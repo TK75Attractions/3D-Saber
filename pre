@@ -1,0 +1,198 @@
+#include <Wire.h>
+#include <Arduino.h>
+#include <ST7032_asukiaaa.h>
+#define SDA_PIN 8
+#define SCL_PIN 10
+
+const byte adress[4] = {0x3E, 0x31, 0x21, 0x2E}; // I2Cアドレス候補
+
+ST7032_asukiaaa lcd[4]{
+  ST7032_asukiaaa (0x3E),//何もなし
+  ST7032_asukiaaa (0x31),//LをV短絡、HをG短絡
+  ST7032_asukiaaa (0x21),//LをV短絡、HをV900G100
+  ST7032_asukiaaa (0x2E)//LをG短絡、HをV900G100
+};
+
+struct KanaCode {
+  const char* kana;  // UTF-8文字列
+  uint8_t code;      // LCD内部1バイトコード
+};
+
+// ST7032カタカナ全対応表（代表例）
+KanaCode kanaTable[] = {
+  {"ア", 0xB1}, {"イ", 0xB2}, {"ウ", 0xB3}, {"エ", 0xB4}, {"オ", 0xB5},
+  {"カ", 0xB6}, {"キ", 0xB7}, {"ク", 0xB8}, {"ケ", 0xB9}, {"コ", 0xBA},
+  {"サ", 0xBB}, {"シ", 0xBC}, {"ス", 0xBD}, {"セ", 0xBE}, {"ソ", 0xBF},
+  {"タ", 0xC0}, {"チ", 0xC1}, {"ツ", 0xC2}, {"テ", 0xC3}, {"ト", 0xC4},
+  {"ナ", 0xC5}, {"ニ", 0xC6}, {"ヌ", 0xC7}, {"ネ", 0xC8}, {"ノ", 0xC9},
+  {"ハ", 0xCA}, {"ヒ", 0xCB}, {"フ", 0xCC}, {"ヘ", 0xCD}, {"ホ", 0xCE},
+  {"マ", 0xCF}, {"ミ", 0xD0}, {"ム", 0xD1}, {"メ", 0xD2}, {"モ", 0xD3},
+  {"ヤ", 0xD4}, {"ユ", 0xD5}, {"ヨ", 0xD6},
+  {"ラ", 0xD7}, {"リ", 0xD8}, {"ル", 0xD9}, {"レ", 0xDA}, {"ロ", 0xDB},
+  {"ワ", 0xDC}, {"ヲ", 0xA6}, {"ャ", 0xAC}, {"ュ", 0xAD}, {"ョ", 0xAE},
+  {"ッ", 0xAF}, 
+};
+
+struct DakutenMap {
+  const char* kana;    // UTF-8文字
+  const char* base;    // 基本カタカナ
+  uint8_t mark;        // 濁点(0xDE) or 半濁点(0xDF)
+};
+
+static const DakutenMap dakutenTable[] = {
+  {"ガ", "カ", 0xDE}, {"ギ", "キ", 0xDE}, {"グ", "ク", 0xDE}, {"ゲ", "ケ", 0xDE}, {"ゴ", "コ", 0xDE},
+  {"ザ", "サ", 0xDE}, {"ジ", "シ", 0xDE}, {"ズ", "ス", 0xDE}, {"ゼ", "セ", 0xDE}, {"ゾ", "ソ", 0xDE},
+  {"ダ", "タ", 0xDE}, {"ヂ", "チ", 0xDE}, {"ヅ", "ツ", 0xDE}, {"デ", "テ", 0xDE}, {"ド", "ト", 0xDE},
+  {"バ", "ハ", 0xDE}, {"ビ", "ヒ", 0xDE}, {"ブ", "フ", 0xDE}, {"ベ", "ヘ", 0xDE}, {"ボ", "ホ", 0xDE},
+  {"パ", "ハ", 0xDF}, {"ピ", "ヒ", 0xDF}, {"プ", "フ", 0xDF}, {"ペ", "ヘ", 0xDF}, {"ポ", "ホ", 0xDF},
+};
+
+void writeData(byte t_data, byte dev) {
+  byte add = adress[dev];
+  Wire.beginTransmission(add);
+  Wire.write(0x40);
+  Wire.write(t_data);
+  Wire.endTransmission();
+  delay(10);
+}
+
+void writeString(const char* str, byte dev) {
+  while (*str) {
+    bool matched = false;
+
+    // ====== まず「濁点・半濁点つき文字」を分解 ======
+    // まず濁点つき文字をチェック
+    for (int i = 0; i < sizeof(dakutenTable) / sizeof(dakutenTable[0]); i++) {
+      size_t len = strlen(dakutenTable[i].kana);
+      if (strncmp(str, dakutenTable[i].kana, len) == 0) {
+        // ベースカタカナをまず送信
+        for (int j = 0; j < sizeof(kanaTable) / sizeof(kanaTable[0]); j++) {
+          if (strcmp(kanaTable[j].kana, dakutenTable[i].base) == 0) {
+            writeData(kanaTable[j].code, dev);
+            break;
+          }
+        }
+        // 濁点 or 半濁点を追加送信
+        writeData(dakutenTable[i].mark, dev);
+        str += len; // 次の文字へ
+        matched = true;
+        break;
+      }
+    }
+
+    if (matched) continue; // 変換済みならスキップ
+
+    // ====== 通常カタカナ ======
+    for (int i = 0; i < sizeof(kanaTable) / sizeof(kanaTable[0]); i++) {
+      size_t len = strlen(kanaTable[i].kana);
+      if (strncmp(str, kanaTable[i].kana, len) == 0) {
+        writeData(kanaTable[i].code, dev);
+        str += len;
+        matched = true;
+        break;
+      }
+    }
+
+    // ====== ASCIIなど ======
+    if (!matched) {
+      if ((unsigned char)*str >= 0x20 && (unsigned char)*str <= 0x7F) {
+        writeData(*str, dev);
+      }
+      str++;
+    }
+  }
+}
+
+void teststring()
+{
+  lcd[0].begin(16, 2);  // 16x2行LCD
+  lcd[0].setContrast(30); // コントラスト調整（0〜63くらい）
+
+  lcd[0].print("device 0");
+  lcd[0].setCursor(0, 1);
+  writeString("パピプペポ",0);
+  lcd[1].begin(16,2);
+  lcd[1].setContrast(30);
+  writeString("アイウュオ",1);
+  lcd[1].setCursor(0,1);
+  lcd[1].print("device 1");
+}
+
+void search()
+{
+  delay(500);
+  Serial.println("\n--- I2C Scanner Start ---");
+  delay(500);
+
+  byte count = 0;
+  for (byte address = 1; address < 127; address++) {
+    Wire.beginTransmission(address);
+    byte error = Wire.endTransmission();
+    if (error == 0) {
+      Serial.print("I2C device found at 0x");
+      if (address < 16) Serial.print("0");
+      Serial.print(address, HEX);
+      Serial.println();
+      count++;
+    } 
+    else if (error == 4) {
+      Serial.print("Unknown error at 0x");
+      if (address < 16) Serial.print("0");
+      Serial.println(address, HEX);
+    }
+    // Serial.println(address); // 不要ならコメントアウト
+    Serial.print(error);
+    Serial.println(address);
+    delay(50);
+  }
+  if (count == 0) Serial.println("No I2C devices found.");
+  else 
+  {
+    Serial.print("Scan complete. Found ");
+    Serial.print(count);
+    Serial.println(" device(s).");
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(SDA_PIN, SCL_PIN);
+  Wire.setClock(100000); // 100kHzに制限
+  delay(2000);
+  search();
+  lcd[0].begin(16, 2);  // 16x2行LCD
+  lcd[0].clear();
+  lcd[1].begin(16, 2);  // 16x2行LCD
+  lcd[1].clear();
+  lcd[2].begin(16, 2);  // 16x2行LCD
+  lcd[2].clear();
+  lcd[3].begin(16, 2);  // 16x2行LCD
+  lcd[3].clear();
+  lcd[0].setCursor(0,0);
+  lcd[0].print("device0 ");
+  lcd[0].setCursor(0,1);
+  writeString("アイウエオ",0);
+  lcd[1].setCursor(0,0);
+  lcd[1].print("device1 ");
+  lcd[1].setCursor(0,1);
+  writeString("アイウエオ",1);
+  lcd[2].setCursor(0,0);
+  lcd[2].print("device2 ");
+  lcd[2].setCursor(0,1);
+  writeString("アイウエオ",2);
+  lcd[3].setCursor(0,0);
+  lcd[3].print("device3 ");
+  lcd[3].setCursor(0,1);
+  writeString("アイウエオ",3);
+
+}
+
+void deviceloop()
+{
+  lcd[0].setCursor(0,0);
+  lcd[0].print("device0 ");
+  Serial.println("looped");
+}
+
+void loop(){
+}
