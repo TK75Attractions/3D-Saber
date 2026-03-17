@@ -1,0 +1,8 @@
+*.ttf filter=lfs diff=lfs merge=lfs -text
+*.otf filter=lfs diff=lfs merge=lfs -text
+"Assets/TextMesh Pro/Fonts/*.ttf" filter=lfs diff=lfs merge=lfs -text
+"Assets/TextMesh Pro/Fonts/*.otf" filter=lfs diff=lfs merge=lfs -text
+"Assets/TextMesh Pro/Fonts/*SDF.asset" filter=lfs diff=lfs merge=lfs -text
+Assets/TextMesh[[:space:]]Pro/Fonts/*.ttf filter=lfs diff=lfs merge=lfs -text
+Assets/TextMesh[[:space:]]Pro/Fonts/*.otf filter=lfs diff=lfs merge=lfs -text
+Assets/TextMesh[[:space:]]Pro/Fonts/*SDF.asset filter=lfs diff=lfs merge=lfs -text

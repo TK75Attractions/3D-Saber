@@ -1,0 +1,21 @@
+fileFormatVersion: 2
+guid: 5a04e326b9edc0a46b665fd55e949a65
+TrueTypeFontImporter:
+  externalObjects: {}
+  serializedVersion: 4
+  fontSize: 16
+  forceTextureCase: 3
+  characterSpacing: 0
+  characterPadding: 1
+  includeFontData: 1
+  fontNames:
+  - ArcadicAlphabet
+  fallbackFontReferences: []
+  customCharacters: ' ?abcdefghijklmnopqrstuvwxyz'
+  fontRenderingMode: 0
+  ascentCalculationMode: 1
+  useLegacyBoundsCalculation: 0
+  shouldRoundAdvanceValue: 1
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
