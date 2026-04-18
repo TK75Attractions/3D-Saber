@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class PlayerController : MonoBehaviour
+public class Pointer : MonoBehaviour
 {
 
     void Update()
