@@ -9,6 +9,9 @@ sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 cap = cv2.VideoCapture(0)  # さっき動いた番号
 
+print(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+print(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+
 while True:
     ret, frame = cap.read()
     if not ret:
