@@ -2,20 +2,17 @@ using UnityEngine;
 
 public class Pointer : MonoBehaviour
 {
+    RectTransform rt;
+
+    void Start()
+    {
+        rt = GetComponent<RectTransform>();
+    }
 
     void Update()
     {
-        // InputPointが存在しない場合は何もしない
         if (InputPoint.Instance == null) return;
 
-        // 正規化座標を取得（-1〜1）
-        Vector2 inputPos = InputPoint.Instance.NormalizedPosition;
-
-        // そのまま座標として反映
-        transform.position = new Vector3(
-            inputPos.x ,
-            inputPos.y ,
-            0f
-        );
+        rt.anchoredPosition = InputPoint.Instance.LocalPosition;
     }
 }

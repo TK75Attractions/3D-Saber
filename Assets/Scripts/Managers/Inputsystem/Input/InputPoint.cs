@@ -26,6 +26,8 @@ public class InputPoint : MonoBehaviour
     // カメラ解像度
     public float camWidth = 1920f;
     public float camHeight = 1080f;
+    public RectTransform boardRect;
+    public Vector2 LocalPosition { get; private set; }
 
     void Awake()
     {
@@ -90,18 +92,28 @@ public class InputPoint : MonoBehaviour
 
         if (updated)
         {
-            // 0〜camSize → -1〜1 に正規化
-            float normalizedX = (x / camWidth) * 0.7f - 1f;
-            float normalizedY = -((y / camHeight) * 0.7f - 1f);
+    // カメラ座標 → 画面座標に変換
+            float screenX = (x / camWidth) * Screen.width;
+            float screenY = (y / camHeight) * Screen.height;
 
-            NormalizedPosition = new Vector2(normalizedX, normalizedY);
+            Vector2 screenPos = new Vector2(screenX, screenY);
+
+            // 画面座標 → boardRectのローカル座標
+            RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            boardRect,
+            screenPos,
+            null,
+            out Vector2 localPos
+            );
+
+            LocalPosition = localPos;
         }
     }
 
     void OnDestroy()
     {
         // スレッド終了
-        receiveThread?.Abort();
+        receiveThread?.Interrupt(); // Abortより安全
         udpClient?.Close();
     }
 }
