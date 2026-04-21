@@ -1,0 +1,17 @@
+{
+    "bpm": 140.0,
+    "notes": [
+        { "beat": 2.0, "time": 1714.0,  "x": -2.5, "y":  0.0, "type": "tap", "color": "red",  "direction": "none" },
+        { "beat": 3.0, "time": 2571.0,  "x":  2.5, "y":  0.0, "type": "tap", "color": "blue", "direction": "none" },
+        { "beat": 4.0, "time": 3428.0,  "x": -1.5, "y":  1.5, "type": "tap", "color": "red",  "direction": "none" },
+        { "beat": 4.5, "time": 3857.0,  "x":  1.5, "y":  1.5, "type": "tap", "color": "blue", "direction": "none" },
+        { "beat": 5.0, "time": 4285.0,  "x":  0.0, "y":  0.5, "type": "tap", "color": "red",  "direction": "none" },
+        { "beat": 6.0, "time": 5142.0,  "x": -2.5, "y": -1.0, "type": "tap", "color": "blue", "direction": "none" },
+        { "beat": 7.0, "time": 6000.0,  "x":  2.5, "y": -1.0, "type": "tap", "color": "red",  "direction": "none" },
+        { "beat": 8.0, "time": 6857.0,  "x": -1.0, "y":  0.0, "type": "tap", "color": "blue", "direction": "none" },
+        { "beat": 8.5, "time": 7285.0,  "x":  1.0, "y":  0.0, "type": "tap", "color": "red",  "direction": "none" },
+        { "beat": 9.0, "time": 7714.0,  "x":  0.0, "y":  1.5, "type": "tap", "color": "blue", "direction": "none" },
+        { "beat":10.0, "time": 8571.0,  "x": -2.0, "y":  0.5, "type": "tap", "color": "red",  "direction": "none" },
+        { "beat":11.0, "time": 9428.0,  "x":  2.0, "y":  0.5, "type": "tap", "color": "blue", "direction": "none" }
+    ]
+}
