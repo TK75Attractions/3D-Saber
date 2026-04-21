@@ -134,27 +134,42 @@ public static class SaberExperimentBuilder
 
     // ---------- Prefab ----------
 
-    private static void BuildNotePrefab(string path, Color color, bool addAlwaysJudgeable)
+    private static void BuildNotePrefab(string path, Color baseColor, bool addAlwaysJudgeable)
     {
         GameObject root = GameObject.CreatePrimitive(PrimitiveType.Cube);
         root.name = Path.GetFileNameWithoutExtension(path);
         root.transform.localScale = new Vector3(0.8f, 0.8f, 0.8f);
-        root.GetComponent<Renderer>().sharedMaterial = MakeLit(color, 0.6f);
+        root.GetComponent<Renderer>().sharedMaterial = MakeLit(baseColor, 0.4f);
         root.AddComponent<CuttableNote>();
         if (addAlwaysJudgeable) root.AddComponent<AlwaysJudgeable>();
 
-        // 見やすくするためのマーカー（+Z 側面に白い窪み風）
-        GameObject marker = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        marker.name = "Marker";
-        marker.transform.SetParent(root.transform, false);
-        marker.transform.localScale = new Vector3(0.5f, 0.1f, 0.05f);
-        marker.transform.localPosition = new Vector3(0f, 0f, -0.5f);
-        Object.DestroyImmediate(marker.GetComponent<BoxCollider>());
-        marker.GetComponent<Renderer>().sharedMaterial = MakeLit(Color.white, 1.2f);
+        // 6 面ステッカー：それぞれ違う色で面の向きが一目でわかるようにする
+        AddFaceSticker(root, "Front", new Vector3(0, 0, -0.51f), new Vector3(0.7f, 0.7f, 0.02f), Color.white, 1.1f);
+        AddFaceSticker(root, "Back", new Vector3(0, 0, 0.51f), new Vector3(0.7f, 0.7f, 0.02f), new Color(0.35f, 0.35f, 0.35f), 0.2f);
+        AddFaceSticker(root, "Right", new Vector3(0.51f, 0, 0), new Vector3(0.02f, 0.7f, 0.7f), new Color(1f, 0.95f, 0.2f), 0.8f);
+        AddFaceSticker(root, "Left", new Vector3(-0.51f, 0, 0), new Vector3(0.02f, 0.7f, 0.7f), new Color(1f, 0.5f, 0.1f), 0.8f);
+        AddFaceSticker(root, "Top", new Vector3(0, 0.51f, 0), new Vector3(0.7f, 0.02f, 0.7f), new Color(0.3f, 1f, 0.8f), 0.8f);
+        AddFaceSticker(root, "Bottom", new Vector3(0, -0.51f, 0), new Vector3(0.7f, 0.02f, 0.7f), new Color(1f, 0.3f, 0.8f), 0.8f);
+
+        // プレイヤー側（-Z）に的マーカー
+        var target = AddFaceSticker(root, "Target", new Vector3(0, 0, -0.53f), new Vector3(0.25f, 0.25f, 0.02f), Color.white, 2.0f);
+        target.transform.localRotation = Quaternion.Euler(0, 0, 45f);
 
         PrefabUtility.SaveAsPrefabAsset(root, path);
         Object.DestroyImmediate(root);
         Debug.Log($"[Builder] Prefab saved: {path}");
+    }
+
+    private static GameObject AddFaceSticker(GameObject root, string name, Vector3 localPos, Vector3 localScale, Color color, float emission)
+    {
+        GameObject s = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        s.name = name;
+        s.transform.SetParent(root.transform, false);
+        s.transform.localPosition = localPos;
+        s.transform.localScale = localScale;
+        Object.DestroyImmediate(s.GetComponent<BoxCollider>());
+        s.GetComponent<Renderer>().sharedMaterial = MakeLit(color, emission);
+        return s;
     }
 
     private static void BuildSongButtonPrefab()
@@ -206,22 +221,21 @@ public static class SaberExperimentBuilder
             mouse.maxBounds = new Vector2(5.5f, 3f);
         }
 
-        // 見た目：縦長ブレード + 柄
-        GameObject blade = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        blade.name = "Blade";
-        blade.transform.SetParent(saber.transform, false);
-        blade.transform.localScale = new Vector3(0.08f, 1.1f, 0.08f);
-        blade.transform.localPosition = new Vector3(0f, 0.4f, 0f);
-        Object.DestroyImmediate(blade.GetComponent<BoxCollider>());
-        blade.GetComponent<Renderer>().sharedMaterial = MakeLit(SaberColor, 1.4f);
+        // 見た目：小さな発光点
+        GameObject point = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        point.name = "Point";
+        point.transform.SetParent(saber.transform, false);
+        point.transform.localScale = new Vector3(0.3f, 0.3f, 0.3f);
+        Object.DestroyImmediate(point.GetComponent<SphereCollider>());
+        point.GetComponent<Renderer>().sharedMaterial = MakeLit(SaberColor, 2.2f);
 
-        GameObject hilt = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        hilt.name = "Hilt";
-        hilt.transform.SetParent(saber.transform, false);
-        hilt.transform.localScale = new Vector3(0.13f, 0.25f, 0.13f);
-        hilt.transform.localPosition = new Vector3(0f, -0.2f, 0f);
-        Object.DestroyImmediate(hilt.GetComponent<BoxCollider>());
-        hilt.GetComponent<Renderer>().sharedMaterial = MakeLit(new Color(0.3f, 0.3f, 0.35f), 0f);
+        // 点の周りに薄いリング（視認性補強）
+        GameObject ring = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        ring.name = "PointGlow";
+        ring.transform.SetParent(saber.transform, false);
+        ring.transform.localScale = new Vector3(0.55f, 0.55f, 0.55f);
+        Object.DestroyImmediate(ring.GetComponent<SphereCollider>());
+        ring.GetComponent<Renderer>().sharedMaterial = MakeTransparentLit(new Color(SaberColor.r, SaberColor.g, SaberColor.b, 0.25f));
 
         return saber;
     }
