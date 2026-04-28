@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using System.Collections;
 
@@ -7,6 +8,13 @@ public static class Haptic
     static bool isConnected = true; // 仮
 
     static HapticRunner runner;
+    static Action<string> sender;
+
+    public static void SetTransport(Action<string> transport)
+    {
+        sender = transport;
+        isConnected = transport != null;
+    }
 
     static void Init()
     {
@@ -15,7 +23,7 @@ public static class Haptic
 
         // ランナー生成
         GameObject obj = new GameObject("HapticRunner");
-        Object.DontDestroyOnLoad(obj);
+        UnityEngine.Object.DontDestroyOnLoad(obj);
         runner = obj.AddComponent<HapticRunner>();
 
         // BLE初期化
@@ -48,6 +56,12 @@ public static class Haptic
 
     static void Send(string msg)
     {
-        Debug.Log("Send: " + msg);
+        if (!isConnected || sender == null)
+        {
+            Debug.LogWarning("Haptic transport is not connected: " + msg.Trim());
+            return;
+        }
+
+        sender(msg);
     }
 }
