@@ -1,12 +1,24 @@
 using UnityEngine;
 
-// 切れるノーツ。Cut() で実際にメッシュを切断して両半分を物理で飛ばす。
+// 切れるノーツ。タップ・方向指定・ロングをすべてこのコンポーネントで扱う。
+// ロングノーツは Cut() を RequiredCutCount 回呼ぶことで完了する。
+// 部分カット時は「ひび」を表示し、最終カットで本体をスライス＋砕け散らせる。
 public class CuttableNote : MonoBehaviour
 {
     public bool IsCut { get; private set; }
     public bool IsJudgeable { get; set; }
     public bool IsMissed { get; private set; }
     public double HitTime { get; set; }
+
+    [Header("Note kind")]
+    public CutDirection RequiredDirection = CutDirection.None;
+    public int RequiredCutCount = 1;
+    public int RemainingCuts = 1;
+    // 通算で1回でも誤方向に切ったら false。
+    public bool LastCutCorrectDirection { get; private set; } = true;
+    // 何回切れたか（達成数）。
+    public int CutsAchieved => RequiredCutCount - RemainingCuts;
+    public bool IsFinalized { get; private set; }
 
     [Header("Slice physics")]
     public float sliceSeparationImpulse = 2.5f;
@@ -16,42 +28,160 @@ public class CuttableNote : MonoBehaviour
     public float pieceAngularImpulse = 4f;
     public bool pieceUseGravity = false;
 
+    [Header("Shatter (long note)")]
+    public int shatterDebrisCount = 6;
+    public float shatterDebrisSpeed = 3f;
+
+    // 最終カット時に発火（タップなら1回、ロングなら全部切れた瞬間に1回）。
     public event System.Action<CuttableNote, Vector3, Vector3> OnCut;
+    // 0回も切れずタイムアウトしたときに発火。部分達成のロングは OnCut（達成率付き）で扱う。
     public event System.Action<CuttableNote> OnMiss;
+
+    private Vector3 lastHitPoint;
+    private Vector3 lastVelocity = Vector3.right;
 
     public void Cut(Vector3 hitPoint, Vector3 cutVelocity)
     {
-        if (IsCut || IsMissed) return;
-        IsCut = true;
-        OnCut?.Invoke(this, hitPoint, cutVelocity);
+        if (IsCut || IsMissed || IsFinalized) return;
 
-        if (!TrySpawnSlices(hitPoint, cutVelocity))
+        // 方向判定（1回でも誤方向なら以降 false 維持）
+        Vector2 vXY = new Vector2(cutVelocity.x, cutVelocity.y);
+        bool dirOk = CutDirectionHelper.Matches(RequiredDirection, vXY);
+        if (CutsAchieved == 0) LastCutCorrectDirection = dirOk;
+        else LastCutCorrectDirection = LastCutCorrectDirection && dirOk;
+
+        RemainingCuts--;
+        lastHitPoint = hitPoint;
+        lastVelocity = cutVelocity;
+
+        // 各カットでひびを追加
+        AddCrack();
+
+        if (RemainingCuts <= 0)
         {
-            gameObject.SetActive(false);
-            return;
+            // 全カット完了：本体を砕け散らせる
+            IsCut = true;
+            IsFinalized = true;
+            OnCut?.Invoke(this, hitPoint, cutVelocity);
+            ShatterAndDestroy(hitPoint, cutVelocity);
         }
-        Destroy(gameObject);
     }
 
-    // 判定窓を逃した時のフラグ立て。視覚的には消さず、そのまま後ろに流す。
+    // 判定窓を逃した時のフラグ。
+    // 部分達成があった場合はスコア用に OnCut を発火（達成率は ScoreManager 側が読む）。
     public void MarkMiss()
     {
-        if (IsCut || IsMissed) return;
+        if (IsCut || IsMissed || IsFinalized) return;
         IsMissed = true;
         IsJudgeable = false;
-        // 見た目だけ「失敗した」と分かるよう色を落とす
-        var mr = GetComponent<MeshRenderer>();
-        if (mr != null && mr.material != null)
+        IsFinalized = true;
+        DimVisual();
+
+        if (CutsAchieved > 0)
         {
-            Color c;
-            if (mr.material.HasProperty("_BaseColor")) c = mr.material.GetColor("_BaseColor");
-            else c = mr.material.color;
-            c = new Color(c.r * 0.4f, c.g * 0.4f, c.b * 0.4f, c.a);
-            if (mr.material.HasProperty("_BaseColor")) mr.material.SetColor("_BaseColor", c);
-            else mr.material.color = c;
-            if (mr.material.HasProperty("_EmissionColor")) mr.material.SetColor("_EmissionColor", c * 0.2f);
+            // 部分達成 → ScoreManager で完了率を見て tier を下げる
+            OnCut?.Invoke(this, lastHitPoint, lastVelocity);
         }
-        OnMiss?.Invoke(this);
+        else
+        {
+            OnMiss?.Invoke(this);
+        }
+    }
+
+    private void DimVisual()
+    {
+        var mr = GetComponent<MeshRenderer>();
+        if (mr == null || mr.material == null) return;
+        Color c;
+        if (mr.material.HasProperty("_BaseColor")) c = mr.material.GetColor("_BaseColor");
+        else c = mr.material.color;
+        c = new Color(c.r * 0.4f, c.g * 0.4f, c.b * 0.4f, c.a);
+        if (mr.material.HasProperty("_BaseColor")) mr.material.SetColor("_BaseColor", c);
+        else mr.material.color = c;
+        if (mr.material.HasProperty("_EmissionColor")) mr.material.SetColor("_EmissionColor", c * 0.2f);
+    }
+
+    private void AddCrack()
+    {
+        // フロント面（-Z 側）にランダムな細い裂け目を1本追加。
+        GameObject crack = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        crack.name = "Crack";
+        crack.transform.SetParent(transform, false);
+        // 端まで届く長さ・ランダム角度・ランダム位置
+        crack.transform.localPosition = new Vector3(
+            Random.Range(-0.3f, 0.3f),
+            Random.Range(-0.3f, 0.3f),
+            -0.55f);
+        crack.transform.localRotation = Quaternion.Euler(0, 0, Random.Range(0f, 360f));
+        crack.transform.localScale = new Vector3(0.04f, Random.Range(0.5f, 0.95f), 0.03f);
+        var col = crack.GetComponent<BoxCollider>();
+        if (col != null) SafeDestroy(col);
+        var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+        var mat = new Material(sh);
+        Color c = Color.white;
+        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
+        else mat.color = c;
+        if (mat.HasProperty("_EmissionColor"))
+        {
+            mat.EnableKeyword("_EMISSION");
+            mat.SetColor("_EmissionColor", c * 1.4f);
+        }
+        crack.GetComponent<MeshRenderer>().sharedMaterial = mat;
+    }
+
+    private void ShatterAndDestroy(Vector3 hitPoint, Vector3 cutVelocity)
+    {
+        bool sliced = TrySpawnSlices(hitPoint, cutVelocity);
+        if (RequiredCutCount > 1)
+        {
+            SpawnDebris(cutVelocity);
+        }
+        if (sliced)
+        {
+            SafeDestroyGo(gameObject);
+        }
+        else
+        {
+            gameObject.SetActive(false);
+        }
+    }
+
+    private static void SafeDestroy(Object o)
+    {
+        if (o == null) return;
+        if (Application.isPlaying) Destroy(o);
+        else DestroyImmediate(o);
+    }
+
+    private static void SafeDestroyGo(GameObject go)
+    {
+        if (go == null) return;
+        if (Application.isPlaying) Destroy(go);
+        else DestroyImmediate(go);
+    }
+
+    private void SpawnDebris(Vector3 cutVelocity)
+    {
+        var srcMr = GetComponent<MeshRenderer>();
+        Material mat = srcMr != null ? srcMr.sharedMaterial : null;
+        for (int i = 0; i < shatterDebrisCount; i++)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            go.name = name + "_debris";
+            var col = go.GetComponent<BoxCollider>();
+            if (col != null) SafeDestroy(col);
+            go.transform.position = transform.position + Random.insideUnitSphere * 0.3f;
+            go.transform.rotation = Random.rotation;
+            go.transform.localScale = Vector3.one * Random.Range(0.06f, 0.14f);
+            if (mat != null) go.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            var rb = go.AddComponent<Rigidbody>();
+            rb.useGravity = pieceUseGravity;
+            rb.linearVelocity = Random.insideUnitSphere * shatterDebrisSpeed + cutVelocity * 0.15f;
+            rb.angularVelocity = Random.insideUnitSphere * (pieceAngularImpulse * 1.5f);
+            var decay = go.AddComponent<SlicePieceDecay>();
+            decay.life = pieceLife;
+            decay.fadeStart = pieceFadeStart;
+        }
     }
 
     private bool TrySpawnSlices(Vector3 hitPoint, Vector3 cutVelocity)
@@ -65,15 +195,10 @@ public class CuttableNote : MonoBehaviour
         if (motionDir.sqrMagnitude < 0.0001f) return false;
         motionDir.Normalize();
 
-        // 切断面の法線：XY 平面内で進行方向に垂直
         Vector3 cutNormalWorld = Vector3.Cross(motionDir, Vector3.forward).normalized;
-
-        // メッシュローカルへ変換
         Vector3 hitLocal = transform.InverseTransformPoint(hitPoint);
         Vector3 normalLocal = transform.InverseTransformDirection(cutNormalWorld).normalized;
 
-        // セーバーの通過点がノーツの外側のことが多いので、
-        // 平面をノーツのバウンディング内に寄せる（必ず切断が成立するように）。
         Bounds b = mf.sharedMesh.bounds;
         float halfExtent = Mathf.Max(b.extents.x, Mathf.Max(b.extents.y, b.extents.z)) * 0.7f;
         float signed = Vector3.Dot(hitLocal - b.center, normalLocal);

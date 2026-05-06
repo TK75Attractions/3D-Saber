@@ -20,6 +20,7 @@ public static class SaberExperimentBuilder
     private const string NoteGamePrefabPath = PrefabDir + "/NotePrefab_Game.prefab";  // 互換保持
 
     private const string SongButtonPath = PrefabDir + "/SongButton.prefab";
+    private const string BarLinePrefabPath = PrefabDir + "/BarLine.prefab";
 
     private const string TitleScenePath = "Assets/Scenes/Title.unity";
     private const string SongSelectScenePath = "Assets/Scenes/SongSelect.unity";
@@ -44,6 +45,7 @@ public static class SaberExperimentBuilder
         BuildNotePrefab(NoteGamePrefabPath, RedNoteColor, addAlwaysJudgeable: false);
 
         BuildSongButtonPrefab();
+        BuildBarLinePrefab();
 
         BuildTitleScene();
         BuildSongSelectScene();
@@ -151,9 +153,33 @@ public static class SaberExperimentBuilder
         AddFaceSticker(root, "Top", new Vector3(0, 0.51f, 0), new Vector3(0.7f, 0.02f, 0.7f), new Color(0.3f, 1f, 0.8f), 0.8f);
         AddFaceSticker(root, "Bottom", new Vector3(0, -0.51f, 0), new Vector3(0.7f, 0.02f, 0.7f), new Color(1f, 0.3f, 0.8f), 0.8f);
 
-        // プレイヤー側（-Z）に的マーカー
+        // ---- プレイヤー側（-Z）の柄 ----
+        // 中央：45°回転の白いダイヤ
         var target = AddFaceSticker(root, "Target", new Vector3(0, 0, -0.53f), new Vector3(0.25f, 0.25f, 0.02f), Color.white, 2.0f);
         target.transform.localRotation = Quaternion.Euler(0, 0, 45f);
+
+        // 4 隅にアクセントドット
+        AddFaceSticker(root, "DotTL", new Vector3(-0.28f,  0.28f, -0.53f), new Vector3(0.08f, 0.08f, 0.02f), Color.white, 1.2f);
+        AddFaceSticker(root, "DotTR", new Vector3( 0.28f,  0.28f, -0.53f), new Vector3(0.08f, 0.08f, 0.02f), Color.white, 1.2f);
+        AddFaceSticker(root, "DotBL", new Vector3(-0.28f, -0.28f, -0.53f), new Vector3(0.08f, 0.08f, 0.02f), Color.white, 1.2f);
+        AddFaceSticker(root, "DotBR", new Vector3( 0.28f, -0.28f, -0.53f), new Vector3(0.08f, 0.08f, 0.02f), Color.white, 1.2f);
+
+        // 上下面にストライプ（3本）
+        Color stripeColor = new Color(1f, 1f, 1f, 1f);
+        for (int i = -1; i <= 1; i++)
+        {
+            float zOff = i * 0.18f;
+            AddFaceSticker(root, $"StripeTop{i}", new Vector3(0f,  0.52f, zOff), new Vector3(0.6f, 0.02f, 0.06f), stripeColor, 0.9f);
+            AddFaceSticker(root, $"StripeBot{i}", new Vector3(0f, -0.52f, zOff), new Vector3(0.6f, 0.02f, 0.06f), stripeColor, 0.9f);
+        }
+
+        // 左右面に縦ストライプ
+        for (int i = -1; i <= 1; i++)
+        {
+            float yOff = i * 0.18f;
+            AddFaceSticker(root, $"StripeR{i}", new Vector3( 0.52f, yOff, 0f), new Vector3(0.02f, 0.06f, 0.6f), stripeColor, 0.9f);
+            AddFaceSticker(root, $"StripeL{i}", new Vector3(-0.52f, yOff, 0f), new Vector3(0.02f, 0.06f, 0.6f), stripeColor, 0.9f);
+        }
 
         PrefabUtility.SaveAsPrefabAsset(root, path);
         Object.DestroyImmediate(root);
@@ -170,6 +196,22 @@ public static class SaberExperimentBuilder
         Object.DestroyImmediate(s.GetComponent<BoxCollider>());
         s.GetComponent<Renderer>().sharedMaterial = MakeLit(color, emission);
         return s;
+    }
+
+    private static void BuildBarLinePrefab()
+    {
+        // 判定面の幅いっぱいに走る、ごく控えめな白い横ライン。色は付けない。
+        var root = new GameObject("BarLine");
+        GameObject mainLine = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        mainLine.name = "Line";
+        mainLine.transform.SetParent(root.transform, false);
+        mainLine.transform.localScale = new Vector3(11f, 0.025f, 0.02f);
+        Object.DestroyImmediate(mainLine.GetComponent<BoxCollider>());
+        mainLine.GetComponent<Renderer>().sharedMaterial = MakeTransparentLit(new Color(1f, 1f, 1f, 0.18f));
+
+        PrefabUtility.SaveAsPrefabAsset(root, BarLinePrefabPath);
+        Object.DestroyImmediate(root);
+        Debug.Log($"[Builder] Prefab saved: {BarLinePrefabPath}");
     }
 
     private static void BuildSongButtonPrefab()
@@ -247,36 +289,81 @@ public static class SaberExperimentBuilder
         var guide = new GameObject("JudgeGuide");
         guide.transform.position = new Vector3(0f, 0f, judgeZ);
 
-        // 水平ライン（X 軸）
-        GameObject hLine = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        hLine.name = "HLine";
-        hLine.transform.SetParent(guide.transform, false);
-        hLine.transform.localScale = new Vector3(14f, 0.02f, 0.02f);
-        Object.DestroyImmediate(hLine.GetComponent<BoxCollider>());
-        hLine.GetComponent<Renderer>().sharedMaterial = MakeTransparentLit(GuideColor);
+        const float halfW = 5.5f;
+        const float halfH = 3f;
+        const float borderThickness = 0.08f;
 
-        // 垂直ライン（Y 軸）
-        GameObject vLine = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        vLine.name = "VLine";
-        vLine.transform.SetParent(guide.transform, false);
-        vLine.transform.localScale = new Vector3(0.02f, 8f, 0.02f);
-        Object.DestroyImmediate(vLine.GetComponent<BoxCollider>());
-        vLine.GetComponent<Renderer>().sharedMaterial = MakeTransparentLit(GuideColor);
+        // 1. 半透明パネル：判定面の領域全体を青く薄く塗る
+        GameObject panel = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        panel.name = "JudgePanel";
+        panel.transform.SetParent(guide.transform, false);
+        panel.transform.localScale = new Vector3(halfW * 2f, halfH * 2f, 0.01f);
+        Object.DestroyImmediate(panel.GetComponent<BoxCollider>());
+        panel.GetComponent<Renderer>().sharedMaterial = MakeTransparentLit(new Color(0.25f, 0.6f, 1f, 0.10f));
 
-        // 判定面の矩形枠
-        GameObject frameTop = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        frameTop.name = "FrameTop";
-        frameTop.transform.SetParent(guide.transform, false);
-        frameTop.transform.localScale = new Vector3(11f, 0.04f, 0.02f);
-        frameTop.transform.localPosition = new Vector3(0f, 3f, 0f);
-        Object.DestroyImmediate(frameTop.GetComponent<BoxCollider>());
-        frameTop.GetComponent<Renderer>().sharedMaterial = MakeTransparentLit(GuideColor);
+        // 2. 4辺の発光ボーダー（白光、目立つ）
+        Color borderColor = new Color(0.9f, 1f, 1f, 1f);
+        AddBorder(guide, "BorderTop",    new Vector3(0f, halfH, 0f),    new Vector3(halfW * 2f + borderThickness, borderThickness, 0.04f), borderColor);
+        AddBorder(guide, "BorderBottom", new Vector3(0f, -halfH, 0f),   new Vector3(halfW * 2f + borderThickness, borderThickness, 0.04f), borderColor);
+        AddBorder(guide, "BorderLeft",   new Vector3(-halfW, 0f, 0f),   new Vector3(borderThickness, halfH * 2f, 0.04f), borderColor);
+        AddBorder(guide, "BorderRight",  new Vector3(halfW, 0f, 0f),    new Vector3(borderThickness, halfH * 2f, 0.04f), borderColor);
 
-        GameObject frameBot = GameObject.Instantiate(frameTop, guide.transform);
-        frameBot.name = "FrameBottom";
-        frameBot.transform.localPosition = new Vector3(0f, -3f, 0f);
+        // 3. 4 隅にコーナー強調（L字風の小さな当て木）
+        Color cornerColor = new Color(0.4f, 1f, 1f, 1f);
+        AddBorder(guide, "CornerTL_h", new Vector3(-halfW + 0.5f, halfH, 0f), new Vector3(1f, 0.16f, 0.05f), cornerColor);
+        AddBorder(guide, "CornerTL_v", new Vector3(-halfW, halfH - 0.3f, 0f), new Vector3(0.16f, 0.6f, 0.05f), cornerColor);
+        AddBorder(guide, "CornerTR_h", new Vector3(halfW - 0.5f, halfH, 0f),  new Vector3(1f, 0.16f, 0.05f), cornerColor);
+        AddBorder(guide, "CornerTR_v", new Vector3(halfW, halfH - 0.3f, 0f),  new Vector3(0.16f, 0.6f, 0.05f), cornerColor);
+        AddBorder(guide, "CornerBL_h", new Vector3(-halfW + 0.5f, -halfH, 0f), new Vector3(1f, 0.16f, 0.05f), cornerColor);
+        AddBorder(guide, "CornerBL_v", new Vector3(-halfW, -halfH + 0.3f, 0f), new Vector3(0.16f, 0.6f, 0.05f), cornerColor);
+        AddBorder(guide, "CornerBR_h", new Vector3(halfW - 0.5f, -halfH, 0f),  new Vector3(1f, 0.16f, 0.05f), cornerColor);
+        AddBorder(guide, "CornerBR_v", new Vector3(halfW, -halfH + 0.3f, 0f),  new Vector3(0.16f, 0.6f, 0.05f), cornerColor);
+
+        // 4. 8×8 グリッド：内側 7 本 × 7 本の薄い線でマス目に分割
+        const int cellsX = 8;
+        const int cellsY = 8;
+        Color gridColor = new Color(0.85f, 0.95f, 1f, 0.4f);
+        float cellW = halfW * 2f / cellsX;
+        float cellH = halfH * 2f / cellsY;
+        for (int i = 1; i < cellsX; i++)
+        {
+            float x = -halfW + cellW * i;
+            GameObject g = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            g.name = $"GridV{i}";
+            g.transform.SetParent(guide.transform, false);
+            g.transform.localPosition = new Vector3(x, 0f, 0f);
+            g.transform.localScale = new Vector3(0.025f, halfH * 2f, 0.02f);
+            Object.DestroyImmediate(g.GetComponent<BoxCollider>());
+            g.GetComponent<Renderer>().sharedMaterial = MakeTransparentLit(gridColor);
+        }
+        for (int i = 1; i < cellsY; i++)
+        {
+            float y = -halfH + cellH * i;
+            GameObject g = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            g.name = $"GridH{i}";
+            g.transform.SetParent(guide.transform, false);
+            g.transform.localPosition = new Vector3(0f, y, 0f);
+            g.transform.localScale = new Vector3(halfW * 2f, 0.025f, 0.02f);
+            Object.DestroyImmediate(g.GetComponent<BoxCollider>());
+            g.GetComponent<Renderer>().sharedMaterial = MakeTransparentLit(gridColor);
+        }
+
+        // 5. 中央クロスヘア（小さく薄く）
+        AddBorder(guide, "CrossH", Vector3.zero, new Vector3(0.4f, 0.04f, 0.04f), new Color(1f, 1f, 1f, 0.5f));
+        AddBorder(guide, "CrossV", Vector3.zero, new Vector3(0.04f, 0.4f, 0.04f), new Color(1f, 1f, 1f, 0.5f));
 
         return guide;
+    }
+
+    private static void AddBorder(GameObject parent, string name, Vector3 localPos, Vector3 localScale, Color color)
+    {
+        GameObject g = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        g.name = name;
+        g.transform.SetParent(parent.transform, false);
+        g.transform.localPosition = localPos;
+        g.transform.localScale = localScale;
+        Object.DestroyImmediate(g.GetComponent<BoxCollider>());
+        g.GetComponent<Renderer>().sharedMaterial = MakeLit(color, 1.4f);
     }
 
     // ---------- Title シーン ----------
@@ -389,6 +476,17 @@ public static class SaberExperimentBuilder
         spawner.missGrace = 0.07f;
         spawner.despawnAfterMissSeconds = 1.5f;
 
+        var barGo = new GameObject("BarLineSpawner");
+        barGo.transform.SetParent(gameRoot.transform, false);
+        var barSpawner = barGo.AddComponent<BarLineSpawner>();
+        barSpawner.barLinePrefab = AssetDatabase.LoadAssetAtPath<GameObject>(BarLinePrefabPath);
+        barSpawner.root = noteRoot.transform;
+        barSpawner.approachTime = 2.0f;
+        barSpawner.spawnZ = 20f;
+        barSpawner.judgeZ = 0f;
+        barSpawner.beatsPerBar = 4;
+        barSpawner.accentEvery = 0;
+
         var scoreGo = new GameObject("ScoreManager");
         scoreGo.transform.SetParent(gameRoot.transform, false);
         var score = scoreGo.AddComponent<ScoreManager>();
@@ -401,6 +499,7 @@ public static class SaberExperimentBuilder
         gpm.noteSpawner = spawner;
         gpm.scoreManager = score;
         gpm.cutJudge = saberGo.GetComponent<SaberCutJudge>();
+        gpm.barLineSpawner = barSpawner;
         gpm.resultSceneName = "Result";
         gpm.endWaitSeconds = 2.0f;
 

@@ -1,0 +1,13 @@
+{
+    "bpm": 110.0,
+    "notes": [
+        { "beat": 3.0,  "time": 1636.0,  "x": -2.0, "y":  0.0, "type": "direction", "color": "red",  "direction": "right",     "count": 1 },
+        { "beat": 5.0,  "time": 2727.0,  "x":  2.0, "y":  0.0, "type": "direction", "color": "blue", "direction": "left",      "count": 1 },
+        { "beat": 7.0,  "time": 3818.0,  "x":  0.0, "y": -1.0, "type": "direction", "color": "red",  "direction": "up",        "count": 1 },
+        { "beat": 9.0,  "time": 4909.0,  "x":  0.0, "y":  1.0, "type": "direction", "color": "blue", "direction": "down",      "count": 1 },
+        { "beat": 11.0, "time": 6000.0,  "x": -1.5, "y": -1.0, "type": "direction", "color": "red",  "direction": "upright",   "count": 1 },
+        { "beat": 13.0, "time": 7090.0,  "x":  1.5, "y":  1.0, "type": "direction", "color": "blue", "direction": "downleft",  "count": 1 },
+        { "beat": 15.0, "time": 8181.0,  "x": -2.0, "y":  1.0, "type": "direction", "color": "red",  "direction": "downright", "count": 1 },
+        { "beat": 17.0, "time": 9272.0,  "x":  2.0, "y": -1.0, "type": "direction", "color": "blue", "direction": "upleft",    "count": 1 }
+    ]
+}

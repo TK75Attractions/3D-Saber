@@ -79,8 +79,60 @@ public class NoteSpawner : MonoBehaviour
             note = go.AddComponent<CuttableNote>();
         }
         note.HitTime = nd.TimeSeconds;
+        note.RequiredDirection = CutDirectionHelper.Parse(nd.direction);
+        note.RequiredCutCount = Mathf.Max(1, nd.count);
+        note.RemainingCuts = note.RequiredCutCount;
+
+        // 方向指定なら矢印マーカー
+        if (note.RequiredDirection != CutDirection.None)
+        {
+            BuildArrow(go.transform, note.RequiredDirection);
+        }
+        // ロングは Z 方向に伸ばす（カウント表示は不要、ひびで進捗を見せる）
+        if (note.RequiredCutCount > 1)
+        {
+            Vector3 sc = go.transform.localScale;
+            go.transform.localScale = new Vector3(sc.x, sc.y, sc.z * note.RequiredCutCount);
+        }
+
         liveNotes.Add(note);
         OnNoteSpawned?.Invoke(note);
+    }
+
+    private static void BuildArrow(Transform parent, CutDirection dir)
+    {
+        GameObject arrow = new GameObject("Arrow");
+        arrow.transform.SetParent(parent, false);
+        arrow.transform.localPosition = new Vector3(0f, 0f, -0.55f);
+        arrow.transform.localRotation = Quaternion.Euler(0f, 0f, CutDirectionHelper.ToZRotationDegrees(dir));
+
+        // 上向き ^ シェブロン
+        for (int sign = -1; sign <= 1; sign += 2)
+        {
+            GameObject bar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            bar.name = sign < 0 ? "BarL" : "BarR";
+            bar.transform.SetParent(arrow.transform, false);
+            bar.transform.localPosition = new Vector3(sign * 0.13f, -0.06f, 0f);
+            bar.transform.localRotation = Quaternion.Euler(0f, 0f, sign * 35f);
+            bar.transform.localScale = new Vector3(0.06f, 0.32f, 0.04f);
+            var col = bar.GetComponent<BoxCollider>();
+            if (col != null) Destroy(col);
+            var mr = bar.GetComponent<Renderer>();
+            if (mr != null)
+            {
+                var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+                var mat = new Material(sh);
+                Color yellow = new Color(1f, 0.95f, 0.3f);
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", yellow);
+                else mat.color = yellow;
+                if (mat.HasProperty("_EmissionColor"))
+                {
+                    mat.EnableKeyword("_EMISSION");
+                    mat.SetColor("_EmissionColor", yellow * 1.6f);
+                }
+                mr.sharedMaterial = mat;
+            }
+        }
     }
 
     private GameObject PickPrefab(string color)
@@ -112,7 +164,11 @@ public class NoteSpawner : MonoBehaviour
             Vector3 p = note.transform.position;
             note.transform.position = new Vector3(p.x, p.y, z);
 
-            note.IsJudgeable = System.Math.Abs(dt) <= judgeWindow;
+            // ロングノーツは複数回切る時間が必要なので、後方の窓を回数に応じて伸ばす。
+            float lateWindow = note.RequiredCutCount > 1
+                ? judgeWindow + (note.RequiredCutCount - 1) * 0.35f
+                : judgeWindow;
+            note.IsJudgeable = dt <= judgeWindow && dt >= -lateWindow;
 
             if (note.IsCut)
             {
@@ -121,14 +177,14 @@ public class NoteSpawner : MonoBehaviour
             }
 
             // 判定窓を過ぎた瞬間に Miss を1回だけ発火するが、ノーツは消さずに後ろへ流し続ける。
-            if (!note.IsMissed && dt < -(judgeWindow + missGrace))
+            if (!note.IsMissed && dt < -(lateWindow + missGrace))
             {
                 note.MarkMiss();
                 OnNoteMissed?.Invoke(note);
             }
 
             // 後方に十分流れたら回収。
-            if (note.IsMissed && dt < -(judgeWindow + missGrace + despawnAfterMissSeconds))
+            if (note.IsMissed && dt < -(lateWindow + missGrace + despawnAfterMissSeconds))
             {
                 SafeDestroy(note.gameObject);
                 liveNotes.RemoveAt(i);

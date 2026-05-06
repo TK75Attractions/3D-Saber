@@ -12,12 +12,16 @@ public class GamePlayManager : MonoBehaviour
     public NoteSpawner noteSpawner;
     public ScoreManager scoreManager;
     public SaberCutJudge cutJudge;
+    public BarLineSpawner barLineSpawner;
 
     public string resultSceneName = "Result";
     public float endWaitSeconds = 2.0f;
+    // 最後のノーツ通過後、リザルトに遷移する前の余韻時間
+    public float outroSeconds = 3.5f;
 
     private bool finished;
     private bool ready;
+    private double lastNoteTime;
 
     IEnumerator Start()
     {
@@ -40,6 +44,10 @@ public class GamePlayManager : MonoBehaviour
 
         ChartData chart = ChartLoader.LoadFromStreamingAssets(songId);
         noteSpawner.SetChart(chart);
+        if (barLineSpawner != null) barLineSpawner.SetChart(chart);
+        lastNoteTime = chart.notes.Count > 0
+            ? chart.notes[chart.notes.Count - 1].TimeSeconds
+            : 0.0;
 
         yield return LoadAudio(songId);
 
@@ -95,10 +103,13 @@ public class GamePlayManager : MonoBehaviour
         if (songPlayer.IsPlaying)
         {
             noteSpawner.Tick(songPlayer.SongTime);
+            if (barLineSpawner != null) barLineSpawner.Tick(songPlayer.SongTime);
         }
 
-        // 3. 終了判定
-        if (songPlayer.IsPlaying && songPlayer.SongTime >= songPlayer.Duration + endWaitSeconds
+        // 3. 終了判定：最終ノーツ通過＋余韻、かつアクティブなノーツがゼロ
+        double endThreshold = System.Math.Max(songPlayer.Duration + endWaitSeconds,
+                                              lastNoteTime + outroSeconds);
+        if (songPlayer.IsPlaying && songPlayer.SongTime >= endThreshold
             && noteSpawner.AliveCount == 0)
         {
             finished = true;

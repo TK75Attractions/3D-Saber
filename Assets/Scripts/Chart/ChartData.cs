@@ -18,9 +18,13 @@ public class NoteData
     public float time;
     public float x;
     public float y;
-    public string type = "tap";
+    public string type = "tap";   // "tap" / "direction" / "long"
     public string color = "default";
     public string direction = "none";
+    public int count = 1;          // long 用の必要切断回数（tap は 1）
 
     public double TimeSeconds => time / 1000.0;
+
+    public bool IsLong => count > 1 || (type != null && type.ToLowerInvariant() == "long");
+    public bool IsDirection => !string.IsNullOrEmpty(direction) && direction.ToLowerInvariant() != "none";
 }
