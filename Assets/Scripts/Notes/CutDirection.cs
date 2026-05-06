@@ -63,7 +63,8 @@ public static class CutDirectionHelper
     }
 
     // 切断ベクトル（XY）が要求方向と一致するか。tolerance は dot 閾値（cos）。
-    public static bool Matches(CutDirection required, Vector2 cutVelXY, float tolerance = 0.5f)
+    // 既定は 0.866（=cos30°）：要求方向に対して ±30° の範囲のみ一致と判定する厳しめの設定。
+    public static bool Matches(CutDirection required, Vector2 cutVelXY, float tolerance = 0.866f)
     {
         if (required == CutDirection.None) return true;
         if (cutVelXY.sqrMagnitude < 0.0001f) return false;

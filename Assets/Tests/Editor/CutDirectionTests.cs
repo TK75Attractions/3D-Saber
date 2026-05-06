@@ -44,4 +44,18 @@ public class CutDirectionTests
     {
         Assert.IsFalse(CutDirectionHelper.Matches(CutDirection.Right, Vector2.zero));
     }
+
+    [Test]
+    public void Matches_StrictTolerance_45DegOff_Fails()
+    {
+        // 45度ずれた切り（Right 要求に対して UpRight 方向の振り）はもはや通らない
+        Assert.IsFalse(CutDirectionHelper.Matches(CutDirection.Right, new Vector2(1, 1)));
+    }
+
+    [Test]
+    public void Matches_StrictTolerance_NearlyCorrect_Passes()
+    {
+        // 約 18°ずれは許容範囲内
+        Assert.IsTrue(CutDirectionHelper.Matches(CutDirection.Right, new Vector2(3, 1)));
+    }
 }

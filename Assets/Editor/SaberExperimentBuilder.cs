@@ -527,9 +527,12 @@ public static class SaberExperimentBuilder
         comboText.alignment = TextAnchor.UpperRight;
         var tierText = CreateLabel(canvasGo.transform, "", new Vector2(0, 250), 140, FontStyle.Bold);
         tierText.color = new Color(1f, 1f, 1f, 0f);
+        var flickWarn = CreateLabel(canvasGo.transform, "", new Vector2(0, 360), 56, FontStyle.Bold);
+        flickWarn.color = new Color(1f, 0.7f, 0.2f, 0f);
 
         var hud = canvasGo.AddComponent<ScoreHUD>();
         hud.score = score;
+        hud.flickWarningText = flickWarn;
         hud.scoreText = scoreText;
         hud.comboText = comboText;
         hud.tierText = tierText;

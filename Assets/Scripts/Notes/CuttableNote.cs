@@ -20,6 +20,9 @@ public class CuttableNote : MonoBehaviour
     public int CutsAchieved => RequiredCutCount - RemainingCuts;
     public bool IsFinalized { get; private set; }
 
+    // ロングノーツ用の残数表示（TMP）。NoteSpawner が割り付ける。
+    public TMPro.TextMeshPro countLabel;
+
     [Header("Slice physics")]
     public float sliceSeparationImpulse = 2.5f;
     public float saberVelocityScale = 0.35f;
@@ -60,8 +63,9 @@ public class CuttableNote : MonoBehaviour
         lastHitPoint = hitPoint;
         lastVelocity = cutVelocity;
 
-        // 各カットでひびを追加
+        // 各カットでひびを追加＆数字を更新
         AddCrack();
+        UpdateCountLabel();
 
         if (RemainingCuts <= 0)
         {
@@ -92,6 +96,13 @@ public class CuttableNote : MonoBehaviour
         {
             OnMiss?.Invoke(this);
         }
+    }
+
+    private void UpdateCountLabel()
+    {
+        if (countLabel == null) return;
+        if (RemainingCuts <= 0) countLabel.gameObject.SetActive(false);
+        else countLabel.text = RemainingCuts.ToString();
     }
 
     private void DimVisual()

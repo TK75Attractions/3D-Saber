@@ -140,4 +140,26 @@ public class DirectionAndLongNoteTests
         }
         return count;
     }
+
+    [Test]
+    public void LongNote_CountLabel_DecrementsAndDisappears()
+    {
+        var n = MakeNote();
+        n.RequiredCutCount = 3;
+        n.RemainingCuts = 3;
+        // ラベルを擬似的に持たせる（TMP は EditMode で生成しづらいので簡易モック相当）
+        var labelGo = new GameObject("CountLabel");
+        labelGo.transform.SetParent(n.transform, false);
+        var tmp = labelGo.AddComponent<TMPro.TextMeshPro>();
+        tmp.text = "3";
+        n.countLabel = tmp;
+
+        n.Cut(Vector3.zero, Vector3.right);
+        Assert.AreEqual("2", n.countLabel.text);
+        n.Cut(Vector3.zero, Vector3.right);
+        Assert.AreEqual("1", n.countLabel.text);
+        n.Cut(Vector3.zero, Vector3.right);
+        // 0 になったらラベルを非表示
+        Assert.IsFalse(n.countLabel.gameObject.activeSelf);
+    }
 }

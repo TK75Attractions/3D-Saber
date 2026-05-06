@@ -1321,6 +1321,7 @@ MonoBehaviour:
   RequiredDirection: 0
   RequiredCutCount: 1
   RemainingCuts: 1
+  countLabel: {fileID: 0}
   sliceSeparationImpulse: 2.5
   saberVelocityScale: 0.35
   pieceLife: 2.8

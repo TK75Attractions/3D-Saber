@@ -89,11 +89,12 @@ public class NoteSpawner : MonoBehaviour
         {
             BuildArrow(go.transform, note.RequiredDirection);
         }
-        // ロングは Z 方向に伸ばす（カウント表示は不要、ひびで進捗を見せる）
+        // ロングは Z 方向に伸ばし、上に残カウント数字を浮かべる
         if (note.RequiredCutCount > 1)
         {
             Vector3 sc = go.transform.localScale;
             go.transform.localScale = new Vector3(sc.x, sc.y, sc.z * note.RequiredCutCount);
+            BuildCountLabel(go.transform, note);
         }
 
         liveNotes.Add(note);
@@ -134,6 +135,26 @@ public class NoteSpawner : MonoBehaviour
                 mr.sharedMaterial = mat;
             }
         }
+    }
+
+    private static void BuildCountLabel(Transform parent, CuttableNote note)
+    {
+        var go = new GameObject("CountLabel");
+        go.transform.SetParent(parent, false);
+        // ノーツの上面付近、プレイヤー側に少し向かせる
+        go.transform.localPosition = new Vector3(0f, 0.7f, -0.3f);
+        // TMP のデフォルト前面は +Z 方向。プレイヤーが -Z 側にいるので 180° 回して読めるように。
+        go.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+        go.transform.localScale = Vector3.one * 0.5f;
+
+        var tmp = go.AddComponent<TMPro.TextMeshPro>();
+        tmp.text = note.RequiredCutCount.ToString();
+        tmp.fontSize = 4f;
+        tmp.alignment = TMPro.TextAlignmentOptions.Center;
+        tmp.enableWordWrapping = false;
+        tmp.color = Color.white;
+
+        note.countLabel = tmp;
     }
 
     private GameObject PickPrefab(string color)
