@@ -71,7 +71,8 @@ public class NoteSpawner : MonoBehaviour
     {
         GameObject prefab = PickPrefab(nd.color);
         if (prefab == null) return;
-        Vector3 pos = new Vector3(nd.x, nd.y, spawnZ);
+        float scale = chart != null ? chart.coordScale : 1f;
+        Vector3 pos = new Vector3(nd.x * scale, nd.y * scale, spawnZ);
         GameObject go = Instantiate(prefab, pos, Quaternion.identity, noteRoot);
         CuttableNote note = go.GetComponent<CuttableNote>();
         if (note == null)

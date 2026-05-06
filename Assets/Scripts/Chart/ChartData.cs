@@ -7,6 +7,9 @@ using System.Collections.Generic;
 public class ChartData
 {
     public float bpm;
+    // 譜面ソフトの座標 → ワールド座標へのスケール（既定 1.0：既に world 単位）。
+    // 譜面ソフトがピクセルで吐く場合は 1920 板なら 11/1920≒0.00573 など。
+    public float coordScale = 1.0f;
     public List<NoteData> notes = new List<NoteData>();
 }
 

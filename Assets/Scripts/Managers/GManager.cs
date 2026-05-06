@@ -23,6 +23,8 @@ public class GManager : MonoBehaviour
     //private 変数は、クラスの外部からアクセスできない変数です。これにより、time 変数は GManager クラスの内部でのみアクセスできます。
     [SerializeField] private float time = 0;
     [SerializeField] private bool logOn = false;
+    // リズムゲーム本編では 30fps 上限を外したいので、必要なシーンだけ true にする。
+    [SerializeField] private bool lockFrameRate30 = false;
 
     public void Awake()
     {
@@ -31,7 +33,8 @@ public class GManager : MonoBehaviour
         {
             Control = this;
             DontDestroyOnLoad(this.transform.parent.gameObject);
-            Application.targetFrameRate = 30;
+            if (lockFrameRate30) Application.targetFrameRate = 30;
+            else Application.targetFrameRate = -1;
         }
         else
         {

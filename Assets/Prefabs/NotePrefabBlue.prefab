@@ -1321,13 +1321,14 @@ MonoBehaviour:
   RequiredDirection: 0
   RequiredCutCount: 1
   RemainingCuts: 1
-  longNoteDots: []
   sliceSeparationImpulse: 2.5
   saberVelocityScale: 0.35
   pieceLife: 2.8
   pieceFadeStart: 1.8
   pieceAngularImpulse: 4
   pieceUseGravity: 0
+  shatterDebrisCount: 6
+  shatterDebrisSpeed: 3
 --- !u!1 &3978537708062497974
 GameObject:
   m_ObjectHideFlags: 0

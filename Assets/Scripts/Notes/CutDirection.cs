@@ -71,4 +71,30 @@ public static class CutDirectionHelper
         Vector2 r = ToVector(required);
         return Vector2.Dot(v, r) >= tolerance;
     }
+
+    // 速度方向か IMU 検知方向のどちらかが一致すれば OK。
+    public static bool MatchesWithHint(CutDirection required, Vector2 cutVelXY, CutDirection imuHint)
+    {
+        if (required == CutDirection.None) return true;
+        if (Matches(required, cutVelXY)) return true;
+        if (imuHint != CutDirection.None && imuHint == required) return true;
+        return false;
+    }
+
+    // Swing8DirectionLogger の 0..7 インデックスを enum に。
+    public static CutDirection FromSwing8Index(int idx)
+    {
+        switch (idx)
+        {
+            case 0: return CutDirection.Right;
+            case 1: return CutDirection.UpRight;
+            case 2: return CutDirection.Up;
+            case 3: return CutDirection.UpLeft;
+            case 4: return CutDirection.Left;
+            case 5: return CutDirection.DownLeft;
+            case 6: return CutDirection.Down;
+            case 7: return CutDirection.DownRight;
+            default: return CutDirection.None;
+        }
+    }
 }

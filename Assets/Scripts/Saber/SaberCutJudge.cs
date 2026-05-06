@@ -12,6 +12,8 @@ public class SaberCutJudge : MonoBehaviour
     public float minCutSpeed = 3.0f;
     public float maxCutDistance = 3.0f;
     public float noteHitRadiusXY = 0.5f;
+    // 直近の IMU 振り検知をどれだけ古くまで採用するか
+    public float imuHintMaxAgeSeconds = 0.30f;
 
     // GamePlayManager / GManager から RunJudge() を呼ぶときは false にして
     // 自前の Update を止め、外部から1点で呼び出す（GManager 主体パターン）。
@@ -92,7 +94,8 @@ public class SaberCutJudge : MonoBehaviour
             float distNow = Vector2.Distance(now, noteXY);
             if (distNow > hitRange)
             {
-                note.Cut(kv.Value.hitPoint, kv.Value.velocity);
+                CutDirection imuHint = ResolveImuHint();
+                note.Cut(kv.Value.hitPoint, kv.Value.velocity, imuHint);
                 cuts++;
                 toRemove.Add(note);
             }
@@ -108,6 +111,14 @@ public class SaberCutJudge : MonoBehaviour
         if (!n.IsJudgeable) return false;
         if (!n.gameObject.activeInHierarchy) return false;
         return true;
+    }
+
+    // 直近 N 秒以内の IMU 振り検知方向を取得。古ければ None。
+    private CutDirection ResolveImuHint()
+    {
+        if (!Swing8DirectionLogger.TryGetLatest(out CutDirection dir, out float t)) return CutDirection.None;
+        if (Time.time - t > imuHintMaxAgeSeconds) return CutDirection.None;
+        return dir;
     }
 
     // 点 p と線分 a→b の最短距離と、線分上の最近点。

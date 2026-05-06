@@ -257,10 +257,14 @@ public static class SaberExperimentBuilder
 
         if (useMouse)
         {
-            var mouse = saber.AddComponent<MouseSaberInput>();
-            mouse.fixedZ = 0f;
-            mouse.minBounds = new Vector2(-5.5f, -3f);
-            mouse.maxBounds = new Vector2(5.5f, 3f);
+            // SaberInputBridge：InputPoint があればそちらを優先、無ければマウスフォールバック
+            var bridge = saber.AddComponent<SaberInputBridge>();
+            bridge.useInputPoint = true;
+            bridge.fallbackToMouse = true;
+            bridge.fixedZ = 0f;
+            bridge.minBounds = new Vector2(-5.5f, -3f);
+            bridge.maxBounds = new Vector2(5.5f, 3f);
+            bridge.pixelsToWorld = 0.00573f;
         }
 
         // 見た目：小さな発光点
@@ -491,6 +495,11 @@ public static class SaberExperimentBuilder
         scoreGo.transform.SetParent(gameRoot.transform, false);
         var score = scoreGo.AddComponent<ScoreManager>();
         score.songPlayer = songPlayer;
+
+        var hapticGo = new GameObject("HapticFeedback");
+        hapticGo.transform.SetParent(gameRoot.transform, false);
+        var haptic = hapticGo.AddComponent<HapticFeedback>();
+        haptic.scoreManager = score;
 
         var gpmGo = new GameObject("GamePlayManager");
         gpmGo.transform.SetParent(gameRoot.transform, false);

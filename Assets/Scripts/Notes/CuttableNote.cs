@@ -42,11 +42,17 @@ public class CuttableNote : MonoBehaviour
 
     public void Cut(Vector3 hitPoint, Vector3 cutVelocity)
     {
+        Cut(hitPoint, cutVelocity, CutDirection.None);
+    }
+
+    // imuHint：IMU 由来の振り検知方向（無ければ None）。velocity か imuHint のどちらかで一致すれば OK。
+    public void Cut(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint)
+    {
         if (IsCut || IsMissed || IsFinalized) return;
 
         // 方向判定（1回でも誤方向なら以降 false 維持）
         Vector2 vXY = new Vector2(cutVelocity.x, cutVelocity.y);
-        bool dirOk = CutDirectionHelper.Matches(RequiredDirection, vXY);
+        bool dirOk = CutDirectionHelper.MatchesWithHint(RequiredDirection, vXY, imuHint);
         if (CutsAchieved == 0) LastCutCorrectDirection = dirOk;
         else LastCutCorrectDirection = LastCutCorrectDirection && dirOk;
 
