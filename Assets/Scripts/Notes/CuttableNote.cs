@@ -33,12 +33,25 @@ public class CuttableNote : MonoBehaviour
         Destroy(gameObject);
     }
 
+    // 判定窓を逃した時のフラグ立て。視覚的には消さず、そのまま後ろに流す。
     public void MarkMiss()
     {
         if (IsCut || IsMissed) return;
         IsMissed = true;
+        IsJudgeable = false;
+        // 見た目だけ「失敗した」と分かるよう色を落とす
+        var mr = GetComponent<MeshRenderer>();
+        if (mr != null && mr.material != null)
+        {
+            Color c;
+            if (mr.material.HasProperty("_BaseColor")) c = mr.material.GetColor("_BaseColor");
+            else c = mr.material.color;
+            c = new Color(c.r * 0.4f, c.g * 0.4f, c.b * 0.4f, c.a);
+            if (mr.material.HasProperty("_BaseColor")) mr.material.SetColor("_BaseColor", c);
+            else mr.material.color = c;
+            if (mr.material.HasProperty("_EmissionColor")) mr.material.SetColor("_EmissionColor", c * 0.2f);
+        }
         OnMiss?.Invoke(this);
-        gameObject.SetActive(false);
     }
 
     private bool TrySpawnSlices(Vector3 hitPoint, Vector3 cutVelocity)

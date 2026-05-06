@@ -43,6 +43,7 @@ public class NoteSpawnerTests
         sp.judgeZ = 0f;
         sp.judgeWindow = 0.15f;
         sp.missGrace = 0.05f;
+        sp.despawnAfterMissSeconds = 0.1f;
         var spawned = new List<CuttableNote>();
         sp.OnNoteSpawned += n => spawned.Add(n);
         return (sp, pf, spawned);
@@ -83,7 +84,7 @@ public class NoteSpawnerTests
     }
 
     [Test]
-    public void Tick_MissesNoteAfterGraceWindow()
+    public void Tick_MissesNoteAfterGraceWindow_KeepsFlowing()
     {
         var (sp, _, _) = MakeSpawner();
         int missed = 0;
@@ -91,9 +92,14 @@ public class NoteSpawnerTests
         sp.SetChart(MakeChart(1000f));
         sp.Tick(0.0);
         sp.Tick(1.0);
-        sp.Tick(1.3);
+        sp.Tick(1.3); // 判定窓 + grace を超える → miss 発火だがノーツは残る
         Assert.AreEqual(1, missed);
+        Assert.AreEqual(1, sp.AliveCount, "miss でも即消えず後ろに流す");
+
+        // despawnAfterMiss(0.1) を超えると回収される
+        sp.Tick(2.0);
         Assert.AreEqual(0, sp.AliveCount);
+        Assert.AreEqual(1, missed, "miss は1回だけ発火");
     }
 
     [Test]

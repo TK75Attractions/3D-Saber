@@ -363,7 +363,7 @@ public static class SaberExperimentBuilder
         CreateLight();
         CreateUnlockFrameRate();
 
-        BuildSaber(useMouse: true);
+        var saberGo = BuildSaber(useMouse: true);
         BuildJudgeGuide(judgeZ: 0f);
 
         GameObject noteRoot = new GameObject("NoteRoot");
@@ -385,8 +385,9 @@ public static class SaberExperimentBuilder
         spawner.approachTime = 2.0f;
         spawner.spawnZ = 20f;
         spawner.judgeZ = 0f;
-        spawner.judgeWindow = 0.2f;
-        spawner.missGrace = 0.05f;
+        spawner.judgeWindow = 0.23f;
+        spawner.missGrace = 0.07f;
+        spawner.despawnAfterMissSeconds = 1.5f;
 
         var scoreGo = new GameObject("ScoreManager");
         scoreGo.transform.SetParent(gameRoot.transform, false);
@@ -399,6 +400,7 @@ public static class SaberExperimentBuilder
         gpm.songPlayer = songPlayer;
         gpm.noteSpawner = spawner;
         gpm.scoreManager = score;
+        gpm.cutJudge = saberGo.GetComponent<SaberCutJudge>();
         gpm.resultSceneName = "Result";
         gpm.endWaitSeconds = 2.0f;
 

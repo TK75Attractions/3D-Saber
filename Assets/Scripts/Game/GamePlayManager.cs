@@ -4,17 +4,20 @@ using UnityEngine;
 using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
-// 本編シーンのルート。GManager には依存しない。
+// 本編シーンの「ゲーム側 GManager」。
+// 単一の Update から SaberCutJudge → NoteSpawner の順に駆動する（GManager 主体パターン）。
 public class GamePlayManager : MonoBehaviour
 {
     public SongPlayer songPlayer;
     public NoteSpawner noteSpawner;
     public ScoreManager scoreManager;
+    public SaberCutJudge cutJudge;
 
     public string resultSceneName = "Result";
     public float endWaitSeconds = 2.0f;
 
     private bool finished;
+    private bool ready;
 
     IEnumerator Start()
     {
@@ -23,6 +26,10 @@ public class GamePlayManager : MonoBehaviour
             Debug.LogError("GamePlayManager: 依存コンポーネントが未設定です");
             yield break;
         }
+
+        // 自動探索
+        if (cutJudge == null) cutJudge = Object.FindFirstObjectByType<SaberCutJudge>();
+        if (cutJudge != null) cutJudge.autonomous = false;
 
         string songId = GameSession.SelectedSongId;
         if (string.IsNullOrEmpty(songId))
@@ -40,6 +47,7 @@ public class GamePlayManager : MonoBehaviour
         scoreManager.Reset();
         scoreManager.Bind(noteSpawner);
         songPlayer.Play();
+        ready = true;
     }
 
     private IEnumerator LoadAudio(string songId)
@@ -74,18 +82,22 @@ public class GamePlayManager : MonoBehaviour
         return AudioType.UNKNOWN;
     }
 
+    // 本編シーンで毎フレーム呼ばれる単一の Update。
+    // 順序：判定 → 譜面進行 → 終了チェック。
     void Update()
     {
-        if (finished) return;
+        if (finished || !ready) return;
+
+        // 1. セーバー判定
+        if (cutJudge != null) cutJudge.RunJudge();
+
+        // 2. 譜面進行
         if (songPlayer.IsPlaying)
         {
             noteSpawner.Tick(songPlayer.SongTime);
         }
-        else if (songPlayer.Clip != null)
-        {
-            // 再生開始前。先読み分だけ先に進めたい場合は呼ばない方が素直なので放置。
-        }
 
+        // 3. 終了判定
         if (songPlayer.IsPlaying && songPlayer.SongTime >= songPlayer.Duration + endWaitSeconds
             && noteSpawner.AliveCount == 0)
         {

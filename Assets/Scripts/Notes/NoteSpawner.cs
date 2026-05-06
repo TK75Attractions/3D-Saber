@@ -12,9 +12,11 @@ public class NoteSpawner : MonoBehaviour
     public float approachTime = 2.0f;
     public float spawnZ = 20f;
     public float judgeZ = 0f;
-    public float judgeWindow = 0.15f;
+    public float judgeWindow = 0.23f;
     // 判定ウィンドウを過ぎたら自動的に miss 扱いにする。
-    public float missGrace = 0.05f;
+    public float missGrace = 0.07f;
+    // miss 扱いになった後、ノーツを画面後方まで流してから片付けるまでの秒数。
+    public float despawnAfterMissSeconds = 1.5f;
 
     private ChartData chart;
     private int nextIndex;
@@ -34,9 +36,16 @@ public class NoteSpawner : MonoBehaviour
         nextIndex = 0;
         foreach (var n in liveNotes)
         {
-            if (n != null) Destroy(n.gameObject);
+            if (n != null) SafeDestroy(n.gameObject);
         }
         liveNotes.Clear();
+    }
+
+    private static void SafeDestroy(GameObject go)
+    {
+        if (go == null) return;
+        if (Application.isPlaying) Destroy(go);
+        else DestroyImmediate(go);
     }
 
     // 毎フレーム呼ぶ想定。songTime は SongPlayer.SongTime（秒）を渡す。
@@ -111,10 +120,17 @@ public class NoteSpawner : MonoBehaviour
                 continue;
             }
 
+            // 判定窓を過ぎた瞬間に Miss を1回だけ発火するが、ノーツは消さずに後ろへ流し続ける。
             if (!note.IsMissed && dt < -(judgeWindow + missGrace))
             {
                 note.MarkMiss();
                 OnNoteMissed?.Invoke(note);
+            }
+
+            // 後方に十分流れたら回収。
+            if (note.IsMissed && dt < -(judgeWindow + missGrace + despawnAfterMissSeconds))
+            {
+                SafeDestroy(note.gameObject);
                 liveNotes.RemoveAt(i);
             }
         }

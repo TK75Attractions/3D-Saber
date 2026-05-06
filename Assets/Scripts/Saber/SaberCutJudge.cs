@@ -13,6 +13,10 @@ public class SaberCutJudge : MonoBehaviour
     public float maxCutDistance = 3.0f;
     public float noteHitRadiusXY = 0.5f;
 
+    // GamePlayManager / GManager から RunJudge() を呼ぶときは false にして
+    // 自前の Update を止め、外部から1点で呼び出す（GManager 主体パターン）。
+    public bool autonomous = true;
+
     private struct Pending
     {
         public Vector3 hitPoint;
@@ -24,6 +28,12 @@ public class SaberCutJudge : MonoBehaviour
     public int PendingCount => pending.Count;
 
     void Update()
+    {
+        if (!autonomous) return;
+        RunJudge();
+    }
+
+    public void RunJudge()
     {
         if (saber == null || !saber.HasPrevious) return;
         TryCut();

@@ -6,36 +6,36 @@ public class JudgmentTierTests
     public void Classify_WithinPerfectWindow()
     {
         Assert.AreEqual(JudgmentTier.Perfect, JudgmentTierHelper.Classify(0.0));
-        Assert.AreEqual(JudgmentTier.Perfect, JudgmentTierHelper.Classify(0.05));
-        Assert.AreEqual(JudgmentTier.Perfect, JudgmentTierHelper.Classify(-0.04));
+        Assert.AreEqual(JudgmentTier.Perfect, JudgmentTierHelper.Classify(0.09));
+        Assert.AreEqual(JudgmentTier.Perfect, JudgmentTierHelper.Classify(-0.08));
     }
 
     [Test]
     public void Classify_GreatWindow()
     {
-        Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(0.08));
-        Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(-0.10));
+        Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(0.12));
+        Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(-0.16));
     }
 
     [Test]
     public void Classify_GoodWindow()
     {
-        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(0.12));
-        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(-0.15));
+        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(0.20));
+        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(-0.23));
     }
 
     [Test]
     public void Classify_BadWindow()
     {
-        Assert.AreEqual(JudgmentTier.Bad, JudgmentTierHelper.Classify(0.18));
-        Assert.AreEqual(JudgmentTier.Bad, JudgmentTierHelper.Classify(-0.20));
+        Assert.AreEqual(JudgmentTier.Bad, JudgmentTierHelper.Classify(0.27));
+        Assert.AreEqual(JudgmentTier.Bad, JudgmentTierHelper.Classify(-0.30));
     }
 
     [Test]
     public void Classify_BeyondBad_IsMiss()
     {
-        Assert.AreEqual(JudgmentTier.Miss, JudgmentTierHelper.Classify(0.25));
-        Assert.AreEqual(JudgmentTier.Miss, JudgmentTierHelper.Classify(-0.3));
+        Assert.AreEqual(JudgmentTier.Miss, JudgmentTierHelper.Classify(0.40));
+        Assert.AreEqual(JudgmentTier.Miss, JudgmentTierHelper.Classify(-0.5));
     }
 
     [Test]

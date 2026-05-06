@@ -9,15 +9,15 @@ public enum JudgmentTier
 
 public static class JudgmentTierHelper
 {
-    // 判定時刻との誤差（秒）からティアを決める。
-    // 対称窓：±50ms = Perfect, ±100ms = Great, ±150ms = Good, ±200ms = Bad, それ以上 = Miss
+    // 判定時刻との誤差（秒）からティアを決める。プレイヤビリティ重視で広めに取る。
+    // 対称窓：±90ms = Perfect, ±160ms = Great, ±230ms = Good, ±300ms = Bad, それ以上 = Miss
     public static JudgmentTier Classify(double errorSeconds)
     {
         double abs = errorSeconds < 0 ? -errorSeconds : errorSeconds;
-        if (abs <= 0.05) return JudgmentTier.Perfect;
-        if (abs <= 0.10) return JudgmentTier.Great;
-        if (abs <= 0.15) return JudgmentTier.Good;
-        if (abs <= 0.20) return JudgmentTier.Bad;
+        if (abs <= 0.09) return JudgmentTier.Perfect;
+        if (abs <= 0.16) return JudgmentTier.Great;
+        if (abs <= 0.23) return JudgmentTier.Good;
+        if (abs <= 0.30) return JudgmentTier.Bad;
         return JudgmentTier.Miss;
     }
 
