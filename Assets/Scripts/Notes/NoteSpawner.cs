@@ -137,15 +137,17 @@ public class NoteSpawner : MonoBehaviour
         }
     }
 
-    private static void BuildCountLabel(Transform parent, CuttableNote note)
+    private static void BuildCountLabel(Transform target, CuttableNote note)
     {
+        // 親にしない：ロングノーツの Z スケール拡張に引きずられて位置や形が歪まないように。
+        // 別 GameObject + FollowTransformWorldOffset で追従させる。
         var go = new GameObject("CountLabel");
-        go.transform.SetParent(parent, false);
-        // ノーツの上面付近、プレイヤー側に少し向かせる
-        go.transform.localPosition = new Vector3(0f, 0.7f, -0.3f);
-        // TMP のデフォルト前面は +Z 方向。プレイヤーが -Z 側にいるので 180° 回して読めるように。
-        go.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
-        go.transform.localScale = Vector3.one * 0.5f;
+        Vector3 offset = new Vector3(0f, 0.7f, 0f);
+        go.transform.position = target.position + offset;
+        // プレイヤー（カメラ）は -Z 側。テキストの前面（+Z）を -Z に向けるため 180° 回転。
+        // それだけだと水平方向に反転するので X スケールを負にして打ち消す。
+        go.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
+        go.transform.localScale = new Vector3(-0.5f, 0.5f, 0.5f);
 
         var tmp = go.AddComponent<TMPro.TextMeshPro>();
         tmp.text = note.RequiredCutCount.ToString();
@@ -153,6 +155,10 @@ public class NoteSpawner : MonoBehaviour
         tmp.alignment = TMPro.TextAlignmentOptions.Center;
         tmp.enableWordWrapping = false;
         tmp.color = Color.white;
+
+        var follower = go.AddComponent<FollowTransformWorldOffset>();
+        follower.target = target;
+        follower.worldOffset = offset;
 
         note.countLabel = tmp;
     }
