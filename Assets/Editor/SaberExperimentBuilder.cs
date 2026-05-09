@@ -421,23 +421,101 @@ public static class SaberExperimentBuilder
 
         CreateEventSystem();
 
-        CreateLabel(canvasGo.transform, "Select Song", new Vector2(0, 380), 72, FontStyle.Bold);
+        CreateLabel(canvasGo.transform, "Select Song", new Vector2(0, 460), 64, FontStyle.Bold);
+        CreateLabel(canvasGo.transform, "↑↓: 曲   ←→: 難易度   Enter: スタート",
+            new Vector2(0, -480), 22, FontStyle.Normal);
 
-        var listGo = new GameObject("List", typeof(RectTransform), typeof(VerticalLayoutGroup));
-        listGo.transform.SetParent(canvasGo.transform, false);
-        var lrt = listGo.GetComponent<RectTransform>();
-        lrt.sizeDelta = new Vector2(500, 400);
-        lrt.anchoredPosition = new Vector2(0, -20);
-        var layout = listGo.GetComponent<VerticalLayoutGroup>();
-        layout.spacing = 18;
-        layout.childAlignment = TextAnchor.UpperCenter;
-        layout.childControlHeight = false;
-        layout.childControlWidth = false;
+        // ---- 左：スクロール可能な曲リスト ----
+        var scrollGo = new GameObject("ScrollView",
+            typeof(RectTransform), typeof(Image), typeof(ScrollRect));
+        scrollGo.transform.SetParent(canvasGo.transform, false);
+        var sgRT = scrollGo.GetComponent<RectTransform>();
+        sgRT.sizeDelta = new Vector2(700, 700);
+        sgRT.anchoredPosition = new Vector2(-450, -50);
+        scrollGo.GetComponent<Image>().color = new Color(0.07f, 0.08f, 0.13f, 0.9f);
 
+        var viewport = new GameObject("Viewport",
+            typeof(RectTransform), typeof(Image), typeof(Mask));
+        viewport.transform.SetParent(scrollGo.transform, false);
+        var vrt = viewport.GetComponent<RectTransform>();
+        vrt.anchorMin = Vector2.zero;
+        vrt.anchorMax = Vector2.one;
+        vrt.offsetMin = vrt.offsetMax = Vector2.zero;
+        var vImg = viewport.GetComponent<Image>();
+        vImg.color = new Color(1, 1, 1, 0.01f);
+        viewport.GetComponent<Mask>().showMaskGraphic = false;
+
+        var content = new GameObject("Content",
+            typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(ContentSizeFitter));
+        content.transform.SetParent(viewport.transform, false);
+        var crt = content.GetComponent<RectTransform>();
+        crt.anchorMin = new Vector2(0, 1);
+        crt.anchorMax = new Vector2(1, 1);
+        crt.pivot = new Vector2(0.5f, 1);
+        crt.anchoredPosition = Vector2.zero;
+        crt.sizeDelta = Vector2.zero;
+        var vlayout = content.GetComponent<VerticalLayoutGroup>();
+        vlayout.spacing = 14;
+        vlayout.padding = new RectOffset(20, 20, 20, 20);
+        vlayout.childAlignment = TextAnchor.UpperCenter;
+        vlayout.childControlHeight = false;
+        vlayout.childControlWidth = false;
+        var fitter = content.GetComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+
+        var sr = scrollGo.GetComponent<ScrollRect>();
+        sr.viewport = viewport.GetComponent<RectTransform>();
+        sr.content = content.GetComponent<RectTransform>();
+        sr.horizontal = false;
+        sr.vertical = true;
+        sr.movementType = ScrollRect.MovementType.Clamped;
+
+        // ---- 右：ジャケット ----
+        var jacketGo = new GameObject("Jacket", typeof(RectTransform), typeof(Image));
+        jacketGo.transform.SetParent(canvasGo.transform, false);
+        var jrt = jacketGo.GetComponent<RectTransform>();
+        jrt.sizeDelta = new Vector2(360, 360);
+        jrt.anchoredPosition = new Vector2(550, 200);
+        var jacketImage = jacketGo.GetComponent<Image>();
+        jacketImage.color = new Color(0.2f, 0.2f, 0.3f);
+
+        // ---- 右：難易度 ----
+        CreateLabel(canvasGo.transform, "Difficulty", new Vector2(550, -20), 32, FontStyle.Bold);
+        var difficultyDisplay = CreateLabel(canvasGo.transform, "Normal",
+            new Vector2(550, -70), 56, FontStyle.Bold);
+        difficultyDisplay.color = new Color(0.4f, 0.85f, 1f);
+
+        var diffEasy = CreateButton(canvasGo.transform, "Easy",
+            new Vector2(440, -160), new Vector2(110, 60));
+        var diffNormal = CreateButton(canvasGo.transform, "Normal",
+            new Vector2(560, -160), new Vector2(110, 60));
+        var diffHard = CreateButton(canvasGo.transform, "Hard",
+            new Vector2(680, -160), new Vector2(110, 60));
+
+        // ---- 右：スタート ----
+        var startBtn = CreateButton(canvasGo.transform, "START",
+            new Vector2(550, -290), new Vector2(280, 88));
+
+        // ---- プレビュー音源 ----
+        var audioGo = new GameObject("PreviewAudio");
+        audioGo.transform.SetParent(canvasGo.transform, false);
+        var src = audioGo.AddComponent<AudioSource>();
+        src.playOnAwake = false;
+        src.volume = 0.7f;
+
+        // ---- コントローラ ----
         var selector = canvasGo.AddComponent<SongSelectController>();
         selector.gameSceneName = "Game";
-        selector.listRoot = listGo.transform;
+        selector.scrollContent = content.GetComponent<RectTransform>();
+        selector.scrollRect = sr;
         selector.buttonPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(SongButtonPath);
+        selector.jacketImage = jacketImage;
+        selector.difficultyDisplay = difficultyDisplay;
+        selector.difficultyButtons = new[] { diffEasy, diffNormal, diffHard };
+        selector.difficultyNames = new[] { "Easy", "Normal", "Hard" };
+        selector.startButton = startBtn;
+        selector.previewSource = src;
+        selector.previewDuration = 10f;
 
         EditorSceneManager.SaveScene(scene, SongSelectScenePath);
         AddSceneToBuildSettings(SongSelectScenePath);
@@ -500,6 +578,11 @@ public static class SaberExperimentBuilder
         hapticGo.transform.SetParent(gameRoot.transform, false);
         var haptic = hapticGo.AddComponent<HapticFeedback>();
         haptic.scoreManager = score;
+
+        var sfxGo = new GameObject("JudgmentSfx", typeof(AudioSource));
+        sfxGo.transform.SetParent(gameRoot.transform, false);
+        var sfx = sfxGo.AddComponent<JudgmentSfx>();
+        sfx.scoreManager = score;
 
         var gpmGo = new GameObject("GamePlayManager");
         gpmGo.transform.SetParent(gameRoot.transform, false);

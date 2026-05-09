@@ -3,6 +3,7 @@ public static class GameSession
 {
     public static string SelectedSongId;
     public static string SelectedSongTitle;
+    public static string SelectedDifficulty = "Normal";
 
     public static int FinalScore;
     public static int FinalMaxCombo;

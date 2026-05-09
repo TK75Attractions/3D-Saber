@@ -147,11 +147,12 @@ public class NoteSpawner : MonoBehaviour
         // プレイヤー（カメラ）は -Z 側。テキストの前面（+Z）を -Z に向けるため 180° 回転。
         // それだけだと水平方向に反転するので X スケールを負にして打ち消す。
         go.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
-        go.transform.localScale = new Vector3(-0.5f, 0.5f, 0.5f);
+        go.transform.localScale = new Vector3(-1.0f, 1.0f, 1.0f);
 
         var tmp = go.AddComponent<TMPro.TextMeshPro>();
         tmp.text = note.RequiredCutCount.ToString();
-        tmp.fontSize = 4f;
+        tmp.fontSize = 12f;
+        tmp.fontStyle = TMPro.FontStyles.Bold;
         tmp.alignment = TMPro.TextAlignmentOptions.Center;
         tmp.enableWordWrapping = false;
         tmp.color = Color.white;

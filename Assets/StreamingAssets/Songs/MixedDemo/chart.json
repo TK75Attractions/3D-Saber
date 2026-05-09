@@ -1,0 +1,48 @@
+{
+    "bpm": 120.0,
+    "notes": [
+        { "beat":  4.0, "time":  2000.0, "x": -2.0, "y":  0.0, "type": "tap",       "color": "red",  "direction": "none",       "count": 1 },
+        { "beat":  5.0, "time":  2500.0, "x":  2.0, "y":  0.0, "type": "tap",       "color": "blue", "direction": "none",       "count": 1 },
+        { "beat":  6.5, "time":  3250.0, "x":  0.0, "y":  1.5, "type": "tap",       "color": "red",  "direction": "none",       "count": 1 },
+
+        { "beat":  8.0, "time":  4000.0, "x": -2.0, "y": -1.0, "type": "direction", "color": "red",  "direction": "right",      "count": 1 },
+        { "beat":  9.0, "time":  4500.0, "x":  2.0, "y": -1.0, "type": "direction", "color": "blue", "direction": "left",       "count": 1 },
+        { "beat": 10.5, "time":  5250.0, "x":  0.0, "y":  1.5, "type": "direction", "color": "red",  "direction": "down",       "count": 1 },
+
+        { "beat": 12.0, "time":  6000.0, "x": -1.5, "y":  0.0, "type": "long",      "color": "red",  "direction": "none",       "count": 2 },
+        { "beat": 14.5, "time":  7250.0, "x":  1.5, "y":  0.0, "type": "long",      "color": "blue", "direction": "none",       "count": 3 },
+
+        { "beat": 17.0, "time":  8500.0, "x": -2.0, "y":  1.0, "type": "tap",       "color": "red",  "direction": "none",       "count": 1 },
+        { "beat": 17.5, "time":  8750.0, "x":  2.0, "y":  1.0, "type": "tap",       "color": "blue", "direction": "none",       "count": 1 },
+        { "beat": 18.0, "time":  9000.0, "x":  0.0, "y":  0.0, "type": "tap",       "color": "red",  "direction": "none",       "count": 1 },
+        { "beat": 18.5, "time":  9250.0, "x": -1.0, "y": -1.0, "type": "tap",       "color": "blue", "direction": "none",       "count": 1 },
+        { "beat": 19.0, "time":  9500.0, "x":  1.0, "y": -1.0, "type": "tap",       "color": "red",  "direction": "none",       "count": 1 },
+
+        { "beat": 21.0, "time": 10500.0, "x": -2.0, "y": -1.0, "type": "direction", "color": "red",  "direction": "upright",    "count": 1 },
+        { "beat": 22.0, "time": 11000.0, "x":  2.0, "y": -1.0, "type": "direction", "color": "blue", "direction": "upleft",     "count": 1 },
+        { "beat": 23.0, "time": 11500.0, "x": -2.0, "y":  1.0, "type": "direction", "color": "red",  "direction": "downright",  "count": 1 },
+        { "beat": 24.0, "time": 12000.0, "x":  2.0, "y":  1.0, "type": "direction", "color": "blue", "direction": "downleft",   "count": 1 },
+
+        { "beat": 26.0, "time": 13000.0, "x":  0.0, "y":  0.0, "type": "long",      "color": "red",  "direction": "none",       "count": 4 },
+
+        { "beat": 31.0, "time": 15500.0, "x": -2.5, "y":  0.5, "type": "direction", "color": "red",  "direction": "up",         "count": 1 },
+        { "beat": 32.0, "time": 16000.0, "x":  2.5, "y":  0.5, "type": "direction", "color": "blue", "direction": "up",         "count": 1 },
+        { "beat": 33.0, "time": 16500.0, "x":  0.0, "y": -1.5, "type": "tap",       "color": "red",  "direction": "none",       "count": 1 },
+        { "beat": 33.5, "time": 16750.0, "x": -1.5, "y": -1.5, "type": "tap",       "color": "blue", "direction": "none",       "count": 1 },
+        { "beat": 34.0, "time": 17000.0, "x":  1.5, "y": -1.5, "type": "tap",       "color": "red",  "direction": "none",       "count": 1 },
+
+        { "beat": 36.0, "time": 18000.0, "x": -1.0, "y":  1.0, "type": "long",      "color": "blue", "direction": "none",       "count": 2 },
+        { "beat": 38.5, "time": 19250.0, "x":  1.0, "y":  1.0, "type": "long",      "color": "red",  "direction": "none",       "count": 2 },
+
+        { "beat": 41.0, "time": 20500.0, "x": -2.0, "y":  0.0, "type": "direction", "color": "red",  "direction": "right",      "count": 1 },
+        { "beat": 42.0, "time": 21000.0, "x":  2.0, "y":  0.0, "type": "direction", "color": "blue", "direction": "left",       "count": 1 },
+
+        { "beat": 44.0, "time": 22000.0, "x":  0.0, "y":  0.0, "type": "tap",       "color": "red",  "direction": "none",       "count": 1 },
+        { "beat": 44.5, "time": 22250.0, "x": -1.5, "y":  0.5, "type": "tap",       "color": "blue", "direction": "none",       "count": 1 },
+        { "beat": 45.0, "time": 22500.0, "x":  1.5, "y":  0.5, "type": "tap",       "color": "red",  "direction": "none",       "count": 1 },
+        { "beat": 45.5, "time": 22750.0, "x":  0.0, "y":  1.5, "type": "tap",       "color": "blue", "direction": "none",       "count": 1 },
+        { "beat": 46.0, "time": 23000.0, "x":  0.0, "y": -1.0, "type": "tap",       "color": "red",  "direction": "none",       "count": 1 },
+
+        { "beat": 48.0, "time": 24000.0, "x":  0.0, "y":  0.0, "type": "long",      "color": "red",  "direction": "none",       "count": 5 }
+    ]
+}
