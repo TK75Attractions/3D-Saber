@@ -1,4 +1,6 @@
 using System;
+using System.Net;
+using System.Net.Sockets;
 using UnityEngine;
 using System.Collections;
 
@@ -9,11 +11,53 @@ public static class Haptic
 
     static HapticRunner runner;
     static Action<string> sender;
+    static UdpClient udpClient;
+    static IPEndPoint udpEndpoint;
 
     public static void SetTransport(Action<string> transport)
     {
         sender = transport;
         isConnected = transport != null;
+    }
+
+    // Set a simple UDP transport so Haptic can send commands directly to a bridge/port.
+    public static void SetUdpTransport(string host = "127.0.0.1", int port = 9001)
+    {
+        try
+        {
+            udpClient?.Close();
+            udpClient = new UdpClient();
+            udpEndpoint = new IPEndPoint(IPAddress.Parse(host), port);
+            sender = (string msg) =>
+            {
+                try
+                {
+                    var trimmed = (msg ?? "").Trim();
+                    var outMsg = "H:" + trimmed;
+                    byte[] data = System.Text.Encoding.UTF8.GetBytes(outMsg);
+                    udpClient.Send(data, data.Length, udpEndpoint);
+                }
+                catch (Exception ex)
+                {
+                    Debug.LogWarning("Haptic UDP send failed: " + ex.Message);
+                }
+            };
+            isConnected = true;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("Failed to set UDP transport: " + ex.Message);
+            isConnected = false;
+        }
+    }
+
+    public static void ClearTransport()
+    {
+        sender = null;
+        isConnected = false;
+        try { udpClient?.Close(); } catch { }
+        udpClient = null;
+        udpEndpoint = null;
     }
 
     static void Init()
