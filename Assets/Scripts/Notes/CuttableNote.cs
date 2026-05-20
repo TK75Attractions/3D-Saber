@@ -9,6 +9,8 @@ public class CuttableNote : MonoBehaviour
     public bool IsJudgeable { get; set; }
     public bool IsMissed { get; private set; }
     public double HitTime { get; set; }
+    // 金ノーツ：切ったときに豪華音を鳴らすため NoteSpawner が立てる。
+    public bool IsGold { get; set; }
 
     [Header("Note kind")]
     public CutDirection RequiredDirection = CutDirection.None;
@@ -56,8 +58,18 @@ public class CuttableNote : MonoBehaviour
     {
         if (IsCut || IsMissed || IsFinalized) return;
 
-        // 方向判定（1回でも誤方向なら以降 false 維持）
+        // 逆方向（要求方向と約120°以上ズレた）スイングはそもそも切らない。
+        // 「準備で間違って切ってしまう」現象を防ぐためのガード。
+        // 横方向（90°前後）は dot ≈ 0 で reject されないので、従来通り降格カットで通る。
         Vector2 vXY = new Vector2(cutVelocity.x, cutVelocity.y);
+        if (RequiredDirection != CutDirection.None &&
+            CutDirectionHelper.ShouldRejectOpposite(RequiredDirection, vXY, imuHint))
+        {
+            // 何もせず終了：ノーツは IsCut も IsMissed も変わらず、セーバーが再度関わると再判定可能。
+            return;
+        }
+
+        // 方向判定（1回でも誤方向なら以降 false 維持）
         bool dirOk = CutDirectionHelper.MatchesWithHint(RequiredDirection, vXY, imuHint);
         if (CutsAchieved == 0) LastCutCorrectDirection = dirOk;
         else LastCutCorrectDirection = LastCutCorrectDirection && dirOk;

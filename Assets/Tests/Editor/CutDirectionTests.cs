@@ -58,4 +58,48 @@ public class CutDirectionTests
         // 約 18°ずれは許容範囲内
         Assert.IsTrue(CutDirectionHelper.Matches(CutDirection.Right, new Vector2(3, 1)));
     }
+
+    // -- ShouldRejectOpposite --
+
+    [Test]
+    public void ShouldRejectOpposite_None_NeverRejects()
+    {
+        Assert.IsFalse(CutDirectionHelper.ShouldRejectOpposite(CutDirection.None, new Vector2(-1, 0), CutDirection.None));
+    }
+
+    [Test]
+    public void ShouldRejectOpposite_OppositeVelocity_Rejects()
+    {
+        // 右要求に対して左方向（180°）
+        Assert.IsTrue(CutDirectionHelper.ShouldRejectOpposite(CutDirection.Right, new Vector2(-1, 0), CutDirection.None));
+    }
+
+    [Test]
+    public void ShouldRejectOpposite_Perpendicular_DoesNotReject()
+    {
+        // 右要求に対して上方向（90°）→ 横方向、降格カットで通すべき
+        Assert.IsFalse(CutDirectionHelper.ShouldRejectOpposite(CutDirection.Right, new Vector2(0, 1), CutDirection.None));
+        Assert.IsFalse(CutDirectionHelper.ShouldRejectOpposite(CutDirection.Right, new Vector2(0, -1), CutDirection.None));
+    }
+
+    [Test]
+    public void ShouldRejectOpposite_SlightlyOff_DoesNotReject()
+    {
+        // 右要求に対して斜め右上、もちろん通す
+        Assert.IsFalse(CutDirectionHelper.ShouldRejectOpposite(CutDirection.Right, new Vector2(1, 1), CutDirection.None));
+    }
+
+    [Test]
+    public void ShouldRejectOpposite_ImuRescuesOpposite()
+    {
+        // 速度は左だが IMU が「右」と検知 → レスキューで通す
+        Assert.IsFalse(CutDirectionHelper.ShouldRejectOpposite(CutDirection.Right, new Vector2(-1, 0), CutDirection.Right));
+    }
+
+    [Test]
+    public void ShouldRejectOpposite_ZeroVelocity_DoesNotReject()
+    {
+        // 速度ゼロは方向判定不能 → 拒否しない（誤拒否回避）
+        Assert.IsFalse(CutDirectionHelper.ShouldRejectOpposite(CutDirection.Right, Vector2.zero, CutDirection.None));
+    }
 }

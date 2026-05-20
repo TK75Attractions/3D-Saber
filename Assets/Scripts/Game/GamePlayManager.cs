@@ -14,6 +14,7 @@ public class GamePlayManager : MonoBehaviour
     public SaberCutJudge cutJudge;
     public BarLineSpawner barLineSpawner;
     public LongNoteCutSfx longNoteCutSfx; // 未設定なら自前で生成
+    public GoldNoteSfx goldNoteSfx;       // 未設定なら自前で生成
 
     public string resultSceneName = "Result";
     public float endWaitSeconds = 2.0f;
@@ -22,7 +23,20 @@ public class GamePlayManager : MonoBehaviour
 
     [Header("Judge guide")]
     public bool simplifyJudgeGuide = true;
-    public float judgePanelAlpha = 0.2f;
+    public float judgePanelAlpha = 0.30f;
+    public Color judgePanelTint = new Color(0.30f, 0.75f, 1.0f, 1f);
+    public bool addJudgePanelOuterGlow = true;
+
+    [Header("Bar lines")]
+    // 流れる小節線が「線の集合」に見えて視覚ノイズになるので既定で OFF。
+    // BPM 視認用に戻したい場合は false にする。
+    public bool disableBarLines = true;
+
+    [Header("Saber hit detection (stricter to avoid sweeping)")]
+    public bool overrideSaberRadii = true;
+    public float saberBladeRadius = 0.22f;       // 既存ビルド時の 0.30 から狭める
+    public float saberNoteHitRadiusXY = 0.35f;   // 既存ビルド時の 0.55 から狭める
+    public float saberMinCutSpeed = 4.0f;        // 3.0 → 4.0 にして「ふわっと振る」での誤発火を抑える
 
     // 判定面ガイドから剥がす子オブジェクトの名前接頭辞。
     private static readonly string[] JudgeGuideStripPrefixes = {
@@ -43,10 +57,22 @@ public class GamePlayManager : MonoBehaviour
 
         // 自動探索
         if (cutJudge == null) cutJudge = Object.FindFirstObjectByType<SaberCutJudge>();
-        if (cutJudge != null) cutJudge.autonomous = false;
+        if (cutJudge != null)
+        {
+            cutJudge.autonomous = false;
+            if (overrideSaberRadii)
+            {
+                // 既存シーンのセーバー値（bladeRadius=0.3, noteHitRadiusXY=0.55）が広く、
+                // 隣接ノーツを巻き込みやすいので、ここで「厳しい」値に上書き。
+                cutJudge.bladeRadius = saberBladeRadius;
+                cutJudge.noteHitRadiusXY = saberNoteHitRadiusXY;
+                cutJudge.minCutSpeed = saberMinCutSpeed;
+            }
+        }
 
         // 既存シーンを編集せずにロング音 SFX を有効化
         EnsureLongNoteCutSfx();
+        EnsureGoldNoteSfx();
 
         // 判定面ガイド：旧シーンに残っている大量の線（グリッド/枠/コーナー/十字）を剥がして
         // 半透明の薄い面のみ残す。ユーザーの「薄い面にして」要件に合わせた整理。
@@ -61,6 +87,14 @@ public class GamePlayManager : MonoBehaviour
 
         ChartData chart = ChartLoader.LoadFromStreamingAssets(songId);
         noteSpawner.SetChart(chart);
+
+        // 既定で小節線は OFF（流れる線が「線の集合」として煩く感じる対策）。
+        // null に落とすことで Update での Tick も自動的にスキップされる。
+        if (disableBarLines && barLineSpawner != null)
+        {
+            barLineSpawner.gameObject.SetActive(false);
+            barLineSpawner = null;
+        }
         if (barLineSpawner != null) barLineSpawner.SetChart(chart);
         lastNoteTime = chart.notes.Count > 0
             ? chart.notes[chart.notes.Count - 1].TimeSeconds
@@ -72,6 +106,7 @@ public class GamePlayManager : MonoBehaviour
         scoreManager.Reset();
         scoreManager.Bind(noteSpawner);
         if (longNoteCutSfx != null) longNoteCutSfx.Bind(noteSpawner);
+        if (goldNoteSfx != null) goldNoteSfx.Bind(noteSpawner);
         songPlayer.Play();
         ready = true;
     }
@@ -84,6 +119,16 @@ public class GamePlayManager : MonoBehaviour
         var go = new GameObject("LongNoteCutSfx", typeof(AudioSource), typeof(LongNoteCutSfx));
         go.transform.SetParent(transform, false);
         longNoteCutSfx = go.GetComponent<LongNoteCutSfx>();
+    }
+
+    private void EnsureGoldNoteSfx()
+    {
+        if (goldNoteSfx != null) return;
+        goldNoteSfx = Object.FindFirstObjectByType<GoldNoteSfx>();
+        if (goldNoteSfx != null) return;
+        var go = new GameObject("GoldNoteSfx", typeof(AudioSource), typeof(GoldNoteSfx));
+        go.transform.SetParent(transform, false);
+        goldNoteSfx = go.GetComponent<GoldNoteSfx>();
     }
 
     private void SimplifyJudgeGuide()
@@ -104,20 +149,74 @@ public class GamePlayManager : MonoBehaviour
             if (Application.isPlaying) Destroy(t.gameObject);
             else DestroyImmediate(t.gameObject);
         }
-        // 残った JudgePanel を少しだけ濃くして「薄い面」として認識できるようにする
+
+        // JudgePanel を「ノーツを切るとこ」と一目で分かる薄い色面に整える
         var panel = guide.transform.Find("JudgePanel");
         if (panel != null)
         {
             var mr = panel.GetComponent<MeshRenderer>();
             if (mr != null && mr.sharedMaterial != null)
             {
-                var m = mr.material; // インスタンス化（共有 Material を上書きしない）
-                Color c = m.HasProperty("_BaseColor") ? m.GetColor("_BaseColor") : m.color;
+                var m = mr.material; // インスタンス化（共有 Material を破壊しない）
+                Color c = judgePanelTint;
                 c.a = judgePanelAlpha;
                 if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
                 else m.color = c;
+                // ほんのり emission を入れて視認性を確保
+                if (m.HasProperty("_EmissionColor"))
+                {
+                    m.EnableKeyword("_EMISSION");
+                    Color e = judgePanelTint; e.a = 1f;
+                    m.SetColor("_EmissionColor", e * 0.25f);
+                }
+            }
+
+            if (addJudgePanelOuterGlow)
+            {
+                AddJudgePanelOuterGlow(guide.transform, panel);
             }
         }
+    }
+
+    // パネルの一回り外側に、より薄い同色のパネルを置いて、エッジを柔らかく外側へ伸ばす。
+    // 太い「枠」ではなく、滲んだような縁を付ける狙い。
+    private void AddJudgePanelOuterGlow(Transform guideTransform, Transform panel)
+    {
+        if (guideTransform.Find("JudgePanelGlow") != null) return; // 冪等
+
+        var src = panel.GetComponent<MeshRenderer>();
+        if (src == null) return;
+
+        var glow = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        glow.name = "JudgePanelGlow";
+        glow.transform.SetParent(guideTransform, false);
+        glow.transform.localPosition = panel.localPosition + new Vector3(0f, 0f, 0.01f);
+        // 元パネルより一回り大きく、厚みは極薄
+        Vector3 ps = panel.localScale;
+        glow.transform.localScale = new Vector3(ps.x * 1.04f, ps.y * 1.08f, 0.005f);
+
+        var col = glow.GetComponent<BoxCollider>();
+        if (col != null) Destroy(col);
+
+        var mr = glow.GetComponent<MeshRenderer>();
+        // src と同じシェーダーで透明版を新規生成
+        var shader = src.sharedMaterial != null ? src.sharedMaterial.shader : Shader.Find("Universal Render Pipeline/Lit");
+        var m = new Material(shader);
+        if (m.HasProperty("_Surface")) m.SetFloat("_Surface", 1f);
+        if (m.HasProperty("_SrcBlend")) m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        if (m.HasProperty("_DstBlend")) m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.One);
+        if (m.HasProperty("_ZWrite")) m.SetFloat("_ZWrite", 0f);
+        m.renderQueue = 3000;
+        Color c = judgePanelTint; c.a = judgePanelAlpha * 0.35f;
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
+        else m.color = c;
+        if (m.HasProperty("_EmissionColor"))
+        {
+            m.EnableKeyword("_EMISSION");
+            Color e = judgePanelTint; e.a = 1f;
+            m.SetColor("_EmissionColor", e * 0.6f);
+        }
+        mr.sharedMaterial = m;
     }
 
     private IEnumerator LoadAudio(string songId)

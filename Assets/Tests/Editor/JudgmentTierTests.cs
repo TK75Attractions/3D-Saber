@@ -5,6 +5,7 @@ public class JudgmentTierTests
     [Test]
     public void Classify_WithinPerfectWindow()
     {
+        // ±90ms（Bad=270ms の 33.3%）
         Assert.AreEqual(JudgmentTier.Perfect, JudgmentTierHelper.Classify(0.0));
         Assert.AreEqual(JudgmentTier.Perfect, JudgmentTierHelper.Classify(0.09));
         Assert.AreEqual(JudgmentTier.Perfect, JudgmentTierHelper.Classify(-0.08));
@@ -13,29 +14,42 @@ public class JudgmentTierTests
     [Test]
     public void Classify_GreatWindow()
     {
+        // 90ms < |e| <= 150ms
         Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(0.12));
-        Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(-0.16));
+        Assert.AreEqual(JudgmentTier.Great, JudgmentTierHelper.Classify(-0.15));
     }
 
     [Test]
     public void Classify_GoodWindow()
     {
-        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(0.20));
-        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(-0.23));
+        // 150ms < |e| <= 210ms
+        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(0.18));
+        Assert.AreEqual(JudgmentTier.Good, JudgmentTierHelper.Classify(-0.21));
     }
 
     [Test]
     public void Classify_BadWindow()
     {
-        Assert.AreEqual(JudgmentTier.Bad, JudgmentTierHelper.Classify(0.27));
-        Assert.AreEqual(JudgmentTier.Bad, JudgmentTierHelper.Classify(-0.30));
+        // 210ms < |e| <= 270ms
+        Assert.AreEqual(JudgmentTier.Bad, JudgmentTierHelper.Classify(0.25));
+        Assert.AreEqual(JudgmentTier.Bad, JudgmentTierHelper.Classify(-0.27));
     }
 
     [Test]
     public void Classify_BeyondBad_IsMiss()
     {
-        Assert.AreEqual(JudgmentTier.Miss, JudgmentTierHelper.Classify(0.40));
+        Assert.AreEqual(JudgmentTier.Miss, JudgmentTierHelper.Classify(0.30));
         Assert.AreEqual(JudgmentTier.Miss, JudgmentTierHelper.Classify(-0.5));
+    }
+
+    [Test]
+    public void Classify_RatioBetweenTiersPreserved()
+    {
+        // Perfect の割合は約 33.3%（Bad の上限に対する比率）
+        const double bad = 0.27;
+        const double perfect = 0.09;
+        double ratio = perfect / bad;
+        Assert.AreEqual(0.3333, ratio, 0.005);
     }
 
     [Test]

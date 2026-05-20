@@ -82,6 +82,27 @@ public static class CutDirectionHelper
         return false;
     }
 
+    // 逆方向（dot < -0.5、約120°以上のズレ）のスイングは「カットさせない」ためのチェック。
+    // 横方向（dot 0 付近）は降格カットで通す、というユーザー仕様に対応する。
+    // IMU で正方向と一致しているならレスキューする。
+    public static bool ShouldRejectOpposite(CutDirection required, Vector2 cutVelXY, CutDirection imuHint, float rejectDotThreshold = -0.5f)
+    {
+        if (required == CutDirection.None) return false;
+        if (cutVelXY.sqrMagnitude < 0.0001f)
+        {
+            // 速度ほぼ無し：IMU が正なら通す、それ以外は判断不能で通す（誤拒否を避ける）
+            if (imuHint != CutDirection.None && imuHint == required) return false;
+            return false;
+        }
+        Vector2 v = cutVelXY.normalized;
+        Vector2 r = ToVector(required);
+        float dot = Vector2.Dot(v, r);
+        if (dot >= rejectDotThreshold) return false;
+        // 逆方向だが IMU が正ならレスキュー
+        if (imuHint != CutDirection.None && imuHint == required) return false;
+        return true;
+    }
+
     // Swing8DirectionLogger の 0..7 インデックスを enum に。
     public static CutDirection FromSwing8Index(int idx)
     {

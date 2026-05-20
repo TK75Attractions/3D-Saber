@@ -36,17 +36,43 @@ public class ScoreManagerTests
     }
 
     [Test]
-    public void RegisterHit_GreatGoodBad_AllCountAsHit()
+    public void RegisterHit_GreatGoodBad_AllCountAsHit_ButBadBreaksCombo()
     {
         var s = Make();
         s.RegisterHit(JudgmentTier.Great);
         s.RegisterHit(JudgmentTier.Good);
         s.RegisterHit(JudgmentTier.Bad);
-        Assert.AreEqual(3, s.HitCount);
+        Assert.AreEqual(3, s.HitCount, "Bad もヒット数には入る");
         Assert.AreEqual(1, s.GreatCount);
         Assert.AreEqual(1, s.GoodCount);
         Assert.AreEqual(1, s.BadCount);
-        Assert.AreEqual(3, s.Combo);
+        Assert.AreEqual(0, s.Combo, "Bad でコンボは切れる");
+        Assert.AreEqual(2, s.MaxCombo, "MaxCombo は Bad 前の値を維持");
+        Object.DestroyImmediate(s.gameObject);
+    }
+
+    [Test]
+    public void RegisterHit_Bad_StillAddsScore_ButResetsCombo()
+    {
+        var s = Make();
+        s.RegisterHit(JudgmentTier.Perfect); // Score 300, Combo 1
+        s.RegisterHit(JudgmentTier.Perfect); // Score +310 = 610, Combo 2
+        int scoreBeforeBad = s.Score;
+        s.RegisterHit(JudgmentTier.Bad);     // Combo 0 でリセット、Bad の基礎点 50
+        Assert.AreEqual(0, s.Combo, "Bad でコンボは0に");
+        Assert.AreEqual(scoreBeforeBad + 50, s.Score, "Bad は基礎点(50)を加算、コンボ倍率は0");
+        Assert.AreEqual(1, s.BadCount);
+        Object.DestroyImmediate(s.gameObject);
+    }
+
+    [Test]
+    public void RegisterHit_GoodKeepsCombo()
+    {
+        var s = Make();
+        s.RegisterHit(JudgmentTier.Perfect);
+        s.RegisterHit(JudgmentTier.Good); // 切れない
+        s.RegisterHit(JudgmentTier.Perfect);
+        Assert.AreEqual(3, s.Combo, "Good ではコンボが継続");
         Object.DestroyImmediate(s.gameObject);
     }
 

@@ -12,11 +12,20 @@ public class NoteSpawner : MonoBehaviour
     public float approachTime = 2.0f;
     public float spawnZ = 20f;
     public float judgeZ = 0f;
-    public float judgeWindow = 0.23f;
-    // 判定ウィンドウを過ぎたら自動的に miss 扱いにする。
-    public float missGrace = 0.07f;
+    // ノーツが判定可能になる時間幅。Classify の Good 上限 (210ms) と合わせて 0.21s。
+    public float judgeWindow = 0.21f;
+    // 判定ウィンドウを過ぎたら自動的に miss 扱いにする猶予秒数（Bad 上限まで届くように）。
+    public float missGrace = 0.06f;
     // miss 扱いになった後、ノーツを画面後方まで流してから片付けるまでの秒数。
     public float despawnAfterMissSeconds = 1.5f;
+    // ロングノーツの追加カット1回あたりの判定ウィンドウ延長秒。
+    // 4 回切りなら lateWindow = judgeWindow + 3 * secondsPerLongCut ≒ 2.3s。
+    // 50 回切りなら ≒ 34.5s（25秒の「サビ前ロング」も余裕で表現可能）。
+    public float secondsPerLongCut = 0.7f;
+    // ロングノーツが HitTime 経過後、判定面の少し後方に滞留する距離（プレイヤーが切り続けられるように）。
+    public float longLingerDriftZ = 1.0f;
+    // ロングノーツの見た目の Z スケール上限（count=50 等でも視野を埋め尽くさないようにキャップ）。
+    public float longMaxVisualZScale = 6f;
 
     private ChartData chart;
     private int nextIndex;
@@ -83,6 +92,8 @@ public class NoteSpawner : MonoBehaviour
         note.RequiredDirection = CutDirectionHelper.Parse(nd.direction);
         note.RequiredCutCount = Mathf.Max(1, nd.count);
         note.RemainingCuts = note.RequiredCutCount;
+        // 金ノーツ判定（chart.json の color:"gold"）
+        note.IsGold = !string.IsNullOrEmpty(nd.color) && nd.color.ToLowerInvariant() == "gold";
 
         // 旧プレハブにある面ステッカー等を剥がして、クリスタル＋ネオン外観に置き換える。
         // NoteVisuals 自身が冪等で、既存プレハブにも安全に被せられる。
@@ -93,11 +104,13 @@ public class NoteSpawner : MonoBehaviour
         {
             BuildArrow(go.transform, note.RequiredDirection);
         }
-        // ロングは Z 方向に伸ばし、上に残カウント数字を浮かべる
+        // ロングは Z 方向に伸ばし、上に残カウント数字を浮かべる。
+        // count が大きすぎる（50 など）と視野を覆い尽くすので longMaxVisualZScale でキャップする。
         if (note.RequiredCutCount > 1)
         {
             Vector3 sc = go.transform.localScale;
-            go.transform.localScale = new Vector3(sc.x, sc.y, sc.z * note.RequiredCutCount);
+            float zFactor = Mathf.Min(note.RequiredCutCount, longMaxVisualZScale);
+            go.transform.localScale = new Vector3(sc.x, sc.y, sc.z * zFactor);
             BuildCountLabel(go.transform, note);
         }
 
@@ -193,14 +206,12 @@ public class NoteSpawner : MonoBehaviour
 
             // 判定時刻を時間差で表現し、現在の Z をそこから計算する。
             double dt = note.HitTime - songTime;
-            float z = judgeZ + speed * (float)dt;
+            float z = ComputeNoteZ(note, dt, speed);
             Vector3 p = note.transform.position;
             note.transform.position = new Vector3(p.x, p.y, z);
 
             // ロングノーツは複数回切る時間が必要なので、後方の窓を回数に応じて伸ばす。
-            float lateWindow = note.RequiredCutCount > 1
-                ? judgeWindow + (note.RequiredCutCount - 1) * 0.35f
-                : judgeWindow;
+            float lateWindow = LateWindowFor(note);
             note.IsJudgeable = dt <= judgeWindow && dt >= -lateWindow;
 
             if (note.IsCut)
@@ -223,5 +234,33 @@ public class NoteSpawner : MonoBehaviour
                 liveNotes.RemoveAt(i);
             }
         }
+    }
+
+    // テスト用に公開：ロングの判定ウィンドウは秒数で何秒か。
+    public float LateWindowFor(CuttableNote note)
+    {
+        if (note == null) return judgeWindow;
+        return note.RequiredCutCount > 1
+            ? judgeWindow + (note.RequiredCutCount - 1) * secondsPerLongCut
+            : judgeWindow;
+    }
+
+    // ロングノーツは HitTime 経過後に判定面の少し後方で「滞留」させて、プレイヤーが切り続けやすくする。
+    // テスト用に公開（純粋関数）。
+    public float ComputeNoteZ(CuttableNote note, double dt, float speed)
+    {
+        if (note == null || note.RequiredCutCount <= 1 || dt >= 0)
+        {
+            return judgeZ + speed * (float)dt;
+        }
+        double overshoot = -dt;
+        float lingerDuration = (note.RequiredCutCount - 1) * secondsPerLongCut;
+        if (lingerDuration <= 0.001f || overshoot <= lingerDuration)
+        {
+            float progress = lingerDuration > 0.001f ? (float)(overshoot / lingerDuration) : 1f;
+            return judgeZ - longLingerDriftZ * progress;
+        }
+        double afterLinger = overshoot - lingerDuration;
+        return judgeZ - longLingerDriftZ - speed * (float)afterLinger;
     }
 }

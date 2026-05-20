@@ -12,6 +12,7 @@ public class NoteVisuals : MonoBehaviour
     [Header("Kind (auto from CuttableNote if present)")]
     public NoteKind kind = NoteKind.Tap;
     public int longSegments = 1; // Long の場合に分割表示する数
+    public int maxVisualSegments = 8; // 表示するセグメント数の上限（count=50 等で発散しないように）
 
     [Header("Look")]
     public Color baseColor = new Color(1f, 0.25f, 0.3f);
@@ -61,7 +62,34 @@ public class NoteVisuals : MonoBehaviour
             }
         }
 
-        if (inheritColorFromMainRenderer)
+        // 色決定の優先順位：
+        // 1. 金ノーツ（Gold）はチャートの色より優先
+        // 2. Long / Direction は kind 固有色を使う（既存の red/blue より見分けやすい）
+        // 3. Tap は譜面のマテリアル色（red / blue / default）をそのまま引き継ぐ
+        bool overrideColor = false;
+        Color overrideC = Color.white;
+        if (note != null && note.IsGold)
+        {
+            overrideColor = true;
+            overrideC = UISkinPalette.NoteGold;
+        }
+        else if (kind == NoteKind.Long)
+        {
+            overrideColor = true;
+            overrideC = UISkinPalette.NoteLong;
+        }
+        else if (kind == NoteKind.Direction)
+        {
+            overrideColor = true;
+            overrideC = UISkinPalette.NoteFlick;
+        }
+
+        if (overrideColor)
+        {
+            baseColor = overrideC;
+            inheritColorFromMainRenderer = false;
+        }
+        else if (inheritColorFromMainRenderer)
         {
             var sourceMr = GetComponent<MeshRenderer>();
             if (sourceMr != null && sourceMr.sharedMaterial != null)
@@ -159,42 +187,38 @@ public class NoteVisuals : MonoBehaviour
     private void BuildTap()
     {
         AddInnerCoreAtZ(0f, 0.45f, Quaternion.Euler(35f, 25f, 0f), 2.5f);
-        AddEdgeRailsFront(emissionScale: 3.0f);
+        AddEdgeRailsFront(emissionScale: 2.2f);
         AddFrontHalo(emissionScale: 1.5f, alpha: 0.6f);
     }
 
     private void BuildDirection()
     {
-        // 矢印が中央を占めるので InnerCore は無し。代わりに前面に「縁取り光」を強く、
+        // 矢印が中央を占めるので InnerCore は無し。代わりに前面に「縁取り光」を程よく、
         // 後ろに薄いバックライトを置いて方向ノーツらしく光が抜ける感じに。
-        AddEdgeRailsFront(emissionScale: 4.0f);
-        AddFrontHalo(emissionScale: 2.2f, alpha: 0.75f);
-        AddBackBackLight(emissionScale: 1.0f, alpha: 0.45f);
+        AddEdgeRailsFront(emissionScale: 3.0f);
+        AddFrontHalo(emissionScale: 2.0f, alpha: 0.7f);
+        AddBackBackLight(emissionScale: 0.9f, alpha: 0.40f);
     }
 
     private void BuildLong()
     {
-        // Long は NoteSpawner で Z 方向に scale.z = count されるので、ボディ自体が長くなる。
-        // 区切り位置に薄い面と、各セグメントの中心に小さな核を配置して「分割」を視覚化。
-        int n = Mathf.Max(1, longSegments);
-        // local 座標で n 等分。元のメッシュは local Z [-0.5, +0.5] なので
-        // 各セグメント中心は (-0.5 + (2k+1)/(2n)) k=0..n-1
+        // Long は NoteSpawner で Z 方向に scale.z が伸ばされる（上限あり）。
+        // 表示セグメント数も maxVisualSegments でキャップして、count=50 などでも安全に。
+        int requested = Mathf.Max(1, longSegments);
+        int n = Mathf.Min(requested, Mathf.Max(1, maxVisualSegments));
         for (int k = 0; k < n; k++)
         {
             float zCenter = -0.5f + (2f * k + 1f) / (2f * n);
-            // 個別の核（小ぶり）
             float coreSize = Mathf.Min(0.4f, 0.6f / n + 0.1f);
-            AddInnerCoreAtZ(zCenter, coreSize, Quaternion.Euler(35f, 25f + k * 15f, 0f), 2.2f);
+            AddInnerCoreAtZ(zCenter, coreSize, Quaternion.Euler(35f, 25f + k * 15f, 0f), 2.0f);
         }
-        // 区切り線（n-1 本）
         for (int k = 1; k < n; k++)
         {
             float zEdge = -0.5f + (float)k / n;
             AddSegmentDivider(zEdge);
         }
-        // 前後面の枠とハロー
-        AddEdgeRailsFront(emissionScale: 2.8f);
-        AddFrontHalo(emissionScale: 1.5f, alpha: 0.6f);
+        AddEdgeRailsFront(emissionScale: 2.0f);
+        AddFrontHalo(emissionScale: 1.4f, alpha: 0.55f);
     }
 
     // ---- 部品 ----
@@ -214,17 +238,20 @@ public class NoteVisuals : MonoBehaviour
 
     private void AddEdgeRailsFront(float emissionScale)
     {
-        Color railColor = Color.Lerp(baseColor, Color.white, 0.4f);
+        // 枠は「太い」と認識されると見栄えが落ちるので、髪の毛より一段太いだけのレベルに抑える。
+        // 発光で存在感を担保し、物理サイズは控えめに。
+        Color railColor = Color.Lerp(baseColor, Color.white, 0.45f);
         var railMat = MakeLit(railColor, baseEmissionStrength * emissionScale);
         StampRelativeFactor(railMat, emissionScale);
 
         const float front = -0.51f;
         const float half = 0.5f;
-        const float thick = 0.05f;
-        MakeChildWithMaterial("EdgeTop", PrimitiveType.Cube, new Vector3(0f, half, front), new Vector3(1.0f, thick, thick), Quaternion.identity, railMat);
-        MakeChildWithMaterial("EdgeBot", PrimitiveType.Cube, new Vector3(0f, -half, front), new Vector3(1.0f, thick, thick), Quaternion.identity, railMat);
-        MakeChildWithMaterial("EdgeLft", PrimitiveType.Cube, new Vector3(-half, 0f, front), new Vector3(thick, 1.0f, thick), Quaternion.identity, railMat);
-        MakeChildWithMaterial("EdgeRgt", PrimitiveType.Cube, new Vector3(half, 0f, front), new Vector3(thick, 1.0f, thick), Quaternion.identity, railMat);
+        const float thick = 0.022f;       // 0.05 → 0.022
+        const float length = 0.92f;       // 角を少しだけ開けて窓枠的にする
+        MakeChildWithMaterial("EdgeTop", PrimitiveType.Cube, new Vector3(0f, half, front), new Vector3(length, thick, thick), Quaternion.identity, railMat);
+        MakeChildWithMaterial("EdgeBot", PrimitiveType.Cube, new Vector3(0f, -half, front), new Vector3(length, thick, thick), Quaternion.identity, railMat);
+        MakeChildWithMaterial("EdgeLft", PrimitiveType.Cube, new Vector3(-half, 0f, front), new Vector3(thick, length, thick), Quaternion.identity, railMat);
+        MakeChildWithMaterial("EdgeRgt", PrimitiveType.Cube, new Vector3(half, 0f, front), new Vector3(thick, length, thick), Quaternion.identity, railMat);
         ownedSubMaterials.Add(railMat);
     }
 
@@ -254,14 +281,14 @@ public class NoteVisuals : MonoBehaviour
 
     private void AddSegmentDivider(float localZ)
     {
-        // ノーツ周囲を四角く囲う細いリングではなく、前面のみに細い帯を入れて区切りを見せる。
+        // 区切りも太いと「線の集合」感が出るので、薄い帯にして発光で見せる。
         var div = MakeChild("Divider", PrimitiveType.Cube,
             new Vector3(0f, 0f, localZ),
-            new Vector3(1.02f, 1.02f, 0.015f),
+            new Vector3(1.01f, 1.01f, 0.008f),
             Quaternion.identity);
         Color dividerColor = Color.Lerp(baseColor, Color.white, 0.6f);
-        var mat = MakeLit(dividerColor, baseEmissionStrength * 2.0f);
-        StampRelativeFactor(mat, 2.0f);
+        var mat = MakeLit(dividerColor, baseEmissionStrength * 1.2f);
+        StampRelativeFactor(mat, 1.2f);
         div.GetComponent<Renderer>().sharedMaterial = mat;
         ownedSubMaterials.Add(mat);
     }

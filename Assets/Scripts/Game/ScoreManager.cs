@@ -63,15 +63,20 @@ public class ScoreManager : MonoBehaviour
 
     private void HandleCut(CuttableNote note, Vector3 point, Vector3 velocity)
     {
-        double songTime = songPlayer != null ? songPlayer.SongTime : 0;
-        double error = songTime - note.HitTime;
-        JudgmentTier tier = JudgmentTierHelper.Classify(error);
-
-        // ロングノーツ：達成数 / 必要数 で tier に上限をかける
+        JudgmentTier tier;
         if (note.RequiredCutCount > 1)
         {
+            // ロングノーツは完了率ベースのみで tier を決める。
+            // 「切りきれたら Perfect、ダメだった分だけ降格」のシンプル仕様。
             float ratio = (float)note.CutsAchieved / Mathf.Max(1, note.RequiredCutCount);
-            tier = ScaleTierByCompletionRatio(tier, ratio);
+            tier = TierByCompletionRatio(ratio);
+        }
+        else
+        {
+            // タップ／フリックは従来通り時間誤差ベース。
+            double songTime = songPlayer != null ? songPlayer.SongTime : 0;
+            double error = songTime - note.HitTime;
+            tier = JudgmentTierHelper.Classify(error);
         }
 
         bool wrongDir = note.RequiredDirection != CutDirection.None && !note.LastCutCorrectDirection;
@@ -95,20 +100,27 @@ public class ScoreManager : MonoBehaviour
         }
     }
 
-    // 完了率（0..1）に応じて tier の上限（=最良値）を制限する。
-    // 100% → そのまま、75%以上 → Great まで、50%以上 → Good まで、25%以上 → Bad、未満 → Miss。
+    // 完了率（0..1）→ tier。完了率のみで決定するシンプル版。
+    // 100% = Perfect、85%以上 = Great、60%以上 = Good、30%以上 = Bad、未満 = Miss。
+    public static JudgmentTier TierByCompletionRatio(float ratio)
+    {
+        if (ratio >= 1.0f) return JudgmentTier.Perfect;
+        if (ratio >= 0.85f) return JudgmentTier.Great;
+        if (ratio >= 0.60f) return JudgmentTier.Good;
+        if (ratio >= 0.30f) return JudgmentTier.Bad;
+        return JudgmentTier.Miss;
+    }
+
+    // 旧 API。完了率と base tier を組み合わせる古い仕様。今は完了率のみで決定するため未使用だが、
+    // 既存テストとの後方互換のため残しておく。
     public static JudgmentTier ScaleTierByCompletionRatio(JudgmentTier baseTier, float ratio)
     {
-        if (ratio >= 1f) return baseTier;
-        if (ratio >= 0.75f) return WorseOrEqual(baseTier, JudgmentTier.Great);
-        if (ratio >= 0.5f) return WorseOrEqual(baseTier, JudgmentTier.Good);
-        if (ratio >= 0.25f) return JudgmentTier.Bad;
-        return JudgmentTier.Miss;
+        JudgmentTier byRatio = TierByCompletionRatio(ratio);
+        return ((int)byRatio) > ((int)baseTier) ? byRatio : baseTier;
     }
 
     private static JudgmentTier WorseOrEqual(JudgmentTier t, JudgmentTier minWorseLevel)
     {
-        // tier 列挙は Perfect=0..Miss=4 の順なので「悪い方=数値大」
         return ((int)t) < ((int)minWorseLevel) ? minWorseLevel : t;
     }
 
@@ -126,9 +138,18 @@ public class ScoreManager : MonoBehaviour
             return;
         }
         HitCount++;
-        Combo++;
-        if (Combo > MaxCombo) MaxCombo = Combo;
-        int award = JudgmentTierHelper.BasePoints(tier) + comboBonusPerStep * (Combo - 1);
+        // Bad 以下でコンボが切れる仕様。Bad はヒット扱いで得点は入るが、コンボは0に戻す。
+        if (tier == JudgmentTier.Bad)
+        {
+            Combo = 0;
+        }
+        else
+        {
+            Combo++;
+            if (Combo > MaxCombo) MaxCombo = Combo;
+        }
+        int comboMultiplier = Mathf.Max(0, Combo - 1);
+        int award = JudgmentTierHelper.BasePoints(tier) + comboBonusPerStep * comboMultiplier;
         Score += award;
         switch (tier)
         {

@@ -80,4 +80,62 @@ public class CuttableNoteTests
         Assert.AreEqual(1, partial);
         Object.DestroyImmediate(n.gameObject);
     }
+
+    [Test]
+    public void Cut_OppositeDirection_DoesNotAdvanceState()
+    {
+        var n = Make();
+        n.RequiredDirection = CutDirection.Right;
+        n.RequiredCutCount = 1;
+        n.RemainingCuts = 1;
+        int onCut = 0, partial = 0;
+        n.OnCut += (_, __, ___) => onCut++;
+        n.OnPartialCut += (_, __, ___) => partial++;
+
+        // 左方向（要求の真逆）で切ろうとする → 反応しない
+        n.Cut(Vector3.zero, Vector3.left);
+        Assert.IsFalse(n.IsCut, "逆方向では IsCut にならない");
+        Assert.IsFalse(n.IsMissed);
+        Assert.AreEqual(0, onCut);
+        Assert.AreEqual(0, partial);
+        Assert.AreEqual(1, n.RemainingCuts, "RemainingCuts は減らない");
+        Object.DestroyImmediate(n.gameObject);
+    }
+
+    [Test]
+    public void Cut_PerpendicularDirection_StillCuts()
+    {
+        var n = Make();
+        n.RequiredDirection = CutDirection.Right;
+        n.RequiredCutCount = 1;
+        n.RemainingCuts = 1;
+        int onCut = 0;
+        n.OnCut += (_, __, ___) => onCut++;
+
+        // 上方向（90°ズレ）→ 拒否されず、降格扱いでカットは成功
+        n.Cut(Vector3.zero, Vector3.up);
+        Assert.IsTrue(n.IsCut);
+        Assert.AreEqual(1, onCut);
+        Assert.IsFalse(n.LastCutCorrectDirection, "向きが合っていないので方向フラグは false");
+        Object.DestroyImmediate(n.gameObject);
+    }
+
+    [Test]
+    public void Cut_OppositeOnLongNote_DoesNotConsumeCut()
+    {
+        var n = Make();
+        n.RequiredDirection = CutDirection.Right;
+        n.RequiredCutCount = 3;
+        n.RemainingCuts = 3;
+
+        n.Cut(Vector3.zero, Vector3.right); // OK 1回目
+        Assert.AreEqual(2, n.RemainingCuts);
+
+        n.Cut(Vector3.zero, Vector3.left);  // 逆方向 → 消費しない
+        Assert.AreEqual(2, n.RemainingCuts);
+
+        n.Cut(Vector3.zero, Vector3.right); // OK 2回目
+        Assert.AreEqual(1, n.RemainingCuts);
+        Object.DestroyImmediate(n.gameObject);
+    }
 }

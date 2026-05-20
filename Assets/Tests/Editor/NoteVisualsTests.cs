@@ -160,4 +160,63 @@ public class NoteVisualsTests
         }
         Assert.AreEqual(2, dividers);
     }
+
+    [Test]
+    public void Color_Override_Long_UsesNoteLongPalette()
+    {
+        var note = MakeLegacyNote();
+        var cn = note.AddComponent<CuttableNote>();
+        cn.RequiredCutCount = 2;
+        cn.RemainingCuts = 2;
+        var visuals = note.AddComponent<NoteVisuals>();
+        Assert.AreEqual(UISkinPalette.NoteLong.r, visuals.baseColor.r, 0.001f);
+        Assert.AreEqual(UISkinPalette.NoteLong.g, visuals.baseColor.g, 0.001f);
+        Assert.AreEqual(UISkinPalette.NoteLong.b, visuals.baseColor.b, 0.001f);
+    }
+
+    [Test]
+    public void Color_Override_Direction_UsesNoteFlickPalette()
+    {
+        var note = MakeLegacyNote();
+        var cn = note.AddComponent<CuttableNote>();
+        cn.RequiredDirection = CutDirection.Up;
+        cn.RequiredCutCount = 1;
+        var visuals = note.AddComponent<NoteVisuals>();
+        Assert.AreEqual(UISkinPalette.NoteFlick.r, visuals.baseColor.r, 0.001f);
+        Assert.AreEqual(UISkinPalette.NoteFlick.g, visuals.baseColor.g, 0.001f);
+        Assert.AreEqual(UISkinPalette.NoteFlick.b, visuals.baseColor.b, 0.001f);
+    }
+
+    [Test]
+    public void Color_Override_Gold_TrumpsKindColor()
+    {
+        // Tap + IsGold → 金色
+        var note = MakeLegacyNote();
+        var cn = note.AddComponent<CuttableNote>();
+        cn.IsGold = true;
+        var visuals = note.AddComponent<NoteVisuals>();
+        Assert.AreEqual(UISkinPalette.NoteGold.r, visuals.baseColor.r, 0.001f);
+        Assert.AreEqual(UISkinPalette.NoteGold.g, visuals.baseColor.g, 0.001f);
+        Assert.AreEqual(UISkinPalette.NoteGold.b, visuals.baseColor.b, 0.001f);
+    }
+
+    [Test]
+    public void Color_Tap_KeepsMaterialColor()
+    {
+        // Tap、非Gold → マテリアル色を継承（Long/Direction の override が走らないこと）
+        var note = MakeLegacyNote();
+        note.AddComponent<CuttableNote>(); // count=1, direction=None, IsGold=false
+        var mr = note.GetComponent<MeshRenderer>();
+        Color expected = new Color(0.9f, 0.3f, 0.3f);
+        var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+        var src = new Material(sh);
+        if (src.HasProperty("_BaseColor")) src.SetColor("_BaseColor", expected);
+        else src.color = expected;
+        mr.sharedMaterial = src;
+
+        var visuals = note.AddComponent<NoteVisuals>();
+        Assert.AreEqual(expected.r, visuals.baseColor.r, 0.001f);
+        Assert.AreEqual(expected.g, visuals.baseColor.g, 0.001f);
+        Assert.AreEqual(expected.b, visuals.baseColor.b, 0.001f);
+    }
 }
