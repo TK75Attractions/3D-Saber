@@ -39,6 +39,9 @@ public class CuttableNote : MonoBehaviour
     public event System.Action<CuttableNote, Vector3, Vector3> OnCut;
     // 0回も切れずタイムアウトしたときに発火。部分達成のロングは OnCut（達成率付き）で扱う。
     public event System.Action<CuttableNote> OnMiss;
+    // 1カットごとに発火（cutIndex は 0 から始まる達成番号、total は必要回数）。
+    // ロングの上行音 SFX 等、各打鍵に紐づく演出に使う。
+    public event System.Action<CuttableNote, int, int> OnPartialCut;
 
     private Vector3 lastHitPoint;
     private Vector3 lastVelocity = Vector3.right;
@@ -66,6 +69,9 @@ public class CuttableNote : MonoBehaviour
         // 各カットでひびを追加＆数字を更新
         AddCrack();
         UpdateCountLabel();
+
+        // 各カットごとに発火（達成番号は 0 始まり）
+        OnPartialCut?.Invoke(this, CutsAchieved - 1, RequiredCutCount);
 
         if (RemainingCuts <= 0)
         {
@@ -190,7 +196,6 @@ public class CuttableNote : MonoBehaviour
             go.transform.position = transform.position + Random.insideUnitSphere * 0.3f;
             go.transform.rotation = Random.rotation;
             go.transform.localScale = Vector3.one * Random.Range(0.06f, 0.14f);
-            if (mat != null) go.GetComponent<MeshRenderer>().sharedMaterial = mat;
             var rb = go.AddComponent<Rigidbody>();
             rb.useGravity = pieceUseGravity;
             rb.linearVelocity = Random.insideUnitSphere * shatterDebrisSpeed + cutVelocity * 0.15f;
@@ -198,6 +203,8 @@ public class CuttableNote : MonoBehaviour
             var decay = go.AddComponent<SlicePieceDecay>();
             decay.life = pieceLife;
             decay.fadeStart = pieceFadeStart;
+            // 親由来マテリアルを複製して破片に渡す（親破棄後もマゼンタにならないように）
+            if (mat != null) decay.SetOwnedMaterial(new Material(mat));
         }
     }
 
@@ -245,7 +252,6 @@ public class CuttableNote : MonoBehaviour
         var mf = go.AddComponent<MeshFilter>();
         mf.sharedMesh = mesh;
         var mr = go.AddComponent<MeshRenderer>();
-        mr.sharedMaterial = mat;
 
         var col = go.AddComponent<MeshCollider>();
         col.convex = true;
@@ -262,5 +268,7 @@ public class CuttableNote : MonoBehaviour
         var decay = go.AddComponent<SlicePieceDecay>();
         decay.life = pieceLife;
         decay.fadeStart = pieceFadeStart;
+        // 親由来マテリアルを複製してスライス片に渡す（親破棄後もマゼンタにならないように）
+        if (mat != null) decay.SetOwnedMaterial(new Material(mat));
     }
 }

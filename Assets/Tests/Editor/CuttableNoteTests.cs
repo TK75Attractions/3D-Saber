@@ -45,4 +45,39 @@ public class CuttableNoteTests
         Assert.IsTrue(n.IsMissed);
         Object.DestroyImmediate(n.gameObject);
     }
+
+    [Test]
+    public void Cut_Long_FiresPartialCutPerCall_ThenOnCutOnce()
+    {
+        var n = Make();
+        n.RequiredCutCount = 3;
+        n.RemainingCuts = 3;
+        var indices = new System.Collections.Generic.List<int>();
+        int totals = 0;
+        int onCutFired = 0;
+        n.OnPartialCut += (_, idx, total) => { indices.Add(idx); totals = total; };
+        n.OnCut += (_, __, ___) => onCutFired++;
+
+        n.Cut(Vector3.zero, Vector3.right);
+        n.Cut(Vector3.zero, Vector3.right);
+        n.Cut(Vector3.zero, Vector3.right);
+        n.Cut(Vector3.zero, Vector3.right); // 4回目：完了済みで何も起きない
+
+        Assert.AreEqual(new[] { 0, 1, 2 }, indices.ToArray());
+        Assert.AreEqual(3, totals);
+        Assert.AreEqual(1, onCutFired);
+        Assert.IsTrue(n.IsCut);
+        Object.DestroyImmediate(n.gameObject);
+    }
+
+    [Test]
+    public void Cut_Tap_FiresPartialCutOnce()
+    {
+        var n = Make();
+        int partial = 0;
+        n.OnPartialCut += (_, __, ___) => partial++;
+        n.Cut(Vector3.zero, Vector3.right);
+        Assert.AreEqual(1, partial);
+        Object.DestroyImmediate(n.gameObject);
+    }
 }

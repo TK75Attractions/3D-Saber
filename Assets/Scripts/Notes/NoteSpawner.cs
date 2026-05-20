@@ -84,6 +84,10 @@ public class NoteSpawner : MonoBehaviour
         note.RequiredCutCount = Mathf.Max(1, nd.count);
         note.RemainingCuts = note.RequiredCutCount;
 
+        // 旧プレハブにある面ステッカー等を剥がして、クリスタル＋ネオン外観に置き換える。
+        // NoteVisuals 自身が冪等で、既存プレハブにも安全に被せられる。
+        if (go.GetComponent<NoteVisuals>() == null) go.AddComponent<NoteVisuals>();
+
         // 方向指定なら矢印マーカー
         if (note.RequiredDirection != CutDirection.None)
         {
