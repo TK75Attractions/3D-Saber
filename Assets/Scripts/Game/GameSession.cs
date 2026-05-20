@@ -17,6 +17,11 @@ public static class GameSession
     public static int FinalGood;
     public static int FinalBad;
 
+    // キャリブレーション（判定調整）モード。SongSelect から該当ボタンで true にして
+    // Game シーンへ遷移する。Game シーンの GamePlayManager がこれを見て、
+    // 合成譜面 + メトロノームを再生する。
+    public static bool IsCalibrationMode;
+
     // 判定オフセット（ミリ秒）。SongSelect でユーザーが調整して PlayerPrefs に保存。
     // GamePlayManager がプレイ開始時にこの値を実効オフセットに加算する。
     private const string JudgmentOffsetMsKey = "judgmentOffsetMs";

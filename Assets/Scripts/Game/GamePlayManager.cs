@@ -28,8 +28,8 @@ public class GamePlayManager : MonoBehaviour
     public float extraOffsetSeconds = 0f;
     // 譜面のノーツが音源より長い場合に自動で切り詰める（曲終了時に譜面も終わるように）。
     public bool trimChartToAudioLength = true;
-    // 音源長からこの秒数を足したところまでをノーツの上限時刻にする。
-    public float trimGraceSeconds = 0.5f;
+    // 音源長 +この秒数 をノーツの上限時刻にする。負にすれば早めに切れる。
+    public float trimGraceSeconds = 0f;
 
     [Header("Judge guide")]
     public bool simplifyJudgeGuide = true;
@@ -57,6 +57,15 @@ public class GamePlayManager : MonoBehaviour
     private bool ready;
     private double lastNoteTime;
 
+    // --- キャリブレーション（判定調整）モード ---
+    private bool inCalibration;
+    private AudioClip calibClickClip;
+    private int nextCalibClickIdx;
+    private double lastAppliedPlayerOffsetSec;
+    private const float CalibBpm = 120f;
+    private const double CalibFirstNoteTime = 2.0;
+    private const float CalibChartDurationSec = 600f; // 10 分のループ
+
     IEnumerator Start()
     {
         if (songPlayer == null || noteSpawner == null || scoreManager == null)
@@ -72,21 +81,23 @@ public class GamePlayManager : MonoBehaviour
             cutJudge.autonomous = false;
             if (overrideSaberRadii)
             {
-                // 既存シーンのセーバー値（bladeRadius=0.3, noteHitRadiusXY=0.55）が広く、
-                // 隣接ノーツを巻き込みやすいので、ここで「厳しい」値に上書き。
                 cutJudge.bladeRadius = saberBladeRadius;
                 cutJudge.noteHitRadiusXY = saberNoteHitRadiusXY;
                 cutJudge.minCutSpeed = saberMinCutSpeed;
             }
         }
 
-        // 既存シーンを編集せずにロング音 SFX を有効化
         EnsureLongNoteCutSfx();
         EnsureGoldNoteSfx();
-
-        // 判定面ガイド：旧シーンに残っている大量の線（グリッド/枠/コーナー/十字）を剥がして
-        // 半透明の薄い面のみ残す。ユーザーの「薄い面にして」要件に合わせた整理。
         if (simplifyJudgeGuide) SimplifyJudgeGuide();
+
+        // --- キャリブレーションモード ---
+        if (GameSession.IsCalibrationMode)
+        {
+            StartCalibration();
+            ready = true;
+            yield break;
+        }
 
         string songId = GameSession.SelectedSongId;
         if (string.IsNullOrEmpty(songId))
@@ -107,22 +118,37 @@ public class GamePlayManager : MonoBehaviour
         double offsetSec = chart.offsetMs / 1000.0 + effectiveExtraOffset;
 
         // 音源より後ろにあるノーツは「曲が終わった後も続く」原因なので、自動で削除。
+        // ロングは後方の判定窓 (count-1) * secondsPerLongCut も延長するので、その分も考慮する。
         double audioLen = songPlayer.Duration;
         if (trimChartToAudioLength && audioLen > 0.0)
         {
+            float perCut = noteSpawner != null ? noteSpawner.secondsPerLongCut : 0.7f;
             int before = chart.notes.Count;
-            chart.notes.RemoveAll(n => (n.TimeSeconds + offsetSec) > audioLen + trimGraceSeconds);
+            chart.notes.RemoveAll(n =>
+            {
+                double eff = n.TimeSeconds + offsetSec;
+                double endTime = eff;
+                if (n.count > 1) endTime += (n.count - 1) * perCut;
+                return endTime > audioLen + trimGraceSeconds;
+            });
             int removed = before - chart.notes.Count;
             if (removed > 0)
             {
-                Debug.Log($"GamePlayManager: 音源長({audioLen:F1}s) を超えるノーツ {removed} 個を切り詰めました");
+                Debug.Log($"GamePlayManager: 音源長({audioLen:F1}s) を超えるノーツ {removed} 個を切り詰めました (ロング後方判定窓を考慮)");
             }
         }
 
-        // 切り詰め後の lastNoteTime を計算
-        lastNoteTime = chart.notes.Count > 0
-            ? chart.notes[chart.notes.Count - 1].TimeSeconds + offsetSec
-            : 0.0;
+        // 切り詰め後の lastNoteTime を計算（ロングの後方延長を含む「実際に最後にカットが必要な時刻」）
+        lastNoteTime = 0.0;
+        {
+            float perCut = noteSpawner != null ? noteSpawner.secondsPerLongCut : 0.7f;
+            foreach (var n in chart.notes)
+            {
+                double eff = n.TimeSeconds + offsetSec;
+                double endTime = eff + (n.count > 1 ? (n.count - 1) * perCut : 0);
+                if (endTime > lastNoteTime) lastNoteTime = endTime;
+            }
+        }
 
         // オフセットを先に NoteSpawner に渡してから SetChart
         noteSpawner.SetExtraOffsetSeconds(effectiveExtraOffset);
@@ -294,7 +320,14 @@ public class GamePlayManager : MonoBehaviour
         // 1. セーバー判定
         if (cutJudge != null) cutJudge.RunJudge();
 
-        // 2. 譜面進行
+        // 2a. キャリブレーション分岐：時計は AudioSettings.dspTime ベース、終了せずループ
+        if (inCalibration)
+        {
+            UpdateCalibration();
+            return;
+        }
+
+        // 2b. 通常の譜面進行
         if (songPlayer.IsPlaying)
         {
             noteSpawner.Tick(songPlayer.SongTime);
@@ -310,6 +343,128 @@ public class GamePlayManager : MonoBehaviour
             finished = true;
             FinishGame();
         }
+    }
+
+    // --- キャリブレーションモード実装 ---
+
+    void StartCalibration()
+    {
+        inCalibration = true;
+
+        // キャリブレーションではセーバー判定を緩めに（本編の「巻き込み防止」設定は外す）。
+        // 軽くマウスを払うだけでカットが入るように：noteHitRadiusXY を広く、minCutSpeed を低く。
+        if (cutJudge != null)
+        {
+            cutJudge.bladeRadius = 0.35f;
+            cutJudge.noteHitRadiusXY = 0.65f;
+            cutJudge.minCutSpeed = 2.0f;
+        }
+
+        // 小節線は不要
+        if (barLineSpawner != null)
+        {
+            barLineSpawner.gameObject.SetActive(false);
+            barLineSpawner = null;
+        }
+
+        // 合成譜面：BPM 120、画面中央 (0, 0.5) に等間隔タップ
+        var chart = SynthesizeCalibrationChart(CalibBpm, CalibChartDurationSec, CalibFirstNoteTime);
+
+        // 現在の player offset を即時反映
+        double playerOffsetSec = GameSession.JudgmentOffsetMs / 1000.0;
+        lastAppliedPlayerOffsetSec = playerOffsetSec;
+        noteSpawner.SetExtraOffsetSeconds(extraOffsetSeconds + playerOffsetSec);
+        noteSpawner.SetChart(chart);
+
+        scoreManager.songPlayer = songPlayer;
+        scoreManager.Reset();
+        scoreManager.Bind(noteSpawner);
+        if (longNoteCutSfx != null) longNoteCutSfx.Bind(noteSpawner);
+        if (goldNoteSfx != null) goldNoteSfx.Bind(noteSpawner);
+
+        // 音源は使わない。AudioSource を流用してメトロノームを鳴らす。
+        var src = songPlayer != null ? songPlayer.GetComponent<AudioSource>() : null;
+        if (src != null)
+        {
+            src.Stop();
+            src.clip = null;
+        }
+
+        calibClickClip = JudgmentSfx.Beep(880f, 0.05f);
+        nextCalibClickIdx = 0;
+
+        // 重要：songPlayer.Play() を呼んで時計を進める。
+        // SongTime は ScoreManager.HandleCut が時間誤差計算に使うので、これを呼ばないと
+        // SongTime は 0 のままで error 計算が破綻し、全 note が Miss になる。
+        // clip は null のままで OK（無音で時計だけ進む）。
+        songPlayer.startDelay = 1.0f; // 1 秒プリロール
+        songPlayer.Play();
+
+        // UI: オフセット調整＋BACK ボタンの「キャリブレーション オーバーレイ」を表示
+        CalibrationOverlay.Ensure();
+    }
+
+    public static ChartData SynthesizeCalibrationChart(float bpm, float durationSeconds, double firstNoteTimeSec)
+    {
+        var chart = new ChartData { bpm = bpm, offsetMs = 0f };
+        double beatInterval = 60.0 / Mathf.Max(1f, bpm);
+        double t = firstNoteTimeSec;
+        while (t < durationSeconds)
+        {
+            chart.notes.Add(new NoteData
+            {
+                time = (float)(t * 1000.0),
+                x = 0f,
+                y = 0.5f,
+                type = "tap",
+                color = "red",
+                direction = "none",
+                count = 1
+            });
+            t += beatInterval;
+        }
+        return chart;
+    }
+
+    void UpdateCalibration()
+    {
+        // 時計は songPlayer.SongTime に一本化する。ScoreManager もこれを参照するので、
+        // NoteSpawner.Tick と ScoreManager の時間軸が完全一致する。
+        double calibTime = songPlayer.SongTime;
+
+        // ユーザーが UI で offset を動かしたら、次のノーツから反映
+        double currentPlayerOffset = GameSession.JudgmentOffsetMs / 1000.0;
+        if (System.Math.Abs(currentPlayerOffset - lastAppliedPlayerOffsetSec) > 0.0001)
+        {
+            lastAppliedPlayerOffsetSec = currentPlayerOffset;
+            noteSpawner.SetExtraOffsetSeconds(extraOffsetSeconds + currentPlayerOffset);
+        }
+
+        noteSpawner.Tick(calibTime);
+
+        // メトロノーム：ビート時刻になったらクリックを鳴らす（オフセットなし＝音楽が基準）
+        double beatInterval = 60.0 / CalibBpm;
+        var src = songPlayer != null ? songPlayer.GetComponent<AudioSource>() : null;
+        while (true)
+        {
+            double clickTime = CalibFirstNoteTime + nextCalibClickIdx * beatInterval;
+            if (clickTime > calibTime) break;
+            // 「大幅に遅れた」クリックは飛ばす（フレ落ち時の連打を防ぐ）
+            if (calibTime - clickTime < 0.10)
+            {
+                if (src != null && calibClickClip != null)
+                {
+                    src.PlayOneShot(calibClickClip, 0.45f);
+                }
+            }
+            nextCalibClickIdx++;
+        }
+    }
+
+    public static void ExitCalibration(string returnSceneName = "SongSelect")
+    {
+        GameSession.IsCalibrationMode = false;
+        UnityEngine.SceneManagement.SceneManager.LoadScene(returnSceneName);
     }
 
     private void FinishGame()

@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell($lines = [System.IO.File]::ReadAllLines\\(\"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\Assets\\\\StreamingAssets\\\\Songs\\\\ElDorado\\\\chart.json\", [System.Text.UTF8Encoding]::new\\($false\\)\\); $bad = 0; foreach \\($line in $lines\\) { if \\($line -match '\"y\":' -and -not \\($line -match '\"y\":\\(  [0-9]\\\\.[0-9]| -[0-9]\\\\.[0-9]\\)'\\)\\) { $bad++; if \\($bad -le 3\\) { Write-Output \\(\"MALFORMED: \" + $line.Trim\\(\\)\\) } } }; Write-Output \\(\"malformed y count: \" + $bad\\))"
+    ]
+  }
+}

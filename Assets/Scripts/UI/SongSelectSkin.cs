@@ -25,9 +25,55 @@ public class SongSelectSkin : MonoBehaviour
         StyleStartButton(ctl);
         StyleSongPanel(canvas);
         StyleSelectedColor(ctl);
-        // 左下に判定オフセット調整ウィジェット、その右隣に「その場で試せる」練習ゾーン
-        JudgmentOffsetWidget.Ensure(canvas);
-        JudgmentTestWidget.Ensure(canvas);
+        // 左下に「判定調整画面」へのボタンだけ置く（実際の調整は Game シーンの calibration mode）
+        AddCalibrationButton(canvas);
+    }
+
+    void AddCalibrationButton(Canvas canvas)
+    {
+        if (canvas.transform.Find("CalibrationButton") != null) return;
+
+        var go = new GameObject("CalibrationButton",
+            typeof(RectTransform), typeof(Image), typeof(Button));
+        go.transform.SetParent(canvas.transform, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchorMin = new Vector2(0f, 0f);
+        rt.anchorMax = new Vector2(0f, 0f);
+        rt.pivot = new Vector2(0f, 0f);
+        rt.anchoredPosition = new Vector2(30f, 30f);
+        rt.sizeDelta = new Vector2(360f, 90f);
+
+        var img = go.GetComponent<Image>();
+        img.color = new Color(UISkinPalette.Cyan.r * 0.15f, UISkinPalette.Cyan.g * 0.15f, UISkinPalette.Cyan.b * 0.25f, 0.85f);
+        var ol = go.AddComponent<Outline>();
+        ol.effectColor = UISkinPalette.Cyan;
+        ol.effectDistance = new Vector2(2f, -2f);
+
+        var btn = go.GetComponent<Button>();
+        btn.onClick.AddListener(EnterCalibration);
+
+        // 2行ラベル：JUDGMENT SETUP / 判定調整
+        var label = new GameObject("Label", typeof(RectTransform), typeof(Text));
+        label.transform.SetParent(go.transform, false);
+        var lrt = label.GetComponent<RectTransform>();
+        lrt.anchorMin = Vector2.zero;
+        lrt.anchorMax = Vector2.one;
+        lrt.offsetMin = Vector2.zero;
+        lrt.offsetMax = Vector2.zero;
+        var t = label.GetComponent<Text>();
+        t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        t.fontSize = 26;
+        t.fontStyle = FontStyle.Bold;
+        t.alignment = TextAnchor.MiddleCenter;
+        t.color = UISkinPalette.Cyan;
+        t.text = "JUDGMENT SETUP";
+        t.raycastTarget = false;
+    }
+
+    public static void EnterCalibration()
+    {
+        GameSession.IsCalibrationMode = true;
+        UnityEngine.SceneManagement.SceneManager.LoadScene("Game");
     }
 
     void StyleHeader(Canvas canvas)
