@@ -27,7 +27,19 @@ public static class ChartLoader
     // StreamingAssets/Songs/<songId>/chart.json
     public static ChartData LoadFromStreamingAssets(string songId)
     {
-        string path = Path.Combine(Application.streamingAssetsPath, "Songs", songId, "chart.json");
-        return LoadFromFile(path);
+        return LoadFromStreamingAssets(songId, null);
+    }
+
+    // 難易度別ロード：chart_<difficulty>.json を優先、無ければ legacy chart.json にフォールバック。
+    // difficulty 例：Easy / Normal / Hard（大文字小文字無視）
+    public static ChartData LoadFromStreamingAssets(string songId, string difficulty)
+    {
+        string dir = Path.Combine(Application.streamingAssetsPath, "Songs", songId);
+        if (!string.IsNullOrEmpty(difficulty))
+        {
+            string specific = Path.Combine(dir, $"chart_{difficulty.ToLowerInvariant()}.json");
+            if (File.Exists(specific)) return LoadFromFile(specific);
+        }
+        return LoadFromFile(Path.Combine(dir, "chart.json"));
     }
 }

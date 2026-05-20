@@ -38,15 +38,26 @@ public class GamePlayManager : MonoBehaviour
     public bool addJudgePanelOuterGlow = true;
 
     [Header("Bar lines")]
-    // 流れる小節線が「線の集合」に見えて視覚ノイズになるので既定で OFF。
-    // BPM 視認用に戻したい場合は false にする。
-    public bool disableBarLines = true;
+    // BPM ガイドとして薄い小節線を流す。視覚ノイズが気になる場合は true で OFF にできる。
+    public bool disableBarLines = false;
+    [Range(0f, 1f)] public float barLineAlpha = 0.18f;
+    [Range(0.005f, 0.08f)] public float barLineThickness = 0.02f;
+    // 判定面に固定して置く「ビート参照線」。流れてきた小節線がここに重なった瞬間がビートのタイミング。
+    public bool addBeatReferenceLine = true;
+    [Range(0f, 1f)] public float beatReferenceAlpha = 0.45f;
+    [Range(0.005f, 0.08f)] public float beatReferenceThickness = 0.035f;
 
     [Header("Saber hit detection (stricter to avoid sweeping)")]
     public bool overrideSaberRadii = true;
     public float saberBladeRadius = 0.22f;       // 既存ビルド時の 0.30 から狭める
     public float saberNoteHitRadiusXY = 0.35f;   // 既存ビルド時の 0.55 から狭める
     public float saberMinCutSpeed = 4.0f;        // 3.0 → 4.0 にして「ふわっと振る」での誤発火を抑える
+
+    [Header("Camera")]
+    // 視点を少し上げ、少し下を向く角度に。元シーンの (0, 0.8, -7) rot(5,0,0) から微調整。
+    public bool overrideCameraPose = true;
+    public Vector3 cameraPosition = new Vector3(0f, 1.25f, -7f);
+    public Vector3 cameraRotationEuler = new Vector3(10f, 0f, 0f);
 
     // 判定面ガイドから剥がす子オブジェクトの名前接頭辞。
     private static readonly string[] JudgeGuideStripPrefixes = {
@@ -90,6 +101,7 @@ public class GamePlayManager : MonoBehaviour
         EnsureLongNoteCutSfx();
         EnsureGoldNoteSfx();
         if (simplifyJudgeGuide) SimplifyJudgeGuide();
+        if (overrideCameraPose) ApplyCameraPose();
 
         // --- キャリブレーションモード ---
         if (GameSession.IsCalibrationMode)
@@ -106,7 +118,7 @@ public class GamePlayManager : MonoBehaviour
             songId = "TestSong";
         }
 
-        ChartData chart = ChartLoader.LoadFromStreamingAssets(songId);
+        ChartData chart = ChartLoader.LoadFromStreamingAssets(songId, GameSession.SelectedDifficulty);
 
         // 音源を先にロードして、譜面長を音源に合わせて切り詰められるようにする。
         yield return LoadAudio(songId);
@@ -154,13 +166,19 @@ public class GamePlayManager : MonoBehaviour
         noteSpawner.SetExtraOffsetSeconds(effectiveExtraOffset);
         noteSpawner.SetChart(chart);
 
-        // 既定で小節線は OFF（流れる線が「線の集合」として煩く感じる対策）。
+        // 小節線：BPM ガイドとして薄く流す
         if (disableBarLines && barLineSpawner != null)
         {
             barLineSpawner.gameObject.SetActive(false);
             barLineSpawner = null;
         }
-        if (barLineSpawner != null) barLineSpawner.SetChart(chart);
+        if (barLineSpawner != null)
+        {
+            barLineSpawner.overrideVisual = true;
+            barLineSpawner.lineAlpha = barLineAlpha;
+            barLineSpawner.lineThickness = barLineThickness;
+            barLineSpawner.SetChart(chart);
+        }
 
         scoreManager.songPlayer = songPlayer;
         scoreManager.Reset();
@@ -179,6 +197,14 @@ public class GamePlayManager : MonoBehaviour
         var go = new GameObject("LongNoteCutSfx", typeof(AudioSource), typeof(LongNoteCutSfx));
         go.transform.SetParent(transform, false);
         longNoteCutSfx = go.GetComponent<LongNoteCutSfx>();
+    }
+
+    private void ApplyCameraPose()
+    {
+        var cam = Camera.main;
+        if (cam == null) return;
+        cam.transform.position = cameraPosition;
+        cam.transform.rotation = Quaternion.Euler(cameraRotationEuler);
     }
 
     private void EnsureGoldNoteSfx()
@@ -235,7 +261,49 @@ public class GamePlayManager : MonoBehaviour
             {
                 AddJudgePanelOuterGlow(guide.transform, panel);
             }
+
+            if (addBeatReferenceLine)
+            {
+                AddBeatReferenceLine(guide.transform, panel);
+            }
         }
+    }
+
+    // 判定面に「ビート参照線」を1本固定で置く。流れてきた小節線がこれに重なった瞬間がビートのタイミング。
+    // 小節線と同じく端から端まで、白い細い線。
+    private void AddBeatReferenceLine(Transform guideTransform, Transform panel)
+    {
+        if (guideTransform.Find("BeatReferenceLine") != null) return; // 冪等
+
+        var line = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        line.name = "BeatReferenceLine";
+        line.transform.SetParent(guideTransform, false);
+        // パネルとほぼ同じ位置だが、ほんの少し前面に出して埋まらないように
+        line.transform.localPosition = panel.localPosition + new Vector3(0f, 0f, -0.005f);
+        // 横幅はパネルと同じ、Y方向に細い帯、Z方向は薄い板
+        Vector3 ps = panel.localScale;
+        line.transform.localScale = new Vector3(ps.x * 1.02f, beatReferenceThickness, 0.01f);
+
+        var col = line.GetComponent<BoxCollider>();
+        if (col != null) Destroy(col);
+
+        var mr = line.GetComponent<MeshRenderer>();
+        var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+        var m = new Material(shader);
+        if (m.HasProperty("_Surface")) m.SetFloat("_Surface", 1f);
+        if (m.HasProperty("_SrcBlend")) m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        if (m.HasProperty("_DstBlend")) m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        if (m.HasProperty("_ZWrite")) m.SetFloat("_ZWrite", 0f);
+        m.renderQueue = 3010; // パネルや小節線より少しだけ前
+        Color c = new Color(1f, 1f, 1f, beatReferenceAlpha);
+        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
+        else m.color = c;
+        if (m.HasProperty("_EmissionColor"))
+        {
+            m.EnableKeyword("_EMISSION");
+            m.SetColor("_EmissionColor", new Color(1f, 1f, 1f, 1f) * 0.6f);
+        }
+        mr.sharedMaterial = m;
     }
 
     // パネルの一回り外側に、より薄い同色のパネルを置いて、エッジを柔らかく外側へ伸ばす。

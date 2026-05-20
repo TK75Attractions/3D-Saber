@@ -1,4 +1,6 @@
+using System.IO;
 using NUnit.Framework;
+using UnityEngine;
 
 public class ChartLoaderTests
 {
@@ -40,5 +42,59 @@ public class ChartLoaderTests
         Assert.IsNotNull(d);
         Assert.IsNotNull(d.notes);
         Assert.AreEqual(0, d.notes.Count);
+    }
+
+    [Test]
+    public void LoadFromStreamingAssets_NullDifficulty_FallsBackToLegacyChart()
+    {
+        // 既存の chart.json が読めるか（既知の ElDorado を使う）
+        ChartData d = ChartLoader.LoadFromStreamingAssets("ElDorado");
+        Assert.IsNotNull(d);
+        Assert.Greater(d.notes.Count, 0);
+    }
+
+    [Test]
+    public void LoadFromStreamingAssets_NormalDifficulty_LoadsNormalChart()
+    {
+        ChartData d = ChartLoader.LoadFromStreamingAssets("ElDorado", "Normal");
+        Assert.IsNotNull(d);
+        Assert.Greater(d.notes.Count, 0);
+    }
+
+    [Test]
+    public void LoadFromStreamingAssets_EasyDifficulty_HasFewerNotesThanNormal()
+    {
+        ChartData easy = ChartLoader.LoadFromStreamingAssets("ElDorado", "Easy");
+        ChartData normal = ChartLoader.LoadFromStreamingAssets("ElDorado", "Normal");
+        Assert.IsNotNull(easy);
+        Assert.IsNotNull(normal);
+        Assert.Less(easy.notes.Count, normal.notes.Count, "Easy は Normal より少ない");
+    }
+
+    [Test]
+    public void LoadFromStreamingAssets_HardDifficulty_HasMoreNotesThanNormal()
+    {
+        ChartData hard = ChartLoader.LoadFromStreamingAssets("ElDorado", "Hard");
+        ChartData normal = ChartLoader.LoadFromStreamingAssets("ElDorado", "Normal");
+        Assert.IsNotNull(hard);
+        Assert.IsNotNull(normal);
+        Assert.Greater(hard.notes.Count, normal.notes.Count, "Hard は Normal より多い");
+    }
+
+    [Test]
+    public void LoadFromStreamingAssets_UnknownDifficulty_FallsBackToLegacy()
+    {
+        // 存在しない難易度名 → chart.json にフォールバック
+        ChartData d = ChartLoader.LoadFromStreamingAssets("ElDorado", "Lunatic");
+        Assert.IsNotNull(d);
+        Assert.Greater(d.notes.Count, 0);
+    }
+
+    [Test]
+    public void LoadFromStreamingAssets_CaseInsensitive()
+    {
+        ChartData lower = ChartLoader.LoadFromStreamingAssets("ElDorado", "easy");
+        ChartData upper = ChartLoader.LoadFromStreamingAssets("ElDorado", "EASY");
+        Assert.AreEqual(lower.notes.Count, upper.notes.Count);
     }
 }

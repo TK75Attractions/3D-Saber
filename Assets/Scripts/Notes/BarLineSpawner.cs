@@ -15,6 +15,11 @@ public class BarLineSpawner : MonoBehaviour
     // バー番号が変わる際に強調する間隔（0 で無効）。控えめにするため既定は 0。
     public int accentEvery = 0;
 
+    // 既存プレハブの見た目を runtime で上書きするオプション（薄い白を細く保証する）。
+    public bool overrideVisual = false;
+    [Range(0f, 1f)] public float lineAlpha = 0.18f;
+    [Range(0.005f, 0.08f)] public float lineThickness = 0.02f;
+
     private float bpm;
     private double endTimeSeconds;
     private int nextBarIndex;
@@ -66,6 +71,12 @@ public class BarLineSpawner : MonoBehaviour
         if (barLinePrefab == null) return;
         var go = Instantiate(barLinePrefab, new Vector3(0f, 0f, spawnZ), Quaternion.identity, root);
         go.SetActive(true);
+
+        if (overrideVisual)
+        {
+            ApplyVisualOverride(go);
+        }
+
         // accentEvery 毎に強調（少し明るく）
         if (accentEvery > 0 && nextBarIndex % accentEvery == 0)
         {
@@ -100,6 +111,28 @@ public class BarLineSpawner : MonoBehaviour
                 SafeDestroy(go);
                 live.RemoveAt(i);
             }
+        }
+    }
+
+    private void ApplyVisualOverride(GameObject barGo)
+    {
+        // バーは prefab 内の "Line" Cube。厚みは scale.y、アルファは material.
+        var line = barGo.transform.Find("Line");
+        if (line != null)
+        {
+            Vector3 s = line.localScale;
+            line.localScale = new Vector3(s.x, lineThickness, s.z);
+        }
+        // 全 MeshRenderer のマテリアルを薄い白に統一
+        var mrs = barGo.GetComponentsInChildren<MeshRenderer>();
+        foreach (var mr in mrs)
+        {
+            if (mr.sharedMaterial == null) continue;
+            var mat = new Material(mr.sharedMaterial);
+            Color c = new Color(1f, 1f, 1f, lineAlpha);
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
+            else mat.color = c;
+            mr.sharedMaterial = mat;
         }
     }
 

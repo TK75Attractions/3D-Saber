@@ -12,9 +12,12 @@ public class NoteSpawner : MonoBehaviour
     public float approachTime = 2.0f;
     public float spawnZ = 20f;
     public float judgeZ = 0f;
-    // ノーツが判定可能になる時間幅。Classify の Good 上限 (210ms) と合わせて 0.21s。
-    public float judgeWindow = 0.21f;
-    // 判定ウィンドウを過ぎたら自動的に miss 扱いにする猶予秒数（Bad 上限まで届くように）。
+    // 遅めの判定ウィンドウ（Bad 上限）= タップ用の lateWindow ベース。
+    // Classify の late Bad = 270ms と一致。
+    public float judgeWindow = 0.27f;
+    // 早め側の判定ウィンドウ（早く切り過ぎ防止）。Classify の early Bad = 135ms と一致。
+    public float earlyJudgeWindow = 0.135f;
+    // lateWindow を過ぎたら自動的に miss 扱いにする猶予秒数。
     public float missGrace = 0.06f;
     // miss 扱いになった後、ノーツを画面後方まで流してから片付けるまでの秒数。
     public float despawnAfterMissSeconds = 1.5f;
@@ -235,8 +238,9 @@ public class NoteSpawner : MonoBehaviour
             note.transform.position = new Vector3(p.x, p.y, z);
 
             // ロングノーツは複数回切る時間が必要なので、後方の窓を回数に応じて伸ばす。
+            // 早め側は earlyJudgeWindow で別管理（小さい）、遅め側は lateWindow（大きい）で非対称化。
             float lateWindow = LateWindowFor(note);
-            note.IsJudgeable = dt <= judgeWindow && dt >= -lateWindow;
+            note.IsJudgeable = dt <= earlyJudgeWindow && dt >= -lateWindow;
 
             if (note.IsCut)
             {
