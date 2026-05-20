@@ -205,4 +205,46 @@ public class NoteSpawnerTests
         Assert.That(zScale, Is.LessThanOrEqualTo(6.1f),
             "count=50 でも視野を埋め尽くさないよう Z スケールはキャップされる");
     }
+
+    [Test]
+    public void OffsetMs_ShiftsHitTime()
+    {
+        var (sp, _, spawned) = MakeSpawner();
+        // 500ms 後ろにずらす（譜面が早すぎる場合）
+        var chart = new ChartData { bpm = 100f, offsetMs = 500f };
+        chart.notes.Add(new NoteData { time = 1000, x = 0, y = 0, type = "tap" });
+        sp.SetChart(chart);
+
+        // 元の TimeSeconds は 1.0、オフセット 0.5 を加えて実効 1.5s
+        // approachTime=2.0s なので、songTime=-0.5 から先読み可能
+        sp.Tick(-0.5);
+        Assert.AreEqual(1, spawned.Count, "オフセット込みで approachTime 内に入っているので生成される");
+        Assert.AreEqual(1.5, spawned[0].HitTime, 0.001, "HitTime にオフセットが反映される");
+    }
+
+    [Test]
+    public void ExtraOffsetSeconds_ShiftsHitTime()
+    {
+        var (sp, _, spawned) = MakeSpawner();
+        var chart = new ChartData { bpm = 100f, offsetMs = 100f };
+        chart.notes.Add(new NoteData { time = 1000, x = 0, y = 0, type = "tap" });
+        sp.SetExtraOffsetSeconds(0.2); // 追加で 200ms ずらす
+        sp.SetChart(chart);
+
+        sp.Tick(0.0);
+        Assert.AreEqual(1, spawned.Count);
+        // 1.0 + 0.1 (chart) + 0.2 (extra) = 1.3
+        Assert.AreEqual(1.3, spawned[0].HitTime, 0.001);
+        Assert.AreEqual(0.3, sp.TotalOffsetSeconds, 0.001);
+    }
+
+    [Test]
+    public void EffectiveTime_ReturnsTimeWithOffset()
+    {
+        var (sp, _, _) = MakeSpawner();
+        var chart = new ChartData { bpm = 100f, offsetMs = 250f };
+        sp.SetChart(chart);
+        var nd = new NoteData { time = 2000 };
+        Assert.AreEqual(2.25, sp.EffectiveTime(nd), 0.001);
+    }
 }

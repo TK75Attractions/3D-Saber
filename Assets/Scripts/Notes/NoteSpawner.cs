@@ -29,6 +29,8 @@ public class NoteSpawner : MonoBehaviour
 
     private ChartData chart;
     private int nextIndex;
+    private double totalOffsetSeconds; // chart.offsetMs/1000 + extraOffsetSeconds
+    private double extraOffsetSeconds; // GamePlayManager から実行時に上書き
     private readonly List<CuttableNote> liveNotes = new List<CuttableNote>();
 
     public float Speed => approachTime > 0.0001f ? (spawnZ - judgeZ) / approachTime : 0f;
@@ -43,11 +45,32 @@ public class NoteSpawner : MonoBehaviour
     {
         chart = data;
         nextIndex = 0;
+        RecomputeTotalOffset();
         foreach (var n in liveNotes)
         {
             if (n != null) SafeDestroy(n.gameObject);
         }
         liveNotes.Clear();
+    }
+
+    public void SetExtraOffsetSeconds(double seconds)
+    {
+        extraOffsetSeconds = seconds;
+        RecomputeTotalOffset();
+    }
+
+    public double TotalOffsetSeconds => totalOffsetSeconds;
+
+    private void RecomputeTotalOffset()
+    {
+        double chartOffset = chart != null ? chart.offsetMs / 1000.0 : 0.0;
+        totalOffsetSeconds = chartOffset + extraOffsetSeconds;
+    }
+
+    // 譜面ノートの「実効時刻（秒）」。chart.offsetMs と extraOffsetSeconds を加算済み。
+    public double EffectiveTime(NoteData nd)
+    {
+        return nd.TimeSeconds + totalOffsetSeconds;
     }
 
     private static void SafeDestroy(GameObject go)
@@ -70,7 +93,8 @@ public class NoteSpawner : MonoBehaviour
         while (nextIndex < chart.notes.Count)
         {
             NoteData nd = chart.notes[nextIndex];
-            if (songTime + approachTime < nd.TimeSeconds) break;
+            double eff = EffectiveTime(nd);
+            if (songTime + approachTime < eff) break;
             SpawnOne(nd);
             nextIndex++;
         }
@@ -88,7 +112,7 @@ public class NoteSpawner : MonoBehaviour
         {
             note = go.AddComponent<CuttableNote>();
         }
-        note.HitTime = nd.TimeSeconds;
+        note.HitTime = EffectiveTime(nd);
         note.RequiredDirection = CutDirectionHelper.Parse(nd.direction);
         note.RequiredCutCount = Mathf.Max(1, nd.count);
         note.RemainingCuts = note.RequiredCutCount;

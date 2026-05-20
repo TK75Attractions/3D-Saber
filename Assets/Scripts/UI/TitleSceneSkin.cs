@@ -5,8 +5,9 @@ using UnityEngine.UI;
 // 既存シーンを編集せず、Canvas を見つけて子要素を上書き/追加する。
 public class TitleSceneSkin : MonoBehaviour
 {
-    public float titlePulseHz = 0.8f;
-    public float titlePulseAmplitude = 0.08f;
+    // 既定で「跳ね」OFF。Inspector で値を入れたら脈動する。
+    public float titlePulseHz = 0f;
+    public float titlePulseAmplitude = 0f;
     public string tagline = "// CUT . THE . RHYTHM";
 
     private Text[] titleHalves;
@@ -31,6 +32,15 @@ public class TitleSceneSkin : MonoBehaviour
     void Update()
     {
         if (titleContainer == null) return;
+        // 振幅か周波数がゼロなら脈動を完全停止（scale も元に戻す）
+        if (titlePulseAmplitude <= 0f || titlePulseHz <= 0f)
+        {
+            if (titleContainer.localScale != Vector3.one)
+            {
+                titleContainer.localScale = Vector3.one;
+            }
+            return;
+        }
         age += Time.deltaTime;
         float pulse = 1f + titlePulseAmplitude * Mathf.Sin(age * titlePulseHz * 2f * Mathf.PI);
         titleContainer.localScale = new Vector3(pulse, pulse, 1f);

@@ -10,6 +10,11 @@ public class ChartData
     // 譜面ソフトの座標 → ワールド座標へのスケール（既定 1.0：既に world 単位）。
     // 譜面ソフトがピクセルで吐く場合は 1920 板なら 11/1920≒0.00573 など。
     public float coordScale = 1.0f;
+    // 譜面全体のタイミングオフセット（ミリ秒）。
+    // +値 = 全ノーツを後ろにずらす（譜面が早すぎる場合）
+    // -値 = 全ノーツを前にずらす（譜面が遅すぎる場合）
+    // 曲の頭の無音や DSP 遅延を吸収するために使う。
+    public float offsetMs = 0f;
     public List<NoteData> notes = new List<NoteData>();
 }
 

@@ -21,6 +21,16 @@ public class GamePlayManager : MonoBehaviour
     // 最後のノーツ通過後、リザルトに遷移する前の余韻時間
     public float outroSeconds = 3.5f;
 
+    [Header("Chart tuning")]
+    // 譜面のリズムが曲とずれているときの追加オフセット秒。
+    // +値 = ノーツが「遅れて」流れてくる、-値 = ノーツが「早く」流れてくる。
+    // chart.offsetMs に上乗せされる。
+    public float extraOffsetSeconds = 0f;
+    // 譜面のノーツが音源より長い場合に自動で切り詰める（曲終了時に譜面も終わるように）。
+    public bool trimChartToAudioLength = true;
+    // 音源長からこの秒数を足したところまでをノーツの上限時刻にする。
+    public float trimGraceSeconds = 0.5f;
+
     [Header("Judge guide")]
     public bool simplifyJudgeGuide = true;
     public float judgePanelAlpha = 0.30f;
@@ -86,21 +96,45 @@ public class GamePlayManager : MonoBehaviour
         }
 
         ChartData chart = ChartLoader.LoadFromStreamingAssets(songId);
+
+        // 音源を先にロードして、譜面長を音源に合わせて切り詰められるようにする。
+        yield return LoadAudio(songId);
+
+        // 譜面オフセット計算：
+        //   chart.offsetMs（曲固有）+ extraOffsetSeconds（Inspector）+ GameSession.JudgmentOffsetMs（プレイヤー調整）
+        double playerOffsetSec = GameSession.JudgmentOffsetMs / 1000.0;
+        double effectiveExtraOffset = extraOffsetSeconds + playerOffsetSec;
+        double offsetSec = chart.offsetMs / 1000.0 + effectiveExtraOffset;
+
+        // 音源より後ろにあるノーツは「曲が終わった後も続く」原因なので、自動で削除。
+        double audioLen = songPlayer.Duration;
+        if (trimChartToAudioLength && audioLen > 0.0)
+        {
+            int before = chart.notes.Count;
+            chart.notes.RemoveAll(n => (n.TimeSeconds + offsetSec) > audioLen + trimGraceSeconds);
+            int removed = before - chart.notes.Count;
+            if (removed > 0)
+            {
+                Debug.Log($"GamePlayManager: 音源長({audioLen:F1}s) を超えるノーツ {removed} 個を切り詰めました");
+            }
+        }
+
+        // 切り詰め後の lastNoteTime を計算
+        lastNoteTime = chart.notes.Count > 0
+            ? chart.notes[chart.notes.Count - 1].TimeSeconds + offsetSec
+            : 0.0;
+
+        // オフセットを先に NoteSpawner に渡してから SetChart
+        noteSpawner.SetExtraOffsetSeconds(effectiveExtraOffset);
         noteSpawner.SetChart(chart);
 
         // 既定で小節線は OFF（流れる線が「線の集合」として煩く感じる対策）。
-        // null に落とすことで Update での Tick も自動的にスキップされる。
         if (disableBarLines && barLineSpawner != null)
         {
             barLineSpawner.gameObject.SetActive(false);
             barLineSpawner = null;
         }
         if (barLineSpawner != null) barLineSpawner.SetChart(chart);
-        lastNoteTime = chart.notes.Count > 0
-            ? chart.notes[chart.notes.Count - 1].TimeSeconds
-            : 0.0;
-
-        yield return LoadAudio(songId);
 
         scoreManager.songPlayer = songPlayer;
         scoreManager.Reset();

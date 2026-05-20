@@ -25,6 +25,9 @@ public class SongSelectSkin : MonoBehaviour
         StyleStartButton(ctl);
         StyleSongPanel(canvas);
         StyleSelectedColor(ctl);
+        // 左下に判定オフセット調整ウィジェット、その右隣に「その場で試せる」練習ゾーン
+        JudgmentOffsetWidget.Ensure(canvas);
+        JudgmentTestWidget.Ensure(canvas);
     }
 
     void StyleHeader(Canvas canvas)
