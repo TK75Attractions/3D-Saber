@@ -43,10 +43,15 @@ public class InputPoint : MonoBehaviour
     }
     public Vector2 LocalStickA { get; private set; }
     public Vector2 LocalStickB { get; private set; }
+    // 元の board/local 座標（ピクセルや boardRect ローカル）を保持
+    public Vector2 LocalStickRawA { get; private set; }
+    public Vector2 LocalStickRawB { get; private set; }
     public Vector2 LocalStickA2 { get; private set; }
     public Vector2 LocalStickB2 { get; private set; }
     public float LocalStickLength { get; private set; }
     public float LocalStickLength2 { get; private set; }
+    public Vector2 LocalStickRawA2 { get; private set; }
+    public Vector2 LocalStickRawB2 { get; private set; }
 
     // スレッド同期用
     object lockObj = new object();
@@ -241,10 +246,22 @@ public class InputPoint : MonoBehaviour
             NormalizedPosition = new Vector2(x / camWidth, y / camHeight);
             if (updatedStick)
             {
-                LocalStickA = ToLocalPosition(x1a, y1a);
-                LocalStickB = ToLocalPosition(x1b, y1b);
+                // 元のローカル座標を保持
+                LocalStickRawA = ToLocalPosition(x1a, y1a);
+                LocalStickRawB = ToLocalPosition(x1b, y1b);
+
+                // -1..1 正規化（カメラ座標基準）
+                float nxA = Mathf.Clamp((x1a / camWidth) * 2f - 1f, -1f, 1f);
+                float nyA = Mathf.Clamp((y1a / camHeight) * 2f - 1f, -1f, 1f);
+                float nxB = Mathf.Clamp((x1b / camWidth) * 2f - 1f, -1f, 1f);
+                float nyB = Mathf.Clamp((y1b / camHeight) * 2f - 1f, -1f, 1f);
+
+                LocalStickA = new Vector2(nxA, nyA);
+                LocalStickB = new Vector2(nxB, nyB);
+
+                // 棒長と角度は正規化座標で計算
                 LocalStickLength = Vector2.Distance(LocalStickA, LocalStickB);
-                LocalAngleDeg = Mathf.Atan2(y1b - y1a, x1b - x1a) * Mathf.Rad2Deg;
+                LocalAngleDeg = Mathf.Atan2(nyB - nyA, nxB - nxA) * Mathf.Rad2Deg;
             }
             LastReceivedTime = Time.timeAsDouble;
         }
@@ -255,10 +272,19 @@ public class InputPoint : MonoBehaviour
             NormalizedPosition2 = new Vector2(x2 / camWidth, y2 / camHeight);
             if (updatedStick2)
             {
-                LocalStickA2 = ToLocalPosition(x2a, y2a);
-                LocalStickB2 = ToLocalPosition(x2b, y2b);
+                LocalStickRawA2 = ToLocalPosition(x2a, y2a);
+                LocalStickRawB2 = ToLocalPosition(x2b, y2b);
+
+                float nxA2 = Mathf.Clamp((x2a / camWidth) * 2f - 1f, -1f, 1f);
+                float nyA2 = Mathf.Clamp((y2a / camHeight) * 2f - 1f, -1f, 1f);
+                float nxB2 = Mathf.Clamp((x2b / camWidth) * 2f - 1f, -1f, 1f);
+                float nyB2 = Mathf.Clamp((y2b / camHeight) * 2f - 1f, -1f, 1f);
+
+                LocalStickA2 = new Vector2(nxA2, nyA2);
+                LocalStickB2 = new Vector2(nxB2, nyB2);
+
                 LocalStickLength2 = Vector2.Distance(LocalStickA2, LocalStickB2);
-                LocalAngleDeg2 = Mathf.Atan2(y2b - y2a, x2b - x2a) * Mathf.Rad2Deg;
+                LocalAngleDeg2 = Mathf.Atan2(nyB2 - nyA2, nxB2 - nxA2) * Mathf.Rad2Deg;
             }
         }
 
