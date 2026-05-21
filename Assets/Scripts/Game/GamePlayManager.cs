@@ -60,6 +60,10 @@ public class GamePlayManager : MonoBehaviour
     public Vector3 cameraPosition = new Vector3(0f, 1.6f, -7f);
     public Vector3 cameraRotationEuler = new Vector3(6f, 0f, 0f);
 
+    [Header("Floor / Lanes")]
+    // Tron 風の床 + レーンガイド + 奥行きグリッドを実行時生成（視認性向上）。
+    public bool addFloor = true;
+
     // 判定面ガイドから剥がす子オブジェクトの名前接頭辞。
     private static readonly string[] JudgeGuideStripPrefixes = {
         "GridV", "GridH", "Border", "Corner", "Cross"
@@ -103,6 +107,7 @@ public class GamePlayManager : MonoBehaviour
         EnsureGoldNoteSfx();
         if (simplifyJudgeGuide) SimplifyJudgeGuide();
         if (overrideCameraPose) ApplyCameraPose();
+        if (addFloor) FloorRenderer.Ensure(transform);
 
         // ユーザー設定のノーツ速度（approachTime）を NoteSpawner に反映。
         if (noteSpawner != null)
