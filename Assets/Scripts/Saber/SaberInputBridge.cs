@@ -7,6 +7,8 @@ public class SaberInputBridge : MonoBehaviour
     [Header("Source")]
     public bool useInputPoint = true;
     public bool fallbackToMouse = true;
+    // UDP データがこの秒数以上止まったら、マウスフォールバックに自動で切り替える。
+    public float inputPointStaleSeconds = 1.0f;
     public Camera targetCamera;
 
     [Header("Coordinate")]
@@ -24,7 +26,9 @@ public class SaberInputBridge : MonoBehaviour
 
     void Update()
     {
-        if (useInputPoint && InputPoint.Instance != null)
+        // UDP データが「最近」来てるなら、それを使う。1 秒以上無音ならマウスフォールバック。
+        if (useInputPoint && InputPoint.Instance != null
+            && InputPoint.Instance.IsRecentlyActive(inputPointStaleSeconds))
         {
             Vector2 pixel = InputPoint.Instance.LocalPosition;
             Vector2 worldXY = pixel * pixelsToWorld;
