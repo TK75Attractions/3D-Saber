@@ -228,10 +228,26 @@ public class GamePlayManager : MonoBehaviour
     // UdpImuBridge は DontDestroyOnLoad 内部で行うので、scene 越境して持ち越される。
     private void EnsureInputPoint()
     {
-        if (Object.FindFirstObjectByType<InputPoint>() != null) return;
-        var go = new GameObject("InputPoint");
-        go.transform.SetParent(transform, false);
-        go.AddComponent<InputPoint>();
+        var ip = Object.FindFirstObjectByType<InputPoint>();
+        if (ip == null)
+        {
+            var go = new GameObject("InputPoint");
+            go.transform.SetParent(transform, false);
+            ip = go.AddComponent<InputPoint>();
+        }
+        // 送信側仕様：中央原点 -1..+1 正規化、y は上が+、16:9 ボード
+        // → useDirectWorldMapping = true、worldScale で直接ワールド座標へ
+        ip.useDirectWorldMapping = true;
+        ip.worldScale = new Vector2(5.5f, 3.0f);
+        ip.worldOffset = Vector2.zero;
+
+        // SaberInputBridge は world 座標がそのまま入る前提に切り替え
+        var bridge = Object.FindFirstObjectByType<SaberInputBridge>();
+        if (bridge != null)
+        {
+            bridge.pixelsToWorld = 1.0f;
+            bridge.useInputPoint = true;
+        }
     }
 
     private void EnsureUdpImuBridge()

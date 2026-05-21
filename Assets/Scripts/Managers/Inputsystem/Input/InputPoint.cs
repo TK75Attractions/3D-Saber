@@ -55,6 +55,14 @@ public class InputPoint : MonoBehaviour
     public bool useImuFallback = true;
     public float imuPositionScale = 200f;
 
+    [Header("Direct world mapping (推奨：正規化入力 -1〜+1 をワールド座標へ直結)")]
+    // true にすると、UDP で受け取った (x, y) を camWidth/camHeight や boardRect を経由せず、
+    // worldScale を掛けるだけで LocalPosition / LocalStickA / LocalStickB を計算する。
+    // 例：入力 (-1, -1)〜(+1, +1) かつ worldScale=(5.5, 3.0) → ワールド (-5.5, -3.0)〜(+5.5, +3.0)
+    public bool useDirectWorldMapping = false;
+    public Vector2 worldScale = new Vector2(5.5f, 3.0f);
+    public Vector2 worldOffset = Vector2.zero;
+
     void Awake()
     {
         Instance = this;
@@ -279,7 +287,14 @@ public class InputPoint : MonoBehaviour
 
     Vector2 ToLocalPosition(float x, float y)
     {
-        // カメラ座標 → 画面座標に変換
+        // 正規化入力モード：camWidth/camHeight や boardRect を一切経由せず直結
+        if (useDirectWorldMapping)
+        {
+            return new Vector2(x * worldScale.x + worldOffset.x,
+                               y * worldScale.y + worldOffset.y);
+        }
+
+        // 旧来のチェーン：カメラ座標 → 画面座標 → boardRect ローカル
         float screenX = (x / camWidth) * Screen.width;
         float screenY = (y / camHeight) * Screen.height;
         Vector2 screenPos = new Vector2(screenX, screenY);
@@ -289,7 +304,6 @@ public class InputPoint : MonoBehaviour
             return screenPos;
         }
 
-        // 画面座標 → boardRectのローカル座標
         RectTransformUtility.ScreenPointToLocalPointInRectangle(
             boardRect,
             screenPos,
