@@ -64,6 +64,14 @@ public class GamePlayManager : MonoBehaviour
     // Tron 風の床 + レーンガイド + 奥行きグリッドを実行時生成（視認性向上）。
     public bool addFloor = true;
 
+    [Header("Saber input bootstrap (実機セーバー接続)")]
+    // UDP 5005/5006 でセーバー位置 (XY) を受け取る InputPoint をシーンに自動配置。
+    public bool autoEnsureInputPoint = true;
+    // UDP 9002 で IMU データを受信、9001 で触覚コマンドを送信する UdpImuBridge を自動配置。
+    public bool autoEnsureUdpImuBridge = true;
+    // IMU から振り方向 (8 方向) を検知する Swing8DirectionLogger を自動配置。
+    public bool autoEnsureSwing8DirectionLogger = true;
+
     // 判定面ガイドから剥がす子オブジェクトの名前接頭辞。
     private static readonly string[] JudgeGuideStripPrefixes = {
         "GridV", "GridH", "Border", "Corner", "Cross"
@@ -105,6 +113,9 @@ public class GamePlayManager : MonoBehaviour
 
         EnsureLongNoteCutSfx();
         EnsureGoldNoteSfx();
+        if (autoEnsureInputPoint) EnsureInputPoint();
+        if (autoEnsureUdpImuBridge) EnsureUdpImuBridge();
+        if (autoEnsureSwing8DirectionLogger) EnsureSwing8DirectionLogger();
         if (simplifyJudgeGuide) SimplifyJudgeGuide();
         if (overrideCameraPose) ApplyCameraPose();
         if (addFloor) FloorRenderer.Ensure(transform);
@@ -209,6 +220,34 @@ public class GamePlayManager : MonoBehaviour
         var go = new GameObject("LongNoteCutSfx", typeof(AudioSource), typeof(LongNoteCutSfx));
         go.transform.SetParent(transform, false);
         longNoteCutSfx = go.GetComponent<LongNoteCutSfx>();
+    }
+
+    // 実機セーバー入力の受信コンポーネント群を自動配置。
+    // すでにシーンにあれば何もしない。
+    // InputPoint / Swing8DirectionLogger は scene-local (この GameObject の子)。
+    // UdpImuBridge は DontDestroyOnLoad 内部で行うので、scene 越境して持ち越される。
+    private void EnsureInputPoint()
+    {
+        if (Object.FindFirstObjectByType<InputPoint>() != null) return;
+        var go = new GameObject("InputPoint");
+        go.transform.SetParent(transform, false);
+        go.AddComponent<InputPoint>();
+    }
+
+    private void EnsureUdpImuBridge()
+    {
+        if (Object.FindFirstObjectByType<UdpImuBridge>() != null) return;
+        // 親を付けない（UdpImuBridge.Awake が DontDestroyOnLoad を呼ぶので、ルート GO であるべき）
+        var go = new GameObject("UdpImuBridge");
+        go.AddComponent<UdpImuBridge>();
+    }
+
+    private void EnsureSwing8DirectionLogger()
+    {
+        if (Object.FindFirstObjectByType<Swing8DirectionLogger>() != null) return;
+        var go = new GameObject("Swing8DirectionLogger");
+        go.transform.SetParent(transform, false);
+        go.AddComponent<Swing8DirectionLogger>();
     }
 
     private void ApplyCameraPose()
