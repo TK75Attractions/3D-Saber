@@ -28,6 +28,17 @@ public class InputPoint : MonoBehaviour
     bool hasNewData2 = false;
     bool hasStickData2 = false;
 
+    [Header("Diagnostics (read-only)")]
+    // 最新受信パケットの中身を Inspector で確認する用。
+    [SerializeField] Vector2 latestRawMidpoint;
+    [SerializeField] Vector2 latestRawA;
+    [SerializeField] Vector2 latestRawB;
+    [SerializeField] Vector2 latestLocalPosition;
+    [SerializeField] Vector2 latestLocalStickA;
+    [SerializeField] Vector2 latestLocalStickB;
+    [SerializeField] int packetCount;
+    bool loggedFirstPacket;
+
     // 他スクリプトが読む用（正規化済み）
     public Vector2 NormalizedPosition { get; private set; }
     public Vector2 NormalizedPosition2 { get; private set; }
@@ -245,8 +256,21 @@ public class InputPoint : MonoBehaviour
                 LocalStickB = ToLocalPosition(x1b, y1b);
                 LocalStickLength = Vector2.Distance(LocalStickA, LocalStickB);
                 LocalAngleDeg = Mathf.Atan2(y1b - y1a, x1b - x1a) * Mathf.Rad2Deg;
+                latestRawA = new Vector2(x1a, y1a);
+                latestRawB = new Vector2(x1b, y1b);
+                latestLocalStickA = LocalStickA;
+                latestLocalStickB = LocalStickB;
             }
             LastReceivedTime = Time.timeAsDouble;
+            // 診断
+            latestRawMidpoint = new Vector2(x, y);
+            latestLocalPosition = LocalPosition;
+            packetCount++;
+            if (!loggedFirstPacket)
+            {
+                loggedFirstPacket = true;
+                Debug.Log($"InputPoint: 1st packet raw_mid=({x:F3},{y:F3}) rawA=({latestRawA.x:F3},{latestRawA.y:F3}) rawB=({latestRawB.x:F3},{latestRawB.y:F3}) → LocalPosition=({LocalPosition.x:F3},{LocalPosition.y:F3}) LocalStickA=({LocalStickA.x:F3},{LocalStickA.y:F3}) LocalStickB=({LocalStickB.x:F3},{LocalStickB.y:F3}) [useDirectWorldMapping={useDirectWorldMapping}, worldScale={worldScale}]");
+            }
         }
 
         if (updated2)
