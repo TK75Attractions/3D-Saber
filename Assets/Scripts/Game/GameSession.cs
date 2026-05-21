@@ -45,6 +45,34 @@ public static class GameSession
         PlayerPrefs.Save();
     }
 
+    // ノーツの流れる速度（approachTime, 秒）。小さいほど速い。
+    // NoteSpawner.approachTime に適用される。GamePlayManager.Start で読み込み、
+    // calibration では UpdateCalibration が毎フレ更新（即時反映）。
+    private const string NoteApproachTimeKey = "noteApproachTime";
+    public const float NoteApproachTimeMin = 0.5f;
+    public const float NoteApproachTimeMax = 4.0f;
+    public const float NoteApproachTimeDefault = 2.0f;
+
+    public static float NoteApproachTime
+    {
+        get => Mathf.Clamp(
+            PlayerPrefs.GetFloat(NoteApproachTimeKey, NoteApproachTimeDefault),
+            NoteApproachTimeMin,
+            NoteApproachTimeMax);
+        set
+        {
+            float clamped = Mathf.Clamp(value, NoteApproachTimeMin, NoteApproachTimeMax);
+            PlayerPrefs.SetFloat(NoteApproachTimeKey, clamped);
+            PlayerPrefs.Save();
+        }
+    }
+
+    public static void ResetNoteApproachTime()
+    {
+        PlayerPrefs.DeleteKey(NoteApproachTimeKey);
+        PlayerPrefs.Save();
+    }
+
     public static void ResetResult()
     {
         FinalScore = 0;

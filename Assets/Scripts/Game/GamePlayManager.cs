@@ -54,10 +54,11 @@ public class GamePlayManager : MonoBehaviour
     public float saberMinCutSpeed = 4.0f;        // 3.0 → 4.0 にして「ふわっと振る」での誤発火を抑える
 
     [Header("Camera")]
-    // 視点を少し上げ、少し下を向く角度に。元シーンの (0, 0.8, -7) rot(5,0,0) から微調整。
+    // 視点を「ほんの少し」上から俯瞰する感じ。判定ラインが傾かないよう、回転は控えめ。
+    // 元シーン (0, 0.8, -7) rot(5,0,0) → Y を上げて高さで俯瞰感を出す。
     public bool overrideCameraPose = true;
-    public Vector3 cameraPosition = new Vector3(0f, 1.25f, -7f);
-    public Vector3 cameraRotationEuler = new Vector3(10f, 0f, 0f);
+    public Vector3 cameraPosition = new Vector3(0f, 1.6f, -7f);
+    public Vector3 cameraRotationEuler = new Vector3(6f, 0f, 0f);
 
     // 判定面ガイドから剥がす子オブジェクトの名前接頭辞。
     private static readonly string[] JudgeGuideStripPrefixes = {
@@ -102,6 +103,12 @@ public class GamePlayManager : MonoBehaviour
         EnsureGoldNoteSfx();
         if (simplifyJudgeGuide) SimplifyJudgeGuide();
         if (overrideCameraPose) ApplyCameraPose();
+
+        // ユーザー設定のノーツ速度（approachTime）を NoteSpawner に反映。
+        if (noteSpawner != null)
+        {
+            noteSpawner.approachTime = GameSession.NoteApproachTime;
+        }
 
         // --- キャリブレーションモード ---
         if (GameSession.IsCalibrationMode)
@@ -506,6 +513,13 @@ public class GamePlayManager : MonoBehaviour
         {
             lastAppliedPlayerOffsetSec = currentPlayerOffset;
             noteSpawner.SetExtraOffsetSeconds(extraOffsetSeconds + currentPlayerOffset);
+        }
+
+        // ノーツ速度（approachTime）の即時反映
+        float wantedApproach = GameSession.NoteApproachTime;
+        if (!Mathf.Approximately(noteSpawner.approachTime, wantedApproach))
+        {
+            noteSpawner.approachTime = wantedApproach;
         }
 
         noteSpawner.Tick(calibTime);

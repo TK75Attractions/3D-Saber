@@ -43,18 +43,20 @@ public class CalibrationOverlay : MonoBehaviour
         BuildBackButton(canvas);
         BuildInstructions(canvas);
 
-        // 既存の JudgmentOffsetWidget を使って、右側の中央あたりに大きく配置
+        // 既存の JudgmentOffsetWidget を使って、右側の上部に配置
         var widget = JudgmentOffsetWidget.Ensure(canvas);
         if (widget != null)
         {
             var rt = widget.GetComponent<RectTransform>();
-            // 右側中央寄りに再アンカー
             rt.anchorMin = new Vector2(1f, 0.5f);
             rt.anchorMax = new Vector2(1f, 0.5f);
             rt.pivot = new Vector2(1f, 0.5f);
-            rt.anchoredPosition = new Vector2(-60f, -50f);
-            rt.sizeDelta = new Vector2(540f, 280f);
+            rt.anchoredPosition = new Vector2(-60f, 90f);
+            rt.sizeDelta = new Vector2(540f, 240f);
         }
+
+        // ノーツ速度ウィジェットを右側下部に
+        NoteSpeedWidget.Ensure(canvas);
     }
 
     void BuildHeader(Canvas canvas)

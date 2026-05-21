@@ -64,8 +64,10 @@ public class TitleSceneSkin : MonoBehaviour
         titleContainer.anchoredPosition = anchored;
 
         // 二色スプリット: "3D" シアン / "SABER" マゼンタ
-        Text t1 = BuildTitleHalf(container.transform, "3D", UISkinPalette.Cyan, TextAnchor.MiddleRight, new Vector2(-30, 0));
-        Text t2 = BuildTitleHalf(container.transform, "SABER", UISkinPalette.Magenta, TextAnchor.MiddleLeft, new Vector2(30, 0));
+        // 各 rect は幅 540 で、text を MiddleRight/MiddleLeft で寄せる。
+        // 中央付近に来てほしいので、rect 中心はかなり左右に振る必要がある（rect 右端 = -30, 左端 = +30 になる位置）。
+        Text t1 = BuildTitleHalf(container.transform, "3D", UISkinPalette.Cyan, TextAnchor.MiddleRight, new Vector2(-300, 0));
+        Text t2 = BuildTitleHalf(container.transform, "SABER", UISkinPalette.Magenta, TextAnchor.MiddleLeft, new Vector2(300, 0));
         titleHalves = new[] { t1, t2 };
 
         // 下のネオン下線（シアン→マゼンタのグラデっぽく見えるよう、薄い2本を重ねる）
