@@ -1,8 +1,6 @@
 import cv2
 import numpy as np
 import socket
-<<<<<<< Updated upstream
-=======
 import math
 import time
 import threading
@@ -42,18 +40,14 @@ def gpu_morph_close(mask, k):
         return out
     except Exception:
         return mask
->>>>>>> Stashed changes
 
 # UDP設定
 UDP_IP = "127.0.0.1"
 UDP_PORT = 5005
-<<<<<<< Updated upstream
-=======
 UDP_PORT_STICK2 = 5006
 SEND_STICK2 = True
 SEND_HZ = 60.0
 HOLD_LAST_VALUE_WHEN_MISSING = True
->>>>>>> Stashed changes
 sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # 遅延最小化オプション: 検出変化時に即時送信する
 IMMEDIATE_SEND_ON_CHANGE = True
@@ -68,8 +62,6 @@ SHOW_DETECTED = True
 
 # キャプチャ用スレッドと最新フレーム/送信用共有変数
 cap = cv2.VideoCapture(0)  # さっき動いた番号
-<<<<<<< Updated upstream
-=======
 # 低解像度キャプチャをオプション化（デフォルト: 有効）
 LOW_RES_CAPTURE = True
 
@@ -576,44 +568,11 @@ def draw_stick(frame, stick, color_line, label):
         1,
         cv2.LINE_AA,
     )
->>>>>>> Stashed changes
 
 if LOG_DETECTIONS:
     print(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
     print(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-<<<<<<< Updated upstream
-while True:
-    ret, frame = cap.read()
-    if not ret:
-        break
-
-    # 明るい点を検出
-    gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
-    _, thresh = cv2.threshold(gray, 200, 255, cv2.THRESH_BINARY)
-
-    contours, _ = cv2.findContours(thresh, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    if contours:
-        # 一番大きい輝点を対象にする
-        c = max(contours, key=cv2.contourArea)
-        M = cv2.moments(c)
-        if M["m00"] > 0:
-            cx = int(M["m10"] / M["m00"])
-            cy = int(M["m01"] / M["m00"])
-
-            # 画面上に表示
-            cv2.circle(frame, (cx, cy), 10, (0, 255, 0), -1)
-            print(f"x: {cx}, y: {cy}")
-
-            # Unityに送信
-            message = f"{cx},{cy}"
-            sock.sendto(message.encode(), (UDP_IP, UDP_PORT))
-
-    cv2.imshow("LED Tracking", frame)
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-        break
-=======
 if SHOW_UI:
     setup_trackbars()
     cv2.namedWindow("LED Tracking", cv2.WINDOW_NORMAL)
@@ -686,7 +645,6 @@ try:
                 cv2.line(mask_b_display, b1, b2, (0, 255, 255), 50)
             if SHOW_DETECTED:
                 cv2.imshow("mask_b_detected", mask_b_display)
->>>>>>> Stashed changes
 
         # 色モードのみ動作。未検出時は HOLD_LAST_VALUE_WHEN_MISSING に従いペイロードをクリア
         h, w = frame.shape[:2]
