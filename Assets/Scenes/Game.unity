@@ -6548,8 +6548,9 @@ MonoBehaviour:
   camWidth: 1920
   camHeight: 1080
   boardRect: {fileID: 0}
-  debugCoordinates: 1
-  useImuFallback: 1
+  debugCoordinates: 0
+  debugReceiveRate: 0
+  useImuFallback: 0
   imuPositionScale: 200
   useDirectWorldMapping: 1
   worldScale: {x: 5.5, y: 3}
@@ -7419,7 +7420,7 @@ MonoBehaviour:
   fallbackToMouse: 1
   inputPointStaleSeconds: 1
   targetCamera: {fileID: 0}
-  debugCoordinates: 1
+  debugCoordinates: 0
   pixelsToWorld: 0.00573
   fixedZ: 0
   clampToBounds: 1
