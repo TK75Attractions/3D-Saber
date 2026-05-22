@@ -50,6 +50,9 @@ public class InputPoint : MonoBehaviour
     public Vector2 LocalStickB2 { get; private set; }
     public float LocalStickLength { get; private set; }
     public float LocalStickLength2 { get; private set; }
+    // 0..1 に正規化した棒の長さ（対角最大長 sqrt(8) で割る）
+    public float LocalStickLengthNormalized { get; private set; }
+    public float LocalStickLengthNormalized2 { get; private set; }
     public Vector2 LocalStickRawA2 { get; private set; }
     public Vector2 LocalStickRawB2 { get; private set; }
 
@@ -63,9 +66,11 @@ public class InputPoint : MonoBehaviour
     public RectTransform boardRect;
     public Vector2 LocalPosition { get; private set; }
     public Vector2 LocalPosition2 { get; private set; }
+    [Header("Debug")]
+    public bool debugCoordinates = false;
 
     [Header("IMU Fallback")]
-    public bool useImuFallback = true;
+    public bool useImuFallback = false;
     public float imuPositionScale = 200f;
 
     [Header("Direct world mapping (推奨：正規化入力 -1〜+1 をワールド座標へ直結)")]
@@ -79,6 +84,18 @@ public class InputPoint : MonoBehaviour
     void Awake()
     {
         Instance = this;
+    }
+
+    // 入力座標が既に -1..1 の範囲で来る場合と、ピクセル座標で来る場合の両対応を行う。
+    // 小さな絶対値 (<=1.5) はそのまま正規化値とみなし、大きければピクセル幅で正規化する。
+    float NormalizeAxis(float v, float span)
+    {
+        if (Mathf.Abs(v) <= 1.5f)
+        {
+            return Mathf.Clamp(v, -1f, 1f);
+        }
+        float n = (v / span) * 2f - 1f;
+        return Mathf.Clamp(n, -1f, 1f);
     }
 
     void Start()
@@ -242,48 +259,154 @@ public class InputPoint : MonoBehaviour
 
         if (updated)
         {
-            LocalPosition = ToLocalPosition(x, y);
-            NormalizedPosition = new Vector2(x / camWidth, y / camHeight);
+            // 入力が "正規化(-1..+1)" か "カメラ座標(ピクセル)" かを判定する。
+            bool inputIsNormalized = (Mathf.Abs(x) <= 1.5f && Mathf.Abs(y) <= 1.5f);
+
+            if (inputIsNormalized)
+            {
+                // -1..+1 -> 0..1
+                float nx01 = (x + 1f) * 0.5f;
+                float ny01 = (y + 1f) * 0.5f;
+                NormalizedPosition = new Vector2(nx01, ny01);
+
+                // useDirectWorldMapping のときは、UDP の単位（正規化 -1..1）を直接 ToLocalPosition に渡す。
+                if (useDirectWorldMapping)
+                {
+                    LocalPosition = ToLocalPosition(x, y);
+                }
+                else
+                {
+                    // ToLocalPosition expects camera-coordinates (0..camWidth / 0..camHeight)
+                    float px = nx01 * camWidth;
+                    float py = ny01 * camHeight;
+                    LocalPosition = ToLocalPosition(px, py);
+                }
+            }
+            else
+            {
+                // 既にカメラ座標（ピクセル）で来ている
+                NormalizedPosition = new Vector2(x / camWidth, y / camHeight);
+                if (useDirectWorldMapping)
+                {
+                    // direct モードでは ToLocalPosition に渡す値は正規化 (-1..1) を期待するため変換する
+                    float normalizedX = (x / camWidth) * 2f - 1f;
+                    float normalizedY = (y / camHeight) * 2f - 1f;
+                    LocalPosition = ToLocalPosition(normalizedX, normalizedY);
+                }
+                else
+                {
+                    LocalPosition = ToLocalPosition(x, y);
+                }
+            }
+
             if (updatedStick)
             {
-                // 元のローカル座標を保持
-                LocalStickRawA = ToLocalPosition(x1a, y1a);
-                LocalStickRawB = ToLocalPosition(x1b, y1b);
+                // Stick の raw ローカル座標は、入力が正規化かどうかに応じてピクセル復元して渡す
+                bool stickAIsNorm = (Mathf.Abs(x1a) <= 1.5f && Mathf.Abs(y1a) <= 1.5f);
+                bool stickBIsNorm = (Mathf.Abs(x1b) <= 1.5f && Mathf.Abs(y1b) <= 1.5f);
 
-                // -1..1 正規化（カメラ座標基準）
-                float nxA = Mathf.Clamp((x1a / camWidth) * 2f - 1f, -1f, 1f);
-                float nyA = Mathf.Clamp((y1a / camHeight) * 2f - 1f, -1f, 1f);
-                float nxB = Mathf.Clamp((x1b / camWidth) * 2f - 1f, -1f, 1f);
-                float nyB = Mathf.Clamp((y1b / camHeight) * 2f - 1f, -1f, 1f);
+                float ax, ay, bx, by;
+                if (useDirectWorldMapping)
+                {
+                    // direct モードは ToLocalPosition に正規化 (-1..1) を渡す
+                    ax = stickAIsNorm ? x1a : ((x1a / camWidth) * 2f - 1f);
+                    ay = stickAIsNorm ? y1a : ((y1a / camHeight) * 2f - 1f);
+                    bx = stickBIsNorm ? x1b : ((x1b / camWidth) * 2f - 1f);
+                    by = stickBIsNorm ? y1b : ((y1b / camHeight) * 2f - 1f);
+                }
+                else
+                {
+                    ax = stickAIsNorm ? ((x1a + 1f) * 0.5f * camWidth) : x1a;
+                    ay = stickAIsNorm ? ((y1a + 1f) * 0.5f * camHeight) : y1a;
+                    bx = stickBIsNorm ? ((x1b + 1f) * 0.5f * camWidth) : x1b;
+                    by = stickBIsNorm ? ((y1b + 1f) * 0.5f * camHeight) : y1b;
+                }
+
+                LocalStickRawA = ToLocalPosition(ax, ay);
+                LocalStickRawB = ToLocalPosition(bx, by);
+
+                // -1..1 正規化は既存の NormalizeAxis で扱う（混在対応）
+                float nxA = NormalizeAxis(x1a, camWidth);
+                float nyA = NormalizeAxis(y1a, camHeight);
+                float nxB = NormalizeAxis(x1b, camWidth);
+                float nyB = NormalizeAxis(y1b, camHeight);
 
                 LocalStickA = new Vector2(nxA, nyA);
                 LocalStickB = new Vector2(nxB, nyB);
 
                 // 棒長と角度は正規化座標で計算
                 LocalStickLength = Vector2.Distance(LocalStickA, LocalStickB);
+                LocalStickLengthNormalized = LocalStickLength / Mathf.Sqrt(8f);
                 LocalAngleDeg = Mathf.Atan2(nyB - nyA, nxB - nxA) * Mathf.Rad2Deg;
             }
             LastReceivedTime = Time.timeAsDouble;
+            if (debugCoordinates)
+            {
+                Debug.Log($"[InputPoint] raw=({x:F2},{y:F2}) norm=({NormalizedPosition.x:F3},{NormalizedPosition.y:F3}) local=({LocalPosition.x:F1},{LocalPosition.y:F1}) isNorm={inputIsNormalized}");
+                if (updatedStick)
+                {
+                    Debug.Log($"[InputPoint] stickRawA=({LocalStickRawA.x:F1},{LocalStickRawA.y:F1}) stickRawB=({LocalStickRawB.x:F1},{LocalStickRawB.y:F1}) stickNormA=({LocalStickA.x:F3},{LocalStickA.y:F3}) stickNormB=({LocalStickB.x:F3},{LocalStickB.y:F3})");
+                }
+            }
         }
 
         if (updated2)
         {
-            LocalPosition2 = ToLocalPosition(x2, y2);
-            NormalizedPosition2 = new Vector2(x2 / camWidth, y2 / camHeight);
+            bool input2IsNormalized = (Mathf.Abs(x2) <= 1.5f && Mathf.Abs(y2) <= 1.5f);
+            if (input2IsNormalized)
+            {
+                float nx01 = (x2 + 1f) * 0.5f;
+                float ny01 = (y2 + 1f) * 0.5f;
+                NormalizedPosition2 = new Vector2(nx01, ny01);
+                if (useDirectWorldMapping)
+                {
+                    LocalPosition2 = ToLocalPosition(x2, y2);
+                }
+                else
+                {
+                    LocalPosition2 = ToLocalPosition(nx01 * camWidth, ny01 * camHeight);
+                }
+            }
+            else
+            {
+                NormalizedPosition2 = new Vector2(x2 / camWidth, y2 / camHeight);
+                LocalPosition2 = ToLocalPosition(x2, y2);
+            }
+
             if (updatedStick2)
             {
-                LocalStickRawA2 = ToLocalPosition(x2a, y2a);
-                LocalStickRawB2 = ToLocalPosition(x2b, y2b);
+                bool stickAIsNorm = (Mathf.Abs(x2a) <= 1.5f && Mathf.Abs(y2a) <= 1.5f);
+                bool stickBIsNorm = (Mathf.Abs(x2b) <= 1.5f && Mathf.Abs(y2b) <= 1.5f);
 
-                float nxA2 = Mathf.Clamp((x2a / camWidth) * 2f - 1f, -1f, 1f);
-                float nyA2 = Mathf.Clamp((y2a / camHeight) * 2f - 1f, -1f, 1f);
-                float nxB2 = Mathf.Clamp((x2b / camWidth) * 2f - 1f, -1f, 1f);
-                float nyB2 = Mathf.Clamp((y2b / camHeight) * 2f - 1f, -1f, 1f);
+                float ax, ay, bx, by;
+                if (useDirectWorldMapping)
+                {
+                    ax = x2a;
+                    ay = y2a;
+                    bx = x2b;
+                    by = y2b;
+                }
+                else
+                {
+                    ax = stickAIsNorm ? ((x2a + 1f) * 0.5f * camWidth) : x2a;
+                    ay = stickAIsNorm ? ((y2a + 1f) * 0.5f * camHeight) : y2a;
+                    bx = stickBIsNorm ? ((x2b + 1f) * 0.5f * camWidth) : x2b;
+                    by = stickBIsNorm ? ((y2b + 1f) * 0.5f * camHeight) : y2b;
+                }
+
+                LocalStickRawA2 = ToLocalPosition(ax, ay);
+                LocalStickRawB2 = ToLocalPosition(bx, by);
+
+                float nxA2 = NormalizeAxis(x2a, camWidth);
+                float nyA2 = NormalizeAxis(y2a, camHeight);
+                float nxB2 = NormalizeAxis(x2b, camWidth);
+                float nyB2 = NormalizeAxis(y2b, camHeight);
 
                 LocalStickA2 = new Vector2(nxA2, nyA2);
                 LocalStickB2 = new Vector2(nxB2, nyB2);
 
                 LocalStickLength2 = Vector2.Distance(LocalStickA2, LocalStickB2);
+                LocalStickLengthNormalized2 = LocalStickLength2 / Mathf.Sqrt(8f);
                 LocalAngleDeg2 = Mathf.Atan2(nyB2 - nyA2, nxB2 - nxA2) * Mathf.Rad2Deg;
             }
         }
@@ -318,6 +441,7 @@ public class InputPoint : MonoBehaviour
                 Mathf.Clamp(LocalPosition.y, -half.y, half.y)
             );
         }
+        //Debug.Log(LocalStickA + " " + LocalStickB);
     }
 
     Vector2 ToLocalPosition(float x, float y)
