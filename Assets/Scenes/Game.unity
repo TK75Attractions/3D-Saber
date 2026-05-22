@@ -1994,15 +1994,16 @@ Material:
   m_Shader: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _EMISSION
+  m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
+  stringTagMap:
+    RenderType: Opaque
+  disabledShaderPasses:
+  - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -2099,7 +2100,7 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.4, g: 1, b: 1, a: 1}
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0.39999998, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0.56, g: 1.4, b: 1.4, a: 1.4}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
@@ -6100,15 +6101,16 @@ Material:
   m_Shader: {fileID: 4800000, guid: 933532a4fcc9baf4fa0491de14d08ed7, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
-  m_ValidKeywords:
-  - _EMISSION
+  m_ValidKeywords: []
   m_InvalidKeywords: []
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
   m_CustomRenderQueue: -1
-  stringTagMap: {}
-  disabledShaderPasses: []
+  stringTagMap:
+    RenderType: Opaque
+  disabledShaderPasses:
+  - MOTIONVECTORS
   m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
@@ -6205,7 +6207,7 @@ Material:
     - _ZWrite: 1
     m_Colors:
     - _BaseColor: {r: 0.4, g: 1, b: 1, a: 1}
-    - _Color: {r: 1, g: 1, b: 1, a: 1}
+    - _Color: {r: 0.39999998, g: 1, b: 1, a: 1}
     - _EmissionColor: {r: 0.56, g: 1.4, b: 1.4, a: 1.4}
     - _SpecColor: {r: 0.19999996, g: 0.19999996, b: 0.19999996, a: 1}
   m_BuildTextureStacks: []
@@ -6546,6 +6548,7 @@ MonoBehaviour:
   camWidth: 1920
   camHeight: 1080
   boardRect: {fileID: 0}
+  debugCoordinates: 1
   useImuFallback: 1
   imuPositionScale: 200
   useDirectWorldMapping: 1
@@ -7416,11 +7419,14 @@ MonoBehaviour:
   fallbackToMouse: 1
   inputPointStaleSeconds: 1
   targetCamera: {fileID: 0}
+  debugCoordinates: 1
   pixelsToWorld: 0.00573
   fixedZ: 0
   clampToBounds: 1
   minBounds: {x: -5.5, y: -3}
   maxBounds: {x: 5.5, y: 3}
+  enableSmoothing: 0
+  smoothingTau: 0.08
 --- !u!4 &1782158257
 Transform:
   m_ObjectHideFlags: 0

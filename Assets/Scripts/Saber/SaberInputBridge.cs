@@ -47,7 +47,7 @@ public class SaberInputBridge : MonoBehaviour
             {
                 Debug.Log($"[SaberInputBridge] LocalPosition={ip.LocalPosition} Normalized={ip.NormalizedPosition} targetWorld={targetWorld}");
             }
-            ApplySmoothedPosition(targetWorld);
+            ApplyPositionImmediate(targetWorld);
             return;
         }
         if (fallbackToMouse)
@@ -65,6 +65,19 @@ public class SaberInputBridge : MonoBehaviour
     private void ApplyPosition(Vector2 worldXY)
     {
         ApplySmoothedPosition(new Vector3(worldXY.x, worldXY.y, fixedZ));
+    }
+
+    private void ApplyPositionImmediate(Vector3 targetPosition)
+    {
+        if (clampToBounds)
+        {
+            targetPosition.x = Mathf.Clamp(targetPosition.x, minBounds.x, maxBounds.x);
+            targetPosition.y = Mathf.Clamp(targetPosition.y, minBounds.y, maxBounds.y);
+        }
+
+        smoothedPosition = targetPosition;
+        hasSmoothedPosition = true;
+        transform.position = targetPosition;
     }
 
     private void ApplySmoothedPosition(Vector3 targetPosition)
