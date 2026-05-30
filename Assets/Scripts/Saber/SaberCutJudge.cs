@@ -8,6 +8,8 @@ using UnityEngine;
 public class SaberCutJudge : MonoBehaviour
 {
     public SaberTracker saber;
+    // ブレード（線分）の端点を提供するソース。指定なし or HasBlade=false のときは従来の点-軌跡判定。
+    public SaberInputBridge bladeProvider;
     public float bladeRadius = 0.3f;
     public float minCutSpeed = 3.0f;
     public float maxCutDistance = 3.0f;
@@ -29,6 +31,11 @@ public class SaberCutJudge : MonoBehaviour
 
     public int PendingCount => pending.Count;
 
+    void Awake()
+    {
+        if (bladeProvider == null) bladeProvider = GetComponent<SaberInputBridge>();
+    }
+
     void Update()
     {
         if (!autonomous) return;
@@ -43,14 +50,82 @@ public class SaberCutJudge : MonoBehaviour
 
     public int TryCut()
     {
-        if (saber.Speed < minCutSpeed) return CheckExits();
+        // ブレード（線分）モード優先。利用不可なら従来の点-軌跡モードへ。
+        if (bladeProvider != null && bladeProvider.HasBlade)
+        {
+            return TryCutBlade();
+        }
+        return TryCutPoint();
+    }
+
+    private int TryCutBlade()
+    {
+        if (saber.Speed < minCutSpeed) return CheckExitsBlade();
+
+        Vector2 a = new Vector2(bladeProvider.WorldEndA.x, bladeProvider.WorldEndA.y);
+        Vector2 b = new Vector2(bladeProvider.WorldEndB.x, bladeProvider.WorldEndB.y);
+        float hitRange = bladeRadius + noteHitRadiusXY;
+
+        CuttableNote[] notes = Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None);
+        foreach (var note in notes)
+        {
+            if (!IsCandidate(note)) continue;
+            if (pending.ContainsKey(note)) continue;
+            Vector2 noteXY = new Vector2(note.transform.position.x, note.transform.position.y);
+            float d = DistPointToSegment(noteXY, a, b, out Vector2 closest);
+            if (d <= hitRange)
+            {
+                pending[note] = new Pending
+                {
+                    hitPoint = new Vector3(closest.x, closest.y, note.transform.position.z),
+                    velocity = saber.Velocity
+                };
+            }
+        }
+        return CheckExitsBlade();
+    }
+
+    private int CheckExitsBlade()
+    {
+        if (pending.Count == 0) return 0;
+        Vector2 a = new Vector2(bladeProvider.WorldEndA.x, bladeProvider.WorldEndA.y);
+        Vector2 b = new Vector2(bladeProvider.WorldEndB.x, bladeProvider.WorldEndB.y);
+        float hitRange = bladeRadius + noteHitRadiusXY;
+
+        var toRemove = new List<CuttableNote>();
+        int cuts = 0;
+        foreach (var kv in pending)
+        {
+            CuttableNote note = kv.Key;
+            if (note == null || note.IsCut || note.IsMissed)
+            {
+                toRemove.Add(note);
+                continue;
+            }
+            Vector2 noteXY = new Vector2(note.transform.position.x, note.transform.position.y);
+            float distNow = DistPointToSegment(noteXY, a, b, out _);
+            if (distNow > hitRange)
+            {
+                CutDirection imuHint = ResolveImuHint();
+                note.Cut(kv.Value.hitPoint, kv.Value.velocity, imuHint);
+                cuts++;
+                toRemove.Add(note);
+            }
+        }
+        foreach (var n in toRemove) pending.Remove(n);
+        return cuts;
+    }
+
+    private int TryCutPoint()
+    {
+        if (saber.Speed < minCutSpeed) return CheckExitsPoint();
 
         Vector2 from = new Vector2(saber.PreviousPosition.x, saber.PreviousPosition.y);
         Vector2 to = new Vector2(saber.CurrentPosition.x, saber.CurrentPosition.y);
         Vector2 delta = to - from;
         float dist = delta.magnitude;
-        if (dist <= 0.0001f) return CheckExits();
-        if (dist > maxCutDistance) return CheckExits();
+        if (dist <= 0.0001f) return CheckExitsPoint();
+        if (dist > maxCutDistance) return CheckExitsPoint();
 
         float hitRange = bladeRadius + noteHitRadiusXY;
 
@@ -71,10 +146,10 @@ public class SaberCutJudge : MonoBehaviour
             }
         }
 
-        return CheckExits();
+        return CheckExitsPoint();
     }
 
-    private int CheckExits()
+    private int CheckExitsPoint()
     {
         if (pending.Count == 0) return 0;
         Vector2 now = new Vector2(saber.CurrentPosition.x, saber.CurrentPosition.y);

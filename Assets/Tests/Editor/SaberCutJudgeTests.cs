@@ -146,4 +146,73 @@ public class SaberCutJudgeTests
         Assert.AreEqual(0f, closest.x, 0.001f);
         Assert.AreEqual(0f, closest.y, 0.001f);
     }
+
+    // ------ Blade (line) mode ------
+
+    private (SaberCutJudge judge, SaberTracker tracker, SaberInputBridge bridge) MakeBladeRig()
+    {
+        var saberGo = new GameObject("saberBlade");
+        created.Add(saberGo);
+        var tracker = saberGo.AddComponent<SaberTracker>();
+        var bridge = saberGo.AddComponent<SaberInputBridge>();
+        // ブレードラインの自動生成（LineRenderer / Material）を抑える：HasBlade は OverrideBlade で立てる。
+        bridge.useBladeMode = false;
+        var judge = saberGo.AddComponent<SaberCutJudge>();
+        judge.saber = tracker;
+        judge.bladeProvider = bridge;
+        judge.minCutSpeed = 3.0f;
+        judge.bladeRadius = 0.2f;
+        judge.maxCutDistance = 5.0f;
+        judge.noteHitRadiusXY = 0.3f;
+        return (judge, tracker, bridge);
+    }
+
+    [Test]
+    public void Blade_NoteOnSegment_EnterAndExit_Cuts()
+    {
+        var (judge, tracker, bridge) = MakeBladeRig();
+        var note = MakeNote(new Vector3(0f, 0f, 0f));
+
+        // 中点はノーツ上、ブレードはノーツを通過中（端点 (-1,0)→(1,0)）
+        tracker.ResetTo(new Vector3(0f, 0f, 0f));
+        tracker.Tick(new Vector3(1f, 0f, 0f), 0.05f); // Speed=20
+        bridge.OverrideBlade(new Vector3(-1f, 0f, 0f), new Vector3(1f, 0f, 0f));
+        int cuts = judge.TryCut();
+        Assert.AreEqual(0, cuts, "ブレード上にノーツが乗ってる間は pending");
+        Assert.Greater(judge.PendingCount, 0);
+
+        // ブレードを大きく外す → exit → cut
+        bridge.OverrideBlade(new Vector3(3f, 3f, 0f), new Vector3(5f, 3f, 0f));
+        tracker.Tick(new Vector3(4f, 3f, 0f), 0.05f);
+        cuts = judge.TryCut();
+        Assert.AreEqual(1, cuts);
+        Assert.IsTrue(note.IsCut);
+    }
+
+    [Test]
+    public void Blade_NoteFarFromSegment_NoCut()
+    {
+        var (judge, tracker, bridge) = MakeBladeRig();
+        MakeNote(new Vector3(0f, 3f, 0f)); // y=3 のところにノーツ
+        tracker.ResetTo(new Vector3(0f, 0f, 0f));
+        tracker.Tick(new Vector3(1f, 0f, 0f), 0.05f);
+        // ブレードは y=0 で水平に走る → ノーツとは 3 離れてる（hitRange=0.5）
+        bridge.OverrideBlade(new Vector3(-2f, 0f, 0f), new Vector3(2f, 0f, 0f));
+        int cuts = judge.TryCut();
+        Assert.AreEqual(0, cuts);
+        Assert.AreEqual(0, judge.PendingCount);
+    }
+
+    [Test]
+    public void Blade_BelowMinSpeed_DoesNotEnterPending()
+    {
+        var (judge, tracker, bridge) = MakeBladeRig();
+        MakeNote(new Vector3(0f, 0f, 0f));
+        tracker.ResetTo(new Vector3(0f, 0f, 0f));
+        tracker.Tick(new Vector3(0.01f, 0f, 0f), 1f); // Speed=0.01
+        bridge.OverrideBlade(new Vector3(-1f, 0f, 0f), new Vector3(1f, 0f, 0f));
+        int cuts = judge.TryCut();
+        Assert.AreEqual(0, cuts);
+        Assert.AreEqual(0, judge.PendingCount, "minCutSpeed 未満なら pending に入らない");
+    }
 }

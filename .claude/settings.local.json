@@ -6,7 +6,12 @@
       "Bash(ffmpeg -i \"C:/Users/shike/OneDrive/ドキュメント/GitHub/3D-Saber/Assets/StreamingAssets/Songs/ElDorado/audio.mp3\" -af silencedetect=noise=-30dB:d=0.5 -f null -)",
       "Read(//c/pinokio/bin/miniconda/**)",
       "Bash(/c/pinokio/bin/miniconda/python.exe -c \"import librosa; print\\(librosa.__version__\\)\")",
-      "Bash(/c/pinokio/bin/miniconda/python.exe -c \"import numpy, scipy; print\\('numpy', numpy.__version__, 'scipy', scipy.__version__\\)\")"
+      "Bash(/c/pinokio/bin/miniconda/python.exe -c \"import numpy, scipy; print\\('numpy', numpy.__version__, 'scipy', scipy.__version__\\)\")",
+      "Bash(where Unity.exe)",
+      "Bash(where unity *)",
+      "PowerShell(Test-Path *)",
+      "Bash(C:\\\\Program Files\\\\Unity\\\\Hub\\\\Editor\\\\6000.3.9f1\\\\Editor\\\\Unity.exe *)",
+      "PowerShell(Get-Process *)"
     ]
   }
 }

@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="16" result="Failed(Child)" total="16" passed="4" failed="12" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.5769499">
+  <test-suite type="TestSuite" id="1000" name="ServTechSlash" fullname="ServTechSlash" runstate="Runnable" testcasecount="194" result="Failed" site="Child" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.576950" total="16" passed="4" failed="12" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="EditMode" />
+    </properties>
+    <failure>
+      <message><![CDATA[One or more child tests had errors]]></message>
+    </failure>
+    <test-suite type="Assembly" id="1226" name="SaberTests.Editor.dll" fullname="C:/Users/shike/OneDrive/ドキュメント/GitHub/3D-Saber/Library/ScriptAssemblies/SaberTests.Editor.dll" runstate="Runnable" testcasecount="194" result="Failed" site="Child" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.541247" total="16" passed="4" failed="12" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="31268" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="EditMode" />
+        <property name="EditorOnly" value="True" />
+      </properties>
+      <failure>
+        <message><![CDATA[One or more child tests had errors]]></message>
+      </failure>
+      <test-suite type="TestFixture" id="1088" name="GoldNoteSfxTests" fullname="GoldNoteSfxTests" classname="GoldNoteSfxTests" runstate="Runnable" testcasecount="2" result="Failed" site="Child" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.189984" total="2" passed="1" failed="1" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-case id="1090" name="GoldSfx_OnlyAttachesToGoldNotes" fullname="GoldNoteSfxTests.GoldSfx_OnlyAttachesToGoldNotes" methodname="GoldSfx_OnlyAttachesToGoldNotes" classname="GoldNoteSfxTests" runstate="Runnable" seed="1593199707" result="Passed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.093481" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1089" name="Spawner_DetectsGoldFromChartColor" fullname="GoldNoteSfxTests.Spawner_DetectsGoldFromChartColor" methodname="Spawner_DetectsGoldFromChartColor" classname="GoldNoteSfxTests" runstate="Runnable" seed="1441071147" result="Failed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.037112" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  Expected: 1
+  But was:  2
+]]></message>
+            <stack-trace><![CDATA[at GoldNoteSfxTests.Spawner_DetectsGoldFromChartColor () [0x0015c] in C:\Users\shike\OneDrive\ドキュメント\GitHub\3D-Saber\Assets\Tests\Editor\GoldNoteSfxTests.cs:49
+]]></stack-trace>
+          </failure>
+        </test-case>
+      </test-suite>
+      <test-suite type="TestFixture" id="1161" name="NoteVisualsTests" fullname="NoteVisualsTests" classname="NoteVisualsTests" runstate="Runnable" testcasecount="13" result="Failed" site="Child" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.294172" total="13" passed="3" failed="10" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-case id="1163" name="Awake_AddsNewVisualChildren" fullname="NoteVisualsTests.Awake_AddsNewVisualChildren" methodname="Awake_AddsNewVisualChildren" classname="NoteVisualsTests" runstate="Runnable" seed="748532878" result="Failed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.027188" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  Expected: not null
+  But was:  null
+]]></message>
+            <stack-trace><![CDATA[at NoteVisualsTests.Awake_AddsNewVisualChildren () [0x00012] in C:\Users\shike\OneDrive\ドキュメント\GitHub\3D-Saber\Assets\Tests\Editor\NoteVisualsTests.cs:58
+]]></stack-trace>
+          </failure>
+        </test-case>
+        <test-case id="1165" name="Awake_DisableStrip_KeepsLegacyDecorations" fullname="NoteVisualsTests.Awake_DisableStrip_KeepsLegacyDecorations" methodname="Awake_DisableStrip_KeepsLegacyDecorations" classname="NoteVisualsTests" runstate="Runnable" seed="1314309796" result="Passed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.002567" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1164" name="Awake_StripsCollidersFromNewChildren" fullname="NoteVisualsTests.Awake_StripsCollidersFromNewChildren" methodname="Awake_StripsCollidersFromNewChildren" classname="NoteVisualsTests" runstate="Runnable" seed="386341712" result="Failed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.003902" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  InnerCore が見つからない
+  Expected: not null
+  But was:  null
+]]></message>
+            <stack-trace><![CDATA[at NoteVisualsTests.Awake_StripsCollidersFromNewChildren () [0x00059] in C:\Users\shike\OneDrive\ドキュメント\GitHub\3D-Saber\Assets\Tests\Editor\NoteVisualsTests.cs:75
+]]></stack-trace>
+          </failure>
+        </test-case>
+        <test-case id="1162" name="Awake_StripsLegacyDecorations_KeepsArrow" fullname="NoteVisualsTests.Awake_StripsLegacyDecorations_KeepsArrow" methodname="Awake_StripsLegacyDecorations_KeepsArrow" classname="NoteVisualsTests" runstate="Runnable" seed="2011424374" result="Failed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.003487" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  旧装飾は全て剥がされている
+  Expected: 0
+  But was:  11
+]]></message>
+            <stack-trace><![CDATA[at NoteVisualsTests.Awake_StripsLegacyDecorations_KeepsArrow () [0x00013] in C:\Users\shike\OneDrive\ドキュメント\GitHub\3D-Saber\Assets\Tests\Editor\NoteVisualsTests.cs:47
+]]></stack-trace>
+          </failure>
+        </test-case>
+        <test-case id="1172" name="Color_Override_Direction_UsesNoteFlickPalette" fullname="NoteVisualsTests.Color_Override_Direction_UsesNoteFlickPalette" methodname="Color_Override_Direction_UsesNoteFlickPalette" classname="NoteVisualsTests" runstate="Runnable" seed="969379028" result="Failed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.015255" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  Expected: 0.75d +/- 0.0010000000474974513d
+  But was:  1.0d
+]]></message>
+            <stack-trace><![CDATA[at NoteVisualsTests.Color_Override_Direction_UsesNoteFlickPalette () [0x0001f] in C:\Users\shike\OneDrive\ドキュメント\GitHub\3D-Saber\Assets\Tests\Editor\NoteVisualsTests.cs:185
+]]></stack-trace>
+          </failure>
+        </test-case>
+        <test-case id="1173" name="Color_Override_Gold_TrumpsKindColor" fullname="NoteVisualsTests.Color_Override_Gold_TrumpsKindColor" methodname="Color_Override_Gold_TrumpsKindColor" classname="NoteVisualsTests" runstate="Runnable" seed="1382171970" result="Failed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.003213" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  Expected: 0.85000002384185791d +/- 0.0010000000474974513d
+  But was:  0.25d
+]]></message>
+            <stack-trace><![CDATA[at NoteVisualsTests.Color_Override_Gold_TrumpsKindColor () [0x0003d] in C:\Users\shike\OneDrive\ドキュメント\GitHub\3D-Saber\Assets\Tests\Editor\NoteVisualsTests.cs:199
+]]></stack-trace>
+          </failure>
+        </test-case>
+        <test-case id="1171" name="Color_Override_Long_UsesNoteLongPalette" fullname="NoteVisualsTests.Color_Override_Long_UsesNoteLongPalette" methodname="Color_Override_Long_UsesNoteLongPalette" classname="NoteVisualsTests" runstate="Runnable" seed="1789300829" result="Failed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.005435" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  Expected: 0.30000001192092896d +/- 0.0010000000474974513d
+  But was:  1.0d
+]]></message>
+            <stack-trace><![CDATA[at NoteVisualsTests.Color_Override_Long_UsesNoteLongPalette () [0x0001f] in C:\Users\shike\OneDrive\ドキュメント\GitHub\3D-Saber\Assets\Tests\Editor\NoteVisualsTests.cs:172
+]]></stack-trace>
+          </failure>
+        </test-case>
+        <test-case id="1174" name="Color_Tap_KeepsMaterialColor" fullname="NoteVisualsTests.Color_Tap_KeepsMaterialColor" methodname="Color_Tap_KeepsMaterialColor" classname="NoteVisualsTests" runstate="Runnable" seed="594512345" result="Failed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.055357" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  Expected: 0.89999997615814209d +/- 0.0010000000474974513d
+  But was:  1.0d
+]]></message>
+            <stack-trace><![CDATA[at NoteVisualsTests.Color_Tap_KeepsMaterialColor () [0x00075] in C:\Users\shike\OneDrive\ドキュメント\GitHub\3D-Saber\Assets\Tests\Editor\NoteVisualsTests.cs:218
+]]></stack-trace>
+          </failure>
+        </test-case>
+        <test-case id="1167" name="InheritsBaseColorFromExistingMaterial" fullname="NoteVisualsTests.InheritsBaseColorFromExistingMaterial" methodname="InheritsBaseColorFromExistingMaterial" classname="NoteVisualsTests" runstate="Runnable" seed="757316365" result="Failed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.006222" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  Expected: 0.25d +/- 0.0010000000474974513d
+  But was:  1.0d
+]]></message>
+            <stack-trace><![CDATA[at NoteVisualsTests.InheritsBaseColorFromExistingMaterial () [0x0006e] in C:\Users\shike\OneDrive\ドキュメント\GitHub\3D-Saber\Assets\Tests\Editor\NoteVisualsTests.cs:117
+]]></stack-trace>
+          </failure>
+        </test-case>
+        <test-case id="1168" name="Kind_DefaultsToTap_WhenNoCuttableNote" fullname="NoteVisualsTests.Kind_DefaultsToTap_WhenNoCuttableNote" methodname="Kind_DefaultsToTap_WhenNoCuttableNote" classname="NoteVisualsTests" runstate="Runnable" seed="1233637535" result="Passed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.006500" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1169" name="Kind_DetectedAsDirection_FromCuttableNote" fullname="NoteVisualsTests.Kind_DetectedAsDirection_FromCuttableNote" methodname="Kind_DetectedAsDirection_FromCuttableNote" classname="NoteVisualsTests" runstate="Runnable" seed="819241879" result="Failed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.003123" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  Expected: Direction
+  But was:  Tap
+]]></message>
+            <stack-trace><![CDATA[at NoteVisualsTests.Kind_DetectedAsDirection_FromCuttableNote () [0x0001f] in C:\Users\shike\OneDrive\ドキュメント\GitHub\3D-Saber\Assets\Tests\Editor\NoteVisualsTests.cs:138
+]]></stack-trace>
+          </failure>
+        </test-case>
+        <test-case id="1170" name="Kind_DetectedAsLong_FromCuttableNote" fullname="NoteVisualsTests.Kind_DetectedAsLong_FromCuttableNote" methodname="Kind_DetectedAsLong_FromCuttableNote" classname="NoteVisualsTests" runstate="Runnable" seed="1612717167" result="Failed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.004514" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  Expected: Long
+  But was:  Tap
+]]></message>
+            <stack-trace><![CDATA[at NoteVisualsTests.Kind_DetectedAsLong_FromCuttableNote () [0x00020] in C:\Users\shike\OneDrive\ドキュメント\GitHub\3D-Saber\Assets\Tests\Editor\NoteVisualsTests.cs:153
+]]></stack-trace>
+          </failure>
+        </test-case>
+        <test-case id="1166" name="Update_WithZeroAmplitude_DoesNotThrow" fullname="NoteVisualsTests.Update_WithZeroAmplitude_DoesNotThrow" methodname="Update_WithZeroAmplitude_DoesNotThrow" classname="NoteVisualsTests" runstate="Runnable" seed="58964587" result="Passed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.006680" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+      </test-suite>
+      <test-suite type="TestFixture" id="1212" name="SlicePieceDecayTests" fullname="SlicePieceDecayTests" classname="SlicePieceDecayTests" runstate="Runnable" testcasecount="1" result="Failed" site="Child" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.039068" total="1" passed="0" failed="1" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <failure>
+          <message><![CDATA[One or more child tests had errors]]></message>
+        </failure>
+        <test-case id="1213" name="SetOwnedMaterial_AssignsToRendererAndDestroysOnGo" fullname="SlicePieceDecayTests.SetOwnedMaterial_AssignsToRendererAndDestroysOnGo" methodname="SetOwnedMaterial_AssignsToRendererAndDestroysOnGo" classname="SlicePieceDecayTests" runstate="Runnable" seed="1453502594" result="Failed" start-time="2026-05-30 00:04:31Z" end-time="2026-05-30 00:04:31Z" duration="0.034819" asserts="0">
+          <properties>
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <failure>
+            <message><![CDATA[  OnDestroy で clone が破棄されているはず
+  Expected: True
+  But was:  False
+]]></message>
+            <stack-trace><![CDATA[at SlicePieceDecayTests.SetOwnedMaterial_AssignsToRendererAndDestroysOnGo () [0x00082] in C:\Users\shike\OneDrive\ドキュメント\GitHub\3D-Saber\Assets\Tests\Editor\SlicePieceDecayTests.cs:57
+]]></stack-trace>
+          </failure>
+          <output><![CDATA[Saving results to: C:/Users/shike/AppData/LocalLow/DefaultCompany/ServTechSlash\TestResults.xml
+]]></output>
+        </test-case>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>
