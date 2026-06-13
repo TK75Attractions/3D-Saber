@@ -15,6 +15,11 @@ public static class UISkinPalette
     public static readonly Color NoteLong = new Color(0.30f, 1f, 0.65f);      // ティール / アクアグリーン
     public static readonly Color NoteGold = new Color(1f, 0.85f, 0.25f);      // 金
 
+    // タイトルロゴ用カラー (BEAT=赤 / TRACE=青 / SLASH=緑)
+    public static readonly Color LogoRed = new Color(1f, 0.22f, 0.33f);
+    public static readonly Color LogoBlue = new Color(0.22f, 0.72f, 1f);
+    public static readonly Color LogoGreen = new Color(0.35f, 1f, 0.55f);
+
     public static readonly Color BgTop = new Color(0.03f, 0.04f, 0.10f, 1f);
     public static readonly Color BgBottom = new Color(0.10f, 0.05f, 0.24f, 1f);
 }

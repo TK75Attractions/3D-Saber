@@ -32,11 +32,23 @@ public class SongSelectController : MonoBehaviour
     public AudioSource previewSource;
     public float previewDuration = 10f;
 
+    [Header("Skin hooks (スキン連携)")]
+    // 選択行の先頭に付ける記号。スキンがカード装飾で選択を示す場合は "" にする。
+    public string selectedPrefix = "→ ";
+    public string normalPrefix = "    ";
+    // true ならスキン側が難易度ボタンの配色を管理する(SetDifficulty の既定色上書きを止める)。
+    public bool suppressDefaultDifficultyTint = false;
+
     private readonly List<string> songIds = new List<string>();
     private readonly List<Text> songLabels = new List<Text>();
     private int selectedIndex = -1;
     private int selectedDifficulty = 1; // Normal
     private Coroutine previewCoroutine;
+
+    public int SelectedIndex => selectedIndex;
+    public int SelectedDifficultyIndex => selectedDifficulty;
+    public event System.Action<int> OnSelectionChanged;
+    public event System.Action<int> OnDifficultyChanged;
 
     void Start()
     {
@@ -114,6 +126,7 @@ public class SongSelectController : MonoBehaviour
         ScrollToSelected();
         LoadJacket(songIds[idx]);
         StartPreview(songIds[idx]);
+        OnSelectionChanged?.Invoke(idx);
     }
 
     private void Move(int delta)
@@ -129,7 +142,7 @@ public class SongSelectController : MonoBehaviour
         {
             if (songLabels[i] == null) continue;
             bool sel = (i == selectedIndex);
-            songLabels[i].text = (sel ? "→ " : "    ") + songIds[i];
+            songLabels[i].text = (sel ? selectedPrefix : normalPrefix) + songIds[i];
             songLabels[i].color = sel ? selectedLabelColor : normalLabelColor;
         }
     }
@@ -222,7 +235,7 @@ public class SongSelectController : MonoBehaviour
         idx = Mathf.Clamp(idx, 0, difficultyNames.Length - 1);
         selectedDifficulty = idx;
         if (difficultyDisplay != null) difficultyDisplay.text = difficultyNames[idx];
-        if (difficultyButtons != null)
+        if (difficultyButtons != null && !suppressDefaultDifficultyTint)
         {
             for (int i = 0; i < difficultyButtons.Length; i++)
             {
@@ -233,6 +246,7 @@ public class SongSelectController : MonoBehaviour
                     : new Color(0.15f, 0.2f, 0.3f, 1f);
             }
         }
+        OnDifficultyChanged?.Invoke(idx);
     }
 
     public void StartGame()

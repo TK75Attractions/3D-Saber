@@ -40,6 +40,8 @@ public class NoteVisuals : MonoBehaviour
     private Material runtimeBodyMat;
     private readonly List<Material> ownedSubMaterials = new List<Material>();
     private float age;
+    private float emissionBoost = 1f;
+    private float lastAppliedStrength = -1f;
 
     void Awake()
     {
@@ -112,16 +114,30 @@ public class NoteVisuals : MonoBehaviour
 
     void Update()
     {
-        if (pulseAmplitude <= 0f || pulseSpeedHz <= 0f) return;
-        age += Time.deltaTime;
-        float pulse = 1f + pulseAmplitude * Mathf.Sin(age * pulseSpeedHz * 2f * Mathf.PI);
+        float pulse = 1f;
+        if (pulseAmplitude > 0f && pulseSpeedHz > 0f)
+        {
+            age += Time.deltaTime;
+            pulse = 1f + pulseAmplitude * Mathf.Sin(age * pulseSpeedHz * 2f * Mathf.PI);
+        }
+        float combined = pulse * emissionBoost;
+        float strength = baseEmissionStrength * combined;
+        // 脈動もブーストも変化していなければ SetColor を呼ばない
+        if (Mathf.Approximately(strength, lastAppliedStrength)) return;
+        lastAppliedStrength = strength;
         // ボディ
-        ApplyEmissionStrength(runtimeBodyMat, baseEmissionStrength * pulse);
+        ApplyEmissionStrength(runtimeBodyMat, strength);
         // サブマテリアル群（コア・レール・ハロー）。色強度に応じた相対倍率は生成時に焼き込んである。
         foreach (var m in ownedSubMaterials)
         {
-            ApplyEmissionStrengthRelative(m, pulse);
+            ApplyEmissionStrengthRelative(m, combined);
         }
+    }
+
+    // 判定窓内ハイライト等、外部からの発光倍率(1 = 等倍)。NoteTimingCue が毎フレーム設定する。
+    public void SetEmissionBoost(float boost)
+    {
+        emissionBoost = Mathf.Max(0f, boost);
     }
 
     // ---- public ヘルパー（テストから検査するため） ----
@@ -343,13 +359,17 @@ public class NoteVisuals : MonoBehaviour
     private static void SetBaseColor(Material m, Color c)
     {
         if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
-        else m.color = c;
+        else if (m.HasProperty("_Color")) m.color = c;
     }
 
+    // _BaseColor も _Color も無いマテリアル(2D URP の Mesh2D-Lit-Default 等)では
+    // m.color がエラーログを出すため、必ず HasProperty でガードする。
     private static Color ReadBaseColor(Material m)
     {
+        if (m == null) return Color.white;
         if (m.HasProperty("_BaseColor")) return m.GetColor("_BaseColor");
-        return m.color;
+        if (m.HasProperty("_Color")) return m.color;
+        return Color.white;
     }
 
     private static void SetEmission(Material m, Color color, float strength)

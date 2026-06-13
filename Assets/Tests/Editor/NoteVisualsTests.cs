@@ -16,6 +16,18 @@ public class NoteVisualsTests
         created.Clear();
     }
 
+    // EditMode では AddComponent で Awake が呼ばれないため、リフレクションで起動する
+    // (NoteVisualsTests.Update_WithZeroAmplitude と同じ流儀)。
+    private static NoteVisuals AttachVisuals(GameObject go)
+    {
+        var v = go.AddComponent<NoteVisuals>();
+        var awake = typeof(NoteVisuals).GetMethod("Awake",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        Assert.IsNotNull(awake, "Awake メソッドが見つからない");
+        awake.Invoke(v, null);
+        return v;
+    }
+
     private GameObject MakeLegacyNote()
     {
         var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -41,9 +53,7 @@ public class NoteVisualsTests
     public void Awake_StripsLegacyDecorations_KeepsArrow()
     {
         var note = MakeLegacyNote();
-        note.AddComponent<NoteVisuals>();
-
-        var visuals = note.GetComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         Assert.AreEqual(0, visuals.LegacyDecorationCount(), "旧装飾は全て剥がされている");
         Assert.IsNotNull(visuals.FindChildByName("Arrow"), "Arrow は保持される");
     }
@@ -52,9 +62,7 @@ public class NoteVisualsTests
     public void Awake_AddsNewVisualChildren()
     {
         var note = MakeLegacyNote();
-        note.AddComponent<NoteVisuals>();
-
-        var visuals = note.GetComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         Assert.IsNotNull(visuals.FindChildByName("InnerCore"));
         Assert.IsNotNull(visuals.FindChildByName("EdgeTop"));
         Assert.IsNotNull(visuals.FindChildByName("EdgeBot"));
@@ -67,8 +75,7 @@ public class NoteVisualsTests
     public void Awake_StripsCollidersFromNewChildren()
     {
         var note = MakeLegacyNote();
-        note.AddComponent<NoteVisuals>();
-        var visuals = note.GetComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         foreach (var name in new[] { "InnerCore", "EdgeTop", "EdgeBot", "EdgeLft", "EdgeRgt", "FrontHalo" })
         {
             var child = visuals.FindChildByName(name);
@@ -81,7 +88,7 @@ public class NoteVisualsTests
     public void Awake_DisableStrip_KeepsLegacyDecorations()
     {
         var note = MakeLegacyNote();
-        var visuals = note.AddComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         // 既に Awake は走ってしまっているので、stripLegacyDecorations フラグが効くことを確かめる別パス：
         // 新しいノートを作って AddComponent 前にフラグを書く手段が無いため、
         // 代わりに「フラグの仕様＝デフォルトで剥がす」を担保する形にする。
@@ -92,7 +99,7 @@ public class NoteVisualsTests
     public void Update_WithZeroAmplitude_DoesNotThrow()
     {
         var note = MakeLegacyNote();
-        var visuals = note.AddComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         visuals.pulseAmplitude = 0f;
         // MonoBehaviour.Update を直接呼ぶ手はないので、リフレクションで起動。
         var m = typeof(NoteVisuals).GetMethod("Update",
@@ -113,7 +120,7 @@ public class NoteVisualsTests
         else src.color = expected;
         mr.sharedMaterial = src;
 
-        var visuals = note.AddComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         Assert.AreEqual(expected.r, visuals.baseColor.r, 0.001f);
         Assert.AreEqual(expected.g, visuals.baseColor.g, 0.001f);
         Assert.AreEqual(expected.b, visuals.baseColor.b, 0.001f);
@@ -123,7 +130,7 @@ public class NoteVisualsTests
     public void Kind_DefaultsToTap_WhenNoCuttableNote()
     {
         var note = MakeLegacyNote();
-        var visuals = note.AddComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         Assert.AreEqual(NoteVisuals.NoteKind.Tap, visuals.kind);
     }
 
@@ -134,7 +141,7 @@ public class NoteVisualsTests
         var cn = note.AddComponent<CuttableNote>();
         cn.RequiredDirection = CutDirection.Up;
         cn.RequiredCutCount = 1;
-        var visuals = note.AddComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         Assert.AreEqual(NoteVisuals.NoteKind.Direction, visuals.kind);
         // Direction では InnerCore は作らない（矢印がそこを占める）
         Assert.IsNull(visuals.FindChildByName("InnerCore"));
@@ -149,7 +156,7 @@ public class NoteVisualsTests
         var cn = note.AddComponent<CuttableNote>();
         cn.RequiredCutCount = 3;
         cn.RemainingCuts = 3;
-        var visuals = note.AddComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         Assert.AreEqual(NoteVisuals.NoteKind.Long, visuals.kind);
         Assert.AreEqual(3, visuals.longSegments);
         // 区切り線が n-1 = 2 本
@@ -168,7 +175,7 @@ public class NoteVisualsTests
         var cn = note.AddComponent<CuttableNote>();
         cn.RequiredCutCount = 2;
         cn.RemainingCuts = 2;
-        var visuals = note.AddComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         Assert.AreEqual(UISkinPalette.NoteLong.r, visuals.baseColor.r, 0.001f);
         Assert.AreEqual(UISkinPalette.NoteLong.g, visuals.baseColor.g, 0.001f);
         Assert.AreEqual(UISkinPalette.NoteLong.b, visuals.baseColor.b, 0.001f);
@@ -181,7 +188,7 @@ public class NoteVisualsTests
         var cn = note.AddComponent<CuttableNote>();
         cn.RequiredDirection = CutDirection.Up;
         cn.RequiredCutCount = 1;
-        var visuals = note.AddComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         Assert.AreEqual(UISkinPalette.NoteFlick.r, visuals.baseColor.r, 0.001f);
         Assert.AreEqual(UISkinPalette.NoteFlick.g, visuals.baseColor.g, 0.001f);
         Assert.AreEqual(UISkinPalette.NoteFlick.b, visuals.baseColor.b, 0.001f);
@@ -194,7 +201,7 @@ public class NoteVisualsTests
         var note = MakeLegacyNote();
         var cn = note.AddComponent<CuttableNote>();
         cn.IsGold = true;
-        var visuals = note.AddComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         Assert.AreEqual(UISkinPalette.NoteGold.r, visuals.baseColor.r, 0.001f);
         Assert.AreEqual(UISkinPalette.NoteGold.g, visuals.baseColor.g, 0.001f);
         Assert.AreEqual(UISkinPalette.NoteGold.b, visuals.baseColor.b, 0.001f);
@@ -214,7 +221,7 @@ public class NoteVisualsTests
         else src.color = expected;
         mr.sharedMaterial = src;
 
-        var visuals = note.AddComponent<NoteVisuals>();
+        var visuals = AttachVisuals(note);
         Assert.AreEqual(expected.r, visuals.baseColor.r, 0.001f);
         Assert.AreEqual(expected.g, visuals.baseColor.g, 0.001f);
         Assert.AreEqual(expected.b, visuals.baseColor.b, 0.001f);

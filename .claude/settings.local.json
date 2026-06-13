@@ -11,7 +11,23 @@
       "Bash(where unity *)",
       "PowerShell(Test-Path *)",
       "Bash(C:\\\\Program Files\\\\Unity\\\\Hub\\\\Editor\\\\6000.3.9f1\\\\Editor\\\\Unity.exe *)",
-      "PowerShell(Get-Process *)"
+      "PowerShell(Get-Process *)",
+      "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Unity.exe\" -batchmode -nographics -projectPath \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\" -runTests -testPlatform EditMode -testResults \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-results-design.xml\" -logFile \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-log-design.txt\")",
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(python *)",
+      "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Unity.exe\" -batchmode -nographics -projectPath \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\" -runTests -testPlatform EditMode -testFilter \"NoteTimingCueTests|UISkinKitTests\" -testResults \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-results-design2.xml\" -logFile \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-log-design2.txt\")",
+      "Bash(echo \"UNITY_EXIT:$?\")",
+      "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Unity.exe\" -batchmode -nographics -projectPath \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\" -runTests -testPlatform EditMode -testResults \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-results-design-final.xml\" -logFile \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-log-design-final.txt\")",
+      "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Unity.exe\" -batchmode -nographics -projectPath \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\" -runTests -testPlatform EditMode -testResults \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-results-design-final2.xml\" -logFile \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-log-design-final2.txt\")",
+      "Skill(update-config)",
+      "Edit",
+      "Write",
+      "NotebookEdit",
+      "Bash(mkdir -p \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\Assets\\\\Resources\\\\Fonts\")",
+      "Bash(curl -sL -o ChakraPetch-BoldItalic.ttf \"https://raw.githubusercontent.com/google/fonts/main/ofl/chakrapetch/ChakraPetch-BoldItalic.ttf\")",
+      "Bash(curl -sL -o ChakraPetch-OFL.txt \"https://raw.githubusercontent.com/google/fonts/main/ofl/chakrapetch/OFL.txt\")",
+      "Bash(xxd)",
+      "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Unity.exe\" -batchmode -nographics -projectPath \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\" -runTests -testPlatform EditMode -testResults \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-results-title.xml\" -logFile \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-log-title.txt\")"
     ]
   }
 }

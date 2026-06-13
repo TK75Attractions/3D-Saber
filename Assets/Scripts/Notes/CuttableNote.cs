@@ -25,6 +25,9 @@ public class CuttableNote : MonoBehaviour
     // ロングノーツ用の残数表示（TMP）。NoteSpawner が割り付ける。
     public TMPro.TextMeshPro countLabel;
 
+    // タイミング視認キュー（接近リング/着地ゴースト）。NoteSpawner が割り付けて毎フレーム駆動する。
+    [System.NonSerialized] public NoteTimingCue TimingCue;
+
     [Header("Slice physics")]
     public float sliceSeparationImpulse = 2.5f;
     public float saberVelocityScale = 0.35f;

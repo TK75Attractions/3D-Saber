@@ -2,25 +2,54 @@ using UnityEngine;
 using UnityEngine.UI;
 
 // ScreenSpaceOverlay Canvas の最背面に「サイバーパンク背景」を生成するコンポーネント。
-// 縦グラデーション + 等間隔の薄いスキャンライン + ゆっくり上下する強めの光線。
-// Canvas に1つだけ存在する想定（Ensure() で冪等に追加）。
+// 構成(奥→手前)：
+//   縦グラデーション → 一点透視の床グリッド → 斜めの光線 → スキャンライン
+//   → 浮遊パーティクル → ビネット → ゆっくり上下する光線
+// Canvas に1つだけ存在する想定(Ensure() で冪等に追加)。
 public class CyberBackdrop : MonoBehaviour
 {
     [Header("Gradient")]
-    public Color topColor = new Color(0.03f, 0.04f, 0.10f, 1f);
-    public Color bottomColor = new Color(0.10f, 0.05f, 0.24f, 1f);
+    public Color topColor = new Color(0.02f, 0.03f, 0.09f, 1f);
+    public Color bottomColor = new Color(0.09f, 0.04f, 0.22f, 1f);
 
     [Header("Scan lines")]
-    public Color scanLineColor = new Color(0.30f, 1f, 1f, 0.08f);
+    public Color scanLineColor = new Color(0.30f, 1f, 1f, 0.05f);
     public int scanLineCount = 18;
 
     [Header("Moving glow line")]
-    public Color glowLineColor = new Color(0.30f, 0.95f, 1f, 0.45f);
-    public float glowLineSpeed = 0.08f;     // 1秒あたり上下方向の進行率
-    public float glowLineThickness = 2f;
+    public Color glowLineColor = new Color(0.30f, 0.95f, 1f, 0.30f);
+    public float glowLineSpeed = 0.06f;     // 1秒あたり上下方向の進行率
+    public float glowLineThickness = 3f;
+
+    [Header("Horizon grid (一点透視の床)")]
+    public bool addHorizonGrid = true;
+    [Range(0f, 1f)] public float horizonHeight = 0.38f; // 画面下からの地平線の高さ(正規化)
+    public Color gridLineColor = new Color(0.30f, 1f, 1f, 0.07f);
+    public Color horizonColor = new Color(0.30f, 1f, 1f, 0.22f);
+
+    [Header("Beams (斜めの光)")]
+    public bool addBeams = true;
+
+    [Header("Particles (浮遊ドット)")]
+    public bool addParticles = true;
+    public int particleCount = 16;
+
+    [Header("Vignette")]
+    public bool addVignette = true;
+    [Range(0f, 1f)] public float vignetteStrength = 0.55f;
 
     private Texture2D gradientTexture;
     private RectTransform glowLineRT;
+
+    // パーティクル状態(Update でアロケーションしない)
+    private RectTransform particleContainer;
+    private RectTransform[] particles;
+    private Vector2[] particleBasePos;
+    private float[] particleSpeed;
+    private float[] particlePhase;
+
+    private RectTransform[] beams;
+    private Vector2[] beamBasePos;
 
     public static CyberBackdrop Ensure(Canvas canvas)
     {
@@ -49,13 +78,17 @@ public class CyberBackdrop : MonoBehaviour
     void Build()
     {
         BuildGradient();
+        if (addHorizonGrid) BuildHorizonGrid();
+        if (addBeams) BuildBeams();
         BuildScanLines();
+        if (addParticles) BuildParticles();
+        if (addVignette) BuildVignette();
         BuildGlowLine();
     }
 
     void BuildGradient()
     {
-        // 縦方向のみ32段の小さなテクスチャで十分（Bilinear 補間で滑らか）
+        // 縦方向のみ32段の小さなテクスチャで十分(Bilinear 補間で滑らか)
         gradientTexture = new Texture2D(1, 32, TextureFormat.RGBA32, false);
         gradientTexture.filterMode = FilterMode.Bilinear;
         gradientTexture.wrapMode = TextureWrapMode.Clamp;
@@ -74,6 +107,101 @@ public class CyberBackdrop : MonoBehaviour
         raw.texture = gradientTexture;
         raw.color = Color.white;
         raw.raycastTarget = false;
+    }
+
+    // 画面下部に一点透視の床グリッド。地平線 + 放射状の縦線 + 地平線に近いほど詰まる横線。
+    void BuildHorizonGrid()
+    {
+        var container = new GameObject("HorizonGrid", typeof(RectTransform));
+        container.transform.SetParent(transform, false);
+        var crt = container.GetComponent<RectTransform>();
+        crt.anchorMin = new Vector2(0f, 0f);
+        crt.anchorMax = new Vector2(1f, horizonHeight);
+        crt.offsetMin = Vector2.zero;
+        crt.offsetMax = Vector2.zero;
+
+        // 地平線
+        var horizon = MakeLine(crt, "Horizon");
+        var hrt = horizon.rectTransform;
+        hrt.anchorMin = new Vector2(0f, 1f);
+        hrt.anchorMax = new Vector2(1f, 1f);
+        hrt.sizeDelta = new Vector2(0f, 2f);
+        horizon.color = horizonColor;
+
+        // 放射状の縦線(消失点 = 地平線の中央)
+        const int fanCount = 11;
+        for (int i = 0; i < fanCount; i++)
+        {
+            var line = MakeLine(crt, $"Fan_{i}");
+            var rt = line.rectTransform;
+            rt.anchorMin = new Vector2(0.5f, 1f);
+            rt.anchorMax = new Vector2(0.5f, 1f);
+            rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(1.6f, 1500f);
+            float t = fanCount <= 1 ? 0.5f : i / (float)(fanCount - 1);
+            rt.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-64f, 64f, t));
+            Color c = gridLineColor;
+            // 中央付近をほんの少し明るく
+            c.a *= Mathf.Lerp(1.2f, 0.7f, Mathf.Abs(t - 0.5f) * 2f);
+            line.color = c;
+        }
+
+        // 横線(地平線に近いほど詰まる = 奥行き圧縮)
+        const int hCount = 6;
+        for (int i = 1; i <= hCount; i++)
+        {
+            float u = i / (float)hCount;
+            float yNorm = 1f - u * u; // 地平線(1)から下へ加速度的に離れる
+            var line = MakeLine(crt, $"Depth_{i}");
+            var rt = line.rectTransform;
+            rt.anchorMin = new Vector2(0f, yNorm);
+            rt.anchorMax = new Vector2(1f, yNorm);
+            rt.sizeDelta = new Vector2(0f, 1.4f);
+            Color c = gridLineColor;
+            c.a *= Mathf.Lerp(1.1f, 0.55f, u);
+            line.color = c;
+        }
+    }
+
+    Image MakeLine(Transform parent, string name)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(parent, false);
+        var img = go.GetComponent<Image>();
+        img.raycastTarget = false;
+        return img;
+    }
+
+    // 画面を横切る大きく薄い光のバンド。ゆっくり漂う。
+    void BuildBeams()
+    {
+        var container = new GameObject("Beams", typeof(RectTransform));
+        container.transform.SetParent(transform, false);
+        StretchFull(container.GetComponent<RectTransform>());
+
+        var defs = new (float angle, float y, Color color)[]
+        {
+            (18f, 180f, new Color(0.30f, 1f, 1f, 0.030f)),
+            (-12f, -120f, new Color(1f, 0.30f, 0.72f, 0.028f)),
+        };
+        beams = new RectTransform[defs.Length];
+        beamBasePos = new Vector2[defs.Length];
+        for (int i = 0; i < defs.Length; i++)
+        {
+            var go = new GameObject($"Beam_{i}", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(container.transform, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(4200f, 320f);
+            rt.anchoredPosition = new Vector2(0f, defs[i].y);
+            rt.localRotation = Quaternion.Euler(0f, 0f, defs[i].angle);
+            var img = go.GetComponent<Image>();
+            img.sprite = UISkinKit.SoftGlow();
+            img.color = defs[i].color;
+            img.raycastTarget = false;
+            beams[i] = rt;
+            beamBasePos[i] = rt.anchoredPosition;
+        }
     }
 
     void BuildScanLines()
@@ -98,6 +226,55 @@ public class CyberBackdrop : MonoBehaviour
         }
     }
 
+    void BuildParticles()
+    {
+        var container = new GameObject("Particles", typeof(RectTransform));
+        container.transform.SetParent(transform, false);
+        StretchFull(container.GetComponent<RectTransform>());
+        particleContainer = container.GetComponent<RectTransform>();
+
+        particles = new RectTransform[particleCount];
+        particleBasePos = new Vector2[particleCount];
+        particleSpeed = new float[particleCount];
+        particlePhase = new float[particleCount];
+
+        for (int i = 0; i < particleCount; i++)
+        {
+            var go = new GameObject($"P_{i}", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(container.transform, false);
+            var rt = go.GetComponent<RectTransform>();
+            float size = Random.Range(4f, 11f);
+            rt.sizeDelta = new Vector2(size, size);
+
+            var img = go.GetComponent<Image>();
+            img.sprite = UISkinKit.SoftGlow();
+            // シアン / マゼンタ / 白を混ぜる
+            float pick = Random.value;
+            Color c = pick < 0.5f ? UISkinPalette.Cyan : (pick < 0.8f ? UISkinPalette.Magenta : Color.white);
+            c.a = Random.Range(0.10f, 0.30f);
+            img.color = c;
+            img.raycastTarget = false;
+
+            particles[i] = rt;
+            // 基準解像度(CanvasScaler 1920x1080)前提のローカル座標
+            particleBasePos[i] = new Vector2(Random.Range(-960f, 960f), Random.Range(-540f, 540f));
+            particleSpeed[i] = Random.Range(8f, 26f);
+            particlePhase[i] = Random.Range(0f, Mathf.PI * 2f);
+            rt.anchoredPosition = particleBasePos[i];
+        }
+    }
+
+    void BuildVignette()
+    {
+        var go = new GameObject("Vignette", typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(transform, false);
+        StretchFull(go.GetComponent<RectTransform>());
+        var img = go.GetComponent<Image>();
+        img.sprite = UISkinKit.Vignette();
+        img.color = new Color(0f, 0f, 0f, vignetteStrength);
+        img.raycastTarget = false;
+    }
+
     void BuildGlowLine()
     {
         var glow = new GameObject("GlowLine", typeof(RectTransform), typeof(Image));
@@ -115,10 +292,41 @@ public class CyberBackdrop : MonoBehaviour
 
     void Update()
     {
-        if (glowLineRT == null) return;
-        float t = Mathf.PingPong(Time.unscaledTime * glowLineSpeed, 1f);
-        glowLineRT.anchorMin = new Vector2(0, t);
-        glowLineRT.anchorMax = new Vector2(1, t);
+        float time = Time.unscaledTime;
+
+        if (glowLineRT != null)
+        {
+            float t = Mathf.PingPong(time * glowLineSpeed, 1f);
+            glowLineRT.anchorMin = new Vector2(0, t);
+            glowLineRT.anchorMax = new Vector2(1, t);
+        }
+
+        if (particles != null)
+        {
+            float halfH = particleContainer != null && particleContainer.rect.height > 1f
+                ? particleContainer.rect.height * 0.5f : 540f;
+            for (int i = 0; i < particles.Length; i++)
+            {
+                var rt = particles[i];
+                if (rt == null) continue;
+                Vector2 p = particleBasePos[i];
+                p.y += time * particleSpeed[i] % (halfH * 2f + 40f);
+                // 上端を越えたら下へラップ
+                p.y = Mathf.Repeat(p.y + halfH + 20f, halfH * 2f + 40f) - halfH - 20f;
+                p.x += Mathf.Sin(time * 0.35f + particlePhase[i]) * 18f;
+                rt.anchoredPosition = p;
+            }
+        }
+
+        if (beams != null)
+        {
+            for (int i = 0; i < beams.Length; i++)
+            {
+                if (beams[i] == null) continue;
+                float sway = Mathf.Sin(time * 0.07f + i * 2.1f) * 220f;
+                beams[i].anchoredPosition = beamBasePos[i] + new Vector2(sway, 0f);
+            }
+        }
     }
 
     void OnDestroy()

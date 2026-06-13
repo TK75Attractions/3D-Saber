@@ -51,10 +51,15 @@ public class SlicePieceDecayTests
         Assert.IsNotNull(mr.sharedMaterial); // マゼンタ化していない
         Assert.IsNotNull(clone);
 
-        // GameObject を破棄するとピースの clone も破棄される（OnDestroy で）
-        Object.DestroyImmediate(go);
-        created.Remove(go);
+        // GameObject 破棄時はピースの clone も破棄される（OnDestroy で）。
+        // EditMode では DestroyImmediate で OnDestroy が呼ばれないため、リフレクションで起動する。
+        var onDestroy = typeof(SlicePieceDecay).GetMethod("OnDestroy",
+            System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+        Assert.IsNotNull(onDestroy, "OnDestroy メソッドが見つからない");
+        onDestroy.Invoke(decay, null);
         Assert.IsTrue(clone == null, "OnDestroy で clone が破棄されているはず");
         materials.Remove(clone); // 既に破棄済み
+        Object.DestroyImmediate(go);
+        created.Remove(go);
     }
 }

@@ -29,6 +29,8 @@ public class NoteSpawner : MonoBehaviour
     public float longLingerDriftZ = 1.0f;
     // ロングノーツの見た目の Z スケール上限（count=50 等でも視野を埋め尽くさないようにキャップ）。
     public float longMaxVisualZScale = 6f;
+    // 接近リング+着地ゴースト（NoteTimingCue）を各ノーツに付ける。
+    public bool buildTimingCues = true;
 
     private ChartData chart;
     private int nextIndex;
@@ -141,6 +143,15 @@ public class NoteSpawner : MonoBehaviour
             BuildCountLabel(go.transform, note);
         }
 
+        // 切る瞬間を読みやすくする接近リング+着地ゴースト
+        if (buildTimingCues)
+        {
+            var cue = go.GetComponent<NoteTimingCue>();
+            if (cue == null) cue = go.AddComponent<NoteTimingCue>();
+            cue.Initialize(note, judgeZ);
+            note.TimingCue = cue;
+        }
+
         liveNotes.Add(note);
         OnNoteSpawned?.Invoke(note);
     }
@@ -241,6 +252,12 @@ public class NoteSpawner : MonoBehaviour
             // 早め側は earlyJudgeWindow で別管理（小さい）、遅め側は lateWindow（大きい）で非対称化。
             float lateWindow = LateWindowFor(note);
             note.IsJudgeable = dt <= earlyJudgeWindow && dt >= -lateWindow;
+
+            // タイミングキュー（接近リング/着地ゴースト）の駆動
+            if (note.TimingCue != null)
+            {
+                note.TimingCue.Tick(dt, approachTime, earlyJudgeWindow, lateWindow);
+            }
 
             if (note.IsCut)
             {

@@ -42,7 +42,8 @@ public class GoldNoteSfxTests
 
         var chart = new ChartData { bpm = 100f };
         chart.notes.Add(new NoteData { time = 1000, x = 0, y = 0, type = "tap", color = "gold" });
-        chart.notes.Add(new NoteData { time = 2000, x = 0, y = 0, type = "tap", color = "red" });
+        // 2つ目は先読み境界(songTime + approachTime >= eff は spawn される)の外に置く
+        chart.notes.Add(new NoteData { time = 2100, x = 0, y = 0, type = "tap", color = "red" });
         spawner.SetChart(chart);
 
         spawner.Tick(0.0); // 先読み内
