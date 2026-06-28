@@ -25,4 +25,13 @@ public class SaveLoadUI : MonoBehaviour
             chartManager.LoadChart();
         }
     }
+
+    // 本編形式(chart.json)で StreamingAssets へ書き出す。ボタンの OnClick に割り当てる。
+    public void OnExportButtonClicked()
+    {
+        if (chartManager != null)
+        {
+            chartManager.ExportToGame();
+        }
+    }
 }

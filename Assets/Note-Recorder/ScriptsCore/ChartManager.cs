@@ -20,8 +20,16 @@ public class ChartManager : MonoBehaviour
     public TimelineManager timelineManager;
     
     [Header("表示UI")]
-    public TextMeshProUGUI formattedTimeText; 
-    public TMP_InputField beatInputField;    
+    public TextMeshProUGUI formattedTimeText;
+    public TMP_InputField beatInputField;
+
+    [Header("本編エクスポート設定 (StreamingAssets へ書き出す)")]
+    public int exportGridSize = 8;
+    public Vector2 exportXRange = new Vector2(-2.5f, 2.5f);  // グリッド横 → ワールドX
+    public Vector2 exportYRange = new Vector2(-1.0f, 1.5f);  // グリッド縦 → ワールドY
+    public float exportLongCutsPerBeat = 1f;                 // ロング: 1拍あたりのカット数
+    public bool exportFlipY = true;                          // 行0が画面上端なら true（上下が反転したら切り替え）
+    public bool exportCopyAudio = true;                      // エディタ実行時、曲フォルダへ音源も複製
 
     [HideInInspector] public int currentSelectedType = 0;
     [HideInInspector] public BeatNoteData selectedNote = null;
@@ -242,4 +250,60 @@ public class ChartManager : MonoBehaviour
             renderer.RenderWaveform(timeManager.audioSource.clip);
         }
     }
+
+    // --- 本編形式(chart.json)へのエクスポート ---
+    // 本編コードには一切手を入れず、StreamingAssets/Songs/<曲>/ に本編が読める JSON を書き出す。
+    // インスペクターの右クリックメニュー、または SaveLoadUI のボタンから呼べる。
+    [ContextMenu("本編形式でエクスポート (StreamingAssets)")]
+    public void ExportToGame()
+    {
+        if (timeManager == null) timeManager = Object.FindFirstObjectByType<TimeManager>();
+        float bpm = timeManager != null ? timeManager.bpm : songInfo.bpm;
+        int resolution = timeManager != null ? timeManager.resolution : songInfo.resolution;
+        float offsetSeconds = timeManager != null ? timeManager.offsetSeconds : songInfo.offset;
+
+        ExportChart outChart = ChartExporter.Build(
+            chartData, bpm, resolution, offsetSeconds,
+            exportGridSize, exportXRange, exportYRange, exportLongCutsPerBeat, exportFlipY);
+        string json = ChartExporter.ToJson(outChart);
+
+        // 書き出し先: StreamingAssets/Songs/<曲フォルダ>/
+        string dir = Path.Combine(Application.streamingAssetsPath, "Songs", currentSongFolder);
+        Directory.CreateDirectory(dir);
+
+        string diff = string.IsNullOrEmpty(currentDifficulty) ? "normal" : currentDifficulty.ToLowerInvariant();
+        File.WriteAllText(Path.Combine(dir, $"chart_{diff}.json"), json);
+
+        // 曲一覧(SongSelect)に出すには chart.json が必須。normal 優先で必ず1つ用意する。
+        string baseChart = Path.Combine(dir, "chart.json");
+        if (diff == "normal" || !File.Exists(baseChart))
+            File.WriteAllText(baseChart, json);
+
+        int copied = 0;
+#if UNITY_EDITOR
+        if (exportCopyAudio) copied = TryCopyAudio(dir);
+#endif
+
+        Debug.Log($"[本編エクスポート完了] {dir}\n  chart_{diff}.json を書き出し（ノーツ {outChart.notes.Count} 個）。" +
+                  (copied > 0 ? " 音源もコピー済み。" : " ※音源 audio.mp3/ogg/wav を同フォルダに置いてください。"));
+
+#if UNITY_EDITOR
+        UnityEditor.AssetDatabase.Refresh();
+#endif
+    }
+
+#if UNITY_EDITOR
+    // エディタ実行時のみ: 現在の AudioSource のクリップ元ファイルを曲フォルダへ audio.<ext> として複製。
+    private int TryCopyAudio(string destDir)
+    {
+        var src = timeManager != null ? timeManager.audioSource : null;
+        if (src == null || src.clip == null) return 0;
+        string srcPath = UnityEditor.AssetDatabase.GetAssetPath(src.clip);
+        if (string.IsNullOrEmpty(srcPath) || !File.Exists(srcPath)) return 0;
+        string ext = Path.GetExtension(srcPath).ToLowerInvariant();
+        if (ext != ".mp3" && ext != ".ogg" && ext != ".wav") return 0;
+        File.Copy(srcPath, Path.Combine(destDir, "audio" + ext), true);
+        return 1;
+    }
+#endif
 }
