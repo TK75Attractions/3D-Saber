@@ -163,33 +163,64 @@ public class NoteSpawner : MonoBehaviour
         arrow.transform.localPosition = new Vector3(0f, 0f, -0.55f);
         arrow.transform.localRotation = Quaternion.Euler(0f, 0f, CutDirectionHelper.ToZRotationDegrees(dir));
 
-        // 上向き ^ シェブロン
+        // 暗い下敷き:紫ボディの発光の上でもシェブロンの輪郭が読めるようにコントラストを作る
+        GameObject backing = GameObject.CreatePrimitive(PrimitiveType.Quad);
+        backing.name = "ArrowBacking";
+        backing.transform.SetParent(arrow.transform, false);
+        backing.transform.localPosition = new Vector3(0f, 0f, 0.01f);
+        backing.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+        backing.transform.localScale = new Vector3(0.62f, 0.62f, 1f);
+        StripArrowCollider(backing);
+        var backingMr = backing.GetComponent<Renderer>();
+        if (backingMr != null)
+        {
+            var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+            var mat = new Material(sh);
+            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
+            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
+            mat.renderQueue = 3001;
+            Color dark = new Color(0.02f, 0.03f, 0.06f, 0.55f);
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", dark);
+            else mat.color = dark;
+            backingMr.sharedMaterial = mat;
+        }
+
+        // 上向き ^ シェブロン:白+強発光で「向き」を最優先の信号にする
         for (int sign = -1; sign <= 1; sign += 2)
         {
             GameObject bar = GameObject.CreatePrimitive(PrimitiveType.Cube);
             bar.name = sign < 0 ? "BarL" : "BarR";
             bar.transform.SetParent(arrow.transform, false);
-            bar.transform.localPosition = new Vector3(sign * 0.13f, -0.06f, 0f);
+            bar.transform.localPosition = new Vector3(sign * 0.16f, -0.07f, 0f);
             bar.transform.localRotation = Quaternion.Euler(0f, 0f, sign * 35f);
-            bar.transform.localScale = new Vector3(0.06f, 0.32f, 0.04f);
-            var col = bar.GetComponent<BoxCollider>();
-            if (col != null) Destroy(col);
+            bar.transform.localScale = new Vector3(0.09f, 0.42f, 0.04f);
+            StripArrowCollider(bar);
             var mr = bar.GetComponent<Renderer>();
             if (mr != null)
             {
                 var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
                 var mat = new Material(sh);
-                Color yellow = new Color(1f, 0.95f, 0.3f);
-                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", yellow);
-                else mat.color = yellow;
+                Color white = new Color(0.98f, 0.99f, 1f);
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", white);
+                else mat.color = white;
                 if (mat.HasProperty("_EmissionColor"))
                 {
                     mat.EnableKeyword("_EMISSION");
-                    mat.SetColor("_EmissionColor", yellow * 1.6f);
+                    mat.SetColor("_EmissionColor", white * 2.4f);
                 }
                 mr.sharedMaterial = mat;
             }
         }
+    }
+
+    private static void StripArrowCollider(GameObject go)
+    {
+        var col = go.GetComponent<Collider>();
+        if (col == null) return;
+        if (Application.isPlaying) Destroy(col);
+        else DestroyImmediate(col);
     }
 
     private static void BuildCountLabel(Transform target, CuttableNote note)

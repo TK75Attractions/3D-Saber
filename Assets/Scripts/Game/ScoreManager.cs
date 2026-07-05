@@ -16,6 +16,10 @@ public class ScoreManager : MonoBehaviour
     public int BadCount { get; private set; }
     public JudgmentTier LastTier { get; private set; } = JudgmentTier.Miss;
     public bool LastWasWrongFlick { get; private set; }
+    // 直近判定の時間誤差(ミリ秒、負=早い/正=遅い)。タップ/フリックのみ有効。
+    // ロング(完了率ベース)と Miss では LastErrorValid=false になる。HUD の EARLY/LATE 表示用。
+    public double LastErrorMs { get; private set; }
+    public bool LastErrorValid { get; private set; }
 
     public event System.Action<JudgmentTier, int> OnJudgment; // (tier, awarded score this judgment)
     public event System.Action<JudgmentTier, int, bool> OnJudgmentEx; // (tier, awarded, wasWrongFlick)
@@ -70,6 +74,7 @@ public class ScoreManager : MonoBehaviour
             // 「切りきれたら Perfect、ダメだった分だけ降格」のシンプル仕様。
             float ratio = (float)note.CutsAchieved / Mathf.Max(1, note.RequiredCutCount);
             tier = TierByCompletionRatio(ratio);
+            LastErrorValid = false;
         }
         else
         {
@@ -77,6 +82,8 @@ public class ScoreManager : MonoBehaviour
             double songTime = songPlayer != null ? songPlayer.SongTime : 0;
             double error = songTime - note.HitTime;
             tier = JudgmentTierHelper.Classify(error);
+            LastErrorMs = error * 1000.0;
+            LastErrorValid = true;
         }
 
         bool wrongDir = note.RequiredDirection != CutDirection.None && !note.LastCutCorrectDirection;
@@ -167,6 +174,7 @@ public class ScoreManager : MonoBehaviour
         MissCount++;
         Combo = 0;
         LastTier = JudgmentTier.Miss;
+        LastErrorValid = false;
         OnJudgment?.Invoke(JudgmentTier.Miss, 0);
         OnJudgmentEx?.Invoke(JudgmentTier.Miss, 0, false);
     }

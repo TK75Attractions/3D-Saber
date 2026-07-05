@@ -13,23 +13,25 @@ public class FloorRenderer : MonoBehaviour
     public float maxZ = 22f;
 
     [Header("Colors")]
-    public Color baseColor = new Color(0.02f, 0.03f, 0.08f, 1f);
+    public Color baseColor = new Color(0.012f, 0.02f, 0.05f, 1f);
     public Color lineColor = new Color(0.27f, 1f, 0.97f, 0.7f);
     public Color brightLineColor = new Color(0.5f, 1f, 1f, 1f);
 
     [Header("Lane lines (vertical strips along Z)")]
-    public float[] laneXPositions = new float[] { -3f, -2f, -1f, 0f, 1f, 2f, 3f };
+    // 両端 + 中央の 3 本だけ。7 本あった旧仕様は縦線が多すぎて視覚ノイズだった。
+    public float[] laneXPositions = new float[] { -3f, 0f, 3f };
     public float laneLineThickness = 0.04f;
-    public float laneLineEmission = 0.9f;
+    public float laneLineEmission = 0.35f;
 
     [Header("Depth lines (perpendicular strips along X)")]
     public float depthLineSpacing = 4f;
     public float depthLineThickness = 0.04f;
-    public float depthLineEmission = 0.6f;
-    public float judgeDepthLineEmission = 2.0f;
+    public float depthLineEmission = 0.3f;
+    public float judgeDepthLineEmission = 2.4f;
 
     [Header("Ceiling")]
-    public bool addCeiling = true;
+    // 既定 OFF。天井グリッドはノーツ軌道の背後で常に光る視覚ノイズだった(true で復活可能)。
+    public bool addCeiling = false;
     public float ceilingDimming = 0.7f;
 
     [Header("Floor base")]

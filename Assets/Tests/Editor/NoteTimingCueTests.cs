@@ -85,18 +85,25 @@ public class NoteTimingCueTests
     }
 
     [Test]
-    public void GhostAlpha_RampsUpTowardHitTime()
+    public void GhostAlpha_ShortWindow_HiddenUntilVisibleSeconds()
     {
-        Assert.AreEqual(0f, NoteTimingCue.ComputeGhostAlpha(2.0, 2f), 0.001f);
-        Assert.AreEqual(1f, NoteTimingCue.ComputeGhostAlpha(0.0, 2f), 0.001f);
-        float mid = NoteTimingCue.ComputeGhostAlpha(1.0, 2f);
-        Assert.Greater(mid, 0f);
-        Assert.Less(mid, 1f);
+        // 残り visibleSeconds(0.7s) を切るまで完全非表示(密な譜面での重なり防止)
+        Assert.AreEqual(0f, NoteTimingCue.ComputeGhostAlpha(2.0, 0.7f), 0.001f);
+        Assert.AreEqual(0f, NoteTimingCue.ComputeGhostAlpha(0.7, 0.7f), 0.001f);
+        // HitTime ちょうどとその後(ロング滞留中)は最大
+        Assert.AreEqual(1f, NoteTimingCue.ComputeGhostAlpha(0.0, 0.7f), 0.001f);
+        Assert.AreEqual(1f, NoteTimingCue.ComputeGhostAlpha(-0.3, 0.7f), 0.001f);
+        // 中間は 0..1 の間で接近につれ単調増加
+        float far = NoteTimingCue.ComputeGhostAlpha(0.5, 0.7f);
+        float near = NoteTimingCue.ComputeGhostAlpha(0.2, 0.7f);
+        Assert.Greater(far, 0f);
+        Assert.Less(far, 1f);
+        Assert.Greater(near, far);
     }
 
     // ---- コンポーネント統合 ----
 
-    private (GameObject go, CuttableNote note, NoteTimingCue cue) MakeNoteWithCue()
+    private (GameObject go, CuttableNote note, NoteTimingCue cue) MakeNoteWithCue(bool buildGhost = false)
     {
         // MeshRenderer 無しの素の GameObject を使う
         // (EditMode で renderer.material に触れないようにするため)
@@ -104,6 +111,7 @@ public class NoteTimingCueTests
         created.Add(go);
         var note = go.AddComponent<CuttableNote>();
         var cue = go.AddComponent<NoteTimingCue>();
+        cue.buildGhost = buildGhost;
         cue.Initialize(note, judgeZ: 0f);
         return (go, note, cue);
     }
@@ -119,9 +127,27 @@ public class NoteTimingCueTests
     }
 
     [Test]
-    public void Initialize_BuildsGhostAtJudgePlane()
+    public void Initialize_BuildsGhostByDefault_WithoutFill()
     {
-        var (go, _, cue) = MakeNoteWithCue();
+        // 短時間表示方式(ghostVisibleSeconds)で復活:既定で生成される。
+        // ヘルパーを使わず素の AddComponent でコンポーネント既定値そのものを検証する。
+        var go = new GameObject("note");
+        created.Add(go);
+        var note = go.AddComponent<CuttableNote>();
+        var cue = go.AddComponent<NoteTimingCue>();
+        Assert.IsTrue(cue.buildGhost, "buildGhost の既定は true(短時間表示方式)");
+        cue.Initialize(note, judgeZ: 0f);
+        Assert.IsNotNull(cue.GhostRoot, "既定で着地ゴーストを生成する");
+        // 内側の塗り(GhostFill)は霞の原因なので廃止済み:枠 4 本のみ
+        Assert.IsNull(cue.GhostRoot.transform.Find("GhostFill"), "GhostFill は生成しない");
+        Assert.AreEqual(4, cue.GhostRoot.transform.childCount, "ゴーストは枠 4 本のみ");
+    }
+
+    [Test]
+    public void Initialize_BuildsGhostAtJudgePlane_WhenEnabled()
+    {
+        // buildGhost=true を明示すれば従来どおり生成できる(オプトイン)
+        var (go, _, cue) = MakeNoteWithCue(buildGhost: true);
         Assert.IsNotNull(cue.GhostRoot, "着地ゴーストが生成される");
         // judgeZ=0 + ghostZBias の位置
         Assert.AreEqual(cue.ghostZBias, cue.GhostRoot.transform.position.z, 0.001f);
@@ -169,7 +195,7 @@ public class NoteTimingCueTests
     {
         // EditMode では DestroyImmediate しても OnDestroy が呼ばれないため、
         // 既存テストの流儀(NoteVisualsTests の Update と同様)でリフレクション起動する。
-        var (go, _, cue) = MakeNoteWithCue();
+        var (go, _, cue) = MakeNoteWithCue(buildGhost: true);
         var ghost = cue.GhostRoot;
         Assert.IsNotNull(ghost);
         var m = typeof(NoteTimingCue).GetMethod("OnDestroy",

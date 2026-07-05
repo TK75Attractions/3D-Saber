@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="utf-8"?>
+<test-run id="2" testcasecount="5" result="Passed" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0" engine-version="3.5.0.0" clr-version="4.0.30319.42000" start-time="2026-07-05 12:57:50Z" end-time="2026-07-05 12:57:55Z" duration="4.9967321">
+  <test-suite type="TestSuite" id="1012" name="ServTechSlash" fullname="ServTechSlash" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-05 12:57:50Z" end-time="2026-07-05 12:57:55Z" duration="4.996732" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+    <properties>
+      <property name="platform" value="PlayMode" />
+    </properties>
+    <test-suite type="Assembly" id="1008" name="SaberTests.PlayMode.dll" fullname="C:/Users/shike/OneDrive/ドキュメント/GitHub/3D-Saber/Library/ScriptAssemblies/SaberTests.PlayMode.dll" runstate="Runnable" testcasecount="5" result="Passed" start-time="2026-07-05 12:57:50Z" end-time="2026-07-05 12:57:55Z" duration="4.975254" total="5" passed="5" failed="0" inconclusive="0" skipped="0" asserts="0">
+      <properties>
+        <property name="_PID" value="56804" />
+        <property name="_APPDOMAIN" value="Unity Child Domain" />
+        <property name="platform" value="PlayMode" />
+        <property name="EditorOnly" value="False" />
+      </properties>
+      <test-suite type="TestFixture" id="1001" name="GameSceneSmokeTest" fullname="GameSceneSmokeTest" classname="GameSceneSmokeTest" runstate="Runnable" testcasecount="1" result="Passed" start-time="2026-07-05 12:57:50Z" end-time="2026-07-05 12:57:55Z" duration="4.868415" total="1" passed="1" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-case id="1002" name="GameScene_LoadsAndSpawnsNotes" fullname="GameSceneSmokeTest.GameScene_LoadsAndSpawnsNotes" methodname="GameScene_LoadsAndSpawnsNotes" classname="GameSceneSmokeTest" runstate="Runnable" seed="1727884735" result="Passed" start-time="2026-07-05 12:57:50Z" end-time="2026-07-05 12:57:55Z" duration="4.837145" asserts="0">
+          <properties>
+            <property name="_JOINTYPE" value="UnityCombinatorial" />
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <output><![CDATA[No audio found under C:/Users/shike/OneDrive/ドキュメント/GitHub/3D-Saber/Assets/StreamingAssets\Songs\TestSong
+UdpImuBridge started: cmd=9001, data=9002
+SongPlayer: clip is null - running silent
+]]></output>
+        </test-case>
+      </test-suite>
+      <test-suite type="TestFixture" id="1003" name="SaberCutSmokeTest" fullname="SaberCutSmokeTest" classname="SaberCutSmokeTest" runstate="Runnable" testcasecount="4" result="Passed" start-time="2026-07-05 12:57:55Z" end-time="2026-07-05 12:57:55Z" duration="0.102291" total="4" passed="4" failed="0" inconclusive="0" skipped="0" asserts="0">
+        <properties />
+        <test-case id="1007" name="MeshIsActuallySliced_TwoPiecesSpawn" fullname="SaberCutSmokeTest.MeshIsActuallySliced_TwoPiecesSpawn" methodname="MeshIsActuallySliced_TwoPiecesSpawn" classname="SaberCutSmokeTest" runstate="Runnable" seed="1702664882" result="Passed" start-time="2026-07-05 12:57:55Z" end-time="2026-07-05 12:57:55Z" duration="0.071537" asserts="0">
+          <properties>
+            <property name="_JOINTYPE" value="UnityCombinatorial" />
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1006" name="NonJudgeableNote_NotCut" fullname="SaberCutSmokeTest.NonJudgeableNote_NotCut" methodname="NonJudgeableNote_NotCut" classname="SaberCutSmokeTest" runstate="Runnable" seed="665150185" result="Passed" start-time="2026-07-05 12:57:55Z" end-time="2026-07-05 12:57:55Z" duration="0.007335" asserts="0">
+          <properties>
+            <property name="_JOINTYPE" value="UnityCombinatorial" />
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1004" name="SaberTrajectoryCutsNote_SingleFrame" fullname="SaberCutSmokeTest.SaberTrajectoryCutsNote_SingleFrame" methodname="SaberTrajectoryCutsNote_SingleFrame" classname="SaberCutSmokeTest" runstate="Runnable" seed="564962318" result="Passed" start-time="2026-07-05 12:57:55Z" end-time="2026-07-05 12:57:55Z" duration="0.009586" asserts="0">
+          <properties>
+            <property name="_JOINTYPE" value="UnityCombinatorial" />
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+        </test-case>
+        <test-case id="1005" name="SlowSaberDoesNotCut" fullname="SaberCutSmokeTest.SlowSaberDoesNotCut" methodname="SlowSaberDoesNotCut" classname="SaberCutSmokeTest" runstate="Runnable" seed="1272193225" result="Passed" start-time="2026-07-05 12:57:55Z" end-time="2026-07-05 12:57:55Z" duration="0.008799" asserts="0">
+          <properties>
+            <property name="_JOINTYPE" value="UnityCombinatorial" />
+            <property name="retryIteration" value="0" />
+            <property name="repeatIteration" value="0" />
+          </properties>
+          <output><![CDATA[Saving results to: C:/Users/shike/AppData/LocalLow/DefaultCompany/ServTechSlash\TestResults.xml
+]]></output>
+        </test-case>
+      </test-suite>
+    </test-suite>
+  </test-suite>
+</test-run>

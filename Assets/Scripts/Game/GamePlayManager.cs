@@ -31,6 +31,17 @@ public class GamePlayManager : MonoBehaviour
     // 音源長 +この秒数 をノーツの上限時刻にする。負にすれば早めに切れる。
     public float trimGraceSeconds = 0f;
 
+    [Header("Overhauled stage (Neon Focus)")]
+    // プレイ画面の全面リニューアル(判定ゲート+フォグ+新HUD+判定緩和)。
+    // false で旧テーマ(青パネル+グロー+ビート線+旧HUD)へ戻せる。
+    // 注意:シーンに無い新規フィールドなのでコード既定値(true)がそのまま効く。
+    public bool useOverhauledStage = true;
+    // リニューアル版のセーバー判定。マウス操作での「理不尽な空振り」を減らす緩和値。
+    // (旧値 blade 0.22 / hitXY 0.35 / minSpeed 4.0 は巻き込み防止に振りすぎていた)
+    public float saberBladeRadiusV2 = 0.26f;
+    public float saberNoteHitRadiusXYV2 = 0.45f;
+    public float saberMinCutSpeedV2 = 3.0f;
+
     [Header("Judge guide")]
     public bool simplifyJudgeGuide = true;
     public float judgePanelAlpha = 0.30f;
@@ -104,9 +115,10 @@ public class GamePlayManager : MonoBehaviour
             cutJudge.autonomous = false;
             if (overrideSaberRadii)
             {
-                cutJudge.bladeRadius = saberBladeRadius;
-                cutJudge.noteHitRadiusXY = saberNoteHitRadiusXY;
-                cutJudge.minCutSpeed = saberMinCutSpeed;
+                // リニューアル時は緩和値(V2)、旧テーマ時はシーンの従来値を使う。
+                cutJudge.bladeRadius = useOverhauledStage ? saberBladeRadiusV2 : saberBladeRadius;
+                cutJudge.noteHitRadiusXY = useOverhauledStage ? saberNoteHitRadiusXYV2 : saberNoteHitRadiusXY;
+                cutJudge.minCutSpeed = useOverhauledStage ? saberMinCutSpeedV2 : saberMinCutSpeed;
             }
         }
 
@@ -115,7 +127,16 @@ public class GamePlayManager : MonoBehaviour
         if (autoEnsureInputPoint) EnsureInputPoint();
         if (autoEnsureUdpImuBridge) EnsureUdpImuBridge();
         if (autoEnsureSwing8DirectionLogger) EnsureSwing8DirectionLogger();
-        if (simplifyJudgeGuide) SimplifyJudgeGuide();
+        if (useOverhauledStage)
+        {
+            // 新テーマ:格子剥がし+判定ゲート+カメラ背景/フォグは GameStageSkin に集約。
+            // 旧 SimplifyJudgeGuide(パネル着色+グロー+ビート線)は役割が被るので呼ばない。
+            GameStageSkin.Apply();
+        }
+        else if (simplifyJudgeGuide)
+        {
+            SimplifyJudgeGuide();
+        }
         if (overrideCameraPose) ApplyCameraPose();
         if (addFloor) FloorRenderer.Ensure(transform);
 
@@ -132,6 +153,10 @@ public class GamePlayManager : MonoBehaviour
             ready = true;
             yield break;
         }
+
+        // 新HUD(スコア/コンボ/判定演出/曲名/進行バー)。旧 ScoreHUD は内部で無効化される。
+        // キャリブレーション時は CalibrationOverlay が主役なので出さない(上の分岐で return 済み)。
+        if (useOverhauledStage) GameHUDSkin.Ensure();
 
         string songId = GameSession.SelectedSongId;
         if (string.IsNullOrEmpty(songId))
@@ -188,6 +213,12 @@ public class GamePlayManager : MonoBehaviour
         noteSpawner.SetExtraOffsetSeconds(effectiveExtraOffset);
         noteSpawner.SetChart(chart);
 
+        // 判定ゲートの拍パルス(視覚メトロノーム)。ノーツと同じトータルオフセットで拍を刻む。
+        if (useOverhauledStage && chart.bpm > 0f)
+        {
+            GateBeatPulse.Ensure(chart.bpm, noteSpawner.TotalOffsetSeconds, songPlayer);
+        }
+
         // 小節線：BPM ガイドとして薄く流す
         if (disableBarLines && barLineSpawner != null)
         {
@@ -197,8 +228,9 @@ public class GamePlayManager : MonoBehaviour
         if (barLineSpawner != null)
         {
             barLineSpawner.overrideVisual = true;
-            barLineSpawner.lineAlpha = barLineAlpha;
-            barLineSpawner.lineThickness = barLineThickness;
+            // 新テーマでは判定ゲートより確実に暗くする(視覚ヒエラルキー維持)
+            barLineSpawner.lineAlpha = useOverhauledStage ? GameStageSkin.BarLineAlpha : barLineAlpha;
+            barLineSpawner.lineThickness = useOverhauledStage ? GameStageSkin.BarLineThickness : barLineThickness;
             barLineSpawner.SetChart(chart);
         }
 

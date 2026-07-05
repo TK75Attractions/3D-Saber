@@ -17,10 +17,12 @@ public class NoteVisuals : MonoBehaviour
     [Header("Look")]
     public Color baseColor = new Color(1f, 0.25f, 0.3f);
     public bool inheritColorFromMainRenderer = true;
-    public float baseEmissionStrength = 1.4f;
+    public float baseEmissionStrength = 1.9f;
 
     [Header("Pulse")]
-    public float pulseAmplitude = 0.6f;
+    // 既定 0(脈動なし)。画面全体の明滅ノイズを避け、ノーツは常時安定した明るさで最前面に立てる。
+    // 判定窓内の強調は NoteTimingCue の SetEmissionBoost が担う。
+    public float pulseAmplitude = 0f;
     public float pulseSpeedHz = 1.6f;
 
     [Header("Composition")]
@@ -262,7 +264,7 @@ public class NoteVisuals : MonoBehaviour
 
         const float front = -0.51f;
         const float half = 0.5f;
-        const float thick = 0.022f;       // 0.05 → 0.022
+        const float thick = 0.034f;       // 遠距離でも枠が読める太さ(0.022 は z=20 で消えていた)
         const float length = 0.92f;       // 角を少しだけ開けて窓枠的にする
         MakeChildWithMaterial("EdgeTop", PrimitiveType.Cube, new Vector3(0f, half, front), new Vector3(length, thick, thick), Quaternion.identity, railMat);
         MakeChildWithMaterial("EdgeBot", PrimitiveType.Cube, new Vector3(0f, -half, front), new Vector3(length, thick, thick), Quaternion.identity, railMat);

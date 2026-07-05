@@ -11,23 +11,26 @@ using UnityEngine;
 public class NoteTimingCue : MonoBehaviour
 {
     [Header("Ring")]
-    public float ringStartScale = 3.0f;
+    public float ringStartScale = 2.4f;
     public float ringEndScale = 1.10f;
     // approachTime のうち、残り時間がこの割合を切ったらリングが見え始める
-    [Range(0.1f, 1f)] public float ringVisiblePortion = 0.9f;
-    public float ringMaxAlpha = 0.85f;
-    public float ringThickness = 0.05f;
+    [Range(0.1f, 1f)] public float ringVisiblePortion = 0.65f;
+    public float ringMaxAlpha = 0.9f;
+    public float ringThickness = 0.035f;
 
     [Header("Ghost (判定面の着地予告)")]
+    // 着地の「時間+場所」アンカー。常時表示だと密な譜面で重なってノイズになるため、
+    // ghostVisibleSeconds(残り時間)を切ってから表示する短時間方式。枠のみで塗りは持たない。
     public bool buildGhost = true;
-    public float ghostMaxAlpha = 0.50f;
-    public float ghostFillMaxAlpha = 0.06f;
+    // 残りこの秒数を切ったらゴーストが浮かび上がる(HitTime ちょうどで不透明度最大)
+    public float ghostVisibleSeconds = 0.7f;
+    public float ghostMaxAlpha = 0.7f;
     // 判定面ガイドと Z-fight しないよう、わずかに手前に置く
     public float ghostZBias = -0.03f;
 
     [Header("In-window highlight")]
     public Color readyColor = Color.white;
-    public float inWindowEmissionBoost = 1.8f;
+    public float inWindowEmissionBoost = 2.4f;
     public float missFadeSeconds = 0.25f;
 
     public bool InWindow { get; private set; }
@@ -41,7 +44,6 @@ public class NoteTimingCue : MonoBehaviour
     private GameObject ghostRoot;
     private Material ringMat;
     private Material ghostMat;
-    private Material ghostFillMat;
     private float endFadeAlpha = 1f;
     private bool initialized;
 
@@ -75,7 +77,6 @@ public class NoteTimingCue : MonoBehaviour
         if (ghostRoot != null) SafeDestroyGo(ghostRoot);
         SafeDestroy(ringMat);
         SafeDestroy(ghostMat);
-        SafeDestroy(ghostFillMat);
     }
 
     // NoteSpawner.UpdateLive から毎フレーム呼ばれる。
@@ -104,17 +105,13 @@ public class NoteTimingCue : MonoBehaviour
             ApplyColor(ringMat, c, a, inWindow ? 2.6f : 1.5f);
         }
 
-        // 2. 着地ゴースト：接近につれて浮かび上がる
+        // 2. 着地ゴースト：残り ghostVisibleSeconds を切ってから浮かび上がる(短時間表示で重なりを防ぐ)
         if (ghostRoot != null)
         {
-            float ramp = ComputeGhostAlpha(dt, approachTime);
+            float ramp = ComputeGhostAlpha(dt, ghostVisibleSeconds);
             float ga = inWindow ? ghostMaxAlpha : ramp * ghostMaxAlpha;
             Color gc = inWindow ? readyColor : baseColor;
-            ApplyColor(ghostMat, gc, ga, inWindow ? 2.2f : 1.2f);
-            if (ghostFillMat != null)
-            {
-                ApplyColor(ghostFillMat, gc, ghostFillMaxAlpha * Mathf.Max(ramp, inWindow ? 1f : 0f), 0.5f);
-            }
+            ApplyColor(ghostMat, gc, ga, inWindow ? 2.4f : 1.4f);
         }
     }
 
@@ -133,11 +130,7 @@ public class NoteTimingCue : MonoBehaviour
         if (ghostRoot != null)
         {
             if (a <= 0f && ghostRoot.activeSelf) ghostRoot.SetActive(false);
-            else
-            {
-                ApplyColor(ghostMat, baseColor, a * 0.3f, 0.5f);
-                if (ghostFillMat != null) ApplyColor(ghostFillMat, baseColor, 0f, 0f);
-            }
+            else ApplyColor(ghostMat, baseColor, a * 0.3f, 0.5f);
         }
     }
 
@@ -169,12 +162,15 @@ public class NoteTimingCue : MonoBehaviour
         return dt <= earlyWindow && dt >= -lateWindow;
     }
 
-    // 着地ゴーストの不透明度。spawn 直後 0 → HitTime で 1。
-    public static float ComputeGhostAlpha(double dt, float approachTime)
+    // 着地ゴーストの不透明度。残り visibleSeconds を切ってから smoothstep で 0→1(HitTime 以降は 1 を維持)。
+    // 短時間表示にすることで、密な譜面でも判定面にゴーストが重なり続けない。
+    public static float ComputeGhostAlpha(double dt, float visibleSeconds)
     {
-        if (approachTime <= 0.0001f) return 1f;
-        float t = 1f - Mathf.Clamp01((float)(dt / approachTime));
-        return Mathf.Pow(t, 1.5f);
+        if (visibleSeconds <= 0.0001f) return dt <= 0.0 ? 1f : 0f;
+        if (dt >= visibleSeconds) return 0f;
+        if (dt <= 0.0) return 1f;
+        float t = 1f - (float)(dt / visibleSeconds);
+        return Mathf.Clamp01(t * t * (3f - 2f * t));
     }
 
     // ---- 構築 ----
@@ -206,18 +202,7 @@ public class NoteTimingCue : MonoBehaviour
         ghostMat = MakeCueMaterial();
         BuildFrame(ghostRoot.transform, 0.5f, 0.05f, ghostMat);
         ApplyColor(ghostMat, baseColor, 0f, 1.2f);
-
-        // 中の薄い面（うっすら塗って「ここに来る」を示す）
-        var fill = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        fill.name = "GhostFill";
-        fill.transform.SetParent(ghostRoot.transform, false);
-        // プレイヤー(-Z 側)に面を向ける
-        fill.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
-        fill.transform.localScale = Vector3.one * 0.98f;
-        StripCollider(fill);
-        ghostFillMat = MakeCueMaterial();
-        fill.GetComponent<MeshRenderer>().sharedMaterial = ghostFillMat;
-        ApplyColor(ghostFillMat, baseColor, 0f, 0.5f);
+        // 内側の塗り(GhostFill)は廃止:判定面付近を霞ませる原因だった。枠だけで場所は十分伝わる。
     }
 
     // 中心 (0,0)・半幅 half の正方形枠を 4 本の薄い Cube で組む。

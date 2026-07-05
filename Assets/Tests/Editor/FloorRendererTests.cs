@@ -46,8 +46,9 @@ public class FloorRendererTests
     }
 
     [Test]
-    public void Build_Creates7FloorLanes()
+    public void Build_Creates3FloorLanes()
     {
+        // Neon Focus:レーンガイドは両端+中央の 3 本に削減(縦線ノイズを減らす)
         var fr = FloorRenderer.Ensure();
         created.Add(fr.gameObject);
         int laneCount = 0;
@@ -55,20 +56,20 @@ public class FloorRendererTests
         {
             if (t.name.StartsWith("FloorLane_")) laneCount++;
         }
-        Assert.AreEqual(7, laneCount, "x=-3..+3 の 7 本（床）");
+        Assert.AreEqual(3, laneCount, "x=-3 / 0 / +3 の 3 本（床）");
     }
 
     [Test]
-    public void Build_Creates7CeilingLanes()
+    public void Build_NoCeilingByDefault()
     {
+        // Neon Focus:天井グリッドは視覚ノイズのため既定 OFF
         var fr = FloorRenderer.Ensure();
         created.Add(fr.gameObject);
-        int ceilCount = 0;
         foreach (Transform t in fr.transform)
         {
-            if (t.name.StartsWith("CeilLane_")) ceilCount++;
+            Assert.IsFalse(t.name.StartsWith("CeilLane_"), $"天井レーンが生成されている: {t.name}");
+            Assert.IsFalse(t.name.StartsWith("CeilDepth_"), $"天井奥行き線が生成されている: {t.name}");
         }
-        Assert.AreEqual(7, ceilCount, "天井にも 7 レーン");
     }
 
     [Test]
@@ -84,18 +85,6 @@ public class FloorRendererTests
         Assert.Greater(depthCount, 5, "床の奥行きラインが複数本");
     }
 
-    [Test]
-    public void Build_CreatesCeilingDepthLines()
-    {
-        var fr = FloorRenderer.Ensure();
-        created.Add(fr.gameObject);
-        int depthCount = 0;
-        foreach (Transform t in fr.transform)
-        {
-            if (t.name.StartsWith("CeilDepth_")) depthCount++;
-        }
-        Assert.Greater(depthCount, 5, "天井の奥行きラインが複数本");
-    }
 
     [Test]
     public void Build_StripsCollidersFromAllParts()
