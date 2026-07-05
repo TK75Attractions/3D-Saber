@@ -12,6 +12,12 @@
 
 > 操作はすべて Play 中に行います（ノーツの配置などはランタイム動作）。
 
+### 操作パネルについて（自動整形）
+
+Play 中、右側の操作パネルは **日本語ラベル＋カテゴリ色＋セクション分け**（ノーツの種類 / 再生・移動 / 編集 / 曲の設定 / ファイル）に **自動で組み直されます**（`EditorPanelBuilder`）。「タップ/フリック/ロング」の種類ボタンや「本編へ出力」ボタンもここに追加されます。
+
+この整形は **Play 中のインスタンスだけ** を変更し、シーン（`.unity`）は書き換えません（停止すれば元の状態に戻る＝非破壊）。元の素のUIに戻したい場合は、シーン内に生成される `EditorPanelBuilder` を無効化／削除してください。
+
 ---
 
 ## クイックスタート（最短の流れ）
@@ -99,6 +105,7 @@
 | `ScriptsUI/EditorControlUI.cs` | BPM/OFFSET等の入力、移動・Undo/Redo のショートカット |
 | `ScriptsUI/TimelineManager.cs` | タイムライン（シークバー＋ノーツ点） |
 | `ScriptsUI/SaveLoadUI.cs` | Save / Load / Export ボタンの受け口 |
+| `ScriptsUI/EditorPanelBuilder.cs` | 操作UIを日本語・グループ分けに自動整形（Play中のみ・非破壊） |
 | `ScriptsUI/EditorHelpOverlay.cs` | 本ヘルプ画面（自動生成・配線不要） |
 | `AudioWaveformRenderer.cs` | 音源の波形表示 |
 | `BeatNoteData.cs` | エディタ内部のデータ定義 |

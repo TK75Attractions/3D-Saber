@@ -27,7 +27,10 @@
       "Bash(curl -sL -o ChakraPetch-BoldItalic.ttf \"https://raw.githubusercontent.com/google/fonts/main/ofl/chakrapetch/ChakraPetch-BoldItalic.ttf\")",
       "Bash(curl -sL -o ChakraPetch-OFL.txt \"https://raw.githubusercontent.com/google/fonts/main/ofl/chakrapetch/OFL.txt\")",
       "Bash(xxd)",
-      "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Unity.exe\" -batchmode -nographics -projectPath \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\" -runTests -testPlatform EditMode -testResults \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-results-title.xml\" -logFile \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-log-title.txt\")"
-    ]
+      "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Unity.exe\" -batchmode -nographics -projectPath \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\" -runTests -testPlatform EditMode -testResults \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-results-title.xml\" -logFile \"C:\\\\Users\\\\shike\\\\OneDrive\\\\ドキュメント\\\\GitHub\\\\3D-Saber\\\\test-log-title.txt\")",
+      "WebFetch(domain:note.com)",
+      "PowerShell($s = Get-Content -Raw -Encoding UTF8 \".claude\\\\settings.local.json\" | ConvertFrom-Json; Write-Output \\(\"defaultMode = \" + $s.permissions.defaultMode\\); Write-Output \\(\"allow rules = \" + $s.permissions.allow.Count\\))"
+    ],
+    "defaultMode": "bypassPermissions"
   }
 }
