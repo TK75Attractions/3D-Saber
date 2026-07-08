@@ -1,16 +1,33 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// ScreenSpaceOverlay Canvas の最背面に「サイバーパンク背景」を生成するコンポーネント。
-// 構成(奥→手前)：
-//   縦グラデーション → 一点透視の床グリッド → 斜めの光線 → スキャンライン
-//   → 浮遊パーティクル → ビネット → ゆっくり上下する光線
+// ScreenSpaceOverlay Canvas の最背面に背景を生成するコンポーネント。
+// スタイルは2種類:
+//   Minimal(既定): 上品な暗色グラデ + 中央の極薄グロー + ビネットのみ。「ミニマル・高級」路線。
+//   Cyber: 従来の盛りだくさん(床グリッド/斜め光線/スキャンライン/浮遊ドット/動く光線)。オプトイン。
 // Canvas に1つだけ存在する想定(Ensure() で冪等に追加)。
+public enum BackdropStyle
+{
+    Minimal = 0,
+    Cyber = 1,
+}
+
 public class CyberBackdrop : MonoBehaviour
 {
-    [Header("Gradient")]
+    public BackdropStyle style = BackdropStyle.Minimal;
+
+    [Header("Gradient (Cyber)")]
     public Color topColor = new Color(0.02f, 0.03f, 0.09f, 1f);
     public Color bottomColor = new Color(0.09f, 0.04f, 0.22f, 1f);
+
+    [Header("Gradient (Minimal)")]
+    // ほぼ黒。上端は完全な黒に近く、下端にだけごくわずかな藍を残して奥行きを出す。彩度は極小。
+    public Color minimalTopColor = new Color(0.012f, 0.014f, 0.026f, 1f);
+    public Color minimalBottomColor = new Color(0.03f, 0.028f, 0.05f, 1f);
+    [Header("Center glow (Minimal)")]
+    // 画面中央やや上に置く、非常に薄く大きいラジアルグロー1枚。奥行きの主役。
+    public Color minimalGlowColor = new Color(0.42f, 0.52f, 0.78f, 0.06f);
+    public float minimalVignetteStrength = 0.62f;
 
     [Header("Scan lines")]
     public Color scanLineColor = new Color(0.30f, 1f, 1f, 0.05f);
@@ -53,6 +70,11 @@ public class CyberBackdrop : MonoBehaviour
 
     public static CyberBackdrop Ensure(Canvas canvas)
     {
+        return Ensure(canvas, BackdropStyle.Minimal);
+    }
+
+    public static CyberBackdrop Ensure(Canvas canvas, BackdropStyle style)
+    {
         if (canvas == null) return null;
         var existing = canvas.GetComponentInChildren<CyberBackdrop>();
         if (existing != null) return existing;
@@ -63,6 +85,7 @@ public class CyberBackdrop : MonoBehaviour
         // 既存 UI の後ろに置く
         go.transform.SetAsFirstSibling();
         var b = go.AddComponent<CyberBackdrop>();
+        b.style = style;
         b.Build();
         return b;
     }
@@ -77,6 +100,12 @@ public class CyberBackdrop : MonoBehaviour
 
     void Build()
     {
+        if (style == BackdropStyle.Minimal)
+        {
+            BuildMinimal();
+            return;
+        }
+
         BuildGradient();
         if (addHorizonGrid) BuildHorizonGrid();
         if (addBeams) BuildBeams();
@@ -86,8 +115,37 @@ public class CyberBackdrop : MonoBehaviour
         BuildGlowLine();
     }
 
+    // ミニマル背景:暗色グラデ + 中央の極薄グロー + ビネットだけ。
+    // 発光もテンプレ模様も持たず、ノーツや前景 UI を最も引き立てる。
+    void BuildMinimal()
+    {
+        BuildGradient();
+        BuildCenterGlow();
+        BuildVignetteWithStrength(minimalVignetteStrength);
+    }
+
+    void BuildCenterGlow()
+    {
+        var go = new GameObject("CenterGlow", typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(transform, false);
+        var rt = go.GetComponent<RectTransform>();
+        // 中央やや上。画面より大きめに広げて、中心が最も明るく端で自然に消えるようにする。
+        rt.anchorMin = new Vector2(0.5f, 0.5f);
+        rt.anchorMax = new Vector2(0.5f, 0.5f);
+        rt.pivot = new Vector2(0.5f, 0.5f);
+        rt.anchoredPosition = new Vector2(0f, 120f);
+        rt.sizeDelta = new Vector2(2600f, 1900f);
+        var img = go.GetComponent<Image>();
+        img.sprite = UISkinKit.SoftGlow();
+        img.color = minimalGlowColor;
+        img.raycastTarget = false;
+    }
+
     void BuildGradient()
     {
+        Color top = style == BackdropStyle.Minimal ? minimalTopColor : topColor;
+        Color bottom = style == BackdropStyle.Minimal ? minimalBottomColor : bottomColor;
+
         // 縦方向のみ32段の小さなテクスチャで十分(Bilinear 補間で滑らか)
         gradientTexture = new Texture2D(1, 32, TextureFormat.RGBA32, false);
         gradientTexture.filterMode = FilterMode.Bilinear;
@@ -95,7 +153,7 @@ public class CyberBackdrop : MonoBehaviour
         for (int y = 0; y < 32; y++)
         {
             float t = y / 31f;
-            Color c = Color.Lerp(bottomColor, topColor, t);
+            Color c = Color.Lerp(bottom, top, t);
             gradientTexture.SetPixel(0, y, c);
         }
         gradientTexture.Apply();
@@ -266,12 +324,17 @@ public class CyberBackdrop : MonoBehaviour
 
     void BuildVignette()
     {
+        BuildVignetteWithStrength(vignetteStrength);
+    }
+
+    void BuildVignetteWithStrength(float strength)
+    {
         var go = new GameObject("Vignette", typeof(RectTransform), typeof(Image));
         go.transform.SetParent(transform, false);
         StretchFull(go.GetComponent<RectTransform>());
         var img = go.GetComponent<Image>();
         img.sprite = UISkinKit.Vignette();
-        img.color = new Color(0f, 0f, 0f, vignetteStrength);
+        img.color = new Color(0f, 0f, 0f, strength);
         img.raycastTarget = false;
     }
 

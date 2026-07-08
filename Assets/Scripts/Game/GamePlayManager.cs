@@ -42,6 +42,13 @@ public class GamePlayManager : MonoBehaviour
     public float saberNoteHitRadiusXYV2 = 0.45f;
     public float saberMinCutSpeedV2 = 3.0f;
 
+    [Header("Two sabers (2本セーバー)")]
+    // 棒1(port5005)=シーンのセーバー、棒2(port5006)=実行時生成の2本目。
+    // 青ノーツ=左手、赤ノーツ=右手、金・無色=どちらでも。マウスフォールバック時は全色切れる。
+    public bool enableTwoSabers = true;
+    // 棒1の手。実機のセーバー割り当てが逆だったらここを Left に変える。
+    public SaberHand stick1Hand = SaberHand.Right;
+
     [Header("Judge guide")]
     public bool simplifyJudgeGuide = true;
     public float judgePanelAlpha = 0.30f;
@@ -90,6 +97,8 @@ public class GamePlayManager : MonoBehaviour
     private bool finished;
     private bool ready;
     private double lastNoteTime;
+    // 2本目のセーバー判定(enableTwoSabers 時に SaberRig が生成)
+    private SaberCutJudge cutJudge2;
 
     // --- キャリブレーション（判定調整）モード ---
     private bool inCalibration;
@@ -127,6 +136,12 @@ public class GamePlayManager : MonoBehaviour
         if (autoEnsureInputPoint) EnsureInputPoint();
         if (autoEnsureUdpImuBridge) EnsureUdpImuBridge();
         if (autoEnsureSwing8DirectionLogger) EnsureSwing8DirectionLogger();
+
+        // 2本目のセーバー(棒2)。1本目の設定が確定した後に生成する。
+        if (enableTwoSabers && cutJudge != null)
+        {
+            cutJudge2 = SaberRig.EnsureSecondSaber(cutJudge, stick1Hand);
+        }
         if (useOverhauledStage)
         {
             // 新テーマ:格子剥がし+判定ゲート+カメラ背景/フォグは GameStageSkin に集約。
@@ -269,12 +284,12 @@ public class GamePlayManager : MonoBehaviour
 
         // SaberInputBridge は world 座標がそのまま入る前提に切り替え。
         // 受信状態に応じて UDP / マウス を SaberInputBridge.Update が自動で切り替える。
-        var bridge = Object.FindFirstObjectByType<SaberInputBridge>();
-        if (bridge != null)
+        // 2本構成でも全 Bridge に適用する(マウスフォールバックは棒1のみ:2本がマウスに重ならないように)。
+        foreach (var bridge in Object.FindObjectsByType<SaberInputBridge>(FindObjectsSortMode.None))
         {
             bridge.pixelsToWorld = 1.0f;
             bridge.useInputPoint = true;
-            bridge.fallbackToMouse = true; // UDP 無音時はマウスに戻る
+            bridge.fallbackToMouse = bridge.stickIndex == 1; // UDP 無音時はマウスに戻る(棒1のみ)
         }
     }
 
@@ -479,8 +494,9 @@ public class GamePlayManager : MonoBehaviour
     {
         if (finished || !ready) return;
 
-        // 1. セーバー判定
+        // 1. セーバー判定(2本構成なら両方)
         if (cutJudge != null) cutJudge.RunJudge();
+        if (cutJudge2 != null) cutJudge2.RunJudge();
 
         // 2a. キャリブレーション分岐：時計は AudioSettings.dspTime ベース、終了せずループ
         if (inCalibration)
@@ -520,6 +536,8 @@ public class GamePlayManager : MonoBehaviour
             cutJudge.bladeRadius = 0.35f;
             cutJudge.noteHitRadiusXY = 0.65f;
             cutJudge.minCutSpeed = 2.0f;
+            // 2本目にも同じ緩和値を反映
+            SaberRig.CopyTuning(cutJudge, cutJudge2);
         }
 
         // 小節線は不要

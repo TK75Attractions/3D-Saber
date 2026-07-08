@@ -51,10 +51,30 @@ public class UISkinTests
     }
 
     [Test]
-    public void Backdrop_Build_CreatesGradientAndScanLinesAndGlow()
+    public void Backdrop_DefaultsToMinimal_GradientGlowVignetteOnly()
     {
+        // 既定はミニマル:グラデ + 中央グロー + ビネットのみ。テンプレ要素は生成しない。
         var canvas = MakeCanvas();
         var backdrop = CyberBackdrop.Ensure(canvas);
+        Assert.AreEqual(BackdropStyle.Minimal, backdrop.style);
+        Assert.IsNotNull(backdrop.transform.Find("Gradient"), "グラデはある");
+        Assert.IsNotNull(backdrop.transform.Find("CenterGlow"), "中央グローはある");
+        Assert.IsNotNull(backdrop.transform.Find("Vignette"), "ビネットはある");
+        // 「デモ感」の主因だったテンプレ要素が無いこと
+        Assert.IsNull(backdrop.transform.Find("ScanLines"), "スキャンラインは無い");
+        Assert.IsNull(backdrop.transform.Find("GlowLine"), "動く光線は無い");
+        Assert.IsNull(backdrop.transform.Find("HorizonGrid"), "床グリッドは無い");
+        Assert.IsNull(backdrop.transform.Find("Beams"), "斜め光線は無い");
+        Assert.IsNull(backdrop.transform.Find("Particles"), "浮遊ドットは無い");
+    }
+
+    [Test]
+    public void Backdrop_CyberStyle_CreatesTemplateElements()
+    {
+        // Cyber は明示オプトインで従来の盛りだくさん構成
+        var canvas = MakeCanvas();
+        var backdrop = CyberBackdrop.Ensure(canvas, BackdropStyle.Cyber);
+        Assert.AreEqual(BackdropStyle.Cyber, backdrop.style);
         Assert.IsNotNull(backdrop.transform.Find("Gradient"));
         Assert.IsNotNull(backdrop.transform.Find("ScanLines"));
         Assert.IsNotNull(backdrop.transform.Find("GlowLine"));

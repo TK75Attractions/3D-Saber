@@ -68,14 +68,21 @@ public class NoteVisuals : MonoBehaviour
 
         // 色決定の優先順位：
         // 1. 金ノーツ（Gold）はチャートの色より優先
-        // 2. Long / Direction は kind 固有色を使う（既存の red/blue より見分けやすい）
-        // 3. Tap は譜面のマテリアル色（red / blue / default）をそのまま引き継ぐ
+        // 2. 担当ハンドあり(Left/Right)は手の色で統一（青=左手 / 赤=右手。ブレード色と対応させ、
+        //    「どの手で切るか」を種別より優先して伝える。ロングは形状+残数ラベルで見分く）
+        // 3. Long / Direction は kind 固有色を使う（手指定なしの場合）
+        // 4. Tap は譜面のマテリアル色（red / blue / default）をそのまま引き継ぐ
         bool overrideColor = false;
         Color overrideC = Color.white;
         if (note != null && note.IsGold)
         {
             overrideColor = true;
             overrideC = UISkinPalette.NoteGold;
+        }
+        else if (note != null && note.RequiredHand != SaberHand.Any)
+        {
+            overrideColor = true;
+            overrideC = SaberHandHelper.HandColor(note.RequiredHand);
         }
         else if (kind == NoteKind.Long)
         {

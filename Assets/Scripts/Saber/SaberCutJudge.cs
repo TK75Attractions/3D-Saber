@@ -10,6 +10,9 @@ public class SaberCutJudge : MonoBehaviour
     public SaberTracker saber;
     // ブレード（線分）の端点を提供するソース。指定なし or HasBlade=false のときは従来の点-軌跡判定。
     public SaberInputBridge bladeProvider;
+    // このセーバーの手(Left=青ノーツ担当 / Right=赤ノーツ担当 / Any=区別なし)。
+    // マウスフォールバック中は EffectiveHand() が Any を返し、全色を切れる(ハード無しでの検証用)。
+    public SaberHand hand = SaberHand.Any;
     public float bladeRadius = 0.3f;
     public float minCutSpeed = 3.0f;
     public float maxCutDistance = 3.0f;
@@ -70,6 +73,8 @@ public class SaberCutJudge : MonoBehaviour
         foreach (var note in notes)
         {
             if (!IsCandidate(note)) continue;
+            // 担当外の手のノーツはそもそも判定対象にしない(誤った手のスイングは無反応)
+            if (!SaberHandHelper.CanCut(note.RequiredHand, EffectiveHand())) continue;
             if (pending.ContainsKey(note)) continue;
             Vector2 noteXY = new Vector2(note.transform.position.x, note.transform.position.y);
             float d = DistPointToSegment(noteXY, a, b, out Vector2 closest);
@@ -107,7 +112,7 @@ public class SaberCutJudge : MonoBehaviour
             if (distNow > hitRange)
             {
                 CutDirection imuHint = ResolveImuHint();
-                note.Cut(kv.Value.hitPoint, kv.Value.velocity, imuHint);
+                note.Cut(kv.Value.hitPoint, kv.Value.velocity, imuHint, EffectiveHand());
                 cuts++;
                 toRemove.Add(note);
             }
@@ -133,6 +138,8 @@ public class SaberCutJudge : MonoBehaviour
         foreach (var note in notes)
         {
             if (!IsCandidate(note)) continue;
+            // 担当外の手のノーツはそもそも判定対象にしない(誤った手のスイングは無反応)
+            if (!SaberHandHelper.CanCut(note.RequiredHand, EffectiveHand())) continue;
             if (pending.ContainsKey(note)) continue;
             Vector2 noteXY = new Vector2(note.transform.position.x, note.transform.position.y);
             float d = DistPointToSegment(noteXY, from, to, out Vector2 closest);
@@ -170,7 +177,7 @@ public class SaberCutJudge : MonoBehaviour
             if (distNow > hitRange)
             {
                 CutDirection imuHint = ResolveImuHint();
-                note.Cut(kv.Value.hitPoint, kv.Value.velocity, imuHint);
+                note.Cut(kv.Value.hitPoint, kv.Value.velocity, imuHint, EffectiveHand());
                 cuts++;
                 toRemove.Add(note);
             }
@@ -186,6 +193,14 @@ public class SaberCutJudge : MonoBehaviour
         if (!n.IsJudgeable) return false;
         if (!n.gameObject.activeInHierarchy) return false;
         return true;
+    }
+
+    // この Judge が「どの手として」切るか。マウスフォールバック中は手の区別をしない(Any)。
+    public SaberHand EffectiveHand()
+    {
+        if (hand == SaberHand.Any) return SaberHand.Any;
+        if (bladeProvider != null && bladeProvider.UsingMouseFallback) return SaberHand.Any;
+        return hand;
     }
 
     // 直近 N 秒以内の IMU 振り検知方向を取得。古ければ None。

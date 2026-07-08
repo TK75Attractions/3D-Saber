@@ -16,6 +16,9 @@ public class CuttableNote : MonoBehaviour
     public CutDirection RequiredDirection = CutDirection.None;
     public int RequiredCutCount = 1;
     public int RemainingCuts = 1;
+    // 担当ハンド(chart.json の color 由来)。Left=青 / Right=赤 / Any=どちらでも(金・無色)。
+    // 誤った手のスイングは「切れない」(ペナルティなし。ロングの各カットにも同じルールを適用)。
+    public SaberHand RequiredHand = SaberHand.Any;
     // 通算で1回でも誤方向に切ったら false。
     public bool LastCutCorrectDirection { get; private set; } = true;
     // 何回切れたか（達成数）。
@@ -53,13 +56,22 @@ public class CuttableNote : MonoBehaviour
 
     public void Cut(Vector3 hitPoint, Vector3 cutVelocity)
     {
-        Cut(hitPoint, cutVelocity, CutDirection.None);
+        Cut(hitPoint, cutVelocity, CutDirection.None, SaberHand.Any);
+    }
+
+    public void Cut(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint)
+    {
+        Cut(hitPoint, cutVelocity, imuHint, SaberHand.Any);
     }
 
     // imuHint：IMU 由来の振り検知方向（無ければ None）。velocity か imuHint のどちらかで一致すれば OK。
-    public void Cut(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint)
+    // cutterHand：切ろうとしたセーバーの手。RequiredHand と不一致なら何もしない(逆方向拒否と同じ非ペナルティ設計)。
+    public void Cut(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand)
     {
         if (IsCut || IsMissed || IsFinalized) return;
+
+        // 担当ハンド不一致のスイングは切れない。ノーツは無傷のまま、正しい手での再判定が可能。
+        if (!SaberHandHelper.CanCut(RequiredHand, cutterHand)) return;
 
         // 逆方向（要求方向と約120°以上ズレた）スイングはそもそも切らない。
         // 「準備で間違って切ってしまう」現象を防ぐためのガード。

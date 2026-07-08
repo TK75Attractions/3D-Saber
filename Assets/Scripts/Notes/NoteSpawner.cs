@@ -123,6 +123,8 @@ public class NoteSpawner : MonoBehaviour
         note.RemainingCuts = note.RequiredCutCount;
         // 金ノーツ判定（chart.json の color:"gold"）
         note.IsGold = !string.IsNullOrEmpty(nd.color) && nd.color.ToLowerInvariant() == "gold";
+        // 担当ハンド（blue=左手 / red=右手 / gold・無色=どちらでも）。ロングにも同じルールを適用。
+        note.RequiredHand = SaberHandHelper.FromColor(nd.color);
 
         // 旧プレハブにある面ステッカー等を剥がして、クリスタル＋ネオン外観に置き換える。
         // NoteVisuals 自身が冪等で、既存プレハブにも安全に被せられる。

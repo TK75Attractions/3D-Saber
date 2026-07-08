@@ -17,7 +17,6 @@ public class TitleSceneSkin : MonoBehaviour
     public float titlePulseHz = 0f;
     public float titlePulseAmplitude = 0f;
     public string tagline = "// CUT . THE . RHYTHM";
-    public string versionLabel = "PROTOTYPE BUILD";
     public string promptText = "CUT THE NOTE TO START";
     public Vector3 startNoteWorldPos = new Vector3(0f, -2.3f, 0f);
 
@@ -54,7 +53,6 @@ public class TitleSceneSkin : MonoBehaviour
         BuildLogo(canvas);
         BuildDividerAndTagline(canvas);
         ReplaceButtons(canvas, has3D);
-        AddVersionTag(canvas);
 
         if (has3D)
         {
@@ -227,17 +225,6 @@ public class TitleSceneSkin : MonoBehaviour
     {
         var t = btn.GetComponentInChildren<Text>();
         return t != null ? t.text : "";
-    }
-
-    void AddVersionTag(Canvas canvas)
-    {
-        var t = UISkinKit.MakeTMP(canvas.transform, "VersionTag", versionLabel, 15f,
-            new Color(0.45f, 0.50f, 0.65f, 0.8f), TextAlignmentOptions.Left,
-            new Vector2(28f, 22f), new Vector2(400f, 30f), FontStyles.Normal, 3f);
-        var rt = t.rectTransform;
-        rt.anchorMin = new Vector2(0f, 0f);
-        rt.anchorMax = new Vector2(0f, 0f);
-        rt.pivot = new Vector2(0f, 0f);
     }
 
     // ---- 切ってスタート ----

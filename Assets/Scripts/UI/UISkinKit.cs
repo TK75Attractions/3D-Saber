@@ -288,7 +288,8 @@ public static class UISkinKit
         var frame = frameGo.GetComponent<Image>();
         frame.sprite = RoundedFrame();
         frame.type = Image.Type.Sliced;
-        frame.color = new Color(accent.r, accent.g, accent.b, 0.85f);
+        // ミニマル路線:枠線は主張しすぎない繊細な明るさに。強調はホバー時のグローが担う。
+        frame.color = new Color(accent.r, accent.g, accent.b, 0.55f);
         frame.raycastTarget = false;
         parts.frame = frame;
 

@@ -422,8 +422,6 @@ public static class SaberExperimentBuilder
         CreateEventSystem();
 
         CreateLabel(canvasGo.transform, "Select Song", new Vector2(0, 460), 64, FontStyle.Bold);
-        CreateLabel(canvasGo.transform, "↑↓: 曲   ←→: 難易度   Enter: スタート",
-            new Vector2(0, -480), 22, FontStyle.Normal);
 
         // ---- 左：スクロール可能な曲リスト ----
         var scrollGo = new GameObject("ScrollView",

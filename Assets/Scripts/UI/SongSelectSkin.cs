@@ -425,31 +425,13 @@ public class SongSelectSkin : MonoBehaviour
 
     // ---- フッター(操作ヒント) ----
 
+    // シーンに焼き込まれた「↑↓: 曲 …」の操作説明は説明感が強いので非表示にする(シーンは編集しない)。
     void StyleHintFooter(Canvas canvas)
     {
-        Text hint = null;
         foreach (var t in canvas.GetComponentsInChildren<Text>(true))
         {
-            if (t.text.Contains("↑↓")) { hint = t; break; }
+            if (t.text.Contains("↑↓")) { t.gameObject.SetActive(false); break; }
         }
-        if (hint == null) return;
-
-        hint.color = TextNormal;
-        hint.fontSize = 20;
-
-        // 後ろに薄い帯
-        var bar = new GameObject("HintBar", typeof(RectTransform), typeof(Image));
-        bar.transform.SetParent(hint.transform.parent, false);
-        bar.transform.SetSiblingIndex(hint.transform.GetSiblingIndex());
-        var brt = bar.GetComponent<RectTransform>();
-        var hrt = hint.GetComponent<RectTransform>();
-        brt.anchoredPosition = hrt.anchoredPosition;
-        brt.sizeDelta = new Vector2(820f, 44f);
-        var bimg = bar.GetComponent<Image>();
-        bimg.sprite = UISkinKit.RoundedRect();
-        bimg.type = Image.Type.Sliced;
-        bimg.color = new Color(0.05f, 0.05f, 0.14f, 0.55f);
-        bimg.raycastTarget = false;
     }
 
     // ---- 判定調整ボタン ----

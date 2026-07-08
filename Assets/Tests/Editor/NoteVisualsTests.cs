@@ -195,6 +195,46 @@ public class NoteVisualsTests
     }
 
     [Test]
+    public void Color_Override_HandLeft_UsesBlue()
+    {
+        var note = MakeLegacyNote();
+        var cn = note.AddComponent<CuttableNote>();
+        cn.RequiredHand = SaberHand.Left;
+        var visuals = AttachVisuals(note);
+        Assert.AreEqual(UISkinPalette.LogoBlue.r, visuals.baseColor.r, 0.001f);
+        Assert.AreEqual(UISkinPalette.LogoBlue.g, visuals.baseColor.g, 0.001f);
+        Assert.AreEqual(UISkinPalette.LogoBlue.b, visuals.baseColor.b, 0.001f);
+    }
+
+    [Test]
+    public void Color_Override_Hand_TrumpsKindColor()
+    {
+        // Long + 右手指定 → 種別色(ティール)より手の色(赤)が優先
+        var note = MakeLegacyNote();
+        var cn = note.AddComponent<CuttableNote>();
+        cn.RequiredCutCount = 2;
+        cn.RemainingCuts = 2;
+        cn.RequiredHand = SaberHand.Right;
+        var visuals = AttachVisuals(note);
+        Assert.AreEqual(UISkinPalette.LogoRed.r, visuals.baseColor.r, 0.001f);
+        Assert.AreEqual(UISkinPalette.LogoRed.g, visuals.baseColor.g, 0.001f);
+        Assert.AreEqual(UISkinPalette.LogoRed.b, visuals.baseColor.b, 0.001f);
+    }
+
+    [Test]
+    public void Color_Override_Gold_TrumpsHandColor()
+    {
+        var note = MakeLegacyNote();
+        var cn = note.AddComponent<CuttableNote>();
+        cn.IsGold = true;
+        cn.RequiredHand = SaberHand.Left;
+        var visuals = AttachVisuals(note);
+        Assert.AreEqual(UISkinPalette.NoteGold.r, visuals.baseColor.r, 0.001f);
+        Assert.AreEqual(UISkinPalette.NoteGold.g, visuals.baseColor.g, 0.001f);
+        Assert.AreEqual(UISkinPalette.NoteGold.b, visuals.baseColor.b, 0.001f);
+    }
+
+    [Test]
     public void Color_Override_Gold_TrumpsKindColor()
     {
         // Tap + IsGold → 金色

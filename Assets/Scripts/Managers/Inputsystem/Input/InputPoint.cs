@@ -33,13 +33,18 @@ public class InputPoint : MonoBehaviour
     public Vector2 NormalizedPosition2 { get; private set; }
     public float LocalAngleDeg { get; private set; }
     public float LocalAngleDeg2 { get; private set; }
-    // 最後にデータを受信した時刻（Time.timeAsDouble 基準）。
-    // SaberInputBridge が「UDP 無音 → マウスフォールバック」を判定するのに使う。
+    // 最後にデータを受信した時刻（Time.timeAsDouble 基準）。棒1（port）/棒2（port2）で別管理。
+    // SaberInputBridge が「UDP 無音 → マウスフォールバック/非表示」を判定するのに使う。
     public double LastReceivedTime { get; private set; } = -1000.0;
+    public double LastReceivedTime2 { get; private set; } = -1000.0;
     // 「最近データが来ているか」を判定するヘルパー。既定 1 秒。
     public bool IsRecentlyActive(double thresholdSeconds = 1.0)
     {
         return (Time.timeAsDouble - LastReceivedTime) < thresholdSeconds;
+    }
+    public bool IsRecentlyActive2(double thresholdSeconds = 1.0)
+    {
+        return (Time.timeAsDouble - LastReceivedTime2) < thresholdSeconds;
     }
     public Vector2 LocalStickA { get; private set; }
     public Vector2 LocalStickB { get; private set; }
@@ -433,6 +438,7 @@ public class InputPoint : MonoBehaviour
                 LocalStickLengthNormalized2 = LocalStickLength2 / Mathf.Sqrt(8f);
                 LocalAngleDeg2 = Mathf.Atan2(nyB2 - nyA2, nxB2 - nxA2) * Mathf.Rad2Deg;
             }
+            LastReceivedTime2 = Time.timeAsDouble;
         }
 
         if (updated)

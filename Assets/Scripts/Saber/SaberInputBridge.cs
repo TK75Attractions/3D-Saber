@@ -13,7 +13,14 @@ public class SaberInputBridge : MonoBehaviour
     public bool fallbackToMouse = false;
     // UDP データがこの秒数以上止まったら、マウスフォールバックに自動で切り替える。
     public float inputPointStaleSeconds = 1.0f;
+    // どちらの棒を読むか。1 = InputPoint の棒1(port 5005) / 2 = 棒2(port 5006)。
+    // 2本セーバープレイでは棒ごとに Bridge を1つずつ持つ。
+    public int stickIndex = 1;
     public Camera targetCamera;
+
+    // 今フレームの位置ソースがマウスフォールバックか。
+    // SaberCutJudge はこれを見て、マウス時は手の区別(SaberHand)を Any 扱いにする。
+    public bool UsingMouseFallback { get; private set; }
     [Header("Debug")]
     public bool debugCoordinates = false;
 
@@ -86,30 +93,40 @@ public class SaberInputBridge : MonoBehaviour
         bladeLine.endColor = bladeColor;
     }
 
+    // この Bridge が読む棒のデータが「最近」届いているか(棒1/棒2で別管理)。
+    private bool IsStickRecentlyActive()
+    {
+        var ip = InputPoint.Instance;
+        if (ip == null) return false;
+        return stickIndex == 2
+            ? ip.IsRecentlyActive2(inputPointStaleSeconds)
+            : ip.IsRecentlyActive(inputPointStaleSeconds);
+    }
+
     void Update()
     {
         bool consumed = false;
 
-        // UDP データが「最近」来てるなら、それを使う。1 秒以上無音ならマウスフォールバック。
-        if (useInputPoint && InputPoint.Instance != null
-            && InputPoint.Instance.IsRecentlyActive(inputPointStaleSeconds))
+        // UDP データが「最近」来てるなら、それを使う。無音ならマウスフォールバック(なければ非表示)。
+        if (useInputPoint && IsStickRecentlyActive())
         {
             var ip = InputPoint.Instance;
             if (useBladeMode)
             {
-                Vector3 rawA = new Vector3(ip.LocalStickRawA.x, ip.LocalStickRawA.y, fixedZ);
-                Vector3 rawB = new Vector3(ip.LocalStickRawB.x, ip.LocalStickRawB.y, fixedZ);
-                ApplyBladeImmediate(rawA, rawB);
+                Vector2 endA = stickIndex == 2 ? ip.LocalStickRawA2 : ip.LocalStickRawA;
+                Vector2 endB = stickIndex == 2 ? ip.LocalStickRawB2 : ip.LocalStickRawB;
+                ApplyBladeImmediate(new Vector3(endA.x, endA.y, fixedZ), new Vector3(endB.x, endB.y, fixedZ));
             }
             else
             {
-                Vector3 targetWorld = new Vector3(ip.LocalPosition.x, ip.LocalPosition.y, fixedZ);
-                ApplyPositionImmediate(targetWorld);
+                Vector2 mid = stickIndex == 2 ? ip.LocalPosition2 : ip.LocalPosition;
+                ApplyPositionImmediate(new Vector3(mid.x, mid.y, fixedZ));
             }
             if (debugCoordinates)
             {
-                Debug.Log($"[SaberInputBridge] mid={ip.LocalPosition} endA={ip.LocalStickRawA} endB={ip.LocalStickRawB}");
+                Debug.Log($"[SaberInputBridge] stick{stickIndex} endA={WorldEndA} endB={WorldEndB}");
             }
+            UsingMouseFallback = false;
             consumed = true;
         }
 
@@ -136,7 +153,35 @@ public class SaberInputBridge : MonoBehaviour
                 {
                     ApplyPosition(new Vector2(world.x, world.y));
                 }
+                UsingMouseFallback = true;
+                consumed = true;
             }
+        }
+
+        // データ源が何も無い(棒2が未接続など):古い線を残さず非表示にする。
+        if (!consumed) HideBlade();
+    }
+
+    private void HideBlade()
+    {
+        UsingMouseFallback = false;
+        HasBlade = false;
+        if (bladeLine != null && bladeLine.enabled) bladeLine.enabled = false;
+    }
+
+    // ブレードの色を実行時に変更する(手の色分け用)。生成済みのマテリアル/ラインにも反映する。
+    public void SetBladeColor(Color c)
+    {
+        bladeColor = c;
+        if (bladeMaterialOwned != null)
+        {
+            if (bladeMaterialOwned.HasProperty("_BaseColor")) bladeMaterialOwned.SetColor("_BaseColor", c);
+            else bladeMaterialOwned.color = c;
+        }
+        if (bladeLine != null)
+        {
+            bladeLine.startColor = c;
+            bladeLine.endColor = c;
         }
     }
 
@@ -239,6 +284,12 @@ public class SaberInputBridge : MonoBehaviour
         WorldEndA = a;
         WorldEndB = b;
         HasBlade = true;
+    }
+
+    // テスト用：マウスフォールバック状態を直接差し込む（EffectiveHand の検証用モック）。
+    public void OverrideMouseFallback(bool usingMouse)
+    {
+        UsingMouseFallback = usingMouse;
     }
 
     // テスト用に純関数化。
