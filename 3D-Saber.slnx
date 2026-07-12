@@ -1,6 +1,7 @@
 ﻿<Solution>
   <Project Path="SaberTests.Editor.csproj" />
   <Project Path="SaberGame.csproj" />
+  <Project Path="SaberChartEditor.csproj" />
   <Project Path="Assembly-CSharp.csproj" />
   <Project Path="SaberTests.PlayMode.csproj" />
   <Project Path="Assembly-CSharp-Editor.csproj" />
