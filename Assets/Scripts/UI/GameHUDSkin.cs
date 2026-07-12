@@ -80,6 +80,7 @@ public class GameHUDSkin : MonoBehaviour
 
     private ScoreManager score;
     private SongPlayer songPlayer;
+    private NoteSpawner noteSpawner;
 
     private TextMeshProUGUI scoreValue;
     private TextMeshProUGUI comboValue;
@@ -99,6 +100,15 @@ public class GameHUDSkin : MonoBehaviour
     private RectTransform comboRT;
     private int lastCombo;
     private float comboPunchAge = 999f;
+
+    // ランク表示(左上・スコアの下)
+    private Image rankBadgeImage;
+    private TextMeshProUGUI rankBadgeText; // 画像が無い環境の文字フォールバック
+    private RectTransform rankFill;
+    private Image rankFillImg;
+    private TextMeshProUGUI rankNextLabel;
+    private PlayRank currentRank = PlayRank.SPlus;
+    private bool rankVisualInit;
 
     private Font jpFont;
     private bool fontResolved;
@@ -129,6 +139,7 @@ public class GameHUDSkin : MonoBehaviour
 
         score = Object.FindFirstObjectByType<ScoreManager>();
         songPlayer = Object.FindFirstObjectByType<SongPlayer>();
+        noteSpawner = Object.FindFirstObjectByType<NoteSpawner>();
         if (score != null) score.OnJudgmentEx += OnJudgmentEx;
 
         DisableLegacyHud();
@@ -142,6 +153,9 @@ public class GameHUDSkin : MonoBehaviour
         scaler.matchWidthOrHeight = 0.5f;
 
         var font = UISkinKit.LogoFontAsset();
+        // 数字(スコア/コンボ)は Rajdhani。無ければ Chakra Petch のまま。
+        var numberFont = UISkinKit.FontAsset("Rajdhani-Bold");
+        if (numberFont == null) numberFont = font;
 
         // --- スコア(左上) ---
         var scoreLabel = UISkinKit.MakeTMP(transform, "ScoreLabel", "SCORE", 22f,
@@ -151,13 +165,16 @@ public class GameHUDSkin : MonoBehaviour
 
         scoreValue = UISkinKit.MakeTMP(transform, "ScoreValue", "0", 52f,
             UISkinPalette.OffWhite, TextAlignmentOptions.TopLeft,
-            Vector2.zero, new Vector2(480f, 64f), FontStyles.Normal, 2f, font);
+            Vector2.zero, new Vector2(480f, 64f), FontStyles.Normal, 2f, numberFont);
         AnchorTopLeft(scoreValue.rectTransform, new Vector2(36f, -52f));
+
+        // --- ランク(左上・スコアの下) ---
+        BuildRankWidget(font);
 
         // --- コンボ(右上) ---
         comboValue = UISkinKit.MakeTMP(transform, "ComboValue", "", 84f,
             UISkinPalette.OffWhite, TextAlignmentOptions.TopRight,
-            Vector2.zero, new Vector2(400f, 96f), FontStyles.Normal, 1f, font);
+            Vector2.zero, new Vector2(400f, 96f), FontStyles.Normal, 1f, numberFont);
         AnchorTopRight(comboValue.rectTransform, new Vector2(-36f, -26f));
         comboRT = comboValue.rectTransform;
 
@@ -243,6 +260,56 @@ public class GameHUDSkin : MonoBehaviour
         }
     }
 
+    // 左上・スコアの下に「現在ランクのバッジ + 次ランクへの進捗バー」を作る。
+    // バッジは Resources/Ranks の画像(無ければランク文字で代替)。
+    private void BuildRankWidget(TMP_FontAsset labelFont)
+    {
+        var rankLabel = UISkinKit.MakeTMP(transform, "RankLabel", "RANK", 22f,
+            UISkinPalette.SubtleGray, TextAlignmentOptions.TopLeft,
+            Vector2.zero, new Vector2(300f, 30f), FontStyles.Normal, 6f, labelFont);
+        AnchorTopLeft(rankLabel.rectTransform, new Vector2(36f, -124f));
+
+        var badgeGo = new GameObject("RankBadge", typeof(RectTransform), typeof(Image));
+        badgeGo.transform.SetParent(transform, false);
+        var badgeRT = badgeGo.GetComponent<RectTransform>();
+        AnchorTopLeft(badgeRT, new Vector2(36f, -150f));
+        badgeRT.sizeDelta = new Vector2(64f, 64f);
+        rankBadgeImage = badgeGo.GetComponent<Image>();
+        rankBadgeImage.preserveAspect = true;
+        rankBadgeImage.raycastTarget = false;
+        rankBadgeImage.enabled = false; // スプライト設定前に白い四角を出さない
+
+        rankBadgeText = UISkinKit.MakeTMP(transform, "RankBadgeText", "", 44f,
+            UISkinPalette.NoteGold, TextAlignmentOptions.TopLeft,
+            Vector2.zero, new Vector2(140f, 56f), FontStyles.Normal, 1f,
+            UISkinKit.FontAsset("Oxanium-ExtraBold"));
+        AnchorTopLeft(rankBadgeText.rectTransform, new Vector2(38f, -152f));
+
+        var barBg = new GameObject("RankProgressBg", typeof(RectTransform), typeof(Image));
+        barBg.transform.SetParent(transform, false);
+        var barRT = barBg.GetComponent<RectTransform>();
+        AnchorTopLeft(barRT, new Vector2(114f, -172f));
+        barRT.sizeDelta = new Vector2(150f, 6f);
+        var barImg = barBg.GetComponent<Image>();
+        barImg.color = new Color(1f, 1f, 1f, 0.10f);
+        barImg.raycastTarget = false;
+
+        var fillGo = new GameObject("RankProgressFill", typeof(RectTransform), typeof(Image));
+        fillGo.transform.SetParent(barBg.transform, false);
+        rankFill = fillGo.GetComponent<RectTransform>();
+        rankFill.anchorMin = new Vector2(0f, 0f);
+        rankFill.anchorMax = new Vector2(0f, 1f); // x は UpdateRank で伸ばす
+        rankFill.offsetMin = rankFill.offsetMax = Vector2.zero;
+        rankFill.pivot = new Vector2(0f, 0.5f);
+        rankFillImg = fillGo.GetComponent<Image>();
+        rankFillImg.raycastTarget = false;
+
+        rankNextLabel = UISkinKit.MakeTMP(transform, "RankNextLabel", "", 16f,
+            UISkinPalette.SubtleGray, TextAlignmentOptions.TopLeft,
+            Vector2.zero, new Vector2(200f, 22f), FontStyles.Normal, 2f, labelFont);
+        AnchorTopLeft(rankNextLabel.rectTransform, new Vector2(114f, -184f));
+    }
+
     private void BuildProgressBar()
     {
         var bg = new GameObject("ProgressBg", typeof(RectTransform), typeof(Image));
@@ -288,6 +355,59 @@ public class GameHUDSkin : MonoBehaviour
         }
         UpdateTierAnimation();
         UpdateProgress();
+        UpdateRank();
+    }
+
+    // 現在の判定カウントからランクを計算して左上の表示を更新する。
+    // 曲中は「曲全体に対する合計割合」(分母=総ノーツ数固定)なので 0 から始まり
+    // ヒットするほど単調に上がっていく。曲終了時は従来の精度と同じ値に収束する。
+    // 総ノーツ数が取れない環境(テスト等)では従来のその時点精度にフォールバック。
+    // スプライトの差し替えはランクが変わった時だけ(毎フレーム Load しない)。
+    private void UpdateRank()
+    {
+        if (rankBadgeImage == null || score == null) return;
+        int totalNotes = noteSpawner != null ? noteSpawner.TotalNoteCount : 0;
+        float acc = totalNotes > 0
+            ? PlayRankHelper.TotalAccuracy(
+                score.PerfectCount, score.GreatCount, score.GoodCount, score.BadCount, totalNotes)
+            : PlayRankHelper.Accuracy(
+                score.PerfectCount, score.GreatCount, score.GoodCount, score.BadCount, score.MissCount);
+        PlayRank rank = PlayRankHelper.FromAccuracy(acc);
+        Color c = PlayRankHelper.RankColor(rank);
+
+        if (!rankVisualInit || rank != currentRank)
+        {
+            rankVisualInit = true;
+            currentRank = rank;
+            var sprite = UISkinKit.LoadSprite(PlayRankHelper.SpriteResourceName(rank));
+            if (sprite != null)
+            {
+                rankBadgeImage.sprite = sprite;
+                rankBadgeImage.enabled = true;
+                if (rankBadgeText != null) rankBadgeText.text = "";
+            }
+            else
+            {
+                rankBadgeImage.enabled = false;
+                if (rankBadgeText != null)
+                {
+                    rankBadgeText.text = PlayRankHelper.Label(rank);
+                    rankBadgeText.color = c;
+                }
+            }
+        }
+
+        if (rankFill != null)
+        {
+            rankFill.anchorMax = new Vector2(PlayRankHelper.ProgressToNext(acc), 1f);
+            rankFillImg.color = new Color(c.r, c.g, c.b, 0.9f);
+        }
+        if (rankNextLabel != null)
+        {
+            rankNextLabel.text = PlayRankHelper.TryNextRank(rank, out PlayRank next)
+                ? "NEXT  " + PlayRankHelper.Label(next)
+                : "MAX";
+        }
     }
 
     private void OnJudgmentEx(JudgmentTier tier, int awarded, bool wasWrongFlick)

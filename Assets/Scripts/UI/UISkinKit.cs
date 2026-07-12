@@ -20,6 +20,8 @@ public static class UISkinKit
     static Sprite vignetteSprite;
     static TMP_FontAsset logoFontAsset;
     static bool logoFontLoadAttempted;
+    static readonly System.Collections.Generic.Dictionary<string, TMP_FontAsset> fontAssetCache =
+        new System.Collections.Generic.Dictionary<string, TMP_FontAsset>();
 
     // ---- スプライト(手続き生成・共有キャッシュ) ----
 
@@ -174,6 +176,61 @@ public static class UISkinKit
         logoFontAsset = TMP_FontAsset.CreateFontAsset(ttf);
         if (logoFontAsset != null) logoFontAsset.hideFlags = HideFlags.HideAndDontSave;
         return logoFontAsset;
+    }
+
+    // Resources/Fonts/<name>.ttf から TMP フォントアセットを生成して共有キャッシュする。
+    // 無い場合は警告を出して null(呼び出し側は既定フォントのまま進める)。null もキャッシュして再試行しない。
+    public static TMP_FontAsset FontAsset(string name)
+    {
+        if (fontAssetCache.TryGetValue(name, out var cached)) return cached;
+        TMP_FontAsset asset = null;
+        var ttf = Resources.Load<Font>("Fonts/" + name);
+        if (ttf == null)
+        {
+            Debug.LogWarning($"UISkinKit: フォント(Fonts/{name})が見つかりません。既定フォントで代替します");
+        }
+        else
+        {
+            asset = TMP_FontAsset.CreateFontAsset(ttf);
+            if (asset != null) asset.hideFlags = HideFlags.HideAndDontSave;
+        }
+        fontAssetCache[name] = asset;
+        return asset;
+    }
+
+    // legacy Text 用の TTF フォント。無ければ組み込みフォントで代替する。
+    public static Font LegacyFont(string name)
+    {
+        var ttf = Resources.Load<Font>("Fonts/" + name);
+        if (ttf != null) return ttf;
+        Debug.LogWarning($"UISkinKit: フォント(Fonts/{name})が見つかりません。既定フォントで代替します");
+        return Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+    }
+
+    static readonly System.Collections.Generic.Dictionary<string, Sprite> spriteCache =
+        new System.Collections.Generic.Dictionary<string, Sprite>();
+
+    // Resources からスプライトを読む(共有キャッシュ)。Sprite 取込でない環境では
+    // Texture2D からの実行時生成にフォールバック。見つからなければ警告して null。
+    public static Sprite LoadSprite(string resourcePath)
+    {
+        if (spriteCache.TryGetValue(resourcePath, out var cached)) return cached;
+        var sp = Resources.Load<Sprite>(resourcePath);
+        if (sp == null)
+        {
+            var tex = Resources.Load<Texture2D>(resourcePath);
+            if (tex != null)
+            {
+                sp = Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f), 100f);
+                sp.hideFlags = HideFlags.HideAndDontSave;
+            }
+        }
+        if (sp == null)
+        {
+            Debug.LogWarning($"UISkinKit: スプライト({resourcePath})が見つかりません");
+        }
+        spriteCache[resourcePath] = sp; // null もキャッシュして再試行しない
+        return sp;
     }
 
     // ロゴフォント(Chakra Petch)は ASCII のみ。日本語等が混ざる文字列に使うと□になるため、

@@ -42,6 +42,8 @@ public class NoteSpawner : MonoBehaviour
 
     public int AliveCount => liveNotes.Count;
     public int NextIndex => nextIndex;
+    // 譜面の総ノーツ数(ランクの合計割合計算用)。譜面未設定なら 0。
+    public int TotalNoteCount => chart != null && chart.notes != null ? chart.notes.Count : 0;
 
     public event System.Action<CuttableNote> OnNoteSpawned;
     public event System.Action<CuttableNote> OnNoteMissed;
