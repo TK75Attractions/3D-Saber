@@ -20,6 +20,8 @@ public class SongSelectController : MonoBehaviour
     public GameObject buttonPrefab;
     public Color normalLabelColor = new Color(0.85f, 0.85f, 0.9f);
     public Color selectedLabelColor = new Color(1f, 1f, 1f);
+    // ロック曲(譜面未制作)の行の色。グレーで「選べない」ことを示す
+    public Color lockedLabelColor = new Color(0.42f, 0.44f, 0.52f);
 
     [Header("Right panel")]
     public Image jacketImage;
@@ -44,6 +46,10 @@ public class SongSelectController : MonoBehaviour
     private int selectedIndex = -1;
     private int selectedDifficulty = 1; // Normal
     private Coroutine previewCoroutine;
+    // 難易度レベル(1〜10)のキャッシュ。キー = songId::難易度名。0 = 譜面なし(数値非表示)
+    private readonly Dictionary<string, int> levelCache = new Dictionary<string, int>();
+    // ロック中(譜面が1つも無い)曲のインデックス。譜面を作れば次回から自動で解禁される
+    private readonly HashSet<int> lockedIndices = new HashSet<int>();
 
     public int SelectedIndex => selectedIndex;
     public int SelectedDifficultyIndex => selectedDifficulty;
@@ -83,11 +89,43 @@ public class SongSelectController : MonoBehaviour
         return result;
     }
 
-    private void Populate()
+    // 曲が1つでも実譜面(ノーツ入り)を持つか。無い曲はロック扱いで選べない。
+    public static bool HasPlayableChart(string songId, string[] difficulties)
+    {
+        try
+        {
+            ChartData baseChart = ChartLoader.LoadFromStreamingAssets(songId);
+            if (baseChart != null && baseChart.notes != null && baseChart.notes.Count > 0) return true;
+            if (difficulties != null)
+            {
+                foreach (string d in difficulties)
+                {
+                    ChartData c = ChartLoader.LoadFromStreamingAssets(songId, d);
+                    if (c != null && c.notes != null && c.notes.Count > 0) return true;
+                }
+            }
+        }
+        catch (System.Exception)
+        {
+            // 読めない譜面はロック扱い
+        }
+        return false;
+    }
+
+    public bool IsLocked(int index) => lockedIndices.Contains(index);
+    public bool SelectedSongLocked => IsLocked(selectedIndex);
+
+    // テストからも呼べるように公開(Start から呼ばれる一覧構築)
+    public void Populate()
     {
         songIds.Clear();
         songLabels.Clear();
+        lockedIndices.Clear();
         songIds.AddRange(EnumerateSongIds());
+        for (int i = 0; i < songIds.Count; i++)
+        {
+            if (!HasPlayableChart(songIds[i], difficultyNames)) lockedIndices.Add(i);
+        }
         if (scrollContent == null || buttonPrefab == null) return;
 
         for (int i = 0; i < songIds.Count; i++)
@@ -126,7 +164,42 @@ public class SongSelectController : MonoBehaviour
         ScrollToSelected();
         LoadJacket(songIds[idx]);
         StartPreview(songIds[idx]);
+        RefreshDifficultyDisplay(); // 曲が変わるとレベル数値も変わる
+        if (startButton != null) startButton.interactable = !SelectedSongLocked; // ロック曲はSTART不可
         OnSelectionChanged?.Invoke(idx);
+    }
+
+    // 選択中の曲×難易度のレベル(1〜10)。譜面なし/空は 0。
+    public int CurrentDifficultyLevel()
+    {
+        if (selectedIndex < 0 || selectedIndex >= songIds.Count) return 0;
+        string name = difficultyNames[Mathf.Clamp(selectedDifficulty, 0, difficultyNames.Length - 1)];
+        return LevelFor(songIds[selectedIndex], name);
+    }
+
+    private int LevelFor(string songId, string difficultyName)
+    {
+        string key = songId + "::" + difficultyName;
+        if (levelCache.TryGetValue(key, out int cached)) return cached;
+        int level = 0;
+        try
+        {
+            level = ChartDifficultyRater.Rate(ChartLoader.LoadFromStreamingAssets(songId, difficultyName));
+        }
+        catch (System.Exception)
+        {
+            level = 0; // 読めない譜面は数値なし扱い
+        }
+        levelCache[key] = level;
+        return level;
+    }
+
+    private void RefreshDifficultyDisplay()
+    {
+        if (difficultyDisplay == null) return;
+        string name = difficultyNames[Mathf.Clamp(selectedDifficulty, 0, difficultyNames.Length - 1)];
+        int level = CurrentDifficultyLevel();
+        difficultyDisplay.text = level > 0 ? $"{name}  {level}" : name;
     }
 
     private void Move(int delta)
@@ -143,7 +216,8 @@ public class SongSelectController : MonoBehaviour
             if (songLabels[i] == null) continue;
             bool sel = (i == selectedIndex);
             songLabels[i].text = (sel ? selectedPrefix : normalPrefix) + songIds[i];
-            songLabels[i].color = sel ? selectedLabelColor : normalLabelColor;
+            // ロック曲はグレー(選択中でもグレーのまま=遊べないサイン)
+            songLabels[i].color = IsLocked(i) ? lockedLabelColor : (sel ? selectedLabelColor : normalLabelColor);
         }
     }
 
@@ -234,7 +308,7 @@ public class SongSelectController : MonoBehaviour
         if (difficultyNames == null || difficultyNames.Length == 0) return;
         idx = Mathf.Clamp(idx, 0, difficultyNames.Length - 1);
         selectedDifficulty = idx;
-        if (difficultyDisplay != null) difficultyDisplay.text = difficultyNames[idx];
+        RefreshDifficultyDisplay(); // 「難易度名  レベル数値」(譜面なしは名前のみ)
         if (difficultyButtons != null && !suppressDefaultDifficultyTint)
         {
             for (int i = 0; i < difficultyButtons.Length; i++)
@@ -252,6 +326,7 @@ public class SongSelectController : MonoBehaviour
     public void StartGame()
     {
         if (selectedIndex < 0 || selectedIndex >= songIds.Count) return;
+        if (SelectedSongLocked) return; // ロック曲(譜面未制作)は開始できない
         if (previewSource != null) previewSource.Stop();
         GameSession.SelectedSongId = songIds[selectedIndex];
         GameSession.SelectedSongTitle = songIds[selectedIndex];

@@ -62,6 +62,24 @@ public class SimultaneousNoteLinkTests
     }
 
     [Test]
+    public void Spawner_LinksLongAndTapWithSameStartTime()
+    {
+        // 異種ノーツ(ロング×タップ)でも始点(time)が同じなら連結する
+        var spawner = MakeSpawner();
+        var chart = new ChartData { bpm = 100f };
+        chart.notes.Add(new NoteData { time = 1000f, x = -1.5f, y = 0f, type = "long", color = "blue", count = 3 });
+        chart.notes.Add(new NoteData { time = 1000f, x = 1.5f, y = 0f, type = "tap", color = "red" });
+        spawner.SetChart(chart);
+        spawner.Tick(0.0);
+
+        var links = Object.FindObjectsByType<SimultaneousNoteLink>(FindObjectsSortMode.None);
+        Assert.AreEqual(1, links.Length, "ロング×タップの同時ペアにも連結線");
+        Assert.IsTrue(links[0].Refresh());
+        bool hasLong = links[0].noteA.RequiredCutCount > 1 || links[0].noteB.RequiredCutCount > 1;
+        Assert.IsTrue(hasLong, "片方はロングノーツ");
+    }
+
+    [Test]
     public void Spawner_NoLinkForDifferentTimes()
     {
         var spawner = MakeSpawner();
