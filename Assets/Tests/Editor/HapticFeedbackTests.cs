@@ -95,8 +95,10 @@ public class HapticFeedbackTests
             CuttableNote captured = null;
             spawner.OnNoteSpawned += n => captured = n;
 
+            // time=0: songPlayer が無い(=曲時刻0)ため、時刻0のノーツなら誤差0=Perfect になり
+            // Miss 経由の LastCutHand リセットを踏まない。
             var chart = new ChartData { bpm = 100f };
-            chart.notes.Add(new NoteData { time = 1000, x = 0, y = 0, type = "tap", color = "blue" });
+            chart.notes.Add(new NoteData { time = 0, x = 0, y = 0, type = "tap", color = "blue" });
             spawner.SetChart(chart);
             spawner.Tick(0.0);
 

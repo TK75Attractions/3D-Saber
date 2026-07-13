@@ -61,24 +61,18 @@ public class ChartLoaderTests
         Assert.Greater(d.notes.Count, 0);
     }
 
+    // 注: 難易度間のノーツ数比較(easy < normal < hard)はテストしない。
+    // 譜面はユーザーが譜面エディターで自由に編集するコンテンツであり、
+    // 物量の大小はデータの性質であって不変条件ではない(2026-07-13、実際に編集で崩れた)。
     [Test]
-    public void LoadFromStreamingAssets_EasyDifficulty_HasFewerNotesThanNormal()
+    public void LoadFromStreamingAssets_EachDifficulty_LoadsSomething()
     {
-        ChartData easy = ChartLoader.LoadFromStreamingAssets("ElDorado", "Easy");
-        ChartData normal = ChartLoader.LoadFromStreamingAssets("ElDorado", "Normal");
-        Assert.IsNotNull(easy);
-        Assert.IsNotNull(normal);
-        Assert.Less(easy.notes.Count, normal.notes.Count, "Easy は Normal より少ない");
-    }
-
-    [Test]
-    public void LoadFromStreamingAssets_HardDifficulty_HasMoreNotesThanNormal()
-    {
-        ChartData hard = ChartLoader.LoadFromStreamingAssets("ElDorado", "Hard");
-        ChartData normal = ChartLoader.LoadFromStreamingAssets("ElDorado", "Normal");
-        Assert.IsNotNull(hard);
-        Assert.IsNotNull(normal);
-        Assert.Greater(hard.notes.Count, normal.notes.Count, "Hard は Normal より多い");
+        foreach (string diff in new[] { "Easy", "Normal", "Hard" })
+        {
+            ChartData d = ChartLoader.LoadFromStreamingAssets("ElDorado", diff);
+            Assert.IsNotNull(d, diff);
+            Assert.Greater(d.notes.Count, 0, diff);
+        }
     }
 
     [Test]
