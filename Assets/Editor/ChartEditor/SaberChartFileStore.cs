@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.Networking;
 
 namespace Saber.ChartEditor
 {
@@ -93,6 +94,22 @@ namespace Saber.ChartEditor
             return destination;
         }
 
+        private sealed class CachedAudio
+        {
+            public AudioClip clip;
+            public bool failed;
+            public DateTime writeTimeUtc;
+            public long fileLength;
+        }
+
+        private static readonly Dictionary<string, CachedAudio> audioCache =
+            new Dictionary<string, CachedAudio>(StringComparer.OrdinalIgnoreCase);
+
+        // StreamingAssets 内のファイルは Unity では「素通しコピー用」(DefaultAsset)扱いで、
+        // AudioClip アセットとしては絶対にインポートされない。そのため AssetDatabase ではなく
+        // 本編ランタイムと同じ file:// 経由のデコードで読み込む。
+        // 毎リペイントの検証(ValidationWarnings)からも呼ばれるため、ファイル更新時刻+サイズで
+        // キャッシュし、失敗もキャッシュして再デコードの連発(ビジーカーソル連打)を防ぐ。
         public static AudioClip LoadAudioClip(string songId)
         {
             string folder = SongFolderPath(songId);
@@ -101,27 +118,89 @@ namespace Saber.ChartEditor
             {
                 string path = Path.Combine(folder, audioName);
                 if (!File.Exists(path)) continue;
-                string assetPath = SaberChartUtility.ProjectRelativeAssetPath(path);
-                if (assetPath == null) continue;
-                AudioClip clip = AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
-                if (clip == null)
+
+                var info = new FileInfo(path);
+                if (audioCache.TryGetValue(path, out CachedAudio cached) &&
+                    cached.writeTimeUtc == info.LastWriteTimeUtc &&
+                    cached.fileLength == info.Length)
                 {
-                    // コピー直後などでまだ取り込まれていない場合に備えて同期インポートして再取得
-                    AssetDatabase.ImportAsset(assetPath, ImportAssetOptions.ForceSynchronousImport);
-                    clip = AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
+                    if (cached.failed) continue;         // 前回デコード失敗 → 次の候補へ
+                    if (cached.clip) return cached.clip; // 生存していればそのまま使う
+                    // クリップが破棄されていたら作り直しに落ちる
                 }
+
+                AudioClip clip = DecodeAudioFile(path);
+                if (clip != null)
+                {
+                    clip.name = songId + " audio";
+                    clip.hideFlags = HideFlags.HideAndDontSave;
+                }
+                audioCache[path] = new CachedAudio
+                {
+                    clip = clip,
+                    failed = clip == null,
+                    writeTimeUtc = info.LastWriteTimeUtc,
+                    fileLength = info.Length,
+                };
                 if (clip != null) return clip;
             }
             return null;
+        }
+
+        // file:// 経由の実行時デコード(mp3/ogg/wav)。エディタ専用なのでタイムアウト付きで同期待ちする。
+        private static AudioClip DecodeAudioFile(string absolutePath)
+        {
+            AudioType type;
+            switch (Path.GetExtension(absolutePath).ToLowerInvariant())
+            {
+                case ".mp3": type = AudioType.MPEG; break;
+                case ".ogg": type = AudioType.OGGVORBIS; break;
+                case ".wav": type = AudioType.WAV; break;
+                default: return null;
+            }
+
+            string url = new Uri(absolutePath).AbsoluteUri; // 日本語・空白を含むパスをエスケープ
+            using (UnityWebRequest request = UnityWebRequestMultimedia.GetAudioClip(url, type))
+            {
+                UnityWebRequestAsyncOperation operation = request.SendWebRequest();
+                double start = EditorApplication.timeSinceStartup;
+                while (!operation.isDone)
+                {
+                    if (EditorApplication.timeSinceStartup - start > 20.0)
+                    {
+                        request.Abort();
+                        return null;
+                    }
+                    System.Threading.Thread.Sleep(10);
+                }
+                if (request.result != UnityWebRequest.Result.Success) return null;
+                try
+                {
+                    return DownloadHandlerAudioClip.GetContent(request);
+                }
+                catch (Exception)
+                {
+                    return null;
+                }
+            }
         }
 
         public static bool IsAudioClipForSong(AudioClip clip, string songId)
         {
             if (clip == null) return false;
             string folder = SongFolderPath(songId);
-            string assetPath = AssetDatabase.GetAssetPath(clip);
-            if (folder == null || string.IsNullOrEmpty(assetPath)) return false;
+            if (folder == null) return false;
 
+            // このストアがデコードして返したクリップはキャッシュ照合で判定する
+            foreach (string audioName in AudioNames)
+            {
+                string path = Path.Combine(folder, audioName);
+                if (audioCache.TryGetValue(path, out CachedAudio cached) && cached.clip == clip) return true;
+            }
+
+            // プロジェクト内アセットとして選択されたクリップはパスで判定する
+            string assetPath = AssetDatabase.GetAssetPath(clip);
+            if (string.IsNullOrEmpty(assetPath)) return false;
             string projectRoot = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
             string absolute = Path.GetFullPath(Path.Combine(projectRoot, assetPath));
             foreach (string audioName in AudioNames)
@@ -158,9 +237,9 @@ namespace Saber.ChartEditor
 
             string destination = Path.Combine(folder, "audio" + extension);
             if (!PathsEqual(sourcePath, destination)) File.Copy(sourcePath, destination, true);
-            AssetDatabase.Refresh(ImportAssetOptions.ForceSynchronousImport);
-            string assetPath = SaberChartUtility.ProjectRelativeAssetPath(destination);
-            return assetPath == null ? null : AssetDatabase.LoadAssetAtPath<AudioClip>(assetPath);
+            AssetDatabase.Refresh();
+            // StreamingAssets 内は AudioClip アセットにならないため、実行時デコード(キャッシュ付き)で返す
+            return LoadAudioClip(songId);
         }
 
         public static List<string> ExistingSongIds()

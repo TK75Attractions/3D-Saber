@@ -70,6 +70,19 @@ public static class PlayRankHelper
         }
     }
 
+    // 表示ラベル("S+" 等)からランクへ戻す。ハイスコア保存値の復元用。不明は C。
+    public static PlayRank FromLabel(string label)
+    {
+        switch (label)
+        {
+            case "S+": return PlayRank.SPlus;
+            case "S": return PlayRank.S;
+            case "A": return PlayRank.A;
+            case "B": return PlayRank.B;
+            default: return PlayRank.C;
+        }
+    }
+
     // ランクの精度下限。C は 0。
     public static float LowerBound(PlayRank rank)
     {

@@ -21,6 +21,43 @@ public class GoldNoteSfxTests
     }
 
     [Test]
+    public void BuildShingClip_ProducesNormalizedMetallicClip()
+    {
+        var clip = GoldNoteSfx.BuildShingClip("test_shing", 2093f, 0.85f, 0.09f, 7f, 12345);
+        Assert.IsNotNull(clip);
+        Assert.Greater(clip.samples, 1000, "十分な長さがある");
+
+        var data = new float[clip.samples];
+        clip.GetData(data, 0);
+        float peak = 0f;
+        double energy = 0.0;
+        foreach (float v in data)
+        {
+            peak = Mathf.Max(peak, Mathf.Abs(v));
+            energy += v * v;
+        }
+        Assert.LessOrEqual(peak, 0.95f, "正規化されクリップしない");
+        Assert.Greater(peak, 0.5f, "ピークは正規化値(0.9)付近");
+        Assert.Greater(energy, 1.0, "無音ではない");
+    }
+
+    [Test]
+    public void BuildShingClip_IsDeterministicForSameSeed()
+    {
+        var a = GoldNoteSfx.BuildShingClip("a", 2093f, 0.4f, 0.09f, 7f, 777);
+        var b = GoldNoteSfx.BuildShingClip("b", 2093f, 0.4f, 0.09f, 7f, 777);
+        var da = new float[a.samples];
+        var db = new float[b.samples];
+        a.GetData(da, 0);
+        b.GetData(db, 0);
+        Assert.AreEqual(da.Length, db.Length);
+        for (int i = 0; i < da.Length; i += 997)
+        {
+            Assert.AreEqual(da[i], db[i], 1e-6f, "シード固定で再現可能(調整の回帰確認ができる)");
+        }
+    }
+
+    [Test]
     public void Spawner_DetectsGoldFromChartColor()
     {
         var sGo = new GameObject("spawner");

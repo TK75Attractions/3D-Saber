@@ -431,6 +431,24 @@ namespace Saber.ChartEditor
             int nextCount = nextTypeIndex == 2
                 ? EditorGUILayout.IntSlider("カット回数", count, 2, 20)
                 : 1;
+            // Long の長さ。自動 = 本編既定の (回数-1)×0.7秒。手動なら拍数で直接指定できる。
+            bool autoLength = note.lengthMs <= 0f;
+            bool nextAutoLength = autoLength;
+            float nextLengthBeats = 0f;
+            if (nextTypeIndex == 2)
+            {
+                nextAutoLength = EditorGUILayout.Toggle("長さ自動 (回数×0.7s)", autoLength);
+                float beatMs = 60000f / Mathf.Max(1f, document.bpm);
+                float effectiveMs = note.lengthMs > 0f
+                    ? note.lengthMs
+                    : (Mathf.Max(2, nextCount) - 1) * SaberChartUtility.DefaultSecondsPerLongCut * 1000f;
+                float shownBeats = effectiveMs / beatMs;
+                using (new EditorGUI.DisabledScope(nextAutoLength))
+                {
+                    nextLengthBeats = EditorGUILayout.FloatField("長さ (拍)", shownBeats);
+                }
+                GUILayout.Label($"実効: {effectiveMs / 1000f:0.00}s", smallMutedStyle);
+            }
             if (EditorGUI.EndChangeCheck())
             {
                 string before = CurrentJson();
@@ -454,6 +472,15 @@ namespace Saber.ChartEditor
                     chosenDirection = "up";
                 selected.direction = changedAwayFromDirection ? SaberChartUtility.DirectionNone : chosenDirection;
                 selected.count = selected.type == SaberChartUtility.TypeLong ? Mathf.Max(2, nextCount) : 1;
+                if (selected.type == SaberChartUtility.TypeLong && !nextAutoLength)
+                {
+                    float beatMs = 60000f / Mathf.Max(1f, document.bpm);
+                    selected.lengthMs = Mathf.Max(60f, nextLengthBeats * beatMs);
+                }
+                else
+                {
+                    selected.lengthMs = 0f; // 自動(回数×0.7s)へ戻す
+                }
                 SaberChartUtility.SortNotes(document);
                 selectedIndex = document.notes.IndexOf(selected);
                 paletteXLane = SaberChartUtility.LaneForCoordinate(selected.x, LaneCount,
@@ -626,7 +653,8 @@ namespace Saber.ChartEditor
                 Color color = NoteColor(note.color);
                 if (note.type == SaberChartUtility.TypeLong)
                 {
-                    float durationBeats = Mathf.Max(0f, (note.count - 1) * 0.7f * document.bpm / 60f);
+                    float durationBeats = Mathf.Max(0f,
+                        SaberChartUtility.EffectiveLongLengthMs(note) / 1000f * document.bpm / 60f);
                     float timelineBeat = TimelineBeat(note);
                     float endY = YForBeat(timelineBeat + durationBeats, laneRect);
                     Rect tail = new Rect(noteRect.center.x - noteRect.width * 0.28f,
@@ -1362,7 +1390,7 @@ namespace Saber.ChartEditor
                     warnings.Add("プレビュー音源と本編用音源が異なります");
                 float audioEndMs = packagedClip.length * 1000f;
                 int beyond = document.notes.Count(note =>
-                    note.time + document.offsetMs + (note.count - 1) * 700f > audioEndMs);
+                    note.time + document.offsetMs + SaberChartUtility.EffectiveLongLengthMs(note) > audioEndMs);
                 if (beyond > 0) warnings.Add($"音源末尾を越えるノーツ/Long: {beyond}個");
             }
             return warnings;

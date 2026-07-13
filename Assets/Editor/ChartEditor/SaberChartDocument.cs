@@ -29,6 +29,8 @@ namespace Saber.ChartEditor
         public string color = SaberChartUtility.ColorRed;
         public string direction = SaberChartUtility.DirectionNone;
         public int count = 1;
+        // Long の実長さ(ミリ秒)。0 なら本編既定の (count-1)×0.7s で自動決定。
+        public float lengthMs;
 
         public SaberChartNote Clone()
         {
@@ -42,6 +44,7 @@ namespace Saber.ChartEditor
                 color = color,
                 direction = direction,
                 count = count,
+                lengthMs = lengthMs,
             };
         }
     }
@@ -156,6 +159,11 @@ namespace Saber.ChartEditor
                     note.type = TypeDirection;
 
                 note.count = note.type == TypeLong ? Mathf.Max(2, count) : 1;
+
+                // 長さ指定は Long 専用。不正値や Long 以外では 0(自動)へ戻す。
+                if (!IsFinite(note.lengthMs) || note.lengthMs < 0f) note.lengthMs = 0f;
+                if (note.type != TypeLong) note.lengthMs = 0f;
+                note.lengthMs = Mathf.Min(note.lengthMs, 600000f);
             }
 
             SortNotes(document);
@@ -289,6 +297,21 @@ namespace Saber.ChartEditor
             int beatInMeasure = inside / stepsPerBeat + 1;
             int subdivision = inside % stepsPerBeat;
             return $"{measure:D3} : {beatInMeasure:D2} : {subdivision:D2}";
+        }
+
+        // 本編 NoteSpawner.secondsPerLongCut の既定値と同じ(長さ自動時の1カットあたり秒数)。
+        public const float DefaultSecondsPerLongCut = 0.7f;
+
+        /// <summary>
+        /// Long の実効長さ(ミリ秒)。lengthMs 指定があればそれを、無ければ本編既定の
+        /// (count-1) × 0.7s を返す。Long 以外は 0。
+        /// </summary>
+        public static float EffectiveLongLengthMs(SaberChartNote note)
+        {
+            if (note == null || note.count <= 1) return 0f;
+            return note.lengthMs > 0f
+                ? note.lengthMs
+                : (note.count - 1) * DefaultSecondsPerLongCut * 1000f;
         }
 
         /// <summary>

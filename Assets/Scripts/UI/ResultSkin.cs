@@ -20,6 +20,9 @@ public class ResultSkin : MonoBehaviour
     const float DelayRowsStart = 0.66f;
     const float DelayRowsStep = 0.13f;
     const float DelayMaxCombo = 1.36f;
+    const float DelayHiscoreTitle = 1.10f;
+    const float DelayHiscoreRows = 1.20f;
+    const float DelayHiscoreStep = 0.09f;
     const float DelayRankTitle = 1.66f;
     const float DelayRankBadge = 1.82f;
     const float DelayBackButton = 2.30f;
@@ -136,6 +139,57 @@ public class ResultSkin : MonoBehaviour
             UISkinPalette.OffWhite, TextAlignmentOptions.MidlineLeft,
             new Vector2(120f, y - 14f), new Vector2(240f, 44f), FontStyles.Normal, 1f, rajBold);
         Reveal(comboValue.gameObject, DelayMaxCombo + 0.08f, 0.16f, new Vector2(0f, -26f));
+
+        // --- ハイスコア(左カラム) ---
+        BuildHighScores(root.transform, accuracy, rank, rajSemi, rajBold);
+    }
+
+    // 今回の結果をハイスコアに記録し、左カラムに上位5件のランキング表を出す。
+    // 今回の記録が入った行はシアンで強調する。曲IDが無い(シーン直起動等)ときは何も出さない。
+    void BuildHighScores(Transform parent, float accuracy, PlayRank rank,
+        TMP_FontAsset labelFont, TMP_FontAsset valueFont)
+    {
+        string songId = GameSession.SelectedSongId;
+        if (string.IsNullOrEmpty(songId)) return;
+
+        var entry = new HighScoreEntry
+        {
+            score = GameSession.FinalScore,
+            rank = PlayRankHelper.Label(rank),
+            accuracy = accuracy,
+            date = System.DateTime.Now.ToString("yyyy/MM/dd"),
+        };
+        int newIndex = HighScoreStore.Record(songId, GameSession.SelectedDifficulty, entry, out HighScoreTable table);
+
+        var header = UISkinKit.MakeTMP(parent, "HiscoreTitle", "HIGH SCORE", 26f,
+            UISkinPalette.SubtleGray, TextAlignmentOptions.Center,
+            new Vector2(-560f, 332f), new Vector2(320f, 32f), FontStyles.Normal, 6f, labelFont);
+        Reveal(header.gameObject, DelayHiscoreTitle, 0.16f, new Vector2(-70f, 0f));
+
+        for (int i = 0; i < table.entries.Count && i < HighScoreStore.MaxEntries; i++)
+        {
+            HighScoreEntry e = table.entries[i];
+            bool isNew = i == newIndex;
+            float rowY = 272f - i * 46f;
+            float delay = DelayHiscoreRows + i * DelayHiscoreStep;
+            Color scoreColor = isNew ? UISkinPalette.Cyan : UISkinPalette.OffWhite;
+            Color numColor = isNew ? UISkinPalette.Cyan : UISkinPalette.SubtleGray;
+
+            var num = UISkinKit.MakeTMP(parent, $"Hiscore{i}Num", (i + 1).ToString(), 24f,
+                numColor, TextAlignmentOptions.MidlineRight,
+                new Vector2(-668f, rowY), new Vector2(44f, 34f), FontStyles.Normal, 0f, valueFont);
+            Reveal(num.gameObject, delay, 0.14f, new Vector2(-80f, 0f));
+
+            var score = UISkinKit.MakeTMP(parent, $"Hiscore{i}Score", e.score.ToString("N0"), isNew ? 32f : 30f,
+                scoreColor, TextAlignmentOptions.MidlineRight,
+                new Vector2(-548f, rowY), new Vector2(200f, 38f), FontStyles.Normal, 1f, valueFont);
+            Reveal(score.gameObject, delay, 0.14f, new Vector2(-80f, 0f));
+
+            var grade = UISkinKit.MakeTMP(parent, $"Hiscore{i}Grade", e.rank ?? "", 24f,
+                PlayRankHelper.RankColor(PlayRankHelper.FromLabel(e.rank)), TextAlignmentOptions.MidlineLeft,
+                new Vector2(-404f, rowY), new Vector2(64f, 34f), FontStyles.Normal, 1f, labelFont);
+            Reveal(grade.gameObject, delay + 0.04f, 0.14f, new Vector2(-80f, 0f));
+        }
     }
 
     // 判定内訳の1行(ラベル=Bangers / 数値=Rajdhani)。右からシャッと入る。

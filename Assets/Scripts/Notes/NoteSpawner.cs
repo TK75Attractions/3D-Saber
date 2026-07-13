@@ -123,6 +123,8 @@ public class NoteSpawner : MonoBehaviour
         note.RequiredDirection = CutDirectionHelper.Parse(nd.direction);
         note.RequiredCutCount = Mathf.Max(1, nd.count);
         note.RemainingCuts = note.RequiredCutCount;
+        // 長さの直接指定（lengthMs）。未指定(0)なら従来の回数×secondsPerLongCut。
+        note.OverrideLingerSeconds = nd.lengthMs > 0f && note.RequiredCutCount > 1 ? nd.lengthMs / 1000f : 0f;
         // 金ノーツ判定（chart.json の color:"gold"）
         note.IsGold = !string.IsNullOrEmpty(nd.color) && nd.color.ToLowerInvariant() == "gold";
         // 担当ハンド（blue=左手 / red=右手 / gold・無色=どちらでも）。ロングにも同じルールを適用。
@@ -142,7 +144,12 @@ public class NoteSpawner : MonoBehaviour
         if (note.RequiredCutCount > 1)
         {
             Vector3 sc = go.transform.localScale;
-            float zFactor = Mathf.Min(note.RequiredCutCount, longMaxVisualZScale);
+            // 見た目の長さは滞留時間に比例させる。「仮想カウント = 1 + 滞留/1カット秒」で、
+            // 長さ未指定のロングは従来 (= count) と完全に同じ見た目になる。
+            float virtualCount = secondsPerLongCut > 0.0001f
+                ? 1f + LingerSecondsFor(note) / secondsPerLongCut
+                : note.RequiredCutCount;
+            float zFactor = Mathf.Clamp(virtualCount, 1f, longMaxVisualZScale);
             go.transform.localScale = new Vector3(sc.x, sc.y, sc.z * zFactor);
             BuildCountLabel(go.transform, note);
         }
@@ -316,13 +323,21 @@ public class NoteSpawner : MonoBehaviour
         }
     }
 
+    // ロングの滞留時間（秒）。lengthMs 指定（OverrideLingerSeconds）があればそれを、
+    // 無ければ従来の (count-1) × secondsPerLongCut を返す。タップは 0。テスト用に公開。
+    public float LingerSecondsFor(CuttableNote note)
+    {
+        if (note == null || note.RequiredCutCount <= 1) return 0f;
+        return note.OverrideLingerSeconds > 0f
+            ? note.OverrideLingerSeconds
+            : (note.RequiredCutCount - 1) * secondsPerLongCut;
+    }
+
     // テスト用に公開：ロングの判定ウィンドウは秒数で何秒か。
     public float LateWindowFor(CuttableNote note)
     {
         if (note == null) return judgeWindow;
-        return note.RequiredCutCount > 1
-            ? judgeWindow + (note.RequiredCutCount - 1) * secondsPerLongCut
-            : judgeWindow;
+        return judgeWindow + LingerSecondsFor(note);
     }
 
     // ロングノーツは HitTime 経過後に判定面の少し後方で「滞留」させて、プレイヤーが切り続けやすくする。
@@ -334,7 +349,7 @@ public class NoteSpawner : MonoBehaviour
             return judgeZ + speed * (float)dt;
         }
         double overshoot = -dt;
-        float lingerDuration = (note.RequiredCutCount - 1) * secondsPerLongCut;
+        float lingerDuration = LingerSecondsFor(note);
         if (lingerDuration <= 0.001f || overshoot <= lingerDuration)
         {
             float progress = lingerDuration > 0.001f ? (float)(overshoot / lingerDuration) : 1f;

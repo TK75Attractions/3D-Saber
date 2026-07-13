@@ -30,6 +30,9 @@ public class NoteData
     public string color = "default";
     public string direction = "none";
     public int count = 1;          // long 用の必要切断回数（tap は 1）
+    // long 用の実長さ（ミリ秒）。0 なら従来通り (count-1) × NoteSpawner.secondsPerLongCut で自動決定。
+    // 「カット回数は少ないが長く滞留する」ようなロングを作れる。
+    public float lengthMs = 0f;
 
     public double TimeSeconds => time / 1000.0;
 

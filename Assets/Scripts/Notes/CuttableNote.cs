@@ -16,6 +16,9 @@ public class CuttableNote : MonoBehaviour
     public CutDirection RequiredDirection = CutDirection.None;
     public int RequiredCutCount = 1;
     public int RemainingCuts = 1;
+    // ロングの滞留時間（秒）を譜面 lengthMs から直接指定する場合の値。
+    // 0 以下なら自動（(RequiredCutCount-1) × NoteSpawner.secondsPerLongCut）。
+    public float OverrideLingerSeconds = 0f;
     // 担当ハンド(chart.json の color 由来)。Left=青 / Right=赤 / Any=どちらでも(金・無色)。
     // 誤った手のスイングは「切れない」(ペナルティなし。ロングの各カットにも同じルールを適用)。
     public SaberHand RequiredHand = SaberHand.Any;
