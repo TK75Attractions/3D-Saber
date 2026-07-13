@@ -16,6 +16,9 @@ public class ScoreManager : MonoBehaviour
     public int BadCount { get; private set; }
     public JudgmentTier LastTier { get; private set; } = JudgmentTier.Miss;
     public bool LastWasWrongFlick { get; private set; }
+    // 直近判定のカットを行った手(ノーツ経由のカットのみ。Miss や直接 RegisterHit では Any)。
+    // HapticFeedback が「切った手のデバイスだけ振動」させるのに使う。
+    public SaberHand LastCutHand { get; private set; } = SaberHand.Any;
     // 直近判定の時間誤差(ミリ秒、負=早い/正=遅い)。タップ/フリックのみ有効。
     // ロング(完了率ベース)と Miss では LastErrorValid=false になる。HUD の EARLY/LATE 表示用。
     public double LastErrorMs { get; private set; }
@@ -67,6 +70,7 @@ public class ScoreManager : MonoBehaviour
 
     private void HandleCut(CuttableNote note, Vector3 point, Vector3 velocity)
     {
+        LastCutHand = note.LastCutterHand;
         JudgmentTier tier;
         if (note.RequiredCutCount > 1)
         {
@@ -175,6 +179,7 @@ public class ScoreManager : MonoBehaviour
         Combo = 0;
         LastTier = JudgmentTier.Miss;
         LastErrorValid = false;
+        LastCutHand = SaberHand.Any;
         OnJudgment?.Invoke(JudgmentTier.Miss, 0);
         OnJudgmentEx?.Invoke(JudgmentTier.Miss, 0, false);
     }

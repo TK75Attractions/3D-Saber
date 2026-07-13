@@ -24,6 +24,8 @@ public class CuttableNote : MonoBehaviour
     public SaberHand RequiredHand = SaberHand.Any;
     // 通算で1回でも誤方向に切ったら false。
     public bool LastCutCorrectDirection { get; private set; } = true;
+    // 最後に「受理された」カットを行った手。ハプティクスの宛先ルーティング等に使う。
+    public SaberHand LastCutterHand { get; private set; } = SaberHand.Any;
     // 何回切れたか（達成数）。
     public int CutsAchieved => RequiredCutCount - RemainingCuts;
     public bool IsFinalized { get; private set; }
@@ -92,6 +94,7 @@ public class CuttableNote : MonoBehaviour
         if (CutsAchieved == 0) LastCutCorrectDirection = dirOk;
         else LastCutCorrectDirection = LastCutCorrectDirection && dirOk;
 
+        LastCutterHand = cutterHand;
         RemainingCuts--;
         lastHitPoint = hitPoint;
         lastVelocity = cutVelocity;

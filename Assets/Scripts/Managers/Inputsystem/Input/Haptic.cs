@@ -73,29 +73,50 @@ public static class Haptic
         // BLE初期化
     }
 
+    // 手識別付きコマンド("1,L" 等)を送るか。既定 false = 従来どおり "1"/"0" のみ
+    // (トラッカー側が2台構成・手識別に対応したら true にする。オプトインなので後方互換)。
+    public static bool handAwareCommands = false;
+
     public static void Vibrate(float seconds)
     {
+        Vibrate(seconds, SaberHand.Any);
+    }
+
+    // hand: どの手(デバイス)を振動させるか。handAwareCommands=false か Any なら従来コマンド。
+    public static void Vibrate(float seconds, SaberHand hand)
+    {
         Init();
-        runner.StartCoroutine(VibrateRoutine(seconds));
+        runner.StartCoroutine(VibrateRoutine(seconds, hand));
     }
 
-    static IEnumerator VibrateRoutine(float seconds)
+    static IEnumerator VibrateRoutine(float seconds, SaberHand hand)
     {
-        On();
+        On(hand);
         yield return new WaitForSeconds(seconds);
-        Off();
+        Off(hand);
     }
 
-    public static void On()
+    public static void On() { On(SaberHand.Any); }
+    public static void Off() { Off(SaberHand.Any); }
+
+    public static void On(SaberHand hand)
     {
         if (!isConnected) return;
-        Send("1\n");
+        Send(Command("1", hand));
     }
 
-    public static void Off()
+    public static void Off(SaberHand hand)
     {
         if (!isConnected) return;
-        Send("0\n");
+        Send(Command("0", hand));
+    }
+
+    // コマンド文字列の組み立て(純粋関数・テスト用に公開)。
+    // handAwareCommands が有効かつ手が確定しているときだけ ",L"/",R" を付ける。
+    public static string Command(string baseCommand, SaberHand hand)
+    {
+        if (!handAwareCommands || hand == SaberHand.Any) return baseCommand + "\n";
+        return baseCommand + (hand == SaberHand.Left ? ",L" : ",R") + "\n";
     }
 
     static void Send(string msg)

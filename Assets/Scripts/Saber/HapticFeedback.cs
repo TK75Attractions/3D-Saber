@@ -24,7 +24,10 @@ public class HapticFeedback : MonoBehaviour
     private void OnJudgment(JudgmentTier tier, int award)
     {
         float dur = DurationFor(tier);
-        if (dur > 0f) Haptic.Vibrate(dur);
+        if (dur <= 0f) return;
+        // 切った手のデバイスへルーティング(Haptic.handAwareCommands 有効時のみコマンドに手が付く)
+        SaberHand hand = scoreManager != null ? scoreManager.LastCutHand : SaberHand.Any;
+        Haptic.Vibrate(dur, hand);
     }
 
     public float DurationFor(JudgmentTier tier)
