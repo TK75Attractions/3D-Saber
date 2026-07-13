@@ -177,7 +177,7 @@ public class GamePlayManager : MonoBehaviour
         if (string.IsNullOrEmpty(songId))
         {
             Debug.LogWarning("GamePlayManager: SelectedSongId 未設定。デフォルト曲を試します");
-            songId = "TestSong";
+            songId = "ElDorado";
         }
 
         ChartData chart = ChartLoader.LoadFromStreamingAssets(songId, GameSession.SelectedDifficulty);
