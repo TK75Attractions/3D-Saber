@@ -48,6 +48,12 @@ public class NoteSpawner : MonoBehaviour
     public event System.Action<CuttableNote> OnNoteSpawned;
     public event System.Action<CuttableNote> OnNoteMissed;
 
+    // 同時押しノーツの間の白い連結線(プロセカの同時線)。標準機能として常時有効。
+    // シーンに旧 NoteSpawner がシリアライズ済みでもコード既定値(true)が使われるよう NonSerialized。
+    [System.NonSerialized] public bool simultaneousGuideEnabled = true;
+    // 「同時」とみなす時刻差(秒)。譜面上同じ拍のノーツは同一値になるので余裕を持った小さい値でよい。
+    public const double SimultaneousEpsilonSeconds = 0.01;
+
     public void SetChart(ChartData data)
     {
         chart = data;
@@ -161,6 +167,19 @@ public class NoteSpawner : MonoBehaviour
             if (cue == null) cue = go.AddComponent<NoteTimingCue>();
             cue.Initialize(note, judgeZ);
             note.TimingCue = cue;
+        }
+
+        // 同時押しガイド: 既に生きている同時刻ノーツと白線で結ぶ(小節線より薄い)
+        if (simultaneousGuideEnabled)
+        {
+            foreach (var other in liveNotes)
+            {
+                if (other == null || other.IsCut || other.IsMissed) continue;
+                if (System.Math.Abs(other.HitTime - note.HitTime) <= SimultaneousEpsilonSeconds)
+                {
+                    SimultaneousNoteLink.Create(other, note, noteRoot);
+                }
+            }
         }
 
         liveNotes.Add(note);
