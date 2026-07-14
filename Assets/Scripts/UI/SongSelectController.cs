@@ -295,6 +295,13 @@ public class SongSelectController : MonoBehaviour
             AudioType type = GuessType(name);
             using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip("file://" + full, type))
             {
+                // 一括デコードだと曲送りのたびにメインスレッドが数百msブロックされ、
+                // ナビノーツのカット直後などに大きなヒッチが出る。ストリーミングにして
+                // 再生しながら少しずつデコードさせる(プレビュー用途では音質・挙動は同じ)。
+                if (req.downloadHandler is DownloadHandlerAudioClip streamHandler)
+                {
+                    streamHandler.streamAudio = true;
+                }
                 yield return req.SendWebRequest();
                 if (req.result == UnityWebRequest.Result.Success)
                 {

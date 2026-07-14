@@ -30,9 +30,10 @@ public class JudgmentOffsetTests
     // -- GameSession --
 
     [Test]
-    public void GameSession_DefaultOffsetIsZero()
+    public void GameSession_DefaultOffsetIsRecommended()
     {
-        Assert.AreEqual(0, GameSession.JudgmentOffsetMs);
+        // 未保存時は推奨既定値(+60ms)から始まる
+        Assert.AreEqual(GameSession.JudgmentOffsetDefaultMs, GameSession.JudgmentOffsetMs);
     }
 
     [Test]
@@ -54,11 +55,11 @@ public class JudgmentOffsetTests
     }
 
     [Test]
-    public void GameSession_ResetClears()
+    public void GameSession_ResetReturnsToRecommendedDefault()
     {
         GameSession.JudgmentOffsetMs = 42;
         GameSession.ResetJudgmentOffset();
-        Assert.AreEqual(0, GameSession.JudgmentOffsetMs);
+        Assert.AreEqual(GameSession.JudgmentOffsetDefaultMs, GameSession.JudgmentOffsetMs);
     }
 
     // -- Widget --
@@ -91,13 +92,15 @@ public class JudgmentOffsetTests
     [Test]
     public void Widget_Change_UpdatesGameSession()
     {
+        // ウィジェットは保存済みの現在値(未保存なら推奨既定値)から相対で動く
         var canvas = MakeCanvas();
         var w = JudgmentOffsetWidget.Ensure(canvas);
+        int baseMs = GameSession.JudgmentOffsetDefaultMs;
         w.Change(10);
-        Assert.AreEqual(10, GameSession.JudgmentOffsetMs);
-        Assert.AreEqual(10, w.currentMs);
+        Assert.AreEqual(baseMs + 10, GameSession.JudgmentOffsetMs);
+        Assert.AreEqual(baseMs + 10, w.currentMs);
         w.Change(-3);
-        Assert.AreEqual(7, GameSession.JudgmentOffsetMs);
+        Assert.AreEqual(baseMs + 7, GameSession.JudgmentOffsetMs);
     }
 
     [Test]

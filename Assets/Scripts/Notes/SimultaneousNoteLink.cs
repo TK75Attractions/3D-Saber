@@ -6,9 +6,9 @@ using UnityEngine;
 // 見た目は小節線(GameStageSkin.BarLineAlpha=0.12)より薄い白: 標準機能として常時有効。
 public class SimultaneousNoteLink : MonoBehaviour
 {
-    // 小節線より控えめにする既定値(α 0.095 < 0.12、幅は小節線の太さ0.02より少し太い程度)
+    // 透明度は小節線(α0.12)より控えめのまま、幅は視認しやすいようしっかり太くする(小節線0.02の4倍)
     public const float DefaultAlpha = 0.095f;
-    public const float DefaultWidth = 0.04f;
+    public const float DefaultWidth = 0.08f;
 
     public CuttableNote noteA;
     public CuttableNote noteB;
