@@ -93,6 +93,16 @@ public class InputPoint : MonoBehaviour
 
     void Awake()
     {
+        // 既にシーン跨ぎの受信機が稼働中(タイトル/曲選択で EnsureInstance 済み)の場合、
+        // シーン直置きの自分が二重にポートを掴もうとすると SocketException (Address already in use)
+        // になり、しかも Instance を上書きしてしまうと「死んだ受信機」が全入力の窓口になる。
+        // → 先住インスタンスを優先し、後から来た自分はコンポーネントだけ退場する(GOと他コンポは残す)。
+        if (Instance != null && Instance != this)
+        {
+            if (Application.isPlaying) Destroy(this);
+            else DestroyImmediate(this);
+            return;
+        }
         Instance = this;
     }
 
@@ -159,19 +169,30 @@ public class InputPoint : MonoBehaviour
 
     void Start()
     {
+        // Awake で重複退場した場合は受信を開始しない
+        if (Instance != this) return;
+
         lastRateLogTime = Time.realtimeSinceStartup;
 
-        // UDP受信開始(棒1)
-        udpClient1 = new UdpClient(port);
-        receiveThread1 = new Thread(() => ReceiveData(udpClient1, lockObj, false));
-        receiveThread1.IsBackground = true;
-        receiveThread1.Start();
+        try
+        {
+            // UDP受信開始(棒1)
+            udpClient1 = new UdpClient(port);
+            receiveThread1 = new Thread(() => ReceiveData(udpClient1, lockObj, false));
+            receiveThread1.IsBackground = true;
+            receiveThread1.Start();
 
-        // UDP受信開始(棒2)
-        udpClient2 = new UdpClient(port2);
-        receiveThread2 = new Thread(() => ReceiveData(udpClient2, lockObj2, true));
-        receiveThread2.IsBackground = true;
-        receiveThread2.Start();
+            // UDP受信開始(棒2)
+            udpClient2 = new UdpClient(port2);
+            receiveThread2 = new Thread(() => ReceiveData(udpClient2, lockObj2, true));
+            receiveThread2.IsBackground = true;
+            receiveThread2.Start();
+        }
+        catch (SocketException e)
+        {
+            // 例外で Start が途切れて無言の入力死を起こさないよう、明示的な警告に変えて続行する
+            Debug.LogWarning($"[InputPoint] UDP ポート {port}/{port2} を開けませんでした(既に使用中?): {e.Message}");
+        }
     }
 
     void ReceiveData(UdpClient client, object targetLock, bool secondStick)
