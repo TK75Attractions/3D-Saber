@@ -196,20 +196,33 @@ public class SongSelectController : MonoBehaviour
         return DifficultyDisplayLevelAt(selectedDifficulty);
     }
 
-    // 表示用レベル。存在しない譜面の宣伝を防ぐため、実際に遊ぶ譜面と表示を一致させる:
-    //   難易度別ファイル(chart_<difficulty>.json)が実在 → キュレーション値(difficultyDisplayLevels)
-    //   基礎 chart.json へのフォールバックで遊ぶ難易度   → その譜面の自動レート
-    //   譜面が無い/読めない                              → 0("LEVEL --" 表示)
-    // 曲未選択(起動直後やテスト)はキュレーション値をそのまま返す。
+    // 表示用レベル(選択中の曲)。実装は DisplayLevelFor を参照。
     public int DifficultyDisplayLevelAt(int difficultyIndex)
     {
-        int configured = ConfiguredDisplayLevelAt(difficultyIndex);
-        if (selectedIndex < 0 || selectedIndex >= songIds.Count) return configured;
+        return DisplayLevelFor(selectedIndex, difficultyIndex);
+    }
 
-        int rated = DifficultyLevelAt(difficultyIndex);
+    // 任意の曲の表示用レベル。存在しない譜面の宣伝を防ぐため、実際に遊ぶ譜面と表示を一致させる:
+    //   難易度別ファイル(chart_<difficulty>.json)が実在 → キュレーション値(difficultyDisplayLevels)
+    //   基礎 chart.json へのフォールバックで遊ぶ難易度   → その譜面の自動レート
+    //   譜面が無い/読めない/ロック曲                     → 0("--" 表示)
+    // 曲が無効(起動直後やテスト)はキュレーション値をそのまま返す。
+    public int DisplayLevelFor(int songIndex, int difficultyIndex)
+    {
+        int configured = ConfiguredDisplayLevelAt(difficultyIndex);
+        if (songIndex < 0 || songIndex >= songIds.Count) return configured;
+        if (IsLocked(songIndex)) return 0;
+
+        int rated = LevelForIndex(songIndex, difficultyIndex);
         if (rated <= 0) return 0;
-        if (!HasDifficultyChartFile(difficultyIndex)) return rated;
+        if (!HasDifficultyChartFileFor(songIndex, difficultyIndex)) return rated;
         return configured > 0 ? configured : rated;
+    }
+
+    // 任意の曲のID(範囲外は空文字)。ホイールUIなど読み取り専用の描画用。
+    public string SongIdAt(int index)
+    {
+        return index >= 0 && index < songIds.Count ? songIds[index] : "";
     }
 
     private int ConfiguredDisplayLevelAt(int difficultyIndex)
@@ -219,13 +232,22 @@ public class SongSelectController : MonoBehaviour
         return difficultyDisplayLevels[difficultyIndex];
     }
 
-    // 難易度別ファイルが実在するか(ChartLoader の基礎 chart.json フォールバックと区別するため)。
-    private bool HasDifficultyChartFile(int difficultyIndex)
+    // 任意の曲のレベル(1〜10)。譜面なし/読めないは 0。
+    private int LevelForIndex(int songIndex, int difficultyIndex)
     {
-        if (selectedIndex < 0 || selectedIndex >= songIds.Count) return false;
+        if (songIndex < 0 || songIndex >= songIds.Count) return 0;
+        if (difficultyNames == null || difficultyNames.Length == 0) return 0;
+        difficultyIndex = Mathf.Clamp(difficultyIndex, 0, difficultyNames.Length - 1);
+        return LevelFor(songIds[songIndex], difficultyNames[difficultyIndex]);
+    }
+
+    // 難易度別ファイルが実在するか(ChartLoader の基礎 chart.json フォールバックと区別するため)。
+    private bool HasDifficultyChartFileFor(int songIndex, int difficultyIndex)
+    {
+        if (songIndex < 0 || songIndex >= songIds.Count) return false;
         if (difficultyNames == null || difficultyNames.Length == 0) return false;
         difficultyIndex = Mathf.Clamp(difficultyIndex, 0, difficultyNames.Length - 1);
-        string path = Path.Combine(Application.streamingAssetsPath, "Songs", songIds[selectedIndex],
+        string path = Path.Combine(Application.streamingAssetsPath, "Songs", songIds[songIndex],
             $"chart_{difficultyNames[difficultyIndex].ToLowerInvariant()}.json");
         return File.Exists(path);
     }
