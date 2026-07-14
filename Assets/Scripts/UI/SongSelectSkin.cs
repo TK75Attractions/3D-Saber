@@ -19,10 +19,25 @@ public class SongSelectSkin : MonoBehaviour
     static readonly Color[] DifficultyColors =
         { UISkinPalette.Cyan, UISkinPalette.Yellow, UISkinPalette.Magenta };
 
+    class DifficultyCardView
+    {
+        public UISkinKit.NeonButtonParts parts;
+        public RectTransform root;
+        public TextMeshProUGUI tier;
+        public TextMeshProUGUI level;
+        public Image[] meter;
+        public Image selectionGlow;
+        public Vector2 basePosition;
+        public bool selected;
+    }
+
     SongSelectController ctl;
     readonly List<SongRowFX> rowFX = new List<SongRowFX>();
-    readonly List<UISkinKit.NeonButtonParts> difficultyParts = new List<UISkinKit.NeonButtonParts>();
+    readonly List<DifficultyCardView> difficultyCards = new List<DifficultyCardView>();
     TextMeshProUGUI difficultyDisplayTMP;
+    TextMeshProUGUI difficultyLevelTMP;
+    TextMeshProUGUI startDifficultyHint;
+    Image[] selectedLevelMeter;
     Image startIdleGlow;
     float age;
 
@@ -89,6 +104,18 @@ public class SongSelectSkin : MonoBehaviour
             Color c = startIdleGlow.color;
             c.a = 0.10f + 0.07f * (0.5f + 0.5f * Mathf.Sin(age * 2.0f));
             startIdleGlow.color = c;
+        }
+
+        // 選択中の難易度カードだけ、弱い呼吸光を残す。
+        for (int i = 0; i < difficultyCards.Count; i++)
+        {
+            var card = difficultyCards[i];
+            if (card == null || card.selectionGlow == null) continue;
+            Color c = card.selectionGlow.color;
+            c.a = card.selected
+                ? 0.11f + 0.055f * (0.5f + 0.5f * Mathf.Sin(age * 2.15f))
+                : 0f;
+            card.selectionGlow.color = c;
         }
     }
 
@@ -322,80 +349,256 @@ public class SongSelectSkin : MonoBehaviour
     void StyleDifficulty(Canvas canvas)
     {
         var logoFont = UISkinKit.LogoFontAsset();
-
-        // "Difficulty" 小見出しを TMP に置き換え
         var oldLabel = TitleSceneSkin.FindTextByContent(canvas, "Difficulty");
-        if (oldLabel != null)
-        {
-            var pos = oldLabel.GetComponent<RectTransform>().anchoredPosition;
-            oldLabel.gameObject.SetActive(false);
-            UISkinKit.MakeTMP(canvas.transform, "DifficultyHeading", "DIFFICULTY", 20f,
-                UISkinPalette.SubtleGray, TextAlignmentOptions.Center,
-                pos, new Vector2(400f, 36f), logoFont != null ? FontStyles.Normal : FontStyles.Bold, 6f, logoFont);
-        }
+        if (oldLabel != null) oldLabel.gameObject.SetActive(false);
+        if (ctl.difficultyDisplay != null) ctl.difficultyDisplay.gameObject.SetActive(false);
 
-        // 現在難易度の大きな表示もロゴフォントの TMP に差し替え
-        // (元の legacy Text は隠す。テキスト更新は HandleDifficultyChanged で行う)
-        if (ctl.difficultyDisplay != null)
-        {
-            var drt = ctl.difficultyDisplay.GetComponent<RectTransform>();
-            Vector2 pos = drt.anchoredPosition;
-            ctl.difficultyDisplay.gameObject.SetActive(false);
-            difficultyDisplayTMP = UISkinKit.MakeTMP(canvas.transform, "DifficultyDisplayTMP", "", 46f,
-                UISkinPalette.Cyan, TextAlignmentOptions.Center,
-                pos, new Vector2(460f, 70f), logoFont != null ? FontStyles.Normal : FontStyles.Bold, 4f, logoFont);
-        }
+        // 難易度名・レベル・3譜面を1つの情報パネルとしてまとめる。
+        var deck = new GameObject("DifficultyDeck", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
+        deck.transform.SetParent(canvas.transform, false);
+        var deckRT = deck.GetComponent<RectTransform>();
+        deckRT.sizeDelta = new Vector2(540f, 220f);
+        deckRT.anchoredPosition = new Vector2(550f, -115f);
+        var deckFill = deck.GetComponent<Image>();
+        deckFill.sprite = UISkinKit.RoundedRect();
+        deckFill.type = Image.Type.Sliced;
+        deckFill.color = new Color(0.010f, 0.016f, 0.045f, 0.82f);
+        deckFill.raycastTarget = false;
 
-        // ボタンをピル化(ラベルは UISkinKit がロゴフォントで生成する)
-        difficultyParts.Clear();
+        var frameGo = new GameObject("Frame", typeof(RectTransform), typeof(Image));
+        frameGo.transform.SetParent(deck.transform, false);
+        var frameRT = frameGo.GetComponent<RectTransform>();
+        frameRT.anchorMin = Vector2.zero;
+        frameRT.anchorMax = Vector2.one;
+        frameRT.sizeDelta = Vector2.zero;
+        var frame = frameGo.GetComponent<Image>();
+        frame.sprite = UISkinKit.RoundedFrame();
+        frame.type = Image.Type.Sliced;
+        frame.color = new Color(0.52f, 0.67f, 0.88f, 0.30f);
+        frame.raycastTarget = false;
+
+        MakeDeckAccent(deck.transform, "EasyAccent", new Vector2(-180f, 109f), UISkinPalette.Cyan);
+        MakeDeckAccent(deck.transform, "NormalAccent", new Vector2(0f, 109f), UISkinPalette.Yellow);
+        MakeDeckAccent(deck.transform, "HardAccent", new Vector2(180f, 109f), UISkinPalette.Magenta);
+
+        var uiFont = UISkinKit.FontAsset("Rajdhani-SemiBold");
+        UISkinKit.MakeTMP(deck.transform, "DifficultyHeading", "CHART DIFFICULTY", 14f,
+            UISkinPalette.SubtleGray, TextAlignmentOptions.Left,
+            new Vector2(-118f, 88f), new Vector2(280f, 24f), FontStyles.Bold, 5f, uiFont);
+        UISkinKit.MakeTMP(deck.transform, "DifficultyInputHint", "A / D", 11f,
+            new Color(0.52f, 0.61f, 0.78f, 0.62f), TextAlignmentOptions.Right,
+            new Vector2(205f, 88f), new Vector2(80f, 22f), FontStyles.Bold, 3f, uiFont);
+
+        FontStyles summaryStyle = logoFont != null ? FontStyles.Normal : FontStyles.Bold;
+        difficultyDisplayTMP = UISkinKit.MakeTMP(deck.transform, "SelectedDifficultyName", "", 29f,
+            UISkinPalette.Cyan, TextAlignmentOptions.Left,
+            new Vector2(-102f, 57f), new Vector2(250f, 40f), summaryStyle, 4f, logoFont);
+        difficultyLevelTMP = UISkinKit.MakeTMP(deck.transform, "SelectedDifficultyLevel", "", 18f,
+            UISkinPalette.OffWhite, TextAlignmentOptions.Right,
+            new Vector2(153f, 57f), new Vector2(190f, 34f), FontStyles.Bold, 3f, uiFont);
+        selectedLevelMeter = BuildLevelMeter(deck.transform, "SelectedLevelMeter",
+            new Vector2(0f, 28f), 28f, 6f);
+
+        difficultyCards.Clear();
         if (ctl.difficultyButtons == null) return;
         ctl.suppressDefaultDifficultyTint = true;
         for (int i = 0; i < ctl.difficultyButtons.Length; i++)
         {
             var btn = ctl.difficultyButtons[i];
-            if (btn == null) { difficultyParts.Add(default); continue; }
+            if (btn == null) { difficultyCards.Add(null); continue; }
+
             Color accent = DifficultyColors[Mathf.Min(i, DifficultyColors.Length - 1)];
-            var parts = UISkinKit.RestyleButton(btn, accent, 21f);
-            difficultyParts.Add(parts);
+            string name = ctl.difficultyNames != null && i < ctl.difficultyNames.Length
+                ? ctl.difficultyNames[i].ToUpperInvariant()
+                : $"CHART {i + 1}";
+
+            var rt = btn.GetComponent<RectTransform>();
+            rt.SetParent(deck.transform, false);
+            rt.anchorMin = new Vector2(0.5f, 0.5f);
+            rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.sizeDelta = new Vector2(156f, 102f);
+            Vector2 basePosition = new Vector2(-170f + i * 170f, -38f);
+            rt.anchoredPosition = basePosition;
+
+            var parts = UISkinKit.RestyleButton(btn, accent, 18f, name);
+            parts.hover.hoverScale = 1.025f;
+            parts.hover.pressScale = 0.985f;
+            parts.hover.glowHoverAlpha = 0.30f;
+            var labelRT = parts.label.rectTransform;
+            labelRT.anchorMin = new Vector2(0f, 0.48f);
+            labelRT.anchorMax = new Vector2(1f, 0.96f);
+            labelRT.offsetMin = Vector2.zero;
+            labelRT.offsetMax = Vector2.zero;
+            parts.label.fontSize = 18f;
+            parts.label.characterSpacing = 3f;
+
+            var selectionGlowGo = new GameObject("SelectionGlow", typeof(RectTransform), typeof(Image));
+            selectionGlowGo.transform.SetParent(btn.transform, false);
+            selectionGlowGo.transform.SetAsFirstSibling();
+            var glowRT = selectionGlowGo.GetComponent<RectTransform>();
+            glowRT.anchorMin = Vector2.zero;
+            glowRT.anchorMax = Vector2.one;
+            glowRT.sizeDelta = new Vector2(52f, 52f);
+            var selectionGlow = selectionGlowGo.GetComponent<Image>();
+            selectionGlow.sprite = UISkinKit.SoftGlow();
+            selectionGlow.color = new Color(accent.r, accent.g, accent.b, 0f);
+            selectionGlow.raycastTarget = false;
+
+            var tier = UISkinKit.MakeTMP(btn.transform, "Tier", $"0{i + 1}", 10f,
+                new Color(0.58f, 0.65f, 0.78f, 0.55f), TextAlignmentOptions.Left,
+                new Vector2(-56f, 38f), new Vector2(42f, 18f), FontStyles.Bold, 2f, uiFont);
+            var level = UISkinKit.MakeTMP(btn.transform, "Level", "", 14f,
+                accent, TextAlignmentOptions.Center,
+                new Vector2(0f, -13f), new Vector2(130f, 24f), FontStyles.Bold, 2f, uiFont);
+            var meter = BuildLevelMeter(btn.transform, "LevelMeter",
+                new Vector2(0f, -38f), 8.3f, 2.8f);
+
+            difficultyCards.Add(new DifficultyCardView
+            {
+                parts = parts,
+                root = rt,
+                tier = tier,
+                level = level,
+                meter = meter,
+                selectionGlow = selectionGlow,
+                basePosition = basePosition
+            });
         }
+
+        var fade = deck.AddComponent<UIFadeSlideIn>();
+        fade.delay = 0.20f;
+        fade.duration = 0.48f;
+        fade.fromOffset = new Vector2(32f, 0f);
     }
 
     void HandleDifficultyChanged(int idx)
     {
-        for (int i = 0; i < difficultyParts.Count; i++)
+        if (ctl == null || ctl.difficultyNames == null || ctl.difficultyNames.Length == 0) return;
+        idx = Mathf.Clamp(idx, 0, ctl.difficultyNames.Length - 1);
+
+        for (int i = 0; i < difficultyCards.Count; i++)
         {
-            var parts = difficultyParts[i];
-            if (parts.button == null) continue;
+            var card = difficultyCards[i];
+            if (card == null || card.parts.button == null) continue;
             Color accent = DifficultyColors[Mathf.Min(i, DifficultyColors.Length - 1)];
             bool sel = i == idx;
-            if (parts.fill != null)
+            int level = ctl.DifficultyLevelAt(i);
+
+            card.selected = sel;
+            card.root.anchoredPosition = card.basePosition + new Vector2(0f, sel ? 5f : 0f);
+            if (card.parts.fill != null)
             {
-                parts.fill.color = sel
-                    ? new Color(accent.r * 0.38f, accent.g * 0.38f, accent.b * 0.42f, 0.95f)
+                card.parts.fill.color = sel
+                    ? new Color(accent.r * 0.20f, accent.g * 0.20f, accent.b * 0.24f, 0.96f)
                     : UISkinKit.DarkFill(accent);
             }
-            if (parts.frame != null)
+            if (card.parts.frame != null)
             {
                 Color fc = accent;
-                fc.a = sel ? 1f : 0.30f;
-                parts.frame.color = fc;
+                fc.a = sel ? 0.96f : 0.24f;
+                card.parts.frame.color = fc;
             }
-            if (parts.label != null)
+            if (card.parts.label != null)
             {
-                parts.label.color = sel ? Color.Lerp(accent, Color.white, 0.55f)
-                                        : new Color(accent.r, accent.g, accent.b, 0.55f);
+                card.parts.label.color = sel ? Color.Lerp(accent, Color.white, 0.64f)
+                                             : new Color(accent.r, accent.g, accent.b, 0.62f);
             }
+            if (card.tier != null)
+                card.tier.color = sel ? new Color(accent.r, accent.g, accent.b, 0.90f)
+                                      : new Color(0.58f, 0.65f, 0.78f, 0.42f);
+            if (card.level != null)
+            {
+                card.level.text = FormatDifficultyCardLevel(level);
+                card.level.color = sel ? Color.Lerp(accent, Color.white, 0.28f)
+                                       : new Color(accent.r, accent.g, accent.b, 0.58f);
+            }
+            UpdateLevelMeter(card.meter, level, accent, sel ? 0.92f : 0.46f);
         }
 
-        if (difficultyDisplayTMP != null && ctl != null && ctl.difficultyNames != null
-            && idx >= 0 && idx < ctl.difficultyNames.Length)
+        string baseName = ctl.difficultyNames[idx].ToUpperInvariant();
+        int selectedLevel = ctl.CurrentDifficultyLevel();
+        Color selectedAccent = DifficultyColors[Mathf.Min(idx, DifficultyColors.Length - 1)];
+        if (difficultyDisplayTMP != null)
         {
-            // 難易度名 + レベル数値(1〜10、譜面なしは数値なし)
-            string baseName = ctl.difficultyNames[idx].ToUpperInvariant();
-            int level = ctl.CurrentDifficultyLevel();
-            difficultyDisplayTMP.text = level > 0 ? $"{baseName}  {level}" : baseName;
-            difficultyDisplayTMP.color = DifficultyColors[Mathf.Min(idx, DifficultyColors.Length - 1)];
+            difficultyDisplayTMP.text = baseName;
+            difficultyDisplayTMP.color = selectedAccent;
         }
+        if (difficultyLevelTMP != null)
+        {
+            difficultyLevelTMP.text = FormatDifficultyLevel(selectedLevel);
+            difficultyLevelTMP.color = Color.Lerp(selectedAccent, Color.white, 0.48f);
+        }
+        UpdateLevelMeter(selectedLevelMeter, selectedLevel, selectedAccent, 0.90f);
+        if (startDifficultyHint != null)
+            startDifficultyHint.text = $"{baseName}  //  {FormatDifficultyLevel(selectedLevel)}";
+    }
+
+    static void MakeDeckAccent(Transform parent, string name, Vector2 position, Color color)
+    {
+        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(parent, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(180f, 3f);
+        rt.anchoredPosition = position;
+        var image = go.GetComponent<Image>();
+        image.color = new Color(color.r, color.g, color.b, 0.86f);
+        image.raycastTarget = false;
+    }
+
+    static Image[] BuildLevelMeter(Transform parent, string name, Vector2 position,
+        float segmentWidth, float gap)
+    {
+        const int count = 10;
+        float totalWidth = count * segmentWidth + (count - 1) * gap;
+        var root = new GameObject(name, typeof(RectTransform));
+        root.transform.SetParent(parent, false);
+        var rootRT = root.GetComponent<RectTransform>();
+        rootRT.sizeDelta = new Vector2(totalWidth, 6f);
+        rootRT.anchoredPosition = position;
+
+        var segments = new Image[count];
+        for (int i = 0; i < count; i++)
+        {
+            var go = new GameObject($"Segment_{i + 1:00}", typeof(RectTransform), typeof(Image));
+            go.transform.SetParent(root.transform, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.sizeDelta = new Vector2(segmentWidth, 4f);
+            rt.anchoredPosition = new Vector2((i - (count - 1) * 0.5f) * (segmentWidth + gap), 0f);
+            var image = go.GetComponent<Image>();
+            image.color = new Color(0.36f, 0.45f, 0.62f, 0.14f);
+            image.raycastTarget = false;
+            segments[i] = image;
+        }
+        return segments;
+    }
+
+    static void UpdateLevelMeter(Image[] meter, int level, Color accent, float activeAlpha)
+    {
+        if (meter == null) return;
+        int active = MeterSegmentsForLevel(level);
+        for (int i = 0; i < meter.Length; i++)
+        {
+            if (meter[i] == null) continue;
+            meter[i].color = i < active
+                ? new Color(accent.r, accent.g, accent.b, activeAlpha)
+                : new Color(0.36f, 0.45f, 0.62f, 0.12f);
+        }
+    }
+
+    public static int MeterSegmentsForLevel(int level)
+    {
+        return Mathf.Clamp(level, 0, 10);
+    }
+
+    public static string FormatDifficultyLevel(int level)
+    {
+        return level > 0 ? $"LEVEL {Mathf.Clamp(level, 0, 99):00}" : "LEVEL --";
+    }
+
+    public static string FormatDifficultyCardLevel(int level)
+    {
+        return level > 0 ? $"LV {Mathf.Clamp(level, 0, 99):00}" : "LV --";
     }
 
     // ---- START ----
@@ -404,15 +607,26 @@ public class SongSelectSkin : MonoBehaviour
     {
         if (ctl.startButton == null) return;
         var rt = ctl.startButton.GetComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(320f, 96f);
-        var parts = UISkinKit.RestyleButton(ctl.startButton, UISkinPalette.Cyan, 38f);
+        rt.sizeDelta = new Vector2(500f, 84f);
+        rt.anchoredPosition = new Vector2(550f, -300f);
+        var parts = UISkinKit.RestyleButton(ctl.startButton, UISkinPalette.Cyan, 31f, "START");
         if (parts.fill != null)
         {
             // START は他より一段明るい塗りで主役感を出す
-            parts.fill.color = new Color(UISkinPalette.Cyan.r * 0.22f, UISkinPalette.Cyan.g * 0.22f,
-                UISkinPalette.Cyan.b * 0.30f, 0.92f);
+            parts.fill.color = new Color(UISkinPalette.Cyan.r * 0.17f, UISkinPalette.Cyan.g * 0.17f,
+                UISkinPalette.Cyan.b * 0.23f, 0.94f);
         }
-        if (parts.label != null) parts.label.characterSpacing = 6f;
+        if (parts.label != null)
+        {
+            parts.label.characterSpacing = 7f;
+            parts.label.rectTransform.anchoredPosition = new Vector2(0f, 10f);
+        }
+
+        startDifficultyHint = UISkinKit.MakeTMP(ctl.startButton.transform, "DifficultyHint", "", 13f,
+            new Color(0.73f, 0.92f, 1f, 0.72f), TextAlignmentOptions.Center,
+            new Vector2(0f, -23f), new Vector2(420f, 22f), FontStyles.Bold, 4f,
+            UISkinKit.FontAsset("Rajdhani-SemiBold"));
+        startDifficultyHint.raycastTarget = false;
 
         // 待機中の明滅グロー(ホバーグローとは別レイヤ)
         var idle = new GameObject("IdlePulse", typeof(RectTransform), typeof(Image));

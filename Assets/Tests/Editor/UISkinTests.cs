@@ -117,4 +117,23 @@ public class UISkinTests
         var found = TitleSceneSkin.FindTextByContent(canvas, "Nothing");
         Assert.IsNull(found);
     }
+
+    [TestCase(-1, 0)]
+    [TestCase(0, 0)]
+    [TestCase(1, 1)]
+    [TestCase(5, 5)]
+    [TestCase(10, 10)]
+    [TestCase(12, 10)]
+    public void DifficultyMeter_ClampsToTenSegments(int level, int expected)
+    {
+        Assert.AreEqual(expected, SongSelectSkin.MeterSegmentsForLevel(level));
+    }
+
+    [TestCase(0, "LEVEL --")]
+    [TestCase(1, "LEVEL 01")]
+    [TestCase(10, "LEVEL 10")]
+    public void DifficultyLevel_FormatsAsTwoDigits(int level, string expected)
+    {
+        Assert.AreEqual(expected, SongSelectSkin.FormatDifficultyLevel(level));
+    }
 }

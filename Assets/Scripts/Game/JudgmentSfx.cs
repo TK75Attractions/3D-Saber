@@ -48,14 +48,14 @@ public class JudgmentSfx : MonoBehaviour
 
     public AudioClip ClipFor(JudgmentTier tier)
     {
-        // 通常ノーツのカット音: 1200Hz→700Hz の下降スイープ 70ms(斬撃感のお試し仕様)。
-        // ティアの違いは HUD 側で見せるため、ヒット音は共通。Miss だけ従来のブザー。
+        // 通常ノーツはティア別ビープ(スイープ案は試した結果、従来仕様へ戻した。2026-07-14)。
+        // 金ノーツのカットは GoldNoteSfx のスイープ+ベルのみ(OnJudgment 側でスキップ)。
         switch (tier)
         {
-            case JudgmentTier.Perfect: return perfectClip != null ? perfectClip : (genPerfect ??= Sweep(1200f, 700f, 0.07f));
-            case JudgmentTier.Great:   return greatClip   != null ? greatClip   : (genGreat   ??= Sweep(1200f, 700f, 0.07f));
-            case JudgmentTier.Good:    return goodClip    != null ? goodClip    : (genGood    ??= Sweep(1200f, 700f, 0.07f));
-            case JudgmentTier.Bad:     return badClip     != null ? badClip     : (genBad     ??= Sweep(1200f, 700f, 0.07f));
+            case JudgmentTier.Perfect: return perfectClip != null ? perfectClip : (genPerfect ??= Beep(880f, 0.16f));
+            case JudgmentTier.Great:   return greatClip   != null ? greatClip   : (genGreat   ??= Beep(660f, 0.14f));
+            case JudgmentTier.Good:    return goodClip    != null ? goodClip    : (genGood    ??= Beep(440f, 0.12f));
+            case JudgmentTier.Bad:     return badClip     != null ? badClip     : (genBad     ??= Beep(220f, 0.10f));
             default:                   return missClip    != null ? missClip    : (genMiss    ??= Buzz(110f, 0.18f));
         }
     }

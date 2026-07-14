@@ -1,38 +1,57 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 
-// StreamingAssets の実譜面(ElDorado)の健全性チェック。
-// 自動生成パイプラインの出力が壊れたらここで気付く。しきい値は再生成に耐えるよう緩めに。
+// StreamingAssets の実譜面の健全性チェック。
+// 曲一覧に出る全曲×全難易度を走査するので、曲を追加すると自動でカバーされる。
+// しきい値は再生成・手編集に耐えるよう構造的な性質(読める・昇順・型/範囲)だけに絞る。
 public class ChartContentTests
 {
     static readonly string[] Difficulties = { "easy", "normal", "hard" };
 
+    static void AssertChartIsSane(string songId, string diff, ChartData chart)
+    {
+        string label = songId + "/" + diff;
+        Assert.IsNotNull(chart, label + " が読めるはず");
+        Assert.Greater(chart.bpm, 30f, label + ": bpm");
+
+        var valid = new HashSet<string> { "red", "blue", "gold", "default" };
+        float prev = float.MinValue;
+        foreach (NoteData n in chart.notes)
+        {
+            Assert.GreaterOrEqual(n.time, prev - 0.001f, label + ": 時刻昇順");
+            prev = n.time;
+            Assert.IsTrue(valid.Contains(n.color), label + ": 色 " + n.color);
+            // 範囲は譜面エディターの配置可能域(X ±2.5 / Y ±1.5)+ 誤差マージン
+            Assert.IsTrue(n.x >= -2.6f && n.x <= 2.6f, label + ": x範囲 " + n.x);
+            Assert.IsTrue(n.y >= -1.6f && n.y <= 1.6f, label + ": y範囲 " + n.y);
+            // long のカット回数はエディター/Normalize の許容範囲(2..99)
+            if (n.IsLong) Assert.IsTrue(n.count >= 2 && n.count <= 99, label + ": longカウント " + n.count);
+            else Assert.AreEqual(1, n.count, label + ": tapカウント");
+        }
+    }
+
     [Test]
-    public void ElDorado_AllDifficulties_LoadAndAreSane()
+    public void AllPlayableSongs_AllDifficulties_AreSane()
+    {
+        var songs = SongSelectController.EnumerateSongIds();
+        Assert.Greater(songs.Count, 0, "プレイアブル曲が存在する");
+        foreach (string songId in songs)
+        {
+            foreach (string diff in Difficulties)
+            {
+                AssertChartIsSane(songId, diff, ChartLoader.LoadFromStreamingAssets(songId, diff));
+            }
+        }
+    }
+
+    [Test]
+    public void ElDorado_AllDifficulties_LoadAndHaveSubstance()
     {
         foreach (string diff in Difficulties)
         {
             ChartData chart = ChartLoader.LoadFromStreamingAssets("ElDorado", diff);
-            Assert.IsNotNull(chart, diff + " が読めるはず");
-            Assert.Greater(chart.bpm, 60f, diff + ": bpm");
+            AssertChartIsSane("ElDorado", diff, chart);
             Assert.Greater(chart.notes.Count, 80, diff + ": ノーツ数");
-
-            var valid = new HashSet<string> { "red", "blue", "gold", "default" };
-            float prev = float.MinValue;
-            foreach (NoteData n in chart.notes)
-            {
-                Assert.GreaterOrEqual(n.time, prev - 0.001f, diff + ": 時刻昇順");
-                prev = n.time;
-                Assert.IsTrue(valid.Contains(n.color), diff + ": 色 " + n.color);
-                // 範囲は譜面エディターの配置可能域(X ±2.5 / Y ±1.5)+ 誤差マージン。
-                // ユーザーがエディターで端に置いた譜面も正当なデータとして通す。
-                Assert.IsTrue(n.x >= -2.6f && n.x <= 2.6f, diff + ": x範囲 " + n.x);
-                Assert.IsTrue(n.y >= -1.6f && n.y <= 1.6f, diff + ": y範囲 " + n.y);
-                // long のカット回数はエディター/Normalize の許容範囲(2..99)に合わせる
-                // (エディターのスライダーは 2..20。生成譜面の 2..5 はコンテンツの性質でありテストしない)
-                if (n.IsLong) Assert.IsTrue(n.count >= 2 && n.count <= 99, diff + ": longカウント " + n.count);
-                else Assert.AreEqual(1, n.count, diff + ": tapカウント");
-            }
         }
     }
 

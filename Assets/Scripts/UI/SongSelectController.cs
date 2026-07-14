@@ -186,8 +186,17 @@ public class SongSelectController : MonoBehaviour
     // 選択中の曲×難易度のレベル(1〜10)。譜面なし/空は 0。
     public int CurrentDifficultyLevel()
     {
+        return DifficultyLevelAt(selectedDifficulty);
+    }
+
+    // 選択中の曲について、任意の難易度のレベルを返す。
+    // 難易度カードで Easy / Normal / Hard を横並び比較するための読み取り専用 API。
+    public int DifficultyLevelAt(int difficultyIndex)
+    {
         if (selectedIndex < 0 || selectedIndex >= songIds.Count) return 0;
-        string name = difficultyNames[Mathf.Clamp(selectedDifficulty, 0, difficultyNames.Length - 1)];
+        if (difficultyNames == null || difficultyNames.Length == 0) return 0;
+        difficultyIndex = Mathf.Clamp(difficultyIndex, 0, difficultyNames.Length - 1);
+        string name = difficultyNames[difficultyIndex];
         return LevelFor(songIds[selectedIndex], name);
     }
 
