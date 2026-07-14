@@ -136,4 +136,35 @@ public class UISkinTests
     {
         Assert.AreEqual(expected, SongSelectSkin.FormatDifficultyLevel(level));
     }
+
+    [TestCase(120f, 0.5)]
+    [TestCase(150f, 0.4)]
+    [TestCase(0f, 0.5)]
+    public void StartCountdown_UsesChartBeatLength(float bpm, double expected)
+    {
+        Assert.AreEqual(expected, GameStartCountdown.BeatSeconds(bpm), 0.0001);
+    }
+
+    [TestCase(9.9, 10.0, 0.5, 0)]
+    [TestCase(10.0, 10.0, 0.5, 0)]
+    [TestCase(10.5, 10.0, 0.5, 1)]
+    [TestCase(11.0, 10.0, 0.5, 2)]
+    [TestCase(11.5, 10.0, 0.5, 3)]
+    [TestCase(20.0, 10.0, 0.5, 3)]
+    public void StartCountdown_AdvancesOneStepPerBeat(
+        double now, double firstBeat, double beatLength, int expected)
+    {
+        Assert.AreEqual(expected, GameStartCountdown.StepAt(now, firstBeat, beatLength));
+    }
+
+    [TestCase(-1, "3")]
+    [TestCase(0, "3")]
+    [TestCase(1, "2")]
+    [TestCase(2, "1")]
+    [TestCase(3, "START!")]
+    [TestCase(9, "START!")]
+    public void StartCountdown_UsesRequestedLabels(int step, string expected)
+    {
+        Assert.AreEqual(expected, GameStartCountdown.TokenForStep(step));
+    }
 }

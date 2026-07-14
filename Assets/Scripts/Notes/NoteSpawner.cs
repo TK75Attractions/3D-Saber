@@ -186,7 +186,8 @@ public class NoteSpawner : MonoBehaviour
         OnNoteSpawned?.Invoke(note);
     }
 
-    private static void BuildArrow(Transform parent, CutDirection dir)
+    // 方向ノーツのシェブロン矢印を組み立てる。曲選択のナビノーツ(SongSelectSlashNav)からも使うため公開。
+    public static void BuildArrow(Transform parent, CutDirection dir)
     {
         GameObject arrow = new GameObject("Arrow");
         arrow.transform.SetParent(parent, false);

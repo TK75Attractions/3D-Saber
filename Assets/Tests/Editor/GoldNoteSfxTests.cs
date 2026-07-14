@@ -21,12 +21,11 @@ public class GoldNoteSfxTests
     }
 
     [Test]
-    public void BuildGoldCutClip_MatchesSpec_150ms_Normalized()
+    public void BuildShingClip_ProducesNormalizedMetallicClip()
     {
-        // お試し仕様: 1600→900Hz スイープ + 2500Hz ベル、150ms
-        var clip = GoldNoteSfx.BuildGoldCutClip(1600f, 900f, 0.15f, 2500f, 0.55f);
+        var clip = GoldNoteSfx.BuildShingClip("test_shing", 2093f, 0.85f, 0.09f, 7f, 12345);
         Assert.IsNotNull(clip);
-        Assert.AreEqual((int)(44100 * 0.15f), clip.samples, "長さ150ms");
+        Assert.Greater(clip.samples, 1000, "十分な長さがある");
 
         var data = new float[clip.samples];
         clip.GetData(data, 0);
@@ -39,7 +38,23 @@ public class GoldNoteSfxTests
         }
         Assert.LessOrEqual(peak, 0.95f, "正規化されクリップしない");
         Assert.Greater(peak, 0.5f, "ピークは正規化値(0.9)付近");
-        Assert.Greater(energy, 0.5, "無音ではない");
+        Assert.Greater(energy, 1.0, "無音ではない");
+    }
+
+    [Test]
+    public void BuildShingClip_IsDeterministicForSameSeed()
+    {
+        var a = GoldNoteSfx.BuildShingClip("a", 2093f, 0.4f, 0.09f, 7f, 777);
+        var b = GoldNoteSfx.BuildShingClip("b", 2093f, 0.4f, 0.09f, 7f, 777);
+        var da = new float[a.samples];
+        var db = new float[b.samples];
+        a.GetData(da, 0);
+        b.GetData(db, 0);
+        Assert.AreEqual(da.Length, db.Length);
+        for (int i = 0; i < da.Length; i += 997)
+        {
+            Assert.AreEqual(da[i], db[i], 1e-6f, "シード固定で再現可能(音色の意図せぬ変化が検出できる)");
+        }
     }
 
     [Test]
@@ -94,7 +109,7 @@ public class GoldNoteSfxTests
 
         Assert.IsNotNull(captured);
         captured.Cut(Vector3.zero, new Vector3(10f, 0f, 0f), CutDirection.None, SaberHand.Any);
-        Assert.IsTrue(score.LastCutWasGold, "金ノーツのカットが記録される(通常カット音のスキップ用)");
+        Assert.IsTrue(score.LastCutWasGold, "金ノーツのカットが記録される");
 
         score.RegisterMiss();
         Assert.IsFalse(score.LastCutWasGold, "Miss でリセット");

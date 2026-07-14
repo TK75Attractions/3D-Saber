@@ -39,8 +39,7 @@ public class JudgmentSfx : MonoBehaviour
 
     private void OnJudgment(JudgmentTier tier, int award)
     {
-        // 金ノーツのカットは GoldNoteSfx 専用音のみ鳴らす(通常カット音を重ねない)
-        if (scoreManager != null && scoreManager.LastCutWasGold && tier != JudgmentTier.Miss) return;
+        // 金ノーツのカット時も判定音は鳴らす(GoldNoteSfx のシャリーンが上に重なる従来仕様)
         AudioClip clip = ClipFor(tier);
         if (clip == null) return;
         source.PlayOneShot(clip, volume);
@@ -49,7 +48,6 @@ public class JudgmentSfx : MonoBehaviour
     public AudioClip ClipFor(JudgmentTier tier)
     {
         // 通常ノーツはティア別ビープ(スイープ案は試した結果、従来仕様へ戻した。2026-07-14)。
-        // 金ノーツのカットは GoldNoteSfx のスイープ+ベルのみ(OnJudgment 側でスキップ)。
         switch (tier)
         {
             case JudgmentTier.Perfect: return perfectClip != null ? perfectClip : (genPerfect ??= Beep(880f, 0.16f));

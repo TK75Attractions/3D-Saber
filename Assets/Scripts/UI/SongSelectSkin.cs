@@ -53,6 +53,16 @@ public class SongSelectSkin : MonoBehaviour
         if (canvas == null) canvas = ctl.GetComponentInParent<Canvas>();
         if (canvas == null) yield break;
 
+        // 3Dナビノーツ(切って曲送り)を UI より手前に描くため、
+        // タイトル画面と同じく Canvas をカメラ前方の平面へ移す(レイアウトは不変)。
+        var worldCam = Camera.main;
+        if (worldCam != null)
+        {
+            canvas.renderMode = RenderMode.ScreenSpaceCamera;
+            canvas.worldCamera = worldCam;
+            canvas.planeDistance = 20f;
+        }
+
         CyberBackdrop.Ensure(canvas);
 
         // 選択ハイライトはカード側(SongRowFX)で示すので矢印プレフィックスを外し、
@@ -84,6 +94,10 @@ public class SongSelectSkin : MonoBehaviour
         // 既存のボタン(曲行/難易度/START等)に0.45秒かざすとクリック扱いになる。
         // UDP入力があるときだけ現れるので、マウス/キーボード操作とは併存する。
         SaberUIPointer.Build();
+
+        // 切って曲送り: ↑/↓ のナビノーツをリストと難易度パネルの間に浮かべる
+        // (↑=前の曲 / ↓=次の曲。セーバーまたはマウスの素振りで切れる)
+        SongSelectSlashNav.Build(ctl);
     }
 
     void OnDestroy()

@@ -42,8 +42,14 @@ public class SongPlayer : MonoBehaviour
 
     public void Play()
     {
+        PlayScheduled(AudioSettings.dspTime + startDelay);
+    }
+
+    // カウントインなど別演出と同じ DSP 時刻へ、曲開始を正確に揃える。
+    public void PlayScheduled(double dspStartTime)
+    {
         EnsureSource();
-        startDspTime = AudioSettings.dspTime + startDelay;
+        startDspTime = System.Math.Max(dspStartTime, AudioSettings.dspTime + 0.01);
         if (source.clip != null)
         {
             source.PlayScheduled(startDspTime);

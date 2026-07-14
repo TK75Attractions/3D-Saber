@@ -21,6 +21,11 @@ public class GamePlayManager : MonoBehaviour
     // 最後のノーツ通過後、リザルトに遷移する前の余韻時間
     public float outroSeconds = 3.5f;
 
+    [Header("Start count-in")]
+    // 本編開始前に、譜面 BPM と同期した「3, 2, 1, START!」を表示する。
+    public bool enableStartCountdown = true;
+    [Range(0f, 1f)] public float startCountdownVolume = 0.55f;
+
     [Header("Chart tuning")]
     // 譜面のリズムが曲とずれているときの追加オフセット秒。
     // +値 = ノーツが「遅れて」流れてくる、-値 = ノーツが「早く」流れてくる。
@@ -259,7 +264,17 @@ public class GamePlayManager : MonoBehaviour
         scoreManager.Bind(noteSpawner);
         if (longNoteCutSfx != null) longNoteCutSfx.Bind(noteSpawner);
         if (goldNoteSfx != null) goldNoteSfx.Bind(noteSpawner);
-        songPlayer.Play();
+        if (enableStartCountdown)
+        {
+            // START! の発光・効果音・楽曲の先頭を同じ DSP 時刻へ予約する。
+            var countdown = GameStartCountdown.Ensure();
+            double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume);
+            songPlayer.PlayScheduled(startDspTime);
+        }
+        else
+        {
+            songPlayer.Play();
+        }
         ready = true;
     }
 
