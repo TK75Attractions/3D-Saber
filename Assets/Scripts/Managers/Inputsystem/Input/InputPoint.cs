@@ -91,6 +91,13 @@ public class InputPoint : MonoBehaviour
     public Vector2 worldScale = new Vector2(5.5f, 3.0f);
     public Vector2 worldOffset = Vector2.zero;
 
+    [Header("Sensitivity")]
+    // 入力感度。中央を基準に手の移動量を増幅する(1=等倍、2=同じ動きで2倍動く)。
+    // 画面端まで大きく動かないと届かない問題への対策。
+    // 棒の2端点は「中点の移動」に合わせて平行移動するため、棒の長さ・角度は変わらない
+    // (端点ごとにスケールすると棒が2倍に伸びてノーツ判定の難度が変わってしまう)。
+    public float sensitivity = 2f;
+
     void Awake()
     {
         // 既にシーン跨ぎの受信機が稼働中(タイトル/曲選択で EnsureInstance 済み)の場合、
@@ -165,6 +172,33 @@ public class InputPoint : MonoBehaviour
         return isNormalized
             ? new Vector2((x + 1f) * 0.5f, (y + 1f) * 0.5f)
             : new Vector2(x / width, y / height);
+    }
+
+    // 中点(CanonicalizePoint 通過後の座標)に感度を適用する純関数。
+    // 生値に掛けると |v|<=1.5 の正規化/ピクセル自動判別が壊れるため、必ず canonical 化の後に呼ぶ。
+    //   direct モード: 中心0の -1..1 → 単純スケール後 ±1 にクランプ
+    //   legacy モード: 中心 (w/2, h/2) のピクセル → 中心基準スケール後 0..幅/高さ にクランプ
+    public static Vector2 ApplySensitivity(Vector2 mid, float sensitivity, bool directMapping, float width, float height)
+    {
+        if (directMapping)
+        {
+            return new Vector2(
+                Mathf.Clamp(mid.x * sensitivity, -1f, 1f),
+                Mathf.Clamp(mid.y * sensitivity, -1f, 1f));
+        }
+        float cx = width * 0.5f;
+        float cy = height * 0.5f;
+        return new Vector2(
+            Mathf.Clamp(cx + (mid.x - cx) * sensitivity, 0f, width),
+            Mathf.Clamp(cy + (mid.y - cy) * sensitivity, 0f, height));
+    }
+
+    // NormalizedPosition(0..1)への感度適用。中心 0.5 基準でスケールし 0..1 にクランプ。
+    public static Vector2 ApplySensitivity01(Vector2 normalized, float sensitivity)
+    {
+        return new Vector2(
+            Mathf.Clamp01(0.5f + (normalized.x - 0.5f) * sensitivity),
+            Mathf.Clamp01(0.5f + (normalized.y - 0.5f) * sensitivity));
     }
 
     void Start()
@@ -359,14 +393,17 @@ public class InputPoint : MonoBehaviour
         if (updated)
         {
             // 中点: 正規化/ピクセルの判別と単位揃えは棒1・棒2共通の純関数で行う
-            NormalizedPosition = Normalized01(x, y, camWidth, camHeight);
+            NormalizedPosition = ApplySensitivity01(Normalized01(x, y, camWidth, camHeight), sensitivity);
             Vector2 mid1 = CanonicalizePoint(x, y, camWidth, camHeight, useDirectWorldMapping);
-            LocalPosition = ToLocalPosition(mid1.x, mid1.y);
+            // 感度は中点に掛け、端点は同じ量だけ平行移動する(棒の長さ・角度を保つ)
+            Vector2 sensMid1 = ApplySensitivity(mid1, sensitivity, useDirectWorldMapping, camWidth, camHeight);
+            Vector2 delta1 = sensMid1 - mid1;
+            LocalPosition = ToLocalPosition(sensMid1.x, sensMid1.y);
 
             if (updatedStick)
             {
-                Vector2 end1a = CanonicalizePoint(x1a, y1a, camWidth, camHeight, useDirectWorldMapping);
-                Vector2 end1b = CanonicalizePoint(x1b, y1b, camWidth, camHeight, useDirectWorldMapping);
+                Vector2 end1a = CanonicalizePoint(x1a, y1a, camWidth, camHeight, useDirectWorldMapping) + delta1;
+                Vector2 end1b = CanonicalizePoint(x1b, y1b, camWidth, camHeight, useDirectWorldMapping) + delta1;
                 LocalStickRawA = ToLocalPosition(end1a.x, end1a.y);
                 LocalStickRawB = ToLocalPosition(end1b.x, end1b.y);
 
@@ -401,14 +438,17 @@ public class InputPoint : MonoBehaviour
             // 棒2も棒1と同一の純関数で変換する。
             // (旧実装は direct モードでピクセル→正規化の変換が抜けており、
             //  ピクセル送信のトラッカーだと棒2だけ画面隅に張り付くバグがあった)
-            NormalizedPosition2 = Normalized01(x2, y2, camWidth, camHeight);
+            NormalizedPosition2 = ApplySensitivity01(Normalized01(x2, y2, camWidth, camHeight), sensitivity);
             Vector2 mid2 = CanonicalizePoint(x2, y2, camWidth, camHeight, useDirectWorldMapping);
-            LocalPosition2 = ToLocalPosition(mid2.x, mid2.y);
+            // 棒1と同じく: 感度は中点、端点は平行移動
+            Vector2 sensMid2 = ApplySensitivity(mid2, sensitivity, useDirectWorldMapping, camWidth, camHeight);
+            Vector2 delta2 = sensMid2 - mid2;
+            LocalPosition2 = ToLocalPosition(sensMid2.x, sensMid2.y);
 
             if (updatedStick2)
             {
-                Vector2 end2a = CanonicalizePoint(x2a, y2a, camWidth, camHeight, useDirectWorldMapping);
-                Vector2 end2b = CanonicalizePoint(x2b, y2b, camWidth, camHeight, useDirectWorldMapping);
+                Vector2 end2a = CanonicalizePoint(x2a, y2a, camWidth, camHeight, useDirectWorldMapping) + delta2;
+                Vector2 end2b = CanonicalizePoint(x2b, y2b, camWidth, camHeight, useDirectWorldMapping) + delta2;
                 LocalStickRawA2 = ToLocalPosition(end2a.x, end2a.y);
                 LocalStickRawB2 = ToLocalPosition(end2b.x, end2b.y);
 

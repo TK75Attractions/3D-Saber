@@ -81,4 +81,93 @@ public class InputPointConversionTests
         Assert.AreEqual(0.5f, fromPixel.x, 1e-4f);
         Assert.AreEqual(0.25f, fromPixel.y, 1e-4f);
     }
+
+    // ---- 感度(中央基準で移動量を増幅。既定2倍) ----
+
+    [Test]
+    public void Sensitivity_Direct_DoublesAroundCenter()
+    {
+        // 中心0基準: (0.25, -0.3) → 2倍 → (0.5, -0.6)
+        Vector2 v = InputPoint.ApplySensitivity(new Vector2(0.25f, -0.3f), 2f, true, W, H);
+        Assert.AreEqual(0.5f, v.x, 1e-4f);
+        Assert.AreEqual(-0.6f, v.y, 1e-4f);
+
+        // 中央は動かない
+        Vector2 c = InputPoint.ApplySensitivity(Vector2.zero, 2f, true, W, H);
+        Assert.AreEqual(0f, c.x, 1e-4f);
+        Assert.AreEqual(0f, c.y, 1e-4f);
+    }
+
+    [Test]
+    public void Sensitivity_Direct_ClampsAtEdge()
+    {
+        // 2倍で ±1 を超える分は画面端でクランプ(画面外へ飛ばさない)
+        Vector2 v = InputPoint.ApplySensitivity(new Vector2(0.8f, -0.9f), 2f, true, W, H);
+        Assert.AreEqual(1f, v.x, 1e-4f);
+        Assert.AreEqual(-1f, v.y, 1e-4f);
+    }
+
+    [Test]
+    public void Sensitivity_One_IsIdentity()
+    {
+        Vector2 v = InputPoint.ApplySensitivity(new Vector2(0.37f, -0.62f), 1f, true, W, H);
+        Assert.AreEqual(0.37f, v.x, 1e-4f);
+        Assert.AreEqual(-0.62f, v.y, 1e-4f);
+
+        Vector2 p = InputPoint.ApplySensitivity(new Vector2(462f, 891f), 1f, false, W, H);
+        Assert.AreEqual(462f, p.x, 1e-3f);
+        Assert.AreEqual(891f, p.y, 1e-3f);
+    }
+
+    [Test]
+    public void Sensitivity_Legacy_ScalesAroundPixelCenter()
+    {
+        // legacy はピクセル中心 (960, 540) 基準。(1200, 270) → (960+240*2, 540-270*2) = (1440, 0)
+        Vector2 v = InputPoint.ApplySensitivity(new Vector2(1200f, 270f), 2f, false, W, H);
+        Assert.AreEqual(1440f, v.x, 1e-2f);
+        Assert.AreEqual(0f, v.y, 1e-2f);
+
+        // 画面外はクランプ
+        Vector2 e = InputPoint.ApplySensitivity(new Vector2(1800f, 1000f), 2f, false, W, H);
+        Assert.AreEqual(1920f, e.x, 1e-2f);
+        Assert.AreEqual(1080f, e.y, 1e-2f);
+    }
+
+    [Test]
+    public void Sensitivity01_ScalesAroundHalf()
+    {
+        // NormalizedPosition(0..1)は 0.5 中心。(0.6, 0.25) → (0.7, 0.0)
+        Vector2 v = InputPoint.ApplySensitivity01(new Vector2(0.6f, 0.25f), 2f);
+        Assert.AreEqual(0.7f, v.x, 1e-4f);
+        Assert.AreEqual(0f, v.y, 1e-4f);
+
+        // クランプ確認
+        Vector2 e = InputPoint.ApplySensitivity01(new Vector2(0.9f, 0.05f), 2f);
+        Assert.AreEqual(1f, e.x, 1e-4f);
+        Assert.AreEqual(0f, e.y, 1e-4f);
+    }
+
+    [Test]
+    public void Sensitivity_StickEndpoints_TranslateWithMidKeepingLength()
+    {
+        // 端点は「中点の移動量」で平行移動する仕様 → 棒の長さが変わらないことを検証。
+        // mid=(0.3,0), 棒は水平で長さ0.4 (endA=0.1, endB=0.5)
+        Vector2 mid = new Vector2(0.3f, 0f);
+        Vector2 endA = new Vector2(0.1f, 0f);
+        Vector2 endB = new Vector2(0.5f, 0f);
+
+        Vector2 sensMid = InputPoint.ApplySensitivity(mid, 2f, true, W, H);
+        Vector2 delta = sensMid - mid;
+        Vector2 movedA = endA + delta;
+        Vector2 movedB = endB + delta;
+
+        // 中点は2倍の位置へ
+        Assert.AreEqual(0.6f, sensMid.x, 1e-4f);
+        // 平行移動後も棒長は 0.4 のまま(端点ごとにスケールすると 0.8 になってしまう)
+        Assert.AreEqual(0.4f, Vector2.Distance(movedA, movedB), 1e-4f);
+        // 移動後の端点の中点 = 感度適用後の中点
+        Vector2 movedMid = (movedA + movedB) * 0.5f;
+        Assert.AreEqual(sensMid.x, movedMid.x, 1e-4f);
+        Assert.AreEqual(sensMid.y, movedMid.y, 1e-4f);
+    }
 }
