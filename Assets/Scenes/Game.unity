@@ -4261,8 +4261,11 @@ MonoBehaviour:
   saberNoteHitRadiusXY: 0.35
   saberMinCutSpeed: 4
   overrideCameraPose: 1
+  useSlightTopDownView: 1
   cameraPosition: {x: 0, y: 1.6, z: -7}
   cameraRotationEuler: {x: 6, y: 0, z: 0}
+  topDownCameraPosition: {x: 0, y: 2.35, z: -7}
+  topDownCameraRotationEuler: {x: 12, y: 0, z: 0}
   addFloor: 1
   autoEnsureInputPoint: 1
   autoEnsureUdpImuBridge: 1

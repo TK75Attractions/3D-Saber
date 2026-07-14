@@ -9,7 +9,7 @@ public class NoteSpawner : MonoBehaviour
     public GameObject notePrefabRed;    // color="red"
     public GameObject notePrefabBlue;   // color="blue"
     public Transform noteRoot;
-    public float approachTime = 2.0f;
+    public float approachTime = 1.0f;
     public float spawnZ = 20f;
     public float judgeZ = 0f;
     // 遅めの判定ウィンドウ（Bad 上限）= タップ用の lateWindow ベース。

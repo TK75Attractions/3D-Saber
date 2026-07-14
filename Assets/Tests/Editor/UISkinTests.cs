@@ -137,6 +137,43 @@ public class UISkinTests
         Assert.AreEqual(expected, SongSelectSkin.FormatDifficultyLevel(level));
     }
 
+    [TestCase(0, "Easy", "EASY")]
+    [TestCase(1, "Normal", "NORMAL")]
+    [TestCase(2, "Hard", "MASTER")]
+    public void DifficultyRibbon_UsesRequestedDisplayNames(int index, string source, string expected)
+    {
+        Assert.AreEqual(expected, SongSelectSkin.DifficultyDisplayName(index, source));
+    }
+
+    [Test]
+    public void DifficultyRibbon_DefaultsToEasyWithRequestedLevels()
+    {
+        var go = new GameObject("SongSelectController");
+        created.Add(go);
+        var controller = go.AddComponent<SongSelectController>();
+
+        Assert.AreEqual(0, controller.SelectedDifficultyIndex);
+        Assert.AreEqual(4, controller.DifficultyDisplayLevelAt(0));
+        Assert.AreEqual(6, controller.DifficultyDisplayLevelAt(1));
+        Assert.AreEqual(8, controller.DifficultyDisplayLevelAt(2));
+    }
+
+    [Test]
+    public void DifficultyStar_AlternatesOuterAndInnerVertices()
+    {
+        Assert.AreEqual(1f, DifficultyStarGraphic.NormalizedPoint(0).magnitude, 0.001f);
+        Assert.AreEqual(0.48f, DifficultyStarGraphic.NormalizedPoint(1).magnitude, 0.001f);
+        Assert.Greater(DifficultyStarGraphic.NormalizedPoint(0).y, 0.99f);
+    }
+
+    [Test]
+    public void DifficultyRibbon_SelectionEaseHasSoftOvershoot()
+    {
+        Assert.AreEqual(0f, DifficultyRibbonItem.EaseOutBack(0f), 0.001f);
+        Assert.Greater(DifficultyRibbonItem.EaseOutBack(0.7f), 1f);
+        Assert.AreEqual(1f, DifficultyRibbonItem.EaseOutBack(1f), 0.001f);
+    }
+
     [TestCase(120f, 0.5)]
     [TestCase(150f, 0.4)]
     [TestCase(0f, 0.5)]

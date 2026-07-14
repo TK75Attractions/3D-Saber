@@ -81,8 +81,12 @@ public class GamePlayManager : MonoBehaviour
     // 視点を「ほんの少し」上から俯瞰する感じ。判定ラインが傾かないよう、回転は控えめ。
     // 元シーン (0, 0.8, -7) rot(5,0,0) → Y を上げて高さで俯瞰感を出す。
     public bool overrideCameraPose = true;
+    // 現行視点との A/B 比較用。判定面の中心をほぼ動かさず、奥行きの重なりだけを見やすくする。
+    public bool useSlightTopDownView = false;
     public Vector3 cameraPosition = new Vector3(0f, 1.6f, -7f);
     public Vector3 cameraRotationEuler = new Vector3(6f, 0f, 0f);
+    public Vector3 topDownCameraPosition = new Vector3(0f, 2.35f, -7f);
+    public Vector3 topDownCameraRotationEuler = new Vector3(12f, 0f, 0f);
 
     [Header("Floor / Lanes")]
     // Tron 風の床 + レーンガイド + 奥行きグリッドを実行時生成（視認性向上）。
@@ -261,6 +265,8 @@ public class GamePlayManager : MonoBehaviour
             // 新テーマでは判定ゲートより確実に暗くする(視覚ヒエラルキー維持)
             barLineSpawner.lineAlpha = useOverhauledStage ? GameStageSkin.BarLineAlpha : barLineAlpha;
             barLineSpawner.lineThickness = useOverhauledStage ? GameStageSkin.BarLineThickness : barLineThickness;
+            // 小節線はノーツと同じ速度で流す(シーンに古い値が焼き込まれていても揃うように)。
+            barLineSpawner.approachTime = GameSession.NoteApproachTime;
             barLineSpawner.SetChart(chart);
         }
 
@@ -328,8 +334,15 @@ public class GamePlayManager : MonoBehaviour
     {
         var cam = Camera.main;
         if (cam == null) return;
-        cam.transform.position = cameraPosition;
-        cam.transform.rotation = Quaternion.Euler(cameraRotationEuler);
+
+        Vector3 position = useSlightTopDownView
+            ? topDownCameraPosition
+            : cameraPosition;
+        Vector3 rotation = useSlightTopDownView
+            ? topDownCameraRotationEuler
+            : cameraRotationEuler;
+
+        cam.transform.SetPositionAndRotation(position, Quaternion.Euler(rotation));
     }
 
     private void EnsureGoldNoteSfx()

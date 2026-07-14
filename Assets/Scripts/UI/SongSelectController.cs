@@ -28,6 +28,8 @@ public class SongSelectController : MonoBehaviour
     public Text difficultyDisplay;
     public Button[] difficultyButtons;
     public string[] difficultyNames = { "Easy", "Normal", "Hard" };
+    // 選曲画面に表示する段階値。譜面の読み込み名は従来どおり Easy / Normal / Hard。
+    public int[] difficultyDisplayLevels = { 4, 6, 8 };
     public Button startButton;
 
     [Header("Preview")]
@@ -44,7 +46,7 @@ public class SongSelectController : MonoBehaviour
     private readonly List<string> songIds = new List<string>();
     private readonly List<Text> songLabels = new List<Text>();
     private int selectedIndex = -1;
-    private int selectedDifficulty = 1; // Normal
+    private int selectedDifficulty = 0; // 初期選択は Easy
     private Coroutine previewCoroutine;
     // 難易度レベル(1〜10)のキャッシュ。キー = songId::難易度名。0 = 譜面なし(数値非表示)
     private readonly Dictionary<string, int> levelCache = new Dictionary<string, int>();
@@ -187,6 +189,45 @@ public class SongSelectController : MonoBehaviour
     public int CurrentDifficultyLevel()
     {
         return DifficultyLevelAt(selectedDifficulty);
+    }
+
+    public int CurrentDifficultyDisplayLevel()
+    {
+        return DifficultyDisplayLevelAt(selectedDifficulty);
+    }
+
+    // 表示用レベル。存在しない譜面の宣伝を防ぐため、実際に遊ぶ譜面と表示を一致させる:
+    //   難易度別ファイル(chart_<difficulty>.json)が実在 → キュレーション値(difficultyDisplayLevels)
+    //   基礎 chart.json へのフォールバックで遊ぶ難易度   → その譜面の自動レート
+    //   譜面が無い/読めない                              → 0("LEVEL --" 表示)
+    // 曲未選択(起動直後やテスト)はキュレーション値をそのまま返す。
+    public int DifficultyDisplayLevelAt(int difficultyIndex)
+    {
+        int configured = ConfiguredDisplayLevelAt(difficultyIndex);
+        if (selectedIndex < 0 || selectedIndex >= songIds.Count) return configured;
+
+        int rated = DifficultyLevelAt(difficultyIndex);
+        if (rated <= 0) return 0;
+        if (!HasDifficultyChartFile(difficultyIndex)) return rated;
+        return configured > 0 ? configured : rated;
+    }
+
+    private int ConfiguredDisplayLevelAt(int difficultyIndex)
+    {
+        if (difficultyDisplayLevels == null || difficultyDisplayLevels.Length == 0) return 0;
+        difficultyIndex = Mathf.Clamp(difficultyIndex, 0, difficultyDisplayLevels.Length - 1);
+        return difficultyDisplayLevels[difficultyIndex];
+    }
+
+    // 難易度別ファイルが実在するか(ChartLoader の基礎 chart.json フォールバックと区別するため)。
+    private bool HasDifficultyChartFile(int difficultyIndex)
+    {
+        if (selectedIndex < 0 || selectedIndex >= songIds.Count) return false;
+        if (difficultyNames == null || difficultyNames.Length == 0) return false;
+        difficultyIndex = Mathf.Clamp(difficultyIndex, 0, difficultyNames.Length - 1);
+        string path = Path.Combine(Application.streamingAssetsPath, "Songs", songIds[selectedIndex],
+            $"chart_{difficultyNames[difficultyIndex].ToLowerInvariant()}.json");
+        return File.Exists(path);
     }
 
     // 選択中の曲について、任意の難易度のレベルを返す。

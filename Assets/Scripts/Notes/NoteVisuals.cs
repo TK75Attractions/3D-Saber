@@ -200,8 +200,8 @@ public class NoteVisuals : MonoBehaviour
     {
         var mr = GetComponent<MeshRenderer>();
         if (mr == null) return;
-        // 半透明ボディ：内部が透けて結晶らしく見える。_ZWrite=1 で深度を残し前後関係を安定させる。
-        runtimeBodyMat = MakeTranslucentLit(baseColor, baseEmissionStrength, alpha: 0.55f);
+        // ほぼ不透明のボディ：視認性優先で透けを抑えつつ、結晶感がわずかに残る程度。_ZWrite=1 で深度を残し前後関係を安定させる。
+        runtimeBodyMat = MakeTranslucentLit(baseColor, baseEmissionStrength, alpha: 0.85f);
         if (runtimeBodyMat.HasProperty("_Smoothness")) runtimeBodyMat.SetFloat("_Smoothness", 0.7f);
         if (runtimeBodyMat.HasProperty("_Metallic")) runtimeBodyMat.SetFloat("_Metallic", 0.1f);
         mr.sharedMaterial = runtimeBodyMat;

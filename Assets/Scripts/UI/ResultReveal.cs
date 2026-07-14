@@ -6,11 +6,12 @@ using UnityEngine.InputSystem;
 // 各要素を CanvasGroup 化して登録し、経過時間に応じて
 //   Slide: 横/縦からスッと滑り込む(シャッ)
 //   Slam : 大きく出現して着地バウンド(デーン。ランクバッジ用)
-// を適用する。クリック/任意キーで全要素即表示(スキップ)。
+//   Ring : バッジ着地後の衝撃波(拡大しながらフェードアウト、終了後は非表示)
+// を適用する。クリック/任意キーで全要素即表示(スキップ。Ring は消える)。
 // アニメ計算は Evaluate(...) に切り出してあり EditMode テストから直接駆動できる。
 public class ResultReveal : MonoBehaviour
 {
-    public enum Kind { Slide, Slam }
+    public enum Kind { Slide, Slam, Ring }
 
     public struct Pose
     {
@@ -35,6 +36,10 @@ public class ResultReveal : MonoBehaviour
     public const float SlamStartScale = 2.8f;
     public const float SlamBounceScale = 0.12f;
 
+    // Ring(衝撃波)のスケール範囲。デザイン仕様: scale .4→1.9 + fade out。
+    public const float RingStartScale = 0.4f;
+    public const float RingEndScale = 1.9f;
+
     private readonly List<Entry> entries = new List<Entry>();
     private float elapsed;
 
@@ -42,12 +47,21 @@ public class ResultReveal : MonoBehaviour
     public static Pose Evaluate(Kind kind, float tSinceDelay, float duration, Vector2 slideFrom)
     {
         Pose pose;
-        pose.scale = kind == Kind.Slam ? SlamStartScale : 1f;
+        pose.scale = kind == Kind.Slam ? SlamStartScale : (kind == Kind.Ring ? RingStartScale : 1f);
         pose.alpha = 0f;
-        pose.offset = kind == Kind.Slam ? Vector2.zero : slideFrom;
+        pose.offset = kind == Kind.Slide ? slideFrom : Vector2.zero;
         if (tSinceDelay <= 0f || duration <= 0f) return pose;
 
         float p = Mathf.Clamp01(tSinceDelay / duration);
+        if (kind == Kind.Ring)
+        {
+            // 拡大しつつ直線フェードアウト。完了後(スキップ含む)は alpha 0 のまま。
+            float ease = 1f - (1f - p) * (1f - p) * (1f - p); // easeOutCubic
+            pose.scale = Mathf.Lerp(RingStartScale, RingEndScale, ease);
+            pose.alpha = 1f - p;
+            pose.offset = Vector2.zero;
+            return pose;
+        }
         if (kind == Kind.Slide)
         {
             float ease = 1f - (1f - p) * (1f - p) * (1f - p); // easeOutCubic

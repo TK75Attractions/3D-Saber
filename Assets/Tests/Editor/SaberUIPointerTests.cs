@@ -78,6 +78,18 @@ public class SaberUIPointerTests
     }
 
     [Test]
+    public void Dwell_PerTargetOverride_WaitsOneSecond()
+    {
+        var tracker = new SaberUIPointer.DwellTracker(0.45f, 0.4f);
+        var difficulty = new object();
+
+        Assert.IsFalse(tracker.Tick(difficulty, 0.50f, 1.0f));
+        Assert.AreEqual(0.5f, tracker.Progress01, 0.001f);
+        Assert.IsFalse(tracker.Tick(difficulty, 0.49f, 1.0f));
+        Assert.IsTrue(tracker.Tick(difficulty, 0.02f, 1.0f));
+    }
+
+    [Test]
     public void Build_CreatesHiddenCursor_AndInputPoint()
     {
         var pointer = SaberUIPointer.Build();

@@ -53,7 +53,7 @@ public static class GameSession
     private const string NoteApproachTimeKey = "noteApproachTime";
     public const float NoteApproachTimeMin = 0.5f;
     public const float NoteApproachTimeMax = 4.0f;
-    public const float NoteApproachTimeDefault = 2.0f;
+    public const float NoteApproachTimeDefault = 1.0f;
 
     public static float NoteApproachTime
     {

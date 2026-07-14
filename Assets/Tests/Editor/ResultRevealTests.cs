@@ -65,6 +65,41 @@ public class ResultRevealTests
         Assert.Greater(mid.scale, 1.02f, "着地後にバウンドで膨らむ");
     }
 
+    // ---- Ring(衝撃波) ----
+
+    [Test]
+    public void Ring_BeforeDelay_IsHidden()
+    {
+        var pose = ResultReveal.Evaluate(ResultReveal.Kind.Ring, -0.1f, 0.7f, Vector2.zero);
+        Assert.AreEqual(0f, pose.alpha, 1e-4f);
+        Assert.AreEqual(ResultReveal.RingStartScale, pose.scale, 1e-4f);
+    }
+
+    [Test]
+    public void Ring_GrowsWhileFadingOut()
+    {
+        var early = ResultReveal.Evaluate(ResultReveal.Kind.Ring, 0.1f, 0.7f, Vector2.zero);
+        var late = ResultReveal.Evaluate(ResultReveal.Kind.Ring, 0.6f, 0.7f, Vector2.zero);
+        Assert.Greater(early.alpha, late.alpha, "だんだん薄くなる");
+        Assert.Less(early.scale, late.scale, "だんだん大きくなる");
+    }
+
+    [Test]
+    public void Ring_End_IsInvisibleAtFullScale()
+    {
+        var pose = ResultReveal.Evaluate(ResultReveal.Kind.Ring, 0.7f, 0.7f, Vector2.zero);
+        Assert.AreEqual(0f, pose.alpha, 1e-4f);
+        Assert.AreEqual(ResultReveal.RingEndScale, pose.scale, 1e-3f);
+    }
+
+    [Test]
+    public void Ring_SkipLeavesItInvisible()
+    {
+        // スキップ(elapsed=999)で完了状態=非表示のままになる
+        var pose = ResultReveal.Evaluate(ResultReveal.Kind.Ring, 999f, 0.7f, Vector2.zero);
+        Assert.AreEqual(0f, pose.alpha, 1e-4f);
+    }
+
     // ---- 登録と駆動 ----
 
     [Test]

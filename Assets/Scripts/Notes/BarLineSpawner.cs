@@ -7,7 +7,7 @@ public class BarLineSpawner : MonoBehaviour
 {
     public GameObject barLinePrefab;
     public Transform root;
-    public float approachTime = 2.0f;
+    public float approachTime = 1.0f;
     public float spawnZ = 20f;
     public float judgeZ = 0f;
     public float despawnAfterSeconds = 1.5f;

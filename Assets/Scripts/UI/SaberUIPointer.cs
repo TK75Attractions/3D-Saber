@@ -19,23 +19,32 @@ public class SaberUIPointer : MonoBehaviour
     // ターゲットが変わる/外れると進捗リセット。発火後はクールダウン中、溜め直しを止める。
     public class DwellTracker
     {
-        private readonly float dwellSeconds;
+        private readonly float defaultDwellSeconds;
         private readonly float cooldownSeconds;
         private object current;
         private float progressTime;
         private float cooldownLeft;
+        private float activeDwellSeconds;
 
         public DwellTracker(float dwell, float cooldown)
         {
-            dwellSeconds = Mathf.Max(0.01f, dwell);
+            defaultDwellSeconds = Mathf.Max(0.01f, dwell);
+            activeDwellSeconds = defaultDwellSeconds;
             cooldownSeconds = Mathf.Max(0f, cooldown);
         }
 
-        public float Progress01 => Mathf.Clamp01(progressTime / dwellSeconds);
+        public float Progress01 => Mathf.Clamp01(progressTime / activeDwellSeconds);
         public bool InCooldown => cooldownLeft > 0f;
 
         public bool Tick(object target, float dt)
         {
+            return Tick(target, dt, defaultDwellSeconds);
+        }
+
+        // 難易度ボタンだけ 1 秒にするなど、対象ごとの滞留時間を受け取る。
+        public bool Tick(object target, float dt, float dwellOverrideSeconds)
+        {
+            float requestedDwell = Mathf.Max(0.01f, dwellOverrideSeconds);
             // クールダウンはフレーム頭で消化し、消化に使ったフレームでは溜めない
             bool wasCooling = cooldownLeft > 0f;
             if (wasCooling) cooldownLeft = Mathf.Max(0f, cooldownLeft - dt);
@@ -45,7 +54,9 @@ public class SaberUIPointer : MonoBehaviour
                 // 対象が変わったら溜め直し(乗った瞬間のフレームから溜め始める)
                 current = target;
                 progressTime = 0f;
+                activeDwellSeconds = requestedDwell;
             }
+            else activeDwellSeconds = requestedDwell;
             if (current == null)
             {
                 progressTime = 0f;
@@ -54,7 +65,7 @@ public class SaberUIPointer : MonoBehaviour
             if (wasCooling) return false;
 
             progressTime += dt;
-            if (progressTime >= dwellSeconds)
+            if (progressTime >= activeDwellSeconds)
             {
                 progressTime = 0f;
                 cooldownLeft = cooldownSeconds;
@@ -67,6 +78,7 @@ public class SaberUIPointer : MonoBehaviour
         {
             current = null;
             progressTime = 0f;
+            activeDwellSeconds = defaultDwellSeconds;
         }
     }
 
@@ -173,7 +185,12 @@ public class SaberUIPointer : MonoBehaviour
         Button target = RaycastButton(screen);
         SetHovered(target);
 
-        bool fired = tracker.Tick(target, Time.unscaledDeltaTime);
+        var dwellTarget = target != null ? target.GetComponent<SaberDwellTarget>() : null;
+        float dwellSeconds = dwellTarget != null ? dwellTarget.dwellSeconds : DwellSeconds;
+        Color progressColor = dwellTarget != null ? dwellTarget.progressColor : UISkinPalette.Cyan;
+        progressRing.color = new Color(progressColor.r, progressColor.g, progressColor.b, 0.62f);
+
+        bool fired = tracker.Tick(target, Time.unscaledDeltaTime, dwellSeconds);
         progressRing.fillAmount = tracker.Progress01;
         if (fired && target != null)
         {

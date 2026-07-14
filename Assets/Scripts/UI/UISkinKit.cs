@@ -16,6 +16,8 @@ public static class UISkinKit
 
     static Sprite roundedSprite;
     static Sprite roundedFrameSprite;
+    static Sprite circleSprite;
+    static Sprite circleRingSprite;
     static Sprite glowSprite;
     static Sprite vignetteSprite;
     static TMP_FontAsset logoFontAsset;
@@ -37,6 +39,18 @@ public static class UISkinKit
     {
         if (roundedFrameSprite == null) roundedFrameSprite = BuildRoundedSprite(filled: false);
         return roundedFrameSprite;
+    }
+
+    public static Sprite Circle()
+    {
+        if (circleSprite == null) circleSprite = BuildCircleSprite(filled: true);
+        return circleSprite;
+    }
+
+    public static Sprite CircleRing()
+    {
+        if (circleRingSprite == null) circleRingSprite = BuildCircleSprite(filled: false);
+        return circleRingSprite;
     }
 
     // 中心が明るく端に向かって減衰する放射グロー。ボタンの後光・ソフトシャドウ用。
@@ -95,6 +109,42 @@ public static class UISkinKit
         float border = RoundedCornerRadius + 6f;
         var sp = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f, 0,
             SpriteMeshType.FullRect, new Vector4(border, border, border, border));
+        sp.hideFlags = HideFlags.HideAndDontSave;
+        return sp;
+    }
+
+    static Sprite BuildCircleSprite(bool filled)
+    {
+        const int n = 64;
+        var tex = new Texture2D(n, n, TextureFormat.RGBA32, false)
+        {
+            hideFlags = HideFlags.HideAndDontSave,
+            wrapMode = TextureWrapMode.Clamp,
+            filterMode = FilterMode.Bilinear
+        };
+        float half = n * 0.5f;
+        float radius = half - 2f;
+        var px = new Color[n * n];
+        for (int y = 0; y < n; y++)
+        {
+            for (int x = 0; x < n; x++)
+            {
+                float dx = x + 0.5f - half;
+                float dy = y + 0.5f - half;
+                float d = Mathf.Sqrt(dx * dx + dy * dy) - radius;
+                float outer = Mathf.Clamp01(0.5f - d / RoundedAA);
+                float a = outer;
+                if (!filled)
+                {
+                    float inner = Mathf.Clamp01(0.5f - (d + FrameLineWidth) / RoundedAA);
+                    a = Mathf.Clamp01(outer - inner);
+                }
+                px[y * n + x] = new Color(1f, 1f, 1f, a);
+            }
+        }
+        tex.SetPixels(px);
+        tex.Apply();
+        var sp = Sprite.Create(tex, new Rect(0, 0, n, n), new Vector2(0.5f, 0.5f), 100f);
         sp.hideFlags = HideFlags.HideAndDontSave;
         return sp;
     }
@@ -174,7 +224,12 @@ public static class UISkinKit
             return null;
         }
         logoFontAsset = TMP_FontAsset.CreateFontAsset(ttf);
-        if (logoFontAsset != null) logoFontAsset.hideFlags = HideFlags.HideAndDontSave;
+        if (logoFontAsset != null)
+        {
+            // CreateFontAsset は name を設定しないため、識別できるよう元リソース名を付ける。
+            logoFontAsset.name = "ChakraPetch-BoldItalic";
+            logoFontAsset.hideFlags = HideFlags.HideAndDontSave;
+        }
         return logoFontAsset;
     }
 
@@ -192,7 +247,12 @@ public static class UISkinKit
         else
         {
             asset = TMP_FontAsset.CreateFontAsset(ttf);
-            if (asset != null) asset.hideFlags = HideFlags.HideAndDontSave;
+            if (asset != null)
+            {
+                // CreateFontAsset は name を設定しないため、識別できるよう元リソース名を付ける。
+                asset.name = name;
+                asset.hideFlags = HideFlags.HideAndDontSave;
+            }
         }
         fontAssetCache[name] = asset;
         return asset;

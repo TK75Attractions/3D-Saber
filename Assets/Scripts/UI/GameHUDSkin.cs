@@ -101,9 +101,10 @@ public class GameHUDSkin : MonoBehaviour
     private int lastCombo;
     private float comboPunchAge = 999f;
 
-    // ランク表示(左上・スコアの下)
-    private Image rankBadgeImage;
-    private TextMeshProUGUI rankBadgeText; // 画像が無い環境の文字フォールバック
+    // ランク表示(左上・スコアの下)。バッジはリザルト画面と同じ六角形のコード描画(画像アセット不使用)。
+    private ResultHexBadgeGraphic rankHexOuter;
+    private Image rankHexGlow;
+    private TextMeshProUGUI rankBadgeText; // 六角バッジ中央のランク文字
     private RectTransform rankFill;
     private Image rankFillImg;
     private TextMeshProUGUI rankNextLabel;
@@ -261,7 +262,7 @@ public class GameHUDSkin : MonoBehaviour
     }
 
     // 左上・スコアの下に「現在ランクのバッジ + 次ランクへの進捗バー」を作る。
-    // バッジは Resources/Ranks の画像(無ければランク文字で代替)。
+    // バッジはリザルト画面と同じ六角形(ResultHexBadgeGraphic)+白のランク文字。
     private void BuildRankWidget(TMP_FontAsset labelFont)
     {
         var rankLabel = UISkinKit.MakeTMP(transform, "RankLabel", "RANK", 22f,
@@ -269,21 +270,38 @@ public class GameHUDSkin : MonoBehaviour
             Vector2.zero, new Vector2(300f, 30f), FontStyles.Normal, 6f, labelFont);
         AnchorTopLeft(rankLabel.rectTransform, new Vector2(36f, -124f));
 
-        var badgeGo = new GameObject("RankBadge", typeof(RectTransform), typeof(Image));
+        var badgeGo = new GameObject("RankBadge", typeof(RectTransform));
         badgeGo.transform.SetParent(transform, false);
         var badgeRT = badgeGo.GetComponent<RectTransform>();
         AnchorTopLeft(badgeRT, new Vector2(36f, -150f));
-        badgeRT.sizeDelta = new Vector2(64f, 64f);
-        rankBadgeImage = badgeGo.GetComponent<Image>();
-        rankBadgeImage.preserveAspect = true;
-        rankBadgeImage.raycastTarget = false;
-        rankBadgeImage.enabled = false; // スプライト設定前に白い四角を出さない
+        badgeRT.sizeDelta = new Vector2(64f, 70f); // リザルトの 400×440 と同比率
 
-        rankBadgeText = UISkinKit.MakeTMP(transform, "RankBadgeText", "", 44f,
-            UISkinPalette.NoteGold, TextAlignmentOptions.TopLeft,
-            Vector2.zero, new Vector2(140f, 56f), FontStyles.Normal, 1f,
-            UISkinKit.FontAsset("Oxanium-ExtraBold"));
-        AnchorTopLeft(rankBadgeText.rectTransform, new Vector2(38f, -152f));
+        var glowGo = new GameObject("Glow", typeof(RectTransform), typeof(Image));
+        glowGo.transform.SetParent(badgeGo.transform, false);
+        glowGo.GetComponent<RectTransform>().sizeDelta = new Vector2(112f, 118f);
+        rankHexGlow = glowGo.GetComponent<Image>();
+        rankHexGlow.sprite = UISkinKit.SoftGlow();
+        rankHexGlow.raycastTarget = false;
+
+        var outerGo = new GameObject("HexOuter", typeof(RectTransform), typeof(ResultHexBadgeGraphic));
+        outerGo.transform.SetParent(badgeGo.transform, false);
+        outerGo.GetComponent<RectTransform>().sizeDelta = new Vector2(64f, 70f);
+        rankHexOuter = outerGo.GetComponent<ResultHexBadgeGraphic>();
+        rankHexOuter.raycastTarget = false;
+
+        var innerGo = new GameObject("HexInner", typeof(RectTransform), typeof(ResultHexBadgeGraphic));
+        innerGo.transform.SetParent(badgeGo.transform, false);
+        innerGo.GetComponent<RectTransform>().sizeDelta = new Vector2(58f, 64f);
+        var innerHex = innerGo.GetComponent<ResultHexBadgeGraphic>();
+        innerHex.flatFill = true;
+        innerHex.topColor = new Color(0.043f, 0.055f, 0.141f); // #0B0E24(リザルトと同じ)
+        innerHex.raycastTarget = false;
+
+        var chakra = UISkinKit.LogoFontAsset();
+        if (chakra == null) chakra = UISkinKit.FontAsset("Oxanium-ExtraBold");
+        rankBadgeText = UISkinKit.MakeTMP(badgeGo.transform, "RankLetter", "", 34f,
+            Color.white, TextAlignmentOptions.Center,
+            Vector2.zero, new Vector2(64f, 48f), FontStyles.Normal, 0f, chakra);
 
         var barBg = new GameObject("RankProgressBg", typeof(RectTransform), typeof(Image));
         barBg.transform.SetParent(transform, false);
@@ -362,10 +380,10 @@ public class GameHUDSkin : MonoBehaviour
     // 曲中は「曲全体に対する合計割合」(分母=総ノーツ数固定)なので 0 から始まり
     // ヒットするほど単調に上がっていく。曲終了時は従来の精度と同じ値に収束する。
     // 総ノーツ数が取れない環境(テスト等)では従来のその時点精度にフォールバック。
-    // スプライトの差し替えはランクが変わった時だけ(毎フレーム Load しない)。
+    // バッジの色と文字の更新はランクが変わった時だけ。
     private void UpdateRank()
     {
-        if (rankBadgeImage == null || score == null) return;
+        if (score == null) return;
         int totalNotes = noteSpawner != null ? noteSpawner.TotalNoteCount : 0;
         float acc = totalNotes > 0
             ? PlayRankHelper.TotalAccuracy(
@@ -373,27 +391,25 @@ public class GameHUDSkin : MonoBehaviour
             : PlayRankHelper.Accuracy(
                 score.PerfectCount, score.GreatCount, score.GoodCount, score.BadCount, score.MissCount);
         PlayRank rank = PlayRankHelper.FromAccuracy(acc);
-        Color c = PlayRankHelper.RankColor(rank);
+        // 色はリザルト画面の六角バッジと同じマップに統一する
+        Color c = ResultSkin.RankAccentColor(PlayRankHelper.Label(rank));
 
         if (!rankVisualInit || rank != currentRank)
         {
             rankVisualInit = true;
             currentRank = rank;
-            var sprite = UISkinKit.LoadSprite(PlayRankHelper.SpriteResourceName(rank));
-            if (sprite != null)
+            if (rankHexOuter != null)
             {
-                rankBadgeImage.sprite = sprite;
-                rankBadgeImage.enabled = true;
-                if (rankBadgeText != null) rankBadgeText.text = "";
+                rankHexOuter.topColor = c;
+                rankHexOuter.SetVerticesDirty();
             }
-            else
+            if (rankHexGlow != null)
             {
-                rankBadgeImage.enabled = false;
-                if (rankBadgeText != null)
-                {
-                    rankBadgeText.text = PlayRankHelper.Label(rank);
-                    rankBadgeText.color = c;
-                }
+                rankHexGlow.color = new Color(c.r, c.g, c.b, 0.35f);
+            }
+            if (rankBadgeText != null)
+            {
+                rankBadgeText.text = PlayRankHelper.Label(rank);
             }
         }
 

@@ -1051,6 +1051,10 @@ MonoBehaviour:
   - Easy
   - Normal
   - Hard
+  difficultyDisplayLevels:
+  - 4
+  - 6
+  - 8
   startButton: {fileID: 273885535}
   previewSource: {fileID: 476787953}
   previewDuration: 10
