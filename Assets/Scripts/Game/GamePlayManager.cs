@@ -41,11 +41,12 @@ public class GamePlayManager : MonoBehaviour
     // false で旧テーマ(青パネル+グロー+ビート線+旧HUD)へ戻せる。
     // 注意:シーンに無い新規フィールドなのでコード既定値(true)がそのまま効く。
     public bool useOverhauledStage = true;
-    // リニューアル版のセーバー判定。マウス操作での「理不尽な空振り」を減らす緩和値。
-    // (旧値 blade 0.22 / hitXY 0.35 / minSpeed 4.0 は巻き込み防止に振りすぎていた)
-    public float saberBladeRadiusV2 = 0.26f;
-    public float saberNoteHitRadiusXYV2 = 0.45f;
-    public float saberMinCutSpeedV2 = 3.0f;
+    // リニューアル版のセーバー判定。「だいぶ甘く」の要望(2026-07)でさらに緩和
+    // (前値 blade 0.26 / hitXY 0.45 / minSpeed 3.0 → 当たりを広く、必要な振り速度を低く)。
+    // キャリブレーションモードの緩和値(0.35/0.65/2.0)に近い、気持ちよく切れる寄りの設定。
+    public float saberBladeRadiusV2 = 0.32f;
+    public float saberNoteHitRadiusXYV2 = 0.60f;
+    public float saberMinCutSpeedV2 = 2.0f;
 
     [Header("Two sabers (2本セーバー)")]
     // 棒1(port5005)=シーンのセーバー、棒2(port5006)=実行時生成の2本目。
@@ -169,6 +170,10 @@ public class GamePlayManager : MonoBehaviour
         if (noteSpawner != null)
         {
             noteSpawner.approachTime = GameSession.NoteApproachTime;
+            // 判定可能ウィンドウを Classify の判定窓と同期させる
+            // (シーンに古い狭い窓が焼き込まれていても、甘くした定数側が常に効くように)。
+            noteSpawner.judgeWindow = (float)JudgmentTierHelper.LateBadSeconds;
+            noteSpawner.earlyJudgeWindow = (float)JudgmentTierHelper.EarlyBadSeconds;
         }
 
         // --- キャリブレーションモード ---

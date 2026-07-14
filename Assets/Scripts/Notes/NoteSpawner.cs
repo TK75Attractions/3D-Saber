@@ -13,10 +13,10 @@ public class NoteSpawner : MonoBehaviour
     public float spawnZ = 20f;
     public float judgeZ = 0f;
     // 遅めの判定ウィンドウ（Bad 上限）= タップ用の lateWindow ベース。
-    // Classify の late Bad = 270ms と一致。
-    public float judgeWindow = 0.27f;
-    // 早め側の判定ウィンドウ（早く切り過ぎ防止）。Classify の early Bad = 135ms と一致。
-    public float earlyJudgeWindow = 0.135f;
+    // 本編では GamePlayManager が JudgmentTierHelper.LateBadSeconds で上書き同期する(ここは既定値)。
+    public float judgeWindow = (float)JudgmentTierHelper.LateBadSeconds;
+    // 早め側の判定ウィンドウ（早く切り過ぎ防止）。同じく EarlyBadSeconds と同期される。
+    public float earlyJudgeWindow = (float)JudgmentTierHelper.EarlyBadSeconds;
     // lateWindow を過ぎたら自動的に miss 扱いにする猶予秒数。
     public float missGrace = 0.06f;
     // miss 扱いになった後、ノーツを画面後方まで流してから片付けるまでの秒数。

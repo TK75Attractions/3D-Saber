@@ -9,27 +9,37 @@ public enum JudgmentTier
 
 public static class JudgmentTierHelper
 {
+    // 判定窓（秒）。「だいぶ甘く」の要望(2026-07)で従来値(90/150/210/270ms)の1.5倍に拡大。
+    // 早め（error < 0）は遅めの 1/2 のままにして、準備スイングの誤爆だけ引き続き抑える非対称窓。
+    // NoteSpawner の判定可能ウィンドウは GamePlayManager がこの定数から同期する
+    // （シーンに古い狭い値が焼き込まれていても、ここを変えれば全体が追従する）。
+    public const double LatePerfectSeconds = 0.135;
+    public const double LateGreatSeconds = 0.225;
+    public const double LateGoodSeconds = 0.315;
+    public const double LateBadSeconds = 0.405;
+    public const double EarlyPerfectSeconds = LatePerfectSeconds * 0.5; // 0.0675
+    public const double EarlyGreatSeconds = LateGreatSeconds * 0.5;     // 0.1125
+    public const double EarlyGoodSeconds = LateGoodSeconds * 0.5;       // 0.1575
+    public const double EarlyBadSeconds = LateBadSeconds * 0.5;         // 0.2025
+
     // 判定時刻との誤差（秒）からティアを決める。
-    // 早め（error < 0）は厳しく、遅め（error >= 0）は緩めの非対称窓。
-    //   遅め: Perfect=90 / Great=150 / Good=210 / Bad=270 ms
-    //   早め: Perfect=45 / Great=75  / Good=105 / Bad=135 ms （遅めの 1/2、比率は維持）
     public static JudgmentTier Classify(double errorSeconds)
     {
         if (errorSeconds >= 0)
         {
             // 遅め
-            if (errorSeconds <= 0.09) return JudgmentTier.Perfect;
-            if (errorSeconds <= 0.15) return JudgmentTier.Great;
-            if (errorSeconds <= 0.21) return JudgmentTier.Good;
-            if (errorSeconds <= 0.27) return JudgmentTier.Bad;
+            if (errorSeconds <= LatePerfectSeconds) return JudgmentTier.Perfect;
+            if (errorSeconds <= LateGreatSeconds) return JudgmentTier.Great;
+            if (errorSeconds <= LateGoodSeconds) return JudgmentTier.Good;
+            if (errorSeconds <= LateBadSeconds) return JudgmentTier.Bad;
             return JudgmentTier.Miss;
         }
         // 早め
         double abs = -errorSeconds;
-        if (abs <= 0.045) return JudgmentTier.Perfect;
-        if (abs <= 0.075) return JudgmentTier.Great;
-        if (abs <= 0.105) return JudgmentTier.Good;
-        if (abs <= 0.135) return JudgmentTier.Bad;
+        if (abs <= EarlyPerfectSeconds) return JudgmentTier.Perfect;
+        if (abs <= EarlyGreatSeconds) return JudgmentTier.Great;
+        if (abs <= EarlyGoodSeconds) return JudgmentTier.Good;
+        if (abs <= EarlyBadSeconds) return JudgmentTier.Bad;
         return JudgmentTier.Miss;
     }
 
