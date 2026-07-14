@@ -21,11 +21,12 @@ public class GoldNoteSfxTests
     }
 
     [Test]
-    public void BuildShingClip_ProducesNormalizedMetallicClip()
+    public void BuildGoldCutClip_MatchesSpec_150ms_Normalized()
     {
-        var clip = GoldNoteSfx.BuildShingClip("test_shing", 2093f, 0.85f, 0.09f, 7f, 12345);
+        // お試し仕様: 1600→900Hz スイープ + 2500Hz ベル、150ms
+        var clip = GoldNoteSfx.BuildGoldCutClip(1600f, 900f, 0.15f, 2500f, 0.55f);
         Assert.IsNotNull(clip);
-        Assert.Greater(clip.samples, 1000, "十分な長さがある");
+        Assert.AreEqual((int)(44100 * 0.15f), clip.samples, "長さ150ms");
 
         var data = new float[clip.samples];
         clip.GetData(data, 0);
@@ -38,23 +39,65 @@ public class GoldNoteSfxTests
         }
         Assert.LessOrEqual(peak, 0.95f, "正規化されクリップしない");
         Assert.Greater(peak, 0.5f, "ピークは正規化値(0.9)付近");
-        Assert.Greater(energy, 1.0, "無音ではない");
+        Assert.Greater(energy, 0.5, "無音ではない");
     }
 
     [Test]
-    public void BuildShingClip_IsDeterministicForSameSeed()
+    public void JudgmentSweep_MatchesSpec_70ms()
     {
-        var a = GoldNoteSfx.BuildShingClip("a", 2093f, 0.4f, 0.09f, 7f, 777);
-        var b = GoldNoteSfx.BuildShingClip("b", 2093f, 0.4f, 0.09f, 7f, 777);
-        var da = new float[a.samples];
-        var db = new float[b.samples];
-        a.GetData(da, 0);
-        b.GetData(db, 0);
-        Assert.AreEqual(da.Length, db.Length);
-        for (int i = 0; i < da.Length; i += 997)
+        // 通常ノーツのカット音: 1200→700Hz、70ms
+        var clip = JudgmentSfx.Sweep(1200f, 700f, 0.07f);
+        Assert.IsNotNull(clip);
+        Assert.AreEqual((int)(44100 * 0.07f), clip.samples, "長さ70ms");
+
+        var data = new float[clip.samples];
+        clip.GetData(data, 0);
+        double energy = 0.0;
+        float peak = 0f;
+        foreach (float v in data)
         {
-            Assert.AreEqual(da[i], db[i], 1e-6f, "シード固定で再現可能(調整の回帰確認ができる)");
+            energy += v * v;
+            peak = Mathf.Max(peak, Mathf.Abs(v));
         }
+        Assert.Greater(energy, 0.1, "無音ではない");
+        Assert.LessOrEqual(peak, 1f);
+        // 末尾は減衰しきってほぼ無音(プチッと切れない)
+        Assert.Less(Mathf.Abs(data[data.Length - 1]), 0.05f);
+    }
+
+    [Test]
+    public void ScoreManager_TracksGoldCut_ForSfxRouting()
+    {
+        var sGo = new GameObject("spawner");
+        var mGo = new GameObject("score");
+        var prefab = new GameObject("notePrefab");
+        created.Add(sGo);
+        created.Add(mGo);
+        created.Add(prefab);
+
+        var spawner = sGo.AddComponent<NoteSpawner>();
+        prefab.AddComponent<CuttableNote>();
+        spawner.notePrefab = prefab;
+        spawner.approachTime = 2.0f;
+        spawner.spawnZ = 20f;
+        spawner.judgeZ = 0f;
+
+        var score = mGo.AddComponent<ScoreManager>();
+        score.Bind(spawner);
+
+        CuttableNote captured = null;
+        spawner.OnNoteSpawned += n => captured = n;
+        var chart = new ChartData { bpm = 100f };
+        chart.notes.Add(new NoteData { time = 0, x = 0, y = 0, type = "tap", color = "gold" });
+        spawner.SetChart(chart);
+        spawner.Tick(0.0);
+
+        Assert.IsNotNull(captured);
+        captured.Cut(Vector3.zero, new Vector3(10f, 0f, 0f), CutDirection.None, SaberHand.Any);
+        Assert.IsTrue(score.LastCutWasGold, "金ノーツのカットが記録される(通常カット音のスキップ用)");
+
+        score.RegisterMiss();
+        Assert.IsFalse(score.LastCutWasGold, "Miss でリセット");
     }
 
     [Test]

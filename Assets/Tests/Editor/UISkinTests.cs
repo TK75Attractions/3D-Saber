@@ -81,6 +81,23 @@ public class UISkinTests
     }
 
     [Test]
+    public void SaberTitleBackdrop_Ensure_BuildsNeonArenaOnce()
+    {
+        var canvas = MakeCanvas();
+        var a = SaberTitleBackdrop.Ensure(canvas);
+        var b = SaberTitleBackdrop.Ensure(canvas);
+
+        Assert.AreSame(a, b, "タイトル専用背景は重複生成しない");
+        Assert.AreEqual(0, a.transform.GetSiblingIndex(), "背景は Canvas の最背面に置く");
+        Assert.IsNotNull(a.transform.Find("Gradient"));
+        Assert.IsNotNull(a.transform.Find("StarField"));
+        Assert.IsNotNull(a.transform.Find("PerspectiveStage/Grid"));
+        Assert.IsNotNull(a.transform.Find("ArenaRails/RedLowerRailCore"));
+        Assert.IsNotNull(a.transform.Find("ArenaRails/BlueLowerRailCore"));
+        Assert.IsNotNull(a.transform.Find("PerspectiveStage/HorizonCore"));
+    }
+
+    [Test]
     public void TitleSceneSkin_FindTextByContent_ReturnsMatch()
     {
         var canvas = MakeCanvas();

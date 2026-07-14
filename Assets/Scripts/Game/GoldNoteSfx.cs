@@ -1,27 +1,24 @@
-using System.Collections;
 using UnityEngine;
 
-// 金ノーツ（CuttableNote.IsGold）を切った瞬間に「シャリーン」と鳴らす。
-// 以前はサイン波の和音チャイムだったが「セイバー感が無い」との評のため、
-// 斬撃ノイズ(スウィッシュ) + 非整数倍音の金属リング(うなり付き)の合成音に刷新。
-// しゃんしゃん感を出すため、少し高い2打目を短いディレイで重ねる。
+// 金ノーツ（CuttableNote.IsGold）を切った瞬間の専用カット音。
+// お試し仕様(2026-07-14): 1600Hz→900Hz の下降スイープ + 2500Hz のベル音、150ms。
+// 通常ノーツのスイープ(1200→700Hz/70ms)より高く長く、「特別に豪華な一閃」に聞こえる設計。
+// 金ノーツのカット時は JudgmentSfx 側が通常音をスキップするので、この音だけが鳴る。
 [RequireComponent(typeof(AudioSource))]
 public class GoldNoteSfx : MonoBehaviour
 {
-    [Range(0f, 1f)] public float volume = 0.65f;
+    [Range(0f, 1f)] public float volume = 0.5f;
 
-    [Header("シング合成(パラメタを変えると次回再生時に作り直す)")]
-    public float baseFrequency = 2093f;   // C7 付近の金属基音
-    public float ringDuration = 0.85f;    // 金属リングの減衰時間(秒)
-    public float swishDuration = 0.09f;   // 斬撃ノイズの長さ(秒)
-    public float shimmerHz = 7f;          // きらめき(振幅うなり)の速さ
-    public float secondHitDelay = 0.13f;  // 2打目(しゃん・しゃん)の間隔(秒)
-    [Range(0f, 1f)] public float secondHitLevel = 0.55f;
+    [Header("カット音合成(変更すると次回再生時に作り直す)")]
+    public float sweepFromHz = 1600f;
+    public float sweepToHz = 900f;
+    public float durationSec = 0.15f;
+    public float bellHz = 2500f;
+    [Range(0f, 1f)] public float bellLevel = 0.55f;
 
     private AudioSource source;
     private NoteSpawner bound;
-    private AudioClip firstClip;
-    private AudioClip secondClip;
+    private AudioClip clip;
     private float builtKey;
 
     void Awake()
@@ -56,74 +53,49 @@ public class GoldNoteSfx : MonoBehaviour
     public void PlayLuxury()
     {
         if (source == null) source = GetComponent<AudioSource>();
-        EnsureClips();
-        if (firstClip != null) source.PlayOneShot(firstClip, volume);
-        if (secondClip != null && isActiveAndEnabled) StartCoroutine(PlaySecondDelayed());
+        EnsureClip();
+        if (clip != null) source.PlayOneShot(clip, volume);
     }
 
-    IEnumerator PlaySecondDelayed()
+    private void EnsureClip()
     {
-        yield return new WaitForSeconds(secondHitDelay);
-        source.PlayOneShot(secondClip, volume * secondHitLevel);
-    }
+        // シーンに旧版がシリアライズされていた場合、新フィールドは 0 で来るので既定値へ戻す
+        if (sweepFromHz < 100f) sweepFromHz = 1600f;
+        if (sweepToHz < 100f) sweepToHz = 900f;
+        if (durationSec <= 0.02f) durationSec = 0.15f;
+        if (bellHz < 100f) bellHz = 2500f;
+        if (bellLevel <= 0.01f) bellLevel = 0.55f;
 
-    private void EnsureClips()
-    {
-        // シーンに旧版がシリアライズされていた場合、新フィールドは 0 で来るので既定値へ戻す。
-        if (baseFrequency < 100f) baseFrequency = 2093f;
-        if (ringDuration <= 0.05f) ringDuration = 0.85f;
-        if (swishDuration <= 0.005f) swishDuration = 0.09f;
-        if (shimmerHz <= 0.5f) shimmerHz = 7f;
-        if (secondHitDelay <= 0.01f) secondHitDelay = 0.13f;
-        if (secondHitLevel <= 0.01f) secondHitLevel = 0.55f;
-
-        float key = baseFrequency * 1000f + ringDuration * 100f + swishDuration * 10f + shimmerHz;
-        if (firstClip != null && Mathf.Approximately(key, builtKey)) return;
+        float key = sweepFromHz * 1000f + sweepToHz * 10f + durationSec + bellHz * 0.001f + bellLevel;
+        if (clip != null && Mathf.Approximately(key, builtKey)) return;
         builtKey = key;
-        firstClip = BuildShingClip("gold_shing", baseFrequency, ringDuration, swishDuration, shimmerHz, 12345);
-        secondClip = BuildShingClip("gold_shing2",
-            baseFrequency * 1.22f, ringDuration * 0.6f, swishDuration * 0.6f, shimmerHz * 1.3f, 54321);
+        clip = BuildGoldCutClip(sweepFromHz, sweepToHz, durationSec, bellHz, bellLevel);
     }
 
-    // 純粋関数: 斬撃ノイズ + 非整数倍音の金属リングで「シャリーン」を合成する。テストから直接呼べる。
-    // 整数倍音を避けた部分音(ベル/ブレード系)と、部分音ごとに位相をずらした振幅うなりが
-    // 「しゃんしゃん」した金属のきらめきを作る。
-    public static AudioClip BuildShingClip(
-        string name, float baseFreq, float ringDuration, float swishDuration, float shimmerHz, int seed)
+    // 純粋関数: 下降スイープ + ベル(高音サイン減衰)を1クリップに合成する。テストから直接呼べる。
+    public static AudioClip BuildGoldCutClip(
+        float sweepFromHz, float sweepToHz, float duration, float bellHz, float bellLevel)
     {
         const int sampleRate = 44100;
-        float total = Mathf.Max(0.1f, ringDuration + 0.05f);
-        int samples = Mathf.Max(1, (int)(sampleRate * total));
+        int samples = Mathf.Max(1, (int)(sampleRate * duration));
         var data = new float[samples];
-
-        float[] ratios = { 1.00f, 1.34f, 1.71f, 2.15f, 2.64f, 3.36f };
-        float[] amps = { 1.00f, 0.72f, 0.55f, 0.40f, 0.28f, 0.18f };
-        var phases = new float[ratios.Length];
-        var rng = new System.Random(seed);
-        for (int k = 0; k < phases.Length; k++) phases[k] = (float)(rng.NextDouble() * Mathf.PI * 2.0);
-
-        float prevNoise = 0f;
+        double sweepPhase = 0.0;
         for (int i = 0; i < samples; i++)
         {
             float t = (float)i / sampleRate;
+            float k = duration > 0f ? Mathf.Clamp01(t / duration) : 1f;
             float attack = Mathf.Clamp01(t / 0.003f);
 
-            // 金属リング: 高次部分音ほど速く減衰
-            float ring = 0f;
-            for (int k = 0; k < ratios.Length; k++)
-            {
-                float decay = Mathf.Exp(-t * (3.0f + 2.2f * k) / Mathf.Max(0.05f, ringDuration));
-                float shimmer = 1f + 0.35f * Mathf.Sin(2f * Mathf.PI * shimmerHz * t + phases[k]);
-                ring += amps[k] * decay * shimmer * Mathf.Sin(2f * Mathf.PI * baseFreq * ratios[k] * t + phases[k]);
-            }
+            // 下降スイープ(位相連続)
+            float freq = Mathf.Lerp(sweepFromHz, sweepToHz, k);
+            sweepPhase += 2.0 * Mathf.PI * freq / sampleRate;
+            float sweep = (float)System.Math.Sin(sweepPhase) * (1f - k);
 
-            // 斬撃スウィッシュ: ホワイトノイズの1次差分(簡易ハイパス)を鋭く減衰
-            float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
-            float highPassed = noise - prevNoise;
-            prevNoise = noise;
-            float swish = highPassed * Mathf.Exp(-t / Mathf.Max(0.005f, swishDuration * 0.45f)) * 0.9f;
+            // ベル: 指数減衰する高音サイン(τ = 長さの1/3)
+            float bellEnv = Mathf.Exp(-t / Mathf.Max(0.01f, duration / 3f));
+            float bell = Mathf.Sin(2f * Mathf.PI * bellHz * t) * bellEnv * bellLevel;
 
-            data[i] = (ring * 0.32f + swish * 0.5f) * attack;
+            data[i] = (sweep * 0.7f + bell * 0.5f) * attack;
         }
 
         // ピーク正規化(クリップ歪み防止)
@@ -135,8 +107,8 @@ public class GoldNoteSfx : MonoBehaviour
             for (int i = 0; i < samples; i++) data[i] *= gain;
         }
 
-        var clip = AudioClip.Create(name, samples, 1, sampleRate, false);
-        clip.SetData(data, 0);
-        return clip;
+        var result = AudioClip.Create("gold_cut", samples, 1, sampleRate, false);
+        result.SetData(data, 0);
+        return result;
     }
 }

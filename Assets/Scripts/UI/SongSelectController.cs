@@ -53,6 +53,7 @@ public class SongSelectController : MonoBehaviour
 
     public int SelectedIndex => selectedIndex;
     public int SelectedDifficultyIndex => selectedDifficulty;
+    public int SongCount => songIds.Count;
     public event System.Action<int> OnSelectionChanged;
     public event System.Action<int> OnDifficultyChanged;
 
@@ -75,7 +76,17 @@ public class SongSelectController : MonoBehaviour
         if (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame) StartGame();
     }
 
+    // 曲一覧に出す標準難易度(HasPlayableChart の探索にも使う)
+    public static readonly string[] StandardDifficulties = { "Easy", "Normal", "Hard" };
+
+    // 曲選択に並べる曲ID一覧。実譜面(ノーツ入り)が1つも無い曲は一覧から完全に除外する
+    // (譜面を作って保存すれば次回から自動で現れる)。
     public static List<string> EnumerateSongIds()
+    {
+        return EnumerateSongIds(playableOnly: true);
+    }
+
+    public static List<string> EnumerateSongIds(bool playableOnly)
     {
         string root = Path.Combine(Application.streamingAssetsPath, "Songs");
         if (!Directory.Exists(root)) return new List<string>();
@@ -83,7 +94,10 @@ public class SongSelectController : MonoBehaviour
         foreach (var dir in Directory.GetDirectories(root))
         {
             string chart = Path.Combine(dir, "chart.json");
-            if (File.Exists(chart)) result.Add(Path.GetFileName(dir));
+            if (!File.Exists(chart)) continue;
+            string songId = Path.GetFileName(dir);
+            if (playableOnly && !HasPlayableChart(songId, StandardDifficulties)) continue;
+            result.Add(songId);
         }
         result.Sort();
         return result;

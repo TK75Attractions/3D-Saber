@@ -59,9 +59,16 @@ public class SongSelectSkin : MonoBehaviour
 
         ctl.OnSelectionChanged += HandleSelectionChanged;
         ctl.OnDifficultyChanged += HandleDifficultyChanged;
+        // 曲が変わると難易度レベル数値も変わるので、選択変更でも難易度表示を更新する
+        ctl.OnSelectionChanged += _ => HandleDifficultyChanged(ctl.SelectedDifficultyIndex);
         // ここでは Select を呼び直さない(プレビューが再起動してしまうため)。状態だけ直接反映する。
         HandleSelectionChanged(ctl.SelectedIndex);
         HandleDifficultyChanged(ctl.SelectedDifficultyIndex);
+
+        // セーバーポインタ: 実機セーバーの位置に光るカーソルを出し、
+        // 既存のボタン(曲行/難易度/START等)に0.45秒かざすとクリック扱いになる。
+        // UDP入力があるときだけ現れるので、マウス/キーボード操作とは併存する。
+        SaberUIPointer.Build();
     }
 
     void OnDestroy()
@@ -383,7 +390,10 @@ public class SongSelectSkin : MonoBehaviour
         if (difficultyDisplayTMP != null && ctl != null && ctl.difficultyNames != null
             && idx >= 0 && idx < ctl.difficultyNames.Length)
         {
-            difficultyDisplayTMP.text = ctl.difficultyNames[idx].ToUpperInvariant();
+            // 難易度名 + レベル数値(1〜10、譜面なしは数値なし)
+            string baseName = ctl.difficultyNames[idx].ToUpperInvariant();
+            int level = ctl.CurrentDifficultyLevel();
+            difficultyDisplayTMP.text = level > 0 ? $"{baseName}  {level}" : baseName;
             difficultyDisplayTMP.color = DifficultyColors[Mathf.Min(idx, DifficultyColors.Length - 1)];
         }
     }

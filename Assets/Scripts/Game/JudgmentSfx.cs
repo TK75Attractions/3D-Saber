@@ -39,6 +39,8 @@ public class JudgmentSfx : MonoBehaviour
 
     private void OnJudgment(JudgmentTier tier, int award)
     {
+        // 金ノーツのカットは GoldNoteSfx 専用音のみ鳴らす(通常カット音を重ねない)
+        if (scoreManager != null && scoreManager.LastCutWasGold && tier != JudgmentTier.Miss) return;
         AudioClip clip = ClipFor(tier);
         if (clip == null) return;
         source.PlayOneShot(clip, volume);
@@ -46,14 +48,39 @@ public class JudgmentSfx : MonoBehaviour
 
     public AudioClip ClipFor(JudgmentTier tier)
     {
+        // 通常ノーツのカット音: 1200Hz→700Hz の下降スイープ 70ms(斬撃感のお試し仕様)。
+        // ティアの違いは HUD 側で見せるため、ヒット音は共通。Miss だけ従来のブザー。
         switch (tier)
         {
-            case JudgmentTier.Perfect: return perfectClip != null ? perfectClip : (genPerfect ??= Beep(880f, 0.16f));
-            case JudgmentTier.Great:   return greatClip   != null ? greatClip   : (genGreat   ??= Beep(660f, 0.14f));
-            case JudgmentTier.Good:    return goodClip    != null ? goodClip    : (genGood    ??= Beep(440f, 0.12f));
-            case JudgmentTier.Bad:     return badClip     != null ? badClip     : (genBad     ??= Beep(220f, 0.10f));
+            case JudgmentTier.Perfect: return perfectClip != null ? perfectClip : (genPerfect ??= Sweep(1200f, 700f, 0.07f));
+            case JudgmentTier.Great:   return greatClip   != null ? greatClip   : (genGreat   ??= Sweep(1200f, 700f, 0.07f));
+            case JudgmentTier.Good:    return goodClip    != null ? goodClip    : (genGood    ??= Sweep(1200f, 700f, 0.07f));
+            case JudgmentTier.Bad:     return badClip     != null ? badClip     : (genBad     ??= Sweep(1200f, 700f, 0.07f));
             default:                   return missClip    != null ? missClip    : (genMiss    ??= Buzz(110f, 0.18f));
         }
+    }
+
+    // 純粋関数: fromHz→toHz へ滑らかに下降(位相連続)するスイープ音を作る。
+    // カット音の「シュッ」とした質感用。エンベロープは 3ms アタック + 線形減衰。
+    public static AudioClip Sweep(float fromHz, float toHz, float duration)
+    {
+        const int sampleRate = 44100;
+        int samples = Mathf.Max(1, (int)(sampleRate * duration));
+        var clip = AudioClip.Create($"sweep_{fromHz:F0}_{toHz:F0}", samples, 1, sampleRate, false);
+        var data = new float[samples];
+        double phase = 0.0;
+        for (int i = 0; i < samples; i++)
+        {
+            float t = (float)i / sampleRate;
+            float k = duration > 0f ? Mathf.Clamp01(t / duration) : 1f;
+            float freq = Mathf.Lerp(fromHz, toHz, k);
+            phase += 2.0 * Mathf.PI * freq / sampleRate;
+            float attack = Mathf.Clamp01(t / 0.003f);
+            float decay = 1f - k;
+            data[i] = (float)System.Math.Sin(phase) * attack * decay * 0.6f;
+        }
+        clip.SetData(data, 0);
+        return clip;
     }
 
     // 純粋関数：周波数と長さからシンプルなサイン波 + 簡易エンベロープでクリップを作る。

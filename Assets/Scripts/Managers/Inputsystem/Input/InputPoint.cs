@@ -96,6 +96,26 @@ public class InputPoint : MonoBehaviour
         Instance = this;
     }
 
+    // どのシーンからでも呼べる生成ヘルパー(タイトル/曲選択でもセーバーを使えるようにする)。
+    // 送信側仕様(中央原点 -1..+1 正規化 → world直結)で構成し、シーンを跨いで維持する
+    // (UDPソケットをシーン遷移ごとに開き直さないため)。冪等。
+    public static InputPoint EnsureInstance()
+    {
+        var ip = Instance != null ? Instance : FindFirstObjectByType<InputPoint>();
+        if (ip == null)
+        {
+            var go = new GameObject("InputPoint");
+            if (Application.isPlaying) DontDestroyOnLoad(go);
+            ip = go.AddComponent<InputPoint>();
+        }
+        // EditMode では Awake が呼ばれないため、ここでも明示的に設定する(冪等)
+        Instance = ip;
+        ip.useDirectWorldMapping = true;
+        ip.worldScale = new Vector2(5.5f, 3.0f);
+        ip.worldOffset = Vector2.zero;
+        return ip;
+    }
+
     // 入力座標が既に -1..1 の範囲で来る場合と、ピクセル座標で来る場合の両対応を行う。
     // 小さな絶対値 (<=1.5) はそのまま正規化値とみなし、大きければピクセル幅で正規化する。
     float NormalizeAxis(float v, float span)

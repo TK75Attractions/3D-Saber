@@ -7,7 +7,7 @@ using UnityEngine;
 [RequireComponent(typeof(AudioSource))]
 public class LongNoteCutSfx : MonoBehaviour
 {
-    [Range(0f, 1f)] public float volume = 0.55f;
+    [Range(0f, 1f)] public float volume = 0.4f;
     public float baseFrequency = 440f;   // 1カット目の周波数（A4）
     public float toneDurationSec = 0.18f;
     public float pitchPerCutSemitones = 0f; // 0=ペンタトニック表（既定）、>0 ならその半音刻み

@@ -27,36 +27,35 @@ public class SongLockTests
     }
 
     [Test]
-    public void Controller_LocksEmptySong_AndBlocksStart()
+    public void EnumerateSongIds_ExcludesChartlessSongs()
+    {
+        // 譜面未制作の曲(揺籠)は一覧に「完全に出ない」。実譜面のある曲は出る。
+        var listed = SongSelectController.EnumerateSongIds();
+        CollectionAssert.Contains(listed, "ElDorado");
+        CollectionAssert.DoesNotContain(listed, "揺籠");
+    }
+
+    [Test]
+    public void EnumerateSongIds_AllMode_StillSeesChartlessSongs()
+    {
+        // playableOnly=false ならフォルダ自体は見える(ツール用途)
+        var all = SongSelectController.EnumerateSongIds(playableOnly: false);
+        CollectionAssert.Contains(all, "揺籠");
+    }
+
+    [Test]
+    public void Controller_ListContainsNoLockedSongs()
     {
         var go = new GameObject("songSelect");
         try
         {
             var ctl = go.AddComponent<SongSelectController>();
             ctl.Populate();
-
-            int lockedIdx = -1, playableIdx = -1;
+            // 一覧から除外済みなので、リスト上にロック曲は存在しない
             for (int i = 0; i < 100; i++)
             {
-                // songIds は非公開なので IsLocked の走査で判定する
-                if (ctl.IsLocked(i)) { if (lockedIdx < 0) lockedIdx = i; }
+                Assert.IsFalse(ctl.IsLocked(i), "一覧にロック曲が混ざらない: index " + i);
             }
-            // 揺籠(空譜面)がロックされているはず
-            Assert.GreaterOrEqual(lockedIdx, 0, "空譜面の曲がロックされている");
-
-            // ロック曲を選択して StartGame してもシーン遷移・セッション変更が起きない
-            GameSession.SelectedSongId = "__sentinel__";
-            ctl.Select(lockedIdx);
-            Assert.IsTrue(ctl.SelectedSongLocked);
-            ctl.StartGame();
-            Assert.AreEqual("__sentinel__", GameSession.SelectedSongId, "ロック曲は開始できない");
-
-            // 参考: ElDorado(実譜面あり)はロックされない
-            for (int i = 0; i < 100; i++)
-            {
-                if (!ctl.IsLocked(i) && i != lockedIdx) { playableIdx = i; break; }
-            }
-            Assert.GreaterOrEqual(playableIdx, 0, "遊べる曲も存在する");
         }
         finally
         {

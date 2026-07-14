@@ -133,6 +133,11 @@ public class GamePlayManager : MonoBehaviour
 
         EnsureLongNoteCutSfx();
         EnsureGoldNoteSfx();
+        // 効果音は全体的に少し控えめに(シーン側に大きい値が保存されていても上書きで下げる)
+        if (goldNoteSfx != null) goldNoteSfx.volume = Mathf.Min(goldNoteSfx.volume, 0.5f);
+        if (longNoteCutSfx != null) longNoteCutSfx.volume = Mathf.Min(longNoteCutSfx.volume, 0.4f);
+        var judgmentSfxComp = Object.FindFirstObjectByType<JudgmentSfx>();
+        if (judgmentSfxComp != null) judgmentSfxComp.volume = Mathf.Min(judgmentSfxComp.volume, 0.45f);
         if (autoEnsureInputPoint) EnsureInputPoint();
         if (autoEnsureUdpImuBridge) EnsureUdpImuBridge();
         if (autoEnsureSwing8DirectionLogger) EnsureSwing8DirectionLogger();
@@ -270,17 +275,8 @@ public class GamePlayManager : MonoBehaviour
 
     private void EnsureInputPoint()
     {
-        var ip = Object.FindFirstObjectByType<InputPoint>();
-        if (ip == null)
-        {
-            var go = new GameObject("InputPoint");
-            go.transform.SetParent(transform, false);
-            ip = go.AddComponent<InputPoint>();
-        }
-        // 送信側仕様：中央原点 -1..+1 正規化、y は上が+、16:9 ボード
-        ip.useDirectWorldMapping = true;
-        ip.worldScale = new Vector2(5.5f, 3.0f);
-        ip.worldOffset = Vector2.zero;
+        // 生成と設定は共通ヘルパーへ(タイトル/曲選択とも同じ構成を使う)
+        InputPoint.EnsureInstance();
 
         // SaberInputBridge は world 座標がそのまま入る前提に切り替え。
         // 受信状態に応じて UDP / マウス を SaberInputBridge.Update が自動で切り替える。
