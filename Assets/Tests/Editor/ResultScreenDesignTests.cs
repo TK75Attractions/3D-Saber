@@ -82,6 +82,17 @@ public class ResultScreenDesignTests
         Assert.AreEqual(new Vector2(-200f, 110f), p[5]);
     }
 
+    // ---- コンボ数字の成長(プレイHUD) ----
+
+    [Test]
+    public void ComboFontSize_GrowsMonotonicallyAndClamps()
+    {
+        Assert.AreEqual(90f, GameHUDSkin.ComboFontSize(0), 1e-3f, "0コンボは基準サイズ");
+        Assert.Greater(GameHUDSkin.ComboFontSize(50), GameHUDSkin.ComboFontSize(10), "コンボで育つ");
+        Assert.AreEqual(128f, GameHUDSkin.ComboFontSize(150), 1e-3f, "150で最大");
+        Assert.AreEqual(128f, GameHUDSkin.ComboFontSize(999), 1e-3f, "以降は頭打ち");
+    }
+
     // ---- 床グリッド ----
 
     [Test]

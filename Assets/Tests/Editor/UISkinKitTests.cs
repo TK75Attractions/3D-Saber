@@ -81,6 +81,26 @@ public class UISkinKitTests
         Assert.Greater(t.outlineWidth, 0f, "暗い縁取りが入る");
     }
 
+    [Test]
+    public void ApplyThreeStopGradient_ApproximatesBrandInMiddle()
+    {
+        var root = MakeCanvasRoot();
+        var t = UISkinKit.MakeTMP(root, "LogoTest3", "BEAT", 100f, Color.white,
+            TMPro.TextAlignmentOptions.Center, Vector2.zero, new Vector2(400f, 120f));
+        Color tint = new Color(1f, 0.851f, 0.871f);    // #FFD9DE
+        Color brand = new Color(1f, 0.22f, 0.33f);     // #FF3854
+        Color dark = new Color(0.600f, 0.063f, 0.122f); // #99101F
+        TitleSceneSkin.ApplyThreeStopGradient(t, tint, brand, dark);
+
+        Assert.IsTrue(t.enableVertexGradient);
+        Assert.AreNotEqual(t.colorGradient.topLeft, t.colorGradient.bottomLeft, "上下で色が変わる");
+        // 上下頂点の中点(=文字の中腹の色)がブランド色へ十分近い(3段グラデの近似目標)
+        Color mid = Color.Lerp(t.colorGradient.topLeft, t.colorGradient.bottomLeft, 0.5f);
+        Assert.Less(Mathf.Abs(mid.r - brand.r), 0.15f);
+        Assert.Less(Mathf.Abs(mid.g - brand.g), 0.15f);
+        Assert.Less(Mathf.Abs(mid.b - brand.b), 0.15f);
+    }
+
     // ---- ASCII 判定(ロゴフォント適用可否) ----
 
     [Test]

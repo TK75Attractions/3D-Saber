@@ -2,12 +2,12 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-// プレイ画面の HUD を「Neon Focus」テーマで実行時に作り直す。
-// 方針:プレイエリア(画面中央)から情報を退避し、フォントをメニューと同じ Chakra Petch に統一する。
-//   ・スコア   … 左上(ラベル+数値)
-//   ・コンボ   … 右上(数値+ラベル、増加時パンチ、コンボ数で色が育つ)
+// プレイ画面の HUD をデザインハンドオフ(プレイ画面版)準拠で実行時に作り直す。
+// 数字は Chakra Petch Bold Italic + 縦グラデ、ラベルは Oxanium(リザルト画面と同じデザイン言語)。
+//   ・スコア   … 左上(ラベル+ゼロ埋めグラデ数字+六角ランクバッジ+次ランク進捗バー)
+//   ・コンボ   … 右上(数値+CHAIN。増加時パンチ、コンボ数で色とサイズが育つ)
 //   ・判定演出 … 中央のやや下(ノーツの軌道に被らない位置で浮かび上がって消える)
-//   ・曲名/難易度 … 上部中央(曲名は日本語対応のため legacy Text)
+//   ・曲名/難易度 … 上部中央(英タイトル+和名(legacy Text)+難易度チップ)
 //   ・進行バー … 画面最上端の細いライン
 // 旧 ScoreHUD(legacy Text ベース)は Ensure 時に無効化する。シーンは書き換えない(非破壊)。
 public class GameHUDSkin : MonoBehaviour
@@ -42,6 +42,12 @@ public class GameHUDSkin : MonoBehaviour
         if (combo >= 30) return new Color(1f, 0.92f, 0.35f);    // 黄
         if (combo >= 10) return new Color(0.27f, 1f, 0.97f);    // シアン
         return new Color(0.91f, 0.93f, 1f);                     // オフホワイト
+    }
+
+    // コンボ数に応じて数字が育つ(90px → 128px、150 コンボで最大)。テストから直接叩く純関数。
+    public static float ComboFontSize(int combo)
+    {
+        return Mathf.Lerp(90f, 128f, Mathf.Clamp01(combo / 150f));
     }
 
     // 難易度の色(SongSelect 系と揃えたロゴ 3 色)
@@ -98,8 +104,12 @@ public class GameHUDSkin : MonoBehaviour
     private bool currentWasFlickFail;
 
     private RectTransform comboRT;
+    private Image comboGlow;
     private int lastCombo;
     private float comboPunchAge = 999f;
+
+    // スコア/コンボ数字の縦グラデ下端色(#1899B3、リザルトと同じ)
+    private static readonly Color ScoreGradientBottom = new Color(0.094f, 0.60f, 0.702f);
 
     // ランク表示(左上・スコアの下)。バッジはリザルト画面と同じ六角形のコード描画(画像アセット不使用)。
     private ResultHexBadgeGraphic rankHexOuter;
@@ -153,36 +163,48 @@ public class GameHUDSkin : MonoBehaviour
         scaler.referenceResolution = new Vector2(1920, 1080);
         scaler.matchWidthOrHeight = 0.5f;
 
-        var font = UISkinKit.LogoFontAsset();
-        // 数字(スコア/コンボ)は Rajdhani。無ければ Chakra Petch のまま。
-        var numberFont = UISkinKit.FontAsset("Rajdhani-Bold");
-        if (numberFont == null) numberFont = font;
+        var font = UISkinKit.LogoFontAsset(); // Chakra Petch Bold Italic(数字・勢いのある文字)
+        var oxBold = UISkinKit.FontAsset("Oxanium-Bold"); // ラベル類
+        if (oxBold == null) oxBold = font;
 
-        // --- スコア(左上) ---
-        var scoreLabel = UISkinKit.MakeTMP(transform, "ScoreLabel", "SCORE", 22f,
+        // --- スコア(左上、デザイン: top:40 left:70) ---
+        var scoreLabel = UISkinKit.MakeTMP(transform, "ScoreLabel", "SCORE", 20f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.TopLeft,
-            Vector2.zero, new Vector2(300f, 30f), FontStyles.Normal, 6f, font);
-        AnchorTopLeft(scoreLabel.rectTransform, new Vector2(36f, -26f));
+            Vector2.zero, new Vector2(300f, 26f), FontStyles.Normal, 4f, oxBold);
+        AnchorTopLeft(scoreLabel.rectTransform, new Vector2(70f, -40f));
 
-        scoreValue = UISkinKit.MakeTMP(transform, "ScoreValue", "0", 52f,
-            UISkinPalette.OffWhite, TextAlignmentOptions.TopLeft,
-            Vector2.zero, new Vector2(480f, 64f), FontStyles.Normal, 2f, numberFont);
-        AnchorTopLeft(scoreValue.rectTransform, new Vector2(36f, -52f));
+        var scoreGlow = AddHudGlow(new Vector2(30f, -46f), new Vector2(420f, 110f),
+            new Color(UISkinPalette.Cyan.r, UISkinPalette.Cyan.g, UISkinPalette.Cyan.b, 0.18f));
+        AnchorTopLeft(scoreGlow.rectTransform, new Vector2(30f, -46f));
+
+        scoreValue = UISkinKit.MakeTMP(transform, "ScoreValue", "000,000", 64f,
+            Color.white, TextAlignmentOptions.TopLeft,
+            Vector2.zero, new Vector2(480f, 76f), FontStyles.Normal, 0f, font);
+        AnchorTopLeft(scoreValue.rectTransform, new Vector2(70f, -66f));
+        scoreValue.enableVertexGradient = true;
+        scoreValue.colorGradient = new VertexGradient(
+            Color.white, Color.white, ScoreGradientBottom, ScoreGradientBottom);
 
         // --- ランク(左上・スコアの下) ---
-        BuildRankWidget(font);
+        BuildRankWidget(oxBold);
 
-        // --- コンボ(右上) ---
-        comboValue = UISkinKit.MakeTMP(transform, "ComboValue", "", 84f,
-            UISkinPalette.OffWhite, TextAlignmentOptions.TopRight,
-            Vector2.zero, new Vector2(400f, 96f), FontStyles.Normal, 1f, numberFont);
-        AnchorTopRight(comboValue.rectTransform, new Vector2(-36f, -26f));
+        // --- コンボ(右上、デザイン: top:40 right:70。色とサイズは UpdateCombo で育つ) ---
+        comboGlow = AddHudGlow(Vector2.zero, new Vector2(440f, 180f), Color.clear);
+        AnchorTopRight(comboGlow.rectTransform, new Vector2(-20f, -20f));
+
+        comboValue = UISkinKit.MakeTMP(transform, "ComboValue", "", 90f,
+            Color.white, TextAlignmentOptions.TopRight,
+            Vector2.zero, new Vector2(500f, 140f), FontStyles.Normal, 0f, font);
+        AnchorTopRight(comboValue.rectTransform, new Vector2(-70f, -40f));
         comboRT = comboValue.rectTransform;
+        // パンチは右上を支点に(CSS transform-origin:100% 20% 相当)
+        comboRT.pivot = new Vector2(1f, 0.8f);
+        comboRT.anchoredPosition = new Vector2(-70f, -40f - 140f * 0.2f);
 
         comboLabel = UISkinKit.MakeTMP(transform, "ComboLabel", "", 22f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.TopRight,
-            Vector2.zero, new Vector2(300f, 30f), FontStyles.Normal, 6f, font);
-        AnchorTopRight(comboLabel.rectTransform, new Vector2(-38f, -112f));
+            Vector2.zero, new Vector2(300f, 30f), FontStyles.Normal, 6f, oxBold);
+        AnchorTopRight(comboLabel.rectTransform, new Vector2(-72f, -160f));
 
         // --- 判定演出(中央やや下:ノーツ軌道の外) ---
         tierText = UISkinKit.MakeTMP(transform, "TierText", "", 64f,
@@ -203,7 +225,7 @@ public class GameHUDSkin : MonoBehaviour
         AnchorCenter(flickWarningText.rectTransform, new Vector2(0f, -428f));
 
         // --- 曲名+難易度(上部中央) ---
-        BuildSongHeader(font);
+        BuildSongHeader(oxBold);
 
         // --- 進行バー(画面最上端) ---
         BuildProgressBar();
@@ -223,75 +245,109 @@ public class GameHUDSkin : MonoBehaviour
         legacy.enabled = false;
     }
 
-    private void BuildSongHeader(TMP_FontAsset font)
+    private void BuildSongHeader(TMP_FontAsset labelFont)
     {
+        string songId = GameSession.SelectedSongId;
         string title = GameSession.SelectedSongTitle;
-        if (string.IsNullOrEmpty(title)) title = GameSession.SelectedSongId;
+        if (string.IsNullOrEmpty(title)) title = songId;
         string difficulty = GameSession.SelectedDifficulty;
 
-        // 曲名:日本語を含み得るので legacy Text + OS フォント
+        // 英タイトル(Oxanium)。songId 由来、無ければ ASCII タイトルをそのまま。
+        string en = !string.IsNullOrEmpty(songId) ? ResultSkin.SongIdToDisplayTitle(songId)
+                  : (!string.IsNullOrEmpty(title) && UISkinKit.IsAsciiOnly(title)
+                      ? title.ToUpperInvariant() : "");
+        if (!string.IsNullOrEmpty(en))
+        {
+            var enTmp = UISkinKit.MakeTMP(transform, "SongTitleEn", en, 34f,
+                UISkinPalette.OffWhite, TextAlignmentOptions.Top,
+                Vector2.zero, new Vector2(900f, 42f), FontStyles.Normal, 2f,
+                UISkinKit.FontAsset("Oxanium-ExtraBold"));
+            var ert = enTmp.rectTransform;
+            ert.anchorMin = ert.anchorMax = new Vector2(0.5f, 1f);
+            ert.pivot = new Vector2(0.5f, 1f);
+            ert.anchoredPosition = new Vector2(0f, -36f);
+        }
+
+        // 和名(日本語対応のため legacy Text + OS フォント)。英タイトルが無いときは主タイトル扱い。
         var titleGo = new GameObject("SongTitle", typeof(RectTransform), typeof(Text));
         titleGo.transform.SetParent(transform, false);
         songTitleText = titleGo.GetComponent<Text>();
         songTitleText.font = JpFont();
         songTitleText.text = title ?? "";
-        songTitleText.fontSize = 26;
+        songTitleText.fontSize = string.IsNullOrEmpty(en) ? 26 : 16;
         songTitleText.fontStyle = FontStyle.Bold;
         songTitleText.alignment = TextAnchor.UpperCenter;
-        songTitleText.color = new Color(0.85f, 0.89f, 1f, 0.9f);
+        songTitleText.color = UISkinPalette.SubtleGray;
         songTitleText.horizontalOverflow = HorizontalWrapMode.Overflow;
         songTitleText.verticalOverflow = VerticalWrapMode.Overflow;
         songTitleText.raycastTarget = false;
         var trt = titleGo.GetComponent<RectTransform>();
         trt.anchorMin = trt.anchorMax = new Vector2(0.5f, 1f);
         trt.pivot = new Vector2(0.5f, 1f);
-        trt.anchoredPosition = new Vector2(0f, -22f);
-        trt.sizeDelta = new Vector2(900f, 34f);
+        trt.anchoredPosition = new Vector2(0f, string.IsNullOrEmpty(en) ? -40f : -80f);
+        trt.sizeDelta = new Vector2(900f, 24f);
+        // 英タイトルと同じ内容しか無い(ASCII のみ)なら二重表示を避けて空にする
+        if (!string.IsNullOrEmpty(en) && !string.IsNullOrEmpty(songTitleText.text)
+            && UISkinKit.IsAsciiOnly(songTitleText.text))
+        {
+            songTitleText.text = "";
+        }
 
-        // 難易度:ASCII なので Chakra Petch。色で難度が分かる。
+        // 難易度チップ(枠+色付きラベル。色は難易度マップで情報を保つ)
         if (!string.IsNullOrEmpty(difficulty))
         {
-            difficultyText = UISkinKit.MakeTMP(transform, "Difficulty", difficulty.ToUpperInvariant(), 20f,
-                DifficultyColor(difficulty), TextAlignmentOptions.Top,
-                Vector2.zero, new Vector2(300f, 26f), FontStyles.Normal, 8f, font);
-            var drt = difficultyText.rectTransform;
-            drt.anchorMin = drt.anchorMax = new Vector2(0.5f, 1f);
-            drt.pivot = new Vector2(0.5f, 1f);
-            drt.anchoredPosition = new Vector2(0f, -56f);
+            Color accent = DifficultyColor(difficulty);
+            var chip = new GameObject("Difficulty", typeof(RectTransform), typeof(Image));
+            chip.transform.SetParent(transform, false);
+            var crt = chip.GetComponent<RectTransform>();
+            crt.anchorMin = crt.anchorMax = new Vector2(0.5f, 1f);
+            crt.pivot = new Vector2(0.5f, 1f);
+            crt.anchoredPosition = new Vector2(0f, -108f);
+            var frame = chip.GetComponent<Image>();
+            frame.sprite = UISkinKit.RoundedFrame();
+            frame.type = Image.Type.Sliced;
+            frame.color = accent;
+            frame.raycastTarget = false;
+            var layout = chip.AddComponent<HorizontalLayoutGroup>();
+            layout.padding = new RectOffset(14, 14, 3, 3);
+            layout.childAlignment = TextAnchor.MiddleCenter;
+            layout.childForceExpandWidth = false;
+            layout.childForceExpandHeight = false;
+            var fitter = chip.AddComponent<ContentSizeFitter>();
+            fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+            fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+            difficultyText = UISkinKit.MakeTMP(chip.transform, "Label", difficulty.ToUpperInvariant(), 17f,
+                accent, TextAlignmentOptions.Center,
+                Vector2.zero, new Vector2(10f, 24f), FontStyles.Normal, 3f, labelFont);
         }
     }
 
-    // 左上・スコアの下に「現在ランクのバッジ + 次ランクへの進捗バー」を作る。
+    // 左上・スコアの下に「六角ランクバッジ + (RANK/進捗バー/NEXT)の右列」を作る(デザイン準拠)。
     // バッジはリザルト画面と同じ六角形(ResultHexBadgeGraphic)+白のランク文字。
     private void BuildRankWidget(TMP_FontAsset labelFont)
     {
-        var rankLabel = UISkinKit.MakeTMP(transform, "RankLabel", "RANK", 22f,
-            UISkinPalette.SubtleGray, TextAlignmentOptions.TopLeft,
-            Vector2.zero, new Vector2(300f, 30f), FontStyles.Normal, 6f, labelFont);
-        AnchorTopLeft(rankLabel.rectTransform, new Vector2(36f, -124f));
-
         var badgeGo = new GameObject("RankBadge", typeof(RectTransform));
         badgeGo.transform.SetParent(transform, false);
         var badgeRT = badgeGo.GetComponent<RectTransform>();
-        AnchorTopLeft(badgeRT, new Vector2(36f, -150f));
-        badgeRT.sizeDelta = new Vector2(64f, 70f); // リザルトの 400×440 と同比率
+        AnchorTopLeft(badgeRT, new Vector2(70f, -134f));
+        badgeRT.sizeDelta = new Vector2(84f, 92f);
 
         var glowGo = new GameObject("Glow", typeof(RectTransform), typeof(Image));
         glowGo.transform.SetParent(badgeGo.transform, false);
-        glowGo.GetComponent<RectTransform>().sizeDelta = new Vector2(112f, 118f);
+        glowGo.GetComponent<RectTransform>().sizeDelta = new Vector2(150f, 158f);
         rankHexGlow = glowGo.GetComponent<Image>();
         rankHexGlow.sprite = UISkinKit.SoftGlow();
         rankHexGlow.raycastTarget = false;
 
         var outerGo = new GameObject("HexOuter", typeof(RectTransform), typeof(ResultHexBadgeGraphic));
         outerGo.transform.SetParent(badgeGo.transform, false);
-        outerGo.GetComponent<RectTransform>().sizeDelta = new Vector2(64f, 70f);
+        outerGo.GetComponent<RectTransform>().sizeDelta = new Vector2(84f, 92f);
         rankHexOuter = outerGo.GetComponent<ResultHexBadgeGraphic>();
         rankHexOuter.raycastTarget = false;
 
         var innerGo = new GameObject("HexInner", typeof(RectTransform), typeof(ResultHexBadgeGraphic));
         innerGo.transform.SetParent(badgeGo.transform, false);
-        innerGo.GetComponent<RectTransform>().sizeDelta = new Vector2(58f, 64f);
+        innerGo.GetComponent<RectTransform>().sizeDelta = new Vector2(76f, 84f);
         var innerHex = innerGo.GetComponent<ResultHexBadgeGraphic>();
         innerHex.flatFill = true;
         innerHex.topColor = new Color(0.043f, 0.055f, 0.141f); // #0B0E24(リザルトと同じ)
@@ -299,17 +355,34 @@ public class GameHUDSkin : MonoBehaviour
 
         var chakra = UISkinKit.LogoFontAsset();
         if (chakra == null) chakra = UISkinKit.FontAsset("Oxanium-ExtraBold");
-        rankBadgeText = UISkinKit.MakeTMP(badgeGo.transform, "RankLetter", "", 34f,
+        rankBadgeText = UISkinKit.MakeTMP(badgeGo.transform, "RankLetter", "", 44f,
             Color.white, TextAlignmentOptions.Center,
-            Vector2.zero, new Vector2(64f, 48f), FontStyles.Normal, 0f, chakra);
+            Vector2.zero, new Vector2(84f, 60f), FontStyles.Normal, 0f, chakra);
+
+        // 右列: RANK / 進捗バー(枠付き) / NEXT
+        var rankLabel = UISkinKit.MakeTMP(transform, "RankLabel", "RANK", 17f,
+            UISkinPalette.SubtleGray, TextAlignmentOptions.TopLeft,
+            Vector2.zero, new Vector2(200f, 22f), FontStyles.Normal, 3f, labelFont);
+        AnchorTopLeft(rankLabel.rectTransform, new Vector2(170f, -146f));
+
+        var barFrame = new GameObject("RankProgressFrame", typeof(RectTransform), typeof(Image));
+        barFrame.transform.SetParent(transform, false);
+        var frameRT = barFrame.GetComponent<RectTransform>();
+        AnchorTopLeft(frameRT, new Vector2(170f, -170f));
+        frameRT.sizeDelta = new Vector2(242f, 12f);
+        var frameImg = barFrame.GetComponent<Image>();
+        frameImg.color = new Color(0.118f, 0.133f, 0.275f); // #1E2246(枠)
+        frameImg.raycastTarget = false;
 
         var barBg = new GameObject("RankProgressBg", typeof(RectTransform), typeof(Image));
-        barBg.transform.SetParent(transform, false);
+        barBg.transform.SetParent(barFrame.transform, false);
         var barRT = barBg.GetComponent<RectTransform>();
-        AnchorTopLeft(barRT, new Vector2(114f, -172f));
-        barRT.sizeDelta = new Vector2(150f, 6f);
+        barRT.anchorMin = Vector2.zero;
+        barRT.anchorMax = Vector2.one;
+        barRT.offsetMin = new Vector2(1f, 1f);
+        barRT.offsetMax = new Vector2(-1f, -1f);
         var barImg = barBg.GetComponent<Image>();
-        barImg.color = new Color(1f, 1f, 1f, 0.10f);
+        barImg.color = new Color(0.078f, 0.094f, 0.220f); // #141838
         barImg.raycastTarget = false;
 
         var fillGo = new GameObject("RankProgressFill", typeof(RectTransform), typeof(Image));
@@ -322,10 +395,10 @@ public class GameHUDSkin : MonoBehaviour
         rankFillImg = fillGo.GetComponent<Image>();
         rankFillImg.raycastTarget = false;
 
-        rankNextLabel = UISkinKit.MakeTMP(transform, "RankNextLabel", "", 16f,
+        rankNextLabel = UISkinKit.MakeTMP(transform, "RankNextLabel", "", 17f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.TopLeft,
-            Vector2.zero, new Vector2(200f, 22f), FontStyles.Normal, 2f, labelFont);
-        AnchorTopLeft(rankNextLabel.rectTransform, new Vector2(114f, -184f));
+            Vector2.zero, new Vector2(240f, 22f), FontStyles.Normal, 3f, labelFont);
+        AnchorTopLeft(rankNextLabel.rectTransform, new Vector2(170f, -188f));
     }
 
     private void BuildProgressBar()
@@ -357,7 +430,7 @@ public class GameHUDSkin : MonoBehaviour
 
     private void RefreshStaticTexts()
     {
-        if (scoreValue != null && score != null) scoreValue.text = score.Score.ToString("N0");
+        if (scoreValue != null && score != null) scoreValue.text = score.Score.ToString("000,000");
     }
 
     // ---------------------------------------------------------------
@@ -368,7 +441,7 @@ public class GameHUDSkin : MonoBehaviour
         if (!IsBuilt) return;
         if (score != null)
         {
-            if (scoreValue != null) scoreValue.text = score.Score.ToString("N0");
+            if (scoreValue != null) scoreValue.text = score.Score.ToString("000,000");
             UpdateCombo();
         }
         UpdateTierAnimation();
@@ -405,25 +478,53 @@ public class GameHUDSkin : MonoBehaviour
             }
             if (rankHexGlow != null)
             {
-                rankHexGlow.color = new Color(c.r, c.g, c.b, 0.35f);
+                rankHexGlow.color = new Color(c.r, c.g, c.b, 0.40f);
             }
             if (rankBadgeText != null)
             {
                 rankBadgeText.text = PlayRankHelper.Label(rank);
+            }
+
+            bool hasNext = PlayRankHelper.TryNextRank(rank, out PlayRank next);
+            Color nextColor = hasNext ? ResultSkin.RankAccentColor(PlayRankHelper.Label(next)) : c;
+            if (rankFillImg != null)
+            {
+                // 現ランク色 → 次ランク色の横グラデ(デザイン準拠)
+                rankFillImg.sprite = RankBarSprite(rank, c, nextColor);
+                rankFillImg.color = Color.white;
+            }
+            if (rankNextLabel != null)
+            {
+                rankNextLabel.text = hasNext
+                    ? "NEXT <color=#" + ColorUtility.ToHtmlStringRGB(nextColor) + "><b>"
+                      + PlayRankHelper.Label(next) + "</b></color>"
+                    : "MAX";
             }
         }
 
         if (rankFill != null)
         {
             rankFill.anchorMax = new Vector2(PlayRankHelper.ProgressToNext(acc), 1f);
-            rankFillImg.color = new Color(c.r, c.g, c.b, 0.9f);
         }
-        if (rankNextLabel != null)
-        {
-            rankNextLabel.text = PlayRankHelper.TryNextRank(rank, out PlayRank next)
-                ? "NEXT  " + PlayRankHelper.Label(next)
-                : "MAX";
-        }
+    }
+
+    // ランク進捗バー用の横グラデスプライト(ランクごとに共有キャッシュ)
+    private static readonly System.Collections.Generic.Dictionary<PlayRank, Sprite> rankBarSprites =
+        new System.Collections.Generic.Dictionary<PlayRank, Sprite>();
+
+    private static Sprite RankBarSprite(PlayRank rank, Color from, Color to)
+    {
+        if (rankBarSprites.TryGetValue(rank, out Sprite cached) && cached != null) return cached;
+        var tex = new Texture2D(2, 1, TextureFormat.RGBA32, false);
+        tex.wrapMode = TextureWrapMode.Clamp;
+        tex.filterMode = FilterMode.Bilinear;
+        tex.SetPixel(0, 0, from);
+        tex.SetPixel(1, 0, to);
+        tex.Apply();
+        var sprite = Sprite.Create(tex, new Rect(0, 0, 2, 1), new Vector2(0.5f, 0.5f), 100f);
+        sprite.hideFlags = HideFlags.HideAndDontSave;
+        rankBarSprites[rank] = sprite;
+        return sprite;
     }
 
     private void OnJudgmentEx(JudgmentTier tier, int awarded, bool wasWrongFlick)
@@ -485,16 +586,22 @@ public class GameHUDSkin : MonoBehaviour
         {
             comboValue.text = "";
             if (comboLabel != null) comboLabel.text = "";
+            if (comboGlow != null) comboGlow.color = Color.clear;
             return;
         }
 
+        // コンボ数に応じて色(既存の階調)とサイズが育つ。上端は白、下端がコンボ色の縦グラデ。
         comboValue.text = combo.ToString();
         Color c = ComboColor(combo);
-        comboValue.color = c;
+        comboValue.fontSize = ComboFontSize(combo);
+        comboValue.enableVertexGradient = true;
+        comboValue.colorGradient = new VertexGradient(Color.white, Color.white, c, c);
+        comboValue.color = Color.white;
+        if (comboGlow != null) comboGlow.color = new Color(c.r, c.g, c.b, 0.20f);
         if (comboLabel != null)
         {
-            comboLabel.text = "COMBO";
-            comboLabel.color = new Color(c.r, c.g, c.b, 0.75f);
+            comboLabel.text = "CHAIN";
+            comboLabel.color = UISkinPalette.SubtleGray;
         }
 
         comboPunchAge += Time.deltaTime;
@@ -522,6 +629,21 @@ public class GameHUDSkin : MonoBehaviour
                     "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans CJK JP", "Arial" }, 26);
         if (jpFont == null) jpFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         return jpFont;
+    }
+
+    // HUD 用のソフトグロー(text-shadow 相当)。位置は呼び出し側で Anchor する。
+    private Image AddHudGlow(Vector2 pos, Vector2 size, Color color)
+    {
+        var go = new GameObject("Glow", typeof(RectTransform), typeof(Image));
+        go.transform.SetParent(transform, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.sizeDelta = size;
+        rt.anchoredPosition = pos;
+        var img = go.GetComponent<Image>();
+        img.sprite = UISkinKit.SoftGlow();
+        img.color = color;
+        img.raycastTarget = false;
+        return img;
     }
 
     private static void AnchorTopLeft(RectTransform rt, Vector2 pos)

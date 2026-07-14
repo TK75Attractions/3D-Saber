@@ -117,9 +117,19 @@ public class TitleSceneSkin : MonoBehaviour
         titleContainer.sizeDelta = new Vector2(1300f, 480f);
         titleContainer.anchoredPosition = new Vector2(0f, 245f);
 
-        BuildLogoWord(container.transform, "BEAT", UISkinPalette.LogoRed, new Vector2(0f, 140f), 640f);
-        BuildLogoWord(container.transform, "TRACE", UISkinPalette.LogoBlue, new Vector2(0f, 0f), 760f);
-        BuildLogoWord(container.transform, "SLASH", UISkinPalette.LogoGreen, new Vector2(0f, -140f), 760f);
+        // 3段グラデ(明トップ→ブランド色→暗い底)の指定色。line-height .98 相当で密に積む。
+        BuildLogoWord(container.transform, "BEAT", UISkinPalette.LogoRed,
+            new Color(1f, 0.851f, 0.871f),      // #FFD9DE
+            new Color(0.600f, 0.063f, 0.122f),  // #99101F
+            new Vector2(0f, 126f), 640f);
+        BuildLogoWord(container.transform, "TRACE", UISkinPalette.LogoBlue,
+            new Color(0.839f, 0.925f, 1f),      // #D6ECFF
+            new Color(0.055f, 0.361f, 0.549f),  // #0E5C8C
+            new Vector2(0f, 0f), 760f);
+        BuildLogoWord(container.transform, "SLASH", UISkinPalette.LogoGreen,
+            new Color(0.851f, 1f, 0.910f),      // #D9FFE8
+            new Color(0.055f, 0.549f, 0.275f),  // #0E8C46
+            new Vector2(0f, -126f), 760f);
 
         var entrance = container.AddComponent<UIFadeSlideIn>();
         entrance.delay = 0.05f;
@@ -127,26 +137,42 @@ public class TitleSceneSkin : MonoBehaviour
         entrance.fromOffset = new Vector2(0f, 46f);
     }
 
-    TextMeshProUGUI BuildLogoWord(Transform parent, string word, Color color, Vector2 pos, float glowWidth)
+    TextMeshProUGUI BuildLogoWord(Transform parent, string word, Color brand, Color tint, Color dark,
+        Vector2 pos, float glowWidth)
     {
-        MakeGlowBlob(parent, pos, new Vector2(glowWidth, 230f), color, 0.17f);
+        // drop-shadow(0 0 34px ブランド色45%) 相当のソフトグロー
+        MakeGlowBlob(parent, pos, new Vector2(glowWidth, 230f), brand, 0.20f);
 
         var font = UISkinKit.LogoFontAsset();
         // Chakra Petch Bold Italic は元から太字+斜体なので素のまま使う。
         // フォントが無い環境では既定フォントに擬似 Bold+Italic で形だけ寄せる。
         FontStyles style = font != null ? FontStyles.Normal : (FontStyles.Bold | FontStyles.Italic);
 
-        Color glowColor = color;
-        glowColor.a = 0.13f;
+        Color glowColor = brand;
+        glowColor.a = 0.15f;
         var glow = UISkinKit.MakeTMP(parent, "LogoGlow_" + word, word, 128f, glowColor,
             TextAlignmentOptions.Center, pos, new Vector2(1210f, 158f), style, 4f, font);
         glow.outlineWidth = 0.34f;
-        glow.outlineColor = new Color(color.r, color.g, color.b, 0.30f);
+        glow.outlineColor = new Color(brand.r, brand.g, brand.b, 0.30f);
 
-        var t = UISkinKit.MakeTMP(parent, "Logo_" + word, word, 128f, color,
+        var t = UISkinKit.MakeTMP(parent, "Logo_" + word, word, 128f, Color.white,
             TextAlignmentOptions.Center, pos, new Vector2(1200f, 150f), style, 4f, font);
-        ApplyLogoGradient(t, color);
+        ApplyThreeStopGradient(t, tint, brand, dark);
         return t;
+    }
+
+    // デザインハンドオフの3段グラデ(明トップ5% → ブランド色55% → 暗い底100%)を
+    // TMP の上下2停止の頂点グラデで近似する。中間色がブランド色に近づくよう
+    // 「上=明色→ブランド色の中間」「下=ブランド色→暗色の中間」へ寄せる。
+    public static void ApplyThreeStopGradient(TextMeshProUGUI t, Color tint, Color brand, Color dark)
+    {
+        t.enableVertexGradient = true;
+        Color top = Color.Lerp(tint, brand, 0.45f);
+        Color bottom = Color.Lerp(brand, dark, 0.55f);
+        t.colorGradient = new VertexGradient(top, top, bottom, bottom);
+        // モックに強い縁取りは無い。暗色のごく細い輪郭で滲みだけ締める。
+        t.outlineWidth = 0.08f;
+        t.outlineColor = new Color(dark.r, dark.g, dark.b, 0.55f);
     }
 
     // 参照画像のネオン文字: 上が白寄り、下が深い原色、暗い縁取りで締める。
