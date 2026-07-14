@@ -37,6 +37,16 @@ public class SaberInputBridge : MonoBehaviour
     Vector3 smoothedPosition;
     bool hasSmoothedPosition = false;
 
+    [Header("Menu remap")]
+    // メニュー画面用: 判定面(±sourceHalfExtents)基準の入力座標を、targetCamera が
+    // z=fixedZ 平面上に映す範囲全体へ写像する(セーバーが画面端まで届くように)。
+    // 棒の長さ・角度は保つ(中点だけ写像し、端点は平行移動)。ゲーム本編では false のまま。
+    public bool remapToCameraView = false;
+    public Vector2 sourceHalfExtents = new Vector2(5.5f, 3f);
+    Vector2 viewCenter;
+    Vector2 viewHalfExtents;
+    bool viewResolved;
+
     [Header("Blade (line) mode")]
     // true なら 2 端点ベースのブレードとして扱う。表示も判定も線になる。
     public bool useBladeMode = true;
@@ -115,12 +125,28 @@ public class SaberInputBridge : MonoBehaviour
             {
                 Vector2 endA = stickIndex == 2 ? ip.LocalStickRawA2 : ip.LocalStickRawA;
                 Vector2 endB = stickIndex == 2 ? ip.LocalStickRawB2 : ip.LocalStickRawB;
-                ApplyBladeImmediate(new Vector3(endA.x, endA.y, fixedZ), new Vector3(endB.x, endB.y, fixedZ));
+                Vector3 a = new Vector3(endA.x, endA.y, fixedZ);
+                Vector3 b = new Vector3(endB.x, endB.y, fixedZ);
+                if (remapToCameraView && ResolveViewExtents())
+                {
+                    // 中点だけ写像して端点は平行移動(棒の長さ・角度を保つ)
+                    Vector3 mid = (a + b) * 0.5f;
+                    Vector3 mapped = RemapPoint(mid, sourceHalfExtents, viewCenter, viewHalfExtents, fixedZ);
+                    Vector3 shift = mapped - mid;
+                    a += shift;
+                    b += shift;
+                }
+                ApplyBladeImmediate(a, b);
             }
             else
             {
                 Vector2 mid = stickIndex == 2 ? ip.LocalPosition2 : ip.LocalPosition;
-                ApplyPositionImmediate(new Vector3(mid.x, mid.y, fixedZ));
+                Vector3 p = new Vector3(mid.x, mid.y, fixedZ);
+                if (remapToCameraView && ResolveViewExtents())
+                {
+                    p = RemapPoint(p, sourceHalfExtents, viewCenter, viewHalfExtents, fixedZ);
+                }
+                ApplyPositionImmediate(p);
             }
             if (debugCoordinates)
             {
@@ -227,12 +253,51 @@ public class SaberInputBridge : MonoBehaviour
         }
     }
 
+    // リマップ有効時はカメラの可視範囲、通常時は判定面の範囲でクランプする。
+    Vector2 EffectiveMinBounds => remapToCameraView && viewResolved ? viewCenter - viewHalfExtents : minBounds;
+    Vector2 EffectiveMaxBounds => remapToCameraView && viewResolved ? viewCenter + viewHalfExtents : maxBounds;
+
     Vector3 ClampPoint(Vector3 v)
     {
         if (!clampToBounds) return v;
-        v.x = Mathf.Clamp(v.x, minBounds.x, maxBounds.x);
-        v.y = Mathf.Clamp(v.y, minBounds.y, maxBounds.y);
+        Vector2 min = EffectiveMinBounds;
+        Vector2 max = EffectiveMaxBounds;
+        v.x = Mathf.Clamp(v.x, min.x, max.x);
+        v.y = Mathf.Clamp(v.y, min.y, max.y);
         return v;
+    }
+
+    // カメラが z=fixedZ 平面上に映す範囲を求めてキャッシュする(メニューのカメラは静止前提)。
+    bool ResolveViewExtents()
+    {
+        if (viewResolved) return true;
+        if (targetCamera == null) targetCamera = Camera.main;
+        viewResolved = TryComputePlaneView(targetCamera, fixedZ, out viewCenter, out viewHalfExtents);
+        return viewResolved;
+    }
+
+    // カメラが z=planeZ 平面上に映す範囲(中心と半幅)。ビューポート対角2点の投影で求める。純関数。
+    public static bool TryComputePlaneView(Camera cam, float planeZ, out Vector2 center, out Vector2 halfExtents)
+    {
+        center = Vector2.zero;
+        halfExtents = Vector2.zero;
+        if (cam == null) return false;
+        if (!MouseSaberInput.TryProjectToPlane(new Vector2(0f, 0f), planeZ, cam, out Vector3 bl)) return false;
+        if (!MouseSaberInput.TryProjectToPlane(new Vector2(cam.pixelWidth, cam.pixelHeight), planeZ, cam, out Vector3 tr)) return false;
+        center = new Vector2((bl.x + tr.x) * 0.5f, (bl.y + tr.y) * 0.5f);
+        halfExtents = new Vector2(Mathf.Abs(tr.x - bl.x) * 0.5f, Mathf.Abs(tr.y - bl.y) * 0.5f);
+        return halfExtents.x > 0.001f && halfExtents.y > 0.001f;
+    }
+
+    // 判定面(±sourceHalf)基準の座標を、カメラ可視範囲(viewCenter±viewHalf)へ写像する。純関数。
+    public static Vector3 RemapPoint(Vector3 v, Vector2 sourceHalf, Vector2 viewCenter, Vector2 viewHalf, float z)
+    {
+        float nx = sourceHalf.x > 0.001f ? v.x / sourceHalf.x : 0f;
+        float ny = sourceHalf.y > 0.001f ? v.y / sourceHalf.y : 0f;
+        return new Vector3(
+            viewCenter.x + Mathf.Clamp(nx, -1f, 1f) * viewHalf.x,
+            viewCenter.y + Mathf.Clamp(ny, -1f, 1f) * viewHalf.y,
+            z);
     }
 
     private void ApplyPosition(Vector2 worldXY)

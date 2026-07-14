@@ -15,8 +15,9 @@ public class SongSelectSlashNav : MonoBehaviour
     [Range(0f, 1f)] public float sfxVolume = 0.22f;
 
     // 配置(ビューポート座標 0-1)。曲リスト(左)と難易度パネル(右)の間の空き縦帯に置く。
-    public Vector2 upViewport = new Vector2(0.565f, 0.615f);
-    public Vector2 downViewport = new Vector2(0.565f, 0.385f);
+    // ↑と↓は誤爆しないよう縦に大きく離す。
+    public Vector2 upViewport = new Vector2(0.565f, 0.68f);
+    public Vector2 downViewport = new Vector2(0.565f, 0.32f);
 
     private SongSelectController ctl;
     private Camera cam;
@@ -58,6 +59,11 @@ public class SongSelectSlashNav : MonoBehaviour
         bridge.useInputPoint = true;
         bridge.fallbackToMouse = true;
         bridge.fixedZ = 0f;
+        // メニューのカメラは判定面(±5.5×±3)より広い範囲を映すため、
+        // 入力をカメラの可視範囲全体へ写像してセーバーが画面端まで届くようにする。
+        bridge.remapToCameraView = true;
+        // 曲選択のセーバーは赤(見た目のみ。手の判定ロジックには影響しない)
+        bridge.SetBladeColor(UISkinPalette.LogoRed);
         var judge = saber.AddComponent<SaberCutJudge>();
         judge.saber = tracker;
         // メニューはボタン類も多いので、タイトルよりわずかに速い振りだけを「カット」と見なす

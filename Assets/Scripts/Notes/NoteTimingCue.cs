@@ -21,10 +21,14 @@ public class NoteTimingCue : MonoBehaviour
     [Header("Ghost (判定面の着地予告)")]
     // 着地の「時間+場所」アンカー。常時表示だと密な譜面で重なってノイズになるため、
     // ghostVisibleSeconds(残り時間)を切ってから表示する短時間方式。枠のみで塗りは持たない。
+    // 「薄く大きく現れて、たたく瞬間にノーツとピッタリ同サイズへ線形収束」する
+    // (収縮が固定位置で起きるため、残り時間がスクリーン上で直読みできる)。
     public bool buildGhost = true;
-    // 残りこの秒数を切ったらゴーストが浮かび上がる(HitTime ちょうどで不透明度最大)
+    // 残りこの秒数を切ったらゴーストが浮かび上がる(HitTime ちょうどで不透明度最大・等倍)
     public float ghostVisibleSeconds = 0.7f;
     public float ghostMaxAlpha = 0.7f;
+    // 出現直後の大きさ(ノーツ比)。HitTime ちょうどで 1.0(ピッタリ)へ収束する。
+    public float ghostStartScale = 2.4f;
     // 判定面ガイドと Z-fight しないよう、わずかに手前に置く
     public float ghostZBias = -0.03f;
 
@@ -42,6 +46,7 @@ public class NoteTimingCue : MonoBehaviour
     private Color baseColor = Color.white;
     private Transform ringRoot;
     private GameObject ghostRoot;
+    private Vector3 ghostBaseScale = Vector3.one; // ノーツと同サイズ(=収束先)のスケール
     private Material ringMat;
     private Material ghostMat;
     private float endFadeAlpha = 1f;
@@ -105,13 +110,17 @@ public class NoteTimingCue : MonoBehaviour
             ApplyColor(ringMat, c, a, inWindow ? 2.6f : 1.5f);
         }
 
-        // 2. 着地ゴースト：残り ghostVisibleSeconds を切ってから浮かび上がる(短時間表示で重なりを防ぐ)
+        // 2. 着地ゴースト：薄く大きく現れ、HitTime ちょうどでノーツと同サイズへ線形収縮する
         if (ghostRoot != null)
         {
             float ramp = ComputeGhostAlpha(dt, ghostVisibleSeconds);
             float ga = inWindow ? ghostMaxAlpha : ramp * ghostMaxAlpha;
             Color gc = inWindow ? readyColor : baseColor;
             ApplyColor(ghostMat, gc, ga, inWindow ? 2.4f : 1.4f);
+
+            float gs = ComputeGhostScale(dt, ghostVisibleSeconds, ghostStartScale);
+            ghostRoot.transform.localScale = new Vector3(
+                ghostBaseScale.x * gs, ghostBaseScale.y * gs, ghostBaseScale.z);
         }
     }
 
@@ -162,6 +171,16 @@ public class NoteTimingCue : MonoBehaviour
         return dt <= earlyWindow && dt >= -lateWindow;
     }
 
+    // 着地ゴーストの大きさ(ノーツ比)。出現時 startScale → HitTime ちょうどで 1.0 へ線形収縮。
+    // 線形なので「あとどれくらいで叩くか」がスクリーン上の残り縮み量で直読みできる。
+    // HitTime を過ぎたら 1.0(ピッタリ)を維持する。
+    public static float ComputeGhostScale(double dt, float visibleSeconds, float startScale)
+    {
+        if (visibleSeconds <= 0.0001f) return 1f;
+        float t = 1f - Mathf.Clamp01((float)(dt / visibleSeconds)); // 0=出現直後, 1=HitTime
+        return Mathf.Lerp(startScale, 1f, t);
+    }
+
     // 着地ゴーストの不透明度。残り visibleSeconds を切ってから smoothstep で 0→1(HitTime 以降は 1 を維持)。
     // 短時間表示にすることで、密な譜面でも判定面にゴーストが重なり続けない。
     public static float ComputeGhostAlpha(double dt, float visibleSeconds)
@@ -197,7 +216,10 @@ public class NoteTimingCue : MonoBehaviour
         ghostRoot.transform.position = new Vector3(p.x, p.y, judgeZ + ghostZBias);
         // ノーツのワールド XY サイズに合わせる（prefab の scale 0.8 等を吸収。Z 伸長は無視）
         Vector3 ls = transform.lossyScale;
-        ghostRoot.transform.localScale = new Vector3(Mathf.Abs(ls.x), Mathf.Abs(ls.y), 1f) * 1.04f;
+        ghostBaseScale = new Vector3(Mathf.Abs(ls.x) * 1.04f, Mathf.Abs(ls.y) * 1.04f, 1f);
+        // 出現時は大きく(ghostStartScale倍)。Tick が HitTime に向けて等倍へ収縮させる。
+        ghostRoot.transform.localScale = new Vector3(
+            ghostBaseScale.x * ghostStartScale, ghostBaseScale.y * ghostStartScale, 1f);
 
         ghostMat = MakeCueMaterial();
         BuildFrame(ghostRoot.transform, 0.5f, 0.05f, ghostMat);
