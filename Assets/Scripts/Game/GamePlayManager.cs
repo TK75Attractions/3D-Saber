@@ -213,21 +213,41 @@ public class GamePlayManager : MonoBehaviour
         // 音源より後ろにあるノーツは「曲が終わった後も続く」原因なので、自動で削除。
         // ロングは後方の判定窓 (count-1) * secondsPerLongCut も延長するので、その分も考慮する。
         double audioLen = songPlayer.Duration;
+        Debug.Log($"GamePlayManager: 音源ロード完了 length={audioLen:F1}s / 譜面ノーツ {chart.notes.Count} 個");
         if (trimChartToAudioLength && audioLen > 0.0)
         {
             float perCut = noteSpawner != null ? noteSpawner.secondsPerLongCut : 0.7f;
             int before = chart.notes.Count;
-            chart.notes.RemoveAll(n =>
+            int wouldRemove = 0;
+            foreach (var n in chart.notes)
             {
                 double eff = n.TimeSeconds + offsetSec;
-                double endTime = eff;
-                if (n.count > 1) endTime += (n.count - 1) * perCut;
-                return endTime > audioLen + trimGraceSeconds;
-            });
-            int removed = before - chart.notes.Count;
-            if (removed > 0)
+                double endTime = eff + (n.count > 1 ? (n.count - 1) * perCut : 0.0);
+                if (endTime > audioLen + trimGraceSeconds) wouldRemove++;
+            }
+
+            // 安全装置: 譜面の 1/4 超が音源長の外にある場合、音源側の異常
+            // (部分同期・長さ誤検出)の可能性が高い。切り詰めると曲が途中で終わって
+            // しまうため、譜面全体を残して警告だけ出す(末尾が無音でも最後まで遊べる)。
+            if (before > 0 && wouldRemove > before / 4)
             {
-                Debug.Log($"GamePlayManager: 音源長({audioLen:F1}s) を超えるノーツ {removed} 個を切り詰めました (ロング後方判定窓を考慮)");
+                Debug.LogWarning($"GamePlayManager: 音源長({audioLen:F1}s)が譜面より大幅に短いため切り詰めを中止 " +
+                    $"(対象 {wouldRemove}/{before} ノーツ)。音源ファイルの破損/部分同期の疑い");
+            }
+            else
+            {
+                chart.notes.RemoveAll(n =>
+                {
+                    double eff = n.TimeSeconds + offsetSec;
+                    double endTime = eff;
+                    if (n.count > 1) endTime += (n.count - 1) * perCut;
+                    return endTime > audioLen + trimGraceSeconds;
+                });
+                int removed = before - chart.notes.Count;
+                if (removed > 0)
+                {
+                    Debug.Log($"GamePlayManager: 音源長({audioLen:F1}s) を超えるノーツ {removed} 個を切り詰めました (ロング後方判定窓を考慮)");
+                }
             }
         }
 
@@ -685,6 +705,9 @@ public class GamePlayManager : MonoBehaviour
 
     private void FinishGame()
     {
+        // 「なぜ今終わったか」を後から追えるように記録する(途中終了バグの診断用)
+        Debug.Log($"GamePlayManager: FinishGame songTime={songPlayer.SongTime:F1}s " +
+            $"duration={songPlayer.Duration:F1}s lastNote={lastNoteTime:F1}s alive={noteSpawner.AliveCount}");
         songPlayer.Stop();
         GameSession.FinalScore = scoreManager.Score;
         GameSession.FinalMaxCombo = scoreManager.MaxCombo;

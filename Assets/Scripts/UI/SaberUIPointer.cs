@@ -86,6 +86,7 @@ public class SaberUIPointer : MonoBehaviour
     private Canvas overlayCanvas;
     private Image cursorDot;
     private Image progressRing;
+    private SaberInputBridge bridge; // セーバー本体。ある場合はその実位置に点を重ねる
     private readonly DwellTracker tracker = new DwellTracker(DwellSeconds, CooldownSeconds);
     private Button hovered;
     private Vector3 smoothedWorld;
@@ -164,8 +165,13 @@ public class SaberUIPointer : MonoBehaviour
             return;
         }
 
-        // セーバー位置(world直結座標)→スクリーン座標。軽くスムージングして震えを抑える
-        Vector3 world = new Vector3(ip.LocalPosition.x, ip.LocalPosition.y, 0f);
+        // セーバー位置→スクリーン座標。軽くスムージングして震えを抑える。
+        // SaberInputBridge がいる画面では、その実位置(リマップ等を反映済み)を使い、
+        // 青点がブレードから絶対にずれないようにする。無い画面のみ InputPoint 直読み。
+        if (bridge == null) bridge = Object.FindFirstObjectByType<SaberInputBridge>();
+        Vector3 world = bridge != null && !bridge.UsingMouseFallback
+            ? bridge.transform.position
+            : new Vector3(ip.LocalPosition.x, ip.LocalPosition.y, 0f);
         if (!hasSmoothed)
         {
             smoothedWorld = world;

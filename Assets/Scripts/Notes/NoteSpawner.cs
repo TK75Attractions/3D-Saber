@@ -212,9 +212,10 @@ public class NoteSpawner : MonoBehaviour
             if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
             mat.renderQueue = 3001;
-            Color dark = new Color(0.02f, 0.03f, 0.06f, 0.55f);
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", dark);
-            else mat.color = dark;
+            // 黒シェブロンの下敷きは明るく(黒矢印がボディ発光の上でも読めるように)
+            Color light = new Color(0.92f, 0.95f, 1f, 0.62f);
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", light);
+            else mat.color = light;
             backingMr.sharedMaterial = mat;
         }
 
@@ -233,14 +234,10 @@ public class NoteSpawner : MonoBehaviour
             {
                 var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
                 var mat = new Material(sh);
-                Color white = new Color(0.98f, 0.99f, 1f);
-                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", white);
-                else mat.color = white;
-                if (mat.HasProperty("_EmissionColor"))
-                {
-                    mat.EnableKeyword("_EMISSION");
-                    mat.SetColor("_EmissionColor", white * 2.4f);
-                }
+                // 黒(非発光)。発光ボディの上でも輪郭が締まって向きが読める(ユーザー指定)。
+                Color black = new Color(0.02f, 0.02f, 0.04f);
+                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", black);
+                else mat.color = black;
                 mr.sharedMaterial = mat;
             }
         }
