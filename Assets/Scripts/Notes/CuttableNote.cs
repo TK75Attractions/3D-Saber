@@ -22,6 +22,9 @@ public class CuttableNote : MonoBehaviour
     // 担当ハンド(chart.json の color 由来)。Left=青 / Right=赤 / Any=どちらでも(金・無色)。
     // 誤った手のスイングは「切れない」(ペナルティなし。ロングの各カットにも同じルールを適用)。
     public SaberHand RequiredHand = SaberHand.Any;
+    // 方向は見た目だけ(メニューのナビノーツ用)。true なら RequiredDirection は矢印の表示にだけ使い、
+    // 判定ではどの方向のスイングでも切れる(逆方向拒否も降格もしない)。本編のノーツは既定 false。
+    public bool DirectionVisualOnly = false;
     // 通算で1回でも誤方向に切ったら false。
     public bool LastCutCorrectDirection { get; private set; } = true;
     // 最後に「受理された」カットを行った手。ハプティクスの宛先ルーティング等に使う。
@@ -33,7 +36,7 @@ public class CuttableNote : MonoBehaviour
     // ロングノーツ用の残数表示（TMP）。NoteSpawner が割り付ける。
     public TMPro.TextMeshPro countLabel;
 
-    // タイミング視認キュー（接近リング/着地ゴースト）。NoteSpawner が割り付けて毎フレーム駆動する。
+    // タイミング視認キュー（判定面の着地ゴースト: 固定枠+収縮枠）。NoteSpawner が割り付けて毎フレーム駆動する。
     [System.NonSerialized] public NoteTimingCue TimingCue;
 
     [Header("Slice physics")]
@@ -82,7 +85,9 @@ public class CuttableNote : MonoBehaviour
         // 「準備で間違って切ってしまう」現象を防ぐためのガード。
         // 横方向（90°前後）は dot ≈ 0 で reject されないので、従来通り降格カットで通る。
         Vector2 vXY = new Vector2(cutVelocity.x, cutVelocity.y);
-        if (RequiredDirection != CutDirection.None &&
+        // 方向が見た目だけのノーツ(ナビノーツ)は逆方向拒否も方向判定もしない
+        bool judgeDirection = RequiredDirection != CutDirection.None && !DirectionVisualOnly;
+        if (judgeDirection &&
             CutDirectionHelper.ShouldRejectOpposite(RequiredDirection, vXY, imuHint))
         {
             // 何もせず終了：ノーツは IsCut も IsMissed も変わらず、セーバーが再度関わると再判定可能。
@@ -90,7 +95,7 @@ public class CuttableNote : MonoBehaviour
         }
 
         // 方向判定（1回でも誤方向なら以降 false 維持）
-        bool dirOk = CutDirectionHelper.MatchesWithHint(RequiredDirection, vXY, imuHint);
+        bool dirOk = !judgeDirection || CutDirectionHelper.MatchesWithHint(RequiredDirection, vXY, imuHint);
         if (CutsAchieved == 0) LastCutCorrectDirection = dirOk;
         else LastCutCorrectDirection = LastCutCorrectDirection && dirOk;
 

@@ -103,7 +103,7 @@ public class NoteTimingCueTests
 
     // ---- コンポーネント統合 ----
 
-    private (GameObject go, CuttableNote note, NoteTimingCue cue) MakeNoteWithCue(bool buildGhost = false)
+    private (GameObject go, CuttableNote note, NoteTimingCue cue) MakeNoteWithCue(bool buildGhost = false, bool buildRing = false)
     {
         // MeshRenderer 無しの素の GameObject を使う
         // (EditMode で renderer.material に触れないようにするため)
@@ -112,16 +112,33 @@ public class NoteTimingCueTests
         var note = go.AddComponent<CuttableNote>();
         var cue = go.AddComponent<NoteTimingCue>();
         cue.buildGhost = buildGhost;
+        cue.buildRing = buildRing;
         cue.Initialize(note, judgeZ: 0f);
         return (go, note, cue);
     }
 
     [Test]
-    public void Initialize_BuildsRingWithFourBars()
+    public void Initialize_SkipsRing_ByDefault()
     {
-        var (go, _, cue) = MakeNoteWithCue();
+        // ノーツ側の接近リングは既定で作らない(壁側の固定枠+収縮枠に一本化)。
+        // コンポーネント既定値そのものを検証するため、素の AddComponent で確認する。
+        var go = new GameObject("note");
+        created.Add(go);
+        var note = go.AddComponent<CuttableNote>();
+        var cue = go.AddComponent<NoteTimingCue>();
+        Assert.IsFalse(cue.buildRing, "buildRing の既定は false");
+        cue.buildGhost = false;
+        cue.Initialize(note, judgeZ: 0f);
+        Assert.IsNull(go.transform.Find("TimingRing"), "既定では TimingRing を生成しない");
+        Assert.IsNull(cue.RingRoot);
+    }
+
+    [Test]
+    public void Initialize_BuildsRingWithFourBars_WhenOptedIn()
+    {
+        var (go, _, cue) = MakeNoteWithCue(buildRing: true);
         var ring = go.transform.Find("TimingRing");
-        Assert.IsNotNull(ring, "TimingRing が note の子として生成される");
+        Assert.IsNotNull(ring, "オプトインで TimingRing が note の子として生成される");
         Assert.AreEqual(4, ring.childCount, "枠は4本のバーで構成される");
         Assert.AreSame(ring, cue.RingRoot);
     }
@@ -137,10 +154,42 @@ public class NoteTimingCueTests
         var cue = go.AddComponent<NoteTimingCue>();
         Assert.IsTrue(cue.buildGhost, "buildGhost の既定は true(短時間表示方式)");
         cue.Initialize(note, judgeZ: 0f);
-        Assert.IsNotNull(cue.GhostRoot, "既定で着地ゴーストを生成する");
+        Assert.IsNotNull(cue.GhostRoot, "既定で着地ゴースト(固定枠)を生成する");
         // 内側の塗り(GhostFill)は霞の原因なので廃止済み:枠 4 本のみ
         Assert.IsNull(cue.GhostRoot.transform.Find("GhostFill"), "GhostFill は生成しない");
-        Assert.AreEqual(4, cue.GhostRoot.transform.childCount, "ゴーストは枠 4 本のみ");
+        Assert.AreEqual(4, cue.GhostRoot.transform.childCount, "固定枠は枠 4 本のみ");
+        Assert.IsNotNull(cue.ApproachRoot, "既定で収縮枠も生成する");
+        Assert.AreEqual(4, cue.ApproachRoot.transform.childCount, "収縮枠も枠 4 本のみ");
+    }
+
+    [Test]
+    public void Tick_ApproachGhostShrinksOntoFixedGhost()
+    {
+        var (_, _, cue) = MakeNoteWithCue(buildGhost: true);
+        Vector3 fixedScale = cue.GhostRoot.transform.localScale;
+        Assert.AreEqual(cue.GhostBaseScale.x, fixedScale.x, 1e-4f, "固定枠はノーツ同サイズ(1.04倍)");
+
+        // 出現の瞬間(残り = ghostVisibleSeconds): 収縮枠は大きく、固定枠はそのまま
+        cue.Tick(cue.ghostVisibleSeconds, 2f, 0.135f, 0.27f);
+        Assert.AreEqual(cue.GhostBaseScale.x * cue.ghostStartScale,
+            cue.ApproachRoot.transform.localScale.x, 1e-3f, "収縮枠は大きく現れる");
+        Assert.AreEqual(fixedScale.x, cue.GhostRoot.transform.localScale.x, 1e-4f, "固定枠は動かない");
+
+        // 中間: 収縮枠は固定枠より大きく、出現時より小さい
+        cue.Tick(cue.ghostVisibleSeconds * 0.5, 2f, 0.135f, 0.27f);
+        float midScale = cue.ApproachRoot.transform.localScale.x;
+        Assert.Greater(midScale, fixedScale.x);
+        Assert.Less(midScale, cue.GhostBaseScale.x * cue.ghostStartScale);
+
+        // HitTime ちょうど: 2枚がピッタリ重なる = 叩く瞬間
+        cue.Tick(0.0, 2f, 0.135f, 0.27f);
+        Assert.AreEqual(fixedScale.x, cue.ApproachRoot.transform.localScale.x, 1e-3f, "HitTime で固定枠と同サイズ");
+        Assert.AreEqual(fixedScale.y, cue.ApproachRoot.transform.localScale.y, 1e-3f);
+
+        // 過ぎても重なったまま(ロング滞留中も基準が動かない)
+        cue.Tick(-0.2, 2f, 0.135f, 0.27f);
+        Assert.AreEqual(fixedScale.x, cue.ApproachRoot.transform.localScale.x, 1e-3f);
+        Assert.AreEqual(fixedScale.x, cue.GhostRoot.transform.localScale.x, 1e-4f);
     }
 
     [Test]
@@ -148,11 +197,16 @@ public class NoteTimingCueTests
     {
         // buildGhost=true を明示すれば従来どおり生成できる(オプトイン)
         var (go, _, cue) = MakeNoteWithCue(buildGhost: true);
-        Assert.IsNotNull(cue.GhostRoot, "着地ゴーストが生成される");
+        Assert.IsNotNull(cue.GhostRoot, "着地ゴースト(固定枠)が生成される");
         // judgeZ=0 + ghostZBias の位置
         Assert.AreEqual(cue.ghostZBias, cue.GhostRoot.transform.position.z, 0.001f);
         Assert.AreEqual(go.transform.position.x, cue.GhostRoot.transform.position.x, 0.001f);
         Assert.AreEqual(go.transform.position.y, cue.GhostRoot.transform.position.y, 0.001f);
+        // 収縮枠も同じ着地位置(XY)に、Z-fight しないよう少し手前
+        Assert.IsNotNull(cue.ApproachRoot, "収縮枠が生成される");
+        Assert.AreEqual(cue.approachZBias, cue.ApproachRoot.transform.position.z, 0.001f);
+        Assert.AreEqual(go.transform.position.x, cue.ApproachRoot.transform.position.x, 0.001f);
+        Assert.AreEqual(go.transform.position.y, cue.ApproachRoot.transform.position.y, 0.001f);
     }
 
     [Test]
@@ -168,9 +222,9 @@ public class NoteTimingCueTests
     }
 
     [Test]
-    public void Tick_RingConvergesOnNote()
+    public void Tick_RingConvergesOnNote_WhenOptedIn()
     {
-        var (_, _, cue) = MakeNoteWithCue();
+        var (_, _, cue) = MakeNoteWithCue(buildRing: true);
         cue.Tick(2.0, 2f, 0.135f, 0.27f);
         float farScale = cue.RingRoot.localScale.x;
         cue.Tick(0.0, 2f, 0.135f, 0.27f);
@@ -197,12 +251,15 @@ public class NoteTimingCueTests
         // 既存テストの流儀(NoteVisualsTests の Update と同様)でリフレクション起動する。
         var (go, _, cue) = MakeNoteWithCue(buildGhost: true);
         var ghost = cue.GhostRoot;
+        var approach = cue.ApproachRoot;
         Assert.IsNotNull(ghost);
+        Assert.IsNotNull(approach);
         var m = typeof(NoteTimingCue).GetMethod("OnDestroy",
             System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
         Assert.IsNotNull(m, "OnDestroy メソッドが見つからない");
         m.Invoke(cue, null);
-        Assert.IsTrue(ghost == null, "ノーツ破棄でゴーストも破棄される");
+        Assert.IsTrue(ghost == null, "ノーツ破棄で固定枠も破棄される");
+        Assert.IsTrue(approach == null, "ノーツ破棄で収縮枠も破棄される");
     }
 
     // ---- NoteSpawner 統合 ----

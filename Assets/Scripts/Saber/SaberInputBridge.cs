@@ -163,29 +163,32 @@ public class SaberInputBridge : MonoBehaviour
             Vector2 mouseScreen = MouseSaberInput.ReadMouseScreen();
             if (MouseSaberInput.TryProjectToPlane(mouseScreen, fixedZ, targetCamera, out Vector3 world))
             {
-                if (useBladeMode)
-                {
-                    float half = fallbackBladeLength * 0.5f;
-                    Vector3 a = new Vector3(world.x - half, world.y, fixedZ);
-                    Vector3 b = new Vector3(world.x + half, world.y, fixedZ);
-                    // マウスは smoothing で滑らかに（中点だけ）→ 擬似ブレードも中点に合わせて配置し直す。
-                    ApplyPosition(new Vector2(world.x, world.y));
-                    Vector3 mid = transform.position;
-                    Vector3 sa = new Vector3(mid.x - half, mid.y, fixedZ);
-                    Vector3 sb = new Vector3(mid.x + half, mid.y, fixedZ);
-                    PublishBlade(sa, sb);
-                }
-                else
-                {
-                    ApplyPosition(new Vector2(world.x, world.y));
-                }
-                UsingMouseFallback = true;
+                ApplyMouseWorld(world);
                 consumed = true;
             }
         }
 
         // データ源が何も無い(棒2が未接続など):古い線を残さず非表示にする。
         if (!consumed) HideBlade();
+    }
+
+    // マウスを z=fixedZ 平面へ投影したワールド座標からセーバー位置(と擬似ブレード)を作る。
+    // マウスは既にカメラの可視範囲全体に投影されているので写像は不要だが、クランプは
+    // 可視範囲(remap 時)で行う必要がある。以前はここで判定面の固定範囲 ±5.5×±3 に再クランプ
+    // していたため、選曲画面(可視範囲 ≒ ±10×±6)でマウスの赤い線が画面の約 75% で止まっていた。
+    // Update から呼ぶほか、テストから直接叩ける(Mouse.current を介さない)。
+    public void ApplyMouseWorld(Vector3 world)
+    {
+        if (remapToCameraView) ResolveViewExtents();
+        // マウスは smoothing で滑らかに（中点だけ）→ 擬似ブレードは滑らかにした中点の周りに置く。
+        ApplyPosition(new Vector2(world.x, world.y));
+        if (useBladeMode)
+        {
+            float half = fallbackBladeLength * 0.5f;
+            Vector3 mid = transform.position;
+            PublishBlade(new Vector3(mid.x - half, mid.y, fixedZ), new Vector3(mid.x + half, mid.y, fixedZ));
+        }
+        UsingMouseFallback = true;
     }
 
     private void HideBlade()
@@ -213,8 +216,15 @@ public class SaberInputBridge : MonoBehaviour
 
     private void ApplyBladeImmediate(Vector3 rawA, Vector3 rawB)
     {
-        Vector3 a = ClampPoint(rawA);
-        Vector3 b = ClampPoint(rawB);
+        // 端点を個別にクランプすると、画面端で片側だけ止まって中点(=ポインタ位置・速度の基準)が
+        // 刃長の 1/4 だけ内側へ戻り、「右端まで届かない」原因になっていた。
+        // 中点だけを範囲内に収め、端点は同じ量だけ平行移動する(刃長・角度は不変)。
+        Vector3 a = rawA;
+        Vector3 b = rawB;
+        if (clampToBounds)
+        {
+            (a, b) = ClampBladeKeepingLength(rawA, rawB, EffectiveMinBounds, EffectiveMaxBounds);
+        }
 
         // UDP の 2 端点はスムージングなしで即時反映（既存の中点 UDP 流儀と一致）。
         // 中点を transform.position に書くことで SaberTracker が速度を拾える。
@@ -257,14 +267,16 @@ public class SaberInputBridge : MonoBehaviour
     Vector2 EffectiveMinBounds => remapToCameraView && viewResolved ? viewCenter - viewHalfExtents : minBounds;
     Vector2 EffectiveMaxBounds => remapToCameraView && viewResolved ? viewCenter + viewHalfExtents : maxBounds;
 
-    Vector3 ClampPoint(Vector3 v)
+    // 刃(線分 a-b)の中点を min..max に収め、端点は同じ量だけ平行移動する。純関数。
+    // 中点が範囲内なら何も変えない(端が画面外にはみ出ても刃は縮めない)。
+    public static (Vector3 a, Vector3 b) ClampBladeKeepingLength(Vector3 a, Vector3 b, Vector2 min, Vector2 max)
     {
-        if (!clampToBounds) return v;
-        Vector2 min = EffectiveMinBounds;
-        Vector2 max = EffectiveMaxBounds;
-        v.x = Mathf.Clamp(v.x, min.x, max.x);
-        v.y = Mathf.Clamp(v.y, min.y, max.y);
-        return v;
+        Vector3 mid = (a + b) * 0.5f;
+        Vector3 shift = new Vector3(
+            Mathf.Clamp(mid.x, min.x, max.x) - mid.x,
+            Mathf.Clamp(mid.y, min.y, max.y) - mid.y,
+            0f);
+        return (a + shift, b + shift);
     }
 
     // カメラが z=fixedZ 平面上に映す範囲を求めてキャッシュする(メニューのカメラは静止前提)。
@@ -282,8 +294,12 @@ public class SaberInputBridge : MonoBehaviour
         center = Vector2.zero;
         halfExtents = Vector2.zero;
         if (cam == null) return false;
-        if (!MouseSaberInput.TryProjectToPlane(new Vector2(0f, 0f), planeZ, cam, out Vector3 bl)) return false;
-        if (!MouseSaberInput.TryProjectToPlane(new Vector2(cam.pixelWidth, cam.pixelHeight), planeZ, cam, out Vector3 tr)) return false;
+        // ScreenPointToRay は「画面全体」のピクセル座標を取るので、カメラの描画矩形(pixelRect)の
+        // 対角2点を使う。(0,0)〜(pixelWidth,pixelHeight) だとレターボックス等で rect が
+        // オフセットされたときに写像が横(縦)へずれ、片側の端に届かなくなる。
+        Rect pr = cam.pixelRect;
+        if (!MouseSaberInput.TryProjectToPlane(new Vector2(pr.xMin, pr.yMin), planeZ, cam, out Vector3 bl)) return false;
+        if (!MouseSaberInput.TryProjectToPlane(new Vector2(pr.xMax, pr.yMax), planeZ, cam, out Vector3 tr)) return false;
         center = new Vector2((bl.x + tr.x) * 0.5f, (bl.y + tr.y) * 0.5f);
         halfExtents = new Vector2(Mathf.Abs(tr.x - bl.x) * 0.5f, Mathf.Abs(tr.y - bl.y) * 0.5f);
         return halfExtents.x > 0.001f && halfExtents.y > 0.001f;
@@ -305,13 +321,20 @@ public class SaberInputBridge : MonoBehaviour
         ApplySmoothedPosition(new Vector3(worldXY.x, worldXY.y, fixedZ));
     }
 
+    // 中点のクランプ。リマップ有効時はカメラの可視範囲、通常時は判定面の範囲(ブレードと同じ規則)。
+    private Vector3 ClampMid(Vector3 p)
+    {
+        if (!clampToBounds) return p;
+        Vector2 min = EffectiveMinBounds;
+        Vector2 max = EffectiveMaxBounds;
+        p.x = Mathf.Clamp(p.x, min.x, max.x);
+        p.y = Mathf.Clamp(p.y, min.y, max.y);
+        return p;
+    }
+
     private void ApplyPositionImmediate(Vector3 targetPosition)
     {
-        if (clampToBounds)
-        {
-            targetPosition.x = Mathf.Clamp(targetPosition.x, minBounds.x, maxBounds.x);
-            targetPosition.y = Mathf.Clamp(targetPosition.y, minBounds.y, maxBounds.y);
-        }
+        targetPosition = ClampMid(targetPosition);
 
         smoothedPosition = targetPosition;
         hasSmoothedPosition = true;
@@ -321,11 +344,7 @@ public class SaberInputBridge : MonoBehaviour
 
     private void ApplySmoothedPosition(Vector3 targetPosition)
     {
-        if (clampToBounds)
-        {
-            targetPosition.x = Mathf.Clamp(targetPosition.x, minBounds.x, maxBounds.x);
-            targetPosition.y = Mathf.Clamp(targetPosition.y, minBounds.y, maxBounds.y);
-        }
+        targetPosition = ClampMid(targetPosition);
 
         if (!enableSmoothing || !hasSmoothedPosition)
         {

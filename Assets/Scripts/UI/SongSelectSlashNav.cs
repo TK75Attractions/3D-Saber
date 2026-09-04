@@ -4,11 +4,12 @@ using UnityEngine;
 // ↑ノーツを切ると前の曲(リスト上方向)、↓ノーツを切ると次の曲へ移動する(端はループ)。
 // タイトル画面の TitleStartNote と同じ本物の CuttableNote を使うので、
 // 実機セーバー(UDP)でもマウスの素振りでも本編と同じ感触で切れる。
-// RequiredDirection 付きのため逆方向のスイングは無反応(↓を切るつもりの下振りが↑に誤爆しない)。
+// 矢印(↑/↓)は「どちらへ送るか」のラベルで、切る方向は問わない(DirectionVisualOnly。ユーザー指定)。
 // 切られたノーツは破片演出の後、respawnDelay 秒で同じ場所に再出現する。
 public class SongSelectSlashNav : MonoBehaviour
 {
-    public float respawnDelay = 0.5f;
+    // カット後に同じ場所へ再出現するまでの秒数(ユーザー指定: 2秒くらい)
+    public float respawnDelay = 2.0f;
     public float noteScale = 0.66f;
     public float bobAmplitude = 0.05f;
     public float bobHz = 0.5f;
@@ -60,7 +61,8 @@ public class SongSelectSlashNav : MonoBehaviour
         bridge.fallbackToMouse = true;
         bridge.fixedZ = 0f;
         // メニューのカメラは判定面(±5.5×±3)より広い範囲を映すため、
-        // 入力をカメラの可視範囲全体へ写像してセーバーが画面端まで届くようにする。
+        // 入力をカメラの可視範囲全体へ写像してセーバーが画面端まで届くようにする
+        // (マウスフォールバックも同じ可視範囲でクランプされる)。
         bridge.remapToCameraView = true;
         // 曲選択のセーバーは赤(見た目のみ。手の判定ロジックには影響しない)
         bridge.SetBladeColor(UISkinPalette.LogoRed);
@@ -108,6 +110,7 @@ public class SongSelectSlashNav : MonoBehaviour
         var note = go.AddComponent<CuttableNote>();
         note.IsJudgeable = true;
         note.RequiredDirection = dir; // NoteVisuals が Direction 種(フリック色)として描く
+        note.DirectionVisualOnly = true; // 矢印は送り先のラベル。切る方向は問わない
         go.AddComponent<NoteVisuals>();
         NoteSpawner.BuildArrow(go.transform, dir); // 本編と同じシェブロン矢印
 

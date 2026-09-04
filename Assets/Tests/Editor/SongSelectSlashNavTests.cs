@@ -58,8 +58,8 @@ public class SongSelectSlashNavTests
 
         Assert.IsNotNull(nav.UpNote, "↑ノーツが生成される");
         Assert.IsNotNull(nav.DownNote, "↓ノーツが生成される");
-        Assert.AreEqual(CutDirection.Up, nav.UpNote.RequiredDirection);
-        Assert.AreEqual(CutDirection.Down, nav.DownNote.RequiredDirection);
+        Assert.AreEqual(CutDirection.Up, nav.UpNote.RequiredDirection, "矢印の向き(見た目)は↑");
+        Assert.AreEqual(CutDirection.Down, nav.DownNote.RequiredDirection, "矢印の向き(見た目)は↓");
         Assert.IsTrue(nav.UpNote.IsJudgeable);
         Assert.IsTrue(nav.DownNote.IsJudgeable);
         Assert.IsNotNull(nav.UpNote.transform.Find("Arrow"), "↑ノーツにシェブロン矢印が付く");
@@ -90,21 +90,26 @@ public class SongSelectSlashNavTests
     }
 
     [Test]
-    public void OppositeSwing_DoesNotTrigger()
+    public void AnySwingDirection_Triggers()
     {
+        // 矢印は「どちらへ送るか」のラベルで、切る方向は問わない(ユーザー指定)。
         var nav = MakeNav(out var ctl);
+        Assert.IsTrue(nav.UpNote.DirectionVisualOnly && nav.DownNote.DirectionVisualOnly, "ナビノーツは方向を判定しない");
 
-        // ↑ノーツに対する下振りは逆方向拒否で無反応(誤爆防止)
+        // ↑ノーツを下振り(真逆)で切っても前の曲へ
         nav.UpNote.Cut(nav.UpNote.transform.position, new Vector3(0f, -9f, 0f));
-        Assert.AreEqual(0, ctl.SelectedIndex, "逆方向スイングでは曲が動かない");
-        Assert.IsNotNull(nav.UpNote, "ノーツは無傷で残る");
-        Assert.IsFalse(nav.UpNote.IsCut);
+        Assert.AreEqual(ctl.SongCount - 1, ctl.SelectedIndex, "逆方向スイングでも曲送りが効く");
+
+        // ↓ノーツを横振りで切っても次の曲へ
+        nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(9f, 0f, 0f));
+        Assert.AreEqual(0, ctl.SelectedIndex, "横振りでも曲送りが効く(末尾→先頭へ回り込み)");
     }
 
     [Test]
     public void CutNote_RespawnsAfterDelay_AndWorksAgain()
     {
         var nav = MakeNav(out var ctl);
+        Assert.AreEqual(2.0f, nav.respawnDelay, 1e-3f, "再出現は2秒くらい(ユーザー指定)");
 
         nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(0f, -9f, 0f));
         Assert.AreEqual(1, ctl.SelectedIndex);
@@ -118,6 +123,7 @@ public class SongSelectSlashNavTests
         Assert.IsNotNull(nav.DownNote, "遅延後に↓ノーツが再出現する");
         Assert.AreEqual(CutDirection.Down, nav.DownNote.RequiredDirection);
         Assert.IsTrue(nav.DownNote.IsJudgeable);
+        Assert.IsTrue(nav.DownNote.DirectionVisualOnly, "再出現したノーツも方向を問わない");
 
         // 再出現したノーツも曲送りが効く(イベント再購読の確認)
         nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(0f, -9f, 0f));

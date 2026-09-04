@@ -71,6 +71,10 @@ public class InputPoint : MonoBehaviour
     public RectTransform boardRect;
     public Vector2 LocalPosition { get; private set; }
     public Vector2 LocalPosition2 { get; private set; }
+    // 感度・写像を掛ける前の「送信側そのままの中点」。InputDebugOverlay(F3)が
+    // 「ポインタが端まで届かないのは送信側の可動域か受信側の変換か」を切り分けるために表示する。
+    public Vector2 LastRaw { get; private set; }
+    public Vector2 LastRaw2 { get; private set; }
     [Header("Debug")]
     public bool debugCoordinates = false;
     public bool debugReceiveRate = false;
@@ -207,6 +211,9 @@ public class InputPoint : MonoBehaviour
         if (Instance != this) return;
 
         lastRateLogTime = Time.realtimeSinceStartup;
+
+        // F3 で入力値を画面に出すデバッグ表示(既定は非表示)。受信機と同じ寿命で全シーンに付いて回る。
+        if (GetComponent<InputDebugOverlay>() == null) gameObject.AddComponent<InputDebugOverlay>();
 
         try
         {
@@ -392,6 +399,7 @@ public class InputPoint : MonoBehaviour
 
         if (updated)
         {
+            LastRaw = new Vector2(x, y);
             // 中点: 正規化/ピクセルの判別と単位揃えは棒1・棒2共通の純関数で行う
             NormalizedPosition = ApplySensitivity01(Normalized01(x, y, camWidth, camHeight), sensitivity);
             Vector2 mid1 = CanonicalizePoint(x, y, camWidth, camHeight, useDirectWorldMapping);
@@ -435,6 +443,7 @@ public class InputPoint : MonoBehaviour
 
         if (updated2)
         {
+            LastRaw2 = new Vector2(x2, y2);
             // 棒2も棒1と同一の純関数で変換する。
             // (旧実装は direct モードでピクセル→正規化の変換が抜けており、
             //  ピクセル送信のトラッカーだと棒2だけ画面隅に張り付くバグがあった)
