@@ -429,7 +429,7 @@ namespace Saber.ChartEditor
             int nextColorIndex = EditorGUILayout.Popup("色 / 手", colorIndex, ColorLabels);
             int nextDirectionIndex = EditorGUILayout.Popup("方向", directionIndex, DirectionLabels);
             int nextCount = nextTypeIndex == 2
-                ? EditorGUILayout.IntSlider("カット回数", count, 2, 20)
+                ? EditorGUILayout.IntSlider("カット回数", count, 2, 99)
                 : 1;
             // Long の長さ。自動 = 本編既定の (回数-1)×0.7秒。手動なら拍数で直接指定できる。
             bool autoLength = note.lengthMs <= 0f;
