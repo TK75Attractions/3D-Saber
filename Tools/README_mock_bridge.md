@@ -45,7 +45,7 @@ Unityから受けるコマンド:
 - `UdpImuBridge` の送受信仕様はそのまま使えます
 - モックの代わりに BLE ブリッジを同じメッセージ仕様で差し替えるだけです
 
-## 5. Mac BLE 実橋 (Bleak)
+## 5. BLE 実橋 (macOS / Windows, Bleak)
 
 ### 5-1. 依存パッケージ
 
@@ -59,6 +59,14 @@ python3 -m pip install -r requirements_ble_bridge.txt
 ```bash
 cd Tools
 python3 mac_ble_udp_bridge.py
+```
+
+macOSとWindowsのどちらでも同じコマンドで起動できます。WindowsではPowerShellで
+`python` または `py` を使用してください。
+
+```powershell
+cd Tools
+py mac_ble_udp_bridge.py
 ```
 
 必要ならデバイス名を明示:

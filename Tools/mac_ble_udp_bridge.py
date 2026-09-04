@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+"""Cross-platform BLE <-> UDP bridge for the XIAO IMU.
+
+Bleak selects the native BLE backend for macOS or Windows automatically.
+"""
 import argparse
 import asyncio
 import socket
@@ -142,7 +146,7 @@ class BleUdpBridge:
 
 
 def parse_args() -> BridgeConfig:
-    parser = argparse.ArgumentParser(description="Bridge ESP32 BLE <-> Unity UDP on macOS")
+    parser = argparse.ArgumentParser(description="Bridge ESP32 BLE <-> Unity UDP on macOS or Windows")
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--command-port", type=int, default=9001)
     parser.add_argument("--data-port", type=int, default=9002)
