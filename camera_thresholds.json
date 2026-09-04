@@ -1,0 +1,19 @@
+{
+  "bright": 255,
+  "min_area": 170,
+  "merge_dist": 41,
+  "flip_h": 1,
+  "flip_v": 1,
+  "a_h_min": 153,
+  "a_s_min": 205,
+  "a_v_min": 186,
+  "a_h_max": 179,
+  "a_s_max": 255,
+  "a_v_max": 255,
+  "b_h_min": 99,
+  "b_s_min": 137,
+  "b_v_min": 168,
+  "b_h_max": 124,
+  "b_s_max": 255,
+  "b_v_max": 255
+}

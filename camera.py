@@ -1,9 +1,21 @@
+import os
+import sys
+import platform
+
+# 特定の Python に固定しない。
+# macOS では pyenv の Python を明示できるが、Windows ではそのパスが存在しないため
+# そのまま現在の実行環境を使う。
+_TARGET_PYTHON = os.environ.get("CAMERA_PYTHON")
+if _TARGET_PYTHON and os.path.exists(_TARGET_PYTHON) and os.path.realpath(sys.executable) != os.path.realpath(_TARGET_PYTHON):
+    os.execv(_TARGET_PYTHON, [_TARGET_PYTHON, *sys.argv])
+
 import cv2
 import numpy as np
 import socket
 import math
 import time
 import threading
+import json
 
 # PyTorch(MPS) オプション: macOS Apple Silicon で GPU(Metal via MPS) を使う
 try:
@@ -61,7 +73,14 @@ LOG_DETECTIONS = False  # 診断ログを抑制
 SHOW_DETECTED = True
 
 # キャプチャ用スレッドと最新フレーム/送信用共有変数
-cap = cv2.VideoCapture(0)  # さっき動いた番号
+if os.name == "nt":
+    # Windows では DirectShow を優先し、失敗したら Media Foundation を試す
+    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+    if not cap.isOpened():
+        cap.release()
+        cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
+else:
+    cap = cv2.VideoCapture(0)  # さっき動いた番号
 # 低解像度キャプチャをオプション化（デフォルト: 有効）
 LOW_RES_CAPTURE = True
 
@@ -166,21 +185,108 @@ class Sender(threading.Thread):
 # 明るさ重視で動かす
 DETECT_MODE = "color"
 
+THRESHOLD_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "camera_thresholds.json")
+
 # 明るさ検出パラメータ
-BRIGHT_THRESHOLD = 200
-MIN_AREA = 20
+DEFAULT_BRIGHT_THRESHOLD = 201
+DEFAULT_MIN_AREA = 170
 # 近接した小領域を連結とみなすためのマージ距離（ピクセル）。0で無効。
-MERGE_DISTANCE = 20
+DEFAULT_MERGE_DISTANCE = 41
 # 送信する座標の反転設定(0/1)
-FLIP_H = 1
-FLIP_V = 1
+DEFAULT_FLIP_H = 1
+DEFAULT_FLIP_V = 1
 
 # 色検出パラメータ(HSV)
 # 必要に応じて値を調整してください。
-COLOR_A_LOWER = np.array([90, 120, 120])
-COLOR_A_UPPER = np.array([130, 255, 255])
-COLOR_B_LOWER = np.array([0, 120, 120])
-COLOR_B_UPPER = np.array([15, 255, 255])
+DEFAULT_COLOR_A_LOWER = np.array([124, 54, 225])
+DEFAULT_COLOR_A_UPPER = np.array([140, 255, 255])
+DEFAULT_COLOR_B_LOWER = np.array([70, 38, 151])
+DEFAULT_COLOR_B_UPPER = np.array([90, 255, 255])
+
+BRIGHT_THRESHOLD = DEFAULT_BRIGHT_THRESHOLD
+MIN_AREA = DEFAULT_MIN_AREA
+MERGE_DISTANCE = DEFAULT_MERGE_DISTANCE
+FLIP_H = DEFAULT_FLIP_H
+FLIP_V = DEFAULT_FLIP_V
+COLOR_A_LOWER = DEFAULT_COLOR_A_LOWER.copy()
+COLOR_A_UPPER = DEFAULT_COLOR_A_UPPER.copy()
+COLOR_B_LOWER = DEFAULT_COLOR_B_LOWER.copy()
+COLOR_B_UPPER = DEFAULT_COLOR_B_UPPER.copy()
+
+
+def _threshold_settings_from_globals():
+    return {
+        "bright": int(BRIGHT_THRESHOLD),
+        "min_area": int(MIN_AREA),
+        "merge_dist": int(MERGE_DISTANCE),
+        "flip_h": int(FLIP_H),
+        "flip_v": int(FLIP_V),
+        "a_h_min": int(COLOR_A_LOWER[0]),
+        "a_s_min": int(COLOR_A_LOWER[1]),
+        "a_v_min": int(COLOR_A_LOWER[2]),
+        "a_h_max": int(COLOR_A_UPPER[0]),
+        "a_s_max": int(COLOR_A_UPPER[1]),
+        "a_v_max": int(COLOR_A_UPPER[2]),
+        "b_h_min": int(COLOR_B_LOWER[0]),
+        "b_s_min": int(COLOR_B_LOWER[1]),
+        "b_v_min": int(COLOR_B_LOWER[2]),
+        "b_h_max": int(COLOR_B_UPPER[0]),
+        "b_s_max": int(COLOR_B_UPPER[1]),
+        "b_v_max": int(COLOR_B_UPPER[2]),
+    }
+
+
+def _apply_threshold_settings(settings):
+    global BRIGHT_THRESHOLD, MIN_AREA, MERGE_DISTANCE, FLIP_H, FLIP_V
+    global COLOR_A_LOWER, COLOR_A_UPPER, COLOR_B_LOWER, COLOR_B_UPPER
+
+    BRIGHT_THRESHOLD = int(settings.get("bright", DEFAULT_BRIGHT_THRESHOLD))
+    MIN_AREA = max(1, int(settings.get("min_area", DEFAULT_MIN_AREA)))
+    MERGE_DISTANCE = max(0, int(settings.get("merge_dist", DEFAULT_MERGE_DISTANCE)))
+    FLIP_H = 1 if int(settings.get("flip_h", DEFAULT_FLIP_H)) else 0
+    FLIP_V = 1 if int(settings.get("flip_v", DEFAULT_FLIP_V)) else 0
+
+    COLOR_A_LOWER = np.array([
+        int(settings.get("a_h_min", int(DEFAULT_COLOR_A_LOWER[0]))),
+        int(settings.get("a_s_min", int(DEFAULT_COLOR_A_LOWER[1]))),
+        int(settings.get("a_v_min", int(DEFAULT_COLOR_A_LOWER[2]))),
+    ])
+    COLOR_A_UPPER = np.array([
+        int(settings.get("a_h_max", int(DEFAULT_COLOR_A_UPPER[0]))),
+        int(settings.get("a_s_max", int(DEFAULT_COLOR_A_UPPER[1]))),
+        int(settings.get("a_v_max", int(DEFAULT_COLOR_A_UPPER[2]))),
+    ])
+    COLOR_B_LOWER = np.array([
+        int(settings.get("b_h_min", int(DEFAULT_COLOR_B_LOWER[0]))),
+        int(settings.get("b_s_min", int(DEFAULT_COLOR_B_LOWER[1]))),
+        int(settings.get("b_v_min", int(DEFAULT_COLOR_B_LOWER[2]))),
+    ])
+    COLOR_B_UPPER = np.array([
+        int(settings.get("b_h_max", int(DEFAULT_COLOR_B_UPPER[0]))),
+        int(settings.get("b_s_max", int(DEFAULT_COLOR_B_UPPER[1]))),
+        int(settings.get("b_v_max", int(DEFAULT_COLOR_B_UPPER[2]))),
+    ])
+
+
+def load_threshold_settings():
+    if not os.path.exists(THRESHOLD_CONFIG_PATH):
+        return
+    try:
+        with open(THRESHOLD_CONFIG_PATH, "r", encoding="utf-8") as f:
+            settings = json.load(f)
+        if isinstance(settings, dict):
+            _apply_threshold_settings(settings)
+    except Exception:
+        pass
+
+
+def save_threshold_settings():
+    settings = _threshold_settings_from_globals()
+    try:
+        with open(THRESHOLD_CONFIG_PATH, "w", encoding="utf-8") as f:
+            json.dump(settings, f, ensure_ascii=False, indent=2)
+    except Exception:
+        pass
 
 TRACKBAR_WINDOW = "Thresholds"
 
@@ -207,6 +313,37 @@ def setup_trackbars():
     cv2.createTrackbar("b_h_max", TRACKBAR_WINDOW, int(COLOR_B_UPPER[0]), 179, lambda _v: None)
     cv2.createTrackbar("b_s_max", TRACKBAR_WINDOW, int(COLOR_B_UPPER[1]), 255, lambda _v: None)
     cv2.createTrackbar("b_v_max", TRACKBAR_WINDOW, int(COLOR_B_UPPER[2]), 255, lambda _v: None)
+
+
+def enable_ui():
+    """UI（トラックバーと表示ウィンドウ）を有効にする。実行中に呼び出して動的に切り替え可能。"""
+    global SHOW_UI
+    if SHOW_UI:
+        return
+    try:
+        setup_trackbars()
+        cv2.namedWindow("LED Tracking", cv2.WINDOW_NORMAL)
+        cv2.setMouseCallback("LED Tracking", mouse_callback)
+        SHOW_UI = True
+    except Exception:
+        # UI が作れない環境では無視
+        SHOW_UI = False
+
+
+def disable_ui():
+    """UI を無効にしてウィンドウを閉じる。"""
+    global SHOW_UI
+    try:
+        if cv2.getWindowProperty(TRACKBAR_WINDOW, cv2.WND_PROP_VISIBLE) >= 0:
+            cv2.destroyWindow(TRACKBAR_WINDOW)
+    except Exception:
+        pass
+    try:
+        if cv2.getWindowProperty("LED Tracking", cv2.WND_PROP_VISIBLE) >= 0:
+            cv2.destroyWindow("LED Tracking")
+    except Exception:
+        pass
+    SHOW_UI = False
 
 
 def mouse_callback(event, x, y, flags, param):
@@ -258,6 +395,8 @@ def update_thresholds_from_trackbars():
     except Exception:
         FLIP_H = 0
         FLIP_V = 0
+
+    save_threshold_settings()
 
 
 def contour_center(contour):
@@ -412,6 +551,82 @@ def endpoints_via_pca(contour):
     return p1, p2
 
 
+def _contour_stick_metrics(contour):
+    area = float(cv2.contourArea(contour))
+    if area <= 0:
+        return None
+
+    rect = cv2.minAreaRect(contour)
+    (cx, cy), (w, h), angle = rect
+    long_side = max(float(w), float(h), 1.0)
+    short_side = max(min(float(w), float(h)), 1.0)
+    aspect = long_side / short_side
+    rect_area = max(float(w) * float(h), 1.0)
+    extent = area / rect_area
+    bbox = cv2.boundingRect(contour)
+    bbox_area = max(float(bbox[2] * bbox[3]), 1.0)
+    bbox_extent = area / bbox_area
+
+    pts = contour.reshape(-1, 2).astype(float)
+    mean = pts.mean(axis=0)
+    centered = pts - mean
+    try:
+        cov = np.cov(centered, rowvar=False)
+        eigvals, _ = np.linalg.eigh(cov)
+        eigvals = np.sort(np.maximum(eigvals, 0.0))
+        elongation = float('inf') if eigvals[-2] <= 1e-6 else float(eigvals[-1] / eigvals[-2])
+    except Exception:
+        elongation = 0.0
+
+    return {
+        'area': area,
+        'rect': rect,
+        'aspect': aspect,
+        'extent': extent,
+        'bbox_extent': bbox_extent,
+        'elongation': elongation,
+        'center': (cx, cy),
+        'long_side': long_side,
+        'short_side': short_side,
+    }
+
+
+def _is_stick_like(metrics, frame_area):
+    if metrics is None:
+        return False
+
+    area = metrics['area']
+    aspect = metrics['aspect']
+    extent = metrics['extent']
+    bbox_extent = metrics['bbox_extent']
+    elongation = metrics['elongation']
+    area_ratio = area / max(float(frame_area), 1.0)
+
+    # 棒状に見えるものだけを通す。服や大きな背景物体はここで落ちやすい。
+    if area_ratio > 0.22:
+        return False
+    if aspect < 2.2:
+        return False
+    if extent < 0.10:
+        return False
+    if bbox_extent < 0.08:
+        return False
+    if elongation and elongation < 2.2:
+        return False
+    return True
+
+
+def _stick_score(metrics, frame_area):
+    area_ratio = metrics['area'] / max(float(frame_area), 1.0)
+    return (
+        metrics['aspect'] * 2.0
+        + metrics['extent'] * 3.0
+        + metrics['bbox_extent'] * 1.5
+        + min(metrics['elongation'], 30.0) * 0.25
+        - area_ratio * 10.0
+    )
+
+
 def find_stick_endpoints_from_mask(mask, debug_name=""):
     # マージ距離が設定されていれば閉処理で小さなギャップを埋めてから輪郭抽出する
     if 'MERGE_DISTANCE' in globals() and MERGE_DISTANCE and MERGE_DISTANCE > 0:
@@ -429,70 +644,71 @@ def find_stick_endpoints_from_mask(mask, debug_name=""):
     else:
         proc_mask = mask.copy()
 
-    # 輪郭を先に取得しておく
+    # 小さな点ノイズを落とす
+    open_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    proc_mask = cv2.morphologyEx(proc_mask, cv2.MORPH_OPEN, open_kernel)
+
     contours, _ = cv2.findContours(proc_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-    contours_filtered = [c for c in contours if cv2.contourArea(c) >= MIN_AREA]
-    if LOG_DETECTIONS:
-        print(f"[{debug_name}] 検出輪郭数: 全{len(contours)}個 > フィルタ後{len(contours_filtered)}個 (MIN_AREA={MIN_AREA})")
-    
-    if not contours_filtered:
-        if LOG_DETECTIONS:
-            print(f"[{debug_name}] 警告: フィルタ後の輪郭がない")
-        if contours:
+    frame_area = float(proc_mask.shape[0] * proc_mask.shape[1])
+    contour_data = []
+    for c in contours:
+        if cv2.contourArea(c) < MIN_AREA:
+            continue
+        metrics = _contour_stick_metrics(c)
+        if not _is_stick_like(metrics, frame_area):
             if LOG_DETECTIONS:
-                for i, c in enumerate(contours):
-                    print(f"  輪郭{i}: 面積={cv2.contourArea(c):.1f}")
+                print(f"[{debug_name}] 棒状でない輪郭を除外: area={metrics['area']:.1f}, aspect={metrics['aspect']:.2f}, extent={metrics['extent']:.2f}, bbox_extent={metrics['bbox_extent']:.2f}, elongation={metrics['elongation']:.2f}")
+            continue
+        contour_data.append((c, metrics))
+
+    if LOG_DETECTIONS:
+        print(f"[{debug_name}] 検出輪郭数: 全{len(contours)}個 > 棒状候補{len(contour_data)}個 (MIN_AREA={MIN_AREA})")
+
+    if not contour_data:
         return None, None
 
-    # 旧方式(2点)が使える場合のみ使う（ただし2点が領域の両端に近いかを確認）
+    c, metrics = max(contour_data, key=lambda item: _stick_score(item[1], frame_area))
+    area = metrics['area']
+    rect = metrics['rect']
+    (cx, cy), (w, h), angle = rect
+    if LOG_DETECTIONS:
+        print(f"[{debug_name}] 採用輪郭: 面積={area:.1f}, aspect={metrics['aspect']:.2f}, extent={metrics['extent']:.2f}, bbox_extent={metrics['bbox_extent']:.2f}, elongation={metrics['elongation']:.2f}, rect(w={w:.1f}, h={h:.1f}, angle={angle:.1f})")
+
+    # 2点が十分離れている場合だけ採用
     p1, p2 = find_top2_centers_from_mask(proc_mask)
     if p1 is not None and p2 is not None:
-        # マスクのバウンディングボックスを使って代表長さを計算
         bx, by, bw, bh = cv2.boundingRect(proc_mask)
         diag = max(bw, bh)
         dist = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
-        # セパレーションが十分なら2点モード採用（係数は実験値）
-        if dist >= 0.6 * diag:
+        if dist >= 0.7 * diag:
             if LOG_DETECTIONS:
                 print(f"[{debug_name}] 2点検出モード: {p1}, {p2} (dist={dist:.1f} diag={diag})")
             return p1, p2
-        else:
-            if LOG_DETECTIONS:
-                print(f"[{debug_name}] 2点は近すぎるため無視: dist={dist:.1f} diag={diag}")
+        elif LOG_DETECTIONS:
+            print(f"[{debug_name}] 2点は近すぎるため無視: dist={dist:.1f} diag={diag}")
 
-    # LEDテープ全体が1塊で見えるケースを想定して最大輪郭から両端を推定
-    c = max(contours_filtered, key=cv2.contourArea)
-    area = cv2.contourArea(c)
-    rect = cv2.minAreaRect(c)
-    (cx, cy), (w, h), angle = rect
-    if LOG_DETECTIONS:
-        print(f"[{debug_name}] 最大輪郭: 面積={area:.1f}, 回転矩形(w={w:.1f}, h={h:.1f}, angle={angle:.1f})")
-    # まず回転矩形で概形を取る（高速）
+    # 回転矩形を優先して、形状に沿った端点を返す
     p1, p2 = endpoints_from_rotated_rect(c)
     if p1 is not None and p2 is not None:
         if LOG_DETECTIONS:
             print(f"[{debug_name}] rotrect端点対: {p1}, {p2}")
         return p1, p2
 
-    # 次に主成分分析（PCA）を試す（中程度のコスト）
     p1, p2 = endpoints_via_pca(c)
     if p1 is not None and p2 is not None:
         if LOG_DETECTIONS:
             print(f"[{debug_name}] PCA端点対: {p1}, {p2}")
         return p1, p2
 
-    # 最後に凸包最遠点対（高コスト）
     p1, p2 = farthest_point_pair(c)
     if p1 is not None and p2 is not None:
         if LOG_DETECTIONS:
             print(f"[{debug_name}] 凸包最遠点対: {p1}, {p2}")
         return p1, p2
 
-    # 最後の手段として回転矩形を再利用
-    p1, p2 = endpoints_from_rotated_rect(c)
     if LOG_DETECTIONS:
-        print(f"[{debug_name}] (fallback) 両端点計算: {p1}, {p2}")
-    return p1, p2
+        print(f"[{debug_name}] 端点計算失敗")
+    return None, None
 
 
 def find_top2_bright_centers(frame):
@@ -568,6 +784,8 @@ def draw_stick(frame, stick, color_line, label):
         1,
         cv2.LINE_AA,
     )
+
+load_threshold_settings()
 
 if LOG_DETECTIONS:
     print(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -731,15 +949,26 @@ try:
                 with _payload_lock:
                     last_payload_stick2 = None
 
-        # 表示とキー処理: SHOW_UI または SHOW_DETECTED のどちらかが有効ならウィンドウ更新とキー読み取りを行う
-        if SHOW_UI or SHOW_DETECTED:
-            if SHOW_UI:
+        # キー処理: 常にキー入力を監視して UI トグルや終了を受け付ける
+        # (ウィンドウがなくても一応ポーリングしておく)
+        key = cv2.waitKey(1) & 0xFF
+        if key == ord('q'):
+            break
+        # 'u' で UI (トラックバー + 表示ウィンドウ) を表示/非表示
+        if key == ord('u'):
+            if not SHOW_UI:
+                enable_ui()
+            else:
+                disable_ui()
+
+        # UI 表示が有効ならウィンドウ更新を行う
+        if SHOW_UI:
+            try:
                 cv2.imshow("LED Tracking", frame)
                 cv2.imshow(TRACKBAR_WINDOW, np.zeros((1, 520, 3), dtype=np.uint8))
-            # mask_*_detected は既に SHOW_DETECTED ロジックで更新されているので、
-            # ウィンドウ更新のためにここで waitKey を呼ぶ
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                break
+            except Exception:
+                # 表示に失敗したら UI を切る
+                disable_ui()
 except KeyboardInterrupt:
     pass
 finally:
