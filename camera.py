@@ -1,6 +1,9 @@
 import os
 import sys
 import platform
+from python_runtime import reexec_with_cv2
+
+reexec_with_cv2()
 
 # 特定の Python に固定しない。
 # macOS では pyenv の Python を明示できるが、Windows ではそのパスが存在しないため
