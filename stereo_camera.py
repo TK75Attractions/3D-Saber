@@ -12,6 +12,7 @@ import os
 import socket
 import threading
 import time
+from pathlib import Path
 
 from python_runtime import reexec_with_cv2
 
@@ -26,8 +27,8 @@ UDP_PORTS = (5005, 5006)
 UDP_3D_PORT = 5007
 DEFAULT_CALIBRATION = os.path.join(os.path.dirname(os.path.abspath(__file__)), "stereo_calibration.json")
 COLORS = {
-    "a": (np.array([124, 54, 225]), np.array([140, 255, 255])),
-    "b": (np.array([70, 38, 151]), np.array([90, 255, 255])),
+    "a": (np.array([170, 70, 100]), np.array([10, 255, 255])),
+    "b": (np.array([99, 137, 168]), np.array([124, 255, 255])),
 }
 
 
@@ -54,6 +55,16 @@ def load_calibration(path, image_size):
         "dist_coeffs_right", "rotation", "translation")}
 
 
+def crop_to_size(frame, size):
+    target_w, target_h = size
+    height, width = frame.shape[:2]
+    if width < target_w or height < target_h:
+        return cv2.resize(frame, (target_w, target_h), interpolation=cv2.INTER_AREA)
+    x = (width - target_w) // 2
+    y = (height - target_h) // 2
+    return frame[y:y + target_h, x:x + target_w]
+
+
 def contour_metrics(contour):
     area = cv2.contourArea(contour)
     rect = cv2.minAreaRect(contour)
@@ -76,9 +87,18 @@ def rect_endpoints(rect):
     return tuple(np.rint(longest[1]).astype(int)), tuple(np.rint(longest[2]).astype(int))
 
 
+def hsv_mask(hsv, lower, upper):
+    if int(lower[0]) <= int(upper[0]):
+        return cv2.inRange(hsv, lower, upper)
+    return cv2.bitwise_or(
+        cv2.inRange(hsv, lower, np.array([179, upper[1], upper[2]], np.uint8)),
+        cv2.inRange(hsv, np.array([0, lower[1], lower[2]], np.uint8), upper),
+    )
+
+
 def detect_candidates(frame, lower, upper):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-    mask = cv2.inRange(hsv, lower, upper)
+    mask = hsv_mask(hsv, lower, upper)
     mask = cv2.morphologyEx(mask, cv2.MORPH_OPEN, np.ones((3, 3), np.uint8))
     mask = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
@@ -86,7 +106,7 @@ def detect_candidates(frame, lower, upper):
     frame_area = frame.shape[0] * frame.shape[1]
     for contour in contours:
         area, rect, aspect, extent, solidity, bbox = contour_metrics(contour)
-        if area < 100 or area / frame_area > 0.22 or aspect < 2.2 or extent < 0.10:
+        if area < 100 or area / frame_area > 0.22 or aspect < 1.5 or extent < 0.10:
             continue
         p1, p2 = rect_endpoints(rect)
         center = ((p1[0] + p2[0]) * 0.5, (p1[1] + p2[1]) * 0.5)
@@ -181,8 +201,13 @@ def main():
 
     left_cap = open_camera(args.left, args.width, args.height)
     right_cap = open_camera(args.right, args.width, args.height)
-    calibration = load_calibration(args.calibration, (args.width, args.height))
-    size = (args.width, args.height)
+    calibration_path = Path(args.calibration)
+    if not calibration_path.is_absolute() and not calibration_path.exists():
+        calibration_path = Path(__file__).resolve().parent / calibration_path
+    with open(calibration_path, "r", encoding="utf-8") as file:
+        calibration_size = tuple(json.load(file)["image_size"])
+    calibration = load_calibration(str(calibration_path), calibration_size)
+    size = calibration_size
     r1, r2, p1, p2, _, _, _ = cv2.stereoRectify(
         calibration["camera_matrix_left"], calibration["dist_coeffs_left"],
         calibration["camera_matrix_right"], calibration["dist_coeffs_right"], size,
@@ -206,8 +231,8 @@ def main():
                 continue
             if abs(timestamp_l - timestamp_r) > 0.035:
                 continue
-            frame_l = cv2.remap(raw_l, map1x, map1y, cv2.INTER_LINEAR)
-            frame_r = cv2.remap(raw_r, map2x, map2y, cv2.INTER_LINEAR)
+            frame_l = cv2.remap(crop_to_size(raw_l, size), map1x, map1y, cv2.INTER_LINEAR)
+            frame_r = cv2.remap(crop_to_size(raw_r, size), map2x, map2y, cv2.INTER_LINEAR)
             output = [None, None]
             debug = frame_l.copy()
             for index, (lower, upper) in enumerate(COLORS.values()):

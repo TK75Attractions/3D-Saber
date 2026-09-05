@@ -75,15 +75,47 @@ LOG_DETECTIONS = False  # 診断ログを抑制
 # `detected` 用の簡易表示は残す(軽量な出力を維持)
 SHOW_DETECTED = True
 
+# カメラ番号は環境によって変わるため、CAMERA_INDEXで固定も自動探索もできる。
+def open_camera():
+    requested = os.environ.get("CAMERA_INDEX", "").strip()
+    if requested:
+        try:
+            indices = [int(requested)]
+        except ValueError as exc:
+            raise RuntimeError("CAMERA_INDEX must be an integer") from exc
+    else:
+        # 以前動作していた番号0を最優先にする。番号0が使えない場合だけ
+        # 他のカメラを探索する（環境によってContinuity Cameraの番号は変わる）。
+        indices = [0] + list(range(1, 6))
+
+    if os.name == "nt":
+        backends = [cv2.CAP_DSHOW, cv2.CAP_MSMF]
+    elif hasattr(cv2, "CAP_AVFOUNDATION"):
+        # Continuity Cameraを含むmacOSのカメラはAVFoundationを優先する。
+        backends = [cv2.CAP_AVFOUNDATION, cv2.CAP_ANY]
+    else:
+        backends = [cv2.CAP_ANY]
+
+    for index in indices:
+        for backend in backends:
+            candidate = cv2.VideoCapture(index, backend)
+            if not candidate.isOpened():
+                candidate.release()
+                continue
+            ok, frame = candidate.read()
+            if ok and frame is not None:
+                print(f"Camera opened: index={index}, backend={backend}, size={frame.shape[1]}x{frame.shape[0]}")
+                return candidate
+            candidate.release()
+
+    raise RuntimeError(
+        "No camera frame could be read. Check macOS Camera permission, "
+        "make sure the iPhone Continuity Camera is connected, or set CAMERA_INDEX."
+    )
+
+
 # キャプチャ用スレッドと最新フレーム/送信用共有変数
-if os.name == "nt":
-    # Windows では DirectShow を優先し、失敗したら Media Foundation を試す
-    cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
-    if not cap.isOpened():
-        cap.release()
-        cap = cv2.VideoCapture(0, cv2.CAP_MSMF)
-else:
-    cap = cv2.VideoCapture(0)  # さっき動いた番号
+cap = open_camera()
 # 低解像度キャプチャをオプション化（デフォルト: 有効）
 LOW_RES_CAPTURE = True
 
@@ -194,17 +226,20 @@ THRESHOLD_CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 DEFAULT_BRIGHT_THRESHOLD = 201
 DEFAULT_MIN_AREA = 170
 # 近接した小領域を連結とみなすためのマージ距離（ピクセル）。0で無効。
-DEFAULT_MERGE_DISTANCE = 41
+DEFAULT_MERGE_DISTANCE = 5
 # 送信する座標の反転設定(0/1)
 DEFAULT_FLIP_H = 1
 DEFAULT_FLIP_V = 1
 
 # 色検出パラメータ(HSV)
 # 必要に応じて値を調整してください。
-DEFAULT_COLOR_A_LOWER = np.array([124, 54, 225])
-DEFAULT_COLOR_A_UPPER = np.array([140, 255, 255])
-DEFAULT_COLOR_B_LOWER = np.array([70, 38, 151])
-DEFAULT_COLOR_B_UPPER = np.array([90, 255, 255])
+# A=red. Red wraps around the OpenCV HSV hue boundary, so the mask helper
+# below treats h_min > h_max as two ranges (170-179 and 0-10).
+DEFAULT_COLOR_A_LOWER = np.array([170, 70, 100])
+DEFAULT_COLOR_A_UPPER = np.array([10, 255, 255])
+# B=blue.
+DEFAULT_COLOR_B_LOWER = np.array([99, 137, 168])
+DEFAULT_COLOR_B_UPPER = np.array([124, 255, 255])
 
 BRIGHT_THRESHOLD = DEFAULT_BRIGHT_THRESHOLD
 MIN_AREA = DEFAULT_MIN_AREA
@@ -357,6 +392,21 @@ def mouse_callback(event, x, y, flags, param):
         h, s, v = hsv[y, x]
         if LOG_DETECTIONS:
             print(f"HSV at ({x},{y}) = {h},{s},{v}")
+
+
+def hsv_mask(hsv, lower, upper):
+    """Build an HSV mask and support colors crossing hue 0, such as red."""
+    if int(lower[0]) <= int(upper[0]):
+        return cv2.inRange(hsv, lower, upper)
+
+    lower_high = np.array([lower[0], lower[1], lower[2]], dtype=np.uint8)
+    upper_high = np.array([179, upper[1], upper[2]], dtype=np.uint8)
+    lower_low = np.array([0, lower[1], lower[2]], dtype=np.uint8)
+    upper_low = np.array([upper[0], upper[1], upper[2]], dtype=np.uint8)
+    return cv2.bitwise_or(
+        cv2.inRange(hsv, lower_high, upper_high),
+        cv2.inRange(hsv, lower_low, upper_low),
+    )
 
 
 def update_thresholds_from_trackbars():
@@ -608,7 +658,7 @@ def _is_stick_like(metrics, frame_area):
     # 棒状に見えるものだけを通す。服や大きな背景物体はここで落ちやすい。
     if area_ratio > 0.22:
         return False
-    if aspect < 2.2:
+    if aspect < 1.5:
         return False
     if extent < 0.10:
         return False
@@ -628,6 +678,36 @@ def _stick_score(metrics, frame_area):
         + min(metrics['elongation'], 30.0) * 0.25
         - area_ratio * 10.0
     )
+
+
+def build_stick_candidate_mask(mask):
+    """デバッグ表示用に、棒状判定を通過した輪郭だけを残す。"""
+    if MERGE_DISTANCE and MERGE_DISTANCE > 0:
+        k = max(1, min(31, int(MERGE_DISTANCE)))
+        kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (k, k))
+        filtered = cv2.morphologyEx(mask, cv2.MORPH_CLOSE, kernel)
+    else:
+        filtered = mask.copy()
+    open_kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (3, 3))
+    filtered = cv2.morphologyEx(filtered, cv2.MORPH_OPEN, open_kernel)
+
+    result = np.zeros_like(filtered)
+    contours, _ = cv2.findContours(filtered, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+    frame_area = float(filtered.shape[0] * filtered.shape[1])
+    candidates = []
+    for contour in contours:
+        if cv2.contourArea(contour) < MIN_AREA:
+            continue
+        metrics = _contour_stick_metrics(contour)
+        if _is_stick_like(metrics, frame_area):
+            candidates.append((contour, metrics))
+    if candidates:
+        best_contour, best_metrics = max(
+            candidates,
+            key=lambda item: _stick_score(item[1], frame_area),
+        )
+        cv2.drawContours(result, [best_contour], -1, 255, -1)
+    return result
 
 
 def find_stick_endpoints_from_mask(mask, debug_name=""):
@@ -678,9 +758,12 @@ def find_stick_endpoints_from_mask(mask, debug_name=""):
         print(f"[{debug_name}] 採用輪郭: 面積={area:.1f}, aspect={metrics['aspect']:.2f}, extent={metrics['extent']:.2f}, bbox_extent={metrics['bbox_extent']:.2f}, elongation={metrics['elongation']:.2f}, rect(w={w:.1f}, h={h:.1f}, angle={angle:.1f})")
 
     # 2点が十分離れている場合だけ採用
-    p1, p2 = find_top2_centers_from_mask(proc_mask)
+    # 端点は全画面ではなく、採用した輪郭だけから計算する。
+    candidate_mask = np.zeros_like(proc_mask)
+    cv2.drawContours(candidate_mask, [c], -1, 255, -1)
+    p1, p2 = find_top2_centers_from_mask(candidate_mask)
     if p1 is not None and p2 is not None:
-        bx, by, bw, bh = cv2.boundingRect(proc_mask)
+        bx, by, bw, bh = cv2.boundingRect(c)
         diag = max(bw, bh)
         dist = math.hypot(p2[0] - p1[0], p2[1] - p1[1])
         if dist >= 0.7 * diag:
@@ -739,8 +822,8 @@ def find_top2_bright_centers(frame):
 def find_color_pair(frame):
     hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
 
-    mask_a = cv2.inRange(hsv, COLOR_A_LOWER, COLOR_A_UPPER)
-    mask_b = cv2.inRange(hsv, COLOR_B_LOWER, COLOR_B_UPPER)
+    mask_a = hsv_mask(hsv, COLOR_A_LOWER, COLOR_A_UPPER)
+    mask_b = hsv_mask(hsv, COLOR_B_LOWER, COLOR_B_UPPER)
 
     # 色ごとに1本ずつ棒を作る(2点検出/長軸検出の両対応)
     a1, a2 = find_stick_endpoints_from_mask(mask_a, "COLOR_A")
@@ -836,12 +919,12 @@ try:
         if DETECT_MODE == "color":
             # デバッグ表示用にマスクを見えるようにする
             hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            mask_a = cv2.inRange(hsv, COLOR_A_LOWER, COLOR_A_UPPER)
-            mask_b = cv2.inRange(hsv, COLOR_B_LOWER, COLOR_B_UPPER)
+            mask_a = hsv_mask(hsv, COLOR_A_LOWER, COLOR_A_UPPER)
+            mask_b = hsv_mask(hsv, COLOR_B_LOWER, COLOR_B_UPPER)
 
             # マスク画像にコントラストを付けて見やすくする
-            mask_a_display = cv2.cvtColor(mask_a, cv2.COLOR_GRAY2BGR)
-            mask_b_display = cv2.cvtColor(mask_b, cv2.COLOR_GRAY2BGR)
+            mask_a_display = cv2.cvtColor(build_stick_candidate_mask(mask_a), cv2.COLOR_GRAY2BGR)
+            mask_b_display = cv2.cvtColor(build_stick_candidate_mask(mask_b), cv2.COLOR_GRAY2BGR)
 
             if SHOW_UI:
                 cv2.imshow("mask_a", mask_a)
@@ -853,17 +936,16 @@ try:
 
             # 検出結果をマスク上に描画
             if a1 is not None and a2 is not None:
-                # a-detected の表示は見やすくするため線を太くする
-                cv2.circle(mask_a_display, a1, 8, (0, 255, 0), -1)
-                cv2.circle(mask_a_display, a2, 8, (255, 0, 0), -1)
-                cv2.line(mask_a_display, a1, a2, (0, 255, 255), 50)
+                cv2.circle(mask_a_display, a1, 4, (0, 255, 0), -1)
+                cv2.circle(mask_a_display, a2, 4, (255, 0, 0), -1)
+                cv2.line(mask_a_display, a1, a2, (0, 255, 255), 4)
             if SHOW_DETECTED:
                 cv2.imshow("mask_a_detected", mask_a_display)
 
             if b1 is not None and b2 is not None:
-                cv2.circle(mask_b_display, b1, 5, (0, 255, 0), -1)
-                cv2.circle(mask_b_display, b2, 5, (255, 0, 0), -1)
-                cv2.line(mask_b_display, b1, b2, (0, 255, 255), 50)
+                cv2.circle(mask_b_display, b1, 4, (0, 255, 0), -1)
+                cv2.circle(mask_b_display, b2, 4, (255, 0, 0), -1)
+                cv2.line(mask_b_display, b1, b2, (0, 255, 255), 4)
             if SHOW_DETECTED:
                 cv2.imshow("mask_b_detected", mask_b_display)
 

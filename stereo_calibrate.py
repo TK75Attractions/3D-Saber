@@ -45,6 +45,16 @@ def open_camera(index):
     return cap
 
 
+def crop_to_size(frame, size):
+    target_w, target_h = size
+    height, width = frame.shape[:2]
+    if width < target_w or height < target_h:
+        return cv2.resize(frame, (target_w, target_h), interpolation=cv2.INTER_AREA)
+    x = (width - target_w) // 2
+    y = (height - target_h) // 2
+    return frame[y:y + target_h, x:x + target_w]
+
+
 def main():
     args = parse_args()
     board_size = (args.cols, args.rows)
@@ -56,13 +66,23 @@ def main():
     right = open_camera(args.right)
     obj_points, left_points, right_points = [], [], []
     last_capture = 0.0
-    print("Show the same chessboard to both cameras. SPACE captures; Q quits.")
+    working_size = None
+    print("Show the same chessboard to both cameras.")
+    print("Press SPACE only when corners are detected in both views; Q quits.")
     try:
         while len(obj_points) < args.samples:
             ok_l, frame_l = left.read()
             ok_r, frame_r = right.read()
             if not ok_l or not ok_r:
                 continue
+            if working_size is None:
+                working_size = (
+                    min(frame_l.shape[1], frame_r.shape[1]),
+                    min(frame_l.shape[0], frame_r.shape[0]),
+                )
+                print(f"using common calibration size: {working_size[0]}x{working_size[1]}")
+            frame_l = crop_to_size(frame_l, working_size)
+            frame_r = crop_to_size(frame_r, working_size)
             gray_l = cv2.cvtColor(frame_l, cv2.COLOR_BGR2GRAY)
             gray_r = cv2.cvtColor(frame_r, cv2.COLOR_BGR2GRAY)
             found_l, corners_l = cv2.findChessboardCorners(gray_l, board_size, None)
@@ -78,6 +98,7 @@ def main():
             cv2.imshow("stereo calibration", combined)
             key = cv2.waitKey(1) & 0xFF
             if key in (ord("q"), 27):
+                print(f"calibration canceled; captured {len(obj_points)} sample(s), file was not saved")
                 return
             if key == ord(" ") and found_l and found_r and time.monotonic() - last_capture > 0.4:
                 criteria = (cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER, 30, 0.001)
@@ -94,7 +115,10 @@ def main():
         cv2.destroyAllWindows()
 
     if len(obj_points) < 10:
-        raise RuntimeError("At least 10 valid stereo samples are required")
+        raise RuntimeError(
+            f"Only {len(obj_points)} valid sample(s) captured. "
+            "Capture at least 10 pairs with SPACE before quitting."
+        )
 
     image_size = gray_l.shape[::-1]
     rms_l, k1, d1, _, _ = cv2.calibrateCamera(obj_points, left_points, image_size, None, None)
