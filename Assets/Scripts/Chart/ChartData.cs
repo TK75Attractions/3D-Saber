@@ -15,6 +15,8 @@ public class ChartData
     // -値 = 全ノーツを前にずらす（譜面が遅すぎる場合）
     // 曲の頭の無音や DSP 遅延を吸収するために使う。
     public float offsetMs = 0f;
+    // 制作者が指定する表示難易度(1..10)。0は未指定で、既存の表示設定/自動推定を使う。
+    public int displayLevel = 0;
     public List<NoteData> notes = new List<NoteData>();
 }
 

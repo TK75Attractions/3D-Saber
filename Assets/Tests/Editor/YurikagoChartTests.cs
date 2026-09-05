@@ -54,4 +54,50 @@ public class YurikagoChartTests
         Assert.IsTrue(SongSelectController.HasPlayableChart("揺籠", new[] { "Easy", "Normal", "Hard" }));
         CollectionAssert.Contains(SongSelectController.EnumerateSongIds(), "揺籠");
     }
+
+    [Test]
+    public void HardDisplaysNine_WithoutChangingOtherDifficultiesOrSongs()
+    {
+        var go = new GameObject("levelDisplayTest");
+        try
+        {
+            var controller = go.AddComponent<SongSelectController>();
+            controller.Populate();
+            int yurikago = -1, elDorado = -1;
+            for (int i = 0; i < controller.SongCount; i++)
+            {
+                if (controller.SongIdAt(i) == "揺籠") yurikago = i;
+                if (controller.SongIdAt(i) == "ElDorado") elDorado = i;
+            }
+            Assert.GreaterOrEqual(yurikago, 0);
+            Assert.GreaterOrEqual(elDorado, 0);
+            Assert.AreEqual(9, controller.DisplayLevelFor(yurikago, 2));
+            Assert.AreEqual(6, controller.DisplayLevelFor(yurikago, 1));
+            Assert.AreEqual(4, controller.DisplayLevelFor(yurikago, 0));
+            Assert.AreEqual(8, controller.DisplayLevelFor(elDorado, 2));
+            CollectionAssert.AreEqual(new[] { 4, 6, 8 }, controller.difficultyDisplayLevels);
+        }
+        finally { Object.DestroyImmediate(go); }
+    }
+
+    [Test]
+    public void EditorRoundTrip_PreservesAuthoredDifficultyLevel()
+    {
+        string path = Path.Combine(Application.streamingAssetsPath, "Songs", "揺籠", "chart_hard.json");
+        var document = Saber.ChartEditor.SaberChartUtility.FromJson(File.ReadAllText(path));
+        Assert.AreEqual(9, document.displayLevel);
+        var clone = Saber.ChartEditor.SaberChartUtility.Clone(document);
+        var runtime = ChartLoader.Parse(Saber.ChartEditor.SaberChartUtility.ToJson(clone));
+        Assert.AreEqual(9, runtime.displayLevel, "エディターで開いて保存してもLv.9が消えない");
+        Assert.AreEqual(document.notes.Count, runtime.notes.Count);
+    }
+
+    [TestCase(-1)]
+    [TestCase(11)]
+    public void EditorRejectsOutOfRangeDisplayLevels(int level)
+    {
+        var document = new Saber.ChartEditor.SaberChartDocument { displayLevel = level };
+        Saber.ChartEditor.SaberChartUtility.Normalize(document);
+        Assert.AreEqual(0, document.displayLevel, "不正な指定は既存の難易度表示へ戻す");
+    }
 }

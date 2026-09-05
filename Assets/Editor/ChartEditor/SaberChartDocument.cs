@@ -15,6 +15,8 @@ namespace Saber.ChartEditor
         public float bpm = 120f;
         public float coordScale = 1f;
         public float offsetMs;
+        // 本編の譜面ごとの表示難易度。エディターで保存しても失わないよう保持する。
+        public int displayLevel;
         public List<SaberChartNote> notes = new List<SaberChartNote>();
     }
 
@@ -130,6 +132,7 @@ namespace Saber.ChartEditor
             if (!IsFinite(document.bpm) || document.bpm <= 0f) document.bpm = 120f;
             if (!IsFinite(document.coordScale) || document.coordScale <= 0f) document.coordScale = 1f;
             if (!IsFinite(document.offsetMs)) document.offsetMs = 0f;
+            if (document.displayLevel < 0 || document.displayLevel > 10) document.displayLevel = 0;
             document.notes ??= new List<SaberChartNote>();
             document.notes.RemoveAll(note => note == null);
 
@@ -356,6 +359,7 @@ namespace Saber.ChartEditor
                 bpm = source.bpm,
                 coordScale = source.coordScale,
                 offsetMs = source.offsetMs,
+                displayLevel = source.displayLevel,
                 notes = new List<SaberChartNote>(),
             };
             if (source.notes == null) return copy;

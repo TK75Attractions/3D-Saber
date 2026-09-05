@@ -1,5 +1,6 @@
 """本物の音源と新譜面から音合わせ用プレビューを作る。ゲーム本体の音源は変更しない。"""
 import json
+import argparse
 import subprocess
 from pathlib import Path
 import numpy as np
@@ -8,6 +9,10 @@ ROOT=Path(r'C:\Users\shike\dev\3D-Saber')
 OUT=Path(__file__).resolve().parents[2]/'Outputs/YurikagoCharts'
 FFMPEG=r'C:\pinokio\bin\miniconda\Library\bin\ffmpeg.exe'
 SR=44100
+parser=argparse.ArgumentParser()
+parser.add_argument('--hard-v2',action='store_true')
+options=parser.parse_args()
+result_dir=OUT/'HardV2' if options.hard_v2 else OUT
 
 
 def decode(path,channels):
@@ -17,8 +22,9 @@ def decode(path,channels):
 
 music=decode(ROOT/'Assets/StreamingAssets/Songs/揺籠/audio.mp3',2)
 sounds={name:decode(ROOT/f'Assets/Resources/Audio/SFX/Saber_{name}.wav',1)[:,0] for name in ['NoteCut','FlickCut','LongTick','LongFinish','GoldCut']}
-for diff in ['easy','normal','hard']:
-    chart=json.loads((OUT/f'Charts/chart_{diff}.json').read_text(encoding='utf-8'))
+for diff in (['hard'] if options.hard_v2 else ['easy','normal','hard']):
+    chart_path=OUT/'HardV2/chart_hard.json' if options.hard_v2 else OUT/f'Charts/chart_{diff}.json'
+    chart=json.loads(chart_path.read_text(encoding='utf-8'))
     mixed=music.copy()*.80
     for note in chart['notes']:
         start=(note['time']+chart['offsetMs'])/1000
@@ -36,11 +42,15 @@ for diff in ['easy','normal','hard']:
             mixed[at:at+length]+=clip[:length,None]*gains*.32
     peak=float(abs(mixed).max())
     if peak>.95:mixed*=.95/peak
-    args=[FFMPEG,'-y','-v','error','-f','f32le','-ar',str(SR),'-ac','2','-i','pipe:0','-c:a','aac','-b:a','192k',str(OUT/f'Yurikago_{diff}_timing_preview.m4a')]
+    args=[FFMPEG,'-y','-v','error','-f','f32le','-ar',str(SR),'-ac','2','-i','pipe:0','-c:a','aac','-b:a','192k',str(result_dir/f'Yurikago_{diff}_timing_preview.m4a')]
     subprocess.run(args,input=mixed.astype('<f4').tobytes(),check=True)
     print(diff,'peak_before_limiter',round(peak,4),'seconds',len(mixed)/SR,flush=True)
     if diff=='hard':
         # 落ちる区間→フィル→最大ピークの差が一度に分かる40秒。
         clip=mixed[round(130*SR):round(170*SR)]
-        args[-1]=str(OUT/'Yurikago_Hard_130-170s_preview.m4a')
+        args[-1]=str(result_dir/'Yurikago_Hard_130-170s_preview.m4a')
         subprocess.run(args,input=clip.astype('<f4').tobytes(),check=True)
+        if options.hard_v2:
+            clip=mixed[round(50*SR):round(75*SR)]
+            args[-1]=str(result_dir/'Yurikago_Hard_50-75s_preview.m4a')
+            subprocess.run(args,input=clip.astype('<f4').tobytes(),check=True)

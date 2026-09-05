@@ -50,6 +50,7 @@ public class SongSelectController : MonoBehaviour
     private Coroutine previewCoroutine;
     // 難易度レベル(1〜10)のキャッシュ。キー = songId::難易度名。0 = 譜面なし(数値非表示)
     private readonly Dictionary<string, int> levelCache = new Dictionary<string, int>();
+    private readonly Dictionary<string, int> authoredLevelCache = new Dictionary<string, int>();
     // ロック中(譜面が1つも無い)曲のインデックス。譜面を作れば次回から自動で解禁される
     private readonly HashSet<int> lockedIndices = new HashSet<int>();
 
@@ -134,6 +135,8 @@ public class SongSelectController : MonoBehaviour
     // テストからも呼べるように公開(Start から呼ばれる一覧構築)
     public void Populate()
     {
+        levelCache.Clear();
+        authoredLevelCache.Clear();
         songIds.Clear();
         songLabels.Clear();
         lockedIndices.Clear();
@@ -203,6 +206,7 @@ public class SongSelectController : MonoBehaviour
     }
 
     // 任意の曲の表示用レベル。存在しない譜面の宣伝を防ぐため、実際に遊ぶ譜面と表示を一致させる:
+    //   譜面自身に displayLevel(1..10) がある          → その曲・難易度専用の指定値
     //   難易度別ファイル(chart_<difficulty>.json)が実在 → キュレーション値(difficultyDisplayLevels)
     //   基礎 chart.json へのフォールバックで遊ぶ難易度   → その譜面の自動レート
     //   譜面が無い/読めない/ロック曲                     → 0("--" 表示)
@@ -215,6 +219,9 @@ public class SongSelectController : MonoBehaviour
 
         int rated = LevelForIndex(songIndex, difficultyIndex);
         if (rated <= 0) return 0;
+        difficultyIndex = Mathf.Clamp(difficultyIndex, 0, difficultyNames.Length - 1);
+        string key = songIds[songIndex] + "::" + difficultyNames[difficultyIndex];
+        if (authoredLevelCache.TryGetValue(key, out int authored) && authored > 0) return authored;
         if (!HasDifficultyChartFileFor(songIndex, difficultyIndex)) return rated;
         return configured > 0 ? configured : rated;
     }
@@ -268,15 +275,20 @@ public class SongSelectController : MonoBehaviour
         string key = songId + "::" + difficultyName;
         if (levelCache.TryGetValue(key, out int cached)) return cached;
         int level = 0;
+        int authored = 0;
         try
         {
-            level = ChartDifficultyRater.Rate(ChartLoader.LoadFromStreamingAssets(songId, difficultyName));
+            ChartData chart = ChartLoader.LoadFromStreamingAssets(songId, difficultyName);
+            level = ChartDifficultyRater.Rate(chart);
+            if (level > 0 && chart.displayLevel >= 1 && chart.displayLevel <= 10)
+                authored = chart.displayLevel;
         }
         catch (System.Exception)
         {
             level = 0; // 読めない譜面は数値なし扱い
         }
         levelCache[key] = level;
+        authoredLevelCache[key] = authored;
         return level;
     }
 
@@ -284,7 +296,7 @@ public class SongSelectController : MonoBehaviour
     {
         if (difficultyDisplay == null) return;
         string name = difficultyNames[Mathf.Clamp(selectedDifficulty, 0, difficultyNames.Length - 1)];
-        int level = CurrentDifficultyLevel();
+        int level = CurrentDifficultyDisplayLevel();
         difficultyDisplay.text = level > 0 ? $"{name}  {level}" : name;
     }
 

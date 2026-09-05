@@ -1,0 +1,206 @@
+{
+  "display_level": 9,
+  "previous": {
+    "two_hit_swing_beats": 65,
+    "occupied_beats": 166,
+    "two_hit_swing_share": 0.3916,
+    "distinct_bar_rhythms": 31,
+    "max_identical_bar_run": 3,
+    "interval_histogram_ms": {
+      "2093.0": 4,
+      "348.8": 161,
+      "697.7": 89,
+      "1046.5": 47,
+      "3139.5": 1
+    },
+    "half_pulse_hits": 0
+  },
+  "revised": {
+    "two_hit_swing_beats": 4,
+    "occupied_beats": 163,
+    "two_hit_swing_share": 0.0245,
+    "distinct_bar_rhythms": 38,
+    "max_identical_bar_run": 1,
+    "interval_histogram_ms": {
+      "2093.0": 5,
+      "1046.5": 54,
+      "348.8": 207,
+      "1395.3": 2,
+      "697.7": 37,
+      "174.4": 37,
+      "1744.2": 1,
+      "523.3": 1,
+      "2441.9": 1
+    },
+    "half_pulse_hits": 19
+  },
+  "stats": {
+    "notes": 404,
+    "cuts": 446,
+    "first_sec": 1.0585,
+    "last_sec": 180.012,
+    "end_of_final_long_sec": 181.4073,
+    "avg_nps": 2.258,
+    "peak_2s_nps": 5.0,
+    "types": {
+      "long": 18,
+      "tap": 268,
+      "direction": 118
+    },
+    "colors": {
+      "gold": 139,
+      "red": 134,
+      "blue": 131
+    },
+    "directions": {
+      "none": 286,
+      "up": 52,
+      "down": 51,
+      "right": 5,
+      "upleft": 3,
+      "upright": 3,
+      "left": 4
+    },
+    "simultaneous_extra": 58,
+    "assigned_hands": {
+      "blue": 206,
+      "red": 198
+    },
+    "sections": {
+      "intro": 8,
+      "opening": 27,
+      "hook": 36,
+      "break1": 7,
+      "verse": 19,
+      "build": 39,
+      "chorus1": 33,
+      "breath": 7,
+      "chorus1b": 28,
+      "interlude": 10,
+      "chorus2": 46,
+      "bridge": 25,
+      "drop": 10,
+      "pickup": 1,
+      "final": 87,
+      "release": 0,
+      "outro": 21,
+      "tail": 0
+    }
+  },
+  "validation": {
+    "errors": [],
+    "warnings": [],
+    "checks": [
+      "time/beat coherence",
+      "bounds",
+      "two-hand chords",
+      "chord separation",
+      "same-hand recovery",
+      "long occupancy",
+      "long cut rate",
+      "song tail"
+    ]
+  },
+  "protected_sha256": {
+    "chart_easy.json": "cae4fce3759c04753b2ebf2922ab22b7e7658176554af246d0c468b147ef03d7",
+    "chart_normal.json": "a5bcd0ecb6dd7677631fb8896012d9ded90ef2532924efa6a8ff358a7546d3ab",
+    "chart.json": "a5bcd0ecb6dd7677631fb8896012d9ded90ef2532924efa6a8ff358a7546d3ab"
+  },
+  "half_pulse_audio_support": [
+    {
+      "pulse": 87.5,
+      "time": 30.5353,
+      "onset_strength": 0.52
+    },
+    {
+      "pulse": 105.5,
+      "time": 36.8143,
+      "onset_strength": 0.462
+    },
+    {
+      "pulse": 106.5,
+      "time": 37.1632,
+      "onset_strength": 1.091
+    },
+    {
+      "pulse": 154.5,
+      "time": 53.9073,
+      "onset_strength": 1.047
+    },
+    {
+      "pulse": 177.5,
+      "time": 61.9306,
+      "onset_strength": 0.326
+    },
+    {
+      "pulse": 189.5,
+      "time": 66.1167,
+      "onset_strength": 1.266
+    },
+    {
+      "pulse": 190.5,
+      "time": 66.4655,
+      "onset_strength": 0.908
+    },
+    {
+      "pulse": 238.5,
+      "time": 83.2097,
+      "onset_strength": 0.639
+    },
+    {
+      "pulse": 255.5,
+      "time": 89.1399,
+      "onset_strength": 0.567
+    },
+    {
+      "pulse": 256.5,
+      "time": 89.4887,
+      "onset_strength": 1.054
+    },
+    {
+      "pulse": 310.5,
+      "time": 108.326,
+      "onset_strength": 0.348
+    },
+    {
+      "pulse": 333.5,
+      "time": 116.3492,
+      "onset_strength": 0.475
+    },
+    {
+      "pulse": 334.5,
+      "time": 116.698,
+      "onset_strength": 0.921
+    },
+    {
+      "pulse": 411.5,
+      "time": 143.5585,
+      "onset_strength": 0.907
+    },
+    {
+      "pulse": 429.5,
+      "time": 149.8376,
+      "onset_strength": 0.422
+    },
+    {
+      "pulse": 430.5,
+      "time": 150.1864,
+      "onset_strength": 0.382
+    },
+    {
+      "pulse": 448.5,
+      "time": 156.4655,
+      "onset_strength": 0.74
+    },
+    {
+      "pulse": 471.5,
+      "time": 164.4887,
+      "onset_strength": 0.682
+    },
+    {
+      "pulse": 472.5,
+      "time": 164.8376,
+      "onset_strength": 0.717
+    }
+  ]
+}

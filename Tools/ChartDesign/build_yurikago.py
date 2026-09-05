@@ -94,7 +94,7 @@ CHORDS = {
 PHRASE_HEADS = {3,24,48,72,108,120,144,168,192,216,228,240,264,276,294,300,324,342,354,378,390,402,414,426,438,450,462,480,492,504,516}
 
 
-def make_chart(diff):
+def make_chart(diff, *, filter_weak_hard=True):
     masks = {'easy':EASY,'normal':NORMAL,'hard':HARD}[diff]
     selected = {b*12+p for b,mask in enumerate(masks) for p in mask}
     selected.update(LONGS[diff])
@@ -110,7 +110,7 @@ def make_chart(diff):
         selected = {q for q in selected if not p < q < p+length}
         occupied.append((p,p+length))
     # 本当に弱い三連の末尾を機械的に埋めない。手設計の主拍とフィルは保持する。
-    if diff == 'hard':
+    if diff == 'hard' and filter_weak_hard:
         selected = {p for p in selected if p%3==0 or p in [293,401] or PULSES[p]['strength'] >= .30}
 
     groups = []
