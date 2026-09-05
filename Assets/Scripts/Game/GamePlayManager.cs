@@ -109,6 +109,7 @@ public class GamePlayManager : MonoBehaviour
     private double lastNoteTime;
     // 2本目のセーバー判定(enableTwoSabers 時に SaberRig が生成)
     private SaberCutJudge cutJudge2;
+    private GateBeatPulse gatePerfectPulse;
 
     // --- キャリブレーション（判定調整）モード ---
     private bool inCalibration;
@@ -267,10 +268,10 @@ public class GamePlayManager : MonoBehaviour
         noteSpawner.SetExtraOffsetSeconds(effectiveExtraOffset);
         noteSpawner.SetChart(chart);
 
-        // 判定ゲートの拍パルス(視覚メトロノーム)。ノーツと同じトータルオフセットで拍を刻む。
-        if (useOverhauledStage && chart.bpm > 0f)
+        // 判定ゲートはPerfectが確定した瞬間だけ発光する。拍や単なる接触では光らせない。
+        if (useOverhauledStage)
         {
-            GateBeatPulse.Ensure(chart.bpm, noteSpawner.TotalOffsetSeconds, songPlayer);
+            gatePerfectPulse = GateBeatPulse.Ensure(chart.bpm, noteSpawner.TotalOffsetSeconds, songPlayer, scoreManager);
         }
 
         // 小節線：BPM ガイドとして薄く流す
@@ -546,6 +547,7 @@ public class GamePlayManager : MonoBehaviour
         // 1. セーバー判定(2本構成なら両方)
         if (cutJudge != null) cutJudge.RunJudge();
         if (cutJudge2 != null) cutJudge2.RunJudge();
+        if (gatePerfectPulse != null) gatePerfectPulse.Tick(Time.unscaledTimeAsDouble);
 
         // 2a. キャリブレーション分岐：時計は AudioSettings.dspTime ベース、終了せずループ
         if (inCalibration)

@@ -17,6 +17,10 @@ public static class StageDesignPreview
     private static int phase;
     private static double started;
     private static string output;
+    private static bool allVariants;
+    private static int themeIndex;
+    private static string capturePath;
+    private static Texture2D overview;
 
     static StageDesignPreview()
     {
@@ -43,6 +47,7 @@ public static class StageDesignPreview
         Directory.CreateDirectory(output);
         SessionState.SetString(OutputKey, output);
         SessionState.SetBool(Running, true);
+        SessionState.SetBool(Running + ".AllVariants", Array.IndexOf(args, "-stagePreviewAll") >= 0);
         EditorSceneManager.OpenScene("Assets/Scenes/Game.unity", OpenSceneMode.Single);
         GameSession.SelectedSongId = "ElDorado";
         GameSession.SelectedDifficulty = "normal";
@@ -58,6 +63,8 @@ public static class StageDesignPreview
             phase = 0;
             started = EditorApplication.timeSinceStartup;
             output = SessionState.GetString(OutputKey, "");
+            allVariants = SessionState.GetBool(Running + ".AllVariants", false);
+            themeIndex = 0;
         }
     }
 
@@ -75,6 +82,7 @@ public static class StageDesignPreview
                 var manager = UnityEngine.Object.FindFirstObjectByType<GamePlayManager>();
                 manager.StopAllCoroutines();
                 manager.enabled = false;
+                foreach (var pulse in UnityEngine.Object.FindObjectsByType<GateBeatPulse>(FindObjectsSortMode.None)) pulse.enabled = false;
                 if (manager.songPlayer != null) manager.songPlayer.GetComponent<AudioSource>().Stop();
                 foreach (var countdown in UnityEngine.Object.FindObjectsByType<GameStartCountdown>(FindObjectsSortMode.None))
                     countdown.gameObject.SetActive(false);
@@ -91,6 +99,7 @@ public static class StageDesignPreview
                 object chart = JsonUtility.FromJson(json, chartType);
                 typeof(NoteSpawner).GetMethod("SetChart").Invoke(spawner, new[] { chart });
                 spawner.Tick(0);
+                if (allVariants) ReplaceStage(StageTheme.ObsidianRelay);
                 frame = 0; phase = 1;
                 return;
             }
@@ -106,17 +115,27 @@ public static class StageDesignPreview
                     if (text.font.name != LongNoteCountStyle.FontName || text.textInfo.characterCount == 0)
                         throw new InvalidOperationException("数字の描画データが不正です。");
                 }
-                File.WriteAllText(Path.Combine(output, "runtime-check.txt"),
-                    "Runtime stage ready\nDraw groups: " + stage.GetComponentsInChildren<MeshRenderer>().Length +
+                var gate = UnityEngine.Object.FindFirstObjectByType<JudgeGateFrame>();
+                if (gate == null || gate.GetComponentsInChildren<Collider>().Length != 0)
+                    throw new InvalidOperationException("ゲートが未生成、または装飾にColliderがあります。");
+                File.AppendAllText(Path.Combine(output, "runtime-check.txt"),
+                    "Runtime stage: " + stage.ActiveTheme + "\nDraw groups: " + stage.GetComponentsInChildren<MeshRenderer>().Length +
                     "\nCount labels: " + string.Join(", ", labels.Select(l => l.GetComponent<TMPro.TextMeshPro>().text)) +
                     "\nCamera: " + Camera.main.transform.position + "\nScene was not saved.\n");
-                CaptureCamera(Path.Combine(output, "gameplay-stage.png"));
+                capturePath = Path.Combine(output, allVariants ? "stage-" + themeIndex + "-" + stage.ActiveTheme + ".png" : "gameplay-stage.png");
+                CaptureCamera(capturePath);
+                if (allVariants && ++themeIndex < StageThemeCatalog.Count)
+                {
+                    ReplaceStage((StageTheme)themeIndex);
+                    frame = 0;
+                    return;
+                }
                 phase = 2; frame = 0;
                 return;
             }
             if (phase == 2 && ++frame > 20)
             {
-                var path = Path.Combine(output, "gameplay-stage.png");
+                var path = capturePath;
                 if (!File.Exists(path) || new FileInfo(path).Length < 10000) return;
                 SessionState.SetBool(Running, false);
                 Debug.Log("[StageDesignPreview] PASS: " + path);
@@ -129,6 +148,19 @@ public static class StageDesignPreview
             Debug.LogException(exception);
             EditorApplication.Exit(1);
         }
+    }
+
+    // 検証用の一時インスタンスだけを交換。判定・カメラ・ノーツ・シーン資産は変更しない。
+    private static void ReplaceStage(StageTheme theme)
+    {
+        var previous = UnityEngine.Object.FindFirstObjectByType<FloorRenderer>();
+        Transform parent = previous != null ? previous.transform.parent : null;
+        if (previous != null) UnityEngine.Object.DestroyImmediate(previous.gameObject);
+        var go = new GameObject("FloorRenderer");
+        go.transform.SetParent(parent, false);
+        var stage = go.AddComponent<FloorRenderer>();
+        stage.randomizeOnPlay = false;
+        stage.Build(theme);
     }
 
     // バッチ Editor には表示中の GameView がないため、URP の描画要求で直接出力する。
@@ -160,6 +192,19 @@ public static class StageDesignPreview
             pixels.ReadPixels(new Rect(0, 0, 1920, 1080), 0, 0);
             pixels.Apply();
             File.WriteAllBytes(path, pixels.EncodeToPNG());
+            if (allVariants)
+            {
+                // 同じ実カメラの描画結果を4枠に並べる。比較画像のためにシーンは加工しない。
+                if (overview == null) overview = new Texture2D(3840, 2160, TextureFormat.RGB24, false);
+                overview.SetPixels((themeIndex % 2) * 1920, (1 - themeIndex / 2) * 1080, 1920, 1080, pixels.GetPixels());
+                if (themeIndex == StageThemeCatalog.Count - 1)
+                {
+                    overview.Apply();
+                    File.WriteAllBytes(Path.Combine(output, "stage-overview.png"), overview.EncodeToPNG());
+                    UnityEngine.Object.DestroyImmediate(overview);
+                    overview = null;
+                }
+            }
         }
         finally
         {

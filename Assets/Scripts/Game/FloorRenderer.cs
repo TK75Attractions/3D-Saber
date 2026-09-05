@@ -3,12 +3,16 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 // Obsidian Relay: 段差のあるデッキと、奥へ重なる側壁で距離を表す。
-// ノーツ・判定ゲート・HUDには触れない。中央は空け、光は床端と側壁だけに置く。
+// 既存+追加3種の静的環境。ノーツ・HUDには触れず、中央は空け、光は床端と側壁に置く。
 // 環境は静的な結合メッシュ。パーツ数に比例した描画呼び出しや Update を増やさない。
 // EditMode の確認で生成した一時資源も OnDestroy で解放する。自動生成・毎フレーム処理はしない。
 [ExecuteAlways]
-public class FloorRenderer : MonoBehaviour
+public partial class FloorRenderer : MonoBehaviour
 {
+    [Header("Stage variation")]
+    public StageTheme theme = StageTheme.ObsidianRelay;
+    public bool randomizeOnPlay = true;
+    public StageTheme ActiveTheme { get; private set; }
     [Header("Floor / Ceiling extents")]
     public float floorY = -2.5f;
     public float ceilingY = 3f;
@@ -40,6 +44,9 @@ public class FloorRenderer : MonoBehaviour
     public float distantExtension = 16f;
 
     public const float ClearCorridorHalfWidth = 5.8f;
+    // 背景だけの明度補正。ノーツ・HUD・全画面露出には触れない。
+    public const float SurfaceBrightness = 1.75f;
+    public const float InlayBrightness = 1.18f;
     private bool built;
     private readonly List<Material> materials = new List<Material>();
     private readonly List<Mesh> meshes = new List<Mesh>();
@@ -59,33 +66,46 @@ public class FloorRenderer : MonoBehaviour
     public void Build()
     {
         if (built) return;
+        Build(Application.isPlaying && randomizeOnPlay ? StageThemeCatalog.NextForPlay() : theme);
+    }
+
+    // 明示指定はプレビュー/Inspector用。通常プレイでは上の入口で開始時に一度だけ抽選する。
+    public void Build(StageTheme selectedTheme)
+    {
+        if (built) return;
+        ActiveTheme = (int)selectedTheme >= 0 && (int)selectedTheme < StageThemeCatalog.Count
+            ? selectedTheme : StageTheme.ObsidianRelay;
         built = true;
+        bool original = ActiveTheme == StageTheme.ObsidianRelay;
         float farZ = maxZ + Mathf.Max(0f, distantExtension);
         float width = Mathf.Max(1f, maxX - minX);
         float centerX = (minX + maxX) * .5f;
         float centerZ = (minZ + farZ) * .5f;
         float depth = Mathf.Max(1f, farZ - minZ);
         var baseMat = Surface("Foundation", baseColor, .18f, .02f);
-        var deckMat = Surface("GraphiteDeck", new Color(.057f, .080f, .104f), .38f, .04f);
-        var edgeMat = Surface("MachinedEdge", new Color(.100f, .139f, .172f), .45f, .04f);
+        Color tint = StageThemeCatalog.MetalTint(ActiveTheme);
+        Color accent = original ? brightLineColor : StageThemeCatalog.Accent(ActiveTheme);
+        var deckMat = Surface("GraphiteDeck", tint, .38f, .04f);
+        var edgeMat = Surface("MachinedEdge", original ? new Color(.100f, .139f, .172f) : tint * 1.64f, .45f, .04f);
         var recessMat = Surface("Recess", new Color(.009f, .017f, .023f), .12f, .015f);
-        var wallMat = Surface("WallPanels", new Color(.042f, .064f, .086f), .30f, .055f);
-        var ribMat = Surface("StructuralRibs", new Color(.076f, .102f, .125f), .38f, .06f);
-        var guideMat = Surface("MutedLane", lineColor, .25f, laneLineEmission);
-        var lightMat = Surface("IceInlay", brightLineColor, .30f, .52f);
+        var wallMat = Surface("WallPanels", original ? new Color(.042f, .064f, .086f) : tint * .8f, .30f, .055f);
+        var ribMat = Surface("StructuralRibs", original ? new Color(.076f, .102f, .125f) : tint * 1.32f, .38f, .06f);
+        var guideMat = Surface("MutedLane", original ? lineColor : accent * .48f, .25f, laneLineEmission);
+        var lightMat = Surface("IceInlay", accent, .30f, .52f);
         var amberMat = Surface("AmberServiceTabs", new Color(.38f, .215f, .073f), .20f, .25f);
 
         if (addFloorBase)
         {
-            var foundation = new Geometry();
+            var foundation = new StageGeometry();
             foundation.Box(new Vector3(centerX, floorY - .16f, centerZ), new Vector3(width, .28f, depth));
             Emit("FloorBase", foundation, baseMat);
         }
-        var panels = new Geometry();
-        var sideDecks = new Geometry();
-        var recesses = new Geometry();
-        var deckInlays = new Geometry();
-        var serviceTabs = new Geometry();
+        var panels = new StageGeometry();
+        var sideDecks = new StageGeometry();
+        var recesses = new StageGeometry();
+        var deckInlays = new StageGeometry();
+        var serviceTabs = new StageGeometry();
+        var variantDetails = new StageGeometry();
         Quaternion horizontal = Quaternion.Euler(90f, 0f, 0f);
         float slabSpacing = Mathf.Max(2f, depthLineSpacing);
         for (float z = minZ; z < farZ - .05f; z += slabSpacing)
@@ -93,9 +113,11 @@ public class FloorRenderer : MonoBehaviour
             float length = Mathf.Min(slabSpacing, farZ - z);
             float mid = z + length * .5f;
             // 全面を発光する格子ではなく、大きな面の継ぎ目と面取りで床を見せる。
-            foreach (float x in new[] { -4.47f, -1.49f, 1.49f, 4.47f })
-                panels.Panel(new Vector3(x, floorY - .018f, mid),
-                    new Vector3(2.90f, Mathf.Max(.1f, length - .11f), .10f), horizontal, .17f);
+            if (original)
+                foreach (float x in new[] { -4.47f, -1.49f, 1.49f, 4.47f })
+                    panels.Panel(new Vector3(x, floorY - .018f, mid),
+                        new Vector3(2.90f, Mathf.Max(.1f, length - .11f), .10f), horizontal, .17f);
+            else BuildVariantFloorBay(panels, variantDetails, z, length);
             foreach (int side in new[] { -1, 1 })
             {
                 sideDecks.Panel(new Vector3(side * 6.94f, floorY + .045f, mid),
@@ -115,6 +137,7 @@ public class FloorRenderer : MonoBehaviour
         Emit("FloorRecesses", recesses, recessMat);
         Emit("FloorEdgeInlays", deckInlays, lightMat);
         Emit("FloorServiceTabs", serviceTabs, amberMat);
+        Emit("FloorVariantInlays", variantDetails, guideMat);
         BuildLaneLines(floorY + .037f, minZ, farZ, guideMat, "FloorLane_");
         BuildDepthMarks(floorY + .04f, minZ, farZ, guideMat, "FloorDepth_");
         if (addCeiling)
@@ -123,7 +146,11 @@ public class FloorRenderer : MonoBehaviour
             BuildLaneLines(ceilingY, minZ, farZ, ceilingMat, "CeilLane_");
             BuildDepthMarks(ceilingY, minZ, farZ, ceilingMat, "CeilDepth_");
         }
-        if (addSideArchitecture) BuildWalls(farZ, wallMat, ribMat, recessMat, lightMat, amberMat);
+        if (addSideArchitecture)
+        {
+            if (original) BuildWalls(farZ, wallMat, ribMat, recessMat, lightMat, amberMat);
+            else BuildVariantWalls(farZ, wallMat, ribMat, recessMat, lightMat, amberMat);
+        }
     }
 
     private void BuildLaneLines(float y, float near, float far, Material material, string prefix)
@@ -131,7 +158,7 @@ public class FloorRenderer : MonoBehaviour
         if (laneXPositions == null) return;
         foreach (float x in laneXPositions)
         {
-            var geometry = new Geometry();
+            var geometry = new StageGeometry();
             // 中央は一段細くし、ノーツの真下に強い光を作らない。
             float thickness = laneLineThickness * (Mathf.Abs(x) < .01f ? .55f : 1f);
             geometry.Box(new Vector3(x, y, (near + far) * .5f), new Vector3(thickness, .008f, far - near));
@@ -143,7 +170,7 @@ public class FloorRenderer : MonoBehaviour
     {
         for (float z = near; z <= far; z += Mathf.Max(2f, depthLineSpacing))
         {
-            var geometry = new Geometry();
+            var geometry = new StageGeometry();
             // 横線は左右の肩だけ。中央を横切る輝線は既存の小節線に任せる。
             foreach (int side in new[] { -1, 1 })
                 geometry.Box(new Vector3(side * 4.93f, y, z + .04f), new Vector3(1.72f, .008f, depthLineThickness));
@@ -153,8 +180,8 @@ public class FloorRenderer : MonoBehaviour
 
     private void BuildWalls(float farZ, Material panelMat, Material ribMat, Material darkMat, Material lightMat, Material amberMat)
     {
-        var panels = new Geometry(); var insets = new Geometry(); var ribs = new Geometry();
-        var trims = new Geometry(); var tabs = new Geometry();
+        var panels = new StageGeometry(); var insets = new StageGeometry(); var ribs = new StageGeometry();
+        var trims = new StageGeometry(); var tabs = new StageGeometry();
         float spacing = Mathf.Max(3.5f, wallBaySpacing);
         for (float z = minZ; z < farZ - .1f; z += spacing)
         {
@@ -202,21 +229,23 @@ public class FloorRenderer : MonoBehaviour
         // Resources 参照でビルド時のシェーダー除外を防ぐ。既存の2D Rendererも維持する。
         var shader = Resources.Load<Shader>("Stage/ObsidianMetal")
             ?? Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-        var material = new Material(shader) { name = "ObsidianRelay/" + name };
-        if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
-        else if (material.HasProperty("_Color")) material.SetColor("_Color", color);
+        var material = new Material(shader) { name = StageThemeCatalog.DisplayName(ActiveTheme) + "/" + name };
+        Color surface = color * SurfaceBrightness;
+        surface.a = 1f;
+        if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", surface);
+        else if (material.HasProperty("_Color")) material.SetColor("_Color", surface);
         if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", smoothness);
         if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", .32f);
         if (material.HasProperty("_EmissionColor"))
         {
             material.EnableKeyword("_EMISSION");
-            material.SetColor("_EmissionColor", color * emission);
+            material.SetColor("_EmissionColor", color * emission * InlayBrightness);
         }
         materials.Add(material);
         return material;
     }
 
-    private void Emit(string name, Geometry geometry, Material material)
+    private void Emit(string name, StageGeometry geometry, Material material)
     {
         if (geometry.VertexCount == 0) return;
         var go = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer));
@@ -246,78 +275,4 @@ public class FloorRenderer : MonoBehaviour
         if (Application.isPlaying) Destroy(item); else DestroyImmediate(item);
     }
 
-    // 材質別に頂点を蓄積し、面取りを含む構造を一つのメッシュへまとめる。
-    private sealed class Geometry
-    {
-        private readonly List<Vector3> vertices = new List<Vector3>();
-        private readonly List<Vector3> normals = new List<Vector3>();
-        private readonly List<int> triangles = new List<int>();
-        public int VertexCount => vertices.Count;
-        private void Triangle(Vector3 a, Vector3 b, Vector3 c)
-        {
-            int start = vertices.Count;
-            Vector3 normal = Vector3.Cross(b - a, c - a).normalized;
-            vertices.Add(a); vertices.Add(b); vertices.Add(c);
-            normals.Add(normal); normals.Add(normal); normals.Add(normal);
-            triangles.Add(start); triangles.Add(start + 1); triangles.Add(start + 2);
-        }
-        private void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d)
-        {
-            Triangle(a, b, c); Triangle(a, c, d);
-        }
-        public void Box(Vector3 center, Vector3 size, Quaternion rotation = default)
-        {
-            if (rotation.Equals(default(Quaternion))) rotation = Quaternion.identity;
-            Vector3 h = size * .5f;
-            var p = new Vector3[8];
-            for (int i = 0; i < 8; i++)
-                p[i] = center + rotation * new Vector3((i & 1) == 0 ? -h.x : h.x,
-                    (i & 2) == 0 ? -h.y : h.y, (i & 4) == 0 ? -h.z : h.z);
-            Quad(p[0], p[2], p[3], p[1]); Quad(p[4], p[5], p[7], p[6]);
-            Quad(p[0], p[4], p[6], p[2]); Quad(p[1], p[3], p[7], p[5]);
-            Quad(p[0], p[1], p[5], p[4]); Quad(p[2], p[6], p[7], p[3]);
-        }
-        public void Beam(Vector3 a, Vector3 b, float width, float depth)
-        {
-            Box((a + b) * .5f, new Vector3(width, Vector3.Distance(a, b), depth),
-                Quaternion.FromToRotation(Vector3.up, (b - a).normalized));
-        }
-        // 正面は -Z。四隅を切った八角形＋傾斜した細い縁で実際の厚みを付ける。
-        public void Panel(Vector3 center, Vector3 size, Quaternion rotation, float corner)
-        {
-            float x = size.x * .5f, y = size.y * .5f, z = size.z * .5f;
-            float cut = Mathf.Min(corner, Mathf.Min(x, y) * .45f);
-            float bevel = Mathf.Min(.035f, Mathf.Min(size.z * .3f, cut * .3f));
-            var ring = new[] {
-                new Vector2(-x + cut, -y), new Vector2(x - cut, -y),
-                new Vector2(x, -y + cut), new Vector2(x, y - cut),
-                new Vector2(x - cut, y), new Vector2(-x + cut, y),
-                new Vector2(-x, y - cut), new Vector2(-x, -y + cut)
-            };
-            var front = new Vector3[8]; var rim = new Vector3[8]; var back = new Vector3[8];
-            for (int i = 0; i < 8; i++)
-            {
-                Vector2 p = ring[i];
-                front[i] = center + rotation * new Vector3(p.x - Mathf.Sign(p.x) * bevel, p.y - Mathf.Sign(p.y) * bevel, -z);
-                rim[i] = center + rotation * new Vector3(p.x, p.y, -z + bevel);
-                back[i] = center + rotation * new Vector3(p.x, p.y, z);
-            }
-            Vector3 frontCenter = center + rotation * new Vector3(0f, 0f, -z);
-            Vector3 backCenter = center + rotation * new Vector3(0f, 0f, z);
-            for (int i = 0; i < 8; i++)
-            {
-                int next = (i + 1) % 8;
-                Triangle(frontCenter, front[next], front[i]); Triangle(backCenter, back[i], back[next]);
-                Quad(rim[i], front[i], front[next], rim[next]); Quad(rim[i], rim[next], back[next], back[i]);
-            }
-        }
-        public Mesh CreateMesh(string name)
-        {
-            var mesh = new Mesh { name = "ObsidianRelay/" + name };
-            if (vertices.Count > 65535) mesh.indexFormat = IndexFormat.UInt32;
-            mesh.SetVertices(vertices); mesh.SetNormals(normals); mesh.SetTriangles(triangles, 0);
-            mesh.RecalculateBounds();
-            return mesh;
-        }
-    }
 }

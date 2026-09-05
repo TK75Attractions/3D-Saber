@@ -12,6 +12,13 @@ using UnityEngine.UI;
 // 選択中の曲を 10 秒間プレビュー再生する。
 public class SongSelectController : MonoBehaviour
 {
+    // 曲フォルダ/スコア保存キーは変えず、選曲とプレイ情報の表示名だけを統一する。
+    public static string DisplaySongTitle(string songId)
+    {
+        return string.Equals(songId, "Epilogue", System.StringComparison.OrdinalIgnoreCase)
+            ? ResultSkin.SongIdToDisplayTitle(songId) : songId;
+    }
+
     public string gameSceneName = "Game";
 
     [Header("List")]
@@ -313,7 +320,7 @@ public class SongSelectController : MonoBehaviour
         {
             if (songLabels[i] == null) continue;
             bool sel = (i == selectedIndex);
-            songLabels[i].text = (sel ? selectedPrefix : normalPrefix) + songIds[i];
+            songLabels[i].text = (sel ? selectedPrefix : normalPrefix) + DisplaySongTitle(songIds[i]);
             // ロック曲はグレー(選択中でもグレーのまま=遊べないサイン)
             songLabels[i].color = IsLocked(i) ? lockedLabelColor : (sel ? selectedLabelColor : normalLabelColor);
         }
@@ -434,7 +441,7 @@ public class SongSelectController : MonoBehaviour
         if (SelectedSongLocked) return; // ロック曲(譜面未制作)は開始できない
         if (previewSource != null) previewSource.Stop();
         GameSession.SelectedSongId = songIds[selectedIndex];
-        GameSession.SelectedSongTitle = songIds[selectedIndex];
+        GameSession.SelectedSongTitle = DisplaySongTitle(songIds[selectedIndex]);
         GameSession.SelectedDifficulty = (selectedDifficulty < difficultyNames.Length)
             ? difficultyNames[selectedDifficulty]
             : "Normal";
