@@ -21,6 +21,7 @@ class BridgeConfig:
     host: str
     command_port: int
     data_port: int
+    mirror_data_port: Optional[int]
     device_name: str
     device_address: Optional[str]
 
@@ -45,6 +46,11 @@ class BleUdpBridge:
 
     def send_udp(self, message: str) -> None:
         self.out_sock.sendto(message.encode("utf-8"), (self.config.host, self.config.data_port))
+        if self.config.mirror_data_port is not None:
+            self.out_sock.sendto(
+                message.encode("utf-8"),
+                (self.config.host, self.config.mirror_data_port),
+            )
 
     def enqueue_command(self, message: str) -> None:
         if self.loop is None:
@@ -110,6 +116,8 @@ class BleUdpBridge:
         )
         print(f"[bridge] command UDP {self.config.host}:{self.config.command_port}")
         print(f"[bridge] data UDP -> {self.config.host}:{self.config.data_port}")
+        if self.config.mirror_data_port is not None:
+            print(f"[bridge] mirror UDP -> {self.config.host}:{self.config.mirror_data_port}")
 
         command_task = asyncio.create_task(self.run_command_loop())
 
@@ -150,6 +158,12 @@ def parse_args() -> BridgeConfig:
     parser.add_argument("--host", default="127.0.0.1")
     parser.add_argument("--command-port", type=int, default=9001)
     parser.add_argument("--data-port", type=int, default=9002)
+    parser.add_argument(
+        "--mirror-data-port",
+        type=int,
+        default=9003,
+        help="Optional second IMU destination for the Python camera tracker",
+    )
     parser.add_argument("--device-name", default="XIAO-LSM6DSV16X")
     parser.add_argument("--device-address", default=None, help="Optional fixed BLE address/UUID")
     args = parser.parse_args()
@@ -158,6 +172,7 @@ def parse_args() -> BridgeConfig:
         host=args.host,
         command_port=args.command_port,
         data_port=args.data_port,
+        mirror_data_port=args.mirror_data_port,
         device_name=args.device_name,
         device_address=args.device_address,
     )
