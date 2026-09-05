@@ -6,14 +6,22 @@ using UnityEngine;
 // 実機セーバー(UDP)でもマウスの素振りでも本編と同じ感触で切れる。
 // 矢印(↑/↓)は「どちらへ送るか」のラベルで、切る方向は問わない(DirectionVisualOnly。ユーザー指定)。
 // 切られたノーツは破片演出の後、respawnDelay 秒で同じ場所に再出現する。
+// 誤爆防止(ユーザー指定): どちらかを切ったら oppositeCooldown 秒のクールタイムに入り、
+// 逆側のノーツも判定対象外(暗く・小さく表示)にする。1回の振りが↑と↓を続けて巻き込んで
+// 「進んで戻る」ことや、振り戻しで逆側が切れてしまうことを防ぐ。
 public class SongSelectSlashNav : MonoBehaviour
 {
     // カット後に同じ場所へ再出現するまでの秒数(ユーザー指定: 2秒くらい)
     public float respawnDelay = 2.0f;
+    // どちらかを切った後、逆側のノーツ(と再出現したノーツ)が判定対象外になる秒数
+    public float oppositeCooldown = 2.0f;
     public float noteScale = 0.66f;
     public float bobAmplitude = 0.05f;
     public float bobHz = 0.5f;
     [Range(0f, 1f)] public float sfxVolume = 0.22f;
+    // クールタイム中の見た目(発光倍率・縮尺)
+    public float cooldownEmission = 0.15f;
+    public float cooldownScale = 0.85f;
 
     // 配置(ビューポート座標 0-1)。曲リスト(左)と難易度パネル(右)の間の空き縦帯に置く。
     // ↑と↓は誤爆しないよう縦に大きく離す。
@@ -27,6 +35,8 @@ public class SongSelectSlashNav : MonoBehaviour
     // -1 = 待機なし / 0以上 = 再出現までの残り秒
     private float upRespawnTimer = -1f;
     private float downRespawnTimer = -1f;
+    // -1 = クールタイムなし / 0以上 = 残り秒(両ノーツ共通)
+    private float cooldownTimer = -1f;
     private Vector3 upBasePos;
     private Vector3 downBasePos;
     private float age;
@@ -34,6 +44,7 @@ public class SongSelectSlashNav : MonoBehaviour
 
     public CuttableNote UpNote => upNote;
     public CuttableNote DownNote => downNote;
+    public bool InCooldown => cooldownTimer > 0f;
 
     // 曲選択画面へ組み込む。曲が2曲未満なら曲送り自体に意味が無いので何も作らない。
     public static SongSelectSlashNav Build(SongSelectController controller)
@@ -115,16 +126,36 @@ public class SongSelectSlashNav : MonoBehaviour
         NoteSpawner.BuildArrow(go.transform, dir); // 本編と同じシェブロン矢印
 
         note.OnCut += HandleNavCut;
+        // クールタイム中に再出現したノーツは、クールタイムが明けるまで切れない
+        if (InCooldown) SetCooldownState(note, true);
         return note;
     }
 
     private void HandleNavCut(CuttableNote note, Vector3 point, Vector3 velocity)
     {
         bool isUp = note == upNote;
-        MoveSelection(isUp ? -1 : +1);
         if (isUp) upRespawnTimer = respawnDelay;
         else downRespawnTimer = respawnDelay;
+
+        // クールタイム中のカット(同じ振りの巻き込みなど)は曲送りしない。演出(破片)と再出現だけ。
+        if (InCooldown) return;
+
+        MoveSelection(isUp ? -1 : +1);
         PlayTick();
+
+        // 両ノーツ共通のクールタイム開始。逆側は判定対象外にして暗く・小さく見せる
+        cooldownTimer = oppositeCooldown;
+        SetCooldownState(isUp ? downNote : upNote, true);
+    }
+
+    // クールタイム状態の適用/解除。IsJudgeable を切り替え、見た目(発光・縮尺)で状態を伝える。
+    private void SetCooldownState(CuttableNote target, bool on)
+    {
+        if (target == null || target.IsCut) return;
+        target.IsJudgeable = !on;
+        var vis = target.GetComponent<NoteVisuals>();
+        if (vis != null) vis.SetEmissionBoost(on ? cooldownEmission : 1f);
+        target.transform.localScale = Vector3.one * noteScale * (on ? cooldownScale : 1f);
     }
 
     // 曲送り(端でループ)。キーボード↑↓の Move と同じ回り込み規則。
@@ -146,10 +177,22 @@ public class SongSelectSlashNav : MonoBehaviour
         Tick(Time.unscaledDeltaTime);
     }
 
-    // 再出現タイマーと浮遊アニメ。テストから直接呼べる。
+    // クールタイム・再出現タイマーと浮遊アニメ。テストから直接呼べる。
     public void Tick(float dt)
     {
         age += dt;
+
+        // クールタイムを先に消化する(同じフレームで再出現するノーツが正しく有効化されるように)
+        if (cooldownTimer > 0f)
+        {
+            cooldownTimer -= dt;
+            if (cooldownTimer <= 0f)
+            {
+                cooldownTimer = -1f;
+                SetCooldownState(upNote, false);
+                SetCooldownState(downNote, false);
+            }
+        }
 
         if (upRespawnTimer >= 0f)
         {

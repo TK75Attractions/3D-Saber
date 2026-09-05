@@ -100,9 +100,66 @@ public class SongSelectSlashNavTests
         nav.UpNote.Cut(nav.UpNote.transform.position, new Vector3(0f, -9f, 0f));
         Assert.AreEqual(ctl.SongCount - 1, ctl.SelectedIndex, "逆方向スイングでも曲送りが効く");
 
-        // ↓ノーツを横振りで切っても次の曲へ
+        // クールタイムを明けてから、↓ノーツを横振りで切っても次の曲へ
+        nav.Tick(nav.oppositeCooldown + 0.01f);
         nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(9f, 0f, 0f));
         Assert.AreEqual(0, ctl.SelectedIndex, "横振りでも曲送りが効く(末尾→先頭へ回り込み)");
+    }
+
+    // ---- 逆側ノーツのクールタイム(1回の振りで「進んで戻る」誤爆の防止) ----
+
+    [Test]
+    public void CutOne_PutsOppositeOnCooldown_AndItsCutDoesNotMoveSelection()
+    {
+        var nav = MakeNav(out var ctl);
+        var up = nav.UpNote;
+
+        nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(0f, -9f, 0f));
+        Assert.AreEqual(1, ctl.SelectedIndex);
+        Assert.IsTrue(nav.InCooldown, "カット直後はクールタイム中");
+        Assert.IsFalse(up.IsJudgeable, "逆側(↑)は判定対象外になる");
+        Assert.Less(up.transform.localScale.x, nav.noteScale, "逆側は縮んで『無効』を示す");
+
+        // 巻き込みで↑が切れてしまっても曲は戻らない
+        up.Cut(up.transform.position, new Vector3(0f, 9f, 0f));
+        Assert.AreEqual(1, ctl.SelectedIndex, "クールタイム中の逆側カットでは曲送りしない");
+    }
+
+    [Test]
+    public void Cooldown_Expires_ThenOppositeWorksAgain()
+    {
+        var nav = MakeNav(out var ctl);
+        nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(0f, -9f, 0f));
+        Assert.AreEqual(1, ctl.SelectedIndex);
+
+        nav.Tick(nav.oppositeCooldown * 0.5f);
+        Assert.IsTrue(nav.InCooldown);
+        Assert.IsFalse(nav.UpNote.IsJudgeable, "まだクールタイム中");
+
+        nav.Tick(nav.oppositeCooldown * 0.5f + 0.01f);
+        Assert.IsFalse(nav.InCooldown, "クールタイム終了");
+        Assert.IsTrue(nav.UpNote.IsJudgeable, "逆側が再び切れる");
+        Assert.AreEqual(nav.noteScale, nav.UpNote.transform.localScale.x, 1e-4f, "見た目も元に戻る");
+
+        nav.UpNote.Cut(nav.UpNote.transform.position, new Vector3(0f, 9f, 0f));
+        Assert.AreEqual(0, ctl.SelectedIndex, "クールタイム後は前の曲へ戻れる");
+    }
+
+    [Test]
+    public void RespawnedNote_DuringCooldown_StaysUnjudgeable_UntilCooldownEnds()
+    {
+        var nav = MakeNav(out _);
+        nav.oppositeCooldown = nav.respawnDelay + 1.0f; // 再出現より長いクールタイム
+
+        nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(0f, -9f, 0f));
+        nav.Tick(nav.respawnDelay + 0.05f);
+        Assert.IsNotNull(nav.DownNote, "再出現している");
+        Assert.IsFalse(nav.DownNote.IsJudgeable, "クールタイム中に再出現したノーツは切れない");
+
+        nav.Tick(1.0f);
+        Assert.IsFalse(nav.InCooldown);
+        Assert.IsTrue(nav.DownNote.IsJudgeable, "クールタイム終了で有効化");
+        Assert.IsTrue(nav.UpNote.IsJudgeable);
     }
 
     [Test]

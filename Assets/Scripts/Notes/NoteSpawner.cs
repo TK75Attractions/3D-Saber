@@ -256,20 +256,15 @@ public class NoteSpawner : MonoBehaviour
         // 親にしない：ロングノーツの Z スケール拡張に引きずられて位置や形が歪まないように。
         // 別 GameObject + FollowTransformWorldOffset で追従させる。
         var go = new GameObject("CountLabel");
-        Vector3 offset = new Vector3(0f, 0.7f, 0f);
+        Vector3 offset = LongNoteCountStyle.WorldOffset;
         go.transform.position = target.position + offset;
-        // プレイヤー（カメラ）は -Z 側。テキストの前面（+Z）を -Z に向けるため 180° 回転。
-        // それだけだと水平方向に反転するので X スケールを負にして打ち消す。
-        go.transform.rotation = Quaternion.Euler(0f, 180f, 0f);
-        go.transform.localScale = new Vector3(-1.0f, 1.0f, 1.0f);
+        // TMP の標準正面は -Z 側。反転スケールを使わず、3D の奥行きテストを保つ。
+        go.transform.rotation = Quaternion.identity;
+        go.transform.localScale = Vector3.one;
 
         var tmp = go.AddComponent<TMPro.TextMeshPro>();
         tmp.text = note.RequiredCutCount.ToString();
-        tmp.fontSize = 12f;
-        tmp.fontStyle = TMPro.FontStyles.Bold;
-        tmp.alignment = TMPro.TextAlignmentOptions.Center;
-        tmp.enableWordWrapping = false;
-        tmp.color = Color.white;
+        LongNoteCountStyle.Apply(tmp);
 
         var follower = go.AddComponent<FollowTransformWorldOffset>();
         follower.target = target;

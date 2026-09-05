@@ -1,152 +1,323 @@
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
-// Game シーンに Tron 風の床 + 天井 + レーンガイド + 奥行きグリッドを runtime で生成する。
-// 視認性向上：床の depth cue、レーン位置のプレビュー、トンネル感。
+// Obsidian Relay: 段差のあるデッキと、奥へ重なる側壁で距離を表す。
+// ノーツ・判定ゲート・HUDには触れない。中央は空け、光は床端と側壁だけに置く。
+// 環境は静的な結合メッシュ。パーツ数に比例した描画呼び出しや Update を増やさない。
+// EditMode の確認で生成した一時資源も OnDestroy で解放する。自動生成・毎フレーム処理はしない。
+[ExecuteAlways]
 public class FloorRenderer : MonoBehaviour
 {
     [Header("Floor / Ceiling extents")]
     public float floorY = -2.5f;
-    public float ceilingY = 3.0f;
+    public float ceilingY = 3f;
     public float minX = -8f;
     public float maxX = 8f;
     public float minZ = -3f;
     public float maxZ = 22f;
-
     [Header("Colors")]
-    public Color baseColor = new Color(0.012f, 0.02f, 0.05f, 1f);
-    public Color lineColor = new Color(0.27f, 1f, 0.97f, 0.7f);
-    public Color brightLineColor = new Color(0.5f, 1f, 1f, 1f);
-
+    public Color baseColor = new Color(.023f, .035f, .049f, 1f);
+    public Color lineColor = new Color(.065f, .30f, .37f, 1f);
+    public Color brightLineColor = new Color(.19f, .53f, .61f, 1f);
     [Header("Lane lines (vertical strips along Z)")]
-    // 両端 + 中央の 3 本だけ。7 本あった旧仕様は縦線が多すぎて視覚ノイズだった。
-    public float[] laneXPositions = new float[] { -3f, 0f, 3f };
-    public float laneLineThickness = 0.04f;
-    public float laneLineEmission = 0.35f;
-
-    [Header("Depth lines (perpendicular strips along X)")]
+    public float[] laneXPositions = { -3f, 0f, 3f };
+    public float laneLineThickness = .024f;
+    public float laneLineEmission = .30f;
+    [Header("Depth marks (outside the central lane)")]
     public float depthLineSpacing = 4f;
-    public float depthLineThickness = 0.04f;
-    public float depthLineEmission = 0.3f;
-    public float judgeDepthLineEmission = 2.4f;
-
-    [Header("Ceiling")]
-    // 既定 OFF。天井グリッドはノーツ軌道の背後で常に光る視覚ノイズだった(true で復活可能)。
+    public float depthLineThickness = .025f;
+    public float depthLineEmission = .22f;
+    public float judgeDepthLineEmission = .45f;
+    [Header("Ceiling (optional; off by default)")]
     public bool addCeiling = false;
-    public float ceilingDimming = 0.7f;
-
+    public float ceilingDimming = .4f;
     [Header("Floor base")]
     public bool addFloorBase = true;
+    [Header("Side architecture")]
+    public bool addSideArchitecture = true;
+    public float wallBaySpacing = 5f;
+    public float distantExtension = 16f;
+
+    public const float ClearCorridorHalfWidth = 5.8f;
+    private bool built;
+    private readonly List<Material> materials = new List<Material>();
+    private readonly List<Mesh> meshes = new List<Mesh>();
 
     public static FloorRenderer Ensure(Transform parent = null)
     {
         var existing = Object.FindFirstObjectByType<FloorRenderer>();
-        if (existing != null) return existing;
+        if (existing != null) { existing.Build(); return existing; }
         var go = new GameObject("FloorRenderer");
         if (parent != null) go.transform.SetParent(parent, false);
-        var r = go.AddComponent<FloorRenderer>();
-        r.Build();
-        return r;
+        var renderer = go.AddComponent<FloorRenderer>();
+        renderer.Build();
+        return renderer;
     }
 
-    void Build()
+    // 二重適用しても環境・マテリアルを増やさない。
+    public void Build()
     {
-        if (addFloorBase) BuildBase("FloorBase", floorY);
-        BuildLaneLines(floorY, 1f, "FloorLane_");
-        BuildDepthLines(floorY, 1f, "FloorDepth_");
+        if (built) return;
+        built = true;
+        float farZ = maxZ + Mathf.Max(0f, distantExtension);
+        float width = Mathf.Max(1f, maxX - minX);
+        float centerX = (minX + maxX) * .5f;
+        float centerZ = (minZ + farZ) * .5f;
+        float depth = Mathf.Max(1f, farZ - minZ);
+        var baseMat = Surface("Foundation", baseColor, .18f, .02f);
+        var deckMat = Surface("GraphiteDeck", new Color(.057f, .080f, .104f), .38f, .04f);
+        var edgeMat = Surface("MachinedEdge", new Color(.100f, .139f, .172f), .45f, .04f);
+        var recessMat = Surface("Recess", new Color(.009f, .017f, .023f), .12f, .015f);
+        var wallMat = Surface("WallPanels", new Color(.042f, .064f, .086f), .30f, .055f);
+        var ribMat = Surface("StructuralRibs", new Color(.076f, .102f, .125f), .38f, .06f);
+        var guideMat = Surface("MutedLane", lineColor, .25f, laneLineEmission);
+        var lightMat = Surface("IceInlay", brightLineColor, .30f, .52f);
+        var amberMat = Surface("AmberServiceTabs", new Color(.38f, .215f, .073f), .20f, .25f);
 
+        if (addFloorBase)
+        {
+            var foundation = new Geometry();
+            foundation.Box(new Vector3(centerX, floorY - .16f, centerZ), new Vector3(width, .28f, depth));
+            Emit("FloorBase", foundation, baseMat);
+        }
+        var panels = new Geometry();
+        var sideDecks = new Geometry();
+        var recesses = new Geometry();
+        var deckInlays = new Geometry();
+        var serviceTabs = new Geometry();
+        Quaternion horizontal = Quaternion.Euler(90f, 0f, 0f);
+        float slabSpacing = Mathf.Max(2f, depthLineSpacing);
+        for (float z = minZ; z < farZ - .05f; z += slabSpacing)
+        {
+            float length = Mathf.Min(slabSpacing, farZ - z);
+            float mid = z + length * .5f;
+            // 全面を発光する格子ではなく、大きな面の継ぎ目と面取りで床を見せる。
+            foreach (float x in new[] { -4.47f, -1.49f, 1.49f, 4.47f })
+                panels.Panel(new Vector3(x, floorY - .018f, mid),
+                    new Vector3(2.90f, Mathf.Max(.1f, length - .11f), .10f), horizontal, .17f);
+            foreach (int side in new[] { -1, 1 })
+            {
+                sideDecks.Panel(new Vector3(side * 6.94f, floorY + .045f, mid),
+                    new Vector3(1.77f, Mathf.Max(.1f, length - .10f), .28f), horizontal, .22f);
+                recesses.Box(new Vector3(side * 6.09f, floorY + .12f, mid), new Vector3(.17f, .06f, length - .13f));
+                deckInlays.Box(new Vector3(side * 6.09f, floorY + .154f, mid), new Vector3(.038f, .018f, length * .72f));
+                // 通路端の排熱溝。短い影の反復で縮尺を示す。
+                for (int slit = 0; slit < 5; slit++)
+                    recesses.Box(new Vector3(side * 6.85f, floorY + .194f, mid - .38f + slit * .19f),
+                        new Vector3(.60f, .014f, .042f));
+                if (Mathf.RoundToInt((z - minZ) / slabSpacing) % 3 == 0)
+                    serviceTabs.Box(new Vector3(side * 7.42f, floorY + .194f, mid), new Vector3(.10f, .016f, .42f));
+            }
+        }
+        Emit("FloorPanels", panels, deckMat);
+        Emit("RaisedSideDecks", sideDecks, edgeMat);
+        Emit("FloorRecesses", recesses, recessMat);
+        Emit("FloorEdgeInlays", deckInlays, lightMat);
+        Emit("FloorServiceTabs", serviceTabs, amberMat);
+        BuildLaneLines(floorY + .037f, minZ, farZ, guideMat, "FloorLane_");
+        BuildDepthMarks(floorY + .04f, minZ, farZ, guideMat, "FloorDepth_");
         if (addCeiling)
         {
-            // 天井は base 無し（背景が見えるよう grid lines のみ）
-            BuildLaneLines(ceilingY, ceilingDimming, "CeilLane_");
-            BuildDepthLines(ceilingY, ceilingDimming, "CeilDepth_");
+            var ceilingMat = Surface("OptionalCeiling", lineColor * ceilingDimming, .2f, depthLineEmission);
+            BuildLaneLines(ceilingY, minZ, farZ, ceilingMat, "CeilLane_");
+            BuildDepthMarks(ceilingY, minZ, farZ, ceilingMat, "CeilDepth_");
         }
+        if (addSideArchitecture) BuildWalls(farZ, wallMat, ribMat, recessMat, lightMat, amberMat);
     }
 
-    void BuildBase(string name, float y)
+    private void BuildLaneLines(float y, float near, float far, Material material, string prefix)
     {
-        var floor = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        floor.name = name;
-        floor.transform.SetParent(transform, false);
-        float w = maxX - minX;
-        float d = maxZ - minZ;
-        float cx = (maxX + minX) / 2f;
-        float cz = (maxZ + minZ) / 2f;
-        floor.transform.localPosition = new Vector3(cx, y - 0.05f, cz);
-        floor.transform.localScale = new Vector3(w, 0.05f, d);
-        StripCollider(floor);
-        floor.GetComponent<MeshRenderer>().sharedMaterial = MakeOpaqueLit(baseColor);
-    }
-
-    void BuildLaneLines(float y, float brightnessFactor, string prefix)
-    {
-        foreach (var x in laneXPositions)
+        if (laneXPositions == null) return;
+        foreach (float x in laneXPositions)
         {
-            var line = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            line.name = $"{prefix}x{x:F1}";
-            line.transform.SetParent(transform, false);
-            float d = maxZ - minZ;
-            float cz = (maxZ + minZ) / 2f;
-            line.transform.localPosition = new Vector3(x, y + 0.005f, cz);
-            line.transform.localScale = new Vector3(laneLineThickness, 0.02f, d);
-            StripCollider(line);
-            bool isCenter = Mathf.Abs(x) < 0.01f;
-            float emission = (isCenter ? laneLineEmission * 1.5f : laneLineEmission) * brightnessFactor;
-            line.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeEmissiveLit(isCenter ? brightLineColor : lineColor, emission);
+            var geometry = new Geometry();
+            // 中央は一段細くし、ノーツの真下に強い光を作らない。
+            float thickness = laneLineThickness * (Mathf.Abs(x) < .01f ? .55f : 1f);
+            geometry.Box(new Vector3(x, y, (near + far) * .5f), new Vector3(thickness, .008f, far - near));
+            Emit($"{prefix}x{x:F1}", geometry, material);
         }
     }
 
-    void BuildDepthLines(float y, float brightnessFactor, string prefix)
+    private void BuildDepthMarks(float y, float near, float far, Material material, string prefix)
     {
-        for (float z = minZ; z <= maxZ + 0.01f; z += depthLineSpacing)
+        for (float z = near; z <= far; z += Mathf.Max(2f, depthLineSpacing))
         {
-            var line = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            line.name = $"{prefix}z{z:F1}";
-            line.transform.SetParent(transform, false);
-            float w = maxX - minX;
-            float cx = (maxX + minX) / 2f;
-            line.transform.localPosition = new Vector3(cx, y + 0.005f, z);
-            line.transform.localScale = new Vector3(w, 0.02f, depthLineThickness);
-            StripCollider(line);
-            bool isJudge = Mathf.Abs(z) < 0.5f;
-            float emission = (isJudge ? judgeDepthLineEmission : depthLineEmission) * brightnessFactor;
-            line.GetComponent<MeshRenderer>().sharedMaterial =
-                MakeEmissiveLit(isJudge ? brightLineColor : lineColor, emission);
+            var geometry = new Geometry();
+            // 横線は左右の肩だけ。中央を横切る輝線は既存の小節線に任せる。
+            foreach (int side in new[] { -1, 1 })
+                geometry.Box(new Vector3(side * 4.93f, y, z + .04f), new Vector3(1.72f, .008f, depthLineThickness));
+            Emit($"{prefix}z{z:F1}", geometry, material);
         }
     }
 
-    static void StripCollider(GameObject go)
+    private void BuildWalls(float farZ, Material panelMat, Material ribMat, Material darkMat, Material lightMat, Material amberMat)
     {
-        var c = go.GetComponent<Collider>();
-        if (c != null)
+        var panels = new Geometry(); var insets = new Geometry(); var ribs = new Geometry();
+        var trims = new Geometry(); var tabs = new Geometry();
+        float spacing = Mathf.Max(3.5f, wallBaySpacing);
+        for (float z = minZ; z < farZ - .1f; z += spacing)
         {
-            if (Application.isPlaying) Destroy(c);
-            else DestroyImmediate(c);
+            float length = Mathf.Min(spacing, farZ - z);
+            if (length < 1.2f) continue;
+            float mid = z + length * .5f;
+            int bay = Mathf.RoundToInt((z - minZ) / spacing);
+            foreach (int side in new[] { -1, 1 })
+            {
+                Quaternion inward = Quaternion.Euler(0f, side * 90f, 0f);
+                panels.Panel(new Vector3(side * 8.03f, floorY + 2.95f, mid),
+                    new Vector3(length - .18f, 5.35f, .34f), inward, .36f);
+                // 背板・くぼみ・縁の三層を実際に離す。視点に応じた重なりが生まれる。
+                insets.Panel(new Vector3(side * 7.83f, floorY + 2.8f, mid),
+                    new Vector3(length - .65f, 2.26f, .12f), inward, .28f);
+                panels.Panel(new Vector3(side * 7.72f, floorY + 2.72f, mid),
+                    new Vector3(length - .96f, 1.82f, .14f), inward, .24f);
+                Vector3 foot = new Vector3(side * 7.25f, floorY + .18f, z + .14f);
+                Vector3 elbow = new Vector3(side * 7.70f, floorY + 3.88f, z + .14f);
+                Vector3 crown = new Vector3(side * 6.77f, floorY + 6.08f, z + .14f);
+                ribs.Beam(foot, elbow, .28f, .43f);
+                ribs.Beam(elbow, crown, .25f, .43f);
+                ribs.Box(new Vector3(side * 7.29f, floorY + .28f, z + .14f), new Vector3(.78f, .48f, .73f));
+                // 支柱全体ではなく、下半分と上の肩に短い埋め込み灯。
+                trims.Beam(foot + new Vector3(-side * .16f, .44f, -.23f),
+                    Vector3.Lerp(foot, elbow, .58f) + new Vector3(-side * .16f, 0f, -.23f), .025f, .018f);
+                trims.Beam(Vector3.Lerp(elbow, crown, .44f) + new Vector3(-side * .14f, 0f, -.23f),
+                    Vector3.Lerp(elbow, crown, .75f) + new Vector3(-side * .14f, 0f, -.23f), .023f, .018f);
+                trims.Box(new Vector3(side * 7.61f, floorY + 1.66f, mid), new Vector3(.018f, .027f, length * .47f));
+                ribs.Box(new Vector3(side * 7.76f, floorY + .77f, mid), new Vector3(.42f, .23f, length - .10f));
+                if (bay % 2 == 0)
+                    for (int tick = 0; tick < 3; tick++)
+                        tabs.Box(new Vector3(side * 7.615f, floorY + 3.74f, mid - .2f + tick * .20f), new Vector3(.018f, .08f, .09f));
+            }
         }
+        Emit("WallPanels", panels, panelMat);
+        Emit("WallRecesses", insets, darkMat);
+        Emit("WallStructuralRibs", ribs, ribMat);
+        Emit("WallLightInlays", trims, lightMat);
+        Emit("WallServiceTabs", tabs, amberMat);
     }
 
-    static Material MakeOpaqueLit(Color c)
+    private Material Surface(string name, Color color, float smoothness, float emission)
     {
-        var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-        var m = new Material(sh);
-        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
-        else m.color = c;
-        if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0.3f);
-        return m;
-    }
-
-    static Material MakeEmissiveLit(Color c, float emission)
-    {
-        var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-        var m = new Material(sh);
-        if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", c);
-        else m.color = c;
-        if (m.HasProperty("_EmissionColor"))
+        // Resources 参照でビルド時のシェーダー除外を防ぐ。既存の2D Rendererも維持する。
+        var shader = Resources.Load<Shader>("Stage/ObsidianMetal")
+            ?? Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
+        var material = new Material(shader) { name = "ObsidianRelay/" + name };
+        if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
+        else if (material.HasProperty("_Color")) material.SetColor("_Color", color);
+        if (material.HasProperty("_Smoothness")) material.SetFloat("_Smoothness", smoothness);
+        if (material.HasProperty("_Metallic")) material.SetFloat("_Metallic", .32f);
+        if (material.HasProperty("_EmissionColor"))
         {
-            m.EnableKeyword("_EMISSION");
-            Color e = c; e.a = 1f;
-            m.SetColor("_EmissionColor", e * emission);
+            material.EnableKeyword("_EMISSION");
+            material.SetColor("_EmissionColor", color * emission);
         }
-        return m;
+        materials.Add(material);
+        return material;
+    }
+
+    private void Emit(string name, Geometry geometry, Material material)
+    {
+        if (geometry.VertexCount == 0) return;
+        var go = new GameObject(name, typeof(MeshFilter), typeof(MeshRenderer));
+        go.transform.SetParent(transform, false);
+        Mesh mesh = geometry.CreateMesh(name);
+        meshes.Add(mesh);
+        go.GetComponent<MeshFilter>().sharedMesh = mesh;
+        var renderer = go.GetComponent<MeshRenderer>();
+        renderer.sharedMaterial = material;
+        renderer.shadowCastingMode = ShadowCastingMode.Off;
+        renderer.receiveShadows = false;
+        renderer.lightProbeUsage = LightProbeUsage.Off;
+        renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+        // 最初から Collider を作らず、セーバーの衝突・判定へ干渉させない。
+    }
+
+    private void OnDestroy()
+    {
+        foreach (var mesh in meshes) Release(mesh);
+        foreach (var material in materials) Release(material);
+        meshes.Clear(); materials.Clear();
+    }
+
+    private static void Release(Object item)
+    {
+        if (item == null) return;
+        if (Application.isPlaying) Destroy(item); else DestroyImmediate(item);
+    }
+
+    // 材質別に頂点を蓄積し、面取りを含む構造を一つのメッシュへまとめる。
+    private sealed class Geometry
+    {
+        private readonly List<Vector3> vertices = new List<Vector3>();
+        private readonly List<Vector3> normals = new List<Vector3>();
+        private readonly List<int> triangles = new List<int>();
+        public int VertexCount => vertices.Count;
+        private void Triangle(Vector3 a, Vector3 b, Vector3 c)
+        {
+            int start = vertices.Count;
+            Vector3 normal = Vector3.Cross(b - a, c - a).normalized;
+            vertices.Add(a); vertices.Add(b); vertices.Add(c);
+            normals.Add(normal); normals.Add(normal); normals.Add(normal);
+            triangles.Add(start); triangles.Add(start + 1); triangles.Add(start + 2);
+        }
+        private void Quad(Vector3 a, Vector3 b, Vector3 c, Vector3 d)
+        {
+            Triangle(a, b, c); Triangle(a, c, d);
+        }
+        public void Box(Vector3 center, Vector3 size, Quaternion rotation = default)
+        {
+            if (rotation.Equals(default(Quaternion))) rotation = Quaternion.identity;
+            Vector3 h = size * .5f;
+            var p = new Vector3[8];
+            for (int i = 0; i < 8; i++)
+                p[i] = center + rotation * new Vector3((i & 1) == 0 ? -h.x : h.x,
+                    (i & 2) == 0 ? -h.y : h.y, (i & 4) == 0 ? -h.z : h.z);
+            Quad(p[0], p[2], p[3], p[1]); Quad(p[4], p[5], p[7], p[6]);
+            Quad(p[0], p[4], p[6], p[2]); Quad(p[1], p[3], p[7], p[5]);
+            Quad(p[0], p[1], p[5], p[4]); Quad(p[2], p[6], p[7], p[3]);
+        }
+        public void Beam(Vector3 a, Vector3 b, float width, float depth)
+        {
+            Box((a + b) * .5f, new Vector3(width, Vector3.Distance(a, b), depth),
+                Quaternion.FromToRotation(Vector3.up, (b - a).normalized));
+        }
+        // 正面は -Z。四隅を切った八角形＋傾斜した細い縁で実際の厚みを付ける。
+        public void Panel(Vector3 center, Vector3 size, Quaternion rotation, float corner)
+        {
+            float x = size.x * .5f, y = size.y * .5f, z = size.z * .5f;
+            float cut = Mathf.Min(corner, Mathf.Min(x, y) * .45f);
+            float bevel = Mathf.Min(.035f, Mathf.Min(size.z * .3f, cut * .3f));
+            var ring = new[] {
+                new Vector2(-x + cut, -y), new Vector2(x - cut, -y),
+                new Vector2(x, -y + cut), new Vector2(x, y - cut),
+                new Vector2(x - cut, y), new Vector2(-x + cut, y),
+                new Vector2(-x, y - cut), new Vector2(-x, -y + cut)
+            };
+            var front = new Vector3[8]; var rim = new Vector3[8]; var back = new Vector3[8];
+            for (int i = 0; i < 8; i++)
+            {
+                Vector2 p = ring[i];
+                front[i] = center + rotation * new Vector3(p.x - Mathf.Sign(p.x) * bevel, p.y - Mathf.Sign(p.y) * bevel, -z);
+                rim[i] = center + rotation * new Vector3(p.x, p.y, -z + bevel);
+                back[i] = center + rotation * new Vector3(p.x, p.y, z);
+            }
+            Vector3 frontCenter = center + rotation * new Vector3(0f, 0f, -z);
+            Vector3 backCenter = center + rotation * new Vector3(0f, 0f, z);
+            for (int i = 0; i < 8; i++)
+            {
+                int next = (i + 1) % 8;
+                Triangle(frontCenter, front[next], front[i]); Triangle(backCenter, back[i], back[next]);
+                Quad(rim[i], front[i], front[next], rim[next]); Quad(rim[i], rim[next], back[next], back[i]);
+            }
+        }
+        public Mesh CreateMesh(string name)
+        {
+            var mesh = new Mesh { name = "ObsidianRelay/" + name };
+            if (vertices.Count > 65535) mesh.indexFormat = IndexFormat.UInt32;
+            mesh.SetVertices(vertices); mesh.SetNormals(normals); mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateBounds();
+            return mesh;
+        }
     }
 }
