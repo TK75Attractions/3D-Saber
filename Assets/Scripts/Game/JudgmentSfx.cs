@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // ScoreManager.OnJudgment を購読し、ティアごとに判定音を鳴らす。
-// AudioClip が割り付けられていなければ手続き的にビープ音を生成して使う。
+// AudioClip が未指定なら同梱の切断音を使い、素材が無い場合だけ合成音へ戻す。
 [RequireComponent(typeof(AudioSource))]
 public class JudgmentSfx : MonoBehaviour
 {
@@ -18,6 +18,8 @@ public class JudgmentSfx : MonoBehaviour
     [Range(0f, 1f)] public float volume = 0.6f;
 
     private AudioSource source;
+    private AudioClip defaultCutClip;
+    private bool defaultClipLoaded;
     // 自動生成したビープ音をキャッシュ
     private AudioClip genPerfect, genGreat, genGood, genBad, genMiss;
 
@@ -25,6 +27,7 @@ public class JudgmentSfx : MonoBehaviour
     {
         source = GetComponent<AudioSource>();
         source.playOnAwake = false;
+        LoadDefaultCutClip();
     }
 
     void OnEnable()
@@ -47,15 +50,26 @@ public class JudgmentSfx : MonoBehaviour
 
     public AudioClip ClipFor(JudgmentTier tier)
     {
-        // 通常ノーツはティア別ビープ(スイープ案は試した結果、従来仕様へ戻した。2026-07-14)。
+        // Inspectorで指定した判定音を優先。Missには切断音を使わない。
+        AudioClip cut = tier == JudgmentTier.Miss ? null : LoadDefaultCutClip();
         switch (tier)
         {
-            case JudgmentTier.Perfect: return perfectClip != null ? perfectClip : (genPerfect ??= Beep(880f, 0.16f));
-            case JudgmentTier.Great:   return greatClip   != null ? greatClip   : (genGreat   ??= Beep(660f, 0.14f));
-            case JudgmentTier.Good:    return goodClip    != null ? goodClip    : (genGood    ??= Beep(440f, 0.12f));
-            case JudgmentTier.Bad:     return badClip     != null ? badClip     : (genBad     ??= Beep(220f, 0.10f));
+            case JudgmentTier.Perfect: return perfectClip != null ? perfectClip : (cut != null ? cut : (genPerfect ??= Beep(880f, 0.16f)));
+            case JudgmentTier.Great:   return greatClip   != null ? greatClip   : (cut != null ? cut : (genGreat   ??= Beep(660f, 0.14f)));
+            case JudgmentTier.Good:    return goodClip    != null ? goodClip    : (cut != null ? cut : (genGood    ??= Beep(440f, 0.12f)));
+            case JudgmentTier.Bad:     return badClip     != null ? badClip     : (cut != null ? cut : (genBad     ??= Beep(220f, 0.10f)));
             default:                   return missClip    != null ? missClip    : (genMiss    ??= Buzz(110f, 0.18f));
         }
+    }
+
+    private AudioClip LoadDefaultCutClip()
+    {
+        if (!defaultClipLoaded)
+        {
+            defaultCutClip = Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut");
+            defaultClipLoaded = true;
+        }
+        return defaultCutClip;
     }
 
     // 純粋関数: fromHz→toHz へ滑らかに下降(位相連続)するスイープ音を作る。

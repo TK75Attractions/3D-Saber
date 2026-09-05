@@ -6,7 +6,10 @@ using TMPro;
 // シーンを編集せずに「角丸カード + ネオン」の統一スタイルを作るための土台。
 // - 角丸 / 枠線 / グロー / ビネットの各スプライトを手続き生成して静的キャッシュ
 // - TMP テキスト・ネオンボタンのファクトリ
-// 注意：日本語文字列は TMP 既定フォント(LiberationSans SDF)にグリフが無いので legacy Text を使うこと。
+// 日本語について：TMP 既定フォント(LiberationSans SDF)には日本語グリフが無い。
+//   UISkinKit.FontAsset / LogoFontAsset が生成するフォントには Noto Sans JP の動的フォールバックを
+//   付けているので、曲名など日本語が混ざる可変文字列もこれらのフォントなら描ける。
+//   固定の日本語文(見出し・説明文)は従来どおり legacy Text(OS フォント)でもよい。
 public static class UISkinKit
 {
     const int RoundedTexSize = 64;
@@ -22,6 +25,8 @@ public static class UISkinKit
     static Sprite vignetteSprite;
     static TMP_FontAsset logoFontAsset;
     static bool logoFontLoadAttempted;
+    static TMP_FontAsset jpFallbackFontAsset;
+    static bool jpFallbackLoadAttempted;
     static readonly System.Collections.Generic.Dictionary<string, TMP_FontAsset> fontAssetCache =
         new System.Collections.Generic.Dictionary<string, TMP_FontAsset>();
 
@@ -229,8 +234,50 @@ public static class UISkinKit
             // CreateFontAsset は name を設定しないため、識別できるよう元リソース名を付ける。
             logoFontAsset.name = "ChakraPetch-BoldItalic";
             logoFontAsset.hideFlags = HideFlags.HideAndDontSave;
+            AttachJapaneseFallback(logoFontAsset);
         }
         return logoFontAsset;
+    }
+
+    // 日本語フォールバック(Noto Sans JP Light / OFL)。Resources/Fonts の OTF から「動的」TMP フォントを
+    // 実行時生成する。動的なので実際に使われたグリフだけをアトラスに描き、7000字級の静的アトラス
+    // (Assets/TextMesh Pro/Fonts の NotoSansJP-Light SDF、8192px)をビルドに抱き込まない。
+    // FontAsset / LogoFontAsset が生成する全フォントの fallbackFontAssetTable に付く。
+    // 経緯: 曲名「揺籠」などが Oxanium/Chakra Petch(ラテン文字のみ)で描かれて□になっていた。
+    public static TMP_FontAsset JapaneseFallbackFontAsset()
+    {
+        if (jpFallbackFontAsset != null) return jpFallbackFontAsset;
+        if (jpFallbackLoadAttempted) return null;
+        jpFallbackLoadAttempted = true;
+        var otf = Resources.Load<Font>("Fonts/NotoSansJP-Light");
+        if (otf == null)
+        {
+            Debug.LogWarning("UISkinKit: 日本語フォールバックフォント(Fonts/NotoSansJP-Light)が見つかりません。TMP の日本語は□になります");
+            return null;
+        }
+        // 72pt/余白8 の 1024² アトラス。埋まったら複数アトラスへ自動拡張(enableMultiAtlasSupport)。
+        jpFallbackFontAsset = TMP_FontAsset.CreateFontAsset(otf, 72, 8,
+            UnityEngine.TextCore.LowLevel.GlyphRenderMode.SDFAA, 1024, 1024,
+            AtlasPopulationMode.Dynamic, true);
+        if (jpFallbackFontAsset != null)
+        {
+            jpFallbackFontAsset.name = "NotoSansJP-Light (JP fallback)";
+            jpFallbackFontAsset.hideFlags = HideFlags.HideAndDontSave;
+        }
+        return jpFallbackFontAsset;
+    }
+
+    // 生成した TMP フォントに日本語フォールバックを付ける(冪等)。
+    static void AttachJapaneseFallback(TMP_FontAsset asset)
+    {
+        if (asset == null) return;
+        var jp = JapaneseFallbackFontAsset();
+        if (jp == null || jp == asset) return;
+        if (asset.fallbackFontAssetTable == null)
+        {
+            asset.fallbackFontAssetTable = new System.Collections.Generic.List<TMP_FontAsset>();
+        }
+        if (!asset.fallbackFontAssetTable.Contains(jp)) asset.fallbackFontAssetTable.Add(jp);
     }
 
     // Resources/Fonts/<name>.ttf から TMP フォントアセットを生成して共有キャッシュする。
@@ -252,6 +299,7 @@ public static class UISkinKit
                 // CreateFontAsset は name を設定しないため、識別できるよう元リソース名を付ける。
                 asset.name = name;
                 asset.hideFlags = HideFlags.HideAndDontSave;
+                AttachJapaneseFallback(asset);
             }
         }
         fontAssetCache[name] = asset;
@@ -293,8 +341,8 @@ public static class UISkinKit
         return sp;
     }
 
-    // ロゴフォント(Chakra Petch)は ASCII のみ。日本語等が混ざる文字列に使うと□になるため、
-    // 可変文字列(曲名など)に適用してよいかの判定に使う。
+    // 文字列が ASCII だけかの判定。legacy Text と TMP の使い分けや、英タイトル/和名の二重表示回避に使う。
+    // (TMP フォントには日本語フォールバックが付いたので、ロゴフォントで日本語が□になる問題自体は解消済み)
     public static bool IsAsciiOnly(string s)
     {
         if (string.IsNullOrEmpty(s)) return true;
@@ -315,6 +363,9 @@ public static class UISkinKit
         rt.sizeDelta = size;
         rt.anchoredPosition = anchoredPos;
         var t = go.AddComponent<TextMeshProUGUI>();
+        // font 未指定で日本語等の非 ASCII を含むなら、TMP 既定フォント(LiberationSans、ASCII のみ)では
+        // □になるため、日本語フォールバック付きの標準 UI フォントに切り替える。
+        if (font == null && !IsAsciiOnly(text)) font = FontAsset("Oxanium-Bold");
         if (font != null) t.font = font;
         t.text = text;
         t.fontSize = fontSize;
@@ -410,8 +461,10 @@ public static class UISkinKit
         frame.raycastTarget = false;
         parts.frame = frame;
 
-        // ラベル(TMP)。ボタンラベルは ASCII 前提なのでロゴフォントで世界観を揃える。
-        var labelFont = IsAsciiOnly(label) ? LogoFontAsset() : null;
+        // ラベル(TMP)。ロゴフォントで世界観を揃える。「START ▶」の ▶ や日本語のような
+        // ロゴフォントに無い字は、付与済みの日本語フォールバック(Noto Sans JP)側で描かれる
+        // (以前は非 ASCII ラベルだけ TMP 既定フォントに逃がしており、▶ が既定フォントにも無くて消えていた)。
+        var labelFont = LogoFontAsset();
         parts.label = MakeTMP(go.transform, "LabelTMP", label, labelSize,
             Color.Lerp(accent, Color.white, 0.35f), TextAlignmentOptions.Center,
             Vector2.zero, Vector2.zero, labelFont != null ? FontStyles.Normal : FontStyles.Bold, 2f, labelFont);

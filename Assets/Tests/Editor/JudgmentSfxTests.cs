@@ -30,7 +30,7 @@ public class JudgmentSfxTests
     }
 
     [Test]
-    public void ClipFor_FallsBackToGeneratedBeep()
+    public void ClipFor_UnassignedTiersRemainPlayable()
     {
         var go = new GameObject("sfx", typeof(AudioSource));
         var sfx = go.AddComponent<JudgmentSfx>();
@@ -49,5 +49,20 @@ public class JudgmentSfxTests
         var sfx = go.AddComponent<JudgmentSfx>();
         sfx.perfectClip = JudgmentSfx.Beep(1000f, 0.05f);
         Assert.AreSame(sfx.perfectClip, sfx.ClipFor(JudgmentTier.Perfect));
+    }
+
+    [Test]
+    public void ClipFor_DefaultHitsUseBundledCutButMissDoesNot()
+    {
+        var go = new GameObject("sfx", typeof(AudioSource));
+        var sfx = go.AddComponent<JudgmentSfx>();
+        var cut = Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut");
+        Assert.IsNotNull(cut, "通常カット音がビルドに含まれる場所から読める");
+        Assert.AreEqual(48000, cut.frequency);
+        Assert.AreEqual(1, cut.channels);
+        Assert.AreEqual(0.22f, cut.length, 0.001f);
+        foreach (var tier in new[] { JudgmentTier.Perfect, JudgmentTier.Great, JudgmentTier.Good, JudgmentTier.Bad })
+            Assert.AreSame(cut, sfx.ClipFor(tier));
+        Assert.AreNotSame(cut, sfx.ClipFor(JudgmentTier.Miss));
     }
 }

@@ -24,6 +24,28 @@ public class LongNoteCutSfxTests
     }
 
     [Test]
+    public void ClipForCut_UsesShortBundledSoundAndRespectsOverride()
+    {
+        var sfx = Make();
+        var rapid = Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut_Rapid");
+        Assert.IsNotNull(rapid, "連打用カット音を読み込める");
+        Assert.AreEqual(0.13f, rapid.length, 0.001f);
+        Assert.AreSame(rapid, sfx.ClipForCut(0));
+        Assert.AreSame(rapid, sfx.ClipForCut(4));
+
+        var custom = AudioClip.Create("custom", 480, 1, 48000, false);
+        try
+        {
+            sfx.cutClip = custom;
+            Assert.AreSame(custom, sfx.ClipForCut(0));
+        }
+        finally
+        {
+            Object.DestroyImmediate(custom);
+        }
+    }
+
+    [Test]
     public void FrequencyFor_AscendsWithCutIndex_Pentatonic()
     {
         var sfx = Make();

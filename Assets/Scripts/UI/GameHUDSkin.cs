@@ -286,9 +286,10 @@ public class GameHUDSkin : MonoBehaviour
         trt.pivot = new Vector2(0.5f, 1f);
         trt.anchoredPosition = new Vector2(0f, string.IsNullOrEmpty(en) ? -40f : -80f);
         trt.sizeDelta = new Vector2(900f, 24f);
-        // 英タイトルと同じ内容しか無い(ASCII のみ)なら二重表示を避けて空にする
+        // 英タイトルと同じ内容しか無い(ASCII のみ、または「揺籠」のように英タイトル行と同一文字列)なら
+        // 二重表示を避けて空にする。TMP 側は日本語フォールバック付きで描けるようになった。
         if (!string.IsNullOrEmpty(en) && !string.IsNullOrEmpty(songTitleText.text)
-            && UISkinKit.IsAsciiOnly(songTitleText.text))
+            && (UISkinKit.IsAsciiOnly(songTitleText.text) || songTitleText.text == en))
         {
             songTitleText.text = "";
         }

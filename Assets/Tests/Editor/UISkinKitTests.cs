@@ -67,6 +67,58 @@ public class UISkinKitTests
         Assert.AreSame(a, UISkinKit.LogoFontAsset(), "2回目以降はキャッシュを返す");
     }
 
+    // ---- 日本語フォールバック(曲名「揺籠」などが□になっていた件) ----
+
+    [Test]
+    public void JapaneseFallbackFontAsset_LoadsFromResources_AndIsDynamic()
+    {
+        var jp = UISkinKit.JapaneseFallbackFontAsset();
+        Assert.IsNotNull(jp, "Resources/Fonts/NotoSansJP-Light から日本語フォールバックが生成される");
+        Assert.AreEqual(TMPro.AtlasPopulationMode.Dynamic, jp.atlasPopulationMode, "使う字だけ描く動的アトラス");
+        Assert.AreSame(jp, UISkinKit.JapaneseFallbackFontAsset(), "2回目以降はキャッシュを返す");
+        var src = Resources.Load<Font>("Fonts/NotoSansJP-Light");
+        Assert.IsNotNull(src);
+        Assert.IsTrue(src.HasCharacter('揺') && src.HasCharacter('籠'), "元フォントは曲名「揺籠」の字を持つ");
+    }
+
+    [Test]
+    public void FontAsset_AndLogoFont_HaveJapaneseFallback()
+    {
+        var jp = UISkinKit.JapaneseFallbackFontAsset();
+        var oxanium = UISkinKit.FontAsset("Oxanium-Bold");
+        var logo = UISkinKit.LogoFontAsset();
+        Assert.IsNotNull(jp);
+        Assert.IsNotNull(oxanium);
+        Assert.IsNotNull(logo);
+        Assert.Contains(jp, oxanium.fallbackFontAssetTable, "曲名フォント(Oxanium)は日本語フォールバック付き");
+        Assert.Contains(jp, logo.fallbackFontAssetTable, "ロゴフォント(Chakra Petch)も日本語フォールバック付き");
+        // フォールバック経由で「揺」が描ける(動的アトラスへグリフが追加される)
+        Assert.IsTrue(oxanium.HasCharacter('揺', searchFallbacks: true, tryAddCharacter: true),
+            "Oxanium 単体に無い漢字もフォールバックで描ける");
+    }
+
+    [Test]
+    public void MakeNeonButton_NonAsciiLabel_AlsoUsesLogoFont()
+    {
+        // 「START ▶」の ▶ は TMP 既定フォントに無く消えていた。ロゴフォント+フォールバックで描く。
+        var root = MakeCanvasRoot();
+        var parts = UISkinKit.MakeNeonButton(root, "TestBtn", "START ▶",
+            Vector2.zero, new Vector2(200f, 60f), Color.cyan, null);
+        var logo = UISkinKit.LogoFontAsset();
+        if (logo != null) Assert.AreSame(logo, parts.label.font, "非 ASCII ラベルもロゴフォントで描画される");
+        else Assert.IsNotNull(parts.label.font);
+    }
+
+    [Test]
+    public void MakeTMP_NonAsciiText_WithoutFont_UsesUiFontWithFallback()
+    {
+        var root = MakeCanvasRoot();
+        var t = UISkinKit.MakeTMP(root, "Jp", "揺籠", 26f, Color.white,
+            TMPro.TextAlignmentOptions.Center, Vector2.zero, new Vector2(300f, 40f));
+        Assert.AreSame(UISkinKit.FontAsset("Oxanium-Bold"), t.font, "font 未指定の日本語は標準 UI フォント(フォールバック付き)へ");
+        Assert.Contains(UISkinKit.JapaneseFallbackFontAsset(), t.font.fallbackFontAssetTable);
+    }
+
     [Test]
     public void ApplyLogoGradient_SetsVertexGradientAndOutline()
     {

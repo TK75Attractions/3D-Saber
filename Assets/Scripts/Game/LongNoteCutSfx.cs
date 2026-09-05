@@ -1,18 +1,21 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// ロングノーツの各カットで上行するチャイム音を鳴らす。
+// ロングノーツの各カットで短い切断音を鳴らす。
 // NoteSpawner.OnNoteSpawned で全ノーツを購読し、ロングノーツの OnPartialCut で発火。
-// 音は JudgmentSfx.Beep を使ってペンタトニックの度数で生成。
+// 同梱素材がない場合は従来の上行チャイムへ戻す。
 [RequireComponent(typeof(AudioSource))]
 public class LongNoteCutSfx : MonoBehaviour
 {
+    public AudioClip cutClip; // 任意。未指定なら同梱の連打用切断音を使用。
     [Range(0f, 1f)] public float volume = 0.4f;
     public float baseFrequency = 440f;   // 1カット目の周波数（A4）
     public float toneDurationSec = 0.18f;
     public float pitchPerCutSemitones = 0f; // 0=ペンタトニック表（既定）、>0 ならその半音刻み
 
     private AudioSource source;
+    private AudioClip defaultCutClip;
+    private bool defaultClipLoaded;
     private NoteSpawner bound;
     // 半音指数（ペンタトニック上行）。長すぎる場合は最後の値を保ち続ける。
     private static readonly int[] PentatonicSteps = { 0, 4, 7, 12, 16, 19, 24, 28, 31, 36 };
@@ -23,6 +26,7 @@ public class LongNoteCutSfx : MonoBehaviour
     {
         source = GetComponent<AudioSource>();
         source.playOnAwake = false;
+        LoadDefaultCutClip();
     }
 
     public void Bind(NoteSpawner spawner)
@@ -55,9 +59,23 @@ public class LongNoteCutSfx : MonoBehaviour
         // 最終カット時は JudgmentSfx が tier 音を鳴らすので、ここはそれ以前のみ。
         if (cutIndex >= total - 1) return;
 
-        float freq = FrequencyFor(cutIndex);
-        var clip = GetOrCreateClip(freq, toneDurationSec);
+        var clip = ClipForCut(cutIndex);
         if (clip != null) source.PlayOneShot(clip, volume);
+    }
+
+    public AudioClip ClipForCut(int cutIndex)
+    {
+        if (cutClip != null) return cutClip;
+        LoadDefaultCutClip();
+        if (defaultCutClip != null) return defaultCutClip;
+        return GetOrCreateClip(FrequencyFor(cutIndex), toneDurationSec);
+    }
+
+    private void LoadDefaultCutClip()
+    {
+        if (defaultClipLoaded) return;
+        defaultCutClip = Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut_Rapid");
+        defaultClipLoaded = true;
     }
 
     public float FrequencyFor(int cutIndex)
