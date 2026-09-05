@@ -1,13 +1,12 @@
 using System.Collections;
 using UnityEngine;
 
-// 金ノーツ（CuttableNote.IsGold）を切った瞬間に「シャリーン」と鳴らす。
-// 以前はサイン波の和音チャイムだったが「セイバー感が無い」との評のため、
-// 斬撃ノイズ(スウィッシュ) + 非整数倍音の金属リング(うなり付き)の合成音に刷新。
-// しゃんしゃん感を出すため、少し高い2打目を短いディレイで重ねる。
+// 金ノーツを切った瞬間に、同梱の短い金属音「シャン」を単独で鳴らす。
+// 同梱音源が無い場合は従来の合成金属音を使用する。
 [RequireComponent(typeof(AudioSource))]
 public class GoldNoteSfx : MonoBehaviour
 {
+    public AudioClip cutClip; // 未指定なら同梱の金ノーツ専用音。
     [Range(0f, 1f)] public float volume = 0.65f;
 
     [Header("シング合成(パラメタを変えると次回再生時に作り直す)")]
@@ -19,6 +18,8 @@ public class GoldNoteSfx : MonoBehaviour
     [Range(0f, 1f)] public float secondHitLevel = 0.55f;
 
     private AudioSource source;
+    private AudioClip defaultCutClip;
+    private bool defaultClipLoaded;
     private NoteSpawner bound;
     private AudioClip firstClip;
     private AudioClip secondClip;
@@ -28,6 +29,7 @@ public class GoldNoteSfx : MonoBehaviour
     {
         source = GetComponent<AudioSource>();
         source.playOnAwake = false;
+        ResolveCutClip();
     }
 
     public void Bind(NoteSpawner spawner)
@@ -50,12 +52,30 @@ public class GoldNoteSfx : MonoBehaviour
 
     private void HandleCut(CuttableNote note, Vector3 point, Vector3 velocity)
     {
+        if (note == null || note.IsMissed) return;
         PlayLuxury();
+    }
+
+    public AudioClip ResolveCutClip()
+    {
+        if (cutClip != null) return cutClip;
+        if (!defaultClipLoaded)
+        {
+            defaultCutClip = Resources.Load<AudioClip>("Audio/SFX/Saber_GoldCut");
+            defaultClipLoaded = true;
+        }
+        return defaultCutClip;
     }
 
     public void PlayLuxury()
     {
         if (source == null) source = GetComponent<AudioSource>();
+        AudioClip cut = ResolveCutClip();
+        if (cut != null)
+        {
+            source.PlayOneShot(cut, volume);
+            return;
+        }
         EnsureClips();
         if (firstClip != null) source.PlayOneShot(firstClip, volume);
         if (secondClip != null && isActiveAndEnabled) StartCoroutine(PlaySecondDelayed());

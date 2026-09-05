@@ -1,0 +1,1534 @@
+{
+  "reference_song": "ElDorado only",
+  "audio_sha256": "0749344ba0c4422c0a3d3e39880bf4621765e469ee1f6d4fb1a4967cc0b0b28c",
+  "bpm": 57.333333333333336,
+  "subdivision_bpm": 172,
+  "offset_ms": 12,
+  "sections": [
+    {
+      "start_sec": 0.012,
+      "end_sec": 8.384,
+      "key": "intro",
+      "label": "導入・余白"
+    },
+    {
+      "start_sec": 8.384,
+      "end_sec": 25.128,
+      "key": "opening",
+      "label": "冒頭の主旋律"
+    },
+    {
+      "start_sec": 25.128,
+      "end_sec": 37.686,
+      "key": "hook",
+      "label": "最初の厚いフレーズ"
+    },
+    {
+      "start_sec": 37.686,
+      "end_sec": 41.872,
+      "key": "break1",
+      "label": "引き算の応答"
+    },
+    {
+      "start_sec": 41.872,
+      "end_sec": 50.245,
+      "key": "verse",
+      "label": "リズム復帰"
+    },
+    {
+      "start_sec": 50.245,
+      "end_sec": 66.989,
+      "key": "build",
+      "label": "展開を積み上げる"
+    },
+    {
+      "start_sec": 66.989,
+      "end_sec": 79.547,
+      "key": "chorus1",
+      "label": "第1ピーク前半"
+    },
+    {
+      "start_sec": 79.547,
+      "end_sec": 83.733,
+      "key": "breath",
+      "label": "短い抜き"
+    },
+    {
+      "start_sec": 83.733,
+      "end_sec": 92.105,
+      "key": "chorus1b",
+      "label": "第1ピーク後半"
+    },
+    {
+      "start_sec": 92.105,
+      "end_sec": 102.221,
+      "key": "interlude",
+      "label": "間奏"
+    },
+    {
+      "start_sec": 102.221,
+      "end_sec": 119.314,
+      "key": "chorus2",
+      "label": "第2ピーク・食い込みから入る"
+    },
+    {
+      "start_sec": 119.314,
+      "end_sec": 131.872,
+      "key": "bridge",
+      "label": "中間の整理"
+    },
+    {
+      "start_sec": 131.872,
+      "end_sec": 139.896,
+      "key": "drop",
+      "label": "高域が落ちる静かな区間"
+    },
+    {
+      "start_sec": 139.896,
+      "end_sec": 140.245,
+      "key": "pickup",
+      "label": "終盤直前の1パルスのフィル"
+    },
+    {
+      "start_sec": 140.245,
+      "end_sec": 165.361,
+      "key": "final",
+      "label": "最大ピーク"
+    },
+    {
+      "start_sec": 165.361,
+      "end_sec": 167.454,
+      "key": "release",
+      "label": "伴奏が抜ける余韻"
+    },
+    {
+      "start_sec": 167.454,
+      "end_sec": 182.105,
+      "key": "outro",
+      "label": "導入の揺れへ戻る"
+    },
+    {
+      "start_sec": 182.105,
+      "end_sec": 184.198,
+      "key": "tail",
+      "label": "音の減衰のみ"
+    }
+  ],
+  "reference": {
+    "easy": {
+      "bpm": 100.0,
+      "sha256": "191a7f1e0de1639c8584b722f08cd18c717e30fdcebc396ffdc3ad992f74bca5",
+      "notes": 106,
+      "cuts": 131,
+      "first": 1.796,
+      "last": 217.196,
+      "avg_nps": 0.492,
+      "peak_2s_nps": 2.0,
+      "types": {
+        "long": 8,
+        "tap": 85,
+        "direction": 13
+      },
+      "colors": {
+        "gold": 50,
+        "blue": 27,
+        "red": 29
+      },
+      "directions": {
+        "none": 93,
+        "up": 13
+      },
+      "simultaneous_extra": 3,
+      "interval_modes": [
+        [
+          2.4,
+          38
+        ],
+        [
+          1.2,
+          36
+        ],
+        [
+          0.6,
+          12
+        ],
+        [
+          4.8,
+          5
+        ],
+        [
+          1.8,
+          3
+        ],
+        [
+          7.2,
+          2
+        ],
+        [
+          9.6,
+          2
+        ],
+        [
+          5.4,
+          1
+        ],
+        [
+          1.35,
+          1
+        ],
+        [
+          1.05,
+          1
+        ],
+        [
+          3.0,
+          1
+        ]
+      ],
+      "x_hist": [
+        [
+          -0.36,
+          24
+        ],
+        [
+          0.36,
+          22
+        ],
+        [
+          -1.07,
+          7
+        ],
+        [
+          1.07,
+          7
+        ],
+        [
+          1.79,
+          5
+        ],
+        [
+          -1.79,
+          5
+        ],
+        [
+          0.0,
+          3
+        ],
+        [
+          0.35,
+          2
+        ],
+        [
+          1.27,
+          2
+        ],
+        [
+          -0.91,
+          1
+        ],
+        [
+          -0.96,
+          1
+        ],
+        [
+          -1.31,
+          1
+        ]
+      ],
+      "y_hist": [
+        [
+          0.64,
+          17
+        ],
+        [
+          -0.64,
+          17
+        ],
+        [
+          0.21,
+          15
+        ],
+        [
+          1.07,
+          9
+        ],
+        [
+          0.55,
+          3
+        ],
+        [
+          0.66,
+          3
+        ],
+        [
+          -0.21,
+          2
+        ],
+        [
+          0.77,
+          2
+        ],
+        [
+          0.44,
+          2
+        ],
+        [
+          0.37,
+          2
+        ],
+        [
+          0.65,
+          2
+        ],
+        [
+          0.98,
+          2
+        ]
+      ],
+      "long_details": [
+        {
+          "time": 1.796,
+          "count": 4,
+          "length": 5.4,
+          "color": "gold"
+        },
+        {
+          "time": 7.196,
+          "count": 6,
+          "length": 4.8,
+          "color": "gold"
+        },
+        {
+          "time": 21.596,
+          "count": 4,
+          "length": 2.4,
+          "color": "gold"
+        },
+        {
+          "time": 79.196,
+          "count": 4,
+          "length": 4.8,
+          "color": "gold"
+        },
+        {
+          "time": 98.396,
+          "count": 3,
+          "length": 28.8,
+          "color": "gold"
+        },
+        {
+          "time": 103.196,
+          "count": 4,
+          "length": 4.8,
+          "color": "gold"
+        },
+        {
+          "time": 127.196,
+          "count": 4,
+          "length": 4.8,
+          "color": "gold"
+        },
+        {
+          "time": 184.796,
+          "count": 4,
+          "length": 4.8,
+          "color": "gold"
+        }
+      ],
+      "per_12sec": [
+        {
+          "start": 0,
+          "count": 3
+        },
+        {
+          "start": 12,
+          "count": 4
+        },
+        {
+          "start": 24,
+          "count": 5
+        },
+        {
+          "start": 36,
+          "count": 6
+        },
+        {
+          "start": 48,
+          "count": 9
+        },
+        {
+          "start": 60,
+          "count": 7
+        },
+        {
+          "start": 72,
+          "count": 3
+        },
+        {
+          "start": 84,
+          "count": 4
+        },
+        {
+          "start": 96,
+          "count": 3
+        },
+        {
+          "start": 108,
+          "count": 6
+        },
+        {
+          "start": 120,
+          "count": 5
+        },
+        {
+          "start": 132,
+          "count": 7
+        },
+        {
+          "start": 144,
+          "count": 7
+        },
+        {
+          "start": 156,
+          "count": 8
+        },
+        {
+          "start": 168,
+          "count": 11
+        },
+        {
+          "start": 180,
+          "count": 7
+        },
+        {
+          "start": 192,
+          "count": 5
+        },
+        {
+          "start": 204,
+          "count": 5
+        },
+        {
+          "start": 216,
+          "count": 1
+        }
+      ]
+    },
+    "normal": {
+      "bpm": 100.0,
+      "sha256": "79584ccd08dfd15b412a5839b00bc81780e664e798868f8dc7d22f9e67b047fd",
+      "notes": 178,
+      "cuts": 226,
+      "first": 2.396,
+      "last": 217.196,
+      "avg_nps": 0.829,
+      "peak_2s_nps": 2.5,
+      "types": {
+        "tap": 116,
+        "long": 19,
+        "direction": 43
+      },
+      "colors": {
+        "blue": 51,
+        "red": 53,
+        "gold": 74
+      },
+      "directions": {
+        "none": 135,
+        "upright": 4,
+        "upleft": 1,
+        "up": 12,
+        "down": 14,
+        "downleft": 3,
+        "downright": 1,
+        "left": 4,
+        "right": 4
+      },
+      "simultaneous_extra": 16,
+      "interval_modes": [
+        [
+          1.2,
+          56
+        ],
+        [
+          0.6,
+          55
+        ],
+        [
+          1.8,
+          15
+        ],
+        [
+          2.4,
+          13
+        ],
+        [
+          3.0,
+          3
+        ],
+        [
+          0.75,
+          3
+        ],
+        [
+          0.45,
+          3
+        ],
+        [
+          0.3,
+          2
+        ],
+        [
+          3.6,
+          2
+        ],
+        [
+          1.35,
+          1
+        ],
+        [
+          1.05,
+          1
+        ],
+        [
+          2.25,
+          1
+        ]
+      ],
+      "x_hist": [
+        [
+          1.07,
+          37
+        ],
+        [
+          -1.07,
+          36
+        ],
+        [
+          0.36,
+          35
+        ],
+        [
+          -0.36,
+          23
+        ],
+        [
+          1.79,
+          14
+        ],
+        [
+          -1.79,
+          8
+        ],
+        [
+          -0.35,
+          2
+        ],
+        [
+          -2.5,
+          2
+        ],
+        [
+          2.5,
+          2
+        ],
+        [
+          1.62,
+          1
+        ],
+        [
+          1.51,
+          1
+        ],
+        [
+          1.11,
+          1
+        ]
+      ],
+      "y_hist": [
+        [
+          0.64,
+          43
+        ],
+        [
+          0.21,
+          23
+        ],
+        [
+          -0.21,
+          17
+        ],
+        [
+          1.07,
+          15
+        ],
+        [
+          -1.07,
+          13
+        ],
+        [
+          -0.64,
+          7
+        ],
+        [
+          0.25,
+          3
+        ],
+        [
+          -0.51,
+          2
+        ],
+        [
+          0.71,
+          2
+        ],
+        [
+          0.5,
+          2
+        ],
+        [
+          0.19,
+          2
+        ],
+        [
+          0.66,
+          2
+        ]
+      ],
+      "long_details": [
+        {
+          "time": 15.746,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 23.396,
+          "count": 2,
+          "length": 1.2,
+          "color": "gold"
+        },
+        {
+          "time": 38.396,
+          "count": 2,
+          "length": 1.2,
+          "color": "red"
+        },
+        {
+          "time": 43.346,
+          "count": 2,
+          "length": 0.0,
+          "color": "blue"
+        },
+        {
+          "time": 60.596,
+          "count": 2,
+          "length": 1.2,
+          "color": "gold"
+        },
+        {
+          "time": 67.196,
+          "count": 8,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 82.796,
+          "count": 2,
+          "length": 1.2,
+          "color": "gold"
+        },
+        {
+          "time": 109.946,
+          "count": 2,
+          "length": 2.4,
+          "color": "gold"
+        },
+        {
+          "time": 115.196,
+          "count": 2,
+          "length": 1.2,
+          "color": "gold"
+        },
+        {
+          "time": 117.596,
+          "count": 8,
+          "length": 19.2,
+          "color": "blue"
+        },
+        {
+          "time": 119.996,
+          "count": 8,
+          "length": 16.8,
+          "color": "red"
+        },
+        {
+          "time": 122.396,
+          "count": 8,
+          "length": 14.4,
+          "color": "gold"
+        },
+        {
+          "time": 152.396,
+          "count": 3,
+          "length": 2.4,
+          "color": "blue"
+        },
+        {
+          "time": 170.996,
+          "count": 3,
+          "length": 1.8,
+          "color": "gold"
+        },
+        {
+          "time": 175.196,
+          "count": 3,
+          "length": 1.8,
+          "color": "gold"
+        },
+        {
+          "time": 194.396,
+          "count": 3,
+          "length": 2.4,
+          "color": "gold"
+        },
+        {
+          "time": 194.396,
+          "count": 3,
+          "length": 2.4,
+          "color": "gold"
+        },
+        {
+          "time": 203.996,
+          "count": 2,
+          "length": 1.8,
+          "color": "gold"
+        },
+        {
+          "time": 203.996,
+          "count": 2,
+          "length": 1.8,
+          "color": "gold"
+        }
+      ],
+      "per_12sec": [
+        {
+          "start": 0,
+          "count": 9
+        },
+        {
+          "start": 12,
+          "count": 11
+        },
+        {
+          "start": 24,
+          "count": 9
+        },
+        {
+          "start": 36,
+          "count": 9
+        },
+        {
+          "start": 48,
+          "count": 17
+        },
+        {
+          "start": 60,
+          "count": 7
+        },
+        {
+          "start": 72,
+          "count": 7
+        },
+        {
+          "start": 84,
+          "count": 12
+        },
+        {
+          "start": 96,
+          "count": 13
+        },
+        {
+          "start": 108,
+          "count": 7
+        },
+        {
+          "start": 120,
+          "count": 1
+        },
+        {
+          "start": 132,
+          "count": 10
+        },
+        {
+          "start": 144,
+          "count": 10
+        },
+        {
+          "start": 156,
+          "count": 11
+        },
+        {
+          "start": 168,
+          "count": 9
+        },
+        {
+          "start": 180,
+          "count": 6
+        },
+        {
+          "start": 192,
+          "count": 14
+        },
+        {
+          "start": 204,
+          "count": 14
+        },
+        {
+          "start": 216,
+          "count": 2
+        }
+      ]
+    },
+    "hard": {
+      "bpm": 100.0,
+      "sha256": "b5a1c91bdd106f79d451c0abbc338b5ef8a7d9eb11bef3e5f3467a5af7ce9e39",
+      "notes": 392,
+      "cuts": 503,
+      "first": 2.396,
+      "last": 217.346,
+      "avg_nps": 1.824,
+      "peak_2s_nps": 4.5,
+      "types": {
+        "long": 47,
+        "tap": 218,
+        "direction": 127
+      },
+      "colors": {
+        "gold": 129,
+        "red": 150,
+        "blue": 113
+      },
+      "directions": {
+        "none": 265,
+        "up": 41,
+        "left": 20,
+        "right": 18,
+        "down": 40,
+        "upleft": 4,
+        "upright": 4
+      },
+      "simultaneous_extra": 74,
+      "interval_modes": [
+        [
+          0.6,
+          144
+        ],
+        [
+          0.3,
+          98
+        ],
+        [
+          1.2,
+          34
+        ],
+        [
+          0.45,
+          10
+        ],
+        [
+          2.4,
+          9
+        ],
+        [
+          0.0,
+          7
+        ],
+        [
+          1.8,
+          5
+        ],
+        [
+          0.15,
+          5
+        ],
+        [
+          0.9,
+          3
+        ],
+        [
+          4.8,
+          2
+        ],
+        [
+          0.75,
+          2
+        ],
+        [
+          1.5,
+          1
+        ]
+      ],
+      "x_hist": [
+        [
+          0.36,
+          78
+        ],
+        [
+          -0.36,
+          76
+        ],
+        [
+          1.79,
+          63
+        ],
+        [
+          1.07,
+          44
+        ],
+        [
+          -1.07,
+          40
+        ],
+        [
+          -1.79,
+          35
+        ],
+        [
+          2.5,
+          7
+        ],
+        [
+          -2.5,
+          7
+        ],
+        [
+          0.35,
+          5
+        ],
+        [
+          -1.73,
+          2
+        ],
+        [
+          1.1,
+          1
+        ],
+        [
+          -1.11,
+          1
+        ]
+      ],
+      "y_hist": [
+        [
+          0.64,
+          86
+        ],
+        [
+          1.07,
+          58
+        ],
+        [
+          -0.21,
+          32
+        ],
+        [
+          -0.64,
+          28
+        ],
+        [
+          0.21,
+          27
+        ],
+        [
+          -1.07,
+          10
+        ],
+        [
+          -1.5,
+          5
+        ],
+        [
+          1.5,
+          5
+        ],
+        [
+          0.8,
+          5
+        ],
+        [
+          -0.45,
+          4
+        ],
+        [
+          -0.28,
+          3
+        ],
+        [
+          -0.29,
+          3
+        ]
+      ],
+      "long_details": [
+        {
+          "time": 2.396,
+          "count": 10,
+          "length": 9.6,
+          "color": "gold"
+        },
+        {
+          "time": 7.196,
+          "count": 10,
+          "length": 4.8,
+          "color": "gold"
+        },
+        {
+          "time": 15.596,
+          "count": 2,
+          "length": 0.0,
+          "color": "red"
+        },
+        {
+          "time": 20.396,
+          "count": 2,
+          "length": 0.0,
+          "color": "blue"
+        },
+        {
+          "time": 50.396,
+          "count": 6,
+          "length": 2.4,
+          "color": "gold"
+        },
+        {
+          "time": 59.996,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 60.596,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 61.196,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 64.796,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 79.196,
+          "count": 20,
+          "length": 9.6,
+          "color": "gold"
+        },
+        {
+          "time": 107.996,
+          "count": 2,
+          "length": 2.4,
+          "color": "blue"
+        },
+        {
+          "time": 112.796,
+          "count": 2,
+          "length": 2.4,
+          "color": "blue"
+        },
+        {
+          "time": 113.996,
+          "count": 2,
+          "length": 0.0,
+          "color": "red"
+        },
+        {
+          "time": 117.596,
+          "count": 4,
+          "length": 2.4,
+          "color": "blue"
+        },
+        {
+          "time": 122.396,
+          "count": 6,
+          "length": 4.8,
+          "color": "blue"
+        },
+        {
+          "time": 136.946,
+          "count": 2,
+          "length": 0.0,
+          "color": "blue"
+        },
+        {
+          "time": 137.996,
+          "count": 2,
+          "length": 0.0,
+          "color": "red"
+        },
+        {
+          "time": 139.196,
+          "count": 2,
+          "length": 0.0,
+          "color": "blue"
+        },
+        {
+          "time": 140.396,
+          "count": 2,
+          "length": 0.0,
+          "color": "red"
+        },
+        {
+          "time": 141.596,
+          "count": 2,
+          "length": 0.0,
+          "color": "blue"
+        },
+        {
+          "time": 142.796,
+          "count": 2,
+          "length": 0.0,
+          "color": "red"
+        },
+        {
+          "time": 143.996,
+          "count": 2,
+          "length": 0.0,
+          "color": "blue"
+        },
+        {
+          "time": 151.795,
+          "count": 2,
+          "length": 0.0,
+          "color": "red"
+        },
+        {
+          "time": 165.596,
+          "count": 4,
+          "length": 2.4,
+          "color": "gold"
+        },
+        {
+          "time": 165.596,
+          "count": 4,
+          "length": 2.4,
+          "color": "gold"
+        },
+        {
+          "time": 175.796,
+          "count": 2,
+          "length": 0.0,
+          "color": "blue"
+        },
+        {
+          "time": 175.796,
+          "count": 2,
+          "length": 0.0,
+          "color": "red"
+        },
+        {
+          "time": 177.596,
+          "count": 4,
+          "length": 2.4,
+          "color": "blue"
+        },
+        {
+          "time": 179.996,
+          "count": 4,
+          "length": 2.4,
+          "color": "blue"
+        },
+        {
+          "time": 184.796,
+          "count": 8,
+          "length": 4.8,
+          "color": "red"
+        },
+        {
+          "time": 189.596,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 196.796,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 197.996,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 199.196,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 200.396,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 201.596,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 202.796,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 203.996,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 205.196,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 206.396,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 207.596,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 208.796,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 208.796,
+          "count": 8,
+          "length": 4.8,
+          "color": "gold"
+        },
+        {
+          "time": 209.996,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 211.196,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 212.396,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        },
+        {
+          "time": 213.596,
+          "count": 2,
+          "length": 0.0,
+          "color": "gold"
+        }
+      ],
+      "per_12sec": [
+        {
+          "start": 0,
+          "count": 5
+        },
+        {
+          "start": 12,
+          "count": 20
+        },
+        {
+          "start": 24,
+          "count": 21
+        },
+        {
+          "start": 36,
+          "count": 23
+        },
+        {
+          "start": 48,
+          "count": 27
+        },
+        {
+          "start": 60,
+          "count": 24
+        },
+        {
+          "start": 72,
+          "count": 6
+        },
+        {
+          "start": 84,
+          "count": 19
+        },
+        {
+          "start": 96,
+          "count": 18
+        },
+        {
+          "start": 108,
+          "count": 16
+        },
+        {
+          "start": 120,
+          "count": 28
+        },
+        {
+          "start": 132,
+          "count": 34
+        },
+        {
+          "start": 144,
+          "count": 23
+        },
+        {
+          "start": 156,
+          "count": 20
+        },
+        {
+          "start": 168,
+          "count": 33
+        },
+        {
+          "start": 180,
+          "count": 17
+        },
+        {
+          "start": 192,
+          "count": 29
+        },
+        {
+          "start": 204,
+          "count": 23
+        },
+        {
+          "start": 216,
+          "count": 6
+        }
+      ]
+    }
+  },
+  "charts": {
+    "easy": {
+      "notes": 102,
+      "cuts": 116,
+      "first_sec": 1.0585,
+      "last_sec": 180.012,
+      "end_of_final_long_sec": 181.4073,
+      "avg_nps": 0.57,
+      "peak_2s_nps": 1.5,
+      "types": {
+        "long": 8,
+        "tap": 82,
+        "direction": 12
+      },
+      "colors": {
+        "gold": 47,
+        "red": 29,
+        "blue": 26
+      },
+      "directions": {
+        "none": 90,
+        "up": 12
+      },
+      "simultaneous_extra": 3,
+      "assigned_hands": {
+        "blue": 52,
+        "red": 50
+      },
+      "sections": {
+        "intro": 3,
+        "opening": 8,
+        "hook": 8,
+        "break1": 2,
+        "verse": 4,
+        "build": 9,
+        "chorus1": 9,
+        "breath": 1,
+        "chorus1b": 6,
+        "interlude": 4,
+        "chorus2": 12,
+        "bridge": 6,
+        "drop": 3,
+        "pickup": 0,
+        "final": 20,
+        "release": 0,
+        "outro": 7,
+        "tail": 0
+      },
+      "validation": {
+        "errors": [],
+        "warnings": [],
+        "checks": [
+          "time/beat coherence",
+          "bounds",
+          "two-hand chords",
+          "chord separation",
+          "same-hand recovery",
+          "long occupancy",
+          "long cut rate",
+          "song tail"
+        ]
+      }
+    },
+    "normal": {
+      "notes": 183,
+      "cuts": 209,
+      "first_sec": 1.0585,
+      "last_sec": 180.012,
+      "end_of_final_long_sec": 181.4073,
+      "avg_nps": 1.023,
+      "peak_2s_nps": 2.5,
+      "types": {
+        "tap": 121,
+        "long": 18,
+        "direction": 44
+      },
+      "colors": {
+        "gold": 73,
+        "red": 54,
+        "blue": 56
+      },
+      "directions": {
+        "none": 139,
+        "up": 14,
+        "down": 18,
+        "upleft": 6,
+        "upright": 2,
+        "left": 2,
+        "right": 2
+      },
+      "simultaneous_extra": 13,
+      "assigned_hands": {
+        "blue": 93,
+        "red": 90
+      },
+      "sections": {
+        "intro": 6,
+        "opening": 16,
+        "hook": 16,
+        "break1": 2,
+        "verse": 9,
+        "build": 17,
+        "chorus1": 16,
+        "breath": 2,
+        "chorus1b": 11,
+        "interlude": 7,
+        "chorus2": 20,
+        "bridge": 12,
+        "drop": 7,
+        "pickup": 1,
+        "final": 29,
+        "release": 0,
+        "outro": 12,
+        "tail": 0
+      },
+      "validation": {
+        "errors": [],
+        "warnings": [],
+        "checks": [
+          "time/beat coherence",
+          "bounds",
+          "two-hand chords",
+          "chord separation",
+          "same-hand recovery",
+          "long occupancy",
+          "long cut rate",
+          "song tail"
+        ]
+      }
+    },
+    "hard": {
+      "notes": 343,
+      "cuts": 399,
+      "first_sec": 1.0585,
+      "last_sec": 180.012,
+      "end_of_final_long_sec": 181.4073,
+      "avg_nps": 1.917,
+      "peak_2s_nps": 3.5,
+      "types": {
+        "long": 38,
+        "tap": 195,
+        "direction": 110
+      },
+      "colors": {
+        "gold": 114,
+        "red": 116,
+        "blue": 113
+      },
+      "directions": {
+        "none": 233,
+        "up": 44,
+        "down": 53,
+        "left": 6,
+        "upleft": 1,
+        "right": 4,
+        "upright": 2
+      },
+      "simultaneous_extra": 40,
+      "assigned_hands": {
+        "blue": 171,
+        "red": 172
+      },
+      "sections": {
+        "intro": 9,
+        "opening": 20,
+        "hook": 27,
+        "break1": 7,
+        "verse": 17,
+        "build": 33,
+        "chorus1": 27,
+        "breath": 4,
+        "chorus1b": 25,
+        "interlude": 10,
+        "chorus2": 44,
+        "bridge": 21,
+        "drop": 9,
+        "pickup": 1,
+        "final": 70,
+        "release": 0,
+        "outro": 19,
+        "tail": 0
+      },
+      "validation": {
+        "errors": [],
+        "warnings": [],
+        "checks": [
+          "time/beat coherence",
+          "bounds",
+          "two-hand chords",
+          "chord separation",
+          "same-hand recovery",
+          "long occupancy",
+          "long cut rate",
+          "song tail"
+        ]
+      }
+    }
+  }
+}

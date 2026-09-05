@@ -14,11 +14,17 @@ public class JudgmentSfx : MonoBehaviour
     public AudioClip badClip;
     public AudioClip missClip;
 
+    [Header("Note kind clips (任意)")]
+    public AudioClip flickClip;
+    public AudioClip longFinishClip;
+
     [Header("Volume")]
     [Range(0f, 1f)] public float volume = 0.6f;
 
     private AudioSource source;
     private AudioClip defaultCutClip;
+    private AudioClip defaultFlickClip;
+    private AudioClip defaultLongFinishClip;
     private bool defaultClipLoaded;
     // 自動生成したビープ音をキャッシュ
     private AudioClip genPerfect, genGreat, genGood, genBad, genMiss;
@@ -42,10 +48,37 @@ public class JudgmentSfx : MonoBehaviour
 
     private void OnJudgment(JudgmentTier tier, int award)
     {
-        // 金ノーツのカット時も判定音は鳴らす(GoldNoteSfx のシャリーンが上に重なる従来仕様)
-        AudioClip clip = ClipFor(tier);
+        AudioClip clip = ClipForCurrentJudgment(tier);
         if (clip == null) return;
         source.PlayOneShot(clip, volume);
+    }
+
+    public AudioClip ClipForCurrentJudgment(JudgmentTier tier)
+    {
+        // 金ノーツは専用の「シャン」だけを鳴らす。
+        // Longの時間切れ評価はカット成功ではないため、完了音を出さない。
+        if (scoreManager != null && (scoreManager.LastCutWasGold || scoreManager.LastCutTimedOut)) return null;
+        return scoreManager == null
+            ? ClipFor(tier)
+            : ClipForCut(tier, scoreManager.LastCutDirection, scoreManager.LastCutCount);
+    }
+
+    public AudioClip ClipForCut(JudgmentTier tier, CutDirection direction, int cutCount)
+    {
+        if (tier == JudgmentTier.Miss) return ClipFor(tier);
+        LoadDefaultCutClip();
+        // 方向付きLongでもLongの完了音を優先する。
+        if (cutCount > 1)
+        {
+            AudioClip clip = longFinishClip != null ? longFinishClip : defaultLongFinishClip;
+            if (clip != null) return clip;
+        }
+        else if (direction != CutDirection.None)
+        {
+            AudioClip clip = flickClip != null ? flickClip : defaultFlickClip;
+            if (clip != null) return clip;
+        }
+        return ClipFor(tier);
     }
 
     public AudioClip ClipFor(JudgmentTier tier)
@@ -67,6 +100,8 @@ public class JudgmentSfx : MonoBehaviour
         if (!defaultClipLoaded)
         {
             defaultCutClip = Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut");
+            defaultFlickClip = Resources.Load<AudioClip>("Audio/SFX/Saber_FlickCut");
+            defaultLongFinishClip = Resources.Load<AudioClip>("Audio/SFX/Saber_LongFinish");
             defaultClipLoaded = true;
         }
         return defaultCutClip;

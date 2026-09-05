@@ -6,6 +6,17 @@ public class GoldNoteSfxTests
 {
     private readonly List<GameObject> created = new List<GameObject>();
 
+    [Test]
+    public void ResolveCutClip_UsesDedicatedGoldSound()
+    {
+        var go = new GameObject("goldSfx", typeof(AudioSource), typeof(GoldNoteSfx));
+        created.Add(go);
+        var gold = go.GetComponent<GoldNoteSfx>().ResolveCutClip();
+        Assert.IsNotNull(gold);
+        Assert.AreEqual(0.58f, gold.length, 0.001f);
+        Assert.AreNotSame(Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut"), gold);
+    }
+
     [TearDown]
     public void Cleanup()
     {
@@ -110,6 +121,11 @@ public class GoldNoteSfxTests
         Assert.IsNotNull(captured);
         captured.Cut(Vector3.zero, new Vector3(10f, 0f, 0f), CutDirection.None, SaberHand.Any);
         Assert.IsTrue(score.LastCutWasGold, "金ノーツのカットが記録される");
+        var sfxGo = new GameObject("judgmentSfx", typeof(AudioSource), typeof(JudgmentSfx));
+        created.Add(sfxGo);
+        var sfx = sfxGo.GetComponent<JudgmentSfx>();
+        sfx.scoreManager = score;
+        Assert.IsNull(sfx.ClipForCurrentJudgment(score.LastTier), "金ノーツへ通常音を重ねない");
 
         score.RegisterMiss();
         Assert.IsFalse(score.LastCutWasGold, "Miss でリセット");

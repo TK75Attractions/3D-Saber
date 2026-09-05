@@ -7,7 +7,7 @@ using UnityEngine;
 [RequireComponent(typeof(AudioSource))]
 public class LongNoteCutSfx : MonoBehaviour
 {
-    public AudioClip cutClip; // 任意。未指定なら同梱の連打用切断音を使用。
+    public AudioClip cutClip; // 任意。未指定なら同梱のLong専用の刻む音を使用。
     [Range(0f, 1f)] public float volume = 0.4f;
     public float baseFrequency = 440f;   // 1カット目の周波数（A4）
     public float toneDurationSec = 0.18f;
@@ -56,7 +56,7 @@ public class LongNoteCutSfx : MonoBehaviour
 
     private void HandlePartialCut(CuttableNote note, int cutIndex, int total)
     {
-        // 最終カット時は JudgmentSfx が tier 音を鳴らすので、ここはそれ以前のみ。
+        // 最終カット時は JudgmentSfx（または金専用音）が鳴るので、ここはそれ以前のみ。
         if (cutIndex >= total - 1) return;
 
         var clip = ClipForCut(cutIndex);
@@ -74,7 +74,7 @@ public class LongNoteCutSfx : MonoBehaviour
     private void LoadDefaultCutClip()
     {
         if (defaultClipLoaded) return;
-        defaultCutClip = Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut_Rapid");
+        defaultCutClip = Resources.Load<AudioClip>("Audio/SFX/Saber_LongTick");
         defaultClipLoaded = true;
     }
 

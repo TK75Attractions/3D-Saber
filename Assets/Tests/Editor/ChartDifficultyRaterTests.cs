@@ -83,11 +83,12 @@ public class ChartDifficultyRaterTests
     }
 
     [Test]
-    public void Rate_EmptySongChart_IsZero_ForNewSong()
+    public void Rate_ParsedEmptySongChart_IsZero()
     {
-        // 揺籠は譜面未制作(空チャート) → 0 = 数値非表示
-        ChartData chart = ChartLoader.LoadFromStreamingAssets("揺籠", "normal");
-        Assert.IsNotNull(chart, "空でも chart.json は読める");
+        // 実在曲は制作・編集されるため、空譜面のJSONをテスト専用に用意する。
+        ChartData chart = ChartLoader.Parse("{\"bpm\":57.333333,\"notes\":[]}");
+        Assert.IsNotNull(chart, "空でも譜面JSONは読める");
+        Assert.IsEmpty(chart.notes);
         Assert.AreEqual(0, ChartDifficultyRater.Rate(chart));
     }
 }

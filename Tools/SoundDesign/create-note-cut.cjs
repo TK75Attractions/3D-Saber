@@ -112,6 +112,97 @@ function writeWav(name, samples) {
   return checkWav(name, wav);
 }
 
+function finish(samples, peakDb) {
+  let peak = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const t = i / sampleRate;
+    const remaining = (samples.length - 1 - i) / sampleRate;
+    const fadeIn = Math.min(1, t / 0.0004);
+    const fadeOut = 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, remaining / 0.025));
+    samples[i] *= fadeIn * fadeOut;
+    peak = Math.max(peak, Math.abs(samples[i]));
+  }
+  const gain = 10 ** (peakDb / 20) / Math.max(peak, 1e-12);
+  for (let i = 0; i < samples.length; i++) samples[i] *= gain;
+  return samples;
+}
+
+function flick() {
+  const samples = new Float64Array(sampleRate * 0.19);
+  const rng = random(92313);
+  const whip = new Bandpass();
+  let phase = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const t = i / sampleRate;
+    // 空気音を高域へ跳ね上げ、短い上昇音で方向へ抜ける感触を作る。
+    const hz = 2100 + 4400 * (1 - Math.exp(-t / 0.016));
+    const noise = whip.tick(rng(), hz, 1.0) * env(t, 0.0008, 0.026);
+    phase += 2 * Math.PI * (1200 + 2200 * (1 - Math.exp(-t / 0.010))) / sampleRate;
+    samples[i] = 0.95 * noise + 0.13 * Math.sin(phase) * env(t, 0.001, 0.023);
+  }
+  return finish(samples, -3.5);
+}
+
+function longTick() {
+  const samples = new Float64Array(sampleRate * 0.12);
+  const rng = random(84901);
+  const grit = new Bandpass();
+  let phase = 0;
+  for (let i = 0; i < samples.length; i++) {
+    const t = i / sampleRate;
+    phase += 2 * Math.PI * (440 + 180 * Math.exp(-t / 0.004)) / sampleRate;
+    const body = (Math.sin(phase) + 0.23 * Math.sin(phase * 2.43)) * env(t, 0.0007, 0.012);
+    const texture = grit.tick(rng(), 1650, 1.0) * env(t, 0.0005, 0.010);
+    // 通常の長い空気音を避け、細かく刻める「コツ・ジッ」という短い質感にする。
+    samples[i] = 0.43 * body + 0.37 * texture;
+  }
+  return finish(samples, -5);
+}
+
+function longFinish() {
+  const samples = new Float64Array(sampleRate * 0.28);
+  const rng = random(42079);
+  const grit = new Bandpass();
+  for (let i = 0; i < samples.length; i++) {
+    const t = i / sampleRate;
+    const release = (Math.sin(2 * Math.PI * 880 * t) + 0.32 * Math.sin(2 * Math.PI * 1320 * t)) * env(t, 0.0008, 0.034);
+    const body = Math.sin(2 * Math.PI * 440 * t) * env(t, 0.0007, 0.014);
+    samples[i] = 0.21 * release + 0.25 * body + 0.55 * grit.tick(rng(), 2700, 0.8) * env(t, 0.0007, 0.020);
+  }
+  return finish(samples, -3.5);
+}
+
+function gold() {
+  const samples = new Float64Array(Math.round(sampleRate * 0.58));
+  const rng = random(514929);
+  const metal = new Bandpass();
+  const ratios = [1, 1.37, 1.83, 2.47, 3.16, 3.87, 4.62];
+  const amplitudes = [1, 0.70, 0.54, 0.36, 0.25, 0.18, 0.10];
+  const phases = ratios.map(() => rng() * Math.PI);
+  let previous = 0;
+  let output = 0;
+  const dcPole = Math.exp(-2 * Math.PI * 160 / sampleRate);
+  for (let i = 0; i < samples.length; i++) {
+    const t = i / sampleRate;
+    let ring = 0;
+    for (let k = 0; k < ratios.length; k++) {
+      const hz = 1760 * ratios[k];
+      const envelope = env(t, 0.0009, 0.085 / (1 + 0.18 * k));
+      // 近い2本の部分音で金属らしい揺らぎを作り、1打の「シャン」にまとめる。
+      ring += amplitudes[k] * envelope * (
+        Math.sin(2 * Math.PI * hz * t + phases[k]) +
+        0.35 * Math.sin(2 * Math.PI * (hz + 9 + k * 3) * t - phases[k])
+      );
+    }
+    const sparkle = metal.tick(rng(), 6100 - 1600 * Math.min(1, t / 0.1), 0.7) * env(t, 0.0007, 0.030);
+    const raw = 0.17 * ring + 0.80 * sparkle;
+    output = raw - previous + dcPole * output;
+    previous = raw;
+    samples[i] = output;
+  }
+  return finish(samples, -3);
+}
+
 function checkWav(name, wav) {
   let peak = 0, squares = 0, sum = 0, clipped = 0, firstAudible = -1;
   const count = (wav.length - 44) / 2;
@@ -143,5 +234,9 @@ const rapid = synthesize({ seconds: 0.13, decay: 0.017, peakDb: -5, seed: 18813,
 const reports = [
   writeWav('Saber_NoteCut.wav', standard),
   writeWav('Saber_NoteCut_Rapid.wav', rapid),
+  writeWav('Saber_FlickCut.wav', flick()),
+  writeWav('Saber_LongTick.wav', longTick()),
+  writeWav('Saber_LongFinish.wav', longFinish()),
+  writeWav('Saber_GoldCut.wav', gold()),
 ];
 console.log(JSON.stringify(reports, null, 2));

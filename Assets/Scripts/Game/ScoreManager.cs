@@ -21,6 +21,10 @@ public class ScoreManager : MonoBehaviour
     public SaberHand LastCutHand { get; private set; } = SaberHand.Any;
     // 直近判定が金ノーツのカットか。JudgmentSfx が通常カット音を重ねない判定に使う。
     public bool LastCutWasGold { get; private set; }
+    // 効果音が判定の良し悪しとノーツ種別を区別するための情報。
+    public CutDirection LastCutDirection { get; private set; } = CutDirection.None;
+    public int LastCutCount { get; private set; } = 1;
+    public bool LastCutTimedOut { get; private set; }
     // 直近判定の時間誤差(ミリ秒、負=早い/正=遅い)。タップ/フリックのみ有効。
     // ロング(完了率ベース)と Miss では LastErrorValid=false になる。HUD の EARLY/LATE 表示用。
     public double LastErrorMs { get; private set; }
@@ -63,6 +67,10 @@ public class ScoreManager : MonoBehaviour
         GoodCount = 0;
         BadCount = 0;
         LastTier = JudgmentTier.Miss;
+        LastCutWasGold = false;
+        LastCutDirection = CutDirection.None;
+        LastCutCount = 1;
+        LastCutTimedOut = false;
     }
 
     private void HandleSpawned(CuttableNote note)
@@ -74,6 +82,9 @@ public class ScoreManager : MonoBehaviour
     {
         LastCutHand = note.LastCutterHand;
         LastCutWasGold = note.IsGold;
+        LastCutDirection = note.RequiredDirection;
+        LastCutCount = note.RequiredCutCount;
+        LastCutTimedOut = note.IsMissed;
         JudgmentTier tier;
         if (note.RequiredCutCount > 1)
         {
@@ -184,6 +195,9 @@ public class ScoreManager : MonoBehaviour
         LastErrorValid = false;
         LastCutHand = SaberHand.Any;
         LastCutWasGold = false;
+        LastCutDirection = CutDirection.None;
+        LastCutCount = 1;
+        LastCutTimedOut = false;
         OnJudgment?.Invoke(JudgmentTier.Miss, 0);
         OnJudgmentEx?.Invoke(JudgmentTier.Miss, 0, false);
     }
