@@ -56,6 +56,9 @@ public class SaberInputBridge : MonoBehaviour
     public float fallbackBladeLength = 1.0f;
     LineRenderer bladeLine;
     Material bladeMaterialOwned;
+    // プロジェクターモード用: 刃の背面に敷く暗い縁取り線
+    LineRenderer bladeOutline;
+    Material bladeOutlineMaterialOwned;
 
     // SaberCutJudge から参照される世界座標の端点。
     public Vector3 WorldEndA { get; private set; }
@@ -77,6 +80,12 @@ public class SaberInputBridge : MonoBehaviour
             else DestroyImmediate(bladeMaterialOwned);
             bladeMaterialOwned = null;
         }
+        if (bladeOutlineMaterialOwned != null)
+        {
+            if (Application.isPlaying) Destroy(bladeOutlineMaterialOwned);
+            else DestroyImmediate(bladeOutlineMaterialOwned);
+            bladeOutlineMaterialOwned = null;
+        }
     }
 
     void EnsureBladeLine()
@@ -86,8 +95,8 @@ public class SaberInputBridge : MonoBehaviour
         if (bladeLine == null) bladeLine = gameObject.AddComponent<LineRenderer>();
         bladeLine.useWorldSpace = true;
         bladeLine.positionCount = 2;
-        bladeLine.startWidth = bladeWidth;
-        bladeLine.endWidth = bladeWidth;
+        bladeLine.startWidth = EffectiveBladeWidth;
+        bladeLine.endWidth = EffectiveBladeWidth;
         bladeLine.numCapVertices = 4;
         bladeLine.numCornerVertices = 0;
         bladeLine.alignment = LineAlignment.View;
@@ -101,7 +110,73 @@ public class SaberInputBridge : MonoBehaviour
         }
         bladeLine.startColor = bladeColor;
         bladeLine.endColor = bladeColor;
+        EnsureBladeOutline();
     }
+
+    // プロジェクターモードでは刃を太くする(灰色に浮いた投影面で細い線が埋もれるため)
+    float EffectiveBladeWidth => bladeWidth * (DisplaySettings.ProjectorMode ? ProjectorMode.BladeWidthScale : 1f);
+
+    // 刃の背面に敷く暗い縁取り線(プロジェクターモードのみ)。刃より少し奥(+z)に置いて Z ファイトを避ける。
+    void EnsureBladeOutline()
+    {
+        bool want = DisplaySettings.ProjectorMode && useBladeMode;
+        if (!want)
+        {
+            if (bladeOutline != null && bladeOutline.enabled) bladeOutline.enabled = false;
+            return;
+        }
+        if (bladeOutline == null)
+        {
+            var go = new GameObject("BladeOutline");
+            go.transform.SetParent(transform, false);
+            bladeOutline = go.AddComponent<LineRenderer>();
+            bladeOutline.useWorldSpace = true;
+            bladeOutline.positionCount = 2;
+            bladeOutline.numCapVertices = 4;
+            bladeOutline.numCornerVertices = 0;
+            bladeOutline.alignment = LineAlignment.View;
+            var sh = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+            bladeOutlineMaterialOwned = new Material(sh);
+            if (bladeOutlineMaterialOwned.HasProperty("_BaseColor")) bladeOutlineMaterialOwned.SetColor("_BaseColor", ProjectorMode.BladeOutlineColor);
+            else bladeOutlineMaterialOwned.color = ProjectorMode.BladeOutlineColor;
+            bladeOutline.sharedMaterial = bladeOutlineMaterialOwned;
+            bladeOutline.startColor = ProjectorMode.BladeOutlineColor;
+            bladeOutline.endColor = ProjectorMode.BladeOutlineColor;
+            bladeOutline.enabled = false; // 位置が入るまで隠す
+        }
+        float w = EffectiveBladeWidth * ProjectorMode.BladeOutlineScale;
+        bladeOutline.startWidth = w;
+        bladeOutline.endWidth = w;
+    }
+
+    void UpdateBladeOutline(Vector3 a, Vector3 b, bool visible)
+    {
+        EnsureBladeOutline();
+        if (bladeOutline == null) return;
+        if (!DisplaySettings.ProjectorMode || !visible)
+        {
+            if (bladeOutline.enabled) bladeOutline.enabled = false;
+            return;
+        }
+        const float behind = 0.02f; // 刃より奥に置く(カメラは -z 側)
+        bladeOutline.SetPosition(0, new Vector3(a.x, a.y, a.z + behind));
+        bladeOutline.SetPosition(1, new Vector3(b.x, b.y, b.z + behind));
+        if (!bladeOutline.enabled) bladeOutline.enabled = true;
+    }
+
+    // プロジェクターモードの切替を、表示中の刃に即時反映する(ProjectorModeHotkey から)。
+    public void RefreshProjectorStyle()
+    {
+        if (bladeLine != null)
+        {
+            bladeLine.startWidth = EffectiveBladeWidth;
+            bladeLine.endWidth = EffectiveBladeWidth;
+        }
+        if (HasBlade) UpdateBladeOutline(WorldEndA, WorldEndB, bladeLine != null && bladeLine.enabled);
+        else EnsureBladeOutline();
+    }
+
+    public LineRenderer BladeOutlineForTest => bladeOutline;
 
     // この Bridge が読む棒のデータが「最近」届いているか(棒1/棒2で別管理)。
     private bool IsStickRecentlyActive()
@@ -196,6 +271,7 @@ public class SaberInputBridge : MonoBehaviour
         UsingMouseFallback = false;
         HasBlade = false;
         if (bladeLine != null && bladeLine.enabled) bladeLine.enabled = false;
+        if (bladeOutline != null && bladeOutline.enabled) bladeOutline.enabled = false;
     }
 
     // ブレードの色を実行時に変更する(手の色分け用)。生成済みのマテリアル/ラインにも反映する。
@@ -255,11 +331,12 @@ public class SaberInputBridge : MonoBehaviour
         {
             bladeLine.SetPosition(0, a);
             bladeLine.SetPosition(1, b);
-            bladeLine.startWidth = bladeWidth;
-            bladeLine.endWidth = bladeWidth;
+            bladeLine.startWidth = EffectiveBladeWidth;
+            bladeLine.endWidth = EffectiveBladeWidth;
             bladeLine.startColor = bladeColor;
             bladeLine.endColor = bladeColor;
             if (!bladeLine.enabled) bladeLine.enabled = true;
+            UpdateBladeOutline(a, b, true);
         }
     }
 

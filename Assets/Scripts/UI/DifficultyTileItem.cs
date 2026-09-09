@@ -2,25 +2,23 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// 曲選択画面の難易度タイル(デザインハンドオフ 12a 準拠)。
-// 「難易度名 + LEVEL 06」の矩形タイル3枚。選択中は難易度色の枠+6px浮き上がり+色14%塗り+グロー。
+// 曲選択の共通金属パネル。難易度名と数値、選択色の細線を同じ基準で配置する。
 // 譜面なし(LEVEL --)はタイル全体を半透明にし、数値を無効色にする。
-// HorizontalLayoutGroup 配下でも浮き上がりが効くよう、可視要素は内側の Content に載せて動かす。
+// 選択しても位置を動かさず、文字と当たり判定の位置を固定する。
 public class DifficultyTileItem : MonoBehaviour
 {
     public const float TileHeight = 92f;
     const float SelectDuration = 0.18f;
 
-    static readonly Color LineColor = new Color(0.118f, 0.133f, 0.275f);       // #1E2246
-    static readonly Color FillColor = new Color(20f / 255f, 24f / 255f, 56f / 255f, 0.55f);
-    static readonly Color NameGray = new Color(0.55f, 0.60f, 0.75f);           // #8C99BF
-    static readonly Color DisabledLevel = new Color(0.227f, 0.251f, 0.40f);    // #3A4066
+    static readonly Color LineColor = SongSelectVisuals.Edge;
+    static readonly Color FillColor = SongSelectVisuals.Surface;
+    static readonly Color NameGray = SongSelectVisuals.Muted;
+    static readonly Color DisabledLevel = SongSelectVisuals.Disabled;
 
     RectTransform content;
     CanvasGroup group;
-    Image fill;
-    Image border;
-    Image glow;
+    SongSelectPanelGraphic fill;
+    SongSelectPanelGraphic selectionLine;
     TextMeshProUGUI nameText;
     TextMeshProUGUI levelText;
     Color accent;
@@ -60,31 +58,21 @@ public class DifficultyTileItem : MonoBehaviour
         content.anchorMax = Vector2.one;
         content.offsetMin = content.offsetMax = Vector2.zero;
 
-        glow = MakeImage("Glow", UISkinKit.SoftGlow(), Color.clear);
-        var grt = glow.rectTransform;
-        grt.anchorMin = Vector2.zero;
-        grt.anchorMax = Vector2.one;
-        grt.sizeDelta = new Vector2(70f, 60f);
-
-        fill = MakeImage("Fill", UISkinKit.RoundedRect(), FillColor);
-        fill.type = Image.Type.Sliced;
+        fill = SongSelectVisuals.Panel(content,"Fill",Vector2.zero,Vector2.zero,FillColor,LineColor,8f);
         StretchFull(fill.rectTransform);
         fill.raycastTarget = true; // ボタン/ドウェルの当たり判定
+        selectionLine = SongSelectVisuals.Panel(content,"SelectionLine",new Vector2(0,-42),new Vector2(145,2),Color.clear,Color.clear,0);
 
-        border = MakeImage("Border", UISkinKit.RoundedFrame(), LineColor);
-        border.type = Image.Type.Sliced;
-        StretchFull(border.rectTransform);
-
-        nameText = UISkinKit.MakeTMP(content, "Name", displayName, 24f,
+        nameText = UISkinKit.MakeTMP(content, "Name", displayName, 21f,
             NameGray, TextAlignmentOptions.Center,
-            new Vector2(0f, 20f), new Vector2(172f, 30f), FontStyles.Normal, 4f,
+            new Vector2(0f, 23f), new Vector2(172f, 28f), FontStyles.Normal, 1f,
             UISkinKit.FontAsset("Oxanium-Bold"));
         nameText.raycastTarget = false;
 
-        levelText = UISkinKit.MakeTMP(content, "Level", "", 30f,
-            UISkinPalette.OffWhite, TextAlignmentOptions.Center,
-            new Vector2(0f, -18f), new Vector2(172f, 38f), FontStyles.Normal, 0f,
-            UISkinKit.LogoFontAsset());
+        levelText = UISkinKit.MakeTMP(content, "Level", "", 31f,
+            SongSelectVisuals.Text, TextAlignmentOptions.Center,
+            new Vector2(0f, -15f), new Vector2(172f, 38f), FontStyles.Normal, 0f,
+            UISkinKit.FontAsset("Oxanium-ExtraBold"));
         levelText.raycastTarget = false;
 
         var rootImage = GetComponent<Image>();
@@ -99,7 +87,7 @@ public class DifficultyTileItem : MonoBehaviour
     public void SetLevel(int level)
     {
         hasChart = level > 0;
-        if (levelText != null) levelText.text = SongSelectSkin.FormatDifficultyLevel(level);
+        if (levelText != null) levelText.text = SongSelectSkin.FormatDifficultyCardLevel(level);
         Apply(amount);
     }
 
@@ -121,33 +109,21 @@ public class DifficultyTileItem : MonoBehaviour
         Apply(amount);
     }
 
-    // 選択度 t(0..1)に応じて枠色・塗り・浮き上がり・グローを適用する
+    // 選択度に応じて枠色・塗り・下線を適用する。
     void Apply(float t)
     {
-        if (content != null) content.anchoredPosition = new Vector2(0f, 6f * t);
-        if (border != null) border.color = Color.Lerp(LineColor, accent, t);
+        if (content != null) content.anchoredPosition = Vector2.zero;
         if (fill != null)
         {
-            fill.color = Color.Lerp(FillColor, new Color(accent.r, accent.g, accent.b, 0.14f), t);
+            fill.SetColors(Color.Lerp(FillColor,Color.Lerp(FillColor,accent,.16f),t),Color.Lerp(LineColor,accent,t));
         }
-        if (glow != null) glow.color = new Color(accent.r, accent.g, accent.b, 0.27f * t);
+        if (selectionLine != null) selectionLine.color = new Color(accent.r,accent.g,accent.b,t);
         if (nameText != null) nameText.color = Color.Lerp(NameGray, accent, t);
         if (levelText != null)
         {
-            levelText.color = hasChart ? UISkinPalette.OffWhite : DisabledLevel;
+            levelText.color = hasChart ? SongSelectVisuals.Text : DisabledLevel;
         }
         if (group != null) group.alpha = hasChart ? 1f : 0.5f;
-    }
-
-    Image MakeImage(string name, Sprite sprite, Color color)
-    {
-        var go = new GameObject(name, typeof(RectTransform), typeof(Image));
-        go.transform.SetParent(content, false);
-        var img = go.GetComponent<Image>();
-        img.sprite = sprite;
-        img.color = color;
-        img.raycastTarget = false;
-        return img;
     }
 
     static void StretchFull(RectTransform rt)

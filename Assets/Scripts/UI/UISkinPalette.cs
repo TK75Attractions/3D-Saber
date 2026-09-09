@@ -8,7 +8,10 @@ public static class UISkinPalette
     public static readonly Color Yellow = new Color(1f, 0.92f, 0.35f);
     public static readonly Color Orange = new Color(1f, 0.60f, 0.25f);
     public static readonly Color OffWhite = new Color(0.91f, 0.93f, 1f);
-    public static readonly Color SubtleGray = new Color(0.55f, 0.60f, 0.75f);
+    // 補助テキスト色。プロジェクターモードでは灰色地に沈むので明るくする。
+    public static Color SubtleGray => DisplaySettings.ProjectorMode
+        ? new Color(0.72f, 0.76f, 0.88f)
+        : new Color(0.55f, 0.60f, 0.75f);
 
     // ノーツ種別カラー
     public static readonly Color NoteFlick = new Color(0.75f, 0.40f, 1f);     // バイオレット

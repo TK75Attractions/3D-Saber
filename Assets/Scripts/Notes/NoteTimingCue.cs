@@ -83,6 +83,15 @@ public class NoteTimingCue : MonoBehaviour
             }
         }
 
+        // プロジェクターモード: 細い枠は灰色地で消えるので太く・濃く
+        if (DisplaySettings.ProjectorMode)
+        {
+            ghostThickness = Mathf.Max(ghostThickness, 0.08f);
+            approachThickness = Mathf.Max(approachThickness, 0.06f);
+            ghostMaxAlpha = Mathf.Max(ghostMaxAlpha, 0.9f);
+            approachMaxAlpha = Mathf.Max(approachMaxAlpha, 1f);
+        }
+
         if (buildRing) BuildRing();
         if (buildGhost) BuildGhost(judgeZ);
         initialized = true;

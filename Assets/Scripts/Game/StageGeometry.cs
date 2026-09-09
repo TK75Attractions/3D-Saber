@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 // 材質別に頂点を蓄積し、面取りを含む構造を一つのメッシュへまとめる。
-internal sealed class StageGeometry
+internal sealed partial class StageGeometry
 {
     private readonly List<Vector3> vertices = new List<Vector3>();
     private readonly List<Vector3> normals = new List<Vector3>();

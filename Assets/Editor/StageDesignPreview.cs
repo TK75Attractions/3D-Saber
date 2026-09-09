@@ -195,8 +195,9 @@ public static class StageDesignPreview
             if (allVariants)
             {
                 // 同じ実カメラの描画結果を4枠に並べる。比較画像のためにシーンは加工しない。
-                if (overview == null) overview = new Texture2D(3840, 2160, TextureFormat.RGB24, false);
-                overview.SetPixels((themeIndex % 2) * 1920, (1 - themeIndex / 2) * 1080, 1920, 1080, pixels.GetPixels());
+                int rows = (StageThemeCatalog.Count + 1) / 2;
+                if (overview == null) overview = new Texture2D(3840, rows * 1080, TextureFormat.RGB24, false);
+                overview.SetPixels((themeIndex % 2) * 1920, (rows - 1 - themeIndex / 2) * 1080, 1920, 1080, pixels.GetPixels());
                 if (themeIndex == StageThemeCatalog.Count - 1)
                 {
                     overview.Apply();

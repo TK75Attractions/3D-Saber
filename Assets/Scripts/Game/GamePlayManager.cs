@@ -110,6 +110,8 @@ public class GamePlayManager : MonoBehaviour
     // 2本目のセーバー判定(enableTwoSabers 時に SaberRig が生成)
     private SaberCutJudge cutJudge2;
     private GateBeatPulse gatePerfectPulse;
+    private FoundryStageMotion foundryStageMotion;
+    private ScenicStageWorld scenicStageWorld;
 
     // --- キャリブレーション（判定調整）モード ---
     private bool inCalibration;
@@ -169,7 +171,12 @@ public class GamePlayManager : MonoBehaviour
             SimplifyJudgeGuide();
         }
         if (overrideCameraPose) ApplyCameraPose();
-        if (addFloor) FloorRenderer.Ensure(transform);
+        if (addFloor)
+        {
+            var floor = FloorRenderer.Ensure(transform);
+            foundryStageMotion = FoundryStageMotion.Ensure(floor);
+            scenicStageWorld = floor.GetComponentInChildren<ScenicStageWorld>();
+        }
 
         // ユーザー設定のノーツ速度（approachTime）を NoteSpawner に反映。
         if (noteSpawner != null)
@@ -548,6 +555,11 @@ public class GamePlayManager : MonoBehaviour
         if (cutJudge != null) cutJudge.RunJudge();
         if (cutJudge2 != null) cutJudge2.RunJudge();
         if (gatePerfectPulse != null) gatePerfectPulse.Tick(Time.unscaledTimeAsDouble);
+        // 背景の可動部もこのループで駆動。曲停止中に独立して進行させない。
+        if (foundryStageMotion != null && songPlayer != null && songPlayer.IsPlaying)
+            foundryStageMotion.Tick(songPlayer.SongTime);
+        if (scenicStageWorld != null && songPlayer != null && songPlayer.IsPlaying)
+            scenicStageWorld.Tick(songPlayer.SongTime);
 
         // 2a. キャリブレーション分岐：時計は AudioSettings.dspTime ベース、終了せずループ
         if (inCalibration)

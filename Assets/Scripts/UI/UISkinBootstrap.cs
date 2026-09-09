@@ -15,6 +15,10 @@ public static class UISkinBootstrap
 
     static void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
+        // 表示モード(プロジェクター向け高コントラスト)は全シーン共通。F4 常駐と、カメラのポストプロセス適用。
+        ProjectorModeHotkey.Ensure();
+        ProjectorMode.Apply(Camera.main);
+
         switch (scene.name)
         {
             case "Title":
@@ -22,6 +26,7 @@ public static class UISkinBootstrap
                 break;
             case "SongSelect":
                 EnsureSkin<SongSelectSkin>();
+                EnsureSkin<ProjectorModeToggleUI>();
                 break;
             case "Result":
                 EnsureSkin<ResultSkin>();

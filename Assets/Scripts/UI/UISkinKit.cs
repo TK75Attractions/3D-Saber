@@ -375,6 +375,12 @@ public static class UISkinKit
         t.characterSpacing = characterSpacing;
         t.raycastTarget = false;
         t.enableWordWrapping = false;
+        // プロジェクターモード: 灰色地でも文字が立つよう暗い縁取り(実行時のみ。EditMode ではマテリアル未初期化)
+        if (DisplaySettings.ProjectorMode && Application.isPlaying)
+        {
+            t.outlineWidth = ProjectorMode.UiOutlineWidth;
+            t.outlineColor = ProjectorMode.UiOutlineColor;
+        }
         return t;
     }
 

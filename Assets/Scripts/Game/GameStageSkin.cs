@@ -12,20 +12,23 @@ public static class GameStageSkin
 
     // 奥の構造も読める青灰色。背景だけを明るくし、ノーツの発光とスコアは維持する。
     public static readonly Color BackgroundColor = new Color(0.014f, 0.024f, 0.047f, 1f);
-    public const float FogDensity = 0.028f;
+    // 以下の数値はプロジェクターモード(DisplaySettings.ProjectorMode)で「太く・明るく・フォグ薄く」へ切り替わる。
+    // プロジェクターでは背景ごと灰色に浮くので、細い線と遠方の溶け込みが真っ先に見えなくなるため。
+    static bool Proj => DisplaySettings.ProjectorMode;
+    public static float FogDensity => Proj ? 0.011f : 0.028f;
 
     // 判定ゲート:暗い面取り筐体と細い氷色のインレイ。パネルの塗りはほぼ消す。
     public static readonly Color GateColor = new Color(0.22f, 0.67f, 0.76f);
     public static readonly Color GateCornerColor = new Color(0.62f, 0.85f, 0.92f);
-    public const float GateBarThickness = 0.017f;
-    public const float GateEmission = 0.95f;
-    public const float GateCornerEmission = 0.8f;
+    public static float GateBarThickness => Proj ? 0.040f : 0.017f;
+    public static float GateEmission => Proj ? 1.6f : 0.95f;
+    public static float GateCornerEmission => Proj ? 1.3f : 0.8f;
     public const float GateCornerLength = 0.32f;
-    public const float PanelFillAlpha = 0.04f;  // 「面がある」ことがギリ分かる程度
+    public static float PanelFillAlpha => Proj ? 0.10f : 0.04f;  // 通常は「面がある」ことがギリ分かる程度
 
     // 小節線:ゲートより確実に暗く(視覚ヒエラルキー維持)
-    public const float BarLineAlpha = 0.12f;
-    public const float BarLineThickness = 0.02f;
+    public static float BarLineAlpha => Proj ? 0.30f : 0.12f;
+    public static float BarLineThickness => Proj ? 0.035f : 0.02f;
 
     // 旧 SimplifyJudgeGuide と同じ:判定面ガイドから剥がす子オブジェクトの名前接頭辞。
     private static readonly string[] GuideStripPrefixes = {

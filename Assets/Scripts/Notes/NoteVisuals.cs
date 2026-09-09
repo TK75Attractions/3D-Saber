@@ -109,6 +109,13 @@ public class NoteVisuals : MonoBehaviour
             }
         }
 
+        // プロジェクターモード: 灰色に浮く投影面でも読めるよう、色を明るさで区別できる側へ寄せ、発光を上げる
+        if (DisplaySettings.ProjectorMode)
+        {
+            baseColor = ProjectorMode.NoteColor(baseColor);
+            baseEmissionStrength = Mathf.Max(baseEmissionStrength, ProjectorMode.NoteEmission);
+        }
+
         if (stripLegacyDecorations) StripLegacyDecorations();
         BuildVisuals();
     }
@@ -201,7 +208,8 @@ public class NoteVisuals : MonoBehaviour
         var mr = GetComponent<MeshRenderer>();
         if (mr == null) return;
         // ほぼ不透明のボディ：視認性優先で透けを抑えつつ、結晶感がわずかに残る程度。_ZWrite=1 で深度を残し前後関係を安定させる。
-        runtimeBodyMat = MakeTranslucentLit(baseColor, baseEmissionStrength, alpha: 0.85f);
+        // プロジェクターモードでは透けが灰色化の元になるので不透明にする
+        runtimeBodyMat = MakeTranslucentLit(baseColor, baseEmissionStrength, alpha: DisplaySettings.ProjectorMode ? 1f : 0.85f);
         if (runtimeBodyMat.HasProperty("_Smoothness")) runtimeBodyMat.SetFloat("_Smoothness", 0.7f);
         if (runtimeBodyMat.HasProperty("_Metallic")) runtimeBodyMat.SetFloat("_Metallic", 0.1f);
         mr.sharedMaterial = runtimeBodyMat;
@@ -271,7 +279,8 @@ public class NoteVisuals : MonoBehaviour
 
         const float front = -0.51f;
         const float half = 0.5f;
-        const float thick = 0.034f;       // 遠距離でも枠が読める太さ(0.022 は z=20 で消えていた)
+        // 遠距離でも枠が読める太さ(0.022 は z=20 で消えていた)。プロジェクターモードはさらに太く。
+        float thick = DisplaySettings.ProjectorMode ? ProjectorMode.NoteRailThickness : 0.034f;
         const float length = 0.92f;       // 角を少しだけ開けて窓枠的にする
         MakeChildWithMaterial("EdgeTop", PrimitiveType.Cube, new Vector3(0f, half, front), new Vector3(length, thick, thick), Quaternion.identity, railMat);
         MakeChildWithMaterial("EdgeBot", PrimitiveType.Cube, new Vector3(0f, -half, front), new Vector3(length, thick, thick), Quaternion.identity, railMat);

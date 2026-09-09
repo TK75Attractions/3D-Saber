@@ -181,6 +181,12 @@ public class SongSelectSlashNav : MonoBehaviour
     public void Tick(float dt)
     {
         age += dt;
+        // 画面サイズやカメラの縦横比が変わっても、UIのナビ枠と同じ画面位置を保つ。
+        if (cam != null)
+        {
+            upBasePos = ResolveWorldPos(upViewport);
+            downBasePos = ResolveWorldPos(downViewport);
+        }
 
         // クールタイムを先に消化する(同じフレームで再出現するノーツが正しく有効化されるように)
         if (cooldownTimer > 0f)

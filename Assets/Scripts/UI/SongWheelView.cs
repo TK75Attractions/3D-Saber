@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 
-// 曲選択画面の「SONG WHEEL」(デザインハンドオフ 12a)。
+// 曲選択画面の金属パネル型「SONG WHEEL」。
 // 選択行は常に画面中央に固定され、曲リスト側が回転して流れる。
 // 各行はオフセット off = i - animPos から位置(off×104px)・縮尺・不透明度を計算する。
 // アニメーションは animPos を easeOutCubic で 0.3 秒かけて目標へ動かすだけで全行が追従する。
@@ -13,18 +13,17 @@ public class SongWheelView : MonoBehaviour
     public const float RowStride = 104f;
     public const float SlideDuration = 0.30f;
 
-    static readonly Color RowLine = new Color(0.118f, 0.133f, 0.275f);        // #1E2246
-    static readonly Color RowFill = new Color(20f / 255f, 24f / 255f, 56f / 255f, 0.72f);
-    static readonly Color SelectedFill = new Color(69f / 255f, 1f, 247f / 255f, 0.10f);
-    static readonly Color LockedText = new Color(0.227f, 0.251f, 0.40f);      // #3A4066
+    static readonly Color RowLine = SongSelectVisuals.Edge;
+    static readonly Color RowFill = SongSelectVisuals.Surface;
+    static readonly Color SelectedFill = Color.Lerp(SongSelectVisuals.Surface,SongSelectVisuals.Accent,.17f);
+    static readonly Color LockedText = SongSelectVisuals.Disabled;
 
     class Row
     {
         public RectTransform root;
         public CanvasGroup group;
-        public Image fill;
-        public Image border;
-        public Image glow;
+        public SongSelectPanelGraphic fill;
+        public SongSelectPanelGraphic marker;
         public Image thumb;
         public TextMeshProUGUI title;
         public TextMeshProUGUI level;
@@ -72,8 +71,8 @@ public class SongWheelView : MonoBehaviour
         go.transform.SetParent(parent, false);
         var rt = go.GetComponent<RectTransform>();
         rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
-        rt.sizeDelta = new Vector2(680f, 760f);
-        rt.anchoredPosition = new Vector2(-520f, -26f); // left:100 top:186 (1920×1080基準)
+        rt.sizeDelta = new Vector2(724f, 700f);
+        rt.anchoredPosition = new Vector2(-490f, -44f);
         var view = go.AddComponent<SongWheelView>();
         view.ctl = controller;
         view.coverProvider = coverProvider;
@@ -84,27 +83,7 @@ public class SongWheelView : MonoBehaviour
 
     void BuildContent()
     {
-        // 選択フレーム(中央固定)。上下の細線 + うっすら塗り。
-        var frame = new GameObject("SelectionFrame", typeof(RectTransform), typeof(Image));
-        frame.transform.SetParent(transform, false);
-        var frt = frame.GetComponent<RectTransform>();
-        frt.sizeDelta = new Vector2(680f, RowStride);
-        var fimg = frame.GetComponent<Image>();
-        fimg.color = new Color(69f / 255f, 1f, 247f / 255f, 0.03f);
-        fimg.raycastTarget = false;
-        MakeLine(frame.transform, new Vector2(0f, RowStride * 0.5f));
-        MakeLine(frame.transform, new Vector2(0f, -RowStride * 0.5f));
-
-        // 左の六角マーカー(ブランドモチーフ)
-        var mark = new GameObject("Marker", typeof(RectTransform), typeof(ResultHexBadgeGraphic));
-        mark.transform.SetParent(transform, false);
-        var mrt = mark.GetComponent<RectTransform>();
-        mrt.sizeDelta = new Vector2(24f, 28f);
-        mrt.anchoredPosition = new Vector2(-352f, 0f);
-        var hex = mark.GetComponent<ResultHexBadgeGraphic>();
-        hex.flatFill = true;
-        hex.topColor = UISkinPalette.Cyan;
-        hex.raycastTarget = false;
+        // 選択行の面取り枠自体を強調し、重複する外枠や後光は置かない。
 
         int count = ctl != null ? ctl.SongCount : 0;
         for (int i = 0; i < count; i++)
@@ -122,46 +101,21 @@ public class SongWheelView : MonoBehaviour
         var go = new GameObject($"WheelRow_{index}", typeof(RectTransform), typeof(CanvasGroup), typeof(Button));
         go.transform.SetParent(transform, false);
         row.root = go.GetComponent<RectTransform>();
-        row.root.sizeDelta = new Vector2(680f, RowHeight);
+        row.root.sizeDelta = new Vector2(724f, RowHeight);
         row.group = go.GetComponent<CanvasGroup>();
         row.locked = ctl.IsLocked(index);
 
-        // 選択グロー(選択行のみ点灯)
-        var glowGo = new GameObject("Glow", typeof(RectTransform), typeof(Image));
-        glowGo.transform.SetParent(go.transform, false);
-        var grt = glowGo.GetComponent<RectTransform>();
-        grt.anchorMin = Vector2.zero;
-        grt.anchorMax = Vector2.one;
-        grt.sizeDelta = new Vector2(90f, 70f);
-        row.glow = glowGo.GetComponent<Image>();
-        row.glow.sprite = UISkinKit.SoftGlow();
-        row.glow.color = Color.clear;
-        row.glow.raycastTarget = false;
-
-        var fillGo = new GameObject("Fill", typeof(RectTransform), typeof(Image));
-        fillGo.transform.SetParent(go.transform, false);
-        StretchFull(fillGo.GetComponent<RectTransform>());
-        row.fill = fillGo.GetComponent<Image>();
-        row.fill.sprite = UISkinKit.RoundedRect();
-        row.fill.type = Image.Type.Sliced;
-        row.fill.color = RowFill;
+        row.fill = SongSelectVisuals.Panel(go.transform,"Fill",Vector2.zero,Vector2.zero,RowFill,RowLine,8f);
+        StretchFull(row.fill.rectTransform);
         row.fill.raycastTarget = true; // ボタンの当たり判定
-
-        var borderGo = new GameObject("Border", typeof(RectTransform), typeof(Image));
-        borderGo.transform.SetParent(go.transform, false);
-        StretchFull(borderGo.GetComponent<RectTransform>());
-        row.border = borderGo.GetComponent<Image>();
-        row.border.sprite = UISkinKit.RoundedFrame();
-        row.border.type = Image.Type.Sliced;
-        row.border.color = RowLine;
-        row.border.raycastTarget = false;
+        row.marker = SongSelectVisuals.Panel(go.transform,"SelectedMarker",new Vector2(-354,0),new Vector2(3,54),Color.clear,Color.clear,0);
 
         // サムネイル(cover.png。無ければ曲名頭文字入りのプレースホルダー)
         var thumbGo = new GameObject("Thumb", typeof(RectTransform), typeof(Image));
         thumbGo.transform.SetParent(go.transform, false);
         var trt = thumbGo.GetComponent<RectTransform>();
         trt.sizeDelta = new Vector2(56f, 56f);
-        trt.anchoredPosition = new Vector2(-290f, 0f);
+        trt.anchoredPosition = new Vector2(-309f, 0f);
         row.thumb = thumbGo.GetComponent<Image>();
         row.thumb.raycastTarget = false;
         Sprite cover = coverProvider != null ? coverProvider(index) : null;
@@ -173,15 +127,12 @@ public class SongWheelView : MonoBehaviour
         }
         else
         {
-            row.thumb.sprite = UISkinKit.RoundedRect();
-            row.thumb.type = Image.Type.Sliced;
-            row.thumb.color = row.locked
-                ? new Color(0.227f, 0.251f, 0.40f)
-                : PlaceholderColor(songId);
-            var chakra = UISkinKit.LogoFontAsset();
+            row.thumb.color = SongSelectVisuals.Raised;
+            var chakra = UISkinKit.FontAsset("Oxanium-Bold");
+            string displayTitle = ResultSkin.SongIdToDisplayTitle(songId);
             var init = UISkinKit.MakeTMP(thumbGo.transform, "Initial",
-                string.IsNullOrEmpty(songId) ? "?" : songId.Substring(0, 1).ToUpperInvariant(),
-                24f, new Color(0.91f, 0.93f, 1f, 0.85f), TextAlignmentOptions.Center,
+                string.IsNullOrEmpty(displayTitle) ? "?" : displayTitle.Substring(0, 1).ToUpperInvariant(),
+                24f, SongSelectVisuals.Muted, TextAlignmentOptions.Center,
                 Vector2.zero, new Vector2(56f, 56f), FontStyles.Normal, 0f, chakra);
             init.raycastTarget = false;
         }
@@ -189,17 +140,19 @@ public class SongWheelView : MonoBehaviour
         // 曲名(英タイトル)。ロック曲はグレー。
         string title = ResultSkin.SongIdToDisplayTitle(songId);
         row.title = UISkinKit.MakeTMP(go.transform, "Title", title, 26f,
-            row.locked ? UISkinPalette.SubtleGray : UISkinPalette.OffWhite,
+            row.locked ? SongSelectVisuals.Muted : SongSelectVisuals.Text,
             TextAlignmentOptions.MidlineLeft,
-            new Vector2(-30f, 0f), new Vector2(420f, 60f), FontStyles.Normal, 1f,
+            new Vector2(-34f, row.locked ? 11f : 0f), new Vector2(442f, 50f), FontStyles.Normal, 0f,
             UISkinKit.FontAsset("Oxanium-Bold"));
+        row.title.enableAutoSizing=true; row.title.fontSizeMin=19; row.title.fontSizeMax=26;
+        row.title.overflowMode=TextOverflowModes.Ellipsis;
 
         // LOCKED チップ
         if (row.locked)
         {
-            var chip = UISkinKit.MakeTMP(go.transform, "LockedChip", "LOCKED", 15f,
-                UISkinPalette.SubtleGray, TextAlignmentOptions.MidlineRight,
-                new Vector2(180f, 0f), new Vector2(120f, 30f), FontStyles.Normal, 2f,
+            var chip = UISkinKit.MakeTMP(go.transform, "LockedChip", "譜面準備中", 14f,
+                SongSelectVisuals.Muted, TextAlignmentOptions.MidlineLeft,
+                new Vector2(-34f, -19f), new Vector2(442f, 22f), FontStyles.Normal, 0f,
                 UISkinKit.FontAsset("Oxanium-Bold"));
             chip.raycastTarget = false;
         }
@@ -207,8 +160,9 @@ public class SongWheelView : MonoBehaviour
         // 現在難易度のレベル(右端)
         row.level = UISkinKit.MakeTMP(go.transform, "Level", "--", 32f,
             LockedText, TextAlignmentOptions.MidlineRight,
-            new Vector2(292f, 0f), new Vector2(90f, 60f), FontStyles.Normal, 0f,
-            UISkinKit.LogoFontAsset());
+            new Vector2(306f, -7f), new Vector2(68f, 45f), FontStyles.Normal, 0f,
+            UISkinKit.FontAsset("Oxanium-ExtraBold"));
+        SongSelectVisuals.Label(go.transform,"LevelCaption","LV",12,new Vector2(306,23),new Vector2(68,18),SongSelectVisuals.Muted,TextAlignmentOptions.MidlineRight);
 
         int captured = index;
         var btn = go.GetComponent<Button>();
@@ -251,11 +205,8 @@ public class SongWheelView : MonoBehaviour
             var row = rows[i];
             if (row == null) continue;
             bool on = i == selectedIndex;
-            row.border.color = on ? new Color(69f / 255f, 1f, 247f / 255f, 0.95f) : RowLine;
-            row.fill.color = on ? SelectedFill : RowFill;
-            row.glow.color = on
-                ? new Color(69f / 255f, 1f, 247f / 255f, 0.25f)
-                : Color.clear;
+            row.fill.SetColors(on ? SelectedFill : RowFill,on ? SongSelectVisuals.Accent : RowLine);
+            row.marker.color = on ? SongSelectVisuals.Accent : Color.clear;
         }
     }
 
@@ -290,30 +241,6 @@ public class SongWheelView : MonoBehaviour
             row.group.alpha = alpha;
             row.group.blocksRaycasts = abs <= 3f;
         }
-    }
-
-    // 曲IDから安定した色相のプレースホルダー色を作る(カバー未設定の曲)
-    static Color PlaceholderColor(string songId)
-    {
-        int hash = 0;
-        if (!string.IsNullOrEmpty(songId))
-        {
-            foreach (char c in songId) hash = hash * 31 + c;
-        }
-        float hue = Mathf.Abs(hash % 360) / 360f;
-        return Color.HSVToRGB(hue, 0.50f, 0.55f);
-    }
-
-    static void MakeLine(Transform parent, Vector2 pos)
-    {
-        var go = new GameObject("Line", typeof(RectTransform), typeof(Image));
-        go.transform.SetParent(parent, false);
-        var rt = go.GetComponent<RectTransform>();
-        rt.sizeDelta = new Vector2(680f, 1f);
-        rt.anchoredPosition = pos;
-        var img = go.GetComponent<Image>();
-        img.color = new Color(69f / 255f, 1f, 247f / 255f, 0.35f);
-        img.raycastTarget = false;
     }
 
     static void StretchFull(RectTransform rt)

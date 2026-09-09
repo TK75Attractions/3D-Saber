@@ -8,16 +8,17 @@ public class StageVariantTests
     public void FirstSelectionCanReachEveryTheme()
     {
         CollectionAssert.AreEquivalent(System.Enum.GetValues(typeof(StageTheme)),
-            Enumerable.Range(0, 4).Select(i => StageThemeCatalog.Choose(i, -1)).ToArray());
+            Enumerable.Range(0, StageThemeCatalog.Count).Select(i => StageThemeCatalog.Choose(i, -1)).ToArray());
     }
 
-    [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]
-    public void NextSelectionIsUniformOverOtherThreeThemes(int previous)
+    [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
+    [TestCase(5)] [TestCase(6)] [TestCase(7)] [TestCase(8)] [TestCase(9)]
+    public void NextSelectionIsUniformOverOtherThemes(int previous)
     {
-        var choices = Enumerable.Range(0, 3).Select(i => StageThemeCatalog.Choose(i, previous)).ToArray();
-        Assert.AreEqual(3, choices.Distinct().Count());
+        var choices = Enumerable.Range(0, StageThemeCatalog.Count - 1).Select(i => StageThemeCatalog.Choose(i, previous)).ToArray();
+        Assert.AreEqual(StageThemeCatalog.Count - 1, choices.Distinct().Count());
         Assert.IsFalse(choices.Contains((StageTheme)previous));
-        Assert.IsTrue(choices.All(t => (int)t >= 0 && (int)t < 4));
+        Assert.IsTrue(choices.All(t => (int)t >= 0 && (int)t < StageThemeCatalog.Count));
     }
 
     [Test]
@@ -72,7 +73,8 @@ public class StageVariantTests
     {
         var wallShapes = new System.Collections.Generic.List<int>();
         var floorShapes = new System.Collections.Generic.List<int>();
-        foreach (StageTheme theme in System.Enum.GetValues(typeof(StageTheme)))
+        // 従来の金属4種の形状の回帰テスト。新しい自然系6種は ScenicStageWorldTests で確認する。
+        foreach (StageTheme theme in new[] { StageTheme.ObsidianRelay, StageTheme.VioletVault, StageTheme.AmberFoundry, StageTheme.AzurePrism })
         {
             var go = new GameObject("ShapeTest");
             try

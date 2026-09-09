@@ -120,6 +120,12 @@ public class NoteSpawner : MonoBehaviour
         float scale = chart != null ? chart.coordScale : 1f;
         Vector3 pos = new Vector3(nd.x * scale, nd.y * scale, spawnZ);
         GameObject go = Instantiate(prefab, pos, Quaternion.identity, noteRoot);
+        // プロジェクターモード: 正面サイズを一回り大きく(x/y のみ。ロングの z 伸長は下で別途扱う)
+        if (DisplaySettings.ProjectorMode)
+        {
+            Vector3 s0 = go.transform.localScale;
+            go.transform.localScale = new Vector3(s0.x * ProjectorMode.NoteScale, s0.y * ProjectorMode.NoteScale, s0.z);
+        }
         CuttableNote note = go.GetComponent<CuttableNote>();
         if (note == null)
         {
@@ -212,8 +218,9 @@ public class NoteSpawner : MonoBehaviour
             if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
             mat.renderQueue = 3001;
-            // 黒シェブロンの下敷きは明るく(黒矢印がボディ発光の上でも読めるように)
-            Color light = new Color(0.92f, 0.95f, 1f, 0.62f);
+            // 黒シェブロンの下敷きは明るく(黒矢印がボディ発光の上でも読めるように)。
+            // プロジェクターモードは反転(白い矢印+暗い下敷き): 黒は灰色化して読めなくなるため。
+            Color light = DisplaySettings.ProjectorMode ? ProjectorMode.ArrowBackingColor : new Color(0.92f, 0.95f, 1f, 0.62f);
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", light);
             else mat.color = light;
             backingMr.sharedMaterial = mat;
@@ -227,7 +234,7 @@ public class NoteSpawner : MonoBehaviour
             bar.transform.SetParent(arrow.transform, false);
             bar.transform.localPosition = new Vector3(sign * 0.16f, -0.07f, 0f);
             bar.transform.localRotation = Quaternion.Euler(0f, 0f, sign * 35f);
-            bar.transform.localScale = new Vector3(0.09f, 0.42f, 0.04f);
+            bar.transform.localScale = new Vector3(DisplaySettings.ProjectorMode ? ProjectorMode.ArrowBarWidth : 0.09f, 0.42f, 0.04f);
             StripArrowCollider(bar);
             var mr = bar.GetComponent<Renderer>();
             if (mr != null)
@@ -235,7 +242,8 @@ public class NoteSpawner : MonoBehaviour
                 var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
                 var mat = new Material(sh);
                 // 黒(非発光)。発光ボディの上でも輪郭が締まって向きが読める(ユーザー指定)。
-                Color black = new Color(0.02f, 0.02f, 0.04f);
+                // プロジェクターモードでは白(暗い下敷きの上)。
+                Color black = DisplaySettings.ProjectorMode ? ProjectorMode.ArrowBarColor : new Color(0.02f, 0.02f, 0.04f);
                 if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", black);
                 else mat.color = black;
                 mr.sharedMaterial = mat;

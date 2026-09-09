@@ -76,6 +76,11 @@ public partial class FloorRenderer : MonoBehaviour
         ActiveTheme = (int)selectedTheme >= 0 && (int)selectedTheme < StageThemeCatalog.Count
             ? selectedTheme : StageTheme.ObsidianRelay;
         built = true;
+        if (StageThemeCatalog.IsScenic(ActiveTheme))
+        {
+            ScenicStageWorld.Ensure(this);
+            return;
+        }
         bool original = ActiveTheme == StageTheme.ObsidianRelay;
         float farZ = maxZ + Mathf.Max(0f, distantExtension);
         float width = Mathf.Max(1f, maxX - minX);

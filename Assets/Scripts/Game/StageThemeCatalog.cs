@@ -5,13 +5,19 @@ public enum StageTheme
     ObsidianRelay = 0,
     VioletVault = 1,
     AmberFoundry = 2,
-    AzurePrism = 3
+    AzurePrism = 3,
+    AbyssalRuins = 4,
+    SkySanctuary = 5,
+    MoonlitGarden = 6,
+    CrystalGrotto = 7,
+    AstralOrbit = 8,
+    DesertSanctum = 9
 }
 
 // 背景だけの乱数系列。譜面・演出などが使う UnityEngine.Random の状態を変えない。
 public static class StageThemeCatalog
 {
-    public const int Count = 4;
+    public const int Count = 10;
     private static readonly System.Random random = new System.Random();
     private static int previous = -1;
 
@@ -22,7 +28,7 @@ public static class StageThemeCatalog
         return next;
     }
 
-    // 初回は全4種、2回目からは直前以外の3種を等確率に選ぶ。
+    // 曲IDに依存せず、毎プレイ抽選。2回目からは直前以外の9種を等確率に選ぶ。
     public static StageTheme Choose(int roll, int previousIndex)
     {
         bool skip = previousIndex >= 0 && previousIndex < Count;
@@ -39,9 +45,17 @@ public static class StageThemeCatalog
             case StageTheme.VioletVault: return "Violet Vault";
             case StageTheme.AmberFoundry: return "Amber Foundry";
             case StageTheme.AzurePrism: return "Azure Prism";
+            case StageTheme.AbyssalRuins: return "Abyssal Ruins";
+            case StageTheme.SkySanctuary: return "Sky Sanctuary";
+            case StageTheme.MoonlitGarden: return "Moonlit Garden";
+            case StageTheme.CrystalGrotto: return "Crystal Grotto";
+            case StageTheme.AstralOrbit: return "Astral Orbit";
+            case StageTheme.DesertSanctum: return "Desert Sanctum";
             default: return "Obsidian Relay";
         }
     }
+
+    public static bool IsScenic(StageTheme theme) => theme >= StageTheme.AbyssalRuins && theme <= StageTheme.DesertSanctum;
 
     // 彩度は端の埋め込み灯に限定。赤/青ノーツと混同しない低輝度の環境色。
     public static Color Accent(StageTheme theme)
