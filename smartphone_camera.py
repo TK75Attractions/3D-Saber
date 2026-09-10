@@ -73,14 +73,24 @@ class LatestFrame(threading.Thread):
                 self.timestamp = time.perf_counter()
                 self.sequence += 1
 
-    def get(self):
+    def get(self, after_sequence=-1):
         with self.lock:
-            if self.frame is None:
+            if self.frame is None or self.sequence == after_sequence:
                 return None, 0.0, self.sequence
             return self.frame.copy(), self.timestamp, self.sequence
 
     def stop(self):
         self.running = False
+
+
+def close_frame_source(latest, capture):
+    latest.stop()
+    latest.join(timeout=4.0)
+    if isinstance(latest, threading.Thread) and latest.is_alive():
+        # Never release a capture while its reader is still inside native read().
+        print("Camera read is still stopping; skipping concurrent release.")
+        return
+    capture.release()
 
 
 class ImuReceiver(threading.Thread):
@@ -347,8 +357,17 @@ class StickTracker:
 def parse_args():
     parser = argparse.ArgumentParser(description="Single-smartphone red/blue saber tracker.")
     parser.add_argument("--camera", type=int, default=int(os.environ.get("CAMERA_INDEX", "0")))
+    parser.add_argument("--capture-backend", choices=("opencv", "native"), default="opencv")
+    parser.add_argument("--device-id", default="continuity", help="Native camera unique ID; default selects only a Continuity Camera")
+    parser.add_argument("--format-index", type=int, default=-1, help="Native format index from --list-cameras")
+    parser.add_argument("--list-cameras", action="store_true", help="Print native device IDs and supported formats, then exit")
+    parser.add_argument("--frame-timeout", type=float, default=10, help="Stop if no fresh frame arrives for this many seconds")
+    parser.add_argument("--source", help="RTSP stream URL instead of Continuity Camera")
     parser.add_argument("--width", type=int, default=640)
     parser.add_argument("--height", type=int, default=360)
+    parser.add_argument("--fps", type=int, choices=(15, 30, 60), default=30)
+    parser.add_argument("--show-masks", action="store_true")
+    parser.add_argument("--preview-only", action="store_true", help="Latency baseline: no detection or UDP")
     parser.add_argument("--output-width", type=int, default=1920)
     parser.add_argument("--output-height", type=int, default=1080)
     parser.add_argument("--background-seconds", type=float, default=2.0)
@@ -376,7 +395,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def open_camera(index, width, height):
+def open_camera(index, width, height, fps=30):
     if sys.platform == "darwin" and hasattr(cv2, "CAP_AVFOUNDATION"):
         backends = (cv2.CAP_AVFOUNDATION, cv2.CAP_ANY)
     elif os.name == "nt":
@@ -391,12 +410,17 @@ def open_camera(index, width, height):
         capture.set(cv2.CAP_PROP_BUFFERSIZE, 1)
         capture.set(cv2.CAP_PROP_FRAME_WIDTH, width)
         capture.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
+        fps_accepted = capture.set(cv2.CAP_PROP_FPS, fps)
         ok, frame = capture.read()
         if ok and frame is not None:
             print(
                 f"Camera opened: index={index}, backend={backend}, "
                 f"size={frame.shape[1]}x{frame.shape[0]}"
             )
+            print(f"Requested {width}x{height} at {fps} FPS; "
+                  f"reported FPS={capture.get(cv2.CAP_PROP_FPS):.1f}, accepted={fps_accepted}")
+            if (frame.shape[1], frame.shape[0]) != (width, height):
+                print("Camera did not honor requested size. Wireless transport size is not exposed by OpenCV.")
             return capture
         capture.release()
     raise RuntimeError(
@@ -483,8 +507,9 @@ def fit_led_axis(core):
     return tuple(p1), tuple(p2), tuple((p1 + p2) / 2), length, math.degrees(math.atan2(vy, vx))
 
 
-def detect_candidates(frame, color_range, min_area, merge_distance, foreground_mask=None):
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+def detect_candidates(frame, color_range, min_area, merge_distance, foreground_mask=None, hsv=None):
+    if hsv is None:
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
     mask = hsv_mask(hsv, *color_range)
     color_pixels = mask > 0
     if foreground_mask is not None:
@@ -539,16 +564,19 @@ def detect_candidates(frame, color_range, min_area, merge_distance, foreground_m
             continue
         angle = rect_angle if rect_width >= rect_height else rect_angle + 90.0
         p1, p2 = endpoints_from_center((cx, cy), long_side, angle)
-        contour_mask = np.zeros(mask.shape, dtype=np.uint8)
-        cv2.drawContours(contour_mask, [contour], -1, 255, -1)
-        brightness = hsv[:, :, 2][contour_mask > 0]
+        region = np.s_[bbox_y:bbox_y + bbox_height, bbox_x:bbox_x + bbox_width]
+        local_hsv = hsv[region]
+        contour_mask = np.zeros((bbox_height, bbox_width), dtype=np.uint8)
+        local_contour = contour - np.array([bbox_x, bbox_y], dtype=contour.dtype)
+        cv2.drawContours(contour_mask, [local_contour], -1, 255, -1)
+        brightness = local_hsv[:, :, 2][contour_mask > 0]
         bright_fraction = (
             float(np.count_nonzero(brightness >= 220)) / max(len(brightness), 1)
         )
         mean_brightness = float(brightness.mean()) / 255.0 if len(brightness) else 0.0
         # Brightness is evidence, not just a bonus that a large skin contour
         # can outweigh. Require colored highlights along the blade axis.
-        core = (contour_mask > 0) & color_pixels & (hsv[:, :, 2] >= 225) & (hsv[:, :, 1] >= 100)
+        core = (contour_mask > 0) & color_pixels[region] & (local_hsv[:, :, 2] >= 225) & (local_hsv[:, :, 1] >= 100)
         core_y, core_x = np.nonzero(core)
         if len(core_x) < max(12, len(brightness) * 0.15):
             continue
@@ -560,6 +588,9 @@ def detect_candidates(frame, color_range, min_area, merge_distance, foreground_m
         if fitted is None:
             continue
         p1, p2, (cx, cy), long_side, angle = fitted
+        p1 = (p1[0] + bbox_x, p1[1] + bbox_y)
+        p2 = (p2[0] + bbox_x, p2[1] + bbox_y)
+        cx, cy = cx + bbox_x, cy + bbox_y
         score = (
             min(aspect, 8.0) * 2.0
             + extent * 3.0
@@ -579,7 +610,8 @@ def detect_candidates(frame, color_range, min_area, merge_distance, foreground_m
 
 def build_foreground_mask(frame, background, threshold):
     difference = cv2.absdiff(frame, cv2.convertScaleAbs(background))
-    difference = np.max(difference, axis=2).astype(np.uint8)
+    blue, green, red = cv2.split(difference)
+    difference = cv2.max(cv2.max(blue, green), red)
     _, mask = cv2.threshold(difference, max(1, threshold), 255, cv2.THRESH_BINARY)
     mask = cv2.morphologyEx(
         mask,
@@ -628,45 +660,120 @@ def draw_detection(frame, detection, color, label):
     )
 
 
+def processing_frame(frame, width, height):
+    """Bound local processing size without stretching or upscaling the image."""
+    source_h, source_w = frame.shape[:2]
+    scale = min(1.0, width / source_w, height / source_h)
+    if scale >= 1.0:
+        return frame
+    return cv2.resize(frame, (max(1, round(source_w * scale)),
+                              max(1, round(source_h * scale))),
+                      interpolation=cv2.INTER_AREA)
+
+
 def main():
     args = parse_args()
+    if args.list_cameras:
+        from native_capture import list_devices
+        print(json.dumps(list_devices(), indent=2, ensure_ascii=False))
+        return
+    if args.source and args.capture_backend == "native":
+        raise ValueError("--source cannot be used with --capture-backend native")
+    if args.preview_only:
+        args.show = True
+        args.imu_stick = 'none'
+    if args.width <= 0 or args.height <= 0:
+        raise ValueError("width and height must be positive")
+    if not math.isfinite(args.frame_timeout) or args.frame_timeout <= 0:
+        raise ValueError("frame-timeout must be positive and finite")
     settings = load_settings()
-    capture = open_camera(args.camera, args.width, args.height)
-    latest = LatestFrame(capture)
+    if args.source:
+        os.environ.setdefault("OPENCV_FFMPEG_CAPTURE_OPTIONS", "rtsp_transport;tcp|fflags;nobuffer")
+        capture = cv2.VideoCapture(args.source, cv2.CAP_FFMPEG, [
+            cv2.CAP_PROP_OPEN_TIMEOUT_MSEC, 5000,
+            cv2.CAP_PROP_READ_TIMEOUT_MSEC, 3000])
+        if not capture.isOpened():
+            capture.release()
+            raise RuntimeError("Stream unavailable. Start broadcasting on the iPhone first.")
+    elif args.capture_backend == "native":
+        from native_capture import NativeLatestFrame
+        capture = NativeLatestFrame(args.device_id, args.width, args.height,
+                                    args.fps, args.format_index)
+        print("Native camera: " + json.dumps(capture.info, ensure_ascii=False))
+        print("Native device IDs are independent of OpenCV --camera indices.")
+    else:
+        capture = open_camera(args.camera, args.width, args.height, args.fps)
+    latest = capture if args.capture_backend == "native" else LatestFrame(capture)
     latest.start()
     udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     imu = None
-    if args.imu_stick != "none":
-        imu = ImuReceiver(args.imu_host, args.imu_port)
-        imu.start()
-        print(
-            f"IMU prediction: stick={args.imu_stick}, UDP={args.imu_host}:{args.imu_port}, "
-            f"axis={args.imu_axis}, sign={args.imu_sign:+.0f}"
-        )
+    try:
+        if args.imu_stick != "none":
+            imu = ImuReceiver(args.imu_host, args.imu_port)
+            imu.start()
+            print(
+                f"IMU prediction: stick={args.imu_stick}, UDP={args.imu_host}:{args.imu_port}, "
+                f"axis={args.imu_axis}, sign={args.imu_sign:+.0f}"
+            )
+    except BaseException:
+        close_frame_source(latest, capture)
+        udp.close()
+        raise
 
     trackers = None
     ports = {"red": args.red_port, "blue": args.blue_port}
     last_sequence = -1
+    stats_time = time.perf_counter()
+    stats_sequence = 0
+    processed = 0
+    processing_ms = 0.0
     background = None
     background_started = 0.0
     background_ready = args.background_seconds <= 0.0
     last_background_second = None
     print("Smartphone-only mode. Q quits; yellow line means short-gap prediction.")
-    if not background_ready:
+    if not background_ready and not args.preview_only:
         print(
             f"Learning the empty background for {args.background_seconds:.1f}s. "
             "Keep both sabers and people outside the frame."
         )
 
+    last_arrival = time.perf_counter()
     try:
         while True:
-            frame, timestamp, sequence = latest.get()
+            frame, timestamp, sequence = latest.get(last_sequence)
             if frame is None or sequence == last_sequence:
+                if time.perf_counter() - last_arrival > args.frame_timeout:
+                    raise RuntimeError("No fresh camera frames. Check the phone connection and camera permission; no fallback camera was opened.")
+                if args.show and cv2.waitKey(1) & 0xFF in (ord('q'), 27):
+                    break
                 time.sleep(0.001)
                 continue
             last_sequence = sequence
+            last_arrival = time.perf_counter()
+            process_started = time.perf_counter()
+            input_height, input_width = frame.shape[:2]
+            frame = processing_frame(frame, args.width, args.height)
             height, width = frame.shape[:2]
+            size_label = f"Input {input_width}x{input_height} / Process {width}x{height}"
+            if args.preview_only:
+                cv2.imshow('preview only - Q quits', frame)
+                if cv2.waitKey(1) & 0xFF in (ord('q'), 27):
+                    break
+                processed += 1
+                processing_ms += (time.perf_counter() - process_started) * 1000
+                now = time.perf_counter()
+                if now - stats_time >= 2:
+                    print(f"Preview input={(sequence-stats_sequence)/(now-stats_time):.1f} FPS "
+                          f"displayed={processed/(now-stats_time):.1f} FPS "
+                          f"work={processing_ms/max(processed,1):.1f} ms "
+                          f"since-available={(now-timestamp)*1000:.1f} ms "
+                          "(not end-to-end latency)", flush=True)
+                    stats_time, stats_sequence = now, sequence
+                    processed, processing_ms = 0, 0.0
+                continue
             if background is None:
+                print(size_label + " (input size does not reveal wireless encoding size)")
                 background = frame.astype(np.float32)
                 background_started = timestamp
             if not background_ready:
@@ -680,6 +787,8 @@ def main():
                     last_background_second = whole_second
                 if timestamp - background_started >= args.background_seconds:
                     background_ready = True
+                    stats_time, stats_sequence = time.perf_counter(), sequence
+                    processed, processing_ms = 0, 0.0
                     print("Background ready. Put the red and blue sabers into view.")
                 if args.show:
                     learning = frame.copy()
@@ -716,7 +825,8 @@ def main():
                     for name in ("red", "blue")
                 }
 
-            display = frame.copy()
+            display = frame.copy() if args.show else None
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
             masks = {}
             foreground_mask = (
                 None
@@ -730,6 +840,7 @@ def main():
                     settings["min_area"],
                     settings["merge_distance"],
                     foreground_mask,
+                    hsv=hsv,
                 )
                 imu_rate = None
                 if imu is not None and args.imu_stick == name:
@@ -761,17 +872,30 @@ def main():
                     )
 
             if args.show:
+                cv2.putText(display, size_label, (12, height - 12),
+                            cv2.FONT_HERSHEY_SIMPLEX, .45, (255, 255, 255), 1,
+                            cv2.LINE_AA)
                 cv2.imshow("smartphone saber tracking", display)
-                cv2.imshow("red mask", masks["red"])
-                cv2.imshow("blue mask", masks["blue"])
+                if args.show_masks:
+                    cv2.imshow("red mask", masks["red"])
+                    cv2.imshow("blue mask", masks["blue"])
                 if cv2.waitKey(1) & 0xFF in (ord("q"), 27):
                     break
+            processed += 1
+            processing_ms += (time.perf_counter() - process_started) * 1000
+            now = time.perf_counter()
+            elapsed = now - stats_time
+            if elapsed >= 2:
+                print(f"Input={(sequence-stats_sequence)/elapsed:.1f} FPS "
+                      f"processed={processed/elapsed:.1f} FPS "
+                      f"work={processing_ms/max(processed,1):.1f} ms/frame "
+                      f"since-available={(now-timestamp)*1000:.1f} ms (not end-to-end latency)")
+                stats_time, stats_sequence = now, sequence
+                processed, processing_ms = 0, 0.0
     except KeyboardInterrupt:
         pass
     finally:
-        latest.stop()
-        latest.join(timeout=1.0)
-        capture.release()
+        close_frame_source(latest, capture)
         udp.close()
         if imu is not None:
             imu.stop()

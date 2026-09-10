@@ -3,14 +3,14 @@ import sys
 import platform
 from python_runtime import reexec_with_cv2
 
-reexec_with_cv2()
-
 # 特定の Python に固定しない。
 # macOS では pyenv の Python を明示できるが、Windows ではそのパスが存在しないため
 # そのまま現在の実行環境を使う。
 _TARGET_PYTHON = os.environ.get("CAMERA_PYTHON")
-if _TARGET_PYTHON and os.path.exists(_TARGET_PYTHON) and os.path.realpath(sys.executable) != os.path.realpath(_TARGET_PYTHON):
-    os.execv(_TARGET_PYTHON, [_TARGET_PYTHON, *sys.argv])
+if __name__ == "__main__":
+    reexec_with_cv2()
+    if _TARGET_PYTHON and os.path.exists(_TARGET_PYTHON) and os.path.realpath(sys.executable) != os.path.realpath(_TARGET_PYTHON):
+        os.execv(_TARGET_PYTHON, [_TARGET_PYTHON, *sys.argv])
 
 import cv2
 import numpy as np
@@ -63,7 +63,7 @@ UDP_PORT_STICK2 = 5006
 SEND_STICK2 = True
 SEND_HZ = 60.0
 HOLD_LAST_VALUE_WHEN_MISSING = True
-sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+sock = None
 # 遅延最小化オプション: 検出変化時に即時送信する
 IMMEDIATE_SEND_ON_CHANGE = True
 _send_lock = threading.Lock()
@@ -114,8 +114,52 @@ def open_camera():
     )
 
 
+def selected_capture_backend(value=None):
+    """Return the explicitly selected capture backend without opening a camera."""
+    backend = (value if value is not None else
+               os.environ.get("CAMERA_CAPTURE_BACKEND", "opencv")).strip().lower()
+    if backend not in ("opencv", "native"):
+        raise ValueError("CAMERA_CAPTURE_BACKEND must be 'opencv' or 'native'")
+    return backend
+
+
+def _environment_int(name, default):
+    try:
+        return int(os.environ.get(name, str(default)))
+    except ValueError as exc:
+        raise ValueError(f"{name} must be an integer") from exc
+
+
+def open_native_camera():
+    """Create the existing NativeLatestFrame source using environment settings."""
+    from native_capture import NativeLatestFrame
+
+    return NativeLatestFrame(
+        os.environ.get("CAMERA_NATIVE_DEVICE_ID", "continuity"),
+        _environment_int("CAMERA_NATIVE_WIDTH", 640),
+        _environment_int("CAMERA_NATIVE_HEIGHT", 360),
+        float(os.environ.get("CAMERA_NATIVE_FPS", "30")),
+        _environment_int("CAMERA_NATIVE_FORMAT_INDEX", -1),
+    )
+
+
+def _native_dimensions(capture):
+    info = getattr(capture, "info", {})
+    active_format = info.get("active_format", {}) if isinstance(info, dict) else {}
+    if not isinstance(active_format, dict):
+        active_format = {}
+    width = int(active_format.get("width", 0) or 0)
+    height = int(active_format.get("height", 0) or 0)
+    if width > 0 and height > 0:
+        return width, height
+    requested = info.get("requested", {}) if isinstance(info, dict) else {}
+    if isinstance(requested, dict):
+        return int(requested.get("width", 0) or 0), int(requested.get("height", 0) or 0)
+    return 0, 0
+
+
 # キャプチャ用スレッドと最新フレーム/送信用共有変数
-cap = open_camera()
+cap = None
 # 低解像度キャプチャをオプション化（デフォルト: 有効）
 LOW_RES_CAPTURE = True
 
@@ -142,8 +186,11 @@ except Exception:
     CAP_W = 0
     CAP_H = 0
 _frame_lock = threading.Lock()
+_frame_condition = threading.Condition(_frame_lock)
 _latest_frame = None
+_latest_frame_generation = 0
 _running = True
+last_frame = None
 
 class FrameGrabber(threading.Thread):
     def __init__(self, cap):
@@ -151,17 +198,72 @@ class FrameGrabber(threading.Thread):
         self.cap = cap
 
     def run(self):
-        global _latest_frame, _running
+        global _latest_frame, _latest_frame_generation, _running
         while _running:
             ret, frame = self.cap.read()
             if not ret:
-                time.sleep(0.001)
+                time.sleep(0.005)
                 continue
-            with _frame_lock:
+            with _frame_condition:
                 _latest_frame = frame
+                _latest_frame_generation += 1
+                _frame_condition.notify_all()
 
     def stop(self):
-        pass
+        global _running
+        _running = False
+        with _frame_condition:
+            _frame_condition.notify_all()
+
+
+class NativeFrameGrabber(threading.Thread):
+    """Poll NativeLatestFrame and publish only frames newer than its sequence."""
+
+    def __init__(self, capture):
+        super().__init__(daemon=True)
+        self.capture = capture
+        self.sequence = -1
+        self.error = None
+
+    def run(self):
+        global _latest_frame, _latest_frame_generation, _running
+        while _running:
+            try:
+                frame, _timestamp, sequence = self.capture.get(self.sequence)
+            except BaseException as exc:
+                self.error = exc
+                _running = False
+                with _frame_condition:
+                    _frame_condition.notify_all()
+                return
+            if frame is None or sequence <= self.sequence:
+                time.sleep(0.001)
+                continue
+            self.sequence = sequence
+            with _frame_condition:
+                if not _running:
+                    return
+                _latest_frame = frame
+                _latest_frame_generation += 1
+                _frame_condition.notify_all()
+
+    def stop(self):
+        global _running
+        _running = False
+        with _frame_condition:
+            _frame_condition.notify_all()
+
+
+def wait_for_new_frame(last_generation, timeout=0.1):
+    """最新フレームが更新されるまで待ち、画像と世代を1回だけ取得する。"""
+    with _frame_condition:
+        _frame_condition.wait_for(
+            lambda: _latest_frame_generation > last_generation or not _running,
+            timeout=timeout,
+        )
+        if _latest_frame is None or _latest_frame_generation <= last_generation:
+            return None, _latest_frame_generation
+        return _latest_frame, _latest_frame_generation
 
 
 _payload_lock = threading.Lock()
@@ -186,27 +288,28 @@ class Sender(threading.Thread):
         while self._running:
             now = time.perf_counter()
             if now >= next_time:
-                with _payload_lock:
-                    p1 = last_payload_stick1
-                    p2 = last_payload_stick2
-                if p1 is not None:
-                    try:
-                        self.sock.sendto(p1, (UDP_IP, UDP_PORT))
-                        if LOG_DETECTIONS:
-                            print(f"SENT -> {UDP_IP}:{UDP_PORT} {p1}")
-                    except Exception:
-                        if LOG_DETECTIONS:
-                            import traceback
-                            print("Sender sendto exception:\n", traceback.format_exc())
-                if SEND_STICK2 and p2 is not None:
-                    try:
-                        self.sock.sendto(p2, (UDP_IP, UDP_PORT_STICK2))
-                        if LOG_DETECTIONS:
-                            print(f"SENT -> {UDP_IP}:{UDP_PORT_STICK2} {p2}")
-                    except Exception:
-                        if LOG_DETECTIONS:
-                            import traceback
-                            print("Sender sendto exception (stick2):\n", traceback.format_exc())
+                with _send_lock:
+                    with _payload_lock:
+                        p1 = last_payload_stick1
+                        p2 = last_payload_stick2
+                    if p1 is not None:
+                        try:
+                            self.sock.sendto(p1, (UDP_IP, UDP_PORT))
+                            if LOG_DETECTIONS:
+                                print(f"SENT -> {UDP_IP}:{UDP_PORT} {p1}")
+                        except Exception:
+                            if LOG_DETECTIONS:
+                                import traceback
+                                print("Sender sendto exception:\n", traceback.format_exc())
+                    if SEND_STICK2 and p2 is not None:
+                        try:
+                            self.sock.sendto(p2, (UDP_IP, UDP_PORT_STICK2))
+                            if LOG_DETECTIONS:
+                                print(f"SENT -> {UDP_IP}:{UDP_PORT_STICK2} {p2}")
+                        except Exception:
+                            if LOG_DETECTIONS:
+                                import traceback
+                                print("Sender sendto exception (stick2):\n", traceback.format_exc())
                 # 保持位相
                 while now >= next_time:
                     next_time += self.interval
@@ -819,16 +922,31 @@ def find_top2_bright_centers(frame):
     return p1, p2
 
 
-def find_color_pair(frame):
-    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-
-    mask_a = hsv_mask(hsv, COLOR_A_LOWER, COLOR_A_UPPER)
-    mask_b = hsv_mask(hsv, COLOR_B_LOWER, COLOR_B_UPPER)
+def find_color_pair(frame=None, hsv=None, masks=None):
+    if masks is None:
+        if hsv is None:
+            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        masks = (
+            hsv_mask(hsv, COLOR_A_LOWER, COLOR_A_UPPER),
+            hsv_mask(hsv, COLOR_B_LOWER, COLOR_B_UPPER),
+        )
+    mask_a, mask_b = masks
 
     # 色ごとに1本ずつ棒を作る(2点検出/長軸検出の両対応)
     a1, a2 = find_stick_endpoints_from_mask(mask_a, "COLOR_A")
     b1, b2 = find_stick_endpoints_from_mask(mask_b, "COLOR_B")
     return (a1, a2), (b1, b2)
+
+
+def detect_frame(frame):
+    """1フレーム分の色変換・マスク生成・検出をまとめて行う。"""
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+    masks = (
+        hsv_mask(hsv, COLOR_A_LOWER, COLOR_A_UPPER),
+        hsv_mask(hsv, COLOR_B_LOWER, COLOR_B_UPPER),
+    )
+    (a1, a2), (b1, b2) = find_color_pair(hsv=hsv, masks=masks)
+    return build_stick(a1, a2), build_stick(b1, b2), masks
 
 
 def build_stick(p1, p2):
@@ -871,197 +989,217 @@ def draw_stick(frame, stick, color_line, label):
         cv2.LINE_AA,
     )
 
-load_threshold_settings()
+def payload_for_stick(stick, frame_shape):
+    if stick is None:
+        return None
+    h, w = frame_shape[:2]
+    scale_x = (ORIG_CAP_W / w) if ORIG_CAP_W and w else 1.0
+    scale_y = (ORIG_CAP_H / h) if ORIG_CAP_H and h else 1.0
+    coords = []
+    for x, y in (stick['p1'], stick['p2']):
+        sx = int(round(x * scale_x))
+        sy = int(round(y * scale_y))
+        coords.extend(((ORIG_CAP_W - sx) if FLIP_H and ORIG_CAP_W else (-sx if FLIP_H else sx),
+                       (ORIG_CAP_H - sy) if FLIP_V and ORIG_CAP_H else (-sy if FLIP_V else sy)))
+    return f"{coords[0]},{coords[1]},{coords[2]},{coords[3]}".encode('ascii')
 
-if LOG_DETECTIONS:
-    print(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
-    print(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
 
-if SHOW_UI:
-    setup_trackbars()
-    cv2.namedWindow("LED Tracking", cv2.WINDOW_NORMAL)
-    cv2.setMouseCallback("LED Tracking", mouse_callback)
-
-# 軽量表示: 検出結果だけ残す場合は専用ウィンドウを用意
-if SHOW_DETECTED:
-    cv2.namedWindow("mask_a_detected", cv2.WINDOW_NORMAL)
-    cv2.namedWindow("mask_b_detected", cv2.WINDOW_NORMAL)
-
-# スレッド開始
-grabber = FrameGrabber(cap)
-grabber.start()
-sender = Sender(sock, hz=SEND_HZ)
-sender.start()
-
-try:
-    # メイン処理は送信Hzに合わせて制限して軽量化
-    process_interval = 1.0 / float(SEND_HZ)
-    next_proc = time.perf_counter()
-    while True:
-        if SHOW_UI:
-            update_thresholds_from_trackbars()
-        with _frame_lock:
-            frame = None if _latest_frame is None else _latest_frame.copy()
-        if frame is None:
-            time.sleep(0.001)
-            continue
-        last_frame = frame.copy()
-
-        # 処理レート制御: 次の処理までスリープして負荷を抑える
-        now_proc = time.perf_counter()
-        if now_proc < next_proc:
-            time.sleep(min(0.001, next_proc - now_proc))
-            continue
-        next_proc += process_interval
-        stick1 = None
-        stick2 = None
-
-        if DETECT_MODE == "color":
-            # デバッグ表示用にマスクを見えるようにする
-            hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
-            mask_a = hsv_mask(hsv, COLOR_A_LOWER, COLOR_A_UPPER)
-            mask_b = hsv_mask(hsv, COLOR_B_LOWER, COLOR_B_UPPER)
-
-            # マスク画像にコントラストを付けて見やすくする
-            mask_a_display = cv2.cvtColor(build_stick_candidate_mask(mask_a), cv2.COLOR_GRAY2BGR)
-            mask_b_display = cv2.cvtColor(build_stick_candidate_mask(mask_b), cv2.COLOR_GRAY2BGR)
-
-            if SHOW_UI:
-                cv2.imshow("mask_a", mask_a)
-                cv2.imshow("mask_b", mask_b)
-
-            (a1, a2), (b1, b2) = find_color_pair(frame)
-            stick1 = build_stick(a1, a2)  # color1同士の棒
-            stick2 = build_stick(b1, b2)  # color2同士の棒
-
-            # 検出結果をマスク上に描画
-            if a1 is not None and a2 is not None:
-                cv2.circle(mask_a_display, a1, 4, (0, 255, 0), -1)
-                cv2.circle(mask_a_display, a2, 4, (255, 0, 0), -1)
-                cv2.line(mask_a_display, a1, a2, (0, 255, 255), 4)
-            if SHOW_DETECTED:
-                cv2.imshow("mask_a_detected", mask_a_display)
-
-            if b1 is not None and b2 is not None:
-                cv2.circle(mask_b_display, b1, 4, (0, 255, 0), -1)
-                cv2.circle(mask_b_display, b2, 4, (255, 0, 0), -1)
-                cv2.line(mask_b_display, b1, b2, (0, 255, 255), 4)
-            if SHOW_DETECTED:
-                cv2.imshow("mask_b_detected", mask_b_display)
-
-        # 色モードのみ動作。未検出時は HOLD_LAST_VALUE_WHEN_MISSING に従いペイロードをクリア
-        h, w = frame.shape[:2]
-        # 検出結果をペイロードに変換して共有変数へセット
-        if stick1 is not None:
-            x1, y1 = stick1['p1']
-            x2, y2 = stick1['p2']
-            # フレーム座標から元のネイティブ解像度へスケーリング
-            cur_w = w
-            cur_h = h
-            scale_x = (ORIG_CAP_W / cur_w) if (ORIG_CAP_W and cur_w) else 1.0
-            scale_y = (ORIG_CAP_H / cur_h) if (ORIG_CAP_H and cur_h) else 1.0
-            sx1 = int(round(x1 * scale_x))
-            sx2 = int(round(x2 * scale_x))
-            sy1 = int(round(y1 * scale_y))
-            sy2 = int(round(y2 * scale_y))
-            # 反転は送信座標系（元解像度）で行う
-            if FLIP_H:
-                sx1 = (ORIG_CAP_W - sx1) if ORIG_CAP_W else -sx1
-                sx2 = (ORIG_CAP_W - sx2) if ORIG_CAP_W else -sx2
-            if FLIP_V:
-                sy1 = (ORIG_CAP_H - sy1) if ORIG_CAP_H else -sy1
-                sy2 = (ORIG_CAP_H - sy2) if ORIG_CAP_H else -sy2
-            payload = f"{sx1},{sy1},{sx2},{sy2}".encode('ascii')
-            with _payload_lock:
+def publish_payload(payload, stick_number, udp_socket):
+    global last_payload_stick1, last_payload_stick2
+    global last_sent_payload_stick1, last_sent_payload_stick2
+    if stick_number == 2 and not SEND_STICK2:
+        return
+    port = UDP_PORT if stick_number == 1 else UDP_PORT_STICK2
+    with _send_lock:
+        with _payload_lock:
+            if stick_number == 1:
                 last_payload_stick1 = payload
-            if LOG_DETECTIONS:
-                print(f"Updated payload stick1: {payload}")
-            # 即時送信(差分のみ)で遅延を減らす
-            if IMMEDIATE_SEND_ON_CHANGE:
-                with _send_lock:
-                    if payload != last_sent_payload_stick1:
-                        try:
-                            sock.sendto(payload, (UDP_IP, UDP_PORT))
-                            last_sent_payload_stick1 = payload
-                            if LOG_DETECTIONS:
-                                print(f"IMMEDIATE SENT -> {UDP_IP}:{UDP_PORT} {payload}")
-                        except Exception:
-                            if LOG_DETECTIONS:
-                                import traceback
-                                print("Immediate send exception:\n", traceback.format_exc())
-        else:
-            if not HOLD_LAST_VALUE_WHEN_MISSING:
-                with _payload_lock:
-                    last_payload_stick1 = None
-
-        if stick2 is not None:
-            x1, y1 = stick2['p1']
-            x2, y2 = stick2['p2']
-            # スケールして元解像度へマッピング
-            cur_w = w
-            cur_h = h
-            scale_x = (ORIG_CAP_W / cur_w) if (ORIG_CAP_W and cur_w) else 1.0
-            scale_y = (ORIG_CAP_H / cur_h) if (ORIG_CAP_H and cur_h) else 1.0
-            sx1 = int(round(x1 * scale_x))
-            sx2 = int(round(x2 * scale_x))
-            sy1 = int(round(y1 * scale_y))
-            sy2 = int(round(y2 * scale_y))
-            if FLIP_H:
-                sx1 = (ORIG_CAP_W - sx1) if ORIG_CAP_W else -sx1
-                sx2 = (ORIG_CAP_W - sx2) if ORIG_CAP_W else -sx2
-            if FLIP_V:
-                sy1 = (ORIG_CAP_H - sy1) if ORIG_CAP_H else -sy1
-                sy2 = (ORIG_CAP_H - sy2) if ORIG_CAP_H else -sy2
-            payload = f"{sx1},{sy1},{sx2},{sy2}".encode('ascii')
-            with _payload_lock:
-                last_payload_stick2 = payload
-            if LOG_DETECTIONS:
-                print(f"Updated payload stick2: {payload}")
-            if IMMEDIATE_SEND_ON_CHANGE and SEND_STICK2:
-                with _send_lock:
-                    if payload != last_sent_payload_stick2:
-                        try:
-                            sock.sendto(payload, (UDP_IP, UDP_PORT_STICK2))
-                            last_sent_payload_stick2 = payload
-                            if LOG_DETECTIONS:
-                                print(f"IMMEDIATE SENT -> {UDP_IP}:{UDP_PORT_STICK2} {payload}")
-                        except Exception:
-                            if LOG_DETECTIONS:
-                                import traceback
-                                print("Immediate send exception (stick2):\n", traceback.format_exc())
-        else:
-            if not HOLD_LAST_VALUE_WHEN_MISSING:
-                with _payload_lock:
-                    last_payload_stick2 = None
-
-        # キー処理: 常にキー入力を監視して UI トグルや終了を受け付ける
-        # (ウィンドウがなくても一応ポーリングしておく)
-        key = cv2.waitKey(1) & 0xFF
-        if key == ord('q'):
-            break
-        # 'u' で UI (トラックバー + 表示ウィンドウ) を表示/非表示
-        if key == ord('u'):
-            if not SHOW_UI:
-                enable_ui()
+                already_sent = last_sent_payload_stick1
             else:
-                disable_ui()
-
-        # UI 表示が有効ならウィンドウ更新を行う
-        if SHOW_UI:
+                last_payload_stick2 = payload
+                already_sent = last_sent_payload_stick2
+        if IMMEDIATE_SEND_ON_CHANGE and payload != already_sent:
             try:
-                cv2.imshow("LED Tracking", frame)
-                cv2.imshow(TRACKBAR_WINDOW, np.zeros((1, 520, 3), dtype=np.uint8))
+                udp_socket.sendto(payload, (UDP_IP, port))
+                with _payload_lock:
+                    if stick_number == 1:
+                        last_sent_payload_stick1 = payload
+                    else:
+                        last_sent_payload_stick2 = payload
             except Exception:
-                # 表示に失敗したら UI を切る
-                disable_ui()
-except KeyboardInterrupt:
-    pass
-finally:
-    # スレッド停止とリソース解放
-    _running = False
-    sender.stop()
+                if LOG_DETECTIONS:
+                    import traceback
+                    print("Immediate send exception:\n", traceback.format_exc())
+
+
+def clear_payload(stick_number):
+    """未検出時の共有値を送信スナップショットと同期してクリアする。"""
+    global last_payload_stick1, last_payload_stick2
+    with _send_lock:
+        with _payload_lock:
+            if stick_number == 1:
+                last_payload_stick1 = None
+            else:
+                last_payload_stick2 = None
+
+
+def handle_key(key):
+    """待機中を含む全ループのキー入力を処理する。"""
+    global _running
+    if key == ord('q'):
+        _running = False
+        return False
+    if key == ord('u'):
+        if SHOW_UI:
+            disable_ui()
+        else:
+            enable_ui()
+    return True
+
+
+def display_detection(masks, sticks):
+    """検出結果を表示する。送信後に呼び、無効時は表示処理を省略する。"""
+    if SHOW_UI:
+        cv2.imshow("mask_a", masks[0])
+        cv2.imshow("mask_b", masks[1])
+    if SHOW_DETECTED:
+        for mask, stick, name in zip(masks, sticks, ("mask_a_detected", "mask_b_detected")):
+            display = cv2.cvtColor(build_stick_candidate_mask(mask), cv2.COLOR_GRAY2BGR)
+            if stick:
+                cv2.circle(display, stick['p1'], 4, (0, 255, 0), -1)
+                cv2.circle(display, stick['p2'], 4, (255, 0, 0), -1)
+                cv2.line(display, stick['p1'], stick['p2'], (0, 255, 255), 4)
+            cv2.imshow(name, display)
+
+
+def close_capture(capture, grabber, backend):
+    """Stop the reader before releasing the underlying capture source."""
+    grabber.stop()
     grabber.join(timeout=1.0)
-    sender.join(timeout=1.0)
-    cap.release()
-    if SHOW_UI or SHOW_DETECTED:
-        cv2.destroyAllWindows()
+    is_alive = getattr(grabber, "is_alive", lambda: False)
+    if is_alive():
+        print("Camera reader is still stopping; skipping concurrent capture release.")
+        return
+    if backend == "native":
+        stop = getattr(capture, "stop", None)
+        if stop is not None:
+            stop()
+        else:
+            capture.release()
+    else:
+        capture.release()
+
+
+def _native_timeout(value=None):
+    raw = value if value is not None else os.environ.get("CAMERA_FRAME_TIMEOUT", "10")
+    try:
+        timeout = float(raw)
+    except (TypeError, ValueError) as exc:
+        raise ValueError("CAMERA_FRAME_TIMEOUT must be positive and finite") from exc
+    if not math.isfinite(timeout) or timeout <= 0:
+        raise ValueError("CAMERA_FRAME_TIMEOUT must be positive and finite")
+    return timeout
+
+
+def main(capture=None, udp_socket=None, key_reader=None, capture_backend=None,
+         frame_timeout=None):
+    global cap, sock, ORIG_CAP_W, ORIG_CAP_H, CAP_W, CAP_H, _running, last_frame
+    global _latest_frame, _latest_frame_generation
+    backend = selected_capture_backend(capture_backend)
+    cap = capture if capture is not None else (
+        open_native_camera() if backend == "native" else open_camera()
+    )
+    sock = udp_socket if udp_socket is not None else socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+    read_key = key_reader or (lambda: cv2.waitKey(1) & 0xFF)
+    if backend == "native":
+        frame_timeout = _native_timeout(frame_timeout)
+        ORIG_CAP_W, ORIG_CAP_H = _native_dimensions(cap)
+        CAP_W, CAP_H = ORIG_CAP_W, ORIG_CAP_H
+    else:
+        try:
+            ORIG_CAP_W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
+            ORIG_CAP_H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+        except Exception:
+            ORIG_CAP_W = ORIG_CAP_H = 0
+        if LOW_RES_CAPTURE:
+            cap.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+            cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+        CAP_W = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH) or 0)
+        CAP_H = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
+    load_threshold_settings()
+    if SHOW_UI:
+        setup_trackbars()
+        cv2.namedWindow("LED Tracking", cv2.WINDOW_NORMAL)
+        cv2.setMouseCallback("LED Tracking", mouse_callback)
+    if SHOW_DETECTED:
+        cv2.namedWindow("mask_a_detected", cv2.WINDOW_NORMAL)
+        cv2.namedWindow("mask_b_detected", cv2.WINDOW_NORMAL)
+    with _frame_condition:
+        _latest_frame = None
+        _latest_frame_generation = 0
+    _running = True
+    if backend == "native":
+        start = getattr(cap, "start", None)
+        if start is not None:
+            start()
+        grabber = NativeFrameGrabber(cap)
+    else:
+        grabber = FrameGrabber(cap)
+    sender = Sender(sock, hz=SEND_HZ)
+    grabber.start()
+    sender.start()
+    generation = 0
+    last_native_frame_at = time.monotonic()
+    try:
+        while _running:
+            if SHOW_UI:
+                update_thresholds_from_trackbars()
+            frame, generation = wait_for_new_frame(generation, timeout=0.05)
+            if frame is None:
+                if getattr(grabber, "error", None) is not None:
+                    raise RuntimeError("Native camera reader failed") from grabber.error
+                if (backend == "native" and
+                        time.monotonic() - last_native_frame_at > frame_timeout):
+                    raise RuntimeError(
+                        "No fresh native camera frames; refusing to process an old frame."
+                    )
+                if not handle_key(read_key()):
+                    break
+                continue
+            if backend == "native":
+                last_native_frame_at = time.monotonic()
+                if not ORIG_CAP_W or not ORIG_CAP_H:
+                    ORIG_CAP_W, ORIG_CAP_H = frame.shape[1], frame.shape[0]
+            last_frame = frame
+            stick1, stick2, masks = detect_frame(frame) if DETECT_MODE == "color" else (None, None, (None, None))
+            publish_payload(payload_for_stick(stick1, frame.shape), 1, sock) if stick1 else None
+            publish_payload(payload_for_stick(stick2, frame.shape), 2, sock) if stick2 else None
+            if not stick1 and not HOLD_LAST_VALUE_WHEN_MISSING:
+                clear_payload(1)
+            if not stick2 and not HOLD_LAST_VALUE_WHEN_MISSING:
+                clear_payload(2)
+            # 検出結果の公開・即時送信を表示処理より先に行う。
+            display_detection(masks, (stick1, stick2))
+            if not handle_key(read_key()):
+                break
+            if SHOW_UI:
+                try:
+                    cv2.imshow("LED Tracking", frame)
+                    cv2.imshow(TRACKBAR_WINDOW, np.zeros((1, 520, 3), dtype=np.uint8))
+                except Exception:
+                    disable_ui()
+        if getattr(grabber, "error", None) is not None:
+            raise RuntimeError("Native camera reader failed") from grabber.error
+    except KeyboardInterrupt:
+        pass
+    finally:
+        _running = False
+        sender.stop()
+        sender.join(timeout=1.0)
+        close_capture(cap, grabber, backend)
+        if SHOW_UI or SHOW_DETECTED:
+            cv2.destroyAllWindows()
+
+
+if __name__ == "__main__":
+    main()

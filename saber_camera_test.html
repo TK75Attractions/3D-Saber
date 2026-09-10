@@ -1,0 +1,342 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Saber Camera Test</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      overflow: hidden;
+      background: #05070b;
+    }
+
+    body { display: flex; flex-direction: column; }
+
+    .stage {
+      position: relative;
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      background: #05070b;
+    }
+
+    .controls {
+      flex: 0 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px 12px;
+      align-items: center;
+      max-width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #303744;
+      border-radius: 8px;
+      background: #0c1018;
+      font-size: 13px;
+      line-height: 1.2;
+    }
+
+    button, select, input { font: inherit; }
+
+    button, select {
+      min-height: 32px;
+      padding: 5px 9px;
+      border: 1px solid #596273;
+      border-radius: 5px;
+      color: #f4f7fb;
+      background: #1a2130;
+      cursor: pointer;
+    }
+
+    button:hover, select:hover { background: #273246; }
+
+    label {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      white-space: nowrap;
+    }
+
+    input[type="range"] { width: 90px; accent-color: #c9d3e5; }
+
+    .hint {
+      flex-basis: 100%;
+      color: #aeb8c8;
+    }
+
+    .display-stamp {
+      flex-basis: 100%;
+      color: #f4f7fb;
+      font-variant-numeric: tabular-nums;
+    }
+
+    @media (max-width: 620px) {
+      .controls { padding: 8px; gap: 6px 8px; }
+      input[type="range"] { width: 72px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="controls" aria-label="テスト表示の操作">
+    <button id="play" type="button">一時停止</button>
+    <select id="mode" aria-label="表示する棒">
+      <option value="both">赤 + 青</option>
+      <option value="red">赤のみ</option>
+      <option value="blue">青のみ</option>
+    </select>
+    <button id="measurement" type="button">計測モード開始</button>
+    <label>切替間隔 <input id="interval" type="range" min="100" max="2000" step="50" value="500"><output id="intervalValue">500</output>ms</label>
+    <label>速度 <input id="speed" type="range" min="0" max="2" step="0.05" value="0.35"><output id="speedValue">0.35</output></label>
+    <label>太さ <input id="thickness" type="range" min="12" max="80" step="1" value="34"><output id="thicknessValue">34</output>px</label>
+    <label>長さ <input id="length" type="range" min="100" max="520" step="5" value="300"><output id="lengthValue">300</output>px</label>
+    <button id="fullscreen" type="button">全画面</button>
+    <button id="saveLog" type="button">表示ログ保存</button>
+    <output id="displayStamp" class="display-stamp" aria-live="polite">計測: 通常　試行: --　state: --　表示時刻: --</output>
+    <span class="hint">Space: 開始/停止　1/2/3: 赤/青/両方　F: 全画面</span>
+  </div>
+  <main class="stage"><canvas id="surface" aria-label="赤と青のテスト棒"></canvas></main>
+
+  <script>
+    (() => {
+      const canvas = document.getElementById('surface');
+      const context = canvas.getContext('2d');
+      const playButton = document.getElementById('play');
+      const modeSelect = document.getElementById('mode');
+      const speedInput = document.getElementById('speed');
+      const thicknessInput = document.getElementById('thickness');
+      const lengthInput = document.getElementById('length');
+      const fullscreenButton = document.getElementById('fullscreen');
+      const saveLogButton = document.getElementById('saveLog');
+      const measurementButton = document.getElementById('measurement');
+      const intervalInput = document.getElementById('interval');
+      const intervalValue = document.getElementById('intervalValue');
+      const displayStamp = document.getElementById('displayStamp');
+      const speedValue = document.getElementById('speedValue');
+      const thicknessValue = document.getElementById('thicknessValue');
+      const lengthValue = document.getElementById('lengthValue');
+
+      let width = 0;
+      let height = 0;
+      let lastTime = performance.now();
+      let running = true;
+      let phase = 0;
+      let frameId = 0;
+      let measurementMode = false;
+      let trialId = null;
+      let nextStateAt = 0;
+      let stateIndex = -1;
+      let measurementState = null;
+      let displayLog = [];
+      let archivedTrials = [];
+      let measurementStatus = 'stopped';
+      let trialStartedEpochMs = null;
+      let trialEndedEpochMs = null;
+      const positions = [
+        [0.22, 0.24], [0.50, 0.24], [0.78, 0.24],
+        [0.78, 0.50], [0.50, 0.50], [0.22, 0.50],
+        [0.22, 0.76], [0.50, 0.76], [0.78, 0.76]
+      ];
+
+      function archiveCurrentTrial() {
+        if (!trialId || displayLog.length === 0) return;
+        const previous = archivedTrials.findIndex(trial => trial.trialId === trialId);
+        const record = { trialId, startedEpochMs: trialStartedEpochMs, endedEpochMs: trialEndedEpochMs, states: displayLog.slice() };
+        if (previous >= 0) archivedTrials[previous] = record;
+        else archivedTrials.push(record);
+      }
+
+      function startTrial() {
+        archiveCurrentTrial();
+        trialId = `trial-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        stateIndex = -1;
+        measurementState = null;
+        displayLog = [];
+        trialStartedEpochMs = null;
+        trialEndedEpochMs = null;
+        measurementStatus = 'running';
+        running = true;
+        nextStateAt = performance.now();
+        playButton.textContent = '一時停止';
+      }
+
+      function normalizedBarState(index, color) {
+        const [cx, cy] = positions[index];
+        const thickness = Math.min(Number(thicknessInput.value), Math.max(10, height * 0.16));
+        const requestedLength = Math.min(Number(lengthInput.value), width * 0.58);
+        const barLength = Math.min(requestedLength, Math.max(1, width - thickness - 16));
+        const x = Math.max(barLength / 2 + 8, Math.min(width - barLength / 2 - 8, cx * width));
+        const y = Math.max(thickness / 2 + 8, Math.min(height - thickness / 2 - 8, cy * height));
+        const endpoints = [{ x: x - barLength / 2, y }, { x: x + barLength / 2, y }];
+        return { color, endpoints, normalizedEndpoints: endpoints.map(p => ({ x: p.x / width, y: p.y / height })), displaySize: { width, height }, barLength, thickness, x, y };
+      }
+
+      function advanceMeasurementState(frameTime) {
+        if (!running || measurementStatus !== 'running') return;
+        if (frameTime < nextStateAt) return;
+        stateIndex += 1;
+        if (stateIndex >= positions.length) {
+          running = false;
+          measurementStatus = 'completed';
+          trialEndedEpochMs = performance.timeOrigin + frameTime;
+          archiveCurrentTrial();
+          playButton.textContent = '新しい試行';
+          return;
+        }
+        const selectedMode = modeSelect.value;
+        const color = selectedMode === 'red' ? 'red' : selectedMode === 'blue' ? 'blue' : (stateIndex % 2 === 0 ? 'red' : 'blue');
+        const state = normalizedBarState(stateIndex, color);
+        const displayEpochMs = performance.timeOrigin + frameTime;
+        if (trialStartedEpochMs === null) trialStartedEpochMs = displayEpochMs;
+        measurementState = { trialId, stateId: stateIndex, color, displayEpochMs, performanceMs: frameTime, normalizedEndpoints: state.normalizedEndpoints, displaySize: state.displaySize, barLength: state.barLength, thickness: state.thickness, x: state.x, y: state.y };
+        displayLog.push(measurementState);
+        nextStateAt = frameTime + Number(intervalInput.value);
+      }
+
+      function resize() {
+        const scale = Math.min(window.devicePixelRatio || 1, 2);
+        const stage = document.querySelector('.stage');
+        width = stage.clientWidth;
+        height = stage.clientHeight;
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        context.setTransform(scale, 0, 0, scale, 0, 0);
+      }
+
+      function updateLabels() {
+        speedValue.value = Number(speedInput.value).toFixed(2);
+        thicknessValue.value = thicknessInput.value;
+        lengthValue.value = lengthInput.value;
+        intervalValue.value = intervalInput.value;
+      }
+
+      function drawBar(x, y, barLength, thickness, color) {
+        const radius = thickness / 2;
+        context.save();
+        context.shadowColor = color;
+        context.shadowBlur = Math.max(8, thickness * 0.25);
+        context.fillStyle = color;
+        context.beginPath();
+        context.roundRect(x - barLength / 2, y - radius, barLength, thickness, radius);
+        context.fill();
+        context.shadowBlur = 0;
+        context.fillStyle = '#ffffff';
+        context.globalAlpha = 0.84;
+        context.beginPath();
+        context.roundRect(x - barLength * 0.37, y - Math.max(2, thickness * 0.08), barLength * 0.74, Math.max(4, thickness * 0.16), 3);
+        context.fill();
+        context.restore();
+      }
+
+      function makeBarState(x, y, barLength) {
+        const endpoints = [
+          { x: x - barLength / 2, y },
+          { x: x + barLength / 2, y },
+        ];
+        return {
+          center: { x, y },
+          length: barLength,
+          angle: 0,
+          endpoints,
+          normalizedEndpoints: endpoints.map(point => ({ x: point.x / width, y: point.y / height })),
+        };
+      }
+
+      function frame(time) {
+        const delta = Math.min(0.05, (time - lastTime) / 1000);
+        lastTime = time;
+        if (running && !measurementMode) phase += delta * Number(speedInput.value);
+        const currentFrameId = frameId++;
+
+        context.clearRect(0, 0, width, height);
+        const thickness = Math.min(Number(thicknessInput.value), Math.max(10, height * 0.16));
+        const barLength = Math.min(Number(lengthInput.value), width * 0.58, Math.max(1, width - thickness - 16));
+        if (measurementMode) {
+          advanceMeasurementState(time);
+          if (measurementState) {
+            drawBar(measurementState.x, measurementState.y, measurementState.barLength, measurementState.thickness, measurementState.color === 'red' ? '#ff1838' : '#168cff');
+            displayStamp.value = `計測: ${measurementMode ? '計測' : '通常'}　試行: ${trialId}　state: ${measurementState.stateId}　表示時刻: ${new Date(measurementState.displayEpochMs).toISOString()} (${measurementState.displayEpochMs.toFixed(3)}ms)`;
+          }
+          requestAnimationFrame(frame);
+          return;
+        }
+        const travel = Math.max(0, (width - barLength) / 2 - 24);
+        const wave = Math.sin(phase * 1.6);
+        const redX = width / 2 + Math.sin(phase) * travel;
+        const blueX = width / 2 + Math.sin(phase + Math.PI) * travel;
+        const redY = height * 0.43 + wave * Math.min(24, height * 0.04);
+        const blueY = height * 0.60 - wave * Math.min(24, height * 0.04);
+        const mode = modeSelect.value;
+        const redState = makeBarState(redX, redY, barLength);
+        const blueState = makeBarState(blueX, blueY, barLength);
+
+        if (mode === 'both' || mode === 'red') drawBar(redX, redY, barLength, thickness, '#ff1838');
+        if (mode === 'both' || mode === 'blue') drawBar(blueX, blueY, barLength, thickness, '#168cff');
+        context.save();
+        context.font = '14px monospace';
+        context.fillStyle = '#f4f7fb';
+        context.globalAlpha = 0.82;
+        context.fillText(`frame=${currentFrameId} 通常モード`, 18, height - 18);
+        context.restore();
+        requestAnimationFrame(frame);
+      }
+
+      playButton.addEventListener('click', () => {
+        if (measurementMode && measurementStatus === 'completed') { startTrial(); return; }
+        running = !running;
+        if (measurementMode) {
+          measurementStatus = running ? 'running' : 'paused';
+          if (running) nextStateAt = performance.now();
+        }
+        playButton.textContent = running ? '一時停止' : '開始';
+      });
+      modeSelect.addEventListener('change', () => { updateLabels(); if (measurementMode) startTrial(); });
+      [speedInput, thicknessInput, lengthInput, intervalInput].forEach(input => input.addEventListener('input', () => { updateLabels(); if (measurementMode) startTrial(); }));
+      measurementButton.addEventListener('click', () => { measurementMode = !measurementMode; if (measurementMode) { startTrial(); measurementButton.textContent = '通常モードへ戻る'; } else { archiveCurrentTrial(); measurementState = null; measurementStatus = 'stopped'; measurementButton.textContent = '計測モード開始'; } });
+      fullscreenButton.addEventListener('click', () => {
+        if (document.fullscreenElement) document.exitFullscreen();
+        else document.documentElement.requestFullscreen();
+      });
+      document.addEventListener('fullscreenchange', () => { resize(); if (measurementMode) startTrial(); });
+      saveLogButton.addEventListener('click', () => {
+        archiveCurrentTrial();
+        const current = archivedTrials.find(trial => trial.trialId === trialId);
+        const blob = new Blob([JSON.stringify({ format: 'saber-display-log-v2', savedAtEpochMs: Date.now(), trialId, measurementMode, trialStartedEpochMs: current?.startedEpochMs ?? trialStartedEpochMs, trialEndedEpochMs: current?.endedEpochMs ?? trialEndedEpochMs, states: current?.states ?? displayLog, trials: archivedTrials }, null, 2)], { type: 'application/json' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'saber-display-log.json';
+        link.click();
+        URL.revokeObjectURL(link.href);
+      });
+      window.addEventListener('resize', () => { resize(); if (measurementMode) startTrial(); });
+      window.addEventListener('keydown', event => {
+        if (event.code === 'Space') {
+          event.preventDefault();
+          playButton.click();
+        } else if (event.key === '1') { modeSelect.value = 'red'; modeSelect.dispatchEvent(new Event('change')); }
+        else if (event.key === '2') { modeSelect.value = 'blue'; modeSelect.dispatchEvent(new Event('change')); }
+        else if (event.key === '3') { modeSelect.value = 'both'; modeSelect.dispatchEvent(new Event('change')); }
+        else if (event.key.toLowerCase() === 'f') fullscreenButton.click();
+      });
+
+      resize();
+      updateLabels();
+      requestAnimationFrame(frame);
+    })();
+  </script>
+</body>
+</html>
