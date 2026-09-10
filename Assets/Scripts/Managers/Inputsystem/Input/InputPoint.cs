@@ -81,7 +81,13 @@ public class InputPoint : MonoBehaviour
 
     int receivedCountPort1Window = 0;
     int receivedCountPort2Window = 0;
+    int receivedPacketCountPort1 = 0;
+    int receivedPacketCountPort2 = 0;
     float lastRateLogTime = 0f;
+
+    // Unity が受理した累計パケット数。デバッグ表示用で、ゲーム動作には使わない。
+    public int ReceivedPacketCount => Volatile.Read(ref receivedPacketCountPort1);
+    public int ReceivedPacketCount2 => Volatile.Read(ref receivedPacketCountPort2);
 
     [Header("IMU Fallback")]
     public bool useImuFallback = false;
@@ -212,9 +218,6 @@ public class InputPoint : MonoBehaviour
 
         lastRateLogTime = Time.realtimeSinceStartup;
 
-        // F3 で入力値を画面に出すデバッグ表示(既定は非表示)。受信機と同じ寿命で全シーンに付いて回る。
-        if (GetComponent<InputDebugOverlay>() == null) gameObject.AddComponent<InputDebugOverlay>();
-
         try
         {
             // UDP受信開始(棒1)
@@ -244,7 +247,7 @@ public class InputPoint : MonoBehaviour
             {
                 IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
                 byte[] data = client.Receive(ref endPoint);
-                string message = Encoding.UTF8.GetString(data);
+                string message = StripOptionalTimestamp(Encoding.UTF8.GetString(data).Trim());
 
                 string[] parts = message.Split(',');
                 if (parts.Length != 2 && parts.Length != 4)
@@ -276,6 +279,7 @@ public class InputPoint : MonoBehaviour
                     if (secondStick)
                     {
                         Interlocked.Increment(ref receivedCountPort2Window);
+                        Interlocked.Increment(ref receivedPacketCountPort2);
                         if (isStick)
                         {
                             rawX2a = a;
@@ -297,6 +301,7 @@ public class InputPoint : MonoBehaviour
                     else
                     {
                         Interlocked.Increment(ref receivedCountPort1Window);
+                        Interlocked.Increment(ref receivedPacketCountPort1);
                         if (isStick)
                         {
                             rawX1a = a;
@@ -330,6 +335,17 @@ public class InputPoint : MonoBehaviour
                 break;
             }
         }
+    }
+
+    static string StripOptionalTimestamp(string message)
+    {
+        foreach (string prefix in new[] { "ts=", "timestamp=" })
+        {
+            if (!message.StartsWith(prefix, StringComparison.Ordinal)) continue;
+            int separator = message.IndexOf(';', prefix.Length);
+            if (separator > prefix.Length) return message.Substring(separator + 1);
+        }
+        return message;
     }
 
     void Update()
