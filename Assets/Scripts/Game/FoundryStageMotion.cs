@@ -110,11 +110,14 @@ public sealed class FoundryStageMotion : MonoBehaviour
     }
 
     // 時刻から直接復元するので FPS によって噴出回数や回転速度が変わらない。
-    public void Tick(double songSeconds)
+    public void Tick(double songSeconds, float chorus = 0)
     {
         if (!built || !isActiveAndEnabled || steamMaterial == null || double.IsNaN(songSeconds) || double.IsInfinity(songSeconds)) return;
         songSeconds = Math.Max(0, songSeconds);
         LastTickSeconds = songSeconds;
+        chorus = float.IsNaN(chorus) || float.IsInfinity(chorus) ? 0 : Mathf.Clamp01(chorus);
+        foreach (var material in materials)
+            if (material.HasProperty("_Chorus")) material.SetFloat("_Chorus",chorus);
         steamMaterial.SetFloat("_MotionTime", (float)(songSeconds % 120));
         LiveParticleCount = 0;
         for (int i = 0; i < EquipmentCount; i++)
@@ -122,7 +125,7 @@ public sealed class FoundryStageMotion : MonoBehaviour
             int side = i % 2 == 0 ? -1 : 1;
             // 七枚羽根が読める穏やかな速度。左右で回転方向も変える。
             float angle = (float)((songSeconds * (i < 2 ? 47 : 39) + i * 31) % 360);
-            rotors[i].localRotation = Quaternion.Euler(0, 0, side * angle);
+            rotors[i].localRotation = Quaternion.Euler(0, 0, side * (angle + chorus*28));
             int count = 0;
             double phase = (songSeconds + i * 1.37) % VentCycleSeconds;
             for (int p = 0; p < ParticlesPerVent; p++)
@@ -135,10 +138,10 @@ public sealed class FoundryStageMotion : MonoBehaviour
                 var particle = new ParticleSystem.Particle();
                 // 外向きの上昇流。中心の判定領域へ横断させない。
                 particle.position = new Vector3(side * (.08f + age * .15f) + Mathf.Sin(seed + age * 2) * .10f * t,
-                    age * .88f + Mathf.Sin(seed) * .07f * t,
+                    age * (.88f + chorus*.30f) + Mathf.Sin(seed) * .07f * t,
                     Mathf.Cos(seed) * .20f + Mathf.Sin(age * 1.8f + seed) * .16f * t);
-                particle.startSize = .24f + t * .97f;
-                particle.startColor = new Color(.62f, .67f, .68f, fade * .26f);
+                particle.startSize = .24f + t * (.97f + chorus*.18f);
+                particle.startColor = new Color(.62f, .67f, .68f, fade * (.26f + chorus*.06f));
                 particle.rotation = seed * Mathf.Rad2Deg + age * (p % 2 == 0 ? 17 : -21);
                 particle.startLifetime = 10;
                 particle.remainingLifetime = 10;

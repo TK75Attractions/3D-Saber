@@ -6,6 +6,10 @@ Shader "Saber/Obsidian Stage Metal"
         _EmissionColor ("Inlay", Color) = (0, 0, 0, 1)
         _Smoothness ("Satin finish", Range(0,1)) = 0.35
         _Metallic ("Metal", Range(0,1)) = 0.32
+        _MotionStyle ("Rigid panels: lift 1 hinge 2 prism 3", Float) = 0
+        _MotionTime ("Song clock", Float) = 0
+        _FloorY ("Floor height", Float) = -2.5
+        _Chorus ("Musical section", Range(0,1)) = 0
     }
     SubShader
     {
@@ -19,11 +23,13 @@ Shader "Saber/Obsidian Stage Metal"
             half4 _EmissionColor;
             half _Smoothness;
             half _Metallic;
+            float _MotionStyle, _MotionTime, _FloorY, _Chorus;
         CBUFFER_END
         struct Attributes
         {
             float4 positionOS : POSITION;
             float3 normalOS : NORMAL;
+            float4 motion : TEXCOORD1;
         };
         struct Varyings
         {
@@ -35,10 +41,45 @@ Shader "Saber/Obsidian Stage Metal"
         Varyings Vert(Attributes input)
         {
             Varyings output;
-            VertexPositionInputs position = GetVertexPositionInputs(input.positionOS.xyz);
+            float3 p = input.positionOS.xyz;
+            float3 n = input.normalOS;
+            float3 anchor = input.motion.xyz;
+            float side = sign(anchor.x);
+            if (input.motion.w > .5 && _MotionStyle > .5)
+            {
+                // 可動建築の「移動→静止→復帰」を、通路の奥行きごとにずらす。
+                // 波形をただ往復させず、板の重さを感じる短い停止時間を作る。
+                float cycle = frac(_MotionTime / (_MotionStyle < 1.5 ? 6.8 : 8.4) - anchor.z * .027 + side * .19);
+                float wave = smoothstep(.04,.27,cycle) * (1-smoothstep(.53,.83,cycle));
+                if (_MotionStyle < 1.5 && abs(anchor.x) > 3)
+                {
+                    // 中央二列・固定レーンは残し、左右の板を順番に持ち上げる。
+                    p.y += wave * (.24 + _Chorus * .12);
+                }
+                else if (_MotionStyle > 1.5 && _MotionStyle < 2.5)
+                {
+                    float angle = side * wave * (.045 + _Chorus * .022);
+                    float2 pivot = float2(side * .045, _FloorY - .018);
+                    float2 q = p.xy - pivot;
+                    float s = sin(angle), c = cos(angle);
+                    p.xy = pivot + float2(c*q.x-s*q.y, s*q.x+c*q.y);
+                    n.xy = float2(c*n.x-s*n.y, s*n.x+c*n.y);
+                }
+                else if (_MotionStyle > 2.5)
+                {
+                    // 研究所の壁板が独立浮遊し、見せ場では外側へ開く。
+                    float phase = _MotionTime * .76 - anchor.z * .23 + anchor.y * 1.4;
+                    float delay = clamp(anchor.z*.006 + (anchor.y-_FloorY)*.026,0,.34);
+                    float open = smoothstep(delay,delay+.66,_Chorus);
+                    p.x += side * (.20 + .18 * sin(phase) + open * .55);
+                    p.y += .25 * sin(phase + 1.1) + open * (anchor.y - _FloorY - 2.6) * .16;
+                    p.z += .18 * cos(phase * .83);
+                }
+            }
+            VertexPositionInputs position = GetVertexPositionInputs(p);
             output.positionCS = position.positionCS;
             output.positionWS = position.positionWS;
-            output.normalWS = TransformObjectToWorldNormal(input.normalOS);
+            output.normalWS = TransformObjectToWorldNormal(n);
             output.fog = ComputeFogFactor(position.positionCS.z);
             return output;
         }
@@ -54,6 +95,9 @@ Shader "Saber/Obsidian Stage Metal"
             half rim = pow(1.0h - saturate(dot(normal, view)), 4.0h) * _Smoothness;
             half highlight = pow(saturate(dot(reflect(-key, normal), view)), 36.0h) * _Smoothness;
             half3 color = _BaseColor.rgb * lighting + _EmissionColor.rgb * 0.35h;
+            float edge = smoothstep(4.8, 7.0, abs(input.positionWS.x));
+            float sweep = pow(saturate(.5 + .5 * sin(input.positionWS.z * .48 - _MotionTime * 1.4)), 5);
+            color += edge * _Chorus * (_BaseColor.rgb * .20 + _EmissionColor.rgb * (.30 + sweep * .55));
             color += half3(0.032, 0.048, 0.062) * (rim + highlight * 0.45h);
             color = MixFog(color, input.fog);
             return half4(color, 1);

@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "displayName": "校歌",
+  "timeOrigin": "audio-file-start",
+  "previewStartSeconds": 133.859,
+  "audioSha256": "c0b0a76a9c3b9f7d23c850e9a4fbccc83427be6d6f29fe0f1f1bed90283d0fbb",
+  "sections": [
+    { "label": "主旋律の展開（PDF第28〜41小節）", "startSeconds": 62.631, "endSeconds": 90.091, "fadeInSeconds": 1.961, "fadeOutSeconds": 3.923, "intensity": 0.65 },
+    { "label": "転調後の主題（PDF第53〜70小節）", "startSeconds": 111.208, "endSeconds": 145.401, "fadeInSeconds": 1.89, "fadeOutSeconds": 3.982, "intensity": 0.72 },
+    { "label": "最終クライマックス（PDF第65〜70小節）", "startSeconds": 133.859, "endSeconds": 145.401, "fadeInSeconds": 1.89, "fadeOutSeconds": 3.982, "intensity": 1.0 }
+  ]
+}

@@ -29,7 +29,7 @@ public class LongNoteCutSfxTests
         var sfx = Make();
         var rapid = Resources.Load<AudioClip>("Audio/SFX/Saber_LongTick");
         Assert.IsNotNull(rapid, "連打用カット音を読み込める");
-        Assert.AreEqual(0.12f, rapid.length, 0.001f);
+        Assert.AreEqual(0.085f, rapid.length, 0.001f);
         Assert.AreSame(rapid, sfx.ClipForCut(0));
         Assert.AreSame(rapid, sfx.ClipForCut(4));
 

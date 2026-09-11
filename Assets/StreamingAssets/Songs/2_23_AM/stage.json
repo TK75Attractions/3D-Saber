@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "displayName": "2:23 AM",
+  "timeOrigin": "audio-file-start",
+  "previewStartSeconds": 129.333,
+  "audioSha256": "ad935ca87f900ed4ed2d4f18149c956724d22e41ebc378a1003dbfadcc014487",
+  "sections": [
+    { "label": "主題の広がり", "startSeconds": 65.333, "endSeconds": 86.667, "fadeInSeconds": 2.667, "fadeOutSeconds": 2.667, "intensity": 0.65 },
+    { "label": "主題の再現", "startSeconds": 129.333, "endSeconds": 150.667, "fadeInSeconds": 2.667, "fadeOutSeconds": 2.667, "intensity": 0.80 }
+  ]
+}

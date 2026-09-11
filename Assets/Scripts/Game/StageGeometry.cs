@@ -8,6 +8,7 @@ internal sealed partial class StageGeometry
     private readonly List<Vector3> vertices = new List<Vector3>();
     private readonly List<Vector3> normals = new List<Vector3>();
     private readonly List<int> triangles = new List<int>();
+    private readonly List<Vector4> motionAnchors = new List<Vector4>();
     public int VertexCount => vertices.Count;
     private void Triangle(Vector3 a, Vector3 b, Vector3 c)
     {
@@ -41,6 +42,7 @@ internal sealed partial class StageGeometry
     // 正面は -Z。四隅を切った八角形＋傾斜した細い縁で実際の厚みを付ける。
     public void Panel(Vector3 center, Vector3 size, Quaternion rotation, float corner)
     {
+        int firstVertex = vertices.Count;
         float x = size.x * .5f, y = size.y * .5f, z = size.z * .5f;
         float cut = Mathf.Min(corner, Mathf.Min(x, y) * .45f);
         float bevel = Mathf.Min(.035f, Mathf.Min(size.z * .3f, cut * .3f));
@@ -66,12 +68,24 @@ internal sealed partial class StageGeometry
             Triangle(frontCenter, front[next], front[i]); Triangle(backCenter, back[i], back[next]);
             Quad(rim[i], front[i], front[next], rim[next]); Quad(rim[i], rim[next], back[next], back[i]);
         }
+        TagMotionSince(firstVertex, center);
+    }
+    // 一枚の板の全頂点に共通の支点を保存する。結合メッシュのまま剛体として動かせる。
+    public void TagMotionSince(int firstVertex, Vector3 center)
+    {
+        while (motionAnchors.Count < vertices.Count) motionAnchors.Add(Vector4.zero);
+        for (int i = firstVertex; i < vertices.Count; i++) motionAnchors[i] = new Vector4(center.x, center.y, center.z, 1);
     }
     public Mesh CreateMesh(string name)
     {
         var mesh = new Mesh { name = "Stage/" + name };
         if (vertices.Count > 65535) mesh.indexFormat = IndexFormat.UInt32;
         mesh.SetVertices(vertices); mesh.SetNormals(normals); mesh.SetTriangles(triangles, 0);
+        if (motionAnchors.Count > 0)
+        {
+            while (motionAnchors.Count < vertices.Count) motionAnchors.Add(Vector4.zero);
+            mesh.SetUVs(1, motionAnchors);
+        }
         mesh.RecalculateBounds();
         return mesh;
     }

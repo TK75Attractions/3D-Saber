@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "displayName": "揺籠",
+  "timeOrigin": "audio-file-start",
+  "previewStartSeconds": 140.245,
+  "audioSha256": "0749344ba0c4422c0a3d3e39880bf4621765e469ee1f6d4fb1a4967cc0b0b28c",
+  "sections": [
+    { "label": "第1ピーク前半", "startSeconds": 66.989, "endSeconds": 79.547, "fadeInSeconds": 0.698, "fadeOutSeconds": 1.395, "intensity": 0.70 },
+    { "label": "ブレイク後の再突入", "startSeconds": 83.733, "endSeconds": 92.105, "fadeInSeconds": 0.698, "fadeOutSeconds": 1.395, "intensity": 0.82 },
+    { "label": "第2ピーク", "startSeconds": 102.221, "endSeconds": 119.314, "fadeInSeconds": 0.698, "fadeOutSeconds": 2.093, "intensity": 0.85 },
+    { "label": "最終ピーク", "startSeconds": 140.245, "endSeconds": 165.361, "fadeInSeconds": 0.698, "fadeOutSeconds": 2.093, "intensity": 1.0 }
+  ]
+}

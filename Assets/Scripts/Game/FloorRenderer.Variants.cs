@@ -14,8 +14,10 @@ public partial class FloorRenderer
             {
                 panels.Panel(new Vector3(side * 2.98f, y, z + length * .5f),
                     new Vector3(5.87f, length - .13f, .10f), flat, .48f);
+                int first = inlays.VertexCount;
                 inlays.Beam(new Vector3(side * 4.15f, floorY + .04f, z + .2f),
                     new Vector3(side * 5.75f, floorY + .04f, z + length * .54f), .019f, .008f);
+                inlays.TagMotionSince(first, new Vector3(side * 2.98f, y, z + length * .5f));
             }
         }
         else if (ActiveTheme == StageTheme.AmberFoundry)
@@ -113,8 +115,10 @@ public partial class FloorRenderer
                             new Vector3(length * .85f, 1.32f, .17f), tilt, .29f);
                         panels.Panel(new Vector3(side * (7.35f + tier * .14f), h, mid + depthShift),
                             new Vector3(length * .72f, 1.18f, .32f), tilt, .29f);
+                        int first = trims.VertexCount;
                         trims.Beam(new Vector3(side * (7.15f + tier * .14f), h - .48f, mid - length * .2f + depthShift),
                             new Vector3(side * (7.15f + tier * .14f), h - .31f, mid + length * .08f + depthShift), .024f, .02f);
+                        trims.TagMotionSince(first, new Vector3(side * (7.35f + tier * .14f), h, mid + depthShift));
                     }
                     ribs.Beam(new Vector3(side * 7.3f, floorY + .1f, z + .2f),
                         new Vector3(side * 6.40f, floorY + 5.9f, z + 1.00f), .18f, .24f);

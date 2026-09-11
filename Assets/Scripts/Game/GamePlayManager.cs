@@ -112,15 +112,13 @@ public class GamePlayManager : MonoBehaviour
     private GateBeatPulse gatePerfectPulse;
     private FoundryStageMotion foundryStageMotion;
     private ScenicStageWorld scenicStageWorld;
+    private FloorRenderer stageFloor;
+    private StagePerformanceTimeline stagePerformance = new StagePerformanceTimeline();
 
     // --- キャリブレーション（判定調整）モード ---
     private bool inCalibration;
-    private AudioClip calibClickClip;
-    private int nextCalibClickIdx;
-    private double lastAppliedPlayerOffsetSec;
-    private const float CalibBpm = 120f;
-    private const double CalibFirstNoteTime = 2.0;
-    private const float CalibChartDurationSec = 600f; // 10 分のループ
+    private CalibrationController calibration;
+    public CalibrationController Calibration => calibration;
 
     IEnumerator Start()
     {
@@ -174,6 +172,7 @@ public class GamePlayManager : MonoBehaviour
         if (addFloor)
         {
             var floor = FloorRenderer.Ensure(transform);
+            stageFloor = floor;
             foundryStageMotion = FoundryStageMotion.Ensure(floor);
             scenicStageWorld = floor.GetComponentInChildren<ScenicStageWorld>();
         }
@@ -208,6 +207,7 @@ public class GamePlayManager : MonoBehaviour
         }
 
         ChartData chart = ChartLoader.LoadFromStreamingAssets(songId, GameSession.SelectedDifficulty);
+        stagePerformance = StagePerformanceTimeline.Load(songId);
 
         // 音源を先にロードして、譜面長を音源に合わせて切り詰められるようにする。
         yield return LoadAudio(songId);
@@ -556,10 +556,14 @@ public class GamePlayManager : MonoBehaviour
         if (cutJudge2 != null) cutJudge2.RunJudge();
         if (gatePerfectPulse != null) gatePerfectPulse.Tick(Time.unscaledTimeAsDouble);
         // 背景の可動部もこのループで駆動。曲停止中に独立して進行させない。
-        if (foundryStageMotion != null && songPlayer != null && songPlayer.IsPlaying)
-            foundryStageMotion.Tick(songPlayer.SongTime);
-        if (scenicStageWorld != null && songPlayer != null && songPlayer.IsPlaying)
-            scenicStageWorld.Tick(songPlayer.SongTime);
+        if (songPlayer != null && songPlayer.IsPlaying)
+        {
+            double time = songPlayer.SongTime;
+            float chorus = stagePerformance.Evaluate(time);
+            if (stageFloor != null) stageFloor.Tick(time,chorus);
+            if (foundryStageMotion != null) foundryStageMotion.Tick(time,chorus);
+            if (scenicStageWorld != null) scenicStageWorld.Tick(time,chorus);
+        }
 
         // 2a. キャリブレーション分岐：時計は AudioSettings.dspTime ベース、終了せずループ
         if (inCalibration)
@@ -591,60 +595,15 @@ public class GamePlayManager : MonoBehaviour
     void StartCalibration()
     {
         inCalibration = true;
-
-        // キャリブレーションではセーバー判定を緩めに（本編の「巻き込み防止」設定は外す）。
-        // 軽くマウスを払うだけでカットが入るように：noteHitRadiusXY を広く、minCutSpeed を低く。
-        if (cutJudge != null)
-        {
-            cutJudge.bladeRadius = 0.35f;
-            cutJudge.noteHitRadiusXY = 0.65f;
-            cutJudge.minCutSpeed = 2.0f;
-            // 2本目にも同じ緩和値を反映
-            SaberRig.CopyTuning(cutJudge, cutJudge2);
-        }
-
-        // 小節線は不要
+        // 本番と同じセーバー判定・位置・速度を保つ。調整画面だけの判定緩和は行わない。
         if (barLineSpawner != null)
         {
             barLineSpawner.gameObject.SetActive(false);
             barLineSpawner = null;
         }
-
-        // 合成譜面：BPM 120、画面中央 (0, 0.5) に等間隔タップ
-        var chart = SynthesizeCalibrationChart(CalibBpm, CalibChartDurationSec, CalibFirstNoteTime);
-
-        // 現在の player offset を即時反映
-        double playerOffsetSec = GameSession.JudgmentOffsetMs / 1000.0;
-        lastAppliedPlayerOffsetSec = playerOffsetSec;
-        noteSpawner.SetExtraOffsetSeconds(extraOffsetSeconds + playerOffsetSec);
-        noteSpawner.SetChart(chart);
-
-        scoreManager.songPlayer = songPlayer;
-        scoreManager.Reset();
-        scoreManager.Bind(noteSpawner);
-        if (longNoteCutSfx != null) longNoteCutSfx.Bind(noteSpawner);
-        if (goldNoteSfx != null) goldNoteSfx.Bind(noteSpawner);
-
-        // 音源は使わない。AudioSource を流用してメトロノームを鳴らす。
-        var src = songPlayer != null ? songPlayer.GetComponent<AudioSource>() : null;
-        if (src != null)
-        {
-            src.Stop();
-            src.clip = null;
-        }
-
-        calibClickClip = JudgmentSfx.Beep(880f, 0.05f);
-        nextCalibClickIdx = 0;
-
-        // 重要：songPlayer.Play() を呼んで時計を進める。
-        // SongTime は ScoreManager.HandleCut が時間誤差計算に使うので、これを呼ばないと
-        // SongTime は 0 のままで error 計算が破綻し、全 note が Miss になる。
-        // clip は null のままで OK（無音で時計だけ進む）。
-        songPlayer.startDelay = 1.0f; // 1 秒プリロール
-        songPlayer.Play();
-
-        // UI: オフセット調整＋BACK ボタンの「キャリブレーション オーバーレイ」を表示
-        CalibrationOverlay.Ensure();
+        calibration = gameObject.AddComponent<CalibrationController>();
+        calibration.Initialize(songPlayer, noteSpawner, scoreManager, extraOffsetSeconds);
+        gatePerfectPulse = GateBeatPulse.Ensure(CalibrationProtocol.Bpm, 0, songPlayer, scoreManager);
     }
 
     public static ChartData SynthesizeCalibrationChart(float bpm, float durationSeconds, double firstNoteTimeSec)
@@ -671,44 +630,7 @@ public class GamePlayManager : MonoBehaviour
 
     void UpdateCalibration()
     {
-        // 時計は songPlayer.SongTime に一本化する。ScoreManager もこれを参照するので、
-        // NoteSpawner.Tick と ScoreManager の時間軸が完全一致する。
-        double calibTime = songPlayer.SongTime;
-
-        // ユーザーが UI で offset を動かしたら、次のノーツから反映
-        double currentPlayerOffset = GameSession.JudgmentOffsetMs / 1000.0;
-        if (System.Math.Abs(currentPlayerOffset - lastAppliedPlayerOffsetSec) > 0.0001)
-        {
-            lastAppliedPlayerOffsetSec = currentPlayerOffset;
-            noteSpawner.SetExtraOffsetSeconds(extraOffsetSeconds + currentPlayerOffset);
-        }
-
-        // ノーツ速度（approachTime）の即時反映
-        float wantedApproach = GameSession.NoteApproachTime;
-        if (!Mathf.Approximately(noteSpawner.approachTime, wantedApproach))
-        {
-            noteSpawner.approachTime = wantedApproach;
-        }
-
-        noteSpawner.Tick(calibTime);
-
-        // メトロノーム：ビート時刻になったらクリックを鳴らす（オフセットなし＝音楽が基準）
-        double beatInterval = 60.0 / CalibBpm;
-        var src = songPlayer != null ? songPlayer.GetComponent<AudioSource>() : null;
-        while (true)
-        {
-            double clickTime = CalibFirstNoteTime + nextCalibClickIdx * beatInterval;
-            if (clickTime > calibTime) break;
-            // 「大幅に遅れた」クリックは飛ばす（フレ落ち時の連打を防ぐ）
-            if (calibTime - clickTime < 0.10)
-            {
-                if (src != null && calibClickClip != null)
-                {
-                    src.PlayOneShot(calibClickClip, 0.45f);
-                }
-            }
-            nextCalibClickIdx++;
-        }
+        if (calibration != null) calibration.Tick(Time.unscaledDeltaTime);
     }
 
     public static void ExitCalibration(string returnSceneName = "SongSelect")

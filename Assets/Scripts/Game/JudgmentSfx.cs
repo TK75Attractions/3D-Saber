@@ -25,6 +25,7 @@ public class JudgmentSfx : MonoBehaviour
     private AudioClip defaultCutClip;
     private AudioClip defaultFlickClip;
     private AudioClip defaultLongFinishClip;
+    private AudioClip defaultMissClip;
     private bool defaultClipLoaded;
     // 自動生成したビープ音をキャッシュ
     private AudioClip genPerfect, genGreat, genGood, genBad, genMiss;
@@ -84,14 +85,14 @@ public class JudgmentSfx : MonoBehaviour
     public AudioClip ClipFor(JudgmentTier tier)
     {
         // Inspectorで指定した判定音を優先。Missには切断音を使わない。
-        AudioClip cut = tier == JudgmentTier.Miss ? null : LoadDefaultCutClip();
+        AudioClip cut = LoadDefaultCutClip();
         switch (tier)
         {
             case JudgmentTier.Perfect: return perfectClip != null ? perfectClip : (cut != null ? cut : (genPerfect ??= Beep(880f, 0.16f)));
             case JudgmentTier.Great:   return greatClip   != null ? greatClip   : (cut != null ? cut : (genGreat   ??= Beep(660f, 0.14f)));
             case JudgmentTier.Good:    return goodClip    != null ? goodClip    : (cut != null ? cut : (genGood    ??= Beep(440f, 0.12f)));
             case JudgmentTier.Bad:     return badClip     != null ? badClip     : (cut != null ? cut : (genBad     ??= Beep(220f, 0.10f)));
-            default:                   return missClip    != null ? missClip    : (genMiss    ??= Buzz(110f, 0.18f));
+            default:                   return missClip    != null ? missClip    : (defaultMissClip != null ? defaultMissClip : (genMiss ??= Buzz(110f, 0.18f)));
         }
     }
 
@@ -102,6 +103,7 @@ public class JudgmentSfx : MonoBehaviour
             defaultCutClip = Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut");
             defaultFlickClip = Resources.Load<AudioClip>("Audio/SFX/Saber_FlickCut");
             defaultLongFinishClip = Resources.Load<AudioClip>("Audio/SFX/Saber_LongFinish");
+            defaultMissClip = Resources.Load<AudioClip>("Audio/SFX/Saber_Miss");
             defaultClipLoaded = true;
         }
         return defaultCutClip;

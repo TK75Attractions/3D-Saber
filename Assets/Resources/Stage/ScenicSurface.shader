@@ -11,6 +11,8 @@ Shader "Saber/Scenic World Surface"
         _Sway ("Plant 1 Cloth -1", Float) = 0
         _AnchorY ("Bend anchor", Float) = -2.5
         _MotionTime ("Song clock", Float) = 0
+        _Chorus ("Musical section", Range(0,1)) = 0
+        _ChorusColor ("Section atmosphere", Color) = (.3,.3,.4,1)
     }
     SubShader
     {
@@ -22,6 +24,8 @@ Shader "Saber/Scenic World Surface"
         CBUFFER_START(UnityPerMaterial)
             half4 _BaseColor, _HazeColor, _AccentColor;
             float _Emission, _Mode, _Caustics, _Sway, _AnchorY, _MotionTime;
+            float _Chorus;
+            half4 _ChorusColor;
         CBUFFER_END
         struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; };
         struct Varyings { float4 positionCS : SV_POSITION; float3 world : TEXCOORD0; half3 normal : TEXCOORD1; float4 screen : TEXCOORD2; };
@@ -68,6 +72,7 @@ Shader "Saber/Scenic World Surface"
                 color = lerp(_HazeColor.rgb, _BaseColor.rgb, horizon);
                 float cloud = sin(p.x * .035 + _MotionTime * .016) * sin(p.y * .07 + p.x * .014) * .5 + .5;
                 color += _AccentColor.rgb * pow(cloud, 6) * .08;
+                color += _ChorusColor.rgb * _Chorus * (.12 + .10 * pow(cloud,3));
                 // スコアと曲名の背後は静かな濃色にして白文字の視認性を保つ。
                 color *= 1 - smoothstep(.72,.96, screen.y) * .68;
                 return half4(color,1);
@@ -84,6 +89,8 @@ Shader "Saber/Scenic World Surface"
             }
             float haze = 1 - exp(-max(0, distance(GetCameraPositionWS(),p) - 12) * .010);
             color = lerp(color, _HazeColor.rgb, haze * .68);
+            float edge = smoothstep(5.4, 8.0, abs(p.x));
+            color += _ChorusColor.rgb * _Chorus * edge * (.10 + _Emission * .30);
             return half4(color,1);
         }
         ENDHLSL

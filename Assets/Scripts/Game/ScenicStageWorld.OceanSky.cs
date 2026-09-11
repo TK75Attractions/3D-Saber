@@ -69,7 +69,7 @@ public sealed partial class ScenicStageWorld
         var rock = Surface("FloatingIslandRock",new Color(.24f,.275f,.285f));
         var grass = Surface("IslandGrass",new Color(.22f,.35f,.265f));
         var clouds = Surface("CloudBanks",new Color(.49f,.59f,.65f));
-        var cloth = Surface("WindBanners",new Color(.22f,.39f,.44f),0,0,null,-1);
+        var cloth = Surface("WindBanners",new Color(.22f,.39f,.44f),0,0,null,-2.8f);
         Path(path,trim,1);
         foreach (int side in new[] {-1,1})
         {
@@ -91,14 +91,32 @@ public sealed partial class ScenicStageWorld
                 var floating = new StageGeometry();
                 floating.Frustum(new Vector3(0,-1,0),.7f,3.4f,3.2f,9);
                 floating.Rock(new Vector3(0,.45f,0),new Vector3(3.8f,.65f,3.5f),10,4);
-                var islandRoot = Moving("FloatingIsland"+side+"-"+island,floating,rock,center,new Vector3(0,.28f,0),new Vector3(0,1.2f,0),.40f,island+side);
+                var islandRoot = Moving("FloatingIsland"+side+"-"+island,floating,rock,center,new Vector3(side*.25f,.65f,0),new Vector3(0,3.2f,0),.66f,island+side);
                 var cap = new StageGeometry(); cap.Frustum(new Vector3(0,.87f,0),2.2f,2.5f,.14f,12);
                 Emit("IslandGrass",cap,grass,islandRoot);
                 var cloud = new StageGeometry();
                 for (int puff = 0; puff < 6; puff++)
                     cloud.Ellipsoid(new Vector3((puff-2.5f)*1.1f,Mathf.Sin(puff*2)*.25f,puff%2),new Vector3(1.9f,.70f,1.65f),16,10);
-                Moving("DriftingCloud"+side+"-"+island,cloud,clouds,center+new Vector3(side*1.7f,-2.2f,-3),new Vector3(side*1.2f,.15f,.25f),Vector3.zero,.17f,island+side);
+                Moving("DriftingCloud"+side+"-"+island,cloud,clouds,center+new Vector3(side*2.8f,-.1f,-3),new Vector3(side*2.1f,.32f,1.2f),Vector3.zero,.42f/(1+island*.35f),island+side);
             }
+            // 神殿の風輪と鳥の群れ。周辺に違う周期の動きを重ねて空の高さを見せる。
+            var wind = new StageGeometry();
+            wind.Torus(Vector3.zero,1.65f,.06f,Quaternion.identity,15,165,24);
+            wind.Torus(Vector3.zero,1.65f,.06f,Quaternion.identity,195,345,24);
+            for (int petal=0;petal<6;petal++)
+            {
+                var turn=Quaternion.Euler(0,0,petal*60);
+                wind.Leaf(turn*new Vector3(0,.75f,0),turn*new Vector3(.35f,1.5f,0),.18f,Vector3.back);
+            }
+            Moving("TempleWindWheel"+side,wind,trim,new Vector3(side*10.3f,floor+4.4f,13),new Vector3(0,.18f,0),new Vector3(0,0,side*17),.6f,side);
+            var birds=new StageGeometry();
+            for (int bird=0;bird<4;bird++)
+            {
+                Vector3 body=new Vector3((bird-1.5f)*.65f,Mathf.Sin(bird)*.3f,bird*.3f);
+                birds.Leaf(body,body+new Vector3(-.40f,.16f,.10f),.18f,Vector3.up);
+                birds.Leaf(body,body+new Vector3(.40f,.16f,.10f),.18f,Vector3.up);
+            }
+            Moving("SkyBirds"+side,birds,marble,new Vector3(side*13.2f,floor+6.3f,23),new Vector3(side*2,1.2f,1.5f),Vector3.zero,.45f,side,new Vector3(0,9,12));
         }
         // 遠景の浮遊神殿。床下と空の層を分けて高さを見せる。
         for (int j = 0; j < 5; j++)

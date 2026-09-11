@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "displayName": "ElDorado",
+  "timeOrigin": "audio-file-start",
+  "previewStartSeconds": 167.4,
+  "audioSha256": "954382e1fbe69c6ed3e0ee6506ddd520426ea47e2d5a493ac39aec96910cb51f",
+  "sections": [
+    { "label": "第1ピーク", "startSeconds": 52.2, "endSeconds": 71.4, "fadeInSeconds": 1.2, "fadeOutSeconds": 2.4, "intensity": 0.80 },
+    { "label": "第2ピークへの助走", "startSeconds": 108.0, "endSeconds": 146.4, "fadeInSeconds": 2.4, "fadeOutSeconds": 2.4, "intensity": 0.45 },
+    { "label": "第2ピークと展開", "startSeconds": 119.4, "endSeconds": 146.4, "fadeInSeconds": 1.2, "fadeOutSeconds": 2.4, "intensity": 0.90 },
+    { "label": "最終ピーク", "startSeconds": 167.4, "endSeconds": 186.6, "fadeInSeconds": 1.2, "fadeOutSeconds": 2.4, "intensity": 1.0 }
+  ]
+}

@@ -13,7 +13,7 @@ public class GoldNoteSfxTests
         created.Add(go);
         var gold = go.GetComponent<GoldNoteSfx>().ResolveCutClip();
         Assert.IsNotNull(gold);
-        Assert.AreEqual(0.58f, gold.length, 0.001f);
+        Assert.AreEqual(0.46f, gold.length, 0.001f);
         Assert.AreNotSame(Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut"), gold);
     }
 

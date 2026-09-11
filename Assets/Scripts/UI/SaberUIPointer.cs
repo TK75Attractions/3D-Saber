@@ -93,6 +93,9 @@ public class SaberUIPointer : MonoBehaviour
     private bool hasSmoothed;
 
     public Button HoveredForTest => hovered;
+    // 調整画面のメニュー時だけ、判定面の入力範囲を画面全体の UI へ写す。
+    // セーバー本体・判定用の座標は変えず、試し切り中はポインター自体を休止する。
+    public bool RemapToFullScreen { get; set; }
 
     // 曲選択などのシーンに設置する。UDP受信機も確保する(無ければ作る)。
     public static SaberUIPointer Build()
@@ -183,6 +186,12 @@ public class SaberUIPointer : MonoBehaviour
             smoothedWorld = Vector3.Lerp(smoothedWorld, world, alpha);
         }
         Vector3 screen = cam.WorldToScreenPoint(smoothedWorld);
+        if (RemapToFullScreen && bridge != null)
+        {
+            screen = new Vector3(
+                Mathf.InverseLerp(bridge.minBounds.x, bridge.maxBounds.x, smoothedWorld.x) * Screen.width,
+                Mathf.InverseLerp(bridge.minBounds.y, bridge.maxBounds.y, smoothedWorld.y) * Screen.height, 0f);
+        }
 
         SetCursorVisible(true);
         cursorDot.rectTransform.position = new Vector3(screen.x, screen.y, 0f);

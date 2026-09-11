@@ -10,6 +10,7 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
     public const int ParticleBudget = 72;
     public StageTheme Theme { get; private set; }
     public double LastTickSeconds { get; private set; }
+    public float ChorusIntensity { get; private set; }
     public int MovingObjectCount => movers.Count;
     private readonly List<Material> materials = new List<Material>();
     private readonly List<Mesh> meshes = new List<Mesh>();
@@ -26,6 +27,7 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
     {
         public Transform transform;
         public Vector3 position, amplitude, rotationSpeed, sway;
+        public Vector3 chorusOffset, chorusRotation;
         public Quaternion rotation;
         public float frequency, phase;
     }
@@ -66,6 +68,7 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
         var mat = new Material(surfaceShader) { name = name, hideFlags = HideFlags.DontSave };
         mat.SetColor("_BaseColor", color); mat.SetColor("_HazeColor", haze); mat.SetColor("_AccentColor", accent ?? color);
         mat.SetFloat("_Mode", mode); mat.SetFloat("_Emission", emission); mat.SetFloat("_Sway", sway);
+        mat.SetColor("_ChorusColor", ChorusColor(Theme));
         mat.SetFloat("_AnchorY", sway < 0 ? floor + 6 : floor);
         if (Theme == StageTheme.AbyssalRuins && mode == 0) mat.SetFloat("_Caustics", .7f);
         materials.Add(mat); return mat;
@@ -123,25 +126,50 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
     {
         var t = Emit(name, geometry, material, transform); t.localPosition = position;
         t.localRotation = rotation.Equals(default(Quaternion)) ? Quaternion.identity : rotation;
+        float side = Mathf.Sign(position.x);
+        Vector3 opening = new Vector3(side*.65f,Theme == StageTheme.CrystalGrotto ? .95f : .50f,0);
+        if (name.StartsWith("DriftingCloud")) opening = new Vector3(side*1.2f,-.55f,0);
+        if (name.StartsWith("PlanetaryRing")) opening = Vector3.zero;
+        Vector3 flourish = Theme == StageTheme.AstralOrbit ? new Vector3(0,18,side*14) : new Vector3(0,side*12,0);
         movers.Add(new Motion { transform = t, position = position, rotation = t.localRotation,
-            amplitude = amplitude, rotationSpeed = speed, frequency = frequency, phase = phase, sway = sway });
+            amplitude = amplitude, rotationSpeed = speed, frequency = frequency, phase = phase, sway = sway,
+            chorusOffset = opening, chorusRotation = flourish });
         return t;
     }
 
-    public void Tick(double songSeconds)
+    public void Tick(double songSeconds, float chorus = 0)
     {
         if (!built || !isActiveAndEnabled || double.IsNaN(songSeconds) || double.IsInfinity(songSeconds)) return;
         songSeconds = Math.Max(0,songSeconds); LastTickSeconds = songSeconds;
-        foreach (var mat in materials) mat.SetFloat("_MotionTime", (float)(songSeconds % 4096));
+        ChorusIntensity = float.IsNaN(chorus) || float.IsInfinity(chorus) ? 0 : Mathf.Clamp01(chorus);
+        foreach (var mat in materials)
+        {
+            mat.SetFloat("_MotionTime", (float)songSeconds);
+            mat.SetFloat("_Chorus", ChorusIntensity);
+        }
         foreach (var item in movers)
         {
             float wave = (float)Math.Sin(songSeconds * item.frequency + item.phase);
-            item.transform.localPosition = item.position + item.amplitude * wave;
+            // 時刻を強度で掛け算するとサビ入りで回転が飛ぶため、位相は常に曲時計のまま。
+            item.transform.localPosition = item.position + item.amplitude * wave + item.chorusOffset * ChorusIntensity;
             Vector3 angle = new Vector3((float)(songSeconds * item.rotationSpeed.x % 360),
                 (float)(songSeconds * item.rotationSpeed.y % 360), (float)(songSeconds * item.rotationSpeed.z % 360));
-            item.transform.localRotation = item.rotation * Quaternion.Euler(angle + item.sway * wave);
+            item.transform.localRotation = item.rotation * Quaternion.Euler(angle + item.sway * wave + item.chorusRotation * ChorusIntensity);
         }
         TickMotes(songSeconds);
+    }
+
+    private static Color ChorusColor(StageTheme theme)
+    {
+        switch (theme)
+        {
+            case StageTheme.AbyssalRuins: return new Color(.10f,.42f,.46f);
+            case StageTheme.SkySanctuary: return new Color(.58f,.46f,.24f);
+            case StageTheme.MoonlitGarden: return new Color(.34f,.43f,.26f);
+            case StageTheme.CrystalGrotto: return new Color(.43f,.24f,.57f);
+            case StageTheme.AstralOrbit: return new Color(.32f,.23f,.57f);
+            default: return new Color(.56f,.31f,.12f);
+        }
     }
 
     private void CreateMotes()
@@ -178,6 +206,8 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
             if (Theme == StageTheme.CrystalGrotto) { y = floor + 4.7f - phase*4.7f; size = .065f; color = new Color(.48f,.60f,.68f,.50f*fade); }
             if (Theme == StageTheme.AstralOrbit) { y = floor + phase*6; x += side*2; size = .05f; color = new Color(.52f,.56f,.72f,.28f*fade); }
             if (Theme == StageTheme.DesertSanctum) { x = side*(7.35f + Mathf.Sin(seed)*.20f); z = 4+(i%3)*9.5f + Mathf.Cos(seed)*.20f; y = floor + 4.0f - phase*4; size = .065f + (i%3)*.02f; color = new Color(.62f,.46f,.26f,.65f*fade); }
+            size *= 1 + ChorusIntensity * .25f;
+            color.a *= 1 + ChorusIntensity * .30f;
             particles[i] = new ParticleSystem.Particle { position = new Vector3(x + Mathf.Sin((float)(time*.8)+seed)*.10f,y,z),
                 startSize = size, startColor = color, remainingLifetime = 10, startLifetime = 10, randomSeed = (uint)(i+1) };
         }

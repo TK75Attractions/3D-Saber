@@ -13,11 +13,15 @@ using UnityEngine.Rendering.Universal;
 public static class ScenicWorldsPreview
 {
     private const string Key="ScenicWorldsPreview.Running";
-    private const int Width=1280,Height=720,Fps=24,Frames=192;
+    private const int Width=1280,Height=720,Fps=24,Frames=288;
     private static int phase,frame,settle,themeIndex,lastTheme;
     private static double started;
     private static string output,folder;
     private static bool stills;
+    private static bool dynamicsDemo;
+    private static readonly StagePerformanceTimeline demo = new StagePerformanceTimeline { sections = new[] {
+        new StagePerformanceTimeline.Section { startSeconds=3,endSeconds=11.5,fadeInSeconds=2,fadeOutSeconds=2.5f }
+    }};
     private static FloorRenderer stage;
     private static FoundryStageMotion foundry;
     private static ScenicStageWorld world;
@@ -34,6 +38,7 @@ public static class ScenicWorldsPreview
             if(!SessionState.GetBool(Key,false)||state!=PlayModeStateChange.EnteredPlayMode) return;
             started=EditorApplication.timeSinceStartup; phase=frame=settle=0;
             output=SessionState.GetString(Key+".Output",""); stills=SessionState.GetBool(Key+".Stills",false);
+            dynamicsDemo=SessionState.GetBool(Key+".Dynamics",false);
             themeIndex=SessionState.GetInt(Key+".First",0); lastTheme=SessionState.GetInt(Key+".Last",9);
         };
     }
@@ -51,6 +56,7 @@ public static class ScenicWorldsPreview
         output=Path.GetFullPath(args[at+1]); Directory.CreateDirectory(output);
         SessionState.SetString(Key+".Output",output); SessionState.SetBool(Key,true);
         SessionState.SetBool(Key+".Stills",Array.IndexOf(args,"-scenicPreviewStills")>=0);
+        SessionState.SetBool(Key+".Dynamics",Array.IndexOf(args,"-scenicDynamicsDemo")>=0);
         int only=Array.IndexOf(args,"-scenicPreviewTheme");
         int first=0,last=StageThemeCatalog.Count-1;
         if(only>=0 && only+1<args.Length) { first=int.Parse(args[only+1]); last=first; }
@@ -105,7 +111,8 @@ public static class ScenicWorldsPreview
                 var pulse=UnityEngine.Object.FindFirstObjectByType<GateBeatPulse>(); if(pulse!=null) pulse.Tick(Time.unscaledTimeAsDouble);
                 Capture(Path.Combine(folder,"Frames",$"frame-{frame:D5}.png"));
                 if(frame==(stills?1:36)) SavePoster();
-                if(++frame<(stills?2:Frames)) return;
+                if(dynamicsDemo && frame==168) File.WriteAllBytes(Path.Combine(folder,"chorus-study.png"),pixels.EncodeToPNG());
+                if(++frame<(stills?2:dynamicsDemo?Frames:192)) return;
                 File.AppendAllText(Path.Combine(output,"runtime-check.txt"),"Captured "+frame+" frames: "+folder+"\n");
                 if(++themeIndex<=lastTheme) { StartWorld(); phase=1; return; }
                 target.Release(); UnityEngine.Object.DestroyImmediate(target); UnityEngine.Object.DestroyImmediate(pixels);
@@ -131,7 +138,16 @@ public static class ScenicWorldsPreview
         caption.text=$"{themeIndex+1:00} / {StageThemeCatalog.Count}    {StageThemeCatalog.DisplayName(stage.ActiveTheme).ToUpperInvariant()}";
         frame=settle=0;
     }
-    private static void Drive(double time) { if(world!=null) world.Tick(time); if(foundry!=null) foundry.Tick(time); }
+    private static void Drive(double time)
+    {
+        float chorus=dynamicsDemo?demo.Evaluate(time):0;
+        stage.Tick(time,chorus);
+        if(world!=null) world.Tick(time,chorus);
+        if(foundry!=null) foundry.Tick(time,chorus);
+        if(dynamicsDemo && caption!=null)
+            caption.text=$"{themeIndex+1:00} / {StageThemeCatalog.Count}    {StageThemeCatalog.DisplayName(stage.ActiveTheme).ToUpperInvariant()}     |     "+
+                (chorus>.01f ? "CHORUS EFFECT STUDY (DEMO TIMING)" : "AMBIENT MOTION");
+    }
     private static void BuildCaption()
     {
         var canvas=new GameObject("PreviewCaption",typeof(Canvas)).GetComponent<Canvas>();

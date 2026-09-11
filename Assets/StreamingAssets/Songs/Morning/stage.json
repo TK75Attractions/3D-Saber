@@ -1,0 +1,11 @@
+{
+  "schemaVersion": 1,
+  "displayName": "Morning",
+  "timeOrigin": "audio-file-start",
+  "previewStartSeconds": 113.898,
+  "audioSha256": "bd0b4b68c754f85a2091c352bd7273d4a108d7a65f144135d92d9aaa1e84b437",
+  "sections": [
+    { "label": "第1周の主題ハイライト", "startSeconds": 40.678, "endSeconds": 56.949, "fadeInSeconds": 2.034, "fadeOutSeconds": 2.034, "intensity": 0.65 },
+    { "label": "第2周の主題ハイライト", "startSeconds": 113.898, "endSeconds": 130.169, "fadeInSeconds": 2.034, "fadeOutSeconds": 2.034, "intensity": 0.80 }
+  ]
+}

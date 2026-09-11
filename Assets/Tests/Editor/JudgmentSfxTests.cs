@@ -60,10 +60,27 @@ public class JudgmentSfxTests
         Assert.IsNotNull(cut, "通常カット音がビルドに含まれる場所から読める");
         Assert.AreEqual(48000, cut.frequency);
         Assert.AreEqual(1, cut.channels);
-        Assert.AreEqual(0.22f, cut.length, 0.001f);
+        Assert.AreEqual(0.16f, cut.length, 0.001f);
         foreach (var tier in new[] { JudgmentTier.Perfect, JudgmentTier.Great, JudgmentTier.Good, JudgmentTier.Bad })
             Assert.AreSame(cut, sfx.ClipFor(tier));
         Assert.AreNotSame(cut, sfx.ClipFor(JudgmentTier.Miss));
+    }
+
+    [Test]
+    public void ClipFor_MissUsesPrismAssetAndRespectsInspectorOverride()
+    {
+        var go = new GameObject("sfx", typeof(AudioSource), typeof(JudgmentSfx));
+        var sfx = go.GetComponent<JudgmentSfx>();
+        var miss = Resources.Load<AudioClip>("Audio/SFX/Saber_Miss");
+        Assert.IsNotNull(miss, "候補Bの空振り音を読み込める");
+        Assert.AreSame(miss, sfx.ClipFor(JudgmentTier.Miss));
+        var custom = AudioClip.Create("customMiss", 480, 1, 48000, false);
+        try
+        {
+            sfx.missClip = custom;
+            Assert.AreSame(custom, sfx.ClipForCut(JudgmentTier.Miss, CutDirection.Up, 4));
+        }
+        finally { Object.DestroyImmediate(custom); }
     }
 
     [Test]

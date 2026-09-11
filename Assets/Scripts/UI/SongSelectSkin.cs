@@ -172,6 +172,9 @@ public class SongSelectSkin : MonoBehaviour
         jacketLockedOverlay=SongSelectVisuals.Panel(viewport,"LockedOverlay",Vector2.zero,new Vector2(296,296),new Color(.025f,.04f,.06f,.83f),Color.clear,0).gameObject;
         SongSelectVisuals.Label(jacketLockedOverlay.transform,"Label","譜面準備中",26,Vector2.zero,new Vector2(252,42),SongSelectVisuals.Text,TextAlignmentOptions.Center,true);
         jacketLockedOverlay.SetActive(false);
+        // 再生時だけジャケットと同じ位置を横長に使用。曲名・難易度・STARTの位置は変えない。
+        var preview=SongSelectVisuals.Panel(canvas.transform,"ChartPreviewPanel",new Vector2(DetailX,149),new Vector2(592,316),SongSelectVisuals.Surface,SongSelectVisuals.Edge,12);
+        ctl.AttachChartPreview(preview.rectTransform);
     }
 
     void BuildDifficultyRibbons(Canvas canvas)

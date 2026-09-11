@@ -3,9 +3,9 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 // Obsidian Relay: 段差のあるデッキと、奥へ重なる側壁で距離を表す。
-// 既存+追加3種の静的環境。ノーツ・HUDには触れず、中央は空け、光は床端と側壁に置く。
-// 環境は静的な結合メッシュ。パーツ数に比例した描画呼び出しや Update を増やさない。
-// EditMode の確認で生成した一時資源も OnDestroy で解放する。自動生成・毎フレーム処理はしない。
+// 金属環境4種と独立世界6種。ノーツ・HUDには触れず、中央は空け、光は床端と側壁に置く。
+// 結合メッシュの板はGPUで剛体変形し、パーツ数に比例した描画呼び出しを増やさない。
+// 資源は OnDestroy で解放。独自Updateは持たず、GamePlayManagerが曲時計でTickする。
 [ExecuteAlways]
 public partial class FloorRenderer : MonoBehaviour
 {
@@ -50,6 +50,21 @@ public partial class FloorRenderer : MonoBehaviour
     private bool built;
     private readonly List<Material> materials = new List<Material>();
     private readonly List<Mesh> meshes = new List<Mesh>();
+    public double LastTickSeconds { get; private set; }
+    public float ChorusIntensity { get; private set; }
+
+    // 曲時計のみを使用し、停止時には背景も止まる。全体露出・判定枠の発光には関与しない。
+    public void Tick(double songSeconds, float chorus = 0)
+    {
+        if (!built || !isActiveAndEnabled || double.IsNaN(songSeconds) || double.IsInfinity(songSeconds)) return;
+        LastTickSeconds = System.Math.Max(0, songSeconds);
+        ChorusIntensity = float.IsNaN(chorus) || float.IsInfinity(chorus) ? 0 : Mathf.Clamp01(chorus);
+        foreach (var material in materials)
+        {
+            material.SetFloat("_MotionTime", (float)LastTickSeconds);
+            material.SetFloat("_Chorus", ChorusIntensity);
+        }
+    }
 
     public static FloorRenderer Ensure(Transform parent = null)
     {
@@ -98,6 +113,18 @@ public partial class FloorRenderer : MonoBehaviour
         var guideMat = Surface("MutedLane", original ? lineColor : accent * .48f, .25f, laneLineEmission);
         var lightMat = Surface("IceInlay", accent, .30f, .52f);
         var amberMat = Surface("AmberServiceTabs", new Color(.38f, .215f, .073f), .20f, .25f);
+        if (ActiveTheme == StageTheme.ObsidianRelay) deckMat.SetFloat("_MotionStyle", 1);
+        if (ActiveTheme == StageTheme.VioletVault)
+        {
+            deckMat.SetFloat("_MotionStyle", 2);
+            // レーンの固定線と可動床の装飾は材質を分けず、支点を持つ頂点だけ動かす。
+            guideMat.SetFloat("_MotionStyle", 2);
+        }
+        if (ActiveTheme == StageTheme.AzurePrism)
+        {
+            wallMat.SetFloat("_MotionStyle", 3);
+            lightMat.SetFloat("_MotionStyle", 3);
+        }
 
         if (addFloorBase)
         {
@@ -247,6 +274,7 @@ public partial class FloorRenderer : MonoBehaviour
             material.SetColor("_EmissionColor", color * emission * InlayBrightness);
         }
         materials.Add(material);
+        material.SetFloat("_FloorY", floorY);
         return material;
     }
 
@@ -260,6 +288,11 @@ public partial class FloorRenderer : MonoBehaviour
         go.GetComponent<MeshFilter>().sharedMesh = mesh;
         var renderer = go.GetComponent<MeshRenderer>();
         renderer.sharedMaterial = material;
+        // 元メッシュの幾何形状を変えず、GPU変形分だけ描画側の境界を広げる。
+        if (material.GetFloat("_MotionStyle") > 0)
+        {
+            Bounds bounds = mesh.bounds; bounds.Expand(new Vector3(2.8f, 2.6f, 2.8f)); renderer.localBounds = bounds;
+        }
         renderer.shadowCastingMode = ShadowCastingMode.Off;
         renderer.receiveShadows = false;
         renderer.lightProbeUsage = LightProbeUsage.Off;

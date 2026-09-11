@@ -3,13 +3,12 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 // スクロール可能な曲リスト + 右側に難易度・ジャケット・スタートボタン。
 // PC キー入力（↑↓で曲選択、←→で難易度、Enter/Space で開始）。
-// 選択中の曲を 10 秒間プレビュー再生する。
+// 選択が1秒落ち着いたら、選択難易度のクライマックスを音付きで10秒プレビューする。
 public class SongSelectController : MonoBehaviour
 {
     // 曲フォルダ/スコア保存キーは変えず、選曲とプレイ情報の表示名だけを統一する。
@@ -54,7 +53,8 @@ public class SongSelectController : MonoBehaviour
     private readonly List<Text> songLabels = new List<Text>();
     private int selectedIndex = -1;
     private int selectedDifficulty = 0; // 初期選択は Easy
-    private Coroutine previewCoroutine;
+    private SongSelectChartPreview chartPreview;
+    public SongSelectChartPreview ChartPreview => chartPreview;
     // 難易度レベル(1〜10)のキャッシュ。キー = songId::難易度名。0 = 譜面なし(数値非表示)
     private readonly Dictionary<string, int> levelCache = new Dictionary<string, int>();
     private readonly Dictionary<string, int> authoredLevelCache = new Dictionary<string, int>();
@@ -77,6 +77,7 @@ public class SongSelectController : MonoBehaviour
 
     void Update()
     {
+        if (chartPreview != null) chartPreview.Tick();
         var kb = Keyboard.current;
         if (kb == null) return;
         if (kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame) Move(-1);
@@ -360,54 +361,29 @@ public class SongSelectController : MonoBehaviour
 
     private void StartPreview(string songId)
     {
-        if (previewSource == null) return;
-        previewSource.Stop();
-        if (previewCoroutine != null) StopCoroutine(previewCoroutine);
-        previewCoroutine = StartCoroutine(LoadAndPlayPreview(songId));
+        if (!Application.isPlaying || previewSource == null || SelectedSongLocked) return;
+        EnsureChartPreview();
+        chartPreview.Select(songId, difficultyNames[selectedDifficulty], previewDuration);
     }
 
-    private IEnumerator LoadAndPlayPreview(string songId)
+    private void EnsureChartPreview()
     {
-        string dir = Path.Combine(Application.streamingAssetsPath, "Songs", songId);
-        string[] candidates = { "audio.ogg", "audio.wav", "audio.mp3" };
-        foreach (var name in candidates)
+        if (chartPreview == null)
         {
-            string full = Path.Combine(dir, name);
-            if (!File.Exists(full)) continue;
-            AudioType type = GuessType(name);
-            using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip("file://" + full, type))
-            {
-                // 一括デコードだと曲送りのたびにメインスレッドが数百msブロックされ、
-                // ナビノーツのカット直後などに大きなヒッチが出る。ストリーミングにして
-                // 再生しながら少しずつデコードさせる(プレビュー用途では音質・挙動は同じ)。
-                if (req.downloadHandler is DownloadHandlerAudioClip streamHandler)
-                {
-                    streamHandler.streamAudio = true;
-                }
-                yield return req.SendWebRequest();
-                if (req.result == UnityWebRequest.Result.Success)
-                {
-                    AudioClip clip = DownloadHandlerAudioClip.GetContent(req);
-                    previewSource.clip = clip;
-                    previewSource.time = 0f;
-                    previewSource.loop = false;
-                    previewSource.Play();
-                    yield return new WaitForSeconds(previewDuration);
-                    if (previewSource != null && previewSource.clip == clip) previewSource.Stop();
-                    yield break;
-                }
-            }
+            chartPreview = gameObject.AddComponent<SongSelectChartPreview>();
+            chartPreview.Initialize(previewSource);
         }
     }
 
-    private AudioType GuessType(string n)
+    public void AttachChartPreview(RectTransform panel)
     {
-        n = n.ToLowerInvariant();
-        if (n.EndsWith(".ogg")) return AudioType.OGGVORBIS;
-        if (n.EndsWith(".wav")) return AudioType.WAV;
-        if (n.EndsWith(".mp3")) return AudioType.MPEG;
-        return AudioType.UNKNOWN;
+        EnsureChartPreview();
+        chartPreview.Attach(panel);
     }
+
+    public void StopPreview() { if (chartPreview != null) chartPreview.Cancel(); else if (previewSource != null) previewSource.Stop(); }
+
+    void OnDisable() { StopPreview(); }
 
     public void ChangeDifficulty(int delta)
     {
@@ -419,6 +395,7 @@ public class SongSelectController : MonoBehaviour
     {
         if (difficultyNames == null || difficultyNames.Length == 0) return;
         idx = Mathf.Clamp(idx, 0, difficultyNames.Length - 1);
+        bool changed = selectedDifficulty != idx;
         selectedDifficulty = idx;
         RefreshDifficultyDisplay(); // 「難易度名  レベル数値」(譜面なしは名前のみ)
         if (difficultyButtons != null && !suppressDefaultDifficultyTint)
@@ -433,13 +410,14 @@ public class SongSelectController : MonoBehaviour
             }
         }
         OnDifficultyChanged?.Invoke(idx);
+        if (changed && selectedIndex >= 0 && selectedIndex < songIds.Count) StartPreview(songIds[selectedIndex]);
     }
 
     public void StartGame()
     {
         if (selectedIndex < 0 || selectedIndex >= songIds.Count) return;
         if (SelectedSongLocked) return; // ロック曲(譜面未制作)は開始できない
-        if (previewSource != null) previewSource.Stop();
+        StopPreview();
         GameSession.SelectedSongId = songIds[selectedIndex];
         GameSession.SelectedSongTitle = DisplaySongTitle(songIds[selectedIndex]);
         GameSession.SelectedDifficulty = (selectedDifficulty < difficultyNames.Length)
