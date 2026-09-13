@@ -1,4 +1,5 @@
 import AVFoundation
+import CoreImage
 import CoreVideo
 
 struct DetectedSaber {
@@ -7,9 +8,13 @@ struct DetectedSaber {
     let isFresh: Bool
 }
 
-final class FrameProcessor {
+final class FrameProcessor: @unchecked Sendable {
     let queue = DispatchQueue(label: "PhoneSaberSender.frames", qos: .userInteractive)
     var onResult: (([DetectedSaber], Int, Int, TimeInterval, Int) -> Void)?
+    var onRawFrameSaved: ((Result<URL, Error>) -> Void)?
+#if DEBUG
+    var onPerformance: ((FramePerformanceSample) -> Void)?
+#endif
     var redThreshold = ColorThreshold()
     var blueThreshold = ColorThreshold()
     private var tracks: [SaberColor: Track] = [.red: Track(), .blue: Track()]
@@ -19,16 +24,35 @@ final class FrameProcessor {
     private var expiryWorkItem: DispatchWorkItem?
     private var lastDimensions: (Int, Int)?
     private var generation = 0
+    private let pendingLock = NSLock()
+    private var pendingFrame: CMSampleBuffer?
+    private var pendingFrameShouldSave = false
+    private var rawFrameSaveRequested = false
+    private var workerScheduled = false
+    private var replacedPendingFrames = 0
+    private let rawFrameDirectory: () throws -> URL
+    private lazy var rawFrameContext = CIContext(options: [.cacheIntermediates: false])
     var currentGeneration: Int { queue.sync { generation } }
+    var replacedPendingFrameCountForTesting: Int {
+        pendingLock.lock(); defer { pendingLock.unlock() }
+        return replacedPendingFrames
+    }
 
     init(
         clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
         expiryScheduler: ((DispatchQueue, TimeInterval, DispatchWorkItem) -> Void)? = { queue, delay, workItem in
             queue.asyncAfter(deadline: .now() + delay, execute: workItem)
+        },
+        rawFrameDirectory: @escaping () throws -> URL = {
+            guard let url = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first else {
+                throw CocoaError(.fileNoSuchFile)
+            }
+            return url
         }
     ) {
         self.clock = clock
         self.expiryScheduler = expiryScheduler
+        self.rawFrameDirectory = rawFrameDirectory
     }
 
     private struct Track {
@@ -38,7 +62,12 @@ final class FrameProcessor {
 
     @discardableResult
     func reset() -> Int {
-        queue.sync {
+        pendingLock.lock()
+        pendingFrame = nil
+        pendingFrameShouldSave = false
+        rawFrameSaveRequested = false
+        pendingLock.unlock()
+        return queue.sync {
             expiryWorkItem?.cancel()
             expiryWorkItem = nil
             tracks = [.red: Track(), .blue: Track()]
@@ -55,8 +84,53 @@ final class FrameProcessor {
         }
     }
 
+    /// Capture callbacks only replace this one-slot mailbox. While one frame is
+    /// processing, any number of older waiting frames collapse to the newest.
+    func submit(_ sampleBuffer: CMSampleBuffer) {
+        pendingLock.lock()
+        if pendingFrame != nil { replacedPendingFrames += 1 }
+        pendingFrame = sampleBuffer
+        if rawFrameSaveRequested {
+            pendingFrameShouldSave = true
+            rawFrameSaveRequested = false
+        }
+        let shouldSchedule = !workerScheduled
+        if shouldSchedule { workerScheduled = true }
+        pendingLock.unlock()
+        if shouldSchedule { queue.async { [weak self] in self?.drainLatestFrames() } }
+    }
+
+    private func drainLatestFrames() {
+        while true {
+            pendingLock.lock()
+            guard let next = pendingFrame else {
+                workerScheduled = false
+                pendingLock.unlock()
+                return
+            }
+            pendingFrame = nil
+            let shouldSave = pendingFrameShouldSave
+            pendingFrameShouldSave = false
+            pendingLock.unlock()
+            process(next, saveRequestedRawFrame: shouldSave)
+        }
+    }
+
     func process(_ sampleBuffer: CMSampleBuffer) {
+        process(sampleBuffer, saveRequestedRawFrame: false)
+    }
+
+    /// The request is consumed by the next submitted camera frame. Normal
+    /// operation adds no new per-frame synchronization beyond the mailbox lock.
+    func requestRawFrameSave() {
+        pendingLock.lock()
+        rawFrameSaveRequested = true
+        pendingLock.unlock()
+    }
+
+    private func process(_ sampleBuffer: CMSampleBuffer, saveRequestedRawFrame: Bool) {
         let processingStart = ProcessInfo.processInfo.systemUptime
+        let accessStart = processingStart
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
         defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
@@ -70,13 +144,45 @@ final class FrameProcessor {
             lastDimensions = (width, height)
         }
         let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
-        let bytes = base.assumingMemoryBound(to: UInt8.self)
-        let bgra = Array(UnsafeBufferPointer(start: bytes, count: bytesPerRow * height))
+        let bytes = UnsafePointer(base.assumingMemoryBound(to: UInt8.self))
+#if DEBUG
+        let accessMs = (ProcessInfo.processInfo.systemUptime - accessStart) * 1000
+        let analysis = analyzeSabers(baseAddress: bytes, width: width, height: height,
+                                     bytesPerRow: bytesPerRow, redThreshold: redThreshold,
+                                     blueThreshold: blueThreshold, collectProfile: true)
+        let sabers = analysis.selected
+#else
+        let sabers = detectSabers(baseAddress: bytes, width: width, height: height,
+                                  bytesPerRow: bytesPerRow,
+                                  redThreshold: redThreshold, blueThreshold: blueThreshold)
+#endif
         let detected: [(SaberColor, (PixelPoint, PixelPoint)?)] = [
-            (.red, detectSaber(in: bgra, width: width, height: height, bytesPerRow: bytesPerRow, color: .red, threshold: redThreshold)),
-            (.blue, detectSaber(in: bgra, width: width, height: height, bytesPerRow: bytesPerRow, color: .blue, threshold: blueThreshold))
+            (.red, sabers[.red]),
+            (.blue, sabers[.blue])
         ]
         emitResults(detected, width: width, height: height, processingStart: processingStart, generation: generation)
+#if DEBUG
+        if let profile = analysis.profile {
+            onPerformance?(FramePerformanceSample(pixelBufferAccessMs: accessMs, detector: profile))
+        }
+#endif
+        if saveRequestedRawFrame { saveRawFrame(pixelBuffer) }
+    }
+
+    private func saveRawFrame(_ pixelBuffer: CVPixelBuffer) {
+        do {
+            let directory = try rawFrameDirectory()
+            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+            let milliseconds = Int64((Date().timeIntervalSince1970 * 1000.0).rounded())
+            let url = directory.appendingPathComponent("phone-saber-raw-\(milliseconds).png")
+            try rawFrameContext.writePNGRepresentation(
+                of: CIImage(cvPixelBuffer: pixelBuffer), to: url,
+                format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB()
+            )
+            onRawFrameSaved?(.success(url))
+        } catch {
+            onRawFrameSaved?(.failure(error))
+        }
     }
 
     private func emitResults(_ detected: [(SaberColor, (PixelPoint, PixelPoint)?)], width: Int, height: Int, processingStart: TimeInterval, generation: Int) {
@@ -89,6 +195,8 @@ final class FrameProcessor {
                 tracks[color] = track
                 return DetectedSaber(endpoints: endpoints, color: color, isFresh: true)
             }
+            // Held endpoints are preview-only: CameraViewModel sends only
+            // isFresh results, so the game never receives a 180 ms old point.
             guard let held = track.endpoints, processingStart - track.lastSeen <= holdDuration else {
                 tracks[color] = Track()
                 return nil
@@ -161,3 +269,10 @@ final class FrameProcessor {
         hypot(Double(first.x - second.x), Double(first.y - second.y))
     }
 }
+
+#if DEBUG
+struct FramePerformanceSample {
+    let pixelBufferAccessMs: Double
+    let detector: SaberDetectionProfile
+}
+#endif

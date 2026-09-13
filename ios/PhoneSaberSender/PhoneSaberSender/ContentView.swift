@@ -8,6 +8,21 @@ struct ContentView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
+                    GroupBox("計測開始") {
+                        TextField("送信先MacのIPアドレス／ホスト名", text: $model.host)
+                            .textFieldStyle(.roundedBorder)
+                            .keyboardType(.URL)
+                            .autocorrectionDisabled(true)
+                            .textInputAutocapitalization(.never)
+                            .disabled(model.running)
+                        Button(model.running ? "停止" : "遅延計測開始") {
+                            model.running ? model.stop() : model.startMeasurement()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        Text("赤: UDP 5005　青: UDP 5006　iPhoneのtsとMac受信時刻を比較します。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                     ZStack {
                         CameraPreview(session: model.session).frame(height: 280)
                         GeometryReader { proxy in
@@ -42,40 +57,56 @@ struct ContentView: View {
                     if let error = model.errorMessage {
                         Text(error).foregroundStyle(.red).font(.footnote)
                     }
-                    GroupBox("接続") {
-                        Text("送信先Mac")
-                            .font(.headline)
-                        TextField("例: 192.168.1.10", text: $model.host)
-                            .textFieldStyle(.roundedBorder)
-                            .keyboardType(.URL)
-                            .autocorrectionDisabled(true)
-                            .textInputAutocapitalization(.never)
-                            .disabled(model.running)
-                        Text("赤: UDP 5005　青: UDP 5006")
+                    DisclosureGroup("詳細設定") {
+                        GroupBox("接続・出力") {
+                            Text("送信先Mac: \(model.host.isEmpty ? "未設定" : model.host)")
+                                .font(.headline)
+                            Text("赤: UDP 5005　青: UDP 5006")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            Text(model.measurementMode ? "遅延計測中は座標の前にiPhoneの時計で ts=... を付けます。Mac受信時刻との差には時計差が含まれます。" : "通常モードは座標だけを送ります。")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Toggle("遅延計測モード", isOn: $model.measurementMode)
-                        Text(model.measurementMode ? "座標の前に iPhone の時計で ts=... を付けます。Macの表示時刻と同じ時刻基準で比較してください。" : "通常モードは座標だけを送ります。")
+                            Text(model.running ? "送信中は送信先を変更できません。停止して編集後、再開してください。" : "送信先の変更は次回の開始時に反映されます。")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(model.running ? "送信中は送信先を変更できません。停止して編集後、再開してください。" : "送信先の変更は次回の開始時に反映されます。")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                        HStack {
-                            Text("出力")
-                            TextField("幅", value: $model.outputWidth, format: .number)
-                            TextField("高さ", value: $model.outputHeight, format: .number)
+                            HStack {
+                                Text("出力")
+                                TextField("幅", value: $model.outputWidth, format: .number)
+                                TextField("高さ", value: $model.outputHeight, format: .number)
+                            }
+                        }
+                        GroupBox("検出") {
+                            Stepper("明るさ閾値: \(model.threshold)", value: $model.threshold, in: 80...255)
+                            Stepper("色差閾値: \(model.dominance)", value: $model.dominance, in: 0...120)
+                            Toggle("左右反転", isOn: $model.mirrorX)
+                            Toggle("上下反転", isOn: $model.mirrorY)
+                            Button("認識前フレームを1枚保存") { model.saveNextRawFrame() }
+                                .disabled(!model.running)
+                            if !model.rawFrameSaveMessage.isEmpty {
+                                Text(model.rawFrameSaveMessage).font(.caption).foregroundStyle(.secondary)
+                            }
+                            if let url = model.lastRawFrameURL {
+                                ShareLink(item: url) { Label("保存画像を共有", systemImage: "square.and.arrow.up") }
+                            }
+                        }
+                        Button("通常送信を開始") {
+                            model.measurementMode = false
+                            model.start()
+                        }
+                        .disabled(model.running)
+                        .buttonStyle(.bordered)
+                    }
+#if DEBUG
+                    DisclosureGroup("Debug Performance") {
+                        Text("表示更新は5Hz。HSV変換と赤青mask生成は同じBGRA走査内で集計します。")
+                            .font(.caption).foregroundStyle(.secondary)
+                        ForEach(model.debugPerformanceRows, id: \.self) { row in
+                            Text(row).font(.caption.monospaced())
+                                .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
-                    GroupBox("検出") {
-                        Stepper("明るさ閾値: \(model.threshold)", value: $model.threshold, in: 80...255)
-                        Stepper("色差閾値: \(model.dominance)", value: $model.dominance, in: 0...120)
-                        Toggle("左右反転", isOn: $model.mirrorX)
-                        Toggle("上下反転", isOn: $model.mirrorY)
-                    }
-                    Button(model.running ? "停止" : "開始") {
-                        model.running ? model.stop() : model.start()
-                    }.buttonStyle(.borderedProminent)
+#endif
                     Text("カメラ映像と検出座標を使用します。192.168.x.x のMacへはiPhoneも同じWi-Fiに接続してください。セルラー経路では通常届きません。Wi-Fi経路ありでも同一LAN・到達可能性は保証されません。")
                         .font(.caption).foregroundStyle(.secondary)
                 }.padding()

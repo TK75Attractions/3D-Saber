@@ -6,8 +6,9 @@ import SwiftUI
 @MainActor
 final class CameraViewModel: NSObject, ObservableObject {
     let session = AVCaptureSession()
-    let processor: FrameProcessor
+    nonisolated let processor: FrameProcessor
     private let output = AVCaptureVideoDataOutput()
+    private let captureQueue = DispatchQueue(label: "PhoneSaberSender.capture", qos: .userInteractive)
     private let sender: UDPSender
     private let pathMonitor = NWPathMonitor()
     @Published var running = false
@@ -43,6 +44,17 @@ final class CameraViewModel: NSObject, ObservableObject {
     // テストと診断用。検出数ではなく、現世代で処理を完了したフレーム数。
     @Published private(set) var processedFrameCount = 0
     @Published private(set) var authorizationCallbackCount = 0
+    @Published private(set) var acceptedSenderUpdateCount = 0
+    @Published private(set) var acceptedSenderUpdateGeneration = 0
+    @Published private(set) var rejectedFrameCallbackCount = 0
+    @Published private(set) var rejectedSenderUpdateCount = 0
+    @Published private(set) var rawFrameSaveMessage = ""
+    @Published private(set) var lastRawFrameURL: URL?
+#if DEBUG
+    @Published private(set) var debugPerformanceRows: [String] = []
+    private var performanceMetrics: [String: PerformanceMetric] = [:]
+    private var lastPerformancePublish = 0.0
+#endif
     private var frameCount = 0
     private var fpsStart = CACurrentMediaTime()
     private var lifecycleGeneration = 0
@@ -78,6 +90,22 @@ final class CameraViewModel: NSObject, ObservableObject {
         processor.onResult = { [weak self] results, width, height, processingStart, generation in
             Task { @MainActor in self?.handle(results, width: width, height: height, processingStart: processingStart, generation: generation) }
         }
+        processor.onRawFrameSaved = { [weak self] result in
+            Task { @MainActor in
+                switch result {
+                case .success(let url):
+                    self?.lastRawFrameURL = url
+                    self?.rawFrameSaveMessage = "認識前フレームを保存しました"
+                case .failure(let error):
+                    self?.rawFrameSaveMessage = "フレーム保存失敗: \(error.localizedDescription)"
+                }
+            }
+        }
+#if DEBUG
+        processor.onPerformance = { [weak self] sample in
+            Task { @MainActor in self?.recordPerformance(sample) }
+        }
+#endif
     }
 
     func start() {
@@ -97,6 +125,11 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
         default: fail("設定アプリでカメラ権限を許可してください")
         }
+    }
+
+    func startMeasurement() {
+        measurementMode = true
+        start()
     }
 
     func stop() {
@@ -144,7 +177,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         output.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA]
         output.alwaysDiscardsLateVideoFrames = true
-        output.setSampleBufferDelegate(self, queue: processor.queue)
+        // Keep the AVFoundation callback short. FrameProcessor owns a one-slot
+        // latest-frame mailbox and drops any superseded waiting frame.
+        output.setSampleBufferDelegate(self, queue: captureQueue)
         session.addOutput(output)
         if let connection = output.connection(with: .video) {
             connection.videoOrientation = .portrait
@@ -166,9 +201,15 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func handle(_ results: [DetectedSaber], width: Int, height: Int, processingStart: TimeInterval, generation: Int) {
-        guard running, generation == processor.currentGeneration else { return }
+#if DEBUG
+        let uiStart = ProcessInfo.processInfo.systemUptime
+        var udpRequestMs = 0.0
+#endif
+        guard running, generation == processor.currentGeneration else {
+            rejectedFrameCallbackCount += 1
+            return
+        }
         processedFrameCount += 1
-        let currentGeneration = lifecycleGeneration
         sourceDimensions = (width, height)
         var redSeen = false
         var blueSeen = false
@@ -201,6 +242,9 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
             if result.color == .red { redAttemptCount += 1 } else { blueAttemptCount += 1 }
             let sendGeneration = lifecycleGeneration
+#if DEBUG
+            let sendRequestStart = ProcessInfo.processInfo.systemUptime
+#endif
             sender.send(text, to: port) { [weak self] result in
                 Task { @MainActor in
                     guard let self, self.running, self.lifecycleGeneration == sendGeneration else { return }
@@ -217,22 +261,68 @@ final class CameraViewModel: NSObject, ObservableObject {
                     self.recomputeErrorMessage()
                 }
             }
+#if DEBUG
+            udpRequestMs += (ProcessInfo.processInfo.systemUptime - sendRequestStart) * 1000
+#endif
         }
         if !redSeen { redEndpoints = nil }
         if !blueSeen { blueEndpoints = nil }
         frameCount += 1
         let elapsed = CACurrentMediaTime() - fpsStart
         if elapsed >= 1 { fps = Double(frameCount) / elapsed; frameCount = 0; fpsStart = CACurrentMediaTime() }
-        sender.snapshot { [weak self] snapshot in
-            Task { @MainActor in
-                guard let self, self.running, self.lifecycleGeneration == currentGeneration else { return }
-                self.applySenderUpdate(states: snapshot.states, errors: snapshot.errors, generation: currentGeneration)
-            }
-        }
+#if DEBUG
+        addPerformance("UDP request", value: udpRequestMs)
+        addPerformance("UI / overlay state", value: (ProcessInfo.processInfo.systemUptime - uiStart) * 1000)
+        publishPerformanceIfNeeded()
+#endif
     }
 
+#if DEBUG
+    private func recordPerformance(_ sample: FramePerformanceSample) {
+        let profile = sample.detector
+        addPerformance("Pixel buffer access", value: sample.pixelBufferAccessMs)
+        addPerformance("BGRA + RGB→HSV + masks", value: profile.pixelScanHSVMaskMs)
+        addPerformance("Close / open", value: profile.morphologyMs)
+        addPerformance("Components + shape/brightness/contrast/PCA", value: profile.componentAndScoreMs)
+        addPerformance("Bright-core proposals", value: profile.lineProposalMs)
+        addPerformance("Proposal detailed score", value: profile.lineScoreMs)
+        addPerformance("Final selection / scaling", value: profile.selectionMs)
+        addPerformance("Detection total", value: profile.totalMs)
+        publishPerformanceIfNeeded()
+    }
+
+    private func addPerformance(_ name: String, value: Double) {
+        var metric = performanceMetrics[name, default: PerformanceMetric()]
+        metric.latest = value
+        metric.total += value
+        metric.maximum = max(metric.maximum, value)
+        metric.count += 1
+        performanceMetrics[name] = metric
+    }
+
+    private func publishPerformanceIfNeeded() {
+        let now = ProcessInfo.processInfo.systemUptime
+        guard now - lastPerformancePublish >= 0.2 else { return }
+        lastPerformancePublish = now
+        let order = ["Pixel buffer access", "BGRA + RGB→HSV + masks", "Close / open",
+                     "Components + shape/brightness/contrast/PCA", "Bright-core proposals",
+                     "Proposal detailed score", "Final selection / scaling",
+                     "Detection total", "UI / overlay state", "UDP request"]
+        debugPerformanceRows = order.compactMap { name in
+            guard let metric = performanceMetrics[name] else { return nil }
+            return String(format: "%@: now %.2f / avg %.2f / max %.2f ms",
+                          name, metric.latest, metric.total / Double(metric.count), metric.maximum)
+        }
+    }
+#endif
+
     private func applySenderUpdate(states: [Int: String], errors: [Int: String], generation: Int) {
-        guard running, lifecycleGeneration == generation else { return }
+        guard running, lifecycleGeneration == generation else {
+            rejectedSenderUpdateCount += 1
+            return
+        }
+        acceptedSenderUpdateCount += 1
+        acceptedSenderUpdateGeneration = generation
         senderStates = states
         senderErrors = errors
         let hasConnectionIssue = states.values.contains { $0 == "waiting" || $0 == "failed" }
@@ -265,6 +355,10 @@ final class CameraViewModel: NSObject, ObservableObject {
         lastLocalSendMs = nil; lastSentEpoch = nil
         processedFrameCount = 0
         authorizationCallbackCount = 0
+        acceptedSenderUpdateCount = 0
+        acceptedSenderUpdateGeneration = 0
+        rejectedFrameCallbackCount = 0
+        rejectedSenderUpdateCount = 0
         redEndpoints = nil; blueEndpoints = nil
         senderStates = [:]; senderErrors = [:]
         sendErrorMessages = [:]
@@ -289,8 +383,23 @@ final class CameraViewModel: NSObject, ObservableObject {
     func processDetectedForTesting(_ detected: [(SaberColor, (PixelPoint, PixelPoint)?)], at time: TimeInterval, dimensions: (width: Int, height: Int)) {
         processor.processDetectedForTesting(detected, at: time, dimensions: dimensions)
     }
+
+    func saveNextRawFrame() {
+        lastRawFrameURL = nil
+        rawFrameSaveMessage = "次の認識前フレームを1枚だけ保存します"
+        processor.requestRawFrameSave()
+    }
 }
 
 extension CameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
-    nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) { processor.process(sampleBuffer) }
+    nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) { processor.submit(sampleBuffer) }
 }
+
+#if DEBUG
+private struct PerformanceMetric {
+    var latest = 0.0
+    var total = 0.0
+    var maximum = 0.0
+    var count = 0
+}
+#endif

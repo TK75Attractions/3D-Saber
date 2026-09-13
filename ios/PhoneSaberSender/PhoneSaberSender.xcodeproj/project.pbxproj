@@ -16,6 +16,11 @@
 		A00000000000000000000007 /* PhoneSaberSenderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000007 /* PhoneSaberSenderApp.swift */; };
 		A00000000000000000000008 /* UDPSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000008 /* UDPSender.swift */; };
 		A00000000000000000000009 /* DetectionCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000009 /* DetectionCoreTests.swift */; };
+		A0000000000000000000000A /* blue-led-with-curtain-reflection-01.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000A /* blue-led-with-curtain-reflection-01.png */; };
+		A0000000000000000000000B /* blue-led-with-curtain-reflection-02.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000B /* blue-led-with-curtain-reflection-02.png */; };
+		A0000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png */; };
+		A0000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png */; };
+		A0000000000000000000000E /* blue-led-bright-large-05.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000E /* blue-led-bright-large-05.png */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -40,6 +45,11 @@
 		B10000000000000000000008 /* UDPSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPSender.swift; sourceTree = "<group>"; };
 		B10000000000000000000009 /* DetectionCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionCoreTests.swift; sourceTree = "<group>"; };
 		B10000000000000000000010 /* PhoneSaberSenderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PhoneSaberSenderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1000000000000000000000A /* blue-led-with-curtain-reflection-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-with-curtain-reflection-01.png"; sourceTree = "<group>"; };
+		B1000000000000000000000B /* blue-led-with-curtain-reflection-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-with-curtain-reflection-02.png"; sourceTree = "<group>"; };
+		B1000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-with-left-curtain-reflection-03.png"; sourceTree = "<group>"; };
+		B1000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-with-left-curtain-reflection-04.png"; sourceTree = "<group>"; };
+		B1000000000000000000000E /* blue-led-bright-large-05.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-bright-large-05.png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -88,8 +98,21 @@
 			isa = PBXGroup;
 			children = (
 				B10000000000000000000009 /* DetectionCoreTests.swift */,
+				D00000000000000000000004 /* Fixtures */,
 			);
 			path = ../PhoneSaberSenderTests;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000004 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				B1000000000000000000000A /* blue-led-with-curtain-reflection-01.png */,
+				B1000000000000000000000B /* blue-led-with-curtain-reflection-02.png */,
+				B1000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png */,
+				B1000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png */,
+				B1000000000000000000000E /* blue-led-bright-large-05.png */,
+			);
+			path = Fixtures;
 			sourceTree = "<group>";
 		};
 		D00000000000000000000003 /* Products */ = {
@@ -187,6 +210,11 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0000000000000000000000A /* blue-led-with-curtain-reflection-01.png in Resources */,
+				A0000000000000000000000B /* blue-led-with-curtain-reflection-02.png in Resources */,
+				A0000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png in Resources */,
+				A0000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png in Resources */,
+				A0000000000000000000000E /* blue-led-bright-large-05.png in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

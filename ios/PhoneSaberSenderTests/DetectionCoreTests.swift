@@ -1,12 +1,17 @@
 import XCTest
+import AVFoundation
+import Combine
+import UIKit
 @testable import PhoneSaberSender
 
 private final class CompletionBox {
     private var values: [(Int, (Result<TimeInterval, Error>) -> Void)] = []
+    private(set) var sent: [(String, Int)] = []
     private let lock = NSLock()
 
-    func append(port: Int, completion: @escaping (Result<TimeInterval, Error>) -> Void) {
+    func append(port: Int, text: String? = nil, completion: @escaping (Result<TimeInterval, Error>) -> Void) {
         lock.lock(); defer { lock.unlock() }
+        if let text { sent.append((text, port)) }
         values.append((port, completion))
     }
 
@@ -47,6 +52,637 @@ private func waitUntil(_ condition: @escaping @MainActor () -> Bool, timeout: Ti
 }
 
 final class DetectionCoreTests: XCTestCase {
+    private func sampleBuffer(width: Int, height: Int, draw: (UnsafeMutableRawPointer, Int) -> Void) -> CMSampleBuffer {
+        var pixelBuffer: CVPixelBuffer?
+        CVPixelBufferCreate(kCFAllocatorDefault, width, height, kCVPixelFormatType_32BGRA, nil, &pixelBuffer)
+        let buffer = pixelBuffer!
+        CVPixelBufferLockBaseAddress(buffer, [])
+        let stride = CVPixelBufferGetBytesPerRow(buffer)
+        let base = CVPixelBufferGetBaseAddress(buffer)!
+        let pixel = base.assumingMemoryBound(to: UInt8.self)
+        for y in 0..<height {
+            for x in 0..<width {
+                let offset = y * stride + x * 4
+                pixel[offset] = 0
+                pixel[offset + 1] = 0
+                pixel[offset + 2] = 0
+                pixel[offset + 3] = 255
+            }
+        }
+        draw(base, stride)
+        CVPixelBufferUnlockBaseAddress(buffer, [])
+        var format: CMVideoFormatDescription?
+        CMVideoFormatDescriptionCreateForImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: buffer, formatDescriptionOut: &format)
+        var sample: CMSampleBuffer?
+        var timing = CMSampleTimingInfo(duration: .invalid, presentationTimeStamp: .zero, decodeTimeStamp: .invalid)
+        CMSampleBufferCreateReadyWithImageBuffer(allocator: kCFAllocatorDefault, imageBuffer: buffer, formatDescription: format!, sampleTiming: &timing, sampleBufferOut: &sample)
+        return sample!
+    }
+
+    private func fixtureImage(_ name: String) throws -> UIImage {
+        guard let url = Bundle(for: Self.self).url(forResource: name, withExtension: "png"),
+              let image = UIImage(contentsOfFile: url.path) else {
+            throw NSError(domain: "PhoneSaberSenderTests", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "fixture not found: \(name).png"])
+        }
+        return image
+    }
+
+    private func fixtureBGRA(_ name: String) throws -> (bytes: [UInt8], width: Int, height: Int, bytesPerRow: Int) {
+        let image = try fixtureImage(name)
+        guard let cgImage = image.cgImage else {
+            throw NSError(domain: "PhoneSaberSenderTests", code: 1,
+                          userInfo: [NSLocalizedDescriptionKey: "fixture has no CGImage: \(name).png"])
+        }
+        let width = cgImage.width, height = cgImage.height, bytesPerRow = width * 4
+        var bytes = Array(repeating: UInt8(0), count: bytesPerRow * height)
+        let rendered = bytes.withUnsafeMutableBytes { raw -> Bool in
+            guard let base = raw.baseAddress,
+                  let context = CGContext(
+                    data: base, width: width, height: height, bitsPerComponent: 8,
+                    bytesPerRow: bytesPerRow, space: CGColorSpaceCreateDeviceRGB(),
+                    bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
+                        | CGBitmapInfo.byteOrder32Little.rawValue
+                  ) else { return false }
+            context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+            return true
+        }
+        guard rendered else {
+            throw NSError(domain: "PhoneSaberSenderTests", code: 2,
+                          userInfo: [NSLocalizedDescriptionKey: "fixture render failed: \(name).png"])
+        }
+        return (bytes, width, height, bytesPerRow)
+    }
+
+    private func writeAnnotatedDiagnostic(
+        name: String,
+        image: UIImage,
+        candidates: [SaberCandidate],
+        selected: (PixelPoint, PixelPoint)?
+    ) throws {
+        let imageWidth = Int(image.size.width)
+        let imageHeight = Int(image.size.height)
+        let panelWidth = 920
+        let rowHeight = 106
+        let canvasHeight = max(imageHeight, candidates.count * rowHeight + 36)
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        format.opaque = true
+        let renderer = UIGraphicsImageRenderer(
+            size: CGSize(width: imageWidth + panelWidth, height: canvasHeight),
+            format: format
+        )
+        let annotated = renderer.image { context in
+            UIColor(white: 0.08, alpha: 1).setFill()
+            context.fill(CGRect(x: 0, y: 0, width: imageWidth + panelWidth, height: canvasHeight))
+            image.draw(in: CGRect(x: 0, y: 0, width: imageWidth, height: imageHeight))
+            let palette: [UIColor] = [.systemOrange, .systemPink, .systemYellow,
+                                      .systemPurple, .systemTeal, .systemRed]
+            let titleAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.monospacedSystemFont(ofSize: 14, weight: .bold),
+                .foregroundColor: UIColor.white
+            ]
+            let detailAttributes: [NSAttributedString.Key: Any] = [
+                .font: UIFont.monospacedSystemFont(ofSize: 11, weight: .regular),
+                .foregroundColor: UIColor(white: 0.92, alpha: 1)
+            ]
+            for (index, candidate) in candidates.enumerated() {
+                let isSelected = selected.map { axisDistance(candidate.endpoints, $0) < 1 } ?? false
+                let color = isSelected ? UIColor.systemGreen : palette[index % palette.count]
+                color.setStroke()
+                color.setFill()
+                let box = candidate.boundingBox
+                let boxPath = UIBezierPath(rect: CGRect(
+                    x: box.minX, y: box.minY,
+                    width: max(box.maxX - box.minX, 1),
+                    height: max(box.maxY - box.minY, 1)
+                ))
+                boxPath.lineWidth = isSelected ? 4 : 2
+                boxPath.stroke()
+                let axisPath = UIBezierPath()
+                axisPath.move(to: CGPoint(x: candidate.endpoints.0.x, y: candidate.endpoints.0.y))
+                axisPath.addLine(to: CGPoint(x: candidate.endpoints.1.x, y: candidate.endpoints.1.y))
+                axisPath.lineWidth = isSelected ? 5 : 2
+                axisPath.stroke()
+                let number = "\(index + 1)" as NSString
+                number.draw(at: CGPoint(x: box.minX + 2, y: max(box.minY - 17, 0)),
+                            withAttributes: titleAttributes.merging([.foregroundColor: color]) { _, new in new })
+
+                let s = candidate.scoreBreakdown
+                let shape = s.length + s.aspect + s.extent + s.widthConsistency + s.area
+                let brightness = s.peakBrightness + s.meanBrightness + s.highBrightnessRatio
+                    + s.clippedWhite + s.coreSupport + s.longitudinalCoreCoverage
+                let heading = String(format: "candidate %02d%@  score=%6.2f  eligible=%@",
+                                     index + 1, isSelected ? "  FINAL" : "", candidate.score,
+                                     candidate.isEmitterEligible.description)
+                let line1 = String(format: "axis=(%d,%d)-(%d,%d) bbox=[%d,%d,%d,%d]",
+                                   candidate.endpoints.0.x, candidate.endpoints.0.y,
+                                   candidate.endpoints.1.x, candidate.endpoints.1.y,
+                                   box.minX, box.minY, box.maxX, box.maxY)
+                let line2 = String(format: "shape=%5.2f brightness=%5.2f color=%5.2f contrast=%5.2f texture=%5.2f",
+                                   shape, brightness, s.colorPurity, s.localContrast, s.emitterTexture)
+                let line3 = String(format: "peak=%3d mean=%5.1f high=%.3f white=%.3f purity=%.3f local=%.3f",
+                                   candidate.peakValue, candidate.meanValue,
+                                   candidate.highValueRatio, candidate.clippedWhiteRatio,
+                                   candidate.meanColorPurity, candidate.localContrast)
+                let line4 = String(format: "longHigh=%.3f widthVar=%.3f core=%.3f coreLong=%.3f",
+                                   candidate.longitudinalHighCoverage, candidate.widthVariation,
+                                   candidate.coreSupportRatio, candidate.longitudinalCoreCoverage)
+                let x = imageWidth + 18
+                let y = 14 + index * rowHeight
+                (heading as NSString).draw(at: CGPoint(x: x, y: y),
+                                           withAttributes: titleAttributes.merging([.foregroundColor: color]) { _, new in new })
+                ([line1, line2, line3, line4].joined(separator: "\n") as NSString).draw(
+                    in: CGRect(x: x, y: y + 20, width: panelWidth - 30, height: rowHeight - 20),
+                    withAttributes: detailAttributes
+                )
+            }
+        }
+        let repository = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+        let outputDirectory = repository.appendingPathComponent("tests/debug_detection", isDirectory: true)
+        try FileManager.default.createDirectory(at: outputDirectory,
+                                                withIntermediateDirectories: true)
+        guard let data = annotated.pngData() else {
+            throw NSError(domain: "PhoneSaberSenderTests", code: 3,
+                          userInfo: [NSLocalizedDescriptionKey: "annotated PNG encoding failed"])
+        }
+        try data.write(to: outputDirectory.appendingPathComponent("\(name)-annotated.png"),
+                       options: .atomic)
+    }
+
+    private func candidateSummary(_ candidates: [SaberCandidate]) -> String {
+        candidates.map { candidate in
+            let a = candidate.endpoints.0, b = candidate.endpoints.1
+            let s = candidate.scoreBreakdown
+            let box = candidate.boundingBox
+            return String(format: "(%d,%d)-(%d,%d) box=[%d,%d,%d,%d] score=%.2f eligible=%@ peak=%d mean=%.1f high=%.3f purity=%.3f white=%.3f variation=%.3f contrast=%.3f longitudinal=%.3f widthVar=%.3f core=%.3f coreLong=%.3f parts[len=%.2f aspect=%.2f extent=%.2f width=%.2f area=%.2f peak=%.2f mean=%.2f high=%.2f purity=%.2f contrast=%.2f texture=%.2f white=%.2f longitudinal=%.2f core=%.2f coreLong=%.2f]",
+                          a.x, a.y, b.x, b.y,
+                          box.minX, box.minY, box.maxX, box.maxY, candidate.score,
+                          candidate.isEmitterEligible.description, candidate.peakValue,
+                          candidate.meanValue, candidate.highValueRatio,
+                          candidate.meanColorPurity, candidate.clippedWhiteRatio,
+                          candidate.brightnessVariation, candidate.localContrast,
+                          candidate.longitudinalHighCoverage, candidate.widthVariation,
+                          candidate.coreSupportRatio, candidate.longitudinalCoreCoverage,
+                          s.length, s.aspect, s.extent, s.widthConsistency, s.area,
+                          s.peakBrightness, s.meanBrightness, s.highBrightnessRatio,
+                          s.colorPurity, s.localContrast, s.emitterTexture,
+                          s.clippedWhite, s.longitudinalHighCoverage,
+                          s.coreSupport, s.longitudinalCoreCoverage)
+        }.joined(separator: " | ")
+    }
+
+    private func axisDistance(_ actual: (PixelPoint, PixelPoint),
+                              _ expected: (PixelPoint, PixelPoint)) -> Double {
+        func distance(_ lhs: PixelPoint, _ rhs: PixelPoint) -> Double {
+            hypot(Double(lhs.x - rhs.x), Double(lhs.y - rhs.y))
+        }
+        let forward = distance(actual.0, expected.0) + distance(actual.1, expected.1)
+        let reversed = distance(actual.0, expected.1) + distance(actual.1, expected.0)
+        return min(forward, reversed) / 2.0
+    }
+
+    private func axisMidpointDistance(_ actual: (PixelPoint, PixelPoint),
+                                      _ expected: (PixelPoint, PixelPoint)) -> Double {
+        let actualX = Double(actual.0.x + actual.1.x) / 2.0
+        let actualY = Double(actual.0.y + actual.1.y) / 2.0
+        let expectedX = Double(expected.0.x + expected.1.x) / 2.0
+        let expectedY = Double(expected.0.y + expected.1.y) / 2.0
+        return hypot(actualX - expectedX, actualY - expectedY)
+    }
+
+    func testRealBlueLEDFixturesPreferEmitterOverCurtainReflection() throws {
+        // These are hand-annotated long axes, not positional recognition rules.
+        // Both frames contain the same physical blade and a separate blue
+        // curtain reflection, at slightly different camera poses.
+        let fixtures: [(String, (PixelPoint, PixelPoint), (PixelPoint, PixelPoint))] = [
+            ("blue-led-with-curtain-reflection-01",
+             (PixelPoint(x: 224, y: 204), PixelPoint(x: 243, y: 371)),
+             (PixelPoint(x: 405, y: 324), PixelPoint(x: 418, y: 404))),
+            ("blue-led-with-curtain-reflection-02",
+             (PixelPoint(x: 218, y: 252), PixelPoint(x: 241, y: 413)),
+             (PixelPoint(x: 285, y: 255), PixelPoint(x: 302, y: 416))),
+            ("blue-led-with-left-curtain-reflection-03",
+             (PixelPoint(x: 193, y: 297), PixelPoint(x: 218, y: 471)),
+             (PixelPoint(x: 74, y: 326), PixelPoint(x: 166, y: 568))),
+            ("blue-led-with-left-curtain-reflection-04",
+             (PixelPoint(x: 188, y: 156), PixelPoint(x: 225, y: 294)),
+             (PixelPoint(x: 77, y: 118), PixelPoint(x: 154, y: 361))),
+            ("blue-led-bright-large-05",
+             (PixelPoint(x: 281, y: 231), PixelPoint(x: 292, y: 365)),
+             (PixelPoint(x: 247, y: 226), PixelPoint(x: 262, y: 361)))
+        ]
+        let threshold = ColorThreshold()
+
+        for (name, expectedLED, expectedReflection) in fixtures {
+            let image = try fixtureBGRA(name)
+            let analysis = analyzeSabers(in: image.bytes, width: image.width, height: image.height,
+                                         bytesPerRow: image.bytesPerRow,
+                                         redThreshold: threshold, blueThreshold: threshold)
+            let candidates = analysis.candidates[.blue] ?? []
+            try writeAnnotatedDiagnostic(name: name, image: fixtureImage(name),
+                                         candidates: candidates, selected: analysis.selected[.blue])
+            let summary = "\(name): \(candidateSummary(candidates))"
+            for candidate in candidates {
+                XCTAssertEqual(candidate.score, candidate.scoreBreakdown.total,
+                               accuracy: 0.000_001, summary)
+            }
+            let selectedText = analysis.selected[.blue].map {
+                "(\($0.0.x),\($0.0.y))-(\($0.1.x),\($0.1.y))"
+            } ?? "none"
+            print("[FixtureRanking] \(summary) selected=\(selectedText)")
+            guard let led = candidates.filter({
+                let ledDistance = axisMidpointDistance($0.endpoints, expectedLED)
+                return ledDistance < 40
+                    && ledDistance < axisMidpointDistance($0.endpoints, expectedReflection)
+            }).max(by: { $0.score < $1.score }) else {
+                XCTFail("actual LED candidate missing; \(summary)")
+                continue
+            }
+            guard let reflection = candidates.filter({
+                let reflectionDistance = axisMidpointDistance($0.endpoints, expectedReflection)
+                return reflectionDistance < 40
+                    && reflectionDistance < axisMidpointDistance($0.endpoints, expectedLED)
+            }).max(by: { $0.score < $1.score }) else {
+                XCTFail("curtain reflection candidate missing; \(summary)")
+                continue
+            }
+            print(String(format: "[FixtureGroundTruth] %@ LED=%.2f reflection=%.2f",
+                         name, led.score, reflection.score))
+
+            XCTAssertLessThan(axisMidpointDistance(led.endpoints, expectedLED), 40, summary)
+            XCTAssertLessThan(axisMidpointDistance(reflection.endpoints, expectedReflection), 40, summary)
+            XCTAssertGreaterThan(led.score, reflection.score, summary)
+            XCTAssertTrue(led.isEmitterEligible, summary)
+            guard let selected = analysis.selected[.blue] else {
+                XCTFail("blue blade was not selected; \(summary)")
+                continue
+            }
+            XCTAssertLessThan(axisMidpointDistance(selected, expectedLED),
+                              axisMidpointDistance(selected, expectedReflection), summary)
+            XCTAssertLessThan(axisDistance(selected, expectedLED), 75, summary)
+        }
+    }
+
+    func testOfflineBrightFrameTimingBaseline() throws {
+        let bright = try fixtureBGRA("blue-led-bright-large-05")
+        let blank = Array(repeating: UInt8(0), count: bright.bytes.count)
+        let threshold = ColorThreshold()
+        func timing(_ bytes: [UInt8], iterations: Int = 12) -> (average: Double, maximum: Double) {
+            var values: [Double] = []
+            for _ in 0..<iterations {
+                let start = ProcessInfo.processInfo.systemUptime
+                _ = analyzeSabers(in: bytes, width: bright.width, height: bright.height,
+                                  bytesPerRow: bright.bytesPerRow,
+                                  redThreshold: threshold, blueThreshold: threshold)
+                values.append((ProcessInfo.processInfo.systemUptime - start) * 1000)
+            }
+            return (values.reduce(0, +) / Double(values.count), values.max() ?? 0)
+        }
+        _ = timing(bright.bytes, iterations: 2)
+        let emptyResult = timing(blank)
+        let brightResult = timing(bright.bytes)
+        print(String(format: "[PerformanceBaseline] empty avg=%.3f max=%.3f ms; bright avg=%.3f max=%.3f ms",
+                     emptyResult.average, emptyResult.maximum,
+                     brightResult.average, brightResult.maximum))
+        XCTAssertLessThan(brightResult.maximum, 35)
+        XCTAssertLessThan(brightResult.average, emptyResult.average * 3.0)
+
+        let profiled = analyzeSabers(in: bright.bytes, width: bright.width, height: bright.height,
+                                     bytesPerRow: bright.bytesPerRow,
+                                     redThreshold: threshold, blueThreshold: threshold,
+                                     collectProfile: true)
+        let profile = try XCTUnwrap(profiled.profile)
+        print(String(format: "[PerformanceStages] total=%.3f scanHSVMask=%.3f morphology=%.3f componentsScorePCA=%.3f lineProposals=%.3f lineScore=%.3f selection=%.3f pixels=%d cores=%d proposals=%d candidates=%d",
+                     profile.totalMs, profile.pixelScanHSVMaskMs, profile.morphologyMs,
+                     profile.componentAndScoreMs, profile.lineProposalMs, profile.lineScoreMs,
+                     profile.selectionMs, profile.colorPixelCount, profile.brightCorePixelCount,
+                     profile.lineProposalCount, profile.candidateCount))
+
+        for name in ["blue-led-with-curtain-reflection-01",
+                     "blue-led-with-curtain-reflection-02",
+                     "blue-led-with-left-curtain-reflection-03",
+                     "blue-led-with-left-curtain-reflection-04",
+                     "blue-led-bright-large-05"] {
+            let fixture = try fixtureBGRA(name)
+            let result = analyzeSabers(in: fixture.bytes, width: fixture.width,
+                                       height: fixture.height, bytesPerRow: fixture.bytesPerRow,
+                                       redThreshold: threshold, blueThreshold: threshold,
+                                       collectProfile: true)
+            let fixtureProfile = try XCTUnwrap(result.profile)
+            print(String(format: "[FixturePerformance] %@ total=%.3f proposals=%d candidates=%d",
+                         name, fixtureProfile.totalMs, fixtureProfile.lineProposalCount,
+                         fixtureProfile.candidateCount))
+            XCTAssertLessThan(fixtureProfile.totalMs, 50, name)
+        }
+    }
+
+    func testFrameMailboxProcessesOnlyNewestWaitingFrame() {
+        let processor = FrameProcessor(expiryScheduler: nil)
+        let delivered = expectation(description: "newest frame delivered")
+        delivered.expectedFulfillmentCount = 1
+        var results: [[DetectedSaber]] = []
+        processor.onResult = { detected, _, _, _, _ in
+            results.append(detected)
+            delivered.fulfill()
+        }
+        func coloredFrame(_ color: SaberColor) -> CMSampleBuffer {
+            sampleBuffer(width: 96, height: 64) { base, stride in
+                let pixel = base.assumingMemoryBound(to: UInt8.self)
+                for x in 12...82 {
+                    for y in 28...36 {
+                        let offset = y * stride + x * 4
+                        pixel[offset] = color == .blue ? 245 : 35
+                        pixel[offset + 1] = 45
+                        pixel[offset + 2] = color == .red ? 245 : 35
+                    }
+                }
+            }
+        }
+        processor.queue.suspend()
+        processor.submit(coloredFrame(.red))
+        processor.submit(coloredFrame(.red))
+        processor.submit(coloredFrame(.blue))
+        XCTAssertEqual(processor.replacedPendingFrameCountForTesting, 2)
+        processor.queue.resume()
+        wait(for: [delivered], timeout: 2)
+        XCTAssertEqual(results.count, 1)
+        XCTAssertEqual(results[0].count, 1)
+        XCTAssertEqual(results[0].first?.color, .blue)
+    }
+
+    func testRawFrameSaveIsExplicitAndOneShot() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberRawFrameTests-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        let processor = FrameProcessor(expiryScheduler: nil, rawFrameDirectory: { directory })
+        let saved = expectation(description: "raw frame saved")
+        processor.onRawFrameSaved = { result in
+            switch result {
+            case .success(let url):
+                XCTAssertTrue(FileManager.default.fileExists(atPath: url.path))
+                XCTAssertGreaterThan((try? Data(contentsOf: url).count) ?? 0, 0)
+            case .failure(let error):
+                XCTFail("raw frame save failed: \(error)")
+            }
+            saved.fulfill()
+        }
+        let frame = sampleBuffer(width: 32, height: 24) { base, stride in
+            let pixels = base.assumingMemoryBound(to: UInt8.self)
+            for y in 0..<24 {
+                for x in 0..<32 {
+                    let offset = y * stride + x * 4
+                    pixels[offset] = 20; pixels[offset + 1] = 40
+                    pixels[offset + 2] = 220; pixels[offset + 3] = 255
+                }
+            }
+        }
+        processor.requestRawFrameSave()
+        processor.submit(frame)
+        wait(for: [saved], timeout: 3)
+        processor.submit(frame)
+        processor.queue.sync {}
+        let files = try FileManager.default.contentsOfDirectory(at: directory,
+                                                                 includingPropertiesForKeys: nil)
+        XCTAssertEqual(files.count, 1)
+    }
+
+    @MainActor
+    func testUDPSenderKeepsOnlyLatestWaitingPayloadPerPort() async {
+        let completions = CompletionBox()
+        let sender = UDPSender { text, port, completion in
+            completions.append(port: port, text: text, completion: completion)
+        }
+        sender.configure(host: "127.0.0.1", ports: [5005])
+        var completed: [String] = []
+        sender.send("first", to: 5005) { _ in completed.append("first") }
+        let firstStarted = await waitUntil { completions.valuesCountForTesting == 1 }
+        XCTAssertTrue(firstStarted)
+        sender.send("obsolete", to: 5005) { _ in completed.append("obsolete") }
+        sender.send("latest", to: 5005) { _ in completed.append("latest") }
+        let replaced = await waitUntil { sender.supersededPendingCountForTesting == 1 }
+        XCTAssertTrue(replaced)
+        XCTAssertEqual(completions.sent.map(\.0), ["first"])
+        completions.removeFirst()?.1(.success(10))
+        let latestStarted = await waitUntil { completions.valuesCountForTesting == 1 }
+        XCTAssertTrue(latestStarted)
+        XCTAssertEqual(completions.sent.map(\.0), ["first", "latest"])
+        completions.removeFirst()?.1(.success(11))
+        let latestCompleted = await waitUntil { completed == ["first", "latest"] }
+        XCTAssertTrue(latestCompleted)
+    }
+
+    @MainActor
+    func testProductionBGRAFrameReachesViewModelEndpointsAndPayload() async {
+        let completions = CompletionBox()
+        let sender = UDPSender { text, port, completion in
+            completions.append(port: port, text: text, completion: completion)
+        }
+        let processor = FrameProcessor(expiryScheduler: nil)
+        let viewModel = CameraViewModel(processor: processor, sender: sender)
+        viewModel.startForTesting()
+        let buffer = sampleBuffer(width: 96, height: 64) { base, stride in
+            func put(_ x: Int, _ y: Int, _ red: UInt8, _ green: UInt8, _ blue: UInt8) {
+                let offset = y * stride + x * 4
+                let pixel = base.assumingMemoryBound(to: UInt8.self)
+                pixel[offset] = blue; pixel[offset + 1] = green; pixel[offset + 2] = red; pixel[offset + 3] = 255
+            }
+            for i in 0...34 {
+                let x = 10 + i * 2, y = 8 + i
+                for dx in -2...2 { for dy in -2...2 { put(x + dx, y + dy, 245, 45, 35) } }
+            }
+            for i in 0...44 {
+                let x = 80, y = 10 + i
+                for dx in -2...2 { for dy in -2...2 { put(x + dx, y + dy, 35, 45, 245) } }
+            }
+        }
+        processor.process(buffer)
+        let detected = await waitUntil {
+            viewModel.redDetectionCount == 1 && viewModel.blueDetectionCount == 1 &&
+            viewModel.redEndpoints != nil && viewModel.blueEndpoints != nil
+        }
+        XCTAssertTrue(detected)
+        guard let redEndpoints = viewModel.redEndpoints, let blueEndpoints = viewModel.blueEndpoints else { return }
+        func assertEndpoints(_ actual: (PixelPoint, PixelPoint), expected: (PixelPoint, PixelPoint), angle: Double) {
+            let direct = hypot(Double(actual.0.x - expected.0.x), Double(actual.0.y - expected.0.y))
+                + hypot(Double(actual.1.x - expected.1.x), Double(actual.1.y - expected.1.y))
+            let reversed = hypot(Double(actual.0.x - expected.1.x), Double(actual.0.y - expected.1.y))
+                + hypot(Double(actual.1.x - expected.0.x), Double(actual.1.y - expected.0.y))
+            XCTAssertLessThanOrEqual(min(direct, reversed) / 2, 6)
+            let actualAngle = atan2(Double(actual.1.y - actual.0.y), Double(actual.1.x - actual.0.x))
+            var error = abs(actualAngle - angle).truncatingRemainder(dividingBy: .pi)
+            if error > .pi / 2 { error = .pi - error }
+            XCTAssertLessThanOrEqual(error, 0.20)
+        }
+        assertEndpoints(redEndpoints, expected: (PixelPoint(x: 10, y: 8), PixelPoint(x: 78, y: 42)), angle: atan2(34, 68))
+        assertEndpoints(blueEndpoints, expected: (PixelPoint(x: 80, y: 10), PixelPoint(x: 80, y: 54)), angle: .pi / 2)
+        XCTAssertEqual(viewModel.sourceDimensions.width, 96)
+        XCTAssertEqual(viewModel.sourceDimensions.height, 64)
+        XCTAssertEqual(viewModel.redAttemptCount, 1)
+        XCTAssertEqual(viewModel.blueAttemptCount, 1)
+        let queued = await waitUntil { completions.valuesCountForTesting == 2 }
+        XCTAssertTrue(queued)
+        XCTAssertEqual(completions.sent.count, 2)
+        XCTAssertEqual(Set(completions.sent.map(\.1)), Set([5005, 5006]))
+        XCTAssertEqual(completions.sent.map(\.1).sorted(), [5005, 5006])
+        // The known values below are the rounded scaled coordinates of the
+        // oriented component's long-axis endpoints, using
+        // (output - 1) / (source - 1). Keep a one-pixel rounding tolerance.
+        func assertKnownPayload(_ text: String, known: [Int], tolerance: Int = 1) {
+            let values = text.split(separator: ",").compactMap { Int($0) }
+            XCTAssertEqual(values.count, 4)
+            guard values.count == 4 else { return }
+            for (actual, expected) in zip(values, known) {
+                XCTAssertLessThanOrEqual(abs(actual - expected), tolerance,
+                                         "payload=\(text), expected=\(known)")
+            }
+        }
+        for (text, port) in completions.sent {
+            if port == 5005 {
+                // Projection onto the PCA/min-area-rectangle long axis gives
+                // source endpoints (8, 8)...(76, 40).
+                assertKnownPayload(text, known: [162, 137, 1535, 685])
+            } else {
+                XCTAssertEqual(port, 5006)
+                // The blue centerline is x=80, y=10...54. Its +/-2px fill reaches
+                // source y=8...56, so independent endpoint scaling yields
+                // [1616, 137, 1616, 959].
+                assertKnownPayload(text, known: [1616, 137, 1616, 959])
+            }
+        }
+        let first = completions.removeFirst()
+        first?.1(.success(10.250))
+        let second = completions.removeFirst()
+        second?.1(.success(10.251))
+        let completed = await waitUntil { viewModel.redCompletedCount == 1 && viewModel.blueCompletedCount == 1 }
+        XCTAssertTrue(completed)
+        XCTAssertEqual(viewModel.redEndpoints?.0, redEndpoints.0)
+        XCTAssertEqual(viewModel.redEndpoints?.1, redEndpoints.1)
+
+        // These expectations are derived from independent source coordinates,
+        // not from the detector's endpoint output above.
+        XCTAssertEqual(scaledPoint(PixelPoint(x: 10, y: 8), from: (96, 64), to: (960, 540), mirrorX: false, mirrorY: false), PixelPoint(x: 101, y: 68))
+        XCTAssertEqual(scaledPoint(PixelPoint(x: 10, y: 8), from: (96, 64), to: (960, 540), mirrorX: true, mirrorY: false), PixelPoint(x: 858, y: 68))
+        XCTAssertEqual(scaledPoint(PixelPoint(x: 10, y: 8), from: (96, 64), to: (960, 540), mirrorX: false, mirrorY: true), PixelPoint(x: 101, y: 471))
+        XCTAssertEqual(scaledPoint(PixelPoint(x: 10, y: 8), from: (96, 64), to: (960, 540), mirrorX: true, mirrorY: true), PixelPoint(x: 858, y: 471))
+        let fillLeft = aspectFillPoint(PixelPoint(x: 0, y: 32), source: (96, 64), view: (400, 400))
+        let fillRight = aspectFillPoint(PixelPoint(x: 95, y: 32), source: (96, 64), view: (400, 400))
+        XCTAssertEqual(fillLeft.x, -100, accuracy: 0.001)
+        XCTAssertEqual(fillLeft.y, 200, accuracy: 0.001)
+        XCTAssertEqual(fillRight.x, 493.75, accuracy: 0.001)
+        XCTAssertEqual(fillRight.y, 200, accuracy: 0.001)
+    }
+
+    @MainActor
+    func testFailureHoldAndOldCompletionPreserveLatestPublishedLatency() async {
+        let completions = CompletionBox()
+        let sender = UDPSender { _, port, completion in
+            completions.append(port: port, completion: completion)
+        }
+        let clock = ManualClock(100)
+        let processor = FrameProcessor(clock: { clock.now }, expiryScheduler: nil)
+        let viewModel = CameraViewModel(processor: processor, sender: sender)
+        viewModel.startForTesting()
+        var published: [Double] = []
+        let subscription = viewModel.$lastLocalSendMs.sink { value in
+            if let value { published.append(value) }
+        }
+        let endpoints = (PixelPoint(x: 2, y: 3), PixelPoint(x: 12, y: 13))
+
+        viewModel.processDetectedForTesting([(.red, endpoints)], at: clock.now, dimensions: (20, 20))
+        let firstQueued = await waitUntil { completions.valuesCountForTesting == 1 }
+        XCTAssertTrue(firstQueued)
+        completions.removeFirst()?.1(.success(clock.now + 0.125))
+        let firstPublished = await waitUntil { viewModel.lastLocalSendMs == 125 }
+        XCTAssertTrue(firstPublished)
+        let baselinePublishedCount = published.count
+
+        clock.advance(by: 0.1)
+        viewModel.processDetectedForTesting([(.red, endpoints)], at: clock.now, dimensions: (20, 20))
+        let failedQueued = await waitUntil { completions.valuesCountForTesting == 1 }
+        XCTAssertTrue(failedQueued)
+        let failedBefore = viewModel.lastLocalSendMs
+        completions.removeFirst()?.1(.failure(NSError(domain: "test", code: 1)))
+        let failureProcessed = await waitUntil { viewModel.redErrorCount == 1 }
+        XCTAssertTrue(failureProcessed)
+        XCTAssertEqual(viewModel.lastLocalSendMs, failedBefore)
+        XCTAssertEqual(published.count, baselinePublishedCount)
+
+        let endpointBeforeHold = viewModel.redEndpoints
+        let attemptsBeforeHold = viewModel.redAttemptCount
+        let completionsBeforeHold = completions.valuesCountForTesting
+        let publishedBeforeHold = published.count
+        let lastLocalSendBeforeHold = viewModel.lastLocalSendMs
+        clock.advance(by: 0.1)
+        viewModel.processDetectedForTesting([(.red, nil)], at: clock.now, dimensions: (20, 20))
+        let holdProcessed = await waitUntil { viewModel.processedFrameCount == 3 }
+        XCTAssertTrue(holdProcessed)
+        XCTAssertEqual(viewModel.redEndpoints?.0, endpointBeforeHold?.0)
+        XCTAssertEqual(viewModel.redEndpoints?.1, endpointBeforeHold?.1)
+        XCTAssertEqual(viewModel.redAttemptCount, attemptsBeforeHold)
+        XCTAssertEqual(completions.valuesCountForTesting, completionsBeforeHold)
+        XCTAssertEqual(published.count, publishedBeforeHold)
+        XCTAssertEqual(viewModel.lastLocalSendMs, lastLocalSendBeforeHold)
+        XCTAssertEqual(viewModel.lastLocalSendMs, failedBefore)
+        XCTAssertEqual(published.count, baselinePublishedCount)
+
+        clock.advance(by: 0.1)
+        viewModel.processDetectedForTesting([(.red, endpoints)], at: clock.now, dimensions: (20, 20))
+        let oldQueued = await waitUntil { completions.valuesCountForTesting == 1 }
+        XCTAssertTrue(oldQueued)
+        let oldCompletion = completions.removeFirst()
+        viewModel.stop(); viewModel.startForTesting()
+        clock.advance(by: 99.7)
+        viewModel.processDetectedForTesting([(.red, endpoints)], at: clock.now, dimensions: (20, 20))
+        let newQueued = await waitUntil { completions.valuesCountForTesting == 1 }
+        XCTAssertTrue(newQueued)
+        let newCompletion = completions.removeFirst()
+        newCompletion?.1(.success(clock.now + 0.250))
+        let newCompletionProcessed = await waitUntil { viewModel.lastLocalSendMs == 250 }
+        XCTAssertTrue(newCompletionProcessed)
+        oldCompletion?.1(.success(999))
+        let oldCompletionRejected = await waitUntil { sender.rejectedCompletionCountForTesting == 1 }
+        XCTAssertTrue(oldCompletionRejected)
+        XCTAssertEqual(viewModel.lastLocalSendMs, 250)
+        _ = subscription
+    }
+
+    @MainActor
+    func testSuccessfulCompletionPublishesLatestLocalLatencyWithoutAnotherFrame() async {
+        let completions = CompletionBox()
+        let sender = UDPSender { _, port, completion in completions.append(port: port, completion: completion) }
+        let viewModel = CameraViewModel(sender: sender)
+        viewModel.startForTesting()
+        let endpoints = (PixelPoint(x: 2, y: 3), PixelPoint(x: 12, y: 13))
+        var published: [Double] = []
+        let subscription = viewModel.$lastLocalSendMs.sink { value in
+            if let value { published.append(value) }
+        }
+        viewModel.processDetectedForTesting([(.red, endpoints)], at: 100, dimensions: (20, 20))
+        let firstQueued = await waitUntil { completions.valuesCountForTesting == 1 }
+        XCTAssertTrue(firstQueued)
+        completions.removeFirst()?.1(.success(100.125))
+        let firstPublished = await waitUntil { viewModel.lastLocalSendMs != nil }
+        XCTAssertTrue(firstPublished)
+        guard let firstValue = viewModel.lastLocalSendMs, let firstNotification = published.last else { return }
+        XCTAssertEqual(firstValue, 125, accuracy: 0.000001)
+        XCTAssertEqual(firstNotification, 125, accuracy: 0.000001)
+        viewModel.processDetectedForTesting([(.red, endpoints)], at: 200, dimensions: (20, 20))
+        let secondQueued = await waitUntil { completions.valuesCountForTesting == 1 }
+        XCTAssertTrue(secondQueued)
+        completions.removeFirst()?.1(.success(200.031))
+        let latestPublished = await waitUntil { viewModel.lastLocalSendMs != nil && abs(viewModel.lastLocalSendMs! - 31) < 0.000001 }
+        XCTAssertTrue(latestPublished)
+        guard let latestValue = viewModel.lastLocalSendMs else { return }
+        XCTAssertEqual(latestValue, 31, accuracy: 0.000001)
+        let publishedBoth = await waitUntil { published.count == 2 }
+        XCTAssertTrue(publishedBoth)
+        XCTAssertEqual(published[0], 125, accuracy: 0.000001)
+        XCTAssertEqual(published[1], 31, accuracy: 0.000001)
+        _ = subscription
+    }
+
     func testBrightRedAndBluePixels() {
         let threshold = ColorThreshold(brightness: 170, dominance: 35)
         XCTAssertTrue(isBright(255, 20, 20, color: .red, threshold: threshold))
@@ -76,6 +712,62 @@ final class DetectionCoreTests: XCTestCase {
         let result = detectSaber(in: bytes, width: width, height: height, bytesPerRow: stride, color: .red, threshold: ColorThreshold(brightness: 170, dominance: 35), sampleStep: 1)
         XCTAssertEqual(result?.0, PixelPoint(x: 1, y: 3))
         XCTAssertEqual(result?.1, PixelPoint(x: 6, y: 3))
+    }
+
+    func testMediumBrightnessElongatedReflectionIsRejectedForBothColors() {
+        let width = 120, height = 64, rowBytes = width * 4
+        for color in [SaberColor.red, .blue] {
+            var bytes = Array(repeating: UInt8(0), count: rowBytes * height)
+            for x in 8...110 {
+                for y in 28...34 {
+                    let offset = y * rowBytes + x * 4
+                    bytes[offset] = color == .blue ? 214 : 70
+                    bytes[offset + 1] = 80
+                    bytes[offset + 2] = color == .red ? 214 : 70
+                    bytes[offset + 3] = 255
+                }
+            }
+            XCTAssertNil(detectSaber(in: bytes, width: width, height: height,
+                                     bytesPerRow: rowBytes, color: color,
+                                     threshold: ColorThreshold(brightness: 140, dominance: 20)),
+                         "a long smooth \(color) reflection is not an emitter")
+        }
+    }
+
+    func testBrightGappedEmitterWinsAgainstLongerReflectionForBothColors() {
+        let width = 160, height = 80, rowBytes = width * 4
+        for color in [SaberColor.red, .blue] {
+            var bytes = Array(repeating: UInt8(0), count: rowBytes * height)
+            func put(_ x: Int, _ y: Int, _ red: UInt8, _ green: UInt8, _ blue: UInt8) {
+                guard x >= 0, x < width, y >= 0, y < height else { return }
+                let offset = y * rowBytes + x * 4
+                bytes[offset] = blue; bytes[offset + 1] = green
+                bytes[offset + 2] = red; bytes[offset + 3] = 255
+            }
+            // Longer, smoother curtain reflection.
+            for x in 5...152 {
+                for y in 60...66 {
+                    put(x, y, color == .red ? 214 : 70, 80, color == .blue ? 214 : 70)
+                }
+            }
+            // Shorter LED emitter with a dark gap and a clipped-white gap.
+            for x in 20...118 {
+                for y in 16...24 {
+                    put(x, y, color == .red ? 248 : 32, 42, color == .blue ? 248 : 32)
+                }
+            }
+            for x in 50...52 { for y in 14...26 { put(x, y, 0, 0, 0) } }
+            for x in 84...86 { for y in 14...26 { put(x, y, 255, 255, 255) } }
+
+            let result = detectSaber(in: bytes, width: width, height: height,
+                                     bytesPerRow: rowBytes, color: color,
+                                     threshold: ColorThreshold(brightness: 140, dominance: 20))
+            XCTAssertNotNil(result)
+            guard let result else { continue }
+            XCTAssertLessThan(abs(result.0.y - 20), 6)
+            XCTAssertLessThan(abs(result.1.y - 20), 6)
+            XCTAssertGreaterThan(abs(result.1.x - result.0.x), 80)
+        }
     }
 
     func testBlueDiagonalBarSurvivesBlurAndShortNoise() {
@@ -270,10 +962,11 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(viewModel.status, "接続エラー")
         sender.setStateForTesting(port: 5005, state: "ready", error: nil)
         sender.setStateForTesting(port: 5006, state: "failed", error: "青ポート障害")
-        let blueFailed = await waitUntil { viewModel.status == "接続エラー" }; XCTAssertTrue(blueFailed)
+        let blueFailed = await waitUntil { viewModel.senderStates[5006] == "failed" && viewModel.senderErrors[5006] == "青ポート障害" }; XCTAssertTrue(blueFailed)
         XCTAssertEqual(viewModel.status, "接続エラー")
         sender.setStateForTesting(port: 5006, state: "ready", error: nil)
-        let ready = await waitUntil { viewModel.status == "送信中" }; XCTAssertTrue(ready)
+        let ready = await waitUntil { viewModel.senderStates[5005] == "ready" && viewModel.senderStates[5006] == "ready" && viewModel.senderErrors.isEmpty }; XCTAssertTrue(ready)
+        XCTAssertEqual(viewModel.status, "送信中")
         XCTAssertEqual(viewModel.status, "送信中")
         let endpoints = (PixelPoint(x: 2, y: 3), PixelPoint(x: 12, y: 13))
         viewModel.processDetectedForTesting([(.red, endpoints), (.blue, endpoints)], at: clock.now, dimensions: (20, 20))
@@ -283,6 +976,7 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(viewModel.redErrorCount, 1)
         XCTAssertEqual(viewModel.blueErrorCount, 1)
         XCTAssertEqual(viewModel.status, "送信エラー")
+        XCTAssertNil(viewModel.lastLocalSendMs)
 
         let redDetectionBeforeHold = viewModel.redDetectionCount
         let blueDetectionBeforeHold = viewModel.blueDetectionCount
@@ -309,6 +1003,7 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(viewModel.redErrorCount, redErrorBeforeHold)
         XCTAssertEqual(viewModel.blueErrorCount, blueErrorBeforeHold)
         XCTAssertEqual(viewModel.lastSentEpoch, lastSentEpochBeforeHold)
+        XCTAssertNil(viewModel.lastLocalSendMs)
 
         clock.advance(by: 0.02)
         viewModel.processDetectedForTesting([(.red, endpoints)], at: clock.now, dimensions: (20, 20))
@@ -352,11 +1047,28 @@ final class DetectionCoreTests: XCTestCase {
         let newQueued = await waitUntil { completions.valuesCountForTesting > 0 }; XCTAssertTrue(newQueued)
         let newCompletion = completions.removeFirst()
         oldCompletion?.1(.success(301))
+        let oldCompletionProcessed = await waitUntil { sender.rejectedCompletionCountForTesting == 1 }; XCTAssertTrue(oldCompletionProcessed)
+        XCTAssertNil(viewModel.lastLocalSendMs)
         XCTAssertEqual(viewModel.redCompletedCount, 0)
         newCompletion?.1(.success(302))
         let completionAccepted = await waitUntil { viewModel.redCompletedCount == 1 }; XCTAssertTrue(completionAccepted)
         XCTAssertEqual(viewModel.redAttemptCount, 1)
         XCTAssertEqual(viewModel.redCompletedCount, 1)
+    }
+
+    @MainActor
+    func testStartMeasurementEnablesTimestampModeBeforeStarting() {
+        let viewModel = CameraViewModel(
+            authorizationStatus: { .denied },
+            requestAccess: { _ in }
+        )
+
+        viewModel.startMeasurement()
+
+        XCTAssertTrue(viewModel.measurementMode)
+        XCTAssertFalse(viewModel.running)
+        XCTAssertEqual(viewModel.status, "カメラエラー")
+        XCTAssertEqual(viewModel.errorMessage, "設定アプリでカメラ権限を許可してください")
     }
 
     @MainActor
@@ -388,20 +1100,23 @@ final class DetectionCoreTests: XCTestCase {
             try? await Task.sleep(nanoseconds: 5_000_000)
         }
         XCTAssertTrue(currentReady)
+        let firstReadyGeneration = viewModel.acceptedSenderUpdateGeneration
         let currentStates = viewModel.senderStates
         let currentErrors = viewModel.senderErrors
         let oldFrameCallback = viewModel.processor.onResult
         let oldFrameGeneration = viewModel.processor.currentGeneration
         viewModel.stop()
         viewModel.startForTesting()
-        for _ in 0..<100 {
-            if viewModel.senderStates == currentStates { break }
-            try? await Task.sleep(nanoseconds: 5_000_000)
-        }
+        let currentReadyAfterRestart = await waitUntil { viewModel.acceptedSenderUpdateGeneration > firstReadyGeneration && viewModel.senderStates == currentStates }
+        XCTAssertTrue(currentReadyAfterRestart)
+        let acceptedBeforeStale = viewModel.acceptedSenderUpdateCount
+        let rejectedFrameBeforeStale = viewModel.rejectedFrameCallbackCount
+        let rejectedSenderBeforeStale = viewModel.rejectedSenderUpdateCount
         oldFrameCallback?([DetectedSaber(endpoints: (PixelPoint(x: 1, y: 1), PixelPoint(x: 2, y: 2)), color: .red, isFresh: true)], 20, 20, 301, oldFrameGeneration)
         sender.sendStaleUpdateForTesting(index: 0, states: [5005: "failed"], errors: [5005: "旧接続通知"])
-        let staleCallbacksDrained = await waitUntil { viewModel.senderStates == currentStates && viewModel.senderErrors == currentErrors }
-        XCTAssertTrue(staleCallbacksDrained)
+        let staleCallbackProcessed = await waitUntil { viewModel.rejectedFrameCallbackCount > rejectedFrameBeforeStale && viewModel.rejectedSenderUpdateCount > rejectedSenderBeforeStale }
+        XCTAssertTrue(staleCallbackProcessed)
+        XCTAssertEqual(viewModel.acceptedSenderUpdateCount, acceptedBeforeStale)
         XCTAssertNil(viewModel.redEndpoints)
         XCTAssertEqual(viewModel.redDetectionCount, 0)
         XCTAssertEqual(viewModel.senderStates, currentStates)
@@ -424,6 +1139,7 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(results.last?.first?.endpoints.0, endpoints.0)
         clock.advance(by: 0.002)
         processor.expireForTesting()
+        wait(for: [expired], timeout: 0)
         XCTAssertEqual(results.last?.count, 0)
     }
 

@@ -12,6 +12,14 @@ final class UDPSender {
     private var configuredHost = ""
     private var updateHandler: (([Int: String], [Int: String], String?) -> Void)?
     private var updateHandlersForTesting: [(( [Int: String], [Int: String], String?) -> Void)?] = []
+    private var rejectedCompletionCount = 0
+    private struct PendingSend {
+        let text: String
+        let completion: (Result<TimeInterval, Error>) -> Void
+    }
+    private var activePorts: Set<Int> = []
+    private var pendingByPort: [Int: PendingSend] = [:]
+    private var supersededPendingCount = 0
     private let sendHandler: SendHandler?
 
     init(sendHandler: SendHandler? = nil) {
@@ -42,6 +50,8 @@ final class UDPSender {
             states = Dictionary(uniqueKeysWithValues: ports.map { ($0, "waiting") })
             connectionErrors = [:]
             sendErrors = [:]
+            activePorts = []
+            pendingByPort = [:]
             connections.values.forEach { $0.cancel() }
             if sendHandler != nil {
                 connections = [:]
@@ -77,47 +87,84 @@ final class UDPSender {
     func send(_ text: String, to port: Int, completion: @escaping (Result<TimeInterval, Error>) -> Void) {
         queue.async { [weak self] in
             guard let self else { return }
-            if let sendHandler = self.sendHandler {
-                let sendGeneration = self.generation
-                sendHandler(text, port) { result in
-                    self.queue.async {
-                        guard self.generation == sendGeneration else { return }
-                        switch result {
-                        case .success(let completedAt): self.sendErrors[port] = nil; completion(.success(completedAt))
-                        case .failure(let error): self.sendErrors[port] = "UDP送信失敗 (\(self.configuredHost):\(port)): \(error.localizedDescription)"; completion(.failure(error))
-                        }
-                        self.publish()
-                    }
+            let request = PendingSend(text: text, completion: completion)
+            if self.activePorts.contains(port) {
+                if self.pendingByPort.updateValue(request, forKey: port) != nil {
+                    self.supersededPendingCount += 1
                 }
-                return
+            } else {
+                self.activePorts.insert(port)
+                self.start(request, port: port)
             }
-            guard let connection = self.connections[port] else { completion(.failure(SendError.notConfigured(host: self.configuredHost, port: port))); return }
-            let sendGeneration = self.generation
-            let sendConnection = connection
-            let host = self.configuredHost
-            guard let data = text.data(using: .ascii) else { completion(.failure(SendError.invalidPayload(host: host, port: port))); return }
-            connection.send(content: data, completion: .contentProcessed { [weak self] error in
-                guard let self else { return }
-                self.queue.async {
-                    guard self.generation == sendGeneration, self.connections[port] === sendConnection else { return }
-                    if let error {
-                        self.sendErrors[port] = "UDP送信失敗 (\(host):\(port)): \(error.localizedDescription)"
-                        self.publish()
-                        completion(.failure(error))
-                    } else {
-                        self.sendErrors[port] = nil
-                        self.publish()
-                        completion(.success(ProcessInfo.processInfo.systemUptime))
-                    }
+        }
+    }
+
+    /// At most one datagram is in flight and one latest datagram is waiting per
+    /// port. Repeated frames replace the waiting value instead of building FIFO lag.
+    private func start(_ request: PendingSend, port: Int) {
+        let sendGeneration = generation
+        if let sendHandler {
+            sendHandler(request.text, port) { [weak self] result in
+                self?.queue.async {
+                    self?.finish(request, port: port, generation: sendGeneration,
+                                 connection: nil, result: result)
                 }
-            })
+            }
+            return
+        }
+        guard let connection = connections[port] else {
+            finish(request, port: port, generation: sendGeneration, connection: nil,
+                   result: .failure(SendError.notConfigured(host: configuredHost, port: port)))
+            return
+        }
+        let host = configuredHost
+        guard let data = request.text.data(using: .ascii) else {
+            finish(request, port: port, generation: sendGeneration, connection: connection,
+                   result: .failure(SendError.invalidPayload(host: host, port: port)))
+            return
+        }
+        connection.send(content: data, completion: .contentProcessed { [weak self] error in
+            guard let self else { return }
+            self.queue.async {
+                self.finish(request, port: port, generation: sendGeneration,
+                            connection: connection,
+                            result: error.map { .failure($0) }
+                                ?? .success(ProcessInfo.processInfo.systemUptime))
+            }
+        })
+    }
+
+    private func finish(_ request: PendingSend, port: Int, generation sendGeneration: Int,
+                        connection: NWConnection?, result: Result<TimeInterval, Error>) {
+        guard generation == sendGeneration,
+              connection == nil || connections[port] === connection else {
+            rejectedCompletionCount += 1
+            return
+        }
+        switch result {
+        case .success(let completedAt):
+            let clearedReportedError = sendErrors.removeValue(forKey: port) != nil
+            request.completion(.success(completedAt))
+            // Connection state did not change. Avoid a second MainActor UI
+            // update for every successful frame; publish only when an error
+            // was actually cleared.
+            if clearedReportedError { publish() }
+        case .failure(let error):
+            sendErrors[port] = "UDP送信失敗 (\(configuredHost):\(port)): \(error.localizedDescription)"
+            request.completion(.failure(error))
+            publish()
+        }
+        if let latest = pendingByPort.removeValue(forKey: port) {
+            start(latest, port: port)
+        } else {
+            activePorts.remove(port)
         }
     }
 
     func snapshot(completion: @escaping (Snapshot) -> Void) { queue.async { completion(Snapshot(states: self.states, errors: self.mergedErrors(), lastError: self.currentError())) } }
 
     func stop() {
-        queue.sync { generation += 1; connections.values.forEach { $0.cancel() }; connections.removeAll(); states = [:]; connectionErrors = [:]; sendErrors = [:]; configuredHost = ""; publish() }
+        queue.sync { generation += 1; connections.values.forEach { $0.cancel() }; connections.removeAll(); activePorts = []; pendingByPort = [:]; states = [:]; connectionErrors = [:]; sendErrors = [:]; configuredHost = ""; publish() }
     }
 
     func setStateForTesting(port: Int, state: String, error: String?) {
@@ -133,6 +180,14 @@ final class UDPSender {
             guard updateHandlersForTesting.indices.contains(index) else { return }
             updateHandlersForTesting[index]?(states, errors, errors.values.first)
         }
+    }
+
+    var rejectedCompletionCountForTesting: Int {
+        queue.sync { rejectedCompletionCount }
+    }
+
+    var supersededPendingCountForTesting: Int {
+        queue.sync { supersededPendingCount }
     }
 
     private func mergedErrors() -> [Int: String] {

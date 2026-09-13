@@ -85,6 +85,15 @@
       font-variant-numeric: tabular-nums;
     }
 
+    .live-panel {
+      flex-basis: 100%;
+      display: grid;
+      gap: 3px;
+      color: #dce7f5;
+      font-variant-numeric: tabular-nums;
+      white-space: pre-wrap;
+    }
+
     @media (max-width: 620px) {
       .controls { padding: 8px; gap: 6px 8px; }
       input[type="range"] { width: 72px; }
@@ -105,8 +114,10 @@
     <label>太さ <input id="thickness" type="range" min="12" max="80" step="1" value="34"><output id="thicknessValue">34</output>px</label>
     <label>長さ <input id="length" type="range" min="100" max="520" step="5" value="300"><output id="lengthValue">300</output>px</label>
     <button id="fullscreen" type="button">全画面</button>
+    <label>照合試行 <select id="trialSelect" aria-label="保存済み試行"><option value="">現在の試行</option></select></label>
     <button id="saveLog" type="button">表示ログ保存</button>
     <output id="displayStamp" class="display-stamp" aria-live="polite">計測: 通常　試行: --　state: --　表示時刻: --</output>
+    <output id="livePanel" class="live-panel" aria-live="polite" hidden>Mac受信: 接続待ち</output>
     <span class="hint">Space: 開始/停止　1/2/3: 赤/青/両方　F: 全画面</span>
   </div>
   <main class="stage"><canvas id="surface" aria-label="赤と青のテスト棒"></canvas></main>
@@ -122,10 +133,12 @@
       const lengthInput = document.getElementById('length');
       const fullscreenButton = document.getElementById('fullscreen');
       const saveLogButton = document.getElementById('saveLog');
+      const trialSelect = document.getElementById('trialSelect');
       const measurementButton = document.getElementById('measurement');
       const intervalInput = document.getElementById('interval');
       const intervalValue = document.getElementById('intervalValue');
       const displayStamp = document.getElementById('displayStamp');
+      const livePanel = document.getElementById('livePanel');
       const speedValue = document.getElementById('speedValue');
       const thicknessValue = document.getElementById('thicknessValue');
       const lengthValue = document.getElementById('lengthValue');
@@ -146,18 +159,36 @@
       let measurementStatus = 'stopped';
       let trialStartedEpochMs = null;
       let trialEndedEpochMs = null;
+      let trialFinalized = false;
+      const liveMode = new URLSearchParams(window.location.search).get('live') === '1' && window.location.protocol !== 'file:';
       const positions = [
         [0.22, 0.24], [0.50, 0.24], [0.78, 0.24],
         [0.78, 0.50], [0.50, 0.50], [0.22, 0.50],
         [0.22, 0.76], [0.50, 0.76], [0.78, 0.76]
       ];
 
+      function epochNow() { return performance.timeOrigin + performance.now(); }
+
+      function finalizeCurrentTrial() {
+        if (trialId && displayLog.length > 0 && trialEndedEpochMs === null) trialEndedEpochMs = epochNow();
+      }
+
+      function refreshTrialSelect() {
+        const selected = trialSelect.value;
+        trialSelect.replaceChildren(new Option('現在の試行', ''));
+        archivedTrials.forEach(trial => trialSelect.add(new Option(`${trial.trialId} (${trial.states.length} state)`, trial.trialId)));
+        trialSelect.value = archivedTrials.some(trial => trial.trialId === selected) ? selected : '';
+      }
+
       function archiveCurrentTrial() {
         if (!trialId || displayLog.length === 0) return;
+        finalizeCurrentTrial();
         const previous = archivedTrials.findIndex(trial => trial.trialId === trialId);
-        const record = { trialId, startedEpochMs: trialStartedEpochMs, endedEpochMs: trialEndedEpochMs, states: displayLog.slice() };
+        if (previous >= 0 && archivedTrials[previous].finalized) return;
+        const record = { trialId, startedEpochMs: trialStartedEpochMs, endedEpochMs: trialEndedEpochMs, states: displayLog.slice(), finalized: trialFinalized };
         if (previous >= 0) archivedTrials[previous] = record;
         else archivedTrials.push(record);
+        refreshTrialSelect();
       }
 
       function startTrial() {
@@ -168,6 +199,7 @@
         displayLog = [];
         trialStartedEpochMs = null;
         trialEndedEpochMs = null;
+        trialFinalized = false;
         measurementStatus = 'running';
         running = true;
         nextStateAt = performance.now();
@@ -222,6 +254,37 @@
         thicknessValue.value = thicknessInput.value;
         lengthValue.value = lengthInput.value;
         intervalValue.value = intervalInput.value;
+      }
+
+      function livePacketText(packet) {
+        if (!packet) return '未受信';
+        const delta = packet.arrivalMinusPhoneMs === null ? '未計測(tsなし/不正)' : `${packet.arrivalMinusPhoneMs.toFixed(3)} ms`;
+        const phone = packet.phoneTimestampSeconds === null ? '-' : packet.phoneTimestampSeconds.toFixed(6);
+        const arrival = packet.arrivalEpochSeconds === null ? '-' : packet.arrivalEpochSeconds.toFixed(6);
+        return `${packet.color} #${packet.order}: Mac受信 ${arrival} / iPhone ts ${phone} / 差分 ${delta}`;
+      }
+
+      function updateLiveDashboard(status) {
+        const counts = status.counts || {};
+        const latest = status.latest || {};
+        const history = (status.history || []).slice(-8).reverse().map(livePacketText);
+        livePanel.value = [
+          `Mac受信ライブ　状態: ${status.listening ? '待受中' : '停止'}　赤 ${counts.red || 0}件 / 青 ${counts.blue || 0}件`,
+          `最新 赤: ${livePacketText(latest.red)}`,
+          `最新 青: ${livePacketText(latest.blue)}`,
+          `直近履歴:\n${history.length ? history.join('\n') : '未受信'}`,
+          '差分は (Mac受信Unix時刻 - iPhone ts) × 1000。両端末の時計差を含みます。'
+        ].join('\n');
+      }
+
+      async function pollLiveDashboard() {
+        try {
+          const response = await fetch('/api/status', { cache: 'no-store' });
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          updateLiveDashboard(await response.json());
+        } catch (error) {
+          livePanel.value = `Mac受信ライブ: 接続エラー (${error.message})`;
+        }
       }
 
       function drawBar(x, y, barLength, thickness, color) {
@@ -300,22 +363,31 @@
         running = !running;
         if (measurementMode) {
           measurementStatus = running ? 'running' : 'paused';
-          if (running) nextStateAt = performance.now();
+          if (running) { if (!trialFinalized) trialEndedEpochMs = null; nextStateAt = performance.now(); }
+          else { finalizeCurrentTrial(); archiveCurrentTrial(); }
         }
         playButton.textContent = running ? '一時停止' : '開始';
       });
       modeSelect.addEventListener('change', () => { updateLabels(); if (measurementMode) startTrial(); });
       [speedInput, thicknessInput, lengthInput, intervalInput].forEach(input => input.addEventListener('input', () => { updateLabels(); if (measurementMode) startTrial(); }));
-      measurementButton.addEventListener('click', () => { measurementMode = !measurementMode; if (measurementMode) { startTrial(); measurementButton.textContent = '通常モードへ戻る'; } else { archiveCurrentTrial(); measurementState = null; measurementStatus = 'stopped'; measurementButton.textContent = '計測モード開始'; } });
+      measurementButton.addEventListener('click', () => { measurementMode = !measurementMode; if (measurementMode) { startTrial(); measurementButton.textContent = '通常モードへ戻る'; } else { finalizeCurrentTrial(); archiveCurrentTrial(); measurementState = null; measurementStatus = 'stopped'; measurementButton.textContent = '計測モード開始'; } });
       fullscreenButton.addEventListener('click', () => {
         if (document.fullscreenElement) document.exitFullscreen();
         else document.documentElement.requestFullscreen();
       });
       document.addEventListener('fullscreenchange', () => { resize(); if (measurementMode) startTrial(); });
       saveLogButton.addEventListener('click', () => {
-        archiveCurrentTrial();
-        const current = archivedTrials.find(trial => trial.trialId === trialId);
-        const blob = new Blob([JSON.stringify({ format: 'saber-display-log-v2', savedAtEpochMs: Date.now(), trialId, measurementMode, trialStartedEpochMs: current?.startedEpochMs ?? trialStartedEpochMs, trialEndedEpochMs: current?.endedEpochMs ?? trialEndedEpochMs, states: current?.states ?? displayLog, trials: archivedTrials }, null, 2)], { type: 'application/json' });
+        if (trialId && displayLog.length > 0) {
+          running = false;
+          measurementStatus = 'completed';
+          finalizeCurrentTrial();
+          trialFinalized = true;
+          archiveCurrentTrial();
+          playButton.textContent = '新しい試行';
+        }
+        const selected = archivedTrials.find(trial => trial.trialId === trialSelect.value) || archivedTrials.find(trial => trial.trialId === trialId);
+        if (!selected) return;
+        const blob = new Blob([JSON.stringify({ format: 'saber-display-log-v2', savedAtEpochMs: Date.now(), trialId: selected.trialId, measurementMode, trialStartedEpochMs: selected.startedEpochMs, trialEndedEpochMs: selected.endedEpochMs, states: selected.states, trials: archivedTrials }, null, 2)], { type: 'application/json' });
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = 'saber-display-log.json';
@@ -335,6 +407,12 @@
 
       resize();
       updateLabels();
+      if (liveMode) {
+        livePanel.hidden = false;
+        measurementButton.click();
+        pollLiveDashboard();
+        window.setInterval(pollLiveDashboard, 250);
+      }
       requestAnimationFrame(frame);
     })();
   </script>
