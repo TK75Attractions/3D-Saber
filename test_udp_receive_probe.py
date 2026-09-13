@@ -18,10 +18,12 @@ class UDPReceiveProbeTests(unittest.TestCase):
     def _reserve_udp_ports(self, count):
         ports = []
         try:
-            for _ in range(count):
+            while len(ports) < count:
                 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as allocator:
                     allocator.bind(("127.0.0.1", 0))
-                    ports.append(allocator.getsockname()[1])
+                    port = allocator.getsockname()[1]
+                    if port not in ports:
+                        ports.append(port)
         except PermissionError as error:
             self.skipTest(f"ソケット利用が環境で禁止されています: {error}")
         return ports
@@ -52,6 +54,15 @@ class UDPReceiveProbeTests(unittest.TestCase):
         self.assertTrue(snapshot["latest"]["blue"]["validTimestamp"])
         self.assertEqual(snapshot["latest"]["blue"]["order"], 105)
         self.assertFalse(next(item for item in snapshot["history"] if item["order"] == 104)["validTimestamp"])
+        json.dumps(snapshot, allow_nan=False)
+
+    def test_live_status_exposes_bonjour_and_network_configuration(self):
+        snapshot = LiveState().snapshot()
+        network = snapshot["network"]
+        self.assertEqual(network["ports"], {"red": 5005, "blue": 5006})
+        self.assertEqual(network["bonjour"]["serviceType"], "_phonesaber._udp")
+        self.assertIn("Unity", network["unityNote"])
+        self.assertIsInstance(network["ipv4"], list)
         json.dumps(snapshot, allow_nan=False)
 
     def test_live_http_rejects_non_loopback_host(self):

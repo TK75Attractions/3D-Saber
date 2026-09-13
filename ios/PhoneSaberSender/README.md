@@ -2,9 +2,9 @@
 
 ## 実機手順
 
-1. Mac と iPhone を同じ Wi‑Fi に接続し、Mac のプライベート IPv4（例 `192.168.1.10`）を確認します。iPhoneのカメラ・ローカルネットワーク権限とmacOSのファイアウォールでUDP 5005/5006を許可します。初回だけXcodeで実機へ起動し、OSの権限ダイアログを許可してください。セルラー単独では通常MacのプライベートIPに届きません。
-2. iPhone画面上部の送信先Mac欄へIPアドレスまたはホスト名を入力し、「遅延計測開始」を押します。これで計測モード、カメラ、UDP送信が一度に開始します。詳細設定は必要なときだけ開きます。出力寸法は `1920 × 1080`、左右反転 `mirrorX=false`、上下反転 `mirrorY=false` が初期設定です。送信ポートは赤=5005、青=5006です。
-3. Macで `start_phone_saber_latency.command` を一度起動します。これはUDP 5005/5006の待受準備とloopback限定のHTTP画面を確認してから、ブラウザのライブ画面を開きます。後続コマンドの貼り付けやブラウザ側の計測開始クリックは不要です。
+1. Macで `run_debug.command` をFinderからダブルクリックします。UDP 5005/5006の診断受信、Bonjour `_phonesaber._udp` 公開、ブラウザの状態画面を開始します。診断受信中はUnityを停止してください（同じUDPポートを二つのプロセスで安全に共有できません）。
+2. iPhoneとMacを同じWi-Fi、またはiPhone Personal Hotspotへ接続します。初回はiPhoneのカメラと「ローカルネットワーク」アクセスを許可します。iPhoneはBonjourでMacを見つけ、画面のNetwork欄にMac名とIPを表示します。
+3. iPhoneで「通常送信を開始」を押します。自動発見ができない場合だけ、手動IP欄にMacのIPv4を入力してください。送信形式は従来どおり赤=UDP 5005、青=UDP 5006、`x1,y1,x2,y2` です。
 
 ```sh
 open /Users/satoshi/縁日/GitHub/school-festival/start_phone_saber_latency.command

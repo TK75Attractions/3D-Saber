@@ -2,6 +2,7 @@ import AVFoundation
 import Foundation
 import Network
 import SwiftUI
+import Darwin
 
 @MainActor
 final class CameraViewModel: NSObject, ObservableObject {
@@ -11,6 +12,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private let captureQueue = DispatchQueue(label: "PhoneSaberSender.capture", qos: .userInteractive)
     private let sender: UDPSender
     private let pathMonitor = NWPathMonitor()
+    private let bonjourDiscovery = BonjourDiscovery()
     @Published var running = false
     @Published var redEndpoints: (PixelPoint, PixelPoint)?
     @Published var blueEndpoints: (PixelPoint, PixelPoint)?
@@ -20,6 +22,10 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var pathStatus = "判定中"
     @Published private(set) var pathInterface = ""
     @Published var host = ""
+    @Published private(set) var networkDiscoveryStatus = "Discovering..."
+    @Published private(set) var discoveredMacName = ""
+    @Published private(set) var discoveredMacIP = ""
+    @Published private(set) var connectionMode = "Auto (Bonjour)"
     @Published var threshold = 145
     @Published var dominance = 25
     @Published var measurementMode = false
@@ -87,6 +93,19 @@ final class CameraViewModel: NSObject, ObservableObject {
             Task { @MainActor in self?.pathStatus = status; self?.pathInterface = interface }
         }
         pathMonitor.start(queue: DispatchQueue(label: "PhoneSaberSender.path"))
+        bonjourDiscovery.onUpdate = { [weak self] update in
+            Task { @MainActor in
+                guard let self else { return }
+                self.networkDiscoveryStatus = update.status
+                self.discoveredMacName = update.name
+                self.discoveredMacIP = update.ip
+                if !update.ip.isEmpty && self.host.isEmpty {
+                    self.host = update.ip
+                    self.connectionMode = "Auto (Bonjour)"
+                }
+            }
+        }
+        bonjourDiscovery.start()
         processor.onResult = { [weak self] results, width, height, processingStart, generation in
             Task { @MainActor in self?.handle(results, width: width, height: height, processingStart: processingStart, generation: generation) }
         }
@@ -127,6 +146,11 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
     }
 
+    func retryDiscovery() {
+        guard !running else { return }
+        bonjourDiscovery.start()
+    }
+
     func startMeasurement() {
         measurementMode = true
         start()
@@ -144,7 +168,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         sendErrorMessages = [:]
         recomputeErrorMessage()
         guard !configuredHost.isEmpty else {
-            fail("送信先MacのIPアドレスまたはホスト名を入力してください")
+            fail("Macを検索中です。見つからない場合は手動IPを入力してください")
             return
         }
         let configuredThreshold = ColorThreshold(brightness: UInt8(clamping: threshold), dominance: UInt8(clamping: dominance))
@@ -194,6 +218,8 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
         }
         host = configuredHost
+        connectionMode = configuredHost == discoveredMacIP && !discoveredMacIP.isEmpty
+            ? "Auto (Bonjour)" : "Manual"
         activeDestination = "\(configuredHost):5005 / \(configuredHost):5006"
         resetStartState()
         processor.configureThresholds(red: configuredThreshold, blue: configuredThreshold)
@@ -403,3 +429,96 @@ private struct PerformanceMetric {
     var count = 0
 }
 #endif
+
+private struct BonjourDiscoveryUpdate {
+    let status: String
+    let name: String
+    let ip: String
+}
+
+/// Discovery runs on the main run loop, outside the capture and UDP queues.
+/// The service advertises red UDP 5005; blue remains the existing 5006 on the
+/// resolved host, preserving the payload and transport contract.
+private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
+    var onUpdate: ((BonjourDiscoveryUpdate) -> Void)?
+    private let browser = NetServiceBrowser()
+    private var resolving: Set<NetService> = []
+    private var searchTimeout: DispatchWorkItem?
+
+    private func report(_ status: String, name: String = "", ip: String = "") {
+#if DEBUG
+        print("[Bonjour] \(status) main=\(Thread.isMainThread)")
+#endif
+        onUpdate?(BonjourDiscoveryUpdate(status: status, name: name, ip: ip))
+    }
+
+    func start() {
+        precondition(Thread.isMainThread)
+        searchTimeout?.cancel()
+        browser.stop()
+        resolving.forEach { $0.stop() }
+        resolving.removeAll()
+        browser.delegate = self
+        report("Discovery starting")
+        browser.searchForServices(ofType: "_phonesaber._udp.", inDomain: "local.")
+        let timeout = DispatchWorkItem { [weak self] in
+            guard let self, self.resolving.isEmpty else { return }
+            self.report("No service found; Manual IP required (探索継続中)")
+        }
+        searchTimeout = timeout
+        DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: timeout)
+    }
+
+    func netServiceBrowserWillSearch(_ browser: NetServiceBrowser) {
+        report("Browsing")
+    }
+
+    func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
+        resolving.remove(service)
+        service.stop()
+        report("Service removed: \(service.name); Manual IP available")
+    }
+
+    func netServiceWillResolve(_ sender: NetService) {
+        report("Resolving: \(sender.name)", name: sender.name)
+    }
+
+    func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService,
+                           moreComing: Bool) {
+        guard !resolving.contains(service) else { return }
+        searchTimeout?.cancel()
+        report("Found: \(service.name)", name: service.name)
+        resolving.insert(service)
+        service.delegate = self
+        service.resolve(withTimeout: 5)
+    }
+
+    func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
+        searchTimeout?.cancel()
+        report("Browse failed: \(errorDict); Local Network設定を確認 / Manual IP required")
+    }
+
+    func netServiceDidResolveAddress(_ sender: NetService) {
+        let ip = sender.addresses?.compactMap(ipv4Address).first ?? ""
+        let name = sender.name
+        let status = ip.isEmpty ? "Resolve failed: IPv4なし; Manual IP required" : "Resolved: \(ip) / Ready"
+        report(status, name: name, ip: ip)
+    }
+
+    func netService(_ sender: NetService, didNotResolve errorDict: [String: NSNumber]) {
+        resolving.remove(sender)
+        report("Resolve failed: \(errorDict); Manual IP required", name: sender.name)
+    }
+
+    private func ipv4Address(_ address: Data) -> String? {
+        address.withUnsafeBytes { rawBuffer in
+            guard rawBuffer.count >= MemoryLayout<sockaddr_in>.size,
+                  let sockaddrPointer = rawBuffer.baseAddress?.assumingMemoryBound(to: sockaddr.self),
+                  sockaddrPointer.pointee.sa_family == sa_family_t(AF_INET) else { return nil }
+            var internetAddress = sockaddrPointer.withMemoryRebound(to: sockaddr_in.self, capacity: 1) { $0.pointee }
+            var host = [CChar](repeating: 0, count: Int(INET_ADDRSTRLEN))
+            guard inet_ntop(AF_INET, &internetAddress.sin_addr, &host, socklen_t(INET_ADDRSTRLEN)) != nil else { return nil }
+            return String(cString: host)
+        }
+    }
+}

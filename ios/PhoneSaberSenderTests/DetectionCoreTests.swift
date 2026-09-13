@@ -378,6 +378,15 @@ final class DetectionCoreTests: XCTestCase {
         }
     }
 
+    func testBuiltApplicationDeclaresBonjourServices() {
+        // Inspect the host app's generated plist, not the project settings or
+        // the test bundle: the missing generated array caused device discovery failure.
+        XCTAssertEqual(Bundle.main.object(forInfoDictionaryKey: "NSBonjourServices") as? [String],
+                       ["_phonesaber._udp"])
+        XCTAssertFalse((Bundle.main.object(forInfoDictionaryKey: "NSLocalNetworkUsageDescription")
+                        as? String ?? "").isEmpty)
+    }
+
     func testFrameMailboxProcessesOnlyNewestWaitingFrame() {
         let processor = FrameProcessor(expiryScheduler: nil)
         let delivered = expectation(description: "newest frame delivered")

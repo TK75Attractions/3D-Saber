@@ -9,8 +9,8 @@ exec python3 -B "$script_dir/udp_receive_probe.py" \
   --port 5005 \
   --port 5006 \
   --live \
+  --bonjour \
   --http-host 127.0.0.1 \
   --http-port 8765 \
   --html "$script_dir/saber_camera_test.html" \
-  --bonjour \
   --open-browser

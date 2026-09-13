@@ -267,12 +267,20 @@
       function updateLiveDashboard(status) {
         const counts = status.counts || {};
         const latest = status.latest || {};
+        const network = status.network || {};
+        const bonjour = network.bonjour || {};
+        const ipv4 = (network.ipv4 || []).join(', ') || '見つかりません';
+        const ports = network.ports || {};
         const history = (status.history || []).slice(-8).reverse().map(livePacketText);
         livePanel.value = [
-          `Mac受信ライブ　状態: ${status.listening ? '待受中' : '停止'}　赤 ${counts.red || 0}件 / 青 ${counts.blue || 0}件`,
+          `NETWORK  UDP待受: ${status.listening ? 'RECEIVING' : 'STOPPED'}　Mac: ${network.macName || '-'}　IPv4: ${ipv4}`,
+          `Bonjour: ${bonjour.running ? 'PUBLISHED' : 'OFF'}　${bonjour.serviceName || '-'} ${bonjour.serviceType || '-'}　Red: ${ports.red || 5005}　Blue: ${ports.blue || 5006}`,
+          `RED   ${latest.red ? 'RECEIVING' : 'NOT RECEIVING'}　count=${counts.red || 0}　${latest.red ? latest.red.payload : 'x1,y1,x2,y2: -'}`,
+          `BLUE  ${latest.blue ? 'RECEIVING' : 'NOT RECEIVING'}　count=${counts.blue || 0}　${latest.blue ? latest.blue.payload : 'x1,y1,x2,y2: -'}`,
           `最新 赤: ${livePacketText(latest.red)}`,
           `最新 青: ${livePacketText(latest.blue)}`,
           `直近履歴:\n${history.length ? history.join('\n') : '未受信'}`,
+          `注意: ${network.unityNote || ''}`,
           '差分は (Mac受信Unix時刻 - iPhone ts) × 1000。両端末の時計差を含みます。'
         ].join('\n');
       }

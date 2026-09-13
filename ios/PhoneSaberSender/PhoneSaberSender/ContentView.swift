@@ -8,18 +8,26 @@ struct ContentView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
-                    GroupBox("計測開始") {
-                        TextField("送信先MacのIPアドレス／ホスト名", text: $model.host)
+                    GroupBox("接続") {
+                        Button("Macを再検索") { model.retryDiscovery() }
+                            .disabled(model.running)
+                        Text("Network: \(model.running ? "CONNECTED" : model.networkDiscoveryStatus)")
+                            .font(.headline)
+                        Text("Mac: \(model.discoveredMacName.isEmpty ? "未発見" : model.discoveredMacName)　IP: \(model.discoveredMacIP.isEmpty ? "-" : model.discoveredMacIP)")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        Text("Mode: \(model.connectionMode)　Red: 5005　Blue: 5006")
+                            .font(.footnote).foregroundStyle(.secondary)
+                        TextField("手動IP（自動発見できない場合のみ）", text: $model.host)
                             .textFieldStyle(.roundedBorder)
                             .keyboardType(.URL)
                             .autocorrectionDisabled(true)
                             .textInputAutocapitalization(.never)
                             .disabled(model.running)
-                        Button(model.running ? "停止" : "遅延計測開始") {
-                            model.running ? model.stop() : model.startMeasurement()
+                        Button(model.running ? "停止" : "通常送信を開始") {
+                            model.running ? model.stop() : model.start()
                         }
                         .buttonStyle(.borderedProminent)
-                        Text("赤: UDP 5005　青: UDP 5006　iPhoneのtsとMac受信時刻を比較します。")
+                        Text("BonjourでMacを自動発見します。見つからない時だけ手動IPを入力します。")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -36,6 +44,8 @@ struct ContentView: View {
                     Text("送信先: \(model.activeDestination)")
                         .font(.footnote).foregroundStyle(.secondary)
                     Text("検出数: 赤 \(model.redDetectionCount) / 青 \(model.blueDetectionCount)")
+                        .font(.footnote)
+                    Text("認識: 赤 \(model.redEndpoints == nil ? "未検出" : "認識中")　青 \(model.blueEndpoints == nil ? "未検出" : "認識中")")
                         .font(.footnote)
                     Text("送信試行: 赤 \(model.redAttemptCount) / 青 \(model.blueAttemptCount)　ローカル完了: 赤 \(model.redCompletedCount) / 青 \(model.blueCompletedCount)")
                         .font(.footnote)
@@ -59,7 +69,7 @@ struct ContentView: View {
                     }
                     DisclosureGroup("詳細設定") {
                         GroupBox("接続・出力") {
-                            Text("送信先Mac: \(model.host.isEmpty ? "未設定" : model.host)")
+                            Text("送信先Mac: \(model.host.isEmpty ? "自動発見待ち" : model.host)")
                                 .font(.headline)
                             Text("赤: UDP 5005　青: UDP 5006")
                                 .font(.caption)

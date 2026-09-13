@@ -9,6 +9,7 @@ import math
 import select
 import socket
 import statistics
+import subprocess
 import threading
 import time
 import webbrowser
@@ -21,6 +22,44 @@ from typing import Callable
 from urllib.parse import urlsplit
 
 PORTS = (5005, 5006)
+BONJOUR_SERVICE_TYPE = "_phonesaber._udp"
+BONJOUR_SERVICE_NAME = "Phone Saber Mac"
+
+
+def local_ipv4_addresses() -> list[str]:
+    """Return usable LAN IPv4 addresses without assuming a particular NIC."""
+    addresses: set[str] = set()
+    try:
+        for _, _, _, _, sockaddr in socket.getaddrinfo(socket.gethostname(), None, socket.AF_INET):
+            address = sockaddr[0]
+            if not address.startswith(("127.", "169.254.")):
+                addresses.add(address)
+    except OSError:
+        pass
+    return sorted(addresses)
+
+
+class BonjourPublisher:
+    """Publishes the existing red UDP listener via macOS dns-sd; no UDP proxy."""
+
+    def __init__(self, port: int, service_name: str = BONJOUR_SERVICE_NAME):
+        self._process = subprocess.Popen(
+            ["/usr/bin/dns-sd", "-R", service_name, BONJOUR_SERVICE_TYPE, "local.", str(port)],
+            stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL,
+        )
+
+    @property
+    def running(self) -> bool:
+        return self._process.poll() is None
+
+    def close(self) -> None:
+        if self.running:
+            self._process.terminate()
+            try:
+                self._process.wait(timeout=2)
+            except subprocess.TimeoutExpired:
+                self._process.kill()
+                self._process.wait(timeout=2)
 
 @dataclass(frozen=True)
 class ParsedPacket:
@@ -46,7 +85,7 @@ class DisplayLog:
 class LiveState:
     """Small bounded, thread-safe state store for the local live dashboard."""
 
-    def __init__(self, history_limit: int = 100):
+    def __init__(self, history_limit: int = 100, bonjour_publisher: BonjourPublisher | None = None):
         self._lock = threading.Lock()
         self._history_limit = history_limit
         self._started = time.time()
@@ -54,6 +93,7 @@ class LiveState:
         self._latest = {"red": None, "blue": None}
         self._history: list[dict] = []
         self._stopped = False
+        self._bonjour_publisher = bonjour_publisher
 
     def record(self, port: int, packet: ParsedPacket, arrival: float, order: int, color: str | None) -> None:
         timestamp = packet.timestamp if packet.timestamp_valid and packet.timestamp is not None and math.isfinite(packet.timestamp) else None
@@ -83,6 +123,14 @@ class LiveState:
                 "counts": dict(self._counts),
                 "latest": {key: value.copy() if value else None for key, value in self._latest.items()},
                 "history": [item.copy() for item in self._history],
+                "network": {
+                    "macName": socket.gethostname(),
+                    "ipv4": local_ipv4_addresses(),
+                    "ports": {"red": 5005, "blue": 5006},
+                    "bonjour": {"serviceName": BONJOUR_SERVICE_NAME, "serviceType": BONJOUR_SERVICE_TYPE,
+                                "running": bool(self._bonjour_publisher and self._bonjour_publisher.running)},
+                    "unityNote": "Unityと同時にUDP 5005/5006をbindできません。診断時はUnityを停止してください。",
+                },
             }
 
     def stop(self) -> None:
@@ -140,8 +188,8 @@ class LiveServer:
         self.thread.join(timeout=2)
 
 
-def start_live_server(host: str = "127.0.0.1", port: int = 8765, html_path: str | Path = "saber_camera_test.html") -> tuple[LiveServer, LiveState]:
-    state = LiveState()
+def start_live_server(host: str = "127.0.0.1", port: int = 8765, html_path: str | Path = "saber_camera_test.html", bonjour_publisher: BonjourPublisher | None = None) -> tuple[LiveServer, LiveState]:
+    state = LiveState(bonjour_publisher=bonjour_publisher)
     server = LiveServer(host, port, Path(html_path), state)
     server.start()
     return server, state
@@ -286,9 +334,10 @@ def parse_args():
     parser.add_argument("--http-host", default="127.0.0.1"); parser.add_argument("--http-port", type=int, default=8765)
     parser.add_argument("--html", type=Path, default=Path(__file__).with_name("saber_camera_test.html"))
     parser.add_argument("--open-browser", action="store_true", help="open the live dashboard after both listeners are ready")
+    parser.add_argument("--bonjour", action="store_true", help="publish _phonesaber._udp via macOS dns-sd")
     return parser.parse_args()
 
-def run(host: str, ports: tuple[int, ...], duration: float, display_log=None, input_width=1920.0, input_height=1080.0, on_ready: Callable[[], None] | None = None, reject_threshold=0.08, trial_id=None, port_colors: dict[int, str] | None = None, on_packet: Callable[[int, ParsedPacket, float], None] | None = None, live=False, http_host="127.0.0.1", http_port=8765, html_path: str | Path = "saber_camera_test.html", open_browser=False) -> int:
+def run(host: str, ports: tuple[int, ...], duration: float, display_log=None, input_width=1920.0, input_height=1080.0, on_ready: Callable[[], None] | None = None, reject_threshold=0.08, trial_id=None, port_colors: dict[int, str] | None = None, on_packet: Callable[[int, ParsedPacket, float], None] | None = None, live=False, http_host="127.0.0.1", http_port=8765, html_path: str | Path = "saber_camera_test.html", open_browser=False, bonjour=False) -> int:
     if not math.isfinite(duration) or duration < 0 or not math.isfinite(input_width) or not math.isfinite(input_height) or input_width <= 0 or input_height <= 0 or not math.isfinite(reject_threshold) or reject_threshold < 0:
         print("拒否閾値・期間・入力寸法は有限かつ非負（寸法は正）で指定してください", flush=True); return 2
     if live and http_host not in {"127.0.0.1", "localhost"}:
@@ -300,6 +349,7 @@ def run(host: str, ports: tuple[int, ...], duration: float, display_log=None, in
     color_counts: dict[str, int] = {}
     live_server = None
     live_state = None
+    bonjour_publisher = None
     colors = port_colors or {5005: "red", 5006: "blue"}
     try:
         for port in ports:
@@ -308,8 +358,12 @@ def run(host: str, ports: tuple[int, ...], duration: float, display_log=None, in
             except OSError: sock.close(); raise
             sock.setblocking(False); sockets.append((port, sock))
         by_socket = {sock: port for port, sock in sockets}; deadline = time.monotonic() + duration if duration > 0 else None
+        if bonjour:
+            bonjour_publisher = BonjourPublisher(5005)
+            if not bonjour_publisher.running:
+                raise RuntimeError("Bonjourサービスを開始できません")
         if live:
-            live_server, live_state = start_live_server(http_host, http_port, html_path)
+            live_server, live_state = start_live_server(http_host, http_port, html_path, bonjour_publisher)
             dashboard_url = verify_live_dashboard(live_server, html_path)
             print(f"live dashboard ready: {dashboard_url}", flush=True)
         print(f"listening on {host}: {', '.join(map(str, ports))}; Ctrl-C to stop", flush=True)
@@ -344,6 +398,7 @@ def run(host: str, ports: tuple[int, ...], duration: float, display_log=None, in
         for _, sock in sockets: sock.close()
         if live_state: live_state.stop()
         if live_server: live_server.close()
+        if bonjour_publisher: bonjour_publisher.close()
     loaded_log, warning = try_load_display_log(display_log)
     frames = loaded_log.frames if loaded_log else []
     if warning: print(warning, flush=True)
@@ -363,4 +418,4 @@ def run(host: str, ports: tuple[int, ...], duration: float, display_log=None, in
     return 0
 
 if __name__ == "__main__":
-    args = parse_args(); raise SystemExit(run(args.host, tuple(args.ports or PORTS), args.duration, args.display_log, args.input_width, args.input_height, reject_threshold=args.reject_threshold, trial_id=args.trial_id, live=args.live, http_host=args.http_host, http_port=args.http_port, html_path=args.html, open_browser=args.open_browser))
+    args = parse_args(); raise SystemExit(run(args.host, tuple(args.ports or PORTS), args.duration, args.display_log, args.input_width, args.input_height, reject_threshold=args.reject_threshold, trial_id=args.trial_id, live=args.live, http_host=args.http_host, http_port=args.http_port, html_path=args.html, open_browser=args.open_browser, bonjour=args.bonjour))

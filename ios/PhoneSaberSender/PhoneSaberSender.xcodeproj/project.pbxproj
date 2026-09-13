@@ -295,6 +295,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = PhoneSaberSender;
 				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "赤と青のLED付き棒を検出するためカメラを使用します。";
+				INFOPLIST_FILE = BonjourInfo.plist;
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "検出した棒の座標を同じネットワーク上のMacへ送信します。";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.satoshi.PhoneSaberSender;
@@ -316,6 +317,7 @@
 				INFOPLIST_KEY_CFBundleDisplayName = PhoneSaberSender;
 				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "赤と青のLED付き棒を検出するためカメラを使用します。";
+				INFOPLIST_FILE = BonjourInfo.plist;
 				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "検出した棒の座標を同じネットワーク上のMacへ送信します。";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.satoshi.PhoneSaberSender;
