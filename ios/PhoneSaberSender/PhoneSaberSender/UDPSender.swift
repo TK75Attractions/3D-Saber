@@ -15,6 +15,8 @@ final class UDPSender {
     private var rejectedCompletionCount = 0
     private struct PendingSend {
         let text: String
+        let enqueuedAt: TimeInterval
+        let onSendStarted: ((TimeInterval, Int) -> Void)?
         let completion: (Result<TimeInterval, Error>) -> Void
     }
     private var activePorts: Set<Int> = []
@@ -52,6 +54,7 @@ final class UDPSender {
             sendErrors = [:]
             activePorts = []
             pendingByPort = [:]
+            supersededPendingCount = 0
             connections.values.forEach { $0.cancel() }
             if sendHandler != nil {
                 connections = [:]
@@ -84,10 +87,12 @@ final class UDPSender {
         }
     }
 
-    func send(_ text: String, to port: Int, completion: @escaping (Result<TimeInterval, Error>) -> Void) {
+    func send(_ text: String, to port: Int, onSendStarted: ((TimeInterval, Int) -> Void)? = nil,
+              completion: @escaping (Result<TimeInterval, Error>) -> Void) {
         queue.async { [weak self] in
             guard let self else { return }
-            let request = PendingSend(text: text, completion: completion)
+            let request = PendingSend(text: text, enqueuedAt: HostMonotonicClock.now(),
+                                      onSendStarted: onSendStarted, completion: completion)
             if self.activePorts.contains(port) {
                 if self.pendingByPort.updateValue(request, forKey: port) != nil {
                     self.supersededPendingCount += 1
@@ -103,6 +108,9 @@ final class UDPSender {
     /// port. Repeated frames replace the waiting value instead of building FIFO lag.
     private func start(_ request: PendingSend, port: Int) {
         let sendGeneration = generation
+        // This is the start of Network.framework work, not proof that the
+        // datagram has reached the network interface or peer.
+        request.onSendStarted?(max(0, HostMonotonicClock.now() - request.enqueuedAt), supersededPendingCount)
         if let sendHandler {
             sendHandler(request.text, port) { [weak self] result in
                 self?.queue.async {
@@ -164,7 +172,7 @@ final class UDPSender {
     func snapshot(completion: @escaping (Snapshot) -> Void) { queue.async { completion(Snapshot(states: self.states, errors: self.mergedErrors(), lastError: self.currentError())) } }
 
     func stop() {
-        queue.sync { generation += 1; connections.values.forEach { $0.cancel() }; connections.removeAll(); activePorts = []; pendingByPort = [:]; states = [:]; connectionErrors = [:]; sendErrors = [:]; configuredHost = ""; publish() }
+        queue.sync { generation += 1; connections.values.forEach { $0.cancel() }; connections.removeAll(); activePorts = []; pendingByPort = [:]; supersededPendingCount = 0; states = [:]; connectionErrors = [:]; sendErrors = [:]; configuredHost = ""; publish() }
     }
 
     func setStateForTesting(port: Int, state: String, error: String?) {

@@ -4,6 +4,105 @@ import Network
 import SwiftUI
 import Darwin
 
+struct CameraFormatOption: Equatable {
+    let index: Int
+    let width: Int32
+    let height: Int32
+    let frameRateRanges: [ClosedRange<Double>]
+
+    var pixelCount: Int64 { Int64(width) * Int64(height) }
+}
+
+func supportsFrameRate(_ fps: Double, ranges: [ClosedRange<Double>]) -> Bool {
+    ranges.contains { range in
+        range.lowerBound - 0.01 <= fps && fps <= range.upperBound + 0.01
+    }
+}
+
+func fixedFrameDuration(fps: Double, ranges: [ClosedRange<Double>]) -> CMTime? {
+    guard fps > 0, supportsFrameRate(fps, ranges: ranges) else { return nil }
+    return CMTime(seconds: 1 / fps, preferredTimescale: 60_000)
+}
+
+func preferredCameraFormatIndex(
+    options: [CameraFormatOption],
+    targetFPS: Double = 30,
+    maximumWidth: Int32 = 640,
+    maximumHeight: Int32 = 480
+) -> Int? {
+    let supported = options.filter { supportsFrameRate(targetFPS, ranges: $0.frameRateRanges) }
+    guard !supported.isEmpty else { return nil }
+    let compact = supported.filter { $0.width <= maximumWidth && $0.height <= maximumHeight }
+    let usesCompactPool = !compact.isEmpty
+    let pool = usesCompactPool ? compact : supported
+    return pool.sorted { lhs, rhs in
+        if lhs.pixelCount != rhs.pixelCount {
+            return usesCompactPool ? lhs.pixelCount > rhs.pixelCount : lhs.pixelCount < rhs.pixelCount
+        }
+        let lhsCeiling = lhs.frameRateRanges.filter { supportsFrameRate(targetFPS, ranges: [$0]) }.map(\.upperBound).min() ?? .infinity
+        let rhsCeiling = rhs.frameRateRanges.filter { supportsFrameRate(targetFPS, ranges: [$0]) }.map(\.upperBound).min() ?? .infinity
+        if lhsCeiling != rhsCeiling { return lhsCeiling < rhsCeiling }
+        return lhs.index < rhs.index
+    }.first?.index
+}
+
+struct CameraFrameIntervalStatistics: Equatable {
+    let sampleCount: Int
+    let latestMs: Double
+    let medianMs: Double
+    let minimumMs: Double
+    let maximumMs: Double
+    var measuredFPS: Double { medianMs > 0 ? 1000 / medianMs : 0 }
+}
+
+struct CameraFrameIntervalWindow {
+    private let capacity: Int
+    private var previousPresentationTime: TimeInterval?
+    private var intervalsMs: [Double] = []
+
+    init(capacity: Int = 120) { self.capacity = max(1, capacity) }
+
+    mutating func reset() {
+        previousPresentationTime = nil
+        intervalsMs = []
+    }
+
+    mutating func record(presentationTime: TimeInterval?) {
+        guard let presentationTime, presentationTime.isFinite else { return }
+        defer { previousPresentationTime = presentationTime }
+        guard let previousPresentationTime else { return }
+        let interval = presentationTime - previousPresentationTime
+        guard interval > 0, interval < 1 else {
+            intervalsMs = []
+            return
+        }
+        intervalsMs.append(interval * 1000)
+        if intervalsMs.count > capacity { intervalsMs.removeFirst(intervalsMs.count - capacity) }
+    }
+
+    var statistics: CameraFrameIntervalStatistics? {
+        Self.statistics(for: intervalsMs)
+    }
+
+    var samples: [Double] { intervalsMs }
+
+    static func statistics(for intervalsMs: [Double]) -> CameraFrameIntervalStatistics? {
+        guard !intervalsMs.isEmpty else { return nil }
+        let sorted = intervalsMs.sorted()
+        let middle = sorted.count / 2
+        let median = sorted.count.isMultiple(of: 2)
+            ? (sorted[middle - 1] + sorted[middle]) / 2
+            : sorted[middle]
+        return CameraFrameIntervalStatistics(
+            sampleCount: intervalsMs.count,
+            latestMs: intervalsMs.last ?? 0,
+            medianMs: median,
+            minimumMs: sorted.first ?? 0,
+            maximumMs: sorted.last ?? 0
+        )
+    }
+}
+
 @MainActor
 final class CameraViewModel: NSObject, ObservableObject {
     let session = AVCaptureSession()
@@ -57,9 +156,24 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var rawFrameSaveMessage = ""
     @Published private(set) var lastRawFrameURL: URL?
 #if DEBUG
-    @Published private(set) var debugPerformanceRows: [String] = []
+    @Published private(set) var debugPerformanceRows = DebugPerformanceRow.placeholders
+    @Published private(set) var debugCameraConfiguration = DebugCameraConfiguration.unavailable
+    @Published private(set) var debugFrameIntervalStatistics: CameraFrameIntervalStatistics?
+    @Published private(set) var debugRequestedFPS = 30
+    @Published private(set) var debugSupports60FPS = false
+    @Published private(set) var debug60FPSFormats = "Start the camera to inspect this device"
+    @Published var debugDetailedProfilingEnabled = true {
+        didSet { processor.setDetailedProfilingEnabled(debugDetailedProfilingEnabled) }
+    }
     private var performanceMetrics: [String: PerformanceMetric] = [:]
     private var lastPerformancePublish = 0.0
+    private var previousTrace: FrameTrace?
+    private var diagnosticEventTimes: [String: [TimeInterval]] = [:]
+    private var latestDiagnosticSequence: UInt64 = 0
+    private var latestFrameCounts = (received: 0, processed: 0, replaced: 0)
+    private(set) var debugPerformancePublishCountForTesting = 0
+    private weak var activeCamera: AVCaptureDevice?
+    private var latestFrameIntervalStatistics: CameraFrameIntervalStatistics?
 #endif
     private var frameCount = 0
     private var fpsStart = CACurrentMediaTime()
@@ -106,8 +220,8 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
         }
         bonjourDiscovery.start()
-        processor.onResult = { [weak self] results, width, height, processingStart, generation in
-            Task { @MainActor in self?.handle(results, width: width, height: height, processingStart: processingStart, generation: generation) }
+        processor.onResult = { [weak self] results, width, height, processingStart, generation, trace in
+            Task { @MainActor in self?.handle(results, width: width, height: height, processingStart: processingStart, generation: generation, trace: trace) }
         }
         processor.onRawFrameSaved = { [weak self] result in
             Task { @MainActor in
@@ -156,6 +270,24 @@ final class CameraViewModel: NSObject, ObservableObject {
         start()
     }
 
+#if DEBUG
+    func selectDebugCameraFPS(_ fps: Int) {
+        guard fps == 30 || fps == 60, fps != debugRequestedFPS else { return }
+        guard fps != 60 || debugSupports60FPS else {
+            cameraErrorMessage = "This back wide camera has no selected-format candidate for 60 FPS"
+            recomputeErrorMessage()
+            return
+        }
+        debugRequestedFPS = fps
+        if running {
+            // A full stop/reconfigure keeps activeFormat, frame durations, the
+            // output connection and the one-slot processor generation atomic.
+            stop()
+            start()
+        }
+    }
+#endif
+
     func stop() {
         lifecycleGeneration += 1
         session.stopRunning(); sender.stop(); _ = processor.reset(); running = false; activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
@@ -166,6 +298,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         cameraErrorMessage = nil
         connectionErrorMessage = nil
         sendErrorMessages = [:]
+#if DEBUG
+        resetDebugPerformance()
+#endif
         recomputeErrorMessage()
         guard !configuredHost.isEmpty else {
             fail("Macを検索中です。見つからない場合は手動IPを入力してください")
@@ -177,24 +312,46 @@ final class CameraViewModel: NSObject, ObservableObject {
         session.outputs.forEach { session.removeOutput($0) }
         guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back), let input = try? AVCaptureDeviceInput(device: camera), session.canAddInput(input), session.canAddOutput(output) else { session.commitConfiguration(); fail("カメラを初期化できません"); return }
         session.addInput(input)
-        let preferredFormats = camera.formats.filter { format in
+        let formatOptions = camera.formats.enumerated().map { index, format in
             let size = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
-            return size.width <= 640 && size.height <= 480
+            return CameraFormatOption(
+                index: index,
+                width: size.width,
+                height: size.height,
+                frameRateRanges: format.videoSupportedFrameRateRanges.map { $0.minFrameRate...$0.maxFrameRate }
+            )
         }
-        let format = preferredFormats.max { a, b in
-            let left = CMVideoFormatDescriptionGetDimensions(a.formatDescription)
-            let right = CMVideoFormatDescriptionGetDimensions(b.formatDescription)
-            return Int64(left.width) * Int64(left.height) < Int64(right.width) * Int64(right.height)
-        } ?? camera.formats.min { a, b in
-            let left = CMVideoFormatDescriptionGetDimensions(a.formatDescription)
-            let right = CMVideoFormatDescriptionGetDimensions(b.formatDescription)
-            return Int64(left.width) * Int64(left.height) < Int64(right.width) * Int64(right.height)
+#if DEBUG
+        let sixtyFPSOptions = formatOptions.filter { supportsFrameRate(60, ranges: $0.frameRateRanges) }
+        debugSupports60FPS = !sixtyFPSOptions.isEmpty
+        debug60FPSFormats = Self.formatSummary(sixtyFPSOptions)
+        if debugRequestedFPS == 60 && !debugSupports60FPS { debugRequestedFPS = 30 }
+        let targetFPS = Double(debugRequestedFPS)
+#else
+        let targetFPS = 30.0
+#endif
+        let selectedIndex = preferredCameraFormatIndex(options: formatOptions, targetFPS: targetFPS)
+        let format = selectedIndex.map { camera.formats[$0] } ?? camera.formats.min { left, right in
+            let lhs = CMVideoFormatDescriptionGetDimensions(left.formatDescription)
+            let rhs = CMVideoFormatDescriptionGetDimensions(right.formatDescription)
+            return Int64(lhs.width) * Int64(lhs.height) < Int64(rhs.width) * Int64(rhs.height)
         }
         if let format {
             do {
                 try camera.lockForConfiguration()
+                defer { camera.unlockForConfiguration() }
                 camera.activeFormat = format
-                camera.unlockForConfiguration()
+                if #available(iOS 18.0, *), format.isAutoVideoFrameRateSupported {
+                    camera.isAutoVideoFrameRateEnabled = false
+                }
+                if camera.isLowLightBoostSupported {
+                    camera.automaticallyEnablesLowLightBoostWhenAvailable = false
+                }
+                let supportedRanges = format.videoSupportedFrameRateRanges.map { $0.minFrameRate...$0.maxFrameRate }
+                if let duration = fixedFrameDuration(fps: targetFPS, ranges: supportedRanges) {
+                    camera.activeVideoMinFrameDuration = duration
+                    camera.activeVideoMaxFrameDuration = duration
+                }
             } catch {
                 errorMessage = "カメラ形式を設定できません: \(error.localizedDescription)"
             }
@@ -208,8 +365,18 @@ final class CameraViewModel: NSObject, ObservableObject {
         if let connection = output.connection(with: .video) {
             connection.videoOrientation = .portrait
             connection.isVideoMirrored = false
+            // Apple's default is off and stabilization adds latency for the
+            // non-low-latency modes. Make the intended capture path explicit.
+            if connection.isVideoStabilizationSupported {
+                connection.preferredVideoStabilizationMode = .off
+            }
         }
         session.commitConfiguration()
+#if DEBUG
+        activeCamera = camera
+        updateCameraConfiguration(camera)
+#endif
+        processor.configureCaptureSynchronizationClock(session.synchronizationClock)
         let currentGeneration = lifecycleGeneration
         running = true
         sender.configure(host: configuredHost) { [weak self] states, errors, lastError in
@@ -226,7 +393,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         frameCount = 0; fpsStart = CACurrentMediaTime(); _ = processor.reset(); status = "送信中"; session.startRunning()
     }
 
-    private func handle(_ results: [DetectedSaber], width: Int, height: Int, processingStart: TimeInterval, generation: Int) {
+    private func handle(_ results: [DetectedSaber], width: Int, height: Int, processingStart: TimeInterval, generation: Int, trace: FrameTrace?) {
 #if DEBUG
         let uiStart = ProcessInfo.processInfo.systemUptime
         var udpRequestMs = 0.0
@@ -236,6 +403,9 @@ final class CameraViewModel: NSObject, ObservableObject {
             return
         }
         processedFrameCount += 1
+#if DEBUG
+        if let trace { recordFrameTrace(trace) }
+#endif
         sourceDimensions = (width, height)
         var redSeen = false
         var blueSeen = false
@@ -269,9 +439,17 @@ final class CameraViewModel: NSObject, ObservableObject {
             if result.color == .red { redAttemptCount += 1 } else { blueAttemptCount += 1 }
             let sendGeneration = lifecycleGeneration
 #if DEBUG
+            let enqueueAt = HostMonotonicClock.now()
+            recordEventRate("UDP enqueue rate")
+            if let trace {
+                addPerformance("Detection → UDP enqueue", value: max(0, (enqueueAt - trace.detectionEnd) * 1000))
+                addPerformance("Post-capture total", value: max(0, (enqueueAt - trace.callbackHostTime) * 1000))
+            }
+#endif
+#if DEBUG
             let sendRequestStart = ProcessInfo.processInfo.systemUptime
 #endif
-            sender.send(text, to: port) { [weak self] result in
+            let completion: (Result<TimeInterval, Error>) -> Void = { [weak self] result in
                 Task { @MainActor in
                     guard let self, self.running, self.lifecycleGeneration == sendGeneration else { return }
                     switch result {
@@ -287,6 +465,13 @@ final class CameraViewModel: NSObject, ObservableObject {
                     self.recomputeErrorMessage()
                 }
             }
+#if DEBUG
+            sender.send(text, to: port, onSendStarted: { [weak self] queueWait, replaced in
+                Task { @MainActor in self?.recordUDPQueueStart(queueWait, replaced: replaced) }
+            }, completion: completion)
+#else
+            sender.send(text, to: port, completion: completion)
+#endif
 #if DEBUG
             udpRequestMs += (ProcessInfo.processInfo.systemUptime - sendRequestStart) * 1000
 #endif
@@ -304,12 +489,29 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
 #if DEBUG
+    private func resetDebugPerformance() {
+        performanceMetrics = [:]
+        previousTrace = nil
+        diagnosticEventTimes = [:]
+        latestDiagnosticSequence = 0
+        latestFrameCounts = (0, 0, 0)
+        debugPerformanceRows = DebugPerformanceRow.placeholders
+        debugFrameIntervalStatistics = nil
+        latestFrameIntervalStatistics = nil
+        lastPerformancePublish = 0
+        debugPerformancePublishCountForTesting = 0
+    }
+
     private func recordPerformance(_ sample: FramePerformanceSample) {
         let profile = sample.detector
         addPerformance("Pixel buffer access", value: sample.pixelBufferAccessMs)
         addPerformance("BGRA + RGB→HSV + masks", value: profile.pixelScanHSVMaskMs)
         addPerformance("Close / open", value: profile.morphologyMs)
         addPerformance("Components + shape/brightness/contrast/PCA", value: profile.componentAndScoreMs)
+        addPerformance("Component traversal / proposal overhead", value: profile.componentTraversalAndProposalOverheadMs)
+        addPerformance("Shape + PCA axis", value: profile.shapeAndAxisMs)
+        addPerformance("Brightness / contrast / color score", value: profile.brightnessContrastColorMs)
+        addPerformance("Endpoints + bounds", value: profile.endpointAndBoundsMs)
         addPerformance("Bright-core proposals", value: profile.lineProposalMs)
         addPerformance("Proposal detailed score", value: profile.lineScoreMs)
         addPerformance("Final selection / scaling", value: profile.selectionMs)
@@ -317,29 +519,183 @@ final class CameraViewModel: NSObject, ObservableObject {
         publishPerformanceIfNeeded()
     }
 
+    private func recordFrameTrace(_ trace: FrameTrace) {
+        latestDiagnosticSequence = trace.sequence
+        latestFrameCounts = (trace.receivedFrames, trace.processedFrames, trace.replacedFrames)
+        if let capture = trace.captureHostTime, trace.callbackHostTime >= capture {
+            addPerformance("Camera / AVFoundation age", value: (trace.callbackHostTime - capture) * 1000)
+        }
+        latestFrameIntervalStatistics = trace.inputFrameIntervalStatistics
+        addPerformance("Callback → processing start", value: max(0, (trace.processingStart - trace.callbackHostTime) * 1000))
+        addPerformance("Detection", value: max(0, (trace.detectionEnd - trace.processingStart) * 1000))
+        if let previous = previousTrace {
+            let elapsed = trace.callbackHostTime - previous.callbackHostTime
+            if elapsed > 0 {
+                addPerformance("Input FPS", value: Double(trace.receivedFrames - previous.receivedFrames) / elapsed)
+                addPerformance("Processed FPS", value: Double(trace.processedFrames - previous.processedFrames) / elapsed)
+                addPerformance("Replaced frames", value: Double(trace.replacedFrames - previous.replacedFrames) / elapsed)
+            }
+        }
+        previousTrace = trace
+        publishPerformanceIfNeeded()
+    }
+
+    private func recordUDPQueueStart(_ wait: TimeInterval, replaced: Int) {
+        addPerformance("UDP queue wait", value: wait * 1000)
+        addPerformance("UDP replaced sends", value: Double(replaced))
+        recordEventRate("UDP actual send rate")
+        publishPerformanceIfNeeded()
+    }
+
+    private func recordEventRate(_ name: String) {
+        let now = HostMonotonicClock.now()
+        var events = diagnosticEventTimes[name, default: []]
+        events.append(now)
+        events = events.filter { now - $0 <= 2 }
+        diagnosticEventTimes[name] = events
+        guard let first = events.first, now > first else { return }
+        addPerformance(name, value: Double(events.count - 1) / (now - first))
+    }
+
     private func addPerformance(_ name: String, value: Double) {
         var metric = performanceMetrics[name, default: PerformanceMetric()]
         metric.latest = value
-        metric.total += value
+        metric.values.append(value)
+        if metric.values.count > 120 { metric.values.removeFirst() }
         metric.maximum = max(metric.maximum, value)
-        metric.count += 1
         performanceMetrics[name] = metric
+    }
+
+    func recordDebugPerformanceForTesting(name: String, value: Double) {
+        addPerformance(name, value: value)
+        publishPerformanceIfNeeded()
     }
 
     private func publishPerformanceIfNeeded() {
         let now = ProcessInfo.processInfo.systemUptime
         guard now - lastPerformancePublish >= 0.2 else { return }
         lastPerformancePublish = now
-        let order = ["Pixel buffer access", "BGRA + RGB→HSV + masks", "Close / open",
-                     "Components + shape/brightness/contrast/PCA", "Bright-core proposals",
-                     "Proposal detailed score", "Final selection / scaling",
-                     "Detection total", "UI / overlay state", "UDP request"]
-        debugPerformanceRows = order.compactMap { name in
-            guard let metric = performanceMetrics[name] else { return nil }
-            return String(format: "%@: now %.2f / avg %.2f / max %.2f ms",
-                          name, metric.latest, metric.total / Double(metric.count), metric.maximum)
+        debugPerformancePublishCountForTesting += 1
+        if let activeCamera { updateCameraConfiguration(activeCamera) }
+        if debugFrameIntervalStatistics != latestFrameIntervalStatistics {
+            debugFrameIntervalStatistics = latestFrameIntervalStatistics
+        }
+        debugPerformanceRows = DebugPerformanceRow.rows(from: performanceMetrics)
+    }
+
+    private func updateCameraConfiguration(_ camera: AVCaptureDevice) {
+        let format = camera.activeFormat
+        let size = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
+        let ranges = format.videoSupportedFrameRateRanges
+            .map { String(format: "%.1f…%.1f", $0.minFrameRate, $0.maxFrameRate) }
+            .joined(separator: ", ")
+        let autoFrameRate: String
+        if #available(iOS 18.0, *) {
+            autoFrameRate = format.isAutoVideoFrameRateSupported
+                ? (camera.isAutoVideoFrameRateEnabled ? "Enabled" : "Disabled")
+                : "Unsupported"
+        } else {
+            autoFrameRate = "Unavailable before iOS 18"
+        }
+        let updated = DebugCameraConfiguration(
+            device: camera.localizedName,
+            position: camera.position == .back ? "Back" : camera.position == .front ? "Front" : "Unspecified",
+            format: "\(size.width)×\(size.height)",
+            fpsRanges: ranges.isEmpty ? "Not available" : ranges,
+            minimumDuration: Self.durationDescription(camera.activeVideoMinFrameDuration),
+            maximumDuration: Self.durationDescription(camera.activeVideoMaxFrameDuration),
+            sessionPreset: session.sessionPreset.rawValue,
+            pixelFormat: "32BGRA",
+            discardsLateFrames: output.alwaysDiscardsLateVideoFrames,
+            autoFrameRate: autoFrameRate,
+            exposure: String(format: "%@ / %.2f ms / ISO %.0f", Self.exposureModeDescription(camera.exposureMode), CMTimeGetSeconds(camera.exposureDuration) * 1000, camera.iso),
+            exposureBudget: Self.exposureBudgetDescription(
+                exposure: camera.exposureDuration,
+                frameDuration: camera.activeVideoMaxFrameDuration
+            ),
+            hdr: "format \(format.isVideoHDRSupported ? "supported" : "unsupported"), active \(camera.isVideoHDREnabled ? "On" : "Off"), auto \(camera.automaticallyAdjustsVideoHDREnabled ? "On" : "Off")",
+            lowLightBoost: camera.isLowLightBoostSupported
+                ? "active \(camera.isLowLightBoostEnabled ? "Yes" : "No"), auto \(camera.automaticallyEnablesLowLightBoostWhenAvailable ? "On" : "Off")"
+                : "Unsupported",
+            systemPressure: Self.systemPressureDescription(camera.systemPressureState.level),
+            thermalState: Self.thermalStateDescription(ProcessInfo.processInfo.thermalState),
+            stabilization: Self.stabilizationDescription(output.connection(with: .video)?.activeVideoStabilizationMode)
+        )
+        if debugCameraConfiguration != updated { debugCameraConfiguration = updated }
+    }
+
+    private static func durationDescription(_ duration: CMTime) -> String {
+        guard duration.isValid, duration.isNumeric else { return "Not available" }
+        let seconds = CMTimeGetSeconds(duration)
+        guard seconds.isFinite, seconds > 0 else { return "Not available" }
+        return String(format: "%.2f ms (%.2f fps)", seconds * 1000, 1 / seconds)
+    }
+
+    private static func exposureModeDescription(_ mode: AVCaptureDevice.ExposureMode) -> String {
+        switch mode {
+        case .locked: return "Locked"
+        case .autoExpose: return "Auto"
+        case .continuousAutoExposure: return "Continuous auto"
+        case .custom: return "Custom"
+        @unknown default: return "Unknown"
         }
     }
+
+    private static func exposureBudgetDescription(exposure: CMTime, frameDuration: CMTime) -> String {
+        let exposureMs = CMTimeGetSeconds(exposure) * 1000
+        let budgetMs = CMTimeGetSeconds(frameDuration) * 1000
+        guard exposureMs.isFinite, budgetMs.isFinite, exposureMs >= 0, budgetMs > 0 else {
+            return "Not available"
+        }
+        return String(format: "%@ (%.2f / %.2f ms)",
+                      exposureMs <= budgetMs + 0.05 ? "Within frame" : "OVER FRAME",
+                      exposureMs, budgetMs)
+    }
+
+    private static func systemPressureDescription(_ level: AVCaptureDevice.SystemPressureState.Level) -> String {
+        switch level {
+        case .nominal: return "Nominal"
+        case .fair: return "Fair"
+        case .serious: return "Serious"
+        case .critical: return "Critical"
+        case .shutdown: return "Shutdown"
+        default: return "Unknown"
+        }
+    }
+
+    private static func thermalStateDescription(_ state: ProcessInfo.ThermalState) -> String {
+        switch state {
+        case .nominal: return "Nominal"
+        case .fair: return "Fair"
+        case .serious: return "Serious"
+        case .critical: return "Critical"
+        @unknown default: return "Unknown"
+        }
+    }
+
+    private static func stabilizationDescription(_ mode: AVCaptureVideoStabilizationMode?) -> String {
+        guard let mode else { return "Not available" }
+        switch mode {
+        case .off: return "Off"
+        case .standard: return "Standard"
+        case .cinematic: return "Cinematic"
+        case .cinematicExtended: return "Cinematic extended"
+        case .auto: return "Auto"
+        case .lowLatency: return "Low latency"
+        case .previewOptimized: return "Preview optimized"
+        case .cinematicExtendedEnhanced: return "Cinematic extended enhanced"
+        @unknown default: return "Unknown"
+        }
+    }
+
+    private static func formatSummary(_ options: [CameraFormatOption]) -> String {
+        let unique = Set(options.map { "\($0.width)×\($0.height)" })
+        return unique.isEmpty ? "Not supported" : unique.sorted().joined(separator: ", ")
+    }
+#endif
+
+#if !DEBUG
+    private func recordUDPQueueStart(_ wait: TimeInterval, replaced: Int) { }
 #endif
 
     private func applySenderUpdate(states: [Int: String], errors: [Int: String], generation: Int) {
@@ -388,6 +744,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         redEndpoints = nil; blueEndpoints = nil
         senderStates = [:]; senderErrors = [:]
         sendErrorMessages = [:]
+#if DEBUG
+        resetDebugPerformance()
+#endif
     }
 
     // Test entry point: this uses the same FrameProcessor callback and UDP completion path as camera frames.
@@ -422,11 +781,102 @@ extension CameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
 }
 
 #if DEBUG
-private struct PerformanceMetric {
+struct DebugCameraConfiguration: Equatable {
+    let device: String
+    let position: String
+    let format: String
+    let fpsRanges: String
+    let minimumDuration: String
+    let maximumDuration: String
+    let sessionPreset: String
+    let pixelFormat: String
+    let discardsLateFrames: Bool
+    let autoFrameRate: String
+    let exposure: String
+    let exposureBudget: String
+    let hdr: String
+    let lowLightBoost: String
+    let systemPressure: String
+    let thermalState: String
+    let stabilization: String
+
+    static let unavailable = DebugCameraConfiguration(
+        device: "Not available", position: "Not available", format: "Not available",
+        fpsRanges: "Not available", minimumDuration: "Not available",
+        maximumDuration: "Not available", sessionPreset: "Not available",
+        pixelFormat: "32BGRA", discardsLateFrames: true,
+        autoFrameRate: "Not available", exposure: "Not available",
+        exposureBudget: "Not available", hdr: "Not available",
+        lowLightBoost: "Not available", systemPressure: "Not available",
+        thermalState: "Not available", stabilization: "Not available"
+    )
+}
+
+fileprivate struct PerformanceMetric {
     var latest = 0.0
-    var total = 0.0
     var maximum = 0.0
-    var count = 0
+    var values: [Double] = []
+    var average: Double { values.isEmpty ? 0 : values.reduce(0, +) / Double(values.count) }
+    var median: Double {
+        guard !values.isEmpty else { return 0 }
+        let sorted = values.sorted()
+        return sorted[sorted.count / 2]
+    }
+}
+
+struct DebugPerformanceRow: Identifiable {
+    let category: String
+    let label: String
+    let source: String
+    let unit: String
+    let latest: Double?
+    let median: Double?
+    let maximum: Double?
+
+    var id: String { source }
+
+    static let definitions: [(category: String, label: String, source: String, unit: String)] = [
+        ("Camera", "Frame age", "Camera / AVFoundation age", "ms"),
+        ("Camera", "Frame queue", "Callback → processing start", "ms"),
+        ("Camera", "Input FPS", "Input FPS", "fps"),
+        ("Camera", "Processed FPS", "Processed FPS", "fps"),
+        ("Camera", "Replaced FPS", "Replaced frames", "fps"),
+        ("Processing", "Detection", "Detection", "ms"),
+        ("Processing", "Pixel + HSV + masks", "BGRA + RGB→HSV + masks", "ms"),
+        ("Processing", "Morphology", "Close / open", "ms"),
+        ("Processing", "Components + score + axis", "Components + shape/brightness/contrast/PCA", "ms"),
+        ("Processing", "Component traversal", "Component traversal / proposal overhead", "ms"),
+        ("Processing", "Shape + PCA axis", "Shape + PCA axis", "ms"),
+        ("Processing", "Brightness / contrast / color", "Brightness / contrast / color score", "ms"),
+        ("Processing", "Endpoints + bounds", "Endpoints + bounds", "ms"),
+        ("Processing", "Bright-core proposals", "Bright-core proposals", "ms"),
+        ("Processing", "Proposal scoring", "Proposal detailed score", "ms"),
+        ("Processing", "Winner selection", "Final selection / scaling", "ms"),
+        ("Processing", "Profiled detector total", "Detection total", "ms"),
+        ("Processing", "Detection → UDP", "Detection → UDP enqueue", "ms"),
+        ("Processing", "Post-capture total", "Post-capture total", "ms"),
+        ("Network", "UDP queue", "UDP queue wait", "ms"),
+        ("Network", "Send rate", "UDP actual send rate", "/s"),
+        ("Network", "Replaced sends", "UDP replaced sends", "count")
+    ]
+
+    static var placeholders: [DebugPerformanceRow] {
+        definitions.map { definition in
+            DebugPerformanceRow(category: definition.category, label: definition.label,
+                                source: definition.source, unit: definition.unit,
+                                latest: nil, median: nil, maximum: nil)
+        }
+    }
+
+    fileprivate static func rows(from metrics: [String: PerformanceMetric]) -> [DebugPerformanceRow] {
+        definitions.map { definition in
+            let metric = metrics[definition.source]
+            return DebugPerformanceRow(category: definition.category, label: definition.label,
+                                       source: definition.source, unit: definition.unit,
+                                       latest: metric?.latest, median: metric?.median,
+                                       maximum: metric?.maximum)
+        }
+    }
 }
 #endif
 

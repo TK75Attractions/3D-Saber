@@ -8,9 +8,37 @@ struct DetectedSaber {
     let isFresh: Bool
 }
 
+/// All values in this trace are iPhone host-monotonic seconds. `captureHostTime`
+/// is nil when AVCapture's synchronization clock cannot be converted safely.
+struct FrameTrace {
+    let sequence: UInt64
+    let captureHostTime: TimeInterval?
+    let callbackHostTime: TimeInterval
+    let processingStart: TimeInterval
+    let detectionEnd: TimeInterval
+    let receivedFrames: Int
+    let processedFrames: Int
+    let replacedFrames: Int
+    let inputFrameIntervalStatistics: CameraFrameIntervalStatistics?
+
+    var cameraAgeMs: Double? {
+        guard let captureHostTime, callbackHostTime >= captureHostTime else { return nil }
+        return (callbackHostTime - captureHostTime) * 1000
+    }
+
+    var queueWaitMs: Double { max(0, (processingStart - callbackHostTime) * 1000) }
+    var detectionMs: Double { max(0, (detectionEnd - processingStart) * 1000) }
+}
+
+enum HostMonotonicClock {
+    static func now() -> TimeInterval {
+        CMTimeGetSeconds(CMClockGetTime(CMClockGetHostTimeClock()))
+    }
+}
+
 final class FrameProcessor: @unchecked Sendable {
     let queue = DispatchQueue(label: "PhoneSaberSender.frames", qos: .userInteractive)
-    var onResult: (([DetectedSaber], Int, Int, TimeInterval, Int) -> Void)?
+    var onResult: (([DetectedSaber], Int, Int, TimeInterval, Int, FrameTrace?) -> Void)?
     var onRawFrameSaved: ((Result<URL, Error>) -> Void)?
 #if DEBUG
     var onPerformance: ((FramePerformanceSample) -> Void)?
@@ -25,11 +53,25 @@ final class FrameProcessor: @unchecked Sendable {
     private var lastDimensions: (Int, Int)?
     private var generation = 0
     private let pendingLock = NSLock()
-    private var pendingFrame: CMSampleBuffer?
+    private struct PendingFrame {
+        let sampleBuffer: CMSampleBuffer
+        let sequence: UInt64
+        let callbackHostTime: TimeInterval
+        let captureHostTime: TimeInterval?
+    }
+    private var pendingFrame: PendingFrame?
     private var pendingFrameShouldSave = false
     private var rawFrameSaveRequested = false
     private var workerScheduled = false
     private var replacedPendingFrames = 0
+    private var receivedFrames = 0
+    private var processedFrames = 0
+    private var nextFrameSequence: UInt64 = 0
+    private var captureSynchronizationClock: CMClock?
+#if DEBUG
+    private var inputFrameIntervalWindow = CameraFrameIntervalWindow(capacity: 120)
+    private var detailedProfilingEnabled = true
+#endif
     private let rawFrameDirectory: () throws -> URL
     private lazy var rawFrameContext = CIContext(options: [.cacheIntermediates: false])
     var currentGeneration: Int { queue.sync { generation } }
@@ -39,7 +81,7 @@ final class FrameProcessor: @unchecked Sendable {
     }
 
     init(
-        clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+        clock: @escaping () -> TimeInterval = { HostMonotonicClock.now() },
         expiryScheduler: ((DispatchQueue, TimeInterval, DispatchWorkItem) -> Void)? = { queue, delay, workItem in
             queue.asyncAfter(deadline: .now() + delay, execute: workItem)
         },
@@ -66,6 +108,13 @@ final class FrameProcessor: @unchecked Sendable {
         pendingFrame = nil
         pendingFrameShouldSave = false
         rawFrameSaveRequested = false
+        replacedPendingFrames = 0
+        receivedFrames = 0
+        processedFrames = 0
+        nextFrameSequence = 0
+#if DEBUG
+        inputFrameIntervalWindow.reset()
+#endif
         pendingLock.unlock()
         return queue.sync {
             expiryWorkItem?.cancel()
@@ -84,12 +133,37 @@ final class FrameProcessor: @unchecked Sendable {
         }
     }
 
+    /// AVCaptureSession documents that its output PTS values use this clock's
+    /// timebase. Keeping it here lets the callback convert to host time before
+    /// it enters the one-slot mailbox.
+    func configureCaptureSynchronizationClock(_ clock: CMClock?) {
+        pendingLock.lock(); captureSynchronizationClock = clock; pendingLock.unlock()
+    }
+
+#if DEBUG
+    func setDetailedProfilingEnabled(_ enabled: Bool) {
+        pendingLock.lock(); detailedProfilingEnabled = enabled; pendingLock.unlock()
+    }
+#endif
+
     /// Capture callbacks only replace this one-slot mailbox. While one frame is
     /// processing, any number of older waiting frames collapse to the newest.
     func submit(_ sampleBuffer: CMSampleBuffer) {
         pendingLock.lock()
+        receivedFrames += 1
+        nextFrameSequence += 1
+#if DEBUG
+        let callbackHostTime = clock()
+        let presentationTime = validPresentationTime(sampleBuffer)
+        inputFrameIntervalWindow.record(presentationTime: presentationTime)
+        let captureHostTime = convertedCaptureHostTime(sampleBuffer)
+#else
+        let callbackHostTime: TimeInterval = 0
+        let captureHostTime: TimeInterval? = nil
+#endif
         if pendingFrame != nil { replacedPendingFrames += 1 }
-        pendingFrame = sampleBuffer
+        pendingFrame = PendingFrame(sampleBuffer: sampleBuffer, sequence: nextFrameSequence,
+                                    callbackHostTime: callbackHostTime, captureHostTime: captureHostTime)
         if rawFrameSaveRequested {
             pendingFrameShouldSave = true
             rawFrameSaveRequested = false
@@ -112,12 +186,27 @@ final class FrameProcessor: @unchecked Sendable {
             let shouldSave = pendingFrameShouldSave
             pendingFrameShouldSave = false
             pendingLock.unlock()
-            process(next, saveRequestedRawFrame: shouldSave)
+            process(next.sampleBuffer, saveRequestedRawFrame: shouldSave, sequence: next.sequence,
+                    callbackHostTime: next.callbackHostTime,
+                    captureHostTime: next.captureHostTime)
         }
     }
 
     func process(_ sampleBuffer: CMSampleBuffer) {
-        process(sampleBuffer, saveRequestedRawFrame: false)
+        pendingLock.lock(); nextFrameSequence += 1; receivedFrames += 1
+#if DEBUG
+        let sequence = nextFrameSequence; let callbackHostTime = clock()
+        let presentationTime = validPresentationTime(sampleBuffer)
+        inputFrameIntervalWindow.record(presentationTime: presentationTime)
+        let captureHostTime = convertedCaptureHostTime(sampleBuffer)
+#else
+        let sequence = nextFrameSequence; let callbackHostTime: TimeInterval = 0
+        let captureHostTime: TimeInterval? = nil
+#endif
+        pendingLock.unlock()
+        process(sampleBuffer, saveRequestedRawFrame: false, sequence: sequence,
+                callbackHostTime: callbackHostTime,
+                captureHostTime: captureHostTime)
     }
 
     /// The request is consumed by the next submitted camera frame. Normal
@@ -128,8 +217,10 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.unlock()
     }
 
-    private func process(_ sampleBuffer: CMSampleBuffer, saveRequestedRawFrame: Bool) {
-        let processingStart = ProcessInfo.processInfo.systemUptime
+    private func process(_ sampleBuffer: CMSampleBuffer, saveRequestedRawFrame: Bool,
+                         sequence: UInt64, callbackHostTime: TimeInterval,
+                         captureHostTime: TimeInterval?) {
+        let processingStart = clock()
         let accessStart = processingStart
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
@@ -147,9 +238,12 @@ final class FrameProcessor: @unchecked Sendable {
         let bytes = UnsafePointer(base.assumingMemoryBound(to: UInt8.self))
 #if DEBUG
         let accessMs = (ProcessInfo.processInfo.systemUptime - accessStart) * 1000
+        pendingLock.lock()
+        let collectProfile = detailedProfilingEnabled
+        pendingLock.unlock()
         let analysis = analyzeSabers(baseAddress: bytes, width: width, height: height,
                                      bytesPerRow: bytesPerRow, redThreshold: redThreshold,
-                                     blueThreshold: blueThreshold, collectProfile: true)
+                                     blueThreshold: blueThreshold, collectProfile: collectProfile)
         let sabers = analysis.selected
 #else
         let sabers = detectSabers(baseAddress: bytes, width: width, height: height,
@@ -160,7 +254,25 @@ final class FrameProcessor: @unchecked Sendable {
             (.red, sabers[.red]),
             (.blue, sabers[.blue])
         ]
-        emitResults(detected, width: width, height: height, processingStart: processingStart, generation: generation)
+        #if DEBUG
+        let detectionEnd = clock()
+        pendingLock.lock()
+        processedFrames += 1
+        let traceReceivedFrames = receivedFrames
+        let traceProcessedFrames = processedFrames
+        let traceReplacedFrames = replacedPendingFrames
+        let inputIntervalSamples = inputFrameIntervalWindow.samples
+        pendingLock.unlock()
+        let trace = FrameTrace(sequence: sequence, captureHostTime: captureHostTime,
+                               callbackHostTime: callbackHostTime, processingStart: processingStart,
+                               detectionEnd: detectionEnd, receivedFrames: traceReceivedFrames,
+                               processedFrames: traceProcessedFrames, replacedFrames: traceReplacedFrames,
+                               inputFrameIntervalStatistics: CameraFrameIntervalWindow.statistics(for: inputIntervalSamples))
+        #else
+        let trace: FrameTrace? = nil
+        #endif
+        emitResults(detected, width: width, height: height, processingStart: processingStart,
+                    generation: generation, trace: trace)
 #if DEBUG
         if let profile = analysis.profile {
             onPerformance?(FramePerformanceSample(pixelBufferAccessMs: accessMs, detector: profile))
@@ -185,7 +297,7 @@ final class FrameProcessor: @unchecked Sendable {
         }
     }
 
-    private func emitResults(_ detected: [(SaberColor, (PixelPoint, PixelPoint)?)], width: Int, height: Int, processingStart: TimeInterval, generation: Int) {
+    private func emitResults(_ detected: [(SaberColor, (PixelPoint, PixelPoint)?)], width: Int, height: Int, processingStart: TimeInterval, generation: Int, trace: FrameTrace? = nil) {
         let results = detected.compactMap { color, current -> DetectedSaber? in
             var track = tracks[color, default: Track()]
             if let current {
@@ -204,7 +316,7 @@ final class FrameProcessor: @unchecked Sendable {
             tracks[color] = track
             return DetectedSaber(endpoints: held, color: color, isFresh: false)
         }
-        onResult?(results, width, height, processingStart, generation)
+        onResult?(results, width, height, processingStart, generation, trace)
         scheduleExpiry(width: width, height: height, generation: generation)
     }
 
@@ -254,7 +366,7 @@ final class FrameProcessor: @unchecked Sendable {
             guard let track = tracks[color], let endpoints = track.endpoints else { return nil }
             return DetectedSaber(endpoints: endpoints, color: color, isFresh: false)
         }
-        onResult?(held, width, height, now, generation)
+        onResult?(held, width, height, now, generation, nil)
         if remaining { scheduleExpiry(width: width, height: height, generation: generation) }
     }
 
@@ -267,6 +379,23 @@ final class FrameProcessor: @unchecked Sendable {
 
     private func distance(_ first: PixelPoint, _ second: PixelPoint) -> Double {
         hypot(Double(first.x - second.x), Double(first.y - second.y))
+    }
+
+    private func convertedCaptureHostTime(_ sampleBuffer: CMSampleBuffer) -> TimeInterval? {
+        guard let captureClock = captureSynchronizationClock else { return nil }
+        let presentation = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+        guard presentation.isValid else { return nil }
+        let host = CMSyncConvertTime(presentation, from: captureClock, to: CMClockGetHostTimeClock())
+        guard host.isValid else { return nil }
+        let seconds = CMTimeGetSeconds(host)
+        return seconds.isFinite ? seconds : nil
+    }
+
+    private func validPresentationTime(_ sampleBuffer: CMSampleBuffer) -> TimeInterval? {
+        let presentation = CMSampleBufferGetPresentationTimeStamp(sampleBuffer)
+        guard presentation.isValid, presentation.isNumeric else { return nil }
+        let seconds = CMTimeGetSeconds(presentation)
+        return seconds.isFinite ? seconds : nil
     }
 }
 

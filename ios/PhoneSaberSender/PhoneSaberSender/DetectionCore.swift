@@ -136,16 +136,26 @@ func cleanSaberMask(_ mask: [UInt8], width: Int, height: Int, closeRadius: Int =
                     openRadius: Int = 1) -> [UInt8] {
     guard width > 0, height > 0, mask.count == width * height else { return [] }
     let closed = closeSaberMask(mask, width: width, height: height, radius: closeRadius)
-    return binaryDilate(binaryErode(closed, width: width, height: height, radius: openRadius),
-                        width: width, height: height, radius: openRadius)
+    return openSaberMask(closed, width: width, height: height, radius: openRadius)
+}
+
+/// Open a mask that has already been closed. The production detector needs
+/// both the close-only and close+open variants, so accepting the intermediate
+/// mask avoids repeating the same full-frame close pass.
+func openSaberMask(_ mask: [UInt8], width: Int, height: Int, radius: Int = 1) -> [UInt8] {
+    guard width > 0, height > 0, mask.count == width * height else { return [] }
+    return binaryDilate(binaryErode(mask, width: width, height: height, radius: radius),
+                        width: width, height: height, radius: radius)
 }
 
 struct SaberCandidate {
+    var source: String = "color-mask"
+    var radiance: Double = 0
     let endpoints: (PixelPoint, PixelPoint)
     let boundingBox: SaberBoundingBox
-    let score: Double
-    let scoreBreakdown: SaberScoreBreakdown
-    let isEmitterEligible: Bool
+    var score: Double
+    var scoreBreakdown: SaberScoreBreakdown
+    var isEmitterEligible: Bool
     let peakValue: Int
     let meanValue: Double
     let highValueRatio: Double
@@ -167,6 +177,8 @@ struct SaberBoundingBox {
 }
 
 struct SaberScoreBreakdown {
+    var proposalPenalty: Double = 0
+    var radiance: Double = 0
     let length: Double
     let aspect: Double
     let extent: Double
@@ -184,7 +196,7 @@ struct SaberScoreBreakdown {
     let longitudinalCoreCoverage: Double
 
     var total: Double {
-        length + aspect + extent + widthConsistency + area
+        proposalPenalty + radiance + length + aspect + extent + widthConsistency + area
             + peakBrightness + meanBrightness + highBrightnessRatio
             + colorPurity + localContrast + emitterTexture + clippedWhite
             + longitudinalHighCoverage
@@ -193,6 +205,7 @@ struct SaberScoreBreakdown {
 }
 
 struct SaberEvidence {
+    var radiance: [UInt8] = []
     let value: [UInt8]
     let chroma: [UInt8]
     let colorMask: [UInt8]
@@ -205,11 +218,22 @@ struct SaberEvidence {
     }
 }
 
+/// DEBUG profiling accumulator supplied only when a caller explicitly asks
+/// for a detailed detector profile. Keeping it nil leaves Release and normal
+/// unprofiled detection without per-candidate clock reads.
+final class SaberCandidateStageProfile {
+    var shapeAndAxisMs = 0.0
+    var brightnessContrastColorMs = 0.0
+    var endpointAndBoundsMs = 0.0
+}
+
 private func clamp01(_ value: Double) -> Double { min(max(value, 0), 1) }
 
 private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: Int,
                                   componentMask: [UInt8]?, componentIndices: Set<Int>? = nil,
-                                  evidence: SaberEvidence?) -> SaberCandidate? {
+                                  evidence: SaberEvidence?,
+                                  stageProfile: SaberCandidateStageProfile? = nil) -> SaberCandidate? {
+    let shapeStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
     let minimumArea = max(4, Int(Double(width * height) * 0.0005))
     guard points.count >= minimumArea else { return nil }
     let frameArea = max(Double(width * height), 1)
@@ -260,12 +284,19 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
         binMax[bin] = max(binMax[bin], minor)
     }
     let widths = binMin.indices.compactMap { index -> Double? in
-        guard binMin[index].isFinite, binMax[index].isFinite else { return nil }
+        // Empty bins use finite sentinels; isFinite alone admitted them and
+        // overflowed the variance to NaN, violating the score sort ordering.
+        guard binMax[index] >= binMin[index] else { return nil }
         return binMax[index] - binMin[index] + 1.0
     }
     let meanWidth = widths.reduce(0, +) / Double(max(widths.count, 1))
     let widthVariance = widths.reduce(0) { $0 + pow($1 - meanWidth, 2) } / Double(max(widths.count, 1))
     let widthVariation = sqrt(widthVariance) / max(meanWidth, 1.0)
+
+    if let stageProfile {
+        stageProfile.shapeAndAxisMs += (ProcessInfo.processInfo.systemUptime - shapeStart) * 1000
+    }
+    let evidenceStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
 
     var lightScore = 0.0
     var emitterScore = 0.0
@@ -281,6 +312,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
     var coreSupportRatio = 0.0
     var longitudinalCoreCoverage = 0.0
     var isEmitterEligible = evidence == nil
+    var radianceSum = 0.0
     if let evidence, evidence.isValid(width: width, height: height) {
         var rawCount = 0
         var valueSum = 0.0
@@ -298,6 +330,9 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
 
         for point in points {
             let index = point.y * width + point.x
+            if evidence.radiance.count == evidence.value.count {
+                radianceSum += pow(Double(evidence.radiance[index]) / 255.0, 2)
+            }
             let value = Int(evidence.value[index])
             let chroma = Int(evidence.chroma[index])
             if evidence.coreMask[index] != 0 {
@@ -396,6 +431,11 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
             + coreSupportRatio * 12.0 + longitudinalCoreCoverage * 8.0
     }
 
+    if let stageProfile {
+        stageProfile.brightnessContrastColorMs += (ProcessInfo.processInfo.systemUptime - evidenceStart) * 1000
+    }
+    let endpointStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
+
     // The endpoints are the long-axis ends of the oriented component box,
     // equivalent to the long side of camera.py's minAreaRect.
     let first = PixelPoint(x: Int((meanX + axis.0 * minMajor).rounded()),
@@ -419,6 +459,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
         (majorLength / Double(max(min(width, height), 1)) - 0.08) / 0.22
     )
     let breakdown = SaberScoreBreakdown(
+        radiance: radianceSum / Double(points.count) * 65.0 * bladeLengthSupport,
         length: min(majorLength / max(frameDiagonal, 1.0), 1.0) * 8.0,
         aspect: min(log2(max(aspect, 1.0)), 4.0) * 2.0,
         extent: extent * 2.0,
@@ -433,7 +474,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
         // A clipped white/cyan center is uncommon in a diffuse reflection but
         // expected from an exposed LED package. Keep it as a soft bonus: a
         // blade without clipping can still win on its other emitter evidence.
-        clippedWhite: clippedRatio * (0.05 * 38.0 + 72.0),
+        clippedWhite: clippedRatio * (0.05 * 38.0 + 72.0) * bladeLengthSupport,
         longitudinalHighCoverage: longitudinalHighCoverage * 3.0,
         coreSupport: coreSupportRatio * 12.0 * bladeLengthSupport,
         longitudinalCoreCoverage: longitudinalCoreCoverage * 8.0 * bladeLengthSupport
@@ -443,7 +484,10 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
         + min(log2(max(aspect, 1.0)), 4.0) * 2.0
         + extent * 2.0 - min(widthVariation, 2.0) * 4.0 - areaRatio * 8.0
         : breakdown.total
-    return SaberCandidate(endpoints: (first, second), boundingBox: boundingBox, score: score,
+    if let stageProfile {
+        stageProfile.endpointAndBoundsMs += (ProcessInfo.processInfo.systemUptime - endpointStart) * 1000
+    }
+    return SaberCandidate(radiance: radianceSum / Double(points.count), endpoints: (first, second), boundingBox: boundingBox, score: score,
                           scoreBreakdown: breakdown,
                           isEmitterEligible: isEmitterEligible,
                           peakValue: peakValue, meanValue: meanValue,
@@ -460,7 +504,8 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
 /// Returns every shape-valid component so fixture tests can compare the chosen
 /// emitter with rejected reflections using the same production score.
 func saberCandidates(in mask: [UInt8], width: Int, height: Int,
-                     evidence: SaberEvidence? = nil) -> [SaberCandidate] {
+                     evidence: SaberEvidence? = nil,
+                     stageProfile: SaberCandidateStageProfile? = nil) -> [SaberCandidate] {
     guard width > 0, height > 0, mask.count == width * height else { return [] }
     var remaining = mask
     var candidates: [SaberCandidate] = []
@@ -486,7 +531,8 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
             }
         }
         guard let candidate = scoredSaberComponent(points, width: width, height: height,
-                                                   componentMask: mask, evidence: evidence) else { continue }
+                                                   componentMask: mask, evidence: evidence,
+                                                   stageProfile: stageProfile) else { continue }
         candidates.append(candidate)
     }
     return candidates.sorted { $0.score > $1.score }
@@ -495,7 +541,8 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
 /// Scores an already-connected compact proposal without allocating and
 /// rescanning a full-frame mask. Used by bright-core line proposals only.
 func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
-                    evidence: SaberEvidence? = nil) -> SaberCandidate? {
+                    evidence: SaberEvidence? = nil,
+                    stageProfile: SaberCandidateStageProfile? = nil) -> SaberCandidate? {
     let uniqueIndices = Set(points.compactMap { point -> Int? in
         guard point.x >= 0, point.x < width, point.y >= 0, point.y < height else { return nil }
         return point.y * width + point.x
@@ -503,7 +550,7 @@ func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
     let uniquePoints = uniqueIndices.map { PixelPoint(x: $0 % width, y: $0 / width) }
     return scoredSaberComponent(uniquePoints, width: width, height: height,
                                 componentMask: nil, componentIndices: uniqueIndices,
-                                evidence: evidence)
+                                evidence: evidence, stageProfile: stageProfile)
 }
 
 /// Select one elongated external component, rather than simply the largest color patch.

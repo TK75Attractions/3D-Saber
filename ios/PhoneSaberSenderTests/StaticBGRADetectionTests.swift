@@ -255,6 +255,18 @@ enum StaticBGRADetectionTests {
             }
         }
         // sampleStep=2 quantizes coordinates by two pixels; this tolerance covers
+        // No temporal history is allowed to delay a real, large position jump.
+        for color in [SaberColor.red, .blue] {
+            for x in [24, 132, 40, 156, 24] {
+                var moving = StaticImage(width: 200, height: 120)
+                let a = PixelPoint(x: x, y: 20), b = PixelPoint(x: x, y: 100)
+                moving.bar(from: a, to: b, color: color, thickness: 4)
+                assertCase("immediate moving \(color) x=\(x)", image: moving, color: color,
+                           expected: (a, b), expectedAngle: .pi / 2)
+            }
+        }
+        print("Fast movement: 10 frames, immediate single-frame detection passed")
+        // sampleStep=2 quantizes coordinates by two pixels; this tolerance covers
         // three samples plus the five-pixel cap. 0.20 radians rejects a 90-degree error.
         print("Static BGRA detection tests passed: \(cases.count + 14) cases")
     }

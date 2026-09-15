@@ -52,6 +52,97 @@ private func waitUntil(_ condition: @escaping @MainActor () -> Bool, timeout: Ti
 }
 
 final class DetectionCoreTests: XCTestCase {
+    func testCameraFormatSelectionRequires30FPSAndKeepsCompactResolution() {
+        let options = [
+            CameraFormatOption(index: 0, width: 1920, height: 1080, frameRateRanges: [24...24]),
+            CameraFormatOption(index: 1, width: 640, height: 480, frameRateRanges: [1...240]),
+            CameraFormatOption(index: 2, width: 640, height: 480, frameRateRanges: [1...30]),
+            CameraFormatOption(index: 3, width: 320, height: 240, frameRateRanges: [1...30])
+        ]
+
+        XCTAssertEqual(preferredCameraFormatIndex(options: options), 2)
+        XCTAssertTrue(supportsFrameRate(30, ranges: options[2].frameRateRanges))
+        XCTAssertFalse(supportsFrameRate(30, ranges: options[0].frameRateRanges))
+        XCTAssertNil(preferredCameraFormatIndex(options: [options[0]]))
+    }
+
+    func testCameraFormatSelectionRequires60FPSAndKeepsCompactResolution() {
+        let options = [
+            CameraFormatOption(index: 0, width: 640, height: 480, frameRateRanges: [1...30]),
+            CameraFormatOption(index: 1, width: 1280, height: 720, frameRateRanges: [1...60]),
+            CameraFormatOption(index: 2, width: 640, height: 480, frameRateRanges: [30...60]),
+            CameraFormatOption(index: 3, width: 320, height: 240, frameRateRanges: [1...60])
+        ]
+
+        XCTAssertEqual(preferredCameraFormatIndex(options: options, targetFPS: 60), 2)
+        XCTAssertTrue(supportsFrameRate(60, ranges: options[2].frameRateRanges))
+        XCTAssertFalse(supportsFrameRate(60, ranges: options[0].frameRateRanges))
+        XCTAssertNil(preferredCameraFormatIndex(options: [options[0]], targetFPS: 60))
+    }
+
+    func testFixedFrameDurationIsOnlyCreatedForSupportedRate() throws {
+        let duration = try XCTUnwrap(fixedFrameDuration(fps: 30, ranges: [1...30]))
+        XCTAssertEqual(CMTimeGetSeconds(duration), 1 / 30.0, accuracy: 0.000_001)
+        XCTAssertNil(fixedFrameDuration(fps: 30, ranges: [1...24]))
+        let sixty = try XCTUnwrap(fixedFrameDuration(fps: 60, ranges: [30...60]))
+        XCTAssertEqual(CMTimeGetSeconds(sixty), 1 / 60.0, accuracy: 0.000_001)
+    }
+
+
+    func testReusingClosedMaskProducesSameCloseOpenResult() {
+        let width = 17, height = 13
+        var mask = Array(repeating: UInt8(0), count: width * height)
+        for x in 2...14 where x != 8 { mask[6 * width + x] = 1 }
+        mask[2 * width + 2] = 1
+        let closed = closeSaberMask(mask, width: width, height: height, radius: 2)
+        XCTAssertEqual(openSaberMask(closed, width: width, height: height),
+                       cleanSaberMask(mask, width: width, height: height, closeRadius: 2))
+    }
+
+    func testCameraFrameIntervalStatisticsUseLast120PresentationTimestamps() throws {
+        var window = CameraFrameIntervalWindow(capacity: 120)
+        for index in 0...130 {
+            window.record(presentationTime: Double(index) / 30)
+        }
+        let statistics = try XCTUnwrap(window.statistics)
+        XCTAssertEqual(statistics.sampleCount, 120)
+        XCTAssertEqual(statistics.medianMs, 1000 / 30.0, accuracy: 0.001)
+        XCTAssertEqual(statistics.minimumMs, 1000 / 30.0, accuracy: 0.001)
+        XCTAssertEqual(statistics.maximumMs, 1000 / 30.0, accuracy: 0.001)
+        XCTAssertEqual(statistics.measuredFPS, 30, accuracy: 0.001)
+
+        window.record(presentationTime: 1)
+        XCTAssertNil(window.statistics, "timestamp discontinuities must reset the interval window")
+    }
+
+    @MainActor
+    func testDebugPerformanceRowsExposeNamedUnavailableMetricsBeforeCapture() {
+        let viewModel = CameraViewModel(
+            authorizationStatus: { .denied },
+            requestAccess: { _ in }
+        )
+
+        XCTAssertEqual(viewModel.debugPerformanceRows.filter { $0.category == "Camera" }.count, 5)
+        XCTAssertEqual(viewModel.debugPerformanceRows.filter { $0.category == "Processing" }.count, 14)
+        XCTAssertEqual(viewModel.debugPerformanceRows.filter { $0.category == "Network" }.count, 3)
+        let frameAge = try? XCTUnwrap(viewModel.debugPerformanceRows.first { $0.label == "Frame age" })
+        XCTAssertNil(frameAge?.latest)
+        XCTAssertNil(frameAge?.median)
+        XCTAssertNil(frameAge?.maximum)
+        XCTAssertEqual(viewModel.debugPerformanceRows.first { $0.label == "Detection" }?.unit, "ms")
+        XCTAssertEqual(viewModel.debugPerformanceRows.first { $0.label == "Send rate" }?.unit, "/s")
+
+        viewModel.recordDebugPerformanceForTesting(name: "Detection", value: 8.5)
+        XCTAssertEqual(viewModel.debugPerformanceRows.first { $0.label == "Detection" }?.latest, 8.5)
+        XCTAssertEqual(viewModel.debugPerformanceRows.first { $0.label == "Detection" }?.median, 8.5)
+        XCTAssertEqual(viewModel.debugPerformanceRows.first { $0.label == "Detection" }?.maximum, 8.5)
+        XCTAssertEqual(viewModel.debugPerformancePublishCountForTesting, 1)
+
+        viewModel.recordDebugPerformanceForTesting(name: "Detection", value: 9.5)
+        XCTAssertEqual(viewModel.debugPerformancePublishCountForTesting, 1,
+                       "performance snapshots must remain capped at 5Hz")
+    }
+
     private func sampleBuffer(width: Int, height: Int, draw: (UnsafeMutableRawPointer, Int) -> Void) -> CMSampleBuffer {
         var pixelBuffer: CVPixelBuffer?
         CVPixelBufferCreate(kCFAllocatorDefault, width, height, kCVPixelFormatType_32BGRA, nil, &pixelBuffer)
@@ -123,7 +214,7 @@ final class DetectionCoreTests: XCTestCase {
         let imageWidth = Int(image.size.width)
         let imageHeight = Int(image.size.height)
         let panelWidth = 920
-        let rowHeight = 106
+        let rowHeight = 126
         let canvasHeight = max(imageHeight, candidates.count * rowHeight + 36)
         let format = UIGraphicsImageRendererFormat()
         format.scale = 1
@@ -185,14 +276,15 @@ final class DetectionCoreTests: XCTestCase {
                                    candidate.peakValue, candidate.meanValue,
                                    candidate.highValueRatio, candidate.clippedWhiteRatio,
                                    candidate.meanColorPurity, candidate.localContrast)
-                let line4 = String(format: "longHigh=%.3f widthVar=%.3f core=%.3f coreLong=%.3f",
+                let line4 = "source=\(candidate.source) radiance=\(String(format: "%.3f", candidate.radiance)) " + String(format: "longHigh=%.3f widthVar=%.3f core=%.3f coreLong=%.3f",
                                    candidate.longitudinalHighCoverage, candidate.widthVariation,
                                    candidate.coreSupportRatio, candidate.longitudinalCoreCoverage)
                 let x = imageWidth + 18
+                let line5 = String(format: "radiance contribution=%.3f duplicate penalty=%.3f", s.radiance, s.proposalPenalty)
                 let y = 14 + index * rowHeight
                 (heading as NSString).draw(at: CGPoint(x: x, y: y),
                                            withAttributes: titleAttributes.merging([.foregroundColor: color]) { _, new in new })
-                ([line1, line2, line3, line4].joined(separator: "\n") as NSString).draw(
+                ([line1, line2, line3, line4, line5].joined(separator: "\n") as NSString).draw(
                     in: CGRect(x: x, y: y + 20, width: panelWidth - 30, height: rowHeight - 20),
                     withAttributes: detailAttributes
                 )
@@ -281,6 +373,12 @@ final class DetectionCoreTests: XCTestCase {
                                          bytesPerRow: image.bytesPerRow,
                                          redThreshold: threshold, blueThreshold: threshold)
             let candidates = analysis.candidates[.blue] ?? []
+            let ranked = candidates.filter(\.isEmitterEligible)
+            if let winner = ranked.first {
+                let runner = ranked.dropFirst().first
+                print(String(format: "[WinnerMargin] %@ winner=%.2f runner=%.2f margin=%.2f source=%@", name,
+                             winner.score, runner?.score ?? 0, winner.score - (runner?.score ?? 0), winner.source))
+            }
             try writeAnnotatedDiagnostic(name: name, image: fixtureImage(name),
                                          candidates: candidates, selected: analysis.selected[.blue])
             let summary = "\(name): \(candidateSummary(candidates))"
@@ -322,6 +420,104 @@ final class DetectionCoreTests: XCTestCase {
             XCTAssertLessThan(axisMidpointDistance(selected, expectedLED),
                               axisMidpointDistance(selected, expectedReflection), summary)
             XCTAssertLessThan(axisDistance(selected, expectedLED), 75, summary)
+
+            // Compare a lower-resolution recognition pass without changing
+            // the production sampleStep. It must still prefer the emitter to
+            // the reflection before it can be considered for a device trial.
+            let lowerResolution = analyzeSabers(
+                in: image.bytes, width: image.width, height: image.height,
+                bytesPerRow: image.bytesPerRow,
+                redThreshold: threshold, blueThreshold: threshold,
+                sampleStep: 3
+            )
+            guard let lowerSelected = lowerResolution.selected[.blue] else {
+                XCTFail("sampleStep=3 lost the LED: \(name)")
+                continue
+            }
+            print(String(format: "[ResolutionComparison] %@ step2Distance=%.2f step3Distance=%.2f",
+                         name, axisDistance(selected, expectedLED),
+                         axisDistance(lowerSelected, expectedLED)))
+            XCTAssertLessThan(axisMidpointDistance(lowerSelected, expectedLED),
+                              axisMidpointDistance(lowerSelected, expectedReflection), name)
+        }
+    }
+
+    func testFirstValidFrameRecognizesImmediateLargePositionChange() {
+        let width = 200, height = 120
+        func blueFrame(x: Int) -> CMSampleBuffer {
+            sampleBuffer(width: width, height: height) { base, stride in
+                let pixels = base.assumingMemoryBound(to: UInt8.self)
+                for y in 18...102 {
+                    for dx in -4...4 {
+                        let offset = y * stride + (x + dx) * 4
+                        pixels[offset] = 250
+                        pixels[offset + 1] = 55
+                        pixels[offset + 2] = 25
+                        pixels[offset + 3] = 255
+                    }
+                }
+            }
+        }
+
+        let processor = FrameProcessor(expiryScheduler: nil)
+        var freshCenters: [Double] = []
+        processor.onResult = { results, _, _, _, _, _ in
+            if let blue = results.first(where: { $0.color == .blue && $0.isFresh }) {
+                freshCenters.append(Double(blue.endpoints.0.x + blue.endpoints.1.x) / 2)
+            }
+        }
+        processor.process(blueFrame(x: 30))
+        processor.process(blueFrame(x: 168))
+
+        XCTAssertEqual(freshCenters.count, 2)
+        XCTAssertEqual(freshCenters[0], 30, accuracy: 8)
+        XCTAssertEqual(freshCenters[1], 168, accuracy: 8,
+                       "the first valid frame after a large jump must not wait for confirmation")
+    }
+
+    func testPerturbedRealFixtureStability() throws {
+        let names = ["blue-led-with-curtain-reflection-01", "blue-led-with-curtain-reflection-02",
+                     "blue-led-with-left-curtain-reflection-03", "blue-led-with-left-curtain-reflection-04",
+                     "blue-led-bright-large-05"]
+        for name in names {
+            let image = try fixtureBGRA(name)
+            var reference: (PixelPoint, PixelPoint)?
+            var maxEndpoint = 0.0, maxCenter = 0.0, maxAngle = 0.0
+            for frame in 0..<9 {
+                var bytes = image.bytes
+                let exposure = 1.0 + Double(frame - 4) * 0.005
+                for y in 0..<image.height {
+                    for x in 0..<image.width {
+                        let offset = y * image.bytesPerRow + x * 4
+                        for channel in 0..<3 {
+                            let noise = (x * 17 + y * 31 + frame * 13 + channel * 7) % 5 - 2
+                            bytes[offset + channel] = UInt8(clamping: Int((Double(bytes[offset + channel]) * exposure).rounded()) + noise)
+                        }
+                    }
+                }
+                let result = analyzeSabers(in: bytes, width: image.width, height: image.height,
+                                          bytesPerRow: image.bytesPerRow,
+                                          redThreshold: ColorThreshold(), blueThreshold: ColorThreshold())
+                let winner = try XCTUnwrap(result.candidates[.blue]?.first(where: \.isEmitterEligible), name)
+                let endpoints = winner.endpoints
+                for candidate in result.candidates[.blue] ?? [] { XCTAssertTrue(candidate.score.isFinite, name) }
+                let other = result.candidates[.blue]?.filter { $0.isEmitterEligible }.dropFirst().first
+                if let previous = reference {
+                    maxEndpoint = max(maxEndpoint, axisDistance(endpoints, previous))
+                    maxCenter = max(maxCenter, axisMidpointDistance(endpoints, previous))
+                    let a = atan2(Double(endpoints.1.y - endpoints.0.y), Double(endpoints.1.x - endpoints.0.x))
+                    let b = atan2(Double(previous.1.y - previous.0.y), Double(previous.1.x - previous.0.x))
+                    let difference = abs(a - b).truncatingRemainder(dividingBy: .pi)
+                    maxAngle = max(maxAngle, min(difference, .pi - difference) * 180 / .pi)
+                } else { reference = endpoints }
+                let dx = Double(endpoints.1.x - endpoints.0.x), dy = Double(endpoints.1.y - endpoints.0.y)
+                let center = "\(Double(endpoints.0.x + endpoints.1.x) / 2),\(Double(endpoints.0.y + endpoints.1.y) / 2)"
+                print("[JitterFrame] \(name) frame=\(frame) source=\(winner.source) center=\(center) angle=\(atan2(dy, dx) * 180 / .pi) length=\(hypot(dx, dy)) endpoints=\(endpoints) score=\(winner.score) runner=\(other?.score ?? 0) margin=\(winner.score - (other?.score ?? 0))")
+            }
+            print(String(format: "[JitterSummary] %@ endpoint=%.2f center=%.2f angle=%.2f", name, maxEndpoint, maxCenter, maxAngle))
+            XCTAssertLessThan(maxEndpoint, 12, name)
+            XCTAssertLessThan(maxCenter, 10, name)
+            XCTAssertLessThan(maxAngle, 3, name)
         }
     }
 
@@ -329,13 +525,15 @@ final class DetectionCoreTests: XCTestCase {
         let bright = try fixtureBGRA("blue-led-bright-large-05")
         let blank = Array(repeating: UInt8(0), count: bright.bytes.count)
         let threshold = ColorThreshold()
-        func timing(_ bytes: [UInt8], iterations: Int = 12) -> (average: Double, maximum: Double) {
+        func timing(_ bytes: [UInt8], iterations: Int = 12,
+                    collectProfile: Bool = false) -> (average: Double, maximum: Double) {
             var values: [Double] = []
             for _ in 0..<iterations {
                 let start = ProcessInfo.processInfo.systemUptime
                 _ = analyzeSabers(in: bytes, width: bright.width, height: bright.height,
                                   bytesPerRow: bright.bytesPerRow,
-                                  redThreshold: threshold, blueThreshold: threshold)
+                                  redThreshold: threshold, blueThreshold: threshold,
+                                  collectProfile: collectProfile)
                 values.append((ProcessInfo.processInfo.systemUptime - start) * 1000)
             }
             return (values.reduce(0, +) / Double(values.count), values.max() ?? 0)
@@ -343,20 +541,29 @@ final class DetectionCoreTests: XCTestCase {
         _ = timing(bright.bytes, iterations: 2)
         let emptyResult = timing(blank)
         let brightResult = timing(bright.bytes)
+        let brightProfiledResult = timing(bright.bytes, collectProfile: true)
         print(String(format: "[PerformanceBaseline] empty avg=%.3f max=%.3f ms; bright avg=%.3f max=%.3f ms",
                      emptyResult.average, emptyResult.maximum,
                      brightResult.average, brightResult.maximum))
+        print(String(format: "[PerformanceProfileOverhead] bright unprofiled avg=%.3f ms; profiled avg=%.3f ms",
+                     brightResult.average, brightProfiledResult.average))
         XCTAssertLessThan(brightResult.maximum, 35)
-        XCTAssertLessThan(brightResult.average, emptyResult.average * 3.0)
+        // Empty-mask fast paths intentionally make the no-target case much
+        // cheaper. Keep an additive guard for content-dependent explosions
+        // instead of penalizing that improvement with an unstable ratio.
+        XCTAssertLessThan(brightResult.average, emptyResult.average + 25.0)
+        XCTAssertLessThan(brightProfiledResult.average, brightResult.average * 1.5)
 
         let profiled = analyzeSabers(in: bright.bytes, width: bright.width, height: bright.height,
                                      bytesPerRow: bright.bytesPerRow,
                                      redThreshold: threshold, blueThreshold: threshold,
                                      collectProfile: true)
         let profile = try XCTUnwrap(profiled.profile)
-        print(String(format: "[PerformanceStages] total=%.3f scanHSVMask=%.3f morphology=%.3f componentsScorePCA=%.3f lineProposals=%.3f lineScore=%.3f selection=%.3f pixels=%d cores=%d proposals=%d candidates=%d",
+        print(String(format: "[PerformanceStages] total=%.3f scanHSVMask=%.3f morphology=%.3f componentsScorePCA=%.3f traversal=%.3f shapeAxis=%.3f brightnessContrastColor=%.3f endpointsBounds=%.3f lineProposals=%.3f lineScore=%.3f selection=%.3f pixels=%d cores=%d proposals=%d candidates=%d",
                      profile.totalMs, profile.pixelScanHSVMaskMs, profile.morphologyMs,
-                     profile.componentAndScoreMs, profile.lineProposalMs, profile.lineScoreMs,
+                     profile.componentAndScoreMs, profile.componentTraversalAndProposalOverheadMs,
+                     profile.shapeAndAxisMs, profile.brightnessContrastColorMs,
+                     profile.endpointAndBoundsMs, profile.lineProposalMs, profile.lineScoreMs,
                      profile.selectionMs, profile.colorPixelCount, profile.brightCorePixelCount,
                      profile.lineProposalCount, profile.candidateCount))
 
@@ -392,7 +599,7 @@ final class DetectionCoreTests: XCTestCase {
         let delivered = expectation(description: "newest frame delivered")
         delivered.expectedFulfillmentCount = 1
         var results: [[DetectedSaber]] = []
-        processor.onResult = { detected, _, _, _, _ in
+        processor.onResult = { detected, _, _, _, _, _ in
             results.append(detected)
             delivered.fulfill()
         }
@@ -419,6 +626,23 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(results.count, 1)
         XCTAssertEqual(results[0].count, 1)
         XCTAssertEqual(results[0].first?.color, .blue)
+    }
+
+    func testFrameTraceUsesOnlyNonNegativeHostClockDurations() {
+        let valid = FrameTrace(sequence: 1, captureHostTime: 10, callbackHostTime: 10.075,
+                               processingStart: 10.080, detectionEnd: 10.091,
+                               receivedFrames: 1, processedFrames: 1, replacedFrames: 0,
+                               inputFrameIntervalStatistics: nil)
+        XCTAssertEqual(try XCTUnwrap(valid.cameraAgeMs), 75, accuracy: 0.0001)
+        XCTAssertEqual(valid.queueWaitMs, 5, accuracy: 0.0001)
+        XCTAssertEqual(valid.detectionMs, 11, accuracy: 0.0001)
+        let invalid = FrameTrace(sequence: 2, captureHostTime: 20, callbackHostTime: 19.9,
+                                 processingStart: 19.8, detectionEnd: 19.7,
+                                 receivedFrames: 2, processedFrames: 2, replacedFrames: 0,
+                                 inputFrameIntervalStatistics: nil)
+        XCTAssertNil(invalid.cameraAgeMs)
+        XCTAssertEqual(invalid.queueWaitMs, 0)
+        XCTAssertEqual(invalid.detectionMs, 0)
     }
 
     func testRawFrameSaveIsExplicitAndOneShot() throws {
@@ -940,7 +1164,7 @@ final class DetectionCoreTests: XCTestCase {
         let clock = ManualClock(100)
         let processor = FrameProcessor(clock: { clock.now }, expiryScheduler: nil)
         var results: [[DetectedSaber]] = []
-        processor.onResult = { detected, _, _, _, _ in results.append(detected) }
+        processor.onResult = { detected, _, _, _, _, _ in results.append(detected) }
         let endpoints = (PixelPoint(x: 2, y: 3), PixelPoint(x: 12, y: 13))
 
         processor.processDetectedForTesting([(.red, endpoints)], at: clock.now, dimensions: (20, 20))
@@ -1031,7 +1255,7 @@ final class DetectionCoreTests: XCTestCase {
         let processor = FrameProcessor()
         let base = ProcessInfo.processInfo.systemUptime
         var results: [[DetectedSaber]] = []
-        processor.onResult = { detected, _, _, _, _ in results.append(detected) }
+        processor.onResult = { detected, _, _, _, _, _ in results.append(detected) }
         processor.processDetectedForTesting([(.blue, (PixelPoint(x: 1, y: 1), PixelPoint(x: 8, y: 8)))], at: base, dimensions: (20, 20))
         processor.processDetectedForTesting([(.blue, nil)], at: base + 0.01, dimensions: (30, 20))
         XCTAssertEqual(results.last?.count, 0)
@@ -1121,7 +1345,7 @@ final class DetectionCoreTests: XCTestCase {
         let acceptedBeforeStale = viewModel.acceptedSenderUpdateCount
         let rejectedFrameBeforeStale = viewModel.rejectedFrameCallbackCount
         let rejectedSenderBeforeStale = viewModel.rejectedSenderUpdateCount
-        oldFrameCallback?([DetectedSaber(endpoints: (PixelPoint(x: 1, y: 1), PixelPoint(x: 2, y: 2)), color: .red, isFresh: true)], 20, 20, 301, oldFrameGeneration)
+        oldFrameCallback?([DetectedSaber(endpoints: (PixelPoint(x: 1, y: 1), PixelPoint(x: 2, y: 2)), color: .red, isFresh: true)], 20, 20, 301, oldFrameGeneration, nil)
         sender.sendStaleUpdateForTesting(index: 0, states: [5005: "failed"], errors: [5005: "旧接続通知"])
         let staleCallbackProcessed = await waitUntil { viewModel.rejectedFrameCallbackCount > rejectedFrameBeforeStale && viewModel.rejectedSenderUpdateCount > rejectedSenderBeforeStale }
         XCTAssertTrue(staleCallbackProcessed)
@@ -1137,7 +1361,7 @@ final class DetectionCoreTests: XCTestCase {
         let processor = FrameProcessor(clock: { clock.now }, expiryScheduler: nil)
         let expired = expectation(description: "held frame expires")
         var results: [[DetectedSaber]] = []
-        processor.onResult = { detected, _, _, _, _ in
+        processor.onResult = { detected, _, _, _, _, _ in
             results.append(detected)
             if detected.isEmpty { expired.fulfill() }
         }
@@ -1156,7 +1380,7 @@ final class DetectionCoreTests: XCTestCase {
         let clock = ManualClock(200)
         let processor = FrameProcessor(clock: { clock.now }, expiryScheduler: nil)
         var results: [[DetectedSaber]] = []
-        processor.onResult = { detected, _, _, _, _ in results.append(detected) }
+        processor.onResult = { detected, _, _, _, _, _ in results.append(detected) }
         let red = (PixelPoint(x: 1, y: 1), PixelPoint(x: 8, y: 8))
         let blue = (PixelPoint(x: 2, y: 2), PixelPoint(x: 9, y: 9))
         processor.processDetectedForTesting([(.red, red)], at: clock.now, dimensions: (20, 20))

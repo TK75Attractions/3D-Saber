@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 from collections import deque
+import csv
 import json
 import math
 import select
@@ -82,10 +83,169 @@ class DisplayLog:
     ended_epoch_ms: float
 
 
+class LatencyTest:
+    """Mac-clock-only A/B display-to-UDP latency state machine.
+
+    The browser only asks the dashboard to show A or B.  It never supplies a
+    timestamp: both the display-switch acknowledgement and the matching UDP
+    arrival are timestamped with ``clock`` on this Mac.  Coordinates are used
+    solely to decide whether the iPhone has reached the left (A) or right (B)
+    half of the deliberately widely-separated test display.
+    """
+
+    def __init__(self, results_directory: str | Path, clock: Callable[[], float] = time.monotonic,
+                 timeout_seconds: float = 3.0, baseline_packets: int = 2,
+                 input_width: float = 1920.0, input_height: float = 1080.0,
+                 stale_guard_seconds: float = .020):
+        self._results_directory = Path(results_directory)
+        self._clock = clock
+        self._timeout_seconds = timeout_seconds
+        self._baseline_packets = baseline_packets
+        self._input_width = input_width
+        self._input_height = input_height
+        self._stale_guard_seconds = stale_guard_seconds
+        self.reset()
+
+    def reset(self) -> None:
+        self._status = "idle"
+        self._trial_limit = 10
+        self._results: list[dict] = []
+        self._expected_state = "A"
+        self._target_state: str | None = None
+        self._displayed_state: str | None = None
+        self._baseline_count = 0
+        self._switch_monotonic: float | None = None
+        self._saved_path: str | None = None
+        self._save_error: str | None = None
+
+    def start(self, trials: int) -> None:
+        self.reset()
+        self._trial_limit = max(1, min(int(trials), 100))
+        self._status = "waiting_baseline"
+
+    def stop(self) -> None:
+        if self._status not in {"idle", "completed"}:
+            self._status = "stopped"
+        if self._results:
+            self._save_results()
+
+    def display_presented(self, state: object) -> bool:
+        self._check_timeout()
+        if state not in {"A", "B"}:
+            return False
+        self._displayed_state = state
+        if self._status == "ready_to_switch" and state == self._target_state:
+            self._switch_monotonic = self._clock()
+            self._status = "awaiting_udp"
+            return True
+        return False
+
+    def record_packet(self, payload: str, arrival_monotonic: float | None = None) -> None:
+        self._check_timeout()
+        observed = self._classify(payload)
+        if observed is None:
+            return
+        now = self._clock() if arrival_monotonic is None else arrival_monotonic
+        if self._status == "waiting_baseline":
+            if observed == self._expected_state and self._displayed_state == observed:
+                self._baseline_count += 1
+                if self._baseline_count >= self._baseline_packets:
+                    self._target_state = "B" if observed == "A" else "A"
+                    self._status = "ready_to_switch"
+            return
+        if (self._status == "awaiting_udp" and observed == self._target_state and self._switch_monotonic is not None
+                and now - self._switch_monotonic >= self._stale_guard_seconds):
+            latency_ms = (now - self._switch_monotonic) * 1000
+            if math.isfinite(latency_ms) and latency_ms >= 0:
+                self._append_result(True, None, latency_ms, now)
+
+    def _classify(self, payload: str) -> str | None:
+        endpoints = parse_coordinate_endpoints(payload, self._input_width, self._input_height)
+        if endpoints is None:
+            return None
+        midpoint = (endpoints[0][0] + endpoints[1][0]) / 2
+        # The test bars are at 20% and 80%; the middle 20% is deliberately
+        # ignored so a stale/intermediate coordinate cannot complete a trial.
+        if midpoint < .4:
+            return "A"
+        if midpoint > .6:
+            return "B"
+        return None
+
+    def _check_timeout(self) -> None:
+        if self._status != "awaiting_udp" or self._switch_monotonic is None:
+            return
+        if self._clock() - self._switch_monotonic >= self._timeout_seconds:
+            self._append_result(False, "timeout", None, None)
+
+    def _append_result(self, success: bool, reason: str | None, latency_ms: float | None,
+                       received_monotonic: float | None) -> None:
+        self._results.append({
+            "trial": len(self._results) + 1,
+            "from": self._expected_state,
+            "to": self._target_state,
+            "latencyMs": latency_ms,
+            "success": success,
+            "reason": reason or "",
+            "switchMonotonic": self._switch_monotonic,
+            "receivedMonotonic": received_monotonic,
+        })
+        if len(self._results) >= self._trial_limit:
+            self._status = "completed"
+            self._save_results()
+            return
+        # The target remains on screen after a result/timeout.  Require two
+        # fresh packets for it before requesting the next alternating switch.
+        self._expected_state = self._target_state or self._expected_state
+        self._target_state = None
+        self._baseline_count = 0
+        self._switch_monotonic = None
+        self._status = "waiting_baseline"
+
+    def _save_results(self) -> None:
+        if self._saved_path is not None:
+            return
+        try:
+            self._results_directory.mkdir(parents=True, exist_ok=True)
+            path = self._results_directory / time.strftime("latency_%Y-%m-%d_%H%M%S.csv")
+            suffix = 1
+            while path.exists():
+                path = self._results_directory / f"latency_{time.strftime('%Y-%m-%d_%H%M%S')}_{suffix}.csv"
+                suffix += 1
+            with path.open("w", newline="", encoding="utf-8") as handle:
+                writer = csv.DictWriter(handle, fieldnames=("trial", "from", "to", "latency_ms", "success", "reason"))
+                writer.writeheader()
+                for result in self._results:
+                    writer.writerow({"trial": result["trial"], "from": result["from"], "to": result["to"],
+                                     "latency_ms": "" if result["latencyMs"] is None else f"{result['latencyMs']:.3f}",
+                                     "success": result["success"], "reason": result["reason"]})
+            self._saved_path = str(path)
+        except OSError as error:
+            self._save_error = str(error)
+
+    def results_directory(self) -> Path:
+        self._results_directory.mkdir(parents=True, exist_ok=True)
+        return self._results_directory
+
+    def snapshot(self) -> dict:
+        self._check_timeout()
+        successful = [result["latencyMs"] for result in self._results if result["success"]]
+        stats = None if not successful else {
+            "averageMs": statistics.mean(successful), "medianMs": statistics.median(successful),
+            "minMs": min(successful), "maxMs": max(successful),
+        }
+        return {"status": self._status, "trialLimit": self._trial_limit, "results": [dict(item) for item in self._results],
+                "expectedState": self._expected_state, "targetState": self._target_state,
+                "displayedState": self._displayed_state, "baselinePackets": self._baseline_count,
+                "timeoutSeconds": self._timeout_seconds, "stats": stats, "savedPath": self._saved_path,
+                "saveError": self._save_error, "staleGuardMs": self._stale_guard_seconds * 1000}
+
+
 class LiveState:
     """Small bounded, thread-safe state store for the local live dashboard."""
 
-    def __init__(self, history_limit: int = 100, bonjour_publisher: BonjourPublisher | None = None):
+    def __init__(self, history_limit: int = 100, bonjour_publisher: BonjourPublisher | None = None,
+                 latency_results_directory: str | Path = "latency_results"):
         self._lock = threading.Lock()
         self._history_limit = history_limit
         self._started = time.time()
@@ -94,8 +254,10 @@ class LiveState:
         self._history: list[dict] = []
         self._stopped = False
         self._bonjour_publisher = bonjour_publisher
+        self._latency = LatencyTest(latency_results_directory)
 
-    def record(self, port: int, packet: ParsedPacket, arrival: float, order: int, color: str | None) -> None:
+    def record(self, port: int, packet: ParsedPacket, arrival: float, order: int, color: str | None,
+               arrival_monotonic: float | None = None) -> None:
         timestamp = packet.timestamp if packet.timestamp_valid and packet.timestamp is not None and math.isfinite(packet.timestamp) else None
         delta = arrival_minus_packet_timestamp_ms(arrival, timestamp)
         item = {
@@ -114,6 +276,28 @@ class LiveState:
                 self._latest[color] = item
             self._history.append(item)
             del self._history[:-self._history_limit]
+            self._latency.record_packet(packet.payload, arrival_monotonic)
+
+    def latency_start(self, trials: int) -> None:
+        with self._lock:
+            self._latency.start(trials)
+
+    def latency_stop(self) -> None:
+        with self._lock:
+            self._latency.stop()
+
+    def latency_reset(self) -> None:
+        with self._lock:
+            self._latency.reset()
+
+    def latency_display_presented(self, state: object) -> bool:
+        with self._lock:
+            return self._latency.display_presented(state)
+
+    def open_latency_results(self) -> None:
+        with self._lock:
+            path = self._latency.results_directory()
+        subprocess.Popen(["open", str(path)])
 
     def snapshot(self) -> dict:
         with self._lock:
@@ -123,6 +307,7 @@ class LiveState:
                 "counts": dict(self._counts),
                 "latest": {key: value.copy() if value else None for key, value in self._latest.items()},
                 "history": [item.copy() for item in self._history],
+                "latency": self._latency.snapshot(),
                 "network": {
                     "macName": socket.gethostname(),
                     "ipv4": local_ipv4_addresses(),
@@ -168,6 +353,48 @@ class _LiveHandler(BaseHTTPRequestHandler):
         self.end_headers()
         self.wfile.write(body)
 
+    def do_POST(self):
+        path = urlsplit(self.path).path
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            if length < 0 or length > 4096:
+                raise ValueError("invalid request length")
+            raw = self.rfile.read(length) if length else b"{}"
+            document = json.loads(raw.decode("utf-8"))
+            if not isinstance(document, dict):
+                raise ValueError("request body must be an object")
+            if path == "/api/latency/start":
+                self.state.latency_start(document.get("trials", 10))
+                result = {"ok": True}
+            elif path == "/api/latency/stop":
+                self.state.latency_stop()
+                result = {"ok": True}
+            elif path == "/api/latency/reset":
+                self.state.latency_reset()
+                result = {"ok": True}
+            elif path == "/api/latency/display":
+                result = {"ok": True, "switchStarted": self.state.latency_display_presented(document.get("state"))}
+            elif path == "/api/latency/open-results":
+                self.state.open_latency_results()
+                result = {"ok": True}
+            else:
+                self.send_error(404, "Unknown latency API")
+                return
+            body = json.dumps(result, ensure_ascii=False).encode("utf-8")
+        except (ValueError, TypeError, json.JSONDecodeError) as error:
+            body = json.dumps({"ok": False, "error": str(error)}, ensure_ascii=False).encode("utf-8")
+            self.send_response(400)
+        except OSError as error:
+            body = json.dumps({"ok": False, "error": str(error)}, ensure_ascii=False).encode("utf-8")
+            self.send_response(500)
+        else:
+            self.send_response(200)
+        self.send_header("Content-Type", "application/json; charset=utf-8")
+        self.send_header("Cache-Control", "no-store")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
 
 class LiveServer:
     def __init__(self, host: str, port: int, html_path: Path, state: LiveState):
@@ -189,8 +416,9 @@ class LiveServer:
 
 
 def start_live_server(host: str = "127.0.0.1", port: int = 8765, html_path: str | Path = "saber_camera_test.html", bonjour_publisher: BonjourPublisher | None = None) -> tuple[LiveServer, LiveState]:
-    state = LiveState(bonjour_publisher=bonjour_publisher)
-    server = LiveServer(host, port, Path(html_path), state)
+    dashboard_path = Path(html_path)
+    state = LiveState(bonjour_publisher=bonjour_publisher, latency_results_directory=dashboard_path.parent / "latency_results")
+    server = LiveServer(host, port, dashboard_path, state)
     server.start()
     return server, state
 
@@ -381,9 +609,9 @@ def run(host: str, ports: tuple[int, ...], duration: float, display_log=None, in
             timeout = .5 if deadline is None else max(0, min(.5, deadline - time.monotonic()))
             ready, _, _ = select.select(list(by_socket), [], [], timeout)
             for sock in ready:
-                data, address = sock.recvfrom(4096); port = by_socket[sock]; arrival = time.time(); packet = parse_packet(data); packet_order += 1; order = packet_order; packets.append((port, packet, arrival, order, address)); color = colors.get(port, "unknown"); color_counts[color] = color_counts.get(color, 0) + 1
+                data, address = sock.recvfrom(4096); port = by_socket[sock]; arrival = time.time(); arrival_monotonic = time.monotonic(); packet = parse_packet(data); packet_order += 1; order = packet_order; packets.append((port, packet, arrival, order, address)); color = colors.get(port, "unknown"); color_counts[color] = color_counts.get(color, 0) + 1
                 print(f"packet order={order} port={port} count={color_counts[color]} payload={packet.payload} timestamp={packet.timestamp if packet.timestamp is not None else '-'}", flush=True)
-                if live_state: live_state.record(port, packet, arrival, order, colors.get(port))
+                if live_state: live_state.record(port, packet, arrival, order, colors.get(port), arrival_monotonic)
                 if on_packet: on_packet(port, packet, arrival)
     except KeyboardInterrupt: print("stopped", flush=True)
     except RuntimeError as error:

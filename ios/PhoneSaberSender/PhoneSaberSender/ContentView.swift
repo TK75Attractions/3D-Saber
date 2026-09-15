@@ -2,6 +2,9 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var model = CameraViewModel()
+#if DEBUG
+    @State private var showDebugPerformance = false
+#endif
 
     var body: some View {
         let pathDetail = model.pathInterface.isEmpty ? "" : " (\(model.pathInterface))"
@@ -67,6 +70,76 @@ struct ContentView: View {
                     if let error = model.errorMessage {
                         Text(error).foregroundStyle(.red).font(.footnote)
                     }
+                    #if DEBUG
+                    DisclosureGroup(isExpanded: $showDebugPerformance) {
+                        Text("DEBUG PROFILING")
+                            .font(.caption.weight(.bold))
+                            .foregroundStyle(.orange)
+                        Text("表示更新は最大5Hz。認識とUDP送信の頻度は下げません。")
+                            .font(.caption).foregroundStyle(.secondary)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Camera Configuration").font(.subheadline.weight(.semibold))
+                            Picker("Capture rate", selection: Binding(
+                                get: { model.debugRequestedFPS },
+                                set: { model.selectDebugCameraFPS($0) }
+                            )) {
+                                Text("30 FPS").tag(30)
+                                Text("60 FPS").tag(60)
+                            }
+                            .pickerStyle(.segmented)
+                            DebugInfoRow(label: "60 FPS formats", value: model.debug60FPSFormats)
+                            DebugInfoRow(label: "Device", value: model.debugCameraConfiguration.device)
+                            DebugInfoRow(label: "Position", value: model.debugCameraConfiguration.position)
+                            DebugInfoRow(label: "Active format", value: model.debugCameraConfiguration.format)
+                            DebugInfoRow(label: "FPS range", value: model.debugCameraConfiguration.fpsRanges)
+                            DebugInfoRow(label: "Min duration", value: model.debugCameraConfiguration.minimumDuration)
+                            DebugInfoRow(label: "Max duration", value: model.debugCameraConfiguration.maximumDuration)
+                            DebugInfoRow(label: "Session preset", value: model.debugCameraConfiguration.sessionPreset)
+                            DebugInfoRow(label: "Pixel format", value: model.debugCameraConfiguration.pixelFormat)
+                            DebugInfoRow(label: "Discard late", value: model.debugCameraConfiguration.discardsLateFrames ? "On" : "Off")
+                            DebugInfoRow(label: "Auto frame rate", value: model.debugCameraConfiguration.autoFrameRate)
+                            DebugInfoRow(label: "Exposure", value: model.debugCameraConfiguration.exposure)
+                            DebugInfoRow(label: "Exposure budget", value: model.debugCameraConfiguration.exposureBudget)
+                            DebugInfoRow(label: "Video HDR", value: model.debugCameraConfiguration.hdr)
+                            DebugInfoRow(label: "Low-light boost", value: model.debugCameraConfiguration.lowLightBoost)
+                            DebugInfoRow(label: "System pressure", value: model.debugCameraConfiguration.systemPressure)
+                            DebugInfoRow(label: "Thermal state", value: model.debugCameraConfiguration.thermalState)
+                            DebugInfoRow(label: "Stabilization", value: model.debugCameraConfiguration.stabilization)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Camera Frame Timing").font(.subheadline.weight(.semibold))
+                            if let timing = model.debugFrameIntervalStatistics {
+                                DebugInfoRow(label: "Measured camera FPS", value: String(format: "%.1f fps", timing.measuredFPS))
+                                DebugInfoRow(label: "Interval latest", value: String(format: "%.1f ms", timing.latestMs))
+                                DebugInfoRow(label: "Interval median", value: String(format: "%.1f ms", timing.medianMs))
+                                DebugInfoRow(label: "Interval min / max", value: String(format: "%.1f / %.1f ms", timing.minimumMs, timing.maximumMs))
+                                DebugInfoRow(label: "Samples", value: "\(timing.sampleCount) / 120")
+                            } else {
+                                DebugInfoRow(label: "Measured camera FPS", value: "Not available")
+                                DebugInfoRow(label: "Frame intervals", value: "Not available")
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        ForEach(["Camera", "Processing", "Network"], id: \.self) { category in
+                            let rows = model.debugPerformanceRows.filter { $0.category == category }
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(category).font(.subheadline.weight(.semibold))
+                                ForEach(rows) { row in
+                                    DebugPerformanceRowView(row: row)
+                                }
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                    } label: {
+                        Label("Debug Performance", systemImage: "speedometer")
+                            .font(.headline)
+                    }
+                    .onAppear { model.debugDetailedProfilingEnabled = showDebugPerformance }
+                    .onChange(of: showDebugPerformance) { enabled in
+                        model.debugDetailedProfilingEnabled = enabled
+                    }
+                    #endif
                     DisclosureGroup("詳細設定") {
                         GroupBox("接続・出力") {
                             Text("送信先Mac: \(model.host.isEmpty ? "自動発見待ち" : model.host)")
@@ -107,16 +180,6 @@ struct ContentView: View {
                         .disabled(model.running)
                         .buttonStyle(.bordered)
                     }
-#if DEBUG
-                    DisclosureGroup("Debug Performance") {
-                        Text("表示更新は5Hz。HSV変換と赤青mask生成は同じBGRA走査内で集計します。")
-                            .font(.caption).foregroundStyle(.secondary)
-                        ForEach(model.debugPerformanceRows, id: \.self) { row in
-                            Text(row).font(.caption.monospaced())
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                        }
-                    }
-#endif
                     Text("カメラ映像と検出座標を使用します。192.168.x.x のMacへはiPhoneも同じWi-Fiに接続してください。セルラー経路では通常届きません。Wi-Fi経路ありでも同一LAN・到達可能性は保証されません。")
                         .font(.caption).foregroundStyle(.secondary)
                 }.padding()
@@ -133,3 +196,45 @@ struct ContentView: View {
         context.stroke(path, with: .color(color), lineWidth: 5)
     }
 }
+
+#if DEBUG
+private struct DebugInfoRow: View {
+    let label: String
+    let value: String
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(label)
+            Spacer()
+            Text(value).multilineTextAlignment(.trailing)
+        }
+        .font(.caption.monospacedDigit())
+    }
+}
+
+private struct DebugPerformanceRowView: View {
+    let row: DebugPerformanceRow
+
+    var body: some View {
+        HStack(alignment: .firstTextBaseline) {
+            Text(row.label).font(.caption)
+            Spacer()
+            VStack(alignment: .trailing, spacing: 1) {
+                Text("Latest  \(formatted(row.latest))")
+                Text("Median  \(formatted(row.median))")
+                    .foregroundStyle(.secondary)
+                Text("Max     \(formatted(row.maximum))")
+                    .foregroundStyle(.secondary)
+            }
+            .font(.caption.monospacedDigit())
+        }
+    }
+
+    private func formatted(_ value: Double?) -> String {
+        guard let value else { return "Not available" }
+        return row.unit == "count"
+            ? String(format: "%.0f", value)
+            : String(format: "%.1f %@", value, row.unit)
+    }
+}
+#endif

@@ -8,25 +8,65 @@
     :root {
       color-scheme: dark;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #05070b;
     }
 
     * { box-sizing: border-box; }
 
     html, body {
       width: 100%;
-      height: 100%;
       margin: 0;
-      overflow: hidden;
       background: #05070b;
     }
 
-    body { display: flex; flex-direction: column; }
+    body { min-height: 100%; color: #eaf0f8; }
+
+    .chrome {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 12px 16px;
+    }
+
+    .topbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 16px;
+      align-items: center;
+      border-bottom: 1px solid #28303c;
+    }
+
+    h1 { margin: 0 auto 0 0; font-size: 19px; }
+
+    .status { display: flex; flex-wrap: wrap; gap: 8px; color: #b9c4d2; font-size: 13px; }
+    .dot { color: #94d4ac; }
+    .dot.waiting { color: #d5c487; }
+
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+    button, select, input { font: inherit; }
+    button, select {
+      min-height: 34px;
+      padding: 6px 10px;
+      border: 1px solid #536075;
+      border-radius: 6px;
+      color: #f4f7fb;
+      background: #171e2a;
+      cursor: pointer;
+    }
+    button:hover, select:hover { background: #253044; }
+    button.primary { background: #e7edf6; border-color: #e7edf6; color: #111822; }
+    button.primary:hover { background: #fff; }
+    button.subtle { color: #b9c4d2; }
 
     .stage {
       position: relative;
-      flex: 1 1 auto;
-      min-height: 0;
+      width: min(1280px, calc(100vw - 32px));
+      height: clamp(440px, 64vh, 820px);
+      margin: 0 auto 14px;
       overflow: hidden;
+      border: 1px solid #28303c;
+      border-radius: 10px;
+      background: #05070b;
     }
 
     canvas {
@@ -36,34 +76,40 @@
       background: #05070b;
     }
 
-    .controls {
-      flex: 0 0 auto;
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px 12px;
+    .test-overlay {
+      position: absolute;
+      top: 14px;
+      right: 16px;
+      display: none;
+      max-width: min(360px, 40vw);
+      padding: 6px 9px;
+      border-radius: 5px;
+      background: rgb(5 7 11 / 70%);
+      color: #d9e1ec;
+      font-size: 12px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+    body.latency-active .test-overlay { display: block; }
+
+    .results {
+      display: grid;
+      grid-template-columns: minmax(150px, .75fr) minmax(240px, 1.4fr) minmax(180px, 1fr);
+      gap: 12px;
       align-items: center;
-      max-width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #303744;
+      border: 1px solid #28303c;
       border-radius: 8px;
       background: #0c1018;
       font-size: 13px;
-      line-height: 1.2;
     }
+    .results strong { font-size: 15px; }
+    .metrics { color: #cad4e0; font-variant-numeric: tabular-nums; }
+    .trial-state { color: #b9c4d2; }
 
-    button, select, input { font: inherit; }
-
-    button, select {
-      min-height: 32px;
-      padding: 5px 9px;
-      border: 1px solid #596273;
-      border-radius: 5px;
-      color: #f4f7fb;
-      background: #1a2130;
-      cursor: pointer;
-    }
-
-    button:hover, select:hover { background: #273246; }
+    details { border-top: 1px solid #28303c; padding: 10px 0; }
+    summary { cursor: pointer; color: #c5d0dd; }
+    .details-output { display: block; margin-top: 8px; color: #aebaca; font: 12px/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .history { max-height: 140px; overflow: auto; }
 
     label {
       display: inline-flex;
@@ -71,56 +117,78 @@
       gap: 5px;
       white-space: nowrap;
     }
-
     input[type="range"] { width: 90px; accent-color: #c9d3e5; }
 
-    .hint {
-      flex-basis: 100%;
-      color: #aeb8c8;
-    }
+    .advanced-controls { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-top: 8px; }
+    .hint, .display-stamp { display: block; margin-top: 8px; color: #aeb8c8; }
 
-    .display-stamp {
-      flex-basis: 100%;
-      color: #f4f7fb;
-      font-variant-numeric: tabular-nums;
+    body.test-view { overflow: hidden; }
+    body.test-view .chrome { display: none; }
+    body.test-view .stage {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      width: 100vw;
+      height: 100vh;
+      margin: 0;
+      border: 0;
+      border-radius: 0;
     }
-
-    .live-panel {
-      flex-basis: 100%;
-      display: grid;
-      gap: 3px;
-      color: #dce7f5;
-      font-variant-numeric: tabular-nums;
-      white-space: pre-wrap;
-    }
+    body.test-view .test-overlay { top: 18px; right: 20px; }
+    .test-actions { display: none; position: absolute; bottom: 16px; right: 20px; color: #bbb; }
+    body.test-view .test-actions { display: flex; gap: 8px; align-items: center; }
+    body.test-running #fullscreenStart, body.test-running #fullscreenReady { display: none; }
+    body.test-running .test-actions button { font-size: 11px; opacity: .65; }
 
     @media (max-width: 620px) {
-      .controls { padding: 8px; gap: 6px 8px; }
+      .chrome { padding: 10px; }
+      .stage { width: calc(100vw - 20px); height: 58vh; }
+      .results { grid-template-columns: 1fr; gap: 6px; }
       input[type="range"] { width: 72px; }
     }
   </style>
 </head>
 <body>
-  <div class="controls" aria-label="テスト表示の操作">
-    <button id="play" type="button">一時停止</button>
-    <select id="mode" aria-label="表示する棒">
-      <option value="both">赤 + 青</option>
-      <option value="red">赤のみ</option>
-      <option value="blue">青のみ</option>
-    </select>
-    <button id="measurement" type="button">計測モード開始</button>
-    <label>切替間隔 <input id="interval" type="range" min="100" max="2000" step="50" value="500"><output id="intervalValue">500</output>ms</label>
-    <label>速度 <input id="speed" type="range" min="0" max="2" step="0.05" value="0.35"><output id="speedValue">0.35</output></label>
-    <label>太さ <input id="thickness" type="range" min="12" max="80" step="1" value="34"><output id="thicknessValue">34</output>px</label>
-    <label>長さ <input id="length" type="range" min="100" max="520" step="5" value="300"><output id="lengthValue">300</output>px</label>
-    <button id="fullscreen" type="button">全画面</button>
-    <label>照合試行 <select id="trialSelect" aria-label="保存済み試行"><option value="">現在の試行</option></select></label>
-    <button id="saveLog" type="button">表示ログ保存</button>
-    <output id="displayStamp" class="display-stamp" aria-live="polite">計測: 通常　試行: --　state: --　表示時刻: --</output>
-    <output id="livePanel" class="live-panel" aria-live="polite" hidden>Mac受信: 接続待ち</output>
-    <span class="hint">Space: 開始/停止　1/2/3: 赤/青/両方　F: 全画面</span>
-  </div>
-  <main class="stage"><canvas id="surface" aria-label="赤と青のテスト棒"></canvas></main>
+  <header class="chrome topbar">
+    <h1>Phone Saber Debug</h1>
+    <div id="quickStatus" class="status" aria-live="polite">Mac: <span class="dot waiting">●</span> Waiting　iPhone: <span class="dot waiting">●</span> Waiting</div>
+    <div class="actions">
+      <label>Trials <select id="latencyTrials"><option>10</option><option>5</option><option>20</option></select></label>
+      <button id="latencyStart" class="primary" type="button">Start Test</button>
+      <button id="latencyStop" type="button">Stop</button>
+      <button id="latencyReset" type="button">Reset</button>
+      <button id="testView" type="button">Enter Test View</button>
+    </div>
+  </header>
+  <main class="stage"><canvas id="surface" aria-label="Latency test display"></canvas><output id="testOverlay" class="test-overlay" aria-live="polite"></output><div class="test-actions"><span id="fullscreenReady">Ready</span><button id="fullscreenStart">Start Test</button><button id="fullscreenExit">Exit / Stop</button></div></main>
+  <section class="chrome results" aria-label="Latency Test results">
+    <strong>Latency Test</strong>
+    <output id="latencyStatus" class="metrics" aria-live="polite">Press Start Test</output>
+    <output id="trialSummary" class="trial-state">Trial -- / --　Success 0　Failed 0</output>
+  </section>
+  <section class="chrome">
+    <details><summary>Trial History</summary><output id="trialHistory" class="details-output history">No trials yet</output></details>
+    <details><summary>Network Details</summary><output id="networkDetails" class="details-output">Waiting for dashboard…</output></details>
+    <details><summary>Detection Details</summary><output id="detectionDetails" class="details-output">Waiting for packets…</output></details>
+    <details><summary>Debug Details</summary>
+      <button id="latencyResults" class="subtle" type="button">Open Results Folder</button>
+      <output id="livePanel" class="details-output" aria-live="polite" hidden></output>
+      <div class="advanced-controls" aria-label="Advanced legacy test display controls">
+        <button id="play" type="button">Pause</button>
+        <select id="mode" aria-label="表示する棒"><option value="both">Red + Blue</option><option value="red">Red only</option><option value="blue">Blue only</option></select>
+        <button id="measurement" type="button">Legacy measurement</button>
+        <label>Interval <input id="interval" type="range" min="100" max="2000" step="50" value="500"><output id="intervalValue">500</output>ms</label>
+        <label>Speed <input id="speed" type="range" min="0" max="2" step="0.05" value="0.35"><output id="speedValue">0.35</output></label>
+        <label>Width <input id="thickness" type="range" min="12" max="80" step="1" value="34"><output id="thicknessValue">34</output>px</label>
+        <label>Length <input id="length" type="range" min="100" max="520" step="5" value="300"><output id="lengthValue">300</output>px</label>
+        <button id="fullscreen" type="button">Legacy fullscreen</button>
+        <label>Log <select id="trialSelect" aria-label="保存済み試行"><option value="">Current</option></select></label>
+        <button id="saveLog" type="button">Save display log</button>
+      </div>
+      <output id="displayStamp" class="display-stamp" aria-live="polite"></output>
+      <span class="hint">Legacy controls only. Normal operation needs Start Test and Test View.</span>
+    </details>
+  </section>
 
   <script>
     (() => {
@@ -142,6 +210,19 @@
       const speedValue = document.getElementById('speedValue');
       const thicknessValue = document.getElementById('thicknessValue');
       const lengthValue = document.getElementById('lengthValue');
+      const latencyTrials = document.getElementById('latencyTrials');
+      const latencyStart = document.getElementById('latencyStart');
+      const latencyStop = document.getElementById('latencyStop');
+      const latencyReset = document.getElementById('latencyReset');
+      const latencyResults = document.getElementById('latencyResults');
+      const latencyStatus = document.getElementById('latencyStatus');
+      const quickStatus = document.getElementById('quickStatus');
+      const trialSummary = document.getElementById('trialSummary');
+      const trialHistory = document.getElementById('trialHistory');
+      const networkDetails = document.getElementById('networkDetails');
+      const detectionDetails = document.getElementById('detectionDetails');
+      const testOverlay = document.getElementById('testOverlay');
+      const testViewButton = document.getElementById('testView');
 
       let width = 0;
       let height = 0;
@@ -160,12 +241,47 @@
       let trialStartedEpochMs = null;
       let trialEndedEpochMs = null;
       let trialFinalized = false;
+      let latencyMode = false;
+      let latencyDisplayState = 'A';
+      let settlingTimer = null;
+      let layoutFrameOne = null;
+      let layoutFrameTwo = null;
+      let pendingDisplayAnnouncement = null;
+      let activeStartRequest = null;
+      const latencyUIState = { value: 'idle' };
+      let latencyUIGeneration = { value: 0 };
+      const latencyUIDebug = new URLSearchParams(window.location.search).get('debugLatencyUI') === '1';
       const liveMode = new URLSearchParams(window.location.search).get('live') === '1' && window.location.protocol !== 'file:';
       const positions = [
         [0.22, 0.24], [0.50, 0.24], [0.78, 0.24],
         [0.78, 0.50], [0.50, 0.50], [0.22, 0.50],
         [0.22, 0.76], [0.50, 0.76], [0.78, 0.76]
       ];
+
+      function uiLog(message) {
+        if (latencyUIDebug) console.debug(`[LatencyUI] ${message}`);
+      }
+
+      function setLatencyUIState(next, detail = '') {
+        if (latencyUIState.value === next) return;
+        uiLog(`${latencyUIState.value} -> ${next}${detail ? ` (${detail})` : ''}`);
+        latencyUIState.value = next;
+        document.body.dataset.latencyUiState = next;
+        document.body.classList.toggle('test-running', next === 'settling' || next === 'running');
+        document.getElementById('fullscreenStart').disabled = next !== 'ready' || !liveMode;
+      }
+
+      function cancelLatencyUIWork() {
+        latencyUIGeneration.value += 1;
+        clearTimeout(settlingTimer);
+        settlingTimer = null;
+        if (layoutFrameOne !== null) cancelAnimationFrame(layoutFrameOne);
+        if (layoutFrameTwo !== null) cancelAnimationFrame(layoutFrameTwo);
+        layoutFrameOne = null;
+        layoutFrameTwo = null;
+        pendingDisplayAnnouncement = null;
+        return latencyUIGeneration.value;
+      }
 
       function epochNow() { return performance.timeOrigin + performance.now(); }
 
@@ -283,6 +399,70 @@
           `注意: ${network.unityNote || ''}`,
           '差分は (Mac受信Unix時刻 - iPhone ts) × 1000。両端末の時計差を含みます。'
         ].join('\n');
+        const redReceiving = Boolean(latest.red);
+        const blueReceiving = Boolean(latest.blue);
+        quickStatus.innerHTML = `Mac: <span class="dot ${status.listening ? '' : 'waiting'}">●</span> ${status.listening ? 'Ready' : 'Stopped'}　iPhone: <span class="dot ${redReceiving || blueReceiving ? '' : 'waiting'}">●</span> ${redReceiving || blueReceiving ? 'Receiving' : 'Waiting'}　Red: ${redReceiving ? 'Detected' : '—'}　Blue: ${blueReceiving ? 'Detected' : '—'}`;
+        networkDetails.value = [
+          `Mac: ${network.macName || '-'}  IPv4: ${ipv4}`,
+          `UDP: red ${ports.red || 5005}, blue ${ports.blue || 5006}  Listening: ${status.listening ? 'yes' : 'no'}`,
+          `Bonjour: ${bonjour.running ? 'published' : 'off'}  ${bonjour.serviceName || '-'} ${bonjour.serviceType || ''}`,
+          network.unityNote || ''
+        ].filter(Boolean).join('\n');
+        detectionDetails.value = [
+          `Red: ${latest.red ? `Detected  ${latest.red.payload}  packets=${counts.red || 0}` : `Not receiving  packets=${counts.red || 0}`}`,
+          `Blue: ${latest.blue ? `Detected  ${latest.blue.payload}  packets=${counts.blue || 0}` : `Not receiving  packets=${counts.blue || 0}`}`
+        ].join('\n');
+        updateLatencyPanel(status.latency || {});
+      }
+
+      function resultText(result) {
+        return `#${result.trial} ${result.from}→${result.to}: ${result.success ? `${result.latencyMs.toFixed(1)} ms` : `失敗 (${result.reason})`}`;
+      }
+
+      function updateLatencyPanel(latency) {
+        const stats = latency.stats;
+        const results = latency.results || [];
+        const succeeded = results.filter(item => item.success);
+        const failed = results.length - succeeded.length;
+        const status = {
+          idle: '待機中', waiting_baseline: `${latency.expectedState || '-'} の事前検出を待機`,
+          ready_to_switch: `${latency.targetState || '-'} へ表示を切替中`, awaiting_udp: `${latency.targetState || '-'} のUDP受信を待機`,
+          completed: '完了', stopped: '停止',
+        }[latency.status] || latency.status || '接続待ち';
+        const last = results.at(-1);
+        latencyStatus.value = stats
+          ? `Last ${last && last.success ? `${last.latencyMs.toFixed(1)} ms` : 'FAILED'}　Avg ${stats.averageMs.toFixed(1)} ms　Median ${stats.medianMs.toFixed(1)} ms　Min ${stats.minMs.toFixed(1)} ms　Max ${stats.maxMs.toFixed(1)} ms`
+          : last && !last.success ? 'Last FAILED — waiting for a successful result' : status;
+        trialSummary.value = `Trial ${results.length} / ${latency.trialLimit || 10}　Success ${succeeded.length}　Failed ${failed}`;
+        trialHistory.value = results.length ? results.map(resultText).join('\n') : 'No trials yet';
+        testOverlay.value = `Trial ${Math.min(results.length + 1, latency.trialLimit || 10)} / ${latency.trialLimit || 10}`;
+        if (latencyUIState.value === 'running' && latency.status === 'completed') {
+          finishLatencyTest();
+        }
+        if (latency.status === 'ready_to_switch' && latency.targetState && latencyDisplayState !== latency.targetState) {
+          setLatencyDisplay(latency.targetState, latencyUIGeneration.value);
+        }
+      }
+
+      async function latencyRequest(path, document = {}) {
+        const response = await fetch(path, { method: 'POST', cache: 'no-store', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(document) });
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+        return response.json();
+      }
+
+      function setLatencyDisplay(state, generation) {
+        latencyDisplayState = state;
+        pendingDisplayAnnouncement = { state, generation };
+      }
+
+      function announceLatencyDisplayAfterDraw() {
+        const announcement = pendingDisplayAnnouncement;
+        if (!latencyMode || latencyUIState.value !== 'running' || !announcement || announcement.generation !== latencyUIGeneration.value) return;
+        pendingDisplayAnnouncement = null;
+        latencyRequest('/api/latency/display', { state: announcement.state }).catch(error => {
+          if (announcement.generation !== latencyUIGeneration.value) return;
+          latencyStatus.value = `Latency Test通信エラー: ${error.message}`;
+        });
       }
 
       async function pollLiveDashboard() {
@@ -292,6 +472,7 @@
           updateLiveDashboard(await response.json());
         } catch (error) {
           livePanel.value = `Mac受信ライブ: 接続エラー (${error.message})`;
+          quickStatus.textContent = 'Mac: Waiting　iPhone: Waiting';
         }
       }
 
@@ -334,6 +515,30 @@
         const currentFrameId = frameId++;
 
         context.clearRect(0, 0, width, height);
+        if (latencyMode || document.body.classList.contains('test-view')) {
+          const x = latencyDisplayState === 'A' ? width * .20 : width * .80;
+          const thickness = width * .03;
+          const barLength = Math.max(180, height * .74);
+          context.save();
+          context.fillStyle = '#03070f';
+          context.fillRect(0, 0, width, height);
+          context.translate(x, height / 2);
+          context.rotate(Math.PI / 2);
+          // A narrow cyan/white core with a bounded blue halo, no broad blur.
+          context.fillStyle = '#166aff';
+          context.fillRect(-barLength / 2, -thickness / 2, barLength, thickness);
+          context.fillStyle = '#d9faff';
+          context.fillRect(-barLength / 2, -thickness * .13, barLength, thickness * .26);
+          context.restore();
+          context.save();
+          context.font = '12px sans-serif';
+          context.fillStyle = '#aaaaaa';
+          context.fillText(latencyDisplayState, 16, 22);
+          context.restore();
+          announceLatencyDisplayAfterDraw();
+          requestAnimationFrame(frame);
+          return;
+        }
         const thickness = Math.min(Number(thicknessInput.value), Math.max(10, height * 0.16));
         const barLength = Math.min(Number(lengthInput.value), width * 0.58, Math.max(1, width - thickness - 16));
         if (measurementMode) {
@@ -379,11 +584,128 @@
       modeSelect.addEventListener('change', () => { updateLabels(); if (measurementMode) startTrial(); });
       [speedInput, thicknessInput, lengthInput, intervalInput].forEach(input => input.addEventListener('input', () => { updateLabels(); if (measurementMode) startTrial(); }));
       measurementButton.addEventListener('click', () => { measurementMode = !measurementMode; if (measurementMode) { startTrial(); measurementButton.textContent = '通常モードへ戻る'; } else { finalizeCurrentTrial(); archiveCurrentTrial(); measurementState = null; measurementStatus = 'stopped'; measurementButton.textContent = '計測モード開始'; } });
+      async function closeTestView(nextState, generation) {
+        latencyMode = false;
+        pendingDisplayAnnouncement = null;
+        document.body.classList.remove('latency-active', 'test-running', 'test-view');
+        if (document.fullscreenElement) {
+          try { await document.exitFullscreen(); } catch (error) { uiLog(`fullscreen exit failed: ${error.message}`); }
+        }
+        if (generation !== latencyUIGeneration.value) return;
+        resize();
+        setLatencyUIState(nextState);
+      }
+
+      function scheduleReadyAfterFullscreen(generation) {
+        if (generation !== latencyUIGeneration.value || latencyUIState.value !== 'enteringFullscreen') return;
+        layoutFrameOne = requestAnimationFrame(() => {
+          layoutFrameOne = null;
+          if (generation !== latencyUIGeneration.value || latencyUIState.value !== 'enteringFullscreen' || !document.fullscreenElement) return;
+          resize();
+          layoutFrameTwo = requestAnimationFrame(() => {
+            layoutFrameTwo = null;
+            if (generation !== latencyUIGeneration.value || latencyUIState.value !== 'enteringFullscreen' || !document.fullscreenElement) return;
+            document.getElementById('fullscreenReady').textContent = liveMode ? 'Ready' : 'Open run_debug.command';
+            setLatencyUIState('ready');
+          });
+        });
+      }
+
+      async function enterTestView() {
+        if (latencyUIState.value !== 'idle' && latencyUIState.value !== 'finished') return;
+        const generation = cancelLatencyUIWork();
+        latencyDisplayState = 'A';
+        latencyMode = false;
+        document.body.classList.add('test-view');
+        document.getElementById('fullscreenReady').textContent = 'Entering fullscreen…';
+        setLatencyUIState('enteringFullscreen');
+        // This call remains directly in the user click handler; readiness waits for fullscreenchange.
+        try {
+          await document.documentElement.requestFullscreen();
+        } catch (error) {
+          if (generation !== latencyUIGeneration.value) return;
+          latencyStatus.value = `Fullscreenを開始できません: ${error.message}`;
+          await closeTestView('idle', generation);
+        }
+      }
+
+      async function beginFullscreenTest() {
+        if (latencyUIState.value !== 'ready' || !document.fullscreenElement || !liveMode) return;
+        const generation = cancelLatencyUIWork();
+        setLatencyUIState('settling');
+        settlingTimer = window.setTimeout(async () => {
+          settlingTimer = null;
+          if (generation !== latencyUIGeneration.value || latencyUIState.value !== 'settling' || !document.fullscreenElement) return;
+          try {
+            measurementMode = false;
+            activeStartRequest = latencyRequest('/api/latency/start', { trials: Number(latencyTrials.value) });
+            await activeStartRequest;
+            activeStartRequest = null;
+            if (generation !== latencyUIGeneration.value || latencyUIState.value !== 'settling' || !document.fullscreenElement) return;
+            latencyMode = true;
+            document.body.classList.add('latency-active');
+            setLatencyDisplay('A', generation);
+            setLatencyUIState('running');
+            await pollLiveDashboard();
+          } catch (error) {
+            activeStartRequest = null;
+            if (generation !== latencyUIGeneration.value) return;
+            latencyStatus.value = `開始できません: ${error.message}`;
+            await closeTestView('idle', generation);
+          }
+        }, 500);
+      }
+
+      async function stopLatencyTest({ reset = false, reason = 'stopped' } = {}) {
+        const previousState = latencyUIState.value;
+        const generation = cancelLatencyUIWork();
+        setLatencyUIState('stopping', reason);
+        // A Stop/Reset issued during the start request is ordered after that request,
+        // so a late start cannot revive an already stopped test.
+        if (activeStartRequest) {
+          try { await activeStartRequest; } catch (_) { /* the original request already reported its error */ }
+        }
+        try {
+          await latencyRequest(reset ? '/api/latency/reset' : '/api/latency/stop');
+        } catch (error) {
+          if (generation === latencyUIGeneration.value) latencyStatus.value = `${reset ? 'Reset' : '停止'}できません: ${error.message}`;
+        }
+        if (generation !== latencyUIGeneration.value) return;
+        latencyDisplayState = 'A';
+        await closeTestView('idle', generation);
+        await pollLiveDashboard();
+        uiLog(`${previousState} stopped (${reason})`);
+      }
+
+      async function finishLatencyTest() {
+        if (latencyUIState.value !== 'running') return;
+        const generation = cancelLatencyUIWork();
+        setLatencyUIState('finished', 'all trials completed');
+        await closeTestView('finished', generation);
+        await pollLiveDashboard();
+      }
+
+      latencyStart.textContent = 'Prepare Test';
+      latencyStart.addEventListener('click', enterTestView);
+      document.getElementById('fullscreenStart').addEventListener('click', beginFullscreenTest);
+      latencyStop.addEventListener('click', () => stopLatencyTest({ reason: 'dashboard stop' }));
+      latencyReset.addEventListener('click', () => stopLatencyTest({ reset: true, reason: 'dashboard reset' }));
+      latencyResults.addEventListener('click', () => latencyRequest('/api/latency/open-results').catch(error => { latencyStatus.value = `フォルダを開けません: ${error.message}`; }));
       fullscreenButton.addEventListener('click', () => {
         if (document.fullscreenElement) document.exitFullscreen();
         else document.documentElement.requestFullscreen();
       });
-      document.addEventListener('fullscreenchange', () => { resize(); if (measurementMode) startTrial(); });
+      testViewButton.addEventListener('click', enterTestView);
+      document.getElementById('fullscreenExit').addEventListener('click', () => stopLatencyTest({ reason: 'test view stop' }));
+      document.addEventListener('fullscreenchange', () => {
+        resize();
+        if (document.fullscreenElement && latencyUIState.value === 'enteringFullscreen') {
+          scheduleReadyAfterFullscreen(latencyUIGeneration.value);
+        } else if (!document.fullscreenElement && document.body.classList.contains('test-view') && latencyUIState.value !== 'stopping' && latencyUIState.value !== 'finished' && latencyUIState.value !== 'idle') {
+          stopLatencyTest({ reason: 'fullscreen closed' });
+        }
+      });
+      document.addEventListener('fullscreenchange', () => { if (measurementMode) startTrial(); });
       saveLogButton.addEventListener('click', () => {
         if (trialId && displayLog.length > 0) {
           running = false;
@@ -404,6 +726,11 @@
       });
       window.addEventListener('resize', () => { resize(); if (measurementMode) startTrial(); });
       window.addEventListener('keydown', event => {
+        if (event.key === 'Escape' && document.body.classList.contains('test-view')) {
+          event.preventDefault();
+          stopLatencyTest({ reason: 'escape' });
+          return;
+        }
         if (event.code === 'Space') {
           event.preventDefault();
           playButton.click();
@@ -417,7 +744,6 @@
       updateLabels();
       if (liveMode) {
         livePanel.hidden = false;
-        measurementButton.click();
         pollLiveDashboard();
         window.setInterval(pollLiveDashboard, 250);
       }

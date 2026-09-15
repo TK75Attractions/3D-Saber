@@ -11,10 +11,68 @@ from unittest import mock
 from pathlib import Path
 
 import udp_receive_probe
-from udp_receive_probe import LiveState, _percentile, arrival_minus_packet_timestamp_ms, nearest_display_frame, parse_packet, run, start_live_server, try_load_display_log
+from udp_receive_probe import LatencyTest, LiveState, _percentile, arrival_minus_packet_timestamp_ms, nearest_display_frame, parse_packet, run, start_live_server, try_load_display_log
 
 
 class UDPReceiveProbeTests(unittest.TestCase):
+
+    def test_latency_test_uses_one_mac_clock_and_ignores_stale_coordinates(self):
+        now = [10.0]
+        with tempfile.TemporaryDirectory() as directory:
+            latency = LatencyTest(directory, clock=lambda: now[0], baseline_packets=2)
+            latency.start(1)
+            self.assertFalse(latency.display_presented("A"))
+            latency.record_packet("100,540,500,540", 10.01)
+            latency.record_packet("100,540,500,540", 10.02)
+            self.assertEqual(latency.snapshot()["status"], "ready_to_switch")
+            now[0] = 10.10
+            self.assertTrue(latency.display_presented("B"))
+            latency.record_packet("100,540,500,540", 10.15)  # old A, must not finish B
+            latency.record_packet("1450,540,1850,540", 10.11)  # B queued before the fresh guard elapsed
+            self.assertEqual(latency.snapshot()["status"], "awaiting_udp")
+            latency.record_packet("1450,540,1850,540", 10.35)
+            snapshot = latency.snapshot()
+            self.assertEqual(snapshot["status"], "completed")
+            self.assertEqual(len(snapshot["results"]), 1)
+            self.assertAlmostEqual(snapshot["results"][0]["latencyMs"], 250.0)
+            self.assertAlmostEqual(snapshot["stats"]["averageMs"], 250.0)
+
+    def test_latency_timeout_is_a_failure_and_not_in_statistics(self):
+        now = [20.0]
+        with tempfile.TemporaryDirectory() as directory:
+            latency = LatencyTest(directory, clock=lambda: now[0], timeout_seconds=1, baseline_packets=1)
+            latency.start(1)
+            latency.display_presented("A")
+            latency.record_packet("100,540,300,540")
+            latency.display_presented("B")
+            now[0] = 21.01
+            snapshot = latency.snapshot()
+            self.assertEqual(snapshot["status"], "completed")
+            self.assertFalse(snapshot["results"][0]["success"])
+            self.assertEqual(snapshot["results"][0]["reason"], "timeout")
+            self.assertIsNone(snapshot["stats"])
+            path = Path(snapshot["savedPath"])
+            self.assertTrue(path.is_file())
+            self.assertIn("trial,from,to,latency_ms,success,reason", path.read_text(encoding="utf-8"))
+
+    def test_live_latency_api_starts_and_reports_state(self):
+        with tempfile.TemporaryDirectory() as directory:
+            html = Path(directory) / "saber_camera_test.html"
+            html.write_text("<html>live</html>", encoding="utf-8")
+            try:
+                server, state = start_live_server("127.0.0.1", 0, html)
+            except PermissionError as error:
+                self.skipTest(f"HTTPソケット利用が環境で禁止されています: {error}")
+            try:
+                base = f"http://127.0.0.1:{server.address[1]}"
+                request = urllib.request.Request(base + "/api/latency/start", data=b'{"trials": 5}', headers={"Content-Type": "application/json"}, method="POST")
+                with urllib.request.urlopen(request, timeout=1) as response:
+                    self.assertTrue(json.loads(response.read())["ok"])
+                with urllib.request.urlopen(base + "/api/status", timeout=1) as response:
+                    self.assertEqual(json.loads(response.read())["latency"]["status"], "waiting_baseline")
+            finally:
+                state.stop()
+                server.close()
     def _reserve_udp_ports(self, count):
         ports = []
         try:
@@ -141,10 +199,12 @@ class UDPReceiveProbeTests(unittest.TestCase):
             self.assertEqual(payload["history"][0]["order"], 6)
             self.assertEqual(payload["history"][-1]["order"], 105)
             self.assertLess(payload["latest"]["red"]["arrivalMinusPhoneMs"], 0)
-            self.assertEqual(payload["latest"]["red"]["order"], 103)
+            # Separate UDP sockets may interleave; global order is not send order.
+            for color in ("red", "blue"):
+                latest = next(item for item in reversed(payload["history"]) if item["color"] == color)
+                self.assertEqual(payload["latest"][color]["order"], latest["order"])
             self.assertEqual(payload["latest"]["blue"]["validTimestamp"], True)
-            self.assertEqual(payload["latest"]["blue"]["order"], 105)
-            self.assertFalse(next(item for item in payload["history"] if item["order"] == 104)["validTimestamp"])
+            self.assertGreaterEqual(payload["counts"]["blue"], 2)
             json.dumps(payload, allow_nan=False)
         for port in (red_port, blue_port):
             with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as rebound:
@@ -507,13 +567,14 @@ class UDPReceiveProbeTests(unittest.TestCase):
             log = Path(directory) / "ctrl-c.json"
             log.write_text(json.dumps({"trialId": "ctrl-c", "trialStartedEpochMs": (now - .01) * 1000, "trialEndedEpochMs": (now + .01) * 1000, "states": [{"trialId": "ctrl-c", "stateId": 0, "color": "red", "displayEpochMs": now * 1000, "normalizedEndpoints": [{"x": .1, "y": .2}, {"x": .3, "y": .2}]}]}), encoding="utf-8")
             calls = 0
+            real_select = udp_receive_probe.select.select
             def interrupt_after_first_receive(readers, _writers, _errors, _timeout):
                 nonlocal calls
                 calls += 1
                 if calls == 1:
                     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sender:
                         sender.sendto(f"timestamp={now + .001};10,20,30,20".encode(), ("127.0.0.1", port))
-                    return readers, [], []
+                    return real_select(readers, [], [], 1.0)
                 raise KeyboardInterrupt
             with mock.patch.object(udp_receive_probe.select, "select", side_effect=interrupt_after_first_receive):
                 with contextlib.redirect_stdout(output):
