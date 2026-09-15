@@ -1,27 +1,19 @@
 using UnityEngine;
 
+// 既存のゲーム判定向け互換窓口。判定は行わず、XIAO/Virtual IMU の
+// SwingStart eventを購読してCutDirectionへ変換する。
 public class Swing8DirectionLogger : MonoBehaviour
 {
     public static Swing8DirectionLogger Instance { get; private set; }
 
-    [Header("Source")]
-    [SerializeField] private bool useAcceleration = true;
-
-    [Header("Detection")]
-    [SerializeField] private float threshold = 0.35f;
-    [SerializeField] private float cooldownSeconds = 0.20f;
-    [SerializeField] private bool logOnlyOnChange = true;
-
     private int lastDirectionIndex = -1;
-    private float lastLogTime = -999f;
+    private float lastEventTime = -999f;
+    private UdpImuBridge subscribedBridge;
 
-    // 外部から最新の振り検知方向を読む。-1 = 未検知。
     public int LastDirectionIndex => lastDirectionIndex;
-    public float LastDirectionTime => lastLogTime;
-    public CutDirection LastDirection =>
-        lastDirectionIndex >= 0 ? CutDirectionHelper.FromSwing8Index(lastDirectionIndex) : CutDirection.None;
+    public float LastDirectionTime => lastEventTime;
+    public CutDirection LastDirection => ToCutDirection(lastDirectionIndex);
 
-    // 静的アクセサ：シングルトンが無くても安全に呼べる。
     public static bool TryGetLatest(out CutDirection direction, out float time)
     {
         if (Instance == null)
@@ -31,7 +23,7 @@ public class Swing8DirectionLogger : MonoBehaviour
             return false;
         }
         direction = Instance.LastDirection;
-        time = Instance.lastLogTime;
+        time = Instance.lastEventTime;
         return Instance.lastDirectionIndex >= 0;
     }
 
@@ -40,49 +32,79 @@ public class Swing8DirectionLogger : MonoBehaviour
         Instance = this;
     }
 
+    private void Start()
+    {
+        Subscribe(UdpImuBridge.Instance);
+    }
+
+    private void OnEnable()
+    {
+        if (UdpImuBridge.Instance != null)
+        {
+            Subscribe(UdpImuBridge.Instance);
+        }
+    }
+
+    private void OnDisable()
+    {
+        Unsubscribe();
+    }
+
     private void OnDestroy()
     {
-        if (Instance == this) Instance = null;
+        Unsubscribe();
+        if (Instance == this)
+        {
+            Instance = null;
+        }
     }
 
-    private void Update()
+    private void Subscribe(UdpImuBridge bridge)
     {
-        if (!UdpImuBridge.TryGetLatest(out Vector3 acceleration, out Vector3 gyro, out bool connected) || !connected)
+        if (bridge == null || subscribedBridge == bridge)
         {
             return;
         }
-
-        Vector2 plane = useAcceleration
-            ? new Vector2(acceleration.x, acceleration.y)
-            : new Vector2(gyro.x, gyro.y);
-
-        if (plane.magnitude < threshold)
-        {
-            return;
-        }
-
-        int directionIndex = Get8DirectionIndex(plane);
-        if (directionIndex < 0)
-        {
-            return;
-        }
-
-        if (Time.time - lastLogTime < cooldownSeconds)
-        {
-            return;
-        }
-
-        if (logOnlyOnChange && directionIndex == lastDirectionIndex)
-        {
-            return;
-        }
-
-        lastDirectionIndex = directionIndex;
-        lastLogTime = Time.time;
-
-        Debug.Log($"Swing8Direction: {GetDirectionName(directionIndex)}  raw=({plane.x:F3}, {plane.y:F3})");
+        Unsubscribe();
+        subscribedBridge = bridge;
+        subscribedBridge.OnSwingReceived += HandleSwing;
     }
 
+    private void Unsubscribe()
+    {
+        if (subscribedBridge != null)
+        {
+            subscribedBridge.OnSwingReceived -= HandleSwing;
+            subscribedBridge = null;
+        }
+    }
+
+    private void HandleSwing(SwingEvent swing)
+    {
+        lastDirectionIndex = ToLegacyDirectionIndex(swing.Direction);
+        lastEventTime = Time.time;
+    }
+
+    public static int ToLegacyDirectionIndex(SwingDirection direction)
+    {
+        switch (direction)
+        {
+            case SwingDirection.Right: return 0;
+            case SwingDirection.Up: return 2;
+            case SwingDirection.Left: return 4;
+            case SwingDirection.Down: return 6;
+            default: return -1;
+        }
+    }
+
+    private static CutDirection ToCutDirection(int directionIndex)
+    {
+        return directionIndex >= 0
+            ? CutDirectionHelper.FromSwing8Index(directionIndex)
+            : CutDirection.None;
+    }
+
+    // 旧テストと方向ユーティリティ利用箇所の互換用。実入力判定には使わない。
     public static int Get8DirectionIndex(Vector2 vector)
     {
         float angle = Mathf.Atan2(vector.y, vector.x) * Mathf.Rad2Deg;
@@ -90,23 +112,6 @@ public class Swing8DirectionLogger : MonoBehaviour
         {
             angle += 360f;
         }
-
         return Mathf.FloorToInt((angle + 22.5f) / 45f) % 8;
-    }
-
-    private static string GetDirectionName(int index)
-    {
-        switch (index)
-        {
-            case 0: return "Right";
-            case 1: return "UpRight";
-            case 2: return "Up";
-            case 3: return "UpLeft";
-            case 4: return "Left";
-            case 5: return "DownLeft";
-            case 6: return "Down";
-            case 7: return "DownRight";
-            default: return "Unknown";
-        }
     }
 }

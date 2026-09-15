@@ -1,13 +1,10 @@
 using System;
-using System.Collections.Generic;
 using System.Globalization;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Threading;
 using UnityEngine;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 public class UdpImuBridge : MonoBehaviour
 {
@@ -18,26 +15,50 @@ public class UdpImuBridge : MonoBehaviour
     [SerializeField] private int commandPort = 9001;
     [SerializeField] private int dataPort = 9002;
 
-    [Header("Latest Values")]
-    [SerializeField] private Vector3 latestAcceleration;
-    [SerializeField] private Vector3 latestGyro;
-    [SerializeField] private bool bridgeConnected;
-    [SerializeField] private bool hasImuData;
+    [Header("Swing event")]
+    [SerializeField, Min(0f)] private float staleEventSeconds = 0.15f;
+    [SerializeField] private bool logAcceptedEvents = true;
+    [SerializeField] private bool logRejectedEvents = true;
 
+    [Header("Debug (read only)")]
+    [SerializeField] private bool bridgeConnected;
+    [SerializeField] private string lastSwing = "none";
+    [SerializeField] private double lastLocalReceiveTime;
+    [SerializeField] private double lastUdpLatencyMs;
+    [SerializeField] private double lastMainThreadHandoffMs;
+    [SerializeField] private float lastCallbackFrameMs;
+    [SerializeField] private int staleEvents;
+    [SerializeField] private int invalidPackets;
+
+    // raw IMU互換は任意の位置fallbackのみに残す。Swing判定はこれを読まない。
+    private readonly object rawImuLock = new object();
+    private Vector3 latestAcceleration;
+    private Vector3 latestGyro;
+    private bool hasImuData;
+
+    private readonly SwingSequenceTracker sequenceTracker = new SwingSequenceTracker();
     private UdpClient sender;
     private UdpClient receiver;
     private IPEndPoint sendEndpoint;
-    private readonly Queue<string> inbox = new Queue<string>();
-    private readonly object inboxLock = new object();
+    private SynchronizationContext mainThreadContext;
+    private int closing;
 
-    public Vector3 LatestAcceleration => latestAcceleration;
-    public Vector3 LatestGyro => latestGyro;
+    public event Action<SwingEvent> OnSwingReceived;
+
     public bool IsBridgeConnected => bridgeConnected;
-    public bool HasImuData => hasImuData;
+    public int ReceivedEvents => sequenceTracker.ReceivedEvents;
+    public int AcceptedEvents => sequenceTracker.AcceptedEvents;
+    public int DuplicateEvents => sequenceTracker.DuplicateEvents;
+    public int OutOfOrderEvents => sequenceTracker.OutOfOrderEvents;
+    public int MissingEvents => sequenceTracker.MissingEvents;
+    public int StaleEvents => Volatile.Read(ref staleEvents);
+    public int InvalidPackets => Volatile.Read(ref invalidPackets);
+    public string LastSwingDebug => lastSwing;
 
     public static bool TryGetLatest(out Vector3 acceleration, out Vector3 gyro, out bool connected)
     {
-        if (Instance == null)
+        UdpImuBridge instance = Instance;
+        if (instance == null)
         {
             acceleration = Vector3.zero;
             gyro = Vector3.zero;
@@ -45,10 +66,13 @@ public class UdpImuBridge : MonoBehaviour
             return false;
         }
 
-        acceleration = Instance.latestAcceleration;
-        gyro = Instance.latestGyro;
-        connected = Instance.bridgeConnected;
-        return Instance.hasImuData;
+        lock (instance.rawImuLock)
+        {
+            acceleration = instance.latestAcceleration;
+            gyro = instance.latestGyro;
+            connected = instance.bridgeConnected;
+            return instance.hasImuData;
+        }
     }
 
     private void Awake()
@@ -60,88 +84,232 @@ public class UdpImuBridge : MonoBehaviour
         }
 
         Instance = this;
+        mainThreadContext = SynchronizationContext.Current;
         DontDestroyOnLoad(gameObject);
     }
 
     private void Start()
     {
-        sendEndpoint = new IPEndPoint(IPAddress.Parse(host), commandPort);
-        sender = new UdpClient();
-        receiver = new UdpClient(dataPort);
-
-        Haptic.SetTransport(OnHapticSend);
-        BeginReceive();
-        SendCommand("PING");
-
-        Debug.Log($"UdpImuBridge started: cmd={commandPort}, data={dataPort}");
-    }
-
-    private void Update()
-    {
-        while (true)
+        try
         {
-            string message;
-            lock (inboxLock)
-            {
-                if (inbox.Count == 0)
-                {
-                    break;
-                }
-
-                message = inbox.Dequeue();
-            }
-
-            HandleMessage(message);
+            sendEndpoint = new IPEndPoint(IPAddress.Parse(host), commandPort);
+            sender = new UdpClient();
+            receiver = new UdpClient(dataPort);
+            Haptic.SetTransport(OnHapticSend);
+            BeginReceive();
+            SendCommand("PING");
+            Debug.Log($"[Swing] UDP event receiver ready: 0.0.0.0:{dataPort}");
         }
-
-        if (IsHapticTestKeyPressed())
+        catch (Exception ex)
         {
-            Haptic.Vibrate(0.15f);
+            Debug.LogError($"[Swing] UDP startup failed on port {dataPort}: {ex.Message}");
         }
     }
 
-    private static bool IsHapticTestKeyPressed()
+    // TestではAddComponent後、最初のframe/Start前に呼ぶ。
+    public void ConfigureForTests(int receivePort, float staleSeconds = 0.15f)
     {
-#if ENABLE_INPUT_SYSTEM
-        return Keyboard.current != null && Keyboard.current.hKey.wasPressedThisFrame;
-#elif ENABLE_LEGACY_INPUT_MANAGER
-        return Input.GetKeyDown(KeyCode.H);
-#else
-        return false;
-#endif
+        dataPort = receivePort;
+        staleEventSeconds = staleSeconds;
+        logAcceptedEvents = false;
+        logRejectedEvents = false;
     }
 
     private void OnDestroy()
     {
+        Interlocked.Exchange(ref closing, 1);
         if (Instance == this)
         {
             Instance = null;
+            Haptic.SetTransport(null);
         }
+        receiver?.Close();
+        receiver = null;
+        sender?.Close();
+        sender = null;
+    }
 
-        Haptic.SetTransport(null);
-
-        if (receiver != null)
+    private void BeginReceive()
+    {
+        if (receiver == null || Volatile.Read(ref closing) != 0)
         {
-            receiver.Close();
-            receiver = null;
+            return;
+        }
+        try
+        {
+            receiver.BeginReceive(OnReceive, null);
+        }
+        catch (ObjectDisposedException)
+        {
+        }
+    }
+
+    private void OnReceive(IAsyncResult asyncResult)
+    {
+        UdpClient activeReceiver = receiver;
+        if (activeReceiver == null || Volatile.Read(ref closing) != 0)
+        {
+            return;
         }
 
-        if (sender != null)
+        IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
+        byte[] bytes;
+        try
         {
-            sender.Close();
-            sender = null;
+            bytes = activeReceiver.EndReceive(asyncResult, ref remote);
         }
+        catch (ObjectDisposedException)
+        {
+            return;
+        }
+        catch (SocketException ex)
+        {
+            PostToMain(() => Debug.LogWarning("[Swing] UDP receive error: " + ex.Message));
+            BeginReceive();
+            return;
+        }
+
+        long receiveTimestamp = SwingMonotonicClock.Timestamp;
+        string message = Encoding.UTF8.GetString(bytes).Trim();
+        try
+        {
+            // sequence判定を到着順に保つため、次のreceive開始前に処理する。
+            // ここでは軽量なparseとmain-threadへのPostだけを行う。
+            ProcessReceivedMessage(message, receiveTimestamp);
+        }
+        finally
+        {
+            BeginReceive();
+        }
+    }
+
+    private void ProcessReceivedMessage(string message, long receiveTimestamp)
+    {
+        if (message.StartsWith("STATE:", StringComparison.Ordinal))
+        {
+            string state = message.Substring(6).Trim();
+            bool connected = state.Equals("CONNECTED", StringComparison.Ordinal);
+            if (connected)
+            {
+                sequenceTracker.ResetSession();
+            }
+            PostToMain(() => bridgeConnected = connected);
+            return;
+        }
+
+        if (message.StartsWith("IMU:", StringComparison.Ordinal))
+        {
+            ParseLegacyRawImu(message.Substring(4));
+            return;
+        }
+
+        if (!SwingPacketParser.TryParse(message, receiveTimestamp, out SwingEvent swing))
+        {
+            Interlocked.Increment(ref invalidPackets);
+            if (logRejectedEvents)
+            {
+                PostToMain(() => Debug.LogWarning("[Swing] invalid packet: " + message));
+            }
+            return;
+        }
+
+        SwingSequenceResult sequenceResult = sequenceTracker.Observe(swing.Sequence);
+        if (sequenceResult != SwingSequenceResult.Accepted)
+        {
+            if (logRejectedEvents)
+            {
+                PostToMain(() => Debug.LogWarning(
+                    $"[Swing] {sequenceResult}: seq={swing.Sequence} " +
+                    $"duplicate={DuplicateEvents} outOfOrder={OutOfOrderEvents}"));
+            }
+            return;
+        }
+
+        PostToMain(() => DispatchSwingOnMainThread(swing));
+    }
+
+    private void DispatchSwingOnMainThread(SwingEvent receivedSwing)
+    {
+        long callbackTimestamp = SwingMonotonicClock.Timestamp;
+        SwingEvent swing = receivedSwing.WithMainThreadHandoff(callbackTimestamp);
+        if (SwingEventTiming.IsStale(swing, callbackTimestamp, staleEventSeconds))
+        {
+            Interlocked.Increment(ref staleEvents);
+            if (logRejectedEvents)
+            {
+                Debug.LogWarning(
+                    $"[Swing] stale seq={swing.Sequence} " +
+                    $"handoff={swing.MainThreadHandoffLatencyMs:F2}ms limit={staleEventSeconds * 1000f:F0}ms");
+            }
+            return;
+        }
+
+        lastLocalReceiveTime = swing.LocalReceiveTimeSeconds;
+        lastUdpLatencyMs = swing.LocalhostTransportLatencyMs;
+        lastMainThreadHandoffMs = swing.MainThreadHandoffLatencyMs;
+        lastCallbackFrameMs = Time.unscaledDeltaTime * 1000f;
+        lastSwing = $"seq={swing.Sequence} {swing.Direction} strength={swing.Strength:F2}";
+        if (logAcceptedEvents)
+        {
+            string udp = double.IsNaN(swing.LocalhostTransportLatencyMs)
+                ? "n/a (real bridge)"
+                : $"{swing.LocalhostTransportLatencyMs:F3}ms";
+            Debug.Log(
+                $"[Swing] {lastSwing} receive={swing.LocalReceiveTimeSeconds:F6}s " +
+                $"UDP={udp} main-handoff={swing.MainThreadHandoffLatencyMs:F3}ms " +
+                $"frame={lastCallbackFrameMs:F2}ms " +
+                $"counts recv={ReceivedEvents} dup={DuplicateEvents} " +
+                $"outOfOrder={OutOfOrderEvents} stale={StaleEvents}");
+        }
+        OnSwingReceived?.Invoke(swing);
+    }
+
+    private void ParseLegacyRawImu(string payload)
+    {
+        string[] values = payload.Split(',');
+        if (values.Length < 6 ||
+            !TryParseFloat(values[0], out float ax) ||
+            !TryParseFloat(values[1], out float ay) ||
+            !TryParseFloat(values[2], out float az) ||
+            !TryParseFloat(values[3], out float gx) ||
+            !TryParseFloat(values[4], out float gy) ||
+            !TryParseFloat(values[5], out float gz))
+        {
+            Interlocked.Increment(ref invalidPackets);
+            return;
+        }
+
+        lock (rawImuLock)
+        {
+            latestAcceleration = new Vector3(ax, ay, az);
+            latestGyro = new Vector3(gx, gy, gz);
+            hasImuData = true;
+        }
+    }
+
+    private void PostToMain(Action action)
+    {
+        SynchronizationContext context = mainThreadContext;
+        if (context == null)
+        {
+            return;
+        }
+        context.Post(_ =>
+        {
+            if (this != null && Volatile.Read(ref closing) == 0)
+            {
+                action();
+            }
+        }, null);
     }
 
     private void OnHapticSend(string raw)
     {
         string trimmed = raw.Trim();
-        if (trimmed.Length == 0)
+        if (trimmed.Length > 0)
         {
-            return;
+            SendCommand("H:" + trimmed);
         }
-
-        SendCommand("H:" + trimmed);
     }
 
     private void SendCommand(string command)
@@ -150,90 +318,11 @@ public class UdpImuBridge : MonoBehaviour
         {
             return;
         }
-
         byte[] payload = Encoding.UTF8.GetBytes(command);
         sender.Send(payload, payload.Length, sendEndpoint);
     }
 
-    private void BeginReceive()
-    {
-        if (receiver == null)
-        {
-            return;
-        }
-
-        receiver.BeginReceive(OnReceive, null);
-    }
-
-    private void OnReceive(IAsyncResult ar)
-    {
-        if (receiver == null)
-        {
-            return;
-        }
-
-        IPEndPoint any = new IPEndPoint(IPAddress.Any, 0);
-        byte[] bytes;
-        try
-        {
-            bytes = receiver.EndReceive(ar, ref any);
-        }
-        catch (ObjectDisposedException)
-        {
-            return;
-        }
-        catch (Exception ex)
-        {
-            Debug.LogWarning("UdpImuBridge receive error: " + ex.Message);
-            BeginReceive();
-            return;
-        }
-
-        string msg = Encoding.UTF8.GetString(bytes).Trim();
-        lock (inboxLock)
-        {
-            inbox.Enqueue(msg);
-        }
-
-        BeginReceive();
-    }
-
-    private void HandleMessage(string message)
-    {
-        if (message.StartsWith("STATE:"))
-        {
-            bridgeConnected = message.EndsWith("CONNECTED", StringComparison.Ordinal);
-            return;
-        }
-
-        if (!message.StartsWith("IMU:"))
-        {
-            return;
-        }
-
-        string payload = message.Substring(4);
-        string[] values = payload.Split(',');
-        if (values.Length < 6)
-        {
-            return;
-        }
-
-        if (!TryParse(values[0], out float ax) ||
-            !TryParse(values[1], out float ay) ||
-            !TryParse(values[2], out float az) ||
-            !TryParse(values[3], out float gx) ||
-            !TryParse(values[4], out float gy) ||
-            !TryParse(values[5], out float gz))
-        {
-            return;
-        }
-
-        latestAcceleration = new Vector3(ax, ay, az);
-        latestGyro = new Vector3(gx, gy, gz);
-        hasImuData = true;
-    }
-
-    private static bool TryParse(string value, out float result)
+    private static bool TryParseFloat(string value, out float result)
     {
         return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
     }
