@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -9,6 +10,8 @@ using UnityEngine.UI;
 // スクロール可能な曲リスト + 右側に難易度・ジャケット・スタートボタン。
 // PC キー入力（↑↓で曲選択、←→で難易度、Enter/Space で開始）。
 // 選択が1秒落ち着いたら、選択難易度のクライマックスを音付きで10秒プレビューする。
+// EventSystem（実行順 -1000）より先に専用キーを処理し、同じ入力の二重配送を防ぐ。
+[DefaultExecutionOrder(-1100)]
 public class SongSelectController : MonoBehaviour
 {
     // 曲フォルダ/スコア保存キーは変えず、選曲とプレイ情報の表示名だけを統一する。
@@ -54,6 +57,8 @@ public class SongSelectController : MonoBehaviour
     private int selectedIndex = -1;
     private int selectedDifficulty = 0; // 初期選択は Easy
     private SongSelectChartPreview chartPreview;
+    private EventSystem keyboardEventSystem;
+    private bool previousNavigationEvents;
     public SongSelectChartPreview ChartPreview => chartPreview;
     // 難易度レベル(1〜10)のキャッシュ。キー = songId::難易度名。0 = 譜面なし(数値非表示)
     private readonly Dictionary<string, int> levelCache = new Dictionary<string, int>();
@@ -79,14 +84,42 @@ public class SongSelectController : MonoBehaviour
 
     void Update()
     {
+        RestoreNavigationEvents();
         if (chartPreview != null) chartPreview.Tick();
         var kb = Keyboard.current;
         if (kb == null) return;
-        if (kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame) Move(-1);
-        if (kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame) Move(1);
-        if (kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame) ChangeDifficulty(-1);
-        if (kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame) ChangeDifficulty(1);
-        if (kb.enterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame) StartGame();
+        bool previousSong = kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame;
+        bool nextSong = kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame;
+        bool easier = kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame;
+        bool harder = kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame;
+        bool start = kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame;
+        bool holdingShortcut = kb.upArrowKey.isPressed || kb.wKey.isPressed || kb.downArrowKey.isPressed || kb.sKey.isPressed
+            || kb.leftArrowKey.isPressed || kb.aKey.isPressed || kb.rightArrowKey.isPressed || kb.dKey.isPressed
+            || kb.enterKey.isPressed || kb.numpadEnterKey.isPressed || kb.spaceKey.isPressed;
+        if (previousSong || nextSong || easier || harder || start || holdingShortcut)
+        {
+            // クリック後の選択ボタンへ、同じ矢印・Enterを移動/Submitとして送らない。長押しも対象。
+            // ポインター処理は継続し、キー操作のないフレームのゲームパッド操作も保つ。
+            keyboardEventSystem = EventSystem.current;
+            if (keyboardEventSystem != null)
+            {
+                previousNavigationEvents = keyboardEventSystem.sendNavigationEvents;
+                keyboardEventSystem.sendNavigationEvents = false;
+            }
+        }
+        if (previousSong) Move(-1);
+        if (nextSong) Move(1);
+        if (easier) ChangeDifficulty(-1);
+        if (harder) ChangeDifficulty(1);
+        if (start) StartGame();
+    }
+
+    void LateUpdate() { RestoreNavigationEvents(); }
+
+    private void RestoreNavigationEvents()
+    {
+        if (keyboardEventSystem != null) keyboardEventSystem.sendNavigationEvents = previousNavigationEvents;
+        keyboardEventSystem = null;
     }
 
     // 曲一覧に出す標準難易度(HasPlayableChart の探索にも使う)
@@ -420,7 +453,7 @@ public class SongSelectController : MonoBehaviour
 
     public void StopPreview() { if (chartPreview != null) chartPreview.Cancel(); else if (previewSource != null) previewSource.Stop(); }
 
-    void OnDisable() { StopPreview(); }
+    void OnDisable() { RestoreNavigationEvents(); StopPreview(); }
 
     void OnDestroy()
     {
