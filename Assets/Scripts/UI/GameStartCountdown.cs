@@ -49,16 +49,19 @@ public class GameStartCountdown : MonoBehaviour
     }
 
     // カウントを開始し、START! と一致する楽曲開始用 DSP 時刻を返す。
-    public double Begin(float bpm, string difficulty, float volume = 0.55f)
+    public double Begin(float bpm, string difficulty, float volume = 0.55f, double minimumLeadSeconds = 0.0)
     {
         Build();
         beatSeconds = BeatSeconds(bpm);
         accent = AccentForDifficulty(difficulty);
-        firstBeatDspTime = AudioSettings.dspTime + ScheduleLeadSeconds;
+        // 低速ノーツの先読みが3拍より長ければ、カウントの前に待ち時間を足す。
+        // 3→2→1→STARTの拍間隔と、STARTと楽曲の同期は維持する。
+        firstBeatDspTime = AudioSettings.dspTime + ScheduleLeadSeconds
+            + System.Math.Max(0.0, minimumLeadSeconds - beatSeconds * 3.0);
         songStartDspTime = firstBeatDspTime + beatSeconds * 3.0;
         shownStep = -1;
         running = true;
-        canvasGroup.alpha = 1f;
+        canvasGroup.alpha = 0f;
         canvasGroup.blocksRaycasts = false;
 
         bpmText.text = $"{SanitizeBpm(bpm):0} BPM  //  3 BEAT COUNT-IN";
@@ -197,6 +200,9 @@ public class GameStartCountdown : MonoBehaviour
         if (!running) return;
 
         double now = AudioSettings.dspTime;
+        // 追加した助走中に「3」だけ先に表示せず、最初のクリック音と一緒に出す。
+        if (now < firstBeatDspTime) { canvasGroup.alpha = 0f; return; }
+        canvasGroup.alpha = 1f;
         int step = StepAt(now, firstBeatDspTime, beatSeconds);
         if (step != shownStep) ApplyStep(step);
 

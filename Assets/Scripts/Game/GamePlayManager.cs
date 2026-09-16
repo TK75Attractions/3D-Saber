@@ -303,16 +303,20 @@ public class GamePlayManager : MonoBehaviour
         scoreManager.Bind(noteSpawner);
         if (longNoteCutSfx != null) longNoteCutSfx.Bind(noteSpawner);
         if (goldNoteSfx != null) goldNoteSfx.Bind(noteSpawner);
+        // 冒頭にも通常と同じ移動時間を確保する。譜面の時刻・オフセットは変えない。
+        double leadInSeconds = chart.notes.Count > 0
+            ? System.Math.Max(0.0, noteSpawner.approachTime - noteSpawner.EffectiveTime(chart.notes[0]))
+            : 0.0;
         if (enableStartCountdown)
         {
             // START! の発光・効果音・楽曲の先頭を同じ DSP 時刻へ予約する。
             var countdown = GameStartCountdown.Ensure();
-            double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume);
+            double startDspTime = countdown.Begin(chart.bpm, GameSession.SelectedDifficulty, startCountdownVolume, leadInSeconds);
             songPlayer.PlayScheduled(startDspTime);
         }
         else
         {
-            songPlayer.Play();
+            songPlayer.PlayScheduled(AudioSettings.dspTime + System.Math.Max(0.01, songPlayer.startDelay) + leadInSeconds);
         }
         ready = true;
     }
@@ -572,8 +576,8 @@ public class GamePlayManager : MonoBehaviour
             return;
         }
 
-        // 2b. 通常の譜面進行
-        if (songPlayer.IsPlaying)
+        // 2b. 開始予約中の負の曲時計でも先読みする。停止後はSongTime=0へ巻き戻して進めない。
+        if (songPlayer.IsScheduled)
         {
             noteSpawner.Tick(songPlayer.SongTime);
             if (barLineSpawner != null) barLineSpawner.Tick(songPlayer.SongTime);

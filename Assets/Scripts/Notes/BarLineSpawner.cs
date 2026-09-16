@@ -23,6 +23,8 @@ public class BarLineSpawner : MonoBehaviour
     private float bpm;
     private double endTimeSeconds;
     private int nextBarIndex;
+    private Material lineMaterial;
+    private Material accentMaterial;
     private readonly List<(GameObject obj, double time)> live = new List<(GameObject, double)>();
 
     public float Speed => approachTime > 0.0001f ? (spawnZ - judgeZ) / approachTime : 0f;
@@ -72,13 +74,14 @@ public class BarLineSpawner : MonoBehaviour
         var go = Instantiate(barLinePrefab, new Vector3(0f, 0f, spawnZ), Quaternion.identity, root);
         go.SetActive(true);
 
+        bool accented = accentEvery > 0 && nextBarIndex % accentEvery == 0;
         if (overrideVisual)
         {
-            ApplyVisualOverride(go);
+            ApplyVisualOverride(go, accented);
         }
 
         // accentEvery 毎に強調（少し明るく）
-        if (accentEvery > 0 && nextBarIndex % accentEvery == 0)
+        else if (accented)
         {
             var mr = go.GetComponentInChildren<MeshRenderer>();
             if (mr != null && mr.sharedMaterial != null)
@@ -114,7 +117,7 @@ public class BarLineSpawner : MonoBehaviour
         }
     }
 
-    private void ApplyVisualOverride(GameObject barGo)
+    private void ApplyVisualOverride(GameObject barGo, bool accented)
     {
         // バーは prefab 内の "Line" Cube。厚みは scale.y、アルファは material.
         var line = barGo.transform.Find("Line");
@@ -123,17 +126,43 @@ public class BarLineSpawner : MonoBehaviour
             Vector3 s = line.localScale;
             line.localScale = new Vector3(s.x, lineThickness, s.z);
         }
-        // 全 MeshRenderer のマテリアルを薄い白に統一
+        // 元の素材が空でもURP用の薄い白を保証する。2種類だけを共有し、曲終了時に解放する。
+        Material material = VisualMaterial(accented);
         var mrs = barGo.GetComponentsInChildren<MeshRenderer>();
         foreach (var mr in mrs)
         {
-            if (mr.sharedMaterial == null) continue;
-            var mat = new Material(mr.sharedMaterial);
-            Color c = new Color(1f, 1f, 1f, lineAlpha);
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
-            else mat.color = c;
-            mr.sharedMaterial = mat;
+            mr.sharedMaterial = material;
         }
+    }
+
+    private Material VisualMaterial(bool accented)
+    {
+        var material = accented ? accentMaterial : lineMaterial;
+        if (material == null)
+        {
+            var shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+            material = new Material(shader) { name = accented ? "BarLineAccent" : "BarLine" };
+            material.SetOverrideTag("RenderType", "Transparent");
+            if (material.HasProperty("_Surface")) material.SetFloat("_Surface", 1f);
+            material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+            if (material.HasProperty("_SrcBlend")) material.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+            if (material.HasProperty("_DstBlend")) material.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+            if (material.HasProperty("_ZWrite")) material.SetInt("_ZWrite", 0);
+            material.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
+            if (accented) accentMaterial = material; else lineMaterial = material;
+        }
+        float strength = accented ? 1.6f : 1f;
+        Color color = new Color(strength, strength, strength, Mathf.Clamp01(lineAlpha * strength));
+        if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
+        else material.color = color;
+        return material;
+    }
+
+    private void OnDestroy()
+    {
+        Cleanup();
+        if (lineMaterial != null) SafeDestroy(lineMaterial);
+        if (accentMaterial != null) SafeDestroy(accentMaterial);
     }
 
     private void Cleanup()
@@ -145,7 +174,7 @@ public class BarLineSpawner : MonoBehaviour
         live.Clear();
     }
 
-    private static void SafeDestroy(GameObject go)
+    private static void SafeDestroy(Object go)
     {
         if (Application.isPlaying) Destroy(go);
         else DestroyImmediate(go);

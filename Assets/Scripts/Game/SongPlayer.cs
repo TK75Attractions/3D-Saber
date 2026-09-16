@@ -16,6 +16,8 @@ public class SongPlayer : MonoBehaviour
         set { EnsureSource(); source.clip = value; }
     }
 
+    // 開始予約中も先読み時計は動く。音が鳴っている状態とは区別する。
+    public bool IsScheduled => scheduled;
     public bool IsPlaying => scheduled && AudioSettings.dspTime >= startDspTime;
 
     // 曲開始からの秒数。再生開始前は負の値。
