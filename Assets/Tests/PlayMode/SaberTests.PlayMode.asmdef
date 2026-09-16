@@ -4,7 +4,8 @@
     "references": [
         "UnityEngine.TestRunner",
         "SaberGame",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

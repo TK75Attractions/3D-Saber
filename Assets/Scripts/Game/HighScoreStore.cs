@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 // 曲×難易度ごとのハイスコア上位N件を PlayerPrefs に JSON で保存する薄いストア。
@@ -37,6 +38,10 @@ public static class HighScoreStore
         {
             var table = JsonUtility.FromJson<HighScoreTable>(json);
             if (table == null || table.entries == null) return new HighScoreTable();
+            // 一部が不正・順不同でも有効な記録を残す。同点の記録順は変えない。
+            // 読み取りだけでは保存先を書き換えず、次のRecordで保存する。
+            table.entries = table.entries.Where(e => e != null && e.score >= 0)
+                .OrderByDescending(e => e.score).Take(MaxEntries).ToList();
             return table;
         }
         catch (Exception)

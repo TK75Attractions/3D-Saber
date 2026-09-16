@@ -412,7 +412,8 @@ public class ResultSkin : MonoBehaviour
         var table = HighScoreStore.Load(songId, GameSession.SelectedDifficulty);
         int prevBest = table.entries.Count > 0 ? table.entries[0].score : 0;
         bool newRecord = GameSession.FinalScore > prevBest && GameSession.FinalScore > 0;
-        int shownScore = prevBest > 0 ? prevBest : GameSession.FinalScore;
+        // NEW RECORDの比較には以前の記録を使い、HI-SCOREには更新後の最高点を表示する。
+        int shownScore = Mathf.Max(prevBest, GameSession.FinalScore);
 
         // 今回の結果を記録(prevBest を読んだ後に保存)
         float accuracy = PlayRankHelper.Accuracy(

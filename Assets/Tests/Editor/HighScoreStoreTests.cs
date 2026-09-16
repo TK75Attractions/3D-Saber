@@ -92,6 +92,32 @@ public class HighScoreStoreTests
         Assert.AreEqual("hiscore_Song_normal", HighScoreStore.Key("Song", null), "難易度未指定は normal");
     }
 
+    [Test]
+    public void Load_RecoversValidEntriesInStableScoreOrderWithoutWritingPreferences()
+    {
+        string key = HighScoreStore.Key(TestSong, TestDiff);
+        string json = "{\"entries\":[{\"score\":-1},null,{\"score\":50,\"date\":\"first\"},{\"score\":100},{\"score\":50,\"date\":\"second\"}]}";
+        PlayerPrefs.SetString(key, json);
+        var table = HighScoreStore.Load(TestSong, TestDiff);
+        Assert.AreEqual(100, table.entries[0].score);
+        Assert.AreEqual("first", table.entries[1].date);
+        Assert.AreEqual("second", table.entries[2].date);
+        Assert.IsTrue(table.entries.TrueForAll(e => e != null && e.score >= 0));
+        Assert.AreEqual(json, PlayerPrefs.GetString(key), "読むだけでは元データを書き換えない");
+    }
+
+    [Test]
+    public void Load_KeepsOnlyTheBestFiveFromOversizedHistory()
+    {
+        var history = new HighScoreTable();
+        for (int i = 0; i < 8; i++) history.entries.Add(Entry(i * 100));
+        PlayerPrefs.SetString(HighScoreStore.Key(TestSong, TestDiff), JsonUtility.ToJson(history));
+        var loaded = HighScoreStore.Load(TestSong, TestDiff);
+        Assert.AreEqual(HighScoreStore.MaxEntries, loaded.entries.Count);
+        Assert.AreEqual(700, loaded.entries[0].score);
+        Assert.AreEqual(300, loaded.entries[4].score);
+    }
+
     // ---- ランクラベルの復元(表示色に使う) ----
 
     [Test]
