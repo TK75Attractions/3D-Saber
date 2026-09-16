@@ -32,6 +32,16 @@ public class Swing8DirectionLoggerTests
     }
 
     [Test]
+    public void SwingEventDirections_MapToExistingCutDirections()
+    {
+        Assert.AreEqual(0, Swing8DirectionLogger.ToLegacyDirectionIndex(SwingDirection.Right));
+        Assert.AreEqual(2, Swing8DirectionLogger.ToLegacyDirectionIndex(SwingDirection.Up));
+        Assert.AreEqual(4, Swing8DirectionLogger.ToLegacyDirectionIndex(SwingDirection.Left));
+        Assert.AreEqual(6, Swing8DirectionLogger.ToLegacyDirectionIndex(SwingDirection.Down));
+        Assert.AreEqual(-1, Swing8DirectionLogger.ToLegacyDirectionIndex(SwingDirection.Unknown));
+    }
+
+    [Test]
     public void TryGetLatest_NoInstance_ReturnsFalse()
     {
         // 直前テストで Instance が残っていないことを確認しつつ既定挙動を検証。
