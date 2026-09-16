@@ -2,8 +2,8 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-// Beat Saber 系の「暗い空間に浮くステージ」をタイトル専用に組み立てる背景。
-// 外部画像に依存せず、星・消失点グリッド・左右のネオンレールを UI 図形だけで生成する。
+// 暗い空間の奥行きと、赤青の光路を持つタイトル専用背景。
+// 奥から手前へ重なるレールの角度・線幅を揃え、ロゴと開始ノーツの周囲は空ける。
 public class SaberTitleBackdrop : MonoBehaviour
 {
     static readonly Color Red = new Color(1f, 0.08f, 0.20f, 1f);
@@ -83,16 +83,16 @@ public class SaberTitleBackdrop : MonoBehaviour
     {
         var root = MakeContainer("AmbientGlows");
         MakeGlow(root, "RedWash", new Vector2(-720f, 70f), new Vector2(1650f, 1450f),
-            new Color(Red.r, Red.g, Red.b, 0.075f));
+            new Color(Red.r, Red.g, Red.b, 0.055f));
         MakeGlow(root, "BlueWash", new Vector2(720f, 70f), new Vector2(1650f, 1450f),
-            new Color(Blue.r, Blue.g, Blue.b, 0.095f));
-        MakeGlow(root, "CenterBloom", new Vector2(0f, 185f), new Vector2(1180f, 860f),
-            new Color(Green.r, Green.g, Green.b, 0.050f));
+            new Color(Blue.r, Blue.g, Blue.b, 0.080f));
+        MakeGlow(root, "FloorBloom", new Vector2(0f, -245f), new Vector2(920f, 280f),
+            new Color(.04f, .55f, .85f, .09f));
     }
 
     void BuildStars()
     {
-        const int count = 52;
+        const int count = 26;
         var root = MakeContainer("StarField");
         var random = new System.Random(3187);
         stars = new RectTransform[count];
@@ -105,7 +105,7 @@ public class SaberTitleBackdrop : MonoBehaviour
             var go = new GameObject($"Star_{i:00}", typeof(RectTransform), typeof(Image));
             go.transform.SetParent(root, false);
             var rt = go.GetComponent<RectTransform>();
-            float size = Mathf.Lerp(1.5f, 5.5f, (float)random.NextDouble());
+            float size = Mathf.Lerp(1.1f, 3.0f, (float)random.NextDouble());
             rt.sizeDelta = Vector2.one * size;
 
             float x = Mathf.Lerp(-1010f, 1010f, (float)random.NextDouble());
@@ -116,7 +116,7 @@ public class SaberTitleBackdrop : MonoBehaviour
             float colorPick = (float)random.NextDouble();
             Color c = colorPick < 0.10f ? Red
                 : (colorPick > 0.90f ? Green : (colorPick > 0.78f ? Blue : Color.white));
-            c.a = Mathf.Lerp(0.12f, 0.62f, (float)random.NextDouble());
+            c.a = Mathf.Lerp(0.09f, 0.32f, (float)random.NextDouble());
             var image = go.GetComponent<Image>();
             image.sprite = UISkinKit.SoftGlow();
             image.color = c;
@@ -135,8 +135,8 @@ public class SaberTitleBackdrop : MonoBehaviour
         grid.transform.SetParent(root, false);
         StretchFull(grid.GetComponent<RectTransform>());
 
-        Vector2 vanishingPoint = new Vector2(0f, -62f);
-        Color gridColor = new Color(0.22f, 0.72f, 0.66f, 0.090f);
+        Vector2 vanishingPoint = new Vector2(0f, -72f);
+        Color gridColor = new Color(.10f, .52f, .68f, .13f);
 
         for (int i = -6; i <= 6; i++)
         {
@@ -157,32 +157,54 @@ public class SaberTitleBackdrop : MonoBehaviour
                 new Vector2(width * 0.5f, y), 1.35f, c);
         }
 
-        MakeNeonLine(root, "Horizon", new Vector2(-880f, -62f), new Vector2(880f, -62f),
-            new Color(Green.r, Green.g, Green.b, 0.38f), 2f, 54f, 0.2f);
+        // 水平線を画面の端から端まで引かず、空間の奥に短い光を置く。
+        MakeNeonLine(root, "HorizonLeft", new Vector2(-530f, -72f), new Vector2(-155f, -72f),
+            new Color(.08f, .64f, .9f, .38f), 1.5f, 24f, .2f);
+        MakeNeonLine(root, "HorizonRight", new Vector2(155f, -72f), new Vector2(530f, -72f),
+            new Color(.08f, .64f, .9f, .38f), 1.5f, 24f, .8f);
+        MakeNeonLine(root, "LeftRunway", new Vector2(-100f, -88f), new Vector2(-390f, -620f),
+            new Color(.08f, .64f, .9f, .32f), 1.5f, 18f, .5f);
+        MakeNeonLine(root, "RightRunway", new Vector2(100f, -88f), new Vector2(390f, -620f),
+            new Color(.08f, .64f, .9f, .32f), 1.5f, 18f, 1.1f);
     }
 
     void BuildArenaRails()
     {
         var root = MakeContainer("ArenaRails");
 
-        MakeNeonLine(root, "RedLowerRail", new Vector2(-1110f, -610f), new Vector2(-520f, 220f),
-            new Color(Red.r, Red.g, Red.b, 0.68f), 3.2f, 76f, 0f);
-        MakeNeonLine(root, "RedUpperRail", new Vector2(-520f, 220f), new Vector2(-245f, 525f),
-            new Color(Red.r, Red.g, Red.b, 0.52f), 2.4f, 58f, 0.5f);
-        MakeNeonLine(root, "BlueLowerRail", new Vector2(1110f, -610f), new Vector2(520f, 220f),
-            new Color(Blue.r, Blue.g, Blue.b, 0.74f), 3.2f, 76f, 1.2f);
-        MakeNeonLine(root, "BlueUpperRail", new Vector2(520f, 220f), new Vector2(245f, 525f),
-            new Color(Blue.r, Blue.g, Blue.b, 0.56f), 2.4f, 58f, 1.8f);
+        for (int side = -1; side <= 1; side += 2)
+        {
+            Color accent = side < 0 ? Red : Blue;
+            // 同じ角度の輪郭を奥へ反復させ、単なる斜線ではなく構造物として見せる。
+            for (int depth = 0; depth < 3; depth++)
+            {
+                float inset = depth * 58f;
+                Color rib = accent;
+                rib.a = depth == 0 ? .68f : .17f - depth * .035f;
+                Vector2 a = new Vector2(side * (1040f - inset), -590f);
+                Vector2 b = new Vector2(side * (710f - inset), -220f + depth * 28f);
+                Vector2 c = new Vector2(side * (570f - inset), 280f - depth * 30f);
+                Vector2 d = new Vector2(side * (390f - inset), 475f - depth * 30f);
+                MakeNeonLine(root, "LowerRail", a, b, rib, depth == 0 ? 2.8f : 1.2f, 24f, depth * .4f);
+                MakeNeonLine(root, "MidRail", b, c, rib, depth == 0 ? 2.8f : 1.2f, 24f, depth * .4f + .4f);
+                MakeNeonLine(root, "UpperRail", c, d, rib, depth == 0 ? 2.8f : 1.2f, 24f, depth * .4f + .8f);
+            }
 
-        // ロゴの背後を横切る細いライト。中央は空けて文字の可読性を保つ。
-        MakeNeonLine(root, "RedHeader", new Vector2(-960f, 410f), new Vector2(-390f, 410f),
-            new Color(Red.r, Red.g, Red.b, 0.42f), 2f, 38f, 0.7f);
-        MakeNeonLine(root, "BlueHeader", new Vector2(390f, 410f), new Vector2(960f, 410f),
-            new Color(Blue.r, Blue.g, Blue.b, 0.46f), 2f, 38f, 1.4f);
+            Color edge = new Color(accent.r, accent.g, accent.b, .42f);
+            MakeNeonLine(root, "Header", new Vector2(side * 990f, 425f), new Vector2(side * 700f, 425f),
+                edge, 1.7f, 22f, side + 1f);
+            MakeFlatLine(root, "HeaderReturn", new Vector2(side * 700f, 425f), new Vector2(side * 660f, 385f), 1.7f, edge);
 
-        Color frame = new Color(0.52f, 0.68f, 1f, 0.11f);
-        MakeFlatLine(root, "LeftFrame", new Vector2(-735f, -445f), new Vector2(-735f, 330f), 1.5f, frame);
-        MakeFlatLine(root, "RightFrame", new Vector2(735f, -445f), new Vector2(735f, 330f), 1.5f, frame);
+            // 短い目盛りはレールの接合部だけに置き、読めない装飾文字は使わない。
+            for (int mark = 0; mark < 5; mark++)
+            {
+                float y = -55f + mark * 14f;
+                float width = mark == 2 ? 35f : 18f;
+                MakeFlatLine(root, "RailNotch", new Vector2(side * 838f, y),
+                    new Vector2(side * (838f - width), y), 2f,
+                    new Color(accent.r, accent.g, accent.b, mark == 2 ? .58f : .23f));
+            }
+        }
     }
 
     void BuildVignette()
