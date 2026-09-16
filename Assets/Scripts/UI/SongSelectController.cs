@@ -119,28 +119,39 @@ public class SongSelectController : MonoBehaviour
     // 曲が1つでも実譜面(ノーツ入り)を持つか。無い曲はロック扱いで選べない。
     public static bool HasPlayableChart(string songId, string[] difficulties)
     {
+        // 実際に選べる難易度を、ゲームと同じ優先順位・フォールバックで確認する。
+        // 空の難易度別ファイルがある場合、基礎譜面を代わりに遊べるとは扱わない。
+        if (difficulties == null || difficulties.Length == 0)
+            return HasPlayableDifficulty(songId, null);
+        foreach (string difficulty in difficulties)
+            if (HasPlayableDifficulty(songId, difficulty)) return true;
+        return false;
+    }
+
+    private static bool HasPlayableDifficulty(string songId, string difficulty)
+    {
         try
         {
-            ChartData baseChart = ChartLoader.LoadFromStreamingAssets(songId);
-            if (baseChart != null && baseChart.notes != null && baseChart.notes.Count > 0) return true;
-            if (difficulties != null)
-            {
-                foreach (string d in difficulties)
-                {
-                    ChartData c = ChartLoader.LoadFromStreamingAssets(songId, d);
-                    if (c != null && c.notes != null && c.notes.Count > 0) return true;
-                }
-            }
+            return ChartDifficultyRater.Rate(ChartLoader.LoadFromStreamingAssets(songId, difficulty)) > 0;
         }
         catch (System.Exception)
         {
-            // 読めない譜面はロック扱い
+            // この難易度だけを利用不可にし、他の難易度の確認は続ける。
+            return false;
         }
-        return false;
     }
 
     public bool IsLocked(int index) => lockedIndices.Contains(index);
     public bool SelectedSongLocked => IsLocked(selectedIndex);
+
+    private bool CanStartSelectedChart => selectedIndex >= 0 && selectedIndex < songIds.Count
+        && difficultyNames != null && selectedDifficulty >= 0 && selectedDifficulty < difficultyNames.Length
+        && !SelectedSongLocked && CurrentDifficultyLevel() > 0;
+
+    private void RefreshStartAvailability()
+    {
+        if (startButton != null) startButton.interactable = CanStartSelectedChart;
+    }
 
     // テストからも呼べるように公開(Start から呼ばれる一覧構築)
     public void Populate()
@@ -155,6 +166,7 @@ public class SongSelectController : MonoBehaviour
         {
             if (!HasPlayableChart(songIds[i], difficultyNames)) lockedIndices.Add(i);
         }
+        RefreshStartAvailability();
         if (scrollContent == null || buttonPrefab == null) return;
 
         for (int i = 0; i < songIds.Count; i++)
@@ -194,7 +206,7 @@ public class SongSelectController : MonoBehaviour
         LoadJacket(songIds[idx]);
         StartPreview(songIds[idx]);
         RefreshDifficultyDisplay(); // 曲が変わるとレベル数値も変わる
-        if (startButton != null) startButton.interactable = !SelectedSongLocked; // ロック曲はSTART不可
+        RefreshStartAvailability();
         OnSelectionChanged?.Invoke(idx);
     }
 
@@ -447,6 +459,8 @@ public class SongSelectController : MonoBehaviour
                     : new Color(0.15f, 0.2f, 0.3f, 1f);
             }
         }
+        // スキンが無効表示へ更新できるよう、通知より先に開始可否を揃える。
+        RefreshStartAvailability();
         OnDifficultyChanged?.Invoke(idx);
         if (changed && selectedIndex >= 0 && selectedIndex < songIds.Count) StartPreview(songIds[selectedIndex]);
     }
@@ -455,6 +469,19 @@ public class SongSelectController : MonoBehaviour
     {
         if (selectedIndex < 0 || selectedIndex >= songIds.Count) return;
         if (SelectedSongLocked) return; // ロック曲(譜面未制作)は開始できない
+        if (difficultyNames == null || selectedDifficulty < 0 || selectedDifficulty >= difficultyNames.Length) return;
+        // 選曲中に編集・削除された譜面も、開始直前には読み直す。
+        string key = songIds[selectedIndex] + "::" + difficultyNames[selectedDifficulty];
+        levelCache.Remove(key);
+        authoredLevelCache.Remove(key);
+        RefreshStartAvailability();
+        if (!CanStartSelectedChart)
+        {
+            StopPreview();
+            RefreshDifficultyDisplay();
+            OnDifficultyChanged?.Invoke(selectedDifficulty);
+            return;
+        }
         StopPreview();
         GameSession.SelectedSongId = songIds[selectedIndex];
         GameSession.SelectedSongTitle = DisplaySongTitle(songIds[selectedIndex]);

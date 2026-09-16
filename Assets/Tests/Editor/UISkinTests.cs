@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.UI;
@@ -92,9 +93,16 @@ public class UISkinTests
         Assert.IsNotNull(a.transform.Find("Gradient"));
         Assert.IsNotNull(a.transform.Find("StarField"));
         Assert.IsNotNull(a.transform.Find("PerspectiveStage/Grid"));
-        Assert.IsNotNull(a.transform.Find("ArenaRails/RedLowerRailCore"));
-        Assert.IsNotNull(a.transform.Find("ArenaRails/BlueLowerRailCore"));
-        Assert.IsNotNull(a.transform.Find("PerspectiveStage/HorizonCore"));
+        // 現在の背景は左右それぞれに反復レールを持つ。旧オブジェクト名には依存しない。
+        a.SetPresentationTime(3f, 0f);
+        var rails = a.transform.Find("ArenaRails").GetComponentsInChildren<Image>();
+        Assert.IsTrue(rails.Any(image => image.color.r > image.color.b && image.color.a > 0f
+            && image.rectTransform.anchoredPosition.x < 0f));
+        Assert.IsTrue(rails.Any(image => image.color.b > image.color.r && image.color.a > 0f
+            && image.rectTransform.anchoredPosition.x > 0f));
+        Assert.IsTrue(rails.All(image => !image.raycastTarget), "背景は開始操作を遮らない");
+        Assert.IsNotNull(a.transform.Find("PerspectiveStage/HorizonLeftCore"));
+        Assert.IsNotNull(a.transform.Find("PerspectiveStage/HorizonRightCore"));
     }
 
     [Test]
