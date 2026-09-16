@@ -44,6 +44,8 @@ public class UdpImuBridge : MonoBehaviour
     private int closing;
 
     public event Action<SwingEvent> OnSwingReceived;
+    // main threadで通知。再接続前や無効化中に受信した方向ヒントを持ち越さない。
+    public event Action<long> OnSwingSessionReset;
 
     public bool IsBridgeConnected => bridgeConnected;
     public int ReceivedEvents => sequenceTracker.ReceivedEvents;
@@ -86,6 +88,16 @@ public class UdpImuBridge : MonoBehaviour
         Instance = this;
         mainThreadContext = SynchronizationContext.Current;
         DontDestroyOnLoad(gameObject);
+    }
+
+    private void OnEnable()
+    {
+        OnSwingSessionReset?.Invoke(SwingMonotonicClock.Timestamp);
+    }
+
+    private void OnDisable()
+    {
+        OnSwingSessionReset?.Invoke(SwingMonotonicClock.Timestamp);
     }
 
     private void Start()
@@ -193,7 +205,11 @@ public class UdpImuBridge : MonoBehaviour
             {
                 sequenceTracker.ResetSession();
             }
-            PostToMain(() => bridgeConnected = connected);
+            PostToMain(() =>
+            {
+                bridgeConnected = connected;
+                OnSwingSessionReset?.Invoke(receiveTimestamp);
+            });
             return;
         }
 
@@ -230,6 +246,7 @@ public class UdpImuBridge : MonoBehaviour
 
     private void DispatchSwingOnMainThread(SwingEvent receivedSwing)
     {
+        if (!isActiveAndEnabled) return;
         long callbackTimestamp = SwingMonotonicClock.Timestamp;
         SwingEvent swing = receivedSwing.WithMainThreadHandoff(callbackTimestamp);
         if (SwingEventTiming.IsStale(swing, callbackTimestamp, staleEventSeconds))

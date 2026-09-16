@@ -44,6 +44,65 @@ public class SaberCutJudgeTests
         return n;
     }
 
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ImuHint_ExpiredReceiveTimeDoesNotRescueOppositeCuts(bool bladeMode)
+    {
+        CheckSimultaneousHint(bladeMode, 0.40, false);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void ImuHint_FreshEventRescuesBothSimultaneousCuts(bool bladeMode)
+    {
+        CheckSimultaneousHint(bladeMode, 0.02, true);
+    }
+
+    private void CheckSimultaneousHint(bool bladeMode, double receiveAgeSeconds, bool expectedCorrect)
+    {
+        var loggerGo = new GameObject("swingLogger");
+        created.Add(loggerGo);
+        var logger = loggerGo.AddComponent<Swing8DirectionLogger>();
+        // EditModeではUnityの起動コールバックを明示的に実行する。
+        typeof(Swing8DirectionLogger).GetMethod("Awake",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            .Invoke(logger, null);
+        // 配送は今でも、方向の有効期間は元の受信時刻から数える。
+        long received = SwingMonotonicClock.Timestamp
+            - (long)(receiveAgeSeconds * System.Diagnostics.Stopwatch.Frequency);
+        var swing = new SwingEvent(1, SwingDirection.Left, 0.8f, 10, received, double.NaN)
+            .WithMainThreadHandoff(SwingMonotonicClock.Timestamp);
+        typeof(Swing8DirectionLogger).GetMethod("HandleSwing",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            .Invoke(logger, new object[] { swing });
+
+        var first = MakeNote(Vector3.zero);
+        var second = MakeNote(new Vector3(0.5f, 0f, 0f));
+        first.RequiredDirection = second.RequiredDirection = CutDirection.Left;
+        if (bladeMode)
+        {
+            var (judge, tracker, bridge) = MakeBladeRig();
+            tracker.ResetTo(new Vector3(-2f, 0f, 0f));
+            tracker.Tick(Vector3.zero, 0.1f);
+            bridge.OverrideBlade(new Vector3(-1f, 0f, 0f), new Vector3(1f, 0f, 0f));
+            Assert.AreEqual(0, judge.TryCut());
+            tracker.Tick(new Vector3(4f, 0f, 0f), 0.1f);
+            bridge.OverrideBlade(new Vector3(3f, 0f, 0f), new Vector3(5f, 0f, 0f));
+            Assert.AreEqual(2, judge.TryCut());
+        }
+        else
+        {
+            var (judge, tracker) = MakeRig();
+            tracker.ResetTo(new Vector3(-2f, 0f, 0f));
+            tracker.Tick(new Vector3(2f, 0f, 0f), 0.1f);
+            Assert.AreEqual(2, judge.TryCut());
+        }
+        Assert.AreEqual(expectedCorrect, first.IsCut);
+        Assert.AreEqual(expectedCorrect, second.IsCut);
+        Assert.AreEqual(expectedCorrect ? 1 : 0, first.CutsAchieved);
+        Assert.AreEqual(expectedCorrect ? 1 : 0, second.CutsAchieved);
+    }
+
     [Test]
     public void TryCut_WithoutPreviousFrame_ReturnsZero()
     {

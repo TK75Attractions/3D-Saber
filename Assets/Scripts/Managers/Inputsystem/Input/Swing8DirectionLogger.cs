@@ -8,15 +8,19 @@ public class Swing8DirectionLogger : MonoBehaviour
 
     private int lastDirectionIndex = -1;
     private float lastEventTime = -999f;
+    private long lastReceiveTimestampTicks;
+    private long minimumReceiveTimestampTicks;
     private UdpImuBridge subscribedBridge;
 
     public int LastDirectionIndex => lastDirectionIndex;
+    // 旧表示用のUnity配送時刻。実際の判定ではTryGetRecentを使う。
     public float LastDirectionTime => lastEventTime;
     public CutDirection LastDirection => ToCutDirection(lastDirectionIndex);
 
     public static bool TryGetLatest(out CutDirection direction, out float time)
     {
-        if (Instance == null)
+        if (Instance == null || !Instance.isActiveAndEnabled || Instance.lastDirectionIndex < 0 ||
+            (Instance.subscribedBridge != null && !Instance.subscribedBridge.isActiveAndEnabled))
         {
             direction = CutDirection.None;
             time = -999f;
@@ -25,6 +29,25 @@ public class Swing8DirectionLogger : MonoBehaviour
         direction = Instance.LastDirection;
         time = Instance.lastEventTime;
         return Instance.lastDirectionIndex >= 0;
+    }
+
+    public static bool TryGetRecent(double maximumAgeSeconds, out CutDirection direction)
+    {
+        return TryGetRecent(maximumAgeSeconds, SwingMonotonicClock.Timestamp, out direction);
+    }
+
+    // 時刻を明示できる入口。同じ判定パスでの共有と待機なしの境界検証に使う。
+    public static bool TryGetRecent(double maximumAgeSeconds, long nowTicks, out CutDirection direction)
+    {
+        if (TryGetLatest(out direction, out _))
+        {
+            double ageMs = SwingMonotonicClock.ElapsedMilliseconds(
+                Instance.lastReceiveTimestampTicks, nowTicks);
+            // 上限0は期限なしではなく、受信と同時刻だけを許可する。
+            if (ageMs >= 0.0 && ageMs <= maximumAgeSeconds * 1000.0) return true;
+        }
+        direction = CutDirection.None;
+        return false;
     }
 
     private void Awake()
@@ -39,6 +62,9 @@ public class Swing8DirectionLogger : MonoBehaviour
 
     private void OnEnable()
     {
+        // 初回起動では受信済みのキューを許可し、再有効化では停止中の入力を持ち越さない。
+        if (minimumReceiveTimestampTicks != 0)
+            minimumReceiveTimestampTicks = SwingMonotonicClock.Timestamp;
         if (UdpImuBridge.Instance != null)
         {
             Subscribe(UdpImuBridge.Instance);
@@ -47,6 +73,7 @@ public class Swing8DirectionLogger : MonoBehaviour
 
     private void OnDisable()
     {
+        HandleSessionReset(SwingMonotonicClock.Timestamp);
         Unsubscribe();
     }
 
@@ -68,6 +95,7 @@ public class Swing8DirectionLogger : MonoBehaviour
         Unsubscribe();
         subscribedBridge = bridge;
         subscribedBridge.OnSwingReceived += HandleSwing;
+        subscribedBridge.OnSwingSessionReset += HandleSessionReset;
     }
 
     private void Unsubscribe()
@@ -75,14 +103,32 @@ public class Swing8DirectionLogger : MonoBehaviour
         if (subscribedBridge != null)
         {
             subscribedBridge.OnSwingReceived -= HandleSwing;
+            subscribedBridge.OnSwingSessionReset -= HandleSessionReset;
             subscribedBridge = null;
         }
+        ClearDirection();
+    }
+
+    private void ClearDirection()
+    {
+        lastDirectionIndex = -1;
+        lastEventTime = -999f;
+        lastReceiveTimestampTicks = 0;
+    }
+
+    private void HandleSessionReset(long resetReceiveTimestampTicks)
+    {
+        minimumReceiveTimestampTicks = System.Math.Max(minimumReceiveTimestampTicks, resetReceiveTimestampTicks);
+        ClearDirection();
     }
 
     private void HandleSwing(SwingEvent swing)
     {
+        if (!isActiveAndEnabled || swing.LocalReceiveTimestampTicks < minimumReceiveTimestampTicks ||
+            (subscribedBridge != null && !subscribedBridge.isActiveAndEnabled)) return;
         lastDirectionIndex = ToLegacyDirectionIndex(swing.Direction);
         lastEventTime = Time.time;
+        lastReceiveTimestampTicks = swing.LocalReceiveTimestampTicks;
     }
 
     public static int ToLegacyDirectionIndex(SwingDirection direction)

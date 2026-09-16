@@ -99,6 +99,8 @@ public class SaberCutJudge : MonoBehaviour
 
         var toRemove = new List<CuttableNote>();
         int cuts = 0;
+        // 同時に抜けたノーツは、期限境界でも同じヒントで評価する（消費しない）。
+        CutDirection imuHint = ResolveImuHint();
         foreach (var kv in pending)
         {
             CuttableNote note = kv.Key;
@@ -111,7 +113,6 @@ public class SaberCutJudge : MonoBehaviour
             float distNow = DistPointToSegment(noteXY, a, b, out _);
             if (distNow > hitRange)
             {
-                CutDirection imuHint = ResolveImuHint();
                 note.Cut(kv.Value.hitPoint, kv.Value.velocity, imuHint, EffectiveHand());
                 cuts++;
                 toRemove.Add(note);
@@ -164,6 +165,7 @@ public class SaberCutJudge : MonoBehaviour
 
         var toRemove = new List<CuttableNote>();
         int cuts = 0;
+        CutDirection imuHint = ResolveImuHint();
         foreach (var kv in pending)
         {
             CuttableNote note = kv.Key;
@@ -176,7 +178,6 @@ public class SaberCutJudge : MonoBehaviour
             float distNow = Vector2.Distance(now, noteXY);
             if (distNow > hitRange)
             {
-                CutDirection imuHint = ResolveImuHint();
                 note.Cut(kv.Value.hitPoint, kv.Value.velocity, imuHint, EffectiveHand());
                 cuts++;
                 toRemove.Add(note);
@@ -203,12 +204,11 @@ public class SaberCutJudge : MonoBehaviour
         return hand;
     }
 
-    // 直近 N 秒以内の IMU 振り検知方向を取得。古ければ None。
+    // 受信からN秒以内の方向だけを取得。配送遅延やTime.timeScaleで期限を延ばさない。
     private CutDirection ResolveImuHint()
     {
-        if (!Swing8DirectionLogger.TryGetLatest(out CutDirection dir, out float t)) return CutDirection.None;
-        if (Time.time - t > imuHintMaxAgeSeconds) return CutDirection.None;
-        return dir;
+        return Swing8DirectionLogger.TryGetRecent(imuHintMaxAgeSeconds, out CutDirection direction)
+            ? direction : CutDirection.None;
     }
 
     // 点 p と線分 a→b の最短距離と、線分上の最近点。

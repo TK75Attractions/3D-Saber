@@ -83,4 +83,16 @@ public class SwingEventStreamTests
         Assert.IsTrue(SwingEventTiming.IsStale(swing, later, 0.15));
         Assert.IsFalse(SwingEventTiming.IsStale(swing, later, 0.25));
     }
+
+    [Test]
+    public void MainThreadHandoff_PreservesOriginalReceiveTimestamp()
+    {
+        long received = System.Diagnostics.Stopwatch.Frequency * 10;
+        var original = new SwingEvent(1, SwingDirection.Left, 0.8f, 10, received, double.NaN);
+        long later = received + System.Diagnostics.Stopwatch.Frequency / 10;
+        var delivered = original.WithMainThreadHandoff(later);
+        Assert.AreEqual(received, delivered.LocalReceiveTimestampTicks);
+        Assert.AreEqual(original.LocalReceiveTimeSeconds, delivered.LocalReceiveTimeSeconds);
+        Assert.AreEqual(100.0, delivered.MainThreadHandoffLatencyMs, 0.001);
+    }
 }

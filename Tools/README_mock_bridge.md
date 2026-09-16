@@ -66,6 +66,18 @@ parse、重複・out-of-order除外を行う。sequence欠番は待たない。m
 `CutDirection` hintへ変換するだけである。Camera座標の5005/5006経路とHit確定は
 今回結合していない。
 
+判定用ヒントは `TryGetRecent` から取得し、UDP受信時刻から単調時計で年齢を数える。
+`SaberCutJudge` の既定300 msにはmain-thread配送待ちも含む。例えば120 ms待って
+配送されたヒントの残り時間は180 msであり、配送時に300 msへ戻さない。
+Time.timeScaleや一時停止によって有効期間は延びない。上限0は期限なしを意味しない。
+旧 `TryGetLatest(out float)` と `LastDirectionTime` は表示互換用のUnity配送時刻であり、
+判定の鮮度確認には使わない。
+
+STATE通知、Logger/Bridgeの無効化・再有効化で保持ヒントを破棄する。
+STATE後の新入力は通知処理より先に受信済みでも採用できるよう、状態パケットの
+受信時刻をリセット境界に使う。STATEを送らない既存のSWING送信元も引き続き利用できる。
+1回の退出判定ではヒントを共有し、同時ノーツの1個目で消費しない。
+
 ## Tests
 
 Python Virtual IMU:
