@@ -135,4 +135,46 @@ public class ResultRevealTests
         var b = ResultReveal.Ensure(canvasGo.GetComponent<Canvas>());
         Assert.AreSame(a, b);
     }
+
+    [Test]
+    public void InteractionWaitsForArrivalAndSkipEnablesIt()
+    {
+        var canvas = new GameObject("canvas", typeof(Canvas));
+        created.Add(canvas);
+        var reveal = ResultReveal.Ensure(canvas.GetComponent<Canvas>());
+        var button = new GameObject("back", typeof(RectTransform), typeof(UnityEngine.UI.Button));
+        button.transform.SetParent(canvas.transform, false);
+        reveal.Add(button, 2f, 1f, ResultReveal.Kind.Slide, Vector2.down * 46);
+        var group = button.GetComponent<CanvasGroup>();
+        Assert.False(button.GetComponent<UnityEngine.UI.Button>().IsInteractable());
+        Assert.False(group.blocksRaycasts);
+        reveal.Tick(2.9f);
+        Assert.AreEqual(1f, group.alpha, "完全に見えても移動中は操作を開始しない");
+        Assert.False(group.interactable);
+        reveal.Tick(3f);
+        Assert.True(group.interactable);
+        Assert.True(group.blocksRaycasts);
+        reveal.Tick(0f);
+        Assert.False(group.interactable);
+        reveal.Tick(999f);
+        Assert.True(group.interactable);
+    }
+
+    [Test]
+    public void RevealDoesNotEnableDecorationsOrOriginallyDisabledControls()
+    {
+        var canvas = new GameObject("canvas", typeof(Canvas));
+        created.Add(canvas);
+        var reveal = ResultReveal.Ensure(canvas.GetComponent<Canvas>());
+        var decoration = new GameObject("decoration", typeof(RectTransform), typeof(CanvasGroup));
+        decoration.transform.SetParent(canvas.transform, false);
+        var group = decoration.GetComponent<CanvasGroup>();
+        group.interactable = false;
+        group.blocksRaycasts = false;
+        reveal.Add(decoration, 0f, 1f, ResultReveal.Kind.Slide, Vector2.zero);
+        reveal.Tick(999f);
+        Assert.AreEqual(1f, group.alpha);
+        Assert.False(group.interactable);
+        Assert.False(group.blocksRaycasts);
+    }
 }

@@ -89,11 +89,11 @@ public class SaberUIPointer : MonoBehaviour
     private SaberInputBridge bridge; // セーバー本体。ある場合はその実位置に点を重ねる
     private readonly DwellTracker tracker = new DwellTracker(DwellSeconds, CooldownSeconds);
     private Button hovered;
-    private Vector3 smoothedWorld;
+    private Vector3 smoothedPosition;
     private bool hasSmoothed;
 
     public Button HoveredForTest => hovered;
-    // 調整画面のメニュー時だけ、判定面の入力範囲を画面全体の UI へ写す。
+    // メニュー時に、判定面の入力範囲を画面全体の UI へ写す。
     // セーバー本体・判定用の座標は変えず、ライブ試し切り中は下端の操作帯だけを使う。
     public bool RemapToFullScreen { get; set; }
     // ライブ判定調整だけ、下端の操作帯を対象にする。ほかの画面は従来どおり。
@@ -177,26 +177,33 @@ public class SaberUIPointer : MonoBehaviour
         // SaberInputBridge がいる画面では、その実位置(リマップ等を反映済み)を使い、
         // 青点がブレードから絶対にずれないようにする。無い画面のみ InputPoint 直読み。
         if (bridge == null) bridge = Object.FindFirstObjectByType<SaberInputBridge>();
-        Vector3 world = bridge != null && !bridge.UsingMouseFallback
+        // 結果画面など3Dブレードの無いUIでは、カメラの画角に依存せず下端まで届かせる。
+        bool normalizedUI = RemapToFullScreen && bridge == null;
+        Vector3 position = normalizedUI ? (Vector3)ip.NormalizedPosition : bridge != null && !bridge.UsingMouseFallback
             ? bridge.transform.position
             : new Vector3(ip.LocalPosition.x, ip.LocalPosition.y, 0f);
         if (!hasSmoothed)
         {
-            smoothedWorld = world;
+            smoothedPosition = position;
             hasSmoothed = true;
         }
         else
         {
             float alpha = Time.unscaledDeltaTime / (0.05f + Time.unscaledDeltaTime);
-            smoothedWorld = Vector3.Lerp(smoothedWorld, world, alpha);
+            smoothedPosition = Vector3.Lerp(smoothedPosition, position, alpha);
         }
-        Vector3 screen = cam.WorldToScreenPoint(smoothedWorld);
-        if (RemapToFullScreen && bridge != null)
+        Vector3 screen;
+        if (normalizedUI)
+        {
+            screen = new Vector3(smoothedPosition.x * Screen.width, smoothedPosition.y * Screen.height, 0f);
+        }
+        else if (RemapToFullScreen && bridge != null)
         {
             screen = new Vector3(
-                Mathf.InverseLerp(bridge.minBounds.x, bridge.maxBounds.x, smoothedWorld.x) * Screen.width,
-                Mathf.InverseLerp(bridge.minBounds.y, bridge.maxBounds.y, smoothedWorld.y) * Screen.height, 0f);
+                Mathf.InverseLerp(bridge.minBounds.x, bridge.maxBounds.x, smoothedPosition.x) * Screen.width,
+                Mathf.InverseLerp(bridge.minBounds.y, bridge.maxBounds.y, smoothedPosition.y) * Screen.height, 0f);
         }
+        else screen = cam.WorldToScreenPoint(smoothedPosition);
 
         if (BottomControlsOnly && !IsInsideBottomControls(screen, Screen.width, Screen.height))
         {
@@ -242,7 +249,7 @@ public class SaberUIPointer : MonoBehaviour
     private void Click(Button target, Vector3 screen)
     {
         var es = EventSystem.current;
-        if (es == null || target == null || !target.interactable) return;
+        if (es == null || target == null || !target.IsInteractable()) return;
         var data = new PointerEventData(es) { position = screen };
         ExecuteEvents.Execute(target.gameObject, data, ExecuteEvents.pointerClickHandler);
     }
@@ -259,7 +266,7 @@ public class SaberUIPointer : MonoBehaviour
         foreach (var hit in raycastResults)
         {
             var button = hit.gameObject.GetComponentInParent<Button>();
-            if (button != null && button.interactable) return button;
+            if (button != null && button.IsInteractable()) return button;
             if (RespectRaycastBlockers) return null;
         }
         return null;

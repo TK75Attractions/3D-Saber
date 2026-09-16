@@ -29,6 +29,8 @@ public class ResultReveal : MonoBehaviour
         public float delay;
         public float duration;
         public Vector2 from;
+        public bool interactable;
+        public bool blocksRaycasts;
     }
 
     // Slam の前半(拡大→着地)の割合。残りがバウンド。
@@ -113,14 +115,17 @@ public class ResultReveal : MonoBehaviour
             delay = delay,
             duration = Mathf.Max(0.01f, duration),
             from = slideFrom,
+            interactable = cg.interactable,
+            blocksRaycasts = cg.blocksRaycasts,
         };
         entries.Add(e);
-        Apply(e, Evaluate(kind, -1f, e.duration, slideFrom));
+        Apply(e, Evaluate(kind, -1f, e.duration, slideFrom), false);
     }
 
     public int EntryCount => entries.Count;
 
-    void Update()
+    // EventSystemの入力処理後に操作を解禁し、スキップした同じEnterでBACKを押さない。
+    void LateUpdate()
     {
         elapsed += Time.unscaledDeltaTime;
         if (SkipRequested()) elapsed = 999f;
@@ -132,13 +137,19 @@ public class ResultReveal : MonoBehaviour
     {
         foreach (var e in entries)
         {
-            Apply(e, Evaluate(e.kind, t - e.delay, e.duration, e.from));
+            Apply(e, Evaluate(e.kind, t - e.delay, e.duration, e.from), t >= e.delay + e.duration);
         }
     }
 
-    private static void Apply(Entry e, Pose pose)
+    private static void Apply(Entry e, Pose pose, bool finished)
     {
-        if (e.cg != null) e.cg.alpha = pose.alpha;
+        if (e.cg != null)
+        {
+            e.cg.alpha = pose.alpha;
+            // 透明・移動中のボタンを押さない。既存の操作禁止・装飾用設定も保持する。
+            e.cg.interactable = e.interactable && finished && pose.alpha > 0f;
+            e.cg.blocksRaycasts = e.blocksRaycasts && finished && pose.alpha > 0f;
+        }
         if (e.rt != null)
         {
             e.rt.anchoredPosition = e.basePos + pose.offset;

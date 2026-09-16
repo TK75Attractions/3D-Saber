@@ -1,5 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem.UI;
 using TMPro;
 
 // リザルト画面(デザインハンドオフ 6a "CHAKRA UNIFIED" 準拠、1920×1080 基準)。
@@ -79,6 +81,9 @@ public class ResultSkin : MonoBehaviour
         BuildDistributionBar(root.transform);
         StyleBackButton(canvas);
         BuildSkipHint(root.transform);
+        var pointer = SaberUIPointer.Build();
+        pointer.RemapToFullScreen = true;
+        pointer.RespectRaycastBlockers = true;
     }
 
     // ---- 純関数(テストから直接叩く) ----
@@ -573,6 +578,14 @@ public class ResultSkin : MonoBehaviour
                 var parts = UISkinKit.RestyleButton(btn, UISkinPalette.Cyan, 27f, "◀ BACK");
                 if (parts.label != null) parts.label.characterSpacing = 4f;
                 Reveal(btn.gameObject, DelayBackButton, 0.45f, FromBelow);
+                var events = EventSystem.current;
+                if (events != null)
+                {
+                    // マウスで演出を飛ばした後も、Enterで唯一の操作へ戻れるようにする。
+                    var module = events.GetComponent<InputSystemUIInputModule>();
+                    if (module != null) module.deselectOnBackgroundClick = false;
+                    events.SetSelectedGameObject(btn.gameObject);
+                }
             }
         }
     }
