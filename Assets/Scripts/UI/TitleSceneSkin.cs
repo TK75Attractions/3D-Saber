@@ -70,11 +70,11 @@ public class TitleSceneSkin : MonoBehaviour
         container.transform.SetParent(canvas.transform, false);
         titleContainer = container.GetComponent<RectTransform>();
         titleContainer.sizeDelta = new Vector2(1050f, 450f);
-        titleContainer.anchoredPosition = new Vector2(-10f, 250f);
+        titleContainer.anchoredPosition = new Vector2(0f, 250f);
 
-        BuildLogoWord(container.transform, "BEAT", new Color(1f, .13f, .25f), new Vector2(-12f, 128f));
+        BuildLogoWord(container.transform, "BEAT", new Color(1f, .13f, .25f), new Vector2(0f, 128f));
         BuildLogoWord(container.transform, "TRACE", new Color(.12f, .72f, 1f), Vector2.zero);
-        BuildLogoWord(container.transform, "SLASH", new Color(.18f, 1f, .56f), new Vector2(12f, -128f));
+        BuildLogoWord(container.transform, "SLASH", new Color(.18f, 1f, .56f), new Vector2(0f, -128f));
 
         var entrance = container.AddComponent<UIFadeSlideIn>();
         entrance.delay = .05f;
@@ -84,31 +84,13 @@ public class TitleSceneSkin : MonoBehaviour
 
     void BuildLogoWord(Transform parent, string word, Color brand, Vector2 position)
     {
-        // 角を切った字形を主役にし、背面の薄い影だけで厚みを付ける。
-        var font = UISkinKit.FontAsset("Oxanium-ExtraBold") ?? UISkinKit.LogoFontAsset();
-        var shadow = UISkinKit.MakeTMP(parent, "LogoDepth_" + word, word, 143f,
-            new Color(brand.r * .14f, brand.g * .14f, brand.b * .14f, 1f),
-            TextAlignmentOptions.Center, position + new Vector2(-5f, -6f),
-            new Vector2(1050f, 160f), FontStyles.Italic, 1f, font);
-        shadow.raycastTarget = false;
-
-        var glow = UISkinKit.MakeTMP(parent, "LogoGlow_" + word, word, 143f,
-            new Color(brand.r, brand.g, brand.b, .075f), TextAlignmentOptions.Center,
-            position, new Vector2(1050f, 160f), FontStyles.Italic, 1f, font);
-        glow.outlineWidth = .16f;
-        glow.outlineColor = new Color(brand.r, brand.g, brand.b, .2f);
-        glow.raycastTarget = false;
-
-        var text = UISkinKit.MakeTMP(parent, "Logo_" + word, word, 143f, Color.white,
-            TextAlignmentOptions.Center, position, new Vector2(1050f, 160f), FontStyles.Italic, 1f, font);
-        Color top = Color.Lerp(brand, Color.white, .25f);
-        Color bottom = brand * .72f;
-        bottom.a = 1f;
-        text.enableVertexGradient = true;
-        text.colorGradient = new VertexGradient(top, top, bottom, bottom);
-        text.outlineWidth = .045f;
-        text.outlineColor = new Color(brand.r * .12f, brand.g * .12f, brand.b * .12f, .95f);
-        text.raycastTarget = false;
+        var go = new GameObject("Logo_" + word, typeof(RectTransform), typeof(TitleWordmark));
+        go.transform.SetParent(parent, false);
+        var rt = go.GetComponent<RectTransform>();
+        rt.anchoredPosition = position;
+        // 行ごとの拡大率は揃え、4文字のBEATだけ自然に短くする。
+        rt.sizeDelta = new Vector2(820f, 116f);
+        go.GetComponent<TitleWordmark>().Configure(word, brand);
     }
 
     // 他画面でも利用する既存のグラデーションAPIは変更しない。

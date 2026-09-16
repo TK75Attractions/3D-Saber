@@ -64,7 +64,9 @@ public static class TitleDesignCapture
                 Capture("title-1080p.png", 1920, 1080);
                 Capture("title-720p.png", 1280, 720);
                 string[] labels = UnityEngine.Object.FindObjectsByType<TextMeshProUGUI>(FindObjectsSortMode.None)
-                    .Where(t => t.gameObject.activeInHierarchy).Select(t => t.name + ": " + t.text).ToArray();
+                    .Where(t => t.gameObject.activeInHierarchy).Select(t => t.name + ": " + t.text)
+                    .Concat(UnityEngine.Object.FindObjectsByType<TitleWordmark>(FindObjectsSortMode.None)
+                        .Where(t => t.gameObject.activeInHierarchy).Select(t => t.name + ": " + t.Word)).ToArray();
                 File.WriteAllLines(Path.Combine(output, "visible-labels.txt"), labels);
                 // ノーツの見た目と透明な開始ボタンの当たり領域が一致していることも確認する。
                 var eventSystem = EventSystem.current;
