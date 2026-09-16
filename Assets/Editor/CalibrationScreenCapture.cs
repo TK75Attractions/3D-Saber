@@ -10,7 +10,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-// 実際の Game シーンを保存せず撮影。結果画面は未入力の実行結果であり、架空の実測値を表示しない。
+// 実際のGameシーンを保存せず撮影。自動カットによる表示検査を実機測定と区別する。
 [InitializeOnLoad]
 public static class CalibrationScreenCapture
 {
@@ -53,22 +53,29 @@ public static class CalibrationScreenCapture
                 if(EditorApplication.timeSinceStartup-started<3)return;
                 foreach(var canvas in UnityEngine.Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None))
                     if(canvas.isRootCanvas) { canvas.renderMode=RenderMode.ScreenSpaceCamera;canvas.worldCamera=Camera.main;canvas.planeDistance=.5f; }
-                Capture("01-home.png",1920,1080);Capture("01-home-720p.png",1280,720);
-                controller.Begin(CalibrationRunMode.Practice);phase=1;return;
+                Capture("01-ready.png",1920,1080);Capture("01-ready-720p.png",1280,720);
+                controller.BeginLivePractice();phase=1;return;
             }
             if(phase==1)
             {
-                if(!controller.IsRunning||controller.RunTime<7.2)return;
-                Capture("02-practice.png",1920,1080);phase=2;return;
+                if(!controller.IsLive||controller.RunTime<6)return;
+                var note=UnityEngine.Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None)
+                    .FirstOrDefault(n=>!n.IsFinalized&&controller.RunTime-n.HitTime>.012&&controller.RunTime-n.HitTime<.070);
+                if(note==null)return;
+                note.Cut(note.transform.position,Vector3.right*6,CutDirection.None,note.RequiredHand);
+                if(!controller.HasLastError)return;
+                var caption=SongSelectVisuals.Label(controller.Overlay.transform,"CaptureLabel",
+                    "表示確認用の自動カット  /  実機の測定値ではありません",20,new Vector2(0,-328),new Vector2(1500,40),Color.white,TMPro.TextAlignmentOptions.Center);
+                Capture("02-live-feedback.png",1920,1080);Capture("02-live-feedback-720p.png",1280,720);
+                UnityEngine.Object.Destroy(caption.gameObject);controller.Overlay.OpenSettings();phase=2;return;
             }
             if(phase==2)
             {
-                if(controller.Mode!=CalibrationRunMode.Result)return;
-                Capture("03-no-input-result.png",1920,1080);
+                Capture("03-settings.png",1920,1080);controller.Overlay.OnBackClicked();
                 controller.ChangeOffset(10);controller.Overlay.OnBackClicked();Capture("04-discard-confirmation.png",1920,1080);
                 // 文字切れの検査。境界値と長い説明文も同じ画面で確認する。
                 controller.Overlay.Tick();
-                File.WriteAllText(Path.Combine(output,"capture-info.txt"),"Actual Game scene / calibration UI / no hardware inputs / no settings committed / source notes, camera and scoring windows unchanged.\n");
+                File.WriteAllText(Path.Combine(output,"capture-info.txt"),"Actual Game scene / live calibration UI / feedback uses an automated CuttableNote.Cut event, not a hardware measurement / no settings committed / notes, camera and scoring windows unchanged.\n");
                 SessionState.SetBool(Key,false);GameSession.IsCalibrationMode=false;Debug.Log("[CalibrationCapture] PASS");EditorApplication.Exit(0);
             }
         }

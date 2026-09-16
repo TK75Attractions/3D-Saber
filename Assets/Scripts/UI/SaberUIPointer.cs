@@ -94,8 +94,13 @@ public class SaberUIPointer : MonoBehaviour
 
     public Button HoveredForTest => hovered;
     // 調整画面のメニュー時だけ、判定面の入力範囲を画面全体の UI へ写す。
-    // セーバー本体・判定用の座標は変えず、試し切り中はポインター自体を休止する。
+    // セーバー本体・判定用の座標は変えず、ライブ試し切り中は下端の操作帯だけを使う。
     public bool RemapToFullScreen { get; set; }
+    // ライブ判定調整だけ、下端の操作帯を対象にする。ほかの画面は従来どおり。
+    public bool BottomControlsOnly { get; set; }
+    public bool RespectRaycastBlockers { get; set; }
+    public static bool IsInsideBottomControls(Vector2 position, float width, float height) =>
+        width > 0 && height > 0 && position.x >= 0 && position.x <= width && position.y >= 0 && position.y <= height * .18f;
 
     // 曲選択などのシーンに設置する。UDP受信機も確保する(無ければ作る)。
     public static SaberUIPointer Build()
@@ -193,6 +198,10 @@ public class SaberUIPointer : MonoBehaviour
                 Mathf.InverseLerp(bridge.minBounds.y, bridge.maxBounds.y, smoothedWorld.y) * Screen.height, 0f);
         }
 
+        if (BottomControlsOnly && !IsInsideBottomControls(screen, Screen.width, Screen.height))
+        {
+            SetCursorVisible(false); SetHovered(null); tracker.Reset(); return;
+        }
         SetCursorVisible(true);
         cursorDot.rectTransform.position = new Vector3(screen.x, screen.y, 0f);
         progressRing.rectTransform.position = new Vector3(screen.x, screen.y, 0f);
@@ -251,6 +260,7 @@ public class SaberUIPointer : MonoBehaviour
         {
             var button = hit.gameObject.GetComponentInParent<Button>();
             if (button != null && button.interactable) return button;
+            if (RespectRaycastBlockers) return null;
         }
         return null;
     }

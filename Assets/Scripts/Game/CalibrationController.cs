@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using UnityEngine;
 
-public enum CalibrationRunMode { Idle, Observe, Measure, Practice, Result }
+public enum CalibrationRunMode { Idle, Observe, Measure, Practice, Result, LivePractice }
 
 // GamePlayManager からだけ Tick する。音・譜面・集計は同じ SongPlayer の DSP 時計を使う。
 public sealed class CalibrationController : MonoBehaviour
@@ -10,11 +10,14 @@ public sealed class CalibrationController : MonoBehaviour
     public CalibrationDraft Draft { get; private set; }
     public CalibrationResult Result { get; private set; }
     public CalibrationRunMode Mode { get; private set; }
-    public bool IsRunning => Mode == CalibrationRunMode.Observe || Mode == CalibrationRunMode.Measure || Mode == CalibrationRunMode.Practice;
+    public bool IsLive => Mode == CalibrationRunMode.LivePractice;
+    public bool IsRunning => IsLive || Mode == CalibrationRunMode.Observe || Mode == CalibrationRunMode.Measure || Mode == CalibrationRunMode.Practice;
     public string Notice { get; private set; } = "本番で合っているなら、今の設定のままで大丈夫です。";
     public string LastCut { get; private set; } = "音に合わせて切り終えましょう";
     public double LastErrorMs { get; private set; }
     public bool HasLastError { get; private set; }
+    public bool LastInputWasMiss { get; private set; }
+    public float LastFeedbackTime { get; private set; } = -100;
     public int CollectedCount => samples.Count;
     public double RunTime => song != null ? song.SongTime : 0;
     public int ProgressCount => !IsRunning ? 0 : Mathf.Clamp((int)Math.Floor(
@@ -29,7 +32,9 @@ public sealed class CalibrationController : MonoBehaviour
     SongPlayer song;
     NoteSpawner spawner;
     ScoreManager score;
-    AudioClip clicks;
+    AudioClip clicks, liveClicks;
+    ChartData liveChart;
+    int nextLiveIndex;
     AudioSource source;
     SaberUIPointer pointer;
     JudgmentSfx[] cutSounds;
@@ -53,6 +58,8 @@ public sealed class CalibrationController : MonoBehaviour
         source.volume = ReferenceVolume;
         var pcm = CalibrationProtocol.ClickSamples(48000);
         clicks = AudioClip.Create("CalibrationReference100BPM", pcm.Length, 1, 48000, false); clicks.SetData(pcm, 0);
+        pcm = CalibrationProtocol.LiveClickSamples(48000);
+        liveClicks = AudioClip.Create("CalibrationLive100BPM", pcm.Length, 1, 48000, false); liveClicks.SetData(pcm, 0);
         // クリック音とカット音を取り違えないよう、この練習だけ判定効果音を止める。
         cutSounds = UnityEngine.Object.FindObjectsByType<JudgmentSfx>(FindObjectsSortMode.None);
         originalVolumes = new float[cutSounds.Length];
@@ -68,7 +75,34 @@ public sealed class CalibrationController : MonoBehaviour
         Overlay = CalibrationOverlay.Ensure(); Overlay.Bind(this);
         pointer = SaberUIPointer.Build();
         pointer.RemapToFullScreen = true;
+        pointer.RespectRaycastBlockers = true;
         AudioSettings.OnAudioConfigurationChanged += AudioConfigurationChanged;
+    }
+
+    public void BeginLivePractice()
+    {
+        StopPlayback(); Result = null; samples.Clear(); captured.Clear();
+        HasLastError = false; LastInputWasMiss = false; LastFeedbackTime = -100;
+        runOffset = Draft.OffsetMs; totalOffset = extraOffset + runOffset / 1000.0;
+        spawner.approachTime = GameSession.NoteApproachTime;
+        nextLiveIndex = 0; liveChart = new ChartData { bpm = CalibrationProtocol.Bpm };
+        spawner.SetExtraOffsetSeconds(totalOffset); spawner.SetChart(liveChart);
+        ExtendLiveChart(0);
+        score.Reset(); song.Clip = liveClicks; source.loop = true; source.volume = ReferenceVolume;
+        song.PlayScheduled(AudioSettings.dspTime + .35); Mode = CalibrationRunMode.LivePractice;
+        Notice = "切った瞬間に、タイミングを表示します。";
+        // 試し切り中は画面下の操作だけを1秒の滞留で受け付け、通常の振りで押されるのを防ぐ。
+        if (pointer != null) { pointer.BottomControlsOnly = true; pointer.gameObject.SetActive(true); }
+        Overlay.Refresh();
+    }
+    void ExtendLiveChart(double time)
+    {
+        if (liveChart == null) return;
+        // 長時間放置・復帰でも過去のノーツを大量生成しない。
+        while (CalibrationProtocol.NoteTime(nextLiveIndex) + totalOffset < time - .5) nextLiveIndex++;
+        while (CalibrationProtocol.NoteTime(nextLiveIndex) + totalOffset <= time + spawner.approachTime + 4.8)
+            liveChart.notes.Add(CalibrationProtocol.LiveNote(nextLiveIndex++));
+        watched.RemoveAll(n => n == null);
     }
 
     public void Begin(CalibrationRunMode mode)
@@ -77,7 +111,7 @@ public sealed class CalibrationController : MonoBehaviour
         if (mode == CalibrationRunMode.Measure && !CanMeasure)
         { Notice = "実機セーバー2本の入力を確認してから測定します。接続前でも「音と表示を見る」は使えます。"; return; }
         StopPlayback(); Result = null; samples.Clear(); captured.Clear();
-        HasLastError = false; LastCut = "音に合わせて切り終えましょう";
+        HasLastError = false; LastInputWasMiss = false; LastFeedbackTime = -100; LastCut = "音に合わせて切り終えましょう";
         runOffset = Draft.OffsetMs; totalOffset = extraOffset + runOffset / 1000.0;
         slowFrames = 0; interrupted = false; lastRunWasMeasurement = mode == CalibrationRunMode.Measure;
         spawner.approachTime = GameSession.NoteApproachTime;
@@ -95,13 +129,14 @@ public sealed class CalibrationController : MonoBehaviour
         if (IsRunning && song.IsPlaying)
         {
             double time = song.SongTime;
+            if (IsLive) ExtendLiveChart(time);
             if (Mode == CalibrationRunMode.Measure && time >= CalibrationProtocol.FirstNoteSeconds)
             {
                 if (!CanMeasure) interrupted = true;
                 if (frameSeconds > .1f) slowFrames++;
             }
             spawner.Tick(time);
-            if (time >= CalibrationProtocol.EndSeconds + extraOffset)
+            if (!IsLive && time >= CalibrationProtocol.EndSeconds + extraOffset)
             {
                 if (Mode == CalibrationRunMode.Observe)
                 { StopPlayback(); Mode = CalibrationRunMode.Idle; Notice = "確認が終わりました。合っていれば変更せず、次へ進めます。"; }
@@ -110,7 +145,12 @@ public sealed class CalibrationController : MonoBehaviour
         }
         Overlay.Tick();
     }
-    void WatchNote(CuttableNote note) { watched.Add(note); note.OnCut += RecordCut; }
+    void WatchNote(CuttableNote note) { watched.Add(note); note.OnCut += RecordCut; note.OnMiss += RecordMiss; }
+    void RecordMiss(CuttableNote note)
+    {
+        if (!IsLive) return;
+        HasLastError = false; LastInputWasMiss = true; LastFeedbackTime = Time.unscaledTime;
+    }
     void RecordCut(CuttableNote note, Vector3 point, Vector3 velocity)
     {
         if (!IsRunning || Mode == CalibrationRunMode.Observe) return;
@@ -118,9 +158,10 @@ public sealed class CalibrationController : MonoBehaviour
         // ScoreManager は先に購読している。本番が確定した誤差を再利用し、
         // 判定後の効果音・発光処理にかかった時間を測定値に加えない。
         double error = score.LastErrorValid ? score.LastErrorMs : (song.SongTime - note.HitTime) * 1000;
-        LastErrorMs = error; HasLastError = true;
+        LastErrorMs = error; HasLastError = true; LastInputWasMiss = false; LastFeedbackTime = Time.unscaledTime;
         string side = note.LastCutterHand == SaberHand.Left ? "左" : note.LastCutterHand == SaberHand.Right ? "右" : "マウス等";
         LastCut = $"{side}  /  {(error < -8 ? "早い" : error > 8 ? "遅い" : "中央")}  {CalibrationDraft.FormatMs(error)}";
+        if (IsLive) return;
         int index = noteIndex - CalibrationProtocol.WarmupNotes;
         if (index < 0 || index >= CalibrationProtocol.MeasuredNotes || !captured.Add(index)) return;
         samples.Add(new CalibrationSample(index, error, note.LastCutterHand));
@@ -135,18 +176,34 @@ public sealed class CalibrationController : MonoBehaviour
     void StopPlayback()
     {
         if (song != null) song.Stop();
-        foreach (var n in watched) if (n != null) n.OnCut -= RecordCut;
+        if (source != null) source.loop = false;
+        foreach (var n in watched) if (n != null) { n.OnCut -= RecordCut; n.OnMiss -= RecordMiss; }
         watched.Clear();
+        liveChart = null;
         if (spawner != null) spawner.SetChart(new ChartData());
-        if (pointer != null) pointer.gameObject.SetActive(true);
+        if (pointer != null) { pointer.BottomControlsOnly = false; pointer.gameObject.SetActive(true); }
     }
     public void Stop()
     {
-        StopPlayback(); Mode = CalibrationRunMode.Idle; Result = null; HasLastError = false;
-        Notice = "中断しました。保存値は変わっていません。";
+        StopPlayback(); Mode = CalibrationRunMode.Idle; Result = null; HasLastError = false; LastInputWasMiss = false;
+        Notice = "一時停止中。保存するまでは本番の設定は変わりません。";
     }
     public void ChangeOffset(int delta)
     {
+        if (IsLive)
+        {
+            int previous = Draft.OffsetMs; Draft.SetOffset(previous + delta);
+            if (previous == Draft.OffsetMs) return;
+            runOffset = Draft.OffsetMs; totalOffset = extraOffset + runOffset / 1000.0;
+            foreach (var n in watched) if (n != null) { n.OnCut -= RecordCut; n.OnMiss -= RecordMiss; }
+            watched.Clear();
+            liveChart = new ChartData { bpm = CalibrationProtocol.Bpm };
+            nextLiveIndex = Mathf.Max(0, (int)Math.Ceiling((RunTime + spawner.approachTime + .15 - totalOffset - CalibrationProtocol.FirstNoteSeconds) / CalibrationProtocol.BeatSeconds));
+            spawner.SetExtraOffsetSeconds(totalOffset); spawner.SetChart(liveChart); ExtendLiveChart(RunTime);
+            HasLastError = false; LastInputWasMiss = false; LastFeedbackTime = -100;
+            Notice = "新しい値を反映しました。音に合わせて続けてください。";
+            Overlay.Refresh(); return;
+        }
         if (IsRunning) return;
         Draft.SetOffset(Draft.OffsetMs + delta); Result = null; HasLastError = false; Mode = CalibrationRunMode.Idle;
         Notice = "仮の設定です。「試し切り」で確認してから保存できます。"; Overlay.Refresh();
@@ -176,7 +233,7 @@ public sealed class CalibrationController : MonoBehaviour
     }
     public void SaveAndExit()
     {
-        if (IsRunning) return;
+        if (IsRunning && !IsLive) return;
         Draft.Commit(); StopPlayback(); GamePlayManager.ExitCalibration();
     }
     public void DiscardAndExit() { StopPlayback(); GamePlayManager.ExitCalibration(); }
@@ -196,8 +253,9 @@ public sealed class CalibrationController : MonoBehaviour
         AudioSettings.OnAudioConfigurationChanged -= AudioConfigurationChanged;
         if (spawner != null) spawner.OnNoteSpawned -= WatchNote;
         StopPlayback();
-        if (source != null && source.clip == clicks) source.clip = null;
+        if (source != null && (source.clip == clicks || source.clip == liveClicks)) source.clip = null;
         if (clicks != null) UISkinKit.SafeDestroy(clicks);
+        if (liveClicks != null) UISkinKit.SafeDestroy(liveClicks);
         if (cutSounds != null) for (int i = 0; i < cutSounds.Length; i++) if (cutSounds[i] != null) cutSounds[i].volume = originalVolumes[i];
     }
 }

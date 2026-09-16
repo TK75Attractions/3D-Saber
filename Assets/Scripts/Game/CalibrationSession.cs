@@ -6,6 +6,8 @@ using UnityEngine;
 // 判定調整の測定条件。通常プレイの判定窓・カット形状は変更しない。
 public static class CalibrationProtocol
 {
+    // 本番のPERFECT幅ではなく、判定調整で中心付近を示す目安。
+    public static string LiveFeedback(double errorMs) => errorMs < -8 ? "早い" : errorMs > 8 ? "遅い" : "ぴったり";
     public const float Bpm = 100f;
     public const double BeatSeconds = .6;
     public const double FirstNoteSeconds = 3.0;
@@ -22,6 +24,30 @@ public static class CalibrationProtocol
                 y = .5f, color = i % 2 == 0 ? "blue" : "red", type = "tap", direction = "none", count = 1 });
         return chart;
     }
+
+    // ライブ調整は4拍の短い音源を連続ループ。ノーツの時刻はDSP時計に合わせて先読みする。
+    public static float[] LiveClickSamples(int sampleRate)
+    {
+        if (sampleRate < 8000) throw new ArgumentOutOfRangeException(nameof(sampleRate));
+        var samples = new float[(int)Math.Round(4 * BeatSeconds * sampleRate)];
+        for (int beat = 0; beat < 4; beat++)
+        {
+            int start = (int)Math.Round(beat * BeatSeconds * sampleRate);
+            for (int j = 0; j < sampleRate * .035; j++)
+            {
+                double t = j / (double)sampleRate;
+                samples[start + j] = (float)(.38 * Math.Min(1, j / (sampleRate * .001)) * Math.Exp(-t * 120) *
+                    (Math.Sin(2 * Math.PI * 1040 * t) + .25 * Math.Sin(2 * Math.PI * 2184 * t)));
+            }
+        }
+        return samples;
+    }
+
+    public static NoteData LiveNote(int index) => new NoteData
+    {
+        time = (float)(NoteTime(index) * 1000), x = index % 2 == 0 ? -1.65f : 1.65f,
+        y = .5f, color = index % 2 == 0 ? "blue" : "red", type = "tap", direction = "none", count = 1
+    };
 
     // クリックを全てサンプル列に事前配置し、一度だけ PlayScheduled で再生する。
     // 画面更新の遅れで基準音の間隔が揺れない。出力機器自体の遅延を測るものではない。
