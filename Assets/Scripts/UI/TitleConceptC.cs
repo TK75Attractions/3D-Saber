@@ -1,62 +1,62 @@
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
 
-// 候補C「刃と残光」。字形と軌跡を同じ細い刃先で揃え、操作対象の周囲に余白を残す。
+// 背景C「刃と残光」。操作対象と共通ロゴの周囲に余白を残す。
 public static class TitleConceptC
 {
     static readonly Color Red = new Color(1f, .11f, .24f);
     static readonly Color Blue = new Color(.06f, .70f, 1f);
-    static readonly Color Green = new Color(.13f, 1f, .54f);
+    public static void Build(Transform parent) => BuildBackground(parent);
 
-    public static void Build(Transform parent)
+    public static void BuildBackground(Transform parent)
     {
+        var root = new GameObject("C_Presentation", typeof(RectTransform), typeof(TitleConceptCPresentation));
+        root.transform.SetParent(parent, false);
+        Stretch(root.GetComponent<RectTransform>());
+        parent = root.transform;
         var background = Image(parent, "C_DarkSpace", Vector2.zero, new Vector2(1920, 1080),
             new Color(.004f, .007f, .015f));
         background.rectTransform.anchorMin = Vector2.zero;
         background.rectTransform.anchorMax = Vector2.one;
         background.rectTransform.sizeDelta = Vector2.zero;
-        Glow(parent, "C_RedAtmosphere", new Vector2(-820, 35), new Vector2(1240, 1550), WithAlpha(Red, .105f));
-        Glow(parent, "C_BlueAtmosphere", new Vector2(835, -70), new Vector2(1330, 1610), WithAlpha(Blue, .12f));
-        Glow(parent, "C_FloorLight", new Vector2(0, -365), new Vector2(640, 140), new Color(.03f, .50f, .7f, .095f));
+        var atmosphere = Group(parent, "C_Atmosphere");
+        Glow(atmosphere.transform, "C_RedAtmosphere", new Vector2(-820, 35), new Vector2(1240, 1550), WithAlpha(Red, .105f));
+        Glow(atmosphere.transform, "C_BlueAtmosphere", new Vector2(835, -70), new Vector2(1330, 1610), WithAlpha(Blue, .12f));
+        Glow(atmosphere.transform, "C_FloorLight", new Vector2(0, -365), new Vector2(640, 140), new Color(.03f, .50f, .7f, .095f));
 
-        Trail(parent, "C_LeftBlade", Red, new Vector2(-1090, -440), new Vector2(-555, -455),
+        var left = Trail(parent, "C_LeftBlade", Red, new Vector2(-1090, -440), new Vector2(-555, -455),
             new Vector2(-930, 390), new Vector2(-380, 545), 13f, .18f);
-        Trail(parent, "C_RightBlade", Blue, new Vector2(1110, -525), new Vector2(620, -555),
+        var right = Trail(parent, "C_RightBlade", Blue, new Vector2(1110, -525), new Vector2(620, -555),
             new Vector2(960, 180), new Vector2(560, 495), 15f, .63f);
 
         // 床は全面の格子にせず、刃が通った跡を二本だけ置く。
-        Line(parent, "C_FloorRed", new Vector2(-865, -535), new Vector2(-172, -312), 1.1f, WithAlpha(Red, .20f));
-        Line(parent, "C_FloorBlue", new Vector2(865, -535), new Vector2(172, -312), 1.1f, WithAlpha(Blue, .24f));
-        Line(parent, "C_FloorEcho", new Vector2(-390, -480), new Vector2(390, -480), 1f, WithAlpha(Blue, .08f));
-
-        Word(parent, "BEAT", new Vector2(-145, 355), Red);
-        Word(parent, "TRACE", new Vector2(0, 237), Blue);
-        Word(parent, "SLASH", new Vector2(145, 119), Green);
-
-        // 三段の右送りを示す短い刃先。ロゴの字面や切るノーツに線を重ねない。
-        Line(parent, "C_RedBladeTip", new Vector2(165, 356), new Vector2(300, 378), 2f, WithAlpha(Red, .54f));
-        Line(parent, "C_BlueBladeTip", new Vector2(365, 238), new Vector2(470, 255), 2f, WithAlpha(Blue, .45f));
-        Line(parent, "C_GreenBladeTip", new Vector2(-305, 102), new Vector2(-215, 118), 2f, WithAlpha(Green, .37f));
+        var floor = Group(parent, "C_Floor");
+        Line(floor.transform, "C_FloorRed", new Vector2(-865, -535), new Vector2(-172, -312), 1.1f, WithAlpha(Red, .20f));
+        Line(floor.transform, "C_FloorBlue", new Vector2(865, -535), new Vector2(172, -312), 1.1f, WithAlpha(Blue, .24f));
+        Line(floor.transform, "C_FloorEcho", new Vector2(-390, -480), new Vector2(390, -480), 1f, WithAlpha(Blue, .08f));
+        root.GetComponent<TitleConceptCPresentation>().Configure(atmosphere, floor, left, right);
     }
 
-    static void Word(Transform parent, string text, Vector2 position, Color color)
+    static CanvasGroup Group(Transform parent, string name)
     {
-        var go = new GameObject("C_Word_" + text, typeof(RectTransform), typeof(TitleConceptCWordmark));
+        var go = new GameObject(name, typeof(RectTransform), typeof(CanvasGroup));
         go.transform.SetParent(parent, false);
-        var rect = go.GetComponent<RectTransform>();
-        rect.anchoredPosition = position;
-        rect.sizeDelta = new Vector2(810, 93);
-        go.GetComponent<TitleConceptCWordmark>().Configure(text, color);
+        Stretch(go.GetComponent<RectTransform>());
+        var group = go.GetComponent<CanvasGroup>();
+        group.interactable = false;
+        group.blocksRaycasts = false;
+        return group;
     }
 
-    static void Trail(Transform parent, string name, Color color, Vector2 a, Vector2 b, Vector2 c, Vector2 d,
+    static TitleConceptCTrail Trail(Transform parent, string name, Color color, Vector2 a, Vector2 b, Vector2 c, Vector2 d,
         float seconds, float phase)
     {
         var go = new GameObject(name, typeof(RectTransform), typeof(TitleConceptCTrail));
         go.transform.SetParent(parent, false);
         go.GetComponent<RectTransform>().sizeDelta = new Vector2(1920, 1080);
-        go.GetComponent<TitleConceptCTrail>().Configure(color, a, b, c, d, seconds, phase);
+        var trail = go.GetComponent<TitleConceptCTrail>();
+        trail.Configure(color, a, b, c, d, seconds, phase);
+        return trail;
     }
 
     static Image Image(Transform parent, string name, Vector2 position, Vector2 size, Color color)
@@ -84,6 +84,41 @@ public static class TitleConceptC
     }
 
     static Color WithAlpha(Color color, float alpha) { color.a = alpha; return color; }
+
+    static void Stretch(RectTransform rect)
+    {
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.offsetMin = rect.offsetMax = Vector2.zero;
+    }
+}
+
+// 親の一つの時計で管理し、任意の時刻へ進めても同じ画面を再現する。
+public sealed class TitleConceptCPresentation : MonoBehaviour, ITitlePresentationLayer
+{
+    CanvasGroup atmosphere;
+    CanvasGroup floor;
+    TitleConceptCTrail left;
+    TitleConceptCTrail right;
+
+    public void Configure(CanvasGroup glow, CanvasGroup ground, TitleConceptCTrail leftBlade, TitleConceptCTrail rightBlade)
+    {
+        atmosphere = glow; floor = ground; left = leftBlade; right = rightBlade;
+        SetPresentationTime(0f, 0f);
+    }
+
+    public void SetPresentationTime(float age, float departure)
+    {
+        age = Mathf.Max(0f, age);
+        departure = Mathf.Clamp01(departure);
+        float entrance = Mathf.SmoothStep(0f, 1f, age / 1.25f);
+        if (atmosphere != null)
+            atmosphere.alpha = entrance * (1f - departure * .55f) * (.96f + .04f * Mathf.Sin(age * .37f));
+        if (floor != null)
+            floor.alpha = Mathf.SmoothStep(0f, 1f, (age - .25f) / 1f) * (1f - departure * .7f);
+        if (left != null) left.SetPresentationTime(age, departure);
+        if (right != null) right.SetPresentationTime(Mathf.Max(0f, age - .12f), departure);
+    }
 }
 
 // 固定された薄い刃と、その上を一方向に進む短い残光。点滅やタイトル自体の移動は行わない。
@@ -94,6 +129,7 @@ public sealed class TitleConceptCTrail : MaskableGraphic
     float period = 13f;
     float initialPhase;
     float age;
+    float departure;
 
     public void Configure(Color tint, Vector2 p0, Vector2 p1, Vector2 p2, Vector2 p3, float seconds, float phase)
     {
@@ -105,9 +141,10 @@ public sealed class TitleConceptCTrail : MaskableGraphic
         SetVerticesDirty();
     }
 
-    void Update()
+    public void SetPresentationTime(float presentationAge, float exitProgress)
     {
-        age += Time.unscaledDeltaTime;
+        age = Mathf.Max(0f, presentationAge);
+        departure = Mathf.Clamp01(exitProgress);
         SetVerticesDirty();
     }
 
@@ -120,13 +157,19 @@ public sealed class TitleConceptCTrail : MaskableGraphic
     protected override void OnPopulateMesh(VertexHelper vh)
     {
         vh.Clear();
-        Strip(vh, 0, 1, 23f, .035f, false);
-        Strip(vh, 0, 1, 4.5f, .28f, false);
-        Strip(vh, 0, 1, 1.25f, .82f, false);
-        float head = Mathf.Repeat(initialPhase + age / period, 1f);
+        float reveal = Mathf.SmoothStep(0f, 1f, age / 1.45f);
+        float fade = 1f - departure;
+        Strip(vh, 0, reveal, 23f, .035f * fade, false);
+        Strip(vh, 0, reveal, 4.5f, .28f * fade, false);
+        Strip(vh, 0, reveal, 1.5f, .82f * fade, false);
+        // 登場中は描画先端に刃の光、待機中は短い残光、開始時は先端へ抜ける。
+        float idleHead = Mathf.Repeat(initialPhase + age / period, 1f);
+        float head = age < 1.45f ? reveal : Mathf.Lerp(idleHead, 1f, Mathf.SmoothStep(0f, 1f, departure));
         float visible = Mathf.SmoothStep(0, 1, Mathf.Min(head / .10f, (1f - head) / .10f));
-        Strip(vh, Mathf.Max(0, head - .20f), head, 8f, .10f * visible, true);
-        Strip(vh, Mathf.Max(0, head - .16f), head, 2.5f, .75f * visible, true);
+        float settled = age < 1.45f ? 1f : Mathf.SmoothStep(0f, 1f, (age - 1.45f) / .6f);
+        float strength = (1f + .65f * Mathf.Sin(departure * Mathf.PI)) * visible * fade * settled;
+        Strip(vh, Mathf.Max(0, head - .20f), head, 13f, .14f * strength, true);
+        Strip(vh, Mathf.Max(0, head - .16f), head, 3f, .95f * strength, true);
     }
 
     void Strip(VertexHelper vh, float from, float to, float width, float alpha, bool taper)
@@ -146,87 +189,6 @@ public sealed class TitleConceptCTrail : MaskableGraphic
             tint.a *= alpha * weight;
             vh.AddVert(p + edge, tint, Vector2.zero);
             vh.AddVert(p - edge, tint, Vector2.zero);
-            if (i == 0) continue;
-            int at = first + i * 2;
-            vh.AddTriangle(at - 2, at, at - 1);
-            vh.AddTriangle(at - 1, at, at + 1);
-        }
-    }
-}
-
-// 横に長い直立字形を専用の線メッシュで構成。すべての文字に同じ線幅と浅い面取りを使う。
-[RequireComponent(typeof(CanvasRenderer))]
-public sealed class TitleConceptCWordmark : MaskableGraphic
-{
-    const float Stroke = 7.5f;
-    const float Tracking = 22f;
-    const float GlyphWidth = 90f;
-    const float Cap = 70f;
-    string word;
-
-    static Vector2[] Path(params float[] values)
-    {
-        var result = new Vector2[values.Length / 2];
-        for (int i = 0; i < result.Length; i++) result[i] = new Vector2(values[i * 2], values[i * 2 + 1]);
-        return result;
-    }
-
-    static readonly Dictionary<char, Vector2[][]> Letters = new Dictionary<char, Vector2[][]>
-    {
-        ['B'] = new[] { Path(0, 0, 0, 70), Path(0, 70, 75, 70, 88, 57, 88, 48, 75, 35, 0, 35), Path(75, 35, 88, 22, 88, 13, 75, 0, 0, 0) },
-        ['E'] = new[] { Path(90, 70, 13, 70, 0, 57, 0, 13, 13, 0, 90, 0), Path(0, 35, 70, 35) },
-        ['A'] = new[] { Path(0, 0, 0, 54, 16, 70, 74, 70, 90, 54, 90, 0), Path(0, 27, 90, 27) },
-        ['T'] = new[] { Path(0, 70, 90, 70), Path(45, 70, 45, 0) },
-        ['R'] = new[] { Path(0, 0, 0, 70, 75, 70, 88, 57, 88, 48, 75, 35, 0, 35), Path(51, 35, 90, 0) },
-        ['C'] = new[] { Path(90, 60, 80, 70, 13, 70, 0, 57, 0, 13, 13, 0, 80, 0, 90, 10) },
-        ['S'] = new[] { Path(90, 70, 13, 70, 0, 57, 0, 47, 13, 35, 77, 35, 90, 23, 90, 13, 77, 0, 0, 0) },
-        ['L'] = new[] { Path(0, 70, 0, 13, 13, 0, 90, 0) },
-        ['H'] = new[] { Path(0, 0, 0, 70), Path(90, 0, 90, 70), Path(0, 35, 90, 35) }
-    };
-
-    public void Configure(string text, Color tint)
-    {
-        word = text;
-        color = tint;
-        raycastTarget = false;
-        SetVerticesDirty();
-    }
-
-    protected override void OnPopulateMesh(VertexHelper vh)
-    {
-        vh.Clear();
-        if (string.IsNullOrEmpty(word)) return;
-        float width = word.Length * (GlyphWidth + Tracking) - Tracking;
-        Rect bounds = GetPixelAdjustedRect();
-        float scale = Mathf.Min(bounds.height / (Cap + Stroke + 6f), bounds.width / (width + Stroke + 6f));
-        Vector2 origin = bounds.center - new Vector2(width, Cap) * scale * .5f;
-        foreach (char letter in word)
-        {
-            if (!Letters.TryGetValue(letter, out Vector2[][] paths)) continue;
-            foreach (Vector2[] path in paths) DrawPath(vh, path, origin, scale);
-            origin.x += (GlyphWidth + Tracking) * scale;
-        }
-    }
-
-    void DrawPath(VertexHelper vh, Vector2[] path, Vector2 origin, float scale)
-    {
-        int first = vh.currentVertCount;
-        for (int i = 0; i < path.Length; i++)
-        {
-            Vector2 before = i > 0 ? (path[i] - path[i - 1]).normalized : (path[1] - path[0]).normalized;
-            Vector2 after = i + 1 < path.Length ? (path[i + 1] - path[i]).normalized : before;
-            Vector2 normalBefore = new Vector2(-before.y, before.x);
-            Vector2 normalAfter = new Vector2(-after.y, after.x);
-            Vector2 miter = (normalBefore + normalAfter).normalized;
-            Vector2 edge = miter * (Stroke * .5f / Mathf.Max(.4f, Vector2.Dot(miter, normalBefore)));
-            Vector2 point = path[i];
-            if (i == 0) point -= after * Stroke * .5f;
-            if (i == path.Length - 1) point += before * Stroke * .5f;
-            // 平面の色を主体にし、上側の刃先だけ僅かに明るくする。
-            Color tint = Color.Lerp(color * .82f, Color.Lerp(color, Color.white, .12f), point.y / Cap);
-            tint.a = color.a;
-            vh.AddVert(origin + (point + edge) * scale, tint, Vector2.zero);
-            vh.AddVert(origin + (point - edge) * scale, tint, Vector2.zero);
             if (i == 0) continue;
             int at = first + i * 2;
             vh.AddTriangle(at - 2, at, at - 1);

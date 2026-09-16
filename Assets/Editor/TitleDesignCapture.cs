@@ -23,6 +23,8 @@ public static class TitleDesignCapture
     static int phase;
     static bool allConcepts;
     static int concept;
+    static bool captureMotion;
+    static int motionFrame;
 
     static TitleDesignCapture()
     {
@@ -34,8 +36,10 @@ public static class TitleDesignCapture
             started = EditorApplication.timeSinceStartup;
             sceneStarted = started;
             allConcepts = SessionState.GetBool(Key + ".AllConcepts", false);
+            captureMotion = SessionState.GetBool(Key + ".Motion", false);
             concept = TitleConceptSelection.Current;
             phase = 0;
+            motionFrame = 0;
         };
     }
 
@@ -50,6 +54,7 @@ public static class TitleDesignCapture
         SessionState.SetString(Key + ".Output", output);
         SessionState.SetBool(Key, true);
         SessionState.SetBool(Key + ".AllConcepts", Array.IndexOf(args, "-titleAllConcepts") >= 0);
+        SessionState.SetBool(Key + ".Motion", Array.IndexOf(args, "-titleMotion") >= 0);
         EditorSceneManager.OpenScene("Assets/Scenes/Title.unity", OpenSceneMode.Single);
         EditorApplication.isPlaying = true;
     }
@@ -59,21 +64,51 @@ public static class TitleDesignCapture
         if (!SessionState.GetBool(Key, false) || !EditorApplication.isPlaying || started <= 0) return;
         try
         {
-            if (EditorApplication.timeSinceStartup - started > 180) throw new TimeoutException("タイトル確認が時間切れになりました。");
-            if (phase == 0)
+            if (EditorApplication.timeSinceStartup - started > 300) throw new TimeoutException("タイトル確認が時間切れになりました。");
+            if (phase == 0 || phase == 2)
             {
                 var note = UnityEngine.Object.FindFirstObjectByType<TitleStartNote>();
-                if (note == null) return;
+                var motion = UnityEngine.Object.FindFirstObjectByType<TitlePresentationMotion>();
+                if (note == null || motion == null) return;
+                concept = TitleConceptSelection.Current;
                 // 検証中に実機の入力やマウス移動で切らないようにする。
                 foreach (var judge in UnityEngine.Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None))
                     judge.autonomous = false;
-                if (EditorApplication.timeSinceStartup - sceneStarted < 3) return;
-                Capture("title-1080p.png", 1920, 1080);
-                Capture("title-720p.png", 1280, 720);
+                if (EditorApplication.timeSinceStartup - sceneStarted < (phase == 2 ? .08 : 2)) return;
+                motion.ManualTime = true;
+                if (phase == 0 && captureMotion && motionFrame < 140)
+                {
+                    motion.SetPresentationTime(motionFrame / 20f, 0f);
+                    Capture("frame-" + motionFrame.ToString("D4") + ".png", 960, 540);
+                    motionFrame++;
+                    return;
+                }
+                motion.SetPresentationTime(phase == 2 ? .08f : 3f, 0f);
+                if (phase == 0)
+                {
+                    Capture("title-1080p.png", 1920, 1080);
+                    Capture("title-720p.png", 1280, 720);
+                    motion.SetPresentationTime(0f, 0f);
+                    Capture("opening-000.png", 1280, 720);
+                    motion.SetPresentationTime(.3f, 0f);
+                    Capture("opening-030.png", 1280, 720);
+                    motion.SetPresentationTime(.75f, 0f);
+                    Capture("opening-075.png", 1280, 720);
+                    motion.SetPresentationTime(3f, .4f);
+                    Capture("departure-040.png", 1280, 720);
+                    motion.SetPresentationTime(3f, 1f);
+                    Capture("departure-100.png", 1280, 720);
+                    motion.SetPresentationTime(3f, 0f);
+                }
+                var wordmarks = UnityEngine.Object.FindObjectsByType<TitleConceptAWordmark>(FindObjectsSortMode.None)
+                    .Where(t => t.gameObject.activeInHierarchy).ToArray();
+                string[] expectedWords = { "BEAT", "SLASH", "TRACE" };
+                if (!wordmarks.Select(w => w.Word).OrderBy(w => w).SequenceEqual(expectedWords) ||
+                    UnityEngine.Object.FindObjectsByType<TitleWordmark>(FindObjectsSortMode.None).Length != 0)
+                    throw new InvalidOperationException("候補1の共通ロゴが3語だけ表示されていません。");
                 string[] labels = UnityEngine.Object.FindObjectsByType<TextMeshProUGUI>(FindObjectsSortMode.None)
                     .Where(t => t.gameObject.activeInHierarchy).Select(t => t.name + ": " + t.text)
-                    .Concat(UnityEngine.Object.FindObjectsByType<TitleWordmark>(FindObjectsSortMode.None)
-                        .Where(t => t.gameObject.activeInHierarchy).Select(t => t.name + ": " + t.Word)).ToArray();
+                    .Concat(wordmarks.Select(t => t.name + ": " + t.Word)).ToArray();
                 File.WriteAllLines(OutputPath("visible-labels.txt"), labels);
                 // ノーツの見た目と透明な開始ボタンの当たり領域が一致していることも確認する。
                 var eventSystem = EventSystem.current;
@@ -90,14 +125,25 @@ public static class TitleDesignCapture
                     throw new InvalidOperationException("開始ノーツの位置に開始ボタンがありません。");
                 ExecuteEvents.Execute(button.gameObject, pointer, ExecuteEvents.pointerClickHandler);
                 if (!note.Note.IsCut) throw new InvalidOperationException("開始ノーツを切れませんでした。");
-                phase = 1;
+                motion.ManualTime = false;
+                phase = phase == 2 ? 3 : 1;
             }
             else if (SceneManager.GetActiveScene().name == "SongSelect")
             {
-                File.WriteAllText(OutputPath("runtime-check.txt"),
-                    "PASS: Actual Title scene rendered at 1920x1080 and 1280x720.\n" +
-                    "PASS: Clicking the visible title note hits StartTarget, cuts the note and transitions to SongSelect.\n" +
-                    "Hardware input and physical projector were not tested.\n");
+                if (phase == 1)
+                {
+                    File.WriteAllText(OutputPath("runtime-check.txt"),
+                        "PASS: Actual Title scene rendered at 1920x1080 and 1280x720, with the three approved wordmarks.\n" +
+                        "PASS: Clicking the visible title note hits StartTarget, cuts the note and transitions to SongSelect.\n" +
+                        "Hardware input and physical projector were not tested.\n");
+                    TitleConceptSelection.Select(concept);
+                    SceneManager.LoadScene("Title");
+                    sceneStarted = EditorApplication.timeSinceStartup;
+                    phase = 2;
+                    return;
+                }
+                File.WriteAllText(OutputPath("opening-input-check.txt"),
+                    "PASS: Clicking the note during the opening animation also cuts it and reaches SongSelect.\n");
                 if (allConcepts && concept + 1 < TitleConceptSelection.Count)
                 {
                     concept++;
@@ -105,10 +151,23 @@ public static class TitleDesignCapture
                     SceneManager.LoadScene("Title");
                     sceneStarted = EditorApplication.timeSinceStartup;
                     phase = 0;
+                    motionFrame = 0;
                     return;
                 }
                 if (allConcepts) File.WriteAllText(Path.Combine(output, "all-concepts-check.txt"),
-                    "PASS: All four title concepts rendered at 1080p/720p and each clickable note transitioned to SongSelect.\n");
+                    "PASS: All four backgrounds use the approved logo; 1080p/720p, opening and idle clicks reached SongSelect.\n");
+                var choices = new List<int>();
+                int previous = TitleConceptSelection.Current;
+                for (int i = 0; i < 64; i++)
+                {
+                    int chosen = TitleConceptSelection.BeginTitle();
+                    if (chosen < 0 || chosen >= TitleConceptSelection.Count || chosen == previous)
+                        throw new InvalidOperationException("背景の抽選範囲または連続回避に失敗しました。");
+                    choices.Add(chosen);
+                    previous = chosen;
+                }
+                File.WriteAllText(Path.Combine(output, "random-background-check.txt"),
+                    "PASS: 64 entries select valid backgrounds without consecutive repeats.\n" + string.Join(",", choices));
                 SessionState.SetBool(Key, false);
                 Debug.Log("[TitleDesignCapture] PASS");
                 EditorApplication.Exit(0);

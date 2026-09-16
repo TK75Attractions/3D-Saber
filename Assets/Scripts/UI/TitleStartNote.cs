@@ -17,6 +17,7 @@ public class TitleStartNote : MonoBehaviour
     private Vector3 basePos;
     private float age;
     private bool fired;
+    private bool presentationDriven;
 
     public static TitleStartNote Build(Vector3 position, Color color)
     {
@@ -59,8 +60,21 @@ public class TitleStartNote : MonoBehaviour
 
     void Update()
     {
+        if (fired || presentationDriven) return;
+        age += Time.unscaledDeltaTime;
+        ApplyMotion();
+    }
+
+    public void SetPresentationTime(float elapsed, float departure)
+    {
+        presentationDriven = true;
         if (fired) return;
-        age += Time.deltaTime;
+        age = elapsed;
+        ApplyMotion();
+    }
+
+    private void ApplyMotion()
+    {
         float bob = Mathf.Sin(age * bobHz * 2f * Mathf.PI) * bobAmplitude;
         transform.position = basePos + new Vector3(0f, bob, 0f);
         float yaw = Mathf.Sin(age * yawHz * 2f * Mathf.PI) * yawAmplitudeDeg;

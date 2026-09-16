@@ -4,22 +4,31 @@ using UnityEngine.UI;
 
 // 暗い空間の奥行きと、赤青の光路を持つタイトル専用背景。
 // 奥から手前へ重なるレールの角度・線幅を揃え、ロゴと開始ノーツの周囲は空ける。
-public class SaberTitleBackdrop : MonoBehaviour
+public class SaberTitleBackdrop : MonoBehaviour, ITitlePresentationLayer
 {
     static readonly Color Red = new Color(1f, 0.08f, 0.20f, 1f);
     static readonly Color Blue = new Color(0.04f, 0.58f, 1f, 1f);
     static readonly Color Green = new Color(0.16f, 1f, 0.46f, 1f);
 
-    readonly List<Image> pulsingImages = new List<Image>();
-    readonly List<float> pulsingBaseAlpha = new List<float>();
-    readonly List<float> pulsingPhase = new List<float>();
+    sealed class LinePresentation
+    {
+        public Image image;
+        public Vector2 from, to;
+        public float thickness, delay, phase;
+        public Color tint;
+        public bool reverse, centered, glow;
+    }
+
+    readonly List<LinePresentation> animatedLines = new List<LinePresentation>();
+    CanvasGroup atmosphere;
+    CanvasGroup starGroup;
+    readonly Image[] floorFlow = new Image[2];
 
     Texture2D gradientTexture;
     RectTransform[] stars;
     Vector2[] starBasePositions;
     float[] starSpeeds;
     float[] starPhases;
-    float age;
 
     public static SaberTitleBackdrop Ensure(Canvas canvas)
     {
@@ -46,6 +55,7 @@ public class SaberTitleBackdrop : MonoBehaviour
         BuildPerspectiveStage();
         BuildArenaRails();
         BuildVignette();
+        SetPresentationTime(0f, 0f);
     }
 
     void BuildGradient()
@@ -82,6 +92,9 @@ public class SaberTitleBackdrop : MonoBehaviour
     void BuildAmbientGlows()
     {
         var root = MakeContainer("AmbientGlows");
+        atmosphere = root.gameObject.AddComponent<CanvasGroup>();
+        atmosphere.blocksRaycasts = false;
+        atmosphere.interactable = false;
         MakeGlow(root, "RedWash", new Vector2(-720f, 70f), new Vector2(1650f, 1450f),
             new Color(Red.r, Red.g, Red.b, 0.055f));
         MakeGlow(root, "BlueWash", new Vector2(720f, 70f), new Vector2(1650f, 1450f),
@@ -94,6 +107,9 @@ public class SaberTitleBackdrop : MonoBehaviour
     {
         const int count = 26;
         var root = MakeContainer("StarField");
+        starGroup = root.gameObject.AddComponent<CanvasGroup>();
+        starGroup.blocksRaycasts = false;
+        starGroup.interactable = false;
         var random = new System.Random(3187);
         stars = new RectTransform[count];
         starBasePositions = new Vector2[count];
@@ -166,6 +182,11 @@ public class SaberTitleBackdrop : MonoBehaviour
             new Color(.08f, .64f, .9f, .32f), 1.5f, 18f, .5f);
         MakeNeonLine(root, "RightRunway", new Vector2(100f, -88f), new Vector2(390f, -620f),
             new Color(.08f, .64f, .9f, .32f), 1.5f, 18f, 1.1f);
+
+        // 待機中の流れは開始ノーツより下に限定し、入力の予告とは区別する。
+        for (int side = 0; side < 2; side++)
+            floorFlow[side] = MakeLine(root, "FloorTravel", Vector2.zero, Vector2.right * 40f, 4f,
+                new Color(.09f, .68f, .9f, .19f), UISkinKit.SoftGlow());
     }
 
     void BuildArenaRails()
@@ -244,22 +265,19 @@ public class SaberTitleBackdrop : MonoBehaviour
     {
         Color glowColor = color;
         glowColor.a *= 0.30f;
-        var glow = MakeLine(parent, name + "Glow", from, to, glowThickness, glowColor, UISkinKit.SoftGlow());
-        pulsingImages.Add(glow);
-        pulsingBaseAlpha.Add(glowColor.a);
-        pulsingPhase.Add(phase);
+        MakeLine(parent, name + "Glow", from, to, glowThickness, glowColor, UISkinKit.SoftGlow(), true, phase);
 
         MakeLine(parent, name + "Core", from, to, coreThickness, color, null);
     }
 
-    static Image MakeFlatLine(Transform parent, string name, Vector2 from, Vector2 to,
+    Image MakeFlatLine(Transform parent, string name, Vector2 from, Vector2 to,
         float thickness, Color color)
     {
         return MakeLine(parent, name, from, to, thickness, color, null);
     }
 
-    static Image MakeLine(Transform parent, string name, Vector2 from, Vector2 to,
-        float thickness, Color color, Sprite sprite)
+    Image MakeLine(Transform parent, string name, Vector2 from, Vector2 to,
+        float thickness, Color color, Sprite sprite, bool glow = false, float phase = 0f)
     {
         Vector2 delta = to - from;
         var go = new GameObject(name, typeof(RectTransform), typeof(Image));
@@ -272,6 +290,17 @@ public class SaberTitleBackdrop : MonoBehaviour
         image.sprite = sprite;
         image.color = color;
         image.raycastTarget = false;
+        if (name != "FloorTravel")
+        {
+            // 上部のレールから手前の床へ順番に組み立てる。元の完成形の座標は保持する。
+            float depth = Mathf.InverseLerp(475f, -625f, (from.y + to.y) * .5f);
+            animatedLines.Add(new LinePresentation {
+                image = image, from = from, to = to, thickness = thickness, tint = color,
+                delay = .10f + depth * .55f, phase = phase, glow = glow,
+                reverse = name.Contains("Rail"),
+                centered = name.StartsWith("Depth_") || name.StartsWith("Horizon")
+            });
+        }
         return image;
     }
 
@@ -283,17 +312,51 @@ public class SaberTitleBackdrop : MonoBehaviour
         rt.offsetMax = Vector2.zero;
     }
 
-    void Update()
+    public void SetPresentationTime(float age, float departure)
     {
-        age += Time.unscaledDeltaTime;
+        age = Mathf.Max(0f, age);
+        departure = Mathf.Clamp01(departure);
+        float exitFade = 1f - .7f * departure;
+        if (atmosphere != null) atmosphere.alpha = Mathf.SmoothStep(0f, 1f, age / 1.25f) * exitFade;
+        if (starGroup != null) starGroup.alpha = Mathf.SmoothStep(0f, 1f, (age - .55f) / 1f) * exitFade;
 
-        for (int i = 0; i < pulsingImages.Count; i++)
+        foreach (var line in animatedLines)
         {
-            if (pulsingImages[i] == null) continue;
-            Color c = pulsingImages[i].color;
-            float pulse = 0.78f + 0.22f * Mathf.Sin(age * 1.15f + pulsingPhase[i]);
-            c.a = pulsingBaseAlpha[i] * pulse;
-            pulsingImages[i].color = c;
+            if (line.image == null) continue;
+            float reveal = Mathf.SmoothStep(0f, 1f, (age - line.delay) / .72f);
+            Vector2 from = line.from;
+            Vector2 to = line.to;
+            if (line.centered)
+            {
+                Vector2 center = (from + to) * .5f;
+                from = Vector2.Lerp(center, from, reveal);
+                to = Vector2.Lerp(center, to, reveal);
+            }
+            else if (line.reverse) from = Vector2.Lerp(to, from, reveal);
+            else to = Vector2.Lerp(from, to, reveal);
+            // 開始時は左右へわずかに抜け、ノーツとロゴの中心を横断しない。
+            from.x *= 1f + .07f * departure;
+            to.x *= 1f + .07f * departure;
+            PositionLine(line.image.rectTransform, from, to, line.thickness);
+            Color tint = line.tint;
+            float pulse = line.glow ? .88f + .12f * Mathf.Sin(age * .72f + line.phase) : 1f;
+            tint.a *= reveal * pulse * exitFade;
+            line.image.color = tint;
+        }
+
+        for (int i = 0; i < floorFlow.Length; i++)
+        {
+            if (floorFlow[i] == null) continue;
+            float progress = Mathf.Repeat(age / 8f + i * .5f, 1f);
+            float head = Mathf.Lerp(progress, 1f, departure);
+            float side = i == 0 ? -1f : 1f;
+            Vector2 from = new Vector2(side * 228f, -325f);
+            Vector2 to = new Vector2(side * 379f, -600f);
+            PositionLine(floorFlow[i].rectTransform, Vector2.Lerp(from, to, Mathf.Max(0f, head - .18f)),
+                Vector2.Lerp(from, to, head), 4f);
+            Color tint = new Color(.09f, .68f, .9f,
+                .24f * Mathf.Sin(head * Mathf.PI) * Mathf.SmoothStep(0f, 1f, (age - .7f) / .7f) * (1f - departure));
+            floorFlow[i].color = tint;
         }
 
         if (stars == null) return;
@@ -305,6 +368,14 @@ public class SaberTitleBackdrop : MonoBehaviour
             p.x += Mathf.Sin(age * 0.10f + starPhases[i]) * 4f;
             stars[i].anchoredPosition = p;
         }
+    }
+
+    static void PositionLine(RectTransform rect, Vector2 from, Vector2 to, float thickness)
+    {
+        Vector2 delta = to - from;
+        rect.anchoredPosition = (from + to) * .5f;
+        rect.sizeDelta = new Vector2(delta.magnitude, thickness);
+        rect.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
     }
 
     void OnDestroy()

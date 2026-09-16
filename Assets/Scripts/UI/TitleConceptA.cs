@@ -12,6 +12,23 @@ public static class TitleConceptA
 
     public static void Build(Transform parent)
     {
+        BuildBackground(parent);
+        BuildLogo(parent);
+    }
+
+    public static void BuildBackground(Transform parent)
+    {
+        var layer = new GameObject("A_Background", typeof(RectTransform), typeof(TitleConceptAOpening));
+        layer.transform.SetParent(parent, false);
+        var layerRect = layer.GetComponent<RectTransform>();
+        layerRect.anchorMin = Vector2.zero;
+        layerRect.anchorMax = Vector2.one;
+        layerRect.offsetMin = layerRect.offsetMax = Vector2.zero;
+        parent = layer.transform;
+
+        var mechanisms = new RectTransform[2];
+        var movingLights = new Image[4];
+        var softLights = new List<Image>();
         Image baseImage = Image(parent, "A_Space", Vector2.zero, new Vector2(2400f, 1600f),
             new Color(.003f, .006f, .014f, 1f));
         var rt = baseImage.rectTransform;
@@ -19,35 +36,45 @@ public static class TitleConceptA
         rt.anchorMax = Vector2.one;
         rt.offsetMin = rt.offsetMax = Vector2.zero;
 
-        Glow(parent, "A_RedReflection", new Vector2(-900f, 110f), new Vector2(1450f, 1560f), new Color(Red.r, Red.g, Red.b, .10f));
-        Glow(parent, "A_BlueReflection", new Vector2(900f, 110f), new Vector2(1450f, 1560f), new Color(Blue.r, Blue.g, Blue.b, .14f));
-        Glow(parent, "A_FloorReflection", new Vector2(0f, -340f), new Vector2(800f, 410f), new Color(.04f, .35f, .62f, .12f));
+        softLights.Add(Glow(parent, "A_RedReflection", new Vector2(-900f, 110f), new Vector2(1450f, 1560f), new Color(Red.r, Red.g, Red.b, .10f)));
+        softLights.Add(Glow(parent, "A_BlueReflection", new Vector2(900f, 110f), new Vector2(1450f, 1560f), new Color(Blue.r, Blue.g, Blue.b, .14f)));
+        softLights.Add(Glow(parent, "A_FloorReflection", new Vector2(0f, -340f), new Vector2(800f, 410f), new Color(.04f, .35f, .62f, .12f)));
 
         for (int side = -1; side <= 1; side += 2)
         {
+            int sideIndex = side < 0 ? 0 : 1;
+            var mechanism = new GameObject(side < 0 ? "A_LeftMechanism" : "A_RightMechanism", typeof(RectTransform));
+            mechanism.transform.SetParent(parent, false);
+            mechanisms[sideIndex] = mechanism.GetComponent<RectTransform>();
+            mechanisms[sideIndex].sizeDelta = new Vector2(1920f, 1080f);
+            Transform sideParent = mechanism.transform;
             Color accent = side < 0 ? Red : Blue;
             Vector2 a = new Vector2(side * 878f, 430f);
             Vector2 b = new Vector2(side * 748f, 254f);
             Vector2 c = new Vector2(side * 748f, -242f);
             Vector2 d = new Vector2(side * 918f, -512f);
             Color housing = new Color(accent.r * .025f, accent.g * .025f, accent.b * .025f, 1f);
-            Line(parent, "A_UpperHousing", a, b, 28f, housing);
-            Line(parent, "A_VerticalHousing", b, c, 28f, housing);
-            Line(parent, "A_LowerHousing", c, d, 28f, housing);
+            Line(sideParent, "A_UpperHousing", a, b, 28f, housing);
+            Line(sideParent, "A_VerticalHousing", b, c, 28f, housing);
+            Line(sideParent, "A_LowerHousing", c, d, 28f, housing);
             Color edge = new Color(accent.r, accent.g, accent.b, .42f);
-            Line(parent, "A_UpperRail", a, b, 2.4f, edge);
-            Line(parent, "A_VerticalRail", b, c, 2.4f, edge);
-            Line(parent, "A_LowerRail", c, d, 2.4f, edge);
-            Line(parent, "A_Header", new Vector2(side * 948f, 450f), new Vector2(side * 798f, 450f), 2f,
-                new Color(accent.r, accent.g, accent.b, .18f));
+            softLights.Add(Line(sideParent, "A_UpperRail", a, b, 2.4f, edge));
+            softLights.Add(Line(sideParent, "A_VerticalRail", b, c, 2.4f, edge));
+            softLights.Add(Line(sideParent, "A_LowerRail", c, d, 2.4f, edge));
+            softLights.Add(Line(sideParent, "A_Header", new Vector2(side * 948f, 450f), new Vector2(side * 798f, 450f), 2f,
+                new Color(accent.r, accent.g, accent.b, .18f)));
 
             // 接合部だけに短い刻みを置き、意味のない装飾文字は足さない。
             for (int mark = 0; mark < 3; mark++)
             {
                 float y = 169f - mark * 15f;
-                Line(parent, "A_Joint", new Vector2(side * 710f, y), new Vector2(side * 686f, y), 3f,
-                    new Color(accent.r, accent.g, accent.b, mark == 1 ? .43f : .16f));
+                softLights.Add(Line(sideParent, "A_Joint", new Vector2(side * 710f, y), new Vector2(side * 686f, y), 3f,
+                    new Color(accent.r, accent.g, accent.b, mark == 1 ? .43f : .16f)));
             }
+            movingLights[sideIndex * 2] = Glow(sideParent, "A_RailLightHalo", new Vector2(side * 748f, 0f),
+                new Vector2(22f, 108f), new Color(accent.r, accent.g, accent.b, .12f));
+            movingLights[sideIndex * 2 + 1] = Image(sideParent, "A_RailLight", new Vector2(side * 748f, 0f),
+                new Vector2(2.4f, 34f), new Color(accent.r, accent.g, accent.b, .58f));
             Line(parent, "A_FarFloor", new Vector2(side * 205f, -89f), new Vector2(side * 670f, -89f), 1.2f,
                 new Color(.07f, .40f, .58f, .22f));
         }
@@ -65,9 +92,20 @@ public static class TitleConceptA
             Line(parent, "A_FloorStep", new Vector2(-halfWidth, y), new Vector2(halfWidth, y), 1.1f, grid);
         }
 
-        Word(parent, "BEAT", new Vector2(0f, 371f), Red);
-        Word(parent, "TRACE", new Vector2(0f, 231f), Blue);
-        Word(parent, "SLASH", new Vector2(0f, 91f), Green);
+        layer.GetComponent<TitleConceptAOpening>().Configure(mechanisms, softLights.ToArray(), movingLights);
+    }
+
+    public static RectTransform BuildLogo(Transform parent)
+    {
+        var logo = new GameObject("A_Logo", typeof(RectTransform), typeof(CanvasGroup));
+        logo.transform.SetParent(parent, false);
+        var rt = logo.GetComponent<RectTransform>();
+        rt.sizeDelta = new Vector2(1920f, 1080f);
+        logo.GetComponent<CanvasGroup>().blocksRaycasts = false;
+        Word(logo.transform, "BEAT", new Vector2(0f, 371f), Red);
+        Word(logo.transform, "TRACE", new Vector2(0f, 231f), Blue);
+        Word(logo.transform, "SLASH", new Vector2(0f, 91f), Green);
+        return rt;
     }
 
     static void Word(Transform parent, string value, Vector2 position, Color accent)
@@ -92,16 +130,77 @@ public static class TitleConceptA
         return image;
     }
 
-    static void Glow(Transform parent, string name, Vector2 position, Vector2 size, Color tint)
+    static Image Glow(Transform parent, string name, Vector2 position, Vector2 size, Color tint)
     {
-        Image(parent, name, position, size, tint).sprite = UISkinKit.SoftGlow();
+        Image image = Image(parent, name, position, size, tint);
+        image.sprite = UISkinKit.SoftGlow();
+        return image;
     }
 
-    static void Line(Transform parent, string name, Vector2 from, Vector2 to, float width, Color tint)
+    static Image Line(Transform parent, string name, Vector2 from, Vector2 to, float width, Color tint)
     {
         Image image = Image(parent, name, (from + to) * .5f, new Vector2((to - from).magnitude, width), tint);
         Vector2 delta = to - from;
         image.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(delta.y, delta.x) * Mathf.Rad2Deg);
+        return image;
+    }
+}
+
+// 経過時間だけから描画状態を決め、撮影・再入場でも同じ時刻の見た目を再現する。
+public sealed class TitleConceptAOpening : MonoBehaviour, ITitlePresentationLayer
+{
+    RectTransform[] mechanisms;
+    Image[] softLights;
+    Color[] lightColors;
+    Image[] movingLights;
+    Color[] movingColors;
+
+    public void Configure(RectTransform[] sides, Image[] lights, Image[] moving)
+    {
+        mechanisms = sides;
+        softLights = lights;
+        movingLights = moving;
+        lightColors = new Color[lights.Length];
+        movingColors = new Color[moving.Length];
+        for (int i = 0; i < lights.Length; i++) lightColors[i] = lights[i].color;
+        for (int i = 0; i < moving.Length; i++) movingColors[i] = moving[i].color;
+        SetPresentationTime(0f, 0f);
+    }
+
+    public void SetPresentationTime(float age, float departure)
+    {
+        if (mechanisms == null) return;
+        age = Mathf.Max(0f, age);
+        float opened = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((age - .06f) / 1.05f));
+        float leaving = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(departure));
+        float lightEntry = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01((age - .10f) / .85f));
+        for (int i = 0; i < mechanisms.Length; i++)
+        {
+            if (mechanisms[i] == null) continue;
+            float side = i == 0 ? -1f : 1f;
+            mechanisms[i].anchoredPosition = new Vector2(side * (-360f * (1f - opened) + 240f * leaving), 0f);
+        }
+        for (int i = 0; i < softLights.Length; i++)
+        {
+            if (softLights[i] == null) continue;
+            Color tint = lightColors[i];
+            float breathing = .94f + .06f * Mathf.Sin(age * .9f + i * .24f);
+            tint.a *= lightEntry * breathing * (1f - .32f * leaving);
+            softLights[i].color = tint;
+        }
+        for (int i = 0; i < movingLights.Length; i++)
+        {
+            if (movingLights[i] == null) continue;
+            int side = i / 2;
+            float phase = Mathf.Repeat(age / 6.5f + side * .47f, 1f);
+            Vector2 position = movingLights[i].rectTransform.anchoredPosition;
+            position.y = Mathf.Lerp(-221f, 233f, phase);
+            movingLights[i].rectTransform.anchoredPosition = position;
+            Color tint = movingColors[i];
+            // 終端は消してから反対側へ戻すので、光が瞬間移動して見えない。
+            tint.a *= Mathf.Pow(Mathf.Sin(phase * Mathf.PI), 2f) * lightEntry * (1f - leaving);
+            movingLights[i].color = tint;
+        }
     }
 }
 
@@ -113,6 +212,7 @@ public sealed class TitleConceptAWordmark : MaskableGraphic
     const float Height = 96f;
     const float Tracking = 16f;
     string word = "BEAT";
+    public string Word => word;
 
     sealed class Glyph
     {

@@ -8,16 +8,15 @@ using TMPro;
 // ロゴと切れるキューブに視線を集める。説明文やモードカードは置かない。
 public class TitleSceneSkin : MonoBehaviour
 {
-    public float titlePulseHz = 0.18f;
-    public float titlePulseAmplitude = 0.004f;
     public Vector3 startNoteWorldPos = new Vector3(0f, -1.82f, 0f);
 
     private TitleMenuController titleCtl;
     private RectTransform titleContainer;
+    private TitlePresentationMotion presentationMotion;
+    private CanvasGroup startTargetGroup;
     private TitleStartNote startNote;
     private Image flashImage;
     private bool transitioning;
-    private float age;
 
     void Start()
     {
@@ -26,6 +25,7 @@ public class TitleSceneSkin : MonoBehaviour
         var canvas = titleCtl.GetComponent<Canvas>();
         if (canvas == null) canvas = titleCtl.GetComponentInParent<Canvas>();
         if (canvas == null) return;
+        TitleConceptSelection.BeginTitle();
 
         var cam = Camera.main;
         if (cam != null)
@@ -41,7 +41,6 @@ public class TitleSceneSkin : MonoBehaviour
         if (TitleConceptSelection.Current == 0)
         {
             SaberTitleBackdrop.Ensure(canvas);
-            BuildLogo(canvas);
         }
         else
         {
@@ -54,6 +53,7 @@ public class TitleSceneSkin : MonoBehaviour
             presentation.transform.SetAsFirstSibling();
             TitleConceptSelection.Build(presentation.transform);
         }
+        titleContainer = TitleConceptA.BuildLogo(canvas.transform);
         BuildStartTarget(canvas, cam != null);
         BuildExitButton(canvas);
 
@@ -64,6 +64,8 @@ public class TitleSceneSkin : MonoBehaviour
             startNote.OnSlashed += HandleSlashed;
         }
         BuildFlashOverlay(canvas);
+        presentationMotion = canvas.gameObject.AddComponent<TitlePresentationMotion>();
+        presentationMotion.Configure(canvas, titleContainer, startTargetGroup, startNote);
     }
 
     void Update()
@@ -73,44 +75,9 @@ public class TitleSceneSkin : MonoBehaviour
             SceneManager.LoadScene(SceneManager.GetActiveScene().name);
             return;
         }
-        age += Time.unscaledDeltaTime;
         if (!transitioning && Keyboard.current != null &&
             (Keyboard.current.enterKey.wasPressedThisFrame || Keyboard.current.spaceKey.wasPressedThisFrame))
             HandlePlayPressed();
-
-        if (titleContainer == null) return;
-        float pulse = titlePulseAmplitude > 0f && titlePulseHz > 0f
-            ? 1f + titlePulseAmplitude * Mathf.Sin(age * titlePulseHz * 2f * Mathf.PI) : 1f;
-        titleContainer.localScale = Vector3.one * pulse;
-    }
-
-    void BuildLogo(Canvas canvas)
-    {
-        var container = new GameObject("TitleLogo", typeof(RectTransform), typeof(CanvasGroup));
-        container.transform.SetParent(canvas.transform, false);
-        titleContainer = container.GetComponent<RectTransform>();
-        titleContainer.sizeDelta = new Vector2(1050f, 450f);
-        titleContainer.anchoredPosition = new Vector2(0f, 250f);
-
-        BuildLogoWord(container.transform, "BEAT", new Color(1f, .13f, .25f), new Vector2(0f, 128f));
-        BuildLogoWord(container.transform, "TRACE", new Color(.12f, .72f, 1f), Vector2.zero);
-        BuildLogoWord(container.transform, "SLASH", new Color(.18f, 1f, .56f), new Vector2(0f, -128f));
-
-        var entrance = container.AddComponent<UIFadeSlideIn>();
-        entrance.delay = .05f;
-        entrance.duration = .65f;
-        entrance.fromOffset = new Vector2(0f, 28f);
-    }
-
-    void BuildLogoWord(Transform parent, string word, Color brand, Vector2 position)
-    {
-        var go = new GameObject("Logo_" + word, typeof(RectTransform), typeof(TitleWordmark));
-        go.transform.SetParent(parent, false);
-        var rt = go.GetComponent<RectTransform>();
-        rt.anchoredPosition = position;
-        // 行ごとの拡大率は揃え、4文字のBEATだけ自然に短くする。
-        rt.sizeDelta = new Vector2(820f, 116f);
-        go.GetComponent<TitleWordmark>().Configure(word, brand);
     }
 
     // 他画面でも利用する既存のグラデーションAPIは変更しない。
@@ -148,6 +115,7 @@ public class TitleSceneSkin : MonoBehaviour
     {
         var go = new GameObject("StartTarget", typeof(RectTransform), typeof(Image), typeof(Button), typeof(CanvasGroup));
         go.transform.SetParent(canvas.transform, false);
+        startTargetGroup = go.GetComponent<CanvasGroup>();
         var rt = go.GetComponent<RectTransform>();
         rt.sizeDelta = new Vector2(260f, 240f);
         rt.anchoredPosition = new Vector2(0f, -174f);
@@ -192,10 +160,6 @@ public class TitleSceneSkin : MonoBehaviour
         hover.pressScale = .98f;
         hover.glow = glow;
         hover.glowHoverAlpha = .22f;
-        var entrance = go.AddComponent<UIFadeSlideIn>();
-        entrance.delay = .3f;
-        entrance.duration = .55f;
-        entrance.fromOffset = new Vector2(0f, -15f);
     }
 
     void BuildExitButton(Canvas canvas)
@@ -283,10 +247,11 @@ public class TitleSceneSkin : MonoBehaviour
         while (t < total)
         {
             t += Time.unscaledDeltaTime;
+            if (presentationMotion != null) presentationMotion.SetDeparture(t / total);
             if (flashImage != null)
             {
-                float a = t < spike ? Mathf.Lerp(0f, .65f, t / spike)
-                    : Mathf.Lerp(.65f, 0f, (t - spike) / (total - spike));
+                float a = t < spike ? Mathf.Lerp(0f, .22f, t / spike)
+                    : Mathf.Lerp(.22f, 0f, (t - spike) / .22f);
                 flashImage.color = new Color(1f, 1f, 1f, a);
             }
             yield return null;
