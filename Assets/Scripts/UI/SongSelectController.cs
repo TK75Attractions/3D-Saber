@@ -58,6 +58,8 @@ public class SongSelectController : MonoBehaviour
     // 難易度レベル(1〜10)のキャッシュ。キー = songId::難易度名。0 = 譜面なし(数値非表示)
     private readonly Dictionary<string, int> levelCache = new Dictionary<string, int>();
     private readonly Dictionary<string, int> authoredLevelCache = new Dictionary<string, int>();
+    // 一覧と拡大表示が同じ画像を借りる。所有・破棄はこのコントローラーだけが行う。
+    private readonly Dictionary<string, Sprite> coverCache = new Dictionary<string, Sprite>();
     // ロック中(譜面が1つも無い)曲のインデックス。譜面を作れば次回から自動で解禁される
     private readonly HashSet<int> lockedIndices = new HashSet<int>();
 
@@ -336,20 +338,43 @@ public class SongSelectController : MonoBehaviour
     private void LoadJacket(string songId)
     {
         if (jacketImage == null) return;
+        var cover = LoadCover(songId);
+        jacketImage.sprite = cover;
+        jacketImage.color = cover != null ? Color.white : ColorFromHash(songId);
+    }
+
+    // 呼び出し元は借りたSpriteやTextureを破棄しない。曲の並べ替えでも曲IDで照合する。
+    public Sprite CoverSpriteAt(int index) => LoadCover(SongIdAt(index));
+
+    private Sprite LoadCover(string songId)
+    {
+        if (string.IsNullOrEmpty(songId)) return null;
+        if (coverCache.TryGetValue(songId, out var cached)) return cached;
+        Sprite sprite = null;
+        Texture2D texture = null;
         string path = Path.Combine(Application.streamingAssetsPath, "Songs", songId, "cover.png");
-        if (File.Exists(path))
+        try
         {
-            byte[] data = File.ReadAllBytes(path);
-            var tex = new Texture2D(2, 2);
-            tex.LoadImage(data);
-            jacketImage.sprite = Sprite.Create(tex, new Rect(0, 0, tex.width, tex.height), Vector2.one * 0.5f);
-            jacketImage.color = Color.white;
+            if (File.Exists(path))
+            {
+                byte[] data = File.ReadAllBytes(path);
+                texture = new Texture2D(2, 2);
+                if (texture.LoadImage(data))
+                    sprite = Sprite.Create(texture, new Rect(0, 0, texture.width, texture.height), Vector2.one * .5f);
+            }
         }
-        else
+        catch (System.Exception error) when (error is IOException || error is System.UnauthorizedAccessException
+            || error is System.ArgumentException || error is UnityException)
         {
-            jacketImage.sprite = null;
-            jacketImage.color = ColorFromHash(songId);
+            Debug.LogWarning($"ジャケットを読み込めません: {songId} ({error.Message})");
         }
+        finally
+        {
+            if (sprite == null && texture != null) UISkinKit.SafeDestroy(texture);
+        }
+        // 画像なし・失敗もこの画面内では覚え、曲送りのたびに同じ読込を繰り返さない。
+        coverCache[songId] = sprite;
+        return sprite;
     }
 
     private static Color ColorFromHash(string s)
@@ -384,6 +409,19 @@ public class SongSelectController : MonoBehaviour
     public void StopPreview() { if (chartPreview != null) chartPreview.Cancel(); else if (previewSource != null) previewSource.Stop(); }
 
     void OnDisable() { StopPreview(); }
+
+    void OnDestroy()
+    {
+        foreach (var sprite in coverCache.Values)
+        {
+            if (sprite == null) continue;
+            if (jacketImage != null && jacketImage.sprite == sprite) jacketImage.sprite = null;
+            var texture = sprite.texture;
+            UISkinKit.SafeDestroy(sprite);
+            if (texture != null) UISkinKit.SafeDestroy(texture);
+        }
+        coverCache.Clear();
+    }
 
     public void ChangeDifficulty(int delta)
     {

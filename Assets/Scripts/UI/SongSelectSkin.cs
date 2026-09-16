@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.IO;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -14,7 +13,6 @@ public class SongSelectSkin : MonoBehaviour
     SongSelectActionStyle startStyle;
     GameObject masterWarning, jacketLockedOverlay, fallbackCover;
     readonly List<DifficultyTileItem> difficultyItems = new List<DifficultyTileItem>();
-    readonly Dictionary<int, Sprite> coverCache = new Dictionary<int, Sprite>();
     const float DetailX = 530f;
 
     IEnumerator Start()
@@ -58,14 +56,6 @@ public class SongSelectSkin : MonoBehaviour
             ctl.OnSelectionChanged -= HandleSelectionChanged;
             ctl.OnDifficultyChanged -= HandleDifficultyChanged;
         }
-        foreach (var sprite in coverCache.Values)
-        {
-            if (sprite == null) continue;
-            var texture = sprite.texture;
-            UISkinKit.SafeDestroy(sprite);
-            if (texture != null) UISkinKit.SafeDestroy(texture);
-        }
-        coverCache.Clear();
     }
 
     // 既存UIテスト・他画面からの呼び出し契約は維持する。
@@ -242,22 +232,6 @@ public class SongSelectSkin : MonoBehaviour
 
     Sprite CoverSprite(int index)
     {
-        if(coverCache.TryGetValue(index,out var cached)) return cached;
-        Sprite sprite=null;
-        string id=ctl!=null?ctl.SongIdAt(index):"";
-        string path=Path.Combine(Application.streamingAssetsPath,"Songs",id,"cover.png");
-        if(!string.IsNullOrEmpty(id) && File.Exists(path))
-        {
-            Texture2D texture=null;
-            try
-            {
-                texture=new Texture2D(2,2);
-                if(texture.LoadImage(File.ReadAllBytes(path)))
-                    sprite=Sprite.Create(texture,new Rect(0,0,texture.width,texture.height),new Vector2(.5f,.5f),100);
-                else UISkinKit.SafeDestroy(texture);
-            }
-            catch(System.Exception) { if(texture!=null) UISkinKit.SafeDestroy(texture); }
-        }
-        coverCache[index]=sprite; return sprite;
+        return ctl != null ? ctl.CoverSpriteAt(index) : null;
     }
 }
