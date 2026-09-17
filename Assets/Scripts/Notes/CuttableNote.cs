@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // 切れるノーツ。タップ・方向指定・ロングをすべてこのコンポーネントで扱う。
@@ -61,6 +62,18 @@ public class CuttableNote : MonoBehaviour
 
     private Vector3 lastHitPoint;
     private Vector3 lastVelocity = Vector3.right;
+    private readonly List<(GameObject visual, Material material)> ownedCracks = new List<(GameObject, Material)>();
+
+    void OnDestroy()
+    {
+        // ノーツの完了・ミス後の破棄・シーン退出のどの経路でも、ひびの材質を残さない。
+        foreach (var crack in ownedCracks)
+        {
+            SafeDestroy(crack.material);
+            SafeDestroyGo(crack.visual);
+        }
+        ownedCracks.Clear();
+    }
 
     public void Cut(Vector3 hitPoint, Vector3 cutVelocity)
     {
@@ -188,6 +201,7 @@ public class CuttableNote : MonoBehaviour
             mat.SetColor("_EmissionColor", c * 1.4f);
         }
         crack.GetComponent<MeshRenderer>().sharedMaterial = mat;
+        ownedCracks.Add((crack, mat));
     }
 
     private void ShatterAndDestroy(Vector3 hitPoint, Vector3 cutVelocity)
@@ -304,6 +318,7 @@ public class CuttableNote : MonoBehaviour
         rb.angularVelocity = Random.insideUnitSphere * pieceAngularImpulse;
 
         var decay = go.AddComponent<SlicePieceDecay>();
+        decay.SetOwnedMesh(mesh);
         decay.life = pieceLife;
         decay.fadeStart = pieceFadeStart;
         // 親由来マテリアルを複製してスライス片に渡す（親破棄後もマゼンタにならないように）

@@ -10,6 +10,7 @@ public class SlicePieceDecay : MonoBehaviour
     private float age;
     private MeshRenderer mr;
     private Material ownedMat;
+    private Mesh ownedMesh;
 
     void Awake()
     {
@@ -24,7 +25,16 @@ public class SlicePieceDecay : MonoBehaviour
             else DestroyImmediate(ownedMat);
             ownedMat = null;
         }
+        if (ownedMesh != null)
+        {
+            if (Application.isPlaying) Destroy(ownedMesh);
+            else DestroyImmediate(ownedMesh);
+            ownedMesh = null;
+        }
     }
+
+    // スライサーが生成した専用メッシュだけを引き取る。通常の破片の共有Cubeは渡さない。
+    public void SetOwnedMesh(Mesh generatedMesh) { ownedMesh = generatedMesh; }
 
     // 親（CuttableNote）由来のマテリアルから複製を作って渡す呼び出し点用。
     // mr.sharedMaterial にも同時に設定する。
