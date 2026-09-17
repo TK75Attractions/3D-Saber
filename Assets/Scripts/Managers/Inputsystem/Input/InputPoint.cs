@@ -15,6 +15,7 @@ public class InputPoint : MonoBehaviour
     UdpClient udpClient2;
     Thread receiveThread1;
     Thread receiveThread2;
+    PhoneSaberBonjourPublisher bonjourPublisher;
     public int port = 5005;
     public int port2 = 5006;
 
@@ -211,31 +212,37 @@ public class InputPoint : MonoBehaviour
             Mathf.Clamp01(0.5f + (normalized.y - 0.5f) * sensitivity));
     }
 
-    void Start()
+    void OnEnable()
     {
         // Awake で重複退場した場合は受信を開始しない
-        if (Instance != this) return;
+        if (!Application.isPlaying || Instance != this) return;
 
         lastRateLogTime = Time.realtimeSinceStartup;
 
         try
         {
-            // UDP受信開始(棒1)
+            // 2ポートともbindできた時だけ受信スレッドとBonjourを開始する。
+            // 片方だけ開いた状態で「受信可能」と公開しない。
             udpClient1 = new UdpClient(port);
+            udpClient2 = new UdpClient(port2);
+
             receiveThread1 = new Thread(() => ReceiveData(udpClient1, lockObj, false));
             receiveThread1.IsBackground = true;
             receiveThread1.Start();
 
-            // UDP受信開始(棒2)
-            udpClient2 = new UdpClient(port2);
             receiveThread2 = new Thread(() => ReceiveData(udpClient2, lockObj2, true));
             receiveThread2.IsBackground = true;
             receiveThread2.Start();
+
+            bonjourPublisher = new PhoneSaberBonjourPublisher();
+            bonjourPublisher.Start(port);
         }
         catch (SocketException e)
         {
-            // 例外で Start が途切れて無言の入力死を起こさないよう、明示的な警告に変えて続行する
-            Debug.LogWarning($"[InputPoint] UDP ポート {port}/{port2} を開けませんでした(既に使用中?): {e.Message}");
+            StopNetworkServices();
+            Debug.LogError(
+                $"[PhoneSaber] UDP {port}/{port2} is already in use. " +
+                $"Stop run_debug.command or another receiver. ({e.Message})");
         }
     }
 
@@ -553,12 +560,21 @@ public class InputPoint : MonoBehaviour
         return localPos;
     }
 
-    void OnDestroy()
+    void StopNetworkServices()
     {
-        // スレッド終了
+        bonjourPublisher?.Dispose();
+        bonjourPublisher = null;
         receiveThread1?.Interrupt(); // Abortより安全
         receiveThread2?.Interrupt();
+        receiveThread1 = null;
+        receiveThread2 = null;
         udpClient1?.Close();
         udpClient2?.Close();
+        udpClient1 = null;
+        udpClient2 = null;
     }
+
+    void OnDisable() => StopNetworkServices();
+    void OnApplicationQuit() => StopNetworkServices();
+    void OnDestroy() => StopNetworkServices();
 }
