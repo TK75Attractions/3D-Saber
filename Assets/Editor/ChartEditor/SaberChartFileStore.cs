@@ -221,25 +221,105 @@ namespace Saber.ChartEditor
             if (folder == null) throw new InvalidOperationException("曲フォルダ名が正しくありません。");
             Directory.CreateDirectory(folder);
 
-            if (removeOtherFormats)
+            string destination = Path.Combine(folder, "audio" + extension);
+            string temporary = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Library",
+                "3DSaberAudioImports", Guid.NewGuid().ToString("N")));
+            Directory.CreateDirectory(temporary);
+            string incoming = Path.Combine(temporary, "incoming" + extension);
+            var movedFiles = new List<(string original, string backup)>();
+            AudioClip importedClip = null;
+            bool committed = false;
+            bool keepRecoveryFiles = false;
+            DateTime writeTimeUtc;
+            long fileLength;
+            try
             {
+                // コピーとデコードが成功するまで既存音源に触れない。同じファイルの再選択も検証する。
+                File.Copy(sourcePath, incoming);
+                importedClip = DecodeAudioFile(incoming);
+                if (importedClip == null)
+                    throw new InvalidOperationException("選択した音源を読み込めませんでした。元の音源は変更していません。");
+                var info = new FileInfo(incoming);
+                writeTimeUtc = info.LastWriteTimeUtc;
+                fileLength = info.Length;
+
+                // 削除の代わりに退避する。途中でロック等に遭遇したら、移動済みのファイルを戻す。
                 foreach (string audioName in AudioNames)
                 {
                     string oldPath = Path.Combine(folder, audioName);
-                    if (!PathsEqual(oldPath, sourcePath))
+                    bool isDestination = PathsEqual(oldPath, destination);
+                    if (isDestination || removeOtherFormats)
                     {
-                        if (File.Exists(oldPath)) File.Delete(oldPath);
-                        string meta = oldPath + ".meta";
-                        if (File.Exists(meta)) File.Delete(meta);
+                        MoveAudioAside(oldPath, temporary, movedFiles);
+                        // 同形式の差し替えではGUIDを保持する。他形式のメタデータだけ整理する。
+                        if (!isDestination) MoveAudioAside(oldPath + ".meta", temporary, movedFiles);
+                    }
+                }
+                File.Move(incoming, destination);
+                committed = true;
+            }
+            catch (Exception importError)
+            {
+                var errors = new List<Exception> { importError };
+                for (int index = movedFiles.Count - 1; index >= 0; index--)
+                {
+                    try { File.Move(movedFiles[index].backup, movedFiles[index].original); }
+                    catch (Exception restoreError) { errors.Add(restoreError); }
+                }
+                if (errors.Count > 1)
+                {
+                    // 復元先まで使用中になった場合、退避データを消さず場所を知らせる。
+                    keepRecoveryFiles = true;
+                    throw new IOException("音源を取り込めず、一部のファイルを元に戻せませんでした。復旧用データ: " + temporary,
+                        new AggregateException(errors));
+                }
+                throw;
+            }
+            finally
+            {
+                if (!committed && importedClip != null) UnityEngine.Object.DestroyImmediate(importedClip);
+                if (!keepRecoveryFiles)
+                {
+                    try { Directory.Delete(temporary, true); }
+                    catch (Exception cleanupError)
+                    {
+                        Debug.LogWarning("音源取り込みの一時データを削除できませんでした: " + temporary + "\n" + cleanupError.Message);
                     }
                 }
             }
 
-            string destination = Path.Combine(folder, "audio" + extension);
-            if (!PathsEqual(sourcePath, destination)) File.Copy(sourcePath, destination, true);
+            // サイズ・更新時刻が同じ差し替えでも、実際に検証した新しい音をプレビューへ渡す。
+            // 成功した場合だけ試聴を止め、置き換えたキャッシュの音声データを解放する。
+            SaberChartAudioPreview.Stop();
+            foreach (string audioName in AudioNames)
+            {
+                string path = Path.Combine(folder, audioName);
+                if (!removeOtherFormats && !PathsEqual(path, destination)) continue;
+                if (audioCache.TryGetValue(path, out CachedAudio cached) && cached.clip != null)
+                    UnityEngine.Object.DestroyImmediate(cached.clip);
+                audioCache.Remove(path);
+            }
+            importedClip.name = songId + " audio";
+            importedClip.hideFlags = HideFlags.HideAndDontSave;
+            audioCache[destination] = new CachedAudio
+            {
+                clip = importedClip,
+                writeTimeUtc = writeTimeUtc,
+                fileLength = fileLength,
+            };
+
             AssetDatabase.Refresh();
-            // StreamingAssets 内は AudioClip アセットにならないため、実行時デコード(キャッシュ付き)で返す
+            // 他形式を保持する呼び出しでは、本編と同じ優先順で音源を選ぶ。
             return LoadAudioClip(songId);
+        }
+
+        private static void MoveAudioAside(string path, string temporary,
+            List<(string original, string backup)> movedFiles)
+        {
+            if (!File.Exists(path)) return;
+            string backup = Path.Combine(temporary, Path.GetFileName(path));
+            File.Move(path, backup);
+            movedFiles.Add((path, backup));
         }
 
         public static List<string> ExistingSongIds()
