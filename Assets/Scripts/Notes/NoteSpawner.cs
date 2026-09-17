@@ -37,6 +37,7 @@ public class NoteSpawner : MonoBehaviour
     private double totalOffsetSeconds; // chart.offsetMs/1000 + extraOffsetSeconds
     private double extraOffsetSeconds; // GamePlayManager から実行時に上書き
     private readonly List<CuttableNote> liveNotes = new List<CuttableNote>();
+    private GameplayCutFeedback cutFeedback;
 
     public float Speed => approachTime > 0.0001f ? (spawnZ - judgeZ) / approachTime : 0f;
 
@@ -56,6 +57,7 @@ public class NoteSpawner : MonoBehaviour
 
     public void SetChart(ChartData data)
     {
+        if (cutFeedback != null) cutFeedback.ResetState();
         chart = data;
         nextIndex = 0;
         RecomputeTotalOffset();
@@ -98,6 +100,19 @@ public class NoteSpawner : MonoBehaviour
     {
         SpawnDue(songTime);
         UpdateLive(songTime);
+        if (cutFeedback != null) cutFeedback.Tick(Time.deltaTime);
+    }
+
+    void OnDisable()
+    {
+        if (cutFeedback != null) cutFeedback.ClearEffects();
+    }
+
+    void OnDestroy()
+    {
+        // Spawnerコンポーネントだけが取り外された場合も、表示用の所有資源を残さない。
+        if (cutFeedback != null) SafeDestroy(cutFeedback.gameObject);
+        cutFeedback = null;
     }
 
     private void SpawnDue(double songTime)
@@ -189,6 +204,8 @@ public class NoteSpawner : MonoBehaviour
         }
 
         liveNotes.Add(note);
+        if (cutFeedback == null) cutFeedback = GameplayCutFeedback.Create(this);
+        cutFeedback.Track(note);
         OnNoteSpawned?.Invoke(note);
     }
 

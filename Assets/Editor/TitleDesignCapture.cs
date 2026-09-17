@@ -94,6 +94,11 @@ public static class TitleDesignCapture
                     Capture("opening-030.png", 1280, 720);
                     motion.SetPresentationTime(.75f, 0f);
                     Capture("opening-075.png", 1280, 720);
+                    for (int departureFrame = 0; departureFrame <= 24; departureFrame++)
+                    {
+                        motion.SetPresentationTime(3f, departureFrame / 24f);
+                        Capture("dive-" + departureFrame.ToString("D3") + ".png", 960, 540);
+                    }
                     motion.SetPresentationTime(3f, .4f);
                     Capture("departure-040.png", 1280, 720);
                     motion.SetPresentationTime(3f, 1f);

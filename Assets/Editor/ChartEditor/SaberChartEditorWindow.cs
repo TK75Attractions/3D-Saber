@@ -31,7 +31,7 @@ namespace Saber.ChartEditor
 
         private const string PrefPrefix = "3DSaber.ChartEditor.";
         private static readonly int[] SnapDenominators = { 4, 8, 12, 16, 24, 32 };
-        private static readonly string[] SnapLabels = { "4分", "8分", "12分", "16分", "24分", "32分" };
+        private static readonly string[] SnapLabels = { "4分（表拍）", "8分", "12分", "16分", "24分", "32分" };
         private static readonly string[] DifficultyValues = { "easy", "normal", "hard" };
         private static readonly string[] DifficultyLabels = { "Easy", "Normal", "Hard" };
         private static readonly string[] TypeValues =
@@ -542,6 +542,8 @@ namespace Saber.ChartEditor
 
         private void SetSpatialPosition(int xLane, int yLane)
         {
+            FinishTextEditing();
+            EndNoteDrag();
             paletteXLane = xLane;
             paletteYLane = yLane;
             SaberChartNote selected = SelectedNote;
@@ -707,6 +709,13 @@ namespace Saber.ChartEditor
             {
                 if (current.type == EventType.MouseUp) EndNoteDrag();
                 return;
+            }
+
+            if (current.type == EventType.MouseDown)
+            {
+                // 手描きの操作領域でも、数値欄から編集フォーカスを受け取る。
+                FinishTextEditing();
+                EndNoteDrag();
             }
 
             if (current.type == EventType.ScrollWheel)
@@ -903,6 +912,11 @@ namespace Saber.ChartEditor
                 Redo();
                 current.Use();
             }
+            else if (action && current.keyCode == KeyCode.D)
+            {
+                DuplicateSelected();
+                current.Use();
+            }
             else if (current.keyCode == KeyCode.Space)
             {
                 TogglePreview();
@@ -941,11 +955,14 @@ namespace Saber.ChartEditor
 
         private void NewDocument()
         {
+            EndNoteDrag();
             if (!ConfirmAbandonChanges()) return;
             StopPreview(false);
             document = new SaberChartDocument();
             beatZeroMs = 0f;
             currentBeat = 0f;
+            // Easyの新規配置は表拍から始める。既存ノーツの時刻は変えない。
+            if (CurrentDifficulty == "easy") snapIndex = 0;
             selectedIndex = -1;
             loadedSongId = null;
             loadedDifficulty = null;
@@ -957,6 +974,7 @@ namespace Saber.ChartEditor
 
         private void LoadDocument()
         {
+            EndNoteDrag();
             if (!ConfirmAbandonChanges()) return;
             try
             {
@@ -981,6 +999,7 @@ namespace Saber.ChartEditor
 
         private bool SaveDocument()
         {
+            EndNoteDrag();
             try
             {
                 string destination = SaberChartFileStore.ChartPath(songId, CurrentDifficulty);
@@ -1240,6 +1259,7 @@ namespace Saber.ChartEditor
 
         private void Undo()
         {
+            EndNoteDrag();
             if (!history.CanUndo) return;
             StopPreview(false);
             document = history.Undo(document);
@@ -1251,6 +1271,7 @@ namespace Saber.ChartEditor
 
         private void Redo()
         {
+            EndNoteDrag();
             if (!history.CanRedo) return;
             StopPreview(false);
             document = history.Redo(document);
@@ -1262,6 +1283,7 @@ namespace Saber.ChartEditor
 
         private void DeleteSelected()
         {
+            EndNoteDrag();
             if (SelectedNote == null) return;
             DeleteNoteAt(selectedIndex);
         }
@@ -1279,6 +1301,7 @@ namespace Saber.ChartEditor
 
         private void DuplicateSelected()
         {
+            EndNoteDrag();
             SaberChartNote selected = SelectedNote;
             if (selected == null) return;
             string before = CurrentJson();
@@ -1411,6 +1434,12 @@ namespace Saber.ChartEditor
         {
             UpdateDirtyState();
             Repaint();
+        }
+
+        private static void FinishTextEditing()
+        {
+            GUIUtility.keyboardControl = 0;
+            EditorGUIUtility.editingTextField = false;
         }
 
         private void UpdateDirtyState()

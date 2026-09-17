@@ -39,9 +39,10 @@ public class TitleSceneSkin : MonoBehaviour
         var original = FindTextByContent(canvas, "3D SABER");
         if (original != null) original.gameObject.SetActive(false);
         HideLegacyButtons(canvas);
+        RectTransform scenery;
         if (TitleConceptSelection.Current == 0)
         {
-            SaberTitleBackdrop.Ensure(canvas);
+            scenery = SaberTitleBackdrop.Ensure(canvas).GetComponent<RectTransform>();
         }
         else
         {
@@ -53,6 +54,7 @@ public class TitleSceneSkin : MonoBehaviour
             rt.offsetMin = rt.offsetMax = Vector2.zero;
             presentation.transform.SetAsFirstSibling();
             TitleConceptSelection.Build(presentation.transform);
+            scenery = rt;
         }
         titleContainer = TitleConceptA.BuildLogo(canvas.transform);
         BuildStartTarget(canvas, cam != null);
@@ -66,7 +68,7 @@ public class TitleSceneSkin : MonoBehaviour
         }
         BuildFlashOverlay(canvas);
         presentationMotion = canvas.gameObject.AddComponent<TitlePresentationMotion>();
-        presentationMotion.Configure(canvas, titleContainer, startTargetGroup, startNote);
+        presentationMotion.Configure(canvas, titleContainer, startTargetGroup, startNote, scenery, flashImage);
     }
 
     void Update()
@@ -175,7 +177,7 @@ public class TitleSceneSkin : MonoBehaviour
         fill.color = new Color(.035f, .08f, .12f, .12f);
         var button = go.GetComponent<Button>();
         button.targetGraphic = fill;
-        button.onClick.AddListener(() => { if (titleCtl != null) titleCtl.OnQuitButton(); });
+        button.onClick.AddListener(() => { if (!transitioning && titleCtl != null) titleCtl.OnQuitButton(); });
         Color stroke = new Color(.35f, .6f, .75f, .48f);
         MakeLine(go.transform, "CloseA", new Vector2(-7f, -7f), new Vector2(7f, 7f), 1.8f, stroke);
         MakeLine(go.transform, "CloseB", new Vector2(-7f, 7f), new Vector2(7f, -7f), 1.8f, stroke);
@@ -199,7 +201,7 @@ public class TitleSceneSkin : MonoBehaviour
     {
         if (transitioning) return;
         if (startNote != null) startNote.SlashProgrammatically();
-        else if (titleCtl != null) titleCtl.OnStartButton();
+        else if (titleCtl != null) HandleSlashed();
     }
 
     void BuildTitleSaber()
@@ -236,6 +238,11 @@ public class TitleSceneSkin : MonoBehaviour
     {
         if (transitioning) return;
         transitioning = true;
+        if (startTargetGroup != null)
+        {
+            startTargetGroup.interactable = false;
+            startTargetGroup.blocksRaycasts = false;
+        }
         PlaySlashChime();
         StartCoroutine(TransitionAfterSlash());
     }
@@ -243,18 +250,11 @@ public class TitleSceneSkin : MonoBehaviour
     IEnumerator TransitionAfterSlash()
     {
         float t = 0f;
-        const float total = 1.05f;
-        const float spike = .10f;
+        const float total = TitlePresentationMotion.DepartureDuration;
         while (t < total)
         {
             t += Time.unscaledDeltaTime;
             if (presentationMotion != null) presentationMotion.SetDeparture(t / total);
-            if (flashImage != null)
-            {
-                float a = t < spike ? Mathf.Lerp(0f, .22f, t / spike)
-                    : Mathf.Lerp(.22f, 0f, (t - spike) / .22f);
-                flashImage.color = new Color(1f, 1f, 1f, a);
-            }
             yield return null;
         }
         if (titleCtl != null) titleCtl.OnStartButton();
