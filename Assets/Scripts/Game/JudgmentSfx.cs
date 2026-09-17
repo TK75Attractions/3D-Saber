@@ -47,6 +47,17 @@ public class JudgmentSfx : MonoBehaviour
         if (scoreManager != null) scoreManager.OnJudgment -= OnJudgment;
     }
 
+    void OnDestroy()
+    {
+        // 自分で合成した音だけを解放する。同梱素材・Inspector指定の音は共有される。
+        UISkinKit.SafeDestroy(genPerfect);
+        UISkinKit.SafeDestroy(genGreat);
+        UISkinKit.SafeDestroy(genGood);
+        UISkinKit.SafeDestroy(genBad);
+        UISkinKit.SafeDestroy(genMiss);
+        genPerfect = genGreat = genGood = genBad = genMiss = null;
+    }
+
     private void OnJudgment(JudgmentTier tier, int award)
     {
         AudioClip clip = ClipForCurrentJudgment(tier);

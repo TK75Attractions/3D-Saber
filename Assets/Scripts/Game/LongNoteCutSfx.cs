@@ -45,6 +45,9 @@ public class LongNoteCutSfx : MonoBehaviour
     void OnDestroy()
     {
         Bind(null);
+        // キャッシュは合成音だけを所有し、外部から借りた素材は含まない。
+        foreach (var clip in clipCache.Values) UISkinKit.SafeDestroy(clip);
+        clipCache.Clear();
     }
 
     private void HandleSpawned(CuttableNote note)

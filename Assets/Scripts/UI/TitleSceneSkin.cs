@@ -17,6 +17,7 @@ public class TitleSceneSkin : MonoBehaviour
     private TitleStartNote startNote;
     private Image flashImage;
     private bool transitioning;
+    private AudioClip slashChimeLow, slashChimeHigh;
 
     void Start()
     {
@@ -261,12 +262,22 @@ public class TitleSceneSkin : MonoBehaviour
 
     void PlaySlashChime()
     {
+        if (slashChimeLow == null) slashChimeLow = JudgmentSfx.Beep(880f, .18f);
+        if (slashChimeHigh == null) slashChimeHigh = JudgmentSfx.Beep(1318.5f, .35f);
         var go = new GameObject("TitleSlashSfx", typeof(AudioSource));
+        go.transform.SetParent(transform, false);
         var src = go.GetComponent<AudioSource>();
         src.playOnAwake = false;
-        src.PlayOneShot(JudgmentSfx.Beep(880f, .18f), .50f);
-        src.PlayOneShot(JudgmentSfx.Beep(1318.5f, .35f), .35f);
+        src.PlayOneShot(slashChimeLow, .50f);
+        src.PlayOneShot(slashChimeHigh, .35f);
         Destroy(go, 1.5f);
+    }
+
+    void OnDestroy()
+    {
+        UISkinKit.SafeDestroy(slashChimeLow);
+        UISkinKit.SafeDestroy(slashChimeHigh);
+        slashChimeLow = slashChimeHigh = null;
     }
 
     public static Text FindTextByContent(Canvas canvas, string content)

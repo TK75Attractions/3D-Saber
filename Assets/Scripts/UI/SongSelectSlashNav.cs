@@ -41,6 +41,7 @@ public class SongSelectSlashNav : MonoBehaviour
     private Vector3 downBasePos;
     private float age;
     private AudioSource sfx;
+    private AudioClip tickClip;
 
     public CuttableNote UpNote => upNote;
     public CuttableNote DownNote => downNote;
@@ -223,12 +224,15 @@ public class SongSelectSlashNav : MonoBehaviour
     {
         // EditMode テスト中は音を出さない(オーディオ系は再生モード前提のため)
         if (!Application.isPlaying || sfx == null) return;
-        sfx.PlayOneShot(JudgmentSfx.Beep(660f, 0.10f), sfxVolume);
+        if (tickClip == null) tickClip = JudgmentSfx.Beep(660f, 0.10f);
+        sfx.PlayOneShot(tickClip, sfxVolume);
     }
 
     void OnDestroy()
     {
         if (upNote != null) upNote.OnCut -= HandleNavCut;
         if (downNote != null) downNote.OnCut -= HandleNavCut;
+        UISkinKit.SafeDestroy(tickClip);
+        tickClip = null;
     }
 }

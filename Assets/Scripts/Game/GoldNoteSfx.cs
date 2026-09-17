@@ -42,6 +42,14 @@ public class GoldNoteSfx : MonoBehaviour
     void OnDestroy()
     {
         Bind(null);
+        ReleaseGeneratedClips();
+    }
+
+    private void ReleaseGeneratedClips()
+    {
+        UISkinKit.SafeDestroy(firstClip);
+        UISkinKit.SafeDestroy(secondClip);
+        firstClip = secondClip = null;
     }
 
     private void HandleSpawned(CuttableNote note)
@@ -99,6 +107,9 @@ public class GoldNoteSfx : MonoBehaviour
 
         float key = baseFrequency * 1000f + ringDuration * 100f + swishDuration * 10f + shimmerHz;
         if (firstClip != null && Mathf.Approximately(key, builtKey)) return;
+        // 作り直す前の遅延音と合成バッファを残さない。共有AudioSourceは停止しない。
+        StopAllCoroutines();
+        ReleaseGeneratedClips();
         builtKey = key;
         firstClip = BuildShingClip("gold_shing", baseFrequency, ringDuration, swishDuration, shimmerHz, 12345);
         secondClip = BuildShingClip("gold_shing2",
