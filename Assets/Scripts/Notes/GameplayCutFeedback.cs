@@ -8,7 +8,9 @@ public sealed class GameplayCutFeedback : MonoBehaviour
 {
     public const int MaxBursts = 12;
     public const float BurstLifetime = .24f;
-    const float SlashLifetime = .10f;
+    const float SlashLifetime = .075f;
+    public const int SparkCount = 8;
+    public const int VerticesPerBurst = (SparkCount + 2) * 4;
 
     struct Burst
     {
@@ -21,10 +23,10 @@ public sealed class GameplayCutFeedback : MonoBehaviour
 
     readonly Burst[] bursts = new Burst[MaxBursts];
     readonly HashSet<CuttableNote> tracked = new HashSet<CuttableNote>();
-    readonly List<Vector3> vertices = new List<Vector3>(MaxBursts * 28);
-    readonly List<Color> colors = new List<Color>(MaxBursts * 28);
-    readonly List<Vector2> uvs = new List<Vector2>(MaxBursts * 28);
-    readonly List<int> triangles = new List<int>(MaxBursts * 42);
+    readonly List<Vector3> vertices = new List<Vector3>(MaxBursts * VerticesPerBurst);
+    readonly List<Color> colors = new List<Color>(MaxBursts * VerticesPerBurst);
+    readonly List<Vector2> uvs = new List<Vector2>(MaxBursts * VerticesPerBurst);
+    readonly List<int> triangles = new List<int>(MaxBursts * VerticesPerBurst * 3 / 2);
     NoteSpawner owner;
     Mesh mesh;
     Material material;
@@ -154,20 +156,24 @@ public sealed class GameplayCutFeedback : MonoBehaviour
             if (slash > .001f)
             {
                 Vector3 center = burst.position + direction * (burst.age * 1.5f * burst.scale);
-                float length = (1.35f + burst.age * 2f) * burst.scale;
-                Streak(center, direction, length, .085f * burst.scale, WithAlpha(burst.color, slash * .48f));
-                Streak(center, direction, length * .88f, .027f * burst.scale,
-                    WithAlpha(Color.Lerp(burst.color, Color.white, .72f), slash * .88f));
+                float length = (1.16f + burst.age * 2f) * burst.scale;
+                Streak(center, direction, length, .11f * burst.scale, WithAlpha(burst.color, slash * .4f));
+                Streak(center, direction, length * .93f, .032f * burst.scale,
+                    WithAlpha(Color.Lerp(burst.color, Color.white, .9f), slash * .96f));
             }
             float life = Mathf.Clamp01(1f - burst.age / BurstLifetime);
-            for (int i = 0; i < 4; i++)
+            for (int i = 0; i < SparkCount; i++)
             {
                 float side = (i & 1) == 0 ? -1f : 1f;
-                Vector3 outward = (direction * (i < 2 ? 1f : -.48f) + normal * (side * .68f)).normalized;
-                float travel = (.12f + burst.age * (i < 2 ? 3.1f : 2.35f)) * burst.scale;
-                Vector3 position = burst.position + outward * travel;
-                Streak(position, outward, (.10f + life * .12f) * burst.scale, .023f * burst.scale,
-                    WithAlpha(burst.color, life * life * burst.gain * .63f));
+                // 主に振った方向へ飛ばし、少数だけ後方へ散らす。細い白い芯は短く減衰する。
+                float spread = .18f + (i % 3) * .3f;
+                Vector3 outward = (direction * (i < 6 ? 1f : -.6f) + normal * (side * spread)).normalized;
+                float speed = 2.6f + (i % 4) * .65f;
+                float travel = (.08f + burst.age * speed) * burst.scale;
+                Vector3 position = burst.position + outward * travel + Vector3.down * (burst.age * burst.age * 3f);
+                Streak(position, (outward + Vector3.down * burst.age).normalized,
+                    (.07f + life * (.16f + i % 3 * .045f)) * burst.scale, (.011f + (i % 2) * .004f) * burst.scale,
+                    WithAlpha(Color.Lerp(burst.color, Color.white, .5f + life * .35f), life * life * burst.gain * .84f));
             }
         }
         mesh.Clear();

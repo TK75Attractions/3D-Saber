@@ -97,6 +97,14 @@ public static class SaberRig
         if (saber == null) return null;
         var trail = saber.GetComponent<TrailRenderer>();
         if (trail == null) trail = saber.gameObject.AddComponent<TrailRenderer>();
+        // 端点があるセイバーは刃全体の残光をBridgeで描く。中点の帯は重ねない。
+        var bridge = saber.GetComponent<SaberInputBridge>();
+        if (bridge != null && bridge.useBladeMode)
+        {
+            trail.emitting = false; trail.enabled = false; trail.Clear();
+            return trail;
+        }
+        trail.emitting = true; trail.enabled = true;
         trail.time = TrailTime;
         trail.startWidth = Mathf.Max(0.06f, bladeWidth * 1.6f);
         trail.endWidth = 0f;

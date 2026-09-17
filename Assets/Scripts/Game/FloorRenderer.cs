@@ -48,6 +48,7 @@ public partial class FloorRenderer : MonoBehaviour
     public const float SurfaceBrightness = 1.75f;
     public const float InlayBrightness = 1.18f;
     private bool built;
+    private PulseArrayStage pulseArray;
     private readonly List<Material> materials = new List<Material>();
     private readonly List<Mesh> meshes = new List<Mesh>();
     public double LastTickSeconds { get; private set; }
@@ -59,12 +60,15 @@ public partial class FloorRenderer : MonoBehaviour
         if (!built || !isActiveAndEnabled || double.IsNaN(songSeconds) || double.IsInfinity(songSeconds)) return;
         LastTickSeconds = System.Math.Max(0, songSeconds);
         ChorusIntensity = float.IsNaN(chorus) || float.IsInfinity(chorus) ? 0 : Mathf.Clamp01(chorus);
+        if (pulseArray != null) pulseArray.Tick(LastTickSeconds, ChorusIntensity);
         foreach (var material in materials)
         {
             material.SetFloat("_MotionTime", (float)LastTickSeconds);
             material.SetFloat("_Chorus", ChorusIntensity);
         }
     }
+
+    public void SetRhythm(ChartData chart) { if (pulseArray != null) pulseArray.SetRhythm(chart); }
 
     public static FloorRenderer Ensure(Transform parent = null)
     {
@@ -91,6 +95,11 @@ public partial class FloorRenderer : MonoBehaviour
         ActiveTheme = (int)selectedTheme >= 0 && (int)selectedTheme < StageThemeCatalog.Count
             ? selectedTheme : StageTheme.ObsidianRelay;
         built = true;
+        if (ActiveTheme == StageTheme.PulseArray)
+        {
+            pulseArray = PulseArrayStage.Create(this);
+            return;
+        }
         if (StageThemeCatalog.IsScenic(ActiveTheme))
         {
             ScenicStageWorld.Ensure(this);

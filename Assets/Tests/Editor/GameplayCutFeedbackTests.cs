@@ -81,7 +81,8 @@ public class GameplayCutFeedbackTests
         for (int i = 0; i < 40; i++)
             Note(i).Cut(new Vector3(i, 0, 0), Vector3.right * 8);
         Assert.AreEqual(GameplayCutFeedback.MaxBursts, feedback.ActiveCount);
-        Assert.LessOrEqual(feedback.GetComponent<MeshFilter>().sharedMesh.vertexCount, 12 * 28);
+        Assert.LessOrEqual(feedback.GetComponent<MeshFilter>().sharedMesh.vertexCount,
+            GameplayCutFeedback.MaxBursts * GameplayCutFeedback.VerticesPerBurst);
         feedback.Tick(1);
         Assert.AreEqual(0, feedback.ActiveCount);
     }

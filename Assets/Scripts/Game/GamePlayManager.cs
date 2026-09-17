@@ -274,6 +274,7 @@ public class GamePlayManager : MonoBehaviour
         // オフセットを先に NoteSpawner に渡してから SetChart
         noteSpawner.SetExtraOffsetSeconds(effectiveExtraOffset);
         noteSpawner.SetChart(chart);
+        if (stageFloor != null) stageFloor.SetRhythm(chart);
 
         // 判定ゲートはPerfectが確定した瞬間だけ発光する。拍や単なる接触では光らせない。
         if (useOverhauledStage)

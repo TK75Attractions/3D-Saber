@@ -113,9 +113,9 @@ public class ScenicStageWorldTests
     }
 
     [Test]
-    public void TenThemesAreSelectedPerPlayNotPerSong()
+    public void AllThemesAreSelectedPerPlayNotPerSong()
     {
-        Assert.AreEqual(10,StageThemeCatalog.Count); Assert.AreEqual(10,Enum.GetValues(typeof(StageTheme)).Length);
+        Assert.AreEqual(11,StageThemeCatalog.Count); Assert.AreEqual(StageThemeCatalog.Count,Enum.GetValues(typeof(StageTheme)).Length);
         string original = GameSession.SelectedSongId;
         var randomState = UnityEngine.Random.state;
         try
@@ -128,7 +128,7 @@ public class ScenicStageWorldTests
                 StageTheme next = StageThemeCatalog.NextForPlay(); Assert.AreNotEqual(previous,next);
                 seen.Add(next); previous = next;
             }
-            Assert.AreEqual(10,seen.Count);
+            Assert.AreEqual(StageThemeCatalog.Count,seen.Count);
             Assert.AreEqual(randomState,UnityEngine.Random.state,"譜面用乱数を消費しない");
         }
         finally { GameSession.SelectedSongId = original; }

@@ -11,13 +11,14 @@ public enum StageTheme
     MoonlitGarden = 6,
     CrystalGrotto = 7,
     AstralOrbit = 8,
-    DesertSanctum = 9
+    DesertSanctum = 9,
+    PulseArray = 10
 }
 
 // 背景だけの乱数系列。譜面・演出などが使う UnityEngine.Random の状態を変えない。
 public static class StageThemeCatalog
 {
-    public const int Count = 10;
+    public const int Count = 11;
     private static readonly System.Random random = new System.Random();
     private static int previous = -1;
 
@@ -28,7 +29,7 @@ public static class StageThemeCatalog
         return next;
     }
 
-    // 曲IDに依存せず、毎プレイ抽選。2回目からは直前以外の9種を等確率に選ぶ。
+    // 曲IDに依存せず、毎プレイ抽選。2回目からは直前以外を等確率に選ぶ。
     public static StageTheme Choose(int roll, int previousIndex)
     {
         bool skip = previousIndex >= 0 && previousIndex < Count;
@@ -51,6 +52,7 @@ public static class StageThemeCatalog
             case StageTheme.CrystalGrotto: return "Crystal Grotto";
             case StageTheme.AstralOrbit: return "Astral Orbit";
             case StageTheme.DesertSanctum: return "Desert Sanctum";
+            case StageTheme.PulseArray: return "Pulse Array";
             default: return "Obsidian Relay";
         }
     }

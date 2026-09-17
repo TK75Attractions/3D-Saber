@@ -59,6 +59,7 @@ public class SaberInputBridge : MonoBehaviour
     // プロジェクターモード用: 刃の背面に敷く暗い縁取り線
     LineRenderer bladeOutline;
     Material bladeOutlineMaterialOwned;
+    SaberBladeVisual bladeVisual;
 
     // SaberCutJudge から参照される世界座標の端点。
     public Vector3 WorldEndA { get; private set; }
@@ -88,6 +89,8 @@ public class SaberInputBridge : MonoBehaviour
         }
     }
 
+    void OnDisable() { HideBlade(); }
+
     void EnsureBladeLine()
     {
         if (bladeLine != null) return;
@@ -102,10 +105,12 @@ public class SaberInputBridge : MonoBehaviour
         bladeLine.alignment = LineAlignment.View;
         if (bladeLine.sharedMaterial == null)
         {
-            var sh = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+            // URP標準Unlitはラインの頂点色を使わないため、専用の頂点色シェーダーで描く。
+            var sh = Resources.Load<Shader>("Effects/GameplayCutAccent") ?? Shader.Find("Universal Render Pipeline/Unlit");
             bladeMaterialOwned = new Material(sh);
-            if (bladeMaterialOwned.HasProperty("_BaseColor")) bladeMaterialOwned.SetColor("_BaseColor", bladeColor);
-            else bladeMaterialOwned.color = bladeColor;
+            // ラインの頂点色で着色する。同じ色を材質にも掛けて暗くしない。
+            if (bladeMaterialOwned.HasProperty("_BaseColor")) bladeMaterialOwned.SetColor("_BaseColor", Color.white);
+            else if (bladeMaterialOwned.HasProperty("_Color")) bladeMaterialOwned.color = Color.white;
             bladeLine.sharedMaterial = bladeMaterialOwned;
         }
         bladeLine.startColor = bladeColor;
@@ -174,6 +179,7 @@ public class SaberInputBridge : MonoBehaviour
         }
         if (HasBlade) UpdateBladeOutline(WorldEndA, WorldEndB, bladeLine != null && bladeLine.enabled);
         else EnsureBladeOutline();
+        if (HasBlade && bladeVisual != null) bladeVisual.Show(WorldEndA, WorldEndB, EffectiveBladeWidth, bladeColor, Time.time);
     }
 
     public LineRenderer BladeOutlineForTest => bladeOutline;
@@ -190,6 +196,7 @@ public class SaberInputBridge : MonoBehaviour
 
     void Update()
     {
+        if (!useBladeMode && HasBlade) HideBlade();
         bool consumed = false;
 
         // UDP データが「最近」来てるなら、それを使う。無音ならマウスフォールバック(なければ非表示)。
@@ -272,6 +279,7 @@ public class SaberInputBridge : MonoBehaviour
         HasBlade = false;
         if (bladeLine != null && bladeLine.enabled) bladeLine.enabled = false;
         if (bladeOutline != null && bladeOutline.enabled) bladeOutline.enabled = false;
+        if (bladeVisual != null) bladeVisual.Clear();
     }
 
     // ブレードの色を実行時に変更する(手の色分け用)。生成済みのマテリアル/ラインにも反映する。
@@ -280,14 +288,15 @@ public class SaberInputBridge : MonoBehaviour
         bladeColor = c;
         if (bladeMaterialOwned != null)
         {
-            if (bladeMaterialOwned.HasProperty("_BaseColor")) bladeMaterialOwned.SetColor("_BaseColor", c);
-            else bladeMaterialOwned.color = c;
+            if (bladeMaterialOwned.HasProperty("_BaseColor")) bladeMaterialOwned.SetColor("_BaseColor", Color.white);
+            else if (bladeMaterialOwned.HasProperty("_Color")) bladeMaterialOwned.color = Color.white;
         }
         if (bladeLine != null)
         {
             bladeLine.startColor = c;
             bladeLine.endColor = c;
         }
+        if (HasBlade && bladeVisual != null) bladeVisual.Show(WorldEndA, WorldEndB, EffectiveBladeWidth, c, Time.time);
     }
 
     private void ApplyBladeImmediate(Vector3 rawA, Vector3 rawB)
@@ -338,6 +347,13 @@ public class SaberInputBridge : MonoBehaviour
             if (!bladeLine.enabled) bladeLine.enabled = true;
             UpdateBladeOutline(a, b, true);
         }
+        if (bladeVisual == null)
+        {
+            var go = new GameObject("BladeLight");
+            go.transform.SetParent(transform, false);
+            bladeVisual = go.AddComponent<SaberBladeVisual>();
+        }
+        bladeVisual.Show(a, b, EffectiveBladeWidth, bladeColor, Time.time);
     }
 
     // リマップ有効時はカメラの可視範囲、通常時は判定面の範囲でクランプする。

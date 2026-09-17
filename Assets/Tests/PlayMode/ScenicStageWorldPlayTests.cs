@@ -15,6 +15,29 @@ public class ScenicStageWorldPlayTests
     }
 
     [UnityTest]
+    public IEnumerator PulseArrayReceivesChartCuesAndFollowsActualSongClock()
+    {
+        GameSession.SelectedSongId="Epilogue"; GameSession.SelectedDifficulty="Normal"; GameSession.IsCalibrationMode=false;
+        nextTheme=StageTheme.PulseArray; SceneManager.sceneLoaded+=ForceWorld;
+        try { yield return SceneManager.LoadSceneAsync("Game",LoadSceneMode.Single); }
+        finally { SceneManager.sceneLoaded-=ForceWorld; }
+        float deadline=Time.realtimeSinceStartup+25;
+        PulseArrayStage stage=null;
+        while(Time.realtimeSinceStartup<deadline)
+        {
+            stage=Object.FindFirstObjectByType<PulseArrayStage>();
+            if(stage!=null && stage.LastTickSeconds>.2) break;
+            yield return null;
+        }
+        Assert.NotNull(stage); Assert.Greater(stage.CueCount,0);
+        var player=Object.FindFirstObjectByType<SongPlayer>();
+        Assert.That(stage.LastTickSeconds,Is.EqualTo(player.SongTime).Within(.15));
+        player.Stop(); double stopped=stage.LastTickSeconds;
+        yield return new WaitForSeconds(.1f);
+        Assert.AreEqual(stopped,stage.LastTickSeconds);
+    }
+
+    [UnityTest]
     public IEnumerator AllSixWorldsAreDrivenByActualGameAndStopWithSong()
     {
         GameSession.SelectedSongId="ElDorado"; GameSession.SelectedDifficulty="normal"; GameSession.IsCalibrationMode=false;
