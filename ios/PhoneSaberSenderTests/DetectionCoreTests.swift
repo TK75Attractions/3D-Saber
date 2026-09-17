@@ -122,6 +122,8 @@ final class DetectionCoreTests: XCTestCase {
             requestAccess: { _ in }
         )
 
+        XCTAssertFalse(viewModel.debugDetailedProfilingEnabled,
+                       "collapsed Debug Performance must not enable detailed hot-path timers")
         XCTAssertEqual(viewModel.debugPerformanceRows.filter { $0.category == "Camera" }.count, 5)
         XCTAssertEqual(viewModel.debugPerformanceRows.filter { $0.category == "Processing" }.count, 14)
         XCTAssertEqual(viewModel.debugPerformanceRows.filter { $0.category == "Network" }.count, 3)

@@ -70,7 +70,7 @@ final class FrameProcessor: @unchecked Sendable {
     private var captureSynchronizationClock: CMClock?
 #if DEBUG
     private var inputFrameIntervalWindow = CameraFrameIntervalWindow(capacity: 120)
-    private var detailedProfilingEnabled = true
+    private var detailedProfilingEnabled = false
 #endif
     private let rawFrameDirectory: () throws -> URL
     private lazy var rawFrameContext = CIContext(options: [.cacheIntermediates: false])

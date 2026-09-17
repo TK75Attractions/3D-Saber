@@ -162,7 +162,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var debugRequestedFPS = 30
     @Published private(set) var debugSupports60FPS = false
     @Published private(set) var debug60FPSFormats = "Start the camera to inspect this device"
-    @Published var debugDetailedProfilingEnabled = true {
+    @Published var debugDetailedProfilingEnabled = false {
         didSet { processor.setDetailedProfilingEnabled(debugDetailedProfilingEnabled) }
     }
     private var performanceMetrics: [String: PerformanceMetric] = [:]
