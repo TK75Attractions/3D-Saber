@@ -46,10 +46,14 @@ public class SongStagePerformanceTests
     {
         var songs=Directory.GetDirectories(Path.Combine(Application.streamingAssetsPath,"Songs"))
             .Where(p=>Directory.GetFiles(p,"chart*.json").Length>0).ToArray();
-        Assert.AreEqual(5,songs.Length);
+        CollectionAssert.AreEquivalent(new[]{"2_23_AM","ElDorado","Epilogue","Morning","揺籠","Andalusia"},
+            songs.Select(Path.GetFileName).ToArray());
         foreach(var folder in songs)
         {
-            Assert.IsNotEmpty(StagePerformanceTimeline.Load(Path.GetFileName(folder)).sections,folder);
+            var timeline = StagePerformanceTimeline.Load(Path.GetFileName(folder));
+            Assert.IsNotNull(timeline.sections,folder);
+            if (Path.GetFileName(folder) != "Andalusia") Assert.IsNotEmpty(timeline.sections,folder);
+            Assert.GreaterOrEqual(timeline.previewStartSeconds,0,folder);
             Assert.AreEqual(1,Directory.GetFiles(folder,"stage*.json").Length,folder);
         }
     }

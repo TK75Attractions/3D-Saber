@@ -18,6 +18,7 @@ public class SongSelectController : MonoBehaviour
     public static string DisplaySongTitle(string songId)
     {
         return string.Equals(songId, "Epilogue", System.StringComparison.OrdinalIgnoreCase)
+            || string.Equals(songId, "Andalusia", System.StringComparison.OrdinalIgnoreCase)
             ? ResultSkin.SongIdToDisplayTitle(songId) : songId;
     }
 

@@ -100,6 +100,7 @@ public class ResultSkin : MonoBehaviour
         if (string.IsNullOrEmpty(songId)) return "";
         // 保存記録と音源フォルダのIDは維持し、画面の曲名だけを正式名称にする。
         if (string.Equals(songId, "Epilogue", System.StringComparison.OrdinalIgnoreCase)) return "校歌";
+        if (string.Equals(songId, "Andalusia", System.StringComparison.OrdinalIgnoreCase)) return "アンダルシア";
         var sb = new System.Text.StringBuilder();
         for (int i = 0; i < songId.Length; i++)
         {

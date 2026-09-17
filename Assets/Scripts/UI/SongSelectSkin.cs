@@ -9,7 +9,7 @@ public class SongSelectSkin : MonoBehaviour
 {
     SongSelectController ctl;
     SongWheelView wheel;
-    TextMeshProUGUI panelTitle, startDifficultyHint, trackNumber;
+    TextMeshProUGUI panelTitle, panelArtist, startDifficultyHint, trackNumber;
     SongSelectActionStyle startStyle;
     GameObject masterWarning, jacketLockedOverlay, fallbackCover;
     readonly List<DifficultyTileItem> difficultyItems = new List<DifficultyTileItem>();
@@ -130,6 +130,8 @@ public class SongSelectSkin : MonoBehaviour
         BuildJacket(canvas);
         panelTitle = SongSelectVisuals.Label(canvas.transform,"PanelSongTitle","",33,new Vector2(DetailX,-39),new Vector2(596,52),SongSelectVisuals.Text,TextAlignmentOptions.Center,true);
         panelTitle.enableAutoSizing=true; panelTitle.fontSizeMin=23; panelTitle.fontSizeMax=33;
+        panelArtist = SongSelectVisuals.Label(canvas.transform,"PanelSongArtist","",18,new Vector2(DetailX,-78),new Vector2(592,26),SongSelectVisuals.Muted,TextAlignmentOptions.Center);
+        panelArtist.enableAutoSizing=true; panelArtist.fontSizeMin=14; panelArtist.fontSizeMax=18;
         BuildDifficultyRibbons(canvas);
         masterWarning = SongSelectVisuals.Rect(canvas.transform,"MasterWarning",new Vector2(DetailX,-219),new Vector2(592,40)).gameObject;
         SongSelectVisuals.Panel(masterWarning.transform,"WarningRule",new Vector2(-286,0),new Vector2(3,18),DifficultyColor(2),Color.clear,0);
@@ -205,6 +207,7 @@ public class SongSelectSkin : MonoBehaviour
     {
         if (wheel!=null) wheel.SetSelected(index);
         if (panelTitle!=null) panelTitle.text=ResultSkin.SongIdToDisplayTitle(ctl.SongIdAt(index));
+        if (panelArtist!=null) panelArtist.text=StagePerformanceTimeline.Load(ctl.SongIdAt(index)).artist ?? "";
         if (trackNumber!=null) trackNumber.text=$"{index+1:00} / {ctl.SongCount:00}";
         bool hasCover=CoverSprite(index)!=null;
         if (fallbackCover!=null) fallbackCover.SetActive(!hasCover);

@@ -282,7 +282,7 @@ public class GamePlayManager : MonoBehaviour
         }
 
         // 小節線：BPM ガイドとして薄く流す
-        if (disableBarLines && barLineSpawner != null)
+        if ((disableBarLines || stagePerformance.hideBarLines) && barLineSpawner != null)
         {
             barLineSpawner.gameObject.SetActive(false);
             barLineSpawner = null;
