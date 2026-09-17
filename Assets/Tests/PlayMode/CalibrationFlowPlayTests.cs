@@ -8,6 +8,12 @@ using UnityEngine.TestTools;
 
 public class CalibrationFlowPlayTests
 {
+    // 集計・入力の試験だけ時計を進める。音声同期そのものは別の実再生試験で確認する。
+    static void SetSongClock(SongPlayer player, double start)
+    {
+        typeof(SongPlayer).GetField("clockSynchronized",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(player,true);
+        typeof(SongPlayer).GetField("startDspTime",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(player,start);
+    }
     int saved; Scene gameScene;
     [UnitySetUp] public IEnumerator Setup()
     {
@@ -39,7 +45,7 @@ public class CalibrationFlowPlayTests
     [UnityTest] public IEnumerator NoInputDoesNotGenerateARecommendedOffset()
     {
         var manager=Object.FindFirstObjectByType<GamePlayManager>();var c=manager.Calibration;c.Begin(CalibrationRunMode.Practice);
-        typeof(SongPlayer).GetField("startDspTime",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(manager.songPlayer,
+        SetSongClock(manager.songPlayer,
             AudioSettings.dspTime-CalibrationProtocol.EndSeconds-manager.extraOffsetSeconds-.1);
         c.Tick(.016f);yield return null;
         Assert.AreEqual(CalibrationRunMode.Result,c.Mode);Assert.NotNull(c.Result);Assert.False(c.Result.CanRecommend);
@@ -73,15 +79,14 @@ public class CalibrationFlowPlayTests
     {
         var manager=Object.FindFirstObjectByType<GamePlayManager>();var c=manager.Calibration;c.Begin(CalibrationRunMode.Practice);
         // 既知の時刻を与え、通常の CuttableNote.OnCut 経路を使う。実機遅延の測定を代替するテストではない。
-        var clock=typeof(SongPlayer).GetField("startDspTime",BindingFlags.Instance|BindingFlags.NonPublic);
         foreach(int index in new[]{0,4})
         {
             double hit=CalibrationProtocol.NoteTime(index)+manager.noteSpawner.TotalOffsetSeconds;
-            clock.SetValue(manager.songPlayer,AudioSettings.dspTime-hit-.025);
+            SetSongClock(manager.songPlayer,AudioSettings.dspTime-hit-.025);
             manager.noteSpawner.Tick(manager.songPlayer.SongTime);
             var note=Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None).Single(n=>System.Math.Abs(n.HitTime-hit)<.001);
             // ノーツ生成・探索の CPU 時間は、入力した時刻とは分ける。
-            clock.SetValue(manager.songPlayer,AudioSettings.dspTime-hit-.025);
+            SetSongClock(manager.songPlayer,AudioSettings.dspTime-hit-.025);
             note.Cut(note.transform.position,Vector3.right*6,CutDirection.None,SaberHand.Left);
             Assert.AreEqual(index==0?0:1,c.CollectedCount);
             Assert.GreaterOrEqual(c.LastErrorMs,24);Assert.AreEqual(manager.scoreManager.LastErrorMs,c.LastErrorMs,.001);
@@ -97,7 +102,7 @@ public class CalibrationFlowPlayTests
         var m=Object.FindFirstObjectByType<GamePlayManager>();var c=m.Calibration;c.BeginLivePractice();
         var source=m.songPlayer.GetComponent<AudioSource>();var clip=m.songPlayer.Clip;
         Assert.True(source.loop);Assert.AreEqual(2.4f,clip.length,.0001f);
-        typeof(SongPlayer).GetField("startDspTime",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(m.songPlayer,
+        SetSongClock(m.songPlayer,
             AudioSettings.dspTime-CalibrationProtocol.EndSeconds-2);
         c.Tick(.016f);yield return null;
         Assert.True(c.IsLive);Assert.IsNull(c.Result,"24ノーツ後に結果画面で止まらない");
@@ -112,14 +117,13 @@ public class CalibrationFlowPlayTests
     [UnityTest] public IEnumerator LiveCutShowsImmediateFeedbackAndMissClearsOldError()
     {
         var m=Object.FindFirstObjectByType<GamePlayManager>();var c=m.Calibration;c.BeginLivePractice();
-        var clock=typeof(SongPlayer).GetField("startDspTime",BindingFlags.Instance|BindingFlags.NonPublic);
         double[] errors={-.030,0,.030};
         for(int index=0;index<3;index++)
         {
             double hit=CalibrationProtocol.NoteTime(index)+m.noteSpawner.TotalOffsetSeconds;
-            clock.SetValue(m.songPlayer,AudioSettings.dspTime-hit-errors[index]);c.Tick(.016f);
+            SetSongClock(m.songPlayer,AudioSettings.dspTime-hit-errors[index]);c.Tick(.016f);
             var note=Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None).Single(n=>System.Math.Abs(n.HitTime-hit)<.001);
-            clock.SetValue(m.songPlayer,AudioSettings.dspTime-hit-errors[index]);
+            SetSongClock(m.songPlayer,AudioSettings.dspTime-hit-errors[index]);
             note.Cut(note.transform.position,Vector3.right*6,CutDirection.None,note.RequiredHand);c.Overlay.Tick();
             // DSP時計は音声バッファ単位で進むため、入力準備時ではなく実際に確定した誤差を検証する。
             // ±8msの境界そのものはCalibrationLiveTestsで壁時計に依存せず検証する。
@@ -127,7 +131,7 @@ public class CalibrationFlowPlayTests
             Assert.AreEqual(m.scoreManager.LastErrorMs,c.LastErrorMs,.001);Assert.AreEqual(0,c.CollectedCount);
         }
         double nextHit=CalibrationProtocol.NoteTime(3)+m.noteSpawner.TotalOffsetSeconds;
-        clock.SetValue(m.songPlayer,AudioSettings.dspTime-nextHit);c.Tick(.016f);
+        SetSongClock(m.songPlayer,AudioSettings.dspTime-nextHit);c.Tick(.016f);
         var next=Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None).Single(n=>System.Math.Abs(n.HitTime-nextHit)<.001);
         next.MarkMiss();c.Overlay.Tick();
         Assert.False(c.HasLastError);Assert.AreEqual("見逃し",c.Overlay.FeedbackText);

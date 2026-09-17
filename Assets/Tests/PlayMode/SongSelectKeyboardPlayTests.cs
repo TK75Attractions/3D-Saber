@@ -48,9 +48,15 @@ public class SongSelectKeyboardPlayTests
         gamepad = InputSystem.AddDevice<Gamepad>();
         foreach (var old in Object.FindObjectsByType<InputPoint>(FindObjectsSortMode.None))
             Object.DestroyImmediate(old.gameObject);
-        input = InputPoint.EnsureInstance();
+        // OnEnableで受信が始まるので、テスト専用ポートを先に設定する。
+        var receiver = new GameObject("SongSelectKeyboardInput");
+        receiver.SetActive(false);
+        Object.DontDestroyOnLoad(receiver);
+        input = receiver.AddComponent<InputPoint>();
         input.port = FreePort();
         do { input.port2 = FreePort(); } while (input.port2 == input.port);
+        receiver.SetActive(true);
+        InputPoint.EnsureInstance();
         GameSession.IsCalibrationMode = false;
         yield return SceneManager.LoadSceneAsync("SongSelect");
         double deadline = Time.realtimeSinceStartupAsDouble + 10;

@@ -1,13 +1,14 @@
 using UnityEngine;
 
-// AudioSettings.dspTime を基準に、曲開始からの秒数 SongTime を公開する。
-// AudioSource.time はフレームに張り付いて粗いので使わない。
+// 実際に再生されたサンプル位置にDSP時計を合わせ、曲開始からの秒数を公開する。
+// 予約時刻だけでは、開始フレームが重かった場合に音声とのずれが曲末まで残る。
 [RequireComponent(typeof(AudioSource))]
 public class SongPlayer : MonoBehaviour
 {
     private AudioSource source;
     private double startDspTime;
     private bool scheduled;
+    private bool clockSynchronized;
     public float startDelay = 0.2f;
 
     public AudioClip Clip
@@ -26,7 +27,18 @@ public class SongPlayer : MonoBehaviour
         get
         {
             if (!scheduled) return 0.0;
-            return AudioSettings.dspTime - startDspTime;
+            double now = AudioSettings.dspTime;
+            double elapsed = now - startDspTime;
+            if (!clockSynchronized && elapsed >= 0.0 && source != null && source.clip != null)
+            {
+                int sample = source.timeSamples;
+                if (sample <= 0) return 0.0; // 音声が始まるまでは先読みの終点で待つ。
+                startDspTime = now - sample / (double)source.clip.frequency;
+                clockSynchronized = true;
+                elapsed = now - startDspTime;
+            }
+            // 同期後はDSPで連続させ、練習のループや音源終了後の余韻も巻き戻さない。
+            return elapsed;
         }
     }
 
@@ -51,6 +63,8 @@ public class SongPlayer : MonoBehaviour
     public void PlayScheduled(double dspStartTime)
     {
         EnsureSource();
+        source.Stop();
+        clockSynchronized = false;
         startDspTime = System.Math.Max(dspStartTime, AudioSettings.dspTime + 0.01);
         if (source.clip != null)
         {
@@ -68,5 +82,6 @@ public class SongPlayer : MonoBehaviour
     {
         if (source != null) source.Stop();
         scheduled = false;
+        clockSynchronized = false;
     }
 }

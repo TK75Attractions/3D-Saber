@@ -105,8 +105,8 @@ namespace Saber.ChartEditor
         private GUIStyle noteLabelStyle;
 
         private bool isPlaying;
-        private double playbackEditorStart;
         private float playbackAudioStartSeconds;
+        [SerializeField] private bool useGameTiming = true;
         private bool draggingNote;
         private bool dragRecorded;
         private int dragNoteIndex = -1;
@@ -336,6 +336,9 @@ namespace Saber.ChartEditor
             GUILayout.Label(
                 $"{SaberChartUtility.FormatMusicalPosition(currentBeat, beatsPerMeasure, CurrentSnap)}   /   {BeatToAudioSeconds(currentBeat):0.000}s",
                 centeredSmallStyle);
+            useGameTiming = EditorGUILayout.ToggleLeft(new GUIContent(
+                $"ゲームと同じ表示補正（{GameSession.JudgmentOffsetMs:+0;-0;0}ms）",
+                "ゲームの判定調整と同じ量だけ再生カーソルを補正します。波形と保存する譜面時刻は変わりません。"), useGameTiming);
 
             GUILayout.Space(10f);
             SectionLabel("音源");
@@ -1187,7 +1190,6 @@ namespace Saber.ChartEditor
                 EditorUtility.DisplayDialog("音源を再生できません", SaberChartAudioPreview.LastError ?? "不明なエラー", "OK");
                 return;
             }
-            playbackEditorStart = EditorApplication.timeSinceStartup;
             playbackAudioStartSeconds = seconds;
             isPlaying = true;
             Repaint();
@@ -1219,13 +1221,14 @@ namespace Saber.ChartEditor
         private void UpdatePlaybackPosition()
         {
             if (!isPlaying) return;
-            float elapsed = (float)(EditorApplication.timeSinceStartup - playbackEditorStart);
-            float audioSeconds = playbackAudioStartSeconds + elapsed;
-            if (audioClip == null || audioSeconds >= audioClip.length)
+            if (!SaberChartAudioPreview.TryGetPosition(audioClip, out float audioSeconds))
             {
                 StopPreview(false);
                 return;
             }
+            // 個人の表示補正を譜面や波形に焼き込まず、試聴中のカーソルだけへ適用する。
+            if (useGameTiming) audioSeconds -= GameSession.JudgmentOffsetMs / 1000f;
+            audioSeconds = Mathf.Max(playbackAudioStartSeconds, audioSeconds);
             currentBeat = SaberChartUtility.TimeMsToBeat(
                 audioSeconds * 1000f - document.offsetMs,
                 document.bpm,

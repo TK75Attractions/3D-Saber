@@ -1,9 +1,11 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
 using NUnit.Framework;
 using Saber.ChartEditor;
 using UnityEditor;
 using UnityEngine;
+using UnityEngine.TestTools;
 
 // 実譜面を保存せず、エディターの入力フォーカス・編集履歴・新規作成の操作を確認する。
 public class ChartEditorWorkflowTests
@@ -144,6 +146,87 @@ public class ChartEditorWorkflowTests
         Assert.False(window.hasUnsavedChanges);
         Key(KeyCode.Y, EventModifiers.Control);
         Assert.AreEqual(2500f, Document.notes[0].time, "終了したドラッグをRedoできる");
+    }
+
+    static readonly System.Type AudioUtil = typeof(AudioImporter).Assembly.GetType("UnityEditor.AudioUtil");
+    static object AudioCall(string name) => AudioUtil.GetMethod(name,
+        BindingFlags.Static | BindingFlags.Public | BindingFlags.NonPublic).Invoke(null, null);
+
+    IEnumerator AwaitPreview(AudioClip clip, float afterSeconds)
+    {
+        double deadline = EditorApplication.timeSinceStartup + 4;
+        while (EditorApplication.timeSinceStartup < deadline)
+        {
+            if ((bool)AudioCall("IsPreviewClipPlaying") &&
+                (int)AudioCall("GetPreviewClipSamplePosition") / (float)clip.frequency > afterSeconds) yield break;
+            yield return null;
+        }
+        Assert.Fail("音声プレビューが指定位置まで再生されませんでした");
+    }
+
+    [UnityTest]
+    public IEnumerator PreviewFollowsRealSamplesAndSharesGameOffsetWithoutChangingChart()
+    {
+        bool hadOffset = PlayerPrefs.HasKey("judgmentOffsetMs");
+        int savedOffset = GameSession.JudgmentOffsetMs;
+        var clip = AudioClip.Create("EditorTimingSilence", 48000 * 5, 1, 48000, false);
+        string original = SaberChartUtility.ToJson(Document, false);
+        try
+        {
+            PlayerPrefs.SetInt("judgmentOffsetMs", 125);
+            Call("SetAudioClip", clip);
+            Set("currentBeat", 2f);
+            Set("useGameTiming", true);
+            Call("TogglePreview");
+            yield return AwaitPreview(clip, 1.3f);
+            Call("UpdatePlaybackPosition");
+            float seconds = (int)AudioCall("GetPreviewClipSamplePosition") / (float)clip.frequency;
+            Assert.That(Get<float>("currentBeat"), Is.EqualTo((seconds - .125f) * 2).Within(.055f));
+
+            Set("useGameTiming", false);
+            Call("UpdatePlaybackPosition");
+            seconds = (int)AudioCall("GetPreviewClipSamplePosition") / (float)clip.frequency;
+            Assert.That(Get<float>("currentBeat"), Is.EqualTo(seconds * 2).Within(.055f));
+            Assert.AreEqual(original, SaberChartUtility.ToJson(Document, false));
+            Assert.False(window.hasUnsavedChanges, "試聴の補正で譜面を書き換えない");
+            Assert.AreEqual(125, GameSession.JudgmentOffsetMs);
+        }
+        finally
+        {
+            Call("StopPreview", false);
+            Object.DestroyImmediate(clip);
+            if (hadOffset) PlayerPrefs.SetInt("judgmentOffsetMs", savedOffset); else PlayerPrefs.DeleteKey("judgmentOffsetMs");
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator SeekingAndStoppingUseAudioStateInsteadOfContinuingTheOldWallClock()
+    {
+        var clip = AudioClip.Create("EditorSeekSilence", 48000 * 4, 1, 48000, false);
+        try
+        {
+            Call("SetAudioClip", clip);
+            Set("useGameTiming", false);
+            Set("currentBeat", 0f);
+            Call("TogglePreview");
+            yield return AwaitPreview(clip, .1f);
+            Call("SeekToBeat", 4f);
+            yield return AwaitPreview(clip, 2.1f);
+            Call("UpdatePlaybackPosition");
+            float seconds = (int)AudioCall("GetPreviewClipSamplePosition") / (float)clip.frequency;
+            Assert.That(Get<float>("currentBeat"), Is.EqualTo(seconds * 2).Within(.055f));
+            Call("TogglePreview");
+            float paused = Get<float>("currentBeat");
+            for (int i = 0; i < 5; i++) { yield return null; Call("UpdatePlaybackPosition"); }
+            Assert.AreEqual(paused, Get<float>("currentBeat"));
+            Call("TogglePreview");
+            yield return AwaitPreview(clip, paused * .5f + .1f);
+            Call("UpdatePlaybackPosition");
+            AudioCall("StopAllPreviewClips");
+            Call("UpdatePlaybackPosition");
+            Assert.False(Get<bool>("isPlaying"), "音声が止まったら表示も止まる");
+        }
+        finally { Call("StopPreview", false); Object.DestroyImmediate(clip); }
     }
 
     SaberChartDocument Document => Get<SaberChartDocument>("document");

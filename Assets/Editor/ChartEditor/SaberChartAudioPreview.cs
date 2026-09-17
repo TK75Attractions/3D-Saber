@@ -19,6 +19,12 @@ namespace Saber.ChartEditor
         private static MethodInfo playMethod;
         private static MethodInfo setPositionMethod;
         private static MethodInfo stopAllMethod;
+        private static MethodInfo getPositionMethod;
+        private static MethodInfo isPlayingMethod;
+        private static AudioClip previewClip;
+        private static int startSample;
+        private static double requestedAt;
+        private static bool observedPlayback;
         private static string lastError;
 
         public static bool IsSupported
@@ -26,7 +32,7 @@ namespace Saber.ChartEditor
             get
             {
                 Resolve();
-                return playMethod != null;
+                return playMethod != null && getPositionMethod != null && isPlayingMethod != null;
             }
         }
 
@@ -36,7 +42,7 @@ namespace Saber.ChartEditor
         {
             if (clip == null) return false;
             Resolve();
-            if (playMethod == null)
+            if (!IsSupported)
             {
                 lastError = "このUnityバージョンでは音源プレビューAPIを見つけられませんでした。";
                 return false;
@@ -58,6 +64,10 @@ namespace Saber.ChartEditor
                 if (!playAcceptedSample && setPositionMethod != null)
                     setPositionMethod.Invoke(null, BuildArguments(setPositionMethod, clip, sample));
 
+                previewClip = clip;
+                startSample = sample;
+                requestedAt = EditorApplication.timeSinceStartup;
+                observedPlayback = false;
                 lastError = null;
                 return true;
             }
@@ -70,6 +80,8 @@ namespace Saber.ChartEditor
 
         public static void Stop()
         {
+            previewClip = null;
+            observedPlayback = false;
             Resolve();
             if (stopAllMethod == null) return;
             try
@@ -79,6 +91,36 @@ namespace Saber.ChartEditor
             catch (Exception exception)
             {
                 lastError = exception.GetBaseException().Message;
+            }
+        }
+
+        // 再生ボタンを押した時刻ではなく、音声が実際に読み進めたサンプル位置を返す。
+        public static bool TryGetPosition(AudioClip clip, out float seconds)
+        {
+            seconds = 0f;
+            if (clip == null || previewClip != clip || clip.frequency <= 0 || !IsSupported) return false;
+            try
+            {
+                bool playing = (bool)isPlayingMethod.Invoke(null, BuildArguments(isPlayingMethod, clip, 0));
+                int sample = (int)getPositionMethod.Invoke(null, BuildArguments(getPositionMethod, clip, 0));
+                if (playing && sample >= startSample)
+                {
+                    observedPlayback = true;
+                    seconds = sample / (float)clip.frequency;
+                    return true;
+                }
+                // 開始・シークの要求が音声側に届くまでは、カーソルを先走らせない。
+                if (!observedPlayback && EditorApplication.timeSinceStartup - requestedAt < 1.0)
+                {
+                    seconds = startSample / (float)clip.frequency;
+                    return true;
+                }
+                return false;
+            }
+            catch (Exception exception)
+            {
+                lastError = exception.GetBaseException().Message;
+                return false;
             }
         }
 
@@ -96,6 +138,10 @@ namespace Saber.ChartEditor
                                 ?? FindMethod(audioUtil, "SetClipSamplePosition");
             stopAllMethod = FindMethod(audioUtil, "StopAllPreviewClips")
                             ?? FindMethod(audioUtil, "StopAllClips");
+            getPositionMethod = FindMethod(audioUtil, "GetPreviewClipSamplePosition")
+                                ?? FindMethod(audioUtil, "GetClipSamplePosition");
+            isPlayingMethod = FindMethod(audioUtil, "IsPreviewClipPlaying")
+                              ?? FindMethod(audioUtil, "IsClipPlaying");
         }
 
         private static MethodInfo FindMethod(Type type, string name)
