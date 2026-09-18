@@ -105,6 +105,23 @@ public class NoteSpawner : MonoBehaviour
         if (cutFeedback != null) cutFeedback.Tick(Time.deltaTime);
     }
 
+    // セーバー判定の前に受付窓だけを今の曲時計へ合わせる。
+    // 生成・移動・Miss通知は従来どおり判定後の Tick で行う。
+    public void RefreshJudgmentWindows(double songTime)
+    {
+        foreach (CuttableNote note in liveNotes)
+        {
+            if (note != null)
+                UpdateJudgmentWindow(note, note.HitTime - songTime, LateWindowFor(note));
+        }
+    }
+
+    void UpdateJudgmentWindow(CuttableNote note, double dt, float lateWindow)
+    {
+        note.IsJudgeable = !note.IsCut && !note.IsMissed && !note.IsFinalized
+            && dt <= earlyJudgeWindow && dt >= -lateWindow;
+    }
+
     void OnDisable()
     {
         if (cutFeedback != null) cutFeedback.ClearEffects();
@@ -335,7 +352,7 @@ public class NoteSpawner : MonoBehaviour
             // ロングノーツは複数回切る時間が必要なので、後方の窓を回数に応じて伸ばす。
             // 早め側は earlyJudgeWindow で別管理（小さい）、遅め側は lateWindow（大きい）で非対称化。
             float lateWindow = LateWindowFor(note);
-            note.IsJudgeable = dt <= earlyJudgeWindow && dt >= -lateWindow;
+            UpdateJudgmentWindow(note, dt, lateWindow);
 
             // タイミングキュー(着地ゴースト)の駆動
             if (note.TimingCue != null)

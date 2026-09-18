@@ -5,7 +5,7 @@ using UnityEngine.Networking;
 using UnityEngine.SceneManagement;
 
 // 本編シーンの「ゲーム側 GManager」。
-// 単一の Update から SaberCutJudge → NoteSpawner の順に駆動する（GManager 主体パターン）。
+// 単一の Update から受付窓の更新 → SaberCutJudge → NoteSpawner の順に駆動する。
 public class GamePlayManager : MonoBehaviour
 {
     public SongPlayer songPlayer;
@@ -579,10 +579,15 @@ public class GamePlayManager : MonoBehaviour
     }
 
     // 本編シーンで毎フレーム呼ばれる単一の Update。
-    // 順序：判定 → 譜面進行 → 終了チェック。
+    // 順序：現在の受付窓 → 判定 → 譜面進行 → 終了チェック。
     void Update()
     {
         if (finished || !ready) return;
+
+        // 判定と採点が同じ曲時計を見るよう、前フレームの受付可否を更新する。
+        // 負の開始予約時刻にも対応し、停止時の SongTime=0 では巻き戻さない。
+        if (songPlayer != null && songPlayer.IsScheduled && noteSpawner != null)
+            noteSpawner.RefreshJudgmentWindows(songPlayer.SongTime);
 
         // 1. セーバー判定(2本構成なら両方)
         if (cutJudge != null) cutJudge.RunJudge();
