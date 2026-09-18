@@ -79,19 +79,87 @@ namespace Saber.ChartEditor
             Directory.CreateDirectory(folder);
             string destination = ChartPath(songId, difficulty);
             string json = SaberChartUtility.ToJson(document, true);
-            BackupExisting(destination, songId, difficulty);
-            WriteUtf8(destination, json);
+            var targets = new List<(string path, string difficulty)> { (destination, difficulty) };
 
             // 曲一覧の契約上 chart.json は必須。Normal は常に同期し、初回は他難易度でも作る。
             string baseChart = Path.Combine(folder, "chart.json");
             if (NormalizeDifficulty(difficulty) == "normal" || !File.Exists(baseChart))
             {
-                if (!PathsEqual(destination, baseChart)) BackupExisting(baseChart, songId, "base");
-                WriteUtf8(baseChart, json);
+                if (!PathsEqual(destination, baseChart)) targets.Add((baseChart, "base"));
             }
 
+            SaveTogether(targets, songId, json, folder);
             AssetDatabase.Refresh();
             return destination;
+        }
+
+        private static void SaveTogether(List<(string path, string difficulty)> targets,
+            string songId, string json, string folder)
+        {
+            // File.Replace と同じボリュームに準備する。先頭が . の作業フォルダはインポート対象外。
+            string temporary = Path.Combine(folder, ".chart-save-" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(temporary);
+            var files = new List<(string destination, string incoming, string previous, bool existed)>();
+            int completed = 0;
+            bool keepRecoveryFiles = false;
+            try
+            {
+                // 書き出しと永続バックアップが全部成功するまで、元の譜面には触れない。
+                for (int index = 0; index < targets.Count; index++)
+                {
+                    var target = targets[index];
+                    string incoming = Path.Combine(temporary, index + ".incoming");
+                    WriteUtf8(incoming, json);
+                    BackupExisting(target.path, songId, target.difficulty);
+                    files.Add((target.path, incoming, Path.Combine(temporary, index + ".previous"),
+                        File.Exists(target.path)));
+                }
+
+                foreach (var file in files)
+                {
+                    // .meta は差し替えず、既存アセットの GUID を維持する。
+                    if (file.existed) File.Replace(file.incoming, file.destination, file.previous);
+                    else File.Move(file.incoming, file.destination);
+                    completed++;
+                }
+            }
+            catch (Exception saveError)
+            {
+                var errors = new List<Exception> { saveError };
+                for (int index = completed - 1; index >= 0; index--)
+                {
+                    var file = files[index];
+                    try
+                    {
+                        if (file.existed) File.Replace(file.previous, file.destination, null);
+                        else File.Delete(file.destination);
+                    }
+                    catch (Exception restoreError) { errors.Add(restoreError); }
+                }
+                if (errors.Count > 1)
+                {
+                    // 復元も阻まれた場合は退避データを残し、復旧場所をエラーに含める。
+                    keepRecoveryFiles = true;
+                    throw new IOException("譜面を保存できず、一部を元に戻せませんでした。復旧用データ: " + temporary,
+                        new AggregateException(errors));
+                }
+                throw;
+            }
+            finally
+            {
+                if (!keepRecoveryFiles)
+                {
+                    try { Directory.Delete(temporary, true); }
+                    catch (IOException cleanupError)
+                    {
+                        Debug.LogWarning("譜面保存の一時データを削除できませんでした: " + temporary + "\n" + cleanupError.Message);
+                    }
+                    catch (UnauthorizedAccessException cleanupError)
+                    {
+                        Debug.LogWarning("譜面保存の一時データを削除できませんでした: " + temporary + "\n" + cleanupError.Message);
+                    }
+                }
+            }
         }
 
         private sealed class CachedAudio
