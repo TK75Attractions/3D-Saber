@@ -215,6 +215,7 @@ public class NoteSpawner : MonoBehaviour
     public static void BuildArrow(Transform parent, CutDirection dir)
     {
         GameObject arrow = new GameObject("Arrow");
+        var materials = arrow.AddComponent<NoteArrowMaterials>();
         arrow.transform.SetParent(parent, false);
         arrow.transform.localPosition = new Vector3(0f, 0f, -0.55f);
         arrow.transform.localRotation = Quaternion.Euler(0f, 0f, CutDirectionHelper.ToZRotationDegrees(dir));
@@ -232,6 +233,7 @@ public class NoteSpawner : MonoBehaviour
         {
             var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
             var mat = new Material(sh);
+            materials.Register(mat);
             if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
             if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
             if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
@@ -260,6 +262,7 @@ public class NoteSpawner : MonoBehaviour
             {
                 var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
                 var mat = new Material(sh);
+                materials.Register(mat);
                 // 黒(非発光)。発光ボディの上でも輪郭が締まって向きが読める(ユーザー指定)。
                 // プロジェクターモードでは白(暗い下敷きの上)。
                 Color black = DisplaySettings.ProjectorMode ? ProjectorMode.ArrowBarColor : new Color(0.02f, 0.02f, 0.04f);
