@@ -31,8 +31,13 @@ public class SaberCutJudge : MonoBehaviour
     }
 
     private readonly Dictionary<CuttableNote, Pending> pending = new Dictionary<CuttableNote, Pending>();
+    private SaberTracker contactTracker;
+    private int contactResetVersion;
 
     public int PendingCount => pending.Count;
+
+    // 入力の停止をまたいで、以前の刃の進入を次の振りへ持ち越さない。
+    void OnDisable() { pending.Clear(); }
 
     void Awake()
     {
@@ -47,12 +52,23 @@ public class SaberCutJudge : MonoBehaviour
 
     public void RunJudge()
     {
-        if (saber == null || !saber.HasPrevious) return;
         TryCut();
     }
 
     public int TryCut()
     {
+        if (!isActiveAndEnabled || saber == null || !saber.HasPrevious)
+        {
+            pending.Clear();
+            return 0;
+        }
+        // 再開後のサンプルが先に来ても、リセット前のentryだけは引き継がない。
+        if (contactTracker != saber || contactResetVersion != saber.ResetVersion)
+        {
+            pending.Clear();
+            contactTracker = saber;
+            contactResetVersion = saber.ResetVersion;
+        }
         // ブレード（線分）モード優先。利用不可なら従来の点-軌跡モードへ。
         if (bladeProvider != null && bladeProvider.HasBlade)
         {
@@ -104,7 +120,7 @@ public class SaberCutJudge : MonoBehaviour
         foreach (var kv in pending)
         {
             CuttableNote note = kv.Key;
-            if (note == null || note.IsCut || note.IsMissed)
+            if (!IsCandidate(note))
             {
                 toRemove.Add(note);
                 continue;
@@ -169,7 +185,7 @@ public class SaberCutJudge : MonoBehaviour
         foreach (var kv in pending)
         {
             CuttableNote note = kv.Key;
-            if (note == null || note.IsCut || note.IsMissed)
+            if (!IsCandidate(note))
             {
                 toRemove.Add(note);
                 continue;

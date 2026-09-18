@@ -274,4 +274,89 @@ public class SaberCutJudgeTests
         Assert.AreEqual(0, cuts);
         Assert.AreEqual(0, judge.PendingCount, "minCutSpeed 未満なら pending に入らない");
     }
+
+    // 進入時は有効でも、抜ける前に判定窓が閉じたら古い進入を使わない。
+    [TestCase(false, 1)] [TestCase(true, 1)]
+    [TestCase(false, 2)] [TestCase(true, 2)]
+    public void PendingCut_ExpiredWindowDoesNotCompleteTapOrLong(bool bladeMode, int count)
+    {
+        var (judge, tracker, bridge) = MakeBladeRig();
+        if (!bladeMode) judge.bladeProvider = null;
+        var root = new GameObject("PendingWindowSpawner"); created.Add(root);
+        var prefab = new GameObject("PendingWindowPrefab"); created.Add(prefab);
+        prefab.AddComponent<CuttableNote>(); prefab.SetActive(false);
+        var spawner = root.AddComponent<NoteSpawner>();
+        spawner.notePrefab = prefab; spawner.buildTimingCues = false;
+        spawner.simultaneousGuideEnabled = false;
+        CuttableNote note = null;
+        spawner.OnNoteSpawned += n => { note = n; n.gameObject.SetActive(true); created.Add(n.gameObject); };
+        spawner.SetChart(new ChartData { notes = new List<NoteData> {
+            new NoteData { time = 1000, x = 0, y = 0, color = "red", type = count > 1 ? "long" : "tap", count = count }
+        } });
+        spawner.Tick(1);
+        Assert.NotNull(note);
+        if (count > 1) note.Cut(Vector3.zero, Vector3.right * 10);
+        double end = note.HitTime + spawner.judgeWindow + (count - 1) * spawner.secondsPerLongCut;
+        spawner.Tick(end - .01);
+        tracker.ResetTo(new Vector3(-2, 0, 0));
+        tracker.Tick(Vector3.zero, .05f);
+        if (bladeMode) bridge.OverrideBlade(Vector3.left, Vector3.right);
+        Assert.AreEqual(0, judge.TryCut());
+        Assert.AreEqual(1, judge.PendingCount);
+
+        spawner.Tick(end + .02);
+        Assert.False(note.IsJudgeable);
+        Assert.False(note.IsMissed, "ミス確定までの猶予中にも古い進入を破棄する");
+        tracker.Tick(new Vector3(2, 0, 0), .05f);
+        if (bladeMode) bridge.OverrideBlade(new Vector3(2, 0, 0), new Vector3(4, 0, 0));
+        Assert.AreEqual(0, judge.TryCut());
+        Assert.False(note.IsCut);
+        Assert.AreEqual(count - 1, note.CutsAchieved);
+        Assert.AreEqual(0, judge.PendingCount);
+    }
+
+    [TestCase(false, "inactive")] [TestCase(true, "inactive")]
+    [TestCase(false, "disabled")] [TestCase(true, "disabled")]
+    [TestCase(false, "trackingReset")] [TestCase(true, "trackingReset")]
+    [TestCase(false, "trackingResetThenSample")] [TestCase(true, "trackingResetThenSample")]
+    public void PendingCut_InterruptedContactDoesNotFireLater(bool bladeMode, string interruption)
+    {
+        var (judge, tracker, bridge) = MakeBladeRig();
+        if (!bladeMode) judge.bladeProvider = null;
+        var note = MakeNote(Vector3.zero);
+        tracker.ResetTo(new Vector3(-2, 0, 0)); tracker.Tick(Vector3.zero, .05f);
+        if (bladeMode) bridge.OverrideBlade(Vector3.left, Vector3.right);
+        Assert.AreEqual(0, judge.TryCut());
+        Assert.AreEqual(1, judge.PendingCount);
+        if (interruption == "inactive") note.gameObject.SetActive(false);
+        if (interruption == "disabled")
+        {
+            judge.enabled = false;
+            // EditModeではライフサイクルを明示的に呼ぶ。
+            typeof(SaberCutJudge).GetMethod("OnDisable", System.Reflection.BindingFlags.Instance |
+                System.Reflection.BindingFlags.NonPublic)?.Invoke(judge, null);
+            judge.enabled = true;
+        }
+        tracker.Tick(new Vector3(2, 0, 0), .05f);
+        // 再開後の新しい通過軌跡を作らず、古い保留だけの有無を調べる。
+        tracker.Tick(new Vector3(2, 0, 0), .05f);
+        if (bladeMode) bridge.OverrideBlade(new Vector3(2, 0, 0), new Vector3(4, 0, 0));
+        if (interruption.StartsWith("trackingReset"))
+        {
+            tracker.ResetTo(new Vector3(2, 0, 0));
+            if (interruption == "trackingResetThenSample") tracker.Tick(new Vector3(2, 0, 0), .05f);
+        }
+        Assert.AreEqual(0, judge.TryCut());
+        Assert.False(note.IsCut);
+        Assert.AreEqual(0, judge.PendingCount);
+        // 有効な新しい進入・退出は、中断後も通常どおり受け付ける。
+        note.gameObject.SetActive(true);
+        tracker.ResetTo(new Vector3(-2, 0, 0)); tracker.Tick(Vector3.zero, .05f);
+        if (bladeMode) bridge.OverrideBlade(Vector3.left, Vector3.right);
+        Assert.AreEqual(0, judge.TryCut());
+        tracker.Tick(new Vector3(2, 0, 0), .05f);
+        if (bladeMode) bridge.OverrideBlade(new Vector3(2, 0, 0), new Vector3(4, 0, 0));
+        Assert.AreEqual(1, judge.TryCut());
+        Assert.True(note.IsCut);
+    }
 }

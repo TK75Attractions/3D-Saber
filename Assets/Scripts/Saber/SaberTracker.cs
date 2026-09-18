@@ -9,6 +9,8 @@ public class SaberTracker : MonoBehaviour
     public Vector3 Velocity { get; private set; }
     public float Speed { get; private set; }
     public bool HasPrevious { get; private set; }
+    // Reset直後にTick済みでも、判定側が古い接触を捨てられるよう履歴の世代を持つ。
+    public int ResetVersion { get; private set; }
 
     void OnEnable()
     {
@@ -34,6 +36,7 @@ public class SaberTracker : MonoBehaviour
 
     public void ResetTo(Vector3 position)
     {
+        ResetVersion = unchecked(ResetVersion + 1);
         PreviousPosition = position;
         CurrentPosition = position;
         Velocity = Vector3.zero;

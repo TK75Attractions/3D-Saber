@@ -41,15 +41,32 @@ public class ChartSaveTransactionTests
     }
 
     [Test]
-    public void LockedLegacyKeepsNormalAndLegacyAtTheirOriginalVersions()
+    public void LockedLegacyRestoresOriginalOrRetainsRecoveryWhenRestoreIsLocked()
     {
         AssetDatabase.Refresh();
         string normalAsset = "Assets/StreamingAssets/Songs/" + songId + "/chart_normal.json";
         string originalGuid = AssetDatabase.AssetPathToGUID(normalAsset);
         Assert.IsNotEmpty(originalGuid);
         // 読み取りは許可し、バックアップ後の書き込みだけを失敗させる。
+        IOException failure;
         using (new FileStream(legacy, FileMode.Open, FileAccess.Read, FileShare.Read))
-            Assert.Throws<IOException>(() => Save("normal"));
+            failure = Assert.Throws<IOException>(() => Save("normal"));
+        if (File.ReadAllText(normal) != OldNormal)
+        {
+            // OSやインポーターが復元も阻む場合は、明示エラーと元データの退避が契約。
+            // 復元できたことにせず、復旧可能な内容と場所が残っていることを検証する。
+            Assert.IsInstanceOf<AggregateException>(failure.InnerException);
+            Assert.GreaterOrEqual(((AggregateException)failure.InnerException).InnerExceptions.Count, 2);
+            var recovery = Directory.GetDirectories(folder, ".chart-save-*");
+            Assert.AreEqual(1, recovery.Length);
+            StringAssert.Contains(Path.GetFullPath(recovery[0]), failure.Message);
+            string previous = Path.Combine(recovery[0], "0.previous");
+            Assert.AreEqual(OldNormal, File.ReadAllText(previous));
+            Assert.AreEqual(OldLegacy, File.ReadAllText(legacy));
+            // 架空曲だけを退避内容から戻し、同じ保存の再試行まで確認する。
+            File.Copy(previous, normal, true);
+            Directory.Delete(recovery[0], true);
+        }
         Assert.AreEqual(OldNormal, File.ReadAllText(normal));
         Assert.AreEqual(OldLegacy, File.ReadAllText(legacy));
         AssertNoTemporaryDirectory();
