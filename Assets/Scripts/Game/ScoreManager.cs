@@ -151,6 +151,9 @@ public class ScoreManager : MonoBehaviour
 
     private void HandleMissed(CuttableNote note)
     {
+        // 部分達成のロングはMarkMiss内のOnCutで完了率判定済み。
+        // 続く期限切れ通知を別のMISSとして数えると、判定数とコンボを二重に更新してしまう。
+        if (note != null && note.CutsAchieved > 0) return;
         RegisterMiss();
     }
 
