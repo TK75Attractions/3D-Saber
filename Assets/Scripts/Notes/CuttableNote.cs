@@ -54,6 +54,12 @@ public class CuttableNote : MonoBehaviour
 
     // 最終カット時に発火（タップなら1回、ロングなら全部切れた瞬間に1回）。
     public event System.Action<CuttableNote, Vector3, Vector3> OnCut;
+    // ScoreManagerの方向降格も含めた確定判定。成功演出はOnCutの購読順に依存させない。
+    public event System.Action<CuttableNote, JudgmentTier, Vector3, Vector3> OnJudged;
+    internal void NotifyJudgment(JudgmentTier tier, Vector3 point, Vector3 velocity)
+    {
+        OnJudged?.Invoke(this, tier, point, velocity);
+    }
     // 0回も切れずタイムアウトしたときに発火。部分達成のロングは OnCut（達成率付き）で扱う。
     public event System.Action<CuttableNote> OnMiss;
     // 1カットごとに発火（cutIndex は 0 から始まる達成番号、total は必要回数）。

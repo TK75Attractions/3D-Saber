@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// 全背景共通の舞台反応。中央のノーツ通路を空け、成功の光を床端と側面へ送る。
+// 全背景共通の舞台反応。Perfectの光をノーツの横位置に対応する床列へ送る。
 // 独自Updateは持たず、GamePlayManagerの曲時計でのみ進む。
 [ExecuteAlways]
 public sealed class StageReactiveEffects : MonoBehaviour
@@ -16,7 +16,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
     {
         public bool active;
         public WaveKind kind;
-        public int side;
+        public int hand, laneMask;
         public double chartTime;
         public float age, gain;
         public Color color;
@@ -41,8 +41,16 @@ public sealed class StageReactiveEffects : MonoBehaviour
     public int ActiveWaveCount { get; private set; }
     public int PairCount { get; private set; }
     public int ReleaseCount { get; private set; }
-    public float LeftCharge { get; private set; }
-    public float RightCharge { get; private set; }
+    public int ActiveFloorLaneMask { get; private set; }
+
+    // 譜面エディターの横8列（-2.5～2.5）を左から2列ずつまとめる。
+    // 色や担当ハンドではなく、coordScale適用後の実際の配置で決める。
+    public static int FloorLaneForX(float worldX)
+    {
+        if (!Finite(worldX)) return -1;
+        return Mathf.Clamp(Mathf.RoundToInt(Mathf.InverseLerp(-2.5f, 2.5f, worldX) * 7), 0, 7) / 2;
+    }
+    public static float FloorLaneCenter(int lane) => -4.5f + Mathf.Clamp(lane, 0, 3) * 3f;
 
     public static StageReactiveEffects Create(FloorRenderer stage, NoteSpawner spawner, StagePerformanceTimeline song)
     {
@@ -93,8 +101,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
     void Track(CuttableNote note)
     {
         if (note == null || !tracked.Add(note)) return;
-        note.OnPartialCut += Partial;
-        note.OnCut += Cut;
+        note.OnJudged += Cut;
         note.OnMiss += Miss;
     }
 
@@ -102,86 +109,76 @@ public sealed class StageReactiveEffects : MonoBehaviour
     {
         if (!ReferenceEquals(note, null))
         {
-            note.OnPartialCut -= Partial;
-            note.OnCut -= Cut;
+            note.OnJudged -= Cut;
             note.OnMiss -= Miss;
         }
         tracked.Remove(note);
     }
 
     bool CanReact => isActiveAndEnabled && owner != null && owner.isActiveAndEnabled;
-    void Miss(CuttableNote note) { Untrack(note); RefreshCharges(); }
+    void Miss(CuttableNote note) { Untrack(note); }
 
-    void Partial(CuttableNote note, int index, int total)
-    {
-        if (!CanReact || total <= 1 || index >= total - 1) return;
-        AddWave(note, WaveKind.Cut, .5f);
-        RefreshCharges();
-    }
-
-    void Cut(CuttableNote note, Vector3 point, Vector3 velocity)
+    void Cut(CuttableNote note, JudgmentTier tier, Vector3 point, Vector3 velocity)
     {
         Untrack(note);
-        RefreshCharges();
-        // 部分達成の時間切れもOnCutを通知する。完走の解放は実際の切断だけ。
-        if (!CanReact || note == null || !note.IsCut || note.IsMissed || !Finite(note.HitTime)) return;
+        // 降格後の確定判定だけを使う。ロング途中・時間切れは祝福しない。
+        if (!CanReact || tier != JudgmentTier.Perfect || note == null || !note.IsCut || note.IsMissed ||
+            !Finite(note.HitTime) || FloorLaneForX(note.transform.position.x) < 0) return;
         if (note.RequiredCutCount > 1)
         {
             AddWave(note, WaveKind.Release, 1);
             ReleaseCount++;
             return;
         }
-        int side = Side(note);
+        int hand = Hand(note);
         for (int i = 0; i < waves.Length; i++)
         {
             // 譜面上同時で、別の手が短い時間内に切った組だけを一つの左右反応へ変える。
             if (!waves[i].active || waves[i].kind != WaveKind.Cut || waves[i].gain < .9f ||
-                waves[i].side == side || waves[i].age > .16f ||
+                waves[i].hand == 0 || hand == 0 || waves[i].hand == hand || waves[i].age > .16f ||
                 Math.Abs(waves[i].chartTime - note.HitTime) > NoteSpawner.SimultaneousEpsilonSeconds) continue;
             waves[i].kind = WaveKind.Pair;
             waves[i].age = 0;
-            waves[i].side = 0;
+            waves[i].laneMask |= 1 << FloorLaneForX(note.transform.position.x);
             waves[i].color = new Color(.68f, .88f, 1.35f);
             PairCount++;
+            CountWaves();
             return;
         }
         AddWave(note, WaveKind.Cut, 1);
     }
 
-    static int Side(CuttableNote note)
+    static int Hand(CuttableNote note)
     {
         var hand = note.LastCutterHand != SaberHand.Any ? note.LastCutterHand : note.RequiredHand;
-        return hand == SaberHand.Left ? -1 : hand == SaberHand.Right ? 1 : note.transform.position.x < 0 ? -1 : 1;
+        return hand == SaberHand.Left ? -1 : hand == SaberHand.Right ? 1 : 0;
     }
 
     void AddWave(CuttableNote note, WaveKind kind, float gain)
     {
         if (note == null || !Finite(note.HitTime)) return;
-        int side = Side(note), slot = -1, oldest = 0;
+        int lane = FloorLaneForX(note.transform.position.x);
+        if (lane < 0) return;
+        int hand = Hand(note), slot = -1, oldest = 0;
         for (int i = 0; i < waves.Length; i++)
         {
             if (!waves[i].active && slot < 0) slot = i;
             if (waves[i].age > waves[oldest].age) oldest = i;
         }
         if (slot < 0) slot = oldest;
-        Color tint = note.IsGold ? UISkinPalette.NoteGold : side < 0 ? UISkinPalette.LogoBlue : UISkinPalette.LogoRed;
-        waves[slot] = new Wave { active = true, kind = kind, side = side, chartTime = note.HitTime,
+        Color tint = note.IsGold ? UISkinPalette.NoteGold : hand < 0 ? UISkinPalette.LogoBlue : UISkinPalette.LogoRed;
+        waves[slot] = new Wave { active = true, kind = kind, hand = hand, laneMask = 1 << lane, chartTime = note.HitTime,
             color = tint, gain = gain, age = 0 };
         CountWaves();
     }
 
-    void RefreshCharges()
+    void PruneNotes()
     {
-        LeftCharge = RightCharge = 0;
         expired.Clear();
         foreach (var note in tracked)
         {
             if (note == null || note.IsFinalized || !note.gameObject.activeInHierarchy)
             { expired.Add(note); continue; }
-            if (note.RequiredCutCount <= 1 || note.CutsAchieved <= 0) continue;
-            float charge = Mathf.Clamp01((float)note.CutsAchieved / note.RequiredCutCount);
-            if (Side(note) < 0) LeftCharge = Mathf.Max(LeftCharge, charge);
-            else RightCharge = Mathf.Max(RightCharge, charge);
         }
         foreach (var note in expired) Untrack(note);
     }
@@ -191,7 +188,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
         if (!Finite(songSeconds) || !isActiveAndEnabled) return;
         if (owner == null || !owner.isActiveAndEnabled) { ClearVisuals(); return; }
         float delta = hasTime ? (float)(songSeconds - LastTickSeconds) : 0;
-        // シーク・再実行に前区間の手応えや途中蓄積を持ち越さない。
+        // シーク・再実行に前区間の手応えを持ち越さない。
         if (delta < -.001f)
         {
             ClearVisuals();
@@ -208,14 +205,19 @@ public sealed class StageReactiveEffects : MonoBehaviour
             if (waves[i].age >= duration) waves[i].active = false;
         }
         CountWaves();
-        RefreshCharges();
+        PruneNotes();
         Draw();
     }
 
     void CountWaves()
     {
         ActiveWaveCount = 0;
-        foreach (var wave in waves) if (wave.active) ActiveWaveCount++;
+        ActiveFloorLaneMask = 0;
+        foreach (var wave in waves) if (wave.active)
+        {
+            ActiveWaveCount++;
+            ActiveFloorLaneMask |= wave.laneMask;
+        }
     }
 
     Color ThemeColor()
@@ -238,25 +240,16 @@ public sealed class StageReactiveEffects : MonoBehaviour
         var state = Presentation;
         float open = state.opening;
         float prepare = state.anticipation;
-        // 難易度に依存しない共通の基礎光。サビ頭では外向き、準備では奥へ収束する。
+        // サビの演出だけは判定・難易度に依存させず、準備から入口まで曲に同期する。
         for (int side = -1; side <= 1; side += 2)
         {
             for (int bank = 0; bank < 7; bank++)
             {
                 float z = 4 + bank * 5;
-                float breath = .5f + .5f * Mathf.Sin((float)LastTickSeconds * .7f - bank * .5f);
-                float alpha = (.035f + breath * .025f + open * .2f + prepare * .14f) * (1 - state.hush * .85f) * projector;
-                float charge = side < 0 ? LeftCharge : RightCharge;
-                float charged = Mathf.Clamp01(charge * 7 - bank);
+                float alpha = (open * .2f + prepare * .14f) * (1 - state.hush * .85f) * projector;
                 Vector3 root = new Vector3(side * 6.05f, floor + .12f, z);
                 Vector3 tip = new Vector3(side * (7 + open * 6 + (1 - prepare) * 1.3f), 4.6f + open * 1.6f, z + 4 + prepare * 5);
                 Beam(root, tip, .035f + open * .07f, themeColor, alpha);
-                if (charged > 0)
-                {
-                    Color chargeColor = side < 0 ? UISkinPalette.LogoBlue : UISkinPalette.LogoRed;
-                    Beam(new Vector3(side * 6.15f, floor + .16f, z), new Vector3(side * 6.15f, floor + .85f, z), .14f, chargeColor, charged * .85f * projector);
-                    Beam(new Vector3(side * 4.7f, floor + .12f, z), root, .1f, chargeColor, charged * .7f * projector, Vector3.forward);
-                }
                 if (prepare > 0)
                 {
                     float moving = Mathf.Repeat((float)LastTickSeconds * 2.5f - bank * .22f, 1);
@@ -277,12 +270,15 @@ public sealed class StageReactiveEffects : MonoBehaviour
             float duration = wave.kind == WaveKind.Cut ? .62f : wave.kind == WaveKind.Pair ? .85f : 1.05f;
             float life = Mathf.Clamp01(1 - wave.age / duration);
             float gain = life * wave.gain * projector * crowded;
+            float travel = wave.age * (wave.kind == WaveKind.Cut ? 42 : 34);
+            Color tint = wave.kind == WaveKind.Release ? Color.Lerp(wave.color, new Color(1.3f, .92f, .45f), .65f) : wave.color;
+            for (int lane = 0; lane < 4; lane++)
+                if ((wave.laneMask & (1 << lane)) != 0)
+                    FloorLaneWave(lane, travel, tint, gain, wave.kind == WaveKind.Cut ? .7f : 1.35f);
             for (int side = -1; side <= 1; side += 2)
             {
-                if (wave.kind != WaveKind.Pair && side != wave.side) continue;
-                float travel = wave.age * (wave.kind == WaveKind.Cut ? 42 : 34);
-                Color tint = wave.kind == WaveKind.Release ? Color.Lerp(wave.color, new Color(1.3f, .92f, .45f), .65f) : wave.color;
-                FloorFan(side, travel, tint, gain, wave.kind == WaveKind.Cut ? .7f : 1.35f);
+                // 同時斬りでも、実際に切った床列の側だけへ展開する。
+                if ((wave.laneMask & (side < 0 ? 3 : 12)) == 0) continue;
                 for (int bank = 0; bank < 7; bank++)
                 {
                     float local = wave.age - bank * .055f;
@@ -329,6 +325,17 @@ public sealed class StageReactiveEffects : MonoBehaviour
         Beam(new Vector3(side * 4.75f, y, z - 3), new Vector3(side * 4.75f, y, z + 1), width * .24f, tint, alpha * .42f, Vector3.right);
     }
 
+    void FloorLaneWave(int lane, float z, Color tint, float alpha, float width)
+    {
+        float y = floor + (theme == StageTheme.ObsidianRelay ? .46f : theme == StageTheme.VioletVault ? .56f : .13f);
+        float x = FloorLaneCenter(lane);
+        // 床4列の枠（-6,-3,0,3,6）を越えない短い山形と残光。
+        Vector3 tip = new Vector3(x, y, z + .7f);
+        Beam(new Vector3(x - 1.18f, y, z), tip, width * .10f, tint, alpha, Vector3.forward);
+        Beam(tip, new Vector3(x + 1.18f, y, z), width * .10f, tint, alpha, Vector3.forward);
+        Beam(new Vector3(x, y, z - 2.1f), tip, width * .17f, tint, alpha * .38f, Vector3.right);
+    }
+
     void Beam(Vector3 a, Vector3 b, float width, Color tint, float alpha, Vector3 edge = default)
     {
         if (alpha < .002f) return;
@@ -354,7 +361,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
     {
         Array.Clear(waves, 0, waves.Length);
         ActiveWaveCount = 0;
-        LeftCharge = RightCharge = 0;
+        ActiveFloorLaneMask = 0;
         Presentation = default;
         if (mesh != null) mesh.Clear();
         if (meshRenderer != null) meshRenderer.enabled = false;
@@ -365,7 +372,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
         foreach (var note in tracked)
             if (!ReferenceEquals(note, null))
             {
-                note.OnPartialCut -= Partial; note.OnCut -= Cut; note.OnMiss -= Miss;
+                note.OnJudged -= Cut; note.OnMiss -= Miss;
             }
         tracked.Clear();
         ClearVisuals();

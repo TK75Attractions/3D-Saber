@@ -8,6 +8,7 @@ public class GameplayCutFeedbackTests
     readonly List<GameObject> created = new List<GameObject>();
     NoteSpawner owner;
     GameplayCutFeedback feedback;
+    ScoreManager score;
 
     [SetUp]
     public void SetUp()
@@ -16,6 +17,7 @@ public class GameplayCutFeedbackTests
         created.Add(go);
         owner = go.AddComponent<NoteSpawner>();
         feedback = GameplayCutFeedback.Create(owner);
+        score = go.AddComponent<ScoreManager>(); score.Bind(owner);
     }
 
     [TearDown]
@@ -33,6 +35,7 @@ public class GameplayCutFeedbackTests
         var note = go.AddComponent<CuttableNote>();
         note.RequiredCutCount = note.RemainingCuts = cuts;
         feedback.Track(note);
+        typeof(ScoreManager).GetMethod("HandleSpawned", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).Invoke(score, new object[] { note });
         return note;
     }
 
@@ -116,9 +119,9 @@ public class GameplayCutFeedbackTests
         CuttableNote spawned = null;
         owner.OnNoteSpawned += note => { spawned = note; created.Add(note.gameObject); };
         var chart = new ChartData();
-        chart.notes.Add(new NoteData { time = 1000, type = "tap" });
+        chart.notes.Add(new NoteData { time = 0, type = "tap" });
         owner.SetChart(chart);
-        owner.Tick(1);
+        owner.Tick(0);
         Assert.NotNull(spawned);
         spawned.Cut(spawned.transform.position, Vector3.right * 8);
         // Spawnerが自分で生成・所有した表示コンポーネントを見る。

@@ -23,6 +23,7 @@ public class GameplayCutFeedbackLifetimeTests
         created.Add(root); created.Add(prefab);
         prefab.AddComponent<CuttableNote>();
         var owner = root.AddComponent<NoteSpawner>();
+        var score = root.AddComponent<ScoreManager>(); score.Bind(owner);
         owner.notePrefab = prefab;
         var captured = new List<CuttableNote>();
         owner.OnNoteSpawned += note => { captured.Add(note); created.Add(note.gameObject); };
@@ -57,6 +58,7 @@ public class GameplayCutFeedbackLifetimeTests
         var owner = CreateSpawner(out var notes);
         yield return null;
         var effect = owner.GetComponentInChildren<GameplayCutFeedback>();
+        notes[0].HitTime = notes[1].HitTime = 0;
         notes[0].Cut(Vector3.zero, Vector3.right * 8);
         Assert.AreEqual(1, effect.ActiveCount);
         owner.enabled = false;

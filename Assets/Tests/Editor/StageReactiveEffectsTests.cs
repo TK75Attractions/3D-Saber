@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -9,6 +10,8 @@ public class StageReactiveEffectsTests
     NoteSpawner spawner;
     StageReactiveEffects effects;
     FloorRenderer stage;
+    ScoreManager score;
+    SongPlayer clock;
 
     [SetUp]
     public void Setup()
@@ -22,6 +25,8 @@ public class StageReactiveEffectsTests
         spawner.buildTimingCues = false;
         spawner.OnNoteSpawned += n => { notes.Add(n); objects.Add(n.gameObject); };
         effects = StageReactiveEffects.Create(stage, spawner, Timeline());
+        clock = root.AddComponent<SongPlayer>();
+        score = root.AddComponent<ScoreManager>(); score.songPlayer = clock; score.Bind(spawner);
     }
 
     [TearDown]
@@ -42,7 +47,13 @@ public class StageReactiveEffectsTests
     }
     static NoteData N(float ms = 1000, string color = "blue", int count = 1) =>
         new NoteData { time = ms, type = count > 1 ? "long" : "tap", color = color, count = count, x = color == "blue" ? -1 : 1 };
-    void Cut(int index) => notes[index].Cut(notes[index].transform.position, Vector3.up * 8, CutDirection.None, notes[index].RequiredHand);
+    void Cut(int index, double error = 0)
+    {
+        typeof(SongPlayer).GetField("scheduled", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(clock, true);
+        typeof(SongPlayer).GetField("clockSynchronized", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(clock, true);
+        typeof(SongPlayer).GetField("startDspTime", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(clock, AudioSettings.dspTime - notes[index].HitTime - error);
+        notes[index].Cut(notes[index].transform.position, Vector3.up * 8, CutDirection.None, notes[index].RequiredHand);
+    }
 
     [Test]
     public void AuthoredEntranceContractsThenOpensWithoutChangingLegacyCurve()
@@ -79,14 +90,96 @@ public class StageReactiveEffectsTests
     }
 
     [Test]
-    public void LongChargesAndOnlyTrueCompletionReleases()
+    public void LongStaysDarkUntilPerfectCompletionAndTimeoutNeverReleases()
     {
         Spawn(N(1000, "blue", 3)); Cut(0);
-        Assert.That(effects.LeftCharge, Is.EqualTo(1f / 3).Within(.001));
-        Cut(0); Assert.AreEqual(0, effects.ReleaseCount);
-        Cut(0); Assert.AreEqual(1, effects.ReleaseCount); Assert.AreEqual(0, effects.LeftCharge);
+        Assert.AreEqual(0, effects.ActiveWaveCount);
+        Cut(0); Assert.AreEqual(0, effects.ReleaseCount); Assert.AreEqual(0, effects.ActiveWaveCount);
+        Cut(0); Assert.AreEqual(1, effects.ReleaseCount); Assert.AreEqual(JudgmentTier.Perfect, score.LastTier);
         notes.Clear(); Spawn(N(1000, "red", 3)); Cut(0); notes[0].MarkMiss();
-        Assert.AreEqual(0, effects.ReleaseCount); Assert.AreEqual(0, effects.RightCharge);
+        Assert.AreEqual(0, effects.ReleaseCount); Assert.AreEqual(0, effects.ActiveWaveCount);
+    }
+
+    [TestCase(0, JudgmentTier.Perfect, 1)]
+    [TestCase(.10, JudgmentTier.Great, 0)]
+    [TestCase(.15, JudgmentTier.Good, 0)]
+    [TestCase(.19, JudgmentTier.Bad, 0)]
+    [TestCase(.40, JudgmentTier.Miss, 0)]
+    [TestCase(-.055, JudgmentTier.Great, 0)]
+    [TestCase(-.075, JudgmentTier.Good, 0)]
+    [TestCase(-.095, JudgmentTier.Bad, 0)]
+    [TestCase(-.15, JudgmentTier.Miss, 0)]
+    public void OnlyFinalPerfectJudgmentLightsStageAndCutSparks(double error, JudgmentTier tier, int count)
+    {
+        Spawn(N()); Cut(0, error); effects.Tick(1.1);
+        Assert.AreEqual(tier, score.LastTier);
+        Assert.AreEqual(count, effects.ActiveWaveCount);
+        Assert.AreEqual(count, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount);
+        if (count == 0) Assert.AreEqual(0, effects.GetComponent<MeshFilter>().sharedMesh.vertexCount);
+    }
+
+    [TestCase(1)] [TestCase(3)]
+    public void DirectionDowngradeBlocksBothAccentsEvenAfterLongCompletion(int cuts)
+    {
+        var n = N(1000, "blue", cuts); n.direction = "right";
+        Spawn(n); for (int i = 0; i < cuts; i++) Cut(0);
+        Assert.AreEqual(JudgmentTier.Great, score.LastTier);
+        Assert.AreEqual(0, effects.ActiveWaveCount); Assert.AreEqual(0, effects.ReleaseCount);
+        Assert.AreEqual(0, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount);
+    }
+
+    [TestCase(0, 0)] [TestCase(1, 0)] [TestCase(2, 1)] [TestCase(3, 1)]
+    [TestCase(4, 2)] [TestCase(5, 2)] [TestCase(6, 3)] [TestCase(7, 3)]
+    public void EveryTwoNoteColumnsLightExactlyOneFloorLane(int column, int lane)
+    {
+        var n = N(1000, column < 4 ? "red" : "blue");
+        n.x = Mathf.Lerp(-2.5f, 2.5f, column / 7f);
+        Spawn(n); Cut(0); effects.Tick(1.12);
+        Assert.AreEqual(1 << lane, effects.ActiveFloorLaneMask, "担当手と配置の左右が逆でも配置に従う");
+        int floorVertices = 0;
+        foreach (var v in effects.GetComponent<MeshFilter>().sharedMesh.vertices)
+            if (v.y <= stage.floorY + .6f && Mathf.Abs(v.x) < 5.8f)
+            {
+                floorVertices++;
+                Assert.That(v.x, Is.InRange(-6f + lane * 3, -3f + lane * 3));
+            }
+        Assert.Greater(floorVertices, 0);
+    }
+
+    [Test]
+    public void CoordinatesRespectScaleAndGoldHandDoesNotMoveTheLane()
+    {
+        var n = N(1000, "gold"); n.x = -1;
+        var chart = new ChartData { coordScale = 2 }; chart.notes.Add(n);
+        spawner.SetChart(chart); spawner.Tick(1); effects.Tick(1);
+        notes[0].RequiredHand = SaberHand.Right; Cut(0);
+        Assert.AreEqual(1, effects.ActiveFloorLaneMask);
+        Assert.AreEqual(-1, StageReactiveEffects.FloorLaneForX(float.NaN));
+        Assert.AreEqual(0, StageReactiveEffects.FloorLaneForX(-100));
+        Assert.AreEqual(3, StageReactiveEffects.FloorLaneForX(100));
+    }
+
+    [Test]
+    public void PairNeedsTwoPerfectsAndKeepsBothActualPositions()
+    {
+        var a = N(); a.x = -2.5f; var b = N(1000, "red"); b.x = -.8f;
+        Spawn(a, b); Cut(0); Cut(1);
+        Assert.AreEqual(1, effects.PairCount); Assert.AreEqual(3, effects.ActiveFloorLaneMask);
+        notes.Clear(); Spawn(a, b); Cut(0); Cut(1, .15);
+        Assert.AreEqual(0, effects.PairCount); Assert.AreEqual(1, effects.ActiveWaveCount);
+        Assert.AreEqual(1, effects.ActiveFloorLaneMask);
+    }
+
+    [Test]
+    public void UnjudgedCutDoesNotUseAnEarlierPerfectAndChorusStillOpens()
+    {
+        Spawn(N()); score.RegisterHit(JudgmentTier.Perfect);
+        score.Bind(null); // 既に生まれたノーツへの既存購読は残るので、新しい譜面で確認する。
+        notes.Clear(); Spawn(N()); Cut(0);
+        Assert.AreEqual(0, effects.ActiveWaveCount);
+        Assert.AreEqual(0, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount);
+        effects.Tick(10); Assert.AreEqual(1, effects.Presentation.impact);
+        Assert.Greater(effects.GetComponent<MeshFilter>().sharedMesh.vertexCount, 0);
     }
 
     [Test]

@@ -111,6 +111,7 @@ public class ScoreManager : MonoBehaviour
         }
         LastWasWrongFlick = wrongDir;
         RegisterHit(tier);
+        note.NotifyJudgment(tier, point, velocity);
     }
 
     public static JudgmentTier DowngradeTier(JudgmentTier t)

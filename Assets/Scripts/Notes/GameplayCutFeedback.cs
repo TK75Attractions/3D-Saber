@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// 切れた場所にだけ短い刃の光と小さな光片を出す。本編Spawnerの時計から駆動する。
+// Perfectが確定した場所にだけ短い刃の光と小さな光片を出す。
 // 画面全体のフラッシュやカメラ揺れ、物理判定は追加しない。
 public sealed class GameplayCutFeedback : MonoBehaviour
 {
@@ -64,25 +64,25 @@ public sealed class GameplayCutFeedback : MonoBehaviour
     public void Track(CuttableNote note)
     {
         if (note == null || !tracked.Add(note)) return;
-        note.OnCut += HandleCut;
+        note.OnJudged += HandleCut;
         note.OnMiss += HandleMiss;
     }
 
     void Untrack(CuttableNote note)
     {
         if (note == null) return;
-        note.OnCut -= HandleCut;
+        note.OnJudged -= HandleCut;
         note.OnMiss -= HandleMiss;
         tracked.Remove(note);
     }
 
     void HandleMiss(CuttableNote note) { Untrack(note); }
 
-    void HandleCut(CuttableNote note, Vector3 hitPoint, Vector3 velocity)
+    void HandleCut(CuttableNote note, JudgmentTier tier, Vector3 hitPoint, Vector3 velocity)
     {
         Untrack(note);
         // 部分達成ロングのタイムアウトもOnCutを通知するため、実際に切れた時だけ描く。
-        if (note == null || !note.IsCut || note.IsMissed || !isActiveAndEnabled
+        if (tier != JudgmentTier.Perfect || note == null || !note.IsCut || note.IsMissed || !isActiveAndEnabled
             || owner == null || !owner.isActiveAndEnabled || mesh == null) return;
         if (!Finite(hitPoint) || !Finite(velocity)) return;
 
@@ -212,7 +212,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
         foreach (var note in tracked)
         {
             if (note == null) continue;
-            note.OnCut -= HandleCut;
+            note.OnJudged -= HandleCut;
             note.OnMiss -= HandleMiss;
         }
         tracked.Clear();
