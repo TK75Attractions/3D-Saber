@@ -107,6 +107,8 @@ public class GamePlayManager : MonoBehaviour
     private bool finished;
     private bool ready;
     private double lastNoteTime;
+    // このシーンでデコードした音源だけを所有する。外から渡された共有音源は破棄しない。
+    private AudioClip ownedSongClip;
     // 2本目のセーバー判定(enableTwoSabers 時に SaberRig が生成)
     private SaberCutJudge cutJudge2;
     private GateBeatPulse gatePerfectPulse;
@@ -527,18 +529,42 @@ public class GamePlayManager : MonoBehaviour
             string full = Path.Combine(dir, name);
             if (!File.Exists(full)) continue;
             AudioType type = GuessType(name);
-            using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip("file://" + full, type))
+            // #・%・日本語・空白を含む曲フォルダーも、選曲プレビューと同じ方法で扱う。
+            using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip(new System.Uri(full).AbsoluteUri, type))
             {
                 yield return req.SendWebRequest();
                 if (req.result == UnityWebRequest.Result.Success)
                 {
-                    songPlayer.Clip = DownloadHandlerAudioClip.GetContent(req);
-                    yield break;
+                    AudioClip clip = DownloadHandlerAudioClip.GetContent(req);
+                    if (clip != null)
+                    {
+                        ReleaseOwnedSongClip();
+                        ownedSongClip = clip;
+                        songPlayer.Clip = clip;
+                        yield break;
+                    }
                 }
                 Debug.LogWarning($"Failed to load audio {full}: {req.error}");
             }
         }
         Debug.LogWarning($"No audio found under {dir}");
+    }
+
+    private void ReleaseOwnedSongClip()
+    {
+        if (ownedSongClip == null) return;
+        if (songPlayer != null && songPlayer.Clip == ownedSongClip)
+        {
+            songPlayer.Stop();
+            songPlayer.Clip = null;
+        }
+        Destroy(ownedSongClip);
+        ownedSongClip = null;
+    }
+
+    private void OnDestroy()
+    {
+        ReleaseOwnedSongClip();
     }
 
     private AudioType GuessType(string name)
