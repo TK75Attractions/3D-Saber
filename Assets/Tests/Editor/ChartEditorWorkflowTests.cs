@@ -230,6 +230,122 @@ public class ChartEditorWorkflowTests
     }
 
     SaberChartDocument Document => Get<SaberChartDocument>("document");
+
+    [TestCase(false, "malformed")]
+    [TestCase(true, "malformed")]
+    [TestCase(false, "locked")]
+    [TestCase(true, "locked")]
+    [TestCase(false, "invalidId")]
+    [TestCase(true, "invalidId")]
+    public void FailedLoadAfterDiscardKeepsUnsavedDocumentAndUndo(bool fromMenu, string failure)
+    {
+        WithChartFolder(target =>
+        {
+            string path = System.IO.Path.Combine(Application.streamingAssetsPath, "Songs", target, "chart_normal.json");
+            System.IO.File.WriteAllText(path, failure == "malformed" ? "{ invalid json" : "{\"bpm\":150,\"notes\":[]}");
+            if (failure == "invalidId") target = "../invalid";
+            Set("loadedSongId", "__OriginalChart");
+            Set("loadedDifficulty", "normal");
+            Set("selectedIndex", 0);
+            Key(KeyCode.D, EventModifiers.Control);
+            var original = Document;
+            string json = SaberChartUtility.ToJson(original, false);
+            string saved = Get<string>("savedJson");
+            int selected = Get<int>("selectedIndex");
+            int confirmations = 0, errors = 0;
+            Set("confirmChangesDialog", new System.Func<string, string, string, string, string, int>((a, b, c, d, e) => { confirmations++; return 2; }));
+            Set("reportLoadError", new System.Action<string>(message => { Assert.IsNotEmpty(message); errors++; }));
+            string originalDestination = Get<string>("songId");
+            System.IO.FileStream locked = failure == "locked"
+                ? new System.IO.FileStream(path, System.IO.FileMode.Open, System.IO.FileAccess.Read, System.IO.FileShare.None) : null;
+            try { LoadTarget(target, fromMenu); }
+            finally { locked?.Dispose(); }
+            Assert.AreEqual(1, errors, "読込失敗を明示する");
+            Assert.AreEqual(1, confirmations);
+            Assert.AreSame(original, Document);
+            Assert.AreEqual(json, SaberChartUtility.ToJson(Document, false));
+            Assert.AreEqual(saved, Get<string>("savedJson"));
+            Assert.True(window.hasUnsavedChanges, "読込失敗で保存警告を失わない");
+            Assert.AreEqual(selected, Get<int>("selectedIndex"));
+            Assert.AreEqual(4f, Get<float>("currentBeat"));
+            Assert.AreEqual("__OriginalChart", Get<string>("loadedSongId"));
+            Assert.AreEqual(fromMenu ? originalDestination : target, Get<string>("songId"));
+            Key(KeyCode.Z, EventModifiers.Control);
+            Assert.AreEqual(2, Document.notes.Count, "失敗後も前の譜面をUndoできる");
+            Assert.False(window.hasUnsavedChanges);
+            Key(KeyCode.Y, EventModifiers.Control);
+            Assert.AreEqual(3, Document.notes.Count);
+            Assert.True(window.hasUnsavedChanges);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void CancelLoadKeepsEditingSession(bool fromMenu)
+    {
+        Set("selectedIndex", 0);
+        Key(KeyCode.D, EventModifiers.Control);
+        var original = Document;
+        string originalDestination = Get<string>("songId");
+        Set("confirmChangesDialog", new System.Func<string, string, string, string, string, int>((a, b, c, d, e) => 1));
+        Set("reportLoadError", new System.Action<string>(message => Assert.Fail(message)));
+        LoadTarget("../invalid", fromMenu);
+        Assert.AreSame(original, Document);
+        Assert.True(window.hasUnsavedChanges);
+        Assert.AreEqual(fromMenu ? originalDestination : "../invalid", Get<string>("songId"));
+    }
+
+    [TestCase(false, false)]
+    [TestCase(true, false)]
+    [TestCase(false, true)]
+    [TestCase(true, true)]
+    public void SuccessfulLoadDiscardsOnlyOnceAndClearsOldHistory(bool fromMenu, bool legacy)
+    {
+        WithChartFolder(target =>
+        {
+            string file = legacy ? "chart.json" : "chart_normal.json";
+            System.IO.File.WriteAllText(System.IO.Path.Combine(Application.streamingAssetsPath, "Songs", target, file),
+                "{\"bpm\":150,\"notes\":[{\"beat\":2,\"time\":800,\"x\":1}]}");
+            Set("selectedIndex", 0);
+            Key(KeyCode.D, EventModifiers.Control);
+            int confirmations = 0;
+            Set("confirmChangesDialog", new System.Func<string, string, string, string, string, int>((a, b, c, d, e) => { confirmations++; return 2; }));
+            Set("reportLoadError", new System.Action<string>(message => Assert.Fail(message)));
+            LoadTarget(target, fromMenu);
+            Assert.AreEqual(1, confirmations);
+            Assert.AreEqual(150f, Document.bpm);
+            Assert.AreEqual(1, Document.notes.Count);
+            Assert.False(window.hasUnsavedChanges);
+            Assert.AreEqual(target, Get<string>("songId"));
+            Assert.AreEqual(target, Get<string>("loadedSongId"));
+            Assert.AreEqual(-1, Get<int>("selectedIndex"));
+            Assert.AreEqual(0f, Get<float>("currentBeat"));
+            Key(KeyCode.Z, EventModifiers.Control);
+            Assert.AreEqual(1, Document.notes.Count, "古い譜面の履歴を混ぜない");
+        });
+    }
+
+    void LoadTarget(string target, bool fromMenu)
+    {
+        if (fromMenu) Call("LoadSongFromMenu", target);
+        else { Set("songId", target); Call("LoadDocument"); }
+    }
+
+    void WithChartFolder(System.Action<string> check)
+    {
+        string target = "__ChartLoadTest_" + System.Guid.NewGuid().ToString("N");
+        string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.streamingAssetsPath, "Songs")) + System.IO.Path.DirectorySeparatorChar;
+        string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(root, target));
+        System.IO.Directory.CreateDirectory(folder);
+        try { check(target); }
+        finally
+        {
+            Assert.True(folder.StartsWith(root, System.StringComparison.OrdinalIgnoreCase));
+            Assert.True(System.IO.Path.GetFileName(folder).StartsWith("__ChartLoadTest_"));
+            if (System.IO.Directory.Exists(folder)) System.IO.Directory.Delete(folder, true);
+            if (System.IO.File.Exists(folder + ".meta")) System.IO.File.Delete(folder + ".meta");
+        }
+    }
     void Key(KeyCode key, EventModifiers modifiers = EventModifiers.None) =>
         Call("HandleKeyboardShortcuts", new Event { type = EventType.KeyDown, keyCode = key, modifiers = modifiers });
     void Set(string name, object value) => typeof(SaberChartEditorWindow).GetField(name, BindingFlags.Instance | BindingFlags.NonPublic).SetValue(window, value);

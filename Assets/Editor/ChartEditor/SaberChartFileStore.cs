@@ -65,6 +65,8 @@ namespace Saber.ChartEditor
 
         public static SaberChartDocument Load(string songId, string difficulty, out string loadedPath)
         {
+            if (!IsValidSongId(songId, out string reason))
+                throw new InvalidOperationException(reason);
             loadedPath = FindChartToLoad(songId, difficulty);
             if (string.IsNullOrEmpty(loadedPath)) return new SaberChartDocument();
             return SaberChartUtility.FromJson(File.ReadAllText(loadedPath, Encoding.UTF8));

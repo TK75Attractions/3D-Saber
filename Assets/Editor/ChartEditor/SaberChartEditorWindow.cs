@@ -114,6 +114,10 @@ namespace Saber.ChartEditor
         private string statusMessage = "準備完了";
         private double statusUntil;
 
+        // 確認の選択とファイル操作を分離し、失敗時の編集状態も検証できるようにする。
+        private Func<string, string, string, string, string, int> confirmChangesDialog = EditorUtility.DisplayDialogComplex;
+        private Action<string> reportLoadError = message => EditorUtility.DisplayDialog("譜面を読み込めません", message, "OK");
+
         private int CurrentSnap => SnapDenominators[Mathf.Clamp(snapIndex, 0, SnapDenominators.Length - 1)];
         private string CurrentDifficulty => DifficultyValues[Mathf.Clamp(difficultyIndex, 0, DifficultyValues.Length - 1)];
         private SaberChartNote SelectedNote =>
@@ -977,26 +981,36 @@ namespace Saber.ChartEditor
 
         private void LoadDocument()
         {
+            LoadDocumentForSong(songId);
+        }
+
+        private void LoadDocumentForSong(string targetSongId)
+        {
             EndNoteDrag();
             if (!ConfirmAbandonChanges()) return;
             try
             {
+                // 読込に失敗した場合は、元の譜面・履歴・未保存状態・保存先を残す。
+                SaberChartDocument nextDocument = SaberChartFileStore.Load(targetSongId, CurrentDifficulty, out string loadedPath);
+                float nextBeatZeroMs = SaberChartUtility.EstimateBeatZeroMs(nextDocument);
+                string nextSavedJson = SaberChartUtility.ToJson(nextDocument, false);
                 StopPreview(false);
-                document = SaberChartFileStore.Load(songId, CurrentDifficulty, out string loadedPath);
-                beatZeroMs = SaberChartUtility.EstimateBeatZeroMs(document);
+                document = nextDocument;
+                songId = targetSongId.Trim();
+                beatZeroMs = nextBeatZeroMs;
                 currentBeat = 0f;
                 selectedIndex = -1;
                 loadedSongId = songId.Trim();
                 loadedDifficulty = CurrentDifficulty;
                 history.Clear();
-                savedJson = CurrentJson();
+                savedJson = nextSavedJson;
                 hasUnsavedChanges = false;
                 EnsureAudioForSong(false);
                 SetStatus(loadedPath == null ? "空の譜面を開きました" : $"読込: {Path.GetFileName(loadedPath)}");
             }
             catch (Exception exception)
             {
-                EditorUtility.DisplayDialog("譜面を読み込めません", exception.Message, "OK");
+                reportLoadError(exception.Message);
             }
         }
 
@@ -1037,16 +1051,15 @@ namespace Saber.ChartEditor
         private bool ConfirmAbandonChanges()
         {
             if (!hasUnsavedChanges) return true;
-            int choice = EditorUtility.DisplayDialogComplex(
+            int choice = confirmChangesDialog(
                 "未保存の変更",
                 "現在の譜面を保存してから続けますか？",
                 "保存",
                 "キャンセル",
                 "保存しない");
             if (choice == 0) return SaveDocument();
-            if (choice != 2) return false;
-            hasUnsavedChanges = false;
-            return true;
+            // 「保存しない」は次の操作への許可。置き換え成功までは未保存のまま保つ。
+            return choice == 2;
         }
 
         private void ShowSongMenu()
@@ -1064,13 +1077,16 @@ namespace Saber.ChartEditor
                     string captured = id;
                     menu.AddItem(new GUIContent(captured), captured == songId, () =>
                     {
-                        if (!ConfirmAbandonChanges()) return;
-                        songId = captured;
-                        LoadDocument();
+                        LoadSongFromMenu(captured);
                     });
                 }
             }
             menu.ShowAsContext();
+        }
+
+        private void LoadSongFromMenu(string selectedSongId)
+        {
+            LoadDocumentForSong(selectedSongId);
         }
 
         private void RevealSongFolder()
