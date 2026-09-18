@@ -1,0 +1,384 @@
+using System;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Rendering;
+
+// 全背景共通の舞台反応。中央のノーツ通路を空け、成功の光を床端と側面へ送る。
+// 独自Updateは持たず、GamePlayManagerの曲時計でのみ進む。
+[ExecuteAlways]
+public sealed class StageReactiveEffects : MonoBehaviour
+{
+    public const int MaxWaves = 10;
+    public const int VertexBudget = 14000;
+    public const float CorridorHalfWidth = 5.8f;
+    enum WaveKind { Cut, Pair, Release }
+    struct Wave
+    {
+        public bool active;
+        public WaveKind kind;
+        public int side;
+        public double chartTime;
+        public float age, gain;
+        public Color color;
+    }
+    readonly Wave[] waves = new Wave[MaxWaves];
+    readonly HashSet<CuttableNote> tracked = new HashSet<CuttableNote>();
+    readonly List<CuttableNote> expired = new List<CuttableNote>();
+    readonly List<Vector3> vertices = new List<Vector3>(VertexBudget);
+    readonly List<Color> colors = new List<Color>(VertexBudget);
+    readonly List<Vector2> uvs = new List<Vector2>(VertexBudget);
+    readonly List<int> indices = new List<int>(VertexBudget * 3 / 2);
+    NoteSpawner owner;
+    StagePerformanceTimeline timeline;
+    Mesh mesh;
+    Material material;
+    MeshRenderer meshRenderer;
+    float floor;
+    bool hasTime;
+    StageTheme theme;
+    public double LastTickSeconds { get; private set; }
+    public StagePerformanceTimeline.Presentation Presentation { get; private set; }
+    public int ActiveWaveCount { get; private set; }
+    public int PairCount { get; private set; }
+    public int ReleaseCount { get; private set; }
+    public float LeftCharge { get; private set; }
+    public float RightCharge { get; private set; }
+
+    public static StageReactiveEffects Create(FloorRenderer stage, NoteSpawner spawner, StagePerformanceTimeline song)
+    {
+        var go = new GameObject("StageReactiveEffects");
+        go.transform.SetParent(stage.transform, false);
+        var effect = go.AddComponent<StageReactiveEffects>();
+        effect.floor = stage.floorY;
+        effect.theme = stage.ActiveTheme;
+        effect.Build();
+        effect.Bind(spawner, song);
+        return effect;
+    }
+
+    void Build()
+    {
+        var shader = Resources.Load<Shader>("Effects/GameplayCutAccent");
+        if (shader == null) return;
+        mesh = new Mesh { name = "StageReactionMesh", hideFlags = HideFlags.DontSave };
+        mesh.MarkDynamic();
+        material = new Material(shader) { name = "StageReactionLight", hideFlags = HideFlags.DontSave };
+        gameObject.AddComponent<MeshFilter>().sharedMesh = mesh;
+        meshRenderer = gameObject.AddComponent<MeshRenderer>();
+        meshRenderer.sharedMaterial = material;
+        meshRenderer.shadowCastingMode = ShadowCastingMode.Off;
+        meshRenderer.receiveShadows = false;
+        meshRenderer.lightProbeUsage = LightProbeUsage.Off;
+        meshRenderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+        meshRenderer.enabled = false;
+    }
+
+    public void Bind(NoteSpawner spawner, StagePerformanceTimeline song)
+    {
+        if (owner != null)
+        {
+            owner.OnNoteSpawned -= Track;
+            owner.OnChartReset -= ResetState;
+        }
+        ResetState();
+        owner = spawner;
+        timeline = song ?? new StagePerformanceTimeline();
+        if (owner != null)
+        {
+            owner.OnNoteSpawned += Track;
+            owner.OnChartReset += ResetState;
+        }
+    }
+
+    void Track(CuttableNote note)
+    {
+        if (note == null || !tracked.Add(note)) return;
+        note.OnPartialCut += Partial;
+        note.OnCut += Cut;
+        note.OnMiss += Miss;
+    }
+
+    void Untrack(CuttableNote note)
+    {
+        if (!ReferenceEquals(note, null))
+        {
+            note.OnPartialCut -= Partial;
+            note.OnCut -= Cut;
+            note.OnMiss -= Miss;
+        }
+        tracked.Remove(note);
+    }
+
+    bool CanReact => isActiveAndEnabled && owner != null && owner.isActiveAndEnabled;
+    void Miss(CuttableNote note) { Untrack(note); RefreshCharges(); }
+
+    void Partial(CuttableNote note, int index, int total)
+    {
+        if (!CanReact || total <= 1 || index >= total - 1) return;
+        AddWave(note, WaveKind.Cut, .5f);
+        RefreshCharges();
+    }
+
+    void Cut(CuttableNote note, Vector3 point, Vector3 velocity)
+    {
+        Untrack(note);
+        RefreshCharges();
+        // 部分達成の時間切れもOnCutを通知する。完走の解放は実際の切断だけ。
+        if (!CanReact || note == null || !note.IsCut || note.IsMissed || !Finite(note.HitTime)) return;
+        if (note.RequiredCutCount > 1)
+        {
+            AddWave(note, WaveKind.Release, 1);
+            ReleaseCount++;
+            return;
+        }
+        int side = Side(note);
+        for (int i = 0; i < waves.Length; i++)
+        {
+            // 譜面上同時で、別の手が短い時間内に切った組だけを一つの左右反応へ変える。
+            if (!waves[i].active || waves[i].kind != WaveKind.Cut || waves[i].gain < .9f ||
+                waves[i].side == side || waves[i].age > .16f ||
+                Math.Abs(waves[i].chartTime - note.HitTime) > NoteSpawner.SimultaneousEpsilonSeconds) continue;
+            waves[i].kind = WaveKind.Pair;
+            waves[i].age = 0;
+            waves[i].side = 0;
+            waves[i].color = new Color(.68f, .88f, 1.35f);
+            PairCount++;
+            return;
+        }
+        AddWave(note, WaveKind.Cut, 1);
+    }
+
+    static int Side(CuttableNote note)
+    {
+        var hand = note.LastCutterHand != SaberHand.Any ? note.LastCutterHand : note.RequiredHand;
+        return hand == SaberHand.Left ? -1 : hand == SaberHand.Right ? 1 : note.transform.position.x < 0 ? -1 : 1;
+    }
+
+    void AddWave(CuttableNote note, WaveKind kind, float gain)
+    {
+        if (note == null || !Finite(note.HitTime)) return;
+        int side = Side(note), slot = -1, oldest = 0;
+        for (int i = 0; i < waves.Length; i++)
+        {
+            if (!waves[i].active && slot < 0) slot = i;
+            if (waves[i].age > waves[oldest].age) oldest = i;
+        }
+        if (slot < 0) slot = oldest;
+        Color tint = note.IsGold ? UISkinPalette.NoteGold : side < 0 ? UISkinPalette.LogoBlue : UISkinPalette.LogoRed;
+        waves[slot] = new Wave { active = true, kind = kind, side = side, chartTime = note.HitTime,
+            color = tint, gain = gain, age = 0 };
+        CountWaves();
+    }
+
+    void RefreshCharges()
+    {
+        LeftCharge = RightCharge = 0;
+        expired.Clear();
+        foreach (var note in tracked)
+        {
+            if (note == null || note.IsFinalized || !note.gameObject.activeInHierarchy)
+            { expired.Add(note); continue; }
+            if (note.RequiredCutCount <= 1 || note.CutsAchieved <= 0) continue;
+            float charge = Mathf.Clamp01((float)note.CutsAchieved / note.RequiredCutCount);
+            if (Side(note) < 0) LeftCharge = Mathf.Max(LeftCharge, charge);
+            else RightCharge = Mathf.Max(RightCharge, charge);
+        }
+        foreach (var note in expired) Untrack(note);
+    }
+
+    public void Tick(double songSeconds)
+    {
+        if (!Finite(songSeconds) || !isActiveAndEnabled) return;
+        if (owner == null || !owner.isActiveAndEnabled) { ClearVisuals(); return; }
+        float delta = hasTime ? (float)(songSeconds - LastTickSeconds) : 0;
+        // シーク・再実行に前区間の手応えや途中蓄積を持ち越さない。
+        if (delta < -.001f)
+        {
+            ClearVisuals();
+            delta = 0;
+        }
+        hasTime = true;
+        LastTickSeconds = songSeconds;
+        Presentation = timeline.EvaluatePresentation(songSeconds);
+        for (int i = 0; i < waves.Length; i++)
+        {
+            if (!waves[i].active) continue;
+            waves[i].age += Mathf.Max(0, delta);
+            float duration = waves[i].kind == WaveKind.Cut ? .62f : waves[i].kind == WaveKind.Pair ? .85f : 1.05f;
+            if (waves[i].age >= duration) waves[i].active = false;
+        }
+        CountWaves();
+        RefreshCharges();
+        Draw();
+    }
+
+    void CountWaves()
+    {
+        ActiveWaveCount = 0;
+        foreach (var wave in waves) if (wave.active) ActiveWaveCount++;
+    }
+
+    Color ThemeColor()
+    {
+        switch (theme)
+        {
+            case StageTheme.AmberFoundry: case StageTheme.DesertSanctum: return new Color(1.2f, .66f, .2f);
+            case StageTheme.MoonlitGarden: return new Color(.96f, .48f, 1.1f);
+            case StageTheme.AstralOrbit: case StageTheme.VioletVault: return new Color(.57f, .42f, 1.3f);
+            default: return new Color(.24f, .82f, 1.25f);
+        }
+    }
+
+    void Draw()
+    {
+        if (mesh == null) return;
+        vertices.Clear(); colors.Clear(); uvs.Clear(); indices.Clear();
+        Color themeColor = ThemeColor();
+        float projector = DisplaySettings.ProjectorMode ? .68f : 1;
+        var state = Presentation;
+        float open = state.opening;
+        float prepare = state.anticipation;
+        // 難易度に依存しない共通の基礎光。サビ頭では外向き、準備では奥へ収束する。
+        for (int side = -1; side <= 1; side += 2)
+        {
+            for (int bank = 0; bank < 7; bank++)
+            {
+                float z = 4 + bank * 5;
+                float breath = .5f + .5f * Mathf.Sin((float)LastTickSeconds * .7f - bank * .5f);
+                float alpha = (.035f + breath * .025f + open * .2f + prepare * .14f) * (1 - state.hush * .85f) * projector;
+                float charge = side < 0 ? LeftCharge : RightCharge;
+                float charged = Mathf.Clamp01(charge * 7 - bank);
+                Vector3 root = new Vector3(side * 6.05f, floor + .12f, z);
+                Vector3 tip = new Vector3(side * (7 + open * 6 + (1 - prepare) * 1.3f), 4.6f + open * 1.6f, z + 4 + prepare * 5);
+                Beam(root, tip, .035f + open * .07f, themeColor, alpha);
+                if (charged > 0)
+                {
+                    Color chargeColor = side < 0 ? UISkinPalette.LogoBlue : UISkinPalette.LogoRed;
+                    Beam(new Vector3(side * 6.15f, floor + .16f, z), new Vector3(side * 6.15f, floor + .85f, z), .14f, chargeColor, charged * .85f * projector);
+                    Beam(new Vector3(side * 4.7f, floor + .12f, z), root, .1f, chargeColor, charged * .7f * projector, Vector3.forward);
+                }
+                if (prepare > 0)
+                {
+                    float moving = Mathf.Repeat((float)LastTickSeconds * 2.5f - bank * .22f, 1);
+                    float z0 = z + moving * 4;
+                    Beam(new Vector3(side * 4.85f, floor + .1f, z0), new Vector3(side * 4.85f, floor + .1f, z0 + 1.2f), .16f, themeColor, prepare * .65f * (1 - state.hush) * projector, Vector3.right);
+                }
+            }
+            if (state.impact > .001f)
+            {
+                float travel = (1 - Mathf.Sqrt(state.impact)) * 25;
+                FloorFan(side, travel, new Color(1.2f, .82f, .38f), state.impact * projector, 1.4f);
+            }
+        }
+        float crowded = 1 / Mathf.Sqrt(Mathf.Max(1, ActiveWaveCount * .45f));
+        foreach (var wave in waves)
+        {
+            if (!wave.active) continue;
+            float duration = wave.kind == WaveKind.Cut ? .62f : wave.kind == WaveKind.Pair ? .85f : 1.05f;
+            float life = Mathf.Clamp01(1 - wave.age / duration);
+            float gain = life * wave.gain * projector * crowded;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                if (wave.kind != WaveKind.Pair && side != wave.side) continue;
+                float travel = wave.age * (wave.kind == WaveKind.Cut ? 42 : 34);
+                Color tint = wave.kind == WaveKind.Release ? Color.Lerp(wave.color, new Color(1.3f, .92f, .45f), .65f) : wave.color;
+                FloorFan(side, travel, tint, gain, wave.kind == WaveKind.Cut ? .7f : 1.35f);
+                for (int bank = 0; bank < 7; bank++)
+                {
+                    float local = wave.age - bank * .055f;
+                    if (local < 0 || local > .28f) continue;
+                    float flash = (1 - local / .28f) * gain;
+                    float z = 4 + bank * 5;
+                    Beam(new Vector3(side * 6.05f, floor + .18f, z), new Vector3(side * (7.1f + local * 3), 3.8f, z + 1), .1f, tint, flash);
+                }
+                if (wave.kind != WaveKind.Cut)
+                {
+                    // 弧は通路の外側だけ。ロング完走は二重の弧がほどける。
+                    int arcs = wave.kind == WaveKind.Release ? 2 : 1;
+                    for (int arc = 0; arc < arcs; arc++)
+                        for (int segment = 0; segment < 12; segment++)
+                        {
+                            float a = segment / 12f, b = (segment + 1) / 12f;
+                            Vector3 p = ArcPoint(side, a, wave.age, arc);
+                            Vector3 q = ArcPoint(side, b, wave.age, arc);
+                            Beam(p, q, .08f, tint, gain * .85f);
+                        }
+                }
+            }
+        }
+        mesh.Clear(); mesh.SetVertices(vertices); mesh.SetColors(colors); mesh.SetUVs(0, uvs);
+        mesh.SetTriangles(indices, 0, true);
+        meshRenderer.enabled = vertices.Count > 0;
+    }
+
+    Vector3 ArcPoint(int side, float fraction, float age, int layer)
+    {
+        return new Vector3(side * (6 + Mathf.Sin(fraction * Mathf.PI) * (2.4f + age * 4) + layer * .35f),
+            floor + .25f + fraction * 8, 7 + age * 12 + layer * 3);
+    }
+
+    void FloorFan(int side, float z, Color tint, float alpha, float width)
+    {
+        // 動く床板の最大上昇分より上に薄い波を置き、板の中に埋めない。
+        float y = floor + (theme == StageTheme.ObsidianRelay ? .46f : theme == StageTheme.VioletVault ? .56f : .13f);
+        Vector3 a = new Vector3(side * 3.35f, y, z - 1.2f);
+        Vector3 b = new Vector3(side * 5.1f, y, z);
+        Vector3 c = new Vector3(side * 7.7f, y, z + 1.1f);
+        Beam(a, b, width * .12f, tint, alpha, Vector3.forward);
+        Beam(b, c, width * .12f, tint, alpha, Vector3.forward);
+        Beam(new Vector3(side * 4.75f, y, z - 3), new Vector3(side * 4.75f, y, z + 1), width * .24f, tint, alpha * .42f, Vector3.right);
+    }
+
+    void Beam(Vector3 a, Vector3 b, float width, Color tint, float alpha, Vector3 edge = default)
+    {
+        if (alpha < .002f) return;
+        if (edge == Vector3.zero) edge = new Vector3(-(b - a).y, (b - a).x, 0).normalized;
+        Quad(a, b, width * 4, tint, alpha * .16f, edge);
+        Quad(a, b, width, Color.Lerp(tint, Color.white, .18f), Mathf.Min(.92f, alpha), edge);
+    }
+
+    void Quad(Vector3 a, Vector3 b, float width, Color tint, float alpha, Vector3 edge)
+    {
+        if (vertices.Count + 4 > VertexBudget) return;
+        int start = vertices.Count;
+        Vector3 half = edge * width * .5f;
+        vertices.Add(a - half); vertices.Add(b - half); vertices.Add(b + half); vertices.Add(a + half);
+        tint.a = alpha;
+        for (int i = 0; i < 4; i++) colors.Add(tint);
+        uvs.Add(Vector2.zero); uvs.Add(Vector2.right); uvs.Add(Vector2.one); uvs.Add(Vector2.up);
+        indices.Add(start); indices.Add(start + 1); indices.Add(start + 2);
+        indices.Add(start); indices.Add(start + 2); indices.Add(start + 3);
+    }
+
+    void ClearVisuals()
+    {
+        Array.Clear(waves, 0, waves.Length);
+        ActiveWaveCount = 0;
+        LeftCharge = RightCharge = 0;
+        Presentation = default;
+        if (mesh != null) mesh.Clear();
+        if (meshRenderer != null) meshRenderer.enabled = false;
+    }
+
+    public void ResetState()
+    {
+        foreach (var note in tracked)
+            if (!ReferenceEquals(note, null))
+            {
+                note.OnPartialCut -= Partial; note.OnCut -= Cut; note.OnMiss -= Miss;
+            }
+        tracked.Clear();
+        ClearVisuals();
+        hasTime = false;
+        PairCount = ReleaseCount = 0;
+    }
+
+    void OnDisable() { ClearVisuals(); hasTime = false; }
+    void OnDestroy()
+    {
+        Bind(null, null);
+        UISkinKit.SafeDestroy(mesh);
+        UISkinKit.SafeDestroy(material);
+    }
+    static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
+}

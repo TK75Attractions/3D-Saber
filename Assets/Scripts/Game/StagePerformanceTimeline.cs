@@ -14,6 +14,9 @@ public sealed class StagePerformanceTimeline
         public float fadeInSeconds = 2;
         public float fadeOutSeconds = 3;
         public float intensity = 1;
+        // サビ前の収束と、頭の開放。低強度の助走区間には適用しない。
+        public float anticipationSeconds = 2.4f;
+        public float impactSeconds = .8f;
     }
 
     public Section[] sections = Array.Empty<Section>();
@@ -23,6 +26,39 @@ public sealed class StagePerformanceTimeline
     public bool hideBarLines = false;
     // 提供音源に記載された作者。未提供なら空欄のままにする。
     public string artist = "";
+
+    public struct Presentation
+    {
+        public float anticipation, hush, impact, opening;
+    }
+
+    // 曲時計から直接評価するため、停止・再開で入口イベントを二重発火しない。
+    // 従来のEvaluateはそのまま維持し、入口の短いアクセントだけを重ねる。
+    public Presentation EvaluatePresentation(double songSeconds)
+    {
+        var value = new Presentation { opening = Evaluate(songSeconds) };
+        if (!Finite(songSeconds) || songSeconds < 0 || sections == null) return value;
+        foreach (var s in sections)
+        {
+            if (s == null || !Finite(s.startSeconds) || !Finite(s.endSeconds) ||
+                !Finite(s.intensity) || s.startSeconds < 0 || s.endSeconds <= s.startSeconds || s.intensity < .65f) continue;
+            float strength = Mathf.Clamp01(s.intensity);
+            double until = s.startSeconds - songSeconds;
+            float preparation = Finite(s.anticipationSeconds) ? Mathf.Clamp(s.anticipationSeconds, 0, 8) : 0;
+            if (preparation > 0 && until > 0 && until <= preparation)
+            {
+                value.anticipation = Mathf.Max(value.anticipation,
+                    Mathf.SmoothStep(0, 1, 1 - (float)until / preparation) * strength);
+                value.hush = Mathf.Max(value.hush, Mathf.Clamp01(1 - (float)until / .22f) * strength);
+            }
+            double age = -until;
+            float duration = Finite(s.impactSeconds) ? Mathf.Clamp(s.impactSeconds, 0, 2) : 0;
+            if (duration > 0 && age >= 0 && age < duration && songSeconds < s.endSeconds)
+                value.impact = Mathf.Max(value.impact, Mathf.Pow(1 - (float)age / duration, 2) * strength);
+        }
+        value.opening = Mathf.Max(value.opening, value.impact);
+        return value;
+    }
 
     public float Evaluate(double songSeconds)
     {

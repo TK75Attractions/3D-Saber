@@ -116,6 +116,7 @@ public class GamePlayManager : MonoBehaviour
     private ScenicStageWorld scenicStageWorld;
     private FloorRenderer stageFloor;
     private StagePerformanceTimeline stagePerformance = new StagePerformanceTimeline();
+    private StageReactiveEffects stageReactions;
 
     // --- キャリブレーション（判定調整）モード ---
     private bool inCalibration;
@@ -277,6 +278,7 @@ public class GamePlayManager : MonoBehaviour
         noteSpawner.SetExtraOffsetSeconds(effectiveExtraOffset);
         noteSpawner.SetChart(chart);
         if (stageFloor != null) stageFloor.SetRhythm(chart);
+        if (stageFloor != null) stageReactions = StageReactiveEffects.Create(stageFloor, noteSpawner, stagePerformance);
 
         // 判定ゲートはPerfectが確定した瞬間だけ発光する。拍や単なる接触では光らせない。
         if (useOverhauledStage)
@@ -594,6 +596,7 @@ public class GamePlayManager : MonoBehaviour
             if (stageFloor != null) stageFloor.Tick(time,chorus);
             if (foundryStageMotion != null) foundryStageMotion.Tick(time,chorus);
             if (scenicStageWorld != null) scenicStageWorld.Tick(time,chorus);
+            if (stageReactions != null) stageReactions.Tick(time);
         }
 
         // 2a. キャリブレーション分岐：時計は AudioSettings.dspTime ベース、終了せずループ

@@ -48,6 +48,7 @@ public class NoteSpawner : MonoBehaviour
 
     public event System.Action<CuttableNote> OnNoteSpawned;
     public event System.Action<CuttableNote> OnNoteMissed;
+    public event System.Action OnChartReset;
 
     // 同時押しノーツの間の白い連結線(プロセカの同時線)。標準機能として常時有効。
     // シーンに旧 NoteSpawner がシリアライズ済みでもコード既定値(true)が使われるよう NonSerialized。
@@ -57,6 +58,7 @@ public class NoteSpawner : MonoBehaviour
 
     public void SetChart(ChartData data)
     {
+        OnChartReset?.Invoke();
         if (cutFeedback != null) cutFeedback.ResetState();
         chart = data;
         nextIndex = 0;
