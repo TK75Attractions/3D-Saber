@@ -39,7 +39,7 @@ public sealed class SongChartPreviewView : IDisposable
     private SongPreviewWindow window;
     private float coordScale,approach;
     private int next;
-    private double lastTime,lastHit=-100;
+    private double lastTime,lastHit=-100,displayOffsetSeconds;
     private bool disposed;
     public bool IsVisible => panel!=null && panel.gameObject.activeSelf;
     public RenderTexture Texture => texture;
@@ -86,8 +86,10 @@ public sealed class SongChartPreviewView : IDisposable
     {
         ClearNotes(); window=excerpt; timeline=performance; coordScale=chart.coordScale;
         approach=Mathf.Clamp(GameSession.NoteApproachTime,.5f,5f);
-        foreach(var note in chart.notes.Where(n=>SongPreviewWindow.Intersects(chart,n,window,approach)))
-            entries.Add(new Entry{data=note,hit=SongPreviewWindow.NoteTime(chart,note),linger=SongPreviewWindow.Linger(note)});
+        displayOffsetSeconds=GameSession.JudgmentOffsetMs/1000.0;
+        var chartWindow=new SongPreviewWindow(window.Start-displayOffsetSeconds,window.Duration);
+        foreach(var note in chart.notes.Where(n=>SongPreviewWindow.Intersects(chart,n,chartWindow,approach)))
+            entries.Add(new Entry{data=note,hit=SongPreviewWindow.NoteTime(chart,note)+displayOffsetSeconds,linger=SongPreviewWindow.Linger(note)});
         entries.Sort((a,b)=>a.hit.CompareTo(b.hit)); next=0; lastTime=window.Start; lastHit=-100;
         heading.text="AUTO PREVIEW  /  "+(string.Equals(difficulty,"Hard",StringComparison.OrdinalIgnoreCase)?"MASTER":(difficulty??"NORMAL").ToUpperInvariant());
         root.SetActive(true); Tick(window.Start); camera.enabled=false;

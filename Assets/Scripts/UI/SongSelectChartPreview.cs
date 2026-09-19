@@ -15,13 +15,34 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     private SongChartPreviewView view;
     private float baseVolume;
     private double scheduledDsp;
+    private int startSample;
+    private bool clockSynchronized;
+    private double stoppedSongTime;
     private int generation;
     public string SongId { get; private set; }
     public string Difficulty { get; private set; }
     public bool IsPlaying { get; private set; }
     public bool IsLoading => loading!=null;
     public SongPreviewWindow Window { get; private set; }
-    public double SongTime => Window.Start+Math.Max(0,AudioSettings.dspTime-scheduledDsp);
+    public double SongTime
+    {
+        get
+        {
+            if(!IsPlaying || source==null || ownedClip==null) return stoppedSongTime;
+            double now=AudioSettings.dspTime;
+            if(now<scheduledDsp) return Window.Start;
+            if(!clockSynchronized)
+            {
+                int sample=source.timeSamples;
+                // シーク要求時の位置のままなら、まだ実音声が進んでいない。
+                if(!source.isPlaying || sample<=startSample) return Window.Start;
+                scheduledDsp=now-(sample/(double)ownedClip.frequency-Window.Start);
+                source.SetScheduledEndTime(scheduledDsp+Window.Duration);
+                clockSynchronized=true;
+            }
+            return Window.Start+Math.Max(0,now-scheduledDsp);
+        }
+    }
     public double SelectedAt { get; private set; }
     public double StartedAt { get; private set; }
     public SongChartPreviewView View => view;
@@ -63,7 +84,9 @@ public sealed class SongSelectChartPreview : MonoBehaviour
             if(token!=generation || !Window.IsValid) yield break;
             view.Prepare(chart,Window,timeline,Difficulty);
             source.clip=ownedClip; source.loop=false; source.pitch=1;
-            source.timeSamples=Mathf.Clamp((int)Math.Round(Window.Start*ownedClip.frequency),0,ownedClip.samples-1);
+            startSample=Mathf.Clamp((int)Math.Round(Window.Start*ownedClip.frequency),0,ownedClip.samples-1);
+            source.timeSamples=startSample;
+            clockSynchronized=false; stoppedSongTime=Window.Start;
             source.volume=0;
             scheduledDsp=AudioSettings.dspTime+.05;
             source.PlayScheduled(scheduledDsp);
@@ -77,12 +100,14 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     public void Tick()
     {
         if(!IsPlaying || source==null) return;
-        double elapsed=AudioSettings.dspTime-scheduledDsp;
-        if(elapsed<0) return;
-        if(elapsed>=Window.Duration) { Finish(); return; }
+        if(AudioSettings.dspTime<scheduledDsp) return;
+        double time=SongTime;
+        if(!clockSynchronized) return;
+        double elapsed=time-Window.Start;
+        if(elapsed>=Window.Duration) { stoppedSongTime=Window.Start+Window.Duration; Finish(); return; }
         float gain=Mathf.Min(Mathf.Clamp01((float)(elapsed/.08)),Mathf.Clamp01((float)((Window.Duration-elapsed)/.25)));
         source.volume=baseVolume*gain;
-        view?.Show(); view?.Tick(Window.Start+elapsed);
+        view?.Show(); view?.Tick(time);
     }
 
     public void Cancel()
@@ -94,7 +119,8 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     }
     private void Finish()
     {
-        IsPlaying=false;
+        if(IsPlaying) stoppedSongTime=SongTime;
+        IsPlaying=false; clockSynchronized=false;
         if(source!=null) { source.Stop(); source.clip=null; source.volume=baseVolume; }
         if(ownedClip!=null) { Destroy(ownedClip); ownedClip=null; }
         view?.Hide();
