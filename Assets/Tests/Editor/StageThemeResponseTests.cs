@@ -17,7 +17,8 @@ public class StageThemeResponseTests
     {
         for (int i = 0; i < StageThemeCatalog.Count; i++)
             if (i != (int)StageTheme.MoonlitGarden && i != (int)StageTheme.AmberFoundry &&
-                i != (int)StageTheme.AzurePrism && i != (int)StageTheme.CrystalGrotto)
+                i != (int)StageTheme.AzurePrism && i != (int)StageTheme.CrystalGrotto &&
+                i != (int)StageTheme.ObsidianRelay)
                 Assert.IsNull(Create((StageTheme)i));
         Assert.IsNull(StageThemeResponse.Create(root.transform, StageTheme.MoonlitGarden, float.NaN));
         Assert.AreEqual(0, root.transform.childCount);
@@ -31,6 +32,8 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.AzurePrism, 2)] [TestCase(StageTheme.AzurePrism, 3)]
     [TestCase(StageTheme.CrystalGrotto, 0)] [TestCase(StageTheme.CrystalGrotto, 1)]
     [TestCase(StageTheme.CrystalGrotto, 2)] [TestCase(StageTheme.CrystalGrotto, 3)]
+    [TestCase(StageTheme.ObsidianRelay, 0)] [TestCase(StageTheme.ObsidianRelay, 1)]
+    [TestCase(StageTheme.ObsidianRelay, 2)] [TestCase(StageTheme.ObsidianRelay, 3)]
     public void EachLaneOwnsOnlyItsResponseAndStaysOutsideTheCorridor(StageTheme theme, int lane)
     {
         var response = Create(theme);
@@ -55,6 +58,7 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.AmberFoundry, StageThemeResponse.FoundryLifetime)]
     [TestCase(StageTheme.AzurePrism, StageThemeResponse.PrismLifetime)]
     [TestCase(StageTheme.CrystalGrotto, StageThemeResponse.CrystalLifetime)]
+    [TestCase(StageTheme.ObsidianRelay, StageThemeResponse.LatchLifetime)]
     public void SongClockFreezesAndThenExpiresAtItsOwnLifetime(StageTheme theme, float lifetime)
     {
         var response = Create(theme); response.Tick(10); response.OnPerfect(0); response.Tick(10.2);
@@ -73,6 +77,7 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.MoonlitGarden)] [TestCase(StageTheme.AmberFoundry)]
     [TestCase(StageTheme.AzurePrism)]
     [TestCase(StageTheme.CrystalGrotto)]
+    [TestCase(StageTheme.ObsidianRelay)]
     public void RewindClearAndDisableDoNotCarryOldSuccessIntoAnotherPlay(StageTheme theme)
     {
         var response = Create(theme); response.Tick(10); response.OnPerfect(1); response.OnPerfect(3);
@@ -161,6 +166,7 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.MoonlitGarden)] [TestCase(StageTheme.AmberFoundry)]
     [TestCase(StageTheme.AzurePrism)]
     [TestCase(StageTheme.CrystalGrotto)]
+    [TestCase(StageTheme.ObsidianRelay)]
     public void DisablingThePreviewParentClearsResponsesAndInactiveDestructionReleasesResources(StageTheme theme)
     {
         var response = Create(theme); response.Tick(1); response.OnPerfect(0); response.Tick(1.25);
@@ -180,6 +186,7 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.MoonlitGarden)] [TestCase(StageTheme.AmberFoundry)]
     [TestCase(StageTheme.AzurePrism)]
     [TestCase(StageTheme.CrystalGrotto)]
+    [TestCase(StageTheme.ObsidianRelay)]
     public void DenseSuccessesReuseFourSlotsAndExactlyTwoOwnedMeshesAndMaterials(StageTheme theme)
     {
         var response = Create(theme); response.Tick(1);

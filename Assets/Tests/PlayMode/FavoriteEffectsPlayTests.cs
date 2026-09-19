@@ -76,7 +76,7 @@ public class FavoriteEffectsPlayTests
     public IEnumerator ThemeResponsesUseFinalPerfect_RespectPlacementAndClearOnReset()
     {
         foreach (var theme in new[] { StageTheme.AmberFoundry, StageTheme.MoonlitGarden, StageTheme.AzurePrism,
-            StageTheme.CrystalGrotto })
+            StageTheme.CrystalGrotto, StageTheme.ObsidianRelay })
         {
             yield return LoadGame(theme);
             var response = floor.GetComponentInChildren<StageThemeResponse>();
@@ -92,9 +92,23 @@ public class FavoriteEffectsPlayTests
                 Assert.AreEqual(JudgmentTier.Perfect, manager.scoreManager.LastTier);
                 Assert.AreEqual(1 << lane, response.ActiveLaneMask);
                 Assert.AreEqual(1 << lane, effects.ActiveFloorLaneMask);
+                if (theme == StageTheme.ObsidianRelay)
+                {
+                    Assert.IsTrue(response.ReplacesSideResponse);
+                    var floorLight = effects.GetComponent<MeshFilter>().sharedMesh;
+                    Assert.Greater(floorLight.vertexCount, 0, "ラッチ動作中も共通床を描く");
+                    foreach (var point in floorLight.vertices)
+                        Assert.Less(point.y, floor.floorY + .7f, "同じ成功へ旧側面波を重ねない");
+                }
                 SetChart(new ChartData());
                 Assert.AreEqual(0, response.ActiveResponseCount);
             }
+
+            SetChart(Single(1)); yield return null;
+            manager.noteSpawner.Tick(1); Draw(1);
+            notes[0].MarkMiss(); Draw(1.25);
+            Assert.AreEqual(0, response.ActiveResponseCount, "Missで素材が応答しました。");
+            Assert.AreEqual(0, effects.ActiveFloorLaneMask, "Missで成功床を出しました。");
 
             SetChart(Single(1)); yield return null;
             manager.noteSpawner.Tick(1.10); Draw(1.10);
@@ -172,6 +186,10 @@ public class FavoriteEffectsPlayTests
     [UnityTest, Timeout(240000)]
     public IEnumerator YurikagoHardPulseArray_RealTimeAudioWithScriptedPerfectInput()
     { return RealTimeAudioWithScriptedPerfectInput(StageTheme.PulseArray); }
+
+    [UnityTest, Timeout(240000)]
+    public IEnumerator YurikagoHardObsidianRelay_RealTimeAudioWithScriptedPerfectInput()
+    { return RealTimeAudioWithScriptedPerfectInput(StageTheme.ObsidianRelay); }
 
     [UnityTest, Timeout(120000)]
     public IEnumerator PulseArrayActualManagerDrivesFormationAndStopsWithTheSong()

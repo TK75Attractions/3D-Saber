@@ -159,10 +159,14 @@ public class StageReactiveEffectsTests
     {
         Spawn(N(1000, "blue", 3)); Cut(0);
         Assert.AreEqual(0, effects.ActiveWaveCount);
+        Assert.AreEqual(0, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount);
         Cut(0); Assert.AreEqual(0, effects.ReleaseCount); Assert.AreEqual(0, effects.ActiveWaveCount);
+        Assert.AreEqual(0, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount);
         Cut(0); Assert.AreEqual(1, effects.ReleaseCount); Assert.AreEqual(JudgmentTier.Perfect, score.LastTier);
+        Assert.AreEqual(1, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount);
         notes.Clear(); Spawn(N(1000, "red", 3)); Cut(0); notes[0].MarkMiss();
         Assert.AreEqual(0, effects.ReleaseCount); Assert.AreEqual(0, effects.ActiveWaveCount);
+        Assert.AreEqual(0, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount);
     }
 
     [TestCase(0, JudgmentTier.Perfect, 1)]
@@ -180,6 +184,8 @@ public class StageReactiveEffectsTests
         Assert.AreEqual(tier, score.LastTier);
         Assert.AreEqual(count, effects.ActiveWaveCount);
         Assert.AreEqual(count, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount);
+        Assert.AreEqual(count, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount,
+            "Obsidianのラッチも最終Perfectと同じ結果を返す");
         if (count == 0) Assert.AreEqual(0, effects.GetComponent<MeshFilter>().sharedMesh.vertexCount);
     }
 
@@ -191,6 +197,7 @@ public class StageReactiveEffectsTests
         Assert.AreEqual(JudgmentTier.Great, score.LastTier);
         Assert.AreEqual(0, effects.ActiveWaveCount); Assert.AreEqual(0, effects.ReleaseCount);
         Assert.AreEqual(0, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount);
+        Assert.AreEqual(0, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount);
     }
 
     [TestCase(0, 0)] [TestCase(1, 0)] [TestCase(2, 1)] [TestCase(3, 1)]
@@ -201,6 +208,7 @@ public class StageReactiveEffectsTests
         n.x = Mathf.Lerp(-2.5f, 2.5f, column / 7f);
         Spawn(n); Cut(0); effects.Tick(1.12);
         Assert.AreEqual(1 << lane, effects.ActiveFloorLaneMask, "担当手と配置の左右が逆でも配置に従う");
+        Assert.AreEqual(1 << lane, effects.GetComponentInChildren<StageThemeResponse>().ActiveLaneMask);
         int floorVertices = 0;
         foreach (var v in effects.GetComponent<MeshFilter>().sharedMesh.vertices)
             if (v.y <= stage.floorY + .6f && Mathf.Abs(v.x) < 5.8f)
@@ -254,6 +262,28 @@ public class StageReactiveEffectsTests
         notes[0].Cut(Vector3.zero, Vector3.up * 8, CutDirection.None, SaberHand.Right);
         Assert.AreEqual(0, effects.ActiveWaveCount);
         notes[0].MarkMiss(); Assert.AreEqual(0, effects.ActiveWaveCount);
+        Assert.AreEqual(0, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount);
+    }
+
+    [TestCase(StageTheme.ObsidianRelay, true)] [TestCase(StageTheme.VioletVault, false)]
+    public void LatchReplacesOnlyTheSupportedThemeSideWaveAndKeepsTheCommonFloor(StageTheme theme, bool replaced)
+    {
+        Object.DestroyImmediate(effects.gameObject);
+        stage.Build(theme);
+        effects = StageReactiveEffects.Create(stage, spawner, Timeline());
+        Spawn(N()); Cut(0); effects.Tick(1.12);
+        var response = effects.GetComponentInChildren<StageThemeResponse>();
+        Assert.AreEqual(replaced, response != null && response.ReplacesSideResponse);
+        Assert.AreEqual(2, effects.ActiveFloorLaneMask);
+        int floorVertices = 0, sideVertices = 0;
+        foreach (var point in effects.GetComponent<MeshFilter>().sharedMesh.vertices)
+        {
+            if (point.y < stage.floorY + .7f) floorVertices++;
+            else sideVertices++;
+        }
+        Assert.Greater(floorVertices, 0, "専用演出の有無によらず共通床の反応を維持する");
+        if (replaced) Assert.AreEqual(0, sideVertices, "ラッチへ置換した側面に旧成功波を重ねない");
+        else Assert.Greater(sideVertices, 0, "対象外背景の既存側面波を弱めない");
     }
 
     [Test]
