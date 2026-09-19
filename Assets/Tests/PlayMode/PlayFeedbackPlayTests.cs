@@ -20,7 +20,7 @@ public class PlayFeedbackPlayTests
         GameSession.SelectedSongId=song; GameSession.SelectedDifficulty=difficulty; GameSession.IsCalibrationMode=calibration;
         foreach(var go in created) if(go!=null) Object.DestroyImmediate(go); created.Clear();
     }
-    [UnityTest] public IEnumerator RealGame_LocalMissAndReject_PoolExpires_FullComboAndOutro()
+    [UnityTest] public IEnumerator RealGame_PreviousJudgmentDisplay_FullComboAndOutro()
     {
         GameSession.SelectedSongId="揺籠"; GameSession.SelectedDifficulty="normal"; GameSession.IsCalibrationMode=false;
         yield return SceneManager.LoadSceneAsync("Game");
@@ -32,38 +32,27 @@ public class PlayFeedbackPlayTests
             if(feedback!=null && manager.songPlayer.IsScheduled) break;
             yield return null;
         }
-        Assert.IsNotNull(feedback); Assert.IsTrue(Object.FindFirstObjectByType<GameHUDSkin>().UseLocalJudgments);
+        Assert.IsNotNull(feedback);
+        var hud=Object.FindFirstObjectByType<GameHUDSkin>(); Assert.IsNotNull(hud); Assert.IsTrue(hud.IsBuilt);
         manager.enabled=false;
         foreach(var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) judge.autonomous=false;
         manager.noteSpawner.SetChart(new ChartData()); manager.scoreManager.Reset();
         foreach(var source in Object.FindObjectsByType<AudioSource>(FindObjectsSortMode.None)) source.Stop();
         DisplaySettings.SetReducedEffectsForTest(true);
-        for(int i=0;i<12;i++)
+        // 従来の画面下の判定に戻り、ノーツ付近の札を作らない。
+        var tierLabel=hud.transform.Find("TierText").GetComponent<TMPro.TextMeshProUGUI>();
+        foreach(var tier in new[]{JudgmentTier.Perfect,JudgmentTier.Great,JudgmentTier.Good,JudgmentTier.Bad})
         {
-            var go=new GameObject("feedback-note"); created.Add(go); go.transform.position=new Vector3((i%4-1.5f)*1.3f,0,0);
-            var note=go.AddComponent<CuttableNote>(); note.IsJudgeable=true; feedback.Track(note);
-            if(i%2==0) note.NotifyRejected(CutRejectionReason.Direction,note.transform.position);
-            else note.MarkMiss();
+            manager.scoreManager.RegisterHit(tier);
+            Assert.AreEqual(JudgmentTierHelper.Label(tier),tierLabel.text);
         }
-        Assert.That(feedback.ActivePopupCount,Is.InRange(1,GameplayFeedbackPresenter.PopupCapacity));
-        Assert.AreEqual(GameplayFeedbackPresenter.PopupCapacity,feedback.GetComponentsInChildren<GameplayFeedbackGlyph>(true).Length,"プールは8個から増えない");
-        yield return null; Canvas.ForceUpdateCanvases();
-        var glyphs=feedback.GetComponentsInChildren<GameplayFeedbackGlyph>();
-        Assert.AreEqual(feedback.ActivePopupCount,glyphs.Length,"全表示に記号のコンポーネントが必要");
-        foreach(var glyph in glyphs)
-        {
-            var mesh=glyph.canvasRenderer.GetMesh();
-            Assert.IsNotNull(mesh,"記号メッシュが未生成");
-            Assert.GreaterOrEqual(mesh.vertexCount,4,"Missの×／矢印が実際に描画される");
-        }
-        for(int i=0;i<glyphs.Length;i++)for(int j=i+1;j<glyphs.Length;j++)
-        {
-            var a=((RectTransform)glyphs[i].transform.parent).anchoredPosition;
-            var b=((RectTransform)glyphs[j].transform.parent).anchoredPosition;
-            Assert.IsTrue(Mathf.Abs(a.x-b.x)>=236 || Mathf.Abs(a.y-b.y)>=72,"密集したラベルが画面端で重ならない");
-        }
-        for(int i=0;i<9;i++) feedback.Tick(.1f,1,10,8);
-        Assert.AreEqual(0,feedback.ActivePopupCount,"控えめ設定でも期限で消える");
+        manager.scoreManager.RegisterMiss();
+        Assert.AreEqual("MISS",tierLabel.text);
+        yield return null;
+        Assert.That(tierLabel.rectTransform.anchoredPosition.y,Is.EqualTo(-330f).Within(.01f));
+        Assert.Greater(tierLabel.color.a,0);
+        Assert.IsNull(feedback.transform.Find("Judgment0"),"ノーツ付近の説明札を生成しない");
+        manager.scoreManager.Reset();
         for(int i=0;i<50;i++) manager.scoreManager.RegisterHit(JudgmentTier.Good);
         Assert.AreEqual(50,feedback.LatestMilestone); Assert.AreEqual("FC ACTIVE",feedback.FullComboLabel);
         manager.scoreManager.RegisterHit(JudgmentTier.Bad);
@@ -71,9 +60,8 @@ public class PlayFeedbackPlayTests
         manager.scoreManager.RegisterHit(JudgmentTier.Perfect); Assert.AreEqual("FC LOST",feedback.FullComboLabel);
         feedback.BeginOutro(); feedback.Tick(.1f,10,10,8);
         Assert.AreEqual("TRACK CLEAR",feedback.EndingLabel); Assert.IsTrue(feedback.OutroStarted);
-        Assert.AreEqual(0,feedback.ActivePopupCount);
         yield return SceneManager.LoadSceneAsync("SongSelect");
-        Assert.IsNull(Object.FindFirstObjectByType<GameplayFeedbackPresenter>(),"シーン終了時にプールと購読を回収");
+        Assert.IsNull(Object.FindFirstObjectByType<GameplayFeedbackPresenter>(),"シーン終了時に演出と購読を回収");
     }
 
     [UnityTest] public IEnumerator SongSelect_LowEffectsButtonIsReadableClickableAndCuttable()

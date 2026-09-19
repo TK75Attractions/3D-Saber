@@ -83,7 +83,6 @@ public class GameHUDSkin : MonoBehaviour
     }
 
     public bool IsBuilt { get; private set; }
-    public bool UseLocalJudgments { get; set; }
 
     private ScoreManager score;
     private SongPlayer songPlayer;
@@ -531,12 +530,6 @@ public class GameHUDSkin : MonoBehaviour
 
     private void OnJudgmentEx(JudgmentTier tier, int awarded, bool wasWrongFlick)
     {
-        if (UseLocalJudgments)
-        {
-            tierText.text = timingHintText.text = flickWarningText.text = "";
-            tierFlashAge = 999f;
-            return;
-        }
         if (tierText != null)
         {
             tierText.text = JudgmentTierHelper.Label(tier);
