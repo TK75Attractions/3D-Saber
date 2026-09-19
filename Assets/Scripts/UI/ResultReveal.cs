@@ -127,6 +127,7 @@ public class ResultReveal : MonoBehaviour
     // EventSystemの入力処理後に操作を解禁し、スキップした同じEnterでBACKを押さない。
     void LateUpdate()
     {
+        if (ScreenTransition.IsBusy) return;
         elapsed += Time.unscaledDeltaTime;
         if (SkipRequested()) elapsed = 999f;
         Tick(elapsed);

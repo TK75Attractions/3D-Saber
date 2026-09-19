@@ -1,4 +1,3 @@
-using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
@@ -73,9 +72,10 @@ public class TitleSceneSkin : MonoBehaviour
 
     void Update()
     {
+        if (ScreenTransition.IsBusy) return;
         if (!transitioning && TitleConceptSelection.ReadSelectionKeys())
         {
-            SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+            ScreenTransition.Load(SceneManager.GetActiveScene().name);
             return;
         }
         if (!transitioning && Keyboard.current != null &&
@@ -199,9 +199,16 @@ public class TitleSceneSkin : MonoBehaviour
 
     void HandlePlayPressed()
     {
-        if (transitioning) return;
+        if (transitioning || ScreenTransition.IsBusy) return;
         if (startNote != null) startNote.SlashProgrammatically();
         else if (titleCtl != null) HandleSlashed();
+    }
+
+    public bool TryStartPresentation()
+    {
+        if (presentationMotion == null) return false;
+        HandlePlayPressed();
+        return true;
     }
 
     void BuildTitleSaber()
@@ -236,7 +243,10 @@ public class TitleSceneSkin : MonoBehaviour
 
     void HandleSlashed()
     {
-        if (transitioning) return;
+        if (transitioning || ScreenTransition.IsBusy || titleCtl == null) return;
+        if (!ScreenTransition.Load(titleCtl.songSelectSceneName, ScreenTransition.Style.Forward,
+            progress => { if (presentationMotion != null) presentationMotion.SetDeparture(progress); },
+            TitlePresentationMotion.DepartureDuration)) return;
         transitioning = true;
         if (startTargetGroup != null)
         {
@@ -244,20 +254,6 @@ public class TitleSceneSkin : MonoBehaviour
             startTargetGroup.blocksRaycasts = false;
         }
         PlaySlashChime();
-        StartCoroutine(TransitionAfterSlash());
-    }
-
-    IEnumerator TransitionAfterSlash()
-    {
-        float t = 0f;
-        const float total = TitlePresentationMotion.DepartureDuration;
-        while (t < total)
-        {
-            t += Time.unscaledDeltaTime;
-            if (presentationMotion != null) presentationMotion.SetDeparture(t / total);
-            yield return null;
-        }
-        if (titleCtl != null) titleCtl.OnStartButton();
     }
 
     void PlaySlashChime()

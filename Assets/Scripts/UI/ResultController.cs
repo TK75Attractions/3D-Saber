@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 public class ResultController : MonoBehaviour
@@ -28,6 +27,6 @@ public class ResultController : MonoBehaviour
 
     public void OnBackButton()
     {
-        SceneManager.LoadScene(titleSceneName);
+        ScreenTransition.Load(titleSceneName, ScreenTransition.Style.Back);
     }
 }

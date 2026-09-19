@@ -57,7 +57,7 @@ public class SaberCutJudge : MonoBehaviour
 
     public int TryCut()
     {
-        if (!isActiveAndEnabled || saber == null || !saber.HasPrevious)
+        if (ScreenTransition.IsBusy || !isActiveAndEnabled || saber == null || !saber.HasPrevious)
         {
             pending.Clear();
             return 0;

@@ -96,7 +96,7 @@ public class SongChartAvailabilityPlayTests
         controller.SetDifficulty(2);
         Assert.IsTrue(controller.startButton.interactable);
         controller.startButton.onClick.Invoke();
-        yield return null;
+        yield return ScreenTransitionPlayTests.WaitForTransition();
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.AreEqual(songId, GameSession.SelectedSongId);
         Assert.AreEqual("Hard", GameSession.SelectedDifficulty);

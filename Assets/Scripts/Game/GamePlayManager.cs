@@ -2,7 +2,6 @@ using System.Collections;
 using System.IO;
 using UnityEngine;
 using UnityEngine.Networking;
-using UnityEngine.SceneManagement;
 
 // 本編シーンの「ゲーム側 GManager」。
 // 単一の Update から受付窓の更新 → SaberCutJudge → NoteSpawner の順に駆動する。
@@ -312,6 +311,8 @@ public class GamePlayManager : MonoBehaviour
         double leadInSeconds = chart.notes.Count > 0
             ? System.Math.Max(0.0, noteSpawner.approachTime - noteSpawner.EffectiveTime(chart.notes[0]))
             : 0.0;
+        // 幕が開く前に音やノーツを走らせず、カウントダウンの最初から見せる。
+        while (ScreenTransition.IsBusy) yield return null;
         if (enableStartCountdown)
         {
             // START! の発光・効果音・楽曲の先頭を同じ DSP 時刻へ予約する。
@@ -674,8 +675,8 @@ public class GamePlayManager : MonoBehaviour
 
     public static void ExitCalibration(string returnSceneName = "SongSelect")
     {
-        GameSession.IsCalibrationMode = false;
-        UnityEngine.SceneManagement.SceneManager.LoadScene(returnSceneName);
+        if (ScreenTransition.Load(returnSceneName, ScreenTransition.Style.Back))
+            GameSession.IsCalibrationMode = false;
     }
 
     private void FinishGame()
@@ -694,7 +695,7 @@ public class GamePlayManager : MonoBehaviour
         GameSession.FinalBad = scoreManager.BadCount;
         if (!string.IsNullOrEmpty(resultSceneName))
         {
-            SceneManager.LoadScene(resultSceneName);
+            ScreenTransition.Load(resultSceneName, ScreenTransition.Style.Result);
         }
     }
 }

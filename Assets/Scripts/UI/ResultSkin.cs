@@ -580,7 +580,8 @@ public class ResultSkin : MonoBehaviour
                 var parts = UISkinKit.RestyleButton(btn, UISkinPalette.Cyan, 27f, "◀ BACK");
                 if (parts.label != null) parts.label.characterSpacing = 4f;
                 Reveal(btn.gameObject, DelayBackButton, 0.45f, FromBelow);
-                var events = EventSystem.current;
+                // 暗転中は入力を止めているため、無効化中のEventSystemにも戻る先を設定する。
+                var events = EventSystem.current ?? Object.FindFirstObjectByType<EventSystem>();
                 if (events != null)
                 {
                     // マウスで演出を飛ばした後も、Enterで唯一の操作へ戻れるようにする。

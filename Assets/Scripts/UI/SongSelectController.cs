@@ -4,7 +4,6 @@ using System.IO;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 // スクロール可能な曲リスト + 右側に難易度・ジャケット・スタートボタン。
@@ -86,6 +85,7 @@ public class SongSelectController : MonoBehaviour
     void Update()
     {
         RestoreNavigationEvents();
+        if (ScreenTransition.IsBusy) return;
         if (chartPreview != null) chartPreview.Tick();
         var kb = Keyboard.current;
         if (kb == null) return;
@@ -501,6 +501,7 @@ public class SongSelectController : MonoBehaviour
 
     public void StartGame()
     {
+        if (ScreenTransition.IsBusy) return;
         if (selectedIndex < 0 || selectedIndex >= songIds.Count) return;
         if (SelectedSongLocked) return; // ロック曲(譜面未制作)は開始できない
         if (difficultyNames == null || selectedDifficulty < 0 || selectedDifficulty >= difficultyNames.Length) return;
@@ -516,13 +517,14 @@ public class SongSelectController : MonoBehaviour
             OnDifficultyChanged?.Invoke(selectedDifficulty);
             return;
         }
+        if (!ScreenTransition.Load(gameSceneName)) return;
         StopPreview();
+        GameSession.IsCalibrationMode = false;
         GameSession.SelectedSongId = songIds[selectedIndex];
         GameSession.SelectedSongTitle = DisplaySongTitle(songIds[selectedIndex]);
         GameSession.SelectedDifficulty = (selectedDifficulty < difficultyNames.Length)
             ? difficultyNames[selectedDifficulty]
             : "Normal";
         GameSession.ResetResult();
-        SceneManager.LoadScene(gameSceneName);
     }
 }

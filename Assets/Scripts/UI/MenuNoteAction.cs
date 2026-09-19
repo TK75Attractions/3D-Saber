@@ -43,6 +43,8 @@ public class MenuNoteAction : MonoBehaviour
 
     void Update()
     {
+        // 別の操作で移動が始まった場合、切断後の遅延操作を次画面へ持ち越さない。
+        if (ScreenTransition.IsBusy) invokeAt = -1;
         if (invokeAt >= 0 && Time.unscaledTime >= invokeAt)
         {
             invokeAt = -1;

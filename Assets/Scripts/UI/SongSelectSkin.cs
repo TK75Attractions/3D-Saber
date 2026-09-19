@@ -71,8 +71,8 @@ public class SongSelectSkin : MonoBehaviour
     public static string FormatDifficultyCardLevel(int level) => level > 0 ? $"LV {Mathf.Clamp(level,0,99):00}" : "LV --";
     public static void EnterCalibration()
     {
-        GameSession.IsCalibrationMode = true;
-        UnityEngine.SceneManagement.SceneManager.LoadScene("Game");
+        if (ScreenTransition.Load("Game", ScreenTransition.Style.Calibration))
+            GameSession.IsCalibrationMode = true;
     }
     public static void ApplyNeon(Button btn, Color accent, float fillAlpha) => UISkinKit.RestyleButton(btn, accent);
 
@@ -102,7 +102,7 @@ public class SongSelectSkin : MonoBehaviour
         SongSelectVisuals.Label(canvas.transform,"HeaderTitle","SONG SELECT",52,new Vector2(-555,430),new Vector2(658,70),SongSelectVisuals.Text,TextAlignmentOptions.MidlineLeft,true);
         SongSelectVisuals.Label(canvas.transform,"HeaderJp","楽曲選択",22,new Vector2(-383,422),new Vector2(166,35),SongSelectVisuals.Muted);
         var back = Action(canvas.transform,"BackToTitle","タイトルへ",new Vector2(749,450),new Vector2(246,72),false);
-        back.onClick.AddListener(() => UnityEngine.SceneManagement.SceneManager.LoadScene("Title"));
+        back.onClick.AddListener(() => ScreenTransition.Load("Title", ScreenTransition.Style.Back));
         SongSelectVisuals.Panel(canvas.transform,"HeaderRule",new Vector2(0,385),new Vector2(1768,1),SongSelectVisuals.Edge,Color.clear,0);
     }
 

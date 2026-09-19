@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.SceneManagement;
 
 public class TitleMenuController : MonoBehaviour
 {
@@ -7,11 +6,14 @@ public class TitleMenuController : MonoBehaviour
 
     public void OnStartButton()
     {
-        SceneManager.LoadScene(songSelectSceneName);
+        if (ScreenTransition.IsBusy) return;
+        var skin = Object.FindFirstObjectByType<TitleSceneSkin>();
+        if (skin != null && skin.TryStartPresentation()) return;
+        ScreenTransition.Load(songSelectSceneName);
     }
 
     public void OnQuitButton()
     {
-        Application.Quit();
+        ScreenTransition.Quit();
     }
 }

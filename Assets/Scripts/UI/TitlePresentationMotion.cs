@@ -70,7 +70,7 @@ public sealed class TitlePresentationMotion : MonoBehaviour
 
     void Update()
     {
-        if (!ManualTime) SetPresentationTime(Age + Time.unscaledDeltaTime, Departure);
+        if (!ManualTime && !ScreenTransition.IsArriving) SetPresentationTime(Age + Time.unscaledDeltaTime, Departure);
     }
 
     public void SetDeparture(float progress)

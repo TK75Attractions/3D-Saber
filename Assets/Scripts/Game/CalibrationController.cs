@@ -233,10 +233,11 @@ public sealed class CalibrationController : MonoBehaviour
     }
     public void SaveAndExit()
     {
+        if (ScreenTransition.IsBusy) return;
         if (IsRunning && !IsLive) return;
         Draft.Commit(); StopPlayback(); GamePlayManager.ExitCalibration();
     }
-    public void DiscardAndExit() { StopPlayback(); GamePlayManager.ExitCalibration(); }
+    public void DiscardAndExit() { if (ScreenTransition.IsBusy) return; StopPlayback(); GamePlayManager.ExitCalibration(); }
     void OnApplicationFocus(bool focus)
     {
         if (!focus && IsRunning) InterruptRun("画面のフォーカスが外れたため中断しました。環境を固定して再開してください。");

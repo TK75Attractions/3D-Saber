@@ -129,6 +129,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
     }
     public void Tick()
     {
+        if (ScreenTransition.IsBusy) return;
         if(ctl==null)return;
         var keyboard=Keyboard.current;
         if(keyboard!=null)

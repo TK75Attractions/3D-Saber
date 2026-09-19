@@ -72,6 +72,7 @@ public class SongSelectKeyboardPlayTests
     [UnityTearDown]
     public IEnumerator TearDown()
     {
+        yield return ScreenTransitionPlayTests.WaitForTransition();
         if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
         if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
         if (gamepad != null && gamepad.added) InputSystem.RemoveDevice(gamepad);
@@ -98,6 +99,7 @@ public class SongSelectKeyboardPlayTests
         InputSystem.QueueStateEvent(keyboard, new KeyboardState());
         yield return null;
         yield return null;
+        yield return ScreenTransitionPlayTests.WaitForTransition();
     }
 
     [UnityTest]
@@ -149,6 +151,7 @@ public class SongSelectKeyboardPlayTests
     public IEnumerator PointerCanStillOpenCalibration()
     {
         yield return Click(GameObject.Find("CalibrationButton").GetComponent<Button>());
+        yield return ScreenTransitionPlayTests.WaitForTransition();
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.True(GameSession.IsCalibrationMode);
         double deadline = Time.realtimeSinceStartupAsDouble + 10;

@@ -137,6 +137,7 @@ public class SongSelectSlashNav : MonoBehaviour
 
     private void HandleNavCut(CuttableNote note, Vector3 point, Vector3 velocity)
     {
+        if (ScreenTransition.IsBusy) return;
         bool isUp = note == upNote;
         if (isUp) upRespawnTimer = respawnDelay;
         else downRespawnTimer = respawnDelay;

@@ -165,7 +165,7 @@ public class SaberUIPointer : MonoBehaviour
     void Update()
     {
         var ip = InputPoint.Instance;
-        bool active = ip != null && ip.IsRecentlyActive(StaleSeconds) && cam != null;
+        bool active = !ScreenTransition.IsBusy && ip != null && ip.IsRecentlyActive(StaleSeconds) && cam != null;
         if (!active)
         {
             SetCursorVisible(false);

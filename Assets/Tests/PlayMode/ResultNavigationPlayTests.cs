@@ -78,6 +78,7 @@ public class ResultNavigationPlayTests
     [UnityTearDown]
     public IEnumerator TearDown()
     {
+        yield return WaitForTransition();
         if (keyboard != null && keyboard.added) InputSystem.RemoveDevice(keyboard);
         if (mouse != null && mouse.added) InputSystem.RemoveDevice(mouse);
         if (originalInputSettings != null) InputSystem.settings = originalInputSettings;
@@ -105,7 +106,8 @@ public class ResultNavigationPlayTests
         reveal.Tick(999);
         Assert.True(back.IsInteractable());
         ExecuteEvents.Execute(back.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
-        yield return null;
+        Assert.True(ScreenTransition.IsBusy);
+        yield return WaitForTransition();
         Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
         Assert.AreEqual(1, HighScoreStore.Load(songId, "Normal").entries.Count, "戻る操作で二重に記録しない");
     }
@@ -144,6 +146,7 @@ public class ResultNavigationPlayTests
             }
         }
         Assert.True(hovered, "画面下部まで届き、BACK上で滞留を始めること");
+        yield return WaitForTransition();
         Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
     }
 
@@ -163,6 +166,7 @@ public class ResultNavigationPlayTests
         InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
         yield return null;
         yield return null;
+        yield return WaitForTransition();
         Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
     }
 
@@ -183,7 +187,15 @@ public class ResultNavigationPlayTests
         InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Enter));
         yield return null;
         yield return null;
+        yield return WaitForTransition();
         Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
+    }
+
+    static IEnumerator WaitForTransition()
+    {
+        double deadline = Time.realtimeSinceStartupAsDouble + 10;
+        while (ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        Assert.False(ScreenTransition.IsBusy);
     }
 
     static int FreePort()

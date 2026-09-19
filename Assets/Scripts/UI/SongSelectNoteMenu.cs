@@ -7,7 +7,7 @@ public class SongSelectNoteMenu : MonoBehaviour
     public const float MinimumCutSpeed = 3f;
     public const float CooldownSeconds = .7f;
     public static SongSelectNoteMenu Instance { get; private set; }
-    public bool IsReady => Time.unscaledTime >= readyAt;
+    public bool IsReady => !ScreenTransition.IsBusy && Time.unscaledTime >= readyAt;
     float readyAt;
     AudioSource audioSource;
     AudioClip cutSound;
