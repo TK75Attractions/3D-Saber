@@ -76,7 +76,7 @@ public class FavoriteEffectsPlayTests
     public IEnumerator ThemeResponsesUseFinalPerfect_RespectPlacementAndClearOnReset()
     {
         foreach (var theme in new[] { StageTheme.AmberFoundry, StageTheme.MoonlitGarden, StageTheme.AzurePrism,
-            StageTheme.CrystalGrotto, StageTheme.ObsidianRelay })
+            StageTheme.CrystalGrotto, StageTheme.ObsidianRelay, StageTheme.AbyssalRuins })
         {
             yield return LoadGame(theme);
             var response = floor.GetComponentInChildren<StageThemeResponse>();
@@ -86,22 +86,32 @@ public class FavoriteEffectsPlayTests
                 SetChart(Single(lane)); yield return null;
                 manager.noteSpawner.Tick(1);
                 Draw(1); SetClock(1);
+                var responseBody = response.transform.Find("Surface").GetComponent<MeshFilter>().sharedMesh;
+                Vector3[] bodyBefore = responseBody.vertices;
                 // 青を右側へ置いても、担当ハンドではなく実位置の床列へ出る。
                 Cut(notes[0], 1, Vector3.right * 6, CutDirection.None);
                 Draw(1.25);
                 Assert.AreEqual(JudgmentTier.Perfect, manager.scoreManager.LastTier);
                 Assert.AreEqual(1 << lane, response.ActiveLaneMask);
                 Assert.AreEqual(1 << lane, effects.ActiveFloorLaneMask);
-                if (theme == StageTheme.ObsidianRelay)
+                if (theme == StageTheme.ObsidianRelay || theme == StageTheme.AbyssalRuins)
                 {
                     Assert.IsTrue(response.ReplacesSideResponse);
                     var floorLight = effects.GetComponent<MeshFilter>().sharedMesh;
-                    Assert.Greater(floorLight.vertexCount, 0, "ラッチ動作中も共通床を描く");
+                    Assert.Greater(floorLight.vertexCount, 0, "素材動作中も共通床を描く");
                     foreach (var point in floorLight.vertices)
                         Assert.Less(point.y, floor.floorY + .7f, "同じ成功へ旧側面波を重ねない");
                 }
+                if (theme == StageTheme.AbyssalRuins)
+                {
+                    CollectionAssert.AreNotEqual(bodyBefore, responseBody.vertices, "実Perfectで珊瑚の形が開く");
+                    Assert.AreEqual(0, response.transform.Find("Details").GetComponent<MeshFilter>().sharedMesh.vertexCount,
+                        "珊瑚の成功へ祝福光を足さない");
+                }
                 SetChart(new ChartData());
                 Assert.AreEqual(0, response.ActiveResponseCount);
+                if (theme == StageTheme.AbyssalRuins) CollectionAssert.AreEqual(bodyBefore, responseBody.vertices,
+                    "譜面再ロードで開いた珊瑚を静止形へ戻す");
             }
 
             SetChart(Single(1)); yield return null;
@@ -190,6 +200,10 @@ public class FavoriteEffectsPlayTests
     [UnityTest, Timeout(240000)]
     public IEnumerator YurikagoHardObsidianRelay_RealTimeAudioWithScriptedPerfectInput()
     { return RealTimeAudioWithScriptedPerfectInput(StageTheme.ObsidianRelay); }
+
+    [UnityTest, Timeout(240000)]
+    public IEnumerator YurikagoHardAbyssalRuins_RealTimeAudioWithScriptedPerfectInput()
+    { return RealTimeAudioWithScriptedPerfectInput(StageTheme.AbyssalRuins); }
 
     [UnityTest, Timeout(120000)]
     public IEnumerator PulseArrayActualManagerDrivesFormationAndStopsWithTheSong()

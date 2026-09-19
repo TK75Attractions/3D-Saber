@@ -266,7 +266,8 @@ public class StageReactiveEffectsTests
     }
 
     [TestCase(StageTheme.ObsidianRelay, true)] [TestCase(StageTheme.VioletVault, false)]
-    public void LatchReplacesOnlyTheSupportedThemeSideWaveAndKeepsTheCommonFloor(StageTheme theme, bool replaced)
+    [TestCase(StageTheme.AbyssalRuins, true)]
+    public void ThemeResponseReplacesOnlyTheSupportedThemeSideWaveAndKeepsTheCommonFloor(StageTheme theme, bool replaced)
     {
         Object.DestroyImmediate(effects.gameObject);
         stage.Build(theme);
@@ -282,7 +283,7 @@ public class StageReactiveEffectsTests
             else sideVertices++;
         }
         Assert.Greater(floorVertices, 0, "専用演出の有無によらず共通床の反応を維持する");
-        if (replaced) Assert.AreEqual(0, sideVertices, "ラッチへ置換した側面に旧成功波を重ねない");
+        if (replaced) Assert.AreEqual(0, sideVertices, "素材反応へ置換した側面に旧成功波を重ねない");
         else Assert.Greater(sideVertices, 0, "対象外背景の既存側面波を弱めない");
     }
 

@@ -16,6 +16,7 @@ public sealed partial class StageThemeResponse : MonoBehaviour
     public const float PrismLifetime = .71f;
     public const float CrystalLifetime = .4f;
     public const float LatchLifetime = .70f;
+    public const float CoralLifetime = 1.30f;
     readonly bool[] active = new bool[LaneCount];
     readonly float[] ages = new float[LaneCount];
     readonly List<Vector3> surfaceVertices = new List<Vector3>(VertexBudget);
@@ -41,7 +42,7 @@ public sealed partial class StageThemeResponse : MonoBehaviour
         if (parent == null || !Finite(floorY) ||
             (theme != StageTheme.AmberFoundry && theme != StageTheme.MoonlitGarden &&
                 theme != StageTheme.AzurePrism && theme != StageTheme.CrystalGrotto &&
-                theme != StageTheme.ObsidianRelay)) return null;
+                theme != StageTheme.ObsidianRelay && theme != StageTheme.AbyssalRuins)) return null;
         var surface = Resources.Load<Shader>("Stage/ScenicSurface");
         var accent = Resources.Load<Shader>("Effects/GameplayCutAccent");
         // 材質がない場合は側面の既存反応を置き換えない。
@@ -57,20 +58,22 @@ public sealed partial class StageThemeResponse : MonoBehaviour
     void Build(Shader surface, Shader accent)
     {
         surfaceMaterial = new Material(surface) { name = "ThemeResponse/Surface", hideFlags = HideFlags.DontSave };
-        surfaceMaterial.SetColor("_BaseColor", theme == StageTheme.ObsidianRelay
+        surfaceMaterial.SetColor("_BaseColor", theme == StageTheme.AbyssalRuins
+            ? new Color(.26f, .18f, .20f) : theme == StageTheme.ObsidianRelay
             ? new Color(.14f, .18f, .21f) : theme == StageTheme.MoonlitGarden
             ? new Color(.28f, .37f, .17f) : theme == StageTheme.AzurePrism
             ? new Color(.16f, .25f, .30f) : theme == StageTheme.CrystalGrotto
             ? new Color(.24f, .19f, .34f) : new Color(.27f, .245f, .19f));
         surfaceMaterial.SetColor("_HazeColor", new Color(.035f, .065f, .08f));
         surfaceMaterial.SetColor("_AccentColor", new Color(.28f, .31f, .18f));
-        surfaceMaterial.SetFloat("_Emission", .025f);
+        surfaceMaterial.SetFloat("_Emission", theme == StageTheme.AbyssalRuins ? 0 : .025f);
         surfaceMaterial.SetFloat("_Mode", 0);
         surfaceMaterial.SetFloat("_Sway", 0);
         accentMaterial = new Material(accent) { name = "ThemeResponse/Details", hideFlags = HideFlags.DontSave };
         surfaceMesh = new Mesh { name = "ThemeResponse/SurfaceMesh", hideFlags = HideFlags.DontSave };
         accentMesh = new Mesh { name = "ThemeResponse/AccentMesh", hideFlags = HideFlags.DontSave };
-        if (theme == StageTheme.MoonlitGarden || theme == StageTheme.AzurePrism || theme == StageTheme.ObsidianRelay) surfaceMesh.MarkDynamic();
+        if (theme == StageTheme.MoonlitGarden || theme == StageTheme.AzurePrism ||
+            theme == StageTheme.ObsidianRelay || theme == StageTheme.AbyssalRuins) surfaceMesh.MarkDynamic();
         accentMesh.MarkDynamic();
         surfaceRenderer = Emit("Surface", surfaceMesh, surfaceMaterial);
         accentRenderer = Emit("Details", accentMesh, accentMaterial);
@@ -107,6 +110,7 @@ public sealed partial class StageThemeResponse : MonoBehaviour
         // 絞りも一周期を完了させる。連打のたびに閉じたまま張り付かせない。
         // 結晶の帯も一度だけ面を渡り、稜線で巻き戻ったり予約再生したりしない。
         // ラッチも着座から帰還までを完走させ、連打で接触直前へ巻き戻さない。
+        // 珊瑚は一度の伸展と収縮を保ち、連打で開いたまま張り付かせない。
         if (theme != StageTheme.AmberFoundry && active[lane]) return;
         active[lane] = true; ages[lane] = 0; dirty = true;
         CountResponses();
@@ -126,7 +130,8 @@ public sealed partial class StageThemeResponse : MonoBehaviour
         float lifetime = theme == StageTheme.MoonlitGarden ? GardenLifetime
             : theme == StageTheme.AzurePrism ? PrismLifetime
             : theme == StageTheme.CrystalGrotto ? CrystalLifetime
-            : theme == StageTheme.ObsidianRelay ? LatchLifetime : FoundryLifetime;
+            : theme == StageTheme.ObsidianRelay ? LatchLifetime
+            : theme == StageTheme.AbyssalRuins ? CoralLifetime : FoundryLifetime;
         for (int lane = 0; lane < LaneCount; lane++)
         {
             if (!active[lane] || delta <= 0) continue;
@@ -163,6 +168,9 @@ public sealed partial class StageThemeResponse : MonoBehaviour
     {
         int side = lane < 2 ? -1 : 1;
         bool outer = lane == 0 || lane == 3;
+        if (theme == StageTheme.AbyssalRuins)
+            // 既存側方岩の三角面より根元を下げ、短い枝を直接接続する。
+            return new Vector3(side * 7.55f, floor - .34f, outer ? 7.4f : 18.4f);
         if (theme == StageTheme.ObsidianRelay)
             // 固定の側方デッキへ支持し、浮沈する中央床とは接続しない。
             return new Vector3(side * 6.65f, floor + .85f, outer ? 4.4f : 9.4f);
@@ -223,6 +231,12 @@ public sealed partial class StageThemeResponse : MonoBehaviour
         {
             surfaceVertices.Clear(); normals.Clear(); surfaceIndices.Clear();
             for (int lane = 0; lane < LaneCount; lane++) DrawLatch(lane, active[lane] ? ages[lane] : -1);
+            UploadSurface();
+        }
+        else if (theme == StageTheme.AbyssalRuins)
+        {
+            surfaceVertices.Clear(); normals.Clear(); surfaceIndices.Clear();
+            for (int lane = 0; lane < LaneCount; lane++) DrawCoral(lane, active[lane] ? ages[lane] : -1);
             UploadSurface();
         }
         else for (int lane = 0; lane < LaneCount; lane++) DrawGauge(lane, active[lane] ? ages[lane] : -1);

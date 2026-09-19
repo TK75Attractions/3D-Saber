@@ -18,7 +18,7 @@ public class StageThemeResponseTests
         for (int i = 0; i < StageThemeCatalog.Count; i++)
             if (i != (int)StageTheme.MoonlitGarden && i != (int)StageTheme.AmberFoundry &&
                 i != (int)StageTheme.AzurePrism && i != (int)StageTheme.CrystalGrotto &&
-                i != (int)StageTheme.ObsidianRelay)
+                i != (int)StageTheme.ObsidianRelay && i != (int)StageTheme.AbyssalRuins)
                 Assert.IsNull(Create((StageTheme)i));
         Assert.IsNull(StageThemeResponse.Create(root.transform, StageTheme.MoonlitGarden, float.NaN));
         Assert.AreEqual(0, root.transform.childCount);
@@ -34,6 +34,8 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.CrystalGrotto, 2)] [TestCase(StageTheme.CrystalGrotto, 3)]
     [TestCase(StageTheme.ObsidianRelay, 0)] [TestCase(StageTheme.ObsidianRelay, 1)]
     [TestCase(StageTheme.ObsidianRelay, 2)] [TestCase(StageTheme.ObsidianRelay, 3)]
+    [TestCase(StageTheme.AbyssalRuins, 0)] [TestCase(StageTheme.AbyssalRuins, 1)]
+    [TestCase(StageTheme.AbyssalRuins, 2)] [TestCase(StageTheme.AbyssalRuins, 3)]
     public void EachLaneOwnsOnlyItsResponseAndStaysOutsideTheCorridor(StageTheme theme, int lane)
     {
         var response = Create(theme);
@@ -59,13 +61,17 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.AzurePrism, StageThemeResponse.PrismLifetime)]
     [TestCase(StageTheme.CrystalGrotto, StageThemeResponse.CrystalLifetime)]
     [TestCase(StageTheme.ObsidianRelay, StageThemeResponse.LatchLifetime)]
+    [TestCase(StageTheme.AbyssalRuins, StageThemeResponse.CoralLifetime)]
     public void SongClockFreezesAndThenExpiresAtItsOwnLifetime(StageTheme theme, float lifetime)
     {
         var response = Create(theme); response.Tick(10); response.OnPerfect(0); response.Tick(10.2);
         var details = response.transform.Find("Details").GetComponent<MeshFilter>().sharedMesh;
         Vector3[] before = details.vertices;
+        var body = response.transform.Find("Surface").GetComponent<MeshFilter>().sharedMesh;
+        Vector3[] beforeBody = body.vertices;
         response.Tick(10.2); response.Tick(double.NaN); response.Tick(double.PositiveInfinity);
         CollectionAssert.AreEqual(before, details.vertices);
+        CollectionAssert.AreEqual(beforeBody, body.vertices, "光を持たない背景も曲時計が止まれば静止する");
         Assert.AreEqual(10.2, response.LastTickSeconds);
         response.Tick(10 + lifetime - .001); Assert.AreEqual(1, response.ActiveResponseCount);
         response.Tick(10 + lifetime + .001); Assert.AreEqual(0, response.ActiveResponseCount);
@@ -78,6 +84,7 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.AzurePrism)]
     [TestCase(StageTheme.CrystalGrotto)]
     [TestCase(StageTheme.ObsidianRelay)]
+    [TestCase(StageTheme.AbyssalRuins)]
     public void RewindClearAndDisableDoNotCarryOldSuccessIntoAnotherPlay(StageTheme theme)
     {
         var response = Create(theme); response.Tick(10); response.OnPerfect(1); response.OnPerfect(3);
@@ -167,6 +174,7 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.AzurePrism)]
     [TestCase(StageTheme.CrystalGrotto)]
     [TestCase(StageTheme.ObsidianRelay)]
+    [TestCase(StageTheme.AbyssalRuins)]
     public void DisablingThePreviewParentClearsResponsesAndInactiveDestructionReleasesResources(StageTheme theme)
     {
         var response = Create(theme); response.Tick(1); response.OnPerfect(0); response.Tick(1.25);
@@ -187,6 +195,7 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.AzurePrism)]
     [TestCase(StageTheme.CrystalGrotto)]
     [TestCase(StageTheme.ObsidianRelay)]
+    [TestCase(StageTheme.AbyssalRuins)]
     public void DenseSuccessesReuseFourSlotsAndExactlyTwoOwnedMeshesAndMaterials(StageTheme theme)
     {
         var response = Create(theme); response.Tick(1);
