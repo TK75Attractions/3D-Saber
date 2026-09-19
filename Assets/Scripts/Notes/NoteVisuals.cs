@@ -44,6 +44,7 @@ public class NoteVisuals : MonoBehaviour
     private float age;
     private float emissionBoost = 1f;
     private float lastAppliedStrength = -1f;
+    private bool bodyDimmed;
 
     bool initialized;
     Material coreMaterial, dividerMaterial;
@@ -158,7 +159,7 @@ public class NoteVisuals : MonoBehaviour
         if (Mathf.Approximately(strength, lastAppliedStrength)) return;
         lastAppliedStrength = strength;
         // ボディ
-        ApplyEmissionStrength(runtimeBodyMat, strength);
+        if (!bodyDimmed) ApplyEmissionStrength(runtimeBodyMat, strength);
         // サブマテリアル群（コア・レール・ハロー）。色強度に応じた相対倍率は生成時に焼き込んである。
         foreach (var m in ownedSubMaterials)
         {
@@ -172,8 +173,21 @@ public class NoteVisuals : MonoBehaviour
         emissionBoost = Mathf.Max(0f, boost);
     }
 
+    public void DimAfterMiss()
+    {
+        if (runtimeBodyMat == null || bodyDimmed) return;
+        // Renderer.material で複製すると、再利用時に復元する材質と表示中の材質が分離する。
+        // ノーツ専用の所有材質を直接暗くし、次の出現まで発光更新で上書きしない。
+        bodyDimmed = true;
+        Color color = ReadBaseColor(runtimeBodyMat);
+        color = new Color(color.r * 0.4f, color.g * 0.4f, color.b * 0.4f, color.a);
+        SetBaseColor(runtimeBodyMat, color);
+        ApplyEmissionStrength(runtimeBodyMat, 0.2f);
+    }
+
     public void ResetForReuse()
     {
+        bodyDimmed = false;
         age=0; emissionBoost=1; lastAppliedStrength=-1;
         if(runtimeBodyMat != null) {
             var color=baseColor; color.a=DisplaySettings.ProjectorMode?1f:.85f; SetBaseColor(runtimeBodyMat,color);

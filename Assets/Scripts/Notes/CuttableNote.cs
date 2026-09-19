@@ -221,15 +221,23 @@ public class CuttableNote : MonoBehaviour
 
     private void DimVisual()
     {
+        var visuals = GetComponent<NoteVisuals>();
+        if (visuals != null)
+        {
+            visuals.DimAfterMiss();
+            return;
+        }
         var mr = GetComponent<MeshRenderer>();
-        if (mr == null || mr.material == null) return;
+        if (mr == null) return;
+        var material = mr.material;
+        if (material == null) return;
         Color c;
-        if (mr.material.HasProperty("_BaseColor")) c = mr.material.GetColor("_BaseColor");
-        else c = mr.material.color;
+        if (material.HasProperty("_BaseColor")) c = material.GetColor("_BaseColor");
+        else c = material.color;
         c = new Color(c.r * 0.4f, c.g * 0.4f, c.b * 0.4f, c.a);
-        if (mr.material.HasProperty("_BaseColor")) mr.material.SetColor("_BaseColor", c);
-        else mr.material.color = c;
-        if (mr.material.HasProperty("_EmissionColor")) mr.material.SetColor("_EmissionColor", c * 0.2f);
+        if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", c);
+        else material.color = c;
+        if (material.HasProperty("_EmissionColor")) material.SetColor("_EmissionColor", c * 0.2f);
     }
 
     int cracksUsed;
