@@ -80,6 +80,36 @@ public sealed class StagePerformanceTimeline
         return result;
     }
 
+    // 登録済みの強い区間を一つだけ利用する。音量・ノーツ密度からサビを推測しない。
+    // 区間中央の最大16秒で食が入り戻る。曲時計だけから求め、停止・シークで状態を持ち越さない。
+    public float EvaluateEclipse(double songSeconds)
+    {
+        if (!Finite(songSeconds) || songSeconds <= 0 || sections == null) return 0;
+        Section selected = null;
+        float strongest = 0;
+        foreach (var section in sections)
+        {
+            if (section == null || !Finite(section.startSeconds) || !Finite(section.endSeconds) ||
+                section.startSeconds < 0 || section.endSeconds - section.startSeconds < 8 ||
+                !Finite(section.intensity) || section.intensity < .65f ||
+                !Finite(section.fadeInSeconds) || !Finite(section.fadeOutSeconds)) continue;
+            float strength = Mathf.Clamp01(section.intensity);
+            if (selected == null || strength > strongest ||
+                (strength == strongest && section.startSeconds > selected.startSeconds))
+            {
+                selected = section;
+                strongest = strength;
+            }
+        }
+        if (selected == null) return 0;
+        double length = selected.endSeconds - selected.startSeconds;
+        double duration = Math.Min(16, length);
+        double start = selected.startSeconds + (length - duration) * .5;
+        if (songSeconds <= start || songSeconds >= start + duration) return 0;
+        double wave = Math.Sin(Math.PI * (songSeconds - start) / duration);
+        return Mathf.Clamp01((float)(wave * wave));
+    }
+
     public static StagePerformanceTimeline Load(string songId)
     {
         // stage.jsonがない既存曲は通常演出を維持する。譜面の内容・オフセットは変えない。

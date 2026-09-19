@@ -56,6 +56,71 @@ public class StageReactiveEffectsTests
     }
 
     [Test]
+    public void RapidPerfectsWeaveOnlyTheirActualLaneAndEachStitchExpiresIndependently()
+    {
+        Spawn(N(1000), N(1140), N(1280));
+        Cut(0); Assert.AreEqual(0, effects.ActiveStitchCount);
+        effects.Tick(1.14); Cut(1);
+        Assert.AreEqual(1, effects.ActiveStitchCount);
+        Assert.AreEqual(1 << StageReactiveEffects.FloorLaneForX(-1), effects.ActiveWeaveLaneMask);
+        effects.Tick(1.28); Cut(2); Assert.AreEqual(2, effects.ActiveStitchCount);
+        effects.Tick(1.64); Assert.AreEqual(1, effects.ActiveStitchCount, "次の成功で古い節を延命しない");
+        effects.Tick(1.79); Assert.AreEqual(0, effects.ActiveStitchCount);
+    }
+
+    [TestCase(false)] [TestCase(true)]
+    public void WeaveCannotSkipAnUnresolvedOrMissedPredecessor(bool miss)
+    {
+        Spawn(N(1000), N(1080), N(1160));
+        Cut(0);
+        if (miss) notes[1].MarkMiss();
+        Cut(2);
+        Assert.AreEqual(0, effects.ActiveStitchCount);
+        if (!miss) { Cut(1); Assert.AreEqual(0, effects.ActiveStitchCount, "後から確定しても過去へ連結しない"); }
+    }
+
+    [Test]
+    public void GreatSimultaneousAndLongNotesBreakTheWeave()
+    {
+        Spawn(N(1000), N(1100), N(1200));
+        Cut(0); Cut(1, .10); Cut(2); Assert.AreEqual(0, effects.ActiveStitchCount);
+        notes.Clear(); Spawn(N(1000), N(1000), N(1120));
+        Cut(0); Cut(1); Cut(2); Assert.AreEqual(0, effects.ActiveStitchCount);
+        notes.Clear(); Spawn(N(1000), N(1100, "blue", 2), N(1200));
+        Cut(0); Cut(1); Cut(1); Cut(2); Assert.AreEqual(0, effects.ActiveStitchCount);
+        notes.Clear(); Spawn(N(1000), N(1230));
+        Cut(0); Cut(1); Assert.AreEqual(0, effects.ActiveStitchCount);
+    }
+
+    [Test]
+    public void OtherLaneDoesNotBreakContinuityAndWeaveIsBoundedAndClearedOnRewind()
+    {
+        Spawn(N(1000), N(1060, "red"), N(1120));
+        Cut(0); Cut(1); Cut(2); Assert.AreEqual(1, effects.ActiveStitchCount);
+        effects.Tick(.5); Assert.AreEqual(0, effects.ActiveStitchCount);
+        notes.Clear();
+        var entries = new NoteData[40];
+        for (int i = 0; i < entries.Length; i++) entries[i] = N(1000 + i * 20);
+        Spawn(entries);
+        for (int i = 0; i < entries.Length; i++) Cut(i);
+        Assert.AreEqual(StageReactiveEffects.StitchesPerLane, effects.ActiveStitchCount);
+        effects.Tick(1.1);
+        Assert.LessOrEqual(effects.GetComponent<MeshFilter>().sharedMesh.vertexCount, StageReactiveEffects.VertexBudget);
+        effects.enabled = false; Assert.AreEqual(0, effects.ActiveStitchCount);
+        effects.enabled = true; spawner.SetChart(new ChartData());
+        Assert.AreEqual(0, effects.ActiveStitchCount);
+    }
+
+    [Test]
+    public void ReenableStartsFreshWeaveWithAlreadySpawnedNotes()
+    {
+        Spawn(N(1000), N(1100), N(1200)); Cut(0);
+        effects.enabled = false; effects.enabled = true;
+        Cut(1); Assert.AreEqual(0, effects.ActiveStitchCount);
+        Cut(2); Assert.AreEqual(1, effects.ActiveStitchCount);
+    }
+
+    [Test]
     public void AuthoredEntranceContractsThenOpensWithoutChangingLegacyCurve()
     {
         var t = Timeline();

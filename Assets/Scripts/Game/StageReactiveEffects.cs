@@ -22,6 +22,23 @@ public sealed class StageReactiveEffects : MonoBehaviour
         public Color color;
     }
     readonly Wave[] waves = new Wave[MaxWaves];
+    // 同時ノーツを一群として保持し、通知順ではなく譜面上の隣接で連打を判定する。
+    sealed class WeaveGroup
+    {
+        public WeaveGroup previous;
+        public double time;
+        public int lane, pending, count, epoch;
+        public bool perfect = true, single = true;
+    }
+    struct Stitch { public bool active; public int lane; public float age; public Color color; }
+    public const int StitchesPerLane = 8;
+    public const float StitchLifetime = .5f;
+    readonly Stitch[] stitches = new Stitch[4 * StitchesPerLane];
+    readonly WeaveGroup[] lastGroups = new WeaveGroup[4];
+    readonly Dictionary<CuttableNote, WeaveGroup> weaveNotes = new Dictionary<CuttableNote, WeaveGroup>();
+    readonly double[] latestResolved = { double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity };
+    int weaveEpoch;
+    StageThemeResponse themeResponse;
     readonly HashSet<CuttableNote> tracked = new HashSet<CuttableNote>();
     readonly List<CuttableNote> expired = new List<CuttableNote>();
     readonly List<Vector3> vertices = new List<Vector3>(VertexBudget);
@@ -42,6 +59,8 @@ public sealed class StageReactiveEffects : MonoBehaviour
     public int PairCount { get; private set; }
     public int ReleaseCount { get; private set; }
     public int ActiveFloorLaneMask { get; private set; }
+    public int ActiveStitchCount { get; private set; }
+    public int ActiveWeaveLaneMask { get; private set; }
 
     // 譜面エディターの横8列（-2.5～2.5）を左から2列ずつまとめる。
     // 色や担当ハンドではなく、coordScale適用後の実際の配置で決める。
@@ -60,6 +79,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
         effect.floor = stage.floorY;
         effect.theme = stage.ActiveTheme;
         effect.Build();
+        effect.themeResponse = StageThemeResponse.Create(effect.transform, effect.theme, effect.floor);
         effect.Bind(spawner, song);
         return effect;
     }
@@ -103,6 +123,17 @@ public sealed class StageReactiveEffects : MonoBehaviour
         if (note == null || !tracked.Add(note)) return;
         note.OnJudged += Cut;
         note.OnMiss += Miss;
+        int lane = FloorLaneForX(note.transform.position.x);
+        if (lane < 0 || !Finite(note.HitTime)) return;
+        var group = lastGroups[lane];
+        if (group == null || Math.Abs(group.time - note.HitTime) > NoteSpawner.SimultaneousEpsilonSeconds)
+        {
+            group = new WeaveGroup { previous = group, time = note.HitTime, lane = lane, epoch = weaveEpoch };
+            lastGroups[lane] = group;
+        }
+        group.count++; group.pending++;
+        group.single &= note.RequiredCutCount == 1;
+        weaveNotes.Add(note, group);
     }
 
     void Untrack(CuttableNote note)
@@ -116,14 +147,17 @@ public sealed class StageReactiveEffects : MonoBehaviour
     }
 
     bool CanReact => isActiveAndEnabled && owner != null && owner.isActiveAndEnabled;
-    void Miss(CuttableNote note) { Untrack(note); }
+    void Miss(CuttableNote note) { ResolveWeave(note, false); Untrack(note); }
 
     void Cut(CuttableNote note, JudgmentTier tier, Vector3 point, Vector3 velocity)
     {
-        Untrack(note);
         // 降格後の確定判定だけを使う。ロング途中・時間切れは祝福しない。
-        if (!CanReact || tier != JudgmentTier.Perfect || note == null || !note.IsCut || note.IsMissed ||
-            !Finite(note.HitTime) || FloorLaneForX(note.transform.position.x) < 0) return;
+        bool perfect = CanReact && tier == JudgmentTier.Perfect && note != null && note.IsCut && !note.IsMissed &&
+            Finite(note.HitTime) && FloorLaneForX(note.transform.position.x) >= 0;
+        ResolveWeave(note, perfect);
+        Untrack(note);
+        if (!perfect) return;
+        if (themeResponse != null) themeResponse.OnPerfect(FloorLaneForX(note.transform.position.x));
         if (note.RequiredCutCount > 1)
         {
             AddWave(note, WaveKind.Release, 1);
@@ -146,6 +180,43 @@ public sealed class StageReactiveEffects : MonoBehaviour
             return;
         }
         AddWave(note, WaveKind.Cut, 1);
+    }
+
+    void ResolveWeave(CuttableNote note, bool perfect)
+    {
+        if (ReferenceEquals(note, null) || !weaveNotes.TryGetValue(note, out var group)) return;
+        weaveNotes.Remove(note);
+        group.perfect &= perfect;
+        if (--group.pending != 0) return;
+        var previous = group.previous;
+        double gap = previous == null ? double.PositiveInfinity : group.time - previous.time;
+        if (group.epoch == weaveEpoch && group.perfect && group.single && group.count == 1 &&
+            previous != null && previous.epoch == weaveEpoch && previous.pending == 0 &&
+            previous.perfect && previous.single && previous.count == 1 &&
+            group.time >= latestResolved[group.lane] && gap > NoteSpawner.SimultaneousEpsilonSeconds && gap <= .220001)
+            AddStitch(group.lane, note.IsGold ? UISkinPalette.NoteGold : Hand(note) < 0 ? UISkinPalette.LogoBlue : UISkinPalette.LogoRed);
+        if (group.epoch == weaveEpoch) latestResolved[group.lane] = Math.Max(latestResolved[group.lane], group.time);
+        // 完了した群から前へたどらない。曲全体の履歴を保持し続けない。
+        group.previous = null;
+    }
+
+    void AddStitch(int lane, Color color)
+    {
+        int start = lane * StitchesPerLane, slot = start;
+        for (int i = start; i < start + StitchesPerLane; i++)
+        {
+            if (!stitches[i].active) { slot = i; break; }
+            if (stitches[i].age > stitches[slot].age) slot = i;
+        }
+        stitches[slot] = new Stitch { active = true, lane = lane, color = color };
+        CountStitches();
+    }
+
+    void CountStitches()
+    {
+        ActiveStitchCount = ActiveWeaveLaneMask = 0;
+        foreach (var stitch in stitches) if (stitch.active)
+        { ActiveStitchCount++; ActiveWeaveLaneMask |= 1 << stitch.lane; }
     }
 
     static int Hand(CuttableNote note)
@@ -180,7 +251,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
             if (note == null || note.IsFinalized || !note.gameObject.activeInHierarchy)
             { expired.Add(note); continue; }
         }
-        foreach (var note in expired) Untrack(note);
+        foreach (var note in expired) { ResolveWeave(note, false); Untrack(note); }
     }
 
     public void Tick(double songSeconds)
@@ -205,6 +276,13 @@ public sealed class StageReactiveEffects : MonoBehaviour
             if (waves[i].age >= duration) waves[i].active = false;
         }
         CountWaves();
+        for (int i = 0; i < stitches.Length; i++) if (stitches[i].active)
+        {
+            stitches[i].age += Mathf.Max(0, delta);
+            if (stitches[i].age >= StitchLifetime) stitches[i].active = false;
+        }
+        CountStitches();
+        if (themeResponse != null) themeResponse.Tick(songSeconds);
         PruneNotes();
         Draw();
     }
@@ -277,6 +355,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
                     FloorLaneWave(lane, travel, tint, gain, wave.kind == WaveKind.Cut ? .7f : 1.35f);
             for (int side = -1; side <= 1; side += 2)
             {
+                if (themeResponse != null && themeResponse.ReplacesSideResponse) continue;
                 // 同時斬りでも、実際に切った床列の側だけへ展開する。
                 if ((wave.laneMask & (side < 0 ? 3 : 12)) == 0) continue;
                 for (int bank = 0; bank < 7; bank++)
@@ -302,9 +381,26 @@ public sealed class StageReactiveEffects : MonoBehaviour
                 }
             }
         }
+        DrawWeave(projector);
         mesh.Clear(); mesh.SetVertices(vertices); mesh.SetColors(colors); mesh.SetUVs(0, uvs);
         mesh.SetTriangles(indices, 0, true);
         meshRenderer.enabled = vertices.Count > 0;
+    }
+
+    void DrawWeave(float projector)
+    {
+        float y = floor + (theme == StageTheme.ObsidianRelay ? .47f : theme == StageTheme.VioletVault ? .57f : .14f);
+        foreach (var stitch in stitches)
+        {
+            if (!stitch.active) continue;
+            // ノーツと切断片の真下から少し外へ寄せ、床列の中で縫い目を見せる。
+            float x = FloorLaneCenter(stitch.lane) + (stitch.lane < 2 ? -.55f : .55f);
+            float z = 1.2f + stitch.age * 18;
+            float alpha = (1 - stitch.age / StitchLifetime) * projector * .85f;
+            // 帯と斜めの縫い目を同じ床列に収める。後続の成功で古い節の寿命を延ばさない。
+            Beam(new Vector3(x, y, z - 1.7f), new Vector3(x, y, z + .6f), .20f, stitch.color, alpha * .36f, Vector3.right);
+            Beam(new Vector3(x - .48f, y, z - .3f), new Vector3(x + .48f, y, z + .3f), .10f, stitch.color, alpha, Vector3.forward);
+        }
     }
 
     Vector3 ArcPoint(int side, float fraction, float age, int layer)
@@ -360,6 +456,14 @@ public sealed class StageReactiveEffects : MonoBehaviour
     void ClearVisuals()
     {
         Array.Clear(waves, 0, waves.Length);
+        Array.Clear(stitches, 0, stitches.Length);
+        ActiveStitchCount = ActiveWeaveLaneMask = 0;
+        weaveEpoch++;
+        // 既に先読みした未確定ノーツ同士は、再開後の新しい連打を作れる。
+        // 完了済みの前群は旧世代のままなので、停止前の成功へはつながらない。
+        foreach (var group in weaveNotes.Values) group.epoch = weaveEpoch;
+        for (int i = 0; i < latestResolved.Length; i++) latestResolved[i] = double.NegativeInfinity;
+        if (themeResponse != null) themeResponse.Clear();
         ActiveWaveCount = 0;
         ActiveFloorLaneMask = 0;
         Presentation = default;
@@ -375,6 +479,8 @@ public sealed class StageReactiveEffects : MonoBehaviour
                 note.OnJudged -= Cut; note.OnMiss -= Miss;
             }
         tracked.Clear();
+        weaveNotes.Clear();
+        Array.Clear(lastGroups, 0, lastGroups.Length);
         ClearVisuals();
         hasTime = false;
         PairCount = ReleaseCount = 0;

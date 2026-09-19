@@ -9,6 +9,9 @@ public sealed partial class ScenicStageWorld
         var trim = Surface("SilverInclusions",new Color(.29f,.32f,.39f));
         var rocks = Surface("OrbitingMeteorites",new Color(.17f,.16f,.225f));
         var planet = Surface("BandedPlanet",new Color(.19f,.215f,.32f),4,0,new Color(.43f,.30f,.30f));
+        // 大小惑星の描画はまとめたまま、右上の大惑星のローカル範囲だけを食の対象にする。
+        eclipsePlanetMaterial = planet;
+        planet.SetVector("_EclipsePlanet",new Vector4(17,12,87,11));
         var rings = Surface("CelestialRings",new Color(.29f,.25f,.39f),0,.16f,new Color(.32f,.3f,.46f));
         var stars = Surface("DistantStars",new Color(.30f,.38f,.49f),0,.25f);
         Path(path,trim,1);

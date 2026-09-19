@@ -601,7 +601,7 @@ public class GamePlayManager : MonoBehaviour
             float chorus = stagePerformance.Evaluate(time);
             if (stageFloor != null) stageFloor.Tick(time,chorus);
             if (foundryStageMotion != null) foundryStageMotion.Tick(time,chorus);
-            if (scenicStageWorld != null) scenicStageWorld.Tick(time,chorus);
+            if (scenicStageWorld != null) scenicStageWorld.Tick(time,chorus,stagePerformance.EvaluateEclipse(time));
             if (stageReactions != null) stageReactions.Tick(time);
         }
 
@@ -685,6 +685,7 @@ public class GamePlayManager : MonoBehaviour
         Debug.Log($"GamePlayManager: FinishGame songTime={songPlayer.SongTime:F1}s " +
             $"duration={songPlayer.Duration:F1}s lastNote={lastNoteTime:F1}s alive={noteSpawner.AliveCount}");
         songPlayer.Stop();
+        if (stageReactions != null) stageReactions.ResetState();
         GameSession.FinalScore = scoreManager.Score;
         GameSession.FinalMaxCombo = scoreManager.MaxCombo;
         GameSession.FinalHit = scoreManager.HitCount;

@@ -13,6 +13,8 @@ Shader "Saber/Scenic World Surface"
         _MotionTime ("Song clock", Float) = 0
         _Chorus ("Musical section", Range(0,1)) = 0
         _ChorusColor ("Section atmosphere", Color) = (.3,.3,.4,1)
+        _Eclipse ("Planet eclipse", Range(0,1)) = 0
+        _EclipsePlanet ("Local planet center and radius", Vector) = (0,0,0,0)
     }
     SubShader
     {
@@ -26,6 +28,8 @@ Shader "Saber/Scenic World Surface"
             float _Emission, _Mode, _Caustics, _Sway, _AnchorY, _MotionTime;
             float _Chorus;
             half4 _ChorusColor;
+            float _Eclipse;
+            float4 _EclipsePlanet;
         CBUFFER_END
         struct Attributes { float4 positionOS : POSITION; float3 normalOS : NORMAL; };
         struct Varyings { float4 positionCS : SV_POSITION; float3 world : TEXCOORD0; half3 normal : TEXCOORD1; float4 screen : TEXCOORD2; };
@@ -91,6 +95,17 @@ Shader "Saber/Scenic World Surface"
             color = lerp(color, _HazeColor.rgb, haze * .68);
             float edge = smoothstep(5.4, 8.0, abs(p.x));
             color += _ChorusColor.rgb * _Chorus * edge * (.10 + _Emission * .30);
+            // 食は対象惑星の表面内だけの模様。新しい影や光源を作らず、空・床・小惑星へは広げない。
+            if (_Mode > 3.5 && _Eclipse > 0 && _EclipsePlanet.w > 0)
+            {
+                float3 local = TransformWorldToObject(p) - _EclipsePlanet.xyz;
+                float radius = _EclipsePlanet.w;
+                float insidePlanet = 1 - step(radius * 1.01, length(local));
+                float2 disc = local.xy / radius;
+                float2 shadowCenter = float2(lerp(-2.4,-.22,saturate(_Eclipse)),.12);
+                float shadow = 1 - smoothstep(.96,1.04,length(disc - shadowCenter));
+                color *= 1 - insidePlanet * shadow * .78;
+            }
             return half4(color,1);
         }
         ENDHLSL

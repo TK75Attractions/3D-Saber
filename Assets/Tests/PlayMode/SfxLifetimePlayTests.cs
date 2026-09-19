@@ -55,15 +55,23 @@ public class SfxLifetimePlayTests
             yield return null;
         }
         Assert.NotNull(nav);
+        var menu = SongSelectNoteMenu.Instance;
+        Assert.NotNull(menu, "選曲の共通クールタイムが初期化されていること");
         var controller = Object.FindFirstObjectByType<SongSelectController>();
         foreach (var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) judge.enabled = false;
         nav.enabled = false;
         int start = controller.SelectedIndex;
         for (int i = 0; i < 20; i++)
         {
+            // 共通クールタイムは実時間で進む。nav.Tickだけで受付条件を飛ばさない。
+            double readyDeadline = Time.realtimeSinceStartupAsDouble + 3;
+            while (!menu.IsReady && Time.realtimeSinceStartupAsDouble < readyDeadline) yield return null;
+            Assert.IsTrue(menu.IsReady, "曲送り" + (i + 1) + "回目: 3秒以内に共通クールタイムが解除されること");
+            nav.Tick(2.1f);
+            Assert.NotNull(nav.DownNote, "曲送り" + (i + 1) + "回目: ノーツが再出現すること");
+            Assert.IsTrue(nav.DownNote.IsJudgeable, "曲送り" + (i + 1) + "回目: 受付可能になってから斬ること");
             nav.DownNote.Cut(nav.DownNote.transform.position, Vector3.down * 8, CutDirection.Down, SaberHand.Any);
             controller.StopPreview();
-            nav.Tick(2.1f);
         }
         Assert.AreEqual((start + 20) % controller.SongCount, controller.SelectedIndex);
         var clips = NewGeneratedClips().Where(c => c.name == "beep_660").ToArray();

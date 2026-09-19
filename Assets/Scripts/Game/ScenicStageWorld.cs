@@ -11,6 +11,7 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
     public StageTheme Theme { get; private set; }
     public double LastTickSeconds { get; private set; }
     public float ChorusIntensity { get; private set; }
+    public float EclipseIntensity { get; private set; }
     public int MovingObjectCount => movers.Count;
     private readonly List<Material> materials = new List<Material>();
     private readonly List<Mesh> meshes = new List<Mesh>();
@@ -19,6 +20,7 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
     private readonly ParticleSystem.Particle[] particles = new ParticleSystem.Particle[ParticleBudget];
     private ParticleSystem motes;
     private Material particleMaterial;
+    private Material eclipsePlanetMaterial;
     private bool built;
     private float floor;
     private Color haze;
@@ -137,11 +139,13 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
         return t;
     }
 
-    public void Tick(double songSeconds, float chorus = 0)
+    public void Tick(double songSeconds, float chorus = 0, float eclipse = 0)
     {
-        if (!built || !isActiveAndEnabled || double.IsNaN(songSeconds) || double.IsInfinity(songSeconds)) return;
+        if (!built || !isActiveAndEnabled) return;
+        if (double.IsNaN(songSeconds) || double.IsInfinity(songSeconds)) { SetEclipse(0); return; }
         songSeconds = Math.Max(0,songSeconds); LastTickSeconds = songSeconds;
         ChorusIntensity = float.IsNaN(chorus) || float.IsInfinity(chorus) ? 0 : Mathf.Clamp01(chorus);
+        SetEclipse(songSeconds > 0 ? eclipse : 0);
         foreach (var mat in materials)
         {
             mat.SetFloat("_MotionTime", (float)songSeconds);
@@ -157,6 +161,13 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
             item.transform.localRotation = item.rotation * Quaternion.Euler(angle + item.sway * wave + item.chorusRotation * ChorusIntensity);
         }
         TickMotes(songSeconds);
+    }
+
+    private void SetEclipse(float value)
+    {
+        EclipseIntensity = Theme != StageTheme.AstralOrbit || float.IsNaN(value) || float.IsInfinity(value)
+            ? 0 : Mathf.Clamp01(value);
+        if (eclipsePlanetMaterial != null) eclipsePlanetMaterial.SetFloat("_Eclipse", EclipseIntensity);
     }
 
     private static Color ChorusColor(StageTheme theme)
@@ -214,7 +225,7 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
         motes.SetParticles(particles,ParticleBudget);
     }
 
-    private void OnDisable() { if (motes != null) motes.Clear(false); }
+    private void OnDisable() { SetEclipse(0); if (motes != null) motes.Clear(false); }
     private void OnDestroy()
     {
         foreach (var mesh in meshes) Release(mesh);
