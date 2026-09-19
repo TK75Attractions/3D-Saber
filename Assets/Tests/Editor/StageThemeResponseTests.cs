@@ -16,7 +16,8 @@ public class StageThemeResponseTests
     public void UnsupportedThemesOrInvalidFloorDoNotCreateOrReplaceAnything()
     {
         for (int i = 0; i < StageThemeCatalog.Count; i++)
-            if (i != (int)StageTheme.MoonlitGarden && i != (int)StageTheme.AmberFoundry && i != (int)StageTheme.AzurePrism)
+            if (i != (int)StageTheme.MoonlitGarden && i != (int)StageTheme.AmberFoundry &&
+                i != (int)StageTheme.AzurePrism && i != (int)StageTheme.CrystalGrotto)
                 Assert.IsNull(Create((StageTheme)i));
         Assert.IsNull(StageThemeResponse.Create(root.transform, StageTheme.MoonlitGarden, float.NaN));
         Assert.AreEqual(0, root.transform.childCount);
@@ -28,6 +29,8 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.AmberFoundry, 2)] [TestCase(StageTheme.AmberFoundry, 3)]
     [TestCase(StageTheme.AzurePrism, 0)] [TestCase(StageTheme.AzurePrism, 1)]
     [TestCase(StageTheme.AzurePrism, 2)] [TestCase(StageTheme.AzurePrism, 3)]
+    [TestCase(StageTheme.CrystalGrotto, 0)] [TestCase(StageTheme.CrystalGrotto, 1)]
+    [TestCase(StageTheme.CrystalGrotto, 2)] [TestCase(StageTheme.CrystalGrotto, 3)]
     public void EachLaneOwnsOnlyItsResponseAndStaysOutsideTheCorridor(StageTheme theme, int lane)
     {
         var response = Create(theme);
@@ -51,6 +54,7 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.MoonlitGarden, StageThemeResponse.GardenLifetime)]
     [TestCase(StageTheme.AmberFoundry, StageThemeResponse.FoundryLifetime)]
     [TestCase(StageTheme.AzurePrism, StageThemeResponse.PrismLifetime)]
+    [TestCase(StageTheme.CrystalGrotto, StageThemeResponse.CrystalLifetime)]
     public void SongClockFreezesAndThenExpiresAtItsOwnLifetime(StageTheme theme, float lifetime)
     {
         var response = Create(theme); response.Tick(10); response.OnPerfect(0); response.Tick(10.2);
@@ -62,11 +66,13 @@ public class StageThemeResponseTests
         response.Tick(10 + lifetime - .001); Assert.AreEqual(1, response.ActiveResponseCount);
         response.Tick(10 + lifetime + .001); Assert.AreEqual(0, response.ActiveResponseCount);
         Assert.AreEqual(0, response.ActiveLaneMask);
-        if (theme == StageTheme.MoonlitGarden) Assert.AreEqual(0, details.vertexCount);
+        if (theme == StageTheme.MoonlitGarden || theme == StageTheme.CrystalGrotto)
+            Assert.AreEqual(0, details.vertexCount);
     }
 
     [TestCase(StageTheme.MoonlitGarden)] [TestCase(StageTheme.AmberFoundry)]
     [TestCase(StageTheme.AzurePrism)]
+    [TestCase(StageTheme.CrystalGrotto)]
     public void RewindClearAndDisableDoNotCarryOldSuccessIntoAnotherPlay(StageTheme theme)
     {
         var response = Create(theme); response.Tick(10); response.OnPerfect(1); response.OnPerfect(3);
@@ -154,6 +160,7 @@ public class StageThemeResponseTests
 
     [TestCase(StageTheme.MoonlitGarden)] [TestCase(StageTheme.AmberFoundry)]
     [TestCase(StageTheme.AzurePrism)]
+    [TestCase(StageTheme.CrystalGrotto)]
     public void DisablingThePreviewParentClearsResponsesAndInactiveDestructionReleasesResources(StageTheme theme)
     {
         var response = Create(theme); response.Tick(1); response.OnPerfect(0); response.Tick(1.25);
@@ -172,6 +179,7 @@ public class StageThemeResponseTests
 
     [TestCase(StageTheme.MoonlitGarden)] [TestCase(StageTheme.AmberFoundry)]
     [TestCase(StageTheme.AzurePrism)]
+    [TestCase(StageTheme.CrystalGrotto)]
     public void DenseSuccessesReuseFourSlotsAndExactlyTwoOwnedMeshesAndMaterials(StageTheme theme)
     {
         var response = Create(theme); response.Tick(1);
@@ -266,5 +274,100 @@ public class StageThemeResponseTests
         CollectionAssert.AreEqual(full, surface.vertices);
         Assert.AreEqual(1 << 2, response.ActiveLaneMask, "設定切替で別の列へ移らない");
         response.Tick(2); CollectionAssert.AreEqual(rest, surface.vertices);
+    }
+
+    [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]
+    public void CrystalOnlyMovesSelectedBandAndKeepsTheBodyAtRest(int lane)
+    {
+        var response = Create(StageTheme.CrystalGrotto); response.Tick(5);
+        Mesh surface = response.transform.Find("Surface").GetComponent<MeshFilter>().sharedMesh;
+        Mesh details = response.transform.Find("Details").GetComponent<MeshFilter>().sharedMesh;
+        Vector3[] body = surface.vertices;
+        Assert.Greater(body.Length, 0);
+        Assert.AreEqual(0, details.vertexCount, "成功前の結晶に帯を出さない");
+        response.OnPerfect(lane); response.Tick(5.08);
+        Vector3[] early = details.vertices;
+        AssertCrystalBandLane(early, lane);
+        CollectionAssert.AreEqual(body, surface.vertices, "台座と結晶本体を動かさない");
+        response.Tick(5.23);
+        AssertCrystalBandLane(details.vertices, lane);
+        CollectionAssert.AreNotEqual(early, details.vertices, "色帯が面内を進む");
+        CollectionAssert.AreEqual(body, surface.vertices);
+        response.Tick(5.401);
+        Assert.AreEqual(0, response.ActiveResponseCount);
+        Assert.AreEqual(0, details.vertexCount);
+        CollectionAssert.AreEqual(body, surface.vertices);
+    }
+
+    static void AssertCrystalBandLane(Vector3[] points, int lane)
+    {
+        Assert.Greater(points.Length, 0, "対象列の色帯が描かれる");
+        foreach (var point in points)
+        {
+            Assert.Greater(Mathf.Abs(point.x), 6f);
+            Assert.AreEqual(lane < 2 ? -1 : 1, Mathf.Sign(point.x), "反対側へ帯を出さない");
+            Assert.AreEqual(lane == 0 || lane == 3, point.z < 7f, "同じ側の手前と奥を混ぜない");
+        }
+    }
+
+    [Test]
+    public void RapidCrystalHitsFinishTheFirstPassWithoutRestartOrDelayedReplay()
+    {
+        var response = Create(StageTheme.CrystalGrotto); response.Tick(1); response.OnPerfect(0);
+        Mesh details = response.transform.Find("Details").GetComponent<MeshFilter>().sharedMesh;
+        for (int hit = 1; hit <= 3; hit++)
+        {
+            double time = 1 + hit * .1;
+            response.Tick(time);
+            Vector3[] before = details.vertices;
+            response.OnPerfect(0); response.Tick(time);
+            CollectionAssert.AreEqual(before, details.vertices, "100ms連打で帯を巻き戻さない");
+            Assert.AreEqual(1, response.ActiveResponseCount);
+        }
+        response.OnPerfect(1);
+        Assert.AreEqual(3, response.ActiveLaneMask, "同側の別列は独立して始まる");
+        response.Tick(1.401);
+        Assert.AreEqual(2, response.ActiveLaneMask, "最初の列だけ0.4秒で終了する");
+        response.Tick(1.701);
+        Assert.AreEqual(0, response.ActiveResponseCount);
+        Assert.AreEqual(0, details.vertexCount);
+        response.Tick(2);
+        Assert.AreEqual(0, response.ActiveResponseCount, "途中Perfectを予約再生しない");
+        response.OnPerfect(0); response.Tick(2.1);
+        Assert.AreEqual(1, response.ActiveLaneMask, "復帰後の新しいPerfectは受け付ける");
+        AssertCrystalBandLane(details.vertices, 0);
+    }
+
+    [Test]
+    public void LowModeOnlyDimsCrystalBandsWithoutChangingTheirGeometryOrLifetime()
+    {
+        DisplaySettings.SetReducedEffectsForTest(false);
+        var response = Create(StageTheme.CrystalGrotto); response.Tick(1); response.OnPerfect(2);
+        response.Tick(1.2);
+        Mesh surface = response.transform.Find("Surface").GetComponent<MeshFilter>().sharedMesh;
+        Mesh details = response.transform.Find("Details").GetComponent<MeshFilter>().sharedMesh;
+        Vector3[] body = surface.vertices, full = details.vertices;
+        int[] triangles = details.triangles;
+        Color[] fullColors = details.colors;
+        Assert.Greater(fullColors.Length, 0);
+        DisplaySettings.SetReducedEffectsForTest(true); response.Tick(1.2);
+        CollectionAssert.AreEqual(body, surface.vertices);
+        CollectionAssert.AreEqual(full, details.vertices, "LOWでも帯の幅と経路を変えない");
+        CollectionAssert.AreEqual(triangles, details.triangles);
+        Color[] low = details.colors;
+        Assert.AreEqual(fullColors.Length, low.Length);
+        for (int i = 0; i < fullColors.Length; i++)
+        {
+            Assert.AreEqual(fullColors[i].r, low[i].r);
+            Assert.AreEqual(fullColors[i].g, low[i].g);
+            Assert.AreEqual(fullColors[i].b, low[i].b);
+            Assert.AreEqual(fullColors[i].a * .3f, low[i].a, .001f);
+        }
+        Assert.AreEqual(4, response.ActiveLaneMask);
+        DisplaySettings.SetReducedEffectsForTest(false); response.Tick(1.2);
+        CollectionAssert.AreEqual(fullColors, details.colors);
+        DisplaySettings.SetReducedEffectsForTest(true); response.Tick(1.401);
+        Assert.AreEqual(0, response.ActiveResponseCount);
+        Assert.AreEqual(0, details.vertexCount, "LOWでも0.4秒で同じように終了する");
     }
 }

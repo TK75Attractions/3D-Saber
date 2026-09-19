@@ -75,7 +75,8 @@ public class FavoriteEffectsPlayTests
     [UnityTest, Timeout(120000)]
     public IEnumerator ThemeResponsesUseFinalPerfect_RespectPlacementAndClearOnReset()
     {
-        foreach (var theme in new[] { StageTheme.AmberFoundry, StageTheme.MoonlitGarden, StageTheme.AzurePrism })
+        foreach (var theme in new[] { StageTheme.AmberFoundry, StageTheme.MoonlitGarden, StageTheme.AzurePrism,
+            StageTheme.CrystalGrotto })
         {
             yield return LoadGame(theme);
             var response = floor.GetComponentInChildren<StageThemeResponse>();
@@ -163,6 +164,10 @@ public class FavoriteEffectsPlayTests
     [UnityTest, Timeout(240000)]
     public IEnumerator YurikagoHardAzurePrism_RealTimeAudioWithScriptedPerfectInput()
     { return RealTimeAudioWithScriptedPerfectInput(StageTheme.AzurePrism); }
+
+    [UnityTest, Timeout(240000)]
+    public IEnumerator YurikagoHardCrystalGrotto_RealTimeAudioWithScriptedPerfectInput()
+    { return RealTimeAudioWithScriptedPerfectInput(StageTheme.CrystalGrotto); }
 
     IEnumerator RealTimeAudioWithScriptedPerfectInput(StageTheme theme)
     {

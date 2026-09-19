@@ -14,6 +14,7 @@ public sealed class StageThemeResponse : MonoBehaviour
     public const float GardenLifetime = 1.2f;
     public const float FoundryLifetime = .65f;
     public const float PrismLifetime = .71f;
+    public const float CrystalLifetime = .4f;
     readonly bool[] active = new bool[LaneCount];
     readonly float[] ages = new float[LaneCount];
     readonly List<Vector3> surfaceVertices = new List<Vector3>(VertexBudget);
@@ -37,7 +38,8 @@ public sealed class StageThemeResponse : MonoBehaviour
     public static StageThemeResponse Create(Transform parent, StageTheme theme, float floorY)
     {
         if (parent == null || !Finite(floorY) ||
-            (theme != StageTheme.AmberFoundry && theme != StageTheme.MoonlitGarden && theme != StageTheme.AzurePrism)) return null;
+            (theme != StageTheme.AmberFoundry && theme != StageTheme.MoonlitGarden &&
+                theme != StageTheme.AzurePrism && theme != StageTheme.CrystalGrotto)) return null;
         var surface = Resources.Load<Shader>("Stage/ScenicSurface");
         var accent = Resources.Load<Shader>("Effects/GameplayCutAccent");
         // 材質がない場合は側面の既存反応を置き換えない。
@@ -55,7 +57,8 @@ public sealed class StageThemeResponse : MonoBehaviour
         surfaceMaterial = new Material(surface) { name = "ThemeResponse/Surface", hideFlags = HideFlags.DontSave };
         surfaceMaterial.SetColor("_BaseColor", theme == StageTheme.MoonlitGarden
             ? new Color(.28f, .37f, .17f) : theme == StageTheme.AzurePrism
-            ? new Color(.16f, .25f, .30f) : new Color(.27f, .245f, .19f));
+            ? new Color(.16f, .25f, .30f) : theme == StageTheme.CrystalGrotto
+            ? new Color(.24f, .19f, .34f) : new Color(.27f, .245f, .19f));
         surfaceMaterial.SetColor("_HazeColor", new Color(.035f, .065f, .08f));
         surfaceMaterial.SetColor("_AccentColor", new Color(.28f, .31f, .18f));
         surfaceMaterial.SetFloat("_Emission", .025f);
@@ -64,13 +67,18 @@ public sealed class StageThemeResponse : MonoBehaviour
         accentMaterial = new Material(accent) { name = "ThemeResponse/Details", hideFlags = HideFlags.DontSave };
         surfaceMesh = new Mesh { name = "ThemeResponse/SurfaceMesh", hideFlags = HideFlags.DontSave };
         accentMesh = new Mesh { name = "ThemeResponse/AccentMesh", hideFlags = HideFlags.DontSave };
-        if (theme != StageTheme.AmberFoundry) surfaceMesh.MarkDynamic();
+        if (theme == StageTheme.MoonlitGarden || theme == StageTheme.AzurePrism) surfaceMesh.MarkDynamic();
         accentMesh.MarkDynamic();
         surfaceRenderer = Emit("Surface", surfaceMesh, surfaceMaterial);
         accentRenderer = Emit("Details", accentMesh, accentMaterial);
         if (theme == StageTheme.AmberFoundry)
         {
             for (int lane = 0; lane < LaneCount; lane++) BuildGaugeHousing(lane);
+            UploadSurface();
+        }
+        else if (theme == StageTheme.CrystalGrotto)
+        {
+            for (int lane = 0; lane < LaneCount; lane++) BuildCrystalHousing(lane);
             UploadSurface();
         }
         built = true; dirty = true;
@@ -94,7 +102,8 @@ public sealed class StageThemeResponse : MonoBehaviour
         // 同列の高速連打でも葉を着水させ、最初の寿命を延長しない。
         // この間の各Perfectは親の床反応へ任せ、別列の葉は独立して開始できる。
         // 絞りも一周期を完了させる。連打のたびに閉じたまま張り付かせない。
-        if ((theme == StageTheme.MoonlitGarden || theme == StageTheme.AzurePrism) && active[lane]) return;
+        // 結晶の帯も一度だけ面を渡り、稜線で巻き戻ったり予約再生したりしない。
+        if (theme != StageTheme.AmberFoundry && active[lane]) return;
         active[lane] = true; ages[lane] = 0; dirty = true;
         CountResponses();
     }
@@ -111,7 +120,8 @@ public sealed class StageThemeResponse : MonoBehaviour
         }
         hasTime = true; LastTickSeconds = songSeconds;
         float lifetime = theme == StageTheme.MoonlitGarden ? GardenLifetime
-            : theme == StageTheme.AzurePrism ? PrismLifetime : FoundryLifetime;
+            : theme == StageTheme.AzurePrism ? PrismLifetime
+            : theme == StageTheme.CrystalGrotto ? CrystalLifetime : FoundryLifetime;
         for (int lane = 0; lane < LaneCount; lane++)
         {
             if (!active[lane] || delta <= 0) continue;
@@ -151,6 +161,8 @@ public sealed class StageThemeResponse : MonoBehaviour
         if (theme == StageTheme.AzurePrism)
             // 奥の装置も柱より通路側へ置き、羽根の中心を隠さない。全頂点は通路外に保つ。
             return new Vector3(side * (outer ? 6.75f : 6.60f), floor + 1.65f, outer ? 5.6f : 10f);
+        if (theme == StageTheme.CrystalGrotto)
+            return new Vector3(side * 7.15f, floor + .02f, outer ? 4.1f : 10.3f);
         return theme == StageTheme.MoonlitGarden
             ? new Vector3(side * 7.75f, floor - .075f, outer ? 5.8f : 10.5f)
             : new Vector3(side * 6.55f, floor + 1.65f, outer ? 5.5f : 14.7f);
@@ -194,6 +206,10 @@ public sealed class StageThemeResponse : MonoBehaviour
             surfaceVertices.Clear(); normals.Clear(); surfaceIndices.Clear();
             for (int lane = 0; lane < LaneCount; lane++) DrawPrism(lane, active[lane] ? ages[lane] : -1);
             UploadSurface();
+        }
+        else if (theme == StageTheme.CrystalGrotto)
+        {
+            for (int lane = 0; lane < LaneCount; lane++) if (active[lane]) DrawCrystal(lane, ages[lane]);
         }
         else for (int lane = 0; lane < LaneCount; lane++) DrawGauge(lane, active[lane] ? ages[lane] : -1);
         if (lastReduced)
@@ -314,6 +330,57 @@ public sealed class StageThemeResponse : MonoBehaviour
             Vector3 axis = Circle(right, up, i * Mathf.PI * .5f);
             Stroke(center + axis * .555f + front * .010f, center + axis * .60f + front * .010f,
                 .018f, seam, Vector3.Cross(axis, front).normalized);
+        }
+    }
+
+    Vector3 CrystalPoint(int lane, Vector3 local)
+    {
+        return Anchor(lane) + Quaternion.Euler(0, lane < 2 ? -8 : 8, 0) * local;
+    }
+
+    void BuildCrystalHousing(int lane)
+    {
+        // 小結晶は静止した不透明な面。既存の大結晶の回転や常時shineとは分ける。
+        var rotation = Quaternion.Euler(0, lane < 2 ? -8 : 8, 0);
+        for (int face = 0; face < 4; face++)
+        {
+            float a = face * Mathf.PI * .5f, b = (face + 1) * Mathf.PI * .5f;
+            Vector3 lowerA = new Vector3(Mathf.Cos(a) * .42f, .18f, Mathf.Sin(a) * .30f);
+            Vector3 lowerB = new Vector3(Mathf.Cos(b) * .42f, .18f, Mathf.Sin(b) * .30f);
+            Vector3 upperA = lowerA + Vector3.up * 1.10f, upperB = lowerB + Vector3.up * 1.10f;
+            Vector3 normal = rotation * new Vector3(Mathf.Cos((a + b) * .5f) / .42f, 0,
+                Mathf.Sin((a + b) * .5f) / .30f).normalized;
+            SolidQuad(CrystalPoint(lane, lowerA), CrystalPoint(lane, lowerB),
+                CrystalPoint(lane, upperB), CrystalPoint(lane, upperA), normal);
+            Vector3 top = new Vector3(lane < 2 ? -.08f : .08f, 1.84f, 0);
+            Vector3 topNormal = rotation * Vector3.Cross(top - upperA, upperB - upperA).normalized;
+            SolidTriangle(CrystalPoint(lane, upperA), CrystalPoint(lane, upperB), CrystalPoint(lane, top), topNormal);
+            SolidTriangle(CrystalPoint(lane, lowerB), CrystalPoint(lane, lowerA),
+                CrystalPoint(lane, Vector3.zero), (normal + Vector3.down).normalized);
+        }
+    }
+
+    void DrawCrystal(int lane, float age)
+    {
+        // 外肩→手前の稜→内肩の二面を一方向に渡る短い帯。面の外へ漏らさない。
+        float phase = Mathf.Clamp01(age / CrystalLifetime);
+        float head = phase * 2.55f, tail = head - .55f;
+        float gain = Mathf.Sin(phase * Mathf.PI) * (lastProjector ? .78f : 1);
+        int side = lane < 2 ? -1 : 1;
+        for (int face = 0; face < 2; face++)
+        {
+            float from = Mathf.Max(tail, face), to = Mathf.Min(head, face + 1);
+            if (to <= from) continue;
+            Vector3 start = face == 0 ? new Vector3(side * .42f, .42f, 0) : new Vector3(0, .96f, -.30f);
+            Vector3 end = face == 0 ? new Vector3(0, .96f, -.30f) : new Vector3(-side * .42f, .62f, 0);
+            Vector3 normal = Vector3.Cross(end - start, Vector3.up).normalized;
+            if (normal.z > 0) normal = -normal;
+            Vector3 a = Vector3.Lerp(start, end, from - face) + normal * .006f;
+            Vector3 b = Vector3.Lerp(start, end, to - face) + normal * .006f;
+            Color tint = face == 0 ? new Color(.67f, .54f, .79f, .65f * gain)
+                : new Color(.42f, .70f, .70f, .58f * gain);
+            AccentQuad(CrystalPoint(lane, a - Vector3.up * .05f), CrystalPoint(lane, b - Vector3.up * .05f),
+                CrystalPoint(lane, b + Vector3.up * .05f), CrystalPoint(lane, a + Vector3.up * .05f), tint, true);
         }
     }
 
