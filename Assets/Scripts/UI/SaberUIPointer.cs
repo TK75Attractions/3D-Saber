@@ -99,6 +99,8 @@ public class SaberUIPointer : MonoBehaviour
     // ライブ判定調整だけ、下端の操作帯を対象にする。ほかの画面は従来どおり。
     public bool BottomControlsOnly { get; set; }
     public bool RespectRaycastBlockers { get; set; }
+    // 選曲の立体ノーツは速度付き斬撃のみ。滞留クリックを重ねて発火しない。
+    public bool SlashOnly { get; set; }
     public static bool IsInsideBottomControls(Vector2 position, float width, float height) =>
         width > 0 && height > 0 && position.x >= 0 && position.x <= width && position.y >= 0 && position.y <= height * .18f;
 
@@ -215,6 +217,13 @@ public class SaberUIPointer : MonoBehaviour
 
         Button target = RaycastButton(screen);
         SetHovered(target);
+
+        if (SlashOnly || (target != null && target.GetComponent<MenuNoteAction>() != null))
+        {
+            tracker.Reset();
+            progressRing.fillAmount = 0f;
+            return;
+        }
 
         var dwellTarget = target != null ? target.GetComponent<SaberDwellTarget>() : null;
         float dwellSeconds = dwellTarget != null ? dwellTarget.dwellSeconds : DwellSeconds;

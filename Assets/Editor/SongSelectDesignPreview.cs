@@ -117,6 +117,7 @@ public static class SongSelectDesignPreview
             target.Create(); camera.targetTexture = target; camera.aspect = width / (float)height;
             var nav=UnityEngine.Object.FindFirstObjectByType<SongSelectSlashNav>(); if(nav!=null) nav.Tick(0);
             Canvas.ForceUpdateCanvases();
+            foreach (var action in UnityEngine.Object.FindObjectsByType<MenuNoteAction>(FindObjectsSortMode.None)) action.Sync();
             // 見た目の確認が空のパネルを見逃さないよう、描画メッシュも検証する。
             foreach (var graphic in UnityEngine.Object.FindObjectsByType<UnityEngine.UI.Graphic>(FindObjectsSortMode.None))
             {

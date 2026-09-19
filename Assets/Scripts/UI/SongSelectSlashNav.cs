@@ -50,11 +50,12 @@ public class SongSelectSlashNav : MonoBehaviour
     // 曲選択画面へ組み込む。曲が2曲未満なら曲送り自体に意味が無いので何も作らない。
     public static SongSelectSlashNav Build(SongSelectController controller)
     {
-        if (controller == null || controller.SongCount <= 1) return null;
+        if (controller == null) return null;
         var mainCam = Camera.main;
         if (mainCam == null) return null;
 
         EnsureSaber();
+        if (controller.SongCount <= 1) return null;
         var go = new GameObject("SongSelectSlashNav");
         var nav = go.AddComponent<SongSelectSlashNav>();
         nav.Init(controller, mainCam);
@@ -81,9 +82,9 @@ public class SongSelectSlashNav : MonoBehaviour
         var judge = saber.AddComponent<SaberCutJudge>();
         judge.saber = tracker;
         // メニューはボタン類も多いので、タイトルよりわずかに速い振りだけを「カット」と見なす
-        judge.bladeRadius = 0.32f;
-        judge.noteHitRadiusXY = 0.55f;
-        judge.minCutSpeed = 3.0f;
+        judge.bladeRadius = 0.08f;
+        judge.noteHitRadiusXY = 0.26f;
+        judge.minCutSpeed = SongSelectNoteMenu.MinimumCutSpeed;
     }
 
     // テストから直接呼べる初期化(EditMode では Awake が呼ばれないため、Build 経由でも明示的に呼ぶ)。
@@ -121,6 +122,8 @@ public class SongSelectSlashNav : MonoBehaviour
 
         var note = go.AddComponent<CuttableNote>();
         note.IsJudgeable = true;
+        note.MinimumCutSpeed = SongSelectNoteMenu.MinimumCutSpeed;
+        note.RequireJudgeableOnCut = true;
         note.RequiredDirection = dir; // NoteVisuals が Direction 種(フリック色)として描く
         note.DirectionVisualOnly = true; // 矢印は送り先のラベル。切る方向は問わない
         go.AddComponent<NoteVisuals>();
@@ -141,6 +144,7 @@ public class SongSelectSlashNav : MonoBehaviour
         // クールタイム中のカット(同じ振りの巻き込みなど)は曲送りしない。演出(破片)と再出現だけ。
         if (InCooldown) return;
 
+        if (SongSelectNoteMenu.Instance != null) SongSelectNoteMenu.Instance.BeginCooldown();
         MoveSelection(isUp ? -1 : +1);
         PlayTick();
 
@@ -153,7 +157,7 @@ public class SongSelectSlashNav : MonoBehaviour
     private void SetCooldownState(CuttableNote target, bool on)
     {
         if (target == null || target.IsCut) return;
-        target.IsJudgeable = !on;
+        target.IsJudgeable = !on && (SongSelectNoteMenu.Instance == null || SongSelectNoteMenu.Instance.IsReady);
         var vis = target.GetComponent<NoteVisuals>();
         if (vis != null) vis.SetEmissionBoost(on ? cooldownEmission : 1f);
         target.transform.localScale = Vector3.one * noteScale * (on ? cooldownScale : 1f);
@@ -211,6 +215,10 @@ public class SongSelectSlashNav : MonoBehaviour
             downRespawnTimer -= dt;
             if (downRespawnTimer < 0f) downNote = SpawnNavNote(CutDirection.Down, downBasePos);
         }
+
+        bool blocked = InCooldown || (SongSelectNoteMenu.Instance != null && !SongSelectNoteMenu.Instance.IsReady);
+        SetCooldownState(upNote, blocked);
+        SetCooldownState(downNote, blocked);
 
         // 上下逆位相のゆっくりした浮遊で「切れるオブジェクト」感を出す
         float bob = Mathf.Sin(age * bobHz * 2f * Mathf.PI) * bobAmplitude;

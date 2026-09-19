@@ -47,10 +47,12 @@ public static class SongSelectVisuals
         button.targetGraphic = face; button.transition = Selectable.Transition.None;
         var text = Label(button.transform, "ActionLabel", label, primary ? 28 : 20, Vector2.zero, Vector2.zero,
             Text, TextAlignmentOptions.Center, true); Stretch(text.rectTransform);
+        text.rectTransform.offsetMin = new Vector2(primary ? 90 : 68, 0);
+        text.rectTransform.offsetMax = new Vector2(-12, 0);
         var style = button.GetComponent<SongSelectActionStyle>() ?? button.gameObject.AddComponent<SongSelectActionStyle>();
         style.Initialize(button, face, text, primary);
-        var dwell = button.GetComponent<SaberDwellTarget>() ?? button.gameObject.AddComponent<SaberDwellTarget>();
-        dwell.progressColor = Accent; dwell.dwellSeconds = 1f;
+        float width = ((RectTransform)button.transform).rect.width;
+        MenuNoteAction.Attach(button, new Vector2(-width * .5f + (primary ? 48 : 36), 0), primary ? 56 : 42, Accent);
         return style;
     }
 }
@@ -102,10 +104,10 @@ public class SongSelectActionStyle : MonoBehaviour, IPointerEnterHandler, IPoint
     {
         if (button==null || face==null || label==null) return;
         bool active=button.interactable; bool raised=active && (hover || focused);
-        Color fill=active && primary ? Color.Lerp(SongSelectVisuals.Accent,SongSelectVisuals.Surface,.20f) : SongSelectVisuals.Surface;
+        Color fill=active && primary ? Color.Lerp(SongSelectVisuals.Accent,SongSelectVisuals.Surface,.88f) : SongSelectVisuals.Surface;
         if (raised) fill=Color.Lerp(fill,SongSelectVisuals.Accent,primary?.12f:.15f);
         face.SetColors(fill,active && (primary || raised)?SongSelectVisuals.Accent:SongSelectVisuals.Edge);
-        label.color=!active?SongSelectVisuals.Disabled:primary?SongSelectVisuals.Background:SongSelectVisuals.Text;
+        label.color=!active?SongSelectVisuals.Disabled:SongSelectVisuals.Text;
     }
     public void OnPointerEnter(PointerEventData e) { hover=true; Refresh(); }
     public void OnPointerExit(PointerEventData e) { hover=false; Refresh(); }

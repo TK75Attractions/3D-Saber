@@ -8,6 +8,9 @@ public class CuttableNote : MonoBehaviour
 {
     public bool IsCut { get; private set; }
     public bool IsJudgeable { get; set; }
+    // メニュー専用の追加条件。既定値では本編の既存判定を変更しない。
+    public float MinimumCutSpeed { get; set; }
+    public bool RequireJudgeableOnCut { get; set; }
     public bool IsMissed { get; private set; }
     public double HitTime { get; set; }
     // 金ノーツ：切ったときに豪華音を鳴らすため NoteSpawner が立てる。
@@ -96,6 +99,9 @@ public class CuttableNote : MonoBehaviour
     public void Cut(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand)
     {
         if (IsCut || IsMissed || IsFinalized) return;
+
+        if (RequireJudgeableOnCut && !IsJudgeable) return;
+        if (MinimumCutSpeed > 0f && !(cutVelocity.magnitude >= MinimumCutSpeed)) return;
 
         // 担当ハンド不一致のスイングは切れない。ノーツは無傷のまま、正しい手での再判定が可能。
         if (!SaberHandHelper.CanCut(RequiredHand, cutterHand)) return;

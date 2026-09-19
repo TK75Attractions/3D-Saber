@@ -34,6 +34,7 @@ public class SongSelectSkin : MonoBehaviour
         scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
         scaler.matchWidthOrHeight = .5f;
         ctl.selectedPrefix = ctl.normalPrefix = "";
+        SongSelectNoteMenu.Build();
         if (ctl.SelectedIndex >= 0) ctl.Select(ctl.SelectedIndex);
         HideSceneRelics(canvas);
         BuildBackdrop(canvas);
@@ -45,7 +46,7 @@ public class SongSelectSkin : MonoBehaviour
         ctl.OnSelectionChanged += HandleSelectionChanged;
         ctl.OnDifficultyChanged += HandleDifficultyChanged;
         HandleSelectionChanged(ctl.SelectedIndex);
-        SaberUIPointer.Build();
+        SaberUIPointer.Build().SlashOnly = true;
         SongSelectSlashNav.Build(ctl);
     }
 
@@ -100,7 +101,7 @@ public class SongSelectSkin : MonoBehaviour
         SongSelectVisuals.Label(canvas.transform,"HeaderCrumb","3D SABER  /  MUSIC LIBRARY",16,new Vector2(-510,484),new Vector2(748,24),SongSelectVisuals.Muted);
         SongSelectVisuals.Label(canvas.transform,"HeaderTitle","SONG SELECT",52,new Vector2(-555,430),new Vector2(658,70),SongSelectVisuals.Text,TextAlignmentOptions.MidlineLeft,true);
         SongSelectVisuals.Label(canvas.transform,"HeaderJp","楽曲選択",22,new Vector2(-383,422),new Vector2(166,35),SongSelectVisuals.Muted);
-        var back = Action(canvas.transform,"BackToTitle","タイトルへ",new Vector2(783,450),new Vector2(178,52),false);
+        var back = Action(canvas.transform,"BackToTitle","タイトルへ",new Vector2(749,450),new Vector2(246,72),false);
         back.onClick.AddListener(() => UnityEngine.SceneManagement.SceneManager.LoadScene("Title"));
         SongSelectVisuals.Panel(canvas.transform,"HeaderRule",new Vector2(0,385),new Vector2(1768,1),SongSelectVisuals.Edge,Color.clear,0);
     }
@@ -132,7 +133,7 @@ public class SongSelectSkin : MonoBehaviour
         panelArtist = SongSelectVisuals.Label(canvas.transform,"PanelSongArtist","",18,new Vector2(DetailX,-78),new Vector2(592,26),SongSelectVisuals.Muted,TextAlignmentOptions.Center);
         panelArtist.enableAutoSizing=true; panelArtist.fontSizeMin=14; panelArtist.fontSizeMax=18;
         BuildDifficultyRibbons(canvas);
-        masterWarning = SongSelectVisuals.Rect(canvas.transform,"MasterWarning",new Vector2(DetailX,-219),new Vector2(592,40)).gameObject;
+        masterWarning = SongSelectVisuals.Rect(canvas.transform,"MasterWarning",new Vector2(DetailX,-232),new Vector2(592,26)).gameObject;
         SongSelectVisuals.Panel(masterWarning.transform,"WarningRule",new Vector2(-286,0),new Vector2(3,18),DifficultyColor(2),Color.clear,0);
         SongSelectVisuals.Label(masterWarning.transform,"Text","高難易度注意！！",18,Vector2.zero,new Vector2(550,40),DifficultyColor(2),TextAlignmentOptions.MidlineLeft);
         masterWarning.SetActive(false);
@@ -140,10 +141,10 @@ public class SongSelectSkin : MonoBehaviour
         {
             var rt=ctl.startButton.GetComponent<RectTransform>(); rt.SetParent(canvas.transform,false); rt.SetAsLastSibling();
             rt.anchorMin=rt.anchorMax=rt.pivot=new Vector2(.5f,.5f);
-            rt.anchoredPosition=new Vector2(DetailX,-282); rt.sizeDelta=new Vector2(592,76);
+            rt.anchoredPosition=new Vector2(DetailX,-294); rt.sizeDelta=new Vector2(592,80);
             startStyle=SongSelectVisuals.StyleAction(ctl.startButton,"START  /  プレイ開始",true);
         }
-        startDifficultyHint = SongSelectVisuals.Label(canvas.transform,"DifficultyHint","",16,new Vector2(DetailX,-346),new Vector2(592,24),SongSelectVisuals.Muted,TextAlignmentOptions.Center);
+        startDifficultyHint = SongSelectVisuals.Label(canvas.transform,"DifficultyHint","",16,new Vector2(DetailX,-354),new Vector2(592,24),SongSelectVisuals.Muted,TextAlignmentOptions.Center);
     }
 
     void BuildJacket(Canvas canvas)
@@ -169,7 +170,7 @@ public class SongSelectSkin : MonoBehaviour
 
     void BuildDifficultyRibbons(Canvas canvas)
     {
-        var row=SongSelectVisuals.Rect(canvas.transform,"DifficultyRibbonRow",new Vector2(DetailX,-136),new Vector2(592,DifficultyTileItem.TileHeight));
+        var row=SongSelectVisuals.Rect(canvas.transform,"DifficultyRibbonRow",new Vector2(DetailX,-153),new Vector2(592,DifficultyTileItem.TileHeight));
         var layout=row.gameObject.AddComponent<HorizontalLayoutGroup>();
         layout.spacing=12; layout.childAlignment=TextAnchor.MiddleCenter;
         layout.childControlWidth=layout.childControlHeight=true; layout.childForceExpandWidth=true; layout.childForceExpandHeight=false;
@@ -190,7 +191,7 @@ public class SongSelectSkin : MonoBehaviour
     void BuildFooter(Canvas canvas)
     {
         SongSelectVisuals.Panel(canvas.transform,"FooterRule",new Vector2(0,-449),new Vector2(1768,1),SongSelectVisuals.Edge,Color.clear,0);
-        var calibration=Action(canvas.transform,"CalibrationButton","判定調整",new Vector2(-774,-488),new Vector2(220,52),false);
+        var calibration=Action(canvas.transform,"CalibrationButton","判定調整",new Vector2(-754,-491),new Vector2(260,68),false);
         calibration.onClick.AddListener(EnterCalibration);
     }
 

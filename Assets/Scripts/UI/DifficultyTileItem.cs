@@ -7,7 +7,7 @@ using UnityEngine.UI;
 // 選択しても位置を動かさず、文字と当たり判定の位置を固定する。
 public class DifficultyTileItem : MonoBehaviour
 {
-    public const float TileHeight = 92f;
+    public const float TileHeight = 124f;
     const float SelectDuration = 0.18f;
 
     static readonly Color LineColor = SongSelectVisuals.Edge;
@@ -21,6 +21,7 @@ public class DifficultyTileItem : MonoBehaviour
     SongSelectPanelGraphic selectionLine;
     TextMeshProUGUI nameText;
     TextMeshProUGUI levelText;
+    TextMeshProUGUI selectionText;
     Color accent;
     bool selected;
     bool hasChart = true;
@@ -46,11 +47,6 @@ public class DifficultyTileItem : MonoBehaviour
         layout.flexibleWidth = 1f;
         layout.flexibleHeight = 0f;
 
-        var dwell = GetComponent<SaberDwellTarget>();
-        if (dwell == null) dwell = gameObject.AddComponent<SaberDwellTarget>();
-        dwell.dwellSeconds = 1f;
-        dwell.progressColor = accent;
-
         var contentGo = new GameObject("Content", typeof(RectTransform));
         contentGo.transform.SetParent(transform, false);
         content = contentGo.GetComponent<RectTransform>();
@@ -61,19 +57,21 @@ public class DifficultyTileItem : MonoBehaviour
         fill = SongSelectVisuals.Panel(content,"Fill",Vector2.zero,Vector2.zero,FillColor,LineColor,8f);
         StretchFull(fill.rectTransform);
         fill.raycastTarget = true; // ボタン/ドウェルの当たり判定
-        selectionLine = SongSelectVisuals.Panel(content,"SelectionLine",new Vector2(0,-42),new Vector2(145,2),Color.clear,Color.clear,0);
+        selectionLine = SongSelectVisuals.Panel(content,"SelectionLine",new Vector2(0,-59),new Vector2(145,2),Color.clear,Color.clear,0);
 
-        nameText = UISkinKit.MakeTMP(content, "Name", displayName, 21f,
+        nameText = UISkinKit.MakeTMP(content, "Name", displayName, 19f,
             NameGray, TextAlignmentOptions.Center,
-            new Vector2(0f, 23f), new Vector2(172f, 28f), FontStyles.Normal, 1f,
+            new Vector2(26f, 25f), new Vector2(116f, 28f), FontStyles.Normal, 1f,
             UISkinKit.FontAsset("Oxanium-Bold"));
         nameText.raycastTarget = false;
 
-        levelText = UISkinKit.MakeTMP(content, "Level", "", 31f,
+        levelText = UISkinKit.MakeTMP(content, "Level", "", 28f,
             SongSelectVisuals.Text, TextAlignmentOptions.Center,
-            new Vector2(0f, -15f), new Vector2(172f, 38f), FontStyles.Normal, 0f,
+            new Vector2(26f, -9f), new Vector2(116f, 38f), FontStyles.Normal, 0f,
             UISkinKit.FontAsset("Oxanium-ExtraBold"));
         levelText.raycastTarget = false;
+        selectionText = SongSelectVisuals.Label(content,"SelectionState","斬って選択",14,new Vector2(0,-43),new Vector2(160,22),NameGray,TextAlignmentOptions.Center);
+        MenuNoteAction.Attach(button,new Vector2(-57,8),42,accent);
 
         var rootImage = GetComponent<Image>();
         if (rootImage != null) rootImage.enabled = false;
@@ -119,6 +117,11 @@ public class DifficultyTileItem : MonoBehaviour
         }
         if (selectionLine != null) selectionLine.color = new Color(accent.r,accent.g,accent.b,t);
         if (nameText != null) nameText.color = Color.Lerp(NameGray, accent, t);
+        if (selectionText != null)
+        {
+            selectionText.text = !hasChart ? "譜面なし" : selected ? "選択中" : "斬って選択";
+            selectionText.color = selected ? accent : NameGray;
+        }
         if (levelText != null)
         {
             levelText.color = hasChart ? SongSelectVisuals.Text : DisabledLevel;

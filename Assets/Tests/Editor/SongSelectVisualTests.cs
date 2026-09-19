@@ -25,7 +25,7 @@ public class SongSelectVisualTests
         var text=button.GetComponentInChildren<TextMeshProUGUI>();
         Assert.AreEqual("Oxanium-ExtraBold",text.font.name);
         Assert.IsTrue(text.font.HasCharacter('開',true,true));
-        Assert.AreEqual(1f,button.GetComponent<SaberDwellTarget>().dwellSeconds);
+        Assert.IsNotNull(button.GetComponent<MenuNoteAction>());
         Assert.IsFalse(text.raycastTarget);
     }
 

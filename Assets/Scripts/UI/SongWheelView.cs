@@ -169,6 +169,8 @@ public class SongWheelView : MonoBehaviour
         btn.targetGraphic = row.fill;
         btn.transition = Selectable.Transition.None;
         btn.onClick.AddListener(() => { if (ctl != null) ctl.Select(captured); });
+        thumbGo.SetActive(false);
+        MenuNoteAction.Attach(btn,new Vector2(-309,0),46,SongSelectVisuals.Accent);
 
         return row;
     }

@@ -1,59 +1,36 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// 曲選択画面の左下(JUDGMENT SETUP の右隣)にプロジェクターモードの ON/OFF ボタンを置く。
-// SongSelectSkin は編集せず、スキンの構築完了(CalibrationButton の出現)を待ってから同じ Canvas に相乗りする。
+// 選曲の設定操作も、共通のノーツとラベル付きパネルに揃える。
 public class ProjectorModeToggleUI : MonoBehaviour
 {
     public const string ButtonName = "ProjectorModeButton";
-
-    UISkinKit.NeonButtonParts parts;
-
-    public static string LabelFor(bool on)
-    {
-        return on ? "PROJECTOR: ON" : "PROJECTOR: OFF";
-    }
+    TextMeshProUGUI label;
+    public static string LabelFor(bool on) => on ? "PROJECTOR: ON" : "PROJECTOR: OFF";
 
     IEnumerator Start()
     {
         Transform canvasTf = null;
-        Transform calib = null;
-        for (int i = 0; i < 300 && calib == null; i++)
+        for (int i = 0; i < 300; i++)
         {
             var ctl = Object.FindFirstObjectByType<SongSelectController>();
-            Canvas canvas = null;
-            if (ctl != null)
-            {
-                canvas = ctl.GetComponent<Canvas>();
-                if (canvas == null) canvas = ctl.GetComponentInParent<Canvas>();
-            }
-            if (canvas != null)
-            {
-                canvasTf = canvas.transform;
-                calib = canvasTf.Find("CalibrationButton");
-            }
-            if (calib == null) yield return null;
+            var canvas = ctl != null ? ctl.GetComponentInParent<Canvas>() : null;
+            if (canvas != null && canvas.transform.Find("CalibrationButton") != null)
+            { canvasTf = canvas.transform; break; }
+            yield return null;
         }
         if (canvasTf == null || canvasTf.Find(ButtonName) != null) yield break;
-
-        parts = UISkinKit.MakeNeonButton(canvasTf, ButtonName, LabelFor(DisplaySettings.ProjectorMode),
-            Vector2.zero, new Vector2(330f, 76f), UISkinPalette.Yellow, ProjectorModeHotkey.Toggle, 21f);
-        var rt = parts.button.GetComponent<RectTransform>();
-        rt.anchorMin = Vector2.zero;
-        rt.anchorMax = Vector2.zero;
-        rt.pivot = Vector2.zero;
-        rt.anchoredPosition = new Vector2(380f, 30f); // JUDGMENT SETUP(30,30 / 幅330)の右隣
+        var rt = SongSelectVisuals.Rect(canvasTf,ButtonName,new Vector2(-430,-491),new Vector2(316,68));
+        var button = rt.gameObject.AddComponent<Button>();
+        button.onClick.AddListener(ProjectorModeHotkey.Toggle);
+        SongSelectVisuals.StyleAction(button,LabelFor(DisplaySettings.ProjectorMode),false);
+        MenuNoteAction.Attach(button,new Vector2(-122,0),42,new Color(.94f,.77f,.40f));
+        label = rt.Find("ActionLabel").GetComponent<TextMeshProUGUI>();
         DisplaySettings.OnProjectorModeChanged += HandleChanged;
     }
 
-    void OnDestroy()
-    {
-        DisplaySettings.OnProjectorModeChanged -= HandleChanged;
-    }
-
-    void HandleChanged(bool on)
-    {
-        if (parts.label != null) parts.label.text = LabelFor(on);
-    }
+    void OnDestroy() { DisplaySettings.OnProjectorModeChanged -= HandleChanged; }
+    void HandleChanged(bool on) { if (label != null) label.text = LabelFor(on); }
 }
