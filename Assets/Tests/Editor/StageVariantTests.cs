@@ -51,7 +51,9 @@ public class StageVariantTests
             Assert.IsEmpty(go.GetComponentsInChildren<Collider>());
             var filters = go.GetComponentsInChildren<MeshFilter>();
             Assert.LessOrEqual(filters.Length, 28);
-            Assert.LessOrEqual(go.GetComponentsInChildren<MeshRenderer>().Select(r => r.sharedMaterial).Distinct().Count(), 9);
+            // 紫の折り幕だけが専用の非発光材質を一つ持つ。他の金属背景の上限は維持する。
+            int materialBudget = theme == StageTheme.VioletVault ? 10 : 9;
+            Assert.LessOrEqual(go.GetComponentsInChildren<MeshRenderer>().Select(r => r.sharedMaterial).Distinct().Count(), materialBudget);
             foreach (var filter in filters)
             {
                 var mesh = filter.sharedMesh;

@@ -52,6 +52,7 @@ public partial class FloorRenderer
     {
         var panels = new StageGeometry(); var insets = new StageGeometry(); var ribs = new StageGeometry();
         var trims = new StageGeometry(); var tabs = new StageGeometry();
+        if (ActiveTheme == StageTheme.VioletVault) violetCurtain = VioletCurtainStage.Ensure(this);
         float spacing = ActiveTheme == StageTheme.AmberFoundry ? 4.6f : 6.0f;
         for (float z = minZ; z < farZ - 1.2f; z += spacing)
         {
@@ -63,13 +64,33 @@ public partial class FloorRenderer
                 var inward = Quaternion.Euler(0, side * 90f, 0);
                 if (ActiveTheme == StageTheme.VioletVault)
                 {
+                    int bay = Mathf.RoundToInt((z - minZ) / spacing);
+                    bool curtainWindow = violetCurtain != null && (bay == 1 || bay == 2);
                     // 壁面に対して斜めに浮いた菱形装甲と、連続するV字の支柱。
                     panels.Panel(new Vector3(side * 8.22f, floorY + 3.1f, mid),
                         new Vector3(length - .20f, 5.45f, .28f), inward, .50f);
-                    insets.Panel(new Vector3(side * 7.95f, floorY + 3.0f, mid),
-                        new Vector3(length * .74f, 3.70f, .18f), inward, .60f);
-                    panels.Panel(new Vector3(side * 7.77f, floorY + 2.92f, mid),
-                        new Vector3(length * .58f, 2.55f, .22f), inward * Quaternion.Euler(0, 0, 18f), .54f);
+                    if (curtainWindow)
+                    {
+                        // 内側装甲をこの二窓だけ奥窓に置換し、幕を開いた先の深さを確保する。
+                        insets.Panel(new Vector3(side * 8.02f, floorY + 2.86f, mid),
+                            new Vector3(4.02f, 4.12f, .08f), inward, .38f);
+                        ribs.Box(new Vector3(side * 7.65f, floorY + 4.87f, mid), new Vector3(.16f, .16f, 4.10f));
+                        ribs.Box(new Vector3(side * 7.68f, floorY + .88f, mid), new Vector3(.16f, .12f, 4.10f));
+                        foreach (int endSide in new[] { -1, 1 })
+                        {
+                            float edgeZ = mid + endSide * 1.98f;
+                            ribs.Box(new Vector3(side * 7.73f, floorY + 2.88f, edgeZ), new Vector3(.17f, 4.05f, .12f));
+                            ribs.Beam(new Vector3(side * 7.65f, floorY + 4.87f, edgeZ),
+                                new Vector3(side * 8.18f, floorY + 4.87f, edgeZ), .10f, .10f);
+                        }
+                    }
+                    else
+                    {
+                        insets.Panel(new Vector3(side * 7.95f, floorY + 3.0f, mid),
+                            new Vector3(length * .74f, 3.70f, .18f), inward, .60f);
+                        panels.Panel(new Vector3(side * 7.77f, floorY + 2.92f, mid),
+                            new Vector3(length * .58f, 2.55f, .22f), inward * Quaternion.Euler(0, 0, 18f), .54f);
+                    }
                     Vector3 foot = new Vector3(side * 6.85f, floorY + .15f, z + .16f);
                     Vector3 apex = new Vector3(side * 6.35f, floorY + 5.68f, mid);
                     Vector3 end = new Vector3(side * 6.85f, floorY + .15f, z + length - .16f);
@@ -79,7 +100,8 @@ public partial class FloorRenderer
                     trims.Beam(Vector3.Lerp(apex, end, .16f) + Vector3.left * side * .16f,
                         Vector3.Lerp(apex, end, .33f) + Vector3.left * side * .16f, .026f, .021f);
                     ribs.Panel(new Vector3(side * 6.85f, floorY + .20f, z + .16f), new Vector3(.8f, .60f, .95f), Quaternion.identity, .16f);
-                    tabs.Box(new Vector3(side * 7.62f, floorY + 2.8f, mid), new Vector3(.023f, .12f, .23f));
+                    if (!curtainWindow)
+                        tabs.Box(new Vector3(side * 7.62f, floorY + 2.8f, mid), new Vector3(.023f, .12f, .23f));
                 }
                 else if (ActiveTheme == StageTheme.AmberFoundry)
                 {
