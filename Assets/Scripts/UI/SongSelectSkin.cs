@@ -193,8 +193,6 @@ public class SongSelectSkin : MonoBehaviour
         SongSelectVisuals.Panel(canvas.transform,"FooterRule",new Vector2(0,-449),new Vector2(1768,1),SongSelectVisuals.Edge,Color.clear,0);
         var calibration=Action(canvas.transform,"CalibrationButton","判定調整",new Vector2(-754,-491),new Vector2(260,68),false);
         calibration.onClick.AddListener(EnterCalibration);
-        SongSelectVisuals.Label(canvas.transform, "AimHint", "照準を1秒合わせて選択  /  離すと再発射できます", 18,
-            new Vector2(268, -491), new Vector2(1080, 36), SongSelectVisuals.Muted, TextAlignmentOptions.MidlineRight);
     }
 
     static Button Action(Transform parent,string name,string label,Vector2 position,Vector2 size,bool primary)

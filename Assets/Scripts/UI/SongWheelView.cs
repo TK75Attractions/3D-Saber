@@ -161,7 +161,7 @@ public class SongWheelView : MonoBehaviour
         row.level = UISkinKit.MakeTMP(go.transform, "Level", "--", 32f,
             LockedText, TextAlignmentOptions.MidlineRight,
             new Vector2(306f, -7f), new Vector2(68f, 45f), FontStyles.Normal, 0f,
-            UISkinKit.FontAsset("Oxanium-ExtraBold"));
+            SongSelectVisuals.DifficultyNumberFont());
         SongSelectVisuals.Label(go.transform,"LevelCaption","LV",12,new Vector2(306,23),new Vector2(68,18),SongSelectVisuals.Muted,TextAlignmentOptions.MidlineRight);
 
         int captured = index;

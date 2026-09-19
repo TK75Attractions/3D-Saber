@@ -16,6 +16,19 @@ public static class SongSelectVisuals
     public static readonly Color Disabled = new Color(.33f,.42f,.47f);
     public static readonly Color[] Difficulty = { new Color(.48f,.83f,.63f), new Color(.40f,.70f,.96f), new Color(1f,.43f,.48f) };
 
+    // レベルの数字だけを7セグにする。LVなどの英字は従来の書体へ戻す。
+    public static TMP_FontAsset DifficultyNumberFont()
+    {
+        var digits = UISkinKit.FontAsset("SaberSevenSegment-Regular");
+        var text = UISkinKit.FontAsset("Oxanium-ExtraBold");
+        if (digits == null) return text;
+        if (digits.fallbackFontAssetTable == null)
+            digits.fallbackFontAssetTable = new System.Collections.Generic.List<TMP_FontAsset>();
+        if (text != null && !digits.fallbackFontAssetTable.Contains(text))
+            digits.fallbackFontAssetTable.Insert(0, text);
+        return digits;
+    }
+
     public static RectTransform Rect(Transform parent, string name, Vector2 position, Vector2 size)
     {
         var go = new GameObject(name, typeof(RectTransform)); go.transform.SetParent(parent, false);
