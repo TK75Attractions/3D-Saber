@@ -13,6 +13,7 @@ public sealed class StageThemeResponse : MonoBehaviour
     public const int VertexBudget = 4096;
     public const float GardenLifetime = 1.2f;
     public const float FoundryLifetime = .65f;
+    public const float PrismLifetime = .71f;
     readonly bool[] active = new bool[LaneCount];
     readonly float[] ages = new float[LaneCount];
     readonly List<Vector3> surfaceVertices = new List<Vector3>(VertexBudget);
@@ -36,7 +37,7 @@ public sealed class StageThemeResponse : MonoBehaviour
     public static StageThemeResponse Create(Transform parent, StageTheme theme, float floorY)
     {
         if (parent == null || !Finite(floorY) ||
-            (theme != StageTheme.AmberFoundry && theme != StageTheme.MoonlitGarden)) return null;
+            (theme != StageTheme.AmberFoundry && theme != StageTheme.MoonlitGarden && theme != StageTheme.AzurePrism)) return null;
         var surface = Resources.Load<Shader>("Stage/ScenicSurface");
         var accent = Resources.Load<Shader>("Effects/GameplayCutAccent");
         // 材質がない場合は側面の既存反応を置き換えない。
@@ -53,7 +54,8 @@ public sealed class StageThemeResponse : MonoBehaviour
     {
         surfaceMaterial = new Material(surface) { name = "ThemeResponse/Surface", hideFlags = HideFlags.DontSave };
         surfaceMaterial.SetColor("_BaseColor", theme == StageTheme.MoonlitGarden
-            ? new Color(.28f, .37f, .17f) : new Color(.27f, .245f, .19f));
+            ? new Color(.28f, .37f, .17f) : theme == StageTheme.AzurePrism
+            ? new Color(.16f, .25f, .30f) : new Color(.27f, .245f, .19f));
         surfaceMaterial.SetColor("_HazeColor", new Color(.035f, .065f, .08f));
         surfaceMaterial.SetColor("_AccentColor", new Color(.28f, .31f, .18f));
         surfaceMaterial.SetFloat("_Emission", .025f);
@@ -62,7 +64,7 @@ public sealed class StageThemeResponse : MonoBehaviour
         accentMaterial = new Material(accent) { name = "ThemeResponse/Details", hideFlags = HideFlags.DontSave };
         surfaceMesh = new Mesh { name = "ThemeResponse/SurfaceMesh", hideFlags = HideFlags.DontSave };
         accentMesh = new Mesh { name = "ThemeResponse/AccentMesh", hideFlags = HideFlags.DontSave };
-        if (theme == StageTheme.MoonlitGarden) surfaceMesh.MarkDynamic();
+        if (theme != StageTheme.AmberFoundry) surfaceMesh.MarkDynamic();
         accentMesh.MarkDynamic();
         surfaceRenderer = Emit("Surface", surfaceMesh, surfaceMaterial);
         accentRenderer = Emit("Details", accentMesh, accentMaterial);
@@ -91,7 +93,8 @@ public sealed class StageThemeResponse : MonoBehaviour
         if (!built || !isActiveAndEnabled || lane < 0 || lane >= LaneCount) return;
         // 同列の高速連打でも葉を着水させ、最初の寿命を延長しない。
         // この間の各Perfectは親の床反応へ任せ、別列の葉は独立して開始できる。
-        if (theme == StageTheme.MoonlitGarden && active[lane]) return;
+        // 絞りも一周期を完了させる。連打のたびに閉じたまま張り付かせない。
+        if ((theme == StageTheme.MoonlitGarden || theme == StageTheme.AzurePrism) && active[lane]) return;
         active[lane] = true; ages[lane] = 0; dirty = true;
         CountResponses();
     }
@@ -107,7 +110,8 @@ public sealed class StageThemeResponse : MonoBehaviour
             delta = 0;
         }
         hasTime = true; LastTickSeconds = songSeconds;
-        float lifetime = theme == StageTheme.MoonlitGarden ? GardenLifetime : FoundryLifetime;
+        float lifetime = theme == StageTheme.MoonlitGarden ? GardenLifetime
+            : theme == StageTheme.AzurePrism ? PrismLifetime : FoundryLifetime;
         for (int lane = 0; lane < LaneCount; lane++)
         {
             if (!active[lane] || delta <= 0) continue;
@@ -144,6 +148,9 @@ public sealed class StageThemeResponse : MonoBehaviour
     {
         int side = lane < 2 ? -1 : 1;
         bool outer = lane == 0 || lane == 3;
+        if (theme == StageTheme.AzurePrism)
+            // 奥の装置も柱より通路側へ置き、羽根の中心を隠さない。全頂点は通路外に保つ。
+            return new Vector3(side * (outer ? 6.75f : 6.60f), floor + 1.65f, outer ? 5.6f : 10f);
         return theme == StageTheme.MoonlitGarden
             ? new Vector3(side * 7.75f, floor - .075f, outer ? 5.8f : 10.5f)
             : new Vector3(side * 6.55f, floor + 1.65f, outer ? 5.5f : 14.7f);
@@ -180,6 +187,12 @@ public sealed class StageThemeResponse : MonoBehaviour
         {
             surfaceVertices.Clear(); normals.Clear(); surfaceIndices.Clear();
             for (int lane = 0; lane < LaneCount; lane++) if (active[lane]) DrawGarden(lane, ages[lane]);
+            UploadSurface();
+        }
+        else if (theme == StageTheme.AzurePrism)
+        {
+            surfaceVertices.Clear(); normals.Clear(); surfaceIndices.Clear();
+            for (int lane = 0; lane < LaneCount; lane++) DrawPrism(lane, active[lane] ? ages[lane] : -1);
             UploadSurface();
         }
         else for (int lane = 0; lane < LaneCount; lane++) DrawGauge(lane, active[lane] ? ages[lane] : -1);
@@ -252,6 +265,55 @@ public sealed class StageThemeResponse : MonoBehaviour
         {
             Vector3 axis = Circle(right, up, spoke * Mathf.PI * 2 / 3 + valveKick);
             Stroke(valve, valve + axis * .17f, .043f, mark, Vector3.Cross(axis, front).normalized);
+        }
+    }
+
+    void DrawPrism(int lane, float age)
+    {
+        Vector3 center = Anchor(lane);
+        Quaternion rotation = Quaternion.Euler(0, lane < 2 ? -25 : 25, 0);
+        Vector3 right = rotation * Vector3.right, up = Vector3.up, front = rotation * Vector3.back;
+        // 六枚の羽根は光ではなく金属面で読ませ、装置の輪郭と取付座は動かさない。
+        for (int i = 0; i < 32; i++)
+        {
+            Vector3 a = Circle(right, up, i * Mathf.PI * 2 / 32);
+            Vector3 b = Circle(right, up, (i + 1) * Mathf.PI * 2 / 32);
+            SolidQuad(center + a * .61f, center + b * .61f,
+                center + b * .53f, center + a * .53f, front);
+        }
+        SolidQuad(center - right * .055f - up * .58f, center + right * .055f - up * .58f,
+            center + right * .055f - up * 1.5f, center - right * .055f - up * 1.5f, front);
+        SolidQuad(center - right * .27f - up * 1.43f, center + right * .27f - up * 1.43f,
+            center + right * .27f - up * 1.54f, center - right * .27f - up * 1.54f, front);
+
+        float closure = age < 0 ? 0 : age < .16f ? Mathf.SmoothStep(0, 1, age / .16f)
+            : age <= .26f ? 1 : 1 - Mathf.SmoothStep(0, 1, (age - .26f) / .45f);
+        if (lastReduced) closure *= .3f;
+        float aperture = Mathf.Lerp(.38f, .23f, closure);
+        float turn = Mathf.Lerp(8, 29, closure) * Mathf.Deg2Rad;
+        Vector3 face = center + front * .012f;
+        float gain = lastProjector ? .78f : 1;
+        Color seam = new Color(.42f, .66f, .76f, .58f * gain);
+        for (int blade = 0; blade < 6; blade++)
+        {
+            float a = blade * Mathf.PI / 3;
+            float b = (blade + 1) * Mathf.PI / 3;
+            Vector3 outerA = face + Circle(right, up, a) * .535f;
+            Vector3 outerB = face + Circle(right, up, b) * .535f;
+            Vector3 innerA = face + Circle(right, up, a + turn) * aperture;
+            Vector3 innerB = face + Circle(right, up, b + turn) * aperture;
+            SolidQuad(outerA, outerB, innerB, innerA, front);
+            Vector3 edge = Vector3.Cross(innerA - outerA, front).normalized;
+            Stroke(outerA + front * .007f, innerA + front * .007f, .012f, seam, edge);
+        }
+        // 成功時もフラッシュは加えず、固定された外周の刻みを残す。
+        Ring(center + front * .008f, .575f, .009f,
+            new Color(.29f, .49f, .60f, .38f * gain), right, up, 32);
+        for (int i = 0; i < 4; i++)
+        {
+            Vector3 axis = Circle(right, up, i * Mathf.PI * .5f);
+            Stroke(center + axis * .555f + front * .010f, center + axis * .60f + front * .010f,
+                .018f, seam, Vector3.Cross(axis, front).normalized);
         }
     }
 

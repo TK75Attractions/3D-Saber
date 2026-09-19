@@ -5,14 +5,18 @@ public class StageThemeResponseTests
 {
     GameObject root;
     [SetUp] public void Setup() { root = new GameObject("ThemeResponseTest"); }
-    [TearDown] public void Cleanup() { if (root != null) Object.DestroyImmediate(root); }
+    [TearDown] public void Cleanup()
+    {
+        DisplaySettings.ResetReducedEffectsCacheForTest();
+        if (root != null) Object.DestroyImmediate(root);
+    }
     StageThemeResponse Create(StageTheme theme) => StageThemeResponse.Create(root.transform, theme, -2.5f);
 
     [Test]
     public void UnsupportedThemesOrInvalidFloorDoNotCreateOrReplaceAnything()
     {
         for (int i = 0; i < StageThemeCatalog.Count; i++)
-            if (i != (int)StageTheme.MoonlitGarden && i != (int)StageTheme.AmberFoundry)
+            if (i != (int)StageTheme.MoonlitGarden && i != (int)StageTheme.AmberFoundry && i != (int)StageTheme.AzurePrism)
                 Assert.IsNull(Create((StageTheme)i));
         Assert.IsNull(StageThemeResponse.Create(root.transform, StageTheme.MoonlitGarden, float.NaN));
         Assert.AreEqual(0, root.transform.childCount);
@@ -22,6 +26,8 @@ public class StageThemeResponseTests
     [TestCase(StageTheme.MoonlitGarden, 2)] [TestCase(StageTheme.MoonlitGarden, 3)]
     [TestCase(StageTheme.AmberFoundry, 0)] [TestCase(StageTheme.AmberFoundry, 1)]
     [TestCase(StageTheme.AmberFoundry, 2)] [TestCase(StageTheme.AmberFoundry, 3)]
+    [TestCase(StageTheme.AzurePrism, 0)] [TestCase(StageTheme.AzurePrism, 1)]
+    [TestCase(StageTheme.AzurePrism, 2)] [TestCase(StageTheme.AzurePrism, 3)]
     public void EachLaneOwnsOnlyItsResponseAndStaysOutsideTheCorridor(StageTheme theme, int lane)
     {
         var response = Create(theme);
@@ -44,6 +50,7 @@ public class StageThemeResponseTests
 
     [TestCase(StageTheme.MoonlitGarden, StageThemeResponse.GardenLifetime)]
     [TestCase(StageTheme.AmberFoundry, StageThemeResponse.FoundryLifetime)]
+    [TestCase(StageTheme.AzurePrism, StageThemeResponse.PrismLifetime)]
     public void SongClockFreezesAndThenExpiresAtItsOwnLifetime(StageTheme theme, float lifetime)
     {
         var response = Create(theme); response.Tick(10); response.OnPerfect(0); response.Tick(10.2);
@@ -59,6 +66,7 @@ public class StageThemeResponseTests
     }
 
     [TestCase(StageTheme.MoonlitGarden)] [TestCase(StageTheme.AmberFoundry)]
+    [TestCase(StageTheme.AzurePrism)]
     public void RewindClearAndDisableDoNotCarryOldSuccessIntoAnotherPlay(StageTheme theme)
     {
         var response = Create(theme); response.Tick(10); response.OnPerfect(1); response.OnPerfect(3);
@@ -145,6 +153,7 @@ public class StageThemeResponseTests
     }
 
     [TestCase(StageTheme.MoonlitGarden)] [TestCase(StageTheme.AmberFoundry)]
+    [TestCase(StageTheme.AzurePrism)]
     public void DisablingThePreviewParentClearsResponsesAndInactiveDestructionReleasesResources(StageTheme theme)
     {
         var response = Create(theme); response.Tick(1); response.OnPerfect(0); response.Tick(1.25);
@@ -162,6 +171,7 @@ public class StageThemeResponseTests
     }
 
     [TestCase(StageTheme.MoonlitGarden)] [TestCase(StageTheme.AmberFoundry)]
+    [TestCase(StageTheme.AzurePrism)]
     public void DenseSuccessesReuseFourSlotsAndExactlyTwoOwnedMeshesAndMaterials(StageTheme theme)
     {
         var response = Create(theme); response.Tick(1);
@@ -187,5 +197,74 @@ public class StageThemeResponseTests
         Object.DestroyImmediate(response.gameObject);
         foreach (var mesh in meshes) Assert.IsTrue(mesh == null, "所有メッシュを解放する");
         foreach (var material in materials) Assert.IsTrue(material == null, "所有材質を解放する");
+    }
+
+    [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)]
+    public void PrismOnlyMovesSelectedBladesAndReturnsToExactRest(int lane)
+    {
+        DisplaySettings.SetReducedEffectsForTest(false);
+        var response = Create(StageTheme.AzurePrism); response.Tick(5);
+        Mesh surface = response.transform.Find("Surface").GetComponent<MeshFilter>().sharedMesh;
+        Vector3[] rest = surface.vertices;
+        response.OnPerfect(lane); response.Tick(5.2);
+        Vector3[] closed = surface.vertices;
+        Assert.AreEqual(rest.Length, closed.Length);
+        int changed = 0;
+        for (int i = 0; i < rest.Length; i++)
+        {
+            if (rest[i] == closed[i]) continue;
+            changed++;
+            Assert.AreEqual(lane < 2 ? -1 : 1, Mathf.Sign(closed[i].x));
+            Assert.That(closed[i].z, Is.InRange(lane == 0 || lane == 3 ? 5.2f : 9.6f,
+                lane == 0 || lane == 3 ? 6f : 10.4f));
+        }
+        Assert.Greater(changed, 0, "対象の羽根だけが動く");
+        response.Tick(5.72); CollectionAssert.AreEqual(rest, surface.vertices);
+    }
+
+    [Test]
+    public void RapidPrismHitsFinishFirstCycleWithoutRestartOrDelayedReplay()
+    {
+        var response = Create(StageTheme.AzurePrism); response.Tick(1);
+        Mesh surface = response.transform.Find("Surface").GetComponent<MeshFilter>().sharedMesh;
+        Vector3[] rest = surface.vertices;
+        response.OnPerfect(0);
+        for (int hit = 1; hit <= 7; hit++)
+        {
+            response.Tick(1 + hit * .1); response.OnPerfect(0);
+            Assert.AreEqual(1, response.ActiveResponseCount);
+        }
+        response.Tick(1.711);
+        Assert.AreEqual(0, response.ActiveResponseCount);
+        CollectionAssert.AreEqual(rest, surface.vertices);
+        response.Tick(2);
+        Assert.AreEqual(0, response.ActiveResponseCount, "途中のPerfectを後から予約再生しない");
+        response.OnPerfect(0); response.Tick(2.2);
+        Assert.AreEqual(1, response.ActiveResponseCount, "復帰後は新しいPerfectを受け付ける");
+    }
+
+    [Test]
+    public void LowModeReducesPrismMotionAndCanSwitchDuringTheSameResponse()
+    {
+        DisplaySettings.SetReducedEffectsForTest(false);
+        var response = Create(StageTheme.AzurePrism); response.Tick(1);
+        Mesh surface = response.transform.Find("Surface").GetComponent<MeshFilter>().sharedMesh;
+        Mesh details = response.transform.Find("Details").GetComponent<MeshFilter>().sharedMesh;
+        Vector3[] rest = surface.vertices;
+        response.OnPerfect(2); response.Tick(1.2);
+        Vector3[] full = surface.vertices; Color[] fullColors = details.colors;
+        DisplaySettings.SetReducedEffectsForTest(true); response.Tick(1.2);
+        Vector3[] low = surface.vertices; Color[] lowColors = details.colors;
+        float fullTravel = 0, lowTravel = 0;
+        for (int i = 0; i < rest.Length; i++)
+        { fullTravel += Vector3.Distance(rest[i], full[i]); lowTravel += Vector3.Distance(rest[i], low[i]); }
+        Assert.Greater(fullTravel, .1f);
+        Assert.That(lowTravel / fullTravel, Is.InRange(.2f, .4f));
+        for (int i = 0; i < fullColors.Length; i++)
+            Assert.AreEqual(fullColors[i].a * .3f, lowColors[i].a, .001f);
+        DisplaySettings.SetReducedEffectsForTest(false); response.Tick(1.2);
+        CollectionAssert.AreEqual(full, surface.vertices);
+        Assert.AreEqual(1 << 2, response.ActiveLaneMask, "設定切替で別の列へ移らない");
+        response.Tick(2); CollectionAssert.AreEqual(rest, surface.vertices);
     }
 }

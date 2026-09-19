@@ -9,6 +9,7 @@ using UnityEngine.TestTools;
 
 public class NoteBrightnessPlayTests
 {
+    const int CaptureLayer = 31;
     Scene previousScene, testScene;
     bool projectorMode;
     NoteSpawner spawner;
@@ -134,6 +135,7 @@ public class NoteBrightnessPlayTests
         camera.clearFlags = CameraClearFlags.SolidColor;
         camera.backgroundColor = Color.black;
         camera.allowHDR = false;
+        camera.cullingMask = 1 << CaptureLayer;
         var data = camera.GetUniversalAdditionalCameraData();
         data.renderPostProcessing = false;
         data.renderShadows = false;
@@ -167,8 +169,11 @@ public class NoteBrightnessPlayTests
         }
     }
 
-    static Color[] Render(Camera camera, string label)
+    Color[] Render(Camera camera, string label)
     {
+        // 加算ロードされたGameに前のテストの切断片が残っても、比較対象だけを描画する。
+        foreach (var part in current.GetComponentsInChildren<Transform>(true))
+            part.gameObject.layer = CaptureLayer;
         var target = new RenderTexture(256, 256, 24, RenderTextureFormat.ARGB32);
         var image = new Texture2D(256, 256, TextureFormat.RGB24, false);
         var previousTarget = camera.targetTexture;

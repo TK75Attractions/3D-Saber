@@ -75,7 +75,7 @@ public class FavoriteEffectsPlayTests
     [UnityTest, Timeout(120000)]
     public IEnumerator ThemeResponsesUseFinalPerfect_RespectPlacementAndClearOnReset()
     {
-        foreach (var theme in new[] { StageTheme.AmberFoundry, StageTheme.MoonlitGarden })
+        foreach (var theme in new[] { StageTheme.AmberFoundry, StageTheme.MoonlitGarden, StageTheme.AzurePrism })
         {
             yield return LoadGame(theme);
             var response = floor.GetComponentInChildren<StageThemeResponse>();
@@ -108,6 +108,41 @@ public class FavoriteEffectsPlayTests
             Assert.AreEqual(JudgmentTier.Great, manager.scoreManager.LastTier, "横振りによる方向降格が再現できません。");
             Assert.AreEqual(0, response.ActiveResponseCount, "方向降格前のPerfectで素材が応答しました。");
 
+            // 同時刻の4列でも、方向降格後にPerfectだった実列だけを返す。
+            // Perfectを青の左列と赤の右内列へ置き、親のPair統合も通す。
+            var simultaneous = new ChartData { bpm = 120, notes = new List<NoteData>() };
+            for (int lane = 0; lane < 4; lane++)
+            {
+                var data = Single(lane).notes[0];
+                data.type = "direction"; data.direction = "up";
+                data.color = lane < 2 ? "blue" : "red";
+                simultaneous.notes.Add(data);
+            }
+            SetChart(simultaneous); yield return null;
+            manager.noteSpawner.Tick(1); Draw(1);
+            Assert.AreEqual(4, notes.Count, "同時刻4列のノーツを生成できません。");
+            int perfectMask = 0;
+            for (int lane = 0; lane < 4; lane++)
+            {
+                var current = notes.Find(note => note != null && note.isActiveAndEnabled &&
+                    !note.IsFinalized && StageReactiveEffects.FloorLaneForX(note.transform.position.x) == lane);
+                Assert.NotNull(current, "対象列のノーツがありません: " + lane);
+                bool succeeds = lane == 0 || lane == 2;
+                Cut(current, 1, (succeeds ? Vector3.up : Vector3.right) * 6,
+                    succeeds ? CutDirection.Up : CutDirection.Right);
+                Assert.AreEqual(succeeds ? JudgmentTier.Perfect : JudgmentTier.Great,
+                    manager.scoreManager.LastTier, "混在判定が再現できません: " + lane);
+                if (succeeds) perfectMask |= 1 << lane;
+                Assert.AreEqual(perfectMask, response.ActiveLaneMask,
+                    "同時判定でGreat列の素材が応答したか、Perfect列が抜けました。");
+                Assert.AreEqual(perfectMask, effects.ActiveFloorLaneMask,
+                    "同時判定でGreat列の床が応答したか、Perfect列が抜けました。");
+            }
+            Draw(1.25);
+            Assert.AreEqual(5, response.ActiveLaneMask);
+            Assert.AreEqual(5, effects.ActiveFloorLaneMask);
+            Assert.AreEqual(2, response.ActiveResponseCount);
+
             var longChart = Single(2); longChart.notes[0].type = "long"; longChart.notes[0].count = 4;
             SetChart(longChart); yield return null;
             manager.noteSpawner.Tick(1); Draw(1);
@@ -123,8 +158,15 @@ public class FavoriteEffectsPlayTests
 
     [UnityTest, Timeout(240000)]
     public IEnumerator YurikagoHardAstralOrbit_RealTimeAudioWithScriptedPerfectInput()
+    { return RealTimeAudioWithScriptedPerfectInput(StageTheme.AstralOrbit); }
+
+    [UnityTest, Timeout(240000)]
+    public IEnumerator YurikagoHardAzurePrism_RealTimeAudioWithScriptedPerfectInput()
+    { return RealTimeAudioWithScriptedPerfectInput(StageTheme.AzurePrism); }
+
+    IEnumerator RealTimeAudioWithScriptedPerfectInput(StageTheme theme)
     {
-        yield return LoadGame(StageTheme.AstralOrbit);
+        yield return LoadGame(theme);
         SetChart(ChartLoader.LoadFromStreamingAssets("揺籠", "hard"));
         // GamePlayManagerは停止しているので結果保存/結果シーン遷移は実行されない。
         // 音声とDSP時計を実時間で進め、人工の正方向入力を毎フレーム与える。
