@@ -122,7 +122,6 @@ public class SongSelectSkin : MonoBehaviour
             SongSelectVisuals.Panel(canvas.transform,sign>0?"NavUpDock":"NavDownDock",new Vector2(124.8f,y),new Vector2(116,146),SongSelectVisuals.Surface,SongSelectVisuals.Edge,12);
             SongSelectVisuals.Label(canvas.transform,sign>0?"NavPreviousLabel":"NavNextLabel",sign>0?"PREVIOUS":"NEXT",14,new Vector2(124.8f,y-57),new Vector2(116,20),SongSelectVisuals.Muted,TextAlignmentOptions.Center);
         }
-        SongSelectVisuals.Label(canvas.transform,"NavInstruction","斬って\n曲送り",19,new Vector2(124.8f,0),new Vector2(114,74),SongSelectVisuals.Muted,TextAlignmentOptions.Center);
     }
 
     void BuildRightPanel(Canvas canvas)
@@ -145,7 +144,6 @@ public class SongSelectSkin : MonoBehaviour
             startStyle=SongSelectVisuals.StyleAction(ctl.startButton,"START  /  プレイ開始",true);
         }
         startDifficultyHint = SongSelectVisuals.Label(canvas.transform,"DifficultyHint","",16,new Vector2(DetailX,-346),new Vector2(592,24),SongSelectVisuals.Muted,TextAlignmentOptions.Center);
-        SongSelectVisuals.Label(canvas.transform,"DwellHint","クリック / ENTER  または  セーバーを1秒かざす",17,new Vector2(DetailX,-379),new Vector2(618,25),SongSelectVisuals.Muted,TextAlignmentOptions.Center);
     }
 
     void BuildJacket(Canvas canvas)
@@ -194,7 +192,6 @@ public class SongSelectSkin : MonoBehaviour
         SongSelectVisuals.Panel(canvas.transform,"FooterRule",new Vector2(0,-449),new Vector2(1768,1),SongSelectVisuals.Edge,Color.clear,0);
         var calibration=Action(canvas.transform,"CalibrationButton","判定調整",new Vector2(-774,-488),new Vector2(220,52),false);
         calibration.onClick.AddListener(EnterCalibration);
-        SongSelectVisuals.Label(canvas.transform,"FooterHint","↑ ↓  曲を選択     ← →  難易度     ENTER  プレイ開始",18,new Vector2(128,-488),new Vector2(1400,28),SongSelectVisuals.Muted,TextAlignmentOptions.MidlineRight);
     }
 
     static Button Action(Transform parent,string name,string label,Vector2 position,Vector2 size,bool primary)
