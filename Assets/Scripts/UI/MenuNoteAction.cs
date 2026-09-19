@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// ラベル付きボタンに、本編と同じ割れる立体ノーツを重ねる。クリックの契約はそのまま残す。
+// ラベル付きボタンの照準対象。見た目は立体ノーツ、受付は1秒照準だけ。クリックも維持。
 [DefaultExecutionOrder(-60)]
 public class MenuNoteAction : MonoBehaviour
 {
@@ -11,7 +11,7 @@ public class MenuNoteAction : MonoBehaviour
     Canvas canvas;
     CanvasGroup[] groups;
     Color accent;
-    float respawnAt;
+    float respawnAt, aimProgress;
     float invokeAt = -1;
     NoteVisuals visuals;
     readonly Vector3[] corners = new Vector3[4];
@@ -29,6 +29,11 @@ public class MenuNoteAction : MonoBehaviour
         target.Anchor.sizeDelta = Vector2.one * size;
         return target;
     }
+
+    public bool CanShoot => IsAvailable && Note != null && invokeAt < 0;
+    public Rect ScreenRect() => SongSelectAimPointer.RectOnScreen((RectTransform)transform);
+    public void SetAimProgress(float progress) { aimProgress = progress; }
+    public void CancelPendingShot() { invokeAt = -1; }
 
     public bool IsAvailable
     {
@@ -79,8 +84,8 @@ public class MenuNoteAction : MonoBehaviour
         Note.transform.rotation = Quaternion.LookRotation(center - camera.transform.position, camera.transform.up)
             * Quaternion.Euler(-8f, -12f, 0f);
         Note.transform.localScale = Vector3.one * Vector3.Distance(left, right);
-        Note.IsJudgeable = menu.IsReady && invokeAt < 0;
-        if (visuals != null) visuals.SetEmissionBoost(Note.IsJudgeable ? 1f : .18f);
+        Note.IsJudgeable = false; // 移動・振り戻しでは絶対に選択しない。
+        if (visuals != null) visuals.SetEmissionBoost(menu.IsReady && invokeAt < 0 ? 1f + aimProgress * .8f : .25f);
     }
 
     static Vector3 OnSaberPlane(Camera camera, Vector2 screen)
@@ -102,7 +107,6 @@ public class MenuNoteAction : MonoBehaviour
         Note.pieceFadeStart = .15f;
         Note.sliceSeparationImpulse = 1.2f;
         Note.saberVelocityScale = .06f;
-        Note.OnCut += OnCut;
         visuals = go.AddComponent<NoteVisuals>();
         visuals.inheritColorFromMainRenderer = false;
         visuals.baseColor = accent;
@@ -110,13 +114,18 @@ public class MenuNoteAction : MonoBehaviour
         go.SetActive(true);
     }
 
-    void OnCut(CuttableNote note, Vector3 point, Vector3 velocity)
+    public bool TryShoot()
     {
-        note.OnCut -= OnCut;
+        var menu = SongSelectNoteMenu.Instance;
+        if (!CanShoot || menu == null || !menu.IsReady) return false;
+        menu.PlayShot(Note);
+        Note.gameObject.SetActive(false);
+        UISkinKit.SafeDestroy(Note.gameObject);
         Note = null;
-        respawnAt = Time.unscaledTime + .8f;
-        SongSelectNoteMenu.Instance.BeginCooldown();
-        invokeAt = Time.unscaledTime + .12f; // 画面遷移前に切断を見せる。
+        respawnAt = Time.unscaledTime + .5f;
+        menu.BeginCooldown();
+        invokeAt = Time.unscaledTime + .18f; // 破砕を見せてから選択・画面遷移する。
+        return true;
     }
 
     void OnDisable()
@@ -128,7 +137,6 @@ public class MenuNoteAction : MonoBehaviour
     void OnDestroy()
     {
         if (Note == null) return;
-        Note.OnCut -= OnCut;
         UISkinKit.SafeDestroy(Note.gameObject);
     }
 }

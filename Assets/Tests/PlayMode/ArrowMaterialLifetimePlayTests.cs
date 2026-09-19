@@ -94,7 +94,7 @@ public class ArrowMaterialLifetimePlayTests
     }
 
     [UnityTest]
-    public IEnumerator RepeatedSelectionCutsReleaseEachOldArrow()
+    public IEnumerator RepeatedSelectionShotsReleaseEachOldArrow()
     {
         var camera = new GameObject("NavigationCamera").AddComponent<Camera>();
         camera.transform.position = new Vector3(0, 0, -10);
@@ -106,7 +106,7 @@ public class ArrowMaterialLifetimePlayTests
         {
             CuttableNote note = nav.UpNote;
             Material[] materials = Observe(note.transform.Find("Arrow"));
-            note.Cut(note.transform.position, Vector3.right * 5);
+            Assert.True(nav.TryShoot(true));
             yield return null;
             yield return null;
             AssertReleased(materials);

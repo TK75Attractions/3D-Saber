@@ -70,7 +70,7 @@ public class DifficultyTileItem : MonoBehaviour
             new Vector2(26f, -9f), new Vector2(116f, 38f), FontStyles.Normal, 0f,
             UISkinKit.FontAsset("Oxanium-ExtraBold"));
         levelText.raycastTarget = false;
-        selectionText = SongSelectVisuals.Label(content,"SelectionState","斬って選択",14,new Vector2(0,-43),new Vector2(160,22),NameGray,TextAlignmentOptions.Center);
+        selectionText = SongSelectVisuals.Label(content,"SelectionState","1秒で選択",14,new Vector2(0,-43),new Vector2(160,22),NameGray,TextAlignmentOptions.Center);
         MenuNoteAction.Attach(button,new Vector2(-57,8),42,accent);
 
         var rootImage = GetComponent<Image>();
@@ -119,7 +119,7 @@ public class DifficultyTileItem : MonoBehaviour
         if (nameText != null) nameText.color = Color.Lerp(NameGray, accent, t);
         if (selectionText != null)
         {
-            selectionText.text = !hasChart ? "譜面なし" : selected ? "選択中" : "斬って選択";
+            selectionText.text = !hasChart ? "譜面なし" : selected ? "選択中" : "1秒で選択";
             selectionText.color = selected ? accent : NameGray;
         }
         if (levelText != null)

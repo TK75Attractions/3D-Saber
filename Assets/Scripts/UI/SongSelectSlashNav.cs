@@ -1,24 +1,15 @@
 using UnityEngine;
 
-// 曲選択画面の「切って曲送り」ナビノーツ。
-// ↑ノーツを切ると前の曲(リスト上方向)、↓ノーツを切ると次の曲へ移動する(端はループ)。
-// タイトル画面の TitleStartNote と同じ本物の CuttableNote を使うので、
-// 実機セーバー(UDP)でもマウスの素振りでも本編と同じ感触で切れる。
-// 矢印(↑/↓)は「どちらへ送るか」のラベルで、切る方向は問わない(DirectionVisualOnly。ユーザー指定)。
-// 切られたノーツは破片演出の後、respawnDelay 秒で同じ場所に再出現する。
-// 誤爆防止(ユーザー指定): どちらかを切ったら oppositeCooldown 秒のクールタイムに入り、
-// 逆側のノーツも判定対象外(暗く・小さく表示)にする。1回の振りが↑と↓を続けて巻き込んで
-// 「進んで戻る」ことや、振り戻しで逆側が切れてしまうことを防ぐ。
+// 曲送りの立体ノーツ。クラス名は互換性のため維持し、受付は照準からのTryShootに限定。
 public class SongSelectSlashNav : MonoBehaviour
 {
-    // カット後に同じ場所へ再出現するまでの秒数(ユーザー指定: 2秒くらい)
-    public float respawnDelay = 2.0f;
+    // 発射後、破片が消える頃にノーツを戻す。
+    public float respawnDelay = .5f;
     // どちらかを切った後、逆側のノーツ(と再出現したノーツ)が判定対象外になる秒数
-    public float oppositeCooldown = 2.0f;
+    public float oppositeCooldown = .2f;
     public float noteScale = 0.66f;
     public float bobAmplitude = 0.05f;
     public float bobHz = 0.5f;
-    [Range(0f, 1f)] public float sfxVolume = 0.22f;
     // クールタイム中の見た目(発光倍率・縮尺)
     public float cooldownEmission = 0.15f;
     public float cooldownScale = 0.85f;
@@ -40,8 +31,6 @@ public class SongSelectSlashNav : MonoBehaviour
     private Vector3 upBasePos;
     private Vector3 downBasePos;
     private float age;
-    private AudioSource sfx;
-    private AudioClip tickClip;
 
     public CuttableNote UpNote => upNote;
     public CuttableNote DownNote => downNote;
@@ -54,7 +43,6 @@ public class SongSelectSlashNav : MonoBehaviour
         var mainCam = Camera.main;
         if (mainCam == null) return null;
 
-        EnsureSaber();
         if (controller.SongCount <= 1) return null;
         var go = new GameObject("SongSelectSlashNav");
         var nav = go.AddComponent<SongSelectSlashNav>();
@@ -62,39 +50,11 @@ public class SongSelectSlashNav : MonoBehaviour
         return nav;
     }
 
-    // 実機セーバー(UDP)/マウス素振りの受け皿。タイトル画面(BuildTitleSaber)と同じ構成。
-    private static void EnsureSaber()
-    {
-        if (Object.FindFirstObjectByType<SaberCutJudge>() != null) return;
-        InputPoint.EnsureInstance();
-        var saber = new GameObject("SongSelectSaber");
-        var tracker = saber.AddComponent<SaberTracker>();
-        var bridge = saber.AddComponent<SaberInputBridge>();
-        bridge.useInputPoint = true;
-        bridge.fallbackToMouse = true;
-        bridge.fixedZ = 0f;
-        // メニューのカメラは判定面(±5.5×±3)より広い範囲を映すため、
-        // 入力をカメラの可視範囲全体へ写像してセーバーが画面端まで届くようにする
-        // (マウスフォールバックも同じ可視範囲でクランプされる)。
-        bridge.remapToCameraView = true;
-        // 曲選択のセーバーは赤(見た目のみ。手の判定ロジックには影響しない)
-        bridge.SetBladeColor(UISkinPalette.LogoRed);
-        var judge = saber.AddComponent<SaberCutJudge>();
-        judge.saber = tracker;
-        // メニューはボタン類も多いので、タイトルよりわずかに速い振りだけを「カット」と見なす
-        judge.bladeRadius = 0.08f;
-        judge.noteHitRadiusXY = 0.26f;
-        judge.minCutSpeed = SongSelectNoteMenu.MinimumCutSpeed;
-    }
-
     // テストから直接呼べる初期化(EditMode では Awake が呼ばれないため、Build 経由でも明示的に呼ぶ)。
     public void Init(SongSelectController controller, Camera camera)
     {
         ctl = controller;
         cam = camera;
-        sfx = GetComponent<AudioSource>();
-        if (sfx == null) sfx = gameObject.AddComponent<AudioSource>();
-        sfx.playOnAwake = false;
 
         upBasePos = ResolveWorldPos(upViewport);
         downBasePos = ResolveWorldPos(downViewport);
@@ -117,11 +77,12 @@ public class SongSelectSlashNav : MonoBehaviour
     {
         var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
         go.name = dir == CutDirection.Up ? "NavNoteUp" : "NavNoteDown";
+        go.transform.SetParent(transform, false);
         go.transform.position = pos;
         go.transform.localScale = Vector3.one * noteScale;
 
         var note = go.AddComponent<CuttableNote>();
-        note.IsJudgeable = true;
+        note.IsJudgeable = false;
         note.MinimumCutSpeed = SongSelectNoteMenu.MinimumCutSpeed;
         note.RequireJudgeableOnCut = true;
         note.RequiredDirection = dir; // NoteVisuals が Direction 種(フリック色)として描く
@@ -129,36 +90,39 @@ public class SongSelectSlashNav : MonoBehaviour
         go.AddComponent<NoteVisuals>();
         NoteSpawner.BuildArrow(go.transform, dir); // 本編と同じシェブロン矢印
 
-        note.OnCut += HandleNavCut;
         // クールタイム中に再出現したノーツは、クールタイムが明けるまで切れない
         if (InCooldown) SetCooldownState(note, true);
         return note;
     }
 
-    private void HandleNavCut(CuttableNote note, Vector3 point, Vector3 velocity)
+    public bool CanShoot(bool up)
     {
-        if (ScreenTransition.IsBusy) return;
-        bool isUp = note == upNote;
-        if (isUp) upRespawnTimer = respawnDelay;
-        else downRespawnTimer = respawnDelay;
+        var note = up ? upNote : downNote;
+        return note != null && !InCooldown && !ScreenTransition.IsBusy
+            && (SongSelectNoteMenu.Instance == null || SongSelectNoteMenu.Instance.IsReady);
+    }
 
-        // クールタイム中のカット(同じ振りの巻き込みなど)は曲送りしない。演出(破片)と再出現だけ。
-        if (InCooldown) return;
-
-        if (SongSelectNoteMenu.Instance != null) SongSelectNoteMenu.Instance.BeginCooldown();
-        MoveSelection(isUp ? -1 : +1);
-        PlayTick();
-
-        // 両ノーツ共通のクールタイム開始。逆側は判定対象外にして暗く・小さく見せる
+    public bool TryShoot(bool up)
+    {
+        if (!CanShoot(up)) return false;
+        var note = up ? upNote : downNote;
+        var menu = SongSelectNoteMenu.Instance;
+        if (menu != null) { menu.PlayShot(note); menu.BeginCooldown(); }
+        note.gameObject.SetActive(false);
+        UISkinKit.SafeDestroy(note.gameObject);
+        if (up) { upNote = null; upRespawnTimer = respawnDelay; }
+        else { downNote = null; downRespawnTimer = respawnDelay; }
         cooldownTimer = oppositeCooldown;
-        SetCooldownState(isUp ? downNote : upNote, true);
+        SetCooldownState(up ? downNote : upNote, true);
+        MoveSelection(up ? -1 : +1);
+        return true;
     }
 
     // クールタイム状態の適用/解除。IsJudgeable を切り替え、見た目(発光・縮尺)で状態を伝える。
     private void SetCooldownState(CuttableNote target, bool on)
     {
         if (target == null || target.IsCut) return;
-        target.IsJudgeable = !on && (SongSelectNoteMenu.Instance == null || SongSelectNoteMenu.Instance.IsReady);
+        target.IsJudgeable = false; // 発射だけで操作し、セーバーの通過は無効。
         var vis = target.GetComponent<NoteVisuals>();
         if (vis != null) vis.SetEmissionBoost(on ? cooldownEmission : 1f);
         target.transform.localScale = Vector3.one * noteScale * (on ? cooldownScale : 1f);
@@ -229,19 +193,9 @@ public class SongSelectSlashNav : MonoBehaviour
             downNote.transform.position = downBasePos + new Vector3(0f, -bob, 0f);
     }
 
-    private void PlayTick()
-    {
-        // EditMode テスト中は音を出さない(オーディオ系は再生モード前提のため)
-        if (!Application.isPlaying || sfx == null) return;
-        if (tickClip == null) tickClip = JudgmentSfx.Beep(660f, 0.10f);
-        sfx.PlayOneShot(tickClip, sfxVolume);
-    }
-
     void OnDestroy()
     {
-        if (upNote != null) upNote.OnCut -= HandleNavCut;
-        if (downNote != null) downNote.OnCut -= HandleNavCut;
-        UISkinKit.SafeDestroy(tickClip);
-        tickClip = null;
+        if (upNote != null) UISkinKit.SafeDestroy(upNote.gameObject);
+        if (downNote != null) UISkinKit.SafeDestroy(downNote.gameObject);
     }
 }

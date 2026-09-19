@@ -42,7 +42,7 @@ public class SfxLifetimePlayTests
     }
 
     [UnityTest]
-    public IEnumerator RepeatedSongNavigationReusesOneTickAndReleasesIt()
+    public IEnumerator RepeatedSongNavigationReusesShotResourcesAndReleasesThem()
     {
         yield return SceneManager.LoadSceneAsync("SongSelect");
         SongSelectSlashNav nav = null;
@@ -59,7 +59,10 @@ public class SfxLifetimePlayTests
         Assert.NotNull(menu, "選曲の共通クールタイムが初期化されていること");
         var controller = Object.FindFirstObjectByType<SongSelectController>();
         foreach (var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) judge.enabled = false;
+        Object.FindFirstObjectByType<SongSelectAimPointer>().enabled = false;
         nav.enabled = false;
+        var mesh = menu.ShotEffect.GetComponent<MeshFilter>().sharedMesh;
+        var material = menu.ShotEffect.GetComponent<Renderer>().sharedMaterial;
         int start = controller.SelectedIndex;
         for (int i = 0; i < 20; i++)
         {
@@ -69,18 +72,21 @@ public class SfxLifetimePlayTests
             Assert.IsTrue(menu.IsReady, "曲送り" + (i + 1) + "回目: 3秒以内に共通クールタイムが解除されること");
             nav.Tick(2.1f);
             Assert.NotNull(nav.DownNote, "曲送り" + (i + 1) + "回目: ノーツが再出現すること");
-            Assert.IsTrue(nav.DownNote.IsJudgeable, "曲送り" + (i + 1) + "回目: 受付可能になってから斬ること");
-            nav.DownNote.Cut(nav.DownNote.transform.position, Vector3.down * 8, CutDirection.Down, SaberHand.Any);
+            Assert.IsFalse(nav.DownNote.IsJudgeable);
+            Assert.True(nav.TryShoot(false));
+            Assert.AreSame(mesh, menu.ShotEffect.GetComponent<MeshFilter>().sharedMesh);
+            Assert.AreSame(material, menu.ShotEffect.GetComponent<Renderer>().sharedMaterial);
             controller.StopPreview();
         }
         Assert.AreEqual((start + 20) % controller.SongCount, controller.SelectedIndex);
-        var clips = NewGeneratedClips().Where(c => c.name == "beep_660").ToArray();
+        var clips = NewGeneratedClips().Where(c => c.name == "menu_aim_shot").ToArray();
         Assert.AreEqual(1, clips.Length, "20回の曲送りで同じ音のバッファを20個作らない");
-        Assert.AreEqual(4410, clips[0].samples);
-        Object.Destroy(nav.gameObject);
+        Assert.AreEqual(12348, clips[0].samples);
+        Object.Destroy(menu.gameObject);
         yield return null;
         yield return null;
         Assert.True(clips[0] == null, "所有者の破棄で合成音も解放する");
+        Assert.True(mesh == null); Assert.True(material == null);
     }
 
     [UnityTest]
@@ -189,5 +195,5 @@ public class SfxLifetimePlayTests
     };
     AudioClip[] NewGeneratedClips() => Resources.FindObjectsOfTypeAll<AudioClip>()
         .Where(c => !initialClips.Contains(c.GetInstanceID()) &&
-            (c.name.StartsWith("beep_") || c.name.StartsWith("buzz_") || c.name.StartsWith("gold_shing"))).ToArray();
+            (c.name == "menu_aim_shot" || c.name.StartsWith("beep_") || c.name.StartsWith("buzz_") || c.name.StartsWith("gold_shing"))).ToArray();
 }

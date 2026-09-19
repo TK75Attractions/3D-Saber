@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 
-// 曲選択の「切って曲送り」ナビノーツ(SongSelectSlashNav)のテスト。
+// 曲選択の「照準で曲送り」ナビノーツ(SongSelectSlashNav)のテスト。
 // EditMode では Awake が呼ばれないため Init() を直接呼ぶ(確立済みパターン)。
 // SongSelectController.Populate は StreamingAssets の実曲を読む(2曲以上ある前提)。
 public class SongSelectSlashNavTests
@@ -60,8 +60,8 @@ public class SongSelectSlashNavTests
         Assert.IsNotNull(nav.DownNote, "↓ノーツが生成される");
         Assert.AreEqual(CutDirection.Up, nav.UpNote.RequiredDirection, "矢印の向き(見た目)は↑");
         Assert.AreEqual(CutDirection.Down, nav.DownNote.RequiredDirection, "矢印の向き(見た目)は↓");
-        Assert.IsTrue(nav.UpNote.IsJudgeable);
-        Assert.IsTrue(nav.DownNote.IsJudgeable);
+        Assert.IsFalse(nav.UpNote.IsJudgeable);
+        Assert.IsFalse(nav.DownNote.IsJudgeable);
         Assert.IsNotNull(nav.UpNote.transform.Find("Arrow"), "↑ノーツにシェブロン矢印が付く");
         Assert.IsNotNull(nav.DownNote.transform.Find("Arrow"), "↓ノーツにシェブロン矢印が付く");
         Assert.Greater(nav.UpNote.transform.position.y, nav.DownNote.transform.position.y,
@@ -69,52 +69,45 @@ public class SongSelectSlashNavTests
     }
 
     [Test]
-    public void CutUpNote_MovesToPreviousSong_WithWrap()
+    public void ShootUpNote_MovesToPreviousSong_WithWrap()
     {
         var nav = MakeNav(out var ctl);
         Assert.AreEqual(0, ctl.SelectedIndex);
 
         // 先頭で↑ = 末尾へ回り込む(キーボード↑と同じ)
-        nav.UpNote.Cut(nav.UpNote.transform.position, new Vector3(0f, 9f, 0f));
+        Assert.True(nav.TryShoot(true));
         Assert.AreEqual(ctl.SongCount - 1, ctl.SelectedIndex);
     }
 
     [Test]
-    public void CutDownNote_MovesToNextSong()
+    public void ShootDownNote_MovesToNextSong()
     {
         var nav = MakeNav(out var ctl);
         Assert.AreEqual(0, ctl.SelectedIndex);
 
-        nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(0f, -9f, 0f));
+        Assert.True(nav.TryShoot(false));
         Assert.AreEqual(1, ctl.SelectedIndex);
     }
 
     [Test]
-    public void AnySwingDirection_Triggers()
+    public void FastSwingsNeverSelectOrDestroyNavigationNotes()
     {
-        // 矢印は「どちらへ送るか」のラベルで、切る方向は問わない(ユーザー指定)。
         var nav = MakeNav(out var ctl);
-        Assert.IsTrue(nav.UpNote.DirectionVisualOnly && nav.DownNote.DirectionVisualOnly, "ナビノーツは方向を判定しない");
-
-        // ↑ノーツを下振り(真逆)で切っても前の曲へ
-        nav.UpNote.Cut(nav.UpNote.transform.position, new Vector3(0f, -9f, 0f));
-        Assert.AreEqual(ctl.SongCount - 1, ctl.SelectedIndex, "逆方向スイングでも曲送りが効く");
-
-        // クールタイムを明けてから、↓ノーツを横振りで切っても次の曲へ
-        nav.Tick(nav.oppositeCooldown + 0.01f);
-        nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(9f, 0f, 0f));
-        Assert.AreEqual(0, ctl.SelectedIndex, "横振りでも曲送りが効く(末尾→先頭へ回り込み)");
+        nav.UpNote.Cut(nav.UpNote.transform.position, Vector3.down * 100);
+        nav.DownNote.Cut(nav.DownNote.transform.position, Vector3.right * 100);
+        Assert.AreEqual(0, ctl.SelectedIndex);
+        Assert.False(nav.UpNote.IsCut); Assert.False(nav.DownNote.IsCut);
     }
 
     // ---- 逆側ノーツのクールタイム(1回の振りで「進んで戻る」誤爆の防止) ----
 
     [Test]
-    public void CutOne_PutsOppositeOnCooldown_AndItsCutDoesNotMoveSelection()
+    public void ShootOne_PutsOppositeOnCooldown_AndItsCutDoesNotMoveSelection()
     {
         var nav = MakeNav(out var ctl);
         var up = nav.UpNote;
 
-        nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(0f, -9f, 0f));
+        Assert.True(nav.TryShoot(false));
         Assert.AreEqual(1, ctl.SelectedIndex);
         Assert.IsTrue(nav.InCooldown, "カット直後はクールタイム中");
         Assert.IsFalse(up.IsJudgeable, "逆側(↑)は判定対象外になる");
@@ -129,7 +122,7 @@ public class SongSelectSlashNavTests
     public void Cooldown_Expires_ThenOppositeWorksAgain()
     {
         var nav = MakeNav(out var ctl);
-        nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(0f, -9f, 0f));
+        Assert.True(nav.TryShoot(false));
         Assert.AreEqual(1, ctl.SelectedIndex);
 
         nav.Tick(nav.oppositeCooldown * 0.5f);
@@ -138,10 +131,10 @@ public class SongSelectSlashNavTests
 
         nav.Tick(nav.oppositeCooldown * 0.5f + 0.01f);
         Assert.IsFalse(nav.InCooldown, "クールタイム終了");
-        Assert.IsTrue(nav.UpNote.IsJudgeable, "逆側が再び切れる");
+        Assert.IsTrue(nav.CanShoot(true), "逆側を再び撃てる");
         Assert.AreEqual(nav.noteScale, nav.UpNote.transform.localScale.x, 1e-4f, "見た目も元に戻る");
 
-        nav.UpNote.Cut(nav.UpNote.transform.position, new Vector3(0f, 9f, 0f));
+        Assert.True(nav.TryShoot(true));
         Assert.AreEqual(0, ctl.SelectedIndex, "クールタイム後は前の曲へ戻れる");
     }
 
@@ -151,24 +144,24 @@ public class SongSelectSlashNavTests
         var nav = MakeNav(out _);
         nav.oppositeCooldown = nav.respawnDelay + 1.0f; // 再出現より長いクールタイム
 
-        nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(0f, -9f, 0f));
+        Assert.True(nav.TryShoot(false));
         nav.Tick(nav.respawnDelay + 0.05f);
         Assert.IsNotNull(nav.DownNote, "再出現している");
         Assert.IsFalse(nav.DownNote.IsJudgeable, "クールタイム中に再出現したノーツは切れない");
 
         nav.Tick(1.0f);
         Assert.IsFalse(nav.InCooldown);
-        Assert.IsTrue(nav.DownNote.IsJudgeable, "クールタイム終了で有効化");
-        Assert.IsTrue(nav.UpNote.IsJudgeable);
+        Assert.IsTrue(nav.CanShoot(false), "クールタイム終了で発射可能");
+        Assert.IsFalse(nav.UpNote.IsJudgeable);
     }
 
     [Test]
-    public void CutNote_RespawnsAfterDelay_AndWorksAgain()
+    public void ShotNote_RespawnsAfterDelay_AndWorksAgain()
     {
         var nav = MakeNav(out var ctl);
-        Assert.AreEqual(2.0f, nav.respawnDelay, 1e-3f, "再出現は2秒くらい(ユーザー指定)");
+        Assert.AreEqual(.5f, nav.respawnDelay, 1e-3f, "破片が消える頃に再出現する");
 
-        nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(0f, -9f, 0f));
+        Assert.True(nav.TryShoot(false));
         Assert.AreEqual(1, ctl.SelectedIndex);
         Assert.IsTrue(nav.DownNote == null, "カット直後は↓ノーツが消えている");
 
@@ -179,11 +172,11 @@ public class SongSelectSlashNavTests
         nav.Tick(nav.respawnDelay);
         Assert.IsNotNull(nav.DownNote, "遅延後に↓ノーツが再出現する");
         Assert.AreEqual(CutDirection.Down, nav.DownNote.RequiredDirection);
-        Assert.IsTrue(nav.DownNote.IsJudgeable);
+        Assert.IsFalse(nav.DownNote.IsJudgeable);
         Assert.IsTrue(nav.DownNote.DirectionVisualOnly, "再出現したノーツも方向を問わない");
 
         // 再出現したノーツも曲送りが効く(イベント再購読の確認)
-        nav.DownNote.Cut(nav.DownNote.transform.position, new Vector3(0f, -9f, 0f));
+        Assert.True(nav.TryShoot(false));
         Assert.AreEqual(2 % ctl.SongCount, ctl.SelectedIndex);
     }
 

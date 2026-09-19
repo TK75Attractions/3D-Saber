@@ -76,7 +76,8 @@ public class NoteSpawner : MonoBehaviour
     // 各見た目の同時表示数をロード中に見積もる。保持は全体128個まで。
     void Prewarm()
     {
-        if(!Pooling || chart?.notes == null) return;
+        // 停止・シーン終了時の空譜面では、破棄中のプールへ触れたり新しく確保したりしない。
+        if(!Pooling || chart?.notes == null || chart.notes.Count == 0) return;
         EnsurePool();
         var groups=new Dictionary<PoolKey, (NoteData sample, List<(double time,int delta)> events)>();
         foreach(var data in chart.notes) {

@@ -102,8 +102,8 @@ public class ScreenTransitionPlayTests
                 yield return new WaitForSecondsRealtime(.6f);
                 var action = back.GetComponent<MenuNoteAction>();
                 action.Sync();
-                Assert.True(action.Note.IsJudgeable);
-                action.Note.Cut(action.Note.transform.position, Vector3.right * 5f);
+                Assert.False(action.Note.IsJudgeable);
+                Assert.True(action.TryShoot());
                 double deadline = Time.realtimeSinceStartupAsDouble + 2;
                 while (!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
             }

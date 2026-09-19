@@ -2,6 +2,8 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
+using System.Net.Sockets;
 using System.Reflection;
 using NUnit.Framework;
 using TMPro;
@@ -25,6 +27,7 @@ public class AndalusiaSongFlowPlayTests
     GamePlayManager manager;
     CuttableNote firstNote;
     double firstSpawnTime;
+    InputPoint testInput;
 
     [SetUp]
     public void SetUp()
@@ -43,6 +46,21 @@ public class AndalusiaSongFlowPlayTests
         GameSession.IsCalibrationMode = false;
         controller = null; manager = null; firstNote = null; firstSpawnTime = double.NaN;
         SceneManager.sceneLoaded += ObserveGame;
+        // 起動中のゲーム・他の検証の受信口と競合させない。製品のポート設定は維持する。
+        if (InputPoint.Instance == null)
+        {
+            var receiver = new GameObject("AndalusiaTestInput");
+            receiver.SetActive(false); Object.DontDestroyOnLoad(receiver);
+            testInput = receiver.AddComponent<InputPoint>();
+            testInput.port = FreePort();
+            do { testInput.port2 = FreePort(); } while (testInput.port2 == testInput.port);
+            receiver.SetActive(true);
+        }
+    }
+
+    static int FreePort()
+    {
+        using (var socket = new UdpClient(0)) return ((IPEndPoint)socket.Client.LocalEndPoint).Port;
     }
 
     void ObserveGame(Scene scene, LoadSceneMode mode)
@@ -70,6 +88,8 @@ public class AndalusiaSongFlowPlayTests
         var empty = SceneManager.CreateScene("AndalusiaCleanup_" + Guid.NewGuid().ToString("N"));
         SceneManager.SetActiveScene(empty);
         if (previous.IsValid() && previous.isLoaded) yield return SceneManager.UnloadSceneAsync(previous);
+        if (testInput != null) Object.DestroyImmediate(testInput.gameObject);
+        testInput = null;
         if (hadSpeed) PlayerPrefs.SetFloat(SpeedKey, speed); else PlayerPrefs.DeleteKey(SpeedKey);
         if (hadOffset) PlayerPrefs.SetInt(OffsetKey, offset); else PlayerPrefs.DeleteKey(OffsetKey);
         foreach (var item in sessionValues) item.Key.SetValue(null, item.Value);

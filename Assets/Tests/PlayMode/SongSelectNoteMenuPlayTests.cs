@@ -8,94 +8,93 @@ using UnityEngine.UI;
 
 public class SongSelectNoteMenuPlayTests
 {
-    [UnityTest]
-    public IEnumerator AllActionsUseNotes_RequireSpeed_AndKeepClicks()
+    SongSelectController controller;
+    SongSelectAimPointer aim;
+    [UnitySetUp] public IEnumerator Open()
     {
-        yield return SceneManager.LoadSceneAsync("SongSelect", LoadSceneMode.Single);
-        float deadline = Time.realtimeSinceStartup + 10;
-        while (GameObject.Find("CalibrationButton") == null && Time.realtimeSinceStartup < deadline)
-            yield return null;
-        Assert.IsNotNull(SongSelectNoteMenu.Instance);
-        foreach (var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) judge.autonomous = false;
-        yield return new WaitForSecondsRealtime(.85f);
-        var ctl = Object.FindFirstObjectByType<SongSelectController>();
-        var canvas = ctl.GetComponentInParent<Canvas>();
-        foreach (var button in canvas.GetComponentsInChildren<Button>())
-            Assert.IsNotNull(button.GetComponent<MenuNoteAction>(), button.name + "も斬れる");
-        Assert.IsTrue(Object.FindFirstObjectByType<SaberUIPointer>().SlashOnly, "滞留で発動しない");
+        yield return SceneManager.LoadSceneAsync("SongSelect");
+        float until = Time.realtimeSinceStartup + 10;
+        while (Object.FindFirstObjectByType<SongSelectAimPointer>() == null && Time.realtimeSinceStartup < until) yield return null;
+        aim = Object.FindFirstObjectByType<SongSelectAimPointer>(); Assert.NotNull(aim); aim.enabled = false;
+        controller = Object.FindFirstObjectByType<SongSelectController>();
+        controller.Select(Enumerable.Range(0, controller.SongCount).Single(i => controller.SongIdAt(i) == "Epilogue"));
+        controller.SetDifficulty(0);
+        yield return new WaitForSecondsRealtime(.6f); Canvas.ForceUpdateCanvases();
+    }
+    [UnityTearDown] public IEnumerator Cleanup()
+    {
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        var scene = SceneManager.GetActiveScene();
+        SceneManager.SetActiveScene(SceneManager.CreateScene("AimCleanup"));
+        yield return SceneManager.UnloadSceneAsync(scene);
+    }
+    void Hold(Vector2 point, int frames) { for (int i = 0; i < frames; i++) aim.TickAt(point, .1f); }
 
-        ctl.SetDifficulty(0);
-        var normal = ctl.difficultyButtons[1].GetComponent<MenuNoteAction>();
-        var master = ctl.difficultyButtons[2].GetComponent<MenuNoteAction>();
-        normal.Sync(); master.Sync();
-        var note = normal.Note;
-        Assert.IsNotNull(note);
-        note.Cut(note.transform.position, Vector3.right * 2.99f);
-        Assert.IsFalse(note.IsCut, "速度不足では破壊も実行もしない");
-        Assert.AreEqual(0, ctl.SelectedDifficultyIndex);
-
-        note.Cut(note.transform.position, Vector3.right * SongSelectNoteMenu.MinimumCutSpeed);
-        Assert.IsTrue(note.IsCut, "閾値以上の斬撃は通る");
-        var second = master.Note;
-        second.Cut(second.transform.position, Vector3.up * 10);
-        Assert.IsFalse(second.IsCut, "同じ振りで別操作を巻き込まない");
-        var nav = Object.FindFirstObjectByType<SongSelectSlashNav>();
-        Assert.IsFalse(nav.UpNote.IsJudgeable, "曲送りともクールタイムを共有");
-        yield return new WaitForSecondsRealtime(.2f);
-        Assert.AreEqual(1, ctl.SelectedDifficultyIndex);
-
-        yield return new WaitForSecondsRealtime(.7f);
-        normal.Sync(); master.Sync();
-        Assert.IsNotNull(normal.Note, "斬ったノーツは復帰する");
-        Assert.IsTrue(master.Note.IsJudgeable);
-        ctl.difficultyButtons[2].onClick.Invoke();
-        Assert.AreEqual(2, ctl.SelectedDifficultyIndex, "通常のクリックを維持");
-
-        var start = ctl.startButton.GetComponent<MenuNoteAction>();
-        ctl.startButton.interactable = false;
-        start.Sync();
-        Assert.IsTrue(start.Note == null || !start.Note.gameObject.activeSelf, "開始できないときはノーツも無効");
-        var hidden = canvas.GetComponentsInChildren<MenuNoteAction>()
-            .FirstOrDefault(a => a.name.StartsWith("WheelRow_") && !a.IsAvailable);
-        if (hidden != null)
-        {
-            hidden.Sync();
-            Assert.IsTrue(hidden.Note == null || !hidden.Note.gameObject.activeSelf, "画面外の曲は切れない");
-        }
+    [UnityTest] public IEnumerator OneSecondShootsDifficulty_HeldAimDoesNotRepeat_AndClicksStillWork()
+    {
+        Assert.IsNull(Object.FindFirstObjectByType<SaberCutJudge>(), "選曲はセーバーの通過判定を生成しない");
+        Assert.IsNull(Object.FindFirstObjectByType<SaberInputBridge>(), "選曲は銃の照準だけを描く");
+        var action = controller.difficultyButtons[1].GetComponent<MenuNoteAction>(); action.Sync();
+        action.Note.Cut(action.Note.transform.position, Vector3.right * 100);
+        Assert.False(action.Note.IsCut, "高速移動でも選択しない");
+        Vector2 point = action.ScreenRect().center;
+        Hold(point, 9); Assert.Zero(aim.ShotCount); Assert.AreEqual(0, controller.SelectedDifficultyIndex);
+        Hold(point, 1); Assert.AreEqual(1, aim.ShotCount); Assert.IsNull(action.Note);
+        var effect = SongSelectNoteMenu.Instance.ShotEffect;
+        Assert.True(effect.IsActive); Assert.NotNull(effect.Clip);
+        yield return new WaitForSecondsRealtime(.65f);
+        Assert.AreEqual(1, controller.SelectedDifficultyIndex);
+        Assert.NotNull(action.Note); Hold(point, 80); Assert.AreEqual(1, aim.ShotCount);
+        Hold(Vector2.zero, 2); Hold(point, 10); Assert.AreEqual(2, aim.ShotCount);
+        yield return new WaitForSecondsRealtime(.25f);
+        controller.difficultyButtons[2].onClick.Invoke(); Assert.AreEqual(2, controller.SelectedDifficultyIndex);
     }
 
-    [UnityTest]
-    public IEnumerator RealJudgeRejectsSlowPass_AndAcceptsFastPass()
+    [UnityTest] public IEnumerator AimSwitch_Cancel_InputLoss_AndDisabledTargetDoNotAccumulate()
     {
-        yield return SceneManager.LoadSceneAsync("SongSelect", LoadSceneMode.Single);
-        yield return new WaitForSecondsRealtime(1);
-        var ctl = Object.FindFirstObjectByType<SongSelectController>();
-        Assert.IsNotNull(ctl);
-        foreach (var existing in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) existing.autonomous = false;
-        ctl.SetDifficulty(0);
-        var action = ctl.difficultyButtons[1].GetComponent<MenuNoteAction>();
-        action.Sync();
-        var go = new GameObject("MenuJudgeTest");
-        var tracker = go.AddComponent<SaberTracker>();
-        var judge = go.AddComponent<SaberCutJudge>();
-        judge.autonomous = false; judge.saber = tracker;
-        judge.bladeRadius = .08f; judge.noteHitRadiusXY = .26f;
-        judge.minCutSpeed = SongSelectNoteMenu.MinimumCutSpeed;
-        try
-        {
-            var center = action.Note.transform.position;
-            tracker.ResetTo(center + Vector3.left * .6f);
-            tracker.Tick(center + Vector3.right * .6f, 1f);
-            judge.TryCut();
-            Assert.AreEqual(0, judge.PendingCount);
-            Assert.IsFalse(action.Note.IsCut);
-            tracker.ResetTo(center + Vector3.left * .6f);
-            tracker.Tick(center + Vector3.right * .6f, .1f);
-            judge.TryCut();
-            Assert.IsNull(action.Note, "速い通過で切断イベントまで到達");
-            yield return new WaitForSecondsRealtime(.2f);
-            Assert.AreEqual(1, ctl.SelectedDifficultyIndex);
-        }
-        finally { Object.Destroy(go); }
+        var normal = controller.difficultyButtons[1].GetComponent<MenuNoteAction>();
+        var master = controller.difficultyButtons[2].GetComponent<MenuNoteAction>();
+        Vector2 n = normal.ScreenRect().center, m = master.ScreenRect().center;
+        Hold(n, 7); Hold(m, 7); Assert.Zero(aim.ShotCount);
+        aim.TickAt(m, .1f, false); Hold(m, 9); Assert.Zero(aim.ShotCount);
+        controller.difficultyButtons[2].interactable = false; Hold(m, 20); Assert.Zero(aim.ShotCount);
+        controller.difficultyButtons[2].interactable = true;
+        Hold(m, 9); Assert.Zero(aim.ShotCount); Hold(m, 1); Assert.AreEqual(1, aim.ShotCount);
+        yield return new WaitForSecondsRealtime(.25f); Assert.AreEqual(2, controller.SelectedDifficultyIndex);
+    }
+
+    [UnityTest] public IEnumerator NavigationMovingTheListCannotFireAgainUntilAimLeaves()
+    {
+        var dock = GameObject.Find("NavDownDock").GetComponent<RectTransform>();
+        Vector2 point = SongSelectAimPointer.RectOnScreen(dock).center;
+        int start = controller.SelectedIndex;
+        Hold(point, 10); Assert.AreEqual(1, aim.ShotCount);
+        Assert.AreEqual((start + 1) % controller.SongCount, controller.SelectedIndex);
+        yield return new WaitForSecondsRealtime(.6f);
+        Hold(point, 50); Assert.AreEqual(1, aim.ShotCount);
+        Hold(Vector2.zero, 2); Hold(point, 10); Assert.AreEqual(2, aim.ShotCount);
+        Assert.AreEqual((start + 2) % controller.SongCount, controller.SelectedIndex);
+    }
+
+    [UnityTest] public IEnumerator StartShootsOnceAndEntersTheSelectedGame()
+    {
+        Vector2 point = controller.startButton.GetComponent<MenuNoteAction>().ScreenRect().center;
+        Hold(point, 9); Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
+        Hold(point, 1); Assert.AreEqual(1, aim.ShotCount);
+        yield return new WaitForSecondsRealtime(.25f);
+        Assert.True(ScreenTransition.IsBusy);
+        aim.TickAt(point, .1f); Assert.Zero(aim.Progress01);
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
+        Assert.AreEqual("Epilogue", GameSession.SelectedSongId);
+    }
+
+    [UnityTest] public IEnumerator SelectingAgainDuringShotAnimationCancelsTheOldAction()
+    {
+        var normal = controller.difficultyButtons[1].GetComponent<MenuNoteAction>();
+        Hold(normal.ScreenRect().center, 10); Assert.AreEqual(1, aim.ShotCount);
+        controller.difficultyButtons[2].onClick.Invoke();
+        yield return new WaitForSecondsRealtime(.3f);
+        Assert.AreEqual(2, controller.SelectedDifficultyIndex, "古い発射予約が新しい選択を上書きしない");
     }
 }

@@ -1,16 +1,15 @@
 using UnityEngine;
 
-// 選曲画面の全ノーツに共通する速度・連続発動制限。ゲーム本編の判定設定とは分離する。
+// 選曲画面の発射演出と短い操作待機。1秒照準と再発射のロックはAimPointerが担当。
 [DefaultExecutionOrder(-80)]
 public class SongSelectNoteMenu : MonoBehaviour
 {
     public const float MinimumCutSpeed = 3f;
-    public const float CooldownSeconds = .7f;
+    public const float CooldownSeconds = .2f;
     public static SongSelectNoteMenu Instance { get; private set; }
     public bool IsReady => !ScreenTransition.IsBusy && Time.unscaledTime >= readyAt;
     float readyAt;
-    AudioSource audioSource;
-    AudioClip cutSound;
+    public SongSelectShotEffect ShotEffect { get; private set; }
 
     public static SongSelectNoteMenu Build()
     {
@@ -22,8 +21,9 @@ public class SongSelectNoteMenu : MonoBehaviour
     {
         Instance = this;
         readyAt = Time.unscaledTime + .5f; // 画面を開いた直後の移動で切らない。
-        audioSource = gameObject.AddComponent<AudioSource>();
-        audioSource.playOnAwake = false;
+        var effect = new GameObject("MenuShotBurst");
+        effect.transform.SetParent(transform, false);
+        ShotEffect = effect.AddComponent<SongSelectShotEffect>();
     }
 
     public void BeginCooldown()
@@ -38,16 +38,15 @@ public class SongSelectNoteMenu : MonoBehaviour
             if (nav.UpNote != null) nav.UpNote.IsJudgeable = false;
             if (nav.DownNote != null) nav.DownNote.IsJudgeable = false;
         }
-        if (Application.isPlaying)
-        {
-            if (cutSound == null) cutSound = JudgmentSfx.Beep(880, .07f);
-            audioSource.PlayOneShot(cutSound, .17f);
-        }
+    }
+
+    public void PlayShot(CuttableNote note)
+    {
+        if (ShotEffect != null && note != null) ShotEffect.Play(note);
     }
 
     void OnDestroy()
     {
         if (Instance == this) Instance = null;
-        UISkinKit.SafeDestroy(cutSound);
     }
 }

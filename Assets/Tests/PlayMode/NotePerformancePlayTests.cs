@@ -111,6 +111,15 @@ public class NotePerformancePlayTests
         var rail=current.transform.Find("EdgeRails").GetComponent<MeshFilter>().sharedMesh;
         Assert.AreEqual(4*24,rail.vertexCount); Assert.AreEqual(4*36,rail.triangles.Length);
     }
+    [UnityTest] public IEnumerator ClearingDuringSceneTeardownDoesNotWarmDestroyedFragments()
+    {
+        Spawn(); yield return null;
+        Object.Destroy(spawner.FragmentPool.gameObject); yield return null;
+        Assert.DoesNotThrow(() => spawner.SetChart(new ChartData()));
+        Assert.True(spawner.FragmentPool == null, "後片付け中に破片プールを再生成しない");
+        yield return null;
+    }
+
     [UnityTest] public IEnumerator ChangingChartsEvictsUnusedKindsAndKeepsTheNextChartReusable()
     {
         Spawn(); yield return null;

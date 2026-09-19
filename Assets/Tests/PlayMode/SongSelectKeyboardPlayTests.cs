@@ -41,6 +41,7 @@ public class SongSelectKeyboardPlayTests
         keyboard = InputSystem.AddDevice<Keyboard>();
         mouse = InputSystem.AddDevice<Mouse>();
         gamepad = InputSystem.AddDevice<Gamepad>();
+        InputSystem.QueueStateEvent(mouse, new MouseState { position = Vector2.zero });
         foreach (var old in Object.FindObjectsByType<InputPoint>(FindObjectsSortMode.None))
             Object.DestroyImmediate(old.gameObject);
         // OnEnableで受信が始まるので、テスト専用ポートを先に設定する。
@@ -214,6 +215,56 @@ public class SongSelectKeyboardPlayTests
         yield return Press(Key.NumpadEnter);
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.False(GameSession.IsCalibrationMode);
+    }
+
+    [UnityTest]
+    public IEnumerator MouseHoverShootsOnceAndClickDoesNotScheduleAnExtraShot()
+    {
+        var aim = Object.FindFirstObjectByType<SongSelectAimPointer>();
+        yield return new WaitForSecondsRealtime(.6f);
+        var normal = controller.difficultyButtons[0].GetComponent<MenuNoteAction>();
+        InputSystem.QueueStateEvent(mouse, new MouseState { position = normal.ScreenRect().center });
+        yield return new WaitForSecondsRealtime(.7f); Assert.AreEqual(0, aim.ShotCount);
+        yield return new WaitForSecondsRealtime(.7f); Assert.AreEqual(1, aim.ShotCount);
+        Assert.AreEqual(0, controller.SelectedDifficultyIndex);
+        yield return new WaitForSecondsRealtime(1.5f); Assert.AreEqual(1, aim.ShotCount);
+        InputSystem.QueueStateEvent(mouse, new MouseState { position = Vector2.zero });
+        yield return new WaitForSecondsRealtime(.2f);
+        yield return Click(controller.difficultyButtons[2]);
+        yield return new WaitForSecondsRealtime(1.3f);
+        Assert.AreEqual(1, aim.ShotCount, "通常クリック後の置きっぱなしで追加発射しない");
+        Assert.AreEqual(2, controller.SelectedDifficultyIndex);
+    }
+
+    [UnityTest]
+    public IEnumerator TrackingLossCancelsAimAndDoesNotFireAtStaleMousePosition()
+    {
+        var aim = Object.FindFirstObjectByType<SongSelectAimPointer>();
+        yield return new WaitForSecondsRealtime(.6f);
+        var action = controller.difficultyButtons[0].GetComponent<MenuNoteAction>();
+        Vector2 pixel = action.ScreenRect().center;
+        InputSystem.QueueStateEvent(mouse, new MouseState { position = pixel });
+        var normalized = typeof(InputPoint).GetProperty("NormalizedPosition");
+        var received = typeof(InputPoint).GetProperty("LastReceivedTime");
+        double until = Time.realtimeSinceStartupAsDouble + .5;
+        while (Time.realtimeSinceStartupAsDouble < until)
+        {
+            normalized.SetValue(input, new Vector2(pixel.x / Screen.width, pixel.y / Screen.height));
+            received.SetValue(input, Time.timeAsDouble);
+            yield return null;
+        }
+        Assert.Greater(aim.Progress01, .2f);
+        received.SetValue(input, -1000d);
+        yield return new WaitForSecondsRealtime(1.4f);
+        Assert.Zero(aim.ShotCount); Assert.Zero(aim.Progress01);
+        until = Time.realtimeSinceStartupAsDouble + 1.4;
+        while (Time.realtimeSinceStartupAsDouble < until)
+        {
+            normalized.SetValue(input, new Vector2(pixel.x / Screen.width, pixel.y / Screen.height));
+            received.SetValue(input, Time.timeAsDouble);
+            yield return null;
+        }
+        Assert.AreEqual(1, aim.ShotCount); Assert.AreEqual(0, controller.SelectedDifficultyIndex);
     }
 
     IEnumerator Click(Button button)
