@@ -106,6 +106,7 @@ public class GamePlayManager : MonoBehaviour
     private bool finished;
     private bool ready;
     private double lastNoteTime;
+    private GameplayFeedbackPresenter playFeedback;
     // このシーンでデコードした音源だけを所有する。外から渡された共有音源は破棄しない。
     private AudioClip ownedSongClip;
     // 2本目のセーバー判定(enableTwoSabers 時に SaberRig が生成)
@@ -276,6 +277,7 @@ public class GamePlayManager : MonoBehaviour
         // オフセットを先に NoteSpawner に渡してから SetChart
         noteSpawner.SetExtraOffsetSeconds(effectiveExtraOffset);
         noteSpawner.SetChart(chart);
+        playFeedback = GameplayFeedbackPresenter.Create(noteSpawner, scoreManager);
         if (stageFloor != null) stageFloor.SetRhythm(chart);
         if (stageFloor != null) stageReactions = StageReactiveEffects.Create(stageFloor, noteSpawner, stagePerformance);
 
@@ -618,6 +620,9 @@ public class GamePlayManager : MonoBehaviour
             noteSpawner.Tick(songPlayer.SongTime);
             if (barLineSpawner != null) barLineSpawner.Tick(songPlayer.SongTime);
         }
+
+        if (playFeedback != null)
+            playFeedback.Tick(Time.unscaledDeltaTime, songPlayer.SongTime, songPlayer.Duration, lastNoteTime);
 
         // 3. 終了判定：最終ノーツ通過＋余韻、かつアクティブなノーツがゼロ
         double endThreshold = System.Math.Max(songPlayer.Duration + endWaitSeconds,

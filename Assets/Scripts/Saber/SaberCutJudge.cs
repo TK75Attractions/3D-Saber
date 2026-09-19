@@ -33,11 +33,19 @@ public class SaberCutJudge : MonoBehaviour
     private readonly Dictionary<CuttableNote, Pending> pending = new Dictionary<CuttableNote, Pending>();
     private SaberTracker contactTracker;
     private int contactResetVersion;
+    struct RejectedContact
+    {
+        public Vector2 entry, velocity;
+        public Vector3 point;
+        public CutRejectionReason reason;
+    }
+    readonly Dictionary<CuttableNote, RejectedContact> rejectedContacts = new Dictionary<CuttableNote, RejectedContact>();
+    readonly List<CuttableNote> rejectedRemoval = new List<CuttableNote>();
 
     public int PendingCount => pending.Count;
 
     // 入力の停止をまたいで、以前の刃の進入を次の振りへ持ち越さない。
-    void OnDisable() { pending.Clear(); }
+    void OnDisable() { pending.Clear(); rejectedContacts.Clear(); }
 
     void Awake()
     {
@@ -55,26 +63,82 @@ public class SaberCutJudge : MonoBehaviour
         TryCut();
     }
 
+    CuttableNote[] frameNotes;
+    CuttableNote[] NotesForFrame() => frameNotes ?? (frameNotes = Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None));
+
     public int TryCut()
     {
+        frameNotes = null;
         if (ScreenTransition.IsBusy || !isActiveAndEnabled || saber == null || !saber.HasPrevious)
         {
             pending.Clear();
+            rejectedContacts.Clear();
             return 0;
         }
         // 再開後のサンプルが先に来ても、リセット前のentryだけは引き継がない。
         if (contactTracker != saber || contactResetVersion != saber.ResetVersion)
         {
             pending.Clear();
+            rejectedContacts.Clear();
             contactTracker = saber;
             contactResetVersion = saber.ResetVersion;
         }
         // ブレード（線分）モード優先。利用不可なら従来の点-軌跡モードへ。
         if (bladeProvider != null && bladeProvider.HasBlade)
         {
-            return TryCutBlade();
+            int cuts = TryCutBlade();
+            ObserveRejectedContacts(true);
+            return cuts;
         }
-        return TryCutPoint();
+        int pointCuts = TryCutPoint();
+        ObserveRejectedContacts(false);
+        return pointCuts;
+    }
+
+    // 既存の切断経路と独立した観察。判定中のノーツに触れて通過した時だけ説明する。
+    // 静止・追跡ジャンプ・かすって同じ側へ戻る動き・正しい手の速度回復では説明を出さない。
+    void ObserveRejectedContacts(bool blade)
+    {
+        Vector2 previous = saber.PreviousPosition, current = saber.CurrentPosition;
+        Vector2 delta = current - previous;
+        if (delta.magnitude > maxCutDistance) { rejectedContacts.Clear(); return; }
+        Vector2 a = blade ? (Vector2)bladeProvider.WorldEndA : previous;
+        Vector2 b = blade ? (Vector2)bladeProvider.WorldEndB : current;
+        float range = bladeRadius + noteHitRadiusXY;
+        bool moving = delta.sqrMagnitude > .0001f && saber.Speed >= minCutSpeed * .35f;
+        if (moving)
+        {
+            foreach (var note in NotesForFrame())
+            {
+                if (!IsCandidate(note) || !note.HasRejectionListener || pending.ContainsKey(note)) continue;
+                bool wrongHand = !SaberHandHelper.CanCut(note.RequiredHand, EffectiveHand());
+                if (!wrongHand && saber.Speed >= minCutSpeed) { rejectedContacts.Remove(note); continue; }
+                if (rejectedContacts.ContainsKey(note)) continue;
+                if (DistPointToSegment(note.transform.position, a, b, out var point) > range) continue;
+                rejectedContacts[note] = new RejectedContact {
+                    entry = previous, velocity = delta.normalized,
+                    point = new Vector3(point.x, point.y, note.transform.position.z),
+                    reason = wrongHand ? CutRejectionReason.Hand : CutRejectionReason.Speed
+                };
+            }
+        }
+        rejectedRemoval.Clear();
+        foreach (var pair in rejectedContacts)
+        {
+            var note = pair.Key;
+            if (!IsCandidate(note) || pending.ContainsKey(note)) { rejectedRemoval.Add(note); continue; }
+            float distance = blade ? DistPointToSegment(note.transform.position, a, b, out _) : Vector2.Distance(current, note.transform.position);
+            if (distance <= range) continue;
+            var contact = pair.Value;
+            // ノーツの反対側へ抜けた接触だけ。戻し動作や端への接触を連続警告にしない。
+            Vector2 center = note.transform.position;
+            if (Vector2.Dot(current - center, contact.velocity) > range * .5f &&
+                Vector2.Dot(contact.entry - center, contact.velocity) < -range * .5f &&
+                (contact.reason == CutRejectionReason.Hand || saber.Speed < minCutSpeed))
+                note.NotifyRejected(contact.reason, contact.point);
+            rejectedRemoval.Add(note);
+        }
+        foreach (var note in rejectedRemoval) rejectedContacts.Remove(note);
     }
 
     private int TryCutBlade()
@@ -85,7 +149,7 @@ public class SaberCutJudge : MonoBehaviour
         Vector2 b = new Vector2(bladeProvider.WorldEndB.x, bladeProvider.WorldEndB.y);
         float hitRange = bladeRadius + noteHitRadiusXY;
 
-        CuttableNote[] notes = Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None);
+        CuttableNote[] notes = NotesForFrame();
         foreach (var note in notes)
         {
             if (!IsCandidate(note)) continue;
@@ -151,7 +215,7 @@ public class SaberCutJudge : MonoBehaviour
 
         float hitRange = bladeRadius + noteHitRadiusXY;
 
-        CuttableNote[] notes = Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None);
+        CuttableNote[] notes = NotesForFrame();
         foreach (var note in notes)
         {
             if (!IsCandidate(note)) continue;

@@ -434,6 +434,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
 
     void Beam(Vector3 a, Vector3 b, float width, Color tint, float alpha, Vector3 edge = default)
     {
+        alpha *= DisplaySettings.AccentScale;
         if (alpha < .002f) return;
         if (edge == Vector3.zero) edge = new Vector3(-(b - a).y, (b - a).x, 0).normalized;
         Quad(a, b, width * 4, tint, alpha * .16f, edge);

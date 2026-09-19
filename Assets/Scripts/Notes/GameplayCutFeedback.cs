@@ -152,7 +152,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
             if (!burst.active) continue;
             Vector3 direction = new Vector3(burst.direction.x, burst.direction.y, 0f);
             Vector3 normal = new Vector3(-direction.y, direction.x, 0f);
-            float slash = Mathf.Pow(Mathf.Clamp01(1f - burst.age / SlashLifetime), 2f) * burst.gain;
+            float slash = Mathf.Pow(Mathf.Clamp01(1f - burst.age / SlashLifetime), 2f) * burst.gain * DisplaySettings.AccentScale;
             if (slash > .001f)
             {
                 Vector3 center = burst.position + direction * (burst.age * 1.5f * burst.scale);
@@ -162,7 +162,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
                     WithAlpha(Color.Lerp(burst.color, Color.white, .9f), slash * .96f));
             }
             float life = Mathf.Clamp01(1f - burst.age / BurstLifetime);
-            for (int i = 0; i < SparkCount; i++)
+            for (int i = 0; i < (DisplaySettings.ReducedEffects ? 2 : SparkCount); i++)
             {
                 float side = (i & 1) == 0 ? -1f : 1f;
                 // 主に振った方向へ飛ばし、少数だけ後方へ散らす。細い白い芯は短く減衰する。
@@ -173,7 +173,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
                 Vector3 position = burst.position + outward * travel + Vector3.down * (burst.age * burst.age * 3f);
                 Streak(position, (outward + Vector3.down * burst.age).normalized,
                     (.07f + life * (.16f + i % 3 * .045f)) * burst.scale, (.011f + (i % 2) * .004f) * burst.scale,
-                    WithAlpha(Color.Lerp(burst.color, Color.white, .5f + life * .35f), life * life * burst.gain * .84f));
+                    WithAlpha(Color.Lerp(burst.color, Color.white, .5f + life * .35f), life * life * burst.gain * .84f * DisplaySettings.AccentScale));
             }
         }
         mesh.Clear();

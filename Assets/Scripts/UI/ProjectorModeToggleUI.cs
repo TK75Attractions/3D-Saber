@@ -7,7 +7,8 @@ using UnityEngine.UI;
 public class ProjectorModeToggleUI : MonoBehaviour
 {
     public const string ButtonName = "ProjectorModeButton";
-    TextMeshProUGUI label;
+    TextMeshProUGUI label, effectsLabel;
+    public static string EffectsLabelFor(bool reduced) => reduced ? "EFFECTS: LOW" : "EFFECTS: FULL";
     public static string LabelFor(bool on) => on ? "PROJECTOR: ON" : "PROJECTOR: OFF";
 
     IEnumerator Start()
@@ -29,8 +30,15 @@ public class ProjectorModeToggleUI : MonoBehaviour
         MenuNoteAction.Attach(button,new Vector2(-122,0),42,new Color(.94f,.77f,.40f));
         label = rt.Find("ActionLabel").GetComponent<TextMeshProUGUI>();
         DisplaySettings.OnProjectorModeChanged += HandleChanged;
+        var effects = SongSelectVisuals.Rect(canvasTf, "ReducedEffectsButton", new Vector2(-110,-491), new Vector2(300,68));
+        var effectsButton = effects.gameObject.AddComponent<Button>();
+        effectsButton.onClick.AddListener(() => DisplaySettings.ReducedEffects = !DisplaySettings.ReducedEffects);
+        SongSelectVisuals.StyleAction(effectsButton, EffectsLabelFor(DisplaySettings.ReducedEffects), false);
+        effectsLabel = effects.Find("ActionLabel").GetComponent<TextMeshProUGUI>();
+        DisplaySettings.OnReducedEffectsChanged += EffectsChanged;
     }
 
-    void OnDestroy() { DisplaySettings.OnProjectorModeChanged -= HandleChanged; }
+    void OnDestroy() { DisplaySettings.OnProjectorModeChanged -= HandleChanged; DisplaySettings.OnReducedEffectsChanged -= EffectsChanged; }
+    void EffectsChanged(bool reduced) { if (effectsLabel != null) effectsLabel.text = EffectsLabelFor(reduced); }
     void HandleChanged(bool on) { if (label != null) label.text = LabelFor(on); }
 }

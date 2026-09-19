@@ -27,7 +27,7 @@ public sealed class StageThemeResponse : MonoBehaviour
     MeshRenderer surfaceRenderer, accentRenderer;
     StageTheme theme;
     float floor;
-    bool built, hasTime, dirty, lastProjector;
+    bool built, hasTime, dirty, lastProjector, lastReduced;
     public bool ReplacesSideResponse => built;
     public int ActiveResponseCount { get; private set; }
     public int ActiveLaneMask { get; private set; }
@@ -117,7 +117,7 @@ public sealed class StageThemeResponse : MonoBehaviour
             dirty = true;
         }
         CountResponses();
-        if (dirty || lastProjector != DisplaySettings.ProjectorMode) Draw();
+        if (dirty || lastProjector != DisplaySettings.ProjectorMode || lastReduced != DisplaySettings.ReducedEffects) Draw();
     }
 
     public void Clear()
@@ -175,6 +175,7 @@ public sealed class StageThemeResponse : MonoBehaviour
         if (!built || accentMesh == null) return;
         accentVertices.Clear(); uvs.Clear(); colors.Clear(); accentIndices.Clear();
         lastProjector = DisplaySettings.ProjectorMode;
+        lastReduced = DisplaySettings.ReducedEffects;
         if (theme == StageTheme.MoonlitGarden)
         {
             surfaceVertices.Clear(); normals.Clear(); surfaceIndices.Clear();
@@ -182,6 +183,8 @@ public sealed class StageThemeResponse : MonoBehaviour
             UploadSurface();
         }
         else for (int lane = 0; lane < LaneCount; lane++) DrawGauge(lane, active[lane] ? ages[lane] : -1);
+        if (lastReduced)
+            for (int i = 0; i < colors.Count; i++) { var c = colors[i]; c.a *= DisplaySettings.AccentScale; colors[i] = c; }
         accentMesh.Clear(); accentMesh.SetVertices(accentVertices); accentMesh.SetColors(colors);
         accentMesh.SetUVs(0, uvs); accentMesh.SetTriangles(accentIndices, 0, true);
         accentRenderer.enabled = isActiveAndEnabled && accentVertices.Count > 0;

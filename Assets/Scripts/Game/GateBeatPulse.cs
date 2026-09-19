@@ -122,7 +122,7 @@ public class GateBeatPulse : MonoBehaviour
         if (Mathf.Approximately(intensity, lastIntensity)) return;
         lastIntensity = intensity;
         if (barMat == null || !barMat.HasProperty("_EmissionColor")) return;
-        float e = baseEmission * (1f + pulseGain * intensity);
+        float e = baseEmission * (1f + pulseGain * intensity * DisplaySettings.AccentScale);
         Color c = gateColor; c.a = 1f;
         barMat.SetColor("_EmissionColor", c * e);
     }

@@ -83,6 +83,7 @@ public class GameHUDSkin : MonoBehaviour
     }
 
     public bool IsBuilt { get; private set; }
+    public bool UseLocalJudgments { get; set; }
 
     private ScoreManager score;
     private SongPlayer songPlayer;
@@ -530,6 +531,12 @@ public class GameHUDSkin : MonoBehaviour
 
     private void OnJudgmentEx(JudgmentTier tier, int awarded, bool wasWrongFlick)
     {
+        if (UseLocalJudgments)
+        {
+            tierText.text = timingHintText.text = flickWarningText.text = "";
+            tierFlashAge = 999f;
+            return;
+        }
         if (tierText != null)
         {
             tierText.text = JudgmentTierHelper.Label(tier);
@@ -556,8 +563,8 @@ public class GameHUDSkin : MonoBehaviour
         tierFlashAge += Time.deltaTime;
         float t = Mathf.Clamp01(tierFlashAge / tierFlashDuration);
         float ease = 1f - (1f - t) * (1f - t);
-        tierRT.anchoredPosition = tierBasePos + new Vector2(0f, tierRiseOffsetY * ease);
-        float punch = 1f + (tierPunchScale - 1f) * Mathf.Max(0f, 1f - tierFlashAge / 0.18f);
+        tierRT.anchoredPosition = tierBasePos + new Vector2(0f, DisplaySettings.ReducedEffects ? 0 : tierRiseOffsetY * ease);
+        float punch = 1f + (DisplaySettings.ReducedEffects ? 0 : tierPunchScale - 1f) * Mathf.Max(0f, 1f - tierFlashAge / 0.18f);
         tierRT.localScale = Vector3.one * punch;
         float alpha = Mathf.Clamp01(1f - t);
         Color c = tierText.color; c.a = alpha; tierText.color = c;
@@ -598,7 +605,7 @@ public class GameHUDSkin : MonoBehaviour
         comboValue.enableVertexGradient = true;
         comboValue.colorGradient = new VertexGradient(Color.white, Color.white, c, c);
         comboValue.color = Color.white;
-        if (comboGlow != null) comboGlow.color = new Color(c.r, c.g, c.b, 0.20f);
+        if (comboGlow != null) comboGlow.color = new Color(c.r, c.g, c.b, 0.20f * DisplaySettings.AccentScale);
         if (comboLabel != null)
         {
             comboLabel.text = "CHAIN";
@@ -607,7 +614,7 @@ public class GameHUDSkin : MonoBehaviour
 
         comboPunchAge += Time.deltaTime;
         float p = Mathf.Clamp01(comboPunchAge / comboPunchDuration);
-        float scale = Mathf.Lerp(comboPunchScale, 1f, p * p * (3f - 2f * p));
+        float scale = Mathf.Lerp(DisplaySettings.ReducedEffects ? 1f : comboPunchScale, 1f, p * p * (3f - 2f * p));
         if (comboRT != null) comboRT.localScale = Vector3.one * scale;
     }
 

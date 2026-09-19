@@ -134,15 +134,25 @@ public class FavoriteEffectsPlayTests
         manager.songPlayer.Play();
         float started = Time.realtimeSinceStartup;
         while (!manager.songPlayer.IsPlaying) yield return null;
+        double previousTime = manager.songPlayer.SongTime, maxFrameGap = 0;
+        var missedDetails = new List<string>();
+        var missedNotes = new HashSet<CuttableNote>();
         while (manager.songPlayer.SongTime < duration + 2)
         {
-            Advance(manager.songPlayer.SongTime, false);
+            double now = manager.songPlayer.SongTime;
+            double gap = now - previousTime;
+            maxFrameGap = Math.Max(maxFrameGap, gap); previousTime = now;
+            Advance(now, false);
+            foreach (var note in notes)
+                if (note != null && note.IsMissed && missedNotes.Add(note))
+                    missedDetails.Add($"note={note.HitTime:F3}s observed={now:F3}s frameGap={gap:F3}s");
             yield return null;
         }
+        Debug.Log($"Real-time cut test: {judged}/404 cuts, maxFrameGap={maxFrameGap:F3}s; " + string.Join("; ", missedDetails));
         Assert.GreaterOrEqual(Time.realtimeSinceStartup - started, duration - .5,
             "実時間テストの時計が短縮されています。");
         Assert.AreEqual(404, manager.noteSpawner.NextIndex);
-        Assert.AreEqual(404, judged, "実時間の人工操作で全ノーツを処理できませんでした。");
+        Assert.AreEqual(404, judged, $"実時間の人工操作で全ノーツを処理できませんでした。maxFrameGap={maxFrameGap:F3}s; " + string.Join("; ", missedDetails));
         manager.songPlayer.Stop();
         yield return ReleaseFloorAndAssertResources();
     }

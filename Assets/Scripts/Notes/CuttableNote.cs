@@ -69,6 +69,19 @@ public class CuttableNote : MonoBehaviour
     // ロングの上行音 SFX 等、各打鍵に紐づく演出に使う。
     public event System.Action<CuttableNote, int, int> OnPartialCut;
 
+    // 不受理の説明専用。スコア・残数・判定には一切影響しない。
+    public event System.Action<CuttableNote, CutRejectionReason, Vector3> OnRejected;
+    public bool HasRejectionListener => OnRejected != null;
+    double lastRejection = double.NegativeInfinity;
+    public void NotifyRejected(CutRejectionReason reason, Vector3 point)
+    {
+        if (!IsJudgeable || IsFinalized || !gameObject.activeInHierarchy || OnRejected == null) return;
+        double now = Time.unscaledTimeAsDouble;
+        if (now - lastRejection < .65) return;
+        lastRejection = now;
+        OnRejected.Invoke(this, reason, point);
+    }
+
     private Vector3 lastHitPoint;
     private Vector3 lastVelocity = Vector3.right;
     private readonly List<(GameObject visual, Material material)> ownedCracks = new List<(GameObject, Material)>();
@@ -115,6 +128,7 @@ public class CuttableNote : MonoBehaviour
         if (judgeDirection &&
             CutDirectionHelper.ShouldRejectOpposite(RequiredDirection, vXY, imuHint))
         {
+            NotifyRejected(CutRejectionReason.Direction, hitPoint);
             // 何もせず終了：ノーツは IsCut も IsMissed も変わらず、セーバーが再度関わると再判定可能。
             return;
         }
