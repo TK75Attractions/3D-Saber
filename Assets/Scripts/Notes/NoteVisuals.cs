@@ -45,8 +45,13 @@ public class NoteVisuals : MonoBehaviour
     private float emissionBoost = 1f;
     private float lastAppliedStrength = -1f;
 
-    void Awake()
+    bool initialized;
+    Material coreMaterial, dividerMaterial;
+    readonly Dictionary<Material,float> relativeFactors = new Dictionary<Material,float>();
+    void Awake() { Initialize(); }
+    public void Initialize()
     {
+        if(initialized) return; initialized=true;
         // CuttableNote が同居していれば、種別を自動判定。
         var note = GetComponent<CuttableNote>();
         if (note != null)
@@ -118,6 +123,17 @@ public class NoteVisuals : MonoBehaviour
 
         if (stripLegacyDecorations) StripLegacyDecorations();
         BuildVisuals();
+        foreach(var material in ownedSubMaterials) relativeFactors[material]=ReadRelativeFactor(material);
+        var groups=new Dictionary<Material,List<Transform>>();
+        foreach(Transform child in transform) {
+            if(!child.gameObject.activeSelf) continue;
+            var renderer=child.GetComponent<MeshRenderer>(); var filter=child.GetComponent<MeshFilter>();
+            if(renderer == null || filter == null || renderer.sharedMaterial == null || !ownedSubMaterials.Contains(renderer.sharedMaterial)) continue;
+            if(!groups.TryGetValue(renderer.sharedMaterial,out var parts)) groups[renderer.sharedMaterial]=parts=new List<Transform>();
+            parts.Add(child);
+        }
+        foreach(var group in groups) if(group.Value.Count>1)
+            NoteMeshBatch.Combine(transform,group.Value[0].name=="EdgeTop"?"EdgeRails":group.Value[0].name,group.Key,group.Value.ToArray());
     }
 
     void OnDestroy()
@@ -156,6 +172,15 @@ public class NoteVisuals : MonoBehaviour
         emissionBoost = Mathf.Max(0f, boost);
     }
 
+    public void ResetForReuse()
+    {
+        age=0; emissionBoost=1; lastAppliedStrength=-1;
+        if(runtimeBodyMat != null) {
+            var color=baseColor; color.a=DisplaySettings.ProjectorMode?1f:.85f; SetBaseColor(runtimeBodyMat,color);
+        }
+        Update();
+    }
+
     // ---- public ヘルパー（テストから検査するため） ----
 
     public int LegacyDecorationCount()
@@ -188,6 +213,7 @@ public class NoteVisuals : MonoBehaviour
         }
         foreach (var t in toRemove)
         {
+            t.gameObject.SetActive(false);
             SafeDestroyGo(t.gameObject);
         }
     }
@@ -263,10 +289,11 @@ public class NoteVisuals : MonoBehaviour
             new Vector3(0f, 0f, localZ),
             new Vector3(size, size, size),
             rot);
-        var coreMat = MakeLit(baseColor, baseEmissionStrength * emissionScale);
+        var coreMat = coreMaterial;
+        if(coreMat == null) { coreMaterial=coreMat=MakeLit(baseColor,baseEmissionStrength*emissionScale); ownedSubMaterials.Add(coreMat); }
         StampRelativeFactor(coreMat, emissionScale);
         core.GetComponent<Renderer>().sharedMaterial = coreMat;
-        ownedSubMaterials.Add(coreMat);
+
     }
 
     private void AddEdgeRailsFront(float emissionScale)
@@ -321,10 +348,10 @@ public class NoteVisuals : MonoBehaviour
             new Vector3(1.01f, 1.01f, 0.008f),
             Quaternion.identity);
         Color dividerColor = Color.Lerp(baseColor, Color.white, 0.6f);
-        var mat = MakeLit(dividerColor, baseEmissionStrength * 1.2f);
+        var mat = dividerMaterial;
+        if(mat == null) { dividerMaterial=mat=MakeLit(dividerColor,baseEmissionStrength*1.2f); ownedSubMaterials.Add(mat); }
         StampRelativeFactor(mat, 1.2f);
         div.GetComponent<Renderer>().sharedMaterial = mat;
-        ownedSubMaterials.Add(mat);
     }
 
     // ---- マテリアル生成 ----
@@ -427,7 +454,7 @@ public class NoteVisuals : MonoBehaviour
 
     private void ApplyEmissionStrengthRelative(Material m, float pulse)
     {
-        float relative = ReadRelativeFactor(m);
+        float relative = relativeFactors.TryGetValue(m,out var value)?value:1f;
         ApplyEmissionStrength(m, baseEmissionStrength * relative * pulse);
     }
 

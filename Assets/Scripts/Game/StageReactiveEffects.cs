@@ -121,6 +121,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
     void Track(CuttableNote note)
     {
         if (note == null || !tracked.Add(note)) return;
+        note.OnRetired += Retired;
         note.OnJudged += Cut;
         note.OnMiss += Miss;
         int lane = FloorLaneForX(note.transform.position.x);
@@ -136,10 +137,13 @@ public sealed class StageReactiveEffects : MonoBehaviour
         weaveNotes.Add(note, group);
     }
 
+    void Retired(CuttableNote note) { ResolveWeave(note, false); Untrack(note); }
+
     void Untrack(CuttableNote note)
     {
         if (!ReferenceEquals(note, null))
         {
+            note.OnRetired -= Retired;
             note.OnJudged -= Cut;
             note.OnMiss -= Miss;
         }
@@ -477,6 +481,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
         foreach (var note in tracked)
             if (!ReferenceEquals(note, null))
             {
+                note.OnRetired -= Retired;
                 note.OnJudged -= Cut; note.OnMiss -= Miss;
             }
         tracked.Clear();

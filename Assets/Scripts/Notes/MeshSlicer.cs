@@ -16,36 +16,37 @@ public static class MeshSlicer
     // 返り値 true の場合 above / below 両方にメッシュが入る。
     public static bool Slice(Mesh source, Plane planeLocal, out Mesh above, out Mesh below)
     {
-        above = null;
-        below = null;
-        if (source == null) return false;
+        if(source == null) { above=below=null; return false; }
+        above = new Mesh(); below = new Mesh();
+        if (SliceInto(source, planeLocal, above, below)) return true;
+        UISkinKit.SafeDestroy(above); UISkinKit.SafeDestroy(below); above = below = null; return false;
+    }
 
-        var srcVerts = source.vertices;
-        var srcTris = source.triangles;
-        var srcNormals = source.normals;
-        var srcUVs = source.uv;
-        bool hasNormals = srcNormals != null && srcNormals.Length == srcVerts.Length;
-        bool hasUVs = srcUVs != null && srcUVs.Length == srcVerts.Length;
-
-        var aboveB = new Builder();
-        var belowB = new Builder();
-        var cutEdges = new List<(Vector3 a, Vector3 b)>();
-
-        V Get(int i) => new V
+    // Unityのメインスレッド専用。コールバックを挟まず、一度の切断が終わってから次へ使う。
+    static readonly List<Vector3> srcVerts = new List<Vector3>(64), srcNormals = new List<Vector3>(64);
+    static readonly List<Vector2> srcUVs = new List<Vector2>(64);
+    static readonly List<int> srcTris = new List<int>(128);
+    static readonly List<int> submeshTris = new List<int>(128);
+    static readonly Builder aboveB = new Builder(), belowB = new Builder();
+    static readonly List<(Vector3 a, Vector3 b)> cutEdges = new List<(Vector3, Vector3)>(32);
+    static readonly V[] tri = new V[3];
+    static readonly bool[] sides = new bool[3];
+    public static bool SliceInto(Mesh source, Plane planeLocal, Mesh above, Mesh below)
+    {
+        if (source == null || above == null || below == null) return false;
+        source.GetVertices(srcVerts); srcTris.Clear();
+        for(int submesh=0;submesh<source.subMeshCount;submesh++) { source.GetTriangles(submeshTris,submesh); srcTris.AddRange(submeshTris); }
+        source.GetNormals(srcNormals); source.GetUVs(0,srcUVs);
+        bool hasNormals = srcNormals.Count == srcVerts.Count, hasUVs = srcUVs.Count == srcVerts.Count;
+        aboveB.Clear(); belowB.Clear(); cutEdges.Clear();
+        for (int t = 0; t < srcTris.Count; t += 3)
         {
-            pos = srcVerts[i],
-            normal = hasNormals ? srcNormals[i] : Vector3.zero,
-            uv = hasUVs ? srcUVs[i] : Vector2.zero
-        };
-
-        for (int t = 0; t < srcTris.Length; t += 3)
-        {
-            V[] tri = { Get(srcTris[t]), Get(srcTris[t + 1]), Get(srcTris[t + 2]) };
-            bool[] sides = {
-                planeLocal.GetSide(tri[0].pos),
-                planeLocal.GetSide(tri[1].pos),
-                planeLocal.GetSide(tri[2].pos)
-            };
+            for (int j=0;j<3;j++)
+            {
+                int index=srcTris[t+j];
+                tri[j]=new V { pos=srcVerts[index], normal=hasNormals?srcNormals[index]:Vector3.zero, uv=hasUVs?srcUVs[index]:Vector2.zero };
+                sides[j]=planeLocal.GetSide(tri[j].pos);
+            }
             int aboveCount = (sides[0] ? 1 : 0) + (sides[1] ? 1 : 0) + (sides[2] ? 1 : 0);
 
             if (aboveCount == 3)
@@ -87,8 +88,8 @@ public static class MeshSlicer
         CapCut(cutEdges, planeLocal, aboveB, aboveSide: true);
         CapCut(cutEdges, planeLocal, belowB, aboveSide: false);
 
-        above = aboveB.Build();
-        below = belowB.Build();
+        aboveB.BuildInto(above);
+        belowB.BuildInto(below);
         return true;
     }
 
@@ -156,9 +157,10 @@ public static class MeshSlicer
             triangles.Add(i0 + 2);
         }
 
-        public Mesh Build()
+        public void Clear() { verts.Clear(); normals.Clear(); uvs.Clear(); triangles.Clear(); }
+        public void BuildInto(Mesh m)
         {
-            var m = new Mesh();
+            m.Clear();
             m.indexFormat = verts.Count > 65000
                 ? UnityEngine.Rendering.IndexFormat.UInt32
                 : UnityEngine.Rendering.IndexFormat.UInt16;
@@ -168,7 +170,7 @@ public static class MeshSlicer
             else m.RecalculateNormals();
             if (uvs.Count == verts.Count) m.SetUVs(0, uvs);
             m.RecalculateBounds();
-            return m;
+
         }
     }
 }

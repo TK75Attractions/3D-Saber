@@ -13,6 +13,7 @@ public class SimultaneousNoteLink : MonoBehaviour
     public CuttableNote noteA;
     public CuttableNote noteB;
 
+    uint versionA, versionB;
     private LineRenderer line;
     private Material ownedMaterial;
 
@@ -25,6 +26,7 @@ public class SimultaneousNoteLink : MonoBehaviour
         var link = go.AddComponent<SimultaneousNoteLink>();
         link.noteA = a;
         link.noteB = b;
+        link.versionA = a.SpawnVersion; link.versionB = b.SpawnVersion;
         link.BuildLine();
         link.Refresh();
         return link;
@@ -78,7 +80,7 @@ public class SimultaneousNoteLink : MonoBehaviour
     // 端点をノーツ現在位置へ更新する。ペアが両方生存していれば true(テストから直接呼べる)。
     public bool Refresh()
     {
-        if (!IsAlive(noteA) || !IsAlive(noteB)) return false;
+        if (!IsAlive(noteA) || !IsAlive(noteB) || noteA.SpawnVersion != versionA || noteB.SpawnVersion != versionB) return false;
         if (line != null)
         {
             line.SetPosition(0, noteA.transform.position);

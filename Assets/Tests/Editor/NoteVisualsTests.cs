@@ -64,10 +64,7 @@ public class NoteVisualsTests
         var note = MakeLegacyNote();
         var visuals = AttachVisuals(note);
         Assert.IsNotNull(visuals.FindChildByName("InnerCore"));
-        Assert.IsNotNull(visuals.FindChildByName("EdgeTop"));
-        Assert.IsNotNull(visuals.FindChildByName("EdgeBot"));
-        Assert.IsNotNull(visuals.FindChildByName("EdgeLft"));
-        Assert.IsNotNull(visuals.FindChildByName("EdgeRgt"));
+        Assert.IsNotNull(visuals.FindChildByName("EdgeRails"));
         Assert.IsNotNull(visuals.FindChildByName("FrontHalo"));
     }
 
@@ -76,7 +73,7 @@ public class NoteVisualsTests
     {
         var note = MakeLegacyNote();
         var visuals = AttachVisuals(note);
-        foreach (var name in new[] { "InnerCore", "EdgeTop", "EdgeBot", "EdgeLft", "EdgeRgt", "FrontHalo" })
+        foreach (var name in new[] { "InnerCore", "EdgeRails", "FrontHalo" })
         {
             var child = visuals.FindChildByName(name);
             Assert.IsNotNull(child, $"{name} が見つからない");
@@ -165,7 +162,8 @@ public class NoteVisualsTests
         {
             if (t.name == "Divider") dividers++;
         }
-        Assert.AreEqual(2, dividers);
+        Assert.AreEqual(1, dividers);
+        Assert.AreEqual(48, note.transform.Find("Divider").GetComponent<MeshFilter>().sharedMesh.vertexCount,"2本の形状が結合後も残る");
     }
 
     [Test]

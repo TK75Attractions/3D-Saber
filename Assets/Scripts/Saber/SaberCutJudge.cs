@@ -26,11 +26,13 @@ public class SaberCutJudge : MonoBehaviour
 
     private struct Pending
     {
+        public uint version;
         public Vector3 hitPoint;
         public Vector3 velocity;
     }
 
     private readonly Dictionary<CuttableNote, Pending> pending = new Dictionary<CuttableNote, Pending>();
+    readonly List<CuttableNote> toRemove = new List<CuttableNote>(16);
     private SaberTracker contactTracker;
     private int contactResetVersion;
 
@@ -85,9 +87,10 @@ public class SaberCutJudge : MonoBehaviour
         Vector2 b = new Vector2(bladeProvider.WorldEndB.x, bladeProvider.WorldEndB.y);
         float hitRange = bladeRadius + noteHitRadiusXY;
 
-        CuttableNote[] notes = Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None);
-        foreach (var note in notes)
+        var notes = CuttableNote.ActiveNotes;
+        for (int i=0;i<notes.Count;i++)
         {
+            var note = notes[i];
             if (!IsCandidate(note)) continue;
             // 担当外の手のノーツはそもそも判定対象にしない(誤った手のスイングは無反応)
             if (!SaberHandHelper.CanCut(note.RequiredHand, EffectiveHand())) continue;
@@ -98,6 +101,7 @@ public class SaberCutJudge : MonoBehaviour
             {
                 pending[note] = new Pending
                 {
+                    version = note.SpawnVersion,
                     hitPoint = new Vector3(closest.x, closest.y, note.transform.position.z),
                     velocity = saber.Velocity
                 };
@@ -113,14 +117,14 @@ public class SaberCutJudge : MonoBehaviour
         Vector2 b = new Vector2(bladeProvider.WorldEndB.x, bladeProvider.WorldEndB.y);
         float hitRange = bladeRadius + noteHitRadiusXY;
 
-        var toRemove = new List<CuttableNote>();
+        toRemove.Clear();
         int cuts = 0;
         // 同時に抜けたノーツは、期限境界でも同じヒントで評価する（消費しない）。
         CutDirection imuHint = ResolveImuHint();
         foreach (var kv in pending)
         {
             CuttableNote note = kv.Key;
-            if (!IsCandidate(note))
+            if (!IsCandidate(note) || note.SpawnVersion != kv.Value.version)
             {
                 toRemove.Add(note);
                 continue;
@@ -151,9 +155,10 @@ public class SaberCutJudge : MonoBehaviour
 
         float hitRange = bladeRadius + noteHitRadiusXY;
 
-        CuttableNote[] notes = Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None);
-        foreach (var note in notes)
+        var notes = CuttableNote.ActiveNotes;
+        for (int i=0;i<notes.Count;i++)
         {
+            var note = notes[i];
             if (!IsCandidate(note)) continue;
             // 担当外の手のノーツはそもそも判定対象にしない(誤った手のスイングは無反応)
             if (!SaberHandHelper.CanCut(note.RequiredHand, EffectiveHand())) continue;
@@ -164,6 +169,7 @@ public class SaberCutJudge : MonoBehaviour
             {
                 pending[note] = new Pending
                 {
+                    version = note.SpawnVersion,
                     hitPoint = new Vector3(closest.x, closest.y, note.transform.position.z),
                     velocity = saber.Velocity
                 };
@@ -179,13 +185,13 @@ public class SaberCutJudge : MonoBehaviour
         Vector2 now = new Vector2(saber.CurrentPosition.x, saber.CurrentPosition.y);
         float hitRange = bladeRadius + noteHitRadiusXY;
 
-        var toRemove = new List<CuttableNote>();
+        toRemove.Clear();
         int cuts = 0;
         CutDirection imuHint = ResolveImuHint();
         foreach (var kv in pending)
         {
             CuttableNote note = kv.Key;
-            if (!IsCandidate(note))
+            if (!IsCandidate(note) || note.SpawnVersion != kv.Value.version)
             {
                 toRemove.Add(note);
                 continue;

@@ -129,12 +129,12 @@ public class ProjectorModeTests
     {
         DisplaySettings.SetProjectorModeForTest(false);
         var normal = BuildNoteVisuals(SaberHand.Left, CutDirection.None);
-        float thickOff = normal.FindChildByName("EdgeTop").localScale.y;
+        float thickOff = normal.FindChildByName("EdgeRails").GetComponent<MeshFilter>().sharedMesh.bounds.size.y - 1f;
         Assert.AreEqual(UISkinPalette.LogoBlue.r, normal.baseColor.r, 1e-3f, "通常モードは左手=LogoBlue のまま");
 
         DisplaySettings.SetProjectorModeForTest(true);
         var proj = BuildNoteVisuals(SaberHand.Left, CutDirection.None);
-        Assert.Greater(proj.FindChildByName("EdgeTop").localScale.y, thickOff, "縁取りレールは太く");
+        Assert.Greater(proj.FindChildByName("EdgeRails").GetComponent<MeshFilter>().sharedMesh.bounds.size.y - 1f, thickOff, "縁取りレールは太く");
         Assert.GreaterOrEqual(proj.baseEmissionStrength, ProjectorMode.NoteEmission, "発光は強く");
         Assert.Greater(proj.baseColor.r + proj.baseColor.g, UISkinPalette.LogoBlue.r + UISkinPalette.LogoBlue.g,
             "深い青は明るいシアン寄りに置き換わる(輝度差で見分ける)");
@@ -150,17 +150,17 @@ public class ProjectorModeTests
         var parent = new GameObject("noteProj");
         created.Add(parent);
         NoteSpawner.BuildArrow(parent.transform, CutDirection.Up);
-        var bar = parent.transform.Find("Arrow/BarL").GetComponent<MeshRenderer>().sharedMaterial;
+        var bar = parent.transform.Find("Arrow/Bars").GetComponent<MeshRenderer>().sharedMaterial;
         Assert.Greater(bar.GetColor("_BaseColor").r, 0.9f, "矢印は白");
         var backing = parent.transform.Find("Arrow/ArrowBacking").GetComponent<MeshRenderer>().sharedMaterial;
         Assert.Less(backing.GetColor("_BaseColor").r, 0.1f, "下敷きは暗い");
-        Assert.Greater(parent.transform.Find("Arrow/BarL").localScale.x, 0.1f, "矢印の線は太い");
+        Assert.AreEqual(48,parent.transform.Find("Arrow/Bars").GetComponent<MeshFilter>().sharedMesh.vertexCount);
 
         DisplaySettings.SetProjectorModeForTest(false);
         var parent2 = new GameObject("noteNormal");
         created.Add(parent2);
         NoteSpawner.BuildArrow(parent2.transform, CutDirection.Up);
-        var bar2 = parent2.transform.Find("Arrow/BarL").GetComponent<MeshRenderer>().sharedMaterial;
+        var bar2 = parent2.transform.Find("Arrow/Bars").GetComponent<MeshRenderer>().sharedMaterial;
         Assert.Less(bar2.GetColor("_BaseColor").r, 0.1f, "通常モードの矢印は黒のまま");
     }
 

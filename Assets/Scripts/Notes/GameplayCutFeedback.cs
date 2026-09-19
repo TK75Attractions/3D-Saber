@@ -64,6 +64,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
     public void Track(CuttableNote note)
     {
         if (note == null || !tracked.Add(note)) return;
+        note.OnRetired += Untrack;
         note.OnJudged += HandleCut;
         note.OnMiss += HandleMiss;
     }
@@ -71,6 +72,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
     void Untrack(CuttableNote note)
     {
         if (note == null) return;
+        note.OnRetired -= Untrack;
         note.OnJudged -= HandleCut;
         note.OnMiss -= HandleMiss;
         tracked.Remove(note);
@@ -212,6 +214,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
         foreach (var note in tracked)
         {
             if (note == null) continue;
+            note.OnRetired -= Untrack;
             note.OnJudged -= HandleCut;
             note.OnMiss -= HandleMiss;
         }

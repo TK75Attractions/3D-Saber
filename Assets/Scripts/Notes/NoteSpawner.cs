@@ -1,3 +1,4 @@
+using PoolKey = System.ValueTuple<UnityEngine.GameObject, CutDirection, int, SaberHand, bool, bool, bool>;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -38,6 +39,80 @@ public class NoteSpawner : MonoBehaviour
     private double extraOffsetSeconds; // GamePlayManager から実行時に上書き
     private readonly List<CuttableNote> liveNotes = new List<CuttableNote>();
     private GameplayCutFeedback cutFeedback;
+    public bool reuseNotes = true;
+    const int MaxIdleNotes = 128;
+    readonly Dictionary<PoolKey, Stack<CuttableNote>> idleNotes = new Dictionary<PoolKey, Stack<CuttableNote>>();
+    readonly Dictionary<CuttableNote, PoolKey> poolKeys = new Dictionary<CuttableNote, PoolKey>();
+    Transform idleRoot;
+    NoteFragmentPool fragmentPool;
+    int idleCount;
+    public int PooledNoteCount => idleCount;
+    public int CreatedNoteCount { get; private set; }
+    public NoteFragmentPool FragmentPool => fragmentPool;
+    bool Pooling => reuseNotes && Application.isPlaying;
+
+    PoolKey Key(NoteData data) => (PickPrefab(data.color), CutDirectionHelper.Parse(data.direction),
+        Mathf.Clamp(data.count,1,8), SaberHandHelper.FromColor(data.color),
+        string.Equals(data.color,"gold",System.StringComparison.OrdinalIgnoreCase), DisplaySettings.ProjectorMode, buildTimingCues);
+    void EnsurePool()
+    {
+        if(idleRoot == null) {
+            var root = new GameObject("IdleNotes"); root.transform.SetParent(transform,false); root.SetActive(false); idleRoot=root.transform;
+            var fragments = new GameObject("NoteFragments");
+            UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(fragments,gameObject.scene);
+            fragmentPool=fragments.AddComponent<NoteFragmentPool>();
+        }
+    }
+    void Recycle(CuttableNote note)
+    {
+        if(note == null) return;
+        if(!note.IsPooled || !poolKeys.TryGetValue(note,out var key)) { SafeDestroy(note.gameObject); return; }
+        note.Retire();
+        if(idleCount >= MaxIdleNotes) { poolKeys.Remove(note); SafeDestroy(note.gameObject); return; }
+        note.transform.SetParent(idleRoot,false);
+        if(!idleNotes.TryGetValue(key,out var stack)) idleNotes[key]=stack=new Stack<CuttableNote>();
+        stack.Push(note); idleCount++;
+    }
+    // 各見た目の同時表示数をロード中に見積もる。保持は全体128個まで。
+    void Prewarm()
+    {
+        if(!Pooling || chart?.notes == null) return;
+        EnsurePool();
+        var groups=new Dictionary<PoolKey, (NoteData sample, List<(double time,int delta)> events)>();
+        foreach(var data in chart.notes) {
+            var key=Key(data); if(key.Item1 == null) continue;
+            if(!groups.TryGetValue(key,out var group)) group=(data,new List<(double,int)>());
+            double linger=data.count <= 1 ? 0 : data.lengthMs > 0 ? data.lengthMs/1000.0 : (data.count-1)*secondsPerLongCut;
+            group.events.Add((EffectiveTime(data)-approachTime,1));
+            group.events.Add((EffectiveTime(data)+judgeWindow+linger+missGrace+despawnAfterMissSeconds+.05,-1));
+            groups[key]=group;
+        }
+        // 前の曲にしかない種類で容量が埋まり、次の曲だけ再利用できなくなるのを防ぐ。
+        foreach(var key in new List<PoolKey>(idleNotes.Keys)) {
+            if(groups.ContainsKey(key)) continue;
+            var old=idleNotes[key];
+            while(old.Count>0) {
+                var note=old.Pop(); idleCount--;
+                if(note != null) { poolKeys.Remove(note); SafeDestroy(note.gameObject); }
+            }
+            idleNotes.Remove(key);
+        }
+        foreach(var pair in groups) {
+            var events=pair.Value.events;
+            events.Sort((a,b)=> { int c=a.time.CompareTo(b.time); return c!=0?c:a.delta.CompareTo(b.delta); });
+            int live=0,peak=0; foreach(var e in events) { live+=e.delta; peak=Mathf.Max(peak,live); }
+            int existing=idleNotes.TryGetValue(pair.Key,out var stack)?stack.Count:0;
+            for(int i=existing;i<Mathf.Min(12,peak+1) && idleCount<MaxIdleNotes;i++) SpawnOne(pair.Value.sample,true);
+        }
+        Material material=null;
+        foreach(var note in poolKeys.Keys) {
+            if(note == null) continue;
+            var renderer=note.GetComponent<MeshRenderer>();
+            if(renderer != null) material=renderer.sharedMaterial;
+            if(material != null) break;
+        }
+        fragmentPool.Prewarm(64,material);
+    }
 
     public float Speed => approachTime > 0.0001f ? (spawnZ - judgeZ) / approachTime : 0f;
 
@@ -65,9 +140,10 @@ public class NoteSpawner : MonoBehaviour
         RecomputeTotalOffset();
         foreach (var n in liveNotes)
         {
-            if (n != null) SafeDestroy(n.gameObject);
+            if (n != null) Recycle(n);
         }
         liveNotes.Clear();
+        Prewarm();
     }
 
     public void SetExtraOffsetSeconds(double seconds)
@@ -132,6 +208,10 @@ public class NoteSpawner : MonoBehaviour
         // Spawnerコンポーネントだけが取り外された場合も、表示用の所有資源を残さない。
         if (cutFeedback != null) SafeDestroy(cutFeedback.gameObject);
         cutFeedback = null;
+        foreach(var note in poolKeys.Keys) if(note != null) SafeDestroy(note.gameObject);
+        poolKeys.Clear(); idleNotes.Clear(); idleCount=0;
+        if(idleRoot != null) SafeDestroy(idleRoot.gameObject);
+        if(fragmentPool != null) SafeDestroy(fragmentPool.gameObject);
     }
 
     private void SpawnDue(double songTime)
@@ -147,13 +227,29 @@ public class NoteSpawner : MonoBehaviour
         }
     }
 
-    private void SpawnOne(NoteData nd)
+    private void SpawnOne(NoteData nd, bool warming = false)
     {
         GameObject prefab = PickPrefab(nd.color);
         if (prefab == null) return;
         float scale = chart != null ? chart.coordScale : 1f;
         Vector3 pos = new Vector3(nd.x * scale, nd.y * scale, spawnZ);
-        GameObject go = Instantiate(prefab, pos, Quaternion.identity, noteRoot);
+        PoolKey key=Key(nd);
+        CuttableNote cached=null;
+        if(Pooling) {
+            EnsurePool();
+            if(!warming && idleNotes.TryGetValue(key,out var stack))
+                while(stack.Count>0 && cached==null) { cached=stack.Pop(); idleCount--; }
+        }
+        bool reused=cached != null;
+        GameObject go;
+        if(reused) go=cached.gameObject;
+        else {
+            go=Instantiate(prefab, pos, Quaternion.identity, Pooling?idleRoot:noteRoot); CreatedNoteCount++;
+            // 設定済みVisualsを含むPrefabでも、種別を設定する前にAwakeを走らせない。
+            if(Pooling) go.SetActive(false);
+        }
+        go.transform.SetParent(noteRoot,false); go.transform.position=pos; go.transform.rotation=Quaternion.identity;
+        go.transform.localScale=prefab.transform.localScale;
         // プロジェクターモード: 正面サイズを一回り大きく(x/y のみ。ロングの z 伸長は下で別途扱う)
         if (DisplaySettings.ProjectorMode)
         {
@@ -165,6 +261,8 @@ public class NoteSpawner : MonoBehaviour
         {
             note = go.AddComponent<CuttableNote>();
         }
+        note.ResetForSpawn(); note.IsPooled=Pooling; note.FragmentPool=Pooling?fragmentPool:null;
+        if(Pooling && !reused) poolKeys.Add(note,key);
         note.HitTime = EffectiveTime(nd);
         note.RequiredDirection = CutDirectionHelper.Parse(nd.direction);
         note.RequiredCutCount = Mathf.Max(1, nd.count);
@@ -178,10 +276,12 @@ public class NoteSpawner : MonoBehaviour
 
         // 旧プレハブにある面ステッカー等を剥がして、クリスタル＋ネオン外観に置き換える。
         // NoteVisuals 自身が冪等で、既存プレハブにも安全に被せられる。
-        if (go.GetComponent<NoteVisuals>() == null) go.AddComponent<NoteVisuals>();
+        var visuals=go.GetComponent<NoteVisuals>() ?? go.AddComponent<NoteVisuals>();
+        visuals.Initialize(); visuals.ResetForReuse();
+        go.SetActive(true);
 
         // 方向指定なら矢印マーカー
-        if (note.RequiredDirection != CutDirection.None)
+        if (!reused && note.RequiredDirection != CutDirection.None)
         {
             BuildArrow(go.transform, note.RequiredDirection);
         }
@@ -197,7 +297,11 @@ public class NoteSpawner : MonoBehaviour
                 : note.RequiredCutCount;
             float zFactor = Mathf.Clamp(virtualCount, 1f, longMaxVisualZScale);
             go.transform.localScale = new Vector3(sc.x, sc.y, sc.z * zFactor);
-            BuildCountLabel(go.transform, note);
+            if(note.countLabel == null) BuildCountLabel(go.transform,note);
+            note.countLabel.text=note.RequiredCutCount.ToString();
+            note.countLabel.transform.position=go.transform.position+LongNoteCountStyle.WorldOffset;
+            note.countLabel.gameObject.SetActive(true);
+            if(Pooling) note.WarmCracks(Mathf.Min(16,note.RequiredCutCount-1));
         }
 
         // 切る瞬間を読みやすくする着地ゴースト(固定枠+収縮枠が重なった瞬間 = 切る瞬間)
@@ -208,6 +312,8 @@ public class NoteSpawner : MonoBehaviour
             cue.Initialize(note, judgeZ);
             note.TimingCue = cue;
         }
+
+        if(warming) { Recycle(note); return; }
 
         // 同時押しガイド: 既に生きている同時刻ノーツと白線で結ぶ(小節線より薄い)
         if (simultaneousGuideEnabled)
@@ -265,6 +371,7 @@ public class NoteSpawner : MonoBehaviour
         }
 
         // 上向き ^ シェブロン:白+強発光で「向き」を最優先の信号にする
+        Material barMaterial=null;
         for (int sign = -1; sign <= 1; sign += 2)
         {
             GameObject bar = GameObject.CreatePrimitive(PrimitiveType.Cube);
@@ -278,8 +385,8 @@ public class NoteSpawner : MonoBehaviour
             if (mr != null)
             {
                 var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-                var mat = new Material(sh);
-                materials.Register(mat);
+                var mat = barMaterial;
+                if(mat == null) { mat=new Material(sh); materials.Register(mat); barMaterial=mat; }
                 // 黒(非発光)。発光ボディの上でも輪郭が締まって向きが読める(ユーザー指定)。
                 // プロジェクターモードでは白(暗い下敷きの上)。
                 Color black = DisplaySettings.ProjectorMode ? ProjectorMode.ArrowBarColor : new Color(0.02f, 0.02f, 0.04f);
@@ -288,6 +395,7 @@ public class NoteSpawner : MonoBehaviour
                 mr.sharedMaterial = mat;
             }
         }
+        NoteMeshBatch.Combine(arrow.transform,"Bars",barMaterial,arrow.transform.Find("BarL"),arrow.transform.Find("BarR"));
     }
 
     private static void StripArrowCollider(GameObject go)
@@ -362,6 +470,7 @@ public class NoteSpawner : MonoBehaviour
 
             if (note.IsCut)
             {
+                Recycle(note);
                 liveNotes.RemoveAt(i);
                 continue;
             }
@@ -376,7 +485,7 @@ public class NoteSpawner : MonoBehaviour
             // 後方に十分流れたら回収。
             if (note.IsMissed && dt < -(lateWindow + missGrace + despawnAfterMissSeconds))
             {
-                SafeDestroy(note.gameObject);
+                Recycle(note);
                 liveNotes.RemoveAt(i);
             }
         }

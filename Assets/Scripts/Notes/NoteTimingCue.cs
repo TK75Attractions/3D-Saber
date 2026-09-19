@@ -92,11 +92,33 @@ public class NoteTimingCue : MonoBehaviour
             approachMaxAlpha = Mathf.Max(approachMaxAlpha, 1f);
         }
 
+        endFadeAlpha=1; InWindow=false;
+        if(initialized) {
+            Vector3 ls=transform.lossyScale;
+            ghostBaseScale=new Vector3(Mathf.Abs(ls.x)*1.04f,Mathf.Abs(ls.y)*1.04f,1);
+            ResetRoot(ghostRoot,judgeZ+ghostZBias); ResetRoot(approachRoot,judgeZ+approachZBias);
+            if(ringRoot != null) ringRoot.gameObject.SetActive(true);
+            ApplyColor(ghostMat,baseColor,0,1.2f); ApplyColor(approachMat,baseColor,0,1.2f);
+            return;
+        }
         if (buildRing) BuildRing();
         if (buildGhost) BuildGhost(judgeZ);
         initialized = true;
     }
 
+    void ResetRoot(GameObject root,float z)
+    {
+        if(root == null) return;
+        root.transform.position=new Vector3(transform.position.x,transform.position.y,z);
+        root.transform.localScale=ghostBaseScale; root.SetActive(true);
+    }
+    public void HideForPool()
+    {
+        if(ghostRoot != null) ghostRoot.SetActive(false);
+        if(approachRoot != null) approachRoot.SetActive(false);
+        if(ringRoot != null) ringRoot.gameObject.SetActive(false);
+    }
+    void OnDisable() { HideForPool(); }
     void OnDestroy()
     {
         if (ghostRoot != null) SafeDestroyGo(ghostRoot);
@@ -274,6 +296,7 @@ public class NoteTimingCue : MonoBehaviour
         MakeBar(parent, "Bottom", new Vector3(0f, -half, 0f), new Vector3(half * 2f + thickness, thickness, 0.02f), mat);
         MakeBar(parent, "Left", new Vector3(-half, 0f, 0f), new Vector3(thickness, half * 2f + thickness, 0.02f), mat);
         MakeBar(parent, "Right", new Vector3(half, 0f, 0f), new Vector3(thickness, half * 2f + thickness, 0.02f), mat);
+        NoteMeshBatch.Combine(parent,"Frame",mat,parent.Find("Top"),parent.Find("Bottom"),parent.Find("Left"),parent.Find("Right"));
     }
 
     private static void MakeBar(Transform parent, string name, Vector3 localPos, Vector3 localScale, Material mat)

@@ -136,6 +136,7 @@ public class ArrowMaterialLifetimePlayTests
         prefab.transform.position = Vector3.one * 1000;
         var spawner = new GameObject("Spawner").AddComponent<NoteSpawner>();
         spawner.notePrefab = prefab;
+        spawner.reuseNotes = false;
         spawner.buildTimingCues = false;
         var chart = new ChartData();
         chart.notes.Add(new NoteData { time = 0, color = "red", direction = "up", count = 1 });
@@ -152,7 +153,7 @@ public class ArrowMaterialLifetimePlayTests
     {
         Assert.NotNull(arrow);
         Material[] materials = arrow.GetComponentsInChildren<Renderer>().Select(renderer => renderer.sharedMaterial).ToArray();
-        Assert.AreEqual(3, materials.Length);
+        Assert.AreEqual(2, materials.Length);
         Assert.True(materials.All(material => material != null));
         observed.AddRange(materials);
         return materials;

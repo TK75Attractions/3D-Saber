@@ -139,7 +139,8 @@ public class NoteTimingCueTests
         var (go, _, cue) = MakeNoteWithCue(buildRing: true);
         var ring = go.transform.Find("TimingRing");
         Assert.IsNotNull(ring, "オプトインで TimingRing が note の子として生成される");
-        Assert.AreEqual(4, ring.childCount, "枠は4本のバーで構成される");
+        Assert.AreEqual(1, ring.childCount, "4本の枠を一つの描画部品に結合する");
+        Assert.AreEqual(96, ring.GetComponentInChildren<MeshFilter>().sharedMesh.vertexCount);
         Assert.AreSame(ring, cue.RingRoot);
     }
 
@@ -157,9 +158,9 @@ public class NoteTimingCueTests
         Assert.IsNotNull(cue.GhostRoot, "既定で着地ゴースト(固定枠)を生成する");
         // 内側の塗り(GhostFill)は霞の原因なので廃止済み:枠 4 本のみ
         Assert.IsNull(cue.GhostRoot.transform.Find("GhostFill"), "GhostFill は生成しない");
-        Assert.AreEqual(4, cue.GhostRoot.transform.childCount, "固定枠は枠 4 本のみ");
+        Assert.AreEqual(1, cue.GhostRoot.transform.childCount, "固定枠の4辺を結合する");
         Assert.IsNotNull(cue.ApproachRoot, "既定で収縮枠も生成する");
-        Assert.AreEqual(4, cue.ApproachRoot.transform.childCount, "収縮枠も枠 4 本のみ");
+        Assert.AreEqual(1, cue.ApproachRoot.transform.childCount, "収縮枠の4辺を結合する");
     }
 
     [Test]

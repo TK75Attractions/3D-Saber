@@ -7,7 +7,50 @@ using UnityEngine;
 public class CuttableNote : MonoBehaviour
 {
     public bool IsCut { get; private set; }
-    public bool IsJudgeable { get; set; }
+    private bool judgeable;
+    public bool IsJudgeable { get => judgeable; set { judgeable = value; if (value && gameObject.activeInHierarchy) Register(); } }
+    static readonly List<CuttableNote> activeNotes = new List<CuttableNote>();
+    public static IReadOnlyList<CuttableNote> ActiveNotes => activeNotes;
+    public uint SpawnVersion { get; private set; }
+    internal NoteFragmentPool FragmentPool;
+    internal bool IsPooled;
+    internal event System.Action<CuttableNote> OnRetired;
+    int registryIndex = -1;
+    void Register()
+    {
+        if (registryIndex >= 0 && registryIndex < activeNotes.Count && activeNotes[registryIndex] == this) return;
+        registryIndex = activeNotes.Count; activeNotes.Add(this);
+    }
+    void OnEnable() { SpawnVersion++; Register(); }
+    void OnDisable()
+    {
+        if (registryIndex < 0 || registryIndex >= activeNotes.Count || activeNotes[registryIndex] != this) return;
+        int last = activeNotes.Count - 1;
+        var moved = activeNotes[last]; activeNotes[registryIndex] = moved; moved.registryIndex = registryIndex;
+        activeNotes.RemoveAt(last); registryIndex = -1;
+    }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetRegistry() { activeNotes.Clear(); }
+    internal void ResetForSpawn()
+    {
+        SpawnVersion++;
+        // 前のノーツに結び付いたスコア・音・演出の購読を持ち越さない。
+        OnRetired?.Invoke(this);
+        OnCut = null; OnJudged = null; OnMiss = null; OnPartialCut = null; OnRetired = null;
+        IsCut = IsMissed = IsFinalized = judgeable = false;
+        MinimumCutSpeed = 0; RequireJudgeableOnCut = DirectionVisualOnly = false;
+        LastCutCorrectDirection = true; LastCutterHand = SaberHand.Any;
+        lastHitPoint = Vector3.zero; lastVelocity = Vector3.right; cracksUsed = 0;
+        foreach (var crack in ownedCracks) if (crack.visual != null) crack.visual.SetActive(false);
+        if (countLabel != null) countLabel.gameObject.SetActive(false);
+    }
+    internal void Retire()
+    {
+        judgeable = false; OnRetired?.Invoke(this);
+        if (countLabel != null) countLabel.gameObject.SetActive(false);
+        if (TimingCue != null) TimingCue.HideForPool();
+        gameObject.SetActive(false);
+    }
     // メニュー専用の追加条件。既定値では本編の既存判定を変更しない。
     public float MinimumCutSpeed { get; set; }
     public bool RequireJudgeableOnCut { get; set; }
@@ -75,6 +118,8 @@ public class CuttableNote : MonoBehaviour
 
     void OnDestroy()
     {
+        OnDisable();
+        if (countLabel != null) SafeDestroyGo(countLabel.gameObject);
         // ノーツの完了・ミス後の破棄・シーン退出のどの経路でも、ひびの材質を残さない。
         foreach (var crack in ownedCracks)
         {
@@ -130,7 +175,7 @@ public class CuttableNote : MonoBehaviour
         lastVelocity = cutVelocity;
 
         // 各カットでひびを追加＆数字を更新
-        AddCrack();
+        if (RemainingCuts > 0) AddCrack();
         UpdateCountLabel();
 
         // 各カットごとに発火（達成番号は 0 始まり）
@@ -187,33 +232,29 @@ public class CuttableNote : MonoBehaviour
         if (mr.material.HasProperty("_EmissionColor")) mr.material.SetColor("_EmissionColor", c * 0.2f);
     }
 
+    int cracksUsed;
+    internal void WarmCracks(int count)
+    {
+        for (int i = ownedCracks.Count; i < count; i++)
+        {
+            var crack = new GameObject("Crack", typeof(MeshFilter), typeof(MeshRenderer));
+            crack.transform.SetParent(transform, false);
+            crack.GetComponent<MeshFilter>().sharedMesh = NoteFragmentPool.CubeMesh;
+            var mat = new Material(Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard"));
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", Color.white);
+            else mat.color = Color.white;
+            if (mat.HasProperty("_EmissionColor")) { mat.EnableKeyword("_EMISSION"); mat.SetColor("_EmissionColor", Color.white * 1.4f); }
+            crack.GetComponent<MeshRenderer>().sharedMaterial = mat;
+            crack.SetActive(false); ownedCracks.Add((crack, mat));
+        }
+    }
     private void AddCrack()
     {
-        // フロント面（-Z 側）にランダムな細い裂け目を1本追加。
-        GameObject crack = GameObject.CreatePrimitive(PrimitiveType.Cube);
-        crack.name = "Crack";
-        crack.transform.SetParent(transform, false);
-        // 端まで届く長さ・ランダム角度・ランダム位置
-        crack.transform.localPosition = new Vector3(
-            Random.Range(-0.3f, 0.3f),
-            Random.Range(-0.3f, 0.3f),
-            -0.55f);
-        crack.transform.localRotation = Quaternion.Euler(0, 0, Random.Range(0f, 360f));
-        crack.transform.localScale = new Vector3(0.04f, Random.Range(0.5f, 0.95f), 0.03f);
-        var col = crack.GetComponent<BoxCollider>();
-        if (col != null) SafeDestroy(col);
-        var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-        var mat = new Material(sh);
-        Color c = Color.white;
-        if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", c);
-        else mat.color = c;
-        if (mat.HasProperty("_EmissionColor"))
-        {
-            mat.EnableKeyword("_EMISSION");
-            mat.SetColor("_EmissionColor", c * 1.4f);
-        }
-        crack.GetComponent<MeshRenderer>().sharedMaterial = mat;
-        ownedCracks.Add((crack, mat));
+        WarmCracks(cracksUsed + 1);
+        var crack = ownedCracks[cracksUsed++].visual;
+        crack.transform.localPosition = new Vector3(Random.Range(-.3f,.3f), Random.Range(-.3f,.3f), -.55f);
+        crack.transform.localRotation = Quaternion.Euler(0,0,Random.Range(0f,360f));
+        crack.transform.localScale = new Vector3(.04f,Random.Range(.5f,.95f),.03f); crack.SetActive(true);
     }
 
     private void ShatterAndDestroy(Vector3 hitPoint, Vector3 cutVelocity)
@@ -223,6 +264,7 @@ public class CuttableNote : MonoBehaviour
         {
             SpawnDebris(cutVelocity);
         }
+        if (IsPooled) { Retire(); return; }
         if (sliced)
         {
             SafeDestroyGo(gameObject);
@@ -249,27 +291,25 @@ public class CuttableNote : MonoBehaviour
 
     private void SpawnDebris(Vector3 cutVelocity)
     {
-        var srcMr = GetComponent<MeshRenderer>();
-        Material mat = srcMr != null ? srcMr.sharedMaterial : null;
+        var renderer = GetComponent<MeshRenderer>();
+        var material = renderer != null ? renderer.sharedMaterial : null;
         for (int i = 0; i < shatterDebrisCount; i++)
         {
-            var go = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            go.name = name + "_debris";
-            var col = go.GetComponent<BoxCollider>();
-            if (col != null) SafeDestroy(col);
-            go.transform.position = transform.position + Random.insideUnitSphere * 0.3f;
-            go.transform.rotation = Random.rotation;
-            go.transform.localScale = Vector3.one * Random.Range(0.06f, 0.14f);
-            var rb = go.AddComponent<Rigidbody>();
-            rb.useGravity = pieceUseGravity;
-            rb.linearVelocity = Random.insideUnitSphere * shatterDebrisSpeed + cutVelocity * 0.15f;
-            rb.angularVelocity = Random.insideUnitSphere * (pieceAngularImpulse * 1.5f);
-            var decay = go.AddComponent<SlicePieceDecay>();
-            decay.life = pieceLife;
-            decay.fadeStart = pieceFadeStart;
-            // 親由来マテリアルを複製して破片に渡す（親破棄後もマゼンタにならないように）
-            if (mat != null) decay.SetOwnedMaterial(new Material(mat));
+            var piece = RentPiece(material, false);
+            piece.transform.position = transform.position + Random.insideUnitSphere * .3f;
+            piece.transform.rotation = Random.rotation;
+            piece.transform.localScale = Vector3.one * Random.Range(.06f,.14f);
+            piece.Launch(FragmentPool, Random.insideUnitSphere * shatterDebrisSpeed + cutVelocity * .15f,
+                Random.insideUnitSphere * (pieceAngularImpulse * 1.5f), pieceUseGravity, pieceLife, pieceFadeStart, 0f);
         }
+    }
+    private SlicePieceDecay RentPiece(Material material, bool sliced)
+    {
+        var piece = FragmentPool != null ? FragmentPool.Rent() : NoteFragmentPool.CreatePiece();
+        piece.name = name + (sliced ? "_piece" : "_debris");
+        piece.CopyMaterial(material);
+        piece.GetComponent<MeshFilter>().sharedMesh = sliced ? piece.ReusableMesh : NoteFragmentPool.CubeMesh;
+        return piece;
     }
 
     private bool TrySpawnSlices(Vector3 hitPoint, Vector3 cutVelocity)
@@ -294,46 +334,21 @@ public class CuttableNote : MonoBehaviour
         Vector3 planePoint = b.center + normalLocal * signed;
         Plane planeLocal = new Plane(normalLocal, planePoint);
 
-        if (!MeshSlicer.Slice(mf.sharedMesh, planeLocal, out Mesh above, out Mesh below))
+        var first = RentPiece(mr.sharedMaterial, true);
+        var second = RentPiece(mr.sharedMaterial, true);
+        if (!MeshSlicer.SliceInto(mf.sharedMesh, planeLocal, first.ReusableMesh, second.ReusableMesh))
         {
-            return false;
+            first.Release(); second.Release(); return false;
         }
-
-        Vector3 separationWorld = cutNormalWorld * sliceSeparationImpulse
-                                  + cutVelocity * saberVelocityScale;
-        SpawnPiece(above, mr.sharedMaterial, separationWorld);
-        SpawnPiece(below, mr.sharedMaterial, -separationWorld);
+        Vector3 separationWorld = cutNormalWorld * sliceSeparationImpulse + cutVelocity * saberVelocityScale;
+        SpawnPiece(first, separationWorld); SpawnPiece(second, -separationWorld);
         return true;
     }
-
-    private void SpawnPiece(Mesh mesh, Material mat, Vector3 launchVel)
+    private void SpawnPiece(SlicePieceDecay piece, Vector3 velocity)
     {
-        var go = new GameObject(name + "_piece");
-        go.transform.position = transform.position;
-        go.transform.rotation = transform.rotation;
-        go.transform.localScale = transform.lossyScale;
-
-        var mf = go.AddComponent<MeshFilter>();
-        mf.sharedMesh = mesh;
-        var mr = go.AddComponent<MeshRenderer>();
-
-        var col = go.AddComponent<MeshCollider>();
-        col.convex = true;
-        col.sharedMesh = mesh;
-
-        var rb = go.AddComponent<Rigidbody>();
-        rb.mass = 0.2f;
-        rb.linearDamping = 0.1f;
-        rb.angularDamping = 0.2f;
-        rb.useGravity = pieceUseGravity;
-        rb.linearVelocity = launchVel;
-        rb.angularVelocity = Random.insideUnitSphere * pieceAngularImpulse;
-
-        var decay = go.AddComponent<SlicePieceDecay>();
-        decay.SetOwnedMesh(mesh);
-        decay.life = pieceLife;
-        decay.fadeStart = pieceFadeStart;
-        // 親由来マテリアルを複製してスライス片に渡す（親破棄後もマゼンタにならないように）
-        if (mat != null) decay.SetOwnedMaterial(new Material(mat));
+        piece.transform.position = transform.position; piece.transform.rotation = transform.rotation;
+        piece.transform.localScale = transform.lossyScale;
+        piece.Launch(FragmentPool, velocity, Random.insideUnitSphere * pieceAngularImpulse,
+            pieceUseGravity, pieceLife, pieceFadeStart, .1f);
     }
 }

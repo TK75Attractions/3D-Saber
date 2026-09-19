@@ -37,7 +37,8 @@ public class NoteEffectOwnershipPlayTests
             if (piece.name.EndsWith("_piece"))
             {
                 Assert.AreNotSame(sharedCube, mesh);
-                Assert.AreSame(mesh, piece.GetComponent<MeshCollider>().sharedMesh);
+                Assert.IsNull(piece.GetComponent<MeshCollider>(),"切断片の衝突計算は不要");
+                Assert.IsNull(piece.GetComponent<Rigidbody>());
                 slicedMeshes.Add(mesh);
             }
             else Assert.AreSame(sharedCube, mesh, "小さな破片は共有Cubeを使い続ける");

@@ -1,70 +1,69 @@
 using UnityEngine;
 
-// 切断後のメッシュ片を一定時間後に消す。フェードアウトも任意でかける。
-// 親ノーツが破棄されると元マテリアルも破棄されるため、ここで「自前のマテリアル」を保持する。
-// CuttableNote.SpawnPiece/SpawnDebris から SetOwnedMaterial で渡される想定。
+// 衝突のない見た目専用の飛散。物理形状の生成・剛体登録をせず、同じ初速から移動する。
 public class SlicePieceDecay : MonoBehaviour
 {
-    public float life = 1.2f;
-    public float fadeStart = 0.6f;
-    private float age;
-    private MeshRenderer mr;
-    private Material ownedMat;
-    private Mesh ownedMesh;
-
-    void Awake()
+    public float life = 1.2f, fadeStart = .6f;
+    float age, damping;
+    Vector3 velocity, angularVelocity;
+    bool gravity, released;
+    MeshRenderer mr;
+    Material ownedMat;
+    Mesh ownedMesh;
+    Color baseColor;
+    internal NoteFragmentPool Pool;
+    internal void PrepareForRent() { released=false; }
+    public Mesh ReusableMesh => ownedMesh != null ? ownedMesh : ownedMesh = new Mesh { name="NoteSlice", hideFlags=HideFlags.DontSave };
+    void Awake() { mr=GetComponent<MeshRenderer>(); }
+    public void SetOwnedMesh(Mesh mesh)
     {
-        mr = GetComponent<MeshRenderer>();
+        if(ownedMesh != null && ownedMesh != mesh) UISkinKit.SafeDestroy(ownedMesh);
+        ownedMesh=mesh;
     }
-
-    void OnDestroy()
+    public void SetOwnedMaterial(Material material)
     {
-        if (ownedMat != null)
+        if(ownedMat != null && ownedMat != material) UISkinKit.SafeDestroy(ownedMat);
+        ownedMat=material; ApplyMaterial();
+    }
+    internal void CopyMaterial(Material source)
+    {
+        if(source == null) return;
+        if(ownedMat == null) ownedMat=new Material(source);
+        else { if(ownedMat.shader != source.shader) ownedMat.shader=source.shader; ownedMat.CopyPropertiesFromMaterial(source); }
+        ApplyMaterial();
+    }
+    void ApplyMaterial()
+    {
+        if(mr == null) mr=GetComponent<MeshRenderer>();
+        if(mr != null) mr.sharedMaterial=ownedMat;
+        baseColor=ownedMat != null && ownedMat.HasProperty("_BaseColor") ? ownedMat.GetColor("_BaseColor") : Color.white;
+    }
+    public void Launch(NoteFragmentPool pool, Vector3 speed, Vector3 spin, bool useGravity, float duration, float fade, float drag)
+    {
+        Pool=pool; velocity=speed; angularVelocity=spin; gravity=useGravity; life=duration; fadeStart=fade;
+        damping=drag; age=0; released=false; gameObject.SetActive(true);
+    }
+    void Update() { Step(Time.deltaTime); }
+    public void Step(float dt)
+    {
+        if(released || dt < 0 || float.IsNaN(dt) || float.IsInfinity(dt)) return;
+        age+=dt;
+        if(gravity) velocity+=Physics.gravity*dt;
+        velocity*=Mathf.Exp(-damping*dt); transform.position+=velocity*dt;
+        transform.Rotate(angularVelocity*(Mathf.Rad2Deg*dt),Space.World);
+        angularVelocity*=Mathf.Exp(-.2f*dt);
+        if(ownedMat != null && age > fadeStart)
         {
-            if (Application.isPlaying) Destroy(ownedMat);
-            else DestroyImmediate(ownedMat);
-            ownedMat = null;
+            var color=baseColor; color.a*=Mathf.Clamp01(1-(age-fadeStart)/Mathf.Max(.0001f,life-fadeStart));
+            if(ownedMat.HasProperty("_BaseColor")) ownedMat.SetColor("_BaseColor",color);
+            else if(ownedMat.HasProperty("_Color")) ownedMat.SetColor("_Color",color);
         }
-        if (ownedMesh != null)
-        {
-            if (Application.isPlaying) Destroy(ownedMesh);
-            else DestroyImmediate(ownedMesh);
-            ownedMesh = null;
-        }
+        if(age >= life) Release();
     }
-
-    // スライサーが生成した専用メッシュだけを引き取る。通常の破片の共有Cubeは渡さない。
-    public void SetOwnedMesh(Mesh generatedMesh) { ownedMesh = generatedMesh; }
-
-    // 親（CuttableNote）由来のマテリアルから複製を作って渡す呼び出し点用。
-    // mr.sharedMaterial にも同時に設定する。
-    public void SetOwnedMaterial(Material instanceCopy)
+    public void Release()
     {
-        ownedMat = instanceCopy;
-        if (mr == null) mr = GetComponent<MeshRenderer>();
-        if (mr != null) mr.sharedMaterial = ownedMat;
+        if(released) return; released=true;
+        if(Pool != null) Pool.Return(this); else UISkinKit.SafeDestroy(gameObject);
     }
-
-    void Update()
-    {
-        age += Time.deltaTime;
-        float fadeRange = Mathf.Max(0.0001f, life - fadeStart);
-        float alpha = Mathf.Clamp01(1f - (age - fadeStart) / fadeRange);
-        if (mr != null && age > fadeStart && ownedMat != null)
-        {
-            if (ownedMat.HasProperty("_BaseColor"))
-            {
-                Color c = ownedMat.GetColor("_BaseColor");
-                c.a = alpha;
-                ownedMat.SetColor("_BaseColor", c);
-            }
-            else if (ownedMat.HasProperty("_Color"))
-            {
-                Color c = ownedMat.color;
-                c.a = alpha;
-                ownedMat.color = c;
-            }
-        }
-        if (age >= life) Destroy(gameObject);
-    }
+    void OnDestroy() { UISkinKit.SafeDestroy(ownedMat); UISkinKit.SafeDestroy(ownedMesh); }
 }
