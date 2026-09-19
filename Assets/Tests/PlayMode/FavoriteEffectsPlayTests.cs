@@ -169,6 +169,67 @@ public class FavoriteEffectsPlayTests
     public IEnumerator YurikagoHardCrystalGrotto_RealTimeAudioWithScriptedPerfectInput()
     { return RealTimeAudioWithScriptedPerfectInput(StageTheme.CrystalGrotto); }
 
+    [UnityTest, Timeout(240000)]
+    public IEnumerator YurikagoHardPulseArray_RealTimeAudioWithScriptedPerfectInput()
+    { return RealTimeAudioWithScriptedPerfectInput(StageTheme.PulseArray); }
+
+    [UnityTest, Timeout(120000)]
+    public IEnumerator PulseArrayActualManagerDrivesFormationAndStopsWithTheSong()
+    {
+        GameSession.SelectedSongId = "揺籠"; GameSession.SelectedDifficulty = "hard";
+        GameSession.IsCalibrationMode = false;
+        SceneManager.sceneLoaded += CreatePulseFloorBeforeManagerStart;
+        try { yield return SceneManager.LoadSceneAsync("Game", LoadSceneMode.Single); }
+        finally { SceneManager.sceneLoaded -= CreatePulseFloorBeforeManagerStart; }
+        manager = Object.FindFirstObjectByType<GamePlayManager>(); Assert.NotNull(manager);
+        try
+        {
+            float deadline = Time.realtimeSinceStartup + 30;
+            while (!manager.songPlayer.IsScheduled && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.IsTrue(manager.songPlayer.IsScheduled, "実シーンの音源準備が完了しません。");
+            // 本物のUpdate接続を使い、結果保存やシーン遷移に届かない余韻をテスト内だけ設定する。
+            manager.endWaitSeconds = 10000;
+            manager.noteSpawner.SetChart(new ChartData());
+            foreach (var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) judge.autonomous = false;
+            foreach (var input in Object.FindObjectsByType<SaberInputBridge>(FindObjectsSortMode.None)) input.enabled = false;
+            floor = Object.FindFirstObjectByType<FloorRenderer>(); Assert.NotNull(floor);
+            Assert.AreEqual(StageTheme.PulseArray, floor.ActiveTheme);
+            var stage = floor.GetComponentInChildren<PulseArrayStage>(); Assert.NotNull(stage);
+            timeline = StagePerformanceTimeline.Load("揺籠");
+            var fixture = stage.transform.Find("LampFixtures").GetComponent<MeshFilter>().sharedMesh;
+            // 実時間通しとは別の、DSP基準の早送り・巻き戻し接続検証。直接Floor.Tickしない。
+            foreach (var time in new[] { 100.0, 143.745, 150.0, 163.861, 166.0, 150.0, 100.0 })
+            {
+                SetClock(time);
+                yield return null; yield return null;
+                Assert.That(stage.LastTickSeconds, Is.EqualTo(manager.songPlayer.SongTime).Within(.15));
+                Assert.AreEqual(timeline.EvaluateLightFormation(stage.LastTickSeconds), stage.FormationIntensity, .00001f,
+                    "GamePlayManagerから明示区間の配列値が届いていません。");
+                if (time == 150) Assert.AreEqual(1, stage.FormationIntensity);
+                if (time == 100 || time == 166) Assert.AreEqual(0, stage.FormationIntensity);
+            }
+            SetClock(150); yield return null; yield return null;
+            Assert.AreEqual(1, stage.FormationIntensity);
+            manager.songPlayer.Stop(); double stopped = stage.LastTickSeconds;
+            var held = fixture.vertices;
+            yield return null; yield return null;
+            Assert.AreEqual(stopped, stage.LastTickSeconds);
+            CollectionAssert.AreEqual(held, fixture.vertices, "曲停止中に独立時計で配列が進んでいます。");
+        }
+        finally
+        {
+            if (manager != null) { manager.enabled = false; manager.songPlayer.Stop(); }
+        }
+        yield return ReleaseFloorAndAssertResources();
+    }
+
+    static void CreatePulseFloorBeforeManagerStart(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name != "Game") return;
+        var forced = new GameObject("PulseFormationGameTestFloor").AddComponent<FloorRenderer>();
+        forced.randomizeOnPlay = false; forced.Build(StageTheme.PulseArray);
+    }
+
     IEnumerator RealTimeAudioWithScriptedPerfectInput(StageTheme theme)
     {
         yield return LoadGame(theme);
@@ -275,7 +336,7 @@ public class FavoriteEffectsPlayTests
     void Draw(double time)
     {
         float chorus = timeline.Evaluate(time);
-        floor.Tick(time, chorus);
+        floor.Tick(time, chorus, timeline.EvaluateLightFormation(time));
         scenic?.Tick(time, chorus, timeline.EvaluateEclipse(time));
         foundry?.Tick(time, chorus);
         effects.Tick(time);

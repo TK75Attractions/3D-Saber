@@ -55,12 +55,12 @@ public partial class FloorRenderer : MonoBehaviour
     public float ChorusIntensity { get; private set; }
 
     // 曲時計のみを使用し、停止時には背景も止まる。全体露出・判定枠の発光には関与しない。
-    public void Tick(double songSeconds, float chorus = 0)
+    public void Tick(double songSeconds, float chorus = 0, float lightFormation = 0)
     {
         if (!built || !isActiveAndEnabled || double.IsNaN(songSeconds) || double.IsInfinity(songSeconds)) return;
         LastTickSeconds = System.Math.Max(0, songSeconds);
         ChorusIntensity = float.IsNaN(chorus) || float.IsInfinity(chorus) ? 0 : Mathf.Clamp01(chorus);
-        if (pulseArray != null) pulseArray.Tick(LastTickSeconds, ChorusIntensity);
+        if (pulseArray != null) pulseArray.Tick(LastTickSeconds, ChorusIntensity, lightFormation);
         foreach (var material in materials)
         {
             material.SetFloat("_MotionTime", (float)LastTickSeconds);
@@ -69,6 +69,8 @@ public partial class FloorRenderer : MonoBehaviour
     }
 
     public void SetRhythm(ChartData chart) { if (pulseArray != null) pulseArray.SetRhythm(chart); }
+
+    void OnDisable() { if (pulseArray != null) pulseArray.ClearFormation(); }
 
     public static FloorRenderer Ensure(Transform parent = null)
     {

@@ -110,6 +110,39 @@ public sealed class StagePerformanceTimeline
         return Mathf.Clamp01((float)(wave * wave));
     }
 
+    // 灯具の配列は最強の有効区間一つだけで変える。入力・難易度・拍パルスは参照しない。
+    // 入口から2秒待ち、3秒で整列し、区間末の3秒で戻す。シーク先の曲時計から直接再現する。
+    public float EvaluateLightFormation(double songSeconds)
+    {
+        if (!Finite(songSeconds) || songSeconds <= 0 || sections == null) return 0;
+        Section selected = null;
+        float strongest = 0;
+        foreach (var section in sections)
+        {
+            if (section == null || !Finite(section.startSeconds) || !Finite(section.endSeconds) ||
+                section.startSeconds < 0 || section.endSeconds - section.startSeconds < 12 ||
+                !Finite(section.intensity) || section.intensity < .65f ||
+                !Finite(section.fadeInSeconds) || !Finite(section.fadeOutSeconds)) continue;
+            float strength = Mathf.Clamp01(section.intensity);
+            // 同強度・同開始でも、配列の順序ではなく終了時刻で一意に選ぶ。
+            if (selected == null || strength > strongest ||
+                (strength == strongest && (section.startSeconds > selected.startSeconds ||
+                (section.startSeconds == selected.startSeconds && section.endSeconds > selected.endSeconds))))
+            {
+                selected = section;
+                strongest = strength;
+            }
+        }
+        if (selected == null) return 0;
+        double age = songSeconds - selected.startSeconds;
+        double remaining = selected.endSeconds - songSeconds;
+        if (age <= 2 || remaining <= 0) return 0;
+        // doubleのまま割合を制限し、大きな有限時刻もfloatへあふれさせない。
+        float enter = Mathf.SmoothStep(0,1,(float)Math.Min(1,(age - 2) / 3));
+        float leave = Mathf.SmoothStep(0,1,(float)Math.Min(1,remaining / 3));
+        return Mathf.Min(enter,leave);
+    }
+
     public static StagePerformanceTimeline Load(string songId)
     {
         // stage.jsonがない既存曲は通常演出を維持する。譜面の内容・オフセットは変えない。

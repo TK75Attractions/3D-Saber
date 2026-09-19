@@ -601,7 +601,7 @@ public class GamePlayManager : MonoBehaviour
         {
             double time = songPlayer.SongTime;
             float chorus = stagePerformance.Evaluate(time);
-            if (stageFloor != null) stageFloor.Tick(time,chorus);
+            if (stageFloor != null) stageFloor.Tick(time,chorus,stagePerformance.EvaluateLightFormation(time));
             if (foundryStageMotion != null) foundryStageMotion.Tick(time,chorus);
             if (scenicStageWorld != null) scenicStageWorld.Tick(time,chorus,stagePerformance.EvaluateEclipse(time));
             if (stageReactions != null) stageReactions.Tick(time);

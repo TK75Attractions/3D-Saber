@@ -51,7 +51,7 @@ public class BeatVisualTests
             var stage = go.GetComponentInChildren<PulseArrayStage>();
             Assert.NotNull(stage);
             var filters = go.GetComponentsInChildren<MeshFilter>();
-            Assert.AreEqual(2, filters.Length);
+            Assert.AreEqual(3, filters.Length);
             Assert.IsEmpty(go.GetComponentsInChildren<Collider>());
             meshes = filters.Select(f => f.sharedMesh).ToArray();
             materials = go.GetComponentsInChildren<MeshRenderer>().Select(r => r.sharedMaterial).Distinct().ToArray();
@@ -73,7 +73,7 @@ public class BeatVisualTests
             Assert.AreEqual(random, Random.state);
             floor.Build(StageTheme.ObsidianRelay);
             Assert.AreEqual(StageTheme.PulseArray, floor.ActiveTheme);
-            Assert.AreEqual(2, go.GetComponentsInChildren<MeshRenderer>().Length);
+            Assert.AreEqual(3, go.GetComponentsInChildren<MeshRenderer>().Length);
         }
         finally { Object.DestroyImmediate(go); DisplaySettings.SetProjectorModeForTest(false); }
         Assert.IsTrue(meshes.All(m => m == null));
