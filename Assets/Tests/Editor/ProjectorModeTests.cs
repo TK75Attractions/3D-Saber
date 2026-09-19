@@ -54,13 +54,6 @@ public class ProjectorModeTests
         DisplaySettings.SetProjectorModeForTest(false);
     }
 
-    [Test]
-    public void ToggleLabel_ReflectsState()
-    {
-        Assert.AreEqual("PROJECTOR: ON", ProjectorModeToggleUI.LabelFor(true));
-        Assert.AreEqual("PROJECTOR: OFF", ProjectorModeToggleUI.LabelFor(false));
-    }
-
     // ---- ポストプロセス ----
 
     [Test]

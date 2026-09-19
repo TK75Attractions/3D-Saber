@@ -13,7 +13,7 @@ public class SongSelectNoteMenuPlayTests
     {
         yield return SceneManager.LoadSceneAsync("SongSelect", LoadSceneMode.Single);
         float deadline = Time.realtimeSinceStartup + 10;
-        while (GameObject.Find(ProjectorModeToggleUI.ButtonName) == null && Time.realtimeSinceStartup < deadline)
+        while (GameObject.Find("CalibrationButton") == null && Time.realtimeSinceStartup < deadline)
             yield return null;
         Assert.IsNotNull(SongSelectNoteMenu.Instance);
         foreach (var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) judge.autonomous = false;

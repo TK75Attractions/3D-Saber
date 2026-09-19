@@ -25,17 +25,12 @@ public class SongSelectKeyboardPlayTests
     Gamepad gamepad;
     InputPoint input;
     InputSettings originalInputSettings, testInputSettings;
-    bool hadProjectorPreference, savedProjectorMode;
-    int savedProjectorPreference;
 
     [UnitySetUp]
     public IEnumerator SetUp()
     {
         foreach (var field in typeof(GameSession).GetFields(BindingFlags.Public | BindingFlags.Static))
             if (!field.IsLiteral && !field.IsInitOnly) sessionValues[field] = field.GetValue(null);
-        hadProjectorPreference = PlayerPrefs.HasKey("displayProjectorMode");
-        savedProjectorPreference = PlayerPrefs.GetInt("displayProjectorMode");
-        savedProjectorMode = DisplaySettings.ProjectorMode;
         originalInputSettings = InputSystem.settings;
         testInputSettings = Object.Instantiate(originalInputSettings);
         InputSystem.settings = testInputSettings;
@@ -60,9 +55,9 @@ public class SongSelectKeyboardPlayTests
         GameSession.IsCalibrationMode = false;
         yield return SceneManager.LoadSceneAsync("SongSelect");
         double deadline = Time.realtimeSinceStartupAsDouble + 10;
-        while (GameObject.Find(ProjectorModeToggleUI.ButtonName) == null && Time.realtimeSinceStartupAsDouble < deadline)
+        while (GameObject.Find("CalibrationButton") == null && Time.realtimeSinceStartupAsDouble < deadline)
             yield return null;
-        Assert.NotNull(GameObject.Find(ProjectorModeToggleUI.ButtonName));
+        Assert.NotNull(GameObject.Find("CalibrationButton"));
         controller = Object.FindFirstObjectByType<SongSelectController>();
         controller.Select(Enumerable.Range(0, controller.SongCount).Single(i => controller.SongIdAt(i) == "Epilogue"));
         controller.SetDifficulty(1);
@@ -84,11 +79,6 @@ public class SongSelectKeyboardPlayTests
         if (input != null) Object.DestroyImmediate(input.gameObject);
         foreach (var entry in sessionValues) entry.Key.SetValue(null, entry.Value);
         sessionValues.Clear();
-        if (hadProjectorPreference) PlayerPrefs.SetInt("displayProjectorMode", savedProjectorPreference);
-        else PlayerPrefs.DeleteKey("displayProjectorMode");
-        PlayerPrefs.Save();
-        DisplaySettings.SetProjectorModeForTest(savedProjectorMode);
-        ProjectorModeHotkey.ApplyNow();
     }
 
     IEnumerator Press(Key key)
@@ -103,18 +93,18 @@ public class SongSelectKeyboardPlayTests
     }
 
     [UnityTest]
-    public IEnumerator EnterAfterProjectorClickStartsGameWithoutChangingTheSettingAgain()
+    public IEnumerator EnterAfterDifficultyClickStartsGameWithoutClickingTheButtonAgain()
     {
-        var button = GameObject.Find(ProjectorModeToggleUI.ButtonName).GetComponent<Button>();
+        var button = controller.difficultyButtons[2];
         yield return Click(button);
         Assert.AreSame(button.gameObject, EventSystem.current.currentSelectedGameObject);
-        bool mode = DisplaySettings.ProjectorMode;
+        Assert.AreEqual(2, controller.SelectedDifficultyIndex);
         int extraClicks = 0;
         button.onClick.AddListener(() => extraClicks++);
         yield return Press(Key.Enter);
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.AreEqual(0, extraClicks, "Enterはプレイ開始だけを行い、前にクリックした設定を再実行しない");
-        Assert.AreEqual(mode, DisplaySettings.ProjectorMode);
+        Assert.AreEqual("Hard", GameSession.SelectedDifficulty);
         Assert.False(GameSession.IsCalibrationMode);
     }
 
@@ -175,11 +165,11 @@ public class SongSelectKeyboardPlayTests
     }
 
     [UnityTest]
-    public IEnumerator GamepadStillSubmitsFocusedSettingsWhenNoShortcutIsPressed()
+    public IEnumerator GamepadStillSubmitsFocusedDifficultyWhenNoShortcutIsPressed()
     {
-        var button = GameObject.Find(ProjectorModeToggleUI.ButtonName).GetComponent<Button>();
+        var button = controller.difficultyButtons[0];
         EventSystem.current.SetSelectedGameObject(button.gameObject);
-        bool mode = DisplaySettings.ProjectorMode;
+        Assert.AreEqual(1, controller.SelectedDifficultyIndex);
         InputSystem.QueueStateEvent(gamepad, new GamepadState().WithButton(GamepadButton.South));
         yield return null;
         yield return null;
@@ -187,7 +177,7 @@ public class SongSelectKeyboardPlayTests
         yield return null;
         yield return null;
         Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
-        Assert.AreEqual(!mode, DisplaySettings.ProjectorMode);
+        Assert.AreEqual(0, controller.SelectedDifficultyIndex);
     }
 
     [UnityTest]
@@ -209,23 +199,21 @@ public class SongSelectKeyboardPlayTests
     [UnityTest]
     public IEnumerator SpaceStartsGameWithoutSubmittingFocusedSettings()
     {
-        var button = GameObject.Find(ProjectorModeToggleUI.ButtonName).GetComponent<Button>();
+        var button = GameObject.Find("CalibrationButton").GetComponent<Button>();
         EventSystem.current.SetSelectedGameObject(button.gameObject);
-        bool mode = DisplaySettings.ProjectorMode;
         yield return Press(Key.Space);
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
-        Assert.AreEqual(mode, DisplaySettings.ProjectorMode);
+        Assert.False(GameSession.IsCalibrationMode);
     }
 
     [UnityTest]
     public IEnumerator NumpadEnterStartsGameWithoutSubmittingFocusedSettings()
     {
-        var button = GameObject.Find(ProjectorModeToggleUI.ButtonName).GetComponent<Button>();
+        var button = GameObject.Find("CalibrationButton").GetComponent<Button>();
         EventSystem.current.SetSelectedGameObject(button.gameObject);
-        bool mode = DisplaySettings.ProjectorMode;
         yield return Press(Key.NumpadEnter);
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
-        Assert.AreEqual(mode, DisplaySettings.ProjectorMode);
+        Assert.False(GameSession.IsCalibrationMode);
     }
 
     IEnumerator Click(Button button)

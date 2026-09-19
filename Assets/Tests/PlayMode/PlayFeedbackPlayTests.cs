@@ -64,34 +64,26 @@ public class PlayFeedbackPlayTests
         Assert.IsNull(Object.FindFirstObjectByType<GameplayFeedbackPresenter>(),"シーン終了時に演出と購読を回収");
     }
 
-    [UnityTest] public IEnumerator SongSelect_LowEffectsButtonIsReadableClickableAndCuttable()
+    [UnityTest] public IEnumerator SongSelect_HidesDisplaySettingsAndKeepsMainActions()
     {
+        bool projector = DisplaySettings.ProjectorMode;
+        bool effects = DisplaySettings.ReducedEffects;
         yield return SceneManager.LoadSceneAsync("SongSelect");
-        float until=Time.realtimeSinceStartup+10;
-        GameObject button=null;
-        while(button==null && Time.realtimeSinceStartup<until) { button=GameObject.Find("ReducedEffectsButton"); yield return null; }
-        Assert.IsNotNull(button); Assert.IsNotNull(button.GetComponent<MenuNoteAction>());
-        var projection=GameObject.Find(ProjectorModeToggleUI.ButtonName).GetComponent<RectTransform>();
-        var rect=button.GetComponent<RectTransform>();
-        Assert.Greater(rect.anchoredPosition.x-rect.sizeDelta.x/2,projection.anchoredPosition.x+projection.sizeDelta.x/2,"投影設定の隣に重ならず並ぶ");
-        // 実ユーザーのPlayerPrefsは退避し、永続化の往復も検証する。
-        bool existed=PlayerPrefs.HasKey("displayReducedEffects"); int before=PlayerPrefs.GetInt("displayReducedEffects",0);
-        try
-        {
-            bool start=DisplaySettings.ReducedEffects;
-            button.GetComponent<Button>().onClick.Invoke();
-            Assert.AreEqual(!start,DisplaySettings.ReducedEffects);
-            DisplaySettings.ResetReducedEffectsCacheForTest();
-            Assert.AreEqual(!start,DisplaySettings.ReducedEffects,"次回起動用の設定保存");
-            string label=button.transform.Find("ActionLabel").GetComponent<TMPro.TextMeshProUGUI>().text;
-            Assert.AreEqual(ProjectorModeToggleUI.EffectsLabelFor(!start),label);
-        }
-        finally
-        {
-            if(existed) PlayerPrefs.SetInt("displayReducedEffects",before); else PlayerPrefs.DeleteKey("displayReducedEffects");
-            PlayerPrefs.Save(); DisplaySettings.SetReducedEffectsForTest(reduced);
-        }
+        float until = Time.realtimeSinceStartup + 10;
+        while (GameObject.Find("CalibrationButton") == null && Time.realtimeSinceStartup < until)
+            yield return null;
+        Assert.IsNotNull(GameObject.Find("CalibrationButton"));
         yield return null;
+        Assert.IsNull(GameObject.Find("ProjectorModeButton"));
+        Assert.IsNull(GameObject.Find("ReducedEffectsButton"));
+        Assert.IsNull(GameObject.Find("MenuNote_ProjectorModeButton"));
+        Assert.IsNull(GameObject.Find("MenuNote_ReducedEffectsButton"));
+        var controller = Object.FindFirstObjectByType<SongSelectController>();
+        Assert.IsNotNull(controller.startButton.GetComponent<MenuNoteAction>());
+        foreach (var button in controller.difficultyButtons)
+            Assert.IsNotNull(button.GetComponent<MenuNoteAction>());
+        Assert.AreEqual(projector, DisplaySettings.ProjectorMode);
+        Assert.AreEqual(effects, DisplaySettings.ReducedEffects);
     }
 
     [UnityTest] public IEnumerator PerfectOnlyAccent_RemainsExclusive_AndLowModeReducesGeometry()

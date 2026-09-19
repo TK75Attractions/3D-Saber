@@ -26,7 +26,6 @@ public static class UISkinBootstrap
                 break;
             case "SongSelect":
                 EnsureSkin<SongSelectSkin>();
-                EnsureSkin<ProjectorModeToggleUI>();
                 break;
             case "Result":
                 EnsureSkin<ResultSkin>();
