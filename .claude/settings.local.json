@@ -37,7 +37,12 @@
       "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Unity.exe\" -batchmode -nographics -projectPath \"C:\\\\\\\\Users\\\\\\\\shike\\\\\\\\OneDrive\\\\\\\\ドキュメント\\\\\\\\GitHub\\\\\\\\3D-Saber\" -runTests -testPlatform EditMode -testResults \"C:\\\\\\\\Users\\\\\\\\shike\\\\\\\\OneDrive\\\\\\\\ドキュメント\\\\\\\\GitHub\\\\\\\\3D-Saber\\\\\\\\test-results-twosaber.xml\" -logFile \"C:\\\\\\\\Users\\\\\\\\shike\\\\\\\\OneDrive\\\\\\\\ドキュメント\\\\\\\\GitHub\\\\\\\\3D-Saber\\\\\\\\test-log-twosaber.txt\")",
       "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Unity.exe\" -batchmode -nographics -projectPath \"C:\\\\\\\\Users\\\\\\\\shike\\\\\\\\OneDrive\\\\\\\\ドキュメント\\\\\\\\GitHub\\\\\\\\3D-Saber\" -runTests -testPlatform PlayMode -testResults \"C:\\\\\\\\Users\\\\\\\\shike\\\\\\\\OneDrive\\\\\\\\ドキュメント\\\\\\\\GitHub\\\\\\\\3D-Saber\\\\\\\\test-results-twosaber-play.xml\" -logFile \"C:\\\\\\\\Users\\\\\\\\shike\\\\\\\\OneDrive\\\\\\\\ドキュメント\\\\\\\\GitHub\\\\\\\\3D-Saber\\\\\\\\test-log-twosaber-play.txt\")",
       "Bash(\"/c/Program Files/Unity/Hub/Editor/6000.3.9f1/Editor/Unity.exe\" -batchmode -nographics -projectPath \"C:\\\\\\\\Users\\\\\\\\shike\\\\\\\\OneDrive\\\\\\\\ドキュメント\\\\\\\\GitHub\\\\\\\\3D-Saber\" -runTests -testPlatform EditMode -testResults \"C:\\\\\\\\Users\\\\\\\\shike\\\\\\\\OneDrive\\\\\\\\ドキュメント\\\\\\\\GitHub\\\\\\\\3D-Saber\\\\\\\\test-results-minimal.xml\" -logFile \"C:\\\\\\\\Users\\\\\\\\shike\\\\\\\\OneDrive\\\\\\\\ドキュメント\\\\\\\\GitHub\\\\\\\\3D-Saber\\\\\\\\test-log-minimal.txt\")",
-      "Bash(claude update *)"
+      "Bash(claude update *)",
+      "WebSearch",
+      "WebFetch(domain:news.ycombinator.com)",
+      "WebFetch(domain:www.gamebusiness.jp)",
+      "WebFetch(domain:media.colorfulpalette.co.jp)",
+      "WebFetch(domain:blog.toylogic.co.jp)"
     ],
     "defaultMode": "bypassPermissions"
   }
