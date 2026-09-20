@@ -18,12 +18,14 @@ Virtual IMU と実 BLE bridge はどちらも UDP 9002 の同じ形式を使う�
 切替時に Unity コードやシーン設定を変更する必要はない。
 
 ```text
-SWING:<sequence>,<left|right|up|down>,<strength>,<xiao_timestamp_us>[,<sender_monotonic_ns>]
+SWING:<sequence>,<direction>,<strength>,<xiao_timestamp_us>[,<sender_monotonic_ns>]
 ```
 
-5番目は Virtual IMU が localhost UDP 遅延を測るためだけに付ける任意field。
-実 BLE bridge の4 field packetもそのまま受理される。`xiao_timestamp_us` は
-Unity時計と直接比較しない。
+実機bridgeは binary Notification を物理side付きの
+`SWING:LEFT,...` / `SWING:RIGHT,...` に変換する。旧形式はVirtual IMU互換のため受理する。
+左右のBLE名は `XIAO-SABER-L` / `XIAO-SABER-R` で、2台を独立に再接続する。
+
+5番目はlocalhost UDP計測用の任意fieldであり、既存の4 field packetも受理する。
 
 ## Latency simulation
 
@@ -163,7 +165,10 @@ cd Tools
 py mac_ble_udp_bridge.py
 ```
 
-必要ならデバイス名を明示:
+`GamePlayManager` Inspectorの `Auto Start Ble Bridge` を明示的にONにした場合だけ、
+`Game.unity` のPlay開始時にUnityが既存bridgeをPINGし、動いていなければこのscriptを
+1プロセスだけ起動する。既定はOFFで、Camera-only / Virtual IMUでは起動しない。
+上の手動起動は診断用。既定BLE名は `XIAO-LSM6DSV16X`。
 
 ```bash
 python3 mac_ble_udp_bridge.py --device-name XIAO-LSM6DSV16X
@@ -177,8 +182,10 @@ python3 mac_ble_udp_bridge.py --device-address <address-or-uuid>
 
 ### 5-4. 役割
 
-- Unity -> UDP(9001) -> Bleak -> ESP32 RX UUID へ `1` / `0` 送信
-- ESP32 TX UUID notify -> Bleak -> UDP(9002) へ転送
+- Unity -> UDP(9001) の `PING` でbridge生存確認
+- ESP32 TX UUID notify -> Bleak -> 既存 `IMU:` UDP(9002) へ転送
+- bridgeは未発見・切断後も一定間隔で再探索・再接続する
+- `BRIDGE_READY`、scan、connection、notification subscriptionは別状態としてUnityへ通知する
 
 `mock_imu_bridge.py` の50 Hz raw `IMU:` streamは旧位置fallback確認専用であり、
 Swing入力の主経路ではない。Swing統合テストには`virtual_imu.py`を使用する。

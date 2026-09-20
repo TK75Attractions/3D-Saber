@@ -1,0 +1,61 @@
+using NUnit.Framework;
+
+public class BleBridgeAutoStartPolicyTests
+{
+    [Test]
+    public void StatusParser_PreservesPhysicalSaberSide()
+    {
+        Assert.IsTrue(BleBridgeStatusParser.TryParse(
+            "STATE:BLE:RIGHT:NOTIFICATIONS_ACTIVE:XIAO-SABER-R",
+            out BleBridgeStatusUpdate status));
+        Assert.AreEqual(SaberSide.Right, status.Side);
+        Assert.AreEqual(BleBridgeConnectionState.NotificationsActive, status.State);
+        Assert.AreEqual("XIAO-SABER-R", status.DeviceName);
+    }
+    [Test]
+    public void DefaultOffNeverStarts()
+    {
+        Assert.IsFalse(BleBridgeAutoStartPolicy.CanStart(
+            false,
+            true,
+            BleBridgeAutoStartPolicy.GameScenePath));
+    }
+
+    [TestCase("")]
+    [TestCase("Assets/InitTestScene123.unity")]
+    [TestCase("Assets/Scenes/InputTest.unity")]
+    public void NonGameAndTemporaryScenesNeverStart(string scenePath)
+    {
+        Assert.IsFalse(BleBridgeAutoStartPolicy.CanStart(true, true, scenePath));
+    }
+
+    [Test]
+    public void ExplicitOptInStartsOnlyWhileGameIsPlaying()
+    {
+        Assert.IsTrue(BleBridgeAutoStartPolicy.CanStart(
+            true,
+            true,
+            BleBridgeAutoStartPolicy.GameScenePath));
+        Assert.IsFalse(BleBridgeAutoStartPolicy.CanStart(
+            true,
+            false,
+            BleBridgeAutoStartPolicy.GameScenePath));
+    }
+
+    [Test]
+    public void GenericBleStatusIsDistinctFromProcessReady()
+    {
+        Assert.IsTrue(BleBridgeStatusParser.TryParse(
+            "STATE:BRIDGE_READY",
+            out BleBridgeStatusUpdate ready));
+        Assert.IsTrue(ready.IsBridgeReady);
+
+        Assert.IsTrue(BleBridgeStatusParser.TryParse(
+            "STATE:BLE:NOTIFICATIONS_ACTIVE:XIAO-LSM6DSV16X",
+            out BleBridgeStatusUpdate active));
+        Assert.IsFalse(active.IsBridgeReady);
+        Assert.AreEqual(
+            BleBridgeConnectionState.NotificationsActive,
+            active.State);
+    }
+}

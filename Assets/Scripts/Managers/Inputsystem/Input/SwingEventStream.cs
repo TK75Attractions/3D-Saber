@@ -12,6 +12,13 @@ public enum SwingDirection
     Down = 4,
 }
 
+public enum SaberSide
+{
+    Unknown = 0,
+    Left = 1,
+    Right = 2,
+}
+
 // Camera座標とは独立した、IMUの振り開始イベント。
 // LocalReceiveTimeSecondsはUnity TimeではなくOS monotonic clock基準。
 [Serializable]
@@ -19,6 +26,7 @@ public readonly struct SwingEvent
 {
     public readonly ushort Sequence;
     public readonly SwingDirection Direction;
+    public readonly SaberSide Side;
     public readonly float Strength;
     public readonly uint XiaoTimestampUs;
     public readonly long LocalReceiveTimestampTicks;
@@ -34,9 +42,24 @@ public readonly struct SwingEvent
         long localReceiveTimestampTicks,
         double localhostTransportLatencyMs,
         double mainThreadHandoffLatencyMs = 0.0)
+        : this(sequence, direction, SaberSide.Unknown, strength, xiaoTimestampUs,
+            localReceiveTimestampTicks, localhostTransportLatencyMs, mainThreadHandoffLatencyMs)
+    {
+    }
+
+    public SwingEvent(
+        ushort sequence,
+        SwingDirection direction,
+        SaberSide side,
+        float strength,
+        uint xiaoTimestampUs,
+        long localReceiveTimestampTicks,
+        double localhostTransportLatencyMs,
+        double mainThreadHandoffLatencyMs = 0.0)
     {
         Sequence = sequence;
         Direction = direction;
+        Side = side;
         Strength = strength;
         XiaoTimestampUs = xiaoTimestampUs;
         LocalReceiveTimestampTicks = localReceiveTimestampTicks;
@@ -53,6 +76,7 @@ public readonly struct SwingEvent
         return new SwingEvent(
             Sequence,
             Direction,
+            Side,
             Strength,
             XiaoTimestampUs,
             LocalReceiveTimestampTicks,
@@ -93,15 +117,20 @@ public static class SwingPacketParser
         }
 
         string[] values = message.Substring(6).Split(',');
-        if (values.Length != 4 && values.Length != 5)
+        if (values.Length < 4 || values.Length > 6) return false;
+        int offset = 0;
+        SaberSide side = SaberSide.Unknown;
+        if (values.Length >= 5 && TryParseSide(values[0], out SaberSide parsedSide))
         {
-            return false;
+            side = parsedSide;
+            offset = 1;
         }
+        if (values.Length - offset != 4 && values.Length - offset != 5) return false;
 
-        if (!ushort.TryParse(values[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out ushort sequence) ||
-            !TryParseDirection(values[1], out SwingDirection direction) ||
-            !float.TryParse(values[2], NumberStyles.Float, CultureInfo.InvariantCulture, out float strength) ||
-            !uint.TryParse(values[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out uint xiaoTimestampUs))
+        if (!ushort.TryParse(values[offset], NumberStyles.Integer, CultureInfo.InvariantCulture, out ushort sequence) ||
+            !TryParseDirection(values[offset + 1], out SwingDirection direction) ||
+            !float.TryParse(values[offset + 2], NumberStyles.Float, CultureInfo.InvariantCulture, out float strength) ||
+            !uint.TryParse(values[offset + 3], NumberStyles.Integer, CultureInfo.InvariantCulture, out uint xiaoTimestampUs))
         {
             return false;
         }
@@ -114,8 +143,8 @@ public static class SwingPacketParser
         strength = Math.Clamp(strength, 0.0f, 1.0f);
 
         double localhostLatencyMs = double.NaN;
-        if (values.Length == 5 &&
-            long.TryParse(values[4], NumberStyles.Integer, CultureInfo.InvariantCulture, out long senderMonotonicNs))
+        if (values.Length - offset == 5 &&
+            long.TryParse(values[offset + 4], NumberStyles.Integer, CultureInfo.InvariantCulture, out long senderMonotonicNs))
         {
             double receiveMonotonicNs = SwingMonotonicClock.ToNanoseconds(receiveTimestampTicks);
             double candidateMs = (receiveMonotonicNs - senderMonotonicNs) / 1_000_000.0;
@@ -129,11 +158,23 @@ public static class SwingPacketParser
         swing = new SwingEvent(
             sequence,
             direction,
+            side,
             strength,
             xiaoTimestampUs,
             receiveTimestampTicks,
             localhostLatencyMs);
         return true;
+    }
+
+    public static bool TryParseSide(string value, out SaberSide side)
+    {
+        switch (value.Trim().ToLowerInvariant())
+        {
+            case "left": side = SaberSide.Left; return true;
+            case "right": side = SaberSide.Right; return true;
+            case "unknown": side = SaberSide.Unknown; return true;
+            default: side = SaberSide.Unknown; return false;
+        }
     }
 
     public static bool TryParseDirection(string value, out SwingDirection direction)
