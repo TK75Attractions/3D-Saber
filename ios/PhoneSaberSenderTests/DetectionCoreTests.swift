@@ -172,8 +172,9 @@ final class DetectionCoreTests: XCTestCase {
         return sample!
     }
 
-    private func fixtureImage(_ name: String) throws -> UIImage {
-        guard let url = Bundle(for: Self.self).url(forResource: name, withExtension: "png"),
+    private func fixtureImage(_ name: String, subdirectory: String? = nil) throws -> UIImage {
+        guard let url = Bundle(for: Self.self).url(forResource: name, withExtension: "png",
+                                                   subdirectory: subdirectory),
               let image = UIImage(contentsOfFile: url.path) else {
             throw NSError(domain: "PhoneSaberSenderTests", code: 1,
                           userInfo: [NSLocalizedDescriptionKey: "fixture not found: \(name).png"])
@@ -181,8 +182,8 @@ final class DetectionCoreTests: XCTestCase {
         return image
     }
 
-    private func fixtureBGRA(_ name: String) throws -> (bytes: [UInt8], width: Int, height: Int, bytesPerRow: Int) {
-        let image = try fixtureImage(name)
+    private func fixtureBGRA(_ name: String, subdirectory: String? = nil) throws -> (bytes: [UInt8], width: Int, height: Int, bytesPerRow: Int) {
+        let image = try fixtureImage(name, subdirectory: subdirectory)
         guard let cgImage = image.cgImage else {
             throw NSError(domain: "PhoneSaberSenderTests", code: 1,
                           userInfo: [NSLocalizedDescriptionKey: "fixture has no CGImage: \(name).png"])
@@ -344,6 +345,54 @@ final class DetectionCoreTests: XCTestCase {
         let expectedX = Double(expected.0.x + expected.1.x) / 2.0
         let expectedY = Double(expected.0.y + expected.1.y) / 2.0
         return hypot(actualX - expectedX, actualY - expectedY)
+    }
+
+    func testProductionVideoFixturesKeepBladeAxesAndRejectFalseCoreLines() throws {
+        typealias Axis = (PixelPoint, PixelPoint)
+        let fixtures: [(String, SaberColor, Axis)] = [
+            ("frame-0000", .red, (PixelPoint(x: 198, y: 463), PixelPoint(x: 274, y: 455))),
+            ("frame-0000", .blue, (PixelPoint(x: 187, y: 554), PixelPoint(x: 280, y: 554))),
+            ("frame-0033", .red, (PixelPoint(x: 62, y: 403), PixelPoint(x: 119, y: 413))),
+            ("frame-0033", .blue, (PixelPoint(x: 117, y: 537), PixelPoint(x: 209, y: 517))),
+            ("frame-0067", .red, (PixelPoint(x: 179, y: 420), PixelPoint(x: 258, y: 427))),
+            ("frame-0067", .blue, (PixelPoint(x: 92, y: 478), PixelPoint(x: 159, y: 432))),
+            ("frame-0120", .red, (PixelPoint(x: 74, y: 403), PixelPoint(x: 99, y: 477))),
+            ("frame-0120", .blue, (PixelPoint(x: 139, y: 485), PixelPoint(x: 220, y: 500))),
+            ("frame-0136", .red, (PixelPoint(x: 56, y: 399), PixelPoint(x: 77, y: 476))),
+            ("frame-0136", .blue, (PixelPoint(x: 116, y: 489), PixelPoint(x: 198, y: 514))),
+            ("frame-0140", .red, (PixelPoint(x: 31, y: 373), PixelPoint(x: 61, y: 450))),
+            ("frame-0140", .blue, (PixelPoint(x: 68, y: 499), PixelPoint(x: 147, y: 525))),
+            ("frame-0220", .red, (PixelPoint(x: 32, y: 420), PixelPoint(x: 56, y: 400))),
+            ("frame-0220", .blue, (PixelPoint(x: 29, y: 571), PixelPoint(x: 59, y: 563))),
+            ("frame-0397", .red, (PixelPoint(x: 148, y: 310), PixelPoint(x: 194, y: 258))),
+            ("frame-0500", .red, (PixelPoint(x: 114, y: 523), PixelPoint(x: 129, y: 618))),
+            ("frame-0500", .blue, (PixelPoint(x: 172, y: 452), PixelPoint(x: 212, y: 398))),
+            ("frame-0600", .red, (PixelPoint(x: 86, y: 390), PixelPoint(x: 124, y: 294))),
+            ("frame-0600", .blue, (PixelPoint(x: 40, y: 546), PixelPoint(x: 206, y: 539))),
+            ("frame-0676", .red, (PixelPoint(x: 205, y: 347), PixelPoint(x: 260, y: 284))),
+            ("frame-0704", .red, (PixelPoint(x: 136, y: 500), PixelPoint(x: 148, y: 570))),
+            ("frame-0747", .red, (PixelPoint(x: 8, y: 517), PixelPoint(x: 11, y: 454))),
+        ]
+        let subdirectory = "production-video-IMG_5933"
+        var cached: [String: (bytes: [UInt8], width: Int, height: Int, bytesPerRow: Int)] = [:]
+        for (name, color, expected) in fixtures {
+            let image: (bytes: [UInt8], width: Int, height: Int, bytesPerRow: Int)
+            if let existing = cached[name] {
+                image = existing
+            } else {
+                image = try fixtureBGRA(name, subdirectory: subdirectory)
+                cached[name] = image
+            }
+            let analysis = analyzeSabers(in: image.bytes, width: image.width, height: image.height,
+                                         bytesPerRow: image.bytesPerRow,
+                                         redThreshold: ColorThreshold(), blueThreshold: ColorThreshold())
+            guard let selected = analysis.selected[color] else {
+                XCTFail("\(name) \(color): expected blade was not selected")
+                continue
+            }
+            XCTAssertLessThanOrEqual(axisDistance(selected, expected), 24,
+                                     "\(name) \(color): wrong blade axis \(selected)")
+        }
     }
 
     func testRealBlueLEDFixturesPreferEmitterOverCurtainReflection() throws {

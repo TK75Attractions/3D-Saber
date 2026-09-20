@@ -361,6 +361,19 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                     || candidateIsSubsegment(candidate, of: $0)
                }) {
                 candidate.source = "core-line"
+                // A Hough line can join two unrelated bright objects and then
+                // win on length alone. Keep it available as a fallback for a
+                // genuinely fragmented/foreshortened blade, but rank it below
+                // a complete candidate unless bright core support is spread
+                // along most of the proposed axis.
+                candidate.scoreBreakdown.proposalPenalty -=
+                    (1.0 - candidate.longitudinalCoreCoverage) * 45.0
+                candidate.score = candidate.scoreBreakdown.total
+                if candidate.longitudinalCoreCoverage < 0.30,
+                   candidate.coreSupportRatio < 0.18 {
+                    candidate.isEmitterEligible = false
+                    candidate.source = "core-line-sparse"
+                }
                 // A line proposal is a fallback for disconnected LEDs. Avoid
                 // cutting a complete connected emitter into competing slices.
                 let overlapsCore = candidates.contains { existing in

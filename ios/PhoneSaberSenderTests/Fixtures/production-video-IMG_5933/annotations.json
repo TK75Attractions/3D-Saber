@@ -1,0 +1,118 @@
+{
+  "source": {
+    "filename": "IMG_5933.mp4",
+    "width": 512,
+    "height": 910,
+    "fps": 30,
+    "frame_count": 748,
+    "input_kind": "compressed-h264-video",
+    "limitations": "This is not a raw iPhone camera CVPixelBuffer. Compression, color conversion, exposure, and orientation metadata may differ from the production BGRA input."
+  },
+  "frames": [
+    {
+      "frame": 0,
+      "file": "frame-0000.png",
+      "categories": ["red-blue-simultaneous", "horizontal"],
+      "red": [[198, 463], [274, 455]],
+      "blue": [[187, 554], [280, 554]]
+    },
+    {
+      "frame": 33,
+      "file": "frame-0033.png",
+      "categories": ["red-blue-simultaneous", "diagonal", "motion"],
+      "red": [[62, 403], [119, 413]],
+      "blue": [[117, 537], [209, 517]]
+    },
+    {
+      "frame": 67,
+      "file": "frame-0067.png",
+      "categories": ["red-blue-simultaneous", "crossing", "false-core-line-regression"],
+      "red": [[179, 420], [258, 427]],
+      "blue": [[92, 478], [159, 432]]
+    },
+    {
+      "frame": 120,
+      "file": "frame-0120.png",
+      "categories": ["red-blue-simultaneous", "background-person", "false-core-line-regression"],
+      "red": [[74, 403], [99, 477]],
+      "blue": [[139, 485], [220, 500]]
+    },
+    {
+      "frame": 136,
+      "file": "frame-0136.png",
+      "categories": ["red-blue-simultaneous", "background-person", "false-core-line-regression"],
+      "red": [[56, 399], [77, 476]],
+      "blue": [[116, 489], [198, 514]]
+    },
+    {
+      "frame": 140,
+      "file": "frame-0140.png",
+      "categories": ["red-blue-simultaneous", "screen-edge", "false-core-line-regression"],
+      "red": [[31, 373], [61, 450]],
+      "blue": [[68, 499], [147, 525]]
+    },
+    {
+      "frame": 220,
+      "file": "frame-0220.png",
+      "categories": ["foreshortened", "partial-occlusion"],
+      "red": [[32, 420], [56, 400]],
+      "blue": [[29, 571], [59, 563]]
+    },
+    {
+      "frame": 224,
+      "file": "frame-0224.png",
+      "categories": ["foreshortened", "partial-occlusion"],
+      "red": "ambiguous",
+      "blue": [[17, 562], [44, 623]]
+    },
+    {
+      "frame": 344,
+      "file": "frame-0344.png",
+      "categories": ["occlusion", "ambiguous"],
+      "red": "ambiguous",
+      "blue": "ambiguous"
+    },
+    {
+      "frame": 397,
+      "file": "frame-0397.png",
+      "categories": ["red-only-evaluable", "blue-ambiguous"],
+      "red": [[148, 310], [194, 258]],
+      "blue": "ambiguous"
+    },
+    {
+      "frame": 500,
+      "file": "frame-0500.png",
+      "categories": ["red-blue-simultaneous", "crossing", "false-core-line-regression"],
+      "red": [[114, 523], [129, 618]],
+      "blue": [[172, 452], [212, 398]]
+    },
+    {
+      "frame": 600,
+      "file": "frame-0600.png",
+      "categories": ["red-blue-simultaneous", "motion", "screen-edge"],
+      "red": [[86, 390], [124, 294]],
+      "blue": [[40, 546], [206, 539]]
+    },
+    {
+      "frame": 676,
+      "file": "frame-0676.png",
+      "categories": ["red-blue-simultaneous", "motion", "screen-edge"],
+      "red": [[205, 347], [260, 284]],
+      "blue": [[8, 545], [188, 655]]
+    },
+    {
+      "frame": 704,
+      "file": "frame-0704.png",
+      "categories": ["red-blue-simultaneous", "foreshortened", "screen-edge"],
+      "red": [[136, 500], [148, 570]],
+      "blue": [[40, 544], [120, 593]]
+    },
+    {
+      "frame": 747,
+      "file": "frame-0747.png",
+      "categories": ["screen-edge", "blue-ambiguous"],
+      "red": [[8, 517], [11, 454]],
+      "blue": "ambiguous"
+    }
+  ]
+}

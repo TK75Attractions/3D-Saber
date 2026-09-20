@@ -21,6 +21,7 @@
 		A0000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png */; };
 		A0000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png */; };
 		A0000000000000000000000E /* blue-led-bright-large-05.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000E /* blue-led-bright-large-05.png */; };
+		A0000000000000000000000F /* production-video-IMG_5933 in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000F /* production-video-IMG_5933 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,6 +51,7 @@
 		B1000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-with-left-curtain-reflection-03.png"; sourceTree = "<group>"; };
 		B1000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-with-left-curtain-reflection-04.png"; sourceTree = "<group>"; };
 		B1000000000000000000000E /* blue-led-bright-large-05.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-bright-large-05.png"; sourceTree = "<group>"; };
+		B1000000000000000000000F /* production-video-IMG_5933 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "production-video-IMG_5933"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -111,6 +113,7 @@
 				B1000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png */,
 				B1000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png */,
 				B1000000000000000000000E /* blue-led-bright-large-05.png */,
+				B1000000000000000000000F /* production-video-IMG_5933 */,
 			);
 			path = Fixtures;
 			sourceTree = "<group>";
@@ -215,6 +218,7 @@
 				A0000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png in Resources */,
 				A0000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png in Resources */,
 				A0000000000000000000000E /* blue-led-bright-large-05.png in Resources */,
+				A0000000000000000000000F /* production-video-IMG_5933 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
