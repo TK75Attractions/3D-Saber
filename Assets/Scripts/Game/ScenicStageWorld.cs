@@ -142,6 +142,7 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
     public void Tick(double songSeconds, float chorus = 0, float eclipse = 0)
     {
         if (!built || !isActiveAndEnabled) return;
+        TickMeteorResponses(songSeconds);
         if (double.IsNaN(songSeconds) || double.IsInfinity(songSeconds)) { SetEclipse(0); return; }
         songSeconds = Math.Max(0,songSeconds); LastTickSeconds = songSeconds;
         ChorusIntensity = float.IsNaN(chorus) || float.IsInfinity(chorus) ? 0 : Mathf.Clamp01(chorus);
@@ -225,7 +226,7 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
         motes.SetParticles(particles,ParticleBudget);
     }
 
-    private void OnDisable() { SetEclipse(0); if (motes != null) motes.Clear(false); }
+    private void OnDisable() { SetEclipse(0); ClearMeteorResponses(); if (motes != null) motes.Clear(false); }
     private void OnDestroy()
     {
         foreach (var mesh in meshes) Release(mesh);
