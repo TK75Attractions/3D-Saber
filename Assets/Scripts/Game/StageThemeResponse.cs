@@ -42,7 +42,8 @@ public sealed partial class StageThemeResponse : MonoBehaviour
         if (parent == null || !Finite(floorY) ||
             (theme != StageTheme.AmberFoundry && theme != StageTheme.MoonlitGarden &&
                 theme != StageTheme.AzurePrism && theme != StageTheme.CrystalGrotto &&
-                theme != StageTheme.ObsidianRelay && theme != StageTheme.AbyssalRuins)) return null;
+                theme != StageTheme.ObsidianRelay && theme != StageTheme.AbyssalRuins &&
+                theme != StageTheme.SkySanctuary)) return null;
         var surface = Resources.Load<Shader>("Stage/ScenicSurface");
         var accent = Resources.Load<Shader>("Effects/GameplayCutAccent");
         // 材質がない場合は側面の既存反応を置き換えない。
@@ -58,7 +59,8 @@ public sealed partial class StageThemeResponse : MonoBehaviour
     void Build(Shader surface, Shader accent)
     {
         surfaceMaterial = new Material(surface) { name = "ThemeResponse/Surface", hideFlags = HideFlags.DontSave };
-        surfaceMaterial.SetColor("_BaseColor", theme == StageTheme.AbyssalRuins
+        surfaceMaterial.SetColor("_BaseColor", theme == StageTheme.SkySanctuary
+            ? new Color(.40f, .34f, .21f) : theme == StageTheme.AbyssalRuins
             ? new Color(.26f, .18f, .20f) : theme == StageTheme.ObsidianRelay
             ? new Color(.14f, .18f, .21f) : theme == StageTheme.MoonlitGarden
             ? new Color(.28f, .37f, .17f) : theme == StageTheme.AzurePrism
@@ -66,14 +68,15 @@ public sealed partial class StageThemeResponse : MonoBehaviour
             ? new Color(.24f, .19f, .34f) : new Color(.27f, .245f, .19f));
         surfaceMaterial.SetColor("_HazeColor", new Color(.035f, .065f, .08f));
         surfaceMaterial.SetColor("_AccentColor", new Color(.28f, .31f, .18f));
-        surfaceMaterial.SetFloat("_Emission", theme == StageTheme.AbyssalRuins ? 0 : .025f);
+        surfaceMaterial.SetFloat("_Emission", theme == StageTheme.AbyssalRuins || theme == StageTheme.SkySanctuary ? 0 : .025f);
         surfaceMaterial.SetFloat("_Mode", 0);
         surfaceMaterial.SetFloat("_Sway", 0);
         accentMaterial = new Material(accent) { name = "ThemeResponse/Details", hideFlags = HideFlags.DontSave };
         surfaceMesh = new Mesh { name = "ThemeResponse/SurfaceMesh", hideFlags = HideFlags.DontSave };
         accentMesh = new Mesh { name = "ThemeResponse/AccentMesh", hideFlags = HideFlags.DontSave };
         if (theme == StageTheme.MoonlitGarden || theme == StageTheme.AzurePrism ||
-            theme == StageTheme.ObsidianRelay || theme == StageTheme.AbyssalRuins) surfaceMesh.MarkDynamic();
+            theme == StageTheme.ObsidianRelay || theme == StageTheme.AbyssalRuins ||
+            theme == StageTheme.SkySanctuary) surfaceMesh.MarkDynamic();
         accentMesh.MarkDynamic();
         surfaceRenderer = Emit("Surface", surfaceMesh, surfaceMaterial);
         accentRenderer = Emit("Details", accentMesh, accentMaterial);
@@ -131,7 +134,8 @@ public sealed partial class StageThemeResponse : MonoBehaviour
             : theme == StageTheme.AzurePrism ? PrismLifetime
             : theme == StageTheme.CrystalGrotto ? CrystalLifetime
             : theme == StageTheme.ObsidianRelay ? LatchLifetime
-            : theme == StageTheme.AbyssalRuins ? CoralLifetime : FoundryLifetime;
+            : theme == StageTheme.AbyssalRuins ? CoralLifetime
+            : theme == StageTheme.SkySanctuary ? VaneLifetime : FoundryLifetime;
         for (int lane = 0; lane < LaneCount; lane++)
         {
             if (!active[lane] || delta <= 0) continue;
@@ -237,6 +241,12 @@ public sealed partial class StageThemeResponse : MonoBehaviour
         {
             surfaceVertices.Clear(); normals.Clear(); surfaceIndices.Clear();
             for (int lane = 0; lane < LaneCount; lane++) DrawCoral(lane, active[lane] ? ages[lane] : -1);
+            UploadSurface();
+        }
+        else if (theme == StageTheme.SkySanctuary)
+        {
+            surfaceVertices.Clear(); normals.Clear(); surfaceIndices.Clear();
+            for (int lane = 0; lane < LaneCount; lane++) DrawVane(lane, active[lane] ? ages[lane] : -1);
             UploadSurface();
         }
         else for (int lane = 0; lane < LaneCount; lane++) DrawGauge(lane, active[lane] ? ages[lane] : -1);

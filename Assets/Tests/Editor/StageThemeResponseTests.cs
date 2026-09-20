@@ -18,7 +18,8 @@ public class StageThemeResponseTests
         for (int i = 0; i < StageThemeCatalog.Count; i++)
             if (i != (int)StageTheme.MoonlitGarden && i != (int)StageTheme.AmberFoundry &&
                 i != (int)StageTheme.AzurePrism && i != (int)StageTheme.CrystalGrotto &&
-                i != (int)StageTheme.ObsidianRelay && i != (int)StageTheme.AbyssalRuins)
+                i != (int)StageTheme.ObsidianRelay && i != (int)StageTheme.AbyssalRuins &&
+                i != (int)StageTheme.SkySanctuary)
                 Assert.IsNull(Create((StageTheme)i));
         Assert.IsNull(StageThemeResponse.Create(root.transform, StageTheme.MoonlitGarden, float.NaN));
         Assert.AreEqual(0, root.transform.childCount);

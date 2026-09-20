@@ -79,7 +79,7 @@ public class FavoriteEffectsPlayTests
     public IEnumerator ThemeResponsesUseFinalPerfect_RespectPlacementAndClearOnReset()
     {
         foreach (var theme in new[] { StageTheme.AmberFoundry, StageTheme.MoonlitGarden, StageTheme.AzurePrism,
-            StageTheme.CrystalGrotto, StageTheme.ObsidianRelay, StageTheme.AbyssalRuins })
+            StageTheme.CrystalGrotto, StageTheme.ObsidianRelay, StageTheme.AbyssalRuins, StageTheme.SkySanctuary })
         {
             yield return LoadGame(theme);
             var response = floor.GetComponentInChildren<StageThemeResponse>();
@@ -97,7 +97,7 @@ public class FavoriteEffectsPlayTests
                 Assert.AreEqual(JudgmentTier.Perfect, manager.scoreManager.LastTier);
                 Assert.AreEqual(1 << lane, response.ActiveLaneMask);
                 Assert.AreEqual(1 << lane, effects.ActiveFloorLaneMask);
-                if (theme == StageTheme.ObsidianRelay || theme == StageTheme.AbyssalRuins)
+                if (theme == StageTheme.ObsidianRelay || theme == StageTheme.AbyssalRuins || theme == StageTheme.SkySanctuary)
                 {
                     Assert.IsTrue(response.ReplacesSideResponse);
                     var floorLight = effects.GetComponent<MeshFilter>().sharedMesh;
@@ -105,16 +105,16 @@ public class FavoriteEffectsPlayTests
                     foreach (var point in floorLight.vertices)
                         Assert.Less(point.y, floor.floorY + .7f, "同じ成功へ旧側面波を重ねない");
                 }
-                if (theme == StageTheme.AbyssalRuins)
+                if (theme == StageTheme.AbyssalRuins || theme == StageTheme.SkySanctuary)
                 {
-                    CollectionAssert.AreNotEqual(bodyBefore, responseBody.vertices, "実Perfectで珊瑚の形が開く");
+                    CollectionAssert.AreNotEqual(bodyBefore, responseBody.vertices, "実Perfectで素材の形が変わる");
                     Assert.AreEqual(0, response.transform.Find("Details").GetComponent<MeshFilter>().sharedMesh.vertexCount,
-                        "珊瑚の成功へ祝福光を足さない");
+                        "素材の成功へ祝福光を足さない");
                 }
                 SetChart(new ChartData());
                 Assert.AreEqual(0, response.ActiveResponseCount);
-                if (theme == StageTheme.AbyssalRuins) CollectionAssert.AreEqual(bodyBefore, responseBody.vertices,
-                    "譜面再ロードで開いた珊瑚を静止形へ戻す");
+                if (theme == StageTheme.AbyssalRuins || theme == StageTheme.SkySanctuary) CollectionAssert.AreEqual(bodyBefore, responseBody.vertices,
+                    "譜面再ロードで素材を静止形へ戻す");
             }
 
             SetChart(Single(1)); yield return null;
@@ -183,6 +183,10 @@ public class FavoriteEffectsPlayTests
             yield return ReleaseFloorAndAssertResources();
         }
     }
+
+    [UnityTest, Timeout(240000)]
+    public IEnumerator YurikagoHardSkySanctuary_RealTimeAudioWithScriptedPerfectInput()
+    { return RealTimeAudioWithScriptedPerfectInput(StageTheme.SkySanctuary); }
 
     [UnityTest, Timeout(240000)]
     public IEnumerator YurikagoHardAstralOrbit_RealTimeAudioWithScriptedPerfectInput()
