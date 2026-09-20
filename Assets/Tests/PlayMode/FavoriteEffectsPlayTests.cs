@@ -213,6 +213,131 @@ public class FavoriteEffectsPlayTests
     { return RealTimeAudioWithScriptedPerfectInput(StageTheme.VioletVault); }
 
     [UnityTest, Timeout(120000)]
+    public IEnumerator MeteorsUseFinalPerfectRespectFourLanesAndClearOnReload()
+    {
+        overrideCurtainEffectsSetting = true; DisplaySettings.SetReducedEffectsForTest(false);
+        yield return LoadGame(StageTheme.AstralOrbit);
+        Assert.IsTrue(scenic.MeteorResponsesReady);
+        var original = new Vector3[4][];
+        for (int lane = 0; lane < 4; lane++) original[lane] = MeteorMeshForLane(scenic, lane).vertices;
+        for (int lane = 0; lane < 4; lane++)
+        {
+            SetChart(Single(lane)); yield return null;
+            manager.noteSpawner.Tick(1); Draw(1);
+            var current = notes.Find(n => n != null && n.isActiveAndEnabled && !n.IsFinalized &&
+                StageReactiveEffects.FloorLaneForX(n.transform.position.x) == lane);
+            Assert.NotNull(current);
+            Cut(current, 1, Vector3.right * 6, CutDirection.None); Draw(1.30);
+            Assert.AreEqual(JudgmentTier.Perfect, manager.scoreManager.LastTier);
+            Assert.AreEqual(1 << lane, scenic.MeteorLaneMask); Assert.AreEqual(1 << lane, effects.ActiveFloorLaneMask);
+            CollectionAssert.AreNotEqual(original[lane], MeteorMeshForLane(scenic, lane).vertices);
+            for (int other = 0; other < 4; other++)
+                if (other != lane) CollectionAssert.AreEqual(original[other], MeteorMeshForLane(scenic, other).vertices);
+            var light = effects.GetComponent<MeshFilter>().sharedMesh;
+            Assert.Greater(light.vertexCount, 0, "岩が分かれる時にも共通床を描く");
+            foreach (var point in light.vertices) Assert.Less(point.y, floor.floorY + .7f, "旧側面成功光を重ねない");
+        }
+
+        var simultaneous = new ChartData { bpm = 120, notes = new List<NoteData>() };
+        for (int lane = 0; lane < 4; lane++)
+        {
+            var data = Single(lane).notes[0]; data.type = "direction"; data.direction = "up";
+            data.color = lane < 2 ? "blue" : "red"; simultaneous.notes.Add(data);
+        }
+        SetChart(simultaneous); yield return null; manager.noteSpawner.Tick(1); Draw(1);
+        int perfectMask = 0;
+        for (int lane = 0; lane < 4; lane++)
+        {
+            var current = notes.Find(n => n != null && n.isActiveAndEnabled && !n.IsFinalized &&
+                StageReactiveEffects.FloorLaneForX(n.transform.position.x) == lane);
+            Assert.NotNull(current);
+            bool perfect = lane == 0 || lane == 2;
+            Cut(current, 1, (perfect ? Vector3.up : Vector3.right) * 6,
+                perfect ? CutDirection.Up : CutDirection.Right);
+            Assert.AreEqual(perfect ? JudgmentTier.Perfect : JudgmentTier.Great, manager.scoreManager.LastTier);
+            if (perfect) perfectMask |= 1 << lane;
+            Assert.AreEqual(perfectMask, scenic.MeteorLaneMask, "最終Greatの実列へ岩の反応を出さない");
+            Assert.AreEqual(perfectMask, effects.ActiveFloorLaneMask);
+        }
+        Draw(1.30); Assert.AreEqual(2, scenic.ActiveMeteorResponseCount);
+        SetChart(Single(1)); yield return null; manager.noteSpawner.Tick(1); Draw(1);
+        notes[0].MarkMiss(); Draw(1.30);
+        Assert.AreEqual(0, scenic.MeteorLaneMask); Assert.AreEqual(0, effects.ActiveFloorLaneMask);
+
+        var longChart = Single(2); longChart.notes[0].type = "long"; longChart.notes[0].count = 4;
+        SetChart(longChart); yield return null; manager.noteSpawner.Tick(1); Draw(1);
+        for (int i = 0; i < 3; i++) Cut(notes[0], 1, Vector3.right * 6, CutDirection.None);
+        Assert.AreEqual(0, scenic.MeteorLaneMask, "ロング途中を素材の成功にしない");
+        Assert.AreEqual(0, effects.ActiveFloorLaneMask);
+        Cut(notes[0], 1, Vector3.right * 6, CutDirection.None); Draw(1.30);
+        Assert.AreEqual(4, scenic.MeteorLaneMask); Assert.AreEqual(4, effects.ActiveFloorLaneMask);
+        SetChart(new ChartData());
+        Assert.AreEqual(0, scenic.ActiveMeteorResponseCount); Assert.AreEqual(0, scenic.MeteorLaneMask);
+        for (int lane = 0; lane < 4; lane++) CollectionAssert.AreEqual(original[lane], MeteorMeshForLane(scenic, lane).vertices);
+        yield return ReleaseFloorAndAssertResources();
+    }
+
+    [UnityTest, Timeout(120000)]
+    public IEnumerator MeteorActualGameSceneReceivesPerfectAndStopsWithTheSong()
+    {
+        overrideCurtainEffectsSetting = true; DisplaySettings.SetReducedEffectsForTest(false);
+        GameSession.SelectedSongId = "揺籠"; GameSession.SelectedDifficulty = "hard"; GameSession.IsCalibrationMode = false;
+        SceneManager.sceneLoaded += CreateMeteorFloorBeforeManagerStart;
+        try { yield return SceneManager.LoadSceneAsync("Game", LoadSceneMode.Single); }
+        finally { SceneManager.sceneLoaded -= CreateMeteorFloorBeforeManagerStart; }
+        manager = Object.FindFirstObjectByType<GamePlayManager>(); Assert.NotNull(manager);
+        try
+        {
+            float deadline = Time.realtimeSinceStartup + 30;
+            while (!manager.songPlayer.IsScheduled && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.IsTrue(manager.songPlayer.IsScheduled); manager.endWaitSeconds = 10000;
+            foreach (var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) judge.autonomous = false;
+            foreach (var input in Object.FindObjectsByType<SaberInputBridge>(FindObjectsSortMode.None)) input.enabled = false;
+            floor = Object.FindFirstObjectByType<FloorRenderer>(); Assert.NotNull(floor);
+            Assert.AreEqual(StageTheme.AstralOrbit, floor.ActiveTheme);
+            scenic = floor.GetComponentInChildren<ScenicStageWorld>(); Assert.IsTrue(scenic.MeteorResponsesReady);
+            effects = floor.GetComponentInChildren<StageReactiveEffects>(); Assert.NotNull(effects);
+            notes.Clear(); manager.noteSpawner.OnNoteSpawned += Collect;
+            manager.noteSpawner.SetExtraOffsetSeconds(0);
+            manager.noteSpawner.SetChart(Single(3));
+            SetClock(.9); yield return null; yield return null;
+            SetClock(1); yield return null; yield return null;
+            var note = notes.Find(n => n != null && n.isActiveAndEnabled && !n.IsFinalized &&
+                StageReactiveEffects.FloorLaneForX(n.transform.position.x) == 3);
+            Assert.NotNull(note);
+            // 実ManagerのUpdateが進めた時計で人工の正方向入力を与える。描画Tickは直接呼ばない。
+            Cut(note, manager.songPlayer.SongTime, Vector3.right * 6, CutDirection.None, false);
+            Assert.AreEqual(JudgmentTier.Perfect, manager.scoreManager.LastTier);
+            Assert.AreEqual(8, scenic.MeteorLaneMask); Assert.AreEqual(8, effects.ActiveFloorLaneMask);
+            SetClock(1.30); yield return null; yield return null;
+            Assert.Greater(scenic.MeteorOpening(3), .9f);
+            Assert.That(scenic.LastTickSeconds, Is.EqualTo(manager.songPlayer.SongTime).Within(.15));
+            manager.songPlayer.Stop(); double stopped = scenic.LastTickSeconds;
+            var held = MeteorMeshForLane(scenic, 3).vertices;
+            yield return null; yield return null;
+            Assert.AreEqual(stopped, scenic.LastTickSeconds);
+            CollectionAssert.AreEqual(held, MeteorMeshForLane(scenic, 3).vertices);
+            manager.noteSpawner.SetChart(new ChartData());
+            Assert.AreEqual(0, scenic.MeteorLaneMask); Assert.AreEqual(0, scenic.ActiveMeteorResponseCount);
+        }
+        finally { if (manager != null) { manager.enabled = false; manager.songPlayer.Stop(); } }
+        yield return ReleaseFloorAndAssertResources();
+    }
+
+    static Mesh MeteorMeshForLane(ScenicStageWorld world, int lane)
+    {
+        string[] names = { "OrbitingRock-1-1", "OrbitingRock-1-2", "OrbitingRock1-2", "OrbitingRock1-1" };
+        return world.transform.Find(names[lane]).GetComponent<MeshFilter>().sharedMesh;
+    }
+
+    static void CreateMeteorFloorBeforeManagerStart(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name != "Game") return;
+        var forced = new GameObject("MeteorResponseGameTestFloor").AddComponent<FloorRenderer>();
+        forced.randomizeOnPlay = false; forced.Build(StageTheme.AstralOrbit);
+    }
+
+    [UnityTest, Timeout(120000)]
     public IEnumerator VaultCurtainIsIndependentOfFinalJudgmentsAndKeepsPerfectFloorAndSideResponse()
     {
         overrideCurtainEffectsSetting = true; DisplaySettings.SetReducedEffectsForTest(false);

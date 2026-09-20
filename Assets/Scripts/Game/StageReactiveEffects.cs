@@ -39,6 +39,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
     readonly double[] latestResolved = { double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity, double.NegativeInfinity };
     int weaveEpoch;
     StageThemeResponse themeResponse;
+    ScenicStageWorld meteorWorld;
     readonly HashSet<CuttableNote> tracked = new HashSet<CuttableNote>();
     readonly List<CuttableNote> expired = new List<CuttableNote>();
     readonly List<Vector3> vertices = new List<Vector3>(VertexBudget);
@@ -80,6 +81,8 @@ public sealed class StageReactiveEffects : MonoBehaviour
         effect.theme = stage.ActiveTheme;
         effect.Build();
         effect.themeResponse = StageThemeResponse.Create(effect.transform, effect.theme, effect.floor);
+        if (effect.theme == StageTheme.AstralOrbit)
+            effect.meteorWorld = stage.GetComponentInChildren<ScenicStageWorld>();
         effect.Bind(spawner, song);
         return effect;
     }
@@ -162,6 +165,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
         Untrack(note);
         if (!perfect) return;
         if (themeResponse != null) themeResponse.OnPerfect(FloorLaneForX(note.transform.position.x));
+        if (meteorWorld != null) meteorWorld.OnMeteorPerfect(FloorLaneForX(note.transform.position.x));
         if (note.RequiredCutCount > 1)
         {
             AddWave(note, WaveKind.Release, 1);
@@ -359,7 +363,8 @@ public sealed class StageReactiveEffects : MonoBehaviour
                     FloorLaneWave(lane, travel, tint, gain, wave.kind == WaveKind.Cut ? .7f : 1.35f);
             for (int side = -1; side <= 1; side += 2)
             {
-                if (themeResponse != null && themeResponse.ReplacesSideResponse) continue;
+                if ((themeResponse != null && themeResponse.ReplacesSideResponse) ||
+                    (meteorWorld != null && meteorWorld.MeteorResponsesReady)) continue;
                 // 同時斬りでも、実際に切った床列の側だけへ展開する。
                 if ((wave.laneMask & (side < 0 ? 3 : 12)) == 0) continue;
                 for (int bank = 0; bank < 7; bank++)
@@ -469,6 +474,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
         foreach (var group in weaveNotes.Values) group.epoch = weaveEpoch;
         for (int i = 0; i < latestResolved.Length; i++) latestResolved[i] = double.NegativeInfinity;
         if (themeResponse != null) themeResponse.Clear();
+        if (meteorWorld != null) meteorWorld.ClearMeteorResponses();
         ActiveWaveCount = 0;
         ActiveFloorLaneMask = 0;
         Presentation = default;

@@ -31,6 +31,11 @@ public sealed partial class ScenicStageWorld
                 rotation:Quaternion.Euler(20,side*28,side*20));
             for (int i = 0; i < 5; i++)
             {
+                if (i == 1 || i == 2)
+                {
+                    BuildRespondingMeteor(side,i,rocks);
+                    continue;
+                }
                 var asteroid = new StageGeometry();
                 asteroid.Rock(Vector3.zero,new Vector3(1.0f,.72f,1.2f),7,4);
                 Moving("OrbitingRock"+side+"-"+i,asteroid,rocks,new Vector3(side*(8.1f+i*.9f),floor+.9f+(i%3)*.8f,3+i*8),
