@@ -118,6 +118,9 @@ public class NoteSpawner : MonoBehaviour
     public float Speed => approachTime > 0.0001f ? (spawnZ - judgeZ) / approachTime : 0f;
 
     public int AliveCount => liveNotes.Count;
+    public IReadOnlyList<CuttableNote> LiveNotes => liveNotes;
+    // ゲーム判定側だけが設定する、受信待ち中のMiss確定保留。
+    public System.Func<CuttableNote, double, bool> ShouldDeferMiss { get; set; }
     public int NextIndex => nextIndex;
     // 譜面の総ノーツ数(ランクの合計割合計算用)。譜面未設定なら 0。
     public int TotalNoteCount => chart != null && chart.notes != null ? chart.notes.Count : 0;
@@ -477,7 +480,8 @@ public class NoteSpawner : MonoBehaviour
             }
 
             // 判定窓を過ぎた瞬間に Miss を1回だけ発火するが、ノーツは消さずに後ろへ流し続ける。
-            if (!note.IsMissed && dt < -(lateWindow + missGrace))
+            if (!note.IsMissed && dt < -(lateWindow + missGrace)
+                && !(ShouldDeferMiss?.Invoke(note, songTime) ?? false))
             {
                 note.MarkMiss();
                 OnNoteMissed?.Invoke(note);

@@ -1,4 +1,4 @@
-"""Generate the original digit-only Saber Seven Segment font.
+"""Generate the original digits and LV Saber Seven Segment font.
 
 Requires fonttools==4.60.1 (authoring only; Unity loads the resulting TTF).
 Run from the Unity repository root: python Tools/Fonts/create_seven_segment.py
@@ -47,15 +47,21 @@ MASKS = [0x3F, 0x06, 0x5B, 0x4F, 0x66, 0x6D, 0x7D, 0x27, 0x7F, 0x67]
 
 def build(output):
     builder = FontBuilder(1000, isTTF=True)
-    order = ['.notdef', 'space', 'hyphen'] + ['digit' + str(i) for i in range(10)]
+    order = ['.notdef', 'space', 'hyphen', 'L', 'V'] + ['digit' + str(i) for i in range(10)]
     builder.setupGlyphOrder(order)
-    builder.setupCharacterMap({32: 'space', 45: 'hyphen',
+    builder.setupCharacterMap({32: 'space', 45: 'hyphen', 76: 'L', 86: 'V',
                                **{48 + i: 'digit' + str(i) for i in range(10)}})
     glyphs = {}
     for name in order:
         pen = TTGlyphPen(None)
         if name.startswith('digit'):
             mask = MASKS[int(name[-1])]
+            for i, segment in enumerate(SEGMENTS):
+                if mask & (1 << i):
+                    polygon(pen, segment)
+        elif name in ('L', 'V'):
+            # Lは左上下と底、Vは下側の左右と底を使う7セグの字形。
+            mask = 0x38 if name == 'L' else 0x1C
             for i, segment in enumerate(SEGMENTS):
                 if mask & (1 << i):
                     polygon(pen, segment)
@@ -74,12 +80,12 @@ def build(output):
     builder.setupNameTable({
         'familyName': 'Saber Seven Segment',
         'styleName': 'Regular',
-        'uniqueFontIdentifier': '3D-Saber:SaberSevenSegment:1.0',
+        'uniqueFontIdentifier': '3D-Saber:SaberSevenSegment:1.1',
         'fullName': 'Saber Seven Segment Regular',
         'psName': 'SaberSevenSegment-Regular',
-        'version': 'Version 1.000',
-        'copyright': 'Original geometric digit designs for the 3D-Saber project, 2026.',
-        'description': 'Seven segment digits with chamfered ends. No third-party font outlines.',
+        'version': 'Version 1.100',
+        'copyright': 'Original geometric digit and LV designs for the 3D-Saber project, 2026.',
+        'description': 'Seven segment digits and LV with chamfered ends. No third-party font outlines.',
     })
     builder.setupOS2(sTypoAscender=850, sTypoDescender=-150, sTypoLineGap=0,
                     usWinAscent=850, usWinDescent=150, sxHeight=760, sCapHeight=760,
@@ -94,13 +100,16 @@ def build(output):
     # 完成バイナリを読み直し、0〜9とダッシュ、桁の等幅を確認する。
     font = TTFont(output)
     cmap = font.getBestCmap()
-    assert set(cmap) == {32, 45, *range(48, 58)}
+    assert set(cmap) == {32, 45, 76, 86, *range(48, 58)}
     for i, mask in enumerate(MASKS):
         glyph = cmap[48 + i]
         assert font['glyf'][glyph].numberOfContours == mask.bit_count()
         assert font['hmtx'][glyph][0] == 500
+    for code in (76, 86):
+        assert font['glyf'][cmap[code]].numberOfContours == 3
+        assert font['hmtx'][cmap[code]][0] == 500
     font.close()
-    print(f'Wrote {output}: 10 digits, hyphen, space; validated.')
+    print(f'Wrote {output}: 10 digits, LV, hyphen, space; validated.')
 
 
 if __name__ == '__main__':

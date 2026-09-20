@@ -21,6 +21,7 @@ public class FavoriteEffectsPlayTests
     StagePerformanceTimeline timeline;
     string originalSong, originalDifficulty;
     bool originalCalibration;
+    bool overrideCurtainEffectsSetting;
     int judged;
 
     [SetUp]
@@ -38,6 +39,8 @@ public class FavoriteEffectsPlayTests
         GameSession.SelectedSongId = originalSong;
         GameSession.SelectedDifficulty = originalDifficulty;
         GameSession.IsCalibrationMode = originalCalibration;
+        if (overrideCurtainEffectsSetting) DisplaySettings.ResetReducedEffectsCacheForTest();
+        overrideCurtainEffectsSetting = false;
     }
 
     [UnityTest, Timeout(360000)]
@@ -205,6 +208,130 @@ public class FavoriteEffectsPlayTests
     public IEnumerator YurikagoHardAbyssalRuins_RealTimeAudioWithScriptedPerfectInput()
     { return RealTimeAudioWithScriptedPerfectInput(StageTheme.AbyssalRuins); }
 
+    [UnityTest, Timeout(240000)]
+    public IEnumerator YurikagoHardVioletVault_RealTimeAudioWithScriptedPerfectInput()
+    { return RealTimeAudioWithScriptedPerfectInput(StageTheme.VioletVault); }
+
+    [UnityTest, Timeout(120000)]
+    public IEnumerator VaultCurtainIsIndependentOfFinalJudgmentsAndKeepsPerfectFloorAndSideResponse()
+    {
+        overrideCurtainEffectsSetting = true; DisplaySettings.SetReducedEffectsForTest(false);
+        yield return LoadGame(StageTheme.VioletVault);
+        var curtain = floor.GetComponentInChildren<VioletCurtainStage>(); Assert.NotNull(curtain);
+        var curtainMesh = curtain.GetComponentInChildren<MeshFilter>().sharedMesh;
+        var rest = curtainMesh.vertices;
+        timeline = new StagePerformanceTimeline { sections = new[] {
+            new StagePerformanceTimeline.Section { startSeconds = 0, endSeconds = 20, intensity = 1 } } };
+        var simultaneous = new ChartData { bpm = 120, notes = new List<NoteData>() };
+        for (int lane = 0; lane < 4; lane++)
+        {
+            var data = Single(lane).notes[0]; data.time = 10000;
+            data.type = "direction"; data.direction = "up"; data.color = lane < 2 ? "blue" : "red";
+            simultaneous.notes.Add(data);
+        }
+        SetChart(simultaneous); yield return null;
+        manager.noteSpawner.Tick(10); Draw(10);
+        Assert.AreEqual(1, curtain.Opening);
+        var peak = curtainMesh.vertices;
+        CollectionAssert.AreNotEqual(rest, peak, "明示区間で幕が実際に畳まれる");
+        int perfectMask = 0;
+        for (int lane = 0; lane < 4; lane++)
+        {
+            var note = notes.Find(n => n != null && n.isActiveAndEnabled && !n.IsFinalized &&
+                StageReactiveEffects.FloorLaneForX(n.transform.position.x) == lane);
+            Assert.NotNull(note);
+            bool perfect = lane == 0 || lane == 2;
+            Cut(note, 10, (perfect ? Vector3.up : Vector3.right) * 6,
+                perfect ? CutDirection.Up : CutDirection.Right);
+            Assert.AreEqual(perfect ? JudgmentTier.Perfect : JudgmentTier.Great, manager.scoreManager.LastTier);
+            if (perfect) perfectMask |= 1 << lane;
+            Assert.AreEqual(perfectMask, effects.ActiveFloorLaneMask, "Greatの実列へ成功床を追加しない");
+            Draw(10);
+            CollectionAssert.AreEqual(peak, curtainMesh.vertices, "曲同期の幕を成功・方向降格で動かさない");
+        }
+        Draw(10.12);
+        var successMesh = effects.GetComponent<MeshFilter>().sharedMesh;
+        bool hasSide = false, hasFloor = false;
+        foreach (var point in successMesh.vertices)
+        {
+            hasSide |= point.y > floor.floorY + .7f;
+            hasFloor |= point.y < floor.floorY + .7f;
+        }
+        Assert.IsTrue(hasSide && hasFloor, "曲同期の幕が既存Perfect床と側面反応を消している");
+
+        var longChart = Single(2); longChart.notes[0].time = 10000;
+        longChart.notes[0].type = "long"; longChart.notes[0].count = 4;
+        SetChart(longChart); yield return null;
+        manager.noteSpawner.Tick(10); Draw(10);
+        for (int i = 0; i < 3; i++) Cut(notes[0], 10, Vector3.right * 6, CutDirection.None);
+        Assert.AreEqual(0, effects.ActiveFloorLaneMask, "ロング途中に成功床を足さない");
+        CollectionAssert.AreEqual(peak, curtainMesh.vertices, "ロング途中を幕の合図にしない");
+        notes[0].MarkMiss(); Draw(10);
+        Assert.AreEqual(0, effects.ActiveFloorLaneMask);
+        CollectionAssert.AreEqual(peak, curtainMesh.vertices, "Missで曲区間の姿勢を消さない");
+        SetChart(new ChartData());
+        Assert.AreEqual(0, curtain.Opening);
+        CollectionAssert.AreEqual(rest, curtainMesh.vertices, "譜面再読込で幕を原位置へ戻す");
+        timeline = new StagePerformanceTimeline(); Draw(10);
+        CollectionAssert.AreEqual(rest, curtainMesh.vertices, "区間なしを譜面密度から補わない");
+        yield return ReleaseFloorAndAssertResources();
+    }
+
+    [UnityTest, Timeout(120000)]
+    public IEnumerator VaultCurtainActualManagerDrivesLongSectionAndStopsWithTheSong()
+    {
+        overrideCurtainEffectsSetting = true; DisplaySettings.SetReducedEffectsForTest(false);
+        GameSession.SelectedSongId = "揺籠"; GameSession.SelectedDifficulty = "hard";
+        GameSession.IsCalibrationMode = false;
+        SceneManager.sceneLoaded += CreateVaultFloorBeforeManagerStart;
+        try { yield return SceneManager.LoadSceneAsync("Game", LoadSceneMode.Single); }
+        finally { SceneManager.sceneLoaded -= CreateVaultFloorBeforeManagerStart; }
+        manager = Object.FindFirstObjectByType<GamePlayManager>(); Assert.NotNull(manager);
+        try
+        {
+            float deadline = Time.realtimeSinceStartup + 30;
+            while (!manager.songPlayer.IsScheduled && Time.realtimeSinceStartup < deadline) yield return null;
+            Assert.IsTrue(manager.songPlayer.IsScheduled);
+            manager.endWaitSeconds = 10000;
+            manager.noteSpawner.SetChart(new ChartData());
+            foreach (var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) judge.autonomous = false;
+            foreach (var input in Object.FindObjectsByType<SaberInputBridge>(FindObjectsSortMode.None)) input.enabled = false;
+            floor = Object.FindFirstObjectByType<FloorRenderer>(); Assert.NotNull(floor);
+            Assert.AreEqual(StageTheme.VioletVault, floor.ActiveTheme);
+            var curtain = floor.GetComponentInChildren<VioletCurtainStage>(); Assert.NotNull(curtain);
+            var mesh = curtain.GetComponentInChildren<MeshFilter>().sharedMesh;
+            timeline = StagePerformanceTimeline.Load("揺籠");
+            // 音源のDSP時計を飛ばす接続検証。実時間通しとは別に扱い、Floor.Tickを直接呼ばない。
+            foreach (var time in new[] { 100.0, 144.245, 150.0, 163.361, 166.0, 150.0, 100.0 })
+            {
+                SetClock(time); yield return null; yield return null;
+                Assert.That(curtain.LastTickSeconds, Is.EqualTo(manager.songPlayer.SongTime).Within(.15));
+                Assert.AreEqual(timeline.EvaluateVaultCurtain(curtain.LastTickSeconds), curtain.Opening, .00001f,
+                    "GamePlayManagerから幕へ明示区間が届かない");
+                if (time == 150) Assert.AreEqual(1, curtain.Opening);
+                if (time == 100 || time == 166) Assert.AreEqual(0, curtain.Opening);
+            }
+            SetClock(150); yield return null; yield return null;
+            manager.songPlayer.Stop(); double stopped = curtain.LastTickSeconds;
+            var held = mesh.vertices;
+            yield return null; yield return null;
+            Assert.AreEqual(stopped, curtain.LastTickSeconds);
+            CollectionAssert.AreEqual(held, mesh.vertices, "停止中に独立時計で幕が進む");
+        }
+        finally
+        {
+            if (manager != null) { manager.enabled = false; manager.songPlayer.Stop(); }
+        }
+        yield return ReleaseFloorAndAssertResources();
+    }
+
+    static void CreateVaultFloorBeforeManagerStart(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name != "Game") return;
+        var forced = new GameObject("VaultCurtainGameTestFloor").AddComponent<FloorRenderer>();
+        forced.randomizeOnPlay = false; forced.Build(StageTheme.VioletVault);
+    }
+
     [UnityTest, Timeout(120000)]
     public IEnumerator PulseArrayActualManagerDrivesFormationAndStopsWithTheSong()
     {
@@ -368,7 +495,7 @@ public class FavoriteEffectsPlayTests
     void Draw(double time)
     {
         float chorus = timeline.Evaluate(time);
-        floor.Tick(time, chorus, timeline.EvaluateLightFormation(time));
+        floor.Tick(time, chorus, timeline.EvaluateLightFormation(time), timeline.EvaluateVaultCurtain(time));
         scenic?.Tick(time, chorus, timeline.EvaluateEclipse(time));
         foundry?.Tick(time, chorus);
         effects.Tick(time);

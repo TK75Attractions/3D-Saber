@@ -97,7 +97,7 @@ public class ScoreManager : MonoBehaviour
         else
         {
             // タップ／フリックは従来通り時間誤差ベース。
-            double songTime = songPlayer != null ? songPlayer.SongTime : 0;
+            double songTime = note.LastCutSongTime ?? (songPlayer != null ? songPlayer.SongTime : 0);
             double error = songTime - note.HitTime;
             tier = JudgmentTierHelper.Classify(error);
             LastErrorMs = error * 1000.0;

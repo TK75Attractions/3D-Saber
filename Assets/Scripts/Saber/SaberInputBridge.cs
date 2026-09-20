@@ -67,6 +67,31 @@ public class SaberInputBridge : MonoBehaviour
     // ブレードデータが有効か（線分判定を使うか）。
     public bool HasBlade { get; private set; }
 
+    CameraSaberSample cameraSample;
+    double cameraSourceStamp = double.NegativeInfinity;
+    bool hasCameraSample;
+
+    // 表示に適用した新規Camera入力のスナップショット。マウス・補間フレームは含めない。
+    public bool TryGetCameraSample(out CameraSaberSample sample)
+    {
+        sample = cameraSample;
+        return isActiveAndEnabled && hasCameraSample && !UsingMouseFallback && useInputPoint;
+    }
+
+    void RecordCameraSample(InputPoint input)
+    {
+        double stamp = stickIndex == 2 ? input.LastReceivedTime2 : input.LastReceivedTime;
+        if (stamp == cameraSourceStamp || Time.timeScale <= 0f) return;
+        cameraSourceStamp = stamp;
+        // InputPointの公開時計をOS monotonicへ写像。受信処理や通信フォーマットは変更しない。
+        double receive = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp)
+            - System.Math.Max(0, Time.timeAsDouble - stamp) / Time.timeScale;
+        cameraSample = new CameraSaberSample(receive,
+            HasBlade ? WorldEndA : transform.position, HasBlade ? WorldEndB : transform.position,
+            stickIndex == 2 ? CameraSaberColor.Blue : CameraSaberColor.Red);
+        hasCameraSample = true;
+    }
+
     void Awake()
     {
         if (targetCamera == null) targetCamera = Camera.main;
@@ -235,6 +260,7 @@ public class SaberInputBridge : MonoBehaviour
                 Debug.Log($"[SaberInputBridge] stick{stickIndex} endA={WorldEndA} endB={WorldEndB}");
             }
             UsingMouseFallback = false;
+            RecordCameraSample(ip);
             consumed = true;
         }
 
@@ -275,6 +301,7 @@ public class SaberInputBridge : MonoBehaviour
 
     private void HideBlade()
     {
+        hasCameraSample = false;
         UsingMouseFallback = false;
         HasBlade = false;
         if (bladeLine != null && bladeLine.enabled) bladeLine.enabled = false;

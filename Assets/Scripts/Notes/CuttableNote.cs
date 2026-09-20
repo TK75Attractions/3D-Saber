@@ -40,6 +40,7 @@ public class CuttableNote : MonoBehaviour
         IsCut = IsMissed = IsFinalized = judgeable = false;
         MinimumCutSpeed = 0; RequireJudgeableOnCut = DirectionVisualOnly = false;
         LastCutCorrectDirection = true; LastCutterHand = SaberHand.Any;
+        LastCutSongTime = null;
         lastHitPoint = Vector3.zero; lastVelocity = Vector3.right; cracksUsed = 0;
         foreach (var crack in ownedCracks) if (crack.visual != null) crack.visual.SetActive(false);
         if (countLabel != null) countLabel.gameObject.SetActive(false);
@@ -56,6 +57,8 @@ public class CuttableNote : MonoBehaviour
     public bool RequireJudgeableOnCut { get; set; }
     public bool IsMissed { get; private set; }
     public double HitTime { get; set; }
+    // 遅延Camera照合で受理したSwingの曲時計。従来判定ではnull。
+    public double? LastCutSongTime { get; private set; }
     // 金ノーツ：切ったときに豪華音を鳴らすため NoteSpawner が立てる。
     public bool IsGold { get; set; }
 
@@ -143,13 +146,27 @@ public class CuttableNote : MonoBehaviour
     // cutterHand：切ろうとしたセーバーの手。RequiredHand と不一致なら何もしない(逆方向拒否と同じ非ペナルティ設計)。
     public void Cut(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand)
     {
-        if (IsCut || IsMissed || IsFinalized) return;
+        CutCore(hitPoint, cutVelocity, imuHint, cutterHand, null, .866f);
+    }
 
-        if (RequireJudgeableOnCut && !IsJudgeable) return;
-        if (MinimumCutSpeed > 0f && !(cutVelocity.magnitude >= MinimumCutSpeed)) return;
+    // 時間窓・位置を外側で確認済みのCamera判定専用。逆方向も拒否せず1段階降格へ渡す。
+    public bool TryCutWithCameraTiming(Vector3 hitPoint, Vector3 cutVelocity, SaberHand cutterHand,
+        double songTime, float directionTolerance)
+    {
+        if (!CameraSaberHistory.Finite(songTime)) return false;
+        return CutCore(hitPoint, cutVelocity, CutDirection.None, cutterHand, songTime, directionTolerance);
+    }
+
+    bool CutCore(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand,
+        double? swingSongTime, float directionTolerance)
+    {
+        if (IsCut || IsMissed || IsFinalized) return false;
+
+        if (RequireJudgeableOnCut && !IsJudgeable && !swingSongTime.HasValue) return false;
+        if (MinimumCutSpeed > 0f && !(cutVelocity.magnitude >= MinimumCutSpeed)) return false;
 
         // 担当ハンド不一致のスイングは切れない。ノーツは無傷のまま、正しい手での再判定が可能。
-        if (!SaberHandHelper.CanCut(RequiredHand, cutterHand)) return;
+        if (!SaberHandHelper.CanCut(RequiredHand, cutterHand)) return false;
 
         // 逆方向（要求方向と約120°以上ズレた）スイングはそもそも切らない。
         // 「準備で間違って切ってしまう」現象を防ぐためのガード。
@@ -157,19 +174,22 @@ public class CuttableNote : MonoBehaviour
         Vector2 vXY = new Vector2(cutVelocity.x, cutVelocity.y);
         // 方向が見た目だけのノーツ(ナビノーツ)は逆方向拒否も方向判定もしない
         bool judgeDirection = RequiredDirection != CutDirection.None && !DirectionVisualOnly;
-        if (judgeDirection &&
+        if (!swingSongTime.HasValue && judgeDirection &&
             CutDirectionHelper.ShouldRejectOpposite(RequiredDirection, vXY, imuHint))
         {
             // 何もせず終了：ノーツは IsCut も IsMissed も変わらず、セーバーが再度関わると再判定可能。
-            return;
+            return false;
         }
 
         // 方向判定（1回でも誤方向なら以降 false 維持）
-        bool dirOk = !judgeDirection || CutDirectionHelper.MatchesWithHint(RequiredDirection, vXY, imuHint);
+        bool dirOk = !judgeDirection || (swingSongTime.HasValue
+            ? CutDirectionHelper.Matches(RequiredDirection, vXY, directionTolerance)
+            : CutDirectionHelper.MatchesWithHint(RequiredDirection, vXY, imuHint));
         if (CutsAchieved == 0) LastCutCorrectDirection = dirOk;
         else LastCutCorrectDirection = LastCutCorrectDirection && dirOk;
 
         LastCutterHand = cutterHand;
+        LastCutSongTime = swingSongTime;
         RemainingCuts--;
         lastHitPoint = hitPoint;
         lastVelocity = cutVelocity;
@@ -189,6 +209,7 @@ public class CuttableNote : MonoBehaviour
             OnCut?.Invoke(this, hitPoint, cutVelocity);
             ShatterAndDestroy(hitPoint, cutVelocity);
         }
+        return true;
     }
 
     // 判定窓を逃した時のフラグ。

@@ -11,6 +11,8 @@ public class GamePlayManager : MonoBehaviour
     public NoteSpawner noteSpawner;
     public ScoreManager scoreManager;
     public SaberCutJudge cutJudge;
+    [Header("Camera + IMU judgment")]
+    public CameraImuJudgment cameraImuJudgment;
     public BarLineSpawner barLineSpawner;
     public LongNoteCutSfx longNoteCutSfx; // 未設定なら自前で生成
     public GoldNoteSfx goldNoteSfx;       // 未設定なら自前で生成
@@ -163,6 +165,9 @@ public class GamePlayManager : MonoBehaviour
         {
             cutJudge2 = SaberRig.EnsureSecondSaber(cutJudge, stick1Hand);
         }
+        if (cameraImuJudgment == null) cameraImuJudgment = GetComponent<CameraImuJudgment>();
+        if (cameraImuJudgment == null) cameraImuJudgment = gameObject.AddComponent<CameraImuJudgment>();
+        cameraImuJudgment.Configure(noteSpawner, cutJudge, cutJudge2);
         if (useOverhauledStage)
         {
             // 新テーマ:格子剥がし+判定ゲート+カメラ背景/フォグは GameStageSkin に集約。
@@ -601,6 +606,10 @@ public class GamePlayManager : MonoBehaviour
             noteSpawner.RefreshJudgmentWindows(songPlayer.SongTime);
 
         // 1. セーバー判定(2本構成なら両方)
+        if (cameraImuJudgment != null)
+            cameraImuJudgment.Tick(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp),
+                songPlayer != null ? songPlayer.SongTime : 0,
+                songPlayer != null && songPlayer.IsScheduled && Time.timeScale > 0f);
         if (cutJudge != null) cutJudge.RunJudge();
         if (cutJudge2 != null) cutJudge2.RunJudge();
         if (gatePerfectPulse != null) gatePerfectPulse.Tick(Time.unscaledTimeAsDouble);
@@ -609,7 +618,7 @@ public class GamePlayManager : MonoBehaviour
         {
             double time = songPlayer.SongTime;
             float chorus = stagePerformance.Evaluate(time);
-            if (stageFloor != null) stageFloor.Tick(time,chorus,stagePerformance.EvaluateLightFormation(time));
+            if (stageFloor != null) stageFloor.Tick(time,chorus,stagePerformance.EvaluateLightFormation(time),stagePerformance.EvaluateVaultCurtain(time));
             if (foundryStageMotion != null) foundryStageMotion.Tick(time,chorus);
             if (scenicStageWorld != null) scenicStageWorld.Tick(time,chorus,stagePerformance.EvaluateEclipse(time));
             if (stageReactions != null) stageReactions.Tick(time);

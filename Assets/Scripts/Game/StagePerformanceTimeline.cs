@@ -143,6 +143,37 @@ public sealed class StagePerformanceTimeline
         return Mathf.Min(enter,leave);
     }
 
+    // 紫の側廊は長い明示区間一つだけで開く。成功判定や譜面の密度は参照しない。
+    // 入口から2秒待ち、4秒で畳み、終端の4秒で戻す。停止・シークでも曲時計から直接再現する。
+    public float EvaluateVaultCurtain(double songSeconds)
+    {
+        if (!Finite(songSeconds) || songSeconds <= 0 || sections == null) return 0;
+        Section selected = null;
+        float strongest = 0;
+        foreach (var section in sections)
+        {
+            if (section == null || !Finite(section.startSeconds) || !Finite(section.endSeconds) ||
+                section.startSeconds < 0 || section.endSeconds - section.startSeconds < 16 ||
+                !Finite(section.intensity) || section.intensity < .65f ||
+                !Finite(section.fadeInSeconds) || !Finite(section.fadeOutSeconds)) continue;
+            float strength = Mathf.Clamp01(section.intensity);
+            if (selected == null || strength > strongest ||
+                (strength == strongest && (section.startSeconds > selected.startSeconds ||
+                (section.startSeconds == selected.startSeconds && section.endSeconds > selected.endSeconds))))
+            {
+                selected = section;
+                strongest = strength;
+            }
+        }
+        if (selected == null) return 0;
+        double age = songSeconds - selected.startSeconds;
+        double remaining = selected.endSeconds - songSeconds;
+        if (age <= 2 || remaining <= 0) return 0;
+        float enter = Mathf.SmoothStep(0,1,(float)Math.Min(1,(age - 2) / 4));
+        float leave = Mathf.SmoothStep(0,1,(float)Math.Min(1,remaining / 4));
+        return Mathf.Min(enter,leave);
+    }
+
     public static StagePerformanceTimeline Load(string songId)
     {
         // stage.jsonがない既存曲は通常演出を維持する。譜面の内容・オフセットは変えない。

@@ -49,18 +49,20 @@ public partial class FloorRenderer : MonoBehaviour
     public const float InlayBrightness = 1.18f;
     private bool built;
     private PulseArrayStage pulseArray;
+    private VioletCurtainStage violetCurtain;
     private readonly List<Material> materials = new List<Material>();
     private readonly List<Mesh> meshes = new List<Mesh>();
     public double LastTickSeconds { get; private set; }
     public float ChorusIntensity { get; private set; }
 
     // 曲時計のみを使用し、停止時には背景も止まる。全体露出・判定枠の発光には関与しない。
-    public void Tick(double songSeconds, float chorus = 0, float lightFormation = 0)
+    public void Tick(double songSeconds, float chorus = 0, float lightFormation = 0, float vaultCurtain = 0)
     {
         if (!built || !isActiveAndEnabled || double.IsNaN(songSeconds) || double.IsInfinity(songSeconds)) return;
         LastTickSeconds = System.Math.Max(0, songSeconds);
         ChorusIntensity = float.IsNaN(chorus) || float.IsInfinity(chorus) ? 0 : Mathf.Clamp01(chorus);
         if (pulseArray != null) pulseArray.Tick(LastTickSeconds, ChorusIntensity, lightFormation);
+        if (violetCurtain != null) violetCurtain.Tick(LastTickSeconds, vaultCurtain);
         foreach (var material in materials)
         {
             material.SetFloat("_MotionTime", (float)LastTickSeconds);
@@ -68,9 +70,17 @@ public partial class FloorRenderer : MonoBehaviour
         }
     }
 
-    public void SetRhythm(ChartData chart) { if (pulseArray != null) pulseArray.SetRhythm(chart); }
+    public void SetRhythm(ChartData chart)
+    {
+        if (pulseArray != null) pulseArray.SetRhythm(chart);
+        if (violetCurtain != null) violetCurtain.Clear();
+    }
 
-    void OnDisable() { if (pulseArray != null) pulseArray.ClearFormation(); }
+    void OnDisable()
+    {
+        if (pulseArray != null) pulseArray.ClearFormation();
+        if (violetCurtain != null) violetCurtain.Clear();
+    }
 
     public static FloorRenderer Ensure(Transform parent = null)
     {

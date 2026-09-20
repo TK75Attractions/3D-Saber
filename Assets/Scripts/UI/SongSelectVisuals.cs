@@ -16,7 +16,7 @@ public static class SongSelectVisuals
     public static readonly Color Disabled = new Color(.33f,.42f,.47f);
     public static readonly Color[] Difficulty = { new Color(.48f,.83f,.63f), new Color(.40f,.70f,.96f), new Color(1f,.43f,.48f) };
 
-    // レベルの数字だけを7セグにする。LVなどの英字は従来の書体へ戻す。
+    // レベルの数字とLVを同じ7セグにする。未収録文字は従来の書体へ戻す。
     public static TMP_FontAsset DifficultyNumberFont()
     {
         var digits = UISkinKit.FontAsset("SaberSevenSegment-Regular");

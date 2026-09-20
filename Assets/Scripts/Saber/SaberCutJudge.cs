@@ -24,6 +24,14 @@ public class SaberCutJudge : MonoBehaviour
     // 自前の Update を止め、外部から1点で呼び出す（GManager 主体パターン）。
     public bool autonomous = true;
 
+    // 本編のIMU+Camera判定がこの棒を担当する間だけ、従来の接触履歴を止める。
+    public bool ExternalJudgment
+    {
+        get => externalJudgment;
+        set { if (externalJudgment != value) pending.Clear(); externalJudgment = value; }
+    }
+    bool externalJudgment;
+
     private struct Pending
     {
         public uint version;
@@ -59,6 +67,7 @@ public class SaberCutJudge : MonoBehaviour
 
     public int TryCut()
     {
+        if (ExternalJudgment) { pending.Clear(); return 0; }
         if (ScreenTransition.IsBusy || !isActiveAndEnabled || saber == null || !saber.HasPrevious)
         {
             pending.Clear();
