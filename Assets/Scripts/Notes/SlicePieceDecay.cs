@@ -41,7 +41,7 @@ public class SlicePieceDecay : MonoBehaviour
     public void Launch(NoteFragmentPool pool, Vector3 speed, Vector3 spin, bool useGravity, float duration, float fade, float drag)
     {
         // 通常の切断片とロングの細片を共通で速く飛ばす。寿命と回転は維持する。
-        Pool=pool; velocity=speed * 1.6f; angularVelocity=spin; gravity=useGravity; life=duration; fadeStart=fade;
+        Pool=pool; velocity=speed * 1.9f; angularVelocity=spin; gravity=useGravity; life=duration; fadeStart=fade;
         damping=drag; age=0; released=false; gameObject.SetActive(true);
     }
     void Update() { Step(Time.deltaTime); }
