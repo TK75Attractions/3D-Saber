@@ -54,7 +54,15 @@ public class GameplaySwingAdapter : MonoBehaviour, IGameplaySwingSource
         ResetSession();
     }
 
-    void OnLegacySwing(SwingEvent swing) => Publish(swing, legacyStreamSide);
+    void OnLegacySwing(SwingEvent swing)
+    {
+        PhysicalSaberSide side = swing.Side == SaberSide.Left
+            ? PhysicalSaberSide.Left
+            : swing.Side == SaberSide.Right
+                ? PhysicalSaberSide.Right
+                : legacyStreamSide;
+        Publish(swing, side);
+    }
     void OnLegacyReset(long unused) => ResetSession();
 
     public void Publish(SwingEvent swing, PhysicalSaberSide side)

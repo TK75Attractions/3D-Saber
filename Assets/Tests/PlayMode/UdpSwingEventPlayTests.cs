@@ -3,12 +3,111 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
+using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
 
 public class UdpSwingEventPlayTests
 {
+    [UnityTest]
+    public IEnumerator BridgeLauncher_RepeatedStartStopOwnsOnlyItsChild()
+    {
+        if (Application.platform != RuntimePlatform.OSXEditor)
+        {
+            Assert.Ignore("Project-local Bleak environment is prepared for the macOS festival host.");
+        }
+
+        int commandPort;
+        int dataPort;
+        using (var first = new UdpClient(0))
+        using (var second = new UdpClient(0))
+        {
+            commandPort = ((IPEndPoint)first.Client.LocalEndPoint).Port;
+            dataPort = ((IPEndPoint)second.Client.LocalEndPoint).Port;
+        }
+        string projectRoot = Directory.GetParent(Application.dataPath).FullName;
+
+        for (int attempt = 0; attempt < 2; attempt++)
+        {
+            using var receiver = new UdpClient(dataPort);
+            var launcher = new ImuBleBridgeLauncher();
+            try
+            {
+                Assert.IsTrue(launcher.TryStart("python3", projectRoot, commandPort, dataPort), launcher.LastError);
+                Assert.IsTrue(launcher.OwnsRunningProcess);
+                // 同じlauncherへの再起動要求は既存の子を再利用する。
+                Assert.IsTrue(launcher.TryStart("python3", projectRoot, commandPort, dataPort));
+
+                bool ready = false;
+                float timeout = Time.realtimeSinceStartup + 5f;
+                float nextPing = 0f;
+                using var command = new UdpClient();
+                while (!ready && Time.realtimeSinceStartup < timeout)
+                {
+                    if (Time.realtimeSinceStartup >= nextPing)
+                    {
+                        byte[] ping = Encoding.ASCII.GetBytes("PING");
+                        command.Send(ping, ping.Length, new IPEndPoint(IPAddress.Loopback, commandPort));
+                        nextPing = Time.realtimeSinceStartup + 0.1f;
+                    }
+                    while (receiver.Available > 0)
+                    {
+                        IPEndPoint remote = new IPEndPoint(IPAddress.Any, 0);
+                        string state = Encoding.UTF8.GetString(receiver.Receive(ref remote));
+                        if (state == "STATE:BRIDGE_READY") ready = true;
+                    }
+                    if (!ready) yield return null;
+                }
+                Assert.IsTrue(ready, "Unityが起動したbridgeがPING応答すること");
+            }
+            finally
+            {
+                launcher.Dispose();
+            }
+            Assert.IsFalse(launcher.OwnsRunningProcess);
+            yield return null;
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator UdpReceive_TracksBleConnectionAndReconnectStates()
+    {
+        foreach (var existing in Object.FindObjectsByType<UdpImuBridge>(
+                     FindObjectsInactive.Include,
+                     FindObjectsSortMode.None))
+        {
+            Object.DestroyImmediate(existing.gameObject);
+        }
+
+        int port = FindFreeUdpPort();
+        var go = new GameObject("UdpSwingBleStatusTest");
+        var bridge = go.AddComponent<UdpImuBridge>();
+        bridge.ConfigureForTests(port, 0.15f);
+        yield return null;
+
+        SendPacket(port, "STATE:BRIDGE_READY");
+        SendPacket(port, "STATE:BLE:CONNECTED:XIAO-LSM6DSV16X");
+        SendPacket(port, "STATE:BLE:NOTIFICATIONS_ACTIVE:XIAO-LSM6DSV16X");
+        float stateTimeout = Time.realtimeSinceStartup + 1f;
+        while (bridge.BleState != BleBridgeConnectionState.NotificationsActive &&
+               Time.realtimeSinceStartup < stateTimeout) yield return null;
+        Assert.IsTrue(bridge.IsBridgeProcessReady);
+        Assert.AreEqual(BleBridgeConnectionState.NotificationsActive, bridge.BleState);
+        Assert.AreEqual("XIAO-LSM6DSV16X", bridge.BleDevice);
+        Assert.IsTrue(bridge.IsBridgeConnected);
+
+        SendPacket(port, "STATE:BLE:DISCONNECTED:XIAO-LSM6DSV16X");
+        stateTimeout = Time.realtimeSinceStartup + 1f;
+        while (bridge.BleState != BleBridgeConnectionState.Disconnected &&
+               Time.realtimeSinceStartup < stateTimeout) yield return null;
+        Assert.AreEqual(BleBridgeConnectionState.Disconnected, bridge.BleState);
+        Assert.IsFalse(bridge.IsBridgeConnected);
+
+        Object.Destroy(go);
+        yield return null;
+    }
+
     [UnityTest]
     public IEnumerator UdpReceive_InvokesEventOnUnityMainThread()
     {
@@ -85,6 +184,32 @@ public class UdpSwingEventPlayTests
         bridge.enabled = true;
         Assert.IsFalse(Swing8DirectionLogger.TryGetRecent(0.30, out _));
 
+        Object.Destroy(go);
+        yield return null;
+    }
+
+    [UnityTest]
+    public IEnumerator UdpReceive_AcceptsIndependentLeftAndRightSequences()
+    {
+        foreach (var existing in Object.FindObjectsByType<UdpImuBridge>(
+                     FindObjectsInactive.Include, FindObjectsSortMode.None))
+            Object.DestroyImmediate(existing.gameObject);
+
+        int port = FindFreeUdpPort();
+        var go = new GameObject("UdpSwingSideTest");
+        var bridge = go.AddComponent<UdpImuBridge>();
+        bridge.ConfigureForTests(port);
+        int left = 0;
+        int right = 0;
+        bridge.OnLeftSwingReceived += _ => left++;
+        bridge.OnRightSwingReceived += _ => right++;
+        yield return null;
+        SendPacket(port, "SWING:LEFT,0,unknown,0.8,1");
+        SendPacket(port, "SWING:RIGHT,0,unknown,0.8,1");
+        float timeout = Time.realtimeSinceStartup + 1f;
+        while ((left == 0 || right == 0) && Time.realtimeSinceStartup < timeout) yield return null;
+        Assert.AreEqual(1, left);
+        Assert.AreEqual(1, right);
         Object.Destroy(go);
         yield return null;
     }

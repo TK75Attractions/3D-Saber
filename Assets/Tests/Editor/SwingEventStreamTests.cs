@@ -28,6 +28,17 @@ public class SwingEventStreamTests
         Assert.AreEqual(0.8f, swing.Strength, 0.0001f);
     }
 
+    [Test]
+    public void PacketParse_PreservesPhysicalSaberSide()
+    {
+        Assert.IsTrue(SwingPacketParser.TryParse(
+            "SWING:LEFT,0,unknown,0.8,12",
+            SwingMonotonicClock.Timestamp,
+            out SwingEvent swing));
+        Assert.AreEqual(SaberSide.Left, swing.Side);
+        Assert.AreEqual(SwingDirection.Unknown, swing.Direction);
+    }
+
     [TestCase("")]
     [TestCase("IMU:1,2,3")]
     [TestCase("SWING:no,left,0.8,1")]

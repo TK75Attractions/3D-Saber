@@ -1968,6 +1968,8 @@ MonoBehaviour:
   secondsPerLongCut: 0.7
   longLingerDriftZ: 1
   longMaxVisualZScale: 6
+  buildTimingCues: 1
+  reuseNotes: 1
 --- !u!4 &438257897
 Transform:
   m_ObjectHideFlags: 0
@@ -3326,6 +3328,8 @@ MonoBehaviour:
   goodClip: {fileID: 0}
   badClip: {fileID: 0}
   missClip: {fileID: 0}
+  flickClip: {fileID: 0}
+  longFinishClip: {fileID: 0}
   volume: 0.6
 --- !u!82 &754311936
 AudioSource:
@@ -4243,9 +4247,17 @@ MonoBehaviour:
   resultSceneName: Result
   endWaitSeconds: 2
   outroSeconds: 3.5
+  enableStartCountdown: 1
+  startCountdownVolume: 0.55
   extraOffsetSeconds: 0
   trimChartToAudioLength: 1
   trimGraceSeconds: 0
+  useOverhauledStage: 1
+  saberBladeRadiusV2: 0.32
+  saberNoteHitRadiusXYV2: 0.6
+  saberMinCutSpeedV2: 2
+  enableTwoSabers: 1
+  stick1Hand: 2
   simplifyJudgeGuide: 1
   judgePanelAlpha: 0.3
   judgePanelTint: {r: 0.3, g: 0.75, b: 1, a: 1}
@@ -4270,6 +4282,7 @@ MonoBehaviour:
   autoEnsureInputPoint: 1
   autoEnsureUdpImuBridge: 1
   autoEnsureSwing8DirectionLogger: 1
+  autoStartBleBridge: 1
 --- !u!21 &1038503615
 Material:
   serializedVersion: 8
@@ -6603,6 +6616,7 @@ MonoBehaviour:
   useDirectWorldMapping: 1
   worldScale: {x: 5.5, y: 3}
   worldOffset: {x: 0, y: 0}
+  sensitivity: 2
 --- !u!4 &1652884641
 Transform:
   m_ObjectHideFlags: 0
@@ -7434,6 +7448,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: SaberGame::SaberCutJudge
   saber: {fileID: 1782158255}
+  bladeProvider: {fileID: 0}
+  hand: 0
   bladeRadius: 0.3
   minCutSpeed: 3
   maxCutDistance: 5
@@ -7467,6 +7483,7 @@ MonoBehaviour:
   useInputPoint: 1
   fallbackToMouse: 1
   inputPointStaleSeconds: 1
+  stickIndex: 1
   targetCamera: {fileID: 0}
   debugCoordinates: 0
   pixelsToWorld: 0.00573
@@ -7476,6 +7493,12 @@ MonoBehaviour:
   maxBounds: {x: 5.5, y: 3}
   enableSmoothing: 0
   smoothingTau: 0.08
+  remapToCameraView: 0
+  sourceHalfExtents: {x: 5.5, y: 3}
+  useBladeMode: 1
+  bladeWidth: 0.12
+  bladeColor: {r: 0.4, g: 1, b: 1, a: 1}
+  fallbackBladeLength: 1
 --- !u!4 &1782158257
 Transform:
   m_ObjectHideFlags: 0
