@@ -174,6 +174,37 @@ public sealed class StagePerformanceTimeline
         return Mathf.Min(enter,leave);
     }
 
+    // 長い明示区間の中央14秒を一度だけ通過する。操作成否や音量から区間を推測しない。
+    // 範囲外は-1。時計から直接求め、停止・シークでも航路を巻き戻し予約しない。
+    public float EvaluateMarinePassAge(double songSeconds)
+    {
+        if (!Finite(songSeconds) || songSeconds < 0 || sections == null) return -1;
+        Section selected = null;
+        float strongest = 0;
+        foreach (var section in sections)
+        {
+            if (section == null || !Finite(section.startSeconds) || !Finite(section.endSeconds) ||
+                section.startSeconds < 0 || section.endSeconds - section.startSeconds < 18 ||
+                !Finite(section.intensity) || section.intensity < .65f ||
+                !Finite(section.fadeInSeconds) || !Finite(section.fadeOutSeconds)) continue;
+            float strength = Mathf.Clamp01(section.intensity);
+            if (selected == null || strength > strongest ||
+                (strength == strongest && (section.startSeconds > selected.startSeconds ||
+                (section.startSeconds == selected.startSeconds && section.endSeconds > selected.endSeconds))))
+            {
+                selected = section; strongest = strength;
+            }
+        }
+        if (selected == null) return -1;
+        double start = selected.startSeconds + (selected.endSeconds - selected.startSeconds - 14) * .5;
+        double end = start + 14;
+        // 巨大時刻で14秒の窓が丸め落ちる場合は表示しない。
+        if (!Finite(end) || Math.Abs((end - start) - 14) > .000001 || start < selected.startSeconds || end > selected.endSeconds) return -1;
+        double age = songSeconds - start;
+        // 終端直前のdoubleをfloatへ変えて14秒ちょうどに丸めない。
+        return age >= 0 && age < 14 ? Mathf.Min((float)age, 13.999999f) : -1;
+    }
+
     public static StagePerformanceTimeline Load(string songId)
     {
         // stage.jsonがない既存曲は通常演出を維持する。譜面の内容・オフセットは変えない。

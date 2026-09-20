@@ -342,6 +342,107 @@ public class FavoriteEffectsPlayTests
     }
 
     [UnityTest, Timeout(120000)]
+    public IEnumerator MarinePassIsIndependentOfJudgmentsAndKeepsCoralAndFloor()
+    {
+        yield return LoadGame(StageTheme.AbyssalRuins);
+        var marine = floor.GetComponentInChildren<AbyssalPassageStage>(); Assert.NotNull(marine);
+        var coral = floor.GetComponentInChildren<StageThemeResponse>(); Assert.NotNull(coral);
+        timeline = new StagePerformanceTimeline { sections = new[] {
+            new StagePerformanceTimeline.Section { startSeconds = 0, endSeconds = 18, intensity = 1 } } };
+        effects.Bind(manager.noteSpawner,timeline);
+        var chart = new ChartData { bpm = 120, notes = new List<NoteData>() };
+        for (int lane=0;lane<4;lane++)
+        {
+            var note=Single(lane).notes[0];note.time=9000;note.type="direction";note.direction="up";
+            chart.notes.Add(note);
+        }
+        SetChart(chart);yield return null;manager.noteSpawner.Tick(9);Draw(9);
+        Assert.IsTrue(marine.IsVisible);Assert.AreEqual(7,marine.PassAge);
+        var mesh=marine.GetComponentInChildren<MeshFilter>().sharedMesh;
+        var lightMesh=effects.GetComponent<MeshFilter>().sharedMesh;
+        // 同じ曲時刻の既存照明を基準にし、サビの光を成功側面光と取り違えない。
+        Draw(9.25);
+        var songLights=Array.FindAll(lightMesh.vertices,p=>p.y>=floor.floorY+.7f);
+        Draw(9);
+        var shape=mesh.vertices;var center=marine.WorldCenter;
+        int mask=0;
+        for(int lane=0;lane<4;lane++)
+        {
+            var note=notes.Find(n=>n!=null && n.isActiveAndEnabled && !n.IsFinalized &&
+                StageReactiveEffects.FloorLaneForX(n.transform.position.x)==lane);
+            Assert.NotNull(note);
+            bool perfect=lane==0 || lane==2;
+            Cut(note,9,(perfect?Vector3.up:Vector3.right)*6,perfect?CutDirection.Up:CutDirection.Right);
+            Assert.AreEqual(perfect?JudgmentTier.Perfect:JudgmentTier.Great,manager.scoreManager.LastTier);
+            if(perfect)mask|=1<<lane;
+            Draw(9);
+            Assert.AreEqual(mask,effects.ActiveFloorLaneMask);Assert.AreEqual(mask,coral.ActiveLaneMask);
+            Assert.AreEqual(center,marine.WorldCenter);CollectionAssert.AreEqual(shape,mesh.vertices);
+        }
+        Draw(9.25);
+        CollectionAssert.AreEqual(songLights,Array.FindAll(lightMesh.vertices,p=>p.y>=floor.floorY+.7f),
+            "既存の曲照明を維持し、成功の旧側面光を追加しない");
+        var longChart=Single(2);longChart.notes[0].time=9000;longChart.notes[0].type="long";longChart.notes[0].count=4;
+        SetChart(longChart);yield return null;manager.noteSpawner.Tick(9);Draw(9);
+        for(int i=0;i<3;i++)Cut(notes[0],9,Vector3.right*6,CutDirection.None);
+        Assert.AreEqual(0,coral.ActiveLaneMask);Assert.AreEqual(0,effects.ActiveFloorLaneMask);
+        Draw(9);CollectionAssert.AreEqual(shape,mesh.vertices);
+        notes[0].MarkMiss();Draw(9);
+        Assert.IsTrue(marine.IsVisible);CollectionAssert.AreEqual(shape,mesh.vertices);
+        SetChart(new ChartData());Assert.IsFalse(marine.IsVisible);
+        Draw(9);Assert.IsTrue(marine.IsVisible,"ノーツがなくても指定区間は再生する");
+        timeline=new StagePerformanceTimeline();effects.Bind(manager.noteSpawner,timeline);Draw(9);
+        Assert.IsFalse(marine.IsVisible,"区間未指定をノーツで補わない");
+        yield return ReleaseFloorAndAssertResources();
+    }
+
+    [UnityTest, Timeout(120000)]
+    public IEnumerator MarinePassActualManagerUsesSongClockAndStops()
+    {
+        GameSession.SelectedSongId="揺籠";GameSession.SelectedDifficulty="hard";GameSession.IsCalibrationMode=false;
+        SceneManager.sceneLoaded+=CreateMarineFloorBeforeManagerStart;
+        try { yield return SceneManager.LoadSceneAsync("Game",LoadSceneMode.Single); }
+        finally { SceneManager.sceneLoaded-=CreateMarineFloorBeforeManagerStart; }
+        manager=Object.FindFirstObjectByType<GamePlayManager>();Assert.NotNull(manager);
+        try
+        {
+            float deadline=Time.realtimeSinceStartup+30;
+            while(!manager.songPlayer.IsScheduled && Time.realtimeSinceStartup<deadline)yield return null;
+            Assert.IsTrue(manager.songPlayer.IsScheduled);manager.endWaitSeconds=10000;
+            manager.noteSpawner.SetExtraOffsetSeconds(0);manager.noteSpawner.SetChart(new ChartData());
+            foreach(var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None))judge.autonomous=false;
+            foreach(var input in Object.FindObjectsByType<SaberInputBridge>(FindObjectsSortMode.None))input.enabled=false;
+            floor=Object.FindFirstObjectByType<FloorRenderer>();Assert.AreEqual(StageTheme.AbyssalRuins,floor.ActiveTheme);
+            effects=floor.GetComponentInChildren<StageReactiveEffects>();Assert.NotNull(effects);
+            var marine=floor.GetComponentInChildren<AbyssalPassageStage>();Assert.NotNull(marine);
+            var mesh=marine.GetComponentInChildren<MeshFilter>().sharedMesh;
+            timeline=StagePerformanceTimeline.Load("揺籠");
+            foreach(double time in new[]{100.0,146.0,150.0,156.0,159.5,160.0,150.0,100.0})
+            {
+                SetClock(time);yield return null;yield return null;
+                Assert.That(effects.LastTickSeconds,Is.EqualTo(manager.songPlayer.SongTime).Within(.15));
+                float expected=timeline.EvaluateMarinePassAge(effects.LastTickSeconds);
+                Assert.AreEqual(expected,marine.PassAge,.00001f);
+                Assert.AreEqual(expected>=0,marine.IsVisible);
+            }
+            SetClock(150);yield return null;yield return null;
+            manager.songPlayer.Stop();var held=mesh.vertices;var center=marine.WorldCenter;float age=marine.PassAge;
+            yield return null;yield return null;
+            Assert.AreEqual(age,marine.PassAge);Assert.AreEqual(center,marine.WorldCenter);
+            CollectionAssert.AreEqual(held,mesh.vertices,"独立時計で遊泳を進めない");
+        }
+        finally { if(manager!=null){manager.enabled=false;manager.songPlayer.Stop();} }
+        yield return ReleaseFloorAndAssertResources();
+    }
+
+    static void CreateMarineFloorBeforeManagerStart(Scene scene,LoadSceneMode mode)
+    {
+        if(scene.name!="Game")return;
+        var stage=new GameObject("MarinePassGameTestFloor").AddComponent<FloorRenderer>();
+        stage.randomizeOnPlay=false;stage.Build(StageTheme.AbyssalRuins);
+    }
+
+    [UnityTest, Timeout(120000)]
     public IEnumerator VaultCurtainIsIndependentOfFinalJudgmentsAndKeepsPerfectFloorAndSideResponse()
     {
         overrideCurtainEffectsSetting = true; DisplaySettings.SetReducedEffectsForTest(false);

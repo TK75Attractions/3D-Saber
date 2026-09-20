@@ -40,6 +40,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
     int weaveEpoch;
     StageThemeResponse themeResponse;
     ScenicStageWorld meteorWorld;
+    AbyssalPassageStage marinePass;
     readonly HashSet<CuttableNote> tracked = new HashSet<CuttableNote>();
     readonly List<CuttableNote> expired = new List<CuttableNote>();
     readonly List<Vector3> vertices = new List<Vector3>(VertexBudget);
@@ -83,6 +84,8 @@ public sealed class StageReactiveEffects : MonoBehaviour
         effect.themeResponse = StageThemeResponse.Create(effect.transform, effect.theme, effect.floor);
         if (effect.theme == StageTheme.AstralOrbit)
             effect.meteorWorld = stage.GetComponentInChildren<ScenicStageWorld>();
+        if (effect.theme == StageTheme.AbyssalRuins)
+            effect.marinePass = AbyssalPassageStage.Create(effect.transform, effect.floor);
         effect.Bind(spawner, song);
         return effect;
     }
@@ -276,6 +279,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
         hasTime = true;
         LastTickSeconds = songSeconds;
         Presentation = timeline.EvaluatePresentation(songSeconds);
+        if (marinePass != null) marinePass.SetPass(timeline.EvaluateMarinePassAge(songSeconds));
         for (int i = 0; i < waves.Length; i++)
         {
             if (!waves[i].active) continue;
@@ -475,6 +479,7 @@ public sealed class StageReactiveEffects : MonoBehaviour
         for (int i = 0; i < latestResolved.Length; i++) latestResolved[i] = double.NegativeInfinity;
         if (themeResponse != null) themeResponse.Clear();
         if (meteorWorld != null) meteorWorld.ClearMeteorResponses();
+        if (marinePass != null) marinePass.Clear();
         ActiveWaveCount = 0;
         ActiveFloorLaneMask = 0;
         Presentation = default;
