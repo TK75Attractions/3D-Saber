@@ -12,15 +12,20 @@ using UnityEngine.SceneManagement;
 public static class BleBridgeAutoStartPolicy
 {
     public const string GameScenePath = "Assets/Scenes/Game.unity";
+    public const string TitleScenePath = "Assets/Scenes/Title.unity";
+    public const string SongSelectScenePath = "Assets/Scenes/SongSelect.unity";
+    public const string ResultScenePath = "Assets/Scenes/Result.unity";
+
+    public static bool IsGameFlowScene(string activeScenePath)
+    {
+        string path = (activeScenePath ?? string.Empty).Replace('\\', '/');
+        return path == TitleScenePath || path == SongSelectScenePath ||
+               path == GameScenePath || path == ResultScenePath;
+    }
 
     public static bool CanStart(bool requested, bool isPlaying, string activeScenePath)
     {
-        return requested &&
-               isPlaying &&
-               string.Equals(
-                   (activeScenePath ?? string.Empty).Replace('\\', '/'),
-                   GameScenePath,
-                   StringComparison.Ordinal);
+        return requested && isPlaying && IsGameFlowScene(activeScenePath);
     }
 }
 
@@ -81,6 +86,8 @@ public class UdpImuBridge : MonoBehaviour
     private long lastBridgeReadyTimestampTicks;
     private string lastLauncherError;
     private bool bridgeStartAnnounced;
+    private bool startupComplete;
+    private Coroutine bridgeMonitor;
 
     public event Action<SwingEvent> OnSwingReceived;
     public event Action<SwingEvent> OnLeftSwingReceived;
@@ -105,6 +112,20 @@ public class UdpImuBridge : MonoBehaviour
     public string LeftBleDevice => leftBleDevice;
     public string RightBleDevice => rightBleDevice;
     public bool OwnsBleBridgeProcess => bridgeLauncher != null && bridgeLauncher.OwnsRunningProcess;
+
+    public static UdpImuBridge EnsurePersistent(bool enableAutoStart)
+    {
+        UdpImuBridge bridge = Instance != null
+            ? Instance
+            : FindFirstObjectByType<UdpImuBridge>(FindObjectsInactive.Include);
+        if (bridge == null)
+        {
+            var go = new GameObject("UdpImuBridge");
+            bridge = go.AddComponent<UdpImuBridge>();
+        }
+        bridge.ConfigureBleBridgeAutoStart(enableAutoStart);
+        return bridge;
+    }
 
     public static bool TryGetLatest(out Vector3 acceleration, out Vector3 gyro, out bool connected)
     {
@@ -160,19 +181,19 @@ public class UdpImuBridge : MonoBehaviour
             BeginReceive();
             SendCommand("PING");
             Debug.Log($"[Swing] UDP event receiver ready: 0.0.0.0:{dataPort}");
+            startupComplete = true;
             string activeScenePath = SceneManager.GetActiveScene().path;
             if (BleBridgeAutoStartPolicy.CanStart(
                     autoStartBleBridge,
                     Application.isPlaying,
                     activeScenePath))
             {
-                bridgeLauncher = new ImuBleBridgeLauncher();
-                StartCoroutine(EnsureBleBridgeRunning());
+                StartBleBridgeMonitor();
             }
             else if (autoStartBleBridge)
             {
                 Debug.LogWarning(
-                    $"[IMU BLE] Auto start skipped outside Game.unity: " +
+                    $"[IMU BLE] Auto start skipped outside the production game flow: " +
                     $"{(string.IsNullOrEmpty(activeScenePath) ? "<temporary scene>" : activeScenePath)}");
             }
         }
@@ -195,7 +216,33 @@ public class UdpImuBridge : MonoBehaviour
     // GamePlayManagerが実行時生成した直後、Startより前に呼ぶ。
     public void ConfigureBleBridgeAutoStart(bool enabled)
     {
+        if (autoStartBleBridge == enabled && (!startupComplete || !enabled || bridgeMonitor != null)) return;
         autoStartBleBridge = enabled;
+        if (!startupComplete || !Application.isPlaying) return;
+        if (enabled && BleBridgeAutoStartPolicy.IsGameFlowScene(SceneManager.GetActiveScene().path))
+            StartBleBridgeMonitor();
+        else if (!enabled)
+            StopBleBridgeMonitor();
+    }
+
+    private void StartBleBridgeMonitor()
+    {
+        if (bridgeMonitor != null) return;
+        bridgeLauncher ??= new ImuBleBridgeLauncher();
+        bridgeMonitor = StartCoroutine(EnsureBleBridgeRunning());
+    }
+
+    private void StopBleBridgeMonitor()
+    {
+        if (bridgeMonitor != null)
+        {
+            StopCoroutine(bridgeMonitor);
+            bridgeMonitor = null;
+        }
+        // DisposeはUnityが起動した子だけを停止する。手動bridgeは所有しないためkillしない。
+        bridgeLauncher?.Dispose();
+        bridgeLauncher = null;
+        bridgeStartAnnounced = false;
     }
 
     private void OnDestroy()
@@ -210,8 +257,7 @@ public class UdpImuBridge : MonoBehaviour
         receiver = null;
         sender?.Close();
         sender = null;
-        bridgeLauncher?.Dispose();
-        bridgeLauncher = null;
+        StopBleBridgeMonitor();
     }
 
     private void BeginReceive()
@@ -400,8 +446,9 @@ public class UdpImuBridge : MonoBehaviour
             return;
         }
 
-        BleBridgeConnectionState previous = bleState;
-        bleState = update.State;
+        BleBridgeConnectionState previous = update.Side == SaberSide.Left
+            ? leftBleState
+            : update.Side == SaberSide.Right ? rightBleState : bleState;
         if (!string.IsNullOrEmpty(update.DeviceName)) bleDevice = update.DeviceName;
         if (update.Side == SaberSide.Left)
         {
@@ -413,36 +460,41 @@ public class UdpImuBridge : MonoBehaviour
             rightBleState = update.State;
             if (!string.IsNullOrEmpty(update.DeviceName)) rightBleDevice = update.DeviceName;
         }
-        bridgeConnected = IsConnectedState(bleState);
+        if (update.Side == SaberSide.Unknown) bleState = update.State;
+        bridgeConnected = IsConnectedState(bleState) ||
+                          IsConnectedState(leftBleState) ||
+                          IsConnectedState(rightBleState);
         if (previous == update.State) return;
 
         string name = update.DeviceName;
+        string side = update.Side == SaberSide.Left ? "Left" :
+            update.Side == SaberSide.Right ? "Right" : "Device";
         switch (update.State)
         {
             case BleBridgeConnectionState.Searching:
-                Debug.Log($"[IMU BLE] Searching for {name}...");
+                Debug.Log($"[IMU BLE] {side} searching...{(string.IsNullOrEmpty(name) ? "" : " " + name)}");
                 break;
             case BleBridgeConnectionState.NotFound:
-                Debug.Log("[IMU BLE] Device not found; retrying...");
+                Debug.Log($"[IMU BLE] {side} not found; retrying...");
                 break;
             case BleBridgeConnectionState.DeviceFound:
-                Debug.Log($"[IMU BLE] Device found: {name}");
+                Debug.Log($"[IMU BLE] {side} found: {name}");
                 break;
             case BleBridgeConnectionState.Connecting:
-                Debug.Log("[IMU BLE] Connecting...");
+                Debug.Log($"[IMU BLE] {side} connecting...");
                 break;
             case BleBridgeConnectionState.Connected:
-                Debug.Log($"[IMU BLE] Connected: {name}");
+                Debug.Log($"[IMU BLE] {side} connected{(string.IsNullOrEmpty(name) ? "" : ": " + name)}");
                 sequenceTracker.ResetSession();
                 if (update.Side == SaberSide.Left) leftSequenceTracker.ResetSession();
                 if (update.Side == SaberSide.Right) rightSequenceTracker.ResetSession();
                 OnSwingSessionReset?.Invoke(receiveTimestamp);
                 break;
             case BleBridgeConnectionState.NotificationsActive:
-                Debug.Log("[IMU BLE] Swing notifications active");
+                Debug.Log($"[IMU BLE] {side} swing notifications active");
                 break;
             case BleBridgeConnectionState.Disconnected:
-                Debug.Log("[IMU BLE] Disconnected; reconnecting...");
+                Debug.Log($"[IMU BLE] {side} disconnected; reconnecting...");
                 OnSwingSessionReset?.Invoke(receiveTimestamp);
                 break;
         }

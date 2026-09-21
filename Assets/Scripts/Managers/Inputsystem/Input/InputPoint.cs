@@ -24,10 +24,12 @@ public class InputPoint : MonoBehaviour
     float rawX1a, rawY1a, rawX1b, rawY1b;
     bool hasNewData = false;
     bool hasStickData = false;
+    long rawReceiveTimestampTicks;
     float rawX2, rawY2;
     float rawX2a, rawY2a, rawX2b, rawY2b;
     bool hasNewData2 = false;
     bool hasStickData2 = false;
+    long rawReceiveTimestampTicks2;
 
     // 他スクリプトが読む用（正規化済み）
     public Vector2 NormalizedPosition { get; private set; }
@@ -38,6 +40,10 @@ public class InputPoint : MonoBehaviour
     // SaberInputBridge が「UDP 無音 → マウスフォールバック/非表示」を判定するのに使う。
     public double LastReceivedTime { get; private set; } = -1000.0;
     public double LastReceivedTime2 { get; private set; } = -1000.0;
+    // UDP receive() 完了時点のOS monotonic clock。Task 1のCamera/IMU照合は
+    // UnityのUpdate時刻ではなく、この受信時刻をSwingEventと同じ時計で使う。
+    public double LastReceivedMonotonicTime { get; private set; } = double.NegativeInfinity;
+    public double LastReceivedMonotonicTime2 { get; private set; } = double.NegativeInfinity;
     // 「最近データが来ているか」を判定するヘルパー。既定 1 秒。
     public bool IsRecentlyActive(double thresholdSeconds = 1.0)
     {
@@ -254,6 +260,7 @@ public class InputPoint : MonoBehaviour
             {
                 IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
                 byte[] data = client.Receive(ref endPoint);
+                long receiveTimestampTicks = SwingMonotonicClock.Timestamp;
                 string message = StripOptionalTimestamp(Encoding.UTF8.GetString(data).Trim());
 
                 string[] parts = message.Split(',');
@@ -303,6 +310,7 @@ public class InputPoint : MonoBehaviour
                             rawY2 = b;
                             hasStickData2 = false;
                         }
+                        rawReceiveTimestampTicks2 = receiveTimestampTicks;
                         hasNewData2 = true;
                     }
                     else
@@ -325,6 +333,7 @@ public class InputPoint : MonoBehaviour
                             rawY = b;
                             hasStickData = false;
                         }
+                        rawReceiveTimestampTicks = receiveTimestampTicks;
                         hasNewData = true;
                     }
                 }
@@ -361,10 +370,12 @@ public class InputPoint : MonoBehaviour
         bool updated = false;
         bool updatedStick = false;
         float x1a = 0, y1a = 0, x1b = 0, y1b = 0;
+        long receiveTimestampTicks = 0;
         float x2 = 0, y2 = 0;
         bool updated2 = false;
         bool updatedStick2 = false;
         float x2a = 0, y2a = 0, x2b = 0, y2b = 0;
+        long receiveTimestampTicks2 = 0;
 
         // スレッドから受け取った値をコピー
         lock (lockObj)
@@ -374,6 +385,7 @@ public class InputPoint : MonoBehaviour
                 x = rawX;
                 y = rawY;
                 hasNewData = false;
+                receiveTimestampTicks = rawReceiveTimestampTicks;
                 updated = true;
                 updatedStick = hasStickData;
                 if (updatedStick)
@@ -393,6 +405,7 @@ public class InputPoint : MonoBehaviour
                 x2 = rawX2;
                 y2 = rawY2;
                 hasNewData2 = false;
+                receiveTimestampTicks2 = rawReceiveTimestampTicks2;
                 updated2 = true;
                 updatedStick2 = hasStickData2;
                 if (updatedStick2)
@@ -453,6 +466,7 @@ public class InputPoint : MonoBehaviour
                 LocalAngleDeg = Mathf.Atan2(nyB - nyA, nxB - nxA) * Mathf.Rad2Deg;
             }
             LastReceivedTime = Time.timeAsDouble;
+            LastReceivedMonotonicTime = SwingMonotonicClock.ToSeconds(receiveTimestampTicks);
             if (debugCoordinates)
             {
                 bool isNorm = Mathf.Abs(x) <= 1.5f && Mathf.Abs(y) <= 1.5f;
@@ -497,6 +511,7 @@ public class InputPoint : MonoBehaviour
                 LocalAngleDeg2 = Mathf.Atan2(nyB2 - nyA2, nxB2 - nxA2) * Mathf.Rad2Deg;
             }
             LastReceivedTime2 = Time.timeAsDouble;
+            LastReceivedMonotonicTime2 = SwingMonotonicClock.ToSeconds(receiveTimestampTicks2);
         }
 
         if (updated)

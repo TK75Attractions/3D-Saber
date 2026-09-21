@@ -80,13 +80,14 @@ public class SaberInputBridge : MonoBehaviour
 
     void RecordCameraSample(InputPoint input)
     {
-        double stamp = stickIndex == 2 ? input.LastReceivedTime2 : input.LastReceivedTime;
+        double stamp = stickIndex == 2
+            ? input.LastReceivedMonotonicTime2
+            : input.LastReceivedMonotonicTime;
         if (stamp == cameraSourceStamp || Time.timeScale <= 0f) return;
         cameraSourceStamp = stamp;
-        // InputPointの公開時計をOS monotonicへ写像。受信処理や通信フォーマットは変更しない。
-        double receive = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp)
-            - System.Math.Max(0, Time.timeAsDouble - stamp) / Time.timeScale;
-        cameraSample = new CameraSaberSample(receive,
+        // InputPointがUDP receive()時に記録した、SwingEventと同じOS monotonic clock。
+        // Update順序やTime.timeScaleによる推定誤差を判定時刻へ持ち込まない。
+        cameraSample = new CameraSaberSample(stamp,
             HasBlade ? WorldEndA : transform.position, HasBlade ? WorldEndB : transform.position,
             stickIndex == 2 ? CameraSaberColor.Blue : CameraSaberColor.Red);
         hasCameraSample = true;

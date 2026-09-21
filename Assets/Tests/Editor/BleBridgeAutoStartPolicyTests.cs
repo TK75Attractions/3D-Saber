@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using UnityEngine;
 
 public class BleBridgeAutoStartPolicyTests
 {
@@ -24,18 +25,21 @@ public class BleBridgeAutoStartPolicyTests
     [TestCase("")]
     [TestCase("Assets/InitTestScene123.unity")]
     [TestCase("Assets/Scenes/InputTest.unity")]
-    public void NonGameAndTemporaryScenesNeverStart(string scenePath)
+    [TestCase("Assets/Scenes/SampleScene.unity")]
+    public void NonGameFlowAndTemporaryScenesNeverStart(string scenePath)
     {
         Assert.IsFalse(BleBridgeAutoStartPolicy.CanStart(true, true, scenePath));
     }
 
     [Test]
-    public void ExplicitOptInStartsOnlyWhileGameIsPlaying()
+    public void ExplicitOptInStartsInEveryGameFlowSceneOnlyWhilePlaying()
     {
-        Assert.IsTrue(BleBridgeAutoStartPolicy.CanStart(
-            true,
-            true,
-            BleBridgeAutoStartPolicy.GameScenePath));
+        foreach (string path in new[] {
+                     BleBridgeAutoStartPolicy.TitleScenePath,
+                     BleBridgeAutoStartPolicy.SongSelectScenePath,
+                     BleBridgeAutoStartPolicy.GameScenePath,
+                     BleBridgeAutoStartPolicy.ResultScenePath })
+            Assert.IsTrue(BleBridgeAutoStartPolicy.CanStart(true, true, path), path);
         Assert.IsFalse(BleBridgeAutoStartPolicy.CanStart(
             true,
             false,
@@ -57,5 +61,13 @@ public class BleBridgeAutoStartPolicyTests
         Assert.AreEqual(
             BleBridgeConnectionState.NotificationsActive,
             active.State);
+    }
+
+    [Test]
+    public void PersistentAutoStartSettingsAssetExists()
+    {
+        Assert.IsNotNull(
+            Resources.Load<ImuBleServiceSettings>("ImuBleServiceSettings"),
+            "Title/Menu起動時に読むBLE共通設定assetが必要");
     }
 }

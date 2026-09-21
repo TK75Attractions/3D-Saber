@@ -124,6 +124,11 @@ public class CameraImuJudgment : MonoBehaviour
             pending[i] = new PendingSwing { Active = true, Swing = swing, Failure = "camera_missing" };
             seen[seenNext] = new SeenSwing { Valid = true, Swing = swing };
             seenNext = (seenNext + 1) % seen.Length;
+            if (debugJudgment)
+            {
+                Debug.Log($"[IMU] {swing.Side} Swing seq={swing.Sequence}", this);
+                Debug.Log($"[JUDGMENT] Pending {swing.Side} Swing seq={swing.Sequence}", this);
+            }
             return;
         }
         Decision($"seq={swing.Sequence} side={swing.Side} reason=pending_capacity");
@@ -132,7 +137,17 @@ public class CameraImuJudgment : MonoBehaviour
     public bool AddCameraSample(CameraSaberSample sample)
     {
         if (sample.ReceiveTime < oldestAllowedSwing) return false;
-        return History(sample.Color).Add(sample, Mathf.Clamp(cameraHistorySeconds, .5f, 1f));
+        bool added = History(sample.Color).Add(sample, Mathf.Clamp(cameraHistorySeconds, .5f, 1f));
+        if (added && debugJudgment && HasPendingFor(sample.Color))
+            Debug.Log($"[CAM] {sample.Color} sample t={sample.ReceiveTime:F6} a={sample.EndA} b={sample.EndB}", this);
+        return added;
+    }
+
+    bool HasPendingFor(CameraSaberColor color)
+    {
+        foreach (var item in pending)
+            if (item.Active && CameraFor(item.Swing.Side) == color) return true;
+        return false;
     }
 
     CameraSaberHistory History(CameraSaberColor color) => color == CameraSaberColor.Red ? red : blue;
@@ -247,6 +262,8 @@ public class CameraImuJudgment : MonoBehaviour
         }
         if (best == null) return false;
         p.PositionPassed = true; p.Swept = contact.Swept; p.NoteId = best.GetInstanceID();
+        if (debugJudgment)
+            Debug.Log($"[JUDGMENT] swing-camera dt={(contact.SampleTime - p.Swing.ReceiveTime) * 1000:F1}ms", this);
         if (best.RequiredDirection != CutDirection.None && !best.DirectionVisualOnly)
         {
             // 接触直前の静止フレームだけでは方向を確定しない。Swing後の軌跡まで待つ。
@@ -269,6 +286,8 @@ public class CameraImuJudgment : MonoBehaviour
         if (!accepted) { p.Failure = "note_rejected"; return false; }
         // 成功した時点でこのイベントを消費。ロングも1イベントにつき1カット。
         Decision($"seq={p.Swing.Sequence} side={p.Swing.Side} camera={color} receive={p.Swing.ReceiveTime:F6} xiao={p.Swing.XiaoTimestampUs} song={p.SongTime:F6} sample={contact.SampleTime:F6} sampleAgeMs={(now - contact.ReceiveTime) * 1000:F1} latencyMs={cameraLatencyCompensationMs:F1} deltaMs={(contact.SampleTime - p.Swing.ReceiveTime) * 1000:F1} note={noteId} position=pass swept={contact.Swept} direction={direction} original={original} final={tier} reason={(tier == JudgmentTier.Miss ? "direction_downgrade_miss" : "hit")}");
+        if (debugJudgment)
+            Debug.Log($"[JUDGMENT] note={noteId} position=PASS direction={(direction ? "PASS" : "FAIL")} result={tier}", this);
         return true;
     }
 
@@ -356,5 +375,7 @@ public class CameraImuJudgment : MonoBehaviour
         double receive = history.Count > 0 ? history[history.Count - 1].ReceiveTime : double.NaN;
         double sample = receive - cameraLatencyCompensationMs / 1000.0;
         Decision($"seq={p.Swing.Sequence} side={p.Swing.Side} receive={p.Swing.ReceiveTime:F6} xiao={p.Swing.XiaoTimestampUs} song={p.SongTime:F6} sample={sample:F6} sampleAgeMs={(now - receive) * 1000:F1} latencyMs={cameraLatencyCompensationMs:F1} deltaMs={(sample - p.Swing.ReceiveTime) * 1000:F1} note={p.NoteId} position={(p.PositionPassed ? "pass" : "fail")} swept={p.Swept} direction=unresolved original={(p.NoteId == 0 ? "unresolved" : p.Original.ToString())} final=no_hit reason={(age < 0 ? "future_swing" : "expired_" + p.Failure)}");
+        if (debugJudgment)
+            Debug.Log($"[JUDGMENT] rejected reason={(age < 0 ? "future_swing" : "expired_" + p.Failure)}", this);
     }
 }
