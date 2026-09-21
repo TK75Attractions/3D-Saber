@@ -1131,6 +1131,96 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertLessThan(candidate.retainedBodyRatio, 0.90)
     }
 
+    func testForensicDiffuserFramesUseContinuousRobustBodyInsteadOfRawSpan() throws {
+        let cases: [(String, SaberColor, Double)] = [
+            ("frame_941", .blue, 428.356),
+            ("frame_1000", .red, 415.783),
+            ("frame_1026", .blue, 484.768),
+            ("frame_1048", .red, 473.009),
+            ("frame_1073", .blue, 305.196)
+        ]
+        for (name, color, expectedRawSpan) in cases {
+            let fixture = try fixtureBGRA(name, subdirectory: "forensic-20260921")
+            let analysis = analyzeSabers(
+                in: fixture.bytes, width: fixture.width, height: fixture.height,
+                bytesPerRow: fixture.bytesPerRow,
+                redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                collectProfile: false
+            )
+            let candidates = analysis.candidates[color] ?? []
+            let selected = try XCTUnwrap(candidates.first(where: \.isEmitterEligible), name)
+            let length = hypot(Double(selected.endpoints.1.x - selected.endpoints.0.x),
+                               Double(selected.endpoints.1.y - selected.endpoints.0.y))
+            print(String(format: "[ForensicAfter] %@ %@ length=%.3f raw=%.3f robust=%.3f continuity=%.3f density=%.3f retained=%.3f source=%@ fallback=%@",
+                         name, String(describing: color), length, selected.rawPCASpan,
+                         selected.robustMainIntervalLength, selected.longitudinalContinuity,
+                         selected.axialDensity, selected.retainedBodyRatio, selected.source,
+                         selected.usedPointLEDFallback.description))
+            XCTAssertEqual(selected.source, "core-line", name)
+            XCTAssertEqual(selected.rawPCASpan, expectedRawSpan, accuracy: 0.01, name)
+            XCTAssertFalse(selected.usedPointLEDFallback, name)
+            XCTAssertLessThan(length, selected.rawPCASpan * 0.40, name)
+            XCTAssertEqual(length, selected.robustMainIntervalLength, accuracy: 12, name)
+        }
+    }
+
+    func testPointLEDFixtureFallbackCharacteristics() throws {
+        for name in ["blue-led-with-curtain-reflection-01",
+                     "blue-led-with-curtain-reflection-02"] {
+            let fixture = try fixtureBGRA(name)
+            let analysis = analyzeSabers(
+                in: fixture.bytes, width: fixture.width, height: fixture.height,
+                bytesPerRow: fixture.bytesPerRow,
+                redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                collectProfile: false
+            )
+            let selected = try XCTUnwrap(
+                (analysis.candidates[.blue] ?? []).first(where: \.isEmitterEligible), name
+            )
+            print(String(format: "[PointLED] %@ raw=%.3f robust=%.3f ratio=%.3f continuity=%.3f density=%.3f retained=%.3f source=%@ fallback=%@",
+                         name, selected.rawPCASpan, selected.robustMainIntervalLength,
+                         selected.robustMainIntervalLength / max(selected.rawPCASpan, 1),
+                         selected.longitudinalContinuity, selected.axialDensity,
+                         selected.retainedBodyRatio, selected.source,
+                         selected.usedPointLEDFallback.description))
+            XCTAssertTrue(selected.usedPointLEDFallback, name)
+            XCTAssertGreaterThan(selected.retainedBodyRatio, 0.95, name)
+        }
+    }
+
+    func testSecondForensicFallback() throws {
+        let cases: [(String, SaberColor, Bool)] = [
+            ("frame_519", .blue, false),
+            ("frame_919", .red, false),
+            ("frame_1091", .red, false),
+            ("frame_1091", .blue, false)
+        ]
+        for (name, color, expectedFallback) in cases {
+            let fixture = try fixtureBGRA(name, subdirectory: "forensic-20260921-211845")
+            let analysis = analyzeSabers(
+                in: fixture.bytes, width: fixture.width, height: fixture.height,
+                bytesPerRow: fixture.bytesPerRow,
+                redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                collectProfile: false
+            )
+            let selected = try XCTUnwrap(
+                (analysis.candidates[color] ?? []).first(where: \.isEmitterEligible), name
+            )
+            let length = hypot(Double(selected.endpoints.1.x - selected.endpoints.0.x),
+                               Double(selected.endpoints.1.y - selected.endpoints.0.y))
+            let bodyPointCount = Int((Double(selected.pointCount)
+                * selected.retainedBodyRatio).rounded())
+            print(String(format: "[SecondForensicAfter] %@ %@ length=%.3f raw=%.3f robust=%.3f continuity=%.3f density=%.3f gap=%d bodyPoints=%d retained=%.3f fallback=%@",
+                         name, String(describing: color), length, selected.rawPCASpan,
+                         selected.robustMainIntervalLength, selected.longitudinalContinuity,
+                         selected.axialDensity, selected.largestLongitudinalGap,
+                         bodyPointCount, selected.retainedBodyRatio,
+                         selected.usedPointLEDFallback.description))
+            XCTAssertEqual(selected.usedPointLEDFallback, expectedFallback, name)
+            XCTAssertEqual(length, selected.robustMainIntervalLength, accuracy: 12, name)
+        }
+    }
+
     func testScaleAndPayload() {
         let value = payload(for: (PixelPoint(x: 0, y: 0), PixelPoint(x: 639, y: 479)), source: (640, 480), output: (1920, 1080), mirrorX: false, mirrorY: false)
         XCTAssertEqual(value, "0,0,1919,1079")
@@ -1471,5 +1561,283 @@ final class DetectionCoreTests: XCTestCase {
         processor.processDetectedForTesting([(.red, nil), (.blue, nil)], at: clock.now, dimensions: (20, 20))
         XCTAssertEqual(results.last?.count, 1)
         XCTAssertEqual(results.last?.first?.color, .blue)
+    }
+
+    func testDebugRecordingCreatesSynchronizedRawOverlayAndMetadata() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberRecordingTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory, date: Date(timeIntervalSince1970: 0))
+        let red = DetectedSaber(
+            endpoints: (PixelPoint(x: 8, y: 10), PixelPoint(x: 52, y: 10)),
+            color: .red, isFresh: true
+        )
+        let blue = DetectedSaber(
+            endpoints: (PixelPoint(x: 8, y: 34), PixelPoint(x: 52, y: 34)),
+            color: .blue, isFresh: true
+        )
+
+        recorder.append(pixelBuffer: solidPixelBuffer(width: 64, height: 48),
+                        presentationTime: CMTime(value: 0, timescale: 30),
+                        frameID: 100, results: [red])
+        Thread.sleep(forTimeInterval: 0.04)
+        recorder.append(pixelBuffer: solidPixelBuffer(width: 64, height: 48),
+                        presentationTime: CMTime(value: 1, timescale: 30),
+                        frameID: 101, results: [blue])
+        Thread.sleep(forTimeInterval: 0.04)
+        let staleRed = DetectedSaber(endpoints: red.endpoints, color: .red, isFresh: false)
+        recorder.append(pixelBuffer: solidPixelBuffer(width: 64, height: 48),
+                        presentationTime: CMTime(value: 2, timescale: 30),
+                        frameID: 102, results: [staleRed])
+
+        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
+            recorder.finish { continuation.resume(with: $0) }
+        }
+        XCTAssertEqual(recording.recordedFrameCount, 3)
+        XCTAssertEqual(recording.droppedFrameCount, 0)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: recording.rawVideoURL.path))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: recording.overlayVideoURL.path))
+
+        let metadata = try JSONDecoder().decode(
+            DebugRecordingMetadata.self,
+            from: Data(contentsOf: recording.metadataURL)
+        )
+        XCTAssertEqual(metadata.frames.map(\.frameID), [100, 101, 102])
+        XCTAssertTrue(metadata.frames[0].red.detected)
+        XCTAssertFalse(metadata.frames[0].blue.detected)
+        XCTAssertFalse(metadata.frames[1].red.detected)
+        XCTAssertTrue(metadata.frames[1].blue.detected)
+        XCTAssertFalse(metadata.frames[2].red.detected)
+        XCTAssertFalse(metadata.frames[2].blue.detected)
+
+        let rawFrames = try decodedVideoSamples(recording.rawVideoURL)
+        let overlayFrames = try decodedVideoSamples(recording.overlayVideoURL)
+        XCTAssertEqual(rawFrames.count, 3)
+        XCTAssertEqual(overlayFrames.count, 3)
+        XCTAssertEqual(rawFrames.map(\.timestamp), overlayFrames.map(\.timestamp))
+        XCTAssertLessThan(rawFrames[0].pixel(30, 10).r, 80)
+        XCTAssertGreaterThan(overlayFrames[0].pixel(30, 10).r, 150)
+        XCTAssertLessThan(rawFrames[1].pixel(30, 34).b, 80)
+        XCTAssertGreaterThan(overlayFrames[1].pixel(30, 34).b, 150)
+        XCTAssertLessThan(overlayFrames[2].pixel(30, 10).r, 80,
+                          "detected=false must not draw a retained red line")
+        XCTAssertLessThan(overlayFrames[2].pixel(30, 34).b, 80,
+                          "detected=false must not draw a retained blue line")
+    }
+
+    @MainActor
+    func testDebugRecordingIsCompletelyOffByDefault() {
+        let viewModel = CameraViewModel(
+            authorizationStatus: { .denied },
+            requestAccess: { _ in }
+        )
+        XCTAssertFalse(viewModel.debugRecordingEnabled)
+        XCTAssertFalse(viewModel.debugRecordingActive)
+        XCTAssertFalse(viewModel.debugRecordingFinalizing)
+        XCTAssertEqual(viewModel.debugRecordingStatus, "OFF")
+        XCTAssertNil(viewModel.lastDebugRecordingResult)
+    }
+
+    func testCandidateDiagnosticsCopiesSelectedAndTopThreeWithoutRecalculation() throws {
+        let fixture = try fixtureBGRA("blue-led-bright-large-05")
+        let analysis = analyzeSabers(
+            in: fixture.bytes, width: fixture.width, height: fixture.height,
+            bytesPerRow: fixture.bytesPerRow,
+            redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+            collectProfile: false
+        )
+        let diagnostics = DebugRecordingCandidateDiagnostics(analysis: analysis)
+        let blueCandidates = analysis.candidates[.blue] ?? []
+        let selectedIndex = blueCandidates.firstIndex { $0.isEmitterEligible }
+
+        XCTAssertEqual(diagnostics.blue.totalCandidateCount, blueCandidates.count)
+        XCTAssertEqual(diagnostics.blue.selectedCandidateIndex, selectedIndex)
+        XCTAssertEqual(diagnostics.blue.topCandidates.count, min(3, blueCandidates.count))
+        let index = try XCTUnwrap(selectedIndex)
+        let selected = try XCTUnwrap(diagnostics.blue.selectedCandidate)
+        XCTAssertEqual(selected.finalScore, blueCandidates[index].score)
+        XCTAssertEqual(selected.scoreBreakdown.total, blueCandidates[index].scoreBreakdown.total)
+        XCTAssertEqual(selected.rawPCASpan, blueCandidates[index].rawPCASpan)
+        XCTAssertEqual(selected.continuity, blueCandidates[index].longitudinalContinuity)
+    }
+
+    func testForensicCaptureWritesOnlyAnomalousAcceptedFrameAfterStop() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberForensicTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let policy = DebugForensicCapturePolicy(
+            absoluteLengthThreshold: 50, relativeLengthThreshold: 40,
+            growthRatio: 2, maximumFrames: 1
+        )
+        let recorder = try DebugVideoRecorder(directory: directory, forensicPolicy: policy)
+        let normal = DetectedSaber(
+            endpoints: (PixelPoint(x: 4, y: 10), PixelPoint(x: 24, y: 10)),
+            color: .red, isFresh: true
+        )
+        let anomalous = DetectedSaber(
+            endpoints: (PixelPoint(x: 2, y: 12), PixelPoint(x: 62, y: 12)),
+            color: .red, isFresh: true
+        )
+        recorder.append(pixelBuffer: solidPixelBuffer(width: 64, height: 48),
+                        presentationTime: CMTime(value: 0, timescale: 30),
+                        frameID: 200, results: [normal])
+        Thread.sleep(forTimeInterval: 0.04)
+        let anomalyBuffer = solidPixelBuffer(width: 64, height: 48)
+        CVPixelBufferLockBaseAddress(anomalyBuffer, .readOnly)
+        recorder.append(pixelBuffer: anomalyBuffer,
+                        presentationTime: CMTime(value: 1, timescale: 30),
+                        frameID: 201, results: [anomalous])
+        CVPixelBufferUnlockBaseAddress(anomalyBuffer, .readOnly)
+        Thread.sleep(forTimeInterval: 0.04)
+        let secondAnomalyBuffer = solidPixelBuffer(width: 64, height: 48)
+        CVPixelBufferLockBaseAddress(secondAnomalyBuffer, .readOnly)
+        recorder.append(pixelBuffer: secondAnomalyBuffer,
+                        presentationTime: CMTime(value: 2, timescale: 30),
+                        frameID: 202, results: [anomalous])
+        CVPixelBufferUnlockBaseAddress(secondAnomalyBuffer, .readOnly)
+
+        XCTAssertFalse(FileManager.default.fileExists(atPath: recorder.forensicDirectoryURL.path),
+                       "recording must not encode or write forensic PNGs")
+        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
+            recorder.finish { continuation.resume(with: $0) }
+        }
+        let metadata = try JSONDecoder().decode(
+            DebugRecordingMetadata.self, from: Data(contentsOf: recording.metadataURL)
+        )
+        XCTAssertFalse(metadata.frames[0].forensicCaptured)
+        XCTAssertNil(metadata.frames[0].forensicFileName)
+        XCTAssertTrue(metadata.frames[1].forensicCaptured)
+        XCTAssertEqual(metadata.frames[1].forensicFileName, "frame_201.png")
+        XCTAssertFalse(metadata.frames[2].forensicCaptured, "session capture limit must be enforced")
+        XCTAssertNil(metadata.frames[2].forensicFileName)
+        let forensicDirectory = try XCTUnwrap(recording.forensicDirectoryURL)
+        let pngURL = forensicDirectory.appendingPathComponent("frame_201.png")
+        XCTAssertTrue(FileManager.default.fileExists(atPath: pngURL.path))
+        let image = try XCTUnwrap(UIImage(contentsOfFile: pngURL.path))
+        XCTAssertEqual(Int(image.size.width), 64)
+        XCTAssertEqual(Int(image.size.height), 48)
+    }
+
+    func testCandidateDiagnosticsCopyPerformanceSample() throws {
+        let fixture = try fixtureBGRA("blue-led-bright-large-05")
+        var withoutDiagnostics: [Double] = []
+        var withDiagnostics: [Double] = []
+        for _ in 0..<20 {
+            var start = ProcessInfo.processInfo.systemUptime
+            _ = analyzeSabers(in: fixture.bytes, width: fixture.width, height: fixture.height,
+                              bytesPerRow: fixture.bytesPerRow,
+                              redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                              collectProfile: false)
+            withoutDiagnostics.append((ProcessInfo.processInfo.systemUptime - start) * 1000)
+            start = ProcessInfo.processInfo.systemUptime
+            let analysis = analyzeSabers(in: fixture.bytes, width: fixture.width,
+                                         height: fixture.height,
+                                         bytesPerRow: fixture.bytesPerRow,
+                                         redThreshold: ColorThreshold(),
+                                         blueThreshold: ColorThreshold(),
+                                         collectProfile: false)
+            _ = DebugRecordingCandidateDiagnostics(analysis: analysis)
+            withDiagnostics.append((ProcessInfo.processInfo.systemUptime - start) * 1000)
+        }
+        func summary(_ values: [Double]) -> (median: Double, p95: Double, max: Double) {
+            let sorted = values.sorted()
+            return (sorted[sorted.count / 2],
+                    sorted[min(sorted.count - 1, Int(Double(sorted.count) * 0.95))],
+                    sorted.last ?? 0)
+        }
+        let baseline = summary(withoutDiagnostics)
+        let recorded = summary(withDiagnostics)
+        print(String(format: "[CandidateDiagnosticsPerformance] simulator OFF median=%.3f p95=%.3f max=%.3f ms; ON median=%.3f p95=%.3f max=%.3f ms (n=20; not device FPS)",
+                     baseline.median, baseline.p95, baseline.max,
+                     recorded.median, recorded.p95, recorded.max))
+    }
+
+    func testDebugRecordingAppendPerformanceSample() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberRecordingPerformance-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory)
+        let prepareStart = ProcessInfo.processInfo.systemUptime
+        try recorder.prepare(width: 480, height: 640)
+        let prepareMilliseconds = (ProcessInfo.processInfo.systemUptime - prepareStart) * 1000
+        var appendMilliseconds: [Double] = []
+        for index in 0..<15 {
+            let pixelBuffer = solidPixelBuffer(width: 480, height: 640)
+            let start = ProcessInfo.processInfo.systemUptime
+            recorder.append(pixelBuffer: pixelBuffer,
+                            presentationTime: CMTime(value: CMTimeValue(index), timescale: 30),
+                            frameID: UInt64(index), results: [])
+            appendMilliseconds.append((ProcessInfo.processInfo.systemUptime - start) * 1000)
+            Thread.sleep(forTimeInterval: 1.0 / 30.0)
+        }
+        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
+            recorder.finish { continuation.resume(with: $0) }
+        }
+        XCTAssertEqual(recording.recordedFrameCount, 15)
+        XCTAssertEqual(recording.droppedFrameCount, 0)
+        let sorted = appendMilliseconds.sorted()
+        let p95 = sorted[min(sorted.count - 1, Int(Double(sorted.count) * 0.95))]
+        print(String(format: "[RecordingPerformance] simulator one-time prepare=%.3f ms; append median=%.3f p95=%.3f max=%.3f ms (480x640, n=%d; not device FPS)",
+                     prepareMilliseconds, sorted[sorted.count / 2], p95,
+                     sorted.max() ?? 0, sorted.count))
+    }
+
+    private struct DecodedVideoFrame {
+        let timestamp: CMTime
+        let width: Int
+        let height: Int
+        let bytesPerRow: Int
+        let bytes: [UInt8]
+
+        func pixel(_ x: Int, _ y: Int) -> (b: UInt8, g: UInt8, r: UInt8) {
+            let offset = y * bytesPerRow + x * 4
+            return (bytes[offset], bytes[offset + 1], bytes[offset + 2])
+        }
+    }
+
+    private func solidPixelBuffer(width: Int, height: Int) -> CVPixelBuffer {
+        var buffer: CVPixelBuffer?
+        CVPixelBufferCreate(kCFAllocatorDefault, width, height, kCVPixelFormatType_32BGRA,
+                            [kCVPixelBufferIOSurfacePropertiesKey as String: [:]] as CFDictionary,
+                            &buffer)
+        let pixelBuffer = buffer!
+        CVPixelBufferLockBaseAddress(pixelBuffer, [])
+        if let base = CVPixelBufferGetBaseAddress(pixelBuffer) {
+            memset(base, 16, CVPixelBufferGetBytesPerRow(pixelBuffer) * height)
+            let bytes = base.assumingMemoryBound(to: UInt8.self)
+            for y in 0..<height {
+                for x in 0..<width { bytes[y * CVPixelBufferGetBytesPerRow(pixelBuffer) + x * 4 + 3] = 255 }
+            }
+        }
+        CVPixelBufferUnlockBaseAddress(pixelBuffer, [])
+        return pixelBuffer
+    }
+
+    private func decodedVideoSamples(_ url: URL) throws -> [DecodedVideoFrame] {
+        let asset = AVURLAsset(url: url)
+        let track = try XCTUnwrap(asset.tracks(withMediaType: .video).first)
+        let reader = try AVAssetReader(asset: asset)
+        let output = AVAssetReaderTrackOutput(track: track, outputSettings: [
+            kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_32BGRA
+        ])
+        output.alwaysCopiesSampleData = true
+        reader.add(output)
+        XCTAssertTrue(reader.startReading())
+        var frames: [DecodedVideoFrame] = []
+        while let sample = output.copyNextSampleBuffer(),
+              let pixelBuffer = CMSampleBufferGetImageBuffer(sample) {
+            CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
+            let height = CVPixelBufferGetHeight(pixelBuffer)
+            let bytesPerRow = CVPixelBufferGetBytesPerRow(pixelBuffer)
+            let data = Data(bytes: CVPixelBufferGetBaseAddress(pixelBuffer)!, count: bytesPerRow * height)
+            CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly)
+            frames.append(DecodedVideoFrame(
+                timestamp: CMSampleBufferGetPresentationTimeStamp(sample),
+                width: CVPixelBufferGetWidth(pixelBuffer), height: height,
+                bytesPerRow: bytesPerRow, bytes: Array(data)
+            ))
+        }
+        XCTAssertEqual(reader.status, .completed)
+        return frames
     }
 }

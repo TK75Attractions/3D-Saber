@@ -1,7 +1,9 @@
+import QuickLook
 import SwiftUI
 
 struct ContentView: View {
     @StateObject private var model = CameraViewModel()
+    @State private var recordingPreviewURL: URL?
 #if DEBUG
     @State private var showDebugPerformance = false
 #endif
@@ -43,6 +45,45 @@ struct ContentView: View {
                             }
                         }.frame(height: 280)
                     }.clipped()
+                    GroupBox("Debug Recording") {
+                        VStack(alignment: .leading, spacing: 8) {
+                            Toggle("Debug Recording: \(model.debugRecordingEnabled ? "ON" : "OFF")",
+                                   isOn: $model.debugRecordingEnabled)
+                                .disabled(model.debugRecordingActive || model.debugRecordingFinalizing)
+                            HStack {
+                                Button("Start Recording") { model.startDebugRecording() }
+                                    .disabled(!model.debugRecordingEnabled || !model.running ||
+                                              model.debugRecordingActive || model.debugRecordingFinalizing)
+                                Button("Stop Recording") { model.stopDebugRecording() }
+                                    .disabled(!model.debugRecordingActive || model.debugRecordingFinalizing)
+                            }
+                            Text(model.debugRecordingEnabled ? model.debugRecordingStatus : "OFF（録画処理なし）")
+                                .font(.caption)
+                                .foregroundStyle(model.debugRecordingActive ? .red : .secondary)
+                            if let recording = model.lastDebugRecordingResult {
+                                Text("\(recording.sessionID)  — raw / overlayは同じセッションです")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                HStack {
+                                    Button { recordingPreviewURL = recording.rawVideoURL } label: {
+                                        Label("Rawを見る", systemImage: "video")
+                                    }
+                                    Button { recordingPreviewURL = recording.overlayVideoURL } label: {
+                                        Label("Overlayを見る", systemImage: "scribble.variable")
+                                    }
+                                    Button { recordingPreviewURL = recording.metadataURL } label: {
+                                        Label("Metadataを見る", systemImage: "doc.text")
+                                    }
+                                    if let forensicDirectoryURL = recording.forensicDirectoryURL {
+                                        ShareLink(item: forensicDirectoryURL) {
+                                            Label("Forensicを共有", systemImage: "photo.stack")
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
                     Text("状態: \(model.status)  FPS: \(model.fps, specifier: "%.1f")")
                     Text("送信先: \(model.activeDestination)")
                         .font(.footnote).foregroundStyle(.secondary)
@@ -183,7 +224,9 @@ struct ContentView: View {
                     Text("カメラ映像と検出座標を使用します。192.168.x.x のMacへはiPhoneも同じWi-Fiに接続してください。セルラー経路では通常届きません。Wi-Fi経路ありでも同一LAN・到達可能性は保証されません。")
                         .font(.caption).foregroundStyle(.secondary)
                 }.padding()
-            }.navigationTitle("Phone Saber Sender")
+            }
+            .navigationTitle("Phone Saber Sender")
+            .quickLookPreview($recordingPreviewURL)
         }
     }
 

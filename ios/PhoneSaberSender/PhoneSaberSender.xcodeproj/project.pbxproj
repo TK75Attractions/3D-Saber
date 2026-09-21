@@ -15,6 +15,7 @@
 		A00000000000000000000006 /* FrameProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000006 /* FrameProcessor.swift */; };
 		A00000000000000000000007 /* PhoneSaberSenderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000007 /* PhoneSaberSenderApp.swift */; };
 		A00000000000000000000008 /* UDPSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000008 /* UDPSender.swift */; };
+		A00000000000000000000011 /* DebugVideoRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000011 /* DebugVideoRecorder.swift */; };
 		A00000000000000000000009 /* DetectionCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000009 /* DetectionCoreTests.swift */; };
 		A0000000000000000000000A /* blue-led-with-curtain-reflection-01.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000A /* blue-led-with-curtain-reflection-01.png */; };
 		A0000000000000000000000B /* blue-led-with-curtain-reflection-02.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000B /* blue-led-with-curtain-reflection-02.png */; };
@@ -22,6 +23,8 @@
 		A0000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png */; };
 		A0000000000000000000000E /* blue-led-bright-large-05.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000E /* blue-led-bright-large-05.png */; };
 		A0000000000000000000000F /* production-video-IMG_5933 in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000F /* production-video-IMG_5933 */; };
+		A00000000000000000000012 /* forensic-20260921 in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000012 /* forensic-20260921 */; };
+		A00000000000000000000013 /* forensic-20260921-211845 in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000013 /* forensic-20260921-211845 */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -44,6 +47,7 @@
 		B10000000000000000000006 /* FrameProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameProcessor.swift; sourceTree = "<group>"; };
 		B10000000000000000000007 /* PhoneSaberSenderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSaberSenderApp.swift; sourceTree = "<group>"; };
 		B10000000000000000000008 /* UDPSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPSender.swift; sourceTree = "<group>"; };
+		B10000000000000000000011 /* DebugVideoRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugVideoRecorder.swift; sourceTree = "<group>"; };
 		B10000000000000000000009 /* DetectionCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionCoreTests.swift; sourceTree = "<group>"; };
 		B10000000000000000000010 /* PhoneSaberSenderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PhoneSaberSenderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		B1000000000000000000000A /* blue-led-with-curtain-reflection-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-with-curtain-reflection-01.png"; sourceTree = "<group>"; };
@@ -52,6 +56,8 @@
 		B1000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-with-left-curtain-reflection-04.png"; sourceTree = "<group>"; };
 		B1000000000000000000000E /* blue-led-bright-large-05.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-bright-large-05.png"; sourceTree = "<group>"; };
 		B1000000000000000000000F /* production-video-IMG_5933 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "production-video-IMG_5933"; sourceTree = "<group>"; };
+		B10000000000000000000012 /* forensic-20260921 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "forensic-20260921"; sourceTree = "<group>"; };
+		B10000000000000000000013 /* forensic-20260921-211845 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "forensic-20260921-211845"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -87,6 +93,7 @@
 				B10000000000000000000005 /* DetectionCore.swift */,
 				B10000000000000000000001 /* BGRADetection.swift */,
 				B10000000000000000000006 /* FrameProcessor.swift */,
+				B10000000000000000000011 /* DebugVideoRecorder.swift */,
 				B10000000000000000000008 /* UDPSender.swift */,
 				B10000000000000000000003 /* CameraViewModel.swift */,
 				B10000000000000000000002 /* CameraPreview.swift */,
@@ -114,6 +121,8 @@
 				B1000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png */,
 				B1000000000000000000000E /* blue-led-bright-large-05.png */,
 				B1000000000000000000000F /* production-video-IMG_5933 */,
+				B10000000000000000000012 /* forensic-20260921 */,
+				B10000000000000000000013 /* forensic-20260921-211845 */,
 			);
 			path = Fixtures;
 			sourceTree = "<group>";
@@ -219,6 +228,8 @@
 				A0000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png in Resources */,
 				A0000000000000000000000E /* blue-led-bright-large-05.png in Resources */,
 				A0000000000000000000000F /* production-video-IMG_5933 in Resources */,
+				A00000000000000000000012 /* forensic-20260921 in Resources */,
+				A00000000000000000000013 /* forensic-20260921-211845 in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -232,6 +243,7 @@
 				A00000000000000000000005 /* DetectionCore.swift in Sources */,
 				A00000000000000000000001 /* BGRADetection.swift in Sources */,
 				A00000000000000000000006 /* FrameProcessor.swift in Sources */,
+				A00000000000000000000011 /* DebugVideoRecorder.swift in Sources */,
 				A00000000000000000000008 /* UDPSender.swift in Sources */,
 				A00000000000000000000003 /* CameraViewModel.swift in Sources */,
 				A00000000000000000000002 /* CameraPreview.swift in Sources */,

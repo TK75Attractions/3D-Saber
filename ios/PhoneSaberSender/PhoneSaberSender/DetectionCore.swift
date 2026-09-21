@@ -173,6 +173,15 @@ struct SaberCandidate {
     let longitudinalContinuity: Double
     let largestLongitudinalGap: Int
     let retainedBodyRatio: Double
+    /// Values already produced while estimating the component axis/body.
+    /// Debug recording copies these; it must never recompute detection work.
+    let rawPCASpan: Double
+    let robustMainIntervalEndpoints: (PixelPoint, PixelPoint)?
+    let robustMainIntervalLength: Double
+    let axialDensity: Double
+    let componentArea: Int
+    let pointCount: Int
+    let usedPointLEDFallback: Bool
 }
 
 struct SaberBoundingBox {
@@ -240,6 +249,9 @@ private struct DominantLongitudinalBody {
     let continuity: Double
     let largestGap: Int
     let retainedRatio: Double
+    let intervalEndpoints: (PixelPoint, PixelPoint)?
+    let intervalLength: Double
+    let density: Double
 }
 
 /// Removes a low-density axial tail without imposing a fixed blade length.
@@ -254,19 +266,25 @@ private func dominantLongitudinalBody(
 ) -> DominantLongitudinalBody {
     guard points.count >= 6 else {
         return DominantLongitudinalBody(points: points, continuity: 1,
-                                        largestGap: 0, retainedRatio: 1)
+                                        largestGap: 0, retainedRatio: 1,
+                                        intervalEndpoints: nil,
+                                        intervalLength: 0, density: 0)
     }
     let projections = points.map {
         (Double($0.x) - meanX) * axis.0 + (Double($0.y) - meanY) * axis.1
     }
     guard let minProjection = projections.min(), let maxProjection = projections.max() else {
         return DominantLongitudinalBody(points: points, continuity: 1,
-                                        largestGap: 0, retainedRatio: 1)
+                                        largestGap: 0, retainedRatio: 1,
+                                        intervalEndpoints: nil,
+                                        intervalLength: 0, density: 0)
     }
     let binCount = max(1, Int((maxProjection - minProjection).rounded(.up)) + 1)
     guard binCount >= 8 else {
         return DominantLongitudinalBody(points: points, continuity: 1,
-                                        largestGap: 0, retainedRatio: 1)
+                                        largestGap: 0, retainedRatio: 1,
+                                        intervalEndpoints: nil,
+                                        intervalLength: 0, density: 0)
     }
     var counts = Array(repeating: 0, count: binCount)
     var pointBins = Array(repeating: 0, count: points.count)
@@ -277,20 +295,36 @@ private func dominantLongitudinalBody(
         counts[bin] += 1
     }
     let peakCount = counts.max() ?? 0
+    func intervalEndpoints(_ start: Int, _ end: Int) -> (PixelPoint, PixelPoint) {
+        let firstProjection = minProjection + Double(start)
+        let lastProjection = minProjection + Double(end)
+        return (
+            PixelPoint(x: Int((meanX + axis.0 * firstProjection).rounded()),
+                       y: Int((meanY + axis.1 * firstProjection).rounded())),
+            PixelPoint(x: Int((meanX + axis.0 * lastProjection).rounded()),
+                       y: Int((meanY + axis.1 * lastProjection).rounded()))
+        )
+    }
     // One-pixel-wide genuine blades remain valid. Robust trimming activates
     // only when the candidate has a visibly wider continuous body.
     guard peakCount >= 4 else {
         let occupied = counts.filter { $0 > 0 }.count
         return DominantLongitudinalBody(
             points: points, continuity: Double(occupied) / Double(binCount),
-            largestGap: largestZeroRun(in: counts, range: 0..<binCount), retainedRatio: 1
+            largestGap: largestZeroRun(in: counts, range: 0..<binCount), retainedRatio: 1,
+            intervalEndpoints: intervalEndpoints(0, binCount - 1),
+            intervalLength: Double(binCount),
+            density: Double(points.count) / Double(binCount)
         )
     }
     let denseThreshold = max(2, Int((Double(peakCount) * 0.30).rounded(.up)))
     let denseBins = counts.indices.filter { counts[$0] >= denseThreshold }
     guard let firstDense = denseBins.first else {
         return DominantLongitudinalBody(points: points, continuity: 0,
-                                        largestGap: binCount, retainedRatio: 1)
+                                        largestGap: binCount, retainedRatio: 1,
+                                        intervalEndpoints: intervalEndpoints(0, binCount - 1),
+                                        intervalLength: Double(binCount),
+                                        density: Double(points.count) / Double(binCount))
     }
     let allowedInternalGap = 2
     var groups: [ClosedRange<Int>] = []
@@ -319,7 +353,10 @@ private func dominantLongitudinalBody(
     let bodyPoints = points.indices.compactMap { bodyRange.contains(pointBins[$0]) ? points[$0] : nil }
     guard bodyPoints.count >= 4 else {
         return DominantLongitudinalBody(points: points, continuity: 0,
-                                        largestGap: binCount, retainedRatio: 1)
+                                        largestGap: binCount, retainedRatio: 1,
+                                        intervalEndpoints: intervalEndpoints(0, binCount - 1),
+                                        intervalLength: Double(binCount),
+                                        density: Double(points.count) / Double(binCount))
     }
     let denseInBody = counts[bodyRange].filter { $0 >= denseThreshold }.count
     let continuity = Double(denseInBody) / Double(bodyRange.count)
@@ -327,7 +364,10 @@ private func dominantLongitudinalBody(
         points: bodyPoints,
         continuity: continuity,
         largestGap: largestZeroRun(in: counts, range: bodyStart..<(bodyEnd + 1)),
-        retainedRatio: Double(bodyPoints.count) / Double(points.count)
+        retainedRatio: Double(bodyPoints.count) / Double(points.count),
+        intervalEndpoints: intervalEndpoints(bodyStart, bodyEnd),
+        intervalLength: Double(bodyRange.count),
+        density: Double(bodyPoints.count) / Double(bodyRange.count)
     )
 }
 
@@ -347,6 +387,7 @@ private func largestZeroRun(in counts: [Int], range: Range<Int>) -> Int {
 private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: Int,
                                   componentMask: [UInt8]?, componentIndices: Set<Int>? = nil,
                                   evidence: SaberEvidence?,
+                                  source: String = "color-mask",
                                   stageProfile: SaberCandidateStageProfile? = nil) -> SaberCandidate? {
     let shapeStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
     let minimumArea = max(4, Int(Double(width * height) * 0.0005))
@@ -565,15 +606,30 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                    y: Int((meanY + axis.1 * maxMajor).rounded()))
     )
     let finalEndpoints: (PixelPoint, PixelPoint)
+    let usedPointLEDFallback: Bool
+    let hasEstablishedContinuousBody = body.continuity >= 0.90
+    // Core-line proposals may contain a long bridge between unrelated emitters.
+    // A paper diffuser's retained body still has several samples per axial bin;
+    // fragmented point LEDs and sparse proposals continue to use the raw axis.
+    let hasDenseTrimmedCoreLine = source == "core-line"
+        && body.largestGap <= 2 && body.density >= 4.0
+    let hasStronglyTrimmedSupportedCoreLine = source == "core-line"
+        && body.retainedRatio <= 0.30
+        && body.largestGap <= 2
+        && body.points.count >= minimumArea
     if body.points.count >= minimumArea,
-       body.continuity >= 0.90,
        body.retainedRatio < 0.85,
+       (hasEstablishedContinuousBody
+        || hasDenseTrimmedCoreLine
+        || hasStronglyTrimmedSupportedCoreLine),
        let bodyEndpoints = principalAxisEndpoints(body.points) {
         finalEndpoints = bodyEndpoints
+        usedPointLEDFallback = false
     } else {
         // Disconnected legacy LED packages and mild edge-density changes are
         // not paper-diffused continuous bodies; keep their established axis.
         finalEndpoints = rawEndpoints
+        usedPointLEDFallback = true
     }
     let first = finalEndpoints.0
     let second = finalEndpoints.1
@@ -622,7 +678,8 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
     if let stageProfile {
         stageProfile.endpointAndBoundsMs += (ProcessInfo.processInfo.systemUptime - endpointStart) * 1000
     }
-    return SaberCandidate(radiance: radianceSum / Double(points.count),
+    return SaberCandidate(source: source,
+                          radiance: radianceSum / Double(points.count),
                           comparisonEndpoints: rawEndpoints,
                           endpoints: (first, second), boundingBox: boundingBox, score: score,
                           scoreBreakdown: breakdown,
@@ -638,7 +695,14 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                           longitudinalCoreCoverage: longitudinalCoreCoverage,
                           longitudinalContinuity: body.continuity,
                           largestLongitudinalGap: body.largestGap,
-                          retainedBodyRatio: body.retainedRatio)
+                          retainedBodyRatio: body.retainedRatio,
+                          rawPCASpan: majorLength,
+                          robustMainIntervalEndpoints: body.intervalEndpoints,
+                          robustMainIntervalLength: body.intervalLength,
+                          axialDensity: body.density,
+                          componentArea: points.count,
+                          pointCount: points.count,
+                          usedPointLEDFallback: usedPointLEDFallback)
 }
 
 /// Returns every shape-valid component so fixture tests can compare the chosen
@@ -682,6 +746,7 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
 /// rescanning a full-frame mask. Used by bright-core line proposals only.
 func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
                     evidence: SaberEvidence? = nil,
+                    source: String = "color-mask",
                     stageProfile: SaberCandidateStageProfile? = nil) -> SaberCandidate? {
     let uniqueIndices = Set(points.compactMap { point -> Int? in
         guard point.x >= 0, point.x < width, point.y >= 0, point.y < height else { return nil }
@@ -690,7 +755,8 @@ func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
     let uniquePoints = uniqueIndices.map { PixelPoint(x: $0 % width, y: $0 / width) }
     return scoredSaberComponent(uniquePoints, width: width, height: height,
                                 componentMask: nil, componentIndices: uniqueIndices,
-                                evidence: evidence, stageProfile: stageProfile)
+                                evidence: evidence, source: source,
+                                stageProfile: stageProfile)
 }
 
 /// Select one elongated external component, rather than simply the largest color patch.

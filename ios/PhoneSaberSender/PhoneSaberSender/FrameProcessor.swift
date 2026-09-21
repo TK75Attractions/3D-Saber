@@ -68,6 +68,7 @@ final class FrameProcessor: @unchecked Sendable {
     private var processedFrames = 0
     private var nextFrameSequence: UInt64 = 0
     private var captureSynchronizationClock: CMClock?
+    private var debugVideoRecorder: DebugVideoRecorder?
 #if DEBUG
     private var inputFrameIntervalWindow = CameraFrameIntervalWindow(capacity: 120)
     private var detailedProfilingEnabled = false
@@ -217,6 +218,39 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.unlock()
     }
 
+    func startDebugRecording(completion: @escaping (Result<String, Error>) -> Void) {
+        queue.async { [weak self] in
+            guard let self else { return }
+            do {
+                guard self.debugVideoRecorder == nil else {
+                    throw DebugVideoRecorderError.alreadyStarted
+                }
+                guard let dimensions = self.lastDimensions else {
+                    throw DebugVideoRecorderError.cameraNotReady
+                }
+                let recorder = try DebugVideoRecorder(directory: self.rawFrameDirectory())
+                try recorder.prepare(width: dimensions.0, height: dimensions.1)
+                self.debugVideoRecorder = recorder
+                completion(.success(recorder.sessionID))
+            } catch {
+                completion(.failure(error))
+            }
+        }
+    }
+
+    func stopDebugRecording(completion: @escaping (Result<DebugRecordingResult, Error>) -> Void) {
+        queue.async { [weak self] in
+            guard let self, let recorder = self.debugVideoRecorder else {
+                completion(.failure(DebugVideoRecorderError.noFrames))
+                return
+            }
+            // Clearing this first makes the OFF/finalizing path a single nil
+            // check per frame; overlay work runs away from the camera queue.
+            self.debugVideoRecorder = nil
+            recorder.finish(completion: completion)
+        }
+    }
+
     private func process(_ sampleBuffer: CMSampleBuffer, saveRequestedRawFrame: Bool,
                          sequence: UInt64, callbackHostTime: TimeInterval,
                          captureHostTime: TimeInterval?) {
@@ -246,9 +280,22 @@ final class FrameProcessor: @unchecked Sendable {
                                      blueThreshold: blueThreshold, collectProfile: collectProfile)
         let sabers = analysis.selected
 #else
-        let sabers = detectSabers(baseAddress: bytes, width: width, height: height,
+        let analysis: SaberFrameAnalysis?
+        let sabers: [SaberColor: (PixelPoint, PixelPoint)]
+        if debugVideoRecorder != nil {
+            let recordedAnalysis = analyzeSabers(
+                baseAddress: bytes, width: width, height: height,
+                bytesPerRow: bytesPerRow, redThreshold: redThreshold,
+                blueThreshold: blueThreshold, collectProfile: false
+            )
+            analysis = recordedAnalysis
+            sabers = recordedAnalysis.selected
+        } else {
+            analysis = nil
+            sabers = detectSabers(baseAddress: bytes, width: width, height: height,
                                   bytesPerRow: bytesPerRow,
                                   redThreshold: redThreshold, blueThreshold: blueThreshold)
+        }
 #endif
         let detected: [(SaberColor, (PixelPoint, PixelPoint)?)] = [
             (.red, sabers[.red]),
@@ -271,8 +318,18 @@ final class FrameProcessor: @unchecked Sendable {
         #else
         let trace: FrameTrace? = nil
         #endif
-        emitResults(detected, width: width, height: height, processingStart: processingStart,
-                    generation: generation, trace: trace)
+        let emitted = emitResults(detected, width: width, height: height,
+                                  processingStart: processingStart,
+                                  generation: generation, trace: trace)
+        if let debugVideoRecorder {
+            debugVideoRecorder.append(
+                pixelBuffer: pixelBuffer,
+                presentationTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer),
+                frameID: sequence,
+                results: emitted,
+                analysis: analysis
+            )
+        }
 #if DEBUG
         if let profile = analysis.profile {
             onPerformance?(FramePerformanceSample(pixelBufferAccessMs: accessMs, detector: profile))
@@ -297,7 +354,8 @@ final class FrameProcessor: @unchecked Sendable {
         }
     }
 
-    private func emitResults(_ detected: [(SaberColor, (PixelPoint, PixelPoint)?)], width: Int, height: Int, processingStart: TimeInterval, generation: Int, trace: FrameTrace? = nil) {
+    @discardableResult
+    private func emitResults(_ detected: [(SaberColor, (PixelPoint, PixelPoint)?)], width: Int, height: Int, processingStart: TimeInterval, generation: Int, trace: FrameTrace? = nil) -> [DetectedSaber] {
         let results = detected.compactMap { color, current -> DetectedSaber? in
             var track = tracks[color, default: Track()]
             if let current {
@@ -318,6 +376,7 @@ final class FrameProcessor: @unchecked Sendable {
         }
         onResult?(results, width, height, processingStart, generation, trace)
         scheduleExpiry(width: width, height: height, generation: generation)
+        return results
     }
 
     // Test-only entry point that exercises the same state transition as camera frames.

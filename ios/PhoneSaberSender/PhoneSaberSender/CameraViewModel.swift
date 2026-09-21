@@ -155,6 +155,11 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var rejectedSenderUpdateCount = 0
     @Published private(set) var rawFrameSaveMessage = ""
     @Published private(set) var lastRawFrameURL: URL?
+    @Published var debugRecordingEnabled = false
+    @Published private(set) var debugRecordingActive = false
+    @Published private(set) var debugRecordingFinalizing = false
+    @Published private(set) var debugRecordingStatus = "OFF"
+    @Published private(set) var lastDebugRecordingResult: DebugRecordingResult?
 #if DEBUG
     @Published private(set) var debugPerformanceRows = DebugPerformanceRow.placeholders
     @Published private(set) var debugCameraConfiguration = DebugCameraConfiguration.unavailable
@@ -290,6 +295,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     func stop() {
         lifecycleGeneration += 1
+        if debugRecordingActive { stopDebugRecording() }
         session.stopRunning(); sender.stop(); _ = processor.reset(); running = false; activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
     }
 
@@ -773,6 +779,51 @@ final class CameraViewModel: NSObject, ObservableObject {
         lastRawFrameURL = nil
         rawFrameSaveMessage = "次の認識前フレームを1枚だけ保存します"
         processor.requestRawFrameSave()
+    }
+
+    func startDebugRecording() {
+        guard debugRecordingEnabled, running, !debugRecordingActive,
+              !debugRecordingFinalizing else { return }
+        lastDebugRecordingResult = nil
+        // Reserve the state immediately so a rapid app Stop queues recorder
+        // finalization after recorder creation instead of leaving it orphaned.
+        debugRecordingActive = true
+        debugRecordingStatus = "録画を開始しています…"
+        processor.startDebugRecording { [weak self] result in
+            Task { @MainActor in
+                guard let self else { return }
+                switch result {
+                case .success(let sessionID):
+                    guard self.debugRecordingActive, !self.debugRecordingFinalizing else { return }
+                    self.debugRecordingStatus = "録画中: \(sessionID)"
+                case .failure(let error):
+                    guard self.debugRecordingActive, !self.debugRecordingFinalizing else { return }
+                    self.debugRecordingActive = false
+                    self.debugRecordingStatus = "録画開始失敗: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+
+    func stopDebugRecording() {
+        guard debugRecordingActive, !debugRecordingFinalizing else { return }
+        debugRecordingActive = false
+        debugRecordingFinalizing = true
+        debugRecordingStatus = "raw動画を確定し、overlay動画を生成中…"
+        processor.stopDebugRecording { [weak self] result in
+            Task { @MainActor in
+                guard let self else { return }
+                self.debugRecordingActive = false
+                self.debugRecordingFinalizing = false
+                switch result {
+                case .success(let recording):
+                    self.lastDebugRecordingResult = recording
+                    self.debugRecordingStatus = "完了: \(recording.recordedFrameCount) frames / ドロップ \(recording.droppedFrameCount)"
+                case .failure(let error):
+                    self.debugRecordingStatus = "録画処理失敗: \(error.localizedDescription)"
+                }
+            }
+        }
     }
 }
 

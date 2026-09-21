@@ -355,6 +355,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         for proposal in proposals {
             if var candidate = saberCandidate(from: proposal, width: maskWidth,
                                               height: maskHeight, evidence: evidence,
+                                              source: "core-line",
                                               stageProfile: candidateStageProfile),
                !candidates.contains(where: {
                 candidateAxisDistance($0, candidate) <= 10.0
@@ -449,7 +450,17 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 longitudinalCoreCoverage: candidate.longitudinalCoreCoverage,
                 longitudinalContinuity: candidate.longitudinalContinuity,
                 largestLongitudinalGap: candidate.largestLongitudinalGap,
-                retainedBodyRatio: candidate.retainedBodyRatio
+                retainedBodyRatio: candidate.retainedBodyRatio,
+                rawPCASpan: candidate.rawPCASpan * Double(step),
+                robustMainIntervalEndpoints: candidate.robustMainIntervalEndpoints.map {
+                    (PixelPoint(x: $0.0.x * step, y: $0.0.y * step),
+                     PixelPoint(x: $0.1.x * step, y: $0.1.y * step))
+                },
+                robustMainIntervalLength: candidate.robustMainIntervalLength * Double(step),
+                axialDensity: candidate.axialDensity / Double(max(step, 1)),
+                componentArea: candidate.componentArea * step * step,
+                pointCount: candidate.pointCount,
+                usedPointLEDFallback: candidate.usedPointLEDFallback
             )
         }
         allCandidates[color] = scaled
