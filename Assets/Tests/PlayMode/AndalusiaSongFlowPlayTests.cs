@@ -217,3 +217,94 @@ public class AndalusiaSongFlowPlayTests
         manager.songPlayer.Stop();
     }
 }
+
+// 譜面全尺を実ランタイムの生成・複数回切断・回収へ通す。実機の運動評価ではない。
+public class AndalusiaArrangementPlayTests
+{
+    Scene previous, scene;
+
+    [SetUp]
+    public void SetUp()
+    {
+        previous = SceneManager.GetActiveScene();
+        scene = SceneManager.CreateScene("AndalusiaArrangement_" + Guid.NewGuid().ToString("N"));
+        SceneManager.SetActiveScene(scene);
+    }
+
+    [UnityTearDown]
+    public IEnumerator TearDown()
+    {
+        SceneManager.SetActiveScene(previous);
+        yield return SceneManager.UnloadSceneAsync(scene);
+        yield return null;
+    }
+
+    [UnityTest] public IEnumerator EasyCompletesAllNoteKinds() { yield return Run("easy"); }
+    [UnityTest] public IEnumerator NormalCompletesAllNoteKinds() { yield return Run("normal"); }
+    [UnityTest] public IEnumerator HardCompletesAllNoteKinds() { yield return Run("hard"); }
+
+    IEnumerator Run(string difficulty)
+    {
+        var chart = ChartLoader.LoadFromStreamingAssets("Andalusia", difficulty);
+        var prefab = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        prefab.name = "AndalusiaArrangementPrefab";
+        prefab.transform.localScale = Vector3.one * .55f;
+        prefab.SetActive(false);
+        var spawner = new GameObject("AndalusiaArrangementSpawner").AddComponent<NoteSpawner>();
+        spawner.notePrefab = prefab;
+        spawner.notePrefabBlue = prefab;
+        spawner.notePrefabRed = prefab;
+        spawner.approachTime = 2;
+        int spawned = 0, completed = 0, missed = 0, gold = 0, longs = 0, directions = 0, links = 0;
+        spawner.OnNoteSpawned += note =>
+        {
+            spawned++;
+            if (note.IsGold) gold++;
+            if (note.RequiredCutCount > 1)
+            {
+                longs++;
+                Assert.IsNotNull(note.countLabel);
+                Assert.Greater(note.OverrideLingerSeconds, 0);
+            }
+            if (note.RequiredDirection != CutDirection.None) directions++;
+            note.OnCut += (n, point, velocity) =>
+            {
+                Assert.AreEqual(n.RequiredCutCount, n.CutsAchieved);
+                Assert.IsTrue(n.LastCutCorrectDirection);
+                completed++;
+            };
+            note.OnMiss += n => missed++;
+        };
+        spawner.SetChart(chart);
+        for (int step = 0; step <= 5500; step++)
+        {
+            double now = step * .02;
+            spawner.Tick(now);
+            links = Math.Max(links, Object.FindObjectsByType<SimultaneousNoteLink>(FindObjectsSortMode.None).Length);
+            foreach (var note in spawner.LiveNotes.ToArray())
+            {
+                if (note.IsFinalized) continue;
+                double nextCut = note.HitTime;
+                if (note.RequiredCutCount > 1)
+                    nextCut += note.CutsAchieved * note.OverrideLingerSeconds / (note.RequiredCutCount - 1);
+                if (now + .00001 < nextCut) continue;
+                Assert.IsTrue(note.IsJudgeable, "ロングの終端まで切れる: " + difficulty + "/" + nextCut);
+                Vector2 direction = CutDirectionHelper.ToVector(note.RequiredDirection);
+                if (direction.sqrMagnitude < .1f) direction = Vector2.up;
+                var hand = note.RequiredHand == SaberHand.Any
+                    ? (note.transform.position.x < 0 ? SaberHand.Left : SaberHand.Right) : note.RequiredHand;
+                note.Cut(note.transform.position, new Vector3(direction.x, direction.y, 0) * 6,
+                    note.RequiredDirection, hand);
+            }
+            if (step % 50 == 0) yield return null;
+        }
+        Assert.AreEqual(chart.notes.Count, spawned);
+        Assert.AreEqual(chart.notes.Count, completed);
+        Assert.AreEqual(0, missed);
+        Assert.Greater(gold, 0);
+        Assert.Greater(longs, 0);
+        Assert.Greater(directions, 0);
+        Assert.Greater(links, 0, "同時切りの連結線が生成される");
+        Debug.Log("[AndalusiaArrangement] " + difficulty + " completed=" + completed + "/" + spawned);
+    }
+}

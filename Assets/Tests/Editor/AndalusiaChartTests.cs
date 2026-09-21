@@ -38,8 +38,18 @@ public class AndalusiaChartTests
             Assert.IsFalse(float.IsNaN(note.time) || float.IsInfinity(note.time));
             Assert.That(note.time, Is.InRange(0f, 112220.6f));
             Assert.GreaterOrEqual(note.time, previous);
-            Assert.AreEqual(1, note.count);
-            Assert.IsFalse(note.IsLong, "初稿で未確認の持続音をロングへ変換しない");
+            if (note.IsLong)
+            {
+                Assert.That(note.count, Is.InRange(2, 3));
+                Assert.That(note.lengthMs, Is.InRange(450f, 2400f));
+                Assert.AreEqual("none", note.direction, "連続切りに方向拘束を重ねない");
+                Assert.Less(note.time + note.lengthMs, 104000f);
+            }
+            else
+            {
+                Assert.AreEqual(1, note.count);
+                Assert.AreEqual(0f, note.lengthMs);
+            }
             previous = note.time;
         }
     }
@@ -66,40 +76,79 @@ public class AndalusiaChartTests
         Assert.AreEqual(level, chart.displayLevel);
         Assert.AreEqual(0f, chart.offsetMs);
         Assert.AreEqual(expected.Length, chart.notes.Count);
+        // 同時刻の左右2個はローダーのソートで順番が入れ替わり得るため、位置で対応付ける。
+        var loaded = chart.notes.OrderBy(n => n.time).ThenBy(n => n.x).ThenBy(n => n.y).ToArray();
         for (int i = 0; i < expected.Length; i++)
         {
-            Assert.AreEqual(expected[i], chart.notes[i].time, .01f, "保存で音の時刻を動かさない: " + i);
-            Assert.AreEqual(document.notes[i].color, chart.notes[i].color);
-            Assert.AreEqual(document.notes[i].direction, chart.notes[i].direction);
-            Assert.AreEqual(document.notes[i].x, chart.notes[i].x, .0001f);
-            Assert.AreEqual(document.notes[i].y, chart.notes[i].y, .0001f);
+            Assert.AreEqual(expected[i], loaded[i].time, .01f, "保存で音の時刻を動かさない: " + i);
+            Assert.AreEqual(document.notes[i].color, loaded[i].color);
+            Assert.AreEqual(document.notes[i].direction, loaded[i].direction);
+            Assert.AreEqual(document.notes[i].x, loaded[i].x, .0001f);
+            Assert.AreEqual(document.notes[i].y, loaded[i].y, .0001f);
+            Assert.AreEqual(document.notes[i].count, loaded[i].count);
+            Assert.AreEqual(document.notes[i].lengthMs, loaded[i].lengthMs, .01f);
+            Assert.AreEqual(document.notes[i].type, loaded[i].type);
         }
     }
 
     [Test]
-    public void EasyKeepsSingleHandNotesAndRecoverySpace()
+    public void EasyIntroducesSpecialNotesWithRecoverySpace()
     {
         var chart = ChartLoader.LoadFromStreamingAssets(SongId, "easy");
         foreach (var note in chart.notes)
         {
-            Assert.That(note.color, Is.EqualTo("blue").Or.EqualTo("red"));
-            Assert.IsFalse(note.IsDirection);
-            Assert.AreEqual("tap", note.type);
+            Assert.Contains(note.color, new[] { "blue", "red", "gold" });
+            if (note.IsLong) Assert.AreEqual(2, note.count);
+            if (note.IsDirection) Assert.Contains(note.direction, new[] { "up", "down" });
         }
         foreach (string hand in new[] { "blue", "red" })
         {
-            var times = chart.notes.Where(n => n.color == hand).Select(n => n.TimeSeconds).ToArray();
-            for (int i = 1; i < times.Length; i++)
-                Assert.GreaterOrEqual(times[i] - times[i - 1], .79, "同じ手をすぐに振り直させない");
+            var notes = chart.notes.Where(n => IntendedHand(n) == hand).ToArray();
+            for (int i = 1; i < notes.Length; i++)
+                Assert.GreaterOrEqual(notes[i].TimeSeconds - EndSeconds(notes[i - 1]), .63,
+                    "ロング終端と金ノーツも含めて同じ手の回復を残す");
         }
-        for (int i = 1; i < chart.notes.Count; i++)
-            Assert.Greater(chart.notes[i].time - chart.notes[i - 1].time, 10f, "Easyに同時斬りを入れない");
         // 表拍かどうかは整数beatで判定できない。ここでは別途レビューした配置の局所密度だけを監査する。
         int start = 0;
         for (int end = 0; end < chart.notes.Count; end++)
         {
             while (chart.notes[end].time - chart.notes[start].time > 2000f) start++;
-            Assert.LessOrEqual(end - start + 1, 4);
+            Assert.LessOrEqual(end - start + 1, 5, "少数の同時切り以外は主打の密度を維持する");
+        }
+    }
+
+    static string IntendedHand(NoteData note) => note.color == "gold" ? (note.x < 0 ? "blue" : "red") : note.color;
+    static double EndSeconds(NoteData note) => note.TimeSeconds + (note.IsLong ? note.lengthMs / 1000.0 : 0);
+
+    [TestCase("easy", .63)]
+    [TestCase("normal", .45)]
+    [TestCase("hard", .29)]
+    public void ArrangementHasVarietyWithoutImpossibleHandOccupancy(string difficulty, double recovery)
+    {
+        var chart = ChartLoader.LoadFromStreamingAssets(SongId, difficulty);
+        Assert.IsTrue(chart.notes.Any(n => n.IsLong));
+        Assert.IsTrue(chart.notes.Any(n => n.IsDirection));
+        Assert.IsTrue(chart.notes.Any(n => n.color == "gold"));
+        Assert.IsTrue(chart.notes.GroupBy(n => n.time).Any(g => g.Count() == 2));
+        foreach (var group in chart.notes.GroupBy(n => n.time))
+        {
+            Assert.LessOrEqual(group.Count(), 2, "三本目の手を要求しない");
+            if (group.Count() != 2) continue;
+            var pair = group.OrderBy(n => n.x).ToArray();
+            Assert.AreNotEqual(IntendedHand(pair[0]), IntendedHand(pair[1]));
+            Assert.GreaterOrEqual(pair[1].x - pair[0].x, 1.4f, "同時切りを重ねない");
+        }
+        foreach (string hand in new[] { "blue", "red" })
+        {
+            var notes = chart.notes.Where(n => IntendedHand(n) == hand).ToArray();
+            for (int i = 1; i < notes.Length; i++)
+            {
+                double gap = notes[i].TimeSeconds - EndSeconds(notes[i - 1]);
+                Assert.GreaterOrEqual(gap, recovery, "同手ロングの拘束中に別ノーツを要求しない: " + notes[i].time);
+                float travel = Vector2.Distance(new Vector2(notes[i].x, notes[i].y),
+                    new Vector2(notes[i - 1].x, notes[i - 1].y));
+                Assert.LessOrEqual(travel, (float)(gap * 1.55 + .003), "短い間隔の大移動を避ける");
+            }
         }
     }
 
