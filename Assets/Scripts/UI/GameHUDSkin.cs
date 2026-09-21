@@ -91,6 +91,9 @@ public class GameHUDSkin : MonoBehaviour
     private TextMeshProUGUI scoreValue;
     private TextMeshProUGUI comboValue;
     private TextMeshProUGUI comboLabel;
+    private TextMeshProUGUI maxComboValue;
+    private int lastMaxCombo;
+    private float maxComboPunchAge = 999f;
     private TextMeshProUGUI tierText;
     private TextMeshProUGUI timingHintText;
     private TextMeshProUGUI flickWarningText;
@@ -188,9 +191,19 @@ public class GameHUDSkin : MonoBehaviour
         // --- ランク(左上・スコアの下) ---
         BuildRankWidget(oxBold);
 
-        // --- コンボ(右上、デザイン: top:40 right:70。色とサイズは UpdateCombo で育つ) ---
+        // 最大コンボを現在コンボの上へ置き、ミス後も記録を残す。
+        maxComboValue = UISkinKit.MakeTMP(transform, "MaxComboValue", "0", 64f,
+            Color.white, TextAlignmentOptions.TopRight,
+            Vector2.zero, new Vector2(500f, 96f), FontStyles.Normal, 0f, font);
+        AnchorTopRight(maxComboValue.rectTransform, new Vector2(-70f, -28f));
+        var maxLabel = UISkinKit.MakeTMP(transform, "MaxComboLabel", "MAX COMBO", 20f,
+            UISkinPalette.SubtleGray, TextAlignmentOptions.TopRight,
+            Vector2.zero, new Vector2(350f, 30f), FontStyles.Normal, 4f, oxBold);
+        AnchorTopRight(maxLabel.rectTransform, new Vector2(-72f, -136f));
+
+        // --- コンボ(最大値の下。色とサイズは UpdateCombo で育つ) ---
         comboGlow = AddHudGlow(Vector2.zero, new Vector2(440f, 180f), Color.clear);
-        AnchorTopRight(comboGlow.rectTransform, new Vector2(-20f, -20f));
+        AnchorTopRight(comboGlow.rectTransform, new Vector2(-20f, -144f));
 
         comboValue = UISkinKit.MakeTMP(transform, "ComboValue", "", 90f,
             Color.white, TextAlignmentOptions.TopRight,
@@ -199,12 +212,12 @@ public class GameHUDSkin : MonoBehaviour
         comboRT = comboValue.rectTransform;
         // パンチは右上を支点に(CSS transform-origin:100% 20% 相当)
         comboRT.pivot = new Vector2(1f, 0.8f);
-        comboRT.anchoredPosition = new Vector2(-70f, -40f - 140f * 0.2f);
+        comboRT.anchoredPosition = new Vector2(-70f, -156f - 140f * 0.2f);
 
         comboLabel = UISkinKit.MakeTMP(transform, "ComboLabel", "", 22f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.TopRight,
             Vector2.zero, new Vector2(300f, 30f), FontStyles.Normal, 6f, oxBold);
-        AnchorTopRight(comboLabel.rectTransform, new Vector2(-72f, -160f));
+        AnchorTopRight(comboLabel.rectTransform, new Vector2(-72f, -330f));
 
         // --- 判定演出(中央やや下:ノーツ軌道の外) ---
         tierText = UISkinKit.MakeTMP(transform, "TierText", "", 64f,
@@ -239,6 +252,7 @@ public class GameHUDSkin : MonoBehaviour
         var legacy = Object.FindFirstObjectByType<ScoreHUD>();
         if (legacy == null) return;
         if (legacy.scoreText != null) legacy.scoreText.gameObject.SetActive(false);
+        if (legacy.maxComboText != null) legacy.maxComboText.gameObject.SetActive(false);
         if (legacy.comboText != null) legacy.comboText.gameObject.SetActive(false);
         if (legacy.tierText != null) legacy.tierText.gameObject.SetActive(false);
         if (legacy.flickWarningText != null) legacy.flickWarningText.gameObject.SetActive(false);
@@ -444,6 +458,7 @@ public class GameHUDSkin : MonoBehaviour
         {
             if (scoreValue != null) scoreValue.text = score.Score.ToString("000,000");
             UpdateCombo();
+            UpdateMaxCombo();
         }
         UpdateTierAnimation();
         UpdateProgress();
@@ -609,6 +624,21 @@ public class GameHUDSkin : MonoBehaviour
         float p = Mathf.Clamp01(comboPunchAge / comboPunchDuration);
         float scale = Mathf.Lerp(DisplaySettings.ReducedEffects ? 1f : comboPunchScale, 1f, p * p * (3f - 2f * p));
         if (comboRT != null) comboRT.localScale = Vector3.one * scale;
+    }
+
+    private void UpdateMaxCombo()
+    {
+        if (maxComboValue == null) return;
+        int maximum = score.MaxCombo;
+        if (maximum > lastMaxCombo) maxComboPunchAge = 0f;
+        lastMaxCombo = maximum;
+        maxComboValue.text = maximum.ToString();
+        maxComboValue.fontSize = Mathf.Lerp(64f, 84f, Mathf.Clamp01(maximum / 300f));
+        maxComboValue.enableVertexGradient = true;
+        maxComboValue.colorGradient = ComboBonusPresentation.Gradient(maximum);
+        maxComboPunchAge += Time.deltaTime;
+        float punch = DisplaySettings.ReducedEffects ? 0f : .10f * Mathf.Clamp01(1f - maxComboPunchAge / .18f);
+        maxComboValue.rectTransform.localScale = Vector3.one * (1f + punch);
     }
 
     private void UpdateProgress()

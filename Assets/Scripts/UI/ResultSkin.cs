@@ -398,6 +398,8 @@ public class ResultSkin : MonoBehaviour
             UISkinPalette.OffWhite, TextAlignmentOptions.MidlineLeft,
             new Vector2(-416f, -1f), new Vector2(300f, 62f), FontStyles.Normal, 0f, chakra);
         Reveal(comboValue.gameObject, DelayMaxCombo, 0.5f, FromLeft);
+        comboValue.enableVertexGradient = true;
+        comboValue.colorGradient = ComboBonusPresentation.Gradient(GameSession.FinalMaxCombo);
 
         // HI-SCORE(記録前の従来ベスト。今回それを超えたら NEW RECORD!)
         BuildHiScoreRow(block.transform, chakra, oxBold);

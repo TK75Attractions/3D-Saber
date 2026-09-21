@@ -3,11 +3,13 @@ using UnityEngine;
 public class ScoreManager : MonoBehaviour
 {
     public SongPlayer songPlayer;
-    public int comboBonusPerStep = 10;
+    public const int ComboBonusPerNote = 100;
 
     public int Score { get; private set; }
     public int Combo { get; private set; }
     public int MaxCombo { get; private set; }
+    public int ComboBonus => MaxCombo * ComboBonusPerNote;
+    public bool IsFinalized { get; private set; }
     public int HitCount { get; private set; }
     public int MissCount { get; private set; }
     public int PerfectCount { get; private set; }
@@ -60,6 +62,7 @@ public class ScoreManager : MonoBehaviour
         Score = 0;
         Combo = 0;
         MaxCombo = 0;
+        IsFinalized = false;
         HitCount = 0;
         MissCount = 0;
         PerfectCount = 0;
@@ -160,6 +163,7 @@ public class ScoreManager : MonoBehaviour
 
     public void RegisterHit(JudgmentTier tier)
     {
+        if (IsFinalized) return;
         LastTier = tier;
         if (tier == JudgmentTier.Miss)
         {
@@ -177,8 +181,7 @@ public class ScoreManager : MonoBehaviour
             Combo++;
             if (Combo > MaxCombo) MaxCombo = Combo;
         }
-        int comboMultiplier = Mathf.Max(0, Combo - 1);
-        int award = JudgmentTierHelper.BasePoints(tier) + comboBonusPerStep * comboMultiplier;
+        int award = JudgmentTierHelper.BasePoints(tier);
         Score += award;
         switch (tier)
         {
@@ -193,6 +196,7 @@ public class ScoreManager : MonoBehaviour
 
     public void RegisterMiss()
     {
+        if (IsFinalized) return;
         MissCount++;
         Combo = 0;
         LastTier = JudgmentTier.Miss;
@@ -204,5 +208,14 @@ public class ScoreManager : MonoBehaviour
         LastCutTimedOut = false;
         OnJudgment?.Invoke(JudgmentTier.Miss, 0);
         OnJudgmentEx?.Invoke(JudgmentTier.Miss, 0, false);
+    }
+
+    // 曲終了時に最大コンボ分を一度だけ精算する。判定イベントは発行しない。
+    public int FinalizeScore()
+    {
+        if (IsFinalized) return 0;
+        IsFinalized = true;
+        Score += ComboBonus;
+        return ComboBonus;
     }
 }

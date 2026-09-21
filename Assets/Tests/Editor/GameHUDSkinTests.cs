@@ -154,6 +154,8 @@ public class GameHUDSkinTests
         Assert.IsNotNull(t.Find("ScoreLabel"), "スコアラベル");
         Assert.IsNotNull(t.Find("ScoreValue"), "スコア数値");
         Assert.IsNotNull(t.Find("ComboValue"), "コンボ数値");
+        Assert.IsNotNull(t.Find("MaxComboValue"), "最大コンボ数値");
+        Assert.IsNotNull(t.Find("MaxComboLabel"), "最大コンボラベル");
         Assert.IsNotNull(t.Find("TierText"), "判定演出テキスト");
         Assert.IsNotNull(t.Find("TimingHint"), "EARLY/LATE表示");
         Assert.IsNotNull(t.Find("SongTitle"), "曲名");

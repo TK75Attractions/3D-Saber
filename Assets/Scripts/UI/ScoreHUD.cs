@@ -9,6 +9,7 @@ public class ScoreHUD : MonoBehaviour
     public ScoreManager score;
     public Text scoreText;
     public Text comboText;
+    public Text maxComboText;
     public Text tierText;
     public Text flickWarningText;
 
@@ -53,6 +54,20 @@ public class ScoreHUD : MonoBehaviour
             ReanchorComboToRight(comboRT);
             ConfigureComboFont(comboText);
             EnsureComboOutline();
+            if (maxComboText == null && !GameSession.IsCalibrationMode)
+            {
+                var go = new GameObject("MaxComboText", typeof(RectTransform), typeof(Text));
+                go.transform.SetParent(comboText.transform.parent, false);
+                maxComboText = go.GetComponent<Text>();
+                ConfigureComboFont(maxComboText);
+                ReanchorComboToRight(maxComboText.rectTransform);
+                maxComboText.rectTransform.anchoredPosition = new Vector2(-60f, 310f);
+                maxComboText.rectTransform.sizeDelta = new Vector2(560f, 180f);
+                maxComboText.fontSize = 76;
+                var outline = go.AddComponent<Outline>();
+                outline.effectColor = new Color(0, 0, 0, .6f);
+                outline.effectDistance = new Vector2(2, -2);
+            }
         }
         if (scoreText != null)
         {
@@ -134,6 +149,11 @@ public class ScoreHUD : MonoBehaviour
         {
             if (scoreText != null) scoreText.text = $"SCORE  {score.Score:N0}";
             UpdateCombo();
+            if (maxComboText != null)
+            {
+                maxComboText.text = $"{score.MaxCombo}\n<size=30>MAX COMBO</size>";
+                maxComboText.color = ComboBonusPresentation.Accent(score.MaxCombo);
+            }
         }
         UpdateTierAnimation();
     }

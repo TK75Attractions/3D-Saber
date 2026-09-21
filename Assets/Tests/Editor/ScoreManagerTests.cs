@@ -23,15 +23,55 @@ public class ScoreManagerTests
     }
 
     [Test]
-    public void RegisterHit_ComboBonusAccumulates()
+    public void RegisterHit_OnlyBasePointsAccumulateDuringPlay()
     {
         var s = Make();
-        s.RegisterHit(JudgmentTier.Perfect);  // 300 + 0
-        s.RegisterHit(JudgmentTier.Perfect);  // 300 + 10
-        s.RegisterHit(JudgmentTier.Perfect);  // 300 + 20
-        Assert.AreEqual(930, s.Score);
+        s.RegisterHit(JudgmentTier.Perfect);
+        s.RegisterHit(JudgmentTier.Perfect);
+        s.RegisterHit(JudgmentTier.Perfect);
+        Assert.AreEqual(900, s.Score);
         Assert.AreEqual(3, s.Combo);
         Assert.AreEqual(3, s.MaxCombo);
+        Object.DestroyImmediate(s.gameObject);
+    }
+
+    [Test]
+    public void FinalizeScore_UsesMaximumDespiteLateMiss_AndAwardsOnce()
+    {
+        var s = Make();
+        for (int i = 0; i < 12; i++) s.RegisterHit(JudgmentTier.Perfect);
+        s.RegisterMiss();
+        s.RegisterHit(JudgmentTier.Good);
+        int baseScore = s.Score;
+        int judgments = 0;
+        s.OnJudgment += (_, __) => judgments++;
+        Assert.AreEqual(1200, s.FinalizeScore());
+        Assert.AreEqual(baseScore + 1200, s.Score);
+        Assert.AreEqual(0, s.FinalizeScore());
+        s.RegisterHit(JudgmentTier.Perfect);
+        s.RegisterMiss();
+        Assert.AreEqual(baseScore + 1200, s.Score);
+        Assert.AreEqual(1, s.Combo);
+        Assert.AreEqual(12, s.MaxCombo);
+        Assert.AreEqual(0, judgments, "精算や終了後の入力を判定イベントにしない");
+        Object.DestroyImmediate(s.gameObject);
+    }
+
+    [Test]
+    public void FinalizeScore_AllMissAndReplayDoNotKeepOldBonus()
+    {
+        var s = Make();
+        s.RegisterMiss();
+        Assert.AreEqual(0, s.FinalizeScore());
+        Assert.AreEqual(0, s.Score);
+        s.Reset();
+        Assert.False(s.IsFinalized);
+        s.RegisterHit(JudgmentTier.Great);
+        Assert.AreEqual(100, s.FinalizeScore());
+        Assert.AreEqual(300, s.Score);
+        s.Reset();
+        Assert.AreEqual(0, s.ComboBonus);
+        Assert.AreEqual(0, s.FinalizeScore());
         Object.DestroyImmediate(s.gameObject);
     }
 
@@ -56,7 +96,7 @@ public class ScoreManagerTests
     {
         var s = Make();
         s.RegisterHit(JudgmentTier.Perfect); // Score 300, Combo 1
-        s.RegisterHit(JudgmentTier.Perfect); // Score +310 = 610, Combo 2
+        s.RegisterHit(JudgmentTier.Perfect); // Score +300 = 600, Combo 2
         int scoreBeforeBad = s.Score;
         s.RegisterHit(JudgmentTier.Bad);     // Combo 0 でリセット、Bad の基礎点 50
         Assert.AreEqual(0, s.Combo, "Bad でコンボは0に");

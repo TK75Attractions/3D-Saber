@@ -701,8 +701,27 @@ public class GamePlayManager : MonoBehaviour
             $"duration={songPlayer.Duration:F1}s lastNote={lastNoteTime:F1}s alive={noteSpawner.AliveCount}");
         songPlayer.Stop();
         if (stageReactions != null) stageReactions.ResetState();
+        if (playFeedback != null) playFeedback.gameObject.SetActive(false);
+        StartCoroutine(FinishWithComboBonus());
+    }
+
+    private System.Collections.IEnumerator FinishWithComboBonus()
+    {
+        var bonus = ComboBonusPresentation.Create(scoreManager.MaxCombo);
+        // アニメと精算を同じ終了経路で管理し、途中の入力では再加算しない。
+        float elapsed = 0f;
+        while (elapsed < bonus.Duration)
+        {
+            bonus.Tick(elapsed);
+            yield return null;
+            // 生成前の長いフレーム時間を足さず、処理落ちでも冒頭を飛ばさない。
+            elapsed += Mathf.Min(Time.unscaledDeltaTime, .1f);
+            if (elapsed >= ComboBonusPresentation.LandingTime) scoreManager.FinalizeScore();
+        }
+        scoreManager.FinalizeScore();
         GameSession.FinalScore = scoreManager.Score;
         GameSession.FinalMaxCombo = scoreManager.MaxCombo;
+        GameSession.FinalComboBonus = scoreManager.ComboBonus;
         GameSession.FinalHit = scoreManager.HitCount;
         GameSession.FinalMiss = scoreManager.MissCount;
         GameSession.FinalPerfect = scoreManager.PerfectCount;
@@ -713,5 +732,6 @@ public class GamePlayManager : MonoBehaviour
         {
             ScreenTransition.Load(resultSceneName, ScreenTransition.Style.Result);
         }
+        else Destroy(bonus.gameObject);
     }
 }

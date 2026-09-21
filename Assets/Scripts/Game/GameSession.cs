@@ -10,6 +10,7 @@ public static class GameSession
 
     public static int FinalScore;
     public static int FinalMaxCombo;
+    public static int FinalComboBonus;
     public static int FinalHit;
     public static int FinalMiss;
     public static int FinalPerfect;
@@ -79,6 +80,7 @@ public static class GameSession
     {
         FinalScore = 0;
         FinalMaxCombo = 0;
+        FinalComboBonus = 0;
         FinalHit = 0;
         FinalMiss = 0;
         FinalPerfect = 0;
