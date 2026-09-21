@@ -14,7 +14,7 @@ public static class UISkinPalette
         : new Color(0.55f, 0.60f, 0.75f);
 
     // ノーツ種別カラー
-    public static readonly Color NoteFlick = new Color(0.75f, 0.40f, 1f);     // バイオレット
+    public static readonly Color NoteFlick = new Color(0.88f, 0.62f, 1f);     // 明るいラベンダー
     public static readonly Color NoteLong = new Color(0.30f, 1f, 0.65f);      // ティール / アクアグリーン
     public static readonly Color NoteGold = new Color(1f, 0.85f, 0.25f);      // 金
 

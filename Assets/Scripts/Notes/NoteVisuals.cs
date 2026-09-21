@@ -268,8 +268,8 @@ public class NoteVisuals : MonoBehaviour
     {
         // 矢印が中央を占めるので InnerCore は無し。代わりに前面に「縁取り光」を程よく、
         // 後ろに薄いバックライトを置いて方向ノーツらしく光が抜ける感じに。
-        AddEdgeRailsFront(emissionScale: 3.0f);
-        AddFrontHalo(emissionScale: 2.0f, alpha: 0.7f);
+        AddEdgeRailsFront(emissionScale: 1.25f);
+        AddFrontHalo(emissionScale: 0.8f, alpha: 0.3f);
         AddBackBackLight(emissionScale: 0.9f, alpha: 0.40f);
     }
 

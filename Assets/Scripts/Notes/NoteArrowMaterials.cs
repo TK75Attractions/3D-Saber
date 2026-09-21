@@ -4,6 +4,8 @@ using UnityEngine;
 // 方向矢印が作った材質だけを所有する。本体や別ノーツの共有材質には触れない。
 public sealed class NoteArrowMaterials : MonoBehaviour
 {
+    readonly List<Mesh> meshes = new List<Mesh>();
+    internal void Register(Mesh mesh) { meshes.Add(mesh); }
     readonly List<Material> owned = new List<Material>();
 
     internal void Register(Material material)
@@ -21,5 +23,7 @@ public sealed class NoteArrowMaterials : MonoBehaviour
             else DestroyImmediate(material);
         }
         owned.Clear();
+        foreach (var mesh in meshes) UISkinKit.SafeDestroy(mesh);
+        meshes.Clear();
     }
 }

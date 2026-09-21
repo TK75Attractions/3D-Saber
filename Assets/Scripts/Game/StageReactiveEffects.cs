@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// 全背景共通の舞台反応。Perfectの光をノーツの横位置に対応する床列へ送る。
+// 全背景共通の舞台反応。Perfectの光をノーツの横位置に対応する左右の縁へ送る。
 // 独自Updateは持たず、GamePlayManagerの曲時計でのみ進む。
 [ExecuteAlways]
 public sealed class StageReactiveEffects : MonoBehaviour
@@ -337,14 +337,14 @@ public sealed class StageReactiveEffects : MonoBehaviour
             {
                 float z = 4 + bank * 5;
                 float alpha = (open * .2f + prepare * .14f) * (1 - state.hush * .85f) * projector;
-                Vector3 root = new Vector3(side * 6.05f, floor + .12f, z);
-                Vector3 tip = new Vector3(side * (7 + open * 6 + (1 - prepare) * 1.3f), 4.6f + open * 1.6f, z + 4 + prepare * 5);
-                Beam(root, tip, .035f + open * .07f, themeColor, alpha);
+                Vector3 root = new Vector3(side * 6.35f, floor + 1.0f, z);
+                Vector3 tip = new Vector3(side * 6.35f, floor + 1.0f, z + 3.2f);
+                Beam(root, tip, .035f + open * .07f, themeColor, alpha, Vector3.up);
                 if (prepare > 0)
                 {
                     float moving = Mathf.Repeat((float)LastTickSeconds * 2.5f - bank * .22f, 1);
                     float z0 = z + moving * 4;
-                    Beam(new Vector3(side * 4.85f, floor + .1f, z0), new Vector3(side * 4.85f, floor + .1f, z0 + 1.2f), .16f, themeColor, prepare * .65f * (1 - state.hush) * projector, Vector3.right);
+                    Beam(new Vector3(side * 6.35f, floor + .3f, z0), new Vector3(side * 6.35f, floor + .3f, z0 + 1.2f), .16f, themeColor, prepare * .65f * (1 - state.hush) * projector, Vector3.right);
                 }
             }
             if (state.impact > .001f)
@@ -365,34 +365,6 @@ public sealed class StageReactiveEffects : MonoBehaviour
             for (int lane = 0; lane < 4; lane++)
                 if ((wave.laneMask & (1 << lane)) != 0)
                     FloorLaneWave(lane, travel, tint, gain, wave.kind == WaveKind.Cut ? .7f : 1.35f);
-            for (int side = -1; side <= 1; side += 2)
-            {
-                if ((themeResponse != null && themeResponse.ReplacesSideResponse) ||
-                    (meteorWorld != null && meteorWorld.MeteorResponsesReady)) continue;
-                // 同時斬りでも、実際に切った床列の側だけへ展開する。
-                if ((wave.laneMask & (side < 0 ? 3 : 12)) == 0) continue;
-                for (int bank = 0; bank < 7; bank++)
-                {
-                    float local = wave.age - bank * .055f;
-                    if (local < 0 || local > .28f) continue;
-                    float flash = (1 - local / .28f) * gain;
-                    float z = 4 + bank * 5;
-                    Beam(new Vector3(side * 6.05f, floor + .18f, z), new Vector3(side * (7.1f + local * 3), 3.8f, z + 1), .1f, tint, flash);
-                }
-                if (wave.kind != WaveKind.Cut)
-                {
-                    // 弧は通路の外側だけ。ロング完走は二重の弧がほどける。
-                    int arcs = wave.kind == WaveKind.Release ? 2 : 1;
-                    for (int arc = 0; arc < arcs; arc++)
-                        for (int segment = 0; segment < 12; segment++)
-                        {
-                            float a = segment / 12f, b = (segment + 1) / 12f;
-                            Vector3 p = ArcPoint(side, a, wave.age, arc);
-                            Vector3 q = ArcPoint(side, b, wave.age, arc);
-                            Beam(p, q, .08f, tint, gain * .85f);
-                        }
-                }
-            }
         }
         DrawWeave(projector);
         mesh.Clear(); mesh.SetVertices(vertices); mesh.SetColors(colors); mesh.SetUVs(0, uvs);
@@ -406,45 +378,31 @@ public sealed class StageReactiveEffects : MonoBehaviour
         foreach (var stitch in stitches)
         {
             if (!stitch.active) continue;
-            // ノーツと切断片の真下から少し外へ寄せ、床列の中で縫い目を見せる。
-            float x = FloorLaneCenter(stitch.lane) + (stitch.lane < 2 ? -.55f : .55f);
-            float z = 1.2f + stitch.age * 18;
+            // 中央のタイミングガイドを避け、左右の縁に連打の短い縫い目を見せる。
+            float x = (stitch.lane < 2 ? -1 : 1) * (6.55f + (stitch.lane % 2) * .32f);
+            float z = 2.4f;
             float alpha = (1 - stitch.age / StitchLifetime) * projector * .85f;
-            // 帯と斜めの縫い目を同じ床列に収める。後続の成功で古い節の寿命を延ばさない。
+            // 帯と斜めの縫い目を縁に収める。後続の成功で古い節の寿命を延ばさない。
             Beam(new Vector3(x, y, z - 1.7f), new Vector3(x, y, z + .6f), .20f, stitch.color, alpha * .36f, Vector3.right);
-            Beam(new Vector3(x - .48f, y, z - .3f), new Vector3(x + .48f, y, z + .3f), .10f, stitch.color, alpha, Vector3.forward);
+            Beam(new Vector3(x - .12f, y, z - .3f), new Vector3(x + .12f, y, z + .3f), .10f, stitch.color, alpha, Vector3.forward);
         }
-    }
-
-    Vector3 ArcPoint(int side, float fraction, float age, int layer)
-    {
-        return new Vector3(side * (6 + Mathf.Sin(fraction * Mathf.PI) * (2.4f + age * 4) + layer * .35f),
-            floor + .25f + fraction * 8, 7 + age * 12 + layer * 3);
     }
 
     void FloorFan(int side, float z, Color tint, float alpha, float width)
     {
-        // 動く床板の最大上昇分より上に薄い波を置き、板の中に埋めない。
-        float y = floor + (theme == StageTheme.ObsidianRelay ? .46f : theme == StageTheme.VioletVault ? .56f : .13f);
-        Vector3 a = new Vector3(side * 3.35f, y, z - 1.2f);
-        Vector3 b = new Vector3(side * 5.1f, y, z);
-        Vector3 c = new Vector3(side * 7.7f, y, z + 1.1f);
-        Beam(a, b, width * .12f, tint, alpha, Vector3.forward);
-        Beam(b, c, width * .12f, tint, alpha, Vector3.forward);
-        Beam(new Vector3(side * 4.75f, y, z - 3), new Vector3(side * 4.75f, y, z + 1), width * .24f, tint, alpha * .42f, Vector3.right);
+        // サビ入口も通路外の縁だけを光らせ、中央の接近ガイドと区別する。
+        Beam(new Vector3(side * 6.4f, floor + .3f, 1),
+            new Vector3(side * 6.4f, floor + .3f, 8), width * .13f, tint, alpha, Vector3.right);
     }
 
     void FloorLaneWave(int lane, float z, Color tint, float alpha, float width)
     {
-        float y = floor + (theme == StageTheme.ObsidianRelay ? .46f : theme == StageTheme.VioletVault ? .56f : .13f);
-        float x = FloorLaneCenter(lane);
-        // 床4列の枠（-6,-3,0,3,6）を越えない短い山形と残光。
-        Vector3 tip = new Vector3(x, y, z + .7f);
-        Beam(new Vector3(x - 1.18f, y, z), tip, width * .10f, tint, alpha, Vector3.forward);
-        Beam(tip, new Vector3(x + 1.18f, y, z), width * .10f, tint, alpha, Vector3.forward);
-        Beam(new Vector3(x, y, z - 2.1f), tip, width * .17f, tint, alpha * .38f, Vector3.right);
+        // Perfectは対応する左右の縁で短く残光。床の逆流・立ち上がる光は出さない。
+        float x = (lane < 2 ? -1 : 1) * (6.55f + (lane % 2) * .32f);
+        float y = floor + .3f;
+        Beam(new Vector3(x, y, 1.2f), new Vector3(x, y, 4.6f),
+            width * .19f, tint, alpha, Vector3.right);
     }
-
     void Beam(Vector3 a, Vector3 b, float width, Color tint, float alpha, Vector3 edge = default)
     {
         alpha *= DisplaySettings.AccentScale;

@@ -191,6 +191,7 @@ public class GamePlayManager : MonoBehaviour
         if (noteSpawner != null)
         {
             noteSpawner.approachTime = GameSession.NoteApproachTime;
+            if (stageFloor != null) noteSpawner.ConfigureFloorGuide(stageFloor.floorY);
             // 判定可能ウィンドウを Classify の判定窓と同期させる
             // (シーンに古い狭い窓が焼き込まれていても、甘くした定数側が常に効くように)。
             noteSpawner.judgeWindow = (float)JudgmentTierHelper.LateBadSeconds;

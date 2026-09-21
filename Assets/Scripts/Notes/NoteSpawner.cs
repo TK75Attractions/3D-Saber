@@ -39,6 +39,12 @@ public class NoteSpawner : MonoBehaviour
     private double extraOffsetSeconds; // GamePlayManager から実行時に上書き
     private readonly List<CuttableNote> liveNotes = new List<CuttableNote>();
     private GameplayCutFeedback cutFeedback;
+    public FloorTimingGuide FloorGuide { get; private set; }
+    public void ConfigureFloorGuide(float floorY)
+    {
+        if (FloorGuide != null) SafeDestroy(FloorGuide.gameObject);
+        FloorGuide = FloorTimingGuide.Create(transform, floorY);
+    }
     public bool reuseNotes = true;
     const int MaxIdleNotes = 128;
     readonly Dictionary<PoolKey, Stack<CuttableNote>> idleNotes = new Dictionary<PoolKey, Stack<CuttableNote>>();
@@ -139,6 +145,7 @@ public class NoteSpawner : MonoBehaviour
     {
         OnChartReset?.Invoke();
         if (cutFeedback != null) cutFeedback.ResetState();
+        if (FloorGuide != null) FloorGuide.Clear();
         chart = data;
         nextIndex = 0;
         RecomputeTotalOffset();
@@ -182,6 +189,7 @@ public class NoteSpawner : MonoBehaviour
     {
         SpawnDue(songTime);
         UpdateLive(songTime);
+        if (FloorGuide != null) FloorGuide.Tick(this, songTime);
         if (cutFeedback != null) cutFeedback.Tick(Time.deltaTime);
     }
 
@@ -205,6 +213,7 @@ public class NoteSpawner : MonoBehaviour
     void OnDisable()
     {
         if (cutFeedback != null) cutFeedback.ClearEffects();
+        if (FloorGuide != null) FloorGuide.Clear();
     }
 
     void OnDestroy()
@@ -212,6 +221,7 @@ public class NoteSpawner : MonoBehaviour
         // Spawnerコンポーネントだけが取り外された場合も、表示用の所有資源を残さない。
         if (cutFeedback != null) SafeDestroy(cutFeedback.gameObject);
         cutFeedback = null;
+        if (FloorGuide != null) SafeDestroy(FloorGuide.gameObject);
         foreach(var note in poolKeys.Keys) if(note != null) SafeDestroy(note.gameObject);
         poolKeys.Clear(); idleNotes.Clear(); idleCount=0;
         if(idleRoot != null) SafeDestroy(idleRoot.gameObject);
@@ -338,78 +348,33 @@ public class NoteSpawner : MonoBehaviour
         OnNoteSpawned?.Invoke(note);
     }
 
-    // 方向ノーツのシェブロン矢印を組み立てる。曲選択のナビノーツ(SongSelectSlashNav)からも使うため公開。
+    // 本体と床の矢印は同じ形状。暗い輪郭の中へ太い白矢印を置く。
     public static void BuildArrow(Transform parent, CutDirection dir)
     {
-        GameObject arrow = new GameObject("Arrow");
-        var materials = arrow.AddComponent<NoteArrowMaterials>();
+        var arrow = new GameObject("Arrow");
         arrow.transform.SetParent(parent, false);
-        arrow.transform.localPosition = new Vector3(0f, 0f, -0.55f);
-        arrow.transform.localRotation = Quaternion.Euler(0f, 0f, CutDirectionHelper.ToZRotationDegrees(dir));
-
-        // 暗い下敷き:紫ボディの発光の上でもシェブロンの輪郭が読めるようにコントラストを作る
-        GameObject backing = GameObject.CreatePrimitive(PrimitiveType.Quad);
-        backing.name = "ArrowBacking";
-        backing.transform.SetParent(arrow.transform, false);
-        backing.transform.localPosition = new Vector3(0f, 0f, 0.01f);
-        backing.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
-        backing.transform.localScale = new Vector3(0.62f, 0.62f, 1f);
-        StripArrowCollider(backing);
-        var backingMr = backing.GetComponent<Renderer>();
-        if (backingMr != null)
+        arrow.transform.localPosition = new Vector3(0, 0, -.57f);
+        arrow.transform.localRotation = Quaternion.Euler(0, 0, CutDirectionHelper.ToZRotationDegrees(dir));
+        var owner = arrow.AddComponent<NoteArrowMaterials>();
+        var mesh = FlickArrowShape.CreateMesh();
+        owner.Register(mesh);
+        var shader = Resources.Load<Shader>("Effects/NoteGuide");
+        for (int layer = 0; layer < 2; layer++)
         {
-            var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            var mat = new Material(sh);
-            materials.Register(mat);
-            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
-            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
-            mat.renderQueue = 3001;
-            // 黒シェブロンの下敷きは明るく(黒矢印がボディ発光の上でも読めるように)。
-            // プロジェクターモードは反転(白い矢印+暗い下敷き): 黒は灰色化して読めなくなるため。
-            Color light = DisplaySettings.ProjectorMode ? ProjectorMode.ArrowBackingColor : new Color(0.92f, 0.95f, 1f, 0.62f);
-            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", light);
-            else mat.color = light;
-            backingMr.sharedMaterial = mat;
+            var part = new GameObject(layer == 0 ? "ArrowBacking" : "Bars", typeof(MeshFilter), typeof(MeshRenderer));
+            part.transform.SetParent(arrow.transform, false);
+            part.transform.localScale = Vector3.one * (layer == 0 ? 1.04f : .8f);
+            part.transform.localPosition = new Vector3(0, 0, layer == 0 ? .008f : -.008f);
+            part.GetComponent<MeshFilter>().sharedMesh = mesh;
+            var material = new Material(shader) { renderQueue = 3021 + layer };
+            material.SetColor("_BaseColor", layer == 0 ? new Color(.015f, .02f, .045f) : Color.white);
+            owner.Register(material);
+            var renderer = part.GetComponent<MeshRenderer>();
+            renderer.sharedMaterial = material;
+            renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
         }
-
-        // 上向き ^ シェブロン:白+強発光で「向き」を最優先の信号にする
-        Material barMaterial=null;
-        for (int sign = -1; sign <= 1; sign += 2)
-        {
-            GameObject bar = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            bar.name = sign < 0 ? "BarL" : "BarR";
-            bar.transform.SetParent(arrow.transform, false);
-            bar.transform.localPosition = new Vector3(sign * 0.16f, -0.07f, 0f);
-            bar.transform.localRotation = Quaternion.Euler(0f, 0f, sign * 35f);
-            bar.transform.localScale = new Vector3(DisplaySettings.ProjectorMode ? ProjectorMode.ArrowBarWidth : 0.09f, 0.42f, 0.04f);
-            StripArrowCollider(bar);
-            var mr = bar.GetComponent<Renderer>();
-            if (mr != null)
-            {
-                var sh = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-                var mat = barMaterial;
-                if(mat == null) { mat=new Material(sh); materials.Register(mat); barMaterial=mat; }
-                // 黒(非発光)。発光ボディの上でも輪郭が締まって向きが読める(ユーザー指定)。
-                // プロジェクターモードでは白(暗い下敷きの上)。
-                Color black = DisplaySettings.ProjectorMode ? ProjectorMode.ArrowBarColor : new Color(0.02f, 0.02f, 0.04f);
-                if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", black);
-                else mat.color = black;
-                mr.sharedMaterial = mat;
-            }
-        }
-        NoteMeshBatch.Combine(arrow.transform,"Bars",barMaterial,arrow.transform.Find("BarL"),arrow.transform.Find("BarR"));
     }
-
-    private static void StripArrowCollider(GameObject go)
-    {
-        var col = go.GetComponent<Collider>();
-        if (col == null) return;
-        if (Application.isPlaying) Destroy(col);
-        else DestroyImmediate(col);
-    }
-
     private static void BuildCountLabel(Transform target, CuttableNote note)
     {
         // 親にしない：ロングノーツの Z スケール拡張に引きずられて位置や形が歪まないように。

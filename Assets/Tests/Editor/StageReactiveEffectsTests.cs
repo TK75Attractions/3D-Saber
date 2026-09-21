@@ -209,16 +209,14 @@ public class StageReactiveEffectsTests
         Spawn(n); Cut(0); effects.Tick(1.12);
         Assert.AreEqual(1 << lane, effects.ActiveFloorLaneMask, "担当手と配置の左右が逆でも配置に従う");
         Assert.AreEqual(1 << lane, effects.GetComponentInChildren<StageThemeResponse>().ActiveLaneMask);
-        int floorVertices = 0;
-        foreach (var v in effects.GetComponent<MeshFilter>().sharedMesh.vertices)
-            if (v.y <= stage.floorY + .6f && Mathf.Abs(v.x) < 5.8f)
-            {
-                floorVertices++;
-                Assert.That(v.x, Is.InRange(-6f + lane * 3, -3f + lane * 3));
-            }
-        Assert.Greater(floorVertices, 0);
+        var points = effects.GetComponent<MeshFilter>().sharedMesh.vertices;
+        Assert.Greater(points.Length, 0);
+        foreach (var v in points)
+        {
+            Assert.GreaterOrEqual(Mathf.Abs(v.x), StageReactiveEffects.CorridorHalfWidth);
+            Assert.AreEqual(lane < 2 ? -1 : 1, Mathf.Sign(v.x), "対応する側の縁だけを光らせる");
+        }
     }
-
     [Test]
     public void CoordinatesRespectScaleAndGoldHandDoesNotMoveTheLane()
     {
@@ -283,8 +281,8 @@ public class StageReactiveEffectsTests
             else sideVertices++;
         }
         Assert.Greater(floorVertices, 0, "専用演出の有無によらず共通床の反応を維持する");
-        if (replaced) Assert.AreEqual(0, sideVertices, "素材反応へ置換した側面に旧成功波を重ねない");
-        else Assert.Greater(sideVertices, 0, "対象外背景の既存側面波を弱めない");
+        Assert.AreEqual(0, sideVertices, "立ち上がる成功波は縁の残光へ置き換える");
+
     }
 
     [Test]
@@ -326,22 +324,18 @@ public class StageReactiveEffectsTests
     }
 
     [TestCase(StageTheme.ObsidianRelay)] [TestCase(StageTheme.VioletVault)]
-    public void FloorWaveClearsTheRaisedMetalDeck(StageTheme theme)
+    public void SuccessAccentStaysOutsideFloorGuides(StageTheme theme)
     {
         Object.DestroyImmediate(effects.gameObject);
         stage.Build(theme);
         effects = StageReactiveEffects.Create(stage, spawner, Timeline());
         Spawn(N()); Cut(0); effects.Tick(1.12);
-        int floorVertices = 0;
-        foreach (var v in effects.GetComponent<MeshFilter>().sharedMesh.vertices)
-            if (Mathf.Abs(v.x) < StageReactiveEffects.CorridorHalfWidth)
-            {
-                floorVertices++;
-                Assert.That(v.y, Is.GreaterThan(stage.floorY + .4f).And.LessThan(stage.floorY + .6f));
-            }
-        Assert.Greater(floorVertices, 0);
+        var points = effects.GetComponent<MeshFilter>().sharedMesh.vertices;
+        Assert.Greater(points.Length, 0);
+        foreach (var v in points)
+            Assert.GreaterOrEqual(Mathf.Abs(v.x), StageReactiveEffects.CorridorHalfWidth,
+                "床の中央は接近ガイド用に空ける");
     }
-
     [Test]
     public void DisableAndReenableKeepLiveNoteSubscriptionsAndDestroyReleasesResources()
     {

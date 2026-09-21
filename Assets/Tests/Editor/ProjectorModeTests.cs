@@ -154,14 +154,14 @@ public class ProjectorModeTests
         Assert.Greater(bar.GetColor("_BaseColor").r, 0.9f, "矢印は白");
         var backing = parent.transform.Find("Arrow/ArrowBacking").GetComponent<MeshRenderer>().sharedMaterial;
         Assert.Less(backing.GetColor("_BaseColor").r, 0.1f, "下敷きは暗い");
-        Assert.AreEqual(48,parent.transform.Find("Arrow/Bars").GetComponent<MeshFilter>().sharedMesh.vertexCount);
+        Assert.AreEqual(7,parent.transform.Find("Arrow/Bars").GetComponent<MeshFilter>().sharedMesh.vertexCount);
 
         DisplaySettings.SetProjectorModeForTest(false);
         var parent2 = new GameObject("noteNormal");
         created.Add(parent2);
         NoteSpawner.BuildArrow(parent2.transform, CutDirection.Up);
         var bar2 = parent2.transform.Find("Arrow/Bars").GetComponent<MeshRenderer>().sharedMaterial;
-        Assert.Less(bar2.GetColor("_BaseColor").r, 0.1f, "通常モードの矢印は黒のまま");
+        Assert.Greater(bar2.GetColor("_BaseColor").r, 0.9f, "通常モードでも白矢印を暗い縁で囲む");
     }
 
     [Test]
