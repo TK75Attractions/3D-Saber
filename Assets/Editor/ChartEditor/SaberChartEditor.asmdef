@@ -2,7 +2,8 @@
     "name": "SaberChartEditor",
     "rootNamespace": "Saber.ChartEditor",
     "references": [
-        "SaberGame"
+        "SaberGame",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [
         "Editor"

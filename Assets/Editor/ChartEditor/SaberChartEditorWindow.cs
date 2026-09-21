@@ -104,6 +104,10 @@ namespace Saber.ChartEditor
         private GUIStyle noteLabelStyle;
 
         private bool isPlaying;
+        [SerializeField] private bool showPlaybackPreview = true;
+        [SerializeField] private bool expandPlaybackPreview;
+        private SaberChartPlaybackPreview playbackPreview;
+        private string playbackPreviewError;
         private float playbackAudioStartSeconds;
         [SerializeField] private bool useGameTiming = true;
         private bool draggingNote;
@@ -150,6 +154,7 @@ namespace Saber.ChartEditor
         {
             EditorApplication.update -= EditorTick;
             StopPreview(false);
+            DisposePlaybackPreview();
             SavePreferences();
         }
 
@@ -184,7 +189,7 @@ namespace Saber.ChartEditor
 
             DrawHeader(headerRect);
             DrawLeftPanel(leftRect);
-            DrawTimeline(timelineRect);
+            DrawCenterPanel(timelineRect);
             DrawRightPanel(rightRect);
             DrawFooter(footerRect);
         }
@@ -197,6 +202,7 @@ namespace Saber.ChartEditor
             GUILayout.BeginHorizontal();
             GUILayout.Label("3D SABER  /  CHART STUDIO", titleStyle, GUILayout.Width(360f));
             GUILayout.FlexibleSpace();
+            showPlaybackPreview = GUILayout.Toggle(showPlaybackPreview, "プレイ画面", EditorStyles.miniButton, GUILayout.Width(90f));
             if (hasUnsavedChanges)
                 GUILayout.Label("● 未保存", new GUIStyle(smallMutedStyle) { normal = { textColor = GoldColor } });
             else
@@ -411,6 +417,62 @@ namespace Saber.ChartEditor
             history.Record(before);
             MarkChanged();
             RestartPreviewIfPlaying();
+        }
+
+        private void DrawCenterPanel(Rect rect)
+        {
+            if (!showPlaybackPreview)
+            {
+                DisposePlaybackPreview();
+                DrawTimeline(rect);
+                return;
+            }
+
+            float previewHeight = expandPlaybackPreview ? rect.height : Mathf.Min(rect.width * 9f / 16f + 30f, rect.height * .46f);
+            Rect previewRect = new Rect(rect.x, rect.y, rect.width, previewHeight);
+            GUI.Box(previewRect, GUIContent.none, panelStyle);
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 5f, rect.width - 110f, 22f),
+                isPlaying ? "プレイ画面  /  再生中" : "プレイ画面  /  一時停止", smallMutedStyle);
+            if (GUI.Button(new Rect(rect.xMax - 94f, rect.y + 4f, 86f, 22f), expandPlaybackPreview ? "編集に戻る" : "拡大"))
+                expandPlaybackPreview = !expandPlaybackPreview;
+            Rect viewport = new Rect(previewRect.x + 4f, previewRect.y + 30f, previewRect.width - 8f, previewRect.height - 34f);
+            // 縦横比は固定。拡大してもノーツの画角を変えない。
+            float width = Mathf.Min(viewport.width, viewport.height * 16f / 9f);
+            viewport = new Rect(viewport.center.x - width / 2f, viewport.center.y - width * 9f / 32f, width, width * 9f / 16f);
+            if (EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                DisposePlaybackPreview();
+                GUI.Label(viewport, "編集モードでプレイ画面を表示します。", centeredSmallStyle);
+            }
+            else if (Event.current.type == EventType.Repaint && playbackPreviewError == null)
+            {
+                try
+                {
+                    playbackPreview ??= new SaberChartPlaybackPreview();
+                    playbackPreview.Tick(document, BeatToAudioSeconds(currentBeat));
+                    Texture frame = playbackPreview.Render(viewport);
+                    if (frame != null) GUI.DrawTexture(viewport, frame, ScaleMode.ScaleToFit, false);
+                }
+                catch (Exception exception)
+                {
+                    DisposePlaybackPreview();
+                    playbackPreviewError = "プレイ画面を表示できません: " + exception.Message;
+                    Debug.LogException(exception);
+                }
+            }
+            if (playbackPreviewError != null)
+            {
+                GUI.Label(viewport, playbackPreviewError, EditorStyles.wordWrappedLabel);
+                if (GUI.Button(new Rect(viewport.x, viewport.yMax - 26f, 88f, 24f), "再試行")) playbackPreviewError = null;
+            }
+            if (!expandPlaybackPreview)
+                DrawTimeline(new Rect(rect.x, previewRect.yMax + PanelGap, rect.width, rect.height - previewHeight - PanelGap));
+        }
+
+        private void DisposePlaybackPreview()
+        {
+            playbackPreview?.Dispose();
+            playbackPreview = null;
         }
 
         private static readonly int[] MeterDenominators = { 1, 2, 4, 8, 16, 32, 64 };
@@ -1286,6 +1348,7 @@ namespace Saber.ChartEditor
             }
             playbackAudioStartSeconds = seconds;
             isPlaying = true;
+            showPlaybackPreview = true;
             Repaint();
         }
 

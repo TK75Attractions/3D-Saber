@@ -375,6 +375,72 @@ public class ChartEditorWorkflowTests
         });
     }
 
+    [Test]
+    public void PlaybackPreviewUsesTheSameCursorForSeekingAndStopping()
+    {
+        using (var preview = new SaberChartPlaybackPreview())
+        {
+            Set("playbackPreview", preview);
+            Document.offsetMs = 250;
+            Call("SeekToBeat", 3f);
+            preview.Tick(Document, (float)Call("BeatToAudioSeconds", Get<float>("currentBeat")));
+            Assert.AreEqual(1.75, preview.DisplayedSongTime, .001);
+            Assert.GreaterOrEqual(preview.VisibleNoteCount, 1);
+            var note = preview.WorldRoot.GetComponentInChildren<CuttableNote>();
+            Assert.AreEqual(2.25, note.HitTime, .001, "譜面オフセットは一度だけ加算");
+            Call("StopPreview", false);
+            Assert.AreEqual(3f, Get<float>("currentBeat"), "一時停止では現在位置を維持");
+            Call("StopPreview", true);
+            Assert.AreEqual(0f, Get<float>("currentBeat"));
+            Set("playbackPreview", null);
+        }
+    }
+
+    [Test]
+    public void ClosingEditorDisposesThePlaybackScene()
+    {
+        var preview = new SaberChartPlaybackPreview();
+        Set("playbackPreview", preview);
+        preview.Tick(Document, 1);
+        var root = preview.WorldRoot;
+        window.DiscardChanges();
+        Object.DestroyImmediate(window);
+        window = null;
+        Assert.True(root == null);
+    }
+
+    [UnityTest]
+    public IEnumerator EditorDrawsInlineAndExpandedPreviewAndCanHideIt()
+    {
+        window.position = new Rect(40, 40, 1280, 800);
+        window.Show();
+        Call("SeekToBeat", 3f);
+        double deadline = EditorApplication.timeSinceStartup + 8;
+        while (Get<SaberChartPlaybackPreview>("playbackPreview") == null && EditorApplication.timeSinceStartup < deadline)
+        {
+            window.Repaint();
+            yield return null;
+        }
+        var preview = Get<SaberChartPlaybackPreview>("playbackPreview");
+        Assert.NotNull(preview, Get<string>("playbackPreviewError"));
+        Assert.AreEqual(1.5, preview.DisplayedSongTime, .001);
+        var root = preview.WorldRoot;
+        Set("expandPlaybackPreview", true);
+        window.Repaint();
+        yield return null;
+        yield return null;
+        Assert.IsNull(Get<string>("playbackPreviewError"));
+        Set("showPlaybackPreview", false);
+        deadline = EditorApplication.timeSinceStartup + 5;
+        while (Get<SaberChartPlaybackPreview>("playbackPreview") != null && EditorApplication.timeSinceStartup < deadline)
+        {
+            window.Repaint();
+            yield return null;
+        }
+        Assert.IsNull(Get<SaberChartPlaybackPreview>("playbackPreview"));
+        Assert.True(root == null);
+    }
+
     void LoadTarget(string target, bool fromMenu)
     {
         if (fromMenu) Call("LoadSongFromMenu", target);
