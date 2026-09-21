@@ -99,7 +99,7 @@ public class GamePlayManager : MonoBehaviour
     public bool autoEnsureInputPoint = true;
     public bool autoEnsureUdpImuBridge = true;
     public bool autoEnsureSwing8DirectionLogger = true;
-    [Tooltip("実機BLE bridgeをGame Play時に自動起動する。実機確認が終わるまではOFFを維持する。")]
+    [Tooltip("実機BLE bridgeをゲーム起動時から自動起動する。変更は全Scene共通設定へ反映される。")]
     public bool autoStartBleBridge = false;
 
     // 判定面ガイドから剥がす子オブジェクトの名前接頭辞。
@@ -364,15 +364,8 @@ public class GamePlayManager : MonoBehaviour
 
     private void EnsureUdpImuBridge()
     {
-        var bridge = Object.FindFirstObjectByType<UdpImuBridge>();
-        if (bridge == null)
-        {
-            var go = new GameObject("UdpImuBridge");
-            bridge = go.AddComponent<UdpImuBridge>();
-        }
-        // AddComponent直後のStartより前に設定する。既定OFFなのでCamera-onlyと
-        // Virtual IMUは外部processなしで従来どおり動作する。
-        bridge.ConfigureBleBridgeAutoStart(autoStartBleBridge);
+        // Menuから維持されたtransportを再利用。Scene localの判定componentは別物。
+        UdpImuBridge.EnsurePersistent(ImuBleServiceSettings.AutoStartBleBridge);
     }
 
     private void EnsureSwing8DirectionLogger()

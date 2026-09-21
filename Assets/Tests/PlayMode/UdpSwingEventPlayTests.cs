@@ -11,6 +11,36 @@ using UnityEngine.TestTools;
 public class UdpSwingEventPlayTests
 {
     [UnityTest]
+    public IEnumerator PersistentBridge_IsSingletonAndReusesExistingTransport()
+    {
+        foreach (var existing in Object.FindObjectsByType<UdpImuBridge>(
+                     FindObjectsInactive.Include, FindObjectsSortMode.None))
+            Object.DestroyImmediate(existing.gameObject);
+
+        int port = FindFreeUdpPort();
+        var go = new GameObject("PersistentUdpImuBridgeTest");
+        go.SetActive(false);
+        var bridge = go.AddComponent<UdpImuBridge>();
+        bridge.ConfigureForTests(port);
+        go.SetActive(true);
+        yield return null;
+
+        Assert.AreSame(bridge, UdpImuBridge.EnsurePersistent(false));
+        Assert.AreSame(bridge, UdpImuBridge.EnsurePersistent(false));
+        Assert.IsFalse(bridge.OwnsBleBridgeProcess,
+            "Auto Start OFFではUnityがbridge processを起動しない");
+
+        var duplicate = new GameObject("DuplicateUdpImuBridgeTest");
+        duplicate.AddComponent<UdpImuBridge>();
+        yield return null;
+        Assert.AreEqual(1, Object.FindObjectsByType<UdpImuBridge>(
+            FindObjectsInactive.Include, FindObjectsSortMode.None).Length);
+
+        Object.Destroy(bridge.gameObject);
+        yield return null;
+    }
+
+    [UnityTest]
     public IEnumerator BridgeLauncher_RepeatedStartStopOwnsOnlyItsChild()
     {
         if (Application.platform != RuntimePlatform.OSXEditor)
@@ -28,7 +58,8 @@ public class UdpSwingEventPlayTests
         }
         string projectRoot = Directory.GetParent(Application.dataPath).FullName;
 
-        for (int attempt = 0; attempt < 2; attempt++)
+        // Play -> Stop -> Playを繰り返す条件に合わせ、3回とも子processを再利用/終了できることを確認する。
+        for (int attempt = 0; attempt < 3; attempt++)
         {
             using var receiver = new UdpClient(dataPort);
             var launcher = new ImuBleBridgeLauncher();
@@ -103,6 +134,43 @@ public class UdpSwingEventPlayTests
                Time.realtimeSinceStartup < stateTimeout) yield return null;
         Assert.AreEqual(BleBridgeConnectionState.Disconnected, bridge.BleState);
         Assert.IsFalse(bridge.IsBridgeConnected);
+
+        Object.Destroy(go);
+        yield return null;
+    }
+
+    [UnityTest]
+    public IEnumerator UdpReceive_TracksLeftAndRightConnectionStatesIndependently()
+    {
+        foreach (var existing in Object.FindObjectsByType<UdpImuBridge>(
+                     FindObjectsInactive.Include, FindObjectsSortMode.None))
+            Object.DestroyImmediate(existing.gameObject);
+
+        int port = FindFreeUdpPort();
+        var go = new GameObject("UdpSwingSideStatusTest");
+        var bridge = go.AddComponent<UdpImuBridge>();
+        bridge.ConfigureForTests(port);
+        yield return null;
+
+        SendPacket(port, "STATE:BLE:LEFT:NOTIFICATIONS_ACTIVE:XIAO-SABER-L");
+        SendPacket(port, "STATE:BLE:RIGHT:CONNECTED:XIAO-SABER-R");
+        float timeout = Time.realtimeSinceStartup + 1f;
+        while ((bridge.LeftBleState != BleBridgeConnectionState.NotificationsActive ||
+                bridge.RightBleState != BleBridgeConnectionState.Connected) &&
+               Time.realtimeSinceStartup < timeout) yield return null;
+        Assert.AreEqual(BleBridgeConnectionState.NotificationsActive, bridge.LeftBleState);
+        Assert.AreEqual(BleBridgeConnectionState.Connected, bridge.RightBleState);
+        Assert.AreEqual("XIAO-SABER-L", bridge.LeftBleDevice);
+        Assert.AreEqual("XIAO-SABER-R", bridge.RightBleDevice);
+        Assert.IsTrue(bridge.IsBridgeConnected);
+
+        SendPacket(port, "STATE:BLE:RIGHT:DISCONNECTED:XIAO-SABER-R");
+        timeout = Time.realtimeSinceStartup + 1f;
+        while (bridge.RightBleState != BleBridgeConnectionState.Disconnected &&
+               Time.realtimeSinceStartup < timeout) yield return null;
+        Assert.AreEqual(BleBridgeConnectionState.Disconnected, bridge.RightBleState);
+        Assert.AreEqual(BleBridgeConnectionState.NotificationsActive, bridge.LeftBleState);
+        Assert.IsTrue(bridge.IsBridgeConnected, "Right切断中もLeft接続を維持する");
 
         Object.Destroy(go);
         yield return null;
