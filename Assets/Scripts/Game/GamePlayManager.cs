@@ -709,11 +709,30 @@ public class GamePlayManager : MonoBehaviour
         songPlayer.Stop();
         if (stageReactions != null) stageReactions.ResetState();
         if (playFeedback != null) playFeedback.gameObject.SetActive(false);
-        StartCoroutine(FinishWithComboBonus());
+        StartCoroutine(FinishWithAchievements());
     }
 
-    private System.Collections.IEnumerator FinishWithComboBonus()
+    private System.Collections.IEnumerator FinishWithAchievements()
     {
+        // 通常終了時だけ達成を表示。ALL PERFECT は FULL COMBO より優先し、一度だけ出す。
+        if (scoreManager.IsFullCombo)
+        {
+            var achievement = ClearAchievementPresentation.Create(scoreManager.IsAllPerfect);
+            try
+            {
+                float achievementTime = 0f;
+                while (achievementTime < ClearAchievementPresentation.Duration)
+                {
+                    achievement.Tick(achievementTime);
+                    yield return null;
+                    achievementTime += Mathf.Min(Time.unscaledDeltaTime, .1f);
+                }
+            }
+            finally
+            {
+                if (achievement != null) Destroy(achievement.gameObject);
+            }
+        }
         var bonus = ComboBonusPresentation.Create(scoreManager.MaxCombo);
         // アニメと精算を同じ終了経路で管理し、途中の入力では再加算しない。
         float elapsed = 0f;

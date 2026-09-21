@@ -16,6 +16,9 @@ public class ScoreManager : MonoBehaviour
     public int GreatCount { get; private set; }
     public int GoodCount { get; private set; }
     public int BadCount { get; private set; }
+    // 空譜面を達成扱いにしない。Good はコンボ継続、Bad / Miss は達成対象外。
+    public bool IsFullCombo => HitCount > 0 && BadCount == 0 && MissCount == 0;
+    public bool IsAllPerfect => IsFullCombo && PerfectCount == HitCount;
     public JudgmentTier LastTier { get; private set; } = JudgmentTier.Miss;
     public bool LastWasWrongFlick { get; private set; }
     // 直近判定のカットを行った手(ノーツ経由のカットのみ。Miss や直接 RegisterHit では Any)。
