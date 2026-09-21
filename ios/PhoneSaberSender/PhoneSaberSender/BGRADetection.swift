@@ -36,28 +36,28 @@ private func candidateAxisDistance(_ lhs: SaberCandidate, _ rhs: SaberCandidate)
     func distance(_ a: PixelPoint, _ b: PixelPoint) -> Double {
         hypot(Double(a.x - b.x), Double(a.y - b.y))
     }
-    let forward = distance(lhs.endpoints.0, rhs.endpoints.0)
-        + distance(lhs.endpoints.1, rhs.endpoints.1)
-    let reversed = distance(lhs.endpoints.0, rhs.endpoints.1)
-        + distance(lhs.endpoints.1, rhs.endpoints.0)
+    let forward = distance(lhs.comparisonEndpoints.0, rhs.comparisonEndpoints.0)
+        + distance(lhs.comparisonEndpoints.1, rhs.comparisonEndpoints.1)
+    let reversed = distance(lhs.comparisonEndpoints.0, rhs.comparisonEndpoints.1)
+        + distance(lhs.comparisonEndpoints.1, rhs.comparisonEndpoints.0)
     return min(forward, reversed) / 2.0
 }
 
 private func candidateIsSubsegment(_ shorter: SaberCandidate, of longer: SaberCandidate) -> Bool {
-    let longDX = Double(longer.endpoints.1.x - longer.endpoints.0.x)
-    let longDY = Double(longer.endpoints.1.y - longer.endpoints.0.y)
+    let longDX = Double(longer.comparisonEndpoints.1.x - longer.comparisonEndpoints.0.x)
+    let longDY = Double(longer.comparisonEndpoints.1.y - longer.comparisonEndpoints.0.y)
     let longLength = hypot(longDX, longDY)
-    let shortDX = Double(shorter.endpoints.1.x - shorter.endpoints.0.x)
-    let shortDY = Double(shorter.endpoints.1.y - shorter.endpoints.0.y)
+    let shortDX = Double(shorter.comparisonEndpoints.1.x - shorter.comparisonEndpoints.0.x)
+    let shortDY = Double(shorter.comparisonEndpoints.1.y - shorter.comparisonEndpoints.0.y)
     let shortLength = hypot(shortDX, shortDY)
     guard longLength >= shortLength * 1.50, shortLength > 0 else { return false }
     let axisX = longDX / longLength, axisY = longDY / longLength
     let shortAxisX = shortDX / shortLength, shortAxisY = shortDY / shortLength
     guard abs(axisX * shortAxisX + axisY * shortAxisY) >= 0.94 else { return false }
     let normalX = -axisY, normalY = axisX
-    return [shorter.endpoints.0, shorter.endpoints.1].allSatisfy { point in
-        let dx = Double(point.x - longer.endpoints.0.x)
-        let dy = Double(point.y - longer.endpoints.0.y)
+    return [shorter.comparisonEndpoints.0, shorter.comparisonEndpoints.1].allSatisfy { point in
+        let dx = Double(point.x - longer.comparisonEndpoints.0.x)
+        let dy = Double(point.y - longer.comparisonEndpoints.0.y)
         let along = dx * axisX + dy * axisY
         let across = abs(dx * normalX + dy * normalY)
         return along >= -6.0 && along <= longLength + 6.0 && across <= 6.0
@@ -334,8 +334,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             let connectedCore = closeSaberMask(associatedCore, width: maskWidth, height: maskHeight, radius: 4)
             for var candidate in saberCandidates(in: connectedCore, width: maskWidth, height: maskHeight,
                                                   evidence: evidence, stageProfile: candidateStageProfile) {
-                let length = hypot(Double(candidate.endpoints.1.x - candidate.endpoints.0.x),
-                                   Double(candidate.endpoints.1.y - candidate.endpoints.0.y))
+                let length = hypot(Double(candidate.comparisonEndpoints.1.x - candidate.comparisonEndpoints.0.x),
+                                   Double(candidate.comparisonEndpoints.1.y - candidate.comparisonEndpoints.0.y))
                 guard length >= max(12, Double(min(maskWidth, maskHeight)) * 0.10) else { continue }
                 candidate.source = "connected-core"
                 candidates.append(candidate)
@@ -378,11 +378,11 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 // cutting a complete connected emitter into competing slices.
                 let overlapsCore = candidates.contains { existing in
                     guard existing.source == "connected-core" else { return false }
-                    let a = existing.endpoints.0, b = existing.endpoints.1
+                    let a = existing.comparisonEndpoints.0, b = existing.comparisonEndpoints.1
                     let dx = Double(b.x - a.x), dy = Double(b.y - a.y)
                     let length = hypot(dx, dy)
-                    let cx = Double(candidate.endpoints.0.x + candidate.endpoints.1.x) / 2 - Double(a.x)
-                    let cy = Double(candidate.endpoints.0.y + candidate.endpoints.1.y) / 2 - Double(a.y)
+                    let cx = Double(candidate.comparisonEndpoints.0.x + candidate.comparisonEndpoints.1.x) / 2 - Double(a.x)
+                    let cy = Double(candidate.comparisonEndpoints.0.y + candidate.comparisonEndpoints.1.y) / 2 - Double(a.y)
                     let along = (cx * dx + cy * dy) / length
                     let across = abs(cx * dy - cy * dx) / length
                     return along >= -4 && along <= length + 4 && across <= 8
@@ -419,6 +419,12 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             SaberCandidate(
                 source: candidate.source,
                 radiance: candidate.radiance,
+                comparisonEndpoints: (
+                    PixelPoint(x: candidate.comparisonEndpoints.0.x * step,
+                               y: candidate.comparisonEndpoints.0.y * step),
+                    PixelPoint(x: candidate.comparisonEndpoints.1.x * step,
+                               y: candidate.comparisonEndpoints.1.y * step)
+                ),
                 endpoints: (PixelPoint(x: candidate.endpoints.0.x * step,
                                        y: candidate.endpoints.0.y * step),
                             PixelPoint(x: candidate.endpoints.1.x * step,
@@ -440,7 +446,10 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 longitudinalHighCoverage: candidate.longitudinalHighCoverage,
                 widthVariation: candidate.widthVariation,
                 coreSupportRatio: candidate.coreSupportRatio,
-                longitudinalCoreCoverage: candidate.longitudinalCoreCoverage
+                longitudinalCoreCoverage: candidate.longitudinalCoreCoverage,
+                longitudinalContinuity: candidate.longitudinalContinuity,
+                largestLongitudinalGap: candidate.largestLongitudinalGap,
+                retainedBodyRatio: candidate.retainedBodyRatio
             )
         }
         allCandidates[color] = scaled

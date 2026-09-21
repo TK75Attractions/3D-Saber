@@ -151,6 +151,9 @@ func openSaberMask(_ mask: [UInt8], width: Int, height: Int, radius: Int = 1) ->
 struct SaberCandidate {
     var source: String = "color-mask"
     var radiance: Double = 0
+    /// Untrimmed component axis used only for proposal de-duplication and
+    /// ranking compatibility. `endpoints` are the physical body output.
+    let comparisonEndpoints: (PixelPoint, PixelPoint)
     let endpoints: (PixelPoint, PixelPoint)
     let boundingBox: SaberBoundingBox
     var score: Double
@@ -167,6 +170,9 @@ struct SaberCandidate {
     let widthVariation: Double
     let coreSupportRatio: Double
     let longitudinalCoreCoverage: Double
+    let longitudinalContinuity: Double
+    let largestLongitudinalGap: Int
+    let retainedBodyRatio: Double
 }
 
 struct SaberBoundingBox {
@@ -229,6 +235,115 @@ final class SaberCandidateStageProfile {
 
 private func clamp01(_ value: Double) -> Double { min(max(value, 0), 1) }
 
+private struct DominantLongitudinalBody {
+    let points: [PixelPoint]
+    let continuity: Double
+    let largestGap: Int
+    let retainedRatio: Double
+}
+
+/// Removes a low-density axial tail without imposing a fixed blade length.
+/// A paper diffuser produces several transverse samples in most bins, whereas
+/// morphology/Hough bridges and color spill are commonly only one sample wide.
+/// Small gaps remain inside the selected interval and are therefore preserved.
+private func dominantLongitudinalBody(
+    in points: [PixelPoint],
+    meanX: Double,
+    meanY: Double,
+    axis: (Double, Double)
+) -> DominantLongitudinalBody {
+    guard points.count >= 6 else {
+        return DominantLongitudinalBody(points: points, continuity: 1,
+                                        largestGap: 0, retainedRatio: 1)
+    }
+    let projections = points.map {
+        (Double($0.x) - meanX) * axis.0 + (Double($0.y) - meanY) * axis.1
+    }
+    guard let minProjection = projections.min(), let maxProjection = projections.max() else {
+        return DominantLongitudinalBody(points: points, continuity: 1,
+                                        largestGap: 0, retainedRatio: 1)
+    }
+    let binCount = max(1, Int((maxProjection - minProjection).rounded(.up)) + 1)
+    guard binCount >= 8 else {
+        return DominantLongitudinalBody(points: points, continuity: 1,
+                                        largestGap: 0, retainedRatio: 1)
+    }
+    var counts = Array(repeating: 0, count: binCount)
+    var pointBins = Array(repeating: 0, count: points.count)
+    for index in points.indices {
+        let bin = min(binCount - 1,
+                      max(0, Int((projections[index] - minProjection).rounded())))
+        pointBins[index] = bin
+        counts[bin] += 1
+    }
+    let peakCount = counts.max() ?? 0
+    // One-pixel-wide genuine blades remain valid. Robust trimming activates
+    // only when the candidate has a visibly wider continuous body.
+    guard peakCount >= 4 else {
+        let occupied = counts.filter { $0 > 0 }.count
+        return DominantLongitudinalBody(
+            points: points, continuity: Double(occupied) / Double(binCount),
+            largestGap: largestZeroRun(in: counts, range: 0..<binCount), retainedRatio: 1
+        )
+    }
+    let denseThreshold = max(2, Int((Double(peakCount) * 0.30).rounded(.up)))
+    let denseBins = counts.indices.filter { counts[$0] >= denseThreshold }
+    guard let firstDense = denseBins.first else {
+        return DominantLongitudinalBody(points: points, continuity: 0,
+                                        largestGap: binCount, retainedRatio: 1)
+    }
+    let allowedInternalGap = 2
+    var groups: [ClosedRange<Int>] = []
+    var start = firstDense, previous = firstDense
+    for bin in denseBins.dropFirst() {
+        if bin - previous - 1 > allowedInternalGap {
+            groups.append(start...previous)
+            start = bin
+        }
+        previous = bin
+    }
+    groups.append(start...previous)
+
+    let best = groups.max { lhs, rhs in
+        func score(_ range: ClosedRange<Int>) -> Double {
+            let support = counts[range].reduce(0, +)
+            return Double(support) * sqrt(Double(range.count))
+        }
+        return score(lhs) < score(rhs)
+    } ?? (firstDense...firstDense)
+    // Restore rounded diffuser caps, but never absorb a long thin tail.
+    let edgeAllowance = min(3, max(1, Int((Double(peakCount) * 0.22).rounded())))
+    let bodyStart = max(0, best.lowerBound - edgeAllowance)
+    let bodyEnd = min(binCount - 1, best.upperBound + edgeAllowance)
+    let bodyRange = bodyStart...bodyEnd
+    let bodyPoints = points.indices.compactMap { bodyRange.contains(pointBins[$0]) ? points[$0] : nil }
+    guard bodyPoints.count >= 4 else {
+        return DominantLongitudinalBody(points: points, continuity: 0,
+                                        largestGap: binCount, retainedRatio: 1)
+    }
+    let denseInBody = counts[bodyRange].filter { $0 >= denseThreshold }.count
+    let continuity = Double(denseInBody) / Double(bodyRange.count)
+    return DominantLongitudinalBody(
+        points: bodyPoints,
+        continuity: continuity,
+        largestGap: largestZeroRun(in: counts, range: bodyStart..<(bodyEnd + 1)),
+        retainedRatio: Double(bodyPoints.count) / Double(points.count)
+    )
+}
+
+private func largestZeroRun(in counts: [Int], range: Range<Int>) -> Int {
+    var current = 0, largest = 0
+    for index in range {
+        if counts[index] == 0 {
+            current += 1
+            largest = max(largest, current)
+        } else {
+            current = 0
+        }
+    }
+    return largest
+}
+
 private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: Int,
                                   componentMask: [UInt8]?, componentIndices: Set<Int>? = nil,
                                   evidence: SaberEvidence?,
@@ -269,6 +384,9 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
     let extent = Double(points.count) / max(majorLength * minorLength, 1.0)
     guard majorLength >= max(4.0, Double(min(width, height)) * 0.025),
           aspect >= 1.5, extent >= 0.10 else { return nil }
+    // The additional longitudinal histogram is only useful for candidates
+    // that already pass the cheap geometric gate.
+    let body = dominantLongitudinalBody(in: points, meanX: meanX, meanY: meanY, axis: axis)
 
     let binCount = max(4, min(12, Int(majorLength.rounded(.up))))
     var binMin = Array(repeating: Double.greatestFiniteMagnitude, count: binCount)
@@ -436,12 +554,29 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
     }
     let endpointStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
 
-    // The endpoints are the long-axis ends of the oriented component box,
-    // equivalent to the long side of camera.py's minAreaRect.
-    let first = PixelPoint(x: Int((meanX + axis.0 * minMajor).rounded()),
-                           y: Int((meanY + axis.1 * minMajor).rounded()))
-    let second = PixelPoint(x: Int((meanX + axis.0 * maxMajor).rounded()),
-                            y: Int((meanY + axis.1 * maxMajor).rounded()))
+    // Keep ranking evidence based on the full connected candidate so the
+    // established real-image ordering remains unchanged. Endpoints alone use
+    // the dense continuous body, preventing a thin spill tail or a remote
+    // reflection from becoming a min/max projection extreme.
+    let rawEndpoints = (
+        PixelPoint(x: Int((meanX + axis.0 * minMajor).rounded()),
+                   y: Int((meanY + axis.1 * minMajor).rounded())),
+        PixelPoint(x: Int((meanX + axis.0 * maxMajor).rounded()),
+                   y: Int((meanY + axis.1 * maxMajor).rounded()))
+    )
+    let finalEndpoints: (PixelPoint, PixelPoint)
+    if body.points.count >= minimumArea,
+       body.continuity >= 0.90,
+       body.retainedRatio < 0.85,
+       let bodyEndpoints = principalAxisEndpoints(body.points) {
+        finalEndpoints = bodyEndpoints
+    } else {
+        // Disconnected legacy LED packages and mild edge-density changes are
+        // not paper-diffused continuous bodies; keep their established axis.
+        finalEndpoints = rawEndpoints
+    }
+    let first = finalEndpoints.0
+    let second = finalEndpoints.1
     var boxMinX = Int.max, boxMinY = Int.max, boxMaxX = Int.min, boxMaxY = Int.min
     for point in points {
         boxMinX = min(boxMinX, point.x); boxMinY = min(boxMinY, point.y)
@@ -487,7 +622,9 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
     if let stageProfile {
         stageProfile.endpointAndBoundsMs += (ProcessInfo.processInfo.systemUptime - endpointStart) * 1000
     }
-    return SaberCandidate(radiance: radianceSum / Double(points.count), endpoints: (first, second), boundingBox: boundingBox, score: score,
+    return SaberCandidate(radiance: radianceSum / Double(points.count),
+                          comparisonEndpoints: rawEndpoints,
+                          endpoints: (first, second), boundingBox: boundingBox, score: score,
                           scoreBreakdown: breakdown,
                           isEmitterEligible: isEmitterEligible,
                           peakValue: peakValue, meanValue: meanValue,
@@ -498,7 +635,10 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                           longitudinalHighCoverage: longitudinalHighCoverage,
                           widthVariation: widthVariation,
                           coreSupportRatio: coreSupportRatio,
-                          longitudinalCoreCoverage: longitudinalCoreCoverage)
+                          longitudinalCoreCoverage: longitudinalCoreCoverage,
+                          longitudinalContinuity: body.continuity,
+                          largestLongitudinalGap: body.largestGap,
+                          retainedBodyRatio: body.retainedRatio)
 }
 
 /// Returns every shape-valid component so fixture tests can compare the chosen

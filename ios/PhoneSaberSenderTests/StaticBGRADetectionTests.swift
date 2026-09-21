@@ -61,6 +61,19 @@ private struct StaticImage {
             pixel(x, y + 6, red: blur[2].0, green: blur[2].1, blue: blur[2].2)
         }
     }
+
+    /// White paper diffuser: a broad pale halo with a continuous colored core.
+    mutating func diffusedPaperBlade(from start: PixelPoint, to end: PixelPoint,
+                                    color: SaberColor, thickness: Int = 6) {
+        let halo: (UInt8, UInt8, UInt8) = color == .red
+            ? (255, 145, 140) : (135, 175, 255)
+        coloredBar(from: start, to: end, red: halo.0, green: halo.1, blue: halo.2,
+                   thickness: thickness + 3)
+        let core: (UInt8, UInt8, UInt8) = color == .red
+            ? (250, 65, 58) : (58, 105, 250)
+        coloredBar(from: start, to: end, red: core.0, green: core.1, blue: core.2,
+                   thickness: thickness)
+    }
 }
 
 private func endpointDistance(_ result: (PixelPoint, PixelPoint), _ expected: (PixelPoint, PixelPoint)) -> Double {
@@ -83,7 +96,8 @@ private func angleError(_ actual: Double, _ expected: Double) -> Double {
 
 private func assertCase(_ name: String, image: StaticImage, color: SaberColor,
                         expected: (PixelPoint, PixelPoint), expectedAngle: Double,
-                        distanceTolerance: Double = 6, angleTolerance: Double = 0.20) {
+                        distanceTolerance: Double = 6, angleTolerance: Double = 0.20,
+                        lengthTolerance: Double = 12) {
     guard let actual = detectSaber(in: image.bytes, width: image.width, height: image.height,
                                    bytesPerRow: image.bytesPerRow, color: color,
                                    threshold: ColorThreshold(brightness: 140, dominance: 20)) else {
@@ -107,7 +121,7 @@ private func assertCase(_ name: String, image: StaticImage, color: SaberColor,
     let expectedLength = hypot(Double(expected.1.x - expected.0.x), Double(expected.1.y - expected.0.y))
     // The filled five-pixel-radius caps extend the principal-axis extrema;
     // this explicit allowance is tied to the drawing geometry, not a loose position check.
-    guard abs(length - expectedLength) <= 12 else { fatalError("\(name): length \(length)") }
+    guard abs(length - expectedLength) <= lengthTolerance else { fatalError("\(name): length \(length)") }
 }
 
 @main
@@ -172,6 +186,27 @@ enum StaticBGRADetectionTests {
         assertCase("blue blade with short gap", image: broken, color: .blue,
                    expected: (brokenStart, brokenEnd), expectedAngle: 0)
 
+        // Reproduces the endpoint failure mode independently of candidate
+        // ranking: a dense continuous blade body, a one-cell color-spill tail,
+        // and a detached dense reflection on the same axis.
+        var bodyWithTail: [PixelPoint] = []
+        for x in 20...100 { for y in 45...55 { bodyWithTail.append(PixelPoint(x: x, y: y)) } }
+        for x in 101...215 { bodyWithTail.append(PixelPoint(x: x, y: 50)) }
+        for x in 216...228 { for y in 47...53 { bodyWithTail.append(PixelPoint(x: x, y: y)) } }
+        guard let legacyEndpoints = principalAxisEndpoints(bodyWithTail),
+              let trimmedCandidate = saberCandidate(from: bodyWithTail, width: 260, height: 100) else {
+            fatalError("continuous-body endpoint regression: no candidate")
+        }
+        let legacyLength = hypot(Double(legacyEndpoints.1.x - legacyEndpoints.0.x),
+                                 Double(legacyEndpoints.1.y - legacyEndpoints.0.y))
+        let trimmedLength = hypot(Double(trimmedCandidate.endpoints.1.x - trimmedCandidate.endpoints.0.x),
+                                  Double(trimmedCandidate.endpoints.1.y - trimmedCandidate.endpoints.0.y))
+        guard legacyLength > 190, trimmedLength < 100,
+              trimmedCandidate.longitudinalContinuity > 0.90,
+              trimmedCandidate.retainedBodyRatio < 0.90 else {
+            fatalError("continuous-body endpoint regression: legacy=\(legacyLength) trimmed=\(trimmedLength) continuity=\(trimmedCandidate.longitudinalContinuity) retained=\(trimmedCandidate.retainedBodyRatio)")
+        }
+
         var redBlob = StaticImage(width: 128, height: 80)
         for y in 20...55 {
             for x in 42...77 { redBlob.pixel(x, y, red: 245, green: 40, blue: 35) }
@@ -233,7 +268,70 @@ enum StaticBGRADetectionTests {
             assertCase("\(color) dotted LED array", image: dotted, color: color,
                        expected: (PixelPoint(x: 14, y: 30), PixelPoint(x: 114, y: 30)),
                        expectedAngle: 0, distanceTolerance: 8)
+
+            var paper = StaticImage(width: 280, height: 120, padding: 16)
+            let paperStart = PixelPoint(x: 22, y: 58)
+            let paperEnd = PixelPoint(x: 104, y: 58)
+            paper.diffusedPaperBlade(from: paperStart, to: paperEnd, color: color)
+            // Low-density spill can remain in the HSV mask between the blade
+            // and a visually separate reflection. It is not continuous blade body.
+            paper.coloredBar(from: PixelPoint(x: 112, y: 58),
+                             to: PixelPoint(x: 232, y: 58),
+                             red: color == .red ? 160 : 45,
+                             green: 58,
+                             blue: color == .blue ? 160 : 45,
+                             thickness: 0)
+            // A small bright reflection lies on the same infinite axis but is
+            // separated by a large unsupported gap. It must not extend either endpoint.
+            paper.coloredBar(from: PixelPoint(x: 232, y: 58),
+                             to: PixelPoint(x: 244, y: 58),
+                             red: color == .red ? 245 : 45,
+                             green: 75,
+                             blue: color == .blue ? 245 : 45,
+                             thickness: 3)
+            assertCase("\(color) paper diffuser ignores separated axial reflection",
+                       image: paper, color: color,
+                       expected: (PixelPoint(x: 13, y: 58), PixelPoint(x: 113, y: 58)),
+                       expectedAngle: 0, distanceTolerance: 10)
+
+            var nearby = StaticImage(width: 190, height: 110)
+            let nearStart = PixelPoint(x: 24, y: 34), nearEnd = PixelPoint(x: 136, y: 34)
+            nearby.diffusedPaperBlade(from: nearStart, to: nearEnd, color: color, thickness: 5)
+            nearby.coloredBar(from: PixelPoint(x: 76, y: 54), to: PixelPoint(x: 120, y: 60),
+                              red: color == .red ? 205 : 55, green: 70,
+                              blue: color == .blue ? 205 : 55, thickness: 2)
+            assertCase("\(color) paper diffuser beats nearby same-color region",
+                       image: nearby, color: color,
+                       expected: (PixelPoint(x: 16, y: 34), PixelPoint(x: 144, y: 34)),
+                       expectedAngle: 0, distanceTolerance: 10)
+
+            var motion = StaticImage(width: 180, height: 100)
+            let motionStart = PixelPoint(x: 18, y: 72), motionEnd = PixelPoint(x: 150, y: 28)
+            motion.blurredBar(from: motionStart, to: motionEnd, color: color)
+            assertCase("\(color) paper-like motion blur", image: motion, color: color,
+                       expected: (motionStart, motionEnd),
+                       expectedAngle: atan2(-44, 132), distanceTolerance: 9,
+                       lengthTolerance: 16)
+
+            var short = StaticImage(width: 120, height: 90)
+            let shortStart = PixelPoint(x: 48, y: 35), shortEnd = PixelPoint(x: 72, y: 49)
+            short.diffusedPaperBlade(from: shortStart, to: shortEnd, color: color, thickness: 3)
+            assertCase("\(color) foreshortened paper blade", image: short, color: color,
+                       expected: (shortStart, shortEnd), expectedAngle: atan2(14, 24),
+                       distanceTolerance: 10, angleTolerance: 0.24)
         }
+
+        var crossing = StaticImage(width: 190, height: 120, padding: 8)
+        let crossingRed = (PixelPoint(x: 22, y: 20), PixelPoint(x: 156, y: 98))
+        let crossingBlue = (PixelPoint(x: 22, y: 98), PixelPoint(x: 156, y: 20))
+        crossing.diffusedPaperBlade(from: crossingRed.0, to: crossingRed.1, color: .red, thickness: 4)
+        crossing.diffusedPaperBlade(from: crossingBlue.0, to: crossingBlue.1, color: .blue, thickness: 4)
+        assertCase("crossing red paper blade", image: crossing, color: .red,
+                   expected: crossingRed, expectedAngle: atan2(78, 134), distanceTolerance: 10,
+                   lengthTolerance: 16)
+        assertCase("crossing blue paper blade", image: crossing, color: .blue,
+                   expected: crossingBlue, expectedAngle: atan2(-78, 134), distanceTolerance: 10,
+                   lengthTolerance: 16)
 
         var empty = StaticImage(width: 72, height: 41, padding: 16)
         for y in stride(from: 4, through: 8, by: 2) {
@@ -268,6 +366,6 @@ enum StaticBGRADetectionTests {
         print("Fast movement: 10 frames, immediate single-frame detection passed")
         // sampleStep=2 quantizes coordinates by two pixels; this tolerance covers
         // three samples plus the five-pixel cap. 0.20 radians rejects a 90-degree error.
-        print("Static BGRA detection tests passed: \(cases.count + 14) cases")
+        print("Static BGRA detection tests passed")
     }
 }

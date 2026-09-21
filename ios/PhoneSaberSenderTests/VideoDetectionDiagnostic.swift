@@ -39,6 +39,9 @@ private func candidateJSON(_ candidate: SaberCandidate) -> [String: Any] {
         "local_contrast": candidate.localContrast,
         "core_support": candidate.coreSupportRatio,
         "longitudinal_core_coverage": candidate.longitudinalCoreCoverage,
+        "longitudinal_continuity": candidate.longitudinalContinuity,
+        "largest_longitudinal_gap": candidate.largestLongitudinalGap,
+        "retained_body_ratio": candidate.retainedBodyRatio,
     ]
 }
 

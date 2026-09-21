@@ -283,7 +283,12 @@ final class DetectionCoreTests: XCTestCase {
                                    candidate.longitudinalHighCoverage, candidate.widthVariation,
                                    candidate.coreSupportRatio, candidate.longitudinalCoreCoverage)
                 let x = imageWidth + 18
-                let line5 = String(format: "radiance contribution=%.3f duplicate penalty=%.3f", s.radiance, s.proposalPenalty)
+                let line5 = String(format: "continuity=%.3f gap=%d retained=%.3f radianceContribution=%.2f proposalPenalty=%.2f",
+                                   candidate.longitudinalContinuity,
+                                   candidate.largestLongitudinalGap,
+                                   candidate.retainedBodyRatio,
+                                   s.radiance,
+                                   s.proposalPenalty)
                 let y = 14 + index * rowHeight
                 (heading as NSString).draw(at: CGPoint(x: x, y: y),
                                            withAttributes: titleAttributes.merging([.foregroundColor: color]) { _, new in new })
@@ -311,7 +316,7 @@ final class DetectionCoreTests: XCTestCase {
             let a = candidate.endpoints.0, b = candidate.endpoints.1
             let s = candidate.scoreBreakdown
             let box = candidate.boundingBox
-            return String(format: "(%d,%d)-(%d,%d) box=[%d,%d,%d,%d] score=%.2f eligible=%@ peak=%d mean=%.1f high=%.3f purity=%.3f white=%.3f variation=%.3f contrast=%.3f longitudinal=%.3f widthVar=%.3f core=%.3f coreLong=%.3f parts[len=%.2f aspect=%.2f extent=%.2f width=%.2f area=%.2f peak=%.2f mean=%.2f high=%.2f purity=%.2f contrast=%.2f texture=%.2f white=%.2f longitudinal=%.2f core=%.2f coreLong=%.2f]",
+            return String(format: "(%d,%d)-(%d,%d) box=[%d,%d,%d,%d] score=%.2f eligible=%@ peak=%d mean=%.1f high=%.3f purity=%.3f white=%.3f variation=%.3f contrast=%.3f longitudinal=%.3f widthVar=%.3f core=%.3f coreLong=%.3f continuity=%.3f gap=%d retained=%.3f parts[len=%.2f aspect=%.2f extent=%.2f width=%.2f area=%.2f peak=%.2f mean=%.2f high=%.2f purity=%.2f contrast=%.2f texture=%.2f white=%.2f longitudinal=%.2f core=%.2f coreLong=%.2f]",
                           a.x, a.y, b.x, b.y,
                           box.minX, box.minY, box.maxX, box.maxY, candidate.score,
                           candidate.isEmitterEligible.description, candidate.peakValue,
@@ -320,6 +325,8 @@ final class DetectionCoreTests: XCTestCase {
                           candidate.brightnessVariation, candidate.localContrast,
                           candidate.longitudinalHighCoverage, candidate.widthVariation,
                           candidate.coreSupportRatio, candidate.longitudinalCoreCoverage,
+                          candidate.longitudinalContinuity, candidate.largestLongitudinalGap,
+                          candidate.retainedBodyRatio,
                           s.length, s.aspect, s.extent, s.widthConsistency, s.area,
                           s.peakBrightness, s.meanBrightness, s.highBrightnessRatio,
                           s.colorPurity, s.localContrast, s.emitterTexture,
@@ -1099,6 +1106,29 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(result.count, bar.count)
         XCTAssertEqual(principalAxisEndpoints(result)?.0, PixelPoint(x: 4, y: 8))
         XCTAssertEqual(principalAxisEndpoints(result)?.1, PixelPoint(x: 21, y: 8))
+    }
+
+    func testCandidateEndpointsUseDenseContinuousBodyInsteadOfAxialSpillAndReflection() throws {
+        var points: [PixelPoint] = []
+        for x in 20...100 {
+            for y in 45...55 { points.append(PixelPoint(x: x, y: y)) }
+        }
+        for x in 101...215 { points.append(PixelPoint(x: x, y: 50)) }
+        for x in 216...228 {
+            for y in 47...53 { points.append(PixelPoint(x: x, y: y)) }
+        }
+
+        let untrimmed = try XCTUnwrap(principalAxisEndpoints(points))
+        let candidate = try XCTUnwrap(saberCandidate(from: points, width: 260, height: 100))
+        let untrimmedLength = hypot(Double(untrimmed.1.x - untrimmed.0.x),
+                                    Double(untrimmed.1.y - untrimmed.0.y))
+        let finalLength = hypot(Double(candidate.endpoints.1.x - candidate.endpoints.0.x),
+                                Double(candidate.endpoints.1.y - candidate.endpoints.0.y))
+
+        XCTAssertGreaterThan(untrimmedLength, 190, "raw projection reproduces the long-line failure")
+        XCTAssertLessThan(finalLength, 100, "distant reflection must not stretch final endpoints")
+        XCTAssertGreaterThan(candidate.longitudinalContinuity, 0.90)
+        XCTAssertLessThan(candidate.retainedBodyRatio, 0.90)
     }
 
     func testScaleAndPayload() {
