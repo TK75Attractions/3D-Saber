@@ -36,10 +36,10 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
         var labelFont = UISkinKit.FontAsset("Oxanium-Bold");
         if (labelFont != null) labelFont.TryAddCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 /,.ms");
         fc = Text(transform, "FullComboStatus", "FC READY", 21, new Vector2(280, 32), Vector2.zero, TextAlignmentOptions.TopRight);
-        TopRight(fc.rectTransform, new Vector2(-74, -206));
+        TopRight(fc.rectTransform, new Vector2(-74, -376));
         fc.color = new Color(.57f, .64f, .7f);
         milestone = Text(transform, "ComboMilestone", "", 25, new Vector2(300, 36), Vector2.zero, TextAlignmentOptions.TopRight);
-        TopRight(milestone.rectTransform, new Vector2(-74, -244));
+        TopRight(milestone.rectTransform, new Vector2(-74, -414));
         var endRoot = Rect(transform, "TrackEnding", new Vector2(720, 170), new Vector2(0, 15));
         endingGroup = endRoot.gameObject.AddComponent<CanvasGroup>(); endingGroup.blocksRaycasts = endingGroup.interactable = false; endingGroup.alpha = 0;
         var endBackground = endRoot.gameObject.AddComponent<Image>(); endBackground.color = new Color(.02f, .035f, .05f, .92f); endBackground.raycastTarget = false;
@@ -117,4 +117,3 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     static void TopRight(RectTransform root, Vector2 position)
     { root.anchorMin = root.anchorMax = root.pivot = Vector2.one; root.anchoredPosition = position; }
 }
-

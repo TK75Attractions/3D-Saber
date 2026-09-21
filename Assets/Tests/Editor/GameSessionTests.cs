@@ -7,11 +7,13 @@ public class GameSessionTests
     {
         GameSession.FinalScore = 999;
         GameSession.FinalMaxCombo = 50;
+        GameSession.FinalComboBonus = 5000;
         GameSession.FinalHit = 30;
         GameSession.FinalMiss = 5;
         GameSession.ResetResult();
         Assert.AreEqual(0, GameSession.FinalScore);
         Assert.AreEqual(0, GameSession.FinalMaxCombo);
+        Assert.AreEqual(0, GameSession.FinalComboBonus);
         Assert.AreEqual(0, GameSession.FinalHit);
         Assert.AreEqual(0, GameSession.FinalMiss);
     }
