@@ -4,7 +4,7 @@
   "artist": "もり　わきお",
   "timeOrigin": "audio-file-start",
   "previewStartSeconds": 53.44,
-  "hideBarLines": true,
+  "hideBarLines": false,
   "audioSha256": "b68e6874dfca9f7e48b5449b404b002a8712a5009b909a7e97b8b85d92d24cb0",
   "sections": []
 }

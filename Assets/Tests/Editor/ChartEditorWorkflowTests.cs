@@ -73,6 +73,56 @@ public class ChartEditorWorkflowTests
     }
 
     [Test]
+    public void MeterEditingSupportsHistoryAndNavigationWithoutMovingNotes()
+    {
+        var times = Document.notes.ConvertAll(note => note.time);
+        Call("SetTimeSignature", 0f, 7, 8);
+        Assert.True(window.hasUnsavedChanges);
+        CollectionAssert.AreEqual(times, Document.notes.ConvertAll(note => note.time));
+        Set("currentBeat", 0f);
+        Key(KeyCode.RightArrow, EventModifiers.Shift);
+        Assert.AreEqual(3.5f, Get<float>("currentBeat"));
+        Key(KeyCode.RightArrow, EventModifiers.Shift);
+        Assert.AreEqual(7f, Get<float>("currentBeat"));
+        Call("SetTimeSignature", 7f, 3, 4);
+        Key(KeyCode.RightArrow, EventModifiers.Shift);
+        Assert.AreEqual(10f, Get<float>("currentBeat"));
+        Call("Undo");
+        Assert.AreEqual(1, Document.timeSignatures.Count);
+        Call("Undo");
+        Assert.AreEqual(0, Document.timeSignatures.Count);
+        Call("Redo");
+        Assert.AreEqual(7, Document.timeSignatures[0].numerator);
+        CollectionAssert.AreEqual(times, Document.notes.ConvertAll(note => note.time));
+    }
+
+    [Test]
+    public void MeterSaveReloadAndDeletionKeepNoteTimesAndTheGridOrigin()
+    {
+        WithChartFolder(target =>
+        {
+            var times = Document.notes.ConvertAll(note => note.time);
+            Call("SetTimeSignature", 0f, 4, 4);
+            Call("SetTimeSignature", 8f, 7, 8);
+            Call("SetTimeSignature", 15f, 3, 4);
+            Call("EditTimeSignature", 1, 8f, 7, 8, true);
+            Assert.AreEqual(2, Document.timeSignatures.Count);
+            Call("Undo");
+            Assert.AreEqual(3, Document.timeSignatures.Count);
+            Set("beatZeroMs", 123f);
+            Set("songId", target);
+            Assert.True((bool)Call("SaveDocument"));
+            Set("document", new SaberChartDocument());
+            LoadTarget(target, false);
+            Assert.AreEqual(123f, Get<float>("beatZeroMs"));
+            Assert.AreEqual(7, Document.timeSignatures[1].numerator);
+            Assert.AreEqual(8, Document.timeSignatures[1].denominator);
+            CollectionAssert.AreEqual(times, Document.notes.ConvertAll(note => note.time));
+            Assert.False(window.hasUnsavedChanges);
+        });
+    }
+
+    [Test]
     public void SpatialPositionEditAfterTypingReturnsShortcutsToTheChart()
     {
         Set("selectedIndex", 0);

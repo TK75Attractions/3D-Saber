@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // chart.json の BPM から小節線を生成し、ノーツと同じ速度で奥から手前に流す。
-// 4/4 拍子前提で 4 拍ごとに 1 本（beatsPerBar で変更可）。
+// 拍子変更とグリッド原点を譜面から読む。旧譜面は beatsPerBar を使用。
 public class BarLineSpawner : MonoBehaviour
 {
     public GameObject barLinePrefab;
@@ -20,8 +20,7 @@ public class BarLineSpawner : MonoBehaviour
     [Range(0f, 1f)] public float lineAlpha = 0.18f;
     [Range(0.005f, 0.08f)] public float lineThickness = 0.02f;
 
-    private float bpm;
-    private double endTimeSeconds;
+    private readonly List<double> barTimes = new List<double>();
     private int nextBarIndex;
     private Material lineMaterial;
     private Material accentMaterial;
@@ -32,19 +31,24 @@ public class BarLineSpawner : MonoBehaviour
     public int AliveCount => live.Count;
     public int NextIndex => nextBarIndex;
 
-    public void SetChart(ChartData chart)
+    public void SetChart(ChartData chart, double extraOffsetSeconds = 0)
     {
-        bpm = chart != null ? chart.bpm : 0f;
-        if (chart != null && chart.notes != null && chart.notes.Count > 0)
-        {
-            endTimeSeconds = chart.notes[chart.notes.Count - 1].TimeSeconds + 4.0;
-        }
-        else
-        {
-            endTimeSeconds = 0.0;
-        }
         nextBarIndex = 0;
         Cleanup();
+        barTimes.Clear();
+        if (chart == null || chart.bpm <= 0 || float.IsNaN(chart.bpm) || float.IsInfinity(chart.bpm)) return;
+        double offset = chart.offsetMs / 1000.0 + extraOffsetSeconds;
+        double origin = chart.beatZeroMs / 1000.0 + offset;
+        double end = 0;
+        if (chart.notes != null && chart.notes.Count > 0)
+        {
+            foreach (var note in chart.notes)
+                if (note != null) end = System.Math.Max(end, note.TimeSeconds);
+            end += 4.0 + offset;
+        }
+        var meter = new ChartMeterMap(chart.timeSignatures, beatsPerBar);
+        foreach (double beat in meter.BarStarts(0, (end - origin) * chart.bpm / 60.0))
+            barTimes.Add(origin + beat * 60.0 / chart.bpm);
     }
 
     public void Tick(double songTime)
@@ -55,15 +59,12 @@ public class BarLineSpawner : MonoBehaviour
 
     private void SpawnDue(double songTime)
     {
-        if (bpm <= 0f) return;
-        double barInterval = 60.0 / bpm * beatsPerBar;
-        if (barInterval <= 0.0) return;
-        while (true)
+        while (nextBarIndex < barTimes.Count)
         {
-            double barTime = nextBarIndex * barInterval;
-            if (barTime > endTimeSeconds) break;
-            if (songTime + approachTime < barTime) break;
-            SpawnBar(barTime);
+            double barTime = barTimes[nextBarIndex];
+            if (songTime + approachTime + 1e-9 < barTime) break;
+            // 途中からの再生でも、通過済みの線を一度に大量生成しない。
+            if (barTime >= songTime - despawnAfterSeconds) SpawnBar(barTime);
             nextBarIndex++;
         }
     }

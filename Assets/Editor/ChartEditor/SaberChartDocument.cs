@@ -17,6 +17,8 @@ namespace Saber.ChartEditor
         public float offsetMs;
         // 本編の譜面ごとの表示難易度。エディターで保存しても失わないよう保持する。
         public int displayLevel;
+        public float beatZeroMs;
+        public List<ChartTimeSignature> timeSignatures = new List<ChartTimeSignature>();
         public List<SaberChartNote> notes = new List<SaberChartNote>();
     }
 
@@ -132,6 +134,8 @@ namespace Saber.ChartEditor
             if (!IsFinite(document.bpm) || document.bpm <= 0f) document.bpm = 120f;
             if (!IsFinite(document.coordScale) || document.coordScale <= 0f) document.coordScale = 1f;
             if (!IsFinite(document.offsetMs)) document.offsetMs = 0f;
+            if (!IsFinite(document.beatZeroMs)) document.beatZeroMs = 0f;
+            document.timeSignatures = ChartMeterMap.Normalize(document.timeSignatures);
             if (document.displayLevel < 0 || document.displayLevel > 10) document.displayLevel = 0;
             document.notes ??= new List<SaberChartNote>();
             document.notes.RemoveAll(note => note == null);
@@ -190,6 +194,8 @@ namespace Saber.ChartEditor
         /// </summary>
         public static float EstimateBeatZeroMs(SaberChartDocument document)
         {
+            if (document != null && IsFinite(document.beatZeroMs) && document.beatZeroMs != 0f)
+                return document.beatZeroMs;
             if (document?.notes == null || document.notes.Count == 0) return 0f;
 
             float bpm = SafeBpm(document.bpm);
@@ -223,6 +229,7 @@ namespace Saber.ChartEditor
 
         public static void RecalculateTimesFromBeats(SaberChartDocument document, float beatZeroMs)
         {
+            if (document != null) document.beatZeroMs = beatZeroMs;
             if (document?.notes == null) return;
             foreach (SaberChartNote note in document.notes)
             {
@@ -235,6 +242,7 @@ namespace Saber.ChartEditor
         /// <summary>本編で権威値となる time を保ったまま、補助値 beat だけを現在のグリッドへ合わせる。</summary>
         public static void RecalculateBeatsFromTimes(SaberChartDocument document, float beatZeroMs)
         {
+            if (document != null) document.beatZeroMs = beatZeroMs;
             if (document?.notes == null) return;
             foreach (SaberChartNote note in document.notes)
             {
@@ -248,6 +256,15 @@ namespace Saber.ChartEditor
         {
             float step = SnapStep(noteDenominator);
             return Mathf.Max(0f, Mathf.Round(beat / step) * step);
+        }
+
+        public static float QuantizeBeat(float beat, int noteDenominator, SaberChartDocument document)
+        {
+            var position = new ChartMeterMap(document.timeSignatures).At(beat);
+            float step = SnapStep(noteDenominator);
+            double snapped = position.BarStart + Math.Round((beat - position.BarStart) / step,
+                MidpointRounding.AwayFromZero) * step;
+            return (float)Math.Max(position.BarStart, Math.Min(position.BarEnd, snapped));
         }
 
         public static float SnapStep(int noteDenominator)
@@ -300,6 +317,14 @@ namespace Saber.ChartEditor
             int beatInMeasure = inside / stepsPerBeat + 1;
             int subdivision = inside % stepsPerBeat;
             return $"{measure:D3} : {beatInMeasure:D2} : {subdivision:D2}";
+        }
+
+        public static string FormatMusicalPosition(float beat, SaberChartDocument document, int noteDenominator)
+        {
+            var position = new ChartMeterMap(document.timeSignatures).At(beat);
+            int subdivision = (int)Math.Floor(position.Fraction * 4.0 / position.Denominator /
+                SnapStep(noteDenominator) + ChartMeterMap.Epsilon);
+            return $"{position.Measure:D3} : {position.Beat:D2} : {subdivision:D2}";
         }
 
         // 本編 NoteSpawner.secondsPerLongCut の既定値と同じ(長さ自動時の1カットあたり秒数)。
@@ -360,6 +385,8 @@ namespace Saber.ChartEditor
                 coordScale = source.coordScale,
                 offsetMs = source.offsetMs,
                 displayLevel = source.displayLevel,
+                beatZeroMs = source.beatZeroMs,
+                timeSignatures = ChartMeterMap.Normalize(source.timeSignatures),
                 notes = new List<SaberChartNote>(),
             };
             if (source.notes == null) return copy;

@@ -308,7 +308,7 @@ public class GamePlayManager : MonoBehaviour
             barLineSpawner.lineThickness = useOverhauledStage ? GameStageSkin.BarLineThickness : barLineThickness;
             // 小節線はノーツと同じ速度で流す(シーンに古い値が焼き込まれていても揃うように)。
             barLineSpawner.approachTime = GameSession.NoteApproachTime;
-            barLineSpawner.SetChart(chart);
+            barLineSpawner.SetChart(chart, effectiveExtraOffset);
         }
 
         scoreManager.songPlayer = songPlayer;

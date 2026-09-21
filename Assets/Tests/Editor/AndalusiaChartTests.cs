@@ -4,7 +4,7 @@ using NUnit.Framework;
 using Saber.ChartEditor;
 using UnityEngine;
 
-// 変拍子の未確定部分を4拍固定へ戻さず、提供音源の秒時刻を保持する。
+// 音源から推定した小節マップを保存し、提供音源のノーツ時刻を保持する。
 public class AndalusiaChartTests
 {
     const string SongId = "Andalusia";
@@ -104,10 +104,10 @@ public class AndalusiaChartTests
     }
 
     [Test]
-    public void StageAvoidsInventedFourBeatBarsAndUsesAnAudioTimePreview()
+    public void StageShowsAuthoredMixedMeterBarsAndUsesAnAudioTimePreview()
     {
         var stage = StagePerformanceTimeline.Load(SongId);
-        Assert.IsTrue(stage.hideBarLines);
+        Assert.IsFalse(stage.hideBarLines);
         Assert.AreEqual(0, stage.sections.Length, "未確認のサビ区間を断定しない");
         var window = SongPreviewWindow.Resolve(stage, 112.22059, 10);
         Assert.AreEqual(53.44, window.Start, .001);
@@ -115,6 +115,16 @@ public class AndalusiaChartTests
         foreach (string difficulty in new[] { "easy", "normal", "hard" })
         {
             var chart = ChartLoader.LoadFromStreamingAssets(SongId, difficulty);
+            Assert.Greater(chart.timeSignatures.Count, 1);
+            Assert.IsTrue(chart.timeSignatures.Any(item => item.denominator == 8));
+            var meter = new ChartMeterMap(chart.timeSignatures);
+            Assert.AreEqual(96, meter.At(96).BarStart);
+            Assert.AreEqual(6, meter.At(96).Numerator);
+            Assert.AreEqual(99, meter.AdjacentBar(96, true));
+            Assert.AreEqual(108, meter.At(108).BarStart);
+            CollectionAssert.AreEqual(
+                ChartLoader.LoadFromStreamingAssets(SongId, "normal").timeSignatures.Select(item => JsonUtility.ToJson(item)),
+                chart.timeSignatures.Select(item => JsonUtility.ToJson(item)));
             Assert.IsTrue(chart.notes.Any(n => SongPreviewWindow.Intersects(chart, n, window, 1)));
         }
         Assert.IsFalse(JsonUtility.FromJson<StagePerformanceTimeline>("{\"sections\":[]}").hideBarLines,

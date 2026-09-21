@@ -175,7 +175,7 @@ public class AndalusiaSongFlowPlayTests
     }
 
     [UnityTest]
-    public IEnumerator SelectionStartsFullAudioWithLeadInAndHidesOnlyThisSongsBarLines()
+    public IEnumerator SelectionStartsFullAudioWithLeadInAndShowsMixedMeterBarLines()
     {
         yield return OpenSelection();
         controller.SetDifficulty(0);
@@ -189,9 +189,8 @@ public class AndalusiaSongFlowPlayTests
         Assert.That(manager.songPlayer.Duration, Is.InRange(112.15, 112.30));
         var chart = ChartLoader.LoadFromStreamingAssets(SongId, "easy");
         Assert.AreEqual(chart.notes.Count, manager.noteSpawner.TotalNoteCount);
-        Assert.IsNull(manager.barLineSpawner, "変拍子の曲に4拍固定の小節線を流さない");
-        Assert.IsFalse(Object.FindObjectsByType<BarLineSpawner>(FindObjectsInactive.Include, FindObjectsSortMode.None)
-            .Any(b => b.gameObject.activeInHierarchy));
+        Assert.IsNotNull(manager.barLineSpawner, "推定小節マップを本編でも表示する");
+        Assert.IsTrue(manager.barLineSpawner.gameObject.activeInHierarchy);
         double deadline = Time.realtimeSinceStartupAsDouble + 6;
         while (firstNote == null && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
         Assert.IsNotNull(firstNote);

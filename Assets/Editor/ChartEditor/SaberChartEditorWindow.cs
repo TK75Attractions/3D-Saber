@@ -79,7 +79,6 @@ namespace Saber.ChartEditor
         [SerializeField] private float currentBeat;
         [SerializeField] private float pixelsPerBeat = 82f;
         [SerializeField] private int snapIndex = 3;
-        [SerializeField] private int beatsPerMeasure = 4;
         [SerializeField] private EditTool editTool = EditTool.Draw;
         [SerializeField] private int paletteXLane = 3;
         [SerializeField] private int paletteYLane = 3;
@@ -338,7 +337,7 @@ namespace Saber.ChartEditor
             float soughtBeat = EditorGUILayout.Slider(currentBeat, 0f, maxBeat);
             if (EditorGUI.EndChangeCheck()) SeekToBeat(soughtBeat);
             GUILayout.Label(
-                $"{SaberChartUtility.FormatMusicalPosition(currentBeat, beatsPerMeasure, CurrentSnap)}   /   {BeatToAudioSeconds(currentBeat):0.000}s",
+                $"{SaberChartUtility.FormatMusicalPosition(currentBeat, document, CurrentSnap)}   /   {BeatToAudioSeconds(currentBeat):0.000}s",
                 centeredSmallStyle);
             useGameTiming = EditorGUILayout.ToggleLeft(new GUIContent(
                 $"ゲームと同じ表示補正（{GameSession.JudgmentOffsetMs:+0;-0;0}ms）",
@@ -361,6 +360,8 @@ namespace Saber.ChartEditor
             GUILayout.Space(10f);
             SectionLabel("曲 / グリッド設定");
             DrawChartSettings();
+            GUILayout.Space(10f);
+            DrawTimeSignatures();
 
             GUILayout.Space(10f);
             SectionLabel(SelectedNote != null ? "選択ノーツのXY位置" : "次に置くXY位置");
@@ -393,7 +394,6 @@ namespace Saber.ChartEditor
             float nextBpm = EditorGUILayout.FloatField("BPM", document.bpm);
             float nextOffset = EditorGUILayout.FloatField("全体OFFSET (ms)", document.offsetMs);
             float nextBeatZero = EditorGUILayout.FloatField("譜面グリッド原点 (ms / 0以上)", beatZeroMs);
-            int nextMeasure = EditorGUILayout.IntField("1小節の拍数", beatsPerMeasure);
             float nextScale = EditorGUILayout.FloatField("座標倍率", document.coordScale);
             if (!EditorGUI.EndChangeCheck()) return;
 
@@ -404,13 +404,90 @@ namespace Saber.ChartEditor
             document.bpm = Mathf.Max(1f, nextBpm);
             document.offsetMs = nextOffset;
             beatZeroMs = safeBeatZero;
-            beatsPerMeasure = Mathf.Clamp(nextMeasure, 1, 16);
+            document.beatZeroMs = beatZeroMs;
             document.coordScale = Mathf.Max(0.0001f, nextScale);
             // time が本編の判定時刻。BPM変更でも時刻は動かさず、補助値 beat だけ更新する。
             if (timingChanged) SaberChartUtility.RecalculateBeatsFromTimes(document, beatZeroMs);
             history.Record(before);
             MarkChanged();
             RestartPreviewIfPlaying();
+        }
+
+        private static readonly int[] MeterDenominators = { 1, 2, 4, 8, 16, 32, 64 };
+        private static readonly string[] MeterDenominatorLabels = { "1", "2", "4", "8", "16", "32", "64" };
+
+        private void DrawTimeSignatures()
+        {
+            SectionLabel("拍子 / 途中の拍子変更");
+            var meter = new ChartMeterMap(document.timeSignatures);
+            var initial = meter.At(0);
+            GUILayout.BeginHorizontal();
+            GUILayout.Label("曲頭", GUILayout.Width(50));
+            EditorGUI.BeginChangeCheck();
+            int numerator = EditorGUILayout.DelayedIntField(initial.Numerator, GUILayout.Width(48));
+            GUILayout.Label("/", GUILayout.Width(12));
+            int denominator = EditorGUILayout.Popup(Array.IndexOf(MeterDenominators, initial.Denominator),
+                MeterDenominatorLabels, GUILayout.Width(58));
+            if (EditorGUI.EndChangeCheck()) SetTimeSignature(0, numerator, MeterDenominators[denominator]);
+            GUILayout.EndHorizontal();
+            GUILayout.Label("開始拍（四分音符単位） / 拍子", smallMutedStyle);
+            for (int i = 0; i < document.timeSignatures.Count; i++)
+            {
+                var signature = document.timeSignatures[i];
+                if (signature.beat == 0) continue;
+                var position = meter.At(signature.beat);
+                GUILayout.Label($"第{position.Measure}小節  /  {BeatToAudioSeconds(signature.beat):0.000}秒", smallMutedStyle);
+                GUILayout.BeginHorizontal();
+                EditorGUI.BeginChangeCheck();
+                float beat = EditorGUILayout.DelayedFloatField(signature.beat, GUILayout.Width(66));
+                numerator = EditorGUILayout.DelayedIntField(signature.numerator, GUILayout.Width(36));
+                GUILayout.Label("/", GUILayout.Width(10));
+                denominator = EditorGUILayout.Popup(Array.IndexOf(MeterDenominators, signature.denominator),
+                    MeterDenominatorLabels, GUILayout.Width(48));
+                bool changed = EditorGUI.EndChangeCheck();
+                bool remove = GUILayout.Button("×", GUILayout.Width(24));
+                GUILayout.EndHorizontal();
+                if (changed || remove)
+                {
+                    EditTimeSignature(i, beat, numerator, MeterDenominators[denominator], remove);
+                    break;
+                }
+            }
+            var active = meter.At(currentBeat);
+            if (GUILayout.Button($"現在位置に追加（{currentBeat:0.###}拍）"))
+                SetTimeSignature(currentBeat, active.Numerator, active.Denominator);
+            EditorGUILayout.HelpBox("変更位置が新しい小節の先頭になります。\n拍子を変えてもノーツの時刻は動きません。", MessageType.None);
+        }
+
+        private void PutTimeSignature(float beat, int numerator, int denominator)
+        {
+            if (float.IsNaN(beat) || float.IsInfinity(beat)) return;
+            beat = Mathf.Max(0, beat);
+            document.timeSignatures.RemoveAll(item => Mathf.Abs(item.beat - beat) < ChartMeterMap.Epsilon);
+            document.timeSignatures.Add(new ChartTimeSignature
+                { beat = beat, numerator = Mathf.Clamp(numerator, 1, 64), denominator = denominator });
+            document.timeSignatures = ChartMeterMap.Normalize(document.timeSignatures);
+        }
+
+        private void SetTimeSignature(float beat, int numerator, int denominator)
+        {
+            EndNoteDrag();
+            string before = CurrentJson();
+            PutTimeSignature(beat, numerator, denominator);
+            history.Record(before);
+            MarkChanged();
+        }
+
+        private void EditTimeSignature(int index, float beat, int numerator, int denominator, bool remove)
+        {
+            if (index < 0 || index >= document.timeSignatures.Count ||
+                (!remove && (float.IsNaN(beat) || float.IsInfinity(beat)))) return;
+            EndNoteDrag();
+            string before = CurrentJson();
+            document.timeSignatures.RemoveAt(index);
+            if (!remove) PutTimeSignature(beat, numerator, denominator);
+            history.Record(before);
+            MarkChanged();
         }
 
         private void DrawSelectedInspector()
@@ -624,29 +701,31 @@ namespace Saber.ChartEditor
             if (pixelsPerBeat * step < 5f)
                 step *= Mathf.Ceil(5f / Mathf.Max(0.01f, pixelsPerBeat * step));
 
-            float first = Mathf.Floor(minBeat / step) * step;
-            for (float beat = first; beat <= maxBeat + step * 0.5f; beat += step)
+            var meter = new ChartMeterMap(document.timeSignatures);
+            foreach (double start in meter.BarStarts(meter.At(minBeat).BarStart, maxBeat))
             {
-                float y = YForBeat(beat, timelineRect);
-                bool wholeBeat = Mathf.Abs(beat - Mathf.Round(beat)) < step * 0.25f;
-                bool measure = wholeBeat && Mathf.RoundToInt(beat) % Mathf.Max(1, beatsPerMeasure) == 0;
-                Color color = measure
-                    ? new Color(0.28f, 0.92f, 1f, 0.72f)
-                    : wholeBeat
-                        ? new Color(0.8f, 0.9f, 1f, 0.28f)
-                        : new Color(0.65f, 0.75f, 0.84f, 0.10f);
-                float thickness = measure ? 2f : 1f;
-                EditorGUI.DrawRect(new Rect(laneRect.x, y, laneRect.width, thickness), color);
-
-                if (wholeBeat)
+                var bar = meter.At(start);
+                for (double beat = start; beat < Math.Min(bar.BarEnd, maxBeat + step) - ChartMeterMap.Epsilon; beat += step)
                 {
-                    int measureNumber = Mathf.FloorToInt(beat / Mathf.Max(1, beatsPerMeasure)) + 1;
-                    int beatNumber = Mathf.FloorToInt(beat) % Mathf.Max(1, beatsPerMeasure) + 1;
-                    GUI.Label(
-                        new Rect(timelineRect.x + 2f, y - 9f, TimelineGutter - 6f, 18f),
-                        $"{measureNumber}:{beatNumber}",
-                        smallMutedStyle);
+                    float y = YForBeat((float)beat, timelineRect);
+                    EditorGUI.DrawRect(new Rect(laneRect.x, y, laneRect.width, 1), new Color(.65f, .75f, .84f, .10f));
                 }
+                // 分母の拍と小節線は Snap の間引きとは独立して描く。
+                for (int pulse = 0; pulse < bar.Numerator; pulse++)
+                {
+                    double beat = start + pulse * 4.0 / bar.Denominator;
+                    if (beat >= bar.BarEnd - ChartMeterMap.Epsilon || beat > maxBeat) break;
+                    float y = YForBeat((float)beat, timelineRect);
+                    bool measure = pulse == 0;
+                    EditorGUI.DrawRect(new Rect(laneRect.x, y, laneRect.width, measure ? 2 : 1),
+                        measure ? new Color(.28f, .92f, 1, .72f) : new Color(.8f, .9f, 1, .28f));
+                    if (measure || pixelsPerBeat * 4f / bar.Denominator >= 18)
+                        GUI.Label(new Rect(timelineRect.x + 2, y - 9, TimelineGutter - 6, 18),
+                            $"{bar.Measure}:{pulse + 1}", smallMutedStyle);
+                }
+                if (document.timeSignatures.Any(item => Math.Abs(item.beat - start) < ChartMeterMap.Epsilon))
+                    GUI.Label(new Rect(laneRect.x + 4, YForBeat((float)start, timelineRect) - 19, 90, 18),
+                        $"{bar.Numerator}/{bar.Denominator}", smallMutedStyle);
             }
         }
 
@@ -706,7 +785,7 @@ namespace Saber.ChartEditor
             EditorGUI.DrawRect(new Rect(timelineRect.x, y - 1f, timelineRect.width, 3f), AccentColor);
             GUI.Label(
                 new Rect(laneRect.x + 4f, y - 21f, 220f, 20f),
-                SaberChartUtility.FormatMusicalPosition(currentBeat, beatsPerMeasure, CurrentSnap),
+                SaberChartUtility.FormatMusicalPosition(currentBeat, document, CurrentSnap),
                 new GUIStyle(smallMutedStyle) { normal = { textColor = AccentColor } });
         }
 
@@ -774,7 +853,7 @@ namespace Saber.ChartEditor
                 else
                 {
                     selectedIndex = -1;
-                    SeekToBeat(SaberChartUtility.QuantizeBeat(BeatAtY(current.mousePosition.y, timelineRect), CurrentSnap));
+                    SeekToBeat(SaberChartUtility.QuantizeBeat(BeatAtY(current.mousePosition.y, timelineRect), CurrentSnap, document));
                 }
                 current.Use();
                 return;
@@ -791,7 +870,7 @@ namespace Saber.ChartEditor
 
                 SaberChartNote note = document.notes[dragNoteIndex];
                 int lane = LaneAtX(current.mousePosition.x, laneRect);
-                float beat = SaberChartUtility.QuantizeBeat(BeatAtY(current.mousePosition.y, timelineRect), CurrentSnap);
+                float beat = SaberChartUtility.QuantizeBeat(BeatAtY(current.mousePosition.y, timelineRect), CurrentSnap, document);
                 note.x = SaberChartUtility.CoordinateForLane(lane, LaneCount,
                     SaberChartUtility.DefaultXMin, SaberChartUtility.DefaultXMax);
                 note.beat = beat;
@@ -833,7 +912,7 @@ namespace Saber.ChartEditor
                 SaberChartUtility.DefaultXMin, SaberChartUtility.DefaultXMax);
             float y = SaberChartUtility.CoordinateForLane(paletteYLane, LaneCount,
                 SaberChartUtility.DefaultYMin, SaberChartUtility.DefaultYMax);
-            float beat = SaberChartUtility.QuantizeBeat(BeatAtY(mouse.y, timelineRect), CurrentSnap);
+            float beat = SaberChartUtility.QuantizeBeat(BeatAtY(mouse.y, timelineRect), CurrentSnap, document);
             SaberChartNote existing = document.notes.FirstOrDefault(note =>
                 Mathf.Abs(TimelineBeat(note) - beat) < 0.0001f &&
                 Mathf.Abs(note.x - x) < 0.0001f && Mathf.Abs(note.y - y) < 0.0001f);
@@ -937,10 +1016,9 @@ namespace Saber.ChartEditor
             else if (current.keyCode == KeyCode.LeftArrow || current.keyCode == KeyCode.RightArrow)
             {
                 float direction = current.keyCode == KeyCode.RightArrow ? 1f : -1f;
-                float amount = current.shift
-                    ? Mathf.Max(1, beatsPerMeasure)
-                    : SaberChartUtility.SnapStep(CurrentSnap);
-                SeekToBeat(currentBeat + direction * amount);
+                SeekToBeat(current.shift
+                    ? (float)new ChartMeterMap(document.timeSignatures).AdjacentBar(currentBeat, direction > 0)
+                    : currentBeat + direction * SaberChartUtility.SnapStep(CurrentSnap));
                 current.Use();
             }
             else if (current.keyCode == KeyCode.Alpha1)
@@ -1634,11 +1712,9 @@ namespace Saber.ChartEditor
             songId = EditorPrefs.GetString(PrefPrefix + "SongId", songId);
             difficultyIndex = EditorPrefs.GetInt(PrefPrefix + "Difficulty", difficultyIndex);
             snapIndex = EditorPrefs.GetInt(PrefPrefix + "Snap", snapIndex);
-            beatsPerMeasure = EditorPrefs.GetInt(PrefPrefix + "Measure", beatsPerMeasure);
             pixelsPerBeat = EditorPrefs.GetFloat(PrefPrefix + "Zoom", pixelsPerBeat);
             difficultyIndex = Mathf.Clamp(difficultyIndex, 0, DifficultyValues.Length - 1);
             snapIndex = Mathf.Clamp(snapIndex, 0, SnapDenominators.Length - 1);
-            beatsPerMeasure = Mathf.Clamp(beatsPerMeasure, 1, 16);
             pixelsPerBeat = Mathf.Clamp(pixelsPerBeat, 30f, 240f);
         }
 
@@ -1647,7 +1723,6 @@ namespace Saber.ChartEditor
             EditorPrefs.SetString(PrefPrefix + "SongId", songId ?? string.Empty);
             EditorPrefs.SetInt(PrefPrefix + "Difficulty", difficultyIndex);
             EditorPrefs.SetInt(PrefPrefix + "Snap", snapIndex);
-            EditorPrefs.SetInt(PrefPrefix + "Measure", beatsPerMeasure);
             EditorPrefs.SetFloat(PrefPrefix + "Zoom", pixelsPerBeat);
         }
     }

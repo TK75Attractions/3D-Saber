@@ -4,6 +4,64 @@
   "coordScale": 1,
   "offsetMs": 0,
   "displayLevel": 3,
+  "beatZeroMs": 0.0,
+  "timeSignatures": [
+    {
+      "beat": 0,
+      "numerator": 4,
+      "denominator": 4
+    },
+    {
+      "beat": 96,
+      "numerator": 6,
+      "denominator": 8
+    },
+    {
+      "beat": 108,
+      "numerator": 4,
+      "denominator": 4
+    },
+    {
+      "beat": 132,
+      "numerator": 6,
+      "denominator": 8
+    },
+    {
+      "beat": 135,
+      "numerator": 4,
+      "denominator": 4
+    },
+    {
+      "beat": 151,
+      "numerator": 6,
+      "denominator": 8
+    },
+    {
+      "beat": 217,
+      "numerator": 4,
+      "denominator": 4
+    },
+    {
+      "beat": 249,
+      "numerator": 6,
+      "denominator": 8
+    },
+    {
+      "beat": 267,
+      "numerator": 4,
+      "denominator": 4
+    },
+    {
+      "beat": 275,
+      "numerator": 6,
+      "denominator": 8
+    },
+    {
+      "beat": 290,
+      "numerator": 4,
+      "denominator": 4
+    }
+  ],
   "notes": [
     {
       "beat": 5.41887,

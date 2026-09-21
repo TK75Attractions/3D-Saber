@@ -17,6 +17,9 @@ public class ChartData
     public float offsetMs = 0f;
     // 制作者が指定する表示難易度(1..10)。0は未指定で、既存の表示設定/自動推定を使う。
     public int displayLevel = 0;
+    // 四分音符グリッドの原点（ms）。offsetMs は別途一度だけ加算する。
+    public float beatZeroMs;
+    public List<ChartTimeSignature> timeSignatures = new List<ChartTimeSignature>();
     public List<NoteData> notes = new List<NoteData>();
 }
 
