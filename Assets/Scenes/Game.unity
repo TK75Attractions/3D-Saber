@@ -3330,7 +3330,7 @@ MonoBehaviour:
   missClip: {fileID: 0}
   flickClip: {fileID: 0}
   longFinishClip: {fileID: 0}
-  volume: 0.6
+  volume: 0.8
 --- !u!82 &754311936
 AudioSource:
   m_ObjectHideFlags: 0

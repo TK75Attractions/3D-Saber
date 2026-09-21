@@ -27,6 +27,13 @@ public class GamePlayManager : MonoBehaviour
     public bool enableStartCountdown = true;
     [Range(0f, 1f)] public float startCountdownVolume = 0.55f;
 
+    [Header("Cut SFX mix")]
+    // 切断系の効果音の上限(曲=1.0 に対する比)。シーンや Inspector の値がこれより大きくても起動時にここまで下げる。
+    // 2026-09-22: 切断の手応えを強めるため 0.45 / 0.5 / 0.4 から引き上げ。Miss は JudgmentSfx.missVolumeScale で従来量を維持。
+    public const float JudgmentSfxMaxVolume = 0.8f;   // 通常カット・フリック・ロング完了
+    public const float GoldSfxMaxVolume = 0.75f;      // 金ノーツ
+    public const float LongTickSfxMaxVolume = 0.55f;  // ロング途中の刻み
+
     [Header("Chart tuning")]
     // 譜面のリズムが曲とずれているときの追加オフセット秒。
     // +値 = ノーツが「遅れて」流れてくる、-値 = ノーツが「早く」流れてくる。
@@ -151,11 +158,11 @@ public class GamePlayManager : MonoBehaviour
 
         EnsureLongNoteCutSfx();
         EnsureGoldNoteSfx();
-        // 効果音は全体的に少し控えめに(シーン側に大きい値が保存されていても上書きで下げる)
-        if (goldNoteSfx != null) goldNoteSfx.volume = Mathf.Min(goldNoteSfx.volume, 0.5f);
-        if (longNoteCutSfx != null) longNoteCutSfx.volume = Mathf.Min(longNoteCutSfx.volume, 0.4f);
+        // 効果音の上限を揃える(シーン側に大きい値が保存されていても上書きで下げる)。値は「Cut SFX mix」の定数。
+        if (goldNoteSfx != null) goldNoteSfx.volume = Mathf.Min(goldNoteSfx.volume, GoldSfxMaxVolume);
+        if (longNoteCutSfx != null) longNoteCutSfx.volume = Mathf.Min(longNoteCutSfx.volume, LongTickSfxMaxVolume);
         var judgmentSfxComp = Object.FindFirstObjectByType<JudgmentSfx>();
-        if (judgmentSfxComp != null) judgmentSfxComp.volume = Mathf.Min(judgmentSfxComp.volume, 0.45f);
+        if (judgmentSfxComp != null) judgmentSfxComp.volume = Mathf.Min(judgmentSfxComp.volume, JudgmentSfxMaxVolume);
         if (autoEnsureInputPoint) EnsureInputPoint();
         if (autoEnsureUdpImuBridge) EnsureUdpImuBridge();
         if (autoEnsureSwing8DirectionLogger) EnsureSwing8DirectionLogger();

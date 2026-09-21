@@ -153,4 +153,37 @@ public class JudgmentSfxTests
         Assert.AreEqual(CutDirection.None, score.LastCutDirection);
         Assert.IsFalse(score.LastCutTimedOut);
     }
+
+    [Test]
+    public void VolumeFor_MissIsScaledDown_OthersUseFullVolume()
+    {
+        var go = new GameObject("sfx", typeof(AudioSource));
+        var sfx = go.AddComponent<JudgmentSfx>();
+        sfx.volume = 0.8f;
+        sfx.missVolumeScale = 0.55f;
+        foreach (var tier in new[] { JudgmentTier.Perfect, JudgmentTier.Great, JudgmentTier.Good, JudgmentTier.Bad })
+            Assert.AreEqual(0.8f, sfx.VolumeFor(tier), 1e-6f, tier + " は切断音の音量をそのまま使う");
+        Assert.AreEqual(0.44f, sfx.VolumeFor(JudgmentTier.Miss), 1e-6f, "Miss だけ missVolumeScale で抑える");
+    }
+
+    [Test]
+    public void CutSfxMix_ComponentDefaultsReachTheBootCaps()
+    {
+        // 起動時は GamePlayManager の上限で Mathf.Min するため、既定値が上限未満だと上限を上げても音が大きくならない。
+        var go = new GameObject("sfx", typeof(AudioSource));
+        var sfx = go.AddComponent<JudgmentSfx>();
+        var gold = new GameObject("gold", typeof(AudioSource)).AddComponent<GoldNoteSfx>();
+        var tick = new GameObject("tick", typeof(AudioSource)).AddComponent<LongNoteCutSfx>();
+        try
+        {
+            Assert.GreaterOrEqual(sfx.volume, GamePlayManager.JudgmentSfxMaxVolume, "通常カット音の既定値が上限に届く");
+            Assert.GreaterOrEqual(gold.volume, GamePlayManager.GoldSfxMaxVolume, "金ノーツ音の既定値が上限に届く");
+            Assert.GreaterOrEqual(tick.volume, GamePlayManager.LongTickSfxMaxVolume, "ロング刻み音の既定値が上限に届く");
+        }
+        finally
+        {
+            Object.DestroyImmediate(gold.gameObject);
+            Object.DestroyImmediate(tick.gameObject);
+        }
+    }
 }
