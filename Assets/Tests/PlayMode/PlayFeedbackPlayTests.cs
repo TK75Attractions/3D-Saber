@@ -86,18 +86,27 @@ public class PlayFeedbackPlayTests
         Assert.AreEqual(effects, DisplaySettings.ReducedEffects);
     }
 
-    [UnityTest] public IEnumerator PerfectOnlyAccent_RemainsExclusive_AndLowModeReducesGeometry()
+    // 2026-09-23: ユーザー依頼で切断演出を判定段階化(Perfect > Great > Good、Bad/Miss は無し)。
+    [UnityTest] public IEnumerator TieredAccent_GreatAndGoodDraw_BadAndMissDoNot_AndLowModeReducesGeometry()
     {
         var owner=new GameObject("spawner"); created.Add(owner); var spawner=owner.AddComponent<NoteSpawner>();
         var effect=GameplayCutFeedback.Create(spawner);
         var notify=typeof(CuttableNote).GetMethod("NotifyJudgment",BindingFlags.Instance|BindingFlags.NonPublic);
         var isCut=typeof(CuttableNote).GetProperty("IsCut");
-        foreach(var tier in new[]{JudgmentTier.Great,JudgmentTier.Good,JudgmentTier.Bad,JudgmentTier.Miss})
+        foreach(var tier in new[]{JudgmentTier.Bad,JudgmentTier.Miss})
         {
             var go=new GameObject("note"); created.Add(go); var note=go.AddComponent<CuttableNote>();
             isCut.SetValue(note,true); effect.Track(note); notify.Invoke(note,new object[]{tier,Vector3.zero,Vector3.right*5});
         }
-        Assert.AreEqual(0,effect.ActiveCount);
+        Assert.AreEqual(0,effect.ActiveCount,"Bad と Miss は演出を出さない");
+        foreach(var tier in new[]{JudgmentTier.Great,JudgmentTier.Good})
+        {
+            var go=new GameObject("note"); created.Add(go); var note=go.AddComponent<CuttableNote>();
+            go.transform.position=new Vector3(tier==JudgmentTier.Great?3:6,0,0);
+            isCut.SetValue(note,true); effect.Track(note); notify.Invoke(note,new object[]{tier,go.transform.position,Vector3.right*5});
+        }
+        Assert.AreEqual(2,effect.ActiveCount,"Great と Good も演出を出す");
+        effect.ClearEffects();
         var perfectGo=new GameObject("perfect"); created.Add(perfectGo); var perfect=perfectGo.AddComponent<CuttableNote>();
         isCut.SetValue(perfect,true); effect.Track(perfect);
         notify.Invoke(perfect,new object[]{JudgmentTier.Perfect,Vector3.zero,Vector3.right*5});

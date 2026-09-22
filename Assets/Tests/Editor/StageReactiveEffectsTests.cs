@@ -183,7 +183,9 @@ public class StageReactiveEffectsTests
         Spawn(N()); Cut(0, error); effects.Tick(1.1);
         Assert.AreEqual(tier, score.LastTier);
         Assert.AreEqual(count, effects.ActiveWaveCount);
-        Assert.AreEqual(count, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount);
+        // 2026-09-23: 切断位置の演出だけは判定段階化(Perfect/Great/Good は出す、Bad/Miss は出さない)。床・背景は Perfect 限定のまま。
+        Assert.AreEqual(GameplayCutFeedback.Draws(tier) ? 1 : 0, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount,
+            "切断演出は Perfect/Great/Good だけに出す");
         Assert.AreEqual(count, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount,
             "Obsidianのラッチも最終Perfectと同じ結果を返す");
         if (count == 0) Assert.AreEqual(0, effects.GetComponent<MeshFilter>().sharedMesh.vertexCount);
@@ -196,7 +198,8 @@ public class StageReactiveEffectsTests
         Spawn(n); for (int i = 0; i < cuts; i++) Cut(0);
         Assert.AreEqual(JudgmentTier.Great, score.LastTier);
         Assert.AreEqual(0, effects.ActiveWaveCount); Assert.AreEqual(0, effects.ReleaseCount);
-        Assert.AreEqual(0, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount);
+        // 方向降格後の Great でも切断位置の演出は Great 相当で出る(床・背景の Perfect 反応は出ない)。
+        Assert.AreEqual(1, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount);
         Assert.AreEqual(0, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount);
     }
 

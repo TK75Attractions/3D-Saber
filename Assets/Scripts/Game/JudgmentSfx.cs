@@ -19,9 +19,9 @@ public class JudgmentSfx : MonoBehaviour
     public AudioClip longFinishClip;
 
     [Header("Volume")]
-    [Range(0f, 1f)] public float volume = 0.8f;
+    [Range(0f, 1f)] public float volume = 1f;
     // Miss の空振り音だけは volume にこの比を掛ける(切断音を上げても失敗音まで大きくしない)。
-    [Range(0f, 1f)] public float missVolumeScale = 0.55f;
+    [Range(0f, 1f)] public float missVolumeScale = 0.44f;
 
     private AudioSource source;
     private AudioClip defaultCutClip;

@@ -367,7 +367,8 @@ public class NoteSpawner : MonoBehaviour
             part.transform.localPosition = new Vector3(0, 0, layer == 0 ? .008f : -.008f);
             part.GetComponent<MeshFilter>().sharedMesh = mesh;
             var material = new Material(shader) { renderQueue = 3021 + layer };
-            material.SetColor("_BaseColor", layer == 0 ? new Color(.015f, .02f, .045f) : Color.white);
+            // 縁取りは黒(投影でも矢印の白と本体色の両方から分離する)。
+            material.SetColor("_BaseColor", layer == 0 ? new Color(0f, 0f, .01f) : Color.white);
             owner.Register(material);
             var renderer = part.GetComponent<MeshRenderer>();
             renderer.sharedMaterial = material;

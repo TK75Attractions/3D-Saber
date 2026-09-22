@@ -15,6 +15,8 @@ public static class FlickArrowShape
     };
     public static readonly Vector2[] OutlinePoints = BuildOutline();
     public const int TipIndex = 0;
+    // 縁取りの太さ(矢印ローカル単位)。2026-09-22: 白い矢印が明るい本体色に溶けて見にくいとの指摘で 0.018 → 0.045。
+    public const float OutlineWidth = .045f;
     static readonly Color TrailColor = new Color(.85f, .81f, .97f, 1);
 
     public static Color VertexColor(int index) { return index < 6 ? Color.white : TrailColor; }
@@ -30,7 +32,7 @@ public static class FlickArrowShape
             Vector2 outgoing = (Points[start + (local + 1) % 6] - Points[i]).normalized;
             Vector2 n0 = new Vector2(-incoming.y, incoming.x);
             Vector2 n1 = new Vector2(-outgoing.y, outgoing.x);
-            outline[i] = Points[i] + (n0 + n1) * (.018f / (1 + Vector2.Dot(n0, n1)));
+            outline[i] = Points[i] + (n0 + n1) * (OutlineWidth / (1 + Vector2.Dot(n0, n1)));
         }
         return outline;
     }

@@ -32,7 +32,9 @@ public class PrismSfxAssetTests
             if(onset<0&&value>.0031623f) onset=i;
         }
         Assert.Greater(peak,.025f,"無音に変化していない");
-        Assert.Less(peak,.43f,"音の重なりに備えた余裕を残す");
+        // 2026-09-23: ユーザー依頼で切断系6音源を波形で +5 dB(ピーク約 -4 dBFS)。左右同時の同一音は加算で一瞬 0 dBFS を超え得るが、
+        // それ以上の余裕は曲側の音量で確保する方針にし、上限を 0.43 → 0.70 へ。Miss だけ据え置き。
+        Assert.Less(peak,.70f,"単発でクリップしない余裕を残す");
         Assert.That(onset,Is.InRange(0,96),"素材の先頭2ms以内に打点がある");
         Assert.Less(Mathf.Abs(data[0]),.00001f);
         Assert.Less(Mathf.Abs(data[data.Length-1]),.00001f);

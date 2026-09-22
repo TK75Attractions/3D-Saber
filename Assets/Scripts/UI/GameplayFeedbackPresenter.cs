@@ -13,6 +13,12 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     CanvasGroup endingGroup;
     float milestoneAge = 99, endingAge = -1;
     int latestMilestone;
+    // コンボ数の後ろの炎(2026-09-23 ユーザー依頼): AP中は虹色、FC中は金色、曲の進行で強くなり、条件が崩れたら消える。
+    ComboFlameGraphic flame;
+    readonly ComboFlameEnvelope flameEnvelope = new ComboFlameEnvelope();
+    float flameTime;
+    public ComboFlameMode FlameMode => flameEnvelope.Shown;
+    public float FlameLevel => flameEnvelope.Level;
     public bool OutroStarted => endingAge >= 0;
     public string FullComboLabel => fc != null ? fc.text : "";
     public string EndingLabel => ending != null ? ending.text : "";
@@ -47,7 +53,37 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
         endingDetail = Text(endRoot, "Detail", "", 20, new Vector2(680, 30), new Vector2(0, -39));
         outroRule = Rect(endRoot, "FinishRule", new Vector2(0, 3), new Vector2(0, -69));
         var line = outroRule.gameObject.AddComponent<Image>(); line.color = new Color(.3f, .85f, .87f); line.raycastTarget = false;
+        BuildFlame();
         if (score != null) score.OnJudgment += Scored;
+    }
+
+    // 炎は HUD(sortingOrder 500)のコンボ数字の下に描く。数字の右端(-70)と下端(約-292)に矩形の右下を合わせる。
+    void BuildFlame()
+    {
+        var holder = new GameObject("ComboFlame", typeof(RectTransform), typeof(Canvas));
+        holder.transform.SetParent(transform, false);
+        var canvas = holder.GetComponent<Canvas>(); canvas.overrideSorting = true; canvas.sortingOrder = 499;
+        var holderRect = (RectTransform)holder.transform;
+        holderRect.anchorMin = holderRect.anchorMax = Vector2.one; holderRect.pivot = new Vector2(1, 0);
+        holderRect.anchoredPosition = new Vector2(-70, -292); holderRect.sizeDelta = new Vector2(340, 260);
+        var graphicGo = new GameObject("ComboFlameGraphic", typeof(RectTransform));
+        graphicGo.transform.SetParent(holder.transform, false);
+        var graphicRect = (RectTransform)graphicGo.transform;
+        graphicRect.anchorMin = graphicRect.anchorMax = new Vector2(1, 0); graphicRect.pivot = new Vector2(1, 0);
+        graphicRect.anchoredPosition = Vector2.zero; graphicRect.sizeDelta = new Vector2(340, 260);
+        flame = graphicGo.AddComponent<ComboFlameGraphic>(); flame.raycastTarget = false;
+    }
+
+    void TickFlame(float delta, double songTime, double duration)
+    {
+        flameTime += delta;
+        var desired = score == null ? ComboFlameMode.None
+            : ComboFlameLogic.DesiredMode(score.HitCount, score.PerfectCount, score.BadCount, score.MissCount);
+        flameEnvelope.Tick(desired, delta);
+        if (flame == null) return;
+        int digits = score != null ? Mathf.Max(1, score.Combo).ToString().Length : 1;
+        flame.SetState(flameEnvelope.Shown, ComboFlameLogic.Intensity(songTime, duration), flameEnvelope.Level, flameTime,
+            ComboFlameLogic.FlameWidth(digits));
     }
 
     public static bool FullComboEligible(int hits, int bad, int miss) => hits > 0 && bad == 0 && miss == 0;
@@ -76,6 +112,7 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
         if (!isActiveAndEnabled) return;
         delta = Mathf.Clamp(delta, 0, .1f);
         UpdateFullCombo();
+        TickFlame(delta, songTime, duration);
         milestoneAge += delta;
         milestone.color = new Color(.79f, .9f, .93f, 1 - Mathf.InverseLerp(.6f, 1.1f, milestoneAge));
         milestone.rectTransform.localScale = Vector3.one * (1 + (DisplaySettings.ReducedEffects ? 0 : .12f) * Mathf.Clamp01(1 - milestoneAge / .22f));

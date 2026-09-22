@@ -7,7 +7,7 @@ using UnityEngine;
 public class GoldNoteSfx : MonoBehaviour
 {
     public AudioClip cutClip; // 未指定なら同梱の金ノーツ専用音。
-    [Range(0f, 1f)] public float volume = 0.75f;
+    [Range(0f, 1f)] public float volume = 0.9375f;
 
     [Header("シング合成(パラメタを変えると次回再生時に作り直す)")]
     public float baseFrequency = 2093f;   // C7 付近の金属基音

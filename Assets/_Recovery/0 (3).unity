@@ -3464,6 +3464,7 @@ MonoBehaviour:
   score: {fileID: 1750828891}
   scoreText: {fileID: 2071487128}
   comboText: {fileID: 863295852}
+  maxComboText: {fileID: 0}
   tierText: {fileID: 273885535}
   flickWarningText: {fileID: 476787953}
   tierFlashDuration: 0.6
@@ -4242,6 +4243,7 @@ MonoBehaviour:
   noteSpawner: {fileID: 438257896}
   scoreManager: {fileID: 1750828891}
   cutJudge: {fileID: 1782158254}
+  cameraImuJudgment: {fileID: 0}
   barLineSpawner: {fileID: 575400676}
   longNoteCutSfx: {fileID: 0}
   goldNoteSfx: {fileID: 0}
@@ -7221,7 +7223,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: SaberGame::ScoreManager
   songPlayer: {fileID: 1047594429}
-  comboBonusPerStep: 10
 --- !u!4 &1750828892
 Transform:
   m_ObjectHideFlags: 0
