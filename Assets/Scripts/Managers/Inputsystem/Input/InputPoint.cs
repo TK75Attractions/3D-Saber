@@ -15,6 +15,21 @@ public class InputPoint : MonoBehaviour
     UdpClient udpClient2;
     Thread receiveThread1;
     Thread receiveThread2;
+    readonly object networkLifecycleLock = new object();
+    ManualResetEvent receiverStopSignal1;
+    ManualResetEvent receiverStopSignal2;
+    volatile bool networkShutdown = true;
+    volatile bool receiverAlive1;
+    volatile bool receiverAlive2;
+    int receiverRestartCount1;
+    int receiverRestartCount2;
+    string lastReceiverExitReason1 = "Not started";
+    string lastReceiverExitReason2 = "Not started";
+    string pendingReceiverDiagnostic1;
+    string pendingReceiverDiagnostic2;
+    const int ReceiverInitialBackoffMilliseconds = 200;
+    const int ReceiverMaximumBackoffMilliseconds = 2000;
+    const int ReceiverJoinTimeoutMilliseconds = 2000;
     PhoneSaberBonjourPublisher bonjourPublisher;
     public int port = 5005;
     public int port2 = 5006;
@@ -36,7 +51,7 @@ public class InputPoint : MonoBehaviour
     public Vector2 NormalizedPosition2 { get; private set; }
     public float LocalAngleDeg { get; private set; }
     public float LocalAngleDeg2 { get; private set; }
-    // 最後にデータを受信した時刻（Time.timeAsDouble 基準）。棒1（port）/棒2（port2）で別管理。
+    // 最後にデータを受信した時刻（unscaled monotonic real time 基準）。棒1/2で別管理。
     // SaberInputBridge が「UDP 無音 → マウスフォールバック/非表示」を判定するのに使う。
     public double LastReceivedTime { get; private set; } = -1000.0;
     public double LastReceivedTime2 { get; private set; } = -1000.0;
@@ -47,11 +62,11 @@ public class InputPoint : MonoBehaviour
     // 「最近データが来ているか」を判定するヘルパー。既定 1 秒。
     public bool IsRecentlyActive(double thresholdSeconds = 1.0)
     {
-        return (Time.timeAsDouble - LastReceivedTime) < thresholdSeconds;
+        return (Time.realtimeSinceStartupAsDouble - LastReceivedTime) < thresholdSeconds;
     }
     public bool IsRecentlyActive2(double thresholdSeconds = 1.0)
     {
-        return (Time.timeAsDouble - LastReceivedTime2) < thresholdSeconds;
+        return (Time.realtimeSinceStartupAsDouble - LastReceivedTime2) < thresholdSeconds;
     }
     public Vector2 LocalStickA { get; private set; }
     public Vector2 LocalStickB { get; private set; }
@@ -67,6 +82,17 @@ public class InputPoint : MonoBehaviour
     public float LocalStickLengthNormalized2 { get; private set; }
     public Vector2 LocalStickRawA2 { get; private set; }
     public Vector2 LocalStickRawB2 { get; private set; }
+    // 直近packetが4要素の棒端点を含んでいたか。2要素packetで必ずfalseに戻す。
+    public bool HasValidStickEndpoints { get; private set; }
+    public bool HasValidStickEndpoints2 { get; private set; }
+
+    // 色ごとのreceiver診断。一方の異常は反対色の状態に影響させない。
+    public bool ReceiverAlive => receiverAlive1;
+    public bool ReceiverAlive2 => receiverAlive2;
+    public int ReceiverRestartCount => Volatile.Read(ref receiverRestartCount1);
+    public int ReceiverRestartCount2 => Volatile.Read(ref receiverRestartCount2);
+    public string LastReceiverExitReason => lastReceiverExitReason1;
+    public string LastReceiverExitReason2 => lastReceiverExitReason2;
 
     // スレッド同期用
     object lockObj = new object();
@@ -238,134 +264,157 @@ public class InputPoint : MonoBehaviour
         if (!Application.isPlaying || Instance != this) return;
 
         lastRateLogTime = Time.realtimeSinceStartup;
+        StartNetworkServices();
+    }
 
-        try
+    void StartNetworkServices()
+    {
+        lock (networkLifecycleLock)
         {
-            // 2ポートともbindできた時だけ受信スレッドとBonjourを開始する。
-            // 片方だけ開いた状態で「受信可能」と公開しない。
-            udpClient1 = new UdpClient(port);
-            udpClient2 = new UdpClient(port2);
+            // Stop/Join未完了の旧threadがいる間は重複起動しない。
+            if ((receiveThread1 != null && receiveThread1.IsAlive) ||
+                (receiveThread2 != null && receiveThread2.IsAlive)) return;
+            receiveThread1 = null;
+            receiveThread2 = null;
+            receiverStopSignal1?.Dispose();
+            receiverStopSignal2?.Dispose();
 
-            receiveThread1 = new Thread(() => ReceiveData(udpClient1, lockObj, false));
+            networkShutdown = false;
+            receiverStopSignal1 = new ManualResetEvent(false);
+            receiverStopSignal2 = new ManualResetEvent(false);
+            receiveThread1 = new Thread(() => ReceiverSupervisor(false));
+            receiveThread2 = new Thread(() => ReceiverSupervisor(true));
+            receiveThread1.Name = "PhoneSaber RED UDP receiver";
+            receiveThread2.Name = "PhoneSaber BLUE UDP receiver";
             receiveThread1.IsBackground = true;
-            receiveThread1.Start();
-
-            receiveThread2 = new Thread(() => ReceiveData(udpClient2, lockObj2, true));
             receiveThread2.IsBackground = true;
+            receiveThread1.Start();
             receiveThread2.Start();
-
-            bonjourPublisher = new PhoneSaberBonjourPublisher();
-            bonjourPublisher.Start(port);
         }
-        catch (SocketException e)
+
+        bonjourPublisher = new PhoneSaberBonjourPublisher();
+        bonjourPublisher.Start(port);
+    }
+
+    void ReceiverSupervisor(bool secondStick)
+    {
+        int backoffMilliseconds = ReceiverInitialBackoffMilliseconds;
+        ManualResetEvent stopSignal = secondStick ? receiverStopSignal2 : receiverStopSignal1;
+        while (!networkShutdown)
         {
-            StopNetworkServices();
-            Debug.LogError(
-                $"[PhoneSaber] UDP {port}/{port2} is already in use. " +
-                $"Stop run_debug.command or another receiver. ({e.Message})");
+            UdpClient client = null;
+            string exitReason = null;
+            try
+            {
+                client = new UdpClient(secondStick ? port2 : port);
+                SetReceiverClient(secondStick, client);
+                SetReceiverAlive(secondStick, true);
+                backoffMilliseconds = ReceiverInitialBackoffMilliseconds;
+                ReceiveData(client, secondStick ? lockObj2 : lockObj, secondStick);
+                if (!networkShutdown) exitReason = "receive loop returned unexpectedly";
+            }
+            catch (Exception e) when (e is SocketException || e is ObjectDisposedException ||
+                                      e is ThreadInterruptedException)
+            {
+                if (!networkShutdown) exitReason = $"{e.GetType().Name}: {e.Message}";
+            }
+            catch (Exception e)
+            {
+                if (!networkShutdown) exitReason = $"unexpected {e.GetType().Name}: {e.Message}";
+            }
+            finally
+            {
+                SetReceiverAlive(secondStick, false);
+                ClearReceiverClient(secondStick, client);
+                client?.Close();
+            }
+
+            if (networkShutdown) break;
+
+            if (secondStick) Interlocked.Increment(ref receiverRestartCount2);
+            else Interlocked.Increment(ref receiverRestartCount1);
+            RecordReceiverExit(secondStick, exitReason ?? "unknown receiver failure", false);
+            if (stopSignal == null || stopSignal.WaitOne(backoffMilliseconds)) break;
+            backoffMilliseconds = Math.Min(backoffMilliseconds * 2, ReceiverMaximumBackoffMilliseconds);
         }
     }
 
     void ReceiveData(UdpClient client, object targetLock, bool secondStick)
     {
-        while (client != null)
+        while (!networkShutdown)
         {
-            try
+            IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+            byte[] data = client.Receive(ref endPoint);
+            long receiveTimestampTicks = SwingMonotonicClock.Timestamp;
+            string message = StripOptionalTimestamp(Encoding.UTF8.GetString(data).Trim());
+
+            string[] parts = message.Split(',');
+            if (parts.Length != 2 && parts.Length != 4) continue;
+
+            if (!float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float a) ||
+                !float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float b)) continue;
+
+            bool isStick = parts.Length == 4;
+            float c = 0f;
+            float d = 0f;
+            if (isStick &&
+                (!float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out c) ||
+                 !float.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out d))) continue;
+
+            // メインスレッドと衝突しないようロック
+            lock (targetLock)
             {
-                IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
-                byte[] data = client.Receive(ref endPoint);
-                long receiveTimestampTicks = SwingMonotonicClock.Timestamp;
-                string message = StripOptionalTimestamp(Encoding.UTF8.GetString(data).Trim());
-
-                string[] parts = message.Split(',');
-                if (parts.Length != 2 && parts.Length != 4)
-                {
-                    continue;
-                }
-
-                if (!float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float a) ||
-                    !float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float b))
-                {
-                    continue;
-                }
-
-                bool isStick = parts.Length == 4;
-                float c = 0f;
-                float d = 0f;
-                if (isStick)
-                {
-                    if (!float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out c) ||
-                        !float.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out d))
-                    {
-                        continue;
-                    }
-                }
-
-                // メインスレッドと衝突しないようロック
-                lock (targetLock)
-                {
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
-                    RecordFreezeReceiveGap(secondStick, receiveTimestampTicks);
+                RecordFreezeReceiveGap(secondStick, receiveTimestampTicks);
 #endif
-                    if (secondStick)
+                if (secondStick)
+                {
+                    Interlocked.Increment(ref receivedCountPort2Window);
+                    Interlocked.Increment(ref receivedPacketCountPort2);
+                    HasValidStickEndpoints2 = isStick;
+                    if (isStick)
                     {
-                        Interlocked.Increment(ref receivedCountPort2Window);
-                        Interlocked.Increment(ref receivedPacketCountPort2);
-                        if (isStick)
-                        {
-                            rawX2a = a;
-                            rawY2a = b;
-                            rawX2b = c;
-                            rawY2b = d;
-                            rawX2 = (a + c) * 0.5f;
-                            rawY2 = (b + d) * 0.5f;
-                            hasStickData2 = true;
-                        }
-                        else
-                        {
-                            rawX2 = a;
-                            rawY2 = b;
-                            hasStickData2 = false;
-                        }
-                        rawReceiveTimestampTicks2 = receiveTimestampTicks;
-                        hasNewData2 = true;
+                        rawX2a = a;
+                        rawY2a = b;
+                        rawX2b = c;
+                        rawY2b = d;
+                        rawX2 = (a + c) * 0.5f;
+                        rawY2 = (b + d) * 0.5f;
+                        hasStickData2 = true;
                     }
                     else
                     {
-                        Interlocked.Increment(ref receivedCountPort1Window);
-                        Interlocked.Increment(ref receivedPacketCountPort1);
-                        if (isStick)
-                        {
-                            rawX1a = a;
-                            rawY1a = b;
-                            rawX1b = c;
-                            rawY1b = d;
-                            rawX = (a + c) * 0.5f;
-                            rawY = (b + d) * 0.5f;
-                            hasStickData = true;
-                        }
-                        else
-                        {
-                            rawX = a;
-                            rawY = b;
-                            hasStickData = false;
-                        }
-                        rawReceiveTimestampTicks = receiveTimestampTicks;
-                        hasNewData = true;
+                        rawX2 = a;
+                        rawY2 = b;
+                        hasStickData2 = false;
                     }
+                    rawReceiveTimestampTicks2 = receiveTimestampTicks;
+                    hasNewData2 = true;
                 }
-            }
-            catch (SocketException)
-            {
-                break;
-            }
-            catch (ObjectDisposedException)
-            {
-                break;
-            }
-            catch (ThreadInterruptedException)
-            {
-                break;
+                else
+                {
+                    Interlocked.Increment(ref receivedCountPort1Window);
+                    Interlocked.Increment(ref receivedPacketCountPort1);
+                    HasValidStickEndpoints = isStick;
+                    if (isStick)
+                    {
+                        rawX1a = a;
+                        rawY1a = b;
+                        rawX1b = c;
+                        rawY1b = d;
+                        rawX = (a + c) * 0.5f;
+                        rawY = (b + d) * 0.5f;
+                        hasStickData = true;
+                    }
+                    else
+                    {
+                        rawX = a;
+                        rawY = b;
+                        hasStickData = false;
+                    }
+                    rawReceiveTimestampTicks = receiveTimestampTicks;
+                    hasNewData = true;
+                }
             }
         }
     }
@@ -383,6 +432,9 @@ public class InputPoint : MonoBehaviour
 
     void Update()
     {
+        // Join timeout後も旧threadが完全終了するまでは重複起動せず、終了確認後にだけ再開する。
+        if (networkShutdown && isActiveAndEnabled && Instance == this) StartNetworkServices();
+        FlushReceiverDiagnostics();
         float x = 0, y = 0;
         bool updated = false;
         bool updatedStick = false;
@@ -481,6 +533,7 @@ public class InputPoint : MonoBehaviour
             Vector2 delta1 = sensMid1 - mid1;
             LocalPosition = ToLocalPosition(sensMid1.x, sensMid1.y);
 
+            HasValidStickEndpoints = updatedStick;
             if (updatedStick)
             {
                 Vector2 end1a = CanonicalizePoint(x1a, y1a, camWidth, camHeight, useDirectWorldMapping) + delta1;
@@ -502,7 +555,7 @@ public class InputPoint : MonoBehaviour
                 LocalStickLengthNormalized = LocalStickLength / Mathf.Sqrt(8f);
                 LocalAngleDeg = Mathf.Atan2(nyB - nyA, nxB - nxA) * Mathf.Rad2Deg;
             }
-            LastReceivedTime = Time.timeAsDouble;
+            LastReceivedTime = Time.realtimeSinceStartupAsDouble;
             LastReceivedMonotonicTime = SwingMonotonicClock.ToSeconds(receiveTimestampTicks);
             if (debugCoordinates)
             {
@@ -528,6 +581,7 @@ public class InputPoint : MonoBehaviour
             Vector2 delta2 = sensMid2 - mid2;
             LocalPosition2 = ToLocalPosition(sensMid2.x, sensMid2.y);
 
+            HasValidStickEndpoints2 = updatedStick2;
             if (updatedStick2)
             {
                 Vector2 end2a = CanonicalizePoint(x2a, y2a, camWidth, camHeight, useDirectWorldMapping) + delta2;
@@ -547,7 +601,7 @@ public class InputPoint : MonoBehaviour
                 LocalStickLengthNormalized2 = LocalStickLength2 / Mathf.Sqrt(8f);
                 LocalAngleDeg2 = Mathf.Atan2(nyB2 - nyA2, nxB2 - nxA2) * Mathf.Rad2Deg;
             }
-            LastReceivedTime2 = Time.timeAsDouble;
+            LastReceivedTime2 = Time.realtimeSinceStartupAsDouble;
             LastReceivedMonotonicTime2 = SwingMonotonicClock.ToSeconds(receiveTimestampTicks2);
         }
 
@@ -638,14 +692,101 @@ public class InputPoint : MonoBehaviour
     {
         bonjourPublisher?.Dispose();
         bonjourPublisher = null;
-        receiveThread1?.Interrupt(); // Abortより安全
-        receiveThread2?.Interrupt();
-        receiveThread1 = null;
-        receiveThread2 = null;
-        udpClient1?.Close();
-        udpClient2?.Close();
-        udpClient1 = null;
-        udpClient2 = null;
+        Thread thread1;
+        Thread thread2;
+        lock (networkLifecycleLock)
+        {
+            if (networkShutdown && receiveThread1 == null && receiveThread2 == null) return;
+            networkShutdown = true;
+            RecordReceiverExit(false, "intentional shutdown", true);
+            RecordReceiverExit(true, "intentional shutdown", true);
+            receiverStopSignal1?.Set();
+            receiverStopSignal2?.Set();
+            udpClient1?.Close();
+            udpClient2?.Close();
+            thread1 = receiveThread1;
+            thread2 = receiveThread2;
+        }
+
+        bool stopped1 = JoinReceiver(thread1, "RED");
+        bool stopped2 = JoinReceiver(thread2, "BLUE");
+
+        lock (networkLifecycleLock)
+        {
+            if (stopped1 && stopped2)
+            {
+                receiveThread1 = null;
+                receiveThread2 = null;
+                udpClient1 = null;
+                udpClient2 = null;
+                receiverStopSignal1?.Dispose();
+                receiverStopSignal2?.Dispose();
+                receiverStopSignal1 = null;
+                receiverStopSignal2 = null;
+            }
+            receiverAlive1 = false;
+            receiverAlive2 = false;
+        }
+    }
+
+    void SetReceiverClient(bool secondStick, UdpClient client)
+    {
+        lock (networkLifecycleLock)
+        {
+            if (secondStick) udpClient2 = client;
+            else udpClient1 = client;
+        }
+    }
+
+    void ClearReceiverClient(bool secondStick, UdpClient client)
+    {
+        lock (networkLifecycleLock)
+        {
+            if (secondStick)
+            {
+                if (ReferenceEquals(udpClient2, client)) udpClient2 = null;
+            }
+            else if (ReferenceEquals(udpClient1, client)) udpClient1 = null;
+        }
+    }
+
+    void SetReceiverAlive(bool secondStick, bool alive)
+    {
+        if (secondStick) receiverAlive2 = alive;
+        else receiverAlive1 = alive;
+    }
+
+    void RecordReceiverExit(bool secondStick, string reason, bool intentional)
+    {
+        string color = secondStick ? "BLUE" : "RED";
+        string diagnostic = $"[PhoneSaber][{color}] receiver {(intentional ? "stopped" : "failed")}: {reason}";
+        if (secondStick)
+        {
+            lastReceiverExitReason2 = reason;
+            if (!intentional) Interlocked.Exchange(ref pendingReceiverDiagnostic2, diagnostic);
+        }
+        else
+        {
+            lastReceiverExitReason1 = reason;
+            if (!intentional) Interlocked.Exchange(ref pendingReceiverDiagnostic1, diagnostic);
+        }
+        if (intentional) Debug.Log(diagnostic);
+    }
+
+    void FlushReceiverDiagnostics()
+    {
+        string red = Interlocked.Exchange(ref pendingReceiverDiagnostic1, null);
+        string blue = Interlocked.Exchange(ref pendingReceiverDiagnostic2, null);
+        if (red != null) Debug.LogWarning(red);
+        if (blue != null) Debug.LogWarning(blue);
+    }
+
+    static bool JoinReceiver(Thread thread, string color)
+    {
+        if (thread == null || thread == Thread.CurrentThread) return true;
+        if (thread.Join(ReceiverJoinTimeoutMilliseconds)) return true;
+        Debug.LogError($"[PhoneSaber][{color}] receiver did not stop within {ReceiverJoinTimeoutMilliseconds}ms");
+        return false;
     }
 
     void OnDisable() => StopNetworkServices();
