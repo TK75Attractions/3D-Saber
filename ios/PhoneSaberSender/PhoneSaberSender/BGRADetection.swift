@@ -43,6 +43,28 @@ struct SaberDetectionProfile {
     var candidateCount = 0
 }
 
+private enum BlueCandidateRankingThresholds {
+    static let longSpanStart = 0.32
+    static let longSpanRamp = 0.10
+    static let trustedContinuity = 0.80
+    static let connectedTrustedContinuity = 0.85
+    static let pointLineRetainedRatio = 0.75
+    static let trustedHighValueRatio = 0.70
+    static let trustedColorPurity = 0.55
+    static let trustedCoreSupport = 0.30
+    static let connectedCoreSupport = 0.55
+    static let connectedHighValueRatio = 0.75
+    static let connectedColorPurity = 0.35
+    static let paleConnectedColorPurity = 0.13
+    static let paleConnectedContrast = 0.30
+    static let weakCompetitorCoreSupport = 0.50
+    static let weakCompetitorHighValueRatio = 0.80
+    static let longWeakCompetitorSpan = 0.37
+    static let highValueAdvantage = 0.20
+    static let coreSupportAdvantage = 0.10
+    static let colorPurityAdvantage = 0.05
+}
+
 private func candidateAxisDistance(_ lhs: SaberCandidate, _ rhs: SaberCandidate) -> Double {
     func distance(_ a: PixelPoint, _ b: PixelPoint) -> Double {
         hypot(Double(a.x - b.x), Double(a.y - b.y))
@@ -86,7 +108,13 @@ func coreLineRobustGeometryPenalty(_ candidate: SaberCandidate, minimumArea: Int
     // line that spans a large fraction of the frame as well as discarding most
     // of its own geometry. This is scale-relative, not a color/pixel hack.
     let normalizedSpan = candidate.rawPCASpan / Double(max(minimumFrameDimension, 1))
-    let longSpanWeight = min(max((normalizedSpan - 0.35) / 0.65, 0), 1)
+    // A blade can plausibly occupy roughly a third of the short frame
+    // dimension. Apply the penalty only beyond that scale, then require the
+    // candidate to also discard its own span/points and lack body support.
+    let longSpanWeight = min(max(
+        (normalizedSpan - BlueCandidateRankingThresholds.longSpanStart)
+            / BlueCandidateRankingThresholds.longSpanRamp, 0
+    ), 1)
     let spanDiscard = max(0, 1 - candidate.robustMainIntervalLength / candidate.rawPCASpan)
     let pointDiscard = max(0, 1 - candidate.retainedBodyRatio)
     let bodyPointCount = Double(candidate.pointCount) * candidate.retainedBodyRatio
@@ -95,6 +123,63 @@ func coreLineRobustGeometryPenalty(_ candidate: SaberCandidate, minimumArea: Int
     let density = min(max(candidate.axialDensity / 2.0, 0), 1)
     return 55.0 * longSpanWeight * spanDiscard * pointDiscard
         * support * continuity * density
+}
+
+/// When a blue frame contains direct, coherent emitter evidence, keep weaker
+/// bridge/halo/background candidates from outranking it on raw length or
+/// clipped-white score alone. This is deliberately comparative: no candidate
+/// is rejected when a trustworthy emitter is absent.
+private func isTrustedBlueEmitter(_ candidate: SaberCandidate) -> Bool {
+    guard candidate.isEmitterEligible,
+          candidate.longitudinalContinuity >= BlueCandidateRankingThresholds.trustedContinuity else { return false }
+    if candidate.source == "core-line" {
+        // A compact, mostly retained line with strong direct color/brightness
+        // evidence is a real sparse LED blade, not a long bridge proposal.
+        return candidate.retainedBodyRatio >= BlueCandidateRankingThresholds.pointLineRetainedRatio
+            && candidate.highValueRatio >= BlueCandidateRankingThresholds.trustedHighValueRatio
+            && candidate.meanColorPurity >= BlueCandidateRankingThresholds.trustedColorPurity
+            && candidate.coreSupportRatio >= BlueCandidateRankingThresholds.trustedCoreSupport
+            && candidate.largestLongitudinalGap <= 1
+    }
+    guard candidate.source == "color-emitter" || candidate.source == "connected-core",
+          candidate.longitudinalContinuity >= BlueCandidateRankingThresholds.connectedTrustedContinuity,
+          candidate.coreSupportRatio >= BlueCandidateRankingThresholds.connectedCoreSupport,
+          candidate.highValueRatio >= BlueCandidateRankingThresholds.connectedHighValueRatio else { return false }
+    return candidate.meanColorPurity >= BlueCandidateRankingThresholds.connectedColorPurity
+        || (candidate.source == "connected-core"
+            && candidate.meanColorPurity >= BlueCandidateRankingThresholds.paleConnectedColorPurity
+            && candidate.localContrast >= BlueCandidateRankingThresholds.paleConnectedContrast)
+}
+
+func preferTrustedBlueEmitter(in candidates: [SaberCandidate],
+                              minimumFrameDimension: Int) -> [SaberCandidate] {
+    let trustedIndices = candidates.indices.filter { index in
+        isTrustedBlueEmitter(candidates[index])
+    }
+    guard let trustedIndex = trustedIndices.max(by: {
+        candidates[$0].score < candidates[$1].score
+    }) else { return candidates }
+    let trustedScore = candidates[trustedIndex].score
+    var adjusted = candidates
+    for index in adjusted.indices where index != trustedIndex
+        && adjusted[index].isEmitterEligible
+        && adjusted[index].coreSupportRatio < BlueCandidateRankingThresholds.weakCompetitorCoreSupport
+        && adjusted[index].highValueRatio < BlueCandidateRankingThresholds.weakCompetitorHighValueRatio
+        && adjusted[index].score >= trustedScore {
+        let longWeakCompetitor = adjusted[index].rawPCASpan
+            / Double(max(minimumFrameDimension, 1)) >= BlueCandidateRankingThresholds.longWeakCompetitorSpan
+        let strongerEmitterEvidence = candidates[trustedIndex].highValueRatio
+                >= adjusted[index].highValueRatio + BlueCandidateRankingThresholds.highValueAdvantage
+            && candidates[trustedIndex].coreSupportRatio
+                >= adjusted[index].coreSupportRatio + BlueCandidateRankingThresholds.coreSupportAdvantage
+            && candidates[trustedIndex].meanColorPurity
+                >= adjusted[index].meanColorPurity + BlueCandidateRankingThresholds.colorPurityAdvantage
+        guard longWeakCompetitor || strongerEmitterEvidence else { continue }
+        let requiredPenalty = adjusted[index].score - trustedScore + 1.0
+        adjusted[index].scoreBreakdown.proposalPenalty -= requiredPenalty
+        adjusted[index].score = adjusted[index].scoreBreakdown.total
+    }
+    return adjusted
 }
 
 private struct CoreLinePeak {
@@ -230,6 +315,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
     let maskHeight = (height + step - 1) / step
     var redMask = Array(repeating: UInt8(0), count: maskWidth * maskHeight)
     var blueMask = Array(repeating: UInt8(0), count: maskWidth * maskHeight)
+    var blueDiffuserMask = Array(repeating: UInt8(0), count: maskWidth * maskHeight)
     var redEmitterMask = Array(repeating: UInt8(0), count: maskWidth * maskHeight)
     var blueEmitterMask = Array(repeating: UInt8(0), count: maskWidth * maskHeight)
     var brightCoreMask = Array(repeating: UInt8(0), count: maskWidth * maskHeight)
@@ -269,7 +355,18 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 blueMaskPixelCount += 1
                 if isEmitterPixel { blueEmitterMask[index] = 1 }
             }
+            if matchesBlueDiffuserPixel(red, green, blue, threshold: blueThreshold) {
+                blueDiffuserMask[index] = 1
+            }
         }
+    }
+    let strictBlueMask = blueMask
+    blueMask = supportedBlueDiffuserMask(
+        strictMask: strictBlueMask, relaxedMask: blueDiffuserMask,
+        width: maskWidth, height: maskHeight
+    )
+    blueMaskPixelCount += blueMask.indices.reduce(0) { count, index in
+        count + (blueMask[index] != 0 && strictBlueMask[index] == 0 ? 1 : 0)
     }
     if collectProfile {
         profile.pixelScanHSVMaskMs = (ProcessInfo.processInfo.systemUptime - scanStart) * 1000
@@ -320,7 +417,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         if collectProfile {
             profile.morphologyMs += (ProcessInfo.processInfo.systemUptime - morphologyStart) * 1000
         }
-        let evidence = SaberEvidence(radiance: radianceMap, value: valueMap, chroma: chromaMap,
+        let evidence = SaberEvidence(color: color, radiance: radianceMap,
+                                     value: valueMap, chroma: chromaMap,
                                      colorMask: rawMask, coreMask: associatedCore)
         // A dotted or one-sample-wide LED blade can vanish under opening while
         // a smooth reflection survives it. Always score close-only components
@@ -484,9 +582,15 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             profile.candidateCount += candidates.count
         }
         let selectionStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
+        if color == .blue {
+            candidates = preferTrustedBlueEmitter(
+                in: candidates, minimumFrameDimension: min(maskWidth, maskHeight)
+            )
+        }
         let completeCandidates = candidates
         for index in candidates.indices where candidates[index].isEmitterEligible
             && candidates[index].source != "connected-core" {
+            if color == .blue, isTrustedBlueEmitter(candidates[index]) { continue }
             if completeCandidates.contains(where: {
                 $0.isEmitterEligible && !$0.source.hasPrefix("core-line")
                     && candidateIsSubsegment(candidates[index], of: $0)

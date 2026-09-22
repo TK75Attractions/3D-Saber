@@ -7,6 +7,8 @@ struct PixelPoint: Equatable {
 }
 
 struct ColorThreshold: Equatable {
+    // Shared strict-mask defaults. Hue windows are named below because they
+    // differ by color; these three values remain Inspector/runtime tunables.
     var brightness: UInt8 = 145
     var dominance: UInt8 = 25
     var saturation: UInt8 = 30
@@ -15,6 +17,35 @@ struct ColorThreshold: Equatable {
 enum SaberColor: Hashable {
     case red
     case blue
+}
+
+enum SaberColorModelThresholds {
+    static let strictRedHueLower = 340.0
+    static let strictRedHueUpper = 20.0
+    static let strictBlueHueLower = 198.0
+    static let strictBlueHueUpper = 248.0
+
+    static let diffuserBlueHueLower = 190.0
+    static let diffuserBlueHueUpper = 260.0
+    static let diffuserBlueMinimumBrightness = 110
+    static let diffuserBlueBrightnessOffset = 25
+    static let diffuserBlueMinimumRedDominance = 8
+    static let diffuserBlueDominanceOffset = 17
+    static let diffuserBlueMinimumGreenDominance = 2
+    static let diffuserBlueMinimumSaturation = 10
+    static let diffuserBlueSaturationOffset = 20
+    static let diffuserNeighborhoodRadius = 2
+}
+
+private enum EndpointSelectionThresholds {
+    static let connectedBodyContinuity = 0.90
+    static let coreLineMaximumGap = 2
+    static let denseCoreLineDensity = 4.0
+    static let stronglyTrimmedRetainedRatio = 0.30
+    static let diffuserRetainedRatio = 0.65
+    static let diffuserContinuity = 0.80
+    static let diffuserColorPurity = 0.40
+    static let diffuserCoreSupport = 0.35
 }
 
 func isBright(_ red: UInt8, _ green: UInt8, _ blue: UInt8, color: SaberColor, threshold: ColorThreshold) -> Bool {
@@ -71,15 +102,56 @@ func matchesSaberHSV(_ hsv: SaberHSV, color: SaberColor, threshold: ColorThresho
           hsv.saturation >= Double(threshold.saturation) else { return false }
     switch color {
     case .red:
-        return hsv.hue >= 340.0 || hsv.hue <= 20.0
+        return hsv.hue >= SaberColorModelThresholds.strictRedHueLower
+            || hsv.hue <= SaberColorModelThresholds.strictRedHueUpper
     case .blue:
-        return hsv.hue >= 198.0 && hsv.hue <= 248.0
+        return hsv.hue >= SaberColorModelThresholds.strictBlueHueLower
+            && hsv.hue <= SaberColorModelThresholds.strictBlueHueUpper
     }
 }
 
 func matchesSaberHSV(_ red: UInt8, _ green: UInt8, _ blue: UInt8,
                      color: SaberColor, threshold: ColorThreshold) -> Bool {
     matchesSaberHSV(saberHSV(red, green, blue), color: color, threshold: threshold)
+}
+
+/// Secondary color model for the current paper-diffused blue blade. It admits
+/// cyan/near-white and motion-darkened blue pixels, but callers must still
+/// require nearby support from the established HSV blue mask. Keeping that
+/// spatial requirement outside this per-pixel function prevents a permissive
+/// full-frame blue mask from turning clothes or daylight into candidates.
+func matchesBlueDiffuserPixel(_ red: UInt8, _ green: UInt8, _ blue: UInt8,
+                              threshold: ColorThreshold) -> Bool {
+    let redValue = Int(red), greenValue = Int(green), blueValue = Int(blue)
+    let relaxedBrightness = max(SaberColorModelThresholds.diffuserBlueMinimumBrightness,
+                                Int(threshold.brightness) - SaberColorModelThresholds.diffuserBlueBrightnessOffset)
+    let relaxedDominance = max(SaberColorModelThresholds.diffuserBlueMinimumRedDominance,
+                               Int(threshold.dominance) - SaberColorModelThresholds.diffuserBlueDominanceOffset)
+    let greenDominance = max(SaberColorModelThresholds.diffuserBlueMinimumGreenDominance,
+                             relaxedDominance / 4)
+    let hsv = saberHSV(red, green, blue)
+    return blueValue >= relaxedBrightness
+        && blueValue - redValue >= relaxedDominance
+        && blueValue - greenValue >= greenDominance
+        && hsv.saturation >= Double(max(SaberColorModelThresholds.diffuserBlueMinimumSaturation,
+                                        Int(threshold.saturation) - SaberColorModelThresholds.diffuserBlueSaturationOffset))
+        && hsv.hue >= SaberColorModelThresholds.diffuserBlueHueLower
+        && hsv.hue <= SaberColorModelThresholds.diffuserBlueHueUpper
+}
+
+/// Expand only around pixels already accepted by the strict blue model. This
+/// recovers the pale diffuser halo without admitting unrelated relaxed-color
+/// regions elsewhere in the frame.
+func supportedBlueDiffuserMask(strictMask: [UInt8], relaxedMask: [UInt8],
+                               width: Int, height: Int,
+                               radius: Int = SaberColorModelThresholds.diffuserNeighborhoodRadius) -> [UInt8] {
+    guard strictMask.count == width * height, relaxedMask.count == strictMask.count else {
+        return strictMask
+    }
+    let support = dilateSaberMask(strictMask, width: width, height: height, radius: radius)
+    return strictMask.indices.map { index in
+        strictMask[index] != 0 || (relaxedMask[index] != 0 && support[index] != 0) ? 1 : 0
+    }
 }
 
 private func binaryDilate(_ input: [UInt8], width: Int, height: Int, radius: Int) -> [UInt8] {
@@ -220,6 +292,7 @@ struct SaberScoreBreakdown {
 }
 
 struct SaberEvidence {
+    let color: SaberColor
     var radiance: [UInt8] = []
     let value: [UInt8]
     let chroma: [UInt8]
@@ -609,21 +682,36 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
     )
     let finalEndpoints: (PixelPoint, PixelPoint)
     let usedPointLEDFallback: Bool
-    let hasEstablishedContinuousBody = body.continuity >= 0.90
+    // A fragmented core-line can have a numerically continuous *local* body
+    // while the discarded raw samples are still the real point-LED blade.
+    // Therefore continuity alone is sufficient only for connected/color
+    // candidates; line proposals need the stronger support checks below.
+    let hasEstablishedContinuousBody = source != "core-line"
+        && body.continuity >= EndpointSelectionThresholds.connectedBodyContinuity
     // Core-line proposals may contain a long bridge between unrelated emitters.
     // A paper diffuser's retained body still has several samples per axial bin;
     // fragmented point LEDs and sparse proposals continue to use the raw axis.
     let hasDenseTrimmedCoreLine = source == "core-line"
-        && body.largestGap <= 2 && body.density >= 4.0
+        && body.largestGap <= EndpointSelectionThresholds.coreLineMaximumGap
+        && body.density >= EndpointSelectionThresholds.denseCoreLineDensity
     let hasStronglyTrimmedSupportedCoreLine = source == "core-line"
-        && body.retainedRatio <= 0.30
-        && body.largestGap <= 2
+        && body.retainedRatio <= EndpointSelectionThresholds.stronglyTrimmedRetainedRatio
+        && body.largestGap <= EndpointSelectionThresholds.coreLineMaximumGap
         && body.points.count >= minimumArea
+    let hasDiffusedBlueCoreLineBody = evidence?.color == .blue
+        && source == "core-line"
+        && body.retainedRatio < EndpointSelectionThresholds.diffuserRetainedRatio
+        && body.continuity >= EndpointSelectionThresholds.diffuserContinuity
+        && body.largestGap <= EndpointSelectionThresholds.coreLineMaximumGap
+        && body.points.count >= minimumArea
+        && meanPurity >= EndpointSelectionThresholds.diffuserColorPurity
+        && coreSupportRatio >= EndpointSelectionThresholds.diffuserCoreSupport
     if body.points.count >= minimumArea,
        body.retainedRatio < 0.85,
        (hasEstablishedContinuousBody
         || hasDenseTrimmedCoreLine
-        || hasStronglyTrimmedSupportedCoreLine),
+        || hasStronglyTrimmedSupportedCoreLine
+        || hasDiffusedBlueCoreLineBody),
        let bodyEndpoints = principalAxisEndpoints(body.points) {
         finalEndpoints = bodyEndpoints
         usedPointLEDFallback = false
