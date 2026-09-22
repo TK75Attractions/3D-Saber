@@ -85,6 +85,17 @@ public class InputPoint : MonoBehaviour
     [Header("Debug")]
     public bool debugCoordinates = false;
     public bool debugReceiveRate = false;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    [Tooltip("100ms級のUDP受信・座標反映停止だけをConsoleに出す診断フラグ。ゲーム入力には影響しない。")]
+    public bool freezeDiagnostics = false;
+    public bool FreezeDiagnosticsEnabled => freezeDiagnostics;
+    long lastFreezeReceiveTimestampTicks1;
+    long lastFreezeReceiveTimestampTicks2;
+    string pendingFreezeReceiveLog1;
+    string pendingFreezeReceiveLog2;
+#else
+    public bool FreezeDiagnosticsEnabled => false;
+#endif
 
     int receivedCountPort1Window = 0;
     int receivedCountPort2Window = 0;
@@ -123,6 +134,9 @@ public class InputPoint : MonoBehaviour
         // → 先住インスタンスを優先し、後から来た自分はコンポーネントだけ退場する(GOと他コンポは残す)。
         if (Instance != null && Instance != this)
         {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            if (freezeDiagnostics) Instance.freezeDiagnostics = true;
+#endif
             if (Application.isPlaying) Destroy(this);
             else DestroyImmediate(this);
             return;
@@ -290,6 +304,9 @@ public class InputPoint : MonoBehaviour
                 // メインスレッドと衝突しないようロック
                 lock (targetLock)
                 {
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+                    RecordFreezeReceiveGap(secondStick, receiveTimestampTicks);
+#endif
                     if (secondStick)
                     {
                         Interlocked.Increment(ref receivedCountPort2Window);
@@ -376,6 +393,10 @@ public class InputPoint : MonoBehaviour
         bool updatedStick2 = false;
         float x2a = 0, y2a = 0, x2b = 0, y2b = 0;
         long receiveTimestampTicks2 = 0;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        string freezeReceiveLog1 = null;
+        string freezeReceiveLog2 = null;
+#endif
 
         // スレッドから受け取った値をコピー
         lock (lockObj)
@@ -396,6 +417,10 @@ public class InputPoint : MonoBehaviour
                     y1b = rawY1b;
                 }
             }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            freezeReceiveLog1 = pendingFreezeReceiveLog1;
+            pendingFreezeReceiveLog1 = null;
+#endif
         }
 
         lock (lockObj2)
@@ -416,7 +441,19 @@ public class InputPoint : MonoBehaviour
                     y2b = rawY2b;
                 }
             }
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            freezeReceiveLog2 = pendingFreezeReceiveLog2;
+            pendingFreezeReceiveLog2 = null;
+#endif
         }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (freezeDiagnostics)
+        {
+            if (freezeReceiveLog1 != null) Debug.Log(freezeReceiveLog1);
+            if (freezeReceiveLog2 != null) Debug.Log(freezeReceiveLog2);
+        }
+#endif
 
         if (debugReceiveRate)
         {
@@ -546,6 +583,28 @@ public class InputPoint : MonoBehaviour
         }
         //Debug.Log(LocalStickA + " " + LocalStickB);
     }
+
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    void RecordFreezeReceiveGap(bool secondStick, long receiveTimestampTicks)
+    {
+        if (!freezeDiagnostics) return;
+        long previous = secondStick
+            ? lastFreezeReceiveTimestampTicks2
+            : lastFreezeReceiveTimestampTicks1;
+        if (secondStick) lastFreezeReceiveTimestampTicks2 = receiveTimestampTicks;
+        else lastFreezeReceiveTimestampTicks1 = receiveTimestampTicks;
+        if (previous == 0) return;
+        double receiveTime = SwingMonotonicClock.ToSeconds(receiveTimestampTicks);
+        double gapMs = (receiveTimestampTicks - previous) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        if (gapMs <= 100.0) return;
+        string color = secondStick ? "BLUE" : "RED";
+        string message = string.Format(CultureInfo.InvariantCulture,
+            "[FREEZE][Unity RX][{0}] gap={1:F1}ms receive={2:F6} sinceLastReceive={1:F1}ms",
+            color, gapMs, receiveTime);
+        if (secondStick) pendingFreezeReceiveLog2 = message;
+        else pendingFreezeReceiveLog1 = message;
+    }
+#endif
 
     Vector2 ToLocalPosition(float x, float y)
     {
