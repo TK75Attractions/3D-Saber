@@ -154,7 +154,7 @@ public class ProjectorModeTests
         Assert.Greater(bar.GetColor("_BaseColor").r, 0.9f, "矢印は白");
         var backing = parent.transform.Find("Arrow/ArrowBacking").GetComponent<MeshRenderer>().sharedMaterial;
         Assert.Less(backing.GetColor("_BaseColor").r, 0.1f, "下敷きは暗い");
-        Assert.AreEqual(7,parent.transform.Find("Arrow/Bars").GetComponent<MeshFilter>().sharedMesh.vertexCount);
+        Assert.AreEqual(12,parent.transform.Find("Arrow/Bars").GetComponent<MeshFilter>().sharedMesh.vertexCount);
 
         DisplaySettings.SetProjectorModeForTest(false);
         var parent2 = new GameObject("noteNormal");

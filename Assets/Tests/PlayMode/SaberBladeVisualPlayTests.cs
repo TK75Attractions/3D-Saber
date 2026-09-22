@@ -7,6 +7,38 @@ using UnityEngine.TestTools;
 public class SaberBladeVisualPlayTests
 {
     [UnityTest]
+    public IEnumerator BladeModeHidesLegacyBluePointEvenWithoutCameraInput()
+    {
+        var go = new GameObject("LegacySceneSaber");
+        try
+        {
+            // Gameシーンに保存されている旧カーソル構成を再現する。
+            foreach (string name in new[] { "Point", "PointGlow" })
+            {
+                var sphere = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+                sphere.name = name;
+                sphere.transform.SetParent(go.transform, false);
+            }
+            var bridge = go.AddComponent<SaberInputBridge>();
+            bridge.useInputPoint = false;
+            bridge.fallbackToMouse = false;
+            bridge.SetBladeColor(Color.red);
+            yield return null;
+            Assert.False(go.transform.Find("Point").gameObject.activeSelf);
+            Assert.False(go.transform.Find("PointGlow").gameObject.activeSelf);
+            bridge.ApplyMouseWorld(Vector3.zero);
+            Assert.True(bridge.HasBlade);
+            Assert.True(go.GetComponent<LineRenderer>().enabled);
+            Assert.AreEqual(Color.red, go.GetComponent<LineRenderer>().startColor);
+            Assert.False(go.transform.Find("Point").gameObject.activeSelf);
+            bridge.enabled = false;
+            Assert.False(go.transform.Find("PointGlow").gameObject.activeSelf);
+        }
+        finally { Object.Destroy(go); }
+        yield return null;
+    }
+
+    [UnityTest]
     public IEnumerator BridgeKeepsJudgmentEndpointsAndClearsVisualsOnDisableAndDestroy()
     {
         var go = new GameObject("BridgeVisualPlayTest");

@@ -348,7 +348,7 @@ public class NoteSpawner : MonoBehaviour
         OnNoteSpawned?.Invoke(note);
     }
 
-    // 本体と床の矢印は同じ形状。暗い輪郭の中へ太い白矢印を置く。
+    // 本体と床でC案の二段シェブロンを共有。輪郭は拡縮せず一定幅にする。
     public static void BuildArrow(Transform parent, CutDirection dir)
     {
         var arrow = new GameObject("Arrow");
@@ -356,14 +356,14 @@ public class NoteSpawner : MonoBehaviour
         arrow.transform.localPosition = new Vector3(0, 0, -.57f);
         arrow.transform.localRotation = Quaternion.Euler(0, 0, CutDirectionHelper.ToZRotationDegrees(dir));
         var owner = arrow.AddComponent<NoteArrowMaterials>();
-        var mesh = FlickArrowShape.CreateMesh();
-        owner.Register(mesh);
         var shader = Resources.Load<Shader>("Effects/NoteGuide");
         for (int layer = 0; layer < 2; layer++)
         {
+            var mesh = FlickArrowShape.CreateMesh(layer == 0);
+            owner.Register(mesh);
             var part = new GameObject(layer == 0 ? "ArrowBacking" : "Bars", typeof(MeshFilter), typeof(MeshRenderer));
             part.transform.SetParent(arrow.transform, false);
-            part.transform.localScale = Vector3.one * (layer == 0 ? 1.04f : .8f);
+            part.transform.localScale = Vector3.one;
             part.transform.localPosition = new Vector3(0, 0, layer == 0 ? .008f : -.008f);
             part.GetComponent<MeshFilter>().sharedMesh = mesh;
             var material = new Material(shader) { renderQueue = 3021 + layer };

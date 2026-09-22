@@ -119,6 +119,12 @@ public class SaberInputBridge : MonoBehaviour
 
     void EnsureBladeLine()
     {
+        // 旧シーンの単点カーソルは青固定。刃表示と重ねると赤の中央にも青い球が残る。
+        // 直下の旧表示だけを止め、刃や残光のRendererには触れない。
+        var point = transform.Find("Point");
+        var glow = transform.Find("PointGlow");
+        if (point != null) point.gameObject.SetActive(false);
+        if (glow != null) glow.gameObject.SetActive(false);
         if (bladeLine != null) return;
         bladeLine = GetComponent<LineRenderer>();
         if (bladeLine == null) bladeLine = gameObject.AddComponent<LineRenderer>();

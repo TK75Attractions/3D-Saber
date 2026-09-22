@@ -13,6 +13,17 @@ public class CameraTaskIntegrationPlayTests
     [UnityTest]
     public IEnumerator RedEndpointPayload_ReachesTask1ClockDomain()
     {
+        return EndpointPayload_ReachesTask1ClockDomain(1);
+    }
+
+    [UnityTest]
+    public IEnumerator BlueEndpointPayload_ReachesTask1ClockDomain()
+    {
+        return EndpointPayload_ReachesTask1ClockDomain(2);
+    }
+
+    IEnumerator EndpointPayload_ReachesTask1ClockDomain(int stickIndex)
+    {
         foreach (var old in Object.FindObjectsByType<InputPoint>(
                      FindObjectsInactive.Include, FindObjectsSortMode.None))
             Object.DestroyImmediate(old.gameObject);
@@ -20,6 +31,7 @@ public class CameraTaskIntegrationPlayTests
 
         int redPort = FreePort();
         int bluePort = FreePort();
+        while (bluePort == redPort) bluePort = FreePort();
         var inputObject = new GameObject("Task2CameraReceiver");
         inputObject.SetActive(false);
         var input = inputObject.AddComponent<InputPoint>();
@@ -28,9 +40,9 @@ public class CameraTaskIntegrationPlayTests
         input.useDirectWorldMapping = true;
         input.sensitivity = 1f;
 
-        var saberObject = new GameObject("Task1RedSaber");
+        var saberObject = new GameObject("Task1Saber" + stickIndex);
         var saber = saberObject.AddComponent<SaberInputBridge>();
-        saber.stickIndex = 1;
+        saber.stickIndex = stickIndex;
         saber.useInputPoint = true;
         saber.fallbackToMouse = false;
 
@@ -38,16 +50,19 @@ public class CameraTaskIntegrationPlayTests
         yield return null;
 
         double before = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
-        Send(redPort, "960,540,1200,540");
+        Send(stickIndex == 2 ? bluePort : redPort, "960,540,1200,540");
         float deadline = Time.realtimeSinceStartup + 1f;
         CameraSaberSample sample = default;
-        while ((!saber.TryGetCameraSample(out sample) || input.ReceivedPacketCount == 0)
+        while ((!saber.TryGetCameraSample(out sample) ||
+                (stickIndex == 2 ? input.ReceivedPacketCount2 : input.ReceivedPacketCount) == 0)
                && Time.realtimeSinceStartup < deadline)
             yield return null;
         double after = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
 
-        Assert.That(input.ReceivedPacketCount, Is.EqualTo(1));
-        Assert.That(sample.Color, Is.EqualTo(CameraSaberColor.Red));
+        Assert.That(stickIndex == 2 ? input.ReceivedPacketCount2 : input.ReceivedPacketCount, Is.EqualTo(1));
+        Assert.That(stickIndex == 2 ? input.ReceivedPacketCount : input.ReceivedPacketCount2, Is.Zero,
+            "片方の入力で反対色の受信状態を更新しない");
+        Assert.That(sample.Color, Is.EqualTo(stickIndex == 2 ? CameraSaberColor.Blue : CameraSaberColor.Red));
         Assert.That(sample.ReceiveTime, Is.InRange(before, after),
             "Camera sampleはUnity Updateの推定値ではなくUDP receive時のmonotonic clockを使う");
         Assert.That(sample.EndA.x, Is.EqualTo(0f).Within(.001f));

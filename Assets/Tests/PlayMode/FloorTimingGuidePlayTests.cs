@@ -99,8 +99,10 @@ public class FloorTimingGuidePlayTests
         var arrowOwner = new GameObject("ArrowCleanupCheck");
         NoteSpawner.BuildArrow(arrowOwner.transform, CutDirection.Up);
         var arrowMesh = arrowOwner.transform.Find("Arrow/Bars").GetComponent<MeshFilter>().sharedMesh;
+        var outlineMesh = arrowOwner.transform.Find("Arrow/ArrowBacking").GetComponent<MeshFilter>().sharedMesh;
         Object.Destroy(arrowOwner); yield return null; yield return null;
         Assert.True(arrowMesh == null, "生成した矢印メッシュを解放する");
+        Assert.True(outlineMesh == null, "輪郭の独立メッシュも解放する");
         File.WriteAllText(Path.Combine(output, "verification.txt"), "Actual Game camera; all stage themes, normal and projector/low settings; synthetic chart and clock. 40 chart resets, mesh/material reuse and cleanup verified.\n");
     }
 

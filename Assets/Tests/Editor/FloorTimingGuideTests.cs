@@ -53,7 +53,7 @@ public class FloorTimingGuideTests
         Chart(direction); spawner.Tick(2.8);
         var vertices = spawner.FloorGuide.GetComponent<MeshFilter>().sharedMesh.vertices;
         var center = spawner.LiveNotes[0].transform.position;
-        var tip = vertices[8 + 4] - center;
+        var tip = vertices[8 + FlickArrowShape.TipIndex] - center;
         var projected = new Vector2(tip.x, tip.z / 2.2f).normalized;
         Assert.Greater(Vector2.Dot(CutDirectionHelper.ToVector(CutDirectionHelper.Parse(direction)), projected), .999f);
         Assert.AreEqual(1, spawner.FloorGuide.MarkerCount);

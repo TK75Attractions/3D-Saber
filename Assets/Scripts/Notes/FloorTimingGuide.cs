@@ -70,9 +70,8 @@ public sealed class FloorTimingGuide : MonoBehaviour
             }
             else
             {
-                Arrow(position, note.RequiredDirection, size * 1.26f, ink, .006f);
-                Arrow(position, note.RequiredDirection, size, tint, .009f);
-                Arrow(position, note.RequiredDirection, size * .67f, new Color(1, 1, 1, alpha), .012f);
+                Arrow(position, note.RequiredDirection, size, ink, .006f, true);
+                Arrow(position, note.RequiredDirection, size, Color.Lerp(tint, new Color(1, 1, 1, alpha), .75f), .009f);
             }
             MarkerCount++;
         }
@@ -91,15 +90,16 @@ public sealed class FloorTimingGuide : MonoBehaviour
         triangles.Add(start); triangles.Add(start + 2); triangles.Add(start + 3);
     }
 
-    void Arrow(Vector3 position, CutDirection direction, float size, Color color, float bias)
+    void Arrow(Vector3 position, CutDirection direction, float size, Color color, float bias, bool outline = false)
     {
         int start = vertices.Count;
         var rotation = Quaternion.Euler(0, 0, CutDirectionHelper.ToZRotationDegrees(direction));
-        foreach (var point in FlickArrowShape.Points)
+        var points = outline ? FlickArrowShape.OutlinePoints : FlickArrowShape.Points;
+        for (int i = 0; i < points.Length; i++)
         {
-            Vector3 p = rotation * (Vector3)(point * size);
+            Vector3 p = rotation * (Vector3)(points[i] * size);
             // 床の遠近で潰れないよう、前後の長さだけ広げる。上矢印は画面奥へ向く。
-            Vertex(new Vector3(position.x + p.x, surfaceY + bias, position.z + p.y * 2.2f), color);
+            Vertex(new Vector3(position.x + p.x, surfaceY + bias, position.z + p.y * 2.2f), outline ? color : color * FlickArrowShape.VertexColor(i));
         }
         foreach (int index in FlickArrowShape.Triangles) triangles.Add(start + index);
     }
