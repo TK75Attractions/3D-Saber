@@ -42,6 +42,11 @@ private func candidateJSON(_ candidate: SaberCandidate) -> [String: Any] {
         "longitudinal_continuity": candidate.longitudinalContinuity,
         "largest_longitudinal_gap": candidate.largestLongitudinalGap,
         "retained_body_ratio": candidate.retainedBodyRatio,
+        "raw_pca_span": candidate.rawPCASpan,
+        "robust_body_length": candidate.robustMainIntervalLength,
+        "axial_density": candidate.axialDensity,
+        "point_count": candidate.pointCount,
+        "used_point_led_fallback": candidate.usedPointLEDFallback,
     ]
 }
 
@@ -84,7 +89,8 @@ private enum VideoDetectionDiagnostic {
                     redThreshold: ColorThreshold(),
                     blueThreshold: ColorThreshold(),
                     sampleStep: arguments.sampleStep,
-                    collectProfile: true
+                    collectProfile: true,
+                    collectPipelineDiagnostics: true
                 )
             }
             var colors: [String: Any] = [:]
@@ -108,6 +114,16 @@ private enum VideoDetectionDiagnostic {
                     "selection_ms": profile?.selectionMs ?? 0,
                     "candidate_count": profile?.candidateCount ?? 0,
                 ],
+                "pipeline": Dictionary(uniqueKeysWithValues: [
+                    ("red", SaberColor.red), ("blue", SaberColor.blue)
+                ].map { name, color in
+                    let value = analysis.pipelineDiagnostics?[color]
+                    return (name, [
+                        "mask_pixels": value?.maskPixelCount ?? 0,
+                        "morphology_pixels": value?.morphologyPixelCount ?? 0,
+                        "components": value?.connectedComponentCount ?? 0,
+                    ])
+                }),
             ]
             let encoded = try JSONSerialization.data(withJSONObject: output, options: [.sortedKeys])
             FileHandle.standardOutput.write(encoded)

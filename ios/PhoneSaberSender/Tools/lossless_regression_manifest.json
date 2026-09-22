@@ -1,0 +1,43 @@
+{
+  "fixtures": [
+    {"name":"point-led-curtain-01","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/blue-led-with-curtain-reflection-01.png","blue":true,"red":null,"category":"point-led-control"},
+    {"name":"point-led-curtain-02","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/blue-led-with-curtain-reflection-02.png","blue":true,"red":null,"category":"point-led-control"},
+    {"name":"diffuser-reflection-03","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/blue-led-with-left-curtain-reflection-03.png","blue":true,"red":null,"category":"blue-diffuser"},
+    {"name":"diffuser-reflection-04","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/blue-led-with-left-curtain-reflection-04.png","blue":true,"red":null,"category":"blue-diffuser"},
+    {"name":"diffuser-bright-05","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/blue-led-bright-large-05.png","blue":true,"red":null,"category":"blue-diffuser"},
+
+    {"name":"forensic-941","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/forensic-20260921/frame_941.png","blue":true,"red":null,"category":"long-core-line"},
+    {"name":"forensic-1000","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/forensic-20260921/frame_1000.png","blue":null,"red":true,"category":"long-core-line"},
+    {"name":"forensic-1026","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/forensic-20260921/frame_1026.png","blue":true,"red":null,"category":"long-core-line"},
+    {"name":"forensic-1048","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/forensic-20260921/frame_1048.png","blue":null,"red":true,"category":"long-core-line"},
+    {"name":"forensic-1073","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/forensic-20260921/frame_1073.png","blue":true,"red":null,"category":"long-core-line"},
+    {"name":"forensic-519","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/forensic-20260921-211845/frame_519.png","blue":true,"red":null,"category":"long-core-line"},
+    {"name":"forensic-919","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/forensic-20260921-211845/frame_919.png","blue":null,"red":true,"category":"long-core-line"},
+    {"name":"forensic-1091","path":"{REPO}/ios/PhoneSaberSenderTests/Fixtures/forensic-20260921-211845/frame_1091.png","blue":true,"red":true,"category":"long-core-line"},
+
+    {"name":"20260922-101530-151","path":"{HOME}/Downloads/phonesaber_20260922_101530_202_forensic/frame_151.png","blue":false,"red":false,"category":"no-blade","optional":true},
+    {"name":"20260922-101530-243","path":"{HOME}/Downloads/phonesaber_20260922_101530_202_forensic/frame_243.png","blue":true,"red":null,"category":"device-positive","optional":true},
+    {"name":"20260922-101530-314","path":"{HOME}/Downloads/phonesaber_20260922_101530_202_forensic/frame_314.png","blue":true,"red":null,"category":"device-positive","optional":true},
+    {"name":"20260922-101530-390","path":"{HOME}/Downloads/phonesaber_20260922_101530_202_forensic/frame_390.png","blue":true,"red":null,"category":"device-positive","optional":true},
+    {"name":"20260922-101530-410","path":"{HOME}/Downloads/phonesaber_20260922_101530_202_forensic/frame_410.png","blue":true,"red":null,"category":"device-positive","optional":true},
+
+    {"name":"20260922-134817-103","path":"{HOME}/Downloads/phonesaber_20260922_134817_916_forensic/frame_103.png","blue":false,"red":null,"category":"background-negative","optional":true},
+    {"name":"20260922-134817-117","path":"{HOME}/Downloads/phonesaber_20260922_134817_916_forensic/blue_dropout_false_117.png","blue":false,"red":null,"category":"background-negative","optional":true},
+    {"name":"20260922-134817-131","path":"{HOME}/Downloads/phonesaber_20260922_134817_916_forensic/frame_131.png","blue":false,"red":null,"category":"background-negative","optional":true},
+    {"name":"20260922-134817-136","path":"{HOME}/Downloads/phonesaber_20260922_134817_916_forensic/frame_136.png","blue":false,"red":null,"category":"background-negative","optional":true},
+    {"name":"20260922-134817-139","path":"{HOME}/Downloads/phonesaber_20260922_134817_916_forensic/frame_139.png","blue":false,"red":null,"category":"background-negative","optional":true},
+    {"name":"20260922-134817-149","path":"{HOME}/Downloads/phonesaber_20260922_134817_916_forensic/frame_149.png","blue":true,"red":null,"category":"device-positive","optional":true},
+    {"name":"20260922-134817-387","path":"{HOME}/Downloads/phonesaber_20260922_134817_916_forensic/frame_387.png","blue":true,"red":null,"category":"device-positive","optional":true},
+    {"name":"20260922-134817-397","path":"{HOME}/Downloads/phonesaber_20260922_134817_916_forensic/frame_397.png","blue":true,"red":null,"category":"device-positive","optional":true},
+    {"name":"20260922-134817-407","path":"{HOME}/Downloads/phonesaber_20260922_134817_916_forensic/frame_407.png","blue":true,"red":null,"category":"device-positive","optional":true},
+    {"name":"20260922-134817-648","path":"{HOME}/Downloads/phonesaber_20260922_134817_916_forensic/frame_648.png","blue":false,"red":null,"category":"background-negative","optional":true},
+    {"name":"20260922-134817-654","path":"{HOME}/Downloads/phonesaber_20260922_134817_916_forensic/frame_654.png","blue":false,"red":null,"category":"background-negative","optional":true},
+    {"name":"20260922-134817-680","path":"{HOME}/Downloads/phonesaber_20260922_134817_916_forensic/blue_dropout_false_680.png","blue":false,"red":null,"category":"background-negative","optional":true},
+
+    {"name":"20260922-140125-23758","path":"{HOME}/Downloads/phonesaber_20260922_140125_176_forensic/frame_23758.png","blue":true,"red":null,"category":"device-positive","optional":true},
+    {"name":"20260922-140125-23824","path":"{HOME}/Downloads/phonesaber_20260922_140125_176_forensic/frame_23824.png","blue":true,"red":null,"category":"device-positive","optional":true},
+    {"name":"20260922-140125-23906","path":"{HOME}/Downloads/phonesaber_20260922_140125_176_forensic/frame_23906.png","blue":true,"red":null,"category":"device-positive","optional":true},
+    {"name":"20260922-140125-24057","path":"{HOME}/Downloads/phonesaber_20260922_140125_176_forensic/frame_24057.png","blue":true,"red":null,"category":"device-positive","optional":true},
+    {"name":"20260922-140125-24119","path":"{HOME}/Downloads/phonesaber_20260922_140125_176_forensic/frame_24119.png","blue":true,"red":null,"category":"device-positive","optional":true}
+  ]
+}
