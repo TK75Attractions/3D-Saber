@@ -70,6 +70,9 @@ public class SaberInputBridge : MonoBehaviour
     CameraSaberSample cameraSample;
     double cameraSourceStamp = double.NegativeInfinity;
     bool hasCameraSample;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+    double lastFreezeApplyTime = double.NegativeInfinity;
+#endif
 
     // 表示に適用した新規Camera入力のスナップショット。マウス・補間フレームは含めない。
     public bool TryGetCameraSample(out CameraSaberSample sample)
@@ -85,6 +88,26 @@ public class SaberInputBridge : MonoBehaviour
             : input.LastReceivedMonotonicTime;
         if (stamp == cameraSourceStamp || Time.timeScale <= 0f) return;
         cameraSourceStamp = stamp;
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+        if (input.FreezeDiagnosticsEnabled)
+        {
+            double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+            if (!double.IsNegativeInfinity(lastFreezeApplyTime))
+            {
+                double gapMs = (now - lastFreezeApplyTime) * 1000.0;
+                if (gapMs > 100.0)
+                {
+                    string color = stickIndex == 2 ? "BLUE" : "RED";
+                    Debug.Log($"[FREEZE][Unity APPLY][{color}] gap={gapMs:F1}ms apply={now:F6} receive={stamp:F6} receiveAge={(now - stamp) * 1000.0:F1}ms");
+                }
+            }
+            lastFreezeApplyTime = now;
+        }
+        else
+        {
+            lastFreezeApplyTime = double.NegativeInfinity;
+        }
+#endif
         // InputPointがUDP receive()時に記録した、SwingEventと同じOS monotonic clock。
         // Update順序やTime.timeScaleによる推定誤差を判定時刻へ持ち込まない。
         cameraSample = new CameraSaberSample(stamp,
