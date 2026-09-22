@@ -57,12 +57,36 @@ private enum BlueCandidateRankingThresholds {
     static let connectedColorPurity = 0.35
     static let paleConnectedColorPurity = 0.13
     static let paleConnectedContrast = 0.30
+    static let haloTrustedContinuity = 0.90
+    static let haloTrustedRetainedRatio = 0.95
+    static let haloTrustedCoreCoverage = 0.95
+    static let haloTrustedCoreSupport = 0.35
+    static let haloTrustedSpanFraction = 0.18
     static let weakCompetitorCoreSupport = 0.50
     static let weakCompetitorHighValueRatio = 0.80
     static let longWeakCompetitorSpan = 0.37
     static let highValueAdvantage = 0.20
     static let coreSupportAdvantage = 0.10
     static let colorPurityAdvantage = 0.05
+}
+
+private enum CoreLineProposalThresholds {
+    // A Hough proposal must be supported by the target color and retain a
+    // coherent axial body. Bright background slices can score highly on
+    // radiance/aspect alone, but do not satisfy all three signals together.
+    static let minimumColorPurity = 0.25
+    static let minimumRetainedBodyRatio = 0.35
+    static let minimumLongitudinalContinuity = 0.70
+    static let minimumHighValueRatio = 0.35
+}
+
+func hasSufficientCoreLineProposalEvidence(_ candidate: SaberCandidate) -> Bool {
+    guard candidate.source.hasPrefix("core-line") else { return true }
+    return candidate.meanColorPurity >= CoreLineProposalThresholds.minimumColorPurity
+        && candidate.retainedBodyRatio >= CoreLineProposalThresholds.minimumRetainedBodyRatio
+        && candidate.longitudinalContinuity
+            >= CoreLineProposalThresholds.minimumLongitudinalContinuity
+        && candidate.highValueRatio >= CoreLineProposalThresholds.minimumHighValueRatio
 }
 
 private func candidateAxisDistance(_ lhs: SaberCandidate, _ rhs: SaberCandidate) -> Double {
@@ -129,7 +153,8 @@ func coreLineRobustGeometryPenalty(_ candidate: SaberCandidate, minimumArea: Int
 /// bridge/halo/background candidates from outranking it on raw length or
 /// clipped-white score alone. This is deliberately comparative: no candidate
 /// is rejected when a trustworthy emitter is absent.
-private func isTrustedBlueEmitter(_ candidate: SaberCandidate) -> Bool {
+private func isTrustedBlueEmitter(_ candidate: SaberCandidate,
+                                  minimumFrameDimension: Int) -> Bool {
     guard candidate.isEmitterEligible,
           candidate.longitudinalContinuity >= BlueCandidateRankingThresholds.trustedContinuity else { return false }
     if candidate.source == "core-line" {
@@ -140,6 +165,20 @@ private func isTrustedBlueEmitter(_ candidate: SaberCandidate) -> Bool {
             && candidate.meanColorPurity >= BlueCandidateRankingThresholds.trustedColorPurity
             && candidate.coreSupportRatio >= BlueCandidateRankingThresholds.trustedCoreSupport
             && candidate.largestLongitudinalGap <= 1
+    }
+    if candidate.source == "core-halo" {
+        // A white-clipped diffuser can have modest blue purity, but a real
+        // blade halo remains continuous and is supported along the full axis.
+        return candidate.longitudinalContinuity
+                >= BlueCandidateRankingThresholds.haloTrustedContinuity
+            && candidate.retainedBodyRatio
+                >= BlueCandidateRankingThresholds.haloTrustedRetainedRatio
+            && candidate.longitudinalCoreCoverage
+                >= BlueCandidateRankingThresholds.haloTrustedCoreCoverage
+            && candidate.coreSupportRatio
+                >= BlueCandidateRankingThresholds.haloTrustedCoreSupport
+            && candidate.rawPCASpan / Double(max(minimumFrameDimension, 1))
+                >= BlueCandidateRankingThresholds.haloTrustedSpanFraction
     }
     guard candidate.source == "color-emitter" || candidate.source == "connected-core",
           candidate.longitudinalContinuity >= BlueCandidateRankingThresholds.connectedTrustedContinuity,
@@ -154,7 +193,7 @@ private func isTrustedBlueEmitter(_ candidate: SaberCandidate) -> Bool {
 func preferTrustedBlueEmitter(in candidates: [SaberCandidate],
                               minimumFrameDimension: Int) -> [SaberCandidate] {
     let trustedIndices = candidates.indices.filter { index in
-        isTrustedBlueEmitter(candidates[index])
+        isTrustedBlueEmitter(candidates[index], minimumFrameDimension: minimumFrameDimension)
     }
     guard let trustedIndex = trustedIndices.max(by: {
         candidates[$0].score < candidates[$1].score
@@ -550,7 +589,10 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                     minimumFrameDimension: min(maskWidth, maskHeight)
                 )
                 candidate.score = candidate.scoreBreakdown.total
-                if candidate.longitudinalCoreCoverage < 0.30,
+                if !hasSufficientCoreLineProposalEvidence(candidate) {
+                    candidate.isEmitterEligible = false
+                    candidate.source = "core-line-low-confidence"
+                } else if candidate.longitudinalCoreCoverage < 0.30,
                    candidate.coreSupportRatio < 0.18 {
                     candidate.isEmitterEligible = false
                     candidate.source = "core-line-sparse"
@@ -586,11 +628,32 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             candidates = preferTrustedBlueEmitter(
                 in: candidates, minimumFrameDimension: min(maskWidth, maskHeight)
             )
+            // If the numerically strongest evidence is an unsupported Hough
+            // slice, weaker candidates from the same glow are not independent
+            // proof of a blade. Abstain unless a directly trusted emitter is
+            // also present. This leaves the color mask unchanged and preserves
+            // coherent point-LED and diffuser candidates.
+            let rejectedLineScore = candidates
+                .filter { $0.source == "core-line-low-confidence" }
+                .map(\.score).max()
+            let eligibleScore = candidates.filter(\.isEmitterEligible).map(\.score).max()
+            let hasTrustedEmitter = candidates.contains {
+                isTrustedBlueEmitter($0, minimumFrameDimension: min(maskWidth, maskHeight))
+            }
+            if let rejectedLineScore, let eligibleScore,
+               rejectedLineScore >= eligibleScore, !hasTrustedEmitter {
+                for index in candidates.indices where candidates[index].isEmitterEligible {
+                    candidates[index].isEmitterEligible = false
+                    candidates[index].source += "-unsupported-core-line-frame"
+                }
+            }
         }
         let completeCandidates = candidates
         for index in candidates.indices where candidates[index].isEmitterEligible
             && candidates[index].source != "connected-core" {
-            if color == .blue, isTrustedBlueEmitter(candidates[index]) { continue }
+            if color == .blue,
+               isTrustedBlueEmitter(candidates[index],
+                                    minimumFrameDimension: min(maskWidth, maskHeight)) { continue }
             if completeCandidates.contains(where: {
                 $0.isEmitterEligible && !$0.source.hasPrefix("core-line")
                     && candidateIsSubsegment(candidates[index], of: $0)
