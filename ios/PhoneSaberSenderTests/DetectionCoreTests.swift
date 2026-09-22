@@ -769,6 +769,140 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertTrue(latestCompleted)
     }
 
+    func testBonjourHostSelectionTracksIPv4ChangesForSameService() {
+        var selection = DestinationHostSelection()
+        XCTAssertTrue(selection.applyBonjour(host: "192.168.1.20", serviceName: "Festival Mac"))
+        XCTAssertEqual(selection.host, "192.168.1.20")
+        XCTAssertEqual(selection.source, .bonjour)
+        XCTAssertTrue(selection.applyBonjour(host: "172.20.10.2", serviceName: "Festival Mac"))
+        XCTAssertEqual(selection.host, "172.20.10.2")
+        XCTAssertFalse(selection.applyBonjour(host: "10.0.0.8", serviceName: "Other Mac"))
+        XCTAssertEqual(selection.host, "172.20.10.2")
+    }
+
+    func testManualHostIsNotOverwrittenByBonjour() {
+        var selection = DestinationHostSelection()
+        selection.setManual("10.0.0.42", resolvedHost: "", serviceName: "")
+        XCTAssertFalse(selection.applyBonjour(host: "192.168.1.20", serviceName: "Festival Mac"))
+        XCTAssertEqual(selection.host, "10.0.0.42")
+        XCTAssertEqual(selection.source, .manual)
+    }
+
+    @MainActor
+    func testRunningBonjourHostUpdateRebuildsBothDestinations() async {
+        let sender = UDPSender { _, _, completion in completion(.success(1)) }
+        let viewModel = CameraViewModel(sender: sender)
+        viewModel.applyBonjourForTesting(host: "192.168.1.20", serviceName: "Festival Mac")
+        viewModel.startForTesting(host: "192.168.1.20", manual: false)
+        let redBefore = sender.connectionGenerationForTesting(port: 5005)
+        let blueBefore = sender.connectionGenerationForTesting(port: 5006)
+
+        viewModel.applyBonjourForTesting(host: "172.20.10.2", serviceName: "Festival Mac")
+
+        let rebuilt = await waitUntil {
+            sender.connectionGenerationForTesting(port: 5005) > redBefore &&
+            sender.connectionGenerationForTesting(port: 5006) > blueBefore
+        }
+        XCTAssertTrue(rebuilt)
+        XCTAssertEqual(viewModel.host, "172.20.10.2")
+        XCTAssertEqual(viewModel.connectionMode, "Auto (Bonjour)")
+        XCTAssertEqual(viewModel.activeDestination, "172.20.10.2:5005 / 172.20.10.2:5006")
+        viewModel.stop()
+    }
+
+    @MainActor
+    func testFailedConnectionReconnectsOnlyFailedPort() async {
+        let timing = UDPSender.Timing(waitingTimeout: 0.05, sendWatchdogTimeout: 1,
+                                      reconnectInitialDelay: 0.01, reconnectMaximumDelay: 0.02)
+        let sender = UDPSender(sendHandler: { _, _, _ in }, timing: timing)
+        sender.configure(host: "127.0.0.1")
+        let redBefore = sender.connectionGenerationForTesting(port: 5005)
+        let blueBefore = sender.connectionGenerationForTesting(port: 5006)
+
+        sender.simulateConnectionStateForTesting(port: 5005, state: .failed, reason: "route lost")
+
+        let reconnected = await waitUntil { sender.reconnectCountForTesting(port: 5005) == 1 }
+        XCTAssertTrue(reconnected)
+        XCTAssertGreaterThan(sender.connectionGenerationForTesting(port: 5005), redBefore)
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5006), blueBefore)
+        XCTAssertEqual(sender.reconnectCountForTesting(port: 5006), 0)
+        sender.stop()
+    }
+
+    @MainActor
+    func testWaitingTimeoutReconnects() async {
+        let timing = UDPSender.Timing(waitingTimeout: 0.02, sendWatchdogTimeout: 1,
+                                      reconnectInitialDelay: 0.01, reconnectMaximumDelay: 0.02)
+        let sender = UDPSender(sendHandler: { _, _, _ in }, timing: timing)
+        sender.configure(host: "127.0.0.1", ports: [5005])
+        sender.simulateConnectionStateForTesting(port: 5005, state: .waiting, reason: "no route")
+        let reconnected = await waitUntil { sender.reconnectCountForTesting(port: 5005) == 1 }
+        XCTAssertTrue(reconnected)
+        sender.stop()
+    }
+
+    @MainActor
+    func testSendWatchdogKeepsLatestAndRejectsStaleCompletion() async {
+        let completions = CompletionBox()
+        let timing = UDPSender.Timing(waitingTimeout: 1, sendWatchdogTimeout: 0.02,
+                                      reconnectInitialDelay: 0.01, reconnectMaximumDelay: 0.02)
+        let sender = UDPSender(sendHandler: { text, port, completion in
+            completions.append(port: port, text: text, completion: completion)
+        }, timing: timing)
+        sender.configure(host: "127.0.0.1", ports: [5005])
+        var accepted: [String] = []
+        sender.send("first", to: 5005) { _ in accepted.append("first") }
+        let firstStarted = await waitUntil { completions.valuesCountForTesting == 1 }
+        XCTAssertTrue(firstStarted)
+        let staleCompletion = completions.removeFirst()?.1
+        sender.send("obsolete", to: 5005) { _ in accepted.append("obsolete") }
+        sender.send("latest", to: 5005) { _ in accepted.append("latest") }
+
+        let recovered = await waitUntil({ completions.sent.count == 2 }, timeout: 0.5)
+        XCTAssertTrue(recovered)
+        XCTAssertEqual(completions.sent.map(\.0), ["first", "latest"])
+        XCTAssertEqual(sender.watchdogTimeoutCountForTesting(port: 5005), 1)
+        let generationAfterRecovery = sender.connectionGenerationForTesting(port: 5005)
+        staleCompletion?(.success(10))
+        let staleRejected = await waitUntil { sender.rejectedCompletionCountForTesting == 1 }
+        XCTAssertTrue(staleRejected)
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5005), generationAfterRecovery)
+        completions.removeFirst()?.1(.success(11))
+        let latestAccepted = await waitUntil { accepted == ["latest"] }
+        XCTAssertTrue(latestAccepted)
+        sender.stop()
+    }
+
+    @MainActor
+    func testStopCancelsScheduledReconnect() async {
+        let timing = UDPSender.Timing(waitingTimeout: 1, sendWatchdogTimeout: 1,
+                                      reconnectInitialDelay: 0.05, reconnectMaximumDelay: 0.05)
+        let sender = UDPSender(sendHandler: { _, _, _ in }, timing: timing)
+        sender.configure(host: "127.0.0.1", ports: [5005])
+        sender.simulateConnectionStateForTesting(port: 5005, state: .failed)
+        let failureProcessed = await waitUntil { sender.connectionGenerationForTesting(port: 5005) == 1 }
+        XCTAssertTrue(failureProcessed)
+        sender.stop()
+        try? await Task.sleep(for: .milliseconds(100))
+        XCTAssertEqual(sender.reconnectCountForTesting(port: 5005), 0)
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5005), 1)
+    }
+
+    @MainActor
+    func testForegroundValidationLeavesHealthyPortsAlone() async {
+        let sender = UDPSender(sendHandler: { _, _, completion in completion(.success(1)) })
+        sender.configure(host: "127.0.0.1")
+        let redGeneration = sender.connectionGenerationForTesting(port: 5005)
+        let blueGeneration = sender.connectionGenerationForTesting(port: 5006)
+        sender.recoverIfNeeded()
+        try? await Task.sleep(for: .milliseconds(20))
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5005), redGeneration)
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5006), blueGeneration)
+        XCTAssertEqual(sender.reconnectCountForTesting(port: 5005), 0)
+        XCTAssertEqual(sender.reconnectCountForTesting(port: 5006), 0)
+        sender.stop()
+    }
+
     @MainActor
     func testProductionBGRAFrameReachesViewModelEndpointsAndPayload() async {
         let completions = CompletionBox()

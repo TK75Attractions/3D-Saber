@@ -4,6 +4,46 @@ import Network
 import SwiftUI
 import Darwin
 
+enum DestinationHostSource: String, Equatable {
+    case automatic = "Auto (Bonjour待機)"
+    case bonjour = "Auto (Bonjour)"
+    case manual = "Manual"
+}
+
+struct DestinationHostSelection: Equatable {
+    private(set) var host = ""
+    private(set) var source: DestinationHostSource = .automatic
+    private(set) var bonjourServiceName = ""
+
+    mutating func setManual(_ value: String, resolvedHost: String, serviceName: String) {
+        host = value
+        if value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            if resolvedHost.isEmpty {
+                source = .automatic
+                bonjourServiceName = ""
+            } else {
+                host = resolvedHost
+                source = .bonjour
+                bonjourServiceName = serviceName
+            }
+        } else {
+            source = .manual
+            bonjourServiceName = ""
+        }
+    }
+
+    @discardableResult
+    mutating func applyBonjour(host resolvedHost: String, serviceName: String) -> Bool {
+        guard !resolvedHost.isEmpty, source != .manual,
+              bonjourServiceName.isEmpty || bonjourServiceName == serviceName else { return false }
+        let changed = host != resolvedHost
+        host = resolvedHost
+        source = .bonjour
+        bonjourServiceName = serviceName
+        return changed
+    }
+}
+
 struct CameraFormatOption: Equatable {
     let index: Int
     let width: Int32
@@ -120,7 +160,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published var errorMessage: String?
     @Published private(set) var pathStatus = "判定中"
     @Published private(set) var pathInterface = ""
-    @Published var host = ""
+    @Published private(set) var host = ""
     @Published private(set) var networkDiscoveryStatus = "Discovering..."
     @Published private(set) var discoveredMacName = ""
     @Published private(set) var discoveredMacIP = ""
@@ -193,6 +233,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private var cameraErrorMessage: String?
     private var connectionErrorMessage: String?
     private var sendErrorMessages: [Int: String] = [:]
+    private var hostSelection = DestinationHostSelection()
     private let authorizationStatus: () -> AVAuthorizationStatus
     private let requestAccess: (@escaping (Bool) -> Void) -> Void
 
@@ -221,14 +262,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         pathMonitor.start(queue: DispatchQueue(label: "PhoneSaberSender.path"))
         bonjourDiscovery.onUpdate = { [weak self] update in
             Task { @MainActor in
-                guard let self else { return }
-                self.networkDiscoveryStatus = update.status
-                self.discoveredMacName = update.name
-                self.discoveredMacIP = update.ip
-                if !update.ip.isEmpty && self.host.isEmpty {
-                    self.host = update.ip
-                    self.connectionMode = "Auto (Bonjour)"
-                }
+                self?.receiveBonjourUpdate(update)
             }
         }
         bonjourDiscovery.start()
@@ -275,6 +309,51 @@ final class CameraViewModel: NSObject, ObservableObject {
     func retryDiscovery() {
         guard !running else { return }
         bonjourDiscovery.start()
+    }
+
+    func setManualHost(_ value: String) {
+        hostSelection.setManual(value, resolvedHost: discoveredMacIP, serviceName: discoveredMacName)
+        host = hostSelection.host
+        connectionMode = hostSelection.source.rawValue
+#if DEBUG
+        print("[Host] source=\(hostSelection.source.rawValue) resolved=\(discoveredMacIP)")
+#endif
+    }
+
+    private func receiveBonjourUpdate(_ update: BonjourDiscoveryUpdate) {
+        networkDiscoveryStatus = update.status
+        discoveredMacName = update.name
+        discoveredMacIP = update.ip
+        if hostSelection.applyBonjour(host: update.ip, serviceName: update.name) {
+            host = hostSelection.host
+            connectionMode = hostSelection.source.rawValue
+#if DEBUG
+            print("[Host] source=\(hostSelection.source.rawValue) resolved=\(update.ip) service=\(update.name)")
+#endif
+            if running {
+                sender.updateHost(update.ip)
+                activeDestination = "\(update.ip):5005 / \(update.ip):5006"
+            }
+        }
+    }
+
+    func applyBonjourForTesting(host: String, serviceName: String = "Test Mac") {
+        receiveBonjourUpdate(BonjourDiscoveryUpdate(status: "Resolved", name: serviceName, ip: host))
+    }
+
+    func recoverFromForeground() {
+        guard running else {
+            bonjourDiscovery.ensureRunning()
+            return
+        }
+        bonjourDiscovery.ensureRunning()
+        sender.recoverIfNeeded()
+        if session.inputs.isEmpty || session.outputs.isEmpty {
+            running = false
+            configureAndStart()
+        } else if !session.isRunning {
+            captureQueue.async { [weak self] in self?.session.startRunning() }
+        }
     }
 
     func startMeasurement() {
@@ -398,8 +477,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
         }
         host = configuredHost
-        connectionMode = configuredHost == discoveredMacIP && !discoveredMacIP.isEmpty
-            ? "Auto (Bonjour)" : "Manual"
+        connectionMode = hostSelection.source.rawValue
         activeDestination = "\(configuredHost):5005 / \(configuredHost):5006"
         resetStartState()
         processor.configureThresholds(red: configuredThreshold, blue: configuredThreshold)
@@ -767,10 +845,11 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     // Test entry point: this uses the same FrameProcessor callback and UDP completion path as camera frames.
-    func startForTesting(host: String = "127.0.0.1") {
+    func startForTesting(host: String = "127.0.0.1", manual: Bool = true) {
         lifecycleGeneration += 1
         resetStartState()
         running = true
+        if manual { hostSelection.setManual(host, resolvedHost: "", serviceName: "") }
         self.host = host
         let currentGeneration = lifecycleGeneration
         sender.configure(host: host) { [weak self] states, errors, _ in
@@ -976,6 +1055,7 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
     private let browser = NetServiceBrowser()
     private var resolving: Set<NetService> = []
     private var searchTimeout: DispatchWorkItem?
+    private var isSearching = false
 
     private func report(_ status: String, name: String = "", ip: String = "") {
 #if DEBUG
@@ -993,6 +1073,7 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
         browser.delegate = self
         report("Discovery starting")
         browser.searchForServices(ofType: "_phonesaber._udp.", inDomain: "local.")
+        isSearching = true
         let timeout = DispatchWorkItem { [weak self] in
             guard let self, self.resolving.isEmpty else { return }
             self.report("No service found; Manual IP required (探索継続中)")
@@ -1001,8 +1082,18 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
         DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: timeout)
     }
 
+    func ensureRunning() {
+        precondition(Thread.isMainThread)
+        if !isSearching { start() }
+    }
+
     func netServiceBrowserWillSearch(_ browser: NetServiceBrowser) {
+        isSearching = true
         report("Browsing")
+    }
+
+    func netServiceBrowserDidStopSearch(_ browser: NetServiceBrowser) {
+        isSearching = false
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
@@ -1026,6 +1117,7 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didNotSearch errorDict: [String: NSNumber]) {
+        isSearching = false
         searchTimeout?.cancel()
         report("Browse failed: \(errorDict); Local Network設定を確認 / Manual IP required")
     }

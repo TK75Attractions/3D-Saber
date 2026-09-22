@@ -3,6 +3,7 @@ import SwiftUI
 
 struct ContentView: View {
     @StateObject private var model = CameraViewModel()
+    @Environment(\.scenePhase) private var scenePhase
     @State private var recordingPreviewURL: URL?
 #if DEBUG
     @State private var showDebugPerformance = false
@@ -22,7 +23,10 @@ struct ContentView: View {
                             .font(.footnote).foregroundStyle(.secondary)
                         Text("Mode: \(model.connectionMode)　Red: 5005　Blue: 5006")
                             .font(.footnote).foregroundStyle(.secondary)
-                        TextField("手動IP（自動発見できない場合のみ）", text: $model.host)
+                        TextField("手動IP（自動発見できない場合のみ）", text: Binding(
+                            get: { model.host },
+                            set: { model.setManualHost($0) }
+                        ))
                             .textFieldStyle(.roundedBorder)
                             .keyboardType(.URL)
                             .autocorrectionDisabled(true)
@@ -232,6 +236,9 @@ struct ContentView: View {
             }
             .navigationTitle("Phone Saber Sender")
             .quickLookPreview($recordingPreviewURL)
+        }
+        .onChange(of: scenePhase) { phase in
+            if phase == .active { model.recoverFromForeground() }
         }
     }
 
