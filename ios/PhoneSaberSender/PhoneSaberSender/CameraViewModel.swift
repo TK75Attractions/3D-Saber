@@ -158,9 +158,16 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published var debugRecordingEnabled = false
     @Published private(set) var debugRecordingActive = false
     @Published private(set) var debugRecordingFinalizing = false
+    @Published private(set) var manualLosslessCapturePending = false
     @Published private(set) var debugRecordingStatus = "OFF"
     @Published private(set) var lastDebugRecordingResult: DebugRecordingResult?
 #if DEBUG
+    @Published var freezeDiagnosticsEnabled = false {
+        didSet {
+            processor.setFreezeDiagnosticsEnabled(freezeDiagnosticsEnabled)
+            sender.setFreezeDiagnosticsEnabled(freezeDiagnosticsEnabled)
+        }
+    }
     @Published private(set) var debugPerformanceRows = DebugPerformanceRow.placeholders
     @Published private(set) var debugCameraConfiguration = DebugCameraConfiguration.unavailable
     @Published private(set) var debugFrameIntervalStatistics: CameraFrameIntervalStatistics?
@@ -436,10 +443,14 @@ final class CameraViewModel: NSObject, ObservableObject {
             let port: Int
             switch result.color {
             case .red:
-                redEndpoints = result.endpoints; redDetectionCount += 1; port = 5005
+                redEndpoints = result.endpoints
+                if !result.isPredicted { redDetectionCount += 1 }
+                port = 5005
                 redSeen = true
             case .blue:
-                blueEndpoints = result.endpoints; blueDetectionCount += 1; port = 5006
+                blueEndpoints = result.endpoints
+                if !result.isPredicted { blueDetectionCount += 1 }
+                port = 5006
                 blueSeen = true
             }
             if result.color == .red { redAttemptCount += 1 } else { blueAttemptCount += 1 }
@@ -808,6 +819,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     func stopDebugRecording() {
         guard debugRecordingActive, !debugRecordingFinalizing else { return }
         debugRecordingActive = false
+        manualLosslessCapturePending = false
         debugRecordingFinalizing = true
         debugRecordingStatus = "raw動画を確定し、overlay動画を生成中…"
         processor.stopDebugRecording { [weak self] result in
@@ -821,6 +833,25 @@ final class CameraViewModel: NSObject, ObservableObject {
                     self.debugRecordingStatus = "完了: \(recording.recordedFrameCount) frames / ドロップ \(recording.droppedFrameCount)"
                 case .failure(let error):
                     self.debugRecordingStatus = "録画処理失敗: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
+
+    func captureNextLosslessFrame() {
+        guard debugRecordingEnabled, debugRecordingActive,
+              !debugRecordingFinalizing, !manualLosslessCapturePending else { return }
+        manualLosslessCapturePending = true
+        debugRecordingStatus = "次の録画フレームをlossless capture待機中…"
+        processor.requestManualLosslessFrame { [weak self] result in
+            Task { @MainActor in
+                guard let self else { return }
+                self.manualLosslessCapturePending = false
+                switch result {
+                case .success(let frameID):
+                    self.debugRecordingStatus = "録画中: manual_frame_\(frameID).png をStop後に保存"
+                case .failure(let error):
+                    self.debugRecordingStatus = "Lossless capture失敗: \(error.localizedDescription)"
                 }
             }
         }

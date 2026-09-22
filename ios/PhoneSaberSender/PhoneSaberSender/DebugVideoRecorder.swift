@@ -119,6 +119,10 @@ struct DebugRecordingColorCandidates: Codable, Equatable {
     static let savedCandidateLimit = 3
 
     let totalCandidateCount: Int
+    let eligibleCandidateCount: Int
+    let maskPixelCount: Int
+    let morphologyPixelCount: Int
+    let connectedComponentCount: Int
     let selectedCandidateIndex: Int?
     let selectedCandidateType: String?
     let selectedCandidateFinalScore: Double?
@@ -126,8 +130,12 @@ struct DebugRecordingColorCandidates: Codable, Equatable {
     let selectedCandidate: DebugRecordingCandidate?
     let topCandidates: [DebugRecordingCandidate]
 
-    init(_ candidates: [SaberCandidate]) {
+    init(_ candidates: [SaberCandidate], pipeline: SaberColorPipelineDiagnostics?) {
         totalCandidateCount = candidates.count
+        eligibleCandidateCount = candidates.filter(\.isEmitterEligible).count
+        maskPixelCount = pipeline?.maskPixelCount ?? 0
+        morphologyPixelCount = pipeline?.morphologyPixelCount ?? 0
+        connectedComponentCount = pipeline?.connectedComponentCount ?? 0
         let selectedIndex = candidates.firstIndex(where: \.isEmitterEligible)
         selectedCandidateIndex = selectedIndex
         selectedCandidateType = selectedIndex.map { candidates[$0].source }
@@ -150,36 +158,44 @@ struct DebugRecordingCandidateDiagnostics: Codable, Equatable {
     let blue: DebugRecordingColorCandidates
 
     init(analysis: SaberFrameAnalysis) {
-        red = DebugRecordingColorCandidates(analysis.candidates[.red] ?? [])
-        blue = DebugRecordingColorCandidates(analysis.candidates[.blue] ?? [])
+        red = DebugRecordingColorCandidates(
+            analysis.candidates[.red] ?? [], pipeline: analysis.pipelineDiagnostics?[.red]
+        )
+        blue = DebugRecordingColorCandidates(
+            analysis.candidates[.blue] ?? [], pipeline: analysis.pipelineDiagnostics?[.blue]
+        )
     }
 }
 
 struct DebugRecordingDetection: Codable, Equatable {
     let detected: Bool
+    let predicted: Bool
     let x1: Int?
     let y1: Int?
     let x2: Int?
     let y2: Int?
 
     static let notDetected = DebugRecordingDetection(
-        detected: false, x1: nil, y1: nil, x2: nil, y2: nil
+        detected: false, predicted: false, x1: nil, y1: nil, x2: nil, y2: nil
     )
 
-    init(endpoints: (PixelPoint, PixelPoint)?) {
+    init(endpoints: (PixelPoint, PixelPoint)?, predicted: Bool = false) {
         guard let endpoints else {
             self = .notDetected
             return
         }
         detected = true
+        self.predicted = predicted
         x1 = endpoints.0.x
         y1 = endpoints.0.y
         x2 = endpoints.1.x
         y2 = endpoints.1.y
     }
 
-    private init(detected: Bool, x1: Int?, y1: Int?, x2: Int?, y2: Int?) {
+    private init(detected: Bool, predicted: Bool,
+                 x1: Int?, y1: Int?, x2: Int?, y2: Int?) {
         self.detected = detected
+        self.predicted = predicted
         self.x1 = x1
         self.y1 = y1
         self.x2 = x2
@@ -197,9 +213,15 @@ struct DebugRecordingFrameMetadata: Codable, Equatable {
     let presentationTimeSeconds: Double
     let red: DebugRecordingDetection
     let blue: DebugRecordingDetection
+    let redDetectionSucceeded: Bool
+    let blueDetectionSucceeded: Bool
     let candidateDiagnostics: DebugRecordingCandidateDiagnostics?
     var forensicCaptured: Bool
     var forensicFileName: String?
+    var manualCaptured: Bool
+    var manualFileName: String?
+    var blueDropoutRole: String?
+    var blueDropoutFileName: String?
 }
 
 struct DebugRecordingMetadata: Codable, Equatable {
@@ -228,6 +250,14 @@ private struct DebugForensicFrame {
     let width: Int
     let height: Int
     let bytes: Data
+}
+
+private struct DebugRetainedBlueFrame {
+    let pixelBuffer: CVPixelBuffer
+    let frameID: UInt64
+    let metadataIndex: Int
+    let width: Int
+    let height: Int
 }
 
 enum DebugVideoRecorderError: LocalizedError {
@@ -272,6 +302,9 @@ final class DebugVideoRecorder {
     private var frames: [DebugRecordingFrameMetadata] = []
     private var forensicFrames: [DebugForensicFrame] = []
     private var previousLengths: [SaberColor: Double] = [:]
+    private var manualCaptureCompletion: ((UInt64) -> Void)?
+    private var lastBlueDetectedFrame: DebugRetainedBlueFrame?
+    private var blueDropoutActive = false
     private let forensicPolicy: DebugForensicCapturePolicy
     private(set) var droppedFrameCount = 0
     private var isFinishing = false
@@ -295,6 +328,15 @@ final class DebugVideoRecorder {
     /// one-time H.264 setup out of the first measured frame.
     func prepare(width: Int, height: Int) throws {
         if writer == nil { try configureWriter(width: width, height: height) }
+    }
+
+    /// Arms a one-shot capture for the next frame accepted by the raw writer.
+    /// The completion receives the exact frame ID stored in metadata.
+    @discardableResult
+    func requestManualCapture(completion: @escaping (UInt64) -> Void) -> Bool {
+        guard !isFinishing, manualCaptureCompletion == nil else { return false }
+        manualCaptureCompletion = completion
+        return true
     }
 
     /// Called only from FrameProcessor's serial queue. Metadata is appended
@@ -335,30 +377,59 @@ final class DebugVideoRecorder {
         }
         lastPresentationTime = relativeTime
 
-        let freshRed = results.first { $0.color == .red && $0.isFresh }?.endpoints
-        let freshBlue = results.first { $0.color == .blue && $0.isFresh }?.endpoints
+        let freshRedResult = results.first { $0.color == .red && $0.isFresh }
+        let freshBlueResult = results.first { $0.color == .blue && $0.isFresh }
+        let freshRed = freshRedResult?.endpoints
+        let freshBlue = freshBlueResult?.endpoints
+        let redDetectionSucceeded = freshRedResult.map { !$0.isPredicted } ?? false
+        let blueDetectionSucceeded = freshBlueResult.map { !$0.isPredicted } ?? false
         let metadataIndex = frames.count
         frames.append(DebugRecordingFrameMetadata(
             frameID: frameID,
             presentationTimeSeconds: CMTimeGetSeconds(relativeTime),
-            red: DebugRecordingDetection(endpoints: freshRed),
-            blue: DebugRecordingDetection(endpoints: freshBlue),
+            red: DebugRecordingDetection(
+                endpoints: freshRed, predicted: freshRedResult?.isPredicted ?? false
+            ),
+            blue: DebugRecordingDetection(
+                endpoints: freshBlue, predicted: freshBlueResult?.isPredicted ?? false
+            ),
+            redDetectionSucceeded: redDetectionSucceeded,
+            blueDetectionSucceeded: blueDetectionSucceeded,
             candidateDiagnostics: analysis.map(DebugRecordingCandidateDiagnostics.init),
             forensicCaptured: false,
-            forensicFileName: nil
+            forensicFileName: nil,
+            manualCaptured: false,
+            manualFileName: nil,
+            blueDropoutRole: nil,
+            blueDropoutFileName: nil
         ))
+        updateBlueDropoutCapture(
+            pixelBuffer: pixelBuffer, frameID: frameID, metadataIndex: metadataIndex,
+            width: width, height: height, blueDetected: blueDetectionSucceeded
+        )
         let redIsAnomalous = anomalyDetected(for: .red, endpoints: freshRed)
         let blueIsAnomalous = anomalyDetected(for: .blue, endpoints: freshBlue)
-        let shouldCapture = redIsAnomalous || blueIsAnomalous
-        if shouldCapture, forensicFrames.count < forensicPolicy.maximumFrames,
+        let manualCompletion = manualCaptureCompletion
+        let shouldCaptureAnomaly = (redIsAnomalous || blueIsAnomalous)
+            && forensicFrames.count < forensicPolicy.maximumFrames
+        if (manualCompletion != nil || shouldCaptureAnomaly),
            let bytes = copyBGRA(pixelBuffer: pixelBuffer, width: width, height: height) {
-            let fileName = "frame_\(frameID).png"
-            frames[metadataIndex].forensicCaptured = true
-            frames[metadataIndex].forensicFileName = fileName
+            let fileName: String
+            if manualCompletion != nil {
+                fileName = "manual_frame_\(frameID).png"
+                frames[metadataIndex].manualCaptured = true
+                frames[metadataIndex].manualFileName = fileName
+                manualCaptureCompletion = nil
+            } else {
+                fileName = "frame_\(frameID).png"
+                frames[metadataIndex].forensicCaptured = true
+                frames[metadataIndex].forensicFileName = fileName
+            }
             forensicFrames.append(DebugForensicFrame(
                 fileName: fileName,
                 width: width, height: height, bytes: bytes
             ))
+            manualCompletion?(frameID)
         }
     }
 
@@ -368,6 +439,7 @@ final class DebugVideoRecorder {
             return
         }
         isFinishing = true
+        lastBlueDetectedFrame = nil
         guard let writer, let writerInput, let dimensions, !frames.isEmpty else {
             completion(.failure(DebugVideoRecorderError.noFrames))
             return
@@ -431,6 +503,71 @@ final class DebugVideoRecorder {
         if length >= forensicPolicy.absoluteLengthThreshold { return true }
         return length >= forensicPolicy.relativeLengthThreshold
             && previous.map { length >= $0 * forensicPolicy.growthRatio } == true
+    }
+
+    /// Keeps only one retained camera buffer while BLUE is detected. A BGRA
+    /// copy happens only on the true→false transition and on recovery.
+    private func updateBlueDropoutCapture(
+        pixelBuffer: CVPixelBuffer,
+        frameID: UInt64,
+        metadataIndex: Int,
+        width: Int,
+        height: Int,
+        blueDetected: Bool
+    ) {
+        if blueDetected {
+            if blueDropoutActive {
+                let fileName = "blue_dropout_recovered_\(frameID).png"
+                if captureCurrentBGRA(pixelBuffer: pixelBuffer, width: width, height: height,
+                                      fileName: fileName) {
+                    frames[metadataIndex].blueDropoutRole = "recovered"
+                    frames[metadataIndex].blueDropoutFileName = fileName
+                }
+                blueDropoutActive = false
+            }
+            lastBlueDetectedFrame = DebugRetainedBlueFrame(
+                pixelBuffer: pixelBuffer, frameID: frameID, metadataIndex: metadataIndex,
+                width: width, height: height
+            )
+            return
+        }
+
+        guard !blueDropoutActive, let previous = lastBlueDetectedFrame,
+              forensicFrames.count + 3 <= forensicPolicy.maximumFrames else { return }
+        let previousFileName = "blue_dropout_last_true_\(previous.frameID).png"
+        let dropoutFileName = "blue_dropout_false_\(frameID).png"
+        guard captureRetainedBGRA(previous, fileName: previousFileName),
+              captureCurrentBGRA(pixelBuffer: pixelBuffer, width: width, height: height,
+                                 fileName: dropoutFileName) else { return }
+        frames[previous.metadataIndex].blueDropoutRole = "last-detected-before-dropout"
+        frames[previous.metadataIndex].blueDropoutFileName = previousFileName
+        frames[metadataIndex].blueDropoutRole = "dropout"
+        frames[metadataIndex].blueDropoutFileName = dropoutFileName
+        lastBlueDetectedFrame = nil
+        blueDropoutActive = true
+    }
+
+    private func captureCurrentBGRA(
+        pixelBuffer: CVPixelBuffer, width: Int, height: Int, fileName: String
+    ) -> Bool {
+        guard let bytes = copyBGRA(pixelBuffer: pixelBuffer, width: width, height: height) else {
+            return false
+        }
+        forensicFrames.append(DebugForensicFrame(
+            fileName: fileName, width: width, height: height, bytes: bytes
+        ))
+        return true
+    }
+
+    private func captureRetainedBGRA(
+        _ frame: DebugRetainedBlueFrame, fileName: String
+    ) -> Bool {
+        CVPixelBufferLockBaseAddress(frame.pixelBuffer, .readOnly)
+        defer { CVPixelBufferUnlockBaseAddress(frame.pixelBuffer, .readOnly) }
+        return captureCurrentBGRA(
+            pixelBuffer: frame.pixelBuffer, width: frame.width,
+            height: frame.height, fileName: fileName
+        )
     }
 
     /// The caller already has the camera BGRA buffer locked. Only anomalous,

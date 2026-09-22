@@ -388,9 +388,11 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                                   componentMask: [UInt8]?, componentIndices: Set<Int>? = nil,
                                   evidence: SaberEvidence?,
                                   source: String = "color-mask",
-                                  stageProfile: SaberCandidateStageProfile? = nil) -> SaberCandidate? {
+                                  stageProfile: SaberCandidateStageProfile? = nil,
+                                  minimumAreaOverride: Int? = nil) -> SaberCandidate? {
     let shapeStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
-    let minimumArea = max(4, Int(Double(width * height) * 0.0005))
+    let minimumArea = max(4, minimumAreaOverride
+        ?? Int(Double(width * height) * 0.0005))
     guard points.count >= minimumArea else { return nil }
     let frameArea = max(Double(width * height), 1)
     let areaRatio = Double(points.count) / frameArea
@@ -709,7 +711,9 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
 /// emitter with rejected reflections using the same production score.
 func saberCandidates(in mask: [UInt8], width: Int, height: Int,
                      evidence: SaberEvidence? = nil,
-                     stageProfile: SaberCandidateStageProfile? = nil) -> [SaberCandidate] {
+                     stageProfile: SaberCandidateStageProfile? = nil,
+                     componentObserver: ((Int) -> Void)? = nil,
+                     minimumAreaOverride: Int? = nil) -> [SaberCandidate] {
     guard width > 0, height > 0, mask.count == width * height else { return [] }
     var remaining = mask
     var candidates: [SaberCandidate] = []
@@ -734,9 +738,11 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
                 }
             }
         }
+        componentObserver?(points.count)
         guard let candidate = scoredSaberComponent(points, width: width, height: height,
                                                    componentMask: mask, evidence: evidence,
-                                                   stageProfile: stageProfile) else { continue }
+                                                   stageProfile: stageProfile,
+                                                   minimumAreaOverride: minimumAreaOverride) else { continue }
         candidates.append(candidate)
     }
     return candidates.sorted { $0.score > $1.score }

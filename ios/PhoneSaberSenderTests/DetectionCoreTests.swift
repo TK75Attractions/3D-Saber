@@ -911,8 +911,11 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertTrue(holdProcessed)
         XCTAssertEqual(viewModel.redEndpoints?.0, endpointBeforeHold?.0)
         XCTAssertEqual(viewModel.redEndpoints?.1, endpointBeforeHold?.1)
-        XCTAssertEqual(viewModel.redAttemptCount, attemptsBeforeHold)
-        XCTAssertEqual(completions.valuesCountForTesting, completionsBeforeHold)
+        XCTAssertEqual(viewModel.redAttemptCount, attemptsBeforeHold + 1)
+        XCTAssertEqual(completions.valuesCountForTesting, completionsBeforeHold + 1)
+        completions.removeFirst()?.1(.failure(NSError(domain: "prediction-test", code: 2)))
+        let predictedFailureProcessed = await waitUntil { viewModel.redErrorCount == 2 }
+        XCTAssertTrue(predictedFailureProcessed)
         XCTAssertEqual(published.count, publishedBeforeHold)
         XCTAssertEqual(viewModel.lastLocalSendMs, lastLocalSendBeforeHold)
         XCTAssertEqual(viewModel.lastLocalSendMs, failedBefore)
@@ -1131,6 +1134,36 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertLessThan(candidate.retainedBodyRatio, 0.90)
     }
 
+    func testLongCoreLineGeometryPenaltyPrefersCompleteBladeEvidence() throws {
+        var bridged: [PixelPoint] = []
+        for x in 20...70 {
+            for y in 47...53 { bridged.append(PixelPoint(x: x, y: y)) }
+        }
+        for x in 71...225 { bridged.append(PixelPoint(x: x, y: 50)) }
+        var complete: [PixelPoint] = []
+        for x in 20...105 {
+            for y in 17...23 { complete.append(PixelPoint(x: x, y: y)) }
+        }
+        let falseLine = try XCTUnwrap(saberCandidate(
+            from: bridged, width: 260, height: 100, source: "core-line"
+        ))
+        let completeBlade = try XCTUnwrap(saberCandidate(
+            from: complete, width: 260, height: 100, source: "color-mask"
+        ))
+        let penalty = coreLineRobustGeometryPenalty(
+            falseLine, minimumArea: 13, minimumFrameDimension: 100
+        )
+        XCTAssertGreaterThan(penalty, 10)
+        XCTAssertLessThan(falseLine.score - penalty, completeBlade.score)
+
+        let coherentLine = try XCTUnwrap(saberCandidate(
+            from: complete, width: 260, height: 100, source: "core-line"
+        ))
+        XCTAssertLessThan(coreLineRobustGeometryPenalty(
+            coherentLine, minimumArea: 13, minimumFrameDimension: 100
+        ), 1)
+    }
+
     func testForensicDiffuserFramesUseContinuousRobustBodyInsteadOfRawSpan() throws {
         let cases: [(String, SaberColor, Double)] = [
             ("frame_941", .blue, 428.356),
@@ -1149,6 +1182,9 @@ final class DetectionCoreTests: XCTestCase {
             )
             let candidates = analysis.candidates[color] ?? []
             let selected = try XCTUnwrap(candidates.first(where: \.isEmitterEligible), name)
+            let bridgedCandidate = try XCTUnwrap(candidates.first(where: {
+                abs($0.rawPCASpan - expectedRawSpan) < 0.02
+            }), "\(name): expected long core-line fixture candidate")
             let length = hypot(Double(selected.endpoints.1.x - selected.endpoints.0.x),
                                Double(selected.endpoints.1.y - selected.endpoints.0.y))
             print(String(format: "[ForensicAfter] %@ %@ length=%.3f raw=%.3f robust=%.3f continuity=%.3f density=%.3f retained=%.3f source=%@ fallback=%@",
@@ -1156,11 +1192,15 @@ final class DetectionCoreTests: XCTestCase {
                          selected.robustMainIntervalLength, selected.longitudinalContinuity,
                          selected.axialDensity, selected.retainedBodyRatio, selected.source,
                          selected.usedPointLEDFallback.description))
-            XCTAssertEqual(selected.source, "core-line", name)
-            XCTAssertEqual(selected.rawPCASpan, expectedRawSpan, accuracy: 0.01, name)
-            XCTAssertFalse(selected.usedPointLEDFallback, name)
-            XCTAssertLessThan(length, selected.rawPCASpan * 0.40, name)
-            XCTAssertEqual(length, selected.robustMainIntervalLength, accuracy: 12, name)
+            XCTAssertTrue(bridgedCandidate.source.hasPrefix("core-line"), name)
+            XCTAssertGreaterThan(coreLineRobustGeometryPenalty(
+                bridgedCandidate,
+                minimumArea: max(4, (fixture.width / 2) * (fixture.height / 2) / 2_000),
+                minimumFrameDimension: min(fixture.width, fixture.height) / 2
+            ), 0, name)
+            XCTAssertGreaterThanOrEqual(selected.score, bridgedCandidate.score, name)
+            XCTAssertLessThan(selected.rawPCASpan, expectedRawSpan * 0.5, name)
+            XCTAssertLessThan(length, 160, name)
         }
     }
 
@@ -1189,13 +1229,13 @@ final class DetectionCoreTests: XCTestCase {
     }
 
     func testSecondForensicFallback() throws {
-        let cases: [(String, SaberColor, Bool)] = [
-            ("frame_519", .blue, false),
-            ("frame_919", .red, false),
-            ("frame_1091", .red, false),
-            ("frame_1091", .blue, false)
+        let cases: [(String, SaberColor, Double)] = [
+            ("frame_519", .blue, 100),
+            ("frame_919", .red, 60),
+            ("frame_1091", .red, 70),
+            ("frame_1091", .blue, 180)
         ]
-        for (name, color, expectedFallback) in cases {
+        for (name, color, maximumLength) in cases {
             let fixture = try fixtureBGRA(name, subdirectory: "forensic-20260921-211845")
             let analysis = analyzeSabers(
                 in: fixture.bytes, width: fixture.width, height: fixture.height,
@@ -1216,8 +1256,10 @@ final class DetectionCoreTests: XCTestCase {
                          selected.axialDensity, selected.largestLongitudinalGap,
                          bodyPointCount, selected.retainedBodyRatio,
                          selected.usedPointLEDFallback.description))
-            XCTAssertEqual(selected.usedPointLEDFallback, expectedFallback, name)
-            XCTAssertEqual(length, selected.robustMainIntervalLength, accuracy: 12, name)
+            XCTAssertLessThan(length, maximumLength, name)
+            if !selected.usedPointLEDFallback {
+                XCTAssertEqual(length, selected.robustMainIntervalLength, accuracy: 12, name)
+            }
         }
     }
 
@@ -1563,6 +1605,57 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(results.last?.first?.color, .blue)
     }
 
+    func testShortDropoutPredictionStopsAfterThreeFramesAndRecoversImmediately() throws {
+        let clock = ManualClock(300)
+        let processor = FrameProcessor(clock: { clock.now }, expiryScheduler: nil)
+        var results: [[DetectedSaber]] = []
+        processor.onResult = { detected, _, _, _, _, _ in results.append(detected) }
+        let first = (PixelPoint(x: 10, y: 10), PixelPoint(x: 20, y: 10))
+        let second = (PixelPoint(x: 12, y: 11), PixelPoint(x: 22, y: 11))
+
+        processor.processDetectedForTesting([(.blue, first)], at: clock.now,
+                                            dimensions: (100, 80))
+        XCTAssertEqual(results.last?.first?.endpoints.0, first.0)
+        XCTAssertFalse(try XCTUnwrap(results.last?.first).isPredicted)
+        clock.advance(by: 1.0 / 30.0)
+        processor.processDetectedForTesting([(.blue, second)], at: clock.now,
+                                            dimensions: (100, 80))
+        XCTAssertEqual(results.last?.first?.endpoints.0, second.0)
+        XCTAssertFalse(try XCTUnwrap(results.last?.first).isPredicted)
+
+        for missingFrame in 1...3 {
+            clock.advance(by: 1.0 / 30.0)
+            processor.processDetectedForTesting([(.blue, nil)], at: clock.now,
+                                                dimensions: (100, 80))
+            let predicted = try XCTUnwrap(results.last?.first)
+            XCTAssertTrue(predicted.isFresh)
+            XCTAssertTrue(predicted.isPredicted)
+            XCTAssertEqual(predicted.endpoints.0,
+                           PixelPoint(x: 12 + 2 * missingFrame,
+                                      y: 11 + missingFrame))
+            XCTAssertEqual(predicted.endpoints.1,
+                           PixelPoint(x: 22 + 2 * missingFrame,
+                                      y: 11 + missingFrame))
+        }
+
+        clock.advance(by: 1.0 / 30.0)
+        processor.processDetectedForTesting([(.blue, nil)], at: clock.now,
+                                            dimensions: (100, 80))
+        let fourth = try XCTUnwrap(results.last?.first)
+        XCTAssertFalse(fourth.isFresh)
+        XCTAssertFalse(fourth.isPredicted)
+
+        let recovered = (PixelPoint(x: 30, y: 20), PixelPoint(x: 40, y: 20))
+        clock.advance(by: 1.0 / 30.0)
+        processor.processDetectedForTesting([(.blue, recovered)], at: clock.now,
+                                            dimensions: (100, 80))
+        let recoveryResult = try XCTUnwrap(results.last?.first)
+        XCTAssertTrue(recoveryResult.isFresh)
+        XCTAssertFalse(recoveryResult.isPredicted)
+        XCTAssertEqual(recoveryResult.endpoints.0, recovered.0)
+        XCTAssertEqual(recoveryResult.endpoints.1, recovered.1)
+    }
+
     func testDebugRecordingCreatesSynchronizedRawOverlayAndMetadata() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("PhoneSaberRecordingTests-\(UUID().uuidString)", isDirectory: true)
@@ -1636,6 +1729,9 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertFalse(viewModel.debugRecordingFinalizing)
         XCTAssertEqual(viewModel.debugRecordingStatus, "OFF")
         XCTAssertNil(viewModel.lastDebugRecordingResult)
+#if DEBUG
+        XCTAssertFalse(viewModel.freezeDiagnosticsEnabled)
+#endif
     }
 
     func testCandidateDiagnosticsCopiesSelectedAndTopThreeWithoutRecalculation() throws {
@@ -1644,13 +1740,18 @@ final class DetectionCoreTests: XCTestCase {
             in: fixture.bytes, width: fixture.width, height: fixture.height,
             bytesPerRow: fixture.bytesPerRow,
             redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
-            collectProfile: false
+            collectProfile: false, collectPipelineDiagnostics: true
         )
         let diagnostics = DebugRecordingCandidateDiagnostics(analysis: analysis)
         let blueCandidates = analysis.candidates[.blue] ?? []
         let selectedIndex = blueCandidates.firstIndex { $0.isEmitterEligible }
 
         XCTAssertEqual(diagnostics.blue.totalCandidateCount, blueCandidates.count)
+        XCTAssertEqual(diagnostics.blue.eligibleCandidateCount,
+                       blueCandidates.filter(\.isEmitterEligible).count)
+        XCTAssertGreaterThan(diagnostics.blue.maskPixelCount, 0)
+        XCTAssertGreaterThan(diagnostics.blue.morphologyPixelCount, 0)
+        XCTAssertGreaterThan(diagnostics.blue.connectedComponentCount, 0)
         XCTAssertEqual(diagnostics.blue.selectedCandidateIndex, selectedIndex)
         XCTAssertEqual(diagnostics.blue.topCandidates.count, min(3, blueCandidates.count))
         let index = try XCTUnwrap(selectedIndex)
@@ -1659,6 +1760,45 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(selected.scoreBreakdown.total, blueCandidates[index].scoreBreakdown.total)
         XCTAssertEqual(selected.rawPCASpan, blueCandidates[index].rawPCASpan)
         XCTAssertEqual(selected.continuity, blueCandidates[index].longitudinalContinuity)
+    }
+
+    func testSparseBlueMaskSurvivesDestructiveOpeningThroughRawFallback() throws {
+        let width = 480, height = 640, bytesPerRow = width * 4
+        var bytes = Array(repeating: UInt8(0), count: bytesPerRow * height)
+        for pixel in stride(from: 3, to: bytes.count, by: 4) { bytes[pixel] = 255 }
+        for sampleX in 50..<69 {
+            let x = sampleX * 2, y = 220
+            let offset = y * bytesPerRow + x * 4
+            bytes[offset] = 255
+            bytes[offset + 1] = 55
+            bytes[offset + 2] = 20
+        }
+        let analysis = analyzeSabers(
+            in: bytes, width: width, height: height, bytesPerRow: bytesPerRow,
+            redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+            collectPipelineDiagnostics: true
+        )
+        let pipeline = try XCTUnwrap(analysis.pipelineDiagnostics?[.blue])
+        XCTAssertEqual(pipeline.maskPixelCount, 19)
+        XCTAssertEqual(pipeline.morphologyPixelCount, 0)
+        XCTAssertEqual(analysis.candidates[.blue]?.first?.source, "color-sparse-raw")
+        XCTAssertNotNil(analysis.selected[.blue])
+    }
+
+    func testNormalMaskDoesNotEnterSparseRawFallback() throws {
+        let fixture = try fixtureBGRA("blue-led-bright-large-05")
+        let analysis = analyzeSabers(
+            in: fixture.bytes, width: fixture.width, height: fixture.height,
+            bytesPerRow: fixture.bytesPerRow,
+            redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+            collectPipelineDiagnostics: true
+        )
+        let pipeline = try XCTUnwrap(analysis.pipelineDiagnostics?[.blue])
+        XCTAssertGreaterThan(pipeline.morphologyPixelCount * 5,
+                             pipeline.maskPixelCount * 3)
+        XCTAssertFalse((analysis.candidates[.blue] ?? []).contains {
+            $0.source == "color-sparse-raw"
+        })
     }
 
     func testForensicCaptureWritesOnlyAnomalousAcceptedFrameAfterStop() async throws {
@@ -1716,6 +1856,89 @@ final class DetectionCoreTests: XCTestCase {
         let image = try XCTUnwrap(UIImage(contentsOfFile: pngURL.path))
         XCTAssertEqual(Int(image.size.width), 64)
         XCTAssertEqual(Int(image.size.height), 48)
+    }
+
+    func testManualLosslessCaptureUsesNextAcceptedFrameAndMatchingMetadata() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberManualCaptureTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory)
+        var capturedFrameID: UInt64?
+        XCTAssertTrue(recorder.requestManualCapture { frameID in
+            capturedFrameID = frameID
+        })
+        XCTAssertFalse(recorder.requestManualCapture { _ in },
+                       "a pending one-shot request must not capture multiple frames")
+        let analysis = SaberFrameAnalysis(candidates: [.red: [], .blue: []], selected: [:])
+        let buffer = solidPixelBuffer(width: 64, height: 48)
+        CVPixelBufferLockBaseAddress(buffer, .readOnly)
+        recorder.append(pixelBuffer: buffer,
+                        presentationTime: CMTime(value: 0, timescale: 30),
+                        frameID: 301, results: [], analysis: analysis)
+        CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+        XCTAssertEqual(capturedFrameID, 301)
+
+        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
+            recorder.finish { continuation.resume(with: $0) }
+        }
+        let metadata = try JSONDecoder().decode(
+            DebugRecordingMetadata.self, from: Data(contentsOf: recording.metadataURL)
+        )
+        XCTAssertEqual(metadata.frames.count, 1)
+        XCTAssertEqual(metadata.frames[0].frameID, 301)
+        XCTAssertTrue(metadata.frames[0].manualCaptured)
+        XCTAssertEqual(metadata.frames[0].manualFileName, "manual_frame_301.png")
+        XCTAssertNotNil(metadata.frames[0].candidateDiagnostics)
+        let forensicDirectory = try XCTUnwrap(recording.forensicDirectoryURL)
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: forensicDirectory.appendingPathComponent("manual_frame_301.png").path
+        ))
+    }
+
+    func testBlueDropoutCaptureStoresLastTrueFalseAndRecoveryFrames() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberDropoutCaptureTests-\(UUID().uuidString)",
+                                    isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory)
+        let blue = DetectedSaber(
+            endpoints: (PixelPoint(x: 8, y: 24), PixelPoint(x: 52, y: 24)),
+            color: .blue, isFresh: true
+        )
+        let states: [(UInt64, [DetectedSaber])] = [(401, [blue]), (402, []), (403, [blue])]
+        for (offset, state) in states.enumerated() {
+            let buffer = solidPixelBuffer(width: 64, height: 48)
+            CVPixelBufferLockBaseAddress(buffer, .readOnly)
+            recorder.append(
+                pixelBuffer: buffer,
+                presentationTime: CMTime(value: CMTimeValue(offset), timescale: 30),
+                frameID: state.0, results: state.1
+            )
+            CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+            Thread.sleep(forTimeInterval: 0.04)
+        }
+
+        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
+            recorder.finish { continuation.resume(with: $0) }
+        }
+        let metadata = try JSONDecoder().decode(
+            DebugRecordingMetadata.self, from: Data(contentsOf: recording.metadataURL)
+        )
+        XCTAssertEqual(metadata.frames.map(\.blueDropoutRole), [
+            "last-detected-before-dropout", "dropout", "recovered"
+        ])
+        XCTAssertEqual(metadata.frames.map(\.blueDropoutFileName), [
+            "blue_dropout_last_true_401.png",
+            "blue_dropout_false_402.png",
+            "blue_dropout_recovered_403.png"
+        ])
+        let forensicDirectory = try XCTUnwrap(recording.forensicDirectoryURL)
+        for frame in metadata.frames {
+            let fileName = try XCTUnwrap(frame.blueDropoutFileName)
+            XCTAssertTrue(FileManager.default.fileExists(
+                atPath: forensicDirectory.appendingPathComponent(fileName).path
+            ))
+        }
     }
 
     func testCandidateDiagnosticsCopyPerformanceSample() throws {

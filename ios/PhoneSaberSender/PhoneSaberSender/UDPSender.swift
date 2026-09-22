@@ -23,6 +23,10 @@ final class UDPSender {
     private var pendingByPort: [Int: PendingSend] = [:]
     private var supersededPendingCount = 0
     private let sendHandler: SendHandler?
+#if DEBUG
+    private var freezeDiagnosticsEnabled = false
+    private var lastSendStartByPort: [Int: TimeInterval] = [:]
+#endif
 
     init(sendHandler: SendHandler? = nil) {
         self.sendHandler = sendHandler
@@ -55,6 +59,9 @@ final class UDPSender {
             activePorts = []
             pendingByPort = [:]
             supersededPendingCount = 0
+#if DEBUG
+            lastSendStartByPort = [:]
+#endif
             connections.values.forEach { $0.cancel() }
             if sendHandler != nil {
                 connections = [:]
@@ -110,7 +117,22 @@ final class UDPSender {
         let sendGeneration = generation
         // This is the start of Network.framework work, not proof that the
         // datagram has reached the network interface or peer.
-        request.onSendStarted?(max(0, HostMonotonicClock.now() - request.enqueuedAt), supersededPendingCount)
+        let sendStartedAt = HostMonotonicClock.now()
+#if DEBUG
+        if freezeDiagnosticsEnabled {
+            if let previous = lastSendStartByPort[port] {
+                let gapMs = (sendStartedAt - previous) * 1000
+                if gapMs > 100 {
+                    let color = port == 5005 ? "RED" : port == 5006 ? "BLUE" : "PORT\(port)"
+                    let queueWaitMs = max(0, sendStartedAt - request.enqueuedAt) * 1000
+                    print(String(format: "[FREEZE][UDP SEND][%@] gap=%.1fms sendAt=%.6f queueWait=%.1fms replaced=%d",
+                                 color, gapMs, sendStartedAt, queueWaitMs, supersededPendingCount))
+                }
+            }
+            lastSendStartByPort[port] = sendStartedAt
+        }
+#endif
+        request.onSendStarted?(max(0, sendStartedAt - request.enqueuedAt), supersededPendingCount)
         if let sendHandler {
             sendHandler(request.text, port) { [weak self] result in
                 self?.queue.async {
@@ -171,8 +193,32 @@ final class UDPSender {
 
     func snapshot(completion: @escaping (Snapshot) -> Void) { queue.async { completion(Snapshot(states: self.states, errors: self.mergedErrors(), lastError: self.currentError())) } }
 
+#if DEBUG
+    func setFreezeDiagnosticsEnabled(_ enabled: Bool) {
+        queue.async { [weak self] in
+            self?.freezeDiagnosticsEnabled = enabled
+            self?.lastSendStartByPort = [:]
+        }
+    }
+#endif
+
     func stop() {
-        queue.sync { generation += 1; connections.values.forEach { $0.cancel() }; connections.removeAll(); activePorts = []; pendingByPort = [:]; supersededPendingCount = 0; states = [:]; connectionErrors = [:]; sendErrors = [:]; configuredHost = ""; publish() }
+        queue.sync {
+            generation += 1
+            connections.values.forEach { $0.cancel() }
+            connections.removeAll()
+            activePorts = []
+            pendingByPort = [:]
+            supersededPendingCount = 0
+#if DEBUG
+            lastSendStartByPort = [:]
+#endif
+            states = [:]
+            connectionErrors = [:]
+            sendErrors = [:]
+            configuredHost = ""
+            publish()
+        }
     }
 
     func setStateForTesting(port: Int, state: String, error: String?) {

@@ -4,14 +4,25 @@ struct SaberFrameAnalysis {
     let candidates: [SaberColor: [SaberCandidate]]
     let selected: [SaberColor: (PixelPoint, PixelPoint)]
     let profile: SaberDetectionProfile?
+    let pipelineDiagnostics: [SaberColor: SaberColorPipelineDiagnostics]?
 
     init(candidates: [SaberColor: [SaberCandidate]],
          selected: [SaberColor: (PixelPoint, PixelPoint)],
-         profile: SaberDetectionProfile? = nil) {
+         profile: SaberDetectionProfile? = nil,
+         pipelineDiagnostics: [SaberColor: SaberColorPipelineDiagnostics]? = nil) {
         self.candidates = candidates
         self.selected = selected
         self.profile = profile
+        self.pipelineDiagnostics = pipelineDiagnostics
     }
+}
+
+/// Counts copied from work the detector already performs. They are populated
+/// only while Debug Recording is active and never participate in detection.
+struct SaberColorPipelineDiagnostics: Equatable {
+    let maskPixelCount: Int
+    let morphologyPixelCount: Int
+    let connectedComponentCount: Int
 }
 
 struct SaberDetectionProfile {
@@ -62,6 +73,28 @@ private func candidateIsSubsegment(_ shorter: SaberCandidate, of longer: SaberCa
         let across = abs(dx * normalX + dy * normalY)
         return along >= -6.0 && along <= longLength + 6.0 && across <= 6.0
     }
+}
+
+/// A core-line that keeps only a small, well-supported local body is usually
+/// bridging unrelated emitters. This continuous penalty stays near zero for
+/// legacy point LEDs whose raw and robust geometry agree.
+func coreLineRobustGeometryPenalty(_ candidate: SaberCandidate, minimumArea: Int,
+                                   minimumFrameDimension: Int) -> Double {
+    guard candidate.source.hasPrefix("core-line"), candidate.rawPCASpan > 0 else { return 0 }
+    // Short proposals can legitimately be a blade subsegment (including the
+    // known long point-LED control). Reserve this ranking correction for a
+    // line that spans a large fraction of the frame as well as discarding most
+    // of its own geometry. This is scale-relative, not a color/pixel hack.
+    let normalizedSpan = candidate.rawPCASpan / Double(max(minimumFrameDimension, 1))
+    let longSpanWeight = min(max((normalizedSpan - 0.35) / 0.65, 0), 1)
+    let spanDiscard = max(0, 1 - candidate.robustMainIntervalLength / candidate.rawPCASpan)
+    let pointDiscard = max(0, 1 - candidate.retainedBodyRatio)
+    let bodyPointCount = Double(candidate.pointCount) * candidate.retainedBodyRatio
+    let support = min(bodyPointCount / Double(max(minimumArea, 1)), 1)
+    let continuity = min(max(candidate.longitudinalContinuity, 0), 1)
+    let density = min(max(candidate.axialDensity / 2.0, 0), 1)
+    return 55.0 * longSpanWeight * spanDiscard * pointDiscard
+        * support * continuity * density
 }
 
 private struct CoreLinePeak {
@@ -184,7 +217,8 @@ private func coreLineProposals(coreMask: [UInt8], colorMask: [UInt8],
 /// Coordinates remain in the source image's coordinate system.
 func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, bytesPerRow: Int,
                    redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
-                   sampleStep: Int = 2, collectProfile: Bool = false) -> SaberFrameAnalysis {
+                   sampleStep: Int = 2, collectProfile: Bool = false,
+                   collectPipelineDiagnostics: Bool = false) -> SaberFrameAnalysis {
     let totalStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
     var profile = SaberDetectionProfile()
     let candidateStageProfile = collectProfile ? SaberCandidateStageProfile() : nil
@@ -202,6 +236,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
     var valueMap = Array(repeating: UInt8(0), count: maskWidth * maskHeight)
     var chromaMap = Array(repeating: UInt8(0), count: maskWidth * maskHeight)
     var radianceMap = Array(repeating: UInt8(0), count: maskWidth * maskHeight)
+    var redMaskPixelCount = 0
+    var blueMaskPixelCount = 0
     let scanStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
     for sampleY in 0..<maskHeight {
         let y = sampleY * step
@@ -225,10 +261,12 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 && hsv.chroma / max(hsv.value, 1) >= 0.35
             if matchesSaberHSV(hsv, color: .red, threshold: redThreshold) {
                 redMask[index] = 1
+                redMaskPixelCount += 1
                 if isEmitterPixel { redEmitterMask[index] = 1 }
             }
             if matchesSaberHSV(hsv, color: .blue, threshold: blueThreshold) {
                 blueMask[index] = 1
+                blueMaskPixelCount += 1
                 if isEmitterPixel { blueEmitterMask[index] = 1 }
             }
         }
@@ -241,17 +279,24 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
     }
     var allCandidates: [SaberColor: [SaberCandidate]] = [:]
     var selected: [SaberColor: (PixelPoint, PixelPoint)] = [:]
-    let masks: [(SaberColor, [UInt8], [UInt8])] = [
-        (.red, redMask, redEmitterMask),
-        (.blue, blueMask, blueEmitterMask)
+    var pipelineDiagnostics: [SaberColor: SaberColorPipelineDiagnostics] = [:]
+    let masks: [(SaberColor, [UInt8], [UInt8], Int)] = [
+        (.red, redMask, redEmitterMask, redMaskPixelCount),
+        (.blue, blueMask, blueEmitterMask, blueMaskPixelCount)
     ]
     let closeRadius = min(maskWidth, maskHeight) >= 16 ? 2 : 1
-    for (color, rawMask, emitterMask) in masks {
+    for (color, rawMask, emitterMask, maskPixelCount) in masks {
         // Most live frames contain at most one saber color. Do not run several
         // full-mask morphology/component passes for an absent color; this is
         // an exact empty-mask fast path and does not alter candidate scoring.
         guard rawMask.contains(1) else {
             allCandidates[color] = []
+            if collectPipelineDiagnostics {
+                pipelineDiagnostics[color] = SaberColorPipelineDiagnostics(
+                    maskPixelCount: 0, morphologyPixelCount: 0,
+                    connectedComponentCount: 0
+                )
+            }
             continue
         }
         let morphologyStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
@@ -282,8 +327,15 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         // as well, then discard duplicates of components already found in the
         // cleaned mask. Shape and emitter evidence reject isolated noise.
         let componentStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
+        var morphologyPixelCount = 0
+        var connectedComponentCount = 0
+        let componentObserver: (Int) -> Void = { count in
+            morphologyPixelCount += count
+            if collectPipelineDiagnostics { connectedComponentCount += 1 }
+        }
         var candidates = saberCandidates(in: cleaned, width: maskWidth, height: maskHeight,
-                                         evidence: evidence, stageProfile: candidateStageProfile)
+                                         evidence: evidence, stageProfile: candidateStageProfile,
+                                         componentObserver: componentObserver)
         let closedCandidates = saberCandidates(
             in: closed,
             width: maskWidth, height: maskHeight, evidence: evidence,
@@ -294,6 +346,32 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         }) {
             candidate.source = "color-close"
             candidates.append(candidate)
+        }
+        // Opening can erase a thin but elongated diffuser blade when only a
+        // small number of target-color samples survive exposure or motion.
+        // Only after a severe morphology loss, score the already-built raw
+        // mask as a low-area fallback. Normal masks keep the established path.
+        let standardMinimumArea = max(4, Int(Double(maskWidth * maskHeight) * 0.0005))
+        let sparseMinimumArea = max(6, standardMinimumArea / 3)
+        let morphologyLostMostPixels = morphologyPixelCount * 5 < maskPixelCount * 3
+        if maskPixelCount >= sparseMinimumArea, morphologyLostMostPixels {
+            let sparseCandidates = saberCandidates(
+                in: rawMask, width: maskWidth, height: maskHeight,
+                evidence: evidence, stageProfile: candidateStageProfile,
+                minimumAreaOverride: sparseMinimumArea
+            )
+            for var candidate in sparseCandidates {
+                candidate.source = "color-sparse-raw"
+                if let duplicate = candidates.firstIndex(where: {
+                    candidateAxisDistance($0, candidate) <= 3.0
+                }) {
+                    if candidate.isEmitterEligible && !candidates[duplicate].isEmitterEligible {
+                        candidates[duplicate] = candidate
+                    }
+                } else {
+                    candidates.append(candidate)
+                }
+            }
         }
         // A bright LED array can be embedded in a broad colored glow that is
         // not itself blade-shaped. Extract concentrated, high-purity emitter
@@ -369,6 +447,10 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 // along most of the proposed axis.
                 candidate.scoreBreakdown.proposalPenalty -=
                     (1.0 - candidate.longitudinalCoreCoverage) * 45.0
+                candidate.scoreBreakdown.proposalPenalty -= coreLineRobustGeometryPenalty(
+                    candidate, minimumArea: standardMinimumArea,
+                    minimumFrameDimension: min(maskWidth, maskHeight)
+                )
                 candidate.score = candidate.scoreBreakdown.total
                 if candidate.longitudinalCoreCoverage < 0.30,
                    candidate.coreSupportRatio < 0.18 {
@@ -464,6 +546,13 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             )
         }
         allCandidates[color] = scaled
+        if collectPipelineDiagnostics {
+            pipelineDiagnostics[color] = SaberColorPipelineDiagnostics(
+                maskPixelCount: maskPixelCount,
+                morphologyPixelCount: morphologyPixelCount,
+                connectedComponentCount: connectedComponentCount
+            )
+        }
         if let winner = scaled.first(where: \.isEmitterEligible) {
             selected[color] = winner.endpoints
         }
@@ -483,7 +572,9 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         )
     }
     return SaberFrameAnalysis(candidates: allCandidates, selected: selected,
-                              profile: collectProfile ? profile : nil)
+                              profile: collectProfile ? profile : nil,
+                              pipelineDiagnostics: collectPipelineDiagnostics
+                                  ? pipelineDiagnostics : nil)
 }
 
 func detectSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, bytesPerRow: Int,
@@ -512,7 +603,8 @@ func detectSaber(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
 
 func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
                    redThreshold: ColorThreshold, blueThreshold: ColorThreshold,
-                   sampleStep: Int = 2, collectProfile: Bool = false) -> SaberFrameAnalysis {
+                   sampleStep: Int = 2, collectProfile: Bool = false,
+                   collectPipelineDiagnostics: Bool = false) -> SaberFrameAnalysis {
     guard width > 0, height > 0, bytesPerRow >= width * 4,
           bgra.count >= bytesPerRow * height else {
         return SaberFrameAnalysis(candidates: [:], selected: [:])
@@ -524,6 +616,7 @@ func analyzeSabers(in bgra: [UInt8], width: Int, height: Int, bytesPerRow: Int,
         return analyzeSabers(baseAddress: base, width: width, height: height,
                              bytesPerRow: bytesPerRow, redThreshold: redThreshold,
                              blueThreshold: blueThreshold, sampleStep: sampleStep,
-                             collectProfile: collectProfile)
+                             collectProfile: collectProfile,
+                             collectPipelineDiagnostics: collectPipelineDiagnostics)
     }
 }

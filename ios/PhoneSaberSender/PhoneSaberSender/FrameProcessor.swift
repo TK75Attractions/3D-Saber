@@ -6,6 +6,15 @@ struct DetectedSaber {
     let endpoints: (PixelPoint, PixelPoint)
     let color: SaberColor
     let isFresh: Bool
+    let isPredicted: Bool
+
+    init(endpoints: (PixelPoint, PixelPoint), color: SaberColor,
+         isFresh: Bool, isPredicted: Bool = false) {
+        self.endpoints = endpoints
+        self.color = color
+        self.isFresh = isFresh
+        self.isPredicted = isPredicted
+    }
 }
 
 /// All values in this trace are iPhone host-monotonic seconds. `captureHostTime`
@@ -72,6 +81,9 @@ final class FrameProcessor: @unchecked Sendable {
 #if DEBUG
     private var inputFrameIntervalWindow = CameraFrameIntervalWindow(capacity: 120)
     private var detailedProfilingEnabled = false
+    private var freezeDiagnosticsEnabled = false
+    private var lastCameraCallbackTime: TimeInterval?
+    private var lastDetectionSuccessTime: [SaberColor: TimeInterval] = [:]
 #endif
     private let rawFrameDirectory: () throws -> URL
     private lazy var rawFrameContext = CIContext(options: [.cacheIntermediates: false])
@@ -100,7 +112,9 @@ final class FrameProcessor: @unchecked Sendable {
 
     private struct Track {
         var endpoints: (PixelPoint, PixelPoint)?
+        var previousEndpoints: (PixelPoint, PixelPoint)?
         var lastSeen: TimeInterval = 0
+        var missingFrameCount = 0
     }
 
     @discardableResult
@@ -115,6 +129,7 @@ final class FrameProcessor: @unchecked Sendable {
         nextFrameSequence = 0
 #if DEBUG
         inputFrameIntervalWindow.reset()
+        lastCameraCallbackTime = nil
 #endif
         pendingLock.unlock()
         return queue.sync {
@@ -122,6 +137,9 @@ final class FrameProcessor: @unchecked Sendable {
             expiryWorkItem = nil
             tracks = [.red: Track(), .blue: Track()]
             lastDimensions = nil
+#if DEBUG
+            lastDetectionSuccessTime = [:]
+#endif
             generation += 1
             return generation
         }
@@ -145,6 +163,14 @@ final class FrameProcessor: @unchecked Sendable {
     func setDetailedProfilingEnabled(_ enabled: Bool) {
         pendingLock.lock(); detailedProfilingEnabled = enabled; pendingLock.unlock()
     }
+
+    func setFreezeDiagnosticsEnabled(_ enabled: Bool) {
+        pendingLock.lock()
+        freezeDiagnosticsEnabled = enabled
+        lastCameraCallbackTime = nil
+        pendingLock.unlock()
+        queue.async { [weak self] in self?.lastDetectionSuccessTime = [:] }
+    }
 #endif
 
     /// Capture callbacks only replace this one-slot mailbox. While one frame is
@@ -158,6 +184,17 @@ final class FrameProcessor: @unchecked Sendable {
         let presentationTime = validPresentationTime(sampleBuffer)
         inputFrameIntervalWindow.record(presentationTime: presentationTime)
         let captureHostTime = convertedCaptureHostTime(sampleBuffer)
+        if freezeDiagnosticsEnabled {
+            if let previous = lastCameraCallbackTime {
+                let gapMs = (callbackHostTime - previous) * 1000
+                if gapMs > 80 {
+                    let pts = presentationTime ?? callbackHostTime
+                    print(String(format: "[FREEZE][iPhone] camera gap=%.1fms frameID=%llu timestamp=%.6f",
+                                 gapMs, nextFrameSequence, pts))
+                }
+            }
+            lastCameraCallbackTime = callbackHostTime
+        }
 #else
         let callbackHostTime: TimeInterval = 0
         let captureHostTime: TimeInterval? = nil
@@ -251,6 +288,23 @@ final class FrameProcessor: @unchecked Sendable {
         }
     }
 
+    func requestManualLosslessFrame(
+        completion: @escaping (Result<UInt64, DebugVideoRecorderError>) -> Void
+    ) {
+        queue.async { [weak self] in
+            guard let recorder = self?.debugVideoRecorder else {
+                completion(.failure(.noFrames))
+                return
+            }
+            let armed = recorder.requestManualCapture { frameID in
+                completion(.success(frameID))
+            }
+            if !armed {
+                completion(.failure(.alreadyStarted))
+            }
+        }
+    }
+
     private func process(_ sampleBuffer: CMSampleBuffer, saveRequestedRawFrame: Bool,
                          sequence: UInt64, callbackHostTime: TimeInterval,
                          captureHostTime: TimeInterval?) {
@@ -277,7 +331,8 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.unlock()
         let analysis = analyzeSabers(baseAddress: bytes, width: width, height: height,
                                      bytesPerRow: bytesPerRow, redThreshold: redThreshold,
-                                     blueThreshold: blueThreshold, collectProfile: collectProfile)
+                                     blueThreshold: blueThreshold, collectProfile: collectProfile,
+                                     collectPipelineDiagnostics: debugVideoRecorder != nil)
         let sabers = analysis.selected
 #else
         let analysis: SaberFrameAnalysis?
@@ -286,7 +341,8 @@ final class FrameProcessor: @unchecked Sendable {
             let recordedAnalysis = analyzeSabers(
                 baseAddress: bytes, width: width, height: height,
                 bytesPerRow: bytesPerRow, redThreshold: redThreshold,
-                blueThreshold: blueThreshold, collectProfile: false
+                blueThreshold: blueThreshold, collectProfile: false,
+                collectPipelineDiagnostics: true
             )
             analysis = recordedAnalysis
             sabers = recordedAnalysis.selected
@@ -301,8 +357,15 @@ final class FrameProcessor: @unchecked Sendable {
             (.red, sabers[.red]),
             (.blue, sabers[.blue])
         ]
-        #if DEBUG
+#if DEBUG
         let detectionEnd = clock()
+        recordFreezeDetection(
+            frameID: sequence,
+            timestamp: detectionEnd,
+            redDetected: sabers[.red] != nil,
+            blueDetected: sabers[.blue] != nil,
+            processingMilliseconds: max(0, (detectionEnd - processingStart) * 1000)
+        )
         pendingLock.lock()
         processedFrames += 1
         let traceReceivedFrames = receivedFrames
@@ -338,6 +401,33 @@ final class FrameProcessor: @unchecked Sendable {
         if saveRequestedRawFrame { saveRawFrame(pixelBuffer) }
     }
 
+#if DEBUG
+    private func recordFreezeDetection(
+        frameID: UInt64,
+        timestamp: TimeInterval,
+        redDetected: Bool,
+        blueDetected: Bool,
+        processingMilliseconds: Double
+    ) {
+        guard freezeDiagnosticsEnabled else { return }
+        for (color, detected) in [(SaberColor.red, redDetected), (.blue, blueDetected)] {
+            guard detected else { continue }
+            if let previous = lastDetectionSuccessTime[color] {
+                let gapMs = (timestamp - previous) * 1000
+                if gapMs > 100 {
+                    let label = color == .red ? "RED" : "BLUE"
+                    print(String(format: "[FREEZE][iPhone][%@] detection gap=%.1fms frameID=%llu timestamp=%.6f redDetected=%@ blueDetected=%@ processing=%.1fms",
+                                 label, gapMs, frameID, timestamp,
+                                 redDetected ? "true" : "false",
+                                 blueDetected ? "true" : "false",
+                                 processingMilliseconds))
+                }
+            }
+            lastDetectionSuccessTime[color] = timestamp
+        }
+    }
+#endif
+
     private func saveRawFrame(_ pixelBuffer: CVPixelBuffer) {
         do {
             let directory = try rawFrameDirectory()
@@ -360,10 +450,27 @@ final class FrameProcessor: @unchecked Sendable {
             var track = tracks[color, default: Track()]
             if let current {
                 let endpoints = stableEndpoints(current, previous: track.endpoints)
+                track.previousEndpoints = track.endpoints
                 track.endpoints = endpoints
                 track.lastSeen = processingStart
+                track.missingFrameCount = 0
                 tracks[color] = track
                 return DetectedSaber(endpoints: endpoints, color: color, isFresh: true)
+            }
+            track.missingFrameCount += 1
+            if track.missingFrameCount <= 3,
+               let previous = track.previousEndpoints,
+               let latest = track.endpoints {
+                let predicted = predictedEndpoints(
+                    previous: previous, latest: latest,
+                    missingFrames: track.missingFrameCount,
+                    width: width, height: height
+                )
+                tracks[color] = track
+                return DetectedSaber(
+                    endpoints: predicted, color: color,
+                    isFresh: true, isPredicted: true
+                )
             }
             // Held endpoints are preview-only: CameraViewModel sends only
             // isFresh results, so the game never receives a 180 ms old point.
@@ -434,6 +541,25 @@ final class FrameProcessor: @unchecked Sendable {
         let direct = distance(current.0, previous.0) + distance(current.1, previous.1)
         let reversed = distance(current.0, previous.1) + distance(current.1, previous.0)
         return reversed < direct ? (current.1, current.0) : current
+    }
+
+    private func predictedEndpoints(
+        previous: (PixelPoint, PixelPoint),
+        latest: (PixelPoint, PixelPoint),
+        missingFrames: Int,
+        width: Int,
+        height: Int
+    ) -> (PixelPoint, PixelPoint) {
+        func extrapolate(_ previous: PixelPoint, _ latest: PixelPoint) -> PixelPoint {
+            let x = latest.x + (latest.x - previous.x) * missingFrames
+            let y = latest.y + (latest.y - previous.y) * missingFrames
+            return PixelPoint(
+                x: min(max(x, 0), max(width - 1, 0)),
+                y: min(max(y, 0), max(height - 1, 0))
+            )
+        }
+        return (extrapolate(previous.0, latest.0),
+                extrapolate(previous.1, latest.1))
     }
 
     private func distance(_ first: PixelPoint, _ second: PixelPoint) -> Double {

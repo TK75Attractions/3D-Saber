@@ -56,6 +56,9 @@ struct ContentView: View {
                                               model.debugRecordingActive || model.debugRecordingFinalizing)
                                 Button("Stop Recording") { model.stopDebugRecording() }
                                     .disabled(!model.debugRecordingActive || model.debugRecordingFinalizing)
+                                Button("Capture Lossless Frame") { model.captureNextLosslessFrame() }
+                                    .disabled(!model.debugRecordingEnabled || !model.debugRecordingActive ||
+                                              model.debugRecordingFinalizing || model.manualLosslessCapturePending)
                             }
                             Text(model.debugRecordingEnabled ? model.debugRecordingStatus : "OFF（録画処理なし）")
                                 .font(.caption)
@@ -112,6 +115,8 @@ struct ContentView: View {
                         Text(error).foregroundStyle(.red).font(.footnote)
                     }
                     #if DEBUG
+                    Toggle("Freeze Diagnostics", isOn: $model.freezeDiagnosticsEnabled)
+                        .tint(.orange)
                     DisclosureGroup(isExpanded: $showDebugPerformance) {
                         Text("DEBUG PROFILING")
                             .font(.caption.weight(.bold))
