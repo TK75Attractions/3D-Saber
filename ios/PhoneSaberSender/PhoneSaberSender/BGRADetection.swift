@@ -687,6 +687,21 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         }
         if color == .blue {
             for index in candidates.indices where candidates[index].isEmitterEligible
+                && candidates[index].source == "color-emitter" {
+                let emitter = candidates[index]
+                let coversBroadRegion = Double(emitter.pointCount)
+                    > Double(maskWidth * maskHeight) * 0.03
+                if coversBroadRegion && emitter.coreSupportRatio < 0.05
+                    && emitter.axialDensity > 8.0 {
+                    // A broad saturated surface can leave a long bright
+                    // emitter-shaped component without a concentrated core.
+                    candidates[index].isEmitterEligible = false
+                    candidates[index].source = "color-emitter-broad-coreless"
+                }
+            }
+        }
+        if color == .blue {
+            for index in candidates.indices where candidates[index].isEmitterEligible
                 && candidates[index].source == "core-line" {
                 let line = candidates[index]
                 guard line.usedPointLEDFallback,
