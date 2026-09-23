@@ -89,6 +89,25 @@ func hasSufficientCoreLineProposalEvidence(_ candidate: SaberCandidate) -> Bool 
         && candidate.highValueRatio >= CoreLineProposalThresholds.minimumHighValueRatio
 }
 
+/// A rejected line is evidence against its own geometry, not every blue
+/// object in the frame. Reuse the existing core-line evidence floors to keep
+/// an independently coherent candidate eligible. A pale connected core can
+/// also survive when it has direct bright-core support; the ordinary
+/// trusted-emitter contrast rule remains stricter for ranking.
+private func hasIndependentBlueEvidence(_ candidate: SaberCandidate) -> Bool {
+    if candidate.meanColorPurity >= CoreLineProposalThresholds.minimumColorPurity
+        && candidate.retainedBodyRatio >= CoreLineProposalThresholds.minimumRetainedBodyRatio
+        && candidate.longitudinalContinuity >= CoreLineProposalThresholds.minimumLongitudinalContinuity
+        && candidate.highValueRatio >= CoreLineProposalThresholds.minimumHighValueRatio {
+        return true
+    }
+    return candidate.source == "connected-core"
+        && candidate.meanColorPurity >= BlueCandidateRankingThresholds.paleConnectedColorPurity
+        && candidate.longitudinalContinuity >= BlueCandidateRankingThresholds.connectedTrustedContinuity
+        && candidate.coreSupportRatio >= BlueCandidateRankingThresholds.connectedCoreSupport
+        && candidate.highValueRatio >= BlueCandidateRankingThresholds.connectedHighValueRatio
+}
+
 private func candidateAxisDistance(_ lhs: SaberCandidate, _ rhs: SaberCandidate) -> Double {
     func distance(_ a: PixelPoint, _ b: PixelPoint) -> Double {
         hypot(Double(a.x - b.x), Double(a.y - b.y))
@@ -628,23 +647,22 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             candidates = preferTrustedBlueEmitter(
                 in: candidates, minimumFrameDimension: min(maskWidth, maskHeight)
             )
-            // If the numerically strongest evidence is an unsupported Hough
-            // slice, weaker candidates from the same glow are not independent
-            // proof of a blade. Abstain unless a directly trusted emitter is
-            // also present. This leaves the color mask unchanged and preserves
-            // coherent point-LED and diffuser candidates.
-            let rejectedLineScore = candidates
-                .filter { $0.source == "core-line-low-confidence" }
-                .map(\.score).max()
+            // A stronger unsupported Hough slice can expose weak background
+            // candidates. Reject only candidates without their own coherent
+            // color/body or bright connected-core evidence. The rejected line
+            // itself stays ineligible under the existing proposal quality gate.
+            let rejectedLines = candidates.filter { $0.source == "core-line-low-confidence" }
+            let rejectedLineScore = rejectedLines.map(\.score).max()
             let eligibleScore = candidates.filter(\.isEmitterEligible).map(\.score).max()
             let hasTrustedEmitter = candidates.contains {
                 isTrustedBlueEmitter($0, minimumFrameDimension: min(maskWidth, maskHeight))
             }
             if let rejectedLineScore, let eligibleScore,
                rejectedLineScore >= eligibleScore, !hasTrustedEmitter {
-                for index in candidates.indices where candidates[index].isEmitterEligible {
+                for index in candidates.indices where candidates[index].isEmitterEligible
+                    && !hasIndependentBlueEvidence(candidates[index]) {
                     candidates[index].isEmitterEligible = false
-                    candidates[index].source += "-unsupported-core-line-frame"
+                    candidates[index].source += "-unsupported-core-line-candidate"
                 }
             }
         }
