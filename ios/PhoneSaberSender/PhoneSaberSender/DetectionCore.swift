@@ -464,8 +464,11 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                                   stageProfile: SaberCandidateStageProfile? = nil,
                                   minimumAreaOverride: Int? = nil) -> SaberCandidate? {
     let shapeStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
-    let minimumArea = max(4, minimumAreaOverride
+    let standardMinimumArea = max(4, minimumAreaOverride
         ?? Int(Double(width * height) * 0.0005))
+    // A nearby, foreshortened red blade can be compact at the sampled
+    // resolution. Evaluate its existing emitter evidence before discarding it.
+    let minimumArea = evidence?.color == .red ? min(standardMinimumArea, 20) : standardMinimumArea
     guard points.count >= minimumArea else { return nil }
     let frameArea = max(Double(width * height), 1)
     let areaRatio = Double(points.count) / frameArea
@@ -497,9 +500,12 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
     let majorLength = maxMajor - minMajor + 1.0
     let minorLength = maxMinor - minMinor + 1.0
     let aspect = majorLength / max(minorLength, 1.0)
+    let isCompactRed = evidence?.color == .red
+        && (points.count < standardMinimumArea || aspect < 1.5)
     let extent = Double(points.count) / max(majorLength * minorLength, 1.0)
     guard majorLength >= max(4.0, Double(min(width, height)) * 0.025),
-          aspect >= 1.5, extent >= 0.10 else { return nil }
+          aspect >= (evidence?.color == .red ? 1.0 : 1.5),
+          extent >= 0.10 else { return nil }
     // The additional longitudinal histogram is only useful for candidates
     // that already pass the cheap geometric gate.
     let body = dominantLongitudinalBody(in: points, meanX: meanX, meanY: meanY, axis: axis)
@@ -659,6 +665,10 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
         // mask: moderately bright reflections may form candidates, but cannot
         // win without a concentrated LED-like emitter core.
         isEmitterEligible = peakValue >= 218 && hasEmitterCore && emitterScore >= 0.42
+        if isCompactRed {
+            isEmitterEligible = isEmitterEligible && peakValue >= 230
+                && highRatio >= 0.50 && meanPurity >= 0.50
+        }
         lightScore = emitterScore * 38.0 + highRatio * 14.0 + meanPurity * 6.0
             + localContrast * 8.0 + emitterTexture * 13.0 + clippedRatio * 8.0
             + longitudinalHighCoverage * 3.0

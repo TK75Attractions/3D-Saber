@@ -666,6 +666,44 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 }
             }
         }
+        if color == .red {
+            let connected = candidates.filter {
+                $0.isEmitterEligible && !$0.source.hasPrefix("core-line")
+            }
+            for index in candidates.indices where candidates[index].isEmitterEligible {
+                let proposal = candidates[index]
+                if proposal.source == "core-line",
+                   proposal.rawPCASpan >= proposal.robustMainIntervalLength * 1.8,
+                   proposal.retainedBodyRatio < 0.65,
+                   connected.contains(where: { body in
+                       body.rawPCASpan >= proposal.robustMainIntervalLength * 0.6
+                           && body.meanColorPurity >= proposal.meanColorPurity - 0.10
+                           && body.highValueRatio >= proposal.highValueRatio - 0.20
+                           && body.longitudinalContinuity >= proposal.longitudinalContinuity
+                           && body.axialDensity >= proposal.axialDensity
+                   }) {
+                    // The proposal joins distant bright objects while a
+                    // coherent connected body already explains the blade.
+                    candidates[index].isEmitterEligible = false
+                    candidates[index].source = "core-line-weak-bridge"
+                } else if proposal.source == "core-halo",
+                          connected.contains(where: { body in
+                              body.source == "color-mask"
+                                  && body.rawPCASpan >= proposal.rawPCASpan * 1.4
+                                  && body.highValueRatio >= 0.50
+                                  && body.meanColorPurity >= 0.50
+                                  && proposal.boundingBox.minX >= body.boundingBox.minX - 4
+                                  && proposal.boundingBox.maxX <= body.boundingBox.maxX + 4
+                                  && proposal.boundingBox.minY >= body.boundingBox.minY - 4
+                                  && proposal.boundingBox.maxY <= body.boundingBox.maxY + 4
+                          }) {
+                    // A bright core is only a short part of the same red
+                    // component; keep the full color body for endpoints.
+                    candidates[index].isEmitterEligible = false
+                    candidates[index].source = "core-halo-short-subsegment"
+                }
+            }
+        }
         let completeCandidates = candidates
         for index in candidates.indices where candidates[index].isEmitterEligible
             && candidates[index].source != "connected-core" {
