@@ -685,6 +685,38 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 }
             }
         }
+        if color == .blue {
+            for index in candidates.indices where candidates[index].isEmitterEligible
+                && candidates[index].source == "core-line" {
+                let line = candidates[index]
+                guard line.usedPointLEDFallback,
+                      line.rawPCASpan >= line.robustMainIntervalLength * 4.0,
+                      line.retainedBodyRatio < 0.50,
+                      line.coreSupportRatio < 0.30 else { continue }
+                let hasSupportedLocalBody = candidates.contains { body in
+                    guard body.isEmitterEligible,
+                          body.coreSupportRatio >= line.coreSupportRatio + 0.10,
+                          body.highValueRatio >= 0.35,
+                          body.robustMainIntervalLength
+                            >= line.robustMainIntervalLength * 0.60 else { return false }
+                    let endpoints = [line.endpoints.0, line.endpoints.1]
+                    let bodyEndpoints = [body.endpoints.0, body.endpoints.1]
+                    return endpoints.contains { endpoint in
+                        bodyEndpoints.contains { supported in
+                            hypot(Double(endpoint.x - supported.x),
+                                  Double(endpoint.y - supported.y)) <= 30.0
+                        }
+                    }
+                }
+                if hasSupportedLocalBody {
+                    // A sparse raw extension reaches far beyond the local
+                    // bright body. A separate, supported proposal covers the
+                    // actual emitter near one end of that extension.
+                    candidates[index].isEmitterEligible = false
+                    candidates[index].source = "core-line-weak-raw-tail"
+                }
+            }
+        }
         if color == .red {
             let connected = candidates.filter {
                 $0.isEmitterEligible && !$0.source.hasPrefix("core-line")
