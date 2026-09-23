@@ -250,7 +250,7 @@ public class SongSelectKeyboardPlayTests
         while (Time.realtimeSinceStartupAsDouble < until)
         {
             normalized.SetValue(input, new Vector2(pixel.x / Screen.width, pixel.y / Screen.height));
-            received.SetValue(input, Time.timeAsDouble);
+            received.SetValue(input, Time.realtimeSinceStartupAsDouble);
             yield return null;
         }
         Assert.Greater(aim.Progress01, .2f);
@@ -261,7 +261,7 @@ public class SongSelectKeyboardPlayTests
         while (Time.realtimeSinceStartupAsDouble < until)
         {
             normalized.SetValue(input, new Vector2(pixel.x / Screen.width, pixel.y / Screen.height));
-            received.SetValue(input, Time.timeAsDouble);
+            received.SetValue(input, Time.realtimeSinceStartupAsDouble);
             yield return null;
         }
         Assert.AreEqual(1, aim.ShotCount); Assert.AreEqual(0, controller.SelectedDifficultyIndex);

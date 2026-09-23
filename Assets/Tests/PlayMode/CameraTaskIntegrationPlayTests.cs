@@ -47,7 +47,12 @@ public class CameraTaskIntegrationPlayTests
         saber.fallbackToMouse = false;
 
         inputObject.SetActive(true);
-        yield return null;
+        float bindDeadline = Time.realtimeSinceStartup + 1f;
+        while ((!input.ReceiverAlive || !input.ReceiverAlive2) &&
+               Time.realtimeSinceStartup < bindDeadline)
+            yield return null;
+        Assert.IsTrue(input.ReceiverAlive);
+        Assert.IsTrue(input.ReceiverAlive2);
 
         double before = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
         Send(stickIndex == 2 ? bluePort : redPort, "960,540,1200,540");

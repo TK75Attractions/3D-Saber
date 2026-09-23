@@ -249,13 +249,23 @@ public class SaberInputBridge : MonoBehaviour
             : ip.IsRecentlyActive(inputPointStaleSeconds);
     }
 
+    private bool HasValidStickEndpoints()
+    {
+        var ip = InputPoint.Instance;
+        if (ip == null) return false;
+        return stickIndex == 2
+            ? ip.HasValidStickEndpoints2
+            : ip.HasValidStickEndpoints;
+    }
+
     void Update()
     {
         if (!useBladeMode && HasBlade) HideBlade();
         bool consumed = false;
 
         // UDP データが「最近」来てるなら、それを使う。無音ならマウスフォールバック(なければ非表示)。
-        if (useInputPoint && IsStickRecentlyActive())
+        if (useInputPoint && IsStickRecentlyActive() &&
+            (!useBladeMode || HasValidStickEndpoints()))
         {
             var ip = InputPoint.Instance;
             if (useBladeMode)
