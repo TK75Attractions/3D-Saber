@@ -41,6 +41,7 @@ public class CuttableNote : MonoBehaviour
         MinimumCutSpeed = 0; RequireJudgeableOnCut = DirectionVisualOnly = false;
         LastCutCorrectDirection = true; LastCutterHand = SaberHand.Any;
         LastCutSongTime = null;
+        firstPiece = secondPiece = null;
         lastHitPoint = Vector3.zero; lastVelocity = Vector3.right; cracksUsed = 0;
         foreach (var crack in ownedCracks) if (crack.visual != null) crack.visual.SetActive(false);
         if (countLabel != null) countLabel.gameObject.SetActive(false);
@@ -108,6 +109,13 @@ public class CuttableNote : MonoBehaviour
     internal void NotifyJudgment(JudgmentTier tier, Vector3 point, Vector3 velocity)
     {
         OnJudged?.Invoke(this, tier, point, velocity);
+    }
+    // 直前の切断で飛ばした2片(Perfect の演出から呼ぶ)。再利用ノーツへ持ち越さない。
+    private SlicePieceDecay firstPiece, secondPiece;
+    public void FlashSlices(Color color, float seconds)
+    {
+        if (firstPiece != null) firstPiece.Flash(color, seconds);
+        if (secondPiece != null) secondPiece.Flash(color, seconds);
     }
     // 0回も切れずタイムアウトしたときに発火。部分達成のロングは OnCut（達成率付き）で扱う。
     public event System.Action<CuttableNote> OnMiss;
@@ -371,6 +379,7 @@ public class CuttableNote : MonoBehaviour
         }
         Vector3 separationWorld = cutNormalWorld * sliceSeparationImpulse + cutVelocity * saberVelocityScale;
         SpawnPiece(first, separationWorld); SpawnPiece(second, -separationWorld);
+        firstPiece = first; secondPiece = second;
         return true;
     }
     private void SpawnPiece(SlicePieceDecay piece, Vector3 velocity)

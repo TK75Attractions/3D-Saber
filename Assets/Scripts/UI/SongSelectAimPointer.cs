@@ -57,7 +57,8 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         overlay = (RectTransform)go.transform;
         impact = SongSelectVisuals.Rect(overlay, "ShotImpact", Vector2.zero, new Vector2(160, 160)).gameObject.AddComponent<SongSelectAimGraphic>();
         impact.raycastTarget = false; impact.ImpactOnly = true;
-        reticle = SongSelectVisuals.Rect(overlay, "AimReticle", Vector2.zero, new Vector2(80, 80)).gameObject.AddComponent<SongSelectAimGraphic>();
+        float reticleBox = (SongSelectAimGraphic.ReticleRadius + SongSelectAimGraphic.RingWidth) * 2f + 12f;
+        reticle = SongSelectVisuals.Rect(overlay, "AimReticle", Vector2.zero, new Vector2(reticleBox, reticleBox)).gameObject.AddComponent<SongSelectAimGraphic>();
         reticle.raycastTarget = false;
         reticle.gameObject.SetActive(false);
     }

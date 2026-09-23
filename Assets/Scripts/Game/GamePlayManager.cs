@@ -29,10 +29,10 @@ public class GamePlayManager : MonoBehaviour
 
     [Header("Cut SFX mix")]
     // 切断系の効果音の上限(曲=1.0 に対する比)。シーンや Inspector の値がこれより大きくても起動時にここまで下げる。
-    // 2026-09-22: 切断の手応えを強めるため 0.45 / 0.5 / 0.4 から引き上げ。Miss は JudgmentSfx.missVolumeScale で従来量を維持。
-    public const float JudgmentSfxMaxVolume = 0.8f;   // 通常カット・フリック・ロング完了
-    public const float GoldSfxMaxVolume = 0.75f;      // 金ノーツ
-    public const float LongTickSfxMaxVolume = 0.55f;  // ロング途中の刻み
+    // 2026-09-22: 追加の音量調整で 0.8 / 0.75 / 0.55 の各1.25倍へ。Miss は JudgmentSfx.missVolumeScale で従来量を維持。
+    public const float JudgmentSfxMaxVolume = 1f;       // 通常カット・フリック・ロング完了
+    public const float GoldSfxMaxVolume = 0.9375f;      // 金ノーツ
+    public const float LongTickSfxMaxVolume = 0.6875f;  // ロング途中の刻み
 
     [Header("Chart tuning")]
     // 譜面のリズムが曲とずれているときの追加オフセット秒。

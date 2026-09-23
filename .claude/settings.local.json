@@ -42,7 +42,23 @@
       "WebFetch(domain:news.ycombinator.com)",
       "WebFetch(domain:www.gamebusiness.jp)",
       "WebFetch(domain:media.colorfulpalette.co.jp)",
-      "WebFetch(domain:blog.toylogic.co.jp)"
+      "WebFetch(domain:blog.toylogic.co.jp)",
+      "PowerShell(git -C C:\\\\Users\\\\shike\\\\dev\\\\3D-Saber status --short --branch)",
+      "PowerShell(git -C C:\\\\Users\\\\shike\\\\dev\\\\3D-Saber log --oneline -8)",
+      "Bash(grep -v \"\\\\.meta$\")",
+      "Bash(git log *)",
+      "Bash(grep -n \"m_Script: {fileID: 11500000, guid:\" Scenes/SongSelect.unity)",
+      "Bash(awk -F'guid: ' '{print $2}')",
+      "Bash(awk -F',' '{print $1}')",
+      "Read(//c/Users/shike/AppData/Local/Temp/claude/C--Users-shike-dev-3D-Saber/15b94022-fb95-4ff7-bc21-9680a96c9cbe/scratchpad/**)",
+      "Bash(mkdir -p \"/c/Users/shike/AppData/Local/Temp/claude/C--Users-shike-dev-3D-Saber/15b94022-fb95-4ff7-bc21-9680a96c9cbe/scratchpad\")",
+      "Bash(curl -sSL -o kinecthig2.pdf \"https://download.microsoft.com/download/6/7/6/676611b4-1982-47a4-a42e-4cf84e1095a8/kinecthig.2.0.pdf\")",
+      "Bash(curl -sSL -o kinecthig17.pdf \"https://download.microsoft.com/download/B/0/7/B070724E-52B4-4B1A-BD1B-05CC28D07899/Human_Interface_Guidelines_v1.7.0.pdf\")",
+      "Bash(pdftotext -layout kinecthig2.pdf hig2.txt)",
+      "Bash(pdftotext -layout kinecthig17.pdf hig17.txt)",
+      "Bash(pdftotext -layout kinecthig2.pdf kinecthig2.txt)",
+      "Bash(pdftotext \"/c/Users/shike/.claude/projects/C--Users-shike-dev-3D-Saber/15b94022-fb95-4ff7-bc21-9680a96c9cbe/tool-results/webfetch-1790128327577-2zwly2.pdf\" majaranta09.txt)",
+      "Bash(pdftotext -layout \"C:/Users/shike/.claude/projects/C--Users-shike-dev-3D-Saber/15b94022-fb95-4ff7-bc21-9680a96c9cbe/tool-results/webfetch-1790128677154-v1fljz.pdf\" magnetic.txt)"
     ],
     "defaultMode": "bypassPermissions"
   }

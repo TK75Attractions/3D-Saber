@@ -11,6 +11,10 @@ public class SlicePieceDecay : MonoBehaviour
     Material ownedMat;
     Mesh ownedMesh;
     Color baseColor;
+    // Perfect 時の縁の発光。元の発光色へ時間で戻す。発光プロパティの無い材質では何もしない。
+    Color baseEmission, flashColor;
+    bool hasEmission;
+    float flashAge = float.PositiveInfinity, flashSeconds = .3f;
     internal NoteFragmentPool Pool;
     internal void PrepareForRent() { released=false; }
     public Mesh ReusableMesh => ownedMesh != null ? ownedMesh : ownedMesh = new Mesh { name="NoteSlice", hideFlags=HideFlags.DontSave };
@@ -37,18 +41,38 @@ public class SlicePieceDecay : MonoBehaviour
         if(mr == null) mr=GetComponent<MeshRenderer>();
         if(mr != null) mr.sharedMaterial=ownedMat;
         baseColor=ownedMat != null && ownedMat.HasProperty("_BaseColor") ? ownedMat.GetColor("_BaseColor") : Color.white;
+        hasEmission=ownedMat != null && ownedMat.HasProperty("_EmissionColor");
+        baseEmission=hasEmission ? ownedMat.GetColor("_EmissionColor") : Color.black;
+        flashAge=float.PositiveInfinity;
+    }
+    public bool IsFlashing => flashAge < flashSeconds;
+    // 切断片の縁を短く発光させる(GameplayCutFeedback が Perfect のときだけ呼ぶ)。
+    public void Flash(Color color, float seconds)
+    {
+        if(released || !hasEmission || ownedMat == null) return;
+        flashColor=color; flashSeconds=Mathf.Max(.01f,seconds); flashAge=0;
+        ownedMat.EnableKeyword("_EMISSION");
+        ownedMat.SetColor("_EmissionColor",flashColor*2.2f);
+    }
+    void StepFlash(float dt)
+    {
+        if(!IsFlashing) return;
+        flashAge+=dt;
+        float k=1-Mathf.Clamp01(flashAge/flashSeconds);
+        ownedMat.SetColor("_EmissionColor",IsFlashing ? Color.Lerp(baseEmission,flashColor*2.2f,k*k) : baseEmission);
     }
     public void Launch(NoteFragmentPool pool, Vector3 speed, Vector3 spin, bool useGravity, float duration, float fade, float drag)
     {
         // 通常の切断片とロングの細片を共通で速く飛ばす。寿命と回転は維持する。
         Pool=pool; velocity=speed * 1.9f; angularVelocity=spin; gravity=useGravity; life=duration; fadeStart=fade;
-        damping=drag; age=0; released=false; gameObject.SetActive(true);
+        damping=drag; age=0; released=false; flashAge=float.PositiveInfinity; gameObject.SetActive(true);
     }
     void Update() { Step(Time.deltaTime); }
     public void Step(float dt)
     {
         if(released || dt < 0 || float.IsNaN(dt) || float.IsInfinity(dt)) return;
         age+=dt;
+        StepFlash(dt);
         if(gravity) velocity+=Physics.gravity*dt;
         velocity*=Mathf.Exp(-damping*dt); transform.position+=velocity*dt;
         transform.Rotate(angularVelocity*(Mathf.Rad2Deg*dt),Space.World);

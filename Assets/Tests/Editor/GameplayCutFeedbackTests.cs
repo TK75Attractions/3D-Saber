@@ -56,6 +56,68 @@ public class GameplayCutFeedbackTests
         Assert.False(renderer.enabled);
     }
 
+    // ScoreManager を通さず、確定判定だけを通知する(方向降格後の最終判定と同じ入口)。
+    void Judge(CuttableNote note, JudgmentTier tier)
+    {
+        typeof(CuttableNote).GetProperty("IsCut").SetValue(note, true);
+        typeof(CuttableNote).GetMethod("NotifyJudgment", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic)
+            .Invoke(note, new object[] { tier, Vector3.zero, Vector3.right * 5f });
+    }
+
+    int VertexCountFor(JudgmentTier tier)
+    {
+        Judge(Note(), tier);
+        int count = feedback.GetComponent<MeshFilter>().sharedMesh.vertexCount;
+        feedback.ClearEffects();
+        return count;
+    }
+
+    [Test]
+    public void TieredAccent_PerfectIsRichest_GreatThenGood_BadAndMissDrawNothing()
+    {
+        DisplaySettings.SetReducedEffectsForTest(false);
+        int perfect = VertexCountFor(JudgmentTier.Perfect);
+        int great = VertexCountFor(JudgmentTier.Great);
+        int good = VertexCountFor(JudgmentTier.Good);
+        Assert.Greater(perfect, great, "Perfect は Great より多い形を描く");
+        Assert.Greater(great, good, "Great は Good より多い形を描く");
+        Assert.Greater(good, 0, "Good も演出を描く");
+        Assert.LessOrEqual(perfect, GameplayCutFeedback.VerticesPerBurst, "1バーストの頂点上限を守る");
+        Judge(Note(), JudgmentTier.Bad);
+        Judge(Note(), JudgmentTier.Miss);
+        Assert.AreEqual(0, feedback.ActiveCount, "Bad と Miss は演出を出さない");
+        Assert.IsFalse(GameplayCutFeedback.Draws(JudgmentTier.Bad));
+        Assert.IsFalse(GameplayCutFeedback.Draws(JudgmentTier.Miss));
+    }
+
+    [Test]
+    public void ReducedEffects_DrawFewerShapesForEveryTier()
+    {
+        try
+        {
+            foreach (var tier in new[] { JudgmentTier.Perfect, JudgmentTier.Great, JudgmentTier.Good })
+            {
+                DisplaySettings.SetReducedEffectsForTest(false);
+                int full = VertexCountFor(tier);
+                DisplaySettings.SetReducedEffectsForTest(true);
+                int low = VertexCountFor(tier);
+                Assert.Greater(full, low, tier + " は LOW で形が減る");
+                Assert.Greater(low, 0, tier + " は LOW でも消えない");
+            }
+        }
+        finally { DisplaySettings.SetReducedEffectsForTest(false); }
+    }
+
+    [Test]
+    public void MergedSimultaneousCutsKeepTheBetterTier()
+    {
+        Judge(Note(), JudgmentTier.Good);
+        int goodOnly = feedback.GetComponent<MeshFilter>().sharedMesh.vertexCount;
+        Judge(Note(), JudgmentTier.Perfect);
+        Assert.AreEqual(1, feedback.ActiveCount, "同じ場所の同時切りは一つにまとめる");
+        Assert.Greater(feedback.GetComponent<MeshFilter>().sharedMesh.vertexCount, goodOnly, "まとめた後は良い方の判定で描く");
+    }
+
     [Test]
     public void PartialLongMissNeverFlashesAsACompletedCut()
     {
