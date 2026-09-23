@@ -58,7 +58,22 @@
       "Bash(pdftotext -layout kinecthig17.pdf hig17.txt)",
       "Bash(pdftotext -layout kinecthig2.pdf kinecthig2.txt)",
       "Bash(pdftotext \"/c/Users/shike/.claude/projects/C--Users-shike-dev-3D-Saber/15b94022-fb95-4ff7-bc21-9680a96c9cbe/tool-results/webfetch-1790128327577-2zwly2.pdf\" majaranta09.txt)",
-      "Bash(pdftotext -layout \"C:/Users/shike/.claude/projects/C--Users-shike-dev-3D-Saber/15b94022-fb95-4ff7-bc21-9680a96c9cbe/tool-results/webfetch-1790128677154-v1fljz.pdf\" magnetic.txt)"
+      "Bash(pdftotext -layout \"C:/Users/shike/.claude/projects/C--Users-shike-dev-3D-Saber/15b94022-fb95-4ff7-bc21-9680a96c9cbe/tool-results/webfetch-1790128677154-v1fljz.pdf\" magnetic.txt)",
+      "Bash(pdftotext -layout \"/c/Users/shike/.claude/projects/C--Users-shike-dev-3D-Saber/15b94022-fb95-4ff7-bc21-9680a96c9cbe/tool-results/webfetch-1790128792118-9j0z4l.pdf\" discas.txt)",
+      "Bash(awk 'NR>=1 && /6.1.2. *Deriving the Acuity Factor for Basic/{c++} c==2{print; n++} n>40{exit}' discas.txt)",
+      "Bash(curl -sSL -m 60 -o piscr_preview.pdf \"https://webstore.ansi.org/preview-pages/InfoComm/preview_ANSI+INFOCOMM+3M-2011.pdf\")",
+      "Bash(pdftotext -layout piscr_preview.pdf piscr.txt)",
+      "Bash(awk '/m_Name: Main Camera/{f=1} f&&/field of view|orthographic:|m_LocalPosition|m_LocalRotation/{print NR\": \"$0} /^--- !u!4 /{if\\(f\\)c++} c>1{exit}' Scenes/Title.unity)",
+      "Bash(awk '/m_Name: Main Camera/{f=1} f&&/field of view|orthographic:|m_LocalPosition|m_LocalRotation/{print NR\": \"$0} /^--- !u!4 /{if\\(f\\)c++} c>1{exit}' Scenes/Game.unity)",
+      "Bash(pdftotext -layout \"/c/Users/shike/.claude/projects/C--Users-shike-dev-3D-Saber/15b94022-fb95-4ff7-bc21-9680a96c9cbe/tool-results/webfetch-1790128953357-2mzn03.pdf\" draper.txt)",
+      "Bash(curl -sSL -m 60 -o dobres2017.pdf \"https://jdobr.es/pdf/Dobres-etal-2017-Ambient.pdf\")",
+      "Bash(pdftotext dobres2017.pdf dobres.txt)",
+      "Bash(gh api *)",
+      "Bash(pdftotext -layout \"C:/Users/shike/.claude/projects/C--Users-shike-dev-3D-Saber/15b94022-fb95-4ff7-bc21-9680a96c9cbe/tool-results/webfetch-1790140241507-ibi3yb.pdf\" smg.txt)",
+      "Bash(curl -s -m 30 \"https://raw.githubusercontent.com/Unity-Technologies/Graphics/6000.3/staging/Packages/com.unity.render-pipelines.universal/Runtime/2D/Rendergraph/DrawRenderer2DPass.cs\" -o DrawRenderer2DPass.cs)",
+      "Bash(curl -s -m 30 \"https://raw.githubusercontent.com/Unity-Technologies/Graphics/6000.3/staging/Packages/com.unity.render-pipelines.universal/Runtime/2D/Rendergraph/Renderer2DRendergraph.cs\" -o R2DRG.cs)",
+      "Bash(curl -s -m 30 \"https://raw.githubusercontent.com/Unity-Technologies/Graphics/6000.3/staging/Packages/com.unity.render-pipelines.universal/Shaders/Lit.shader\")",
+      "Bash(curl -s -m 30 \"https://raw.githubusercontent.com/Unity-Technologies/Graphics/6000.3/staging/Packages/com.unity.render-pipelines.universal/Shaders/Utils/Universal2D.hlsl\")"
     ],
     "defaultMode": "bypassPermissions"
   }

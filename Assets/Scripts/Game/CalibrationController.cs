@@ -84,7 +84,7 @@ public sealed class CalibrationController : MonoBehaviour
         StopPlayback(); Result = null; samples.Clear(); captured.Clear();
         HasLastError = false; LastInputWasMiss = false; LastFeedbackTime = -100;
         runOffset = Draft.OffsetMs; totalOffset = extraOffset + runOffset / 1000.0;
-        spawner.approachTime = GameSession.NoteApproachTime;
+        spawner.approachTime = Draft.ApproachTime;   // 下書きの速度で練習する(保存前でも体感できる)
         nextLiveIndex = 0; liveChart = new ChartData { bpm = CalibrationProtocol.Bpm };
         spawner.SetExtraOffsetSeconds(totalOffset); spawner.SetChart(liveChart);
         ExtendLiveChart(0);
@@ -114,7 +114,7 @@ public sealed class CalibrationController : MonoBehaviour
         HasLastError = false; LastInputWasMiss = false; LastFeedbackTime = -100; LastCut = "音に合わせて切り終えましょう";
         runOffset = Draft.OffsetMs; totalOffset = extraOffset + runOffset / 1000.0;
         slowFrames = 0; interrupted = false; lastRunWasMeasurement = mode == CalibrationRunMode.Measure;
-        spawner.approachTime = GameSession.NoteApproachTime;
+        spawner.approachTime = Draft.ApproachTime;
         spawner.SetExtraOffsetSeconds(totalOffset); spawner.SetChart(CalibrationProtocol.CreateChart());
         score.Reset(); song.Clip = clicks; source.volume = ReferenceVolume;
         song.PlayScheduled(AudioSettings.dspTime + .35); Mode = mode;
@@ -195,18 +195,41 @@ public sealed class CalibrationController : MonoBehaviour
             int previous = Draft.OffsetMs; Draft.SetOffset(previous + delta);
             if (previous == Draft.OffsetMs) return;
             runOffset = Draft.OffsetMs; totalOffset = extraOffset + runOffset / 1000.0;
-            foreach (var n in watched) if (n != null) { n.OnCut -= RecordCut; n.OnMiss -= RecordMiss; }
-            watched.Clear();
-            liveChart = new ChartData { bpm = CalibrationProtocol.Bpm };
-            nextLiveIndex = Mathf.Max(0, (int)Math.Ceiling((RunTime + spawner.approachTime + .15 - totalOffset - CalibrationProtocol.FirstNoteSeconds) / CalibrationProtocol.BeatSeconds));
-            spawner.SetExtraOffsetSeconds(totalOffset); spawner.SetChart(liveChart); ExtendLiveChart(RunTime);
-            HasLastError = false; LastInputWasMiss = false; LastFeedbackTime = -100;
-            Notice = "新しい値を反映しました。音に合わせて続けてください。";
-            Overlay.Refresh(); return;
+            RebuildLiveChart("新しい値を反映しました。音に合わせて続けてください。");
+            return;
         }
         if (IsRunning) return;
         Draft.SetOffset(Draft.OffsetMs + delta); Result = null; HasLastError = false; Mode = CalibrationRunMode.Idle;
         Notice = "仮の設定です。「試し切り」で確認してから保存できます。"; Overlay.Refresh();
+    }
+    // 試し切り中に設定を変えたとき、過去のノーツは残したまま、これから来るノーツだけを新しい設定で作り直す。
+    void RebuildLiveChart(string notice)
+    {
+        foreach (var n in watched) if (n != null) { n.OnCut -= RecordCut; n.OnMiss -= RecordMiss; }
+        watched.Clear();
+        liveChart = new ChartData { bpm = CalibrationProtocol.Bpm };
+        nextLiveIndex = Mathf.Max(0, (int)Math.Ceiling((RunTime + spawner.approachTime + .15 - totalOffset - CalibrationProtocol.FirstNoteSeconds) / CalibrationProtocol.BeatSeconds));
+        spawner.SetExtraOffsetSeconds(totalOffset); spawner.SetChart(liveChart); ExtendLiveChart(RunTime);
+        HasLastError = false; LastInputWasMiss = false; LastFeedbackTime = -100;
+        Notice = notice;
+        Overlay.Refresh();
+    }
+    public int SpeedStep => Draft != null ? Draft.SpeedStep : NoteSpeedPreset.StepFor(GameSession.NoteApproachTime);
+    // ノーツ速度の段(0=ゆっくり 2.0秒 / 1=ふつう 1.0秒 / 2=はやい 0.5秒)。試し切り中は即座に反映し、測定中は変えない。
+    public void SetSpeedStep(int step)
+    {
+        if (Draft == null || (IsRunning && !IsLive)) return;
+        step = Mathf.Clamp(step, 0, NoteSpeedPreset.Count - 1);
+        if (Draft.SpeedStep == step) return;
+        Draft.SetSpeedStep(step);
+        if (IsLive)
+        {
+            spawner.approachTime = Draft.ApproachTime;
+            RebuildLiveChart($"ノーツ速度を「{NoteSpeedPreset.Names[step]}」にしました。保存すると本番にも反映されます。");
+            return;
+        }
+        Result = null; HasLastError = false; Mode = CalibrationRunMode.Idle;
+        Notice = $"ノーツ速度を「{NoteSpeedPreset.Names[step]}」にしました。「試し切り」で確かめて保存できます。"; Overlay.Refresh();
     }
     public void SelectProfile(int profile)
     {

@@ -17,9 +17,12 @@ public sealed class CalibrationOverlay : MonoBehaviour
     RectTransform feedbackCard;
     readonly List<Button> adjustments=new List<Button>();
     Button[] profiles;
+    Button[] speeds;   // ノーツ速度の3段(2026-09-23)
     CalibrationRunMode shownMode=(CalibrationRunMode)(-1);
-    int shownOffset=int.MinValue;
+    int shownOffset=int.MinValue, shownSpeed=-1;
     bool shownDirty;
+    public int SpeedButtonCount => speeds!=null?speeds.Length:0;
+    public string SpeedCaption(int step) => speeds!=null&&step>=0&&step<speeds.Length?speeds[step].GetComponentInChildren<TextMeshProUGUI>(true).text:"";
     public bool IsExitDialogOpen => exitDialog!=null&&exitDialog.activeSelf;
     public bool IsSettingsOpen => settings!=null&&settings.activeSelf;
     public string FeedbackText => feedback!=null?feedback.text:"";
@@ -67,16 +70,24 @@ public sealed class CalibrationOverlay : MonoBehaviour
         feedbackCard=(RectTransform)Panel(transform,"LiveFeedback",0,253,580,146);
         feedback=Label(feedbackCard,"Feedback","切って確かめる",49,0,22,540,77,Cyan);
         feedbackDetail=Label(feedbackCard,"FeedbackDetail","切るたびに、ここにタイミングを表示",22,0,-40,540,42,Muted);
-        var controls=Panel(transform,"Controls",0,-447,1840,170);
-        play=Action(controls,"PlayPause","試し切りを始める",-716,16,322,70,TogglePractice,true);
-        int[] deltas={-10,-1,1,10};float[] xs={-455,-344,125,236};
+        // 操作パネルは画面下 18% に収める(試し切り中はセーバー照準がこの範囲だけを受け付ける)。上段=判定、下段=ノーツ速度。
+        var controls=Panel(transform,"Controls",0,-432,1840,200);
+        // 案内文は高さ 34 を保つ(TMP の折返し+省略で、行の高さ未満だと文字ごと消える)。
+        Label(controls,"DirectionHint","← 早める                                      遅らせる →",20,-110,83,805,34,Muted);
+        play=Action(controls,"PlayPause","試し切りを始める",-740,30,322,70,TogglePractice,true);
+        // ±ボタンは幅 150。操作ボタンは左に照準の的(68px)を持つため、99px では文字が入らず空になる。
+        int[] deltas={-10,-1,1,10};float[] xs={-500,-340,110,270};
         for(int i=0;i<4;i++)
-        {int d=deltas[i];adjustments.Add(Action(controls,"Adjust"+d,d.ToString("+0;-0"),xs[i],16,99,68,()=>ctl?.ChangeOffset(d)));}
-        value=Label(controls,"OffsetValue","",46,-110,16,286,72,Ink);
+        {int d=deltas[i];adjustments.Add(Action(controls,"Adjust"+d,d.ToString("+0;-0"),xs[i],30,150,68,()=>ctl?.ChangeOffset(d)));}
+        value=Label(controls,"OffsetValue","",46,-115,30,270,72,Ink);
         value.enableAutoSizing=true;value.fontSizeMin=34;value.fontSizeMax=46;
-        Label(controls,"DirectionHint","← 早める                                      遅らせる →",20,-110,-49,805,34,Muted);
-        save=Action(controls,"Save","保存して戻る",674,16,360,70,()=>ctl?.SaveAndExit(),true);
-        state=Label(controls,"SaveState","",19,674,-49,360,34,Muted);
+        save=Action(controls,"Save","保存して戻る",674,30,360,70,()=>ctl?.SaveAndExit(),true);
+        Label(controls,"SpeedLabel","ノーツ速度",22,-716,-48,220,40,Muted);
+        speeds=new Button[NoteSpeedPreset.Count];float[] sx={-440,-120,200};
+        for(int i=0;i<speeds.Length;i++)
+        {int s=i;speeds[i]=Action(controls,"Speed"+(i+1),NoteSpeedPreset.Caption(i,false),sx[i],-48,300,56,()=>ctl?.SetSpeedStep(s));
+         speeds[i].GetComponentInChildren<TextMeshProUGUI>().fontSize=22;}
+        state=Label(controls,"SaveState","",19,674,-48,360,34,Muted);
         BuildSettings();BuildExitDialog();
     }
     void BuildSettings()
@@ -142,9 +153,13 @@ public sealed class CalibrationOverlay : MonoBehaviour
                 int step=keyboard.leftShiftKey.isPressed||keyboard.rightShiftKey.isPressed?10:1;
                 if(keyboard.leftArrowKey.wasPressedThisFrame)ctl.ChangeOffset(-step);
                 if(keyboard.rightArrowKey.wasPressedThisFrame)ctl.ChangeOffset(step);
+                // 数字キー 1/2/3 でノーツ速度の段を選ぶ(テンキーも可)。
+                if(keyboard.digit1Key.wasPressedThisFrame||keyboard.numpad1Key.wasPressedThisFrame)ctl.SetSpeedStep(0);
+                if(keyboard.digit2Key.wasPressedThisFrame||keyboard.numpad2Key.wasPressedThisFrame)ctl.SetSpeedStep(1);
+                if(keyboard.digit3Key.wasPressedThisFrame||keyboard.numpad3Key.wasPressedThisFrame)ctl.SetSpeedStep(2);
             }
         }
-        if(shownMode!=ctl.Mode||shownOffset!=ctl.Draft.OffsetMs||shownDirty!=ctl.Draft.IsDirty)Refresh();
+        if(shownMode!=ctl.Mode||shownOffset!=ctl.Draft.OffsetMs||shownDirty!=ctl.Draft.IsDirty||shownSpeed!=ctl.SpeedStep)Refresh();
         RefreshFeedback();
         if(IsSettingsOpen)connections.text=$"セーバー  左：{(ctl.Stick1Ready?"接続中":"入力待ち")}    右：{(ctl.Stick2Ready?"接続中":"入力待ち")}";
     }
@@ -174,7 +189,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
     public void Refresh()
     {
         if(ctl?.Draft==null)return;
-        shownMode=ctl.Mode;shownOffset=ctl.Draft.OffsetMs;shownDirty=ctl.Draft.IsDirty;
+        shownMode=ctl.Mode;shownOffset=ctl.Draft.OffsetMs;shownDirty=ctl.Draft.IsDirty;shownSpeed=ctl.SpeedStep;
         value.text=CalibrationDraft.FormatMs(ctl.Draft.OffsetMs);
         state.text=ctl.Draft.IsDirty?"変更中 · まだ保存していません":"今の保存値を使用中";
         Caption(play,ctl.IsRunning?"一時停止":"試し切りを始める");
@@ -182,6 +197,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
         bool modal=IsSettingsOpen||IsExitDialogOpen;
         bool canAdjust=(!ctl.IsRunning||ctl.IsLive)&&!modal;
         foreach(var b in adjustments)Enable(b,canAdjust);
+        for(int i=0;i<speeds.Length;i++){Caption(speeds[i],NoteSpeedPreset.Caption(i,ctl.SpeedStep==i));Enable(speeds[i],canAdjust);}
         Enable(save,canAdjust);Enable(play,!modal);Enable(settingsButton,!modal);Enable(back,!modal);
         instruction.text=ctl.IsRunning?"音に合わせて切る → タイミングを見る → 下で調整":"音に合わせて、青・赤のノーツを切ってみよう";
         volume.text=$"基準音の音量   {ctl.ReferenceVolume*100:0}%";

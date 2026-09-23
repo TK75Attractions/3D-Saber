@@ -72,6 +72,26 @@ public static class CalibrationProtocol
     }
 }
 
+// 判定調整画面のノーツ速度(到着までの秒数)。2026-09-23 ユーザー指定: 1段目 2.0秒 / 2段目 1.0秒 / 3段目 0.5秒。
+// 値は GameSession.NoteApproachTime と同じ意味(小さいほど速い)。本番のプレイと小節線にも同じ値が使われる。
+public static class NoteSpeedPreset
+{
+    public static readonly float[] Seconds = { 2f, 1f, .5f };
+    public static readonly string[] Names = { "ゆっくり", "ふつう", "はやい" };
+    public static int Count => Seconds.Length;
+    // 保存値が段の値と一致しない場合(旧ウィジェット等)は最も近い段として表示する。
+    public static int StepFor(float approach)
+    {
+        int best = 0;
+        for (int i = 1; i < Seconds.Length; i++)
+            if (Mathf.Abs(Seconds[i] - approach) < Mathf.Abs(Seconds[best] - approach)) best = i;
+        return best;
+    }
+    public static float SecondsFor(int step) => Seconds[Mathf.Clamp(step, 0, Seconds.Length - 1)];
+    public static string Caption(int step, bool selected) =>
+        (selected ? "●  " : "") + (step + 1) + "  " + Names[step] + "  " + Seconds[step].ToString("0.0") + "秒";
+}
+
 // 未保存の編集を PlayerPrefs から分離。音の出力先の切替は利用者が明示して行う。
 public sealed class CalibrationDraft
 {
@@ -82,14 +102,20 @@ public sealed class CalibrationDraft
     readonly int[] originals = new int[2];
     readonly bool[] previouslySaved = new bool[2];
     int originalProfile;
+    // ノーツ速度も下書きに含め、「保存して戻る」で確定、「保存せずに戻る」で破棄する(判定値と同じ扱い)。
+    float approach, originalApproach;
     public int Profile { get; private set; }
     public int OffsetMs => values[Profile];
     public int SavedOffsetMs => originals[Profile];
     public bool HasSavedProfile => previouslySaved[Profile];
-    public bool IsDirty => Profile != originalProfile || values[0] != originals[0] || values[1] != originals[1];
+    public float ApproachTime => approach;
+    public int SpeedStep => NoteSpeedPreset.StepFor(approach);
+    public bool IsDirty => Profile != originalProfile || values[0] != originals[0] || values[1] != originals[1]
+        || !Mathf.Approximately(approach, originalApproach);
     public string ProfileName => Profile == 0 ? "PCスピーカー" : "有線イヤホン";
     public CalibrationDraft()
     {
+        approach = originalApproach = GameSession.NoteApproachTime;
         Profile = originalProfile = Mathf.Clamp(PlayerPrefs.GetInt(ActiveKey, 0), 0, 1);
         int current = GameSession.JudgmentOffsetMs;
         values[0] = PlayerPrefs.GetInt(SpeakerKey, current);
@@ -104,14 +130,16 @@ public sealed class CalibrationDraft
     }
     public void SelectProfile(int profile) => Profile = Mathf.Clamp(profile, 0, 1);
     public void SetOffset(int ms) => values[Profile] = Clamp(ms);
-    public void RestoreSaved() => values[Profile] = originals[Profile];
+    public void SetSpeedStep(int step) => approach = NoteSpeedPreset.SecondsFor(step);
+    public void RestoreSaved() { values[Profile] = originals[Profile]; approach = originalApproach; }
     public void Commit()
     {
         PlayerPrefs.SetInt(SpeakerKey, values[0]);
         PlayerPrefs.SetInt(HeadphoneKey, values[1]);
         PlayerPrefs.SetInt(ActiveKey, Profile);
         GameSession.JudgmentOffsetMs = values[Profile];
-        originalProfile = Profile;
+        GameSession.NoteApproachTime = approach;
+        originalProfile = Profile; originalApproach = approach;
         for (int i = 0; i < 2; i++) { originals[i] = values[i]; previouslySaved[i] = true; }
     }
     static int Clamp(int ms) => Mathf.Clamp(ms, GameSession.JudgmentOffsetMinMs, GameSession.JudgmentOffsetMaxMs);
