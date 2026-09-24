@@ -32,5 +32,32 @@ ios/PhoneSaberSender/Tools/analyze_session_metadata.py \
   --compare before_metadata.json after_metadata.json
 ```
 
-The existing metadata does not identify prediction-bridge frames, so the
-analyzer reports that metric as unavailable instead of inferring it.
+The session analyzer uses the explicit `redDetectionSucceeded` and
+`blueDetectionSucceeded` fields where present. Prediction-only coordinates
+are excluded from actual detection rate. If an older metadata file lacks the
+fresh-success fields, `detected=true` with `predicted=true` is excluded.
+
+Compare two device sessions:
+
+```bash
+ios/PhoneSaberSender/Tools/compare_phone_saber_sessions.py \
+  baseline_metadata.json experimental_metadata.json
+```
+
+Attach either or both iOS Freeze Diagnostics logs and save a JSON report:
+
+```bash
+ios/PhoneSaberSender/Tools/compare_phone_saber_sessions.py \
+  baseline_metadata.json experimental_metadata.json \
+  --baseline-freeze-log baseline_freeze.log \
+  --experimental-freeze-log experimental_freeze.log \
+  --json comparison.json
+```
+
+The comparison treats dropout as a metadata detection miss. Metadata cannot
+establish whether the saber was in view, so it does not label a miss as a
+confirmed recognition failure. Freeze timing values come from the existing
+logged summary windows; the report documents how multiple windows are
+combined. Run `run_lossless_regression.py` separately for the existing PNG
+fixture regression gate; this session comparator does not re-run image
+detection or replace that gate.

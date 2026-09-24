@@ -25,9 +25,22 @@ def percentile(values: list[float], fraction: float) -> float | None:
     return ordered[min(len(ordered) - 1, math.ceil(len(ordered) * fraction) - 1)]
 
 
+def detection_status(frame: dict[str, Any], color: str) -> bool | None:
+    """Return fresh detector success, excluding prediction-only output."""
+    explicit = frame.get(f"{color}DetectionSucceeded")
+    if isinstance(explicit, bool):
+        return explicit
+    value = frame.get(color)
+    if not isinstance(value, dict) or not isinstance(value.get("detected"), bool):
+        return None
+    if value.get("predicted") is True:
+        return False
+    return value["detected"]
+
+
 def endpoint_tuple(frame: dict[str, Any], color: str) -> tuple[float, float, float, float] | None:
     value = frame.get(color) or {}
-    if not value.get("detected"):
+    if detection_status(frame, color) is False or not value.get("detected"):
         return None
     coordinates = (value.get("x1"), value.get("y1"), value.get("x2"), value.get("y2"))
     if not all(isinstance(item, (int, float)) for item in coordinates):
@@ -98,8 +111,10 @@ def timing_value(frame: dict[str, Any]) -> float | None:
 
 
 def analyze_color(frames: list[dict[str, Any]], color: str) -> dict[str, Any]:
-    detected_flags = [bool((frame.get(color) or {}).get("detected")) for frame in frames]
-    dropout_runs = contiguous_runs([not value for value in detected_flags])
+    statuses = [detection_status(frame, color) for frame in frames]
+    known_statuses = [status for status in statuses if status is not None]
+    # Unknown frames break dropout runs instead of being counted as misses.
+    dropout_runs = contiguous_runs([status is False for status in statuses])
     dropout_lengths = [end - start + 1 for start, end in dropout_runs]
     dropout_durations = [run_duration_ms(frames, start, end) for start, end in dropout_runs]
 
@@ -139,11 +154,14 @@ def analyze_color(frames: list[dict[str, Any]], color: str) -> dict[str, Any]:
         diagnostics = ((frame.get("candidateDiagnostics") or {}).get(color) or {})
         if diagnostics:
             diagnostic_frames += 1
-        if diagnostics.get("eligibleCandidateCount") == 0:
+        total_count = diagnostics.get("totalCandidateCount")
+        eligible_count = diagnostics.get("eligibleCandidateCount")
+        has_candidate_counts = isinstance(total_count, (int, float)) and isinstance(eligible_count, (int, float))
+        if has_candidate_counts and eligible_count == 0:
             eligible_zero += 1
-            if diagnostics.get("totalCandidateCount") == 0:
+            if total_count == 0:
                 candidate_zero += 1
-            elif isinstance(diagnostics.get("totalCandidateCount"), (int, float)):
+            elif total_count > 0:
                 candidate_present_eligible_zero += 1
         mask_count = diagnostics.get("maskPixelCount")
         morphology_count = diagnostics.get("morphologyPixelCount")
@@ -165,11 +183,15 @@ def analyze_color(frames: list[dict[str, Any]], color: str) -> dict[str, Any]:
     longest_dropout_index = max(range(len(dropout_runs)), key=lambda i: dropout_lengths[i]) \
         if dropout_runs else None
     longest_stuck_suspect = max((end - start + 1 for start, end in stuck_runs), default=0)
+    detected_count = sum(known_statuses)
     return {
         "frames": len(frames),
-        "detected_frames": sum(detected_flags),
-        "detection_rate_percent": 100.0 * sum(detected_flags) / len(frames) if frames else 0.0,
-        "not_detected_frames": len(frames) - sum(detected_flags),
+        "frames_with_detection_status": len(known_statuses),
+        "unknown_detection_status_frames": len(frames) - len(known_statuses),
+        "detection_status_coverage_percent": 100.0 * len(known_statuses) / len(frames) if frames else 0.0,
+        "detected_frames": detected_count,
+        "detection_rate_percent": 100.0 * detected_count / len(known_statuses) if known_statuses else None,
+        "not_detected_frames": sum(status is False for status in statuses),
         "dropout_runs": len(dropout_runs),
         "longest_dropout_frames": dropout_lengths[longest_dropout_index] if longest_dropout_index is not None else 0,
         "longest_dropout_milliseconds": dropout_durations[longest_dropout_index] if longest_dropout_index is not None else 0.0,
@@ -210,8 +232,16 @@ def analyze_file(path: Path) -> dict[str, Any]:
         "session_id": document.get("sessionID") if isinstance(document, dict) else None,
         "colors": {color: analyze_color(frames, color) for color in COLORS},
         "prediction_bridge": {
-            "available": False,
-            "note": "current metadata does not identify predicted frames",
+            "available": any(
+                isinstance(frame.get(f"{color}DetectionSucceeded"), bool)
+                or isinstance((frame.get(color) or {}).get("predicted"), bool)
+                for frame in frames for color in COLORS
+            ),
+            "note": "detectionSucceeded counts fresh detector output; prediction-only coordinates are excluded",
+        },
+        "ground_truth": {
+            "object_presence": "unknown from metadata; an undetected frame may have the object outside the camera view",
+            "dropouts": "metadata detection misses only; not confirmed object-recognition failures",
         },
         "definitions": {
             "jump": "minimum endpoint-order maximum displacement in pixels",
@@ -226,10 +256,13 @@ def print_color(color: str, result: dict[str, Any]) -> None:
     rate = result["detection_rate_percent"]
     duration = result["longest_dropout_milliseconds"]
     duration_text = "n/a" if duration is None else f"{duration:.1f}ms"
+    rate_text = "n/a" if rate is None else f"{rate:.2f}%"
     counts = result["dropout_length_counts"]
     print(color.upper())
     print(f"frames: {result['frames']}")
-    print(f"detected: {result['detected_frames']} / {result['frames']} = {rate:.2f}%")
+    print(f"actual detected: {result['detected_frames']} / {result['frames_with_detection_status']} = {rate_text}")
+    print(f"detection status coverage: {result['detection_status_coverage_percent']:.2f}% "
+          f"(unknown {result['unknown_detection_status_frames']})")
     print(f"detected=false: {result['not_detected_frames']}")
     print(f"dropout runs: {result['dropout_runs']}")
     print(f"longest dropout: {result['longest_dropout_frames']} frames / {duration_text}")
@@ -264,26 +297,45 @@ def comparison(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
         "detection_rate_percent": lambda value: value["detection_rate_percent"],
         "dropout_runs": lambda value: value["dropout_runs"],
         "longest_dropout_frames": lambda value: value["longest_dropout_frames"],
+        "dropout_1_frame_runs": lambda value: value["dropout_length_counts"]["1"],
+        "dropout_2_frame_runs": lambda value: value["dropout_length_counts"]["2"],
+        "dropout_3_frame_runs": lambda value: value["dropout_length_counts"]["3"],
         "dropout_4_or_more": lambda value: value["dropout_length_counts"]["4_or_more"],
         "stuck_suspect_runs_4_or_more": lambda value: value["stuck_suspect_runs_4_or_more"],
+        "identical_endpoint_suspect_4f_runs": lambda value: value["stuck_suspect_runs_4_or_more"],
         "jumps_180_or_more": lambda value: value["jumps_180_or_more"],
         "jumps_260_or_more": lambda value: value["jumps_260_or_more"],
+        "candidate_zero_frames": lambda value: value["total_candidate_zero_frames"],
+        "candidate_present_eligible_zero_frames": lambda value: value["candidate_present_eligible_zero_frames"],
         "core_line_selected": lambda value: value["core_line_selected"],
     }
+    color_diffs: dict[str, Any] = {}
+    for color in COLORS:
+        values: dict[str, Any] = {}
+        for name, extractor in metrics.items():
+            left = extractor(before["colors"][color])
+            right = extractor(after["colors"][color])
+            delta = right - left if left is not None and right is not None else None
+            values[name] = {
+                "before": left, "after": right, "delta": delta,
+                "percent_change": (100.0 * delta / abs(left)) if delta is not None and left != 0 else None,
+                "delta_percentage_points": delta if name == "detection_rate_percent" else None,
+            }
+        source_types = set(before["colors"][color]["selected_candidate_types"])
+        source_types.update(after["colors"][color]["selected_candidate_types"])
+        for source in sorted(source_types):
+            left = before["colors"][color]["selected_candidate_types"].get(source, 0)
+            right = after["colors"][color]["selected_candidate_types"].get(source, 0)
+            delta = right - left
+            values[f"candidate_type:{source}"] = {
+                "before": left, "after": right, "delta": delta,
+                "percent_change": (100.0 * delta / abs(left)) if left != 0 else None,
+                "delta_percentage_points": None,
+            }
+        color_diffs[color] = values
     return {
         "before": before["file"], "after": after["file"],
-        "colors": {
-            color: {
-                name: {
-                    "before": extractor(before["colors"][color]),
-                    "after": extractor(after["colors"][color]),
-                    "delta": extractor(after["colors"][color])
-                        - extractor(before["colors"][color]),
-                }
-                for name, extractor in metrics.items()
-            }
-            for color in COLORS
-        },
+        "colors": color_diffs,
     }
 
 
@@ -291,9 +343,13 @@ def print_comparison(result: dict[str, Any]) -> None:
     for color in COLORS:
         print(color.upper())
         for key, values in result["colors"][color].items():
-            suffix = "pt" if key == "detection_rate_percent" else ""
-            print(f"{key}: before {values['before']:.2f} after {values['after']:.2f} "
-                  f"delta {values['delta']:+.2f}{suffix}")
+            left, right, delta = values["before"], values["after"], values["delta"]
+            if left is None or right is None or delta is None:
+                print(f"{key}: before={left} after={right} delta=n/a")
+                continue
+            percent = "n/a" if values["percent_change"] is None else f"{values['percent_change']:+.1f}%"
+            unit = "pp" if key == "detection_rate_percent" else ""
+            print(f"{key}: {left:.2f} → {right:.2f} delta={delta:+.2f}{unit} ({percent})")
 
 
 def write_json(result: dict[str, Any], destination: str | None) -> None:
