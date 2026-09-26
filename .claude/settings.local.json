@@ -73,7 +73,10 @@
       "Bash(curl -s -m 30 \"https://raw.githubusercontent.com/Unity-Technologies/Graphics/6000.3/staging/Packages/com.unity.render-pipelines.universal/Runtime/2D/Rendergraph/DrawRenderer2DPass.cs\" -o DrawRenderer2DPass.cs)",
       "Bash(curl -s -m 30 \"https://raw.githubusercontent.com/Unity-Technologies/Graphics/6000.3/staging/Packages/com.unity.render-pipelines.universal/Runtime/2D/Rendergraph/Renderer2DRendergraph.cs\" -o R2DRG.cs)",
       "Bash(curl -s -m 30 \"https://raw.githubusercontent.com/Unity-Technologies/Graphics/6000.3/staging/Packages/com.unity.render-pipelines.universal/Shaders/Lit.shader\")",
-      "Bash(curl -s -m 30 \"https://raw.githubusercontent.com/Unity-Technologies/Graphics/6000.3/staging/Packages/com.unity.render-pipelines.universal/Shaders/Utils/Universal2D.hlsl\")"
+      "Bash(curl -s -m 30 \"https://raw.githubusercontent.com/Unity-Technologies/Graphics/6000.3/staging/Packages/com.unity.render-pipelines.universal/Shaders/Utils/Universal2D.hlsl\")",
+      "PowerShell(python --version; $p = \"C:\\\\Users\\\\shike\\\\dev\\\\3D-Saber\\\\Assets\\\\StreamingAssets\\\\Songs\\\\ElDorado\\\\chart_hard.json\"; $j = Get-Content $p -Raw -Encoding utf8 | ConvertFrom-Json; $j | Select-Object bpm, coordScale, offsetMs, displayLevel, beatZeroMs | Format-List; \\($j.notes | Where-Object { $_.type -eq 'long' } | Select-Object -First 2 | ConvertTo-Json -Compress\\); \\($j.notes | Select-Object -First 2 | ConvertTo-Json -Compress\\); \\($j.notes | Group-Object type | Select-Object Name, Count | Format-Table -AutoSize | Out-String\\))",
+      "PowerShell(node --version)",
+      "PowerShell(py --version)"
     ],
     "defaultMode": "bypassPermissions"
   }
