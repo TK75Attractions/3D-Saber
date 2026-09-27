@@ -42,13 +42,18 @@ Run the complete automated verification from the `school-festival` repository:
 ./tools/verify_phone_saber.sh
 ```
 
-The command runs the full iOS XCTest suite (including `DetectionCoreTests`),
-the dedicated static BGRA Detection tests, the lossless fixture regression,
-PhoneSaber Tools unittests, an iOS Release build, the PhoneSaber-related Unity
-EditMode and PlayMode tests, Unity script compilation,
-and `git diff --check` for both `school-festival` and `3D-Saber`. Every command's
+The command runs the full iOS XCTest suite (including `DetectionCoreTests`)
+serially on one Simulator, with parallel test execution disabled and the worker
+count capped at one. It also runs the dedicated static BGRA Detection tests,
+the lossless fixture regression, PhoneSaber Tools unittests, an iOS Release
+build, the PhoneSaber-related Unity EditMode and PlayMode tests, Unity script
+compilation, and `git diff --check` for both `school-festival` and `3D-Saber`.
+Every command's
 stdout and stderr, Unity result XML, and Xcode result bundles are saved under
 `.verify-logs/phone-saber/<run timestamp>/`.
+The iOS logs also include the xcresult summary and
+`ios-xctest-classification.stdout.log`, which separates assertion failures,
+worker kills, other execution failures, and passing runs.
 
 By default the Unity project is expected at the sibling path `../3D-Saber`.
 Set `UNITY_PROJECT_PATH` if it is elsewhere. Set `UNITY_EDITOR` to select a

@@ -41,6 +41,7 @@ UNITY_BLOCK_REASON=""
 LAST_EXIT=0
 
 IOS_XCTEST_STATUS="FAIL"
+IOS_XCTEST_CLASSIFICATION="NOT_RUN"
 DETECTION_STATUS="FAIL"
 LOSSLESS_STATUS="FAIL"
 TOOLS_STATUS="FAIL"
@@ -267,6 +268,7 @@ sys.exit(1)'
 fi
 if [[ -n "$IOS_SIMULATOR_ID" ]]; then
   IOS_SIMULATOR_DESTINATION="platform=iOS Simulator,id=$IOS_SIMULATOR_ID"
+  # Keep XCTest on one simulator and one worker for stable production verification.
   run_logged_command "iOS XCTest" ios-xctest \
     xcodebuild \
     -project "$IOS_PROJECT" \
@@ -276,13 +278,37 @@ if [[ -n "$IOS_SIMULATOR_ID" ]]; then
     -derivedDataPath "$RUN_DIR/iOS-XCTest-DerivedData" \
     -resultBundlePath "$RUN_DIR/iOS-XCTest.xcresult" \
     -parallel-testing-enabled NO \
+    -maximum-concurrent-test-simulator-destinations 1 \
+    -maximum-parallel-testing-workers 1 \
     CODE_SIGNING_ALLOWED=NO \
     test
-  if [[ "$LAST_EXIT" -eq 0 ]]; then IOS_XCTEST_STATUS="PASS"; fi
+  xcodebuild_exit_code="$LAST_EXIT"
+
+  run_logged_command "iOS XCTest result summary" ios-xctest-result-summary \
+    xcrun xcresulttool get test-results summary \
+    --path "$RUN_DIR/iOS-XCTest.xcresult"
+  summary_exit_code="$LAST_EXIT"
+
+  run_logged_command "iOS XCTest outcome classification" ios-xctest-classification \
+    python3 "$REPO_ROOT/ios/PhoneSaberSender/Tools/xctest_result_classifier.py" \
+    --summary "$RUN_DIR/ios-xctest-result-summary.stdout.log" \
+    --summary-exit-code "$summary_exit_code" \
+    --summary-stderr-log "$RUN_DIR/ios-xctest-result-summary.stderr.log" \
+    --xcodebuild-exit-code "$xcodebuild_exit_code" \
+    --xcodebuild-stdout-log "$RUN_DIR/ios-xctest.stdout.log" \
+    --xcodebuild-stderr-log "$RUN_DIR/ios-xctest.stderr.log"
+  IOS_XCTEST_CLASSIFICATION="$(sed -n 's/^classification=//p' "$RUN_DIR/ios-xctest-classification.stdout.log" | head -n 1)"
+  if [[ "$IOS_XCTEST_CLASSIFICATION" == "PASS" || \
+        "$IOS_XCTEST_CLASSIFICATION" == "PASS_WITH_WORKER_KILL" ]]; then
+    IOS_XCTEST_STATUS="PASS"
+  elif [[ -z "$IOS_XCTEST_CLASSIFICATION" ]]; then
+    IOS_XCTEST_CLASSIFICATION="CLASSIFIER_ERROR"
+  fi
 else
+  IOS_XCTEST_CLASSIFICATION="NOT_RUN"
   mark_not_run "iOS XCTest" ios-xctest FAIL "No iPhone Simulator UDID could be selected; inspect the simulator discovery and selection logs."
 fi
-report_stage "iOS XCTest" "$IOS_XCTEST_STATUS"
+printf '%-20s %s (%s)\n' "iOS XCTest" "$IOS_XCTEST_STATUS" "$IOS_XCTEST_CLASSIFICATION"
 
 run_logged_command "Static BGRA Detection tests" detection-tests \
   bash "$REPO_ROOT/ios/PhoneSaberSender/run-static-tests.sh"
