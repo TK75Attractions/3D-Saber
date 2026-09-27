@@ -19,8 +19,24 @@ struct ContentView: View {
                     GroupBox("接続") {
                         Button("Macを再検索") { model.retryDiscovery() }
                             .disabled(model.running)
-                        Text("Network: \(model.running ? "CONNECTED" : model.networkDiscoveryStatus)")
+                        Text(model.networkStateLabel)
                             .font(.headline)
+                        Text(model.cameraState.displayLabel)
+                            .font(.headline)
+                            .foregroundStyle(model.cameraState == .live ? .green : .orange)
+                        if let cameraDetail = model.cameraState.detail {
+                            Text(cameraDetail)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        if let frameAge = model.lastCameraFrameAge {
+                            Text("Last camera frame: \(frameAge, specifier: "%.2f") s ago")
+                                .font(.caption.monospacedDigit())
+                                .foregroundStyle(.secondary)
+                        }
+                        if model.running && model.cameraState.canRetry {
+                            Button("カメラを再開") { model.retryCameraRecovery() }
+                        }
                         Text("Mac: \(model.discoveredMacName.isEmpty ? "未発見" : model.discoveredMacName)　IP: \(model.discoveredMacIP.isEmpty ? "-" : model.discoveredMacIP)")
                             .font(.footnote).foregroundStyle(.secondary)
                         Text("Mode: \(model.connectionMode)　Red: 5005　Blue: 5006")
@@ -271,6 +287,7 @@ struct ContentView: View {
             .quickLookPreview($recordingPreviewURL)
         }
         .task { model.refreshDebugRecordingSessions() }
+        .onAppear { model.sceneDidChange(isActive: scenePhase == .active) }
         .confirmationDialog(
             "古い録画sessionを整理しますか？",
             isPresented: $showRecordingCleanupConfirmation,
@@ -288,7 +305,7 @@ struct ContentView: View {
             Text("対象: \(older.count)件（最古 \(firstOlder)、約\(ByteCountFormatter.string(fromByteCount: reclaimable, countStyle: .file))）。最新 \(latest) は保持します。")
         }
         .onChange(of: scenePhase) { phase in
-            if phase == .active { model.recoverFromForeground() }
+            model.sceneDidChange(isActive: phase == .active)
         }
     }
 

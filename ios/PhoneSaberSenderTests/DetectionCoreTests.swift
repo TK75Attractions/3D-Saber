@@ -115,6 +115,173 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertNil(window.statistics, "timestamp discontinuities must reset the interval window")
     }
 
+    func testNormalCameraStartupBecomesLiveOnlyAfterAFrameAndThenDetectsStall() {
+        var lifecycle = CameraLifecycleStateMachine()
+        XCTAssertEqual(lifecycle.state, .stopped)
+
+        lifecycle.requestStart(at: 10)
+        lifecycle.sessionStarted(at: 10.05)
+        XCTAssertEqual(lifecycle.state, .starting)
+        XCTAssertFalse(lifecycle.evaluateStall(at: 12.049))
+        XCTAssertTrue(lifecycle.evaluateStall(at: 12.05))
+        XCTAssertEqual(lifecycle.state, .stalled)
+
+        lifecycle.receivedFrame(at: 12.08)
+        XCTAssertEqual(lifecycle.state, .live)
+        XCTAssertEqual(lifecycle.lastFrameAt, 12.08)
+    }
+
+    func testThirtyFPSFrameCadenceHasTwoSecondStallGrace() {
+        var lifecycle = CameraLifecycleStateMachine()
+        lifecycle.requestStart(at: 0)
+        lifecycle.receivedFrame(at: 0)
+
+        for frame in 1...59 {
+            let time = Double(frame) / 30
+            lifecycle.receivedFrame(at: time)
+            XCTAssertFalse(lifecycle.evaluateStall(at: time))
+        }
+        XCTAssertFalse(lifecycle.evaluateStall(at: 59.0 / 30.0 + 1.999))
+        XCTAssertTrue(lifecycle.evaluateStall(at: 59.0 / 30.0 + 2.0))
+        XCTAssertEqual(lifecycle.state, .stalled)
+    }
+
+    func testBackgroundForegroundRecoveryWaitsForFreshFrame() {
+        var lifecycle = CameraLifecycleStateMachine()
+        lifecycle.requestStart(at: 1)
+        lifecycle.receivedFrame(at: 1.03)
+        XCTAssertEqual(lifecycle.state, .live)
+
+        XCTAssertFalse(lifecycle.setForeground(false, at: 1.04))
+        XCTAssertTrue(lifecycle.setForeground(true, at: 8))
+        XCTAssertEqual(lifecycle.state, .recovering)
+        lifecycle.restartFinished(succeeded: true, at: 8.1)
+        XCTAssertEqual(lifecycle.state, .starting)
+        XCTAssertEqual(lifecycle.lastFrameAt, 1.03, "retain the last produced frame until a new one arrives")
+
+        lifecycle.receivedFrame(at: 8.13)
+        XCTAssertEqual(lifecycle.state, .live)
+        XCTAssertEqual(lifecycle.lastFrameAt, 8.13)
+    }
+
+    func testFrameTimestampFromBeforeSessionRestartCannotMarkCameraLive() {
+        var lifecycle = CameraLifecycleStateMachine()
+        lifecycle.requestStart(at: 0)
+        lifecycle.receivedFrame(at: 0.03)
+        lifecycle.interruptionBegan(reason: "camera in use")
+        XCTAssertTrue(lifecycle.interruptionEnded(at: 2))
+        lifecycle.restartFinished(succeeded: true, at: 2.1)
+
+        lifecycle.receivedFrame(at: 2.09)
+        XCTAssertEqual(lifecycle.state, .starting)
+        XCTAssertEqual(lifecycle.lastFrameAt, 0.03)
+        lifecycle.receivedFrame(at: 2.13)
+        XCTAssertEqual(lifecycle.state, .live)
+        XCTAssertEqual(lifecycle.lastFrameAt, 2.13)
+    }
+
+    func testInterruptionRequiresSessionRestartAndNewFrame() {
+        var lifecycle = CameraLifecycleStateMachine()
+        lifecycle.requestStart(at: 0)
+        lifecycle.receivedFrame(at: 0.03)
+        lifecycle.interruptionBegan(reason: "camera in use")
+        XCTAssertEqual(lifecycle.state, .interrupted("camera in use"))
+
+        lifecycle.receivedFrame(at: 0.08)
+        XCTAssertEqual(lifecycle.state, .interrupted("camera in use"))
+        XCTAssertTrue(lifecycle.interruptionEnded(at: 1))
+        XCTAssertEqual(lifecycle.state, .recovering)
+        lifecycle.restartFinished(succeeded: true, at: 1.1)
+        XCTAssertEqual(lifecycle.state, .starting)
+        lifecycle.receivedFrame(at: 1.14)
+        XCTAssertEqual(lifecycle.state, .live)
+    }
+
+    func testRuntimeErrorAndFailedSessionRestartNeverReportCameraLive() {
+        var lifecycle = CameraLifecycleStateMachine()
+        lifecycle.requestStart(at: 0)
+        lifecycle.receivedFrame(at: 0.03)
+        lifecycle.runtimeError("media services reset")
+        XCTAssertEqual(lifecycle.state, .failed("media services reset"))
+
+        XCTAssertTrue(lifecycle.beginRecovery(at: 1))
+        lifecycle.restartFinished(succeeded: false, at: 1.1, error: "restart failed")
+        XCTAssertEqual(lifecycle.state, .failed("restart failed"))
+        lifecycle.receivedFrame(at: 1.2)
+        XCTAssertEqual(lifecycle.state, .failed("restart failed"))
+    }
+
+    @MainActor
+    func testScreenSleepPreventionTracksActiveSendingAndCameraStateIsSeparateFromNetwork() async {
+        var idleTimerChanges: [Bool] = []
+        let sender = UDPSender { _, _, completion in completion(.success(1)) }
+        let viewModel = CameraViewModel(sender: sender, idleTimerUpdater: { idleTimerChanges.append($0) })
+        viewModel.startForTesting()
+        let ready = await waitUntil { viewModel.networkStateLabel == "NETWORK READY" }
+        XCTAssertTrue(ready)
+        XCTAssertTrue(viewModel.screenSleepPreventionActive)
+        XCTAssertEqual(viewModel.cameraState, .starting)
+
+        viewModel.sceneDidChange(isActive: false)
+        XCTAssertFalse(viewModel.screenSleepPreventionActive)
+        viewModel.sceneDidChange(isActive: true)
+        XCTAssertTrue(viewModel.screenSleepPreventionActive)
+        viewModel.stop()
+        XCTAssertFalse(viewModel.screenSleepPreventionActive)
+        XCTAssertEqual(idleTimerChanges, [true, false, true, false])
+        sender.stop()
+    }
+
+    @MainActor
+    func testBackgroundInterruptionAndRuntimeErrorNotificationsKeepNetworkAndCameraSeparate() async {
+        let sender = UDPSender { _, _, completion in completion(.success(1)) }
+        let viewModel = CameraViewModel(sender: sender, idleTimerUpdater: { _ in })
+        viewModel.startForTesting()
+        let ready = await waitUntil { viewModel.networkStateLabel == "NETWORK READY" }
+        XCTAssertTrue(ready)
+
+        viewModel.sceneDidChange(isActive: false)
+        NotificationCenter.default.post(
+            name: AVCaptureSession.wasInterruptedNotification,
+            object: viewModel.session,
+            userInfo: [AVCaptureSessionInterruptionReasonKey: NSNumber(value: 1)]
+        )
+        let interrupted = await waitUntil {
+            if case .interrupted = viewModel.cameraState { return true }
+            return false
+        }
+        XCTAssertTrue(interrupted)
+
+        NotificationCenter.default.post(
+            name: AVCaptureSession.interruptionEndedNotification,
+            object: viewModel.session
+        )
+        try? await Task.sleep(for: .milliseconds(20))
+        if case .interrupted = viewModel.cameraState {
+            // Ending the interruption in the background is deferred until foreground.
+        } else {
+            XCTFail("background interruption end must wait for foreground recovery")
+        }
+        viewModel.sceneDidChange(isActive: true)
+        XCTAssertEqual(viewModel.cameraState, .recovering)
+        XCTAssertEqual(viewModel.networkStateLabel, "NETWORK READY")
+
+        NotificationCenter.default.post(
+            name: AVCaptureSession.runtimeErrorNotification,
+            object: viewModel.session,
+            userInfo: [AVCaptureSessionErrorKey: NSError(domain: "CameraLifecycleTests", code: 42,
+                                                        userInfo: [NSLocalizedDescriptionKey: "runtime failure"])]
+        )
+        let failed = await waitUntil {
+            if case .failed("runtime failure") = viewModel.cameraState { return true }
+            return false
+        }
+        XCTAssertTrue(failed)
+        XCTAssertEqual(viewModel.networkStateLabel, "NETWORK READY")
+        viewModel.stop()
+        sender.stop()
+    }
+
     @MainActor
     func testDebugPerformanceRowsExposeNamedUnavailableMetricsBeforeCapture() {
         let viewModel = CameraViewModel(

@@ -3,6 +3,7 @@ import Foundation
 import Network
 import SwiftUI
 import Darwin
+import UIKit
 
 enum DestinationHostSource: String, Equatable {
     case automatic = "Auto (Bonjour待機)"
@@ -143,12 +144,204 @@ struct CameraFrameIntervalWindow {
     }
 }
 
+enum CameraLifecycleState: Equatable {
+    case stopped
+    case starting
+    case live
+    case stalled
+    case interrupted(String)
+    case recovering
+    case failed(String)
+
+    var displayLabel: String {
+        switch self {
+        case .stopped: return "CAMERA STOPPED"
+        case .starting: return "CAMERA STARTING"
+        case .live: return "CAMERA LIVE"
+        case .stalled: return "CAMERA STALLED"
+        case .interrupted: return "CAMERA INTERRUPTED"
+        case .recovering: return "CAMERA RECOVERING"
+        case .failed: return "CAMERA FAILED"
+        }
+    }
+
+    var detail: String? {
+        switch self {
+        case .interrupted(let reason), .failed(let reason): return reason
+        case .starting: return "最初のcamera frameを待っています"
+        case .stalled: return "最終frameから2秒以上経過しました"
+        case .recovering: return "capture sessionを再設定しています"
+        case .stopped, .live: return nil
+        }
+    }
+
+    var canRetry: Bool {
+        switch self {
+        case .stalled, .interrupted(_), .failed(_): return true
+        case .stopped, .starting, .live, .recovering: return false
+        }
+    }
+}
+
+/// Tracks whether AVCapture is actively producing frames. Network readiness is
+/// deliberately kept outside this state machine.
+struct CameraLifecycleStateMachine {
+    static let frameStallTimeout: TimeInterval = 2.0
+
+    private(set) var state: CameraLifecycleState = .stopped
+    private(set) var lastFrameAt: TimeInterval?
+    private(set) var isForeground = true
+    private(set) var isSending = false
+    private var captureStartAt: TimeInterval?
+
+    mutating func requestStart(at time: TimeInterval) {
+        isSending = true
+        state = .starting
+        lastFrameAt = nil
+        captureStartAt = time
+    }
+
+    mutating func sessionStarted(at time: TimeInterval) {
+        guard isSending else { return }
+        if state == .live { return }
+        state = .starting
+        captureStartAt = time
+    }
+
+    mutating func receivedFrame(at time: TimeInterval) {
+        guard isSending else { return }
+        switch state {
+        case .starting:
+            guard let startTime = captureStartAt, time >= startTime else { return }
+            lastFrameAt = time
+            captureStartAt = nil
+            state = .live
+        case .live, .stalled:
+            if let lastFrameAt, time < lastFrameAt { return }
+            lastFrameAt = time
+            captureStartAt = nil
+            state = .live
+        case .stopped, .interrupted, .recovering, .failed:
+            return
+        }
+    }
+
+    @discardableResult
+    mutating func evaluateStall(at time: TimeInterval,
+                                timeout: TimeInterval = frameStallTimeout) -> Bool {
+        guard isSending, isForeground else { return false }
+        let reference: TimeInterval?
+        switch state {
+        case .starting:
+            reference = captureStartAt
+        case .live:
+            reference = lastFrameAt
+        case .stopped, .stalled, .interrupted, .recovering, .failed:
+            return false
+        }
+        guard let reference, time >= reference, time - reference >= timeout else { return false }
+        state = .stalled
+        return true
+    }
+
+    mutating func interruptionBegan(reason: String) {
+        guard isSending else { return }
+        state = .interrupted(reason)
+    }
+
+    @discardableResult
+    mutating func interruptionEnded(at time: TimeInterval) -> Bool {
+        guard case .interrupted = state else { return false }
+        return beginRecovery(at: time)
+    }
+
+    mutating func runtimeError(_ message: String) {
+        guard isSending else { return }
+        state = .failed(message)
+    }
+
+    mutating func fail(_ message: String) {
+        state = .failed(message)
+    }
+
+    @discardableResult
+    mutating func beginRecovery(at time: TimeInterval) -> Bool {
+        guard isSending, isForeground else { return false }
+        state = .recovering
+        captureStartAt = time
+        return true
+    }
+
+    mutating func restartFinished(succeeded: Bool, at time: TimeInterval, error: String? = nil) {
+        guard isSending, state == .recovering else { return }
+        if succeeded {
+            state = .starting
+            captureStartAt = time
+        } else {
+            state = .failed(error ?? "capture sessionを再開できませんでした")
+        }
+    }
+
+    @discardableResult
+    mutating func setForeground(_ active: Bool, at time: TimeInterval) -> Bool {
+        isForeground = active
+        guard active, isSending else { return false }
+        _ = evaluateStall(at: time)
+        switch state {
+        case .stalled, .interrupted, .failed:
+            return beginRecovery(at: time)
+        case .starting:
+            guard let captureStartAt, time - captureStartAt >= Self.frameStallTimeout else { return false }
+            return beginRecovery(at: time)
+        case .stopped, .live, .recovering:
+            return false
+        }
+    }
+
+    mutating func stop() {
+        isSending = false
+        state = .stopped
+        lastFrameAt = nil
+        captureStartAt = nil
+    }
+}
+
+private final class CaptureSessionRunner: @unchecked Sendable {
+    private let session: AVCaptureSession
+    private let queue = DispatchQueue(label: "PhoneSaberSender.session", qos: .userInitiated)
+
+    init(session: AVCaptureSession) {
+        self.session = session
+    }
+
+    func stop(completion: (@MainActor @Sendable () -> Void)? = nil) {
+        queue.async { [self] in
+            session.stopRunning()
+            guard let completion else { return }
+            Task { @MainActor in completion() }
+        }
+    }
+
+    func stopSynchronously() {
+        queue.sync { session.stopRunning() }
+    }
+
+    func start(completion: @escaping @MainActor @Sendable (Bool) -> Void) {
+        queue.async { [self] in
+            session.startRunning()
+            let succeeded = session.isRunning
+            Task { @MainActor in completion(succeeded) }
+        }
+    }
+}
+
 @MainActor
 final class CameraViewModel: NSObject, ObservableObject {
     let session = AVCaptureSession()
     nonisolated let processor: FrameProcessor
     private let output = AVCaptureVideoDataOutput()
     private let captureQueue = DispatchQueue(label: "PhoneSaberSender.capture", qos: .userInteractive)
+    private lazy var sessionRunner = CaptureSessionRunner(session: session)
     private let sender: UDPSender
     private let pathMonitor = NWPathMonitor()
     private let bonjourDiscovery = BonjourDiscovery()
@@ -158,6 +351,9 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published var fps = 0.0
     @Published var status = "停止中"
     @Published var errorMessage: String?
+    @Published private(set) var cameraState: CameraLifecycleState = .stopped
+    @Published private(set) var lastCameraFrameAge: TimeInterval?
+    @Published private(set) var screenSleepPreventionActive = false
     @Published private(set) var pathStatus = "判定中"
     @Published private(set) var pathInterface = ""
     @Published private(set) var host = ""
@@ -241,18 +437,32 @@ final class CameraViewModel: NSObject, ObservableObject {
     private var debugRecordingMaximumDurationTask: Task<Void, Never>?
     private let authorizationStatus: () -> AVAuthorizationStatus
     private let requestAccess: (@escaping (Bool) -> Void) -> Void
+    private let idleTimerUpdater: @MainActor (Bool) -> Void
+    private var cameraLifecycle = CameraLifecycleStateMachine()
+    private var cameraWatchdogTask: Task<Void, Never>?
+    private var sessionObserverTokens: [NSObjectProtocol] = []
+    private var sceneIsActive = true
+    private var cameraRecoveryInProgress = false
+    private var cameraRecoveryAttempted = false
+    private var cameraRecoveryGeneration = 0
+    private var cameraLifecycleEnabled = true
 
     init(
         processor: FrameProcessor = FrameProcessor(),
         sender: UDPSender = UDPSender(),
         authorizationStatus: @escaping () -> AVAuthorizationStatus = { AVCaptureDevice.authorizationStatus(for: .video) },
-        requestAccess: @escaping (@escaping (Bool) -> Void) -> Void = { completion in AVCaptureDevice.requestAccess(for: .video, completionHandler: completion) }
+        requestAccess: @escaping (@escaping (Bool) -> Void) -> Void = { completion in AVCaptureDevice.requestAccess(for: .video, completionHandler: completion) },
+        idleTimerUpdater: @escaping @MainActor (Bool) -> Void = { disabled in
+            UIApplication.shared.isIdleTimerDisabled = disabled
+        }
     ) {
         self.processor = processor
         self.sender = sender
         self.authorizationStatus = authorizationStatus
         self.requestAccess = requestAccess
+        self.idleTimerUpdater = idleTimerUpdater
         super.init()
+        registerCameraSessionObservers()
         pathMonitor.pathUpdateHandler = { [weak self] path in
             let status: String
             switch path.status {
@@ -303,6 +513,212 @@ final class CameraViewModel: NSObject, ObservableObject {
             Task { @MainActor in self?.recordPerformance(sample) }
         }
 #endif
+    }
+
+    var networkStateLabel: String {
+        guard running else {
+            return host.isEmpty ? "DISCOVERING" : "NETWORK IDLE"
+        }
+        let portStates = [senderStates[5005], senderStates[5006]].compactMap { $0 }
+        if portStates.count == 2 && portStates.allSatisfy({ $0.hasPrefix("ready") }) {
+            return "NETWORK READY"
+        }
+        if portStates.contains(where: { $0 == "waiting" || $0 == "failed" }) {
+            return "NETWORK WAITING"
+        }
+        return "NETWORK CONNECTING"
+    }
+
+    private func registerCameraSessionObservers() {
+        let center = NotificationCenter.default
+        sessionObserverTokens.append(center.addObserver(
+            forName: AVCaptureSession.wasInterruptedNotification,
+            object: session,
+            queue: .main
+        ) { [weak self] notification in
+            let reason = notification.userInfo?[AVCaptureSessionInterruptionReasonKey]
+                .map { String(describing: $0) } ?? "理由不明"
+            Task { @MainActor in self?.handleCameraInterruption(reason: reason) }
+        })
+        sessionObserverTokens.append(center.addObserver(
+            forName: AVCaptureSession.interruptionEndedNotification,
+            object: session,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.handleCameraInterruptionEnded() }
+        })
+        sessionObserverTokens.append(center.addObserver(
+            forName: AVCaptureSession.runtimeErrorNotification,
+            object: session,
+            queue: .main
+        ) { [weak self] notification in
+            let error = notification.userInfo?[AVCaptureSessionErrorKey] as? NSError
+            let message = error?.localizedDescription ?? "AVCaptureSession runtime error"
+            Task { @MainActor in self?.handleCameraRuntimeError(message) }
+        })
+    }
+
+    func sceneDidChange(isActive: Bool) {
+        sceneIsActive = isActive
+        updateIdleTimerPolicy()
+        let now = ProcessInfo.processInfo.systemUptime
+        let recoveryRequested = cameraLifecycle.setForeground(isActive, at: now)
+        let shouldRecover = cameraLifecycleEnabled && recoveryRequested
+        publishCameraLifecycle(at: now)
+        guard isActive else { return }
+        bonjourDiscovery.ensureRunning()
+        guard running else { return }
+        sender.recoverIfNeeded()
+        if shouldRecover {
+            cameraRecoveryAttempted = false
+            scheduleCameraRecovery(alreadyMarkedRecovering: true)
+        }
+    }
+
+    func retryCameraRecovery() {
+        guard running, sceneIsActive, cameraLifecycleEnabled else { return }
+        cameraRecoveryAttempted = false
+        scheduleCameraRecovery(alreadyMarkedRecovering: false)
+    }
+
+    private func handleCameraInterruption(reason: String) {
+        guard running else { return }
+        cameraLifecycle.interruptionBegan(reason: reason)
+        publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
+    }
+
+    private func handleCameraInterruptionEnded() {
+        guard running else { return }
+        if sceneIsActive {
+            cameraRecoveryAttempted = false
+            let now = ProcessInfo.processInfo.systemUptime
+            if cameraLifecycle.interruptionEnded(at: now) {
+                publishCameraLifecycle(at: now)
+                scheduleCameraRecovery(alreadyMarkedRecovering: true)
+            }
+        }
+    }
+
+    private func handleCameraRuntimeError(_ message: String) {
+        guard running else { return }
+        if cameraRecoveryInProgress {
+            cameraErrorMessage = message
+            recomputeErrorMessage()
+            return
+        }
+        cameraLifecycle.runtimeError(message)
+        cameraErrorMessage = message
+        publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
+        recomputeErrorMessage()
+        if sceneIsActive && !cameraRecoveryAttempted {
+            scheduleCameraRecovery(alreadyMarkedRecovering: false)
+        }
+    }
+
+    private func scheduleCameraRecovery(alreadyMarkedRecovering: Bool) {
+        guard running, sceneIsActive, cameraLifecycleEnabled, !cameraRecoveryInProgress else { return }
+        let now = ProcessInfo.processInfo.systemUptime
+        if !alreadyMarkedRecovering && !cameraLifecycle.beginRecovery(at: now) { return }
+        cameraRecoveryInProgress = true
+        cameraRecoveryAttempted = true
+        cameraRecoveryGeneration += 1
+        let recoveryGeneration = cameraRecoveryGeneration
+        let runGeneration = lifecycleGeneration
+        _ = processor.reset()
+        publishCameraLifecycle(at: now)
+        sessionRunner.stop { [weak self] in
+            guard let self,
+                  self.lifecycleGeneration == runGeneration,
+                  self.cameraRecoveryGeneration == recoveryGeneration,
+                  self.running else { return }
+            self.configureAndStart(isRecovery: true, recoveryGeneration: recoveryGeneration)
+        }
+    }
+
+    private func finishCameraStart(succeeded: Bool, lifecycle: Int,
+                                   recovery: Int?, isRecovery: Bool) {
+        guard lifecycleGeneration == lifecycle, running else {
+            sessionRunner.stop()
+            return
+        }
+        let now = ProcessInfo.processInfo.systemUptime
+        if isRecovery {
+            guard recovery == cameraRecoveryGeneration else { return }
+            cameraRecoveryInProgress = false
+            cameraLifecycle.restartFinished(
+                succeeded: succeeded,
+                at: now,
+                error: "capture sessionを再開できませんでした"
+            )
+            if succeeded {
+                cameraErrorMessage = nil
+            } else {
+                cameraErrorMessage = "capture sessionを再開できませんでした"
+            }
+        } else if succeeded {
+            cameraLifecycle.sessionStarted(at: now)
+            cameraErrorMessage = nil
+        } else {
+            cameraLifecycle.runtimeError("capture sessionを開始できませんでした")
+            cameraErrorMessage = "capture sessionを開始できませんでした"
+        }
+        publishCameraLifecycle(at: now)
+        recomputeErrorMessage()
+    }
+
+    private func startCameraWatchdog() {
+        cameraWatchdogTask?.cancel()
+        cameraWatchdogTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .milliseconds(250))
+                guard let self, !Task.isCancelled else { return }
+                self.pollCameraFrameHealth(at: ProcessInfo.processInfo.systemUptime)
+            }
+        }
+    }
+
+    private func pollCameraFrameHealth(at time: TimeInterval) {
+        guard cameraLifecycleEnabled, running else { return }
+        let becameStalled = cameraLifecycle.evaluateStall(at: time)
+        publishCameraLifecycle(at: time)
+        if becameStalled {
+            cameraErrorMessage = "カメラframeが2秒以上届いていません"
+            recomputeErrorMessage()
+            if sceneIsActive && !cameraRecoveryAttempted {
+                scheduleCameraRecovery(alreadyMarkedRecovering: false)
+            }
+        }
+    }
+
+    private func receiveCameraFrame(at time: TimeInterval) {
+        guard running, cameraLifecycleEnabled else { return }
+        cameraLifecycle.receivedFrame(at: time)
+        guard cameraLifecycle.state == .live else { return }
+        cameraRecoveryAttempted = false
+        cameraErrorMessage = nil
+        publishCameraLifecycle(at: time)
+        recomputeErrorMessage()
+    }
+
+    private func publishCameraLifecycle(at time: TimeInterval) {
+        cameraState = cameraLifecycle.state
+        if let lastFrameAt = cameraLifecycle.lastFrameAt, time >= lastFrameAt {
+            lastCameraFrameAge = time - lastFrameAt
+        } else {
+            lastCameraFrameAge = nil
+        }
+    }
+
+    private func updateIdleTimerPolicy() {
+        let shouldPreventSleep = running && sceneIsActive
+        guard screenSleepPreventionActive != shouldPreventSleep else { return }
+        screenSleepPreventionActive = shouldPreventSleep
+        idleTimerUpdater(shouldPreventSleep)
+    }
+
+    deinit {
+        cameraWatchdogTask?.cancel()
+        sessionObserverTokens.forEach(NotificationCenter.default.removeObserver)
     }
 
     func start() {
@@ -360,18 +776,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     func recoverFromForeground() {
-        guard running else {
-            bonjourDiscovery.ensureRunning()
-            return
-        }
-        bonjourDiscovery.ensureRunning()
-        sender.recoverIfNeeded()
-        if session.inputs.isEmpty || session.outputs.isEmpty {
-            running = false
-            configureAndStart()
-        } else if !session.isRunning {
-            captureQueue.async { [weak self] in self?.session.startRunning() }
-        }
+        sceneDidChange(isActive: true)
     }
 
     func startMeasurement() {
@@ -399,11 +804,22 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     func stop() {
         lifecycleGeneration += 1
+        cameraRecoveryGeneration += 1
+        cameraRecoveryInProgress = false
+        cameraRecoveryAttempted = false
         if debugRecordingActive { stopDebugRecording() }
-        session.stopRunning(); sender.stop(); _ = processor.reset(); running = false; activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
+        running = false
+        cameraWatchdogTask?.cancel()
+        cameraWatchdogTask = nil
+        cameraLifecycle.stop()
+        cameraLifecycleEnabled = true
+        publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
+        updateIdleTimerPolicy()
+        sessionRunner.stopSynchronously()
+        sender.stop(); _ = processor.reset(); activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
     }
 
-    private func configureAndStart() {
+    private func configureAndStart(isRecovery: Bool = false, recoveryGeneration: Int? = nil) {
         let configuredHost = host.trimmingCharacters(in: .whitespacesAndNewlines)
         cameraErrorMessage = nil
         connectionErrorMessage = nil
@@ -413,14 +829,28 @@ final class CameraViewModel: NSObject, ObservableObject {
 #endif
         recomputeErrorMessage()
         guard !configuredHost.isEmpty else {
-            fail("Macを検索中です。見つからない場合は手動IPを入力してください")
+            if isRecovery {
+                cameraRecoveryInProgress = false
+                cameraLifecycle.restartFinished(succeeded: false, at: ProcessInfo.processInfo.systemUptime,
+                                                error: "送信先Macが設定されていません")
+                publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
+            } else {
+                cameraLifecycle.stop()
+                publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
+            }
+            fail("Macを検索中です。見つからない場合は手動IPを入力してください", cameraFailure: false)
             return
         }
         let configuredThreshold = ColorThreshold(brightness: UInt8(clamping: threshold), dominance: UInt8(clamping: dominance))
         session.beginConfiguration()
         session.inputs.forEach { session.removeInput($0) }
         session.outputs.forEach { session.removeOutput($0) }
-        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back), let input = try? AVCaptureDeviceInput(device: camera), session.canAddInput(input), session.canAddOutput(output) else { session.commitConfiguration(); fail("カメラを初期化できません"); return }
+        guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .back), let input = try? AVCaptureDeviceInput(device: camera), session.canAddInput(input), session.canAddOutput(output) else {
+            session.commitConfiguration()
+            cameraRecoveryInProgress = false
+            fail("カメラを初期化できません")
+            return
+        }
         session.addInput(input)
         let formatOptions = camera.formats.enumerated().map { index, format in
             let size = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
@@ -488,7 +918,12 @@ final class CameraViewModel: NSObject, ObservableObject {
 #endif
         processor.configureCaptureSynchronizationClock(session.synchronizationClock)
         let currentGeneration = lifecycleGeneration
+        if !isRecovery {
+            cameraLifecycle.requestStart(at: ProcessInfo.processInfo.systemUptime)
+        }
+        cameraLifecycleEnabled = true
         running = true
+        updateIdleTimerPolicy()
         sender.configure(host: configuredHost) { [weak self] states, errors, lastError in
             Task { @MainActor in
                 self?.applySenderUpdate(states: states, errors: errors, generation: currentGeneration)
@@ -499,7 +934,13 @@ final class CameraViewModel: NSObject, ObservableObject {
         activeDestination = "\(configuredHost):5005 / \(configuredHost):5006"
         resetStartState()
         processor.configureThresholds(red: configuredThreshold, blue: configuredThreshold)
-        frameCount = 0; fpsStart = CACurrentMediaTime(); _ = processor.reset(); status = "送信中"; session.startRunning()
+        frameCount = 0; fpsStart = CACurrentMediaTime(); _ = processor.reset(); status = "送信中"
+        startCameraWatchdog()
+        publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
+        sessionRunner.start { [weak self] succeeded in
+            self?.finishCameraStart(succeeded: succeeded, lifecycle: currentGeneration,
+                                    recovery: recoveryGeneration, isRecovery: isRecovery)
+        }
     }
 
     private func handle(_ results: [DetectedSaber], width: Int, height: Int, processingStart: TimeInterval, generation: Int, trace: FrameTrace?) {
@@ -882,7 +1323,14 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
     }
 
-    private func fail(_ message: String) { cameraErrorMessage = message; recomputeErrorMessage() }
+    private func fail(_ message: String, cameraFailure: Bool = true) {
+        cameraErrorMessage = message
+        if cameraFailure {
+            cameraLifecycle.fail(message)
+            publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
+        }
+        recomputeErrorMessage()
+    }
 
     private func resetStartState() {
         redDetectionCount = 0; blueDetectionCount = 0
@@ -907,8 +1355,13 @@ final class CameraViewModel: NSObject, ObservableObject {
     // Test entry point: this uses the same FrameProcessor callback and UDP completion path as camera frames.
     func startForTesting(host: String = "127.0.0.1", manual: Bool = true) {
         lifecycleGeneration += 1
+        cameraLifecycleEnabled = false
+        cameraLifecycle.requestStart(at: ProcessInfo.processInfo.systemUptime)
+        cameraState = .starting
+        lastCameraFrameAge = nil
         resetStartState()
         running = true
+        updateIdleTimerPolicy()
         if manual { hostSelection.setManual(host, resolvedHost: "", serviceName: "") }
         self.host = host
         let currentGeneration = lifecycleGeneration
@@ -1068,7 +1521,11 @@ final class CameraViewModel: NSObject, ObservableObject {
 }
 
 extension CameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
-    nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) { processor.submit(sampleBuffer) }
+    nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
+        let frameTime = ProcessInfo.processInfo.systemUptime
+        processor.submit(sampleBuffer)
+        Task { @MainActor [weak self] in self?.receiveCameraFrame(at: frameTime) }
+    }
 }
 
 #if DEBUG
