@@ -2,6 +2,7 @@
 __pycache__/
 tests/debug_detection/
 latency_results/
+/.verify-logs/
 
 # Python bytecode and local environments
 *.py[cod]

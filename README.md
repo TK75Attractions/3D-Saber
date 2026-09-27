@@ -33,3 +33,32 @@ receives its acknowledgement. It therefore measures the normal camera,
 recognition, fresh-only UDP, and Mac receive path without iPhone/Mac clock
 synchronization; display refresh/compositor timing remains an external
 measurement uncertainty.
+
+## PhoneSaber verification
+
+Run the complete automated verification from the `school-festival` repository:
+
+```bash
+./tools/verify_phone_saber.sh
+```
+
+The command runs the full iOS XCTest suite (including `DetectionCoreTests`)
+serially on one Simulator, with parallel test execution disabled and the worker
+count capped at one. It also runs the dedicated static BGRA Detection tests,
+the lossless fixture regression, PhoneSaber Tools unittests, an iOS Release
+build, a read-only Unity Editor capability check, and `git diff --check` for
+`school-festival`. Set `PHONESABER_VERIFY_UNITY_RUN=1` only when you intend to
+run Unity EditMode, PlayMode, and compile checks in the separate `3D-Saber`
+project. Every command's stdout and stderr and Xcode result bundles are saved under
+`.verify-logs/phone-saber/<run timestamp>/`.
+The iOS logs also include the xcresult summary and
+`ios-xctest-classification.stdout.log`, which separates assertion failures,
+worker kills, other execution failures, and passing runs.
+
+By default the Unity project is expected at the sibling path `../3D-Saber`.
+Set `UNITY_PROJECT_PATH` if it is elsewhere. Set `UNITY_EDITOR` to select a
+Unity Editor executable, or `PHONESABER_IOS_SIMULATOR_ID` to choose an installed
+iPhone Simulator explicitly. If the Unity Editor already has the target
+project open and prevents batch-mode execution, Unity stages report `BLOCKED`;
+close that Editor and rerun. The command exits `0` when all stages pass, `1` on
+a failure, and `2` when a stage is blocked.

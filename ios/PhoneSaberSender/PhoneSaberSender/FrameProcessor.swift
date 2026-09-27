@@ -83,6 +83,12 @@ final class FrameProcessor: @unchecked Sendable {
     private var nextFrameSequence: UInt64 = 0
     private var captureSynchronizationClock: CMClock?
     private var debugVideoRecorder: DebugVideoRecorder?
+    private var debugRecordingIsFinalizing = false
+    private var debugRecordingFinishCallbacks: [
+        (Result<DebugRecordingResult, Error>) -> Void
+    ] = []
+    var onDebugRecordingLimitReached: ((DebugRecordingFinishReason) -> Void)?
+    var onDebugRecordingAutoFinished: ((Result<DebugRecordingResult, Error>) -> Void)?
 #if DEBUG
     private var inputFrameIntervalWindow = CameraFrameIntervalWindow(capacity: 120)
     private var detailedProfilingEnabled = false
@@ -289,7 +295,7 @@ final class FrameProcessor: @unchecked Sendable {
         queue.async { [weak self] in
             guard let self else { return }
             do {
-                guard self.debugVideoRecorder == nil else {
+                guard self.debugVideoRecorder == nil, !self.debugRecordingIsFinalizing else {
                     throw DebugVideoRecorderError.alreadyStarted
                 }
                 guard let dimensions = self.lastDimensions else {
@@ -333,16 +339,46 @@ final class FrameProcessor: @unchecked Sendable {
     }
 #endif
 
-    func stopDebugRecording(completion: @escaping (Result<DebugRecordingResult, Error>) -> Void) {
+    func stopDebugRecording(
+        reason: DebugRecordingFinishReason = .user,
+        completion: @escaping (Result<DebugRecordingResult, Error>) -> Void
+    ) {
         queue.async { [weak self] in
-            guard let self, let recorder = self.debugVideoRecorder else {
+            guard let self else {
                 completion(.failure(DebugVideoRecorderError.noFrames))
                 return
             }
-            // Clearing this first makes the OFF/finalizing path a single nil
-            // check per frame; overlay work runs away from the camera queue.
-            self.debugVideoRecorder = nil
-            recorder.finish(completion: completion)
+            if self.debugRecordingIsFinalizing {
+                self.debugRecordingFinishCallbacks.append(completion)
+                return
+            }
+            guard let recorder = self.debugVideoRecorder else {
+                completion(.failure(DebugVideoRecorderError.noFrames))
+                return
+            }
+            self.finishDebugRecordingOnQueue(recorder, reason: reason,
+                                             automatic: false, completion: completion)
+        }
+    }
+
+    /// Called on the frame queue for manual and automatic endings alike.
+    private func finishDebugRecordingOnQueue(
+        _ recorder: DebugVideoRecorder, reason: DebugRecordingFinishReason,
+        automatic: Bool,
+        completion: ((Result<DebugRecordingResult, Error>) -> Void)?
+    ) {
+        debugVideoRecorder = nil
+        debugRecordingIsFinalizing = true
+        recorder.finish(reason: reason) { [weak self] result in
+            guard let self else { completion?(result); return }
+            self.queue.async {
+                self.debugRecordingIsFinalizing = false
+                if automatic { self.onDebugRecordingAutoFinished?(result) }
+                completion?(result)
+                let callbacks = self.debugRecordingFinishCallbacks
+                self.debugRecordingFinishCallbacks.removeAll()
+                callbacks.forEach { $0(result) }
+            }
         }
     }
 
@@ -354,9 +390,7 @@ final class FrameProcessor: @unchecked Sendable {
                 completion(.failure(.noFrames))
                 return
             }
-            let armed = recorder.requestManualCapture { frameID in
-                completion(.success(frameID))
-            }
+            let armed = recorder.requestManualCapture(completion: completion)
             if !armed {
                 completion(.failure(.alreadyStarted))
             }
@@ -456,14 +490,19 @@ final class FrameProcessor: @unchecked Sendable {
         let emitted = emitResults(detected, width: width, height: height,
                                   processingStart: processingStart,
                                   generation: generation, trace: trace)
-        if let debugVideoRecorder {
-            debugVideoRecorder.append(
+        if let debugVideoRecorder = debugVideoRecorder {
+            let appendResult = debugVideoRecorder.append(
                 pixelBuffer: pixelBuffer,
                 presentationTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer),
                 frameID: sequence,
                 results: emitted,
                 analysis: analysis
             )
+            if case .reachedLimit(let reason) = appendResult {
+                onDebugRecordingLimitReached?(reason)
+                finishDebugRecordingOnQueue(debugVideoRecorder, reason: reason,
+                                            automatic: true, completion: nil)
+            }
         }
         if saveRequestedRawFrame { saveRawFrame(pixelBuffer) }
         if isLocked {
