@@ -47,6 +47,10 @@ def write_bundle(root: Path, image_count: int = 1, *, malformed_summary: bool = 
         context_file.write_text(json.dumps({
             "sessionID": "sample_session",
             "selectedFrameID": 100 + index,
+            "selectedColor": "red" if index % 2 == 0 else "blue",
+            "selectedFailureType": "dropout",
+            "selectedReasons": ["first false frame"],
+            "contextRadiusFrames": 2,
             "frames": [{
                 "frameID": 100 + index,
                 "timestamp": index / 30,

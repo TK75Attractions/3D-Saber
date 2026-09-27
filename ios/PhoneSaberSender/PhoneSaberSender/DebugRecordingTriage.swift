@@ -27,6 +27,16 @@ struct DebugRecordingTriageLimits {
     static let maximumBundleBytes: Int64 = 512 * 1024 * 1024
 }
 
+enum DebugRecordingLifecyclePolicy {
+    static func mayStart(enabled: Bool, cameraRunning: Bool, active: Bool, finalizing: Bool) -> Bool {
+        enabled && cameraRunning && !active && !finalizing
+    }
+
+    static func mayStop(active: Bool, finalizing: Bool) -> Bool {
+        active && !finalizing
+    }
+}
+
 struct DebugRecordingTriageImage: Equatable {
     let frameIndex: Int
     let frameID: UInt64
@@ -335,7 +345,7 @@ enum DebugRecordingTriageBuilder {
                                      detail: "raw PCA span diverges from robust interval"))
             }
             let support = number(breakdown["coreSupport"])
-            let highCoverage = number(breakdown["highBrightnessRatio"])
+            let highCoverage = number(breakdown["longitudinalHighCoverage"])
             if let raw, raw >= 180, let support, support <= 4.2,
                let highCoverage, highCoverage <= 2.0 {
                 result.append(Reason(color: color, type: "broad_coreless_emitter_suspect", priority: 7,

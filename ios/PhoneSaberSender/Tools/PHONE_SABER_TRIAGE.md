@@ -24,9 +24,13 @@ python3 phone_saber_triage_receiver.py --port 8765 --inbox /tmp/phonesaber-inbox
 
 Use `--no-bonjour` to test a local receiver without publishing the service. Only local/private network peers can upload. The envelope provides integrity verification, not transport encryption; run it on the trusted Wi-Fi used by the devices.
 
-## Codex dry run
+## Codex analysis and dry run
 
-After Phase C is installed, start the receiver with `--dry-run` to show the exact image and compact metadata file list that would be attached. Dry run makes no Codex call. `--max-images` defaults to 12 and cannot exceed the hard limit of 20; at most two images are selected for each failure type.
+The receiver starts Codex analysis automatically after a valid upload. It uses the Codex CLI already installed on the Mac and its existing login. If Codex is missing or fails, the received bundle stays in the inbox and the receiver keeps running.
+
+Use `--dry-run` to print the exact selected PNG and compact metadata list without making a Codex call. Use `--no-codex` to only receive and save bundles. `--max-images` defaults to 12 and cannot exceed the hard limit of 20; at most two images are selected for each failure type.
+
+The receiver passes `summary.json`, selected `frames/*.json`, and only the selected PNGs. The bundle's `prompt.md` is retained for inspection but is not attached to Codex; the Mac supplies its own fixed A–G analysis instructions. Codex runs `codex exec --ephemeral --sandbox read-only` in a temporary directory that contains only those selected inputs. The receiver writes only `analysis_report.md` and `analysis_report.json` in the received bundle.
 
 ## Bundle shape
 

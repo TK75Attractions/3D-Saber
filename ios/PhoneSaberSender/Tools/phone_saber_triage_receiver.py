@@ -6,16 +6,23 @@ from __future__ import annotations
 import argparse
 import ipaddress
 import json
+import queue
 import shutil
 import subprocess
 import sys
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from threading import Thread
 from typing import Any
 
+from phone_saber_triage_codex import (
+    DEFAULT_MAX_IMAGES,
+    analyze_bundle,
+)
 from phone_saber_triage_protocol import (
     CONTENT_TYPE,
     MAX_BUNDLE_BYTES,
+    MAX_IMAGES,
     BundleError,
     receive_bundle,
 )
@@ -25,9 +32,49 @@ class TriageHTTPServer(ThreadingHTTPServer):
     daemon_threads = True
     allow_reuse_address = True
 
-    def __init__(self, address: tuple[str, int], inbox: Path) -> None:
+    def __init__(
+        self,
+        address: tuple[str, int],
+        inbox: Path,
+        *,
+        analysis_mode: str = "disabled",
+        max_images: int = DEFAULT_MAX_IMAGES,
+        codex_path: str | None = None,
+    ) -> None:
         super().__init__(address, TriageRequestHandler)
         self.inbox = inbox
+        self.analysis_mode = analysis_mode
+        self.max_images = max_images
+        self.codex_path = codex_path
+        self.analysis_queue: queue.Queue[Path] = queue.Queue(maxsize=4)
+        if analysis_mode != "disabled":
+            Thread(target=self._analysis_worker, name="phonesaber-codex-worker", daemon=True).start()
+
+    def enqueue_analysis(self, bundle: Path) -> bool:
+        if self.analysis_mode == "disabled":
+            return False
+        try:
+            self.analysis_queue.put_nowait(bundle)
+            return True
+        except queue.Full:
+            print(f"[codex] queue full; bundle preserved for manual analysis: {bundle}", flush=True)
+            return False
+
+    def _analysis_worker(self) -> None:
+        while True:
+            bundle = self.analysis_queue.get()
+            try:
+                result = analyze_bundle(
+                    bundle,
+                    max_images=self.max_images,
+                    codex_path=self.codex_path,
+                    dry_run=self.analysis_mode == "dry-run",
+                )
+                print(f"[codex] {result}", flush=True)
+            except Exception as exc:
+                print(f"[codex] analysis failed; bundle preserved: {exc}", flush=True)
+            finally:
+                self.analysis_queue.task_done()
 
 
 class TriageRequestHandler(BaseHTTPRequestHandler):
@@ -67,8 +114,9 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
         except (BundleError, OSError) as exc:
             self._reply(400, {"error": str(exc)})
             return
-        self._reply(201, {"accepted": True, "bundle": bundle.name})
         print(f"[triage] received {bundle.name} from {self.client_address[0]} → {bundle}", flush=True)
+        self.server.enqueue_analysis(bundle)
+        self._reply(201, {"accepted": True, "bundle": bundle.name})
 
     def log_message(self, fmt: str, *args: Any) -> None:
         print(f"[http] {self.address_string()} {fmt % args}", flush=True)
@@ -120,22 +168,36 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--service-name", default="Phone Saber Diagnostics")
     parser.add_argument("--no-bonjour", action="store_true", help="do not publish the Bonjour service")
+    codex_group = parser.add_mutually_exclusive_group()
+    codex_group.add_argument("--dry-run", action="store_true",
+                             help="show the exact selected PNG/context input list; do not call Codex")
+    codex_group.add_argument("--no-codex", action="store_true",
+                             help="receive bundles only; do not start Codex analysis")
+    parser.add_argument("--max-images", type=int, default=DEFAULT_MAX_IMAGES,
+                        help=f"Codex image limit (default {DEFAULT_MAX_IMAGES}, hard max {MAX_IMAGES})")
+    parser.add_argument("--codex-path", help="explicit Codex CLI executable; defaults to installed Codex")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if not 0 <= args.max_images <= MAX_IMAGES:
+        print(f"--max-images must be between 0 and {MAX_IMAGES}", file=sys.stderr)
+        return 2
     args.inbox.mkdir(parents=True, exist_ok=True)
     if args.inbox.is_symlink() or not args.inbox.is_dir():
         print(f"receiver inbox must be a real directory: {args.inbox}", file=sys.stderr)
         return 2
     try:
-        server = TriageHTTPServer((args.host, args.port), args.inbox.resolve())
+        mode = "dry-run" if args.dry_run else "disabled" if args.no_codex else "automatic"
+        server = TriageHTTPServer((args.host, args.port), args.inbox.resolve(),
+                                  analysis_mode=mode, max_images=args.max_images,
+                                  codex_path=args.codex_path)
     except OSError as exc:
         print(f"cannot start PhoneSaber diagnostics receiver: {exc}", file=sys.stderr)
         return 2
     bonjour = None if args.no_bonjour else _publish_bonjour(server.server_port, args.service_name)
-    print(f"[triage] listening on {args.host}:{server.server_port}; inbox={args.inbox}", flush=True)
+    print(f"[triage] listening on {args.host}:{server.server_port}; inbox={args.inbox}; codex={server.analysis_mode}; max-images={server.max_images}", flush=True)
     try:
         server.serve_forever(poll_interval=0.25)
     except KeyboardInterrupt:

@@ -872,8 +872,10 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     func startDebugRecording() {
-        guard debugRecordingEnabled, running, !debugRecordingActive,
-              !debugRecordingFinalizing else { return }
+        guard DebugRecordingLifecyclePolicy.mayStart(
+            enabled: debugRecordingEnabled, cameraRunning: running,
+            active: debugRecordingActive, finalizing: debugRecordingFinalizing
+        ) else { return }
         lastDebugRecordingResult = nil
         // Reserve the state immediately so a rapid app Stop queues recorder
         // finalization after recorder creation instead of leaving it orphaned.
@@ -896,7 +898,9 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     func stopDebugRecording() {
-        guard debugRecordingActive, !debugRecordingFinalizing else { return }
+        guard DebugRecordingLifecyclePolicy.mayStop(
+            active: debugRecordingActive, finalizing: debugRecordingFinalizing
+        ) else { return }
         debugRecordingActive = false
         manualLosslessCapturePending = false
         debugRecordingFinalizing = true

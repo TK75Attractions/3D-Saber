@@ -3,6 +3,36 @@ import XCTest
 @testable import PhoneSaberSender
 
 final class DebugRecordingTriageTests: XCTestCase {
+    func testDebugRecordingOffDoesNotEnterRecordingOrStopLifecycle() {
+        XCTAssertFalse(DebugRecordingLifecyclePolicy.mayStart(
+            enabled: false, cameraRunning: true, active: false, finalizing: false
+        ))
+        XCTAssertFalse(DebugRecordingLifecyclePolicy.mayStop(active: false, finalizing: false))
+    }
+
+    func testBroadCorelessSuspectUsesLongitudinalHighBrightnessCoverage() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var frame = makeFrame(0)
+        frame["forensicCaptured"] = true
+        frame["forensicFileName"] = "frame_0.png"
+        frame["candidateDiagnostics"] = ["red": [
+            "selectedCandidateType": "color-component",
+            "selectedCandidate": [
+                "sourceType": "color-component", "rawPCASpan": 210.0,
+                "robustMainIntervalLength": 125.0,
+                "scoreBreakdown": ["coreSupport": 3.0, "longitudinalHighCoverage": 1.0,
+                                   "highBrightnessRatio": 18.0]
+            ]
+        ], "blue": ["totalCandidateCount": 1, "eligibleCandidateCount": 1]] as [String: Any]
+        try Data("lossless".utf8).write(to: directory.appendingPathComponent("frame_0.png"))
+
+        let selected = try select([frame], directory: directory)
+
+        XCTAssertTrue(try XCTUnwrap(selected.images.first?.reasons)
+            .contains("wide candidate with weak core and high-brightness support"))
+    }
+
     func testManyDropoutsRespectImageAndPerFailureLimitsAndDeduplicateNearbyFrames() throws {
         let directory = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }
