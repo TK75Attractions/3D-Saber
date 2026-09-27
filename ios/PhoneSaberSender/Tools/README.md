@@ -16,6 +16,26 @@ ios/PhoneSaberSender/Tools/validate_phone_saber_metadata.py \
 An absent or malformed legacy field is reported as unknown and does not reject
 the file. Add `--strict` to return a nonzero status for those warnings.
 
+`run_lossless_regression.py` compiles the checked-in Swift detector and checks
+each color-specific contract in `lossless_regression_manifest.json`: expected
+detection, selected candidate type, endpoint distance (allowing endpoint order
+to reverse), and any candidate types that must remain rejected. The summary
+includes per-class fixture, positive, negative, pass, and failure counts.
+Manifest paths are relative to `PhoneSaberSenderTests/Fixtures`; SHA-256 values
+pin the copied PNG bytes. The regression corpus contains 40 color-specific
+cases across 35 images, including byte-preserved device captures. No external
+Downloads path is required.
+
+Failure classes:
+
+- **A:** normal RED/BLUE and diffuser positives, including frames 0220/0600
+- **B:** sparse BLUE point-LED cases
+- **C:** BLUE candidate-local handling when a frame contains a rejected line
+- **D:** BLUE raw-tail core-line rejection while preserving valid local output
+- **E:** no-blade, background, and hard-negative scenes
+- **F:** compact RED component recovery
+- **G:** RED long core-line selection and bounded endpoints
+
 Run the lossless fixture suite from the repository root:
 
 ```bash
