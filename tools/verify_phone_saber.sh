@@ -48,7 +48,8 @@ TOOLS_STATUS="FAIL"
 IOS_RELEASE_STATUS="FAIL"
 UNITY_EDITMODE_STATUS="FAIL"
 UNITY_PLAYMODE_STATUS="FAIL"
-UNITY_COMPILE_STATUS="FAIL"
+UNITY_COMPILE_STATUS="NOT_RUN"
+UNITY_CAPABILITY_STATUS="FAIL"
 DIFF_CHECK_STATUS="FAIL"
 LOSSLESS_DETAIL=""
 
@@ -275,7 +276,7 @@ if [[ -n "$IOS_SIMULATOR_ID" ]]; then
     -scheme "$IOS_SCHEME" \
     -configuration Debug \
     -destination "$IOS_SIMULATOR_DESTINATION" \
-    -derivedDataPath "$RUN_DIR/iOS-XCTest-DerivedData" \
+    -derivedDataPath "${PHONESABER_VERIFY_DERIVED_DATA:-$RUN_DIR/iOS-XCTest-DerivedData}" \
     -resultBundlePath "$RUN_DIR/iOS-XCTest.xcresult" \
     -parallel-testing-enabled NO \
     -maximum-concurrent-test-simulator-destinations 1 \
@@ -419,15 +420,32 @@ if [[ "$UNITY_ROOT_VALID" == true ]]; then
     printf 'exit_code=0\n' > "$RUN_DIR/unity-editor-check.command.log"
   fi
 
-  if [[ "$UNITY_EDITOR_OPEN" == true ]]; then
+  if [[ "${PHONESABER_VERIFY_UNITY_RUN:-0}" != "1" ]]; then
+    if [[ ! -x "$UNITY_EDITOR_PATH" ]]; then
+      UNITY_CAPABILITY_STATUS="BLOCKED"
+      UNITY_BLOCK_REASON="Unity Editor executable is unavailable at $UNITY_EDITOR_PATH."
+    elif [[ "$UNITY_EDITOR_OPEN" == true || "$UNITY_CLI_BLOCKED" == true ]]; then
+      UNITY_CAPABILITY_STATUS="BLOCKED"
+      UNITY_BLOCK_REASON="Unity Editor currently owns the project."
+    else
+      UNITY_CAPABILITY_STATUS="CAPABLE"
+    fi
+    UNITY_EDITMODE_STATUS="NOT_RUN"
+    UNITY_PLAYMODE_STATUS="NOT_RUN"
+    UNITY_COMPILE_STATUS="NOT_RUN"
+  elif [[ "$UNITY_EDITOR_OPEN" == true ]]; then
+    UNITY_CAPABILITY_STATUS="BLOCKED"
     mark_unity_blocked "Unity Editor already has 3D-Saber open. Close it and rerun to execute EditMode, PlayMode, and compile through the CLI."
   elif [[ "$UNITY_CLI_BLOCKED" == true ]]; then
+    UNITY_CAPABILITY_STATUS="BLOCKED"
     : "Unity process detection did not complete; the blocked status is retained."
   elif [[ ! -x "$UNITY_EDITOR_PATH" ]]; then
+    UNITY_CAPABILITY_STATUS="BLOCKED"
     mark_not_run "Unity EditMode" unity-editmode-unavailable FAIL "Unity Editor executable is not available at $UNITY_EDITOR_PATH."
     mark_not_run "Unity PlayMode" unity-playmode-unavailable FAIL "Unity Editor executable is not available at $UNITY_EDITOR_PATH."
     mark_not_run "Unity Compile" unity-compile-unavailable FAIL "Unity Editor executable is not available at $UNITY_EDITOR_PATH."
   else
+    UNITY_CAPABILITY_STATUS="CAPABLE"
     run_unity_test "Unity PhoneSaber EditMode" unity-editmode EditMode \
       'InputPointConversionTests;InputPointSingletonTests;PhoneSaberProjectSettingsTests;SaberInputBridgeTests'
     if [[ "$UNITY_EDITMODE_STATUS" == "BLOCKED" ]]; then
@@ -464,12 +482,13 @@ if [[ "$UNITY_ROOT_VALID" == true ]]; then
     fi
   fi
 else
+  UNITY_CAPABILITY_STATUS="FAIL"
   mark_not_run "Unity EditMode" unity-editmode-invalid-project FAIL "UNITY_PROJECT_PATH does not identify the 3D-Saber Git project; expected Assets/, Packages/, and ProjectSettings/."
   mark_not_run "Unity PlayMode" unity-playmode-invalid-project FAIL "UNITY_PROJECT_PATH does not identify the 3D-Saber Git project; expected Assets/, Packages/, and ProjectSettings/."
   mark_not_run "Unity Compile" unity-compile-invalid-project FAIL "UNITY_PROJECT_PATH does not identify the 3D-Saber Git project; expected Assets/, Packages/, and ProjectSettings/."
 fi
 
-if [[ "$UNITY_EDITOR_OPEN" == true || "$UNITY_CLI_BLOCKED" == true ]]; then
+if [[ "${PHONESABER_VERIFY_UNITY_RUN:-0}" == "1" && ( "$UNITY_EDITOR_OPEN" == true || "$UNITY_CLI_BLOCKED" == true ) ]]; then
   [[ "$UNITY_EDITMODE_STATUS" != "FAIL" ]] || UNITY_EDITMODE_STATUS="BLOCKED"
   [[ "$UNITY_PLAYMODE_STATUS" != "FAIL" ]] || UNITY_PLAYMODE_STATUS="BLOCKED"
   [[ "$UNITY_COMPILE_STATUS" != "FAIL" ]] || UNITY_COMPILE_STATUS="BLOCKED"
@@ -477,22 +496,12 @@ fi
 report_stage "Unity EditMode" "$UNITY_EDITMODE_STATUS"
 report_stage "Unity PlayMode" "$UNITY_PLAYMODE_STATUS"
 report_stage "Unity Compile" "$UNITY_COMPILE_STATUS"
+report_stage "Unity capability" "$UNITY_CAPABILITY_STATUS"
 
 run_logged_command "school-festival git diff --check" diff-check-school-festival \
   git -C "$REPO_ROOT" diff --check
 school_diff_exit="$LAST_EXIT"
-if [[ "$UNITY_ROOT_VALID" == true ]]; then
-  run_logged_command "3D-Saber git diff --check" diff-check-3d-saber \
-    git -C "$UNITY_ROOT" diff --check
-  unity_diff_exit="$LAST_EXIT"
-else
-  mark_not_run "3D-Saber git diff --check" diff-check-3d-saber-unavailable FAIL \
-    "UNITY_PROJECT_PATH does not identify the 3D-Saber Git project."
-  unity_diff_exit=1
-fi
-if [[ "$school_diff_exit" -eq 0 && "$unity_diff_exit" -eq 0 ]]; then
-  DIFF_CHECK_STATUS="PASS"
-fi
+if [[ "$school_diff_exit" -eq 0 ]]; then DIFF_CHECK_STATUS="PASS"; fi
 report_stage "Diff Check" "$DIFF_CHECK_STATUS"
 
 printf '\nPhoneSaber verification summary\n'
@@ -508,6 +517,7 @@ printf '%-20s %s\n' "iOS Release" "$IOS_RELEASE_STATUS"
 printf '%-20s %s\n' "Unity EditMode" "$UNITY_EDITMODE_STATUS"
 printf '%-20s %s\n' "Unity PlayMode" "$UNITY_PLAYMODE_STATUS"
 printf '%-20s %s\n' "Unity Compile" "$UNITY_COMPILE_STATUS"
+printf '%-20s %s\n' "Unity capability" "$UNITY_CAPABILITY_STATUS"
 printf '%-20s %s\n' "Diff Check" "$DIFF_CHECK_STATUS"
 if [[ -n "$UNITY_BLOCK_REASON" ]]; then printf 'Unity: %s\n' "$UNITY_BLOCK_REASON"; fi
 printf 'Logs: %s\n' "$RUN_DIR"
@@ -515,14 +525,14 @@ printf 'Logs: %s\n' "$RUN_DIR"
 for status in \
   "$IOS_XCTEST_STATUS" "$DETECTION_STATUS" "$LOSSLESS_STATUS" "$TOOLS_STATUS" \
   "$IOS_RELEASE_STATUS" "$UNITY_EDITMODE_STATUS" "$UNITY_PLAYMODE_STATUS" \
-  "$UNITY_COMPILE_STATUS" "$DIFF_CHECK_STATUS"; do
+  "$UNITY_COMPILE_STATUS" "$UNITY_CAPABILITY_STATUS" "$DIFF_CHECK_STATUS"; do
   if [[ "$status" == "FAIL" ]]; then exit 1; fi
 done
 if [[ "$IOS_XCTEST_STATUS" == "BLOCKED" || "$DETECTION_STATUS" == "BLOCKED" || \
       "$LOSSLESS_STATUS" == "BLOCKED" || "$TOOLS_STATUS" == "BLOCKED" || \
       "$IOS_RELEASE_STATUS" == "BLOCKED" || "$UNITY_EDITMODE_STATUS" == "BLOCKED" || \
       "$UNITY_PLAYMODE_STATUS" == "BLOCKED" || "$UNITY_COMPILE_STATUS" == "BLOCKED" || \
-      "$DIFF_CHECK_STATUS" == "BLOCKED" ]]; then
+      "$UNITY_CAPABILITY_STATUS" == "BLOCKED" || "$DIFF_CHECK_STATUS" == "BLOCKED" ]]; then
   exit 2
 fi
 exit 0

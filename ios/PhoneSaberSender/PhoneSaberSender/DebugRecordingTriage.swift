@@ -24,7 +24,7 @@ struct DebugRecordingTriageLimits {
     static let hardImageCount = 20
     static let perFailureType = 2
     static let contextRadius = 2
-    static let maximumBundleBytes: Int64 = 512 * 1024 * 1024
+    static let maximumBundleBytes: Int64 = 64 * 1024 * 1024
 }
 
 enum DebugRecordingLifecyclePolicy {
@@ -71,8 +71,7 @@ struct DebugRecordingTriageAccumulator {
         identicalBlue = blueIdentical ? identicalBlue + 1 : 0
         let incident = frame.manualCaptured || frame.forensicCaptured
             || frame.redDropoutRole != nil || frame.blueDropoutRole != nil
-            || suspicious(frame.candidateDiagnostics?.red)
-            || suspicious(frame.candidateDiagnostics?.blue)
+            || Self.isCaptureCandidate(frame)
             || jump(frame.red, previous?.red) >= 180
             || jump(frame.blue, previous?.blue) >= 180
             || identicalRed >= 3 || identicalBlue >= 3
@@ -102,7 +101,11 @@ struct DebugRecordingTriageAccumulator {
         }
     }
 
-    private func suspicious(_ diagnostics: DebugRecordingColorCandidates?) -> Bool {
+    static func isCaptureCandidate(_ frame: DebugRecordingFrameMetadata) -> Bool {
+        suspicious(frame.candidateDiagnostics?.red) || suspicious(frame.candidateDiagnostics?.blue)
+    }
+
+    private static func suspicious(_ diagnostics: DebugRecordingColorCandidates?) -> Bool {
         guard let diagnostics else { return false }
         if diagnostics.totalCandidateCount == 0 || diagnostics.eligibleCandidateCount == 0 { return true }
         guard let candidate = diagnostics.selectedCandidate else { return false }
@@ -211,14 +214,17 @@ enum DebugRecordingTriageBuilder {
         let requestedLimit = max(0, min(maximumImages, DebugRecordingTriageLimits.hardImageCount))
         let failureLimit = max(0, min(perFailureType, DebugRecordingTriageLimits.hardImageCount))
 
-        let existingReferences = try references.filter { reference in
+        let existingReferences = try references.map { reference -> ImageReference in
             guard safePNGName(reference.fileName) else {
                 throw DebugRecordingTriageError.unsafeImageName(reference.fileName)
             }
-            guard let directory else { return false }
-            return FileManager.default.fileExists(
-                atPath: directory.appendingPathComponent(reference.fileName).path
-            )
+            guard let directory,
+                  FileManager.default.fileExists(
+                    atPath: directory.appendingPathComponent(reference.fileName).path
+                  ) else {
+                throw DebugRecordingTriageError.imageMissing(reference.fileName)
+            }
+            return reference
         }
         var uniqueByName: [String: ImageReference] = [:]
         for reference in existingReferences {
@@ -339,6 +345,7 @@ enum DebugRecordingTriageBuilder {
                 "sessionID": sessionID,
                 "recordedFrameCount": recordedFrameCount ?? frames(metadata).count,
                 "retainedIncidentContextFrames": frames(metadata).count,
+                "summaryScope": "retained incident candidates and nearby context",
                 "redBlueDetectionSummary": detectionSummary(metadata: metadata),
                 "dropoutSummary": dropoutSummary(metadata: metadata),
                 "selectedImageCount": selection.images.count,
@@ -358,6 +365,10 @@ enum DebugRecordingTriageBuilder {
             try promptText(sessionID: sessionID, imageCount: selection.images.count)
                 .write(to: bundleURL.appendingPathComponent("prompt.md"), atomically: true,
                        encoding: .utf8)
+            guard DebugRecordingStorage.diskUsage(at: bundleURL)
+                <= DebugRecordingTriageLimits.maximumBundleBytes else {
+                throw DebugRecordingTriageError.bundleTooLarge
+            }
             return bundleURL
         } catch {
             try? FileManager.default.removeItem(at: bundleURL)
@@ -442,6 +453,7 @@ enum DebugRecordingTriageBuilder {
             var start: Int?
             for index in 0...frames.count {
                 let same = index > 0 && index < frames.count
+                    && areAdjacent(frames[index - 1], frames[index])
                     && isDetectionSuccess(frames[index], color: color)
                     && endpointTuple(frames[index], color: color) != nil
                     && endpointTuple(frames[index], color: color)
@@ -639,7 +651,8 @@ enum DebugRecordingTriageBuilder {
 
     private static func endpointJumpAt(_ frames: [[String: Any]], index: Int,
                                        color: String) -> Double? {
-        guard index > 0, let current = endpointTuple(frames[index], color: color),
+        guard index > 0, areAdjacent(frames[index - 1], frames[index]) else { return nil }
+        guard let current = endpointTuple(frames[index], color: color),
               let previous = endpointTuple(frames[index - 1], color: color) else { return nil }
         func distance(_ a: (Double, Double), _ b: (Double, Double)) -> Double {
             hypot(a.0 - b.0, a.1 - b.1)
@@ -678,9 +691,16 @@ enum DebugRecordingTriageBuilder {
         detectionStatus(frame, color: color) == true
     }
 
+    private static func areAdjacent(_ previous: [String: Any], _ current: [String: Any]) -> Bool {
+        guard let before = integer(previous["frameID"]),
+              let after = integer(current["frameID"]) else { return false }
+        return after == before + 1
+    }
+
     private static func isFirstFalseAfterDetection(_ frames: [[String: Any]], index: Int,
                                                    color: String) -> Bool {
-        index > 0 && detectionStatus(frames[index], color: color) == false
+        index > 0 && areAdjacent(frames[index - 1], frames[index])
+            && detectionStatus(frames[index], color: color) == false
             && detectionStatus(frames[index - 1], color: color) == true
     }
 

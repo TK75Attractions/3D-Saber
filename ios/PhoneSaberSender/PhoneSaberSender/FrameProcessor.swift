@@ -356,19 +356,28 @@ final class FrameProcessor: @unchecked Sendable {
                 completion(.failure(DebugVideoRecorderError.noFrames))
                 return
             }
-            // Clearing this first makes the OFF/finalizing path a single nil
-            // check per frame; overlay work runs away from the camera queue.
-            self.debugVideoRecorder = nil
-            self.debugRecordingIsFinalizing = true
-            recorder.finish(reason: reason) { [weak self] result in
-                guard let self else { completion(result); return }
-                self.queue.async {
-                    self.debugRecordingIsFinalizing = false
-                    completion(result)
-                    let callbacks = self.debugRecordingFinishCallbacks
-                    self.debugRecordingFinishCallbacks.removeAll()
-                    callbacks.forEach { $0(result) }
-                }
+            self.finishDebugRecordingOnQueue(recorder, reason: reason,
+                                             automatic: false, completion: completion)
+        }
+    }
+
+    /// Called on the frame queue for manual and automatic endings alike.
+    private func finishDebugRecordingOnQueue(
+        _ recorder: DebugVideoRecorder, reason: DebugRecordingFinishReason,
+        automatic: Bool,
+        completion: ((Result<DebugRecordingResult, Error>) -> Void)?
+    ) {
+        debugVideoRecorder = nil
+        debugRecordingIsFinalizing = true
+        recorder.finish(reason: reason) { [weak self] result in
+            guard let self else { completion?(result); return }
+            self.queue.async {
+                self.debugRecordingIsFinalizing = false
+                if automatic { self.onDebugRecordingAutoFinished?(result) }
+                completion?(result)
+                let callbacks = self.debugRecordingFinishCallbacks
+                self.debugRecordingFinishCallbacks.removeAll()
+                callbacks.forEach { $0(result) }
             }
         }
     }
@@ -490,19 +499,9 @@ final class FrameProcessor: @unchecked Sendable {
                 analysis: analysis
             )
             if case .reachedLimit(let reason) = appendResult {
-                self.debugVideoRecorder = nil
-                self.debugRecordingIsFinalizing = true
                 onDebugRecordingLimitReached?(reason)
-                debugVideoRecorder.finish(reason: reason) { [weak self] result in
-                    guard let self else { return }
-                    self.queue.async {
-                        self.debugRecordingIsFinalizing = false
-                        self.onDebugRecordingAutoFinished?(result)
-                        let callbacks = self.debugRecordingFinishCallbacks
-                        self.debugRecordingFinishCallbacks.removeAll()
-                        callbacks.forEach { $0(result) }
-                    }
-                }
+                finishDebugRecordingOnQueue(debugVideoRecorder, reason: reason,
+                                            automatic: true, completion: nil)
             }
         }
         if saveRequestedRawFrame { saveRawFrame(pixelBuffer) }

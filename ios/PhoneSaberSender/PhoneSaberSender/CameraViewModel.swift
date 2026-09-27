@@ -439,6 +439,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private let requestAccess: (@escaping (Bool) -> Void) -> Void
     private let idleTimerUpdater: @MainActor (Bool) -> Void
     private var cameraLifecycle = CameraLifecycleStateMachine()
+    private var recordingBackgroundTask: UIBackgroundTaskIdentifier = .invalid
     private var cameraWatchdogTask: Task<Void, Never>?
     private var sessionObserverTokens: [NSObjectProtocol] = []
     private var sceneIsActive = true
@@ -559,6 +560,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     func sceneDidChange(isActive: Bool) {
+        if !isActive && debugRecordingActive { stopDebugRecording(reason: .background) }
         sceneIsActive = isActive
         updateIdleTimerPolicy()
         let now = ProcessInfo.processInfo.systemUptime
@@ -583,6 +585,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func handleCameraInterruption(reason: String) {
         guard running else { return }
+        if debugRecordingActive { stopDebugRecording(reason: .interruption) }
         cameraLifecycle.interruptionBegan(reason: reason)
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
     }
@@ -601,6 +604,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func handleCameraRuntimeError(_ message: String) {
         guard running else { return }
+        if debugRecordingActive { stopDebugRecording(reason: .runtimeFailure) }
         if cameraRecoveryInProgress {
             cameraErrorMessage = message
             recomputeErrorMessage()
@@ -617,6 +621,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func scheduleCameraRecovery(alreadyMarkedRecovering: Bool) {
         guard running, sceneIsActive, cameraLifecycleEnabled, !cameraRecoveryInProgress else { return }
+        if debugRecordingActive { stopDebugRecording(reason: .runtimeFailure) }
         let now = ProcessInfo.processInfo.systemUptime
         if !alreadyMarkedRecovering && !cameraLifecycle.beginRecovery(at: now) { return }
         cameraRecoveryInProgress = true
@@ -1418,6 +1423,13 @@ final class CameraViewModel: NSObject, ObservableObject {
         debugRecordingActive = false
         manualLosslessCapturePending = false
         debugRecordingFinalizing = true
+        if reason == .background && recordingBackgroundTask == .invalid {
+            recordingBackgroundTask = UIApplication.shared.beginBackgroundTask(
+                withName: "PhoneSaber recording finalize"
+            ) { [weak self] in
+                Task { @MainActor in self?.endRecordingBackgroundTask() }
+            }
+        }
         debugRecordingMaximumDurationTask?.cancel()
         debugRecordingStatus = reason == .user
             ? "raw動画を確定し、overlay動画を生成中…"
@@ -1452,7 +1464,14 @@ final class CameraViewModel: NSObject, ObservableObject {
         FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
     }
 
+    private func endRecordingBackgroundTask() {
+        guard recordingBackgroundTask != .invalid else { return }
+        UIApplication.shared.endBackgroundTask(recordingBackgroundTask)
+        recordingBackgroundTask = .invalid
+    }
+
     private func completeDebugRecording(_ result: Result<DebugRecordingResult, Error>) {
+        endRecordingBackgroundTask()
         debugRecordingMaximumDurationTask?.cancel()
         debugRecordingActive = false
         debugRecordingFinalizing = false
@@ -1478,6 +1497,12 @@ final class CameraViewModel: NSObject, ObservableObject {
         case .maximumDuration: return "5分の録画時間上限"
         case .maximumDiskUsage: return "録画容量上限"
         case .maximumMetadataSize: return "metadata容量上限"
+        case .diskLow: return "空き容量不足"
+        case .background: return "アプリのバックグラウンド移行"
+        case .interruption: return "カメラの中断"
+        case .runtimeFailure: return "カメラ障害"
+        case .rawWriterFailure: return "raw動画書込み失敗"
+        case .metadataWriterFailure: return "metadata書込み失敗"
         }
     }
 

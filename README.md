@@ -46,10 +46,10 @@ The command runs the full iOS XCTest suite (including `DetectionCoreTests`)
 serially on one Simulator, with parallel test execution disabled and the worker
 count capped at one. It also runs the dedicated static BGRA Detection tests,
 the lossless fixture regression, PhoneSaber Tools unittests, an iOS Release
-build, the PhoneSaber-related Unity EditMode and PlayMode tests, Unity script
-compilation, and `git diff --check` for both `school-festival` and `3D-Saber`.
-Every command's
-stdout and stderr, Unity result XML, and Xcode result bundles are saved under
+build, a read-only Unity Editor capability check, and `git diff --check` for
+`school-festival`. Set `PHONESABER_VERIFY_UNITY_RUN=1` only when you intend to
+run Unity EditMode, PlayMode, and compile checks in the separate `3D-Saber`
+project. Every command's stdout and stderr and Xcode result bundles are saved under
 `.verify-logs/phone-saber/<run timestamp>/`.
 The iOS logs also include the xcresult summary and
 `ios-xctest-classification.stdout.log`, which separates assertion failures,

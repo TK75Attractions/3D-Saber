@@ -28,7 +28,7 @@ private enum DebugBundleTransferError: LocalizedError {
         case .invalidSummary: return "summary.json is invalid"
         case .unsafePath(let path): return "unsafe triage bundle path: \(path)"
         case .invalidFiles: return "triage bundle file list is invalid"
-        case .bundleTooLarge: return "triage upload exceeds the 512 MiB limit"
+        case .bundleTooLarge: return "triage upload exceeds the 64 MiB limit"
         case .discoveryTimeout: return "PhoneSaber diagnostics receiver was not found"
         case .invalidEndpoint: return "receiver hostname or port is invalid"
         case .httpStatus(let status): return "receiver returned HTTP \(status)"
@@ -46,7 +46,7 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
     static let serviceName = "Phone Saber Diagnostics"
     private static let maximumImages = 20
     private static let maximumFiles = 42
-    private static let maximumBytes: Int64 = 512 * 1024 * 1024
+    private static let maximumBytes: Int64 = 64 * 1024 * 1024
     private static let maximumAttempts = 3
 
     private let workQueue = DispatchQueue(label: "PhoneSaberSender.debug-bundle-transfer",
@@ -302,8 +302,8 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         let envelopeSize = Int64(8 + manifestData.count) + totalBytes
         guard envelopeSize <= maximumBytes else { throw DebugBundleTransferError.bundleTooLarge }
 
-        let packageURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("phonesaber-triage-\(UUID().uuidString).psbt")
+        let packageURL = root.deletingLastPathComponent()
+            .appendingPathComponent("\(sessionID)_triage_transfer.psbt")
         guard FileManager.default.createFile(atPath: packageURL.path, contents: nil) else {
             throw DebugBundleTransferError.invalidFiles
         }
@@ -320,6 +320,11 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
                     try output.write(contentsOf: chunk)
                 }
                 try input.close()
+            }
+            guard DebugRecordingStorage.diskUsage(
+                sessionID: sessionID, in: root.deletingLastPathComponent()
+            ) <= DebugRecordingLimits.maximumDiskUsageBytes else {
+                throw DebugBundleTransferError.bundleTooLarge
             }
             return packageURL
         } catch {
