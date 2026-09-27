@@ -207,14 +207,31 @@ enum StaticBGRADetectionTests {
             fatalError("continuous-body endpoint regression: legacy=\(legacyLength) trimmed=\(trimmedLength) continuity=\(trimmedCandidate.longitudinalContinuity) retained=\(trimmedCandidate.retainedBodyRatio)")
         }
 
-        var redBlob = StaticImage(width: 128, height: 80)
+        // Compact RED acceptance depends on strong emission evidence, not
+        // compactness alone. Keep a strong control and a same-size moderate
+        // reflection control; real captured short-blade positives are covered
+        // by lossless-regression class F.
+        var strongCompactRed = StaticImage(width: 128, height: 80)
         for y in 20...55 {
-            for x in 42...77 { redBlob.pixel(x, y, red: 245, green: 40, blue: 35) }
+            for x in 42...77 { strongCompactRed.pixel(x, y, red: 245, green: 40, blue: 35) }
         }
-        guard detectSaber(in: redBlob.bytes, width: redBlob.width, height: redBlob.height,
-                          bytesPerRow: redBlob.bytesPerRow, color: .red,
-                          threshold: ColorThreshold(brightness: 140, dominance: 20)) == nil else {
-            fatalError("compact red blob must not be detected as a saber")
+        let compactRedThreshold = ColorThreshold(brightness: 140, dominance: 20)
+        guard detectSaber(in: strongCompactRed.bytes, width: strongCompactRed.width,
+                          height: strongCompactRed.height,
+                          bytesPerRow: strongCompactRed.bytesPerRow, color: .red,
+                          threshold: compactRedThreshold) != nil else {
+            fatalError("compact red with strong emission evidence must remain detectable")
+        }
+
+        var weakCompactRed = strongCompactRed
+        for y in 20...55 {
+            for x in 42...77 { weakCompactRed.pixel(x, y, red: 214, green: 80, blue: 70) }
+        }
+        guard detectSaber(in: weakCompactRed.bytes, width: weakCompactRed.width,
+                          height: weakCompactRed.height,
+                          bytesPerRow: weakCompactRed.bytesPerRow, color: .red,
+                          threshold: compactRedThreshold) == nil else {
+            fatalError("weak-emission compact red reflection must not be detected as a saber")
         }
 
         guard matchesSaberHSV(245, 30, 60, color: .red,
