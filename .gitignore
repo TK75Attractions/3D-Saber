@@ -4,6 +4,11 @@
 #
 .utmp/
 /Tools/.venv/
+__pycache__/
+*.py[cod]
+.DS_Store*
+Thumbs.db*
+desktop.ini*
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
