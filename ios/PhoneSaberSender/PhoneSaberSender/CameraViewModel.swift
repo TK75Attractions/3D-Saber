@@ -199,8 +199,11 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var debugRecordingActive = false
     @Published private(set) var debugRecordingFinalizing = false
     @Published private(set) var manualLosslessCapturePending = false
+    @Published private(set) var debugManualLosslessCaptureCount = 0
     @Published private(set) var debugRecordingStatus = "OFF"
     @Published private(set) var lastDebugRecordingResult: DebugRecordingResult?
+    @Published private(set) var debugRecordingSessions: [DebugRecordingSessionSummary] = []
+    @Published private(set) var debugRecordingCleanupStatus = ""
 #if DEBUG
     @Published var freezeDiagnosticsEnabled = false {
         didSet {
@@ -235,6 +238,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private var connectionErrorMessage: String?
     private var sendErrorMessages: [Int: String] = [:]
     private var hostSelection = DestinationHostSelection()
+    private var debugRecordingMaximumDurationTask: Task<Void, Never>?
     private let authorizationStatus: () -> AVAuthorizationStatus
     private let requestAccess: (@escaping (Bool) -> Void) -> Void
 
@@ -280,6 +284,19 @@ final class CameraViewModel: NSObject, ObservableObject {
                     self?.rawFrameSaveMessage = "フレーム保存失敗: \(error.localizedDescription)"
                 }
             }
+        }
+        processor.onDebugRecordingLimitReached = { [weak self] reason in
+            Task { @MainActor in
+                guard let self else { return }
+                self.debugRecordingActive = false
+                self.manualLosslessCapturePending = false
+                self.debugRecordingFinalizing = true
+                self.debugRecordingMaximumDurationTask?.cancel()
+                self.debugRecordingStatus = "\(self.recordingLimitDescription(reason))。録画を自動停止して保存中…"
+            }
+        }
+        processor.onDebugRecordingAutoFinished = { [weak self] result in
+            Task { @MainActor in self?.completeDebugRecording(result) }
         }
 #if DEBUG
         processor.onPerformance = { [weak self] sample in
@@ -920,6 +937,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             active: debugRecordingActive, finalizing: debugRecordingFinalizing
         ) else { return }
         lastDebugRecordingResult = nil
+        debugManualLosslessCaptureCount = 0
         // Reserve the state immediately so a rapid app Stop queues recorder
         // finalization after recorder creation instead of leaving it orphaned.
         debugRecordingActive = true
@@ -931,6 +949,8 @@ final class CameraViewModel: NSObject, ObservableObject {
                 case .success(let sessionID):
                     guard self.debugRecordingActive, !self.debugRecordingFinalizing else { return }
                     self.debugRecordingStatus = "録画中: \(sessionID)"
+                    self.refreshDebugRecordingSessions()
+                    self.scheduleDebugRecordingMaximumDurationStop()
                 case .failure(let error):
                     guard self.debugRecordingActive, !self.debugRecordingFinalizing else { return }
                     self.debugRecordingActive = false
@@ -940,27 +960,89 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
     }
 
-    func stopDebugRecording() {
-        guard DebugRecordingLifecyclePolicy.mayStop(
-            active: debugRecordingActive, finalizing: debugRecordingFinalizing
-        ) else { return }
+    func stopDebugRecording(reason: DebugRecordingFinishReason = .user) {
+        guard DebugRecordingLifecyclePolicy.mayStop(active: debugRecordingActive, finalizing: debugRecordingFinalizing) else { return }
         debugRecordingActive = false
         manualLosslessCapturePending = false
         debugRecordingFinalizing = true
-        debugRecordingStatus = "raw動画を確定し、overlay動画を生成中…"
-        processor.stopDebugRecording { [weak self] result in
-            Task { @MainActor in
-                guard let self else { return }
-                self.debugRecordingActive = false
-                self.debugRecordingFinalizing = false
-                switch result {
-                case .success(let recording):
-                    self.lastDebugRecordingResult = recording
-                    self.debugRecordingStatus = "完了: \(recording.recordedFrameCount) frames / ドロップ \(recording.droppedFrameCount)"
-                case .failure(let error):
-                    self.debugRecordingStatus = "録画処理失敗: \(error.localizedDescription)"
-                }
+        debugRecordingMaximumDurationTask?.cancel()
+        debugRecordingStatus = reason == .user
+            ? "raw動画を確定し、overlay動画を生成中…"
+            : "\(recordingLimitDescription(reason))。録画を自動停止して保存中…"
+        processor.stopDebugRecording(reason: reason) { [weak self] result in
+            Task { @MainActor in self?.completeDebugRecording(result) }
+        }
+    }
+
+    func refreshDebugRecordingSessions() {
+        guard let directory = debugRecordingDirectory() else {
+            debugRecordingSessions = []
+            return
+        }
+        debugRecordingSessions = DebugRecordingStorage.sessionSummaries(in: directory)
+    }
+
+    func cleanupOlderDebugRecordingSessions() {
+        guard let directory = debugRecordingDirectory() else { return }
+        do {
+            let removed = try DebugRecordingStorage.deleteOlderSessions(in: directory)
+            debugRecordingCleanupStatus = removed.count == 0
+                ? "整理対象の古いsessionはありません"
+                : "古いsession \(removed.count) 件を整理しました（\(formattedBytes(removed.bytes))）"
+            refreshDebugRecordingSessions()
+        } catch {
+            debugRecordingCleanupStatus = "整理失敗: \(error.localizedDescription)"
+        }
+    }
+
+    private func debugRecordingDirectory() -> URL? {
+        FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first
+    }
+
+    private func completeDebugRecording(_ result: Result<DebugRecordingResult, Error>) {
+        debugRecordingMaximumDurationTask?.cancel()
+        debugRecordingActive = false
+        debugRecordingFinalizing = false
+        manualLosslessCapturePending = false
+        switch result {
+        case .success(let recording):
+            lastDebugRecordingResult = recording
+            debugRecordingStatus = String(
+                format: "完了: %d frames / %@ / %.0f秒",
+                recording.recordedFrameCount,
+                formattedBytes(recording.diskUsageBytes),
+                recording.durationSeconds
+            )
+        case .failure(let error):
+            debugRecordingStatus = "録画処理失敗: \(error.localizedDescription)"
+        }
+        refreshDebugRecordingSessions()
+    }
+
+    private func recordingLimitDescription(_ reason: DebugRecordingFinishReason) -> String {
+        switch reason {
+        case .user: return "手動停止"
+        case .maximumDuration: return "5分の録画時間上限"
+        case .maximumDiskUsage: return "録画容量上限"
+        case .maximumMetadataSize: return "metadata容量上限"
+        }
+    }
+
+    private func formattedBytes(_ bytes: Int64) -> String {
+        ByteCountFormatter.string(fromByteCount: bytes, countStyle: .file)
+    }
+
+    private func scheduleDebugRecordingMaximumDurationStop() {
+        debugRecordingMaximumDurationTask?.cancel()
+        let duration = UInt64(DebugRecordingLimits.maximumDurationSeconds * 1_000_000_000)
+        debugRecordingMaximumDurationTask = Task { [weak self] in
+            do {
+                try await Task.sleep(nanoseconds: duration)
+            } catch {
+                return
             }
+            guard let self, self.debugRecordingActive, !self.debugRecordingFinalizing else { return }
+            self.stopDebugRecording(reason: .maximumDuration)
         }
     }
 
@@ -975,6 +1057,7 @@ final class CameraViewModel: NSObject, ObservableObject {
                 self.manualLosslessCapturePending = false
                 switch result {
                 case .success(let frameID):
+                    self.debugManualLosslessCaptureCount += 1
                     self.debugRecordingStatus = "録画中: manual_frame_\(frameID).png をStop後に保存"
                 case .failure(let error):
                     self.debugRecordingStatus = "Lossless capture失敗: \(error.localizedDescription)"

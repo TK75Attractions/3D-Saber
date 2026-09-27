@@ -2194,8 +2194,8 @@ final class DetectionCoreTests: XCTestCase {
         defer { try? FileManager.default.removeItem(at: directory) }
         let recorder = try DebugVideoRecorder(directory: directory)
         var capturedFrameID: UInt64?
-        XCTAssertTrue(recorder.requestManualCapture { frameID in
-            capturedFrameID = frameID
+        XCTAssertTrue(recorder.requestManualCapture { result in
+            capturedFrameID = try? result.get()
         })
         XCTAssertFalse(recorder.requestManualCapture { _ in },
                        "a pending one-shot request must not capture multiple frames")
@@ -2223,6 +2223,136 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(
             atPath: forensicDirectory.appendingPathComponent("manual_frame_301.png").path
         ))
+    }
+
+    func testDebugRecordingAutomaticallyStopsAtDurationLimit() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberDurationLimitTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var now: TimeInterval = 10
+        let recorder = try DebugVideoRecorder(directory: directory, clock: { now })
+        try recorder.prepare(width: 64, height: 48)
+        let first = solidPixelBuffer(width: 64, height: 48)
+        CVPixelBufferLockBaseAddress(first, .readOnly)
+        XCTAssertEqual(recorder.append(
+            pixelBuffer: first, presentationTime: CMTime(value: 0, timescale: 30),
+            frameID: 501, results: []
+        ), .accepted)
+        CVPixelBufferUnlockBaseAddress(first, .readOnly)
+        Thread.sleep(forTimeInterval: 0.04)
+
+        now += DebugRecordingLimits.maximumDurationSeconds + 1
+        let second = solidPixelBuffer(width: 64, height: 48)
+        CVPixelBufferLockBaseAddress(second, .readOnly)
+        let result = recorder.append(
+            pixelBuffer: second, presentationTime: CMTime(value: 1, timescale: 30),
+            frameID: 502, results: []
+        )
+        CVPixelBufferUnlockBaseAddress(second, .readOnly)
+        guard case .reachedLimit(.maximumDuration) = result else {
+            return XCTFail("Expected the duration cap to stop the recording")
+        }
+
+        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
+            recorder.finish(reason: .maximumDuration) { continuation.resume(with: $0) }
+        }
+        XCTAssertEqual(recording.recordedFrameCount, 1)
+        XCTAssertEqual(recording.finishReason, .maximumDuration)
+    }
+
+    func testDebugRecordingBudgetsAreFiniteAndFitSessionLimit() {
+        let reservedMaximum = 2 * DebugRecordingLimits.maximumSingleVideoBytes
+            + DebugRecordingLimits.maximumMetadataBytes
+            + DebugRecordingLimits.maximumLosslessImageBytes
+        XCTAssertEqual(DebugRecordingLimits.maximumDurationSeconds, 300)
+        XCTAssertLessThanOrEqual(reservedMaximum, DebugRecordingLimits.maximumDiskUsageBytes)
+        XCTAssertEqual(DebugForensicCapturePolicy.production.maximumFrames,
+                       DebugRecordingLimits.maximumForensicImages)
+        XCTAssertEqual(DebugRecordingLimits.maximumManualLosslessCaptures, 3)
+        XCTAssertLessThan(Int64(DebugRecordingLimits.maximumBufferedLosslessBytes),
+                          DebugRecordingLimits.maximumDiskUsageBytes)
+    }
+
+    func testManualLosslessCaptureHasSessionLimitAndMetadataRemainsCompatible() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberManualLimitTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory)
+
+        for index in 0..<DebugRecordingLimits.maximumManualLosslessCaptures {
+            var captureResult: Result<UInt64, DebugVideoRecorderError>?
+            XCTAssertTrue(recorder.requestManualCapture { captureResult = $0 })
+            let buffer = solidPixelBuffer(width: 64, height: 48)
+            CVPixelBufferLockBaseAddress(buffer, .readOnly)
+            _ = recorder.append(
+                pixelBuffer: buffer,
+                presentationTime: CMTime(value: CMTimeValue(index), timescale: 30),
+                frameID: UInt64(600 + index), results: []
+            )
+            CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+            XCTAssertEqual(try captureResult?.get(), UInt64(600 + index))
+            Thread.sleep(forTimeInterval: 0.04)
+        }
+
+        var rejectedCapture: Result<UInt64, DebugVideoRecorderError>?
+        XCTAssertTrue(recorder.requestManualCapture { rejectedCapture = $0 })
+        XCTAssertThrowsError(try rejectedCapture?.get()) { error in
+            XCTAssertEqual(error as? DebugVideoRecorderError, .manualCaptureLimitReached)
+        }
+
+        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
+            recorder.finish { continuation.resume(with: $0) }
+        }
+        let metadataData = try Data(contentsOf: recording.metadataURL)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: metadataData) as? [String: Any])
+        XCTAssertEqual(Set(json.keys), Set(["sessionID", "width", "height", "frames"]))
+        let metadata = try JSONDecoder().decode(DebugRecordingMetadata.self, from: metadataData)
+        XCTAssertEqual(metadata.frames.filter(\.manualCaptured).count,
+                       DebugRecordingLimits.maximumManualLosslessCaptures)
+        XCTAssertLessThanOrEqual(recording.diskUsageBytes,
+                                 DebugRecordingLimits.maximumDiskUsageBytes)
+        let firstLosslessURL = try XCTUnwrap(recording.forensicDirectoryURL)
+            .appendingPathComponent("manual_frame_600.png")
+        let losslessImage = try XCTUnwrap(UIImage(contentsOfFile: firstLosslessURL.path)?.cgImage)
+        let losslessPixels = try XCTUnwrap(losslessImage.dataProvider?.data)
+        let firstPixel = try XCTUnwrap(CFDataGetBytePtr(losslessPixels))
+        XCTAssertEqual(firstPixel[0], 16)
+        XCTAssertEqual(firstPixel[1], 16)
+        XCTAssertEqual(firstPixel[2], 16)
+        XCTAssertEqual(firstPixel[3], 255)
+    }
+
+    func testOlderSessionCleanupRequiresCallAndKeepsNewestAndUnrelatedFrames() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberCleanupTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let sessions = [
+            "phonesaber_20260101_120000_000",
+            "phonesaber_20260102_120000_000",
+            "phonesaber_20260103_120000_000"
+        ]
+        for (index, sessionID) in sessions.enumerated() {
+            let url = directory.appendingPathComponent("\(sessionID)_raw.mp4")
+            try Data(repeating: UInt8(index + 1), count: index + 10).write(to: url)
+            try FileManager.default.setAttributes(
+                [.modificationDate: Date(timeIntervalSince1970: TimeInterval(index + 1))],
+                ofItemAtPath: url.path
+            )
+        }
+        let unrelated = directory.appendingPathComponent("phone-saber-raw-1.png")
+        try Data("keep".utf8).write(to: unrelated)
+
+        XCTAssertEqual(DebugRecordingStorage.sessionSummaries(in: directory).count, 3)
+        let removed = try DebugRecordingStorage.deleteOlderSessions(in: directory)
+        XCTAssertEqual(removed.count, 2)
+        XCTAssertFalse(FileManager.default.fileExists(
+            atPath: directory.appendingPathComponent("\(sessions[0])_raw.mp4").path
+        ))
+        XCTAssertTrue(FileManager.default.fileExists(
+            atPath: directory.appendingPathComponent("\(sessions[2])_raw.mp4").path
+        ))
+        XCTAssertTrue(FileManager.default.fileExists(atPath: unrelated.path))
     }
 
     func testBlueDropoutCaptureStoresLastTrueFalseAndRecoveryFrames() async throws {

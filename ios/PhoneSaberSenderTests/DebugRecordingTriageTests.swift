@@ -131,7 +131,8 @@ final class DebugRecordingTriageTests: XCTestCase {
         try metadata(frames).write(to: metadataURL)
 
         let bundle = try DebugRecordingTriageBuilder.build(
-            metadataURL: metadataURL, forensicDirectoryURL: forensic
+            metadataData: try metadata(frames), metadataURL: metadataURL,
+            forensicDirectoryURL: forensic
         )
         let relativePaths = try FileManager.default.subpathsOfDirectory(atPath: bundle.path).sorted()
         XCTAssertTrue(relativePaths.contains("summary.json"))

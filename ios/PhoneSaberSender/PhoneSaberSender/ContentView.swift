@@ -6,6 +6,7 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @AppStorage("phoneSaberAutoTransferDebugBundles") private var autoTransferDebugBundles = true
     @State private var recordingPreviewURL: URL?
+    @State private var showRecordingCleanupConfirmation = false
 #if DEBUG
     @State private var showDebugPerformance = false
 #endif
@@ -65,8 +66,12 @@ struct ContentView: View {
                                     .disabled(!model.debugRecordingActive || model.debugRecordingFinalizing)
                                 Button("Capture Lossless Frame") { model.captureNextLosslessFrame() }
                                     .disabled(!model.debugRecordingEnabled || !model.debugRecordingActive ||
-                                              model.debugRecordingFinalizing || model.manualLosslessCapturePending)
+                                              model.debugRecordingFinalizing || model.manualLosslessCapturePending ||
+                                              model.debugManualLosslessCaptureCount >= DebugRecordingLimits.maximumManualLosslessCaptures)
                             }
+                            Text("上限: 1録画5分・768 MiB / lossless手動 \(model.debugManualLosslessCaptureCount)/3枚 / forensic自動8枚")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                             Text(model.debugRecordingEnabled ? model.debugRecordingStatus : "OFF（録画処理なし）")
                                 .font(.caption)
                                 .foregroundStyle(model.debugRecordingActive ? .red : .secondary)
@@ -98,6 +103,23 @@ struct ContentView: View {
                                         }
                                     }
                                 }
+                            }
+                            HStack {
+                                Text("保存中の録画session: \(model.debugRecordingSessions.count)件")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                Spacer()
+                                Button("古いsessionを整理…") {
+                                    showRecordingCleanupConfirmation = true
+                                }
+                                .font(.caption)
+                                .disabled(model.debugRecordingActive || model.debugRecordingFinalizing
+                                          || model.debugRecordingSessions.count < 2)
+                            }
+                            if !model.debugRecordingCleanupStatus.isEmpty {
+                                Text(model.debugRecordingCleanupStatus)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -247,6 +269,23 @@ struct ContentView: View {
             }
             .navigationTitle("Phone Saber Sender")
             .quickLookPreview($recordingPreviewURL)
+        }
+        .task { model.refreshDebugRecordingSessions() }
+        .confirmationDialog(
+            "古い録画sessionを整理しますか？",
+            isPresented: $showRecordingCleanupConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("古いsessionを整理（最新は保持）", role: .destructive) {
+                model.cleanupOlderDebugRecordingSessions()
+            }
+            Button("キャンセル", role: .cancel) {}
+        } message: {
+            let older = Array(model.debugRecordingSessions.dropFirst())
+            let reclaimable = older.reduce(Int64(0)) { $0 + $1.diskUsageBytes }
+            let firstOlder = older.last?.sessionID ?? "なし"
+            let latest = model.debugRecordingSessions.first?.sessionID ?? "なし"
+            Text("対象: \(older.count)件（最古 \(firstOlder)、約\(ByteCountFormatter.string(fromByteCount: reclaimable, countStyle: .file))）。最新 \(latest) は保持します。")
         }
         .onChange(of: scenePhase) { phase in
             if phase == .active { model.recoverFromForeground() }

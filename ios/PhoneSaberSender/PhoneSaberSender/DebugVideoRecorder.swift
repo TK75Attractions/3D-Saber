@@ -13,6 +13,173 @@ struct DebugRecordingResult {
     let droppedFrameCount: Int
     let triageBundleURL: URL?
     let triageErrorMessage: String?
+    let durationSeconds: TimeInterval
+    let diskUsageBytes: Int64
+    let finishReason: DebugRecordingFinishReason
+}
+
+enum DebugRecordingFinishReason: Equatable {
+    case user
+    case maximumDuration
+    case maximumDiskUsage
+    case maximumMetadataSize
+}
+
+enum DebugRecordingLimits {
+    static let maximumDurationSeconds: TimeInterval = 5 * 60
+    static let maximumDiskUsageBytes: Int64 = 768 * 1_024 * 1_024
+    static let minimumFreeSpaceReserveBytes: Int64 = 128 * 1_024 * 1_024
+    static let maximumMetadataBytes: Int64 = 220 * 1_024 * 1_024
+    static let maximumSingleVideoBytes: Int64 = 220 * 1_024 * 1_024
+    static let maximumLosslessImageBytes: Int64 = 64 * 1_024 * 1_024
+    static let maximumBufferedLosslessBytes = 128 * 1_024 * 1_024
+    static let maximumManualLosslessCaptures = 3
+    static let maximumForensicImages = 8
+    static let averageVideoBitRate = 4_000_000
+    static let metadataFrameReserveBytes: Int64 = 64 * 1_024
+}
+
+struct DebugRecordingSessionSummary: Identifiable, Equatable {
+    let sessionID: String
+    let modifiedAt: Date
+    let diskUsageBytes: Int64
+
+    var id: String { sessionID }
+}
+
+enum DebugRecordingStorage {
+    private static let sessionSuffixes = [
+        "_metadata.json.partial", "_metadata.json", "_overlay.mp4", "_raw.mp4", "_forensic"
+    ]
+    private static let sessionDateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyyMMdd_HHmmss_SSS"
+        return formatter
+    }()
+
+    static func availableCapacity(at directory: URL) throws -> Int64 {
+        let values = try directory.resourceValues(forKeys: [
+            .volumeAvailableCapacityForImportantUsageKey,
+            .volumeAvailableCapacityKey
+        ])
+        if let capacity = values.volumeAvailableCapacityForImportantUsage {
+            return capacity
+        }
+        if let capacity = values.volumeAvailableCapacity {
+            return Int64(capacity)
+        }
+        throw CocoaError(.fileReadUnknown)
+    }
+
+    static func validateStartCapacity(at directory: URL) throws {
+        let required = DebugRecordingLimits.maximumDiskUsageBytes
+            + DebugRecordingLimits.minimumFreeSpaceReserveBytes
+        let available = try availableCapacity(at: directory)
+        guard available >= required else {
+            throw DebugVideoRecorderError.insufficientDiskSpace(
+                required: required, available: available
+            )
+        }
+    }
+
+    static func sessionSummaries(in directory: URL) -> [DebugRecordingSessionSummary] {
+        guard let entries = try? FileManager.default.contentsOfDirectory(
+            at: directory, includingPropertiesForKeys: [.isDirectoryKey, .contentModificationDateKey]
+        ) else { return [] }
+        var sessionIDs = Set<String>()
+        for entry in entries {
+            let name = entry.lastPathComponent
+            guard name.hasPrefix("phonesaber_") else { continue }
+            for suffix in sessionSuffixes where name.hasSuffix(suffix) {
+                sessionIDs.insert(String(name.dropLast(suffix.count)))
+                break
+            }
+        }
+        return sessionIDs.compactMap { sessionID in
+            let files = matchingSessionEntries(sessionID: sessionID, entries: entries)
+            guard !files.isEmpty else { return nil }
+            let modifiedAt = files.compactMap {
+                try? $0.resourceValues(forKeys: [.contentModificationDateKey]).contentModificationDate
+            }.max() ?? Date.distantPast
+            return DebugRecordingSessionSummary(
+                sessionID: sessionID,
+                modifiedAt: modifiedAt,
+                diskUsageBytes: files.reduce(Int64(0)) {
+                    $0 + allocatedSize(at: $1)
+                }
+            )
+        }.sorted { lhs, rhs in
+            let lhsDate = dateFromSessionID(lhs.sessionID) ?? lhs.modifiedAt
+            let rhsDate = dateFromSessionID(rhs.sessionID) ?? rhs.modifiedAt
+            return lhsDate == rhsDate
+                ? lhs.sessionID > rhs.sessionID
+                : lhsDate > rhsDate
+        }
+    }
+
+    @discardableResult
+    static func deleteOlderSessions(in directory: URL) throws -> (count: Int, bytes: Int64) {
+        let sessions = sessionSummaries(in: directory)
+        guard sessions.count > 1 else { return (0, 0) }
+        let newestID = sessions[0].sessionID
+        var removedCount = 0
+        var removedBytes: Int64 = 0
+        let entries = try FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)
+        for session in sessions.dropFirst() where session.sessionID != newestID {
+            let matching = matchingSessionEntries(sessionID: session.sessionID, entries: entries)
+            for entry in matching {
+                try FileManager.default.removeItem(at: entry)
+            }
+            removedCount += 1
+            removedBytes += session.diskUsageBytes
+        }
+        return (removedCount, removedBytes)
+    }
+
+    static func diskUsage(sessionID: String, in directory: URL) -> Int64 {
+        guard let entries = try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil) else {
+            return 0
+        }
+        return matchingSessionEntries(sessionID: sessionID, entries: entries).reduce(Int64(0)) {
+            $0 + allocatedSize(at: $1)
+        }
+    }
+
+    static func diskUsage(at directory: URL) -> Int64 {
+        allocatedSize(at: directory)
+    }
+
+    private static func matchingSessionEntries(sessionID: String, entries: [URL]) -> [URL] {
+        entries.filter { entry in
+            let name = entry.lastPathComponent
+            return name == "\(sessionID)_raw.mp4"
+                || name == "\(sessionID)_overlay.mp4"
+                || name == "\(sessionID)_metadata.json"
+                || name == "\(sessionID)_metadata.json.partial"
+                || name == "\(sessionID)_forensic"
+        }
+    }
+
+    private static func dateFromSessionID(_ sessionID: String) -> Date? {
+        let prefix = "phonesaber_"
+        guard sessionID.hasPrefix(prefix) else { return nil }
+        return sessionDateFormatter.date(from: String(sessionID.dropFirst(prefix.count)))
+    }
+
+    private static func allocatedSize(at url: URL) -> Int64 {
+        let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey])
+        if values?.isDirectory == true,
+           let enumerator = FileManager.default.enumerator(at: url, includingPropertiesForKeys: [.fileSizeKey]) {
+            return enumerator.compactMap { item -> Int64? in
+                guard let item = item as? URL,
+                      let size = try? item.resourceValues(forKeys: [.fileSizeKey]).fileSize else { return nil }
+                return Int64(size)
+            }.reduce(0, +)
+        }
+        return Int64(values?.fileSize ?? 0)
+    }
 }
 
 struct DebugRecordingPoint: Codable, Equatable {
@@ -263,7 +430,7 @@ struct DebugForensicCapturePolicy {
         absoluteLengthThreshold: 260,
         relativeLengthThreshold: 180,
         growthRatio: 2.0,
-        maximumFrames: 24
+        maximumFrames: DebugRecordingLimits.maximumForensicImages
     )
 
     let absoluteLengthThreshold: Double
@@ -279,15 +446,91 @@ private struct DebugForensicFrame {
     let bytes: Data
 }
 
+private struct DebugOverlayFrame {
+    let red: (PixelPoint, PixelPoint)?
+    let blue: (PixelPoint, PixelPoint)?
+}
+
+private final class DebugRecordingMetadataStream {
+    private let partialURL: URL
+    private let finalURL: URL
+    private let encoder = JSONEncoder()
+    private var handle: FileHandle
+    private var firstFrame = true
+    private(set) var bytesWritten: Int64
+
+    init(url: URL, sessionID: String, width: Int, height: Int) throws {
+        finalURL = url
+        partialURL = url.appendingPathExtension("partial")
+        encoder.outputFormatting = [.sortedKeys]
+        FileManager.default.createFile(atPath: partialURL.path, contents: nil)
+        handle = try FileHandle(forWritingTo: partialURL)
+        let encodedSessionID = try encoder.encode(sessionID)
+        let header = Data("{\"formatVersion\":1,\"sessionID\":\(String(decoding: encodedSessionID, as: UTF8.self)),\"width\":\(width),\"height\":\(height),\"frames\":[".utf8)
+        try handle.write(contentsOf: header)
+        bytesWritten = Int64(header.count)
+    }
+
+    var canReserveNextFrame: Bool {
+        bytesWritten + 2 * DebugRecordingLimits.metadataFrameReserveBytes
+            <= DebugRecordingLimits.maximumMetadataBytes
+    }
+
+    func append(_ frame: DebugRecordingFrameMetadata) throws {
+        let encoded = try encoder.encode(frame)
+        let separator = firstFrame ? Data() : Data([0x2c])
+        let nextSize = bytesWritten + Int64(separator.count + encoded.count)
+            + 2 // closing array and object
+        guard nextSize <= DebugRecordingLimits.maximumMetadataBytes else {
+            throw DebugVideoRecorderError.metadataSizeLimitReached
+        }
+        try handle.write(contentsOf: separator)
+        try handle.write(contentsOf: encoded)
+        bytesWritten += Int64(separator.count + encoded.count)
+        firstFrame = false
+    }
+
+    func finish(cameraSamples: [DebugRecordingCameraSample]) throws {
+        let sampleData = try encoder.encode(cameraSamples)
+        let suffixCount = Data("],\"cameraSamples\":".utf8).count + sampleData.count + 1
+        guard bytesWritten + Int64(suffixCount) <= DebugRecordingLimits.maximumMetadataBytes else {
+            throw DebugVideoRecorderError.metadataSizeLimitReached
+        }
+        try handle.write(contentsOf: Data("],\"cameraSamples\":".utf8))
+        try handle.write(contentsOf: sampleData)
+        try handle.write(contentsOf: Data("}".utf8))
+        try handle.synchronize()
+        try handle.close()
+        bytesWritten += Int64(suffixCount)
+    }
+
+    func publish() throws {
+        if FileManager.default.fileExists(atPath: finalURL.path) {
+            try FileManager.default.removeItem(at: finalURL)
+        }
+        try FileManager.default.moveItem(at: partialURL, to: finalURL)
+    }
+
+    func discard() {
+        try? handle.close()
+        try? FileManager.default.removeItem(at: partialURL)
+    }
+}
+
 private struct DebugRetainedBlueFrame {
     let pixelBuffer: CVPixelBuffer
     let frameID: UInt64
-    let metadataIndex: Int
     let width: Int
     let height: Int
 }
 
-enum DebugVideoRecorderError: LocalizedError {
+enum DebugRecordingAppendResult: Equatable {
+    case accepted
+    case skipped
+    case reachedLimit(DebugRecordingFinishReason)
+}
+
+enum DebugVideoRecorderError: LocalizedError, Equatable {
     case alreadyStarted
     case cameraNotReady
     case noFrames
@@ -295,6 +538,11 @@ enum DebugVideoRecorderError: LocalizedError {
     case appendFailed(String)
     case cannotReadRawVideo(String)
     case metadataFrameMismatch(expected: Int, actual: Int)
+    case insufficientDiskSpace(required: Int64, available: Int64)
+    case manualCaptureLimitReached
+    case losslessMemoryLimitReached
+    case metadataSizeLimitReached
+    case diskUsageLimitReached
 
     var errorDescription: String? {
         switch self {
@@ -306,6 +554,16 @@ enum DebugVideoRecorderError: LocalizedError {
         case .cannotReadRawVideo(let message): return "raw動画を読み込めません: \(message)"
         case .metadataFrameMismatch(let expected, let actual):
             return "動画と検出結果のフレーム数が一致しません (metadata \(expected), video \(actual))"
+        case .insufficientDiskSpace(let required, let available):
+            return "録画を開始できません。空き容量が不足しています (必要 \(ByteCountFormatter.string(fromByteCount: required, countStyle: .file)) / 空き \(ByteCountFormatter.string(fromByteCount: available, countStyle: .file)))"
+        case .manualCaptureLimitReached:
+            return "この録画のlossless capture上限に達しました"
+        case .losslessMemoryLimitReached:
+            return "lossless画像のメモリ上限に達したため、この画像は保存できません"
+        case .metadataSizeLimitReached:
+            return "metadataのサイズ上限に達しました"
+        case .diskUsageLimitReached:
+            return "この録画のdisk usage上限に達しました"
         }
     }
 }
@@ -329,22 +587,37 @@ final class DebugVideoRecorder {
     private var firstPresentationTime: CMTime?
     private var lastPresentationTime: CMTime?
     private var dimensions: (width: Int, height: Int)?
-    private var frames: [DebugRecordingFrameMetadata] = []
+    private var latestRecordedFrameTiming: (UInt64, Double)?
     private var cameraSamples: [DebugRecordingCameraSample] = []
+    private var metadataStream: DebugRecordingMetadataStream?
+    private var triageAccumulator = DebugRecordingTriageAccumulator()
+    private var pendingMetadataFrame: DebugRecordingFrameMetadata?
+    private var overlayFrames: [DebugOverlayFrame] = []
+    private var recordedFrameCount = 0
     private var forensicFrames: [DebugForensicFrame] = []
+    private var automaticForensicCaptureCount = 0
+    private var bufferedLosslessBytes = 0
+    private var reservedLosslessDiskBytes: Int64 = 0
+    private var manualLosslessCaptureCount = 0
     private var previousLengths: [SaberColor: Double] = [:]
-    private var manualCaptureCompletion: ((UInt64) -> Void)?
+    private var manualCaptureCompletion: ((Result<UInt64, DebugVideoRecorderError>) -> Void)?
     private var lastBlueDetectedFrame: DebugRetainedBlueFrame?
     private var blueDropoutActive = false
     private var lastRedDetectedFrame: DebugRetainedBlueFrame?
     private var redDropoutActive = false
     private let forensicPolicy: DebugForensicCapturePolicy
+    private let clock: () -> TimeInterval
+    private var startedAt: TimeInterval?
+    private var terminalError: Error?
+    private var finishReason: DebugRecordingFinishReason = .user
     private(set) var droppedFrameCount = 0
     private var isFinishing = false
 
     init(directory: URL, date: Date = Date(),
-         forensicPolicy: DebugForensicCapturePolicy = .production) throws {
+         forensicPolicy: DebugForensicCapturePolicy = .production,
+         clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        try DebugRecordingStorage.validateStartCapacity(at: directory)
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.timeZone = .current
@@ -355,19 +628,27 @@ final class DebugVideoRecorder {
         metadataURL = directory.appendingPathComponent("\(sessionID)_metadata.json")
         forensicDirectoryURL = directory.appendingPathComponent("\(sessionID)_forensic", isDirectory: true)
         self.forensicPolicy = forensicPolicy
+        self.clock = clock
     }
 
     /// Prepares the encoder before the recording interval begins. This keeps
     /// one-time H.264 setup out of the first measured frame.
     func prepare(width: Int, height: Int) throws {
         if writer == nil { try configureWriter(width: width, height: height) }
+        if startedAt == nil { startedAt = clock() }
     }
 
     /// Arms a one-shot capture for the next frame accepted by the raw writer.
     /// The completion receives the exact frame ID stored in metadata.
     @discardableResult
-    func requestManualCapture(completion: @escaping (UInt64) -> Void) -> Bool {
+    func requestManualCapture(
+        completion: @escaping (Result<UInt64, DebugVideoRecorderError>) -> Void
+    ) -> Bool {
         guard !isFinishing, manualCaptureCompletion == nil else { return false }
+        guard manualLosslessCaptureCount < DebugRecordingLimits.maximumManualLosslessCaptures else {
+            completion(.failure(.manualCaptureLimitReached))
+            return true
+        }
         manualCaptureCompletion = completion
         return true
     }
@@ -381,7 +662,7 @@ final class DebugVideoRecorder {
     }
 
     var latestFrameTiming: (UInt64, Double)? {
-        frames.last.map { ($0.frameID, $0.presentationTimeSeconds) }
+        latestRecordedFrameTiming
     }
 
     /// Called only from FrameProcessor's serial queue. Metadata is appended
@@ -392,25 +673,33 @@ final class DebugVideoRecorder {
         frameID: UInt64,
         results: [DetectedSaber],
         analysis: SaberFrameAnalysis? = nil
-    ) {
-        guard !isFinishing else { return }
+    ) -> DebugRecordingAppendResult {
+        guard !isFinishing else { return .skipped }
+        if startedAt == nil { startedAt = clock() }
+        if let startedAt, clock() - startedAt >= DebugRecordingLimits.maximumDurationSeconds {
+            return .reachedLimit(.maximumDuration)
+        }
+        if let metadataStream, !metadataStream.canReserveNextFrame {
+            return .reachedLimit(.maximumMetadataSize)
+        }
         let width = CVPixelBufferGetWidth(pixelBuffer)
         let height = CVPixelBufferGetHeight(pixelBuffer)
         do {
             if writer == nil { try configureWriter(width: width, height: height) }
         } catch {
             droppedFrameCount += 1
-            return
+            terminalError = error
+            return .skipped
         }
         guard dimensions?.width == width, dimensions?.height == height,
               let writerInput, let adaptor else {
             droppedFrameCount += 1
-            return
+            return .skipped
         }
 
         let sourceTime = presentationTime.isValid && presentationTime.isNumeric
             ? presentationTime
-            : CMTime(value: Int64(frames.count), timescale: 30)
+            : CMTime(value: Int64(recordedFrameCount), timescale: 30)
         if firstPresentationTime == nil { firstPresentationTime = sourceTime }
         let relativeTime = CMTimeSubtract(sourceTime, firstPresentationTime ?? .zero)
         guard relativeTime.isValid, relativeTime.isNumeric,
@@ -418,7 +707,7 @@ final class DebugVideoRecorder {
               writerInput.isReadyForMoreMediaData,
               adaptor.append(pixelBuffer, withPresentationTime: relativeTime) else {
             droppedFrameCount += 1
-            return
+            return .skipped
         }
         lastPresentationTime = relativeTime
 
@@ -428,8 +717,7 @@ final class DebugVideoRecorder {
         let freshBlue = freshBlueResult?.endpoints
         let redDetectionSucceeded = freshRedResult.map { !$0.isPredicted } ?? false
         let blueDetectionSucceeded = freshBlueResult.map { !$0.isPredicted } ?? false
-        let metadataIndex = frames.count
-        frames.append(DebugRecordingFrameMetadata(
+        var frame = DebugRecordingFrameMetadata(
             frameID: frameID,
             presentationTimeSeconds: CMTimeGetSeconds(relativeTime),
             red: DebugRecordingDetection(
@@ -449,68 +737,131 @@ final class DebugVideoRecorder {
             blueDropoutFileName: nil,
             redDropoutRole: nil,
             redDropoutFileName: nil
-        ))
+        )
         updateBlueDropoutCapture(
-            pixelBuffer: pixelBuffer, frameID: frameID, metadataIndex: metadataIndex,
+            pixelBuffer: pixelBuffer, frameID: frameID,
+            currentMetadata: &frame, previousMetadata: &pendingMetadataFrame,
             width: width, height: height, blueDetected: blueDetectionSucceeded
         )
         updateRedDropoutCapture(
-            pixelBuffer: pixelBuffer, frameID: frameID, metadataIndex: metadataIndex,
+            pixelBuffer: pixelBuffer, frameID: frameID,
+            currentMetadata: &frame, previousMetadata: &pendingMetadataFrame,
             width: width, height: height, redDetected: redDetectionSucceeded
         )
         let redIsAnomalous = anomalyDetected(for: .red, endpoints: freshRed)
         let blueIsAnomalous = anomalyDetected(for: .blue, endpoints: freshBlue)
         let manualCompletion = manualCaptureCompletion
         let shouldCaptureAnomaly = (redIsAnomalous || blueIsAnomalous)
-            && forensicFrames.count < forensicPolicy.maximumFrames
-        if (manualCompletion != nil || shouldCaptureAnomaly),
-           let bytes = copyBGRA(pixelBuffer: pixelBuffer, width: width, height: height) {
-            let fileName: String
-            if manualCompletion != nil {
-                fileName = "manual_frame_\(frameID).png"
-                frames[metadataIndex].manualCaptured = true
-                frames[metadataIndex].manualFileName = fileName
+            && automaticForensicCaptureCount < forensicPolicy.maximumFrames
+        if let manualCompletion {
+            let fileName = "manual_frame_\(frameID).png"
+            if captureCurrentBGRA(pixelBuffer: pixelBuffer, width: width, height: height,
+                                  fileName: fileName, manual: true) {
+                frame.manualCaptured = true
+                frame.manualFileName = fileName
                 manualCaptureCompletion = nil
+                manualCompletion(.success(frameID))
             } else {
-                fileName = "frame_\(frameID).png"
-                frames[metadataIndex].forensicCaptured = true
-                frames[metadataIndex].forensicFileName = fileName
+                manualCaptureCompletion = nil
+                manualCompletion(.failure(.losslessMemoryLimitReached))
             }
-            forensicFrames.append(DebugForensicFrame(
-                fileName: fileName,
-                width: width, height: height, bytes: bytes
-            ))
-            manualCompletion?(frameID)
+        } else if shouldCaptureAnomaly {
+            let fileName = "frame_\(frameID).png"
+            if captureCurrentBGRA(pixelBuffer: pixelBuffer, width: width, height: height,
+                                  fileName: fileName) {
+                frame.forensicCaptured = true
+                frame.forensicFileName = fileName
+            }
         }
+
+        do {
+            if let previous = pendingMetadataFrame {
+                try metadataStream?.append(previous)
+                triageAccumulator.observe(previous)
+            }
+            pendingMetadataFrame = frame
+        } catch {
+            terminalError = error
+            return .reachedLimit(.maximumMetadataSize)
+        }
+        latestRecordedFrameTiming = (frameID, frame.presentationTimeSeconds)
+        overlayFrames.append(DebugOverlayFrame(red: freshRed, blue: freshBlue))
+        recordedFrameCount += 1
+
+        if recordedFrameCount % 15 == 0 {
+            let rawBytes = fileSize(at: rawVideoURL)
+            let sessionBytes = DebugRecordingStorage.diskUsage(sessionID: sessionID,
+                                                               in: rawVideoURL.deletingLastPathComponent())
+            let remainingCapacity = try? DebugRecordingStorage.availableCapacity(
+                at: rawVideoURL.deletingLastPathComponent()
+            )
+            if rawBytes >= DebugRecordingLimits.maximumSingleVideoBytes
+                || sessionBytes >= DebugRecordingLimits.maximumDiskUsageBytes
+                || (remainingCapacity ?? 0) <= DebugRecordingLimits.minimumFreeSpaceReserveBytes {
+                return .reachedLimit(.maximumDiskUsage)
+            }
+        }
+        return .accepted
     }
 
-    func finish(completion: @escaping (Result<DebugRecordingResult, Error>) -> Void) {
+    func finish(
+        reason: DebugRecordingFinishReason = .user,
+        completion: @escaping (Result<DebugRecordingResult, Error>) -> Void
+    ) {
         guard !isFinishing else {
             completion(.failure(DebugVideoRecorderError.alreadyStarted))
             return
         }
         isFinishing = true
+        finishReason = reason
         lastBlueDetectedFrame = nil
         lastRedDetectedFrame = nil
-        guard let writer, let writerInput, let dimensions, !frames.isEmpty else {
+        guard let writer, let writerInput, let dimensions, recordedFrameCount > 0 else {
+            metadataStream?.discard()
+            writer?.cancelWriting()
             completion(.failure(DebugVideoRecorderError.noFrames))
             return
         }
-        let metadata = DebugRecordingMetadata(
-            formatVersion: DebugRecordingMetadata.currentFormatVersion,
-            sessionID: sessionID, width: dimensions.width, height: dimensions.height,
-            frames: frames, cameraSamples: cameraSamples
-        )
+        if let terminalError {
+            metadataStream?.discard()
+            writerInput.markAsFinished()
+            writer.finishWriting { completion(.failure(terminalError)) }
+            return
+        }
+        do {
+            if let pendingMetadataFrame {
+                try metadataStream?.append(pendingMetadataFrame)
+                triageAccumulator.observe(pendingMetadataFrame)
+                self.pendingMetadataFrame = nil
+            }
+            try metadataStream?.finish(cameraSamples: cameraSamples)
+        } catch {
+            metadataStream?.discard()
+            writerInput.markAsFinished()
+            writer.finishWriting { completion(.failure(error)) }
+            return
+        }
         let forensicFrames = forensicFrames
+        let triageFrames = triageAccumulator.retainedFrames
+        let stream = metadataStream
         let dropped = droppedFrameCount
+        let frameCount = recordedFrameCount
+        let overlayFrames = overlayFrames
+        let duration = max(0, clock() - (startedAt ?? clock()))
+        let reason = finishReason
+        let directory = rawVideoURL.deletingLastPathComponent()
+        let currentSessionID = sessionID
         writerInput.markAsFinished()
         writer.finishWriting { [rawVideoURL, overlayVideoURL, metadataURL, forensicDirectoryURL] in
+            let writerCompleted = writer.status == .completed
+            let writerFailure = writer.error?.localizedDescription
+                ?? "writer status \(writer.status.rawValue)"
             // This runs only after Stop. User-initiated priority keeps the
             // explicitly requested export responsive without touching capture.
             Task.detached(priority: .userInitiated) {
                 do {
-                    guard writer.status == .completed else {
-                        throw DebugVideoRecorderError.appendFailed(writer.error?.localizedDescription ?? "writer status \(writer.status.rawValue)")
+                    guard writerCompleted else {
+                        throw DebugVideoRecorderError.appendFailed(writerFailure)
                     }
                     if !forensicFrames.isEmpty {
                         try FileManager.default.createDirectory(
@@ -520,40 +871,82 @@ final class DebugVideoRecorder {
                             try DebugVideoRecorder.writeForensicPNG(
                                 frame, directory: forensicDirectoryURL
                             )
+                            guard DebugRecordingStorage.diskUsage(at: forensicDirectoryURL)
+                                <= DebugRecordingLimits.maximumLosslessImageBytes,
+                                DebugRecordingStorage.diskUsage(
+                                    sessionID: currentSessionID, in: directory
+                                ) <= DebugRecordingLimits.maximumDiskUsageBytes else {
+                                try? FileManager.default.removeItem(
+                                    at: forensicDirectoryURL.appendingPathComponent(frame.fileName)
+                                )
+                                throw DebugVideoRecorderError.diskUsageLimitReached
+                            }
                         }
                     }
-                    let data = try JSONEncoder.prettyPrinted.encode(metadata)
-                    try data.write(to: metadataURL, options: .atomic)
+                    // The complete path appears only after raw and required PNGs succeed.
+                    try stream?.publish()
+                    let snapshot = DebugRecordingMetadata(
+                        formatVersion: DebugRecordingMetadata.currentFormatVersion,
+                        sessionID: currentSessionID, width: dimensions.width,
+                        height: dimensions.height, frames: triageFrames, cameraSamples: []
+                    )
                     var triageBundleURL: URL?
                     var triageErrorMessage: String?
-                    do {
-                        triageBundleURL = try DebugRecordingTriageBuilder.build(
-                            metadataURL: metadataURL,
-                            forensicDirectoryURL: forensicFrames.isEmpty ? nil : forensicDirectoryURL
-                        )
-                        if let triageBundleURL {
-                            DebugBundleTransfer.shared.enqueue(bundleURL: triageBundleURL)
+                    if !triageFrames.isEmpty {
+                        do {
+                            triageBundleURL = try DebugRecordingTriageBuilder.build(
+                                metadataData: try JSONEncoder().encode(snapshot),
+                                metadataURL: metadataURL,
+                                forensicDirectoryURL: forensicFrames.isEmpty ? nil : forensicDirectoryURL,
+                                recordedFrameCount: frameCount
+                            )
+                            if let triageBundleURL {
+                                let usage = DebugRecordingStorage.diskUsage(
+                                    sessionID: currentSessionID, in: directory
+                                )
+                                guard usage <= DebugRecordingLimits.maximumDiskUsageBytes else {
+                                    try? FileManager.default.removeItem(at: triageBundleURL)
+                                    throw DebugVideoRecorderError.diskUsageLimitReached
+                                }
+                                DebugBundleTransfer.shared.enqueue(bundleURL: triageBundleURL)
+                            }
+                        } catch {
+                            triageErrorMessage = error.localizedDescription
+                            print("[DebugTriage] bundle generation failed: \(error.localizedDescription)")
                         }
-                    } catch {
-                        // Triage is best-effort and must not turn a completed recording into a failure.
-                        triageErrorMessage = error.localizedDescription
-                        print("[DebugTriage] bundle generation failed: \(error.localizedDescription)")
                     }
-                    try await DebugVideoRecorder.makeOverlayVideo(
-                        rawURL: rawVideoURL,
-                        outputURL: overlayVideoURL,
-                        metadata: metadata
+                    // Overlay is a viewing aid. Its failure must not invalidate
+                    // verified metadata, PNGs, or a finished triage bundle.
+                    do {
+                        try await DebugVideoRecorder.makeOverlayVideo(
+                            rawURL: rawVideoURL, outputURL: overlayVideoURL,
+                            width: dimensions.width, height: dimensions.height,
+                            frames: overlayFrames
+                        )
+                    } catch {
+                        try? FileManager.default.removeItem(at: overlayVideoURL)
+                        print("[DebugRecording] overlay failed: \(error.localizedDescription)")
+                    }
+                    let diskUsage = DebugRecordingStorage.diskUsage(
+                        sessionID: currentSessionID, in: directory
                     )
+                    guard diskUsage <= DebugRecordingLimits.maximumDiskUsageBytes else {
+                        try? FileManager.default.removeItem(at: overlayVideoURL)
+                        throw DebugVideoRecorderError.diskUsageLimitReached
+                    }
                     completion(.success(DebugRecordingResult(
-                        sessionID: metadata.sessionID,
+                        sessionID: currentSessionID,
                         rawVideoURL: rawVideoURL,
                         overlayVideoURL: overlayVideoURL,
                         metadataURL: metadataURL,
                         forensicDirectoryURL: forensicFrames.isEmpty ? nil : forensicDirectoryURL,
-                        recordedFrameCount: metadata.frames.count,
+                        recordedFrameCount: frameCount,
                         droppedFrameCount: dropped,
                         triageBundleURL: triageBundleURL,
-                        triageErrorMessage: triageErrorMessage
+                        triageErrorMessage: triageErrorMessage,
+                        durationSeconds: duration,
+                        diskUsageBytes: diskUsage,
+                        finishReason: reason
                     )))
                 } catch {
                     completion(.failure(error))
@@ -581,7 +974,8 @@ final class DebugVideoRecorder {
     private func updateBlueDropoutCapture(
         pixelBuffer: CVPixelBuffer,
         frameID: UInt64,
-        metadataIndex: Int,
+        currentMetadata: inout DebugRecordingFrameMetadata,
+        previousMetadata: inout DebugRecordingFrameMetadata?,
         width: Int,
         height: Int,
         blueDetected: Bool
@@ -591,39 +985,40 @@ final class DebugVideoRecorder {
                 let fileName = "blue_dropout_recovered_\(frameID).png"
                 if captureCurrentBGRA(pixelBuffer: pixelBuffer, width: width, height: height,
                                       fileName: fileName) {
-                    frames[metadataIndex].blueDropoutRole = "recovered"
-                    frames[metadataIndex].blueDropoutFileName = fileName
+                    currentMetadata.blueDropoutRole = "recovered"
+                    currentMetadata.blueDropoutFileName = fileName
                 }
                 blueDropoutActive = false
             }
             lastBlueDetectedFrame = DebugRetainedBlueFrame(
-                pixelBuffer: pixelBuffer, frameID: frameID, metadataIndex: metadataIndex,
+                pixelBuffer: pixelBuffer, frameID: frameID,
                 width: width, height: height
             )
             return
         }
 
         guard !blueDropoutActive, let previous = lastBlueDetectedFrame,
-              forensicFrames.count + 3 <= forensicPolicy.maximumFrames else { return }
+              previousMetadata != nil,
+              automaticForensicCaptureCount + 3 <= forensicPolicy.maximumFrames else { return }
         let previousFileName = "blue_dropout_last_true_\(previous.frameID).png"
         let dropoutFileName = "blue_dropout_false_\(frameID).png"
         guard captureRetainedBGRA(previous, fileName: previousFileName),
               captureCurrentBGRA(pixelBuffer: pixelBuffer, width: width, height: height,
                                  fileName: dropoutFileName) else { return }
-        frames[previous.metadataIndex].blueDropoutRole = "last-detected-before-dropout"
-        frames[previous.metadataIndex].blueDropoutFileName = previousFileName
-        frames[metadataIndex].blueDropoutRole = "dropout"
-        frames[metadataIndex].blueDropoutFileName = dropoutFileName
+        previousMetadata?.blueDropoutRole = "last-detected-before-dropout"
+        previousMetadata?.blueDropoutFileName = previousFileName
+        currentMetadata.blueDropoutRole = "dropout"
+        currentMetadata.blueDropoutFileName = dropoutFileName
         lastBlueDetectedFrame = nil
         blueDropoutActive = true
     }
 
-    /// RED has its own retained frame and transition state. This mirrors the
-    /// BLUE recorder behavior while keeping the two dropout sequences isolated.
+    /// RED and BLUE share the same one-frame metadata delay and capture budget.
     private func updateRedDropoutCapture(
         pixelBuffer: CVPixelBuffer,
         frameID: UInt64,
-        metadataIndex: Int,
+        currentMetadata: inout DebugRecordingFrameMetadata,
+        previousMetadata: inout DebugRecordingFrameMetadata?,
         width: Int,
         height: Int,
         redDetected: Bool
@@ -633,42 +1028,63 @@ final class DebugVideoRecorder {
                 let fileName = "red_dropout_recovered_\(frameID).png"
                 if captureCurrentBGRA(pixelBuffer: pixelBuffer, width: width, height: height,
                                       fileName: fileName) {
-                    frames[metadataIndex].redDropoutRole = "recovered"
-                    frames[metadataIndex].redDropoutFileName = fileName
+                    currentMetadata.redDropoutRole = "recovered"
+                    currentMetadata.redDropoutFileName = fileName
                 }
                 redDropoutActive = false
             }
             lastRedDetectedFrame = DebugRetainedBlueFrame(
-                pixelBuffer: pixelBuffer, frameID: frameID, metadataIndex: metadataIndex,
+                pixelBuffer: pixelBuffer, frameID: frameID,
                 width: width, height: height
             )
             return
         }
-
         guard !redDropoutActive, let previous = lastRedDetectedFrame,
-              forensicFrames.count + 3 <= forensicPolicy.maximumFrames else { return }
+              previousMetadata != nil,
+              automaticForensicCaptureCount + 3 <= forensicPolicy.maximumFrames else { return }
         let previousFileName = "red_dropout_last_true_\(previous.frameID).png"
         let dropoutFileName = "red_dropout_false_\(frameID).png"
         guard captureRetainedBGRA(previous, fileName: previousFileName),
               captureCurrentBGRA(pixelBuffer: pixelBuffer, width: width, height: height,
                                  fileName: dropoutFileName) else { return }
-        frames[previous.metadataIndex].redDropoutRole = "last-detected-before-dropout"
-        frames[previous.metadataIndex].redDropoutFileName = previousFileName
-        frames[metadataIndex].redDropoutRole = "dropout"
-        frames[metadataIndex].redDropoutFileName = dropoutFileName
+        previousMetadata?.redDropoutRole = "last-detected-before-dropout"
+        previousMetadata?.redDropoutFileName = previousFileName
+        currentMetadata.redDropoutRole = "dropout"
+        currentMetadata.redDropoutFileName = dropoutFileName
         lastRedDetectedFrame = nil
         redDropoutActive = true
     }
 
     private func captureCurrentBGRA(
-        pixelBuffer: CVPixelBuffer, width: Int, height: Int, fileName: String
+        pixelBuffer: CVPixelBuffer, width: Int, height: Int, fileName: String,
+        manual: Bool = false
     ) -> Bool {
+        let (pixelCount, overflow) = width.multipliedReportingOverflow(by: height)
+        guard !overflow else { return false }
+        let (byteCount, byteOverflow) = pixelCount.multipliedReportingOverflow(by: 4)
+        guard !byteOverflow,
+              (manual || automaticForensicCaptureCount < forensicPolicy.maximumFrames),
+              bufferedLosslessBytes + byteCount <= DebugRecordingLimits.maximumBufferedLosslessBytes,
+              manualLosslessCaptureCount < DebugRecordingLimits.maximumManualLosslessCaptures || !manual else {
+            return false
+        }
+        let pngBound = Int64(byteCount) + max(Int64(byteCount) / 100, 64 * 1_024)
+        guard reservedLosslessDiskBytes + pngBound <= DebugRecordingLimits.maximumLosslessImageBytes else {
+            return false
+        }
         guard let bytes = copyBGRA(pixelBuffer: pixelBuffer, width: width, height: height) else {
             return false
         }
         forensicFrames.append(DebugForensicFrame(
             fileName: fileName, width: width, height: height, bytes: bytes
         ))
+        bufferedLosslessBytes += bytes.count
+        reservedLosslessDiskBytes += pngBound
+        if manual {
+            manualLosslessCaptureCount += 1
+        } else {
+            automaticForensicCaptureCount += 1
+        }
         return true
     }
 
@@ -701,6 +1117,11 @@ final class DebugVideoRecorder {
         return data
     }
 
+    private func fileSize(at url: URL) -> Int64 {
+        let values = try? url.resourceValues(forKeys: [.fileSizeKey])
+        return Int64(values?.fileSize ?? 0)
+    }
+
     private static func writeForensicPNG(
         _ frame: DebugForensicFrame,
         directory: URL
@@ -727,7 +1148,10 @@ final class DebugVideoRecorder {
         let settings: [String: Any] = [
             AVVideoCodecKey: AVVideoCodecType.h264,
             AVVideoWidthKey: width,
-            AVVideoHeightKey: height
+            AVVideoHeightKey: height,
+            AVVideoCompressionPropertiesKey: [
+                AVVideoAverageBitRateKey: DebugRecordingLimits.averageVideoBitRate
+            ]
         ]
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: settings)
         input.expectsMediaDataInRealTime = true
@@ -743,7 +1167,11 @@ final class DebugVideoRecorder {
                 kCVPixelBufferHeightKey as String: height
             ]
         )
+        let metadataStream = try DebugRecordingMetadataStream(
+            url: metadataURL, sessionID: sessionID, width: width, height: height
+        )
         guard writer.startWriting() else {
+            metadataStream.discard()
             throw DebugVideoRecorderError.cannotCreateWriter(writer.error?.localizedDescription ?? "startWriting failed")
         }
         writer.startSession(atSourceTime: .zero)
@@ -751,12 +1179,15 @@ final class DebugVideoRecorder {
         writerInput = input
         self.adaptor = adaptor
         dimensions = (width, height)
+        self.metadataStream = metadataStream
     }
 
     private static func makeOverlayVideo(
         rawURL: URL,
         outputURL: URL,
-        metadata: DebugRecordingMetadata
+        width: Int,
+        height: Int,
+        frames: [DebugOverlayFrame]
     ) async throws {
         let asset = AVURLAsset(url: rawURL)
         guard let track = try await asset.loadTracks(withMediaType: .video).first else {
@@ -776,8 +1207,11 @@ final class DebugVideoRecorder {
         let writer = try AVAssetWriter(outputURL: outputURL, fileType: .mp4)
         let input = AVAssetWriterInput(mediaType: .video, outputSettings: [
             AVVideoCodecKey: AVVideoCodecType.h264,
-            AVVideoWidthKey: metadata.width,
-            AVVideoHeightKey: metadata.height
+            AVVideoWidthKey: width,
+            AVVideoHeightKey: height,
+            AVVideoCompressionPropertiesKey: [
+                AVVideoAverageBitRateKey: DebugRecordingLimits.averageVideoBitRate
+            ]
         ])
         input.expectsMediaDataInRealTime = false
         input.transform = try await track.load(.preferredTransform)
@@ -795,18 +1229,20 @@ final class DebugVideoRecorder {
 
         var index = 0
         while let sample = output.copyNextSampleBuffer() {
-            guard index < metadata.frames.count,
+            guard index < frames.count,
                   let pixelBuffer = CMSampleBufferGetImageBuffer(sample) else {
                 reader.cancelReading()
                 writer.cancelWriting()
                 throw DebugVideoRecorderError.metadataFrameMismatch(
-                    expected: metadata.frames.count, actual: index + 1
+                    expected: frames.count, actual: index + 1
                 )
             }
-            let frame = metadata.frames[index]
-            OverlayRasterizer.draw(frame.red.endpoints, color: .red, into: pixelBuffer)
-            OverlayRasterizer.draw(frame.blue.endpoints, color: .blue, into: pixelBuffer)
-            while !input.isReadyForMoreMediaData { Thread.sleep(forTimeInterval: 0.001) }
+            let frame = frames[index]
+            OverlayRasterizer.draw(frame.red, color: .red, into: pixelBuffer)
+            OverlayRasterizer.draw(frame.blue, color: .blue, into: pixelBuffer)
+            while !input.isReadyForMoreMediaData {
+                try await Task.sleep(nanoseconds: 1_000_000)
+            }
             let presentationTime = CMSampleBufferGetPresentationTimeStamp(sample)
             guard adaptor.append(pixelBuffer, withPresentationTime: presentationTime) else {
                 reader.cancelReading()
@@ -814,15 +1250,32 @@ final class DebugVideoRecorder {
                 throw DebugVideoRecorderError.appendFailed(writer.error?.localizedDescription ?? "overlay append failed")
             }
             index += 1
+            if index % 15 == 0 {
+                let outputBytes = Int64(
+                    (try? outputURL.resourceValues(forKeys: [.fileSizeKey]).fileSize) ?? 0
+                )
+                let remainingCapacity = try? DebugRecordingStorage.availableCapacity(
+                    at: outputURL.deletingLastPathComponent()
+                )
+                if outputBytes >= DebugRecordingLimits.maximumSingleVideoBytes
+                    || (remainingCapacity ?? 0)
+                        <= DebugRecordingLimits.minimumFreeSpaceReserveBytes {
+                    reader.cancelReading()
+                    writer.cancelWriting()
+                    try? FileManager.default.removeItem(at: outputURL)
+                    throw DebugVideoRecorderError.diskUsageLimitReached
+                }
+            }
         }
-        guard index == metadata.frames.count else {
+        guard index == frames.count else {
             reader.cancelReading()
             writer.cancelWriting()
-            throw DebugVideoRecorderError.metadataFrameMismatch(expected: metadata.frames.count, actual: index)
+            throw DebugVideoRecorderError.metadataFrameMismatch(expected: frames.count, actual: index)
         }
         input.markAsFinished()
         await writer.finishWriting()
         guard reader.status == .completed, writer.status == .completed else {
+            try? FileManager.default.removeItem(at: outputURL)
             throw DebugVideoRecorderError.appendFailed(
                 reader.error?.localizedDescription ?? writer.error?.localizedDescription ?? "overlay finalize failed"
             )
