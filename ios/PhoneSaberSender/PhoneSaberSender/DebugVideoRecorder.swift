@@ -224,6 +224,8 @@ struct DebugRecordingFrameMetadata: Codable, Equatable {
     var manualFileName: String?
     var blueDropoutRole: String?
     var blueDropoutFileName: String?
+    var redDropoutRole: String?
+    var redDropoutFileName: String?
 }
 
 struct DebugRecordingMetadata: Codable, Equatable {
@@ -307,6 +309,8 @@ final class DebugVideoRecorder {
     private var manualCaptureCompletion: ((UInt64) -> Void)?
     private var lastBlueDetectedFrame: DebugRetainedBlueFrame?
     private var blueDropoutActive = false
+    private var lastRedDetectedFrame: DebugRetainedBlueFrame?
+    private var redDropoutActive = false
     private let forensicPolicy: DebugForensicCapturePolicy
     private(set) var droppedFrameCount = 0
     private var isFinishing = false
@@ -403,11 +407,17 @@ final class DebugVideoRecorder {
             manualCaptured: false,
             manualFileName: nil,
             blueDropoutRole: nil,
-            blueDropoutFileName: nil
+            blueDropoutFileName: nil,
+            redDropoutRole: nil,
+            redDropoutFileName: nil
         ))
         updateBlueDropoutCapture(
             pixelBuffer: pixelBuffer, frameID: frameID, metadataIndex: metadataIndex,
             width: width, height: height, blueDetected: blueDetectionSucceeded
+        )
+        updateRedDropoutCapture(
+            pixelBuffer: pixelBuffer, frameID: frameID, metadataIndex: metadataIndex,
+            width: width, height: height, redDetected: redDetectionSucceeded
         )
         let redIsAnomalous = anomalyDetected(for: .red, endpoints: freshRed)
         let blueIsAnomalous = anomalyDetected(for: .blue, endpoints: freshBlue)
@@ -442,6 +452,7 @@ final class DebugVideoRecorder {
         }
         isFinishing = true
         lastBlueDetectedFrame = nil
+        lastRedDetectedFrame = nil
         guard let writer, let writerInput, let dimensions, !frames.isEmpty else {
             completion(.failure(DebugVideoRecorderError.noFrames))
             return
@@ -564,6 +575,48 @@ final class DebugVideoRecorder {
         frames[metadataIndex].blueDropoutFileName = dropoutFileName
         lastBlueDetectedFrame = nil
         blueDropoutActive = true
+    }
+
+    /// RED has its own retained frame and transition state. This mirrors the
+    /// BLUE recorder behavior while keeping the two dropout sequences isolated.
+    private func updateRedDropoutCapture(
+        pixelBuffer: CVPixelBuffer,
+        frameID: UInt64,
+        metadataIndex: Int,
+        width: Int,
+        height: Int,
+        redDetected: Bool
+    ) {
+        if redDetected {
+            if redDropoutActive {
+                let fileName = "red_dropout_recovered_\(frameID).png"
+                if captureCurrentBGRA(pixelBuffer: pixelBuffer, width: width, height: height,
+                                      fileName: fileName) {
+                    frames[metadataIndex].redDropoutRole = "recovered"
+                    frames[metadataIndex].redDropoutFileName = fileName
+                }
+                redDropoutActive = false
+            }
+            lastRedDetectedFrame = DebugRetainedBlueFrame(
+                pixelBuffer: pixelBuffer, frameID: frameID, metadataIndex: metadataIndex,
+                width: width, height: height
+            )
+            return
+        }
+
+        guard !redDropoutActive, let previous = lastRedDetectedFrame,
+              forensicFrames.count + 3 <= forensicPolicy.maximumFrames else { return }
+        let previousFileName = "red_dropout_last_true_\(previous.frameID).png"
+        let dropoutFileName = "red_dropout_false_\(frameID).png"
+        guard captureRetainedBGRA(previous, fileName: previousFileName),
+              captureCurrentBGRA(pixelBuffer: pixelBuffer, width: width, height: height,
+                                 fileName: dropoutFileName) else { return }
+        frames[previous.metadataIndex].redDropoutRole = "last-detected-before-dropout"
+        frames[previous.metadataIndex].redDropoutFileName = previousFileName
+        frames[metadataIndex].redDropoutRole = "dropout"
+        frames[metadataIndex].redDropoutFileName = dropoutFileName
+        lastRedDetectedFrame = nil
+        redDropoutActive = true
     }
 
     private func captureCurrentBGRA(

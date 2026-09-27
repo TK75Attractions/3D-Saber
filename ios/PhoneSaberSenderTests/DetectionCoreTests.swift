@@ -2162,6 +2162,61 @@ final class DetectionCoreTests: XCTestCase {
         }
     }
 
+    func testRedDropoutCaptureUsesFirstFalseFrameAndKeepsBlueStateIndependent() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberRedDropoutTests-\(UUID().uuidString)",
+                                    isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory)
+        let red = DetectedSaber(
+            endpoints: (PixelPoint(x: 8, y: 24), PixelPoint(x: 52, y: 24)),
+            color: .red, isFresh: true
+        )
+        let blue = DetectedSaber(
+            endpoints: (PixelPoint(x: 8, y: 20), PixelPoint(x: 52, y: 20)),
+            color: .blue, isFresh: true
+        )
+        let states: [(UInt64, [DetectedSaber])] = [
+            (501, [red, blue]), (502, []), (503, []), (504, [red, blue])
+        ]
+        for (offset, state) in states.enumerated() {
+            let buffer = solidPixelBuffer(width: 64, height: 48)
+            CVPixelBufferLockBaseAddress(buffer, .readOnly)
+            recorder.append(pixelBuffer: buffer,
+                            presentationTime: CMTime(value: CMTimeValue(offset), timescale: 30),
+                            frameID: state.0, results: state.1,
+                            analysis: SaberFrameAnalysis(candidates: [.red: [], .blue: []], selected: [:]))
+            CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+            Thread.sleep(forTimeInterval: 0.04)
+        }
+
+        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
+            recorder.finish { continuation.resume(with: $0) }
+        }
+        let metadata = try JSONDecoder().decode(
+            DebugRecordingMetadata.self, from: Data(contentsOf: recording.metadataURL)
+        )
+        XCTAssertEqual(metadata.frames.map(\.redDropoutRole), [
+            "last-detected-before-dropout", "dropout", nil, "recovered"
+        ])
+        XCTAssertEqual(metadata.frames.map(\.redDropoutFileName), [
+            "red_dropout_last_true_501.png", "red_dropout_false_502.png", nil,
+            "red_dropout_recovered_504.png"
+        ])
+        // BLUE's independent state sees the same true→false→true sequence.
+        XCTAssertEqual(metadata.frames.map(\.blueDropoutFileName), [
+            "blue_dropout_last_true_501.png", "blue_dropout_false_502.png", nil,
+            "blue_dropout_recovered_504.png"
+        ])
+        XCTAssertNotNil(metadata.frames[1].candidateDiagnostics)
+        let forensicDirectory = try XCTUnwrap(recording.forensicDirectoryURL)
+        for fileName in metadata.frames.compactMap(\.redDropoutFileName) {
+            XCTAssertTrue(FileManager.default.fileExists(
+                atPath: forensicDirectory.appendingPathComponent(fileName).path
+            ))
+        }
+    }
+
     func testCandidateDiagnosticsCopyPerformanceSample() throws {
         let fixture = try fixtureBGRA("blue-led-bright-large-05")
         var withoutDiagnostics: [Double] = []
