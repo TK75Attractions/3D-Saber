@@ -4,7 +4,6 @@ using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
-using UnityEngine.UI;
 
 public class SongSelectNoteMenuPlayTests
 {
@@ -13,7 +12,7 @@ public class SongSelectNoteMenuPlayTests
     [UnitySetUp] public IEnumerator Open()
     {
         yield return SceneManager.LoadSceneAsync("SongSelect");
-        float until = Time.realtimeSinceStartup + 10;
+        float until = Time.realtimeSinceStartup + 15;
         while (Object.FindFirstObjectByType<SongSelectAimPointer>() == null && Time.realtimeSinceStartup < until) yield return null;
         aim = Object.FindFirstObjectByType<SongSelectAimPointer>(); Assert.NotNull(aim); aim.enabled = false;
         controller = Object.FindFirstObjectByType<SongSelectController>();
@@ -29,72 +28,72 @@ public class SongSelectNoteMenuPlayTests
         yield return SceneManager.UnloadSceneAsync(scene);
     }
     void Hold(Vector2 point, int frames) { for (int i = 0; i < frames; i++) aim.TickAt(point, .1f); }
-
     [UnityTest] public IEnumerator OneSecondShootsDifficulty_HeldAimDoesNotRepeat_AndClicksStillWork()
     {
-        Assert.IsNull(Object.FindFirstObjectByType<SaberCutJudge>(), "選曲はセーバーの通過判定を生成しない");
-        Assert.IsNull(Object.FindFirstObjectByType<SaberInputBridge>(), "選曲は銃の照準だけを描く");
-        var action = controller.difficultyButtons[1].GetComponent<MenuNoteAction>(); action.Sync();
-        action.Note.Cut(action.Note.transform.position, Vector3.right * 100);
-        Assert.False(action.Note.IsCut, "高速移動でも選択しない");
+        Assert.IsNull(Object.FindFirstObjectByType<SaberCutJudge>());
+        Assert.IsNull(Object.FindFirstObjectByType<SaberInputBridge>());
+        Assert.IsNull(Object.FindFirstObjectByType<CuttableNote>(), "旧3Dノーツを選曲へ戻さない");
+        var action = controller.difficultyButtons[1].GetComponent<SongSelectDiscTarget>();
         Vector2 point = action.ScreenRect().center;
-        Hold(point, 9); Assert.Zero(aim.ShotCount); Assert.AreEqual(0, controller.SelectedDifficultyIndex);
-        Hold(point, 1); Assert.AreEqual(1, aim.ShotCount); Assert.IsNull(action.Note);
-        var effect = SongSelectNoteMenu.Instance.ShotEffect;
-        Assert.True(effect.IsActive); Assert.NotNull(effect.Clip);
-        yield return new WaitForSecondsRealtime(.65f);
-        Assert.AreEqual(1, controller.SelectedDifficultyIndex);
-        Assert.NotNull(action.Note); Hold(point, 80); Assert.AreEqual(1, aim.ShotCount);
-        Hold(Vector2.zero, 2); Hold(point, 10); Assert.AreEqual(2, aim.ShotCount);
-        yield return new WaitForSecondsRealtime(.25f);
-        controller.difficultyButtons[2].onClick.Invoke(); Assert.AreEqual(2, controller.SelectedDifficultyIndex);
+        Hold(point,9); Assert.Zero(aim.ShotCount);
+        Hold(point,1); Assert.AreEqual(1,aim.ShotCount); Assert.AreEqual(1,controller.SelectedDifficultyIndex);
+        Hold(point,80); Assert.AreEqual(1,aim.ShotCount);
+        Hold(Vector2.zero,2); Hold(point,10); Assert.AreEqual(2,aim.ShotCount);
+        controller.difficultyButtons[2].onClick.Invoke(); Assert.AreEqual(2,controller.SelectedDifficultyIndex);
+        yield return null;
     }
-
-    [UnityTest] public IEnumerator AimSwitch_Cancel_InputLoss_AndDisabledTargetDoNotAccumulate()
+    [UnityTest] public IEnumerator TargetChange_InputLoss_AndDisabledTargetCancelCharge()
     {
-        var normal = controller.difficultyButtons[1].GetComponent<MenuNoteAction>();
-        var master = controller.difficultyButtons[2].GetComponent<MenuNoteAction>();
-        Vector2 n = normal.ScreenRect().center, m = master.ScreenRect().center;
-        Hold(n, 7); Hold(m, 7); Assert.Zero(aim.ShotCount);
-        aim.TickAt(m, .1f, false); Hold(m, 9); Assert.Zero(aim.ShotCount);
-        controller.difficultyButtons[2].interactable = false; Hold(m, 20); Assert.Zero(aim.ShotCount);
-        controller.difficultyButtons[2].interactable = true;
-        Hold(m, 9); Assert.Zero(aim.ShotCount); Hold(m, 1); Assert.AreEqual(1, aim.ShotCount);
-        yield return new WaitForSecondsRealtime(.25f); Assert.AreEqual(2, controller.SelectedDifficultyIndex);
+        var normal = controller.difficultyButtons[1].GetComponent<SongSelectDiscTarget>();
+        var master = controller.difficultyButtons[2].GetComponent<SongSelectDiscTarget>();
+        Vector2 n=normal.ScreenRect().center,m=master.ScreenRect().center;
+        Hold(n,7); Hold(m,7); Assert.Zero(aim.ShotCount);
+        aim.TickAt(m,.1f,false); Hold(m,9); Assert.Zero(aim.ShotCount);
+        controller.difficultyButtons[2].interactable=false; Hold(m,20); Assert.Zero(aim.ShotCount);
+        controller.difficultyButtons[2].interactable=true; Hold(m,10);
+        Assert.AreEqual(1,aim.ShotCount); Assert.AreEqual(2,controller.SelectedDifficultyIndex);
+        yield return null;
     }
-
-    [UnityTest] public IEnumerator NavigationMovingTheListCannotFireAgainUntilAimLeaves()
+    [UnityTest] public IEnumerator MovingDiscsCannotFireAgainUntilAimLeaves()
     {
-        var dock = GameObject.Find("NavDownDock").GetComponent<RectTransform>();
-        Vector2 point = SongSelectAimPointer.RectOnScreen(dock).center;
-        int start = controller.SelectedIndex;
-        Hold(point, 10); Assert.AreEqual(1, aim.ShotCount);
-        Assert.AreEqual((start + 1) % controller.SongCount, controller.SelectedIndex);
+        int start=controller.SelectedIndex, next=(start+1)%controller.SongCount;
+        var target=GameObject.Find("SongDisc_"+next).GetComponent<SongSelectDiscTarget>();
+        Vector2 point=target.ScreenRect().center;
+        Hold(point,10); Assert.AreEqual(1,aim.ShotCount); Assert.AreEqual(next,controller.SelectedIndex);
         yield return new WaitForSecondsRealtime(.6f);
-        Hold(point, 50); Assert.AreEqual(1, aim.ShotCount);
-        Hold(Vector2.zero, 2); Hold(point, 10); Assert.AreEqual(2, aim.ShotCount);
-        Assert.AreEqual((start + 2) % controller.SongCount, controller.SelectedIndex);
+        Hold(point,50); Assert.AreEqual(1,aim.ShotCount);
+        Hold(Vector2.zero,2); Hold(point,10); Assert.AreEqual(2,aim.ShotCount);
+        Assert.AreEqual((start+2)%controller.SongCount,controller.SelectedIndex);
     }
-
-    [UnityTest] public IEnumerator StartShootsOnceAndEntersTheSelectedGame()
+    [UnityTest] public IEnumerator CenterNeedsTwoSecondsAndTransitionPreservesReleaseLock()
     {
-        Vector2 point = controller.startButton.GetComponent<MenuNoteAction>().ScreenRect().center;
-        Hold(point, 9); Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
-        Hold(point, 1); Assert.AreEqual(1, aim.ShotCount);
-        yield return new WaitForSecondsRealtime(.25f);
-        Assert.True(ScreenTransition.IsBusy);
-        aim.TickAt(point, .1f); Assert.Zero(aim.Progress01);
+        var target=controller.startButton.GetComponent<SongSelectDiscTarget>();
+        Vector2 point=target.ScreenRect().center;
+        Hold(point,19); Assert.Zero(aim.ShotCount); Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);
+        Hold(point,1); Assert.AreEqual(1,aim.ShotCount); Assert.True(ScreenTransition.IsBusy);
+        aim.TickAt(Vector2.zero,.15f); Assert.True(aim.NeedsRelease); Assert.Zero(aim.Progress01);
         yield return ScreenTransitionPlayTests.WaitForTransition();
-        Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
-        Assert.AreEqual("Epilogue", GameSession.SelectedSongId);
+        Assert.AreEqual("Game",SceneManager.GetActiveScene().name); Assert.AreEqual("Epilogue",GameSession.SelectedSongId);
     }
-
-    [UnityTest] public IEnumerator SelectingAgainDuringShotAnimationCancelsTheOldAction()
+    [UnityTest] public IEnumerator DiscCornersAreNotTargets()
     {
-        var normal = controller.difficultyButtons[1].GetComponent<MenuNoteAction>();
-        Hold(normal.ScreenRect().center, 10); Assert.AreEqual(1, aim.ShotCount);
-        controller.difficultyButtons[2].onClick.Invoke();
-        yield return new WaitForSecondsRealtime(.3f);
-        Assert.AreEqual(2, controller.SelectedDifficultyIndex, "古い発射予約が新しい選択を上書きしない");
+        var target=controller.startButton.GetComponent<SongSelectDiscTarget>(); var rect=target.ScreenRect();
+        Vector2 corner=rect.max-Vector2.one*2;
+        Assert.False(target.IsRaycastLocationValid(corner,null));
+        Hold(corner,25); Assert.Zero(aim.ShotCount);
+        Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);
+        yield return null;
+    }
+    [UnityTest] public IEnumerator TimeoutStartsSelectedDifficultyAndResetsOnReturn()
+    {
+        var skin=Object.FindFirstObjectByType<SongSelectSkin>(); controller.SetDifficulty(2);
+        skin.TickCountdown(101); Assert.True(ScreenTransition.IsBusy);
+        skin.TickCountdown(101);
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        Assert.AreEqual("Game",SceneManager.GetActiveScene().name); Assert.AreEqual("Hard",GameSession.SelectedDifficulty);
+        yield return SceneManager.LoadSceneAsync("SongSelect");
+        yield return null; yield return null;
+        skin=Object.FindFirstObjectByType<SongSelectSkin>();
+        Assert.That(skin.RemainingSeconds,Is.GreaterThan(98));
     }
 }

@@ -115,10 +115,10 @@ public class SongSelectKeyboardPlayTests
         var button = GameObject.Find("CalibrationButton");
         EventSystem.current.SetSelectedGameObject(button);
         int song = controller.SelectedIndex;
-        yield return Press(Key.DownArrow);
+        yield return Press(Key.RightArrow);
         Assert.AreEqual((song + 1) % controller.SongCount, controller.SelectedIndex);
         Assert.AreSame(button, EventSystem.current.currentSelectedGameObject, "曲送りと別のUI移動を同時に実行しない");
-        yield return Press(Key.RightArrow);
+        yield return Press(Key.DownArrow);
         Assert.AreEqual(2, controller.SelectedDifficultyIndex);
         Assert.AreSame(button, EventSystem.current.currentSelectedGameObject);
     }
@@ -187,7 +187,7 @@ public class SongSelectKeyboardPlayTests
         var button = GameObject.Find("CalibrationButton");
         EventSystem.current.SetSelectedGameObject(button);
         int song = controller.SelectedIndex;
-        InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.DownArrow));
+        InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.RightArrow));
         yield return new WaitForSecondsRealtime(.8f);
         InputSystem.QueueStateEvent(keyboard, new KeyboardState());
         yield return null;
@@ -222,7 +222,7 @@ public class SongSelectKeyboardPlayTests
     {
         var aim = Object.FindFirstObjectByType<SongSelectAimPointer>();
         yield return new WaitForSecondsRealtime(.6f);
-        var normal = controller.difficultyButtons[0].GetComponent<MenuNoteAction>();
+        var normal = controller.difficultyButtons[0].GetComponent<SongSelectDiscTarget>();
         InputSystem.QueueStateEvent(mouse, new MouseState { position = normal.ScreenRect().center });
         yield return new WaitForSecondsRealtime(.7f); Assert.AreEqual(0, aim.ShotCount);
         yield return new WaitForSecondsRealtime(.7f); Assert.AreEqual(1, aim.ShotCount);
@@ -241,7 +241,7 @@ public class SongSelectKeyboardPlayTests
     {
         var aim = Object.FindFirstObjectByType<SongSelectAimPointer>();
         yield return new WaitForSecondsRealtime(.6f);
-        var action = controller.difficultyButtons[0].GetComponent<MenuNoteAction>();
+        var action = controller.difficultyButtons[0].GetComponent<SongSelectDiscTarget>();
         Vector2 pixel = action.ScreenRect().center;
         InputSystem.QueueStateEvent(mouse, new MouseState { position = pixel });
         var normalized = typeof(InputPoint).GetProperty("NormalizedPosition");
@@ -281,6 +281,15 @@ public class SongSelectKeyboardPlayTests
         InputSystem.QueueStateEvent(mouse, new MouseState { position = position });
         yield return null;
         yield return null;
+    }
+
+    [UnityTest]
+    public IEnumerator NumberKeysChooseDifficultyAndEscapeReturnsToTitle()
+    {
+        yield return Press(Key.Digit3); Assert.AreEqual(2, controller.SelectedDifficultyIndex);
+        yield return Press(Key.Digit1); Assert.AreEqual(0, controller.SelectedDifficultyIndex);
+        yield return Press(Key.Digit2); Assert.AreEqual(1, controller.SelectedDifficultyIndex);
+        yield return Press(Key.Escape); Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
     }
 
     static int FreePort()

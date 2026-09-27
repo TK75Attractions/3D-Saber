@@ -1,0 +1,27 @@
+{
+  "schemaVersion": 1,
+  "displayName": "Neon Parade",
+  "artist": "",
+  "timeOrigin": "audio-file-start",
+  "previewStartSeconds": 88.615,
+  "hideBarLines": false,
+  "audioSha256": "e320cb8ac2878684b0d0dbf9cc9e01ec58edd7a2b33a280aeee9dc48ec58b3f8",
+  "sections": [
+    {
+      "label": "ドロップ1(フック初登場)",
+      "startSeconds": 36.923,
+      "endSeconds": 66.462,
+      "fadeInSeconds": 0.692,
+      "fadeOutSeconds": 1.846,
+      "intensity": 0.85
+    },
+    {
+      "label": "ドロップ2(最後の山)",
+      "startSeconds": 88.615,
+      "endSeconds": 118.154,
+      "fadeInSeconds": 0.692,
+      "fadeOutSeconds": 1.846,
+      "intensity": 1.0
+    }
+  ]
+}

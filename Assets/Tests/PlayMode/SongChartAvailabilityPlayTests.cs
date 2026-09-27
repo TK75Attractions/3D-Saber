@@ -71,11 +71,11 @@ public class SongChartAvailabilityPlayTests
         while (Time.realtimeSinceStartupAsDouble < deadline)
         {
             controller = Object.FindFirstObjectByType<SongSelectController>();
-            if (controller != null && controller.ChartPreview?.View != null) break;
+            if (controller != null && Object.FindFirstObjectByType<SongSelectSkin>()?.IsReady == true) break;
             yield return null;
         }
         Assert.IsNotNull(controller);
-        Assert.IsNotNull(controller.ChartPreview?.View, "選曲スキンの準備が完了している");
+        Assert.IsNotNull(controller.ChartPreview, "選曲スキンの準備が完了している");
         int selected = -1;
         for (int i = 0; i < controller.SongCount; i++) if (controller.SongIdAt(i) == songId) selected = i;
         Assert.GreaterOrEqual(selected, 0, "Hardが遊べる曲は一覧に残る");

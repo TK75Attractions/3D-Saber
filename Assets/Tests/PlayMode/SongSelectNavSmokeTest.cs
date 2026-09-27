@@ -40,41 +40,29 @@ public class SongSelectNavSmokeTest
     }
 
     [UnityTest]
-    public IEnumerator SongSelectScene_BuildsAimNavigationNotes()
+    public IEnumerator SongSelectScene_BuildsDiscTargetsAndDedicatedBackground()
     {
-        // ナビは実曲2曲以上のときだけ出る仕様。曲が減った環境ではテスト自体を保留する。
-        if (SongSelectController.EnumerateSongIds().Count < 2)
-        {
-            Assert.Ignore("実曲が2曲未満のためナビは生成されない(仕様)");
-        }
-
         yield return SceneManager.LoadSceneAsync("SongSelect", LoadSceneMode.Single);
-
-        // スキンが1フレ遅延で構築されるため、ナビの出現をポーリングで待つ(最長10秒)
-        SongSelectSlashNav nav = null;
-        float deadline = Time.realtimeSinceStartup + 10f;
+        float deadline = Time.realtimeSinceStartup + 15;
+        SongSelectSkin skin = null;
         while (Time.realtimeSinceStartup < deadline)
         {
-            nav = Object.FindFirstObjectByType<SongSelectSlashNav>();
-            if (nav != null && nav.UpNote != null && nav.DownNote != null) break;
+            skin = Object.FindFirstObjectByType<SongSelectSkin>();
+            if (skin != null && skin.IsReady) break;
             yield return null;
         }
-
-        Assert.IsNotNull(nav, "SongSelectSlashNav がシーンに生成されるはず");
-        Assert.IsNotNull(nav.UpNote, "↑ノーツが存在する");
-        Assert.IsNotNull(nav.DownNote, "↓ノーツが存在する");
-        Assert.AreEqual(CutDirection.Up, nav.UpNote.RequiredDirection);
-        Assert.AreEqual(CutDirection.Down, nav.DownNote.RequiredDirection);
-        Assert.IsNotNull(nav.UpNote.transform.Find("Arrow"), "矢印マーカーが付いている");
-        Assert.IsNotNull(Object.FindFirstObjectByType<SongSelectAimPointer>(), "メニュー用照準が存在する");
-        Assert.IsNull(Object.FindFirstObjectByType<SaberCutJudge>(), "セーバーの通過判定は生成しない");
-
-        // ノーツを UI の手前に描く前提: Canvas がカメラ平面モードへ移っている
+        Assert.NotNull(skin); Assert.True(skin.IsReady);
         var ctl = Object.FindFirstObjectByType<SongSelectController>();
-        Assert.IsNotNull(ctl, "SongSelectController が存在する");
-        var canvas = ctl.GetComponentInParent<Canvas>();
-        Assert.IsNotNull(canvas, "Canvas が存在する");
-        Assert.AreEqual(RenderMode.ScreenSpaceCamera, canvas.renderMode, "Canvas はカメラ平面モード");
-        Assert.IsNotNull(canvas.worldCamera, "Canvas にメインカメラが割り付いている");
+        Assert.NotNull(ctl.startButton.GetComponent<SongSelectDiscTarget>());
+        Assert.AreEqual(2, ctl.startButton.GetComponent<SongSelectDiscTarget>().HoldSeconds);
+        Assert.NotNull(Object.FindFirstObjectByType<SongSelectAimPointer>());
+        Assert.IsNull(Object.FindFirstObjectByType<SaberCutJudge>());
+        Assert.IsNull(Object.FindFirstObjectByType<SongSelectSlashNav>());
+        Assert.NotNull(skin.Background.Texture);
+        Assert.True(skin.Background.Texture.IsCreated());
+        Assert.AreEqual(1 << 30, skin.Background.ViewCamera.cullingMask);
+        Assert.That(skin.RemainingSeconds, Is.GreaterThan(95));
+        Assert.AreEqual(0, ctl.SelectedDifficultyIndex);
+        Assert.IsNull(ctl.ChartPreview.View, "旧譜面の描画カメラを生成しない");
     }
 }

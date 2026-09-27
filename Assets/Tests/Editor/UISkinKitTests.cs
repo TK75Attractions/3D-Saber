@@ -73,10 +73,10 @@ public class UISkinKitTests
     public void JapaneseFallbackFontAsset_LoadsFromResources_AndIsDynamic()
     {
         var jp = UISkinKit.JapaneseFallbackFontAsset();
-        Assert.IsNotNull(jp, "Resources/Fonts/NotoSansJP-Light から日本語フォールバックが生成される");
+        Assert.IsNotNull(jp, "Resources/Fonts/Makinas-4-Square から日本語フォールバックが生成される");
         Assert.AreEqual(TMPro.AtlasPopulationMode.Dynamic, jp.atlasPopulationMode, "使う字だけ描く動的アトラス");
         Assert.AreSame(jp, UISkinKit.JapaneseFallbackFontAsset(), "2回目以降はキャッシュを返す");
-        var src = Resources.Load<Font>("Fonts/NotoSansJP-Light");
+        var src = Resources.Load<Font>("Fonts/" + UISkinKit.JapaneseFontResourceName);
         Assert.IsNotNull(src);
         Assert.IsTrue(src.HasCharacter('揺') && src.HasCharacter('籠'), "元フォントは曲名「揺籠」の字を持つ");
     }

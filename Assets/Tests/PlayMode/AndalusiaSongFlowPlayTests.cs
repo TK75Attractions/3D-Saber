@@ -114,11 +114,12 @@ public class AndalusiaSongFlowPlayTests
         while (Time.realtimeSinceStartupAsDouble < deadline)
         {
             controller = Object.FindFirstObjectByType<SongSelectController>();
-            if (controller != null && controller.ChartPreview?.View != null) break;
+            var skin = Object.FindFirstObjectByType<SongSelectSkin>();
+            if (controller != null && controller.ChartPreview != null && skin != null && skin.IsReady) break;
             yield return null;
         }
         Assert.IsNotNull(controller);
-        Assert.IsNotNull(controller.ChartPreview?.View);
+        Assert.IsNotNull(controller.ChartPreview);
         int index = Enumerable.Range(0, controller.SongCount).Single(i => controller.SongIdAt(i) == SongId);
         controller.Select(index);
     }
@@ -127,9 +128,9 @@ public class AndalusiaSongFlowPlayTests
     {
         double deadline = Time.realtimeSinceStartupAsDouble + 12;
         while (Time.realtimeSinceStartupAsDouble < deadline &&
-            (!controller.ChartPreview.IsPlaying || !controller.ChartPreview.View.IsVisible)) yield return null;
+            !controller.ChartPreview.IsPlaying) yield return null;
         Assert.IsTrue(controller.ChartPreview.IsPlaying);
-        Assert.IsTrue(controller.ChartPreview.View.IsVisible);
+        Assert.IsNull(controller.ChartPreview.View);
     }
 
     IEnumerator AwaitGame()
@@ -144,13 +145,11 @@ public class AndalusiaSongFlowPlayTests
     }
 
     [UnityTest]
-    public IEnumerator EveryDifficultyPreviewsTheNamedSongAndAuthorWithTheSameAudioClock()
+    public IEnumerator EveryDifficultyPreviewsTheNamedSongWithTheSameAudioClock()
     {
         yield return OpenSelection();
         Assert.AreEqual("アンダルシア", Object.FindObjectsByType<TextMeshProUGUI>(FindObjectsSortMode.None)
             .Single(t => t.name == "PanelSongTitle").text);
-        Assert.AreEqual("もり　わきお", Object.FindObjectsByType<TextMeshProUGUI>(FindObjectsSortMode.None)
-            .Single(t => t.name == "PanelSongArtist").text);
         var names = new[] { "Easy", "Normal", "Hard" };
         var levels = new[] { 3, 5, 7 };
         for (int i = 0; i < names.Length; i++)
@@ -165,9 +164,8 @@ public class AndalusiaSongFlowPlayTests
             Assert.AreEqual(10, preview.Window.Duration, .001);
             Assert.IsNotNull(controller.previewSource.clip);
             Assert.That(controller.previewSource.clip.length, Is.InRange(112.15f, 112.30f));
-            Assert.Greater(preview.View.ExcerptNoteCount, 0);
+            Assert.IsNull(preview.View, "ディスク画面では譜面ウィンドウなしで試聴する");
             Assert.That(controller.previewSource.time, Is.EqualTo(preview.SongTime).Within(.35));
-            Assert.That(preview.View.DisplayedSongTime, Is.EqualTo(preview.SongTime).Within(.15));
         }
         controller.StopPreview();
         yield return null;

@@ -755,6 +755,7 @@ public class GamePlayManager : MonoBehaviour
         GameSession.FinalGreat = scoreManager.GreatCount;
         GameSession.FinalGood = scoreManager.GoodCount;
         GameSession.FinalBad = scoreManager.BadCount;
+        GameSession.RecordCompletedAchievements();
         if (!string.IsNullOrEmpty(resultSceneName))
         {
             ScreenTransition.Load(resultSceneName, ScreenTransition.Style.Result);

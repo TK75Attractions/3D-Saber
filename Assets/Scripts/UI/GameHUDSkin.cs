@@ -124,8 +124,6 @@ public class GameHUDSkin : MonoBehaviour
     private PlayRank currentRank = PlayRank.SPlus;
     private bool rankVisualInit;
 
-    private Font jpFont;
-    private bool fontResolved;
 
     // HUD を(無ければ)生成して返す。冪等。
     public static GameHUDSkin Ensure()
@@ -282,11 +280,11 @@ public class GameHUDSkin : MonoBehaviour
             ert.anchoredPosition = new Vector2(0f, -36f);
         }
 
-        // 和名(日本語対応のため legacy Text + OS フォント)。英タイトルが無いときは主タイトル扱い。
+        // 和名(legacy Text も共通の日本語フォント)。英タイトルが無いときは主タイトル扱い。
         var titleGo = new GameObject("SongTitle", typeof(RectTransform), typeof(Text));
         titleGo.transform.SetParent(transform, false);
         songTitleText = titleGo.GetComponent<Text>();
-        songTitleText.font = JpFont();
+        songTitleText.font = UISkinKit.JapaneseFont();
         songTitleText.text = title ?? "";
         songTitleText.fontSize = string.IsNullOrEmpty(en) ? 26 : 16;
         songTitleText.fontStyle = FontStyle.Bold;
@@ -651,17 +649,6 @@ public class GameHUDSkin : MonoBehaviour
     // ---------------------------------------------------------------
     // フォント
     // ---------------------------------------------------------------
-    private Font JpFont()
-    {
-        if (fontResolved) return jpFont;
-        fontResolved = true;
-        jpFont = Font.CreateDynamicFontFromOSFont(
-            new[] { "Yu Gothic UI", "Yu Gothic", "Meiryo", "MS Gothic",
-                    "Hiragino Sans", "Hiragino Kaku Gothic ProN", "Noto Sans CJK JP", "Arial" }, 26);
-        if (jpFont == null) jpFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        return jpFont;
-    }
-
     // HUD 用のソフトグロー(text-shadow 相当)。位置は呼び出し側で Anchor する。
     private Image AddHudGlow(Vector2 pos, Vector2 size, Color color)
     {

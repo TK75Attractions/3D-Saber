@@ -17,6 +17,15 @@ public static class GameSession
     public static int FinalGreat;
     public static int FinalGood;
     public static int FinalBad;
+    // 結果UIの再構築と、同じ人の次のプレイを区別する保存用ID。
+    public static string AchievementRunId;
+
+    public static void RecordCompletedAchievements()
+    {
+        if (IsCalibrationMode) return;
+        SongAchievementStore.Record(SelectedSongId, SelectedDifficulty, AchievementRunId,
+            FinalPerfect, FinalGreat, FinalGood, FinalBad, FinalMiss);
+    }
 
     // キャリブレーション（判定調整）モード。SongSelect から該当ボタンで true にして
     // Game シーンへ遷移する。Game シーンの GamePlayManager がこれを見て、
@@ -78,6 +87,7 @@ public static class GameSession
 
     public static void ResetResult()
     {
+        AchievementRunId = System.Guid.NewGuid().ToString("N");
         FinalScore = 0;
         FinalMaxCombo = 0;
         FinalComboBonus = 0;
