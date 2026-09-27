@@ -71,6 +71,14 @@ struct ContentView: View {
                                 Text("\(recording.sessionID)  — raw / overlayは同じセッションです")
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
+                                if let triageBundleURL = recording.triageBundleURL {
+                                    ShareLink(item: triageBundleURL) {
+                                        Label("Triage bundleを共有", systemImage: "shippingbox")
+                                    }
+                                } else if let triageErrorMessage = recording.triageErrorMessage {
+                                    Text("Triage生成失敗: \(triageErrorMessage)")
+                                        .font(.caption2).foregroundStyle(.orange)
+                                }
                                 HStack {
                                     Button { recordingPreviewURL = recording.rawVideoURL } label: {
                                         Label("Rawを見る", systemImage: "video")

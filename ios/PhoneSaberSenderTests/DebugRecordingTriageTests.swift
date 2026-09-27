@@ -1,0 +1,163 @@
+import Foundation
+import XCTest
+@testable import PhoneSaberSender
+
+final class DebugRecordingTriageTests: XCTestCase {
+    func testManyDropoutsRespectImageAndPerFailureLimitsAndDeduplicateNearbyFrames() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var frames: [[String: Any]] = []
+        for index in 0..<80 {
+            let detected = index % 8 < 4
+            var frame = makeFrame(index, redDetected: detected, blueDetected: detected)
+            if index % 8 == 4 {
+                for color in ["red", "blue"] {
+                    frame["\(color)DropoutRole"] = "dropout"
+                    frame["\(color)DropoutFileName"] = "\(color)_dropout_false_\(index).png"
+                    try Data("lossless".utf8).write(to: directory.appendingPathComponent("\(color)_dropout_false_\(index).png"))
+                }
+            } else if index % 8 == 3 {
+                for color in ["red", "blue"] {
+                    frame["\(color)DropoutRole"] = "last-detected-before-dropout"
+                    frame["\(color)DropoutFileName"] = "\(color)_dropout_last_true_\(index).png"
+                    try Data("lossless".utf8).write(to: directory.appendingPathComponent("\(color)_dropout_last_true_\(index).png"))
+                }
+            }
+            frames.append(frame)
+        }
+
+        let selected = try select(frames, directory: directory)
+        XCTAssertLessThanOrEqual(selected.images.count, DebugRecordingTriageLimits.defaultImageCount)
+        XCTAssertLessThanOrEqual(selected.images.count, DebugRecordingTriageLimits.hardImageCount)
+        XCTAssertLessThanOrEqual(selected.images.filter { $0.failureType == "dropout" }.count, 2)
+        XCTAssertEqual(Set(selected.images.map(\.fileName)).count, selected.images.count)
+        XCTAssertTrue(selected.images.contains { $0.fileName.contains("dropout_false") })
+    }
+
+    func testRedAndBlueDropoutsAreBothRepresented() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var frames = (0..<6).map { makeFrame($0, redDetected: true, blueDetected: true) }
+        frames[1]["redDetectionSucceeded"] = false
+        frames[1]["red"] = detection(detected: false)
+        frames[1]["redDropoutRole"] = "dropout"
+        frames[1]["redDropoutFileName"] = "red_dropout_false_1.png"
+        frames[3]["blueDetectionSucceeded"] = false
+        frames[3]["blue"] = detection(detected: false)
+        frames[3]["blueDropoutRole"] = "dropout"
+        frames[3]["blueDropoutFileName"] = "blue_dropout_false_3.png"
+        for name in ["red_dropout_false_1.png", "blue_dropout_false_3.png"] {
+            try Data("png".utf8).write(to: directory.appendingPathComponent(name))
+        }
+
+        let selected = try select(frames, directory: directory)
+        XCTAssertTrue(selected.images.contains { $0.color == "red" })
+        XCTAssertTrue(selected.images.contains { $0.color == "blue" })
+    }
+
+    func testManualCaptureHasPriorityOverEarlierAnomalyImage() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var frames = (0..<8).map { makeFrame($0) }
+        frames[0]["forensicCaptured"] = true
+        frames[0]["forensicFileName"] = "frame_0.png"
+        frames[7]["manualCaptured"] = true
+        frames[7]["manualFileName"] = "manual_frame_7.png"
+        for name in ["frame_0.png", "manual_frame_7.png"] {
+            try Data("png".utf8).write(to: directory.appendingPathComponent(name))
+        }
+
+        let selected = try select(frames, directory: directory, maximumImages: 1)
+        XCTAssertEqual(selected.images.map(\.fileName), ["manual_frame_7.png"])
+        XCTAssertEqual(selected.images.first?.failureType, "manual_capture")
+    }
+
+    func testNoFailureSessionSelectsNoImages() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let frames = (0..<5).map { makeFrame($0) }
+
+        let selected = try select(frames, directory: directory)
+        XCTAssertTrue(selected.images.isEmpty)
+        XCTAssertEqual(selected.incidentCount, 0)
+    }
+
+    func testMalformedMetadataIsRejected() {
+        XCTAssertThrowsError(try DebugRecordingTriageBuilder.selectImages(
+            metadataData: Data("{broken".utf8), forensicDirectoryURL: nil
+        ))
+    }
+
+    func testBundleContainsOnlySelectedPngAndSmallContext() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let forensic = directory.appendingPathComponent("forensic", isDirectory: true)
+        try FileManager.default.createDirectory(at: forensic, withIntermediateDirectories: true)
+        var frames = (0..<7).map { makeFrame($0) }
+        frames[3]["manualCaptured"] = true
+        frames[3]["manualFileName"] = "manual_frame_3.png"
+        try Data("PNG bytes remain unchanged".utf8).write(to: forensic.appendingPathComponent("manual_frame_3.png"))
+        let metadataURL = directory.appendingPathComponent("metadata.json")
+        try metadata(frames).write(to: metadataURL)
+
+        let bundle = try DebugRecordingTriageBuilder.build(
+            metadataURL: metadataURL, forensicDirectoryURL: forensic
+        )
+        let relativePaths = try FileManager.default.subpathsOfDirectory(atPath: bundle.path).sorted()
+        XCTAssertTrue(relativePaths.contains("summary.json"))
+        XCTAssertTrue(relativePaths.contains("prompt.md"))
+        XCTAssertEqual(relativePaths.filter { $0.hasSuffix(".png") }.count, 1)
+        XCTAssertFalse(relativePaths.contains { $0.hasSuffix(".mp4") || $0 == "metadata.json" })
+        let contextURL = try XCTUnwrap(relativePaths.first { $0.hasPrefix("frames/") && $0.hasSuffix(".json") })
+        let context = try JSONSerialization.jsonObject(
+            with: Data(contentsOf: bundle.appendingPathComponent(contextURL))
+        ) as? [String: Any]
+        let contextFrames = try XCTUnwrap(context?["frames"] as? [[String: Any]])
+        XCTAssertLessThanOrEqual(contextFrames.count, 5)
+        XCTAssertNotNil(contextFrames.first?["red"])
+        XCTAssertNotNil(contextFrames.first?["blue"])
+    }
+
+    private func select(_ frames: [[String: Any]], directory: URL,
+                        maximumImages: Int = DebugRecordingTriageLimits.defaultImageCount) throws
+        -> DebugRecordingTriageSelection {
+        try DebugRecordingTriageBuilder.selectImages(
+            metadataData: metadata(frames), forensicDirectoryURL: directory,
+            maximumImages: maximumImages
+        ).selection
+    }
+
+    private func metadata(_ frames: [[String: Any]]) throws -> Data {
+        try JSONSerialization.data(withJSONObject: ["sessionID": "test_session", "frames": frames])
+    }
+
+    private func makeFrame(_ index: Int, redDetected: Bool = true,
+                           blueDetected: Bool = true) -> [String: Any] {
+        [
+            "frameID": index,
+            "presentationTimeSeconds": Double(index) / 30.0,
+            "red": detection(detected: redDetected, x: 10 + index),
+            "blue": detection(detected: blueDetected, x: 30 + index),
+            "redDetectionSucceeded": redDetected,
+            "blueDetectionSucceeded": blueDetected,
+            "candidateDiagnostics": [
+                "red": ["totalCandidateCount": 1, "eligibleCandidateCount": 1],
+                "blue": ["totalCandidateCount": 1, "eligibleCandidateCount": 1]
+            ],
+            "forensicCaptured": false,
+            "manualCaptured": false
+        ]
+    }
+
+    private func detection(detected: Bool, x: Int = 10) -> [String: Any] {
+        ["detected": detected, "predicted": false,
+         "x1": x, "y1": 10, "x2": x + 100, "y2": 10]
+    }
+
+    private func makeTemporaryDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("phonesaber-triage-tests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        return directory
+    }
+}

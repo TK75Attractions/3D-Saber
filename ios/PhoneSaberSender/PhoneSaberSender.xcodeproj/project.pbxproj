@@ -25,6 +25,8 @@
 		A0000000000000000000000F /* production-video-IMG_5933 in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000F /* production-video-IMG_5933 */; };
 		A00000000000000000000012 /* forensic-20260921 in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000012 /* forensic-20260921 */; };
 		A00000000000000000000013 /* forensic-20260921-211845 in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000013 /* forensic-20260921-211845 */; };
+		A00000000000000000000014 /* DebugRecordingTriage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000014 /* DebugRecordingTriage.swift */; };
+		A00000000000000000000015 /* DebugRecordingTriageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000015 /* DebugRecordingTriageTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -58,6 +60,8 @@
 		B1000000000000000000000F /* production-video-IMG_5933 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "production-video-IMG_5933"; sourceTree = "<group>"; };
 		B10000000000000000000012 /* forensic-20260921 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "forensic-20260921"; sourceTree = "<group>"; };
 		B10000000000000000000013 /* forensic-20260921-211845 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "forensic-20260921-211845"; sourceTree = "<group>"; };
+		B10000000000000000000014 /* DebugRecordingTriage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugRecordingTriage.swift; sourceTree = "<group>"; };
+		B10000000000000000000015 /* DebugRecordingTriageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugRecordingTriageTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -94,6 +98,7 @@
 				B10000000000000000000001 /* BGRADetection.swift */,
 				B10000000000000000000006 /* FrameProcessor.swift */,
 				B10000000000000000000011 /* DebugVideoRecorder.swift */,
+				B10000000000000000000014 /* DebugRecordingTriage.swift */,
 				B10000000000000000000008 /* UDPSender.swift */,
 				B10000000000000000000003 /* CameraViewModel.swift */,
 				B10000000000000000000002 /* CameraPreview.swift */,
@@ -107,6 +112,7 @@
 			isa = PBXGroup;
 			children = (
 				B10000000000000000000009 /* DetectionCoreTests.swift */,
+				B10000000000000000000015 /* DebugRecordingTriageTests.swift */,
 				D00000000000000000000004 /* Fixtures */,
 			);
 			path = ../PhoneSaberSenderTests;
@@ -244,6 +250,7 @@
 				A00000000000000000000001 /* BGRADetection.swift in Sources */,
 				A00000000000000000000006 /* FrameProcessor.swift in Sources */,
 				A00000000000000000000011 /* DebugVideoRecorder.swift in Sources */,
+				A00000000000000000000014 /* DebugRecordingTriage.swift in Sources */,
 				A00000000000000000000008 /* UDPSender.swift in Sources */,
 				A00000000000000000000003 /* CameraViewModel.swift in Sources */,
 				A00000000000000000000002 /* CameraPreview.swift in Sources */,
@@ -257,6 +264,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A00000000000000000000009 /* DetectionCoreTests.swift in Sources */,
+				A00000000000000000000015 /* DebugRecordingTriageTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -11,6 +11,8 @@ struct DebugRecordingResult {
     let forensicDirectoryURL: URL?
     let recordedFrameCount: Int
     let droppedFrameCount: Int
+    let triageBundleURL: URL?
+    let triageErrorMessage: String?
 }
 
 struct DebugRecordingPoint: Codable, Equatable {
@@ -470,6 +472,18 @@ final class DebugVideoRecorder {
                     }
                     let data = try JSONEncoder.prettyPrinted.encode(metadata)
                     try data.write(to: metadataURL, options: .atomic)
+                    var triageBundleURL: URL?
+                    var triageErrorMessage: String?
+                    do {
+                        triageBundleURL = try DebugRecordingTriageBuilder.build(
+                            metadataURL: metadataURL,
+                            forensicDirectoryURL: forensicFrames.isEmpty ? nil : forensicDirectoryURL
+                        )
+                    } catch {
+                        // Triage is best-effort and must not turn a completed recording into a failure.
+                        triageErrorMessage = error.localizedDescription
+                        print("[DebugTriage] bundle generation failed: \(error.localizedDescription)")
+                    }
                     try await DebugVideoRecorder.makeOverlayVideo(
                         rawURL: rawVideoURL,
                         outputURL: overlayVideoURL,
@@ -482,7 +496,9 @@ final class DebugVideoRecorder {
                         metadataURL: metadataURL,
                         forensicDirectoryURL: forensicFrames.isEmpty ? nil : forensicDirectoryURL,
                         recordedFrameCount: metadata.frames.count,
-                        droppedFrameCount: dropped
+                        droppedFrameCount: dropped,
+                        triageBundleURL: triageBundleURL,
+                        triageErrorMessage: triageErrorMessage
                     )))
                 } catch {
                     completion(.failure(error))
