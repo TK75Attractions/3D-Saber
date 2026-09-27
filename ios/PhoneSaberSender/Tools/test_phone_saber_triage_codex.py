@@ -24,7 +24,7 @@ from phone_saber_triage_codex import (
     input_plan,
 )
 from phone_saber_triage_protocol import BundleError
-from phone_saber_triage_protocol import CONTENT_TYPE
+from phone_saber_triage_protocol import CONTENT_TYPE, pack_bundle
 from phone_saber_triage_receiver import TriageHTTPServer
 from test_phone_saber_triage_protocol import write_bundle
 
@@ -37,18 +37,23 @@ EMPTY_ANALYSIS = {
     "other_findings": [],
     "limitations": [],
 }
+EXPECTED_SUMMARY_SCOPE = "retained incident candidates and nearby context"
 
 
 class CodexTriageTests(unittest.TestCase):
     def test_dry_run_lists_only_selected_png_and_compact_context(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "bundle"
-            write_bundle(bundle)
+            write_codex_bundle(bundle)
+            codex_spy = Path(directory) / "codex-spy.json"
+            codex = fake_codex(Path(directory), codex_spy, analysis=EMPTY_ANALYSIS)
             output = io.StringIO()
             with contextlib.redirect_stdout(output):
-                result = analyze_bundle(bundle, dry_run=True, codex_path="/missing/codex")
+                result = analyze_bundle(bundle, dry_run=True, codex_path=str(codex))
             report = output.getvalue()
             self.assertEqual(result["status"], "dry_run")
+            self.assertFalse(codex_spy.exists())
+            self.assertFalse((bundle / "analysis_report.json").exists())
             self.assertIn("images/image_01.png", report)
             self.assertIn("frames/frame_100_1.json", report)
             self.assertIn("summary.json", report)
@@ -60,7 +65,7 @@ class CodexTriageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bundle = root / "bundle"
-            write_bundle(bundle)
+            write_codex_bundle(bundle)
             spy = root / "codex-spy.json"
             codex = fake_codex(root, spy, analysis=EMPTY_ANALYSIS)
 
@@ -87,7 +92,7 @@ class CodexTriageTests(unittest.TestCase):
     def test_codex_unavailable_preserves_received_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "bundle"
-            write_bundle(bundle)
+            write_codex_bundle(bundle)
             with self.assertRaises(CodexUnavailable):
                 analyze_bundle(bundle, codex_path="/missing/codex")
             self.assertTrue((bundle / "summary.json").is_file())
@@ -98,7 +103,7 @@ class CodexTriageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bundle = root / "bundle"
-            write_bundle(bundle)
+            write_codex_bundle(bundle)
             codex = fake_codex(root, root / "unused.json", fail=True)
             with self.assertRaises(CodexFailed):
                 analyze_bundle(bundle, codex_path=str(codex))
@@ -109,7 +114,7 @@ class CodexTriageTests(unittest.TestCase):
     def test_zero_image_session_writes_local_report_without_codex(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "bundle"
-            write_bundle(bundle, image_count=0)
+            write_codex_bundle(bundle, image_count=0)
             result = analyze_bundle(bundle, codex_path="/missing/codex")
             self.assertEqual(result["status"], "no_images")
             report = json.loads((bundle / "analysis_report.json").read_text(encoding="utf-8"))
@@ -119,7 +124,7 @@ class CodexTriageTests(unittest.TestCase):
     def test_default_image_limit_and_failure_type_dedup_are_enforced(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "bundle"
-            write_bundle(bundle, image_count=3)
+            write_codex_bundle(bundle, image_count=3)
             with self.assertRaisesRegex(BundleError, "per-failure-type"):
                 input_plan(bundle)
             with self.assertRaises(ValueError):
@@ -128,21 +133,50 @@ class CodexTriageTests(unittest.TestCase):
     def test_malformed_summary_is_rejected_before_codex(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "bundle"
-            write_bundle(bundle)
+            write_codex_bundle(bundle)
             (bundle / "summary.json").write_text("{bad", encoding="utf-8")
             with self.assertRaisesRegex(BundleError, "summary.json is malformed"):
                 input_plan(bundle)
 
     def test_full_session_metadata_cannot_be_attached_through_summary(self) -> None:
-        with tempfile.TemporaryDirectory() as directory:
-            bundle = Path(directory) / "bundle"
-            write_bundle(bundle)
-            summary_path = bundle / "summary.json"
-            summary = json.loads(summary_path.read_text(encoding="utf-8"))
-            summary["frames"] = [{"frameID": index} for index in range(100)]
-            summary_path.write_text(json.dumps(summary), encoding="utf-8")
-            with self.assertRaisesRegex(BundleError, "full-session metadata"):
-                input_plan(bundle)
+        for key, value in (
+            ("frames", [{"frameID": index} for index in range(100)]),
+            ("cameraSamples", [{"timestamp": index} for index in range(100)]),
+            ("candidateDiagnostics", {"red": {"raw": "full session"}}),
+        ):
+            with self.subTest(key=key), tempfile.TemporaryDirectory() as directory:
+                bundle = Path(directory) / "bundle"
+                write_codex_bundle(bundle)
+                summary_path = bundle / "summary.json"
+                summary = json.loads(summary_path.read_text(encoding="utf-8"))
+                summary[key] = value
+                summary_path.write_text(json.dumps(summary), encoding="utf-8")
+                with self.assertRaisesRegex(BundleError, "full-session metadata"):
+                    input_plan(bundle)
+
+    def test_retained_incident_context_frames_must_be_a_nonnegative_integer(self) -> None:
+        for value in (True, -1, 1.5, "138"):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as directory:
+                bundle = Path(directory) / "bundle"
+                write_codex_bundle(bundle)
+                summary_path = bundle / "summary.json"
+                summary = json.loads(summary_path.read_text(encoding="utf-8"))
+                summary["retainedIncidentContextFrames"] = value
+                summary_path.write_text(json.dumps(summary), encoding="utf-8")
+                with self.assertRaisesRegex(BundleError, "retainedIncidentContextFrames"):
+                    input_plan(bundle)
+
+    def test_summary_scope_must_match_the_compact_triage_scope(self) -> None:
+        for value in (True, 138, "", "full session metadata"):
+            with self.subTest(value=value), tempfile.TemporaryDirectory() as directory:
+                bundle = Path(directory) / "bundle"
+                write_codex_bundle(bundle)
+                summary_path = bundle / "summary.json"
+                summary = json.loads(summary_path.read_text(encoding="utf-8"))
+                summary["summaryScope"] = value
+                summary_path.write_text(json.dumps(summary), encoding="utf-8")
+                with self.assertRaisesRegex(BundleError, "summaryScope"):
+                    input_plan(bundle)
 
     def test_receiver_dry_run_accepts_bundle_without_calling_codex(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -153,7 +187,7 @@ class CodexTriageTests(unittest.TestCase):
             thread = Thread(target=server.serve_forever, daemon=True)
             thread.start()
             try:
-                body = write_bundle(root / "bundle")
+                body = write_codex_bundle(root / "bundle")
                 connection = HTTPConnection("127.0.0.1", server.server_port, timeout=3)
                 connection.request("POST", "/v1/bundle", body=body, headers={
                     "Content-Type": CONTENT_TYPE,
@@ -183,7 +217,7 @@ class CodexTriageTests(unittest.TestCase):
             thread = Thread(target=server.serve_forever, daemon=True)
             thread.start()
             try:
-                body = write_bundle(root / "bundle")
+                body = write_codex_bundle(root / "bundle")
                 connection = HTTPConnection("127.0.0.1", server.server_port, timeout=3)
                 connection.request("POST", "/v1/bundle", body=body, headers={
                     "Content-Type": CONTENT_TYPE,
@@ -239,6 +273,18 @@ response_path.write_text({response_json!r}, encoding='utf-8')
     executable.write_text(script, encoding="utf-8")
     executable.chmod(0o755)
     return executable
+
+
+def write_codex_bundle(bundle: Path, *, image_count: int = 1) -> bytes:
+    write_bundle(bundle, image_count=image_count)
+    summary_path = bundle / "summary.json"
+    summary = json.loads(summary_path.read_text(encoding="utf-8"))
+    summary["summaryScope"] = EXPECTED_SUMMARY_SCOPE
+    summary["retainedIncidentContextFrames"] = 138
+    summary_path.write_text(json.dumps(summary), encoding="utf-8")
+    envelope = bundle.with_suffix(".psbt")
+    pack_bundle(bundle, envelope)
+    return envelope.read_bytes()
 
 
 if __name__ == "__main__":

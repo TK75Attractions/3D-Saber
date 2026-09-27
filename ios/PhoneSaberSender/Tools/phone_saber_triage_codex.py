@@ -27,6 +27,7 @@ from phone_saber_triage_protocol import (
 
 DEFAULT_MAX_IMAGES = 12
 PER_FAILURE_TYPE = 2
+EXPECTED_SUMMARY_SCOPE = "retained incident candidates and nearby context"
 MAX_REPORT_BYTES = 512 * 1024
 MAX_CODEX_SUMMARY_BYTES = 128 * 1024
 MAX_CODEX_CONTEXT_BYTES = 16 * 1024
@@ -106,9 +107,17 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES) -> CodexI
         raise BundleError("summary.json schema is unsupported")
     allowed_summary_keys = {"formatVersion", "sessionID", "recordedFrameCount",
                             "redBlueDetectionSummary", "dropoutSummary", "selectedImageCount",
-                            "incidentCount", "incidents", "images", "limits", "groundTruth"}
+                            "incidentCount", "incidents", "images", "limits", "groundTruth",
+                            "summaryScope", "retainedIncidentContextFrames"}
     if not set(summary).issubset(allowed_summary_keys):
         raise BundleError("summary.json contains non-triage or full-session metadata")
+    summary_scope = summary.get("summaryScope")
+    if not isinstance(summary_scope, str) or summary_scope != EXPECTED_SUMMARY_SCOPE:
+        raise BundleError("summary.json has an invalid summaryScope")
+    retained_context_frames = summary.get("retainedIncidentContextFrames")
+    if isinstance(retained_context_frames, bool) or not isinstance(retained_context_frames, int) \
+            or retained_context_frames < 0:
+        raise BundleError("summary.json has an invalid retainedIncidentContextFrames")
     session_id = summary.get("sessionID")
     images = summary.get("images")
     count = summary.get("selectedImageCount")
