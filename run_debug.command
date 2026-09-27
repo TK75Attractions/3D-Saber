@@ -13,4 +13,5 @@ exec python3 -B "$script_dir/udp_receive_probe.py" \
   --http-host 127.0.0.1 \
   --http-port 8765 \
   --html "$script_dir/saber_camera_test.html" \
-  --open-browser
+  --open-browser \
+  "$@"

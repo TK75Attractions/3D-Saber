@@ -41,6 +41,26 @@
     .dot { color: #94d4ac; }
     .dot.waiting { color: #d5c487; }
 
+    .live-diagnostics {
+      display: grid;
+      gap: 8px;
+      margin: 8px auto 14px;
+      padding: 10px 12px;
+      border: 1px solid #3b4656;
+      border-radius: 8px;
+      background: #0c1018;
+      font-size: 13px;
+      font-variant-numeric: tabular-nums;
+    }
+    .live-diagnostics[hidden] { display: none; }
+    .diagnostic-heading { color: #eaf0f8; }
+    .diagnostic-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .diagnostic-item { display: grid; gap: 3px; padding: 8px 10px; border-radius: 6px; background: #141b26; }
+    .diagnostic-label { color: #b9c4d2; font-weight: 600; }
+    .diagnostic-value { color: #eaf0f8; overflow-wrap: anywhere; }
+    .diagnostic-stale { color: #ffb7a8; }
+    .diagnostic-fresh { color: #a4e6b8; }
+
     .actions { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
 
     button, select, input { font: inherit; }
@@ -144,6 +164,7 @@
       .chrome { padding: 10px; }
       .stage { width: calc(100vw - 20px); height: 58vh; }
       .results { grid-template-columns: 1fr; gap: 6px; }
+      .diagnostic-grid { grid-template-columns: 1fr; }
       input[type="range"] { width: 72px; }
     }
   </style>
@@ -160,6 +181,13 @@
       <button id="testView" type="button">Enter Test View</button>
     </div>
   </header>
+  <section class="chrome live-diagnostics" id="liveDiagnostics" aria-label="Phone Saber live diagnostic status" hidden>
+    <div class="diagnostic-heading"><strong>Live connection status</strong>　<span id="diagnosticBonjour">Bonjour: waiting</span></div>
+    <div class="diagnostic-grid">
+      <div class="diagnostic-item"><span class="diagnostic-label">RED · UDP 5005</span><span class="diagnostic-value" id="diagnosticRed">Waiting</span></div>
+      <div class="diagnostic-item"><span class="diagnostic-label">BLUE · UDP 5006</span><span class="diagnostic-value" id="diagnosticBlue">Waiting</span></div>
+    </div>
+  </section>
   <main class="stage"><canvas id="surface" aria-label="Latency test display"></canvas><output id="testOverlay" class="test-overlay" aria-live="polite"></output><div class="test-actions"><span id="fullscreenReady">Ready</span><button id="fullscreenStart">Start Test</button><button id="fullscreenExit">Exit / Stop</button></div></main>
   <section class="chrome results" aria-label="Latency Test results">
     <strong>Latency Test</strong>
@@ -217,6 +245,10 @@
       const latencyResults = document.getElementById('latencyResults');
       const latencyStatus = document.getElementById('latencyStatus');
       const quickStatus = document.getElementById('quickStatus');
+      const liveDiagnostics = document.getElementById('liveDiagnostics');
+      const diagnosticBonjour = document.getElementById('diagnosticBonjour');
+      const diagnosticRed = document.getElementById('diagnosticRed');
+      const diagnosticBlue = document.getElementById('diagnosticBlue');
       const trialSummary = document.getElementById('trialSummary');
       const trialHistory = document.getElementById('trialHistory');
       const networkDetails = document.getElementById('networkDetails');
@@ -387,30 +419,51 @@
         const bonjour = network.bonjour || {};
         const ipv4 = (network.ipv4 || []).join(', ') || '見つかりません';
         const ports = network.ports || {};
+        const redPort = ports.red || {};
+        const bluePort = ports.blue || {};
+        const redReceiving = Boolean(!redPort.stale && latest.red);
+        const blueReceiving = Boolean(!bluePort.stale && latest.blue);
+        liveDiagnostics.hidden = false;
+        diagnosticBonjour.textContent = `Bonjour: ${(bonjour.status || (bonjour.running ? 'publishing' : 'disabled')).toUpperCase()}`;
+        const diagnosticText = (port) => {
+          const bind = (port.bindStatus || 'unknown').toUpperCase();
+          const freshness = (port.status || (port.stale ? 'stale' : 'fresh')).toUpperCase();
+          const received = port.lastPacketReceivedAt || '未受信';
+          const age = port.packetAgeSeconds === null || port.packetAgeSeconds === undefined
+            ? 'never'
+            : `${port.packetAgeSeconds.toFixed(2)}s`;
+          const rate = Number(port.packetRatePerSecond || 0).toFixed(1);
+          return `${bind} · ${freshness} · last ${received} · age ${age} · ${rate} pkt/s`;
+        };
+        diagnosticRed.textContent = diagnosticText(redPort);
+        diagnosticBlue.textContent = diagnosticText(bluePort);
+        diagnosticRed.className = `diagnostic-value ${redPort.stale ? 'diagnostic-stale' : 'diagnostic-fresh'}`;
+        diagnosticBlue.className = `diagnostic-value ${bluePort.stale ? 'diagnostic-stale' : 'diagnostic-fresh'}`;
         const history = (status.history || []).slice(-8).reverse().map(livePacketText);
         livePanel.value = [
           `NETWORK  UDP待受: ${status.listening ? 'RECEIVING' : 'STOPPED'}　Mac: ${network.macName || '-'}　IPv4: ${ipv4}`,
-          `Bonjour: ${bonjour.running ? 'PUBLISHED' : 'OFF'}　${bonjour.serviceName || '-'} ${bonjour.serviceType || '-'}　Red: ${ports.red || 5005}　Blue: ${ports.blue || 5006}`,
-          `RED   ${latest.red ? 'RECEIVING' : 'NOT RECEIVING'}　count=${counts.red || 0}　${latest.red ? latest.red.payload : 'x1,y1,x2,y2: -'}`,
-          `BLUE  ${latest.blue ? 'RECEIVING' : 'NOT RECEIVING'}　count=${counts.blue || 0}　${latest.blue ? latest.blue.payload : 'x1,y1,x2,y2: -'}`,
+          `Bonjour: ${(bonjour.status || (bonjour.running ? 'publishing' : 'disabled')).toUpperCase()}　${bonjour.serviceName || '-'} ${bonjour.serviceType || '-'}　Red: ${redPort.port || 5005}　Blue: ${bluePort.port || 5006}`,
+          `RED   ${redReceiving ? 'FRESH' : 'STALE'}　count=${counts.red || 0}　${latest.red ? latest.red.payload : 'x1,y1,x2,y2: -'}`,
+          `BLUE  ${blueReceiving ? 'FRESH' : 'STALE'}　count=${counts.blue || 0}　${latest.blue ? latest.blue.payload : 'x1,y1,x2,y2: -'}`,
           `最新 赤: ${livePacketText(latest.red)}`,
           `最新 青: ${livePacketText(latest.blue)}`,
           `直近履歴:\n${history.length ? history.join('\n') : '未受信'}`,
           `注意: ${network.unityNote || ''}`,
           '差分は (Mac受信Unix時刻 - iPhone ts) × 1000。両端末の時計差を含みます。'
         ].join('\n');
-        const redReceiving = Boolean(latest.red);
-        const blueReceiving = Boolean(latest.blue);
-        quickStatus.innerHTML = `Mac: <span class="dot ${status.listening ? '' : 'waiting'}">●</span> ${status.listening ? 'Ready' : 'Stopped'}　iPhone: <span class="dot ${redReceiving || blueReceiving ? '' : 'waiting'}">●</span> ${redReceiving || blueReceiving ? 'Receiving' : 'Waiting'}　Red: ${redReceiving ? 'Detected' : '—'}　Blue: ${blueReceiving ? 'Detected' : '—'}`;
+        const portsBound = Boolean(redPort.bound && bluePort.bound);
+        quickStatus.innerHTML = `Mac: <span class="dot ${portsBound ? '' : 'waiting'}">●</span> ${portsBound ? 'Ready' : 'UDP bind issue'}　iPhone: <span class="dot ${redReceiving || blueReceiving ? '' : 'waiting'}">●</span> ${redReceiving || blueReceiving ? 'Receiving' : 'Waiting'}　Red: ${redReceiving ? 'Fresh' : 'Stale'}　Blue: ${blueReceiving ? 'Fresh' : 'Stale'}`;
         networkDetails.value = [
           `Mac: ${network.macName || '-'}  IPv4: ${ipv4}`,
-          `UDP: red ${ports.red || 5005}, blue ${ports.blue || 5006}  Listening: ${status.listening ? 'yes' : 'no'}`,
-          `Bonjour: ${bonjour.running ? 'published' : 'off'}  ${bonjour.serviceName || '-'} ${bonjour.serviceType || ''}`,
+          `UDP: RED ${redPort.port || 5005} ${redPort.bindStatus || 'unknown'}, BLUE ${bluePort.port || 5006} ${bluePort.bindStatus || 'unknown'}`,
+          `Bonjour: ${(bonjour.status || (bonjour.running ? 'publishing' : 'disabled'))}  ${bonjour.serviceName || '-'} ${bonjour.serviceType || ''}`,
+          `RED last=${redPort.lastPacketReceivedAt || 'never'} age=${redPort.packetAgeSeconds == null ? 'never' : `${redPort.packetAgeSeconds.toFixed(2)}s`} rate=${Number(redPort.packetRatePerSecond || 0).toFixed(1)}pps stale=${Boolean(redPort.stale)}`,
+          `BLUE last=${bluePort.lastPacketReceivedAt || 'never'} age=${bluePort.packetAgeSeconds == null ? 'never' : `${bluePort.packetAgeSeconds.toFixed(2)}s`} rate=${Number(bluePort.packetRatePerSecond || 0).toFixed(1)}pps stale=${Boolean(bluePort.stale)}`,
           network.unityNote || ''
         ].filter(Boolean).join('\n');
         detectionDetails.value = [
-          `Red: ${latest.red ? `Detected  ${latest.red.payload}  packets=${counts.red || 0}` : `Not receiving  packets=${counts.red || 0}`}`,
-          `Blue: ${latest.blue ? `Detected  ${latest.blue.payload}  packets=${counts.blue || 0}` : `Not receiving  packets=${counts.blue || 0}`}`
+          `Red: ${redReceiving ? 'Fresh' : 'Stale'}  ${latest.red ? latest.red.payload : '-'}  packets=${counts.red || 0}`,
+          `Blue: ${blueReceiving ? 'Fresh' : 'Stale'}  ${latest.blue ? latest.blue.payload : '-'}  packets=${counts.blue || 0}`
         ].join('\n');
         updateLatencyPanel(status.latency || {});
       }
@@ -744,6 +797,7 @@
       updateLabels();
       if (liveMode) {
         livePanel.hidden = false;
+        liveDiagnostics.hidden = false;
         pollLiveDashboard();
         window.setInterval(pollLiveDashboard, 250);
       }

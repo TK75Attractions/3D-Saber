@@ -5,12 +5,15 @@ from __future__ import annotations
 import argparse
 from collections import deque
 import csv
+from datetime import datetime
 import json
 import math
 import select
+import shutil
 import socket
 import statistics
 import subprocess
+import sys
 import threading
 import time
 import webbrowser
@@ -25,6 +28,11 @@ from urllib.parse import urlsplit
 PORTS = (5005, 5006)
 BONJOUR_SERVICE_TYPE = "_phonesaber._udp"
 BONJOUR_SERVICE_NAME = "Phone Saber Mac"
+LIVE_HISTORY_LIMIT = 100
+RECONCILE_PACKET_LIMIT = 10_000
+PACKET_RATE_WINDOW_SECONDS = 5.0
+STALE_AFTER_SECONDS = 1.0
+MAX_SAFE_PACKET_COUNT = 9_007_199_254_740_991
 
 
 def local_ipv4_addresses() -> list[str]:
@@ -81,6 +89,38 @@ class DisplayLog:
     frames: list[dict]
     started_epoch_ms: float
     ended_epoch_ms: float
+
+
+class PacketRateWindow:
+    """Fixed-size, one-second buckets for a five-second rolling packet rate."""
+
+    def __init__(self, window_seconds: float = PACKET_RATE_WINDOW_SECONDS):
+        self._window_seconds = max(1.0, float(window_seconds))
+        self._buckets: dict[int, int] = {}
+        self._started: float | None = None
+
+    def record(self, observed_monotonic: float) -> None:
+        if not math.isfinite(observed_monotonic):
+            return
+        if self._started is None:
+            self._started = observed_monotonic
+        bucket = math.floor(observed_monotonic)
+        self._buckets[bucket] = min(MAX_SAFE_PACKET_COUNT, self._buckets.get(bucket, 0) + 1)
+        self._prune(bucket)
+
+    def rate(self, now_monotonic: float) -> float:
+        if not math.isfinite(now_monotonic) or self._started is None:
+            return 0.0
+        bucket = math.floor(now_monotonic)
+        self._prune(bucket)
+        elapsed = max(1.0, min(self._window_seconds, now_monotonic - self._started))
+        return sum(self._buckets.values()) / elapsed
+
+    def _prune(self, current_bucket: int) -> None:
+        oldest = current_bucket - math.ceil(self._window_seconds)
+        for bucket in tuple(self._buckets):
+            if bucket < oldest:
+                del self._buckets[bucket]
 
 
 class LatencyTest:
@@ -244,16 +284,29 @@ class LatencyTest:
 class LiveState:
     """Small bounded, thread-safe state store for the local live dashboard."""
 
-    def __init__(self, history_limit: int = 100, bonjour_publisher: BonjourPublisher | None = None,
-                 latency_results_directory: str | Path = "latency_results"):
+    def __init__(self, history_limit: int = LIVE_HISTORY_LIMIT, bonjour_publisher: BonjourPublisher | None = None,
+                 latency_results_directory: str | Path = "latency_results", bound_ports: tuple[int, ...] = (),
+                 port_by_color: dict[str, int] | None = None,
+                 clock: Callable[[], float] = time.time,
+                 monotonic_clock: Callable[[], float] = time.monotonic):
         self._lock = threading.Lock()
-        self._history_limit = history_limit
-        self._started = time.time()
+        self._history_limit = max(1, min(int(history_limit), LIVE_HISTORY_LIMIT))
+        self._clock = clock
+        self._monotonic_clock = monotonic_clock
+        self._started = clock()
+        self._started_monotonic = monotonic_clock()
         self._counts = {"red": 0, "blue": 0, "unknown": 0}
         self._latest = {"red": None, "blue": None}
-        self._history: list[dict] = []
+        self._history: deque[dict] = deque(maxlen=self._history_limit)
         self._stopped = False
         self._bonjour_publisher = bonjour_publisher
+        self._bound_ports = set(bound_ports)
+        self._port_by_color = {"red": 5005, "blue": 5006}
+        if port_by_color:
+            self._port_by_color.update(port_by_color)
+        self._last_received_epoch = {"red": None, "blue": None}
+        self._last_received_monotonic = {"red": None, "blue": None}
+        self._rates = {"red": PacketRateWindow(), "blue": PacketRateWindow()}
         self._latency = LatencyTest(latency_results_directory)
 
     def record(self, port: int, packet: ParsedPacket, arrival: float, order: int, color: str | None,
@@ -265,18 +318,27 @@ class LiveState:
             "port": port,
             "color": color or "unknown",
             "arrivalEpochSeconds": arrival if math.isfinite(arrival) else None,
+            "receivedAt": _format_local_time(arrival),
             "phoneTimestampSeconds": timestamp,
             "arrivalMinusPhoneMs": delta if delta is not None and math.isfinite(delta) else None,
             "validTimestamp": timestamp is not None,
             "payload": packet.payload,
         }
+        observed_monotonic = self._monotonic_clock() if arrival_monotonic is None else arrival_monotonic
         with self._lock:
-            self._counts[item["color"]] = self._counts.get(item["color"], 0) + 1
+            current_count = self._counts.get(item["color"], 0)
+            self._counts[item["color"]] = min(MAX_SAFE_PACKET_COUNT, current_count + 1)
             if color in self._latest:
                 self._latest[color] = item
+                self._last_received_epoch[color] = arrival if math.isfinite(arrival) else None
+                self._last_received_monotonic[color] = observed_monotonic if math.isfinite(observed_monotonic) else None
+                self._rates[color].record(observed_monotonic)
             self._history.append(item)
-            del self._history[:-self._history_limit]
-            self._latency.record_packet(packet.payload, arrival_monotonic)
+            self._latency.record_packet(packet.payload, observed_monotonic)
+
+    def set_bonjour_publisher(self, publisher: BonjourPublisher | None) -> None:
+        with self._lock:
+            self._bonjour_publisher = publisher
 
     def latency_start(self, trials: int) -> None:
         with self._lock:
@@ -301,6 +363,15 @@ class LiveState:
 
     def snapshot(self) -> dict:
         with self._lock:
+            now_epoch = self._clock()
+            now_monotonic = self._monotonic_clock()
+            ports = {
+                "red": self._port_snapshot("red", self._port_by_color["red"], now_monotonic),
+                "blue": self._port_snapshot("blue", self._port_by_color["blue"], now_monotonic),
+            }
+            publisher = self._bonjour_publisher
+            bonjour_running = bool(publisher and publisher.running)
+            bonjour_status = "publishing" if bonjour_running else ("failed" if publisher else "disabled")
             return {
                 "listening": not self._stopped,
                 "startedEpochSeconds": self._started,
@@ -311,12 +382,31 @@ class LiveState:
                 "network": {
                     "macName": socket.gethostname(),
                     "ipv4": local_ipv4_addresses(),
-                    "ports": {"red": 5005, "blue": 5006},
+                    "ports": ports,
+                    "staleAfterSeconds": STALE_AFTER_SECONDS,
+                    "packetRateWindowSeconds": PACKET_RATE_WINDOW_SECONDS,
                     "bonjour": {"serviceName": BONJOUR_SERVICE_NAME, "serviceType": BONJOUR_SERVICE_TYPE,
-                                "running": bool(self._bonjour_publisher and self._bonjour_publisher.running)},
+                                "running": bonjour_running, "published": bonjour_running, "status": bonjour_status},
                     "unityNote": "Unityと同時にUDP 5005/5006をbindできません。診断時はUnityを停止してください。",
                 },
             }
+
+    def _port_snapshot(self, color: str, port: int, now_monotonic: float) -> dict:
+        last_monotonic = self._last_received_monotonic[color]
+        age = None if last_monotonic is None else max(0.0, now_monotonic - last_monotonic)
+        requested = port in self._bound_ports
+        return {
+            "port": port,
+            "bindStatus": "bound" if requested else "not-requested",
+            "bound": requested,
+            "lastPacketReceivedAt": _format_local_time(self._last_received_epoch[color]),
+            "lastPacketReceivedEpochSeconds": self._last_received_epoch[color],
+            "packetAgeSeconds": age,
+            "packetRatePerSecond": self._rates[color].rate(now_monotonic),
+            "packetCount": self._counts[color],
+            "stale": age is None or age > STALE_AFTER_SECONDS,
+            "status": "stale" if age is None or age > STALE_AFTER_SECONDS else "fresh",
+        }
 
     def stop(self) -> None:
         with self._lock:
@@ -415,9 +505,9 @@ class LiveServer:
         self.thread.join(timeout=2)
 
 
-def start_live_server(host: str = "127.0.0.1", port: int = 8765, html_path: str | Path = "saber_camera_test.html", bonjour_publisher: BonjourPublisher | None = None) -> tuple[LiveServer, LiveState]:
+def start_live_server(host: str = "127.0.0.1", port: int = 8765, html_path: str | Path = "saber_camera_test.html", bonjour_publisher: BonjourPublisher | None = None, bound_ports: tuple[int, ...] = (), port_by_color: dict[str, int] | None = None) -> tuple[LiveServer, LiveState]:
     dashboard_path = Path(html_path)
-    state = LiveState(bonjour_publisher=bonjour_publisher, latency_results_directory=dashboard_path.parent / "latency_results")
+    state = LiveState(bonjour_publisher=bonjour_publisher, latency_results_directory=dashboard_path.parent / "latency_results", bound_ports=bound_ports, port_by_color=port_by_color)
     server = LiveServer(host, port, dashboard_path, state)
     server.start()
     return server, state
@@ -458,6 +548,14 @@ def parse_packet(data: bytes) -> ParsedPacket:
 def arrival_minus_packet_timestamp_ms(arrival: float, packet_timestamp: float | None) -> float | None:
     if packet_timestamp is None or not math.isfinite(arrival) or not math.isfinite(packet_timestamp): return None
     return (arrival - packet_timestamp) * 1000
+
+def _format_local_time(epoch_seconds: float | None) -> str | None:
+    if epoch_seconds is None or not math.isfinite(epoch_seconds):
+        return None
+    try:
+        return datetime.fromtimestamp(epoch_seconds).astimezone().isoformat(timespec="milliseconds")
+    except (OSError, OverflowError, ValueError):
+        return None
 
 def _valid_state_id(value: object) -> bool:
     return isinstance(value, int) and not isinstance(value, bool) and value >= 0
@@ -555,6 +653,43 @@ def _print_stats(samples, label):
     if not values: print(f"statistics color={label} count=0 average_ms=- median_ms=- p50_ms=- p95_ms=-", flush=True); return
     print(f"statistics color={label} count={len(values)} average_ms={statistics.mean(values):.3f} median_ms={statistics.median(values):.3f} p50_ms={_percentile(values, .50):.3f} p95_ms={_percentile(values, .95):.3f}", flush=True)
 
+def _diagnostic_summary_lines(ports, bound_ports, packet_stats, now_monotonic, bonjour_publisher):
+    def bind_status(port):
+        if port in bound_ports:
+            return "BOUND"
+        return "FAILED" if port in ports else "NOT REQUESTED"
+
+    def packet_status(color):
+        stats = packet_stats[color]
+        last = stats["lastMonotonic"]
+        age = None if last is None else max(0.0, now_monotonic - last)
+        freshness = "STALE" if age is None or age > STALE_AFTER_SECONDS else "FRESH"
+        age_text = "never" if age is None else f"{age:.1f}s"
+        rate = stats["rate"].rate(now_monotonic)
+        return f"{freshness} age={age_text} rate={rate:.1f}pps"
+
+    if bonjour_publisher is None:
+        bonjour_status = "DISABLED"
+    else:
+        bonjour_status = "PUBLISHING" if bonjour_publisher.running else "FAILED"
+    return (
+        f"UDP 5005: {bind_status(5005)} | UDP 5006: {bind_status(5006)} | Bonjour: {bonjour_status}",
+        f"RED {packet_status('red')} | BLUE {packet_status('blue')}",
+    )
+
+def _write_console_summary(lines, interactive: bool, redraw: bool = False, finish: bool = False) -> None:
+    if not interactive:
+        print(*lines, sep="\n", flush=True)
+        return
+    width = max(40, shutil.get_terminal_size(fallback=(100, 24)).columns - 1)
+    first, second = (line[:width] for line in lines)
+    if redraw:
+        sys.stdout.write("\033[1A")
+    sys.stdout.write("\r\033[2K" + first + "\n\r\033[2K" + second)
+    if finish:
+        sys.stdout.write("\n")
+    sys.stdout.flush()
+
 def parse_args():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--host", default="0.0.0.0"); parser.add_argument("--duration", type=float, default=0.0); parser.add_argument("--port", type=int, action="append", dest="ports"); parser.add_argument("--display-log", type=Path); parser.add_argument("--trial-id"); parser.add_argument("--reject-threshold", type=float, default=0.08); parser.add_argument("--input-width", type=float, default=1920.0); parser.add_argument("--input-height", type=float, default=1080.0)
@@ -563,39 +698,61 @@ def parse_args():
     parser.add_argument("--html", type=Path, default=Path(__file__).with_name("saber_camera_test.html"))
     parser.add_argument("--open-browser", action="store_true", help="open the live dashboard after both listeners are ready")
     parser.add_argument("--bonjour", action="store_true", help="publish _phonesaber._udp via macOS dns-sd")
+    parser.add_argument("--verbose", action="store_true", help="print every raw packet to Terminal")
     return parser.parse_args()
 
-def run(host: str, ports: tuple[int, ...], duration: float, display_log=None, input_width=1920.0, input_height=1080.0, on_ready: Callable[[], None] | None = None, reject_threshold=0.08, trial_id=None, port_colors: dict[int, str] | None = None, on_packet: Callable[[int, ParsedPacket, float], None] | None = None, live=False, http_host="127.0.0.1", http_port=8765, html_path: str | Path = "saber_camera_test.html", open_browser=False, bonjour=False) -> int:
+def run(host: str, ports: tuple[int, ...], duration: float, display_log=None, input_width=1920.0, input_height=1080.0, on_ready: Callable[[], None] | None = None, reject_threshold=0.08, trial_id=None, port_colors: dict[int, str] | None = None, on_packet: Callable[[int, ParsedPacket, float], None] | None = None, live=False, http_host="127.0.0.1", http_port=8765, html_path: str | Path = "saber_camera_test.html", open_browser=False, bonjour=False, verbose=False) -> int:
     if not math.isfinite(duration) or duration < 0 or not math.isfinite(input_width) or not math.isfinite(input_height) or input_width <= 0 or input_height <= 0 or not math.isfinite(reject_threshold) or reject_threshold < 0:
         print("拒否閾値・期間・入力寸法は有限かつ非負（寸法は正）で指定してください", flush=True); return 2
     if live and http_host not in {"127.0.0.1", "localhost"}:
         print("ライブHTTPはIPv4 loopback（127.0.0.1/localhost）に限定してください", flush=True); return 2
     sockets = []
     live_requested = live
-    packets = deque(maxlen=100) if live and display_log is None else []
+    packets = deque(maxlen=RECONCILE_PACKET_LIMIT) if display_log is not None else None
+    packets_dropped = 0
     packet_order = 0
     color_counts: dict[str, int] = {}
+    packet_stats = {
+        "red": {"lastMonotonic": None, "rate": PacketRateWindow()},
+        "blue": {"lastMonotonic": None, "rate": PacketRateWindow()},
+    }
+    bound_ports: set[int] = set()
     live_server = None
     live_state = None
     bonjour_publisher = None
     colors = port_colors or {5005: "red", 5006: "blue"}
+    binding_port = None
+    completed = False
+    stopped_by_user = False
+    summary_rendered = False
+    terminal_summary = sys.stdout.isatty() and not verbose
     try:
         for port in ports:
+            binding_port = port
             sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             try: sock.bind((host, port))
             except OSError: sock.close(); raise
-            sock.setblocking(False); sockets.append((port, sock))
+            sock.setblocking(False); sockets.append((port, sock)); bound_ports.add(port)
+        binding_port = None
         by_socket = {sock: port for port, sock in sockets}; deadline = time.monotonic() + duration if duration > 0 else None
         if bonjour:
             bonjour_publisher = BonjourPublisher(5005)
             if not bonjour_publisher.running:
                 raise RuntimeError("Bonjourサービスを開始できません")
         if live:
-            live_server, live_state = start_live_server(http_host, http_port, html_path, bonjour_publisher)
+            port_by_color = {color: port for port, color in colors.items() if color in {"red", "blue"}}
+            live_server, live_state = start_live_server(http_host, http_port, html_path, bonjour_publisher,
+                                                        tuple(bound_ports), port_by_color)
             dashboard_url = verify_live_dashboard(live_server, html_path)
             print(f"live dashboard ready: {dashboard_url}", flush=True)
         print(f"listening on {host}: {', '.join(map(str, ports))}; Ctrl-C to stop", flush=True)
         if on_ready: on_ready()
+        _write_console_summary(
+            _diagnostic_summary_lines(ports, bound_ports, packet_stats, time.monotonic(), bonjour_publisher),
+            terminal_summary,
+        )
+        summary_rendered = True
+        next_summary = time.monotonic() + 1.0
         if live and open_browser:
             try:
                 opened = webbrowser.open(dashboard_url)
@@ -606,32 +763,80 @@ def run(host: str, ports: tuple[int, ...], duration: float, display_log=None, in
                 print(f"ブラウザを開けません（webbrowser.openがFalse）: {dashboard_url}", flush=True)
                 return 2
         while deadline is None or time.monotonic() < deadline:
-            timeout = .5 if deadline is None else max(0, min(.5, deadline - time.monotonic()))
+            now_monotonic = time.monotonic()
+            timeout = .5 if deadline is None else max(0, min(.5, deadline - now_monotonic))
             ready, _, _ = select.select(list(by_socket), [], [], timeout)
             for sock in ready:
-                data, address = sock.recvfrom(4096); port = by_socket[sock]; arrival = time.time(); arrival_monotonic = time.monotonic(); packet = parse_packet(data); packet_order += 1; order = packet_order; packets.append((port, packet, arrival, order, address)); color = colors.get(port, "unknown"); color_counts[color] = color_counts.get(color, 0) + 1
-                print(f"packet order={order} port={port} count={color_counts[color]} payload={packet.payload} timestamp={packet.timestamp if packet.timestamp is not None else '-'}", flush=True)
+                data, address = sock.recvfrom(4096)
+                port = by_socket[sock]
+                arrival = time.time()
+                arrival_monotonic = time.monotonic()
+                packet = parse_packet(data)
+                packet_order = min(MAX_SAFE_PACKET_COUNT, packet_order + 1)
+                order = packet_order
+                if packets is not None:
+                    if len(packets) == packets.maxlen:
+                        packets_dropped = min(MAX_SAFE_PACKET_COUNT, packets_dropped + 1)
+                    packets.append((port, packet, arrival, order, address))
+                color = colors.get(port, "unknown")
+                color_counts[color] = min(MAX_SAFE_PACKET_COUNT, color_counts.get(color, 0) + 1)
+                if color in packet_stats:
+                    packet_stats[color]["lastMonotonic"] = arrival_monotonic
+                    packet_stats[color]["rate"].record(arrival_monotonic)
+                if verbose:
+                    print(f"packet order={order} port={port} count={color_counts[color]} payload={packet.payload} timestamp={packet.timestamp if packet.timestamp is not None else '-'}", flush=True)
                 if live_state: live_state.record(port, packet, arrival, order, colors.get(port), arrival_monotonic)
                 if on_packet: on_packet(port, packet, arrival)
-    except KeyboardInterrupt: print("stopped", flush=True)
+            now_monotonic = time.monotonic()
+            if terminal_summary and now_monotonic >= next_summary:
+                _write_console_summary(
+                    _diagnostic_summary_lines(ports, bound_ports, packet_stats, now_monotonic, bonjour_publisher),
+                    True,
+                    redraw=summary_rendered,
+                )
+                summary_rendered = True
+                next_summary = now_monotonic + 1.0
+        completed = True
+    except KeyboardInterrupt:
+        completed = True
+        stopped_by_user = True
     except RuntimeError as error:
         print(f"ライブ起動に失敗しました: {error}", flush=True); return 2
     except OSError as error:
-        if live_requested:
+        if binding_port is not None:
+            bind_report = ", ".join(
+                f"UDP {port}={'BOUND' if port in bound_ports else 'FAILED' if port == binding_port else 'NOT TRIED'}"
+                for port in ports
+            )
+            print(f"{bind_report}。Unityまたは別のprobeがポートを使用中なら先に停止してください。 ({error})", flush=True)
+        elif live_requested:
             print(f"ライブ起動に失敗しました（UDP/HTTP資源を解放します）: {error}", flush=True)
         else:
             print(f"受信ソケットを開けません: {error}。Unityまたは別のprobeがポートを使用中なら先に停止してください。", flush=True)
         return 2
     finally:
+        if completed:
+            _write_console_summary(
+                _diagnostic_summary_lines(ports, bound_ports, packet_stats, time.monotonic(), bonjour_publisher),
+                terminal_summary,
+                redraw=summary_rendered and terminal_summary,
+                finish=terminal_summary,
+            )
+            if stopped_by_user:
+                print("stopped", flush=True)
         for _, sock in sockets: sock.close()
         if live_state: live_state.stop()
         if live_server: live_server.close()
         if bonjour_publisher: bonjour_publisher.close()
+    if packets is None:
+        print("照合状態=未指定（保存済み表示ログなし）", flush=True)
+        return 0
     loaded_log, warning = try_load_display_log(display_log)
     frames = loaded_log.frames if loaded_log else []
     if warning: print(warning, flush=True)
-    if display_log is None: print("照合状態=未指定（packetはこの実行の終了まで保持します。終了後は失われるため、再実行だけでは照合できません）", flush=True)
     if trial_id is not None: print("注意: --trial-id は保存ログを絞るだけでpacket自体に試行IDを付与しません。packetの時刻区間も検証します。", flush=True)
+    if packets_dropped:
+        print(f"packet_history_limit={RECONCILE_PACKET_LIMIT} dropped_oldest={packets_dropped}; 照合は直近packetのみです", flush=True)
     samples = {"all": [], "red": [], "blue": []}; seen: set[tuple[str, str, int]] = set(); matched = duplicates = unmatched = 0
     interval = (loaded_log.started_epoch_ms, loaded_log.ended_epoch_ms) if loaded_log else None
     for port, packet, _, order, _ in packets:
@@ -646,4 +851,4 @@ def run(host: str, ports: tuple[int, ...], duration: float, display_log=None, in
     return 0
 
 if __name__ == "__main__":
-    args = parse_args(); raise SystemExit(run(args.host, tuple(args.ports or PORTS), args.duration, args.display_log, args.input_width, args.input_height, reject_threshold=args.reject_threshold, trial_id=args.trial_id, live=args.live, http_host=args.http_host, http_port=args.http_port, html_path=args.html, open_browser=args.open_browser, bonjour=args.bonjour))
+    args = parse_args(); raise SystemExit(run(args.host, tuple(args.ports or PORTS), args.duration, args.display_log, args.input_width, args.input_height, reject_threshold=args.reject_threshold, trial_id=args.trial_id, live=args.live, http_host=args.http_host, http_port=args.http_port, html_path=args.html, open_browser=args.open_browser, bonjour=args.bonjour, verbose=args.verbose))

@@ -95,7 +95,7 @@ class UDPReceiveProbeTests(unittest.TestCase):
             self.skipTest(f"ソケット利用が環境で禁止されています: {error}")
 
     def test_live_state_keeps_bounded_history_and_never_serializes_invalid_delta(self):
-        state = LiveState(history_limit=100)
+        state = LiveState(history_limit=100_000, bound_ports=(5005, 5006))
         future_timestamp = 11.0
         for order in range(1, 104):
             state.record(5005, parse_packet(f"ts={future_timestamp};1,2,3,4".encode()), 10.0, order, "red")
@@ -115,13 +115,55 @@ class UDPReceiveProbeTests(unittest.TestCase):
         json.dumps(snapshot, allow_nan=False)
 
     def test_live_status_exposes_bonjour_and_network_configuration(self):
-        snapshot = LiveState().snapshot()
+        snapshot = LiveState(bound_ports=(5005, 5006)).snapshot()
         network = snapshot["network"]
-        self.assertEqual(network["ports"], {"red": 5005, "blue": 5006})
+        self.assertEqual(network["ports"]["red"]["port"], 5005)
+        self.assertTrue(network["ports"]["red"]["bound"])
+        self.assertEqual(network["ports"]["blue"]["port"], 5006)
+        self.assertTrue(network["ports"]["blue"]["bound"])
         self.assertEqual(network["bonjour"]["serviceType"], "_phonesaber._udp")
+        self.assertEqual(network["bonjour"]["status"], "disabled")
         self.assertIn("Unity", network["unityNote"])
         self.assertIsInstance(network["ipv4"], list)
         json.dumps(snapshot, allow_nan=False)
+
+    def test_live_status_reports_bonjour_publisher_liveness(self):
+        publisher = mock.Mock()
+        publisher.running = True
+        state = LiveState(bonjour_publisher=publisher)
+        self.assertEqual(state.snapshot()["network"]["bonjour"]["status"], "publishing")
+        publisher.running = False
+        self.assertEqual(state.snapshot()["network"]["bonjour"]["status"], "failed")
+
+    def test_live_status_reports_last_receive_age_rate_and_stale_transition(self):
+        epoch = [1_800_000_000.0]
+        monotonic = [10.0]
+        state = LiveState(bound_ports=(5005, 5006), clock=lambda: epoch[0], monotonic_clock=lambda: monotonic[0])
+        state.record(5005, parse_packet(b"1,2,3,4"), epoch[0], 1, "red", monotonic[0])
+        epoch[0] += .1
+        monotonic[0] += .1
+        state.record(5005, parse_packet(b"1,2,3,4"), epoch[0], 2, "red", monotonic[0])
+
+        fresh = state.snapshot()["network"]["ports"]["red"]
+        self.assertEqual(fresh["bindStatus"], "bound")
+        self.assertEqual(fresh["status"], "fresh")
+        self.assertFalse(fresh["stale"])
+        self.assertEqual(fresh["lastPacketReceivedEpochSeconds"], epoch[0])
+        self.assertTrue(fresh["lastPacketReceivedAt"])
+        self.assertAlmostEqual(fresh["packetAgeSeconds"], 0.0)
+        self.assertGreater(fresh["packetRatePerSecond"], 0)
+
+        monotonic[0] += 1.1
+        epoch[0] += 1.1
+        stale = state.snapshot()["network"]["ports"]["red"]
+        self.assertEqual(stale["status"], "stale")
+        self.assertTrue(stale["stale"])
+        self.assertAlmostEqual(stale["packetAgeSeconds"], 1.1)
+        never_received = state.snapshot()["network"]["ports"]["blue"]
+        self.assertIsNone(never_received["lastPacketReceivedAt"])
+        self.assertIsNone(never_received["packetAgeSeconds"])
+        self.assertTrue(never_received["stale"])
+        self.assertLessEqual(len(state._rates["red"]._buckets), 6)
 
     def test_live_http_rejects_non_loopback_host(self):
         output = io.StringIO()
@@ -195,6 +237,16 @@ class UDPReceiveProbeTests(unittest.TestCase):
             self.assertIsNotNone(payload)
             self.assertEqual(payload["counts"]["red"], 103)
             self.assertEqual(payload["counts"]["blue"], 2)
+            red_status = payload["network"]["ports"]["red"]
+            blue_status = payload["network"]["ports"]["blue"]
+            self.assertEqual(red_status["port"], red_port)
+            self.assertTrue(red_status["bound"])
+            self.assertTrue(red_status["lastPacketReceivedAt"])
+            self.assertIsNotNone(red_status["packetAgeSeconds"])
+            self.assertGreater(red_status["packetRatePerSecond"], 0)
+            self.assertEqual(blue_status["port"], blue_port)
+            self.assertTrue(blue_status["bound"])
+            self.assertTrue(blue_status["lastPacketReceivedAt"])
             self.assertEqual(len(payload["history"]), 100)
             self.assertEqual(payload["history"][0]["order"], 6)
             self.assertEqual(payload["history"][-1]["order"], 105)
@@ -418,7 +470,8 @@ class UDPReceiveProbeTests(unittest.TestCase):
 
             def receive():
                 with contextlib.redirect_stdout(output):
-                    result.append(run("127.0.0.1", (port,), 0.2, on_ready=ready.set))
+                    result.append(run("127.0.0.1", (port,), 0.2, on_ready=ready.set,
+                                      port_colors={port: "red"}))
 
             thread = threading.Thread(target=receive)
             thread.start()
@@ -429,9 +482,32 @@ class UDPReceiveProbeTests(unittest.TestCase):
             self.assertFalse(thread.is_alive())
             self.assertEqual(result, [0])
             received = output.getvalue()
-            self.assertIn(f"port={port}", received)
-            self.assertIn("count=1", received)
-            self.assertIn("payload=1,2,3,4", received)
+            self.assertIn("RED FRESH", received)
+            self.assertNotIn("payload=1,2,3,4", received)
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as rebound:
+            rebound.bind(("127.0.0.1", port))
+
+    def test_verbose_mode_prints_raw_packets_on_demand(self):
+        port = self._reserve_udp_ports(1)[0]
+        ready = threading.Event()
+        result = []
+        output = io.StringIO()
+
+        def receive():
+            with contextlib.redirect_stdout(output):
+                result.append(run("127.0.0.1", (port,), .2, on_ready=ready.set,
+                                  port_colors={port: "red"}, verbose=True))
+
+        thread = threading.Thread(target=receive)
+        thread.start()
+        self.assertTrue(ready.wait(1.0))
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sender:
+            sender.sendto(b"1,2,3,4", ("127.0.0.1", port))
+        thread.join(1.0)
+        self.assertFalse(thread.is_alive())
+        self.assertEqual(result, [0])
+        self.assertIn(f"port={port}", output.getvalue())
+        self.assertIn("payload=1,2,3,4", output.getvalue())
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as rebound:
             rebound.bind(("127.0.0.1", port))
 
@@ -538,7 +614,8 @@ class UDPReceiveProbeTests(unittest.TestCase):
         def receive():
             with contextlib.redirect_stdout(output):
                 with mock.patch.object(Path, "open", side_effect=PermissionError("読取拒否")):
-                    result.append(run("127.0.0.1", (port,), 0.2, display_log=Path("denied.json"), on_ready=ready.set))
+                    result.append(run("127.0.0.1", (port,), 0.2, display_log=Path("denied.json"),
+                                      on_ready=ready.set, port_colors={port: "red"}))
 
         thread = threading.Thread(target=receive)
         thread.start()
@@ -550,7 +627,7 @@ class UDPReceiveProbeTests(unittest.TestCase):
         self.assertEqual(result, [0])
         received = output.getvalue()
         self.assertIn("計測照合なしで続行", received)
-        self.assertIn("count=1", received)
+        self.assertIn("RED FRESH", received)
         with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as rebound:
             rebound.bind(("127.0.0.1", port))
 
@@ -601,6 +678,8 @@ class UDPReceiveProbeTests(unittest.TestCase):
                     result = run("127.0.0.1", (first, second), 0.1)
                 self.assertEqual(result, 2)
                 self.assertIn("Unityまたは別のprobe", output.getvalue())
+                self.assertIn(f"UDP {first}=BOUND", output.getvalue())
+                self.assertIn(f"UDP {second}=FAILED", output.getvalue())
                 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as rebound:
                     rebound.bind(("127.0.0.1", first))
 
