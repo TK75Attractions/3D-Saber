@@ -599,6 +599,12 @@ public class GamePlayManager : MonoBehaviour
     // 順序：現在の受付窓 → 判定 → 譜面進行 → 終了チェック。
     void Update()
     {
+        // 判定調整のEscは既存の練習停止・設定終了へ渡す。幕の間は連続して戻らない。
+        if (!inCalibration && !GameSession.IsCalibrationMode && !ScreenTransition.IsBusy && InputManager.EscapeGetDown)
+        {
+            ReturnToTitle();
+            return;
+        }
         if (finished || !ready) return;
 
         // 判定と採点が同じ曲時計を見るよう、前フレームの受付可否を更新する。
@@ -651,6 +657,17 @@ public class GamePlayManager : MonoBehaviour
             finished = true;
             FinishGame();
         }
+    }
+
+    private void ReturnToTitle()
+    {
+        if (!ScreenTransition.Load("Title", ScreenTransition.Style.Back)) return;
+        // 途中離脱は終了処理へ流さず、結果・実績を保存しない。開始待ちや終了演出も打ち切る。
+        finished = true;
+        StopAllCoroutines();
+        if (songPlayer != null) songPlayer.Stop();
+        var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
+        if (countdown != null) Destroy(countdown.gameObject);
     }
 
     // --- キャリブレーションモード実装 ---

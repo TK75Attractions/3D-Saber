@@ -3,6 +3,9 @@ using UnityEngine.InputSystem;
 
 public class InputManager : MonoBehaviour
 {
+	// 画面を戻るキーも入力側へ集約する。本編の単一Updateから参照する。
+    public static bool EscapeGetDown => Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
+
 	[SerializeField] private bool enableLog = true;
 
     //キーが押されている時に true になる。

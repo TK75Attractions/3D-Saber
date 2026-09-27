@@ -292,6 +292,96 @@ public class SongSelectKeyboardPlayTests
         yield return Press(Key.Escape); Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
     }
 
+    [UnityTest]
+    public IEnumerator EscapeDuringSongReturnsToTitleWithCurtainWithoutSaving()
+    {
+        yield return EscapeFromGame(false);
+    }
+
+    [UnityTest]
+    public IEnumerator EscapeDuringCountInCancelsScheduledAudioAndReturnsToTitle()
+    {
+        yield return EscapeFromGame(true);
+    }
+
+    IEnumerator EscapeFromGame(bool duringCountIn)
+    {
+        string[] keys = { HighScoreStore.Key("Epilogue", "Normal"), SongAchievementStore.Key("Epilogue", "Normal") };
+        var stored = keys.ToDictionary(key => key, key => PlayerPrefs.HasKey(key) ? PlayerPrefs.GetString(key) : null);
+        var visited = new List<string>();
+        void Observe(Scene scene, LoadSceneMode mode) => visited.Add(scene.name);
+        SceneManager.sceneLoaded += Observe;
+        try
+        {
+            yield return Press(Key.Enter);
+            var manager = Object.FindFirstObjectByType<GamePlayManager>();
+            Assert.NotNull(manager);
+            double deadline = Time.realtimeSinceStartupAsDouble + 15;
+            while (!(duringCountIn ? manager.songPlayer.IsScheduled : manager.songPlayer.SongTime > .25) &&
+                Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+            Assert.True(manager.songPlayer.IsScheduled);
+            if (duringCountIn)
+            {
+                Assert.Less(manager.songPlayer.SongTime, 0);
+                Assert.NotNull(Object.FindFirstObjectByType<GameStartCountdown>());
+            }
+            else Assert.Greater(manager.songPlayer.SongTime, .25);
+            manager.scoreManager.RegisterHit(JudgmentTier.Perfect);
+
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
+            deadline = Time.realtimeSinceStartupAsDouble + 2;
+            while (!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+            Assert.True(ScreenTransition.IsBusy);
+            Assert.AreEqual("Game", SceneManager.GetActiveScene().name, "幕が閉じる前にシーンを飛ばさない");
+            Assert.False(manager.songPlayer.IsScheduled);
+            Assert.False(manager.songPlayer.GetComponent<AudioSource>().isPlaying);
+            int hit = manager.scoreManager.HitCount, miss = manager.scoreManager.MissCount;
+            yield return new WaitForSecondsRealtime(.15f);
+            var curtain = Object.FindFirstObjectByType<ScreenTransitionGraphic>();
+            Assert.NotNull(curtain);
+            Assert.That(curtain.Progress, Is.InRange(.01f, .99f), "戻る幕が途中のフレームを描く");
+            Assert.AreEqual(hit, manager.scoreManager.HitCount);
+            Assert.AreEqual(miss, manager.scoreManager.MissCount, "退出中は追加の判定をしない");
+            Assert.IsNull(Object.FindFirstObjectByType<GameStartCountdown>());
+            yield return ScreenTransitionPlayTests.WaitForTransition();
+            Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
+            Assert.True(EventSystem.current.enabled);
+            Assert.False(curtain.gameObject.activeInHierarchy);
+            yield return new WaitForSecondsRealtime(.3f); // Escを押したままでも再遷移しない。
+            Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
+            CollectionAssert.AreEqual(new[] { "Game", "Title" }, visited);
+            Assert.Zero(GameSession.FinalScore);
+            Assert.Zero(GameSession.FinalPerfect);
+            foreach (var item in stored)
+                Assert.AreEqual(item.Value, PlayerPrefs.HasKey(item.Key) ? PlayerPrefs.GetString(item.Key) : null,
+                    "途中離脱でスコアや実績を書き換えない: " + item.Key);
+        }
+        finally
+        {
+            SceneManager.sceneLoaded -= Observe;
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            // 不具合が起きた場合も検証前の保存内容へ戻す。
+            foreach (var item in stored)
+                if (item.Value == null) PlayerPrefs.DeleteKey(item.Key); else PlayerPrefs.SetString(item.Key, item.Value);
+            PlayerPrefs.Save();
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator EscapeInCalibrationKeepsTheExistingReturnToSongSelect()
+    {
+        yield return Click(GameObject.Find("CalibrationButton").GetComponent<Button>());
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        var manager = Object.FindFirstObjectByType<GamePlayManager>();
+        double deadline = Time.realtimeSinceStartupAsDouble + 10;
+        while (manager.Calibration == null && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        Assert.NotNull(manager.Calibration);
+        Assert.True(GameSession.IsCalibrationMode);
+        yield return Press(Key.Escape);
+        Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
+        Assert.False(GameSession.IsCalibrationMode);
+    }
+
     static int FreePort()
     {
         using (var receiver = new UdpClient(0)) return ((IPEndPoint)receiver.Client.LocalEndPoint).Port;
