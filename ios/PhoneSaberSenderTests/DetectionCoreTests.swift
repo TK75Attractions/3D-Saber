@@ -722,6 +722,33 @@ final class DetectionCoreTests: XCTestCase {
                        "a saturated detector must not block generation checks or queued control")
     }
 
+    func testDebugCameraSampleMailboxCoalescesWhileProcessorQueueIsBusy() {
+        let processor = FrameProcessor(expiryScheduler: nil)
+        let queueBlocked = expectation(description: "processor queue blocked")
+        let releaseQueue = DispatchSemaphore(value: 0)
+        processor.queue.async {
+            queueBlocked.fulfill()
+            releaseQueue.wait()
+        }
+        wait(for: [queueBlocked], timeout: 1)
+
+        for index in 0..<1_000 {
+            processor.recordDebugCameraSample(DebugRecordingCameraSample(
+                frameID: UInt64(index), presentationTimeSeconds: Double(index),
+                exposureDurationMs: 8, iso: 200,
+                whiteBalanceRedGain: 1, whiteBalanceGreenGain: 1, whiteBalanceBlueGain: 1,
+                exposureMode: "Auto", whiteBalanceMode: "Auto", focusMode: "Auto",
+                lensPosition: 0.5, activeFormat: "640×480",
+                activeFormatFPSRanges: "30…60", activeMinFPS: 30, activeMaxFPS: 60
+            ))
+        }
+        XCTAssertEqual(processor.pendingDebugCameraSampleCountForTesting, 1)
+
+        releaseQueue.signal()
+        processor.queue.sync {}
+        XCTAssertEqual(processor.pendingDebugCameraSampleCountForTesting, 0)
+    }
+
     func testFrameTraceUsesOnlyNonNegativeHostClockDurations() {
         let valid = FrameTrace(sequence: 1, captureHostTime: 10, callbackHostTime: 10.075,
                                processingStart: 10.080, detectionEnd: 10.091,
@@ -1887,6 +1914,56 @@ final class DetectionCoreTests: XCTestCase {
                           "detected=false must not draw a retained red line")
         XCTAssertLessThan(overlayFrames[2].pixel(30, 34).b, 80,
                           "detected=false must not draw a retained blue line")
+    }
+
+    func testDebugRecordingCameraSamplesAreEncodedAndBounded() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberCameraSampleTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory, date: Date(timeIntervalSince1970: 0))
+        recorder.append(pixelBuffer: solidPixelBuffer(width: 64, height: 48),
+                        presentationTime: CMTime(value: 0, timescale: 30),
+                        frameID: 500, results: [])
+        try await Task.sleep(for: .milliseconds(40))
+
+        for index in 0..<(DebugVideoRecorder.maximumCameraSamples + 5) {
+            recorder.appendCameraSample(DebugRecordingCameraSample(
+                frameID: UInt64(index), presentationTimeSeconds: Double(index) / 30,
+                exposureDurationMs: 8.5, iso: 320,
+                whiteBalanceRedGain: 1.1, whiteBalanceGreenGain: 1.2, whiteBalanceBlueGain: 1.3,
+                exposureMode: "Continuous auto", whiteBalanceMode: "Continuous auto",
+                focusMode: "Continuous auto", lensPosition: 0.4,
+                activeFormat: "640×480", activeFormatFPSRanges: "30…60",
+                activeMinFPS: 30, activeMaxFPS: 60
+            ))
+        }
+
+        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
+            recorder.finish { continuation.resume(with: $0) }
+        }
+        let encoded = try Data(contentsOf: recording.metadataURL)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: encoded) as? [String: Any])
+        let cameraSamplesObject = try XCTUnwrap(object["cameraSamples"] as? [[String: Any]])
+        let metadata = try JSONDecoder().decode(DebugRecordingMetadata.self, from: encoded)
+        XCTAssertEqual(cameraSamplesObject.count, DebugVideoRecorder.maximumCameraSamples)
+        XCTAssertEqual(metadata.cameraSamples.map(\.frameID), (5..<305).map { UInt64($0) })
+        let firstSample = try XCTUnwrap(metadata.cameraSamples.first)
+        XCTAssertEqual(firstSample.frameID, 5)
+        XCTAssertEqual(firstSample.presentationTimeSeconds ?? -1, 5.0 / 30.0, accuracy: 0.000_001)
+        XCTAssertEqual(firstSample.exposureDurationMs, 8.5)
+        XCTAssertEqual(firstSample.iso, 320)
+        XCTAssertEqual(firstSample.whiteBalanceRedGain, 1.1)
+        XCTAssertEqual(firstSample.whiteBalanceGreenGain, 1.2)
+        XCTAssertEqual(firstSample.whiteBalanceBlueGain, 1.3)
+        XCTAssertEqual(firstSample.exposureMode, "Continuous auto")
+        XCTAssertEqual(firstSample.whiteBalanceMode, "Continuous auto")
+        XCTAssertEqual(firstSample.focusMode, "Continuous auto")
+        XCTAssertEqual(firstSample.lensPosition, 0.4)
+        XCTAssertEqual(firstSample.activeFormat, "640×480")
+        XCTAssertEqual(firstSample.activeFormatFPSRanges, "30…60")
+        XCTAssertEqual(firstSample.activeMinFPS, 30)
+        XCTAssertEqual(firstSample.activeMaxFPS, 60)
+        XCTAssertEqual(metadata.frames.map(\.frameID), [500])
     }
 
     @MainActor

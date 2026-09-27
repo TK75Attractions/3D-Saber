@@ -219,6 +219,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
     private var performanceMetrics: [String: PerformanceMetric] = [:]
     private var lastPerformancePublish = 0.0
+    private var lastCameraSampleTime = 0.0
     private var previousTrace: FrameTrace?
     private var diagnosticEventTimes: [String: [TimeInterval]] = [:]
     private var latestDiagnosticSequence: UInt64 = 0
@@ -594,6 +595,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         debugFrameIntervalStatistics = nil
         latestFrameIntervalStatistics = nil
         lastPerformancePublish = 0
+        lastCameraSampleTime = 0
         debugPerformancePublishCountForTesting = 0
     }
 
@@ -717,6 +719,29 @@ final class CameraViewModel: NSObject, ObservableObject {
             stabilization: Self.stabilizationDescription(output.connection(with: .video)?.activeVideoStabilizationMode)
         )
         if debugCameraConfiguration != updated { debugCameraConfiguration = updated }
+        let now = ProcessInfo.processInfo.systemUptime
+        if debugRecordingActive && now - lastCameraSampleTime >= 1.0 {
+            lastCameraSampleTime = now
+            let gains = camera.deviceWhiteBalanceGains
+            let minDuration = CMTimeGetSeconds(camera.activeVideoMinFrameDuration)
+            let maxDuration = CMTimeGetSeconds(camera.activeVideoMaxFrameDuration)
+            processor.recordDebugCameraSample(DebugRecordingCameraSample(
+                frameID: nil, presentationTimeSeconds: nil,
+                exposureDurationMs: CMTimeGetSeconds(camera.exposureDuration) * 1000,
+                iso: camera.iso,
+                whiteBalanceRedGain: gains.redGain,
+                whiteBalanceGreenGain: gains.greenGain,
+                whiteBalanceBlueGain: gains.blueGain,
+                exposureMode: Self.exposureModeDescription(camera.exposureMode),
+                whiteBalanceMode: Self.whiteBalanceModeDescription(camera.whiteBalanceMode),
+                focusMode: Self.focusModeDescription(camera.focusMode),
+                lensPosition: camera.lensPosition,
+                activeFormat: "\(size.width)×\(size.height)",
+                activeFormatFPSRanges: ranges.isEmpty ? "Not available" : ranges,
+                activeMinFPS: maxDuration > 0 && maxDuration.isFinite ? 1 / maxDuration : nil,
+                activeMaxFPS: minDuration > 0 && minDuration.isFinite ? 1 / minDuration : nil
+            ))
+        }
     }
 
     private static func durationDescription(_ duration: CMTime) -> String {
@@ -732,6 +757,24 @@ final class CameraViewModel: NSObject, ObservableObject {
         case .autoExpose: return "Auto"
         case .continuousAutoExposure: return "Continuous auto"
         case .custom: return "Custom"
+        @unknown default: return "Unknown"
+        }
+    }
+
+    private static func whiteBalanceModeDescription(_ mode: AVCaptureDevice.WhiteBalanceMode) -> String {
+        switch mode {
+        case .locked: return "Locked"
+        case .autoWhiteBalance: return "Auto"
+        case .continuousAutoWhiteBalance: return "Continuous auto"
+        @unknown default: return "Unknown"
+        }
+    }
+
+    private static func focusModeDescription(_ mode: AVCaptureDevice.FocusMode) -> String {
+        switch mode {
+        case .locked: return "Locked"
+        case .autoFocus: return "Auto"
+        case .continuousAutoFocus: return "Continuous auto"
         @unknown default: return "Unknown"
         }
     }

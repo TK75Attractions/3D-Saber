@@ -233,6 +233,26 @@ struct DebugRecordingMetadata: Codable, Equatable {
     let width: Int
     let height: Int
     let frames: [DebugRecordingFrameMetadata]
+    let cameraSamples: [DebugRecordingCameraSample]
+}
+
+/// Camera state is sampled during a DEBUG recording, without changing capture settings.
+struct DebugRecordingCameraSample: Codable, Equatable {
+    var frameID: UInt64?
+    var presentationTimeSeconds: Double?
+    let exposureDurationMs: Double
+    let iso: Float
+    let whiteBalanceRedGain: Float
+    let whiteBalanceGreenGain: Float
+    let whiteBalanceBlueGain: Float
+    let exposureMode: String
+    let whiteBalanceMode: String
+    let focusMode: String
+    let lensPosition: Float
+    let activeFormat: String
+    let activeFormatFPSRanges: String
+    let activeMinFPS: Double?
+    let activeMaxFPS: Double?
 }
 
 struct DebugForensicCapturePolicy {
@@ -291,6 +311,9 @@ enum DebugVideoRecorderError: LocalizedError {
 /// and the final fresh endpoints paired with every frame that the writer
 /// accepted. The overlay is deliberately rendered only after recording stops.
 final class DebugVideoRecorder {
+    /// Retains at most five minutes of the approximately 1 Hz camera samples.
+    static let maximumCameraSamples = 300
+
     let sessionID: String
     let rawVideoURL: URL
     let overlayVideoURL: URL
@@ -304,6 +327,7 @@ final class DebugVideoRecorder {
     private var lastPresentationTime: CMTime?
     private var dimensions: (width: Int, height: Int)?
     private var frames: [DebugRecordingFrameMetadata] = []
+    private var cameraSamples: [DebugRecordingCameraSample] = []
     private var forensicFrames: [DebugForensicFrame] = []
     private var previousLengths: [SaberColor: Double] = [:]
     private var manualCaptureCompletion: ((UInt64) -> Void)?
@@ -343,6 +367,18 @@ final class DebugVideoRecorder {
         guard !isFinishing, manualCaptureCompletion == nil else { return false }
         manualCaptureCompletion = completion
         return true
+    }
+
+    func appendCameraSample(_ sample: DebugRecordingCameraSample) {
+        guard !isFinishing else { return }
+        if cameraSamples.count >= Self.maximumCameraSamples {
+            cameraSamples.removeFirst()
+        }
+        cameraSamples.append(sample)
+    }
+
+    var latestFrameTiming: (UInt64, Double)? {
+        frames.last.map { ($0.frameID, $0.presentationTimeSeconds) }
     }
 
     /// Called only from FrameProcessor's serial queue. Metadata is appended
@@ -458,7 +494,8 @@ final class DebugVideoRecorder {
             return
         }
         let metadata = DebugRecordingMetadata(
-            sessionID: sessionID, width: dimensions.width, height: dimensions.height, frames: frames
+            sessionID: sessionID, width: dimensions.width, height: dimensions.height,
+            frames: frames, cameraSamples: cameraSamples
         )
         let forensicFrames = forensicFrames
         let dropped = droppedFrameCount

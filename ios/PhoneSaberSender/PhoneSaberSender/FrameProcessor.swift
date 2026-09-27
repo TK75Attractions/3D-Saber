@@ -89,6 +89,8 @@ final class FrameProcessor: @unchecked Sendable {
     private var freezeDiagnosticsEnabled = false
     private var lastCameraCallbackTime: TimeInterval?
     private let freezeWindow = FrameFreezeWindow()
+    private var pendingDebugCameraSample: DebugRecordingCameraSample?
+    private var debugCameraSampleDrainScheduled = false
 #endif
     private let rawFrameDirectory: () throws -> URL
     private lazy var rawFrameContext = CIContext(options: [.cacheIntermediates: false])
@@ -100,6 +102,12 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.lock(); defer { pendingLock.unlock() }
         return replacedPendingFrames
     }
+#if DEBUG
+    var pendingDebugCameraSampleCountForTesting: Int {
+        pendingLock.lock(); defer { pendingLock.unlock() }
+        return pendingDebugCameraSample == nil ? 0 : 1
+    }
+#endif
 
     init(
         clock: @escaping () -> TimeInterval = { HostMonotonicClock.now() },
@@ -296,6 +304,34 @@ final class FrameProcessor: @unchecked Sendable {
             }
         }
     }
+
+#if DEBUG
+    func recordDebugCameraSample(_ sample: DebugRecordingCameraSample) {
+        pendingLock.lock()
+        pendingDebugCameraSample = sample
+        let shouldScheduleDrain = !debugCameraSampleDrainScheduled
+        if shouldScheduleDrain { debugCameraSampleDrainScheduled = true }
+        pendingLock.unlock()
+        guard shouldScheduleDrain else { return }
+        queue.async { [weak self] in self?.drainDebugCameraSample() }
+    }
+
+    private func drainDebugCameraSample() {
+        pendingLock.lock()
+        let sample = pendingDebugCameraSample
+        pendingDebugCameraSample = nil
+        debugCameraSampleDrainScheduled = false
+        pendingLock.unlock()
+
+        guard let sample, let recorder = debugVideoRecorder else { return }
+        var timed = sample
+        if let (frameID, seconds) = recorder.latestFrameTiming {
+            timed.frameID = frameID
+            timed.presentationTimeSeconds = seconds
+        }
+        recorder.appendCameraSample(timed)
+    }
+#endif
 
     func stopDebugRecording(completion: @escaping (Result<DebugRecordingResult, Error>) -> Void) {
         queue.async { [weak self] in
