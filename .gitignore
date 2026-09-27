@@ -4,6 +4,11 @@
 #
 .utmp/
 /Tools/.venv/
+__pycache__/
+*.py[cod]
+.DS_Store*
+Thumbs.db*
+desktop.ini*
 /[Ll]ibrary/
 /[Tt]emp/
 /[Oo]bj/
@@ -98,3 +103,6 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# Makinas is downloaded from its author; do not redistribute the raw font.
+/Assets/Resources/Fonts/Makinas-4-Square.otf

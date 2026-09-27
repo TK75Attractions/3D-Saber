@@ -7,36 +7,50 @@ public sealed class SongSelectAimTracker
     public const float ReleaseSeconds = .12f;
     object current;
     float held, outside;
+    float duration = HoldSeconds;
+    bool releaseCircle;
     Rect releaseArea;
-    public float Progress01 => Mathf.Clamp01(held / HoldSeconds);
+    public float Progress01 => Mathf.Clamp01(held / duration);
     public bool NeedsRelease { get; private set; }
 
-    public bool Tick(object target, Rect area, Vector2 point, float dt, bool ready)
+    public bool Tick(object target, Rect area, Vector2 point, float dt, bool ready, float holdSeconds = HoldSeconds, bool circle = false)
     {
         // 停止・復帰したフレームを「かざした時間」に数えない。
         if (float.IsNaN(dt) || dt < 0 || dt > .2f) { Cancel(); return false; }
         if (NeedsRelease)
         {
             held = 0; current = null;
-            outside = releaseArea.Contains(point) ? 0 : outside + dt;
+            outside = Contains(releaseArea, point, releaseCircle) ? 0 : outside + dt;
             if (outside >= ReleaseSeconds) { NeedsRelease = false; outside = 0; }
             return false;
         }
         if (!ready || target == null) { Cancel(); return false; }
-        if (!ReferenceEquals(current, target)) { held = 0; current = target; }
+        float requested = float.IsNaN(holdSeconds) || float.IsInfinity(holdSeconds) ? HoldSeconds : Mathf.Max(.05f, holdSeconds);
+        if (!ReferenceEquals(current, target) || duration != requested) { held = 0; current = target; duration = requested; }
         held += dt;
-        if (held + .00001f < HoldSeconds) return false;
-        BlockUntilExit(area);
+        if (held + .00001f < duration) return false;
+        BlockUntilExit(area, circle);
         return true;
     }
 
-    public void BlockUntilExit(Rect area)
+    public void BlockUntilExit(Rect area, bool circle = false)
     {
         releaseArea = area;
+        releaseCircle = circle;
         NeedsRelease = true;
         Cancel();
     }
 
     // 入力断・画面遷移でも再発射ロックは解除しない。
     public void Cancel() { current = null; held = outside = 0; }
+
+    public static bool Contains(Rect area, Vector2 point, bool circle)
+    {
+        if (!area.Contains(point)) return false;
+        if (!circle) return true;
+        Vector2 delta = point - area.center;
+        return area.width > 0 && area.height > 0 &&
+            delta.x * delta.x / (area.width * area.width * .25f) +
+            delta.y * delta.y / (area.height * area.height * .25f) <= 1;
+    }
 }

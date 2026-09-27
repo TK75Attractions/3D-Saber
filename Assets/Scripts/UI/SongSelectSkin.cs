@@ -4,16 +4,44 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// 曲選択専用の金属パネルUI。シーン・操作・曲データは維持し、実行中の外観だけ組み直す。
+// 1920×1080のディスク選曲。選択・開始・音源の所有権はControllerに残す。
 public class SongSelectSkin : MonoBehaviour
 {
+    sealed class Disc
+    {
+        public int index, offset;
+        public RectTransform root;
+        public Button button;
+        public SongSelectDiscTarget target;
+        public SongSelectDiscGraphic art, halo, rim, progress;
+        public TextMeshProUGUI fallback;
+        public Vector2 from, to;
+        public float fromScale, toScale;
+    }
     SongSelectController ctl;
-    SongWheelView wheel;
-    TextMeshProUGUI panelTitle, panelArtist, startDifficultyHint, trackNumber;
-    SongSelectActionStyle startStyle;
-    GameObject masterWarning, jacketLockedOverlay, fallbackCover;
-    readonly List<DifficultyTileItem> difficultyItems = new List<DifficultyTileItem>();
-    const float DetailX = 530f;
+    readonly List<Disc> discs = new List<Disc>();
+    readonly SongSelectCountdown countdown = new SongSelectCountdown();
+    readonly SongSelectDiscGraphic[] difficultyFaces = new SongSelectDiscGraphic[3];
+    readonly SongSelectDiscGraphic[] difficultyRings = new SongSelectDiscGraphic[3];
+    readonly TextMeshProUGUI[] difficultyNumbers = new TextMeshProUGUI[3];
+    readonly TextMeshProUGUI[] difficultyLabels = new TextMeshProUGUI[3];
+    readonly SongSelectRubyText[] counts = new SongSelectRubyText[4];
+    TextMeshProUGUI timer, achievementDifficulty;
+    SongSelectRubyText songTitle;
+    SongSelectCorridor corridor;
+    RectTransform layout;
+    float animation = 1;
+    bool built;
+    int displayedSecond = -1;
+    double lastTick;
+    public bool IsReady => built;
+    public double RemainingSeconds => countdown.Remaining;
+    public SongSelectCorridor Background => corridor;
+    public static readonly Color Cyan = new Color(.27f, 1, .97f);
+    public static readonly Color Ink = new Color(.012f, .024f, .047f);
+    public static readonly Color Gold = new Color(1, .847f, .302f);
+    static readonly Color Panel = new Color(.059f, .102f, .173f, .94f);
+    static readonly Color White = new Color(.918f, .965f, 1);
 
     IEnumerator Start()
     {
@@ -22,217 +50,267 @@ public class SongSelectSkin : MonoBehaviour
         if (ctl == null) yield break;
         var canvas = ctl.GetComponent<Canvas>() ?? ctl.GetComponentInParent<Canvas>();
         if (canvas == null) yield break;
-        if (Camera.main != null)
-        {
-            canvas.renderMode = RenderMode.ScreenSpaceCamera;
-            canvas.worldCamera = Camera.main;
-            canvas.planeDistance = 20f;
-        }
+        canvas.renderMode = RenderMode.ScreenSpaceCamera; canvas.worldCamera = Camera.main; canvas.planeDistance = 20;
         var scaler = canvas.GetComponent<CanvasScaler>() ?? canvas.gameObject.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920,1080);
-        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-        scaler.matchWidthOrHeight = .5f;
-        ctl.selectedPrefix = ctl.normalPrefix = "";
-        SongSelectNoteMenu.Build();
-        if (ctl.SelectedIndex >= 0) ctl.Select(ctl.SelectedIndex);
-        HideSceneRelics(canvas);
-        BuildBackdrop(canvas);
-        BuildHeader(canvas);
-        BuildPanels(canvas);
-        wheel = SongWheelView.Build(ctl, canvas.transform, CoverSprite, DifficultyColor);
-        BuildRightPanel(canvas);
-        BuildFooter(canvas);
-        ctl.OnSelectionChanged += HandleSelectionChanged;
-        ctl.OnDifficultyChanged += HandleDifficultyChanged;
-        HandleSelectionChanged(ctl.SelectedIndex);
-        var navigation = SongSelectSlashNav.Build(ctl);
-        SongSelectAimPointer.Build(ctl, canvas, navigation);
-    }
-
-    void OnDestroy()
-    {
-        if (ctl != null)
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize; scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
+        foreach (Transform child in canvas.transform)
         {
-            ctl.OnSelectionChanged -= HandleSelectionChanged;
-            ctl.OnDifficultyChanged -= HandleDifficultyChanged;
+            // PreviewAudioは元のCanvasの子。表示の交換で音源まで止めない。
+            if (ctl.previewSource != null && (child == ctl.previewSource.transform || ctl.previewSource.transform.IsChildOf(child))) continue;
+            child.gameObject.SetActive(false);
         }
+        layout = SongSelectVisuals.Rect(canvas.transform, "DiscSelectLayout", Vector2.zero, new Vector2(1920, 1080));
+        ctl.suppressDefaultDifficultyTint = true;
+        corridor = SongSelectCorridor.Build(layout, ctl);
+        BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildAchievements(); BuildActions();
+        ctl.OnSelectionChanged += SelectionChanged; ctl.OnDifficultyChanged += DifficultyChanged;
+        SelectionChanged(ctl.SelectedIndex); animation = 1; AnimateDiscs();
+        SongSelectAimPointer.Build(ctl, canvas, null);
+        countdown.Reset(); lastTick = Time.realtimeSinceStartupAsDouble; built = true;
     }
 
-    // 既存UIテスト・他画面からの呼び出し契約は維持する。
-    public static Color DifficultyColor(int index) => SongSelectVisuals.Difficulty[Mathf.Clamp(index,0,2)];
-    public static string DifficultyDisplayName(int index, string sourceName)
-    {
-        if (index == 2) return "MASTER";
-        return string.IsNullOrEmpty(sourceName) ? $"CHART {index+1}" : sourceName.ToUpperInvariant();
-    }
-    public static int MeterSegmentsForLevel(int level) => Mathf.Clamp(level,0,10);
-    public static string FormatDifficultyLevel(int level) => level > 0 ? $"LEVEL {Mathf.Clamp(level,0,99):00}" : "LEVEL --";
-    public static string FormatDifficultyCardLevel(int level) => level > 0 ? $"LV {Mathf.Clamp(level,0,99):00}" : "LV --";
+    public static Color DifficultyColor(int index) => SongSelectVisuals.Difficulty[Mathf.Clamp(index, 0, 2)];
+    public static string DifficultyDisplayName(int index, string sourceName) => index == 2 ? "MASTER" : string.IsNullOrEmpty(sourceName) ? $"CHART {index + 1}" : sourceName.ToUpperInvariant();
+    public static int MeterSegmentsForLevel(int level) => Mathf.Clamp(level, 0, 10);
+    public static string FormatDifficultyLevel(int level) => level > 0 ? $"LEVEL {Mathf.Clamp(level, 0, 99):00}" : "LEVEL --";
+    public static string FormatDifficultyCardLevel(int level) => level > 0 ? $"LV {Mathf.Clamp(level, 0, 99):00}" : "LV --";
+    public static void ApplyNeon(Button button, Color accent, float fillAlpha) => UISkinKit.RestyleButton(button, accent);
     public static void EnterCalibration()
     {
-        if (ScreenTransition.Load("Game", ScreenTransition.Style.Calibration))
-            GameSession.IsCalibrationMode = true;
+        if (ScreenTransition.Load("Game", ScreenTransition.Style.Calibration)) GameSession.IsCalibrationMode = true;
     }
-    public static void ApplyNeon(Button btn, Color accent, float fillAlpha) => UISkinKit.RestyleButton(btn, accent);
-
-    void HideSceneRelics(Canvas canvas)
+    static Vector2 Position(float x, float y) => new Vector2(x - 960, 540 - y);
+    RectTransform Rect(string name, float x, float y, float w, float h) => SongSelectVisuals.Rect(layout, name, Position(x, y), new Vector2(w, h));
+    public static SongSelectDiscGraphic Graphic(Transform parent, string name, Vector2 position, Vector2 size, SongSelectDiscGraphic.Shape form, Color color)
     {
-        foreach (var img in canvas.GetComponentsInChildren<Image>(true))
-            if (img.name == "ScrollView") img.gameObject.SetActive(false);
-        var header = TitleSceneSkin.FindTextByContent(canvas,"Select Song");
-        if (header != null) header.gameObject.SetActive(false);
-        var oldLabel = TitleSceneSkin.FindTextByContent(canvas,"Difficulty");
-        if (oldLabel != null) oldLabel.gameObject.SetActive(false);
-        if (ctl.difficultyDisplay != null) ctl.difficultyDisplay.gameObject.SetActive(false);
-        foreach (var text in canvas.GetComponentsInChildren<Text>(true))
-            if (text.text.Contains("↑↓")) text.gameObject.SetActive(false);
+        var g = SongSelectVisuals.Rect(parent, name, position, size).gameObject.AddComponent<SongSelectDiscGraphic>();
+        g.Form = form; g.color = color; g.raycastTarget = false; return g;
     }
-
-    void BuildBackdrop(Canvas canvas)
+    static TextMeshProUGUI Label(Transform parent, string name, string text, float size, Vector2 position, Vector2 dimensions, TMP_FontAsset font = null, Color? color = null)
     {
-        var rt = SongSelectVisuals.Rect(canvas.transform,"SelectBackdrop",Vector2.zero,Vector2.zero);
-        SongSelectVisuals.Stretch(rt); rt.SetAsFirstSibling();
-        var graphic = rt.gameObject.AddComponent<SongSelectBackdropGraphic>(); graphic.raycastTarget = false;
-    }
-
-    void BuildHeader(Canvas canvas)
-    {
-        SongSelectVisuals.Label(canvas.transform,"HeaderCrumb","3D SABER  /  MUSIC LIBRARY",16,new Vector2(-510,484),new Vector2(748,24),SongSelectVisuals.Muted);
-        SongSelectVisuals.Label(canvas.transform,"HeaderTitle","SONG SELECT",52,new Vector2(-555,430),new Vector2(658,70),SongSelectVisuals.Text,TextAlignmentOptions.MidlineLeft,true);
-        SongSelectVisuals.Label(canvas.transform,"HeaderJp","楽曲選択",22,new Vector2(-383,422),new Vector2(166,35),SongSelectVisuals.Muted);
-        var back = Action(canvas.transform,"BackToTitle","タイトルへ",new Vector2(749,450),new Vector2(246,72),false);
-        back.onClick.AddListener(() => ScreenTransition.Load("Title", ScreenTransition.Style.Back));
-        SongSelectVisuals.Panel(canvas.transform,"HeaderRule",new Vector2(0,385),new Vector2(1768,1),SongSelectVisuals.Edge,Color.clear,0);
-    }
-
-    void BuildPanels(Canvas canvas)
-    {
-        SongSelectVisuals.Panel(canvas.transform,"LibraryPanel",new Vector2(-490,-26),new Vector2(788,772),
-            new Color(.045f,.071f,.092f,.88f),SongSelectVisuals.Edge,16);
-        SongSelectVisuals.Panel(canvas.transform,"DetailPanel",new Vector2(DetailX,-26),new Vector2(684,772),
-            new Color(.055f,.087f,.109f,.94f),SongSelectVisuals.Edge,16);
-        SongSelectVisuals.Label(canvas.transform,"LibraryLabel","TRACK LIST",17,new Vector2(-687,329),new Vector2(330,25),SongSelectVisuals.Muted);
-        SongSelectVisuals.Label(canvas.transform,"LibraryCount",$"{ctl.SongCount:00} TRACKS",16,new Vector2(-196,329),new Vector2(156,25),SongSelectVisuals.Muted,TextAlignmentOptions.MidlineRight);
-        SongSelectVisuals.Label(canvas.transform,"SelectedLabel","SELECTED TRACK",17,new Vector2(DetailX-155,329),new Vector2(300,25),SongSelectVisuals.Muted);
-        trackNumber = SongSelectVisuals.Label(canvas.transform,"TrackNumber","",16,new Vector2(DetailX+221,329),new Vector2(156,25),SongSelectVisuals.Muted,TextAlignmentOptions.MidlineRight);
-        // 3Dナビノーツはそのまま。背景パネルとラベルで操作場所を明確にする。
-        foreach (int sign in new[] {1,-1})
+        var t = UISkinKit.MakeTMP(parent, name, text, size, color ?? White, TextAlignmentOptions.Center,
+            position, dimensions, FontStyles.Normal, 0, font ?? UISkinKit.FontAsset("Oxanium-Bold"));
+        t.raycastTarget = false; t.textWrappingMode = TextWrappingModes.NoWrap; t.overflowMode = TextOverflowModes.Overflow;
+        if (font == UISkinKit.JapaneseFallbackFontAsset())
         {
-            float y=sign*194.4f;
-            SongSelectVisuals.Panel(canvas.transform,sign>0?"NavUpDock":"NavDownDock",new Vector2(124.8f,y),new Vector2(116,146),SongSelectVisuals.Surface,SongSelectVisuals.Edge,12);
-            SongSelectVisuals.Label(canvas.transform,sign>0?"NavPreviousLabel":"NavNextLabel",sign>0?"PREVIOUS":"NEXT",14,new Vector2(124.8f,y-57),new Vector2(116,20),SongSelectVisuals.Muted,TextAlignmentOptions.Center);
+            t.fontStyle = FontStyles.Bold;
+            t.fontMaterial.SetFloat(ShaderUtilities.ID_FaceDilate, .1f);
+        }
+        return t;
+    }
+    static SongSelectRubyText Ruby(TextMeshProUGUI text, string markup)
+    {
+        var ruby = text.gameObject.AddComponent<SongSelectRubyText>(); ruby.Set(markup); return ruby;
+    }
+    SongSelectDiscGraphic PanelAt(string name, float x, float y, float w, float h, Color edge, float border = 3, float radius = 24)
+    {
+        var g = Graphic(layout, name, Position(x, y), new Vector2(w, h), SongSelectDiscGraphic.Shape.Panel, Panel);
+        g.Edge = edge; g.Width = border; g.Radius = radius; g.Bottom = new Color(.025f, .045f, .085f, .94f); return g;
+    }
+    static Button ButtonOn(RectTransform rect, Graphic graphic, float seconds, bool circle)
+    {
+        var b = rect.gameObject.AddComponent<Button>(); b.targetGraphic = graphic; graphic.raycastTarget = true;
+        b.transition = Selectable.Transition.None; SongSelectDiscTarget.Attach(b, seconds, circle); return b;
+    }
+
+    void BuildHeader()
+    {
+        var header = Graphic(layout, "InstructionTab", Position(490, 92), new Vector2(860, 112), SongSelectDiscGraphic.Shape.Tab, Panel);
+        header.Width = 6; header.Edge = new Color(1, .18f, .30f); header.EdgeRight = new Color(.25f, .43f, 1); header.Bottom = Ink;
+        var title = Label(header.transform, "Instruction", "", 48, new Vector2(0, -7), new Vector2(825, 80), UISkinKit.JapaneseFallbackFontAsset());
+        title.fontStyle = FontStyles.Bold;
+        Ruby(title, "<ruby=なんいど>難易度</ruby>と<ruby=がっきょく>楽曲</ruby>を<ruby=えら>選</ruby>んでね");
+        var clock = Graphic(layout, "TimeTab", Position(1680, 92), new Vector2(360, 112), SongSelectDiscGraphic.Shape.Tab, Panel);
+        clock.Width = 6; clock.Edge = new Color(.25f, .43f, 1); clock.EdgeRight = Cyan; clock.Bottom = Ink;
+        var icon = Graphic(clock.transform, "ClockIcon", new Vector2(-89, 0), new Vector2(56, 56), SongSelectDiscGraphic.Shape.Clock, White); icon.Edge = Ink;
+        timer = Label(clock.transform, "TimeRemaining", "100", 86, new Vector2(42, 0), new Vector2(180, 106), UISkinKit.LogoFontAsset());
+    }
+    void BuildDiscs()
+    {
+        for (int i = 0; i < ctl.SongCount; i++)
+        {
+            var d = new Disc { index = i };
+            d.root = Rect("SongDisc_" + i, 960, 452, 540, 540);
+            d.halo = Graphic(d.root, "Halo", Vector2.zero, new Vector2(664, 664), SongSelectDiscGraphic.Shape.Halo, new Color(Cyan.r, Cyan.g, Cyan.b, .16f)); d.halo.Width = 64;
+            var face = Graphic(d.root, "RecordGrooves", Vector2.zero, new Vector2(540, 540), SongSelectDiscGraphic.Shape.Disc, Color.white);
+            d.art = Graphic(d.root, "Artwork", Vector2.zero, new Vector2(454, 454), SongSelectDiscGraphic.Shape.Cover, Color.white);
+            d.art.Artwork = CoverSprite(i);
+            if (d.art.Artwork == null)
+            {
+                d.art.color = new Color(.07f, .10f, .20f);
+                var stripes = Graphic(d.root, "FallbackRings", Vector2.zero, new Vector2(370, 370), SongSelectDiscGraphic.Shape.Ring, new Color(.3f, .65f, .8f, .6f)); stripes.Width = 7;
+                Graphic(d.root, "FallbackInner", Vector2.zero, new Vector2(295, 295), SongSelectDiscGraphic.Shape.Ring, new Color(1, .2f, .4f, .65f)).Width = 3;
+                d.fallback = Label(d.root, "FallbackTitle", ResultSkin.SongIdToDisplayTitle(ctl.SongIdAt(i)), 42, Vector2.zero, new Vector2(370, 130), UISkinKit.FontAsset("Oxanium-ExtraBold"));
+                d.fallback.enableAutoSizing = true; d.fallback.fontSizeMin = 20; d.fallback.fontSizeMax = 42;
+            }
+            d.rim = Graphic(d.root, "DiscRim", Vector2.zero, new Vector2(544, 544), SongSelectDiscGraphic.Shape.Ring, Cyan); d.rim.Width = 3;
+            d.progress = Graphic(d.root, "StartProgress", Vector2.zero, new Vector2(588, 588), SongSelectDiscGraphic.Shape.Ring, Gold); d.progress.Width = 12; d.progress.Progress = 0;
+            d.button = ButtonOn(d.root, face, 2, true); d.target = d.root.GetComponent<SongSelectDiscTarget>();
+            d.button.onClick.AddListener(() =>
+            {
+                if (ScreenTransition.IsBusy) return;
+                if (d.index == ctl.SelectedIndex) ctl.StartGame();
+                else if (Mathf.Abs(d.offset) == 1) ctl.Select(d.index);
+            });
+            discs.Add(d);
+        }
+        foreach (int side in new[] { -1, 1 })
+        {
+            var arrow = Graphic(layout, "DecorativeArrow", Position(side < 0 ? 52 : 1844, 500), new Vector2(60, 90), SongSelectDiscGraphic.Shape.Arrow, new Color(.38f, .81f, .83f, .35f));
+            if (side > 0) arrow.rectTransform.localScale = new Vector3(-1, 1, 1);
         }
     }
-
-    void BuildRightPanel(Canvas canvas)
+    void BuildTitle()
     {
-        BuildJacket(canvas);
-        panelTitle = SongSelectVisuals.Label(canvas.transform,"PanelSongTitle","",33,new Vector2(DetailX,-39),new Vector2(596,52),SongSelectVisuals.Text,TextAlignmentOptions.Center,true);
-        panelTitle.enableAutoSizing=true; panelTitle.fontSizeMin=23; panelTitle.fontSizeMax=33;
-        panelArtist = SongSelectVisuals.Label(canvas.transform,"PanelSongArtist","",18,new Vector2(DetailX,-78),new Vector2(592,26),SongSelectVisuals.Muted,TextAlignmentOptions.Center);
-        panelArtist.enableAutoSizing=true; panelArtist.fontSizeMin=14; panelArtist.fontSizeMax=18;
-        BuildDifficultyRibbons(canvas);
-        masterWarning = SongSelectVisuals.Rect(canvas.transform,"MasterWarning",new Vector2(DetailX,-232),new Vector2(592,26)).gameObject;
-        SongSelectVisuals.Panel(masterWarning.transform,"WarningRule",new Vector2(-286,0),new Vector2(3,18),DifficultyColor(2),Color.clear,0);
-        SongSelectVisuals.Label(masterWarning.transform,"Text","高難易度注意！！",18,Vector2.zero,new Vector2(550,40),DifficultyColor(2),TextAlignmentOptions.MidlineLeft);
-        masterWarning.SetActive(false);
-        if (ctl.startButton != null)
-        {
-            var rt=ctl.startButton.GetComponent<RectTransform>(); rt.SetParent(canvas.transform,false); rt.SetAsLastSibling();
-            rt.anchorMin=rt.anchorMax=rt.pivot=new Vector2(.5f,.5f);
-            rt.anchoredPosition=new Vector2(DetailX,-294); rt.sizeDelta=new Vector2(592,80);
-            startStyle=SongSelectVisuals.StyleAction(ctl.startButton,"START  /  プレイ開始",true);
-        }
-        startDifficultyHint = SongSelectVisuals.Label(canvas.transform,"DifficultyHint","",16,new Vector2(DetailX,-354),new Vector2(592,24),SongSelectVisuals.Muted,TextAlignmentOptions.Center);
+        PanelAt("TitleShadow", 960, 788, 716, 108, Ink, 5, 30);
+        var panel = PanelAt("SongTitlePanel", 960, 788, 700, 92, Cyan, 5);
+        var t = Label(panel.transform, "PanelSongTitle", "", 58, new Vector2(0, -2), new Vector2(660, 74), UISkinKit.FontAsset("Oxanium-ExtraBold"));
+        t.enableAutoSizing = true; t.fontSizeMin = 26; t.fontSizeMax = 58; songTitle = Ruby(t, "");
     }
-
-    void BuildJacket(Canvas canvas)
+    void BuildDifficulties()
     {
-        var frame=SongSelectVisuals.Panel(canvas.transform,"JacketFrame",new Vector2(DetailX,149),new Vector2(316,316),SongSelectVisuals.Raised,SongSelectVisuals.Edge,12);
-        var viewport=SongSelectVisuals.Rect(frame.transform,"Artwork",Vector2.zero,new Vector2(296,296));
-        if (ctl.jacketImage != null)
+        var tray = PanelAt("DifficultyTray", 960, 952, 720, 124, new Color(.09f, .19f, .29f), 4, 62); tray.color = new Color(.024f, .043f, .082f);
+        ctl.difficultyButtons = new Button[3];
+        for (int i = 0; i < 3; i++)
         {
-            ctl.jacketImage.rectTransform.SetParent(viewport,false);
-            SongSelectVisuals.Stretch(ctl.jacketImage.rectTransform); ctl.jacketImage.preserveAspect=true; ctl.jacketImage.raycastTarget=false;
-        }
-        fallbackCover=SongSelectVisuals.Rect(viewport,"FallbackArtwork",Vector2.zero,new Vector2(296,296)).gameObject;
-        var art=fallbackCover.AddComponent<SongSelectCoverGraphic>();art.raycastTarget=false;
-        SongSelectVisuals.Label(fallbackCover.transform,"CoverBrand","3D / SABER",14,new Vector2(0,118),new Vector2(252,22),SongSelectVisuals.Muted);
-        SongSelectVisuals.Label(fallbackCover.transform,"CoverCaption","RHYTHM ARCHIVE",14,new Vector2(0,-120),new Vector2(252,22),SongSelectVisuals.Muted,TextAlignmentOptions.MidlineRight);
-        jacketLockedOverlay=SongSelectVisuals.Panel(viewport,"LockedOverlay",Vector2.zero,new Vector2(296,296),new Color(.025f,.04f,.06f,.83f),Color.clear,0).gameObject;
-        SongSelectVisuals.Label(jacketLockedOverlay.transform,"Label","譜面準備中",26,Vector2.zero,new Vector2(252,42),SongSelectVisuals.Text,TextAlignmentOptions.Center,true);
-        jacketLockedOverlay.SetActive(false);
-        // 再生時だけジャケットと同じ位置を横長に使用。曲名・難易度・STARTの位置は変えない。
-        var preview=SongSelectVisuals.Panel(canvas.transform,"ChartPreviewPanel",new Vector2(DetailX,149),new Vector2(592,316),SongSelectVisuals.Surface,SongSelectVisuals.Edge,12);
-        ctl.AttachChartPreview(preview.rectTransform);
-    }
-
-    void BuildDifficultyRibbons(Canvas canvas)
-    {
-        var row=SongSelectVisuals.Rect(canvas.transform,"DifficultyRibbonRow",new Vector2(DetailX,-153),new Vector2(592,DifficultyTileItem.TileHeight));
-        var layout=row.gameObject.AddComponent<HorizontalLayoutGroup>();
-        layout.spacing=12; layout.childAlignment=TextAnchor.MiddleCenter;
-        layout.childControlWidth=layout.childControlHeight=true; layout.childForceExpandWidth=true; layout.childForceExpandHeight=false;
-        ctl.suppressDefaultDifficultyTint=true;
-        if (ctl.difficultyButtons==null) return;
-        for (int i=0;i<ctl.difficultyButtons.Length;i++)
-        {
-            var button=ctl.difficultyButtons[i];
-            if (button==null) { difficultyItems.Add(null); continue; }
-            var rt=button.GetComponent<RectTransform>();rt.SetParent(row,false);
-            var tile=button.GetComponent<DifficultyTileItem>() ?? button.gameObject.AddComponent<DifficultyTileItem>();
-            string source=ctl.difficultyNames!=null && i<ctl.difficultyNames.Length?ctl.difficultyNames[i]:null;
-            tile.Build(button,DifficultyColor(i),DifficultyDisplayName(i,source),ctl.DifficultyDisplayLevelAt(i));
-            tile.SetSelected(i==ctl.SelectedDifficultyIndex,true);difficultyItems.Add(tile);
+            int index = i;
+            var root = Rect("Difficulty" + i, 730 + 230 * i, 954, 190, 196);
+            var face = Graphic(root, "Circle", new Vector2(0, 2), new Vector2(124, 124), SongSelectDiscGraphic.Shape.Cover, Ink);
+            var ring = Graphic(root, "CircleEdge", new Vector2(0, 2), new Vector2(124, 124), SongSelectDiscGraphic.Shape.Ring, DifficultyColor(i)); ring.Width = 9;
+            difficultyFaces[i] = face;
+            difficultyRings[i] = Graphic(root, "SelectedRing", new Vector2(0, 2), new Vector2(158, 158), SongSelectDiscGraphic.Shape.Ring, White); difficultyRings[i].Width = 5;
+            difficultyNumbers[i] = Label(root, "Level", "", 58, new Vector2(0, 2), new Vector2(110, 100), UISkinKit.LogoFontAsset(), DifficultyColor(i));
+            difficultyLabels[i] = Label(root, "DifficultyName", DifficultyDisplayName(i, ctl.difficultyNames[i]), 19, new Vector2(0, -88), new Vector2(190, 30));
+            // 資料の190×196の受付範囲。円と下の難易度名を一つの的にする。
+            var hit = Graphic(root, "HitArea", Vector2.zero, new Vector2(190, 196), SongSelectDiscGraphic.Shape.Panel, Color.clear); hit.Width = 0;
+            ctl.difficultyButtons[i] = ButtonOn(root, hit, 1, false);
+            ctl.difficultyButtons[i].onClick.AddListener(() => ctl.SetDifficulty(index));
         }
     }
-
-    void BuildFooter(Canvas canvas)
+    void BuildAchievements()
     {
-        SongSelectVisuals.Panel(canvas.transform,"FooterRule",new Vector2(0,-449),new Vector2(1768,1),SongSelectVisuals.Edge,Color.clear,0);
-        var calibration=Action(canvas.transform,"CalibrationButton","判定調整",new Vector2(-754,-491),new Vector2(260,68),false);
-        calibration.onClick.AddListener(EnterCalibration);
-    }
-
-    static Button Action(Transform parent,string name,string label,Vector2 position,Vector2 size,bool primary)
-    {
-        var rt=SongSelectVisuals.Rect(parent,name,position,size); var b=rt.gameObject.AddComponent<Button>();
-        SongSelectVisuals.StyleAction(b,label,primary);return b;
-    }
-
-    void HandleSelectionChanged(int index)
-    {
-        if (wheel!=null) wheel.SetSelected(index);
-        if (panelTitle!=null) panelTitle.text=ResultSkin.SongIdToDisplayTitle(ctl.SongIdAt(index));
-        if (panelArtist!=null) panelArtist.text=StagePerformanceTimeline.Load(ctl.SongIdAt(index)).artist ?? "";
-        if (trackNumber!=null) trackNumber.text=$"{index+1:00} / {ctl.SongCount:00}";
-        bool hasCover=CoverSprite(index)!=null;
-        if (fallbackCover!=null) fallbackCover.SetActive(!hasCover);
-        if (ctl.jacketImage!=null) ctl.jacketImage.enabled=hasCover;
-        if (jacketLockedOverlay!=null) jacketLockedOverlay.SetActive(ctl.IsLocked(index));
-        HandleDifficultyChanged(ctl.SelectedDifficultyIndex);
-    }
-
-    void HandleDifficultyChanged(int index)
-    {
-        if (ctl==null || ctl.difficultyNames==null || ctl.difficultyNames.Length==0) return;
-        index=Mathf.Clamp(index,0,ctl.difficultyNames.Length-1);
-        int level=ctl.CurrentDifficultyDisplayLevel();
-        for(int i=0;i<difficultyItems.Count;i++)
+        var panel = PanelAt("Achievements", 295, 915, 470, 250, SongSelectVisuals.Edge, 3, 22);
+        Ruby(Label(panel.transform, "AchievementHeading", "", 24, new Vector2(-163, 88), new Vector2(94, 45), UISkinKit.JapaneseFallbackFontAsset(), SongSelectVisuals.Accent), "<ruby=じっせき>実績</ruby>");
+        achievementDifficulty = Label(panel.transform, "AchievementDifficulty", "EASY", 16, new Vector2(-73, 86), new Vector2(110, 28), color: SongSelectVisuals.Muted);
+        string[] ranks = { "S", "S<color=#ff6e7a>+</color>", "FC", "AP" };
+        for (int i = 0; i < 4; i++)
         {
-            if(difficultyItems[i]==null) continue;
-            difficultyItems[i].SetLevel(ctl.DifficultyDisplayLevelAt(i));difficultyItems[i].SetSelected(i==index);
+            float x = i % 2 == 0 ? -192 : 32, y = i < 2 ? 29 : -43;
+            var rank = Label(panel.transform, "Rank" + i, ranks[i], 46, new Vector2(x + 35, y), new Vector2(100, 65), UISkinKit.LogoFontAsset(), Gold);
+            rank.alignment = TextAlignmentOptions.MidlineLeft;
+            if (i == 3) { rank.color = Color.white; rank.enableVertexGradient = true; rank.colorGradient = new VertexGradient(new Color(1, .5f, .5f), new Color(.65f, .5f, 1), new Color(1, .85f, .45f), new Color(.3f, .9f, 1)); }
+            var number = Label(panel.transform, "Count" + i, "", 36, new Vector2(x + 137, y - 2), new Vector2(106, 55), UISkinKit.LogoFontAsset());
+            number.enableAutoSizing = true; number.fontSizeMin = 16; number.fontSizeMax = 36;
+            counts[i] = Ruby(number, "0<size=20><ruby=にん>人</ruby></size>");
+            var line = Graphic(panel.transform, "Rule", new Vector2(x + 94, y - 31), new Vector2(196, 2), SongSelectDiscGraphic.Shape.Panel, new Color(.38f, .81f, .83f, .2f)); line.Width = 0;
         }
-        if(wheel!=null) wheel.RefreshLevels(index);
-        if(masterWarning!=null) masterWarning.SetActive(index==2 && level>0);
-        if(startStyle!=null) startStyle.Refresh();
-        if(startDifficultyHint!=null)
-            startDifficultyHint.text=ctl.SelectedSongLocked?"譜面準備中":level<=0?"この難易度の譜面はありません":$"{DifficultyDisplayName(index,ctl.difficultyNames[index])}  /  {FormatDifficultyLevel(level)}";
     }
-
-    Sprite CoverSprite(int index)
+    void BuildActions()
     {
-        return ctl != null ? ctl.CoverSpriteAt(index) : null;
+        var cal = PanelAt("CalibrationButton", 1630, 930, 460, 180, SongSelectVisuals.Edge, 4);
+        ButtonOn(cal.rectTransform, cal, 2, false).onClick.AddListener(() => { EnterCalibration(); if (ScreenTransition.IsBusy) ctl.StopPreview(); });
+        var t = Label(cal.transform, "CalibrationLabel", "", 52, new Vector2(0, -8), new Vector2(410, 106), UISkinKit.JapaneseFallbackFontAsset()); t.fontStyle = FontStyles.Bold;
+        Ruby(t, "<ruby=はんてい>判定</ruby><ruby=ちょうせい>調整</ruby>");
+        var back = PanelAt("BackToTitle", 1240, 88, 244, 64, SongSelectVisuals.Edge, 2, 16);
+        ButtonOn(back.rectTransform, back, 2, false).onClick.AddListener(ctl.ReturnToTitle);
+        Label(back.transform, "Label", "タイトルへ", 25, Vector2.zero, new Vector2(220, 52), UISkinKit.JapaneseFallbackFontAsset());
     }
+    void SelectionChanged(int index)
+    {
+        foreach (var d in discs)
+        {
+            int offset = (d.index - index + discs.Count) % discs.Count;
+            if (offset > discs.Count / 2) offset -= discs.Count;
+            d.offset = offset; d.from = d.root.anchoredPosition; d.fromScale = d.root.localScale.x;
+            float x = offset == 0 ? 960 : offset == -1 ? 320 : offset == 1 ? 1600 : offset < 0 ? -100 - 600 * Mathf.Max(0, -offset - 2) : 2020 + 600 * Mathf.Max(0, offset - 2);
+            d.to = Position(x, offset == 0 ? 452 : Mathf.Abs(offset) == 1 ? 500 : 600);
+            d.toScale = (offset == 0 ? 540 : Mathf.Abs(offset) == 1 ? 380 : 280) / 540f;
+            if (!built) { d.from = d.to; d.fromScale = d.toScale; }
+            d.target.HoldSeconds = offset == 0 ? 2 : 1;
+            d.halo.gameObject.SetActive(offset == 0); d.rim.gameObject.SetActive(offset == 0); d.progress.gameObject.SetActive(offset == 0);
+            if (offset == 0) ctl.startButton = d.button;
+            d.root.gameObject.SetActive(Mathf.Abs(offset) <= 2 || Mathf.Abs(d.from.x) < 1400);
+        }
+        animation = 0;
+        string id = ctl.SongIdAt(index), title = ResultSkin.SongIdToDisplayTitle(id);
+        string markup = id == "Epilogue" ? "<ruby=こうか>校歌</ruby>" : id == "揺籠" ? "<ruby=ゆりかご>揺籠</ruby>" : title;
+        var titleText = songTitle.GetComponent<TextMeshProUGUI>();
+        bool japanese = id == "Epilogue" || id == "揺籠";
+        // フォントは固定し、日本語は既存のフォールバックで描く。切替時に別アトラスの材質を残さない。
+        titleText.fontStyle = japanese ? FontStyles.Bold : FontStyles.Normal;
+        titleText.fontSizeMax = japanese ? 48 : 58;
+        titleText.rectTransform.anchoredPosition = new Vector2(0, japanese ? -11 : -2);
+        songTitle.Set(markup); DifficultyChanged(ctl.SelectedDifficultyIndex);
+        corridor.Select(id);
+    }
+    void DifficultyChanged(int selected)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            bool active = i == selected; int level = ctl.DifficultyDisplayLevelAt(i);
+            difficultyNumbers[i].text = level > 0 ? level.ToString() : "—";
+            difficultyNumbers[i].color = active ? Ink : DifficultyColor(i);
+            difficultyNumbers[i].rectTransform.localScale = Vector3.one * (active ? 1.14f : 1);
+            difficultyFaces[i].color = active ? DifficultyColor(i) : Ink;
+            difficultyFaces[i].rectTransform.localScale = Vector3.one * (active ? 1.14f : 1);
+            difficultyRings[i].gameObject.SetActive(active);
+            difficultyLabels[i].color = active ? White : new Color(.56f, .61f, .66f);
+            ctl.difficultyButtons[i].interactable = ctl.DifficultyLevelAt(i) > 0;
+        }
+        foreach (var d in discs) d.button.interactable = d.offset == 0 ? !ctl.SelectedSongLocked && ctl.CurrentDifficultyLevel() > 0 : Mathf.Abs(d.offset) == 1;
+        achievementDifficulty.text = DifficultyDisplayName(selected, ctl.difficultyNames[selected]);
+        var value = SongAchievementStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.difficultyNames[selected]);
+        int[] values = { value.s, value.sPlus, value.fc, value.ap };
+        for (int i = 0; i < 4; i++) counts[i].Set(values[i].ToString() + "<size=20><ruby=にん>人</ruby></size>");
+    }
+    void Update()
+    {
+        if (!built) return;
+        animation = Mathf.Min(1, animation + Time.unscaledDeltaTime / .5f); AnimateDiscs();
+        double now = Time.realtimeSinceStartupAsDouble;
+        TickCountdown(now - lastTick); lastTick = now;
+        int seconds = Mathf.CeilToInt((float)countdown.Remaining);
+        if (displayedSecond != seconds) { timer.text = seconds.ToString(); displayedSecond = seconds; }
+        timer.color = seconds <= 10 ? Gold : White;
+        timer.rectTransform.localScale = Vector3.one * (seconds <= 10 ? 1 + .055f * Mathf.Exp(-((100 - (float)countdown.Remaining) % 1) * 8) : 1);
+    }
+    public void TickCountdown(double deltaSeconds)
+    {
+        if (built && countdown.Tick(deltaSeconds, !ScreenTransition.IsBusy)) ctl.StartGame();
+    }
+    void AnimateDiscs()
+    {
+        float t = Ease(Mathf.Clamp01(animation * .5f / .46f));
+        foreach (var d in discs)
+        {
+            d.root.anchoredPosition = Vector2.LerpUnclamped(d.from, d.to, t);
+            float bounce = d.offset == 0 && animation < 1 ? animation < .5f ? Mathf.Lerp(.9f, 1.05f, animation * 2) : Mathf.Lerp(1.05f, 1, animation * 2 - 1) : 1;
+            d.root.localScale = Vector3.one * Mathf.LerpUnclamped(d.fromScale, d.toScale, t) * bounce;
+            float brightness = d.offset == 0 ? 1 : d.target.Hovered && Mathf.Abs(d.offset) == 1 ? .8f : Mathf.Abs(d.offset) == 1 ? .5f : .36f;
+            d.art.color = d.art.Artwork != null ? new Color(brightness, brightness, brightness) : new Color(.07f * brightness, .10f * brightness, .20f * brightness);
+            if (d.fallback != null) d.fallback.color = new Color(brightness, brightness, brightness);
+            if (d.offset == 0)
+            {
+                float pulse = corridor != null ? corridor.CenterPulse : 0;
+                d.rim.color = new Color(Cyan.r, Cyan.g, Cyan.b, .35f + .55f * pulse); d.rim.Width = 3 + 4 * pulse; d.rim.Refresh();
+                float spread = 24 + 40 * pulse;
+                d.halo.Width = spread; d.halo.rectTransform.sizeDelta = Vector2.one * (540 + spread * 2);
+                d.halo.color = new Color(Cyan.r, Cyan.g, Cyan.b, .04f + .08f * pulse);
+                d.progress.Progress = d.target.Progress; d.progress.Refresh();
+            }
+            if (animation >= 1 && Mathf.Abs(d.offset) > 2) d.root.gameObject.SetActive(false);
+        }
+    }
+    static float Ease(float x)
+    {
+        float low = 0, high = 1, u = x;
+        for (int i = 0; i < 12; i++) { u = (low + high) * .5f; float t = 3 * (1 - u) * (1 - u) * u * .3f + 3 * (1 - u) * u * u * .55f + u * u * u; if (t < x) low = u; else high = u; }
+        return 3 * (1 - u) * (1 - u) * u * 1.35f + 3 * (1 - u) * u * u + u * u * u;
+    }
+    void OnDestroy()
+    {
+        if (ctl != null) { ctl.OnSelectionChanged -= SelectionChanged; ctl.OnDifficultyChanged -= DifficultyChanged; }
+    }
+    Sprite CoverSprite(int index) => ctl != null ? ctl.CoverSpriteAt(index) : null;
 }

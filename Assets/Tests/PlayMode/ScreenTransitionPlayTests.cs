@@ -100,9 +100,8 @@ public class ScreenTransitionPlayTests
             if (concept % 2 == 0)
             {
                 yield return new WaitForSecondsRealtime(.6f);
-                var action = back.GetComponent<MenuNoteAction>();
-                action.Sync();
-                Assert.False(action.Note.IsJudgeable);
+                var action = back.GetComponent<SongSelectDiscTarget>();
+                Assert.AreEqual(2, action.HoldSeconds);
                 Assert.True(action.TryShoot());
                 double deadline = Time.realtimeSinceStartupAsDouble + 2;
                 while (!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
@@ -184,6 +183,9 @@ public class ScreenTransitionPlayTests
         GameSession.SelectedDifficulty = "Normal";
         typeof(GamePlayManager).GetField("finished", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(manager, true);
         typeof(GamePlayManager).GetMethod("FinishGame", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(manager, null);
+        // 既存の達成・コンボ加算演出が終わってからリザルトへの幕が始まる。
+        deadline = Time.realtimeSinceStartupAsDouble + 15;
+        while (!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
         Assert.True(ScreenTransition.IsBusy);
         yield return new WaitForSecondsRealtime(.21f);
         Capture("play-result");

@@ -15,7 +15,13 @@ public class SongChartPreviewPlayTests
         while(Time.realtimeSinceStartup<deadline)
         {
             controller=Object.FindFirstObjectByType<SongSelectController>();
-            if(controller!=null && controller.ChartPreview?.View!=null) yield break;
+            if(controller!=null && Object.FindFirstObjectByType<SongSelectSkin>()?.IsReady == true)
+            {
+                var mount = new GameObject("OptionalPreviewTest", typeof(RectTransform));
+                mount.transform.SetParent(controller.transform, false);
+                controller.AttachChartPreview(mount.GetComponent<RectTransform>());
+                yield break;
+            }
             yield return null;
         }
         Assert.Fail("選曲プレビューの表示領域が生成されません。");

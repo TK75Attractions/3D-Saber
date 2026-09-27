@@ -79,9 +79,9 @@ public class PlayFeedbackPlayTests
         Assert.IsNull(GameObject.Find("MenuNote_ProjectorModeButton"));
         Assert.IsNull(GameObject.Find("MenuNote_ReducedEffectsButton"));
         var controller = Object.FindFirstObjectByType<SongSelectController>();
-        Assert.IsNotNull(controller.startButton.GetComponent<MenuNoteAction>());
+        Assert.IsNotNull(controller.startButton.GetComponent<SongSelectDiscTarget>());
         foreach (var button in controller.difficultyButtons)
-            Assert.IsNotNull(button.GetComponent<MenuNoteAction>());
+            Assert.IsNotNull(button.GetComponent<SongSelectDiscTarget>());
         Assert.AreEqual(projector, DisplaySettings.ProjectorMode);
         Assert.AreEqual(effects, DisplaySettings.ReducedEffects);
     }

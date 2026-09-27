@@ -28,6 +28,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     {
         public Object key;
         public MenuNoteAction action;
+        public SongSelectDiscTarget disc;
         public bool up;
         public Rect area;
     }
@@ -88,7 +89,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         if (valid && kind == 2 && mouse.leftButton.wasPressedThisFrame)
         {
             Target clicked = Resolve(point);
-            if (clicked.key != null) tracker.BlockUntilExit(Expand(clicked.area, Padding));
+            if (clicked.key != null) tracker.BlockUntilExit(Expand(clicked.area, Padding), clicked.disc != null && clicked.disc.Circle);
         }
         TickAt(smoothed, Time.unscaledDeltaTime, valid);
     }
@@ -109,24 +110,26 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         }
         Target next = Resolve(point);
         // 対象の端での小さな震えは許容。他のボタンへ移ったときは必ずため直す。
-        if (next.key == null && Available(hovered) && Expand(ScreenArea(hovered), Padding).Contains(point))
+        if (next.key == null && Available(hovered) && SongSelectAimTracker.Contains(Expand(ScreenArea(hovered), Padding), point, hovered.disc != null && hovered.disc.Circle))
             next = hovered;
         if (next.key != hovered.key) SetHovered(next);
         else hovered = next;
         Rect area = next.key != null ? ScreenArea(next) : default;
-        bool ready = Available(next) && SongSelectNoteMenu.Instance != null && SongSelectNoteMenu.Instance.IsReady;
-        bool fire = tracker.Tick(next.key, Expand(area, Padding), point, dt, ready);
+        bool ready = Available(next) && (next.disc != null || SongSelectNoteMenu.Instance != null && SongSelectNoteMenu.Instance.IsReady);
+        bool fire = tracker.Tick(next.key, Expand(area, Padding), point, dt, ready,
+            next.disc != null ? next.disc.HoldSeconds : 1, next.disc != null && next.disc.Circle);
         if (reticle != null)
         {
             reticle.gameObject.SetActive(true); Place(reticle.rectTransform, point);
             reticle.Show(tracker.Progress01, tracker.NeedsRelease);
         }
         if (next.action != null) next.action.SetAimProgress(tracker.Progress01);
+        if (next.disc != null) next.disc.SetAimProgress(tracker.Progress01);
         if (fire)
         {
-            CuttableNote note = next.action != null ? next.action.Note : next.up ? navigation.UpNote : navigation.DownNote;
+            CuttableNote note = next.action != null ? next.action.Note : navigation != null ? next.up ? navigation.UpNote : navigation.DownNote : null;
             Vector2 hit = note != null ? (Vector2)Camera.main.WorldToScreenPoint(note.transform.position) : point;
-            bool accepted = next.action != null ? next.action.TryShoot() : navigation.TryShoot(next.up);
+            bool accepted = next.disc != null ? next.disc.TryShoot() : next.action != null ? next.action.TryShoot() : navigation != null && navigation.TryShoot(next.up);
             if (accepted)
             {
                 ShotCount++; shotAge = 0;
@@ -142,6 +145,9 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         hits.Clear(); events.RaycastAll(new PointerEventData(events) { position = point }, hits);
         foreach (var hit in hits)
         {
+            var disc = hit.gameObject.GetComponentInParent<SongSelectDiscTarget>();
+            if (disc != null)
+                return disc.Available ? new Target { key = disc, disc = disc, area = disc.ScreenRect() } : default;
             var action = hit.gameObject.GetComponentInParent<MenuNoteAction>();
             if (action != null)
                 return action.IsAvailable ? new Target { key = action, action = action, area = action.ScreenRect() } : default;
@@ -156,8 +162,8 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         return default;
     }
 
-    bool Available(Target target) => target.key != null && (target.action != null ? target.action.CanShoot : navigation != null && navigation.CanShoot(target.up));
-    Rect ScreenArea(Target target) => target.action != null ? target.action.ScreenRect() : RectOnScreen(target.up ? upDock : downDock);
+    bool Available(Target target) => target.key != null && (target.disc != null ? target.disc.Available : target.action != null ? target.action.CanShoot : navigation != null && navigation.CanShoot(target.up));
+    Rect ScreenArea(Target target) => target.disc != null ? target.disc.ScreenRect() : target.action != null ? target.action.ScreenRect() : RectOnScreen(target.up ? upDock : downDock);
     public static Rect RectOnScreen(RectTransform rect)
     {
         if (rect == null) return default;
@@ -176,12 +182,18 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     void SetHovered(Target next)
     {
         var es = EventSystem.current;
+        if (hovered.disc != null)
+        {
+            hovered.disc.SetAimProgress(0);
+            hovered.disc.OnPointerExit(null);
+        }
         if (hovered.action != null)
         {
             hovered.action.SetAimProgress(0);
             if (es != null) ExecuteEvents.Execute(hovered.action.gameObject, new PointerEventData(es), ExecuteEvents.pointerExitHandler);
         }
         hovered = next;
+        if (next.disc != null) next.disc.OnPointerEnter(null);
         if (next.action != null && es != null) ExecuteEvents.Execute(next.action.gameObject, new PointerEventData(es), ExecuteEvents.pointerEnterHandler);
     }
     void SelectionChanged(int index)

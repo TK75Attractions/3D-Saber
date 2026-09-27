@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "displayName": "Prism Circuit",
+  "artist": "Codex Original",
+  "timeOrigin": "audio-file-start",
+  "previewStartSeconds": 90.810811,
+  "hideBarLines": false,
+  "audioSha256": "2f13a2b132937d3a1f7963e7e0fc352a78d9c68353ef226bb69b7186e9579ba5",
+  "sections": [
+    {
+      "label": "Prism",
+      "startSeconds": 38.918919,
+      "endSeconds": 64.864865,
+      "fadeInSeconds": 0.5,
+      "fadeOutSeconds": 1.6,
+      "intensity": 0.82,
+      "anticipationSeconds": 0.8108108108108109,
+      "impactSeconds": 0.6
+    },
+    {
+      "label": "Full spectrum",
+      "startSeconds": 90.810811,
+      "endSeconds": 110.27027,
+      "fadeInSeconds": 0.5,
+      "fadeOutSeconds": 1.6,
+      "intensity": 1.0,
+      "anticipationSeconds": 0.8108108108108109,
+      "impactSeconds": 0.6
+    }
+  ]
+}

@@ -51,25 +51,36 @@ public static class SongSelectDesignPreview
             if (ready == 0)
             {
                 controller = UnityEngine.Object.FindFirstObjectByType<SongSelectController>();
-                if (controller == null || controller.SongCount == 0 || GameObject.Find("DifficultyRibbonRow") == null) return;
-                AudioListener.pause = true;
+                if (controller == null || controller.SongCount == 0 || UnityEngine.Object.FindFirstObjectByType<SongSelectSkin>()?.IsReady != true) return;
+                SessionState.SetBool(Key + ".SavedProjector", DisplaySettings.ProjectorMode);
+                SessionState.SetBool(Key + ".HasSavedProjector", true);
+                DisplaySettings.ProjectorMode = false; ProjectorMode.Apply(Camera.main);
+                controller.previewSource.mute = true;
+                UnityEngine.Object.FindFirstObjectByType<SongSelectAimPointer>().enabled = false;
                 foreach (var judge in UnityEngine.Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) judge.autonomous = false;
                 Choose(); return;
             }
             if (EditorApplication.timeSinceStartup - ready < 2) return;
-            var label = state == 0 ? "school-easy" : state == 1 ? "school-master" : "el-dorado-normal";
+            var label = new[] { "two23am-easy", "school-master", "el-dorado-normal", "neonparade", "yurikago-projector" }[state];
             Capture(Path.Combine(output, label + ".png"), 1920, 1080);
             if (state == 1) Capture(Path.Combine(output, "school-master-720p.png"), 1280, 720);
             File.AppendAllText(Path.Combine(output, "runtime-check.txt"), $"{label}: selected={controller.SongIdAt(controller.SelectedIndex)}, level={controller.CurrentDifficultyDisplayLevel()}, canStart={controller.startButton.interactable}, navNotes={UnityEngine.Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None).Length}; scene not saved.\n");
-            if (++state < 3) { Choose(); return; }
+            if (++state < 5) { Choose(); return; }
             VerifyInteractions();
-            SessionState.SetBool(Key, false); Debug.Log("[SongSelectDesignPreview] PASS"); EditorApplication.Exit(0);
+            RestoreSettings(); SessionState.SetBool(Key, false); Debug.Log("[SongSelectDesignPreview] PASS"); EditorApplication.Exit(0);
         }
-        catch (Exception e) { SessionState.SetBool(Key, false); Debug.LogException(e); EditorApplication.Exit(1); }
+        catch (Exception e) { RestoreSettings(); SessionState.SetBool(Key, false); Debug.LogException(e); EditorApplication.Exit(1); }
+    }
+    static void RestoreSettings()
+    {
+        if (!SessionState.GetBool(Key + ".HasSavedProjector", false)) return;
+        DisplaySettings.ProjectorMode = SessionState.GetBool(Key + ".SavedProjector", false);
+        SessionState.SetBool(Key + ".HasSavedProjector", false);
     }
     static void Choose()
     {
-        string id = state < 2 ? "Epilogue" : "ElDorado";
+        string id = new[] { "2_23_AM", "Epilogue", "ElDorado", "NeonParade", "揺籠" }[state];
+        if (state == 4) { DisplaySettings.ProjectorMode = true; ProjectorMode.Apply(Camera.main); }
         int index = Enumerable.Range(0, controller.SongCount).FirstOrDefault(i => controller.SongIdAt(i) == id);
         controller.Select(index); controller.SetDifficulty(state == 0 ? 0 : state == 1 ? 2 : 1);
         ready = EditorApplication.timeSinceStartup;
@@ -88,11 +99,11 @@ public static class SongSelectDesignPreview
         AssertHit(controller.startButton);
         AssertHit(GameObject.Find("BackToTitle").GetComponent<Button>());
         AssertHit(GameObject.Find("CalibrationButton").GetComponent<Button>());
-        var row=GameObject.Find("WheelRow_"+controller.SelectedIndex).GetComponent<Button>();
+        var row=GameObject.Find("SongDisc_"+controller.SelectedIndex).GetComponent<Button>();
         AssertHit(row);
         // クリック後に再描画する曲を選び、曲リスト側の接続も確認する。
-        int next=Mathf.Min(controller.SelectedIndex+1,controller.SongCount-1);
-        row=GameObject.Find("WheelRow_"+next).GetComponent<Button>();
+        int next=(controller.SelectedIndex+1)%controller.SongCount;
+        row=GameObject.Find("SongDisc_"+next).GetComponent<Button>();
         AssertHit(row);
         ExecuteEvents.Execute(row.gameObject,new PointerEventData(EventSystem.current){button=PointerEventData.InputButton.Left},ExecuteEvents.pointerClickHandler);
         if(controller.SelectedIndex!=next) throw new InvalidOperationException("曲リストのクリックが反映されません");

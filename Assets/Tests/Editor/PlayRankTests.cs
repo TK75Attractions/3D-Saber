@@ -71,16 +71,19 @@ public class PlayRankTests
     [Test]
     public void FromAccuracy_Boundaries()
     {
+        // 2026-09-23 のしきい値: B 40% / A 60% / S 80% / S+ 90%
         Assert.AreEqual(PlayRank.SPlus, PlayRankHelper.FromAccuracy(1.00f));
-        Assert.AreEqual(PlayRank.SPlus, PlayRankHelper.FromAccuracy(0.95f));
-        Assert.AreEqual(PlayRank.S, PlayRankHelper.FromAccuracy(0.949f));
-        Assert.AreEqual(PlayRank.S, PlayRankHelper.FromAccuracy(0.90f));
-        Assert.AreEqual(PlayRank.A, PlayRankHelper.FromAccuracy(0.899f));
-        Assert.AreEqual(PlayRank.A, PlayRankHelper.FromAccuracy(0.80f));
-        Assert.AreEqual(PlayRank.B, PlayRankHelper.FromAccuracy(0.799f));
-        Assert.AreEqual(PlayRank.B, PlayRankHelper.FromAccuracy(0.65f));
-        Assert.AreEqual(PlayRank.C, PlayRankHelper.FromAccuracy(0.649f));
+        Assert.AreEqual(PlayRank.SPlus, PlayRankHelper.FromAccuracy(0.90f));
+        Assert.AreEqual(PlayRank.S, PlayRankHelper.FromAccuracy(0.899f));
+        Assert.AreEqual(PlayRank.S, PlayRankHelper.FromAccuracy(0.80f));
+        Assert.AreEqual(PlayRank.A, PlayRankHelper.FromAccuracy(0.799f));
+        Assert.AreEqual(PlayRank.A, PlayRankHelper.FromAccuracy(0.60f));
+        Assert.AreEqual(PlayRank.B, PlayRankHelper.FromAccuracy(0.599f));
+        Assert.AreEqual(PlayRank.B, PlayRankHelper.FromAccuracy(0.40f));
+        Assert.AreEqual(PlayRank.C, PlayRankHelper.FromAccuracy(0.399f));
         Assert.AreEqual(PlayRank.C, PlayRankHelper.FromAccuracy(0f));
+        Assert.AreEqual(0.40f, PlayRankHelper.ThresholdB); Assert.AreEqual(0.60f, PlayRankHelper.ThresholdA);
+        Assert.AreEqual(0.80f, PlayRankHelper.ThresholdS); Assert.AreEqual(0.90f, PlayRankHelper.ThresholdSPlus);
     }
 
     // ---- Label / NextRank / Progress ----
@@ -112,16 +115,16 @@ public class PlayRankTests
     [Test]
     public void ProgressToNext_MidBand_IsHalf()
     {
-        // B 帯 [0.65, 0.80) の中間
-        Assert.AreEqual(0.5f, PlayRankHelper.ProgressToNext(0.725f), 1e-4f);
-        // C 帯 [0, 0.65) の中間
-        Assert.AreEqual(0.5f, PlayRankHelper.ProgressToNext(0.325f), 1e-4f);
+        // B 帯 [0.40, 0.60) の中間
+        Assert.AreEqual(0.5f, PlayRankHelper.ProgressToNext(0.50f), 1e-4f);
+        // C 帯 [0, 0.40) の中間
+        Assert.AreEqual(0.5f, PlayRankHelper.ProgressToNext(0.20f), 1e-4f);
     }
 
     [Test]
     public void ProgressToNext_BandEdges()
     {
-        Assert.AreEqual(0f, PlayRankHelper.ProgressToNext(0.65f), 1e-4f, "ランク下限では 0");
+        Assert.AreEqual(0f, PlayRankHelper.ProgressToNext(0.40f), 1e-4f, "ランク下限では 0");
         Assert.AreEqual(1f, PlayRankHelper.ProgressToNext(0.96f), 1e-4f, "S+ は常に 1");
         Assert.AreEqual(1f, PlayRankHelper.ProgressToNext(1f), 1e-4f);
     }

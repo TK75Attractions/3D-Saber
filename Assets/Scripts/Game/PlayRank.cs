@@ -14,11 +14,12 @@ public enum PlayRank
 
 public static class PlayRankHelper
 {
-    // 精度の下限しきい値(この値以上でそのランク)
-    public const float ThresholdB = 0.65f;
-    public const float ThresholdA = 0.80f;
-    public const float ThresholdS = 0.90f;
-    public const float ThresholdSPlus = 0.95f;
+    // 精度の下限しきい値(この値以上でそのランク)。
+    // 2026-09-23 ユーザー指定で緩和: B 65→40% / A 80→60% / S 90→80% / S+ 95→90%(旧値は文化祭の初見客には厳しすぎた)。
+    public const float ThresholdB = 0.40f;
+    public const float ThresholdA = 0.60f;
+    public const float ThresholdS = 0.80f;
+    public const float ThresholdSPlus = 0.90f;
 
     // 判定カウント → 精度(0..1)。まだ何も判定していないときは 1(満点スタート)。
     public static float Accuracy(int perfect, int great, int good, int bad, int miss)

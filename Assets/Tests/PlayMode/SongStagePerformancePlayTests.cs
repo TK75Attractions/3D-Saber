@@ -10,7 +10,7 @@ public class SongStagePerformancePlayTests
     [UnityTest]
     public IEnumerator ActualGameLoadsEachSongAndDrivesItsHighlightFromAudioClock()
     {
-        string[] songs={"2_23_AM","ElDorado","Epilogue","Morning","揺籠"};
+        string[] songs={"2_23_AM","ElDorado","Epilogue","Morning","揺籠","NeonParade"};
         string[] difficulties={"easy","normal","hard"};
         var clock=typeof(SongPlayer).GetField("startDspTime",BindingFlags.Instance|BindingFlags.NonPublic);
         try

@@ -255,13 +255,13 @@ public class ResultSkin : MonoBehaviour
             Vector2.zero, new Vector2(10f, 56f), FontStyles.Normal, 6f,
             UISkinKit.FontAsset("Oxanium-ExtraBold"));
 
-        // 和名(日本語タイトルがあるときだけ。TMP は ASCII フォントのため legacy Text)
+        // 和名(日本語タイトルがあるときだけ。共通書体を legacy Text でも使用)
         if (!string.IsNullOrEmpty(title) && !UISkinKit.IsAsciiOnly(title) && title != songId)
         {
             var jp = new GameObject("TitleJp", typeof(RectTransform), typeof(Text));
             jp.transform.SetParent(row.transform, false);
             var t = jp.GetComponent<Text>();
-            t.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            t.font = UISkinKit.JapaneseFont();
             t.fontSize = 24;
             t.fontStyle = FontStyle.Bold;
             t.alignment = TextAnchor.MiddleCenter;

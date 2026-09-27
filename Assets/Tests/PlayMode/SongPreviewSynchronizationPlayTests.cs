@@ -15,7 +15,7 @@ public class SongPreviewSynchronizationPlayTests
         var controller = Object.FindFirstObjectByType<SongSelectController>();
         Assert.NotNull(controller);
         double deadline = Time.realtimeSinceStartupAsDouble + 15;
-        while ((controller.SongCount == 0 || controller.ChartPreview?.View == null)
+        while ((controller.SongCount == 0 || controller.ChartPreview == null)
             && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
         controller.Select(Enumerable.Range(0, controller.SongCount).Single(i => controller.SongIdAt(i) == "Epilogue"));
         deadline = Time.realtimeSinceStartupAsDouble + 15;
@@ -44,18 +44,18 @@ public class SongPreviewSynchronizationPlayTests
         yield return SceneManager.LoadSceneAsync("SongSelect", LoadSceneMode.Single);
         var controller = Object.FindFirstObjectByType<SongSelectController>();
         double deadline = Time.realtimeSinceStartupAsDouble + 15;
-        while ((controller.SongCount == 0 || controller.ChartPreview?.View == null)
+        while ((controller.SongCount == 0 || controller.ChartPreview == null)
             && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
-        string[] songs = { "2_23_AM", "Andalusia", "ElDorado", "Epilogue", "Morning", "揺籠" };
+        string[] songs = { "2_23_AM", "Andalusia", "ElDorado", "Epilogue", "Morning", "揺籠", "NeonParade" };
         AudioSettings.GetDSPBufferSize(out int frames, out _);
         foreach (string id in songs)
         {
             controller.Select(Enumerable.Range(0, controller.SongCount).Single(i => controller.SongIdAt(i) == id));
             deadline = Time.realtimeSinceStartupAsDouble + 15;
-            while ((!controller.ChartPreview.IsPlaying || !controller.ChartPreview.View.IsVisible)
+            while ((!controller.ChartPreview.IsPlaying || controller.ChartPreview.SongTime <= controller.ChartPreview.Window.Start + .01)
                 && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
             Assert.True(controller.ChartPreview.IsPlaying, id);
-            Assert.True(controller.ChartPreview.View.IsVisible, id);
+            Assert.IsNull(controller.ChartPreview.View, "ディスク選曲は旧譜面表示なしで再生する: " + id);
             for (int frame = 0; frame < 12; frame++)
             {
                 double time = controller.ChartPreview.SongTime;

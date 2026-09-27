@@ -7,7 +7,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // スクロール可能な曲リスト + 右側に難易度・ジャケット・スタートボタン。
-// PC キー入力（↑↓で曲選択、←→で難易度、Enter/Space で開始）。
+// PC キー入力（←→で曲選択、↑↓・1/2/3で難易度、Enter/Space で開始）。
 // 選択が1秒落ち着いたら、選択難易度のクライマックスを音付きで10秒プレビューする。
 // EventSystem（実行順 -1000）より先に専用キーを処理し、同じ入力の二重配送を防ぐ。
 [DefaultExecutionOrder(-1100)]
@@ -89,15 +89,17 @@ public class SongSelectController : MonoBehaviour
         if (chartPreview != null) chartPreview.Tick();
         var kb = Keyboard.current;
         if (kb == null) return;
-        bool previousSong = kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame;
-        bool nextSong = kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame;
-        bool easier = kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame;
-        bool harder = kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame;
+        bool previousSong = kb.leftArrowKey.wasPressedThisFrame || kb.aKey.wasPressedThisFrame;
+        bool nextSong = kb.rightArrowKey.wasPressedThisFrame || kb.dKey.wasPressedThisFrame;
+        bool easier = kb.upArrowKey.wasPressedThisFrame || kb.wKey.wasPressedThisFrame;
+        bool harder = kb.downArrowKey.wasPressedThisFrame || kb.sKey.wasPressedThisFrame;
+        bool back = kb.escapeKey.wasPressedThisFrame;
+        int directDifficulty = kb.digit1Key.wasPressedThisFrame ? 0 : kb.digit2Key.wasPressedThisFrame ? 1 : kb.digit3Key.wasPressedThisFrame ? 2 : -1;
         bool start = kb.enterKey.wasPressedThisFrame || kb.numpadEnterKey.wasPressedThisFrame || kb.spaceKey.wasPressedThisFrame;
         bool holdingShortcut = kb.upArrowKey.isPressed || kb.wKey.isPressed || kb.downArrowKey.isPressed || kb.sKey.isPressed
             || kb.leftArrowKey.isPressed || kb.aKey.isPressed || kb.rightArrowKey.isPressed || kb.dKey.isPressed
             || kb.enterKey.isPressed || kb.numpadEnterKey.isPressed || kb.spaceKey.isPressed;
-        if (previousSong || nextSong || easier || harder || start || holdingShortcut)
+        if (previousSong || nextSong || easier || harder || start || holdingShortcut || back || directDifficulty >= 0)
         {
             // クリック後の選択ボタンへ、同じ矢印・Enterを移動/Submitとして送らない。長押しも対象。
             // ポインター処理は継続し、キー操作のないフレームのゲームパッド操作も保つ。
@@ -112,10 +114,17 @@ public class SongSelectController : MonoBehaviour
         if (nextSong) Move(1);
         if (easier) ChangeDifficulty(-1);
         if (harder) ChangeDifficulty(1);
+        if (directDifficulty >= 0) SetDifficulty(directDifficulty);
+        if (back) { ReturnToTitle(); return; }
         if (start) StartGame();
     }
 
     void LateUpdate() { RestoreNavigationEvents(); }
+
+    public void ReturnToTitle()
+    {
+        if (ScreenTransition.Load("Title", ScreenTransition.Style.Back)) StopPreview();
+    }
 
     private void RestoreNavigationEvents()
     {

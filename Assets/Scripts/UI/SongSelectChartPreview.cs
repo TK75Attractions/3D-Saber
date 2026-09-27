@@ -80,9 +80,9 @@ public sealed class SongSelectChartPreview : MonoBehaviour
             if(ownedClip==null) continue;
             var timeline=StagePerformanceTimeline.Load(songId);
             Window=SongPreviewWindow.Resolve(timeline,ownedClip.length,duration);
-            while(view==null && token==generation) yield return null;
             if(token!=generation || !Window.IsValid) yield break;
-            view.Prepare(chart,Window,timeline,Difficulty);
+            // 音だけのディスク選曲でも同じDSP時計を使う。旧譜面表示は任意。
+            view?.Prepare(chart,Window,timeline,Difficulty);
             source.clip=ownedClip; source.loop=false; source.pitch=1;
             startSample=Mathf.Clamp((int)Math.Round(Window.Start*ownedClip.frequency),0,ownedClip.samples-1);
             source.timeSamples=startSample;

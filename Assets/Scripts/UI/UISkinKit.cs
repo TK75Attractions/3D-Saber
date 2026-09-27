@@ -7,9 +7,9 @@ using TMPro;
 // - 角丸 / 枠線 / グロー / ビネットの各スプライトを手続き生成して静的キャッシュ
 // - TMP テキスト・ネオンボタンのファクトリ
 // 日本語について：TMP 既定フォント(LiberationSans SDF)には日本語グリフが無い。
-//   UISkinKit.FontAsset / LogoFontAsset が生成するフォントには Noto Sans JP の動的フォールバックを
+//   UISkinKit.FontAsset / LogoFontAsset が生成するフォントには マキナス 4 Square の動的フォールバックを
 //   付けているので、曲名など日本語が混ざる可変文字列もこれらのフォントなら描ける。
-//   固定の日本語文(見出し・説明文)は従来どおり legacy Text(OS フォント)でもよい。
+//   legacy Text の日本語にも JapaneseFont() で同じ同梱書体を使う。
 public static class UISkinKit
 {
     const int RoundedTexSize = 64;
@@ -239,7 +239,12 @@ public static class UISkinKit
         return logoFontAsset;
     }
 
-    // 日本語フォールバック(Noto Sans JP Light / OFL)。Resources/Fonts の OTF から「動的」TMP フォントを
+    // 日本語は全画面でマキナス 4 Square に統一。legacy Text の曲名も同じ元書体を使う。
+    public const string JapaneseFontResourceName = "Makinas-4-Square";
+
+    public static Font JapaneseFont() => LegacyFont(JapaneseFontResourceName);
+
+    // 日本語フォールバック(マキナス 4 Square)。Resources/Fonts の OTF から「動的」TMP フォントを
     // 実行時生成する。動的なので実際に使われたグリフだけをアトラスに描き、7000字級の静的アトラス
     // (Assets/TextMesh Pro/Fonts の NotoSansJP-Light SDF、8192px)をビルドに抱き込まない。
     // FontAsset / LogoFontAsset が生成する全フォントの fallbackFontAssetTable に付く。
@@ -249,10 +254,10 @@ public static class UISkinKit
         if (jpFallbackFontAsset != null) return jpFallbackFontAsset;
         if (jpFallbackLoadAttempted) return null;
         jpFallbackLoadAttempted = true;
-        var otf = Resources.Load<Font>("Fonts/NotoSansJP-Light");
+        var otf = Resources.Load<Font>("Fonts/" + JapaneseFontResourceName);
         if (otf == null)
         {
-            Debug.LogWarning("UISkinKit: 日本語フォールバックフォント(Fonts/NotoSansJP-Light)が見つかりません。TMP の日本語は□になります");
+            Debug.LogWarning($"UISkinKit: 日本語フォント(Fonts/{JapaneseFontResourceName})が見つかりません。Tools/Fonts/download-japanese-font.ps1 を実行してください");
             return null;
         }
         // 72pt/余白8 の 1024² アトラス。埋まったら複数アトラスへ自動拡張(enableMultiAtlasSupport)。
@@ -261,7 +266,7 @@ public static class UISkinKit
             AtlasPopulationMode.Dynamic, true);
         if (jpFallbackFontAsset != null)
         {
-            jpFallbackFontAsset.name = "NotoSansJP-Light (JP fallback)";
+            jpFallbackFontAsset.name = JapaneseFontResourceName + " (JP fallback)";
             jpFallbackFontAsset.hideFlags = HideFlags.HideAndDontSave;
         }
         return jpFallbackFontAsset;

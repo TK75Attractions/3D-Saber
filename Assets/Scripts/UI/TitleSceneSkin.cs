@@ -217,6 +217,7 @@ public class TitleSceneSkin : MonoBehaviour
         var saber = new GameObject("TitleSaber");
         var tracker = saber.AddComponent<SaberTracker>();
         var bridge = saber.AddComponent<SaberInputBridge>();
+        bridge.SetBladeColor(SaberHandHelper.HandColor(SaberHand.Right));
         bridge.useInputPoint = true;
         bridge.fallbackToMouse = true;
         bridge.fixedZ = 0f;
