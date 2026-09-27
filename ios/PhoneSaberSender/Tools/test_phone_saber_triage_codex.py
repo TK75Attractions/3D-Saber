@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import contextlib
+import copy
 import io
 import json
 import os
@@ -22,6 +23,7 @@ from phone_saber_triage_codex import (
     analyze_bundle,
     dry_run_text,
     input_plan,
+    _output_schema,
     _codex_prompt,
 )
 from phone_saber_triage_protocol import BundleError
@@ -38,6 +40,7 @@ EMPTY_ANALYSIS = {
     "other_findings": [],
     "limitations": [],
 }
+FOUR_IMAGE_IDS = ["image_001", "image_002", "image_003", "image_004"]
 EXPECTED_SUMMARY_SCOPE = "retained incident candidates and nearby context"
 
 
@@ -55,6 +58,7 @@ class CodexTriageTests(unittest.TestCase):
             self.assertEqual(result["status"], "dry_run")
             self.assertFalse(codex_spy.exists())
             self.assertFalse((bundle / "analysis_report.json").exists())
+            self.assertIn("image_001 -> image_01.png", report)
             self.assertIn("images/image_01.png", report)
             self.assertIn("frames/frame_100_1.json", report)
             self.assertIn("summary.json", report)
@@ -70,8 +74,9 @@ class CodexTriageTests(unittest.TestCase):
                 bundle, image_count=4,
                 failure_types=("dropout", "endpoint_jump", "manual_capture", "candidate_zero"),
             )
+            plan = input_plan(bundle)
             spy = root / "codex-spy.json"
-            codex = fake_codex(root, spy, analysis=EMPTY_ANALYSIS)
+            codex = fake_codex(root, spy, analysis=analysis_with_image_ids(FOUR_IMAGE_IDS))
 
             result = analyze_bundle(bundle, codex_path=str(codex))
 
@@ -81,7 +86,7 @@ class CodexTriageTests(unittest.TestCase):
             self.assertEqual(invoked["image_flag_count"], 4)
             self.assertTrue(all(path.endswith(f"/images/image_{index:02d}.png")
                                 for index, path in enumerate(invoked["images"], start=1)))
-            self.assertEqual(invoked["prompt"], _codex_prompt("sample_session", 4))
+            self.assertEqual(invoked["prompt"], _codex_prompt("sample_session", plan.images, plan.root))
             self.assertIsNone(invoked["positional_prompt"])
             self.assertTrue(invoked["stdin_sentinel"])
             self.assertEqual(set(invoked["files"]), {
@@ -95,11 +100,80 @@ class CodexTriageTests(unittest.TestCase):
             self.assertTrue(invoked["skip_git_repo_check"])
             self.assertIn("A = capture/data artifact", invoked["prompt"])
             self.assertIn("Do not edit, create, or propose applying production code", invoked["prompt"])
+            self.assertIn("image_ids may contain only the exact", invoked["prompt"])
+            self.assertIn("detected=false", invoked["prompt"])
+            self.assertIn("Context filename: frames/frame_100_1.json", invoked["prompt"])
+            for section in ("false_negatives", "wrong_candidate_and_endpoint_errors",
+                            "false_positive_suspects", "other_findings"):
+                self.assertEqual(
+                    invoked["output_schema"]["properties"][section]["items"]
+                    ["properties"]["image_ids"]["items"]["enum"],
+                    FOUR_IMAGE_IDS,
+                )
             report = json.loads((bundle / "analysis_report.json").read_text(encoding="utf-8"))
+            self.assertEqual(report["formatVersion"], 2)
             self.assertEqual(report["input"]["imageCount"], 4)
+            self.assertEqual([image["id"] for image in report["input"]["imageReferences"]],
+                             FOUR_IMAGE_IDS)
+            self.assertEqual(report["analysis"]["other_findings"][0]["image_ids"], FOUR_IMAGE_IDS)
             self.assertFalse(report["input"]["videoIncluded"])
             self.assertFalse(report["input"]["fullMetadataIncluded"])
-            self.assertTrue((bundle / "analysis_report.md").is_file())
+            markdown = (bundle / "analysis_report.md").read_text(encoding="utf-8")
+            self.assertIn("image_001 — `images/image_01.png`", markdown)
+            self.assertIn("images: image_001, image_002, image_003, image_004", markdown)
+
+    def test_unknown_or_path_like_image_references_are_rejected(self) -> None:
+        for name, image_ids in (
+            ("unknown ID", ["image_999"]),
+            ("absolute path", ["/tmp/input/images/image_01.png"]),
+            ("traversal path", ["../images/image_01.png"]),
+        ):
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                bundle = root / "bundle"
+                write_codex_bundle(bundle)
+                codex = fake_codex(root, root / "spy.json",
+                                   analysis=analysis_with_image_ids(image_ids))
+                with self.assertRaisesRegex(CodexFailed, "image ID that was not sent"):
+                    analyze_bundle(bundle, codex_path=str(codex))
+                self.assertTrue((bundle / "summary.json").is_file())
+                self.assertFalse((bundle / "analysis_report.json").exists())
+                self.assertFalse((bundle / "analysis_report.md").exists())
+
+    def test_duplicate_image_reference_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = root / "bundle"
+            write_codex_bundle(bundle)
+            codex = fake_codex(root, root / "spy.json",
+                               analysis=analysis_with_image_ids(["image_001", "image_001"]))
+            with self.assertRaisesRegex(CodexFailed, "duplicate image IDs"):
+                analyze_bundle(bundle, codex_path=str(codex))
+            self.assertTrue((bundle / "summary.json").is_file())
+            self.assertFalse((bundle / "analysis_report.json").exists())
+
+    def test_case_insensitive_basename_collision_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "bundle"
+            write_codex_bundle(bundle, image_count=2)
+            summary_path = bundle / "summary.json"
+            summary = json.loads(summary_path.read_text(encoding="utf-8"))
+            collision_path = bundle / "images/IMAGE_01.PNG"
+            (bundle / summary["images"][1]["path"]).rename(collision_path)
+            summary["images"][1]["path"] = "images/IMAGE_01.PNG"
+            summary_path.write_text(json.dumps(summary), encoding="utf-8")
+            with self.assertRaisesRegex(BundleError, "ambiguous selected image basenames"):
+                input_plan(bundle)
+
+    def test_output_schema_is_limited_to_selected_image_ids(self) -> None:
+        schema = _output_schema(("image_001", "image_002"))
+        for section in ("false_negatives", "wrong_candidate_and_endpoint_errors",
+                        "false_positive_suspects", "other_findings"):
+            item_schema = schema["properties"][section]["items"]
+            self.assertNotIn("image_paths", item_schema["properties"])
+            self.assertEqual(item_schema["properties"]["image_ids"]["items"], {
+                "type": "string", "enum": ["image_001", "image_002"],
+            })
 
     def test_codex_unavailable_preserves_received_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -272,6 +346,7 @@ if {fail!r}:
 image_paths = [args[i + 1] for i, value in enumerate(args[:-1]) if value == '--image']
 input_root = pathlib.Path(args[args.index('--cd') + 1])
 response_path = pathlib.Path(args[args.index('--output-last-message') + 1])
+schema_path = pathlib.Path(args[args.index('--output-schema') + 1])
 spy = {{
     'images': image_paths,
     'image_flag_count': args.count('--image'),
@@ -282,6 +357,7 @@ spy = {{
     'prompt': prompt,
     'positional_prompt': args[-1] if args and args[-1] != '-' else None,
     'stdin_sentinel': bool(args and args[-1] == '-'),
+    'output_schema': json.loads(schema_path.read_text(encoding='utf-8')),
 }}
 pathlib.Path({spy_literal}).write_text(json.dumps(spy), encoding='utf-8')
 response_path.write_text({response_json!r}, encoding='utf-8')
@@ -289,6 +365,21 @@ response_path.write_text({response_json!r}, encoding='utf-8')
     executable.write_text(script, encoding="utf-8")
     executable.chmod(0o755)
     return executable
+
+
+def analysis_with_image_ids(image_ids: list[str]) -> dict:
+    analysis = copy.deepcopy(EMPTY_ANALYSIS)
+    analysis["other_findings"] = [{
+        "classification": ["G"],
+        "color": "UNKNOWN",
+        "frame_ids": [100],
+        "image_ids": image_ids,
+        "issue_type": "Image reference contract test",
+        "observation": "A selected image was supplied.",
+        "interpretation": "Only supplied image IDs are referenced.",
+        "confidence": "low",
+    }]
+    return analysis
 
 
 def write_codex_bundle(bundle: Path, *, image_count: int = 1,
