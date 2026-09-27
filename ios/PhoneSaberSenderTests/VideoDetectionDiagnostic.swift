@@ -113,6 +113,7 @@ private enum VideoDetectionDiagnostic {
                     "line_score_ms": profile?.lineScoreMs ?? 0,
                     "selection_ms": profile?.selectionMs ?? 0,
                     "candidate_count": profile?.candidateCount ?? 0,
+                    "line_proposal_count": profile?.lineProposalCount ?? 0,
                 ],
                 "pipeline": Dictionary(uniqueKeysWithValues: [
                     ("red", SaberColor.red), ("blue", SaberColor.blue)

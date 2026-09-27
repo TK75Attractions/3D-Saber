@@ -122,6 +122,13 @@ func matchesSaberHSV(_ red: UInt8, _ green: UInt8, _ blue: UInt8,
 /// full-frame blue mask from turning clothes or daylight into candidates.
 func matchesBlueDiffuserPixel(_ red: UInt8, _ green: UInt8, _ blue: UInt8,
                               threshold: ColorThreshold) -> Bool {
+    matchesBlueDiffuserPixel(red, green, blue, hsv: saberHSV(red, green, blue),
+                             threshold: threshold)
+}
+
+/// Reuse the HSV conversion already made by the production BGRA scan.
+func matchesBlueDiffuserPixel(_ red: UInt8, _ green: UInt8, _ blue: UInt8,
+                              hsv: SaberHSV, threshold: ColorThreshold) -> Bool {
     let redValue = Int(red), greenValue = Int(green), blueValue = Int(blue)
     let relaxedBrightness = max(SaberColorModelThresholds.diffuserBlueMinimumBrightness,
                                 Int(threshold.brightness) - SaberColorModelThresholds.diffuserBlueBrightnessOffset)
@@ -129,7 +136,6 @@ func matchesBlueDiffuserPixel(_ red: UInt8, _ green: UInt8, _ blue: UInt8,
                                Int(threshold.dominance) - SaberColorModelThresholds.diffuserBlueDominanceOffset)
     let greenDominance = max(SaberColorModelThresholds.diffuserBlueMinimumGreenDominance,
                              relaxedDominance / 4)
-    let hsv = saberHSV(red, green, blue)
     return blueValue >= relaxedBrightness
         && blueValue - redValue >= relaxedDominance
         && blueValue - greenValue >= greenDominance
@@ -310,6 +316,8 @@ struct SaberEvidence {
 /// for a detailed detector profile. Keeping it nil leaves Release and normal
 /// unprofiled detection without per-candidate clock reads.
 final class SaberCandidateStageProfile {
+    var connectedComponentsMs = 0.0
+    var candidateScoringMs = 0.0
     var shapeAndAxisMs = 0.0
     var brightnessContrastColorMs = 0.0
     var endpointAndBoundsMs = 0.0
@@ -817,6 +825,7 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
     var candidates: [SaberCandidate] = []
     var queue: [Int] = []
     for seed in remaining.indices where remaining[seed] != 0 {
+        let traversalStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
         remaining[seed] = 0
         queue.removeAll(keepingCapacity: true)
         queue.append(seed)
@@ -836,11 +845,21 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
                 }
             }
         }
+        if let stageProfile {
+            stageProfile.connectedComponentsMs +=
+                (ProcessInfo.processInfo.systemUptime - traversalStart) * 1000
+        }
         componentObserver?(points.count)
-        guard let candidate = scoredSaberComponent(points, width: width, height: height,
-                                                   componentMask: mask, evidence: evidence,
-                                                   stageProfile: stageProfile,
-                                                   minimumAreaOverride: minimumAreaOverride) else { continue }
+        let scoreStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
+        let candidate = scoredSaberComponent(points, width: width, height: height,
+                                             componentMask: mask, evidence: evidence,
+                                             stageProfile: stageProfile,
+                                             minimumAreaOverride: minimumAreaOverride)
+        if let stageProfile {
+            stageProfile.candidateScoringMs +=
+                (ProcessInfo.processInfo.systemUptime - scoreStart) * 1000
+        }
+        guard let candidate else { continue }
         candidates.append(candidate)
     }
     return candidates.sorted { $0.score > $1.score }

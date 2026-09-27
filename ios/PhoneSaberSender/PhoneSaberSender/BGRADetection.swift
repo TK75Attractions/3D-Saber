@@ -26,6 +26,8 @@ struct SaberColorPipelineDiagnostics: Equatable {
 }
 
 struct SaberDetectionProfile {
+    var bgraScanMs = 0.0
+    var maskGenerationMs = 0.0
     var pixelScanHSVMaskMs = 0.0
     var morphologyMs = 0.0
     var componentAndScoreMs = 0.0
@@ -41,6 +43,10 @@ struct SaberDetectionProfile {
     var brightCorePixelCount = 0
     var lineProposalCount = 0
     var candidateCount = 0
+    var connectedComponentCount = 0
+    var connectedComponentsMs = 0.0
+    var candidateScoringMs = 0.0
+    var candidateGenerationMs = 0.0
 }
 
 private enum BlueCandidateRankingThresholds {
@@ -413,11 +419,13 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 blueMaskPixelCount += 1
                 if isEmitterPixel { blueEmitterMask[index] = 1 }
             }
-            if matchesBlueDiffuserPixel(red, green, blue, threshold: blueThreshold) {
+            if matchesBlueDiffuserPixel(red, green, blue, hsv: hsv,
+                                        threshold: blueThreshold) {
                 blueDiffuserMask[index] = 1
             }
         }
     }
+    let scanEnd = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
     let strictBlueMask = blueMask
     blueMask = supportedBlueDiffuserMask(
         strictMask: strictBlueMask, relaxedMask: blueDiffuserMask,
@@ -427,7 +435,10 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         count + (blueMask[index] != 0 && strictBlueMask[index] == 0 ? 1 : 0)
     }
     if collectProfile {
-        profile.pixelScanHSVMaskMs = (ProcessInfo.processInfo.systemUptime - scanStart) * 1000
+        let maskEnd = ProcessInfo.processInfo.systemUptime
+        profile.bgraScanMs = (scanEnd - scanStart) * 1000
+        profile.maskGenerationMs = (maskEnd - scanEnd) * 1000
+        profile.pixelScanHSVMaskMs = (maskEnd - scanStart) * 1000
         profile.colorPixelCount = redMask.reduce(0) { $0 + Int($1) }
             + blueMask.reduce(0) { $0 + Int($1) }
         profile.brightCorePixelCount = brightCoreMask.reduce(0) { $0 + Int($1) }
@@ -488,14 +499,18 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         let componentObserver: (Int) -> Void = { count in
             morphologyPixelCount += count
             if collectPipelineDiagnostics { connectedComponentCount += 1 }
+            if collectProfile { profile.connectedComponentCount += 1 }
         }
+        let additionalComponentObserver: ((Int) -> Void)? = collectProfile
+            ? { _ in profile.connectedComponentCount += 1 } : nil
         var candidates = saberCandidates(in: cleaned, width: maskWidth, height: maskHeight,
                                          evidence: evidence, stageProfile: candidateStageProfile,
                                          componentObserver: componentObserver)
         let closedCandidates = saberCandidates(
             in: closed,
             width: maskWidth, height: maskHeight, evidence: evidence,
-            stageProfile: candidateStageProfile
+            stageProfile: candidateStageProfile,
+            componentObserver: additionalComponentObserver
         )
         for var candidate in closedCandidates where !candidates.contains(where: {
             candidateAxisDistance($0, candidate) <= 3.0
@@ -514,6 +529,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             let sparseCandidates = saberCandidates(
                 in: rawMask, width: maskWidth, height: maskHeight,
                 evidence: evidence, stageProfile: candidateStageProfile,
+                componentObserver: additionalComponentObserver,
                 minimumAreaOverride: sparseMinimumArea
             )
             for var candidate in sparseCandidates {
@@ -538,7 +554,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 in: closeSaberMask(emitterMask, width: maskWidth, height: maskHeight,
                                    radius: closeRadius),
                 width: maskWidth, height: maskHeight, evidence: evidence,
-                stageProfile: candidateStageProfile
+                stageProfile: candidateStageProfile,
+                componentObserver: additionalComponentObserver
             ) : []
         for var candidate in emitterCandidates where !candidates.contains(where: {
             candidateAxisDistance($0, candidate) <= 3.0
@@ -555,7 +572,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 in: closeSaberMask(coreAndHaloMask, width: maskWidth, height: maskHeight,
                                    radius: closeRadius),
                 width: maskWidth, height: maskHeight, evidence: evidence,
-                stageProfile: candidateStageProfile
+                stageProfile: candidateStageProfile,
+                componentObserver: additionalComponentObserver
             ) : []
         for var candidate in coreCandidates where !candidates.contains(where: {
             candidateAxisDistance($0, candidate) <= 3.0
@@ -567,7 +585,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         if hasAssociatedCore {
             let connectedCore = closeSaberMask(associatedCore, width: maskWidth, height: maskHeight, radius: 4)
             for var candidate in saberCandidates(in: connectedCore, width: maskWidth, height: maskHeight,
-                                                  evidence: evidence, stageProfile: candidateStageProfile) {
+                                                  evidence: evidence, stageProfile: candidateStageProfile,
+                                                  componentObserver: additionalComponentObserver) {
                 let length = hypot(Double(candidate.comparisonEndpoints.1.x - candidate.comparisonEndpoints.0.x),
                                    Double(candidate.comparisonEndpoints.1.y - candidate.comparisonEndpoints.0.y))
                 guard length >= max(12, Double(min(maskWidth, maskHeight)) * 0.10) else { continue }
@@ -788,6 +807,10 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         profile.shapeAndAxisMs = candidateStageProfile?.shapeAndAxisMs ?? 0
         profile.brightnessContrastColorMs = candidateStageProfile?.brightnessContrastColorMs ?? 0
         profile.endpointAndBoundsMs = candidateStageProfile?.endpointAndBoundsMs ?? 0
+        profile.connectedComponentsMs = candidateStageProfile?.connectedComponentsMs ?? 0
+        profile.candidateScoringMs = candidateStageProfile?.candidateScoringMs ?? 0
+        profile.candidateGenerationMs = max(0, profile.componentAndScoreMs
+            - profile.connectedComponentsMs - profile.candidateScoringMs)
         profile.componentTraversalAndProposalOverheadMs = max(
             0, profile.componentAndScoreMs + profile.lineScoreMs
                 - profile.shapeAndAxisMs - profile.brightnessContrastColorMs

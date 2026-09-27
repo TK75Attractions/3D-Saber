@@ -61,12 +61,17 @@ final class FrameProcessor: @unchecked Sendable {
     private var expiryWorkItem: DispatchWorkItem?
     private var lastDimensions: (Int, Int)?
     private var generation = 0
+    // Published under pendingLock so a MainActor result callback never waits
+    // for the detector queue just to reject an obsolete generation.
+    private var generationSnapshot = 0
     private let pendingLock = NSLock()
     private struct PendingFrame {
         let sampleBuffer: CMSampleBuffer
         let sequence: UInt64
         let callbackHostTime: TimeInterval
         let captureHostTime: TimeInterval?
+        let callbackIntervalMs: Double?
+        let callbackWorkMs: Double?
     }
     private var pendingFrame: PendingFrame?
     private var pendingFrameShouldSave = false
@@ -83,11 +88,14 @@ final class FrameProcessor: @unchecked Sendable {
     private var detailedProfilingEnabled = false
     private var freezeDiagnosticsEnabled = false
     private var lastCameraCallbackTime: TimeInterval?
-    private var lastDetectionSuccessTime: [SaberColor: TimeInterval] = [:]
+    private let freezeWindow = FrameFreezeWindow()
 #endif
     private let rawFrameDirectory: () throws -> URL
     private lazy var rawFrameContext = CIContext(options: [.cacheIntermediates: false])
-    var currentGeneration: Int { queue.sync { generation } }
+    var currentGeneration: Int {
+        pendingLock.lock(); defer { pendingLock.unlock() }
+        return generationSnapshot
+    }
     var replacedPendingFrameCountForTesting: Int {
         pendingLock.lock(); defer { pendingLock.unlock() }
         return replacedPendingFrames
@@ -138,9 +146,12 @@ final class FrameProcessor: @unchecked Sendable {
             tracks = [.red: Track(), .blue: Track()]
             lastDimensions = nil
 #if DEBUG
-            lastDetectionSuccessTime = [:]
+            freezeWindow.reset()
 #endif
             generation += 1
+            pendingLock.lock()
+            generationSnapshot = generation
+            pendingLock.unlock()
             return generation
         }
     }
@@ -169,7 +180,7 @@ final class FrameProcessor: @unchecked Sendable {
         freezeDiagnosticsEnabled = enabled
         lastCameraCallbackTime = nil
         pendingLock.unlock()
-        queue.async { [weak self] in self?.lastDetectionSuccessTime = [:] }
+        freezeWindow.reset()
     }
 #endif
 
@@ -184,24 +195,22 @@ final class FrameProcessor: @unchecked Sendable {
         let presentationTime = validPresentationTime(sampleBuffer)
         inputFrameIntervalWindow.record(presentationTime: presentationTime)
         let captureHostTime = convertedCaptureHostTime(sampleBuffer)
-        if freezeDiagnosticsEnabled {
-            if let previous = lastCameraCallbackTime {
-                let gapMs = (callbackHostTime - previous) * 1000
-                if gapMs > 80 {
-                    let pts = presentationTime ?? callbackHostTime
-                    print(String(format: "[FREEZE][iPhone] camera gap=%.1fms frameID=%llu timestamp=%.6f",
-                                 gapMs, nextFrameSequence, pts))
-                }
-            }
-            lastCameraCallbackTime = callbackHostTime
-        }
+        let callbackIntervalMs = freezeDiagnosticsEnabled
+            ? lastCameraCallbackTime.map { (callbackHostTime - $0) * 1000 } : nil
+        if freezeDiagnosticsEnabled { lastCameraCallbackTime = callbackHostTime }
+        let callbackWorkMs: Double? = freezeDiagnosticsEnabled
+            ? max(0, (clock() - callbackHostTime) * 1000) : nil
 #else
         let callbackHostTime: TimeInterval = 0
         let captureHostTime: TimeInterval? = nil
+        let callbackIntervalMs: Double? = nil
+        let callbackWorkMs: Double? = nil
 #endif
         if pendingFrame != nil { replacedPendingFrames += 1 }
         pendingFrame = PendingFrame(sampleBuffer: sampleBuffer, sequence: nextFrameSequence,
-                                    callbackHostTime: callbackHostTime, captureHostTime: captureHostTime)
+                                    callbackHostTime: callbackHostTime, captureHostTime: captureHostTime,
+                                    callbackIntervalMs: callbackIntervalMs,
+                                    callbackWorkMs: callbackWorkMs)
         if rawFrameSaveRequested {
             pendingFrameShouldSave = true
             rawFrameSaveRequested = false
@@ -213,20 +222,32 @@ final class FrameProcessor: @unchecked Sendable {
     }
 
     private func drainLatestFrames() {
-        while true {
-            pendingLock.lock()
-            guard let next = pendingFrame else {
-                workerScheduled = false
-                pendingLock.unlock()
-                return
-            }
-            pendingFrame = nil
-            let shouldSave = pendingFrameShouldSave
-            pendingFrameShouldSave = false
+        pendingLock.lock()
+        guard let next = pendingFrame else {
+            workerScheduled = false
             pendingLock.unlock()
-            process(next.sampleBuffer, saveRequestedRawFrame: shouldSave, sequence: next.sequence,
-                    callbackHostTime: next.callbackHostTime,
-                    captureHostTime: next.captureHostTime)
+            return
+        }
+        pendingFrame = nil
+        let shouldSave = pendingFrameShouldSave
+        pendingFrameShouldSave = false
+        pendingLock.unlock()
+        process(next.sampleBuffer, saveRequestedRawFrame: shouldSave, sequence: next.sequence,
+                callbackHostTime: next.callbackHostTime,
+                captureHostTime: next.captureHostTime,
+                callbackIntervalMs: next.callbackIntervalMs,
+                callbackWorkMs: next.callbackWorkMs)
+
+        // A continuously full mailbox must not monopolize this queue. In
+        // particular, CameraViewModel checks currentGeneration via queue.sync
+        // on MainActor; give that check and reset/configuration calls a turn
+        // between frames while still retaining only the newest pending frame.
+        pendingLock.lock()
+        let hasPendingFrame = pendingFrame != nil
+        if !hasPendingFrame { workerScheduled = false }
+        pendingLock.unlock()
+        if hasPendingFrame {
+            queue.async { [weak self] in self?.drainLatestFrames() }
         }
     }
 
@@ -244,7 +265,8 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.unlock()
         process(sampleBuffer, saveRequestedRawFrame: false, sequence: sequence,
                 callbackHostTime: callbackHostTime,
-                captureHostTime: captureHostTime)
+                captureHostTime: captureHostTime,
+                callbackIntervalMs: nil, callbackWorkMs: nil)
     }
 
     /// The request is consumed by the next submitted camera frame. Normal
@@ -307,12 +329,17 @@ final class FrameProcessor: @unchecked Sendable {
 
     private func process(_ sampleBuffer: CMSampleBuffer, saveRequestedRawFrame: Bool,
                          sequence: UInt64, callbackHostTime: TimeInterval,
-                         captureHostTime: TimeInterval?) {
+                         captureHostTime: TimeInterval?,
+                         callbackIntervalMs: Double?, callbackWorkMs: Double?) {
         let processingStart = clock()
         let accessStart = processingStart
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
-        CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) }
+        guard CVPixelBufferLockBaseAddress(pixelBuffer, .readOnly) == kCVReturnSuccess else { return }
+#if DEBUG
+        let lockStart = clock()
+#endif
+        var isLocked = true
+        defer { if isLocked { CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly) } }
         guard let base = CVPixelBufferGetBaseAddress(pixelBuffer) else { return }
         let width = CVPixelBufferGetWidth(pixelBuffer)
         let height = CVPixelBufferGetHeight(pixelBuffer)
@@ -327,7 +354,9 @@ final class FrameProcessor: @unchecked Sendable {
 #if DEBUG
         let accessMs = (ProcessInfo.processInfo.systemUptime - accessStart) * 1000
         pendingLock.lock()
-        let collectProfile = detailedProfilingEnabled
+        let collectProfile = detailedProfilingEnabled || freezeDiagnosticsEnabled
+        let collectFreeze = freezeDiagnosticsEnabled
+        let sendPerformance = detailedProfilingEnabled
         pendingLock.unlock()
         let analysis = analyzeSabers(baseAddress: bytes, width: width, height: height,
                                      bytesPerRow: bytesPerRow, redThreshold: redThreshold,
@@ -359,13 +388,20 @@ final class FrameProcessor: @unchecked Sendable {
         ]
 #if DEBUG
         let detectionEnd = clock()
-        recordFreezeDetection(
-            frameID: sequence,
-            timestamp: detectionEnd,
-            redDetected: sabers[.red] != nil,
-            blueDetected: sabers[.blue] != nil,
-            processingMilliseconds: max(0, (detectionEnd - processingStart) * 1000)
-        )
+#endif
+        // Detection has finished reading BGRA. Keep the lock only when a
+        // requested recording or raw save still needs the pixel buffer.
+#if DEBUG
+        var lockHoldMs = 0.0
+#endif
+        if debugVideoRecorder == nil && !saveRequestedRawFrame {
+#if DEBUG
+            lockHoldMs = (clock() - lockStart) * 1000
+#endif
+            CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly)
+            isLocked = false
+        }
+#if DEBUG
         pendingLock.lock()
         processedFrames += 1
         let traceReceivedFrames = receivedFrames
@@ -393,40 +429,40 @@ final class FrameProcessor: @unchecked Sendable {
                 analysis: analysis
             )
         }
+        if saveRequestedRawFrame { saveRawFrame(pixelBuffer) }
+        if isLocked {
 #if DEBUG
-        if let profile = analysis.profile {
+            lockHoldMs = (clock() - lockStart) * 1000
+#endif
+            CVPixelBufferUnlockBaseAddress(pixelBuffer, .readOnly)
+            isLocked = false
+        }
+#if DEBUG
+        if sendPerformance, let profile = analysis.profile {
             onPerformance?(FramePerformanceSample(pixelBufferAccessMs: accessMs, detector: profile))
         }
-#endif
-        if saveRequestedRawFrame { saveRawFrame(pixelBuffer) }
-    }
-
-#if DEBUG
-    private func recordFreezeDetection(
-        frameID: UInt64,
-        timestamp: TimeInterval,
-        redDetected: Bool,
-        blueDetected: Bool,
-        processingMilliseconds: Double
-    ) {
-        guard freezeDiagnosticsEnabled else { return }
-        for (color, detected) in [(SaberColor.red, redDetected), (.blue, blueDetected)] {
-            guard detected else { continue }
-            if let previous = lastDetectionSuccessTime[color] {
-                let gapMs = (timestamp - previous) * 1000
-                if gapMs > 100 {
-                    let label = color == .red ? "RED" : "BLUE"
-                    print(String(format: "[FREEZE][iPhone][%@] detection gap=%.1fms frameID=%llu timestamp=%.6f redDetected=%@ blueDetected=%@ processing=%.1fms",
-                                 label, gapMs, frameID, timestamp,
-                                 redDetected ? "true" : "false",
-                                 blueDetected ? "true" : "false",
-                                 processingMilliseconds))
+        if collectFreeze, let profile = analysis.profile {
+            let completed = clock()
+            freezeWindow.record(
+                detected: !sabers.isEmpty, callbackIntervalMs: callbackIntervalMs,
+                callbackWorkMs: callbackWorkMs,
+                queueWaitMs: max(0, (processingStart - callbackHostTime) * 1000),
+                pixelLockMs: lockHoldMs,
+                profile: profile,
+                detectionMs: (detectionEnd - processingStart) * 1000,
+                callbackToCompletionMs: (completed - callbackHostTime) * 1000,
+                replacedFrames: traceReplacedFrames
+            )
+            if freezeWindow.shouldProbeMainQueue(at: completed) {
+                DispatchQueue.main.async { [weak self] in
+                    self?.freezeWindow.recordMainQueueLatency(
+                        (HostMonotonicClock.now() - completed) * 1000
+                    )
                 }
             }
-            lastDetectionSuccessTime[color] = timestamp
         }
-    }
 #endif
+    }
 
     private func saveRawFrame(_ pixelBuffer: CVPixelBuffer) {
         do {
@@ -585,6 +621,114 @@ final class FrameProcessor: @unchecked Sendable {
 }
 
 #if DEBUG
+/// Bounded, five-second aggregate. Main queue pings are sampled once per
+/// report, so diagnostics cannot create a per-frame MainActor backlog.
+private final class FrameFreezeWindow: @unchecked Sendable {
+    private let lock = NSLock()
+    private var groups: [Bool: [String: [Double]]] = [:]
+    private var mainQueueLatency: [Double] = []
+    private var reportStartedAt = 0.0
+    private var probePending = false
+    private var previousReplacedFrames = 0
+    private var frameCount = 0
+
+    func reset() {
+        lock.lock(); defer { lock.unlock() }
+        groups = [:]
+        mainQueueLatency = []
+        reportStartedAt = 0
+        probePending = false
+        previousReplacedFrames = 0
+        frameCount = 0
+    }
+
+    func record(detected: Bool, callbackIntervalMs: Double?, callbackWorkMs: Double?,
+                queueWaitMs: Double, pixelLockMs: Double, profile: SaberDetectionProfile,
+                detectionMs: Double, callbackToCompletionMs: Double,
+                replacedFrames: Int) {
+        lock.lock(); defer { lock.unlock() }
+        if reportStartedAt == 0 { reportStartedAt = HostMonotonicClock.now() }
+        frameCount += 1
+        func add(_ name: String, _ value: Double?) {
+            guard let value, value.isFinite else { return }
+            groups[detected, default: [:]][name, default: []].append(value)
+        }
+        add("cameraInterval", callbackIntervalMs)
+        add("cameraCallbackWork", callbackWorkMs)
+        add("queueWait", queueWaitMs)
+        add("pixelLock", pixelLockMs)
+        add("bgraScan", profile.bgraScanMs)
+        add("maskGeneration", profile.maskGenerationMs)
+        add("morphology", profile.morphologyMs)
+        add("components", profile.connectedComponentsMs)
+        add("candidateGeneration", profile.candidateGenerationMs)
+        add("coreLineProposal", profile.lineProposalMs)
+        add("scoreRanking", profile.candidateScoringMs + profile.lineScoreMs + profile.selectionMs)
+        add("endpoint", profile.endpointAndBoundsMs)
+        add("detection", detectionMs)
+        add("callbackToProcessorDone", callbackToCompletionMs)
+        add("candidateCount", Double(profile.candidateCount))
+        add("componentCount", Double(profile.connectedComponentCount))
+        add("coreLineCount", Double(profile.lineProposalCount))
+        add("mailboxReplaced", Double(max(0, replacedFrames - previousReplacedFrames)))
+        previousReplacedFrames = replacedFrames
+
+        if let callbackIntervalMs, callbackIntervalMs > 100 {
+            print(String(format: "[FREEZE_DIAG][CAMERA] callbackGap=%.1fms", callbackIntervalMs))
+        }
+        if queueWaitMs > 100 {
+            print(String(format: "[FREEZE_DIAG][QUEUE] wait=%.1fms", queueWaitMs))
+        }
+        if detectionMs > 100 {
+            print(String(format: "[FREEZE_DIAG][DETECTION] duration=%.1fms", detectionMs))
+        }
+    }
+
+    func recordMainQueueLatency(_ value: Double) {
+        lock.lock(); defer { lock.unlock() }
+        if value.isFinite {
+            mainQueueLatency.append(value)
+            if value > 100 {
+                print(String(format: "[FREEZE_DIAG][MAIN] delay=%.1fms", value))
+            }
+        }
+        probePending = false
+    }
+
+    func shouldProbeMainQueue(at now: TimeInterval) -> Bool {
+        lock.lock()
+        guard reportStartedAt > 0, now - reportStartedAt >= 5 else {
+            lock.unlock()
+            return false
+        }
+        let snapshot = groups
+        let main = mainQueueLatency
+        let frames = frameCount
+        frameCount = 0
+        groups = [:]
+        mainQueueLatency = []
+        reportStartedAt = now
+        let shouldProbe = !probePending
+        if shouldProbe { probePending = true }
+        lock.unlock()
+
+        func stats(_ values: [Double]?) -> String {
+            guard let values, !values.isEmpty else { return "-" }
+            let sorted = values.sorted()
+            let middle = sorted.count / 2
+            let median = sorted.count.isMultiple(of: 2)
+                ? (sorted[middle - 1] + sorted[middle]) / 2 : sorted[middle]
+            let p95 = sorted[max(0, Int(ceil(Double(sorted.count) * 0.95)) - 1)]
+            return String(format: "%.2f/%.2f/%.2f", median, p95, sorted.last ?? 0)
+        }
+        let all = snapshot.values.reduce(into: [String: [Double]]()) { result, group in
+            for (key, values) in group { result[key, default: []].append(contentsOf: values) }
+        }
+        print("[FREEZE_DIAG][SUMMARY] cameraGap p50/p95/max=\(stats(all["cameraInterval"]))ms queueWait p50/p95/max=\(stats(all["queueWait"]))ms detection p50/p95/max=\(stats(all["detection"]))ms mainDelay p50/p95/max=\(stats(main))ms frames=\(frames)")
+        return shouldProbe
+    }
+}
+
 struct FramePerformanceSample {
     let pixelBufferAccessMs: Double
     let detector: SaberDetectionProfile

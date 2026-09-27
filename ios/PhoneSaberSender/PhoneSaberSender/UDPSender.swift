@@ -294,8 +294,8 @@ final class UDPSender {
                 if gapMs > 100 {
                     let color = port == 5005 ? "RED" : port == 5006 ? "BLUE" : "PORT\(port)"
                     let queueWaitMs = max(0, sendStartedAt - request.enqueuedAt) * 1000
-                    print(String(format: "[FREEZE][UDP SEND][%@] gap=%.1fms sendAt=%.6f queueWait=%.1fms replaced=%d",
-                                 color, gapMs, sendStartedAt, queueWaitMs, supersededPendingCount))
+                    print(String(format: "[FREEZE_DIAG][UDP] sendGap=%.1fms color=%@ queueWait=%.1fms replaced=%d",
+                                 gapMs, color, queueWaitMs, supersededPendingCount))
                 }
             }
             lastSendStartByPort[port] = sendStartedAt

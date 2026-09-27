@@ -691,6 +691,37 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(results[0].first?.color, .blue)
     }
 
+    func testContinuouslyFullMailboxYieldsToGenerationRead() {
+        let processor = FrameProcessor(expiryScheduler: nil)
+        let frame = sampleBuffer(width: 16, height: 16) { _, _ in }
+        let started = expectation(description: "processing started")
+        let generationRead = expectation(description: "generation read while mailbox stays full")
+        let queuedControl = expectation(description: "queued control runs while mailbox stays full")
+        let feedLock = NSLock()
+        var keepFeeding = true
+        var frameCount = 0
+        processor.onResult = { _, _, _, _, _, _ in
+            frameCount += 1
+            if frameCount == 1 { started.fulfill() }
+            feedLock.lock()
+            let shouldFeed = keepFeeding
+            feedLock.unlock()
+            if shouldFeed { processor.submit(frame) }
+        }
+        processor.submit(frame)
+        wait(for: [started], timeout: 2)
+        DispatchQueue.global(qos: .userInitiated).async {
+            _ = processor.currentGeneration
+            generationRead.fulfill()
+        }
+        processor.queue.async { queuedControl.fulfill() }
+        let result = XCTWaiter.wait(for: [generationRead, queuedControl], timeout: 0.5)
+        feedLock.lock(); keepFeeding = false; feedLock.unlock()
+        processor.queue.sync { processor.onResult = nil }
+        XCTAssertEqual(result, .completed,
+                       "a saturated detector must not block generation checks or queued control")
+    }
+
     func testFrameTraceUsesOnlyNonNegativeHostClockDurations() {
         let valid = FrameTrace(sequence: 1, captureHostTime: 10, callbackHostTime: 10.075,
                                processingStart: 10.080, detectionEnd: 10.091,
