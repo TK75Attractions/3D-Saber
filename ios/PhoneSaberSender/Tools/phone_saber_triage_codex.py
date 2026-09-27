@@ -207,7 +207,7 @@ def dry_run_text(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES) -> str:
     lines.append("Compact metadata files:")
     lines.extend(f"  {name}" for name in files if not name.endswith(".png"))
     lines.extend([
-        "Prompt: inline A–G analysis instructions; bundle prompt.md is not attached",
+        "Prompt: inline A–G instructions sent through stdin; bundle prompt.md is not attached",
         "Excluded: video, full metadata.json, unselected PNGs",
     ])
     return "\n".join(lines)
@@ -289,13 +289,13 @@ def analyze_bundle(
         ]
         for image_path in selected_images:
             command.extend(["--image", str(image_path)])
-        command.append(prompt)
+        command.append("-")
 
         try:
             completed = subprocess.run(
                 command,
                 cwd=input_root,
-                stdin=subprocess.DEVNULL,
+                input=prompt,
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 text=True,

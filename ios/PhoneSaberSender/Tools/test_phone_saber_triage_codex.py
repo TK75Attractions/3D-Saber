@@ -22,6 +22,7 @@ from phone_saber_triage_codex import (
     analyze_bundle,
     dry_run_text,
     input_plan,
+    _codex_prompt,
 )
 from phone_saber_triage_protocol import BundleError
 from phone_saber_triage_protocol import CONTENT_TYPE, pack_bundle
@@ -65,7 +66,10 @@ class CodexTriageTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             bundle = root / "bundle"
-            write_codex_bundle(bundle)
+            write_codex_bundle(
+                bundle, image_count=4,
+                failure_types=("dropout", "endpoint_jump", "manual_capture", "candidate_zero"),
+            )
             spy = root / "codex-spy.json"
             codex = fake_codex(root, spy, analysis=EMPTY_ANALYSIS)
 
@@ -73,10 +77,18 @@ class CodexTriageTests(unittest.TestCase):
 
             self.assertEqual(result["status"], "completed")
             invoked = json.loads(spy.read_text(encoding="utf-8"))
-            self.assertEqual(len(invoked["images"]), 1)
-            self.assertTrue(invoked["images"][0].endswith("/images/image_01.png"))
+            self.assertEqual(len(invoked["images"]), 4)
+            self.assertEqual(invoked["image_flag_count"], 4)
+            self.assertTrue(all(path.endswith(f"/images/image_{index:02d}.png")
+                                for index, path in enumerate(invoked["images"], start=1)))
+            self.assertEqual(invoked["prompt"], _codex_prompt("sample_session", 4))
+            self.assertIsNone(invoked["positional_prompt"])
+            self.assertTrue(invoked["stdin_sentinel"])
             self.assertEqual(set(invoked["files"]), {
-                "summary.json", "images/image_01.png", "frames/frame_100_1.json"
+                "summary.json",
+                "images/image_01.png", "images/image_02.png", "images/image_03.png", "images/image_04.png",
+                "frames/frame_100_1.json", "frames/frame_101_2.json",
+                "frames/frame_102_3.json", "frames/frame_103_4.json",
             })
             self.assertEqual(invoked["sandbox"], "read-only")
             self.assertTrue(invoked["ephemeral"])
@@ -84,7 +96,7 @@ class CodexTriageTests(unittest.TestCase):
             self.assertIn("A = capture/data artifact", invoked["prompt"])
             self.assertIn("Do not edit, create, or propose applying production code", invoked["prompt"])
             report = json.loads((bundle / "analysis_report.json").read_text(encoding="utf-8"))
-            self.assertEqual(report["input"]["imageCount"], 1)
+            self.assertEqual(report["input"]["imageCount"], 4)
             self.assertFalse(report["input"]["videoIncluded"])
             self.assertFalse(report["input"]["fullMetadataIncluded"])
             self.assertTrue((bundle / "analysis_report.md").is_file())
@@ -253,6 +265,7 @@ def fake_codex(root: Path, spy_path: Path, *, analysis: dict | None = None,
     script = f"""#!{sys.executable}
 import json, pathlib, sys
 args = sys.argv[1:]
+prompt = sys.stdin.read()
 if {fail!r}:
     print('simulated Codex failure', file=sys.stderr)
     raise SystemExit(9)
@@ -261,11 +274,14 @@ input_root = pathlib.Path(args[args.index('--cd') + 1])
 response_path = pathlib.Path(args[args.index('--output-last-message') + 1])
 spy = {{
     'images': image_paths,
+    'image_flag_count': args.count('--image'),
     'files': sorted(path.relative_to(input_root).as_posix() for path in input_root.rglob('*') if path.is_file()),
     'sandbox': args[args.index('--sandbox') + 1],
     'ephemeral': '--ephemeral' in args,
     'skip_git_repo_check': '--skip-git-repo-check' in args,
-    'prompt': args[-1],
+    'prompt': prompt,
+    'positional_prompt': args[-1] if args and args[-1] != '-' else None,
+    'stdin_sentinel': bool(args and args[-1] == '-'),
 }}
 pathlib.Path({spy_literal}).write_text(json.dumps(spy), encoding='utf-8')
 response_path.write_text({response_json!r}, encoding='utf-8')
@@ -275,12 +291,18 @@ response_path.write_text({response_json!r}, encoding='utf-8')
     return executable
 
 
-def write_codex_bundle(bundle: Path, *, image_count: int = 1) -> bytes:
+def write_codex_bundle(bundle: Path, *, image_count: int = 1,
+                       failure_types: tuple[str, ...] | None = None) -> bytes:
     write_bundle(bundle, image_count=image_count)
     summary_path = bundle / "summary.json"
     summary = json.loads(summary_path.read_text(encoding="utf-8"))
     summary["summaryScope"] = EXPECTED_SUMMARY_SCOPE
     summary["retainedIncidentContextFrames"] = 138
+    if failure_types is not None:
+        if len(failure_types) != image_count:
+            raise ValueError("failure_types must match image_count")
+        for image, failure_type in zip(summary["images"], failure_types):
+            image["failureType"] = failure_type
     summary_path.write_text(json.dumps(summary), encoding="utf-8")
     envelope = bundle.with_suffix(".psbt")
     pack_bundle(bundle, envelope)
