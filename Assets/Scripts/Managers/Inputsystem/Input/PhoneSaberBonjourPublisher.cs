@@ -35,13 +35,21 @@ public sealed class PhoneSaberBonjourPublisher : IDisposable
         }
     }
 
+    public bool IsPublishing
+    {
+        get
+        {
+            lock (Gate) return ReferenceEquals(owner, this) && ProcessIsRunning(process);
+        }
+    }
+
     public bool Start(int port)
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         lock (Gate)
         {
             if (disposed) return false;
-            if (ProcessIsRunning(process)) return true;
+            if (ProcessIsRunning(process)) return ReferenceEquals(owner, this);
 
             StopProcessLocked();
             try
@@ -79,6 +87,15 @@ public sealed class PhoneSaberBonjourPublisher : IDisposable
 #else
         return false;
 #endif
+    }
+
+    // receiver が失われた時は一時停止し、backoff 後に bind が回復したら再公開できる。
+    public void Stop()
+    {
+        lock (Gate)
+        {
+            if (ReferenceEquals(owner, this)) StopProcessLocked();
+        }
     }
 
     public void Dispose()

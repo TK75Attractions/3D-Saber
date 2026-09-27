@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 using System.Reflection;
@@ -6,6 +7,7 @@ using System.Text;
 using System.Threading;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
 public class PhoneSaberReliabilityPlayTests
@@ -64,6 +66,34 @@ public class PhoneSaberReliabilityPlayTests
     }
 
     [UnityTest]
+    public IEnumerator ProductionPorts5005And5006_BothBindBeforeBonjourStarts()
+    {
+        yield return RestartOnProductionPorts();
+
+        Assert.IsTrue(input.ReceiverAlive, "UDP 5005 RED receiverがbind済み");
+        Assert.IsTrue(input.ReceiverAlive2, "UDP 5006 BLUE receiverがbind済み");
+        AssertBonjourMatchesReceiverState(true);
+    }
+
+    [UnityTest]
+    public IEnumerator RedPort5005Conflict_SuppressesBonjourUntilBindRecovers()
+    {
+        yield return VerifyProductionPortConflict(5005);
+    }
+
+    [UnityTest]
+    public IEnumerator BluePort5006Conflict_SuppressesBonjourUntilBindRecovers()
+    {
+        yield return VerifyProductionPortConflict(5006);
+    }
+
+    [UnityTest]
+    public IEnumerator BothProductionPortsConflict_SuppressBonjourUntilBothRecover()
+    {
+        yield return VerifyProductionPortConflict(5005, 5006);
+    }
+
+    [UnityTest]
     public IEnumerator FourThenTwoElements_InvalidatesOldBladeEndpoints()
     {
         var saberObject = new GameObject("EndpointValiditySaber");
@@ -96,11 +126,18 @@ public class PhoneSaberReliabilityPlayTests
         int initialRestartCount = input.ReceiverRestartCount;
         CloseReceiverSocket("udpClient1");
 
+        yield return WaitUntil(() => !input.ReceiverAlive, 1.0);
+        Assert.IsFalse(input.ReceiverAlive, "異常終了後、rebind前はRED receiverを利用可能扱いしない");
+        Assert.IsTrue(input.ReceiverAlive2, "RED receiver loss中もBLUE receiverは維持される");
+        AssertBonjourMatchesReceiverState(false);
+
         yield return WaitUntil(() => input.ReceiverRestartCount > initialRestartCount &&
-                                     input.ReceiverAlive, 2.0);
+                                     input.ReceiverAlive &&
+                                     (!PhoneSaberBonjourPublisher.IsSupported || input.BonjourPublisherRunning), 3.0);
         Assert.Greater(input.ReceiverRestartCount, initialRestartCount);
         Assert.IsTrue(input.ReceiverAlive);
         Assert.That(input.LastReceiverExitReason, Does.Contain("Exception"));
+        AssertBonjourMatchesReceiverState(true);
 
         Send(redPort, "0,0,1,0");
         yield return WaitUntil(() => input.ReceivedPacketCount == 1, 1.0);
@@ -122,6 +159,8 @@ public class PhoneSaberReliabilityPlayTests
         Assert.AreEqual(blueRestarts, input.ReceiverRestartCount2);
         Assert.AreEqual("intentional shutdown", input.LastReceiverExitReason);
         Assert.AreEqual("intentional shutdown", input.LastReceiverExitReason2);
+        Assert.IsFalse(input.BonjourPublicationEligible);
+        Assert.IsFalse(input.BonjourPublisherRunning);
     }
 
     [UnityTest]
@@ -164,6 +203,38 @@ public class PhoneSaberReliabilityPlayTests
         Assert.IsFalse(oldBlue.IsAlive, "再Enable後も旧BLUE threadは終了済み");
         Assert.IsTrue(newRed.IsAlive);
         Assert.IsTrue(newBlue.IsAlive);
+        AssertBonjourMatchesReceiverState(true);
+    }
+
+    [UnityTest]
+    public IEnumerator PersistentReceiver_RemainsBoundAcrossSceneUnload()
+    {
+        var departureScene = SceneManager.CreateScene("PhoneSaberDepartureScene");
+        SceneManager.MoveGameObjectToScene(inputObject, departureScene);
+        Object.DontDestroyOnLoad(inputObject);
+        var arrivalScene = SceneManager.CreateScene("PhoneSaberArrivalScene");
+
+        yield return SceneManager.UnloadSceneAsync(departureScene);
+        Assert.IsTrue(input != null, "永続receiverは遷移元Sceneのunloadで破棄されない");
+        Assert.IsTrue(input.ReceiverAlive);
+        Assert.IsTrue(input.ReceiverAlive2);
+        AssertBonjourMatchesReceiverState(true);
+
+        yield return SceneManager.UnloadSceneAsync(arrivalScene);
+    }
+
+    [UnityTest]
+    public IEnumerator SceneOwnedReceiver_UnloadStopsBonjour()
+    {
+        var scene = SceneManager.CreateScene("PhoneSaberOwnedReceiverScene");
+        SceneManager.MoveGameObjectToScene(inputObject, scene);
+        var destroyedInput = input;
+
+        yield return SceneManager.UnloadSceneAsync(scene);
+        Assert.IsTrue(destroyedInput == null, "Scene所有のreceiverはScene unload時に破棄される");
+        Assert.IsFalse(destroyedInput.BonjourPublicationEligible);
+        Assert.IsFalse(destroyedInput.BonjourPublisherRunning);
+        inputObject = null;
     }
 
     [UnityTest]
@@ -190,6 +261,103 @@ public class PhoneSaberReliabilityPlayTests
         var socket = field.GetValue(input) as UdpClient;
         Assert.NotNull(socket, $"{fieldName}がbind済み");
         socket.Close();
+    }
+
+    IEnumerator RestartOnProductionPorts()
+    {
+        StopInputAndSelectProductionPorts();
+        EnsureProductionPortsAvailable();
+        inputObject.SetActive(true);
+        yield return WaitUntil(() => input.BonjourPublicationEligible &&
+                                     (!PhoneSaberBonjourPublisher.IsSupported || input.BonjourPublisherRunning), 3.0);
+    }
+
+    IEnumerator VerifyProductionPortConflict(params int[] blockedPorts)
+    {
+        StopInputAndSelectProductionPorts();
+        var blockers = new List<UdpClient>();
+        int initialRedRestarts = input.ReceiverRestartCount;
+        int initialBlueRestarts = input.ReceiverRestartCount2;
+        try
+        {
+            foreach (int blockedPort in blockedPorts)
+                blockers.Add(BindTestBlocker(blockedPort));
+
+            inputObject.SetActive(true);
+            bool redBlocked = System.Array.IndexOf(blockedPorts, 5005) >= 0;
+            bool blueBlocked = System.Array.IndexOf(blockedPorts, 5006) >= 0;
+            yield return WaitUntil(() => (redBlocked
+                    ? input.ReceiverRestartCount > initialRedRestarts
+                    : input.ReceiverAlive) &&
+                (blueBlocked ? input.ReceiverRestartCount2 > initialBlueRestarts : input.ReceiverAlive2), 3.0);
+
+            Assert.AreEqual(!redBlocked, input.ReceiverAlive, "RED receiverのbind状態");
+            Assert.AreEqual(!blueBlocked, input.ReceiverAlive2, "BLUE receiverのbind状態");
+            AssertBonjourMatchesReceiverState(false);
+
+            foreach (var blocker in blockers) blocker.Close();
+            blockers.Clear();
+
+            yield return WaitUntil(() => input.BonjourPublicationEligible &&
+                                         (!PhoneSaberBonjourPublisher.IsSupported || input.BonjourPublisherRunning), 5.0);
+            Assert.IsTrue(input.ReceiverAlive, "競合解消後にRED receiverがbackoff再試行で回復する");
+            Assert.IsTrue(input.ReceiverAlive2, "競合解消後にBLUE receiverがbackoff再試行で回復する");
+            AssertBonjourMatchesReceiverState(true);
+        }
+        finally
+        {
+            foreach (var blocker in blockers) blocker.Close();
+        }
+    }
+
+    void StopInputAndSelectProductionPorts()
+    {
+        inputObject.SetActive(false);
+        input.port = 5005;
+        input.port2 = 5006;
+    }
+
+    static UdpClient BindTestBlocker(int port)
+    {
+        try
+        {
+            return new UdpClient(port);
+        }
+        catch (SocketException exception)
+        {
+            Assert.Ignore($"UDP {port} is already in use, so the bind-conflict test cannot reserve it: {exception.Message}");
+            return null;
+        }
+    }
+
+    static void EnsureProductionPortsAvailable()
+    {
+        var sockets = new List<UdpClient>();
+        try
+        {
+            sockets.Add(new UdpClient(5005));
+            sockets.Add(new UdpClient(5006));
+        }
+        catch (SocketException exception)
+        {
+            Assert.Ignore($"UDP 5005/5006 must be free for the production bind test: {exception.Message}");
+        }
+        finally
+        {
+            foreach (var socket in sockets) socket.Close();
+        }
+    }
+
+    void AssertBonjourMatchesReceiverState(bool expected)
+    {
+        Assert.AreEqual(expected, input.BonjourPublicationEligible,
+            "Bonjour公開資格はRED/BLUE両receiverの正常bind時だけ成立する");
+        if (PhoneSaberBonjourPublisher.IsSupported)
+            Assert.AreEqual(expected, input.BonjourPublisherRunning,
+                "macOSでは両receiverの正常bind状態とBonjour process状態が一致する");
+        else
+            Assert.IsFalse(input.BonjourPublisherRunning,
+                "macOS以外ではBonjourを公開しない");
     }
 
     Thread GetReceiverThread(string fieldName)

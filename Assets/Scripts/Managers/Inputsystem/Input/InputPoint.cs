@@ -89,6 +89,15 @@ public class InputPoint : MonoBehaviour
     // 色ごとのreceiver診断。一方の異常は反対色の状態に影響させない。
     public bool ReceiverAlive => receiverAlive1;
     public bool ReceiverAlive2 => receiverAlive2;
+    public bool BonjourPublicationEligible => !networkShutdown && receiverAlive1 && receiverAlive2;
+    public bool BonjourPublisherRunning
+    {
+        get
+        {
+            lock (networkLifecycleLock)
+                return bonjourPublisher != null && bonjourPublisher.IsPublishing;
+        }
+    }
     public int ReceiverRestartCount => Volatile.Read(ref receiverRestartCount1);
     public int ReceiverRestartCount2 => Volatile.Read(ref receiverRestartCount2);
     public string LastReceiverExitReason => lastReceiverExitReason1;
@@ -278,8 +287,12 @@ public class InputPoint : MonoBehaviour
             receiveThread2 = null;
             receiverStopSignal1?.Dispose();
             receiverStopSignal2?.Dispose();
+            bonjourPublisher?.Dispose();
+            bonjourPublisher = new PhoneSaberBonjourPublisher();
 
             networkShutdown = false;
+            receiverAlive1 = false;
+            receiverAlive2 = false;
             receiverStopSignal1 = new ManualResetEvent(false);
             receiverStopSignal2 = new ManualResetEvent(false);
             receiveThread1 = new Thread(() => ReceiverSupervisor(false));
@@ -291,9 +304,6 @@ public class InputPoint : MonoBehaviour
             receiveThread1.Start();
             receiveThread2.Start();
         }
-
-        bonjourPublisher = new PhoneSaberBonjourPublisher();
-        bonjourPublisher.Start(port);
     }
 
     void ReceiverSupervisor(bool secondStick)
@@ -690,14 +700,23 @@ public class InputPoint : MonoBehaviour
 
     void StopNetworkServices()
     {
-        bonjourPublisher?.Dispose();
-        bonjourPublisher = null;
         Thread thread1;
         Thread thread2;
         lock (networkLifecycleLock)
         {
-            if (networkShutdown && receiveThread1 == null && receiveThread2 == null) return;
+            if (networkShutdown && receiveThread1 == null && receiveThread2 == null)
+            {
+                bonjourPublisher?.Dispose();
+                bonjourPublisher = null;
+                receiverAlive1 = false;
+                receiverAlive2 = false;
+                return;
+            }
             networkShutdown = true;
+            receiverAlive1 = false;
+            receiverAlive2 = false;
+            bonjourPublisher?.Dispose();
+            bonjourPublisher = null;
             RecordReceiverExit(false, "intentional shutdown", true);
             RecordReceiverExit(true, "intentional shutdown", true);
             receiverStopSignal1?.Set();
@@ -752,8 +771,16 @@ public class InputPoint : MonoBehaviour
 
     void SetReceiverAlive(bool secondStick, bool alive)
     {
-        if (secondStick) receiverAlive2 = alive;
-        else receiverAlive1 = alive;
+        lock (networkLifecycleLock)
+        {
+            if (secondStick) receiverAlive2 = alive;
+            else receiverAlive1 = alive;
+
+            if (networkShutdown || !receiverAlive1 || !receiverAlive2)
+                bonjourPublisher?.Stop();
+            else
+                bonjourPublisher?.Start(port);
+        }
     }
 
     void RecordReceiverExit(bool secondStick, string reason, bool intentional)
