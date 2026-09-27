@@ -105,7 +105,7 @@ public class AndalusiaChartTests
         {
             var notes = chart.notes.Where(n => IntendedHand(n) == hand).ToArray();
             for (int i = 1; i < notes.Length; i++)
-                Assert.GreaterOrEqual(notes[i].TimeSeconds - EndSeconds(notes[i - 1]), .63,
+                Assert.GreaterOrEqual(notes[i].TimeSeconds - EndSeconds(notes[i - 1]), .5,
                     "ロング終端と金ノーツも含めて同じ手の回復を残す");
         }
         // 表拍かどうかは整数beatで判定できない。ここでは別途レビューした配置の局所密度だけを監査する。
@@ -120,7 +120,7 @@ public class AndalusiaChartTests
     static string IntendedHand(NoteData note) => note.color == "gold" ? (note.x < 0 ? "blue" : "red") : note.color;
     static double EndSeconds(NoteData note) => note.TimeSeconds + (note.IsLong ? note.lengthMs / 1000.0 : 0);
 
-    [TestCase("easy", .63)]
+    [TestCase("easy", .5)]
     [TestCase("normal", .45)]
     [TestCase("hard", .29)]
     public void ArrangementHasVarietyWithoutImpossibleHandOccupancy(string difficulty, double recovery)

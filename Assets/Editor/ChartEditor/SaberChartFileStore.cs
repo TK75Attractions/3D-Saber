@@ -11,6 +11,10 @@ namespace Saber.ChartEditor
     internal static class SaberChartFileStore
     {
         private static readonly string[] AudioNames = { "audio.ogg", "audio.wav", "audio.mp3" };
+        // Keep transaction I/O behind replaceable delegates so rollback tests can inject
+        // portable failures instead of relying on OS-specific open-file locking behavior.
+        private static Action<string, string> moveFileOperation = File.Move;
+        private static Action<string, string, string> replaceFileOperation = File.Replace;
 
         public static string SongsRootPath =>
             Path.GetFullPath(Path.Combine(Application.dataPath, "StreamingAssets", "Songs"));
@@ -120,8 +124,8 @@ namespace Saber.ChartEditor
                 foreach (var file in files)
                 {
                     // .meta は差し替えず、既存アセットの GUID を維持する。
-                    if (file.existed) File.Replace(file.incoming, file.destination, file.previous);
-                    else File.Move(file.incoming, file.destination);
+                    if (file.existed) replaceFileOperation(file.incoming, file.destination, file.previous);
+                    else moveFileOperation(file.incoming, file.destination);
                     completed++;
                 }
             }
@@ -133,7 +137,7 @@ namespace Saber.ChartEditor
                     var file = files[index];
                     try
                     {
-                        if (file.existed) File.Replace(file.previous, file.destination, null);
+                        if (file.existed) replaceFileOperation(file.previous, file.destination, null);
                         else File.Delete(file.destination);
                     }
                     catch (Exception restoreError) { errors.Add(restoreError); }
@@ -325,7 +329,7 @@ namespace Saber.ChartEditor
                         if (!isDestination) MoveAudioAside(oldPath + ".meta", temporary, movedFiles);
                     }
                 }
-                File.Move(incoming, destination);
+                moveFileOperation(incoming, destination);
                 committed = true;
             }
             catch (Exception importError)
@@ -333,7 +337,7 @@ namespace Saber.ChartEditor
                 var errors = new List<Exception> { importError };
                 for (int index = movedFiles.Count - 1; index >= 0; index--)
                 {
-                    try { File.Move(movedFiles[index].backup, movedFiles[index].original); }
+                    try { moveFileOperation(movedFiles[index].backup, movedFiles[index].original); }
                     catch (Exception restoreError) { errors.Add(restoreError); }
                 }
                 if (errors.Count > 1)
@@ -388,7 +392,7 @@ namespace Saber.ChartEditor
         {
             if (!File.Exists(path)) return;
             string backup = Path.Combine(temporary, Path.GetFileName(path));
-            File.Move(path, backup);
+            moveFileOperation(path, backup);
             movedFiles.Add((path, backup));
         }
 

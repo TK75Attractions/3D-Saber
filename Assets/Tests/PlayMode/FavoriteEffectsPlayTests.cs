@@ -450,8 +450,10 @@ public class FavoriteEffectsPlayTests
         var curtain = floor.GetComponentInChildren<VioletCurtainStage>(); Assert.NotNull(curtain);
         var curtainMesh = curtain.GetComponentInChildren<MeshFilter>().sharedMesh;
         var rest = curtainMesh.vertices;
-        timeline = new StagePerformanceTimeline { sections = new[] {
-            new StagePerformanceTimeline.Section { startSeconds = 0, endSeconds = 20, intensity = 1 } } };
+        // StageReactiveEffects retains the timeline instance passed during LoadGame.
+        // Replace its sections in place so floor, curtain, and effects all read the same test interval.
+        timeline.sections = new[] {
+            new StagePerformanceTimeline.Section { startSeconds = 0, endSeconds = 20, intensity = 1 } };
         var simultaneous = new ChartData { bpm = 120, notes = new List<NoteData>() };
         for (int lane = 0; lane < 4; lane++)
         {

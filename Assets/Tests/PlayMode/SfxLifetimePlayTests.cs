@@ -42,51 +42,51 @@ public class SfxLifetimePlayTests
     }
 
     [UnityTest]
-    public IEnumerator RepeatedSongNavigationReusesShotResourcesAndReleasesThem()
+    public IEnumerator RepeatedDiscSelectionReusesTargetsAndReleasesTheScene()
     {
         yield return SceneManager.LoadSceneAsync("SongSelect");
-        SongSelectSlashNav nav = null;
+        SongSelectController controller = null;
+        SongSelectSkin skin = null;
         double deadline = Time.realtimeSinceStartupAsDouble + 30;
-        while (true)
+        while (Time.realtimeSinceStartupAsDouble < deadline)
         {
-            nav = Object.FindFirstObjectByType<SongSelectSlashNav>();
-            if (nav != null && nav.DownNote != null) break;
-            if (Time.realtimeSinceStartupAsDouble >= deadline) break;
+            controller = Object.FindFirstObjectByType<SongSelectController>();
+            skin = Object.FindFirstObjectByType<SongSelectSkin>();
+            if (controller != null && skin != null && skin.IsReady) break;
             yield return null;
         }
-        Assert.NotNull(nav);
-        var menu = SongSelectNoteMenu.Instance;
-        Assert.NotNull(menu, "選曲の共通クールタイムが初期化されていること");
-        var controller = Object.FindFirstObjectByType<SongSelectController>();
+        Assert.NotNull(controller);
+        Assert.NotNull(skin);
+        Assert.IsTrue(skin.IsReady, "ディスク選曲画面の構築が完了していること");
         foreach (var judge in Object.FindObjectsByType<SaberCutJudge>(FindObjectsSortMode.None)) judge.enabled = false;
-        Object.FindFirstObjectByType<SongSelectAimPointer>().enabled = false;
-        nav.enabled = false;
-        var mesh = menu.ShotEffect.GetComponent<MeshFilter>().sharedMesh;
-        var material = menu.ShotEffect.GetComponent<Renderer>().sharedMaterial;
-        int start = controller.SelectedIndex;
+        var aim = Object.FindFirstObjectByType<SongSelectAimPointer>();
+        Assert.NotNull(aim);
+        aim.enabled = false;
+        int songCount = controller.SongCount;
+        Assert.Greater(songCount, 1);
+        var allTargets = Object.FindObjectsByType<SongSelectDiscTarget>(FindObjectsInactive.Include, FindObjectsSortMode.None)
+            .Where(target => target.gameObject.scene == SceneManager.GetActiveScene());
+        var targets = Enumerable.Range(0, songCount)
+            .Select(index => allTargets.SingleOrDefault(target => target.gameObject.name == "SongDisc_" + index))
+            .ToArray();
+        Assert.AreEqual(songCount, targets.Length);
+        Assert.IsTrue(targets.All(target => target != null), "曲ごとのディスク対象が一度ずつ生成されること");
+        int[] targetIds = targets.Select(target => target.GetInstanceID()).ToArray();
         for (int i = 0; i < 20; i++)
         {
-            // 共通クールタイムは実時間で進む。nav.Tickだけで受付条件を飛ばさない。
-            double readyDeadline = Time.realtimeSinceStartupAsDouble + 3;
-            while (!menu.IsReady && Time.realtimeSinceStartupAsDouble < readyDeadline) yield return null;
-            Assert.IsTrue(menu.IsReady, "曲送り" + (i + 1) + "回目: 3秒以内に共通クールタイムが解除されること");
-            nav.Tick(2.1f);
-            Assert.NotNull(nav.DownNote, "曲送り" + (i + 1) + "回目: ノーツが再出現すること");
-            Assert.IsFalse(nav.DownNote.IsJudgeable);
-            Assert.True(nav.TryShoot(false));
-            Assert.AreSame(mesh, menu.ShotEffect.GetComponent<MeshFilter>().sharedMesh);
-            Assert.AreSame(material, menu.ShotEffect.GetComponent<Renderer>().sharedMaterial);
+            int next = (controller.SelectedIndex + 1) % songCount;
+            SongSelectDiscTarget target = targets[next];
+            Assert.IsTrue(target.Available, "曲送り" + (i + 1) + "回目: 隣のディスクが選択可能であること");
+            Assert.IsTrue(target.TryShoot(), "曲送り" + (i + 1) + "回目: ディスク操作を受け付けること");
+            Assert.AreEqual(next, controller.SelectedIndex);
             controller.StopPreview();
+            yield return null;
         }
-        Assert.AreEqual((start + 20) % controller.SongCount, controller.SelectedIndex);
-        var clips = NewGeneratedClips().Where(c => c.name == "menu_aim_shot").ToArray();
-        Assert.AreEqual(1, clips.Length, "20回の曲送りで同じ音のバッファを20個作らない");
-        Assert.AreEqual(12348, clips[0].samples);
-        Object.Destroy(menu.gameObject);
+        CollectionAssert.AreEqual(targetIds, targets.Select(target => target.GetInstanceID()).ToArray(),
+            "曲送りを繰り返してもディスク対象を作り直さない");
+        yield return SceneManager.LoadSceneAsync("Title", LoadSceneMode.Single);
         yield return null;
-        yield return null;
-        Assert.True(clips[0] == null, "所有者の破棄で合成音も解放する");
-        Assert.True(mesh == null); Assert.True(material == null);
+        Assert.IsTrue(targets.All(target => target == null), "選曲シーンを離れるとディスク対象を解放する");
     }
 
     [UnityTest]

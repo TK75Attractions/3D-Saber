@@ -14,13 +14,16 @@ using Object = UnityEngine.Object;
 public class ChartAudioImportTests
 {
     static readonly Type Store = typeof(SaberChartEditorWindow).Assembly.GetType("Saber.ChartEditor.SaberChartFileStore");
+    static readonly FieldInfo MoveFileOperation = Store.GetField("moveFileOperation", BindingFlags.NonPublic | BindingFlags.Static);
     readonly List<AudioClip> clips = new List<AudioClip>();
     string songId, folder, sourceFolder, source;
     Dictionary<string, byte[]> originals;
+    Action<string, string> originalMoveFileOperation;
 
     [SetUp]
     public void SetUp()
     {
+        originalMoveFileOperation = (Action<string, string>)MoveFileOperation.GetValue(null);
         songId = "__AudioImportTest_" + Guid.NewGuid().ToString("N");
         folder = (string)Call("SongFolderPath", songId);
         sourceFolder = Path.Combine(Application.dataPath, "..", "Library", songId);
@@ -41,6 +44,7 @@ public class ChartAudioImportTests
     [TearDown]
     public void TearDown()
     {
+        MoveFileOperation.SetValue(null, originalMoveFileOperation);
         // 内部キャッシュに残る試験用クリップも解放する。実曲のキャッシュは変更しない。
         var cache = (IDictionary)Store.GetField("audioCache", BindingFlags.NonPublic | BindingFlags.Static).GetValue(null);
         foreach (string name in new[] { "audio.ogg", "audio.wav", "audio.mp3" })
@@ -69,18 +73,18 @@ public class ChartAudioImportTests
     }
 
     [Test]
-    public void LockedDestinationRestoresPreviouslyMovedFormats()
+    public void DestinationMoveFailureRestoresPreviouslyMovedFormats()
     {
-        using (new FileStream(Path.Combine(folder, "audio.wav"), FileMode.Open, FileAccess.Read, FileShare.None))
-            Assert.Throws<IOException>(() => Import(source));
+        FailMoveOnceWhen(Path.Combine(folder, "audio.wav"));
+        Assert.Throws<IOException>(() => Import(source));
         AssertOriginals();
     }
 
     [Test]
-    public void LockedObsoleteMetadataRestoresAudioAndMetadataTogether()
+    public void ObsoleteMetadataMoveFailureRestoresAudioAndMetadataTogether()
     {
-        using (new FileStream(Path.Combine(folder, "audio.mp3.meta"), FileMode.Open, FileAccess.Read, FileShare.None))
-            Assert.Throws<IOException>(() => Import(source));
+        FailMoveOnceWhen(Path.Combine(folder, "audio.mp3.meta"));
+        Assert.Throws<IOException>(() => Import(source));
         AssertOriginals();
     }
 
@@ -181,6 +185,22 @@ public class ChartAudioImportTests
         CollectionAssert.AreEquivalent(originals.Keys, Array.ConvertAll(Directory.GetFiles(folder), Path.GetFileName));
         foreach (var item in originals)
             CollectionAssert.AreEqual(item.Value, File.ReadAllBytes(Path.Combine(folder, item.Key)), item.Key);
+    }
+
+    void FailMoveOnceWhen(string sourcePath)
+    {
+        string target = Path.GetFullPath(sourcePath);
+        var move = (Action<string, string>)MoveFileOperation.GetValue(null);
+        bool injected = false;
+        MoveFileOperation.SetValue(null, (Action<string, string>)((from, to) =>
+        {
+            if (!injected && string.Equals(Path.GetFullPath(from), target, StringComparison.OrdinalIgnoreCase))
+            {
+                injected = true;
+                throw new IOException("Injected move failure for transaction rollback test.");
+            }
+            move(from, to);
+        }));
     }
 
     static object Call(string method, params object[] args)

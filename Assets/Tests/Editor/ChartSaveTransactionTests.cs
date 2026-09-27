@@ -10,13 +10,16 @@ using UnityEngine;
 public class ChartSaveTransactionTests
 {
     static readonly Type Store = typeof(SaberChartEditorWindow).Assembly.GetType("Saber.ChartEditor.SaberChartFileStore");
+    static readonly FieldInfo ReplaceFileOperation = Store.GetField("replaceFileOperation", BindingFlags.NonPublic | BindingFlags.Static);
     string songId, folder, normal, legacy;
+    Action<string, string, string> originalReplaceFileOperation;
     const string OldNormal = "{\"bpm\":111,\"offsetMs\":12,\"notes\":[]}";
     const string OldLegacy = "{\"bpm\":112,\"offsetMs\":13,\"notes\":[]}";
 
     [SetUp]
     public void SetUp()
     {
+        originalReplaceFileOperation = (Action<string, string, string>)ReplaceFileOperation.GetValue(null);
         songId = "__ChartSaveTest_" + Guid.NewGuid().ToString("N");
         folder = Path.Combine(Application.streamingAssetsPath, "Songs", songId);
         normal = Path.Combine(folder, "chart_normal.json");
@@ -29,6 +32,7 @@ public class ChartSaveTransactionTests
     [TearDown]
     public void TearDown()
     {
+        ReplaceFileOperation.SetValue(null, originalReplaceFileOperation);
         string root = Path.GetFullPath(Path.Combine(Application.streamingAssetsPath, "Songs")) + Path.DirectorySeparatorChar;
         Assert.IsTrue(Path.GetFullPath(folder).StartsWith(root, StringComparison.OrdinalIgnoreCase));
         Assert.IsTrue(Path.GetFileName(folder).StartsWith("__ChartSaveTest_"));
@@ -41,16 +45,17 @@ public class ChartSaveTransactionTests
     }
 
     [Test]
-    public void LockedLegacyRestoresOriginalOrRetainsRecoveryWhenRestoreIsLocked()
+    public void LegacyReplaceFailureRestoresOriginalAndAllowsRetry()
     {
         AssetDatabase.Refresh();
         string normalAsset = "Assets/StreamingAssets/Songs/" + songId + "/chart_normal.json";
         string originalGuid = AssetDatabase.AssetPathToGUID(normalAsset);
         Assert.IsNotEmpty(originalGuid);
-        // 読み取りは許可し、バックアップ後の書き込みだけを失敗させる。
+        // Fail the second replacement after chart_normal has already been committed.
+        // This exercises rollback identically on POSIX and Windows filesystems.
+        FailReplaceOnceWhen(legacy);
         IOException failure;
-        using (new FileStream(legacy, FileMode.Open, FileAccess.Read, FileShare.Read))
-            failure = Assert.Throws<IOException>(() => Save("normal"));
+        failure = Assert.Throws<IOException>(() => Save("normal"));
         if (File.ReadAllText(normal) != OldNormal)
         {
             // OSやインポーターが復元も阻む場合は、明示エラーと元データの退避が契約。
@@ -80,11 +85,11 @@ public class ChartSaveTransactionTests
     }
 
     [Test]
-    public void FailedFirstNormalSaveDoesNotLeaveANewDifficultyFile()
+    public void LegacyReplaceFailureDoesNotLeaveANewDifficultyFile()
     {
         File.Delete(normal);
-        using (new FileStream(legacy, FileMode.Open, FileAccess.Read, FileShare.Read))
-            Assert.Throws<IOException>(() => Save("normal"));
+        FailReplaceOnceWhen(legacy);
+        Assert.Throws<IOException>(() => Save("normal"));
         Assert.False(File.Exists(normal), "失敗した保存の新規譜面を残さない");
         Assert.AreEqual(OldLegacy, File.ReadAllText(legacy));
         AssertNoTemporaryDirectory();
@@ -103,10 +108,10 @@ public class ChartSaveTransactionTests
     }
 
     [Test]
-    public void LockedSpecificChartLeavesTheFallbackUntouched()
+    public void SpecificChartReplaceFailureLeavesTheFallbackUntouched()
     {
-        using (new FileStream(normal, FileMode.Open, FileAccess.Read, FileShare.Read))
-            Assert.Throws<IOException>(() => Save("normal"));
+        FailReplaceOnceWhen(normal);
+        Assert.Throws<IOException>(() => Save("normal"));
         Assert.AreEqual(OldNormal, File.ReadAllText(normal));
         Assert.AreEqual(OldLegacy, File.ReadAllText(legacy));
         AssertNoTemporaryDirectory();
@@ -165,5 +170,21 @@ public class ChartSaveTransactionTests
     void AssertNoTemporaryDirectory()
     {
         Assert.IsEmpty(Directory.GetDirectories(folder, ".chart-save-*"));
+    }
+
+    void FailReplaceOnceWhen(string destinationPath)
+    {
+        string target = Path.GetFullPath(destinationPath);
+        var replace = (Action<string, string, string>)ReplaceFileOperation.GetValue(null);
+        bool injected = false;
+        ReplaceFileOperation.SetValue(null, (Action<string, string, string>)((source, destination, backup) =>
+        {
+            if (!injected && string.Equals(Path.GetFullPath(destination), target, StringComparison.OrdinalIgnoreCase))
+            {
+                injected = true;
+                throw new IOException("Injected replace failure for transaction rollback test.");
+            }
+            replace(source, destination, backup);
+        }));
     }
 }
