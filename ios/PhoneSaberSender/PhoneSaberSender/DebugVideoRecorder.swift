@@ -229,6 +229,9 @@ struct DebugRecordingFrameMetadata: Codable, Equatable {
 }
 
 struct DebugRecordingMetadata: Codable, Equatable {
+    static let currentFormatVersion = 1
+
+    let formatVersion: Int
     let sessionID: String
     let width: Int
     let height: Int
@@ -494,6 +497,7 @@ final class DebugVideoRecorder {
             return
         }
         let metadata = DebugRecordingMetadata(
+            formatVersion: DebugRecordingMetadata.currentFormatVersion,
             sessionID: sessionID, width: dimensions.width, height: dimensions.height,
             frames: frames, cameraSamples: cameraSamples
         )

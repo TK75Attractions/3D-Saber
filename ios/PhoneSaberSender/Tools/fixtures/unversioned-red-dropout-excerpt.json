@@ -1,0 +1,1531 @@
+{
+  "sessionID": "phonesaber_20260923_143446_247",
+  "width": 480,
+  "height": 640,
+  "cameraSamples": [
+    {
+      "activeFormat": "640×480",
+      "activeFormatFPSRanges": "1.0…60.0",
+      "activeMaxFPS": 30,
+      "activeMinFPS": 30,
+      "exposureDurationMs": 30.002000000000002,
+      "exposureMode": "Continuous auto",
+      "focusMode": "Continuous auto",
+      "frameID": 59,
+      "iso": 2988.8616,
+      "lensPosition": 0.4078431,
+      "presentationTimeSeconds": 0.133310833,
+      "whiteBalanceBlueGain": 2.503662,
+      "whiteBalanceGreenGain": 1,
+      "whiteBalanceMode": "Continuous auto",
+      "whiteBalanceRedGain": 2.0332031
+    },
+    {
+      "activeFormat": "640×480",
+      "activeFormatFPSRanges": "1.0…60.0",
+      "activeMaxFPS": 30,
+      "activeMinFPS": 30,
+      "exposureDurationMs": 30.002000000000002,
+      "exposureMode": "Continuous auto",
+      "focusMode": "Continuous auto",
+      "frameID": 91,
+      "iso": 751.1385,
+      "lensPosition": 0.5764706,
+      "presentationTimeSeconds": 1.199796833,
+      "whiteBalanceBlueGain": 2.0534668,
+      "whiteBalanceGreenGain": 1,
+      "whiteBalanceMode": "Continuous auto",
+      "whiteBalanceRedGain": 2.244629
+    }
+  ],
+  "frames": [
+    {
+      "blue": {
+        "detected": true,
+        "predicted": false,
+        "x1": 282,
+        "x2": 468,
+        "y1": 214,
+        "y2": 274
+      },
+      "blueDetectionSucceeded": true,
+      "candidateDiagnostics": {
+        "blue": {
+          "connectedComponentCount": 8,
+          "eligibleCandidateCount": 20,
+          "maskPixelCount": 34417,
+          "morphologyPixelCount": 33968,
+          "selectedCandidate": {
+            "componentArea": 3676,
+            "continuity": 0.7872340425531915,
+            "density": 5.9361702127659575,
+            "eligible": true,
+            "finalOutputEndpoints": {
+              "first": {
+                "x": 282,
+                "y": 214
+              },
+              "second": {
+                "x": 468,
+                "y": 274
+              }
+            },
+            "finalScore": 205.6432702582797,
+            "index": 0,
+            "maxGap": 0,
+            "pointCount": 919,
+            "rawPCAEndpoints": {
+              "first": {
+                "x": 282,
+                "y": 214
+              },
+              "second": {
+                "x": 468,
+                "y": 274
+              }
+            },
+            "rawPCASpan": 198.04791779258073,
+            "robustMainIntervalEndpoints": {
+              "first": {
+                "x": 322,
+                "y": 226
+              },
+              "second": {
+                "x": 408,
+                "y": 254
+              }
+            },
+            "robustMainIntervalLength": 94,
+            "scoreBreakdown": {
+              "area": -0.09572916666666667,
+              "aspect": 3.2039857982049087,
+              "clippedWhite": 73.9,
+              "colorPurity": 1.9176864279464405,
+              "coreSupport": 9.806311207834604,
+              "emitterTexture": 0.13262537093745638,
+              "extent": 0.5690007677204881,
+              "highBrightnessRatio": 23.36932735426009,
+              "length": 1.9804791779258073,
+              "localContrast": 4.584461645455524,
+              "longitudinalCoreCoverage": 8,
+              "longitudinalHighCoverage": 3,
+              "meanBrightness": 7.760385650224215,
+              "peakBrightness": 12.16,
+              "proposalPenalty": 0,
+              "radiance": 57.28640637504861,
+              "total": 205.6432702582797,
+              "widthConsistency": -1.9316703506117767
+            },
+            "selected": true,
+            "sourceType": "connected-core",
+            "usedPointLEDFallback": true
+          },
+          "selectedCandidateFinalScore": 205.6432702582797,
+          "selectedCandidateIndex": 0,
+          "selectedCandidateScoreBreakdown": {
+            "area": -0.09572916666666667,
+            "aspect": 3.2039857982049087,
+            "clippedWhite": 73.9,
+            "colorPurity": 1.9176864279464405,
+            "coreSupport": 9.806311207834604,
+            "emitterTexture": 0.13262537093745638,
+            "extent": 0.5690007677204881,
+            "highBrightnessRatio": 23.36932735426009,
+            "length": 1.9804791779258073,
+            "localContrast": 4.584461645455524,
+            "longitudinalCoreCoverage": 8,
+            "longitudinalHighCoverage": 3,
+            "meanBrightness": 7.760385650224215,
+            "peakBrightness": 12.16,
+            "proposalPenalty": 0,
+            "radiance": 57.28640637504861,
+            "total": 205.6432702582797,
+            "widthConsistency": -1.9316703506117767
+          },
+          "selectedCandidateType": "connected-core",
+          "topCandidates": [
+            {
+              "componentArea": 3676,
+              "continuity": 0.7872340425531915,
+              "density": 5.9361702127659575,
+              "eligible": true,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 282,
+                  "y": 214
+                },
+                "second": {
+                  "x": 468,
+                  "y": 274
+                }
+              },
+              "finalScore": 205.6432702582797,
+              "index": 0,
+              "maxGap": 0,
+              "pointCount": 919,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 282,
+                  "y": 214
+                },
+                "second": {
+                  "x": 468,
+                  "y": 274
+                }
+              },
+              "rawPCASpan": 198.04791779258073,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 322,
+                  "y": 226
+                },
+                "second": {
+                  "x": 408,
+                  "y": 254
+                }
+              },
+              "robustMainIntervalLength": 94,
+              "scoreBreakdown": {
+                "area": -0.09572916666666667,
+                "aspect": 3.2039857982049087,
+                "clippedWhite": 73.9,
+                "colorPurity": 1.9176864279464405,
+                "coreSupport": 9.806311207834604,
+                "emitterTexture": 0.13262537093745638,
+                "extent": 0.5690007677204881,
+                "highBrightnessRatio": 23.36932735426009,
+                "length": 1.9804791779258073,
+                "localContrast": 4.584461645455524,
+                "longitudinalCoreCoverage": 8,
+                "longitudinalHighCoverage": 3,
+                "meanBrightness": 7.760385650224215,
+                "peakBrightness": 12.16,
+                "proposalPenalty": 0,
+                "radiance": 57.28640637504861,
+                "total": 205.6432702582797,
+                "widthConsistency": -1.9316703506117767
+              },
+              "selected": true,
+              "sourceType": "connected-core",
+              "usedPointLEDFallback": true
+            },
+            {
+              "componentArea": 5916,
+              "continuity": 0.8840579710144928,
+              "density": 7.978260869565218,
+              "eligible": true,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 276,
+                  "y": 212
+                },
+                "second": {
+                  "x": 474,
+                  "y": 274
+                }
+              },
+              "finalScore": 178.5945967966337,
+              "index": 1,
+              "maxGap": 0,
+              "pointCount": 1479,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 276,
+                  "y": 212
+                },
+                "second": {
+                  "x": 474,
+                  "y": 274
+                }
+              },
+              "rawPCASpan": 209.33855121777873,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 296,
+                  "y": 220
+                },
+                "second": {
+                  "x": 426,
+                  "y": 260
+                }
+              },
+              "robustMainIntervalLength": 138,
+              "scoreBreakdown": {
+                "area": -0.1540625,
+                "aspect": 2.8972492603413245,
+                "clippedWhite": 73.9,
+                "colorPurity": 2.589512045086667,
+                "coreSupport": 6.239350912778905,
+                "emitterTexture": 2.6347807749303382,
+                "extent": 0.7369519947822474,
+                "highBrightnessRatio": 12.802445081184336,
+                "length": 2.0933855121777873,
+                "localContrast": 3.368847255863497,
+                "longitudinalCoreCoverage": 8,
+                "longitudinalHighCoverage": 3,
+                "meanBrightness": 5.294085959885386,
+                "peakBrightness": 12.16,
+                "proposalPenalty": 0,
+                "radiance": 44.53007994272755,
+                "total": 178.5945967966337,
+                "widthConsistency": -1.4980294431243357
+              },
+              "selected": false,
+              "sourceType": "core-halo",
+              "usedPointLEDFallback": true
+            },
+            {
+              "componentArea": 2400,
+              "continuity": 0.9767441860465116,
+              "density": 2.546511627906977,
+              "eligible": false,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 310,
+                  "y": 262
+                },
+                "second": {
+                  "x": 478,
+                  "y": 254
+                }
+              },
+              "finalScore": 167.50629786065952,
+              "index": 2,
+              "maxGap": 1,
+              "pointCount": 600,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 158,
+                  "y": 264
+                },
+                "second": {
+                  "x": 478,
+                  "y": 260
+                }
+              },
+              "rawPCASpan": 322.1271180514159,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 310,
+                  "y": 262
+                },
+                "second": {
+                  "x": 480,
+                  "y": 260
+                }
+              },
+              "robustMainIntervalLength": 172,
+              "scoreBreakdown": {
+                "area": -0.0625,
+                "aspect": 8,
+                "clippedWhite": 73.9,
+                "colorPurity": 2.1997101535619605,
+                "coreSupport": 7.700000000000001,
+                "emitterTexture": 0.1704898595296876,
+                "extent": 1.01152486778283,
+                "highBrightnessRatio": 17.675093333333336,
+                "length": 3.221271180514159,
+                "localContrast": 4.8194394994606276,
+                "longitudinalCoreCoverage": 5.333333333333333,
+                "longitudinalHighCoverage": 2.25,
+                "meanBrightness": 6.165962666666667,
+                "peakBrightness": 12.16,
+                "proposalPenalty": -21.759882528931705,
+                "radiance": 46.164306164295766,
+                "total": 167.50629786065952,
+                "widthConsistency": -1.4424506688871575
+              },
+              "selected": false,
+              "sourceType": "core-line-low-confidence",
+              "usedPointLEDFallback": false
+            }
+          ],
+          "totalCandidateCount": 33
+        },
+        "red": {
+          "connectedComponentCount": 0,
+          "eligibleCandidateCount": 1,
+          "maskPixelCount": 9,
+          "morphologyPixelCount": 0,
+          "selectedCandidate": {
+            "componentArea": 216,
+            "continuity": 0.8571428571428571,
+            "density": 1.9285714285714286,
+            "eligible": true,
+            "finalOutputEndpoints": {
+              "first": {
+                "x": 468,
+                "y": 582
+              },
+              "second": {
+                "x": 472,
+                "y": 608
+              }
+            },
+            "finalScore": 50.940991823695434,
+            "index": 0,
+            "maxGap": 0,
+            "pointCount": 54,
+            "rawPCAEndpoints": {
+              "first": {
+                "x": 468,
+                "y": 582
+              },
+              "second": {
+                "x": 472,
+                "y": 608
+              }
+            },
+            "rawPCASpan": 28.305892591253023,
+            "robustMainIntervalEndpoints": {
+              "first": {
+                "x": 468,
+                "y": 582
+              },
+              "second": {
+                "x": 472,
+                "y": 608
+              }
+            },
+            "robustMainIntervalLength": 28,
+            "scoreBreakdown": {
+              "area": -0.005625,
+              "aspect": 2.091763637003307,
+              "clippedWhite": 0,
+              "colorPurity": 1.5821438206868865,
+              "coreSupport": 0,
+              "emitterTexture": 0,
+              "extent": 1.113196513211604,
+              "highBrightnessRatio": 24.64,
+              "length": 0.28305892591253023,
+              "localContrast": 0.06358974358974592,
+              "longitudinalCoreCoverage": 0,
+              "longitudinalHighCoverage": 2.5,
+              "meanBrightness": 8.412888888888892,
+              "peakBrightness": 11.717818181818181,
+              "proposalPenalty": 0,
+              "radiance": 0,
+              "total": 50.940991823695434,
+              "widthConsistency": -1.4578428874157159
+            },
+            "selected": true,
+            "sourceType": "core-halo",
+            "usedPointLEDFallback": true
+          },
+          "selectedCandidateFinalScore": 50.940991823695434,
+          "selectedCandidateIndex": 0,
+          "selectedCandidateScoreBreakdown": {
+            "area": -0.005625,
+            "aspect": 2.091763637003307,
+            "clippedWhite": 0,
+            "colorPurity": 1.5821438206868865,
+            "coreSupport": 0,
+            "emitterTexture": 0,
+            "extent": 1.113196513211604,
+            "highBrightnessRatio": 24.64,
+            "length": 0.28305892591253023,
+            "localContrast": 0.06358974358974592,
+            "longitudinalCoreCoverage": 0,
+            "longitudinalHighCoverage": 2.5,
+            "meanBrightness": 8.412888888888892,
+            "peakBrightness": 11.717818181818181,
+            "proposalPenalty": 0,
+            "radiance": 0,
+            "total": 50.940991823695434,
+            "widthConsistency": -1.4578428874157159
+          },
+          "selectedCandidateType": "core-halo",
+          "topCandidates": [
+            {
+              "componentArea": 216,
+              "continuity": 0.8571428571428571,
+              "density": 1.9285714285714286,
+              "eligible": true,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 468,
+                  "y": 582
+                },
+                "second": {
+                  "x": 472,
+                  "y": 608
+                }
+              },
+              "finalScore": 50.940991823695434,
+              "index": 0,
+              "maxGap": 0,
+              "pointCount": 54,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 468,
+                  "y": 582
+                },
+                "second": {
+                  "x": 472,
+                  "y": 608
+                }
+              },
+              "rawPCASpan": 28.305892591253023,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 468,
+                  "y": 582
+                },
+                "second": {
+                  "x": 472,
+                  "y": 608
+                }
+              },
+              "robustMainIntervalLength": 28,
+              "scoreBreakdown": {
+                "area": -0.005625,
+                "aspect": 2.091763637003307,
+                "clippedWhite": 0,
+                "colorPurity": 1.5821438206868865,
+                "coreSupport": 0,
+                "emitterTexture": 0,
+                "extent": 1.113196513211604,
+                "highBrightnessRatio": 24.64,
+                "length": 0.28305892591253023,
+                "localContrast": 0.06358974358974592,
+                "longitudinalCoreCoverage": 0,
+                "longitudinalHighCoverage": 2.5,
+                "meanBrightness": 8.412888888888892,
+                "peakBrightness": 11.717818181818181,
+                "proposalPenalty": 0,
+                "radiance": 0,
+                "total": 50.940991823695434,
+                "widthConsistency": -1.4578428874157159
+              },
+              "selected": true,
+              "sourceType": "core-halo",
+              "usedPointLEDFallback": true
+            }
+          ],
+          "totalCandidateCount": 1
+        }
+      },
+      "forensicCaptured": false,
+      "frameID": 82,
+      "manualCaptured": false,
+      "presentationTimeSeconds": 0.899847833,
+      "red": {
+        "detected": true,
+        "predicted": false,
+        "x1": 468,
+        "x2": 472,
+        "y1": 582,
+        "y2": 608
+      },
+      "redDetectionSucceeded": true,
+      "redDropoutFileName": "red_dropout_last_true_82.png",
+      "redDropoutRole": "last-detected-before-dropout"
+    },
+    {
+      "blue": {
+        "detected": true,
+        "predicted": false,
+        "x1": 296,
+        "x2": 416,
+        "y1": 194,
+        "y2": 268
+      },
+      "blueDetectionSucceeded": true,
+      "candidateDiagnostics": {
+        "blue": {
+          "connectedComponentCount": 11,
+          "eligibleCandidateCount": 20,
+          "maskPixelCount": 32143,
+          "morphologyPixelCount": 31797,
+          "selectedCandidate": {
+            "componentArea": 3156,
+            "continuity": 0.8260869565217391,
+            "density": 7.141304347826087,
+            "eligible": true,
+            "finalOutputEndpoints": {
+              "first": {
+                "x": 296,
+                "y": 194
+              },
+              "second": {
+                "x": 416,
+                "y": 268
+              }
+            },
+            "finalScore": 204.70488360748513,
+            "index": 0,
+            "maxGap": 0,
+            "pointCount": 789,
+            "rawPCAEndpoints": {
+              "first": {
+                "x": 296,
+                "y": 194
+              },
+              "second": {
+                "x": 416,
+                "y": 268
+              }
+            },
+            "rawPCASpan": 143.59062982427452,
+            "robustMainIntervalEndpoints": {
+              "first": {
+                "x": 330,
+                "y": 214
+              },
+              "second": {
+                "x": 406,
+                "y": 262
+              }
+            },
+            "robustMainIntervalLength": 92,
+            "scoreBreakdown": {
+              "area": -0.0821875,
+              "aspect": 2.2380595278356683,
+              "clippedWhite": 73.61351840922242,
+              "colorPurity": 1.8761595689730655,
+              "coreSupport": 8.029587770317072,
+              "emitterTexture": 3.3484785098157768,
+              "extent": 0.6649305919493349,
+              "highBrightnessRatio": 22.594079422382674,
+              "length": 1.435906298242745,
+              "localContrast": 4.067346582695553,
+              "longitudinalCoreCoverage": 7.968987107899585,
+              "longitudinalHighCoverage": 3,
+              "meanBrightness": 7.360664259927798,
+              "peakBrightness": 12.16,
+              "proposalPenalty": 0,
+              "radiance": 58.38815304638561,
+              "total": 204.70488360748513,
+              "widthConsistency": -1.9587999881621678
+            },
+            "selected": true,
+            "sourceType": "connected-core",
+            "usedPointLEDFallback": true
+          },
+          "selectedCandidateFinalScore": 204.70488360748513,
+          "selectedCandidateIndex": 0,
+          "selectedCandidateScoreBreakdown": {
+            "area": -0.0821875,
+            "aspect": 2.2380595278356683,
+            "clippedWhite": 73.61351840922242,
+            "colorPurity": 1.8761595689730655,
+            "coreSupport": 8.029587770317072,
+            "emitterTexture": 3.3484785098157768,
+            "extent": 0.6649305919493349,
+            "highBrightnessRatio": 22.594079422382674,
+            "length": 1.435906298242745,
+            "localContrast": 4.067346582695553,
+            "longitudinalCoreCoverage": 7.968987107899585,
+            "longitudinalHighCoverage": 3,
+            "meanBrightness": 7.360664259927798,
+            "peakBrightness": 12.16,
+            "proposalPenalty": 0,
+            "radiance": 58.38815304638561,
+            "total": 204.70488360748513,
+            "widthConsistency": -1.9587999881621678
+          },
+          "selectedCandidateType": "connected-core",
+          "topCandidates": [
+            {
+              "componentArea": 3156,
+              "continuity": 0.8260869565217391,
+              "density": 7.141304347826087,
+              "eligible": true,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 296,
+                  "y": 194
+                },
+                "second": {
+                  "x": 416,
+                  "y": 268
+                }
+              },
+              "finalScore": 204.70488360748513,
+              "index": 0,
+              "maxGap": 0,
+              "pointCount": 789,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 296,
+                  "y": 194
+                },
+                "second": {
+                  "x": 416,
+                  "y": 268
+                }
+              },
+              "rawPCASpan": 143.59062982427452,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 330,
+                  "y": 214
+                },
+                "second": {
+                  "x": 406,
+                  "y": 262
+                }
+              },
+              "robustMainIntervalLength": 92,
+              "scoreBreakdown": {
+                "area": -0.0821875,
+                "aspect": 2.2380595278356683,
+                "clippedWhite": 73.61351840922242,
+                "colorPurity": 1.8761595689730655,
+                "coreSupport": 8.029587770317072,
+                "emitterTexture": 3.3484785098157768,
+                "extent": 0.6649305919493349,
+                "highBrightnessRatio": 22.594079422382674,
+                "length": 1.435906298242745,
+                "localContrast": 4.067346582695553,
+                "longitudinalCoreCoverage": 7.968987107899585,
+                "longitudinalHighCoverage": 3,
+                "meanBrightness": 7.360664259927798,
+                "peakBrightness": 12.16,
+                "proposalPenalty": 0,
+                "radiance": 58.38815304638561,
+                "total": 204.70488360748513,
+                "widthConsistency": -1.9587999881621678
+              },
+              "selected": true,
+              "sourceType": "connected-core",
+              "usedPointLEDFallback": true
+            },
+            {
+              "componentArea": 2156,
+              "continuity": 0.975609756097561,
+              "density": 2.3963414634146343,
+              "eligible": true,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 318,
+                  "y": 254
+                },
+                "second": {
+                  "x": 478,
+                  "y": 248
+                }
+              },
+              "finalScore": 164.81880405986377,
+              "index": 1,
+              "maxGap": 1,
+              "pointCount": 539,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 164,
+                  "y": 254
+                },
+                "second": {
+                  "x": 478,
+                  "y": 254
+                }
+              },
+              "rawPCASpan": 316.0122033243968,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 318,
+                  "y": 254
+                },
+                "second": {
+                  "x": 480,
+                  "y": 254
+                }
+              },
+              "robustMainIntervalLength": 164,
+              "scoreBreakdown": {
+                "area": -0.05614583333333333,
+                "aspect": 8,
+                "clippedWhite": 73.9,
+                "colorPurity": 2.7091373217383876,
+                "coreSupport": 6.857142857142857,
+                "emitterTexture": 0,
+                "extent": 1.0763799119545066,
+                "highBrightnessRatio": 15.833951890034365,
+                "length": 3.160122033243968,
+                "localContrast": 2.944798813915803,
+                "longitudinalCoreCoverage": 6,
+                "longitudinalHighCoverage": 2.25,
+                "meanBrightness": 5.338529209621994,
+                "peakBrightness": 12.16,
+                "proposalPenalty": -18.24161514842769,
+                "radiance": 44.49552826478188,
+                "total": 164.81880405986377,
+                "widthConsistency": -1.6090252608089803
+              },
+              "selected": false,
+              "sourceType": "core-line",
+              "usedPointLEDFallback": false
+            },
+            {
+              "componentArea": 2080,
+              "continuity": 0.9491525423728814,
+              "density": 2.6440677966101696,
+              "eligible": false,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 366,
+                  "y": 242
+                },
+                "second": {
+                  "x": 478,
+                  "y": 264
+                }
+              },
+              "finalScore": 98.46310396076596,
+              "index": 2,
+              "maxGap": 1,
+              "pointCount": 520,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 198,
+                  "y": 216
+                },
+                "second": {
+                  "x": 478,
+                  "y": 260
+                }
+              },
+              "rawPCASpan": 286.3611624869119,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 366,
+                  "y": 242
+                },
+                "second": {
+                  "x": 480,
+                  "y": 260
+                }
+              },
+              "robustMainIntervalLength": 118,
+              "scoreBreakdown": {
+                "area": -0.05416666666666667,
+                "aspect": 8,
+                "clippedWhite": 73.9,
+                "colorPurity": 3.7770489767210624,
+                "coreSupport": 5.699999999999999,
+                "emitterTexture": 0,
+                "extent": 0.9419183204270375,
+                "highBrightnessRatio": 12.206972477064221,
+                "length": 2.863611624869119,
+                "localContrast": 2.9849073394495385,
+                "longitudinalCoreCoverage": 5.333333333333333,
+                "longitudinalHighCoverage": 2,
+                "meanBrightness": 4.430629969418959,
+                "peakBrightness": 12.16,
+                "proposalPenalty": -71.18626680688195,
+                "radiance": 36.73589773164164,
+                "total": 98.46310396076596,
+                "widthConsistency": -1.3307823386103372
+              },
+              "selected": false,
+              "sourceType": "core-line-overlap",
+              "usedPointLEDFallback": false
+            }
+          ],
+          "totalCandidateCount": 36
+        },
+        "red": {
+          "connectedComponentCount": 1,
+          "eligibleCandidateCount": 0,
+          "maskPixelCount": 17,
+          "morphologyPixelCount": 5,
+          "topCandidates": [
+            {
+              "componentArea": 1104,
+              "continuity": 0.9333333333333333,
+              "density": 1.8666666666666667,
+              "eligible": false,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 472,
+                  "y": 576
+                },
+                "second": {
+                  "x": 478,
+                  "y": 604
+                }
+              },
+              "finalScore": 94.13699995705223,
+              "index": 0,
+              "maxGap": 0,
+              "pointCount": 276,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 410,
+                  "y": 154
+                },
+                "second": {
+                  "x": 476,
+                  "y": 604
+                }
+              },
+              "rawPCASpan": 457.67760398044504,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 472,
+                  "y": 576
+                },
+                "second": {
+                  "x": 476,
+                  "y": 604
+                }
+              },
+              "robustMainIntervalLength": 30,
+              "scoreBreakdown": {
+                "area": -0.02875,
+                "aspect": 8,
+                "clippedWhite": 73.9,
+                "colorPurity": 1.6364715329275803,
+                "coreSupport": 2.3043478260869565,
+                "emitterTexture": 5.36203494083863,
+                "extent": 0.35412793365378853,
+                "highBrightnessRatio": 22.176000000000002,
+                "length": 4.57677603980445,
+                "localContrast": 5.2766834282539214,
+                "longitudinalCoreCoverage": 1.3333333333333333,
+                "longitudinalHighCoverage": 0.25,
+                "meanBrightness": 7.967200000000001,
+                "peakBrightness": 11.93890909090909,
+                "proposalPenalty": -75.73577629649458,
+                "radiance": 27.03288172330598,
+                "total": 94.13699995705223,
+                "widthConsistency": -2.207239595566916
+              },
+              "selected": false,
+              "sourceType": "core-line-low-confidence",
+              "usedPointLEDFallback": false
+            },
+            {
+              "componentArea": 128,
+              "continuity": 0.8181818181818182,
+              "density": 1.4545454545454546,
+              "eligible": false,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 472,
+                  "y": 580
+                },
+                "second": {
+                  "x": 472,
+                  "y": 600
+                }
+              },
+              "finalScore": 51.14441839958505,
+              "index": 1,
+              "maxGap": 0,
+              "pointCount": 32,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 472,
+                  "y": 580
+                },
+                "second": {
+                  "x": 472,
+                  "y": 600
+                }
+              },
+              "rawPCASpan": 22,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 472,
+                  "y": 580
+                },
+                "second": {
+                  "x": 472,
+                  "y": 600
+                }
+              },
+              "robustMainIntervalLength": 22,
+              "scoreBreakdown": {
+                "area": -0.0033333333333333335,
+                "aspect": 2.9188632372745946,
+                "clippedWhite": 0,
+                "colorPurity": 1.6978773472098003,
+                "coreSupport": 0,
+                "emitterTexture": 0,
+                "extent": 1.4545454545454546,
+                "highBrightnessRatio": 24.64,
+                "length": 0.22,
+                "localContrast": 0,
+                "longitudinalCoreCoverage": 0,
+                "longitudinalHighCoverage": 1.9090909090909092,
+                "meanBrightness": 8.41142857142857,
+                "peakBrightness": 11.496727272727274,
+                "proposalPenalty": 0,
+                "radiance": 0,
+                "total": 51.14441839958505,
+                "widthConsistency": -1.6007810593582121
+              },
+              "selected": false,
+              "sourceType": "core-halo",
+              "usedPointLEDFallback": true
+            }
+          ],
+          "totalCandidateCount": 2
+        }
+      },
+      "forensicCaptured": false,
+      "frameID": 83,
+      "manualCaptured": false,
+      "presentationTimeSeconds": 0.933175375,
+      "red": {
+        "detected": true,
+        "predicted": true,
+        "x1": 474,
+        "x2": 472,
+        "y1": 588,
+        "y2": 612
+      },
+      "redDetectionSucceeded": false,
+      "redDropoutFileName": "red_dropout_false_83.png",
+      "redDropoutRole": "dropout"
+    },
+    {
+      "blue": {
+        "detected": true,
+        "predicted": false,
+        "x1": 296,
+        "x2": 416,
+        "y1": 202,
+        "y2": 272
+      },
+      "blueDetectionSucceeded": true,
+      "candidateDiagnostics": {
+        "blue": {
+          "connectedComponentCount": 10,
+          "eligibleCandidateCount": 21,
+          "maskPixelCount": 32038,
+          "morphologyPixelCount": 31939,
+          "selectedCandidate": {
+            "componentArea": 3024,
+            "continuity": 0.8,
+            "density": 6.9,
+            "eligible": true,
+            "finalOutputEndpoints": {
+              "first": {
+                "x": 296,
+                "y": 202
+              },
+              "second": {
+                "x": 416,
+                "y": 272
+              }
+            },
+            "finalScore": 195.7561074770934,
+            "index": 0,
+            "maxGap": 0,
+            "pointCount": 756,
+            "rawPCAEndpoints": {
+              "first": {
+                "x": 296,
+                "y": 202
+              },
+              "second": {
+                "x": 416,
+                "y": 272
+              }
+            },
+            "rawPCASpan": 139.63337419321903,
+            "robustMainIntervalEndpoints": {
+              "first": {
+                "x": 330,
+                "y": 222
+              },
+              "second": {
+                "x": 406,
+                "y": 266
+              }
+            },
+            "robustMainIntervalLength": 90,
+            "scoreBreakdown": {
+              "area": -0.07875,
+              "aspect": 2.1846184020577675,
+              "clippedWhite": 70.84418894771672,
+              "colorPurity": 2.113267790754432,
+              "coreSupport": 6.923578832659128,
+              "emitterTexture": 5.175925925925926,
+              "extent": 0.6613801420750031,
+              "highBrightnessRatio": 19.874238683127572,
+              "length": 1.3963337419321902,
+              "localContrast": 3.5135598090300992,
+              "longitudinalCoreCoverage": 7.669195014637804,
+              "longitudinalHighCoverage": 3,
+              "meanBrightness": 6.810650205761317,
+              "peakBrightness": 12.16,
+              "proposalPenalty": 0,
+              "radiance": 55.51158087749598,
+              "total": 195.7561074770934,
+              "widthConsistency": -2.0036608960805458
+            },
+            "selected": true,
+            "sourceType": "connected-core",
+            "usedPointLEDFallback": true
+          },
+          "selectedCandidateFinalScore": 195.7561074770934,
+          "selectedCandidateIndex": 0,
+          "selectedCandidateScoreBreakdown": {
+            "area": -0.07875,
+            "aspect": 2.1846184020577675,
+            "clippedWhite": 70.84418894771672,
+            "colorPurity": 2.113267790754432,
+            "coreSupport": 6.923578832659128,
+            "emitterTexture": 5.175925925925926,
+            "extent": 0.6613801420750031,
+            "highBrightnessRatio": 19.874238683127572,
+            "length": 1.3963337419321902,
+            "localContrast": 3.5135598090300992,
+            "longitudinalCoreCoverage": 7.669195014637804,
+            "longitudinalHighCoverage": 3,
+            "meanBrightness": 6.810650205761317,
+            "peakBrightness": 12.16,
+            "proposalPenalty": 0,
+            "radiance": 55.51158087749598,
+            "total": 195.7561074770934,
+            "widthConsistency": -2.0036608960805458
+          },
+          "selectedCandidateType": "connected-core",
+          "topCandidates": [
+            {
+              "componentArea": 3024,
+              "continuity": 0.8,
+              "density": 6.9,
+              "eligible": true,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 296,
+                  "y": 202
+                },
+                "second": {
+                  "x": 416,
+                  "y": 272
+                }
+              },
+              "finalScore": 195.7561074770934,
+              "index": 0,
+              "maxGap": 0,
+              "pointCount": 756,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 296,
+                  "y": 202
+                },
+                "second": {
+                  "x": 416,
+                  "y": 272
+                }
+              },
+              "rawPCASpan": 139.63337419321903,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 330,
+                  "y": 222
+                },
+                "second": {
+                  "x": 406,
+                  "y": 266
+                }
+              },
+              "robustMainIntervalLength": 90,
+              "scoreBreakdown": {
+                "area": -0.07875,
+                "aspect": 2.1846184020577675,
+                "clippedWhite": 70.84418894771672,
+                "colorPurity": 2.113267790754432,
+                "coreSupport": 6.923578832659128,
+                "emitterTexture": 5.175925925925926,
+                "extent": 0.6613801420750031,
+                "highBrightnessRatio": 19.874238683127572,
+                "length": 1.3963337419321902,
+                "localContrast": 3.5135598090300992,
+                "longitudinalCoreCoverage": 7.669195014637804,
+                "longitudinalHighCoverage": 3,
+                "meanBrightness": 6.810650205761317,
+                "peakBrightness": 12.16,
+                "proposalPenalty": 0,
+                "radiance": 55.51158087749598,
+                "total": 195.7561074770934,
+                "widthConsistency": -2.0036608960805458
+              },
+              "selected": true,
+              "sourceType": "connected-core",
+              "usedPointLEDFallback": true
+            },
+            {
+              "componentArea": 4860,
+              "continuity": 0.9195402298850575,
+              "density": 6.925287356321839,
+              "eligible": true,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 304,
+                  "y": 228
+                },
+                "second": {
+                  "x": 474,
+                  "y": 268
+                }
+              },
+              "finalScore": 166.45967665953657,
+              "index": 1,
+              "maxGap": 1,
+              "pointCount": 1215,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 304,
+                  "y": 228
+                },
+                "second": {
+                  "x": 474,
+                  "y": 268
+                }
+              },
+              "rawPCASpan": 178.50021188446124,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 310,
+                  "y": 228
+                },
+                "second": {
+                  "x": 476,
+                  "y": 268
+                }
+              },
+              "robustMainIntervalLength": 174,
+              "scoreBreakdown": {
+                "area": -0.1265625,
+                "aspect": 2.4556784571352672,
+                "clippedWhite": 73.9,
+                "colorPurity": 2.820596584491279,
+                "coreSupport": 5.303703703703704,
+                "emitterTexture": 1.1268819084450883,
+                "extent": 0.7145049315215168,
+                "highBrightnessRatio": 9.163101182654403,
+                "length": 1.7850021188446124,
+                "localContrast": 1.1977146734568047,
+                "longitudinalCoreCoverage": 8,
+                "longitudinalHighCoverage": 3,
+                "meanBrightness": 4.118843626806834,
+                "peakBrightness": 12.16,
+                "proposalPenalty": 0,
+                "radiance": 42.485037378785854,
+                "total": 166.45967665953657,
+                "widthConsistency": -1.6448254063087981
+              },
+              "selected": false,
+              "sourceType": "core-halo",
+              "usedPointLEDFallback": true
+            },
+            {
+              "componentArea": 2260,
+              "continuity": 0.975609756097561,
+              "density": 2.4207317073170733,
+              "eligible": false,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 318,
+                  "y": 260
+                },
+                "second": {
+                  "x": 478,
+                  "y": 254
+                }
+              },
+              "finalScore": 160.37240555296614,
+              "index": 2,
+              "maxGap": 1,
+              "pointCount": 565,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 162,
+                  "y": 260
+                },
+                "second": {
+                  "x": 478,
+                  "y": 260
+                }
+              },
+              "rawPCASpan": 318.0149405848108,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 318,
+                  "y": 260
+                },
+                "second": {
+                  "x": 480,
+                  "y": 260
+                }
+              },
+              "robustMainIntervalLength": 164,
+              "scoreBreakdown": {
+                "area": -0.058854166666666666,
+                "aspect": 8,
+                "clippedWhite": 73.9,
+                "colorPurity": 2.5224724063562367,
+                "coreSupport": 6.520353982300884,
+                "emitterTexture": 0,
+                "extent": 1.1268065106406548,
+                "highBrightnessRatio": 13.756073619631902,
+                "length": 3.180149405848108,
+                "localContrast": 3.5453168138826485,
+                "longitudinalCoreCoverage": 6,
+                "longitudinalHighCoverage": 2.25,
+                "meanBrightness": 4.990858895705523,
+                "peakBrightness": 12.16,
+                "proposalPenalty": -18.977072493447977,
+                "radiance": 43.27648440184676,
+                "total": 160.37240555296614,
+                "widthConsistency": -1.82018382313193
+              },
+              "selected": false,
+              "sourceType": "core-line-low-confidence",
+              "usedPointLEDFallback": false
+            }
+          ],
+          "totalCandidateCount": 37
+        },
+        "red": {
+          "connectedComponentCount": 1,
+          "eligibleCandidateCount": 1,
+          "maskPixelCount": 20,
+          "morphologyPixelCount": 8,
+          "selectedCandidate": {
+            "componentArea": 48,
+            "continuity": 0.8181818181818182,
+            "density": 0.5454545454545454,
+            "eligible": true,
+            "finalOutputEndpoints": {
+              "first": {
+                "x": 468,
+                "y": 590
+              },
+              "second": {
+                "x": 476,
+                "y": 608
+              }
+            },
+            "finalScore": 50.86956114075729,
+            "index": 1,
+            "maxGap": 1,
+            "pointCount": 12,
+            "rawPCAEndpoints": {
+              "first": {
+                "x": 468,
+                "y": 590
+              },
+              "second": {
+                "x": 476,
+                "y": 608
+              }
+            },
+            "rawPCASpan": 20.944060316326908,
+            "robustMainIntervalEndpoints": {
+              "first": {
+                "x": 468,
+                "y": 590
+              },
+              "second": {
+                "x": 476,
+                "y": 608
+              }
+            },
+            "robustMainIntervalLength": 22,
+            "scoreBreakdown": {
+              "area": -0.00125,
+              "aspect": 2.5455869697078417,
+              "clippedWhite": 0,
+              "colorPurity": 1.6497276125223648,
+              "coreSupport": 0,
+              "emitterTexture": 0,
+              "extent": 0.5288085768225914,
+              "highBrightnessRatio": 24.64,
+              "length": 0.20944060316326907,
+              "localContrast": 0,
+              "longitudinalCoreCoverage": 0,
+              "longitudinalHighCoverage": 2.4545454545454546,
+              "meanBrightness": 8.402666666666669,
+              "peakBrightness": 11.93890909090909,
+              "proposalPenalty": 0,
+              "radiance": 0,
+              "total": 50.86956114075729,
+              "widthConsistency": -1.4988738335799892
+            },
+            "selected": true,
+            "sourceType": "color-sparse-raw",
+            "usedPointLEDFallback": true
+          },
+          "selectedCandidateFinalScore": 50.86956114075729,
+          "selectedCandidateIndex": 1,
+          "selectedCandidateScoreBreakdown": {
+            "area": -0.00125,
+            "aspect": 2.5455869697078417,
+            "clippedWhite": 0,
+            "colorPurity": 1.6497276125223648,
+            "coreSupport": 0,
+            "emitterTexture": 0,
+            "extent": 0.5288085768225914,
+            "highBrightnessRatio": 24.64,
+            "length": 0.20944060316326907,
+            "localContrast": 0,
+            "longitudinalCoreCoverage": 0,
+            "longitudinalHighCoverage": 2.4545454545454546,
+            "meanBrightness": 8.402666666666669,
+            "peakBrightness": 11.93890909090909,
+            "proposalPenalty": 0,
+            "radiance": 0,
+            "total": 50.86956114075729,
+            "widthConsistency": -1.4988738335799892
+          },
+          "selectedCandidateType": "color-sparse-raw",
+          "topCandidates": [
+            {
+              "componentArea": 1152,
+              "continuity": 0.875,
+              "density": 1.875,
+              "eligible": false,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 468,
+                  "y": 582
+                },
+                "second": {
+                  "x": 478,
+                  "y": 610
+                }
+              },
+              "finalScore": 84.29426537324476,
+              "index": 0,
+              "maxGap": 1,
+              "pointCount": 288,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 406,
+                  "y": 156
+                },
+                "second": {
+                  "x": 474,
+                  "y": 610
+                }
+              },
+              "rawPCASpan": 462.22642131830116,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 470,
+                  "y": 582
+                },
+                "second": {
+                  "x": 474,
+                  "y": 612
+                }
+              },
+              "robustMainIntervalLength": 32,
+              "scoreBreakdown": {
+                "area": -0.03,
+                "aspect": 8,
+                "clippedWhite": 73.9,
+                "colorPurity": 1.837338385879695,
+                "coreSupport": 2.458333333333333,
+                "emitterTexture": 1.346982838713251,
+                "extent": 0.38344356964484977,
+                "highBrightnessRatio": 16.858947368421052,
+                "length": 4.622264213183012,
+                "localContrast": 3.534195326986165,
+                "longitudinalCoreCoverage": 1.3333333333333333,
+                "longitudinalHighCoverage": 0.5,
+                "meanBrightness": 6.2608421052631575,
+                "peakBrightness": 11.93890909090909,
+                "proposalPenalty": -72.96136210248716,
+                "radiance": 26.51765159767615,
+                "total": 84.29426537324476,
+                "widthConsistency": -2.2066136876111733
+              },
+              "selected": false,
+              "sourceType": "core-line-low-confidence",
+              "usedPointLEDFallback": false
+            },
+            {
+              "componentArea": 48,
+              "continuity": 0.8181818181818182,
+              "density": 0.5454545454545454,
+              "eligible": true,
+              "finalOutputEndpoints": {
+                "first": {
+                  "x": 468,
+                  "y": 590
+                },
+                "second": {
+                  "x": 476,
+                  "y": 608
+                }
+              },
+              "finalScore": 50.86956114075729,
+              "index": 1,
+              "maxGap": 1,
+              "pointCount": 12,
+              "rawPCAEndpoints": {
+                "first": {
+                  "x": 468,
+                  "y": 590
+                },
+                "second": {
+                  "x": 476,
+                  "y": 608
+                }
+              },
+              "rawPCASpan": 20.944060316326908,
+              "robustMainIntervalEndpoints": {
+                "first": {
+                  "x": 468,
+                  "y": 590
+                },
+                "second": {
+                  "x": 476,
+                  "y": 608
+                }
+              },
+              "robustMainIntervalLength": 22,
+              "scoreBreakdown": {
+                "area": -0.00125,
+                "aspect": 2.5455869697078417,
+                "clippedWhite": 0,
+                "colorPurity": 1.6497276125223648,
+                "coreSupport": 0,
+                "emitterTexture": 0,
+                "extent": 0.5288085768225914,
+                "highBrightnessRatio": 24.64,
+                "length": 0.20944060316326907,
+                "localContrast": 0,
+                "longitudinalCoreCoverage": 0,
+                "longitudinalHighCoverage": 2.4545454545454546,
+                "meanBrightness": 8.402666666666669,
+                "peakBrightness": 11.93890909090909,
+                "proposalPenalty": 0,
+                "radiance": 0,
+                "total": 50.86956114075729,
+                "widthConsistency": -1.4988738335799892
+              },
+              "selected": true,
+              "sourceType": "color-sparse-raw",
+              "usedPointLEDFallback": true
+            }
+          ],
+          "totalCandidateCount": 2
+        }
+      },
+      "forensicCaptured": false,
+      "frameID": 84,
+      "manualCaptured": false,
+      "presentationTimeSeconds": 0.966503125,
+      "red": {
+        "detected": true,
+        "predicted": false,
+        "x1": 468,
+        "x2": 476,
+        "y1": 590,
+        "y2": 608
+      },
+      "redDetectionSucceeded": true,
+      "redDropoutFileName": "red_dropout_recovered_84.png",
+      "redDropoutRole": "recovered"
+    }
+  ]
+}

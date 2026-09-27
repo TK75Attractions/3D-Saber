@@ -1893,6 +1893,7 @@ final class DetectionCoreTests: XCTestCase {
             DebugRecordingMetadata.self,
             from: Data(contentsOf: recording.metadataURL)
         )
+        XCTAssertEqual(metadata.formatVersion, DebugRecordingMetadata.currentFormatVersion)
         XCTAssertEqual(metadata.frames.map(\.frameID), [100, 101, 102])
         XCTAssertTrue(metadata.frames[0].red.detected)
         XCTAssertFalse(metadata.frames[0].blue.detected)

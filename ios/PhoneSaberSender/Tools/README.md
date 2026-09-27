@@ -3,6 +3,19 @@
 These tools read saved lossless fixtures and Debug Recording metadata. They do
 not alter or re-run detection for session metadata.
 
+The JSON contract and its legacy rules are documented in
+[`PHONE_SABER_DEBUG_METADATA_SCHEMA.md`](PHONE_SABER_DEBUG_METADATA_SCHEMA.md).
+Validate one or more sessions before analysis when you want a field-by-field
+report:
+
+```bash
+ios/PhoneSaberSender/Tools/validate_phone_saber_metadata.py \
+  /path/to/baseline_metadata.json /path/to/experimental_metadata.json
+```
+
+An absent or malformed legacy field is reported as unknown and does not reject
+the file. Add `--strict` to return a nonzero status for those warnings.
+
 Run the lossless fixture suite from the repository root:
 
 ```bash

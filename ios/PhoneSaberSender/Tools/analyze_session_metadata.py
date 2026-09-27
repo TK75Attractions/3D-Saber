@@ -12,6 +12,8 @@ from collections import Counter
 from pathlib import Path
 from typing import Any
 
+from phone_saber_metadata_schema import load_metadata_file
+
 
 COLORS = ("blue", "red")
 RAW_ROBUST_RATIO = 2.0
@@ -27,6 +29,8 @@ def percentile(values: list[float], fraction: float) -> float | None:
 
 def detection_status(frame: dict[str, Any], color: str) -> bool | None:
     """Return fresh detector success, excluding prediction-only output."""
+    if not isinstance(frame, dict):
+        return None
     explicit = frame.get(f"{color}DetectionSucceeded")
     if isinstance(explicit, bool):
         return explicit
@@ -39,11 +43,15 @@ def detection_status(frame: dict[str, Any], color: str) -> bool | None:
 
 
 def endpoint_tuple(frame: dict[str, Any], color: str) -> tuple[float, float, float, float] | None:
-    value = frame.get(color) or {}
+    if not isinstance(frame, dict):
+        return None
+    value = frame.get(color)
+    if not isinstance(value, dict):
+        return None
     if detection_status(frame, color) is False or not value.get("detected"):
         return None
     coordinates = (value.get("x1"), value.get("y1"), value.get("x2"), value.get("y2"))
-    if not all(isinstance(item, (int, float)) for item in coordinates):
+    if not all(_finite_number(item) for item in coordinates):
         return None
     return tuple(float(item) for item in coordinates)  # type: ignore[return-value]
 
@@ -70,32 +78,66 @@ def contiguous_runs(flags: list[bool]) -> list[tuple[int, int]]:
 
 
 def run_duration_ms(frames: list[dict[str, Any]], start: int, end: int) -> float | None:
-    timestamps = [frame.get("presentationTimeSeconds") for frame in frames]
-    first = timestamps[start]
-    if not isinstance(first, (int, float)):
+    timestamps: list[float | None] = []
+    previous: float | None = None
+    for frame in frames:
+        raw = frame.get("presentationTimeSeconds") if isinstance(frame, dict) else None
+        value = float(raw) if _finite_number(raw) else None
+        if value is not None and previous is not None and value <= previous:
+            value = None
+        timestamps.append(value)
+        if value is not None:
+            previous = value
+    if any(timestamps[index] is None for index in range(start, end + 1)):
         return None
-    if end + 1 < len(frames) and isinstance(timestamps[end + 1], (int, float)):
+    first = timestamps[start]
+    if not _finite_number(first):
+        return None
+    if end + 1 < len(frames) and _finite_number(timestamps[end + 1]) \
+            and float(timestamps[end + 1]) > float(timestamps[end]):
         return max(0.0, (float(timestamps[end + 1]) - float(first)) * 1000.0)
     last = timestamps[end]
-    if not isinstance(last, (int, float)):
+    if not _finite_number(last):
         return None
     intervals = [
         float(right) - float(left)
         for left, right in zip(timestamps, timestamps[1:])
-        if isinstance(left, (int, float)) and isinstance(right, (int, float)) and right > left
+        if _finite_number(left) and _finite_number(right) and right > left
     ]
     tail = statistics.median(intervals) if intervals else 0.0
     return max(0.0, (float(last) - float(first) + tail) * 1000.0)
 
 
 def selected_candidate(frame: dict[str, Any], color: str) -> dict[str, Any] | None:
-    diagnostics = ((frame.get("candidateDiagnostics") or {}).get(color) or {})
+    if not isinstance(frame, dict):
+        return None
+    all_diagnostics = frame.get("candidateDiagnostics")
+    if not isinstance(all_diagnostics, dict):
+        return None
+    diagnostics = all_diagnostics.get(color)
+    if not isinstance(diagnostics, dict):
+        return None
     candidate = diagnostics.get("selectedCandidate")
     return candidate if isinstance(candidate, dict) else None
 
 
+def _finite_number(value: Any) -> bool:
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return False
+    try:
+        return math.isfinite(float(value))
+    except OverflowError:
+        return False
+
+
 def timing_value(frame: dict[str, Any]) -> float | None:
-    containers = [frame, frame.get("timing") or {}, frame.get("candidateDiagnostics") or {}]
+    if not isinstance(frame, dict):
+        return None
+    containers = [frame]
+    for name in ("timing", "candidateDiagnostics"):
+        nested = frame.get(name)
+        if isinstance(nested, dict):
+            containers.append(nested)
     keys = (
         "processingTimeMilliseconds", "processingTimeMs", "detectionProcessingMilliseconds",
         "detectionTimeMilliseconds", "detectionTimeMs",
@@ -105,7 +147,7 @@ def timing_value(frame: dict[str, Any]) -> float | None:
             continue
         for key in keys:
             value = container.get(key)
-            if isinstance(value, (int, float)):
+            if _finite_number(value):
                 return float(value)
     return None
 
@@ -151,7 +193,10 @@ def analyze_color(frames: list[dict[str, Any]], color: str) -> dict[str, Any]:
     mask_lost_in_morphology = 0
     diagnostic_frames = 0
     for frame in frames:
-        diagnostics = ((frame.get("candidateDiagnostics") or {}).get(color) or {})
+        diagnostics_by_color = frame.get("candidateDiagnostics")
+        diagnostics = diagnostics_by_color.get(color) if isinstance(diagnostics_by_color, dict) else None
+        if not isinstance(diagnostics, dict):
+            diagnostics = {}
         if diagnostics:
             diagnostic_frames += 1
         total_count = diagnostics.get("totalCandidateCount")
@@ -222,14 +267,12 @@ def analyze_color(frames: list[dict[str, Any]], color: str) -> dict[str, Any]:
 
 
 def analyze_file(path: Path) -> dict[str, Any]:
-    with path.open(encoding="utf-8") as handle:
-        document = json.load(handle)
-    frames = document.get("frames") if isinstance(document, dict) else document
-    if not isinstance(frames, list):
-        raise ValueError("metadata must contain a frames array")
+    validated = load_metadata_file(path)
+    document = validated.document
+    frames = validated.frames
     return {
         "file": str(path),
-        "session_id": document.get("sessionID") if isinstance(document, dict) else None,
+        "session_id": document.get("sessionID"),
         "colors": {color: analyze_color(frames, color) for color in COLORS},
         "prediction_bridge": {
             "available": any(

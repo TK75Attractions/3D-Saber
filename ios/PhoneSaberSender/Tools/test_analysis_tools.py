@@ -78,6 +78,13 @@ class SessionAnalyzerTests(unittest.TestCase):
         self.assertEqual(result["jumps_180_or_more"], 1)
         self.assertEqual(result["jumps_260_or_more"], 1)
 
+    def test_missing_timestamp_keeps_detection_but_makes_dropout_duration_unknown(self):
+        frames = [frame(1, 0.0, False), frame(2, None, False)]
+        result = analyzer.analyze_color(frames, "blue")
+        self.assertEqual(result["not_detected_frames"], 2)
+        self.assertEqual(result["longest_dropout_frames"], 2)
+        self.assertIsNone(result["longest_dropout_milliseconds"])
+
     def test_file_and_comparison_json(self):
         frames = [frame(1, 0.0, False), frame(2, 0.033, True, (0, 0, 10, 0))]
         with tempfile.TemporaryDirectory() as directory:

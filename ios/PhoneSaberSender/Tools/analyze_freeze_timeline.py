@@ -14,8 +14,9 @@ from typing import Any
 
 from analyze_session_metadata import (
     COLORS, RAW_ROBUST_DELTA_PX, RAW_ROBUST_RATIO, contiguous_runs,
-    endpoint_jump, endpoint_tuple, selected_candidate,
+    detection_status, endpoint_jump, endpoint_tuple, selected_candidate,
 )
+from phone_saber_metadata_schema import load_metadata_file
 
 
 UNITY_GAP = re.compile(
@@ -37,41 +38,74 @@ FREEZE_UDP = re.compile(
 
 
 def number(value: Any) -> float | None:
-    if isinstance(value, (int, float)) and not isinstance(value, bool) and math.isfinite(value):
-        return float(value)
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return None
+    try:
+        if math.isfinite(float(value)):
+            return float(value)
+    except OverflowError:
+        pass
     return None
 
 
-def frame_times(frames: list[dict[str, Any]]) -> list[float]:
-    times = [number(frame.get("presentationTimeSeconds")) for frame in frames]
-    if any(value is None for value in times):
-        raise ValueError("every frame needs a finite presentationTimeSeconds")
-    result = [value for value in times if value is not None]
-    if any(right <= left for left, right in zip(result, result[1:])):
-        raise ValueError("presentationTimeSeconds must increase strictly")
+def frame_times(frames: list[dict[str, Any]]) -> list[float | None]:
+    """Return known recording-relative times; invalid entries become unknown.
+
+    A non-increasing timestamp is isolated as unknown so one bad or absent
+    value cannot discard timeline results for every other frame.
+    """
+    result: list[float | None] = []
+    previous: float | None = None
+    for frame in frames:
+        value = number(frame.get("presentationTimeSeconds")) if isinstance(frame, dict) else None
+        if value is not None and previous is not None and value <= previous:
+            value = None
+        result.append(value)
+        if value is not None:
+            previous = value
     return result
 
 
 def analyze_frames(frames: list[dict[str, Any]]) -> list[dict[str, Any]]:
     times = frame_times(frames)
-    intervals = [right - left for left, right in zip(times, times[1:])]
+    intervals = [
+        right - left for left, right in zip(times, times[1:])
+        if left is not None and right is not None and right > left
+    ]
     tail = statistics.median(intervals) if intervals else 0.0
-    ends = times[1:] + ([times[-1] + tail] if times else [])
+    ends: list[float | None] = []
+    for index, value in enumerate(times):
+        next_value = times[index + 1] if index + 1 < len(times) else None
+        if value is None:
+            ends.append(None)
+        elif next_value is not None and next_value > value:
+            ends.append(next_value)
+        else:
+            ends.append(value + tail)
     events: list[dict[str, Any]] = []
 
     def add(color: str, kind: str, start: int, end: int, **details: Any) -> None:
         frame = frames[start]
-        detection = frame.get(color) or {}
-        diagnostics = (frame.get("candidateDiagnostics") or {}).get(color) or {}
+        start_time = times[start]
+        end_time = ends[end]
+        if start_time is None or end_time is None:
+            return
+        detection = frame.get(color)
+        if not isinstance(detection, dict):
+            detection = {}
+        all_diagnostics = frame.get("candidateDiagnostics")
+        diagnostics = all_diagnostics.get(color) if isinstance(all_diagnostics, dict) else None
+        if not isinstance(diagnostics, dict):
+            diagnostics = {}
         candidate = selected_candidate(frame, color) or {}
         endpoint = endpoint_tuple(frame, color)
         events.append({
             "color": color.upper(), "eventType": kind,
             "frameID": frame.get("frameID"), "endFrameID": frames[end].get("frameID"),
             "frameCount": end - start + 1,
-            "startTimeSeconds": times[start], "endTimeSeconds": ends[end],
-            "durationMs": (ends[end] - times[start]) * 1000,
-            "detected": bool(detection.get("detected")),
+            "startTimeSeconds": start_time, "endTimeSeconds": end_time,
+            "durationMs": (end_time - start_time) * 1000,
+            "detected": detection_status(frame, color),
             "selectedCandidateType": diagnostics.get("selectedCandidateType") or candidate.get("sourceType"),
             "endpoint": list(endpoint) if endpoint else None,
             "maskPixelCount": diagnostics.get("maskPixelCount"),
@@ -82,9 +116,13 @@ def analyze_frames(frames: list[dict[str, Any]]) -> list[dict[str, Any]]:
         })
 
     for color in COLORS:
-        detections = [bool((frame.get(color) or {}).get("detected")) for frame in frames]
+        statuses = [detection_status(frame, color) for frame in frames]
         endpoints = [endpoint_tuple(frame, color) for frame in frames]
-        for start, end in contiguous_runs([not detected for detected in detections]):
+        dropout_flags = [
+            False if status is None or times[index] is None else not status
+            for index, status in enumerate(statuses)
+        ]
+        for start, end in contiguous_runs(dropout_flags):
             add(color, "detected_false", start, end)
 
         identical_start: int | None = None
@@ -92,19 +130,24 @@ def analyze_frames(frames: list[dict[str, Any]]) -> list[dict[str, Any]]:
             same_as_previous = (
                 index < len(frames) and index > 0
                 and endpoints[index] is not None
+                and times[index] is not None and times[index - 1] is not None
                 and endpoints[index] == endpoints[index - 1]
             )
             if index == 0:
-                identical_start = 0 if endpoints and endpoints[0] is not None else None
+                identical_start = 0 if endpoints and endpoints[0] is not None and times[0] is not None else None
             elif same_as_previous:
                 continue
             else:
                 if identical_start is not None and index - identical_start >= 4:
                     add(color, "identical_endpoint", identical_start, index - 1)
-                identical_start = index if index < len(frames) and endpoints[index] is not None else None
+                identical_start = (
+                    index if index < len(frames) and endpoints[index] is not None
+                    and times[index] is not None else None
+                )
 
         for index in range(1, len(frames)):
-            if endpoints[index] is None or endpoints[index - 1] is None:
+            if endpoints[index] is None or endpoints[index - 1] is None \
+                    or times[index] is None or times[index - 1] is None:
                 continue
             jump = endpoint_jump(endpoints[index - 1], endpoints[index])
             if jump >= 180:
@@ -119,8 +162,12 @@ def analyze_frames(frames: list[dict[str, Any]]) -> list[dict[str, Any]]:
                 "raw_robust_divergence",
             )
         }
-        for frame in frames:
-            diagnostics = (frame.get("candidateDiagnostics") or {}).get(color) or {}
+        for frame_index, frame in enumerate(frames):
+            all_diagnostics = frame.get("candidateDiagnostics")
+            diagnostics = all_diagnostics.get(color) if isinstance(all_diagnostics, dict) else None
+            if not isinstance(diagnostics, dict):
+                diagnostics = {}
+            time_known = times[frame_index] is not None
             total = number(diagnostics.get("totalCandidateCount"))
             eligible = number(diagnostics.get("eligibleCandidateCount"))
             mask = number(diagnostics.get("maskPixelCount"))
@@ -129,12 +176,18 @@ def analyze_frames(frames: list[dict[str, Any]]) -> list[dict[str, Any]]:
             source = diagnostics.get("selectedCandidateType") or candidate.get("sourceType")
             raw = number(candidate.get("rawPCASpan"))
             robust = number(candidate.get("robustMainIntervalLength"))
-            flags["candidate_zero"].append(total == 0)
-            flags["candidate_present_eligible_zero"].append(total is not None and total > 0 and eligible == 0)
-            flags["mask_present_morphology_zero"].append(mask is not None and mask > 0 and morphology == 0)
-            flags["selected_core_line"].append(isinstance(source, str) and source.startswith("core-line"))
+            flags["candidate_zero"].append(time_known and total == 0)
+            flags["candidate_present_eligible_zero"].append(
+                time_known and total is not None and total > 0 and eligible == 0
+            )
+            flags["mask_present_morphology_zero"].append(
+                time_known and mask is not None and mask > 0 and morphology == 0
+            )
+            flags["selected_core_line"].append(
+                time_known and isinstance(source, str) and source.startswith("core-line")
+            )
             flags["raw_robust_divergence"].append(
-                raw is not None and robust is not None
+                time_known and raw is not None and robust is not None
                 and raw >= robust * RAW_ROBUST_RATIO
                 and raw - robust >= RAW_ROBUST_DELTA_PX
             )
@@ -248,13 +301,12 @@ def read_freeze_diagnostics(path: Path) -> dict[str, Any]:
 
 
 def analyze_file(path: Path, unity_log: Path | None = None) -> dict[str, Any]:
-    document = json.loads(path.read_text(encoding="utf-8"))
-    frames = document.get("frames") if isinstance(document, dict) else document
-    if not isinstance(frames, list) or any(not isinstance(frame, dict) for frame in frames):
-        raise ValueError("metadata must contain a frames array of objects")
+    validated = load_metadata_file(path)
+    document = validated.document
+    frames = validated.frames
     events = analyze_frames(frames)
     result = {
-        "file": str(path), "sessionID": document.get("sessionID") if isinstance(document, dict) else None,
+        "file": str(path), "sessionID": document.get("sessionID"),
         "events": events, "incidents": incidents(events),
     }
     if unity_log is not None:

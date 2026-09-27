@@ -100,9 +100,11 @@ class FreezeTimelineTests(unittest.TestCase):
             self.assertEqual(len(result["events"]), 2)
             self.assertNotIn("unityStartSeconds", result["incidents"][0])
 
-    def test_invalid_timestamps_rejected(self):
-        with self.assertRaisesRegex(ValueError, "increase strictly"):
-            timeline.analyze_frames([frame(1, 0), frame(2, 0)])
+    def test_invalid_timestamps_only_break_time_based_events(self):
+        events = timeline.analyze_frames([frame(1, 0), frame(2, 0), frame(3, .03)])
+        self.assertEqual(len(events), 4)  # two usable timestamps for each color
+        self.assertEqual({event["eventType"] for event in events}, {"detected_false"})
+        self.assertEqual([event["startTimeSeconds"] for event in events], [0.0, 0.0, .03, .03])
 
 
 if __name__ == "__main__":
