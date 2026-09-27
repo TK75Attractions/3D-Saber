@@ -3,6 +3,14 @@
 <plist version="1.0">
 <dict>
     <key>NSBonjourServices</key>
-    <array><string>_phonesaber._udp</string></array>
+    <array>
+        <string>_phonesaber._udp</string>
+        <string>_phonesaber-diag._tcp</string>
+    </array>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+        <key>NSAllowsLocalNetworking</key>
+        <true/>
+    </dict>
 </dict>
 </plist>

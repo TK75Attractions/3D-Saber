@@ -27,6 +27,7 @@
 		A00000000000000000000013 /* forensic-20260921-211845 in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000013 /* forensic-20260921-211845 */; };
 		A00000000000000000000014 /* DebugRecordingTriage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000014 /* DebugRecordingTriage.swift */; };
 		A00000000000000000000015 /* DebugRecordingTriageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000015 /* DebugRecordingTriageTests.swift */; };
+		A00000000000000000000016 /* DebugBundleTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000016 /* DebugBundleTransfer.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -62,6 +63,7 @@
 		B10000000000000000000013 /* forensic-20260921-211845 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "forensic-20260921-211845"; sourceTree = "<group>"; };
 		B10000000000000000000014 /* DebugRecordingTriage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugRecordingTriage.swift; sourceTree = "<group>"; };
 		B10000000000000000000015 /* DebugRecordingTriageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugRecordingTriageTests.swift; sourceTree = "<group>"; };
+		B10000000000000000000016 /* DebugBundleTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugBundleTransfer.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -99,6 +101,7 @@
 				B10000000000000000000006 /* FrameProcessor.swift */,
 				B10000000000000000000011 /* DebugVideoRecorder.swift */,
 				B10000000000000000000014 /* DebugRecordingTriage.swift */,
+				B10000000000000000000016 /* DebugBundleTransfer.swift */,
 				B10000000000000000000008 /* UDPSender.swift */,
 				B10000000000000000000003 /* CameraViewModel.swift */,
 				B10000000000000000000002 /* CameraPreview.swift */,
@@ -251,6 +254,7 @@
 				A00000000000000000000006 /* FrameProcessor.swift in Sources */,
 				A00000000000000000000011 /* DebugVideoRecorder.swift in Sources */,
 				A00000000000000000000014 /* DebugRecordingTriage.swift in Sources */,
+				A00000000000000000000016 /* DebugBundleTransfer.swift in Sources */,
 				A00000000000000000000008 /* UDPSender.swift in Sources */,
 				A00000000000000000000003 /* CameraViewModel.swift in Sources */,
 				A00000000000000000000002 /* CameraPreview.swift in Sources */,
@@ -320,7 +324,7 @@
 				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "赤と青のLED付き棒を検出するためカメラを使用します。";
 				INFOPLIST_FILE = BonjourInfo.plist;
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "検出した棒の座標を同じネットワーク上のMacへ送信します。";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "検出した棒の座標と選択済み診断bundleを同じネットワーク上のMacへ送信します。";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.satoshi.PhoneSaberSender;
 				PRODUCT_NAME = PhoneSaberSender;
@@ -343,7 +347,7 @@
 				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
 				INFOPLIST_KEY_NSCameraUsageDescription = "赤と青のLED付き棒を検出するためカメラを使用します。";
 				INFOPLIST_FILE = BonjourInfo.plist;
-				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "検出した棒の座標を同じネットワーク上のMacへ送信します。";
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "検出した棒の座標と選択済み診断bundleを同じネットワーク上のMacへ送信します。";
 				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.satoshi.PhoneSaberSender;
 				PRODUCT_NAME = PhoneSaberSender;

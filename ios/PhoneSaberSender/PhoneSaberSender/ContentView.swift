@@ -4,6 +4,7 @@ import SwiftUI
 struct ContentView: View {
     @StateObject private var model = CameraViewModel()
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage("phoneSaberAutoTransferDebugBundles") private var autoTransferDebugBundles = true
     @State private var recordingPreviewURL: URL?
 #if DEBUG
     @State private var showDebugPerformance = false
@@ -54,6 +55,8 @@ struct ContentView: View {
                             Toggle("Debug Recording: \(model.debugRecordingEnabled ? "ON" : "OFF")",
                                    isOn: $model.debugRecordingEnabled)
                                 .disabled(model.debugRecordingActive || model.debugRecordingFinalizing)
+                            Toggle("Stop後にtriage bundleをMacへ自動転送",
+                                   isOn: $autoTransferDebugBundles)
                             HStack {
                                 Button("Start Recording") { model.startDebugRecording() }
                                     .disabled(!model.debugRecordingEnabled || !model.running ||

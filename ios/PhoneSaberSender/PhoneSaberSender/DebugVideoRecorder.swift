@@ -479,6 +479,9 @@ final class DebugVideoRecorder {
                             metadataURL: metadataURL,
                             forensicDirectoryURL: forensicFrames.isEmpty ? nil : forensicDirectoryURL
                         )
+                        if let triageBundleURL {
+                            DebugBundleTransfer.shared.enqueue(bundleURL: triageBundleURL)
+                        }
                     } catch {
                         // Triage is best-effort and must not turn a completed recording into a failure.
                         triageErrorMessage = error.localizedDescription
