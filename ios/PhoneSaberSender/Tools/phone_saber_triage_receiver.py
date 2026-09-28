@@ -10,6 +10,7 @@ import queue
 import shutil
 import subprocess
 import sys
+import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
@@ -19,6 +20,7 @@ from phone_saber_triage_codex import (
     DEFAULT_MAX_IMAGES,
     analyze_bundle,
 )
+from phone_saber_auto_repair import RepairError, repair_bundle
 from phone_saber_triage_protocol import (
     CONTENT_TYPE,
     MAX_BUNDLE_BYTES,
@@ -40,12 +42,15 @@ class TriageHTTPServer(ThreadingHTTPServer):
         analysis_mode: str = "disabled",
         max_images: int = DEFAULT_MAX_IMAGES,
         codex_path: str | None = None,
+        repair_mode: str | None = None,
     ) -> None:
         super().__init__(address, TriageRequestHandler)
         self.inbox = inbox
         self.analysis_mode = analysis_mode
         self.max_images = max_images
         self.codex_path = codex_path
+        self.repair_mode = repair_mode or (
+            "automatic" if analysis_mode == "automatic" else "disabled")
         self.analysis_queue: queue.Queue[Path] = queue.Queue(maxsize=4)
         if analysis_mode != "disabled":
             Thread(target=self._analysis_worker, name="phonesaber-codex-worker", daemon=True).start()
@@ -63,15 +68,30 @@ class TriageHTTPServer(ThreadingHTTPServer):
     def _analysis_worker(self) -> None:
         while True:
             bundle = self.analysis_queue.get()
+            started = time.monotonic()
             try:
-                result = analyze_bundle(
-                    bundle,
-                    max_images=self.max_images,
-                    codex_path=self.codex_path,
-                    dry_run=self.analysis_mode == "dry-run",
-                )
+                if (bundle / "analysis_report.json").is_file():
+                    result = {"status": "existing_analysis", "bundle": str(bundle)}
+                else:
+                    print("[AUTO_REPAIR][ANALYSIS] elapsed=0.0s subprocess=codex read-only result=starting", flush=True)
+                    result = analyze_bundle(
+                        bundle,
+                        max_images=self.max_images,
+                        codex_path=self.codex_path,
+                        dry_run=self.analysis_mode == "dry-run",
+                    )
                 print(f"[codex] {result}", flush=True)
+                print(f"[AUTO_REPAIR][ANALYSIS] elapsed={time.monotonic() - started:.1f}s "
+                      f"subprocess=codex read-only result={result['status']}", flush=True)
+                if self.repair_mode != "disabled" and result["status"] in {
+                        "completed", "no_images", "existing_analysis"}:
+                    repair = repair_bundle(bundle, codex_path=self.codex_path,
+                                           dry_run=self.repair_mode == "dry-run",
+                                           max_images=self.max_images)
+                    print(f"[auto-repair] {repair}", flush=True)
             except Exception as exc:
+                print(f"[AUTO_REPAIR][ANALYSIS] elapsed={time.monotonic() - started:.1f}s "
+                      f"subprocess=codex read-only result=FAIL {exc}", flush=True)
                 print(f"[codex] analysis failed; bundle preserved: {exc}", flush=True)
             finally:
                 self.analysis_queue.task_done()
@@ -173,6 +193,10 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
                              help="show the exact selected PNG/context input list; do not call Codex")
     codex_group.add_argument("--no-codex", action="store_true",
                              help="receive bundles only; do not start Codex analysis")
+    parser.add_argument("--repair-dry-run", action="store_true",
+                        help="run the repair gate, but do not edit source, commit, or push")
+    parser.add_argument("--repair-bundle", type=Path,
+                        help="evaluate one already received bundle and exit (use with --repair-dry-run)")
     parser.add_argument("--max-images", type=int, default=DEFAULT_MAX_IMAGES,
                         help=f"Codex image limit (default {DEFAULT_MAX_IMAGES}, hard max {MAX_IMAGES})")
     parser.add_argument("--codex-path", help="explicit Codex CLI executable; defaults to installed Codex")
@@ -181,6 +205,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.repair_bundle is not None:
+        if not args.repair_dry_run:
+            print("--repair-bundle requires --repair-dry-run", file=sys.stderr)
+            return 2
+        try:
+            result = repair_bundle(args.repair_bundle, codex_path=args.codex_path,
+                                   dry_run=True, max_images=args.max_images)
+        except (BundleError, RepairError, OSError, ValueError) as exc:
+            print(f"repair dry run failed: {exc}", file=sys.stderr)
+            return 2
+        print(json.dumps(result, ensure_ascii=False), flush=True)
+        return 0 if result["status"] in {"needs_capture", "dry_run"} else 2
     if not 0 <= args.max_images <= MAX_IMAGES:
         print(f"--max-images must be between 0 and {MAX_IMAGES}", file=sys.stderr)
         return 2
@@ -192,12 +228,20 @@ def main(argv: list[str] | None = None) -> int:
         mode = "dry-run" if args.dry_run else "disabled" if args.no_codex else "automatic"
         server = TriageHTTPServer((args.host, args.port), args.inbox.resolve(),
                                   analysis_mode=mode, max_images=args.max_images,
-                                  codex_path=args.codex_path)
+                                  codex_path=args.codex_path,
+                                  repair_mode="dry-run" if args.repair_dry_run else
+                                  "automatic" if mode == "automatic" else "disabled")
     except OSError as exc:
         print(f"cannot start PhoneSaber diagnostics receiver: {exc}", file=sys.stderr)
         return 2
     bonjour = None if args.no_bonjour else _publish_bonjour(server.server_port, args.service_name)
     print(f"[triage] listening on {args.host}:{server.server_port}; inbox={args.inbox}; codex={server.analysis_mode}; max-images={server.max_images}", flush=True)
+    if server.analysis_mode == "automatic":
+        for bundle in sorted(args.inbox.glob("phone_saber_triage_*")):
+            if bundle.is_dir() and not bundle.is_symlink() and \
+                    (bundle / "summary.json").is_file() and \
+                    not (bundle / "repair_status.json").exists():
+                server.enqueue_analysis(bundle)
     try:
         server.serve_forever(poll_interval=0.25)
     except KeyboardInterrupt:

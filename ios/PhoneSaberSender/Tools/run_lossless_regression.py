@@ -8,6 +8,7 @@ import csv
 import hashlib
 import json
 import math
+import os
 import shutil
 import subprocess
 import sys
@@ -17,7 +18,7 @@ from typing import Any
 
 
 TOOLS_DIR = Path(__file__).resolve().parent
-REPO = TOOLS_DIR.parents[2]
+REPO = Path(os.environ.get("PHONESABER_REGRESSION_REPO", TOOLS_DIR.parents[2])).resolve()
 FIXTURES_DIR = REPO / "ios/PhoneSaberSenderTests/Fixtures"
 DEFAULT_MANIFEST = TOOLS_DIR / "lossless_regression_manifest.json"
 COLORS = {"RED": "red", "BLUE": "blue"}
@@ -211,6 +212,9 @@ def evaluate_fixture(fixture: dict[str, Any], analysis: dict[str, Any]) -> dict[
         "detected": detected,
         "expectedCandidateType": fixture["expectedCandidateType"],
         "candidateType": candidate_type,
+        "candidateCount": len(color_data["candidates"]),
+        "candidateScores": [candidate.get("score") for candidate in color_data["candidates"]],
+        "selectedScore": selected.get("score") if selected else None,
         "expectedEndpoint": fixture["expectedEndpoint"],
         "endpoint": endpoints,
         "endpointErrorPx": error_px,

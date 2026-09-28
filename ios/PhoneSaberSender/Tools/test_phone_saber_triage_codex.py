@@ -39,6 +39,13 @@ EMPTY_ANALYSIS = {
     "false_positive_suspects": [],
     "other_findings": [],
     "limitations": [],
+    "repair_assessment": {
+        "decision": "needs_capture", "visible_saber_confirmed": False,
+        "production_change_supported": False, "root_cause_stage": "unknown",
+        "diagnosis_consistent_with_metadata": False, "change_type": "none",
+        "independent_visual_examples": 0, "affected_colors": [],
+        "evidence_image_ids": [], "reason": "Insufficient visual evidence.",
+    },
 }
 FOUR_IMAGE_IDS = ["image_001", "image_002", "image_003", "image_004"]
 EXPECTED_SUMMARY_SCOPE = "retained incident candidates and nearby context"
@@ -110,8 +117,11 @@ class CodexTriageTests(unittest.TestCase):
                     ["properties"]["image_ids"]["items"]["enum"],
                     FOUR_IMAGE_IDS,
                 )
+            self.assertEqual(
+                invoked["output_schema"]["properties"]["repair_assessment"]
+                ["properties"]["evidence_image_ids"]["items"]["enum"], FOUR_IMAGE_IDS)
             report = json.loads((bundle / "analysis_report.json").read_text(encoding="utf-8"))
-            self.assertEqual(report["formatVersion"], 2)
+            self.assertEqual(report["formatVersion"], 3)
             self.assertEqual(report["input"]["imageCount"], 4)
             self.assertEqual([image["id"] for image in report["input"]["imageReferences"]],
                              FOUR_IMAGE_IDS)
@@ -152,6 +162,18 @@ class CodexTriageTests(unittest.TestCase):
             self.assertTrue((bundle / "summary.json").is_file())
             self.assertFalse((bundle / "analysis_report.json").exists())
 
+    def test_invalid_repair_assessment_is_rejected_before_report_publish(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = root / "bundle"
+            write_codex_bundle(bundle)
+            invalid = copy.deepcopy(EMPTY_ANALYSIS)
+            invalid["repair_assessment"]["evidence_image_ids"] = ["image_999"]
+            codex = fake_codex(root, root / "spy.json", analysis=invalid)
+            with self.assertRaisesRegex(CodexFailed, "repair assessment"):
+                analyze_bundle(bundle, codex_path=str(codex))
+            self.assertFalse((bundle / "analysis_report.json").exists())
+
     def test_case_insensitive_basename_collision_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "bundle"
@@ -174,6 +196,9 @@ class CodexTriageTests(unittest.TestCase):
             self.assertEqual(item_schema["properties"]["image_ids"]["items"], {
                 "type": "string", "enum": ["image_001", "image_002"],
             })
+        self.assertEqual(
+            schema["properties"]["repair_assessment"]["properties"]
+            ["evidence_image_ids"]["items"]["enum"], ["image_001", "image_002"])
 
     def test_codex_unavailable_preserves_received_bundle(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -206,6 +231,7 @@ class CodexTriageTests(unittest.TestCase):
             report = json.loads((bundle / "analysis_report.json").read_text(encoding="utf-8"))
             self.assertEqual(report["input"]["imageCount"], 0)
             self.assertIn("No Codex request was made", report["analysis"]["session_summary"])
+            self.assertEqual(report["analysis"]["repair_assessment"]["decision"], "needs_capture")
 
     def test_default_image_limit_and_failure_type_dedup_are_enforced(self) -> None:
         with tempfile.TemporaryDirectory() as directory:

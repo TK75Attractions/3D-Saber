@@ -34,6 +34,36 @@ MAX_CODEX_SUMMARY_BYTES = 128 * 1024
 MAX_CODEX_CONTEXT_BYTES = 16 * 1024
 MAX_CODEX_METADATA_BYTES = 512 * 1024
 CODEX_TIMEOUT_SECONDS = 600
+GENERATED_REPORT_FILES = {
+    "analysis_report.json", "analysis_report.md", "repair_status.json", "state.json",
+    "repair_report.json", "repair_report.md", "review_report.json", "review_report.md",
+    "final_report.md",
+}
+
+REPAIR_ASSESSMENT_SCHEMA = {
+    "type": "object",
+    "additionalProperties": False,
+    "properties": {
+        "decision": {"type": "string", "enum": ["actionable", "needs_capture"]},
+        "visible_saber_confirmed": {"type": "boolean"},
+        "production_change_supported": {"type": "boolean"},
+        "root_cause_stage": {"type": "string", "enum": [
+            "segmentation", "candidate_generation", "eligibility", "ranking", "endpoint",
+            "temporal", "capture", "unknown",
+        ]},
+        "diagnosis_consistent_with_metadata": {"type": "boolean"},
+        "change_type": {"type": "string", "enum": [
+            "none", "threshold", "candidate_logic", "endpoint_logic", "other_recognition",
+        ]},
+        "independent_visual_examples": {"type": "integer"},
+        "affected_colors": {"type": "array", "items": {"type": "string", "enum": ["RED", "BLUE"]}},
+        "evidence_image_ids": {"type": "array", "items": {"type": "string"}},
+        "reason": {"type": "string"},
+    },
+    "required": ["decision", "visible_saber_confirmed", "production_change_supported",
+                 "root_cause_stage", "diagnosis_consistent_with_metadata", "change_type",
+                 "independent_visual_examples", "affected_colors", "evidence_image_ids", "reason"],
+}
 
 FINDING_SCHEMA = {
     "type": "object",
@@ -62,9 +92,10 @@ OUTPUT_SCHEMA = {
         "false_positive_suspects": {"type": "array", "items": FINDING_SCHEMA},
         "other_findings": {"type": "array", "items": FINDING_SCHEMA},
         "limitations": {"type": "array", "items": {"type": "string"}},
+        "repair_assessment": REPAIR_ASSESSMENT_SCHEMA,
     },
     "required": ["session_summary", "false_negatives", "wrong_candidate_and_endpoint_errors",
-                 "false_positive_suspects", "other_findings", "limitations"],
+                 "false_positive_suspects", "other_findings", "limitations", "repair_assessment"],
 }
 
 
@@ -104,7 +135,8 @@ class CodexFailed(RuntimeError):
     pass
 
 
-def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES) -> CodexInputPlan:
+def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
+               allow_reports: bool = False) -> CodexInputPlan:
     if not 0 <= max_images <= MAX_IMAGES:
         raise ValueError(f"max_images must be between 0 and {MAX_IMAGES}")
     if bundle_dir.is_symlink():
@@ -212,6 +244,11 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES) -> CodexI
         if not path.is_file():
             raise BundleError("Codex bundle cannot contain symlinks or special files")
         actual.add(path.relative_to(root).as_posix())
+    if allow_reports:
+        generated = actual & GENERATED_REPORT_FILES
+        if any((root / name).stat().st_size > MAX_REPORT_BYTES for name in generated):
+            raise BundleError("generated triage report exceeds its size limit")
+        expected.update(generated)
     if actual != expected:
         raise BundleError("Codex bundle contains files outside the selected summary, PNG, and contexts")
     metadata_bytes = summary_path.stat().st_size + sum(
@@ -362,7 +399,7 @@ def analyze_bundle(
             raise CodexFailed(f"Codex CLI returned invalid structured output: {exc}") from exc
 
     report = {
-        "formatVersion": 2,
+        "formatVersion": 3,
         "sessionID": plan.session_id,
         "input": {
             "imageCount": len(plan.image_paths),
@@ -394,7 +431,7 @@ def _write_no_image_report(bundle_dir: Path, plan: CodexInputPlan) -> dict[str, 
     if (bundle_dir / "analysis_report.json").exists() or (bundle_dir / "analysis_report.md").exists():
         raise CodexFailed("analysis report already exists; refusing to overwrite it")
     report = {
-        "formatVersion": 2,
+        "formatVersion": 3,
         "sessionID": plan.session_id,
         "input": {"imageCount": 0, "imagePaths": [], "contextPaths": [],
                   "imageReferences": [], "videoIncluded": False, "fullMetadataIncluded": False},
@@ -403,6 +440,13 @@ def _write_no_image_report(bundle_dir: Path, plan: CodexInputPlan) -> dict[str, 
             "false_negatives": [], "wrong_candidate_and_endpoint_errors": [],
             "false_positive_suspects": [], "other_findings": [],
             "limitations": ["There were no selected lossless images to inspect."],
+            "repair_assessment": {
+                "decision": "needs_capture", "visible_saber_confirmed": False,
+                "production_change_supported": False, "root_cause_stage": "unknown",
+                "diagnosis_consistent_with_metadata": False, "change_type": "none",
+                "independent_visual_examples": 0, "affected_colors": [],
+                "evidence_image_ids": [], "reason": "No selected lossless image is available.",
+            },
         },
     }
     markdown = render_markdown(plan.session_id, report["input"], report["analysis"])
@@ -431,7 +475,7 @@ def _write_reports(bundle_dir: Path, report: dict[str, Any], markdown: str) -> N
 
 def _validate_analysis(value: Any, allowed_images: set[str]) -> None:
     required = {"session_summary", "false_negatives", "wrong_candidate_and_endpoint_errors",
-                "false_positive_suspects", "other_findings", "limitations"}
+                "false_positive_suspects", "other_findings", "limitations", "repair_assessment"}
     if not isinstance(value, dict) or set(value) != required:
         raise BundleError("response must contain exactly the required report sections")
     if not isinstance(value["session_summary"], str) or len(value["session_summary"]) > 16_000:
@@ -471,6 +515,27 @@ def _validate_analysis(value: Any, allowed_images: set[str]) -> None:
     if not isinstance(value["limitations"], list) or len(value["limitations"]) > 100 \
             or not all(isinstance(item, str) and len(item) <= 3_000 for item in value["limitations"]):
         raise BundleError("limitations must be a bounded list of strings")
+    assessment = value["repair_assessment"]
+    if not isinstance(assessment, dict) or set(assessment) != set(REPAIR_ASSESSMENT_SCHEMA["required"]):
+        raise BundleError("repair assessment has an invalid shape")
+    for key in ("decision", "root_cause_stage", "change_type"):
+        if assessment[key] not in REPAIR_ASSESSMENT_SCHEMA["properties"][key]["enum"]:
+            raise BundleError(f"repair assessment has an invalid {key}")
+    for key in ("visible_saber_confirmed", "production_change_supported",
+                "diagnosis_consistent_with_metadata"):
+        if not isinstance(assessment[key], bool):
+            raise BundleError(f"repair assessment has an invalid {key}")
+    examples = assessment["independent_visual_examples"]
+    if isinstance(examples, bool) or not isinstance(examples, int) or not 0 <= examples <= MAX_IMAGES:
+        raise BundleError("repair assessment has an invalid independent_visual_examples")
+    for key, allowed in (("affected_colors", {"RED", "BLUE"}),
+                         ("evidence_image_ids", allowed_images)):
+        items = assessment[key]
+        if not isinstance(items, list) or not all(isinstance(item, str) for item in items) \
+                or len(items) != len(set(items)) or not set(items).issubset(allowed):
+            raise BundleError(f"repair assessment has invalid {key}")
+    if not isinstance(assessment["reason"], str) or not 1 <= len(assessment["reason"]) <= 3_000:
+        raise BundleError("repair assessment has an invalid reason")
 
 
 def render_markdown(session_id: str, input_details: dict[str, Any], analysis: dict[str, Any]) -> str:
@@ -523,6 +588,10 @@ def render_markdown(session_id: str, input_details: dict[str, Any], analysis: di
             ])
     lines.extend(["", "## Limitations", ""])
     lines.extend(f"- {item}" for item in analysis["limitations"])
+    assessment = analysis["repair_assessment"]
+    lines.extend(["", "## Repair assessment", "",
+                  f"Decision: {assessment['decision']}",
+                  f"Reason: {assessment['reason']}"])
     lines.append("")
     return "\n".join(lines)
 
@@ -534,6 +603,9 @@ def _output_schema(image_ids: tuple[str, ...]) -> dict[str, Any]:
         schema["properties"][section]["items"]["properties"]["image_ids"]["items"] = {
             "type": "string", "enum": list(image_ids),
         }
+    schema["properties"]["repair_assessment"]["properties"]["evidence_image_ids"]["items"] = {
+        "type": "string", "enum": list(image_ids),
+    }
     return schema
 
 
@@ -559,6 +631,8 @@ Evidence rules:
 - Classify findings: A = capture/data artifact; B = false negative or candidate=0; C = candidate exists but eligible=0; D = wrong candidate or endpoint jump; E = false-positive suspect (broad/coreless or identical endpoint); F = temporal dropout/continuity; G = insufficient evidence or other.
 - If evidence is insufficient, say so and do not recommend production recognition changes.
 - Do not edit, create, or propose applying production code. Return a concise JSON object matching the supplied schema exactly.
+- Complete repair_assessment conservatively. Mark actionable only when selected PNG pixels visibly confirm a real saber, the metadata supports a specific recognition-stage cause, and the evidence supports a production change. Otherwise use needs_capture. A detector dropout or endpoint jump alone is not visual proof.
+- For a threshold proposal, count independent visually supported examples; a single example is insufficient. Use only listed Image IDs in evidence_image_ids. Describe uncertainty in reason. Regression coverage is checked separately by the Mac gate.
 
 Selected image reference map:
 {image_map}
