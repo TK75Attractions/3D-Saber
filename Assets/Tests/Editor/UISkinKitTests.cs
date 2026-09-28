@@ -70,14 +70,15 @@ public class UISkinKitTests
     // ---- 日本語フォールバック(曲名「揺籠」などが□になっていた件) ----
 
     [Test]
-    public void JapaneseFallbackFontAsset_LoadsFromResources_AndIsDynamic()
+    public void JapaneseFallbackFontAsset_UsesDynamicJapaneseFallback()
     {
         var jp = UISkinKit.JapaneseFallbackFontAsset();
-        Assert.IsNotNull(jp, "Resources/Fonts/Makinas-4-Square から日本語フォールバックが生成される");
+        Assert.IsNotNull(jp, "test fixtureから日本語フォールバックが生成される");
         Assert.AreEqual(TMPro.AtlasPopulationMode.Dynamic, jp.atlasPopulationMode, "使う字だけ描く動的アトラス");
         Assert.AreSame(jp, UISkinKit.JapaneseFallbackFontAsset(), "2回目以降はキャッシュを返す");
-        var src = Resources.Load<Font>("Fonts/" + UISkinKit.JapaneseFontResourceName);
-        Assert.IsNotNull(src);
+        Assert.AreEqual("Makinas-4-Square", UISkinKit.JapaneseFontResourceName,
+            "productionのfont resource identityは維持する");
+        var src = JapaneseFontTestFixture.Font;
         Assert.IsTrue(src.HasCharacter('揺') && src.HasCharacter('籠'), "元フォントは曲名「揺籠」の字を持つ");
     }
 

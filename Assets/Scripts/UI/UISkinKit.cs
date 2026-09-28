@@ -30,6 +30,33 @@ public static class UISkinKit
     static readonly System.Collections.Generic.Dictionary<string, TMP_FontAsset> fontAssetCache =
         new System.Collections.Generic.Dictionary<string, TMP_FontAsset>();
 
+#if UNITY_EDITOR
+    // Editorテストは再配布可能なfixtureを使い、別途取得するMakinasに依存しない。
+    // overrideがnullのときは本番のresource選択を変更しない。
+    static Font japaneseFontOverrideForTests;
+
+    public static void SetJapaneseFontForTests(Font font)
+    {
+        if (font == null) throw new System.ArgumentNullException(nameof(font));
+        japaneseFontOverrideForTests = font;
+        jpFallbackFontAsset = null;
+        jpFallbackLoadAttempted = false;
+        logoFontAsset = null;
+        logoFontLoadAttempted = false;
+        fontAssetCache.Clear();
+    }
+
+    public static void ClearJapaneseFontForTests()
+    {
+        japaneseFontOverrideForTests = null;
+        jpFallbackFontAsset = null;
+        jpFallbackLoadAttempted = false;
+        logoFontAsset = null;
+        logoFontLoadAttempted = false;
+        fontAssetCache.Clear();
+    }
+#endif
+
     // ---- スプライト(手続き生成・共有キャッシュ) ----
 
     // 角丸の白スプライト(9スライス)。Image.type = Sliced で任意サイズに伸ばす。
@@ -242,7 +269,21 @@ public static class UISkinKit
     // 日本語は全画面でマキナス 4 Square に統一。legacy Text の曲名も同じ元書体を使う。
     public const string JapaneseFontResourceName = "Makinas-4-Square";
 
-    public static Font JapaneseFont() => LegacyFont(JapaneseFontResourceName);
+    public static Font JapaneseFont()
+    {
+#if UNITY_EDITOR
+        if (japaneseFontOverrideForTests != null) return japaneseFontOverrideForTests;
+#endif
+        return LegacyFont(JapaneseFontResourceName);
+    }
+
+    static Font LoadJapaneseFontSource()
+    {
+#if UNITY_EDITOR
+        if (japaneseFontOverrideForTests != null) return japaneseFontOverrideForTests;
+#endif
+        return Resources.Load<Font>("Fonts/" + JapaneseFontResourceName);
+    }
 
     // 日本語フォールバック(マキナス 4 Square)。Resources/Fonts の OTF から「動的」TMP フォントを
     // 実行時生成する。動的なので実際に使われたグリフだけをアトラスに描き、7000字級の静的アトラス
@@ -254,7 +295,7 @@ public static class UISkinKit
         if (jpFallbackFontAsset != null) return jpFallbackFontAsset;
         if (jpFallbackLoadAttempted) return null;
         jpFallbackLoadAttempted = true;
-        var otf = Resources.Load<Font>("Fonts/" + JapaneseFontResourceName);
+        var otf = LoadJapaneseFontSource();
         if (otf == null)
         {
             Debug.LogWarning($"UISkinKit: 日本語フォント(Fonts/{JapaneseFontResourceName})が見つかりません。Tools/Fonts/download-japanese-font.ps1 を実行してください");
