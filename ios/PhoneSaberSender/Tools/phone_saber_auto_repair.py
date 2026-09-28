@@ -18,11 +18,15 @@ from pathlib import Path
 from typing import Any
 
 from phone_saber_triage_codex import (
+    ANALYSIS_MODEL,
+    ANALYSIS_REASONING_EFFORT,
     CODEX_TIMEOUT_SECONDS,
     MAX_REPORT_BYTES,
+    CodexModelUnavailable,
     _validate_analysis,
     find_codex_binary,
     input_plan,
+    is_model_unavailable,
 )
 from phone_saber_triage_protocol import BundleError
 
@@ -31,9 +35,13 @@ REPO_ROOT = Path(__file__).resolve().parents[3]
 MAX_ATTEMPTS = 2
 VERIFY_TIMEOUT_SECONDS = 3600
 GIT_TIMEOUT_SECONDS = 90
+REPAIR_MODEL = "gpt-6-sol"
+REPAIR_REASONING_EFFORT = "high"
+REVIEW_MODEL = "gpt-6-sol"
+REVIEW_REASONING_EFFORT = "high"
 TERMINAL_STATUSES = {
     "needs_capture", "repair_failed", "blocked", "blocked_remote_changed",
-    "repair_pushed", "dry_run",
+    "repair_pushed", "dry_run", "MODEL_UNAVAILABLE",
 }
 REPAIR_FILES = (
     "ios/PhoneSaberSender/PhoneSaberSender/DetectionCore.swift",
@@ -71,6 +79,10 @@ class RepairError(RuntimeError):
 
 
 class RepairTimeout(RepairError):
+    pass
+
+
+class RepairModelUnavailable(RepairError):
     pass
 
 
@@ -194,6 +206,10 @@ def repair_gate(report: dict[str, Any], plan: Any, repo: Path) -> dict[str, Any]
     if report["formatVersion"] != 3 or not isinstance(assessment, dict):
         reasons.append("legacy analysis lacks machine-readable repair evidence")
     else:
+        if report.get("analysisModel") != ANALYSIS_MODEL \
+                or report.get("analysisReasoningEffort") != ANALYSIS_REASONING_EFFORT \
+                or report.get("analysisExecuted") is not True:
+            reasons.append("analysis model provenance is missing or differs from the pinned role")
         selected = {}
         for image in plan.images:
             context = _json_file(image.context_path, 16 * 1024)
@@ -289,15 +305,39 @@ def _terminal_report(bundle: Path, state: dict[str, Any], gate: dict[str, Any],
         "dry_run": "DRY RUN", "blocked": "BLOCKED",
         "blocked_remote_changed": "BLOCKED_REMOTE_CHANGED",
         "repair_failed": "REPAIR FAILED",
+        "MODEL_UNAVAILABLE": "MODEL_UNAVAILABLE",
     }[status]
+    models = state.get("models", {})
+    model_fields = {
+        "analysisModel": models.get("analysis", {}).get("model", ANALYSIS_MODEL),
+        "analysisReasoningEffort": models.get("analysis", {}).get(
+            "reasoningEffort", ANALYSIS_REASONING_EFFORT),
+        "analysisExecuted": models.get("analysis", {}).get("executed"),
+        "analysisAttempted": models.get("analysis", {}).get("attempted", False),
+        "repairModel": models.get("repair", {}).get("model", REPAIR_MODEL),
+        "repairReasoningEffort": models.get("repair", {}).get(
+            "reasoningEffort", REPAIR_REASONING_EFFORT),
+        "repairExecuted": models.get("repair", {}).get("executed", False),
+        "repairAttempted": models.get("repair", {}).get("attempted", False),
+        "reviewModel": models.get("review", {}).get("model", REVIEW_MODEL),
+        "reviewReasoningEffort": models.get("review", {}).get(
+            "reasoningEffort", REVIEW_REASONING_EFFORT),
+        "reviewExecuted": models.get("review", {}).get("executed", False),
+        "reviewAttempted": models.get("review", {}).get("attempted", False),
+    }
     payload = {"sessionID": state["sessionID"], "status": status,
                "reason": reason, "attempts": len(attempts), "commit": state.get("commit"),
-               "originMain": state.get("pushedOriginMain"), "dryRun": state.get("dryRun", False)}
+               "originMain": state.get("pushedOriginMain"), "dryRun": state.get("dryRun", False),
+               **model_fields}
+    final_payload = {**payload, "result": label,
+                     "tests": "PASS" if verification.get("passed") else "NOT PASSED",
+                     "review": review.get("decision", "not_run").upper(),
+                     "verification": verification}
     _atomic_json(bundle / "repair_status.json", payload)
     repair_report = {"sessionID": state["sessionID"], "gate": gate,
                      "attempts": attempts, "verification": verification,
                      "result": status, "reason": reason,
-                     "dryRunPlan": state.get("dryRunPlan")}
+                     "dryRunPlan": state.get("dryRunPlan"), **model_fields}
     _atomic_json(bundle / "repair_report.json", repair_report)
     lines = ["# PhoneSaber repair", "", f"Status: {status}", "", f"Reason: {reason}", "",
              f"Gate: {gate.get('decision', 'not_run')}", f"Corpus: {gate.get('corpus', 'not_run')}",
@@ -326,7 +366,20 @@ def _terminal_report(bundle: Path, state: dict[str, Any], gate: dict[str, Any],
                  f"Reason: {reason}\n\ncommit:\n{state.get('commit') or '-'}\n\n"
                  f"origin/main:\n{state.get('pushedOriginMain') or '-'}\n\n"
                  f"tests:\n{'PASS' if verification.get('passed') else 'NOT PASSED'}\n\n"
-                 f"review:\n{review.get('decision', 'not_run').upper()}\n")
+                 f"review:\n{review.get('decision', 'not_run').upper()}\n\n"
+                 f"analysisModel: {model_fields['analysisModel']}\n"
+                 f"analysisReasoningEffort: {model_fields['analysisReasoningEffort']}\n"
+                 f"analysisExecuted: {model_fields['analysisExecuted']}\n"
+                 f"analysisAttempted: {model_fields['analysisAttempted']}\n\n"
+                 f"repairModel: {model_fields['repairModel']}\n"
+                 f"repairReasoningEffort: {model_fields['repairReasoningEffort']}\n"
+                 f"repairExecuted: {model_fields['repairExecuted']}\n"
+                 f"repairAttempted: {model_fields['repairAttempted']}\n\n"
+                 f"reviewModel: {model_fields['reviewModel']}\n"
+                 f"reviewReasoningEffort: {model_fields['reviewReasoningEffort']}\n"
+                 f"reviewExecuted: {model_fields['reviewExecuted']}\n"
+                 f"reviewAttempted: {model_fields['reviewAttempted']}\n")
+    _atomic_json(bundle / "final_report.json", final_payload)
     state["phase"] = "done"
     state["updatedAt"] = time.time()
     _atomic_json(bundle / "state.json", state)
@@ -355,23 +408,37 @@ def _run(command: list[str], *, cwd: Path, timeout: int, stdin: str | None = Non
 
 
 def _codex_call(binary: str, scratch: Path, prompt: str, schema: dict[str, Any],
-                images: list[Path], *, writable: bool, timeout: int) -> dict[str, Any]:
+                images: list[Path], *, role: str, writable: bool, timeout: int) -> dict[str, Any]:
+    if role == "repair":
+        model, effort = REPAIR_MODEL, REPAIR_REASONING_EFFORT
+    elif role == "review":
+        model, effort = REVIEW_MODEL, REVIEW_REASONING_EFFORT
+    else:
+        raise ValueError(f"unsupported Codex role: {role}")
     schema_path = scratch.parent / "codex_output_schema.json"
     response_path = scratch.parent / "codex_last_message.json"
     _atomic_json(schema_path, schema)
     response_path.unlink(missing_ok=True)
-    command = [binary, "exec", "--ephemeral", "--sandbox",
+    command = [binary, "exec", "--model", model, "-c",
+               f"model_reasoning_effort={json.dumps(effort)}", "--ephemeral", "--sandbox",
                "workspace-write" if writable else "read-only", "--skip-git-repo-check",
                "--cd", str(scratch), "--output-schema", str(schema_path),
                "--output-last-message", str(response_path)]
     for image_path in images:
         command.extend(["--image", str(image_path)])
     command.append("-")
+    print(f"[AUTO_REPAIR][{role.upper()}] model={model} effort={effort} "
+          f"subprocess=codex sandbox={'workspace-write' if writable else 'read-only'} "
+          "result=starting", flush=True)
     completed = _run(command, cwd=scratch, timeout=timeout, stdin=prompt)
     if completed.returncode:
         diagnostic = (completed.stderr or completed.stdout).strip().splitlines()
-        raise RepairError(f"Codex exit {completed.returncode}: "
-                          f"{(diagnostic[-1] if diagnostic else 'no diagnostic')[:500]}")
+        detail = f"Codex exit {completed.returncode}: {(diagnostic[-1] if diagnostic else 'no diagnostic')[:500]}"
+        if is_model_unavailable(completed.stderr + "\n" + completed.stdout):
+            print(f"[AUTO_REPAIR][{role.upper()}] model={model} effort={effort} "
+                  "subprocess=codex result=MODEL_UNAVAILABLE", flush=True)
+            raise RepairModelUnavailable(f"MODEL_UNAVAILABLE: {role} requires {model}/{effort}: {detail}")
+        raise RepairError(detail)
     response = _json_file(response_path)
     if not isinstance(response, dict) or set(response) != set(schema["required"]):
         raise RepairError("Codex response has an invalid structure")
@@ -384,6 +451,8 @@ def _codex_call(binary: str, scratch: Path, prompt: str, schema: dict[str, Any],
                                           or not all(isinstance(item, str) and len(item) <= 1000
                                                      for item in value)):
             raise RepairError(f"Codex response has invalid {key}")
+    print(f"[AUTO_REPAIR][{role.upper()}] model={model} effort={effort} "
+          "subprocess=codex result=complete", flush=True)
     return response
 
 
@@ -603,7 +672,7 @@ def _review(binary: str, scratch: Path, plan: Any, report: dict[str, Any],
               f"Verification: {json.dumps(verification, ensure_ascii=False)}\n\n"
               f"Diff:\n{diff[:120000]}")
     return _codex_call(binary, scratch, prompt, REVIEW_RESPONSE_SCHEMA, images,
-                       writable=False, timeout=CODEX_TIMEOUT_SECONDS)
+                       role="review", writable=False, timeout=CODEX_TIMEOUT_SECONDS)
 
 
 def _commit_push(repo: Path, bundle: Path, state: dict[str, Any], changed: list[str]) -> str:
@@ -718,7 +787,22 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
         gate = repair_gate(report, plan, repo)
         state: dict[str, Any] = {"sessionID": plan.session_id, "status": "running",
                                  "phase": "gate", "attempt": 0, "dryRun": dry_run,
-                                 "ownedFiles": {}, "startedAt": time.time()}
+                                 "ownedFiles": {}, "startedAt": time.time(),
+                                 "models": {
+                                     "analysis": {
+                                         "model": report.get("analysisModel", ANALYSIS_MODEL),
+                                         "reasoningEffort": report.get("analysisReasoningEffort",
+                                                                        ANALYSIS_REASONING_EFFORT),
+                                         "executed": report.get("analysisExecuted"),
+                                         "attempted": report.get("analysisExecuted") is True,
+                                     },
+                                     "repair": {"model": REPAIR_MODEL,
+                                                "reasoningEffort": REPAIR_REASONING_EFFORT,
+                                                "executed": False, "attempted": False},
+                                     "review": {"model": REVIEW_MODEL,
+                                                "reasoningEffort": REVIEW_REASONING_EFFORT,
+                                                "executed": False, "attempted": False},
+                                 }}
         _save_state(bundle, state, "gate")
         attempts: list[dict[str, Any]] = []
         review: dict[str, Any] = {}
@@ -744,6 +828,17 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
             if dry_run:
                 state["dryRunPlan"] = {
                     "mainCommit": safety["head"],
+                    "models": {
+                        "analysis": {"model": ANALYSIS_MODEL,
+                                     "reasoningEffort": ANALYSIS_REASONING_EFFORT,
+                                     "executed": state["models"]["analysis"]["executed"]},
+                        "repair": {"model": REPAIR_MODEL,
+                                   "reasoningEffort": REPAIR_REASONING_EFFORT,
+                                   "executed": False},
+                        "review": {"model": REVIEW_MODEL,
+                                   "reasoningEffort": REVIEW_REASONING_EFFORT,
+                                   "executed": False},
+                    },
                     "selectedImageIDs": list(plan.image_ids),
                     "repairPrompt": (
                         "Inspect selected lossless PNGs, compact contexts, analysis, and "
@@ -775,7 +870,8 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
             for attempt in range(1, MAX_ATTEMPTS + 1):
                 state["attempt"] = attempt
                 _save_state(bundle, state, "repairing")
-                _progress(start, "REPAIR", f"attempt {attempt}/{MAX_ATTEMPTS} subprocess=codex workspace-write result=starting")
+                _progress(start, "REPAIR", f"attempt {attempt}/{MAX_ATTEMPTS} "
+                          f"model={REPAIR_MODEL} effort={REPAIR_REASONING_EFFORT} subprocess=codex result=starting")
                 prompt = (f"Repair PhoneSaber recognition from main commit {safety['head']}. "
                           "Read evidence/analysis_report.json, evidence/analysis_report.md, "
                           "evidence/summary.json, selected compact frame contexts, and the "
@@ -795,8 +891,12 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
                           f"Allowed: {', '.join(REPAIR_FILES)}. "
                           f"Prior verification failure: {failure_detail[:3000] or 'none'}. "
                           "Return a concise JSON decision and summary.")
+                state["models"]["repair"]["attempted"] = True
+                _save_state(bundle, state, "repairing")
                 response = _codex_call(binary, scratch, prompt, REPAIR_RESPONSE_SCHEMA, images,
-                                       writable=True, timeout=CODEX_TIMEOUT_SECONDS)
+                                       role="repair", writable=True, timeout=CODEX_TIMEOUT_SECONDS)
+                state["models"]["repair"]["executed"] = True
+                _save_state(bundle, state, "repairing")
                 changed = _candidate_files(scratch, originals, evidence_hashes)
                 if response["decision"] == "needs_more_evidence":
                     state["status"] = "needs_capture"
@@ -827,8 +927,13 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
                     # Codex receives failure context in the next attempt; scratch retains edits.
                     continue
                 diff = _current_diff(repo, changed)
-                _progress(start, "REVIEW", "subprocess=codex read-only; starting")
+                _progress(start, "REVIEW", f"model={REVIEW_MODEL} effort={REVIEW_REASONING_EFFORT} "
+                          "subprocess=codex read-only; starting")
+                state["models"]["review"]["attempted"] = True
+                _save_state(bundle, state, "reviewing")
                 review = _review(binary, scratch, plan, report, diff, verification, images)
+                state["models"]["review"]["executed"] = True
+                _save_state(bundle, state, "reviewing")
                 if review["decision"] != "approved":
                     attempts.append({"attempt": attempt, "result": "review_" + review["decision"],
                                      "files": changed, "reason": review["reason"]})
@@ -851,7 +956,9 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
                                     reason="Verified repair reviewed, committed and pushed")
         except (RepairError, BundleError, OSError, ValueError) as exc:
             reason = str(exc)
-            if reason.startswith("BLOCKED_REMOTE_CHANGED"):
+            if isinstance(exc, RepairModelUnavailable):
+                state["status"] = "MODEL_UNAVAILABLE"
+            elif reason.startswith("BLOCKED_REMOTE_CHANGED"):
                 state["status"] = "blocked_remote_changed"
             elif "BLOCKED main safety gate" in reason or "main HEAD changed" in reason \
                     or "unexpected changes" in reason:
@@ -883,6 +990,29 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
             _progress(start, "STOP", f"subprocess=none result={state['status']}: {reason[:250]}")
             return _terminal_report(bundle, state, gate, attempts, review, verification,
                                     reason=reason)
+
+
+def record_analysis_model_unavailable(bundle: Path, reason: str) -> dict[str, Any]:
+    """Persist a terminal model failure without entering repair or touching the repo."""
+    if bundle.is_symlink():
+        raise RepairError("bundle path must not be a symlink")
+    bundle = bundle.resolve(strict=True)
+    plan = input_plan(bundle, allow_reports=True)
+    state = {
+        "sessionID": plan.session_id, "status": "MODEL_UNAVAILABLE", "phase": "done",
+        "attempt": 0, "dryRun": False, "ownedFiles": {}, "startedAt": time.time(),
+        "models": {
+            "analysis": {"model": ANALYSIS_MODEL,
+                         "reasoningEffort": ANALYSIS_REASONING_EFFORT,
+                         "attempted": True, "executed": False},
+            "repair": {"model": REPAIR_MODEL, "reasoningEffort": REPAIR_REASONING_EFFORT,
+                       "attempted": False, "executed": False},
+            "review": {"model": REVIEW_MODEL, "reasoningEffort": REVIEW_REASONING_EFFORT,
+                       "attempted": False, "executed": False},
+        },
+    }
+    _save_state(bundle, state, "done")
+    return _terminal_report(bundle, state, {}, [], {}, {}, reason=reason)
 
 
 def main(argv: list[str] | None = None) -> int:

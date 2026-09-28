@@ -17,10 +17,17 @@ from threading import Thread
 from typing import Any
 
 from phone_saber_triage_codex import (
+    ANALYSIS_MODEL,
+    ANALYSIS_REASONING_EFFORT,
     DEFAULT_MAX_IMAGES,
+    CodexModelUnavailable,
     analyze_bundle,
 )
-from phone_saber_auto_repair import RepairError, repair_bundle
+from phone_saber_auto_repair import (
+    RepairError,
+    record_analysis_model_unavailable,
+    repair_bundle,
+)
 from phone_saber_triage_protocol import (
     CONTENT_TYPE,
     MAX_BUNDLE_BYTES,
@@ -89,6 +96,16 @@ class TriageHTTPServer(ThreadingHTTPServer):
                                            dry_run=self.repair_mode == "dry-run",
                                            max_images=self.max_images)
                     print(f"[auto-repair] {repair}", flush=True)
+            except CodexModelUnavailable as exc:
+                print(f"[AUTO_REPAIR][ANALYSIS] elapsed={time.monotonic() - started:.1f}s "
+                      f"subprocess=codex model={ANALYSIS_MODEL} effort={ANALYSIS_REASONING_EFFORT} "
+                      f"result=MODEL_UNAVAILABLE {exc}", flush=True)
+                try:
+                    result = record_analysis_model_unavailable(bundle, str(exc))
+                    print(f"[auto-repair] {result}", flush=True)
+                except Exception as report_error:
+                    print(f"[auto-repair] could not persist MODEL_UNAVAILABLE status: {report_error}",
+                          flush=True)
             except Exception as exc:
                 print(f"[AUTO_REPAIR][ANALYSIS] elapsed={time.monotonic() - started:.1f}s "
                       f"subprocess=codex read-only result=FAIL {exc}", flush=True)

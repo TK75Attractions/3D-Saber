@@ -18,7 +18,10 @@ from threading import Thread
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from phone_saber_triage_codex import (
+    ANALYSIS_MODEL,
+    ANALYSIS_REASONING_EFFORT,
     CodexFailed,
+    CodexModelUnavailable,
     CodexUnavailable,
     analyze_bundle,
     dry_run_text,
@@ -103,6 +106,9 @@ class CodexTriageTests(unittest.TestCase):
                 "frames/frame_102_3.json", "frames/frame_103_4.json",
             })
             self.assertEqual(invoked["sandbox"], "read-only")
+            self.assertEqual(invoked["model"], ANALYSIS_MODEL)
+            self.assertEqual(invoked["effort_config"],
+                             f'model_reasoning_effort="{ANALYSIS_REASONING_EFFORT}"')
             self.assertTrue(invoked["ephemeral"])
             self.assertTrue(invoked["skip_git_repo_check"])
             self.assertIn("A = capture/data artifact", invoked["prompt"])
@@ -122,6 +128,9 @@ class CodexTriageTests(unittest.TestCase):
                 ["properties"]["evidence_image_ids"]["items"]["enum"], FOUR_IMAGE_IDS)
             report = json.loads((bundle / "analysis_report.json").read_text(encoding="utf-8"))
             self.assertEqual(report["formatVersion"], 3)
+            self.assertEqual(report["analysisModel"], ANALYSIS_MODEL)
+            self.assertEqual(report["analysisReasoningEffort"], ANALYSIS_REASONING_EFFORT)
+            self.assertTrue(report["analysisExecuted"])
             self.assertEqual(report["input"]["imageCount"], 4)
             self.assertEqual([image["id"] for image in report["input"]["imageReferences"]],
                              FOUR_IMAGE_IDS)
@@ -222,6 +231,21 @@ class CodexTriageTests(unittest.TestCase):
             self.assertFalse((bundle / "analysis_report.json").exists())
             self.assertFalse((bundle / "analysis_report.md").exists())
 
+    def test_model_unavailable_fails_without_fallback(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = root / "bundle"
+            write_codex_bundle(bundle)
+            spy = root / "spy.json"
+            codex = fake_codex(root, spy, model_error="unknown model gpt-6-luna")
+            with self.assertRaisesRegex(CodexModelUnavailable, "MODEL_UNAVAILABLE"):
+                analyze_bundle(bundle, codex_path=str(codex))
+            invoked = json.loads(spy.read_text())
+            self.assertEqual(invoked["model"], ANALYSIS_MODEL)
+            self.assertEqual(invoked["effort_config"],
+                             f'model_reasoning_effort="{ANALYSIS_REASONING_EFFORT}"')
+            self.assertFalse((bundle / "analysis_report.json").exists())
+
     def test_zero_image_session_writes_local_report_without_codex(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "bundle"
@@ -230,6 +254,9 @@ class CodexTriageTests(unittest.TestCase):
             self.assertEqual(result["status"], "no_images")
             report = json.loads((bundle / "analysis_report.json").read_text(encoding="utf-8"))
             self.assertEqual(report["input"]["imageCount"], 0)
+            self.assertEqual(report["analysisModel"], ANALYSIS_MODEL)
+            self.assertEqual(report["analysisReasoningEffort"], ANALYSIS_REASONING_EFFORT)
+            self.assertFalse(report["analysisExecuted"])
             self.assertIn("No Codex request was made", report["analysis"]["session_summary"])
             self.assertEqual(report["analysis"]["repair_assessment"]["decision"], "needs_capture")
 
@@ -358,7 +385,7 @@ class CodexTriageTests(unittest.TestCase):
 
 
 def fake_codex(root: Path, spy_path: Path, *, analysis: dict | None = None,
-               fail: bool = False) -> Path:
+               fail: bool = False, model_error: str | None = None) -> Path:
     executable = root / "fake-codex"
     response_json = json.dumps(analysis or EMPTY_ANALYSIS, ensure_ascii=False)
     spy_literal = repr(str(spy_path))
@@ -366,8 +393,11 @@ def fake_codex(root: Path, spy_path: Path, *, analysis: dict | None = None,
 import json, pathlib, sys
 args = sys.argv[1:]
 prompt = sys.stdin.read()
-if {fail!r}:
-    print('simulated Codex failure', file=sys.stderr)
+model = args[args.index('--model') + 1] if '--model' in args else None
+effort_config = args[args.index('-c') + 1] if '-c' in args else None
+if {fail or model_error is not None!r}:
+    pathlib.Path({spy_literal}).write_text(json.dumps({{'model': model, 'effort_config': effort_config, 'args': args}}), encoding='utf-8')
+    print({(model_error or 'simulated Codex failure')!r}, file=sys.stderr)
     raise SystemExit(9)
 image_paths = [args[i + 1] for i, value in enumerate(args[:-1]) if value == '--image']
 input_root = pathlib.Path(args[args.index('--cd') + 1])
@@ -378,6 +408,8 @@ spy = {{
     'image_flag_count': args.count('--image'),
     'files': sorted(path.relative_to(input_root).as_posix() for path in input_root.rglob('*') if path.is_file()),
     'sandbox': args[args.index('--sandbox') + 1],
+    'model': model,
+    'effort_config': effort_config,
     'ephemeral': '--ephemeral' in args,
     'skip_git_repo_check': '--skip-git-repo-check' in args,
     'prompt': prompt,

@@ -7,10 +7,12 @@ import argparse
 import copy
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -34,10 +36,20 @@ MAX_CODEX_SUMMARY_BYTES = 128 * 1024
 MAX_CODEX_CONTEXT_BYTES = 16 * 1024
 MAX_CODEX_METADATA_BYTES = 512 * 1024
 CODEX_TIMEOUT_SECONDS = 600
+ANALYSIS_MODEL = "gpt-6-luna"
+ANALYSIS_REASONING_EFFORT = "max"
+MODEL_UNAVAILABLE_PATTERNS = (
+    "unknown model", "unsupported model", "invalid model", "model not found",
+    "model is not available", "model unavailable", "model is unavailable",
+    "model is unsupported", "model is not supported", "not a valid model",
+    "model does not exist",
+    "unsupported reasoning effort", "invalid reasoning effort",
+    "unknown reasoning effort", "reasoning effort is not supported",
+)
 GENERATED_REPORT_FILES = {
     "analysis_report.json", "analysis_report.md", "repair_status.json", "state.json",
     "repair_report.json", "repair_report.md", "review_report.json", "review_report.md",
-    "final_report.md",
+    "final_report.md", "final_report.json",
 }
 
 REPAIR_ASSESSMENT_SCHEMA = {
@@ -133,6 +145,24 @@ class CodexUnavailable(RuntimeError):
 
 class CodexFailed(RuntimeError):
     pass
+
+
+class CodexModelUnavailable(CodexFailed):
+    """The pinned model or reasoning effort was rejected; never retry with defaults."""
+
+
+def is_model_unavailable(diagnostic: str) -> bool:
+    normalized = diagnostic.casefold()
+    if any(pattern in normalized for pattern in MODEL_UNAVAILABLE_PATTERNS):
+        return True
+    # CLI/API diagnostics often put the requested model ID between these words.
+    if re.search(r"\bmodel\b.{0,120}\b(?:unavailable|not available|not supported|unsupported|"
+                 r"not found|does not exist|unknown|invalid)\b", normalized, re.DOTALL):
+        return True
+    if "model_reasoning_effort" in normalized and any(
+            word in normalized for word in ("invalid", "unknown", "unsupported", "not supported")):
+        return True
+    return False
 
 
 def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
@@ -360,6 +390,8 @@ def analyze_bundle(
         command = [
             binary,
             "exec",
+            "--model", ANALYSIS_MODEL,
+            "-c", f"model_reasoning_effort={json.dumps(ANALYSIS_REASONING_EFFORT)}",
             "--ephemeral",
             "--sandbox", "read-only",
             "--skip-git-repo-check",
@@ -370,6 +402,9 @@ def analyze_bundle(
         for image_path in selected_images:
             command.extend(["--image", str(image_path)])
         command.append("-")
+        started = time.monotonic()
+        print(f"[AUTO_REPAIR][ANALYSIS] model={ANALYSIS_MODEL} "
+              f"effort={ANALYSIS_REASONING_EFFORT} subprocess=codex result=starting", flush=True)
 
         try:
             completed = subprocess.run(
@@ -389,6 +424,12 @@ def analyze_bundle(
         if completed.returncode != 0:
             diagnostic = (completed.stderr or completed.stdout).strip().splitlines()
             detail = diagnostic[-1][:300] if diagnostic else f"exit {completed.returncode}"
+            if is_model_unavailable(completed.stderr + "\n" + completed.stdout):
+                print(f"[AUTO_REPAIR][ANALYSIS] model={ANALYSIS_MODEL} "
+                      f"effort={ANALYSIS_REASONING_EFFORT} subprocess=codex "
+                      f"result=MODEL_UNAVAILABLE elapsed={time.monotonic() - started:.1f}s", flush=True)
+                raise CodexModelUnavailable(
+                    f"MODEL_UNAVAILABLE: analysis requires {ANALYSIS_MODEL}/{ANALYSIS_REASONING_EFFORT}: {detail}")
             raise CodexFailed(f"Codex CLI failed ({completed.returncode}): {detail}")
         if not response_path.is_file() or response_path.stat().st_size > MAX_REPORT_BYTES:
             raise CodexFailed("Codex CLI returned no bounded final report")
@@ -397,10 +438,16 @@ def analyze_bundle(
             _validate_analysis(analysis, set(plan.image_ids))
         except (OSError, UnicodeError, json.JSONDecodeError, BundleError, TypeError) as exc:
             raise CodexFailed(f"Codex CLI returned invalid structured output: {exc}") from exc
+        print(f"[AUTO_REPAIR][ANALYSIS] model={ANALYSIS_MODEL} "
+              f"effort={ANALYSIS_REASONING_EFFORT} subprocess=codex "
+              f"result=complete elapsed={time.monotonic() - started:.1f}s", flush=True)
 
     report = {
         "formatVersion": 3,
         "sessionID": plan.session_id,
+        "analysisModel": ANALYSIS_MODEL,
+        "analysisReasoningEffort": ANALYSIS_REASONING_EFFORT,
+        "analysisExecuted": True,
         "input": {
             "imageCount": len(plan.image_paths),
             "imagePaths": [path.relative_to(plan.root).as_posix() for path in plan.image_paths],
@@ -433,6 +480,9 @@ def _write_no_image_report(bundle_dir: Path, plan: CodexInputPlan) -> dict[str, 
     report = {
         "formatVersion": 3,
         "sessionID": plan.session_id,
+        "analysisModel": ANALYSIS_MODEL,
+        "analysisReasoningEffort": ANALYSIS_REASONING_EFFORT,
+        "analysisExecuted": False,
         "input": {"imageCount": 0, "imagePaths": [], "contextPaths": [],
                   "imageReferences": [], "videoIncluded": False, "fullMetadataIncluded": False},
         "analysis": {

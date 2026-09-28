@@ -22,6 +22,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import phone_saber_auto_repair as repair
 from phone_saber_triage_codex import input_plan
 from test_phone_saber_triage_codex import EMPTY_ANALYSIS, fake_codex, write_codex_bundle
+from phone_saber_triage_codex import ANALYSIS_MODEL, ANALYSIS_REASONING_EFFORT
 from phone_saber_triage_protocol import CONTENT_TYPE
 from phone_saber_triage_receiver import TriageHTTPServer
 
@@ -63,6 +64,9 @@ def prepared_bundle(root: Path, *, actionable: bool = True, count: int = 1,
                    "frameID": image.frame_id, "incidentType": image.failure_type}
                   for image in plan.images]
     report = {"formatVersion": 3, "sessionID": plan.session_id,
+              "analysisModel": ANALYSIS_MODEL,
+              "analysisReasoningEffort": ANALYSIS_REASONING_EFFORT,
+              "analysisExecuted": True,
               "input": {"imageCount": len(references),
                         "imagePaths": [item["path"] for item in references],
                         "contextPaths": [item["contextPath"] for item in references],
@@ -163,6 +167,23 @@ class RepairGateTests(unittest.TestCase):
             plan = json.loads((bundle / "repair_report.json").read_text())["dryRunPlan"]
             self.assertIn("./tools/verify_phone_saber.sh", plan["verificationCommands"])
             self.assertIn("recognition", plan["repairPrompt"])
+            self.assertEqual(plan["models"]["repair"], {
+                "model": repair.REPAIR_MODEL,
+                "reasoningEffort": repair.REPAIR_REASONING_EFFORT,
+                "executed": False,
+            })
+            self.assertEqual(plan["models"]["review"], {
+                "model": repair.REVIEW_MODEL,
+                "reasoningEffort": repair.REVIEW_REASONING_EFFORT,
+                "executed": False,
+            })
+            status = json.loads((bundle / "repair_status.json").read_text())
+            self.assertEqual(status["analysisModel"], ANALYSIS_MODEL)
+            self.assertEqual(status["analysisReasoningEffort"], ANALYSIS_REASONING_EFFORT)
+            self.assertEqual(status["repairModel"], repair.REPAIR_MODEL)
+            self.assertEqual(status["repairReasoningEffort"], repair.REPAIR_REASONING_EFFORT)
+            self.assertFalse(status["repairExecuted"])
+            self.assertFalse(status["reviewExecuted"])
 
     def test_interrupted_owned_edit_is_restored_without_starting_another_attempt(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
@@ -265,6 +286,30 @@ class RepairPipelineTests(unittest.TestCase):
                 self.assertEqual(result["status"], "repair_failed")
                 self.assertEqual(calls.codex.call_count, 1)
 
+    def test_model_unavailable_stops_with_explicit_status_and_no_fallback(self) -> None:
+        result, bundle, _repo, calls = self._run(
+            codex_error=repair.RepairModelUnavailable("MODEL_UNAVAILABLE repair model"))
+        self.assertEqual(result["status"], "MODEL_UNAVAILABLE")
+        self.assertEqual(calls.codex.call_count, 1)
+        status = json.loads((bundle / "repair_status.json").read_text())
+        self.assertEqual(status["repairModel"], repair.REPAIR_MODEL)
+        self.assertFalse(status["repairExecuted"])
+        self.assertFalse(status["reviewExecuted"])
+
+    def test_analysis_model_unavailable_report_marks_planned_roles_unexecuted(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = prepared_bundle(Path(directory))
+            result = repair.record_analysis_model_unavailable(
+                bundle, "MODEL_UNAVAILABLE: analysis requires gpt-6-luna/max")
+            self.assertEqual(result["status"], "MODEL_UNAVAILABLE")
+            final = json.loads((bundle / "final_report.json").read_text())
+            self.assertEqual(final["analysisModel"], ANALYSIS_MODEL)
+            self.assertEqual(final["analysisReasoningEffort"], ANALYSIS_REASONING_EFFORT)
+            self.assertTrue(final["analysisAttempted"])
+            self.assertFalse(final["analysisExecuted"])
+            self.assertFalse(final["repairExecuted"])
+            self.assertFalse(final["reviewExecuted"])
+
     def test_verification_failure_uses_exactly_two_attempts_then_restores(self) -> None:
         result, bundle, _repo, calls = self._run(
             verification_error=repair.RepairError("XCTest failed"))
@@ -294,6 +339,16 @@ class RepairPipelineTests(unittest.TestCase):
         self.assertEqual(result["status"], "repair_pushed")
         self.assertEqual(calls.commit.call_count, 1)
         self.assertTrue((bundle / "final_report.md").is_file())
+        final = json.loads((bundle / "final_report.json").read_text())
+        self.assertEqual(final["analysisModel"], ANALYSIS_MODEL)
+        self.assertEqual(final["analysisReasoningEffort"], ANALYSIS_REASONING_EFFORT)
+        self.assertTrue(final["analysisExecuted"])
+        self.assertEqual(final["repairModel"], repair.REPAIR_MODEL)
+        self.assertEqual(final["repairReasoningEffort"], repair.REPAIR_REASONING_EFFORT)
+        self.assertTrue(final["repairExecuted"])
+        self.assertEqual(final["reviewModel"], repair.REVIEW_MODEL)
+        self.assertEqual(final["reviewReasoningEffort"], repair.REVIEW_REASONING_EFFORT)
+        self.assertTrue(final["reviewExecuted"])
 
 
 class VerificationAndIsolationTests(unittest.TestCase):
@@ -329,9 +384,12 @@ class VerificationAndIsolationTests(unittest.TestCase):
                 "import json, pathlib, sys\n"
                 "args = sys.argv[1:]\n"
                 "mode = args[args.index('--sandbox') + 1]\n"
+                "model = args[args.index('--model') + 1]\n"
+                "effort = args[args.index('-c') + 1]\n"
                 "images = [args[i+1] for i, v in enumerate(args[:-1]) if v == '--image']\n"
                 f"with pathlib.Path({str(spy)!r}).open('a') as out:\n"
-                "    out.write(json.dumps({'mode': mode, 'images': images, 'stdin': sys.stdin.read(), "
+                "    out.write(json.dumps({'mode': mode, 'model': model, 'effort': effort, "
+                "'images': images, 'stdin': sys.stdin.read(), "
                 "'ephemeral': '--ephemeral' in args}) + '\\n')\n"
                 "response = {'decision': 'changes_made', 'summary': 'fixed'} if mode == "
                 "'workspace-write' else {'decision': 'approved', 'reason': 'safe', 'risk_notes': []}\n"
@@ -340,17 +398,57 @@ class VerificationAndIsolationTests(unittest.TestCase):
             executable.chmod(0o755)
             first = repair._codex_call(str(executable), scratch, "repair prompt",
                                        repair.REPAIR_RESPONSE_SCHEMA, [image],
-                                       writable=True, timeout=10)
+                                       role="repair", writable=True, timeout=10)
             second = repair._codex_call(str(executable), scratch, "review prompt",
                                         repair.REVIEW_RESPONSE_SCHEMA, [image],
-                                        writable=False, timeout=10)
+                                        role="review", writable=False, timeout=10)
             calls = [json.loads(line) for line in spy.read_text().splitlines()]
             self.assertEqual((first["decision"], second["decision"]),
                              ("changes_made", "approved"))
             self.assertEqual([call["mode"] for call in calls], ["workspace-write", "read-only"])
+            self.assertEqual([call["model"] for call in calls],
+                             [repair.REPAIR_MODEL, repair.REVIEW_MODEL])
+            self.assertEqual([call["effort"] for call in calls], [
+                f'model_reasoning_effort="{repair.REPAIR_REASONING_EFFORT}"',
+                f'model_reasoning_effort="{repair.REVIEW_REASONING_EFFORT}"',
+            ])
             self.assertEqual([call["stdin"] for call in calls], ["repair prompt", "review prompt"])
             self.assertEqual(calls[0]["images"], [str(image)])
             self.assertTrue(all(call["ephemeral"] for call in calls))
+
+    def test_repair_and_reviewer_model_rejection_never_retries_with_defaults(self) -> None:
+        for role, model, effort, schema, writable in (
+                ("repair", repair.REPAIR_MODEL, repair.REPAIR_REASONING_EFFORT,
+                 repair.REPAIR_RESPONSE_SCHEMA, True),
+                ("review", repair.REVIEW_MODEL, repair.REVIEW_REASONING_EFFORT,
+                 repair.REVIEW_RESPONSE_SCHEMA, False)):
+            with self.subTest(role=role), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                scratch = root / "candidate"
+                scratch.mkdir()
+                spy = root / "calls.jsonl"
+                executable = root / "codex-reject-model"
+                executable.write_text(
+                    f"#!{sys.executable}\n"
+                    "import json, pathlib, sys\n"
+                    "args = sys.argv[1:]\n"
+                    "record = {'args': args, 'model': args[args.index('--model') + 1], "
+                    "'effort': args[args.index('-c') + 1]}\n"
+                    f"with pathlib.Path({str(spy)!r}).open('a') as out:\n"
+                    "    out.write(json.dumps(record) + '\\n')\n"
+                    "print('unknown model requested', file=sys.stderr)\n"
+                    "raise SystemExit(1)\n",
+                    encoding="utf-8")
+                executable.chmod(0o755)
+                with self.assertRaisesRegex(repair.RepairModelUnavailable, "MODEL_UNAVAILABLE"):
+                    repair._codex_call(str(executable), scratch, f"{role} prompt", schema, [],
+                                       role=role, writable=writable, timeout=10)
+                calls = [json.loads(line) for line in spy.read_text().splitlines()]
+                self.assertEqual(len(calls), 1)
+                self.assertEqual(calls[0]["model"], model)
+                self.assertEqual(calls[0]["effort"], f'model_reasoning_effort="{effort}"')
+                self.assertEqual(calls[0]["args"].count("--model"), 1)
+                self.assertEqual(calls[0]["args"].count("-c"), 1)
 
     def test_known_good_output_change_fails_but_candidate_metrics_are_reported(self) -> None:
         before = {"fixtures": [{"name": "known", "passed": True, "detected": True,
