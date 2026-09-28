@@ -204,8 +204,7 @@ run_unity_test() {
     -testPlatform "$platform" \
     -testFilter "$test_filter" \
     -testResults "$result_file" \
-    -logFile "$editor_log" \
-    -quit
+    -logFile "$editor_log"
   local command_exit="$LAST_EXIT"
 
   if [[ "$command_exit" -ne 0 ]] && unity_project_lock_in_logs "$key"; then
