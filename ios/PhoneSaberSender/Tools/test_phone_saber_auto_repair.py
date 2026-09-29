@@ -85,7 +85,9 @@ def miniature_repo(root: Path) -> Path:
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(f"original {relative}\n", encoding="utf-8")
     manifest = "ios/PhoneSaberSender/Tools/lossless_regression_manifest.json"
+    (repo / manifest).parent.mkdir(parents=True, exist_ok=True)
     (repo / manifest).write_bytes((repair.REPO_ROOT / manifest).read_bytes())
+    (repo / "camera.py").write_bytes((repair.REPO_ROOT / "camera.py").read_bytes())
     return repo
 
 
@@ -223,6 +225,41 @@ class RepairGateTests(unittest.TestCase):
             codex.assert_not_called()
 
 
+    def test_baseline_infrastructure_crash_blocks_repair(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = prepared_bundle(root)
+            repo = miniature_repo(root)
+            with mock.patch.object(repair, "main_safety_gate", return_value={
+                    "head": BASE, "origin": BASE}), \
+                    mock.patch.object(repair, "find_codex_binary", return_value="codex"), \
+                    mock.patch.object(repair, "_baseline", side_effect=repair.RepairError(
+                        "BLOCKED formal lossless baseline infrastructure failed: runner crash")), \
+                    mock.patch.object(repair, "_codex_call") as codex:
+                result = repair.repair_bundle(bundle, repo=repo)
+            self.assertEqual(result["status"], "blocked")
+            codex.assert_not_called()
+
+    def test_broad_unknown_baseline_blocks_repair(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = prepared_bundle(root)
+            repo = miniature_repo(root)
+            baseline = VerificationAndIsolationTests._formal_rows({
+                f"case_{index:02d}" for index in range(10)})
+            classes = {f"case_{index:02d}": "unknown" for index in range(10)}
+            with mock.patch.object(repair, "main_safety_gate", return_value={
+                    "head": BASE, "origin": BASE}), \
+                    mock.patch.object(repair, "find_codex_binary", return_value="codex"), \
+                    mock.patch.object(repair, "_baseline", return_value=baseline), \
+                    mock.patch.object(repair, "_classify_baseline", return_value=classes), \
+                    mock.patch.object(repair, "_codex_call") as codex:
+                result = repair.repair_bundle(bundle, repo=repo)
+            self.assertEqual(result["status"], "BLOCKED_BASELINE_UNSTABLE")
+            self.assertTrue((bundle / "baseline_regression.json").is_file())
+            codex.assert_not_called()
+
+
 class RepairPipelineTests(unittest.TestCase):
     def _run(self, *, codex_error: Exception | None = None,
              verification_error: Exception | None = None,
@@ -264,7 +301,7 @@ class RepairPipelineTests(unittest.TestCase):
                 "head": BASE, "origin": BASE}), \
                 mock.patch.object(repair, "find_codex_binary", return_value="codex"), \
                 mock.patch.object(repair, "_baseline", return_value={
-                    "summary": {"passed": 40}}), \
+                    "fixtures": [], "summary": {"passed": 40, "failed": 0}}), \
                 mock.patch.object(repair, "_codex_call", side_effect=codex), \
                 mock.patch.object(repair, "_verify", side_effect=verify), \
                 mock.patch.object(repair, "_current_diff", return_value="diff --git"), \
@@ -352,6 +389,154 @@ class RepairPipelineTests(unittest.TestCase):
 
 
 class VerificationAndIsolationTests(unittest.TestCase):
+    def test_reviewer_receives_changed_case_details_and_negative_control_rule(self) -> None:
+        unchanged = {"fixture": "unchanged", "beforePassed": True,
+                     "afterPassed": True, "before": {"detected": False},
+                     "after": {"detected": False}}
+        changed = {"fixture": "changed", "beforePassed": False,
+                   "afterPassed": True, "before": {"detected": False},
+                   "after": {"detected": True}}
+        verification = {"passed": True, "formalComparison": {
+            "fixtures": 40, "beforePassed": 39, "afterPassed": 40,
+            "caseDiff": [unchanged, changed]}}
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.object(repair, "_codex_call", return_value={
+                    "decision": "approved", "reason": "safe", "risk_notes": []}) as codex:
+            repair._review("codex", Path(directory), None, {"analysis": {
+                "repair_assessment": {"affected_colors": ["BLUE"]}}},
+                           "diff", verification, [])
+        prompt = codex.call_args.args[2]
+        self.assertIn('"fixture": "changed"', prompt)
+        self.assertNotIn('"fixture": "unchanged"', prompt)
+        self.assertIn("negative PNG controls", prompt)
+        attached = codex.call_args.args[4]
+        self.assertEqual(len(attached), len(repair.REVIEW_NEGATIVE_CONTROLS["BLUE"]))
+        self.assertTrue(all(path.is_file() for path in attached))
+
+    def test_reviewer_selects_controls_for_affected_color(self) -> None:
+        with tempfile.TemporaryDirectory() as directory, \
+                mock.patch.object(repair, "_codex_call", return_value={
+                    "decision": "approved", "reason": "safe", "risk_notes": []}) as codex:
+            repair._review("codex", Path(directory), None, {"analysis": {
+                "repair_assessment": {"affected_colors": ["RED"]}}},
+                           "diff", {"formalComparison": {"caseDiff": []}}, [])
+        attached = codex.call_args.args[4]
+        self.assertEqual({path.name for path in attached}, {
+            "frame_103.png", "frame_131.png", "red_dropout_false_348.png"})
+
+    @staticmethod
+    def _formal_rows(failed: set[str]) -> dict:
+        rows = []
+        for index in range(40):
+            name = f"case_{index:02d}"
+            passes = name not in failed
+            rows.append({"name": name, "passed": passes, "detected": passes,
+                         "candidateType": "core" if passes else None,
+                         "endpoint": [1, 2] if passes else None,
+                         "candidateCount": 1 if passes else 0,
+                         "candidateScores": [4.0] if passes else [],
+                         "selectedScore": 4.0 if passes else None,
+                         "endpointErrorPx": 0 if passes else None,
+                         "errors": [] if passes else ["detected expected True got False"]})
+        return {"fixtures": rows, "summary": {"fixture_count": 40,
+                "passed": 40 - len(failed), "failed": len(failed)}}
+
+    def test_monotonic_formal_cases(self) -> None:
+        case_a, case_b = "case_00", "case_01"
+        full = self._formal_rows(set())
+        broken = self._formal_rows({case_b})
+        repaired = repair._compare_regression(broken, full, {case_b: "target-related"})
+        self.assertEqual(repair._compare_regression(full, full)["afterPassed"], 40)
+        self.assertEqual((repaired["beforePassed"], repaired["afterPassed"],
+                          repaired["preservedPasses"], repaired["targetFailuresRepaired"]),
+                         (39, 40, 39, 1))
+        with self.assertRaisesRegex(repair.RepairError, "did not improve"):
+            repair._compare_regression(broken, broken, {case_b: "target-related"})
+        with self.assertRaisesRegex(repair.RepairError, "new formal regressions"):
+            repair._compare_regression(broken, self._formal_rows({case_a, case_b}),
+                                       {case_b: "target-related"})
+        with self.assertRaisesRegex(repair.RepairError, "new formal regressions"):
+            repair._compare_regression(broken, self._formal_rows({case_a}),
+                                       {case_b: "target-related"})
+
+    def test_unrelated_failures_worsening_rejected(self) -> None:
+        before = self._formal_rows({"case_00", "case_01"})
+        after = self._formal_rows({"case_01"})
+        after["fixtures"][1]["errors"].append("candidate type changed")
+        with self.assertRaisesRegex(repair.RepairError, "baseline failures worsened"):
+            repair._compare_regression(before, after, {
+                "case_00": "target-related", "case_01": "unrelated-existing"})
+
+    def test_partial_positive_recovery_still_fails_full_post_corpus(self) -> None:
+        before = self._formal_rows({"case_00", "case_01"})
+        after = self._formal_rows({"case_01"})
+        old, new = before["fixtures"][1], after["fixtures"][1]
+        old["expectedDetected"] = new["expectedDetected"] = True
+        new.update({"detected": True, "candidateType": "wrong", "endpoint": [3, 4],
+                    "endpointErrorPx": 9.0,
+                    "errors": ["candidate type expected 'core' got 'wrong'",
+                               "endpoint error 9px exceeds 3px"]})
+        with self.assertRaisesRegex(repair.RepairError, "post-repair formal failures remain"):
+            repair._compare_regression(before, after, {
+                "case_00": "target-related", "case_01": "unrelated-existing"})
+
+    def test_corpus_runner_crash_blocks_before_repair(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "pinned_lossless_runner.py").write_text("# pinned")
+            (root / "pinned_lossless_manifest.json").write_text("{}")
+            crash = subprocess.CompletedProcess([], 2, "", "compile failure")
+            with mock.patch.object(repair, "_run", return_value=crash):
+                with self.assertRaisesRegex(repair.RepairError, "infrastructure failed"):
+                    repair._formal_regression(root, root, "baseline")
+
+    def test_recognition_assertion_exit_one_is_valid_baseline(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def runner(command: list[str], **_kwargs: object) -> subprocess.CompletedProcess:
+                output = Path(command[command.index("--json") + 1])
+                output.write_text(json.dumps(self._formal_rows({"case_00"})))
+                return subprocess.CompletedProcess(command, 1, "assertion failure", "")
+            with mock.patch.object(repair, "_run", side_effect=runner):
+                result = repair._formal_regression(root, root, "baseline")
+            self.assertEqual((result["summary"]["passed"], result["summary"]["failed"]),
+                             (39, 1))
+
+    def test_many_unrelated_baseline_failures_block(self) -> None:
+        before = self._formal_rows({"case_00", "case_01", "case_02"})
+        with self.assertRaisesRegex(repair.RepairError, "no baseline failure relates"):
+            repair._compare_regression(before, before, {
+                name: "unrelated-existing" for name in ("case_00", "case_01", "case_02")})
+
+    def test_unconfirmed_image_does_not_make_formal_failure_related(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifest = root / "ios/PhoneSaberSender/Tools/lossless_regression_manifest.json"
+            manifest.parent.mkdir(parents=True)
+            images = []
+            fixtures = []
+            for index in (1, 2):
+                image = root / f"image_{index}.png"
+                image.write_bytes(bytes([index]))
+                context = root / f"context_{index}.json"
+                context.write_text(json.dumps({"selectedColor": "red"}))
+                images.append(mock.Mock(image_id=f"image_{index:03d}",
+                                        image_path=image, context_path=context))
+                fixtures.append({"name": f"case_{index}", "color": "RED",
+                                 "sha256": repair._sha256(image)})
+            manifest.write_text(json.dumps({"fixtures": fixtures}))
+            before = {"fixtures": [
+                {"name": "case_1", "color": "RED", "scenario": "one",
+                 "failureClass": "A", "passed": False},
+                {"name": "case_2", "color": "RED", "scenario": "two",
+                 "failureClass": "F", "passed": False},
+            ]}
+            report = {"analysis": {"repair_assessment": {
+                "evidence_image_ids": ["image_001"]}}}
+            classes = repair._classify_baseline(before, mock.Mock(images=images),
+                                                root, report)
+            self.assertEqual(classes, {"case_1": "target-related", "case_2": "unknown"})
+
     def test_formal_manifest_cannot_weaken_existing_fixture(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

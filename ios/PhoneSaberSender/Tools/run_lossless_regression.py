@@ -204,6 +204,8 @@ def evaluate_fixture(fixture: dict[str, Any], analysis: dict[str, Any]) -> dict[
     return {
         "name": fixture["name"],
         "path": fixture["path"],
+        "sourceSession": fixture.get("sourceSession"),
+        "frameID": fixture.get("frameID"),
         "color": fixture["color"],
         "truth": fixture["truth"],
         "failureClass": fixture["failureClass"],

@@ -37,20 +37,23 @@ VERIFY_TIMEOUT_SECONDS = 3600
 GIT_TIMEOUT_SECONDS = 90
 REPAIR_MODEL = "gpt-6-sol"
 REPAIR_REASONING_EFFORT = "high"
+REPAIR_CODEX_TIMEOUT_SECONDS = 900
 REVIEW_MODEL = "gpt-6-sol"
 REVIEW_REASONING_EFFORT = "high"
+REVIEW_CODEX_TIMEOUT_SECONDS = 900
+REVIEW_NEGATIVE_CONTROLS = {
+    "BLUE": ("no_blade_blue_103", "background_blue_131", "blue_broad_coreless_64"),
+    "RED": ("no_blade_red_103", "background_red_131", "red_hard_negative_348"),
+}
 TERMINAL_STATUSES = {
     "needs_capture", "repair_failed", "blocked", "blocked_remote_changed",
-    "repair_pushed", "dry_run", "MODEL_UNAVAILABLE",
+    "repair_pushed", "dry_run", "MODEL_UNAVAILABLE", "BLOCKED_BASELINE_UNSTABLE",
 }
 REPAIR_FILES = (
     "ios/PhoneSaberSender/PhoneSaberSender/DetectionCore.swift",
     "ios/PhoneSaberSender/PhoneSaberSender/BGRADetection.swift",
     "ios/PhoneSaberSenderTests/DetectionCoreTests.swift",
     "ios/PhoneSaberSenderTests/StaticBGRADetectionTests.swift",
-    "ios/PhoneSaberSender/Tools/run_lossless_regression.py",
-    "ios/PhoneSaberSender/Tools/lossless_regression_manifest.json",
-    "ios/PhoneSaberSender/Tools/test_lossless_regression.py",
 )
 REQUIRED_VERIFY_STAGES = (
     "iOS XCTest", "Detection", "Lossless", "Tools", "iOS Release", "Diff Check",
@@ -306,6 +309,7 @@ def _terminal_report(bundle: Path, state: dict[str, Any], gate: dict[str, Any],
         "blocked_remote_changed": "BLOCKED_REMOTE_CHANGED",
         "repair_failed": "REPAIR FAILED",
         "MODEL_UNAVAILABLE": "MODEL_UNAVAILABLE",
+        "BLOCKED_BASELINE_UNSTABLE": "BLOCKED_BASELINE_UNSTABLE",
     }[status]
     models = state.get("models", {})
     model_fields = {
@@ -336,6 +340,7 @@ def _terminal_report(bundle: Path, state: dict[str, Any], gate: dict[str, Any],
     _atomic_json(bundle / "repair_status.json", payload)
     repair_report = {"sessionID": state["sessionID"], "gate": gate,
                      "attempts": attempts, "verification": verification,
+                     "formalBaseline": state.get("formalBaseline"),
                      "result": status, "reason": reason,
                      "dryRunPlan": state.get("dryRunPlan"), **model_fields}
     _atomic_json(bundle / "repair_report.json", repair_report)
@@ -349,6 +354,14 @@ def _terminal_report(bundle: Path, state: dict[str, Any], gate: dict[str, Any],
         lines.extend(["", "## Verification", ""])
         lines.extend(f"- {name}: {value}" for name, value in verification.get("stages", {}).items())
         comparison = verification.get("formalComparison", {})
+        if comparison:
+            lines.extend([
+                f"- Formal regression before: {comparison['beforePassed']}/{comparison['fixtures']}",
+                f"- Formal regression after: {comparison['afterPassed']}/{comparison['fixtures']}",
+                f"- Preserved previous passes: {comparison['preservedPasses']}/{comparison['beforePassed']}",
+                f"- Target failures repaired: {comparison['targetFailuresRepaired']}/{comparison['targetFailures']}",
+                f"- New regressions: {len(comparison['newRegressions'])}",
+            ])
         lines.append(f"- Protected fixture output changes: {len(comparison.get('outputChanges', []))}")
         lines.append(f"- Candidate diagnostic changes: "
                      f"{len(comparison.get('candidateDiagnosticChanges', []))}")
@@ -472,6 +485,10 @@ def _copy_inputs(scratch: Path, repo: Path, plan: Any, report: dict[str, Any]) -
     _atomic_json(evidence / "analysis_report.json", report)
     shutil.copyfile(plan.root / "analysis_report.md", evidence / "analysis_report.md")
     shutil.copyfile(plan.root / "summary.json", evidence / "summary.json")
+    reference = repo / "camera.py"
+    if reference.is_symlink() or not reference.is_file():
+        raise RepairError("checked-in camera.py reference is unavailable")
+    shutil.copyfile(reference, evidence / "camera_reference.py")
     images: list[Path] = []
     for item in plan.images:
         for source in (item.image_path, item.context_path):
@@ -540,28 +557,114 @@ def _formal_regression(repo: Path, private: Path, name: str) -> dict[str, Any]:
                       "--manifest", str(private / "pinned_lossless_manifest.json"),
                       "--json", str(output)], cwd=repo, timeout=VERIFY_TIMEOUT_SECONDS,
                      environment=environment)
-    if completed.returncode:
-        raise RepairError(f"formal lossless {name} failed: "
+    if completed.returncode not in {0, 1} or not output.is_file():
+        raise RepairError(f"BLOCKED formal lossless {name} infrastructure failed: "
                           f"{(completed.stderr or completed.stdout)[-1000:]}")
     result = _json_file(output, 8 * 1024 * 1024)
-    if result.get("summary", {}).get("fixture_count") != 40 \
-            or result["summary"].get("failed") != 0:
-        raise RepairError(f"formal lossless {name} has failures or incomplete corpus")
+    if not isinstance(result, dict) or not isinstance(result.get("fixtures"), list) \
+            or len(result["fixtures"]) != 40 or not isinstance(result.get("summary"), dict):
+        raise RepairError(f"BLOCKED formal lossless {name} has malformed or incomplete corpus")
+    rows = result["fixtures"]
+    names = [row.get("name") for row in rows if isinstance(row, dict)]
+    if len(names) != 40 or len(set(names)) != 40 or any(not isinstance(name, str) for name in names) \
+            or any(not isinstance(row.get("passed"), bool) for row in rows) \
+            or any(not isinstance(row.get("candidateScores"), list) for row in rows) \
+            or result["summary"].get("fixture_count") != 40 \
+            or result["summary"].get("passed") != sum(row["passed"] for row in rows) \
+            or result["summary"].get("failed") != sum(not row["passed"] for row in rows) \
+            or (completed.returncode == 0) != (result["summary"]["failed"] == 0):
+        raise RepairError(f"BLOCKED formal lossless {name} result is inconsistent")
     return result
 
 
-def _compare_regression(before: dict[str, Any], after: dict[str, Any]) -> dict[str, Any]:
+def _classify_baseline(before: dict[str, Any], plan: Any, repo: Path,
+                       report: dict[str, Any]) -> dict[str, str]:
+    """Relate failures to actual selected PNGs and the analysis affected color."""
+    selected = {}
+    confirmed_ids = set(report["analysis"]["repair_assessment"]["evidence_image_ids"])
+    for image in plan.images:
+        if image.image_id not in confirmed_ids:
+            continue
+        context = _json_file(image.context_path, 16 * 1024)
+        selected[_sha256(image.image_path)] = str(context["selectedColor"]).upper()
+    manifest = _json_file(repo / "ios/PhoneSaberSender/Tools/lossless_regression_manifest.json",
+                          2 * 1024 * 1024)
+    evidence = {(item["name"], item["color"]) for item in manifest["fixtures"]
+                if item.get("sha256") in selected and
+                selected[item["sha256"]] in {item["color"], "BOTH"}}
+    direct = {name for name, _color in evidence}
+    rows = before["fixtures"]
+    related_scenarios = {(row["color"], row["scenario"])
+                         for row in rows if row["name"] in direct and not row["passed"]}
+    related_classes = {(row["color"], row["failureClass"])
+                       for row in rows if row["name"] in direct and not row["passed"]}
+    affected = {color for _name, color in evidence}
+    classified = {}
+    for row in rows:
+        if row["passed"]:
+            continue
+        if row["name"] in direct or (row["color"], row["scenario"]) in related_scenarios \
+                or (row["color"], row["failureClass"]) in related_classes:
+            classified[row["name"]] = "target-related"
+        elif row["color"] not in affected:
+            classified[row["name"]] = "unrelated-existing"
+        else:
+            classified[row["name"]] = "unknown"
+    return classified
+
+
+def _compare_regression(before: dict[str, Any], after: dict[str, Any],
+                        classifications: dict[str, str] | None = None) -> dict[str, Any]:
     previous = {row["name"]: row for row in before["fixtures"]}
     current = {row["name"]: row for row in after["fixtures"]}
     if previous.keys() != current.keys():
         raise RepairError("formal fixture set changed between baseline and candidate")
-    output_changes, diagnostic_changes = [], []
+    output_changes, diagnostic_changes, case_diff = [], [], []
+    classifications = classifications or {}
+    new_regressions, target_repaired, worsened = [], [], []
     for name in sorted(previous):
         left, right = previous[name], current[name]
-        if not left["passed"] or not right["passed"]:
-            raise RepairError(f"formal fixture failed: {name}")
+        if left["passed"] and not right["passed"]:
+            new_regressions.append(name)
+        if not left["passed"] and right["passed"] and classifications.get(name) == "target-related":
+            target_repaired.append(name)
+        if not left["passed"] and not right["passed"]:
+            expected = left.get("expectedDetected")
+            newly_detected_positive = expected is True and not left["detected"] and right["detected"]
+            removed_negative_false_positive = expected is False and left["detected"] and not right["detected"]
+            def error_keys(row: dict[str, Any]) -> set[str]:
+                keys = set()
+                for error in row.get("errors", []):
+                    if error.startswith("endpoint error "):
+                        keys.add("endpoint error")
+                    elif error.startswith("candidate type expected "):
+                        keys.add("candidate type")
+                    elif error.startswith("detected expected "):
+                        keys.add("detected")
+                    else:
+                        keys.add(error)
+                return keys
+            new_errors = error_keys(right) - error_keys(left)
+            endpoint_worse = (expected is True and left["detected"] and right["detected"]
+                              and left.get("endpointErrorPx") is not None
+                              and right.get("endpointErrorPx") is not None
+                              and right["endpointErrorPx"] > left["endpointErrorPx"] + 1e-6)
+            candidates_worse = (expected is True and not left["detected"]
+                                and not right["detected"]
+                                and right.get("candidateCount", 0) < left.get("candidateCount", 0))
+            if (new_errors and not (newly_detected_positive or removed_negative_false_positive)) \
+                    or endpoint_worse or candidates_worse:
+                worsened.append(name)
+        case_diff.append({"fixture": name, "classification": classifications.get(name, "previous-pass"),
+                          "beforePassed": left["passed"], "afterPassed": right["passed"],
+                          "before": {key: left.get(key) for key in
+                                     ("detected", "candidateCount", "candidateType", "endpoint",
+                                      "endpointErrorPx", "candidateScores", "selectedScore", "errors")},
+                          "after": {key: right.get(key) for key in
+                                    ("detected", "candidateCount", "candidateType", "endpoint",
+                                     "endpointErrorPx", "candidateScores", "selectedScore", "errors")}})
         keys = ("detected", "candidateType", "endpoint")
-        if any(left[key] != right[key] for key in keys):
+        if left["passed"] and any(left[key] != right[key] for key in keys):
             output_changes.append(name)
         keys = ("candidateCount", "candidateScores", "selectedScore")
         left_scores, right_scores = left.get("candidateScores"), right.get("candidateScores")
@@ -586,15 +689,37 @@ def _compare_regression(before: dict[str, Any], after: dict[str, Any]) -> dict[s
                 "before": {key: left.get(key) for key in keys},
                 "after": {key: right.get(key) for key in keys},
             })
+    def details(names: list[str]) -> str:
+        selected = [row for row in case_diff if row["fixture"] in names]
+        return json.dumps(selected, ensure_ascii=False, separators=(",", ":"))[:2400]
+
+    if new_regressions:
+        raise RepairError(f"new formal regressions: {details(new_regressions)}")
     if output_changes:
-        raise RepairError(f"protected recognition outputs changed: {', '.join(output_changes)}")
-    return {"fixtures": len(previous), "outputChanges": output_changes,
+        raise RepairError(f"protected recognition outputs changed: {details(output_changes)}")
+    if worsened:
+        raise RepairError(f"baseline failures worsened: {details(worsened)}")
+    targets = [name for name, kind in classifications.items() if kind == "target-related"]
+    if targets and not target_repaired:
+        raise RepairError(f"target formal failures did not improve into PASS: {details(targets)}")
+    if any(not row["passed"] for row in previous.values()) and not targets:
+        raise RepairError("BLOCKED_BASELINE_UNSTABLE: no baseline failure relates to incident")
+    remaining = [name for name, row in current.items() if not row["passed"]]
+    if remaining:
+        raise RepairError(f"post-repair formal failures remain: {details(remaining)}")
+    return {"fixtures": len(previous), "beforePassed": sum(row["passed"] for row in previous.values()),
+            "afterPassed": sum(row["passed"] for row in current.values()),
+            "preservedPasses": sum(previous[name]["passed"] and current[name]["passed"] for name in previous),
+            "targetFailures": len(targets), "targetFailuresRepaired": len(target_repaired),
+            "newRegressions": new_regressions, "worsenedBaselineFailures": worsened,
+            "caseDiff": case_diff, "outputChanges": output_changes,
             "candidateDiagnosticChanges": diagnostic_changes}
 
 
-def _verify(repo: Path, private: Path, baseline: dict[str, Any], attempt: int) -> dict[str, Any]:
+def _verify(repo: Path, private: Path, baseline: dict[str, Any], attempt: int,
+            classifications: dict[str, str] | None = None) -> dict[str, Any]:
     after = _formal_regression(repo, private, f"attempt{attempt}")
-    comparison = _compare_regression(baseline, after)
+    comparison = _compare_regression(baseline, after, classifications)
     completed = _run([str(repo / "tools/verify_phone_saber.sh")], cwd=repo,
                      timeout=VERIFY_TIMEOUT_SECONDS)
     output = completed.stdout + "\n" + completed.stderr
@@ -607,7 +732,20 @@ def _verify(repo: Path, private: Path, baseline: dict[str, Any], attempt: int) -
     if any(stages[stage] != "PASS" for stage in REQUIRED_VERIFY_STAGES) \
             or any(stages[stage] == "FAIL" for stage in stages if stage.startswith("Unity")) \
             or completed.returncode not in {0, 2}:
-        raise RepairError(f"verification stages did not pass: {stages}; exit={completed.returncode}")
+        diagnostics = []
+        match = re.search(r"(?m)^Logs:\s*(.+)$", output)
+        if match:
+            log_dir = Path(match.group(1).strip()).resolve()
+            if log_dir.is_relative_to(repo.resolve()):
+                for name in ("ios-xctest.stdout.log", "detection-tests.stderr.log",
+                             "detection-tests.stdout.log"):
+                    path = log_dir / name
+                    if path.is_file() and not path.is_symlink():
+                        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+                        diagnostics.extend(line.strip()[:300] for line in lines
+                                           if re.search(r"Test Case .* failed|error:|Assertion Failure|FAILED", line))
+        raise RepairError(f"verification stages did not pass: {stages}; exit={completed.returncode}; "
+                          f"diagnostics={diagnostics[:8]}")
     return {"passed": True, "stages": stages, "formalComparison": comparison,
             "verifyExitCode": completed.returncode}
 
@@ -662,17 +800,52 @@ def _current_diff(repo: Path, changed: list[str]) -> str:
 
 
 def _review(binary: str, scratch: Path, plan: Any, report: dict[str, Any],
-            diff: str, verification: dict[str, Any], images: list[Path]) -> dict[str, Any]:
+            diff: str, verification: dict[str, Any], images: list[Path],
+            repo: Path = REPO_ROOT) -> dict[str, Any]:
+    manifest = _json_file(repo / "ios/PhoneSaberSender/Tools/lossless_regression_manifest.json",
+                          2 * 1024 * 1024)
+    fixtures = {item["name"]: item for item in manifest["fixtures"]}
+    affected = report["analysis"]["repair_assessment"]["affected_colors"]
+    if not isinstance(affected, list) or not affected or any(
+            color not in REVIEW_NEGATIVE_CONTROLS for color in affected):
+        raise RepairError("review requires recognized affected colors")
+    control_names = tuple(name for color in dict.fromkeys(affected)
+                          for name in REVIEW_NEGATIVE_CONTROLS[color])
+    controls: list[Path] = []
+    fixture_root = (repo / "ios/PhoneSaberSenderTests/Fixtures").resolve()
+    for name in control_names:
+        item = fixtures[name]
+        if item["truth"] != "negative" or item["expectedDetected"] is not False:
+            raise RepairError(f"review control is not a protected negative: {name}")
+        source = fixture_root / item["path"]
+        path = source.resolve()
+        if source.is_symlink() or not path.is_relative_to(fixture_root) \
+                or not path.is_file() or _sha256(path) != item["sha256"]:
+            raise RepairError(f"review control is missing or changed: {name}")
+        controls.append(path)
+    compact_verification = dict(verification)
+    comparison = dict(compact_verification.get("formalComparison", {}))
+    comparison["caseDiff"] = [row for row in comparison.get("caseDiff", [])
+                              if not row["beforePassed"] or row["before"] != row["after"]]
+    compact_verification["formalComparison"] = comparison
     prompt = ("Independent read-only review of a proposed PhoneSaber recognition repair. "
-              "Inspect only these selected PNGs, compact contexts, structured analysis, "
-              "source changes, and verification results. Reject uncertain visual ground truth, "
+              "Inspect the selected incident PNGs, compact contexts, structured analysis, "
+              "and the attached formal negative PNG controls "
+              f"({', '.join(control_names)}), "
+              "source changes, and verification results. Inspect every formal case diff, "
+              "including candidate counts, selected endpoints and score changes on previous "
+              "passes; judge candidate-count changes against the negative PNG controls and "
+              "formal rejected-candidate expectations, then reject unreasonable changes. "
+              "A candidate-count change alone is diagnostic and does not imply a detection. "
+              "Reject uncertain visual ground truth, "
               "untested side effects, threshold changes supported by fewer than two independent "
               "examples, gameplay/UDP changes, or incomplete coverage. Respond in the schema.\n\n"
               f"Analysis: {json.dumps(report['analysis'], ensure_ascii=False)}\n\n"
-              f"Verification: {json.dumps(verification, ensure_ascii=False)}\n\n"
+              f"Verification: {json.dumps(compact_verification, ensure_ascii=False)}\n\n"
               f"Diff:\n{diff[:120000]}")
-    return _codex_call(binary, scratch, prompt, REVIEW_RESPONSE_SCHEMA, images,
-                       role="review", writable=False, timeout=CODEX_TIMEOUT_SECONDS)
+    return _codex_call(binary, scratch, prompt, REVIEW_RESPONSE_SCHEMA, [*images, *controls],
+                       role="review", writable=False,
+                       timeout=REVIEW_CODEX_TIMEOUT_SECONDS)
 
 
 def _commit_push(repo: Path, bundle: Path, state: dict[str, Any], changed: list[str]) -> str:
@@ -865,6 +1038,21 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
             scratch.mkdir()
             originals, evidence_hashes, images = _copy_inputs(scratch, repo, plan, report)
             baseline = _baseline(repo, private)
+            _atomic_json(bundle / "baseline_regression.json", baseline)
+            classifications = _classify_baseline(baseline, plan, repo, report)
+            baseline_evidence = scratch / "evidence/formal_baseline.json"
+            _atomic_json(baseline_evidence, {"corpus": baseline, "classifications": classifications})
+            evidence_hashes["evidence/formal_baseline.json"] = _sha256(baseline_evidence)
+            state["formalBaseline"] = {"passed": baseline["summary"]["passed"],
+                                        "failed": baseline["summary"]["failed"],
+                                        "classifications": classifications}
+            _save_state(bundle, state, "baseline")
+            failures = baseline["summary"]["failed"]
+            unknown = sum(kind == "unknown" for kind in classifications.values())
+            related = sum(kind == "target-related" for kind in classifications.values())
+            if failures and (not related or unknown > max(2, failures * 3 // 4)):
+                raise RepairError("BLOCKED_BASELINE_UNSTABLE: formal failures are not sufficiently "
+                                  f"related to incident (target={related}, unknown={unknown}, total={failures})")
             _progress(start, "BASELINE", f"subprocess=lossless result={baseline['summary']['passed']}/40 PASS")
             failure_detail = ""
             for attempt in range(1, MAX_ATTEMPTS + 1):
@@ -874,15 +1062,17 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
                           f"model={REPAIR_MODEL} effort={REPAIR_REASONING_EFFORT} subprocess=codex result=starting")
                 prompt = (f"Repair PhoneSaber recognition from main commit {safety['head']}. "
                           "Read evidence/analysis_report.json, evidence/analysis_report.md, "
+                          "evidence/formal_baseline.json, evidence/camera_reference.py, "
                           "evidence/summary.json, selected compact frame contexts, and the "
                           "attached lossless PNGs. Verify the visual diagnosis against metadata "
                           "and recognition source before editing. "
                           "Verification after editing will run the pinned 40-case lossless "
                           "regression and ./tools/verify_phone_saber.sh (Tools, Detection "
                           "XCTest, Static BGRA, Release, git diff --check). "
-                          "Edit only the seven existing paths under ios/ listed below. "
+                          "Edit only the existing paths under ios/ listed below. "
                           "Do not change UDP, gameplay, camera, recording, or unrelated files. "
-                          "Use only attached selected lossless PNGs, compact contexts, and analysis. "
+                          "Use the attached selected lossless PNGs, compact contexts, actual formal "
+                          "results, and checked-in camera.py as reference for the HSV convention. "
                           "Do not assume absence of metadata means zero/false. Do not alter formal "
                           "regression expectations to hide a failure. If evidence cannot support a "
                           "safe repair, return needs_more_evidence without edits. "
@@ -894,7 +1084,8 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
                 state["models"]["repair"]["attempted"] = True
                 _save_state(bundle, state, "repairing")
                 response = _codex_call(binary, scratch, prompt, REPAIR_RESPONSE_SCHEMA, images,
-                                       role="repair", writable=True, timeout=CODEX_TIMEOUT_SECONDS)
+                                       role="repair", writable=True,
+                                       timeout=REPAIR_CODEX_TIMEOUT_SECONDS)
                 state["models"]["repair"]["executed"] = True
                 _save_state(bundle, state, "repairing")
                 changed = _candidate_files(scratch, originals, evidence_hashes)
@@ -905,14 +1096,12 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
                 if not changed or not any(path.endswith(("DetectionCore.swift", "BGRADetection.swift"))
                                           for path in changed):
                     raise RepairError("Codex made no recognition source change")
-                if "ios/PhoneSaberSender/Tools/lossless_regression_manifest.json" in changed:
-                    _protect_formal_manifest(private, scratch)
                 if _git(repo, "status", "--porcelain"):
                     raise RepairError("repository changed while Codex prepared the candidate")
                 _apply_candidate(repo, scratch, private, state, changed, bundle)
                 try:
                     _progress(start, "VERIFY", f"attempt {attempt}; subprocess=lossless+verify_phone_saber.sh")
-                    verification = _verify(repo, private, baseline, attempt)
+                    verification = _verify(repo, private, baseline, attempt, classifications)
                 except RepairError as exc:
                     failure_detail = str(exc)
                     verification = {"passed": False, "reason": failure_detail,
@@ -931,7 +1120,7 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
                           "subprocess=codex read-only; starting")
                 state["models"]["review"]["attempted"] = True
                 _save_state(bundle, state, "reviewing")
-                review = _review(binary, scratch, plan, report, diff, verification, images)
+                review = _review(binary, scratch, plan, report, diff, verification, images, repo)
                 state["models"]["review"]["executed"] = True
                 _save_state(bundle, state, "reviewing")
                 if review["decision"] != "approved":
@@ -960,8 +1149,10 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
                 state["status"] = "MODEL_UNAVAILABLE"
             elif reason.startswith("BLOCKED_REMOTE_CHANGED"):
                 state["status"] = "blocked_remote_changed"
+            elif reason.startswith("BLOCKED_BASELINE_UNSTABLE"):
+                state["status"] = "BLOCKED_BASELINE_UNSTABLE"
             elif "BLOCKED main safety gate" in reason or "main HEAD changed" in reason \
-                    or "unexpected changes" in reason:
+                    or "unexpected changes" in reason or reason.startswith("BLOCKED formal"):
                 state["status"] = "blocked"
             else:
                 state["status"] = "repair_failed"

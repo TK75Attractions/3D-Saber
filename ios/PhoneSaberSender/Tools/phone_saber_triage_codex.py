@@ -49,7 +49,7 @@ MODEL_UNAVAILABLE_PATTERNS = (
 GENERATED_REPORT_FILES = {
     "analysis_report.json", "analysis_report.md", "repair_status.json", "state.json",
     "repair_report.json", "repair_report.md", "review_report.json", "review_report.md",
-    "final_report.md", "final_report.json",
+    "final_report.md", "final_report.json", "baseline_regression.json",
 }
 
 REPAIR_ASSESSMENT_SCHEMA = {
