@@ -30,7 +30,9 @@ def make_repo(parent: Path, name: str = "縁日 workspace") -> tuple[Path, Path]
     for filename in (
         "Start PhoneSaber.command",
         "Open PhoneSaber Log.command",
+        "Open Latest PhoneSaber Images.command",
         "install_phone_saber_launcher.command",
+        "phone_saber_open_images.py",
         "phone_saber_receiver_launcher.py",
     ):
         shutil.copy2(TOOLS_SOURCE / filename, tools / filename)
@@ -104,7 +106,7 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
             self.assertIn("repository not found at expected path", result.stderr)
             self.assertIn("school-festival repository", result.stderr)
 
-    def test_installer_is_idempotent_and_creates_both_desktop_links(self) -> None:
+    def test_installer_dry_run_and_idempotent_three_desktop_links(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             repo, tools = make_repo(root)
@@ -112,22 +114,31 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
             env = {**os.environ, "HOME": str(home)}
             command = ["bash", str(tools / "install_phone_saber_launcher.command")]
 
+            dry_run = subprocess.run(
+                [*command, "--dry-run"], cwd=root, env=env, check=False,
+                capture_output=True, text=True,
+            )
+            self.assertEqual(dry_run.returncode, 0, dry_run.stderr)
+            self.assertIn("would install", dry_run.stdout)
+            self.assertFalse((home / "Desktop").exists())
+
             first = subprocess.run(command, cwd=root, env=env, check=False, capture_output=True, text=True)
             self.assertEqual(first.returncode, 0, first.stderr)
             desktop = home / "Desktop"
-            start_link = desktop / "Start PhoneSaber.command"
-            log_link = desktop / "Open PhoneSaber Log.command"
-            self.assertTrue(start_link.is_symlink())
-            self.assertTrue(log_link.is_symlink())
-            start_target = start_link.resolve()
-            log_target = log_link.resolve()
-            self.assertEqual(start_target, (tools / "Start PhoneSaber.command").resolve())
-            self.assertEqual(log_target, (tools / "Open PhoneSaber Log.command").resolve())
+            launchers = (
+                "Start PhoneSaber.command",
+                "Open PhoneSaber Log.command",
+                "Open Latest PhoneSaber Images.command",
+            )
+            links = [desktop / name for name in launchers]
+            targets = [link.resolve() for link in links]
+            for link, name, target in zip(links, launchers, targets):
+                self.assertTrue(link.is_symlink())
+                self.assertEqual(target, (tools / name).resolve())
 
             second = subprocess.run(command, cwd=root, env=env, check=False, capture_output=True, text=True)
             self.assertEqual(second.returncode, 0, second.stderr)
-            self.assertEqual(start_link.resolve(), start_target)
-            self.assertEqual(log_link.resolve(), log_target)
+            self.assertEqual([link.resolve() for link in links], targets)
 
     def test_receiver_output_is_streamed_saved_and_latest_is_updated(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

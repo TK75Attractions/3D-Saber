@@ -1,19 +1,43 @@
 #!/bin/bash
 set -euo pipefail
 
+if [ "$#" -gt 1 ] || { [ "$#" -eq 1 ] && [ "$1" != "--dry-run" ]; }; then
+    printf 'Usage: %s [--dry-run]\n' "$(basename "$0")" >&2
+    exit 2
+fi
+dry_run=0
+if [ "$#" -eq 1 ]; then
+    dry_run=1
+fi
+
 tools_dir="$(CDPATH='' cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 desktop_dir="${HOME:?HOME is not set}/Desktop"
-mkdir -p "$desktop_dir"
 
-names=("Start PhoneSaber.command" "Open PhoneSaber Log.command")
-sources=("$tools_dir/Start PhoneSaber.command" "$tools_dir/Open PhoneSaber Log.command")
-destinations=("$desktop_dir/Start PhoneSaber.command" "$desktop_dir/Open PhoneSaber Log.command")
+names=(
+    "Start PhoneSaber.command"
+    "Open PhoneSaber Log.command"
+    "Open Latest PhoneSaber Images.command"
+)
+sources=(
+    "$tools_dir/Start PhoneSaber.command"
+    "$tools_dir/Open PhoneSaber Log.command"
+    "$tools_dir/Open Latest PhoneSaber Images.command"
+)
+destinations=(
+    "$desktop_dir/Start PhoneSaber.command"
+    "$desktop_dir/Open PhoneSaber Log.command"
+    "$desktop_dir/Open Latest PhoneSaber Images.command"
+)
 
-# Check all destinations before creating either link so a name conflict never
+# Check all destinations before creating any link so a name conflict never
 # replaces or partially obscures an existing Desktop file.
 for index in "${!names[@]}"; do
     destination="${destinations[$index]}"
     source="${sources[$index]}"
+    if [ ! -f "$source" ]; then
+        printf 'Launcher source not found: %s\n' "$source" >&2
+        exit 1
+    fi
     if [ -L "$destination" ] && [ "$(readlink "$destination")" = "$source" ]; then
         continue
     fi
@@ -23,6 +47,21 @@ for index in "${!names[@]}"; do
     fi
 done
 
+if [ "$dry_run" -eq 1 ]; then
+    printf 'Desktop launcher dry run:\n'
+    for index in "${!names[@]}"; do
+        destination="${destinations[$index]}"
+        source="${sources[$index]}"
+        if [ -L "$destination" ] && [ "$(readlink "$destination")" = "$source" ]; then
+            printf '  already installed: %s\n' "$destination"
+        else
+            printf '  would install: %s -> %s\n' "$destination" "$source"
+        fi
+    done
+    exit 0
+fi
+
+mkdir -p "$desktop_dir"
 for index in "${!names[@]}"; do
     destination="${destinations[$index]}"
     source="${sources[$index]}"
@@ -31,5 +70,7 @@ for index in "${!names[@]}"; do
     fi
 done
 
-printf 'Desktop launchers are ready:\n  %s\n  %s\n' \
-    "${destinations[0]}" "${destinations[1]}"
+printf 'Desktop launchers are ready:\n'
+for destination in "${destinations[@]}"; do
+    printf '  %s\n' "$destination"
+done
