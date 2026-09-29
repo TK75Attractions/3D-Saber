@@ -62,3 +62,21 @@ iPhone Simulator explicitly. If the Unity Editor already has the target
 project open and prevents batch-mode execution, Unity stages report `BLOCKED`;
 close that Editor and rerun. The command exits `0` when all stages pass, `1` on
 a failure, and `2` when a stage is blocked.
+
+## 新しいMacへの移行
+
+1. `school-festival` と `3D-Saber` を同じフォルダへ clone します。
+2. `school-festival/setup_mac.command` を実行します（Finderからダブルクリックも可能）。
+3. 最後に表示される `MANUAL ACTION REQUIRED` を実施します。
+4. Desktop の `Start PhoneSaber.command` を起動します。
+
+```bash
+git clone https://github.com/setasato/school-festival.git
+git clone https://github.com/TK75Attractions/3D-Saber.git
+cd school-festival
+./setup_mac.command
+```
+
+Unity側を別の場所にcloneした場合は `./setup_mac.command --3d-saber "/path/to/3D-Saber"` を使用します。`--check` は書き込みなしの環境確認、`--verify` は通常setupに加えてセットアップツール自身のテストも実行します。通常setupはGit LFSを導入済みなら初期化し、Unity assetを取得して、既存のinstaller経由でDesktop launcherを設置します。Homebrewがあれば不足したGit LFSを `brew install git-lfs` で導入します。Homebrew、[Codex CLI](https://learn.chatgpt.com/docs/codex/cli)、Xcode、Unity Hub/Editor、iPhoneの署名と実機実行は画面の案内に従い手動で用意してください。Codex CLIの認証は `codex login` で本人が行います。Makinas fontは別途ローカルに設置しますが、EditModeテスト用のNotoSansJP-Lightはリポジトリに含まれています。
+
+通常setupの報告は `~/Library/Logs/PhoneSaber/setup-latest.log` に保存されます。`--check` はログも作りません。終了コードは `0` が準備完了、`1` が必須処理の失敗、`2` が手動作業ありです。通常setupはPhoneSaber Toolsのテスト、Python構文、`git diff --check` を実行します。受信プロセス、Unityの長いPlayModeテスト、iOS実機テストは起動しません。iOS/Unityの全テストが必要な場合は既存の `./tools/verify_phone_saber.sh` を使います。
