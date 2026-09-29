@@ -651,6 +651,43 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 if overlapsCore {
                     candidate.isEmitterEligible = false
                     candidate.source = "core-line-overlap"
+                    if collectPipelineDiagnostics {
+                        if let body = candidates.first(where: { existing in
+                            guard existing.source == "connected-core" else { return false }
+                            let a = existing.comparisonEndpoints.0
+                            let b = existing.comparisonEndpoints.1
+                            let dx = Double(b.x - a.x), dy = Double(b.y - a.y)
+                            let length = hypot(dx, dy)
+                            guard length > 0 else { return false }
+                            let cx = Double(candidate.comparisonEndpoints.0.x
+                                + candidate.comparisonEndpoints.1.x) / 2 - Double(a.x)
+                            let cy = Double(candidate.comparisonEndpoints.0.y
+                                + candidate.comparisonEndpoints.1.y) / 2 - Double(a.y)
+                            let along = (cx * dx + cy * dy) / length
+                            let across = abs(cx * dy - cy * dx) / length
+                            return along >= -4 && along <= length + 4 && across <= 8
+                        }) {
+                            let a = body.comparisonEndpoints.0, b = body.comparisonEndpoints.1
+                            let dx = Double(b.x - a.x), dy = Double(b.y - a.y)
+                            let length = hypot(dx, dy)
+                            if length > 0 {
+                                let cx = Double(candidate.comparisonEndpoints.0.x
+                                    + candidate.comparisonEndpoints.1.x) / 2 - Double(a.x)
+                                let cy = Double(candidate.comparisonEndpoints.0.y
+                                    + candidate.comparisonEndpoints.1.y) / 2 - Double(a.y)
+                                let along = (cx * dx + cy * dy) / length
+                                candidate.diagnosticRejections += [
+                                    SaberEligibilityDecision(name: "core-line-overlap.alongBefore",
+                                        value: along, comparison: "<", threshold: -4),
+                                    SaberEligibilityDecision(name: "core-line-overlap.alongAfter",
+                                        value: along, comparison: ">", threshold: length + 4),
+                                    SaberEligibilityDecision(name: "core-line-overlap.across",
+                                        value: abs(cx * dy - cy * dx) / length,
+                                        comparison: ">", threshold: 8)
+                                ]
+                            }
+                        }
+                    }
                     candidate.scoreBreakdown.proposalPenalty = -candidate.score * 0.5
                     candidate.score = candidate.scoreBreakdown.total
                 }
@@ -682,6 +719,17 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                     && !hasIndependentBlueEvidence(candidates[index]) {
                     candidates[index].isEmitterEligible = false
                     candidates[index].source += "-unsupported-core-line-candidate"
+                    if collectPipelineDiagnostics {
+                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                            name: "unsupported-core-line-candidate.rejectedLineScore",
+                            value: rejectedLineScore, comparison: "<", threshold: eligibleScore))
+                        candidates[index].diagnosticRejections += [
+                            SaberEligibilityDecision(name: "unsupported-core-line-candidate.trustedEmitter",
+                                value: hasTrustedEmitter ? 1 : 0, comparison: "==", threshold: 1),
+                            SaberEligibilityDecision(name: "unsupported-core-line-candidate.independentEvidence",
+                                value: 0, comparison: "==", threshold: 1)
+                        ]
+                    }
                 }
             }
         }
@@ -697,6 +745,17 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                     // emitter-shaped component without a concentrated core.
                     candidates[index].isEmitterEligible = false
                     candidates[index].source = "color-emitter-broad-coreless"
+                    if collectPipelineDiagnostics {
+                        candidates[index].diagnosticRejections += [
+                            SaberEligibilityDecision(name: "color-emitter-broad-coreless.area",
+                                value: Double(emitter.pointCount), comparison: "<=",
+                                threshold: Double(maskWidth * maskHeight) * 0.03),
+                            SaberEligibilityDecision(name: "color-emitter-broad-coreless.coreSupport",
+                                value: emitter.coreSupportRatio, comparison: ">=", threshold: 0.05),
+                            SaberEligibilityDecision(name: "color-emitter-broad-coreless.density",
+                                value: emitter.axialDensity, comparison: "<=", threshold: 8.0)
+                        ]
+                    }
                 }
             }
         }
@@ -729,6 +788,24 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                     // actual emitter near one end of that extension.
                     candidates[index].isEmitterEligible = false
                     candidates[index].source = "core-line-weak-raw-tail"
+                    if collectPipelineDiagnostics {
+                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                            name: "core-line-weak-raw-tail.span",
+                            value: line.rawPCASpan, comparison: "<",
+                            threshold: line.robustMainIntervalLength * 4.0))
+                        candidates[index].diagnosticRejections += [
+                            SaberEligibilityDecision(name: "core-line-weak-raw-tail.pointFallback",
+                                value: line.usedPointLEDFallback ? 1 : 0,
+                                comparison: "==", threshold: 0),
+                            SaberEligibilityDecision(name: "core-line-weak-raw-tail.retainedBody",
+                                value: line.retainedBodyRatio, comparison: ">=", threshold: 0.50),
+                            SaberEligibilityDecision(name: "core-line-weak-raw-tail.coreSupport",
+                                value: line.coreSupportRatio, comparison: ">=", threshold: 0.30),
+                            SaberEligibilityDecision(name: "core-line-weak-raw-tail.localBody",
+                                value: hasSupportedLocalBody ? 1 : 0,
+                                comparison: "==", threshold: 0)
+                        ]
+                    }
                 }
             }
         }
@@ -752,6 +829,40 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                     // coherent connected body already explains the blade.
                     candidates[index].isEmitterEligible = false
                     candidates[index].source = "core-line-weak-bridge"
+                    if collectPipelineDiagnostics {
+                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                            name: "core-line-weak-bridge.span",
+                            value: proposal.rawPCASpan, comparison: "<",
+                            threshold: proposal.robustMainIntervalLength * 1.8))
+                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                            name: "core-line-weak-bridge.retainedBody",
+                            value: proposal.retainedBodyRatio, comparison: ">=", threshold: 0.65))
+                        if let body = connected.first(where: { body in
+                            body.rawPCASpan >= proposal.robustMainIntervalLength * 0.6
+                                && body.meanColorPurity >= proposal.meanColorPurity - 0.10
+                                && body.highValueRatio >= proposal.highValueRatio - 0.20
+                                && body.longitudinalContinuity >= proposal.longitudinalContinuity
+                                && body.axialDensity >= proposal.axialDensity
+                        }) {
+                            candidates[index].diagnosticRejections += [
+                                SaberEligibilityDecision(name: "core-line-weak-bridge.bodySpan",
+                                    value: body.rawPCASpan, comparison: "<",
+                                    threshold: proposal.robustMainIntervalLength * 0.6),
+                                SaberEligibilityDecision(name: "core-line-weak-bridge.bodyPurity",
+                                    value: body.meanColorPurity, comparison: "<",
+                                    threshold: proposal.meanColorPurity - 0.10),
+                                SaberEligibilityDecision(name: "core-line-weak-bridge.bodyHighValue",
+                                    value: body.highValueRatio, comparison: "<",
+                                    threshold: proposal.highValueRatio - 0.20),
+                                SaberEligibilityDecision(name: "core-line-weak-bridge.bodyContinuity",
+                                    value: body.longitudinalContinuity, comparison: "<",
+                                    threshold: proposal.longitudinalContinuity),
+                                SaberEligibilityDecision(name: "core-line-weak-bridge.bodyDensity",
+                                    value: body.axialDensity, comparison: "<",
+                                    threshold: proposal.axialDensity)
+                            ]
+                        }
+                    }
                 } else if proposal.source == "core-halo",
                           connected.contains(where: { body in
                               body.source == "color-mask"
@@ -767,6 +878,40 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                     // component; keep the full color body for endpoints.
                     candidates[index].isEmitterEligible = false
                     candidates[index].source = "core-halo-short-subsegment"
+                    if collectPipelineDiagnostics {
+                        if let body = connected.first(where: { body in
+                            body.source == "color-mask"
+                                && body.rawPCASpan >= proposal.rawPCASpan * 1.4
+                                && body.highValueRatio >= 0.50
+                                && body.meanColorPurity >= 0.50
+                                && proposal.boundingBox.minX >= body.boundingBox.minX - 4
+                                && proposal.boundingBox.maxX <= body.boundingBox.maxX + 4
+                                && proposal.boundingBox.minY >= body.boundingBox.minY - 4
+                                && proposal.boundingBox.maxY <= body.boundingBox.maxY + 4
+                        }) {
+                            candidates[index].diagnosticRejections += [
+                                SaberEligibilityDecision(name: "core-halo-short-subsegment.span",
+                                    value: body.rawPCASpan, comparison: "<",
+                                    threshold: proposal.rawPCASpan * 1.4),
+                                SaberEligibilityDecision(name: "core-halo-short-subsegment.highValue",
+                                    value: body.highValueRatio, comparison: "<", threshold: 0.50),
+                                SaberEligibilityDecision(name: "core-halo-short-subsegment.purity",
+                                    value: body.meanColorPurity, comparison: "<", threshold: 0.50),
+                                SaberEligibilityDecision(name: "core-halo-short-subsegment.minX",
+                                    value: Double(proposal.boundingBox.minX), comparison: "<",
+                                    threshold: Double(body.boundingBox.minX - 4)),
+                                SaberEligibilityDecision(name: "core-halo-short-subsegment.maxX",
+                                    value: Double(proposal.boundingBox.maxX), comparison: ">",
+                                    threshold: Double(body.boundingBox.maxX + 4)),
+                                SaberEligibilityDecision(name: "core-halo-short-subsegment.minY",
+                                    value: Double(proposal.boundingBox.minY), comparison: "<",
+                                    threshold: Double(body.boundingBox.minY - 4)),
+                                SaberEligibilityDecision(name: "core-halo-short-subsegment.maxY",
+                                    value: Double(proposal.boundingBox.maxY), comparison: ">",
+                                    threshold: Double(body.boundingBox.maxY + 4))
+                            ]
+                        }
+                    }
                 }
             }
         }
@@ -782,6 +927,54 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             }) {
                 candidates[index].isEmitterEligible = false
                 candidates[index].source += "-subsegment"
+                if collectPipelineDiagnostics {
+                    if let body = completeCandidates.first(where: {
+                        $0.isEmitterEligible && !$0.source.hasPrefix("core-line")
+                            && candidateIsSubsegment(candidates[index], of: $0)
+                    }) {
+                        let long = hypot(Double(body.comparisonEndpoints.1.x
+                            - body.comparisonEndpoints.0.x),
+                            Double(body.comparisonEndpoints.1.y
+                            - body.comparisonEndpoints.0.y))
+                        let short = hypot(Double(candidates[index].comparisonEndpoints.1.x
+                            - candidates[index].comparisonEndpoints.0.x),
+                            Double(candidates[index].comparisonEndpoints.1.y
+                            - candidates[index].comparisonEndpoints.0.y))
+                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                            name: "-subsegment.length", value: long,
+                            comparison: "<", threshold: short * 1.50))
+                        if long > 0 && short > 0 {
+                            let longX = Double(body.comparisonEndpoints.1.x
+                                - body.comparisonEndpoints.0.x) / long
+                            let longY = Double(body.comparisonEndpoints.1.y
+                                - body.comparisonEndpoints.0.y) / long
+                            let shortX = Double(candidates[index].comparisonEndpoints.1.x
+                                - candidates[index].comparisonEndpoints.0.x) / short
+                            let shortY = Double(candidates[index].comparisonEndpoints.1.y
+                                - candidates[index].comparisonEndpoints.0.y) / short
+                            candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                                name: "-subsegment.axisAlignment",
+                                value: abs(longX * shortX + longY * shortY),
+                                comparison: "<", threshold: 0.94))
+                            for (endpoint, point) in [candidates[index].comparisonEndpoints.0,
+                                                      candidates[index].comparisonEndpoints.1].enumerated() {
+                                let dx = Double(point.x - body.comparisonEndpoints.0.x)
+                                let dy = Double(point.y - body.comparisonEndpoints.0.y)
+                                let along = dx * longX + dy * longY
+                                let across = abs(-dx * longY + dy * longX)
+                                let prefix = "-subsegment.endpoint\(endpoint)"
+                                candidates[index].diagnosticRejections += [
+                                    SaberEligibilityDecision(name: "\(prefix).before",
+                                        value: along, comparison: "<", threshold: -6),
+                                    SaberEligibilityDecision(name: "\(prefix).after",
+                                        value: along, comparison: ">", threshold: long + 6),
+                                    SaberEligibilityDecision(name: "\(prefix).across",
+                                        value: across, comparison: ">", threshold: 6)
+                                ]
+                            }
+                        }
+                    }
+                }
                 candidates[index].scoreBreakdown.proposalPenalty = -candidates[index].score * 0.5
                 candidates[index].score = candidates[index].scoreBreakdown.total
             }
@@ -809,6 +1002,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 ),
                 score: candidate.score, scoreBreakdown: candidate.scoreBreakdown,
                 isEmitterEligible: candidate.isEmitterEligible,
+                isCompactRed: candidate.isCompactRed,
                 peakValue: candidate.peakValue, meanValue: candidate.meanValue,
                 highValueRatio: candidate.highValueRatio,
                 meanColorPurity: candidate.meanColorPurity,
@@ -831,7 +1025,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 axialDensity: candidate.axialDensity / Double(max(step, 1)),
                 componentArea: candidate.componentArea * step * step,
                 pointCount: candidate.pointCount,
-                usedPointLEDFallback: candidate.usedPointLEDFallback
+                usedPointLEDFallback: candidate.usedPointLEDFallback,
+                diagnosticRejections: candidate.diagnosticRejections
             )
         }
         allCandidates[color] = scaled

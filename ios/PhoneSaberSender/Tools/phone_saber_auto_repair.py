@@ -20,8 +20,11 @@ from typing import Any
 from phone_saber_triage_codex import (
     ANALYSIS_MODEL,
     ANALYSIS_REASONING_EFFORT,
+    ESCALATION_MODEL,
+    ESCALATION_REASONING_EFFORT,
     CODEX_TIMEOUT_SECONDS,
     MAX_REPORT_BYTES,
+    MAX_CODEX_CONTEXT_BYTES,
     CodexModelUnavailable,
     _validate_analysis,
     find_codex_binary,
@@ -213,9 +216,14 @@ def repair_gate(report: dict[str, Any], plan: Any, repo: Path) -> dict[str, Any]
                 or report.get("analysisReasoningEffort") != ANALYSIS_REASONING_EFFORT \
                 or report.get("analysisExecuted") is not True:
             reasons.append("analysis model provenance is missing or differs from the pinned role")
+        if report.get("analysisEscalationExecuted") is True \
+                and (report.get("analysisEscalationModel") != ESCALATION_MODEL
+                     or report.get("analysisEscalationReasoningEffort")
+                        != ESCALATION_REASONING_EFFORT):
+            reasons.append("second-opinion model provenance is invalid")
         selected = {}
         for image in plan.images:
-            context = _json_file(image.context_path, 16 * 1024)
+            context = _json_file(image.context_path, MAX_CODEX_CONTEXT_BYTES)
             selected[image.image_id] = (image.frame_id, str(context.get("selectedColor", "")).upper())
         if assessment["decision"] != "actionable":
             reasons.append("analysis requests more evidence")
@@ -318,6 +326,11 @@ def _terminal_report(bundle: Path, state: dict[str, Any], gate: dict[str, Any],
             "reasoningEffort", ANALYSIS_REASONING_EFFORT),
         "analysisExecuted": models.get("analysis", {}).get("executed"),
         "analysisAttempted": models.get("analysis", {}).get("attempted", False),
+        "analysisReanalysisExecuted": models.get("analysis", {}).get("reanalysisExecuted", False),
+        "analysisEscalationModel": models.get("analysisEscalation", {}).get("model", ESCALATION_MODEL),
+        "analysisEscalationReasoningEffort": models.get("analysisEscalation", {}).get(
+            "reasoningEffort", ESCALATION_REASONING_EFFORT),
+        "analysisEscalationExecuted": models.get("analysisEscalation", {}).get("executed", False),
         "repairModel": models.get("repair", {}).get("model", REPAIR_MODEL),
         "repairReasoningEffort": models.get("repair", {}).get(
             "reasoningEffort", REPAIR_REASONING_EFFORT),
@@ -384,6 +397,10 @@ def _terminal_report(bundle: Path, state: dict[str, Any], gate: dict[str, Any],
                  f"analysisReasoningEffort: {model_fields['analysisReasoningEffort']}\n"
                  f"analysisExecuted: {model_fields['analysisExecuted']}\n"
                  f"analysisAttempted: {model_fields['analysisAttempted']}\n\n"
+                 f"analysisReanalysisExecuted: {model_fields['analysisReanalysisExecuted']}\n"
+                 f"analysisEscalationModel: {model_fields['analysisEscalationModel']}\n"
+                 f"analysisEscalationReasoningEffort: {model_fields['analysisEscalationReasoningEffort']}\n"
+                 f"analysisEscalationExecuted: {model_fields['analysisEscalationExecuted']}\n\n"
                  f"repairModel: {model_fields['repairModel']}\n"
                  f"repairReasoningEffort: {model_fields['repairReasoningEffort']}\n"
                  f"repairExecuted: {model_fields['repairExecuted']}\n"
@@ -585,7 +602,7 @@ def _classify_baseline(before: dict[str, Any], plan: Any, repo: Path,
     for image in plan.images:
         if image.image_id not in confirmed_ids:
             continue
-        context = _json_file(image.context_path, 16 * 1024)
+        context = _json_file(image.context_path, MAX_CODEX_CONTEXT_BYTES)
         selected[_sha256(image.image_path)] = str(context["selectedColor"]).upper()
     manifest = _json_file(repo / "ios/PhoneSaberSender/Tools/lossless_regression_manifest.json",
                           2 * 1024 * 1024)
@@ -968,6 +985,14 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
                                                                         ANALYSIS_REASONING_EFFORT),
                                          "executed": report.get("analysisExecuted"),
                                          "attempted": report.get("analysisExecuted") is True,
+                                         "reanalysisExecuted": report.get("analysisReanalysisExecuted", False),
+                                     },
+                                     "analysisEscalation": {
+                                         "model": report.get("analysisEscalationModel", ESCALATION_MODEL),
+                                         "reasoningEffort": report.get("analysisEscalationReasoningEffort",
+                                                                        ESCALATION_REASONING_EFFORT),
+                                         "executed": report.get("analysisEscalationExecuted", False),
+                                         "attempted": report.get("analysisEscalationExecuted", False),
                                      },
                                      "repair": {"model": REPAIR_MODEL,
                                                 "reasoningEffort": REPAIR_REASONING_EFFORT,
@@ -1005,6 +1030,7 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
                         "analysis": {"model": ANALYSIS_MODEL,
                                      "reasoningEffort": ANALYSIS_REASONING_EFFORT,
                                      "executed": state["models"]["analysis"]["executed"]},
+                        "analysisEscalation": state["models"]["analysisEscalation"],
                         "repair": {"model": REPAIR_MODEL,
                                    "reasoningEffort": REPAIR_REASONING_EFFORT,
                                    "executed": False},

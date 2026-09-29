@@ -179,6 +179,48 @@ final class DebugRecordingTriageTests: XCTestCase {
         }
     }
 
+    func testEligibilityDropoutCopiesFailedRuleAcrossContextFrames() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        var frames = (0..<2).map { makeFrame($0, redDetected: false) }
+        let rejected: [String: Any] = [
+            "index": 0, "sourceType": "color-mask", "eligible": false,
+            "finalScore": 12.5, "rejectionReasons": ["peakValue"],
+            "eligibilityRules": [["name": "peakValue", "result": "FAIL",
+                                  "value": 210.0, "comparison": ">=", "threshold": 218.0]]
+        ]
+        for index in frames.indices {
+            frames[index]["candidateDiagnostics"] = [
+                "red": ["totalCandidateCount": 1, "eligibleCandidateCount": 0,
+                        "topCandidates": [rejected]],
+                "blue": ["totalCandidateCount": 0, "eligibleCandidateCount": 0]
+            ]
+        }
+        frames[1]["manualCaptured"] = true
+        frames[1]["manualFileName"] = "manual_frame_1.png"
+        try Data("synthetic".utf8).write(
+            to: directory.appendingPathComponent("manual_frame_1.png"))
+        let bundle = try DebugRecordingTriageBuilder.build(
+            metadataData: metadata(frames),
+            metadataURL: directory.appendingPathComponent("metadata.json"),
+            forensicDirectoryURL: directory)
+        let context = try JSONSerialization.jsonObject(with: Data(contentsOf:
+            bundle.appendingPathComponent("frames/frame_1_1.json"))) as? [String: Any]
+        let contextFrames = try XCTUnwrap(context?["frames"] as? [[String: Any]])
+        XCTAssertEqual(contextFrames.count, 2)
+        for frame in contextFrames {
+            let red = try XCTUnwrap(frame["red"] as? [String: Any])
+            XCTAssertEqual(red["candidateCount"] as? Int, 1)
+            XCTAssertEqual(red["eligibleCandidateCount"] as? Int, 0)
+            XCTAssertEqual(red["failureStage"] as? String, "eligibility")
+            let trace = try XCTUnwrap(red["candidateDecisionTrace"] as? [[String: Any]])
+            let rules = try XCTUnwrap(trace.first?["rules"] as? [[String: Any]])
+            XCTAssertEqual(rules.first?["name"] as? String, "peakValue")
+            XCTAssertEqual(rules.first?["value"] as? Double, 210)
+            XCTAssertEqual(rules.first?["threshold"] as? Double, 218)
+        }
+    }
+
     func testMissingRequiredPngRejectsBundle() throws {
         let directory = try makeTemporaryDirectory()
         defer { try? FileManager.default.removeItem(at: directory) }

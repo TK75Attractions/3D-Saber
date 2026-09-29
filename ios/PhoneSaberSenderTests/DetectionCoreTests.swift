@@ -2179,6 +2179,21 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(selected.scoreBreakdown.total, blueCandidates[index].scoreBreakdown.total)
         XCTAssertEqual(selected.rawPCASpan, blueCandidates[index].rawPCASpan)
         XCTAssertEqual(selected.continuity, blueCandidates[index].longitudinalContinuity)
+        XCTAssertTrue(selected.eligibilityRules.contains { $0.name == "peakValue" })
+    }
+
+    func testNormalDetectionDoesNotBuildRejectionSiteDiagnostics() throws {
+        let fixture = try fixtureBGRA("blue-led-bright-large-05")
+        let analysis = analyzeSabers(
+            in: fixture.bytes, width: fixture.width, height: fixture.height,
+            bytesPerRow: fixture.bytesPerRow,
+            redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+            collectProfile: false, collectPipelineDiagnostics: false
+        )
+        XCTAssertNil(analysis.pipelineDiagnostics)
+        XCTAssertTrue(analysis.candidates.values.flatMap { $0 }.allSatisfy {
+            $0.diagnosticRejections.isEmpty
+        })
     }
 
     func testSparseBlueMaskSurvivesDestructiveOpeningThroughRawFallback() throws {

@@ -527,6 +527,10 @@ enum DebugRecordingTriageBuilder {
             ] {
                 if let value = integer(diagnostic[source]) { colorData[target] = value }
             }
+            if let count = integer(diagnostic["totalCandidateCount"]), count > 0,
+               integer(diagnostic["eligibleCandidateCount"]) == 0 {
+                colorData["failureStage"] = "eligibility"
+            }
             if let source = string(diagnostic["selectedCandidateType"]) ?? string(candidate?["sourceType"]) {
                 colorData["selectedCandidateType"] = source
             }
@@ -547,6 +551,22 @@ enum DebugRecordingTriageBuilder {
                 }
                 if let coverage = number(breakdown["longitudinalHighCoverage"]) {
                     colorData["highBrightnessCoverage"] = coverage / 3.0
+                }
+            }
+            if let top = diagnostic["topCandidates"] as? [[String: Any]], !top.isEmpty {
+                let limit = integer(diagnostic["eligibleCandidateCount"]) == 0 ? 3 : 1
+                colorData["candidateDecisionTrace"] = top.prefix(limit).map { entry -> [String: Any] in
+                    var trace: [String: Any] = [:]
+                    for key in ["index", "sourceType", "eligible", "finalScore",
+                                "rejectionReasons", "peakValue", "meanValue",
+                                "highValueRatio", "meanColorPurity", "clippedWhiteRatio",
+                                "isCompactRed", "rawPCASpan", "robustMainIntervalLength",
+                                "continuity", "density", "componentArea", "pointCount"] {
+                        if let value = entry[key] { trace[key] = value }
+                    }
+                    let rules = entry["eligibilityRules"] as? [[String: Any]] ?? []
+                    trace["rules"] = rules.filter { string($0["result"]) == "FAIL" }
+                    return trace
                 }
             }
             output[color] = colorData
@@ -642,6 +662,7 @@ enum DebugRecordingTriageBuilder {
         - Use these A–G labels: A = capture/data artifact; B = false negative or candidate=0; C = candidate exists but eligible=0; D = wrong candidate or endpoint jump; E = false positive suspect (broad/coreless or identical endpoint); F = temporal dropout/continuity; G = insufficient evidence or other.
         - State what is visible in each PNG before interpreting the metadata. Cite image and frame IDs.
         - If evidence is insufficient, say so and do not recommend production recognition-code changes.
+        - For eligibility dropouts, inspect candidateDecisionTrace: identify failed production rules, measured values and thresholds, and whether failures repeat across frames. Assess false-positive risk before supporting a production change; do not simply loosen a threshold.
         - Do not edit, create, or propose applying production code. Return analysis findings only.
 
         ## Required output

@@ -14,6 +14,7 @@ import unittest
 from http.client import HTTPConnection
 from pathlib import Path
 from threading import Thread
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -28,10 +29,12 @@ from phone_saber_triage_codex import (
     input_plan,
     _output_schema,
     _codex_prompt,
+    _decision_trace_summary,
 )
 from phone_saber_triage_protocol import BundleError
 from phone_saber_triage_protocol import CONTENT_TYPE, pack_bundle
 from phone_saber_triage_receiver import TriageHTTPServer
+from phone_saber_auto_repair import repair_bundle, repair_gate
 from test_phone_saber_triage_protocol import write_bundle
 
 
@@ -55,6 +58,129 @@ EXPECTED_SUMMARY_SCOPE = "retained incident candidates and nearby context"
 
 
 class CodexTriageTests(unittest.TestCase):
+    def test_eligibility_trace_reaches_luna_and_repeats_across_frames(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = root / "bundle"
+            write_codex_bundle(bundle)
+            add_synthetic_eligibility_trace(bundle)
+            plan = input_plan(bundle)
+            traces = _decision_trace_summary(plan)
+            self.assertEqual([item["frameID"] for item in traces], [100, 101])
+            self.assertEqual([item["failedRule"] for item in traces],
+                             ["peakValue", "peakValue"])
+            codex = fake_codex(root, root / "spy.json")
+            analyze_bundle(bundle, codex_path=str(codex))
+            spy = json.loads((root / "spy.json").read_text())
+            self.assertIn("candidateDecisionTrace", json.loads(
+                (bundle / "frames/frame_100_1.json").read_text())["frames"][0]["red"])
+            self.assertIn("eligibility dropouts", spy["prompt"])
+
+    def test_untrusted_rule_shape_is_rejected_before_analysis(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "bundle"
+            write_codex_bundle(bundle)
+            add_synthetic_eligibility_trace(bundle)
+            path = bundle / "frames/frame_100_1.json"
+            context = json.loads(path.read_text())
+            context["frames"][0]["red"]["candidateDecisionTrace"][0]["rules"][0][
+                "comparison"] = "execute"
+            path.write_text(json.dumps(context))
+            with self.assertRaises(BundleError):
+                input_plan(bundle)
+
+    def test_missing_rejection_reason_reanalyzes_once_then_stops(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = root / "bundle"
+            write_codex_bundle(bundle)
+            add_synthetic_eligibility_trace(bundle)
+            missing = eligibility_assessment("needs_capture", "Missing rejection reason")
+            actionable = eligibility_assessment("actionable", "Two visible examples support change")
+            actionable["repair_assessment"].update({
+                "production_change_supported": True, "change_type": "candidate_logic",
+                "independent_visual_examples": 2})
+            codex = fake_codex(root, root / "spy.json", responses=[missing, actionable])
+            analyze_bundle(bundle, codex_path=str(codex))
+            spy = json.loads((root / "spy.json").read_text())
+            report = json.loads((bundle / "analysis_report.json").read_text())
+            self.assertEqual(len(spy["calls"]), 2)
+            self.assertEqual([call["model"] for call in spy["calls"]],
+                             [ANALYSIS_MODEL, ANALYSIS_MODEL])
+            self.assertTrue(report["analysisReanalysisExecuted"])
+            self.assertFalse(report["analysisEscalationExecuted"])
+            self.assertEqual(report["analysis"]["repair_assessment"]["decision"], "actionable")
+            with patch("phone_saber_auto_repair._corpus_coverage",
+                       return_value=(True, "covered")):
+                gate = repair_gate(report, input_plan(bundle, allow_reports=True), root)
+            self.assertEqual(gate["decision"], "actionable")
+
+    def test_missing_trace_requires_capture_without_a_second_call(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = root / "bundle"
+            write_codex_bundle(bundle)
+            missing = eligibility_assessment("needs_capture", "Missing rejection details")
+            codex = fake_codex(root, root / "spy.json", responses=[missing])
+            analyze_bundle(bundle, codex_path=str(codex))
+            spy = json.loads((root / "spy.json").read_text())
+            report = json.loads((bundle / "analysis_report.json").read_text())
+            self.assertEqual(len(spy["calls"]), 1)
+            self.assertFalse(report["analysisReanalysisExecuted"])
+            self.assertFalse(report["analysisEscalationExecuted"])
+
+    def test_reanalysis_never_repeats_when_reason_is_still_missing(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = root / "bundle"
+            write_codex_bundle(bundle)
+            add_synthetic_eligibility_trace(bundle)
+            missing = eligibility_assessment("needs_capture", "Missing rejection details")
+            codex = fake_codex(root, root / "spy.json", responses=[missing, missing])
+            analyze_bundle(bundle, codex_path=str(codex))
+            spy = json.loads((root / "spy.json").read_text())
+            report = json.loads((bundle / "analysis_report.json").read_text())
+            self.assertEqual(len(spy["calls"]), 2)
+            self.assertTrue(report["analysisReanalysisExecuted"])
+            self.assertFalse(report["analysisEscalationExecuted"])
+
+    def test_ambiguous_luna_escalates_once_without_repair(self) -> None:
+        for final_decision in ("needs_capture", "actionable"):
+            with self.subTest(final_decision=final_decision), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                bundle = root / "bundle"
+                write_codex_bundle(bundle)
+                add_synthetic_eligibility_trace(bundle)
+                ambiguous = eligibility_assessment("needs_capture", "Interpretation remains uncertain")
+                second = eligibility_assessment(final_decision, "Independent assessment")
+                if final_decision == "actionable":
+                    second["repair_assessment"].update({
+                        "production_change_supported": True, "change_type": "candidate_logic",
+                        "independent_visual_examples": 2})
+                codex = fake_codex(root, root / "spy.json", responses=[ambiguous, second])
+                analyze_bundle(bundle, codex_path=str(codex))
+                spy = json.loads((root / "spy.json").read_text())
+                report = json.loads((bundle / "analysis_report.json").read_text())
+                self.assertEqual(len(spy["calls"]), 2)
+                self.assertEqual(spy["calls"][1]["model"], "gpt-6-sol")
+                self.assertEqual(spy["calls"][1]["sandbox"], "read-only")
+                self.assertTrue(report["analysisEscalationExecuted"])
+                self.assertEqual(report["analysis"]["repair_assessment"]["decision"],
+                                 final_decision)
+                with patch("phone_saber_auto_repair._corpus_coverage",
+                           return_value=(True, "covered")):
+                    gate = repair_gate(report, input_plan(bundle, allow_reports=True), root)
+                self.assertEqual(gate["decision"],
+                                 "actionable" if final_decision == "actionable"
+                                 else "needs_capture")
+                if final_decision == "needs_capture":
+                    with patch("phone_saber_auto_repair._corpus_coverage",
+                               return_value=(True, "covered")):
+                        status = repair_bundle(bundle, repo=root, codex_path=str(codex))
+                    self.assertEqual(status["status"], "needs_capture")
+                    self.assertFalse(status["repairExecuted"])
+                    self.assertEqual(len(json.loads((root / "spy.json").read_text())["calls"]), 2)
+
     def test_dry_run_lists_only_selected_png_and_compact_context(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "bundle"
@@ -384,10 +510,51 @@ class CodexTriageTests(unittest.TestCase):
                 thread.join(timeout=2)
 
 
+def add_synthetic_eligibility_trace(bundle: Path) -> None:
+    path = bundle / "frames/frame_100_1.json"
+    context = json.loads(path.read_text(encoding="utf-8"))
+    frames = []
+    for frame_id in (100, 101):
+        candidate = {"index": 0, "sourceType": "color-mask", "eligible": False,
+                     "finalScore": 12.5, "rejectionReasons": ["peakValue"],
+                     "peakValue": 210, "meanValue": 180.0, "highValueRatio": 0.02,
+                     "meanColorPurity": 0.54, "clippedWhiteRatio": 0.0,
+                     "isCompactRed": False, "rawPCASpan": 140.0,
+                     "robustMainIntervalLength": 105.0, "continuity": 0.8,
+                     "density": 2.0, "componentArea": 310, "pointCount": 78,
+                     "rules": [{"name": "peakValue", "result": "FAIL", "value": 210,
+                                "comparison": ">=", "threshold": 218}]}
+        frames.append({"frameID": frame_id, "timestamp": frame_id / 30,
+                       "red": {"detected": False, "detectionSucceeded": False,
+                               "candidateCount": 1, "eligibleCandidateCount": 0,
+                               "failureStage": "eligibility",
+                               "candidateDecisionTrace": [candidate]},
+                       "blue": {"detected": True}})
+    context["frames"] = frames
+    path.write_text(json.dumps(context), encoding="utf-8")
+
+
+def eligibility_assessment(decision: str, reason: str) -> dict:
+    analysis = copy.deepcopy(EMPTY_ANALYSIS)
+    analysis["repair_assessment"].update({
+        "decision": decision, "visible_saber_confirmed": True,
+        "root_cause_stage": "eligibility", "diagnosis_consistent_with_metadata": True,
+        "affected_colors": ["RED"], "evidence_image_ids": ["image_001"],
+        "reason": reason})
+    analysis["false_negatives"] = [{
+        "classification": ["C"], "color": "RED", "frame_ids": [100],
+        "image_ids": ["image_001"], "issue_type": "eligibility dropout",
+        "observation": "A lit red saber is visible in the selected image.",
+        "interpretation": "A candidate failed an eligibility rule.", "confidence": "high"}]
+    return analysis
+
+
 def fake_codex(root: Path, spy_path: Path, *, analysis: dict | None = None,
-               fail: bool = False, model_error: str | None = None) -> Path:
+               fail: bool = False, model_error: str | None = None,
+               responses: list[dict] | None = None) -> Path:
     executable = root / "fake-codex"
     response_json = json.dumps(analysis or EMPTY_ANALYSIS, ensure_ascii=False)
+    response_sequence = json.dumps(responses or [], ensure_ascii=False)
     spy_literal = repr(str(spy_path))
     script = f"""#!{sys.executable}
 import json, pathlib, sys
@@ -417,8 +584,15 @@ spy = {{
     'stdin_sentinel': bool(args and args[-1] == '-'),
     'output_schema': json.loads(schema_path.read_text(encoding='utf-8')),
 }}
-pathlib.Path({spy_literal}).write_text(json.dumps(spy), encoding='utf-8')
-response_path.write_text({response_json!r}, encoding='utf-8')
+spy_file = pathlib.Path({spy_literal})
+prior = json.loads(spy_file.read_text(encoding='utf-8')) if spy_file.exists() else {{}}
+calls = prior.get('calls', [])
+calls.append({{'model': model, 'prompt': prompt, 'sandbox': spy['sandbox']}})
+spy['calls'] = calls
+spy_file.write_text(json.dumps(spy), encoding='utf-8')
+responses = json.loads({response_sequence!r})
+response = responses[min(len(calls) - 1, len(responses) - 1)] if responses else json.loads({response_json!r})
+response_path.write_text(json.dumps(response), encoding='utf-8')
 """
     executable.write_text(script, encoding="utf-8")
     executable.chmod(0o755)

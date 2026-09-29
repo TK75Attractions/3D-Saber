@@ -226,6 +226,13 @@ func openSaberMask(_ mask: [UInt8], width: Int, height: Int, radius: Int = 1) ->
                         width: width, height: height, radius: radius)
 }
 
+struct SaberEligibilityDecision {
+    let name: String
+    let value: Double?
+    let comparison: String?
+    let threshold: Double?
+}
+
 struct SaberCandidate {
     var source: String = "color-mask"
     var radiance: Double = 0
@@ -237,6 +244,7 @@ struct SaberCandidate {
     var score: Double
     var scoreBreakdown: SaberScoreBreakdown
     var isEmitterEligible: Bool
+    let isCompactRed: Bool
     let peakValue: Int
     let meanValue: Double
     let highValueRatio: Double
@@ -260,6 +268,8 @@ struct SaberCandidate {
     let componentArea: Int
     let pointCount: Int
     let usedPointLEDFallback: Bool
+    /// Populated only for Debug Recording, at the production rejection site.
+    var diagnosticRejections: [SaberEligibilityDecision] = []
 }
 
 struct SaberBoundingBox {
@@ -792,6 +802,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                           endpoints: (first, second), boundingBox: boundingBox, score: score,
                           scoreBreakdown: breakdown,
                           isEmitterEligible: isEmitterEligible,
+                          isCompactRed: isCompactRed,
                           peakValue: peakValue, meanValue: meanValue,
                           highValueRatio: highRatio, meanColorPurity: meanPurity,
                           clippedWhiteRatio: clippedRatio,

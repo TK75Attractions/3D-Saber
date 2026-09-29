@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import copy
 import json
+import math
 import os
 import re
 import shutil
@@ -33,11 +34,13 @@ PER_FAILURE_TYPE = 2
 EXPECTED_SUMMARY_SCOPE = "retained incident candidates and nearby context"
 MAX_REPORT_BYTES = 512 * 1024
 MAX_CODEX_SUMMARY_BYTES = 128 * 1024
-MAX_CODEX_CONTEXT_BYTES = 16 * 1024
+MAX_CODEX_CONTEXT_BYTES = 32 * 1024
 MAX_CODEX_METADATA_BYTES = 512 * 1024
 CODEX_TIMEOUT_SECONDS = 600
 ANALYSIS_MODEL = "gpt-6-luna"
 ANALYSIS_REASONING_EFFORT = "max"
+ESCALATION_MODEL = "gpt-6-sol"
+ESCALATION_REASONING_EFFORT = "high"
 MODEL_UNAVAILABLE_PATTERNS = (
     "unknown model", "unsupported model", "invalid model", "model not found",
     "model is not available", "model unavailable", "model is unavailable",
@@ -337,6 +340,61 @@ def find_codex_binary(explicit: str | None = None) -> str | None:
     return next((str(path) for path in candidates if path.is_file() and os.access(path, os.X_OK)), None)
 
 
+def _decision_trace_summary(plan: Any) -> list[dict[str, Any]]:
+    """Read only already-selected compact contexts; do not infer absent metrics."""
+    summary: list[dict[str, Any]] = []
+    seen: set[tuple[int, str, int, str]] = set()
+    for image in plan.images:
+        context = json.loads(image.context_path.read_text(encoding="utf-8"))
+        for frame in context["frames"]:
+            for color in ("red", "blue"):
+                for candidate in frame[color].get("candidateDecisionTrace", []):
+                    for rule in candidate["rules"]:
+                        key = (frame["frameID"], color, candidate["index"], rule["name"])
+                        if key in seen:
+                            continue
+                        seen.add(key)
+                        summary.append({"frameID": frame["frameID"], "color": color,
+                            "candidate": candidate["index"], "source": candidate["sourceType"],
+                            "failedRule": rule["name"], "value": rule["value"],
+                            "comparison": rule["comparison"], "threshold": rule["threshold"]})
+    return summary[:60]
+
+
+def _needs_internal_diagnostics(analysis: dict[str, Any]) -> bool:
+    assessment = analysis["repair_assessment"]
+    if assessment["decision"] != "needs_capture" \
+            or assessment["root_cause_stage"] != "eligibility":
+        return False
+    reason = " ".join([assessment["reason"], *analysis["limitations"]]).lower()
+    return any(term in reason for term in (
+        "missing rejection", "missing eligibility", "missing candidate trace",
+        "rejection detail", "rejection reason", "eligibility detail",
+        "rejection diagnostic", "eligibility rule", "candidate-level rejection",
+        "decision trace", "failed rule", "reject rule"))
+
+
+def _needs_second_opinion(analysis: dict[str, Any], traces: list[dict[str, Any]]) -> bool:
+    assessment = analysis["repair_assessment"]
+    reason = assessment["reason"].lower()
+    colors = set(assessment["affected_colors"])
+    return assessment["decision"] == "needs_capture" \
+        and assessment["visible_saber_confirmed"] \
+        and assessment["root_cause_stage"] in {
+            "segmentation", "candidate_generation", "eligibility", "ranking", "endpoint"} \
+        and bool(assessment["evidence_image_ids"]) \
+        and any(item["color"].upper() in colors
+                and item["value"] is not None and item["threshold"] is not None
+                for item in traces) \
+        and any(term in reason for term in (
+            "uncertain", "ambiguous", "cannot determine", "cannot conclude",
+            "unclear which", "判断でき", "曖昧")) \
+        and not any(term in reason for term in (
+            "new capture", "more images", "additional images", "not visible",
+            "occluded", "insufficient visual examples")) \
+        and not _needs_internal_diagnostics(analysis)
+
+
 def analyze_bundle(
     bundle_dir: Path,
     *,
@@ -402,45 +460,82 @@ def analyze_bundle(
         for image_path in selected_images:
             command.extend(["--image", str(image_path)])
         command.append("-")
-        started = time.monotonic()
-        print(f"[AUTO_REPAIR][ANALYSIS] model={ANALYSIS_MODEL} "
-              f"effort={ANALYSIS_REASONING_EFFORT} subprocess=codex result=starting", flush=True)
+        def run_analysis(model: str, effort: str, text_prompt: str, label: str) -> dict[str, Any]:
+            configured = command.copy()
+            configured[configured.index(ANALYSIS_MODEL)] = model
+            configured[configured.index(f"model_reasoning_effort={json.dumps(ANALYSIS_REASONING_EFFORT)}")] = (
+                f"model_reasoning_effort={json.dumps(effort)}")
+            started = time.monotonic()
+            print(f"[AUTO_REPAIR][{label}] model={model} effort={effort} "
+                  "subprocess=codex read-only result=starting", flush=True)
+            try:
+                completed = subprocess.run(
+                    configured, cwd=input_root, input=text_prompt,
+                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
+                    timeout=timeout_seconds, check=False,
+                )
+            except subprocess.TimeoutExpired as exc:
+                raise CodexFailed(f"Codex CLI timed out after {timeout_seconds} seconds") from exc
+            except OSError as exc:
+                raise CodexFailed(f"Codex CLI could not start: {exc}") from exc
+            if completed.returncode != 0:
+                diagnostic = (completed.stderr or completed.stdout).strip().splitlines()
+                detail = diagnostic[-1][:300] if diagnostic else f"exit {completed.returncode}"
+                if is_model_unavailable(completed.stderr + "\n" + completed.stdout):
+                    raise CodexModelUnavailable(
+                        f"MODEL_UNAVAILABLE: analysis requires {model}/{effort}: {detail}")
+                raise CodexFailed(f"Codex CLI failed ({completed.returncode}): {detail}")
+            if not response_path.is_file() or response_path.stat().st_size > MAX_REPORT_BYTES:
+                raise CodexFailed("Codex CLI returned no bounded final report")
+            try:
+                result = json.loads(response_path.read_text(encoding="utf-8"))
+                _validate_analysis(result, set(plan.image_ids))
+            except (OSError, UnicodeError, json.JSONDecodeError, BundleError, TypeError) as exc:
+                raise CodexFailed(f"Codex CLI returned invalid structured output: {exc}") from exc
+            print(f"[AUTO_REPAIR][{label}] model={model} effort={effort} "
+                  f"subprocess=codex read-only result=complete "
+                  f"elapsed={time.monotonic() - started:.1f}s", flush=True)
+            return result
 
-        try:
-            completed = subprocess.run(
-                command,
-                cwd=input_root,
-                input=prompt,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                timeout=timeout_seconds,
-                check=False,
-            )
-        except subprocess.TimeoutExpired as exc:
-            raise CodexFailed(f"Codex CLI timed out after {timeout_seconds} seconds") from exc
-        except OSError as exc:
-            raise CodexFailed(f"Codex CLI could not start: {exc}") from exc
-        if completed.returncode != 0:
-            diagnostic = (completed.stderr or completed.stdout).strip().splitlines()
-            detail = diagnostic[-1][:300] if diagnostic else f"exit {completed.returncode}"
-            if is_model_unavailable(completed.stderr + "\n" + completed.stdout):
-                print(f"[AUTO_REPAIR][ANALYSIS] model={ANALYSIS_MODEL} "
-                      f"effort={ANALYSIS_REASONING_EFFORT} subprocess=codex "
-                      f"result=MODEL_UNAVAILABLE elapsed={time.monotonic() - started:.1f}s", flush=True)
-                raise CodexModelUnavailable(
-                    f"MODEL_UNAVAILABLE: analysis requires {ANALYSIS_MODEL}/{ANALYSIS_REASONING_EFFORT}: {detail}")
-            raise CodexFailed(f"Codex CLI failed ({completed.returncode}): {detail}")
-        if not response_path.is_file() or response_path.stat().st_size > MAX_REPORT_BYTES:
-            raise CodexFailed("Codex CLI returned no bounded final report")
-        try:
-            analysis = json.loads(response_path.read_text(encoding="utf-8"))
-            _validate_analysis(analysis, set(plan.image_ids))
-        except (OSError, UnicodeError, json.JSONDecodeError, BundleError, TypeError) as exc:
-            raise CodexFailed(f"Codex CLI returned invalid structured output: {exc}") from exc
-        print(f"[AUTO_REPAIR][ANALYSIS] model={ANALYSIS_MODEL} "
-              f"effort={ANALYSIS_REASONING_EFFORT} subprocess=codex "
-              f"result=complete elapsed={time.monotonic() - started:.1f}s", flush=True)
+        analysis = run_analysis(ANALYSIS_MODEL, ANALYSIS_REASONING_EFFORT, prompt, "ANALYSIS")
+        traces = _decision_trace_summary(plan)
+        affected = set(analysis["repair_assessment"]["affected_colors"])
+        relevant_traces = [item for item in traces if item["color"].upper() in affected]
+        initial_assessment = copy.deepcopy(analysis["repair_assessment"])
+        reanalysis_executed = False
+        escalation_executed = False
+        for item in traces[:12]:
+            print(f"[AUTO_REPAIR][DIAGNOSTICS] stage=eligibility "
+                  f"frame={item['frameID']} color={item['color']} "
+                  f"candidate={item['candidate']} failedRule={item['failedRule']} "
+                  f"value={item['value']} threshold={item['threshold']}", flush=True)
+        if _needs_internal_diagnostics(analysis) and relevant_traces:
+            enriched_prompt = (prompt + "\n\nDiagnostics enrichment: The following failed "
+                "eligibility rules were extracted from the selected compact frame contexts. "
+                "Re-evaluate once using these actual values and thresholds; keep the "
+                "visual and repair safety requirements.\n" +
+                json.dumps(relevant_traces, ensure_ascii=False))
+            analysis = run_analysis(ANALYSIS_MODEL, ANALYSIS_REASONING_EFFORT,
+                                    enriched_prompt, "REANALYSIS")
+            reanalysis_executed = True
+        if _needs_second_opinion(analysis, traces):
+            reason = " ".join(analysis["repair_assessment"]["reason"].split())[:200]
+            print(f"[AUTO_REPAIR][ESCALATION] model={ESCALATION_MODEL} "
+                  f"effort={ESCALATION_REASONING_EFFORT} role=second-opinion "
+                  f"reason={reason}", flush=True)
+            second_prompt = (prompt + "\n\nSECOND_OPINION_ANALYSIS. Read-only. "
+                "A prior Luna/MAX analysis could not decide despite available visual "
+                "and eligibility evidence. Analyze independently. Do not edit source. "
+                "Use the same conservative repair assessment and cite only selected images. "
+                "Prior assessment and measured decision trace:\n" +
+                json.dumps({"prior": analysis["repair_assessment"], "trace": traces},
+                           ensure_ascii=False))
+            try:
+                analysis = run_analysis(ESCALATION_MODEL, ESCALATION_REASONING_EFFORT,
+                                        second_prompt, "ESCALATION")
+                escalation_executed = True
+            except (CodexModelUnavailable, CodexFailed) as exc:
+                print(f"[AUTO_REPAIR][ESCALATION] result=unavailable reason={exc}", flush=True)
 
     report = {
         "formatVersion": 3,
@@ -448,6 +543,11 @@ def analyze_bundle(
         "analysisModel": ANALYSIS_MODEL,
         "analysisReasoningEffort": ANALYSIS_REASONING_EFFORT,
         "analysisExecuted": True,
+        "analysisReanalysisExecuted": reanalysis_executed,
+        "analysisEscalationModel": ESCALATION_MODEL,
+        "analysisEscalationReasoningEffort": ESCALATION_REASONING_EFFORT,
+        "analysisEscalationExecuted": escalation_executed,
+        "analysisInitialAssessment": initial_assessment,
         "input": {
             "imageCount": len(plan.image_paths),
             "imagePaths": [path.relative_to(plan.root).as_posix() for path in plan.image_paths],
@@ -680,6 +780,7 @@ Evidence rules:
 - Keep false negatives, wrong-candidate/endpoint errors, and false-positive suspects in separate output sections.
 - Classify findings: A = capture/data artifact; B = false negative or candidate=0; C = candidate exists but eligible=0; D = wrong candidate or endpoint jump; E = false-positive suspect (broad/coreless or identical endpoint); F = temporal dropout/continuity; G = insufficient evidence or other.
 - If evidence is insufficient, say so and do not recommend production recognition changes.
+- For eligibility dropouts, inspect candidateDecisionTrace for each selected frame. Name the failed rule, actual measured value and threshold, whether it repeats across independent visible examples, and false-positive risk. A threshold must not be loosened solely because a candidate was rejected.
 - Do not edit, create, or propose applying production code. Return a concise JSON object matching the supplied schema exactly.
 - Complete repair_assessment conservatively. Mark actionable only when selected PNG pixels visibly confirm a real saber, the metadata supports a specific recognition-stage cause, and the evidence supports a production change. Otherwise use needs_capture. A detector dropout or endpoint jump alone is not visual proof.
 - For a threshold proposal, count independent visually supported examples; a single example is insufficient. Use only listed Image IDs in evidence_image_ids. Describe uncertainty in reason. Regression coverage is checked separately by the Mac gate.
@@ -717,7 +818,8 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
                      "morphologyPixelCount", "connectedComponentCount", "candidateCount",
                      "eligibleCandidateCount", "selectedCandidateType", "score", "endpoint",
                      "rawPCASpan", "robustMainIntervalLength", "continuity", "density",
-                     "colorPurity", "coreSupport", "highBrightnessCoverage"}
+                     "colorPurity", "coreSupport", "highBrightnessCoverage",
+                     "candidateDecisionTrace", "failureStage"}
     for frame in context["frames"]:
         if not isinstance(frame, dict) or set(frame) != allowed_frame \
                 or not isinstance(frame.get("frameID"), int) \
@@ -734,11 +836,67 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
                                for point in values["endpoint"])):
                 raise BundleError(f"frame context has an invalid endpoint: {path.name}")
             for key, value in values.items():
-                if key not in {"endpoint", "selectedCandidateType"} \
+                if key == "candidateDecisionTrace":
+                    _validate_decision_trace(value, path.name)
+                elif key not in {"endpoint", "selectedCandidateType", "failureStage"} \
                         and not isinstance(value, (int, float, bool)):
                     raise BundleError(f"frame context has a non-numeric metric: {path.name}")
                 if key == "selectedCandidateType" and (not isinstance(value, str) or len(value) > 100):
                     raise BundleError(f"frame context has an invalid candidate type: {path.name}")
+                if key == "failureStage" and value != "eligibility":
+                    raise BundleError(f"frame context has an invalid failure stage: {path.name}")
+
+
+def _validate_decision_trace(value: Any, name: str) -> None:
+    if not isinstance(value, list) or len(value) > 3:
+        raise BundleError(f"invalid candidate decision trace: {name}")
+    for candidate in value:
+        if not isinstance(candidate, dict) or not set(candidate).issubset({
+                "index", "sourceType", "eligible", "finalScore", "rejectionReasons", "rules",
+                "peakValue", "meanValue", "highValueRatio", "meanColorPurity",
+                "clippedWhiteRatio", "isCompactRed", "rawPCASpan",
+                "robustMainIntervalLength", "continuity", "density",
+                "componentArea", "pointCount"}):
+            raise BundleError(f"invalid candidate decision trace: {name}")
+        if not isinstance(candidate.get("index"), int) or isinstance(candidate["index"], bool) \
+                or not isinstance(candidate.get("sourceType"), str) \
+                or len(candidate["sourceType"]) > 100 \
+                or not isinstance(candidate.get("eligible"), bool) \
+                or not isinstance(candidate.get("finalScore"), (int, float)) \
+                or isinstance(candidate["finalScore"], bool) \
+                or not math.isfinite(candidate["finalScore"]) \
+                or not isinstance(candidate.get("rejectionReasons"), list) \
+                or len(candidate["rejectionReasons"]) > 20 \
+                or not all(isinstance(rule, str) and len(rule) <= 100
+                           for rule in candidate["rejectionReasons"]):
+            raise BundleError(f"invalid candidate decision fields: {name}")
+        if any(key in candidate and (not isinstance(candidate[key], (int, float))
+                   or isinstance(candidate[key], bool)) for key in (
+                       "peakValue", "meanValue", "highValueRatio",
+                       "meanColorPurity", "clippedWhiteRatio", "rawPCASpan",
+                       "robustMainIntervalLength", "continuity", "density",
+                       "componentArea", "pointCount")) \
+                or any(key in candidate and not math.isfinite(candidate[key])
+                       for key in ("peakValue", "meanValue", "highValueRatio",
+                                   "meanColorPurity", "clippedWhiteRatio", "rawPCASpan",
+                                   "robustMainIntervalLength", "continuity", "density",
+                                   "componentArea", "pointCount")) \
+                or ("isCompactRed" in candidate
+                    and not isinstance(candidate["isCompactRed"], bool)):
+            raise BundleError(f"invalid candidate measurement: {name}")
+        rules = candidate.get("rules")
+        if not isinstance(rules, list) or len(rules) > 20:
+            raise BundleError(f"invalid candidate rules: {name}")
+        for rule in rules:
+            if not isinstance(rule, dict) or set(rule) != {
+                    "name", "result", "value", "comparison", "threshold"} \
+                    or not isinstance(rule["name"], str) or len(rule["name"]) > 100 \
+                    or rule["result"] != "FAIL" \
+                    or rule["comparison"] not in {None, ">=", "<=", "==", ">", "<"} \
+                    or any(item is not None and (not isinstance(item, (int, float))
+                            or isinstance(item, bool) or not math.isfinite(item)) for item in
+                           (rule["value"], rule["threshold"])):
+                raise BundleError(f"invalid candidate rule: {name}")
 
 
 def _safe_relative(value: Any, parent: str, suffix: str) -> str:

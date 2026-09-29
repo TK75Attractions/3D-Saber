@@ -87,6 +87,10 @@ Candidate object fields:
 | `sourceType` | string |
 | `eligible` | boolean |
 | `finalScore` | number |
+| `peakValue`, `meanValue`, `highValueRatio`, `meanColorPurity`, `clippedWhiteRatio` | measured candidate numbers |
+| `isCompactRed` | boolean |
+| `eligibilityRules` | array of `{name, result, value, comparison, threshold}` |
+| `rejectionReasons` | array of failed production rule names |
 | `scoreBreakdown` | score object |
 | `rawPCAEndpoints` | endpoint object |
 | `rawPCASpan` | number |
@@ -99,6 +103,13 @@ Candidate object fields:
 | `componentArea` | integer |
 | `pointCount` | integer |
 | `usedPointLEDFallback` | boolean |
+
+An eligibility rule has `result: PASS` when its comparison holds and `FAIL`
+otherwise. Compound rejections list the failing escape conditions that would
+have kept the proposal eligible. `value` and `threshold` are null only when a
+comparative witness could not be retained. Geometry comparisons recorded at
+the rejection site use the detector's sampled mask units; the candidate's
+saved endpoint and span fields use source-frame pixels.
 
 An endpoint object contains `first` and `second` point objects; each point has
 integer `x` and `y` coordinates. A score object contains numeric fields:

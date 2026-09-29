@@ -263,6 +263,14 @@ struct DebugRecordingScoreBreakdown: Codable, Equatable {
     }
 }
 
+struct DebugRecordingEligibilityRule: Codable, Equatable {
+    let name: String
+    let result: String
+    let value: Double?
+    let comparison: String?
+    let threshold: Double?
+}
+
 struct DebugRecordingCandidate: Codable, Equatable {
     let index: Int
     let selected: Bool
@@ -281,6 +289,14 @@ struct DebugRecordingCandidate: Codable, Equatable {
     let componentArea: Int
     let pointCount: Int
     let usedPointLEDFallback: Bool
+    let peakValue: Int
+    let meanValue: Double
+    let highValueRatio: Double
+    let meanColorPurity: Double
+    let clippedWhiteRatio: Double
+    let isCompactRed: Bool
+    let eligibilityRules: [DebugRecordingEligibilityRule]
+    let rejectionReasons: [String]
 
     init(index: Int, candidate: SaberCandidate, selectedIndex: Int?) {
         self.index = index
@@ -300,6 +316,88 @@ struct DebugRecordingCandidate: Codable, Equatable {
         componentArea = candidate.componentArea
         pointCount = candidate.pointCount
         usedPointLEDFallback = candidate.usedPointLEDFallback
+        peakValue = candidate.peakValue
+        meanValue = candidate.meanValue
+        highValueRatio = candidate.highValueRatio
+        meanColorPurity = candidate.meanColorPurity
+        clippedWhiteRatio = candidate.clippedWhiteRatio
+        isCompactRed = candidate.isCompactRed
+        var rules: [DebugRecordingEligibilityRule] = []
+        func check(_ name: String, _ value: Double, _ comparison: String,
+                   _ threshold: Double, _ passed: Bool) {
+            rules.append(DebugRecordingEligibilityRule(name: name,
+                result: passed ? "PASS" : "FAIL", value: value,
+                comparison: comparison, threshold: threshold))
+        }
+        let peak = Double(candidate.peakValue)
+        let high = candidate.highValueRatio
+        let purity = candidate.meanColorPurity
+        let core = high >= 0.08 || (peak >= 242 && candidate.meanValue >= 190)
+            || candidate.clippedWhiteRatio > 0
+        let emitterScore = min(max((peak - 200) / 55, 0), 1) * 0.32
+            + min(max((candidate.meanValue - 160) / 95, 0), 1) * 0.23
+            + high * 0.28 + purity * 0.12 + candidate.clippedWhiteRatio * 0.05
+        check("peakValue", peak, ">=", 218, peak >= 218)
+        rules.append(DebugRecordingEligibilityRule(name: "hasEmitterCore",
+            result: core ? "PASS" : "FAIL", value: core ? 1 : 0,
+            comparison: "==", threshold: 1))
+        check("emitterScore", emitterScore, ">=", 0.42, emitterScore >= 0.42)
+        if candidate.isCompactRed {
+            check("compactRedPeakValue", peak, ">=", 230, peak >= 230)
+            check("compactRedHighValueRatio", high, ">=", 0.50, high >= 0.50)
+            check("compactRedColorPurity", purity, ">=", 0.50, purity >= 0.50)
+        }
+        if candidate.source.hasPrefix("core-line") {
+            check("coreLineColorPurity", purity, ">=", 0.25, purity >= 0.25)
+            check("coreLineRetainedBodyRatio", candidate.retainedBodyRatio,
+                  ">=", 0.35, candidate.retainedBodyRatio >= 0.35)
+            check("coreLineContinuity", candidate.longitudinalContinuity,
+                  ">=", 0.70, candidate.longitudinalContinuity >= 0.70)
+            check("coreLineHighValueRatio", high, ">=", 0.35, high >= 0.35)
+            if candidate.source == "core-line-sparse" {
+                // Production rejects only when both sparse conditions hold.
+                check("coreLineSparseCoreCoverage", candidate.longitudinalCoreCoverage,
+                      ">=", 0.30, candidate.longitudinalCoreCoverage >= 0.30)
+                check("coreLineSparseCoreSupport", candidate.coreSupportRatio,
+                      ">=", 0.18, candidate.coreSupportRatio >= 0.18)
+            }
+        }
+        if candidate.source.contains("unsupported-core-line-candidate") {
+            check("independentBlueColorPurity", purity, ">=", 0.25, purity >= 0.25)
+            check("independentBlueRetainedBody", candidate.retainedBodyRatio,
+                  ">=", 0.35, candidate.retainedBodyRatio >= 0.35)
+            check("independentBlueContinuity", candidate.longitudinalContinuity,
+                  ">=", 0.70, candidate.longitudinalContinuity >= 0.70)
+            check("independentBlueHighValue", high, ">=", 0.35, high >= 0.35)
+            if candidate.source.hasPrefix("connected-core") {
+                check("independentPaleColorPurity", purity, ">=", 0.13, purity >= 0.13)
+                check("independentPaleContinuity", candidate.longitudinalContinuity,
+                      ">=", 0.85, candidate.longitudinalContinuity >= 0.85)
+                check("independentPaleCoreSupport", candidate.coreSupportRatio,
+                      ">=", 0.55, candidate.coreSupportRatio >= 0.55)
+                check("independentPaleHighValue", high, ">=", 0.75, high >= 0.75)
+            }
+        }
+        for event in candidate.diagnosticRejections {
+            rules.append(DebugRecordingEligibilityRule(name: event.name, result: "FAIL",
+                value: event.value, comparison: event.comparison,
+                threshold: event.threshold))
+        }
+        // Older callers may not collect rejection-site details. Preserve the
+        // source-based reason without inventing a threshold in that case.
+        for marker in ["core-line-overlap", "unsupported-core-line-candidate",
+                       "color-emitter-broad-coreless", "core-line-weak-raw-tail",
+                       "core-line-weak-bridge", "core-halo-short-subsegment", "-subsegment"]
+            where candidate.source.contains(marker)
+                && !(marker == "-subsegment" && candidate.source == "core-halo-short-subsegment")
+                && !rules.contains(where: { $0.name.hasPrefix(marker) }) {
+            rules.append(DebugRecordingEligibilityRule(name: marker,
+                result: "FAIL", value: nil, comparison: nil, threshold: nil))
+        }
+        eligibilityRules = rules
+        rejectionReasons = candidate.isEmitterEligible ? [] : rules.filter {
+            $0.result == "FAIL"
+        }.map(\.name)
     }
 }
 
