@@ -144,6 +144,36 @@ class CodexTriageTests(unittest.TestCase):
             self.assertTrue(report["analysisReanalysisExecuted"])
             self.assertFalse(report["analysisEscalationExecuted"])
 
+    def test_unconfirmed_red_dropout_stops_after_diagnostics_reanalysis(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = root / "bundle"
+            write_codex_bundle(bundle, image_count=3,
+                               failure_types=("dropout", "dropout", "core_line_tail"))
+            add_synthetic_eligibility_trace(bundle)
+            missing = eligibility_assessment("needs_capture", "Missing rejection details")
+            final = eligibility_assessment("needs_capture",
+                "Image 003 confirms a visible red blade, but the RED dropout PNGs "
+                "show only a compact glow rather than a discernible blade. The selected "
+                "pixels do not provide independent visual examples of a real red-blade "
+                "dropout, so capture frames showing the blade during rejection.")
+            final["repair_assessment"]["evidence_image_ids"] = [
+                "image_001", "image_002", "image_003"]
+            final["false_negatives"] = []
+            codex = fake_codex(root, root / "spy.json", responses=[missing, final])
+            analyze_bundle(bundle, codex_path=str(codex))
+            spy = json.loads((root / "spy.json").read_text())
+            report = json.loads((bundle / "analysis_report.json").read_text())
+            self.assertEqual(len(spy["calls"]), 2)
+            self.assertEqual([call["model"] for call in spy["calls"]],
+                             [ANALYSIS_MODEL, ANALYSIS_MODEL])
+            self.assertTrue(report["analysisReanalysisExecuted"])
+            self.assertFalse(report["analysisEscalationExecuted"])
+            with patch("phone_saber_auto_repair._corpus_coverage",
+                       return_value=(True, "covered")):
+                gate = repair_gate(report, input_plan(bundle, allow_reports=True), root)
+            self.assertEqual(gate["decision"], "needs_capture")
+
     def test_ambiguous_luna_escalates_once_without_repair(self) -> None:
         for final_decision in ("needs_capture", "actionable"):
             with self.subTest(final_decision=final_decision), tempfile.TemporaryDirectory() as directory:

@@ -797,6 +797,44 @@ class GitSafetyTests(unittest.TestCase):
             with self.assertRaisesRegex(repair.RepairError, "ahead/behind"):
                 repair.main_safety_gate(repo)
 
+    def test_xcode_user_state_is_ignored_but_source_still_blocks_repair(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            origin, repo = root / "origin.git", root / "repo"
+            subprocess.run(["git", "init", "--bare", str(origin)], check=True,
+                           capture_output=True)
+            subprocess.run(["git", "init", "-b", "main", str(repo)], check=True,
+                           capture_output=True)
+            def git(*args: str) -> str:
+                result = subprocess.run(["git", *args], cwd=repo, check=True,
+                                        capture_output=True, text=True)
+                return result.stdout.strip()
+            git("config", "user.name", "Test")
+            git("config", "user.email", "test@example.com")
+            git("remote", "add", "origin", str(origin))
+            (repo / ".gitignore").write_bytes((repair.REPO_ROOT / ".gitignore").read_bytes())
+            source = repo / SOURCE
+            source.parent.mkdir(parents=True, exist_ok=True)
+            source.write_text("production source\n")
+            git("add", ".gitignore", SOURCE)
+            git("commit", "-m", "baseline")
+            git("push", "-u", "origin", "main")
+            ui_path = ("ios/PhoneSaberSender/PhoneSaberSender.xcodeproj/"
+                       "project.xcworkspace/xcuserdata/satoshi.xcuserdatad/"
+                       "UserInterfaceState.xcuserstate")
+            ui_file = repo / ui_path
+            ui_file.parent.mkdir(parents=True, exist_ok=True)
+            ui_file.write_bytes(b"first Xcode state")
+            self.assertEqual(git("ls-files", "--", ui_path), "")
+            self.assertEqual(git("status", "--porcelain"), "")
+            ui_file.write_bytes(b"updated Xcode state")
+            self.assertEqual(git("status", "--porcelain"), "")
+            self.assertEqual(repair.main_safety_gate(repo)["porcelain"], "")
+            source.write_text("changed production source\n")
+            self.assertIn(SOURCE, git("status", "--porcelain"))
+            with self.assertRaisesRegex(repair.RepairError, "dirty=True"):
+                repair.main_safety_gate(repo)
+
 
 if __name__ == "__main__":
     unittest.main()
