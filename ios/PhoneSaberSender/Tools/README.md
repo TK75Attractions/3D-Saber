@@ -42,6 +42,24 @@ Run the lossless fixture suite from the repository root:
 ios/PhoneSaberSender/Tools/run_lossless_regression.py
 ```
 
+To repeat the automatic repair success-path E2E with real Codex CLI calls, run
+the isolated harness from a clean, synchronized `main`:
+
+```bash
+python3 ios/PhoneSaberSender/Tools/phone_saber_auto_repair_e2e.py --allow-real-codex
+```
+
+The harness measures the 40-case corpus first, derives a blue component-area
+boundary from three pinned visible positives, and requires a trial with exactly
+those three failures and every negative still passing. It then creates a new
+`/tmp/phonesaber-auto-repair-e2e-*` clone and local bare origin, commits the
+fault there, and runs the existing Luna/max triage and Sol/high repair gates.
+The real checkout is read-only; the temporary clone rejects GitHub remotes and
+uses only normal local pushes. It writes `e2e-summary.json`, formal results,
+measurements, and the analysis bundle under its temporary directory. Omit the
+flag to inspect help without starting paid model calls. If source layout or
+corpus expectations change, the harness stops before a repair attempt.
+
 Save machine-readable results when needed:
 
 ```bash
