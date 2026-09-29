@@ -10,9 +10,25 @@
 
 The coordinate path remains UDP 5005/5006. Triage upload does not call or wait on `UDPSender`, camera processing, or gameplay. The phone keeps its local bundle if Bonjour discovery or upload fails; upload attempts stop after three tries. The iPhone preference `Stop後にtriage bundleをMacへ自動転送` defaults ON and can be turned OFF.
 
-## Start the Mac receiver
+## Quick start on macOS
 
-Run `run_phone_saber_triage_receiver.command` on the Mac before recording. It listens on TCP 8765, publishes `Phone Saber Diagnostics` with Bonjour, and saves outside the repository at:
+1. On the first use, double-click `install_phone_saber_launcher.command` in this folder. It adds Desktop links for `Start PhoneSaber.command` and `Open PhoneSaber Log.command`. Running the installer again is safe; it keeps links that already point to these launchers and does not replace other Desktop items.
+2. Before recording, double-click **Start PhoneSaber** on the Desktop. It resolves this repository even when launched through the Desktop link, shows the branch and Git state, then starts the same receiver used by the direct command below. A non-main branch or dirty tree produces a warning and does not trigger cleanup or reset. The receiver can still collect and analyze bundles; the existing repair safety gate blocks source edits unless `main` is clean and synchronized with `origin/main`.
+3. After recording, press Stop on the iPhone. To inspect live output or recent history, double-click **Open PhoneSaber Log** on the Desktop.
+
+Each receiver run writes its complete stdout and stderr stream to a timestamped file in:
+
+```text
+~/Library/Logs/PhoneSaber/triage-YYYYMMDD-HHMMSS.log
+```
+
+`latest.log` points to the current run. The log viewer displays the most recent 200 lines and follows new output. Up to 50 timestamped logs are retained. Session and auto-repair phase markers are added while original receiver output is preserved.
+
+The launcher prevents a second instance with a per-user lock and checks TCP 8765 before starting, which also detects receivers started with the direct command. Ctrl+C sends SIGINT to the receiver process group; the receiver's existing shutdown path closes HTTP, stops Bonjour, and the launcher waits for child processes to exit.
+
+## Direct receiver command
+
+For manual or isolated use, `run_phone_saber_triage_receiver.command` remains available. It listens on TCP 8765, publishes `Phone Saber Diagnostics` with Bonjour, and saves uploaded bundles outside the repository at:
 
 ```text
 ~/Library/Application Support/PhoneSaber/diagnostics-inbox/
