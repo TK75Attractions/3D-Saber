@@ -7,6 +7,10 @@ public sealed class SongSelectDiscTarget : MonoBehaviour, ICanvasRaycastFilter, 
 {
     public float HoldSeconds = 1;
     public bool Circle;
+    // 乗せたままでも、ため直すたびに続けて発射する(曲送りの盤)。スタートなどは一度外れるまで受け付けない。
+    public bool RepeatWhileHeld;
+    // 盤が滑っている間は照準をためない(止まってから1秒を数える)。クリックはそのまま受け付ける。
+    public bool Sliding;
     public bool Hovered { get; private set; }
     public float Progress { get; private set; }
     public Button Button { get; private set; }

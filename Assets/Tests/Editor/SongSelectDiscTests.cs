@@ -28,6 +28,34 @@ public class SongSelectDiscTests
         tracker.Tick(null,rect,Vector2.one,.1f,false); Assert.True(tracker.NeedsRelease);
         tracker.Tick(null,rect,Vector2.one,.021f,false); Assert.False(tracker.NeedsRelease);
     }
+    [Test] public void FiveDiscSlotsFitOnScreenWithoutOverlapAndOthersWaitOffScreen()
+    {
+        for(int slot=-2;slot<=2;slot++)
+        {
+            Vector2 c=SongSelectSkin.DiscSlotPosition(slot); float r=SongSelectSkin.DiscSlotDiameter(slot)/2;
+            Assert.LessOrEqual(Mathf.Abs(c.x)+r,940,"slot "+slot+" は左右20px以上の余白を残して画面に収まる");
+            Assert.LessOrEqual(Mathf.Abs(c.y)+r,540,"slot "+slot);
+            Assert.AreEqual(-c.x,SongSelectSkin.DiscSlotPosition(-slot).x,.001f); Assert.AreEqual(c.y,SongSelectSkin.DiscSlotPosition(-slot).y,.001f);
+            if(slot<2)
+            {
+                Vector2 n=SongSelectSkin.DiscSlotPosition(slot+1); float nr=SongSelectSkin.DiscSlotDiameter(slot+1)/2;
+                Assert.GreaterOrEqual(Vector2.Distance(c,n)-r-nr,12,"slot "+slot+" と隣の盤が重ならない");
+            }
+        }
+        // 2曲先も照準の的。投影で狙える大きさ(1080p で 220px 以上)を保つ。
+        Assert.GreaterOrEqual(SongSelectSkin.DiscSlotDiameter(2),220);
+        Assert.Greater(SongSelectSkin.DiscSlotDiameter(0),SongSelectSkin.DiscSlotDiameter(1));
+        Assert.Greater(SongSelectSkin.DiscSlotDiameter(1),SongSelectSkin.DiscSlotDiameter(2));
+        for(int slot=3;slot<=6;slot++)
+            foreach(int s in new[]{slot,-slot})
+                Assert.GreaterOrEqual(Mathf.Abs(SongSelectSkin.DiscSlotPosition(s).x)-SongSelectSkin.DiscSlotDiameter(s)/2,960,"待機位置 "+s+" は画面外");
+    }
+    [Test] public void WrapOffsetSplitsSongsAroundTheSelection()
+    {
+        Assert.AreEqual(0,SongSelectSkin.WrapOffset(0,8)); Assert.AreEqual(4,SongSelectSkin.WrapOffset(4,8)); Assert.AreEqual(-3,SongSelectSkin.WrapOffset(5,8));
+        Assert.AreEqual(-2,SongSelectSkin.WrapOffset(-2,8)); Assert.AreEqual(2,SongSelectSkin.WrapOffset(-6,8)); Assert.AreEqual(-1,SongSelectSkin.WrapOffset(15,8));
+        Assert.AreEqual(2,SongSelectSkin.WrapOffset(2,5)); Assert.AreEqual(-2,SongSelectSkin.WrapOffset(3,5)); Assert.AreEqual(0,SongSelectSkin.WrapOffset(3,0));
+    }
     [Test] public void CountdownPausesAndExpiresOnce()
     {
         var timer=new SongSelectCountdown(); Assert.False(timer.Tick(70,false)); Assert.AreEqual(100,timer.Remaining);

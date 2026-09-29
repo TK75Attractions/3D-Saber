@@ -19,6 +19,17 @@ public static class GameSession
     public static int FinalBad;
     // 結果UIの再構築と、同じ人の次のプレイを区別する保存用ID。
     public static string AchievementRunId;
+    public static DailyRankingStore.Result FinalDailyRanking;
+
+    // 通常終了の確定スコアのみ登録。日付や結果UIが変わっても同じプレイを二重登録しない。
+    public static void RecordCompletedDailyRanking()
+    {
+        if (FinalDailyRanking != null || IsCalibrationMode) return;
+        if (FinalPerfect < 0 || FinalGreat < 0 || FinalGood < 0 || FinalBad < 0 || FinalMiss < 0) return;
+        if ((long)FinalPerfect + FinalGreat + FinalGood + FinalBad + FinalMiss == 0) return;
+        FinalDailyRanking = DailyRankingStore.Record(SelectedSongId, SelectedDifficulty,
+            AchievementRunId, FinalScore, System.DateTime.Now);
+    }
 
     public static void RecordCompletedAchievements()
     {
@@ -88,6 +99,7 @@ public static class GameSession
     public static void ResetResult()
     {
         AchievementRunId = System.Guid.NewGuid().ToString("N");
+        FinalDailyRanking = null;
         FinalScore = 0;
         FinalMaxCombo = 0;
         FinalComboBonus = 0;

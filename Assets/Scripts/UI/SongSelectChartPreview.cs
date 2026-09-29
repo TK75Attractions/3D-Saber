@@ -44,6 +44,8 @@ public sealed class SongSelectChartPreview : MonoBehaviour
         }
     }
     public double SelectedAt { get; private set; }
+    // 1秒の待ちを数え始める時刻。曲送りをため続けている間は HoldOff で後ろへずらす。
+    public double SettledAt { get; private set; }
     public double StartedAt { get; private set; }
     public SongChartPreviewView View => view;
 
@@ -51,15 +53,21 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     public void Attach(RectTransform panel) { view?.Dispose(); view=new SongChartPreviewView(panel); }
     public void Select(string songId,string difficulty,float duration)
     {
-        Cancel(); SongId=songId; Difficulty=difficulty; SelectedAt=Time.realtimeSinceStartupAsDouble;
+        Cancel(); SongId=songId; Difficulty=difficulty; SelectedAt=SettledAt=Time.realtimeSinceStartupAsDouble;
         if(source==null || !isActiveAndEnabled || string.IsNullOrEmpty(songId)) return;
         loading=StartCoroutine(Load(songId,difficulty,duration,generation));
+    }
+
+    // まだ待っている試聴の開始を、今から1秒後以降へ延ばす。読み込み中・再生中の試聴は止めない。
+    public void HoldOff()
+    {
+        if(!IsPlaying && request==null) SettledAt=Math.Max(SettledAt,Time.realtimeSinceStartupAsDouble);
     }
 
     private IEnumerator Load(string songId,string difficulty,float duration,int token)
     {
         // 高速な曲送りでは、まだ音源を開かない。1秒の間はジャケットを維持する。
-        while(Time.realtimeSinceStartupAsDouble<SelectedAt+SelectionDelaySeconds) yield return null;
+        while(Time.realtimeSinceStartupAsDouble<SettledAt+SelectionDelaySeconds) yield return null;
         if(token!=generation) yield break;
         ChartData chart=null;
         try { chart=ChartLoader.LoadFromStreamingAssets(songId,difficulty); }

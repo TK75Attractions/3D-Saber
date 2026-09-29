@@ -27,7 +27,6 @@ public class ResultSkin : MonoBehaviour
     const float DurRankBadge = 0.65f;
     const float DelayRing = 1.98f;
     const float DurRing = 0.70f;
-    const float DelayBackButton = 2.30f;
     const float DelaySkipHint = 2.50f;
 
     // スライド距離(px)。rvU=下から46 / rvL=左から90 / rvR=右から90。
@@ -79,6 +78,7 @@ public class ResultSkin : MonoBehaviour
         BuildScoreBlock(root.transform);
         BuildJudgeList(root.transform);
         BuildDistributionBar(root.transform);
+        DailyRankingPresentation.Build(root.transform, reveal, GameSession.FinalDailyRanking);
         StyleBackButton(canvas);
         BuildSkipHint(root.transform);
         var pointer = SaberUIPointer.Build();
@@ -581,7 +581,7 @@ public class ResultSkin : MonoBehaviour
                 rt.sizeDelta = new Vector2(280f, 58f);
                 var parts = UISkinKit.RestyleButton(btn, UISkinPalette.Cyan, 27f, "◀ BACK");
                 if (parts.label != null) parts.label.characterSpacing = 4f;
-                Reveal(btn.gameObject, DelayBackButton, 0.45f, FromBelow);
+                Reveal(btn.gameObject, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking), 0.45f, FromBelow);
                 // 暗転中は入力を止めているため、無効化中のEventSystemにも戻る先を設定する。
                 var events = EventSystem.current ?? Object.FindFirstObjectByType<EventSystem>();
                 if (events != null)

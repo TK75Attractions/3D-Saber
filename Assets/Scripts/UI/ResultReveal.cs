@@ -44,6 +44,7 @@ public class ResultReveal : MonoBehaviour
 
     private readonly List<Entry> entries = new List<Entry>();
     private float elapsed;
+    public event System.Action<float> TimeChanged;
 
     // 経過時間(要素の delay 差し引き後)→ 表示状態。純関数。
     public static Pose Evaluate(Kind kind, float tSinceDelay, float duration, Vector2 slideFrom)
@@ -140,6 +141,7 @@ public class ResultReveal : MonoBehaviour
         {
             Apply(e, Evaluate(e.kind, t - e.delay, e.duration, e.from), t >= e.delay + e.duration);
         }
+        TimeChanged?.Invoke(t);
     }
 
     private static void Apply(Entry e, Pose pose, bool finished)

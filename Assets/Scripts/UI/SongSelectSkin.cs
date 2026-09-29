@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -9,7 +10,8 @@ public class SongSelectSkin : MonoBehaviour
 {
     sealed class Disc
     {
-        public int index, offset;
+        // offset=選択中から見た位置(±半周)。slot=画面上で向かっている置き場(端を回り込む途中は ±3 より外)。
+        public int index, offset, slot;
         public RectTransform root;
         public Button button;
         public SongSelectDiscTarget target;
@@ -32,7 +34,7 @@ public class SongSelectSkin : MonoBehaviour
     RectTransform layout;
     float animation = 1;
     bool built;
-    int displayedSecond = -1;
+    int displayedSecond = -1, shownIndex = -1;
     double lastTick;
     public bool IsReady => built;
     public double RemainingSeconds => countdown.Remaining;
@@ -81,6 +83,22 @@ public class SongSelectSkin : MonoBehaviour
         if (ScreenTransition.Load("Game", ScreenTransition.Style.Calibration)) GameSession.IsCalibrationMode = true;
     }
     static Vector2 Position(float x, float y) => new Vector2(x - 960, 540 - y);
+    // 盤の置き場(1920×1080 基準、画面中央が原点)。0=選択中、±1=隣、±2=2曲先。±3 より外は画面外で待機する。
+    // 中央540・隣380 は保ち、盤どうしの隙間を約20pxにそろえて2曲先を画面内に収める。
+    public static Vector2 DiscSlotPosition(int slot)
+    {
+        int distance = Mathf.Abs(slot); float side = slot < 0 ? -1 : 1;
+        float x = distance == 0 ? 960 : distance == 1 ? 960 + side * 479 : 960 + side * (790 + 300 * (distance - 2));
+        return Position(x, distance == 0 ? 452 : distance == 1 ? 500 : 615);
+    }
+    public static float DiscSlotDiameter(int slot) => slot == 0 ? 540 : Mathf.Abs(slot) == 1 ? 380 : 240;
+    // 選択中から見た盤の位置。半周を超えたら反対側に数える。
+    public static int WrapOffset(int offset, int count)
+    {
+        if (count <= 0) return 0;
+        offset = (offset % count + count) % count;
+        return offset > count / 2 ? offset - count : offset;
+    }
     RectTransform Rect(string name, float x, float y, float w, float h) => SongSelectVisuals.Rect(layout, name, Position(x, y), new Vector2(w, h));
     public static SongSelectDiscGraphic Graphic(Transform parent, string name, Vector2 position, Vector2 size, SongSelectDiscGraphic.Shape form, Color color)
     {
@@ -151,13 +169,14 @@ public class SongSelectSkin : MonoBehaviour
             {
                 if (ScreenTransition.IsBusy) return;
                 if (d.index == ctl.SelectedIndex) ctl.StartGame();
-                else if (Mathf.Abs(d.offset) == 1) ctl.Select(d.index);
+                else if (Mathf.Abs(d.offset) <= 2) ctl.Select(d.index);
             });
             discs.Add(d);
         }
         foreach (int side in new[] { -1, 1 })
         {
-            var arrow = Graphic(layout, "DecorativeArrow", Position(side < 0 ? 52 : 1844, 500), new Vector2(60, 90), SongSelectDiscGraphic.Shape.Arrow, new Color(.38f, .81f, .83f, .35f));
+            // 2曲先の盤(画面端)の縁にかからない高さに置く。
+            var arrow = Graphic(layout, "DecorativeArrow", Position(side < 0 ? 52 : 1844, 470), new Vector2(60, 90), SongSelectDiscGraphic.Shape.Arrow, new Color(.38f, .81f, .83f, .35f));
             if (side > 0) arrow.rectTransform.localScale = new Vector3(-1, 1, 1);
         }
     }
@@ -218,20 +237,35 @@ public class SongSelectSkin : MonoBehaviour
     }
     void SelectionChanged(int index)
     {
+        // 送った向きと量(隣なら±1、2曲先なら±2)。盤の位置と同じく半周を超えたら逆回りに数える。
+        int step = built && shownIndex >= 0 ? WrapOffset(index - shownIndex, discs.Count) : 0;
+        shownIndex = index;
         foreach (var d in discs)
         {
-            int offset = (d.index - index + discs.Count) % discs.Count;
-            if (offset > discs.Count / 2) offset -= discs.Count;
+            int offset = WrapOffset(d.index - index, discs.Count), travel = d.slot - step;
+            bool shown = Mathf.Abs(offset) <= 2;
             d.offset = offset; d.from = d.root.anchoredPosition; d.fromScale = d.root.localScale.x;
-            float x = offset == 0 ? 960 : offset == -1 ? 320 : offset == 1 ? 1600 : offset < 0 ? -100 - 600 * Mathf.Max(0, -offset - 2) : 2020 + 600 * Mathf.Max(0, offset - 2);
-            d.to = Position(x, offset == 0 ? 452 : Mathf.Abs(offset) == 1 ? 500 : 600);
-            d.toScale = (offset == 0 ? 540 : Mathf.Abs(offset) == 1 ? 380 : 280) / 540f;
+            // 端を回り込む盤に画面を横切らせない。消える盤は進む向きへ抜け、現れる盤は反対側の画面外から入る。
+            if (!built || travel == offset) d.slot = offset;
+            else if (shown)
+            {
+                int entry = step > 0 ? Mathf.Max(offset + step, 3) : Mathf.Min(offset + step, -3);
+                d.slot = offset; d.from = DiscSlotPosition(entry); d.fromScale = DiscSlotDiameter(entry) / 540f;
+            }
+            else d.slot = travel;
+            d.to = DiscSlotPosition(d.slot); d.toScale = DiscSlotDiameter(d.slot) / 540f;
             if (!built) { d.from = d.to; d.fromScale = d.toScale; }
             d.target.HoldSeconds = offset == 0 ? 2 : 1;
+            // 隣と2曲先は曲送りの的で、乗せたままでも続けて送る。中央(スタート)は一度外れるまで受け付けない。
+            d.target.RepeatWhileHeld = offset != 0; d.target.Sliding = built;
             d.halo.gameObject.SetActive(offset == 0); d.rim.gameObject.SetActive(offset == 0); d.progress.gameObject.SetActive(offset == 0);
             if (offset == 0) ctl.startButton = d.button;
-            d.root.gameObject.SetActive(Mathf.Abs(offset) <= 2 || Mathf.Abs(d.from.x) < 1400);
+            d.root.gameObject.SetActive(shown || d.root.gameObject.activeSelf);
         }
+        // 中央ほど手前に描く。滑っている途中で重なっても、手前の盤が照準の当たりを取る。
+        int order = int.MaxValue;
+        foreach (var d in discs) order = Mathf.Min(order, d.root.GetSiblingIndex());
+        foreach (var d in discs.OrderByDescending(x => Mathf.Abs(x.offset))) d.root.SetSiblingIndex(order++);
         animation = 0;
         string id = ctl.SongIdAt(index), title = ResultSkin.SongIdToDisplayTitle(id);
         string markup = id == "Epilogue" ? "<ruby=こうか>校歌</ruby>" : id == "揺籠" ? "<ruby=ゆりかご>揺籠</ruby>" : title;
@@ -258,7 +292,7 @@ public class SongSelectSkin : MonoBehaviour
             difficultyLabels[i].color = active ? White : new Color(.56f, .61f, .66f);
             ctl.difficultyButtons[i].interactable = ctl.DifficultyLevelAt(i) > 0;
         }
-        foreach (var d in discs) d.button.interactable = d.offset == 0 ? !ctl.SelectedSongLocked && ctl.CurrentDifficultyLevel() > 0 : Mathf.Abs(d.offset) == 1;
+        foreach (var d in discs) d.button.interactable = d.offset == 0 ? !ctl.SelectedSongLocked && ctl.CurrentDifficultyLevel() > 0 : Mathf.Abs(d.offset) <= 2;
         achievementDifficulty.text = DifficultyDisplayName(selected, ctl.difficultyNames[selected]);
         var value = SongAchievementStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.difficultyNames[selected]);
         int[] values = { value.s, value.sPlus, value.fc, value.ap };
@@ -284,10 +318,17 @@ public class SongSelectSkin : MonoBehaviour
         float t = Ease(Mathf.Clamp01(animation * .5f / .46f));
         foreach (var d in discs)
         {
+            // 画面外へ抜けた盤は、次に呼ばれる側の待機位置へ移しておく(非表示のまま移すので見えない)。
+            if (animation >= 1 && Mathf.Abs(d.offset) > 2 && d.slot != d.offset)
+            {
+                d.slot = d.offset; d.from = d.to = DiscSlotPosition(d.offset);
+                d.fromScale = d.toScale = DiscSlotDiameter(d.offset) / 540f;
+            }
             d.root.anchoredPosition = Vector2.LerpUnclamped(d.from, d.to, t);
+            d.target.Sliding = animation < 1;
             float bounce = d.offset == 0 && animation < 1 ? animation < .5f ? Mathf.Lerp(.9f, 1.05f, animation * 2) : Mathf.Lerp(1.05f, 1, animation * 2 - 1) : 1;
             d.root.localScale = Vector3.one * Mathf.LerpUnclamped(d.fromScale, d.toScale, t) * bounce;
-            float brightness = d.offset == 0 ? 1 : d.target.Hovered && Mathf.Abs(d.offset) == 1 ? .8f : Mathf.Abs(d.offset) == 1 ? .5f : .36f;
+            float brightness = d.offset == 0 ? 1 : d.target.Hovered && Mathf.Abs(d.offset) <= 2 ? .8f : Mathf.Abs(d.offset) == 1 ? .5f : .36f;
             d.art.color = d.art.Artwork != null ? new Color(brightness, brightness, brightness) : new Color(.07f * brightness, .10f * brightness, .20f * brightness);
             if (d.fallback != null) d.fallback.color = new Color(brightness, brightness, brightness);
             if (d.offset == 0)

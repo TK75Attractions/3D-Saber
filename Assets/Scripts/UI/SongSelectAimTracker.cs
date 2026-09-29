@@ -1,6 +1,7 @@
 using UnityEngine;
 
 // 選曲専用の照準受付。発射位置が動いたり対象が再生成されても、同じ位置で連射しない。
+// ただし repeat を指定した的(曲送りの盤)は、乗せたままでも、ため直すたびに続けて発射する。
 public sealed class SongSelectAimTracker
 {
     public const float HoldSeconds = 1f;
@@ -13,7 +14,7 @@ public sealed class SongSelectAimTracker
     public float Progress01 => Mathf.Clamp01(held / duration);
     public bool NeedsRelease { get; private set; }
 
-    public bool Tick(object target, Rect area, Vector2 point, float dt, bool ready, float holdSeconds = HoldSeconds, bool circle = false)
+    public bool Tick(object target, Rect area, Vector2 point, float dt, bool ready, float holdSeconds = HoldSeconds, bool circle = false, bool repeat = false)
     {
         // 停止・復帰したフレームを「かざした時間」に数えない。
         if (float.IsNaN(dt) || dt < 0 || dt > .2f) { Cancel(); return false; }
@@ -29,6 +30,8 @@ public sealed class SongSelectAimTracker
         if (!ReferenceEquals(current, target) || duration != requested) { held = 0; current = target; duration = requested; }
         held += dt;
         if (held + .00001f < duration) return false;
+        // 連続送りの的は外すまで待たせない。次の発射も同じ時間のため直しから数える。
+        if (repeat) { Cancel(); return true; }
         BlockUntilExit(area, circle);
         return true;
     }

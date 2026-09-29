@@ -66,6 +66,20 @@ public class SongChartPreviewPlayTests
     }
 
     [UnityTest]
+    public IEnumerator HoldOffKeepsTheNextPreviewWaitingUntilAimingStops()
+    {
+        yield return Open(); controller.Select(Index("Morning"));
+        var preview=controller.ChartPreview;
+        double until=Time.realtimeSinceStartupAsDouble+1.6;
+        while(Time.realtimeSinceStartupAsDouble<until) { preview.HoldOff(); Assert.IsFalse(preview.IsPlaying); yield return null; }
+        Assert.IsFalse(controller.previewSource.isPlaying);
+        double released=Time.realtimeSinceStartupAsDouble;
+        yield return AwaitPlaying();
+        Assert.AreEqual("Morning",preview.SongId);
+        Assert.GreaterOrEqual(preview.StartedAt-released,SongSelectChartPreview.SelectionDelaySeconds-.05,"ため終わってから1秒待って鳴らす");
+    }
+
+    [UnityTest]
     public IEnumerator TenSecondPreviewFinishesAndSceneExitReleasesWorld()
     {
         yield return Open(); Assert.AreEqual(10,controller.previewDuration);

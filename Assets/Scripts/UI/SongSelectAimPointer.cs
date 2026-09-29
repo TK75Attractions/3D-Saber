@@ -115,9 +115,14 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         if (next.key != hovered.key) SetHovered(next);
         else hovered = next;
         Rect area = next.key != null ? ScreenArea(next) : default;
-        bool ready = Available(next) && (next.disc != null || SongSelectNoteMenu.Instance != null && SongSelectNoteMenu.Instance.IsReady);
+        // 滑っている盤はため始めない。連続送りの次の1秒も、盤が止まってから数える。
+        bool ready = Available(next) && !(next.disc != null && next.disc.Sliding)
+            && (next.disc != null || SongSelectNoteMenu.Instance != null && SongSelectNoteMenu.Instance.IsReady);
+        bool repeat = next.disc != null && next.disc.RepeatWhileHeld;
         bool fire = tracker.Tick(next.key, Expand(area, Padding), point, dt, ready,
-            next.disc != null ? next.disc.HoldSeconds : 1, next.disc != null && next.disc.Circle);
+            next.disc != null ? next.disc.HoldSeconds : 1, next.disc != null && next.disc.Circle, repeat);
+        // 曲送りをため続けている間は試聴を始めない。送るたびに鳴りかけて途切れるのを防ぐ。
+        if (repeat && tracker.Progress01 > 0 && controller != null && controller.ChartPreview != null) controller.ChartPreview.HoldOff();
         if (reticle != null)
         {
             reticle.gameObject.SetActive(true); Place(reticle.rectTransform, point);

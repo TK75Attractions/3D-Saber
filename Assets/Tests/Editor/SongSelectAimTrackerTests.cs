@@ -39,4 +39,35 @@ public class SongSelectAimTrackerTests
         Assert.False(t.Tick(key,area,point,.1f,false)); Hold(t,key,area,point,9);
         Assert.False(t.Tick(key,area,point,1.2f,true)); Assert.Zero(t.Progress01);
     }
+    // 曲送りの盤: 乗せたままでも、1秒ため直すたびに続けて発射する。
+    static bool Repeat(SongSelectAimTracker t, object key, float dt = .1f) => t.Tick(key, new Rect(100, 100, 200, 100), new Vector2(180, 150), dt, true, 1, false, true);
+    [Test] public void RepeatTargetKeepsFiringEveryFullHoldWithoutLeaving()
+    {
+        var t = new SongSelectAimTracker(); var key = new object();
+        for (int shot = 0; shot < 3; shot++)
+        {
+            for (int i = 0; i < 9; i++) Assert.False(Repeat(t, key));
+            Assert.True(Repeat(t, key)); Assert.False(t.NeedsRelease); Assert.Zero(t.Progress01);
+        }
+    }
+    [Test] public void RepeatStillNeedsAFullHoldForTheNextDiscAndAfterLongFrames()
+    {
+        var t = new SongSelectAimTracker(); object a = new object(), b = new object();
+        for (int i = 0; i < 9; i++) Repeat(t, a);
+        Assert.True(Repeat(t, a));
+        for (int i = 0; i < 5; i++) Assert.False(Repeat(t, b));
+        Assert.False(Repeat(t, b, .25f)); Assert.Zero(t.Progress01);
+        for (int i = 0; i < 9; i++) Assert.False(Repeat(t, b));
+        Assert.True(Repeat(t, b));
+    }
+    [Test] public void RepeatShotDoesNotUnlockCommitTargetsUnderTheSamePoint()
+    {
+        // 連続送りの直後に同じ位置へ来たスタートの的は2秒ため直し、撃った後は外すまで受け付けない。
+        var t = new SongSelectAimTracker(); object disc = new object(), start = new object();
+        for (int i = 0; i < 9; i++) Repeat(t, disc);
+        Assert.True(Repeat(t, disc));
+        for (int i = 0; i < 19; i++) Assert.False(t.Tick(start, area, point, .1f, true, 2));
+        Assert.True(t.Tick(start, area, point, .1f, true, 2)); Assert.True(t.NeedsRelease);
+        for (int i = 0; i < 30; i++) Assert.False(t.Tick(start, area, point, .1f, true, 2));
+    }
 }
