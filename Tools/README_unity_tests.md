@@ -36,6 +36,11 @@ override and checks both legacy Text and TMP through the production loader.
 Run it with Makinas absent as well as present. A missing bundled Noto asset
 fails explicitly; it is not reported as a skipped or passing test.
 
+`CalibrationCountdownPlayTests` checks the selection/calibration time handoff,
+counting while practice is paused or a dialog is open, and timeout navigation
+without saving draft settings. Voluntary return retains the remaining time;
+timeout discards the draft and opens a new 100-second selection period.
+
 The callback in `Assets/Tests/PlayMode/PlayModeProgressCallback.cs` emits
 `[UNITY_TEST][PLAYMODE] class=... test=... elapsed=...` (and the corresponding
 EditMode tag) for each test. This separates a known long test from a runner

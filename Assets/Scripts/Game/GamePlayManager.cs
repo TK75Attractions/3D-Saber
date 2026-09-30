@@ -716,7 +716,10 @@ public class GamePlayManager : MonoBehaviour
     public static void ExitCalibration(string returnSceneName = "SongSelect")
     {
         if (ScreenTransition.Load(returnSceneName, ScreenTransition.Style.Back))
+        {
             GameSession.IsCalibrationMode = false;
+            if (returnSceneName != "SongSelect") GameSession.CalibrationSelectionSeconds = null;
+        }
     }
 
     private void FinishGame()

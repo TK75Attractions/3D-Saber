@@ -11,7 +11,10 @@ public sealed class CalibrationOverlay : MonoBehaviour
         Cyan=new Color(.43f,.93f,.87f), Blue=new Color(.4f,.72f,1), Coral=new Color(1,.59f,.48f),
         PanelColor=new Color(.025f,.043f,.065f,.94f);
     CalibrationController ctl;
-    TextMeshProUGUI feedback, feedbackDetail, value, state, instruction, volume, connections;
+    TextMeshProUGUI feedback, feedbackDetail, value, state, instruction, volume, connections, timer;
+    readonly SongSelectCountdown countdown = new SongSelectCountdown();
+    double lastTick;
+    public double RemainingSeconds => countdown.Remaining;
     Button play, save, settingsButton, back;
     GameObject settings, exitDialog;
     RectTransform feedbackCard;
@@ -65,7 +68,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
         var header=Panel(transform,"Header",0,480,1920,120);
         back=Action(header,"Back","戻る",-835,0,150,60,OnBackClicked);
         Label(header,"Title","判定調整",38,-510,0,440,72,Ink,false);
-        settingsButton=Action(header,"Settings","音・設定",805,0,220,60,OpenSettings);
+        settingsButton=Action(header,"Settings","音・設定",375,0,220,60,OpenSettings);
         instruction=Label(transform,"Instruction","音に合わせて、青・赤のノーツを切ってみよう",28,0,363,1400,50,Ink);
         feedbackCard=(RectTransform)Panel(transform,"LiveFeedback",0,253,580,146);
         feedback=Label(feedbackCard,"Feedback","切って確かめる",49,0,22,540,77,Cyan);
@@ -89,6 +92,16 @@ public sealed class CalibrationOverlay : MonoBehaviour
          speeds[i].GetComponentInChildren<TextMeshProUGUI>().fontSize=22;}
         state=Label(controls,"SaveState","",19,674,-48,360,34,Muted);
         BuildSettings();BuildExitDialog();
+        // ダイアログの暗幕より後に置き、設定中・未保存確認中も残り時間を見せる。
+        var clock=Panel(transform,"TimeTab",730,480,380,112);
+        foreach(var graphic in clock.GetComponentsInChildren<Graphic>())graphic.raycastTarget=false;
+        Label(clock,"TimeLabel","残り時間",20,-102,25,140,32,Muted);
+        Label(clock,"TimeoutHint","0秒で選曲へ",18,-92,-20,170,32,Muted);
+        timer=Label(clock,"TimeRemaining","",70,85,0,166,100,Ink);
+        timer.font=UISkinKit.LogoFontAsset();timer.textWrappingMode=TextWrappingModes.NoWrap;
+        countdown.Reset(GameSession.CalibrationSelectionSeconds ?? 100);
+        GameSession.CalibrationSelectionSeconds=countdown.Remaining;
+        lastTick=Time.realtimeSinceStartupAsDouble;RefreshCountdown();
     }
     void BuildSettings()
     {
@@ -140,6 +153,8 @@ public sealed class CalibrationOverlay : MonoBehaviour
     }
     public void Tick()
     {
+        double now=Time.realtimeSinceStartupAsDouble;
+        TickCountdown(now-lastTick);lastTick=now;
         if (ScreenTransition.IsBusy) return;
         if(ctl==null)return;
         var keyboard=Keyboard.current;
@@ -162,6 +177,23 @@ public sealed class CalibrationOverlay : MonoBehaviour
         if(shownMode!=ctl.Mode||shownOffset!=ctl.Draft.OffsetMs||shownDirty!=ctl.Draft.IsDirty||shownSpeed!=ctl.SpeedStep)Refresh();
         RefreshFeedback();
         if(IsSettingsOpen)connections.text=$"セーバー  左：{(ctl.Stick1Ready?"接続中":"入力待ち")}    右：{(ctl.Stick2Ready?"接続中":"入力待ち")}";
+    }
+    // 試し切りの一時停止・設定・確認画面でも進め、画面遷移中だけ止める。
+    public void TickCountdown(double deltaSeconds)
+    {
+        if(ctl==null||ScreenTransition.IsBusy)return;
+        bool expired=countdown.Tick(deltaSeconds,true);
+        GameSession.CalibrationSelectionSeconds=countdown.Remaining;
+        RefreshCountdown();
+        if(!expired)return;
+        // 保存は明示操作だけ。時間切れでは音を止めて破棄し、選曲を新しい100秒で開く。
+        GameSession.CalibrationSelectionSeconds=null;
+        ctl.DiscardAndExit();
+    }
+    void RefreshCountdown()
+    {
+        timer.text=System.Math.Ceiling(countdown.Remaining).ToString();
+        timer.color=countdown.Remaining<=10?Coral:Ink;
     }
     void RefreshFeedback()
     {

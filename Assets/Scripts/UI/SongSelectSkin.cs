@@ -69,7 +69,10 @@ public class SongSelectSkin : MonoBehaviour
         ctl.OnSelectionChanged += SelectionChanged; ctl.OnDifficultyChanged += DifficultyChanged;
         SelectionChanged(ctl.SelectedIndex); animation = 1; AnimateDiscs();
         SongSelectAimPointer.Build(ctl, canvas, null);
-        countdown.Reset(); lastTick = Time.realtimeSinceStartupAsDouble; built = true;
+        countdown.Reset(GameSession.CalibrationSelectionSeconds ?? 100);
+        GameSession.CalibrationSelectionSeconds = null;
+        timer.text = Mathf.CeilToInt((float)countdown.Remaining).ToString();
+        lastTick = Time.realtimeSinceStartupAsDouble; built = true;
     }
 
     public static Color DifficultyColor(int index) => SongSelectVisuals.Difficulty[Mathf.Clamp(index, 0, 2)];
@@ -80,7 +83,10 @@ public class SongSelectSkin : MonoBehaviour
     public static void ApplyNeon(Button button, Color accent, float fillAlpha) => UISkinKit.RestyleButton(button, accent);
     public static void EnterCalibration()
     {
-        if (ScreenTransition.Load("Game", ScreenTransition.Style.Calibration)) GameSession.IsCalibrationMode = true;
+        if (!ScreenTransition.Load("Game", ScreenTransition.Style.Calibration)) return;
+        var skin = Object.FindFirstObjectByType<SongSelectSkin>();
+        GameSession.CalibrationSelectionSeconds = skin != null ? skin.RemainingSeconds : 100;
+        GameSession.IsCalibrationMode = true;
     }
     static Vector2 Position(float x, float y) => new Vector2(x - 960, 540 - y);
     // 盤の置き場(1920×1080 基準、画面中央が原点)。0=選択中、±1=隣、±2=2曲先。±3 より外は画面外で待機する。

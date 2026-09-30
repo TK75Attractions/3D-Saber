@@ -5,7 +5,11 @@ public sealed class SongSelectCountdown
 {
     public double Remaining { get; private set; } = 100;
     bool expired;
-    public void Reset() { Remaining = 100; expired = false; }
+    public void Reset(double remaining = 100)
+    {
+        Remaining = double.IsNaN(remaining) || double.IsInfinity(remaining) ? 100 : Math.Clamp(remaining, 0, 100);
+        expired = false;
+    }
     public bool Tick(double deltaSeconds, bool active)
     {
         if (!active || expired || double.IsNaN(deltaSeconds) || double.IsInfinity(deltaSeconds) || deltaSeconds < 0) return false;

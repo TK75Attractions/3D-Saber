@@ -5,6 +5,16 @@ using UnityEngine;
 
 public class SongSelectDiscTests
 {
+    [Test] public void CountdownRestoresFractionalTimeAndExpiresOnce()
+    {
+        var timer=new SongSelectCountdown();timer.Reset(12.25);
+        Assert.False(timer.Tick(12.25,false));Assert.AreEqual(12.25,timer.Remaining);
+        Assert.False(timer.Tick(12,true));Assert.True(timer.Tick(.25,true));
+        Assert.False(timer.Tick(1,true));timer.Reset();Assert.AreEqual(100,timer.Remaining);
+        timer.Reset(double.NaN);Assert.AreEqual(100,timer.Remaining);
+        timer.Reset(-1);Assert.AreEqual(0,timer.Remaining);Assert.True(timer.Tick(0,true));
+    }
+
     [Test] public void TwoSecondTargetAndLongFrameRequireFreshHold()
     {
         var tracker=new SongSelectAimTracker(); var key=new object(); var rect=new Rect(0,0,200,200); var p=rect.center;
