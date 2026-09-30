@@ -266,26 +266,22 @@ public static class UISkinKit
         return logoFontAsset;
     }
 
-    // 日本語は全画面でマキナス 4 Square に統一。legacy Text の曲名も同じ元書体を使う。
+    // Makinas を優先し、未取得なら同梱 Noto を使う。legacy Text と TMP で元書体をそろえる。
     public const string JapaneseFontResourceName = "Makinas-4-Square";
+    public const string BundledJapaneseFontResourceName = "NotoSansJP-Light";
 
-    public static Font JapaneseFont()
-    {
-#if UNITY_EDITOR
-        if (japaneseFontOverrideForTests != null) return japaneseFontOverrideForTests;
-#endif
-        return LegacyFont(JapaneseFontResourceName);
-    }
+    public static Font JapaneseFont() => LoadJapaneseFontSource();
 
     static Font LoadJapaneseFontSource()
     {
 #if UNITY_EDITOR
         if (japaneseFontOverrideForTests != null) return japaneseFontOverrideForTests;
 #endif
-        return Resources.Load<Font>("Fonts/" + JapaneseFontResourceName);
+        var preferred = Resources.Load<Font>("Fonts/" + JapaneseFontResourceName);
+        return preferred != null ? preferred : Resources.Load<Font>("Fonts/" + BundledJapaneseFontResourceName);
     }
 
-    // 日本語フォールバック(マキナス 4 Square)。Resources/Fonts の OTF から「動的」TMP フォントを
+    // 日本語フォールバック。Resources/Fonts の OTF から「動的」TMP フォントを
     // 実行時生成する。動的なので実際に使われたグリフだけをアトラスに描き、7000字級の静的アトラス
     // (Assets/TextMesh Pro/Fonts の NotoSansJP-Light SDF、8192px)をビルドに抱き込まない。
     // FontAsset / LogoFontAsset が生成する全フォントの fallbackFontAssetTable に付く。
@@ -298,7 +294,7 @@ public static class UISkinKit
         var otf = LoadJapaneseFontSource();
         if (otf == null)
         {
-            Debug.LogWarning($"UISkinKit: 日本語フォント(Fonts/{JapaneseFontResourceName})が見つかりません。Tools/Fonts/download-japanese-font.ps1 を実行してください");
+            Debug.LogError($"UISkinKit: 同梱日本語フォント(Fonts/{BundledJapaneseFontResourceName})が見つかりません。リポジトリのフォントを復元してください");
             return null;
         }
         // 72pt/余白8 の 1024² アトラス。埋まったら複数アトラスへ自動拡張(enableMultiAtlasSupport)。
@@ -307,7 +303,7 @@ public static class UISkinKit
             AtlasPopulationMode.Dynamic, true);
         if (jpFallbackFontAsset != null)
         {
-            jpFallbackFontAsset.name = JapaneseFontResourceName + " (JP fallback)";
+            jpFallbackFontAsset.name = otf.name + " (JP fallback)";
             jpFallbackFontAsset.hideFlags = HideFlags.HideAndDontSave;
         }
         return jpFallbackFontAsset;

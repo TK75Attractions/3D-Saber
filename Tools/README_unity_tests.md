@@ -24,11 +24,14 @@ The groups are:
 
 The editor fixture uses the tracked, OFL-licensed
 `Assets/Resources/Fonts/NotoSansJP-Light.otf`. It supplies Japanese glyphs to
-the editor-only test override while production continues to load
-`Makinas-4-Square`. Makinas is downloaded separately by
-`Tools/Fonts/download-japanese-font.ps1` and is never added to Git. A checkout
-without an expanded Git LFS Noto asset fails explicitly as a missing required
-fixture; it is not reported as a skipped or passing test.
+the editor-only test override. Production prefers `Makinas-4-Square` and
+automatically uses the bundled Noto font when Makinas is absent. Noto is stored
+as a regular Git binary, without LFS. Makinas is optionally downloaded by
+`Tools/Fonts/download-japanese-font.ps1` and is never added to Git.
+`UISkinKitTests.ProductionJapaneseFont_WorksWithoutTheTestOverride` clears the
+override and checks both legacy Text and TMP through the production loader.
+Run it with Makinas absent as well as present. A missing bundled Noto asset
+fails explicitly; it is not reported as a skipped or passing test.
 
 The callback in `Assets/Tests/PlayMode/PlayModeProgressCallback.cs` emits
 `[UNITY_TEST][PLAYMODE] class=... test=... elapsed=...` (and the corresponding

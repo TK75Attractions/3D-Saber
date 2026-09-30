@@ -24,6 +24,29 @@ public class UISkinKitTests
         return go.transform;
     }
 
+    [Test]
+    public void ProductionJapaneseFont_WorksWithoutTheTestOverride()
+    {
+        UISkinKit.ClearJapaneseFontForTests();
+        try
+        {
+            var bundled = Resources.Load<Font>("Fonts/" + UISkinKit.BundledJapaneseFontResourceName);
+            Assert.NotNull(bundled, "新規PCでも使える日本語OTFを同梱する");
+            var preferred = Resources.Load<Font>("Fonts/" + UISkinKit.JapaneseFontResourceName);
+            var source = UISkinKit.JapaneseFont();
+            Assert.AreSame(preferred != null ? preferred : bundled, source);
+            var fallback = UISkinKit.JapaneseFallbackFontAsset();
+            Assert.NotNull(fallback);Assert.AreSame(source, fallback.sourceFontFile);
+            foreach (char c in "揺籠判定調整残り時間保存音設定選曲難易度")
+            {
+                Assert.True(source.HasCharacter(c), "legacy Text: " + c);
+                Assert.True(UISkinKit.FontAsset("Oxanium-Bold").HasCharacter(c, searchFallbacks: true, tryAddCharacter: true), "TMP: " + c);
+            }
+            Debug.Log("[UNITY_TEST][FONT] production=" + source.name + " optionalMakinas=" + (preferred != null));
+        }
+        finally { JapaneseFontTestFixture.Install(); }
+    }
+
     // ---- スプライト生成 ----
 
     [Test]

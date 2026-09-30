@@ -1,8 +1,8 @@
 using NUnit.Framework;
 using UnityEngine;
 
-// Editorテストは、再配布できない本番Makinasを取得せず、既存のOFL日本語fontを使う。
-// 本番UIのMakinas resource名は維持し、このfixtureは同じfallback契約だけを供給する。
+// 見た目の基準をそろえるEditorテストは、同梱OFL日本語fontを明示使用する。
+// 本番もMakinas未取得時にはこのNotoへ自動で切り替わる。
 [SetUpFixture]
 public sealed class JapaneseFontTestAssemblyFixture
 {
@@ -29,7 +29,7 @@ public static class JapaneseFontTestFixture
         fixture = Resources.Load<Font>(ResourcePath);
         Assert.IsNotNull(fixture,
             "required external/test fixture missing: Resources/Fonts/NotoSansJP-Light. " +
-            "Restore Git LFS assets before running Unity tests.");
+            "Restore the bundled font from Git before running Unity tests.");
         Assert.IsTrue(fixture.HasCharacter('揺') && fixture.HasCharacter('籠'),
             "required Japanese test fixture lacks the 揺籠 glyphs");
         UISkinKit.SetJapaneseFontForTests(fixture);

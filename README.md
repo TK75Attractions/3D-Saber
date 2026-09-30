@@ -14,3 +14,7 @@ the Mac without a manually entered IP address. The coordinate payload remains
 Do not run `run_debug.command` at the same time as Unity. Both receive on UDP
 5005/5006. Stop Play Mode before starting the Python debug receiver, and stop
 the debug receiver before entering Play Mode again.
+
+## 日本語フォント
+
+Makinas未取得のPCでは、同梱のNoto Sans JPへ自動で切り替わります。日本語表示のための追加インストールは不要です。Makinasを使用する場合の取得手順とライセンスは [日本語書体](docs/JapaneseTypography.md) を参照してください。
