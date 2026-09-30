@@ -26,8 +26,11 @@ The editor fixture uses the tracked, OFL-licensed
 `Assets/Resources/Fonts/NotoSansJP-Light.otf`. It supplies Japanese glyphs to
 the editor-only test override. Production prefers `Makinas-4-Square` and
 automatically uses the bundled Noto font when Makinas is absent. Noto is stored
-as a regular Git binary, without LFS. Makinas is optionally downloaded by
-`Tools/Fonts/download-japanese-font.ps1` and is never added to Git.
+as a regular Git binary, without LFS. Makinas is also included as a regular
+Git binary for this game's typography; its author's separate usage terms
+are linked in `Assets/Resources/Fonts/Makinas-NOTICE.txt`.
+`Tools/Fonts/download-japanese-font.ps1` restores it from the official source
+if the local file is missing or damaged.
 `UISkinKitTests.ProductionJapaneseFont_WorksWithoutTheTestOverride` clears the
 override and checks both legacy Text and TMP through the production loader.
 Run it with Makinas absent as well as present. A missing bundled Noto asset

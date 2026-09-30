@@ -1,5 +1,5 @@
 $ErrorActionPreference = 'Stop'
-# フォント本体の再配布を避け、作者の配布元から直接取得する。
+# 同梱Makinasを復元する場合に、作者の配布元から取得して内容を検証する。
 $fontProject = (Resolve-Path -LiteralPath (Join-Path $PSScriptRoot '../..')).Path
 $fontDestination = Join-Path $fontProject 'Assets/Resources/Fonts/Makinas-4-Square.otf'
 $fontArchive = Join-Path ([IO.Path]::GetTempPath()) ('3D-Saber-Makinas-' + [Guid]::NewGuid().ToString('N') + '.zip')

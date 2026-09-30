@@ -7,5 +7,6 @@ Assets/TextMesh[[:space:]]Pro/Fonts/*.ttf filter=lfs diff=lfs merge=lfs -text
 Assets/TextMesh[[:space:]]Pro/Fonts/*.otf filter=lfs diff=lfs merge=lfs -text
 Assets/TextMesh[[:space:]]Pro/Fonts/*SDF.asset filter=lfs diff=lfs merge=lfs -text
 
-# Keep the required Japanese fallback available even without Git LFS.
+# Keep Japanese fonts available even without Git LFS.
 Assets/Resources/Fonts/NotoSansJP-Light.otf -filter -diff -merge -text
+Assets/Resources/Fonts/Makinas-4-Square.otf -filter -diff -merge -text

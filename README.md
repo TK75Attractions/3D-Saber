@@ -17,4 +17,4 @@ the debug receiver before entering Play Mode again.
 
 ## 日本語フォント
 
-Makinas未取得のPCでは、同梱のNoto Sans JPへ自動で切り替わります。日本語表示のための追加インストールは不要です。Makinasを使用する場合の取得手順とライセンスは [日本語書体](docs/JapaneseTypography.md) を参照してください。
+日本語表示には、ゲーム素材として同梱した **マキナス 4 Square（もじワク研究）** を使用します。フォント本体は通常のGitで保存しているため、新しいPCでも最新版を取得すれば追加ダウンロード・OSへのインストールなしで同じ書体になります。作者・配布元・利用条件は [日本語書体](docs/JapaneseTypography.md) と [フォントの注意書き](Assets/Resources/Fonts/Makinas-NOTICE.txt) を参照してください。
