@@ -113,6 +113,9 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.lock(); defer { pendingLock.unlock() }
         return pendingDebugCameraSample == nil ? 0 : 1
     }
+    var motionHistoryCountForTesting: Int {
+        queue.sync { debugVideoRecorder?.motionHistoryCountForTesting ?? 0 }
+    }
 #endif
 
     init(
@@ -496,7 +499,8 @@ final class FrameProcessor: @unchecked Sendable {
                 presentationTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer),
                 frameID: sequence,
                 results: emitted,
-                analysis: analysis
+                analysis: analysis,
+                processingTimeSeconds: max(0, clock() - processingStart)
             )
             if case .reachedLimit(let reason) = appendResult {
                 onDebugRecordingLimitReached?(reason)

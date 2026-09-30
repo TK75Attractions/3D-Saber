@@ -3,6 +3,177 @@ import XCTest
 @testable import PhoneSaberSender
 
 final class DebugRecordingTriageTests: XCTestCase {
+    private func motionColor(_ detected: Bool, x: Int = 0, length: Int = 100,
+                             candidates: Int = 1, eligible: Int = 1,
+                             gap: Double? = nil, margin: Double? = nil,
+                             type: String? = "color-mask") -> DebugMotionColorSample {
+        DebugMotionColorSample(detected: detected,
+            endpoints: detected ? (PixelPoint(x: x, y: 0), PixelPoint(x: x, y: length)) : nil,
+            candidateCount: candidates, eligibleCount: eligible,
+            topScoreGap: gap, failedRuleMargin: margin,
+            selectedCandidateType: type)
+    }
+
+    private func motionFrame(_ id: UInt64, _ time: Double,
+                             red: DebugMotionColorSample? = nil,
+                             blue: DebugMotionColorSample? = nil,
+                             processing: Double = 0.005) -> DebugMotionSample {
+        DebugMotionSample(frameID: id, timestamp: time, processingSeconds: processing,
+            red: red ?? motionColor(false), blue: blue ?? motionColor(false))
+    }
+
+    func testMotionDropoutFlickerAndColorIndependence() {
+        var detector = DebugMotionDetector()
+        for index in 0..<3 {
+            _ = detector.observe(motionFrame(UInt64(index), Double(index) / 30,
+                red: motionColor(true), blue: motionColor(true)))
+        }
+        let redHit = detector.observe(motionFrame(3, 0.1,
+            red: motionColor(false), blue: motionColor(true)))
+        XCTAssertTrue(redHit.contains { $0.color == "red"
+            && $0.signals.contains { $0.kind == "dropout" } })
+        XCTAssertFalse(redHit.contains { $0.color == "blue" })
+        _ = detector.observe(motionFrame(4, 4.0 / 30, red: motionColor(true)))
+        let flicker = detector.observe(motionFrame(5, 5.0 / 30,
+            red: motionColor(false)))
+        XCTAssertTrue(flicker.contains { $0.color == "red" })
+        XCTAssertEqual(detector.signalCounts["flicker"], 1)
+    }
+
+    func testMotionJumpLengthPredictionCandidateAndNearMissSignals() {
+        var detector = DebugMotionDetector()
+        _ = detector.observe(motionFrame(0, 0, red: motionColor(true, x: 0)))
+        _ = detector.observe(motionFrame(1, 1.0 / 30,
+            red: motionColor(true, x: 10)))
+        let jumped = detector.observe(motionFrame(2, 2.0 / 30,
+            red: motionColor(true, x: 200, length: 200)))
+        let kinds = Set(jumped.flatMap(\.signals).map(\.kind))
+        XCTAssertTrue(kinds.contains("endpoint_jump"))
+        XCTAssertTrue(kinds.contains("length_change"))
+        XCTAssertTrue(kinds.contains("prediction_error"))
+        let ambiguous = detector.observe(motionFrame(3, 3.0 / 30,
+            red: motionColor(true, x: 205, length: 200,
+                             candidates: 2, eligible: 2, gap: 1)))
+        XCTAssertFalse(ambiguous.isEmpty)
+        XCTAssertEqual(detector.signalCounts["candidate_ambiguity"], 1)
+        XCTAssertEqual(detector.signalCounts["multiple_eligible"], 1)
+        _ = detector.observe(motionFrame(4, 4.0 / 30,
+            red: motionColor(true, x: 210, length: 200, type: "core-line")))
+        XCTAssertEqual(detector.signalCounts["candidate_switch"], 1)
+        let nearMiss = detector.observe(motionFrame(5, 5.0 / 30,
+            red: motionColor(false, candidates: 1, eligible: 0, margin: 0.02)))
+        XCTAssertFalse(nearMiss.isEmpty)
+        XCTAssertEqual(detector.signalCounts["near_miss"], 1)
+    }
+
+    func testEndpointOrderReversalIsNotMotionAnomaly() {
+        var detector = DebugMotionDetector()
+        for id in 0..<3 {
+            var color = motionColor(true)
+            if id % 2 == 1 {
+                color = DebugMotionColorSample(detected: true,
+                    endpoints: (PixelPoint(x: 0, y: 100), PixelPoint(x: 0, y: 0)),
+                    candidateCount: 1, eligibleCount: 1, topScoreGap: nil,
+                    failedRuleMargin: nil, selectedCandidateType: "color-mask")
+            }
+            XCTAssertTrue(detector.observe(motionFrame(UInt64(id), Double(id) / 30,
+                red: color)).isEmpty)
+        }
+    }
+
+    func testMotionDelayMergingAndHistoryBound() {
+        var detector = DebugMotionDetector()
+        _ = detector.observe(motionFrame(1, 0))
+        let first = detector.observe(motionFrame(4, 0.1, processing: 0.05))
+        XCTAssertEqual(first.count, 1)
+        XCTAssertEqual(first.first?.color, "both")
+        XCTAssertEqual(Set(first.flatMap(\.signals).map(\.kind)),
+                       ["frame_interval", "frame_gap", "processing_time"])
+        let merged = detector.observe(motionFrame(5, 0.13, processing: 0.05))
+        XCTAssertEqual(merged.first?.index, first.first?.index)
+        for index in 6..<100 {
+            _ = detector.observe(motionFrame(UInt64(index), Double(index) / 30))
+        }
+        XCTAssertEqual(detector.history.count, DebugMotionThresholds.historyFrames)
+    }
+
+    func testMotionImageSelectionPrioritizesScoreAndKeepsRolesWithinTwelve() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let frames = (0..<15).map { makeFrame($0) }
+        var events: [[String: Any]] = []
+        for eventIndex in 0..<5 {
+            let images = ["event_pre", "event_at", "event_post"].enumerated().map {
+                roleIndex, role -> [String: Any] in
+                let frameID = eventIndex * 3 + roleIndex
+                let name = "motion_event_\(eventIndex)_\(role)_\(frameID).png"
+                try? Data("lossless".utf8).write(to: directory.appendingPathComponent(name))
+                return ["role": role, "frameID": frameID, "fileName": name]
+            }
+            events.append(["eventIndex": eventIndex, "color": "red",
+                "peakScore": Double(eventIndex + 1), "images": images,
+                "signals": [["kind": "dropout", "color": "red",
+                    "value": 3.0, "threshold": 3.0, "score": 1.0]]])
+        }
+        var document = try XCTUnwrap(JSONSerialization.jsonObject(
+            with: metadata(frames)) as? [String: Any])
+        document["motionEvents"] = events
+        document["motionSummary"] = ["events": (0..<5).map {
+            [$0, "red", Double($0 + 1), "retained"] as [Any]
+        }]
+        let data = try JSONSerialization.data(withJSONObject: document)
+        let selection = try DebugRecordingTriageBuilder.selectImages(
+            metadataData: data, forensicDirectoryURL: directory).selection
+        XCTAssertEqual(selection.images.count, 12)
+        XCTAssertEqual(try DebugRecordingTriageBuilder.selectImages(
+            metadataData: data, forensicDirectoryURL: directory, maximumImages: 20)
+            .selection.images.count, 12)
+        XCTAssertEqual(Set(selection.images.compactMap(\.eventIndex)), [1, 2, 3, 4])
+        XCTAssertEqual(selection.images.filter { $0.eventIndex == 4 }.map(\.role),
+                       ["event_at", "event_pre", "event_post"])
+        XCTAssertTrue(selection.images.allSatisfy { !$0.signals.isEmpty && $0.score != nil })
+        let bundle = try DebugRecordingTriageBuilder.build(metadataData: data,
+            metadataURL: directory.appendingPathComponent("metadata.json"),
+            forensicDirectoryURL: directory)
+        let summary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+        let motionSummary = try XCTUnwrap(summary["motionEventSummary"] as? [String: Any])
+        let ledger = try XCTUnwrap(motionSummary["events"] as? [[Any]])
+        XCTAssertEqual(ledger[0][3] as? String, "image_limit")
+        XCTAssertTrue(ledger.dropFirst().allSatisfy { $0[3] as? String == "selected" })
+    }
+
+    func testMotionSelectionHonorsTransportByteBudget() throws {
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let large = directory.appendingPathComponent("large.png")
+        FileManager.default.createFile(atPath: large.path, contents: Data())
+        let handle = try FileHandle(forWritingTo: large)
+        try handle.truncate(atOffset: 63 * 1_024 * 1_024)
+        try handle.close()
+        try Data("small".utf8).write(to: directory.appendingPathComponent("small.png"))
+        var document = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            metadata([makeFrame(0), makeFrame(1)])) as? [String: Any])
+        document["motionEvents"] = [
+            ["eventIndex": 0, "color": "red", "peakScore": 4.0,
+             "signals": [], "images": [["role": "event_at", "frameID": 0, "fileName": "large.png"]]],
+            ["eventIndex": 1, "color": "red", "peakScore": 2.0,
+             "signals": [], "images": [["role": "event_at", "frameID": 1, "fileName": "small.png"]]]]
+        document["motionSummary"] = ["events": [[0, "red", 4.0, "retained"],
+                                                [1, "red", 2.0, "retained"]]]
+        let bundle = try DebugRecordingTriageBuilder.build(
+            metadataData: JSONSerialization.data(withJSONObject: document),
+            metadataURL: directory.appendingPathComponent("metadata.json"),
+            forensicDirectoryURL: directory)
+        let summary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+        XCTAssertEqual(summary["selectedImageCount"] as? Int, 1)
+        let motionSummary = try XCTUnwrap(summary["motionEventSummary"] as? [String: Any])
+        let ledger = try XCTUnwrap(motionSummary["events"] as? [[Any]])
+        XCTAssertEqual(ledger[0][3] as? String, "byte_limit")
+        XCTAssertEqual(ledger[1][3] as? String, "selected")
+    }
+
     func testDebugRecordingOffDoesNotEnterRecordingOrStopLifecycle() {
         XCTAssertFalse(DebugRecordingLifecyclePolicy.mayStart(
             enabled: false, cameraRunning: true, active: false, finalizing: false

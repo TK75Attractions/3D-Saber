@@ -222,9 +222,15 @@ def repair_gate(report: dict[str, Any], plan: Any, repo: Path) -> dict[str, Any]
                         != ESCALATION_REASONING_EFFORT):
             reasons.append("second-opinion model provenance is invalid")
         selected = {}
+        latency_only_images: set[str] = set()
         for image in plan.images:
             context = _json_file(image.context_path, MAX_CODEX_CONTEXT_BYTES)
             selected[image.image_id] = (image.frame_id, str(context.get("selectedColor", "")).upper())
+            motion = context.get("motionEvent")
+            if isinstance(motion, dict) and motion.get("signals") and all(
+                    item.get("kind") in {"frame_interval", "frame_gap", "processing_time"}
+                    for item in motion["signals"]):
+                latency_only_images.add(image.image_id)
         if assessment["decision"] != "actionable":
             reasons.append("analysis requests more evidence")
         if not assessment["visible_saber_confirmed"]:
@@ -240,8 +246,13 @@ def repair_gate(report: dict[str, Any], plan: Any, repo: Path) -> dict[str, Any]
             reasons.append("no concrete recognition change is proposed")
         if not assessment["affected_colors"] or not assessment["evidence_image_ids"]:
             reasons.append("affected color or selected visual evidence is missing")
+        if assessment["evidence_image_ids"] and all(
+                image_id in latency_only_images
+                for image_id in assessment["evidence_image_ids"]):
+            reasons.append("latency-only events do not support recognition repair")
         for color in assessment["affected_colors"]:
-            if not any(selected.get(image_id, (None, None))[1] == color
+            if not any(image_id not in latency_only_images
+                       and selected.get(image_id, (None, None))[1] == color
                        for image_id in assessment["evidence_image_ids"]):
                 reasons.append(f"no selected {color} PNG supports the proposed repair")
         findings = [finding for section in _analysis_sections()
@@ -249,7 +260,8 @@ def repair_gate(report: dict[str, Any], plan: Any, repo: Path) -> dict[str, Any]
         supported = [finding for finding in findings
                      if finding["confidence"] in {"high", "medium"}
                      and finding["color"] in set(assessment["affected_colors"]) | {"BOTH"}
-                     and any(image_id in assessment["evidence_image_ids"]
+                     and any(image_id not in latency_only_images
+                             and image_id in assessment["evidence_image_ids"]
                              and selected[image_id][0] in finding["frame_ids"]
                              for image_id in finding["image_ids"])]
         if not supported:
@@ -257,7 +269,8 @@ def repair_gate(report: dict[str, Any], plan: Any, repo: Path) -> dict[str, Any]
         if assessment["change_type"] == "threshold":
             frames = {selected[image_id][0] for finding in supported
                       for image_id in finding["image_ids"]
-                      if image_id in assessment["evidence_image_ids"]}
+                      if image_id in assessment["evidence_image_ids"]
+                      and image_id not in latency_only_images}
             if assessment["independent_visual_examples"] < 2 \
                     or len(assessment["evidence_image_ids"]) < 2 or len(frames) < 2:
                 reasons.append("a threshold change is supported by fewer than two distinct examples")

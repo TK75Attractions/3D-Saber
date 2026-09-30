@@ -118,6 +118,8 @@ FRAME = object_field({
     "blueDropoutFileName": scalar("string", nullable=True),
     "redDropoutRole": scalar("string", nullable=True),
     "redDropoutFileName": scalar("string", nullable=True),
+    "processingTimeSeconds": scalar("number", nullable=True),
+    "motionEventIndex": scalar("integer", nullable=True),
 }, required=True)
 
 CAMERA_SAMPLE = object_field({
@@ -146,6 +148,8 @@ ROOT = object_field({
     # Camera state was added by a diagnostic-capable producer. Its absence does
     # not invalidate older sessions or frame-level analysis.
     "cameraSamples": array_field(CAMERA_SAMPLE),
+    "motionEvents": array_field(object_field({})),
+    "motionSummary": object_field({}),
 }, required=True)
 
 

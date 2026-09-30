@@ -33,9 +33,9 @@ DEFAULT_MAX_IMAGES = 12
 PER_FAILURE_TYPE = 2
 EXPECTED_SUMMARY_SCOPE = "retained incident candidates and nearby context"
 MAX_REPORT_BYTES = 512 * 1024
-MAX_CODEX_SUMMARY_BYTES = 128 * 1024
+MAX_CODEX_SUMMARY_BYTES = 256 * 1024
 MAX_CODEX_CONTEXT_BYTES = 32 * 1024
-MAX_CODEX_METADATA_BYTES = 512 * 1024
+MAX_CODEX_METADATA_BYTES = 768 * 1024
 CODEX_TIMEOUT_SECONDS = 600
 ANALYSIS_MODEL = "gpt-6-luna"
 ANALYSIS_REASONING_EFFORT = "max"
@@ -194,9 +194,27 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
     allowed_summary_keys = {"formatVersion", "sessionID", "recordedFrameCount",
                             "redBlueDetectionSummary", "dropoutSummary", "selectedImageCount",
                             "incidentCount", "incidents", "images", "limits", "groundTruth",
-                            "summaryScope", "retainedIncidentContextFrames"}
+                            "summaryScope", "retainedIncidentContextFrames",
+                            "motionEventSummary"}
     if not set(summary).issubset(allowed_summary_keys):
         raise BundleError("summary.json contains non-triage or full-session metadata")
+    motion_summary = summary.get("motionEventSummary")
+    if motion_summary is not None:
+        if not isinstance(motion_summary, dict) or not isinstance(
+                motion_summary.get("events"), list):
+            raise BundleError("motion event summary is malformed")
+        seen_event_ids: set[int] = set()
+        for event in motion_summary["events"]:
+            if not isinstance(event, list) or len(event) != 4 \
+                    or isinstance(event[0], bool) or not isinstance(event[0], int) \
+                    or event[0] in seen_event_ids \
+                    or event[1] not in {"red", "blue", "both"} \
+                    or not isinstance(event[2], (int, float)) \
+                    or isinstance(event[2], bool) or not math.isfinite(event[2]) \
+                    or event[3] not in {"selected", "lower_score", "memory",
+                                         "duplicate", "image_limit", "byte_limit"}:
+                raise BundleError("motion event selection ledger is malformed")
+            seen_event_ids.add(event[0])
     summary_scope = summary.get("summaryScope")
     if not isinstance(summary_scope, str) or summary_scope != EXPECTED_SUMMARY_SCOPE:
         raise BundleError("summary.json has an invalid summaryScope")
@@ -222,6 +240,7 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
     unique_context_paths: set[Path] = set()
     unique_image_basenames: set[str] = set()
     type_counts: dict[str, int] = {}
+    motion_roles: set[tuple[int, str]] = set()
     for image in images:
         if not isinstance(image, dict):
             raise BundleError("summary image entry is invalid")
@@ -255,6 +274,33 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
         if isinstance(frame_id, bool) or not isinstance(frame_id, int):
             raise BundleError("summary image has an invalid frameID")
         type_counts[failure_type] = type_counts.get(failure_type, 0) + 1
+        if failure_type.startswith("motion_event_") and "eventIndex" not in image:
+            raise BundleError("motion event failure type lacks validated event metadata")
+        if "eventIndex" in image:
+            if not failure_type.startswith("motion_event_") \
+                    or image.get("role") not in {"event_pre", "event_at", "event_post"} \
+                    or isinstance(image["eventIndex"], bool) \
+                    or not isinstance(image["eventIndex"], int) \
+                    or isinstance(image.get("anomalyScore"), bool) \
+                    or not isinstance(image.get("anomalyScore"), (int, float)) \
+                    or not isinstance(image.get("signals"), list) \
+                    or image.get("signalAggregation") != "event_max_per_kind":
+                raise BundleError("motion event image metadata is invalid")
+            if not math.isfinite(image["anomalyScore"]) \
+                    or not _valid_motion_signals(image["signals"]) \
+                    or (image["eventIndex"], image["role"]) in motion_roles:
+                raise BundleError("motion event image signal or role is invalid")
+            motion_roles.add((image["eventIndex"], image["role"]))
+            context_event = json.loads(context_path.read_text(encoding="utf-8")).get("motionEvent")
+            if context_event != {"eventIndex": image["eventIndex"],
+                                 "role": image["role"],
+                                 "score": image["anomalyScore"],
+                                 "signals": image["signals"],
+                                 "signalAggregation": "event_max_per_kind"}:
+                raise BundleError("motion event summary and context disagree")
+        elif any(key in image for key in (
+                "role", "anomalyScore", "signals", "signalAggregation")):
+            raise BundleError("motion event image fields have no event index")
         selected_images.append(CodexInputImage(
             image_id=f"image_{len(selected_images) + 1:03d}",
             image_path=image_path,
@@ -262,8 +308,14 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
             frame_id=frame_id,
             failure_type=failure_type,
         ))
-    if any(count > PER_FAILURE_TYPE for count in type_counts.values()):
+    if any(count > (3 if kind.startswith("motion_event_") else PER_FAILURE_TYPE)
+           for kind, count in type_counts.items()):
         raise BundleError("per-failure-type image limit exceeds two")
+    if motion_roles:
+        ledger = {item[0]: item for item in motion_summary["events"]} if motion_summary else {}
+        if any(event_id not in ledger or ledger[event_id][3] != "selected"
+               for event_id, _ in motion_roles):
+            raise BundleError("selected motion images lack a matching event ledger entry")
 
     expected = {"summary.json", "prompt.md"}
     expected.update(image.image_path.relative_to(root).as_posix() for image in selected_images)
@@ -781,6 +833,7 @@ Evidence rules:
 - Classify findings: A = capture/data artifact; B = false negative or candidate=0; C = candidate exists but eligible=0; D = wrong candidate or endpoint jump; E = false-positive suspect (broad/coreless or identical endpoint); F = temporal dropout/continuity; G = insufficient evidence or other.
 - If evidence is insufficient, say so and do not recommend production recognition changes.
 - For eligibility dropouts, inspect candidateDecisionTrace for each selected frame. Name the failed rule, actual measured value and threshold, whether it repeats across independent visible examples, and false-positive risk. A threshold must not be loosened solely because a candidate was rejected.
+- For motion events, compare event_pre, event_at, and event_post PNGs with the score, measured signals, detected states, and endpoints in their compact contexts. Signals marked event_max_per_kind may peak on different frames within the merged event. The signal is a selection heuristic, not proof of a saber or a recognition error. A frame gap, processing delay, or saber outside the image is a capture/latency finding, not a recognition repair target; say this explicitly in the analysis.
 - Do not edit, create, or propose applying production code. Return a concise JSON object matching the supplied schema exactly.
 - Complete repair_assessment conservatively. Mark actionable only when selected PNG pixels visibly confirm a real saber, the metadata supports a specific recognition-stage cause, and the evidence supports a production change. Otherwise use needs_capture. A detector dropout or endpoint jump alone is not visual proof.
 - For a threshold proposal, count independent visually supported examples; a single example is insufficient. Use only listed Image IDs in evidence_image_ids. Describe uncertainty in reason. Regression coverage is checked separately by the Mac gate.
@@ -795,10 +848,11 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
         context = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, UnicodeError, json.JSONDecodeError) as exc:
         raise BundleError(f"frame context is malformed: {path.name}") from exc
-    allowed_top = {"sessionID", "selectedFrameID", "selectedColor", "selectedFailureType",
-                   "selectedReasons", "contextRadiusFrames", "frames"}
-    required_top = allowed_top
-    if not isinstance(context, dict) or set(context) != required_top \
+    required_top = {"sessionID", "selectedFrameID", "selectedColor", "selectedFailureType",
+                    "selectedReasons", "contextRadiusFrames", "frames"}
+    allowed_top = required_top | {"motionEvent"}
+    if not isinstance(context, dict) or not required_top.issubset(context) \
+            or not set(context).issubset(allowed_top) \
             or context.get("sessionID") != session_id or context.get("selectedFrameID") != selected_frame_id \
             or not isinstance(context.get("selectedFrameID"), int) \
             or isinstance(context.get("selectedFrameID"), bool) \
@@ -813,19 +867,44 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
             or not all(isinstance(item, str) and len(item) <= 500 for item in context["selectedReasons"]) \
             or not isinstance(context.get("frames"), list) or not 1 <= len(context["frames"]) <= 5:
         raise BundleError(f"frame context is outside the permitted compact shape: {path.name}")
-    allowed_frame = {"frameID", "timestamp", "red", "blue"}
+    if "motionEvent" in context:
+        event = context["motionEvent"]
+        if not isinstance(event, dict) or set(event) != {
+                "eventIndex", "role", "score", "signals", "signalAggregation"} \
+                or isinstance(event["eventIndex"], bool) \
+                or not isinstance(event["eventIndex"], int) \
+                or event["role"] not in {"event_pre", "event_at", "event_post"} \
+                or isinstance(event["score"], bool) \
+                or not isinstance(event["score"], (int, float)) \
+                or not math.isfinite(event["score"]) \
+                or event["signalAggregation"] != "event_max_per_kind" \
+                or not _valid_motion_signals(event["signals"]):
+            raise BundleError(f"invalid motion event context: {path.name}")
+    allowed_frame = {"frameID", "timestamp", "red", "blue",
+                     "processingTimeSeconds", "motionEventIndex"}
     allowed_color = {"detected", "predictionUsed", "detectionSucceeded", "maskPixelCount",
                      "morphologyPixelCount", "connectedComponentCount", "candidateCount",
                      "eligibleCandidateCount", "selectedCandidateType", "score", "endpoint",
+                     "selectedCandidateIndex", "topScoreGap", "minimumFailedRuleMargin",
                      "rawPCASpan", "robustMainIntervalLength", "continuity", "density",
                      "colorPurity", "coreSupport", "highBrightnessCoverage",
                      "candidateDecisionTrace", "failureStage"}
     for frame in context["frames"]:
-        if not isinstance(frame, dict) or set(frame) != allowed_frame \
+        if not isinstance(frame, dict) or not {"frameID", "timestamp", "red", "blue"}.issubset(frame) \
+                or not set(frame).issubset(allowed_frame) \
                 or not isinstance(frame.get("frameID"), int) \
                 or isinstance(frame.get("frameID"), bool) \
                 or not isinstance(frame.get("timestamp"), (int, float)):
             raise BundleError(f"frame context has an invalid frame entry: {path.name}")
+        if ("processingTimeSeconds" in frame and (
+                not isinstance(frame["processingTimeSeconds"], (int, float))
+                or isinstance(frame["processingTimeSeconds"], bool)
+                or not math.isfinite(frame["processingTimeSeconds"])
+                or frame["processingTimeSeconds"] < 0)) \
+                or ("motionEventIndex" in frame and (
+                    isinstance(frame["motionEventIndex"], bool)
+                    or not isinstance(frame["motionEventIndex"], int))):
+            raise BundleError(f"frame context has invalid motion metrics: {path.name}")
         for color in ("red", "blue"):
             values = frame.get(color)
             if not isinstance(values, dict) or not set(values).issubset(allowed_color):
@@ -845,6 +924,26 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
                     raise BundleError(f"frame context has an invalid candidate type: {path.name}")
                 if key == "failureStage" and value != "eligibility":
                     raise BundleError(f"frame context has an invalid failure stage: {path.name}")
+
+
+def _valid_motion_signals(value: Any) -> bool:
+    if not isinstance(value, list) or not 1 <= len(value) <= 12:
+        return False
+    for signal in value:
+        if not isinstance(signal, dict) or set(signal) != {
+                "kind", "color", "value", "threshold", "score"}:
+            return False
+        if not isinstance(signal["kind"], str) or signal["kind"] not in {
+                "dropout", "flicker", "endpoint_jump", "length_change", "prediction_error",
+                "multiple_eligible", "candidate_ambiguity", "candidate_switch", "near_miss",
+                "frame_interval", "frame_gap", "processing_time"} \
+                or signal["color"] not in {"red", "blue", "both"}:
+            return False
+        for key in ("value", "threshold", "score"):
+            if not isinstance(signal[key], (int, float)) or isinstance(signal[key], bool) \
+                    or not math.isfinite(signal[key]):
+                return False
+    return True
 
 
 def _validate_decision_trace(value: Any, name: str) -> None:

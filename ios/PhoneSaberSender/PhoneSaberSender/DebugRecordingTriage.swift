@@ -1,6 +1,313 @@
 import CoreFoundation
 import Foundation
 
+/// Diagnostic thresholds are deliberately independent of recognition scoring.
+/// All geometry values use source-image pixels and presentation timestamps.
+enum DebugMotionThresholds {
+    static let dropoutEnabled = true
+    static let flickerEnabled = true
+    static let jumpEnabled = true
+    static let lengthEnabled = true
+    static let predictionEnabled = true
+    static let candidateAmbiguityEnabled = true
+    static let nearMissEnabled = true
+    static let latencyEnabled = true
+    static let dropoutRunFrames = 3
+    static let flickerWindowFrames = 8
+    static let flickerTransitions = 3
+    static let endpointSpeedPixelsPerSecond = 3_600.0
+    static let endpointAccelerationPixelsPerSecondSquared = 90_000.0
+    static let lengthChangeFraction = 0.35
+    static let predictionErrorPixels = 80.0
+    static let multipleEligibleCandidates = 2
+    static let candidateScoreGap = 5.0
+    static let failedRuleMarginFraction = 0.08
+    static let frameIntervalSeconds = 0.055
+    static let processingSeconds = 0.040
+    static let eventScore = 1.0
+    static let mergeIntervalSeconds = 0.20
+    static let historyFrames = 64
+    static let preRollSeconds = 2.0
+    static let preRollStride = 15 // Four sampled 1080p frames cover about two seconds.
+    static let preRollBuffers = 4
+    static let postRollSeconds = 0.5
+    static let maximumSelectedEvents = 3
+    static let maximumEventImages = 9
+    static let maximumRetainedBGRABytes = 128 * 1_024 * 1_024
+}
+
+struct DebugMotionColorSample {
+    let detected: Bool
+    let endpoints: (PixelPoint, PixelPoint)?
+    let candidateCount: Int
+    let eligibleCount: Int
+    let topScoreGap: Double?
+    let failedRuleMargin: Double?
+    let selectedCandidateType: String?
+    var selectedCandidateIndex: Int? = nil
+}
+
+struct DebugMotionSample {
+    let frameID: UInt64
+    let timestamp: Double
+    let processingSeconds: Double
+    let red: DebugMotionColorSample
+    let blue: DebugMotionColorSample
+}
+
+struct DebugMotionSignal: Equatable {
+    let kind: String
+    let color: String
+    let value: Double
+    let threshold: Double
+    let score: Double
+
+    var dictionary: [String: Any] {
+        ["kind": kind, "color": color, "value": value,
+         "threshold": threshold, "score": score]
+    }
+}
+
+struct DebugMotionEvent {
+    let index: Int
+    let color: String
+    var startFrameID: UInt64
+    var endFrameID: UInt64
+    var startTime: Double
+    var endTime: Double
+    var peakScore: Double
+    var signals: [DebugMotionSignal]
+
+    var dictionary: [String: Any] {
+        ["eventIndex": index, "color": color,
+         "startFrameID": startFrameID, "endFrameID": endFrameID,
+         "startTime": startTime, "endTime": endTime, "peakScore": peakScore,
+         "signals": signals.map(\.dictionary)]
+    }
+}
+
+/// Receives only writer-accepted Debug Recording frames. Nothing is retained
+/// by FrameProcessor when recording is off.
+struct DebugMotionDetector {
+    private var historyStorage: [DebugMotionSample?] = Array(
+        repeating: nil, count: DebugMotionThresholds.historyFrames)
+    private var historyCursor = 0
+    private(set) var historyCount = 0
+    // Ordered materialization is used by tests only, never by observe.
+    var history: [DebugMotionSample] {
+        (0..<historyCount).compactMap {
+            historyStorage[(historyCursor - historyCount + $0 + historyStorage.count)
+                % historyStorage.count]
+        }
+    }
+    private(set) var events: [DebugMotionEvent] = []
+    private(set) var signalCounts: [String: Int] = [:]
+    private(set) var signalScoreSums: [String: Double] = [:]
+    private(set) var signalScoreMaxima: [String: Double] = [:]
+    private var lastEventIndex: [String: Int] = [:]
+    private var previous: DebugMotionSample?
+    private var beforePrevious: DebugMotionSample?
+    private var trueRun: [String: Int] = ["red": 0, "blue": 0]
+    private var transitionMasks: [String: UInt16] = ["red": 0, "blue": 0]
+
+    mutating func observe(_ sample: DebugMotionSample) -> [DebugMotionEvent] {
+        var emitted: [DebugMotionEvent] = []
+        for color in ["red", "blue"] {
+            let current = color == "red" ? sample.red : sample.blue
+            let previousColor = color == "red" ? previous?.red : previous?.blue
+            let olderColor = color == "red" ? beforePrevious?.red : beforePrevious?.blue
+            let signals = colorSignals(current, previous: previousColor, older: olderColor,
+                                       currentTime: sample.timestamp,
+                                       previousTime: previous?.timestamp,
+                                       olderTime: beforePrevious?.timestamp, color: color)
+            if let event = record(signals, color: color, sample: sample) { emitted.append(event) }
+        }
+        var delaySignals: [DebugMotionSignal] = []
+        if DebugMotionThresholds.latencyEnabled, let previous {
+            let interval = sample.timestamp - previous.timestamp
+            if interval > DebugMotionThresholds.frameIntervalSeconds {
+                delaySignals.append(signal("frame_interval", "both", interval,
+                                           DebugMotionThresholds.frameIntervalSeconds))
+            }
+            if sample.frameID > previous.frameID + 1 {
+                delaySignals.append(signal("frame_gap", "both",
+                                           Double(sample.frameID - previous.frameID), 1))
+            }
+        }
+        if DebugMotionThresholds.latencyEnabled,
+           sample.processingSeconds > DebugMotionThresholds.processingSeconds {
+            delaySignals.append(signal("processing_time", "both", sample.processingSeconds,
+                                       DebugMotionThresholds.processingSeconds))
+        }
+        if let event = record(delaySignals, color: "both", sample: sample) { emitted.append(event) }
+        historyStorage[historyCursor] = sample
+        historyCursor = (historyCursor + 1) % historyStorage.count
+        historyCount = min(historyCount + 1, historyStorage.count)
+        beforePrevious = previous
+        previous = sample
+        return emitted
+    }
+
+    private mutating func colorSignals(
+        _ current: DebugMotionColorSample, previous: DebugMotionColorSample?,
+        older: DebugMotionColorSample?, currentTime: Double,
+        previousTime: Double?, olderTime: Double?, color: String
+    ) -> [DebugMotionSignal] {
+        var result: [DebugMotionSignal] = []
+        let run = trueRun[color, default: 0]
+        if DebugMotionThresholds.dropoutEnabled, let previous,
+           previous.detected && !current.detected,
+           run >= DebugMotionThresholds.dropoutRunFrames {
+            result.append(signal("dropout", color, Double(run),
+                                 Double(DebugMotionThresholds.dropoutRunFrames)))
+        }
+        trueRun[color] = current.detected ? run + 1 : 0
+        let transition = previous.map { $0.detected != current.detected } ?? false
+        let mask = ((transitionMasks[color, default: 0] << 1) | (transition ? 1 : 0))
+            & UInt16((1 << DebugMotionThresholds.flickerWindowFrames) - 1)
+        transitionMasks[color] = mask
+        if DebugMotionThresholds.flickerEnabled,
+           mask.nonzeroBitCount >= DebugMotionThresholds.flickerTransitions, transition {
+            result.append(signal("flicker", color, Double(mask.nonzeroBitCount),
+                                 Double(DebugMotionThresholds.flickerTransitions)))
+        }
+        if let endpoints = current.endpoints, let previousEndpoints = previous?.endpoints,
+           let previousTime, currentTime > previousTime {
+            // Endpoint order is not physical identity. Align by minimum movement.
+            let prior = aligned(previousEndpoints, to: endpoints)
+            let dt = currentTime - previousTime
+            let displacement = max(distance(endpoints.0, prior.0),
+                                   distance(endpoints.1, prior.1))
+            let speed = displacement / dt
+            var jumpRatio = speed / DebugMotionThresholds.endpointSpeedPixelsPerSecond
+            if let olderEndpoints = older?.endpoints, let olderTime, previousTime > olderTime {
+                let older = aligned(olderEndpoints, to: prior)
+                let previousDt = previousTime - olderTime
+                func endpointAcceleration(_ now: PixelPoint, _ prior: PixelPoint,
+                                  _ older: PixelPoint) -> Double {
+                    hypot(Double(now.x - prior.x) / dt - Double(prior.x - older.x) / previousDt,
+                          Double(now.y - prior.y) / dt - Double(prior.y - older.y) / previousDt) / dt
+                }
+                let acceleration = max(endpointAcceleration(endpoints.0, prior.0, older.0),
+                                       endpointAcceleration(endpoints.1, prior.1, older.1))
+                jumpRatio = max(jumpRatio,
+                    acceleration / DebugMotionThresholds.endpointAccelerationPixelsPerSecondSquared)
+                if DebugMotionThresholds.predictionEnabled {
+                    func residual(_ now: PixelPoint, _ prior: PixelPoint,
+                                  _ older: PixelPoint) -> Double {
+                        let factor = dt / previousDt
+                        return hypot(Double(now.x - prior.x) - Double(prior.x - older.x) * factor,
+                                     Double(now.y - prior.y) - Double(prior.y - older.y) * factor)
+                    }
+                    let error = max(residual(endpoints.0, prior.0, older.0),
+                                    residual(endpoints.1, prior.1, older.1))
+                    if error > DebugMotionThresholds.predictionErrorPixels {
+                        result.append(signal("prediction_error", color, error,
+                            DebugMotionThresholds.predictionErrorPixels))
+                    }
+                }
+            }
+            if DebugMotionThresholds.jumpEnabled, jumpRatio > 1 {
+                result.append(signal("endpoint_jump", color, jumpRatio, 1))
+            }
+            if DebugMotionThresholds.lengthEnabled {
+                let priorLength = distance(prior.0, prior.1)
+                let change = abs(distance(endpoints.0, endpoints.1) - priorLength)
+                    / max(priorLength, 1)
+                if change > DebugMotionThresholds.lengthChangeFraction {
+                    result.append(signal("length_change", color, change,
+                        DebugMotionThresholds.lengthChangeFraction))
+                }
+            }
+        }
+        if DebugMotionThresholds.candidateAmbiguityEnabled {
+            if current.eligibleCount >= DebugMotionThresholds.multipleEligibleCandidates {
+                result.append(signal("multiple_eligible", color, Double(current.eligibleCount),
+                    Double(DebugMotionThresholds.multipleEligibleCandidates)))
+            }
+            if current.eligibleCount >= 2, let gap = current.topScoreGap,
+               gap < DebugMotionThresholds.candidateScoreGap {
+                result.append(signal("candidate_ambiguity", color,
+                    DebugMotionThresholds.candidateScoreGap - gap,
+                    DebugMotionThresholds.candidateScoreGap))
+            }
+            if current.detected, let previous, previous.detected,
+               let currentType = current.selectedCandidateType,
+               let previousType = previous.selectedCandidateType,
+               (currentType != previousType
+                || (current.selectedCandidateIndex != nil
+                    && previous.selectedCandidateIndex != nil
+                    && current.selectedCandidateIndex != previous.selectedCandidateIndex)) {
+                result.append(signal("candidate_switch", color, 1, 1))
+            }
+        }
+        if DebugMotionThresholds.nearMissEnabled, !current.detected,
+           current.candidateCount > 0, current.eligibleCount == 0,
+           let margin = current.failedRuleMargin,
+           margin <= DebugMotionThresholds.failedRuleMarginFraction {
+            result.append(signal("near_miss", color,
+                DebugMotionThresholds.failedRuleMarginFraction - margin,
+                DebugMotionThresholds.failedRuleMarginFraction))
+        }
+        return result
+    }
+
+    private mutating func record(_ signals: [DebugMotionSignal], color: String,
+                                 sample: DebugMotionSample) -> DebugMotionEvent? {
+        guard !signals.isEmpty else { return nil }
+        let score = signals.reduce(0) { $0 + $1.score }
+        guard score >= DebugMotionThresholds.eventScore else { return nil }
+        for item in signals {
+            signalCounts[item.kind, default: 0] += 1
+            signalScoreSums[item.kind, default: 0] += item.score
+            signalScoreMaxima[item.kind] = max(signalScoreMaxima[item.kind] ?? 0, item.score)
+        }
+        if let index = lastEventIndex[color],
+           sample.timestamp - events[index].endTime <= DebugMotionThresholds.mergeIntervalSeconds {
+            events[index].endFrameID = sample.frameID
+            events[index].endTime = sample.timestamp
+            events[index].peakScore = max(events[index].peakScore, score)
+            for item in signals {
+                if let existing = events[index].signals.firstIndex(where: { $0.kind == item.kind }) {
+                    if item.score > events[index].signals[existing].score {
+                        events[index].signals[existing] = item
+                    }
+                } else {
+                    events[index].signals.append(item)
+                }
+            }
+            return events[index]
+        }
+        let event = DebugMotionEvent(index: events.count, color: color,
+            startFrameID: sample.frameID, endFrameID: sample.frameID,
+            startTime: sample.timestamp, endTime: sample.timestamp,
+            peakScore: score, signals: signals)
+        events.append(event)
+        lastEventIndex[color] = event.index
+        return event
+    }
+
+    private func signal(_ kind: String, _ color: String, _ value: Double,
+                        _ threshold: Double) -> DebugMotionSignal {
+        let ratio = value / threshold
+        let score = kind == "near_miss" || kind == "candidate_ambiguity"
+            ? 1 + min(1, max(0, ratio)) : min(4, max(1, ratio))
+        return DebugMotionSignal(kind: kind, color: color, value: value,
+                                 threshold: threshold, score: score)
+    }
+
+    private func aligned(_ points: (PixelPoint, PixelPoint),
+                         to reference: (PixelPoint, PixelPoint)) -> (PixelPoint, PixelPoint) {
+        let direct = distance(points.0, reference.0) + distance(points.1, reference.1)
+        let reversed = distance(points.1, reference.0) + distance(points.0, reference.1)
+        return direct <= reversed ? points : (points.1, points.0)
+    }
+
+    private func distance(_ a: PixelPoint, _ b: PixelPoint) -> Double {
+        hypot(Double(a.x - b.x), Double(a.y - b.y))
+    }
+}
+
 enum DebugRecordingTriageError: LocalizedError {
     case malformedMetadata(String)
     case unsafeImageName(String)
@@ -45,6 +352,10 @@ struct DebugRecordingTriageImage: Equatable {
     let failureType: String
     let priority: Int
     let reasons: [String]
+    var eventIndex: Int? = nil
+    var role: String? = nil
+    var score: Double? = nil
+    var signals: [DebugMotionSignal] = []
 }
 
 struct DebugRecordingTriageSelection: Equatable {
@@ -58,6 +369,7 @@ struct DebugRecordingTriageSelection: Equatable {
 struct DebugRecordingTriageAccumulator {
     static let maximumRetainedFrames = 256
     private(set) var retainedFrames: [DebugRecordingFrameMetadata] = []
+    private var retainedIDs: Set<UInt64> = []
     private var recent: [DebugRecordingFrameMetadata] = []
     private var followingContext = 0
     private var identicalRed = 0
@@ -70,6 +382,7 @@ struct DebugRecordingTriageAccumulator {
         identicalRed = redIdentical ? identicalRed + 1 : 0
         identicalBlue = blueIdentical ? identicalBlue + 1 : 0
         let incident = frame.manualCaptured || frame.forensicCaptured
+            || frame.motionEventIndex != nil
             || frame.redDropoutRole != nil || frame.blueDropoutRole != nil
             || Self.isCaptureCandidate(frame)
             || jump(frame.red, previous?.red) >= 180
@@ -90,14 +403,14 @@ struct DebugRecordingTriageAccumulator {
     }
 
     private mutating func retain(_ frame: DebugRecordingFrameMetadata) {
-        guard retainedFrames.last?.frameID != frame.frameID else { return }
+        guard retainedIDs.insert(frame.frameID).inserted else { return }
         retainedFrames.append(frame)
         if retainedFrames.count > Self.maximumRetainedFrames {
             let removable = retainedFrames.firstIndex {
                 !$0.manualCaptured && !$0.forensicCaptured
                     && $0.redDropoutFileName == nil && $0.blueDropoutFileName == nil
             } ?? 0
-            retainedFrames.remove(at: removable)
+            retainedIDs.remove(retainedFrames.remove(at: removable).frameID)
         }
     }
 
@@ -150,6 +463,10 @@ enum DebugRecordingTriageBuilder {
         let color: String
         let fileName: String
         let isManual: Bool
+        var eventIndex: Int? = nil
+        var role: String? = nil
+        var score: Double? = nil
+        var signals: [DebugMotionSignal] = []
     }
 
     static func selectImages(
@@ -206,12 +523,50 @@ enum DebugRecordingTriageBuilder {
             }
         }
 
+        if let motionEvents = metadata["motionEvents"] as? [[String: Any]] {
+            let indexByID = Dictionary(uniqueKeysWithValues: frames.enumerated().compactMap {
+                index, frame -> (UInt64, Int)? in
+                guard let id = integer(frame["frameID"]) else { return nil }
+                return (id, index)
+            })
+            for event in motionEvents {
+                guard let eventIndex = event["eventIndex"] as? Int,
+                      let color = string(event["color"]),
+                      let score = number(event["peakScore"]),
+                      let images = event["images"] as? [[String: Any]] else { continue }
+                let signals = (event["signals"] as? [[String: Any]] ?? []).compactMap {
+                    signal -> DebugMotionSignal? in
+                    guard let kind = string(signal["kind"]),
+                          let signalColor = string(signal["color"]),
+                          let value = number(signal["value"]),
+                          let threshold = number(signal["threshold"]),
+                          let signalScore = number(signal["score"]) else { return nil }
+                    return DebugMotionSignal(kind: kind, color: signalColor,
+                        value: value, threshold: threshold, score: signalScore)
+                }
+                for image in images {
+                    guard let frameID = integer(image["frameID"]),
+                          let frameIndex = indexByID[frameID],
+                          let fileName = string(image["fileName"]),
+                          let role = string(image["role"]),
+                          ["event_pre", "event_at", "event_post"].contains(role) else { continue }
+                    references.append(ImageReference(frameIndex: frameIndex,
+                        frameID: frameID, color: color, fileName: fileName,
+                        isManual: false, eventIndex: eventIndex, role: role,
+                        score: score, signals: signals))
+                }
+            }
+        }
+
         addIdenticalEndpointReasons(frames: frames, reasonsByFrame: &reasonsByFrame)
 
         let incidentCount = incidentSummary(metadata: metadata).reduce(0) {
             $0 + Int(integer($1["incidentCount"]) ?? 0)
         }
-        let requestedLimit = max(0, min(maximumImages, DebugRecordingTriageLimits.hardImageCount))
+        let hasMotionEvents = !(metadata["motionEvents"] as? [[String: Any]] ?? []).isEmpty
+        let ceiling = hasMotionEvents ? DebugRecordingTriageLimits.defaultImageCount
+            : DebugRecordingTriageLimits.hardImageCount
+        let requestedLimit = max(0, min(maximumImages, ceiling))
         let failureLimit = max(0, min(perFailureType, DebugRecordingTriageLimits.hardImageCount))
 
         let existingReferences = try references.map { reference -> ImageReference in
@@ -232,6 +587,18 @@ enum DebugRecordingTriageBuilder {
         }
 
         let sortedReferences = uniqueByName.values.sorted { lhs, rhs in
+            if (lhs.eventIndex != nil) != (rhs.eventIndex != nil) {
+                return lhs.eventIndex != nil
+            }
+            if let leftScore = lhs.score, let rightScore = rhs.score,
+               leftScore != rightScore { return leftScore > rightScore }
+            if lhs.eventIndex != rhs.eventIndex {
+                return (lhs.eventIndex ?? Int.max) < (rhs.eventIndex ?? Int.max)
+            }
+            let roles = ["event_at": 0, "event_pre": 1, "event_post": 2]
+            if lhs.role != rhs.role {
+                return (roles[lhs.role ?? ""] ?? 3) < (roles[rhs.role ?? ""] ?? 3)
+            }
             let leftReasons = reasonList(for: lhs, reasonsByFrame: reasonsByFrame)
             let rightReasons = reasonList(for: rhs, reasonsByFrame: reasonsByFrame)
             let leftPriority = leftReasons.map(\.priority).min() ?? (lhs.isManual ? 0 : 7)
@@ -243,8 +610,13 @@ enum DebugRecordingTriageBuilder {
 
         var selected: [DebugRecordingTriageImage] = []
         var countByType: [String: Int] = [:]
+        var selectedBytes: Int64 = 0
+        // Leave room for the compact contexts, summary and prompt under the
+        // unchanged 64 MiB transport budget. Selection is performed after Stop.
+        let imageBudget = DebugRecordingTriageLimits.maximumBundleBytes - 2 * 1_024 * 1_024
         for reference in sortedReferences {
             guard selected.count < requestedLimit else { break }
+            if selected.contains(where: { $0.frameID == reference.frameID }) { continue }
             let referenceReasons = reasonList(for: reference, reasonsByFrame: reasonsByFrame)
             let primary = referenceReasons.sorted {
                 if $0.priority != $1.priority { return $0.priority < $1.priority }
@@ -252,31 +624,50 @@ enum DebugRecordingTriageBuilder {
             }.first ?? Reason(color: reference.color, type: "lossless_anomaly",
                               priority: 7, detail: "recorder forensic capture")
             let buckets = Set(referenceReasons.map(\.type)).union([primary.type])
-            guard reference.isManual || buckets.allSatisfy({ countByType[$0, default: 0] < failureLimit }) else { continue }
+            guard reference.eventIndex != nil || reference.isManual
+                || buckets.allSatisfy({ countByType[$0, default: 0] < failureLimit }) else { continue }
             let duplicatesNearby = selected.contains { item in
                 buckets.contains(item.failureType)
                     && item.color == reference.color
                     && abs(item.frameIndex - reference.frameIndex) <= 3
                     && item.fileName != reference.fileName
             }
-            guard reference.isManual || !duplicatesNearby else { continue }
+            guard reference.eventIndex != nil || reference.isManual || !duplicatesNearby else { continue }
 
+            let eventType = reference.eventIndex.map { index in
+                "motion_event_\(index)_\(reference.signals.first?.kind ?? "anomaly")"
+            }
+            let eventReasons = reference.signals.map {
+                "\($0.kind) \($0.value) threshold \($0.threshold) score \($0.score)"
+            }
+
+            let attributes = try FileManager.default.attributesOfItem(
+                atPath: directory!.appendingPathComponent(reference.fileName).path)
+            let size = (attributes[.size] as? NSNumber)?.int64Value ?? 0
+            guard selectedBytes + size <= imageBudget else { continue }
+            selectedBytes += size
             selected.append(DebugRecordingTriageImage(
                 frameIndex: reference.frameIndex,
                 frameID: reference.frameID,
                 color: reference.color,
                 fileName: reference.fileName,
-                failureType: primary.type,
+                failureType: eventType ?? primary.type,
                 priority: primary.priority,
-                reasons: Array(Set(referenceReasons.map(\.detail))).sorted()
+                reasons: reference.eventIndex == nil
+                    ? Array(Set(referenceReasons.map(\.detail))).sorted()
+                    : ["\(reference.role ?? "event_at") for event \(reference.eventIndex!)"] + eventReasons,
+                eventIndex: reference.eventIndex, role: reference.role,
+                score: reference.score, signals: reference.signals
             ))
-            if !reference.isManual {
+            if !reference.isManual && reference.eventIndex == nil {
                 for bucket in buckets { countByType[bucket, default: 0] += 1 }
             }
         }
 
+        let motionSummary = metadata["motionSummary"] as? [String: Any]
+        let motionCount = (motionSummary?["events"] as? [[Any]])?.count ?? 0
         return (metadata, DebugRecordingTriageSelection(images: selected,
-                                                         incidentCount: incidentCount))
+            incidentCount: incidentCount + motionCount))
     }
 
     static func build(
@@ -331,16 +722,50 @@ enum DebugRecordingTriageBuilder {
                 let frameName = "frame_\(item.frameID)_\(offset + 1).json"
                 try jsonData(framePayload).write(to: frameDirectory.appendingPathComponent(frameName),
                                                 options: .atomic)
-                imageEntries.append([
+                var imageEntry: [String: Any] = [
                     "path": "images/\(targetName)", "frameContextPath": "frames/\(frameName)",
                     "frameID": item.frameID, "timestamp": number(frames(metadata)[item.frameIndex]["presentationTimeSeconds"]) ?? 0,
                     "color": item.color, "failureType": item.failureType,
                     "reason": item.reasons.joined(separator: "; "), "sourceFile": item.fileName
-                ])
+                ]
+                if let eventIndex = item.eventIndex, let role = item.role,
+                   let score = item.score {
+                    imageEntry["eventIndex"] = eventIndex
+                    imageEntry["role"] = role
+                    imageEntry["anomalyScore"] = score
+                    imageEntry["signals"] = item.signals.map(\.dictionary)
+                    imageEntry["signalAggregation"] = "event_max_per_kind"
+                }
+                imageEntries.append(imageEntry)
             }
 
             let incidentEntries = incidentSummary(metadata: metadata)
-            let summary: [String: Any] = [
+            var motionSummary = metadata["motionSummary"] as? [String: Any] ?? [:]
+            if var events = motionSummary["events"] as? [[Any]] {
+                let selectedIDs = Set(selection.images.compactMap(\.eventIndex))
+                let retainedEvents = (metadata["motionEvents"] as? [[String: Any]] ?? [])
+                let retainedIDs = Set(retainedEvents.compactMap { $0["eventIndex"] as? Int })
+                for index in events.indices {
+                    guard events[index].count == 4,
+                          let eventID = events[index][0] as? Int else { continue }
+                    if selectedIDs.contains(eventID) {
+                        events[index][3] = "selected"
+                    } else if retainedIDs.contains(eventID) {
+                        let retained = retainedEvents.first {
+                            $0["eventIndex"] as? Int == eventID
+                        }
+                        let imageIDs = (retained?["images"] as? [[String: Any]] ?? [])
+                            .compactMap { integer($0["frameID"]) }
+                        let alreadySelected = Set(selection.images.map(\.frameID))
+                        events[index][3] = imageIDs.allSatisfy {
+                            alreadySelected.contains($0)
+                        } ? "duplicate" : (selection.images.count >= maximumImages
+                            ? "image_limit" : "byte_limit")
+                    }
+                }
+                motionSummary["events"] = events
+            }
+            var summary: [String: Any] = [
                 "formatVersion": 1,
                 "sessionID": sessionID,
                 "recordedFrameCount": recordedFrameCount ?? frames(metadata).count,
@@ -360,6 +785,7 @@ enum DebugRecordingTriageBuilder {
                 ],
                 "groundTruth": "lossless PNG only; H.264 video is excluded"
             ]
+            if !motionSummary.isEmpty { summary["motionEventSummary"] = motionSummary }
             try jsonData(summary).write(to: bundleURL.appendingPathComponent("summary.json"),
                                         options: .atomic)
             try promptText(sessionID: sessionID, imageCount: selection.images.count)
@@ -491,7 +917,7 @@ enum DebugRecordingTriageBuilder {
         let lower = max(0, selected.frameIndex - DebugRecordingTriageLimits.contextRadius)
         let upper = min(allFrames.count - 1, selected.frameIndex + DebugRecordingTriageLimits.contextRadius)
         let context = lower...upper
-        return [
+        var result: [String: Any] = [
             "sessionID": string(metadata["sessionID"]) ?? "",
             "selectedFrameID": selected.frameID,
             "selectedColor": selected.color,
@@ -500,6 +926,13 @@ enum DebugRecordingTriageBuilder {
             "contextRadiusFrames": DebugRecordingTriageLimits.contextRadius,
             "frames": context.map { minimalFrame(allFrames[$0], index: $0) }
         ]
+        if let eventIndex = selected.eventIndex, let role = selected.role,
+           let score = selected.score {
+            result["motionEvent"] = ["eventIndex": eventIndex, "role": role,
+                "score": score, "signals": selected.signals.map(\.dictionary),
+                "signalAggregation": "event_max_per_kind"]
+        }
+        return result
     }
 
     private static func minimalFrame(_ frame: [String: Any], index: Int) -> [String: Any] {
@@ -507,6 +940,12 @@ enum DebugRecordingTriageBuilder {
             "frameID": integer(frame["frameID"]) ?? UInt64(index),
             "timestamp": number(frame["presentationTimeSeconds"]) ?? 0
         ]
+        if let processing = number(frame["processingTimeSeconds"]) {
+            output["processingTimeSeconds"] = processing
+        }
+        if let event = integer(frame["motionEventIndex"]) {
+            output["motionEventIndex"] = event
+        }
         for color in colors {
             let detection = frame[color] as? [String: Any] ?? [:]
             let diagnostic = colorDiagnostics(frame, color: color)
@@ -534,8 +973,28 @@ enum DebugRecordingTriageBuilder {
             if let source = string(diagnostic["selectedCandidateType"]) ?? string(candidate?["sourceType"]) {
                 colorData["selectedCandidateType"] = source
             }
+            if let selectedIndex = integer(diagnostic["selectedCandidateIndex"]) {
+                colorData["selectedCandidateIndex"] = selectedIndex
+            }
             if let score = number(diagnostic["selectedCandidateFinalScore"]) ?? number(candidate?["finalScore"]) {
                 colorData["score"] = score
+            }
+            if let top = diagnostic["topCandidates"] as? [[String: Any]] {
+                let scores = top.filter { $0["eligible"] as? Bool == true }
+                    .compactMap { number($0["finalScore"]) }.sorted(by: >)
+                if scores.count >= 2 { colorData["topScoreGap"] = scores[0] - scores[1] }
+                let margins = top.flatMap { ($0["eligibilityRules"] as? [[String: Any]]) ?? [] }
+                    .compactMap { rule -> Double? in
+                        guard string(rule["result"]) == "FAIL",
+                              string(rule["comparison"]) != "==",
+                              let value = number(rule["value"]),
+                              let threshold = number(rule["threshold"]),
+                              threshold != 0 else { return nil }
+                        return abs(value - threshold) / abs(threshold)
+                    }
+                if let smallest = margins.min() {
+                    colorData["minimumFailedRuleMargin"] = smallest
+                }
             }
             if let endpoint = detectionEndpoint(detection) { colorData["endpoint"] = endpoint }
             if let candidate {

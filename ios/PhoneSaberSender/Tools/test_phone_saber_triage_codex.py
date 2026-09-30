@@ -58,6 +58,63 @@ EXPECTED_SUMMARY_SCOPE = "retained incident candidates and nearby context"
 
 
 class CodexTriageTests(unittest.TestCase):
+    def test_motion_event_roles_and_scores_reach_luna_without_repair(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = root / "bundle"
+            write_codex_bundle(bundle, image_count=3,
+                               failure_types=("motion_event_0_dropout",) * 3)
+            summary_path = bundle / "summary.json"
+            summary = json.loads(summary_path.read_text())
+            summary["motionEventSummary"] = {"events": [[0, "red", 2.0, "selected"]],
+                "signalDistributions": {"dropout": {"count": 1,
+                    "meanScore": 2.0, "maxScore": 2.0}}}
+            signals = [{"kind": "dropout", "color": "red", "value": 4.0,
+                        "threshold": 3.0, "score": 2.0}]
+            for index, role in enumerate(("event_pre", "event_at", "event_post")):
+                entry = summary["images"][index]
+                entry.update(eventIndex=0, role=role, anomalyScore=2.0,
+                             signals=signals, signalAggregation="event_max_per_kind")
+                context_path = bundle / entry["frameContextPath"]
+                context = json.loads(context_path.read_text())
+                context["motionEvent"] = {"eventIndex": 0, "role": role,
+                                          "score": 2.0, "signals": signals,
+                                          "signalAggregation": "event_max_per_kind"}
+                context["frames"][0]["processingTimeSeconds"] = 0.01
+                context_path.write_text(json.dumps(context))
+            summary_path.write_text(json.dumps(summary))
+            plan = input_plan(bundle)
+            self.assertEqual(len(plan.image_paths), 3)
+            codex = fake_codex(root, root / "spy.json", analysis=EMPTY_ANALYSIS)
+            analyze_bundle(bundle, codex_path=str(codex))
+            spy = json.loads((root / "spy.json").read_text())
+            self.assertIn("event_pre", (bundle / summary["images"][0][
+                "frameContextPath"]).read_text())
+            self.assertIn("frame gap, processing delay", spy["prompt"])
+            report = json.loads((bundle / "analysis_report.json").read_text())
+            self.assertFalse(report["analysisEscalationExecuted"])
+            with patch("phone_saber_auto_repair._corpus_coverage",
+                       return_value=(True, "covered")):
+                gate = repair_gate(report, input_plan(bundle, allow_reports=True), root)
+            self.assertEqual(gate["decision"], "needs_capture")
+
+    def test_motion_event_summary_context_mismatch_is_rejected(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "bundle"
+            write_codex_bundle(bundle)
+            summary_path = bundle / "summary.json"
+            summary = json.loads(summary_path.read_text())
+            image = summary["images"][0]
+            image.update(failureType="motion_event_0_dropout", eventIndex=0,
+                         role="event_at", anomalyScore=2.0,
+                         signals=[{"kind": "dropout", "color": "red", "value": 4.0,
+                                   "threshold": 3.0, "score": 2.0}],
+                         signalAggregation="event_max_per_kind")
+            summary["motionEventSummary"] = {"events": [[0, "red", 2.0, "selected"]]}
+            summary_path.write_text(json.dumps(summary))
+            with self.assertRaisesRegex(BundleError, "summary and context disagree"):
+                input_plan(bundle)
+
     def test_eligibility_trace_reaches_luna_and_repeats_across_frames(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

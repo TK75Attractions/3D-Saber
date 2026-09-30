@@ -2,6 +2,7 @@ import XCTest
 import AVFoundation
 import Combine
 import UIKit
+import Darwin
 @testable import PhoneSaberSender
 
 private final class CompletionBox {
@@ -2139,6 +2140,9 @@ final class DetectionCoreTests: XCTestCase {
 
     @MainActor
     func testDebugRecordingIsCompletelyOffByDefault() {
+        let processor = FrameProcessor(expiryScheduler: nil)
+        processor.process(sampleBuffer(width: 16, height: 16) { _, _ in })
+        XCTAssertEqual(processor.motionHistoryCountForTesting, 0)
         let viewModel = CameraViewModel(
             authorizationStatus: { .denied },
             requestAccess: { _ in }
@@ -2491,7 +2495,8 @@ final class DetectionCoreTests: XCTestCase {
         }
         let metadataData = try Data(contentsOf: recording.metadataURL)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: metadataData) as? [String: Any])
-        XCTAssertEqual(Set(json.keys), Set(["formatVersion", "sessionID", "width", "height", "frames", "cameraSamples"]))
+        XCTAssertEqual(Set(json.keys), Set(["formatVersion", "sessionID", "width", "height", "frames", "cameraSamples", "motionEvents", "motionSummary"]))
+        // Existing Codable readers ignore the additive motion root fields.
         let metadata = try JSONDecoder().decode(DebugRecordingMetadata.self, from: metadataData)
         XCTAssertEqual(metadata.frames.filter(\.manualCaptured).count,
                        DebugRecordingLimits.maximumManualLosslessCaptures)
@@ -2683,6 +2688,71 @@ final class DetectionCoreTests: XCTestCase {
         }
     }
 
+    func testMotionEventKeepsMatchingPreAtPostLosslessFrames() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberMotionCaptureTests-\(UUID().uuidString)",
+                                    isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory)
+        let red = DetectedSaber(
+            endpoints: (PixelPoint(x: 8, y: 24), PixelPoint(x: 52, y: 24)),
+            color: .red, isFresh: true)
+        for offset in 0..<21 {
+            let buffer = solidPixelBuffer(width: 64, height: 48)
+            CVPixelBufferLockBaseAddress(buffer, .readOnly)
+            let result = recorder.append(pixelBuffer: buffer,
+                presentationTime: CMTime(value: CMTimeValue(offset), timescale: 30),
+                frameID: UInt64(100 + offset), results: offset < 4 ? [red] : [])
+            CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+            XCTAssertEqual(result, .accepted)
+            Thread.sleep(forTimeInterval: 0.04)
+        }
+        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation {
+            continuation in recorder.finish { continuation.resume(with: $0) }
+        }
+        let fullMetadata = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: recording.metadataURL)) as? [String: Any])
+        let motionSummary = try XCTUnwrap(fullMetadata["motionSummary"] as? [String: Any])
+        let distributions = try XCTUnwrap(motionSummary["signalDistributions"] as? [String: [String: Any]])
+        XCTAssertEqual(distributions["dropout"]?["count"] as? Int, 1)
+        XCTAssertEqual(distributions["near_miss"]?["count"] as? Int, 0)
+        XCTAssertEqual(distributions["dropout"]?["meanScore"] as? Double, 4.0 / 3.0)
+        let runtime = try XCTUnwrap(motionSummary["runtime"] as? [String: Any])
+        let peakBytes = try XCTUnwrap(runtime["peakRetainedBGRABytes"] as? Int)
+        XCTAssertLessThanOrEqual(peakBytes,
+            DebugMotionThresholds.maximumRetainedBGRABytes)
+        print("MOTION_PROFILING frames=\(runtime["observedFrames"] ?? 0) "
+            + "mean_ms=\(runtime["meanObservationMs"] ?? 0) "
+            + "max_ms=\(runtime["maxObservationMs"] ?? 0) "
+            + "peak_bgra_bytes=\(peakBytes)")
+        let bundle = try XCTUnwrap(recording.triageBundleURL)
+        let summary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+        let eventSummary = try XCTUnwrap(summary["motionEventSummary"] as? [String: Any])
+        let ledger = try XCTUnwrap(eventSummary["events"] as? [[Any]])
+        XCTAssertEqual(ledger.first?[3] as? String, "selected")
+        let images = try XCTUnwrap(summary["images"] as? [[String: Any]])
+        let motion = images.filter { $0["eventIndex"] as? Int != nil }
+        XCTAssertEqual(motion.count, 3)
+        XCTAssertEqual(motion.compactMap { $0["role"] as? String },
+                       ["event_at", "event_pre", "event_post"])
+        XCTAssertEqual(motion.compactMap { $0["frameID"] as? Int }, [104, 100, 119])
+        let forensic = try XCTUnwrap(recording.forensicDirectoryURL)
+        XCTAssertTrue(FileManager.default.fileExists(atPath: forensic
+            .appendingPathComponent("motion_event_0_overlay_104.png").path))
+        XCTAssertFalse(FileManager.default.fileExists(atPath: bundle
+            .appendingPathComponent("images/motion_event_0_overlay_104.png").path))
+        for image in motion {
+            let path = try XCTUnwrap(image["path"] as? String)
+            let contextPath = try XCTUnwrap(image["frameContextPath"] as? String)
+            let id = try XCTUnwrap(image["frameID"] as? Int)
+            let context = try XCTUnwrap(JSONSerialization.jsonObject(with:
+                Data(contentsOf: bundle.appendingPathComponent(contextPath))) as? [String: Any])
+            XCTAssertEqual(context["selectedFrameID"] as? Int, id)
+            XCTAssertNotNil(UIImage(contentsOfFile: bundle.appendingPathComponent(path).path))
+        }
+    }
+
     func testRedDropoutCaptureUsesFirstFalseFrameAndKeepsBlueStateIndependent() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("PhoneSaberRedDropoutTests-\(UUID().uuidString)",
@@ -2772,11 +2842,59 @@ final class DetectionCoreTests: XCTestCase {
                      recorded.median, recorded.p95, recorded.max))
     }
 
+    func testMotionPreRollIsThinnedBoundedAndExpires() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberMotionRing-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory)
+        try recorder.prepare(width: 64, height: 48)
+        for index in 0..<76 {
+            let outcome = recorder.append(pixelBuffer: solidPixelBuffer(width: 64, height: 48),
+                presentationTime: CMTime(value: CMTimeValue(index), timescale: 30),
+                frameID: UInt64(index), results: [])
+            XCTAssertEqual(outcome, .accepted)
+            XCTAssertLessThanOrEqual(recorder.motionPreRollFrameIDsForTesting.count,
+                                     DebugMotionThresholds.preRollBuffers)
+            XCTAssertLessThanOrEqual(recorder.motionRetainedBytesForTesting,
+                                     DebugMotionThresholds.maximumRetainedBGRABytes)
+            Thread.sleep(forTimeInterval: 1.0 / 30.0)
+        }
+        XCTAssertEqual(recorder.motionPreRollFrameIDsForTesting, [30, 45, 60, 75])
+        // A presentation-time discontinuity expires older pre-roll frames.
+        recorder.append(pixelBuffer: solidPixelBuffer(width: 64, height: 48),
+            presentationTime: CMTime(value: 180, timescale: 30), frameID: 180, results: [])
+        // Expiration occurs every sampling tick; check policy at the next tick.
+        for index in 77...90 {
+            Thread.sleep(forTimeInterval: 1.0 / 30.0)
+            recorder.append(pixelBuffer: solidPixelBuffer(width: 64, height: 48),
+                presentationTime: CMTime(value: CMTimeValue(index + 104), timescale: 30),
+                frameID: UInt64(index + 104), results: [])
+        }
+        XCTAssertTrue(recorder.motionPreRollFrameIDsForTesting.allSatisfy { $0 >= 180 })
+        _ = try await withCheckedThrowingContinuation { continuation in
+            recorder.finish { continuation.resume(with: $0) }
+        } as DebugRecordingResult
+    }
+
+    private func residentBytesForPerformance() -> UInt64 {
+        var info = mach_task_basic_info()
+        var count = mach_msg_type_number_t(MemoryLayout<mach_task_basic_info>.size
+                                          / MemoryLayout<integer_t>.size)
+        let result = withUnsafeMutablePointer(to: &info) {
+            $0.withMemoryRebound(to: integer_t.self, capacity: Int(count)) {
+                task_info(mach_task_self_, task_flavor_t(MACH_TASK_BASIC_INFO), $0, &count)
+            }
+        }
+        return result == KERN_SUCCESS ? info.resident_size : 0
+    }
+
     func testDebugRecordingAppendPerformanceSample() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("PhoneSaberRecordingPerformance-\(UUID().uuidString)", isDirectory: true)
         defer { try? FileManager.default.removeItem(at: directory) }
         let recorder = try DebugVideoRecorder(directory: directory)
+        let initialResidentBytes = residentBytesForPerformance()
+        var peakResidentBytes = initialResidentBytes
         let prepareStart = ProcessInfo.processInfo.systemUptime
         try recorder.prepare(width: 480, height: 640)
         let prepareMilliseconds = (ProcessInfo.processInfo.systemUptime - prepareStart) * 1000
@@ -2788,6 +2906,7 @@ final class DetectionCoreTests: XCTestCase {
                             presentationTime: CMTime(value: CMTimeValue(index), timescale: 30),
                             frameID: UInt64(index), results: [])
             appendMilliseconds.append((ProcessInfo.processInfo.systemUptime - start) * 1000)
+            peakResidentBytes = max(peakResidentBytes, residentBytesForPerformance())
             Thread.sleep(forTimeInterval: 1.0 / 30.0)
         }
         let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
@@ -2800,6 +2919,7 @@ final class DetectionCoreTests: XCTestCase {
         print(String(format: "[RecordingPerformance] simulator one-time prepare=%.3f ms; append median=%.3f p95=%.3f max=%.3f ms (480x640, n=%d; not device FPS)",
                      prepareMilliseconds, sorted[sorted.count / 2], p95,
                      sorted.max() ?? 0, sorted.count))
+        print("[RecordingMemory] simulator resident_start=\(initialResidentBytes) resident_peak=\(peakResidentBytes) delta=\(peakResidentBytes - initialResidentBytes) bytes; includes writer and runtime")
     }
 
     private struct DecodedVideoFrame {

@@ -76,3 +76,11 @@ phone_saber_triage_<session>/
 ```
 
 PNG files are copied byte-for-byte; the transport envelope adds a manifest and checksum but does not recompress images.
+
+## Automatic motion evidence
+
+Debug Recording now retains high-score motion events automatically and selects
+original pre/event/post PNGs within the existing image and transport limits.
+Luna receives measured signs and selection reasons. These heuristics do not prove
+a real saber; latency-only images cannot support recognition repair. See
+[Debug Recording motion evidence](DEBUG_MOTION_EVENTS.md).

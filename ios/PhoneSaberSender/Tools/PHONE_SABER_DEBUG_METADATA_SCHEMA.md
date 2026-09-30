@@ -174,3 +174,12 @@ Validate one or more sessions with:
 ```bash
 python3 ios/PhoneSaberSender/Tools/validate_phone_saber_metadata.py path/to/session_metadata.json
 ```
+
+## Optional automatic motion evidence
+
+Format 1 adds optional root `motionEvents` and `motionSummary`, and optional
+frame `processingTimeSeconds` / `motionEventIndex`. Existing frame fields retain
+their meaning. Compact event contexts add role, event ID, score and measured
+signals; lossless originals and overlays are separate. See
+[Debug Recording motion evidence](DEBUG_MOTION_EVENTS.md) for limits, metric
+scope, selection ledger and conservative repair acceptance.

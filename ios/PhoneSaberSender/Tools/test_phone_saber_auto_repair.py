@@ -100,6 +100,28 @@ def fake_git(_repo: Path, *args: str, **_kwargs: object) -> str:
 
 
 class RepairGateTests(unittest.TestCase):
+    def test_motion_evidence_requires_visible_saber_and_reconciled_numbers(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            bundle = prepared_bundle(root)
+            plan = input_plan(bundle, allow_reports=True)
+            report = repair.load_analysis(bundle, plan)
+            context_path = plan.images[0].context_path
+            context = json.loads(context_path.read_text())
+            context["motionEvent"] = {"signals": [{"kind": "dropout"}]}
+            context_path.write_text(json.dumps(context))
+            with mock.patch.object(repair, "_corpus_coverage", return_value=(True, "covered")):
+                self.assertEqual(repair.repair_gate(report, plan, root)["decision"], "actionable")
+                for field in ("visible_saber_confirmed", "diagnosis_consistent_with_metadata"):
+                    changed = copy.deepcopy(report)
+                    changed["analysis"]["repair_assessment"][field] = False
+                    self.assertEqual(repair.repair_gate(changed, plan, root)["decision"], "needs_capture")
+                context["motionEvent"]["signals"] = [{"kind": "frame_gap"}]
+                context_path.write_text(json.dumps(context))
+                gate = repair.repair_gate(report, plan, root)
+                self.assertEqual(gate["decision"], "needs_capture")
+                self.assertIn("latency-only events do not support recognition repair", gate["reasons"])
+
     def test_receiver_runs_analysis_then_repair_gate_automatically(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

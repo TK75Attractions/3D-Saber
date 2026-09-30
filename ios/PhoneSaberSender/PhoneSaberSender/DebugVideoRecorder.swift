@@ -45,6 +45,9 @@ enum DebugRecordingLimits {
     static let maximumMetadataBytes: Int64 = 220 * 1_024 * 1_024
     static let maximumSingleVideoBytes: Int64 = 220 * 1_024 * 1_024
     static let maximumLosslessImageBytes: Int64 = 64 * 1_024 * 1_024
+    // Legacy reservations remain 64 MiB. Motion originals and separate overlays
+    // have their own bounded Stop-time allowance, within the session disk cap.
+    static let maximumCombinedLosslessImageBytes: Int64 = 192 * 1_024 * 1_024
     static let maximumBufferedLosslessBytes = 128 * 1_024 * 1_024
     static let maximumManualLosslessCaptures = 3
     static let maximumForensicImages = 8
@@ -510,6 +513,8 @@ struct DebugRecordingFrameMetadata: Codable, Equatable {
     var blueDropoutFileName: String?
     var redDropoutRole: String?
     var redDropoutFileName: String?
+    var processingTimeSeconds: Double? = nil
+    var motionEventIndex: Int? = nil
 }
 
 struct DebugRecordingMetadata: Codable, Equatable {
@@ -607,14 +612,23 @@ private final class DebugRecordingMetadataStream {
         firstFrame = false
     }
 
-    func finish(cameraSamples: [DebugRecordingCameraSample]) throws {
+    func finish(cameraSamples: [DebugRecordingCameraSample],
+                motionEvents: [[String: Any]], motionSummary: [String: Any]) throws {
         let sampleData = try encoder.encode(cameraSamples)
-        let suffixCount = Data("],\"cameraSamples\":".utf8).count + sampleData.count + 1
+        let eventData = try JSONSerialization.data(withJSONObject: motionEvents)
+        let summaryData = try JSONSerialization.data(withJSONObject: motionSummary)
+        let suffixCount = Data("],\"cameraSamples\":".utf8).count + sampleData.count
+            + Data(",\"motionEvents\":".utf8).count + eventData.count
+            + Data(",\"motionSummary\":".utf8).count + summaryData.count + 1
         guard bytesWritten + Int64(suffixCount) <= DebugRecordingLimits.maximumMetadataBytes else {
             throw DebugVideoRecorderError.metadataSizeLimitReached
         }
         try handle.write(contentsOf: Data("],\"cameraSamples\":".utf8))
         try handle.write(contentsOf: sampleData)
+        try handle.write(contentsOf: Data(",\"motionEvents\":".utf8))
+        try handle.write(contentsOf: eventData)
+        try handle.write(contentsOf: Data(",\"motionSummary\":".utf8))
+        try handle.write(contentsOf: summaryData)
         try handle.write(contentsOf: Data("}".utf8))
         try handle.synchronize()
         try handle.close()
@@ -644,6 +658,35 @@ private struct DebugRetainedBlueFrame {
     let frameID: UInt64
     let width: Int
     let height: Int
+}
+
+private struct DebugMotionPixelFrame: @unchecked Sendable {
+    let pixelBuffer: CVPixelBuffer
+    let frameID: UInt64
+    let timestamp: Double
+    let width: Int
+    let height: Int
+    let metadata: DebugRecordingFrameMetadata
+
+    var byteCount: Int { CVPixelBufferGetBytesPerRow(pixelBuffer) * height }
+}
+
+private struct DebugMotionCapturedEvent: Sendable {
+    let index: Int
+    let color: String
+    var peakScore: Double
+    var endTime: Double
+    var pre: DebugMotionPixelFrame?
+    var at: DebugMotionPixelFrame
+    var post: DebugMotionPixelFrame?
+
+    var frames: [(String, DebugMotionPixelFrame)] {
+        var result: [(String, DebugMotionPixelFrame)] = []
+        if let pre { result.append(("event_pre", pre)) }
+        result.append(("event_at", at))
+        if let post { result.append(("event_post", post)) }
+        return result
+    }
 }
 
 enum DebugRecordingAppendResult: Equatable {
@@ -716,6 +759,15 @@ final class DebugVideoRecorder {
     private var cameraSamples: [DebugRecordingCameraSample] = []
     private var metadataStream: DebugRecordingMetadataStream?
     private var triageAccumulator = DebugRecordingTriageAccumulator()
+    private var motionDetector = DebugMotionDetector()
+    private var motionPreRoll: [DebugMotionPixelFrame] = []
+    private var motionCaptures: [DebugMotionCapturedEvent] = []
+    private var motionRejectionReasons: [Int: String] = [:]
+    private var motionObservationCount = 0
+    private var motionObservationTotalMs = 0.0
+    private var motionObservationMaxMs = 0.0
+    private var motionPeakRetainedBytes = 0
+    private var legacyReferenceReservationBytes = 0
     private var pendingMetadataFrame: DebugRecordingFrameMetadata?
     private var overlayFrames: [DebugOverlayFrame] = []
     private var recordedFrameCount = 0
@@ -739,6 +791,9 @@ final class DebugVideoRecorder {
     private var finishReason: DebugRecordingFinishReason = .user
 #if DEBUG
     var injectedFailureStageForTesting: DebugRecordingFailureStage?
+    var motionHistoryCountForTesting: Int { motionDetector.historyCount }
+    var motionPreRollFrameIDsForTesting: [UInt64] { motionPreRoll.map(\.frameID) }
+    var motionRetainedBytesForTesting: Int { motionRetainedBytes() + bufferedLosslessBytes }
 #endif
     private(set) var droppedFrameCount = 0
     private var isFinishing = false
@@ -802,7 +857,8 @@ final class DebugVideoRecorder {
         presentationTime: CMTime,
         frameID: UInt64,
         results: [DetectedSaber],
-        analysis: SaberFrameAnalysis? = nil
+        analysis: SaberFrameAnalysis? = nil,
+        processingTimeSeconds: Double = 0
     ) -> DebugRecordingAppendResult {
         guard !isFinishing else { return .skipped }
         if startedAt == nil { startedAt = clock() }
@@ -878,8 +934,15 @@ final class DebugVideoRecorder {
             blueDropoutRole: nil,
             blueDropoutFileName: nil,
             redDropoutRole: nil,
-            redDropoutFileName: nil
+            redDropoutFileName: nil,
+            processingTimeSeconds: processingTimeSeconds
         )
+        let motionStarted = clock()
+        observeMotionFrame(pixelBuffer: pixelBuffer, frame: &frame, width: width, height: height)
+        let motionMs = max(0, (clock() - motionStarted) * 1000)
+        motionObservationCount += 1
+        motionObservationTotalMs += motionMs
+        motionObservationMaxMs = max(motionObservationMaxMs, motionMs)
         updateBlueDropoutCapture(
             pixelBuffer: pixelBuffer, frameID: frameID,
             currentMetadata: &frame, previousMetadata: &pendingMetadataFrame,
@@ -935,6 +998,8 @@ final class DebugVideoRecorder {
             terminalError = error
             return .reachedLimit(.metadataWriterFailure)
         }
+        motionPeakRetainedBytes = max(motionPeakRetainedBytes,
+            motionRetainedBytes() + bufferedLosslessBytes)
         latestRecordedFrameTiming = (frameID, frame.presentationTimeSeconds)
         overlayFrames.append(DebugOverlayFrame(red: freshRed, blue: freshBlue))
         recordedFrameCount += 1
@@ -955,6 +1020,228 @@ final class DebugVideoRecorder {
             }
         }
         return .accepted
+    }
+
+    private func motionColor(_ detection: DebugRecordingDetection,
+                             succeeded: Bool,
+                             candidates: DebugRecordingColorCandidates?) -> DebugMotionColorSample {
+        var best: Double?
+        var second: Double?
+        var smallestMargin: Double?
+        if let candidates {
+            for candidate in candidates.topCandidates {
+                if candidate.eligible {
+                    if best == nil || candidate.finalScore > best! {
+                        second = best
+                        best = candidate.finalScore
+                    } else if second == nil || candidate.finalScore > second! {
+                        second = candidate.finalScore
+                    }
+                }
+                for rule in candidate.eligibilityRules where rule.result == "FAIL" {
+                    if let value = rule.value, let threshold = rule.threshold,
+                       threshold != 0, rule.comparison != "==" {
+                        let margin = abs(value - threshold) / abs(threshold)
+                        smallestMargin = min(smallestMargin ?? margin, margin)
+                    }
+                }
+            }
+        }
+        return DebugMotionColorSample(
+            detected: succeeded, endpoints: succeeded ? detection.endpoints : nil,
+            candidateCount: candidates?.totalCandidateCount ?? 0,
+            eligibleCount: candidates?.eligibleCandidateCount ?? 0,
+            topScoreGap: best.flatMap { first in second.map { first - $0 } },
+            failedRuleMargin: smallestMargin,
+            selectedCandidateType: candidates?.selectedCandidateType,
+            selectedCandidateIndex: candidates?.selectedCandidateIndex
+        )
+    }
+
+    private func observeMotionFrame(pixelBuffer: CVPixelBuffer,
+                                    frame: inout DebugRecordingFrameMetadata,
+                                    width: Int, height: Int) {
+        legacyReferenceReservationBytes = 2 * CVPixelBufferGetBytesPerRow(pixelBuffer) * height
+        let sample = DebugMotionSample(
+            frameID: frame.frameID, timestamp: frame.presentationTimeSeconds,
+            processingSeconds: frame.processingTimeSeconds ?? 0,
+            red: motionColor(frame.red, succeeded: frame.redDetectionSucceeded,
+                             candidates: frame.candidateDiagnostics?.red),
+            blue: motionColor(frame.blue, succeeded: frame.blueDetectionSucceeded,
+                              candidates: frame.candidateDiagnostics?.blue)
+        )
+        let hits = motionDetector.observe(sample)
+        frame.motionEventIndex = hits.first?.index
+        let pixelFrame = DebugMotionPixelFrame(
+            pixelBuffer: pixelBuffer, frameID: frame.frameID,
+            timestamp: frame.presentationTimeSeconds, width: width, height: height,
+            metadata: frame)
+        for hit in hits { retainMotionEvent(hit, current: pixelFrame) }
+        for index in motionCaptures.indices where motionCaptures[index].post == nil {
+            if frame.presentationTimeSeconds >= motionCaptures[index].endTime
+                + DebugMotionThresholds.postRollSeconds,
+               canRetainMotion(pixelFrame.byteCount) {
+                motionCaptures[index].post = pixelFrame
+            }
+        }
+        if recordedFrameCount % DebugMotionThresholds.preRollStride == 0 {
+            motionPreRoll.append(pixelFrame)
+            motionPreRoll.removeAll {
+                frame.presentationTimeSeconds - $0.timestamp > DebugMotionThresholds.preRollSeconds
+            }
+            while motionPreRoll.count > DebugMotionThresholds.preRollBuffers
+                || motionRetainedBytes() + bufferedLosslessBytes
+                    > DebugMotionThresholds.maximumRetainedBGRABytes {
+                motionPreRoll.removeFirst()
+            }
+        }
+    }
+
+    private func motionRetainedBytes() -> Int {
+        legacyReferenceReservationBytes + motionPreRoll.reduce(0) { $0 + $1.byteCount }
+            + motionCaptures.reduce(0) { total, event in
+                total + event.at.byteCount + (event.pre?.byteCount ?? 0)
+                    + (event.post?.byteCount ?? 0)
+            }
+    }
+
+    private func canRetainMotion(_ bytes: Int) -> Bool {
+        bytes > 0 && motionRetainedBytes() + bufferedLosslessBytes + bytes
+            <= DebugMotionThresholds.maximumRetainedBGRABytes
+    }
+
+    private func retainMotionEvent(_ hit: DebugMotionEvent,
+                                   current: DebugMotionPixelFrame) {
+        if let index = motionCaptures.firstIndex(where: { $0.index == hit.index }) {
+            motionCaptures[index].endTime = hit.endTime
+            motionCaptures[index].post = nil
+            if hit.peakScore > motionCaptures[index].peakScore {
+                motionCaptures[index].peakScore = hit.peakScore
+                motionCaptures[index].at = current
+            }
+            return
+        }
+        let weakest = motionCaptures.indices.min {
+            motionCaptures[$0].peakScore < motionCaptures[$1].peakScore
+        }
+        if motionCaptures.count >= DebugMotionThresholds.maximumSelectedEvents,
+           let weakest {
+            guard hit.peakScore > motionCaptures[weakest].peakScore else {
+                motionRejectionReasons[hit.index] = "lower_score"
+                return
+            }
+            motionRejectionReasons[motionCaptures[weakest].index] = "lower_score"
+            motionCaptures.remove(at: weakest)
+        }
+        // Memory pressure also replaces a weaker event before rejecting a
+        // stronger one, even if the three-event count limit is not yet full.
+        while !canRetainMotion(current.byteCount),
+              let weakest = motionCaptures.indices.min(by: {
+                  motionCaptures[$0].peakScore < motionCaptures[$1].peakScore
+              }), hit.peakScore > motionCaptures[weakest].peakScore {
+            motionRejectionReasons[motionCaptures[weakest].index] = "lower_score"
+            motionCaptures.remove(at: weakest)
+        }
+        let previous = motionPreRoll.last { $0.timestamp < hit.startTime }
+        guard canRetainMotion(current.byteCount) else {
+            motionRejectionReasons[hit.index] = "memory"
+            return
+        }
+        motionRejectionReasons.removeValue(forKey: hit.index)
+        var capture = DebugMotionCapturedEvent(
+            index: hit.index, color: hit.color, peakScore: hit.peakScore,
+            endTime: hit.endTime, pre: nil, at: current, post: nil)
+        if let previous, canRetainMotion(current.byteCount + previous.byteCount) {
+            capture.pre = previous
+        }
+        motionCaptures.append(capture)
+    }
+
+    private func motionEventEntries() -> [[String: Any]] {
+        motionCaptures.sorted { $0.peakScore > $1.peakScore }.map { capture in
+            let event = motionDetector.events[capture.index]
+            var entry = event.dictionary
+            entry["images"] = capture.frames.map { role, frame in
+                var image: [String: Any] = ["role": role, "frameID": frame.frameID,
+                    "timestamp": frame.timestamp,
+                    "fileName": "motion_event_\(capture.index)_\(role)_\(frame.frameID).png"]
+                if role == "event_at" {
+                    image["overlayFileName"] =
+                        "motion_event_\(capture.index)_overlay_\(frame.frameID).png"
+                }
+                return image
+            }
+            return entry
+        }
+    }
+
+    private func motionSummary() -> [String: Any] {
+        let retained = Set(motionCaptures.map(\.index))
+        let events = motionDetector.events.map { event -> [Any] in
+            let status = retained.contains(event.index) ? "retained"
+                : (motionRejectionReasons[event.index] ?? "memory")
+            return [event.index, event.color,
+                (event.peakScore * 1_000).rounded() / 1_000, status]
+        }
+        var stats: [String: [String: Any]] = [:]
+        for kind in ["dropout", "flicker", "endpoint_jump", "length_change",
+                     "prediction_error", "multiple_eligible", "candidate_ambiguity", "candidate_switch",
+                     "near_miss", "frame_interval", "frame_gap", "processing_time"] {
+            let count = motionDetector.signalCounts[kind, default: 0]
+            stats[kind] = ["count": count,
+                "meanScore": motionDetector.signalScoreSums[kind, default: 0]
+                    / Double(max(1, count)),
+                "maxScore": motionDetector.signalScoreMaxima[kind, default: 0]]
+        }
+        return ["events": events,
+                "eventColumns": ["eventIndex", "color", "peakScore", "selectionCode"],
+                "selectionCodes": ["retained": "top-scoring event with lossless frames",
+                    "lower_score": "lower anomaly score than retained events",
+                    "memory": "lossless frame retention memory budget reached",
+                    "selected": "included in the 12-image diagnostic bundle",
+                    "duplicate": "all retained frames duplicate higher-score selections",
+                    "image_limit": "12-image limit reached before this event",
+                    "byte_limit": "64 MiB transport byte budget reached"],
+                "signalDistributions": stats,
+                "distributionScope": "above-threshold signals across both colors; includes zero counts",
+                "processingTimeScope": "FrameProcessor start through recognition and UDP emission, before recorder append",
+                "memoryScope": "conservative sum of motion references, legacy BGRA copies and reservation for two legacy last-detected references; excludes camera/writer pools and Stop-time PNG/overlay work",
+                "runtime": ["observedFrames": motionObservationCount,
+                    "meanObservationMs": motionObservationTotalMs
+                        / Double(max(1, motionObservationCount)),
+                    "maxObservationMs": motionObservationMaxMs,
+                    "peakRetainedBGRABytes": motionPeakRetainedBytes],
+                "thresholds": [
+                    "dropoutEnabled": DebugMotionThresholds.dropoutEnabled,
+                    "flickerEnabled": DebugMotionThresholds.flickerEnabled,
+                    "jumpEnabled": DebugMotionThresholds.jumpEnabled,
+                    "lengthEnabled": DebugMotionThresholds.lengthEnabled,
+                    "predictionEnabled": DebugMotionThresholds.predictionEnabled,
+                    "candidateAmbiguityEnabled": DebugMotionThresholds.candidateAmbiguityEnabled,
+                    "nearMissEnabled": DebugMotionThresholds.nearMissEnabled,
+                    "latencyEnabled": DebugMotionThresholds.latencyEnabled,
+                    "dropoutRunFrames": DebugMotionThresholds.dropoutRunFrames,
+                    "flickerWindowFrames": DebugMotionThresholds.flickerWindowFrames,
+                    "flickerTransitions": DebugMotionThresholds.flickerTransitions,
+                    "endpointSpeedPixelsPerSecond": DebugMotionThresholds.endpointSpeedPixelsPerSecond,
+                    "endpointAccelerationPixelsPerSecondSquared": DebugMotionThresholds.endpointAccelerationPixelsPerSecondSquared,
+                    "lengthChangeFraction": DebugMotionThresholds.lengthChangeFraction,
+                    "predictionErrorPixels": DebugMotionThresholds.predictionErrorPixels,
+                    "multipleEligibleCandidates": DebugMotionThresholds.multipleEligibleCandidates,
+                    "candidateScoreGap": DebugMotionThresholds.candidateScoreGap,
+                    "failedRuleMarginFraction": DebugMotionThresholds.failedRuleMarginFraction,
+                    "frameIntervalSeconds": DebugMotionThresholds.frameIntervalSeconds,
+                    "processingSeconds": DebugMotionThresholds.processingSeconds,
+                    "mergeIntervalSeconds": DebugMotionThresholds.mergeIntervalSeconds,
+                    "historyFrames": DebugMotionThresholds.historyFrames,
+                    "preRollSeconds": DebugMotionThresholds.preRollSeconds,
+                    "preRollStride": DebugMotionThresholds.preRollStride,
+                    "preRollBuffers": DebugMotionThresholds.preRollBuffers,
+                    "postRollSeconds": DebugMotionThresholds.postRollSeconds,
+                    "eventScore": DebugMotionThresholds.eventScore,
+                    "maximumSelectedEvents": DebugMotionThresholds.maximumSelectedEvents,
+                    "maximumEventImages": DebugMotionThresholds.maximumEventImages,
+                    "maximumRetainedBGRABytes": DebugMotionThresholds.maximumRetainedBGRABytes]]
     }
 
     func finish(
@@ -986,6 +1273,8 @@ final class DebugVideoRecorder {
 #else
         let injectedFailure: DebugRecordingFailureStage? = nil
 #endif
+        let selectedMotionEvents = motionEventEntries()
+        let selectedMotionSummary = motionSummary()
         do {
             if injectedFailure == .metadata {
                 throw DebugVideoRecorderError.appendFailed("injected metadata failure")
@@ -995,7 +1284,8 @@ final class DebugVideoRecorder {
                 triageAccumulator.observe(pendingMetadataFrame)
                 self.pendingMetadataFrame = nil
             }
-            try metadataStream?.finish(cameraSamples: cameraSamples)
+            try metadataStream?.finish(cameraSamples: cameraSamples,
+                motionEvents: selectedMotionEvents, motionSummary: selectedMotionSummary)
         } catch {
             metadataStream?.discard()
             writerInput.markAsFinished()
@@ -1003,7 +1293,17 @@ final class DebugVideoRecorder {
             return
         }
         let forensicFrames = forensicFrames
-        let triageFrames = triageAccumulator.retainedFrames
+        let motionCaptures = motionCaptures
+        var triageByID = Dictionary(uniqueKeysWithValues:
+            triageAccumulator.retainedFrames.map { ($0.frameID, $0) })
+        for capture in motionCaptures {
+            for (_, frame) in capture.frames {
+                if triageByID[frame.frameID] == nil {
+                    triageByID[frame.frameID] = frame.metadata
+                }
+            }
+        }
+        let triageFrames = triageByID.values.sorted { $0.frameID < $1.frameID }
         let stream = metadataStream
         let dropped = droppedFrameCount
         let frameCount = recordedFrameCount
@@ -1027,7 +1327,7 @@ final class DebugVideoRecorder {
                     if injectedFailure == .png && !forensicFrames.isEmpty {
                         throw DebugVideoRecorderError.appendFailed("injected PNG failure")
                     }
-                    if !forensicFrames.isEmpty {
+                    if !forensicFrames.isEmpty || !motionCaptures.isEmpty {
                         try FileManager.default.createDirectory(
                             at: forensicDirectoryURL, withIntermediateDirectories: true
                         )
@@ -1046,6 +1346,29 @@ final class DebugVideoRecorder {
                                 throw DebugVideoRecorderError.diskUsageLimitReached
                             }
                         }
+                        for capture in motionCaptures {
+                            for (role, frame) in capture.frames {
+                                let fileName = "motion_event_\(capture.index)_\(role)_\(frame.frameID).png"
+                                try DebugVideoRecorder.writeMotionPNG(
+                                    frame, fileName: fileName, directory: forensicDirectoryURL)
+                                if role == "event_at" {
+                                    do {
+                                        try DebugVideoRecorder.writeMotionOverlayPNG(
+                                            frame,
+                                            fileName: "motion_event_\(capture.index)_overlay_\(frame.frameID).png",
+                                            directory: forensicDirectoryURL)
+                                    } catch {
+                                        print("[DebugMotion] optional overlay failed: \(error.localizedDescription)")
+                                    }
+                                }
+                                guard DebugRecordingStorage.diskUsage(at: forensicDirectoryURL)
+                                    <= DebugRecordingLimits.maximumCombinedLosslessImageBytes,
+                                    DebugRecordingStorage.diskUsage(sessionID: currentSessionID,
+                                        in: directory) <= DebugRecordingLimits.maximumDiskUsageBytes else {
+                                    throw DebugVideoRecorderError.diskUsageLimitReached
+                                }
+                            }
+                        }
                     }
                     // The complete path appears only after raw and required PNGs succeed.
                     try stream?.publish()
@@ -1054,14 +1377,20 @@ final class DebugVideoRecorder {
                         sessionID: currentSessionID, width: dimensions.width,
                         height: dimensions.height, frames: triageFrames, cameraSamples: []
                     )
+                    var snapshotObject = try JSONSerialization.jsonObject(
+                        with: JSONEncoder().encode(snapshot)) as! [String: Any]
+                    snapshotObject["motionEvents"] = selectedMotionEvents
+                    snapshotObject["motionSummary"] = selectedMotionSummary
+                    let snapshotData = try JSONSerialization.data(withJSONObject: snapshotObject)
                     var triageBundleURL: URL?
                     var triageErrorMessage: String?
-                    if !triageFrames.isEmpty && !forensicFrames.isEmpty {
+                    if !triageFrames.isEmpty && (!forensicFrames.isEmpty || !motionCaptures.isEmpty) {
                         do {
                             triageBundleURL = try DebugRecordingTriageBuilder.build(
-                                metadataData: try JSONEncoder().encode(snapshot),
+                                metadataData: snapshotData,
                                 metadataURL: metadataURL,
-                                forensicDirectoryURL: forensicFrames.isEmpty ? nil : forensicDirectoryURL,
+                                forensicDirectoryURL: forensicFrames.isEmpty && motionCaptures.isEmpty
+                                    ? nil : forensicDirectoryURL,
                                 recordedFrameCount: frameCount
                             )
                             if let triageBundleURL {
@@ -1113,7 +1442,8 @@ final class DebugVideoRecorder {
                         rawVideoURL: rawVideoURL,
                         overlayVideoURL: overlayVideoURL,
                         metadataURL: metadataURL,
-                        forensicDirectoryURL: forensicFrames.isEmpty ? nil : forensicDirectoryURL,
+                        forensicDirectoryURL: forensicFrames.isEmpty && motionCaptures.isEmpty
+                            ? nil : forensicDirectoryURL,
                         recordedFrameCount: frameCount,
                         droppedFrameCount: dropped,
                         triageBundleURL: triageBundleURL,
@@ -1286,6 +1616,8 @@ final class DebugVideoRecorder {
         guard !byteOverflow,
               (manual || automaticForensicCaptureCount < forensicPolicy.maximumFrames),
               bufferedLosslessBytes + byteCount <= DebugRecordingLimits.maximumBufferedLosslessBytes,
+              motionRetainedBytes() + bufferedLosslessBytes + byteCount
+                <= DebugMotionThresholds.maximumRetainedBGRABytes,
               manualLosslessCaptureCount < DebugRecordingLimits.maximumManualLosslessCaptures || !manual else {
             return false
         }
@@ -1361,6 +1693,61 @@ final class DebugVideoRecorder {
             format: .RGBA8,
             colorSpace: CGColorSpaceCreateDeviceRGB()
         )
+    }
+
+    private static func writeMotionPNG(_ frame: DebugMotionPixelFrame,
+                                       fileName: String, directory: URL) throws {
+        // Strong retention of the original CVPixelBuffer preserves its pixels;
+        // compression and disk I/O happen in the detached Stop task.
+        let image = CIImage(cvPixelBuffer: frame.pixelBuffer)
+        try CIContext(options: [.cacheIntermediates: false]).writePNGRepresentation(
+            of: image, to: directory.appendingPathComponent(fileName),
+            format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB())
+    }
+
+    private static func writeMotionOverlayPNG(_ frame: DebugMotionPixelFrame,
+                                              fileName: String, directory: URL) throws {
+        let width = frame.width
+        let height = frame.height
+        let stride = width * 4
+        guard CVPixelBufferLockBaseAddress(frame.pixelBuffer, .readOnly) == kCVReturnSuccess else {
+            throw DebugVideoRecorderError.cannotReadRawVideo("motion overlay pixel buffer")
+        }
+        defer { CVPixelBufferUnlockBaseAddress(frame.pixelBuffer, .readOnly) }
+        guard let source = CVPixelBufferGetBaseAddress(frame.pixelBuffer) else {
+            throw DebugVideoRecorderError.cannotReadRawVideo("motion overlay base address")
+        }
+        let sourceStride = CVPixelBufferGetBytesPerRow(frame.pixelBuffer)
+        var pixels = Data(count: stride * height)
+        pixels.withUnsafeMutableBytes { destination in
+            guard let base = destination.baseAddress else { return }
+            for row in 0..<height {
+                memcpy(base.advanced(by: row * stride),
+                       source.advanced(by: row * sourceStride), stride)
+            }
+            guard let context = CGContext(data: base, width: width, height: height,
+                bitsPerComponent: 8, bytesPerRow: stride,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
+                    | CGBitmapInfo.byteOrder32Little.rawValue) else { return }
+            context.setLineWidth(4)
+            for (detection, color) in [
+                (frame.metadata.red, CGColor(red: 1, green: 0, blue: 0, alpha: 1)),
+                (frame.metadata.blue, CGColor(red: 0, green: 0.45, blue: 1, alpha: 1))
+            ] {
+                guard let endpoints = detection.endpoints else { continue }
+                context.setStrokeColor(color)
+                context.move(to: CGPoint(x: endpoints.0.x, y: height - 1 - endpoints.0.y))
+                context.addLine(to: CGPoint(x: endpoints.1.x, y: height - 1 - endpoints.1.y))
+                context.strokePath()
+            }
+        }
+        let image = CIImage(bitmapData: pixels, bytesPerRow: stride,
+            size: CGSize(width: width, height: height), format: .BGRA8,
+            colorSpace: CGColorSpaceCreateDeviceRGB())
+        try CIContext(options: [.cacheIntermediates: false]).writePNGRepresentation(
+            of: image, to: directory.appendingPathComponent(fileName),
+            format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB())
     }
 
     private func configureWriter(width: Int, height: Int) throws {
