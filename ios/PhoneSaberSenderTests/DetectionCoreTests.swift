@@ -2495,7 +2495,7 @@ final class DetectionCoreTests: XCTestCase {
         }
         let metadataData = try Data(contentsOf: recording.metadataURL)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: metadataData) as? [String: Any])
-        XCTAssertEqual(Set(json.keys), Set(["formatVersion", "sessionID", "width", "height", "frames", "cameraSamples", "motionEvents", "motionSummary"]))
+        XCTAssertEqual(Set(json.keys), Set(["formatVersion", "sessionID", "width", "height", "frames", "cameraSamples", "motionEvents", "motionSummary", "udpTransmissions"]))
         // Existing Codable readers ignore the additive motion root fields.
         let metadata = try JSONDecoder().decode(DebugRecordingMetadata.self, from: metadataData)
         XCTAssertEqual(metadata.frames.filter(\.manualCaptured).count,
@@ -2932,6 +2932,91 @@ final class DetectionCoreTests: XCTestCase {
         func pixel(_ x: Int, _ y: Int) -> (b: UInt8, g: UInt8, r: UInt8) {
             let offset = y * bytesPerRow + x * 4
             return (bytes[offset], bytes[offset + 1], bytes[offset + 2])
+        }
+    }
+
+    func testTrackingRecordingSelectsConsecutivePeakWindowAndExactPNGMapping() async throws {
+        for missingFrameID: UInt64? in [nil, 1_011] {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberTrackingWindow-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory)
+        recorder.injectedTrackingCopyFailureFrameIDForTesting = missingFrameID
+        for offset in 0..<25 {
+            let buffer = solidPixelBuffer(width: 64, height: 48)
+            CVPixelBufferLockBaseAddress(buffer, [])
+            if let base = CVPixelBufferGetBaseAddress(buffer) {
+                let bytes = base.assumingMemoryBound(to: UInt8.self)
+                for row in 0..<48 {
+                    for column in 0..<64 {
+                        for channel in 0..<3 {
+                            bytes[row * CVPixelBufferGetBytesPerRow(buffer) + column * 4 + channel] = UInt8(16 + offset)
+                        }
+                    }
+                }
+            }
+            let points = (8...52).flatMap { x in (20...24).map { y in
+                offset == 10 ? PixelPoint(x: 30 + (y - 22), y: x - 5) : PixelPoint(x: x, y: y)
+            } }
+            let candidate = try XCTUnwrap(saberCandidate(from: points, width: 64, height: 48,
+                                                         collectEndpointDiagnostics: true))
+            let analysis = SaberFrameAnalysis(candidates: [.red: [candidate]], selected: [.red: candidate.endpoints])
+            let result = DetectedSaber(endpoints: candidate.endpoints, color: .red, isFresh: true)
+            XCTAssertEqual(recorder.append(pixelBuffer: buffer,
+                presentationTime: CMTime(value: CMTimeValue(offset), timescale: 30),
+                frameID: UInt64(1_000 + offset), results: [result], analysis: analysis), .accepted)
+            CVPixelBufferUnlockBaseAddress(buffer, [])
+            recorder.recordTransmission(frameID: UInt64(1_000 + offset), color: "red",
+                coordinates: "8,22,52,22", sourceEndpoints: candidate.endpoints)
+            Thread.sleep(forTimeInterval: 0.04)
+        }
+        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation {
+            continuation in recorder.finish { continuation.resume(with: $0) }
+        }
+        let metadata = try JSONDecoder().decode(DebugRecordingMetadata.self, from: Data(contentsOf: recording.metadataURL))
+        let maximum = try XCTUnwrap(metadata.frames.max {
+            ($0.tracking["red"]?.instabilityScore ?? 0) < ($1.tracking["red"]?.instabilityScore ?? 0)
+        })
+        let bundle = try XCTUnwrap(recording.triageBundleURL, recording.triageErrorMessage ?? "missing bundle")
+        let summary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+        let images = try XCTUnwrap(summary["images"] as? [[String: Any]])
+            .filter { $0["eventIndex"] as? Int == 1_000_000_000 }
+        let motion = try XCTUnwrap(summary["motionEventSummary"] as? [String: Any])
+        let capture = try XCTUnwrap(motion["trackingCapture"] as? [String: Any])
+        let center = try XCTUnwrap(capture["retainedPeakFrameID"] as? UInt64)
+        let retainedScore = try XCTUnwrap(capture["retainedPeakScore"] as? Double)
+        XCTAssertEqual(retainedScore, metadata.frames.first { $0.frameID == center }?.tracking["red"]?.instabilityScore)
+        if missingFrameID != nil {
+            XCTAssertEqual(capture["recordingMaxFrameID"] as? UInt64, maximum.frameID)
+            XCTAssertTrue(try XCTUnwrap(capture["highestRankedFrameMissing"] as? Bool))
+            XCTAssertNotEqual(center, maximum.frameID)
+        } else {
+            XCTAssertEqual(center, maximum.frameID)
+        }
+        let expected = ((center - 5)...(center + 5)).filter { $0 != missingFrameID }
+        XCTAssertEqual(images.count, expected.count)
+        XCTAssertEqual(images.compactMap { $0["frameID"] as? UInt64 }, expected)
+        XCTAssertEqual(images[5]["anomalyScore"] as? Double, retainedScore)
+        XCTAssertEqual(images[5]["role"] as? String, "peak")
+        for image in images {
+            let frameID = try XCTUnwrap(image["frameID"] as? Int)
+            let path = try XCTUnwrap(image["path"] as? String)
+            let contextPath = try XCTUnwrap(image["frameContextPath"] as? String)
+            let context = try XCTUnwrap(JSONSerialization.jsonObject(with:
+                Data(contentsOf: bundle.appendingPathComponent(contextPath))) as? [String: Any])
+            let mapping = try XCTUnwrap(context["imageMapping"] as? [String: Any])
+            XCTAssertEqual(mapping["frameID"] as? Int, frameID)
+            XCTAssertEqual(mapping["image"] as? String, path)
+            XCTAssertEqual(mapping["sessionID"] as? String, recording.sessionID)
+            XCTAssertEqual(mapping["eventRole"] as? String, image["role"] as? String)
+            let transmissions = try XCTUnwrap(context["udpTransmissions"] as? [[String: Any]])
+            XCTAssertEqual(transmissions.first?["frameID"] as? Int, frameID)
+            let png = try XCTUnwrap(UIImage(contentsOfFile: bundle.appendingPathComponent(path).path)?.cgImage)
+            let data = try XCTUnwrap(png.dataProvider?.data)
+            let pixels = try XCTUnwrap(CFDataGetBytePtr(data))
+            XCTAssertEqual(pixels[0], UInt8(16 + frameID - 1_000))
+        }
         }
     }
 

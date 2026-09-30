@@ -550,3 +550,147 @@ final class DebugRecordingTriageTests: XCTestCase {
         return directory
     }
 }
+
+extension DebugRecordingTriageTests {
+    private func trackingCandidate(x: Int = 0, index: Int = 0, finalLength: Int = 100,
+                                   source: String = "fallbackPCA") throws -> DebugRecordingCandidate {
+        let points = (0...100).flatMap { x in (0...5).map { PixelPoint(x: x, y: $0) } }
+        let proposal = try XCTUnwrap(saberCandidate(from: points, width: 640, height: 480,
+                                                   collectEndpointDiagnostics: true))
+        let candidate = DebugRecordingCandidate(index: index, candidate: proposal, selectedIndex: index)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(candidate)) as? [String: Any])
+        let raw: [String: Any] = ["first": ["x": x, "y": 2], "second": ["x": x + 100, "y": 2]]
+        let final: [String: Any] = ["first": ["x": x, "y": 2], "second": ["x": x + finalLength, "y": 2]]
+        object["rawPCAEndpoints"] = raw
+        object["finalOutputEndpoints"] = final
+        object["centroid"] = [Double(x + 50), 2.5]
+        object["bbox"] = [x, 0, x + 100, 5]
+        var pipeline = try XCTUnwrap(object["endpointPipeline"] as? [String: Any])
+        pipeline["rawPCA"] = raw; pipeline["robustInterval"] = raw
+        pipeline["finalSelected"] = final; pipeline["endpointSource"] = source
+        pipeline["bodyAdopted"] = source == "bodyPCA"
+        if source == "bodyPCA" { pipeline["body"] = final; pipeline.removeValue(forKey: "fallbackReason") }
+        else { pipeline["fallbackReason"] = "bodyNotStronglyTrimmed" }
+        object["endpointPipeline"] = pipeline
+        return try JSONDecoder().decode(DebugRecordingCandidate.self, from: JSONSerialization.data(withJSONObject: object))
+    }
+
+    private func trackingFrame(_ id: UInt64, candidate: DebugRecordingCandidate?,
+                               alternatives: [DebugRecordingCandidate] = []) throws -> DebugRecordingFrameMetadata {
+        let empty = DebugRecordingColorCandidates([], pipeline: nil)
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(empty)) as? [String: Any])
+        let candidates = candidate.map { [$0] + alternatives } ?? alternatives
+        object["totalCandidateCount"] = candidates.count
+        object["eligibleCandidateCount"] = candidates.count
+        object["topCandidates"] = try candidates.map { try JSONSerialization.jsonObject(with: JSONEncoder().encode($0)) }
+        if let candidate {
+            object["selectedCandidate"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(candidate))
+            object["selectedCandidateIndex"] = candidate.index
+            object["selectedCandidateType"] = candidate.sourceType
+            object["selectedCandidateFinalScore"] = candidate.finalScore
+        }
+        let red = try JSONDecoder().decode(DebugRecordingColorCandidates.self,
+            from: JSONSerialization.data(withJSONObject: object))
+        var diagnosticsObject: [String: Any] = [:]
+        diagnosticsObject["red"] = object
+        diagnosticsObject["blue"] = try JSONSerialization.jsonObject(with: JSONEncoder().encode(empty))
+        let diagnostics = try JSONDecoder().decode(DebugRecordingCandidateDiagnostics.self,
+            from: JSONSerialization.data(withJSONObject: diagnosticsObject))
+        let p = candidate?.finalOutputEndpoints
+        let endpoints = p.map { (PixelPoint(x: $0.first.x, y: $0.first.y), PixelPoint(x: $0.second.x, y: $0.second.y)) }
+        XCTAssertEqual(red.selectedCandidateIndex, candidate?.index)
+        return DebugRecordingFrameMetadata(frameID: id, presentationTimeSeconds: Double(id) / 30,
+            red: DebugRecordingDetection(endpoints: endpoints), blue: .notDetected,
+            redDetectionSucceeded: candidate != nil, blueDetectionSucceeded: false,
+            candidateDiagnostics: diagnostics, forensicCaptured: false, forensicFileName: nil,
+            manualCaptured: false, manualFileName: nil)
+    }
+
+    func testTrackingStableAndFastSmoothTranslationHaveLowInstability() throws {
+        for speed in [0, 160] {
+            let older = try trackingFrame(0, candidate: trackingCandidate(x: 0))
+            let previous = try trackingFrame(1, candidate: trackingCandidate(x: speed))
+            let current = try trackingFrame(2, candidate: trackingCandidate(x: speed * 2))
+            let values = DebugTrackingDiagnostics.measure(current, previous: previous, older: older, color: "red")
+            XCTAssertEqual(values.instabilityScore, 0, accuracy: 0.00001)
+            XCTAssertFalse(values.candidateSwitch)
+        }
+    }
+
+    func testTrackingCandidateSwitchUsesGeometryAndIgnoresListReordering() throws {
+        let a = try trackingCandidate(x: 0, index: 0), b = try trackingCandidate(x: 300, index: 1)
+        let previous = try trackingFrame(1, candidate: a, alternatives: [b])
+        let switched = try trackingFrame(2, candidate: trackingCandidate(x: 300, index: 0),
+                                        alternatives: [trackingCandidate(x: 0, index: 1)])
+        let signal = DebugTrackingDiagnostics.measure(switched, previous: previous, older: nil, color: "red")
+        XCTAssertTrue(signal.candidateSwitch)
+        let reordered = try trackingFrame(2, candidate: trackingCandidate(x: 0, index: 1),
+                                          alternatives: [trackingCandidate(x: 300, index: 0)])
+        XCTAssertFalse(DebugTrackingDiagnostics.measure(reordered, previous: previous, older: nil, color: "red").candidateSwitch)
+    }
+
+    func testTrackingEndpointJumpIsLocalizedAfterStableRawAndRobustGeometry() throws {
+        let older = try trackingFrame(0, candidate: trackingCandidate())
+        let previous = try trackingFrame(1, candidate: trackingCandidate())
+        let current = try trackingFrame(2, candidate: trackingCandidate(finalLength: 350))
+        let values = DebugTrackingDiagnostics.measure(current, previous: previous, older: older, color: "red")
+        XCTAssertFalse(values.candidateSwitch)
+        XCTAssertEqual(values.stageDiscontinuities["rawPCA"], 0)
+        XCTAssertEqual(values.stageDiscontinuities["robustInterval"], 0)
+        XCTAssertGreaterThan(values.stageDiscontinuities["finalSelected"] ?? 0, 1)
+        XCTAssertGreaterThan(values.instabilityScore, 1)
+    }
+
+    func testTrackingEndpointSourceAndDropoutRemainExplicit() throws {
+        let previous = try trackingFrame(1, candidate: trackingCandidate())
+        let changed = try trackingFrame(2, candidate: trackingCandidate(source: "bodyPCA"))
+        let values = DebugTrackingDiagnostics.measure(changed, previous: previous, older: nil, color: "red")
+        XCTAssertTrue(values.endpointPathChanged)
+        XCTAssertEqual(values.instabilityScore, 1)
+        let missing = try trackingFrame(3, candidate: nil)
+        let dropout = DebugTrackingDiagnostics.measure(missing, previous: changed, older: previous, color: "red")
+        XCTAssertTrue(dropout.detectedToggle)
+        let recovered = DebugTrackingDiagnostics.measure(changed, previous: missing, older: previous, color: "red")
+        XCTAssertTrue(recovered.detectedToggle)
+    }
+
+    func testCompoundWeakBridgeShowsSatisfiedTriggerConditions() throws {
+        let points = (0...100).flatMap { x in (0...5).map { PixelPoint(x: x, y: $0) } }
+        var candidate = try XCTUnwrap(saberCandidate(from: points, width: 640, height: 480))
+        candidate.source = "core-line-weak-bridge"
+        candidate.isEmitterEligible = false
+        candidate.diagnosticRejections = [
+            SaberEligibilityDecision(name: "core-line-weak-bridge.span", value: 78.3, comparison: ">=", threshold: 32.4),
+            SaberEligibilityDecision(name: "core-line-weak-bridge.retainedBody", value: 0.56, comparison: "<", threshold: 0.65),
+            SaberEligibilityDecision(name: "core-line-weak-bridge.bodyPurity", value: 0.625, comparison: ">=", threshold: 0.495)]
+        let diagnostic = DebugRecordingCandidate(index: 0, candidate: candidate, selectedIndex: nil)
+        XCTAssertTrue(diagnostic.rejectionReasons.contains("core-line-weak-bridge"))
+        XCTAssertFalse(diagnostic.eligibilityRules.contains { $0.name == "core-line-weak-bridge.bodyPurity" })
+        XCTAssertEqual(diagnostic.compoundRejections.first?.conditions.map(\.satisfied), [true, true, true])
+        XCTAssertEqual(diagnostic.compoundRejections.first?.conditions.map(\.comparison), [">=", "<", ">="])
+        let directory = try makeTemporaryDirectory()
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let frame = try trackingFrame(1, candidate: nil, alternatives: [diagnostic])
+        var object = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(frame)) as? [String: Any])
+        object["forensicCaptured"] = true; object["forensicFileName"] = "compound.png"
+        try Data("lossless".utf8).write(to: directory.appendingPathComponent("compound.png"))
+        let document: [String: Any] = ["sessionID": "compound_contract", "frames": [object]]
+        let bundle = try DebugRecordingTriageBuilder.build(
+            metadataData: JSONSerialization.data(withJSONObject: document),
+            metadataURL: directory.appendingPathComponent("metadata.json"), forensicDirectoryURL: directory)
+        let summary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+        let image = try XCTUnwrap((summary["images"] as? [[String: Any]])?.first)
+        let contextPath = try XCTUnwrap(image["frameContextPath"] as? String)
+        let context = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent(contextPath))) as? [String: Any])
+        let contextFrame = try XCTUnwrap((context["frames"] as? [[String: Any]])?.first)
+        let red = try XCTUnwrap(contextFrame["red"] as? [String: Any])
+        let trace = try XCTUnwrap((red["candidateDecisionTrace"] as? [[String: Any]])?.first)
+        let rules = try XCTUnwrap(trace["rules"] as? [[String: Any]])
+        let parent = try XCTUnwrap(rules.first { $0["name"] as? String == "core-line-weak-bridge" })
+        XCTAssertEqual(Set(parent.keys), Set(["name", "result", "value", "comparison", "threshold"]))
+        XCTAssertTrue(parent["value"] is NSNull)
+        XCTAssertEqual((trace["compoundRejections"] as? [[String: Any]])?.count, 1)
+    }
+}

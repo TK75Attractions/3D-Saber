@@ -274,6 +274,32 @@ struct DebugRecordingEligibilityRule: Codable, Equatable {
     let threshold: Double?
 }
 
+struct DebugRecordingCondition: Codable, Equatable {
+    let condition: String
+    let value: Double?
+    let comparison: String?
+    let threshold: Double?
+    let satisfied: Bool?
+}
+struct DebugRecordingCompoundRule: Codable, Equatable {
+    let rejectionRule: String
+    let conditions: [DebugRecordingCondition]
+}
+struct DebugRecordingEndpointPipeline: Codable, Equatable {
+    let coordinateSpace: String
+    let rawPCA: DebugRecordingEndpoints
+    let body: DebugRecordingEndpoints?
+    let robustInterval: DebugRecordingEndpoints?
+    let fallback: DebugRecordingEndpoints?
+    let finalSelected: DebugRecordingEndpoints
+    let endpointSource: String
+    let bodyAdopted: Bool
+    let robustIntervalAdopted: Bool
+    let fallbackReason: String?
+    let gatingValues: [String: Double]
+    let gatingCoordinateSpace: String
+}
+
 struct DebugRecordingCandidate: Codable, Equatable {
     let index: Int
     let selected: Bool
@@ -300,9 +326,46 @@ struct DebugRecordingCandidate: Codable, Equatable {
     let isCompactRed: Bool
     let eligibilityRules: [DebugRecordingEligibilityRule]
     let rejectionReasons: [String]
+    let compoundRejections: [DebugRecordingCompoundRule]
+    let centroid: [Double]?
+    let bbox: [Int]
+    let endpointPipeline: DebugRecordingEndpointPipeline
 
     init(index: Int, candidate: SaberCandidate, selectedIndex: Int?) {
         self.index = index
+        let trace = candidate.endpointDiagnosticTrace
+        centroid = trace.map { [$0.centroidX, $0.centroidY] }
+        let box = candidate.boundingBox
+        bbox = [box.minX, box.minY, box.maxX, box.maxY]
+        var gating = ["retainedBodyRatio": candidate.retainedBodyRatio,
+                      "continuity": candidate.longitudinalContinuity,
+                      "density": candidate.axialDensity,
+                      "largestGap": Double(candidate.largestLongitudinalGap)]
+        if let trace {
+            gating = trace.gatingValues
+            gating["bodyPointCount"] = Double(trace.bodyPointCount)
+            gating["minimumArea"] = Double(trace.minimumArea)
+            gating["establishedContinuousBody"] = trace.establishedContinuousBody ? 1 : 0
+            gating["denseTrimmedCoreLine"] = trace.denseTrimmedCoreLine ? 1 : 0
+            gating["stronglyTrimmedCoreLine"] = trace.stronglyTrimmedCoreLine ? 1 : 0
+            gating["diffusedBlueBody"] = trace.diffusedBlueBody ? 1 : 0
+        }
+        let fallbackReason: String?
+        if !candidate.usedPointLEDFallback { fallbackReason = nil }
+        else if let trace, trace.bodyPointCount < trace.minimumArea { fallbackReason = "insufficientBodyPoints" }
+        else if candidate.retainedBodyRatio >= 0.85 { fallbackReason = "bodyNotStronglyTrimmed" }
+        else { fallbackReason = "bodySupportOrPCAUnavailable" }
+        endpointPipeline = DebugRecordingEndpointPipeline(
+            coordinateSpace: "sourceImagePixels",
+            rawPCA: DebugRecordingEndpoints(candidate.comparisonEndpoints),
+            body: trace?.bodyEndpoints.map(DebugRecordingEndpoints.init),
+            robustInterval: candidate.robustMainIntervalEndpoints.map(DebugRecordingEndpoints.init),
+            fallback: candidate.usedPointLEDFallback ? DebugRecordingEndpoints(candidate.comparisonEndpoints) : nil,
+            finalSelected: DebugRecordingEndpoints(candidate.endpoints),
+            endpointSource: candidate.usedPointLEDFallback ? "fallbackPCA" : "bodyPCA",
+            bodyAdopted: !candidate.usedPointLEDFallback,
+            robustIntervalAdopted: false, fallbackReason: fallbackReason, gatingValues: gating,
+            gatingCoordinateSpace: trace == nil ? "sourceImageMetricsOnly" : "maskGridAtDecision")
         selected = index == selectedIndex
         sourceType = candidate.source
         eligible = candidate.isEmitterEligible
@@ -381,7 +444,7 @@ struct DebugRecordingCandidate: Codable, Equatable {
                 check("independentPaleHighValue", high, ">=", 0.75, high >= 0.75)
             }
         }
-        for event in candidate.diagnosticRejections {
+        for event in candidate.diagnosticRejections where !event.name.hasPrefix("core-line-weak-bridge.") {
             rules.append(DebugRecordingEligibilityRule(name: event.name, result: "FAIL",
                 value: event.value, comparison: event.comparison,
                 threshold: event.threshold))
@@ -397,6 +460,13 @@ struct DebugRecordingCandidate: Codable, Equatable {
             rules.append(DebugRecordingEligibilityRule(name: marker,
                 result: "FAIL", value: nil, comparison: nil, threshold: nil))
         }
+        let bridge = candidate.diagnosticRejections.filter { $0.name.hasPrefix("core-line-weak-bridge.") }
+        compoundRejections = bridge.isEmpty ? [] : [DebugRecordingCompoundRule(
+            rejectionRule: "core-line-weak-bridge", conditions: bridge.map { event in
+                DebugRecordingCondition(condition: String(event.name.split(separator: ".").last!),
+                    value: event.value, comparison: event.comparison, threshold: event.threshold,
+                    satisfied: DebugTrackingDiagnostics.compare(event.value, event.comparison, event.threshold))
+            })]
         eligibilityRules = rules
         rejectionReasons = candidate.isEmitterEligible ? [] : rules.filter {
             $0.result == "FAIL"
@@ -418,8 +488,13 @@ struct DebugRecordingColorCandidates: Codable, Equatable {
     let selectedCandidateScoreBreakdown: DebugRecordingScoreBreakdown?
     let selectedCandidate: DebugRecordingCandidate?
     let topCandidates: [DebugRecordingCandidate]
+    let secondBestScore: Double?
+    let scoreMargin: Double?
 
     init(_ candidates: [SaberCandidate], pipeline: SaberColorPipelineDiagnostics?) {
+        let scores = candidates.filter(\.isEmitterEligible).map(\.score).sorted(by: >)
+        secondBestScore = scores.count > 1 ? scores[1] : nil
+        scoreMargin = scores.count > 1 ? scores[0] - scores[1] : nil
         totalCandidateCount = candidates.count
         eligibleCandidateCount = candidates.filter(\.isEmitterEligible).count
         maskPixelCount = pipeline?.maskPixelCount ?? 0
@@ -515,6 +590,7 @@ struct DebugRecordingFrameMetadata: Codable, Equatable {
     var redDropoutFileName: String?
     var processingTimeSeconds: Double? = nil
     var motionEventIndex: Int? = nil
+    var tracking: [String: DebugTrackingFrame] = [:]
 }
 
 struct DebugRecordingMetadata: Codable, Equatable {
@@ -613,13 +689,16 @@ private final class DebugRecordingMetadataStream {
     }
 
     func finish(cameraSamples: [DebugRecordingCameraSample],
-                motionEvents: [[String: Any]], motionSummary: [String: Any]) throws {
+                motionEvents: [[String: Any]], motionSummary: [String: Any],
+                transmissions: [[String: Any]] = []) throws {
         let sampleData = try encoder.encode(cameraSamples)
         let eventData = try JSONSerialization.data(withJSONObject: motionEvents)
         let summaryData = try JSONSerialization.data(withJSONObject: motionSummary)
+        let transmissionData = try JSONSerialization.data(withJSONObject: transmissions)
         let suffixCount = Data("],\"cameraSamples\":".utf8).count + sampleData.count
             + Data(",\"motionEvents\":".utf8).count + eventData.count
-            + Data(",\"motionSummary\":".utf8).count + summaryData.count + 1
+            + Data(",\"motionSummary\":".utf8).count + summaryData.count
+            + Data(",\"udpTransmissions\":".utf8).count + transmissionData.count + 1
         guard bytesWritten + Int64(suffixCount) <= DebugRecordingLimits.maximumMetadataBytes else {
             throw DebugVideoRecorderError.metadataSizeLimitReached
         }
@@ -629,6 +708,8 @@ private final class DebugRecordingMetadataStream {
         try handle.write(contentsOf: eventData)
         try handle.write(contentsOf: Data(",\"motionSummary\":".utf8))
         try handle.write(contentsOf: summaryData)
+        try handle.write(contentsOf: Data(",\"udpTransmissions\":".utf8))
+        try handle.write(contentsOf: transmissionData)
         try handle.write(contentsOf: Data("}".utf8))
         try handle.synchronize()
         try handle.close()
@@ -679,8 +760,17 @@ private struct DebugMotionCapturedEvent: Sendable {
     var pre: DebugMotionPixelFrame?
     var at: DebugMotionPixelFrame
     var post: DebugMotionPixelFrame?
+    var temporalFrames: [DebugMotionPixelFrame] = []
 
     var frames: [(String, DebugMotionPixelFrame)] {
+        if !temporalFrames.isEmpty {
+            return temporalFrames.map { frame in
+                let offset = Int(frame.frameID) - Int(at.frameID)
+                let role = offset == 0 ? "peak" : (offset == -1 ? "onset" :
+                    (offset < 0 ? "before" : (offset == 5 ? "recovery" : "after")))
+                return (role, frame)
+            }
+        }
         var result: [(String, DebugMotionPixelFrame)] = []
         if let pre { result.append(("event_pre", pre)) }
         result.append(("event_at", at))
@@ -762,6 +852,18 @@ final class DebugVideoRecorder {
     private var motionDetector = DebugMotionDetector()
     private var motionPreRoll: [DebugMotionPixelFrame] = []
     private var motionCaptures: [DebugMotionCapturedEvent] = []
+    private var trackingRecent: [DebugMotionPixelFrame] = []
+    private var trackingCapture: DebugMotionCapturedEvent?
+    private var trackingRankings: [(frameID: UInt64, color: String, components: [String: Double])] = []
+    private var trackingMissingContext = false
+#if DEBUG
+    var injectedTrackingCopyFailureFrameIDForTesting: UInt64?
+#endif
+    private var transmissionRecords: [[String: Any]] = []
+    private var previousTrackingFrame: DebugRecordingFrameMetadata?
+    private var olderTrackingFrame: DebugRecordingFrameMetadata?
+    private static let trackingEventIndex = 1_000_000_000
+
     private var motionRejectionReasons: [Int: String] = [:]
     private var motionObservationCount = 0
     private var motionObservationTotalMs = 0.0
@@ -938,6 +1040,12 @@ final class DebugVideoRecorder {
             processingTimeSeconds: processingTimeSeconds
         )
         let motionStarted = clock()
+        for color in ["red", "blue"] {
+            frame.tracking[color] = DebugTrackingDiagnostics.measure(frame,
+                previous: previousTrackingFrame, older: olderTrackingFrame, color: color)
+        }
+        olderTrackingFrame = previousTrackingFrame
+        previousTrackingFrame = frame
         observeMotionFrame(pixelBuffer: pixelBuffer, frame: &frame, width: width, height: height)
         let motionMs = max(0, (clock() - motionStarted) * 1000)
         motionObservationCount += 1
@@ -1024,7 +1132,8 @@ final class DebugVideoRecorder {
 
     private func motionColor(_ detection: DebugRecordingDetection,
                              succeeded: Bool,
-                             candidates: DebugRecordingColorCandidates?) -> DebugMotionColorSample {
+                             candidates: DebugRecordingColorCandidates?,
+                             tracking: DebugTrackingFrame? = nil) -> DebugMotionColorSample {
         var best: Double?
         var second: Double?
         var smallestMargin: Double?
@@ -1054,7 +1163,8 @@ final class DebugVideoRecorder {
             topScoreGap: best.flatMap { first in second.map { first - $0 } },
             failedRuleMargin: smallestMargin,
             selectedCandidateType: candidates?.selectedCandidateType,
-            selectedCandidateIndex: candidates?.selectedCandidateIndex
+            selectedCandidateIndex: candidates?.selectedCandidateIndex,
+            candidateSwitch: tracking?.candidateSwitch
         )
     }
 
@@ -1066,9 +1176,9 @@ final class DebugVideoRecorder {
             frameID: frame.frameID, timestamp: frame.presentationTimeSeconds,
             processingSeconds: frame.processingTimeSeconds ?? 0,
             red: motionColor(frame.red, succeeded: frame.redDetectionSucceeded,
-                             candidates: frame.candidateDiagnostics?.red),
+                             candidates: frame.candidateDiagnostics?.red, tracking: frame.tracking["red"]),
             blue: motionColor(frame.blue, succeeded: frame.blueDetectionSucceeded,
-                              candidates: frame.candidateDiagnostics?.blue)
+                              candidates: frame.candidateDiagnostics?.blue, tracking: frame.tracking["blue"])
         )
         let hits = motionDetector.observe(sample)
         frame.motionEventIndex = hits.first?.index
@@ -1076,7 +1186,13 @@ final class DebugVideoRecorder {
             pixelBuffer: pixelBuffer, frameID: frame.frameID,
             timestamp: frame.presentationTimeSeconds, width: width, height: height,
             metadata: frame)
-        for hit in hits { retainMotionEvent(hit, current: pixelFrame) }
+        let hasTrackingEvidence = frame.candidateDiagnostics?.red.selectedCandidate?.centroid != nil
+            || frame.candidateDiagnostics?.blue.selectedCandidate?.centroid != nil
+        if hasTrackingEvidence || trackingCapture != nil {
+            retainTrackingFrame(pixelFrame)
+        } else {
+            for hit in hits { retainMotionEvent(hit, current: pixelFrame) }
+        }
         for index in motionCaptures.indices where motionCaptures[index].post == nil {
             if frame.presentationTimeSeconds >= motionCaptures[index].endTime
                 + DebugMotionThresholds.postRollSeconds,
@@ -1084,7 +1200,7 @@ final class DebugVideoRecorder {
                 motionCaptures[index].post = pixelFrame
             }
         }
-        if recordedFrameCount % DebugMotionThresholds.preRollStride == 0 {
+        if trackingCapture == nil && recordedFrameCount % DebugMotionThresholds.preRollStride == 0 {
             motionPreRoll.append(pixelFrame)
             motionPreRoll.removeAll {
                 frame.presentationTimeSeconds - $0.timestamp > DebugMotionThresholds.preRollSeconds
@@ -1098,7 +1214,7 @@ final class DebugVideoRecorder {
     }
 
     private func motionRetainedBytes() -> Int {
-        legacyReferenceReservationBytes + motionPreRoll.reduce(0) { $0 + $1.byteCount }
+        legacyReferenceReservationBytes + trackingRetainedBytes() + motionPreRoll.reduce(0) { $0 + $1.byteCount }
             + motionCaptures.reduce(0) { total, event in
                 total + event.at.byteCount + (event.pre?.byteCount ?? 0)
                     + (event.post?.byteCount ?? 0)
@@ -1157,15 +1273,123 @@ final class DebugVideoRecorder {
         motionCaptures.append(capture)
     }
 
+    // Keeps five adjacent originals plus the strongest eleven-frame window.
+    // Independent storage prevents retaining capture-pool buffers while a saber moves.
+    private func retainTrackingFrame(_ source: DebugMotionPixelFrame) {
+        let color = (source.metadata.tracking["red"]?.instabilityScore ?? 0)
+            >= (source.metadata.tracking["blue"]?.instabilityScore ?? 0) ? "red" : "blue"
+        let score = source.metadata.tracking[color]?.instabilityScore ?? 0
+        for color in ["red", "blue"] {
+            if let measurement = source.metadata.tracking[color] {
+                trackingRankings.append((source.frameID, color, measurement.scoreComponents))
+            }
+        }
+#if DEBUG
+        if source.frameID == injectedTrackingCopyFailureFrameIDForTesting {
+            trackingMissingContext = true
+            trackingRecent.removeAll()
+            return
+        }
+#endif
+        guard canRetainMotion(source.byteCount) else {
+            trackingMissingContext = true
+            trackingRecent.removeAll()
+            return
+        }
+        var copy: CVPixelBuffer?
+        guard CVPixelBufferCreate(kCFAllocatorDefault, source.width, source.height,
+            kCVPixelFormatType_32BGRA, nil, &copy) == kCVReturnSuccess, let copy,
+            CVPixelBufferLockBaseAddress(copy, []) == kCVReturnSuccess else {
+            trackingMissingContext = true
+            return
+        }
+        defer { CVPixelBufferUnlockBaseAddress(copy, []) }
+        guard let src = CVPixelBufferGetBaseAddress(source.pixelBuffer),
+              let dst = CVPixelBufferGetBaseAddress(copy) else { return }
+        let srcStride = CVPixelBufferGetBytesPerRow(source.pixelBuffer)
+        let dstStride = CVPixelBufferGetBytesPerRow(copy)
+        for row in 0..<source.height {
+            memcpy(dst.advanced(by: row * dstStride), src.advanced(by: row * srcStride), source.width * 4)
+        }
+        let frame = DebugMotionPixelFrame(pixelBuffer: copy, frameID: source.frameID,
+            timestamp: source.timestamp, width: source.width, height: source.height,
+            metadata: source.metadata)
+        let preceding = trackingRecent.filter {
+            source.frameID > $0.frameID && source.frameID - $0.frameID <= 5
+        }
+        let existingPreCount = trackingCapture.flatMap { capture in
+            capture.temporalFrames.firstIndex { $0.frameID == capture.at.frameID }
+        } ?? -1
+        if score > (trackingCapture?.peakScore ?? -1)
+            || (score == trackingCapture?.peakScore && preceding.count > existingPreCount) {
+            motionCaptures.removeAll()
+            motionPreRoll.removeAll()
+            trackingCapture = DebugMotionCapturedEvent(index: Self.trackingEventIndex,
+                color: color, peakScore: score, endTime: frame.timestamp,
+                pre: nil, at: frame, post: nil, temporalFrames: preceding + [frame])
+        } else if var capture = trackingCapture,
+                  frame.frameID > capture.at.frameID,
+                  frame.frameID - capture.at.frameID <= 5 {
+            capture.temporalFrames.append(frame)
+            capture.endTime = frame.timestamp
+            trackingCapture = capture
+        }
+        trackingRecent.append(frame)
+        if trackingRecent.count > 5 { trackingRecent.removeFirst() }
+    }
+
+    private func trackingRetainedBytes() -> Int {
+        var unique: [UInt64: Int] = [:]
+        for frame in trackingRecent + (trackingCapture?.temporalFrames ?? []) {
+            unique[frame.frameID] = frame.byteCount
+        }
+        return unique.values.reduce(0, +)
+    }
+
+    func recordTransmission(frameID: UInt64, color: String, coordinates: String,
+                            sourceEndpoints: (PixelPoint, PixelPoint)) {
+        guard !isFinishing, transmissionRecords.count < 18_000 else { return }
+        let points = coordinates.split(separator: ",").compactMap { Double($0) }
+        guard points.count == 4, points.allSatisfy(\.isFinite) else { return }
+        transmissionRecords.append(["frameID": frameID, "color": color,
+            "endpoint": points, "sourceEndpoint": DebugTrackingDiagnostics.values(DebugRecordingEndpoints(sourceEndpoints))!,
+            "coordinateSpace": "configuredUDPOutputPixels",
+            "state": "sendStarted", "hostTimestamp": HostMonotonicClock.now()])
+    }
+
     private func motionEventEntries() -> [[String: Any]] {
-        motionCaptures.sorted { $0.peakScore > $1.peakScore }.map { capture in
-            let event = motionDetector.events[capture.index]
-            var entry = event.dictionary
+        (motionCaptures + (trackingCapture.map { [$0] } ?? [])).sorted { $0.peakScore > $1.peakScore }.map { capture in
+            var entry: [String: Any]
+            if capture.index == Self.trackingEventIndex {
+                // Final score/ranking is materialized after Stop from the recording ledger.
+                let ranked = trackingRankings.map { sample in
+                    (sample.frameID, sample.color, DebugTrackingDiagnostics.rankingScore(sample.components))
+                }.sorted { $0.2 > $1.2 }
+                let retainedRank = ranked.first { $0.0 == capture.at.frameID && $0.1 == capture.color }
+                let finalScore = retainedRank?.2 ?? capture.peakScore
+                let recordingMaximum = ranked.first
+                entry = ["eventIndex": capture.index, "color": capture.color,
+                    "startFrameID": capture.temporalFrames.first?.frameID ?? capture.at.frameID,
+                    "endFrameID": capture.temporalFrames.last?.frameID ?? capture.at.frameID,
+                    "startTime": capture.temporalFrames.first?.timestamp ?? capture.at.timestamp,
+                    "endTime": capture.endTime, "peakScore": finalScore,
+                    "centerFrameID": capture.at.frameID, "eventType": "trackingInstability",
+                    "rankingOnly": true, "rankedFrameCount": ranked.count,
+                    "recordingMaxFrameID": recordingMaximum?.0 ?? capture.at.frameID,
+                    "recordingMaxScore": recordingMaximum?.2 ?? finalScore,
+                    "recordingMaxRetained": recordingMaximum?.0 == capture.at.frameID
+                        && recordingMaximum?.1 == capture.color,
+                    "contextIncomplete": trackingMissingContext || capture.temporalFrames.count != 11,
+                    "signals": [DebugMotionSignal(kind: "tracking_instability", color: capture.color,
+                        value: finalScore, threshold: 1, score: finalScore).dictionary]]
+            } else {
+                entry = motionDetector.events[capture.index].dictionary
+            }
             entry["images"] = capture.frames.map { role, frame in
                 var image: [String: Any] = ["role": role, "frameID": frame.frameID,
                     "timestamp": frame.timestamp,
                     "fileName": "motion_event_\(capture.index)_\(role)_\(frame.frameID).png"]
-                if role == "event_at" {
+                if role == "event_at" || role == "peak" {
                     image["overlayFileName"] =
                         "motion_event_\(capture.index)_overlay_\(frame.frameID).png"
                 }
@@ -1177,11 +1401,14 @@ final class DebugVideoRecorder {
 
     private func motionSummary() -> [String: Any] {
         let retained = Set(motionCaptures.map(\.index))
-        let events = motionDetector.events.map { event -> [Any] in
+        var events = motionDetector.events.map { event -> [Any] in
             let status = retained.contains(event.index) ? "retained"
                 : (motionRejectionReasons[event.index] ?? "memory")
             return [event.index, event.color,
                 (event.peakScore * 1_000).rounded() / 1_000, status]
+        }
+        if let capture = trackingCapture {
+            events.append([capture.index, capture.color, capture.peakScore, "retained"])
         }
         var stats: [String: [String: Any]] = [:]
         for kind in ["dropout", "flicker", "endpoint_jump", "length_change",
@@ -1193,7 +1420,7 @@ final class DebugVideoRecorder {
                     / Double(max(1, count)),
                 "maxScore": motionDetector.signalScoreMaxima[kind, default: 0]]
         }
-        return ["events": events,
+        var result: [String: Any] = ["events": events,
                 "eventColumns": ["eventIndex", "color", "peakScore", "selectionCode"],
                 "selectionCodes": ["retained": "top-scoring event with lossless frames",
                     "lower_score": "lower anomaly score than retained events",
@@ -1204,8 +1431,8 @@ final class DebugVideoRecorder {
                     "byte_limit": "64 MiB transport byte budget reached"],
                 "signalDistributions": stats,
                 "distributionScope": "above-threshold signals across both colors; includes zero counts",
-                "processingTimeScope": "FrameProcessor start through recognition and UDP emission, before recorder append",
-                "memoryScope": "conservative sum of motion references, legacy BGRA copies and reservation for two legacy last-detected references; excludes camera/writer pools and Stop-time PNG/overlay work",
+                "processingTimeScope": "FrameProcessor start through recognition and result callback enqueue; excludes asynchronous UDP send and recorder append",
+                "memoryScope": "conservative sum of unique tracking copies, motion references, legacy BGRA copies and reservation for two legacy last-detected references; excludes camera/writer pools and Stop-time PNG/overlay work",
                 "runtime": ["observedFrames": motionObservationCount,
                     "meanObservationMs": motionObservationTotalMs
                         / Double(max(1, motionObservationCount)),
@@ -1242,6 +1469,21 @@ final class DebugVideoRecorder {
                     "maximumSelectedEvents": DebugMotionThresholds.maximumSelectedEvents,
                     "maximumEventImages": DebugMotionThresholds.maximumEventImages,
                     "maximumRetainedBGRABytes": DebugMotionThresholds.maximumRetainedBGRABytes]]
+        if let capture = trackingCapture {
+            let maximum = trackingRankings.max {
+                DebugTrackingDiagnostics.rankingScore($0.components)
+                    < DebugTrackingDiagnostics.rankingScore($1.components)
+            }
+            result["trackingCapture"] = ["recordingMaxFrameID": maximum?.frameID ?? capture.at.frameID,
+                "recordingMaxColor": maximum?.color ?? capture.color,
+                "recordingMaxScore": maximum.map { DebugTrackingDiagnostics.rankingScore($0.components) } ?? capture.peakScore,
+                "retainedPeakFrameID": capture.at.frameID, "retainedPeakColor": capture.color,
+                "retainedPeakScore": capture.peakScore, "temporalFramesRetained": capture.temporalFrames.count,
+                "highestRankedFrameMissing": (maximum?.frameID != capture.at.frameID || maximum?.color != capture.color)
+                    && (maximum.map { DebugTrackingDiagnostics.rankingScore($0.components) } ?? 0) > capture.peakScore,
+                "contextIncomplete": trackingMissingContext || capture.temporalFrames.count != 11]
+        }
+        return result
     }
 
     func finish(
@@ -1285,7 +1527,8 @@ final class DebugVideoRecorder {
                 self.pendingMetadataFrame = nil
             }
             try metadataStream?.finish(cameraSamples: cameraSamples,
-                motionEvents: selectedMotionEvents, motionSummary: selectedMotionSummary)
+                motionEvents: selectedMotionEvents, motionSummary: selectedMotionSummary,
+                transmissions: transmissionRecords)
         } catch {
             metadataStream?.discard()
             writerInput.markAsFinished()
@@ -1293,7 +1536,7 @@ final class DebugVideoRecorder {
             return
         }
         let forensicFrames = forensicFrames
-        let motionCaptures = motionCaptures
+        let motionCaptures = motionCaptures + (trackingCapture.map { [$0] } ?? [])
         var triageByID = Dictionary(uniqueKeysWithValues:
             triageAccumulator.retainedFrames.map { ($0.frameID, $0) })
         for capture in motionCaptures {
@@ -1304,6 +1547,7 @@ final class DebugVideoRecorder {
             }
         }
         let triageFrames = triageByID.values.sorted { $0.frameID < $1.frameID }
+        let transmissions = transmissionRecords
         let stream = metadataStream
         let dropped = droppedFrameCount
         let frameCount = recordedFrameCount
@@ -1351,7 +1595,7 @@ final class DebugVideoRecorder {
                                 let fileName = "motion_event_\(capture.index)_\(role)_\(frame.frameID).png"
                                 try DebugVideoRecorder.writeMotionPNG(
                                     frame, fileName: fileName, directory: forensicDirectoryURL)
-                                if role == "event_at" {
+                                if role == "event_at" || role == "peak" {
                                     do {
                                         try DebugVideoRecorder.writeMotionOverlayPNG(
                                             frame,
@@ -1381,6 +1625,7 @@ final class DebugVideoRecorder {
                         with: JSONEncoder().encode(snapshot)) as! [String: Any]
                     snapshotObject["motionEvents"] = selectedMotionEvents
                     snapshotObject["motionSummary"] = selectedMotionSummary
+                    snapshotObject["udpTransmissions"] = transmissions
                     let snapshotData = try JSONSerialization.data(withJSONObject: snapshotObject)
                     var triageBundleURL: URL?
                     var triageErrorMessage: String?

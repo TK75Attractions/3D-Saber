@@ -183,3 +183,7 @@ their meaning. Compact event contexts add role, event ID, score and measured
 signals; lossless originals and overlays are separate. See
 [Debug Recording motion evidence](DEBUG_MOTION_EVENTS.md) for limits, metric
 scope, selection ledger and conservative repair acceptance.
+
+## Tracking / endpoint diagnostics
+
+録画限定の追加schema、座標系、temporal PNG mapping、compound rejection、安全gateは [TRACKING_DIAGNOSTICS.md](TRACKING_DIAGNOSTICS.md) を参照。version 1へのadditive fieldsで、legacy sessionsのPython解析を維持する。

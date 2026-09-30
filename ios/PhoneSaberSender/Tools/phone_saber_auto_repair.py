@@ -32,6 +32,7 @@ from phone_saber_triage_codex import (
     is_model_unavailable,
 )
 from phone_saber_triage_protocol import BundleError
+from phone_saber_tracking_diagnostics import temporal_events, sufficient_temporal, supports_temporal_images, tracking_repair_required
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -209,6 +210,7 @@ def repair_gate(report: dict[str, Any], plan: Any, repo: Path) -> dict[str, Any]
     analysis = report["analysis"]
     assessment = analysis.get("repair_assessment")
     reasons: list[str] = []
+    reason_codes: set[str] = set()
     if report["formatVersion"] != 3 or not isinstance(assessment, dict):
         reasons.append("legacy analysis lacks machine-readable repair evidence")
     else:
@@ -281,9 +283,63 @@ def repair_gate(report: dict[str, Any], plan: Any, repo: Path) -> dict[str, Any]
                 reasons.append(detail)
         else:
             detail = "formal corpus not assessed without an affected color"
+    events = temporal_events(plan)
+    tracking_required = tracking_repair_required(analysis, events)
+    if tracking_required:
+        proposal = analysis.get("tracking_assessment", {})
+        references = set(proposal.get("temporal_image_ids", []))
+        selected_events = [e for e in events if e["color"].upper() in (assessment or {}).get("affected_colors", [])]
+        if not events:
+            reason_codes.add("frameMappingMissing")
+        if not selected_events or not any(sufficient_temporal(e) for e in selected_events):
+            reason_codes.add("temporalEvidenceMissing")
+        if not any(sum(bool(f["selectedCandidate"]) for f in e["frames"]) >= 3 for e in selected_events):
+            reason_codes.add("insufficientCandidateHistory")
+        if not any(sum(bool((f["selectedCandidate"] or {}).get("endpointPipeline"))
+                       for f in e["frames"]) >= 3 for e in selected_events):
+            reason_codes.add("insufficientEndpointHistory")
+        if not proposal.get("symptom_confirmed_in_images") or not any(
+                supports_temporal_images(e, references) for e in selected_events):
+            reason_codes.add("visualEvidenceMissing")
+        stage = proposal.get("first_unstable_stage", "unknown")
+        expected_coarse = {"candidate_selection": {"ranking", "candidate_generation"},
+            "mask_component": {"segmentation", "candidate_generation"}, "PCA": {"endpoint"},
+            "robust_body": {"endpoint"}, "endpoint_selection": {"endpoint"},
+            "fallback": {"endpoint"}}
+        if stage not in expected_coarse:
+            reason_codes.add("rootCauseStageUnknown" if stage == "unknown" else "productionChangeUnsupported")
+        elif assessment.get("root_cause_stage") not in expected_coarse[stage]:
+            reason_codes.add("rootCauseStageUnknown")
+        if not all(isinstance(proposal.get(key), str) and proposal[key].strip()
+                   and proposal[key].strip().lower() not in {"unknown", "none", "n/a"}
+                   for key in ("concrete_cause", "concrete_production_change", "expected_effect", "regression_risk")):
+            reason_codes.add("noConcreteRepairProposed")
+        for code in sorted(reason_codes):
+            reasons.append(f"tracking evidence requirement not satisfied: {code}")
+    for reason in reasons:
+        text = reason.lower()
+        if "do not confirm a real saber" in text or "selected visual evidence is missing" in text:
+            reason_codes.add("visualEvidenceMissing")
+        if "root-cause stage" in text:
+            reason_codes.add("rootCauseStageUnknown")
+        if "no concrete" in text:
+            reason_codes.add("noConcreteRepairProposed")
+        if "production change" in text or "latency-only" in text:
+            reason_codes.add("productionChangeUnsupported")
+        if "model provenance" in text or "pinned role" in text:
+            reason_codes.add("analysisProvenanceInvalid")
+        if "corpus" in text and "not assessed" not in text:
+            reason_codes.add("regressionCoverageMissing")
+        if "threshold change" in text:
+            reason_codes.add("insufficientIndependentVisualExamples")
+        if "low confidence" in text or "not reconciled" in text:
+            reason_codes.add("diagnosisUnsupported")
+        if "more evidence" in text or "legacy analysis" in text:
+            reason_codes.add("evidenceAssessmentIncomplete")
     return {
         "decision": "actionable" if not reasons else "needs_capture",
         "reasons": reasons,
+        "reasonCodes": sorted(reason_codes),
         "corpus": locals().get("detail", "formal corpus not assessed"),
     }
 
@@ -356,7 +412,7 @@ def _terminal_report(bundle: Path, state: dict[str, Any], gate: dict[str, Any],
         "reviewAttempted": models.get("review", {}).get("attempted", False),
     }
     payload = {"sessionID": state["sessionID"], "status": status,
-               "reason": reason, "attempts": len(attempts), "commit": state.get("commit"),
+               "reason": reason, "reasonCodes": gate.get("reasonCodes", []), "attempts": len(attempts), "commit": state.get("commit"),
                "originMain": state.get("pushedOriginMain"), "dryRun": state.get("dryRun", False),
                **model_fields}
     final_payload = {**payload, "result": label,

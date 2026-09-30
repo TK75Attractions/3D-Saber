@@ -70,6 +70,10 @@ CANDIDATE = object_field({
     "componentArea": scalar("integer", required=True),
     "pointCount": scalar("integer", required=True),
     "usedPointLEDFallback": scalar("boolean", required=True),
+    "centroid": array_field(scalar("number")),
+    "bbox": array_field(scalar("integer")),
+    "endpointPipeline": object_field({}),
+    "compoundRejections": array_field(object_field({})),
 }, required=True)
 
 COLOR_CANDIDATES = object_field({
@@ -86,6 +90,8 @@ COLOR_CANDIDATES = object_field({
     ),
     "selectedCandidate": object_field(CANDIDATE.fields or {}, nullable=True),
     "topCandidates": array_field(CANDIDATE, required=True),
+    "secondBestScore": scalar("number", nullable=True),
+    "scoreMargin": scalar("number", nullable=True),
 }, required=True)
 
 CANDIDATE_DIAGNOSTICS = object_field({
@@ -120,6 +126,7 @@ FRAME = object_field({
     "redDropoutFileName": scalar("string", nullable=True),
     "processingTimeSeconds": scalar("number", nullable=True),
     "motionEventIndex": scalar("integer", nullable=True),
+    "tracking": object_field({"red": object_field({}), "blue": object_field({})}),
 }, required=True)
 
 CAMERA_SAMPLE = object_field({
@@ -150,6 +157,7 @@ ROOT = object_field({
     "cameraSamples": array_field(CAMERA_SAMPLE),
     "motionEvents": array_field(object_field({})),
     "motionSummary": object_field({}),
+    "udpTransmissions": array_field(object_field({})),
 }, required=True)
 
 

@@ -1026,10 +1026,13 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
 #if DEBUG
             sender.send(text, to: port, onSendStarted: { [weak self] queueWait, replaced in
+                result.diagnosticSendStarted?(coordinates)
                 Task { @MainActor in self?.recordUDPQueueStart(queueWait, replaced: replaced) }
             }, completion: completion)
 #else
-            sender.send(text, to: port, completion: completion)
+            sender.send(text, to: port, onSendStarted: result.diagnosticSendStarted.map { callback in
+                { _, _ in callback(coordinates) }
+            }, completion: completion)
 #endif
 #if DEBUG
             udpRequestMs += (ProcessInfo.processInfo.systemUptime - sendRequestStart) * 1000

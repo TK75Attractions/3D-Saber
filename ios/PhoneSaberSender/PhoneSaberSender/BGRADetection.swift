@@ -505,13 +505,13 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             ? { _ in profile.connectedComponentCount += 1 } : nil
         var candidates = saberCandidates(in: cleaned, width: maskWidth, height: maskHeight,
                                          evidence: evidence, stageProfile: candidateStageProfile,
-                                         componentObserver: componentObserver)
+                                         componentObserver: componentObserver, collectEndpointDiagnostics: collectPipelineDiagnostics)
         let closedCandidates = saberCandidates(
             in: closed,
             width: maskWidth, height: maskHeight, evidence: evidence,
             stageProfile: candidateStageProfile,
             componentObserver: additionalComponentObserver
-        )
+        , collectEndpointDiagnostics: collectPipelineDiagnostics)
         for var candidate in closedCandidates where !candidates.contains(where: {
             candidateAxisDistance($0, candidate) <= 3.0
         }) {
@@ -531,7 +531,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 evidence: evidence, stageProfile: candidateStageProfile,
                 componentObserver: additionalComponentObserver,
                 minimumAreaOverride: sparseMinimumArea
-            )
+            , collectEndpointDiagnostics: collectPipelineDiagnostics)
             for var candidate in sparseCandidates {
                 candidate.source = "color-sparse-raw"
                 if let duplicate = candidates.firstIndex(where: {
@@ -556,7 +556,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 width: maskWidth, height: maskHeight, evidence: evidence,
                 stageProfile: candidateStageProfile,
                 componentObserver: additionalComponentObserver
-            ) : []
+            , collectEndpointDiagnostics: collectPipelineDiagnostics) : []
         for var candidate in emitterCandidates where !candidates.contains(where: {
             candidateAxisDistance($0, candidate) <= 3.0
         }) {
@@ -574,7 +574,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 width: maskWidth, height: maskHeight, evidence: evidence,
                 stageProfile: candidateStageProfile,
                 componentObserver: additionalComponentObserver
-            ) : []
+            , collectEndpointDiagnostics: collectPipelineDiagnostics) : []
         for var candidate in coreCandidates where !candidates.contains(where: {
             candidateAxisDistance($0, candidate) <= 3.0
         }) {
@@ -586,7 +586,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             let connectedCore = closeSaberMask(associatedCore, width: maskWidth, height: maskHeight, radius: 4)
             for var candidate in saberCandidates(in: connectedCore, width: maskWidth, height: maskHeight,
                                                   evidence: evidence, stageProfile: candidateStageProfile,
-                                                  componentObserver: additionalComponentObserver) {
+                                                  componentObserver: additionalComponentObserver, collectEndpointDiagnostics: collectPipelineDiagnostics) {
                 let length = hypot(Double(candidate.comparisonEndpoints.1.x - candidate.comparisonEndpoints.0.x),
                                    Double(candidate.comparisonEndpoints.1.y - candidate.comparisonEndpoints.0.y))
                 guard length >= max(12, Double(min(maskWidth, maskHeight)) * 0.10) else { continue }
@@ -609,7 +609,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             if var candidate = saberCandidate(from: proposal, width: maskWidth,
                                               height: maskHeight, evidence: evidence,
                                               source: "core-line",
-                                              stageProfile: candidateStageProfile),
+                                              stageProfile: candidateStageProfile, collectEndpointDiagnostics: collectPipelineDiagnostics),
                !candidates.contains(where: {
                 candidateAxisDistance($0, candidate) <= 10.0
                     || candidateIsSubsegment(candidate, of: $0)
@@ -832,11 +832,11 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                     if collectPipelineDiagnostics {
                         candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
                             name: "core-line-weak-bridge.span",
-                            value: proposal.rawPCASpan, comparison: "<",
+                            value: proposal.rawPCASpan, comparison: ">=",
                             threshold: proposal.robustMainIntervalLength * 1.8))
                         candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
                             name: "core-line-weak-bridge.retainedBody",
-                            value: proposal.retainedBodyRatio, comparison: ">=", threshold: 0.65))
+                            value: proposal.retainedBodyRatio, comparison: "<", threshold: 0.65))
                         if let body = connected.first(where: { body in
                             body.rawPCASpan >= proposal.robustMainIntervalLength * 0.6
                                 && body.meanColorPurity >= proposal.meanColorPurity - 0.10
@@ -846,19 +846,19 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                         }) {
                             candidates[index].diagnosticRejections += [
                                 SaberEligibilityDecision(name: "core-line-weak-bridge.bodySpan",
-                                    value: body.rawPCASpan, comparison: "<",
+                                    value: body.rawPCASpan, comparison: ">=",
                                     threshold: proposal.robustMainIntervalLength * 0.6),
                                 SaberEligibilityDecision(name: "core-line-weak-bridge.bodyPurity",
-                                    value: body.meanColorPurity, comparison: "<",
+                                    value: body.meanColorPurity, comparison: ">=",
                                     threshold: proposal.meanColorPurity - 0.10),
                                 SaberEligibilityDecision(name: "core-line-weak-bridge.bodyHighValue",
-                                    value: body.highValueRatio, comparison: "<",
+                                    value: body.highValueRatio, comparison: ">=",
                                     threshold: proposal.highValueRatio - 0.20),
                                 SaberEligibilityDecision(name: "core-line-weak-bridge.bodyContinuity",
-                                    value: body.longitudinalContinuity, comparison: "<",
+                                    value: body.longitudinalContinuity, comparison: ">=",
                                     threshold: proposal.longitudinalContinuity),
                                 SaberEligibilityDecision(name: "core-line-weak-bridge.bodyDensity",
-                                    value: body.axialDensity, comparison: "<",
+                                    value: body.axialDensity, comparison: ">=",
                                     threshold: proposal.axialDensity)
                             ]
                         }
@@ -1026,7 +1026,20 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 componentArea: candidate.componentArea * step * step,
                 pointCount: candidate.pointCount,
                 usedPointLEDFallback: candidate.usedPointLEDFallback,
-                diagnosticRejections: candidate.diagnosticRejections
+                diagnosticRejections: candidate.diagnosticRejections,
+                endpointDiagnosticTrace: candidate.endpointDiagnosticTrace.map { trace in
+                    SaberEndpointDiagnosticTrace(
+                        centroidX: trace.centroidX * Double(step),
+                        centroidY: trace.centroidY * Double(step),
+                        bodyEndpoints: trace.bodyEndpoints.map {
+                            (PixelPoint(x: $0.0.x * step, y: $0.0.y * step),
+                             PixelPoint(x: $0.1.x * step, y: $0.1.y * step))
+                        }, minimumArea: trace.minimumArea, bodyPointCount: trace.bodyPointCount,
+                        establishedContinuousBody: trace.establishedContinuousBody,
+                        denseTrimmedCoreLine: trace.denseTrimmedCoreLine,
+                        stronglyTrimmedCoreLine: trace.stronglyTrimmedCoreLine,
+                        diffusedBlueBody: trace.diffusedBlueBody, gatingValues: trace.gatingValues)
+                }
             )
         }
         allCandidates[color] = scaled

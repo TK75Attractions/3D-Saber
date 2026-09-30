@@ -7,6 +7,7 @@ struct DetectedSaber {
     let color: SaberColor
     let isFresh: Bool
     let isPredicted: Bool
+    var diagnosticSendStarted: ((String) -> Void)? = nil
 
     init(endpoints: (PixelPoint, PixelPoint), color: SaberColor,
          isFresh: Bool, isPredicted: Bool = false) {
@@ -492,7 +493,7 @@ final class FrameProcessor: @unchecked Sendable {
         #endif
         let emitted = emitResults(detected, width: width, height: height,
                                   processingStart: processingStart,
-                                  generation: generation, trace: trace)
+                                  generation: generation, trace: trace, recordingFrameID: sequence)
         if let debugVideoRecorder = debugVideoRecorder {
             let appendResult = debugVideoRecorder.append(
                 pixelBuffer: pixelBuffer,
@@ -560,8 +561,8 @@ final class FrameProcessor: @unchecked Sendable {
     }
 
     @discardableResult
-    private func emitResults(_ detected: [(SaberColor, (PixelPoint, PixelPoint)?)], width: Int, height: Int, processingStart: TimeInterval, generation: Int, trace: FrameTrace? = nil) -> [DetectedSaber] {
-        let results = detected.compactMap { color, current -> DetectedSaber? in
+    private func emitResults(_ detected: [(SaberColor, (PixelPoint, PixelPoint)?)], width: Int, height: Int, processingStart: TimeInterval, generation: Int, trace: FrameTrace? = nil, recordingFrameID: UInt64? = nil) -> [DetectedSaber] {
+        var results = detected.compactMap { color, current -> DetectedSaber? in
             var track = tracks[color, default: Track()]
             if let current {
                 let endpoints = stableEndpoints(current, previous: track.endpoints)
@@ -595,6 +596,18 @@ final class FrameProcessor: @unchecked Sendable {
             }
             tracks[color] = track
             return DetectedSaber(endpoints: held, color: color, isFresh: false)
+        }
+        if let recorder = debugVideoRecorder, let frameID = recordingFrameID {
+            for index in results.indices where results[index].isFresh {
+                let color = results[index].color == .red ? "red" : "blue"
+                let source = results[index].endpoints
+                results[index].diagnosticSendStarted = { [weak self, weak recorder] coordinates in
+                    self?.queue.async {
+                        recorder?.recordTransmission(frameID: frameID, color: color,
+                            coordinates: coordinates, sourceEndpoints: source)
+                    }
+                }
+            }
         }
         onResult?(results, width, height, processingStart, generation, trace)
         scheduleExpiry(width: width, height: height, generation: generation)

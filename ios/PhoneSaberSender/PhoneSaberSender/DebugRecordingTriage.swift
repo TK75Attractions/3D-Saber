@@ -33,7 +33,7 @@ enum DebugMotionThresholds {
     static let postRollSeconds = 0.5
     static let maximumSelectedEvents = 3
     static let maximumEventImages = 9
-    static let maximumRetainedBGRABytes = 128 * 1_024 * 1_024
+    static let maximumRetainedBGRABytes = 192 * 1_024 * 1_024
 }
 
 struct DebugMotionColorSample {
@@ -45,6 +45,7 @@ struct DebugMotionColorSample {
     let failedRuleMargin: Double?
     let selectedCandidateType: String?
     var selectedCandidateIndex: Int? = nil
+    var candidateSwitch: Bool? = nil
 }
 
 struct DebugMotionSample {
@@ -234,10 +235,10 @@ struct DebugMotionDetector {
             if current.detected, let previous, previous.detected,
                let currentType = current.selectedCandidateType,
                let previousType = previous.selectedCandidateType,
-               (currentType != previousType
+               (current.candidateSwitch ?? (currentType != previousType
                 || (current.selectedCandidateIndex != nil
                     && previous.selectedCandidateIndex != nil
-                    && current.selectedCandidateIndex != previous.selectedCandidateIndex)) {
+                    && current.selectedCandidateIndex != previous.selectedCandidateIndex))) {
                 result.append(signal("candidate_switch", color, 1, 1))
             }
         }
@@ -549,7 +550,7 @@ enum DebugRecordingTriageBuilder {
                           let frameIndex = indexByID[frameID],
                           let fileName = string(image["fileName"]),
                           let role = string(image["role"]),
-                          ["event_pre", "event_at", "event_post"].contains(role) else { continue }
+                          ["event_pre", "event_at", "event_post", "before", "onset", "peak", "after", "recovery"].contains(role) else { continue }
                     references.append(ImageReference(frameIndex: frameIndex,
                         frameID: frameID, color: color, fileName: fileName,
                         isManual: false, eventIndex: eventIndex, role: role,
@@ -594,6 +595,11 @@ enum DebugRecordingTriageBuilder {
                leftScore != rightScore { return leftScore > rightScore }
             if lhs.eventIndex != rhs.eventIndex {
                 return (lhs.eventIndex ?? Int.max) < (rhs.eventIndex ?? Int.max)
+            }
+            if lhs.signals.contains(where: { $0.kind == "tracking_instability" }),
+               rhs.signals.contains(where: { $0.kind == "tracking_instability" }),
+               lhs.eventIndex == rhs.eventIndex {
+                return lhs.frameID < rhs.frameID
             }
             let roles = ["event_at": 0, "event_pre": 1, "event_post": 2]
             if lhs.role != rhs.role {
@@ -718,12 +724,18 @@ enum DebugRecordingTriageBuilder {
                 try FileManager.default.copyItem(at: sourceURL,
                                                  to: imageDirectory.appendingPathComponent(targetName))
 
-                let framePayload = contextPayload(metadata: metadata, selected: item)
+                var framePayload = contextPayload(metadata: metadata, selected: item)
+                framePayload["imageMapping"] = ["sessionID": sessionID,
+                    "frameID": item.frameID,
+                    "timestamp": number(frames(metadata)[item.frameIndex]["presentationTimeSeconds"]) ?? 0,
+                    "color": item.color, "image": "images/\(targetName)",
+                    "eventID": item.eventIndex.map { String($0) } ?? "none",
+                    "eventRole": item.role ?? "single"]
                 let frameName = "frame_\(item.frameID)_\(offset + 1).json"
                 try jsonData(framePayload).write(to: frameDirectory.appendingPathComponent(frameName),
                                                 options: .atomic)
                 var imageEntry: [String: Any] = [
-                    "path": "images/\(targetName)", "frameContextPath": "frames/\(frameName)",
+                    "path": "images/\(targetName)", "frameContextPath": "frames/\(frameName)", "sessionID": sessionID,
                     "frameID": item.frameID, "timestamp": number(frames(metadata)[item.frameIndex]["presentationTimeSeconds"]) ?? 0,
                     "color": item.color, "failureType": item.failureType,
                     "reason": item.reasons.joined(separator: "; "), "sourceFile": item.fileName
@@ -924,7 +936,8 @@ enum DebugRecordingTriageBuilder {
             "selectedFailureType": selected.failureType,
             "selectedReasons": selected.reasons,
             "contextRadiusFrames": DebugRecordingTriageLimits.contextRadius,
-            "frames": context.map { minimalFrame(allFrames[$0], index: $0) }
+            "frames": context.map { minimalFrame(allFrames[$0], index: $0,
+                includeTracking: $0 == selected.frameIndex) }
         ]
         if let eventIndex = selected.eventIndex, let role = selected.role,
            let score = selected.score {
@@ -932,10 +945,16 @@ enum DebugRecordingTriageBuilder {
                 "score": score, "signals": selected.signals.map(\.dictionary),
                 "signalAggregation": "event_max_per_kind"]
         }
+        if let transmissions = metadata["udpTransmissions"] as? [[String: Any]] {
+            result["udpTransmissions"] = transmissions.filter {
+                integer($0["frameID"]) == selected.frameID
+            }
+        }
         return result
     }
 
-    private static func minimalFrame(_ frame: [String: Any], index: Int) -> [String: Any] {
+    private static func minimalFrame(_ frame: [String: Any], index: Int,
+                                     includeTracking: Bool = false) -> [String: Any] {
         var output: [String: Any] = [
             "frameID": integer(frame["frameID"]) ?? UInt64(index),
             "timestamp": number(frame["presentationTimeSeconds"]) ?? 0
@@ -1020,12 +1039,36 @@ enum DebugRecordingTriageBuilder {
                                 "rejectionReasons", "peakValue", "meanValue",
                                 "highValueRatio", "meanColorPurity", "clippedWhiteRatio",
                                 "isCompactRed", "rawPCASpan", "robustMainIntervalLength",
-                                "continuity", "density", "componentArea", "pointCount"] {
+                                "continuity", "density", "componentArea", "pointCount", "compoundRejections"] {
                         if let value = entry[key] { trace[key] = value }
                     }
                     let rules = entry["eligibilityRules"] as? [[String: Any]] ?? []
-                    trace["rules"] = rules.filter { string($0["result"]) == "FAIL" }
+                    trace["rules"] = rules.filter { string($0["result"]) == "FAIL" }.map { rule in
+                        // Codable omits nil optionals; compact rules use explicit nulls
+                        // to preserve the consumer's exact decision-trace contract.
+                        ["name": rule["name"] ?? "", "result": "FAIL",
+                         "value": rule["value"] ?? NSNull(),
+                         "comparison": rule["comparison"] ?? NSNull(),
+                         "threshold": rule["threshold"] ?? NSNull()] as [String: Any]
+                    }
                     return trace
+                }
+            }
+            if includeTracking {
+                if let tracking = frame["tracking"] as? [String: Any], let measurement = tracking[color] {
+                    colorData["tracking"] = measurement
+                }
+                if let candidate {
+                    var selected: [String: Any] = [:]
+                    for key in ["index", "sourceType", "finalScore", "centroid", "bbox", "componentArea",
+                                "pointCount", "peakValue", "meanValue", "highValueRatio", "meanColorPurity",
+                                "clippedWhiteRatio", "continuity", "density", "maxGap", "endpointPipeline"] {
+                        if let value = candidate[key] { selected[key] = value }
+                    }
+                    colorData["selectedCandidate"] = selected
+                }
+                for key in ["secondBestScore", "scoreMargin"] {
+                    if let value = diagnostic[key] { colorData[key] = value }
                 }
             }
             output[color] = colorData
@@ -1237,5 +1280,158 @@ enum DebugRecordingTriageBuilder {
 
     private static func jsonData(_ object: Any) throws -> Data {
         try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+    }
+}
+
+/// Recording-only measurements. Scores rank discontinuities, never detection eligibility.
+struct DebugTrackingFrame: Codable, Equatable {
+    let midpoint: [Double]?
+    let segmentLength: Double?
+    let orientationRadians: Double?
+    let endpointDisplacement: Double?
+    let midpointDisplacement: Double?
+    let lengthChange: Double?
+    let orientationChange: Double?
+    let candidateSwitch: Bool
+    let candidateMatchConfidence: String
+    let endpointPathChanged: Bool
+    let detectedToggle: Bool
+    let scoreChange: Double?
+    let scoreMarginCollapse: Double?
+    let stageDiscontinuities: [String: Double]
+    let scoreComponents: [String: Double]
+    let instabilityScore: Double
+}
+
+enum DebugTrackingDiagnostics {
+    static func rankingScore(_ components: [String: Double]) -> Double {
+        // Fixed order keeps online retention and Stop-time ranking bit-for-bit consistent.
+        ["geometryDiscontinuity", "candidateSwitch", "endpointPathChanged", "detectedToggle",
+         "scoreChange", "scoreMarginCollapse"].reduce(0) { $0 + (components[$1] ?? 0) }
+    }
+    static func compare(_ value: Double?, _ comparison: String?, _ threshold: Double?) -> Bool? {
+        guard let value, let threshold else { return nil }
+        switch comparison {
+        case ">=": return value >= threshold
+        case "<=": return value <= threshold
+        case ">": return value > threshold
+        case "<": return value < threshold
+        case "==": return value == threshold
+        default: return nil
+        }
+    }
+
+    static func values(_ points: DebugRecordingEndpoints?) -> [Double]? {
+        guard let points else { return nil }
+        return [Double(points.first.x), Double(points.first.y),
+                Double(points.second.x), Double(points.second.y)]
+    }
+    static func length(_ p: [Double]) -> Double { hypot(p[2] - p[0], p[3] - p[1]) }
+    static func angle(_ p: [Double]) -> Double { atan2(p[3] - p[1], p[2] - p[0]) }
+    static func angleChange(_ a: Double, _ b: Double) -> Double {
+        let delta = abs(a - b).truncatingRemainder(dividingBy: .pi)
+        return min(delta, .pi - delta)
+    }
+    static func aligned(_ p: [Double], _ q: [Double]) -> [Double] {
+        let direct = hypot(p[0] - q[0], p[1] - q[1]) + hypot(p[2] - q[2], p[3] - q[3])
+        let reverse = hypot(p[2] - q[0], p[3] - q[1]) + hypot(p[0] - q[2], p[1] - q[3])
+        return direct <= reverse ? p : [p[2], p[3], p[0], p[1]]
+    }
+    static func movement(_ p: [Double], _ q: [Double]) -> Double {
+        let a = aligned(p, q)
+        return max(hypot(a[0] - q[0], a[1] - q[1]), hypot(a[2] - q[2], a[3] - q[3]))
+    }
+    static func matchCost(_ a: DebugRecordingCandidate, _ b: DebugRecordingCandidate) -> Double {
+        // List index and proposal source are not persistent physical identity.
+        let ac = a.centroid ?? [(Double(a.bbox[0]) + Double(a.bbox[2])) / 2,
+                               (Double(a.bbox[1]) + Double(a.bbox[3])) / 2]
+        let bc = b.centroid ?? [(Double(b.bbox[0]) + Double(b.bbox[2])) / 2,
+                               (Double(b.bbox[1]) + Double(b.bbox[3])) / 2]
+        let scale = max(a.rawPCASpan, b.rawPCASpan, 1)
+        let overlap = Double(max(0, min(a.bbox[2], b.bbox[2]) - max(a.bbox[0], b.bbox[0])))
+            * Double(max(0, min(a.bbox[3], b.bbox[3]) - max(a.bbox[1], b.bbox[1])))
+        let areaA = Double(max(1, a.bbox[2] - a.bbox[0]) * max(1, a.bbox[3] - a.bbox[1]))
+        let areaB = Double(max(1, b.bbox[2] - b.bbox[0]) * max(1, b.bbox[3] - b.bbox[1]))
+        let iou = overlap / max(1, areaA + areaB - overlap)
+        let geometry = abs(log(max(1, a.rawPCASpan) / max(1, b.rawPCASpan)))
+            + abs(log(Double(max(1, a.componentArea)) / Double(max(1, b.componentArea)))) * 0.25
+        let orientation = angleChange(angle(values(a.rawPCAEndpoints)!), angle(values(b.rawPCAEndpoints)!)) / .pi
+        return hypot(ac[0] - bc[0], ac[1] - bc[1]) / scale + geometry + orientation + (1 - iou) * 0.25
+    }
+    static func candidateSwitch(_ current: DebugRecordingColorCandidates?,
+                                _ previous: DebugRecordingColorCandidates?) -> (Bool, String) {
+        guard let a = previous?.selectedCandidate, let b = current?.selectedCandidate else {
+            return (false, "unavailable")
+        }
+        let cost = matchCost(a, b)
+        let forward = current!.topCandidates.filter { $0.index != b.index }.map { matchCost(a, $0) }.min()
+        let backward = previous!.topCandidates.filter { $0.index != a.index }.map { matchCost($0, b) }.min()
+        // Only mark a switch when another observed proposal explains the correspondence
+        // substantially better; translation of an isolated fast-moving saber is ambiguous.
+        let alternate = min(forward ?? cost, backward ?? cost)
+        let switched = cost > 0.55 && alternate < 0.45 && alternate + 0.30 < cost
+        return (switched, switched ? "alternativeGeometryMatch" : (cost < 0.55 ? "geometryMatch" : "ambiguousMotion"))
+    }
+    static func measure(_ frame: DebugRecordingFrameMetadata,
+                        previous: DebugRecordingFrameMetadata?, older: DebugRecordingFrameMetadata?,
+                        color: String) -> DebugTrackingFrame {
+        func candidates(_ f: DebugRecordingFrameMetadata?) -> DebugRecordingColorCandidates? {
+            color == "red" ? f?.candidateDiagnostics?.red : f?.candidateDiagnostics?.blue
+        }
+        func succeeded(_ f: DebugRecordingFrameMetadata?) -> Bool {
+            color == "red" ? f?.redDetectionSucceeded == true : f?.blueDetectionSucceeded == true
+        }
+        let current = candidates(frame), prior = candidates(previous), old = candidates(older)
+        let selected = current?.selectedCandidate, previousSelected = prior?.selectedCandidate
+        let p = values(selected?.finalOutputEndpoints), q = values(previousSelected?.finalOutputEndpoints)
+        let switchResult = candidateSwitch(current, prior)
+        let pathChanged = selected != nil && previousSelected != nil && (
+            selected!.endpointPipeline.endpointSource != previousSelected!.endpointPipeline.endpointSource
+            || selected!.endpointPipeline.fallbackReason != previousSelected!.endpointPipeline.fallbackReason)
+        let toggle = previous != nil && succeeded(frame) != succeeded(previous)
+        let scoreChange = selected.flatMap { a in previousSelected.map { a.finalScore - $0.finalScore } }
+        let collapse = current?.scoreMargin.flatMap { a in prior?.scoreMargin.map { max(0, $0 - a) / max(1, abs($0)) } }
+        var stages: [String: Double] = [:]
+        let dt = frame.presentationTimeSeconds - (previous?.presentationTimeSeconds ?? frame.presentationTimeSeconds)
+        let oldDT = (previous?.presentationTimeSeconds ?? 0) - (older?.presentationTimeSeconds ?? 0)
+        for stage in ["rawPCA", "robustInterval", "body", "finalSelected"] {
+            func points(_ c: DebugRecordingCandidate?) -> [Double]? {
+                guard let c else { return nil }
+                switch stage {
+                case "rawPCA": return values(c.endpointPipeline.rawPCA)
+                case "robustInterval": return values(c.endpointPipeline.robustInterval)
+                case "body": return values(c.endpointPipeline.body)
+                default: return values(c.endpointPipeline.finalSelected)
+                }
+            }
+            if let now = points(selected), let before = points(previousSelected),
+               let earliest = points(old?.selectedCandidate), dt > 0, oldDT > 0 {
+                let n = aligned(now, before), o = aligned(earliest, before)
+                let expected = zip(before, o).map { $0 + ($0 - $1) * dt / oldDT }
+                let scale = max(length(before), 1)
+                let residual = movement(n, expected) / scale
+                let lengthJump = abs(log(max(1, length(now)) / max(1, length(before))))
+                let angleJump = angleChange(angle(now), angle(before)) / .pi
+                stages[stage] = residual + lengthJump + angleJump
+            }
+        }
+        let components = ["geometryDiscontinuity": stages["finalSelected"] ?? 0,
+            "candidateSwitch": switchResult.0 ? 2.0 : 0,
+            "endpointPathChanged": pathChanged ? 1.0 : 0,
+            "detectedToggle": toggle ? 2.0 : 0,
+            "scoreChange": min(1, abs(scoreChange ?? 0) / max(1, abs(previousSelected?.finalScore ?? 1))) * 0.25,
+            "scoreMarginCollapse": min(1, collapse ?? 0) * 0.5]
+        let score = rankingScore(components)
+        return DebugTrackingFrame(
+            midpoint: p.map { [($0[0] + $0[2]) / 2, ($0[1] + $0[3]) / 2] },
+            segmentLength: p.map(length), orientationRadians: p.map(angle),
+            endpointDisplacement: p.flatMap { p in q.map { movement(p, $0) } },
+            midpointDisplacement: p.flatMap { p in q.map { hypot((p[0] + p[2] - $0[0] - $0[2]) / 2, (p[1] + p[3] - $0[1] - $0[3]) / 2) } },
+            lengthChange: p.flatMap { p in q.map { length(p) - length($0) } },
+            orientationChange: p.flatMap { p in q.map { angleChange(angle(p), angle($0)) } },
+            candidateSwitch: switchResult.0, candidateMatchConfidence: switchResult.1,
+            endpointPathChanged: pathChanged, detectedToggle: toggle,
+            scoreChange: scoreChange, scoreMarginCollapse: collapse,
+            stageDiscontinuities: stages, scoreComponents: components, instabilityScore: score)
     }
 }

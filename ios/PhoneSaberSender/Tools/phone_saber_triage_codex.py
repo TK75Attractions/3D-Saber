@@ -15,6 +15,14 @@ import sys
 import tempfile
 import time
 from dataclasses import dataclass
+from types import SimpleNamespace
+
+from phone_saber_tracking_diagnostics import (
+    TRACKING_ROLES, TRACKING_ASSESSMENT_SCHEMA, validate_mapping, validate_tracking,
+    validate_selected, validate_compound, validate_transmissions, validate_assessment,
+    temporal_events, sufficient_temporal, supports_temporal_images,
+    tracking_repair_required, has_tracking_discontinuity,
+)
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -64,7 +72,7 @@ REPAIR_ASSESSMENT_SCHEMA = {
         "production_change_supported": {"type": "boolean"},
         "root_cause_stage": {"type": "string", "enum": [
             "segmentation", "candidate_generation", "eligibility", "ranking", "endpoint",
-            "temporal", "capture", "unknown",
+            "temporal", "capture", "downstream", "unknown",
         ]},
         "diagnosis_consistent_with_metadata": {"type": "boolean"},
         "change_type": {"type": "string", "enum": [
@@ -108,6 +116,7 @@ OUTPUT_SCHEMA = {
         "other_findings": {"type": "array", "items": FINDING_SCHEMA},
         "limitations": {"type": "array", "items": {"type": "string"}},
         "repair_assessment": REPAIR_ASSESSMENT_SCHEMA,
+        "tracking_assessment": TRACKING_ASSESSMENT_SCHEMA,
     },
     "required": ["session_summary", "false_negatives", "wrong_candidate_and_endpoint_errors",
                  "false_positive_suspects", "other_findings", "limitations", "repair_assessment"],
@@ -264,6 +273,7 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
         if context_path.stat().st_size > min(MAX_CONTEXT_BYTES, MAX_CODEX_CONTEXT_BYTES):
             raise BundleError("frame context exceeds its size limit")
         _validate_context(context_path, session_id, image.get("frameID"))
+        validate_mapping(json.loads(context_path.read_text(encoding="utf-8")), image, session_id)
         with image_path.open("rb") as image_file:
             if image_file.read(8) != b"\x89PNG\r\n\x1a\n":
                 raise BundleError(f"selected lossless image is not a PNG: {image_path.name}")
@@ -278,7 +288,7 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
             raise BundleError("motion event failure type lacks validated event metadata")
         if "eventIndex" in image:
             if not failure_type.startswith("motion_event_") \
-                    or image.get("role") not in {"event_pre", "event_at", "event_post"} \
+                    or image.get("role") not in {"event_pre", "event_at", "event_post"} | TRACKING_ROLES \
                     or isinstance(image["eventIndex"], bool) \
                     or not isinstance(image["eventIndex"], int) \
                     or isinstance(image.get("anomalyScore"), bool) \
@@ -288,9 +298,14 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
                 raise BundleError("motion event image metadata is invalid")
             if not math.isfinite(image["anomalyScore"]) \
                     or not _valid_motion_signals(image["signals"]) \
-                    or (image["eventIndex"], image["role"]) in motion_roles:
+                    or (image["eventIndex"], str(image["frameID"]) if image["role"] in TRACKING_ROLES else image["role"]) in motion_roles:
                 raise BundleError("motion event image signal or role is invalid")
-            motion_roles.add((image["eventIndex"], image["role"]))
+            tracking_signal = any(s["kind"] == "tracking_instability" for s in image["signals"])
+            if tracking_signal != (image["role"] in TRACKING_ROLES) or (tracking_signal and (
+                    len(image["signals"]) != 1 or failure_type !=
+                    f"motion_event_{image['eventIndex']}_tracking_instability")):
+                raise BundleError("tracking event role, signal, and failure type disagree")
+            motion_roles.add((image["eventIndex"], str(image["frameID"]) if image["role"] in TRACKING_ROLES else image["role"]))
             context_event = json.loads(context_path.read_text(encoding="utf-8")).get("motionEvent")
             if context_event != {"eventIndex": image["eventIndex"],
                                  "role": image["role"],
@@ -308,7 +323,8 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
             frame_id=frame_id,
             failure_type=failure_type,
         ))
-    if any(count > (3 if kind.startswith("motion_event_") else PER_FAILURE_TYPE)
+    if any(count > (11 if kind.endswith("tracking_instability") else
+                    3 if kind.startswith("motion_event_") else PER_FAILURE_TYPE)
            for kind, count in type_counts.items()):
         raise BundleError("per-failure-type image limit exceeds two")
     if motion_roles:
@@ -401,6 +417,13 @@ def _decision_trace_summary(plan: Any) -> list[dict[str, Any]]:
         for frame in context["frames"]:
             for color in ("red", "blue"):
                 for candidate in frame[color].get("candidateDecisionTrace", []):
+                    for group in candidate.get("compoundRejections", []):
+                        key = (frame["frameID"], color, candidate["index"], group["rejectionRule"])
+                        if key not in seen:
+                            seen.add(key)
+                            summary.append({"frameID": frame["frameID"], "color": color,
+                                "candidate": candidate["index"], "source": candidate["sourceType"],
+                                "rejectionRule": group["rejectionRule"], "conditions": group["conditions"]})
                     for rule in candidate["rules"]:
                         key = (frame["frameID"], color, candidate["index"], rule["name"])
                         if key in seen:
@@ -413,31 +436,54 @@ def _decision_trace_summary(plan: Any) -> list[dict[str, Any]]:
     return summary[:60]
 
 
-def _needs_internal_diagnostics(analysis: dict[str, Any]) -> bool:
+def _internal_diagnostic_requests(analysis: dict[str, Any], events: list[dict] | None = None) -> set[str]:
     assessment = analysis["repair_assessment"]
-    if assessment["decision"] != "needs_capture" \
-            or assessment["root_cause_stage"] != "eligibility":
-        return False
+    if assessment["decision"] != "needs_capture":
+        return set()
+    requests: set[str] = set()
+    if events and any(has_tracking_discontinuity(e) for e in events) and "tracking_assessment" not in analysis:
+        requests.add("tracking")
     reason = " ".join([assessment["reason"], *analysis["limitations"]]).lower()
-    return any(term in reason for term in (
-        "missing rejection", "missing eligibility", "missing candidate trace",
-        "rejection detail", "rejection reason", "eligibility detail",
-        "rejection diagnostic", "eligibility rule", "candidate-level rejection",
-        "decision trace", "failed rule", "reject rule"))
+    eligibility_terms = ("missing rejection", "missing eligibility", "missing candidate trace",
+        "rejection detail", "rejection reason", "eligibility detail", "rejection diagnostic",
+        "eligibility rule", "candidate-level rejection", "decision trace", "failed rule", "reject rule")
+    tracking_terms = ("missing temporal", "missing tracking", "missing endpoint", "missing candidate history",
+        "missing frame mapping", "missing numeric timeline", "missing pipeline history",
+        "temporalevidencemissing", "insufficientendpointhistory", "insufficientcandidatehistory",
+        "framemappingmissing", "時系列が不足", "端点履歴が不足")
+    if assessment["root_cause_stage"] == "eligibility" and any(t in reason for t in eligibility_terms):
+        requests.add("eligibility")
+    if any(t in reason for t in tracking_terms):
+        requests.add("tracking")
+    return requests
 
 
-def _needs_second_opinion(analysis: dict[str, Any], traces: list[dict[str, Any]]) -> bool:
+def _needs_internal_diagnostics(analysis: dict[str, Any], events: list[dict] | None = None) -> bool:
+    return bool(_internal_diagnostic_requests(analysis, events))
+
+
+def _needs_second_opinion(analysis: dict[str, Any], traces: list[dict[str, Any]],
+                         events: list[dict[str, Any]] | None = None) -> bool:
     assessment = analysis["repair_assessment"]
     reason = assessment["reason"].lower()
     colors = set(assessment["affected_colors"])
+    tracking = analysis.get("tracking_assessment", {})
+    tracking_ready = tracking.get("symptom_confirmed_in_images") is True \
+        and tracking.get("first_unstable_stage") not in {None, "unknown", "downstream"} \
+        and any(e["color"].upper() in colors
+                and supports_temporal_images(e, set(tracking.get("temporal_image_ids", [])))
+                for e in events or [])
+    eligibility_ready = any(item["color"].upper() in colors and (
+        (item.get("value") is not None and item.get("threshold") is not None)
+        or any(c.get("value") is not None and c.get("threshold") is not None
+               for c in item.get("conditions", []))) for item in traces)
+    numeric_ready = tracking_ready if tracking_repair_required(analysis, events or []) else eligibility_ready
     return assessment["decision"] == "needs_capture" \
         and assessment["visible_saber_confirmed"] \
         and assessment["root_cause_stage"] in {
             "segmentation", "candidate_generation", "eligibility", "ranking", "endpoint"} \
         and bool(assessment["evidence_image_ids"]) \
-        and any(item["color"].upper() in colors
-                and item["value"] is not None and item["threshold"] is not None
-                for item in traces) \
+        and numeric_ready \
         and any(term in reason for term in (
             "uncertain", "ambiguous", "cannot determine", "cannot conclude",
             "unclear which", "判断でき", "曖昧")) \
@@ -552,35 +598,40 @@ def analyze_bundle(
         analysis = run_analysis(ANALYSIS_MODEL, ANALYSIS_REASONING_EFFORT, prompt, "ANALYSIS")
         traces = _decision_trace_summary(plan)
         affected = set(analysis["repair_assessment"]["affected_colors"])
-        relevant_traces = [item for item in traces if item["color"].upper() in affected]
+        relevant_traces = [item for item in traces if not affected or item["color"].upper() in affected]
+        events = temporal_events(plan)
+        relevant_events = [e for e in events if (not affected or e["color"].upper() in affected) and sufficient_temporal(e)]
         initial_assessment = copy.deepcopy(analysis["repair_assessment"])
         reanalysis_executed = False
         escalation_executed = False
         for item in traces[:12]:
-            print(f"[AUTO_REPAIR][DIAGNOSTICS] stage=eligibility "
-                  f"frame={item['frameID']} color={item['color']} "
-                  f"candidate={item['candidate']} failedRule={item['failedRule']} "
-                  f"value={item['value']} threshold={item['threshold']}", flush=True)
-        if _needs_internal_diagnostics(analysis) and relevant_traces:
-            enriched_prompt = (prompt + "\n\nDiagnostics enrichment: The following failed "
-                "eligibility rules were extracted from the selected compact frame contexts. "
-                "Re-evaluate once using these actual values and thresholds; keep the "
-                "visual and repair safety requirements.\n" +
-                json.dumps(relevant_traces, ensure_ascii=False))
+            print("[AUTO_REPAIR][DIAGNOSTICS] stage=eligibility " +
+                  json.dumps(item, ensure_ascii=False), flush=True)
+        requests = _internal_diagnostic_requests(analysis, relevant_events)
+        enrichment_available = ("tracking" in requests and bool(relevant_events)) \
+            or ("eligibility" in requests and bool(relevant_traces))
+        if enrichment_available:
+            enriched_prompt = (prompt + "\n\nDiagnostics enrichment: The following measured "
+                "eligibility rules and temporal events already exist in the selected contexts. "
+                "Re-evaluate once using these values; do not invent missing images or history. "
+                "Compound rejection conditions describe the trigger; satisfied does not mean FAIL. "
+                "Keep all visual and repair safety requirements.\n" +
+                json.dumps({"decisionTraces": relevant_traces, "trackingEvents": relevant_events}, ensure_ascii=False))
             analysis = run_analysis(ANALYSIS_MODEL, ANALYSIS_REASONING_EFFORT,
                                     enriched_prompt, "REANALYSIS")
             reanalysis_executed = True
-        if _needs_second_opinion(analysis, traces):
+        if _needs_second_opinion(analysis, traces, events):
             reason = " ".join(analysis["repair_assessment"]["reason"].split())[:200]
             print(f"[AUTO_REPAIR][ESCALATION] model={ESCALATION_MODEL} "
                   f"effort={ESCALATION_REASONING_EFFORT} role=second-opinion "
                   f"reason={reason}", flush=True)
             second_prompt = (prompt + "\n\nSECOND_OPINION_ANALYSIS. Read-only. "
                 "A prior Luna/MAX analysis could not decide despite available visual "
-                "and eligibility evidence. Analyze independently. Do not edit source. "
+                "and numeric temporal/eligibility evidence. Analyze independently. Do not edit source. "
                 "Use the same conservative repair assessment and cite only selected images. "
                 "Prior assessment and measured decision trace:\n" +
-                json.dumps({"prior": analysis["repair_assessment"], "trace": traces},
+                json.dumps({"prior": analysis["repair_assessment"], "trackingAssessment": analysis.get("tracking_assessment"),
+                            "trace": traces, "trackingEvents": events},
                            ensure_ascii=False))
             try:
                 analysis = run_analysis(ESCALATION_MODEL, ESCALATION_REASONING_EFFORT,
@@ -678,7 +729,7 @@ def _write_reports(bundle_dir: Path, report: dict[str, Any], markdown: str) -> N
 def _validate_analysis(value: Any, allowed_images: set[str]) -> None:
     required = {"session_summary", "false_negatives", "wrong_candidate_and_endpoint_errors",
                 "false_positive_suspects", "other_findings", "limitations", "repair_assessment"}
-    if not isinstance(value, dict) or set(value) != required:
+    if not isinstance(value, dict) or not required.issubset(value) or not set(value) <= required | {"tracking_assessment"}:
         raise BundleError("response must contain exactly the required report sections")
     if not isinstance(value["session_summary"], str) or len(value["session_summary"]) > 16_000:
         raise BundleError("response has an invalid session summary")
@@ -717,6 +768,8 @@ def _validate_analysis(value: Any, allowed_images: set[str]) -> None:
     if not isinstance(value["limitations"], list) or len(value["limitations"]) > 100 \
             or not all(isinstance(item, str) and len(item) <= 3_000 for item in value["limitations"]):
         raise BundleError("limitations must be a bounded list of strings")
+    if "tracking_assessment" in value:
+        validate_assessment(value["tracking_assessment"], allowed_images)
     assessment = value["repair_assessment"]
     if not isinstance(assessment, dict) or set(assessment) != set(REPAIR_ASSESSMENT_SCHEMA["required"]):
         raise BundleError("repair assessment has an invalid shape")
@@ -754,7 +807,7 @@ def render_markdown(session_id: str, input_details: dict[str, Any], analysis: di
     for image in input_details.get("imageReferences", []):
         lines.append(
             f"- {image['id']} — `{image['path']}` "
-            f"(incident: {image['incidentType']}; context: `{image['contextPath']}`)"
+            f"(frame: {image['frameID']}; incident: {image['incidentType']}; context: `{image['contextPath']}`)"
         )
     if not input_details.get("imageReferences"):
         lines.append("None selected.")
@@ -794,6 +847,9 @@ def render_markdown(session_id: str, input_details: dict[str, Any], analysis: di
     lines.extend(["", "## Repair assessment", "",
                   f"Decision: {assessment['decision']}",
                   f"Reason: {assessment['reason']}"])
+    if "tracking_assessment" in analysis:
+        lines.extend(["", "## Tracking assessment", "",
+                      json.dumps(analysis["tracking_assessment"], ensure_ascii=False, indent=2)])
     lines.append("")
     return "\n".join(lines)
 
@@ -808,17 +864,23 @@ def _output_schema(image_ids: tuple[str, ...]) -> dict[str, Any]:
     schema["properties"]["repair_assessment"]["properties"]["evidence_image_ids"]["items"] = {
         "type": "string", "enum": list(image_ids),
     }
+    schema["properties"]["tracking_assessment"]["properties"]["temporal_image_ids"]["items"] = {
+        "type": "string", "enum": list(image_ids),
+    }
     return schema
 
 
 def _codex_prompt(session_id: str, images: tuple[CodexInputImage, ...], bundle_root: Path) -> str:
     image_map = "\n".join(
         f"- Image ID: {image.image_id}\n"
+        f"  Frame: {image.frame_id} -> {image.image_path.relative_to(bundle_root).as_posix()}\n"
         f"  Filename: {image.image_path.name}\n"
         f"  Incident type: {image.failure_type}\n"
         f"  Context filename: {image.context_path.relative_to(bundle_root).as_posix()}"
         for image in images
     ) or "- No images were selected."
+    events = temporal_events(SimpleNamespace(images=images))
+    timeline = json.dumps(events, ensure_ascii=False)
     return f"""Analyze PhoneSaber Debug Recording {session_id} using exactly {len(images)} attached selected lossless PNGs.
 
 Evidence rules:
@@ -834,12 +896,21 @@ Evidence rules:
 - If evidence is insufficient, say so and do not recommend production recognition changes.
 - For eligibility dropouts, inspect candidateDecisionTrace for each selected frame. Name the failed rule, actual measured value and threshold, whether it repeats across independent visible examples, and false-positive risk. A threshold must not be loosened solely because a candidate was rejected.
 - For motion events, compare event_pre, event_at, and event_post PNGs with the score, measured signals, detected states, and endpoints in their compact contexts. Signals marked event_max_per_kind may peak on different frames within the merged event. The signal is a selection heuristic, not proof of a saber or a recognition error. A frame gap, processing delay, or saber outside the image is a capture/latency finding, not a recognition repair target; say this explicitly in the analysis.
+- Analyze detected=true tracking instability as well as dropouts. Read the ordered tracking event timeline below as ONE event, not independent frames. Before/onset/peak/after/recovery are positional labels, not assertions that failure or recovery actually occurred.
+- Identify the FIRST unstable stage: candidate_selection; mask_component; PCA; robust_body; endpoint_selection; fallback; or downstream. Compare rawPCA, robustInterval, bodyPCA, finalSelected, emittedEndpoint (which can be predicted), and observed UDP sendStarted endpoints separately. Robust interval endpoints are not themselves the adopted body PCA. Missing body PCA means not evaluated/adopted; do not reconstruct it.
+- Candidate indices can reorder. Use candidateSwitch with its match confidence, centroid/bbox/area/geometry and path changes. Large smooth physical motion is not a recognition failure. Scores only rank recording discontinuities, never prove a defect.
+- If observed transmitted endpoints are stable and pixels support stable geometry, classify the remaining Unity symptom as downstream (Mac/UDP/Unity); absence of send observations does not prove stability or delivery. SendStarted is a local transport invocation, not receiver acknowledgement.
+- For core-line-weak-bridge, inspect compoundRejections: rejectionRule names the compound trigger, each condition has value/comparison/threshold/satisfied. A satisfied trigger condition is not an incorrectly failed acceptance threshold.
+- Include tracking_assessment for tracking events: confirm visible temporal instability only if pixels support it, cite at least three ordered mapped temporal images spanning before/peak/after, identify first_unstable_stage, and describe concrete_cause, concrete_production_change, expected_effect, regression_risk. Leave unsupported proposal text empty and request evidence; never force actionable.
 - Do not edit, create, or propose applying production code. Return a concise JSON object matching the supplied schema exactly.
 - Complete repair_assessment conservatively. Mark actionable only when selected PNG pixels visibly confirm a real saber, the metadata supports a specific recognition-stage cause, and the evidence supports a production change. Otherwise use needs_capture. A detector dropout or endpoint jump alone is not visual proof.
 - For a threshold proposal, count independent visually supported examples; a single example is insufficient. Use only listed Image IDs in evidence_image_ids. Describe uncertainty in reason. Regression coverage is checked separately by the Mac gate.
 
 Selected image reference map:
 {image_map}
+
+Ordered tracking instability events (selected PNGs and exact mapped frame metadata):
+{timeline}
 """
 
 
@@ -850,7 +921,7 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
         raise BundleError(f"frame context is malformed: {path.name}") from exc
     required_top = {"sessionID", "selectedFrameID", "selectedColor", "selectedFailureType",
                     "selectedReasons", "contextRadiusFrames", "frames"}
-    allowed_top = required_top | {"motionEvent"}
+    allowed_top = required_top | {"motionEvent", "imageMapping", "udpTransmissions"}
     if not isinstance(context, dict) or not required_top.issubset(context) \
             or not set(context).issubset(allowed_top) \
             or context.get("sessionID") != session_id or context.get("selectedFrameID") != selected_frame_id \
@@ -873,7 +944,7 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
                 "eventIndex", "role", "score", "signals", "signalAggregation"} \
                 or isinstance(event["eventIndex"], bool) \
                 or not isinstance(event["eventIndex"], int) \
-                or event["role"] not in {"event_pre", "event_at", "event_post"} \
+                or event["role"] not in {"event_pre", "event_at", "event_post"} | TRACKING_ROLES \
                 or isinstance(event["score"], bool) \
                 or not isinstance(event["score"], (int, float)) \
                 or not math.isfinite(event["score"]) \
@@ -888,7 +959,8 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
                      "selectedCandidateIndex", "topScoreGap", "minimumFailedRuleMargin",
                      "rawPCASpan", "robustMainIntervalLength", "continuity", "density",
                      "colorPurity", "coreSupport", "highBrightnessCoverage",
-                     "candidateDecisionTrace", "failureStage"}
+                     "candidateDecisionTrace", "failureStage", "tracking", "selectedCandidate",
+                     "secondBestScore", "scoreMargin"}
     for frame in context["frames"]:
         if not isinstance(frame, dict) or not {"frameID", "timestamp", "red", "blue"}.issubset(frame) \
                 or not set(frame).issubset(allowed_frame) \
@@ -915,7 +987,11 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
                                for point in values["endpoint"])):
                 raise BundleError(f"frame context has an invalid endpoint: {path.name}")
             for key, value in values.items():
-                if key == "candidateDecisionTrace":
+                if key == "tracking":
+                    validate_tracking(value)
+                elif key == "selectedCandidate":
+                    validate_selected(value)
+                elif key == "candidateDecisionTrace":
                     _validate_decision_trace(value, path.name)
                 elif key not in {"endpoint", "selectedCandidateType", "failureStage"} \
                         and not isinstance(value, (int, float, bool)):
@@ -924,6 +1000,10 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
                     raise BundleError(f"frame context has an invalid candidate type: {path.name}")
                 if key == "failureStage" and value != "eligibility":
                     raise BundleError(f"frame context has an invalid failure stage: {path.name}")
+
+
+    if "udpTransmissions" in context:
+        validate_transmissions(context["udpTransmissions"], selected_frame_id)
 
 
 def _valid_motion_signals(value: Any) -> bool:
@@ -936,7 +1016,7 @@ def _valid_motion_signals(value: Any) -> bool:
         if not isinstance(signal["kind"], str) or signal["kind"] not in {
                 "dropout", "flicker", "endpoint_jump", "length_change", "prediction_error",
                 "multiple_eligible", "candidate_ambiguity", "candidate_switch", "near_miss",
-                "frame_interval", "frame_gap", "processing_time"} \
+                "frame_interval", "frame_gap", "processing_time", "tracking_instability"} \
                 or signal["color"] not in {"red", "blue", "both"}:
             return False
         for key in ("value", "threshold", "score"):
@@ -955,7 +1035,7 @@ def _validate_decision_trace(value: Any, name: str) -> None:
                 "peakValue", "meanValue", "highValueRatio", "meanColorPurity",
                 "clippedWhiteRatio", "isCompactRed", "rawPCASpan",
                 "robustMainIntervalLength", "continuity", "density",
-                "componentArea", "pointCount"}):
+                "componentArea", "pointCount", "compoundRejections"}):
             raise BundleError(f"invalid candidate decision trace: {name}")
         if not isinstance(candidate.get("index"), int) or isinstance(candidate["index"], bool) \
                 or not isinstance(candidate.get("sourceType"), str) \
@@ -983,6 +1063,8 @@ def _validate_decision_trace(value: Any, name: str) -> None:
                 or ("isCompactRed" in candidate
                     and not isinstance(candidate["isCompactRed"], bool)):
             raise BundleError(f"invalid candidate measurement: {name}")
+        if "compoundRejections" in candidate:
+            validate_compound(candidate["compoundRejections"])
         rules = candidate.get("rules")
         if not isinstance(rules, list) or len(rules) > 20:
             raise BundleError(f"invalid candidate rules: {name}")

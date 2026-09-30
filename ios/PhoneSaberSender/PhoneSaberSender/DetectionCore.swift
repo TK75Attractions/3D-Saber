@@ -233,6 +233,31 @@ struct SaberEligibilityDecision {
     let threshold: Double?
 }
 
+final class SaberEndpointDiagnosticTrace {
+    let centroidX: Double
+    let centroidY: Double
+    let bodyEndpoints: (PixelPoint, PixelPoint)?
+    let minimumArea: Int
+    let bodyPointCount: Int
+    let establishedContinuousBody: Bool
+    let denseTrimmedCoreLine: Bool
+    let stronglyTrimmedCoreLine: Bool
+    let diffusedBlueBody: Bool
+    let gatingValues: [String: Double]
+
+    init(centroidX: Double, centroidY: Double, bodyEndpoints: (PixelPoint, PixelPoint)?,
+         minimumArea: Int, bodyPointCount: Int, establishedContinuousBody: Bool,
+         denseTrimmedCoreLine: Bool, stronglyTrimmedCoreLine: Bool, diffusedBlueBody: Bool,
+         gatingValues: [String: Double]) {
+        self.centroidX = centroidX; self.centroidY = centroidY; self.bodyEndpoints = bodyEndpoints
+        self.minimumArea = minimumArea; self.bodyPointCount = bodyPointCount
+        self.establishedContinuousBody = establishedContinuousBody
+        self.denseTrimmedCoreLine = denseTrimmedCoreLine
+        self.stronglyTrimmedCoreLine = stronglyTrimmedCoreLine; self.diffusedBlueBody = diffusedBlueBody
+        self.gatingValues = gatingValues
+    }
+}
+
 struct SaberCandidate {
     var source: String = "color-mask"
     var radiance: Double = 0
@@ -270,6 +295,7 @@ struct SaberCandidate {
     let usedPointLEDFallback: Bool
     /// Populated only for Debug Recording, at the production rejection site.
     var diagnosticRejections: [SaberEligibilityDecision] = []
+    var endpointDiagnosticTrace: SaberEndpointDiagnosticTrace? = nil
 }
 
 struct SaberBoundingBox {
@@ -480,7 +506,8 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                                   evidence: SaberEvidence?,
                                   source: String = "color-mask",
                                   stageProfile: SaberCandidateStageProfile? = nil,
-                                  minimumAreaOverride: Int? = nil) -> SaberCandidate? {
+                                  minimumAreaOverride: Int? = nil,
+                                  collectEndpointDiagnostics: Bool = false) -> SaberCandidate? {
     let shapeStart = stageProfile == nil ? 0 : ProcessInfo.processInfo.systemUptime
     let standardMinimumArea = max(4, minimumAreaOverride
         ?? Int(Double(width * height) * 0.0005))
@@ -709,6 +736,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                    y: Int((meanY + axis.1 * maxMajor).rounded()))
     )
     let finalEndpoints: (PixelPoint, PixelPoint)
+    var adoptedBodyEndpoints: (PixelPoint, PixelPoint)?
     let usedPointLEDFallback: Bool
     // A fragmented core-line can have a numerically continuous *local* body
     // while the discarded raw samples are still the real point-LED blade.
@@ -742,6 +770,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
         || hasDiffusedBlueCoreLineBody),
        let bodyEndpoints = principalAxisEndpoints(body.points) {
         finalEndpoints = bodyEndpoints
+        adoptedBodyEndpoints = bodyEndpoints
         usedPointLEDFallback = false
     } else {
         // Disconnected legacy LED packages and mild edge-density changes are
@@ -796,7 +825,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
     if let stageProfile {
         stageProfile.endpointAndBoundsMs += (ProcessInfo.processInfo.systemUptime - endpointStart) * 1000
     }
-    return SaberCandidate(source: source,
+    var candidate = SaberCandidate(source: source,
                           radiance: radianceSum / Double(points.count),
                           comparisonEndpoints: rawEndpoints,
                           endpoints: (first, second), boundingBox: boundingBox, score: score,
@@ -822,6 +851,27 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                           componentArea: points.count,
                           pointCount: points.count,
                           usedPointLEDFallback: usedPointLEDFallback)
+    if collectEndpointDiagnostics {
+        candidate.endpointDiagnosticTrace = SaberEndpointDiagnosticTrace(
+            centroidX: meanX, centroidY: meanY,
+            bodyEndpoints: adoptedBodyEndpoints,
+            minimumArea: minimumArea, bodyPointCount: body.points.count,
+            establishedContinuousBody: hasEstablishedContinuousBody,
+            denseTrimmedCoreLine: hasDenseTrimmedCoreLine,
+            stronglyTrimmedCoreLine: hasStronglyTrimmedSupportedCoreLine,
+            diffusedBlueBody: hasDiffusedBlueCoreLineBody,
+            gatingValues: ["bodyPointCount": Double(body.points.count), "minimumArea": Double(minimumArea),
+                "retainedBodyRatio": body.retainedRatio, "retainedBodyLimit": 0.85,
+                "continuity": body.continuity, "connectedBodyContinuityThreshold": EndpointSelectionThresholds.connectedBodyContinuity,
+                "largestGap": Double(body.largestGap), "coreLineMaximumGapThreshold": Double(EndpointSelectionThresholds.coreLineMaximumGap),
+                "density": body.density, "denseCoreLineDensityThreshold": EndpointSelectionThresholds.denseCoreLineDensity,
+                "stronglyTrimmedRetainedRatioThreshold": EndpointSelectionThresholds.stronglyTrimmedRetainedRatio,
+                "diffuserRetainedRatioThreshold": EndpointSelectionThresholds.diffuserRetainedRatio,
+                "diffuserContinuityThreshold": EndpointSelectionThresholds.diffuserContinuity,
+                "colorPurity": meanPurity, "diffuserColorPurityThreshold": EndpointSelectionThresholds.diffuserColorPurity,
+                "coreSupport": coreSupportRatio, "diffuserCoreSupportThreshold": EndpointSelectionThresholds.diffuserCoreSupport])
+    }
+    return candidate
 }
 
 /// Returns every shape-valid component so fixture tests can compare the chosen
@@ -830,7 +880,8 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
                      evidence: SaberEvidence? = nil,
                      stageProfile: SaberCandidateStageProfile? = nil,
                      componentObserver: ((Int) -> Void)? = nil,
-                     minimumAreaOverride: Int? = nil) -> [SaberCandidate] {
+                     minimumAreaOverride: Int? = nil,
+                     collectEndpointDiagnostics: Bool = false) -> [SaberCandidate] {
     guard width > 0, height > 0, mask.count == width * height else { return [] }
     var remaining = mask
     var candidates: [SaberCandidate] = []
@@ -865,7 +916,8 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
         let candidate = scoredSaberComponent(points, width: width, height: height,
                                              componentMask: mask, evidence: evidence,
                                              stageProfile: stageProfile,
-                                             minimumAreaOverride: minimumAreaOverride)
+                                             minimumAreaOverride: minimumAreaOverride,
+                                             collectEndpointDiagnostics: collectEndpointDiagnostics)
         if let stageProfile {
             stageProfile.candidateScoringMs +=
                 (ProcessInfo.processInfo.systemUptime - scoreStart) * 1000
@@ -881,7 +933,8 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
 func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
                     evidence: SaberEvidence? = nil,
                     source: String = "color-mask",
-                    stageProfile: SaberCandidateStageProfile? = nil) -> SaberCandidate? {
+                    stageProfile: SaberCandidateStageProfile? = nil,
+                    collectEndpointDiagnostics: Bool = false) -> SaberCandidate? {
     let uniqueIndices = Set(points.compactMap { point -> Int? in
         guard point.x >= 0, point.x < width, point.y >= 0, point.y < height else { return nil }
         return point.y * width + point.x
@@ -890,7 +943,8 @@ func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
     return scoredSaberComponent(uniquePoints, width: width, height: height,
                                 componentMask: nil, componentIndices: uniqueIndices,
                                 evidence: evidence, source: source,
-                                stageProfile: stageProfile)
+                                stageProfile: stageProfile,
+                                collectEndpointDiagnostics: collectEndpointDiagnostics)
 }
 
 /// Select one elongated external component, rather than simply the largest color patch.
