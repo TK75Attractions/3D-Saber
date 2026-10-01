@@ -44,7 +44,6 @@ from phone_saber_triage_protocol import (
 class AnalysisJob:
     bundle: Path
     source: str
-    reason: str
 
 
 class TriageHTTPServer(ThreadingHTTPServer):
@@ -77,23 +76,13 @@ class TriageHTTPServer(ThreadingHTTPServer):
         if self.analysis_mode == "disabled":
             return False
         try:
-            self.analysis_queue.put_nowait(AnalysisJob(bundle, source, reason))
+            self.analysis_queue.put_nowait(AnalysisJob(bundle, source))
             return True
         except queue.Full:
             with session_log_context(bundle, source=source):
                 print(f"[codex] {log_fields()} reason={reason} queue full; "
                       f"bundle preserved for manual analysis: {bundle}", flush=True)
             return False
-
-    def resume_existing_sessions(self) -> None:
-        """Keep the existing startup selection policy; only annotate queued work."""
-        if self.analysis_mode == "automatic":
-            for bundle in sorted(self.inbox.glob("phone_saber_triage_*")):
-                if bundle.is_dir() and not bundle.is_symlink() and \
-                        (bundle / "summary.json").is_file() and \
-                        not (bundle / "repair_status.json").exists():
-                    self.enqueue_analysis(bundle, source="startup_resume",
-                                          reason="repair_status_missing")
 
     def _analysis_worker(self) -> None:
         while True:
@@ -102,11 +91,6 @@ class TriageHTTPServer(ThreadingHTTPServer):
             started = time.monotonic()
             with session_log_context(bundle, source=job.source):
                 try:
-                    if job.source == "startup_resume":
-                        print(f"[AUTO_REPAIR][RESUME] {log_fields(source='existing_inbox')} "
-                              f"reason={job.reason} trigger=startup_resume "
-                              f"analysis_report={'present' if (bundle / 'analysis_report.json').is_file() else 'missing'} "
-                              f"state_file={'present' if (bundle / 'state.json').exists() else 'missing'}", flush=True)
                     self._process_analysis(bundle, started)
                 finally:
                     self.analysis_queue.task_done()
@@ -188,6 +172,7 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
             self._reply(400, {"error": str(exc)})
             return
         with session_log_context(bundle, source="new_upload"):
+            print(f"[PHONE_SABER][SESSION] {log_fields()}", flush=True)
             print(f"[triage] received {bundle.name} {log_fields()} "
                   f"from {self.client_address[0]} → {bundle}", flush=True)
         self.server.enqueue_analysis(bundle, source="new_upload", reason="post_received")
@@ -289,9 +274,10 @@ def main(argv: list[str] | None = None) -> int:
     except OSError as exc:
         print(f"cannot start PhoneSaber diagnostics receiver: {exc}", file=sys.stderr)
         return 2
+    print("[PHONE_SABER][START]", flush=True)
     bonjour = None if args.no_bonjour else _publish_bonjour(server.server_port, args.service_name)
     print(f"[triage] listening on {args.host}:{server.server_port}; inbox={args.inbox}; codex={server.analysis_mode}; max-images={server.max_images}", flush=True)
-    server.resume_existing_sessions()
+    print("[PHONE_SABER][WAITING] source=new_upload", flush=True)
     try:
         server.serve_forever(poll_interval=0.25)
     except KeyboardInterrupt:

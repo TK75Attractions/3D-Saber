@@ -157,13 +157,13 @@ class TrackingDiagnosticTests(unittest.TestCase):
             codex = fake_codex(root, root / "spy.json", responses=[initial, tracking_analysis()])
             output = io.StringIO()
             with contextlib.redirect_stdout(output):
-                analyze_bundle(bundle, codex_path=str(codex), source="startup_resume")
+                analyze_bundle(bundle, codex_path=str(codex), source="manual_retry")
             for phase in ("ANALYSIS", "REANALYSIS"):
                 lines = [line for line in output.getvalue().splitlines()
                          if f"[AUTO_REPAIR][{phase}]" in line]
                 self.assertTrue(lines, f"missing {phase}")
                 for line in lines:
-                    self.assertIn("sessionID=sample_session source=startup_resume", line)
+                    self.assertIn("sessionID=sample_session source=manual_retry", line)
             calls = json.loads((root / "spy.json").read_text())["calls"]
             self.assertEqual(len(calls), 2)
             self.assertEqual([c["model"] for c in calls], ["gpt-6-luna", "gpt-6-luna"])
