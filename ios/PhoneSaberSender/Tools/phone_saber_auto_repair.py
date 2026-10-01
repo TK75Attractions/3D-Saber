@@ -17,6 +17,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from phone_saber_codex_process import CodexProcessError, run_codex
+
 from phone_saber_triage_codex import (
     ANALYSIS_MODEL,
     ANALYSIS_REASONING_EFFORT,
@@ -29,7 +31,6 @@ from phone_saber_triage_codex import (
     _validate_analysis,
     find_codex_binary,
     input_plan,
-    is_model_unavailable,
 )
 from phone_saber_triage_protocol import BundleError
 from phone_saber_tracking_diagnostics import (
@@ -525,7 +526,7 @@ def _codex_call(binary: str, scratch: Path, prompt: str, schema: dict[str, Any],
     response_path = scratch.parent / "codex_last_message.json"
     _atomic_json(schema_path, schema)
     response_path.unlink(missing_ok=True)
-    command = [binary, "exec", "--model", model, "-c",
+    command = [binary, "exec", "--json", "--model", model, "-c",
                f"model_reasoning_effort={json.dumps(effort)}", "--ephemeral", "--sandbox",
                "workspace-write" if writable else "read-only", "--skip-git-repo-check",
                "--cd", str(scratch), "--output-schema", str(schema_path),
@@ -536,27 +537,28 @@ def _codex_call(binary: str, scratch: Path, prompt: str, schema: dict[str, Any],
     print(f"[AUTO_REPAIR][{role.upper()}] model={model} effort={effort} "
           f"subprocess=codex sandbox={'workspace-write' if writable else 'read-only'} "
           "result=starting", flush=True)
-    completed = _run(command, cwd=scratch, timeout=timeout, stdin=prompt)
-    if completed.returncode:
-        diagnostic = (completed.stderr or completed.stdout).strip().splitlines()
-        detail = f"Codex exit {completed.returncode}: {(diagnostic[-1] if diagnostic else 'no diagnostic')[:500]}"
-        if is_model_unavailable(completed.stderr + "\n" + completed.stdout):
-            print(f"[AUTO_REPAIR][{role.upper()}] model={model} effort={effort} "
-                  "subprocess=codex result=MODEL_UNAVAILABLE", flush=True)
-            raise RepairModelUnavailable(f"MODEL_UNAVAILABLE: {role} requires {model}/{effort}: {detail}")
-        raise RepairError(detail)
-    response = _json_file(response_path)
+    try:
+        capture = run_codex(command, cwd=scratch, prompt=prompt, model=model,
+                            effort=effort, timeout=timeout)
+    except CodexProcessError as exc:
+        failure = (RepairModelUnavailable if exc.code == "MODEL_UNAVAILABLE" else
+                   RepairTimeout if exc.code == "CLI_TIMEOUT" else RepairError)
+        raise failure(str(exc)) from exc
+    try:
+        response = _json_file(response_path)
+    except RepairError as exc:
+        raise RepairError(str(capture.failure(str(exc)))) from exc
     if not isinstance(response, dict) or set(response) != set(schema["required"]):
-        raise RepairError("Codex response has an invalid structure")
+        raise RepairError(str(capture.failure("Codex response has an invalid structure")))
     for key, spec in schema["properties"].items():
         value = response[key]
         if spec["type"] == "string" and (not isinstance(value, str) or len(value) > 8000
                                            or ("enum" in spec and value not in spec["enum"])):
-            raise RepairError(f"Codex response has invalid {key}")
+            raise RepairError(str(capture.failure(f"Codex response has invalid {key}")))
         if spec["type"] == "array" and (not isinstance(value, list) or len(value) > 30
                                           or not all(isinstance(item, str) and len(item) <= 1000
                                                      for item in value)):
-            raise RepairError(f"Codex response has invalid {key}")
+            raise RepairError(str(capture.failure(f"Codex response has invalid {key}")))
     print(f"[AUTO_REPAIR][{role.upper()}] model={model} effort={effort} "
           "subprocess=codex result=complete", flush=True)
     return response

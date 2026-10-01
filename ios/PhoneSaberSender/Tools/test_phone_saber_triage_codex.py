@@ -646,6 +646,9 @@ def fake_codex(root: Path, spy_path: Path, *, analysis: dict | None = None,
     script = f"""#!{sys.executable}
 import json, pathlib, sys
 args = sys.argv[1:]
+if args == ["--version"]:
+    print("codex-cli test")
+    raise SystemExit(0)
 prompt = sys.stdin.read()
 model = args[args.index('--model') + 1] if '--model' in args else None
 effort_config = args[args.index('-c') + 1] if '-c' in args else None

@@ -10,7 +10,6 @@ import math
 import os
 import re
 import shutil
-import subprocess
 import sys
 import tempfile
 import time
@@ -26,6 +25,8 @@ from phone_saber_tracking_diagnostics import (
 )
 from pathlib import Path, PurePosixPath
 from typing import Any
+
+from phone_saber_codex_process import CodexProcessError, run_codex
 
 from phone_saber_triage_protocol import (
     MAX_BUNDLE_BYTES,
@@ -522,9 +523,7 @@ def analyze_bundle(
     if not plan.image_paths:
         return _write_no_image_report(bundle_dir, plan)
 
-    binary = find_codex_binary(codex_path)
-    if binary is None:
-        raise CodexUnavailable("Codex CLI not found; received bundle is preserved")
+    binary = find_codex_binary(codex_path) or str(Path(codex_path).expanduser() if codex_path else "codex")
 
     final_json = bundle_dir / "analysis_report.json"
     final_markdown = bundle_dir / "analysis_report.md"
@@ -559,6 +558,7 @@ def analyze_bundle(
         command = [
             binary,
             "exec",
+            "--json",
             "--model", ANALYSIS_MODEL,
             "-c", f"model_reasoning_effort={json.dumps(ANALYSIS_REASONING_EFFORT)}",
             "--ephemeral",
@@ -579,30 +579,22 @@ def analyze_bundle(
             started = time.monotonic()
             print(f"[AUTO_REPAIR][{label}] model={model} effort={effort} "
                   "subprocess=codex read-only result=starting", flush=True)
+            response_path.unlink(missing_ok=True)
             try:
-                completed = subprocess.run(
-                    configured, cwd=input_root, input=text_prompt,
-                    stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True,
-                    timeout=timeout_seconds, check=False,
-                )
-            except subprocess.TimeoutExpired as exc:
-                raise CodexFailed(f"Codex CLI timed out after {timeout_seconds} seconds") from exc
-            except OSError as exc:
-                raise CodexFailed(f"Codex CLI could not start: {exc}") from exc
-            if completed.returncode != 0:
-                diagnostic = (completed.stderr or completed.stdout).strip().splitlines()
-                detail = diagnostic[-1][:300] if diagnostic else f"exit {completed.returncode}"
-                if is_model_unavailable(completed.stderr + "\n" + completed.stdout):
-                    raise CodexModelUnavailable(
-                        f"MODEL_UNAVAILABLE: analysis requires {model}/{effort}: {detail}")
-                raise CodexFailed(f"Codex CLI failed ({completed.returncode}): {detail}")
+                capture = run_codex(configured, cwd=input_root, prompt=text_prompt,
+                                    model=model, effort=effort, timeout=timeout_seconds)
+            except CodexProcessError as exc:
+                failure = (CodexModelUnavailable if exc.code == "MODEL_UNAVAILABLE" else
+                           CodexUnavailable if exc.code in {"EXECUTABLE_MISSING", "CLI_START_FAILED"}
+                           else CodexFailed)
+                raise failure(str(exc)) from exc
             if not response_path.is_file() or response_path.stat().st_size > MAX_REPORT_BYTES:
-                raise CodexFailed("Codex CLI returned no bounded final report")
+                raise CodexFailed(str(capture.failure("Codex CLI returned no bounded final report")))
             try:
                 result = json.loads(response_path.read_text(encoding="utf-8"))
                 _validate_analysis(result, set(plan.image_ids))
             except (OSError, UnicodeError, json.JSONDecodeError, BundleError, TypeError) as exc:
-                raise CodexFailed(f"Codex CLI returned invalid structured output: {exc}") from exc
+                raise CodexFailed(str(capture.failure(f"Codex CLI returned invalid structured output: {exc}"))) from exc
             print(f"[AUTO_REPAIR][{label}] model={model} effort={effort} "
                   f"subprocess=codex read-only result=complete "
                   f"elapsed={time.monotonic() - started:.1f}s", flush=True)
@@ -890,6 +882,9 @@ def render_markdown(session_id: str, input_details: dict[str, Any], analysis: di
 
 def _output_schema(image_ids: tuple[str, ...]) -> dict[str, Any]:
     schema = copy.deepcopy(OUTPUT_SCHEMA)
+    # The CLI's strict response format requires every property to be required.
+    # Keep legacy saved-report validation separate from this wire schema.
+    schema["required"] = list(schema["properties"])
     for section in ("false_negatives", "wrong_candidate_and_endpoint_errors",
                     "false_positive_suspects", "other_findings"):
         schema["properties"][section]["items"]["properties"]["image_ids"]["items"] = {

@@ -121,3 +121,14 @@ good environment. Older recordings have no camera samples.
 
 Tracking preflight、terminal summary、実capture + mock LLMのE2E、Recording OFF監査、
 実機benchmark手順は [TRACKING_VERIFICATION.md](TRACKING_VERIFICATION.md) を参照してください。
+
+Codex CLIのみをbundleなしで確認するには、次を実行してください。
+
+```bash
+python3 ios/PhoneSaberSender/Tools/phone_saber_codex_probe.py
+```
+
+固定のLuna/max/read-onlyで実modelを呼び、成功時は`CLI_PROBE_OK`を表示します。
+失敗時はJSON/JSONLのerror payloadと実行条件を表示し、秘密情報を除いた全文を
+`~/Library/Logs/PhoneSaber/codex/`へ保存します。CLI schema拒否の原因・修正・
+保存session再試験は [CODEX_CLI_VERIFICATION.md](CODEX_CLI_VERIFICATION.md) を参照してください。
