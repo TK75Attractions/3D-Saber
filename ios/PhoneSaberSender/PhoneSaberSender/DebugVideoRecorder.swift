@@ -2,6 +2,7 @@ import AVFoundation
 import CoreImage
 import CoreVideo
 import Foundation
+import os
 
 struct DebugRecordingResult {
     let sessionID: String
@@ -941,6 +942,10 @@ final class DebugVideoRecorder {
     private var motionObservationTotalMs = 0.0
     private var motionObservationMaxMs = 0.0
     private var motionPeakRetainedBytes = 0
+    // os_proc_available_memory() minimum while recording, to check the device
+    // headroom of the 256 MiB retained-BGRA budget. 0 means unsupported (Simulator).
+    private var memoryHeadroomSamples = 0
+    private var minimumAvailableMemory: (bytes: Int, frameID: UInt64, retainedBytes: Int)?
     private var legacyReferenceReservationBytes = 0
     private var pendingMetadataFrame: DebugRecordingFrameMetadata?
     private var overlayFrames: [DebugOverlayFrame] = []
@@ -1187,8 +1192,19 @@ final class DebugVideoRecorder {
             terminalError = error
             return .reachedLimit(.metadataWriterFailure)
         }
-        motionPeakRetainedBytes = max(motionPeakRetainedBytes,
-            motionRetainedBytes() + bufferedLosslessBytes)
+        let retainedNow = motionRetainedBytes() + bufferedLosslessBytes
+        motionPeakRetainedBytes = max(motionPeakRetainedBytes, retainedNow)
+#if os(iOS)
+        let available = Int(os_proc_available_memory())
+#else
+        let available = 0 // Not provided on macOS (host-side test harnesses).
+#endif
+        if available > 0 {
+            memoryHeadroomSamples += 1
+            if available < (minimumAvailableMemory?.bytes ?? .max) {
+                minimumAvailableMemory = (available, frameID, retainedNow)
+            }
+        }
         latestRecordedFrameTiming = (frameID, frame.presentationTimeSeconds)
         overlayFrames.append(DebugOverlayFrame(red: freshRed, blue: freshBlue))
         recordedFrameCount += 1
@@ -1304,6 +1320,17 @@ final class DebugVideoRecorder {
                 motionPreRoll.removeFirst()
             }
         }
+    }
+
+    private func memoryHeadroomEntry() -> [String: Any] {
+        var entry: [String: Any] = ["source": "os_proc_available_memory", "samples": memoryHeadroomSamples,
+                                    "available": minimumAvailableMemory != nil]
+        if let minimum = minimumAvailableMemory {
+            entry["minimumAvailableBytes"] = minimum.bytes
+            entry["minimumFrameID"] = minimum.frameID
+            entry["retainedBGRABytesAtMinimum"] = minimum.retainedBytes
+        }
+        return entry
     }
 
     private func motionRetainedBytes() -> Int {
@@ -1530,7 +1557,8 @@ final class DebugVideoRecorder {
                     "meanObservationMs": motionObservationTotalMs
                         / Double(max(1, motionObservationCount)),
                     "maxObservationMs": motionObservationMaxMs,
-                    "peakRetainedBGRABytes": motionPeakRetainedBytes],
+                    "peakRetainedBGRABytes": motionPeakRetainedBytes,
+                    "memoryHeadroom": memoryHeadroomEntry()],
                 "thresholds": [
                     "dropoutEnabled": DebugMotionThresholds.dropoutEnabled,
                     "flickerEnabled": DebugMotionThresholds.flickerEnabled,
@@ -1609,6 +1637,11 @@ final class DebugVideoRecorder {
 #endif
         let selectedMotionEvents = motionEventEntries()
         let selectedMotionSummary = motionSummary()
+        if let minimum = minimumAvailableMemory {
+            print("[DebugRecording] min os_proc_available_memory=\(minimum.bytes / 1_048_576)MiB "
+                + "frame=\(minimum.frameID) retainedBGRA=\(minimum.retainedBytes / 1_048_576)MiB "
+                + "peakRetainedBGRA=\(motionPeakRetainedBytes / 1_048_576)MiB samples=\(memoryHeadroomSamples)")
+        }
         // Pending candidates never saw a closing success; their copies are dropped.
         let diagnostics = diagnosticsMetadata()
         bridgePending.removeAll()

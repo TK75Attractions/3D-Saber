@@ -2879,6 +2879,13 @@ final class DetectionCoreTests: XCTestCase {
         let peakBytes = try XCTUnwrap(runtime["peakRetainedBGRABytes"] as? Int)
         XCTAssertLessThanOrEqual(peakBytes,
             DebugMotionThresholds.maximumRetainedBGRABytes)
+        let headroom = try XCTUnwrap(runtime["memoryHeadroom"] as? [String: Any])
+        XCTAssertEqual(headroom["source"] as? String, "os_proc_available_memory")
+        if headroom["available"] as? Bool == true {
+            XCTAssertGreaterThan(try XCTUnwrap(headroom["minimumAvailableBytes"] as? Int), 0)
+        } else {
+            XCTAssertNil(headroom["minimumAvailableBytes"])
+        }
         print("MOTION_PROFILING frames=\(runtime["observedFrames"] ?? 0) "
             + "mean_ms=\(runtime["meanObservationMs"] ?? 0) "
             + "max_ms=\(runtime["maxObservationMs"] ?? 0) "

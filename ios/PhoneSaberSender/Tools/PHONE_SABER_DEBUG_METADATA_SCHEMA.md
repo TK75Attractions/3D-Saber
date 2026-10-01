@@ -186,6 +186,13 @@ signals; lossless originals and overlays are separate. See
 [Debug Recording motion evidence](DEBUG_MOTION_EVENTS.md) for limits, metric
 scope, selection ledger and conservative repair acceptance.
 
+`motionSummary.runtime.memoryHeadroom` (additive) records the minimum
+`os_proc_available_memory()` seen while recording: `source`, `samples`,
+`available` (false on the Simulator or macOS, where no value is provided), and when
+available `minimumAvailableBytes`, `minimumFrameID` and
+`retainedBGRABytesAtMinimum`. It is used to confirm device headroom for the
+256 MiB retained-BGRA budget; it does not change any selection.
+
 ## Tracking / endpoint diagnostics
 
 録画限定の追加schema、座標系、temporal PNG mapping、compound rejection、安全gateは [TRACKING_DIAGNOSTICS.md](TRACKING_DIAGNOSTICS.md) を参照。version 1へのadditive fieldsで、legacy sessionsのPython解析を維持する。
