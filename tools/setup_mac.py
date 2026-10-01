@@ -106,7 +106,8 @@ def editor_present(version: str) -> bool:
 
 
 def launcher_links(repo: Path, home: Path) -> bool:
-    for name in ("Start PhoneSaber.command", "Open PhoneSaber Log.command"):
+    for name in ("Start PhoneSaber.command", "Open PhoneSaber Log.command",
+                 "Open Latest PhoneSaber Images.command"):
         link = home / "Desktop" / name
         if not link.is_symlink() or link.resolve() != (repo / TOOLS / name).resolve():
             return False

@@ -80,7 +80,7 @@ class TriageHTTPServer(ThreadingHTTPServer):
                 if (bundle / "analysis_report.json").is_file():
                     result = {"status": "existing_analysis", "bundle": str(bundle)}
                 else:
-                    print("[AUTO_REPAIR][ANALYSIS] elapsed=0.0s subprocess=codex read-only result=starting", flush=True)
+                    print("[AUTO_REPAIR][PRECHECK] elapsed=0.0s subprocess=none result=starting", flush=True)
                     result = analyze_bundle(
                         bundle,
                         max_images=self.max_images,
@@ -88,8 +88,9 @@ class TriageHTTPServer(ThreadingHTTPServer):
                         dry_run=self.analysis_mode == "dry-run",
                     )
                 print(f"[codex] {result}", flush=True)
+                subprocess_label = "codex read-only" if result["status"] == "completed" else "none"
                 print(f"[AUTO_REPAIR][ANALYSIS] elapsed={time.monotonic() - started:.1f}s "
-                      f"subprocess=codex read-only result={result['status']}", flush=True)
+                      f"subprocess={subprocess_label} result={result['status']}", flush=True)
                 if self.repair_mode != "disabled" and result["status"] in {
                         "completed", "no_images", "existing_analysis"}:
                     repair = repair_bundle(bundle, codex_path=self.codex_path,

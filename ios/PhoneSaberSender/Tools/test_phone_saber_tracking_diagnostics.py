@@ -57,7 +57,8 @@ def write_tracking_bundle(bundle: Path, count: int = 11) -> None:
                        "signals": signals, "signalAggregation": "event_max_per_kind"},
                    "frames": [{"frameID": image["frameID"], "timestamp": image["timestamp"],
                        "red": {"detected": True, "detectionSucceeded": True, "candidateCount": 1,
-                               "eligibleCandidateCount": 1, "tracking": tracking, "selectedCandidate": candidate},
+                               "eligibleCandidateCount": 1, "tracking": tracking, "selectedCandidate": candidate,
+                               "endpoint": [0, 20, 180 if index == peak else 100, 20]},
                        "blue": {"detected": False}}],
                    "udpTransmissions": [{"frameID": image["frameID"], "color": "red", "endpoint": [0, 20, 100, 20],
                         "sourceEndpoint": [0, 20, 100, 20], "coordinateSpace": "configuredUDPOutputPixels",
@@ -165,8 +166,10 @@ class TrackingDiagnosticTests(unittest.TestCase):
             initial = tracking_analysis(count=2, actionable=False)
             initial["repair_assessment"]["reason"] = "Missing temporal evidence and endpoint history."
             codex = fake_codex(root, root / "spy.json", analysis=initial)
-            analyze_bundle(bundle, codex_path=str(codex))
-            self.assertEqual(len(json.loads((root / "spy.json").read_text())["calls"]), 1)
+            result = analyze_bundle(bundle, codex_path=str(codex))
+            self.assertEqual(result["status"], "precheck_failed")
+            self.assertIn("temporalEvidenceMissing", result["reasonCodes"])
+            self.assertFalse((root / "spy.json").exists())
 
     def test_sol_escalation_requires_visual_temporal_confirmation(self):
         for visible in (True, False):

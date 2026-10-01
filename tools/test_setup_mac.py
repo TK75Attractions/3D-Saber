@@ -31,7 +31,8 @@ class SetupMacTests(unittest.TestCase):
         tools = self.repo / setup.TOOLS
         tools.mkdir(parents=True)
         for name in (*setup.MODEL_PINS, "phone_saber_receiver_launcher.py", "Start PhoneSaber.command",
-                     "Open PhoneSaber Log.command", "install_phone_saber_launcher.command"):
+                     "Open PhoneSaber Log.command", "Open Latest PhoneSaber Images.command",
+                     "install_phone_saber_launcher.command"):
             shutil.copy2(SOURCE_REPO / setup.TOOLS / name, tools / name)
         project = self.repo / "ios/PhoneSaberSender/PhoneSaberSender.xcodeproj"
         project.mkdir(parents=True)
@@ -110,6 +111,11 @@ class SetupMacTests(unittest.TestCase):
             result = subprocess.run(["/bin/bash", str(installer)], env=env, capture_output=True, text=True)
             self.assertEqual(result.returncode, 0, result.stderr)
         self.assertTrue(setup.launcher_links(self.repo, self.home))
+        viewer = self.home / "Desktop/Open Latest PhoneSaber Images.command"
+        self.assertTrue(viewer.is_symlink())
+        self.assertEqual(viewer.resolve(), (self.repo / setup.TOOLS / viewer.name).resolve())
+        viewer.unlink()
+        self.assertFalse(setup.launcher_links(self.repo, self.home))
 
     def test_log_generation_and_secret_not_copied(self):
         fake = self.fake_system()

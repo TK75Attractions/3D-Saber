@@ -22,6 +22,7 @@ from phone_saber_tracking_diagnostics import (
     validate_selected, validate_compound, validate_transmissions, validate_assessment,
     temporal_events, sufficient_temporal, supports_temporal_images,
     tracking_repair_required, has_tracking_discontinuity,
+    PrecheckFailed, input_failure, tracking_preflight, tracking_summary, print_tracking_summary,
 )
 from pathlib import Path, PurePosixPath
 from typing import Any
@@ -501,8 +502,20 @@ def analyze_bundle(
     timeout_seconds: int = CODEX_TIMEOUT_SECONDS,
     dry_run: bool = False,
 ) -> dict[str, Any]:
-    plan = input_plan(bundle_dir, max_images=max_images)
+    try:
+        plan = input_plan(bundle_dir, max_images=max_images)
+    except BundleError as exc:
+        failure = input_failure(exc)
+        print(f"[AUTO_REPAIR][PRECHECK_FAILED] result=NEEDS MORE EVIDENCE {failure}", flush=True)
+        raise failure from exc
     bundle_dir = plan.root
+    precheck = tracking_preflight(plan)
+    if precheck["status"] == "PRECHECK_FAILED":
+        print("[AUTO_REPAIR][PRECHECK_FAILED] result=NEEDS MORE EVIDENCE " +
+              json.dumps(precheck, ensure_ascii=False), flush=True)
+        if dry_run:
+            return {**precheck, "status": "precheck_failed", "sessionID": plan.session_id}
+        return _write_precheck_report(bundle_dir, plan, precheck)
     if dry_run:
         print(dry_run_text(bundle_dir, max_images=max_images), flush=True)
         return {"status": "dry_run", "sessionID": plan.session_id}
@@ -646,6 +659,7 @@ def analyze_bundle(
         "analysisModel": ANALYSIS_MODEL,
         "analysisReasoningEffort": ANALYSIS_REASONING_EFFORT,
         "analysisExecuted": True,
+        "precheck": precheck,
         "analysisReanalysisExecuted": reanalysis_executed,
         "analysisEscalationModel": ESCALATION_MODEL,
         "analysisEscalationReasoningEffort": ESCALATION_REASONING_EFFORT,
@@ -670,6 +684,8 @@ def analyze_bundle(
         },
         "analysis": analysis,
     }
+    report["trackingSummary"] = tracking_summary(plan, report)
+    print_tracking_summary(report["trackingSummary"])
     markdown = render_markdown(plan.session_id, report["input"], analysis)
     _write_reports(bundle_dir, report, markdown)
     return {"status": "completed", "sessionID": plan.session_id,
@@ -677,7 +693,11 @@ def analyze_bundle(
             "markdownPath": str(final_markdown)}
 
 
-def _write_no_image_report(bundle_dir: Path, plan: CodexInputPlan) -> dict[str, Any]:
+def _write_precheck_report(bundle_dir: Path, plan: CodexInputPlan, precheck: dict) -> dict[str, Any]:
+    return _write_no_image_report(bundle_dir, plan, precheck=precheck)
+
+
+def _write_no_image_report(bundle_dir: Path, plan: CodexInputPlan, *, precheck: dict | None = None) -> dict[str, Any]:
     if (bundle_dir / "analysis_report.json").exists() or (bundle_dir / "analysis_report.md").exists():
         raise CodexFailed("analysis report already exists; refusing to overwrite it")
     report = {
@@ -702,9 +722,23 @@ def _write_no_image_report(bundle_dir: Path, plan: CodexInputPlan) -> dict[str, 
             },
         },
     }
+    if precheck is not None:
+        report["precheck"] = precheck
+        report["input"].update(imageCount=len(plan.images),
+            imagePaths=[p.relative_to(plan.root).as_posix() for p in plan.image_paths],
+            contextPaths=[p.relative_to(plan.root).as_posix() for p in plan.context_paths],
+            imageReferences=[{"id": i.image_id, "path": i.image_path.relative_to(plan.root).as_posix(),
+                "contextPath": i.context_path.relative_to(plan.root).as_posix(),
+                "frameID": i.frame_id, "incidentType": i.failure_type} for i in plan.images])
+        report["analysis"]["session_summary"] = "PRECHECK_FAILED: analysis skipped. NEEDS MORE EVIDENCE."
+        report["analysis"]["limitations"] = [r["code"] + ": " + r["detail"] for r in precheck["reasons"]]
+        report["analysis"]["repair_assessment"]["reason"] = ",".join(precheck["reasonCodes"])
+        report["trackingSummary"] = tracking_summary(plan, report, {"decision": "needs_capture", "reasonCodes": precheck["reasonCodes"]})
+        print_tracking_summary(report["trackingSummary"])
     markdown = render_markdown(plan.session_id, report["input"], report["analysis"])
     _write_reports(bundle_dir, report, markdown)
-    return {"status": "no_images", "sessionID": plan.session_id, "imageCount": 0}
+    return {"status": "precheck_failed" if precheck else "no_images", "sessionID": plan.session_id,
+            "imageCount": len(plan.images), "reasonCodes": precheck["reasonCodes"] if precheck else []}
 
 
 def _write_reports(bundle_dir: Path, report: dict[str, Any], markdown: str) -> None:
@@ -962,12 +996,16 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
                      "candidateDecisionTrace", "failureStage", "tracking", "selectedCandidate",
                      "secondBestScore", "scoreMargin"}
     for frame in context["frames"]:
+        if isinstance(frame, dict) and "timestamp" not in frame:
+            raise BundleError(f"frame timestamp missing or invalid: {path.name}")
         if not isinstance(frame, dict) or not {"frameID", "timestamp", "red", "blue"}.issubset(frame) \
                 or not set(frame).issubset(allowed_frame) \
                 or not isinstance(frame.get("frameID"), int) \
-                or isinstance(frame.get("frameID"), bool) \
-                or not isinstance(frame.get("timestamp"), (int, float)):
+                or isinstance(frame.get("frameID"), bool):
             raise BundleError(f"frame context has an invalid frame entry: {path.name}")
+        if not isinstance(frame.get("timestamp"), (int, float)) or isinstance(frame.get("timestamp"), bool) \
+                or not math.isfinite(frame["timestamp"]):
+            raise BundleError(f"frame timestamp missing or invalid: {path.name}")
         if ("processingTimeSeconds" in frame and (
                 not isinstance(frame["processingTimeSeconds"], (int, float))
                 or isinstance(frame["processingTimeSeconds"], bool)

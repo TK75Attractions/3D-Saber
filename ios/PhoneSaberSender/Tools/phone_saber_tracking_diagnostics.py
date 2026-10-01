@@ -38,6 +38,9 @@ def validate_mapping(context: dict, image: dict, session: str) -> None:
         if image.get("role") in TRACKING_ROLES:
             raise BundleError("tracking image lacks explicit frame mapping")
         return  # Backward-compatible legacy input; never sufficient for tracking repair.
+    if image.get("role") in TRACKING_ROLES and (isinstance(image.get("eventIndex"), bool) or
+            not isinstance(image.get("eventIndex"), int)):
+        raise BundleError("tracking event ID missing")
     expected = {"sessionID": session, "frameID": image["frameID"],
                 "timestamp": image.get("timestamp"), "color": image.get("color"),
                 "image": image["path"], "eventID": str(image.get("eventIndex", "none")),
@@ -239,3 +242,150 @@ def tracking_repair_required(analysis: dict, events: list[dict]) -> bool:
     return bool(tracking_images & evidence_ids) and (targeted_finding or numeric_target
         or assessment.get("root_cause_stage") == "endpoint"
         or analysis.get("tracking_assessment", {}).get("symptom_confirmed_in_images") is True)
+
+
+class PrecheckFailed(BundleError):
+    """Selected input cannot support analysis; never substitute another frame."""
+    def __init__(self, reasons: list[dict]):
+        self.reasons = reasons
+        self.reason_codes = sorted({r["code"] for r in reasons})
+        super().__init__("PRECHECK_FAILED " + ",".join(self.reason_codes) + ": " +
+                         "; ".join(r["detail"] for r in reasons))
+
+
+def input_failure(error: BundleError) -> PrecheckFailed:
+    """Translate the existing strict input contract without relaxing it."""
+    detail = str(error)
+    lower = detail.lower()
+    code = "inputContractInvalid"
+    if "event id missing" in lower:
+        code = "temporalEvidenceMissing"
+    elif "timestamp missing or invalid" in lower:
+        code = "timestampMissing"
+    elif "not a png" in lower:
+        code = "imageFileInvalid"
+    elif "missing" in lower and (".png" in lower or "not a png" in lower):
+        code = "imageFileMissing"
+    elif "endpoint pipeline" in lower or "endpoint pair" in lower:
+        code = "endpointHistoryMissing"
+    elif "selected tracking candidate" in lower:
+        code = "candidateHistoryMissing"
+    elif any(x in lower for x in (".json", "mapping", "frame entry", "frameid", "frame context", "timestamp", "duplicate selected", "ambiguous selected")):
+        code = "frameMappingMissing"
+    elif any(x in lower for x in ("motion", "event", "tracking")):
+        code = "temporalEvidenceMissing"
+    return PrecheckFailed([{"code": code, "detail": detail}])
+
+
+def tracking_preflight(plan: Any) -> dict:
+    """Check selected evidence before any LLM request, including re-analysis.
+
+    A dropout-only event can use eligibility diagnostics without three selected
+    candidates. Geometry/path/switch events need the complete tracking history.
+    UDP send-start records are optional: they cannot prove delivery to Unity.
+    """
+    reasons: list[dict] = []
+    def fail(code: str, detail: str) -> None:
+        reasons.append({"code": code, "detail": detail})
+    groups: dict[tuple[int, str], list[dict]] = {}
+    for image in plan.images:
+        c = json.loads(image.context_path.read_text(encoding="utf-8"))
+        motion = c.get("motionEvent", {})
+        if motion.get("role") not in TRACKING_ROLES:
+            continue
+        key = (motion["eventIndex"], c["selectedColor"])
+        groups.setdefault(key, []).append(c)
+        if not image.image_path.is_file():
+            fail("imageFileMissing", str(image.image_path))
+        frames = c["frames"]
+        if not all(number(f.get("timestamp")) for f in frames):
+            fail("timestampMissing", f"frame={image.frame_id}")
+        if any(b["frameID"] <= a["frameID"] or b["timestamp"] <= a["timestamp"]
+               for a, b in zip(frames, frames[1:])):
+            fail("temporalOrderInvalid", f"context frame={image.frame_id}")
+    events = temporal_events(plan)
+    summary = json.loads((plan.root / "summary.json").read_text(encoding="utf-8"))
+    if not events and summary.get("motionEventSummary", {}).get("trackingCapture"):
+        fail("temporalEvidenceMissing", "tracking capture has no selected temporal event")
+    modes = []
+    for e in events:
+        label = f"event={e['eventID']} color={e['color']}"
+        fs = e["frames"]
+        contexts = groups[(e["eventID"], e["color"])]
+        ids = [c["selectedFrameID"] for c in contexts]
+        if ids != sorted(set(ids)):
+            fail("temporalOrderInvalid", label + " selected PNG order")
+        if e["centerFrameID"] is None:
+            fail("eventCenterMissing", label)
+        peak = next((f for f in fs if f["role"] == "peak"), {})
+        t = peak.get("tracking") or {}
+        dropout_only = peak.get("detected") is False and not (
+            t.get("candidateSwitch") or t.get("endpointPathChanged") or
+            t.get("stageDiscontinuities", {}).get("finalSelected", 0) > 0)
+        modes.append({"eventID": e["eventID"], "mode": "eligibility-dropout" if dropout_only else "tracking"})
+        if dropout_only:
+            continue
+        if len(fs) < 3 or not e["consecutiveFrames"] or e["centerFrameID"] is None or not (
+                fs[0]["frameID"] < e["centerFrameID"] < fs[-1]["frameID"]):
+            fail("temporalEvidenceMissing", label + " requires consecutive before/peak/after")
+        if any(not number(f.get("timestamp")) for f in fs):
+            fail("timestampMissing", label)
+        if any(not f.get("tracking") for f in fs):
+            fail("trackingTimelineMissing", label)
+        observed = [f for f in fs if f.get("detected") is True]
+        if len(observed) < 3 or any(not f.get("selectedCandidate") for f in observed):
+            fail("candidateHistoryMissing", label)
+        pipelines = [(f.get("selectedCandidate") or {}).get("endpointPipeline") or {} for f in observed]
+        if len(pipelines) < 3 or any(not p.get("finalSelected") for p in pipelines) or any(
+                not numeric_array(f.get("emittedEndpoint"), 4) for f in observed):
+            fail("endpointHistoryMissing", label)
+        if len(pipelines) < 3 or any(not p.get("endpointSource") for p in pipelines):
+            fail("endpointPathHistoryMissing", label)
+        if sum(bool((f.get("tracking") or {}).get("stageDiscontinuities")) for f in fs) < 2:
+            fail("trackingTimelineMissing", label + " stage history")
+        if not sufficient_temporal(e):
+            fail("trackingAssessmentDataMissing", label)
+    return {"status": "PRECHECK_FAILED" if reasons else "PASS",
+            "reasonCodes": sorted({r["code"] for r in reasons}), "reasons": reasons,
+            "eventModes": modes}
+
+
+STAGE_LABELS = {"candidate_selection": "candidate-selection", "mask_component": "mask-component",
+                "PCA": "raw-pca", "robust_body": "body-endpoint",
+                "endpoint_selection": "final-selection", "fallback": "final-selection",
+                "downstream": "downstream", "unknown": "unknown"}
+
+
+def tracking_summary(plan: Any, report: dict, gate: dict | None = None) -> list[dict]:
+    assessment = report.get("analysis", {}).get("tracking_assessment", {})
+    rows = []
+    precheck = tracking_preflight(plan)
+    for event in temporal_events(plan):
+        peak = next((f for f in event["frames"] if f["role"] == "peak"), {})
+        t = peak.get("tracking") or {}
+        # The first stage is the analysis conclusion; numeric jumps alone are
+        # not proof of a recognition defect.
+        refs = set(assessment.get("temporal_image_ids", []))
+        temporal_complete = sufficient_temporal(event) and precheck["status"] == "PASS"
+        row = {"sessionID": plan.session_id, "selectedEventID": event["eventID"],
+            "color": event["color"], "centerFrame": event["centerFrameID"],
+            "instabilityScore": t.get("instabilityScore"), "detected": peak.get("detected"),
+            "candidateSwitch": t.get("candidateSwitch"), "endpointPathChanged": t.get("endpointPathChanged"),
+            "midpointDiscontinuity": t.get("midpointDisplacement"),
+            "angleDiscontinuity": t.get("orientationChange"), "lengthDiscontinuity": t.get("lengthChange"),
+            "firstUnstableStage": STAGE_LABELS.get(assessment.get("first_unstable_stage"), "unknown") if peak.get("imageID") in refs else "unknown",
+            "visualEvidence": "complete" if assessment.get("symptom_confirmed_in_images") is True and supports_temporal_images(event, refs) else "incomplete",
+            "temporalEvidence": "complete" if temporal_complete else "incomplete",
+            "analysisResult": report.get("precheck", {}).get("status") if not report.get("analysisExecuted") else report.get("analysis", {}).get("repair_assessment", {}).get("decision", "unknown"),
+            "reanalysisExecuted": report.get("analysisReanalysisExecuted", False),
+            "solEscalationExecuted": report.get("analysisEscalationExecuted", False),
+            "gateResult": (gate or {}).get("decision", "pending"),
+            "reasonCodes": (gate or report.get("precheck", {})).get("reasonCodes", [])}
+        rows.append(row)
+    return rows
+
+
+def print_tracking_summary(rows: list[dict]) -> None:
+    for row in rows:
+        print("[AUTO_REPAIR][TRACKING_SUMMARY] " + " ".join(
+            f"{k}={json.dumps(v, ensure_ascii=False, separators=(',', ':'))}" for k, v in row.items()), flush=True)

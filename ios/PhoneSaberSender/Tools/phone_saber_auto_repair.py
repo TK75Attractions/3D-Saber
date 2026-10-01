@@ -32,7 +32,10 @@ from phone_saber_triage_codex import (
     is_model_unavailable,
 )
 from phone_saber_triage_protocol import BundleError
-from phone_saber_tracking_diagnostics import temporal_events, sufficient_temporal, supports_temporal_images, tracking_repair_required
+from phone_saber_tracking_diagnostics import (
+    temporal_events, sufficient_temporal, supports_temporal_images, tracking_repair_required,
+    tracking_preflight, tracking_summary, print_tracking_summary,
+)
 
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
@@ -210,7 +213,9 @@ def repair_gate(report: dict[str, Any], plan: Any, repo: Path) -> dict[str, Any]
     analysis = report["analysis"]
     assessment = analysis.get("repair_assessment")
     reasons: list[str] = []
-    reason_codes: set[str] = set()
+    precheck = tracking_preflight(plan)
+    reason_codes: set[str] = set(precheck["reasonCodes"])
+    reasons.extend("preflight evidence requirement not satisfied: " + r["code"] for r in precheck["reasons"])
     if report["formatVersion"] != 3 or not isinstance(assessment, dict):
         reasons.append("legacy analysis lacks machine-readable repair evidence")
     else:
@@ -425,6 +430,8 @@ def _terminal_report(bundle: Path, state: dict[str, Any], gate: dict[str, Any],
                      "formalBaseline": state.get("formalBaseline"),
                      "result": status, "reason": reason,
                      "dryRunPlan": state.get("dryRunPlan"), **model_fields}
+    repair_report["trackingSummary"] = state.get("trackingSummary", [])
+    print_tracking_summary(repair_report["trackingSummary"])
     _atomic_json(bundle / "repair_report.json", repair_report)
     lines = ["# PhoneSaber repair", "", f"Status: {status}", "", f"Reason: {reason}", "",
              f"Gate: {gate.get('decision', 'not_run')}", f"Corpus: {gate.get('corpus', 'not_run')}",
@@ -1044,9 +1051,10 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
         plan = input_plan(bundle, max_images=max_images, allow_reports=True)
         report = load_analysis(bundle, plan)
         gate = repair_gate(report, plan, repo)
+        summary = tracking_summary(plan, report, gate)
         state: dict[str, Any] = {"sessionID": plan.session_id, "status": "running",
                                  "phase": "gate", "attempt": 0, "dryRun": dry_run,
-                                 "ownedFiles": {}, "startedAt": time.time(),
+                                 "ownedFiles": {}, "startedAt": time.time(), "trackingSummary": summary,
                                  "models": {
                                      "analysis": {
                                          "model": report.get("analysisModel", ANALYSIS_MODEL),

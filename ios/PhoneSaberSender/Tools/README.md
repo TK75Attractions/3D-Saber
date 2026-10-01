@@ -118,3 +118,6 @@ once per second and linked to the nearest recorded `frameID` and presentation
 time. Compare exposure duration, ISO, white balance gains and modes, focus and
 lens position, active format, and active FPS range between school and a known
 good environment. Older recordings have no camera samples.
+
+Tracking preflight、terminal summary、実capture + mock LLMのE2E、Recording OFF監査、
+実機benchmark手順は [TRACKING_VERIFICATION.md](TRACKING_VERIFICATION.md) を参照してください。

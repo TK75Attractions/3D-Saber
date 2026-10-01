@@ -2141,8 +2141,28 @@ final class DetectionCoreTests: XCTestCase {
     @MainActor
     func testDebugRecordingIsCompletelyOffByDefault() {
         let processor = FrameProcessor(expiryScheduler: nil)
-        processor.process(sampleBuffer(width: 16, height: 16) { _, _ in })
-        XCTAssertEqual(processor.motionHistoryCountForTesting, 0)
+        var freshResults = 0
+        processor.onResult = { results, _, _, _, _, _ in
+            let red = results.first { $0.color == .red && $0.isFresh && !$0.isPredicted }
+            XCTAssertNotNil(red)
+            XCTAssertNil(red?.diagnosticSendStarted)
+            freshResults += red == nil ? 0 : 1
+        }
+        // Exercise repeated successful recognition, including a moving blade,
+        // rather than checking OFF with only an empty frame.
+        for offset in 0..<25 {
+            let frame = sampleBuffer(width: 192, height: 96) { base, stride in
+                let pixels = base.assumingMemoryBound(to: UInt8.self)
+                for y in 30...38 { for x in (10 + offset)...(90 + offset) {
+                    let index = y * stride + x * 4
+                    pixels[index] = 35; pixels[index + 1] = 45
+                    pixels[index + 2] = 245; pixels[index + 3] = 255
+                } }
+            }
+            processor.process(frame)
+            XCTAssertEqual(processor.motionHistoryCountForTesting, 0)
+        }
+        XCTAssertEqual(freshResults, 25)
         let viewModel = CameraViewModel(
             authorizationStatus: { .denied },
             requestAccess: { _ in }
@@ -2188,16 +2208,19 @@ final class DetectionCoreTests: XCTestCase {
 
     func testNormalDetectionDoesNotBuildRejectionSiteDiagnostics() throws {
         let fixture = try fixtureBGRA("blue-led-bright-large-05")
-        let analysis = analyzeSabers(
-            in: fixture.bytes, width: fixture.width, height: fixture.height,
-            bytesPerRow: fixture.bytesPerRow,
-            redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
-            collectProfile: false, collectPipelineDiagnostics: false
-        )
-        XCTAssertNil(analysis.pipelineDiagnostics)
-        XCTAssertTrue(analysis.candidates.values.flatMap { $0 }.allSatisfy {
-            $0.diagnosticRejections.isEmpty
-        })
+        for profiling in [false, true] {
+            let analysis = analyzeSabers(
+                in: fixture.bytes, width: fixture.width, height: fixture.height,
+                bytesPerRow: fixture.bytesPerRow,
+                redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                collectProfile: profiling, collectPipelineDiagnostics: false
+            )
+            XCTAssertNil(analysis.pipelineDiagnostics)
+            XCTAssertFalse(analysis.candidates.values.flatMap { $0 }.isEmpty)
+            XCTAssertTrue(analysis.candidates.values.flatMap { $0 }.allSatisfy {
+                $0.diagnosticRejections.isEmpty && $0.endpointDiagnosticTrace == nil
+            })
+        }
     }
 
     func testSparseBlueMaskSurvivesDestructiveOpeningThroughRawFallback() throws {
