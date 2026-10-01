@@ -295,7 +295,8 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.unlock()
     }
 
-    func startDebugRecording(completion: @escaping (Result<String, Error>) -> Void) {
+    func startDebugRecording(diagnosticColors: DebugDiagnosticColors = .both,
+                             completion: @escaping (Result<String, Error>) -> Void) {
         queue.async { [weak self] in
             guard let self else { return }
             do {
@@ -305,7 +306,8 @@ final class FrameProcessor: @unchecked Sendable {
                 guard let dimensions = self.lastDimensions else {
                     throw DebugVideoRecorderError.cameraNotReady
                 }
-                let recorder = try DebugVideoRecorder(directory: self.rawFrameDirectory())
+                let recorder = try DebugVideoRecorder(directory: self.rawFrameDirectory(),
+                                                      diagnosticColors: diagnosticColors)
                 try recorder.prepare(width: dimensions.0, height: dimensions.1)
                 self.debugVideoRecorder = recorder
                 completion(.success(recorder.sessionID))

@@ -119,6 +119,9 @@ time. Compare exposure duration, ISO, white balance gains and modes, focus and
 lens position, active format, and active FPS range between school and a known
 good environment. Older recordings have no camera samples.
 
+Bridge dropout（棒が画面外に出ただけの欠落を診断対象から除く選択）、診断色（RED/BLUE/BOTH）、
+compact contextは [BRIDGE_DROPOUT_DIAGNOSTICS.md](BRIDGE_DROPOUT_DIAGNOSTICS.md) を参照してください。
+
 Tracking preflight、terminal summary、実capture + mock LLMのE2E、Recording OFF監査、
 実機benchmark手順は [TRACKING_VERIFICATION.md](TRACKING_VERIFICATION.md) を参照してください。
 

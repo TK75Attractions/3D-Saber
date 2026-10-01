@@ -694,3 +694,681 @@ extension DebugRecordingTriageTests {
         XCTAssertEqual((trace["compoundRejections"] as? [[String: Any]])?.count, 1)
     }
 }
+
+// MARK: - Bridge dropouts, active colors and compact contexts
+
+final class DebugBridgeDropoutTests: XCTestCase {
+    private func sample(_ id: UInt64, _ time: Double, _ points: [Double]?) -> DebugBridgeSample {
+        DebugBridgeSample(frameID: id, timestamp: time, succeeded: points != nil, endpoints: points)
+    }
+
+    private func line(_ x: Double, _ y: Double = 100, length: Double = 100,
+                      vertical: Bool = false) -> [Double] {
+        vertical ? [x, y, x, y + length] : [x, y, x + length, y]
+    }
+
+    // MARK: Assessment
+
+    func testShortLossOfTheSameSaberIsABridgeDropout() {
+        let result = DebugBridgeDropout.assess(
+            prior: [sample(1, 0, line(100))],
+            missing: [sample(2, 1.0 / 30, nil)],
+            after: sample(3, 2.0 / 30, line(108)))
+        XCTAssertTrue(result.accepted, result.rejection ?? "")
+        XCTAssertEqual(try XCTUnwrap(result.measurements["gapSeconds"]), 2.0 / 30, accuracy: 1e-9)
+        XCTAssertEqual(result.measurements["missingFrameCount"], 1)
+        XCTAssertNotNil(result.measurements["midpointDisplacement"])
+        XCTAssertNotNil(result.measurements["orientationChangeRadians"])
+    }
+
+    func testLongAbsenceIsNotABridgeDropout() {
+        let result = DebugBridgeDropout.assess(
+            prior: [sample(1, 0, line(100))],
+            missing: [sample(2, 1.0 / 30, nil)],
+            after: sample(90, 3.0, line(100)))
+        XCTAssertFalse(result.accepted)
+        XCTAssertEqual(result.rejection, "gap_too_long")
+    }
+
+    func testBoundaryWithoutSuccessOnEitherSideIsRejected() {
+        XCTAssertEqual(DebugBridgeDropout.assess(
+            prior: [], missing: [sample(2, 0.03, nil)], after: sample(3, 0.06, line(100))).rejection,
+            "missing_success_on_one_side")
+        XCTAssertEqual(DebugBridgeDropout.assess(
+            prior: [sample(1, 0, line(100))], missing: [sample(2, 0.03, nil)],
+            after: sample(3, 0.06, nil)).rejection, "missing_success_on_one_side")
+        XCTAssertEqual(DebugBridgeDropout.assess(
+            prior: [sample(1, 0, line(100))], missing: [],
+            after: sample(3, 0.06, line(100))).rejection, "missing_success_on_one_side")
+    }
+
+    func testImplausibleSpeedLengthAndOrientationAreDiscontinuities() {
+        let jump = DebugBridgeDropout.assess(
+            prior: [sample(1, 0, line(100))], missing: [sample(2, 0.03, nil)],
+            after: sample(3, 0.06, line(900)))
+        XCTAssertEqual(jump.rejection, "discontinuous_speed")
+        let shorter = DebugBridgeDropout.assess(
+            prior: [sample(1, 0, line(100, length: 100))], missing: [sample(2, 0.03, nil)],
+            after: sample(3, 0.06, line(100, length: 20)))
+        XCTAssertEqual(shorter.rejection, "discontinuous_length_change")
+        let turned = DebugBridgeDropout.assess(
+            prior: [sample(1, 0, line(100))], missing: [sample(2, 0.03, nil)],
+            after: sample(3, 0.06, line(100, vertical: true)))
+        XCTAssertEqual(turned.rejection, "discontinuous_orientation_change")
+    }
+
+    func testEndpointOrderDoesNotMatter() {
+        let result = DebugBridgeDropout.assess(
+            prior: [sample(1, 0, [100, 100, 200, 100])], missing: [sample(2, 0.03, nil)],
+            after: sample(3, 0.06, [205, 100, 105, 100]))
+        XCTAssertTrue(result.accepted, result.rejection ?? "")
+    }
+
+    func testPriorVelocityRejectsAReappearanceOnTheWrongSideOfTheMotion() {
+        // Moving right at ~1000 px/s, then back at x=100 after 0.2 s: plausible
+        // by speed alone, but far from where steady motion would put it.
+        let prior = [sample(1, -0.033, line(66)), sample(2, 0, line(100))]
+        let wrongWay = DebugBridgeDropout.assess(
+            prior: prior, missing: [sample(3, 0.1, nil)], after: sample(4, 0.2, line(-200)))
+        XCTAssertEqual(wrongWay.rejection, "discontinuous_prediction_residual")
+        XCTAssertNotNil(wrongWay.measurements["predictionResidual"])
+        let onTrack = DebugBridgeDropout.assess(
+            prior: prior, missing: [sample(3, 0.1, nil)], after: sample(4, 0.2, line(300)))
+        XCTAssertTrue(onTrack.accepted, onTrack.rejection ?? "")
+    }
+
+    func testExpectedPositionInterpolatesBetweenTheTwoSuccesses() throws {
+        let expected = try XCTUnwrap(DebugBridgeDropout.predictedEndpoints(
+            before: sample(1, 0, line(100)), after: sample(3, 0.2, line(200)), at: 0.1))
+        XCTAssertEqual(expected, [150, 100, 250, 100])
+    }
+
+    // MARK: Tracker
+
+    func testTrackerNeverStartsOrClosesACandidateOutsideTheSuccessWindow() {
+        var tracker = DebugBridgeTracker()
+        for id in 0..<3 {
+            XCTAssertEqual(tracker.observe(sample(UInt64(id), Double(id) * 0.03, nil)), .none)
+        }
+        XCTAssertNil(tracker.firstSuccess)
+        _ = tracker.observe(sample(3, 0.09, line(100)))
+        XCTAssertEqual(tracker.firstSuccess?.frameID, 3)
+        guard case .dropoutStarted(let run) = tracker.observe(sample(4, 0.12, nil)) else {
+            return XCTFail("expected a dropout to start after a success")
+        }
+        XCTAssertEqual(run.prior.map(\.frameID), [3])
+        XCTAssertEqual(tracker.observe(sample(5, 0.15, nil)), .none)
+        guard case .recovered(let closed, let after) = tracker.observe(sample(6, 0.18, line(104))) else {
+            return XCTFail("expected the dropout to close on the next success")
+        }
+        XCTAssertEqual(closed.missing.map(\.frameID), [4, 5])
+        XCTAssertEqual(after.frameID, 6)
+        _ = tracker.observe(sample(7, 0.21, nil))
+        _ = tracker.observe(sample(8, 0.24, nil))
+        // The recording ends in absence: it is never closed, so never a candidate.
+        XCTAssertNotNil(tracker.unclosedRun)
+        XCTAssertEqual(tracker.lastSuccess?.frameID, 6)
+    }
+
+    // MARK: Selection from metadata
+
+    private func temporaryDirectory() throws -> URL {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("phonesaber-bridge-tests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        return directory
+    }
+
+    private func detection(_ points: [Double]?) -> [String: Any] {
+        guard let points else { return ["detected": false, "predicted": false] }
+        return ["detected": true, "predicted": false, "x1": Int(points[0]), "y1": Int(points[1]),
+                "x2": Int(points[2]), "y2": Int(points[3])]
+    }
+
+    private func rules(_ count: Int) -> [[String: Any]] {
+        (0..<count).map { ["name": "rule\($0)", "result": "FAIL", "value": 0.2 + Double($0) / 100,
+                           "comparison": ">=", "threshold": 0.5] }
+    }
+
+    private func diagnostics(candidates: Int, eligible: Int, rules ruleCount: Int = 0) -> [String: Any] {
+        var result: [String: Any] = ["totalCandidateCount": candidates, "eligibleCandidateCount": eligible]
+        if candidates > 0 {
+            result["topCandidates"] = (0..<min(3, candidates)).map { index -> [String: Any] in
+                ["index": index, "sourceType": "color-component", "eligible": false,
+                 "finalScore": 10.0 - Double(index), "rejectionReasons": ["rule0"],
+                 "eligibilityRules": rules(ruleCount), "peakValue": 210, "componentArea": 1800]
+            }
+        }
+        return result
+    }
+
+    private func frame(_ id: Int, red: [Double]?, blue: [Double]?, heavy: Bool = false,
+                       redCandidates: Int = 0, blueCandidates: Int = 0) -> [String: Any] {
+        ["frameID": id, "presentationTimeSeconds": Double(id) / 30,
+         "red": detection(red), "blue": detection(blue),
+         "redDetectionSucceeded": red != nil, "blueDetectionSucceeded": blue != nil,
+         "candidateDiagnostics": [
+            "red": diagnostics(candidates: red == nil ? redCandidates : 1, eligible: red == nil ? 0 : 1,
+                               rules: heavy ? 20 : 3),
+            "blue": diagnostics(candidates: blue == nil ? blueCandidates : 1, eligible: blue == nil ? 0 : 1,
+                                rules: heavy ? 20 : 3)],
+         "forensicCaptured": false, "manualCaptured": false]
+    }
+
+    private func event(_ id: Int, color: String, start: Int, gap: Int = 1,
+                       annotated: Bool = true) -> [String: Any] {
+        let dropout = start + 1
+        let after = start + 1 + gap
+        func name(_ role: String, _ frame: Int) -> String { "bridge_event_\(id)_\(role)_\(frame).png" }
+        var dropoutImage: [String: Any] = ["role": "dropout", "frameID": dropout,
+            "timestamp": Double(dropout) / 30, "fileName": name("dropout", dropout)]
+        if annotated { dropoutImage["annotatedFileName"] = "bridge_event_\(id)_dropout_annotated_\(dropout).png" }
+        return ["eventID": id, "color": color, "beforeFrameID": start, "dropoutFrameID": dropout,
+                "afterFrameID": after, "beforeTimestamp": Double(start) / 30,
+                "dropoutTimestamp": Double(dropout) / 30, "afterTimestamp": Double(after) / 30,
+                "missingFrameCount": gap, "gapSeconds": Double(gap + 1) / 30,
+                "assessment": ["accepted": true, "measurements": ["gapSeconds": Double(gap + 1) / 30],
+                               "thresholds": DebugBridgeThresholds.dictionary],
+                "images": [
+                    ["role": "before_success", "frameID": start, "timestamp": Double(start) / 30,
+                     "fileName": name("before_success", start)],
+                    dropoutImage,
+                    ["role": "after_success", "frameID": after, "timestamp": Double(after) / 30,
+                     "fileName": name("after_success", after)]],
+                "annotation": ["groundTruth": false, "expectedEndpoints": [100, 100, 200, 100]]]
+    }
+
+    private func writeImages(_ events: [[String: Any]], to directory: URL,
+                             skip: Set<String> = []) throws {
+        for event in events {
+            for image in event["images"] as? [[String: Any]] ?? [] {
+                for key in ["fileName", "annotatedFileName"] {
+                    if let name = image[key] as? String, !skip.contains(name) {
+                        try Data("png".utf8).write(to: directory.appendingPathComponent(name))
+                    }
+                }
+            }
+        }
+    }
+
+    private func document(frames: [[String: Any]], events: [[String: Any]],
+                          active: [String] = ["red", "blue"],
+                          windows: [String: Any]? = nil) throws -> Data {
+        var document: [String: Any] = ["sessionID": "bridge_session", "frames": frames,
+            "activeColors": active, "bridgeDropoutEvents": events,
+            "bridgeDropoutSummary": ["observedDropouts": events.count, "accepted": events.count,
+                                     "rejected": [String: Int](), "unclosedAtStop": 0]]
+        document["diagnosticWindows"] = windows ?? Dictionary(uniqueKeysWithValues: active.map {
+            ($0, ["firstSuccessFrameID": 0, "lastSuccessFrameID": 100,
+                  "firstSuccessTime": 0.0, "lastSuccessTime": 100.0] as [String: Any])
+        })
+        return try JSONSerialization.data(withJSONObject: document)
+    }
+
+    private func bridgeFrames(missingColor: String = "red", id: Int = 10,
+                              heavy: Bool = false) -> [[String: Any]] {
+        (id - 2...id + 4).map { index in
+            let missing = index == id + 1
+            return frame(index,
+                red: missingColor == "red" && missing ? nil : line(100 + Double(index)),
+                blue: missingColor == "blue" && missing ? nil : line(100 + Double(index), 300),
+                heavy: heavy, redCandidates: 3, blueCandidates: 3)
+        }
+    }
+
+    func testBridgeEventIsSelectedAsOneTemporalUnitWithOriginalsFirst() throws {
+        let directory = try temporaryDirectory()
+        let events = [event(1, color: "red", start: 10)]
+        try writeImages(events, to: directory)
+        let selection = try DebugRecordingTriageBuilder.selectImages(
+            metadataData: document(frames: bridgeFrames(), events: events),
+            forensicDirectoryURL: directory).selection
+        XCTAssertEqual(selection.images.compactMap { $0.bridge?.role },
+                       ["before_success", "dropout", "annotated_dropout", "after_success"])
+        XCTAssertEqual(Set(selection.images.compactMap { $0.bridge?.eventID }), [1])
+        XCTAssertEqual(selection.images.map(\.frameID), [10, 11, 11, 12])
+        XCTAssertEqual(selection.images.filter { $0.bridge?.auxiliary == true }.count, 1)
+        XCTAssertEqual(selection.images[2].bridge?.derivedFromFileName,
+                       "bridge_event_1_dropout_11.png")
+    }
+
+    func testMissingAnnotatedImageStillKeepsTheThreeOriginals() throws {
+        let directory = try temporaryDirectory()
+        let events = [event(1, color: "red", start: 10)]
+        try writeImages(events, to: directory, skip: ["bridge_event_1_dropout_annotated_11.png"])
+        let selection = try DebugRecordingTriageBuilder.selectImages(
+            metadataData: document(frames: bridgeFrames(), events: events),
+            forensicDirectoryURL: directory).selection
+        XCTAssertEqual(selection.images.compactMap { $0.bridge?.role },
+                       ["before_success", "dropout", "after_success"])
+    }
+
+    func testEventMissingAnyOriginalOrAfterSuccessIsNeverPartiallySelected() throws {
+        let directory = try temporaryDirectory()
+        var events = [event(1, color: "red", start: 10)]
+        try writeImages(events, to: directory, skip: ["bridge_event_1_after_success_12.png"])
+        XCTAssertTrue(try DebugRecordingTriageBuilder.selectImages(
+            metadataData: document(frames: bridgeFrames(), events: events),
+            forensicDirectoryURL: directory).selection.images.isEmpty)
+        // No after-success image entry at all (e.g. the recording ended first).
+        events = [event(2, color: "red", start: 10)]
+        var images = events[0]["images"] as! [[String: Any]]
+        images.removeAll { $0["role"] as? String == "after_success" }
+        events[0]["images"] = images
+        try writeImages(events, to: directory)
+        XCTAssertTrue(try DebugRecordingTriageBuilder.selectImages(
+            metadataData: document(frames: bridgeFrames(), events: events),
+            forensicDirectoryURL: directory).selection.images.isEmpty)
+    }
+
+    func testAbsenceBeforeTheFirstAndAfterTheLastSuccessIsNotSelected() throws {
+        let directory = try temporaryDirectory()
+        // candidate=0 on both ends; a forensic capture on those frames must not
+        // turn them into candidate_zero / eligible_zero evidence.
+        var frames: [[String: Any]] = []
+        for index in 0..<12 {
+            let detected = (4...8).contains(index)
+            var item = frame(index, red: detected ? line(100) : nil, blue: nil)
+            if index == 1 || index == 10 {
+                item["forensicCaptured"] = true
+                item["forensicFileName"] = "frame_\(index).png"
+                try Data("png".utf8).write(to: directory.appendingPathComponent("frame_\(index).png"))
+            }
+            frames.append(item)
+        }
+        let windows: [String: Any] = ["red": ["firstSuccessFrameID": 4, "lastSuccessFrameID": 8,
+            "firstSuccessTime": 4.0 / 30, "lastSuccessTime": 8.0 / 30]]
+        let selection = try DebugRecordingTriageBuilder.selectImages(
+            metadataData: document(frames: frames, events: [], active: ["red"], windows: windows),
+            forensicDirectoryURL: directory).selection
+        for image in selection.images {
+            XCTAssertFalse(image.failureType.contains("candidate_zero"))
+            XCTAssertFalse(image.failureType.contains("eligible_zero"))
+            XCTAssertFalse(image.failureType == "dropout")
+            XCTAssertFalse(image.reasons.contains("candidate=0"))
+        }
+    }
+
+    func testOnlyActiveColorEventsAreSelected() throws {
+        let directory = try temporaryDirectory()
+        let events = [event(1, color: "red", start: 10), event(2, color: "blue", start: 10)]
+        try writeImages(events, to: directory)
+        let frames = bridgeFrames()
+        func colors(_ active: [String]) throws -> Set<String> {
+            Set(try DebugRecordingTriageBuilder.selectImages(
+                metadataData: document(frames: frames, events: events, active: active),
+                forensicDirectoryURL: directory).selection.images.map(\.color))
+        }
+        XCTAssertEqual(try colors(["red"]), ["red"])
+        XCTAssertEqual(try colors(["blue"]), ["blue"])
+        XCTAssertEqual(try colors(["red", "blue"]), ["red", "blue"])
+    }
+
+    func testAtMostTwoEventsAreSelectedPreferringTheLongerLoss() throws {
+        let directory = try temporaryDirectory()
+        let events = [event(1, color: "red", start: 10, gap: 1),
+                      event(2, color: "red", start: 20, gap: 4),
+                      event(3, color: "red", start: 40, gap: 2)]
+        try writeImages(events, to: directory)
+        let frames = (0..<60).map { frame($0, red: line(100), blue: line(100, 300)) }
+        let selection = try DebugRecordingTriageBuilder.selectImages(
+            metadataData: document(frames: frames, events: events),
+            forensicDirectoryURL: directory).selection
+        XCTAssertEqual(Set(selection.images.compactMap { $0.bridge?.eventID }), [2, 3])
+        XCTAssertLessThanOrEqual(selection.images.count, DebugRecordingTriageLimits.defaultImageCount)
+    }
+
+    func testRedModeDoesNotCountBlueAbsenceInSummaries() throws {
+        let directory = try temporaryDirectory()
+        let frames = (0..<8).map { frame($0, red: line(100), blue: nil, blueCandidates: 0) }
+        let bundle = try DebugRecordingTriageBuilder.build(
+            metadataData: document(frames: frames, events: [], active: ["red"]),
+            metadataURL: directory.appendingPathComponent("metadata.json"),
+            forensicDirectoryURL: directory)
+        let summary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+        let detection = try XCTUnwrap(summary["redBlueDetectionSummary"] as? [String: [String: Any]])
+        XCTAssertEqual(detection["blue"]?["missedFrames"] as? Int, 0)
+        XCTAssertEqual(detection["blue"]?["candidateZeroFrames"] as? Int, 0)
+        XCTAssertEqual(detection["blue"]?["excludedFromDiagnosis"] as? Bool, true)
+        XCTAssertNil(detection["red"]?["excludedFromDiagnosis"])
+        XCTAssertEqual(summary["activeColors"] as? [String], ["red"])
+        let dropout = try XCTUnwrap(summary["dropoutSummary"] as? [String: [String: Any]])
+        XCTAssertEqual(dropout["blue"]?["falseFrames"] as? Int, 0)
+        let incidents = summary["incidents"] as? [[String: Any]] ?? []
+        XCTAssertTrue(incidents.allSatisfy { $0["color"] as? String != "blue" })
+    }
+
+    // MARK: Compact context
+
+    func testCompactContextsStayUnderTheConsumerLimitEvenWithHeavyTraces() throws {
+        let directory = try temporaryDirectory()
+        let events = [event(1, color: "red", start: 10)]
+        try writeImages(events, to: directory)
+        let bundle = try DebugRecordingTriageBuilder.build(
+            metadataData: document(frames: bridgeFrames(heavy: true), events: events),
+            metadataURL: directory.appendingPathComponent("metadata.json"),
+            forensicDirectoryURL: directory)
+        let frameDirectory = bundle.appendingPathComponent("frames")
+        let files = try FileManager.default.contentsOfDirectory(at: frameDirectory,
+                                                                 includingPropertiesForKeys: nil)
+        XCTAssertEqual(files.count, 4)
+        for file in files {
+            let data = try Data(contentsOf: file)
+            XCTAssertLessThan(data.count, 32 * 1024, file.lastPathComponent)
+            XCTAssertFalse(String(decoding: data, as: UTF8.self).contains("\n  "),
+                           "contexts are written compactly")
+        }
+        // Everything the diagnosis needs survives on the selected frame.
+        let dropoutContext = try XCTUnwrap(files.first { $0.lastPathComponent.hasPrefix("frame_11_2") })
+        let context = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: dropoutContext))
+            as? [String: Any])
+        let mapping = try XCTUnwrap(context["imageMapping"] as? [String: Any])
+        XCTAssertEqual(mapping["eventID"] as? String, "bridge_1")
+        XCTAssertEqual(mapping["eventRole"] as? String, "dropout")
+        let framesList = try XCTUnwrap(context["frames"] as? [[String: Any]])
+        let selected = try XCTUnwrap(framesList.first { $0["frameID"] as? Int == 11 })
+        let red = try XCTUnwrap(selected["red"] as? [String: Any])
+        let trace = try XCTUnwrap(red["candidateDecisionTrace"] as? [[String: Any]])
+        XCTAssertEqual(trace.count, 3)
+        let firstRules = try XCTUnwrap(trace[0]["rules"] as? [[String: Any]])
+        XCTAssertEqual(firstRules.count, 20)
+        XCTAssertNotNil(firstRules[0]["value"])
+        XCTAssertNotNil(firstRules[0]["threshold"])
+        XCTAssertEqual(red["failureStage"] as? String, "eligibility")
+        // Neighbours keep only the leading candidate's trace.
+        let neighbour = try XCTUnwrap(framesList.first { $0["frameID"] as? Int == 12 })
+        XCTAssertLessThanOrEqual(((neighbour["red"] as? [String: Any])?["candidateDecisionTrace"]
+            as? [[String: Any]] ?? []).count, 1)
+        // The color outside the diagnosis (none here) would be empty; both are active.
+        let bridge = try XCTUnwrap(context["bridgeEvent"] as? [String: Any])
+        XCTAssertEqual(bridge["beforeFrameID"] as? Int, 10)
+        XCTAssertEqual(bridge["afterFrameID"] as? Int, 12)
+    }
+
+    func testInactiveColorIsEmptyInsideContexts() throws {
+        let directory = try temporaryDirectory()
+        let events = [event(1, color: "red", start: 10)]
+        try writeImages(events, to: directory)
+        let bundle = try DebugRecordingTriageBuilder.build(
+            metadataData: document(frames: bridgeFrames(heavy: true), events: events, active: ["red"]),
+            metadataURL: directory.appendingPathComponent("metadata.json"),
+            forensicDirectoryURL: directory)
+        let files = try FileManager.default.contentsOfDirectory(
+            at: bundle.appendingPathComponent("frames"), includingPropertiesForKeys: nil)
+        for file in files {
+            let context = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: file))
+                as? [String: Any])
+            XCTAssertEqual(context["activeColors"] as? [String], ["red"])
+            for frame in context["frames"] as? [[String: Any]] ?? [] {
+                XCTAssertTrue((frame["blue"] as? [String: Any])?.isEmpty == true)
+            }
+        }
+    }
+}
+
+// MARK: - Candidate geometry observability and event priority
+
+extension DebugBridgeDropoutTests {
+    private func saber(x: Int, y: Int = 30, eligible: Bool = true, score: Double = 80,
+                       length: Int = 60) throws -> SaberCandidate {
+        let points = (0...length).flatMap { a in (0...4).map { PixelPoint(x: x + a, y: y + $0) } }
+        var candidate = try XCTUnwrap(saberCandidate(from: points, width: 640, height: 480,
+                                                    collectEndpointDiagnostics: true))
+        candidate.isEmitterEligible = eligible
+        candidate.score = score
+        return candidate
+    }
+
+    private func geometryEntry(_ id: Int, red: [SaberCandidate], blue: [SaberCandidate] = []) -> [String: Any] {
+        ["frameID": id, "red": DebugCandidateGeometrySet(red).dictionary,
+         "blue": DebugCandidateGeometrySet(blue).dictionary]
+    }
+
+    /// A frame dictionary whose recorded eligible count matches its candidate list.
+    private func geometryFrame(_ id: Int, red: [SaberCandidate], blue: [SaberCandidate] = []) -> [String: Any] {
+        func diag(_ list: [SaberCandidate]) -> [String: Any] {
+            ["totalCandidateCount": list.count, "eligibleCandidateCount": list.filter(\.isEmitterEligible).count]
+        }
+        return ["frameID": id, "presentationTimeSeconds": Double(id) / 30,
+                "red": detection([100, 100, 200, 100]), "blue": detection([100, 300, 200, 300]),
+                "redDetectionSucceeded": true, "blueDetectionSucceeded": true,
+                "candidateDiagnostics": ["red": diag(red), "blue": diag(blue)],
+                "forensicCaptured": false, "manualCaptured": false]
+    }
+
+    private func addGeometry(_ data: Data, _ entries: [[String: Any]]) throws -> Data {
+        var document = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        document["candidateGeometry"] = entries
+        return try JSONSerialization.data(withJSONObject: document)
+    }
+
+    private func contexts(_ bundle: URL) throws -> [[String: Any]] {
+        try FileManager.default.contentsOfDirectory(at: bundle.appendingPathComponent("frames"),
+                                                    includingPropertiesForKeys: nil).sorted {
+            $0.lastPathComponent < $1.lastPathComponent
+        }.map { try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf: $0)) as? [String: Any]) }
+    }
+
+    private func redGeometry(_ context: [String: Any], frame id: Int) throws -> [String: Any] {
+        let frames = try XCTUnwrap(context["frames"] as? [[String: Any]])
+        let frame = try XCTUnwrap(frames.first { $0["frameID"] as? Int == id })
+        return try XCTUnwrap((frame["red"] as? [String: Any])?["candidateGeometry"] as? [String: Any])
+    }
+
+    /// Frames 8...13 (event 1 drops at frame 11), with each frame's candidate list.
+    private func geometryBundle(lists: [Int: [SaberCandidate]], blue: [Int: [SaberCandidate]] = [:],
+                                active: [String] = ["red", "blue"],
+                                heavyRules: Bool = false) throws -> URL {
+        let directory = try temporaryDirectory()
+        let events = [event(1, color: "red", start: 10)]
+        try writeImages(events, to: directory)
+        let frames = (8...14).map { geometryFrame($0, red: lists[$0] ?? [], blue: blue[$0] ?? []) }
+        let entries = (8...14).map { geometryEntry($0, red: lists[$0] ?? [], blue: blue[$0] ?? []) }
+        let data = try addGeometry(document(frames: frames, events: events, active: active), entries)
+        return try DebugRecordingTriageBuilder.build(
+            metadataData: data, metadataURL: directory.appendingPathComponent("metadata.json"),
+            forensicDirectoryURL: directory)
+    }
+
+    func testGeometryRecordsEveryEligibleCandidateWithRanksAndStatesOmission() throws {
+        var candidates = try (0..<15).map { try saber(x: 10 + $0 * 30, score: 90 - Double($0)) }
+        candidates.insert(try saber(x: 5, eligible: false, score: 99), at: 0)
+        candidates.append(contentsOf: try (0..<8).map { try saber(x: 400 + $0 * 20, eligible: false, score: 10) })
+        let set = DebugCandidateGeometrySet(candidates)
+        XCTAssertEqual(set.totalCandidateCount, 24)
+        XCTAssertEqual(set.eligibleCandidateCount, 15)
+        let eligible = set.candidates.filter(\.eligible)
+        XCTAssertEqual(eligible.count, DebugCandidateGeometrySet.eligibleLimit)
+        XCTAssertEqual(eligible.map { $0.eligibleRank }, (1...12).map { Optional($0) })
+        XCTAssertEqual(set.candidates.filter { !$0.eligible }.count, DebugCandidateGeometrySet.ineligibleLimit)
+        // The ineligible leader keeps its list position; rank counts eligible ones only.
+        XCTAssertEqual(set.candidates[0].listIndex, 0)
+        XCTAssertFalse(set.candidates[0].eligible)
+        XCTAssertNil(set.candidates[0].eligibleRank)
+        let first = try XCTUnwrap(eligible.first)
+        XCTAssertEqual(first.bbox.count, 4)
+        XCTAssertEqual(first.centroid.count, 2)
+        XCTAssertEqual(first.rawPCAEndpoints.count, 4)
+        XCTAssertEqual(first.finalOutputEndpoints.count, 4)
+        XCTAssertEqual(first.scoreBreakdown.count, 18)
+        XCTAssertGreaterThan(first.componentArea, 0)
+        XCTAssertFalse(first.sourceType.isEmpty)
+        XCTAssertFalse(set.candidates.first { !$0.eligible }?.rejectionReasons.isEmpty ?? true)
+    }
+
+    func testContextsReconcileEligibleCountsAndFlagTruncationExplicitly() throws {
+        // Fifteen eligible candidates on a quiet frame: the selected frame keeps the
+        // first twelve and says three were left out.
+        let many = try (0..<15).map { try saber(x: 10 + $0 * 30, score: 90 - Double($0)) }
+        let bundle = try geometryBundle(lists: Dictionary(uniqueKeysWithValues: (8...14).map { ($0, many) }))
+        let dropoutContext = try XCTUnwrap(try contexts(bundle).first {
+            ($0["bridgeEvent"] as? [String: Any])?["role"] as? String == "dropout" })
+        let selected = try redGeometry(dropoutContext, frame: 11)
+        XCTAssertEqual(selected["eligibleCandidateCount"] as? Int, 15)
+        XCTAssertEqual(selected["savedEligibleCount"] as? Int, DebugCandidateGeometrySet.eligibleLimit)
+        XCTAssertEqual(selected["eligibleOmittedCount"] as? Int, 3)
+        XCTAssertEqual(selected["candidatesTruncated"] as? Bool, true)
+        XCTAssertEqual((selected["savedEligibleCount"] as? Int ?? 0) + (selected["eligibleOmittedCount"] as? Int ?? 0),
+                       selected["eligibleCandidateCount"] as? Int)
+        // The recorded count and the context's own diagnostics agree.
+        let frames = try XCTUnwrap(dropoutContext["frames"] as? [[String: Any]])
+        let red = try XCTUnwrap(frames.first { $0["frameID"] as? Int == 11 }?["red"] as? [String: Any])
+        XCTAssertEqual(red["eligibleCandidateCount"] as? Int, selected["eligibleCandidateCount"] as? Int)
+        // Any neighbour geometry that survives is limited and says so; when the context had
+        // to shed it, the compaction record says that instead.
+        if let neighbour = try? redGeometry(dropoutContext, frame: 12) {
+            XCTAssertLessThanOrEqual(neighbour["savedEligibleCount"] as? Int ?? 99, 3)
+            XCTAssertEqual(neighbour["candidatesTruncated"] as? Bool, true)
+            XCTAssertEqual((neighbour["savedEligibleCount"] as? Int ?? 0) + (neighbour["eligibleOmittedCount"] as? Int ?? 0), 15)
+        } else {
+            XCTAssertTrue((dropoutContext["compaction"] as? [String] ?? []).contains {
+                $0.hasPrefix("neighbourCandidateGeometry") })
+        }
+        // Ineligible candidates are accounted for the same way.
+        let withIneligible = try (0..<8).map { try saber(x: 450 + $0 * 20, eligible: false, score: 5) }
+        let second = try geometryBundle(lists: Dictionary(uniqueKeysWithValues: (8...14).map {
+            ($0, [try saber(x: 10)] + withIneligible) }))
+        let context = try XCTUnwrap(try contexts(second).first {
+            ($0["bridgeEvent"] as? [String: Any])?["role"] as? String == "dropout" })
+        let ineligible = try redGeometry(context, frame: 11)
+        XCTAssertEqual(ineligible["savedIneligibleCount"] as? Int, DebugCandidateGeometrySet.ineligibleLimit)
+        XCTAssertEqual(ineligible["ineligibleOmittedCount"] as? Int, 2)
+        XCTAssertEqual(ineligible["totalCandidateCount"] as? Int, 9)
+        // Nothing is omitted when everything fits.
+        let small = try geometryBundle(lists: Dictionary(uniqueKeysWithValues: (8...14).map {
+            ($0, [try saber(x: 10), try saber(x: 200)]) }))
+        let smallContext = try XCTUnwrap(try contexts(small).first {
+            ($0["bridgeEvent"] as? [String: Any])?["role"] as? String == "dropout" })
+        let whole = try redGeometry(smallContext, frame: 11)
+        XCTAssertEqual(whole["candidatesTruncated"] as? Bool, false)
+        XCTAssertEqual(whole["eligibleOmittedCount"] as? Int, 0)
+        XCTAssertEqual((whole["candidates"] as? [[String: Any]])?.count, 2)
+    }
+
+    func testGeometryIdentityIsCheckableWhenCandidateOrderChanges() throws {
+        let near = try saber(x: 10), far = try saber(x: 400, score: 79)
+        var lists: [Int: [SaberCandidate]] = [:]
+        for id in 8...11 { lists[id] = [near, far] }          // the near candidate wins
+        for id in 12...14 { lists[id] = [far, near] }         // the far one now wins; order swapped
+        let bundle = try geometryBundle(lists: lists)
+        let context = try XCTUnwrap(try contexts(bundle).first {
+            ($0["bridgeEvent"] as? [String: Any])?["role"] as? String == "after_success" })
+        let geometry = try redGeometry(context, frame: 12)
+        let candidates = try XCTUnwrap(geometry["candidates"] as? [[String: Any]])
+        let winner = try XCTUnwrap(candidates.first { $0["eligibleRank"] as? Int == 1 })
+        let other = try XCTUnwrap(candidates.first { $0["eligibleRank"] as? Int == 2 })
+        // List index 0 is now the far candidate, yet geometry still finds the old winner.
+        XCTAssertEqual(winner["listIndex"] as? Int, 0)
+        let winnerMatch = try XCTUnwrap(winner["matchToPreviousWinner"] as? [String: Any])
+        let otherMatch = try XCTUnwrap(other["matchToPreviousWinner"] as? [String: Any])
+        XCTAssertGreaterThan(try XCTUnwrap(winnerMatch["centroidDistance"] as? Double), 300)
+        XCTAssertEqual(winnerMatch["bboxIoU"] as? Double, 0)
+        XCTAssertEqual(otherMatch["centroidDistance"] as? Double, 0)
+        XCTAssertEqual(otherMatch["bboxIoU"] as? Double, 1)
+        XCTAssertEqual(otherMatch["areaRatio"] as? Double, 1)
+        XCTAssertEqual(otherMatch["spanRatio"] as? Double, 1)
+        XCTAssertEqual(otherMatch["orientationDifference"] as? Double, 0)
+        let previous = try XCTUnwrap(geometry["previousWinner"] as? [String: Any])
+        XCTAssertEqual(previous["frameID"] as? Int, 11)
+        XCTAssertEqual(geometry["previousFrameGeometryAvailable"] as? Bool, true)
+    }
+
+    func testCompactContextWithFullGeometryOnBothColorsStaysWithinTheLimit() throws {
+        let many = try (0..<12).map { try saber(x: 10 + $0 * 30, score: 90 - Double($0)) }
+            + (try (0..<6).map { try saber(x: 450 + $0 * 20, eligible: false, score: 5) })
+        var lists: [Int: [SaberCandidate]] = [:]
+        for id in 8...14 { lists[id] = many }
+        let bundle = try geometryBundle(lists: lists, blue: lists)
+        for context in try contexts(bundle) {
+            let data = try JSONSerialization.data(withJSONObject: context)
+            XCTAssertLessThan(data.count, 32 * 1024)
+            // When detail had to go, the context says what was dropped.
+            let compaction = context["compaction"] as? [String] ?? []
+            XCTAssertLessThan(data.count, 24 * 1024 + 2048, "guard keeps contexts near the budget")
+            XCTAssertTrue(!compaction.isEmpty || data.count <= 24 * 1024,
+                          "an oversized context is only acceptable when its reductions are recorded")
+            // The selected frame keeps all its eligible geometry for both colors.
+            if context["bridgeEvent"] != nil, (context["bridgeEvent"] as? [String: Any])?["auxiliary"] as? Bool != true,
+               let id = context["selectedFrameID"] as? Int {
+                let selected = try redGeometry(context, frame: id)
+                // Whatever was shed is stated, and the counts still reconcile.
+                XCTAssertEqual((selected["savedEligibleCount"] as? Int ?? 0) + (selected["eligibleOmittedCount"] as? Int ?? 0), 12)
+                XCTAssertEqual(selected["eligibleCandidateCount"] as? Int, 12)
+                XCTAssertEqual(selected["candidatesTruncated"] as? Bool,
+                               (selected["eligibleOmittedCount"] as? Int ?? 0) + (selected["ineligibleOmittedCount"] as? Int ?? 0) > 0)
+            }
+        }
+    }
+
+    // MARK: Event priority between bridge and tracking evidence
+
+    private func trackingMotionEvent(peak: Int, score: Double) -> [String: Any] {
+        let roles = ["before", "before", "before", "before", "onset", "peak", "after", "after", "after", "after", "recovery"]
+        let start = peak - 5
+        let images = roles.enumerated().map { offset, role -> [String: Any] in
+            ["role": role, "frameID": start + offset, "fileName": "motion_\(start + offset).png"]
+        }
+        return ["eventIndex": DebugRecordingTriageLimits.trackingEventIndex, "color": "red",
+                "peakScore": score, "signals": [], "images": images]
+    }
+
+    private func prioritySelection(trackingScore: Double, bridgeEvents: Int) throws
+        -> (selection: DebugRecordingTriageSelection, summary: [String: Any]) {
+        let directory = try temporaryDirectory()
+        var events: [[String: Any]] = []
+        for index in 0..<bridgeEvents { events.append(event(index + 1, color: "red", start: 10 + index * 10)) }
+        try writeImages(events, to: directory)
+        for frame in 100...110 { try Data("png".utf8).write(to: directory.appendingPathComponent("motion_\(frame).png")) }
+        let frames = (0..<130).map { frame($0, red: line(100), blue: line(100, 300)) }
+        var document = try XCTUnwrap(JSONSerialization.jsonObject(with: self.document(
+            frames: frames, events: events)) as? [String: Any])
+        document["motionEvents"] = [trackingMotionEvent(peak: 105, score: trackingScore)]
+        document["motionSummary"] = ["events": [[DebugRecordingTriageLimits.trackingEventIndex, "red", trackingScore, "retained"]]]
+        let data = try JSONSerialization.data(withJSONObject: document)
+        let selection = try DebugRecordingTriageBuilder.selectImages(
+            metadataData: data, forensicDirectoryURL: directory).selection
+        return (selection, document)
+    }
+
+    func testSignificantTrackingInstabilityKeepsAWindowBesideBridgeEvents() throws {
+        let (selection, _) = try prioritySelection(trackingScore: 2.0, bridgeEvents: 2)
+        let tracking = selection.images.filter { $0.eventIndex == DebugRecordingTriageLimits.trackingEventIndex }
+        XCTAssertEqual(selection.images.compactMap { $0.bridge?.eventID }.reduce(into: Set<Int>()) { $0.insert($1) }.count, 1)
+        XCTAssertLessThanOrEqual(selection.images.count, DebugRecordingTriageLimits.defaultImageCount)
+        XCTAssertGreaterThanOrEqual(tracking.count, DebugRecordingTriageLimits.minimumTrackingWindow)
+        XCTAssertEqual(selection.trackingWindow?["available"], 11)
+        XCTAssertEqual(selection.trackingWindow?["selected"], tracking.count)
+        let ids = tracking.map(\.frameID).sorted()
+        XCTAssertEqual(ids, Array(ids[0]...(ids[0] + UInt64(ids.count - 1))), "contiguous window")
+        XCTAssertTrue(tracking.contains { $0.role == "peak" })
+        XCTAssertTrue(tracking.contains { $0.role == "before" } && tracking.contains { $0.role == "after" })
+        XCTAssertTrue(selection.bridgePriorityEventIDs.isEmpty)
+    }
+
+    // Regression for phonesaber_20261002_005850_489 (peak 2538, score 74.52) and
+    // phonesaber_20261002_013205_087 (peak 256, score 90.30): the switch-out frame
+    // is the onset just before the return-jump peak and must stay in the window.
+    func testRecordedCandidateSwitchOnsetStaysInTheWindowBesideABridgeEvent() throws {
+        for score in [74.52087241706056, 90.29987096046787] {
+            let (selection, _) = try prioritySelection(trackingScore: score, bridgeEvents: 2)
+            let tracking = selection.images.filter { $0.eventIndex == DebugRecordingTriageLimits.trackingEventIndex }
+            XCTAssertTrue(tracking.contains { $0.role == "onset" && $0.frameID == 104 }, "score \(score)")
+            XCTAssertTrue(tracking.contains { $0.role == "peak" && $0.frameID == 105 }, "score \(score)")
+            XCTAssertTrue(selection.bridgePriorityEventIDs.isEmpty)
+        }
+    }
+
+    func testQuietTrackingEventYieldsToBridgeEventsAndIsStillWholeWhenAlone() throws {
+        let (withBridge, _) = try prioritySelection(trackingScore: 0, bridgeEvents: 2)
+        XCTAssertEqual(withBridge.images.compactMap { $0.bridge?.eventID }.reduce(into: Set<Int>()) { $0.insert($1) }.count, 2)
+        XCTAssertTrue(withBridge.images.allSatisfy { $0.eventIndex == nil })
+        XCTAssertEqual(withBridge.bridgePriorityEventIDs, [DebugRecordingTriageLimits.trackingEventIndex])
+        let (alone, _) = try prioritySelection(trackingScore: 0, bridgeEvents: 0)
+        XCTAssertEqual(alone.images.filter { $0.eventIndex == DebugRecordingTriageLimits.trackingEventIndex }.count, 11)
+        XCTAssertNil(alone.trackingWindow)
+        let (significantAlone, _) = try prioritySelection(trackingScore: 2.0, bridgeEvents: 0)
+        XCTAssertEqual(significantAlone.images.count, 11)
+    }
+}

@@ -591,6 +591,16 @@ struct DebugRecordingFrameMetadata: Codable, Equatable {
     var processingTimeSeconds: Double? = nil
     var motionEventIndex: Int? = nil
     var tracking: [String: DebugTrackingFrame] = [:]
+    /// Retained only in memory and in the triage snapshot; excluded from the
+    /// streamed metadata so a long recording stays inside its size limit.
+    var candidateGeometry: DebugFrameGeometry? = nil
+
+    private enum CodingKeys: String, CodingKey {
+        case frameID, presentationTimeSeconds, red, blue, redDetectionSucceeded, blueDetectionSucceeded
+        case candidateDiagnostics, forensicCaptured, forensicFileName, manualCaptured, manualFileName
+        case blueDropoutRole, blueDropoutFileName, redDropoutRole, redDropoutFileName
+        case processingTimeSeconds, motionEventIndex, tracking
+    }
 }
 
 struct DebugRecordingMetadata: Codable, Equatable {
@@ -690,15 +700,24 @@ private final class DebugRecordingMetadataStream {
 
     func finish(cameraSamples: [DebugRecordingCameraSample],
                 motionEvents: [[String: Any]], motionSummary: [String: Any],
-                transmissions: [[String: Any]] = []) throws {
+                transmissions: [[String: Any]] = [],
+                diagnostics: [String: Any] = [:]) throws {
         let sampleData = try encoder.encode(cameraSamples)
         let eventData = try JSONSerialization.data(withJSONObject: motionEvents)
         let summaryData = try JSONSerialization.data(withJSONObject: motionSummary)
         let transmissionData = try JSONSerialization.data(withJSONObject: transmissions)
+        // Additive top-level fields (active colors, diagnostic windows, bridge events).
+        var diagnosticData = Data()
+        for key in diagnostics.keys.sorted() {
+            diagnosticData.append(Data(",\"\(key)\":".utf8))
+            diagnosticData.append(try JSONSerialization.data(withJSONObject: diagnostics[key]!,
+                                                             options: [.fragmentsAllowed, .sortedKeys]))
+        }
         let suffixCount = Data("],\"cameraSamples\":".utf8).count + sampleData.count
             + Data(",\"motionEvents\":".utf8).count + eventData.count
             + Data(",\"motionSummary\":".utf8).count + summaryData.count
-            + Data(",\"udpTransmissions\":".utf8).count + transmissionData.count + 1
+            + Data(",\"udpTransmissions\":".utf8).count + transmissionData.count
+            + diagnosticData.count + 1
         guard bytesWritten + Int64(suffixCount) <= DebugRecordingLimits.maximumMetadataBytes else {
             throw DebugVideoRecorderError.metadataSizeLimitReached
         }
@@ -710,6 +729,7 @@ private final class DebugRecordingMetadataStream {
         try handle.write(contentsOf: summaryData)
         try handle.write(contentsOf: Data(",\"udpTransmissions\":".utf8))
         try handle.write(contentsOf: transmissionData)
+        try handle.write(contentsOf: diagnosticData)
         try handle.write(contentsOf: Data("}".utf8))
         try handle.synchronize()
         try handle.close()
@@ -750,6 +770,58 @@ private struct DebugMotionPixelFrame: @unchecked Sendable {
     let metadata: DebugRecordingFrameMetadata
 
     var byteCount: Int { CVPixelBufferGetBytesPerRow(pixelBuffer) * height }
+}
+
+/// Dropout under observation: copies exist only until a later success decides
+/// whether it is a bridge dropout, so rejected absences keep no memory.
+private struct DebugBridgePending {
+    var run: DebugBridgeTracker.Run
+    var before: DebugMotionPixelFrame?
+    var dropout: DebugMotionPixelFrame?
+    var context: [UInt64: DebugRecordingFrameMetadata]
+    var missingTail: [UInt64] = []
+
+    var retainedBytes: Int { (before?.byteCount ?? 0) + (dropout?.byteCount ?? 0) }
+
+    mutating func noteMissing(_ frame: DebugRecordingFrameMetadata) {
+        // Keep the first three and the last two missing frames as context.
+        if run.missing.count <= 3 {
+            context[frame.frameID] = frame
+            return
+        }
+        context[frame.frameID] = frame
+        missingTail.append(frame.frameID)
+        if missingTail.count > 2 {
+            context.removeValue(forKey: missingTail.removeFirst())
+        }
+    }
+}
+
+/// before-success / dropout / after-success originals of one bridge dropout.
+private struct DebugBridgeCapturedEvent: Sendable {
+    let id: Int
+    let color: String
+    let before: DebugMotionPixelFrame
+    let dropout: DebugMotionPixelFrame
+    let after: DebugMotionPixelFrame
+    let beforeSample: DebugBridgeSample
+    let afterSample: DebugBridgeSample
+    let missingFrameCount: Int
+    let assessment: DebugBridgeAssessment
+    var context: [UInt64: DebugRecordingFrameMetadata]
+    var followingRemaining: Int
+
+    var gapSeconds: Double { afterSample.timestamp - beforeSample.timestamp }
+    var retainedBytes: Int { before.byteCount + dropout.byteCount + after.byteCount }
+
+    func fileName(_ role: String, _ frame: DebugMotionPixelFrame) -> String {
+        "bridge_event_\(id)_\(role)_\(frame.frameID).png"
+    }
+    var annotatedFileName: String { "bridge_event_\(id)_dropout_annotated_\(dropout.frameID).png" }
+    var expectedEndpoints: [Double]? {
+        DebugBridgeDropout.predictedEndpoints(before: beforeSample, after: afterSample,
+                                              at: dropout.timestamp)
+    }
 }
 
 private struct DebugMotionCapturedEvent: Sendable {
@@ -862,7 +934,7 @@ final class DebugVideoRecorder {
     private var transmissionRecords: [[String: Any]] = []
     private var previousTrackingFrame: DebugRecordingFrameMetadata?
     private var olderTrackingFrame: DebugRecordingFrameMetadata?
-    private static let trackingEventIndex = 1_000_000_000
+    private static let trackingEventIndex = DebugRecordingTriageLimits.trackingEventIndex
 
     private var motionRejectionReasons: [Int: String] = [:]
     private var motionObservationCount = 0
@@ -882,10 +954,15 @@ final class DebugVideoRecorder {
     private var manualLosslessCaptureCount = 0
     private var previousLengths: [SaberColor: Double] = [:]
     private var manualCaptureCompletion: ((Result<UInt64, DebugVideoRecorderError>) -> Void)?
-    private var lastBlueDetectedFrame: DebugRetainedBlueFrame?
-    private var blueDropoutActive = false
-    private var lastRedDetectedFrame: DebugRetainedBlueFrame?
-    private var redDropoutActive = false
+    private let diagnosticColors: DebugDiagnosticColors
+    private var bridgeTrackers: [String: DebugBridgeTracker] = [:]
+    private var lastDetectedFrames: [String: DebugRetainedBlueFrame] = [:]
+    private var bridgePending: [String: DebugBridgePending] = [:]
+    private var bridgeCaptures: [DebugBridgeCapturedEvent] = []
+    private var bridgeEventCounter = 0
+    private var bridgeStats: [String: Int] = [:]
+    private var bridgeRejections: [String: Int] = [:]
+    private var recentMetadata: [DebugRecordingFrameMetadata] = []
     private let forensicPolicy: DebugForensicCapturePolicy
     private let clock: () -> TimeInterval
     private var startedAt: TimeInterval?
@@ -902,6 +979,7 @@ final class DebugVideoRecorder {
 
     init(directory: URL, date: Date = Date(),
          forensicPolicy: DebugForensicCapturePolicy = .production,
+         diagnosticColors: DebugDiagnosticColors = .both,
          clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try DebugRecordingStorage.validateStartCapacity(at: directory)
@@ -915,7 +993,10 @@ final class DebugVideoRecorder {
         metadataURL = directory.appendingPathComponent("\(sessionID)_metadata.json")
         forensicDirectoryURL = directory.appendingPathComponent("\(sessionID)_forensic", isDirectory: true)
         self.forensicPolicy = forensicPolicy
+        self.diagnosticColors = diagnosticColors
         self.clock = clock
+        triageAccumulator.activeColors = Set(diagnosticColors.colorNames)
+        triageAccumulator.absenceIsIncident = false
     }
 
     /// Prepares the encoder before the recording interval begins. This keeps
@@ -1039,8 +1120,12 @@ final class DebugVideoRecorder {
             redDropoutFileName: nil,
             processingTimeSeconds: processingTimeSeconds
         )
+        // Kept with retained event frames only (not streamed): all eligible candidates.
+        frame.candidateGeometry = analysis.map {
+            DebugFrameGeometry($0, active: diagnosticColors.colorNames)
+        }
         let motionStarted = clock()
-        for color in ["red", "blue"] {
+        for color in ["red", "blue"] where diagnosticColors.includes(color) {
             frame.tracking[color] = DebugTrackingDiagnostics.measure(frame,
                 previous: previousTrackingFrame, older: olderTrackingFrame, color: color)
         }
@@ -1051,27 +1136,23 @@ final class DebugVideoRecorder {
         motionObservationCount += 1
         motionObservationTotalMs += motionMs
         motionObservationMaxMs = max(motionObservationMaxMs, motionMs)
-        updateBlueDropoutCapture(
-            pixelBuffer: pixelBuffer, frameID: frameID,
-            currentMetadata: &frame, previousMetadata: &pendingMetadataFrame,
-            width: width, height: height, blueDetected: blueDetectionSucceeded
-        )
-        updateRedDropoutCapture(
-            pixelBuffer: pixelBuffer, frameID: frameID,
-            currentMetadata: &frame, previousMetadata: &pendingMetadataFrame,
-            width: width, height: height, redDetected: redDetectionSucceeded
-        )
-        let redIsAnomalous = anomalyDetected(for: .red, endpoints: freshRed)
-        let blueIsAnomalous = anomalyDetected(for: .blue, endpoints: freshBlue)
+        observeBridge(pixelBuffer: pixelBuffer, frame: frame, width: width, height: height)
+        let redActive = diagnosticColors.includes("red")
+        let blueActive = diagnosticColors.includes("blue")
+        let redIsAnomalous = redActive && anomalyDetected(for: .red, endpoints: freshRed)
+        let blueIsAnomalous = blueActive && anomalyDetected(for: .blue, endpoints: freshBlue)
         let manualCompletion = manualCaptureCompletion
-        let endpointJump = jumpDetected(freshRed, previous: pendingMetadataFrame?.red.endpoints)
-            || jumpDetected(freshBlue, previous: pendingMetadataFrame?.blue.endpoints)
-        let identicalEndpoint = updateIdenticalStreak(for: .red, current: freshRed,
-                                                      previous: pendingMetadataFrame?.red.endpoints)
-            || updateIdenticalStreak(for: .blue, current: freshBlue,
-                                     previous: pendingMetadataFrame?.blue.endpoints)
+        let endpointJump = (redActive && jumpDetected(freshRed, previous: pendingMetadataFrame?.red.endpoints))
+            || (blueActive && jumpDetected(freshBlue, previous: pendingMetadataFrame?.blue.endpoints))
+        let identicalEndpoint = (redActive && updateIdenticalStreak(for: .red, current: freshRed,
+                                                      previous: pendingMetadataFrame?.red.endpoints))
+            || (blueActive && updateIdenticalStreak(for: .blue, current: freshBlue,
+                                     previous: pendingMetadataFrame?.blue.endpoints))
+        // candidate=0 / eligible=0 only mean "not found" and are reported through
+        // bridge events, never as a stand-alone failure capture.
         let shouldCaptureAnomaly = (redIsAnomalous || blueIsAnomalous || endpointJump
-            || identicalEndpoint || DebugRecordingTriageAccumulator.isCaptureCandidate(frame))
+            || identicalEndpoint || DebugRecordingTriageAccumulator.isCaptureCandidate(
+                frame, activeColors: Set(diagnosticColors.colorNames), includeAbsence: false))
             && nonDropoutCaptureCount < 2
             && automaticForensicCaptureCount < forensicPolicy.maximumFrames
         if let manualCompletion {
@@ -1130,6 +1211,12 @@ final class DebugVideoRecorder {
         return .accepted
     }
 
+    /// A color outside the diagnosis is fed to motion analysis as never seen, so it
+    /// cannot raise dropout, flicker or ambiguity events.
+    private static let inactiveMotionColor = DebugMotionColorSample(
+        detected: false, endpoints: nil, candidateCount: 0, eligibleCount: 0,
+        topScoreGap: nil, failedRuleMargin: nil, selectedCandidateType: nil)
+
     private func motionColor(_ detection: DebugRecordingDetection,
                              succeeded: Bool,
                              candidates: DebugRecordingColorCandidates?,
@@ -1175,10 +1262,14 @@ final class DebugVideoRecorder {
         let sample = DebugMotionSample(
             frameID: frame.frameID, timestamp: frame.presentationTimeSeconds,
             processingSeconds: frame.processingTimeSeconds ?? 0,
-            red: motionColor(frame.red, succeeded: frame.redDetectionSucceeded,
-                             candidates: frame.candidateDiagnostics?.red, tracking: frame.tracking["red"]),
-            blue: motionColor(frame.blue, succeeded: frame.blueDetectionSucceeded,
+            red: diagnosticColors.includes("red")
+                ? motionColor(frame.red, succeeded: frame.redDetectionSucceeded,
+                              candidates: frame.candidateDiagnostics?.red, tracking: frame.tracking["red"])
+                : Self.inactiveMotionColor,
+            blue: diagnosticColors.includes("blue")
+                ? motionColor(frame.blue, succeeded: frame.blueDetectionSucceeded,
                               candidates: frame.candidateDiagnostics?.blue, tracking: frame.tracking["blue"])
+                : Self.inactiveMotionColor
         )
         let hits = motionDetector.observe(sample)
         frame.motionEventIndex = hits.first?.index
@@ -1186,8 +1277,10 @@ final class DebugVideoRecorder {
             pixelBuffer: pixelBuffer, frameID: frame.frameID,
             timestamp: frame.presentationTimeSeconds, width: width, height: height,
             metadata: frame)
-        let hasTrackingEvidence = frame.candidateDiagnostics?.red.selectedCandidate?.centroid != nil
-            || frame.candidateDiagnostics?.blue.selectedCandidate?.centroid != nil
+        let hasTrackingEvidence = (diagnosticColors.includes("red")
+                && frame.candidateDiagnostics?.red.selectedCandidate?.centroid != nil)
+            || (diagnosticColors.includes("blue")
+                && frame.candidateDiagnostics?.blue.selectedCandidate?.centroid != nil)
         if hasTrackingEvidence || trackingCapture != nil {
             retainTrackingFrame(pixelFrame)
         } else {
@@ -1214,7 +1307,8 @@ final class DebugVideoRecorder {
     }
 
     private func motionRetainedBytes() -> Int {
-        legacyReferenceReservationBytes + trackingRetainedBytes() + motionPreRoll.reduce(0) { $0 + $1.byteCount }
+        legacyReferenceReservationBytes + trackingRetainedBytes() + bridgeRetainedBytes()
+            + motionPreRoll.reduce(0) { $0 + $1.byteCount }
             + motionCaptures.reduce(0) { total, event in
                 total + event.at.byteCount + (event.pre?.byteCount ?? 0)
                     + (event.post?.byteCount ?? 0)
@@ -1276,12 +1370,24 @@ final class DebugVideoRecorder {
     // Keeps five adjacent originals plus the strongest eleven-frame window.
     // Independent storage prevents retaining capture-pool buffers while a saber moves.
     private func retainTrackingFrame(_ source: DebugMotionPixelFrame) {
-        let color = (source.metadata.tracking["red"]?.instabilityScore ?? 0)
-            >= (source.metadata.tracking["blue"]?.instabilityScore ?? 0) ? "red" : "blue"
-        let score = source.metadata.tracking[color]?.instabilityScore ?? 0
-        for color in ["red", "blue"] {
-            if let measurement = source.metadata.tracking[color] {
-                trackingRankings.append((source.frameID, color, measurement.scoreComponents))
+        let activeNames = diagnosticColors.colorNames
+        // A detected true<->false toggle is the start or end of an absence. Bridged
+        // losses are reported as bridge dropout events, so a bare toggle must not
+        // make an image sequence around the saber leaving the view the top
+        // "tracking instability" event. Recorded per-frame metadata is unchanged.
+        func rankedComponents(_ color: String) -> [String: Double]? {
+            guard var components = source.metadata.tracking[color]?.scoreComponents else { return nil }
+            components["detectedToggle"] = 0
+            return components
+        }
+        func rankedScore(_ color: String) -> Double {
+            rankedComponents(color).map(DebugTrackingDiagnostics.rankingScore) ?? 0
+        }
+        let color = activeNames.max { rankedScore($0) < rankedScore($1) } ?? "red"
+        let score = rankedScore(color)
+        for color in activeNames {
+            if let components = rankedComponents(color) {
+                trackingRankings.append((source.frameID, color, components))
             }
         }
 #if DEBUG
@@ -1296,24 +1402,10 @@ final class DebugVideoRecorder {
             trackingRecent.removeAll()
             return
         }
-        var copy: CVPixelBuffer?
-        guard CVPixelBufferCreate(kCFAllocatorDefault, source.width, source.height,
-            kCVPixelFormatType_32BGRA, nil, &copy) == kCVReturnSuccess, let copy,
-            CVPixelBufferLockBaseAddress(copy, []) == kCVReturnSuccess else {
+        guard let frame = independentCopy(of: source) else {
             trackingMissingContext = true
             return
         }
-        defer { CVPixelBufferUnlockBaseAddress(copy, []) }
-        guard let src = CVPixelBufferGetBaseAddress(source.pixelBuffer),
-              let dst = CVPixelBufferGetBaseAddress(copy) else { return }
-        let srcStride = CVPixelBufferGetBytesPerRow(source.pixelBuffer)
-        let dstStride = CVPixelBufferGetBytesPerRow(copy)
-        for row in 0..<source.height {
-            memcpy(dst.advanced(by: row * dstStride), src.advanced(by: row * srcStride), source.width * 4)
-        }
-        let frame = DebugMotionPixelFrame(pixelBuffer: copy, frameID: source.frameID,
-            timestamp: source.timestamp, width: source.width, height: source.height,
-            metadata: source.metadata)
         let preceding = trackingRecent.filter {
             source.frameID > $0.frameID && source.frameID - $0.frameID <= 5
         }
@@ -1428,6 +1520,7 @@ final class DebugVideoRecorder {
                     "selected": "included in the 12-image diagnostic bundle",
                     "duplicate": "all retained frames duplicate higher-score selections",
                     "image_limit": "12-image limit reached before this event",
+                    "bridge_priority": "left out whole so bridge dropout events fit the 12-image limit",
                     "byte_limit": "64 MiB transport byte budget reached"],
                 "signalDistributions": stats,
                 "distributionScope": "above-threshold signals across both colors; includes zero counts",
@@ -1496,8 +1589,7 @@ final class DebugVideoRecorder {
         }
         isFinishing = true
         finishReason = reason
-        lastBlueDetectedFrame = nil
-        lastRedDetectedFrame = nil
+        lastDetectedFrames.removeAll()
         guard let writer, let writerInput, let dimensions, recordedFrameCount > 0 else {
             metadataStream?.discard()
             writer?.cancelWriting()
@@ -1517,6 +1609,10 @@ final class DebugVideoRecorder {
 #endif
         let selectedMotionEvents = motionEventEntries()
         let selectedMotionSummary = motionSummary()
+        // Pending candidates never saw a closing success; their copies are dropped.
+        let diagnostics = diagnosticsMetadata()
+        bridgePending.removeAll()
+        let bridgeCaptures = bridgeCaptures
         do {
             if injectedFailure == .metadata {
                 throw DebugVideoRecorderError.appendFailed("injected metadata failure")
@@ -1528,7 +1624,7 @@ final class DebugVideoRecorder {
             }
             try metadataStream?.finish(cameraSamples: cameraSamples,
                 motionEvents: selectedMotionEvents, motionSummary: selectedMotionSummary,
-                transmissions: transmissionRecords)
+                transmissions: transmissionRecords, diagnostics: diagnostics)
         } catch {
             metadataStream?.discard()
             writerInput.markAsFinished()
@@ -1537,6 +1633,7 @@ final class DebugVideoRecorder {
         }
         let forensicFrames = forensicFrames
         let motionCaptures = motionCaptures + (trackingCapture.map { [$0] } ?? [])
+        let hasStopImages = !forensicFrames.isEmpty || !motionCaptures.isEmpty || !bridgeCaptures.isEmpty
         var triageByID = Dictionary(uniqueKeysWithValues:
             triageAccumulator.retainedFrames.map { ($0.frameID, $0) })
         for capture in motionCaptures {
@@ -1544,6 +1641,14 @@ final class DebugVideoRecorder {
                 if triageByID[frame.frameID] == nil {
                     triageByID[frame.frameID] = frame.metadata
                 }
+            }
+        }
+        // Bridge events keep their exact before/dropout/after frames and the
+        // neighbouring frame metadata, which the accumulator does not retain.
+        for event in bridgeCaptures {
+            for (id, metadata) in event.context where triageByID[id] == nil { triageByID[id] = metadata }
+            for frame in [event.before, event.dropout, event.after] where triageByID[frame.frameID] == nil {
+                triageByID[frame.frameID] = frame.metadata
             }
         }
         let triageFrames = triageByID.values.sorted { $0.frameID < $1.frameID }
@@ -1571,7 +1676,7 @@ final class DebugVideoRecorder {
                     if injectedFailure == .png && !forensicFrames.isEmpty {
                         throw DebugVideoRecorderError.appendFailed("injected PNG failure")
                     }
-                    if !forensicFrames.isEmpty || !motionCaptures.isEmpty {
+                    if hasStopImages {
                         try FileManager.default.createDirectory(
                             at: forensicDirectoryURL, withIntermediateDirectories: true
                         )
@@ -1614,6 +1719,30 @@ final class DebugVideoRecorder {
                             }
                         }
                     }
+                    for event in bridgeCaptures {
+                        for (role, frame) in [("before_success", event.before),
+                                              ("dropout", event.dropout),
+                                              ("after_success", event.after)] {
+                            try DebugVideoRecorder.writeMotionPNG(
+                                frame, fileName: event.fileName(role, frame),
+                                directory: forensicDirectoryURL)
+                            guard DebugRecordingStorage.diskUsage(at: forensicDirectoryURL)
+                                <= DebugRecordingLimits.maximumCombinedLosslessImageBytes,
+                                DebugRecordingStorage.diskUsage(sessionID: currentSessionID,
+                                    in: directory) <= DebugRecordingLimits.maximumDiskUsageBytes else {
+                                throw DebugVideoRecorderError.diskUsageLimitReached
+                            }
+                        }
+                        // The annotated copy is a viewing aid; the originals above are required.
+                        do {
+                            try DebugVideoRecorder.writeBridgeAnnotatedPNG(
+                                event.dropout, before: event.beforeSample.endpoints,
+                                after: event.afterSample.endpoints, expected: event.expectedEndpoints,
+                                fileName: event.annotatedFileName, directory: forensicDirectoryURL)
+                        } catch {
+                            print("[DebugBridge] optional annotated PNG failed: \(error.localizedDescription)")
+                        }
+                    }
                     // The complete path appears only after raw and required PNGs succeed.
                     try stream?.publish()
                     let snapshot = DebugRecordingMetadata(
@@ -1626,16 +1755,22 @@ final class DebugVideoRecorder {
                     snapshotObject["motionEvents"] = selectedMotionEvents
                     snapshotObject["motionSummary"] = selectedMotionSummary
                     snapshotObject["udpTransmissions"] = transmissions
+                    snapshotObject["candidateGeometry"] = triageFrames.compactMap { item -> [String: Any]? in
+                        guard let geometry = item.candidateGeometry else { return nil }
+                        var entry = geometry.dictionary
+                        entry["frameID"] = item.frameID
+                        return entry
+                    }
+                    for (key, value) in diagnostics { snapshotObject[key] = value }
                     let snapshotData = try JSONSerialization.data(withJSONObject: snapshotObject)
                     var triageBundleURL: URL?
                     var triageErrorMessage: String?
-                    if !triageFrames.isEmpty && (!forensicFrames.isEmpty || !motionCaptures.isEmpty) {
+                    if !triageFrames.isEmpty && hasStopImages {
                         do {
                             triageBundleURL = try DebugRecordingTriageBuilder.build(
                                 metadataData: snapshotData,
                                 metadataURL: metadataURL,
-                                forensicDirectoryURL: forensicFrames.isEmpty && motionCaptures.isEmpty
-                                    ? nil : forensicDirectoryURL,
+                                forensicDirectoryURL: hasStopImages ? forensicDirectoryURL : nil,
                                 recordedFrameCount: frameCount
                             )
                             if let triageBundleURL {
@@ -1687,8 +1822,7 @@ final class DebugVideoRecorder {
                         rawVideoURL: rawVideoURL,
                         overlayVideoURL: overlayVideoURL,
                         metadataURL: metadataURL,
-                        forensicDirectoryURL: forensicFrames.isEmpty && motionCaptures.isEmpty
-                            ? nil : forensicDirectoryURL,
+                        forensicDirectoryURL: hasStopImages ? forensicDirectoryURL : nil,
                         recordedFrameCount: frameCount,
                         droppedFrameCount: dropped,
                         triageBundleURL: triageBundleURL,
@@ -1719,113 +1853,194 @@ final class DebugVideoRecorder {
             && previous.map { length >= $0 * forensicPolicy.growthRatio } == true
     }
 
-    /// Keeps only one retained camera buffer while BLUE is detected. A BGRA
-    /// copy happens only on the true→false transition and on recovery.
-    private func updateBlueDropoutCapture(
-        pixelBuffer: CVPixelBuffer,
-        frameID: UInt64,
-        currentMetadata: inout DebugRecordingFrameMetadata,
-        previousMetadata: inout DebugRecordingFrameMetadata?,
-        width: Int,
-        height: Int,
-        blueDetected: Bool
-    ) {
-        if blueDetected {
-            if blueDropoutActive {
-                let fileName = "blue_dropout_recovered_\(frameID).png"
-                if captureCurrentBGRA(pixelBuffer: pixelBuffer, width: width, height: height,
-                                      fileName: fileName) {
-                    currentMetadata.blueDropoutRole = "recovered"
-                    currentMetadata.blueDropoutFileName = fileName
-                }
-                blueDropoutActive = false
-            }
-            lastBlueDetectedFrame = DebugRetainedBlueFrame(
-                pixelBuffer: pixelBuffer, frameID: frameID,
-                width: width, height: height
-            )
-            return
-        }
+    // MARK: Bridge dropouts
 
-        guard !blueDropoutActive, let previous = lastBlueDetectedFrame,
-              previousMetadata != nil,
-              automaticForensicCaptureCount + 3 <= forensicPolicy.maximumFrames else { return }
-        let previousFileName = "blue_dropout_last_true_\(previous.frameID).png"
-        let dropoutFileName = "blue_dropout_false_\(frameID).png"
-        guard captureDropoutPair(previous: previous, current: pixelBuffer,
-                                 width: width, height: height,
-                                 previousFileName: previousFileName,
-                                 dropoutFileName: dropoutFileName) else { return }
-        previousMetadata?.blueDropoutRole = "last-detected-before-dropout"
-        previousMetadata?.blueDropoutFileName = previousFileName
-        currentMetadata.blueDropoutRole = "dropout"
-        currentMetadata.blueDropoutFileName = dropoutFileName
-        lastBlueDetectedFrame = nil
-        blueDropoutActive = true
+    /// Independent BGRA copy, so no camera or writer pool buffer stays retained.
+    private func independentCopy(of source: DebugMotionPixelFrame) -> DebugMotionPixelFrame? {
+        var copy: CVPixelBuffer?
+        guard CVPixelBufferCreate(kCFAllocatorDefault, source.width, source.height,
+            kCVPixelFormatType_32BGRA, nil, &copy) == kCVReturnSuccess, let copy,
+            CVPixelBufferLockBaseAddress(copy, []) == kCVReturnSuccess else { return nil }
+        defer { CVPixelBufferUnlockBaseAddress(copy, []) }
+        // The current camera buffer is already locked by the caller; this lock is
+        // reference counted and also covers previously retained buffers.
+        guard CVPixelBufferLockBaseAddress(source.pixelBuffer, .readOnly) == kCVReturnSuccess else { return nil }
+        defer { CVPixelBufferUnlockBaseAddress(source.pixelBuffer, .readOnly) }
+        guard let src = CVPixelBufferGetBaseAddress(source.pixelBuffer),
+              let dst = CVPixelBufferGetBaseAddress(copy) else { return nil }
+        let srcStride = CVPixelBufferGetBytesPerRow(source.pixelBuffer)
+        let dstStride = CVPixelBufferGetBytesPerRow(copy)
+        for row in 0..<source.height {
+            memcpy(dst.advanced(by: row * dstStride), src.advanced(by: row * srcStride), source.width * 4)
+        }
+        return DebugMotionPixelFrame(pixelBuffer: copy, frameID: source.frameID,
+            timestamp: source.timestamp, width: source.width, height: source.height,
+            metadata: source.metadata)
     }
 
-    /// RED and BLUE share the same one-frame metadata delay and capture budget.
-    private func updateRedDropoutCapture(
-        pixelBuffer: CVPixelBuffer,
-        frameID: UInt64,
-        currentMetadata: inout DebugRecordingFrameMetadata,
-        previousMetadata: inout DebugRecordingFrameMetadata?,
-        width: Int,
-        height: Int,
-        redDetected: Bool
-    ) {
-        if redDetected {
-            if redDropoutActive {
-                let fileName = "red_dropout_recovered_\(frameID).png"
-                if captureCurrentBGRA(pixelBuffer: pixelBuffer, width: width, height: height,
-                                      fileName: fileName) {
-                    currentMetadata.redDropoutRole = "recovered"
-                    currentMetadata.redDropoutFileName = fileName
-                }
-                redDropoutActive = false
-            }
-            lastRedDetectedFrame = DebugRetainedBlueFrame(
-                pixelBuffer: pixelBuffer, frameID: frameID,
-                width: width, height: height
-            )
-            return
-        }
-        guard !redDropoutActive, let previous = lastRedDetectedFrame,
-              previousMetadata != nil,
-              automaticForensicCaptureCount + 3 <= forensicPolicy.maximumFrames else { return }
-        let previousFileName = "red_dropout_last_true_\(previous.frameID).png"
-        let dropoutFileName = "red_dropout_false_\(frameID).png"
-        guard captureDropoutPair(previous: previous, current: pixelBuffer,
-                                 width: width, height: height,
-                                 previousFileName: previousFileName,
-                                 dropoutFileName: dropoutFileName) else { return }
-        previousMetadata?.redDropoutRole = "last-detected-before-dropout"
-        previousMetadata?.redDropoutFileName = previousFileName
-        currentMetadata.redDropoutRole = "dropout"
-        currentMetadata.redDropoutFileName = dropoutFileName
-        lastRedDetectedFrame = nil
-        redDropoutActive = true
+    private func bridgeRetainedBytes() -> Int {
+        bridgePending.values.reduce(0) { $0 + $1.retainedBytes }
+            + bridgeCaptures.reduce(0) { $0 + $1.retainedBytes }
     }
 
-    private func captureDropoutPair(
-        previous: DebugRetainedBlueFrame, current: CVPixelBuffer,
-        width: Int, height: Int, previousFileName: String,
-        dropoutFileName: String
-    ) -> Bool {
-        let count = forensicFrames.count
-        let bytes = bufferedLosslessBytes
-        let reserved = reservedLosslessDiskBytes
-        let automatic = automaticForensicCaptureCount
-        guard captureRetainedBGRA(previous, fileName: previousFileName),
-              captureCurrentBGRA(pixelBuffer: current, width: width, height: height,
-                                 fileName: dropoutFileName) else {
-            forensicFrames.removeLast(forensicFrames.count - count)
-            bufferedLosslessBytes = bytes
-            reservedLosslessDiskBytes = reserved
-            automaticForensicCaptureCount = automatic
-            return false
+    private func bumpBridge(_ key: String) { bridgeStats[key, default: 0] += 1 }
+    private func rejectBridge(_ reason: String) {
+        // Bucket by cause, not by measured value, so the ledger stays small.
+        let bucket = reason.hasPrefix("discontinuous_") ? "discontinuous" : reason
+        bridgeRejections[bucket, default: 0] += 1
+    }
+
+    /// Tracks each diagnosed color for success → short miss → success sequences.
+    /// Frames before the first or after the last success never start or close one.
+    private func observeBridge(pixelBuffer: CVPixelBuffer, frame: DebugRecordingFrameMetadata,
+                               width: Int, height: Int) {
+        for index in bridgeCaptures.indices where bridgeCaptures[index].followingRemaining > 0 {
+            bridgeCaptures[index].context[frame.frameID] = frame
+            bridgeCaptures[index].followingRemaining -= 1
         }
-        return true
+        for color in diagnosticColors.colorNames {
+            let detection = color == "red" ? frame.red : frame.blue
+            let succeeded = color == "red" ? frame.redDetectionSucceeded : frame.blueDetectionSucceeded
+            let points = succeeded
+                ? DebugTrackingDiagnostics.values(detection.endpoints.map(DebugRecordingEndpoints.init)) : nil
+            let sample = DebugBridgeSample(frameID: frame.frameID,
+                timestamp: frame.presentationTimeSeconds,
+                succeeded: succeeded && points != nil, endpoints: points)
+            var tracker = bridgeTrackers[color] ?? DebugBridgeTracker()
+            let outcome = tracker.observe(sample)
+            bridgeTrackers[color] = tracker
+            let current = DebugMotionPixelFrame(pixelBuffer: pixelBuffer, frameID: frame.frameID,
+                timestamp: frame.presentationTimeSeconds, width: width, height: height, metadata: frame)
+            switch outcome {
+            case .none:
+                if !sample.succeeded, var pending = bridgePending[color] {
+                    pending.run = tracker.run ?? pending.run
+                    pending.noteMissing(frame)
+                    bridgePending[color] = pending
+                }
+            case .dropoutStarted(let run):
+                bumpBridge("observedDropouts")
+                var pending = DebugBridgePending(run: run, before: nil, dropout: nil,
+                    context: Dictionary(recentMetadata.map { ($0.frameID, $0) },
+                                        uniquingKeysWith: { first, _ in first }))
+                pending.context[frame.frameID] = frame
+                if let retained = lastDetectedFrames[color],
+                   retained.frameID == run.prior.last?.frameID,
+                   let beforeMetadata = recentMetadata.last(where: { $0.frameID == retained.frameID }),
+                   canRetainMotion(2 * current.byteCount) {
+                    let before = DebugMotionPixelFrame(pixelBuffer: retained.pixelBuffer,
+                        frameID: retained.frameID, timestamp: run.prior.last?.timestamp ?? 0,
+                        width: retained.width, height: retained.height, metadata: beforeMetadata)
+                    pending.before = independentCopy(of: before)
+                    pending.dropout = independentCopy(of: current)
+                    if pending.before == nil || pending.dropout == nil {
+                        pending.before = nil
+                        pending.dropout = nil
+                    }
+                }
+                bridgePending[color] = pending
+            case .recovered(let run, let after):
+                lastDetectedFrames[color] = nil
+                commitBridge(color: color, run: run, after: after, current: current)
+            }
+            if sample.succeeded {
+                lastDetectedFrames[color] = DebugRetainedBlueFrame(
+                    pixelBuffer: pixelBuffer, frameID: frame.frameID, width: width, height: height)
+            }
+        }
+        recentMetadata.append(frame)
+        if recentMetadata.count > 3 { recentMetadata.removeFirst() }
+    }
+
+    private func commitBridge(color: String, run: DebugBridgeTracker.Run,
+                              after: DebugBridgeSample, current: DebugMotionPixelFrame) {
+        guard var pending = bridgePending.removeValue(forKey: color) else {
+            rejectBridge("not_captured")
+            return
+        }
+        let assessment = DebugBridgeDropout.assess(prior: run.prior, missing: run.missing, after: after)
+        guard assessment.accepted else {
+            rejectBridge(assessment.rejection ?? "rejected")
+            return
+        }
+        guard let before = pending.before, let dropout = pending.dropout,
+              let beforeSample = run.prior.last else {
+            rejectBridge("memory_unavailable")
+            return
+        }
+        let gap = after.timestamp - beforeSample.timestamp
+        if bridgeCaptures.count >= DebugBridgeThresholds.maximumEvents {
+            // Longer losses of a continuous saber are the more informative ones.
+            guard let weakest = bridgeCaptures.indices.min(by: {
+                bridgeCaptures[$0].gapSeconds < bridgeCaptures[$1].gapSeconds
+            }), gap > bridgeCaptures[weakest].gapSeconds else {
+                rejectBridge("lower_rank")
+                return
+            }
+            bridgeCaptures.remove(at: weakest)
+            bumpBridge("evictedForLongerEvent")
+        }
+        guard canRetainMotion(pending.retainedBytes + current.byteCount),
+              let afterCopy = independentCopy(of: current) else {
+            rejectBridge("memory_unavailable")
+            return
+        }
+        bridgeEventCounter += 1
+        pending.context[current.frameID] = current.metadata
+        bridgeCaptures.append(DebugBridgeCapturedEvent(
+            id: bridgeEventCounter, color: color, before: before, dropout: dropout, after: afterCopy,
+            beforeSample: beforeSample, afterSample: after, missingFrameCount: run.missing.count,
+            assessment: assessment, context: pending.context,
+            followingRemaining: DebugBridgeThresholds.followingContextFrames))
+        bumpBridge("accepted")
+    }
+
+    private func diagnosticsMetadata() -> [String: Any] {
+        var windows: [String: Any] = [:]
+        for color in diagnosticColors.colorNames {
+            guard let tracker = bridgeTrackers[color], let first = tracker.firstSuccess,
+                  let last = tracker.lastSuccess else { continue }
+            windows[color] = ["firstSuccessFrameID": first.frameID, "lastSuccessFrameID": last.frameID,
+                              "firstSuccessTime": first.timestamp, "lastSuccessTime": last.timestamp]
+        }
+        let events = bridgeCaptures.sorted { $0.id < $1.id }.map { event -> [String: Any] in
+            func image(_ role: String, _ frame: DebugMotionPixelFrame) -> [String: Any] {
+                var entry: [String: Any] = ["role": role, "frameID": frame.frameID,
+                    "timestamp": frame.timestamp, "fileName": event.fileName(role, frame)]
+                if role == "dropout" { entry["annotatedFileName"] = event.annotatedFileName }
+                return entry
+            }
+            var annotation: [String: Any] = [
+                "method": "linear interpolation between the nearest successful detections in time",
+                "groundTruth": false,
+                "legend": "yellow dashed = interpolated expected position; green = before-success detection; magenta = after-success detection"]
+            if let expected = event.expectedEndpoints { annotation["expectedEndpoints"] = expected }
+            annotation["beforeEndpoints"] = event.beforeSample.endpoints ?? []
+            annotation["afterEndpoints"] = event.afterSample.endpoints ?? []
+            return ["eventID": event.id, "color": event.color,
+                "beforeFrameID": event.before.frameID, "dropoutFrameID": event.dropout.frameID,
+                "afterFrameID": event.after.frameID,
+                "beforeTimestamp": event.before.timestamp, "dropoutTimestamp": event.dropout.timestamp,
+                "afterTimestamp": event.after.timestamp,
+                "missingFrameCount": event.missingFrameCount, "gapSeconds": event.gapSeconds,
+                "assessment": ["accepted": true, "measurements": event.assessment.measurements,
+                               "thresholds": DebugBridgeThresholds.dictionary,
+                               "scope": "diagnostic image selection only; not a recognition rule"],
+                "images": [image("before_success", event.before), image("dropout", event.dropout),
+                           image("after_success", event.after)],
+                "annotation": annotation]
+        }
+        let unclosed = diagnosticColors.colorNames.filter { bridgeTrackers[$0]?.unclosedRun != nil }.count
+        var summary: [String: Any] = ["observedDropouts": bridgeStats["observedDropouts", default: 0],
+            "accepted": bridgeStats["accepted", default: 0],
+            "rejected": bridgeRejections,
+            "evictedForLongerEvent": bridgeStats["evictedForLongerEvent", default: 0],
+            "unclosedAtStop": unclosed,
+            "retained": events.count,
+            "scope": "A dropout counts only when a success exists on both sides; start/end absences and long absences are not diagnosed."]
+        if bridgeCaptures.isEmpty { summary["note"] = "no bridge dropout was retained" }
+        return ["activeColors": diagnosticColors.colorNames, "diagnosticWindows": windows,
+                "bridgeDropoutEvents": events, "bridgeDropoutSummary": summary]
     }
 
     private func jumpDetected(_ current: (PixelPoint, PixelPoint)?,
@@ -1884,17 +2099,6 @@ final class DebugVideoRecorder {
             automaticForensicCaptureCount += 1
         }
         return true
-    }
-
-    private func captureRetainedBGRA(
-        _ frame: DebugRetainedBlueFrame, fileName: String
-    ) -> Bool {
-        CVPixelBufferLockBaseAddress(frame.pixelBuffer, .readOnly)
-        defer { CVPixelBufferUnlockBaseAddress(frame.pixelBuffer, .readOnly) }
-        return captureCurrentBGRA(
-            pixelBuffer: frame.pixelBuffer, width: frame.width,
-            height: frame.height, fileName: fileName
-        )
     }
 
     /// The caller already has the camera BGRA buffer locked. Only anomalous,
@@ -1986,6 +2190,60 @@ final class DebugVideoRecorder {
                 context.addLine(to: CGPoint(x: endpoints.1.x, y: height - 1 - endpoints.1.y))
                 context.strokePath()
             }
+        }
+        let image = CIImage(bitmapData: pixels, bytesPerRow: stride,
+            size: CGSize(width: width, height: height), format: .BGRA8,
+            colorSpace: CGColorSpaceCreateDeviceRGB())
+        try CIContext(options: [.cacheIntermediates: false]).writePNGRepresentation(
+            of: image, to: directory.appendingPathComponent(fileName),
+            format: .RGBA8, colorSpace: CGColorSpaceCreateDeviceRGB())
+    }
+
+    /// Original dropout pixels plus the expected position; a viewing aid only.
+    private static func writeBridgeAnnotatedPNG(_ frame: DebugMotionPixelFrame,
+                                                before: [Double]?, after: [Double]?,
+                                                expected: [Double]?,
+                                                fileName: String, directory: URL) throws {
+        let width = frame.width
+        let height = frame.height
+        let stride = width * 4
+        guard CVPixelBufferLockBaseAddress(frame.pixelBuffer, .readOnly) == kCVReturnSuccess else {
+            throw DebugVideoRecorderError.cannotReadRawVideo("bridge annotation pixel buffer")
+        }
+        defer { CVPixelBufferUnlockBaseAddress(frame.pixelBuffer, .readOnly) }
+        guard let source = CVPixelBufferGetBaseAddress(frame.pixelBuffer) else {
+            throw DebugVideoRecorderError.cannotReadRawVideo("bridge annotation base address")
+        }
+        let sourceStride = CVPixelBufferGetBytesPerRow(frame.pixelBuffer)
+        var pixels = Data(count: stride * height)
+        pixels.withUnsafeMutableBytes { destination in
+            guard let base = destination.baseAddress else { return }
+            for row in 0..<height {
+                memcpy(base.advanced(by: row * stride), source.advanced(by: row * sourceStride), stride)
+            }
+            guard let context = CGContext(data: base, width: width, height: height,
+                bitsPerComponent: 8, bytesPerRow: stride, space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
+                    | CGBitmapInfo.byteOrder32Little.rawValue) else { return }
+            func line(_ points: [Double]?, _ color: CGColor, width lineWidth: CGFloat, dashed: Bool) {
+                guard let points, points.count == 4 else { return }
+                context.saveGState()
+                context.setStrokeColor(color)
+                context.setLineWidth(lineWidth)
+                context.setLineDash(phase: 0, lengths: dashed ? [16, 10] : [])
+                context.move(to: CGPoint(x: points[0], y: Double(height - 1) - points[1]))
+                context.addLine(to: CGPoint(x: points[2], y: Double(height - 1) - points[3]))
+                context.strokePath()
+                context.setLineDash(phase: 0, lengths: [])
+                for index in [0, 2] {
+                    context.strokeEllipse(in: CGRect(x: points[index] - 10,
+                        y: Double(height - 1) - points[index + 1] - 10, width: 20, height: 20))
+                }
+                context.restoreGState()
+            }
+            line(before, CGColor(red: 0, green: 1, blue: 0, alpha: 1), width: 2, dashed: false)
+            line(after, CGColor(red: 1, green: 0, blue: 1, alpha: 1), width: 2, dashed: false)
+            line(expected, CGColor(red: 1, green: 0.9, blue: 0, alpha: 1), width: 5, dashed: true)
         }
         let image = CIImage(bitmapData: pixels, bytesPerRow: stride,
             size: CGSize(width: width, height: height), format: .BGRA8,

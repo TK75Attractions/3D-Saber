@@ -11,7 +11,7 @@ from unittest import mock
 
 from phone_saber_tracking_e2e import capture_bundles
 from phone_saber_tracking_diagnostics import (temporal_events, tracking_preflight,
-    tracking_summary, PrecheckFailed)
+    tracking_summary, PrecheckFailed, sufficient_temporal as sufficient_for_tracking)
 from phone_saber_triage_protocol import pack_bundle, receive_bundle
 from phone_saber_triage_codex import input_plan, analyze_bundle, _codex_prompt
 import phone_saber_auto_repair as repair
@@ -169,6 +169,262 @@ class TrackingPipelineE2ETests(unittest.TestCase):
             repair_report = json.loads((bundle / "repair_report.json").read_text())
             self.assertEqual(repair_report["gate"]["decision"], "actionable")
             self.assertTrue(repair_report["trackingSummary"][0]["solEscalationExecuted"])
+
+
+    # --- bridge dropouts: one temporal evidence event, annotated image is not evidence ---
+
+    def bridge_analysis(self, evidence_ids, frame_ids, examples=2):
+        value = copy.deepcopy(EMPTY_ANALYSIS)
+        value["repair_assessment"].update(
+            decision="actionable", visible_saber_confirmed=True, production_change_supported=True,
+            root_cause_stage="eligibility", diagnosis_consistent_with_metadata=True,
+            change_type="threshold", independent_visual_examples=examples,
+            affected_colors=["RED"], evidence_image_ids=evidence_ids, reason="Fixture threshold proposal.")
+        value["false_negatives"] = [{"classification": ["C"], "color": "RED", "frame_ids": frame_ids,
+            "image_ids": evidence_ids, "issue_type": "eligibility", "observation": "visible saber",
+            "interpretation": "rejected by an eligibility rule", "confidence": "high"}]
+        return value
+
+    def test_H_real_recorder_bridge_event_is_one_temporal_unit_with_original_and_annotated_png(self):
+        from phone_saber_tracking_diagnostics import bridge_events, bridge_summary, complete_bridge_event
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); bundle = self.bundle(root, "bridge"); plan = input_plan(bundle)
+            bridge_images = [i for i in plan.images if i.bridge_event_id is not None]
+            self.assertEqual([i.role for i in bridge_images],
+                             ["before_success", "dropout", "annotated_dropout", "after_success"])
+            self.assertEqual({i.bridge_event_id for i in bridge_images}, {1})
+            self.assertEqual([i.auxiliary for i in bridge_images], [False, False, True, False])
+            self.assertEqual([i.frame_id for i in bridge_images], [1009, 1010, 1010, 1012])
+            # Bridge events come first so they are never cut by the image limit.
+            self.assertEqual([i.image_id for i in bridge_images],
+                             ["image_001", "image_002", "image_003", "image_004"])
+            events = bridge_events(plan)
+            self.assertEqual(len(events), 1)
+            self.assertTrue(complete_bridge_event(events[0]))
+            self.assertEqual(events[0]["missingFrameCount"], 2)
+            self.assertEqual(tracking_preflight(plan)["status"], "PASS")
+            rows = bridge_summary(plan)
+            self.assertEqual([(r["independentExamples"], r["annotatedImage"], r["frames"]) for r in rows],
+                             [(1, True, [1009, 1010, 1012])])
+            summary = json.loads((bundle / "summary.json").read_text())
+            self.assertEqual(summary["activeColors"], ["red", "blue"])
+            self.assertEqual(summary["bridgeDropoutSummary"]["selectedEventIDs"], [1])
+            # Swift decoded every PNG (including the annotated copy) against its frame number.
+            self.assertEqual(self.captures["bridge"]["pngMappingVerified"], len(plan.images))
+            # The original dropout PNG is kept beside the annotated one.
+            forensic = Path(self.captures["bridge"]["forensic"])
+            metadata = json.loads(Path(self.captures["bridge"]["metadata"]).read_text())
+            images = metadata["bridgeDropoutEvents"][0]["images"]
+            dropout = next(i for i in images if i["role"] == "dropout")
+            self.assertNotEqual((forensic / dropout["fileName"]).read_bytes(),
+                                (forensic / dropout["annotatedFileName"]).read_bytes())
+            prompt = _codex_prompt(plan.session_id, plan.images, plan.root)
+            self.assertIn("ONE temporal evidence event", prompt)
+            self.assertIn("never ground truth", prompt)
+            self.assertIn('"evidenceUnit": "bridge_dropout_1"', prompt)
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                analyze_bundle(bundle, codex_path=str(fake_codex(root, root / "spy.json",
+                                                                 analysis=EMPTY_ANALYSIS)))
+            self.assertIn("[AUTO_REPAIR][BRIDGE_SUMMARY]", output.getvalue())
+
+    def test_I_three_frames_of_one_bridge_event_are_one_example_and_annotated_is_not_evidence(self):
+        import dataclasses
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); bundle = self.bundle(root, "bridge"); plan = input_plan(bundle)
+            originals = ["image_001", "image_002", "image_004"]
+            response = self.bridge_analysis(originals, [1009, 1010, 1012])
+            binary = fake_codex(root, root / "spy.json", responses=[response])
+            with contextlib.redirect_stdout(io.StringIO()):
+                self.assertEqual(analyze_bundle(bundle, codex_path=str(binary))["status"], "completed")
+            plan = input_plan(bundle, allow_reports=True)
+            report = repair.load_analysis(bundle, plan)
+            with mock.patch.object(repair, "_corpus_coverage", return_value=(True, "covered")):
+                gate = repair.repair_gate(report, plan, repair.REPO_ROOT)
+                # Three PNGs, three frame IDs, and a claimed count of two: still one event.
+                self.assertEqual(gate["decision"], "needs_capture", gate)
+                self.assertIn("insufficientIndependentVisualExamples", gate["reasonCodes"])
+                # The same evidence from two distinct events clears only that unit check.
+                second = dataclasses.replace(plan.images[3], bridge_event_id=2)
+                two_events = dataclasses.replace(plan, images=plan.images[:3] + (second,))
+                gate_two = repair.repair_gate(report, two_events, repair.REPO_ROOT)
+                self.assertNotIn("insufficientIndependentVisualExamples", gate_two["reasonCodes"])
+                # An annotated image alone never supports a repair.
+                annotated = self.bridge_analysis(["image_003"], [1010])
+                annotated_report = copy.deepcopy(report)
+                annotated_report["analysis"] = annotated
+                gate_annotated = repair.repair_gate(annotated_report, plan, repair.REPO_ROOT)
+                self.assertEqual(gate_annotated["decision"], "needs_capture")
+                self.assertTrue(any("no selected RED PNG supports" in r for r in gate_annotated["reasons"]))
+                self.assertTrue(any("lack selected PNG references" in r for r in gate_annotated["reasons"]))
+
+    def test_J_absence_before_first_and_after_last_detection_leaves_no_evidence(self):
+        capture = self.captures["edge-absence"]
+        metadata = json.loads(Path(capture["metadata"]).read_text())
+        self.assertEqual(metadata["bridgeDropoutEvents"], [])
+        window = metadata["diagnosticWindows"]["red"]
+        self.assertEqual((window["firstSuccessFrameID"], window["lastSuccessFrameID"]), (1006, 1018))
+        self.assertEqual(metadata["bridgeDropoutSummary"]["unclosedAtStop"], 1)
+        # The saber leaving the view is not a tracking-instability event either.
+        ranked = [f for f in metadata["frames"] if f["tracking"]["red"]["detectedToggle"]]
+        self.assertTrue(ranked, "fixture must contain true<->false toggles")
+        # Whatever was selected lies inside the detected window and is not an absence image.
+        if capture["bundle"] is not None:
+            summary = json.loads((Path(capture["bundle"]) / "summary.json").read_text())
+            for image in summary["images"]:
+                self.assertTrue(window["firstSuccessFrameID"] <= image["frameID"] <= window["lastSuccessFrameID"]
+                                or image["frameID"] <= window["lastSuccessFrameID"] + 5, image)
+                self.assertNotIn("candidate_zero", image["failureType"])
+                self.assertNotIn("dropout", image["failureType"])
+                context = json.loads((Path(capture["bundle"]) / image["frameContextPath"]).read_text())
+                selected = next(f for f in context["frames"] if f["frameID"] == image["frameID"])
+                if image["frameID"] <= window["lastSuccessFrameID"]:
+                    self.assertTrue(selected["red"].get("detectionSucceeded"), image)
+
+    def test_K_bridge_bundle_contract_rejects_partial_forged_or_oversized_events(self):
+        from phone_saber_triage_protocol import BundleError
+        def fresh():
+            tmp = tempfile.TemporaryDirectory(); self.addCleanup(tmp.cleanup)
+            bundle = self.bundle(Path(tmp.name), "bridge")
+            return bundle, json.loads((bundle / "summary.json").read_text())
+        def save(bundle, summary): (bundle / "summary.json").write_text(json.dumps(summary))
+        # An event without its after_success image is never accepted as a partial event.
+        bundle, summary = fresh()
+        for entry in summary["images"]:
+            if entry.get("role") == "after_success":
+                entry.update(path=None)
+        summary["images"] = [e for e in summary["images"] if e.get("role") != "after_success"]
+        summary["selectedImageCount"] = len(summary["images"])
+        save(bundle, summary)
+        with self.assertRaises(BundleError): input_plan(bundle)
+        # Summary and context must agree on event, role and frame.
+        bundle, summary = fresh()
+        next(e for e in summary["images"] if e.get("role") == "dropout")["bridgeEventID"] = 7
+        save(bundle, summary)
+        with self.assertRaises(BundleError): input_plan(bundle)
+        # The annotated image must be derived from this event's own dropout PNG.
+        bundle, summary = fresh()
+        next(e for e in summary["images"] if e.get("role") == "annotated_dropout")["derivedFromImage"] = \
+            next(e for e in summary["images"] if e.get("role") == "before_success")["path"]
+        save(bundle, summary)
+        with self.assertRaisesRegex(BundleError, "not derived from its dropout"): input_plan(bundle)
+        # The three originals must be ordered before < dropout < after.
+        bundle, summary = fresh()
+        entry = next(e for e in summary["images"] if e.get("role") == "after_success")
+        context_path = bundle / entry["frameContextPath"]
+        context = json.loads(context_path.read_text())
+        context["bridgeEvent"]["afterFrameID"] = context["bridgeEvent"]["beforeFrameID"]
+        context_path.write_text(json.dumps(context))
+        with self.assertRaisesRegex(BundleError, "not ordered"): input_plan(bundle)
+        # The 32 KiB context size safety is unchanged.
+        bundle, summary = fresh()
+        entry = summary["images"][1]
+        context_path = bundle / entry["frameContextPath"]
+        context = json.loads(context_path.read_text())
+        context_path.write_text(json.dumps(context) + " " * 40_000)  # valid JSON, over 32 KiB
+        with self.assertRaisesRegex(BundleError, "size limit"): input_plan(bundle)
+
+    def test_L_preflight_stops_a_bridge_event_that_is_not_detected_missed_detected(self):
+        tmp = tempfile.TemporaryDirectory(); self.addCleanup(tmp.cleanup)
+        bundle = self.bundle(Path(tmp.name), "bridge")
+        plan = input_plan(bundle)
+        before = next(i for i in plan.images if i.role == "before_success")
+        context = json.loads(before.context_path.read_text())
+        for frame in context["frames"]:
+            if frame["frameID"] == before.frame_id:
+                frame["red"]["detectionSucceeded"] = False; frame["red"]["detected"] = False
+        before.context_path.write_text(json.dumps(context))
+        result = tracking_preflight(plan)
+        self.assertEqual(result["status"], "PRECHECK_FAILED")
+        self.assertIn("bridgeEvidenceIncomplete", result["reasonCodes"])
+        with mock.patch("phone_saber_triage_codex.find_codex_binary") as cli, contextlib.redirect_stdout(io.StringIO()):
+            outcome = analyze_bundle(bundle)
+        cli.assert_not_called()
+        self.assertEqual(outcome["status"], "precheck_failed")
+        self.assertIn("bridgeEvidenceIncomplete", outcome["reasonCodes"])
+
+    def test_M_real_recorder_contexts_fit_the_consumer_size_limit_and_are_compact(self):
+        from phone_saber_triage_codex import MAX_CODEX_CONTEXT_BYTES
+        for scenario in ("bridge", "stable", "candidate-switch", "raw-jump", "path-switch", "bridge-switch"):
+            bundle = Path(self.captures[scenario]["bundle"])
+            for path in (bundle / "frames").glob("*.json"):
+                data = path.read_bytes()
+                self.assertLess(len(data), MAX_CODEX_CONTEXT_BYTES, f"{scenario}/{path.name}")
+                self.assertNotIn(b"\n  ", data, "contexts are written without pretty-print indentation")
+            self.assertNotIn(b"\n  ", (bundle / "summary.json").read_bytes())
+
+
+    # --- candidate geometry: can the next capture tell CASE A / B / C apart? ---
+
+    def audit_hints(self, scenario):
+        from phone_saber_tracking_diagnostics import candidate_selection_audit
+        plan = input_plan(Path(self.captures[scenario]["bundle"]))
+        return plan, candidate_selection_audit(plan)
+
+    def test_N_real_recorder_geometry_distinguishes_cases_a_b_and_c(self):
+        _, switch = self.audit_hints("candidate-switch")     # a different, equally eligible candidate takes over
+        a_rows = [r for r in switch if r["hint"] == "A"]
+        self.assertEqual([r["frameID"] for r in a_rows], [1010])
+        self.assertEqual(a_rows[0]["eligibleCandidateCount"], 2)
+        self.assertFalse(a_rows[0]["candidatesTruncated"])
+        self.assertIn("matchingAlternativeListIndex", a_rows[0])
+        _, jump = self.audit_hints("raw-jump")                # same candidate, endpoints break
+        self.assertEqual([r["hint"] for r in jump if r["hint"] != "none"][:1], ["C"])
+        self.assertTrue(all(r["hint"] != "A" for r in jump))
+        _, bridge = self.audit_hints("bridge")                # the candidate is not generated at all
+        b_rows = [r for r in bridge if r["hint"] == "B"]
+        self.assertEqual([(r["frameID"], r["bCause"]) for r in b_rows], [(1010, "notGenerated")])
+        _, stable = self.audit_hints("stable")
+        self.assertTrue(all(r["hint"] == "none" for r in stable))
+
+    def test_O_selected_frame_geometry_is_complete_reconciled_and_never_silently_cut(self):
+        for scenario in ("candidate-switch", "raw-jump", "path-switch", "bridge", "bridge-switch"):
+            plan = input_plan(Path(self.captures[scenario]["bundle"]))
+            seen = 0
+            for image in plan.images:
+                context = json.loads(image.context_path.read_text())
+                if context.get("bridgeEvent", {}).get("auxiliary"):
+                    continue
+                selected = next(f for f in context["frames"] if f["frameID"] == image.frame_id)
+                geometry = selected["red"].get("candidateGeometry")
+                self.assertIsNotNone(geometry, f"{scenario} image {image.image_id} lacks geometry")
+                seen += 1
+                # Recorded eligible count == saved + explicitly omitted; the flag follows.
+                self.assertEqual(geometry["eligibleCandidateCount"], selected["red"]["eligibleCandidateCount"])
+                self.assertEqual(geometry["eligibleCandidateCount"],
+                                 geometry["savedEligibleCount"] + geometry["eligibleOmittedCount"])
+                self.assertEqual(geometry["candidatesTruncated"],
+                                 geometry["eligibleOmittedCount"] + geometry["ineligibleOmittedCount"] > 0)
+                for entry in geometry["candidates"]:
+                    for key in ("centroid", "bbox", "componentArea", "sourceType", "finalScore", "scoreBreakdown",
+                                "eligible", "rejectionReasons", "rawPCAEndpoints", "finalOutputEndpoints"):
+                        self.assertIn(key, entry)
+            self.assertGreater(seen, 0)
+
+    def test_P_bridge_and_a_real_switch_share_the_image_budget_without_losing_either(self):
+        from phone_saber_tracking_diagnostics import candidate_selection_audit
+        capture = self.captures["bridge-switch"]
+        tmp = tempfile.TemporaryDirectory(); self.addCleanup(tmp.cleanup)
+        plan = input_plan(Path(capture["bundle"]))
+        self.assertLessEqual(len(plan.images), 12)
+        bridge = [i for i in plan.images if i.bridge_event_id is not None]
+        tracking = [i for i in plan.images if i.failure_type.endswith("tracking_instability")]
+        self.assertEqual([i.role for i in bridge],
+                         ["before_success", "dropout", "annotated_dropout", "after_success"])
+        self.assertGreaterEqual(len(tracking), 5)
+        summary = json.loads((Path(capture["bundle"]) / "summary.json").read_text())
+        window = summary["bridgeDropoutSummary"]["trackingWindow"]
+        self.assertEqual((window["selected"], window["available"]), (len(tracking), 11))
+        frames = sorted(i.frame_id for i in tracking)
+        self.assertEqual(frames, list(range(frames[0], frames[0] + len(frames))), "contiguous window")
+        peak = next(i for i in tracking if json.loads(i.context_path.read_text())["motionEvent"]["role"] == "peak")
+        self.assertTrue(frames[0] < peak.frame_id < frames[-1])
+        self.assertEqual(tracking_preflight(plan)["status"], "PASS")
+        hints = [r for r in candidate_selection_audit(plan) if r["hint"] == "A"]
+        self.assertTrue(hints, "the candidate-selection switch is still diagnosable")
+        events = temporal_events(plan)
+        self.assertEqual(len(events), 1)
+        self.assertTrue(sufficient_for_tracking(events[0]))
 
 
 if __name__ == "__main__": unittest.main()

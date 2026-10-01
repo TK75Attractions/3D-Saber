@@ -392,6 +392,9 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var rawFrameSaveMessage = ""
     @Published private(set) var lastRawFrameURL: URL?
     @Published var debugRecordingEnabled = false
+    /// Colors whose absence and anomalies count as diagnostic failures. Recognition
+    /// and UDP output always cover both colors.
+    @Published var debugDiagnosticColors: DebugDiagnosticColors = .both
     @Published private(set) var debugRecordingActive = false
     @Published private(set) var debugRecordingFinalizing = false
     @Published private(set) var manualLosslessCapturePending = false
@@ -1403,7 +1406,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         // finalization after recorder creation instead of leaving it orphaned.
         debugRecordingActive = true
         debugRecordingStatus = "録画を開始しています…"
-        processor.startDebugRecording { [weak self] result in
+        processor.startDebugRecording(diagnosticColors: debugDiagnosticColors) { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }
                 switch result {

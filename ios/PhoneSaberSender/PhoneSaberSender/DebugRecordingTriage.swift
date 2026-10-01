@@ -33,7 +33,7 @@ enum DebugMotionThresholds {
     static let postRollSeconds = 0.5
     static let maximumSelectedEvents = 3
     static let maximumEventImages = 9
-    static let maximumRetainedBGRABytes = 192 * 1_024 * 1_024
+    static let maximumRetainedBGRABytes = 256 * 1_024 * 1_024 // Bridge originals share this budget.
 }
 
 struct DebugMotionColorSample {
@@ -328,6 +328,10 @@ enum DebugRecordingTriageError: LocalizedError {
 }
 
 struct DebugRecordingTriageLimits {
+    static let trackingEventIndex = 1_000_000_000
+    /// Smallest contiguous tracking window (peak plus two frames each side) kept
+    /// beside bridge events.
+    static let minimumTrackingWindow = 5
     static let defaultImageCount = 12
     static let hardImageCount = 20
     static let perFailureType = 2
@@ -357,11 +361,28 @@ struct DebugRecordingTriageImage: Equatable {
     var role: String? = nil
     var score: Double? = nil
     var signals: [DebugMotionSignal] = []
+    var bridge: DebugBridgeImageInfo? = nil
+}
+
+/// The before-success / dropout / after-success frames of one bridge dropout are
+/// ONE temporal evidence event; the annotated dropout PNG is a derived viewing aid.
+struct DebugBridgeImageInfo: Equatable {
+    static let roles = ["before_success", "dropout", "after_success"]
+    static let annotatedRole = "annotated_dropout"
+    let eventID: Int
+    let role: String
+    var auxiliary: Bool { role == Self.annotatedRole }
+    /// Original dropout PNG file name that an annotated image was drawn from.
+    let derivedFromFileName: String?
 }
 
 struct DebugRecordingTriageSelection: Equatable {
     let images: [DebugRecordingTriageImage]
     let incidentCount: Int
+    /// Temporal events left out whole because bridge dropout events took the image budget.
+    var bridgePriorityEventIDs: Set<Int> = []
+    /// Set when the tracking event was cut to a window around its peak: selected/available.
+    var trackingWindow: [String: Int]? = nil
 }
 
 
@@ -376,21 +397,33 @@ struct DebugRecordingTriageAccumulator {
     private var identicalRed = 0
     private var identicalBlue = 0
 
+    /// Colors whose anomalies count. Legacy recordings diagnose both.
+    var activeColors: Set<String> = ["red", "blue"]
+    /// New recordings report absences only through bridge dropout events, so a
+    /// missing color is not an incident by itself.
+    var absenceIsIncident = true
+
     mutating func observe(_ frame: DebugRecordingFrameMetadata) {
         let previous = recent.last
-        let redIdentical = identical(frame.red, previous?.red) && frame.redDetectionSucceeded
-        let blueIdentical = identical(frame.blue, previous?.blue) && frame.blueDetectionSucceeded
+        let redActive = activeColors.contains("red")
+        let blueActive = activeColors.contains("blue")
+        let redIdentical = redActive && identical(frame.red, previous?.red) && frame.redDetectionSucceeded
+        let blueIdentical = blueActive && identical(frame.blue, previous?.blue) && frame.blueDetectionSucceeded
         identicalRed = redIdentical ? identicalRed + 1 : 0
         identicalBlue = blueIdentical ? identicalBlue + 1 : 0
+        let absence = absenceIsIncident
+            && ((redActive && (frame.redDropoutRole != nil
+                    || (previous?.redDetectionSucceeded == true && !frame.redDetectionSucceeded)))
+                || (blueActive && (frame.blueDropoutRole != nil
+                    || (previous?.blueDetectionSucceeded == true && !frame.blueDetectionSucceeded))))
         let incident = frame.manualCaptured || frame.forensicCaptured
             || frame.motionEventIndex != nil
-            || frame.redDropoutRole != nil || frame.blueDropoutRole != nil
-            || Self.isCaptureCandidate(frame)
-            || jump(frame.red, previous?.red) >= 180
-            || jump(frame.blue, previous?.blue) >= 180
+            || absence
+            || Self.isCaptureCandidate(frame, activeColors: activeColors,
+                                       includeAbsence: absenceIsIncident)
+            || (redActive && jump(frame.red, previous?.red) >= 180)
+            || (blueActive && jump(frame.blue, previous?.blue) >= 180)
             || identicalRed >= 3 || identicalBlue >= 3
-            || (previous?.redDetectionSucceeded == true && !frame.redDetectionSucceeded)
-            || (previous?.blueDetectionSucceeded == true && !frame.blueDetectionSucceeded)
         if incident {
             for context in recent { retain(context) }
             retain(frame)
@@ -416,12 +449,22 @@ struct DebugRecordingTriageAccumulator {
     }
 
     static func isCaptureCandidate(_ frame: DebugRecordingFrameMetadata) -> Bool {
-        suspicious(frame.candidateDiagnostics?.red) || suspicious(frame.candidateDiagnostics?.blue)
+        isCaptureCandidate(frame, activeColors: ["red", "blue"], includeAbsence: true)
     }
 
-    private static func suspicious(_ diagnostics: DebugRecordingColorCandidates?) -> Bool {
+    /// `includeAbsence == false` ignores candidate=0 / eligible=0, which only
+    /// say that a saber was not found, and keeps the suspicious-geometry checks.
+    static func isCaptureCandidate(_ frame: DebugRecordingFrameMetadata,
+                                   activeColors: Set<String>, includeAbsence: Bool) -> Bool {
+        (activeColors.contains("red") && suspicious(frame.candidateDiagnostics?.red, includeAbsence: includeAbsence))
+            || (activeColors.contains("blue") && suspicious(frame.candidateDiagnostics?.blue, includeAbsence: includeAbsence))
+    }
+
+    private static func suspicious(_ diagnostics: DebugRecordingColorCandidates?,
+                                   includeAbsence: Bool) -> Bool {
         guard let diagnostics else { return false }
-        if diagnostics.totalCandidateCount == 0 || diagnostics.eligibleCandidateCount == 0 { return true }
+        if includeAbsence,
+           diagnostics.totalCandidateCount == 0 || diagnostics.eligibleCandidateCount == 0 { return true }
         guard let candidate = diagnostics.selectedCandidate else { return false }
         let raw = candidate.rawPCASpan
         let robust = candidate.robustMainIntervalLength
@@ -470,6 +513,22 @@ enum DebugRecordingTriageBuilder {
         var signals: [DebugMotionSignal] = []
     }
 
+    /// Colors whose failures count. Metadata without `activeColors` predates
+    /// diagnostic color selection and diagnoses both colors as before.
+    static func activeColorSet(_ metadata: [String: Any]) -> Set<String> {
+        guard let names = metadata["activeColors"] as? [String] else { return Set(colors) }
+        return Set(names).intersection(colors)
+    }
+
+    private static func inDiagnosticWindow(_ metadata: [String: Any], color: String,
+                                           timestamp: Double) -> Bool {
+        guard let windows = metadata["diagnosticWindows"] as? [String: Any],
+              let window = windows[color] as? [String: Any],
+              let first = number(window["firstSuccessTime"]),
+              let last = number(window["lastSuccessTime"]) else { return false }
+        return timestamp >= first && timestamp <= last
+    }
+
     static func selectImages(
         metadataData: Data,
         forensicDirectoryURL: URL?,
@@ -479,6 +538,10 @@ enum DebugRecordingTriageBuilder {
         let metadata = try decodeMetadata(metadataData)
         let frames = metadata["frames"] as! [[String: Any]]
         let directory = forensicDirectoryURL
+        // New recordings report absence only through bridge events bounded by a
+        // success on both sides; the legacy absence reasons stay for old files.
+        let boundedAbsence = metadata["activeColors"] != nil
+        let active = activeColorSet(metadata)
         var reasonsByFrame: [[Reason]] = Array(repeating: [], count: frames.count)
         var references: [ImageReference] = []
 
@@ -491,7 +554,7 @@ enum DebugRecordingTriageBuilder {
                                                     priority: 0, detail: "manual lossless capture"))
             }
 
-            for color in colors {
+            for color in colors where active.contains(color) && !boundedAbsence {
                 let dropoutRole = string(frame["\(color)DropoutRole"])
                 let dropoutFile = string(frame["\(color)DropoutFileName"])
                 if let dropoutFile, let dropoutRole,
@@ -519,8 +582,17 @@ enum DebugRecordingTriageBuilder {
                                                  color: "both", fileName: forensic, isManual: false))
             }
 
-            for color in colors {
-                reasonsByFrame[index].append(contentsOf: reasons(for: frames, at: index, color: color))
+            for color in colors where active.contains(color) {
+                var found = reasons(for: frames, at: index, color: color,
+                                    includeAbsence: !boundedAbsence)
+                if boundedAbsence, !inDiagnosticWindow(
+                    metadata, color: color,
+                    timestamp: number(frame["presentationTimeSeconds"]) ?? -1) {
+                    // Before the first or after the last success nothing can be
+                    // attributed to recognition.
+                    found = []
+                }
+                reasonsByFrame[index].append(contentsOf: found)
             }
         }
 
@@ -535,6 +607,7 @@ enum DebugRecordingTriageBuilder {
                       let color = string(event["color"]),
                       let score = number(event["peakScore"]),
                       let images = event["images"] as? [[String: Any]] else { continue }
+                if !active.contains(color) && color != "both" { continue }
                 let signals = (event["signals"] as? [[String: Any]] ?? []).compactMap {
                     signal -> DebugMotionSignal? in
                     guard let kind = string(signal["kind"]),
@@ -545,6 +618,10 @@ enum DebugRecordingTriageBuilder {
                     return DebugMotionSignal(kind: kind, color: signalColor,
                         value: value, threshold: threshold, score: signalScore)
                 }
+                // Presence/absence signals are covered by bridge events, which
+                // require a success on both sides.
+                if boundedAbsence, !signals.isEmpty,
+                   signals.allSatisfy({ ["dropout", "flicker"].contains($0.kind) }) { continue }
                 for image in images {
                     guard let frameID = integer(image["frameID"]),
                           let frameIndex = indexByID[frameID],
@@ -559,7 +636,7 @@ enum DebugRecordingTriageBuilder {
             }
         }
 
-        addIdenticalEndpointReasons(frames: frames, reasonsByFrame: &reasonsByFrame)
+        addIdenticalEndpointReasons(frames: frames, reasonsByFrame: &reasonsByFrame, active: active)
 
         let incidentCount = incidentSummary(metadata: metadata).reduce(0) {
             $0 + Int(integer($1["incidentCount"]) ?? 0)
@@ -587,7 +664,71 @@ enum DebugRecordingTriageBuilder {
             if uniqueByName[reference.fileName] == nil { uniqueByName[reference.fileName] = reference }
         }
 
-        let sortedReferences = uniqueByName.values.sorted { lhs, rhs in
+        var selected: [DebugRecordingTriageImage] = []
+        var countByType: [String: Int] = [:]
+        var selectedBytes: Int64 = 0
+        // Leave room for the compact contexts, summary and prompt under the
+        // unchanged 64 MiB transport budget. Selection is performed after Stop.
+        let imageBudget = DebugRecordingTriageLimits.maximumBundleBytes - 2 * 1_024 * 1_024
+
+        // A tracking-instability event that actually shows instability (event score at
+        // or above the diagnostic event threshold) is never crowded out by bridge
+        // events: it keeps at least a five-frame window around its peak.
+        let trackingReferences = uniqueByName.values.filter {
+            $0.eventIndex == DebugRecordingTriageLimits.trackingEventIndex
+        }.sorted { $0.frameID < $1.frameID }
+        let trackingSignificant = (trackingReferences.first?.score ?? 0) >= DebugMotionThresholds.eventScore
+        let bridgeImageBudget = trackingSignificant
+            ? requestedLimit - min(trackingReferences.count, DebugRecordingTriageLimits.minimumTrackingWindow)
+            : requestedLimit
+
+        // Bridge events are complete temporal units: all three originals or nothing.
+        if boundedAbsence, let directory {
+            let indexByID = Dictionary(uniqueKeysWithValues: frames.enumerated().compactMap {
+                index, frame -> (UInt64, Int)? in
+                guard let id = integer(frame["frameID"]) else { return nil }
+                return (id, index)
+            })
+            let events = (metadata["bridgeDropoutEvents"] as? [[String: Any]] ?? []).sorted {
+                (number($0["gapSeconds"]) ?? 0) > (number($1["gapSeconds"]) ?? 0)
+            }
+            var taken = 0
+            for event in events where taken < DebugBridgeThresholds.maximumEvents {
+                guard let unit = bridgeUnit(event, active: active, indexByID: indexByID,
+                                            directory: directory) else { continue }
+                let bytes = unit.reduce(Int64(0)) { $0 + $1.1 }
+                guard selected.count + unit.count <= bridgeImageBudget,
+                      selectedBytes + bytes <= imageBudget else { continue }
+                selected.append(contentsOf: unit.map(\.0))
+                selectedBytes += bytes
+                taken += 1
+            }
+        }
+        let bridgeFrameIDs = Set(selected.map(\.frameID))
+
+        // The tracking event is a temporal unit as well: a contiguous window around its
+        // peak (all eleven frames when they fit), never a scattered subset.
+        let slots = requestedLimit - selected.count
+        let trackingCount = trackingReferences.count
+        var trackingWindow: Set<UInt64>?
+        var trackingWindowInfo: [String: Int]?
+        if trackingCount > 0, trackingCount > slots, trackingSignificant, slots >= 3 {
+            let size = min(trackingCount, slots)
+            let peak = trackingReferences.firstIndex { $0.role == "peak" } ?? trackingCount / 2
+            var lower = peak - (size - 1) / 2
+            lower = max(0, min(lower, trackingCount - size))
+            trackingWindow = Set(trackingReferences[lower..<lower + size].map(\.frameID))
+            trackingWindowInfo = ["selected": size, "available": trackingCount]
+        }
+        let trackingFits = trackingCount <= slots || trackingWindow != nil
+        let bridgePriority: Set<Int> = (!trackingFits && !selected.isEmpty && trackingCount > 0)
+            ? [DebugRecordingTriageLimits.trackingEventIndex] : []
+
+        let sortedReferences = uniqueByName.values.filter {
+            ($0.eventIndex != DebugRecordingTriageLimits.trackingEventIndex
+                || (trackingFits && (trackingWindow?.contains($0.frameID) ?? true)))
+                && !bridgeFrameIDs.contains($0.frameID)
+        }.sorted { lhs, rhs in
             if (lhs.eventIndex != nil) != (rhs.eventIndex != nil) {
                 return lhs.eventIndex != nil
             }
@@ -614,12 +755,6 @@ enum DebugRecordingTriageBuilder {
             return lhs.fileName < rhs.fileName
         }
 
-        var selected: [DebugRecordingTriageImage] = []
-        var countByType: [String: Int] = [:]
-        var selectedBytes: Int64 = 0
-        // Leave room for the compact contexts, summary and prompt under the
-        // unchanged 64 MiB transport budget. Selection is performed after Stop.
-        let imageBudget = DebugRecordingTriageLimits.maximumBundleBytes - 2 * 1_024 * 1_024
         for reference in sortedReferences {
             guard selected.count < requestedLimit else { break }
             if selected.contains(where: { $0.frameID == reference.frameID }) { continue }
@@ -673,7 +808,8 @@ enum DebugRecordingTriageBuilder {
         let motionSummary = metadata["motionSummary"] as? [String: Any]
         let motionCount = (motionSummary?["events"] as? [[Any]])?.count ?? 0
         return (metadata, DebugRecordingTriageSelection(images: selected,
-            incidentCount: incidentCount + motionCount))
+            incidentCount: incidentCount + motionCount, bridgePriorityEventIDs: bridgePriority,
+            trackingWindow: trackingWindowInfo))
     }
 
     static func build(
@@ -690,6 +826,7 @@ enum DebugRecordingTriageBuilder {
         guard let sessionID = string(metadata["sessionID"]), !sessionID.isEmpty else {
             throw DebugRecordingTriageError.malformedMetadata("sessionID is missing")
         }
+        let active = activeColorSet(metadata)
 
         let bundleURL = metadataURL.deletingLastPathComponent()
             .appendingPathComponent("phone_saber_triage_\(safeSessionName(sessionID))",
@@ -724,16 +861,17 @@ enum DebugRecordingTriageBuilder {
                 try FileManager.default.copyItem(at: sourceURL,
                                                  to: imageDirectory.appendingPathComponent(targetName))
 
-                var framePayload = contextPayload(metadata: metadata, selected: item)
+                var framePayload = contextPayload(metadata: metadata, selected: item, active: active)
                 framePayload["imageMapping"] = ["sessionID": sessionID,
                     "frameID": item.frameID,
                     "timestamp": number(frames(metadata)[item.frameIndex]["presentationTimeSeconds"]) ?? 0,
                     "color": item.color, "image": "images/\(targetName)",
-                    "eventID": item.eventIndex.map { String($0) } ?? "none",
-                    "eventRole": item.role ?? "single"]
+                    "eventID": item.bridge.map { "bridge_\($0.eventID)" }
+                        ?? item.eventIndex.map { String($0) } ?? "none",
+                    "eventRole": item.bridge?.role ?? item.role ?? "single"]
                 let frameName = "frame_\(item.frameID)_\(offset + 1).json"
-                try jsonData(framePayload).write(to: frameDirectory.appendingPathComponent(frameName),
-                                                options: .atomic)
+                try jsonData(framePayload, compact: true).write(
+                    to: frameDirectory.appendingPathComponent(frameName), options: .atomic)
                 var imageEntry: [String: Any] = [
                     "path": "images/\(targetName)", "frameContextPath": "frames/\(frameName)", "sessionID": sessionID,
                     "frameID": item.frameID, "timestamp": number(frames(metadata)[item.frameIndex]["presentationTimeSeconds"]) ?? 0,
@@ -747,6 +885,18 @@ enum DebugRecordingTriageBuilder {
                     imageEntry["anomalyScore"] = score
                     imageEntry["signals"] = item.signals.map(\.dictionary)
                     imageEntry["signalAggregation"] = "event_max_per_kind"
+                }
+                if let bridge = item.bridge {
+                    imageEntry["bridgeEventID"] = bridge.eventID
+                    imageEntry["role"] = bridge.role
+                    imageEntry["evidenceUnit"] = "bridge_dropout_\(bridge.eventID)"
+                    imageEntry["auxiliary"] = bridge.auxiliary
+                    if let derived = bridge.derivedFromFileName,
+                       let original = selection.images.firstIndex(where: {
+                           $0.fileName == derived && $0.bridge?.eventID == bridge.eventID }) {
+                        imageEntry["derivedFromImage"] = String(
+                            format: "images/image_%02d_%@", original + 1, derived)
+                    }
                 }
                 imageEntries.append(imageEntry)
             }
@@ -762,6 +912,8 @@ enum DebugRecordingTriageBuilder {
                           let eventID = events[index][0] as? Int else { continue }
                     if selectedIDs.contains(eventID) {
                         events[index][3] = "selected"
+                    } else if selection.bridgePriorityEventIDs.contains(eventID) {
+                        events[index][3] = "bridge_priority"
                     } else if retainedIDs.contains(eventID) {
                         let retained = retainedEvents.first {
                             $0["eventIndex"] as? Int == eventID
@@ -798,8 +950,15 @@ enum DebugRecordingTriageBuilder {
                 "groundTruth": "lossless PNG only; H.264 video is excluded"
             ]
             if !motionSummary.isEmpty { summary["motionEventSummary"] = motionSummary }
-            try jsonData(summary).write(to: bundleURL.appendingPathComponent("summary.json"),
-                                        options: .atomic)
+            if metadata["activeColors"] != nil {
+                summary["activeColors"] = colors.filter { active.contains($0) }
+                var bridge = metadata["bridgeDropoutSummary"] as? [String: Any] ?? [:]
+                bridge["selectedEventIDs"] = Array(Set(selection.images.compactMap { $0.bridge?.eventID })).sorted()
+                if let window = selection.trackingWindow { bridge["trackingWindow"] = window }
+                summary["bridgeDropoutSummary"] = bridge
+            }
+            try jsonData(summary, compact: true).write(
+                to: bundleURL.appendingPathComponent("summary.json"), options: .atomic)
             try promptText(sessionID: sessionID, imageCount: selection.images.count)
                 .write(to: bundleURL.appendingPathComponent("prompt.md"), atomically: true,
                        encoding: .utf8)
@@ -834,7 +993,7 @@ enum DebugRecordingTriageBuilder {
     }
 
     private static func reasons(for frames: [[String: Any]], at index: Int,
-                                color: String) -> [Reason] {
+                                color: String, includeAbsence: Bool = true) -> [Reason] {
         let frame = frames[index]
         let diagnostic = colorDiagnostics(frame, color: color)
         let candidate = selectedCandidate(frame, color: color)
@@ -842,7 +1001,9 @@ enum DebugRecordingTriageBuilder {
         let eligibleCount = integer(diagnostic["eligibleCandidateCount"])
         var result: [Reason] = []
 
-        if candidateCount == 0 {
+        if !includeAbsence {
+            // candidate=0 / eligible=0 only say the saber was not found.
+        } else if candidateCount == 0 {
             result.append(Reason(color: color, type: "candidate_zero", priority: 5,
                                  detail: "candidate=0"))
         } else if let candidateCount, candidateCount > 0, eligibleCount == 0 {
@@ -886,8 +1047,9 @@ enum DebugRecordingTriageBuilder {
     }
 
     private static func addIdenticalEndpointReasons(frames: [[String: Any]],
-                                                    reasonsByFrame: inout [[Reason]]) {
-        for color in colors {
+                                                    reasonsByFrame: inout [[Reason]],
+                                                    active: Set<String> = Set(colors)) {
+        for color in colors where active.contains(color) {
             var start: Int?
             for index in 0...frames.count {
                 let same = index > 0 && index < frames.count
@@ -916,6 +1078,44 @@ enum DebugRecordingTriageBuilder {
         }
     }
 
+    private static func fileSize(_ directory: URL, _ name: String) -> Int64? {
+        guard let attributes = try? FileManager.default.attributesOfItem(
+            atPath: directory.appendingPathComponent(name).path) else { return nil }
+        return (attributes[.size] as? NSNumber)?.int64Value
+    }
+
+    /// before_success, dropout, annotated_dropout (optional), after_success for one
+    /// event, or nil when any original is missing; never a partial event.
+    private static func bridgeUnit(_ event: [String: Any], active: Set<String>,
+                                   indexByID: [UInt64: Int],
+                                   directory: URL) -> [(DebugRecordingTriageImage, Int64)]? {
+        guard let id = integer(event["eventID"]).map({ Int($0) }), let color = string(event["color"]),
+              active.contains(color), let images = event["images"] as? [[String: Any]] else { return nil }
+        let gap = number(event["gapSeconds"]) ?? 0
+        var result: [(DebugRecordingTriageImage, Int64)] = []
+        for role in DebugBridgeImageInfo.roles {
+            guard let image = images.first(where: { string($0["role"]) == role }),
+                  let frameID = integer(image["frameID"]), let frameIndex = indexByID[frameID],
+                  let fileName = string(image["fileName"]), safePNGName(fileName),
+                  let size = fileSize(directory, fileName) else { return nil }
+            func entry(_ name: String, _ imageRole: String, derived: String?) -> DebugRecordingTriageImage {
+                DebugRecordingTriageImage(
+                    frameIndex: frameIndex, frameID: frameID, color: color, fileName: name,
+                    failureType: "bridge_dropout_\(id)", priority: 1,
+                    reasons: ["bridge dropout event \(id) \(imageRole)",
+                              String(format: "same %@ saber lost for %.3f s between two successful detections", color, gap)],
+                    bridge: DebugBridgeImageInfo(eventID: id, role: imageRole, derivedFromFileName: derived))
+            }
+            result.append((entry(fileName, role, derived: nil), size))
+            if role == "dropout", let annotated = string(image["annotatedFileName"]),
+               safePNGName(annotated), let annotatedSize = fileSize(directory, annotated) {
+                result.append((entry(annotated, DebugBridgeImageInfo.annotatedRole, derived: fileName),
+                               annotatedSize))
+            }
+        }
+        return result
+    }
+
     private static func reasonList(for reference: ImageReference,
                                    reasonsByFrame: [[Reason]]) -> [Reason] {
         let sameFrame = reasonsByFrame[reference.frameIndex]
@@ -923,38 +1123,236 @@ enum DebugRecordingTriageBuilder {
         return matching
     }
 
+    /// Consumers reject a context above 32 KiB; stay well below it.
+    private static let contextByteBudget = 24 * 1_024
+
     private static func contextPayload(metadata: [String: Any],
-                                       selected: DebugRecordingTriageImage) -> [String: Any] {
+                                       selected: DebugRecordingTriageImage,
+                                       active: Set<String>) -> [String: Any] {
         let allFrames = frames(metadata)
-        let lower = max(0, selected.frameIndex - DebugRecordingTriageLimits.contextRadius)
-        let upper = min(allFrames.count - 1, selected.frameIndex + DebugRecordingTriageLimits.contextRadius)
-        let context = lower...upper
-        var result: [String: Any] = [
-            "sessionID": string(metadata["sessionID"]) ?? "",
-            "selectedFrameID": selected.frameID,
-            "selectedColor": selected.color,
-            "selectedFailureType": selected.failureType,
-            "selectedReasons": selected.reasons,
-            "contextRadiusFrames": DebugRecordingTriageLimits.contextRadius,
-            "frames": context.map { minimalFrame(allFrames[$0], index: $0,
-                includeTracking: $0 == selected.frameIndex) }
-        ]
-        if let eventIndex = selected.eventIndex, let role = selected.role,
-           let score = selected.score {
-            result["motionEvent"] = ["eventIndex": eventIndex, "role": role,
-                "score": score, "signals": selected.signals.map(\.dictionary),
-                "signalAggregation": "event_max_per_kind"]
-        }
-        if let transmissions = metadata["udpTransmissions"] as? [[String: Any]] {
-            result["udpTransmissions"] = transmissions.filter {
-                integer($0["frameID"]) == selected.frameID
+        let radius = DebugRecordingTriageLimits.contextRadius
+        let geometry = geometryTable(metadata)
+        var indexes: [Int]
+        if let bridge = selected.bridge {
+            // Bridge contexts use real frame-ID neighbours, not neighbouring retained frames.
+            indexes = bridge.auxiliary ? [selected.frameIndex] : allFrames.indices.filter {
+                guard let id = integer(allFrames[$0]["frameID"]) else { return false }
+                return abs(Int64(id) - Int64(selected.frameID)) <= Int64(radius)
             }
+        } else {
+            let lower = max(0, selected.frameIndex - radius)
+            let upper = min(allFrames.count - 1, selected.frameIndex + radius)
+            indexes = Array(lower...upper)
+        }
+        let auxiliary = selected.bridge?.auxiliary == true
+        /// Neighbour candidate geometry: 0 = leading three eligible, 1 = winner only, 2 = none.
+        func makePayload(_ indexes: [Int], neighbourLevel: Int,
+                         selectedLimits: (eligible: Int, ineligible: Int, breakdown: Int)) -> [String: Any] {
+            var result: [String: Any] = [
+                "sessionID": string(metadata["sessionID"]) ?? "",
+                "selectedFrameID": selected.frameID,
+                "selectedColor": selected.color,
+                "selectedFailureType": selected.failureType,
+                "selectedReasons": selected.reasons,
+                "contextRadiusFrames": radius,
+                "frames": indexes.map { index -> [String: Any] in
+                    let isSelected = index == selected.frameIndex
+                    let limits: (Int, Int, Int)? = auxiliary ? nil
+                        : (isSelected ? (selectedLimits.eligible, selectedLimits.ineligible, selectedLimits.breakdown)
+                            : (neighbourLevel == 0 ? (3, 2, 3) : (neighbourLevel == 1 ? (1, 0, 1) : nil)))
+                    return minimalFrame(allFrames[index], index: index,
+                        includeTracking: isSelected, isSelected: isSelected, active: active,
+                        geometry: geometry, geometryLimits: limits)
+                }
+            ]
+            if metadata["activeColors"] != nil {
+                result["activeColors"] = colors.filter { active.contains($0) }
+            }
+            if let eventIndex = selected.eventIndex, let role = selected.role,
+               let score = selected.score {
+                result["motionEvent"] = ["eventIndex": eventIndex, "role": role,
+                    "score": score, "signals": selected.signals.map(\.dictionary),
+                    "signalAggregation": "event_max_per_kind"]
+            }
+            if let bridge = selected.bridge,
+               let event = (metadata["bridgeDropoutEvents"] as? [[String: Any]])?.first(where: {
+                   integer($0["eventID"]).map { Int($0) } == bridge.eventID }) {
+                result["bridgeEvent"] = bridgeContext(event, role: bridge.role,
+                                                      auxiliary: bridge.auxiliary,
+                                                      selectedFrameID: selected.frameID)
+            }
+            if let transmissions = metadata["udpTransmissions"] as? [[String: Any]] {
+                result["udpTransmissions"] = transmissions.filter {
+                    integer($0["frameID"]) == selected.frameID
+                }
+            }
+            return result
+        }
+        var selectedLimits = (eligible: DebugCandidateGeometrySet.eligibleLimit,
+                              ineligible: DebugCandidateGeometrySet.ineligibleLimit, breakdown: Int.max)
+        var payload = makePayload(indexes, neighbourLevel: 0, selectedLimits: selectedLimits)
+        func size(_ value: [String: Any]) -> Int {
+            (try? jsonData(value, compact: true).count) ?? Int.max
+        }
+        // Reduce detail progressively, always saying so. The selected frame keeps
+        // its temporal mapping, candidate trace, all eligible candidate geometry,
+        // endpoint pipeline and tracking.
+        var steps: [String] = []
+        var level = 0
+        for step in ["neighbourCandidateGeometryWinnerOnly", "neighbourCandidateGeometryDropped",
+                     "selectedScoreBreakdownLimitedToLeadingEligible", "selectedIneligibleLimitedToTwo",
+                     "selectedEligibleLimitedToEight",
+                     "neighbourFramesWithin1", "neighbourFramesWithin0"] where size(payload) > contextByteBudget {
+            switch step {
+            case "neighbourCandidateGeometryWinnerOnly": level = 1
+            case "neighbourCandidateGeometryDropped": level = 2
+            case "selectedScoreBreakdownLimitedToLeadingEligible": selectedLimits.breakdown = 4
+            case "selectedIneligibleLimitedToTwo": selectedLimits.ineligible = 2
+            case "selectedEligibleLimitedToEight": selectedLimits.eligible = 8
+            case "neighbourFramesWithin1": indexes = indexes.filter { abs($0 - selected.frameIndex) <= 1 }
+            default: indexes = indexes.filter { $0 == selected.frameIndex }
+            }
+            payload = makePayload(indexes, neighbourLevel: level, selectedLimits: selectedLimits)
+            steps.append(step)
+        }
+        if !steps.isEmpty { payload["compaction"] = steps }
+        return payload
+    }
+
+    // MARK: Candidate geometry in contexts
+
+    private typealias GeometryTable = [UInt64: [String: [String: Any]]]
+
+    private static func geometryTable(_ metadata: [String: Any]) -> GeometryTable {
+        var table: GeometryTable = [:]
+        for entry in metadata["candidateGeometry"] as? [[String: Any]] ?? [] {
+            guard let id = integer(entry["frameID"]) else { continue }
+            var colorsForFrame: [String: [String: Any]] = [:]
+            for color in colors { if let set = entry[color] as? [String: Any] { colorsForFrame[color] = set } }
+            table[id] = colorsForFrame
+        }
+        return table
+    }
+
+    private static func doubles(_ value: Any?) -> [Double] {
+        (value as? [Any])?.compactMap { number($0) } ?? []
+    }
+
+    /// Geometry correspondence of one candidate to the previous frame's winner:
+    /// independent of list order and candidate index.
+    private static func matchMetrics(_ candidate: [String: Any], _ winner: [String: Any]) -> [String: Any] {
+        let c = doubles(candidate["centroid"]), w = doubles(winner["centroid"])
+        let cb = doubles(candidate["bbox"]), wb = doubles(winner["bbox"])
+        let cr = doubles(candidate["rawPCAEndpoints"]), wr = doubles(winner["rawPCAEndpoints"])
+        var result: [String: Any] = [:]
+        let r = DebugCandidateGeometry.round4
+        let winnerSpan = max(number(winner["rawPCASpan"]) ?? 0, 1)
+        if c.count == 2, w.count == 2 {
+            let distance = hypot(c[0] - w[0], c[1] - w[1])
+            result["centroidDistance"] = r(distance)
+            result["centroidDistanceNormalized"] = r(distance / winnerSpan)
+        }
+        if cb.count == 4, wb.count == 4 {
+            let ix = max(0, min(cb[2], wb[2]) - max(cb[0], wb[0]) + 1)
+            let iy = max(0, min(cb[3], wb[3]) - max(cb[1], wb[1]) + 1)
+            let intersection = ix * iy
+            let areaC = (cb[2] - cb[0] + 1) * (cb[3] - cb[1] + 1)
+            let areaW = (wb[2] - wb[0] + 1) * (wb[3] - wb[1] + 1)
+            let union = areaC + areaW - intersection
+            result["bboxIoU"] = r(union > 0 ? intersection / union : 0)
+        }
+        if let a = number(candidate["componentArea"]), let b = number(winner["componentArea"]) {
+            result["areaRatio"] = r(a / max(b, 1))
+        }
+        if let a = number(candidate["rawPCASpan"]), let b = number(winner["rawPCASpan"]) {
+            result["spanRatio"] = r(a / max(b, 1))
+        }
+        if cr.count == 4, wr.count == 4 {
+            result["orientationDifference"] = r(DebugTrackingDiagnostics.angleChange(
+                DebugTrackingDiagnostics.angle(cr), DebugTrackingDiagnostics.angle(wr)))
+        }
+        return result
+    }
+
+    /// All eligible candidates (up to the limits) of one frame and color, with an
+    /// explicit statement of what was left out.
+    private static func geometryContext(_ table: GeometryTable, frameID: UInt64, color: String,
+                                        eligibleLimit: Int, ineligibleLimit: Int,
+                                        breakdownLimit: Int = .max) -> [String: Any]? {
+        guard let set = table[frameID]?[color],
+              let stored = set["candidates"] as? [[String: Any]],
+              let total = integer(set["totalCandidateCount"]).map({ Int($0) }),
+              let eligibleTotal = integer(set["eligibleCandidateCount"]).map({ Int($0) }) else { return nil }
+        let eligible = stored.filter { $0["eligible"] as? Bool == true }.sorted {
+            (integer($0["eligibleRank"]) ?? 0) < (integer($1["eligibleRank"]) ?? 0)
+        }
+        let ineligible = stored.filter { $0["eligible"] as? Bool != true }
+        let keptEligible = Array(eligible.prefix(eligibleLimit))
+        let keptIneligible = Array(ineligible.prefix(ineligibleLimit))
+        var previous: (UInt64, [String: Any])?
+        for offset in 1...3 where frameID >= UInt64(offset) {
+            let id = frameID - UInt64(offset)
+            if let candidates = table[id]?[color]?["candidates"] as? [[String: Any]] {
+                previous = candidates.first { integer($0["eligibleRank"]) == 1 }.map { (id, $0) }
+                break
+            }
+        }
+        let entries = (keptEligible + keptIneligible).enumerated().map { position, candidate -> [String: Any] in
+            var entry = candidate
+            if let previous { entry["matchToPreviousWinner"] = matchMetrics(candidate, previous.1) }
+            // Lower-ranked candidates keep their total score; the omission is stated per entry.
+            if position >= breakdownLimit, let breakdown = candidate["scoreBreakdown"] as? [String: Any] {
+                entry["scoreBreakdown"] = ["total": breakdown["total"] ?? 0]
+                entry["scoreBreakdownReduced"] = true
+            }
+            return entry
+        }
+        let eligibleOmitted = eligibleTotal - keptEligible.count
+        let ineligibleOmitted = (total - eligibleTotal) - keptIneligible.count
+        var result: [String: Any] = ["totalCandidateCount": total,
+            "eligibleCandidateCount": eligibleTotal,
+            "savedEligibleCount": keptEligible.count, "eligibleOmittedCount": eligibleOmitted,
+            "savedIneligibleCount": keptIneligible.count, "ineligibleOmittedCount": ineligibleOmitted,
+            "candidatesTruncated": eligibleOmitted > 0 || ineligibleOmitted > 0,
+            "candidates": entries, "previousFrameGeometryAvailable": previous != nil]
+        if let previous {
+            let winner = previous.1
+            result["previousWinner"] = ["frameID": previous.0, "listIndex": winner["listIndex"] ?? 0,
+                "centroid": winner["centroid"] ?? [], "bbox": winner["bbox"] ?? [],
+                "componentArea": winner["componentArea"] ?? 0, "rawPCASpan": winner["rawPCASpan"] ?? 0,
+                "rawPCAEndpoints": winner["rawPCAEndpoints"] ?? [],
+                "finalOutputEndpoints": winner["finalOutputEndpoints"] ?? []] as [String: Any]
+        }
+        return result
+    }
+
+    /// Event-level facts shared by the three originals and the annotated image.
+    private static func bridgeContext(_ event: [String: Any], role: String, auxiliary: Bool,
+                                      selectedFrameID: UInt64) -> [String: Any] {
+        var result: [String: Any] = ["eventID": event["eventID"] ?? 0, "role": role,
+            "auxiliary": auxiliary, "color": event["color"] ?? "",
+            "beforeFrameID": event["beforeFrameID"] ?? 0,
+            "dropoutFrameID": event["dropoutFrameID"] ?? 0,
+            "afterFrameID": event["afterFrameID"] ?? 0,
+            "beforeTimestamp": event["beforeTimestamp"] ?? 0,
+            "dropoutTimestamp": event["dropoutTimestamp"] ?? 0,
+            "afterTimestamp": event["afterTimestamp"] ?? 0,
+            "missingFrameCount": event["missingFrameCount"] ?? 0,
+            "gapSeconds": event["gapSeconds"] ?? 0,
+            "evidenceUnit": "one temporal event; its frames are not independent failure examples",
+            "continuity": event["assessment"] ?? [:]]
+        if auxiliary {
+            result["annotation"] = event["annotation"] ?? [:]
         }
         return result
     }
 
     private static func minimalFrame(_ frame: [String: Any], index: Int,
-                                     includeTracking: Bool = false) -> [String: Any] {
+                                     includeTracking: Bool = false,
+                                     isSelected: Bool = true,
+                                     active: Set<String> = Set(colors),
+                                     geometry: GeometryTable = [:],
+                                     geometryLimits: (Int, Int, Int)? = nil) -> [String: Any] {
         var output: [String: Any] = [
             "frameID": integer(frame["frameID"]) ?? UInt64(index),
             "timestamp": number(frame["presentationTimeSeconds"]) ?? 0
@@ -966,6 +1364,8 @@ enum DebugRecordingTriageBuilder {
             output["motionEventIndex"] = event
         }
         for color in colors {
+            // A color outside the diagnosis never contributes absence or traces.
+            guard active.contains(color) else { output[color] = [String: Any](); continue }
             let detection = frame[color] as? [String: Any] ?? [:]
             let diagnostic = colorDiagnostics(frame, color: color)
             let candidate = selectedCandidate(frame, color: color)
@@ -1032,7 +1432,7 @@ enum DebugRecordingTriageBuilder {
                 }
             }
             if let top = diagnostic["topCandidates"] as? [[String: Any]], !top.isEmpty {
-                let limit = integer(diagnostic["eligibleCandidateCount"]) == 0 ? 3 : 1
+                let limit = isSelected && integer(diagnostic["eligibleCandidateCount"]) == 0 ? 3 : 1
                 colorData["candidateDecisionTrace"] = top.prefix(limit).map { entry -> [String: Any] in
                     var trace: [String: Any] = [:]
                     for key in ["index", "sourceType", "eligible", "finalScore",
@@ -1053,6 +1453,13 @@ enum DebugRecordingTriageBuilder {
                     }
                     return trace
                 }
+            }
+            if let geometryLimits, let id = integer(frame["frameID"]),
+               let context = geometryContext(geometry, frameID: id, color: color,
+                                             eligibleLimit: geometryLimits.0,
+                                             ineligibleLimit: geometryLimits.1,
+                                             breakdownLimit: geometryLimits.2) {
+                colorData["candidateGeometry"] = context
             }
             if includeTracking {
                 if let tracking = frame["tracking"] as? [String: Any], let measurement = tracking[color] {
@@ -1078,8 +1485,16 @@ enum DebugRecordingTriageBuilder {
 
     private static func detectionSummary(metadata: [String: Any]) -> [String: Any] {
         let allFrames = frames(metadata)
+        let active = activeColorSet(metadata)
         return Dictionary(uniqueKeysWithValues: colors.map { color in
             let detected = allFrames.filter { detectionStatus($0, color: color) == true }.count
+            guard active.contains(color) else {
+                // Not diagnosed: absence of this color is not a failure.
+                return (color, ["frames": allFrames.count, "detectedFrames": detected,
+                                "missedFrames": 0, "unknownDetectionFrames": allFrames.count - detected,
+                                "candidateZeroFrames": 0, "eligibleZeroFrames": 0,
+                                "excludedFromDiagnosis": true] as [String: Any])
+            }
             let missed = allFrames.filter { detectionStatus($0, color: color) == false }.count
             let candidates = allFrames.map { integer(colorDiagnostics($0, color: color)["totalCandidateCount"]) }
             let eligible = allFrames.map { integer(colorDiagnostics($0, color: color)["eligibleCandidateCount"]) }
@@ -1096,7 +1511,12 @@ enum DebugRecordingTriageBuilder {
 
     private static func dropoutSummary(metadata: [String: Any]) -> [String: Any] {
         let allFrames = frames(metadata)
+        let active = activeColorSet(metadata)
         return Dictionary(uniqueKeysWithValues: colors.map { color in
+            guard active.contains(color) else {
+                return (color, ["falseFrames": 0, "dropoutTransitions": 0, "recoveredTransitions": 0,
+                                "excludedFromDiagnosis": true] as [String: Any])
+            }
             let transitions = allFrames.filter {
                 string($0["\(color)DropoutRole"]) == "dropout"
             }.count
@@ -1111,6 +1531,8 @@ enum DebugRecordingTriageBuilder {
 
     private static func incidentSummary(metadata: [String: Any]) -> [[String: Any]] {
         let allFrames = frames(metadata)
+        let boundedAbsence = metadata["activeColors"] != nil
+        let active = activeColorSet(metadata)
         var grouped: [String: (String, String, [Int], Int)] = [:]
         var reasonsByFrame: [[Reason]] = Array(repeating: [], count: allFrames.count)
         for (index, frame) in allFrames.enumerated() {
@@ -1118,14 +1540,18 @@ enum DebugRecordingTriageBuilder {
                 reasonsByFrame[index].append(Reason(color: "both", type: "manual_capture",
                                                     priority: 0, detail: "manual lossless capture"))
             }
-            for color in colors { reasonsByFrame[index].append(contentsOf: reasons(for: allFrames, at: index, color: color)) }
-            for color in colors where string(frame["\(color)DropoutRole"]) == "dropout"
-                || isFirstFalseAfterDetection(allFrames, index: index, color: color) {
+            for color in colors where active.contains(color) {
+                reasonsByFrame[index].append(contentsOf: reasons(
+                    for: allFrames, at: index, color: color, includeAbsence: !boundedAbsence))
+            }
+            for color in colors where !boundedAbsence && active.contains(color)
+                && (string(frame["\(color)DropoutRole"]) == "dropout"
+                    || isFirstFalseAfterDetection(allFrames, index: index, color: color)) {
                 reasonsByFrame[index].append(Reason(color: color, type: "dropout", priority: 1,
                                                     detail: "first false frame after a detected run"))
             }
         }
-        addIdenticalEndpointReasons(frames: allFrames, reasonsByFrame: &reasonsByFrame)
+        addIdenticalEndpointReasons(frames: allFrames, reasonsByFrame: &reasonsByFrame, active: active)
         for (index, reasons) in reasonsByFrame.enumerated() {
             for reason in reasons {
                 let key = "\(reason.color)|\(reason.type)"
@@ -1134,7 +1560,7 @@ enum DebugRecordingTriageBuilder {
                 grouped[key] = item
             }
         }
-        return grouped.values.map { color, type, indexes, _ in
+        var entries = grouped.values.map { color, type, indexes, _ in
             let uniqueIndexes = Array(Set(indexes)).sorted()
             var incidents = 0
             var previous: Int?
@@ -1143,8 +1569,20 @@ enum DebugRecordingTriageBuilder {
                 previous = index
             }
             return ["color": color, "type": type, "incidentCount": incidents,
-                    "affectedFrames": uniqueIndexes.count]
-        }.sorted {
+                    "affectedFrames": uniqueIndexes.count] as [String: Any]
+        }
+        for color in colors where active.contains(color) {
+            let events = (metadata["bridgeDropoutEvents"] as? [[String: Any]] ?? []).filter {
+                string($0["color"]) == color
+            }
+            if !events.isEmpty {
+                entries.append(["color": color, "type": "bridge_dropout",
+                                "incidentCount": events.count,
+                                "affectedFrames": events.reduce(0) {
+                                    $0 + Int(integer($1["missingFrameCount"]) ?? 0) }])
+            }
+        }
+        return entries.sorted {
             let lhs = "\($0["color"] ?? "")|\($0["type"] ?? "")"
             let rhs = "\($1["color"] ?? "")|\($1["type"] ?? "")"
             return lhs < rhs
@@ -1165,6 +1603,8 @@ enum DebugRecordingTriageBuilder {
         - State what is visible in each PNG before interpreting the metadata. Cite image and frame IDs.
         - If evidence is insufficient, say so and do not recommend production recognition-code changes.
         - For eligibility dropouts, inspect candidateDecisionTrace: identify failed production rules, measured values and thresholds, and whether failures repeat across frames. Assess false-positive risk before supporting a production change; do not simply loosen a threshold.
+        - A bridge dropout is ONE temporal event: before_success (detected), dropout (missed) and after_success (detected) bracket a short loss of the same saber. Count it as one example, never as three independent failures. The annotated_dropout PNG is a viewing aid with an interpolated expected position; it is not ground truth and never replaces the original dropout PNG.
+        - Colors not listed in activeColors are outside this diagnosis; their absence is not a failure.
         - Do not edit, create, or propose applying production code. Return analysis findings only.
 
         ## Required output
@@ -1278,8 +1718,9 @@ enum DebugRecordingTriageBuilder {
         return String(cleaned.prefix(100))
     }
 
-    private static func jsonData(_ object: Any) throws -> Data {
-        try JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted, .sortedKeys])
+    private static func jsonData(_ object: Any, compact: Bool = false) throws -> Data {
+        try JSONSerialization.data(withJSONObject: object,
+                                   options: compact ? [.sortedKeys] : [.prettyPrinted, .sortedKeys])
     }
 }
 
@@ -1433,5 +1874,337 @@ enum DebugTrackingDiagnostics {
             endpointPathChanged: pathChanged, detectedToggle: toggle,
             scoreChange: scoreChange, scoreMarginCollapse: collapse,
             stageDiscontinuities: stages, scoreComponents: components, instabilityScore: score)
+    }
+}
+
+// MARK: - Diagnostic colors and bridge dropouts
+
+/// Colors Debug Recording diagnoses. Recognition and UDP always run for both
+/// colors; this only decides which absences and anomalies count as failures.
+enum DebugDiagnosticColors: String, CaseIterable, Identifiable, Equatable {
+    case red = "RED"
+    case blue = "BLUE"
+    case both = "BOTH"
+
+    var id: String { rawValue }
+
+    var colorNames: [String] {
+        switch self {
+        case .red: return ["red"]
+        case .blue: return ["blue"]
+        case .both: return ["red", "blue"]
+        }
+    }
+
+    func includes(_ color: String) -> Bool { colorNames.contains(color) }
+}
+
+/// Thresholds for choosing diagnostic images only. They never reach recognition,
+/// scoring, eligibility or UDP output, and are stored with every selected event.
+enum DebugBridgeThresholds {
+    /// Outer temporal bound; motion plausibility below is the real criterion.
+    static let maximumGapSeconds = 2.0
+    static let maximumSpeedPixelsPerSecond = DebugMotionThresholds.endpointSpeedPixelsPerSecond
+    static let lengthChangeBase = DebugMotionThresholds.lengthChangeFraction
+    static let lengthChangeCap = 0.7
+    static let orientationBaseRadians = 0.5
+    static let orientationRateRadiansPerSecond = 8.0
+    static let orientationCapRadians = 1.4
+    static let residualLengthFraction = 0.5
+    static let residualLengthFractionPerSecond = 1.5
+    /// Two prior successes closer than this give a usable midpoint velocity.
+    static let velocityWindowSeconds = 0.25
+    static let maximumEvents = 2
+    static let followingContextFrames = 2
+
+    static var dictionary: [String: Double] {
+        ["maximumGapSeconds": maximumGapSeconds,
+         "maximumSpeedPixelsPerSecond": maximumSpeedPixelsPerSecond,
+         "lengthChangeBase": lengthChangeBase, "lengthChangeCap": lengthChangeCap,
+         "orientationBaseRadians": orientationBaseRadians,
+         "orientationRateRadiansPerSecond": orientationRateRadiansPerSecond,
+         "orientationCapRadians": orientationCapRadians,
+         "residualLengthFraction": residualLengthFraction,
+         "residualLengthFractionPerSecond": residualLengthFractionPerSecond,
+         "velocityWindowSeconds": velocityWindowSeconds]
+    }
+}
+
+struct DebugBridgeSample: Equatable {
+    let frameID: UInt64
+    let timestamp: Double
+    /// Fresh, non-predicted detection of the color.
+    let succeeded: Bool
+    /// x1,y1,x2,y2 of a successful detection.
+    let endpoints: [Double]?
+}
+
+struct DebugBridgeAssessment: Equatable {
+    let accepted: Bool
+    let rejection: String?
+    let measurements: [String: Double]
+}
+
+enum DebugBridgeDropout {
+    /// Decides whether `missing` is a short loss of the same saber, bounded by a
+    /// successful detection on each side, rather than the saber leaving the view.
+    /// Uses the existing tracking-diagnostic geometry (midpoint, length,
+    /// undirected orientation, constant-velocity prediction) and the temporal
+    /// interval between the two successes.
+    static func assess(prior: [DebugBridgeSample], missing: [DebugBridgeSample],
+                       after: DebugBridgeSample) -> DebugBridgeAssessment {
+        func reject(_ reason: String, _ values: [String: Double] = [:]) -> DebugBridgeAssessment {
+            DebugBridgeAssessment(accepted: false, rejection: reason, measurements: values)
+        }
+        guard let before = prior.last, before.succeeded, let beforePoints = before.endpoints,
+              after.succeeded, let afterRaw = after.endpoints,
+              beforePoints.count == 4, afterRaw.count == 4,
+              let firstMissing = missing.first, let lastMissing = missing.last,
+              missing.allSatisfy({ !$0.succeeded }) else {
+            return reject("missing_success_on_one_side")
+        }
+        let gap = after.timestamp - before.timestamp
+        guard before.timestamp < firstMissing.timestamp, lastMissing.timestamp < after.timestamp,
+              gap > 0, gap.isFinite else {
+            return reject("temporal_order_invalid")
+        }
+        var values: [String: Double] = ["gapSeconds": gap, "missingFrameCount": Double(missing.count)]
+        guard gap <= DebugBridgeThresholds.maximumGapSeconds else {
+            return reject("gap_too_long", values)
+        }
+
+        let afterPoints = DebugTrackingDiagnostics.aligned(afterRaw, beforePoints)
+        func midpoint(_ p: [Double]) -> (Double, Double) { ((p[0] + p[2]) / 2, (p[1] + p[3]) / 2) }
+        let beforeMid = midpoint(beforePoints)
+        let afterMid = midpoint(afterPoints)
+        let displacement = hypot(afterMid.0 - beforeMid.0, afterMid.1 - beforeMid.1)
+        let beforeLength = DebugTrackingDiagnostics.length(beforePoints)
+        let afterLength = DebugTrackingDiagnostics.length(afterPoints)
+        let reference = max(beforeLength, afterLength, 1)
+        let speed = displacement / gap
+        let lengthChange = abs(afterLength - beforeLength) / reference
+        let orientationChange = DebugTrackingDiagnostics.angleChange(
+            DebugTrackingDiagnostics.angle(beforePoints), DebugTrackingDiagnostics.angle(afterPoints))
+        let lengthLimit = min(DebugBridgeThresholds.lengthChangeCap,
+                              DebugBridgeThresholds.lengthChangeBase + gap)
+        let orientationLimit = min(DebugBridgeThresholds.orientationCapRadians,
+            DebugBridgeThresholds.orientationBaseRadians
+                + DebugBridgeThresholds.orientationRateRadiansPerSecond * gap)
+        values["midpointDisplacement"] = displacement
+        values["speedPixelsPerSecond"] = speed
+        values["speedLimitPixelsPerSecond"] = DebugBridgeThresholds.maximumSpeedPixelsPerSecond
+        values["lengthChange"] = lengthChange
+        values["lengthChangeLimit"] = lengthLimit
+        values["orientationChangeRadians"] = orientationChange
+        values["orientationChangeLimitRadians"] = orientationLimit
+        values["beforeLength"] = beforeLength
+        values["afterLength"] = afterLength
+
+        var failures: [String] = []
+        if speed > DebugBridgeThresholds.maximumSpeedPixelsPerSecond { failures.append("speed") }
+        if lengthChange > lengthLimit { failures.append("length_change") }
+        if orientationChange > orientationLimit { failures.append("orientation_change") }
+
+        if prior.count >= 2, let olderPoints = prior[prior.count - 2].endpoints,
+           olderPoints.count == 4, prior[prior.count - 2].succeeded {
+            let older = prior[prior.count - 2]
+            let interval = before.timestamp - older.timestamp
+            if interval > 0, interval <= DebugBridgeThresholds.velocityWindowSeconds {
+                let alignedOlder = DebugTrackingDiagnostics.aligned(olderPoints, beforePoints)
+                let olderMid = midpoint(alignedOlder)
+                let velocity = ((beforeMid.0 - olderMid.0) / interval,
+                                (beforeMid.1 - olderMid.1) / interval)
+                let predicted = (beforeMid.0 + velocity.0 * gap, beforeMid.1 + velocity.1 * gap)
+                let residual = hypot(afterMid.0 - predicted.0, afterMid.1 - predicted.1)
+                let tolerance = reference * (DebugBridgeThresholds.residualLengthFraction
+                    + DebugBridgeThresholds.residualLengthFractionPerSecond * gap)
+                values["predictionResidual"] = residual
+                values["predictionResidualTolerance"] = tolerance
+                if residual > tolerance { failures.append("prediction_residual") }
+            }
+        }
+        return DebugBridgeAssessment(accepted: failures.isEmpty,
+            rejection: failures.isEmpty ? nil : "discontinuous_" + failures.joined(separator: "+"),
+            measurements: values)
+    }
+
+    /// Location where the saber would be if it moved steadily between the two
+    /// successful detections. A viewing aid, never ground truth.
+    static func predictedEndpoints(before: DebugBridgeSample, after: DebugBridgeSample,
+                                   at timestamp: Double) -> [Double]? {
+        guard let b = before.endpoints, let a0 = after.endpoints, b.count == 4, a0.count == 4,
+              after.timestamp > before.timestamp else { return nil }
+        let a = DebugTrackingDiagnostics.aligned(a0, b)
+        let fraction = min(1, max(0, (timestamp - before.timestamp) / (after.timestamp - before.timestamp)))
+        return (0..<4).map { b[$0] + (a[$0] - b[$0]) * fraction }
+    }
+}
+
+/// Follows one color's success/missing sequence. A bridge candidate starts only
+/// after a success and is reported only when a later success closes it, so
+/// frames before the first or after the last success are never candidates.
+struct DebugBridgeTracker {
+    struct Run: Equatable {
+        var prior: [DebugBridgeSample]
+        var missing: [DebugBridgeSample]
+    }
+
+    enum Outcome: Equatable {
+        case none
+        case dropoutStarted(Run)
+        case recovered(Run, after: DebugBridgeSample)
+    }
+
+    private var recentSuccesses: [DebugBridgeSample] = []
+    private(set) var run: Run?
+    private(set) var firstSuccess: DebugBridgeSample?
+    private(set) var lastSuccess: DebugBridgeSample?
+
+    mutating func observe(_ sample: DebugBridgeSample) -> Outcome {
+        if sample.succeeded {
+            if firstSuccess == nil { firstSuccess = sample }
+            lastSuccess = sample
+            let closed = run
+            run = nil
+            recentSuccesses.append(sample)
+            if recentSuccesses.count > 2 { recentSuccesses.removeFirst() }
+            if let closed { return .recovered(closed, after: sample) }
+            return .none
+        }
+        if var open = run {
+            open.missing.append(sample)
+            run = open
+            return .none
+        }
+        guard !recentSuccesses.isEmpty else { return .none }
+        let started = Run(prior: recentSuccesses, missing: [sample])
+        run = started
+        return .dropoutStarted(started)
+    }
+
+    /// Candidate that never saw a later success (recording ended first).
+    var unclosedRun: Run? { run }
+}
+
+// MARK: - Candidate geometry (diagnostics only)
+
+/// Geometry of one candidate, enough to follow a candidate across frames even when
+/// the candidate list reorders. Observability only: nothing here feeds recognition.
+struct DebugCandidateGeometry: Equatable {
+    let listIndex: Int
+    let eligible: Bool
+    /// 1-based position among eligible candidates in production order; rank 1 won.
+    let eligibleRank: Int?
+    let sourceType: String
+    let finalScore: Double
+    let scoreBreakdown: [String: Double]
+    let centroid: [Double]
+    /// "trace" when measured from the mask, "bboxCenter" when no trace was collected.
+    let centroidSource: String
+    let bbox: [Int]
+    let componentArea: Int
+    let rawPCASpan: Double
+    let rawPCAEndpoints: [Double]
+    let finalOutputEndpoints: [Double]
+    let rejectionReasons: [String]
+
+    static func round4(_ value: Double) -> Double { (value * 10_000).rounded() / 10_000 }
+
+    var dictionary: [String: Any] {
+        var result: [String: Any] = ["listIndex": listIndex, "eligible": eligible,
+            "sourceType": sourceType, "finalScore": Self.round4(finalScore),
+            "scoreBreakdown": scoreBreakdown, "centroid": centroid, "centroidSource": centroidSource,
+            "bbox": bbox, "componentArea": componentArea, "rawPCASpan": Self.round4(rawPCASpan),
+            "rawPCAEndpoints": rawPCAEndpoints, "finalOutputEndpoints": finalOutputEndpoints,
+            "rejectionReasons": rejectionReasons]
+        if let eligibleRank { result["eligibleRank"] = eligibleRank }
+        return result
+    }
+}
+
+/// Candidates of one color in one frame. Every eligible candidate is saved up to
+/// `eligibleLimit`; what was left out is stated explicitly, never implied.
+struct DebugCandidateGeometrySet: Equatable {
+    static let eligibleLimit = 12
+    static let ineligibleLimit = 6
+
+    let totalCandidateCount: Int
+    let eligibleCandidateCount: Int
+    let candidates: [DebugCandidateGeometry]
+
+    init(_ source: [SaberCandidate]) {
+        totalCandidateCount = source.count
+        eligibleCandidateCount = source.filter(\.isEmitterEligible).count
+        var rank = 0
+        var saved: [DebugCandidateGeometry] = []
+        var ineligibleSaved = 0
+        for (index, candidate) in source.enumerated() {
+            if candidate.isEmitterEligible { rank += 1 }
+            let keep = candidate.isEmitterEligible ? rank <= Self.eligibleLimit
+                : ineligibleSaved < Self.ineligibleLimit
+            guard keep else { continue }
+            if !candidate.isEmitterEligible { ineligibleSaved += 1 }
+            let breakdown = DebugRecordingScoreBreakdown(candidate.scoreBreakdown)
+            var scores: [String: Double] = [:]
+            for (key, value) in [("proposalPenalty", breakdown.proposalPenalty), ("radiance", breakdown.radiance),
+                ("length", breakdown.length), ("aspect", breakdown.aspect), ("extent", breakdown.extent),
+                ("widthConsistency", breakdown.widthConsistency), ("area", breakdown.area),
+                ("peakBrightness", breakdown.peakBrightness), ("meanBrightness", breakdown.meanBrightness),
+                ("highBrightnessRatio", breakdown.highBrightnessRatio), ("colorPurity", breakdown.colorPurity),
+                ("localContrast", breakdown.localContrast), ("emitterTexture", breakdown.emitterTexture),
+                ("clippedWhite", breakdown.clippedWhite),
+                ("longitudinalHighCoverage", breakdown.longitudinalHighCoverage),
+                ("coreSupport", breakdown.coreSupport),
+                ("longitudinalCoreCoverage", breakdown.longitudinalCoreCoverage),
+                ("total", breakdown.total)] {
+                scores[key] = DebugCandidateGeometry.round4(value)
+            }
+            let box = candidate.boundingBox
+            let trace = candidate.endpointDiagnosticTrace
+            let centroid = trace.map { [DebugCandidateGeometry.round4($0.centroidX),
+                                        DebugCandidateGeometry.round4($0.centroidY)] }
+                ?? [Double(box.minX + box.maxX) / 2, Double(box.minY + box.maxY) / 2]
+            let raw = candidate.comparisonEndpoints, final = candidate.endpoints
+            var reasons: [String] = []
+            if !candidate.isEmitterEligible {
+                reasons = DebugRecordingCandidate(index: index, candidate: candidate,
+                                                  selectedIndex: nil).rejectionReasons
+            }
+            saved.append(DebugCandidateGeometry(
+                listIndex: index, eligible: candidate.isEmitterEligible,
+                eligibleRank: candidate.isEmitterEligible ? rank : nil,
+                sourceType: candidate.source, finalScore: candidate.score, scoreBreakdown: scores,
+                centroid: centroid, centroidSource: trace == nil ? "bboxCenter" : "trace",
+                bbox: [box.minX, box.minY, box.maxX, box.maxY], componentArea: candidate.componentArea,
+                rawPCASpan: candidate.rawPCASpan,
+                rawPCAEndpoints: [Double(raw.0.x), Double(raw.0.y), Double(raw.1.x), Double(raw.1.y)],
+                finalOutputEndpoints: [Double(final.0.x), Double(final.0.y), Double(final.1.x), Double(final.1.y)],
+                rejectionReasons: reasons))
+        }
+        candidates = saved
+    }
+
+    var dictionary: [String: Any] {
+        ["totalCandidateCount": totalCandidateCount, "eligibleCandidateCount": eligibleCandidateCount,
+         "candidates": candidates.map(\.dictionary)]
+    }
+}
+
+/// Side data carried with a frame's metadata but never streamed into the full
+/// metadata file; it reaches only the triage snapshot of retained event frames.
+struct DebugFrameGeometry: Equatable {
+    var red: DebugCandidateGeometrySet?
+    var blue: DebugCandidateGeometrySet?
+
+    init(_ analysis: SaberFrameAnalysis, active: [String]) {
+        red = active.contains("red") ? DebugCandidateGeometrySet(analysis.candidates[.red] ?? []) : nil
+        blue = active.contains("blue") ? DebugCandidateGeometrySet(analysis.candidates[.blue] ?? []) : nil
+    }
+
+    var dictionary: [String: Any] {
+        var result: [String: Any] = [:]
+        if let red { result["red"] = red.dictionary }
+        if let blue { result["blue"] = blue.dictionary }
+        return result
     }
 }

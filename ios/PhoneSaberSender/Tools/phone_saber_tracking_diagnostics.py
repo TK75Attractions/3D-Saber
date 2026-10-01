@@ -8,6 +8,9 @@ from typing import Any
 from phone_saber_triage_protocol import BundleError
 
 TRACKING_ROLES = {"before", "onset", "peak", "after", "recovery"}
+BRIDGE_ROLES = ("before_success", "dropout", "after_success")
+BRIDGE_ANNOTATED_ROLE = "annotated_dropout"
+BRIDGE_IMAGE_ROLES = set(BRIDGE_ROLES) | {BRIDGE_ANNOTATED_ROLE}
 PIPELINE_STAGES = {"candidate_selection", "mask_component", "PCA", "robust_body",
                    "endpoint_selection", "fallback", "downstream", "unknown"}
 TRACKING_ASSESSMENT_SCHEMA = {
@@ -35,9 +38,20 @@ def numeric_array(value: Any, size: int) -> bool:
 def validate_mapping(context: dict, image: dict, session: str) -> None:
     mapping = context.get("imageMapping")
     if mapping is None:
-        if image.get("role") in TRACKING_ROLES:
+        if image.get("role") in TRACKING_ROLES or "bridgeEventID" in image:
             raise BundleError("tracking image lacks explicit frame mapping")
         return  # Backward-compatible legacy input; never sufficient for tracking repair.
+    if "bridgeEventID" in image:
+        expected = {"sessionID": session, "frameID": image["frameID"],
+                    "timestamp": image.get("timestamp"), "color": image.get("color"),
+                    "image": image["path"], "eventID": f"bridge_{image['bridgeEventID']}",
+                    "eventRole": image.get("role")}
+        if mapping != expected or image.get("sessionID", session) != session:
+            raise BundleError("PNG/frame/metadata mapping disagrees with summary")
+        matches = [f for f in context["frames"] if f["frameID"] == image["frameID"]]
+        if len(matches) != 1 or matches[0]["timestamp"] != mapping["timestamp"]:
+            raise BundleError("mapped PNG lacks its exact frame timestamp")
+        return
     if image.get("role") in TRACKING_ROLES and (isinstance(image.get("eventIndex"), bool) or
             not isinstance(image.get("eventIndex"), int)):
         raise BundleError("tracking event ID missing")
@@ -101,6 +115,176 @@ def validate_tracking(value: Any) -> None:
     if not isinstance(stages, dict) or not set(stages) <= {"rawPCA", "robustInterval", "body", "finalSelected"} \
             or not all(number(x) and x >= 0 for x in stages.values()) or value["instabilityScore"] < 0:
         raise BundleError("invalid stage discontinuities")
+
+
+GEOMETRY_MATCH_KEYS = {"centroidDistance", "centroidDistanceNormalized", "bboxIoU", "areaRatio",
+                       "spanRatio", "orientationDifference"}
+GEOMETRY_ENTRY_KEYS = {"listIndex", "eligible", "eligibleRank", "sourceType", "finalScore", "scoreBreakdown",
+                       "centroid", "centroidSource", "bbox", "componentArea", "rawPCASpan",
+                       "rawPCAEndpoints", "finalOutputEndpoints", "rejectionReasons", "matchToPreviousWinner",
+                       "scoreBreakdownReduced"}
+
+
+def validate_candidate_geometry(value: Any, eligible_count: Any = None) -> None:
+    """All-eligible candidate geometry for one frame/color, with explicit omission counts."""
+    required = {"totalCandidateCount", "eligibleCandidateCount", "savedEligibleCount",
+                "eligibleOmittedCount", "savedIneligibleCount", "ineligibleOmittedCount",
+                "candidatesTruncated", "candidates", "previousFrameGeometryAvailable"}
+    if not isinstance(value, dict) or not required <= set(value) <= required | {"previousWinner"}:
+        raise BundleError("invalid candidate geometry block")
+    counts = [value[k] for k in required - {"candidatesTruncated", "candidates", "previousFrameGeometryAvailable"}]
+    if any(isinstance(c, bool) or not isinstance(c, int) or c < 0 for c in counts) \
+            or not isinstance(value["candidatesTruncated"], bool) \
+            or not isinstance(value["previousFrameGeometryAvailable"], bool) \
+            or not isinstance(value["candidates"], list) or len(value["candidates"]) > 18:
+        raise BundleError("invalid candidate geometry counts")
+    eligible = [c for c in value["candidates"] if isinstance(c, dict) and c.get("eligible") is True]
+    ineligible = [c for c in value["candidates"] if isinstance(c, dict) and c.get("eligible") is False]
+    omitted = value["eligibleOmittedCount"] + value["ineligibleOmittedCount"]
+    if len(eligible) + len(ineligible) != len(value["candidates"]) \
+            or value["savedEligibleCount"] != len(eligible) or value["savedIneligibleCount"] != len(ineligible) \
+            or value["eligibleCandidateCount"] != value["savedEligibleCount"] + value["eligibleOmittedCount"] \
+            or value["totalCandidateCount"] != value["eligibleCandidateCount"] + value["savedIneligibleCount"] \
+                + value["ineligibleOmittedCount"] \
+            or value["candidatesTruncated"] != (omitted > 0) \
+            or (eligible_count is not None and eligible_count != value["eligibleCandidateCount"]):
+        raise BundleError("candidate geometry counts disagree with the recorded eligible count")
+    ranks = [c.get("eligibleRank") for c in eligible]
+    if any(isinstance(r, bool) or not isinstance(r, int) or r < 1 for r in ranks) \
+            or ranks != sorted(ranks) or len(set(ranks)) != len(ranks):
+        raise BundleError("invalid eligible ranks")
+    for c in value["candidates"]:
+        if not isinstance(c, dict) or not (GEOMETRY_ENTRY_KEYS - {"eligibleRank", "matchToPreviousWinner",
+                                                                    "scoreBreakdownReduced"}) <= set(c) \
+                <= GEOMETRY_ENTRY_KEYS or isinstance(c["listIndex"], bool) or not isinstance(c["listIndex"], int) \
+                or not isinstance(c["sourceType"], str) or len(c["sourceType"]) > 100 \
+                or c["centroidSource"] not in {"trace", "bboxCenter"} \
+                or not number(c["finalScore"]) or not number(c["rawPCASpan"]) or not number(c["componentArea"]) \
+                or not numeric_array(c["centroid"], 2) or not numeric_array(c["bbox"], 4) \
+                or not numeric_array(c["rawPCAEndpoints"], 4) or not numeric_array(c["finalOutputEndpoints"], 4) \
+                or not isinstance(c["scoreBreakdown"], dict) or len(c["scoreBreakdown"]) > 24 \
+                or not all(number(x) for x in c["scoreBreakdown"].values()) \
+                or not isinstance(c["rejectionReasons"], list) or len(c["rejectionReasons"]) > 20 \
+                or not all(isinstance(r, str) and len(r) <= 100 for r in c["rejectionReasons"]) \
+                or (c["eligible"] and "eligibleRank" not in c) or (not c["eligible"] and "eligibleRank" in c) \
+                or ("scoreBreakdownReduced" in c and c["scoreBreakdownReduced"] is not True):
+            raise BundleError("invalid candidate geometry entry")
+        match = c.get("matchToPreviousWinner")
+        if match is not None and (not value["previousFrameGeometryAvailable"] or not isinstance(match, dict)
+                                  or not set(match) <= GEOMETRY_MATCH_KEYS or not all(number(x) for x in match.values())):
+            raise BundleError("invalid candidate correspondence metrics")
+    winner = value.get("previousWinner")
+    if winner is not None and (not value["previousFrameGeometryAvailable"] or not isinstance(winner, dict)
+            or not {"frameID", "centroid", "bbox", "componentArea", "rawPCASpan", "rawPCAEndpoints",
+                    "finalOutputEndpoints", "listIndex"} <= set(winner)
+            or not numeric_array(winner["centroid"], 2) or not numeric_array(winner["bbox"], 4)
+            or not numeric_array(winner["rawPCAEndpoints"], 4) or not numeric_array(winner["finalOutputEndpoints"], 4)):
+        raise BundleError("invalid previous winner geometry")
+
+
+# Heuristic thresholds for the hint audit only; they never reach recognition or the gate.
+AUDIT_CONTINUITY_IOU = 0.2
+AUDIT_CONTINUITY_DISTANCE = 0.5
+AUDIT_ENDPOINT_STAGE = 0.5
+
+
+def _continuous(match: dict) -> bool:
+    return match.get("bboxIoU", 0) >= AUDIT_CONTINUITY_IOU \
+        or match.get("centroidDistanceNormalized", math.inf) <= AUDIT_CONTINUITY_DISTANCE
+
+
+def _b_cause(geometry: dict, matching: list) -> str:
+    if geometry["totalCandidateCount"] == 0:
+        return "notGenerated"
+    if matching:
+        return "ineligible"
+    return "unknownTruncated" if geometry["candidatesTruncated"] else "noCandidateMatchesPreviousWinner"
+
+
+def _endpoints_broken(winner: dict, previous: dict) -> dict | None:
+    """Final endpoints of the same-looking winner against the previous winner (geometry only)."""
+    a, b = winner["finalOutputEndpoints"], previous["finalOutputEndpoints"]
+    direct = math.hypot(a[0] - b[0], a[1] - b[1]) + math.hypot(a[2] - b[2], a[3] - b[3])
+    flipped = math.hypot(a[2] - b[0], a[3] - b[1]) + math.hypot(a[0] - b[2], a[1] - b[3])
+    if flipped < direct:
+        a = [a[2], a[3], a[0], a[1]]
+    span = max(math.hypot(b[2] - b[0], b[3] - b[1]), 1)
+    movement = max(math.hypot(a[0] - b[0], a[1] - b[1]), math.hypot(a[2] - b[2], a[3] - b[3])) / span
+    length_ratio = max(math.hypot(a[2] - a[0], a[3] - a[1]), 1) / span
+    angle = abs(math.atan2(a[3] - a[1], a[2] - a[0]) - math.atan2(b[3] - b[1], b[2] - b[0])) % math.pi
+    angle = min(angle, math.pi - angle)
+    broken = movement >= AUDIT_ENDPOINT_STAGE or not 0.67 <= length_ratio <= 1.5 or angle >= 0.5
+    return {"movementOverSpan": round(movement, 4), "lengthRatio": round(length_ratio, 4),
+            "orientationDifference": round(angle, 4)} if broken else None
+
+
+def candidate_selection_audit(plan: Any) -> list[dict]:
+    """Deterministic hints separating three failure shapes from the selected contexts.
+
+    A: a correct-looking candidate stays eligible but another one narrowly wins.
+    B: no eligible candidate corresponds to the previous winner (ineligible or absent).
+    C: the winner corresponds to the previous winner but its endpoints break.
+    Hints only: pixels and the analysis decide, and nothing here feeds the gate.
+    """
+    rows = []
+    for image in plan.images:
+        c = json.loads(image.context_path.read_text(encoding="utf-8"))
+        if c.get("bridgeEvent", {}).get("auxiliary"):
+            continue
+        for color in c.get("activeColors") or ["red", "blue"]:
+            frame = next((f for f in c["frames"] if f["frameID"] == image.frame_id), None)
+            geometry = (frame or {}).get(color, {}).get("candidateGeometry")
+            if not geometry or not geometry["previousFrameGeometryAvailable"]:
+                continue
+            candidates = geometry["candidates"]
+            winner = next((x for x in candidates if x.get("eligibleRank") == 1), None)
+            row = {"imageID": image.image_id, "frameID": image.frame_id, "color": color,
+                   "totalCandidateCount": geometry["totalCandidateCount"],
+                   "eligibleCandidateCount": geometry["eligibleCandidateCount"],
+                   "candidatesTruncated": geometry["candidatesTruncated"],
+                   "previousWinnerFrameID": geometry.get("previousWinner", {}).get("frameID")}
+            if winner is None:
+                matching = [x for x in candidates if x["eligible"] is False
+                            and _continuous(x.get("matchToPreviousWinner", {}))]
+                row.update(hint="B", detail="no eligible candidate",
+                           bCause=_b_cause(geometry, matching),
+                           ineligibleMatchesPreviousWinner=[
+                               {"listIndex": x["listIndex"], "rejectionReasons": x["rejectionReasons"]} for x in matching])
+                rows.append(row)
+                continue
+            winner_continuous = _continuous(winner.get("matchToPreviousWinner", {}))
+            alternatives = [x for x in candidates if x["eligible"] and x is not winner
+                            and _continuous(x.get("matchToPreviousWinner", {}))]
+            tracking = (frame.get(color) or {}).get("tracking") or {}
+            if not winner_continuous and alternatives:
+                best = max(alternatives, key=lambda x: x["finalScore"])
+                row.update(hint="A", detail="a candidate matching the previous winner stayed eligible but lost",
+                           winnerListIndex=winner["listIndex"], winnerScore=winner["finalScore"],
+                           matchingAlternativeListIndex=best["listIndex"], matchingAlternativeScore=best["finalScore"],
+                           scoreMargin=round(winner["finalScore"] - best["finalScore"], 4),
+                           winnerDistanceFromPreviousWinner=winner["matchToPreviousWinner"].get("centroidDistanceNormalized"))
+            elif not winner_continuous:
+                matching = [x for x in candidates if x["eligible"] is False
+                            and _continuous(x.get("matchToPreviousWinner", {}))]
+                row.update(hint="B" if not geometry["candidatesTruncated"] or matching else "unknown",
+                           detail="winner does not match the previous winner and no eligible candidate does",
+                           bCause=_b_cause(geometry, matching),
+                           ineligibleMatchesPreviousWinner=[
+                               {"listIndex": x["listIndex"], "rejectionReasons": x["rejectionReasons"]} for x in matching])
+            elif _endpoints_broken(winner, geometry["previousWinner"]) or tracking.get("endpointPathChanged"):
+                row.update(hint="C", detail="winner matches the previous winner but its endpoints are discontinuous",
+                           endpointDiscontinuity=_endpoints_broken(winner, geometry["previousWinner"]),
+                           endpointPathChanged=tracking.get("endpointPathChanged"))
+            else:
+                row.update(hint="none", detail="winner matches the previous winner; endpoints continuous")
+            rows.append(row)
+    return rows
+
+
+def print_candidate_audit(rows: list[dict]) -> None:
+    for row in rows:
+        print("[AUTO_REPAIR][CANDIDATE_AUDIT] " + " ".join(
+            f"{k}={json.dumps(v, ensure_ascii=False, separators=(',', ':'))}" for k, v in row.items()), flush=True)
 
 
 def validate_selected(value: Any) -> None:
@@ -244,6 +428,73 @@ def tracking_repair_required(analysis: dict, events: list[dict]) -> bool:
         or analysis.get("tracking_assessment", {}).get("symptom_confirmed_in_images") is True)
 
 
+def validate_bridge_context(value: Any, image: dict) -> None:
+    """Shape and summary agreement of one bridge image's event block."""
+    keys = {"eventID", "role", "auxiliary", "color", "beforeFrameID", "dropoutFrameID",
+            "afterFrameID", "beforeTimestamp", "dropoutTimestamp", "afterTimestamp",
+            "missingFrameCount", "gapSeconds", "evidenceUnit", "continuity", "annotation"}
+    if not isinstance(value, dict) or not {"eventID", "role", "auxiliary", "color", "beforeFrameID",
+            "dropoutFrameID", "afterFrameID", "beforeTimestamp", "dropoutTimestamp", "afterTimestamp",
+            "missingFrameCount", "gapSeconds", "evidenceUnit", "continuity"} <= set(value) <= keys:
+        raise BundleError("invalid bridge event context")
+    ids = [value["beforeFrameID"], value["dropoutFrameID"], value["afterFrameID"]]
+    times = [value["beforeTimestamp"], value["dropoutTimestamp"], value["afterTimestamp"]]
+    if any(isinstance(x, bool) or not isinstance(x, int) for x in ids) or not all(number(x) for x in times) \
+            or not ids[0] < ids[1] < ids[2] or not times[0] < times[1] < times[2] \
+            or not number(value["gapSeconds"]) or value["gapSeconds"] <= 0 \
+            or isinstance(value["missingFrameCount"], bool) or not isinstance(value["missingFrameCount"], int) \
+            or value["missingFrameCount"] < 1 or not isinstance(value["continuity"], dict) \
+            or value["color"] not in {"red", "blue"}:
+        raise BundleError("bridge event frames are not ordered before < dropout < after")
+    if value["eventID"] != image.get("bridgeEventID") or value["role"] != image.get("role") \
+            or value["auxiliary"] is not (image.get("role") == BRIDGE_ANNOTATED_ROLE) \
+            or value["color"] != image.get("color"):
+        raise BundleError("bridge event summary and context disagree")
+    expected_frame = {"before_success": ids[0], "dropout": ids[1], "annotated_dropout": ids[1],
+                      "after_success": ids[2]}[image["role"]]
+    if image.get("frameID") != expected_frame:
+        raise BundleError("bridge event role does not match its frame")
+    if value["auxiliary"] and not isinstance(value.get("annotation"), dict):
+        raise BundleError("annotated bridge image lacks annotation metadata")
+
+
+def bridge_events(plan: Any) -> list[dict]:
+    """One entry per bridge dropout. Its frames are ONE temporal evidence event."""
+    groups: dict[int, dict] = {}
+    for image in plan.images:
+        c = json.loads(image.context_path.read_text(encoding="utf-8"))
+        bridge = c.get("bridgeEvent")
+        if not bridge:
+            continue
+        event = groups.setdefault(bridge["eventID"], {
+            "eventID": bridge["eventID"], "color": bridge["color"],
+            "evidenceUnit": f"bridge_dropout_{bridge['eventID']}",
+            "gapSeconds": bridge["gapSeconds"], "missingFrameCount": bridge["missingFrameCount"],
+            "continuity": bridge["continuity"], "images": {}})
+        selected = next((f for f in c["frames"] if f["frameID"] == image.frame_id), {})
+        values = selected.get(bridge["color"], {})
+        event["images"][bridge["role"]] = {
+            "imageID": image.image_id, "frameID": image.frame_id,
+            "timestamp": selected.get("timestamp"), "role": bridge["role"],
+            "auxiliary": bridge["auxiliary"],
+            "detected": values.get("detectionSucceeded", values.get("detected")),
+            "candidateCount": values.get("candidateCount"),
+            "eligibleCandidateCount": values.get("eligibleCandidateCount"),
+            "endpoint": values.get("endpoint")}
+    return sorted(groups.values(), key=lambda e: e["eventID"])
+
+
+def complete_bridge_event(event: dict) -> bool:
+    images = event["images"]
+    if not all(role in images for role in BRIDGE_ROLES):
+        return False
+    before, dropout, after = (images[role] for role in BRIDGE_ROLES)
+    return before["detected"] is True and after["detected"] is True and dropout["detected"] is False \
+        and number(before["timestamp"]) and number(dropout["timestamp"]) and number(after["timestamp"]) \
+        and before["frameID"] < dropout["frameID"] < after["frameID"] \
+        and before["timestamp"] < dropout["timestamp"] < after["timestamp"]
+
+
 class PrecheckFailed(BundleError):
     """Selected input cannot support analysis; never substitute another frame."""
     def __init__(self, reasons: list[dict]):
@@ -305,7 +556,12 @@ def tracking_preflight(plan: Any) -> dict:
             fail("temporalOrderInvalid", f"context frame={image.frame_id}")
     events = temporal_events(plan)
     summary = json.loads((plan.root / "summary.json").read_text(encoding="utf-8"))
-    if not events and summary.get("motionEventSummary", {}).get("trackingCapture"):
+    ledger = {e[0]: e[3] for e in summary.get("motionEventSummary", {}).get("events", [])
+              if isinstance(e, list) and len(e) == 4}
+    # bridge_priority is the explicit ledger code for a tracking event that was left
+    # out whole so bridge dropout events fit the image limit; it is not missing evidence.
+    if not events and summary.get("motionEventSummary", {}).get("trackingCapture") \
+            and "bridge_priority" not in ledger.values():
         fail("temporalEvidenceMissing", "tracking capture has no selected temporal event")
     modes = []
     for e in events:
@@ -345,6 +601,14 @@ def tracking_preflight(plan: Any) -> dict:
             fail("trackingTimelineMissing", label + " stage history")
         if not sufficient_temporal(e):
             fail("trackingAssessmentDataMissing", label)
+    for event in bridge_events(plan):
+        label = f"bridge event={event['eventID']} color={event['color']}"
+        if not all(role in event["images"] for role in BRIDGE_ROLES):
+            fail("bridgeEvidenceIncomplete", label + " needs before_success, dropout and after_success")
+        elif not complete_bridge_event(event):
+            fail("bridgeEvidenceIncomplete", label + " must be detected, missed, detected in time order")
+        else:
+            modes.append({"eventID": f"bridge_{event['eventID']}", "mode": "bridge-dropout"})
     return {"status": "PRECHECK_FAILED" if reasons else "PASS",
             "reasonCodes": sorted({r["code"] for r in reasons}), "reasons": reasons,
             "eventModes": modes}
@@ -383,6 +647,27 @@ def tracking_summary(plan: Any, report: dict, gate: dict | None = None) -> list[
             "reasonCodes": (gate or report.get("precheck", {})).get("reasonCodes", [])}
         rows.append(row)
     return rows
+
+
+def bridge_summary(plan: Any, report: dict | None = None) -> list[dict]:
+    """One row per bridge event; its three frames are a single evidence unit."""
+    rows = []
+    for event in bridge_events(plan):
+        images = event["images"]
+        rows.append({"sessionID": plan.session_id, "bridgeEventID": event["eventID"],
+            "color": event["color"], "evidenceUnit": event["evidenceUnit"],
+            "frames": [images[r]["frameID"] for r in BRIDGE_ROLES if r in images],
+            "missingFrameCount": event["missingFrameCount"], "gapSeconds": event["gapSeconds"],
+            "annotatedImage": BRIDGE_ANNOTATED_ROLE in images,
+            "temporalEvidence": "complete" if complete_bridge_event(event) else "incomplete",
+            "independentExamples": 1})
+    return rows
+
+
+def print_bridge_summary(rows: list[dict]) -> None:
+    for row in rows:
+        print("[AUTO_REPAIR][BRIDGE_SUMMARY] " + " ".join(
+            f"{k}={json.dumps(v, ensure_ascii=False, separators=(',', ':'))}" for k, v in row.items()), flush=True)
 
 
 def print_tracking_summary(rows: list[dict]) -> None:

@@ -75,28 +75,41 @@ struct TrackingDiagnosticsCaptureHarness {
     static func main() async throws {
         let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
         var output: [String: Any] = [:]
-        for scenario in ["stable", "candidate-switch", "raw-jump", "path-switch", "emitted-stable"] {
+        for scenario in ["stable", "candidate-switch", "raw-jump", "path-switch", "emitted-stable",
+                         "bridge", "edge-absence", "bridge-switch"] {
             let directory = root.appendingPathComponent(scenario, isDirectory: true)
             let recorder = try DebugVideoRecorder(directory: directory, date: Date(timeIntervalSince1970: 1_700_000_000))
             try recorder.prepare(width: 192, height: 96)
             for offset in 0..<25 {
-                let switched = scenario == "candidate-switch" && offset >= 10
+                // "bridge-switch": a short loss AND a later candidate-selection switch.
+                let switched = (scenario == "candidate-switch" && offset >= 10)
+                    || (scenario == "bridge-switch" && offset >= 15)
                 let rotated = scenario == "raw-jump" && offset >= 10
                 let path = scenario == "path-switch" && offset >= 10
                 let selected = try candidate(x: switched ? 110 : 10, rotated: rotated, fallback: !path)
-                let alternatives = scenario == "candidate-switch" ? [try candidate(x: switched ? 10 : 110)] : []
+                let alternatives = ["candidate-switch", "bridge-switch"].contains(scenario)
+                    ? [try candidate(x: switched ? 10 : 110)] : []
                 let pixels = try buffer(selected, alternatives: alternatives, id: offset)
-                let analysis = SaberFrameAnalysis(candidates: [.red: [selected] + alternatives], selected: [.red: selected.endpoints])
+                // "bridge": the saber is lost for two frames between two detections.
+                // "edge-absence": it is only in view in the middle of the recording.
+                let present = scenario == "bridge" ? !(10...11).contains(offset)
+                    : (scenario == "bridge-switch" ? !(5...6).contains(offset)
+                    : (scenario == "edge-absence" ? (6...18).contains(offset) : true))
+                let analysis = present
+                    ? SaberFrameAnalysis(candidates: [.red: [selected] + alternatives], selected: [.red: selected.endpoints])
+                    : SaberFrameAnalysis(candidates: [.red: []], selected: [:])
                 let result = DetectedSaber(endpoints: selected.endpoints, color: .red, isFresh: true)
                 CVPixelBufferLockBaseAddress(pixels, .readOnly)
                 let appended = recorder.append(pixelBuffer: pixels,
                     presentationTime: CMTime(value: Int64(offset), timescale: 30), frameID: UInt64(1000 + offset),
-                    results: [result], analysis: analysis, processingTimeSeconds: 0.005)
+                    results: present ? [result] : [], analysis: analysis, processingTimeSeconds: 0.005)
                 CVPixelBufferUnlockBaseAddress(pixels, .readOnly)
                 guard appended == .accepted else { throw NSError(domain: "appendRejected-\(scenario)-\(offset)", code: 1) }
                 let p = selected.endpoints
-                recorder.recordTransmission(frameID: UInt64(1000 + offset), color: "red",
-                    coordinates: "\(p.0.x),\(p.0.y),\(p.1.x),\(p.1.y)", sourceEndpoints: p)
+                if present {
+                    recorder.recordTransmission(frameID: UInt64(1000 + offset), color: "red",
+                        coordinates: "\(p.0.x),\(p.0.y),\(p.1.x),\(p.1.y)", sourceEndpoints: p)
+                }
                 // Let the real video writer drain; frame IDs/timestamps stay fixed.
                 try await Task.sleep(nanoseconds: 40_000_000)
             }
@@ -104,7 +117,13 @@ struct TrackingDiagnosticsCaptureHarness {
                 recorder.finish { continuation.resume(with: $0) }
             }
             guard let bundle = recording.triageBundleURL else {
-                throw NSError(domain: recording.triageErrorMessage ?? "triageFailed", code: 1)
+                // Absence outside a bridge is never an evidence image, so no bundle exists.
+                guard scenario == "edge-absence" else {
+                    throw NSError(domain: recording.triageErrorMessage ?? "triageFailed", code: 1)
+                }
+                output[scenario] = ["bundle": NSNull(), "metadata": recording.metadataURL.path,
+                                    "forensic": (recording.forensicDirectoryURL?.path as Any?) ?? NSNull()]
+                continue
             }
             let summary = try JSONSerialization.jsonObject(with: Data(contentsOf:
                 bundle.appendingPathComponent("summary.json"))) as! [String: Any]
@@ -122,6 +141,7 @@ struct TrackingDiagnosticsCaptureHarness {
                 }
             }
             output[scenario] = ["bundle": bundle.path, "metadata": recording.metadataURL.path,
+                                "forensic": (recording.forensicDirectoryURL?.path as Any?) ?? NSNull(),
                                 "pngMappingVerified": images.count]
         }
         let data = try JSONSerialization.data(withJSONObject: output, options: [.sortedKeys])

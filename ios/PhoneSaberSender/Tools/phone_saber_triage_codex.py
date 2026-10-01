@@ -18,6 +18,9 @@ from types import SimpleNamespace
 
 from phone_saber_tracking_diagnostics import (
     TRACKING_ROLES, TRACKING_ASSESSMENT_SCHEMA, validate_mapping, validate_tracking,
+    BRIDGE_ROLES, BRIDGE_ANNOTATED_ROLE, BRIDGE_IMAGE_ROLES, validate_bridge_context, bridge_events,
+    bridge_summary, print_bridge_summary, validate_candidate_geometry, candidate_selection_audit,
+    print_candidate_audit,
     validate_selected, validate_compound, validate_transmissions, validate_assessment,
     temporal_events, sufficient_temporal, supports_temporal_images,
     tracking_repair_required, has_tracking_discontinuity,
@@ -134,6 +137,11 @@ class CodexInputImage:
     context_path: Path
     frame_id: int
     failure_type: str
+    # Bridge dropout images: the three frames of one event are ONE evidence unit and
+    # the annotated copy is a viewing aid that never counts as evidence.
+    bridge_event_id: int | None = None
+    role: str | None = None
+    auxiliary: bool = False
 
 
 @dataclass(frozen=True)
@@ -208,7 +216,7 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
                             "redBlueDetectionSummary", "dropoutSummary", "selectedImageCount",
                             "incidentCount", "incidents", "images", "limits", "groundTruth",
                             "summaryScope", "retainedIncidentContextFrames",
-                            "motionEventSummary"}
+                            "motionEventSummary", "activeColors", "bridgeDropoutSummary"}
     if not set(summary).issubset(allowed_summary_keys):
         raise BundleError("summary.json contains non-triage or full-session metadata")
     motion_summary = summary.get("motionEventSummary")
@@ -224,10 +232,19 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
                     or event[1] not in {"red", "blue", "both"} \
                     or not isinstance(event[2], (int, float)) \
                     or isinstance(event[2], bool) or not math.isfinite(event[2]) \
-                    or event[3] not in {"selected", "lower_score", "memory",
-                                         "duplicate", "image_limit", "byte_limit"}:
+                    or event[3] not in {"selected", "lower_score", "memory", "duplicate",
+                                         "image_limit", "byte_limit", "bridge_priority"}:
                 raise BundleError("motion event selection ledger is malformed")
             seen_event_ids.add(event[0])
+    active_colors = summary.get("activeColors")
+    if active_colors is not None and (
+            not isinstance(active_colors, list) or not active_colors
+            or len(set(active_colors)) != len(active_colors)
+            or not set(active_colors) <= {"red", "blue"}):
+        raise BundleError("summary.json has invalid activeColors")
+    if "bridgeDropoutSummary" in summary and (
+            not isinstance(summary["bridgeDropoutSummary"], dict) or active_colors is None):
+        raise BundleError("bridge dropout summary is malformed")
     summary_scope = summary.get("summaryScope")
     if not isinstance(summary_scope, str) or summary_scope != EXPECTED_SUMMARY_SCOPE:
         raise BundleError("summary.json has an invalid summaryScope")
@@ -254,6 +271,7 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
     unique_image_basenames: set[str] = set()
     type_counts: dict[str, int] = {}
     motion_roles: set[tuple[int, str]] = set()
+    bridge_roles: dict[int, dict[str, dict]] = {}
     for image in images:
         if not isinstance(image, dict):
             raise BundleError("summary image entry is invalid")
@@ -317,20 +335,48 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
                                  "signals": image["signals"],
                                  "signalAggregation": "event_max_per_kind"}:
                 raise BundleError("motion event summary and context disagree")
+        elif "bridgeEventID" in image:
+            event_id = image["bridgeEventID"]
+            role = image.get("role")
+            if isinstance(event_id, bool) or not isinstance(event_id, int) or event_id < 1 \
+                    or role not in BRIDGE_IMAGE_ROLES \
+                    or failure_type != f"bridge_dropout_{event_id}" \
+                    or image.get("evidenceUnit") != f"bridge_dropout_{event_id}" \
+                    or image.get("auxiliary") is not (role == BRIDGE_ANNOTATED_ROLE) \
+                    or any(key in image for key in ("anomalyScore", "signals", "signalAggregation")) \
+                    or role in bridge_roles.get(event_id, {}) \
+                    or (role == BRIDGE_ANNOTATED_ROLE) != isinstance(image.get("derivedFromImage"), str) \
+                    or active_colors is None or image.get("color") not in active_colors:
+                raise BundleError("bridge dropout image metadata is invalid")
+            context_json = json.loads(context_path.read_text(encoding="utf-8"))
+            validate_bridge_context(context_json.get("bridgeEvent"), image)
+            bridge_roles.setdefault(event_id, {})[role] = image
         elif any(key in image for key in (
-                "role", "anomalyScore", "signals", "signalAggregation")):
+                "role", "anomalyScore", "signals", "signalAggregation",
+                "evidenceUnit", "auxiliary", "derivedFromImage")):
             raise BundleError("motion event image fields have no event index")
+        bridge_image = image.get("bridgeEventID") if "bridgeEventID" in image else None
         selected_images.append(CodexInputImage(
             image_id=f"image_{len(selected_images) + 1:03d}",
             image_path=image_path,
             context_path=context_path,
             frame_id=frame_id,
             failure_type=failure_type,
+            bridge_event_id=bridge_image,
+            role=image.get("role") if bridge_image is not None else None,
+            auxiliary=bool(bridge_image is not None and image.get("role") == BRIDGE_ANNOTATED_ROLE),
         ))
     if any(count > (11 if kind.endswith("tracking_instability") else
-                    3 if kind.startswith("motion_event_") else PER_FAILURE_TYPE)
+                    3 if kind.startswith("motion_event_") else
+                    4 if kind.startswith("bridge_dropout_") else PER_FAILURE_TYPE)
            for kind, count in type_counts.items()):
         raise BundleError("per-failure-type image limit exceeds two")
+    for event_id, by_role in bridge_roles.items():
+        if not all(role in by_role for role in BRIDGE_ROLES):
+            raise BundleError("bridge dropout event lacks before_success, dropout or after_success")
+        annotated = by_role.get(BRIDGE_ANNOTATED_ROLE)
+        if annotated is not None and annotated["derivedFromImage"] != by_role["dropout"]["path"]:
+            raise BundleError("annotated bridge image is not derived from its dropout PNG")
     if motion_roles:
         ledger = {item[0]: item for item in motion_summary["events"]} if motion_summary else {}
         if any(event_id not in ledger or ledger[event_id][3] != "selected"
@@ -694,6 +740,10 @@ def _analyze_bundle(
     }
     report["trackingSummary"] = tracking_summary(plan, report)
     print_tracking_summary(report["trackingSummary"])
+    report["bridgeSummary"] = bridge_summary(plan, report)
+    print_bridge_summary(report["bridgeSummary"])
+    report["candidateAudit"] = candidate_selection_audit(plan)
+    print_candidate_audit(report["candidateAudit"])
     markdown = render_markdown(plan.session_id, report["input"], analysis)
     _write_reports(bundle_dir, report, markdown)
     return {"status": "completed", "sessionID": plan.session_id,
@@ -926,6 +976,8 @@ def _codex_prompt(session_id: str, images: tuple[CodexInputImage, ...], bundle_r
     ) or "- No images were selected."
     events = temporal_events(SimpleNamespace(images=images))
     timeline = json.dumps(events, ensure_ascii=False)
+    bridges = json.dumps(bridge_events(SimpleNamespace(images=images)), ensure_ascii=False)
+    audit = json.dumps(candidate_selection_audit(SimpleNamespace(images=images)), ensure_ascii=False)
     return f"""Analyze PhoneSaber Debug Recording {session_id} using exactly {len(images)} attached selected lossless PNGs.
 
 Evidence rules:
@@ -946,6 +998,10 @@ Evidence rules:
 - Candidate indices can reorder. Use candidateSwitch with its match confidence, centroid/bbox/area/geometry and path changes. Large smooth physical motion is not a recognition failure. Scores only rank recording discontinuities, never prove a defect.
 - If observed transmitted endpoints are stable and pixels support stable geometry, classify the remaining Unity symptom as downstream (Mac/UDP/Unity); absence of send observations does not prove stability or delivery. SendStarted is a local transport invocation, not receiver acknowledgement.
 - For core-line-weak-bridge, inspect compoundRejections: rejectionRule names the compound trigger, each condition has value/comparison/threshold/satisfied. A satisfied trigger condition is not an incorrectly failed acceptance threshold.
+- A bridge dropout event is ONE temporal evidence event: before_success (the color was detected), dropout (it was missed) and after_success (it was detected again) bracket a short loss of the same saber, and the measured continuity between the two detections is in bridgeEvent.continuity. Its three frames are not three independent failure examples; independent_visual_examples counts each event once. Judge from the original dropout PNG whether the saber is visible there and which production stage rejected it.
+- The annotated_dropout image is the original dropout PNG with the position interpolated between the two successful detections drawn on it (yellow dashed expected position, green before, magenta after). It is a viewing aid for locating the saber, never ground truth: do not cite it as the only evidence, and an overlay line does not prove a saber is present. Judge pixels on the original images.
+- To separate candidate-selection failures use each selected frame's candidateGeometry (all eligible candidates unless candidatesTruncated, with centroid, bbox, componentArea, sourceType, finalScore, scoreBreakdown, rawPCA and final endpoints) and matchToPreviousWinner (centroid distance, bbox IoU, area ratio, span ratio, orientation difference against the previous frame's winner; list order and index are not identity). CASE A: a candidate matching the previous winner is still eligible but another, distant candidate wins narrowly. CASE B: no eligible candidate matches the previous winner (ineligible or never generated; check rejectionReasons and candidatesTruncated). CASE C: the winner matches the previous winner but rawPCA/final endpoints break. eligibleOmittedCount > 0 means some eligible candidates were not recorded; do not conclude from absence then.
+- Only colors listed in activeColors are diagnosed. Absence of any other color is not a failure and must not appear in findings.
 - Include tracking_assessment for tracking events: confirm visible temporal instability only if pixels support it, cite at least three ordered mapped temporal images spanning before/peak/after, identify first_unstable_stage, and describe concrete_cause, concrete_production_change, expected_effect, regression_risk. Leave unsupported proposal text empty and request evidence; never force actionable.
 - Do not edit, create, or propose applying production code. Return a concise JSON object matching the supplied schema exactly.
 - Complete repair_assessment conservatively. Mark actionable only when selected PNG pixels visibly confirm a real saber, the metadata supports a specific recognition-stage cause, and the evidence supports a production change. Otherwise use needs_capture. A detector dropout or endpoint jump alone is not visual proof.
@@ -956,6 +1012,12 @@ Selected image reference map:
 
 Ordered tracking instability events (selected PNGs and exact mapped frame metadata):
 {timeline}
+
+Bridge dropout events (one temporal evidence event each; frames by role):
+{bridges}
+
+Candidate-selection audit (deterministic HINTS from candidateGeometry; verify them against the pixels):
+{audit}
 """
 
 
@@ -966,7 +1028,8 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
         raise BundleError(f"frame context is malformed: {path.name}") from exc
     required_top = {"sessionID", "selectedFrameID", "selectedColor", "selectedFailureType",
                     "selectedReasons", "contextRadiusFrames", "frames"}
-    allowed_top = required_top | {"motionEvent", "imageMapping", "udpTransmissions"}
+    allowed_top = required_top | {"motionEvent", "imageMapping", "udpTransmissions",
+                                  "activeColors", "bridgeEvent", "compaction"}
     if not isinstance(context, dict) or not required_top.issubset(context) \
             or not set(context).issubset(allowed_top) \
             or context.get("sessionID") != session_id or context.get("selectedFrameID") != selected_frame_id \
@@ -983,6 +1046,14 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
             or not all(isinstance(item, str) and len(item) <= 500 for item in context["selectedReasons"]) \
             or not isinstance(context.get("frames"), list) or not 1 <= len(context["frames"]) <= 5:
         raise BundleError(f"frame context is outside the permitted compact shape: {path.name}")
+    if "activeColors" in context and (
+            not isinstance(context["activeColors"], list) or not context["activeColors"]
+            or not set(context["activeColors"]) <= {"red", "blue"}):
+        raise BundleError(f"invalid active colors in context: {path.name}")
+    if "compaction" in context and (
+            not isinstance(context["compaction"], list) or len(context["compaction"]) > 8
+            or not all(isinstance(item, str) and len(item) <= 100 for item in context["compaction"])):
+        raise BundleError(f"invalid context compaction record: {path.name}")
     if "motionEvent" in context:
         event = context["motionEvent"]
         if not isinstance(event, dict) or set(event) != {
@@ -1005,7 +1076,7 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
                      "rawPCASpan", "robustMainIntervalLength", "continuity", "density",
                      "colorPurity", "coreSupport", "highBrightnessCoverage",
                      "candidateDecisionTrace", "failureStage", "tracking", "selectedCandidate",
-                     "secondBestScore", "scoreMargin"}
+                     "secondBestScore", "scoreMargin", "candidateGeometry"}
     for frame in context["frames"]:
         if isinstance(frame, dict) and "timestamp" not in frame:
             raise BundleError(f"frame timestamp missing or invalid: {path.name}")
@@ -1040,6 +1111,8 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
                     validate_tracking(value)
                 elif key == "selectedCandidate":
                     validate_selected(value)
+                elif key == "candidateGeometry":
+                    validate_candidate_geometry(value, values.get("eligibleCandidateCount"))
                 elif key == "candidateDecisionTrace":
                     _validate_decision_trace(value, path.name)
                 elif key not in {"endpoint", "selectedCandidateType", "failureStage"} \

@@ -233,9 +233,18 @@ def repair_gate(report: dict[str, Any], plan: Any, repo: Path) -> dict[str, Any]
             reasons.append("second-opinion model provenance is invalid")
         selected = {}
         latency_only_images: set[str] = set()
+        # The frames of one bridge dropout are a single evidence unit, and the
+        # annotated copy is a viewing aid; neither is an extra independent example.
+        evidence_unit: dict[str, str] = {}
+        auxiliary_images: set[str] = set()
         for image in plan.images:
             context = _json_file(image.context_path, MAX_CODEX_CONTEXT_BYTES)
             selected[image.image_id] = (image.frame_id, str(context.get("selectedColor", "")).upper())
+            evidence_unit[image.image_id] = (f"bridge:{image.bridge_event_id}"
+                                             if image.bridge_event_id is not None
+                                             else f"frame:{image.frame_id}")
+            if image.auxiliary:
+                auxiliary_images.add(image.image_id)
             motion = context.get("motionEvent")
             if isinstance(motion, dict) and motion.get("signals") and all(
                     item.get("kind") in {"frame_interval", "frame_gap", "processing_time"}
@@ -262,6 +271,7 @@ def repair_gate(report: dict[str, Any], plan: Any, repo: Path) -> dict[str, Any]
             reasons.append("latency-only events do not support recognition repair")
         for color in assessment["affected_colors"]:
             if not any(image_id not in latency_only_images
+                       and image_id not in auxiliary_images
                        and selected.get(image_id, (None, None))[1] == color
                        for image_id in assessment["evidence_image_ids"]):
                 reasons.append(f"no selected {color} PNG supports the proposed repair")
@@ -271,16 +281,18 @@ def repair_gate(report: dict[str, Any], plan: Any, repo: Path) -> dict[str, Any]
                      if finding["confidence"] in {"high", "medium"}
                      and finding["color"] in set(assessment["affected_colors"]) | {"BOTH"}
                      and any(image_id not in latency_only_images
+                             and image_id not in auxiliary_images
                              and image_id in assessment["evidence_image_ids"]
                              and selected[image_id][0] in finding["frame_ids"]
                              for image_id in finding["image_ids"])]
         if not supported:
             reasons.append("all relevant findings are low confidence or lack selected PNG references")
         if assessment["change_type"] == "threshold":
-            frames = {selected[image_id][0] for finding in supported
+            frames = {evidence_unit[image_id] for finding in supported
                       for image_id in finding["image_ids"]
                       if image_id in assessment["evidence_image_ids"]
-                      and image_id not in latency_only_images}
+                      and image_id not in latency_only_images
+                      and image_id not in auxiliary_images}
             if assessment["independent_visual_examples"] < 2 \
                     or len(assessment["evidence_image_ids"]) < 2 or len(frames) < 2:
                 reasons.append("a threshold change is supported by fewer than two distinct examples")

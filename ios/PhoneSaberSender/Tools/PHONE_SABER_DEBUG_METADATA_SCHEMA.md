@@ -44,9 +44,11 @@ fields are reported and treated as unknown at their own field or frame.
 | `blueDropoutRole`, `blueDropoutFileName` | string | Optional | BLUE dropout capture annotation and still-image filename. |
 | `redDropoutRole`, `redDropoutFileName` | string | Optional | RED counterpart to the BLUE dropout fields. |
 
-Dropout roles currently used are `last-detected-before-dropout`, `dropout`, and
-`recovered`. A role and filename can be absent independently; their absence does
-not mean that the color was detected.
+Dropout roles `last-detected-before-dropout`, `dropout`, and `recovered` were written
+by recorders before bridge dropout events existed. Current recordings no longer write
+them (see "Bridge dropout fields" below); readers must keep accepting them. A role and
+filename can be absent independently; their absence does not mean that the color was
+detected.
 
 ### Detection object
 
@@ -187,3 +189,46 @@ scope, selection ledger and conservative repair acceptance.
 ## Tracking / endpoint diagnostics
 
 録画限定の追加schema、座標系、temporal PNG mapping、compound rejection、安全gateは [TRACKING_DIAGNOSTICS.md](TRACKING_DIAGNOSTICS.md) を参照。version 1へのadditive fieldsで、legacy sessionsのPython解析を維持する。
+
+## Bridge dropout fields (additive, version 1)
+
+These root fields are written by recorders that support diagnostic color selection.
+Metadata without `activeColors` predates them and diagnoses both colors with the
+older dropout rules. All fields are additive; readers that ignore them keep working.
+
+| Root field | JSON type | Meaning |
+| --- | --- | --- |
+| `activeColors` | array of `"red"`/`"blue"` | Colors chosen at Debug Recording start (RED, BLUE or BOTH). Recognition and UDP always run for both colors; only these colors' absences and anomalies count as diagnostic failures. |
+| `diagnosticWindows` | object, per active color | `firstSuccessFrameID`, `lastSuccessFrameID`, `firstSuccessTime`, `lastSuccessTime`. A color that never succeeded has no entry. Frames before the first or after the last success cannot be attributed to recognition. |
+| `bridgeDropoutEvents` | array | Accepted bridge dropouts (see below). |
+| `bridgeDropoutSummary` | object | `observedDropouts`, `accepted`, `rejected` (counts by cause: `gap_too_long`, `discontinuous`, `memory_unavailable`, `lower_rank`, ...), `evictedForLongerEvent`, `unclosedAtStop`, `retained`, `scope`. |
+
+A **bridge dropout** is `detected success → short missing interval → detected success`
+for one active color. The missing interval must be closed by a later success, so an
+absence at the start or end of a recording is never a candidate. Whether the two
+successes are the same saber is judged from the existing tracking-diagnostic geometry:
+temporal interval, midpoint displacement and speed, constant-velocity prediction
+residual (when two earlier successes give a velocity), length change and undirected
+orientation change. The limits grow with the temporal interval and are scaled by the
+saber's length (`assessment.thresholds` records them for every event). They exist only
+to choose diagnostic images and never reach recognition, scoring, eligibility or UDP.
+
+Each event has `eventID`, `color`, `beforeFrameID`/`dropoutFrameID`/`afterFrameID` with
+timestamps, `missingFrameCount`, `gapSeconds`, `assessment` (`accepted`, `measurements`,
+`thresholds`, `scope`), `images` and `annotation`.
+`images` lists `before_success`, `dropout` and `after_success` original lossless PNGs
+(`fileName`); the `dropout` entry also names `annotatedFileName`. The originals are
+never modified. The annotated PNG draws the position interpolated between the two
+successful detections (yellow dashed), the before detection (green) and the after
+detection (magenta); `annotation.groundTruth` is `false`, it only helps to locate the
+saber and never proves one is present.
+
+The three frames of an event are ONE temporal evidence event. The triage bundle labels
+them with `bridgeEventID` and `evidenceUnit`, marks the annotated image
+`"auxiliary": true`, and the Mac gate counts the event once.
+
+### Candidate geometry (triage snapshot only)
+
+`candidateGeometry` (array of `{frameID, red?, blue?}`) exists only in the triage
+snapshot handed to the bundle builder for retained event frames. It is not written to
+the streamed `*_metadata.json`. See `BRIDGE_DROPOUT_DIAGNOSTICS.md`.

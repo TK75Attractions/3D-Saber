@@ -2518,7 +2518,7 @@ final class DetectionCoreTests: XCTestCase {
         }
         let metadataData = try Data(contentsOf: recording.metadataURL)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: metadataData) as? [String: Any])
-        XCTAssertEqual(Set(json.keys), Set(["formatVersion", "sessionID", "width", "height", "frames", "cameraSamples", "motionEvents", "motionSummary", "udpTransmissions"]))
+        XCTAssertEqual(Set(json.keys), Set(["formatVersion", "sessionID", "width", "height", "frames", "cameraSamples", "motionEvents", "motionSummary", "udpTransmissions", "activeColors", "diagnosticWindows", "bridgeDropoutEvents", "bridgeDropoutSummary"]))
         // Existing Codable readers ignore the additive motion root fields.
         let metadata = try JSONDecoder().decode(DebugRecordingMetadata.self, from: metadataData)
         XCTAssertEqual(metadata.frames.filter(\.manualCaptured).count,
@@ -2665,50 +2665,182 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertTrue(FileManager.default.fileExists(atPath: unrelated.path))
     }
 
-    func testBlueDropoutCaptureStoresLastTrueFalseAndRecoveryFrames() async throws {
-        let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("PhoneSaberDropoutCaptureTests-\(UUID().uuidString)",
-                                    isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let recorder = try DebugVideoRecorder(directory: directory)
-        let blue = DetectedSaber(
-            endpoints: (PixelPoint(x: 8, y: 24), PixelPoint(x: 52, y: 24)),
-            color: .blue, isFresh: true
-        )
-        let states: [(UInt64, [DetectedSaber])] = [(401, [blue]), (402, []), (403, [blue])]
-        for (offset, state) in states.enumerated() {
-            let buffer = solidPixelBuffer(width: 64, height: 48)
-            CVPixelBufferLockBaseAddress(buffer, .readOnly)
-            recorder.append(
-                pixelBuffer: buffer,
-                presentationTime: CMTime(value: CMTimeValue(offset), timescale: 30),
-                frameID: state.0, results: state.1
-            )
-            CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
-            Thread.sleep(forTimeInterval: 0.04)
-        }
+    // MARK: Bridge dropout recording
 
+    private typealias BridgeFrame = (id: UInt64, time: Int, sabers: [DetectedSaber])
+
+    private func bridgeSaber(_ color: SaberColor, _ x1: Int = 8, _ y1: Int = 24,
+                             _ x2: Int = 52, _ y2: Int = 24) -> DetectedSaber {
+        DetectedSaber(endpoints: (PixelPoint(x: x1, y: y1), PixelPoint(x: x2, y: y2)),
+                      color: color, isFresh: true)
+    }
+
+    private func recordBridge(_ frames: [BridgeFrame], colors: DebugDiagnosticColors = .both,
+                              width: Int = 64, height: Int = 48)
+        async throws -> (recording: DebugRecordingResult, metadata: [String: Any]) {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberBridgeTests-\(UUID().uuidString)", isDirectory: true)
+        addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory, diagnosticColors: colors)
+        for frame in frames {
+            let buffer = solidPixelBuffer(width: width, height: height)
+            CVPixelBufferLockBaseAddress(buffer, .readOnly)
+            recorder.append(pixelBuffer: buffer,
+                presentationTime: CMTime(value: CMTimeValue(frame.time), timescale: 30),
+                frameID: frame.id, results: frame.sabers,
+                analysis: SaberFrameAnalysis(candidates: [.red: [], .blue: []], selected: [:]))
+            CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+            Thread.sleep(forTimeInterval: 0.02)
+        }
         let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
             recorder.finish { continuation.resume(with: $0) }
         }
-        let metadata = try JSONDecoder().decode(
-            DebugRecordingMetadata.self, from: Data(contentsOf: recording.metadataURL)
-        )
-        XCTAssertEqual(metadata.frames.map(\.blueDropoutRole), [
-            "last-detected-before-dropout", "dropout", "recovered"
-        ])
-        XCTAssertEqual(metadata.frames.map(\.blueDropoutFileName), [
-            "blue_dropout_last_true_401.png",
-            "blue_dropout_false_402.png",
-            "blue_dropout_recovered_403.png"
-        ])
-        let forensicDirectory = try XCTUnwrap(recording.forensicDirectoryURL)
-        for frame in metadata.frames {
-            let fileName = try XCTUnwrap(frame.blueDropoutFileName)
-            XCTAssertTrue(FileManager.default.fileExists(
-                atPath: forensicDirectory.appendingPathComponent(fileName).path
-            ))
+        let metadata = try XCTUnwrap(JSONSerialization.jsonObject(
+            with: Data(contentsOf: recording.metadataURL)) as? [String: Any])
+        return (recording, metadata)
+    }
+
+    private func bridgeEvents(_ metadata: [String: Any]) -> [[String: Any]] {
+        metadata["bridgeDropoutEvents"] as? [[String: Any]] ?? []
+    }
+
+    func testBridgeDropoutKeepsBeforeDropoutAfterOriginalsAndAnnotatedPNG() async throws {
+        let blue = bridgeSaber(.blue)
+        let (recording, metadata) = try await recordBridge([
+            (401, 0, [blue]), (402, 1, []), (403, 2, [blue]), (404, 3, [blue]), (405, 4, [blue])])
+        XCTAssertEqual(metadata["activeColors"] as? [String], ["red", "blue"])
+        let events = bridgeEvents(metadata)
+        XCTAssertEqual(events.count, 1)
+        let event = try XCTUnwrap(events.first)
+        XCTAssertEqual(event["color"] as? String, "blue")
+        XCTAssertEqual([event["beforeFrameID"], event["dropoutFrameID"], event["afterFrameID"]]
+            .compactMap { $0 as? Int }, [401, 402, 403])
+        XCTAssertEqual(event["missingFrameCount"] as? Int, 1)
+        let windows = try XCTUnwrap(metadata["diagnosticWindows"] as? [String: Any])
+        XCTAssertNil(windows["red"])
+        XCTAssertEqual((windows["blue"] as? [String: Any])?["firstSuccessFrameID"] as? Int, 401)
+        XCTAssertEqual((windows["blue"] as? [String: Any])?["lastSuccessFrameID"] as? Int, 405)
+        let forensic = try XCTUnwrap(recording.forensicDirectoryURL)
+        let images = try XCTUnwrap(event["images"] as? [[String: Any]])
+        XCTAssertEqual(images.compactMap { $0["role"] as? String },
+                       ["before_success", "dropout", "after_success"])
+        for image in images {
+            let name = try XCTUnwrap(image["fileName"] as? String)
+            XCTAssertTrue(FileManager.default.fileExists(atPath: forensic.appendingPathComponent(name).path), name)
         }
+        // The original dropout PNG is untouched; the annotated copy differs from it.
+        let original = try XCTUnwrap(images[1]["fileName"] as? String)
+        let annotated = try XCTUnwrap(images[1]["annotatedFileName"] as? String)
+        XCTAssertNotEqual(original, annotated)
+        func pixel(_ name: String) throws -> [UInt8] {
+            let cg = try XCTUnwrap(UIImage(contentsOfFile: forensic.appendingPathComponent(name).path)?.cgImage)
+            let data = try XCTUnwrap(cg.dataProvider?.data as Data?)
+            let offset = 24 * cg.bytesPerRow + 16 * (cg.bitsPerPixel / 8)
+            return Array(data[offset..<offset + 3])
+        }
+        XCTAssertNotEqual(try pixel(original), try pixel(annotated))
+        XCTAssertEqual(try pixel(original), try pixel(try XCTUnwrap(images[0]["fileName"] as? String)))
+        let annotation = try XCTUnwrap(event["annotation"] as? [String: Any])
+        XCTAssertEqual(annotation["groundTruth"] as? Bool, false)
+
+        // The triage bundle carries ONE event: three originals plus a derived annotated image.
+        let bundle = try XCTUnwrap(recording.triageBundleURL)
+        let summary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+        let entries = try XCTUnwrap(summary["images"] as? [[String: Any]])
+        XCTAssertEqual(entries.compactMap { $0["role"] as? String },
+                       ["before_success", "dropout", "annotated_dropout", "after_success"])
+        XCTAssertEqual(Set(entries.compactMap { $0["bridgeEventID"] as? Int }).count, 1)
+        XCTAssertEqual(Set(entries.compactMap { $0["evidenceUnit"] as? String }).count, 1)
+        XCTAssertEqual(entries.filter { $0["auxiliary"] as? Bool == true }.count, 1)
+        XCTAssertNotNil(entries[2]["derivedFromImage"] as? String)
+        for entry in entries {
+            let context = try XCTUnwrap(JSONSerialization.jsonObject(with: Data(contentsOf:
+                bundle.appendingPathComponent(try XCTUnwrap(entry["frameContextPath"] as? String)))) as? [String: Any])
+            XCTAssertNotNil(context["bridgeEvent"])
+            XCTAssertLessThan(try Data(contentsOf: bundle.appendingPathComponent(
+                try XCTUnwrap(entry["frameContextPath"] as? String))).count, 32 * 1024)
+        }
+    }
+
+    func testBridgeDropoutsAreTrackedPerColorAcrossSeveralMissingFrames() async throws {
+        let red = bridgeSaber(.red)
+        let blue = bridgeSaber(.blue, 8, 20, 52, 20)
+        let (_, metadata) = try await recordBridge([
+            (501, 0, [red, blue]), (502, 1, []), (503, 2, []), (504, 3, [red, blue])])
+        let events = bridgeEvents(metadata)
+        XCTAssertEqual(Set(events.compactMap { $0["color"] as? String }), ["red", "blue"])
+        XCTAssertTrue(events.allSatisfy { $0["missingFrameCount"] as? Int == 2 })
+        let windows = try XCTUnwrap(metadata["diagnosticWindows"] as? [String: Any])
+        XCTAssertNotNil(windows["red"])
+        XCTAssertNotNil(windows["blue"])
+    }
+
+    func testAbsenceBeforeFirstAndAfterLastSuccessIsNeverCaptured() async throws {
+        let red = bridgeSaber(.red)
+        let (recording, metadata) = try await recordBridge([
+            (601, 0, []), (602, 1, []), (603, 2, []),
+            (604, 3, [red]), (605, 4, [red]), (606, 5, [red]),
+            (607, 6, []), (608, 7, []), (609, 8, [])])
+        XCTAssertTrue(bridgeEvents(metadata).isEmpty)
+        let summary = try XCTUnwrap(metadata["bridgeDropoutSummary"] as? [String: Any])
+        XCTAssertEqual(summary["unclosedAtStop"] as? Int, 1)
+        XCTAssertEqual(summary["accepted"] as? Int, 0)
+        let windows = try XCTUnwrap(metadata["diagnosticWindows"] as? [String: Any])
+        let window = try XCTUnwrap(windows["red"] as? [String: Any])
+        XCTAssertEqual(window["firstSuccessFrameID"] as? Int, 604)
+        XCTAssertEqual(window["lastSuccessFrameID"] as? Int, 606)
+        // Start/end absence leaves no candidate=0 evidence image behind.
+        if let bundle = recording.triageBundleURL {
+            let summary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+                Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+            let images = summary["images"] as? [[String: Any]] ?? []
+            XCTAssertTrue(images.allSatisfy { ($0["failureType"] as? String)?.contains("candidate_zero") != true })
+            XCTAssertTrue(images.isEmpty)
+        }
+    }
+
+    func testLongAbsenceBetweenSuccessesIsNotABridgeDropout() async throws {
+        let red = bridgeSaber(.red)
+        // The saber is gone for 3 s of presentation time before it returns.
+        let (_, metadata) = try await recordBridge([
+            (701, 0, [red]), (702, 1, []), (703, 2, []), (704, 95, [red])])
+        XCTAssertTrue(bridgeEvents(metadata).isEmpty)
+        let summary = try XCTUnwrap(metadata["bridgeDropoutSummary"] as? [String: Any])
+        XCTAssertEqual((summary["rejected"] as? [String: Int])?["gap_too_long"], 1)
+    }
+
+    func testDiscontinuousReappearanceIsNotABridgeDropout() async throws {
+        let before = bridgeSaber(.red, 8, 24, 52, 24)
+        let elsewhere = bridgeSaber(.red, 600, 400, 560, 440)
+        let (_, metadata) = try await recordBridge([
+            (751, 0, [before]), (752, 1, []), (753, 2, [elsewhere])], width: 640, height: 480)
+        XCTAssertTrue(bridgeEvents(metadata).isEmpty)
+        let summary = try XCTUnwrap(metadata["bridgeDropoutSummary"] as? [String: Any])
+        XCTAssertEqual((summary["rejected"] as? [String: Int])?["discontinuous"], 1)
+    }
+
+    func testDiagnosticColorSelectionIgnoresTheOtherColorsAbsence() async throws {
+        let red = bridgeSaber(.red)
+        let blue = bridgeSaber(.blue, 8, 20, 52, 20)
+        let sequence: [BridgeFrame] = [
+            (801, 0, [red, blue]), (802, 1, []), (803, 2, [red, blue])]
+        let redOnly = try await recordBridge(sequence, colors: .red).metadata
+        XCTAssertEqual(redOnly["activeColors"] as? [String], ["red"])
+        XCTAssertEqual(bridgeEvents(redOnly).compactMap { $0["color"] as? String }, ["red"])
+        XCTAssertNil((redOnly["diagnosticWindows"] as? [String: Any])?["blue"])
+        let blueOnly = try await recordBridge(sequence, colors: .blue).metadata
+        XCTAssertEqual(blueOnly["activeColors"] as? [String], ["blue"])
+        XCTAssertEqual(bridgeEvents(blueOnly).compactMap { $0["color"] as? String }, ["blue"])
+        // RED mode: the saber that is only ever missing on BLUE is not a failure.
+        let blueMissing = try await recordBridge([
+            (811, 0, [red]), (812, 1, [red]), (813, 2, [red])], colors: .red).metadata
+        XCTAssertTrue(bridgeEvents(blueMissing).isEmpty)
+        let redMissing = try await recordBridge([
+            (821, 0, [blue]), (822, 1, [blue]), (823, 2, [blue])], colors: .blue).metadata
+        XCTAssertTrue(bridgeEvents(redMissing).isEmpty)
+        let both = try await recordBridge(sequence, colors: .both).metadata
+        XCTAssertEqual(Set(bridgeEvents(both).compactMap { $0["color"] as? String }), ["red", "blue"])
     }
 
     func testMotionEventKeepsMatchingPreAtPostLosslessFrames() async throws {
@@ -2720,15 +2852,18 @@ final class DetectionCoreTests: XCTestCase {
         let red = DetectedSaber(
             endpoints: (PixelPoint(x: 8, y: 24), PixelPoint(x: 52, y: 24)),
             color: .red, isFresh: true)
-        for offset in 0..<21 {
+        // One slow frame is a processing_time event on a saber that stays visible;
+        // absence at the end of a recording is deliberately not an event image.
+        for offset in 0..<45 {
             let buffer = solidPixelBuffer(width: 64, height: 48)
             CVPixelBufferLockBaseAddress(buffer, .readOnly)
             let result = recorder.append(pixelBuffer: buffer,
                 presentationTime: CMTime(value: CMTimeValue(offset), timescale: 30),
-                frameID: UInt64(100 + offset), results: offset < 4 ? [red] : [])
+                frameID: UInt64(100 + offset), results: [red],
+                processingTimeSeconds: offset == 20 ? 0.12 : 0.004)
             CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
             XCTAssertEqual(result, .accepted)
-            Thread.sleep(forTimeInterval: 0.04)
+            Thread.sleep(forTimeInterval: 0.02)
         }
         let recording: DebugRecordingResult = try await withCheckedThrowingContinuation {
             continuation in recorder.finish { continuation.resume(with: $0) }
@@ -2737,9 +2872,9 @@ final class DetectionCoreTests: XCTestCase {
             Data(contentsOf: recording.metadataURL)) as? [String: Any])
         let motionSummary = try XCTUnwrap(fullMetadata["motionSummary"] as? [String: Any])
         let distributions = try XCTUnwrap(motionSummary["signalDistributions"] as? [String: [String: Any]])
-        XCTAssertEqual(distributions["dropout"]?["count"] as? Int, 1)
+        XCTAssertEqual(distributions["processing_time"]?["count"] as? Int, 1)
+        XCTAssertEqual(distributions["dropout"]?["count"] as? Int, 0)
         XCTAssertEqual(distributions["near_miss"]?["count"] as? Int, 0)
-        XCTAssertEqual(distributions["dropout"]?["meanScore"] as? Double, 4.0 / 3.0)
         let runtime = try XCTUnwrap(motionSummary["runtime"] as? [String: Any])
         let peakBytes = try XCTUnwrap(runtime["peakRetainedBGRABytes"] as? Int)
         XCTAssertLessThanOrEqual(peakBytes,
@@ -2759,12 +2894,12 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(motion.count, 3)
         XCTAssertEqual(motion.compactMap { $0["role"] as? String },
                        ["event_at", "event_pre", "event_post"])
-        XCTAssertEqual(motion.compactMap { $0["frameID"] as? Int }, [104, 100, 119])
+        XCTAssertEqual(motion.compactMap { $0["frameID"] as? Int }, [120, 115, 135])
         let forensic = try XCTUnwrap(recording.forensicDirectoryURL)
         XCTAssertTrue(FileManager.default.fileExists(atPath: forensic
-            .appendingPathComponent("motion_event_0_overlay_104.png").path))
+            .appendingPathComponent("motion_event_0_overlay_120.png").path))
         XCTAssertFalse(FileManager.default.fileExists(atPath: bundle
-            .appendingPathComponent("images/motion_event_0_overlay_104.png").path))
+            .appendingPathComponent("images/motion_event_0_overlay_120.png").path))
         for image in motion {
             let path = try XCTUnwrap(image["path"] as? String)
             let contextPath = try XCTUnwrap(image["frameContextPath"] as? String)
@@ -2773,61 +2908,6 @@ final class DetectionCoreTests: XCTestCase {
                 Data(contentsOf: bundle.appendingPathComponent(contextPath))) as? [String: Any])
             XCTAssertEqual(context["selectedFrameID"] as? Int, id)
             XCTAssertNotNil(UIImage(contentsOfFile: bundle.appendingPathComponent(path).path))
-        }
-    }
-
-    func testRedDropoutCaptureUsesFirstFalseFrameAndKeepsBlueStateIndependent() async throws {
-        let directory = FileManager.default.temporaryDirectory
-            .appendingPathComponent("PhoneSaberRedDropoutTests-\(UUID().uuidString)",
-                                    isDirectory: true)
-        defer { try? FileManager.default.removeItem(at: directory) }
-        let recorder = try DebugVideoRecorder(directory: directory)
-        let red = DetectedSaber(
-            endpoints: (PixelPoint(x: 8, y: 24), PixelPoint(x: 52, y: 24)),
-            color: .red, isFresh: true
-        )
-        let blue = DetectedSaber(
-            endpoints: (PixelPoint(x: 8, y: 20), PixelPoint(x: 52, y: 20)),
-            color: .blue, isFresh: true
-        )
-        let states: [(UInt64, [DetectedSaber])] = [
-            (501, [red, blue]), (502, []), (503, []), (504, [red, blue])
-        ]
-        for (offset, state) in states.enumerated() {
-            let buffer = solidPixelBuffer(width: 64, height: 48)
-            CVPixelBufferLockBaseAddress(buffer, .readOnly)
-            recorder.append(pixelBuffer: buffer,
-                            presentationTime: CMTime(value: CMTimeValue(offset), timescale: 30),
-                            frameID: state.0, results: state.1,
-                            analysis: SaberFrameAnalysis(candidates: [.red: [], .blue: []], selected: [:]))
-            CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
-            Thread.sleep(forTimeInterval: 0.04)
-        }
-
-        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
-            recorder.finish { continuation.resume(with: $0) }
-        }
-        let metadata = try JSONDecoder().decode(
-            DebugRecordingMetadata.self, from: Data(contentsOf: recording.metadataURL)
-        )
-        XCTAssertEqual(metadata.frames.map(\.redDropoutRole), [
-            "last-detected-before-dropout", "dropout", nil, "recovered"
-        ])
-        XCTAssertEqual(metadata.frames.map(\.redDropoutFileName), [
-            "red_dropout_last_true_501.png", "red_dropout_false_502.png", nil,
-            "red_dropout_recovered_504.png"
-        ])
-        // BLUE's independent state sees the same true→false→true sequence.
-        XCTAssertEqual(metadata.frames.map(\.blueDropoutFileName), [
-            "blue_dropout_last_true_501.png", "blue_dropout_false_502.png", nil,
-            "blue_dropout_recovered_504.png"
-        ])
-        XCTAssertNotNil(metadata.frames[1].candidateDiagnostics)
-        let forensicDirectory = try XCTUnwrap(recording.forensicDirectoryURL)
-        for fileName in metadata.frames.compactMap(\.redDropoutFileName) {
-            XCTAssertTrue(FileManager.default.fileExists(
-                atPath: forensicDirectory.appendingPathComponent(fileName).path
-            ))
         }
     }
 

@@ -158,6 +158,11 @@ ROOT = object_field({
     "motionEvents": array_field(object_field({})),
     "motionSummary": object_field({}),
     "udpTransmissions": array_field(object_field({})),
+    # Diagnostic color selection, success windows and bridge dropout events.
+    "activeColors": array_field(scalar("string")),
+    "diagnosticWindows": object_field({}),
+    "bridgeDropoutEvents": array_field(object_field({})),
+    "bridgeDropoutSummary": object_field({}),
 }, required=True)
 
 

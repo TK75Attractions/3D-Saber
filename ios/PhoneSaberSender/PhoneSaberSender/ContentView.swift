@@ -72,6 +72,14 @@ struct ContentView: View {
                             Toggle("Debug Recording: \(model.debugRecordingEnabled ? "ON" : "OFF")",
                                    isOn: $model.debugRecordingEnabled)
                                 .disabled(model.debugRecordingActive || model.debugRecordingFinalizing)
+                            Picker("診断対象の色", selection: $model.debugDiagnosticColors) {
+                                ForEach(DebugDiagnosticColors.allCases) { Text($0.rawValue).tag($0) }
+                            }
+                            .pickerStyle(.segmented)
+                            .disabled(model.debugRecordingActive || model.debugRecordingFinalizing)
+                            Text("選んだ色以外の未検出は診断の失敗として数えません（認識とUDP送信は常に両色）")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                             Toggle("Stop後にtriage bundleをMacへ自動転送",
                                    isOn: $autoTransferDebugBundles)
                             HStack {
