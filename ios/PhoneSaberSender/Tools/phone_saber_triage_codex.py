@@ -26,6 +26,8 @@ from phone_saber_tracking_diagnostics import (
 from pathlib import Path, PurePosixPath
 from typing import Any
 
+from phone_saber_session_log import log_fields, session_log_context
+
 from phone_saber_codex_process import CodexProcessError, run_codex
 
 from phone_saber_triage_protocol import (
@@ -502,17 +504,31 @@ def analyze_bundle(
     codex_path: str | None = None,
     timeout_seconds: int = CODEX_TIMEOUT_SECONDS,
     dry_run: bool = False,
+    source: str | None = None,
+) -> dict[str, Any]:
+    with session_log_context(bundle_dir, source=source):
+        return _analyze_bundle(bundle_dir, max_images=max_images, codex_path=codex_path,
+                               timeout_seconds=timeout_seconds, dry_run=dry_run)
+
+
+def _analyze_bundle(
+    bundle_dir: Path,
+    *,
+    max_images: int = DEFAULT_MAX_IMAGES,
+    codex_path: str | None = None,
+    timeout_seconds: int = CODEX_TIMEOUT_SECONDS,
+    dry_run: bool = False,
 ) -> dict[str, Any]:
     try:
         plan = input_plan(bundle_dir, max_images=max_images)
     except BundleError as exc:
         failure = input_failure(exc)
-        print(f"[AUTO_REPAIR][PRECHECK_FAILED] result=NEEDS MORE EVIDENCE {failure}", flush=True)
+        print(f"[AUTO_REPAIR][PRECHECK_FAILED] {log_fields()} result=NEEDS MORE EVIDENCE {failure}", flush=True)
         raise failure from exc
     bundle_dir = plan.root
     precheck = tracking_preflight(plan)
     if precheck["status"] == "PRECHECK_FAILED":
-        print("[AUTO_REPAIR][PRECHECK_FAILED] result=NEEDS MORE EVIDENCE " +
+        print(f"[AUTO_REPAIR][PRECHECK_FAILED] {log_fields()} result=NEEDS MORE EVIDENCE " +
               json.dumps(precheck, ensure_ascii=False), flush=True)
         if dry_run:
             return {**precheck, "status": "precheck_failed", "sessionID": plan.session_id}
@@ -577,7 +593,7 @@ def analyze_bundle(
             configured[configured.index(f"model_reasoning_effort={json.dumps(ANALYSIS_REASONING_EFFORT)}")] = (
                 f"model_reasoning_effort={json.dumps(effort)}")
             started = time.monotonic()
-            print(f"[AUTO_REPAIR][{label}] model={model} effort={effort} "
+            print(f"[AUTO_REPAIR][{label}] {log_fields()} model={model} effort={effort} "
                   "subprocess=codex read-only result=starting", flush=True)
             response_path.unlink(missing_ok=True)
             try:
@@ -595,7 +611,7 @@ def analyze_bundle(
                 _validate_analysis(result, set(plan.image_ids))
             except (OSError, UnicodeError, json.JSONDecodeError, BundleError, TypeError) as exc:
                 raise CodexFailed(str(capture.failure(f"Codex CLI returned invalid structured output: {exc}"))) from exc
-            print(f"[AUTO_REPAIR][{label}] model={model} effort={effort} "
+            print(f"[AUTO_REPAIR][{label}] {log_fields()} model={model} effort={effort} "
                   f"subprocess=codex read-only result=complete "
                   f"elapsed={time.monotonic() - started:.1f}s", flush=True)
             return result
@@ -610,7 +626,7 @@ def analyze_bundle(
         reanalysis_executed = False
         escalation_executed = False
         for item in traces[:12]:
-            print("[AUTO_REPAIR][DIAGNOSTICS] stage=eligibility " +
+            print(f"[AUTO_REPAIR][DIAGNOSTICS] {log_fields()} stage=eligibility " +
                   json.dumps(item, ensure_ascii=False), flush=True)
         requests = _internal_diagnostic_requests(analysis, relevant_events)
         enrichment_available = ("tracking" in requests and bool(relevant_events)) \
@@ -627,7 +643,7 @@ def analyze_bundle(
             reanalysis_executed = True
         if _needs_second_opinion(analysis, traces, events):
             reason = " ".join(analysis["repair_assessment"]["reason"].split())[:200]
-            print(f"[AUTO_REPAIR][ESCALATION] model={ESCALATION_MODEL} "
+            print(f"[AUTO_REPAIR][SECOND_OPINION] {log_fields()} model={ESCALATION_MODEL} "
                   f"effort={ESCALATION_REASONING_EFFORT} role=second-opinion "
                   f"reason={reason}", flush=True)
             second_prompt = (prompt + "\n\nSECOND_OPINION_ANALYSIS. Read-only. "
@@ -640,10 +656,10 @@ def analyze_bundle(
                            ensure_ascii=False))
             try:
                 analysis = run_analysis(ESCALATION_MODEL, ESCALATION_REASONING_EFFORT,
-                                        second_prompt, "ESCALATION")
+                                        second_prompt, "SECOND_OPINION")
                 escalation_executed = True
             except (CodexModelUnavailable, CodexFailed) as exc:
-                print(f"[AUTO_REPAIR][ESCALATION] result=unavailable reason={exc}", flush=True)
+                print(f"[AUTO_REPAIR][SECOND_OPINION] {log_fields()} result=unavailable reason={exc}", flush=True)
 
     report = {
         "formatVersion": 3,

@@ -2,6 +2,8 @@
 from __future__ import annotations
 
 import copy
+import contextlib
+import io
 import json
 from pathlib import Path
 import tempfile
@@ -153,7 +155,15 @@ class TrackingDiagnosticTests(unittest.TestCase):
             initial.pop("tracking_assessment")
             initial["repair_assessment"]["reason"] = "Missing temporal evidence and endpoint history."
             codex = fake_codex(root, root / "spy.json", responses=[initial, tracking_analysis()])
-            analyze_bundle(bundle, codex_path=str(codex))
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                analyze_bundle(bundle, codex_path=str(codex), source="startup_resume")
+            for phase in ("ANALYSIS", "REANALYSIS"):
+                lines = [line for line in output.getvalue().splitlines()
+                         if f"[AUTO_REPAIR][{phase}]" in line]
+                self.assertTrue(lines, f"missing {phase}")
+                for line in lines:
+                    self.assertIn("sessionID=sample_session source=startup_resume", line)
             calls = json.loads((root / "spy.json").read_text())["calls"]
             self.assertEqual(len(calls), 2)
             self.assertEqual([c["model"] for c in calls], ["gpt-6-luna", "gpt-6-luna"])
@@ -178,7 +188,14 @@ class TrackingDiagnosticTests(unittest.TestCase):
                 initial = tracking_analysis(actionable=False)
                 initial["tracking_assessment"]["symptom_confirmed_in_images"] = visible
                 codex = fake_codex(root, root / "spy.json", responses=[initial, tracking_analysis()])
-                analyze_bundle(bundle, codex_path=str(codex))
+                output = io.StringIO()
+                with contextlib.redirect_stdout(output):
+                    analyze_bundle(bundle, codex_path=str(codex), source="new_upload")
+                lines = [line for line in output.getvalue().splitlines()
+                         if "[AUTO_REPAIR][SECOND_OPINION]" in line]
+                self.assertEqual(bool(lines), visible)
+                for line in lines:
+                    self.assertIn("sessionID=sample_session source=new_upload", line)
                 calls = json.loads((root / "spy.json").read_text())["calls"]
                 self.assertEqual([c["model"] for c in calls], ["gpt-6-luna", "gpt-6-sol"] if visible else ["gpt-6-luna"])
                 self.assertTrue(all(c["sandbox"] == "read-only" for c in calls))

@@ -17,6 +17,8 @@ import re
 from pathlib import Path
 from typing import Any
 
+from phone_saber_session_log import log_fields, session_log_context
+
 from phone_saber_codex_process import CodexProcessError, run_codex
 
 from phone_saber_triage_codex import (
@@ -379,7 +381,7 @@ def main_safety_gate(repo: Path) -> dict[str, str]:
 
 
 def _progress(start: float, phase: str, message: str) -> None:
-    print(f"[AUTO_REPAIR][{phase}] elapsed={time.monotonic() - start:.1f}s {message}", flush=True)
+    print(f"[AUTO_REPAIR][{phase}] {log_fields()} elapsed={time.monotonic() - start:.1f}s {message}", flush=True)
 
 
 def _terminal_report(bundle: Path, state: dict[str, Any], gate: dict[str, Any],
@@ -492,7 +494,7 @@ def _terminal_report(bundle: Path, state: dict[str, Any], gate: dict[str, Any],
     _atomic_json(bundle / "state.json", state)
     started = state.get("startedAt")
     elapsed = max(0.0, time.time() - started) if isinstance(started, (int, float)) and started > 0 else 0.0
-    print(f"[AUTO_REPAIR][DONE] elapsed={elapsed:.1f}s "
+    print(f"[AUTO_REPAIR][DONE] {log_fields(session_id=state['sessionID'])} elapsed={elapsed:.1f}s "
           f"subprocess=none result={label}", flush=True)
     return payload
 
@@ -534,7 +536,7 @@ def _codex_call(binary: str, scratch: Path, prompt: str, schema: dict[str, Any],
     for image_path in images:
         command.extend(["--image", str(image_path)])
     command.append("-")
-    print(f"[AUTO_REPAIR][{role.upper()}] model={model} effort={effort} "
+    print(f"[AUTO_REPAIR][{role.upper()}] {log_fields()} model={model} effort={effort} "
           f"subprocess=codex sandbox={'workspace-write' if writable else 'read-only'} "
           "result=starting", flush=True)
     try:
@@ -559,7 +561,7 @@ def _codex_call(binary: str, scratch: Path, prompt: str, schema: dict[str, Any],
                                           or not all(isinstance(item, str) and len(item) <= 1000
                                                      for item in value)):
             raise RepairError(str(capture.failure(f"Codex response has invalid {key}")))
-    print(f"[AUTO_REPAIR][{role.upper()}] model={model} effort={effort} "
+    print(f"[AUTO_REPAIR][{role.upper()}] {log_fields()} model={model} effort={effort} "
           "subprocess=codex result=complete", flush=True)
     return response
 
@@ -959,7 +961,7 @@ def _commit_push(repo: Path, bundle: Path, state: dict[str, Any], changed: list[
     commit = _git(repo, "rev-parse", "HEAD")
     state["commit"] = commit
     _save_state(bundle, state, "pushing")
-    print(f"[AUTO_REPAIR][PUSH] elapsed={max(0.0, time.time() - state['startedAt']):.1f}s "
+    print(f"[AUTO_REPAIR][PUSH] {log_fields()} elapsed={max(0.0, time.time() - state['startedAt']):.1f}s "
           "subprocess=git push result=starting", flush=True)
     result = _run(["git", "push", "origin", "main"], cwd=repo, timeout=GIT_TIMEOUT_SECONDS)
     _git(repo, "fetch", "origin")
@@ -1005,6 +1007,15 @@ def _discover_owned_commit(repo: Path, state: dict[str, Any]) -> None:
 
 
 def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | None = None,
+                  dry_run: bool = False, max_images: int = 12,
+                  source: str | None = None) -> dict[str, Any]:
+    """Run the existing repair policy with session-scoped terminal attribution."""
+    with session_log_context(bundle, source=source):
+        return _repair_bundle(bundle, repo=repo, codex_path=codex_path,
+                              dry_run=dry_run, max_images=max_images)
+
+
+def _repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | None = None,
                   dry_run: bool = False, max_images: int = 12) -> dict[str, Any]:
     """Run at most two repairs under one inbox lock; terminal state is never replayed."""
     start = time.monotonic()
@@ -1288,7 +1299,13 @@ def repair_bundle(bundle: Path, *, repo: Path = REPO_ROOT, codex_path: str | Non
                                     reason=reason)
 
 
-def record_analysis_model_unavailable(bundle: Path, reason: str) -> dict[str, Any]:
+def record_analysis_model_unavailable(bundle: Path, reason: str, *,
+                                      source: str | None = None) -> dict[str, Any]:
+    with session_log_context(bundle, source=source):
+        return _record_analysis_model_unavailable(bundle, reason)
+
+
+def _record_analysis_model_unavailable(bundle: Path, reason: str) -> dict[str, Any]:
     """Persist a terminal model failure without entering repair or touching the repo."""
     if bundle.is_symlink():
         raise RepairError("bundle path must not be a symlink")
@@ -1322,7 +1339,8 @@ def main(argv: list[str] | None = None) -> int:
         result = repair_bundle(arguments.bundle, codex_path=arguments.codex_path,
                                dry_run=arguments.repair_dry_run, max_images=arguments.max_images)
     except (RepairError, BundleError, OSError, ValueError) as exc:
-        print(f"[AUTO_REPAIR][ERROR] {exc}", file=sys.stderr)
+        with session_log_context(arguments.bundle):
+            print(f"[AUTO_REPAIR][ERROR] {log_fields()} {exc}", file=sys.stderr)
         return 2
     print(json.dumps(result, ensure_ascii=False))
     return 0 if result["status"] in {"needs_capture", "repair_pushed", "dry_run"} else 2

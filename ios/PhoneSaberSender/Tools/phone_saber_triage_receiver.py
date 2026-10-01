@@ -11,10 +11,13 @@ import shutil
 import subprocess
 import sys
 import time
+from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Thread
 from typing import Any
+
+from phone_saber_session_log import log_fields, session_log_context
 
 from phone_saber_triage_codex import (
     ANALYSIS_MODEL,
@@ -35,6 +38,13 @@ from phone_saber_triage_protocol import (
     BundleError,
     receive_bundle,
 )
+
+
+@dataclass(frozen=True)
+class AnalysisJob:
+    bundle: Path
+    source: str
+    reason: str
 
 
 class TriageHTTPServer(ThreadingHTTPServer):
@@ -58,61 +68,86 @@ class TriageHTTPServer(ThreadingHTTPServer):
         self.codex_path = codex_path
         self.repair_mode = repair_mode or (
             "automatic" if analysis_mode == "automatic" else "disabled")
-        self.analysis_queue: queue.Queue[Path] = queue.Queue(maxsize=4)
+        self.analysis_queue: queue.Queue[AnalysisJob] = queue.Queue(maxsize=4)
         if analysis_mode != "disabled":
             Thread(target=self._analysis_worker, name="phonesaber-codex-worker", daemon=True).start()
 
-    def enqueue_analysis(self, bundle: Path) -> bool:
+    def enqueue_analysis(self, bundle: Path, *, source: str = "manual_retry",
+                         reason: str = "explicit_request") -> bool:
         if self.analysis_mode == "disabled":
             return False
         try:
-            self.analysis_queue.put_nowait(bundle)
+            self.analysis_queue.put_nowait(AnalysisJob(bundle, source, reason))
             return True
         except queue.Full:
-            print(f"[codex] queue full; bundle preserved for manual analysis: {bundle}", flush=True)
+            with session_log_context(bundle, source=source):
+                print(f"[codex] {log_fields()} reason={reason} queue full; "
+                      f"bundle preserved for manual analysis: {bundle}", flush=True)
             return False
+
+    def resume_existing_sessions(self) -> None:
+        """Keep the existing startup selection policy; only annotate queued work."""
+        if self.analysis_mode == "automatic":
+            for bundle in sorted(self.inbox.glob("phone_saber_triage_*")):
+                if bundle.is_dir() and not bundle.is_symlink() and \
+                        (bundle / "summary.json").is_file() and \
+                        not (bundle / "repair_status.json").exists():
+                    self.enqueue_analysis(bundle, source="startup_resume",
+                                          reason="repair_status_missing")
 
     def _analysis_worker(self) -> None:
         while True:
-            bundle = self.analysis_queue.get()
+            job = self.analysis_queue.get()
+            bundle = job.bundle
             started = time.monotonic()
-            try:
-                if (bundle / "analysis_report.json").is_file():
-                    result = {"status": "existing_analysis", "bundle": str(bundle)}
-                else:
-                    print("[AUTO_REPAIR][PRECHECK] elapsed=0.0s subprocess=none result=starting", flush=True)
-                    result = analyze_bundle(
-                        bundle,
-                        max_images=self.max_images,
-                        codex_path=self.codex_path,
-                        dry_run=self.analysis_mode == "dry-run",
-                    )
-                print(f"[codex] {result}", flush=True)
-                subprocess_label = "codex read-only" if result["status"] == "completed" else "none"
-                print(f"[AUTO_REPAIR][ANALYSIS] elapsed={time.monotonic() - started:.1f}s "
-                      f"subprocess={subprocess_label} result={result['status']}", flush=True)
-                if self.repair_mode != "disabled" and result["status"] in {
-                        "completed", "no_images", "existing_analysis"}:
-                    repair = repair_bundle(bundle, codex_path=self.codex_path,
-                                           dry_run=self.repair_mode == "dry-run",
-                                           max_images=self.max_images)
-                    print(f"[auto-repair] {repair}", flush=True)
-            except CodexModelUnavailable as exc:
-                print(f"[AUTO_REPAIR][ANALYSIS] elapsed={time.monotonic() - started:.1f}s "
-                      f"subprocess=codex model={ANALYSIS_MODEL} effort={ANALYSIS_REASONING_EFFORT} "
-                      f"result=MODEL_UNAVAILABLE {exc}", flush=True)
+            with session_log_context(bundle, source=job.source):
                 try:
-                    result = record_analysis_model_unavailable(bundle, str(exc))
-                    print(f"[auto-repair] {result}", flush=True)
-                except Exception as report_error:
-                    print(f"[auto-repair] could not persist MODEL_UNAVAILABLE status: {report_error}",
-                          flush=True)
-            except Exception as exc:
-                print(f"[AUTO_REPAIR][ANALYSIS] elapsed={time.monotonic() - started:.1f}s "
-                      f"subprocess=codex read-only result=FAIL {exc}", flush=True)
-                print(f"[codex] analysis failed; bundle preserved: {exc}", flush=True)
-            finally:
-                self.analysis_queue.task_done()
+                    if job.source == "startup_resume":
+                        print(f"[AUTO_REPAIR][RESUME] {log_fields(source='existing_inbox')} "
+                              f"reason={job.reason} trigger=startup_resume "
+                              f"analysis_report={'present' if (bundle / 'analysis_report.json').is_file() else 'missing'} "
+                              f"state_file={'present' if (bundle / 'state.json').exists() else 'missing'}", flush=True)
+                    self._process_analysis(bundle, started)
+                finally:
+                    self.analysis_queue.task_done()
+
+    def _process_analysis(self, bundle: Path, started: float) -> None:
+        try:
+            if (bundle / "analysis_report.json").is_file():
+                result = {"status": "existing_analysis", "bundle": str(bundle)}
+            else:
+                print(f"[AUTO_REPAIR][PRECHECK] {log_fields()} "
+                      "elapsed=0.0s subprocess=none result=starting", flush=True)
+                result = analyze_bundle(
+                    bundle,
+                    max_images=self.max_images,
+                    codex_path=self.codex_path,
+                    dry_run=self.analysis_mode == "dry-run",
+                )
+            print(f"[codex] {log_fields()} {result}", flush=True)
+            subprocess_label = "codex read-only" if result["status"] == "completed" else "none"
+            print(f"[AUTO_REPAIR][ANALYSIS] {log_fields()} elapsed={time.monotonic() - started:.1f}s "
+                  f"subprocess={subprocess_label} result={result['status']}", flush=True)
+            if self.repair_mode != "disabled" and result["status"] in {
+                    "completed", "no_images", "existing_analysis"}:
+                repair = repair_bundle(bundle, codex_path=self.codex_path,
+                                       dry_run=self.repair_mode == "dry-run",
+                                       max_images=self.max_images)
+                print(f"[auto-repair] {log_fields()} {repair}", flush=True)
+        except CodexModelUnavailable as exc:
+            print(f"[AUTO_REPAIR][ANALYSIS] {log_fields()} elapsed={time.monotonic() - started:.1f}s "
+                  f"subprocess=codex model={ANALYSIS_MODEL} effort={ANALYSIS_REASONING_EFFORT} "
+                  f"result=MODEL_UNAVAILABLE {exc}", flush=True)
+            try:
+                result = record_analysis_model_unavailable(bundle, str(exc))
+                print(f"[auto-repair] {log_fields()} {result}", flush=True)
+            except Exception as report_error:
+                print(f"[auto-repair] {log_fields()} could not persist MODEL_UNAVAILABLE status: {report_error}",
+                      flush=True)
+        except Exception as exc:
+            print(f"[AUTO_REPAIR][ANALYSIS] {log_fields()} elapsed={time.monotonic() - started:.1f}s "
+                  f"subprocess=codex read-only result=FAIL {exc}", flush=True)
+            print(f"[codex] {log_fields()} analysis failed; bundle preserved: {exc}", flush=True)
 
 
 class TriageRequestHandler(BaseHTTPRequestHandler):
@@ -152,8 +187,10 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
         except (BundleError, OSError) as exc:
             self._reply(400, {"error": str(exc)})
             return
-        print(f"[triage] received {bundle.name} from {self.client_address[0]} → {bundle}", flush=True)
-        self.server.enqueue_analysis(bundle)
+        with session_log_context(bundle, source="new_upload"):
+            print(f"[triage] received {bundle.name} {log_fields()} "
+                  f"from {self.client_address[0]} → {bundle}", flush=True)
+        self.server.enqueue_analysis(bundle, source="new_upload", reason="post_received")
         self._reply(201, {"accepted": True, "bundle": bundle.name})
 
     def log_message(self, fmt: str, *args: Any) -> None:
@@ -254,12 +291,7 @@ def main(argv: list[str] | None = None) -> int:
         return 2
     bonjour = None if args.no_bonjour else _publish_bonjour(server.server_port, args.service_name)
     print(f"[triage] listening on {args.host}:{server.server_port}; inbox={args.inbox}; codex={server.analysis_mode}; max-images={server.max_images}", flush=True)
-    if server.analysis_mode == "automatic":
-        for bundle in sorted(args.inbox.glob("phone_saber_triage_*")):
-            if bundle.is_dir() and not bundle.is_symlink() and \
-                    (bundle / "summary.json").is_file() and \
-                    not (bundle / "repair_status.json").exists():
-                server.enqueue_analysis(bundle)
+    server.resume_existing_sessions()
     try:
         server.serve_forever(poll_interval=0.25)
     except KeyboardInterrupt:

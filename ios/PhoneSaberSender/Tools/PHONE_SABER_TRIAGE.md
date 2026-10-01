@@ -57,7 +57,55 @@ Production eligibility conditions traced here are: the common emitter floor (`pe
 
 The maximum analysis sequence is initial Luna/MAX plus one Luna/MAX re-analysis plus one Sol/High second opinion. The Sol second opinion is read-only and cannot edit source. Its result, like an initial Luna result, must pass the same deterministic repair gate before the separate write-capable Sol/High repair role runs. `analysisReanalysisExecuted`, `analysisEscalationModel`, `analysisEscalationExecuted`, `repairModel`, and `reviewModel` are recorded separately. If either analyst still needs evidence, repair is skipped.
 
-The bundle retains `state.json`, `repair_status.json`, `repair_report.md/json`, `review_report.md/json`, and `final_report.md`. The inbox holds a hidden per-session candidate and backup directory for interrupted-run recovery. The receiver skips terminal repair states when restarted. A failed verification, Codex call, review, or remote check restores only the files owned by that repair. The receiver never uses force push, hard reset, or repository-wide clean. If an owned file was changed externally, rollback stops for manual inspection.
+The bundle retains `state.json`, `repair_status.json`, `repair_report.md/json`, `review_report.md/json`, and `final_report.md`. The inbox holds a hidden per-session candidate and backup directory for interrupted-run recovery. Startup skips any bundle with `repair_status.json`, regardless of its status contents. A failed verification, Codex call, review, or remote check restores only the files owned by that repair. The receiver never uses force push, hard reset, or repository-wide clean. If an owned file was changed externally, rollback stops for manual inspection.
+
+### Startup selection and terminal log attribution
+
+The startup policy is unchanged. Only `analysis_mode=automatic` scans the inbox;
+`--dry-run` and `--no-codex` do not resume existing sessions. It scans sorted
+`phone_saber_triage_*` paths and queues a path only when it is a directory, is not
+a symlink, has a `summary.json` file, and has no `repair_status.json` path. Startup
+does not parse state names, count attempts, check session age, or distinguish timeout
+from other analysis failures. The existing queue limit remains four waiting jobs;
+a full queue leaves the bundle in the inbox without processing it in that scan.
+
+Before a queued startup session begins any processing, Terminal prints:
+
+```text
+[AUTO_REPAIR][RESUME] sessionID=sample_session source=existing_inbox reason=repair_status_missing trigger=startup_resume analysis_report=missing state_file=missing
+[AUTO_REPAIR][PRECHECK] sessionID=sample_session source=startup_resume elapsed=0.0s subprocess=none result=starting
+```
+
+`reason=repair_status_missing` names the actual selection condition, rather than
+guessing whether the prior process timed out or crashed. `analysis_report` and
+`state_file` show which artifacts already exist. Subsequent PRECHECK, ANALYSIS,
+REANALYSIS, SECOND_OPINION, REPAIR, REVIEW, DONE and other automatic repair logs
+carry `sessionID` and `source`. The read-only second opinion previously labeled
+ESCALATION is now labeled SECOND_OPINION; its models and execution conditions are
+unchanged. Sources are `new_upload` for an accepted POST, `startup_resume` for
+inbox work at startup, and `manual_retry` for an explicit queued or standalone
+analysis/repair invocation. Source is terminal-log context only; it is not persisted
+into reports or used by diagnostics, retry policy, or any safety gate.
+
+| Existing session/artifacts | Startup treatment |
+| --- | --- |
+| Unanalyzed bundle; no repair status | Queued; PRECHECK and analysis run. |
+| Analysis failure or analysis CLI timeout; no repair status | Queued on the next automatic startup; analysis can run again. |
+| Analysis `completed`; analysis report exists, no repair status | Queued; cached report is reused (`result=existing_analysis`), then repair/recovery policy runs. No duplicate analysis call. |
+| Completed workflow with repair status (`repair_pushed` or `needs_capture`) | Excluded; no analysis or repair. |
+| `repair_failed`, including repair/review/verification timeout, with repair status | Excluded. These failures are terminal, unlike an analysis timeout without repair status. |
+| `blocked`, `blocked_remote_changed`, `MODEL_UNAVAILABLE`, `BLOCKED_BASELINE_UNSTABLE`, or `dry_run`, with repair status | Excluded. A dry run can still be explicitly evaluated by a later real repair invocation. |
+| Any other status label (`completed`, `failed`, `timeout`, etc.) with repair status | Excluded; the startup scan checks file existence, not the label or JSON validity. |
+| Precheck failure with only an analysis report | Queued if no repair status exists; the worker reuses the existing report. Startup selection does not special-case precheck failure. |
+| Interrupted nonterminal `state.json`; no repair status | Queued; repair recovers owned changes or a completed push, without starting a duplicate repair. |
+| Terminal `state.json`; repair status missing | Queued by the scan, but repair's terminal-state guard skips duplicate repair and tries to read the missing status. The resulting error is logged; no new repair is authorized. |
+| Missing summary, symlink bundle, non-directory, or other path name | Excluded. |
+
+The repair terminal states are `needs_capture`, `repair_failed`, `blocked`,
+`blocked_remote_changed`, `repair_pushed`, `dry_run`, `MODEL_UNAVAILABLE`, and
+`BLOCKED_BASELINE_UNSTABLE`. Existing terminal guards, interrupted-run recovery,
+two repair attempts, diagnostic reanalysis limits, and commit/push safety gates
+remain unchanged. Removing a status file does not bypass those guards.
 
 Before repair, the pinned 40-case formal corpus always runs and its per-case results are saved as `baseline_regression.json`. A recognition assertion failure can be repair evidence; a compiler, runner, fixture, or resource failure blocks repair. Failed cases are classified against the incident PNGs that the analysis explicitly confirms as evidence, as target-related, unrelated-existing, or unknown. A baseline with no related failure or excessive unknown failures stops with `BLOCKED_BASELINE_UNSTABLE`.
 

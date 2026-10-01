@@ -394,7 +394,15 @@ class RepairPipelineTests(unittest.TestCase):
         self.assertEqual(calls.commit.call_count, 1)
 
     def test_approved_path_records_pushed_result(self) -> None:
-        result, bundle, _repo, calls = self._run(success=True)
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            result, bundle, _repo, calls = self._run(success=True)
+        for phase in ("REPAIR", "REVIEW", "DONE"):
+            lines = [line for line in output.getvalue().splitlines()
+                     if f"[AUTO_REPAIR][{phase}]" in line]
+            self.assertTrue(lines, f"missing {phase}")
+            for line in lines:
+                self.assertIn("sessionID=sample_session source=manual_retry", line)
         self.assertEqual(result["status"], "repair_pushed")
         self.assertEqual(calls.commit.call_count, 1)
         self.assertTrue((bundle / "final_report.md").is_file())
