@@ -581,7 +581,13 @@ def _analyze_bundle(
         return _write_precheck_report(bundle_dir, plan, precheck)
     if dry_run:
         print(dry_run_text(bundle_dir, max_images=max_images), flush=True)
-        return {"status": "dry_run", "sessionID": plan.session_id}
+        # Read-only CASE A/B/C hints from the recorded geometry; no model call.
+        bridges = bridge_summary(plan)
+        print_bridge_summary(bridges)
+        audit = candidate_selection_audit(plan)
+        print_candidate_audit(audit)
+        return {"status": "dry_run", "sessionID": plan.session_id,
+                "bridgeSummary": bridges, "candidateAudit": audit}
     if not plan.image_paths:
         return _write_no_image_report(bundle_dir, plan)
 

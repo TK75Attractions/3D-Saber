@@ -288,6 +288,9 @@ class CodexTriageTests(unittest.TestCase):
             self.assertIn("bundle prompt.md is not attached", report)
             self.assertIn("Excluded: video, full metadata.json, unselected PNGs", report)
             self.assertNotIn("image_02.png", report)
+            # Geometry-free bundles still dry-run; the audit is simply empty.
+            self.assertEqual(result["candidateAudit"], [])
+            self.assertEqual(result["bridgeSummary"], [])
 
     def test_codex_is_given_only_selected_images_and_compact_metadata(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
