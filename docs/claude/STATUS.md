@@ -2,7 +2,7 @@
 
 ## ユーザー待ち
 - **iPhone 実機 Debug Recording を1回**(2026-10-02 依頼、同日に条件を追加)
-  - 事前に main の最新版の PhoneSaberSender を Xcode で iPhone にインストールする(memoryHeadroom・bridge・candidate geometry 診断を含むビルド)。
+  - 事前に main の最新版の PhoneSaberSender を Xcode で iPhone にインストールする(Debug build。memoryHeadroom・bridge・candidate geometry・emitter 証拠・shadow R7e・露出記録を含む)。
   - Mac で Start PhoneSaber を起動し、iPhone で Debug Recording ON、診断対象の色は BOTH のまま。
   - **赤・青の saber を点灯させ、画面内に映した状態で**撮る(既存の 10-02 session は saber が映っていない、または消灯していた)。
   - カメラは正立・固定(三脚など)。背景の赤い物(ラベル・カラビナ)はあえて片付けない(背景誤検出の比較のため)。
@@ -27,6 +27,9 @@
 - score gap の分布(winner − runner-up、agent の再解析): ジャンプ開始 5 件はすべて ≤3.2。
   ただし安定 frame でも 26% が <3 なので、margin だけではジャンプを切り分けられない(n=5、すべて背景物)。
 - 修正 A の gate(本物の saber で CASE A を、別々の swing で 2 event 以上)は**未達**。production は変更しない。
+- **認識の非決定性を修正済み(bbc1f32)**: core-line 候補の score が Set の反復順(起動ごと・frame ごとに変わる)に依存していた。
+  最大 4.3 点揺れ、eligibility の閾値(0.30)をまたぐ例もあった。点を並べ替えるだけの1行修正で、144 画像で winner/eligibility/端点は不変、formal 40/40。
+  「ぐわんぐわん」への寄与は未確定(既存の記録では winner は変わっていない)だが、次の capture は決定的な認識で撮れる。
 
 ## 次にやること
 1. 新しい実機 session が届いたら、bundle のコピーで次の2つを実行する。
@@ -51,6 +54,10 @@
 ## 作業ログ(新しい順)
 
 ### 2026-10-03(深夜、並列作業の続き)
+- 1ad12f9: 診断 on/off の parity test を、全 candidate で bit 一致に厳格化(通常の hash seed でも一致)。XCTest 162/162、Python 245/245、formal 40/40。
+- 31ad94c: Debug Recording に emitter の証拠(emitterScore と各項、閾値までの余裕、channel 統計)、shadow R7e 判定(適用しない)、frame ごとの露出(ISO・露光時間・bias・WB)を記録。
+  診断 on/off で認識結果が bit 一致することを確認(固定 seed で 52 画像)。
+- bbc1f32: core-line の scoring を Set 反復順から独立させた(認識の非決定性の修正)。
 - d55294c: 新 tool の review 指摘を修正。session report の CASE 二重計上(B=2→1)、replay で同じ sessionID の bundle が上書きし合う問題、
   hotspot の2乗時間(4000 件で2–3秒、upload 応答の前に走る)、深さ 1000–8000 の JSON で receiver がログ保存前に落ちる残りの経路。XCTest 155/155、Python 239/239。
 - 116130f: R7e(赤の eligibility 候補ルール)の offline 探索結果を記録。採用は見送り(理由は「次にやること 4」)。

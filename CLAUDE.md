@@ -70,6 +70,10 @@ diagnostics 改善は commit 済み(6bf2cf3 以降)。主な内容:
 - tracking 窓(最低5 frame、bridge と共存時は8 frame)、toggle 成分を tracking ranking から除外
 - retained BGRA 上限 256MiB(Debug Recording 時のみ)と memoryHeadroom の記録
 - 解析 tool:triage の `--dry-run`(CASE hint)、`phone_saber_selection_replay.py`(score gap 分布と修正 A の offline replay)
+- 背景誤検出の調査用:emitter の証拠と shadow R7e 判定(適用しない)、frame ごとの露出、背景ネガティブ benchmark、静的ホットスポット、受信時の1ページ session report
+
+2026-10-03: core-line 候補の scoring が Swift の Set 反復順に依存し、起動ごとに結果が揺れていた(最大 4.3 点)。bbc1f32 で修正し、認識は決定的になった。
+parity test は bit 一致を要求するので、今後 Set / Dictionary の反復順を計算に持ち込まないこと。
 
 ## 4. production 修正の gate
 修正 A(candidate temporal consistency)を実装してよい条件:
