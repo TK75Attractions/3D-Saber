@@ -293,7 +293,9 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
             )
             assert process.stdout is not None
             transcript: list[str] = []
-            deadline = time.monotonic() + 10
+            # Event-driven readiness wait: returns as soon as the launcher reports
+            # WAITING; the bound only guards against a hung start on a loaded host.
+            deadline = time.monotonic() + 30
             try:
                 while time.monotonic() < deadline:
                     ready, _, _ = select.select([process.stdout], [], [], 0.2)
@@ -310,7 +312,13 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
                     "".join(transcript),
                 )
                 os.kill(process.pid, signal.SIGINT)
-                tail, _ = process.communicate(timeout=12)
+                # Safety bound only. Correct shutdown returns within ~1 s, but the
+                # launcher's own escalation path may legitimately take
+                # 10 s (SIGINT wait) + 3 s (SIGTERM wait) + 2 s (group cleanup), so
+                # the old 12 s bound was shorter than the code under test. The
+                # assertions below still fail if shutdown needed SIGTERM/SIGKILL
+                # (the receiver's finally block would not write stopped.txt).
+                tail, _ = process.communicate(timeout=40)
                 transcript.append(tail.decode("utf-8", errors="replace"))
                 self.assertEqual(process.returncode, 130, "\n".join(transcript))
                 self.assertTrue(stopped_file.exists(), "receiver did not run its shutdown path")

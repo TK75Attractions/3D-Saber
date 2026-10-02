@@ -116,7 +116,10 @@ class CodexProcessTests(unittest.TestCase):
                 self.failure(f"print({message!r}, file=sys.stderr)\nraise SystemExit(1)\n", expected)
 
     def test_timeout_keeps_partial_streams(self):
-        error, record = self.failure("print('partial stdout', flush=True)\nprint('partial stderr', file=sys.stderr, flush=True)\ntime.sleep(10)\n", "CLI_TIMEOUT", timeout=0.1)
+        # The fake CLI must start and flush its partial output before the
+        # timeout fires; 0.1 s was shorter than a Python start-up on a loaded
+        # host. 2 s still times out well before the 10 s sleep ends.
+        error, record = self.failure("print('partial stdout', flush=True)\nprint('partial stderr', file=sys.stderr, flush=True)\ntime.sleep(10)\n", "CLI_TIMEOUT", timeout=2)
         self.assertIsNone(record["exit_code"])
         self.assertIn("partial stdout", str(error))
         self.assertIn("partial stderr", str(error))

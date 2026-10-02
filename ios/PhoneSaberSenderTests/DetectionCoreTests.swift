@@ -43,8 +43,11 @@ private final class ManualClock {
     }
 }
 
+// Polls until the condition holds and returns as soon as it does. Every caller
+// expects the condition to become true, so the default bound is only a safety
+// limit for a loaded host, not a latency requirement.
 @MainActor
-private func waitUntil(_ condition: @escaping @MainActor () -> Bool, timeout: TimeInterval = 1.0) async -> Bool {
+private func waitUntil(_ condition: @escaping @MainActor () -> Bool, timeout: TimeInterval = 3.0) async -> Bool {
     let deadline = ContinuousClock.now + .seconds(timeout)
     while !condition() && ContinuousClock.now < deadline {
         try? await Task.sleep(for: .milliseconds(2))
@@ -757,7 +760,8 @@ final class DetectionCoreTests: XCTestCase {
         let blank = Array(repeating: UInt8(0), count: bright.bytes.count)
         let threshold = ColorThreshold()
         func timing(_ bytes: [UInt8], iterations: Int = 12,
-                    collectProfile: Bool = false) -> (average: Double, maximum: Double, p90: Double) {
+                    collectProfile: Bool = false)
+            -> (average: Double, median: Double, maximum: Double, p90: Double) {
             var values: [Double] = []
             for _ in 0..<iterations {
                 let start = ProcessInfo.processInfo.systemUptime
@@ -769,24 +773,28 @@ final class DetectionCoreTests: XCTestCase {
             }
             let ordered = values.sorted()
             let p90Index = Int(ceil(Double(ordered.count) * 0.9)) - 1
-            return (values.reduce(0, +) / Double(values.count),
+            return (values.reduce(0, +) / Double(values.count), ordered[ordered.count / 2],
                     values.max() ?? 0, ordered[p90Index])
         }
         _ = timing(bright.bytes, iterations: 2)
         let emptyResult = timing(blank)
         let brightResult = timing(bright.bytes)
         let brightProfiledResult = timing(bright.bytes, collectProfile: true)
-        print(String(format: "[PerformanceBaseline] empty avg=%.3f max=%.3f ms; bright avg=%.3f max=%.3f ms",
-                     emptyResult.average, emptyResult.maximum,
-                     brightResult.average, brightResult.maximum))
-        print(String(format: "[PerformanceProfileOverhead] bright unprofiled avg=%.3f ms; profiled avg=%.3f ms",
-                     brightResult.average, brightProfiledResult.average))
+        print(String(format: "[PerformanceBaseline] empty avg=%.3f median=%.3f max=%.3f ms; bright avg=%.3f median=%.3f max=%.3f ms",
+                     emptyResult.average, emptyResult.median, emptyResult.maximum,
+                     brightResult.average, brightResult.median, brightResult.maximum))
+        print(String(format: "[PerformanceProfileOverhead] bright unprofiled avg=%.3f median=%.3f ms; profiled avg=%.3f median=%.3f ms",
+                     brightResult.average, brightResult.median,
+                     brightProfiledResult.average, brightProfiledResult.median))
         // A single simulator scheduling pause is not a detector regression;
         // the 90th percentile still catches sustained frame-time overruns.
         XCTAssertLessThan(brightResult.p90, 35)
-        // Empty-mask fast paths make the no-target case much cheaper.
-        XCTAssertLessThan(brightResult.average, emptyResult.average + 30.0)
-        XCTAssertLessThan(brightProfiledResult.average, brightResult.average * 1.5)
+        // Empty-mask fast paths make the no-target case much cheaper. Compare
+        // medians (same margins as before): one host-load pause of ~100 ms in
+        // a 12-sample batch shifts an average by ~8 ms, but a sustained
+        // per-frame regression still moves the median.
+        XCTAssertLessThan(brightResult.median, emptyResult.median + 30.0)
+        XCTAssertLessThan(brightProfiledResult.median, brightResult.median * 1.5)
 
         let profiled = analyzeSabers(in: bright.bytes, width: bright.width, height: bright.height,
                                      bytesPerRow: bright.bytesPerRow,
@@ -801,21 +809,33 @@ final class DetectionCoreTests: XCTestCase {
                      profile.selectionMs, profile.colorPixelCount, profile.brightCorePixelCount,
                      profile.lineProposalCount, profile.candidateCount))
 
+        let fixtureTimingSamples = 5
         for name in ["blue-led-with-curtain-reflection-01",
                      "blue-led-with-curtain-reflection-02",
                      "blue-led-with-left-curtain-reflection-03",
                      "blue-led-with-left-curtain-reflection-04",
                      "blue-led-bright-large-05"] {
             let fixture = try fixtureBGRA(name)
-            let result = analyzeSabers(in: fixture.bytes, width: fixture.width,
-                                       height: fixture.height, bytesPerRow: fixture.bytesPerRow,
-                                       redThreshold: threshold, blueThreshold: threshold,
-                                       collectProfile: true)
-            let fixtureProfile = try XCTUnwrap(result.profile)
-            print(String(format: "[FixturePerformance] %@ total=%.3f proposals=%d candidates=%d",
-                         name, fixtureProfile.totalMs, fixtureProfile.lineProposalCount,
-                         fixtureProfile.candidateCount))
-            XCTAssertLessThan(fixtureProfile.totalMs, 50, name)
+            func profiledRun() throws -> SaberDetectionProfile {
+                let result = analyzeSabers(in: fixture.bytes, width: fixture.width,
+                                           height: fixture.height, bytesPerRow: fixture.bytesPerRow,
+                                           redThreshold: threshold, blueThreshold: threshold,
+                                           collectProfile: true)
+                return try XCTUnwrap(result.profile, name)
+            }
+            // One unrecorded warm-up, then the median of several runs. A single
+            // sample let one host scheduling pause (e.g. 99 ms while other
+            // fixtures ran at 20-30 ms) fail the frame budget; the median still
+            // fails if the detector's typical cost exceeds the same 50 ms budget.
+            _ = try profiledRun()
+            let samples = try (0..<fixtureTimingSamples).map { _ in try profiledRun() }
+            let totals = samples.map(\.totalMs).sorted()
+            let medianTotal = totals[totals.count / 2]
+            let fixtureProfile = samples[0]
+            print(String(format: "[FixturePerformance] %@ total median=%.3f min=%.3f max=%.3f n=%d proposals=%d candidates=%d",
+                         name, medianTotal, totals.first ?? 0, totals.last ?? 0, totals.count,
+                         fixtureProfile.lineProposalCount, fixtureProfile.candidateCount))
+            XCTAssertLessThan(medianTotal, 50, name)
         }
     }
 
@@ -886,7 +906,10 @@ final class DetectionCoreTests: XCTestCase {
             generationRead.fulfill()
         }
         processor.queue.async { queuedControl.fulfill() }
-        let result = XCTWaiter.wait(for: [generationRead, queuedControl], timeout: 0.5)
+        // Safety bound only: a monopolizing drain loop starves both waits for
+        // as long as feeding continues, so a longer bound still fails it while
+        // tolerating host scheduling delays.
+        let result = XCTWaiter.wait(for: [generationRead, queuedControl], timeout: 3)
         feedLock.lock(); keepFeeding = false; feedLock.unlock()
         processor.queue.sync { processor.onResult = nil }
         XCTAssertEqual(result, .completed,
