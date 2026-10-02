@@ -102,6 +102,7 @@ def _complete_eligible(geometry: dict) -> list[dict] | None:
 def load_sequences(bundles: Iterable[Path]) -> dict[tuple[str, str], list[tuple[int, list[dict]]]]:
     """(session, color) -> frames sorted by frameID with complete eligible lists."""
     found: dict[tuple[str, str], dict[int, list[dict]]] = {}
+    owner: dict[str, Path] = {}  # sessionID -> the bundle that first used it
     for bundle in bundles:
         frames_dir = bundle / "frames"
         for path in sorted(frames_dir.glob("*.json")) if frames_dir.is_dir() else []:
@@ -110,6 +111,11 @@ def load_sequences(bundles: Iterable[Path]) -> dict[tuple[str, str], list[tuple[
             except (OSError, json.JSONDecodeError):
                 continue
             session = str(context.get("sessionID") or bundle.name)
+            # Different bundles that share a sessionID (copies, test harness runs) are
+            # separate sequences; merging them would let one overwrite the other's frames.
+            first = owner.setdefault(session, bundle)
+            if first != bundle:
+                session = f"{session} [{bundle.name}]"
             for frame in context.get("frames") or []:
                 frame_id = frame.get("frameID") if isinstance(frame, dict) else None
                 if not isinstance(frame_id, int):

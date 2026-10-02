@@ -86,6 +86,26 @@ class Redactor:
         return self(value) if isinstance(value, str) else value
 
 
+MAX_EVENT_VALUE_DEPTH = 64
+
+
+def _bounded(value: Any) -> Any:
+    """An event field that redaction and serialization can walk recursively.
+
+    Depth is measured iteratively; anything deeper than MAX_EVENT_VALUE_DEPTH is
+    replaced, since Redactor.value and json.dumps recurse per nesting level.
+    """
+    stack = [(value, 1)]
+    while stack:
+        item, depth = stack.pop()
+        if isinstance(item, (dict, list)):
+            if depth > MAX_EVENT_VALUE_DEPTH:
+                return "[too deeply nested value omitted]"
+            children = item.values() if isinstance(item, dict) else item
+            stack.extend((child, depth + 1) for child in children)
+    return value
+
+
 def error_events(*streams: str) -> list[dict[str, Any]]:
     """Decode JSONL or pretty JSON embedded after e.g. ERROR:, retaining errors."""
     decoder = json.JSONDecoder()
@@ -110,7 +130,8 @@ def error_events(*streams: str) -> list[dict[str, Any]]:
                         visit(payload, True)
                         return
         if active and any(key in value for key in ("message", "code")):
-            event = {key: value[key] for key in ("message", "type", "code", "param", "status") if key in value}
+            event = {key: _bounded(value[key]) for key in ("message", "type", "code", "param", "status")
+                     if key in value}
             if event not in found:
                 found.append(event)
         if isinstance(value.get("error"), str):
@@ -137,7 +158,10 @@ def error_events(*streams: str) -> list[dict[str, Any]]:
             except ValueError:
                 position = start + 1
                 continue
-            visit(value)
+            try:
+                visit(value)
+            except RecursionError:  # decodable but deeper than visit() can walk
+                pass
             position = end
     return found
 

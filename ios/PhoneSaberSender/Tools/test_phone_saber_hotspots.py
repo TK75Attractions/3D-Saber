@@ -201,6 +201,30 @@ class StaticHotspotTests(unittest.TestCase):
             self.assertEqual(hotspot_tool.main([str(self.root / "missing")]), 2)
 
 
+class HotspotClusteringCostTests(unittest.TestCase):
+    def test_many_static_observations_cluster_quickly_and_correctly(self):
+        import time
+        from phone_saber_hotspots import Observation, _cluster
+        observations = [Observation(frame_id=i, timestamp=i / 30, color="red",
+                                    centroid=(80.0 + (i % 3) * 0.5, 245.0), bbox=list(LABEL_BOX),
+                                    eligible=True, winning=False, final_score=55.0,
+                                    source_type="color-close", source="candidateGeometry")
+                        for i in range(5000)]
+        observations += [Observation(frame_id=i, timestamp=i / 30, color="red",
+                                     centroid=(150.0 + 7 * (i % 50), 400.0), bbox=None,
+                                     eligible=True, winning=True, final_score=90.0,
+                                     source_type="core-line", source="candidateGeometry")
+                         for i in range(500)]
+        started = time.monotonic()
+        clusters = _cluster(observations, radius_px=24.0, min_iou=0.5)
+        elapsed = time.monotonic() - started
+        label = max(clusters, key=lambda c: len(c.members))
+        self.assertEqual(len(label.members), 5000)
+        self.assertLess(abs(label.representative()["centroid"][0] - 80.5), 1.0)
+        # ~2-3 s before the representative was cached; generous bound for loaded hosts.
+        self.assertLess(elapsed, 2.0)
+
+
 class SessionReportHotspotSectionTests(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()

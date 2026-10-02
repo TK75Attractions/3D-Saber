@@ -221,7 +221,10 @@ def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MA
         contract_error = f"{type(exc).__name__}: {exc}"
     audit = _guard(errors, "candidate_selection_audit",
                    lambda: candidate_selection_audit(plan)) if plan is not None else None
-    hint_counts = dict(Counter(str(r.get("hint")) for r in audit)) if audit is not None else None
+    # One row per (frameID, color): a frame selected for two roles (e.g. bridge and
+    # tracking) must not be counted twice — the audit marks the row to tally.
+    tallied = [r for r in audit or [] if r.get("countForTally", True)]
+    hint_counts = dict(Counter(str(r.get("hint")) for r in tallied)) if audit is not None else None
     report = {
         "bundle": str(bundle),
         "sessionID": summary.get("sessionID") or (plan.session_id if plan else None),
@@ -238,7 +241,7 @@ def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MA
         "bridgeEvents": _guard(errors, "bridge_summary",
                                lambda: bridge_summary(plan)) if plan is not None else None,
         "caseHintCounts": hint_counts,
-        "caseHints": [r for r in audit or [] if r.get("hint") != "none"] if audit is not None else None,
+        "caseHints": [r for r in tallied if r.get("hint") != "none"] if audit is not None else None,
         "selectionReplay": _guard(errors, "selection_replay",
                                   lambda: replay_section(bundle, margins, holds)),
         "staticHotspots": _guard(errors, "static_hotspots", lambda: static_hotspots(bundle)),
@@ -282,7 +285,7 @@ def _hotspot_lines(hotspots: Any) -> list[str]:
         if not hotspots.get("framesWithPositions"):
             return lines + ["- n/a — no candidate geometry or winner positions in this bundle"]
         size = hotspots.get("imageSize") or [None, None]
-        lines.append(f"- frames with positions: {hotspots['framesWithPositions']} "
+        lines.append(f"- frame-color pairs with positions: {hotspots['framesWithPositions']} "
                      f"(sources {_fmt(hotspots.get('frameSources'))}), image {_fmt(size[0])}x{_fmt(size[1])}, "
                      f"likelyBackground clusters: {hotspots.get('likelyBackgroundCount')}")
         if hotspots.get("winnersOnly"):
@@ -379,7 +382,8 @@ def render_markdown(report: dict) -> str:
     priority = tracking.get("bridgePriorityEvents") or []
     add("- bridge_priority: " + (", ".join(
         f"event {e['eventIndex']} {e['color']} score {_fmt(e['peakScore'])}" for e in priority)
-        if priority else "none (tracking event was not yielded to bridge events)"))
+        if priority else ("n/a (no selection-code ledger in this bundle)" if tracking.get("ledgerCodes") is None
+                          else "none (tracking event was not yielded to bridge events)")))
     add("")
 
     add("## Bridge dropout events")
@@ -430,7 +434,7 @@ def render_markdown(report: dict) -> str:
     elif not replay_info["sequences"]:
         add("- n/a — no complete eligible candidate lists (bundle predates candidate geometry recording)")
     else:
-        add(f"- sequences: {replay_info['sequences']}, frames with complete eligible lists: "
+        add(f"- sequences: {replay_info['sequences']}, frame-color pairs with complete eligible lists: "
             f"{replay_info['framesWithCompleteEligibleLists']}, correspondence: {replay_info['correspondence']}")
         add(f"- recorded switches (R breaks continuity, eligible M continues it): "
             f"{len(replay_info['switchEvents'])}; switch-out score gap R−M: "

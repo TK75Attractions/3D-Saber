@@ -104,6 +104,14 @@ class SelectionReplayTests(unittest.TestCase):
         self.assertEqual(gap_distribution(sequences, self.policy), [])
         self.assertEqual(replay(sequences, self.policy, 100)["changedFrames"], [])
 
+    def test_bundles_sharing_a_session_id_stay_separate(self):
+        first = write_bundle(self.root / "one", SWITCH)
+        second = write_bundle(self.root / "two", SWITCH)
+        sequences = load_sequences([first, second])
+        self.assertEqual(len(sequences), 2)
+        rows = [r for r in gap_distribution(sequences, self.policy) if not r["returnsToEarlierWinner"]]
+        self.assertEqual(len(rows), 2, "both bundles' switch-outs are counted")
+
     def test_cli_reports_missing_geometry_without_failing(self):
         bundle = self.root / "old"
         (bundle / "frames").mkdir(parents=True)

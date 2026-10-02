@@ -179,12 +179,27 @@ class CodexProcessTests(unittest.TestCase):
         self.assertEqual(records[0]["error_code"], "MALFORMED_OUTPUT")
         self.assertIn("invalid structured output", records[0]["output_error"])
 
+    # Decodable JSON deeper than Python's recursion limit must still leave a saved log.
+    def test_failed_run_with_deeply_nested_output_still_saves_its_log(self):
+        for depth in (1000, 3000, 8000):
+            for shape in ("error_chain", "message_list"):
+                with self.subTest(depth=depth, shape=shape):
+                    body = (f"d = {depth}\n"
+                            "chain = '{\"error\":' * d + '1' + '}' * d\n"
+                            "listy = json.dumps({'type': 'error', 'message': 'x'})[:-1] + "
+                            "', \"param\": ' + '[' * d + ']' * d + '}'\n"
+                            f"print(chain if '{shape}' == 'error_chain' else listy)\n"
+                            "raise SystemExit(1)\n")
+                    _, record = self.failure(body)
+                    self.assertIn("errors", record)
+
 
 # The pre-2026-10 credential-assignment pattern, kept only as an equivalence
 # oracle. It is cubic on long [\w-] runs, so feed it short inputs only.
 LEGACY_CREDENTIAL_ASSIGNMENT = re.compile(
     r'(?i)((?:[\w-]*(?:api[_-]?key|token|cookie|authorization|password|secret|credential)[\w-]*)["\x27]?\s*(?:[:=]|\s)\s*)'
     r'(?:"[^"\n]*"|\x27[^\x27\n]*\x27|[^\s,;&}\n]+)')
+
 
 
 class ErrorEventRobustnessTests(unittest.TestCase):

@@ -91,8 +91,23 @@ class Observation:
 class _Cluster:
     color: str
     members: list[Observation] = field(default_factory=list)
+    _cached: dict | None = field(default=None, repr=False)
+    _cached_size: int = field(default=0, repr=False)
+
+    def add(self, observation: Observation) -> None:
+        self.members.append(observation)
 
     def representative(self) -> dict:
+        # Medians are exact while a cluster is small and refreshed every 16 joins
+        # after that: a static object's median barely moves, and recomputing it for
+        # every observation made clustering quadratic (4,000 observations: 2-3 s).
+        size = len(self.members)
+        if self._cached is not None and size > 64 and size - self._cached_size < 16:
+            return self._cached
+        self._cached, self._cached_size = self._representative(), size
+        return self._cached
+
+    def _representative(self) -> dict:
         xs = [m.centroid[0] for m in self.members]
         ys = [m.centroid[1] for m in self.members]
         rep: dict[str, Any] = {"centroid": [median(xs), median(ys)]}
@@ -275,7 +290,7 @@ def _cluster(observations: list[Observation], radius_px: float, min_iou: float) 
         if best is None:
             best = _Cluster(obs.color)
             clusters.append(best)
-        best.members.append(obs)
+        best.add(obs)
     return clusters
 
 
@@ -390,7 +405,7 @@ def static_hotspots(bundle_dir_or_plan: Any, params: HotspotParams = HotspotPara
     for summary in summaries:
         by_color[summary["color"]].append(summary)
         summary["clusterID"] = f"{summary['color']}-{len(by_color[summary['color']])}"
-    frame_count = len(data_frames)
+    frame_count = len(data_frames)  # (color, frameID) pairs, not distinct frames
     return {
         "bundle": str(root),
         "sessionID": session,
@@ -420,7 +435,7 @@ def format_cluster(cluster: dict) -> str:
 
 def render_text(result: dict, min_frames_to_list: int = 2) -> str:
     lines = [f"{result['sessionID'] or result['bundle']}: image {result['imageSize'][0]}x{result['imageSize'][1]} "
-             f"({result['imageSizeSource']}), frames with positions {result['framesWithPositions']} "
+             f"({result['imageSizeSource']}), frame-color pairs with positions {result['framesWithPositions']} "
              f"sources {result['frameSources']}"
              + (" — winners only (no candidateGeometry): eligible losers are not visible" if result["winnersOnly"]
                 else "")]

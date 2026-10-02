@@ -181,6 +181,32 @@ class SessionReportTests(unittest.TestCase):
             write_session_report(bundle, bundle / "inside.md")
 
 
+class SessionReportTallyTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+
+    def test_case_counts_use_only_rows_marked_for_tally(self):
+        bundle = self.root / "phone_saber_triage_sample_session"
+        write_codex_bundle(bundle)
+        rows = [{"imageID": "image_002", "frameID": 1014, "color": "red", "hint": "B", "countForTally": True},
+                # The same frame and color selected again for another role.
+                {"imageID": "image_006", "frameID": 1014, "color": "red", "hint": "B", "countForTally": False},
+                {"imageID": "image_007", "frameID": 1016, "color": "red", "hint": "A", "countForTally": True}]
+        with mock.patch.object(report_tool, "candidate_selection_audit", return_value=rows):
+            report = build_report(bundle)
+        self.assertEqual(report["caseHintCounts"], {"B": 1, "A": 1})
+        self.assertEqual([r["imageID"] for r in report["caseHints"]], ["image_002", "image_007"])
+
+    def test_bridge_priority_line_is_na_without_a_ledger(self):
+        bundle = self.root / "phone_saber_triage_sample_session"
+        write_codex_bundle(bundle)
+        text = render_markdown(build_report(bundle))
+        self.assertIn("bridge_priority: n/a", text)
+        self.assertNotIn("tracking event was not yielded", text)
+
+
 class ReceiverReportHookTests(unittest.TestCase):
     def post(self, root: Path, *, patch_report=None) -> tuple[int, str, Path, mock.Mock]:
         inbox = root / "inbox"
