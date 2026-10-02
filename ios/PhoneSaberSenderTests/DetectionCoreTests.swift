@@ -3291,3 +3291,343 @@ final class DetectionCoreTests: XCTestCase {
         return frames
     }
 }
+
+// MARK: - Emitter diagnostics and shadow verdicts (Debug Recording only)
+
+extension DetectionCoreTests {
+    /// Every fixture image bundled with the tests, plus synthetic red bars.
+    private func diagnosticParityImages() throws -> [(String, (bytes: [UInt8], width: Int, height: Int, bytesPerRow: Int))] {
+        var images: [(String, (bytes: [UInt8], width: Int, height: Int, bytesPerRow: Int))] = []
+        for name in ["blue-led-with-curtain-reflection-01", "blue-led-with-curtain-reflection-02",
+                     "blue-led-with-left-curtain-reflection-03", "blue-led-with-left-curtain-reflection-04",
+                     "blue-led-bright-large-05"] {
+            images.append((name, try fixtureBGRA(name)))
+        }
+        for subdirectory in ["production-video-IMG_5933", "forensic-20260921", "forensic-20260921-211845"] {
+            let urls = Bundle(for: Self.self).urls(forResourcesWithExtension: "png", subdirectory: subdirectory) ?? []
+            XCTAssertFalse(urls.isEmpty, "\(subdirectory) fixtures must be bundled")
+            for url in urls.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
+                let name = url.deletingPathExtension().lastPathComponent
+                images.append(("\(subdirectory)/\(name)", try fixtureBGRA(name, subdirectory: subdirectory)))
+            }
+        }
+        images.append(("synthetic-thin-red", syntheticRedBar(thickness: 6)))
+        images.append(("synthetic-thick-red", syntheticRedBar(thickness: 24)))
+        return images
+    }
+
+    /// A uniform saturated red bar (R 250, G 40, B 30) on black at 480x640.
+    private func syntheticRedBar(thickness: Int, width: Int = 480, height: Int = 640)
+        -> (bytes: [UInt8], width: Int, height: Int, bytesPerRow: Int) {
+        let stride = width * 4
+        var bytes = Array(repeating: UInt8(0), count: stride * height)
+        for y in 300..<(300 + thickness) {
+            for x in 100..<300 {
+                let offset = y * stride + x * 4
+                bytes[offset] = 30; bytes[offset + 1] = 40; bytes[offset + 2] = 250; bytes[offset + 3] = 255
+            }
+        }
+        return (bytes, width, height, stride)
+    }
+
+    /// Core-line proposals are scored from `Set`-ordered points
+    /// (`saberCandidate(from:)`), so with Swift's per-instance hash seeding
+    /// their sums - and comparative penalties derived from them - can differ
+    /// slightly between ANY two runs in one process, diagnostics on or off
+    /// alike (a pre-existing property of production code). Those candidates
+    /// are compared with a tolerance here; every other candidate must be
+    /// bit-identical. Tools/test_diagnostic_parity.py fixes the hash seed
+    /// (SWIFT_DETERMINISTIC_HASHING=1) and proves bit identity for all of them.
+    private func assertIdenticalRecognition(_ lhs: SaberFrameAnalysis, _ rhs: SaberFrameAnalysis,
+                                            _ label: String) {
+        func key(_ e: (PixelPoint, PixelPoint)?) -> [Int]? { e.map { [$0.0.x, $0.0.y, $0.1.x, $0.1.y] } }
+        func close(_ a: [Int]?, _ b: [Int]?) -> Bool {
+            guard let a, let b else { return a == nil && b == nil }
+            return zip(a, b).allSatisfy { abs($0 - $1) <= 2 }
+        }
+        func setOrdered(_ c: SaberCandidate) -> Bool {
+            c.source.contains("core-line") || c.scoreBreakdown.proposalPenalty != 0
+        }
+        for color in [SaberColor.red, .blue] {
+            let a = lhs.candidates[color] ?? [], b = rhs.candidates[color] ?? []
+            let winnerIsSetOrdered = (a.first(where: \.isEmitterEligible).map(setOrdered) ?? false)
+                || (b.first(where: \.isEmitterEligible).map(setOrdered) ?? false)
+            if winnerIsSetOrdered {
+                XCTAssertTrue(close(key(lhs.selected[color]), key(rhs.selected[color])), "\(label) \(color) output")
+            } else {
+                XCTAssertEqual(key(lhs.selected[color]), key(rhs.selected[color]), "\(label) \(color) output")
+            }
+            XCTAssertEqual(a.count, b.count, "\(label) \(color) candidate count")
+            for (x, y) in zip(a, b) {
+                let tolerant = setOrdered(x) || setOrdered(y)
+                XCTAssertEqual(x.source, y.source, label)
+                XCTAssertEqual(x.isEmitterEligible, y.isEmitterEligible, "\(label) \(color) eligibility")
+                XCTAssertEqual(x.isCompactRed, y.isCompactRed, label)
+                XCTAssertEqual(x.peakValue, y.peakValue, label)
+                XCTAssertEqual(x.pointCount, y.pointCount, label)
+                XCTAssertEqual(x.usedPointLEDFallback, y.usedPointLEDFallback, label)
+                if tolerant {
+                    XCTAssertTrue(close(key(x.endpoints), key(y.endpoints)), "\(label) \(color) endpoints")
+                } else {
+                    XCTAssertEqual(key(x.endpoints), key(y.endpoints), "\(label) \(color) endpoints")
+                    XCTAssertEqual(key(x.comparisonEndpoints), key(y.comparisonEndpoints), label)
+                }
+                for (name, u, v) in [("score", x.score, y.score),
+                                     ("total", x.scoreBreakdown.total, y.scoreBreakdown.total),
+                                     ("meanValue", x.meanValue, y.meanValue),
+                                     ("highValueRatio", x.highValueRatio, y.highValueRatio),
+                                     ("meanColorPurity", x.meanColorPurity, y.meanColorPurity),
+                                     ("clippedWhiteRatio", x.clippedWhiteRatio, y.clippedWhiteRatio),
+                                     ("localContrast", x.localContrast, y.localContrast),
+                                     ("coreSupportRatio", x.coreSupportRatio, y.coreSupportRatio),
+                                     ("axialDensity", x.axialDensity, y.axialDensity),
+                                     ("rawPCASpan", x.rawPCASpan, y.rawPCASpan)] {
+                    if tolerant {
+                        XCTAssertEqual(u, v, accuracy: max(abs(u), 1) * 2e-3, "\(label) \(color) \(x.source) \(name)")
+                    } else {
+                        XCTAssertEqual(u.bitPattern, v.bitPattern, "\(label) \(color) \(x.source) \(name)")
+                    }
+                }
+            }
+        }
+    }
+
+    func testDiagnosticCollectionLeavesRecognitionUnchanged() throws {
+        let images = try diagnosticParityImages()
+        XCTAssertGreaterThanOrEqual(images.count, 20)
+        var emitterTraces = 0
+        for (name, image) in images {
+            func run(_ diagnostics: Bool, _ profile: Bool) -> SaberFrameAnalysis {
+                analyzeSabers(in: image.bytes, width: image.width, height: image.height,
+                              bytesPerRow: image.bytesPerRow, redThreshold: ColorThreshold(),
+                              blueThreshold: ColorThreshold(), collectProfile: profile,
+                              collectPipelineDiagnostics: diagnostics)
+            }
+            let off = run(false, false)
+            let on = run(true, false)
+            assertIdenticalRecognition(off, on, "\(name) diagnostics")
+            assertIdenticalRecognition(off, run(true, true), "\(name) diagnostics+profile")
+            // The production entry point used when Debug Recording is OFF agrees too.
+            let production = image.bytes.withUnsafeBufferPointer { buffer in
+                detectSabers(baseAddress: buffer.baseAddress!, width: image.width, height: image.height,
+                             bytesPerRow: image.bytesPerRow, redThreshold: ColorThreshold(),
+                             blueThreshold: ColorThreshold())
+            }
+            for color in [SaberColor.red, .blue] {
+                XCTAssertEqual(production[color].map { [$0.0.x, $0.0.y, $0.1.x, $0.1.y] },
+                               on.selected[color].map { [$0.0.x, $0.0.y, $0.1.x, $0.1.y] }, "\(name) \(color)")
+            }
+            XCTAssertTrue(off.candidates.values.joined().allSatisfy { $0.endpointDiagnosticTrace == nil })
+            emitterTraces += on.candidates.values.joined().filter {
+                $0.endpointDiagnosticTrace?.emitter != nil }.count
+        }
+        XCTAssertGreaterThan(emitterTraces, 0)
+    }
+
+    func testEmitterDiagnosticsMatchRecomputationForSyntheticRedComponent() throws {
+        let image = syntheticRedBar(thickness: 6)
+        let analysis = analyzeSabers(in: image.bytes, width: image.width, height: image.height,
+                                     bytesPerRow: image.bytesPerRow, redThreshold: ColorThreshold(),
+                                     blueThreshold: ColorThreshold(), collectPipelineDiagnostics: true)
+        let red = analysis.candidates[.red] ?? []
+        XCTAssertFalse(red.isEmpty)
+        let step = 2.0
+        for candidate in red {
+            let emitter = try XCTUnwrap(candidate.endpointDiagnosticTrace?.emitter, candidate.source)
+            let peak = Double(candidate.peakValue)
+            XCTAssertEqual(emitter.peakTerm, min(max((peak - 200) / 55, 0), 1) * 0.32)
+            XCTAssertEqual(emitter.meanTerm, min(max((candidate.meanValue - 160) / 95, 0), 1) * 0.23)
+            XCTAssertEqual(emitter.highValueTerm, candidate.highValueRatio * 0.28)
+            XCTAssertEqual(emitter.purityTerm, candidate.meanColorPurity * 0.12)
+            XCTAssertEqual(emitter.clippedWhiteTerm, candidate.clippedWhiteRatio * 0.05)
+            XCTAssertEqual(emitter.emitterScore,
+                           emitter.peakTerm + emitter.meanTerm + emitter.highValueTerm
+                            + emitter.purityTerm + emitter.clippedWhiteTerm, accuracy: 1e-12)
+            XCTAssertEqual(emitter.emitterScoreMargin, emitter.emitterScore - 0.42, accuracy: 1e-12)
+            XCTAssertEqual(emitter.hasEmitterCore, emitter.coreByHighValueRatio
+                           || emitter.coreByPeakAndMean || emitter.coreByClippedWhite)
+            XCTAssertEqual(emitter.coreByHighValueRatio, candidate.highValueRatio >= 0.08)
+            XCTAssertEqual(emitter.compactRedGate, candidate.isCompactRed)
+            // No later source rule rejected this clean bar: the scoring-site verdict is final.
+            XCTAssertEqual(emitter.baseEligible, candidate.isEmitterEligible)
+            if !candidate.isCompactRed {
+                XCTAssertEqual(emitter.baseEligible, candidate.peakValue >= 218 && emitter.hasEmitterCore
+                               && emitter.emitterScore >= 0.42)
+            }
+            XCTAssertEqual(emitter.localContrast, candidate.localContrast)
+            XCTAssertEqual(emitter.coreSupport, candidate.coreSupportRatio)
+            XCTAssertEqual(emitter.brightnessVariation, candidate.brightnessVariation)
+            XCTAssertEqual(emitter.majorLengthSamples, candidate.rawPCASpan / step)
+            let shortSide = Double(min(image.width, image.height)) / step
+            let support = min(max((emitter.majorLengthSamples / shortSide - 0.08) / 0.22, 0), 1)
+            XCTAssertEqual(emitter.bladeLengthSupport, support, accuracy: 1e-12)
+            XCTAssertEqual(candidate.scoreBreakdown.coreSupport,
+                           candidate.coreSupportRatio * 12.0 * emitter.bladeLengthSupport, accuracy: 1e-12)
+            // Uniform R 250 / G 40 / B 30: the sorted channels are exact.
+            XCTAssertEqual(emitter.meanMaxChannel, 250)
+            XCTAssertEqual(emitter.meanSecondChannel, 40)
+            XCTAssertEqual(emitter.maxSecondChannel, 40)
+            XCTAssertEqual(emitter.meanMinChannel, 30)
+            XCTAssertEqual(emitter.nearWhiteFraction, 0)
+            XCTAssertEqual(emitter.brightSecondChannelFraction, 0)
+            XCTAssertEqual(emitter.colorSampleCount, emitter.sampleCount)
+            XCTAssertEqual(emitter.sampleCount, candidate.pointCount)
+            // The recorded JSON form carries the same values.
+            let recorded = try XCTUnwrap(DebugRecordingCandidate(index: 0, candidate: candidate,
+                                                                 selectedIndex: 0).emitterDiagnostics)
+            XCTAssertEqual(recorded.emitterScoreThreshold, 0.42)
+            XCTAssertEqual(recorded.emitterScore, emitter.emitterScore, accuracy: 1e-6)
+            XCTAssertEqual(recorded.emitterScoreMargin, emitter.emitterScore - 0.42, accuracy: 1e-6)
+            XCTAssertEqual(recorded.bladeLengthSupport, emitter.bladeLengthSupport, accuracy: 1e-6)
+            XCTAssertEqual(recorded.meanSecondChannel, 40)
+        }
+        XCTAssertTrue((analysis.candidates[.blue] ?? []).isEmpty)
+    }
+
+    func testShadowR7eVerdictIsRecordedButNeverChangesEligibility() throws {
+        // A thin (3-sample) matte-like red bar: eligible in production, without
+        // clipped white and with a thin body, so the shadow R7e rule rejects it.
+        let thin = syntheticRedBar(thickness: 6)
+        func analysis(_ diagnostics: Bool, _ image: (bytes: [UInt8], width: Int, height: Int, bytesPerRow: Int))
+            -> SaberFrameAnalysis {
+            analyzeSabers(in: image.bytes, width: image.width, height: image.height,
+                          bytesPerRow: image.bytesPerRow, redThreshold: ColorThreshold(),
+                          blueThreshold: ColorThreshold(), collectPipelineDiagnostics: diagnostics)
+        }
+        let on = analysis(true, thin), off = analysis(false, thin)
+        assertIdenticalRecognition(off, on, "thin red")
+        XCTAssertNotNil(off.selected[.red], "production still selects the thin bar")
+        let winner = try XCTUnwrap(on.candidates[.red]?.first(where: \.isEmitterEligible))
+        let emitter = try XCTUnwrap(winner.endpointDiagnosticTrace?.emitter)
+        let shadow = try XCTUnwrap(emitter.shadowR7e)
+        XCTAssertTrue(winner.isEmitterEligible)
+        XCTAssertTrue(emitter.baseEligible)
+        XCTAssertFalse(shadow.ruleSatisfied)
+        XCTAssertFalse(shadow.shadowEligible, "the shadow verdict differs from production")
+        XCTAssertEqual(shadow.clippedWhiteRatio, winner.clippedWhiteRatio)
+        XCTAssertEqual(shadow.meanColorPurity, winner.meanColorPurity)
+        // Recomputation from the published candidate (mask units: step 2).
+        let maskShort = Double(min(thin.width, thin.height) / 2)
+        let bodyDensity = winner.axialDensity * 2
+        XCTAssertEqual(shadow.density, bodyDensity)
+        XCTAssertEqual(shadow.fallbackDensity, Double(winner.pointCount) / max(winner.rawPCASpan / 2, 1))
+        let chosen = bodyDensity > 0 ? bodyDensity : shadow.fallbackDensity
+        XCTAssertEqual(shadow.usedFallbackDensity, !(bodyDensity > 0))
+        XCTAssertEqual(shadow.d240, chosen * 240 / maskShort, accuracy: 1e-12)
+        XCTAssertLessThan(shadow.d240, 3.5)
+        XCTAssertEqual(shadow.thickBodyMargin, shadow.d240 - 4.2, accuracy: 1e-12)
+        XCTAssertEqual(shadow.clippedWhiteMargin, shadow.clippedWhiteRatio - 0.35, accuracy: 1e-12)
+        let recorded = try XCTUnwrap(DebugRecordingCandidate(index: 0, candidate: winner,
+                                                             selectedIndex: 0).emitterDiagnostics?.shadowR7e)
+        XCTAssertFalse(recorded.applied)
+        XCTAssertFalse(recorded.shadowR7eEligible)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(recorded)) as? [String: Any])
+        XCTAssertEqual(Set(json.keys), ["applied", "density", "fallbackDensity", "usedFallbackDensity", "d240",
+            "clippedWhiteRatio", "meanColorPurity", "clippedWhiteMargin", "thickBodyMargin",
+            "saturatedBodyDensityMargin", "saturatedBodyPurityMargin", "ruleSatisfied", "shadowR7eEligible"])
+
+        // A thick bar satisfies the rule; production is again unchanged by collection.
+        let thick = syntheticRedBar(thickness: 24)
+        let thickOn = analysis(true, thick)
+        assertIdenticalRecognition(analysis(false, thick), thickOn, "thick red")
+        let thickWinner = try XCTUnwrap(thickOn.candidates[.red]?.first(where: \.isEmitterEligible))
+        let thickShadow = try XCTUnwrap(thickWinner.endpointDiagnosticTrace?.emitter?.shadowR7e)
+        XCTAssertTrue(thickShadow.ruleSatisfied)
+        XCTAssertTrue(thickShadow.shadowEligible)
+
+        // Blue candidates never carry the red-only shadow verdict.
+        let blue = try fixtureBGRA("blue-led-bright-large-05")
+        let blueCandidates = analysis(true, blue).candidates[.blue] ?? []
+        XCTAssertFalse(blueCandidates.isEmpty)
+        XCTAssertTrue(blueCandidates.allSatisfy {
+            $0.endpointDiagnosticTrace?.emitter != nil && $0.endpointDiagnosticTrace?.emitter?.shadowR7e == nil })
+    }
+
+    func testFrameCameraCombinesExifAndDeviceStateWithoutInventingValues() throws {
+        XCTAssertNil(DebugRecordingFrameCamera.make(exif: nil, device: nil, now: 10))
+        let exif: [String: Any] = [kCGImagePropertyExifISOSpeedRatings as String: [320],
+                                   kCGImagePropertyExifExposureTime as String: 0.008333,
+                                   kCGImagePropertyExifExposureBiasValue as String: -0.5,
+                                   kCGImagePropertyExifBrightnessValue as String: 2.25,
+                                   kCGImagePropertyExifFNumber as String: 1.78]
+        let exifOnly = try XCTUnwrap(DebugRecordingFrameCamera.make(exif: exif, device: nil, now: 10))
+        XCTAssertEqual(exifOnly.source, "exif")
+        XCTAssertEqual(exifOnly.iso, 320)
+        XCTAssertEqual(exifOnly.exposureDurationSeconds, 0.008333)
+        XCTAssertEqual(exifOnly.exposureBiasEV, -0.5)
+        XCTAssertEqual(exifOnly.brightnessValue, 2.25)
+        XCTAssertNil(exifOnly.whiteBalanceGains)
+        XCTAssertNil(exifOnly.deviceSampleAgeSeconds)
+        let device = DebugCameraDeviceState(iso: 400, exposureDurationSeconds: 0.01, exposureTargetBias: 0,
+                                            exposureTargetOffset: -0.25, whiteBalanceGains: [1.9, 1, 2.1],
+                                            sampledAt: 9.75)
+        let both = try XCTUnwrap(DebugRecordingFrameCamera.make(exif: exif, device: device, now: 10))
+        XCTAssertEqual(both.source, "exif+device")
+        XCTAssertEqual(both.iso, 320, "the frame's own Exif wins over the device snapshot")
+        XCTAssertEqual(both.exposureTargetOffset, -0.25)
+        XCTAssertEqual(both.whiteBalanceGains, [1.9, 1, 2.1])
+        XCTAssertEqual(both.deviceSampleAgeSeconds, 0.25)
+        let deviceOnly = try XCTUnwrap(DebugRecordingFrameCamera.make(exif: [:], device: device, now: 10))
+        XCTAssertEqual(deviceOnly.source, "device")
+        XCTAssertEqual(deviceOnly.iso, 400)
+        XCTAssertEqual(deviceOnly.exposureDurationSeconds, 0.01)
+    }
+
+    func testRecordedFramesCarryCameraStateAndEmitterEvidence() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberFrameCameraTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let processor = FrameProcessor(expiryScheduler: nil, rawFrameDirectory: { directory })
+        func frame() -> CMSampleBuffer {
+            sampleBuffer(width: 192, height: 96) { base, stride in
+                let pixels = base.assumingMemoryBound(to: UInt8.self)
+                for y in 30...38 { for x in 10...90 {
+                    let index = y * stride + x * 4
+                    pixels[index] = 35; pixels[index + 1] = 45; pixels[index + 2] = 245; pixels[index + 3] = 255
+                } }
+            }
+        }
+        processor.process(frame())  // establishes the dimensions; not recorded
+        let _: String = try await withCheckedThrowingContinuation { continuation in
+            processor.startDebugRecording(diagnosticColors: .both) { continuation.resume(with: $0) }
+        }
+        processor.updateDebugCameraDeviceState(DebugCameraDeviceState(
+            iso: 250, exposureDurationSeconds: 1.0 / 120, exposureTargetBias: 0.5,
+            exposureTargetOffset: 0.125, whiteBalanceGains: [2, 1, 1.5], sampledAt: HostMonotonicClock.now()))
+        for _ in 0..<3 {
+            processor.process(frame())
+            try await Task.sleep(for: .milliseconds(40))
+        }
+        let result: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
+            processor.stopDebugRecording { continuation.resume(with: $0) }
+        }
+        let data = try Data(contentsOf: result.metadataURL)
+        let object = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let frames = try XCTUnwrap(object["frames"] as? [[String: Any]])
+        XCTAssertFalse(frames.isEmpty)
+        for recorded in frames {
+            let camera = try XCTUnwrap(recorded["camera"] as? [String: Any])
+            XCTAssertEqual(camera["source"] as? String, "device")
+            XCTAssertEqual(camera["iso"] as? Double, 250)
+            XCTAssertEqual(camera["exposureTargetBias"] as? Double, 0.5)
+            XCTAssertEqual(camera["exposureTargetOffset"] as? Double, 0.125)
+            XCTAssertEqual(camera["whiteBalanceGains"] as? [Double], [2, 1, 1.5])
+            XCTAssertGreaterThanOrEqual(camera["deviceSampleAgeSeconds"] as? Double ?? -1, 0)
+            // The recorded red winner carries its emitter evidence and shadow verdict.
+            let red = (recorded["candidateDiagnostics"] as? [String: Any])?["red"] as? [String: Any]
+            let selected = try XCTUnwrap(red?["selectedCandidate"] as? [String: Any])
+            let emitter = try XCTUnwrap(selected["emitterDiagnostics"] as? [String: Any])
+            XCTAssertNotNil(emitter["emitterScoreMargin"] as? Double)
+            XCTAssertNotNil(emitter["bladeLengthSupport"] as? Double)
+            // The streamed file keeps the compact subset; the triage snapshot has the rest.
+            XCTAssertNil(emitter["emitterScoreThreshold"])
+            XCTAssertNil(emitter["sampleCount"])
+            let shadow = try XCTUnwrap(emitter["shadowR7e"] as? [String: Any])
+            XCTAssertEqual(shadow["applied"] as? Bool, false)
+            XCTAssertNotNil(shadow["shadowR7eEligible"] as? Bool)
+            XCTAssertNil(shadow["thickBodyMargin"])
+        }
+        let decoded = try JSONDecoder().decode(DebugRecordingMetadata.self, from: data)
+        XCTAssertEqual(decoded.frames.first?.camera?.iso, 250)
+    }
+}

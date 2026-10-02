@@ -1167,7 +1167,8 @@ enum DebugRecordingTriageBuilder {
         let auxiliary = selected.bridge?.auxiliary == true
         /// Neighbour candidate geometry: 0 = leading three eligible, 1 = winner only, 2 = none.
         func makePayload(_ indexes: [Int], neighbourLevel: Int,
-                         selectedLimits: (eligible: Int, ineligible: Int, breakdown: Int)) -> [String: Any] {
+                         selectedLimits: (eligible: Int, ineligible: Int, breakdown: Int, emitter: Int),
+                         selectedTraceEmitter: Bool) -> [String: Any] {
             var result: [String: Any] = [
                 "sessionID": string(metadata["sessionID"]) ?? "",
                 "selectedFrameID": selected.frameID,
@@ -1177,12 +1178,19 @@ enum DebugRecordingTriageBuilder {
                 "contextRadiusFrames": radius,
                 "frames": indexes.map { index -> [String: Any] in
                     let isSelected = index == selected.frameIndex
-                    let limits: (Int, Int, Int)? = auxiliary ? nil
-                        : (isSelected ? (selectedLimits.eligible, selectedLimits.ineligible, selectedLimits.breakdown)
-                            : (neighbourLevel == 0 ? (3, 2, 3) : (neighbourLevel == 1 ? (1, 0, 1) : nil)))
+                    // Neighbour geometry never carries emitter diagnostics (limit 0).
+                    let limits: GeometryLimits? = auxiliary ? nil
+                        : (isSelected ? GeometryLimits(eligible: selectedLimits.eligible,
+                                                       ineligible: selectedLimits.ineligible,
+                                                       breakdown: selectedLimits.breakdown,
+                                                       emitter: selectedLimits.emitter)
+                            : (neighbourLevel == 0 ? GeometryLimits(eligible: 3, ineligible: 2, breakdown: 3, emitter: 0)
+                               : (neighbourLevel == 1 ? GeometryLimits(eligible: 1, ineligible: 0, breakdown: 1, emitter: 0)
+                                  : nil)))
                     return minimalFrame(allFrames[index], index: index,
                         includeTracking: isSelected, isSelected: isSelected, active: active,
-                        geometry: geometry, geometryLimits: limits)
+                        geometry: geometry, geometryLimits: limits,
+                        traceEmitterDiagnostics: isSelected && selectedTraceEmitter)
                 }
             ]
             if metadata["activeColors"] != nil {
@@ -1209,8 +1217,11 @@ enum DebugRecordingTriageBuilder {
             return result
         }
         var selectedLimits = (eligible: DebugCandidateGeometrySet.eligibleLimit,
-                              ineligible: DebugCandidateGeometrySet.ineligibleLimit, breakdown: Int.max)
-        var payload = makePayload(indexes, neighbourLevel: 0, selectedLimits: selectedLimits)
+                              ineligible: DebugCandidateGeometrySet.ineligibleLimit, breakdown: Int.max,
+                              emitter: Int.max)
+        var selectedTraceEmitter = true
+        var payload = makePayload(indexes, neighbourLevel: 0, selectedLimits: selectedLimits,
+                                  selectedTraceEmitter: selectedTraceEmitter)
         func size(_ value: [String: Any]) -> Int {
             (try? jsonData(value, compact: true).count) ?? Int.max
         }
@@ -1220,19 +1231,23 @@ enum DebugRecordingTriageBuilder {
         var steps: [String] = []
         var level = 0
         for step in ["neighbourCandidateGeometryWinnerOnly", "neighbourCandidateGeometryDropped",
-                     "selectedScoreBreakdownLimitedToLeadingEligible", "selectedIneligibleLimitedToTwo",
-                     "selectedEligibleLimitedToEight",
+                     "selectedScoreBreakdownLimitedToLeadingEligible",
+                     "selectedEmitterDiagnosticsLimitedToLeadingFour", "selectedIneligibleLimitedToTwo",
+                     "selectedEligibleLimitedToEight", "selectedDecisionTraceEmitterDiagnosticsDropped",
                      "neighbourFramesWithin1", "neighbourFramesWithin0"] where size(payload) > contextByteBudget {
             switch step {
             case "neighbourCandidateGeometryWinnerOnly": level = 1
             case "neighbourCandidateGeometryDropped": level = 2
             case "selectedScoreBreakdownLimitedToLeadingEligible": selectedLimits.breakdown = 4
+            case "selectedEmitterDiagnosticsLimitedToLeadingFour": selectedLimits.emitter = 4
+            case "selectedDecisionTraceEmitterDiagnosticsDropped": selectedTraceEmitter = false
             case "selectedIneligibleLimitedToTwo": selectedLimits.ineligible = 2
             case "selectedEligibleLimitedToEight": selectedLimits.eligible = 8
             case "neighbourFramesWithin1": indexes = indexes.filter { abs($0 - selected.frameIndex) <= 1 }
             default: indexes = indexes.filter { $0 == selected.frameIndex }
             }
-            payload = makePayload(indexes, neighbourLevel: level, selectedLimits: selectedLimits)
+            payload = makePayload(indexes, neighbourLevel: level, selectedLimits: selectedLimits,
+                                  selectedTraceEmitter: selectedTraceEmitter)
             steps.append(step)
         }
         if !steps.isEmpty { payload["compaction"] = steps }
@@ -1242,6 +1257,15 @@ enum DebugRecordingTriageBuilder {
     // MARK: Candidate geometry in contexts
 
     private typealias GeometryTable = [UInt64: [String: [String: Any]]]
+
+    /// Per-frame geometry limits: saved eligible / ineligible entries, entries
+    /// keeping their full score breakdown, entries keeping emitter diagnostics.
+    private struct GeometryLimits {
+        let eligible: Int
+        let ineligible: Int
+        let breakdown: Int
+        let emitter: Int
+    }
 
     private static func geometryTable(_ metadata: [String: Any]) -> GeometryTable {
         var table: GeometryTable = [:]
@@ -1298,7 +1322,8 @@ enum DebugRecordingTriageBuilder {
     /// explicit statement of what was left out.
     private static func geometryContext(_ table: GeometryTable, frameID: UInt64, color: String,
                                         eligibleLimit: Int, ineligibleLimit: Int,
-                                        breakdownLimit: Int = .max) -> [String: Any]? {
+                                        breakdownLimit: Int = .max,
+                                        emitterLimit: Int = .max) -> [String: Any]? {
         guard let set = table[frameID]?[color],
               let stored = set["candidates"] as? [[String: Any]],
               let total = integer(set["totalCandidateCount"]).map({ Int($0) }),
@@ -1324,6 +1349,10 @@ enum DebugRecordingTriageBuilder {
             if position >= breakdownLimit, let breakdown = candidate["scoreBreakdown"] as? [String: Any] {
                 entry["scoreBreakdown"] = ["total": breakdown["total"] ?? 0]
                 entry["scoreBreakdownReduced"] = true
+            }
+            // Emitter evidence follows the same leading-entries rule; the omission is stated.
+            if position >= emitterLimit, entry.removeValue(forKey: "emitter") != nil {
+                entry["emitterDiagnosticsReduced"] = true
             }
             return entry
         }
@@ -1372,11 +1401,16 @@ enum DebugRecordingTriageBuilder {
                                      isSelected: Bool = true,
                                      active: Set<String> = Set(colors),
                                      geometry: GeometryTable = [:],
-                                     geometryLimits: (Int, Int, Int)? = nil) -> [String: Any] {
+                                     geometryLimits: GeometryLimits? = nil,
+                                     traceEmitterDiagnostics: Bool = false) -> [String: Any] {
         var output: [String: Any] = [
             "frameID": integer(frame["frameID"]) ?? UInt64(index),
             "timestamp": number(frame["presentationTimeSeconds"]) ?? 0
         ]
+        // Exposure state of the selected frame (absent in older bundles).
+        if isSelected, let camera = frame["camera"] as? [String: Any], !camera.isEmpty {
+            output["camera"] = camera
+        }
         if let processing = number(frame["processingTimeSeconds"]) {
             output["processingTimeSeconds"] = processing
         }
@@ -1462,6 +1496,9 @@ enum DebugRecordingTriageBuilder {
                                 "continuity", "density", "componentArea", "pointCount", "compoundRejections"] {
                         if let value = entry[key] { trace[key] = value }
                     }
+                    if traceEmitterDiagnostics, let emitter = entry["emitterDiagnostics"] as? [String: Any] {
+                        trace["emitterDiagnostics"] = emitter
+                    }
                     let rules = entry["eligibilityRules"] as? [[String: Any]] ?? []
                     trace["rules"] = rules.filter { string($0["result"]) == "FAIL" }.map { rule in
                         // Codable omits nil optionals; compact rules use explicit nulls
@@ -1476,9 +1513,10 @@ enum DebugRecordingTriageBuilder {
             }
             if let geometryLimits, let id = integer(frame["frameID"]),
                let context = geometryContext(geometry, frameID: id, color: color,
-                                             eligibleLimit: geometryLimits.0,
-                                             ineligibleLimit: geometryLimits.1,
-                                             breakdownLimit: geometryLimits.2) {
+                                             eligibleLimit: geometryLimits.eligible,
+                                             ineligibleLimit: geometryLimits.ineligible,
+                                             breakdownLimit: geometryLimits.breakdown,
+                                             emitterLimit: geometryLimits.emitter) {
                 colorData["candidateGeometry"] = context
             }
             if includeTracking {
@@ -2127,8 +2165,48 @@ struct DebugCandidateGeometry: Equatable {
     let rawPCAEndpoints: [Double]
     let finalOutputEndpoints: [Double]
     let rejectionReasons: [String]
+    /// Compact emitter-eligibility evidence (`SaberEmitterDiagnostics`); nil when
+    /// the analysis carried no diagnostic trace.
+    var emitter: [String: Any]? = nil
 
     static func round4(_ value: Double) -> Double { (value * 10_000).rounded() / 10_000 }
+
+    /// The geometry subset of `DebugRecordingEmitterDiagnostics`, rounded like the rest of the entry.
+    static func emitterDictionary(_ value: SaberEmitterDiagnostics) -> [String: Any] {
+        var result: [String: Any] = [
+            "emitterScore": round4(value.emitterScore),
+            "emitterScoreMargin": round4(value.emitterScoreMargin),
+            "peakTerm": round4(value.peakTerm), "meanTerm": round4(value.meanTerm),
+            "highValueTerm": round4(value.highValueTerm), "purityTerm": round4(value.purityTerm),
+            "clippedWhiteTerm": round4(value.clippedWhiteTerm),
+            "hasEmitterCore": value.hasEmitterCore,
+            "bladeLengthSupport": round4(value.bladeLengthSupport),
+            "localContrast": round4(value.localContrast),
+            "emitterTexture": round4(value.emitterTexture),
+            "coreSupport": round4(value.coreSupport),
+            "meanMinChannel": round4(value.meanMinChannel),
+            "nearWhiteFraction": round4(value.nearWhiteFraction)]
+        if let second = value.meanSecondChannel { result["meanSecondChannel"] = round4(second) }
+        if let shadow = value.shadowR7e {
+            // Evidence only, not applied to recognition.
+            result["shadowR7e"] = ["applied": false, "d240": round4(shadow.d240),
+                                   "clippedWhiteRatio": round4(shadow.clippedWhiteRatio),
+                                   "meanColorPurity": round4(shadow.meanColorPurity),
+                                   "shadowR7eEligible": shadow.shadowEligible] as [String: Any]
+        }
+        return result
+    }
+
+    static func == (lhs: DebugCandidateGeometry, rhs: DebugCandidateGeometry) -> Bool {
+        lhs.listIndex == rhs.listIndex && lhs.eligible == rhs.eligible && lhs.eligibleRank == rhs.eligibleRank
+            && lhs.sourceType == rhs.sourceType && lhs.finalScore == rhs.finalScore
+            && lhs.scoreBreakdown == rhs.scoreBreakdown && lhs.centroid == rhs.centroid
+            && lhs.centroidSource == rhs.centroidSource && lhs.bbox == rhs.bbox
+            && lhs.componentArea == rhs.componentArea && lhs.rawPCASpan == rhs.rawPCASpan
+            && lhs.rawPCAEndpoints == rhs.rawPCAEndpoints && lhs.finalOutputEndpoints == rhs.finalOutputEndpoints
+            && lhs.rejectionReasons == rhs.rejectionReasons
+            && (lhs.emitter.map { NSDictionary(dictionary: $0) } == rhs.emitter.map { NSDictionary(dictionary: $0) })
+    }
 
     var dictionary: [String: Any] {
         var result: [String: Any] = ["listIndex": listIndex, "eligible": eligible,
@@ -2138,6 +2216,7 @@ struct DebugCandidateGeometry: Equatable {
             "rawPCAEndpoints": rawPCAEndpoints, "finalOutputEndpoints": finalOutputEndpoints,
             "rejectionReasons": rejectionReasons]
         if let eligibleRank { result["eligibleRank"] = eligibleRank }
+        if let emitter { result["emitter"] = emitter }
         return result
     }
 }
@@ -2199,7 +2278,8 @@ struct DebugCandidateGeometrySet: Equatable {
                 rawPCASpan: candidate.rawPCASpan,
                 rawPCAEndpoints: [Double(raw.0.x), Double(raw.0.y), Double(raw.1.x), Double(raw.1.y)],
                 finalOutputEndpoints: [Double(final.0.x), Double(final.0.y), Double(final.1.x), Double(final.1.y)],
-                rejectionReasons: reasons))
+                rejectionReasons: reasons,
+                emitter: trace?.emitter.map(DebugCandidateGeometry.emitterDictionary)))
         }
         candidates = saved
     }

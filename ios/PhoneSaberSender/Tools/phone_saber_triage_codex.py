@@ -22,6 +22,7 @@ from phone_saber_tracking_diagnostics import (
     bridge_summary, print_bridge_summary, validate_candidate_geometry, candidate_selection_audit,
     print_candidate_audit,
     validate_selected, validate_compound, validate_transmissions, validate_assessment,
+    validate_emitter_diagnostics, validate_frame_camera,
     temporal_events, sufficient_temporal, supports_temporal_images,
     tracking_repair_required, has_tracking_discontinuity,
     PrecheckFailed, input_failure, tracking_preflight, tracking_summary, print_tracking_summary,
@@ -1057,7 +1058,7 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
             or not set(context["activeColors"]) <= {"red", "blue"}):
         raise BundleError(f"invalid active colors in context: {path.name}")
     if "compaction" in context and (
-            not isinstance(context["compaction"], list) or len(context["compaction"]) > 8
+            not isinstance(context["compaction"], list) or len(context["compaction"]) > 12
             or not all(isinstance(item, str) and len(item) <= 100 for item in context["compaction"])):
         raise BundleError(f"invalid context compaction record: {path.name}")
     if "motionEvent" in context:
@@ -1074,7 +1075,7 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
                 or not _valid_motion_signals(event["signals"]):
             raise BundleError(f"invalid motion event context: {path.name}")
     allowed_frame = {"frameID", "timestamp", "red", "blue",
-                     "processingTimeSeconds", "motionEventIndex"}
+                     "processingTimeSeconds", "motionEventIndex", "camera"}
     allowed_color = {"detected", "predictionUsed", "detectionSucceeded", "maskPixelCount",
                      "morphologyPixelCount", "connectedComponentCount", "candidateCount",
                      "eligibleCandidateCount", "selectedCandidateType", "score", "endpoint",
@@ -1103,6 +1104,8 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
                     isinstance(frame["motionEventIndex"], bool)
                     or not isinstance(frame["motionEventIndex"], int))):
             raise BundleError(f"frame context has invalid motion metrics: {path.name}")
+        if "camera" in frame:
+            validate_frame_camera(frame["camera"])
         for color in ("red", "blue"):
             values = frame.get(color)
             if not isinstance(values, dict) or not set(values).issubset(allowed_color):
@@ -1163,8 +1166,10 @@ def _validate_decision_trace(value: Any, name: str) -> None:
                 "peakValue", "meanValue", "highValueRatio", "meanColorPurity",
                 "clippedWhiteRatio", "isCompactRed", "rawPCASpan",
                 "robustMainIntervalLength", "continuity", "density",
-                "componentArea", "pointCount", "compoundRejections"}):
+                "componentArea", "pointCount", "compoundRejections", "emitterDiagnostics"}):
             raise BundleError(f"invalid candidate decision trace: {name}")
+        if "emitterDiagnostics" in candidate:
+            validate_emitter_diagnostics(candidate["emitterDiagnostics"])
         if not isinstance(candidate.get("index"), int) or isinstance(candidate["index"], bool) \
                 or not isinstance(candidate.get("sourceType"), str) \
                 or len(candidate["sourceType"]) > 100 \

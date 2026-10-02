@@ -244,17 +244,126 @@ final class SaberEndpointDiagnosticTrace {
     let stronglyTrimmedCoreLine: Bool
     let diffusedBlueBody: Bool
     let gatingValues: [String: Double]
+    /// Emitter-eligibility evidence; nil when the candidate had no valid evidence.
+    let emitter: SaberEmitterDiagnostics?
 
     init(centroidX: Double, centroidY: Double, bodyEndpoints: (PixelPoint, PixelPoint)?,
          minimumArea: Int, bodyPointCount: Int, establishedContinuousBody: Bool,
          denseTrimmedCoreLine: Bool, stronglyTrimmedCoreLine: Bool, diffusedBlueBody: Bool,
-         gatingValues: [String: Double]) {
+         gatingValues: [String: Double], emitter: SaberEmitterDiagnostics? = nil) {
         self.centroidX = centroidX; self.centroidY = centroidY; self.bodyEndpoints = bodyEndpoints
         self.minimumArea = minimumArea; self.bodyPointCount = bodyPointCount
         self.establishedContinuousBody = establishedContinuousBody
         self.denseTrimmedCoreLine = denseTrimmedCoreLine
         self.stronglyTrimmedCoreLine = stronglyTrimmedCoreLine; self.diffusedBlueBody = diffusedBlueBody
         self.gatingValues = gatingValues
+        self.emitter = emitter
+    }
+}
+
+/// Emitter-eligibility evidence of one candidate, for Debug Recording only.
+///
+/// Built exclusively inside `scoredSaberComponent`'s
+/// `collectEndpointDiagnostics` branch, after the candidate (score,
+/// eligibility, endpoints) is already final. Fields named after production
+/// variables are copies of those variables; the `*Term` split and the
+/// `coreBy*` inputs repeat the production formula on the copied inputs; the
+/// channel statistics are a separate read-only pass over the component's own
+/// mask samples. Nothing here is read by recognition.
+struct SaberEmitterDiagnostics: Equatable {
+    /// Production `emitterScore` (copied, not recomputed).
+    let emitterScore: Double
+    /// `clamp01((peak - 200) / 55) * 0.32` and the other four addends, in production order.
+    let peakTerm: Double
+    let meanTerm: Double
+    let highValueTerm: Double
+    let purityTerm: Double
+    let clippedWhiteTerm: Double
+    /// hasEmitterCore = coreByHighValueRatio || coreByPeakAndMean || coreByClippedWhite.
+    let hasEmitterCore: Bool
+    let coreByHighValueRatio: Bool
+    let coreByPeakAndMean: Bool
+    let coreByClippedWhite: Bool
+    /// Production `isEmitterEligible` at the scoring site (before any later
+    /// source-specific rejection in BGRADetection).
+    let baseEligible: Bool
+    let compactRedGate: Bool
+    /// Production `majorLength` (mask samples) and `bladeLengthSupport`.
+    let majorLengthSamples: Double
+    let bladeLengthSupport: Double
+    let localContrast: Double
+    let emitterTexture: Double
+    let brightnessVariation: Double
+    let coreSupport: Double
+    let longitudinalCoreCoverage: Double
+    let longitudinalHighCoverage: Double
+    /// Sorted-channel statistics over every component sample (max channel =
+    /// `value`; second channel = the radiance map; min channel = value - chroma).
+    let sampleCount: Int
+    let colorSampleCount: Int
+    let meanMaxChannel: Double
+    let meanSecondChannel: Double?
+    let maxSecondChannel: Int?
+    let meanMinChannel: Double
+    /// value >= 245 && chroma <= 38: the production clipped-white pixel test.
+    let nearWhiteFraction: Double
+    /// second channel >= 100: the production bright-core second-channel floor.
+    let brightSecondChannelFraction: Double?
+
+    /// Red candidates only: offline-explored "R7e" matte-red rule, evaluated as
+    /// evidence and NEVER applied to eligibility, ranking or output.
+    let shadowR7e: SaberShadowR7eVerdict?
+
+    static let emitterScoreThreshold = 0.42
+    var emitterScoreMargin: Double { emitterScore - Self.emitterScoreThreshold }
+}
+
+/// Shadow verdict of the offline red-eligibility rule "R7e"
+/// (clippedWhiteRatio >= 0.35 || d240 >= 4.2 || (d240 >= 3.5 && purity >= 0.60)).
+/// Evidence only, not applied: its thresholds were fitted to ~5 sessions with
+/// tiny margins, so recognition ignores it entirely. Recorded to collect real
+/// distributions of the deciding features.
+struct SaberShadowR7eVerdict: Equatable {
+    static let clippedWhiteThreshold = 0.35
+    static let thickBodyDensityThreshold = 4.2
+    static let saturatedBodyDensityThreshold = 3.5
+    static let saturatedBodyPurityThreshold = 0.60
+    /// Short side (mask samples) the density is normalised to.
+    static let referenceShortSide = 240.0
+
+    /// Dominant-body axial density (production `body.density`).
+    let density: Double
+    /// points / majorLength, used when no body density was established.
+    let fallbackDensity: Double
+    let usedFallbackDensity: Bool
+    /// Chosen density scaled to a 240-sample short side.
+    let d240: Double
+    let clippedWhiteRatio: Double
+    let meanColorPurity: Double
+    /// The rule's OR expression alone.
+    let ruleSatisfied: Bool
+    /// baseEligible && ruleSatisfied: what eligibility would be if R7e applied.
+    let shadowEligible: Bool
+
+    var clippedWhiteMargin: Double { clippedWhiteRatio - Self.clippedWhiteThreshold }
+    var thickBodyMargin: Double { d240 - Self.thickBodyDensityThreshold }
+    var saturatedBodyDensityMargin: Double { d240 - Self.saturatedBodyDensityThreshold }
+    var saturatedBodyPurityMargin: Double { meanColorPurity - Self.saturatedBodyPurityThreshold }
+
+    init(bodyDensity: Double, pointCount: Int, majorLength: Double, maskWidth: Int, maskHeight: Int,
+         clippedWhiteRatio: Double, meanColorPurity: Double, baseEligible: Bool) {
+        density = bodyDensity
+        fallbackDensity = Double(pointCount) / max(majorLength, 1.0)
+        usedFallbackDensity = !(bodyDensity > 0)
+        let chosen = usedFallbackDensity ? fallbackDensity : bodyDensity
+        d240 = chosen * Self.referenceShortSide / Double(max(min(maskWidth, maskHeight), 1))
+        self.clippedWhiteRatio = clippedWhiteRatio
+        self.meanColorPurity = meanColorPurity
+        ruleSatisfied = clippedWhiteRatio >= Self.clippedWhiteThreshold
+            || d240 >= Self.thickBodyDensityThreshold
+            || (d240 >= Self.saturatedBodyDensityThreshold
+                && meanColorPurity >= Self.saturatedBodyPurityThreshold)
+        shadowEligible = baseEligible && ruleSatisfied
     }
 }
 
@@ -869,9 +978,83 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                 "diffuserRetainedRatioThreshold": EndpointSelectionThresholds.diffuserRetainedRatio,
                 "diffuserContinuityThreshold": EndpointSelectionThresholds.diffuserContinuity,
                 "colorPurity": meanPurity, "diffuserColorPurityThreshold": EndpointSelectionThresholds.diffuserColorPurity,
-                "coreSupport": coreSupportRatio, "diffuserCoreSupportThreshold": EndpointSelectionThresholds.diffuserCoreSupport])
+                "coreSupport": coreSupportRatio, "diffuserCoreSupportThreshold": EndpointSelectionThresholds.diffuserCoreSupport],
+            emitter: evidence.flatMap { evidence in
+                evidence.isValid(width: width, height: height) ? saberEmitterDiagnostics(
+                    points: points, width: width, height: height, evidence: evidence,
+                    bodyDensity: body.density,
+                    emitterScore: emitterScore, peakValue: peakValue, meanValue: meanValue,
+                    highRatio: highRatio, meanPurity: meanPurity, clippedRatio: clippedRatio,
+                    baseEligible: isEmitterEligible, isCompactRed: isCompactRed,
+                    majorLength: majorLength, bladeLengthSupport: bladeLengthSupport,
+                    localContrast: localContrast, emitterTexture: emitterTexture,
+                    brightnessVariation: brightnessVariation, coreSupport: coreSupportRatio,
+                    longitudinalCoreCoverage: longitudinalCoreCoverage,
+                    longitudinalHighCoverage: longitudinalHighCoverage) : nil
+            })
     }
     return candidate
+}
+
+/// Debug Recording only: see `SaberEmitterDiagnostics`. Every argument is a
+/// final production value of the candidate; this function only splits the
+/// emitter score into its addends and reads the component's own samples.
+private func saberEmitterDiagnostics(
+    points: [PixelPoint], width: Int, height: Int, evidence: SaberEvidence,
+    bodyDensity: Double, emitterScore: Double, peakValue: Int, meanValue: Double, highRatio: Double,
+    meanPurity: Double, clippedRatio: Double, baseEligible: Bool, isCompactRed: Bool,
+    majorLength: Double, bladeLengthSupport: Double, localContrast: Double,
+    emitterTexture: Double, brightnessVariation: Double, coreSupport: Double,
+    longitudinalCoreCoverage: Double, longitudinalHighCoverage: Double
+) -> SaberEmitterDiagnostics {
+    let hasRadiance = evidence.radiance.count == evidence.value.count
+    var colorSamples = 0, nearWhite = 0, brightSecond = 0, maxSecond = 0
+    var maxSum = 0, secondSum = 0, minSum = 0
+    for point in points {
+        let index = point.y * width + point.x
+        let value = Int(evidence.value[index]), chroma = Int(evidence.chroma[index])
+        if evidence.colorMask[index] != 0 { colorSamples += 1 }
+        if value >= 245 && chroma <= 38 { nearWhite += 1 }
+        maxSum += value
+        minSum += max(0, value - chroma)
+        if hasRadiance {
+            let second = Int(evidence.radiance[index])
+            secondSum += second
+            maxSecond = max(maxSecond, second)
+            if second >= 100 { brightSecond += 1 }
+        }
+    }
+    let count = Double(max(points.count, 1))
+    return SaberEmitterDiagnostics(
+        emitterScore: emitterScore,
+        peakTerm: clamp01((Double(peakValue) - 200.0) / 55.0) * 0.32,
+        meanTerm: clamp01((meanValue - 160.0) / 95.0) * 0.23,
+        highValueTerm: highRatio * 0.28,
+        purityTerm: meanPurity * 0.12,
+        clippedWhiteTerm: clippedRatio * 0.05,
+        hasEmitterCore: highRatio >= 0.08 || (peakValue >= 242 && meanValue >= 190) || clippedRatio > 0,
+        coreByHighValueRatio: highRatio >= 0.08,
+        coreByPeakAndMean: peakValue >= 242 && meanValue >= 190,
+        // clippedRatio > 0 exactly when the production clippedWhiteCount > 0.
+        coreByClippedWhite: clippedRatio > 0,
+        baseEligible: baseEligible, compactRedGate: isCompactRed,
+        majorLengthSamples: majorLength, bladeLengthSupport: bladeLengthSupport,
+        localContrast: localContrast, emitterTexture: emitterTexture,
+        brightnessVariation: brightnessVariation, coreSupport: coreSupport,
+        longitudinalCoreCoverage: longitudinalCoreCoverage,
+        longitudinalHighCoverage: longitudinalHighCoverage,
+        sampleCount: points.count, colorSampleCount: colorSamples,
+        meanMaxChannel: Double(maxSum) / count,
+        meanSecondChannel: hasRadiance ? Double(secondSum) / count : nil,
+        maxSecondChannel: hasRadiance ? maxSecond : nil,
+        meanMinChannel: Double(minSum) / count,
+        nearWhiteFraction: Double(nearWhite) / count,
+        brightSecondChannelFraction: hasRadiance ? Double(brightSecond) / count : nil,
+        shadowR7e: evidence.color == .red ? SaberShadowR7eVerdict(
+            bodyDensity: bodyDensity, pointCount: points.count, majorLength: majorLength,
+            maskWidth: width, maskHeight: height, clippedWhiteRatio: clippedRatio,
+            meanColorPurity: meanPurity, baseEligible: baseEligible) : nil
+    )
 }
 
 /// Returns every shape-valid component so fixture tests can compare the chosen

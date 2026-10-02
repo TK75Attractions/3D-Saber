@@ -1188,6 +1188,22 @@ final class CameraViewModel: NSObject, ObservableObject {
             stabilization: Self.stabilizationDescription(output.connection(with: .video)?.activeVideoStabilizationMode)
         )
         if debugCameraConfiguration != updated { debugCameraConfiguration = updated }
+#if os(iOS)
+        if debugRecordingActive {
+            // Same throttled main-actor read as above; the processor only keeps
+            // the newest value and attaches it, with its age, to each frame.
+            let deviceGains = camera.deviceWhiteBalanceGains
+            processor.updateDebugCameraDeviceState(DebugCameraDeviceState(
+                iso: Double(camera.iso),
+                exposureDurationSeconds: CMTimeGetSeconds(camera.exposureDuration),
+                exposureTargetBias: Double(camera.exposureTargetBias),
+                exposureTargetOffset: Double(camera.exposureTargetOffset),
+                whiteBalanceGains: [Double(deviceGains.redGain), Double(deviceGains.greenGain),
+                                    Double(deviceGains.blueGain)],
+                sampledAt: HostMonotonicClock.now()
+            ))
+        }
+#endif
         let now = ProcessInfo.processInfo.systemUptime
         if debugRecordingActive && now - lastCameraSampleTime >= 1.0 {
             lastCameraSampleTime = now
@@ -1406,6 +1422,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         // finalization after recorder creation instead of leaving it orphaned.
         debugRecordingActive = true
         debugRecordingStatus = "録画を開始しています…"
+        processor.updateDebugCameraDeviceState(nil)
         processor.startDebugRecording(diagnosticColors: debugDiagnosticColors) { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }
@@ -1429,6 +1446,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         debugRecordingActive = false
         manualLosslessCapturePending = false
         debugRecordingFinalizing = true
+        processor.updateDebugCameraDeviceState(nil)
         if reason == .background && recordingBackgroundTask == .invalid {
             recordingBackgroundTask = UIApplication.shared.beginBackgroundTask(
                 withName: "PhoneSaber recording finalize"

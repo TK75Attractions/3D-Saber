@@ -1038,7 +1038,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                         establishedContinuousBody: trace.establishedContinuousBody,
                         denseTrimmedCoreLine: trace.denseTrimmedCoreLine,
                         stronglyTrimmedCoreLine: trace.stronglyTrimmedCoreLine,
-                        diffusedBlueBody: trace.diffusedBlueBody, gatingValues: trace.gatingValues)
+                        diffusedBlueBody: trace.diffusedBlueBody, gatingValues: trace.gatingValues,
+                        emitter: trace.emitter)
                 }
             )
         }

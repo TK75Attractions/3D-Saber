@@ -50,6 +50,42 @@ SCORE_BREAKDOWN = object_field({
     )
 }, required=True)
 
+SHADOW_R7E = object_field({
+    **{name: scalar("number") for name in (
+        "density", "fallbackDensity", "d240", "clippedWhiteRatio", "meanColorPurity",
+        "clippedWhiteMargin", "thickBodyMargin", "saturatedBodyDensityMargin",
+        "saturatedBodyPurityMargin")},
+    **{name: scalar("boolean") for name in (
+        "applied", "usedFallbackDensity", "ruleSatisfied", "shadowR7eEligible")},
+})
+
+# Debug Recording diagnostic path only; absent in older bundles.
+EMITTER_DIAGNOSTICS = object_field({
+    **{name: scalar("number") for name in (
+        "emitterScore", "emitterScoreThreshold", "emitterScoreMargin", "peakTerm", "meanTerm",
+        "highValueTerm", "purityTerm", "clippedWhiteTerm", "majorLengthSamples",
+        "bladeLengthSupport", "localContrast", "emitterTexture", "brightnessVariation",
+        "coreSupport", "longitudinalCoreCoverage", "longitudinalHighCoverage",
+        "meanMaxChannel", "meanMinChannel", "nearWhiteFraction")},
+    "meanSecondChannel": scalar("number", nullable=True),
+    "brightSecondChannelFraction": scalar("number", nullable=True),
+    "maxSecondChannel": scalar("integer", nullable=True),
+    "sampleCount": scalar("integer"),
+    "colorSampleCount": scalar("integer"),
+    **{name: scalar("boolean") for name in (
+        "hasEmitterCore", "coreByHighValueRatio", "coreByPeakAndMean", "coreByClippedWhite",
+        "baseEligible", "compactRedGate")},
+    "shadowR7e": SHADOW_R7E,
+}, nullable=True)
+
+FRAME_CAMERA = object_field({
+    "source": scalar("string"),
+    **{name: scalar("number", nullable=True) for name in (
+        "iso", "exposureDurationSeconds", "exposureBiasEV", "brightnessValue", "fNumber",
+        "exposureTargetBias", "exposureTargetOffset", "deviceSampleAgeSeconds")},
+    "whiteBalanceGains": array_field(scalar("number"), nullable=True),
+}, nullable=True)
+
 CANDIDATE = object_field({
     "index": scalar("integer", required=True),
     "selected": scalar("boolean", required=True),
@@ -74,6 +110,7 @@ CANDIDATE = object_field({
     "bbox": array_field(scalar("integer")),
     "endpointPipeline": object_field({}),
     "compoundRejections": array_field(object_field({})),
+    "emitterDiagnostics": EMITTER_DIAGNOSTICS,
 }, required=True)
 
 COLOR_CANDIDATES = object_field({
@@ -127,6 +164,7 @@ FRAME = object_field({
     "processingTimeSeconds": scalar("number", nullable=True),
     "motionEventIndex": scalar("integer", nullable=True),
     "tracking": object_field({"red": object_field({}), "blue": object_field({})}),
+    "camera": FRAME_CAMERA,
 }, required=True)
 
 CAMERA_SAMPLE = object_field({

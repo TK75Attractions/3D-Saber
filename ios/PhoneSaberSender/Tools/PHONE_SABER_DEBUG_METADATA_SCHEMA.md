@@ -43,6 +43,7 @@ fields are reported and treated as unknown at their own field or frame.
 | `forensicFileName`, `manualFileName` | string | Optional | Saved still-image filename when present. |
 | `blueDropoutRole`, `blueDropoutFileName` | string | Optional | BLUE dropout capture annotation and still-image filename. |
 | `redDropoutRole`, `redDropoutFileName` | string | Optional | RED counterpart to the BLUE dropout fields. |
+| `camera` | frame camera object | Optional | Exposure state of this frame (see "Per-frame camera state"). Absent in older recordings and when no source was available. |
 
 Dropout roles `last-detected-before-dropout`, `dropout`, and `recovered` were written
 by recorders before bridge dropout events existed. Current recordings no longer write
@@ -105,6 +106,7 @@ Candidate object fields:
 | `componentArea` | integer |
 | `pointCount` | integer |
 | `usedPointLEDFallback` | boolean |
+| `emitterDiagnostics` | emitter diagnostics object, optional (see below) |
 
 An eligibility rule has `result: PASS` when its comparison holds and `FAIL`
 otherwise. Compound rejections list the failing escape conditions that would
@@ -120,6 +122,71 @@ integer `x` and `y` coordinates. A score object contains numeric fields:
 `highBrightnessRatio`, `colorPurity`, `localContrast`, `emitterTexture`,
 `clippedWhite`, `longitudinalHighCoverage`, `coreSupport`,
 `longitudinalCoreCoverage`, and `total`.
+
+### Emitter diagnostics (optional, additive)
+
+`emitterDiagnostics` is written only for frames analysed on the Debug Recording
+diagnostic path (`collectPipelineDiagnostics`); older bundles and candidates
+without valid evidence omit it, and readers must accept its absence. It is
+built after the candidate's score, eligibility and endpoints are final and is
+never read by recognition, so recording it cannot change any detection result.
+Values are rounded to six decimals.
+
+To protect the streamed file's size budget, the streamed `*_metadata.json`
+carries only the compact subset that the candidate's other fields cannot
+reproduce: `emitterScore`, `emitterScoreMargin`, `hasEmitterCore`,
+`baseEligible`, `bladeLengthSupport`, `meanSecondChannel`, `meanMinChannel`,
+`nearWhiteFraction` and `shadowR7e` with `applied`, `d240`, `ruleSatisfied`,
+`shadowR7eEligible` (about 2 KiB per busy frame). The triage snapshot, and so
+every compact context, carries all fields below.
+
+| Field | JSON type | Meaning |
+| --- | --- | --- |
+| `emitterScore` | number | Production `emitterScore` (copied). |
+| `emitterScoreThreshold`, `emitterScoreMargin` | number | `0.42` and `emitterScore - 0.42`. |
+| `peakTerm`, `meanTerm`, `highValueTerm`, `purityTerm`, `clippedWhiteTerm` | number | The five addends of `emitterScore`: `clamp01((peak-200)/55)*0.32`, `clamp01((mean-160)/95)*0.23`, `highValueRatio*0.28`, `meanColorPurity*0.12`, `clippedWhiteRatio*0.05`. |
+| `hasEmitterCore` | boolean | `coreByHighValueRatio OR coreByPeakAndMean OR coreByClippedWhite`. |
+| `coreByHighValueRatio`, `coreByPeakAndMean`, `coreByClippedWhite` | boolean | `highValueRatio >= 0.08`; `peak >= 242 AND mean >= 190`; at least one clipped-white sample. |
+| `baseEligible` | boolean | `isEmitterEligible` at the scoring site (peak, core, score and the compact-red gate). A later source-specific rule may still reject the candidate; compare with the candidate's `eligible`. |
+| `compactRedGate` | boolean | The compact-red extra gate applied. |
+| `majorLengthSamples`, `bladeLengthSupport` | number | PCA length in mask samples and the factor scaling the radiance / clipped-white / core-support / core-coverage score terms. |
+| `localContrast`, `emitterTexture`, `brightnessVariation`, `coreSupport`, `longitudinalCoreCoverage`, `longitudinalHighCoverage` | number | Production values (copied). |
+| `sampleCount`, `colorSampleCount` | integer | Component mask samples; those inside the color mask. |
+| `meanMaxChannel`, `meanMinChannel` | number | Mean of the largest and smallest of R/G/B over the component. For a red component the max channel is R, so `meanMinChannel` and `meanSecondChannel` are its non-dominant channels. |
+| `meanSecondChannel`, `maxSecondChannel` | number / integer, optional | Mean and maximum of the middle channel (null when the evidence had no radiance map). |
+| `nearWhiteFraction` | number | Share of samples with `value >= 245 AND chroma <= 38` (the clipped-white test). |
+| `brightSecondChannelFraction` | number, optional | Share of samples whose middle channel is `>= 100` (the bright-core floor). |
+| `shadowR7e` | object, red only, optional | Shadow verdict of the offline "R7e" rule. **Evidence only, not applied.** |
+
+`shadowR7e` records the rule
+`clippedWhiteRatio >= 0.35 OR d240 >= 4.2 OR (d240 >= 3.5 AND meanColorPurity >= 0.60)`,
+where `d` is the dominant-body axial density (`points / majorLength` when no body
+density was established) and `d240 = d * 240 / min(maskWidth, maskHeight)`.
+Fields: `applied` (always `false`), `density`, `fallbackDensity`,
+`usedFallbackDensity`, `d240`, `clippedWhiteRatio`, `meanColorPurity`, the
+margins `clippedWhiteMargin`, `thickBodyMargin`, `saturatedBodyDensityMargin`,
+`saturatedBodyPurityMargin` (value minus threshold), `ruleSatisfied` (the OR
+expression) and `shadowR7eEligible` (`baseEligible AND ruleSatisfied`). The
+thresholds come from a small offline exploration with tiny margins; production
+eligibility, ranking and UDP output never read this object. It exists to
+collect real distributions before any production decision.
+
+## Per-frame camera state
+
+`frames[].camera` is optional and additive. Exif values come from the frame's
+own sample-buffer attachment and describe exactly that frame; device values
+are the newest AVCaptureDevice state pushed (about every 0.2 s, DEBUG builds)
+while recording, with its age. The processing queue never calls
+AVCaptureDevice.
+
+| Field | JSON type | Meaning |
+| --- | --- | --- |
+| `source` | string | `exif`, `device` or `exif+device`. |
+| `iso`, `exposureDurationSeconds` | number, optional | Exif ISO / exposure time; device values only when Exif lacks them. |
+| `exposureBiasEV`, `brightnessValue`, `fNumber` | number, optional | Exif ExposureBiasValue, BrightnessValue (APEX) and FNumber. |
+| `exposureTargetBias`, `exposureTargetOffset` | number, optional | Device exposure target bias and metering offset (EV). |
+| `whiteBalanceGains` | array of 3 numbers, optional | Device white-balance gains `[red, green, blue]`. |
+| `deviceSampleAgeSeconds` | number, optional | Age of the device values when the frame was recorded. |
 
 ## Camera samples
 
@@ -239,3 +306,24 @@ them with `bridgeEventID` and `evidenceUnit`, marks the annotated image
 `candidateGeometry` (array of `{frameID, red?, blue?}`) exists only in the triage
 snapshot handed to the bundle builder for retained event frames. It is not written to
 the streamed `*_metadata.json`. See `BRIDGE_DROPOUT_DIAGNOSTICS.md`.
+
+Each geometry entry may carry an optional compact `emitter` object (a subset of
+`emitterDiagnostics`: `emitterScore`, `emitterScoreMargin`, the five `*Term`
+fields, `hasEmitterCore`, `bladeLengthSupport`, `localContrast`,
+`emitterTexture`, `coreSupport`, `meanSecondChannel`, `meanMinChannel`,
+`nearWhiteFraction` and, for red, `shadowR7e` with `applied: false`, `d240`,
+`clippedWhiteRatio`, `meanColorPurity`, `shadowR7eEligible`).
+
+### Compact triage contexts
+
+In a frame context only the selected frame carries `camera`, and only its
+`candidateDecisionTrace` entries carry `emitterDiagnostics`; neighbour frames
+carry neither, and neighbour geometry has no `emitter`. When a context exceeds
+its 24 KiB budget the builder reduces detail step by step and lists each step in
+`compaction`, in this order: `neighbourCandidateGeometryWinnerOnly`,
+`neighbourCandidateGeometryDropped`, `selectedScoreBreakdownLimitedToLeadingEligible`,
+`selectedEmitterDiagnosticsLimitedToLeadingFour` (later entries get
+`emitterDiagnosticsReduced: true` instead of `emitter`),
+`selectedIneligibleLimitedToTwo`, `selectedEligibleLimitedToEight`,
+`selectedDecisionTraceEmitterDiagnosticsDropped`, `neighbourFramesWithin1`,
+`neighbourFramesWithin0`. Contexts stay below the 32 KiB preflight limit.

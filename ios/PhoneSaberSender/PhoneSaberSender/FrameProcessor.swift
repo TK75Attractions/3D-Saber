@@ -99,6 +99,9 @@ final class FrameProcessor: @unchecked Sendable {
     private var pendingDebugCameraSample: DebugRecordingCameraSample?
     private var debugCameraSampleDrainScheduled = false
 #endif
+    /// Newest AVCaptureDevice exposure state, guarded by pendingLock. Read
+    /// only while a Debug Recording is active.
+    private var debugCameraDeviceState: DebugCameraDeviceState?
     private let rawFrameDirectory: () throws -> URL
     private lazy var rawFrameContext = CIContext(options: [.cacheIntermediates: false])
     var currentGeneration: Int {
@@ -345,6 +348,15 @@ final class FrameProcessor: @unchecked Sendable {
     }
 #endif
 
+    /// Stores the newest device exposure state for per-frame Debug Recording
+    /// metadata. A single slot under the mailbox lock: callers never wait for
+    /// the processing queue, and a newer state simply replaces an older one.
+    func updateDebugCameraDeviceState(_ state: DebugCameraDeviceState?) {
+        pendingLock.lock()
+        debugCameraDeviceState = state
+        pendingLock.unlock()
+    }
+
     func stopDebugRecording(
         reason: DebugRecordingFinishReason = .user,
         completion: @escaping (Result<DebugRecordingResult, Error>) -> Void
@@ -497,13 +509,23 @@ final class FrameProcessor: @unchecked Sendable {
                                   processingStart: processingStart,
                                   generation: generation, trace: trace, recordingFrameID: sequence)
         if let debugVideoRecorder = debugVideoRecorder {
+            let processingTimeSeconds = max(0, clock() - processingStart)
+            // Recording only: this frame's Exif attachment plus the newest
+            // pushed device state. Neither read can block on the camera.
+            pendingLock.lock()
+            let deviceState = debugCameraDeviceState
+            pendingLock.unlock()
+            let camera = DebugRecordingFrameCamera.make(
+                exif: DebugRecordingFrameCamera.exifAttachment(of: sampleBuffer),
+                device: deviceState, now: clock())
             let appendResult = debugVideoRecorder.append(
                 pixelBuffer: pixelBuffer,
                 presentationTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer),
                 frameID: sequence,
                 results: emitted,
                 analysis: analysis,
-                processingTimeSeconds: max(0, clock() - processingStart)
+                processingTimeSeconds: processingTimeSeconds,
+                camera: camera
             )
             if case .reachedLimit(let reason) = appendResult {
                 onDebugRecordingLimitReached?(reason)

@@ -1408,3 +1408,113 @@ extension DebugBridgeDropoutTests {
         XCTAssertEqual(significantAlone.images.count, 11)
     }
 }
+
+// MARK: - Emitter diagnostics and camera state in compact contexts
+
+extension DebugBridgeDropoutTests {
+    private static let redEvidence: SaberEvidence = {
+        let count = 640 * 480
+        return SaberEvidence(color: .red, radiance: Array(repeating: 40, count: count),
+                             value: Array(repeating: 250, count: count),
+                             chroma: Array(repeating: 220, count: count),
+                             colorMask: Array(repeating: 1, count: count),
+                             coreMask: Array(repeating: 0, count: count))
+    }()
+
+    private func emitterSaber(x: Int, y: Int = 30, eligible: Bool = true, score: Double = 80) throws -> SaberCandidate {
+        let points = (0...60).flatMap { a in (0...4).map { PixelPoint(x: x + a, y: y + $0) } }
+        var candidate = try XCTUnwrap(saberCandidate(from: points, width: 640, height: 480,
+                                                    evidence: Self.redEvidence,
+                                                    collectEndpointDiagnostics: true))
+        XCTAssertNotNil(candidate.endpointDiagnosticTrace?.emitter?.shadowR7e)
+        candidate.isEmitterEligible = eligible
+        candidate.score = score
+        return candidate
+    }
+
+    private func emitterBundle(red: [SaberCandidate], blue: [SaberCandidate]) throws -> URL {
+        let directory = try temporaryDirectory()
+        let events = [event(1, color: "red", start: 10)]
+        try writeImages(events, to: directory)
+        let encoder = JSONEncoder()
+        func colorDiagnostics(_ list: [SaberCandidate]) throws -> Any {
+            try JSONSerialization.jsonObject(with: encoder.encode(DebugRecordingColorCandidates(list, pipeline: nil)))
+        }
+        let camera: [String: Any] = ["source": "exif+device", "iso": 320, "exposureDurationSeconds": 0.008333,
+                                     "exposureBiasEV": 0, "brightnessValue": 1.5, "fNumber": 1.78,
+                                     "exposureTargetBias": 0, "exposureTargetOffset": -0.125,
+                                     "whiteBalanceGains": [1.9, 1, 2.1], "deviceSampleAgeSeconds": 0.1]
+        let frames = try (8...14).map { id -> [String: Any] in
+            ["frameID": id, "presentationTimeSeconds": Double(id) / 30,
+             "red": detection([100, 100, 200, 100]), "blue": detection([100, 300, 200, 300]),
+             "redDetectionSucceeded": true, "blueDetectionSucceeded": true,
+             "candidateDiagnostics": ["red": try colorDiagnostics(red), "blue": try colorDiagnostics(blue)],
+             "forensicCaptured": false, "manualCaptured": false, "camera": camera]
+        }
+        let entries = (8...14).map { id -> [String: Any] in
+            ["frameID": id, "red": DebugCandidateGeometrySet(red).dictionary,
+             "blue": DebugCandidateGeometrySet(blue).dictionary]
+        }
+        let data = try addGeometry(document(frames: frames, events: events, active: ["red", "blue"]), entries)
+        return try DebugRecordingTriageBuilder.build(
+            metadataData: data, metadataURL: directory.appendingPathComponent("metadata.json"),
+            forensicDirectoryURL: directory)
+    }
+
+    func testContextsCarryEmitterEvidenceAndCameraWithinTheLimit() throws {
+        // Small frame: everything fits, nothing is reduced.
+        let small = try emitterBundle(red: [try emitterSaber(x: 10), try emitterSaber(x: 200, score: 70)], blue: [])
+        let context = try XCTUnwrap(try contexts(small).first {
+            ($0["bridgeEvent"] as? [String: Any])?["role"] as? String == "dropout" })
+        XCTAssertNil(context["compaction"])
+        let frames = try XCTUnwrap(context["frames"] as? [[String: Any]])
+        let selected = try XCTUnwrap(frames.first { $0["frameID"] as? Int == 11 })
+        XCTAssertEqual((selected["camera"] as? [String: Any])?["iso"] as? Double, 320)
+        XCTAssertTrue(frames.filter { $0["frameID"] as? Int != 11 }.allSatisfy { $0["camera"] == nil },
+                      "camera state is attached to the selected frame only")
+        let red = try XCTUnwrap(selected["red"] as? [String: Any])
+        let trace = try XCTUnwrap((red["candidateDecisionTrace"] as? [[String: Any]])?.first)
+        let emitter = try XCTUnwrap(trace["emitterDiagnostics"] as? [String: Any])
+        XCTAssertEqual(emitter["emitterScoreThreshold"] as? Double, 0.42)
+        XCTAssertNotNil(emitter["bladeLengthSupport"] as? Double)
+        XCTAssertEqual((emitter["shadowR7e"] as? [String: Any])?["applied"] as? Bool, false)
+        let neighbour = try XCTUnwrap(frames.first { $0["frameID"] as? Int == 12 }?["red"] as? [String: Any])
+        XCTAssertTrue((neighbour["candidateDecisionTrace"] as? [[String: Any]] ?? []).allSatisfy {
+            $0["emitterDiagnostics"] == nil })
+        let geometry = try redGeometry(context, frame: 11)
+        let entries = try XCTUnwrap(geometry["candidates"] as? [[String: Any]])
+        XCTAssertTrue(entries.allSatisfy { ($0["emitter"] as? [String: Any])?["emitterScore"] is Double })
+        XCTAssertTrue(entries.allSatisfy {
+            (($0["emitter"] as? [String: Any])?["shadowR7e"] as? [String: Any])?["applied"] as? Bool == false })
+        if let neighbourGeometry = try? redGeometry(context, frame: 12) {
+            XCTAssertTrue((neighbourGeometry["candidates"] as? [[String: Any]] ?? []).allSatisfy {
+                $0["emitter"] == nil })
+        }
+
+        // Many candidates on both colors: still under 32 KiB, and every reduction is stated.
+        let many = try (0..<12).map { try emitterSaber(x: 10 + $0 * 30, score: 90 - Double($0)) }
+            + (try (0..<6).map { try emitterSaber(x: 450 + $0 * 20, eligible: false, score: 5) })
+        let large = try emitterBundle(red: many, blue: many)
+        for context in try contexts(large) {
+            let data = try JSONSerialization.data(withJSONObject: context)
+            XCTAssertLessThan(data.count, 32 * 1024)
+            let compaction = context["compaction"] as? [String] ?? []
+            XCTAssertTrue(!compaction.isEmpty || data.count <= 24 * 1024)
+            guard (context["bridgeEvent"] as? [String: Any])?["auxiliary"] as? Bool != true,
+                  let id = context["selectedFrameID"] as? Int else { continue }
+            let geometry = try redGeometry(context, frame: id)
+            for entry in geometry["candidates"] as? [[String: Any]] ?? [] {
+                XCTAssertTrue((entry["emitter"] != nil) != (entry["emitterDiagnosticsReduced"] as? Bool == true),
+                              "each entry keeps its emitter evidence or says it was reduced")
+            }
+            if (geometry["candidates"] as? [[String: Any]] ?? []).contains(where: { $0["emitterDiagnosticsReduced"] != nil }) {
+                XCTAssertTrue(compaction.contains("selectedEmitterDiagnosticsLimitedToLeadingFour"))
+            }
+            let frames = try XCTUnwrap(context["frames"] as? [[String: Any]])
+            let selectedRed = try XCTUnwrap(frames.first { $0["frameID"] as? Int == id }?["red"] as? [String: Any])
+            let traced = (selectedRed["candidateDecisionTrace"] as? [[String: Any]] ?? []).contains {
+                $0["emitterDiagnostics"] != nil }
+            XCTAssertTrue(traced || compaction.contains("selectedDecisionTraceEmitterDiagnosticsDropped"))
+        }
+    }
+}

@@ -2,6 +2,7 @@ import AVFoundation
 import CoreImage
 import CoreVideo
 import Foundation
+import ImageIO
 import os
 
 struct DebugRecordingResult {
@@ -301,6 +302,202 @@ struct DebugRecordingEndpointPipeline: Codable, Equatable {
     let gatingCoordinateSpace: String
 }
 
+extension CodingUserInfoKey {
+    /// Set on the encoder of the streamed `*_metadata.json`. Diagnostic
+    /// payloads that also reach the in-memory triage snapshot write only their
+    /// compact subset there, so long recordings keep their metadata budget.
+    static let debugRecordingStreamedMetadata = CodingUserInfoKey(rawValue: "phoneSaber.streamedMetadata")!
+}
+
+/// Per-candidate emitter-eligibility evidence copied from the detector's
+/// diagnostic trace (`SaberEmitterDiagnostics`). Present only when the frame
+/// was analysed with pipeline diagnostics (Debug Recording); older bundles omit
+/// it. Values are rounded to six decimals. The streamed metadata file carries
+/// the non-optional (compact) fields; the triage snapshot carries all fields.
+struct DebugRecordingEmitterDiagnostics: Codable, Equatable {
+    // Compact fields: streamed and snapshot. Everything here is information
+    // the candidate's existing fields cannot reproduce.
+    let emitterScore: Double
+    let emitterScoreMargin: Double
+    let hasEmitterCore: Bool
+    let baseEligible: Bool
+    let bladeLengthSupport: Double
+    let meanSecondChannel: Double?
+    let meanMinChannel: Double
+    let nearWhiteFraction: Double
+    /// Red only. Evidence only, not applied to recognition.
+    let shadowR7e: DebugRecordingShadowR7e?
+    // Full fields (triage snapshot only; absent from the streamed metadata).
+    // The terms and ratios below are reproducible from the candidate's own
+    // peak/mean/high/purity/clipped values and score breakdown.
+    let peakTerm: Double?
+    let meanTerm: Double?
+    let highValueTerm: Double?
+    let purityTerm: Double?
+    let clippedWhiteTerm: Double?
+    let localContrast: Double?
+    let emitterTexture: Double?
+    let coreSupport: Double?
+    let emitterScoreThreshold: Double?
+    let coreByHighValueRatio: Bool?
+    let coreByPeakAndMean: Bool?
+    let coreByClippedWhite: Bool?
+    let compactRedGate: Bool?
+    let majorLengthSamples: Double?
+    let brightnessVariation: Double?
+    let longitudinalCoreCoverage: Double?
+    let longitudinalHighCoverage: Double?
+    let sampleCount: Int?
+    let colorSampleCount: Int?
+    let meanMaxChannel: Double?
+    let maxSecondChannel: Int?
+    let brightSecondChannelFraction: Double?
+
+    static func round6(_ value: Double) -> Double { (value * 1_000_000).rounded() / 1_000_000 }
+
+    init(_ value: SaberEmitterDiagnostics) {
+        let r = Self.round6
+        emitterScore = r(value.emitterScore)
+        emitterScoreMargin = r(value.emitterScoreMargin)
+        peakTerm = r(value.peakTerm)
+        meanTerm = r(value.meanTerm)
+        highValueTerm = r(value.highValueTerm)
+        purityTerm = r(value.purityTerm)
+        clippedWhiteTerm = r(value.clippedWhiteTerm)
+        hasEmitterCore = value.hasEmitterCore
+        baseEligible = value.baseEligible
+        bladeLengthSupport = r(value.bladeLengthSupport)
+        localContrast = r(value.localContrast)
+        emitterTexture = r(value.emitterTexture)
+        coreSupport = r(value.coreSupport)
+        meanSecondChannel = value.meanSecondChannel.map(r)
+        meanMinChannel = r(value.meanMinChannel)
+        nearWhiteFraction = r(value.nearWhiteFraction)
+        shadowR7e = value.shadowR7e.map(DebugRecordingShadowR7e.init)
+        emitterScoreThreshold = SaberEmitterDiagnostics.emitterScoreThreshold
+        coreByHighValueRatio = value.coreByHighValueRatio
+        coreByPeakAndMean = value.coreByPeakAndMean
+        coreByClippedWhite = value.coreByClippedWhite
+        compactRedGate = value.compactRedGate
+        majorLengthSamples = r(value.majorLengthSamples)
+        brightnessVariation = r(value.brightnessVariation)
+        longitudinalCoreCoverage = r(value.longitudinalCoreCoverage)
+        longitudinalHighCoverage = r(value.longitudinalHighCoverage)
+        sampleCount = value.sampleCount
+        colorSampleCount = value.colorSampleCount
+        meanMaxChannel = r(value.meanMaxChannel)
+        maxSecondChannel = value.maxSecondChannel
+        brightSecondChannelFraction = value.brightSecondChannelFraction.map(r)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case emitterScore, emitterScoreMargin, hasEmitterCore, baseEligible, bladeLengthSupport
+        case meanSecondChannel, meanMinChannel, nearWhiteFraction, shadowR7e
+        case peakTerm, meanTerm, highValueTerm, purityTerm, clippedWhiteTerm, localContrast
+        case emitterTexture, coreSupport, emitterScoreThreshold, coreByHighValueRatio, coreByPeakAndMean, coreByClippedWhite
+        case compactRedGate, majorLengthSamples, brightnessVariation, longitudinalCoreCoverage
+        case longitudinalHighCoverage, sampleCount, colorSampleCount, meanMaxChannel
+        case maxSecondChannel, brightSecondChannelFraction
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(emitterScore, forKey: .emitterScore)
+        try c.encode(emitterScoreMargin, forKey: .emitterScoreMargin)
+        try c.encode(hasEmitterCore, forKey: .hasEmitterCore)
+        try c.encode(baseEligible, forKey: .baseEligible)
+        try c.encode(bladeLengthSupport, forKey: .bladeLengthSupport)
+        try c.encodeIfPresent(meanSecondChannel, forKey: .meanSecondChannel)
+        try c.encode(meanMinChannel, forKey: .meanMinChannel)
+        try c.encode(nearWhiteFraction, forKey: .nearWhiteFraction)
+        try c.encodeIfPresent(shadowR7e, forKey: .shadowR7e)
+        guard encoder.userInfo[.debugRecordingStreamedMetadata] as? Bool != true else { return }
+        try c.encodeIfPresent(peakTerm, forKey: .peakTerm)
+        try c.encodeIfPresent(meanTerm, forKey: .meanTerm)
+        try c.encodeIfPresent(highValueTerm, forKey: .highValueTerm)
+        try c.encodeIfPresent(purityTerm, forKey: .purityTerm)
+        try c.encodeIfPresent(clippedWhiteTerm, forKey: .clippedWhiteTerm)
+        try c.encodeIfPresent(localContrast, forKey: .localContrast)
+        try c.encodeIfPresent(emitterTexture, forKey: .emitterTexture)
+        try c.encodeIfPresent(coreSupport, forKey: .coreSupport)
+        try c.encodeIfPresent(emitterScoreThreshold, forKey: .emitterScoreThreshold)
+        try c.encodeIfPresent(coreByHighValueRatio, forKey: .coreByHighValueRatio)
+        try c.encodeIfPresent(coreByPeakAndMean, forKey: .coreByPeakAndMean)
+        try c.encodeIfPresent(coreByClippedWhite, forKey: .coreByClippedWhite)
+        try c.encodeIfPresent(compactRedGate, forKey: .compactRedGate)
+        try c.encodeIfPresent(majorLengthSamples, forKey: .majorLengthSamples)
+        try c.encodeIfPresent(brightnessVariation, forKey: .brightnessVariation)
+        try c.encodeIfPresent(longitudinalCoreCoverage, forKey: .longitudinalCoreCoverage)
+        try c.encodeIfPresent(longitudinalHighCoverage, forKey: .longitudinalHighCoverage)
+        try c.encodeIfPresent(sampleCount, forKey: .sampleCount)
+        try c.encodeIfPresent(colorSampleCount, forKey: .colorSampleCount)
+        try c.encodeIfPresent(meanMaxChannel, forKey: .meanMaxChannel)
+        try c.encodeIfPresent(maxSecondChannel, forKey: .maxSecondChannel)
+        try c.encodeIfPresent(brightSecondChannelFraction, forKey: .brightSecondChannelFraction)
+    }
+}
+
+/// Shadow verdict of the offline "R7e" red rule (`SaberShadowR7eVerdict`).
+/// Evidence only, not applied: production eligibility never reads it. The
+/// streamed metadata carries the non-optional fields; the triage snapshot all.
+struct DebugRecordingShadowR7e: Codable, Equatable {
+    let applied: Bool
+    let d240: Double
+    let ruleSatisfied: Bool
+    let shadowR7eEligible: Bool
+    /// Same values as the candidate's clippedWhiteRatio / meanColorPurity.
+    let clippedWhiteRatio: Double?
+    let meanColorPurity: Double?
+    let density: Double?
+    let fallbackDensity: Double?
+    let usedFallbackDensity: Bool?
+    let clippedWhiteMargin: Double?
+    let thickBodyMargin: Double?
+    let saturatedBodyDensityMargin: Double?
+    let saturatedBodyPurityMargin: Double?
+
+    init(_ value: SaberShadowR7eVerdict) {
+        let r = DebugRecordingEmitterDiagnostics.round6
+        applied = false
+        d240 = r(value.d240)
+        clippedWhiteRatio = r(value.clippedWhiteRatio)
+        meanColorPurity = r(value.meanColorPurity)
+        ruleSatisfied = value.ruleSatisfied
+        shadowR7eEligible = value.shadowEligible
+        density = r(value.density)
+        fallbackDensity = r(value.fallbackDensity)
+        usedFallbackDensity = value.usedFallbackDensity
+        clippedWhiteMargin = r(value.clippedWhiteMargin)
+        thickBodyMargin = r(value.thickBodyMargin)
+        saturatedBodyDensityMargin = r(value.saturatedBodyDensityMargin)
+        saturatedBodyPurityMargin = r(value.saturatedBodyPurityMargin)
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case applied, d240, ruleSatisfied, shadowR7eEligible, clippedWhiteRatio, meanColorPurity
+        case density, fallbackDensity, usedFallbackDensity, clippedWhiteMargin, thickBodyMargin
+        case saturatedBodyDensityMargin, saturatedBodyPurityMargin
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var c = encoder.container(keyedBy: CodingKeys.self)
+        try c.encode(applied, forKey: .applied)
+        try c.encode(d240, forKey: .d240)
+        try c.encode(ruleSatisfied, forKey: .ruleSatisfied)
+        try c.encode(shadowR7eEligible, forKey: .shadowR7eEligible)
+        guard encoder.userInfo[.debugRecordingStreamedMetadata] as? Bool != true else { return }
+        try c.encodeIfPresent(clippedWhiteRatio, forKey: .clippedWhiteRatio)
+        try c.encodeIfPresent(meanColorPurity, forKey: .meanColorPurity)
+        try c.encodeIfPresent(density, forKey: .density)
+        try c.encodeIfPresent(fallbackDensity, forKey: .fallbackDensity)
+        try c.encodeIfPresent(usedFallbackDensity, forKey: .usedFallbackDensity)
+        try c.encodeIfPresent(clippedWhiteMargin, forKey: .clippedWhiteMargin)
+        try c.encodeIfPresent(thickBodyMargin, forKey: .thickBodyMargin)
+        try c.encodeIfPresent(saturatedBodyDensityMargin, forKey: .saturatedBodyDensityMargin)
+        try c.encodeIfPresent(saturatedBodyPurityMargin, forKey: .saturatedBodyPurityMargin)
+    }
+}
+
 struct DebugRecordingCandidate: Codable, Equatable {
     let index: Int
     let selected: Bool
@@ -331,10 +528,13 @@ struct DebugRecordingCandidate: Codable, Equatable {
     let centroid: [Double]?
     let bbox: [Int]
     let endpointPipeline: DebugRecordingEndpointPipeline
+    /// Diagnostic path only; nil (and omitted from JSON) otherwise.
+    let emitterDiagnostics: DebugRecordingEmitterDiagnostics?
 
     init(index: Int, candidate: SaberCandidate, selectedIndex: Int?) {
         self.index = index
         let trace = candidate.endpointDiagnosticTrace
+        emitterDiagnostics = trace?.emitter.map(DebugRecordingEmitterDiagnostics.init)
         centroid = trace.map { [$0.centroidX, $0.centroidY] }
         let box = candidate.boundingBox
         bbox = [box.minX, box.minY, box.maxX, box.maxY]
@@ -595,12 +795,14 @@ struct DebugRecordingFrameMetadata: Codable, Equatable {
     /// Retained only in memory and in the triage snapshot; excluded from the
     /// streamed metadata so a long recording stays inside its size limit.
     var candidateGeometry: DebugFrameGeometry? = nil
+    /// Per-frame exposure state; nil (omitted) when no source was available.
+    var camera: DebugRecordingFrameCamera? = nil
 
     private enum CodingKeys: String, CodingKey {
         case frameID, presentationTimeSeconds, red, blue, redDetectionSucceeded, blueDetectionSucceeded
         case candidateDiagnostics, forensicCaptured, forensicFileName, manualCaptured, manualFileName
         case blueDropoutRole, blueDropoutFileName, redDropoutRole, redDropoutFileName
-        case processingTimeSeconds, motionEventIndex, tracking
+        case processingTimeSeconds, motionEventIndex, tracking, camera
     }
 }
 
@@ -632,6 +834,89 @@ struct DebugRecordingCameraSample: Codable, Equatable {
     let activeFormatFPSRanges: String
     let activeMinFPS: Double?
     let activeMaxFPS: Double?
+}
+
+/// Latest AVCaptureDevice exposure state, pushed by the camera owner while a
+/// Debug Recording is active. Plain values so the processing queue never
+/// touches AVCaptureDevice itself.
+struct DebugCameraDeviceState: Equatable {
+    let iso: Double
+    let exposureDurationSeconds: Double
+    let exposureTargetBias: Double
+    let exposureTargetOffset: Double
+    let whiteBalanceGains: [Double]?
+    /// Host clock (HostMonotonicClock) time at which the device was read.
+    let sampledAt: TimeInterval
+}
+
+/// Per-frame camera exposure state in Debug Recording metadata (`frames[].camera`).
+/// Exif values come from the frame's own sample-buffer attachment and describe
+/// exactly that frame; device values are the newest pushed AVCaptureDevice
+/// state with its age. Every field is optional; older bundles omit `camera`.
+struct DebugRecordingFrameCamera: Codable, Equatable {
+    /// "exif", "device" or "exif+device": which sources contributed.
+    var source: String
+    var iso: Double?
+    var exposureDurationSeconds: Double?
+    /// Exif ExposureBiasValue (EV) and BrightnessValue (APEX) of this frame.
+    var exposureBiasEV: Double?
+    var brightnessValue: Double?
+    var fNumber: Double?
+    var exposureTargetBias: Double?
+    var exposureTargetOffset: Double?
+    /// Device white-balance gains [red, green, blue].
+    var whiteBalanceGains: [Double]?
+    var deviceSampleAgeSeconds: Double?
+
+    private static func round6(_ value: Double) -> Double { (value * 1_000_000).rounded() / 1_000_000 }
+
+    private static func finite(_ value: Any?) -> Double? {
+        if let array = value as? [Any] { return finite(array.first) }
+        guard let number = value as? NSNumber else { return nil }
+        let double = number.doubleValue
+        return double.isFinite ? round6(double) : nil
+    }
+
+    /// Combines this frame's Exif attachment with the newest device state.
+    static func make(exif: [String: Any]?, device: DebugCameraDeviceState?,
+                     now: TimeInterval) -> DebugRecordingFrameCamera? {
+        var camera = DebugRecordingFrameCamera(
+            source: "",
+            iso: finite(exif?[kCGImagePropertyExifISOSpeedRatings as String]),
+            exposureDurationSeconds: finite(exif?[kCGImagePropertyExifExposureTime as String]),
+            exposureBiasEV: finite(exif?[kCGImagePropertyExifExposureBiasValue as String]),
+            brightnessValue: finite(exif?[kCGImagePropertyExifBrightnessValue as String]),
+            fNumber: finite(exif?[kCGImagePropertyExifFNumber as String]))
+        let hasExif = [camera.iso, camera.exposureDurationSeconds, camera.exposureBiasEV,
+                       camera.brightnessValue, camera.fNumber].contains { $0 != nil }
+        if let device {
+            if camera.iso == nil, device.iso.isFinite { camera.iso = round6(device.iso) }
+            if camera.exposureDurationSeconds == nil, device.exposureDurationSeconds.isFinite {
+                camera.exposureDurationSeconds = round6(device.exposureDurationSeconds)
+            }
+            camera.exposureTargetBias = device.exposureTargetBias.isFinite
+                ? round6(device.exposureTargetBias) : nil
+            camera.exposureTargetOffset = device.exposureTargetOffset.isFinite
+                ? round6(device.exposureTargetOffset) : nil
+            camera.whiteBalanceGains = device.whiteBalanceGains.flatMap {
+                $0.count == 3 && $0.allSatisfy(\.isFinite) ? $0.map(round6) : nil
+            }
+            camera.deviceSampleAgeSeconds = round6(max(0, now - device.sampledAt))
+        }
+        switch (hasExif, device != nil) {
+        case (true, true): camera.source = "exif+device"
+        case (true, false): camera.source = "exif"
+        case (false, true): camera.source = "device"
+        case (false, false): return nil
+        }
+        return camera
+    }
+
+    /// Reads only the Exif attachment already carried by this frame; never blocks.
+    static func exifAttachment(of sampleBuffer: CMSampleBuffer) -> [String: Any]? {
+        CMGetAttachment(sampleBuffer, key: kCGImagePropertyExifDictionary,
+                        attachmentModeOut: nil) as? [String: Any]
+    }
 }
 
 struct DebugForensicCapturePolicy {
@@ -672,6 +957,7 @@ private final class DebugRecordingMetadataStream {
         finalURL = url
         partialURL = url.appendingPathExtension("partial")
         encoder.outputFormatting = [.sortedKeys]
+        encoder.userInfo[.debugRecordingStreamedMetadata] = true
         FileManager.default.createFile(atPath: partialURL.path, contents: nil)
         handle = try FileHandle(forWritingTo: partialURL)
         let encodedSessionID = try encoder.encode(sessionID)
@@ -1061,7 +1347,8 @@ final class DebugVideoRecorder {
         frameID: UInt64,
         results: [DetectedSaber],
         analysis: SaberFrameAnalysis? = nil,
-        processingTimeSeconds: Double = 0
+        processingTimeSeconds: Double = 0,
+        camera: DebugRecordingFrameCamera? = nil
     ) -> DebugRecordingAppendResult {
         guard !isFinishing else { return .skipped }
         if startedAt == nil { startedAt = clock() }
@@ -1140,6 +1427,7 @@ final class DebugVideoRecorder {
             redDropoutFileName: nil,
             processingTimeSeconds: processingTimeSeconds
         )
+        frame.camera = camera
         // Kept with retained event frames only (not streamed): all eligible candidates.
         frame.candidateGeometry = analysis.map {
             DebugFrameGeometry($0, active: diagnosticColors.colorNames)

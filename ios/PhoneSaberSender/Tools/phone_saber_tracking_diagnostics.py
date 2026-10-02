@@ -118,12 +118,67 @@ def validate_tracking(value: Any) -> None:
         raise BundleError("invalid stage discontinuities")
 
 
+# Optional per-candidate emitter-eligibility evidence (Debug Recording only).
+# Older bundles omit it; every key is optional so compact subsets validate too.
+EMITTER_NUMBER_KEYS = {
+    "emitterScore", "emitterScoreThreshold", "emitterScoreMargin", "peakTerm", "meanTerm",
+    "highValueTerm", "purityTerm", "clippedWhiteTerm", "majorLengthSamples", "bladeLengthSupport",
+    "localContrast", "emitterTexture", "brightnessVariation", "coreSupport",
+    "longitudinalCoreCoverage", "longitudinalHighCoverage", "meanMaxChannel", "meanSecondChannel",
+    "meanMinChannel", "nearWhiteFraction", "brightSecondChannelFraction"}
+EMITTER_INTEGER_KEYS = {"sampleCount", "colorSampleCount", "maxSecondChannel"}
+EMITTER_BOOL_KEYS = {"hasEmitterCore", "coreByHighValueRatio", "coreByPeakAndMean", "coreByClippedWhite",
+                     "baseEligible", "compactRedGate"}
+SHADOW_R7E_NUMBER_KEYS = {"density", "fallbackDensity", "d240", "clippedWhiteRatio", "meanColorPurity",
+                          "clippedWhiteMargin", "thickBodyMargin", "saturatedBodyDensityMargin",
+                          "saturatedBodyPurityMargin"}
+SHADOW_R7E_BOOL_KEYS = {"applied", "usedFallbackDensity", "ruleSatisfied", "shadowR7eEligible"}
+
+
+def validate_shadow_r7e(value: Any) -> None:
+    """Shadow R7e verdict: evidence only, so `applied` must never be true."""
+    if not isinstance(value, dict) or not {"applied", "shadowR7eEligible"} <= set(value) \
+            or not set(value) <= SHADOW_R7E_NUMBER_KEYS | SHADOW_R7E_BOOL_KEYS \
+            or value["applied"] is not False \
+            or not all(number(value[k]) for k in SHADOW_R7E_NUMBER_KEYS & set(value)) \
+            or not all(isinstance(value[k], bool) for k in SHADOW_R7E_BOOL_KEYS & set(value)):
+        raise BundleError("invalid shadow R7e verdict")
+
+
+def validate_emitter_diagnostics(value: Any) -> None:
+    allowed = EMITTER_NUMBER_KEYS | EMITTER_INTEGER_KEYS | EMITTER_BOOL_KEYS | {"shadowR7e"}
+    if not isinstance(value, dict) or not {"emitterScore", "emitterScoreMargin", "hasEmitterCore"} <= set(value) \
+            or not set(value) <= allowed \
+            or not all(number(value[k]) for k in EMITTER_NUMBER_KEYS & set(value)) \
+            or not all(isinstance(value[k], int) and not isinstance(value[k], bool) and value[k] >= 0
+                       for k in EMITTER_INTEGER_KEYS & set(value)) \
+            or not all(isinstance(value[k], bool) for k in EMITTER_BOOL_KEYS & set(value)):
+        raise BundleError("invalid emitter diagnostics")
+    if "shadowR7e" in value:
+        validate_shadow_r7e(value["shadowR7e"])
+
+
+CAMERA_NUMBER_KEYS = {"iso", "exposureDurationSeconds", "exposureBiasEV", "brightnessValue", "fNumber",
+                      "exposureTargetBias", "exposureTargetOffset", "deviceSampleAgeSeconds"}
+
+
+def validate_frame_camera(value: Any) -> None:
+    """Optional per-frame exposure state (`frames[].camera`)."""
+    if not isinstance(value, dict) or value.get("source") not in {"exif", "device", "exif+device"} \
+            or not set(value) <= CAMERA_NUMBER_KEYS | {"source", "whiteBalanceGains"} \
+            or not all(number(value[k]) for k in CAMERA_NUMBER_KEYS & set(value)) \
+            or ("whiteBalanceGains" in value and not numeric_array(value["whiteBalanceGains"], 3)):
+        raise BundleError("invalid frame camera state")
+
+
 GEOMETRY_MATCH_KEYS = {"centroidDistance", "centroidDistanceNormalized", "bboxIoU", "areaRatio",
                        "spanRatio", "orientationDifference"}
 GEOMETRY_ENTRY_KEYS = {"listIndex", "eligible", "eligibleRank", "sourceType", "finalScore", "scoreBreakdown",
                        "centroid", "centroidSource", "bbox", "componentArea", "rawPCASpan",
                        "rawPCAEndpoints", "finalOutputEndpoints", "rejectionReasons", "matchToPreviousWinner",
-                       "scoreBreakdownReduced"}
+                       "scoreBreakdownReduced", "emitter", "emitterDiagnosticsReduced"}
+GEOMETRY_OPTIONAL_KEYS = {"eligibleRank", "matchToPreviousWinner", "scoreBreakdownReduced", "emitter",
+                          "emitterDiagnosticsReduced"}
 
 
 def validate_candidate_geometry(value: Any, eligible_count: Any = None) -> None:
@@ -156,8 +211,7 @@ def validate_candidate_geometry(value: Any, eligible_count: Any = None) -> None:
             or ranks != list(range(1, len(eligible) + 1)):
         raise BundleError("invalid eligible ranks")
     for c in value["candidates"]:
-        if not isinstance(c, dict) or not (GEOMETRY_ENTRY_KEYS - {"eligibleRank", "matchToPreviousWinner",
-                                                                    "scoreBreakdownReduced"}) <= set(c) \
+        if not isinstance(c, dict) or not (GEOMETRY_ENTRY_KEYS - GEOMETRY_OPTIONAL_KEYS) <= set(c) \
                 <= GEOMETRY_ENTRY_KEYS or isinstance(c["listIndex"], bool) or not isinstance(c["listIndex"], int) \
                 or not isinstance(c["sourceType"], str) or len(c["sourceType"]) > 100 \
                 or c["centroidSource"] not in {"trace", "bboxCenter"} \
@@ -169,8 +223,12 @@ def validate_candidate_geometry(value: Any, eligible_count: Any = None) -> None:
                 or not isinstance(c["rejectionReasons"], list) or len(c["rejectionReasons"]) > 20 \
                 or not all(isinstance(r, str) and len(r) <= 100 for r in c["rejectionReasons"]) \
                 or (c["eligible"] and "eligibleRank" not in c) or (not c["eligible"] and "eligibleRank" in c) \
-                or ("scoreBreakdownReduced" in c and c["scoreBreakdownReduced"] is not True):
+                or ("scoreBreakdownReduced" in c and c["scoreBreakdownReduced"] is not True) \
+                or ("emitterDiagnosticsReduced" in c and (c["emitterDiagnosticsReduced"] is not True
+                                                          or "emitter" in c)):
             raise BundleError("invalid candidate geometry entry")
+        if "emitter" in c:
+            validate_emitter_diagnostics(c["emitter"])
         # Swift writes the full metric set on every entry exactly when a previous winner exists.
         if value["previousFrameGeometryAvailable"]:
             match = c.get("matchToPreviousWinner")
