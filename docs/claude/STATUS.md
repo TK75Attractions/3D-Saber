@@ -49,7 +49,7 @@
 - 既存 bundle 20 件を横断で再解析(read-only agent、表は docs/claude/analysis/2026-10-02_jump_events.csv)。
   ジャンプ/切替 17 件。CASE A 寄り 5 件はすべて背景物どうしの往復で、点灯 saber は映っていない(2537 / 255 は original PNG を目視で確認済み)。
   例B は phonesaber_20261002_010049_190(f660: eligible 1→1 で 437px、f665: raw 218 / robust 52)。
-- 「push しない」指示を受けた(2026-10-02 04:2x)。以降の commit はローカルのみ。origin/main は 6bf2cf3 まで。
+- 「push しない」指示を受けた(2026-10-02 04:2x)。同日夜に「push はどんどんしてよい」と再指示があり、以降は検証 PASS ごとに push している。
 - 40986a2(ローカル): Debug Recording 中に os_proc_available_memory() の最小値を記録
   (motionSummary.runtime.memoryHeadroom と Stop 時のログ)。macOS の host harness では API が使えないため #if os(iOS)。
   検証: XCTest 150/150、formal 40/40、Python 182/182、Release PASS、diff-check PASS。

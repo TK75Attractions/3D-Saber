@@ -51,7 +51,7 @@ formatVersionはadditiveなversion 1のまま。既存dropout/rule/value/thresho
 | `endpointPipeline` | `endpointSource=bodyPCA/fallbackPCA`、bodyAdopted、robustIntervalAdopted=false、fallbackReason、gatingValues、gatingCoordinateSpace |
 | `frames[].tracking.<color>` | midpoint、length、orientation、端点/中点displacement、length/orientation change、score change、margin collapse、candidateSwitch/confidence、endpointPathChanged、detectedToggle、stageDiscontinuities、scoreComponents、provisional instabilityScore |
 | `udpTransmissions[]` | frame/color、実際にsend開始callbackが呼ばれたwire座標、送信に使用したsource端点、output座標系、host timestamp、state=sendStarted |
-| `motionEvents[]` | 保存済みpeakのframe/score、録画全体のmax frame/score、maxが保持できたか、contextIncomplete、11frame程度の画像一覧 |
+| `motionEvents[]` | 保存済みpeakのframe/score、録画全体のmax frame/score、maxが保持できたか、contextIncomplete、peak中心の連続窓(11/8/5 frame)の画像一覧 |
 | `motionSummary.trackingCapture` | 録画maxと保持peakのframe/color/score、最高区間未保持、保持数、欠損状態。compact bundleにも引き継ぐ |
 
 `robustInterval`とbody PCAは異なる推定値。productionはrobust interval端点そのものを直接採用していないため、診断も採用したと偽らない。body PCAは既存production branchで計算/採用された場合のみ保存し、不採用時に診断のため再計算しない。fallback理由はbody点数不足、retained ratio条件、body support/PCA availabilityに分ける。gatingValuesは決定時mask gridの値と実際の閾値を保存し、source画像の幾何pixelと混同しない。
@@ -69,7 +69,7 @@ source端点の順序は最小移動で揃える。前二frameのtimestamp間隔
 - finalSelectedのstage discontinuity
 - geometry対応によるcandidateSwitch: 2
 - endpointSource/fallback理由の変更: 1
-- detected true/false toggle: 2
+- detected true/false toggle: 2(metadata の scoreComponents / instabilityScore には記録するが、tracking event の ranking と保持判断では 0 として扱う。消失は bridge dropout event として別に報告する。BRIDGE_DROPOUT_DIAGNOSTICS.md 参照)
 - selected scoreの相対変化: 最大0.25
 - score marginの相対collapse: 最大0.5
 
@@ -79,9 +79,9 @@ candidate対応はcentroid距離をspanで正規化し、bbox IoU、span比、ar
 
 ## 連続画像とmapping
 
-録画中にsource原画を独立bufferへcopyし、直前5frameと最上位1区間のN±5を保持する。raw画像のPNG化はStop時だけ。camera poolのbufferを長時間占有しない。memory capは11原画と5frame ringを収めるためDebug Recording限定で128→192 MiBに変更し、legacy copy/reservationも同じcapに数える。通常認識でring/copy/history/JSON/新規PCA処理は行わない。
+録画中にsource原画を独立bufferへcopyし、直前5frameと最上位1区間のN±5を保持する。raw画像のPNG化はStop時だけ。camera poolのbufferを長時間占有しない。memory capは11原画と5frame ringを収めるためDebug Recording限定で128→192 MiBに変更し(その後 bridge dropout 追加時に256 MiBへ変更)、legacy copy/reservationも同じcapに数える。通常認識でring/copy/history/JSON/新規PCA処理は行わない。
 
-通常は11 PNGを時系列順で選択し、12枚制限の残りを既存manual/dropout等に使う。実frame IDがN±5を外れるframeで穴埋めしない。開始/終了、writer gap、copy/memory失敗、64 MiBのbundle byte制限で足りない場合は欠損を示す。最高rankのframeを保持できなかった場合、録画maxと保存済みpeakを分離し、別PNGに未保持frameのscoreを付けない。
+peak中心の連続窓を時系列順で選ぶ(単独なら11枚、bridge event 1件と共存するときは8枚、最低5枚)。score<1.0のtracking eventはbridge eventに譲って丸ごと外し、ledgerに`bridge_priority`を記録する。12枚制限の残りを既存manual等に使う。実frame IDがN±5を外れるframeで穴埋めしない。開始/終了、writer gap、copy/memory失敗、64 MiBのbundle byte制限で足りない場合は欠損を示す。最高rankのframeを保持できなかった場合、録画maxと保存済みpeakを分離し、別PNGに未保持frameのscoreを付けない。
 
 rolesはN-5..N-2=before、N-1=onset、N=peak、N+1..N+4=after、N+5=recovery。これらは位置のラベルで、実際にfailure/recoveryが起きたという主張ではない。
 

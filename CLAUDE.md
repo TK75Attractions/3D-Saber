@@ -115,6 +115,8 @@ CASE A の条件:
    - CASE A:正しい candidate は eligible のまま残っていて、遠方の candidate が僅差で winner になる → 修正 A の根拠
    - CASE B:正しい candidate が生成されていない、または ineligible → generation / eligibility を調査(unknownTruncated の場合は断定しない)
    - CASE C:winner は正しい領域だが、PCA / endpoint が壊れる → 修正 B の領域
+   - CANDIDATE_AUDIT の集計は countForTally=true の行だけで行う。recovery(switch-out からの戻り)は数えない。unknown は判定保留。
+   - まず original PNG に本物の saber が映っているかを確認する。背景物どうしの往復は CASE A に数えない。
 5. 判定と根拠(session 名、frame、数値)を STATUS.md に追記する。
 6. CASE B が多い場合、次の diagnostics として「candidate 生成前に落ちた component(bbox、area、落ちた理由)」の記録を追加する。
 

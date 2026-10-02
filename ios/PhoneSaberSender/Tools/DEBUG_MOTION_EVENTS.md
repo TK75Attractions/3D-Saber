@@ -57,12 +57,23 @@ and endpoints remain attached to the actual selected frame.
   frames and expired at sampling ticks after 2 seconds. At 30 fps these represent
   about 2 seconds. Stride 15, rather than 3, limits retained camera buffers and
   initial memory pressure; this choice has not been calibrated on an iPhone.
+- When any active color has a selected candidate with a centroid, the recorder
+  keeps one contiguous tracking window instead (peak N±5, up to 11 originals;
+  trimmed to 8 or 5 beside bridge dropout events, see
+  [BRIDGE_DROPOUT_DIAGNOSTICS.md](BRIDGE_DROPOUT_DIAGNOSTICS.md) and
+  [TRACKING_DIAGNOSTICS.md](TRACKING_DIAGNOSTICS.md)); pre-roll and the
+  pre/peak/post scheme below then stop. They apply only while no selected
+  candidate has been seen.
 - Up to three strongest events retain one nearest sampled pre-frame, one peak
   event frame, and one first accepted frame at least 0.5 seconds after the last
   event hit. Continued hits renew post-roll. Early Stop can leave a role absent.
   Higher scores replace weaker events under count or memory pressure.
-- The conservative BGRA accounting cap is 128 MiB including motion references,
-  legacy copies and two reserved legacy last-detected buffers. A 1080p buffer is
+- The conservative retained-BGRA accounting cap is 256 MiB (Debug Recording
+  only), covering the tracking window, bridge dropout originals, pre-roll,
+  motion references and two reserved legacy last-detected buffers; legacy
+  buffered copies alone are further capped at 128 MiB. The minimum
+  `os_proc_available_memory()` seen while recording is written to
+  `motionSummary.runtime.memoryHeadroom`. A 1080p buffer is
   about 8 MiB. Shared references can be counted more than once. This cap excludes
   camera/writer pools, numeric metadata and Stop-time encoder/overlay memory.
 - Observing a frame computes only scalar geometry/candidate metrics, bounded
@@ -94,7 +105,9 @@ are in full metadata only.
 mean/max scores including zero-count signs, observation timing/memory scope,
 and every event's score and selection code. Counts combine RED/BLUE above-threshold
 signs; they are not full raw motion distributions. Bundle selection updates codes
-to selected, lower_score, memory, duplicate, image_limit or byte_limit.
+to selected, lower_score, memory, duplicate, image_limit, byte_limit or
+bridge_priority (a quiet tracking event left out whole so bridge dropout events
+fit; the recorder itself writes `retained` before selection).
 
 Luna receives only selected original PNGs, summary and matching compact contexts.
 It must say what is visible, reconcile the measured signs with those pixels,

@@ -80,7 +80,7 @@ python3 ios/PhoneSaberSender/Tools/benchmark_detection.py --iterations 5 --json 
 
 Desktopの3つのlauncher link、Startのdry-run、installerの反復、log lifecycle、最新timestamp session/複数PNG/空画像/欠けたreportのviewerテストを確認する。launcherとviewer本体は変更しない。root setup toolのlink検証が従来2つだけだった穴を3つへ修正し、そのinstaller test fixtureも3つに更新する。
 
-Unity verificationは`PHONESABER_VERIFY_UNITY_RUN=1 bash Tools/verify_phone_saber.sh`で既存所有process確認を利用する。Editor所有時にはkillせずEditMode/PlayMode/CompileをBLOCKEDと報告する。今回Unity repositoryはクリーンで変更なし。
+Unity verificationは`PHONESABER_VERIFY_UNITY_RUN=1 ./tools/verify_phone_saber.sh`で既存所有process確認を利用する。Editor所有時にはkillせずEditMode/PlayMode/CompileをBLOCKEDと報告する。今回Unity repositoryはクリーンで変更なし。
 
 ## 今回のverification結果
 

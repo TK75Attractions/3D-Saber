@@ -93,7 +93,7 @@ struct ContentView: View {
                                               model.debugRecordingFinalizing || model.manualLosslessCapturePending ||
                                               model.debugManualLosslessCaptureCount >= DebugRecordingLimits.maximumManualLosslessCaptures)
                             }
-                            Text("上限: 1録画5分・768 MiB / lossless手動 \(model.debugManualLosslessCaptureCount)/3枚 / forensic自動8枚")
+                            Text("上限: 1録画\(Int(DebugRecordingLimits.maximumDurationSeconds / 60))分・\(DebugRecordingLimits.maximumDiskUsageBytes / 1_048_576) MiB / lossless手動 \(model.debugManualLosslessCaptureCount)/3枚 / forensic自動8枚")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
                             Text(model.debugRecordingEnabled ? model.debugRecordingStatus : "OFF（録画処理なし）")
