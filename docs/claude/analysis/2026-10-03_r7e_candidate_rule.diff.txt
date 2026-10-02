@@ -1,0 +1,44 @@
+--- a/ios/PhoneSaberSender/PhoneSaberSender/DetectionCore.swift
++++ b/ios/PhoneSaberSender/PhoneSaberSender/DetectionCore.swift
+@@ -360,6 +360,16 @@
+ }
+ 
+ private func clamp01(_ value: Double) -> Double { min(max(value, 0), 1) }
++
++/// EXPERIMENTAL thresholds from ~5 sessions / 3 rooms; see
++/// scratchpad agent8/eligibility_rule_exploration.md. Not for production
++/// without real-capture distributions.
++enum RedMatteGuard {
++    static let clippedWhiteRatio = 0.35
++    static let thickBodyDensity = 4.2
++    static let saturatedBodyDensity = 3.5
++    static let saturatedBodyPurity = 0.60
++}
+ 
+ private struct DominantLongitudinalBody {
+     let points: [PixelPoint]
+@@ -713,6 +723,24 @@
+         if isCompactRed {
+             isEmitterEligible = isEmitterEligible && peakValue >= 230
+                 && highRatio >= 0.50 && meanPurity >= 0.50
++        }
++        // EXPERIMENTAL (offline only, not evidence-backed): matte red background
++        // objects (label strip, carabiner, basket) saturate R and pass the
++        // emitter score without any LED evidence. A red candidate must show a
++        // clipped white core, or be a thick body, or be a moderately thick and
++        // strongly saturated body (daylight saber without white clipping).
++        // Thickness uses the dominant-body axial density, falling back to
++        // samples per unit length when no body was established, normalized by
++        // the sampled frame's short side (240 samples at 480x640, step 2).
++        if evidence.color == .red && isEmitterEligible {
++            let axialDensity = body.density > 0
++                ? body.density : Double(points.count) / max(majorLength, 1.0)
++            let densityPer240 = axialDensity * 240.0 / Double(max(min(width, height), 1))
++            let hasClippedWhiteCore = clippedRatio >= RedMatteGuard.clippedWhiteRatio
++            let isThickBody = densityPer240 >= RedMatteGuard.thickBodyDensity
++            let isSaturatedBody = densityPer240 >= RedMatteGuard.saturatedBodyDensity
++                && meanPurity >= RedMatteGuard.saturatedBodyPurity
++            isEmitterEligible = hasClippedWhiteCore || isThickBody || isSaturatedBody
+         }
+         lightScore = emitterScore * 38.0 + highRatio * 14.0 + meanPurity * 6.0
+             + localContrast * 8.0 + emitterTexture * 13.0 + clippedRatio * 8.0

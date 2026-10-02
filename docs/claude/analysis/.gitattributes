@@ -1,0 +1,2 @@
+# Unapplied patches kept as evidence: diff context lines carry significant whitespace.
+*.diff.txt -whitespace

@@ -38,10 +38,24 @@
    新しい capture が届くと、受信時に `<inbox>/<bundle>.report.md`(無料の1ページ要約)が自動で作られる。
 4. 修正方針の判断(**要ユーザー判断**): 修正 A(時間的一貫性)より先に「背景の赤い物の eligibility」を直すべきかどうか。
    eligibility の変更は production の recognition 変更になるので、gate(証拠・regression・実機再試験)を満たしてから行う。
+   - offline 探索の結果(docs/claude/analysis/2026-10-03_eligibility_rule_exploration.md):最良の候補 R7e
+     (赤のみ:clippedWhite ≥ 0.35、または太さ d240 ≥ 4.2、または d240 ≥ 3.5 かつ purity ≥ 0.60)で、
+     formal 40/40、背景 FP 8→0、実 saber の取りこぼし 0、blue は不変。
+   - ただし**採用は見送り**。決め手の差が太さ 0.3px 程度しかなく、明るさ +8% で背景 FP が 7/8 に戻る。
+     部屋 3 つ程度・5 session 程度からの当てはめで、証拠が足りない。差分案は 2026-10-03_r7e_candidate_rule.diff.txt(未適用)。
+   - 次の capture で判断できるように、R7e の判定を「shadow(計算するが適用しない)」として Debug Recording に記録する作業を進行中。
+   - 採用に必要な capture: 点灯した赤 saber を 0.5–3m、3部屋以上、昼/夜、固定露出/自動露出。同じ部屋で消灯時の赤い物。±1EV の露出振り。
 
 ---
 
 ## 作業ログ(新しい順)
+
+### 2026-10-03(深夜、並列作業の続き)
+- 312f63c: Codex 出力の深い入れ子で receiver が RecursionError で落ちる問題を修正(ログ保存前に落ちていた)。
+- 67597e4: credential redaction の正規表現が長い単語列で3乗時間になっていた(20KB で約12秒、`"token"*40000` は数時間)。
+  出力を変えない線形時間の形に置き換え(差分 fuzz 約670万件で不一致なし)。
+- 4a38f53: 静的ホットスポット解析(背景誤検出の候補を自動で示す)。既存 2 session で赤ラベルを背景として検出。session report にも表示。
+- R7e の offline 探索(上の「次にやること 4」)。
 
 ### 2026-10-02(夜、並列作業)
 - cf3a873: bridge event が tracking 窓と重なると peak が bundle から落ち、precheck が失敗する不具合を修正(高)。
