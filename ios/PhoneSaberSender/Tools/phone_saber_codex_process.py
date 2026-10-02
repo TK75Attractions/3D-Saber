@@ -104,7 +104,7 @@ def error_events(*streams: str) -> list[dict[str, Any]]:
                 if isinstance(nested, str) and "{" in nested:
                     try:
                         payload, _ = decoder.raw_decode(nested, nested.index("{"))
-                    except ValueError:
+                    except (ValueError, RecursionError):  # pathological nesting is not an error event
                         continue
                     if isinstance(payload, dict) and ("error" in payload or "code" in payload):
                         visit(payload, True)
@@ -128,6 +128,12 @@ def error_events(*streams: str) -> list[dict[str, Any]]:
                 break
             try:
                 value, end = decoder.raw_decode(stream, start)
+            except RecursionError:
+                # Pathological nesting must not abort log saving. Every later "{" of
+                # the same run would recurse as deeply, so resume at the next JSONL line.
+                newline = stream.find("\n", start)
+                position = len(stream) if newline < 0 else newline + 1
+                continue
             except ValueError:
                 position = start + 1
                 continue

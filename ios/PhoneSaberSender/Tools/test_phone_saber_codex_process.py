@@ -187,6 +187,17 @@ LEGACY_CREDENTIAL_ASSIGNMENT = re.compile(
     r'(?:"[^"\n]*"|\x27[^\x27\n]*\x27|[^\s,;&}\n]+)')
 
 
+class ErrorEventRobustnessTests(unittest.TestCase):
+    def test_deeply_nested_output_is_skipped_not_raised(self):
+        from phone_saber_codex_process import error_events
+        deep = '{"a":[' * 50_000
+        self.assertEqual(error_events(deep), [])
+        wrapped = json.dumps({"type": "error", "message": deep})
+        self.assertEqual(error_events(wrapped)[0]["type"], "error")
+        tail = deep + '\n{"type": "error", "message": "after the deep run"}'
+        self.assertIn("after the deep run", json.dumps(error_events(tail)))
+
+
 class RedactionComplexityTests(unittest.TestCase):
     """Regression for the 20 KB stderr that took ~25 s in Redactor.__call__."""
 
