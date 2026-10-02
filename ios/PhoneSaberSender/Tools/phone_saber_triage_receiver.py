@@ -18,6 +18,7 @@ from threading import Thread
 from typing import Any
 
 from phone_saber_session_log import log_fields, session_log_context
+from phone_saber_session_report import write_session_report
 
 from phone_saber_triage_codex import (
     ANALYSIS_MODEL,
@@ -70,6 +71,17 @@ class TriageHTTPServer(ThreadingHTTPServer):
         self.analysis_queue: queue.Queue[AnalysisJob] = queue.Queue(maxsize=4)
         if analysis_mode != "disabled":
             Thread(target=self._analysis_worker, name="phonesaber-codex-worker", daemon=True).start()
+
+    def write_report(self, bundle: Path) -> Path | None:
+        """Free local one-page report beside the bundle; failure never blocks receiving."""
+        try:
+            path = write_session_report(bundle)
+        except Exception as exc:  # noqa: BLE001 - the upload and analysis must continue
+            print(f"[PHONE_SABER][REPORT] {log_fields()} result=FAIL "
+                  f"{type(exc).__name__}: {exc}; bundle preserved, analysis continues", flush=True)
+            return None
+        print(f"[PHONE_SABER][REPORT] {log_fields()} path={path}", flush=True)
+        return path
 
     def enqueue_analysis(self, bundle: Path, *, source: str = "manual_retry",
                          reason: str = "explicit_request") -> bool:
@@ -175,6 +187,9 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
             print(f"[PHONE_SABER][SESSION] {log_fields()}", flush=True)
             print(f"[triage] received {bundle.name} {log_fields()} "
                   f"from {self.client_address[0]} → {bundle}", flush=True)
+            # Before analysis is queued: the analysis writes temporary report files
+            # into the bundle, which the read-only report must not race with.
+            self.server.write_report(bundle)
         self.server.enqueue_analysis(bundle, source="new_upload", reason="post_received")
         self._reply(201, {"accepted": True, "bundle": bundle.name})
 

@@ -437,5 +437,29 @@ class TrackingPipelineE2ETests(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertTrue(sufficient_for_tracking(events[0]))
 
+    def test_Q_session_report_summarizes_a_real_recorder_bundle_read_only(self):
+        from phone_saber_session_report import build_report, render_markdown
+        bundle = Path(self.captures["bridge-switch"]["bundle"])
+        before = sorted((p.relative_to(bundle).as_posix(), p.stat().st_mtime_ns)
+                        for p in bundle.rglob("*") if p.is_file())
+        report = build_report(bundle)
+        text = render_markdown(report)
+        self.assertEqual(sorted((p.relative_to(bundle).as_posix(), p.stat().st_mtime_ns)
+                                for p in bundle.rglob("*") if p.is_file()), before)
+        self.assertEqual(report["inputContract"], "PASS")
+        self.assertEqual(report["errors"], [])
+        self.assertEqual(len(report["bridgeEvents"]), 1)
+        self.assertIn("## Bridge dropout events", text)
+        self.assertIn(f"| {report['bridgeEvents'][0]['bridgeEventID']} | red |", text)
+        self.assertGreaterEqual(report["caseHintCounts"].get("A", 0), 1)
+        self.assertIn("CASE A frame", text)
+        self.assertIn("bridgeDropoutSummary.trackingWindow: selected", text)
+        self.assertEqual(report["trackingPreflight"]["status"], "PASS")
+        # The macOS host harness has no os_proc_available_memory().
+        self.assertTrue(report["memory"]["verdict"].startswith("unavailable"))
+        self.assertGreater(report["selectionReplay"]["sequences"], 0)
+        self.assertTrue(report["imagesToOpen"]["bridgeOriginals"])
+        self.assertTrue(report["imagesToOpen"]["annotatedViewingAidOnly"])
+
 
 if __name__ == "__main__": unittest.main()

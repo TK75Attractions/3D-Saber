@@ -79,8 +79,25 @@ Only a newly accepted `POST /v1/bundle` queues automatic processing. It prints:
 
 ```text
 [PHONE_SABER][SESSION] sessionID=sample_session source=new_upload
+[PHONE_SABER][REPORT] sessionID=sample_session source=new_upload path=<inbox>/phone_saber_triage_sample_session.report.md
 [AUTO_REPAIR][PRECHECK] sessionID=sample_session source=new_upload elapsed=0.0s subprocess=none result=starting
 ```
+
+### Free local session report
+
+Right after a bundle is saved, and before analysis is queued, the receiver writes a
+one-page Markdown summary beside it as `<inbox>/phone_saber_triage_<session>.report.md`
+(never inside the bundle: the input contract rejects extra files). It is local and
+free (no Codex call) and read-only on the bundle: session and RED/BLUE counts,
+`motionEventSummary.runtime` memory headroom with a verdict against the retained-BGRA
+budget (`unavailable` on the Simulator/macOS), the tracking capture and
+`bridgeDropoutSummary.trackingWindow`, `bridge_priority` ledger codes, bridge events,
+CASE A/B/C hint counts, a small selection-replay sweep (evidence, not production
+values), `tracking_preflight`, and the CLAUDE.md §5 checklist with the original PNGs
+to open first (annotated images are listed as viewing aids only). A failure is logged
+as `[PHONE_SABER][REPORT] ... result=FAIL` and never affects receiving or analysis.
+Run it by hand on any bundle (fields missing from older bundles print `n/a`):
+`python3 ios/PhoneSaberSender/Tools/phone_saber_session_report.py <bundle> [--output report.md] [--json]`.
 
 PRECHECK, ANALYSIS, REANALYSIS, SECOND_OPINION, REPAIR, REVIEW, DONE and other repair
 logs continue to carry `sessionID` and `source`. The startup scan and RESUME log

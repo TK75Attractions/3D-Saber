@@ -55,6 +55,21 @@ Policy values are inputs to compare, never production defaults: a production
 threshold must cite the measured distribution. Triage bundles hold event
 windows only, so counts describe those windows.
 
+`phone_saber_session_report.py` is the free, local, one-page summary of one
+triage bundle (no Codex or other model call; read-only on the bundle). It
+combines the session counts, the memory headroom verdict, the tracking event and
+`bridge_priority` ledger, bridge events, CASE A/B/C hint counts, a small
+selection-replay sweep (labelled as evidence), `tracking_preflight` and the
+CLAUDE.md §5 checklist with the original PNGs to open first. Fields missing from
+older bundles print `n/a`. The receiver writes it automatically beside each new
+upload as `<inbox>/phone_saber_triage_<session>.report.md`.
+
+```bash
+ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle
+ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --output /tmp/report.md
+ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --json
+```
+
 Run the lossless fixture suite from the repository root:
 
 ```bash
