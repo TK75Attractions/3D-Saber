@@ -3,9 +3,10 @@
 
 Compiles the production detector with DiagnosticParityHarness.swift and runs it
 over every bundled fixture PNG (including the formal lossless corpus) with
-diagnostics off, on, and on with profiling. SWIFT_DETERMINISTIC_HASHING=1 fixes
-the Set iteration order that core-line proposal scoring depends on; without it
-even two identical runs can differ in the last floating-point bits.
+diagnostics off, on, and on with profiling. It runs once with Swift's normal
+per-process hash seed and once with SWIFT_DETERMINISTIC_HASHING=1: core-line
+scoring used to follow Set iteration order, so identical runs could differ;
+both must now be bit-identical.
 """
 from __future__ import annotations
 
@@ -34,10 +35,17 @@ class DiagnosticParityTests(unittest.TestCase):
                  str(SOURCES / "BGRADetection.swift"), str(HARNESS), "-o", str(binary)],
                 text=True, capture_output=True, timeout=300)
             self.assertEqual(compiled.returncode, 0, compiled.stderr)
-            run = subprocess.run([str(binary), str(FIXTURES)], capture_output=True, timeout=600,
-                                 env=dict(os.environ, SWIFT_DETERMINISTIC_HASHING="1"))
-            self.assertEqual(run.returncode, 0, run.stderr.decode(errors="replace"))
-            summary = json.loads(run.stdout)
+            summaries = []
+            for deterministic in (False, True):
+                env = dict(os.environ)
+                env.pop("SWIFT_DETERMINISTIC_HASHING", None)
+                if deterministic:
+                    env["SWIFT_DETERMINISTIC_HASHING"] = "1"
+                run = subprocess.run([str(binary), str(FIXTURES)], capture_output=True, timeout=600, env=env)
+                self.assertEqual(run.returncode, 0, run.stderr.decode(errors="replace"))
+                summaries.append(json.loads(run.stdout))
+            summary = summaries[0]
+            self.assertEqual(summaries[1]["mismatched"], [], "deterministic-hashing run")
         expected = sorted(str(p.relative_to(FIXTURES)) for p in FIXTURES.rglob("*") if p.suffix.lower() == ".png")
         self.assertEqual(sorted(summary["compared"]), expected)
         self.assertGreaterEqual(len(expected), 40)

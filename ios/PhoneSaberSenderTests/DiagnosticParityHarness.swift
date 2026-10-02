@@ -5,10 +5,9 @@ import ImageIO
 /// Host-side check that Debug Recording diagnostics never change recognition.
 ///
 /// Compiled with only DetectionCore.swift and BGRADetection.swift by
-/// Tools/test_diagnostic_parity.py and run with SWIFT_DETERMINISTIC_HASHING=1:
-/// core-line proposals are scored from Set-ordered points, so without a fixed
-/// hash seed two runs of the SAME configuration can differ in the last bits.
-/// With it, diagnostics on/off must agree bit for bit on every candidate.
+/// Tools/test_diagnostic_parity.py and run both with Swift's normal hash seed and
+/// with SWIFT_DETERMINISTIC_HASHING=1. Diagnostics on/off must agree bit for bit
+/// on every candidate (core-line scoring no longer follows Set iteration order).
 @main
 enum DiagnosticParityHarness {
     private static func load(_ url: URL) -> (bytes: [UInt8], width: Int, height: Int)? {

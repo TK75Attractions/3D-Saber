@@ -3330,48 +3330,26 @@ extension DetectionCoreTests {
         return (bytes, width, height, stride)
     }
 
-    /// Core-line proposals are scored from `Set`-ordered points
-    /// (`saberCandidate(from:)`), so with Swift's per-instance hash seeding
-    /// their sums - and comparative penalties derived from them - can differ
-    /// slightly between ANY two runs in one process, diagnostics on or off
-    /// alike (a pre-existing property of production code). Those candidates
-    /// are compared with a tolerance here; every other candidate must be
-    /// bit-identical. Tools/test_diagnostic_parity.py fixes the hash seed
-    /// (SWIFT_DETERMINISTIC_HASHING=1) and proves bit identity for all of them.
+    /// Diagnostics on/off must agree bit for bit on every candidate. Core-line
+    /// scoring no longer depends on Set iteration order (saberCandidate(from:)
+    /// sorts its points), so no tolerance is needed even without a fixed hash
+    /// seed; a tolerance here would hide that non-determinism returning.
     private func assertIdenticalRecognition(_ lhs: SaberFrameAnalysis, _ rhs: SaberFrameAnalysis,
                                             _ label: String) {
         func key(_ e: (PixelPoint, PixelPoint)?) -> [Int]? { e.map { [$0.0.x, $0.0.y, $0.1.x, $0.1.y] } }
-        func close(_ a: [Int]?, _ b: [Int]?) -> Bool {
-            guard let a, let b else { return a == nil && b == nil }
-            return zip(a, b).allSatisfy { abs($0 - $1) <= 2 }
-        }
-        func setOrdered(_ c: SaberCandidate) -> Bool {
-            c.source.contains("core-line") || c.scoreBreakdown.proposalPenalty != 0
-        }
         for color in [SaberColor.red, .blue] {
             let a = lhs.candidates[color] ?? [], b = rhs.candidates[color] ?? []
-            let winnerIsSetOrdered = (a.first(where: \.isEmitterEligible).map(setOrdered) ?? false)
-                || (b.first(where: \.isEmitterEligible).map(setOrdered) ?? false)
-            if winnerIsSetOrdered {
-                XCTAssertTrue(close(key(lhs.selected[color]), key(rhs.selected[color])), "\(label) \(color) output")
-            } else {
-                XCTAssertEqual(key(lhs.selected[color]), key(rhs.selected[color]), "\(label) \(color) output")
-            }
+            XCTAssertEqual(key(lhs.selected[color]), key(rhs.selected[color]), "\(label) \(color) output")
             XCTAssertEqual(a.count, b.count, "\(label) \(color) candidate count")
             for (x, y) in zip(a, b) {
-                let tolerant = setOrdered(x) || setOrdered(y)
                 XCTAssertEqual(x.source, y.source, label)
                 XCTAssertEqual(x.isEmitterEligible, y.isEmitterEligible, "\(label) \(color) eligibility")
                 XCTAssertEqual(x.isCompactRed, y.isCompactRed, label)
                 XCTAssertEqual(x.peakValue, y.peakValue, label)
                 XCTAssertEqual(x.pointCount, y.pointCount, label)
                 XCTAssertEqual(x.usedPointLEDFallback, y.usedPointLEDFallback, label)
-                if tolerant {
-                    XCTAssertTrue(close(key(x.endpoints), key(y.endpoints)), "\(label) \(color) endpoints")
-                } else {
-                    XCTAssertEqual(key(x.endpoints), key(y.endpoints), "\(label) \(color) endpoints")
-                    XCTAssertEqual(key(x.comparisonEndpoints), key(y.comparisonEndpoints), label)
-                }
+                XCTAssertEqual(key(x.endpoints), key(y.endpoints), "\(label) \(color) endpoints")
+                XCTAssertEqual(key(x.comparisonEndpoints), key(y.comparisonEndpoints), label)
                 for (name, u, v) in [("score", x.score, y.score),
                                      ("total", x.scoreBreakdown.total, y.scoreBreakdown.total),
                                      ("meanValue", x.meanValue, y.meanValue),
@@ -3382,11 +3360,7 @@ extension DetectionCoreTests {
                                      ("coreSupportRatio", x.coreSupportRatio, y.coreSupportRatio),
                                      ("axialDensity", x.axialDensity, y.axialDensity),
                                      ("rawPCASpan", x.rawPCASpan, y.rawPCASpan)] {
-                    if tolerant {
-                        XCTAssertEqual(u, v, accuracy: max(abs(u), 1) * 2e-3, "\(label) \(color) \(x.source) \(name)")
-                    } else {
-                        XCTAssertEqual(u.bitPattern, v.bitPattern, "\(label) \(color) \(x.source) \(name)")
-                    }
+                    XCTAssertEqual(u.bitPattern, v.bitPattern, "\(label) \(color) \(x.source) \(name)")
                 }
             }
         }
