@@ -20,6 +20,19 @@ from typing import Any
 LOG_DIR = Path.home() / "Library/Logs/PhoneSaber/codex"
 DISPLAY_TAIL = 16 * 1024
 SECRET_KEY = re.compile(r"(?i)(?:api.?key|token|cookie|authorization|password|secret|credential)")
+# JSON, TOML, environment assignments, query strings and CLI credential flags.
+# Linear-time form of the historical pattern
+#   ([\w-]*KEYWORD[\w-]*["']?\s*(?:[:=]|\s)\s*)VALUE
+# which backtracked cubically on long [\w-] runs (e.g. 20 KB of "x" took ~12 s).
+# Equivalence: a key must end at its [\w-] run end (the next token is a quote,
+# whitespace, ':' or '='), and every scan resumes outside a run, so matches
+# start at a run start (lookbehind) containing a keyword (lookahead). Of the
+# separator splits, only "all whitespace then [:=]" or "whitespace up to the
+# next token" can lead to a different VALUE start, tried in the same order.
+CREDENTIAL_ASSIGNMENT = re.compile(
+    r'(?i)((?<![\w-])(?=[\w-]*?(?:api[_-]?key|token|cookie|authorization|password|secret|credential))'
+    r'[\w-]*["\x27]?(?:\s*[:=]\s*|\s+))'
+    r'(?:"[^"\n]*"|\x27[^\x27\n]*\x27|[^\s,;&}\n]+)')
 
 
 def _text(value: str | bytes | None) -> str:
@@ -59,11 +72,7 @@ class Redactor:
         text = re.sub(r"\b(?:sk-[A-Za-z0-9_-]+|eyJ[A-Za-z0-9_.-]+)", "[REDACTED]", text)
         text = re.sub(r'(?i)(bearer\s+)[^\s"\x27,]+', r'\1[REDACTED]', text)
         text = re.sub(r'(?i)(https?://)[^\s/@:]+:[^\s/@]+@', r'\1[REDACTED]@', text)
-        # JSON, TOML, environment assignments, query strings and CLI credential flags.
-        text = re.sub(
-            r'(?i)((?:[\w-]*(?:api[_-]?key|token|cookie|authorization|password|secret|credential)[\w-]*)["\x27]?\s*(?:[:=]|\s)\s*)'
-            r'(?:"[^"\n]*"|\x27[^\x27\n]*\x27|[^\s,;&}\n]+)',
-            r'\1"[REDACTED]"', text)
+        text = CREDENTIAL_ASSIGNMENT.sub(r'\1"[REDACTED]"', text)
         # Cookie/authorization headers may contain multiple values on the line.
         text = re.sub(r'(?im)^((?:set-cookie|cookie|authorization)\s*:).+$', r'\1 [REDACTED]', text)
         return text

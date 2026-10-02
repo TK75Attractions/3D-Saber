@@ -5,9 +5,12 @@ import contextlib
 import io
 import json
 import os
+import random
+import re
 import stat
 import sys
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -175,6 +178,74 @@ class CodexProcessTests(unittest.TestCase):
         records = [json.loads(path.read_text()) for path in self.logs.glob("*.json")]
         self.assertEqual(records[0]["error_code"], "MALFORMED_OUTPUT")
         self.assertIn("invalid structured output", records[0]["output_error"])
+
+
+# The pre-2026-10 credential-assignment pattern, kept only as an equivalence
+# oracle. It is cubic on long [\w-] runs, so feed it short inputs only.
+LEGACY_CREDENTIAL_ASSIGNMENT = re.compile(
+    r'(?i)((?:[\w-]*(?:api[_-]?key|token|cookie|authorization|password|secret|credential)[\w-]*)["\x27]?\s*(?:[:=]|\s)\s*)'
+    r'(?:"[^"\n]*"|\x27[^\x27\n]*\x27|[^\s,;&}\n]+)')
+
+
+class RedactionComplexityTests(unittest.TestCase):
+    """Regression for the 20 KB stderr that took ~25 s in Redactor.__call__."""
+
+    def redactor(self) -> process.Redactor:
+        redactor = process.Redactor.__new__(process.Redactor)
+        redactor.secrets = set()  # host-independent; literal secrets are a separate pass
+        return redactor
+
+    def assert_equivalent(self, text: str) -> None:
+        expected = LEGACY_CREDENTIAL_ASSIGNMENT.sub(r'\1"[REDACTED]"', text)
+        self.assertEqual(process.CREDENTIAL_ASSIGNMENT.sub(r'\1"[REDACTED]"', text), expected, repr(text))
+
+    def test_matches_legacy_pattern_on_representative_and_adversarial_inputs(self):
+        cases = [
+            'OPENAI_API_KEY=sk-live123 next', '{"api_key": "abc", "token":"t", "x": 1}', "token = 'abc def'\n",
+            "--password hunter2 --secret=xyz", "?access_token=abc&cookie=1;", "Cookie: a=b; c=d",
+            'password="unterminated\nnext', "token:", "token:,", "token  :  ,", "token  ,", "token   \n  :  v",
+            'token"  =  "quoted"', "token'\t:\t'x'", "mytoken_value: x", "tokentoken=1", "xtokenx-y z",
+            "api-key:=v", "apikey\n\nv", "token=a}token=b,token=c;", "TOKEN : 'a\n'", "\u212aey token \u00e9",
+            "x" * 300, "token" * 60 + "=v", "token" + " " * 300 + ",", "secret" + " \n" * 150 + ";",
+            "api_key=abc, " * 30, 'password "' * 30, "token:" * 40, "-" * 200 + "token" + "-" * 200 + " v",
+        ]
+        for text in cases:
+            with self.subTest(text=text[:40]):
+                self.assert_equivalent(text)
+
+    def test_matches_legacy_pattern_on_seeded_random_inputs(self):
+        tokens = ["token", "TOKEN", "api_key", "api-key", "ApiKey", "secret", "password", "cookie", "authorization",
+                  "credential", "tok", "ken", "api", "key", "x", "-", "_", "1", " ", "\n", "\t", ":", "=", '"', "'",
+                  ",", ";", "&", "}", "{", "/", "@", "\u212a", "\u00e9", "\u00a0", "\u2028"]
+        rng = random.Random(20261002)
+        for _ in range(5000):
+            if rng.random() < 0.3:
+                text = "".join(rng.choice("tokenapi_-k: =\"',;\n\t}") for _ in range(rng.randint(1, 60)))
+            else:
+                text = "".join(rng.choice(tokens) for _ in range(rng.randint(1, 40)))
+            self.assert_equivalent(text)
+
+    def test_large_adversarial_inputs_redact_quickly(self):
+        size = 200_000
+        cases = {
+            "long word line": "x" * size,
+            "keyword run": "token" * (size // 5),
+            "whitespace before delimiter": "token" + " " * size + ",",
+            "multiline whitespace": "secret" + " \n" * (size // 2) + ";",
+            "many partial secrets": "api_key=abc, " * (size // 13),
+            "unterminated quotes": 'password "' * (size // 10),
+            "empty assignments": "token:" * (size // 6),
+            "mixed stderr": ("Authorization: Bearer sk-abc tokenxx=" + "y" * 50 + "\n") * (size // 90),
+        }
+        redactor = self.redactor()
+        for name, text in cases.items():
+            with self.subTest(name=name):
+                started = time.perf_counter()
+                redactor(text)
+                # Linear form takes ~10 ms here; the legacy pattern needed hours
+                # for "keyword run". Generous bound so a loaded host cannot flake.
+                self.assertLess(time.perf_counter() - started, 5.0)
+        self.assertEqual(redactor("token=abc " + "x" * size)[:22], 'token="[REDACTED]" xxx')
 
 
 if __name__ == "__main__":
