@@ -269,6 +269,9 @@ fi
 if [[ -n "$IOS_SIMULATOR_ID" ]]; then
   IOS_SIMULATOR_DESTINATION="platform=iOS Simulator,id=$IOS_SIMULATOR_ID"
   # Keep XCTest on one simulator and one worker for stable production verification.
+  # Skip post-test simulator diagnostics: `simctl diagnose` could hold xcodebuild
+  # for up to 10 minutes after all tests had already finished and load the host
+  # enough to break later timing-sensitive steps. Results are unaffected.
   run_logged_command "iOS XCTest" ios-xctest \
     xcodebuild \
     -project "$IOS_PROJECT" \
@@ -280,6 +283,7 @@ if [[ -n "$IOS_SIMULATOR_ID" ]]; then
     -parallel-testing-enabled NO \
     -maximum-concurrent-test-simulator-destinations 1 \
     -maximum-parallel-testing-workers 1 \
+    -collect-test-diagnostics never \
     CODE_SIGNING_ALLOWED=NO \
     test
   xcodebuild_exit_code="$LAST_EXIT"

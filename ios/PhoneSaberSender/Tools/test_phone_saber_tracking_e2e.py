@@ -377,6 +377,17 @@ class TrackingPipelineE2ETests(unittest.TestCase):
         _, stable = self.audit_hints("stable")
         self.assertTrue(all(r["hint"] == "none" for r in stable))
 
+    def test_N2_offline_selection_replay_reads_real_recorder_geometry(self):
+        from phone_saber_selection_replay import Policy, gap_distribution, load_sequences, replay
+        sequences = load_sequences([Path(self.captures["candidate-switch"]["bundle"])])
+        self.assertTrue(sequences, "replay finds complete eligible lists in a real bundle")
+        policy = Policy(margin=1e9, max_distance=0.5, min_iou=0.2, hold_frames=1)
+        switches = [r for r in gap_distribution(sequences, policy) if not r["returnsToEarlierWinner"]]
+        self.assertIn(1010, [r["frameID"] for r in switches])
+        self.assertIn(1010, [c["frameID"] for c in replay(sequences, policy, 100)["changedFrames"]])
+        stable = load_sequences([Path(self.captures["stable"]["bundle"])])
+        self.assertEqual(replay(stable, policy, 100)["changedFrames"], [])
+
     def test_O_selected_frame_geometry_is_complete_reconciled_and_never_silently_cut(self):
         for scenario in ("candidate-switch", "raw-jump", "path-switch", "bridge", "bridge-switch"):
             plan = input_plan(Path(self.captures[scenario]["bundle"]))

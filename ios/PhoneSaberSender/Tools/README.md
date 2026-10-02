@@ -36,6 +36,25 @@ Failure classes:
 - **F:** compact RED component recovery
 - **G:** RED long core-line selection and bounded endpoints
 
+`phone_saber_selection_replay.py` is the read-only evidence tool for the planned
+candidate temporal-consistency fix. It reads the complete eligible candidate
+geometry saved in triage frame contexts (truncated lists are skipped) and does
+not change recognition:
+
+```bash
+# Score gap R - M where the recorded winner R breaks continuity while an
+# eligible M continues the previous winner (switch-outs; returns listed apart)
+ios/PhoneSaberSender/Tools/phone_saber_selection_replay.py /path/to/bundle
+# Which frames a margin / correspondence / expiry policy would change, and how
+# many >=100 px output jumps remain; comma-separated values sweep
+ios/PhoneSaberSender/Tools/phone_saber_selection_replay.py /path/to/bundle \
+  --mode replay --margin 0.5,1,2,5 --hold 1,3
+```
+
+Policy values are inputs to compare, never production defaults: a production
+threshold must cite the measured distribution. Triage bundles hold event
+windows only, so counts describe those windows.
+
 Run the lossless fixture suite from the repository root:
 
 ```bash
