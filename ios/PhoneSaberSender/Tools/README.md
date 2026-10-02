@@ -87,6 +87,51 @@ ios/PhoneSaberSender/Tools/run_lossless_regression.py \
   --csv /tmp/phonesaber-regression.csv
 ```
 
+## Background hard-negative benchmark (informational)
+
+`run_background_negative_benchmark.py` runs the unmodified production detector
+(the same Swift harness as the lossless suite) on device frames that show matte
+red background objects (a red label strip, red carabiners, a red basket) and no
+lit saber. These objects can pass RED emitter eligibility and win the RED
+selection, which causes large output jumps. Each listed color in
+`background_negative_benchmark.json` must not be detected; any detection is a
+false positive. One control frame is already rejected and must stay rejected.
+
+Why it is separate from the formal corpus: 7 of the 8 frames are detected
+today, so they are known failures. Adding them to the 40/40 lossless gate would
+break the gate before an eligibility fix exists. This benchmark only measures
+progress. It exits 0 unless you pass `--strict`, and it is not wired into
+`tools/verify_phone_saber.sh`.
+
+Privacy rule: the source PNGs are private home recordings that show a person.
+Never copy them into this repository. The manifest references them by a path
+relative to the diagnostics inbox
+(`~/Library/Application Support/PhoneSaber/diagnostics-inbox`) and pins the
+full SHA-256. A missing image is skipped. An image with a different hash is
+reported as an error and is not evaluated.
+
+```bash
+ios/PhoneSaberSender/Tools/run_background_negative_benchmark.py
+ios/PhoneSaberSender/Tools/run_background_negative_benchmark.py \
+  --inbox /path/to/diagnostics-inbox --json /tmp/phonesaber-bgneg.json
+```
+
+`--json -` prints JSON to stdout. You can also set the inbox with
+`PHONESABER_DIAGNOSTICS_INBOX`. For each image the report shows, per color:
+detected, the number of eligible candidates, and the winning candidate's source
+type, score, bounding box, centroid (the bounding-box center), and features
+(peak, mean, high-value ratio, purity, core support, axial density, sampled
+point count). The harness does not expose component area. The summary line is
+`false positives X / available N (missing M, errors E)`. Images whose measured
+status differs from `baselineStatus` are listed as `baseline changed`.
+
+Baseline (2026-10-02): **false positives 7 / available 8**. The control
+`control_label_carabiners_013205_282` is rejected.
+
+The unit tests do not need the private images. To also check the real inbox,
+set `PHONESABER_BACKGROUND_BENCHMARK_INTEGRATION=1`. That test is skipped when
+the images are absent.
+
 Analyze one device recording:
 
 ```bash
