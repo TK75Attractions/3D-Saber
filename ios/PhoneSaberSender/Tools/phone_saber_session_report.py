@@ -23,6 +23,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Callable
 
+from phone_saber_hotspots import static_hotspots
 from phone_saber_selection_replay import Policy, gap_distribution, load_sequences, quantiles, replay
 from phone_saber_tracking_diagnostics import (
     BRIDGE_ANNOTATED_ROLE,
@@ -240,6 +241,7 @@ def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MA
         "caseHints": [r for r in audit or [] if r.get("hint") != "none"] if audit is not None else None,
         "selectionReplay": _guard(errors, "selection_replay",
                                   lambda: replay_section(bundle, margins, holds)),
+        "staticHotspots": _guard(errors, "static_hotspots", lambda: static_hotspots(bundle)),
         "trackingPreflight": _guard(errors, "tracking_preflight",
                                     lambda: tracking_preflight(plan)) if plan is not None else None,
         "imagesToOpen": _guard(errors, "images", lambda: images_to_open(summary, audit, plan)),
@@ -265,6 +267,55 @@ def _color_table(report: dict) -> list[str]:
         lines.append("| " + " | ".join([color] + [_fmt(d.get(k)) for k in (
             "frames", "detectedFrames", "missedFrames", "candidateZeroFrames", "eligibleZeroFrames")]
             + [_fmt(o.get(k)) for k in ("dropoutTransitions", "recoveredTransitions", "falseFrames")]) + " |")
+    return lines
+
+
+HOTSPOT_LIST_MIN_FRAMES = 3
+HOTSPOT_LIST_MAX_PER_COLOR = 6
+
+
+def _hotspot_lines(hotspots: Any) -> list[str]:
+    lines = ["## 静的ホットスポット(背景誤検出の候補 — hint のみ、gate には使わない)", ""]
+    try:
+        if not isinstance(hotspots, dict):
+            return lines + ["- n/a"]
+        if not hotspots.get("framesWithPositions"):
+            return lines + ["- n/a — no candidate geometry or winner positions in this bundle"]
+        size = hotspots.get("imageSize") or [None, None]
+        lines.append(f"- frames with positions: {hotspots['framesWithPositions']} "
+                     f"(sources {_fmt(hotspots.get('frameSources'))}), image {_fmt(size[0])}x{_fmt(size[1])}, "
+                     f"likelyBackground clusters: {hotspots.get('likelyBackgroundCount')}")
+        if hotspots.get("winnersOnly"):
+            lines.append("- winners only (bundle predates candidateGeometry): a static object that was "
+                         "eligible but lost is not visible here")
+        lines.append("- likelyBackground = 同じ位置に長く居座る eligible/winning 候補。静止した本物の saber も"
+                     "該当し得るので ORIGINAL PNG で確認する")
+        for color in ("red", "blue"):
+            clusters = (hotspots.get("clusters") or {}).get(color) or []
+            shown = [c for c in clusters if c.get("likelyBackground")
+                     or c.get("framesPresent", 0) >= HOTSPOT_LIST_MIN_FRAMES][:HOTSPOT_LIST_MAX_PER_COLOR]
+            if not shown:
+                lines.append(f"- {color}: no cluster with ≥{HOTSPOT_LIST_MIN_FRAMES} frames "
+                             f"({len(clusters)} clusters total)")
+                continue
+            for c in shown:
+                flag = "**LIKELY BACKGROUND**" if c.get("likelyBackground") else "static? no"
+                failed = [k for k, ok in (c.get("checks") or {}).items() if not ok]
+                lines.append(
+                    f"- {c.get('clusterID')} {flag}: centroid {_fmt(c.get('centroid'))} bbox {_fmt(c.get('bbox'))}, "
+                    f"frames {c.get('framesPresent')} (windows {c.get('windows')}, span {_fmt(c.get('spanSeconds'))}s, "
+                    f"coverage {_fmt(c.get('coverage'))}), "
+                    f"eligible {_fmt(c.get('eligibleFraction'))}, winning {_fmt(c.get('winningFraction'))}, "
+                    f"score max/median {_fmt(c.get('maxFinalScore'))}/{_fmt(c.get('medianFinalScore'))}, "
+                    f"jitter {_fmt(c.get('centroidJitterPx'))}px, types {_fmt(c.get('sourceTypes'))}"
+                    + (f", failed checks {_fmt(failed)}" if failed else ""))
+                elsewhere = c.get("winnerElsewhereFrames") or []
+                if elsewhere:
+                    lines.append(f"  - same-color winner elsewhere in this span: frames {_fmt(elsewhere)}")
+                images = c.get("selectedImages") or []
+                lines.append("  - selected images: " + (", ".join(f"`{p}`" for p in images) if images else "none"))
+    except Exception as exc:  # noqa: BLE001 - rendering must never break the report
+        lines.append(f"- n/a ({type(exc).__name__}: {exc})")
     return lines
 
 
@@ -395,6 +446,9 @@ def render_markdown(report: dict) -> str:
         for run in replay_info["sweep"]:
             add(f"| {run['margin']:g} | {run['hold']} | {run['framesCompared']} | {run['jumpsRecorded']} | "
                 f"{run['jumpsReplay']} | {_fmt(run['changedFrames'])} |")
+    add("")
+
+    out.extend(_hotspot_lines(report.get("staticHotspots")))
     add("")
 
     add("## tracking_preflight")

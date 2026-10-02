@@ -70,6 +70,25 @@ ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --outpu
 ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --json
 ```
 
+`phone_saber_hotspots.py` is the read-only static-hotspot map for background
+false positives (matte red labels, carabiners). It clusters every recorded
+candidate position per color by centroid distance / bbox IoU and reports, per
+cluster, the representative bbox/centroid, frames present, eligible/winning
+fractions, max/median `finalScore`, source types and the selected images that
+show it. It uses `candidateGeometry` when present and otherwise falls back to the
+winner only (`selectedCandidate`, then the detected non-predicted `endpoint`), so
+on older bundles an eligible object that lost is invisible. `likelyBackground` is
+a hint, never a gate input: present in ≥5 frames spanning ≥0.25 s, p90 centroid
+jitter ≤2% of the image diagonal, stable bbox, eligible or winning, and present in
+≥60% of that color's frames with data inside its span. A real saber held still
+can match too, so confirm on the original PNG. The session report shows it as
+「静的ホットスポット(背景誤検出の候補)」.
+
+```bash
+ios/PhoneSaberSender/Tools/phone_saber_hotspots.py /path/to/bundle [/path/to/bundle2 ...]
+ios/PhoneSaberSender/Tools/phone_saber_hotspots.py /path/to/bundle --json
+```
+
 Run the lossless fixture suite from the repository root:
 
 ```bash
