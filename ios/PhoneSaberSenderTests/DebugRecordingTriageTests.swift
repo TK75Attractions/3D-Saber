@@ -1314,11 +1314,14 @@ extension DebugBridgeDropoutTests {
                 "peakScore": score, "signals": [], "images": images]
     }
 
-    private func prioritySelection(trackingScore: Double, bridgeEvents: Int) throws
+    private func prioritySelection(trackingScore: Double, bridgeEvents: Int,
+                                   overlapping: [[String: Any]] = []) throws
         -> (selection: DebugRecordingTriageSelection, summary: [String: Any]) {
         let directory = try temporaryDirectory()
-        var events: [[String: Any]] = []
-        for index in 0..<bridgeEvents { events.append(event(index + 1, color: "red", start: 10 + index * 10)) }
+        var events: [[String: Any]] = overlapping
+        for index in 0..<bridgeEvents {
+            events.append(event(overlapping.count + index + 1, color: "red", start: 10 + index * 10))
+        }
         try writeImages(events, to: directory)
         for frame in 100...110 { try Data("png".utf8).write(to: directory.appendingPathComponent("motion_\(frame).png")) }
         let frames = (0..<130).map { frame($0, red: line(100), blue: line(100, 300)) }
@@ -1345,6 +1348,39 @@ extension DebugBridgeDropoutTests {
         XCTAssertTrue(tracking.contains { $0.role == "peak" })
         XCTAssertTrue(tracking.contains { $0.role == "before" } && tracking.contains { $0.role == "after" })
         XCTAssertTrue(selection.bridgePriorityEventIDs.isEmpty)
+    }
+
+    // A bridge event whose frames fall inside the tracking window (the after-success
+    // is often the instability peak) must not remove tracking frames: the bridge and
+    // tracking PNGs of one frame are different files.
+    func testBridgeEventOverlappingTheTrackingWindowKeepsTheWholeWindowAndPeak() throws {
+        let peak = 105
+        for dropout in [peak - 1, peak, peak + 1] {
+            for (gap, others) in [(1, 0), (2, 1)] {
+                let label = "dropout \(dropout) gap \(gap) others \(others)"
+                let overlap = event(1, color: "red", start: dropout - 1, gap: gap)
+                let (selection, _) = try prioritySelection(trackingScore: 2.0, bridgeEvents: others,
+                                                           overlapping: [overlap])
+                let bridge = selection.images.filter { $0.bridge != nil }
+                XCTAssertEqual(Set(bridge.compactMap { $0.bridge?.eventID }), [1], label)
+                XCTAssertEqual(bridge.count, 4, label)
+                let tracking = selection.images.filter {
+                    $0.eventIndex == DebugRecordingTriageLimits.trackingEventIndex
+                }
+                XCTAssertEqual(selection.images.count, DebugRecordingTriageLimits.defaultImageCount, label)
+                XCTAssertEqual(tracking.count, DebugRecordingTriageLimits.defaultImageCount - bridge.count, label)
+                XCTAssertEqual(selection.trackingWindow?["selected"], tracking.count, label)
+                XCTAssertEqual(selection.trackingWindow?["available"], 11, label)
+                let ids = tracking.map(\.frameID).sorted()
+                XCTAssertEqual(ids, Array(ids[0]...(ids[0] + UInt64(ids.count - 1))), "contiguous \(label)")
+                XCTAssertTrue(tracking.contains { $0.role == "peak" && $0.frameID == UInt64(peak) }, label)
+                XCTAssertTrue(ids.first! < UInt64(peak) && UInt64(peak) < ids.last!, label)
+                // The overlap is real: some tracking frames share a frame with the bridge event.
+                XCTAssertFalse(Set(ids).isDisjoint(with: bridge.map(\.frameID)), label)
+                XCTAssertEqual(Set(selection.images.map(\.fileName)).count, selection.images.count, label)
+                XCTAssertTrue(selection.bridgePriorityEventIDs.isEmpty, label)
+            }
+        }
     }
 
     // Regression for phonesaber_20261002_005850_489 (peak 2538, score 74.52) and

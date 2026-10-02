@@ -345,7 +345,7 @@ class TrackingPipelineE2ETests(unittest.TestCase):
 
     def test_M_real_recorder_contexts_fit_the_consumer_size_limit_and_are_compact(self):
         from phone_saber_triage_codex import MAX_CODEX_CONTEXT_BYTES
-        for scenario in ("bridge", "stable", "candidate-switch", "raw-jump", "path-switch", "bridge-switch"):
+        for scenario in ("bridge", "stable", "candidate-switch", "raw-jump", "path-switch", "bridge-switch", "bridge-overlap"):
             bundle = Path(self.captures[scenario]["bundle"])
             for path in (bundle / "frames").glob("*.json"):
                 data = path.read_bytes()
@@ -389,7 +389,7 @@ class TrackingPipelineE2ETests(unittest.TestCase):
         self.assertEqual(replay(stable, policy, 100)["changedFrames"], [])
 
     def test_O_selected_frame_geometry_is_complete_reconciled_and_never_silently_cut(self):
-        for scenario in ("candidate-switch", "raw-jump", "path-switch", "bridge", "bridge-switch"):
+        for scenario in ("candidate-switch", "raw-jump", "path-switch", "bridge", "bridge-switch", "bridge-overlap"):
             plan = input_plan(Path(self.captures[scenario]["bundle"]))
             seen = 0
             for image in plan.images:
@@ -460,6 +460,32 @@ class TrackingPipelineE2ETests(unittest.TestCase):
         self.assertGreater(report["selectionReplay"]["sequences"], 0)
         self.assertTrue(report["imagesToOpen"]["bridgeOriginals"])
         self.assertTrue(report["imagesToOpen"]["annotatedViewingAidOnly"])
+
+    def test_R_bridge_event_inside_the_tracking_window_keeps_the_window_and_its_peak(self):
+        # The loss (before 1013, dropout 1014, after 1015) shares frames with the
+        # switch's window (peak 1016): the tracking PNGs of those frames still count.
+        capture = self.captures["bridge-overlap"]
+        plan = input_plan(Path(capture["bundle"]))
+        self.assertEqual(len(plan.images), 12)
+        self.assertEqual(len({i.image_path for i in plan.images}), len(plan.images))
+        bridge = [i for i in plan.images if i.bridge_event_id is not None]
+        tracking = [i for i in plan.images if i.failure_type.endswith("tracking_instability")]
+        self.assertEqual([i.role for i in bridge],
+                         ["before_success", "dropout", "annotated_dropout", "after_success"])
+        frames = sorted(i.frame_id for i in tracking)
+        self.assertEqual(len(frames), 8)
+        self.assertEqual(frames, list(range(frames[0], frames[0] + len(frames))), "contiguous window")
+        self.assertTrue({i.frame_id for i in bridge} & set(frames), "bridge and window overlap")
+        summary = json.loads((Path(capture["bundle"]) / "summary.json").read_text())
+        window = summary["bridgeDropoutSummary"]["trackingWindow"]
+        self.assertEqual((window["selected"], window["available"]), (len(tracking), 11))
+        peak = next(i for i in tracking if json.loads(i.context_path.read_text())["motionEvent"]["role"] == "peak")
+        self.assertTrue(frames[0] < peak.frame_id < frames[-1])
+        self.assertIn(peak.frame_id - 1, {i.frame_id for i in bridge}, "the peak's onset is a bridge frame")
+        self.assertEqual(tracking_preflight(plan)["status"], "PASS")
+        events = temporal_events(plan)
+        self.assertEqual(len(events), 1)
+        self.assertTrue(sufficient_for_tracking(events[0]))
 
 
 if __name__ == "__main__": unittest.main()

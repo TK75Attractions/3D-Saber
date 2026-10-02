@@ -2699,12 +2699,15 @@ final class DetectionCoreTests: XCTestCase {
     }
 
     private func recordBridge(_ frames: [BridgeFrame], colors: DebugDiagnosticColors = .both,
-                              width: Int = 64, height: Int = 48)
+                              width: Int = 64, height: Int = 48,
+                              configure: (DebugVideoRecorder) -> Void = { _ in },
+                              afterFrame: (UInt64, DebugVideoRecorder) -> Void = { _, _ in })
         async throws -> (recording: DebugRecordingResult, metadata: [String: Any]) {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("PhoneSaberBridgeTests-\(UUID().uuidString)", isDirectory: true)
         addTeardownBlock { try? FileManager.default.removeItem(at: directory) }
         let recorder = try DebugVideoRecorder(directory: directory, diagnosticColors: colors)
+        configure(recorder)
         for frame in frames {
             let buffer = solidPixelBuffer(width: width, height: height)
             CVPixelBufferLockBaseAddress(buffer, .readOnly)
@@ -2713,6 +2716,7 @@ final class DetectionCoreTests: XCTestCase {
                 frameID: frame.id, results: frame.sabers,
                 analysis: SaberFrameAnalysis(candidates: [.red: [], .blue: []], selected: [:]))
             CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+            afterFrame(frame.id, recorder)
             Thread.sleep(forTimeInterval: 0.02)
         }
         let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
@@ -2831,6 +2835,70 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertTrue(bridgeEvents(metadata).isEmpty)
         let summary = try XCTUnwrap(metadata["bridgeDropoutSummary"] as? [String: Any])
         XCTAssertEqual((summary["rejected"] as? [String: Int])?["gap_too_long"], 1)
+    }
+
+    func testBridgeCopiesAreReleasedOnceTheLossOutlastsTheMaximumGap() async throws {
+        let red = bridgeSaber(.red)
+        var retained: [UInt64: Int] = [:]
+        // Lost at 1/30 s, still lost at 1.0 s, then at 2.33 s (> maximumGapSeconds),
+        // and back at 2.4 s: that return can only be rejected as gap_too_long.
+        let (_, metadata) = try await recordBridge(
+            [(901, 0, [red]), (902, 1, []), (903, 30, []), (904, 70, []), (905, 72, [red])],
+            colors: .red, afterFrame: { id, recorder in retained[id] = recorder.bridgeRetainedBytesForTesting })
+        XCTAssertEqual(retained[901], 0)
+        XCTAssertGreaterThanOrEqual(retained[902] ?? 0, 2 * 64 * 48 * 4, "before + dropout BGRA copies")
+        XCTAssertEqual(retained[903], retained[902], "still a possible bridge dropout")
+        XCTAssertEqual(retained[904], 0, "copies released once the gap exceeds the outer bound")
+        XCTAssertEqual(retained[905], 0)
+        XCTAssertTrue(bridgeEvents(metadata).isEmpty)
+        let summary = try XCTUnwrap(metadata["bridgeDropoutSummary"] as? [String: Any])
+        XCTAssertEqual(summary["observedDropouts"] as? Int, 1)
+        XCTAssertEqual((summary["rejected"] as? [String: Int])?["gap_too_long"], 1)
+        XCTAssertNil((summary["rejected"] as? [String: Int])?["memory_unavailable"])
+        XCTAssertEqual(summary["unclosedAtStop"] as? Int, 0)
+    }
+
+    func testColorThatNeverReturnsReleasesItsBridgeCopiesBeforeStop() async throws {
+        let red = bridgeSaber(.red)
+        var retained: [UInt64: Int] = [:]
+        let (_, metadata) = try await recordBridge(
+            [(911, 0, [red]), (912, 1, []), (913, 61, []), (914, 62, [])],
+            colors: .red, afterFrame: { id, recorder in retained[id] = recorder.bridgeRetainedBytesForTesting })
+        XCTAssertGreaterThan(retained[912] ?? 0, 0)
+        XCTAssertEqual(retained[913], 0)
+        XCTAssertEqual(retained[914], 0)
+        let summary = try XCTUnwrap(metadata["bridgeDropoutSummary"] as? [String: Any])
+        XCTAssertEqual(summary["unclosedAtStop"] as? Int, 1)
+    }
+
+    func testFailedAfterCopyNeverEvictsAStoredBridgeEvent() async throws {
+        let red = bridgeSaber(.red)
+        // Two stored events (gaps 2/30 and 3/30); a longer third one would evict the
+        // shorter, but its after-success copy fails: both stored events must remain.
+        let (_, metadata) = try await recordBridge([
+            (1, 0, [red]), (2, 1, []), (3, 2, [red]),
+            (4, 3, []), (5, 4, []), (6, 5, [red]),
+            (7, 6, []), (8, 7, []), (9, 8, []), (10, 9, [red])],
+            colors: .red, configure: { $0.injectedBridgeAfterCopyFailureFrameIDForTesting = 10 })
+        let events = bridgeEvents(metadata)
+        XCTAssertEqual(events.compactMap { $0["beforeFrameID"] as? Int }, [1, 3])
+        let summary = try XCTUnwrap(metadata["bridgeDropoutSummary"] as? [String: Any])
+        XCTAssertEqual(summary["accepted"] as? Int, 2)
+        XCTAssertEqual(summary["evictedForLongerEvent"] as? Int, 0)
+        XCTAssertEqual((summary["rejected"] as? [String: Int])?["memory_unavailable"], 1)
+        XCTAssertEqual(summary["retained"] as? Int, 2)
+    }
+
+    func testLongerBridgeEventEvictsTheShortestOnlyAfterItsCopySucceeds() async throws {
+        let red = bridgeSaber(.red)
+        let (_, metadata) = try await recordBridge([
+            (1, 0, [red]), (2, 1, []), (3, 2, [red]),
+            (4, 3, []), (5, 4, []), (6, 5, [red]),
+            (7, 6, []), (8, 7, []), (9, 8, []), (10, 9, [red])], colors: .red)
+        XCTAssertEqual(bridgeEvents(metadata).compactMap { $0["beforeFrameID"] as? Int }, [3, 6])
+        let summary = try XCTUnwrap(metadata["bridgeDropoutSummary"] as? [String: Any])
+        XCTAssertEqual(summary["evictedForLongerEvent"] as? Int, 1)
+        XCTAssertEqual(summary["accepted"] as? Int, 3)
     }
 
     func testDiscontinuousReappearanceIsNotABridgeDropout() async throws {

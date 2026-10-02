@@ -707,7 +707,10 @@ enum DebugRecordingTriageBuilder {
         let bridgeFrameIDs = Set(selected.map(\.frameID))
 
         // The tracking event is a temporal unit as well: a contiguous window around its
-        // peak (all eleven frames when they fit), never a scattered subset.
+        // peak (all eleven frames when they fit), never a scattered subset. Its PNGs are
+        // separate files from bridge PNGs of the same frame, so a bridge event that
+        // overlaps the window (often the after-success is the instability peak) never
+        // removes frames from it.
         let slots = requestedLimit - selected.count
         let trackingCount = trackingReferences.count
         var trackingWindow: Set<UInt64>?
@@ -724,11 +727,17 @@ enum DebugRecordingTriageBuilder {
         let bridgePriority: Set<Int> = (!trackingFits && !selected.isEmpty && trackingCount > 0)
             ? [DebugRecordingTriageLimits.trackingEventIndex] : []
 
+        let trackingIndex = DebugRecordingTriageLimits.trackingEventIndex
         let sortedReferences = uniqueByName.values.filter {
-            ($0.eventIndex != DebugRecordingTriageLimits.trackingEventIndex
-                || (trackingFits && (trackingWindow?.contains($0.frameID) ?? true)))
-                && !bridgeFrameIDs.contains($0.frameID)
+            $0.eventIndex == trackingIndex
+                ? trackingFits && (trackingWindow?.contains($0.frameID) ?? true)
+                : !bridgeFrameIDs.contains($0.frameID)
         }.sorted { lhs, rhs in
+            // A sized window owns exactly the remaining slots; nothing may take one first.
+            if trackingWindow != nil,
+               (lhs.eventIndex == trackingIndex) != (rhs.eventIndex == trackingIndex) {
+                return lhs.eventIndex == trackingIndex
+            }
             if (lhs.eventIndex != nil) != (rhs.eventIndex != nil) {
                 return lhs.eventIndex != nil
             }
@@ -757,7 +766,13 @@ enum DebugRecordingTriageBuilder {
 
         for reference in sortedReferences {
             guard selected.count < requestedLimit else { break }
-            if selected.contains(where: { $0.frameID == reference.frameID }) { continue }
+            if reference.eventIndex == trackingIndex {
+                // Only an identical file or the same tracking frame is a duplicate.
+                if selected.contains(where: {
+                    $0.fileName == reference.fileName
+                        || ($0.eventIndex == trackingIndex && $0.frameID == reference.frameID)
+                }) { continue }
+            } else if selected.contains(where: { $0.frameID == reference.frameID }) { continue }
             let referenceReasons = reasonList(for: reference, reasonsByFrame: reasonsByFrame)
             let primary = referenceReasons.sorted {
                 if $0.priority != $1.priority { return $0.priority < $1.priority }
@@ -803,6 +818,11 @@ enum DebugRecordingTriageBuilder {
             if !reference.isManual && reference.eventIndex == nil {
                 for bucket in buckets { countByType[bucket, default: 0] += 1 }
             }
+        }
+
+        if trackingWindowInfo != nil {
+            // Report what was actually selected, never the planned size.
+            trackingWindowInfo?["selected"] = selected.filter { $0.eventIndex == trackingIndex }.count
         }
 
         let motionSummary = metadata["motionSummary"] as? [String: Any]

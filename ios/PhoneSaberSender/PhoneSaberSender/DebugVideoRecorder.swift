@@ -784,6 +784,19 @@ private struct DebugBridgePending {
 
     var retainedBytes: Int { (before?.byteCount ?? 0) + (dropout?.byteCount ?? 0) }
 
+    /// Once the loss outlasts the outer bound, `assess` can only reject it
+    /// (gap_too_long), so the copies are useless; the entry itself stays so the
+    /// rejection is still counted when (if) the color returns.
+    func exceedsMaximumGap(at timestamp: Double) -> Bool {
+        guard let before = run.prior.last else { return false }
+        return timestamp - before.timestamp > DebugBridgeThresholds.maximumGapSeconds
+    }
+
+    mutating func releaseCopies() {
+        before = nil
+        dropout = nil
+    }
+
     mutating func noteMissing(_ frame: DebugRecordingFrameMetadata) {
         // Keep the first three and the last two missing frames as context.
         if run.missing.count <= 3 {
@@ -978,6 +991,8 @@ final class DebugVideoRecorder {
     var motionHistoryCountForTesting: Int { motionDetector.historyCount }
     var motionPreRollFrameIDsForTesting: [UInt64] { motionPreRoll.map(\.frameID) }
     var motionRetainedBytesForTesting: Int { motionRetainedBytes() + bufferedLosslessBytes }
+    var bridgeRetainedBytesForTesting: Int { bridgeRetainedBytes() }
+    var injectedBridgeAfterCopyFailureFrameIDForTesting: UInt64?
 #endif
     private(set) var droppedFrameCount = 0
     private var isFinishing = false
@@ -1342,8 +1357,9 @@ final class DebugVideoRecorder {
             }
     }
 
-    private func canRetainMotion(_ bytes: Int) -> Bool {
-        bytes > 0 && motionRetainedBytes() + bufferedLosslessBytes + bytes
+    /// `releasing` counts bytes that the caller frees right after a successful copy.
+    private func canRetainMotion(_ bytes: Int, releasing: Int = 0) -> Bool {
+        bytes > 0 && motionRetainedBytes() + bufferedLosslessBytes - releasing + bytes
             <= DebugMotionThresholds.maximumRetainedBGRABytes
     }
 
@@ -1949,6 +1965,9 @@ final class DebugVideoRecorder {
                 if !sample.succeeded, var pending = bridgePending[color] {
                     pending.run = tracker.run ?? pending.run
                     pending.noteMissing(frame)
+                    if pending.exceedsMaximumGap(at: frame.presentationTimeSeconds) {
+                        pending.releaseCopies()
+                    }
                     bridgePending[color] = pending
                 }
             case .dropoutStarted(let run):
@@ -1957,7 +1976,8 @@ final class DebugVideoRecorder {
                     context: Dictionary(recentMetadata.map { ($0.frameID, $0) },
                                         uniquingKeysWith: { first, _ in first }))
                 pending.context[frame.frameID] = frame
-                if let retained = lastDetectedFrames[color],
+                if !pending.exceedsMaximumGap(at: frame.presentationTimeSeconds),
+                   let retained = lastDetectedFrames[color],
                    retained.frameID == run.prior.last?.frameID,
                    let beforeMetadata = recentMetadata.last(where: { $0.frameID == retained.frameID }),
                    canRetainMotion(2 * current.byteCount) {
@@ -2002,6 +2022,7 @@ final class DebugVideoRecorder {
             return
         }
         let gap = after.timestamp - beforeSample.timestamp
+        var weakestToEvict: Int?
         if bridgeCaptures.count >= DebugBridgeThresholds.maximumEvents {
             // Longer losses of a continuous saber are the more informative ones.
             guard let weakest = bridgeCaptures.indices.min(by: {
@@ -2010,13 +2031,23 @@ final class DebugVideoRecorder {
                 rejectBridge("lower_rank")
                 return
             }
-            bridgeCaptures.remove(at: weakest)
-            bumpBridge("evictedForLongerEvent")
+            weakestToEvict = weakest
         }
-        guard canRetainMotion(pending.retainedBytes + current.byteCount),
+        // Copy first: a stored event is evicted only once its replacement exists.
+        var copyAllowed = true
+#if DEBUG
+        if current.frameID == injectedBridgeAfterCopyFailureFrameIDForTesting { copyAllowed = false }
+#endif
+        guard copyAllowed,
+              canRetainMotion(pending.retainedBytes + current.byteCount,
+                              releasing: weakestToEvict.map { bridgeCaptures[$0].retainedBytes } ?? 0),
               let afterCopy = independentCopy(of: current) else {
             rejectBridge("memory_unavailable")
             return
+        }
+        if let weakestToEvict {
+            bridgeCaptures.remove(at: weakestToEvict)
+            bumpBridge("evictedForLongerEvent")
         }
         bridgeEventCounter += 1
         pending.context[current.frameID] = current.metadata

@@ -76,24 +76,27 @@ struct TrackingDiagnosticsCaptureHarness {
         let root = URL(fileURLWithPath: CommandLine.arguments[1], isDirectory: true)
         var output: [String: Any] = [:]
         for scenario in ["stable", "candidate-switch", "raw-jump", "path-switch", "emitted-stable",
-                         "bridge", "edge-absence", "bridge-switch"] {
+                         "bridge", "edge-absence", "bridge-switch", "bridge-overlap"] {
             let directory = root.appendingPathComponent(scenario, isDirectory: true)
             let recorder = try DebugVideoRecorder(directory: directory, date: Date(timeIntervalSince1970: 1_700_000_000))
             try recorder.prepare(width: 192, height: 96)
             for offset in 0..<25 {
                 // "bridge-switch": a short loss AND a later candidate-selection switch.
+                // "bridge-overlap": the loss's frames fall inside the switch's tracking window.
                 let switched = (scenario == "candidate-switch" && offset >= 10)
                     || (scenario == "bridge-switch" && offset >= 15)
+                    || (scenario == "bridge-overlap" && offset >= 16)
                 let rotated = scenario == "raw-jump" && offset >= 10
                 let path = scenario == "path-switch" && offset >= 10
                 let selected = try candidate(x: switched ? 110 : 10, rotated: rotated, fallback: !path)
-                let alternatives = ["candidate-switch", "bridge-switch"].contains(scenario)
+                let alternatives = ["candidate-switch", "bridge-switch", "bridge-overlap"].contains(scenario)
                     ? [try candidate(x: switched ? 10 : 110)] : []
                 let pixels = try buffer(selected, alternatives: alternatives, id: offset)
                 // "bridge": the saber is lost for two frames between two detections.
                 // "edge-absence": it is only in view in the middle of the recording.
                 let present = scenario == "bridge" ? !(10...11).contains(offset)
                     : (scenario == "bridge-switch" ? !(5...6).contains(offset)
+                    : scenario == "bridge-overlap" ? offset != 14
                     : (scenario == "edge-absence" ? (6...18).contains(offset) : true))
                 let analysis = present
                     ? SaberFrameAnalysis(candidates: [.red: [selected] + alternatives], selected: [.red: selected.endpoints])
