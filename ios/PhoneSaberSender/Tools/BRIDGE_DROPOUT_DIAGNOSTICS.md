@@ -114,7 +114,23 @@ orientation difference.
 (`A`, `B` with `bCause` notGenerated / ineligible / noCandidateMatchesPreviousWinner /
 unknownTruncated, `C`, `none`). They are hints with documented heuristic thresholds
 (`AUDIT_*` in `phone_saber_tracking_diagnostics.py`), never conclusions and never an
-input to the repair gate. Truncation turns a would-be B into `unknown`.
+input to the repair gate. Only omitted *eligible* candidates (`eligibleOmittedCount` > 0)
+turn a would-be B into `unknown`; omitted ineligible ones only make `bCause`
+`unknownTruncated`. A frame whose eligible candidates exist but none was saved is `unknown`.
+The return leg of a one-frame switch-out (the previous winner itself broke from its own
+previous winner, and the current winner continues the winner of two frames back) is
+`recovery`, so one switch is counted once, at its onset. `A` has no score-margin threshold:
+`scoreMargin` and `scoreMarginRatio` (margin / |winner score|) are informational, and an A
+counts as evidence only after a human confirms the margin is narrow and the original PNG
+shows a real saber at the losing candidate. Each row has `imageColor`, `subjectColor` (the
+row's color is the image's selected color) and `countForTally` (one row per
+`(frameID, color)`, preferring the subject color); tally CASE counts over
+`countForTally=true` rows only.
+
+The Mac validator mirrors what the recorder writes: `previousWinner` is present exactly
+when `previousFrameGeometryAvailable`, then every candidate carries the full six-key
+`matchToPreviousWinner`, and saved eligible ranks are exactly `1..k`. The audit re-checks
+each block with that validator and reports a violating block as `unknown` instead of raising.
 
 ## Tracking-instability ranking
 

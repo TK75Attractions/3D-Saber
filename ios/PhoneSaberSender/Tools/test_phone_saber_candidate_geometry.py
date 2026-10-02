@@ -17,8 +17,8 @@ from phone_saber_triage_protocol import BundleError
 
 
 def candidate(index, *, eligible=True, rank=None, centroid=(100.0, 100.0), bbox=(50, 90, 150, 110),
-              area=1000, span=100.0, final=(50, 100, 150, 100), match=None, reasons=()):
-    entry = {"listIndex": index, "eligible": eligible, "sourceType": "color-component", "finalScore": 80.0,
+              area=1000, span=100.0, final=(50, 100, 150, 100), match=None, reasons=(), score=80.0):
+    entry = {"listIndex": index, "eligible": eligible, "sourceType": "color-component", "finalScore": score,
              "scoreBreakdown": {"total": 80.0, "radiance": 10.0}, "centroid": list(centroid),
              "centroidSource": "trace", "bbox": list(bbox), "componentArea": area, "rawPCASpan": span,
              "rawPCAEndpoints": list(final), "finalOutputEndpoints": list(final),
@@ -40,7 +40,11 @@ PREVIOUS = {"frameID": 9, "listIndex": 0, "centroid": [100.0, 100.0], "bbox": [5
 
 
 def block(candidates, *, total=None, eligible=None, truncated=False, previous=True,
-          omitted_eligible=0, omitted_ineligible=0):
+          omitted_eligible=0, omitted_ineligible=0, previous_winner=None, fill_match=True):
+    # Swift writes matchToPreviousWinner on every entry exactly when a previous winner exists.
+    if fill_match and previous:
+        for c in candidates:
+            c.setdefault("matchToPreviousWinner", dict(SAME))
     saved_e = [c for c in candidates if c["eligible"]]
     saved_i = [c for c in candidates if not c["eligible"]]
     eligible_total = len(saved_e) + omitted_eligible if eligible is None else eligible
@@ -50,7 +54,7 @@ def block(candidates, *, total=None, eligible=None, truncated=False, previous=Tr
               "ineligibleOmittedCount": omitted_ineligible, "candidatesTruncated": truncated,
               "candidates": candidates, "previousFrameGeometryAvailable": previous}
     if previous:
-        result["previousWinner"] = copy.deepcopy(PREVIOUS)
+        result["previousWinner"] = copy.deepcopy(previous_winner or PREVIOUS)
     return result
 
 
@@ -150,6 +154,112 @@ class CandidateGeometryTests(unittest.TestCase):
         reduced["candidates"][0]["scoreBreakdownReduced"] = False
         with self.assertRaises(BundleError):
             validate_candidate_geometry(reduced)
+
+
+OUTLIER = {"centroid": (900.0, 100.0), "bbox": (850, 90, 950, 110), "final": (850, 100, 950, 100)}
+ELSEWHERE = {"centroid": (500.0, 600.0), "bbox": (450, 590, 550, 610), "final": (450, 600, 550, 600)}
+
+
+def winner_of(frame_id, geometry=None, index=0):
+    g = geometry or {"centroid": (100.0, 100.0), "bbox": (50, 90, 150, 110), "final": (50, 100, 150, 100)}
+    return {"frameID": frame_id, "listIndex": index, "centroid": list(g["centroid"]), "bbox": list(g["bbox"]),
+            "componentArea": 1000, "rawPCASpan": 100.0, "rawPCAEndpoints": list(g["final"]),
+            "finalOutputEndpoints": list(g["final"])}
+
+
+class CandidateAuditRegressionTests(unittest.TestCase):
+    def run_audit(self, context, images):
+        tmp = tempfile.TemporaryDirectory(); self.addCleanup(tmp.cleanup)
+        plan_images = []
+        for number, frame_id in enumerate(images):
+            path = Path(tmp.name) / f"context_{number}.json"
+            path.write_text(json.dumps(context(frame_id) if callable(context) else context))
+            plan_images.append(SimpleNamespace(context_path=path, image_id=f"image_{number + 1:03d}", frame_id=frame_id))
+        return candidate_selection_audit(SimpleNamespace(images=plan_images))
+
+    def single(self, geometry):
+        return self.run_audit({"activeColors": ["red"], "frames": [
+            {"frameID": 10, "timestamp": 0.3, "red": {"candidateGeometry": geometry}, "blue": {}}]}, [10])
+
+    # 1. bundles the validator accepted used to crash the audit
+    def test_contract_violations_are_rejected_and_never_crash_the_audit(self):
+        def no_winner_match(b): b["candidates"][0].pop("matchToPreviousWinner")
+        def no_previous(b): b.pop("previousWinner")
+        def null_previous(b): b["previousWinner"] = None
+        def partial_match(b): b["candidates"][1]["matchToPreviousWinner"].pop("spanRatio")
+        def match_without_previous(b): b.update(previousFrameGeometryAvailable=False); b.pop("previousWinner")
+        for mutate in (no_winner_match, no_previous, null_previous, partial_match, match_without_previous):
+            broken = block([candidate(0, rank=1, match=dict(FAR)), candidate(1, rank=2, match=dict(SAME))])
+            mutate(broken)
+            with self.subTest(mutate.__name__):
+                with self.assertRaises(BundleError):
+                    validate_candidate_geometry(broken)
+                rows = self.single(broken)  # must not raise
+                self.assertEqual([r["hint"] for r in rows], ["unknown"])
+        weird = {"activeColors": "red", "frames": [None, {"frameID": 10, "red": "x", "blue": {"candidateGeometry": 7}}]}
+        self.assertEqual([r["hint"] for r in self.run_audit(weird, [10])], ["unknown"])
+
+    # 2. eligible ranks are exactly the prefix 1..k
+    def test_eligible_ranks_must_be_the_prefix_one_to_k(self):
+        gap = block([candidate(0, rank=2, match=dict(FAR)), candidate(1, rank=3, match=dict(SAME))])
+        with self.assertRaises(BundleError):
+            validate_candidate_geometry(gap, eligible_count=2)
+        validate_candidate_geometry(block([candidate(0, rank=1), candidate(1, rank=2)]), eligible_count=2)
+
+    def test_eligible_candidates_that_were_not_saved_are_unknown_not_b(self):
+        unsaved = block([candidate(0, eligible=False, match=dict(FAR), reasons=["peakValue"])],
+                        omitted_eligible=2, truncated=True)
+        validate_candidate_geometry(unsaved, eligible_count=2)
+        row = self.single(unsaved)[0]
+        self.assertEqual((row["hint"], row["bCause"]), ("unknown", "unknownTruncated"))
+
+    # 3. only omitted ELIGIBLE candidates can hide an A
+    def test_omitted_ineligible_candidates_do_not_turn_b_into_unknown(self):
+        row = self.single(block([candidate(0, rank=1, match=dict(FAR))], truncated=True, omitted_ineligible=3))[0]
+        self.assertEqual((row["hint"], row["bCause"]), ("B", "unknownTruncated"))
+        row = self.single(block([candidate(0, rank=1, match=dict(FAR))], truncated=True, omitted_eligible=1))[0]
+        self.assertEqual(row["hint"], "unknown")
+
+    # 4. the return leg of a one-frame switch-out is not a second CASE A
+    def switch_context(self, return_geometry=None):
+        onset = block([candidate(0, rank=1, match=dict(FAR), **OUTLIER), candidate(1, rank=2, match=dict(SAME))],
+                      previous_winner=winner_of(8))
+        back = return_geometry or {"centroid": (100.0, 100.0), "bbox": (50, 90, 150, 110), "final": (50, 100, 150, 100)}
+        ret = block([candidate(0, rank=1, match=dict(FAR), **back), candidate(1, rank=2, match=dict(SAME), **OUTLIER)],
+                    previous_winner=winner_of(9, OUTLIER))
+        stable = block([candidate(0, rank=1, match=dict(SAME))], previous_winner=winner_of(7))
+        return {"activeColors": ["red"], "frames": [
+            {"frameID": f, "timestamp": f / 30, "red": {"candidateGeometry": g}, "blue": {}}
+            for f, g in ((8, stable), (9, onset), (10, ret))]}
+
+    def test_switch_onset_is_a_and_the_return_frame_is_recovery(self):
+        rows = self.run_audit(self.switch_context(), [9, 10])
+        self.assertEqual([(r["frameID"], r["hint"]) for r in rows], [(9, "A"), (10, "recovery")])
+        self.assertEqual((rows[1]["switchedOutFrameID"], rows[1]["returnsToWinnerOfFrameID"]), (9, 8))
+        self.assertTrue(all(r["countForTally"] for r in rows))
+
+    def test_a_second_jump_elsewhere_is_not_recovery(self):
+        rows = self.run_audit(self.switch_context(ELSEWHERE), [10])
+        self.assertEqual(rows[0]["hint"], "A")
+
+    # 5. one tally row per (frameID, color)
+    def test_rows_flag_the_subject_color_and_count_each_frame_color_once(self):
+        geometry = block([candidate(0, rank=1, match=dict(FAR)), candidate(1, rank=2, match=dict(SAME))])
+        context = {"selectedColor": "red", "activeColors": ["red", "blue"], "frames": [
+            {"frameID": 10, "timestamp": 0.3, "red": {"candidateGeometry": geometry},
+             "blue": {"candidateGeometry": copy.deepcopy(geometry)}}]}
+        rows = self.run_audit(context, [10, 10])
+        self.assertEqual([(r["color"], r["imageColor"], r["subjectColor"]) for r in rows],
+                         [("red", "red", True), ("blue", "red", False)] * 2)
+        tallied = [(r["frameID"], r["color"]) for r in rows if r["countForTally"]]
+        self.assertEqual(sorted(tallied), [(10, "blue"), (10, "red")])
+
+    # 6. narrowness is informational only
+    def test_case_a_reports_the_score_margin_ratio_without_a_threshold(self):
+        wide = block([candidate(0, rank=1, match=dict(FAR), score=80.0, **OUTLIER),
+                      candidate(1, rank=2, match=dict(SAME), score=20.0)])
+        row = self.single(wide)[0]
+        self.assertEqual((row["hint"], row["scoreMargin"], row["scoreMarginRatio"]), ("A", 60.0, 0.75))
 
 
 if __name__ == "__main__":

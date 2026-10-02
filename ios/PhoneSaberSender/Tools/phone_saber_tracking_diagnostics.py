@@ -5,6 +5,7 @@ import json
 import math
 from typing import Any
 
+from phone_saber_selection_replay import match_metrics
 from phone_saber_triage_protocol import BundleError
 
 TRACKING_ROLES = {"before", "onset", "peak", "after", "recovery"}
@@ -149,9 +150,10 @@ def validate_candidate_geometry(value: Any, eligible_count: Any = None) -> None:
             or value["candidatesTruncated"] != (omitted > 0) \
             or (eligible_count is not None and eligible_count != value["eligibleCandidateCount"]):
         raise BundleError("candidate geometry counts disagree with the recorded eligible count")
+    # Swift keeps a rank-ordered prefix of the eligible list, so saved ranks are exactly 1..k.
     ranks = [c.get("eligibleRank") for c in eligible]
-    if any(isinstance(r, bool) or not isinstance(r, int) or r < 1 for r in ranks) \
-            or ranks != sorted(ranks) or len(set(ranks)) != len(ranks):
+    if any(isinstance(r, bool) or not isinstance(r, int) for r in ranks) \
+            or ranks != list(range(1, len(eligible) + 1)):
         raise BundleError("invalid eligible ranks")
     for c in value["candidates"]:
         if not isinstance(c, dict) or not (GEOMETRY_ENTRY_KEYS - {"eligibleRank", "matchToPreviousWinner",
@@ -169,14 +171,22 @@ def validate_candidate_geometry(value: Any, eligible_count: Any = None) -> None:
                 or (c["eligible"] and "eligibleRank" not in c) or (not c["eligible"] and "eligibleRank" in c) \
                 or ("scoreBreakdownReduced" in c and c["scoreBreakdownReduced"] is not True):
             raise BundleError("invalid candidate geometry entry")
-        match = c.get("matchToPreviousWinner")
-        if match is not None and (not value["previousFrameGeometryAvailable"] or not isinstance(match, dict)
-                                  or not set(match) <= GEOMETRY_MATCH_KEYS or not all(number(x) for x in match.values())):
-            raise BundleError("invalid candidate correspondence metrics")
+        # Swift writes the full metric set on every entry exactly when a previous winner exists.
+        if value["previousFrameGeometryAvailable"]:
+            match = c.get("matchToPreviousWinner")
+            if not isinstance(match, dict) or set(match) != GEOMETRY_MATCH_KEYS \
+                    or not all(number(x) for x in match.values()):
+                raise BundleError("invalid candidate correspondence metrics")
+        elif "matchToPreviousWinner" in c:
+            raise BundleError("candidate correspondence without previous frame geometry")
+    if value["previousFrameGeometryAvailable"] != ("previousWinner" in value):
+        raise BundleError("previous winner presence disagrees with previousFrameGeometryAvailable")
     winner = value.get("previousWinner")
-    if winner is not None and (not value["previousFrameGeometryAvailable"] or not isinstance(winner, dict)
+    if "previousWinner" in value and (not isinstance(winner, dict)
             or not {"frameID", "centroid", "bbox", "componentArea", "rawPCASpan", "rawPCAEndpoints",
                     "finalOutputEndpoints", "listIndex"} <= set(winner)
+            or isinstance(winner["frameID"], bool) or not isinstance(winner["frameID"], int)
+            or not number(winner["componentArea"]) or not number(winner["rawPCASpan"])
             or not numeric_array(winner["centroid"], 2) or not numeric_array(winner["bbox"], 4)
             or not numeric_array(winner["rawPCAEndpoints"], 4) or not numeric_array(winner["finalOutputEndpoints"], 4)):
         raise BundleError("invalid previous winner geometry")
@@ -218,66 +228,162 @@ def _endpoints_broken(winner: dict, previous: dict) -> dict | None:
             "orientationDifference": round(angle, 4)} if broken else None
 
 
-def candidate_selection_audit(plan: Any) -> list[dict]:
-    """Deterministic hints separating three failure shapes from the selected contexts.
+def _valid_geometry(value: Any) -> dict | None:
+    """The block when it meets the recorder contract; the audit never reasons about anything else."""
+    try:
+        validate_candidate_geometry(value)
+    except (BundleError, KeyError, TypeError, ValueError, AttributeError):
+        return None
+    return value
 
-    A: a correct-looking candidate stays eligible but another one narrowly wins.
+
+def _matching_ineligible(candidates: list) -> list:
+    return [x for x in candidates if x["eligible"] is False and _continuous(x["matchToPreviousWinner"])]
+
+
+def _recovery(frames: list, color: str, geometry: dict, winner: dict) -> dict | None:
+    """Return leg of a one-frame switch-out, so the switch is counted once (at its onset).
+
+    The previous frame's winner was itself not continuous with ITS previous winner (its rank-1
+    entry, recorded on the neighbour frame of the same context, carries that correspondence),
+    and the current winner continues the winner from two frames back (same geometry metrics).
+    """
+    previous = geometry["previousWinner"]
+    frame = next((f for f in frames if isinstance(f, dict) and f.get("frameID") == previous["frameID"]), None)
+    values = frame.get(color) if frame else None
+    before = _valid_geometry(values.get("candidateGeometry") if isinstance(values, dict) else None)
+    if not before or not before["previousFrameGeometryAvailable"]:
+        return None
+    switched = next((x for x in before["candidates"] if x["eligible"] and x["eligibleRank"] == 1), None)
+    if switched is None or switched["listIndex"] != previous["listIndex"] \
+            or _continuous(switched["matchToPreviousWinner"]):
+        return None
+    earlier = before["previousWinner"]
+    match = match_metrics(winner, earlier)
+    if not _continuous(match):
+        return None
+    return {"switchedOutFrameID": previous["frameID"], "returnsToWinnerOfFrameID": earlier["frameID"],
+            "matchToWinnerBeforeSwitch": {k: round(v, 4) for k, v in match.items()}}
+
+
+def _image_color(context: dict) -> str | None:
+    mapping = context.get("imageMapping")
+    value = context.get("selectedColor") or (mapping.get("color") if isinstance(mapping, dict) else None)
+    return value if value in {"red", "blue", "both"} else None
+
+
+def _audit_color(frames: list, values: dict, geometry: dict, row: dict) -> None:
+    candidates = geometry["candidates"]
+    winner = next((x for x in candidates if x["eligible"] and x["eligibleRank"] == 1), None)
+    row.update(totalCandidateCount=geometry["totalCandidateCount"],
+               eligibleCandidateCount=geometry["eligibleCandidateCount"],
+               candidatesTruncated=geometry["candidatesTruncated"],
+               previousWinnerFrameID=geometry["previousWinner"]["frameID"],
+               eligibleOmittedCount=geometry["eligibleOmittedCount"])
+    if winner is None:
+        matching = _matching_ineligible(candidates)
+        if geometry["eligibleCandidateCount"] > 0:
+            # Eligible candidates exist but none was saved: nothing can be said about them.
+            row.update(hint="unknown", detail="eligible candidates exist but none were saved",
+                       bCause="unknownTruncated")
+        else:
+            row.update(hint="B", detail="no eligible candidate", bCause=_b_cause(geometry, matching))
+        row["ineligibleMatchesPreviousWinner"] = [
+            {"listIndex": x["listIndex"], "rejectionReasons": x["rejectionReasons"]} for x in matching]
+        return
+    winner_continuous = _continuous(winner["matchToPreviousWinner"])
+    alternatives = [x for x in candidates if x["eligible"] and x is not winner
+                    and _continuous(x["matchToPreviousWinner"])]
+    tracking = values.get("tracking") if isinstance(values.get("tracking"), dict) else {}
+    recovery = None if winner_continuous else _recovery(frames, row["color"], geometry, winner)
+    if recovery:
+        row.update(hint="recovery",
+                   detail="winner returns to the winner before a one-frame switch-out; counted at the onset",
+                   winnerListIndex=winner["listIndex"], winnerScore=winner["finalScore"],
+                   winnerDistanceFromPreviousWinner=winner["matchToPreviousWinner"]["centroidDistanceNormalized"],
+                   **recovery)
+    elif not winner_continuous and alternatives:
+        best = max(alternatives, key=lambda x: x["finalScore"])
+        margin = winner["finalScore"] - best["finalScore"]
+        row.update(hint="A", detail="a candidate matching the previous winner stayed eligible but lost",
+                   winnerListIndex=winner["listIndex"], winnerScore=winner["finalScore"],
+                   matchingAlternativeListIndex=best["listIndex"], matchingAlternativeScore=best["finalScore"],
+                   scoreMargin=round(margin, 4),
+                   scoreMarginRatio=round(margin / abs(winner["finalScore"]), 4) if winner["finalScore"] else None,
+                   winnerDistanceFromPreviousWinner=winner["matchToPreviousWinner"]["centroidDistanceNormalized"])
+    elif not winner_continuous:
+        matching = _matching_ineligible(candidates)
+        # Only omitted ELIGIBLE candidates can hide a continuing eligible one (a would-be A).
+        row.update(hint="B" if geometry["eligibleOmittedCount"] == 0 or matching else "unknown",
+                   detail="winner does not match the previous winner and no eligible candidate does",
+                   bCause=_b_cause(geometry, matching),
+                   ineligibleMatchesPreviousWinner=[
+                       {"listIndex": x["listIndex"], "rejectionReasons": x["rejectionReasons"]} for x in matching])
+    elif _endpoints_broken(winner, geometry["previousWinner"]) or tracking.get("endpointPathChanged"):
+        row.update(hint="C", detail="winner matches the previous winner but its endpoints are discontinuous",
+                   endpointDiscontinuity=_endpoints_broken(winner, geometry["previousWinner"]),
+                   endpointPathChanged=tracking.get("endpointPathChanged"))
+    else:
+        row.update(hint="none", detail="winner matches the previous winner; endpoints continuous")
+
+
+def candidate_selection_audit(plan: Any) -> list[dict]:
+    """Deterministic hints separating the failure shapes from the selected contexts.
+
+    A: the winner does not continue the previous winner while an eligible candidate that does
+       stays eligible and loses. No score-margin threshold is applied: `scoreMargin` and
+       `scoreMarginRatio` (margin / |winner score|) are informational. Counting an A as
+       evidence still needs a human to confirm the margin is narrow AND that the original PNG
+       shows a real saber where the losing candidate is.
     B: no eligible candidate corresponds to the previous winner (ineligible or absent).
     C: the winner corresponds to the previous winner but its endpoints break.
-    Hints only: pixels and the analysis decide, and nothing here feeds the gate.
+    recovery: the return leg after a one-frame switch-out (the switch is counted once, at A/B).
+    unknown: omitted eligible candidates (or an invalid geometry block) prevent a decision.
+    Rows carry `subjectColor` (the row's color is the image's selected color) and
+    `countForTally` (exactly one row per (frameID, color), preferring the subject color),
+    so CASE counts never double count a frame. Hints only: pixels and the analysis decide,
+    and nothing here feeds the gate.
     """
     rows = []
     for image in plan.images:
-        c = json.loads(image.context_path.read_text(encoding="utf-8"))
-        if c.get("bridgeEvent", {}).get("auxiliary"):
+        try:
+            c = json.loads(image.context_path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
             continue
-        for color in c.get("activeColors") or ["red", "blue"]:
-            frame = next((f for f in c["frames"] if f["frameID"] == image.frame_id), None)
-            geometry = (frame or {}).get(color, {}).get("candidateGeometry")
-            if not geometry or not geometry["previousFrameGeometryAvailable"]:
+        if not isinstance(c, dict):
+            continue
+        bridge = c.get("bridgeEvent")
+        if isinstance(bridge, dict) and bridge.get("auxiliary"):
+            continue
+        frames = c["frames"] if isinstance(c.get("frames"), list) else []
+        frame = next((f for f in frames if isinstance(f, dict) and f.get("frameID") == image.frame_id), None)
+        image_color = _image_color(c)
+        active = c.get("activeColors")
+        colors = [x for x in active if x in {"red", "blue"}] if isinstance(active, list) and active \
+            else ["red", "blue"]
+        for color in colors:
+            values = frame.get(color) if frame else None
+            raw = values.get("candidateGeometry") if isinstance(values, dict) else None
+            if not raw:
                 continue
-            candidates = geometry["candidates"]
-            winner = next((x for x in candidates if x.get("eligibleRank") == 1), None)
             row = {"imageID": image.image_id, "frameID": image.frame_id, "color": color,
-                   "totalCandidateCount": geometry["totalCandidateCount"],
-                   "eligibleCandidateCount": geometry["eligibleCandidateCount"],
-                   "candidatesTruncated": geometry["candidatesTruncated"],
-                   "previousWinnerFrameID": geometry.get("previousWinner", {}).get("frameID")}
-            if winner is None:
-                matching = [x for x in candidates if x["eligible"] is False
-                            and _continuous(x.get("matchToPreviousWinner", {}))]
-                row.update(hint="B", detail="no eligible candidate",
-                           bCause=_b_cause(geometry, matching),
-                           ineligibleMatchesPreviousWinner=[
-                               {"listIndex": x["listIndex"], "rejectionReasons": x["rejectionReasons"]} for x in matching])
+                   "imageColor": image_color, "subjectColor": image_color in {None, "both", color}}
+            geometry = _valid_geometry(raw)
+            if geometry is None:
+                row.update(hint="unknown", detail="candidate geometry violates the recorder contract")
                 rows.append(row)
                 continue
-            winner_continuous = _continuous(winner.get("matchToPreviousWinner", {}))
-            alternatives = [x for x in candidates if x["eligible"] and x is not winner
-                            and _continuous(x.get("matchToPreviousWinner", {}))]
-            tracking = (frame.get(color) or {}).get("tracking") or {}
-            if not winner_continuous and alternatives:
-                best = max(alternatives, key=lambda x: x["finalScore"])
-                row.update(hint="A", detail="a candidate matching the previous winner stayed eligible but lost",
-                           winnerListIndex=winner["listIndex"], winnerScore=winner["finalScore"],
-                           matchingAlternativeListIndex=best["listIndex"], matchingAlternativeScore=best["finalScore"],
-                           scoreMargin=round(winner["finalScore"] - best["finalScore"], 4),
-                           winnerDistanceFromPreviousWinner=winner["matchToPreviousWinner"].get("centroidDistanceNormalized"))
-            elif not winner_continuous:
-                matching = [x for x in candidates if x["eligible"] is False
-                            and _continuous(x.get("matchToPreviousWinner", {}))]
-                row.update(hint="B" if not geometry["candidatesTruncated"] or matching else "unknown",
-                           detail="winner does not match the previous winner and no eligible candidate does",
-                           bCause=_b_cause(geometry, matching),
-                           ineligibleMatchesPreviousWinner=[
-                               {"listIndex": x["listIndex"], "rejectionReasons": x["rejectionReasons"]} for x in matching])
-            elif _endpoints_broken(winner, geometry["previousWinner"]) or tracking.get("endpointPathChanged"):
-                row.update(hint="C", detail="winner matches the previous winner but its endpoints are discontinuous",
-                           endpointDiscontinuity=_endpoints_broken(winner, geometry["previousWinner"]),
-                           endpointPathChanged=tracking.get("endpointPathChanged"))
-            else:
-                row.update(hint="none", detail="winner matches the previous winner; endpoints continuous")
+            if not geometry["previousFrameGeometryAvailable"]:
+                continue
+            _audit_color(frames, values, geometry, row)
             rows.append(row)
+    chosen: dict = {}
+    for index, row in enumerate(rows):
+        key = (row["frameID"], row["color"])
+        if key not in chosen or (row["subjectColor"] and not rows[chosen[key]]["subjectColor"]):
+            chosen[key] = index
+    for index, row in enumerate(rows):
+        row["countForTally"] = chosen[(row["frameID"], row["color"])] == index
     return rows
 
 
