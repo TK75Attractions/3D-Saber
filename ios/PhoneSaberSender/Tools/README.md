@@ -89,6 +89,26 @@ ios/PhoneSaberSender/Tools/phone_saber_hotspots.py /path/to/bundle [/path/to/bun
 ios/PhoneSaberSender/Tools/phone_saber_hotspots.py /path/to/bundle --json
 ```
 
+The session report section 「背景誤検出の証拠(emitter / shadow R7e / 露出)」
+(`phone_saber_background_evidence.py`; `backgroundEvidence` in `--json`) reads the
+selected-frame evidence recorded since 31ad94c: full decision-trace
+`emitterDiagnostics`, the compact geometry `emitter`, and frame `camera`. For each
+selected-frame winner (`selectedCandidateIndex`) and each `likelyBackground`
+cluster (joined by `static_hotspots(include_members=True)` on frame and candidate
+index) it shows `emitterScore` and its margin to 0.42, the dominant terms,
+`hasEmitterCore` and its three inputs (full evidence only), and the shadow R7e
+verdict with its four margins (recomputed from the documented thresholds for the
+compact subset, marked "computed"). The key tally counts winners whose recorded
+`shadowR7eEligible` is false — R7e would have changed the output — split by
+whether the winner's cluster is `likelyBackground`. Exposure shows per-bundle
+ISO / exposure time / bias ranges and, per flagged cluster, median ISO, exposure
+and peak value for eligible vs ineligible (and R7e keep vs reject) frames; the
+peak is the trace value, or inverted from `peakTerm` when that is not clamped.
+All of it is evidence, not ground truth: R7e is `applied: false` and never read
+by production. Bundles without the fields print `n/a`; the Swift E2E harness
+writes neither field (no radiance map, no Exif), so its test adds them to a copy
+of a real recorder bundle and checks the strict input contract still passes.
+
 Run the lossless fixture suite from the repository root:
 
 ```bash

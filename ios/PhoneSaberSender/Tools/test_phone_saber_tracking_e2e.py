@@ -487,5 +487,52 @@ class TrackingPipelineE2ETests(unittest.TestCase):
         self.assertEqual(len(events), 1)
         self.assertTrue(sufficient_for_tracking(events[0]))
 
+    def test_S_background_evidence_section_renders_from_a_real_recorder_bundle(self):
+        import shutil
+        from phone_saber_session_report import build_report, render_markdown
+        from test_phone_saber_emitter_diagnostics import CAMERA, EMITTER, GEOMETRY_EMITTER
+        heading = "## 背景誤検出の証拠(emitter / shadow R7e / 露出)"
+        source = Path(self.captures["candidate-switch"]["bundle"])
+        report = build_report(source)
+        self.assertEqual(report["errors"], [])
+        evidence = report["backgroundEvidence"]
+        # The host harness builds candidates without a radiance map and appends pixel
+        # buffers without Exif attachments, so the recorder writes neither field.
+        self.assertFalse(evidence["emitterEvidenceAvailable"])
+        self.assertFalse(evidence["exposure"]["available"])
+        self.assertGreater(len(evidence["winners"]), 0, "selected-frame winners are found in real contexts")
+        self.assertTrue(all(w["evidence"] is None and w["clusterID"] for w in evidence["winners"]))
+        text = render_markdown(report)
+        self.assertIn(heading + "\n\n- **evidence only, NOT ground truth**", text)
+        self.assertIn("- n/a — no `emitterDiagnostics`", text)
+        # Add the fields, exactly where the schema puts them, to a copy of the real
+        # bundle: the strict input contract accepts them and the section reads them.
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = Path(tmp) / source.name
+            shutil.copytree(source, bundle)
+            for path in sorted((bundle / "frames").glob("*.json")):
+                context = json.loads(path.read_text())
+                selected = next(f for f in context["frames"] if f["frameID"] == context["selectedFrameID"])
+                selected["camera"] = copy.deepcopy(CAMERA)
+                for entry in selected["red"].get("candidateDecisionTrace", []):
+                    entry["emitterDiagnostics"] = copy.deepcopy(EMITTER)
+                for entry in (selected["red"].get("candidateGeometry") or {}).get("candidates", []):
+                    entry["emitter"] = copy.deepcopy(GEOMETRY_EMITTER)
+                path.write_text(json.dumps(context, separators=(",", ":")))
+            input_plan(bundle)
+            augmented = build_report(bundle)
+            self.assertEqual(augmented["errors"], [])
+            evidence = augmented["backgroundEvidence"]
+            red = [w for w in evidence["winners"] if w["color"] == "red"]
+            self.assertTrue(red and all(w["evidence"] for w in red))
+            self.assertTrue(all(w["r7eVerdict"] == "reject" for w in red))  # SHADOW: shadowR7eEligible false
+            self.assertEqual(evidence["shadowR7eTally"]["total"]["r7eWouldReject"], len(red))
+            self.assertEqual(evidence["exposure"]["iso"]["range"], [320.0, 320.0])
+            text = render_markdown(augmented)
+            section = text.split(heading)[1].split("\n## ")[0]
+            self.assertIn("### shadow R7e tally", section)
+            self.assertIn("**would reject**", section)
+            self.assertIn("- ISO 320–320", section)
+
 
 if __name__ == "__main__": unittest.main()

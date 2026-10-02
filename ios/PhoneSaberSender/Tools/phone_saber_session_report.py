@@ -5,7 +5,8 @@ Free and offline: no Codex or other model call. It reuses the existing helpers
 (input contract, bridge summary, CASE A/B/C audit, tracking preflight and the
 offline selection replay) and never writes into the bundle, because the bundle
 input contract rejects any extra file. Fields absent from older bundles are
-shown as ``n/a``.
+shown as ``n/a``. The background false-positive evidence section (emitter
+terms, shadow R7e verdict, exposure) is labelled as evidence, not ground truth.
 
     phone_saber_session_report.py <bundle_dir> [--output report.md] [--json]
 
@@ -23,6 +24,7 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Callable
 
+from phone_saber_background_evidence import background_evidence, render_lines as background_evidence_lines
 from phone_saber_hotspots import static_hotspots
 from phone_saber_selection_replay import Policy, gap_distribution, load_sequences, quantiles, replay
 from phone_saber_tracking_diagnostics import (
@@ -208,6 +210,14 @@ def images_to_open(summary: dict, audit: list[dict] | None, plan: Any) -> dict:
             "other": [p for p in names(lambda i: True) if p not in listed]}
 
 
+def _strip_members(hotspots: Any) -> Any:
+    if not isinstance(hotspots, dict):
+        return hotspots
+    clusters = {color: [{k: v for k, v in c.items() if k != "members"} for c in rows]
+                for color, rows in (hotspots.get("clusters") or {}).items()}
+    return {**hotspots, "clusters": clusters}
+
+
 def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MARGINS,
                  holds: tuple[int, ...] = DEFAULT_REPLAY_HOLDS) -> dict:
     """Read-only. Every section degrades to None/n/a instead of raising."""
@@ -225,6 +235,9 @@ def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MA
     # tracking) must not be counted twice — the audit marks the row to tally.
     tallied = [r for r in audit or [] if r.get("countForTally", True)]
     hint_counts = dict(Counter(str(r.get("hint")) for r in tallied)) if audit is not None else None
+    # Hotspots are computed once with members (for joining per-candidate emitter
+    # evidence); the report's staticHotspots keeps the member-free shape.
+    hotspots = _guard(errors, "static_hotspots", lambda: static_hotspots(bundle, include_members=True))
     report = {
         "bundle": str(bundle),
         "sessionID": summary.get("sessionID") or (plan.session_id if plan else None),
@@ -244,7 +257,9 @@ def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MA
         "caseHints": [r for r in tallied if r.get("hint") != "none"] if audit is not None else None,
         "selectionReplay": _guard(errors, "selection_replay",
                                   lambda: replay_section(bundle, margins, holds)),
-        "staticHotspots": _guard(errors, "static_hotspots", lambda: static_hotspots(bundle)),
+        "staticHotspots": _strip_members(hotspots),
+        "backgroundEvidence": _guard(errors, "background_evidence",
+                                     lambda: background_evidence(bundle, hotspots)),
         "trackingPreflight": _guard(errors, "tracking_preflight",
                                     lambda: tracking_preflight(plan)) if plan is not None else None,
         "imagesToOpen": _guard(errors, "images", lambda: images_to_open(summary, audit, plan)),
@@ -453,6 +468,8 @@ def render_markdown(report: dict) -> str:
     add("")
 
     out.extend(_hotspot_lines(report.get("staticHotspots")))
+    add("")
+    out.extend(background_evidence_lines(report.get("backgroundEvidence")))
     add("")
 
     add("## tracking_preflight")

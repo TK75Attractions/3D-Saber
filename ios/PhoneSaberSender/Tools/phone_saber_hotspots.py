@@ -85,6 +85,9 @@ class Observation:
     final_score: float | None
     source_type: str | None
     source: str
+    # Index of the candidate in its frame's candidate list (geometry ``listIndex``,
+    # trace/selected ``index``); lets other evidence for the same candidate be joined.
+    candidate_index: int | None = None
 
 
 @dataclass
@@ -147,8 +150,10 @@ def _candidate_observation(entry: dict, *, frame_id: int, timestamp: float | Non
         centroid = ((bbox[0] + bbox[2]) / 2, (bbox[1] + bbox[3]) / 2)
     if centroid is None:
         return None
+    index = entry.get("listIndex", entry.get("index"))
+    index = index if isinstance(index, int) and not isinstance(index, bool) else None
     return Observation(frame_id, timestamp, color, centroid, bbox, eligible, winning,
-                       _number(entry.get("finalScore")), entry.get("sourceType"), source)
+                       _number(entry.get("finalScore")), entry.get("sourceType"), source, index)
 
 
 def frame_observations(frame: dict, color: str) -> tuple[str, list[Observation]] | None:
@@ -206,9 +211,11 @@ def frame_observations(frame: dict, color: str) -> tuple[str, list[Observation]]
     if detected and endpoint is not None and (data.get("eligibleCandidateCount") or 0) > 0:
         x1, y1, x2, y2 = endpoint
         bbox = [min(x1, x2), min(y1, y2), max(x1, x2), max(y1, y2)]
+        index = data.get("selectedCandidateIndex")
+        index = index if isinstance(index, int) and not isinstance(index, bool) else None
         return "endpoint", [Observation(frame_id, timestamp, color, ((x1 + x2) / 2, (y1 + y2) / 2), bbox,
                                         True, True, _number(data.get("score")),
-                                        data.get("selectedCandidateType"), "endpoint")]
+                                        data.get("selectedCandidateType"), "endpoint", index)]
     return None
 
 
@@ -305,7 +312,8 @@ def _windows(frame_ids: list[int]) -> int:
 
 def _summarize(cluster: _Cluster, diagonal: float, params: HotspotParams,
                winners_by_frame: dict[tuple[str, int], list[Observation]],
-               images_by_frame: dict[int, list[str]], data_frames: set[tuple[str, int]]) -> dict:
+               images_by_frame: dict[int, list[str]], data_frames: set[tuple[str, int]],
+               include_members: bool = False) -> dict:
     # One observation per frame: the best-scoring member (a frame can hold two pieces).
     per_frame: dict[int, Observation] = {}
     for member in cluster.members:
@@ -344,7 +352,7 @@ def _summarize(cluster: _Cluster, diagonal: float, params: HotspotParams,
         "coverage": coverage >= params.min_coverage,
     }
     sources = Counter(o.source for o in observations)
-    return {
+    result = {
         "color": cluster.color,
         "centroid": [round(cx, 1), round(cy, 1)],
         "bbox": [round(v, 1) for v in rep["bbox"]] if rep.get("bbox") else None,
@@ -370,6 +378,14 @@ def _summarize(cluster: _Cluster, diagonal: float, params: HotspotParams,
         "likelyBackground": all(checks.values()),
         "selectedImages": sorted({p for f in frames for p in images_by_frame.get(f, [])}),
     }
+    if include_members:
+        # Every member (a frame can hold two pieces), so other per-candidate evidence
+        # can be joined by (frameID, candidateIndex). Opt-in: it grows with the bundle.
+        result["members"] = [{"frameID": m.frame_id, "candidateIndex": m.candidate_index,
+                              "eligible": m.eligible, "winning": m.winning, "finalScore": m.final_score,
+                              "source": m.source}
+                             for m in sorted(cluster.members, key=lambda m: (m.frame_id, m.candidate_index or 0))]
+    return result
 
 
 def _selected_images(root: Path) -> dict[int, list[str]]:
@@ -385,8 +401,13 @@ def _selected_images(root: Path) -> dict[int, list[str]]:
 
 
 def static_hotspots(bundle_dir_or_plan: Any, params: HotspotParams = HotspotParams(), *,
-                    image_size_override: tuple[int, int] | None = None) -> dict:
-    """Clusters per color for one triage bundle (directory or input plan). Read-only."""
+                    image_size_override: tuple[int, int] | None = None,
+                    include_members: bool = False) -> dict:
+    """Clusters per color for one triage bundle (directory or input plan). Read-only.
+
+    ``include_members`` adds each cluster's ``members`` (frameID, candidateIndex,
+    eligible, winning, finalScore, source) for joining per-candidate evidence.
+    """
     root = _bundle_root(bundle_dir_or_plan)
     session, observations, sources = load_observations(root)
     size, size_source = (image_size_override, "override") if image_size_override else image_size(root)
@@ -398,8 +419,8 @@ def static_hotspots(bundle_dir_or_plan: Any, params: HotspotParams = HotspotPara
     clusters = _cluster(observations, params.cluster_radius * diagonal, params.cluster_min_iou)
     images_by_frame = _selected_images(root)
     data_frames = {(o.color, o.frame_id) for o in observations}
-    summaries = [_summarize(c, diagonal, params, winners_by_frame, images_by_frame, data_frames)
-                 for c in clusters]
+    summaries = [_summarize(c, diagonal, params, winners_by_frame, images_by_frame, data_frames,
+                            include_members) for c in clusters]
     summaries.sort(key=lambda s: (not s["likelyBackground"], -s["framesPresent"], -(s["maxFinalScore"] or 0)))
     by_color: dict[str, list[dict]] = {color: [] for color in COLORS}
     for summary in summaries:
