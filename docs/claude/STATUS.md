@@ -34,13 +34,24 @@
    - `python3 ios/PhoneSaberSender/Tools/phone_saber_selection_replay.py <copy>`(score gap の分布と replay)
    そのうえで original PNG を見て、**本物の saber が映っているか**を最初に確認し、CASE A/B/C を判定する。
 2. summary.json の motionEventSummary.runtime.memoryHeadroom.minimumAvailableBytes で、256MiB 上限の余裕を判断する。
-3. 背景誤検出の測定基盤を作る(進行中): 背景ネガティブの benchmark(formal 40 件とは分離、private 画像は commit しない)。
+3. 背景誤検出の測定基盤: `run_background_negative_benchmark.py`(formal 40 件とは分離。private 画像は commit せず、inbox の path と sha256 で参照)。baseline は false positive 7/8。
+   新しい capture が届くと、受信時に `<inbox>/<bundle>.report.md`(無料の1ページ要約)が自動で作られる。
 4. 修正方針の判断(**要ユーザー判断**): 修正 A(時間的一貫性)より先に「背景の赤い物の eligibility」を直すべきかどうか。
    eligibility の変更は production の recognition 変更になるので、gate(証拠・regression・実機再試験)を満たしてから行う。
 
 ---
 
 ## 作業ログ(新しい順)
+
+### 2026-10-02(夜、並列作業)
+- cf3a873: bridge event が tracking 窓と重なると peak が bundle から落ち、precheck が失敗する不具合を修正(高)。
+  失効した bridge copy を Stop 前に解放(中)、event 入れ替えは copy 成功後に evict(低)。XCTest 155/155、Python 220/220。
+- b2d74dc: docs と code の不一致を修正(256MiB 上限、tracking 窓 11/8/5、toggle の扱い、bridge_priority、Desktop link 3つ、UI の上限表示 768→864MiB)。
+- ebb398a: 1ページの session report(`phone_saber_session_report.py`)と、receiver での自動生成。
+- 23b667f: 背景ネガティブ benchmark(baseline: false positive 7/8)。
+- 014c4d2: 負荷で揺れる timing test を堅牢化(budget は据え置き、median 判定)。
+- bdd684e: verify で `-collect-test-diagnostics never`(テスト後の simctl diagnose で最大10分止まる問題の対策)。selection replay tool を追加。
+- 並列 agent の運用: 編集する agent は別の git worktree で作業し、lead が review → main に取り込み → 全 verify → push。worktree と一時 branch は取り込み後に削除。
 
 ### 2026-10-02
 - 背景誤検出の解析(read-only agent): production detector を offline で再現し、赤ラベル・カラビナが eligible を通る理由を特定。
