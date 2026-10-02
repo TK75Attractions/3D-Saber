@@ -11,6 +11,9 @@ public class SaberTracker : MonoBehaviour
     public bool HasPrevious { get; private set; }
     // Reset直後にTick済みでも、判定側が古い接触を捨てられるよう履歴の世代を持つ。
     public int ResetVersion { get; private set; }
+    // 位置の更新回数と直近の更新間隔。判定側が同じ更新を二重に数えないために使う。
+    public int TickCount { get; private set; }
+    public float LastDeltaTime { get; private set; }
 
     void OnEnable()
     {
@@ -32,6 +35,8 @@ public class SaberTracker : MonoBehaviour
         Velocity = (CurrentPosition - PreviousPosition) / safeDt;
         Speed = Velocity.magnitude;
         HasPrevious = true;
+        TickCount = unchecked(TickCount + 1);
+        LastDeltaTime = Mathf.Max(dt, 0f);
     }
 
     public void ResetTo(Vector3 position)
@@ -42,5 +47,6 @@ public class SaberTracker : MonoBehaviour
         Velocity = Vector3.zero;
         Speed = 0f;
         HasPrevious = false;
+        LastDeltaTime = 0f;
     }
 }

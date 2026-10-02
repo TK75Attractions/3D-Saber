@@ -14,7 +14,7 @@ public class CameraImuJudgmentTests
     const double Clock = 100;
 
     void Create(CameraImuMode mode = CameraImuMode.ImuAndCamera, int count = 1,
-        string direction = "", bool twoNotes = false)
+        string direction = "", bool twoNotes = false, float secondTime = 1040)
     {
         root = new GameObject("CameraImuTest");
         spawner = root.AddComponent<NoteSpawner>();
@@ -27,7 +27,7 @@ public class CameraImuJudgmentTests
         var data = new ChartData { notes = new List<NoteData> {
             new NoteData { time = 1000, color = "red", count = count, direction = direction }
         } };
-        if (twoNotes) data.notes.Add(new NoteData { time = 1040, color = "red", count = 1 });
+        if (twoNotes) data.notes.Add(new NoteData { time = secondTime, x = secondTime == 1000 ? 1 : 0, color = "red", count = 1 });
         spawner.SetChart(data); spawner.Tick(.9);
         judge = MakeJudge("Red", SaberHand.Right);
         judge2 = MakeJudge("Blue", SaberHand.Left);
@@ -158,6 +158,16 @@ public class CameraImuJudgmentTests
         Create(twoNotes: true); Swing(); Path(); Advance(.17);
         Assert.True(notes[0].IsCut); Assert.False(notes[1].IsCut);
         Assert.That(score.HitCount, Is.EqualTo(1));
+    }
+
+    [Test]
+    public void OneSwingCutsSimultaneousNotesTogether()
+    {
+        // 金＋金のような同時ノーツ(時刻差0)は、1回の振りで両方切れる。
+        Create(twoNotes: true, secondTime: 1000); Swing(); Path(); Advance(.17);
+        Assert.True(notes[0].IsCut); Assert.True(notes[1].IsCut);
+        Assert.That(score.HitCount, Is.EqualTo(2));
+        Assert.That(score.LastTier, Is.EqualTo(JudgmentTier.Perfect));
     }
 
     [TestCase("right", false, JudgmentTier.Perfect)]

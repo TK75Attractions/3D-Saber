@@ -206,7 +206,7 @@ public class SongSelectSkin : MonoBehaviour
             difficultyFaces[i] = face;
             difficultyRings[i] = Graphic(root, "SelectedRing", new Vector2(0, 2), new Vector2(158, 158), SongSelectDiscGraphic.Shape.Ring, White); difficultyRings[i].Width = 5;
             difficultyNumbers[i] = Label(root, "Level", "", 58, new Vector2(0, 2), new Vector2(110, 100), UISkinKit.LogoFontAsset(), DifficultyColor(i));
-            difficultyLabels[i] = Label(root, "DifficultyName", DifficultyDisplayName(i, ctl.difficultyNames[i]), 19, new Vector2(0, -88), new Vector2(190, 30));
+            difficultyLabels[i] = Label(root, "DifficultyName", DifficultyDisplayName(i, ctl.difficultyNames[i]), 28, new Vector2(0, -88), new Vector2(210, 40));
             // 資料の190×196の受付範囲。円と下の難易度名を一つの的にする。
             var hit = Graphic(root, "HitArea", Vector2.zero, new Vector2(190, 196), SongSelectDiscGraphic.Shape.Panel, Color.clear); hit.Width = 0;
             ctl.difficultyButtons[i] = ButtonOn(root, hit, 1, false);
@@ -217,7 +217,7 @@ public class SongSelectSkin : MonoBehaviour
     {
         var panel = PanelAt("Achievements", 295, 915, 470, 250, SongSelectVisuals.Edge, 3, 22);
         Ruby(Label(panel.transform, "AchievementHeading", "", 24, new Vector2(-163, 88), new Vector2(94, 45), UISkinKit.JapaneseFallbackFontAsset(), SongSelectVisuals.Accent), "<ruby=じっせき>実績</ruby>");
-        achievementDifficulty = Label(panel.transform, "AchievementDifficulty", "EASY", 16, new Vector2(-73, 86), new Vector2(110, 28), color: SongSelectVisuals.Muted);
+        achievementDifficulty = Label(panel.transform, "AchievementDifficulty", "EASY", 24, new Vector2(-49, 86), new Vector2(152, 36), color: SongSelectVisuals.Muted);
         string[] ranks = { "S", "S<color=#ff6e7a>+</color>", "FC", "AP" };
         for (int i = 0; i < 4; i++)
         {
@@ -237,9 +237,9 @@ public class SongSelectSkin : MonoBehaviour
         ButtonOn(cal.rectTransform, cal, 2, false).onClick.AddListener(() => { EnterCalibration(); if (ScreenTransition.IsBusy) ctl.StopPreview(); });
         var t = Label(cal.transform, "CalibrationLabel", "", 52, new Vector2(0, -8), new Vector2(410, 106), UISkinKit.JapaneseFallbackFontAsset()); t.fontStyle = FontStyles.Bold;
         Ruby(t, "<ruby=はんてい>判定</ruby><ruby=ちょうせい>調整</ruby>");
-        var back = PanelAt("BackToTitle", 1240, 88, 244, 64, SongSelectVisuals.Edge, 2, 16);
+        var back = PanelAt("BackToTitle", 1220, 92, 340, 96, SongSelectVisuals.Edge, 2, 16);
         ButtonOn(back.rectTransform, back, 2, false).onClick.AddListener(ctl.ReturnToTitle);
-        Label(back.transform, "Label", "タイトルへ", 25, Vector2.zero, new Vector2(220, 52), UISkinKit.JapaneseFallbackFontAsset());
+        Label(back.transform, "Label", "タイトルへ", 36, Vector2.zero, new Vector2(300, 76), UISkinKit.JapaneseFallbackFontAsset());
     }
     void SelectionChanged(int index)
     {

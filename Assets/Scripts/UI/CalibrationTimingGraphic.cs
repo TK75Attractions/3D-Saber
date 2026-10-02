@@ -18,10 +18,10 @@ public sealed class CalibrationTimingGraphic : MaskableGraphic
         vh.Clear(); var r=rectTransform.rect;
         if(isDistribution)
         {
-            // 非対称の実際の PERFECT 幅。「中央 ±8ms」の目安とは別。
+            // 本番のPERFECT幅ではなく、音との中心をそろえるための±8ms。
             float scale=r.width/500f;
-            Box(vh,-(float)JudgmentTierHelper.EarlyPerfectSeconds*1000*scale,r.yMin+4,
-                (float)(JudgmentTierHelper.EarlyPerfectSeconds+JudgmentTierHelper.LatePerfectSeconds)*1000*scale,r.height-8,new Color(.1f,.29f,.28f));
+            Box(vh,r.xMin,r.yMin,r.width,r.height,new Color(.04f,.075f,.095f));
+            Box(vh,-8*scale,r.yMin,16*scale,r.height,new Color(.1f,.35f,.30f));
             for(int i=-5;i<=5;i++) Box(vh,i*r.width/10f-1,r.yMin+4,1,r.height-8,Dim);
             Box(vh,-1,r.yMin,2,r.height,Cyan);
             if(result!=null)
@@ -31,7 +31,8 @@ public sealed class CalibrationTimingGraphic : MaskableGraphic
                 for(int i=0;i<25;i++) if(bins[i]>0) Box(vh,r.xMin+i*r.width/25+2,r.yMin+6,r.width/25-4,(r.height-12)*bins[i]/max,
                     i<12?new Color(.4f,.72f,1):i>12?new Color(1,.59f,.48f):Cyan);
             }
-            else if(hasError) Box(vh,Mathf.Clamp((float)error,-245,245)*scale-3,r.yMin+2,6,r.height-4,Color.white);
+            // 分布があるときも直前の1回を白線で重ねる。
+            if(hasError) Box(vh,Mathf.Clamp((float)error,-245,245)*scale-3,r.yMin+2,6,r.height-4,Color.white);
             return;
         }
         Box(vh,r.xMin,0,r.width,2,Dim);

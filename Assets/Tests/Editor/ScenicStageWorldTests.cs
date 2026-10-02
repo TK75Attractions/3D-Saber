@@ -115,7 +115,7 @@ public class ScenicStageWorldTests
     [Test]
     public void AllThemesAreSelectedPerPlayNotPerSong()
     {
-        Assert.AreEqual(11,StageThemeCatalog.Count); Assert.AreEqual(StageThemeCatalog.Count,Enum.GetValues(typeof(StageTheme)).Length);
+        Assert.AreEqual(14,StageThemeCatalog.Count); Assert.AreEqual(StageThemeCatalog.Count,Enum.GetValues(typeof(StageTheme)).Length);
         string original = GameSession.SelectedSongId;
         var randomState = UnityEngine.Random.state;
         try

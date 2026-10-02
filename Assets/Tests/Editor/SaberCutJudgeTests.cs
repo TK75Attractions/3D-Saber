@@ -315,6 +315,145 @@ public class SaberCutJudgeTests
         Assert.AreEqual(0, judge.PendingCount);
     }
 
+    // ------ 1回の振り = 1つの時刻(後続ノーツの巻き込み防止) と、いちばん近づいた時刻での採点 ------
+
+    private CuttableNote TimedNote(Vector3 pos, double hitTime)
+    {
+        var note = MakeNote(pos);
+        note.HitTime = hitTime;
+        return note;
+    }
+
+    [Test]
+    public void OneSwingDoesNotRopeInTheFollowingNote_ButTheReturnSwingCutsIt()
+    {
+        var (judge, tracker) = MakeRig();
+        var first = TimedNote(Vector3.zero, 1.0);
+        var next = TimedNote(new Vector3(1f, 0f, 0f), 1.3);
+        tracker.ResetTo(new Vector3(-2f, 0f, 0f));
+        tracker.Tick(new Vector3(3f, 0f, 0f), 0.1f); // 1回の振りが2つとも通り抜ける
+        judge.TryCut(1.0);
+        Assert.True(first.IsCut, "タイミングの合ったノーツを切る");
+        Assert.False(next.IsCut, "同じ振りの続きで、後のノーツは切らない");
+        tracker.Tick(new Vector3(-2f, 0f, 0f), 0.1f); // 振り返し = 次の振り
+        judge.TryCut(1.3);
+        Assert.True(next.IsCut);
+        Assert.AreEqual(1.3, next.LastCutSongTime.Value, 1e-9);
+    }
+
+    [Test]
+    public void OneSwingPicksTheNoteWhoseTimingMatchesBest()
+    {
+        var (judge, tracker) = MakeRig();
+        var late = TimedNote(Vector3.zero, 1.0);
+        var onTime = TimedNote(new Vector3(1f, 0f, 0f), 1.15);
+        tracker.ResetTo(new Vector3(-2f, 0f, 0f));
+        tracker.Tick(new Vector3(3f, 0f, 0f), 0.1f);
+        judge.TryCut(1.15);
+        Assert.True(onTime.IsCut, "曲時計とヒット時刻が近いほうを切る");
+        Assert.False(late.IsCut, "同じ振りで2つの時刻は切らない");
+    }
+
+    [Test]
+    public void SimultaneousNotesAreCutTogetherInOneSwing()
+    {
+        var (judge, tracker) = MakeRig();
+        var left = TimedNote(Vector3.zero, 1.0);
+        var right = TimedNote(new Vector3(1f, 0f, 0f), 1.0);
+        tracker.ResetTo(new Vector3(-2f, 0f, 0f));
+        tracker.Tick(new Vector3(3f, 0f, 0f), 0.1f);
+        Assert.AreEqual(2, judge.TryCut(1.0));
+        Assert.True(left.IsCut);
+        Assert.True(right.IsCut);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void PausingBeforeTheNextNoteStartsANewSwing(bool pause)
+    {
+        var (judge, tracker) = MakeRig();
+        var first = TimedNote(Vector3.zero, 1.0);
+        var next = TimedNote(new Vector3(3f, 0f, 0f), 1.3);
+        tracker.ResetTo(new Vector3(-2f, 0f, 0f));
+        tracker.Tick(new Vector3(1.5f, 0f, 0f), 0.1f); // 1つ目だけを通過
+        judge.TryCut(1.0);
+        Assert.True(first.IsCut);
+        if (pause)
+        {
+            // 0.1秒止まる(strokeRestSeconds=0.08 を超える)
+            tracker.Tick(new Vector3(1.5f, 0f, 0f), 0.05f); judge.TryCut(1.1);
+            tracker.Tick(new Vector3(1.5f, 0f, 0f), 0.05f); judge.TryCut(1.15);
+        }
+        tracker.Tick(new Vector3(5f, 0f, 0f), 0.1f); // 同じ向きに振って2つ目を通過
+        judge.TryCut(1.3);
+        Assert.AreEqual(pause, next.IsCut, pause ? "止まったあとの振りなら次のノーツを切れる" : "止まらずに振り続けた続きでは切らない");
+    }
+
+    [Test]
+    public void ScoresAtTheClosestApproachNotAtTheExit()
+    {
+        var (judge, tracker, bridge) = MakeBladeRig();
+        var note = TimedNote(Vector3.zero, 1.0);
+        tracker.ResetTo(new Vector3(-1f, 0f, 0f));
+        tracker.Tick(new Vector3(-0.3f, 0f, 0f), 0.05f);
+        bridge.OverrideBlade(new Vector3(-0.3f, -1f, 0f), new Vector3(-0.3f, 1f, 0f)); // ノーツから0.3(範囲0.5の中)
+        Assert.AreEqual(0, judge.TryCut(0.98));
+        tracker.Tick(Vector3.zero, 0.05f);
+        bridge.OverrideBlade(new Vector3(0f, -1f, 0f), new Vector3(0f, 1f, 0f)); // 真上を通る
+        Assert.AreEqual(0, judge.TryCut(1.0));
+        tracker.Tick(new Vector3(0.4f, 0f, 0f), 0.05f);
+        bridge.OverrideBlade(new Vector3(0.4f, -1f, 0f), new Vector3(0.4f, 1f, 0f)); // まだ範囲の中
+        Assert.AreEqual(0, judge.TryCut(1.03));
+        tracker.Tick(new Vector3(1f, 0f, 0f), 0.05f);
+        bridge.OverrideBlade(new Vector3(1f, -1f, 0f), new Vector3(1f, 1f, 0f)); // 抜けた
+        Assert.AreEqual(1, judge.TryCut(1.06));
+        Assert.True(note.IsCut);
+        Assert.AreEqual(1.0, note.LastCutSongTime.Value, 1e-9, "採点は抜けた時刻ではなく、いちばん近づいた時刻");
+    }
+
+    [Test]
+    public void SlowPassStillCountsWhenItsClosestApproachWasInsideTheWindow()
+    {
+        var (judge, tracker) = MakeRig();
+        var root = new GameObject("SlowPassSpawner"); created.Add(root);
+        var prefab = new GameObject("SlowPassPrefab"); created.Add(prefab);
+        prefab.AddComponent<CuttableNote>(); prefab.SetActive(false);
+        var spawner = root.AddComponent<NoteSpawner>();
+        spawner.notePrefab = prefab; spawner.buildTimingCues = false;
+        spawner.simultaneousGuideEnabled = false;
+        CuttableNote note = null;
+        spawner.OnNoteSpawned += n => { note = n; n.gameObject.SetActive(true); created.Add(n.gameObject); };
+        spawner.SetChart(new ChartData { notes = new List<NoteData> {
+            new NoteData { time = 1000, x = 0, y = 0, color = "red", type = "tap", count = 1 }
+        } });
+        spawner.Tick(1);
+        double end = note.HitTime + spawner.judgeWindow;
+        spawner.Tick(end - .01);
+        tracker.ResetTo(new Vector3(-2, 0, 0)); tracker.Tick(Vector3.zero, .05f);
+        Assert.AreEqual(0, judge.TryCut(end - .01));
+        spawner.Tick(end + .02); // 窓は閉じたが、Miss確定(猶予0.06秒)の前
+        Assert.False(note.IsJudgeable);
+        Assert.False(note.IsMissed);
+        tracker.Tick(new Vector3(2, 0, 0), .05f);
+        Assert.AreEqual(1, judge.TryCut(end + .02));
+        Assert.True(note.IsCut, "近づいたのが窓の中なら、抜けるのが窓のあとでも切れる");
+        Assert.AreEqual(end - .01, note.LastCutSongTime.Value, 1e-9);
+    }
+
+    [Test]
+    public void GameUsesTheEnlargedHitRangeInCodeAndScene()
+    {
+        var go = new GameObject("HitRangeDefaults"); created.Add(go);
+        var manager = go.AddComponent<GamePlayManager>(); manager.enabled = false;
+        float codeRange = manager.saberBladeRadiusV2 + manager.saberNoteHitRadiusXYV2;
+        Assert.AreEqual(1.20f, codeRange, .001f, "刃との距離 0.92 の 1.3 倍");
+        string scene = System.IO.File.ReadAllText("Assets/Scenes/Game.unity");
+        float Read(string key) => float.Parse(System.Text.RegularExpressions.Regex.Match(scene,
+            @"\n\s*" + key + @": ([0-9.]+)").Groups[1].Value, System.Globalization.CultureInfo.InvariantCulture);
+        Assert.AreEqual(codeRange, Read("saberBladeRadiusV2") + Read("saberNoteHitRadiusXYV2"), .001f,
+            "シーンに古い値が残っていない(シーンの値がコードの既定値より優先される)");
+    }
+
     [TestCase(false, "inactive")] [TestCase(true, "inactive")]
     [TestCase(false, "disabled")] [TestCase(true, "disabled")]
     [TestCase(false, "trackingReset")] [TestCase(true, "trackingReset")]

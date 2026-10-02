@@ -1,0 +1,17 @@
+{
+  "mode": "Built-in image_gen",
+  "assets": [
+    {
+      "key": "AuroraLake",
+      "prompt": "Use case: photorealistic-natural. Asset type: complete seamless-looking cinematic wide landscape background plate for a rhythm game, 16:9 landscape, preferably 2048x1152. Primary request: realistic aurora borealis and a still Arctic lake. Natural photographic fidelity, fine auroral filaments, breathtaking but credible green curtains with faint purple tips sweeping the upper third of an immense starry sky. Low distant mountain silhouettes near 58 percent down the frame, quiet dark water in the lower half with delicate reflected aurora and tiny realistic ripples. Composition: fixed level camera, symmetrical open view, central 55 percent remains spacious, moderately dark and free of objects for gameplay notes. Beautiful photographic tonal separation; perceptible terrain and natural detail, not a black void. Brightest light stays near upper left and upper right sky. No buildings, no people, no foreground objects, no gaming corridor, no geometric shapes, no text, no UI, no watermark, no borders. It should look like a high-end long exposure landscape photograph, not a digital painting or low-poly 3D render."
+    },
+    {
+      "key": "RainyCity",
+      "prompt": "Use case: photorealistic-natural. Asset type: complete cinematic wide landscape background plate for a rhythm game, 16:9 landscape, preferably 2048x1152. Primary request: a realistic rain-soaked city street at blue hour transitioning to night, viewed from a fixed level camera on a broad quiet street. Beautiful photographic wet asphalt reflections, detailed modern buildings and a few warm shop windows on the far left and far right, atmospheric rain haze in the distance. Cool charcoal and muted teal with warm amber lights. The center 55 percent is spacious empty dark wet road and soft distant mist, vanishing point slightly above the middle. Background buildings realistically photographed, sophisticated film still, subtle reflections with long delicate streaks, not over-saturated neon. Readable detail in the shadows. No cars or people in foreground, no large signs, no readable text, no logos, no red or blue luminous billboards, no UI, no gaming corridor, no borders, no watermark. No sci-fi, no illustration, no low-poly 3D render. The mood is cinematic, serene and deeply atmospheric."
+    },
+    {
+      "key": "SunlitOcean",
+      "prompt": "Use case: photorealistic-natural. Asset type: complete cinematic wide landscape background plate for a rhythm game, 16:9 landscape, preferably 2048x1152. Primary request: realistic underwater ocean, looking forward and slightly up into spacious deep blue water with natural sunlight filtering through a rippling surface across the top edge. Very beautiful photographic underwater light shafts entering from the upper left and upper right, soft turquoise near surface fading to dark ink blue in center. Fine suspended particles, subtle realistic reefs and dark textured rocks only at the extreme lower corners, dark gently rippled sand below. Center 55 percent should be open clear darker water, no objects, with a stable level camera and strong depth. Natural marine photography, fine real textures, restrained color, visible shadow detail. No fish, no humans, no ruins, no pillars, no buildings, no bubbles near center, no text, no UI, no borders, no watermark. Not illustration, not stylized or low-poly CG."
+    }
+  ]
+}

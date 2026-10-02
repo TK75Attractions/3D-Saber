@@ -58,7 +58,7 @@ public class CuttableNote : MonoBehaviour
     public bool RequireJudgeableOnCut { get; set; }
     public bool IsMissed { get; private set; }
     public double HitTime { get; set; }
-    // 遅延Camera照合で受理したSwingの曲時計。従来判定ではnull。
+    // 採点に使う曲時計。IMU+Camera照合ではSwingの時刻、従来判定では刃がいちばん近づいた時刻。時計がなければnull。
     public double? LastCutSongTime { get; private set; }
     // 金ノーツ：切ったときに豪華音を鳴らすため NoteSpawner が立てる。
     public bool IsGold { get; set; }
@@ -165,8 +165,17 @@ public class CuttableNote : MonoBehaviour
         return CutCore(hitPoint, cutVelocity, CutDirection.None, cutterHand, songTime, directionTolerance);
     }
 
+    // 従来のセーバー判定用。judgedSongTime があれば、その曲時計(刃がいちばん近づいた時刻)で採点する。
+    // 方向の扱いは Cut と同じ(逆方向は切らない)。切れたかどうかを返す。
+    public bool CutAtSongTime(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand,
+        double? judgedSongTime)
+    {
+        if (judgedSongTime.HasValue && !CameraSaberHistory.Finite(judgedSongTime.Value)) judgedSongTime = null;
+        return CutCore(hitPoint, cutVelocity, imuHint, cutterHand, null, .866f, judgedSongTime);
+    }
+
     bool CutCore(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand,
-        double? swingSongTime, float directionTolerance)
+        double? swingSongTime, float directionTolerance, double? judgedSongTime = null)
     {
         if (IsCut || IsMissed || IsFinalized) return false;
 
@@ -197,7 +206,7 @@ public class CuttableNote : MonoBehaviour
         else LastCutCorrectDirection = LastCutCorrectDirection && dirOk;
 
         LastCutterHand = cutterHand;
-        LastCutSongTime = swingSongTime;
+        LastCutSongTime = swingSongTime ?? judgedSongTime;
         RemainingCuts--;
         lastHitPoint = hitPoint;
         lastVelocity = cutVelocity;

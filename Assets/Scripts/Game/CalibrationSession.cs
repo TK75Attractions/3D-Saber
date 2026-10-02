@@ -156,6 +156,40 @@ public struct CalibrationSample
     public CalibrationSample(int index, double errorMs, SaberHand hand) { Index = index; ErrorMs = errorMs; Hand = hand; }
 }
 
+// 直近のカットだけを保持する。見逃しを0msとして混ぜず、設定変更時に一緒に消す。
+// ライブの傾向は手動調整の参考。専用測定の品質条件を満たした提案とは分ける。
+public sealed class CalibrationHistory
+{
+    readonly List<CalibrationSample> samples = new List<CalibrationSample>();
+    public CalibrationResult Summary { get; private set; }
+    public int Misses { get; private set; }
+    public int Count => samples.Count;
+    public void Clear() { samples.Clear(); Summary = null; Misses = 0; }
+    public void RecordMiss() { Misses++; }
+    public void Add(double errorMs, SaberHand hand)
+    {
+        if (double.IsNaN(errorMs) || double.IsInfinity(errorMs)) return;
+        if (samples.Count == CalibrationProtocol.MeasuredNotes) samples.RemoveAt(0);
+        samples.Add(new CalibrationSample(0, errorMs, hand));
+        for (int i = 0; i < samples.Count; i++)
+            samples[i] = new CalibrationSample(i, samples[i].ErrorMs, samples[i].Hand);
+        Summary = CalibrationResult.Analyze(samples, 0);
+        Summary.CanRecommend = false;
+    }
+    public string Hint
+    {
+        get
+        {
+            if (Count < 8) return $"あと {8 - Count} 回切ると、タイミングの傾向が分かります";
+            if (Summary.SpreadMs > 25) return "ばらつきがあります。まずは同じ振り幅で続けましょう";
+            if (Summary.LeftCount >= 3 && Summary.RightCount >= 3 && Math.Abs(Summary.LeftMs - Summary.RightMs) > 35)
+                return "左右に差があります。両手の振り方をそろえて確認";
+            if (Math.Abs(Summary.MedianMs) <= 8) return "中心付近で安定しています。この値で試しましょう";
+            return Summary.MedianMs < 0 ? "FAST が続いています → − 側へ少しずつ" : "LATE が続いています → ＋ 側へ少しずつ";
+        }
+    }
+}
+
 public sealed class CalibrationResult
 {
     public int Captured, Accepted, Excluded, Missing, Early, Center, Late, LeftCount, RightCount;

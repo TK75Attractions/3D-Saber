@@ -98,6 +98,25 @@ public class GameplayJudgmentClockTests
     }
 
     [Test]
+    public void GameLoopScoresAtTheClosestApproachNotAtTheExit()
+    {
+        Create(true, false, 1);
+        spawner.Tick(.95);
+        tracker.ResetTo(new Vector3(-2, 0, 0)); tracker.Tick(Vector3.zero, .033f);
+        bridge.OverrideBlade(Vector3.left, Vector3.right); // ノーツの真上
+        TickManager(1.0);
+        tracker.Tick(new Vector3(.3f, 0, 0), .033f);
+        bridge.OverrideBlade(new Vector3(.3f, -1, 0), new Vector3(.3f, 1, 0)); // まだ範囲の中
+        TickManager(1.05);
+        Assert.False(note.IsCut);
+        tracker.Tick(new Vector3(3, 0, 0), .033f);
+        bridge.OverrideBlade(new Vector3(3, 0, 0), new Vector3(5, 0, 0)); // 抜けた
+        TickManager(1.12);
+        Assert.True(note.IsCut);
+        Assert.AreEqual(1.0, note.LastCutSongTime.Value, .03, "抜けた時刻(1.12)ではなく、いちばん近づいた時刻(1.0)を採点に使う");
+    }
+
+    [Test]
     public void ScheduledPrerollUsesNegativeClock()
     {
         Create(false, false, 1);

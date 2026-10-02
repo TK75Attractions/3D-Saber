@@ -262,7 +262,7 @@ public class ResultSkin : MonoBehaviour
             jp.transform.SetParent(row.transform, false);
             var t = jp.GetComponent<Text>();
             t.font = UISkinKit.JapaneseFont();
-            t.fontSize = 24;
+            t.fontSize = 30;
             t.fontStyle = FontStyle.Bold;
             t.alignment = TextAnchor.MiddleCenter;
             t.text = title;
@@ -353,9 +353,9 @@ public class ResultSkin : MonoBehaviour
         var accFitter = accRow.AddComponent<ContentSizeFitter>();
         accFitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         accFitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-        UISkinKit.MakeTMP(accRow.transform, "Label", "ACCURACY", 25f,
+        UISkinKit.MakeTMP(accRow.transform, "Label", "ACCURACY", 30f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.Center,
-            Vector2.zero, new Vector2(10f, 32f), FontStyles.Normal, 4f,
+            Vector2.zero, new Vector2(10f, 40f), FontStyles.Normal, 4f,
             UISkinKit.FontAsset("Oxanium-Bold"));
         UISkinKit.MakeTMP(accRow.transform, "Value", FormatAccuracy(accuracy), 50f,
             UISkinPalette.Cyan, TextAlignmentOptions.Center,
@@ -377,9 +377,9 @@ public class ResultSkin : MonoBehaviour
         // SCORE ラベル(シアン + グロー)。列間が広すぎて見切れたため中央へ寄せている(元: left 120px)。
         AddGlow(block.transform, "LabelGlow", new Vector2(-675f, 185f), new Vector2(220f, 70f),
             new Color(UISkinPalette.Cyan.r, UISkinPalette.Cyan.g, UISkinPalette.Cyan.b, 0.30f));
-        UISkinKit.MakeTMP(block.transform, "ScoreLabel", "SCORE", 25f,
+        UISkinKit.MakeTMP(block.transform, "ScoreLabel", "SCORE", 32f,
             UISkinPalette.Cyan, TextAlignmentOptions.MidlineLeft,
-            new Vector2(-540f, 185f), new Vector2(430f, 32f), FontStyles.Normal, 6f, oxBold);
+            new Vector2(-540f, 185f), new Vector2(430f, 44f), FontStyles.Normal, 6f, oxBold);
 
         // スコア数字(白→シアン→深シアンの縦グラデ近似 + グロー)
         AddGlow(block.transform, "ScoreGlow", new Vector2(-595f, 110f), new Vector2(520f, 170f),
@@ -391,12 +391,12 @@ public class ResultSkin : MonoBehaviour
         scoreValue.colorGradient = new VertexGradient(Color.white, Color.white, DeepCyan, DeepCyan);
 
         // MAX COMBO(数値だけ 1.36s に遅れて出る)
-        UISkinKit.MakeTMP(block.transform, "MaxComboLabel", "MAX COMBO", 23f,
+        UISkinKit.MakeTMP(block.transform, "MaxComboLabel", "MAX COMBO", 28f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.MidlineLeft,
-            new Vector2(-660f, -3f), new Vector2(190f, 30f), FontStyles.Normal, 2f, oxBold);
+            new Vector2(-640f, -3f), new Vector2(230f, 40f), FontStyles.Normal, 2f, oxBold);
         var comboValue = UISkinKit.MakeTMP(block.transform, "MaxComboValue", GameSession.FinalMaxCombo.ToString("N0"), 54f,
             UISkinPalette.OffWhite, TextAlignmentOptions.MidlineLeft,
-            new Vector2(-416f, -1f), new Vector2(300f, 62f), FontStyles.Normal, 0f, chakra);
+            new Vector2(-390f, -1f), new Vector2(240f, 62f), FontStyles.Normal, 0f, chakra);
         Reveal(comboValue.gameObject, DelayMaxCombo, 0.5f, FromLeft);
         comboValue.enableVertexGradient = true;
         comboValue.colorGradient = ComboBonusPresentation.Gradient(GameSession.FinalMaxCombo);
@@ -444,9 +444,9 @@ public class ResultSkin : MonoBehaviour
         fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
         fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 
-        UISkinKit.MakeTMP(row.transform, "Label", "HI-SCORE", 23f,
+        UISkinKit.MakeTMP(row.transform, "Label", "HI-SCORE", 26f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.MidlineLeft,
-            Vector2.zero, new Vector2(10f, 30f), FontStyles.Normal, 2f, oxBold);
+            Vector2.zero, new Vector2(10f, 36f), FontStyles.Normal, 2f, oxBold);
         UISkinKit.MakeTMP(row.transform, "Value", shownScore.ToString("N0"), 38f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.MidlineLeft,
             Vector2.zero, new Vector2(10f, 46f), FontStyles.Normal, 0f, chakra);
@@ -553,14 +553,14 @@ public class ResultSkin : MonoBehaviour
         }
 
         var oxBold = UISkinKit.FontAsset("Oxanium-Bold");
-        UISkinKit.MakeTMP(block.transform, "NotesLabel", total.ToString("N0") + " NOTES", 21f,
+        UISkinKit.MakeTMP(block.transform, "NotesLabel", total.ToString("N0") + " NOTES", 28f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.MidlineLeft,
-            new Vector2(-560f, -377f), new Vector2(400f, 26f), FontStyles.Normal, 1f, oxBold);
+            new Vector2(-535f, -383f), new Vector2(450f, 40f), FontStyles.Normal, 1f, oxBold);
         float perfectRate = total > 0 ? counts[0] * 100f / total : 0f;
         UISkinKit.MakeTMP(block.transform, "PerfectRateLabel",
-            "PERFECT RATE " + perfectRate.ToString("F1") + "%", 21f,
+            "PERFECT RATE " + perfectRate.ToString("F1") + "%", 28f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.MidlineRight,
-            new Vector2(560f, -377f), new Vector2(400f, 26f), FontStyles.Normal, 1f, oxBold);
+            new Vector2(535f, -383f), new Vector2(450f, 40f), FontStyles.Normal, 1f, oxBold);
 
         Reveal(block, DelayDistribution, 0.5f, FromBelow);
     }
@@ -577,9 +577,9 @@ public class ResultSkin : MonoBehaviour
                 var rt = btn.GetComponent<RectTransform>();
                 rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
                 rt.pivot = new Vector2(0.5f, 0.5f);
-                rt.anchoredPosition = new Vector2(0f, -468f);
-                rt.sizeDelta = new Vector2(280f, 58f);
-                var parts = UISkinKit.RestyleButton(btn, UISkinPalette.Cyan, 27f, "◀ BACK");
+                rt.anchoredPosition = new Vector2(0f, -466f);
+                rt.sizeDelta = new Vector2(420f, 96f);
+                var parts = UISkinKit.RestyleButton(btn, UISkinPalette.Cyan, 40f, "◀ BACK");
                 if (parts.label != null) parts.label.characterSpacing = 4f;
                 Reveal(btn.gameObject, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking), 0.45f, FromBelow);
                 // 暗転中は入力を止めているため、無効化中のEventSystemにも戻る先を設定する。
@@ -597,9 +597,9 @@ public class ResultSkin : MonoBehaviour
 
     void BuildSkipHint(Transform parent)
     {
-        var hint = UISkinKit.MakeTMP(parent, "SkipHint", "CLICK / ANY KEY TO SKIP", 18f,
+        var hint = UISkinKit.MakeTMP(parent, "SkipHint", "CLICK / ANY KEY TO SKIP", 26f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.MidlineRight,
-            new Vector2(560f, -473f), new Vector2(400f, 24f), FontStyles.Normal, 2f,
+            new Vector2(610f, -466f), new Vector2(580f, 40f), FontStyles.Normal, 2f,
             UISkinKit.FontAsset("Oxanium-Bold"));
         Reveal(hint.gameObject, DelaySkipHint, 0.45f, Vector2.zero); // フェードのみ
     }

@@ -171,16 +171,16 @@ public class TitleSceneSkin : MonoBehaviour
         go.transform.SetParent(canvas.transform, false);
         var rt = go.GetComponent<RectTransform>();
         rt.anchorMin = rt.anchorMax = rt.pivot = new Vector2(1f, 0f);
-        rt.sizeDelta = new Vector2(48f, 48f);
-        rt.anchoredPosition = new Vector2(-30f, 24f);
+        rt.sizeDelta = new Vector2(88f, 88f);
+        rt.anchoredPosition = new Vector2(-36f, 32f);
         var fill = go.GetComponent<Image>();
-        fill.color = new Color(.035f, .08f, .12f, .12f);
+        fill.color = new Color(.035f, .08f, .12f, .65f);
         var button = go.GetComponent<Button>();
         button.targetGraphic = fill;
         button.onClick.AddListener(() => { if (!transitioning && titleCtl != null) titleCtl.OnQuitButton(); });
-        Color stroke = new Color(.35f, .6f, .75f, .48f);
-        MakeLine(go.transform, "CloseA", new Vector2(-7f, -7f), new Vector2(7f, 7f), 1.8f, stroke);
-        MakeLine(go.transform, "CloseB", new Vector2(-7f, 7f), new Vector2(7f, -7f), 1.8f, stroke);
+        Color stroke = new Color(.65f, .82f, .92f, .9f);
+        MakeLine(go.transform, "CloseA", new Vector2(-14f, -14f), new Vector2(14f, 14f), 3f, stroke);
+        MakeLine(go.transform, "CloseB", new Vector2(-14f, 14f), new Vector2(14f, -14f), 3f, stroke);
     }
 
     static void MakeLine(Transform parent, string name, Vector2 from, Vector2 to, float width, Color color)

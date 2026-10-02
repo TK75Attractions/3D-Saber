@@ -48,6 +48,7 @@ public partial class FloorRenderer : MonoBehaviour
     public const float SurfaceBrightness = 1.75f;
     public const float InlayBrightness = 1.18f;
     private bool built;
+    private PhotographicStage photographicStage;
     private PulseArrayStage pulseArray;
     private VioletCurtainStage violetCurtain;
     private readonly List<Material> materials = new List<Material>();
@@ -61,6 +62,7 @@ public partial class FloorRenderer : MonoBehaviour
         if (!built || !isActiveAndEnabled || double.IsNaN(songSeconds) || double.IsInfinity(songSeconds)) return;
         LastTickSeconds = System.Math.Max(0, songSeconds);
         ChorusIntensity = float.IsNaN(chorus) || float.IsInfinity(chorus) ? 0 : Mathf.Clamp01(chorus);
+        if (photographicStage != null) photographicStage.Tick(LastTickSeconds, ChorusIntensity);
         if (pulseArray != null) pulseArray.Tick(LastTickSeconds, ChorusIntensity, lightFormation);
         if (violetCurtain != null) violetCurtain.Tick(LastTickSeconds, vaultCurtain);
         foreach (var material in materials)
@@ -107,6 +109,11 @@ public partial class FloorRenderer : MonoBehaviour
         ActiveTheme = (int)selectedTheme >= 0 && (int)selectedTheme < StageThemeCatalog.Count
             ? selectedTheme : StageTheme.ObsidianRelay;
         built = true;
+        if (StageThemeCatalog.IsPhotographic(ActiveTheme))
+        {
+            photographicStage = PhotographicStage.Create(this);
+            return;
+        }
         if (ActiveTheme == StageTheme.PulseArray)
         {
             pulseArray = PulseArrayStage.Create(this);

@@ -77,7 +77,10 @@
       "PowerShell(python --version; $p = \"C:\\\\Users\\\\shike\\\\dev\\\\3D-Saber\\\\Assets\\\\StreamingAssets\\\\Songs\\\\ElDorado\\\\chart_hard.json\"; $j = Get-Content $p -Raw -Encoding utf8 | ConvertFrom-Json; $j | Select-Object bpm, coordScale, offsetMs, displayLevel, beatZeroMs | Format-List; \\($j.notes | Where-Object { $_.type -eq 'long' } | Select-Object -First 2 | ConvertTo-Json -Compress\\); \\($j.notes | Select-Object -First 2 | ConvertTo-Json -Compress\\); \\($j.notes | Group-Object type | Select-Object Name, Count | Format-Table -AutoSize | Out-String\\))",
       "PowerShell(node --version)",
       "PowerShell(py --version)",
-      "PowerShell($d = Get-CimInstance Win32_LogicalDisk -Filter \"DeviceID='C:'\"; \"Free GB: {0:N2} / Total GB: {1:N2}\" -f \\($d.FreeSpace/1GB\\), \\($d.Size/1GB\\); & C:\\\\pinokio\\\\bin\\\\miniconda\\\\python.exe -c \"import sys; print\\(sys.version\\); import numpy; print\\('numpy', numpy.__version__\\)\"; & C:\\\\pinokio\\\\bin\\\\miniconda\\\\python.exe -c \"import scipy; print\\('scipy', scipy.__version__\\)\"; Get-ChildItem C:\\\\Users\\\\shike\\\\dev\\\\tools | Select-Object Name, LastWriteTime)"
+      "PowerShell($d = Get-CimInstance Win32_LogicalDisk -Filter \"DeviceID='C:'\"; \"Free GB: {0:N2} / Total GB: {1:N2}\" -f \\($d.FreeSpace/1GB\\), \\($d.Size/1GB\\); & C:\\\\pinokio\\\\bin\\\\miniconda\\\\python.exe -c \"import sys; print\\(sys.version\\); import numpy; print\\('numpy', numpy.__version__\\)\"; & C:\\\\pinokio\\\\bin\\\\miniconda\\\\python.exe -c \"import scipy; print\\('scipy', scipy.__version__\\)\"; Get-ChildItem C:\\\\Users\\\\shike\\\\dev\\\\tools | Select-Object Name, LastWriteTime)",
+      "Bash(py --version)",
+      "Bash(xargs wc -l)",
+      "Bash(sort -k2)"
     ],
     "defaultMode": "bypassPermissions"
   }

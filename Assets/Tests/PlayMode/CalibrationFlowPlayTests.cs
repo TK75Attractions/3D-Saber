@@ -8,22 +8,105 @@ using UnityEngine.TestTools;
 
 public class CalibrationFlowPlayTests
 {
+    [UnityTest] public IEnumerator ConnectionLabelsFollowTheAssignedHandsInsteadOfPortOrder()
+    {
+        var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;var input=InputPoint.Instance;
+        double previousLeft=input.LastReceivedTime,previousRight=input.LastReceivedTime2;
+        try
+        {
+            typeof(InputPoint).GetProperty("LastReceivedTime").SetValue(input,Time.realtimeSinceStartupAsDouble);
+            typeof(InputPoint).GetProperty("LastReceivedTime2").SetValue(input,-1000d);
+            typeof(CalibrationController).GetField("firstHand",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(c,SaberHand.Right);
+            Assert.False(c.LeftReady);Assert.True(c.RightReady);Assert.False(c.CanMeasure);
+            c.Overlay.OpenSettings();
+            StringAssert.Contains("左：入力待ち    右：接続中",c.Overlay.transform.Find("AudioSettings/SettingsCard/Connections").GetComponent<TMPro.TextMeshProUGUI>().text);
+            typeof(CalibrationController).GetField("firstHand",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(c,SaberHand.Left);
+            Assert.True(c.LeftReady);Assert.False(c.RightReady);
+        }
+        finally
+        {
+            typeof(InputPoint).GetProperty("LastReceivedTime").SetValue(input,previousLeft);
+            typeof(InputPoint).GetProperty("LastReceivedTime2").SetValue(input,previousRight);
+        }
+        yield return null;
+    }
+    [UnityTest] public IEnumerator MeasurementProposalCanBeTriedWithoutSavingAndControlsStaySafe()
+    {
+        var m=Object.FindFirstObjectByType<GamePlayManager>();var c=m.Calibration;var ui=c.Overlay;
+        var input=InputPoint.Instance;
+        double previousLeft=input.LastReceivedTime, previousRight=input.LastReceivedTime2;
+        try
+        {
+            // 接続状態と既知の測定結果を与え、測定→提案→検証の実際のUI遷移を確認する。
+            typeof(InputPoint).GetProperty("LastReceivedTime").SetValue(input,Time.realtimeSinceStartupAsDouble);
+            typeof(InputPoint).GetProperty("LastReceivedTime2").SetValue(input,Time.realtimeSinceStartupAsDouble);
+            c.ChangeOffset(60-c.Draft.OffsetMs);ui.StartMeasurement();
+            Assert.AreEqual(CalibrationRunMode.Measure,c.Mode);
+            Assert.True(Object.FindFirstObjectByType<SaberUIPointer>().BottomControlsOnly);
+            Assert.True(ui.transform.Find("Controls/PlayPause").GetComponent<UnityEngine.UI.Button>().interactable);
+            Assert.False(ui.transform.Find("Controls/Save").GetComponent<UnityEngine.UI.Button>().interactable);
+            var samples=(System.Collections.Generic.List<CalibrationSample>)typeof(CalibrationController)
+                .GetField("samples",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(c);
+            samples.AddRange(Enumerable.Range(0,24).Select(i=>new CalibrationSample(i,25,i%2==0?SaberHand.Left:SaberHand.Right)));
+            SetSongClock(m.songPlayer,AudioSettings.dspTime-CalibrationProtocol.EndSeconds-m.noteSpawner.TotalOffsetSeconds-.2);
+            c.Tick(.016f);
+            Assert.True(ui.IsResultOpen);Assert.True(c.Result.CanRecommend,c.Result.Message);
+            Assert.AreEqual(85,c.Result.ProposedOffsetMs);Assert.AreEqual(saved,GameSession.JudgmentOffsetMs);
+            ui.transform.Find("MeasurementSummary/TryProposal").GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+            Assert.AreEqual(CalibrationRunMode.Practice,c.Mode);Assert.False(ui.IsResultOpen);
+            Assert.AreEqual(85,c.Draft.OffsetMs);Assert.AreEqual(saved,GameSession.JudgmentOffsetMs);
+            Assert.False(m.songPlayer.GetComponent<AudioSource>().loop);
+            c.Stop();ui.Refresh();
+        }
+        finally
+        {
+            typeof(InputPoint).GetProperty("LastReceivedTime").SetValue(input,previousLeft);
+            typeof(InputPoint).GetProperty("LastReceivedTime2").SetValue(input,previousRight);
+        }
+        yield return null;
+    }
+    [UnityTest] public IEnumerator LiveRestoreKeepsAudioAndClearsHistoryFromOldSettings()
+    {
+        var m=Object.FindFirstObjectByType<GamePlayManager>();var c=m.Calibration;
+        c.ChangeOffset(saved<990?10:-10);c.SetSpeedStep(c.SpeedStep==0?1:0);c.BeginLivePractice();
+        c.History.Add(30,SaberHand.Left);var clip=m.songPlayer.Clip;
+        c.RestoreSaved();
+        Assert.True(c.IsLive);Assert.AreSame(clip,m.songPlayer.Clip);
+        Assert.True(m.songPlayer.GetComponent<AudioSource>().loop);
+        Assert.AreEqual(saved,c.Draft.OffsetMs);Assert.AreEqual(GameSession.NoteApproachTime,c.Draft.ApproachTime);
+        Assert.AreEqual(0,c.History.Count);Assert.False(c.Draft.IsDirty);
+        c.ChangeOffset(GameSession.JudgmentOffsetMaxMs-c.Draft.OffsetMs);c.Overlay.Refresh();
+        Assert.False(c.Overlay.transform.Find("Controls/Adjust1").GetComponent<UnityEngine.UI.Button>().interactable);
+        Assert.True(c.Overlay.transform.Find("Controls/Adjust-1").GetComponent<UnityEngine.UI.Button>().interactable);
+        c.Stop();yield return null;
+    }
+    [UnityTest] public IEnumerator MeasurementCannotStartWithTooLittleTimeAndHelpExplainsWhy()
+    {
+        var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;var ui=c.Overlay;
+        ui.TickCountdown(ui.RemainingSeconds-24);ui.Refresh();
+        ui.StartMeasurement();Assert.False(c.IsRunning);
+        Assert.False(ui.transform.Find("Controls/Measure").GetComponent<UnityEngine.UI.Button>().interactable);
+        StringAssert.Contains("25秒",ui.transform.Find("MeasurementStatus").GetComponent<TMPro.TextMeshProUGUI>().text);
+        yield return null;
+    }
     // 集計・入力の試験だけ時計を進める。音声同期そのものは別の実再生試験で確認する。
     static void SetSongClock(SongPlayer player, double start)
     {
         typeof(SongPlayer).GetField("clockSynchronized",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(player,true);
         typeof(SongPlayer).GetField("startDspTime",BindingFlags.Instance|BindingFlags.NonPublic).SetValue(player,start);
     }
-    int saved; Scene gameScene;
+    int saved; double? savedSelectionSeconds; Scene gameScene;
     [UnitySetUp] public IEnumerator Setup()
     {
         saved=GameSession.JudgmentOffsetMs; GameSession.IsCalibrationMode=true;
+        savedSelectionSeconds=GameSession.CalibrationSelectionSeconds;GameSession.CalibrationSelectionSeconds=null;
         yield return SceneManager.LoadSceneAsync("Game");gameScene=SceneManager.GetActiveScene();
         for(int i=0;i<120&&Object.FindFirstObjectByType<GamePlayManager>()?.Calibration==null;i++) yield return null;
     }
     [UnityTearDown] public IEnumerator Cleanup()
     {
         GameSession.IsCalibrationMode=false;GameSession.JudgmentOffsetMs=saved;
+        GameSession.CalibrationSelectionSeconds=savedSelectionSeconds;
         var empty=SceneManager.CreateScene("CalibrationCleanup");SceneManager.SetActiveScene(empty);
         yield return SceneManager.UnloadSceneAsync(gameScene);
     }
@@ -138,13 +221,15 @@ public class CalibrationFlowPlayTests
         c.Stop();yield return null;
     }
 
-    [UnityTest] public IEnumerator SimpleScreenHidesStatisticsAndSettingsPauseLivePractice()
+    [UnityTest] public IEnumerator GuidedScreenKeepsPracticeClearAndSettingsPauseLivePractice()
     {
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;var ui=c.Overlay;
         Assert.False(ui.IsSettingsOpen);Assert.IsNull(ui.transform.Find("Environment"));
         Assert.IsNull(ui.transform.Find("TimingReadout"));Assert.IsNull(ui.transform.Find("MeasurementResult"));
         Assert.NotNull(ui.transform.Find("LiveFeedback"));Assert.NotNull(ui.transform.Find("Controls"));
-        ui.TogglePractice();Assert.True(c.IsLive);ui.OpenSettings();Assert.False(c.IsRunning);Assert.True(ui.IsSettingsOpen);
+        Assert.NotNull(ui.transform.Find("RecentTiming/ErrorMeter"));Assert.NotNull(ui.transform.Find("Controls/Measure"));
+        ui.TogglePractice();Assert.True(c.IsLive);Assert.False(ui.transform.Find("ReadyGuide").gameObject.activeSelf);
+        ui.OpenSettings();Assert.False(c.IsRunning);Assert.True(ui.IsSettingsOpen);
         Assert.AreEqual(saved,GameSession.JudgmentOffsetMs);ui.OnBackClicked();Assert.False(ui.IsSettingsOpen);
         yield return null;
     }

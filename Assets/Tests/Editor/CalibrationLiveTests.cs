@@ -3,6 +3,27 @@ using UnityEngine;
 
 public class CalibrationLiveTests
 {
+    [Test] public void RecentHistoryRollsOverWithoutTurningMissesIntoCenteredHits()
+    {
+        var h = new CalibrationHistory();
+        for (int i = 0; i < 24; i++) h.Add(-30, i % 2 == 0 ? SaberHand.Left : SaberHand.Right);
+        for (int i = 0; i < 24; i++) h.Add(35, i % 2 == 0 ? SaberHand.Left : SaberHand.Right);
+        h.RecordMiss(); h.Add(double.NaN, SaberHand.Any);
+        Assert.AreEqual(24, h.Count); Assert.AreEqual(1, h.Misses);
+        Assert.AreEqual(35, h.Summary.MedianMs); Assert.AreEqual(24, h.Summary.Late);
+        StringAssert.Contains("＋", h.Hint); Assert.False(h.Summary.CanRecommend);
+        h.Clear(); Assert.AreEqual(0, h.Count); Assert.AreEqual(0, h.Misses); Assert.IsNull(h.Summary);
+    }
+    [Test] public void RecentHistoryRequiresEnoughConsistentHitsBeforeSuggestingADirection()
+    {
+        var h = new CalibrationHistory();
+        for (int i = 0; i < 7; i++) h.Add(-30, SaberHand.Left);
+        StringAssert.Contains("あと 1", h.Hint);
+        h.Add(-30, SaberHand.Right); StringAssert.Contains("−", h.Hint);
+        h.Clear();
+        for (int i = 0; i < 16; i++) h.Add(i % 2 == 0 ? -25 : 25, i % 2 == 0 ? SaberHand.Left : SaberHand.Right);
+        Assert.False(h.Hint.Contains("側へ"), "左右差・ばらつきを全体のずれと取り違えない");
+    }
     [TestCase(-30,"早い")]
     [TestCase(-8.01,"早い")]
     [TestCase(-8,"ぴったり")]

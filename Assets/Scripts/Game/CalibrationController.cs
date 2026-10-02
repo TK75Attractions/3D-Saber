@@ -9,6 +9,8 @@ public sealed class CalibrationController : MonoBehaviour
 {
     public CalibrationDraft Draft { get; private set; }
     public CalibrationResult Result { get; private set; }
+    public CalibrationHistory History { get; } = new CalibrationHistory();
+    public bool LastRunWasMeasurement => lastRunWasMeasurement;
     public CalibrationRunMode Mode { get; private set; }
     public bool IsLive => Mode == CalibrationRunMode.LivePractice;
     public bool IsRunning => IsLive || Mode == CalibrationRunMode.Observe || Mode == CalibrationRunMode.Measure || Mode == CalibrationRunMode.Practice;
@@ -25,6 +27,8 @@ public sealed class CalibrationController : MonoBehaviour
         0, CalibrationProtocol.MeasuredNotes);
     public bool Stick1Ready => InputPoint.Instance != null && InputPoint.Instance.IsRecentlyActive(.7);
     public bool Stick2Ready => InputPoint.Instance != null && InputPoint.Instance.IsRecentlyActive2(.7);
+    public bool LeftReady => firstHand == SaberHand.Left ? Stick1Ready : Stick2Ready;
+    public bool RightReady => firstHand == SaberHand.Left ? Stick2Ready : Stick1Ready;
     public bool CanMeasure => Stick1Ready && Stick2Ready;
     public float ReferenceVolume { get; private set; } = .65f;
     public CalibrationOverlay Overlay { get; private set; }
@@ -45,10 +49,14 @@ public sealed class CalibrationController : MonoBehaviour
     double extraOffset, totalOffset;
     int runOffset, slowFrames;
     bool interrupted, lastRunWasMeasurement, cleanedUp;
+    SaberHand firstHand = SaberHand.Right;
 
     public void Initialize(SongPlayer player, NoteSpawner notes, ScoreManager scoring, double extra)
     {
         song = player; spawner = notes; score = scoring; extraOffset = extra;
+        // 既定は入力1=右・赤、入力2=左・青。入れ替え設定も接続表示に反映する。
+        var manager = GetComponent<GamePlayManager>();
+        firstHand = manager != null ? manager.stick1Hand : SaberHand.Right;
         Draft = new CalibrationDraft();
         score.songPlayer = song; score.Reset(); score.Bind(spawner);
         spawner.SetChart(new ChartData());
@@ -82,6 +90,7 @@ public sealed class CalibrationController : MonoBehaviour
     public void BeginLivePractice()
     {
         StopPlayback(); Result = null; samples.Clear(); captured.Clear();
+        History.Clear(); slowFrames = 0; interrupted = false; lastRunWasMeasurement = false;
         HasLastError = false; LastInputWasMiss = false; LastFeedbackTime = -100;
         runOffset = Draft.OffsetMs; totalOffset = extraOffset + runOffset / 1000.0;
         spawner.approachTime = Draft.ApproachTime;   // 下書きの速度で練習する(保存前でも体感できる)
@@ -111,6 +120,7 @@ public sealed class CalibrationController : MonoBehaviour
         if (mode == CalibrationRunMode.Measure && !CanMeasure)
         { Notice = "実機セーバー2本の入力を確認してから測定します。接続前でも「音と表示を見る」は使えます。"; return; }
         StopPlayback(); Result = null; samples.Clear(); captured.Clear();
+        History.Clear();
         HasLastError = false; LastInputWasMiss = false; LastFeedbackTime = -100; LastCut = "音に合わせて切り終えましょう";
         runOffset = Draft.OffsetMs; totalOffset = extraOffset + runOffset / 1000.0;
         slowFrames = 0; interrupted = false; lastRunWasMeasurement = mode == CalibrationRunMode.Measure;
@@ -120,7 +130,8 @@ public sealed class CalibrationController : MonoBehaviour
         song.PlayScheduled(AudioSettings.dspTime + .35); Mode = mode;
         Notice = mode == CalibrationRunMode.Observe ? "切らずに確認。音と、ノーツが枠に届く瞬間を比べてください。" :
             "4拍の合図 → 4ノーツ練習 → 24ノーツ。青は左手、赤は右手で切ります。";
-        if (pointer != null) pointer.gameObject.SetActive(false);
+        // 測定中も下端の一時停止だけを使えるようにし、振りながら上部の操作を誤発火させない。
+        if (pointer != null) { pointer.BottomControlsOnly = true; pointer.gameObject.SetActive(true); }
         Overlay.Refresh();
     }
     public void Tick(float frameSeconds)
@@ -136,7 +147,7 @@ public sealed class CalibrationController : MonoBehaviour
                 if (frameSeconds > .1f) slowFrames++;
             }
             spawner.Tick(time);
-            if (!IsLive && time >= CalibrationProtocol.EndSeconds + extraOffset)
+            if (!IsLive && time >= CalibrationProtocol.EndSeconds + totalOffset)
             {
                 if (Mode == CalibrationRunMode.Observe)
                 { StopPlayback(); Mode = CalibrationRunMode.Idle; Notice = "確認が終わりました。合っていれば変更せず、次へ進めます。"; }
@@ -148,7 +159,8 @@ public sealed class CalibrationController : MonoBehaviour
     void WatchNote(CuttableNote note) { watched.Add(note); note.OnCut += RecordCut; note.OnMiss += RecordMiss; }
     void RecordMiss(CuttableNote note)
     {
-        if (!IsLive) return;
+        if (!IsRunning || Mode == CalibrationRunMode.Observe) return;
+        History.RecordMiss();
         HasLastError = false; LastInputWasMiss = true; LastFeedbackTime = Time.unscaledTime;
     }
     void RecordCut(CuttableNote note, Vector3 point, Vector3 velocity)
@@ -159,6 +171,7 @@ public sealed class CalibrationController : MonoBehaviour
         // 判定後の効果音・発光処理にかかった時間を測定値に加えない。
         double error = score.LastErrorValid ? score.LastErrorMs : (song.SongTime - note.HitTime) * 1000;
         LastErrorMs = error; HasLastError = true; LastInputWasMiss = false; LastFeedbackTime = Time.unscaledTime;
+        History.Add(error, note.LastCutterHand);
         string side = note.LastCutterHand == SaberHand.Left ? "左" : note.LastCutterHand == SaberHand.Right ? "右" : "マウス等";
         LastCut = $"{side}  /  {(error < -8 ? "早い" : error > 8 ? "遅い" : "中央")}  {CalibrationDraft.FormatMs(error)}";
         if (IsLive) return;
@@ -172,6 +185,7 @@ public sealed class CalibrationController : MonoBehaviour
         // 試し切りは再調整の起点にはしない。測定と検証を混同させない。
         if (!lastRunWasMeasurement) Result.CanRecommend = false;
         StopPlayback(); Mode = CalibrationRunMode.Result; Notice = lastRunWasMeasurement ? "測定結果 / 保存値は変わっていません" : "試し切りの結果 / まだ保存されていません";
+        Overlay.Refresh();
     }
     void StopPlayback()
     {
@@ -200,6 +214,7 @@ public sealed class CalibrationController : MonoBehaviour
         }
         if (IsRunning) return;
         Draft.SetOffset(Draft.OffsetMs + delta); Result = null; HasLastError = false; Mode = CalibrationRunMode.Idle;
+        History.Clear();
         Notice = "仮の設定です。「試し切り」で確認してから保存できます。"; Overlay.Refresh();
     }
     // 試し切り中に設定を変えたとき、過去のノーツは残したまま、これから来るノーツだけを新しい設定で作り直す。
@@ -211,6 +226,7 @@ public sealed class CalibrationController : MonoBehaviour
         nextLiveIndex = Mathf.Max(0, (int)Math.Ceiling((RunTime + spawner.approachTime + .15 - totalOffset - CalibrationProtocol.FirstNoteSeconds) / CalibrationProtocol.BeatSeconds));
         spawner.SetExtraOffsetSeconds(totalOffset); spawner.SetChart(liveChart); ExtendLiveChart(RunTime);
         HasLastError = false; LastInputWasMiss = false; LastFeedbackTime = -100;
+        History.Clear();
         Notice = notice;
         Overlay.Refresh();
     }
@@ -229,18 +245,30 @@ public sealed class CalibrationController : MonoBehaviour
             return;
         }
         Result = null; HasLastError = false; Mode = CalibrationRunMode.Idle;
+        History.Clear();
         Notice = $"ノーツ速度を「{NoteSpeedPreset.Names[step]}」にしました。「試し切り」で確かめて保存できます。"; Overlay.Refresh();
     }
     public void SelectProfile(int profile)
     {
         if (IsRunning) return;
         Draft.SelectProfile(profile); Result = null; HasLastError = false; Mode = CalibrationRunMode.Idle;
+        History.Clear();
         Notice = "設定の保存先を選びました。Windowsの音の出力先は自動では切り替わりません。"; Overlay.Refresh();
     }
     public void RestoreSaved()
     {
-        if (IsRunning) return;
+        if (IsRunning && !IsLive) return;
+        bool live = IsLive;
         Draft.RestoreSaved(); Result = null; HasLastError = false; Mode = CalibrationRunMode.Idle;
+        History.Clear();
+        if (live)
+        {
+            Mode = CalibrationRunMode.LivePractice;
+            runOffset = Draft.OffsetMs; totalOffset = extraOffset + runOffset / 1000.0;
+            spawner.approachTime = Draft.ApproachTime;
+            RebuildLiveChart("保存した判定・速度に戻しました。音に合わせて続けてください。");
+            return;
+        }
         Notice = "この出力先の保存値に戻しました。"; Overlay.Refresh();
     }
     public void TryRecommendation()
@@ -270,7 +298,11 @@ public sealed class CalibrationController : MonoBehaviour
         if (IsRunning) InterruptRun("音声機器の設定が変わったため中断しました。出力先を確認して測り直してください。");
         else Notice = "音声機器の設定が変わりました。出力先とプロフィールを確認してください。";
     }
-    void InterruptRun(string message) { interrupted = true; StopPlayback(); Mode = CalibrationRunMode.Idle; Result = null; Notice = message; }
+    void InterruptRun(string message)
+    {
+        interrupted = true; StopPlayback(); Mode = CalibrationRunMode.Idle; Result = null;
+        HasLastError = false; LastInputWasMiss = false; History.Clear(); Notice = message; Overlay.Refresh();
+    }
     void OnDestroy()
     {
         if (cleanedUp) return; cleanedUp = true;

@@ -1,0 +1,291 @@
+{
+  "easy": {
+    "notes": 127,
+    "cuts": 131,
+    "averageNps": 1.06,
+    "peak4SecondNps": 1.5,
+    "peak4SecondCuts": 1.75,
+    "minSameHandMs": 810.81,
+    "maxTravelUnitsPerSecond": 1.766,
+    "firstSeconds": 3.243243,
+    "lastSeconds": 113.513514,
+    "types": {
+      "tap": 125,
+      "long": 2
+    },
+    "colors": {
+      "blue": 55,
+      "red": 55,
+      "gold": 17
+    },
+    "simultaneousPairs": 8,
+    "goldPercent": 13.39,
+    "pairOnsetPercent": 6.72,
+    "sections": [
+      {
+        "name": "Signal",
+        "notes": 2,
+        "nps": 0.308,
+        "gold": 0,
+        "pairs": 0
+      },
+      {
+        "name": "Motion",
+        "notes": 21,
+        "nps": 1.079,
+        "gold": 3,
+        "pairs": 0
+      },
+      {
+        "name": "Lift",
+        "notes": 15,
+        "nps": 1.156,
+        "gold": 2,
+        "pairs": 0
+      },
+      {
+        "name": "Prism",
+        "notes": 36,
+        "nps": 1.387,
+        "gold": 4,
+        "pairs": 4
+      },
+      {
+        "name": "Weightless",
+        "notes": 8,
+        "nps": 0.617,
+        "gold": 2,
+        "pairs": 0
+      },
+      {
+        "name": "Reignite",
+        "notes": 15,
+        "nps": 1.156,
+        "gold": 2,
+        "pairs": 0
+      },
+      {
+        "name": "Full spectrum",
+        "notes": 27,
+        "nps": 1.388,
+        "gold": 3,
+        "pairs": 3
+      },
+      {
+        "name": "Afterimage",
+        "notes": 3,
+        "nps": 0.463,
+        "gold": 1,
+        "pairs": 1
+      }
+    ],
+    "minRollCutMs": 405.406,
+    "unequalHeightPairs": 0,
+    "opposedHeightArrows": 0,
+    "uniquePositions": 56,
+    "uniqueBarLayouts": 42,
+    "mostRepeatedBarLayout": 2
+  },
+  "normal": {
+    "notes": 232,
+    "cuts": 238,
+    "averageNps": 1.937,
+    "peak4SecondNps": 3.0,
+    "peak4SecondCuts": 3.0,
+    "minSameHandMs": 405.405,
+    "maxTravelUnitsPerSecond": 4.193,
+    "firstSeconds": 3.243243,
+    "lastSeconds": 113.513514,
+    "types": {
+      "tap": 207,
+      "direction": 23,
+      "long": 2
+    },
+    "colors": {
+      "blue": 104,
+      "red": 104,
+      "gold": 24
+    },
+    "simultaneousPairs": 23,
+    "goldPercent": 10.34,
+    "pairOnsetPercent": 11.0,
+    "sections": [
+      {
+        "name": "Signal",
+        "notes": 4,
+        "nps": 0.617,
+        "gold": 0,
+        "pairs": 0
+      },
+      {
+        "name": "Motion",
+        "notes": 33,
+        "nps": 1.696,
+        "gold": 3,
+        "pairs": 3
+      },
+      {
+        "name": "Lift",
+        "notes": 29,
+        "nps": 2.235,
+        "gold": 2,
+        "pairs": 1
+      },
+      {
+        "name": "Prism",
+        "notes": 64,
+        "nps": 2.467,
+        "gold": 8,
+        "pairs": 8
+      },
+      {
+        "name": "Weightless",
+        "notes": 16,
+        "nps": 1.233,
+        "gold": 2,
+        "pairs": 0
+      },
+      {
+        "name": "Reignite",
+        "notes": 29,
+        "nps": 2.235,
+        "gold": 2,
+        "pairs": 1
+      },
+      {
+        "name": "Full spectrum",
+        "notes": 51,
+        "nps": 2.621,
+        "gold": 6,
+        "pairs": 9
+      },
+      {
+        "name": "Afterimage",
+        "notes": 6,
+        "nps": 0.925,
+        "gold": 1,
+        "pairs": 1
+      }
+    ],
+    "minRollCutMs": 405.405,
+    "unequalHeightPairs": 0,
+    "opposedHeightArrows": 0,
+    "uniquePositions": 91,
+    "uniqueBarLayouts": 61,
+    "mostRepeatedBarLayout": 2
+  },
+  "hard": {
+    "notes": 309,
+    "cuts": 321,
+    "averageNps": 2.58,
+    "peak4SecondNps": 5.0,
+    "peak4SecondCuts": 5.0,
+    "minSameHandMs": 405.405,
+    "maxTravelUnitsPerSecond": 4.068,
+    "firstSeconds": 3.243243,
+    "lastSeconds": 113.513514,
+    "types": {
+      "tap": 151,
+      "direction": 156,
+      "long": 2
+    },
+    "colors": {
+      "blue": 144,
+      "red": 141,
+      "gold": 24
+    },
+    "simultaneousPairs": 31,
+    "goldPercent": 7.77,
+    "pairOnsetPercent": 11.15,
+    "sections": [
+      {
+        "name": "Signal",
+        "notes": 4,
+        "nps": 0.617,
+        "gold": 0,
+        "pairs": 0
+      },
+      {
+        "name": "Motion",
+        "notes": 39,
+        "nps": 2.004,
+        "gold": 3,
+        "pairs": 3
+      },
+      {
+        "name": "Lift",
+        "notes": 40,
+        "nps": 3.083,
+        "gold": 2,
+        "pairs": 1
+      },
+      {
+        "name": "Prism",
+        "notes": 89,
+        "nps": 3.43,
+        "gold": 8,
+        "pairs": 10
+      },
+      {
+        "name": "Weightless",
+        "notes": 20,
+        "nps": 1.542,
+        "gold": 2,
+        "pairs": 0
+      },
+      {
+        "name": "Reignite",
+        "notes": 40,
+        "nps": 3.083,
+        "gold": 2,
+        "pairs": 1
+      },
+      {
+        "name": "Full spectrum",
+        "notes": 71,
+        "nps": 3.649,
+        "gold": 6,
+        "pairs": 15
+      },
+      {
+        "name": "Afterimage",
+        "notes": 6,
+        "nps": 0.925,
+        "gold": 1,
+        "pairs": 1
+      }
+    ],
+    "minRollCutMs": 202.703,
+    "unequalHeightPairs": 0,
+    "opposedHeightArrows": 0,
+    "uniquePositions": 109,
+    "uniqueBarLayouts": 60,
+    "mostRepeatedBarLayout": 3
+  },
+  "audio": {
+    "durationSeconds": 119.75675736961452,
+    "sampleRate": 44100,
+    "channels": 2,
+    "alignmentSamples": [
+      0,
+      0,
+      0,
+      0,
+      0
+    ],
+    "truePeak4xDb": -2.669,
+    "loudness": {
+      "input_i": "-14.00",
+      "input_tp": "-2.67",
+      "input_lra": "4.00",
+      "input_thresh": "-24.09",
+      "output_i": "-13.21",
+      "output_tp": "-1.50",
+      "output_lra": "3.60",
+      "output_thresh": "-23.28",
+      "normalization_type": "dynamic",
+      "target_offset": "-0.79"
+    },
+    "sha256": "2f13a2b132937d3a1f7963e7e0fc352a78d9c68353ef226bb69b7186e9579ba5"
+  }
+}

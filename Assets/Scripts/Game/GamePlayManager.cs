@@ -51,9 +51,10 @@ public class GamePlayManager : MonoBehaviour
     public bool useOverhauledStage = true;
     // リニューアル版のセーバー判定。「だいぶ甘く」の要望(2026-07)でさらに緩和
     // (前値 blade 0.26 / hitXY 0.45 / minSpeed 3.0 → 当たりを広く、必要な振り速度を低く)。
-    // キャリブレーションモードの緩和値(0.35/0.65/2.0)に近い、気持ちよく切れる寄りの設定。
+    // 2026-10「切りにくすぎる」の要望で当たりを 1.3 倍(刃との距離 0.92 → 1.20)に広げた。
+    // 後続ノーツの巻き込みは SaberCutJudge の「1回の振りで1つの時刻」で防ぐ。シーンにも同じ値を保存している。
     public float saberBladeRadiusV2 = 0.32f;
-    public float saberNoteHitRadiusXYV2 = 0.60f;
+    public float saberNoteHitRadiusXYV2 = 0.88f;
     public float saberMinCutSpeedV2 = 2.0f;
 
     [Header("Two sabers (2本セーバー)")]
@@ -617,8 +618,10 @@ public class GamePlayManager : MonoBehaviour
             cameraImuJudgment.Tick(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp),
                 songPlayer != null ? songPlayer.SongTime : 0,
                 songPlayer != null && songPlayer.IsScheduled && Time.timeScale > 0f);
-        if (cutJudge != null) cutJudge.RunJudge();
-        if (cutJudge2 != null) cutJudge2.RunJudge();
+        // 採点は刃がノーツにいちばん近づいた時刻。受付窓と同じ曲時計を渡す(開始予約前は従来どおり)。
+        double judgeTime = songPlayer != null && songPlayer.IsScheduled ? songPlayer.SongTime : double.NaN;
+        if (cutJudge != null) cutJudge.RunJudge(judgeTime);
+        if (cutJudge2 != null) cutJudge2.RunJudge(judgeTime);
         if (gatePerfectPulse != null) gatePerfectPulse.Tick(Time.unscaledTimeAsDouble);
         // 背景の可動部もこのループで駆動。曲停止中に独立して進行させない。
         if (songPlayer != null && songPlayer.IsPlaying)

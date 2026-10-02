@@ -4255,7 +4255,7 @@ MonoBehaviour:
   trimGraceSeconds: 0
   useOverhauledStage: 1
   saberBladeRadiusV2: 0.32
-  saberNoteHitRadiusXYV2: 0.6
+  saberNoteHitRadiusXYV2: 0.88
   saberMinCutSpeedV2: 2
   enableTwoSabers: 1
   stick1Hand: 2

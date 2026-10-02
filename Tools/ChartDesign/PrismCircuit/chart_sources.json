@@ -1,0 +1,8736 @@
+{
+  "easy": [
+    {
+      "beat": 8,
+      "color": "blue",
+      "motif": "intro_hands",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        20
+      ],
+      "roles": [
+        "intro_motif"
+      ]
+    },
+    {
+      "beat": 12,
+      "color": "red",
+      "motif": "intro_hands",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        32
+      ],
+      "roles": [
+        "intro_motif"
+      ]
+    },
+    {
+      "beat": 16,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        51
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 18,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        61
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 20,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        81
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 22,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        89
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 24,
+      "color": "gold",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        111
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 26,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        121
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 28,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        141
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 32,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        172
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 34,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        182
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 36,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        202
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 38,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        212
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 40,
+      "color": "gold",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        231
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 42,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        241
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 44,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        261
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 48,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        291
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 50,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        301
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 52,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        321
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 54,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        329
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 56,
+      "color": "gold",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        351
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 58,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        361
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 60,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        381
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 64,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        408
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 66,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        422
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 68,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        436
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 70,
+      "color": "gold",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        450
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 72,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        464
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 74,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        478
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 76,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        492
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 78,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        506
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 80,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        520
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 82,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        535
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 84,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        550
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 86,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        565
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 88,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        581
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 90,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        597
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 92,
+      "color": "gold",
+      "motif": "snare_roll",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        609,
+        614,
+        619
+      ],
+      "roles": [
+        "snare",
+        "snare",
+        "snare"
+      ]
+    },
+    {
+      "beat": 96,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        639
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 96,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        631
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 98,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        656
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 100,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        689
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 102,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        707
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 104,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        741
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 106,
+      "color": "gold",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        758
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 108,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        791
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 110,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        809
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 112,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        841
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 112,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        834
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 114,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        858
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 116,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        891
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 118,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        908
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 120,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        943
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 122,
+      "color": "gold",
+      "motif": "chorus_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        963
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 124,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        995
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 126,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1013
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 128,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1048
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 128,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1040
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 130,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1069
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 132,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1106
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 134,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1128
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 136,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1166
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 138,
+      "color": "gold",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1187
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 140,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1224
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 142,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1246
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 144,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1282
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 144,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1275
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 146,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1303
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 148,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1340
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 150,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1361
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 152,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1400
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 154,
+      "color": "gold",
+      "motif": "chorus_walk",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1424
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 156,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1460
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 158,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1482
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 160,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1513
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 164,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1520
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 168,
+      "color": "gold",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1528
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 172,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1535
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 176,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1543
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 180,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1552
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 184,
+      "color": "gold",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1562
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 188,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1571
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 192,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1584
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 194,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1598
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 196,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1612
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 198,
+      "color": "gold",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1626
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 200,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1640
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 202,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1654
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 204,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1668
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 206,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1682
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 208,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1696
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 210,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1711
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 212,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1726
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 214,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1741
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 216,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1757
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 218,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1773
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 220,
+      "color": "gold",
+      "motif": "snare_roll",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1785,
+        1790,
+        1795
+      ],
+      "roles": [
+        "snare",
+        "snare",
+        "snare"
+      ]
+    },
+    {
+      "beat": 224,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1815
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 224,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1807
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 226,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1839
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 228,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1878
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 230,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1902
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 232,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1943
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 234,
+      "color": "gold",
+      "motif": "chorus_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1967
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 236,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2006
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 238,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2030
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 240,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2068
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 240,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2061
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 242,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2092
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 244,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2131
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 246,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2155
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 248,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2196
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 250,
+      "color": "gold",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2223
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 252,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2262
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 254,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2286
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 256,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2328
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 256,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2320
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 258,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2352
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 260,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2391
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 262,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2415
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 264,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2456
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 266,
+      "color": "gold",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2483
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 268,
+      "color": "blue",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2522
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 270,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2546
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 272,
+      "color": "blue",
+      "motif": "landing_chord",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2576
+      ],
+      "roles": [
+        "ending_chord"
+      ]
+    },
+    {
+      "beat": 272,
+      "color": "red",
+      "motif": "landing_chord",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2575
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 280,
+      "color": "gold",
+      "motif": "final_bell",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2597
+      ],
+      "roles": [
+        "last_note"
+      ]
+    }
+  ],
+  "normal": [
+    {
+      "beat": 8,
+      "color": "blue",
+      "motif": "intro_hands",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        20
+      ],
+      "roles": [
+        "intro_motif"
+      ]
+    },
+    {
+      "beat": 10,
+      "color": "red",
+      "motif": "intro_hands",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        24
+      ],
+      "roles": [
+        "intro_motif"
+      ]
+    },
+    {
+      "beat": 12,
+      "color": "blue",
+      "motif": "intro_hands",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        32
+      ],
+      "roles": [
+        "intro_motif"
+      ]
+    },
+    {
+      "beat": 14,
+      "color": "red",
+      "motif": "intro_hands",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        36
+      ],
+      "roles": [
+        "intro_motif"
+      ]
+    },
+    {
+      "beat": 16,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        51
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 18,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        61
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 20,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        81
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 22,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        89
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 23,
+      "color": "gold",
+      "motif": "verse_backbeat",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        96
+      ],
+      "roles": [
+        "answer"
+      ]
+    },
+    {
+      "beat": 24,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        111
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 26,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        121
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 28,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        141
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 30,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        151
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 31,
+      "color": "blue",
+      "motif": "verse_backbeat",
+      "contour": "walk",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        155
+      ],
+      "roles": [
+        "answer"
+      ]
+    },
+    {
+      "beat": 31,
+      "color": "red",
+      "motif": "verse_backbeat",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        153
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 32,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        172
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 34,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        182
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 36,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        202
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 38,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        212
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 39,
+      "color": "gold",
+      "motif": "verse_backbeat",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        216
+      ],
+      "roles": [
+        "answer"
+      ]
+    },
+    {
+      "beat": 40,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        231
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 42,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        241
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 44,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        261
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 46,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        271
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 47,
+      "color": "blue",
+      "motif": "verse_backbeat",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        276
+      ],
+      "roles": [
+        "answer"
+      ]
+    },
+    {
+      "beat": 47,
+      "color": "red",
+      "motif": "verse_backbeat",
+      "contour": "stair",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        273
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 48,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        291
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 50,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        301
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 52,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        321
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 54,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        329
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 55,
+      "color": "gold",
+      "motif": "verse_backbeat",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        336
+      ],
+      "roles": [
+        "answer"
+      ]
+    },
+    {
+      "beat": 56,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        351
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 58,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        361
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 60,
+      "color": "blue",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        381
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 62,
+      "color": "red",
+      "motif": "verse_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        391
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 63,
+      "color": "blue",
+      "motif": "verse_backbeat",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        395
+      ],
+      "roles": [
+        "answer"
+      ]
+    },
+    {
+      "beat": 63,
+      "color": "red",
+      "motif": "verse_backbeat",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        393
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 64,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        408
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 65,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        415
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 66,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        422
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 67,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        425
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 68,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        436
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 69,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        443
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 70,
+      "color": "gold",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        450
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 71,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        453
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 72,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        464
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 72,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        461
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 73,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        471
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 74,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        478
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 75,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        481
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 76,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        492
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 77,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        499
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 78,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        506
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 79,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        509
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 80,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        520
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 81,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        529
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 82,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        535
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 83,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        540
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 84,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        550
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 85,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        559
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 86,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        565
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 87,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        570
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 88,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        581
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 89,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        590
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 90,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        597
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 92,
+      "color": "gold",
+      "motif": "snare_roll",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        609,
+        614,
+        619,
+        624
+      ],
+      "roles": [
+        "snare",
+        "snare",
+        "snare",
+        "snare"
+      ]
+    },
+    {
+      "beat": 96,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        639
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 96,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        631
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 97,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        646
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 98,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        656
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 99,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        674
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 100,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        689
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 101.5,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        699
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 103,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        717
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 104,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        741
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 104,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        734
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 105,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        748
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 106,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "downleft",
+      "sourceEventIds": [
+        758
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 107,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        776
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 108,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        791
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 109.5,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        804
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 111,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        825
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 112,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        841
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 112,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        834
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 113,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        846
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 114,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        858
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 115,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        876
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 116,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        891
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 118,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        908
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 119,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        927
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 120,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        943
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 120,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        936
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 121.5,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        958
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 122,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "pendulum",
+      "intendedSwing": "downleft",
+      "sourceEventIds": [
+        963
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 123,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        980
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 124,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        995
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 125.5,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1005
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 127,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1028
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 128,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1048
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 128,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1040
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 129,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1057
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 130,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1069
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 131,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1089
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 132,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1106
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 133.5,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1119
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 135,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1140
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 136,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1166
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 136,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1159
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 137.5,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1184
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 138,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "upleft",
+      "sourceEventIds": [
+        1187
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 139,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1207
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 140,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1224
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 142,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1246
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 143,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1264
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 144,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1282
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 144,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1275
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 145,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1289
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 146,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "wave",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1303
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 147,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1323
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 148,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1340
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 149.5,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1358
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 151,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1382
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 152,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1400
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 152,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1393
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 153.5,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1418
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 154,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "wave",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1424
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 155,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1443
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 156,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1460
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 157.5,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1473
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 159,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1499
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 160,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1513
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 162,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1515
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 164,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1520
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 165.5,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1522
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 168,
+      "color": "gold",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1528
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 170,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1530
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 172,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1535
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 173.5,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1537
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 176,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1543
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 178,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1546
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 180,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1552
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 181.5,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1555
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 184,
+      "color": "gold",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1562
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 186,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1565
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 188,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1571
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 189.5,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1574
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 192,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1584
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 193,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1591
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 194,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1598
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 195,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1601
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 196,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1612
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 197,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1619
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 198,
+      "color": "gold",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1626
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 199,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1629
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 200,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1640
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 200,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1637
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 201,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1647
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 202,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1654
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 203,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1657
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 204,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1668
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 205,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1675
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 206,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1682
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 207,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1685
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 208,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1696
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 209,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1705
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 210,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1711
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 211,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1716
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 212,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1726
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 213,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1735
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 214,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1741
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 215,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1746
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 216,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1757
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 217,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1766
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 218,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1773
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 220,
+      "color": "gold",
+      "motif": "snare_roll",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1785,
+        1790,
+        1795,
+        1800
+      ],
+      "roles": [
+        "snare",
+        "snare",
+        "snare",
+        "snare"
+      ]
+    },
+    {
+      "beat": 224,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1815
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 224,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1807
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 225,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1825
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 226,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "stair",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1839
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 227,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1860
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 228,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1878
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 229.5,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1893
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 231,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1916
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 232,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1943
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 232,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1936
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 233,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1953
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 234,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "stair",
+      "intendedSwing": "downleft",
+      "sourceEventIds": [
+        1967
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 235,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "stair",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        1988
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 235,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1980
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 236,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2006
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 237.5,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2023
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 239,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2049
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 240,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2068
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 240,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2061
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 241.5,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2088
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 242,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        2092
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 243,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2113
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 244,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2131
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 246,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2155
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 247,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2177
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 248,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2196
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 248,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2189
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 249,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2206
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 250,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "upleft",
+      "sourceEventIds": [
+        2223
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 251,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        2244
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 251,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2236
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 252,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2262
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 253.5,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2277
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 255,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2304
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 256,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2328
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 256,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2320
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 257.5,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2348
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 258,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        2352
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 259,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2373
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 260,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2391
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 262,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2415
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 263,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2437
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 264,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2456
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 264,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2449
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 265,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2466
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 266,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "downleft",
+      "sourceEventIds": [
+        2483
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 267,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        2504
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 267,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        2496
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 268,
+      "color": "blue",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2522
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 269.5,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2537
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 271,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2557
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 272,
+      "color": "blue",
+      "motif": "landing_chord",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2576
+      ],
+      "roles": [
+        "ending_chord"
+      ]
+    },
+    {
+      "beat": 272,
+      "color": "red",
+      "motif": "landing_chord",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2575
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 274,
+      "color": "red",
+      "motif": "ending_echo",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2581
+      ],
+      "roles": [
+        "ending_motif"
+      ]
+    },
+    {
+      "beat": 276,
+      "color": "blue",
+      "motif": "ending_echo",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2587
+      ],
+      "roles": [
+        "ending_motif"
+      ]
+    },
+    {
+      "beat": 278,
+      "color": "red",
+      "motif": "ending_echo",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2591
+      ],
+      "roles": [
+        "ending_motif"
+      ]
+    },
+    {
+      "beat": 280,
+      "color": "gold",
+      "motif": "final_bell",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2597
+      ],
+      "roles": [
+        "last_note"
+      ]
+    }
+  ],
+  "hard": [
+    {
+      "beat": 8,
+      "color": "blue",
+      "motif": "intro_hands",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        20
+      ],
+      "roles": [
+        "intro_motif"
+      ]
+    },
+    {
+      "beat": 10,
+      "color": "red",
+      "motif": "intro_hands",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        24
+      ],
+      "roles": [
+        "intro_motif"
+      ]
+    },
+    {
+      "beat": 12,
+      "color": "blue",
+      "motif": "intro_hands",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        32
+      ],
+      "roles": [
+        "intro_motif"
+      ]
+    },
+    {
+      "beat": 14,
+      "color": "red",
+      "motif": "intro_hands",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        36
+      ],
+      "roles": [
+        "intro_motif"
+      ]
+    },
+    {
+      "beat": 16,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "walk",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        51
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 18,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "walk",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        61
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 19,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "walk",
+      "intendedSwing": "upleft",
+      "sourceEventIds": [
+        66
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 20,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "walk",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        81
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 21.5,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "walk",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        88
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 23,
+      "color": "gold",
+      "motif": "bell_answer",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        96
+      ],
+      "roles": [
+        "answer"
+      ]
+    },
+    {
+      "beat": 24,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        111
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 25.5,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        119
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 27,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "walk",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        126
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 28,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "walk",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        141
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 30,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "walk",
+      "intendedSwing": "upleft",
+      "sourceEventIds": [
+        151
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 31,
+      "color": "blue",
+      "motif": "verse_backbeat",
+      "contour": "walk",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        155
+      ],
+      "roles": [
+        "answer"
+      ]
+    },
+    {
+      "beat": 31,
+      "color": "red",
+      "motif": "verse_backbeat",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        153
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 32,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "stair",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        172
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 33.5,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "stair",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        180
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 35,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "stair",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        187
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 36,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "stair",
+      "intendedSwing": "upright",
+      "sourceEventIds": [
+        202
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 38,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "stair",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        212
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 39,
+      "color": "gold",
+      "motif": "bell_answer",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        216
+      ],
+      "roles": [
+        "answer"
+      ]
+    },
+    {
+      "beat": 40,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        231
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 41,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        235
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 42.5,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "stair",
+      "intendedSwing": "downleft",
+      "sourceEventIds": [
+        243
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 44,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "stair",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        261
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 46,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "stair",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        271
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 47,
+      "color": "blue",
+      "motif": "verse_backbeat",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        276
+      ],
+      "roles": [
+        "answer"
+      ]
+    },
+    {
+      "beat": 47,
+      "color": "red",
+      "motif": "verse_backbeat",
+      "contour": "stair",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        273
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 48,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        291
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 50,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        301
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 51,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "pendulum",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        306
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 52,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "pendulum",
+      "intendedSwing": "upright",
+      "sourceEventIds": [
+        321
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 53.5,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        328
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 55,
+      "color": "gold",
+      "motif": "bell_answer",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        336
+      ],
+      "roles": [
+        "answer"
+      ]
+    },
+    {
+      "beat": 56,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        351
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 57.5,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        359
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 59,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "pendulum",
+      "intendedSwing": "downleft",
+      "sourceEventIds": [
+        366
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 60,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "pendulum",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        381
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 62,
+      "color": "red",
+      "motif": "verse_melody",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        391
+      ],
+      "roles": [
+        "verse_melody"
+      ]
+    },
+    {
+      "beat": 63,
+      "color": "blue",
+      "motif": "verse_backbeat",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        395
+      ],
+      "roles": [
+        "answer"
+      ]
+    },
+    {
+      "beat": 63,
+      "color": "red",
+      "motif": "verse_backbeat",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        393
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 64,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "upleft",
+      "sourceEventIds": [
+        408
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 65,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        415
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 66,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        422
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 67,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        425
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 68,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        436
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 69,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        443
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 70,
+      "color": "gold",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        450
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 71,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        453
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 72,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        464
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 72,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        461
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 73,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        471
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 74,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "upleft",
+      "sourceEventIds": [
+        478
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 75,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        481
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 76,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        492
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 77,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        499
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 78,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        506
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 79,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        509
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 80,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "downleft",
+      "sourceEventIds": [
+        520
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 80.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "downright",
+      "sourceEventIds": [
+        525
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 81,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        529
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 81.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        530
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 82,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        535
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 82.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        536
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 83,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        540
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 83.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        541
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 84,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        550
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 84.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        555
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 85,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        559
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 85.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        560
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 86,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        565
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 86.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        566
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 87,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        570
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 87.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        571
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 88,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        581
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 88.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        586
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 89,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        590
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 89.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        591
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 90,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        597
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 90.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        598
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 92,
+      "color": "gold",
+      "motif": "snare_roll",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        609,
+        612,
+        614,
+        617,
+        619,
+        622,
+        624
+      ],
+      "roles": [
+        "snare",
+        "snare",
+        "snare",
+        "snare",
+        "snare",
+        "snare",
+        "snare"
+      ]
+    },
+    {
+      "beat": 96,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        639
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 96,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        631
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 97,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        646
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 97.5,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        654
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 98.5,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        664
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 99,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        674
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 100,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        689
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 101,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        696
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 102,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        707
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 103,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        717
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 103,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        718
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 104,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        741
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 105,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        748
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 105.5,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        756
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 106.5,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        766
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 107,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        776
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 108,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        791
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 109.5,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        804
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 110,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        809
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 111,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        825
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 111,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "fan",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        817
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 112,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        841
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 112,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        834
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 113,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        846
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 113.5,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        856
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 114.5,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "pendulum",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        866
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 115,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "pendulum",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        876
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 116,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        891
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 117,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        898
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 118,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        908
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 119,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        927
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 119,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        919
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 120.0,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        943
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 120.5,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "pendulum",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        945
+      ],
+      "roles": [
+        "openhat"
+      ]
+    },
+    {
+      "beat": 121.0,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "pendulum",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        950
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 121.5,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        958
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 122.0,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        963
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 122.5,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "pendulum",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        970
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 123.0,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        980
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 124,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        995
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 125,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1002
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 125.5,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1005
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 126,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1013
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 126.5,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1015
+      ],
+      "roles": [
+        "openhat"
+      ]
+    },
+    {
+      "beat": 127,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1028
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 128,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        1048
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 128,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        1040
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 129,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1057
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 130,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1069
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 130.5,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1078
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 131,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1089
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 132,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1106
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 133,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1115
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 133.5,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1119
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 134,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "downleft",
+      "sourceEventIds": [
+        1128
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 135,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1140
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 135,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1141
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 136,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1166
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 136.5,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1169
+      ],
+      "roles": [
+        "openhat"
+      ]
+    },
+    {
+      "beat": 137.5,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "upright",
+      "sourceEventIds": [
+        1184
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 138,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        1187
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 139,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1207
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 140,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1224
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 141,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1229
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 142,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1246
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 143,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        1264
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 143,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "ribbon",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1256
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 144,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1282
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 144,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "wave",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        1275
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 145,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "wave",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1289
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 146,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "wave",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1303
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 146.5,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1312
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 147,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "wave",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        1323
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 148,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1340
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 149,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1349
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 150,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1361
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 151,
+      "color": "blue",
+      "motif": "chorus_open",
+      "contour": "wave",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        1382
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 151,
+      "color": "red",
+      "motif": "chorus_open",
+      "contour": "wave",
+      "intendedSwing": "upright",
+      "sourceEventIds": [
+        1374
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 152,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "wave",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1400
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 152.5,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1403
+      ],
+      "roles": [
+        "openhat"
+      ]
+    },
+    {
+      "beat": 153,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1409
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 154,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "wave",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1424
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 154.5,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1432
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 155,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "wave",
+      "intendedSwing": "downleft",
+      "sourceEventIds": [
+        1443
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 156,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1460
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 157,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1469
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 158,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1482
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 158.5,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "wave",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1485
+      ],
+      "roles": [
+        "openhat"
+      ]
+    },
+    {
+      "beat": 159,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "wave",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        1499
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 160,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1513
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 162,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1515
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 164,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1520
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 165.5,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1522
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 167,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1523
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 168,
+      "color": "gold",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1528
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 170,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1530
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 172,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1535
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 173.5,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1537
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 175,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1538
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 176,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1543
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 178,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1546
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 180,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1552
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 181.5,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1555
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 183,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1557
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 184,
+      "color": "gold",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1562
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 186,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1565
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 188,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1571
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 189.5,
+      "color": "red",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1574
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 191,
+      "color": "blue",
+      "motif": "quiet_keys",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1576
+      ],
+      "roles": [
+        "quiet_melody"
+      ]
+    },
+    {
+      "beat": 192,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1584
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 193,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1591
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 194,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1598
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 195,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        1601
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 196,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "upright",
+      "sourceEventIds": [
+        1612
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 197,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1619
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 198,
+      "color": "gold",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1626
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 199,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1629
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 200,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1640
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 200,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1637
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 201,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        1647
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 202,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "downleft",
+      "sourceEventIds": [
+        1654
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 203,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1657
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 204,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1668
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 205,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1675
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 206,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1682
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 207,
+      "color": "blue",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1685
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 208,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        1696
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 208.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        1701
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 209,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1705
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 209.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1706
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 210,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1711
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 210.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1712
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 211,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        1716
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 211.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        1717
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 212,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1726
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 212.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1731
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 213,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1735
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 213.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1736
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 214,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1741
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 214.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1742
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 215,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "upright",
+      "sourceEventIds": [
+        1746
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 215.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "upleft",
+      "sourceEventIds": [
+        1747
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 216,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1757
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 216.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1762
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 217,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1766
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 217.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1767
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 218,
+      "color": "red",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1773
+      ],
+      "roles": [
+        "build_pulse"
+      ]
+    },
+    {
+      "beat": 218.5,
+      "color": "blue",
+      "motif": "build_alternation",
+      "contour": "wave",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1774
+      ],
+      "roles": [
+        "hat"
+      ]
+    },
+    {
+      "beat": 220,
+      "color": "gold",
+      "motif": "snare_roll",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1785,
+        1788,
+        1790,
+        1793,
+        1795,
+        1798,
+        1800
+      ],
+      "roles": [
+        "snare",
+        "snare",
+        "snare",
+        "snare",
+        "snare",
+        "snare",
+        "snare"
+      ]
+    },
+    {
+      "beat": 224,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1815
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 224,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1807
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 225,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1825
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 225.5,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "stair",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1835
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 226.5,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "stair",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        1848
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 227,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1860
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 228,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1878
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 229,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1888
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 230,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1902
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 231,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1916
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 231,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1917
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 232,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1943
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 232,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1936
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 233,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "stair",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1953
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 233.5,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "stair",
+      "intendedSwing": "downleft",
+      "sourceEventIds": [
+        1963
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 234,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "stair",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        1967
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 235,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1988
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 235,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1980
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 236,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2006
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 237.5,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2023
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 238,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2030
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 239,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "stair",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        2049
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 239,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "stair",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        2041
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 240,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "ribbon",
+      "intendedSwing": "upleft",
+      "sourceEventIds": [
+        2068
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 240,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "ribbon",
+      "intendedSwing": "upright",
+      "sourceEventIds": [
+        2061
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 241,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        2077
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 241.5,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        2088
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 242.5,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2101
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 243,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2113
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 244,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2131
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 245,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2141
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 246,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2155
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 247,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "ribbon",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        2177
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 247,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "ribbon",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        2169
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 248,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2196
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 248,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2189
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 249,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "ribbon",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        2206
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 249.5,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "ribbon",
+      "intendedSwing": "upleft",
+      "sourceEventIds": [
+        2216
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 250,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "ribbon",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        2223
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 251,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2244
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 251,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2236
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 252,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2262
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 253,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2272
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 253.5,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2277
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
+      "beat": 254,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "ribbon",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        2286
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 254.5,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "ribbon",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        2290
+      ],
+      "roles": [
+        "openhat"
+      ]
+    },
+    {
+      "beat": 255,
+      "color": "blue",
+      "motif": "eighth_weave",
+      "contour": "ribbon",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        2304
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 256,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "fan",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        2328
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 256,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "fan",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        2320
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 257,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        2338
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 257.5,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        2348
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 258.5,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2361
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 259,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2373
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 260,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2391
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 261,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2401
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 262,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2415
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 263,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2437
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 263,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2429
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 264,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2456
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 264,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2449
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 265,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        2466
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 265.5,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "downleft",
+      "sourceEventIds": [
+        2476
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 266,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        2483
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 267,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "fan",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        2504
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 267,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "fan",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        2496
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 268,
+      "color": "gold",
+      "motif": "chorus_gold_reply",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2522
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 269,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2532
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 269,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2528
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 270,
+      "color": "blue",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "left",
+      "sourceEventIds": [
+        2546
+      ],
+      "roles": [
+        "hook"
+      ]
+    },
+    {
+      "beat": 271,
+      "color": "blue",
+      "motif": "spectrum_open",
+      "contour": "fan",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        2557
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 271,
+      "color": "red",
+      "motif": "spectrum_open",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2558
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 272,
+      "color": "blue",
+      "motif": "landing_chord",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2576
+      ],
+      "roles": [
+        "ending_chord"
+      ]
+    },
+    {
+      "beat": 272,
+      "color": "red",
+      "motif": "landing_chord",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2575
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 274,
+      "color": "red",
+      "motif": "ending_echo",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2581
+      ],
+      "roles": [
+        "ending_motif"
+      ]
+    },
+    {
+      "beat": 276,
+      "color": "red",
+      "motif": "ending_echo",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2587
+      ],
+      "roles": [
+        "ending_motif"
+      ]
+    },
+    {
+      "beat": 278,
+      "color": "red",
+      "motif": "ending_echo",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2591
+      ],
+      "roles": [
+        "ending_motif"
+      ]
+    },
+    {
+      "beat": 280,
+      "color": "gold",
+      "motif": "final_bell",
+      "contour": "walk",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2597
+      ],
+      "roles": [
+        "last_note"
+      ]
+    }
+  ]
+}

@@ -169,10 +169,10 @@ public class GameHUDSkin : MonoBehaviour
         if (oxBold == null) oxBold = font;
 
         // --- スコア(左上、デザイン: top:40 left:70) ---
-        var scoreLabel = UISkinKit.MakeTMP(transform, "ScoreLabel", "SCORE", 20f,
+        var scoreLabel = UISkinKit.MakeTMP(transform, "ScoreLabel", "SCORE", 28f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.TopLeft,
-            Vector2.zero, new Vector2(300f, 26f), FontStyles.Normal, 4f, oxBold);
-        AnchorTopLeft(scoreLabel.rectTransform, new Vector2(70f, -40f));
+            Vector2.zero, new Vector2(300f, 38f), FontStyles.Normal, 4f, oxBold);
+        AnchorTopLeft(scoreLabel.rectTransform, new Vector2(70f, -30f));
 
         var scoreGlow = AddHudGlow(new Vector2(30f, -46f), new Vector2(420f, 110f),
             new Color(UISkinPalette.Cyan.r, UISkinPalette.Cyan.g, UISkinPalette.Cyan.b, 0.18f));
@@ -194,10 +194,10 @@ public class GameHUDSkin : MonoBehaviour
             Color.white, TextAlignmentOptions.TopRight,
             Vector2.zero, new Vector2(500f, 96f), FontStyles.Normal, 0f, font);
         AnchorTopRight(maxComboValue.rectTransform, new Vector2(-70f, -28f));
-        var maxLabel = UISkinKit.MakeTMP(transform, "MaxComboLabel", "MAX COMBO", 20f,
+        var maxLabel = UISkinKit.MakeTMP(transform, "MaxComboLabel", "MAX COMBO", 28f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.TopRight,
-            Vector2.zero, new Vector2(350f, 30f), FontStyles.Normal, 4f, oxBold);
-        AnchorTopRight(maxLabel.rectTransform, new Vector2(-72f, -136f));
+            Vector2.zero, new Vector2(350f, 38f), FontStyles.Normal, 4f, oxBold);
+        AnchorTopRight(maxLabel.rectTransform, new Vector2(-72f, -130f));
 
         // --- コンボ(最大値の下。色とサイズは UpdateCombo で育つ) ---
         comboGlow = AddHudGlow(Vector2.zero, new Vector2(440f, 180f), Color.clear);
@@ -210,11 +210,11 @@ public class GameHUDSkin : MonoBehaviour
         comboRT = comboValue.rectTransform;
         // パンチは右上を支点に(CSS transform-origin:100% 20% 相当)
         comboRT.pivot = new Vector2(1f, 0.8f);
-        comboRT.anchoredPosition = new Vector2(-70f, -156f - 140f * 0.2f);
+        comboRT.anchoredPosition = new Vector2(-70f, -174f - 140f * 0.2f);
 
-        comboLabel = UISkinKit.MakeTMP(transform, "ComboLabel", "", 22f,
+        comboLabel = UISkinKit.MakeTMP(transform, "ComboLabel", "", 28f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.TopRight,
-            Vector2.zero, new Vector2(300f, 30f), FontStyles.Normal, 6f, oxBold);
+            Vector2.zero, new Vector2(300f, 38f), FontStyles.Normal, 6f, oxBold);
         AnchorTopRight(comboLabel.rectTransform, new Vector2(-72f, -330f));
 
         // --- 判定演出(中央やや下:ノーツ軌道の外) ---
@@ -286,7 +286,7 @@ public class GameHUDSkin : MonoBehaviour
         songTitleText = titleGo.GetComponent<Text>();
         songTitleText.font = UISkinKit.JapaneseFont();
         songTitleText.text = title ?? "";
-        songTitleText.fontSize = string.IsNullOrEmpty(en) ? 26 : 16;
+        songTitleText.fontSize = string.IsNullOrEmpty(en) ? 32 : 24;
         songTitleText.fontStyle = FontStyle.Bold;
         songTitleText.alignment = TextAnchor.UpperCenter;
         songTitleText.color = UISkinPalette.SubtleGray;
@@ -297,7 +297,7 @@ public class GameHUDSkin : MonoBehaviour
         trt.anchorMin = trt.anchorMax = new Vector2(0.5f, 1f);
         trt.pivot = new Vector2(0.5f, 1f);
         trt.anchoredPosition = new Vector2(0f, string.IsNullOrEmpty(en) ? -40f : -80f);
-        trt.sizeDelta = new Vector2(900f, 24f);
+        trt.sizeDelta = new Vector2(900f, 36f);
         // 英タイトルと同じ内容しか無い(ASCII のみ、または「揺籠」のように英タイトル行と同一文字列)なら
         // 二重表示を避けて空にする。TMP 側は日本語フォールバック付きで描けるようになった。
         if (!string.IsNullOrEmpty(en) && !string.IsNullOrEmpty(songTitleText.text)
@@ -315,7 +315,7 @@ public class GameHUDSkin : MonoBehaviour
             var crt = chip.GetComponent<RectTransform>();
             crt.anchorMin = crt.anchorMax = new Vector2(0.5f, 1f);
             crt.pivot = new Vector2(0.5f, 1f);
-            crt.anchoredPosition = new Vector2(0f, -108f);
+            crt.anchoredPosition = new Vector2(0f, -122f);
             var frame = chip.GetComponent<Image>();
             frame.sprite = UISkinKit.RoundedFrame();
             frame.type = Image.Type.Sliced;
@@ -329,9 +329,9 @@ public class GameHUDSkin : MonoBehaviour
             var fitter = chip.AddComponent<ContentSizeFitter>();
             fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
             fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-            difficultyText = UISkinKit.MakeTMP(chip.transform, "Label", difficulty.ToUpperInvariant(), 17f,
+            difficultyText = UISkinKit.MakeTMP(chip.transform, "Label", difficulty.ToUpperInvariant(), 24f,
                 accent, TextAlignmentOptions.Center,
-                Vector2.zero, new Vector2(10f, 24f), FontStyles.Normal, 3f, labelFont);
+                Vector2.zero, new Vector2(10f, 34f), FontStyles.Normal, 3f, labelFont);
         }
     }
 
@@ -342,7 +342,7 @@ public class GameHUDSkin : MonoBehaviour
         var badgeGo = new GameObject("RankBadge", typeof(RectTransform));
         badgeGo.transform.SetParent(transform, false);
         var badgeRT = badgeGo.GetComponent<RectTransform>();
-        AnchorTopLeft(badgeRT, new Vector2(70f, -134f));
+        AnchorTopLeft(badgeRT, new Vector2(70f, -152f));
         badgeRT.sizeDelta = new Vector2(84f, 92f);
 
         var glowGo = new GameObject("Glow", typeof(RectTransform), typeof(Image));
@@ -373,15 +373,15 @@ public class GameHUDSkin : MonoBehaviour
             Vector2.zero, new Vector2(84f, 60f), FontStyles.Normal, 0f, chakra);
 
         // 右列: RANK / 進捗バー(枠付き) / NEXT
-        var rankLabel = UISkinKit.MakeTMP(transform, "RankLabel", "RANK", 17f,
+        var rankLabel = UISkinKit.MakeTMP(transform, "RankLabel", "RANK", 24f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.TopLeft,
-            Vector2.zero, new Vector2(200f, 22f), FontStyles.Normal, 3f, labelFont);
-        AnchorTopLeft(rankLabel.rectTransform, new Vector2(170f, -146f));
+            Vector2.zero, new Vector2(240f, 32f), FontStyles.Normal, 3f, labelFont);
+        AnchorTopLeft(rankLabel.rectTransform, new Vector2(170f, -152f));
 
         var barFrame = new GameObject("RankProgressFrame", typeof(RectTransform), typeof(Image));
         barFrame.transform.SetParent(transform, false);
         var frameRT = barFrame.GetComponent<RectTransform>();
-        AnchorTopLeft(frameRT, new Vector2(170f, -170f));
+        AnchorTopLeft(frameRT, new Vector2(170f, -190f));
         frameRT.sizeDelta = new Vector2(242f, 12f);
         var frameImg = barFrame.GetComponent<Image>();
         frameImg.color = new Color(0.118f, 0.133f, 0.275f); // #1E2246(枠)
@@ -408,10 +408,10 @@ public class GameHUDSkin : MonoBehaviour
         rankFillImg = fillGo.GetComponent<Image>();
         rankFillImg.raycastTarget = false;
 
-        rankNextLabel = UISkinKit.MakeTMP(transform, "RankNextLabel", "", 17f,
+        rankNextLabel = UISkinKit.MakeTMP(transform, "RankNextLabel", "", 24f,
             UISkinPalette.SubtleGray, TextAlignmentOptions.TopLeft,
-            Vector2.zero, new Vector2(240f, 22f), FontStyles.Normal, 3f, labelFont);
-        AnchorTopLeft(rankNextLabel.rectTransform, new Vector2(170f, -188f));
+            Vector2.zero, new Vector2(300f, 34f), FontStyles.Normal, 3f, labelFont);
+        AnchorTopLeft(rankNextLabel.rectTransform, new Vector2(170f, -214f));
     }
 
     private void BuildProgressBar()

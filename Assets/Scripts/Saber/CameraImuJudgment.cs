@@ -47,6 +47,9 @@ public class CameraImuJudgment : MonoBehaviour
 
     readonly PendingSwing[] pending = new PendingSwing[64];
     readonly SeenSwing[] seen = new SeenSwing[256];
+    // 1回の振りで接触したノーツ。選んだノーツと同時(SaberCutJudge.SimultaneousSeconds 以内)のものもまとめて切る。
+    readonly System.Collections.Generic.List<(CuttableNote note, Contact contact)> touched =
+        new System.Collections.Generic.List<(CuttableNote note, Contact contact)>(8);
     readonly CameraSaberHistory red = new CameraSaberHistory();
     readonly CameraSaberHistory blue = new CameraSaberHistory();
     int seenNext;
@@ -246,6 +249,7 @@ public class CameraImuJudgment : MonoBehaviour
         double bestError = double.PositiveInfinity;
         p.Failure = "no_note_in_swing_window";
         p.PositionPassed = p.Swept = false;
+        touched.Clear();
         for (int n = 0; n < spawner.LiveNotes.Count; n++)
         {
             CuttableNote note = spawner.LiveNotes[n];
@@ -256,6 +260,7 @@ public class CameraImuJudgment : MonoBehaviour
                 : JudgmentTierHelper.Classify(p.SongTime - note.HitTime);
             p.Failure = "position_fail";
             if (!FindContact(history, p.Swing.ReceiveTime, note, judge, out var hit)) continue;
+            touched.Add((note, hit));
             double error = Math.Abs(p.SongTime - note.HitTime);
             if (best != null && (error > bestError || (error == bestError && note.GetInstanceID() >= best.GetInstanceID()))) continue;
             best = note; bestError = error; contact = hit;
@@ -284,11 +289,35 @@ public class CameraImuJudgment : MonoBehaviour
         bool accepted = best.TryCutWithCameraTiming(contact.Point, contact.Velocity, judge.EffectiveHand(),
             p.SongTime, Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad));
         if (!accepted) { p.Failure = "note_rejected"; return false; }
+        // 同時のノーツ(金＋金など)は同じ振りでまとめて切る。時刻のずれた後続ノーツは次の振りへ残す。
+        CutSimultaneous(best, history, p, judge);
         // 成功した時点でこのイベントを消費。ロングも1イベントにつき1カット。
         Decision($"seq={p.Swing.Sequence} side={p.Swing.Side} camera={color} receive={p.Swing.ReceiveTime:F6} xiao={p.Swing.XiaoTimestampUs} song={p.SongTime:F6} sample={contact.SampleTime:F6} sampleAgeMs={(now - contact.ReceiveTime) * 1000:F1} latencyMs={cameraLatencyCompensationMs:F1} deltaMs={(contact.SampleTime - p.Swing.ReceiveTime) * 1000:F1} note={noteId} position=pass swept={contact.Swept} direction={direction} original={original} final={tier} reason={(tier == JudgmentTier.Miss ? "direction_downgrade_miss" : "hit")}");
         if (debugJudgment)
             Debug.Log($"[JUDGMENT] note={noteId} position=PASS direction={(direction ? "PASS" : "FAIL")} result={tier}", this);
         return true;
+    }
+
+    void CutSimultaneous(CuttableNote best, CameraSaberHistory history, PendingSwing p, SaberCutJudge judge)
+    {
+        bool hasDirection = false;
+        Vector3 directionVelocity = Vector3.zero;
+        float tolerance = Mathf.Cos(directionToleranceDegrees * Mathf.Deg2Rad);
+        foreach (var (note, hit) in touched)
+        {
+            if (note == best || note.IsCut || note.IsMissed || note.IsFinalized) continue;
+            if (Math.Abs(note.HitTime - best.HitTime) > SaberCutJudge.SimultaneousSeconds) continue;
+            Contact c = hit;
+            if (note.RequiredDirection != CutDirection.None && !note.DirectionVisualOnly)
+            {
+                if (!hasDirection && !TryCameraDirection(history, p.Swing.ReceiveTime, out directionVelocity)) continue;
+                hasDirection = true;
+                c.Velocity = directionVelocity;
+            }
+            c.Point.z = spawner.ComputeNoteZ(note, note.HitTime - p.SongTime, spawner.Speed);
+            note.TryCutWithCameraTiming(c.Point, c.Velocity, judge.EffectiveHand(), p.SongTime, tolerance);
+        }
+        touched.Clear();
     }
 
     bool FindContact(CameraSaberHistory history, double swingTime, CuttableNote note, SaberCutJudge judge, out Contact contact)
