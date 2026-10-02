@@ -7,7 +7,8 @@
   - **赤・青の saber を点灯させ、画面内に映した状態で**撮る(既存の 10-02 session は saber が映っていない、または消灯していた)。
   - カメラは正立・固定(三脚など)。背景の赤い物(ラベル・カラビナ)はあえて片付けない(背景誤検出の比較のため)。
   - 棒を大きく速く振る swing を数回。画面端への出入り(フレームアウト → フレームイン)も含める。
-  - 最後に 5 秒ほど、saber を画面外に出す/消灯した区間を入れる(背景だけの区間の比較用)。
+  - 最後に約 10 秒、saber を画面外に出すか消灯した区間を入れる(背景だけの区間の比較用)。
+  - 可能なら、その背景だけの区間を「赤ラベル・カラビナを布などで隠した状態」でもう1回撮る(背景誤検出の確定用。隠すと往復が消えれば確定)。
   - Stop 後に triage bundle を Mac へ自動転送(diagnostics-inbox に届けば、こちらで解析を開始する)。
 
 ## 現在の仮説と確度
@@ -15,7 +16,12 @@
   original PNG に**点灯した赤 saber が映っていない**。赤い出力は、背景の赤ラベル(左)と赤カラビナ(右下)の間を往復している。
   - したがって「僅差の candidate すり替え(CASE A)」は起きているが、**本物の saber の上では未確認**。
     いまの例に修正 A を入れても、誤った背景出力が安定するだけ。修正 A の根拠にはならない。
-  - より有力な見方: saber 不在時に背景の赤い物が eligible になる(背景誤検出 / eligibility の問題)。確度は「中」。
+  - より有力な見方: saber 不在時に背景の赤い物が eligible になる(背景誤検出 / eligibility の問題)。**確度は「高」**(2026-10-02 解析)。
+    production の detector を offline で再現(端末の score と完全一致)した結果、赤ラベル・カラビナは emitterScore 0.68–0.73(閾値 0.42)で eligible を通る。
+    赤の「value」は max channel = R なので、つや消しの赤い物でも R が飽和すれば LED と区別できない。白い芯(core)の証拠は必須ではない。
+    10-01 の実 saber 映像でも、赤ラベルは 14 frame 中 13 frame で eligible のまま控えており、端から見た saber(score 40.2)にラベル(55.1)が勝つ frame もあった。
+    単独できれいに分ける特徴はない(mean value の AUC 0.92 が最良だが露出に依存し、保護対象の正例 device_normal_red_390 と重なる)。
+    詳細: docs/claude/analysis/2026-10-02_background_false_positives.md
   - 本物の saber が関わる例は 1 件だけ(20260930_234740_348 f4023 blue。CASE B 寄り。画面外に出た可能性あり、event frame の PNG なし)。
   - CASE C(raw PCA tail): 010049_190 f665(raw 218 / robust 52)の 1 件。対象は背景物。
 - score gap の分布(winner − runner-up、agent の再解析): ジャンプ開始 5 件はすべて ≤3.2。
@@ -28,13 +34,18 @@
    - `python3 ios/PhoneSaberSender/Tools/phone_saber_selection_replay.py <copy>`(score gap の分布と replay)
    そのうえで original PNG を見て、**本物の saber が映っているか**を最初に確認し、CASE A/B/C を判定する。
 2. summary.json の motionEventSummary.runtime.memoryHeadroom.minimumAvailableBytes で、256MiB 上限の余裕を判断する。
-3. saber 不在時の背景誤検出が主因なら、修正 A ではなく「背景 candidate の eligibility」側の診断を優先する(要ユーザー判断:目標の見直し)。
+3. 背景誤検出の測定基盤を作る(進行中): 背景ネガティブの benchmark(formal 40 件とは分離、private 画像は commit しない)。
+4. 修正方針の判断(**要ユーザー判断**): 修正 A(時間的一貫性)より先に「背景の赤い物の eligibility」を直すべきかどうか。
+   eligibility の変更は production の recognition 変更になるので、gate(証拠・regression・実機再試験)を満たしてから行う。
 
 ---
 
 ## 作業ログ(新しい順)
 
 ### 2026-10-02
+- 背景誤検出の解析(read-only agent): production detector を offline で再現し、赤ラベル・カラビナが eligible を通る理由を特定。
+  formal corpus に「つや消しの赤い物」の hard negative がないことも確認。報告は docs/claude/analysis/2026-10-02_background_false_positives.md。
+- ecbebc8: CASE audit と candidate geometry validator を強化(recovery hint、countForTally、validator を Swift 出力に厳密化、クラッシュ修正)。
 - 既存 bundle 20 件を横断で再解析(read-only agent、表は docs/claude/analysis/2026-10-02_jump_events.csv)。
   ジャンプ/切替 17 件。CASE A 寄り 5 件はすべて背景物どうしの往復で、点灯 saber は映っていない(2537 / 255 は original PNG を目視で確認済み)。
   例B は phonesaber_20261002_010049_190(f660: eligible 1→1 で 437px、f665: raw 218 / robust 52)。

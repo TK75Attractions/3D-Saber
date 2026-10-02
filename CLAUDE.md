@@ -53,22 +53,23 @@ Simulator の起動エラーは環境要因のことが多いので、リトラ�
 - phonesaber_20261002_005850_489 frame 2537:color-close → color-sparse-raw、約422px のジャンプ、次 frame で元の領域へ戻る
 - phonesaber_20261002_013205_087 frame 255:core-halo → color-sparse-raw、約430px のジャンプ
 
-candidate selection では説明できない例もある:
-- 例B frame 660:eligible が1件だけなのに約437px のジャンプ
-- 例B frame 665:raw PCA の tail が伸びる(raw span 46→218px、robust 46→52px)
+candidate selection では説明できない例もある(いずれも phonesaber_20261002_010049_190):
+- frame 660:eligible が1件だけなのに約437px のジャンプ
+- frame 665:raw PCA の tail が伸びる(raw span 46→218px、robust 46→52px)
 
-未commitの diagnostics 改善(working tree にある):
+**2026-10-02 再解析での見直し**(詳細は docs/claude/STATUS.md と docs/claude/analysis/):
+上記の代表例(2537 / 255 / 660–664)は、original PNG に点灯した赤 saber が映っていない。
+赤の出力は、背景の赤ラベルと赤カラビナの間を往復している。つまり「僅差のすり替え」は起きているが、
+本物の saber の上では未確認。修正 A の根拠には、本物の saber が映った capture での CASE A が必要。
+背景の赤い物が eligible になること(背景誤検出)も、有力な原因候補として扱う。
+
+diagnostics 改善は commit 済み(6bf2cf3 以降)。主な内容:
 - bridge dropout 検出(前後3 frame を1 evidence とし、original と annotated を別保存)
-- Active Color 選択(RED / BLUE / BOTH)
-- context の compact 化
-- 全 eligible candidate の geometry 記録(eligibleRank、truncation の明示、件数照合)
-- matchToPreviousWinner(centroid 距離 / IoU / 面積比 / span 比 / 向きの差)
-- [AUTO_REPAIR][CANDIDATE_AUDIT] の CASE ヒント(bCause を4分類。gate には使わない)
-- tracking 窓(不安定がある event では最低5 frame を確保。bridge と共存する場合は8 frame)
-- toggle 成分を tracking ranking から除外
-- retained BGRA の上限を 256MiB に変更(Debug Recording 時のみ)
-- gate:bridge は1 event として数える。annotated は証拠から除外する
-検証:XCTest 149/149、formal 40/40、Python 182/182、Release PASS。
+- Active Color 選択(RED / BLUE / BOTH)、context の compact 化
+- 全 eligible candidate の geometry 記録と matchToPreviousWinner、[AUTO_REPAIR][CANDIDATE_AUDIT] の CASE ヒント(gate には使わない)
+- tracking 窓(最低5 frame、bridge と共存時は8 frame)、toggle 成分を tracking ranking から除外
+- retained BGRA 上限 256MiB(Debug Recording 時のみ)と memoryHeadroom の記録
+- 解析 tool:triage の `--dry-run`(CASE hint)、`phone_saber_selection_replay.py`(score gap 分布と修正 A の offline replay)
 
 ## 4. production 修正の gate
 修正 A(candidate temporal consistency)を実装してよい条件:
@@ -133,7 +134,7 @@ CASE A の条件:
 - 次にやること
 その下に、作業ログを新しい順に書く(日付、内容、commit hash、検証結果)。古いログは、ときどき要約にまとめる。
 
-## 8. 最初のタスク(この順で)
+## 8. 最初のタスク(この順で)— 2026-10-02 完了(結果は docs/claude/STATUS.md)
 1. git status / git diff --stat で、未commit変更(15 変更 + 新規2ファイル)が §3 と一致するかを確認する。
 2. production recognition のコードパスに差分がないことを、diff を見て確認する。
 3. 既存 session で回帰を確認する。phonesaber_20261002_005850_489 frame 2537 と phonesaber_20261002_013205_087 frame 255 が、新しい選択ロジックでも tracking event として選ばれ、窓に含まれるかを確認する。含まれなければ修正する。
