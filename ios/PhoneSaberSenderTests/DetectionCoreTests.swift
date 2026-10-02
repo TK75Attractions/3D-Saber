@@ -2565,7 +2565,8 @@ final class DetectionCoreTests: XCTestCase {
         }
         let metadataData = try Data(contentsOf: recording.metadataURL)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: metadataData) as? [String: Any])
-        XCTAssertEqual(Set(json.keys), Set(["formatVersion", "sessionID", "width", "height", "frames", "cameraSamples", "motionEvents", "motionSummary", "udpTransmissions", "activeColors", "diagnosticWindows", "bridgeDropoutEvents", "bridgeDropoutSummary"]))
+        XCTAssertEqual(Set(json.keys), Set(["formatVersion", "sessionID", "width", "height", "frames", "cameraSamples", "motionEvents", "motionSummary", "udpTransmissions", "activeColors", "diagnosticWindows", "bridgeDropoutEvents", "bridgeDropoutSummary",
+                                                "segmentMarkers", "segmentSummary"]))
         // Existing Codable readers ignore the additive motion root fields.
         let metadata = try JSONDecoder().decode(DebugRecordingMetadata.self, from: metadataData)
         XCTAssertEqual(metadata.frames.filter(\.manualCaptured).count,
@@ -2725,6 +2726,7 @@ final class DetectionCoreTests: XCTestCase {
     private func recordBridge(_ frames: [BridgeFrame], colors: DebugDiagnosticColors = .both,
                               width: Int = 64, height: Int = 48,
                               configure: (DebugVideoRecorder) -> Void = { _ in },
+                              labels: [UInt64: DebugSegmentLabel] = [:],
                               afterFrame: (UInt64, DebugVideoRecorder) -> Void = { _, _ in })
         async throws -> (recording: DebugRecordingResult, metadata: [String: Any]) {
         let directory = FileManager.default.temporaryDirectory
@@ -2738,7 +2740,8 @@ final class DetectionCoreTests: XCTestCase {
             recorder.append(pixelBuffer: buffer,
                 presentationTime: CMTime(value: CMTimeValue(frame.time), timescale: 30),
                 frameID: frame.id, results: frame.sabers,
-                analysis: SaberFrameAnalysis(candidates: [.red: [], .blue: []], selected: [:]))
+                analysis: SaberFrameAnalysis(candidates: [.red: [], .blue: []], selected: [:]),
+                segmentLabel: labels[frame.id] ?? .unlabeled)
             CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
             afterFrame(frame.id, recorder)
             Thread.sleep(forTimeInterval: 0.02)
@@ -3603,5 +3606,231 @@ extension DetectionCoreTests {
         }
         let decoded = try JSONDecoder().decode(DebugRecordingMetadata.self, from: data)
         XCTAssertEqual(decoded.frames.first?.camera?.iso, 250)
+    }
+
+    // MARK: Segment markers (operator ground truth; metadata only)
+
+    func testSegmentLedgerRecordsMarkersPerLabelCountsAndFalsePositives() throws {
+        var ledger = DebugSegmentLedger()
+        func observe(_ id: UInt64, _ label: DebugSegmentLabel, red: Bool = false, blue: Bool = false,
+                     predictedRed: Bool = false) {
+            ledger.observe(frameID: id, timestamp: Double(id) / 30, label: label,
+                           detected: ["red": red || predictedRed, "blue": blue],
+                           measured: ["red": red, "blue": blue])
+        }
+        observe(1, .unlabeled, red: true)
+        observe(2, .sabersVisible, red: true, blue: true)
+        observe(3, .sabersVisible, blue: true)
+        observe(4, .noSaber, red: true)
+        observe(5, .noSaber, predictedRed: true)
+        observe(6, .noSaber)
+        observe(7, .noSaberCovered, blue: true)
+        observe(8, .noSaberCovered)
+        observe(9, .noSaber)
+        XCTAssertEqual(ledger.markers.map(\.frameID), [2, 4, 7, 9])
+        XCTAssertEqual(ledger.markers.map(\.label), [.sabersVisible, .noSaber, .noSaberCovered, .noSaber])
+        XCTAssertEqual(ledger.markers.first?.timestamp ?? 0, 2.0 / 30, accuracy: 1e-12)
+        let summary = ledger.summary
+        XCTAssertEqual(summary["totalFrames"] as? Int, 9)
+        let byLabel = try XCTUnwrap(summary["byLabel"] as? [String: [String: Any]])
+        XCTAssertEqual(Set(byLabel.keys), Set(DebugSegmentLabel.allCases.map(\.rawValue)))
+        XCTAssertEqual(byLabel["unlabeled"]?["frames"] as? Int, 1)
+        XCTAssertEqual(byLabel["sabersVisible"]?["frames"] as? Int, 2)
+        XCTAssertEqual(byLabel["noSaber"]?["frames"] as? Int, 4)
+        XCTAssertEqual(byLabel["noSaberCovered"]?["frames"] as? Int, 2)
+        XCTAssertEqual((byLabel["noSaber"]?["red"] as? [String: Int])?["detectedFrames"], 2)
+        XCTAssertEqual((byLabel["noSaber"]?["red"] as? [String: Int])?["measuredFrames"], 1)
+        XCTAssertEqual((byLabel["sabersVisible"]?["blue"] as? [String: Int])?["detectedFrames"], 2)
+        let falsePositives = try XCTUnwrap(summary["falsePositiveFrames"] as? [String: [String: Int]])
+        XCTAssertEqual(falsePositives["noSaber"], ["red": 2, "blue": 0])
+        XCTAssertEqual(falsePositives["noSaberCovered"], ["red": 0, "blue": 1])
+        XCTAssertNil(falsePositives["sabersVisible"])
+        XCTAssertEqual(summary["markerCount"] as? Int, 4)
+        XCTAssertEqual(summary["droppedMarkerCount"] as? Int, 0)
+        XCTAssertNoThrow(try JSONSerialization.data(withJSONObject: summary))
+        XCTAssertNoThrow(try JSONSerialization.data(withJSONObject: ledger.markerEntries))
+
+        // Markers are bounded; frames keep being counted under the newest label.
+        var flapping = DebugSegmentLedger()
+        for id in 0..<(DebugSegmentLedger.maximumMarkers + 10) {
+            flapping.observe(frameID: UInt64(id), timestamp: Double(id),
+                             label: id % 2 == 0 ? .noSaber : .sabersVisible,
+                             detected: [:], measured: [:])
+        }
+        XCTAssertEqual(flapping.markers.count, DebugSegmentLedger.maximumMarkers)
+        XCTAssertEqual(flapping.droppedMarkerCount, 10)
+        XCTAssertEqual(flapping.frameCount(.noSaber) + flapping.frameCount(.sabersVisible),
+                       DebugSegmentLedger.maximumMarkers + 10)
+    }
+
+    func testUnlabeledRecordingHasNoMarkersAndCountsEveryFrameAsUnlabeled() async throws {
+        let blue = bridgeSaber(.blue)
+        let (_, metadata) = try await recordBridge([(301, 0, [blue]), (302, 1, [blue]), (303, 2, [])])
+        XCTAssertEqual((metadata["segmentMarkers"] as? [Any])?.count, 0)
+        let summary = try XCTUnwrap(metadata["segmentSummary"] as? [String: Any])
+        let frames = try XCTUnwrap(metadata["frames"] as? [[String: Any]])
+        XCTAssertEqual(summary["totalFrames"] as? Int, frames.count)
+        let byLabel = try XCTUnwrap(summary["byLabel"] as? [String: [String: Any]])
+        XCTAssertEqual(byLabel["unlabeled"]?["frames"] as? Int, frames.count)
+        XCTAssertEqual(byLabel["noSaber"]?["frames"] as? Int, 0)
+        // The streamed per-frame shape is unchanged: labels live only in root markers.
+        XCTAssertTrue(frames.allSatisfy { $0["segmentLabel"] == nil })
+    }
+
+    func testSegmentMarkersReachMetadataSummaryAndCompactContexts() async throws {
+        let blue = bridgeSaber(.blue)
+        let red = bridgeSaber(.red)
+        let labels: [UInt64: DebugSegmentLabel] = [
+            402: .sabersVisible, 403: .sabersVisible, 404: .noSaber, 405: .noSaber,
+            406: .noSaberCovered, 407: .noSaberCovered]
+        let (recording, metadata) = try await recordBridge([
+            (401, 0, [blue]), (402, 1, []), (403, 2, [blue]), (404, 3, [blue]), (405, 4, [blue]),
+            (406, 5, []), (407, 6, [red])], labels: labels)
+        let frames = try XCTUnwrap(metadata["frames"] as? [[String: Any]])
+        XCTAssertEqual(frames.compactMap { $0["frameID"] as? Int }, [401, 402, 403, 404, 405, 406, 407])
+        let markers = try XCTUnwrap(metadata["segmentMarkers"] as? [[String: Any]])
+        XCTAssertEqual(markers.compactMap { $0["frameID"] as? Int }, [402, 404, 406])
+        XCTAssertEqual(markers.compactMap { $0["label"] as? String },
+                       ["sabersVisible", "noSaber", "noSaberCovered"])
+        for marker in markers {
+            let frame = try XCTUnwrap(frames.first { $0["frameID"] as? Int == marker["frameID"] as? Int })
+            XCTAssertEqual(marker["timestamp"] as? Double, frame["presentationTimeSeconds"] as? Double)
+        }
+        let summary = try XCTUnwrap(metadata["segmentSummary"] as? [String: Any])
+        let byLabel = try XCTUnwrap(summary["byLabel"] as? [String: [String: Any]])
+        XCTAssertEqual(DebugSegmentLabel.allCases.map { byLabel[$0.rawValue]?["frames"] as? Int },
+                       [1, 2, 2, 2])
+        let falsePositives = try XCTUnwrap(summary["falsePositiveFrames"] as? [String: [String: Int]])
+        XCTAssertEqual(falsePositives["noSaber"], ["red": 0, "blue": 2])
+        XCTAssertEqual(falsePositives["noSaberCovered"], ["red": 1, "blue": 0])
+
+        // summary.json carries the whole-session counts plus the markers.
+        let bundle = try XCTUnwrap(recording.triageBundleURL)
+        let triageSummary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+        let segments = try XCTUnwrap(triageSummary["segmentSummary"] as? [String: Any])
+        XCTAssertEqual(segments["totalFrames"] as? Int, 7)
+        XCTAssertEqual((segments["markers"] as? [[String: Any]])?.compactMap { $0["frameID"] as? Int },
+                       [402, 404, 406])
+        // Each compact context states the label of its selected frame and stays small.
+        let contexts = try FileManager.default.contentsOfDirectory(
+            at: bundle.appendingPathComponent("frames"), includingPropertiesForKeys: nil)
+        XCTAssertFalse(contexts.isEmpty)
+        for url in contexts {
+            let data = try Data(contentsOf: url)
+            XCTAssertLessThan(data.count, 32 * 1_024)
+            let context = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            let id = try XCTUnwrap(context["selectedFrameID"] as? Int)
+            XCTAssertEqual(context["segmentLabel"] as? String,
+                           (labels[UInt64(id)] ?? .unlabeled).rawValue, "frame \(id)")
+        }
+    }
+
+    func testSegmentLabelBuilderLookupUsesNewestMarkerAndIsAbsentForOldBundles() {
+        let markers: [[String: Any]] = [["frameID": 10, "timestamp": 0.3, "label": "noSaber"],
+                                        ["frameID": 20, "timestamp": 0.6, "label": "sabersVisible"]]
+        let metadata: [String: Any] = ["segmentMarkers": markers]
+        XCTAssertEqual(DebugRecordingTriageBuilder.segmentLabel(metadata, frameID: 9), "unlabeled")
+        XCTAssertEqual(DebugRecordingTriageBuilder.segmentLabel(metadata, frameID: 10), "noSaber")
+        XCTAssertEqual(DebugRecordingTriageBuilder.segmentLabel(metadata, frameID: 19), "noSaber")
+        XCTAssertEqual(DebugRecordingTriageBuilder.segmentLabel(metadata, frameID: 25), "sabersVisible")
+        XCTAssertNil(DebugRecordingTriageBuilder.segmentLabel([:], frameID: 10))
+    }
+
+    func testSettingTheSegmentLabelNeverWaitsForTheProcessingQueue() {
+        let processor = FrameProcessor(expiryScheduler: nil)
+        let queueBlocked = expectation(description: "processor queue blocked")
+        let releaseQueue = DispatchSemaphore(value: 0)
+        processor.queue.async {
+            queueBlocked.fulfill()
+            releaseQueue.wait()
+        }
+        wait(for: [queueBlocked], timeout: 1)
+        let started = Date()
+        for label in DebugSegmentLabel.allCases + [.noSaber] { processor.setDebugSegmentLabel(label) }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 0.5)
+        XCTAssertEqual(processor.debugSegmentLabelForTesting, .noSaber)
+        releaseQueue.signal()
+        processor.queue.sync {}
+    }
+
+    func testSegmentLabelsLeaveRecognitionAndOutputUnchanged() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberSegmentTests-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        func frame(_ offset: Int) -> CMSampleBuffer {
+            sampleBuffer(width: 192, height: 96) { base, stride in
+                let pixels = base.assumingMemoryBound(to: UInt8.self)
+                for y in 30...38 { for x in (10 + offset)...(90 + offset) {
+                    let index = y * stride + x * 4
+                    pixels[index] = 35; pixels[index + 1] = 45; pixels[index + 2] = 245; pixels[index + 3] = 255
+                } }
+            }
+        }
+        final class Outputs { var values: [String] = [] }
+        func describe(_ results: [DetectedSaber]) -> String {
+            results.map { saber -> String in
+                let (first, second) = saber.endpoints
+                return "\(saber.color) \(first.x),\(first.y)-\(second.x),\(second.y) "
+                    + "fresh=\(saber.isFresh) predicted=\(saber.isPredicted)"
+            }.sorted().joined(separator: "|")
+        }
+        // The same frames three ways: not recording, recording unlabeled, recording with label changes.
+        func run(record: Bool, label: Bool) async throws -> (outputs: [String], metadata: [String: Any]?) {
+            let processor = FrameProcessor(expiryScheduler: nil, rawFrameDirectory: { directory })
+            let outputs = Outputs()
+            processor.onResult = { results, _, _, _, _, _ in outputs.values.append(describe(results)) }
+            processor.process(frame(0))
+            if record {
+                let _: String = try await withCheckedThrowingContinuation { continuation in
+                    processor.startDebugRecording(diagnosticColors: .both) { continuation.resume(with: $0) }
+                }
+            }
+            for index in 1...6 {
+                if label && index == 3 { processor.setDebugSegmentLabel(.noSaber) }
+                if label && index == 5 { processor.setDebugSegmentLabel(.noSaberCovered) }
+                processor.process(frame(index * 3))
+                try await Task.sleep(for: .milliseconds(40))
+            }
+            guard record else { return (outputs.values, nil) }
+            let result: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
+                processor.stopDebugRecording { continuation.resume(with: $0) }
+            }
+            let object = try JSONSerialization.jsonObject(with: Data(contentsOf: result.metadataURL))
+            return (outputs.values, object as? [String: Any])
+        }
+        let off = try await run(record: false, label: false)
+        let unlabeled = try await run(record: true, label: false)
+        let labeled = try await run(record: true, label: true)
+        XCTAssertEqual(off.outputs.count, 7)
+        XCTAssertTrue(off.outputs.allSatisfy { $0.contains("red") && $0.contains("fresh=true") })
+        XCTAssertEqual(unlabeled.outputs, off.outputs)
+        XCTAssertEqual(labeled.outputs, off.outputs)
+
+        let metadata = try XCTUnwrap(labeled.metadata)
+        let frames = try XCTUnwrap(metadata["frames"] as? [[String: Any]])
+        XCTAssertFalse(frames.isEmpty)
+        // Frame IDs 2...7 are recorded; the labels apply from frames 4 and 6 on.
+        func expected(_ id: Int) -> DebugSegmentLabel {
+            id >= 6 ? .noSaberCovered : (id >= 4 ? .noSaber : .unlabeled)
+        }
+        let ids = frames.compactMap { $0["frameID"] as? Int }
+        var expectedMarkers: [Int] = []
+        var previous = DebugSegmentLabel.unlabeled
+        for id in ids where expected(id) != previous {
+            expectedMarkers.append(id)
+            previous = expected(id)
+        }
+        let markers = try XCTUnwrap(metadata["segmentMarkers"] as? [[String: Any]])
+        XCTAssertEqual(markers.compactMap { $0["frameID"] as? Int }, expectedMarkers)
+        let segmentSummary = try XCTUnwrap(metadata["segmentSummary"] as? [String: Any])
+        let byLabel = try XCTUnwrap(segmentSummary["byLabel"] as? [String: [String: Any]])
+        for label in DebugSegmentLabel.allCases {
+            XCTAssertEqual(byLabel[label.rawValue]?["frames"] as? Int,
+                           ids.filter { expected($0) == label }.count, label.rawValue)
+        }
+        let falsePositives = try XCTUnwrap(segmentSummary["falsePositiveFrames"] as? [String: [String: Int]])
+        XCTAssertEqual(falsePositives["noSaber"]?["red"], ids.filter { expected($0) == .noSaber }.count)
+        XCTAssertEqual((unlabeled.metadata?["segmentMarkers"] as? [Any])?.count, 0)
     }
 }

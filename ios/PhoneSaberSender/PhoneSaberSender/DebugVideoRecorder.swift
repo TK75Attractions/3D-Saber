@@ -806,6 +806,104 @@ struct DebugRecordingFrameMetadata: Codable, Equatable {
     }
 }
 
+/// Operator-provided ground truth for the current stretch of a Debug Recording.
+/// Diagnostic metadata only: it never reaches recognition, tracking or UDP.
+/// Raw values are the stable metadata keys; `title` is the UI text.
+enum DebugSegmentLabel: String, CaseIterable, Identifiable, Equatable, Sendable {
+    case unlabeled
+    case sabersVisible
+    case noSaber
+    case noSaberCovered
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .unlabeled: return "未設定"
+        case .sabersVisible: return "saberあり"
+        case .noSaber: return "saberなし"
+        case .noSaberCovered: return "赤い物隠し"
+        }
+    }
+
+    /// Labels under which every detection is a false positive.
+    static let falsePositiveLabels: [DebugSegmentLabel] = [.noSaber, .noSaberCovered]
+}
+
+/// Counts frames per segment label and records label changes. Updated once per
+/// recorded frame on the processing queue; O(1) per frame and bounded.
+struct DebugSegmentLedger {
+    struct Marker: Equatable {
+        let frameID: UInt64
+        let timestamp: Double
+        let label: DebugSegmentLabel
+    }
+
+    /// Label changes are operator-paced; this bound only protects metadata size.
+    static let maximumMarkers = 256
+    static let colors = ["red", "blue"]
+
+    private(set) var current: DebugSegmentLabel = .unlabeled
+    private(set) var markers: [Marker] = []
+    private(set) var droppedMarkerCount = 0
+    private var frames: [DebugSegmentLabel: Int] = [:]
+    private var detected: [DebugSegmentLabel: [String: Int]] = [:]
+    private var measured: [DebugSegmentLabel: [String: Int]] = [:]
+
+    /// `detected` is the fresh output (prediction included); `measured` excludes predictions.
+    mutating func observe(frameID: UInt64, timestamp: Double, label: DebugSegmentLabel,
+                          detected detectedColors: [String: Bool], measured measuredColors: [String: Bool]) {
+        if label != current {
+            if markers.count < Self.maximumMarkers {
+                markers.append(Marker(frameID: frameID, timestamp: timestamp, label: label))
+            } else {
+                droppedMarkerCount += 1
+            }
+            current = label
+        }
+        frames[label, default: 0] += 1
+        for color in Self.colors {
+            if detectedColors[color] == true { detected[label, default: [:]][color, default: 0] += 1 }
+            if measuredColors[color] == true { measured[label, default: [:]][color, default: 0] += 1 }
+        }
+    }
+
+    func frameCount(_ label: DebugSegmentLabel) -> Int { frames[label, default: 0] }
+    func detectedCount(_ label: DebugSegmentLabel, _ color: String) -> Int {
+        detected[label]?[color] ?? 0
+    }
+
+    /// Root `segmentMarkers`: the first frame carrying each new label.
+    var markerEntries: [[String: Any]] {
+        markers.map { ["frameID": $0.frameID, "timestamp": $0.timestamp, "label": $0.label.rawValue] }
+    }
+
+    /// Root and summary.json `segmentSummary`; every label and color is always present.
+    var summary: [String: Any] {
+        var byLabel: [String: Any] = [:]
+        for label in DebugSegmentLabel.allCases {
+            var entry: [String: Any] = ["frames": frameCount(label)]
+            for color in Self.colors {
+                entry[color] = ["detectedFrames": detectedCount(label, color),
+                                "measuredFrames": measured[label]?[color] ?? 0]
+            }
+            byLabel[label.rawValue] = entry
+        }
+        var falsePositives: [String: Any] = [:]
+        for label in DebugSegmentLabel.falsePositiveLabels {
+            falsePositives[label.rawValue] = Dictionary(uniqueKeysWithValues:
+                Self.colors.map { ($0, detectedCount(label, $0)) })
+        }
+        return ["formatVersion": 1,
+                "totalFrames": frames.values.reduce(0, +),
+                "byLabel": byLabel,
+                "falsePositiveFrames": falsePositives,
+                "markerCount": markers.count,
+                "droppedMarkerCount": droppedMarkerCount,
+                "definition": "Operator labels. detectedFrames = fresh output incl. prediction; measuredFrames = without prediction; falsePositiveFrames = detectedFrames while the label is noSaber or noSaberCovered. Frames before the first marker are unlabeled."]
+    }
+}
+
 struct DebugRecordingMetadata: Codable, Equatable {
     static let currentFormatVersion = 1
 
@@ -1267,6 +1365,7 @@ final class DebugVideoRecorder {
     private var bridgeStats: [String: Int] = [:]
     private var bridgeRejections: [String: Int] = [:]
     private var recentMetadata: [DebugRecordingFrameMetadata] = []
+    private var segmentLedger = DebugSegmentLedger()
     private let forensicPolicy: DebugForensicCapturePolicy
     private let clock: () -> TimeInterval
     private var startedAt: TimeInterval?
@@ -1278,6 +1377,7 @@ final class DebugVideoRecorder {
     var motionPreRollFrameIDsForTesting: [UInt64] { motionPreRoll.map(\.frameID) }
     var motionRetainedBytesForTesting: Int { motionRetainedBytes() + bufferedLosslessBytes }
     var bridgeRetainedBytesForTesting: Int { bridgeRetainedBytes() }
+    var segmentLedgerForTesting: DebugSegmentLedger { segmentLedger }
     var injectedBridgeAfterCopyFailureFrameIDForTesting: UInt64?
 #endif
     private(set) var droppedFrameCount = 0
@@ -1348,7 +1448,8 @@ final class DebugVideoRecorder {
         results: [DetectedSaber],
         analysis: SaberFrameAnalysis? = nil,
         processingTimeSeconds: Double = 0,
-        camera: DebugRecordingFrameCamera? = nil
+        camera: DebugRecordingFrameCamera? = nil,
+        segmentLabel: DebugSegmentLabel = .unlabeled
     ) -> DebugRecordingAppendResult {
         guard !isFinishing else { return .skipped }
         if startedAt == nil { startedAt = clock() }
@@ -1509,6 +1610,10 @@ final class DebugVideoRecorder {
             }
         }
         latestRecordedFrameTiming = (frameID, frame.presentationTimeSeconds)
+        segmentLedger.observe(frameID: frameID, timestamp: frame.presentationTimeSeconds,
+                              label: segmentLabel,
+                              detected: ["red": frame.red.detected, "blue": frame.blue.detected],
+                              measured: ["red": redDetectionSucceeded, "blue": blueDetectionSucceeded])
         overlayFrames.append(DebugOverlayFrame(red: freshRed, blue: freshBlue))
         recordedFrameCount += 1
 
@@ -2392,7 +2497,8 @@ final class DebugVideoRecorder {
             "scope": "A dropout counts only when a success exists on both sides; start/end absences and long absences are not diagnosed."]
         if bridgeCaptures.isEmpty { summary["note"] = "no bridge dropout was retained" }
         return ["activeColors": diagnosticColors.colorNames, "diagnosticWindows": windows,
-                "bridgeDropoutEvents": events, "bridgeDropoutSummary": summary]
+                "bridgeDropoutEvents": events, "bridgeDropoutSummary": summary,
+                "segmentMarkers": segmentLedger.markerEntries, "segmentSummary": segmentLedger.summary]
     }
 
     private func jumpDetected(_ current: (PixelPoint, PixelPoint)?,

@@ -185,6 +185,42 @@ CAMERA_SAMPLE = object_field({
     "activeMaxFPS": scalar("number", nullable=True),
 }, required=True)
 
+SEGMENT_LABELS = ("unlabeled", "sabersVisible", "noSaber", "noSaberCovered")
+# Labels under which every detection of a color is a false positive.
+FALSE_POSITIVE_SEGMENT_LABELS = ("noSaber", "noSaberCovered")
+
+SEGMENT_MARKER = object_field({
+    "frameID": scalar("integer", required=True),
+    "timestamp": scalar("number", required=True),
+    "label": scalar("string", required=True),
+}, required=True)
+
+SEGMENT_COLOR_COUNTS = object_field({
+    "detectedFrames": scalar("integer", required=True),
+    "measuredFrames": scalar("integer", required=True),
+})
+
+SEGMENT_SUMMARY = object_field({
+    "formatVersion": scalar("integer"),
+    "totalFrames": scalar("integer", required=True),
+    "byLabel": object_field({
+        label: object_field({
+            "frames": scalar("integer", required=True),
+            "red": SEGMENT_COLOR_COUNTS,
+            "blue": SEGMENT_COLOR_COUNTS,
+        }) for label in SEGMENT_LABELS
+    }, required=True),
+    "falsePositiveFrames": object_field({
+        label: object_field({"red": scalar("integer"), "blue": scalar("integer")})
+        for label in FALSE_POSITIVE_SEGMENT_LABELS
+    }),
+    "markerCount": scalar("integer"),
+    "droppedMarkerCount": scalar("integer"),
+    "definition": scalar("string"),
+    # summary.json only: a copy of the root segmentMarkers.
+    "markers": array_field(SEGMENT_MARKER),
+})
+
 ROOT = object_field({
     "sessionID": scalar("string", required=True),
     "width": scalar("integer", required=True),
@@ -201,6 +237,9 @@ ROOT = object_field({
     "diagnosticWindows": object_field({}),
     "bridgeDropoutEvents": array_field(object_field({})),
     "bridgeDropoutSummary": object_field({}),
+    # Operator segment labels (ground truth); absent in older recordings.
+    "segmentMarkers": array_field(SEGMENT_MARKER),
+    "segmentSummary": SEGMENT_SUMMARY,
 }, required=True)
 
 
@@ -339,6 +378,13 @@ def validate_document(value: Any) -> ValidatedMetadata:
                 )
                 for name in coordinate_names:
                     detection.pop(name, None)
+    markers = normalized.get("segmentMarkers")
+    if isinstance(markers, list):
+        for index, marker in enumerate(markers):
+            if isinstance(marker, dict) and isinstance(marker.get("label"), str) \
+                    and marker["label"] not in SEGMENT_LABELS:
+                warn(f"segmentMarkers[{index}].label", "unknown segment label; treated as unknown")
+                marker.pop("label", None)
     normalized["frames"] = frames
     report = ValidationReport(format_version=format_version, warnings=dict(sorted(warnings.items())))
     return ValidatedMetadata(document=normalized, frames=frames, report=report)
@@ -348,3 +394,85 @@ def load_metadata_file(path: str | Path) -> ValidatedMetadata:
     with Path(path).open(encoding="utf-8") as handle:
         document = json.load(handle)
     return validate_document(document)
+
+
+def _count(value: Any) -> bool:
+    return isinstance(value, int) and not isinstance(value, bool) and value >= 0
+
+
+def segment_marker_errors(markers: Any) -> list[str]:
+    """Strict check of segmentMarkers: known labels, strictly increasing frame IDs."""
+    if not isinstance(markers, list):
+        return ["segmentMarkers must be an array"]
+    errors = []
+    previous = None
+    for index, marker in enumerate(markers):
+        if not isinstance(marker, dict) or set(marker) != {"frameID", "timestamp", "label"} \
+                or not _count(marker["frameID"]) or not _matches_kind(marker["timestamp"], "number") \
+                or marker["label"] not in SEGMENT_LABELS:
+            errors.append(f"segmentMarkers[{index}] is malformed")
+            continue
+        if previous is not None and marker["frameID"] <= previous:
+            errors.append(f"segmentMarkers[{index}] frameID is not increasing")
+        previous = marker["frameID"]
+    return errors
+
+
+def segment_summary_errors(summary: Any) -> list[str]:
+    """Strict check of segmentSummary (metadata root or summary.json).
+
+    Counts are non-negative integers, a color is never detected on more frames
+    than its label has, frames add up to totalFrames, and every false-positive
+    count equals the detectedFrames of its label and color.
+    """
+    if not isinstance(summary, dict):
+        return ["segmentSummary must be an object"]
+    by_label = summary.get("byLabel")
+    if not isinstance(by_label, dict) or not set(by_label) <= set(SEGMENT_LABELS):
+        return ["segmentSummary.byLabel is malformed"]
+    errors = []
+    total = 0
+    for label, entry in by_label.items():
+        if not isinstance(entry, dict) or not _count(entry.get("frames")) \
+                or not set(entry) <= {"frames", "red", "blue"}:
+            errors.append(f"segmentSummary.byLabel.{label} is malformed")
+            continue
+        total += entry["frames"]
+        for color in ("red", "blue"):
+            counts = entry.get(color)
+            if counts is None:
+                continue
+            if not isinstance(counts, dict) or set(counts) != {"detectedFrames", "measuredFrames"} \
+                    or not all(_count(value) and value <= entry["frames"] for value in counts.values()):
+                errors.append(f"segmentSummary.byLabel.{label}.{color} is malformed")
+    if not _count(summary.get("totalFrames")) or summary["totalFrames"] != total:
+        errors.append("segmentSummary.totalFrames does not match byLabel frames")
+    false_positives = summary.get("falsePositiveFrames", {})
+    if not isinstance(false_positives, dict) \
+            or not set(false_positives) <= set(FALSE_POSITIVE_SEGMENT_LABELS):
+        errors.append("segmentSummary.falsePositiveFrames is malformed")
+    else:
+        for label, counts in false_positives.items():
+            entry = by_label.get(label) if isinstance(by_label.get(label), dict) else {}
+            if not isinstance(counts, dict) or not set(counts) <= {"red", "blue"} or any(
+                    not _count(value)
+                    or value != (entry.get(color) if isinstance(entry.get(color), dict) else {})
+                    .get("detectedFrames", 0)
+                    for color, value in counts.items()):
+                errors.append(f"segmentSummary.falsePositiveFrames.{label} is inconsistent")
+    for key in ("formatVersion", "markerCount", "droppedMarkerCount"):
+        if key in summary and not _count(summary[key]):
+            errors.append(f"segmentSummary.{key} is malformed")
+    if "definition" in summary and (not isinstance(summary["definition"], str)
+                                    or len(summary["definition"]) > 1000):
+        errors.append("segmentSummary.definition is malformed")
+    if "markers" in summary:
+        errors.extend(segment_marker_errors(summary["markers"]))
+        if isinstance(summary["markers"], list) and "markerCount" in summary \
+                and summary["markerCount"] != len(summary["markers"]):
+            errors.append("segmentSummary.markerCount does not match markers")
+    unknown = set(summary) - {"formatVersion", "totalFrames", "byLabel", "falsePositiveFrames",
+                              "markerCount", "droppedMarkerCount", "definition", "markers"}
+    if unknown:
+        errors.append(f"segmentSummary has unknown keys: {sorted(unknown)}")
+    return errors

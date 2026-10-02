@@ -109,6 +109,18 @@ by production. Bundles without the fields print `n/a`; the Swift E2E harness
 writes neither field (no radiance map, no Exif), so its test adds them to a copy
 of a real recorder bundle and checks the strict input contract still passes.
 
+`phone_saber_segments.py` reads the operator segment labels set on the iPhone
+during Debug Recording (区間ラベル: `sabersVisible` / `noSaber` /
+`noSaberCovered` / `unlabeled`) and prints frames and per-color detection rates per
+label. A detection under `noSaber` or `noSaberCovered` is a false positive, so
+comparing those two rows shows whether covering the red background objects
+removed the RED false positives. See `PHONE_SABER_DEBUG_METADATA_SCHEMA.md`.
+
+```bash
+ios/PhoneSaberSender/Tools/phone_saber_segments.py /path/to/bundle
+ios/PhoneSaberSender/Tools/phone_saber_segments.py /path/to/session_metadata.json --json
+```
+
 Run the lossless fixture suite from the repository root:
 
 ```bash

@@ -970,6 +970,10 @@ enum DebugRecordingTriageBuilder {
                 "groundTruth": "lossless PNG only; H.264 video is excluded"
             ]
             if !motionSummary.isEmpty { summary["motionEventSummary"] = motionSummary }
+            if var segments = metadata["segmentSummary"] as? [String: Any] {
+                segments["markers"] = metadata["segmentMarkers"] as? [[String: Any]] ?? []
+                summary["segmentSummary"] = segments
+            }
             if metadata["activeColors"] != nil {
                 summary["activeColors"] = colors.filter { active.contains($0) }
                 var bridge = metadata["bridgeDropoutSummary"] as? [String: Any] ?? [:]
@@ -1143,6 +1147,21 @@ enum DebugRecordingTriageBuilder {
         return matching
     }
 
+    /// Operator segment label of a frame: the newest marker at or before it.
+    /// nil for recordings made before segment markers existed.
+    static func segmentLabel(_ metadata: [String: Any], frameID: UInt64) -> String? {
+        guard let markers = metadata["segmentMarkers"] as? [[String: Any]] else { return nil }
+        var label = DebugSegmentLabel.unlabeled.rawValue
+        var newest: UInt64?
+        for marker in markers {
+            guard let id = integer(marker["frameID"]), id <= frameID, id >= (newest ?? 0),
+                  let value = string(marker["label"]) else { continue }
+            newest = id
+            label = value
+        }
+        return label
+    }
+
     /// Consumers reject a context above 32 KiB; stay well below it.
     private static let contextByteBudget = 24 * 1_024
 
@@ -1195,6 +1214,9 @@ enum DebugRecordingTriageBuilder {
             ]
             if metadata["activeColors"] != nil {
                 result["activeColors"] = colors.filter { active.contains($0) }
+            }
+            if let label = segmentLabel(metadata, frameID: selected.frameID) {
+                result["segmentLabel"] = label
             }
             if let eventIndex = selected.eventIndex, let role = selected.role,
                let score = selected.score {

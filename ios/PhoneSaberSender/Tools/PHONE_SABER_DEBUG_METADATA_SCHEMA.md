@@ -327,3 +327,52 @@ its 24 KiB budget the builder reduces detail step by step and lists each step in
 `selectedIneligibleLimitedToTwo`, `selectedEligibleLimitedToEight`,
 `selectedDecisionTraceEmitterDiagnosticsDropped`, `neighbourFramesWithin1`,
 `neighbourFramesWithin0`. Contexts stay below the 32 KiB preflight limit.
+
+## Segment markers (additive, version 1)
+
+Operator-provided ground truth for intervals of a recording. While Debug Recording
+is active the iPhone shows a segmented control 区間ラベル with
+`未設定` (`unlabeled`, the default at every Start), `saberあり` (`sabersVisible`:
+lit sabers in view), `saberなし` (`noSaber`: no saber or sabers off, background
+only) and `赤い物隠し` (`noSaberCovered`: background only with the red background
+objects covered). The control is disabled when not recording. Setting a label only
+writes one value under the frame mailbox lock; the processing queue reads it with
+the per-frame camera state and passes it to the recorder. The label never reaches
+recognition, tracking or UDP, and nothing is read when recording is off. The keys
+below are stable English identifiers; the Japanese text is UI only.
+
+| Root field | JSON type | Meaning |
+| --- | --- | --- |
+| `segmentMarkers` | array of `{frameID, timestamp, label}` | One entry per label change: `frameID` is the first recorded frame carrying the new label, `timestamp` its `presentationTimeSeconds`. Frames before the first marker are `unlabeled`; an empty array means the recording was never labeled. At most 256 markers are kept (`droppedMarkerCount` counts the rest). |
+| `segmentSummary` | object | Whole-session counts over every recorded frame (not only retained frames): `formatVersion` (1), `totalFrames`, `byLabel` (all four labels, each `{frames, red: {detectedFrames, measuredFrames}, blue: {...}}`), `falsePositiveFrames` (`noSaber` and `noSaberCovered`, each `{red, blue}`), `markerCount`, `droppedMarkerCount`, `definition`. |
+
+`detectedFrames` counts frames whose fresh output for the color is `detected: true`
+(prediction included); `measuredFrames` counts `<color>DetectionSucceeded: true`
+(prediction excluded). `falsePositiveFrames[label][color]` equals
+`byLabel[label][color].detectedFrames` for the two no-saber labels: any detection
+while no saber is in view is a false positive. Frame entries in `*_metadata.json`
+do not change; the label of a frame is derived from the markers.
+
+The triage bundle carries the same data compactly:
+
+- `summary.json` → `segmentSummary`: the root object plus `markers` (a copy of
+  `segmentMarkers`).
+- Each frame context → `segmentLabel`: the label of the selected frame (the newest
+  marker at or before it). A few bytes; it is included before the 24 KiB compaction
+  check.
+
+Recordings made before this feature have neither root field, no `segmentSummary` in
+`summary.json` and no `segmentLabel` in contexts; all readers treat them as valid.
+`phone_saber_metadata_schema.py` types the new fields (an unknown marker label is a
+warning) and offers strict `segment_marker_errors` / `segment_summary_errors`, which
+`phone_saber_triage_codex.py` applies to `summary.json` (counts consistent, false
+positives equal to the no-saber detections, no unknown keys) alongside the
+`segmentLabel` check in contexts.
+
+`phone_saber_segments.py <bundle_or_metadata> [--json]` prints frames, detections
+and detection rates per label and color, and the false-positive rates under
+`noSaber` / `noSaberCovered`. With a bundle (or `summary.json`) it reads
+`segmentSummary`; with a full `*_metadata.json` it recomputes the counts from
+`frames` and `segmentMarkers` and warns when they differ from the recorded
+`segmentSummary`. Older metadata counts every frame as `unlabeled`; an older
+`summary.json` without `segmentSummary` exits with status 2.

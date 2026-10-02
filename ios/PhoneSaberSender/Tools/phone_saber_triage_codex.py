@@ -34,6 +34,8 @@ from phone_saber_session_log import log_fields, session_log_context
 
 from phone_saber_codex_process import CodexProcessError, run_codex
 
+from phone_saber_metadata_schema import SEGMENT_LABELS, segment_summary_errors
+
 from phone_saber_triage_protocol import (
     MAX_BUNDLE_BYTES,
     MAX_CONTEXT_BYTES,
@@ -217,9 +219,14 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
                             "redBlueDetectionSummary", "dropoutSummary", "selectedImageCount",
                             "incidentCount", "incidents", "images", "limits", "groundTruth",
                             "summaryScope", "retainedIncidentContextFrames",
-                            "motionEventSummary", "activeColors", "bridgeDropoutSummary"}
+                            "motionEventSummary", "activeColors", "bridgeDropoutSummary",
+                            "segmentSummary"}
     if not set(summary).issubset(allowed_summary_keys):
         raise BundleError("summary.json contains non-triage or full-session metadata")
+    segment_errors = segment_summary_errors(summary["segmentSummary"]) \
+        if "segmentSummary" in summary else []
+    if segment_errors:
+        raise BundleError("segment summary is malformed: " + "; ".join(segment_errors[:3]))
     motion_summary = summary.get("motionEventSummary")
     if motion_summary is not None:
         if not isinstance(motion_summary, dict) or not isinstance(
@@ -1008,6 +1015,7 @@ Evidence rules:
 - A bridge dropout event is ONE temporal evidence event: before_success (the color was detected), dropout (it was missed) and after_success (it was detected again) bracket a short loss of the same saber, and the measured continuity between the two detections is in bridgeEvent.continuity. Its three frames are not three independent failure examples; independent_visual_examples counts each event once. Judge from the original dropout PNG whether the saber is visible there and which production stage rejected it.
 - The annotated_dropout image is the original dropout PNG with the position interpolated between the two successful detections drawn on it (yellow dashed expected position, green before, magenta after). It is a viewing aid for locating the saber, never ground truth: do not cite it as the only evidence, and an overlay line does not prove a saber is present. Judge pixels on the original images.
 - To separate candidate-selection failures use each selected frame's candidateGeometry (all eligible candidates unless candidatesTruncated, with centroid, bbox, componentArea, sourceType, finalScore, scoreBreakdown, rawPCA and final endpoints) and matchToPreviousWinner (centroid distance, bbox IoU, area ratio, span ratio, orientation difference against the previous frame's winner; list order and index are not identity). CASE A: a candidate matching the previous winner is still eligible but another, distant candidate wins narrowly. CASE B: no eligible candidate matches the previous winner (ineligible or never generated; check rejectionReasons and candidatesTruncated). CASE C: the winner matches the previous winner but rawPCA/final endpoints break. eligibleOmittedCount > 0 means some eligible candidates were not recorded; do not conclude from absence then.
+- segmentLabel (per context) and segmentSummary (summary.json) are operator labels for the recording interval: sabersVisible = lit sabers in view; noSaber = no saber or sabers off, background only; noSaberCovered = background only with the red background objects covered; unlabeled = no statement. A detection under noSaber or noSaberCovered is a false-positive suspect; still state what the PNG pixels show.
 - Only colors listed in activeColors are diagnosed. Absence of any other color is not a failure and must not appear in findings.
 - Include tracking_assessment for tracking events: confirm visible temporal instability only if pixels support it, cite at least three ordered mapped temporal images spanning before/peak/after, identify first_unstable_stage, and describe concrete_cause, concrete_production_change, expected_effect, regression_risk. Leave unsupported proposal text empty and request evidence; never force actionable.
 - Do not edit, create, or propose applying production code. Return a concise JSON object matching the supplied schema exactly.
@@ -1036,7 +1044,7 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
     required_top = {"sessionID", "selectedFrameID", "selectedColor", "selectedFailureType",
                     "selectedReasons", "contextRadiusFrames", "frames"}
     allowed_top = required_top | {"motionEvent", "imageMapping", "udpTransmissions",
-                                  "activeColors", "bridgeEvent", "compaction"}
+                                  "activeColors", "bridgeEvent", "compaction", "segmentLabel"}
     if not isinstance(context, dict) or not required_top.issubset(context) \
             or not set(context).issubset(allowed_top) \
             or context.get("sessionID") != session_id or context.get("selectedFrameID") != selected_frame_id \
@@ -1057,6 +1065,8 @@ def _validate_context(path: Path, session_id: Any, selected_frame_id: Any) -> No
             not isinstance(context["activeColors"], list) or not context["activeColors"]
             or not set(context["activeColors"]) <= {"red", "blue"}):
         raise BundleError(f"invalid active colors in context: {path.name}")
+    if "segmentLabel" in context and context["segmentLabel"] not in SEGMENT_LABELS:
+        raise BundleError(f"invalid segment label in context: {path.name}")
     if "compaction" in context and (
             not isinstance(context["compaction"], list) or len(context["compaction"]) > 12
             or not all(isinstance(item, str) and len(item) <= 100 for item in context["compaction"])):

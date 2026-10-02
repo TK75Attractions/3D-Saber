@@ -93,6 +93,14 @@ struct ContentView: View {
                                               model.debugRecordingFinalizing || model.manualLosslessCapturePending ||
                                               model.debugManualLosslessCaptureCount >= DebugRecordingLimits.maximumManualLosslessCaptures)
                             }
+                            Picker("区間ラベル", selection: $model.debugSegmentLabel) {
+                                ForEach(DebugSegmentLabel.allCases) { Text($0.title).tag($0) }
+                            }
+                            .pickerStyle(.segmented)
+                            .disabled(!model.debugRecordingActive || model.debugRecordingFinalizing)
+                            Text("区間ラベル（正解情報・metadataのみ）: saberあり=点灯saberが画面内 / saberなし=消灯・背景のみ / 赤い物隠し=背景の赤い物を覆って背景のみ")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                             Text("上限: 1録画\(Int(DebugRecordingLimits.maximumDurationSeconds / 60))分・\(DebugRecordingLimits.maximumDiskUsageBytes / 1_048_576) MiB / lossless手動 \(model.debugManualLosslessCaptureCount)/3枚 / forensic自動8枚")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)

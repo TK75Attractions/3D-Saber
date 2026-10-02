@@ -396,6 +396,11 @@ final class CameraViewModel: NSObject, ObservableObject {
     /// and UDP output always cover both colors.
     @Published var debugDiagnosticColors: DebugDiagnosticColors = .both
     @Published private(set) var debugRecordingActive = false
+    /// Operator ground truth for the current part of a Debug Recording
+    /// (metadata only). Reset to unlabeled at every Start.
+    @Published var debugSegmentLabel: DebugSegmentLabel = .unlabeled {
+        didSet { processor.setDebugSegmentLabel(debugSegmentLabel) }
+    }
     @Published private(set) var debugRecordingFinalizing = false
     @Published private(set) var manualLosslessCapturePending = false
     @Published private(set) var debugManualLosslessCaptureCount = 0
@@ -1423,6 +1428,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         debugRecordingActive = true
         debugRecordingStatus = "録画を開始しています…"
         processor.updateDebugCameraDeviceState(nil)
+        debugSegmentLabel = .unlabeled
         processor.startDebugRecording(diagnosticColors: debugDiagnosticColors) { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }

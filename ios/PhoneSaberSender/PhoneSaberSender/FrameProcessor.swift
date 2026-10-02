@@ -102,6 +102,9 @@ final class FrameProcessor: @unchecked Sendable {
     /// Newest AVCaptureDevice exposure state, guarded by pendingLock. Read
     /// only while a Debug Recording is active.
     private var debugCameraDeviceState: DebugCameraDeviceState?
+    /// Operator segment label for Debug Recording metadata, guarded by
+    /// pendingLock. Never read by recognition, tracking or UDP output.
+    private var debugSegmentLabel: DebugSegmentLabel = .unlabeled
     private let rawFrameDirectory: () throws -> URL
     private lazy var rawFrameContext = CIContext(options: [.cacheIntermediates: false])
     var currentGeneration: Int {
@@ -357,6 +360,20 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.unlock()
     }
 
+    /// Sets the ground-truth label stamped on the following recorded frames.
+    /// A single slot under the mailbox lock: the caller never waits for the
+    /// processing queue, and the first frame read after this call carries it.
+    func setDebugSegmentLabel(_ label: DebugSegmentLabel) {
+        pendingLock.lock()
+        debugSegmentLabel = label
+        pendingLock.unlock()
+    }
+
+    var debugSegmentLabelForTesting: DebugSegmentLabel {
+        pendingLock.lock(); defer { pendingLock.unlock() }
+        return debugSegmentLabel
+    }
+
     func stopDebugRecording(
         reason: DebugRecordingFinishReason = .user,
         completion: @escaping (Result<DebugRecordingResult, Error>) -> Void
@@ -514,6 +531,7 @@ final class FrameProcessor: @unchecked Sendable {
             // pushed device state. Neither read can block on the camera.
             pendingLock.lock()
             let deviceState = debugCameraDeviceState
+            let segmentLabel = debugSegmentLabel
             pendingLock.unlock()
             let camera = DebugRecordingFrameCamera.make(
                 exif: DebugRecordingFrameCamera.exifAttachment(of: sampleBuffer),
@@ -525,7 +543,8 @@ final class FrameProcessor: @unchecked Sendable {
                 results: emitted,
                 analysis: analysis,
                 processingTimeSeconds: processingTimeSeconds,
-                camera: camera
+                camera: camera,
+                segmentLabel: segmentLabel
             )
             if case .reachedLimit(let reason) = appendResult {
                 onDebugRecordingLimitReached?(reason)
