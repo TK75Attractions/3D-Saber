@@ -939,7 +939,12 @@ func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
         guard point.x >= 0, point.x < width, point.y >= 0, point.y < height else { return nil }
         return point.y * width + point.x
     })
-    let uniquePoints = uniqueIndices.map { PixelPoint(x: $0 % width, y: $0 / width) }
+    // Set iteration order is seeded per process (and per instance), so sort the
+    // unique indices into row-major order. Every downstream floating-point sum,
+    // axial-bin assignment and principal-axis tie then sees one fixed order, making
+    // core-line scores identical across launches and frames (they could differ by
+    // up to 4.3 points when an axial bin boundary flipped).
+    let uniquePoints = uniqueIndices.sorted().map { PixelPoint(x: $0 % width, y: $0 / width) }
     return scoredSaberComponent(uniquePoints, width: width, height: height,
                                 componentMask: nil, componentIndices: uniqueIndices,
                                 evidence: evidence, source: source,

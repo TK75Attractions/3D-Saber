@@ -56,6 +56,30 @@ private func waitUntil(_ condition: @escaping @MainActor () -> Bool, timeout: Ti
 }
 
 final class DetectionCoreTests: XCTestCase {
+    func testCoreLineCandidateScoringIsIndependentOfPointOrder() throws {
+        // A slanted, ragged bright-core proposal: the same pixels in any order (and
+        // any Set instance) must score bit-identically. Set iteration order used to
+        // reach the floating-point sums and axial bins, so results varied across
+        // launches and even between frames.
+        var points: [PixelPoint] = []
+        for t in 0..<160 {
+            let x = 40 + t, y = 60 + t * 3 / 7
+            for w in 0...(t % 5 == 0 ? 4 : 2) { points.append(PixelPoint(x: x, y: y + w)) }
+        }
+        points += points.prefix(30)  // duplicates collapse to the same unique set
+        let reference = try XCTUnwrap(saberCandidate(from: points, width: 640, height: 480))
+        var generator = SystemRandomNumberGenerator()
+        for _ in 0..<30 {
+            let candidate = try XCTUnwrap(saberCandidate(from: points.shuffled(using: &generator),
+                                                         width: 640, height: 480))
+            XCTAssertEqual(candidate.score.bitPattern, reference.score.bitPattern)
+            XCTAssertEqual(candidate.rawPCASpan.bitPattern, reference.rawPCASpan.bitPattern)
+            XCTAssertEqual(candidate.endpoints.0, reference.endpoints.0)
+            XCTAssertEqual(candidate.endpoints.1, reference.endpoints.1)
+            XCTAssertEqual(candidate.isEmitterEligible, reference.isEmitterEligible)
+        }
+    }
+
     func testCameraFormatSelectionRequires30FPSAndKeepsCompactResolution() {
         let options = [
             CameraFormatOption(index: 0, width: 1920, height: 1080, frameRateRanges: [24...24]),

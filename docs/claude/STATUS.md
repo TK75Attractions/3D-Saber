@@ -51,6 +51,9 @@
 ## 作業ログ(新しい順)
 
 ### 2026-10-03(深夜、並列作業の続き)
+- d55294c: 新 tool の review 指摘を修正。session report の CASE 二重計上(B=2→1)、replay で同じ sessionID の bundle が上書きし合う問題、
+  hotspot の2乗時間(4000 件で2–3秒、upload 応答の前に走る)、深さ 1000–8000 の JSON で receiver がログ保存前に落ちる残りの経路。XCTest 155/155、Python 239/239。
+- 116130f: R7e(赤の eligibility 候補ルール)の offline 探索結果を記録。採用は見送り(理由は「次にやること 4」)。
 - 312f63c: Codex 出力の深い入れ子で receiver が RecursionError で落ちる問題を修正(ログ保存前に落ちていた)。
 - 67597e4: credential redaction の正規表現が長い単語列で3乗時間になっていた(20KB で約12秒、`"token"*40000` は数時間)。
   出力を変えない線形時間の形に置き換え(差分 fuzz 約670万件で不一致なし)。
