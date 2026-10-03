@@ -28,10 +28,13 @@ PhoneSaberSender (iPhone)
 
 - iPhone: `NWBrowser` で `_phonesaber-p2p._udp` を探し(`includePeerToPeer = true`)、見つけた bridge へ
   `NWConnection`(UDP、`includePeerToPeer = true`、`prohibitedInterfaceTypes = [.cellular]`)を張ります。
-  複数見つかったときは、service 名の辞書順で最初のものを使います。
+  複数見つかったとき(Mac が 2 台など)は、最初は service 名の辞書順で最初のものを選び、その名前に**固定**します。
+  固定した Mac が Bonjour の一覧から消えたときだけ、別の Mac に切り替えます(後から見つかった Mac に奪われません)。
+  P2P 接続中は Bonjour の検索を止め、P2P が使えなくなったら再開します。
 - Mac: `NWListener`(UDP、`includePeerToPeer = true`)が同じ service を公開します。
-- 同じ Wi-Fi にいるときは、通常の Wi-Fi 経由でつながることもあります(UI に `P2P Connected (en0)` のように
-  経由した interface を表示します)。iPhone が Wi-Fi のどこにも参加していない場合は、AWDL(`awdl0`)になります。
+- 同じ Wi-Fi にいるときは、通常の Wi-Fi 経由でつながることもあります(UI に `P2P Connected (en0 · Saber Mac)` のように
+  経由した interface と接続先の service 名を表示します。interface は経路が変わるたびに更新し、
+  link-local アドレスの scope(`%awdl0` など)を優先します)。iPhone が Wi-Fi のどこにも参加していない場合は、AWDL(`awdl0`)になります。
 - **送信は認識とは別の queue** で行います。色ごとに「送信中の 1 件 + 最新の 1 件」しか保持しないので、
   詰まっても古い座標が溜まりません(既存の UDPSender と同じ方針)。
 
@@ -59,20 +62,30 @@ iPhone(DebugBundleTransfer)
    - ping は 0.25 秒ごと。最後の pong から **1.5 秒** で P2P をやめ、LAN へ戻ります(ゲームの再起動は不要)。
    - pong が **4 秒** 来ない(または新しい接続で 4 秒以内に最初の pong が来ない)と、接続を張り直します。
    - pong が戻れば、自動で P2P に戻ります。bridge を再起動した場合も同じです。
+     ただし一度 stale になった後(または接続を張り直した後)は、**0.5 秒以内の間隔で 3 回続けて** pong が来るまで
+     P2P に戻しません(1.5 秒の境目で P2P と LAN が交互になるのを防ぐため)。起動後最初の接続だけは pong 1 回で使います。
+   - 座標の送信が **0.5 秒** 終わらない(ping は通るのに座標が詰まる)ときは、その接続を捨てて LAN に戻し、張り直します。
+   - 張り直しの間隔は 0.25 秒から 2 倍ずつ伸ばし、最大 4 秒です。pong が 1 回来たら 0.25 秒に戻します。
+   - アプリが前面に戻ったときは、最近 pong がある接続には ping をすぐ送り、そうでなければ待たずに張り直します。
 2. **LAN(Bonjour)**: 既存の `_phonesaber._udp` で見つけた Mac の IP。
 3. **手動 IP**: 既存の手動入力欄。
 
 その他の動作:
 
 - P2P と LAN は同時には使いません(Unity に同じ座標が二重に届かないようにするため)。
+- P2P に戻ったとき、LAN 側で送信待ちの座標(port が ready でなかったもの)は捨てます。
+  あとで LAN が ready になっても、古い座標が新しい座標の後に届くことはありません。
+- P2P が送る直前に使えなくなり、LAN も未設定のときは、その座標は送らずに数えるだけです(`p2pNoRouteCount`)。
 - 「P2P優先」toggle を OFF にすると、従来とまったく同じ LAN だけの動作になります(設定は保存されます)。
 - P2P が ON なら、LAN の送信先が未発見のままでも開始できます(従来は「Macを検索中」で開始できませんでした)。
   その場合、P2P が届くまでは座標を送りません。あとから LAN の Mac が見つかれば、LAN の fallback が自動で加わります。
 
 ## 表示とログ
 
-- iPhone の画面:「経路: P2P Connected (awdl0) / LAN Connected / Manual IP / Reconnecting / Failed」と、
+- iPhone の画面:「経路: P2P Connected (awdl0 · <Mac の service 名>) / LAN Connected / Manual IP / Reconnecting / Failed」と、
   P2P の状態(`P2P Searching`、`P2P Connecting`、`P2P Reconnecting`、`P2P Failed`、`P2P Off`)。
+  ローカルネットワークの許可がないときは `P2P Failed (ローカルネットワークの許可が必要: 設定 > PhoneSaberSender)`。
+  許可されれば自動で検索を再開します(待機中の検索は 10 秒ごとに作り直します)。
   P2P 接続中は、ping の往復時間(RTT)も出す:`P2P RTT 中央値 … ms / p95 … ms / 最大 … ms / ping欠落 …%`
   (直近 40 回の ping。2 秒以内に pong が来なかった ping を「欠落」に数える)。
 - Mac の bridge のログ(毎フレームは出しません):
@@ -129,7 +142,7 @@ macOS が「ローカルネットワーク」へのアクセス許可を求め�
 | A | Mac を学校 Wi-Fi に接続する。iPhone は学校 Wi-Fi に**参加しない**(Wi-Fi 自体は ON のまま)。Personal Hotspot は OFF。 | |
 | B | Unity で Play を押す(bridge は自動で起動する)。 | Unity の Console に `[PhoneSaber][P2P] listening ...` と `Bonjour registered` が出る |
 | C | iPhone で PhoneSaberSender を起動し、「P2P優先」を ON にして開始する。初回はローカルネットワークの許可を求められる。 | |
-| D | 画面の「経路」を確認する。 | `P2P Connected (awdl0)`。Mac に `peer connected` と `RED received` / `BLUE received` が出る。`P2P RTT` の中央値と最大値、Mac の `maxGapMs` を控えておく(LAN と比べるため) |
+| D | 画面の「経路」を確認する。 | `P2P Connected (awdl0 · <Mac の service 名>)`。Mac に `peer connected` と `RED received` / `BLUE received` が出る。`P2P RTT` の中央値と最大値、Mac の `maxGapMs` を控えておく(LAN と比べるため) |
 | E | Mac で Codex やブラウザを使いながら saber を振る。 | Unity に座標が届き続ける。インターネットも使える |
 | F | iPhone のモバイルデータ通信を OFF にする。 | P2P の送信が続く(cellular は最初から禁止しています) |
 | G | `PHONESABER_P2P_BRIDGE=0` で Unity を起動し直す(または Terminal で bridge の process を止める)。 | 約 1.5 秒で「経路」が LAN か Reconnecting になる。LAN の Mac が見つかっていれば、Unity への送信が LAN で続く。bridge が戻ると P2P に戻る |
@@ -146,13 +159,16 @@ macOS が「ローカルネットワーク」へのアクセス許可を求め�
 - `PhoneSaberSenderTests/P2PTransportTests.swift`: 形式の往復と payload 不変、不正な packet、重複と順序入れ替え、
   liveness による fallback と再接続の判定、loopback の偽 bridge を使った RED/BLUE の配送、bridge の停止と再開、
   最新値の優先、CameraViewModel の経路選択(P2P 優先、P2P が落ちたら LAN、P2P OFF なら従来どおり)。
+  2026-10-03 の追加: Mac の固定選択、復帰の hysteresis、張り直しの backoff、interface 表示、許可エラーの文言、
+  送信 watchdog(送信 hook で詰まりを再現)、前面復帰、P2P 復帰時の LAN 待ち座標の破棄、LAN なしの fallback の計数。
 - 任意実行: `TEST_RUNNER_PHONESABER_P2P_DISCOVERY_TEST=1` を付け、Mac で
   `--red-port 47431 --blue-port 47432` の bridge を起動しておくと、Simulator が実際の Bonjour で bridge を見つけ、
   localhost への転送まで確認します。
 - `Tools/test_phone_saber_p2p_bridge.py`: 実際の Swift bridge を build して起動し、loopback で、
   RED/BLUE の振り分け、本文の不変、不正な packet、重複、アプリ再起動(新 session)、2 台の peer、bridge の再起動、
   ping/pong、log の頻度制限、build の cache を確認します。
-- 実機でしか確認できないこと: AWDL での接続、学校 Wi-Fi との同時使用、iPhone がどの Wi-Fi にも参加していない状態。
+- 実機でしか確認できないこと: AWDL での接続、学校 Wi-Fi との同時使用、iPhone がどの Wi-Fi にも参加していない状態、
+  Mac 2 台での選択、経路変更時の interface 表示、ローカルネットワーク拒否時の表示と許可後の復帰、P2P 接続中の検索停止。
 
 ## rollback
 
