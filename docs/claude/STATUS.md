@@ -47,12 +47,21 @@
      formal 40/40、背景 FP 8→0、実 saber の取りこぼし 0、blue は不変。
    - ただし**採用は見送り**。決め手の差が太さ 0.3px 程度しかなく、明るさ +8% で背景 FP が 7/8 に戻る。
      部屋 3 つ程度・5 session 程度からの当てはめで、証拠が足りない。差分案は 2026-10-03_r7e_candidate_rule.diff.txt(未適用)。
-   - 次の capture で判断できるように、R7e の判定を「shadow(計算するが適用しない)」として Debug Recording に記録する作業を進行中。
+   - R7e と PF22(赤 purity ≥ 0.22、ただし clippedWhite ≥ 0.35 は除外)を shadow(計算するが適用しない)として Debug Recording に記録済み。
+     既存 23 bundle では PF22 が未検出に変えるジャンプは 16 件中 1 件(144936_295 f2552)だけ。10-02 のラベル・カラビナは purity 0.53–0.79 で防げない。
    - 採用に必要な capture: 点灯した赤 saber を 0.5–3m、3部屋以上、昼/夜、固定露出/自動露出。同じ部屋で消灯時の赤い物。±1EV の露出振り。
 
 ---
 
 ## 作業ログ(新しい順)
+
+### 2026-10-03(夜)
+- 当日用 runbook(docs/claude/EVENT_DAY_RUNBOOK.md)と読み取り専用の点検 `PhoneSaber Status.command`(phone_saber_status.py)を追加(5723323)。
+- Mac が2台あると診断 bundle が座標と別の Mac に届く問題を修正:座標で固定した Mac に送る(36d9d93)。
+- 露出実験スイッチ(Debug Recording 欄、自動(既定)/ 1/100 / 1/120 / 1/240 秒、activeMaxExposureDuration で上限、ISO は自動)。
+  自動ではカメラ設定に触れない。metadata・session report に記録(63eca9d)。
+- shadow PF22 を記録(diagnostic only、parity bit 一致)。既存 23 bundle の集計は上の「次にやること」4 を参照(4316ce3)。
+- 検証:並列 verify が同じ Simulator を共有して test runner が kill される問題があり、`PHONESABER_IOS_SIMULATOR_ID` で専用 Simulator を指定して PASS。
 
 ### 2026-10-03(午後)
 - 実機なしの改善(並列):iOS P2P の review 指摘(正しい Mac への固定、送信 watchdog 3 秒、ヒステリシス、backoff、前面復帰、
