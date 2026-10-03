@@ -1,5 +1,9 @@
 # PhoneSaberSender 同一試行の遅延計測
 
+> **P2P(peer-to-peer Wi-Fi)通信**: Mac を学校 Wi-Fi につないだまま、iPhone → Mac の座標だけを Apple の
+> peer-to-peer Wi-Fi で直接送る追加機能があります。P2P が使えないときは、下の LAN(Bonjour / 手動 IP)に自動で戻ります。
+> 構成・fallback 条件・実機での確認手順・rollback は [P2P_BRIDGE.md](P2P_BRIDGE.md) を参照してください。
+
 ## 実機手順
 
 1. Macで `run_debug.command` をFinderからダブルクリックします。UDP 5005/5006の診断受信、Bonjour `_phonesaber._udp` 公開、ブラウザの状態画面を開始します。診断受信中はUnityを停止してください（同じUDPポートを二つのプロセスで安全に共有できません）。

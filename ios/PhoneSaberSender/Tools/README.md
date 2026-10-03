@@ -265,3 +265,12 @@ python3 ios/PhoneSaberSender/Tools/phone_saber_codex_probe.py
 失敗時はJSON/JSONLのerror payloadと実行条件を表示し、秘密情報を除いた全文を
 `~/Library/Logs/PhoneSaber/codex/`へ保存します。CLI schema拒否の原因・修正・
 保存session再試験は [CODEX_CLI_VERIFICATION.md](CODEX_CLI_VERIFICATION.md) を参照してください。
+
+## P2P bridge (optional)
+
+`phone_saber_p2p_bridge.py` (or `Start PhoneSaber P2P Bridge.command`) builds and
+runs the Mac-side bridge in `p2p_bridge/PhoneSaberP2PBridge.swift`: it receives
+PhoneSaberSender coordinates over Network.framework peer-to-peer Wi-Fi
+(`_phonesaber-p2p._udp`) and forwards the unchanged payload to 127.0.0.1:5005
+(RED) / 5006 (BLUE) for the unchanged Unity InputPoint. Without it the iPhone
+keeps using the existing LAN UDP path. See [../P2P_BRIDGE.md](../P2P_BRIDGE.md).

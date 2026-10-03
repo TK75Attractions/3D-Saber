@@ -41,6 +41,17 @@ struct ContentView: View {
                             .font(.footnote).foregroundStyle(.secondary)
                         Text("Mode: \(model.connectionMode)　Red: 5005　Blue: 5006")
                             .font(.footnote).foregroundStyle(.secondary)
+                        Text("経路: \(model.transportLabel)")
+                            .font(.footnote.weight(.semibold))
+                        Toggle("P2P優先 (peer-to-peer Wi-Fi・Mac側 P2P bridge)", isOn: Binding(
+                            get: { model.p2pEnabled },
+                            set: { model.setP2PEnabled($0) }
+                        ))
+                            .font(.footnote)
+                        if model.p2pEnabled && !model.p2pState.isConnected {
+                            Text("\(model.p2pState.label)。届かない間は LAN(Bonjour / 手動IP)で送ります")
+                                .font(.caption2).foregroundStyle(.secondary)
+                        }
                         TextField("手動IP（自動発見できない場合のみ）", text: Binding(
                             get: { model.host },
                             set: { model.setManualHost($0) }

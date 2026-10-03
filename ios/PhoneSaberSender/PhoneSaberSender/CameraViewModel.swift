@@ -343,6 +343,13 @@ final class CameraViewModel: NSObject, ObservableObject {
     private let captureQueue = DispatchQueue(label: "PhoneSaberSender.capture", qos: .userInteractive)
     private lazy var sessionRunner = CaptureSessionRunner(session: session)
     private let sender: UDPSender
+    /// Optional peer-to-peer Wi-Fi link to the Mac P2P bridge. Coordinates use it
+    /// only while the bridge answers pings; otherwise the LAN `sender` is used.
+    private let p2pSender: P2PSender
+    private static let p2pEnabledKey = "PhoneSaber.p2pEnabled"
+    /// True once `sender` has a LAN destination for the current run.
+    private var lanConfigured = false
+    private var p2pNoRouteCount = 0
     private let pathMonitor = NWPathMonitor()
     private let bonjourDiscovery = BonjourDiscovery()
     @Published var running = false
@@ -361,6 +368,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var discoveredMacName = ""
     @Published private(set) var discoveredMacIP = ""
     @Published private(set) var connectionMode = "Auto (Bonjour)"
+    @Published private(set) var p2pEnabled = true
+    @Published private(set) var p2pState: P2PLinkState = .disabled
     @Published var threshold = 145
     @Published var dominance = 25
     @Published var measurementMode = false
@@ -459,6 +468,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     init(
         processor: FrameProcessor = FrameProcessor(),
         sender: UDPSender = UDPSender(),
+        p2pSender: P2PSender = P2PSender(),
+        p2pEnabled: Bool? = nil,
         authorizationStatus: @escaping () -> AVAuthorizationStatus = { AVCaptureDevice.authorizationStatus(for: .video) },
         requestAccess: @escaping (@escaping (Bool) -> Void) -> Void = { completion in AVCaptureDevice.requestAccess(for: .video, completionHandler: completion) },
         idleTimerUpdater: @escaping @MainActor (Bool) -> Void = { disabled in
@@ -467,6 +478,12 @@ final class CameraViewModel: NSObject, ObservableObject {
     ) {
         self.processor = processor
         self.sender = sender
+        self.p2pSender = p2pSender
+        // Unit tests opt in explicitly, so a bridge running on the developer's Mac
+        // can never reroute the existing LAN tests.
+        let underTest = NSClassFromString("XCTestCase") != nil
+        self.p2pEnabled = p2pEnabled
+            ?? (underTest ? false : UserDefaults.standard.object(forKey: Self.p2pEnabledKey) as? Bool ?? true)
         self.authorizationStatus = authorizationStatus
         self.requestAccess = requestAccess
         self.idleTimerUpdater = idleTimerUpdater
@@ -490,6 +507,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
         }
         bonjourDiscovery.start()
+        if self.p2pEnabled { startP2P() }
         processor.onResult = { [weak self] results, width, height, processingStart, generation, trace in
             Task { @MainActor in self?.handle(results, width: width, height: height, processingStart: processingStart, generation: generation, trace: trace) }
         }
@@ -526,8 +544,10 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     var networkStateLabel: String {
         guard running else {
-            return host.isEmpty ? "DISCOVERING" : "NETWORK IDLE"
+            return host.isEmpty && !p2pState.isConnected ? "DISCOVERING" : "NETWORK IDLE"
         }
+        if p2pState.isConnected { return "NETWORK READY (P2P)" }
+        if !lanConfigured { return p2pEnabled ? "NETWORK SEARCHING (P2P)" : "NETWORK CONNECTING" }
         let portStates = [senderStates[5005], senderStates[5006]].compactMap { $0 }
         if portStates.count == 2 && portStates.allSatisfy({ $0.hasPrefix("ready") }) {
             return "NETWORK READY"
@@ -778,7 +798,12 @@ final class CameraViewModel: NSObject, ObservableObject {
             print("[Host] source=\(hostSelection.source.rawValue) resolved=\(update.ip) service=\(update.name)")
 #endif
             if running {
-                sender.updateHost(update.ip)
+                if lanConfigured {
+                    sender.updateHost(update.ip)
+                } else {
+                    // Started on P2P alone; the LAN fallback becomes available now.
+                    configureLAN(host: update.ip, generation: lifecycleGeneration)
+                }
                 activeDestination = "\(update.ip):5005 / \(update.ip):5006"
             }
         }
@@ -829,7 +854,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
         updateIdleTimerPolicy()
         sessionRunner.stopSynchronously()
-        sender.stop(); _ = processor.reset(); activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
+        sender.stop(); lanConfigured = false; _ = processor.reset(); activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
     }
 
     private func configureAndStart(isRecovery: Bool = false, recoveryGeneration: Int? = nil) {
@@ -841,7 +866,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         resetDebugPerformance()
 #endif
         recomputeErrorMessage()
-        guard !configuredHost.isEmpty else {
+        // With P2P enabled the camera may start before (or without) a LAN host:
+        // coordinates go over P2P once the bridge answers, LAN is added when found.
+        guard !configuredHost.isEmpty || p2pEnabled else {
             if isRecovery {
                 cameraRecoveryInProgress = false
                 cameraLifecycle.restartFinished(succeeded: false, at: ProcessInfo.processInfo.systemUptime,
@@ -937,14 +964,15 @@ final class CameraViewModel: NSObject, ObservableObject {
         cameraLifecycleEnabled = true
         running = true
         updateIdleTimerPolicy()
-        sender.configure(host: configuredHost) { [weak self] states, errors, lastError in
-            Task { @MainActor in
-                self?.applySenderUpdate(states: states, errors: errors, generation: currentGeneration)
-            }
+        if configuredHost.isEmpty {
+            lanConfigured = false
+            activeDestination = "P2P待機中(LAN未設定)"
+        } else {
+            configureLAN(host: configuredHost, generation: currentGeneration)
+            activeDestination = "\(configuredHost):5005 / \(configuredHost):5006"
         }
         host = configuredHost
         connectionMode = hostSelection.source.rawValue
-        activeDestination = "\(configuredHost):5005 / \(configuredHost):5006"
         resetStartState()
         processor.configureThresholds(red: configuredThreshold, blue: configuredThreshold)
         frameCount = 0; fpsStart = CACurrentMediaTime(); _ = processor.reset(); status = "送信中"
@@ -1033,15 +1061,16 @@ final class CameraViewModel: NSObject, ObservableObject {
                 }
             }
 #if DEBUG
-            sender.send(text, to: port, onSendStarted: { [weak self] queueWait, replaced in
+            let onSendStarted: ((TimeInterval, Int) -> Void)? = { [weak self] queueWait, replaced in
                 result.diagnosticSendStarted?(coordinates)
                 Task { @MainActor in self?.recordUDPQueueStart(queueWait, replaced: replaced) }
-            }, completion: completion)
+            }
 #else
-            sender.send(text, to: port, onSendStarted: result.diagnosticSendStarted.map { callback in
+            let onSendStarted: ((TimeInterval, Int) -> Void)? = result.diagnosticSendStarted.map { callback in
                 { _, _ in callback(coordinates) }
-            }, completion: completion)
+            }
 #endif
+            route(text, port: port, onSendStarted: onSendStarted, completion: completion)
 #if DEBUG
             udpRequestMs += (ProcessInfo.processInfo.systemUptime - sendRequestStart) * 1000
 #endif
@@ -1326,6 +1355,79 @@ final class CameraViewModel: NSObject, ObservableObject {
     private func recordUDPQueueStart(_ wait: TimeInterval, replaced: Int) { }
 #endif
 
+    // MARK: Transport (P2P first, then the existing LAN UDP path)
+
+    /// Picks the transport for one coordinate without blocking: P2P while the
+    /// bridge answers pings, otherwise the existing LAN `sender` (Bonjour or
+    /// manual IP). Payload and RED 5005 / BLUE 5006 are identical on both.
+    private func route(_ text: String, port: Int,
+                       onSendStarted: ((TimeInterval, Int) -> Void)?,
+                       completion: @escaping (Result<TimeInterval, Error>) -> Void) {
+        if p2pEnabled && p2pSender.isUsable {
+            let lan = sender
+            let lanAvailable = lanConfigured
+            p2pSender.send(text, to: port, onSendStarted: onSendStarted, completion: completion,
+                           fallback: {
+                               // The link dropped after the check: hand this coordinate to LAN.
+                               if lanAvailable {
+                                   lan.send(text, to: port, onSendStarted: onSendStarted, completion: completion)
+                               }
+                           })
+        } else if lanConfigured {
+            sender.send(text, to: port, onSendStarted: onSendStarted, completion: completion)
+        } else {
+            // Neither link is up yet (P2P searching, no LAN host): nothing to send to.
+            p2pNoRouteCount += 1
+        }
+    }
+
+    private func configureLAN(host: String, generation: Int) {
+        lanConfigured = true
+        sender.configure(host: host) { [weak self] states, errors, _ in
+            Task { @MainActor in
+                self?.applySenderUpdate(states: states, errors: errors, generation: generation)
+            }
+        }
+    }
+
+    private func startP2P() {
+        p2pSender.start { [weak self] state in
+            Task { @MainActor in self?.p2pState = state }
+        }
+    }
+
+    func setP2PEnabled(_ enabled: Bool) {
+        guard enabled != p2pEnabled else { return }
+        p2pEnabled = enabled
+        UserDefaults.standard.set(enabled, forKey: Self.p2pEnabledKey)
+        if enabled {
+            startP2P()
+        } else {
+            p2pSender.stop()
+            p2pState = .disabled
+        }
+#if DEBUG
+        print("[P2P] \(enabled ? "enabled" : "disabled") by user")
+#endif
+    }
+
+    /// The path coordinates take right now, for the UI.
+    var transportLabel: String {
+        if p2pEnabled && p2pState.isConnected { return p2pState.label }
+        guard running else { return p2pEnabled ? p2pState.label : "停止中" }
+        if lanConfigured {
+            let portStates = [senderStates[5005], senderStates[5006]].compactMap { $0 }
+            let lan = hostSelection.source == .manual ? "Manual IP" : "LAN Connected"
+            if portStates.count == 2 && portStates.allSatisfy({ $0.hasPrefix("ready") }) { return lan }
+            if portStates.contains("failed") { return "Failed" }
+            return "Reconnecting"
+        }
+        return p2pEnabled ? p2pState.label : "Failed (送信先なし)"
+    }
+
+    var p2pNoRouteCountForTesting: Int { p2pNoRouteCount }
+    var lanConfiguredForTesting: Bool { lanConfigured }
+
     private func applySenderUpdate(states: [Int: String], errors: [Int: String], generation: Int) {
         guard running, lifecycleGeneration == generation else {
             rejectedSenderUpdateCount += 1
@@ -1397,11 +1499,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         if manual { hostSelection.setManual(host, resolvedHost: "", serviceName: "") }
         self.host = host
         let currentGeneration = lifecycleGeneration
-        sender.configure(host: host) { [weak self] states, errors, _ in
-            Task { @MainActor in
-                self?.applySenderUpdate(states: states, errors: errors, generation: currentGeneration)
-            }
-        }
+        configureLAN(host: host, generation: currentGeneration)
         _ = processor.reset()
         recomputeErrorMessage()
     }

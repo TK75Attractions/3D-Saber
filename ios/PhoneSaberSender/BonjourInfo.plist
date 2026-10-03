@@ -5,6 +5,7 @@
     <key>NSBonjourServices</key>
     <array>
         <string>_phonesaber._udp</string>
+        <string>_phonesaber-p2p._udp</string>
         <string>_phonesaber-diag._tcp</string>
     </array>
     <key>NSAppTransportSecurity</key>

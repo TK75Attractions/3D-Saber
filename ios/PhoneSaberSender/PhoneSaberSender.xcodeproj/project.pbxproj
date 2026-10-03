@@ -28,6 +28,9 @@
 		A00000000000000000000014 /* DebugRecordingTriage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000014 /* DebugRecordingTriage.swift */; };
 		A00000000000000000000015 /* DebugRecordingTriageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000015 /* DebugRecordingTriageTests.swift */; };
 		A00000000000000000000016 /* DebugBundleTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000016 /* DebugBundleTransfer.swift */; };
+		A00000000000000000000017 /* P2PProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000017 /* P2PProtocol.swift */; };
+		A00000000000000000000018 /* P2PSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000018 /* P2PSender.swift */; };
+		A00000000000000000000019 /* P2PTransportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000019 /* P2PTransportTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -50,6 +53,9 @@
 		B10000000000000000000006 /* FrameProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameProcessor.swift; sourceTree = "<group>"; };
 		B10000000000000000000007 /* PhoneSaberSenderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSaberSenderApp.swift; sourceTree = "<group>"; };
 		B10000000000000000000008 /* UDPSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPSender.swift; sourceTree = "<group>"; };
+		B10000000000000000000017 /* P2PProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PProtocol.swift; sourceTree = "<group>"; };
+		B10000000000000000000018 /* P2PSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PSender.swift; sourceTree = "<group>"; };
+		B10000000000000000000019 /* P2PTransportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PTransportTests.swift; sourceTree = "<group>"; };
 		B10000000000000000000011 /* DebugVideoRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugVideoRecorder.swift; sourceTree = "<group>"; };
 		B10000000000000000000009 /* DetectionCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionCoreTests.swift; sourceTree = "<group>"; };
 		B10000000000000000000010 /* PhoneSaberSenderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PhoneSaberSenderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -103,6 +109,8 @@
 				B10000000000000000000014 /* DebugRecordingTriage.swift */,
 				B10000000000000000000016 /* DebugBundleTransfer.swift */,
 				B10000000000000000000008 /* UDPSender.swift */,
+				B10000000000000000000017 /* P2PProtocol.swift */,
+				B10000000000000000000018 /* P2PSender.swift */,
 				B10000000000000000000003 /* CameraViewModel.swift */,
 				B10000000000000000000002 /* CameraPreview.swift */,
 				B10000000000000000000004 /* ContentView.swift */,
@@ -116,6 +124,7 @@
 			children = (
 				B10000000000000000000009 /* DetectionCoreTests.swift */,
 				B10000000000000000000015 /* DebugRecordingTriageTests.swift */,
+				B10000000000000000000019 /* P2PTransportTests.swift */,
 				D00000000000000000000004 /* Fixtures */,
 			);
 			path = ../PhoneSaberSenderTests;
@@ -256,6 +265,8 @@
 				A00000000000000000000014 /* DebugRecordingTriage.swift in Sources */,
 				A00000000000000000000016 /* DebugBundleTransfer.swift in Sources */,
 				A00000000000000000000008 /* UDPSender.swift in Sources */,
+				A00000000000000000000017 /* P2PProtocol.swift in Sources */,
+				A00000000000000000000018 /* P2PSender.swift in Sources */,
 				A00000000000000000000003 /* CameraViewModel.swift in Sources */,
 				A00000000000000000000002 /* CameraPreview.swift in Sources */,
 				A00000000000000000000004 /* ContentView.swift in Sources */,
@@ -269,6 +280,7 @@
 			files = (
 				A00000000000000000000009 /* DetectionCoreTests.swift in Sources */,
 				A00000000000000000000015 /* DebugRecordingTriageTests.swift in Sources */,
+				A00000000000000000000019 /* P2PTransportTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
