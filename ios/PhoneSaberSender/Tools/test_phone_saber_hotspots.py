@@ -215,13 +215,15 @@ class HotspotClusteringCostTests(unittest.TestCase):
                                      eligible=True, winning=True, final_score=90.0,
                                      source_type="core-line", source="candidateGeometry")
                          for i in range(500)]
-        started = time.monotonic()
+        # CPU time, not wall time: parallel verify runs load the host, which
+        # stretched wall time past the bound although the work was unchanged.
+        started = time.process_time()
         clusters = _cluster(observations, radius_px=24.0, min_iou=0.5)
-        elapsed = time.monotonic() - started
+        elapsed = time.process_time() - started
         label = max(clusters, key=lambda c: len(c.members))
         self.assertEqual(len(label.members), 5000)
         self.assertLess(abs(label.representative()["centroid"][0] - 80.5), 1.0)
-        # ~2-3 s before the representative was cached; generous bound for loaded hosts.
+        # ~2-3 s before the representative was cached.
         self.assertLess(elapsed, 2.0)
 
 

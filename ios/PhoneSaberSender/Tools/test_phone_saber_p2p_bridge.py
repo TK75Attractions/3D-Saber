@@ -218,7 +218,9 @@ class P2PBridgeListenerRestartTests(unittest.TestCase):
             phone = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             phone.settimeout(0.5)
             self.addCleanup(phone.close)
-            deadline = time.monotonic() + 8
+            # Generous: both waits end as soon as the event happens; 8 s was too short
+            # while parallel verify runs loaded the machine (load average 50+).
+            deadline = time.monotonic() + 30
             while "restarting in" not in log_path.read_text() and time.monotonic() < deadline:
                 time.sleep(0.05)
             self.assertIn("restarting in 1s", log_path.read_text())
