@@ -102,9 +102,9 @@ public class PrismCircuitSongTests
     }
 
     // データを差し替えても、金・両手の役割と回復時間を失わないための回帰確認。
-    [TestCase("easy", 6, 10, 12, 24)]
-    [TestCase("normal", 18, 30, 18, 34)]
-    [TestCase("hard", 28, 42, 20, 38)]
+    [TestCase("easy", 13, 18, 22, 30)]
+    [TestCase("normal", 34, 42, 35, 46)]
+    [TestCase("hard", 46, 56, 40, 52)]
     public void RechartHasMusicalGoldAndDoubleAccents(string difficulty, int minPairs, int maxPairs, int minGold, int maxGold)
     {
         var c = ChartLoader.LoadFromStreamingAssets(SongId, difficulty);
@@ -184,5 +184,38 @@ public class PrismCircuitSongTests
             .GroupBy(s=>s).ToArray();
         Assert.GreaterOrEqual(signatures.Length,minLayouts,"微小ずらしだけに頼らず配置に変化を作る");
         Assert.LessOrEqual(signatures.Max(g=>g.Count()),4,"同じ小節配置を反復しすぎない");
+    }
+
+    [TestCase("easy")]
+    [TestCase("normal")]
+    [TestCase("hard")]
+    public void FlickEntryAndRapidReturnRespectTheActualDirectionVectors(string difficulty)
+    {
+        var c = ChartLoader.LoadFromStreamingAssets(SongId, difficulty);
+        foreach (var hand in new[] { "red", "blue" })
+        {
+            var ns = c.notes.Where(n => n.color == hand || n.color == "gold").ToArray();
+            for (int i = 1; i < ns.Length; i++)
+            {
+                var a = ns[i-1]; var b = ns[i];
+                var delta = new Vector2(b.x-a.x, b.y-a.y);
+                double gap = b.TimeSeconds-a.TimeSeconds-a.lengthMs/1000;
+                if (b.IsDirection)
+                {
+                    var bv = CutDirectionHelper.ToVector(CutDirectionHelper.Parse(b.direction));
+                    Assert.GreaterOrEqual(delta.magnitude, .07999f);
+                    Assert.GreaterOrEqual(Vector2.Dot(delta.normalized, bv), Mathf.Sqrt(.5f)-.0001f,
+                        "横から入って縦へ切り直すフリックを避け、進入を45度以内にする");
+                    if (a.IsDirection)
+                    {
+                        var av = CutDirectionHelper.ToVector(CutDirectionHelper.Parse(a.direction));
+                        if (gap < 120.0/148-.0001)
+                            Assert.LessOrEqual(Vector2.Dot(av,bv), -.4999f, "短い間隔は120度以上の折り返し");
+                        double path = .5+(delta-.25f*(av+bv)).magnitude;
+                        Assert.LessOrEqual(path/gap, 5.5001, "振り抜きと次の振り始めも移動量に含める");
+                    }
+                }
+            }
+        }
     }
 }

@@ -1,26 +1,26 @@
 {
   "easy": {
-    "notes": 127,
-    "cuts": 131,
-    "averageNps": 1.06,
-    "peak4SecondNps": 1.5,
+    "notes": 134,
+    "cuts": 138,
+    "averageNps": 1.119,
+    "peak4SecondNps": 1.75,
     "peak4SecondCuts": 1.75,
     "minSameHandMs": 810.81,
     "maxTravelUnitsPerSecond": 1.766,
     "firstSeconds": 3.243243,
     "lastSeconds": 113.513514,
     "types": {
-      "tap": 125,
+      "tap": 132,
       "long": 2
     },
     "colors": {
       "blue": 55,
       "red": 55,
-      "gold": 17
+      "gold": 24
     },
-    "simultaneousPairs": 8,
-    "goldPercent": 13.39,
-    "pairOnsetPercent": 6.72,
+    "simultaneousPairs": 15,
+    "goldPercent": 17.91,
+    "pairOnsetPercent": 12.61,
     "sections": [
       {
         "name": "Signal",
@@ -45,10 +45,10 @@
       },
       {
         "name": "Prism",
-        "notes": 36,
-        "nps": 1.387,
-        "gold": 4,
-        "pairs": 4
+        "notes": 40,
+        "nps": 1.542,
+        "gold": 8,
+        "pairs": 8
       },
       {
         "name": "Weightless",
@@ -66,10 +66,10 @@
       },
       {
         "name": "Full spectrum",
-        "notes": 27,
-        "nps": 1.388,
-        "gold": 3,
-        "pairs": 3
+        "notes": 30,
+        "nps": 1.542,
+        "gold": 6,
+        "pairs": 6
       },
       {
         "name": "Afterimage",
@@ -82,33 +82,43 @@
     "minRollCutMs": 405.406,
     "unequalHeightPairs": 0,
     "opposedHeightArrows": 0,
-    "uniquePositions": 56,
-    "uniqueBarLayouts": 42,
-    "mostRepeatedBarLayout": 2
+    "uniquePositions": 55,
+    "uniqueBarLayouts": 36,
+    "mostRepeatedBarLayout": 4,
+    "swingAudit": {
+      "failures": [],
+      "allGoldAssignmentsFeasible": true,
+      "optionalGoldTaps": 22,
+      "halfSwingUnits": 0.25,
+      "swingTravelLimitUnitsPerSecond": 5.5,
+      "maxEntryAngleDegrees": 45,
+      "rapidArrowMinimumTurnDegrees": 120,
+      "maxBranchStates": 2
+    }
   },
   "normal": {
-    "notes": 232,
-    "cuts": 238,
-    "averageNps": 1.937,
-    "peak4SecondNps": 3.0,
-    "peak4SecondCuts": 3.0,
+    "notes": 246,
+    "cuts": 252,
+    "averageNps": 2.054,
+    "peak4SecondNps": 3.25,
+    "peak4SecondCuts": 3.25,
     "minSameHandMs": 405.405,
     "maxTravelUnitsPerSecond": 4.193,
     "firstSeconds": 3.243243,
     "lastSeconds": 113.513514,
     "types": {
-      "tap": 207,
-      "direction": 23,
+      "tap": 206,
+      "direction": 38,
       "long": 2
     },
     "colors": {
-      "blue": 104,
-      "red": 104,
-      "gold": 24
+      "blue": 103,
+      "red": 103,
+      "gold": 40
     },
-    "simultaneousPairs": 23,
-    "goldPercent": 10.34,
-    "pairOnsetPercent": 11.0,
+    "simultaneousPairs": 37,
+    "goldPercent": 16.26,
+    "pairOnsetPercent": 17.7,
     "sections": [
       {
         "name": "Signal",
@@ -121,63 +131,73 @@
         "name": "Motion",
         "notes": 33,
         "nps": 1.696,
-        "gold": 3,
+        "gold": 9,
         "pairs": 3
       },
       {
         "name": "Lift",
         "notes": 29,
         "nps": 2.235,
-        "gold": 2,
+        "gold": 5,
         "pairs": 1
       },
       {
         "name": "Prism",
-        "notes": 64,
-        "nps": 2.467,
+        "notes": 72,
+        "nps": 2.775,
         "gold": 8,
-        "pairs": 8
+        "pairs": 16
       },
       {
         "name": "Weightless",
         "notes": 16,
         "nps": 1.233,
-        "gold": 2,
+        "gold": 4,
         "pairs": 0
       },
       {
         "name": "Reignite",
         "notes": 29,
         "nps": 2.235,
-        "gold": 2,
+        "gold": 5,
         "pairs": 1
       },
       {
         "name": "Full spectrum",
-        "notes": 51,
-        "nps": 2.621,
+        "notes": 57,
+        "nps": 2.929,
         "gold": 6,
-        "pairs": 9
+        "pairs": 15
       },
       {
         "name": "Afterimage",
         "notes": 6,
         "nps": 0.925,
-        "gold": 1,
+        "gold": 3,
         "pairs": 1
       }
     ],
     "minRollCutMs": 405.405,
     "unequalHeightPairs": 0,
     "opposedHeightArrows": 0,
-    "uniquePositions": 91,
-    "uniqueBarLayouts": 61,
-    "mostRepeatedBarLayout": 2
+    "uniquePositions": 98,
+    "uniqueBarLayouts": 62,
+    "mostRepeatedBarLayout": 1,
+    "swingAudit": {
+      "failures": [],
+      "allGoldAssignmentsFeasible": true,
+      "optionalGoldTaps": 38,
+      "halfSwingUnits": 0.25,
+      "swingTravelLimitUnitsPerSecond": 5.5,
+      "maxEntryAngleDegrees": 45,
+      "rapidArrowMinimumTurnDegrees": 120,
+      "maxBranchStates": 4
+    }
   },
   "hard": {
-    "notes": 309,
-    "cuts": 321,
-    "averageNps": 2.58,
+    "notes": 328,
+    "cuts": 340,
+    "averageNps": 2.739,
     "peak4SecondNps": 5.0,
     "peak4SecondCuts": 5.0,
     "minSameHandMs": 405.405,
@@ -185,18 +205,18 @@
     "firstSeconds": 3.243243,
     "lastSeconds": 113.513514,
     "types": {
-      "tap": 151,
-      "direction": 156,
+      "tap": 245,
+      "direction": 81,
       "long": 2
     },
     "colors": {
-      "blue": 144,
-      "red": 141,
-      "gold": 24
+      "blue": 142,
+      "red": 142,
+      "gold": 44
     },
-    "simultaneousPairs": 31,
-    "goldPercent": 7.77,
-    "pairOnsetPercent": 11.15,
+    "simultaneousPairs": 50,
+    "goldPercent": 13.41,
+    "pairOnsetPercent": 17.99,
     "sections": [
       {
         "name": "Signal",
@@ -207,24 +227,24 @@
       },
       {
         "name": "Motion",
-        "notes": 39,
-        "nps": 2.004,
-        "gold": 3,
-        "pairs": 3
+        "notes": 43,
+        "nps": 2.21,
+        "gold": 8,
+        "pairs": 7
       },
       {
         "name": "Lift",
-        "notes": 40,
-        "nps": 3.083,
-        "gold": 2,
-        "pairs": 1
+        "notes": 41,
+        "nps": 3.16,
+        "gold": 5,
+        "pairs": 2
       },
       {
         "name": "Prism",
-        "notes": 89,
-        "nps": 3.43,
-        "gold": 8,
-        "pairs": 10
+        "notes": 98,
+        "nps": 3.777,
+        "gold": 12,
+        "pairs": 19
       },
       {
         "name": "Weightless",
@@ -235,32 +255,42 @@
       },
       {
         "name": "Reignite",
-        "notes": 40,
-        "nps": 3.083,
-        "gold": 2,
-        "pairs": 1
+        "notes": 41,
+        "nps": 3.16,
+        "gold": 5,
+        "pairs": 2
       },
       {
         "name": "Full spectrum",
-        "notes": 71,
-        "nps": 3.649,
-        "gold": 6,
-        "pairs": 15
+        "notes": 75,
+        "nps": 3.854,
+        "gold": 9,
+        "pairs": 19
       },
       {
         "name": "Afterimage",
         "notes": 6,
         "nps": 0.925,
-        "gold": 1,
+        "gold": 3,
         "pairs": 1
       }
     ],
     "minRollCutMs": 202.703,
     "unequalHeightPairs": 0,
     "opposedHeightArrows": 0,
-    "uniquePositions": 109,
+    "uniquePositions": 112,
     "uniqueBarLayouts": 60,
-    "mostRepeatedBarLayout": 3
+    "mostRepeatedBarLayout": 3,
+    "swingAudit": {
+      "failures": [],
+      "allGoldAssignmentsFeasible": true,
+      "optionalGoldTaps": 42,
+      "halfSwingUnits": 0.25,
+      "swingTravelLimitUnitsPerSecond": 5.5,
+      "maxEntryAngleDegrees": 45,
+      "rapidArrowMinimumTurnDegrees": 120,
+      "maxBranchStates": 4
+    }
   },
   "audio": {
     "durationSeconds": 119.75675736961452,

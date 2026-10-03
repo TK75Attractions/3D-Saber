@@ -2,7 +2,7 @@
 import copy
 import collections
 import unittest
-from chart_v2 import BEAT, DIFFICULTIES, build, validate
+from chart_v2 import BEAT, DIFFICULTIES, DIR_NAMES, audit_swing_flow, build, swing_edge, validate
 
 
 class ChartFlowTests(unittest.TestCase):
@@ -99,6 +99,55 @@ class ChartFlowTests(unittest.TestCase):
         self.chart['notes'] = [n for n in self.chart['notes'] if n['color'] != 'gold' or n['count'] > 1]
         with self.assertRaisesRegex(ValueError, 'gold budget'):
             validate(self.chart, 'hard')
+
+
+class SwingAuditTests(unittest.TestCase):
+    @staticmethod
+    def note(beat, x, y, direction='none', color='blue'):
+        return dict(beat=beat, time=beat*BEAT*1000, x=x, y=y,
+                    direction=direction, color=color, count=1)
+
+    def test_rejects_shallow_entry_even_when_dot_product_is_positive(self):
+        a, b = self.note(0, 0, 0), self.note(2, .8, .1, 'up')
+        self.assertTrue(audit_swing_flow([a, b])['failures'])
+        b['direction'] = 'right'
+        self.assertFalse(audit_swing_flow([a, b])['failures'])
+
+    def test_fast_quarter_turn_requires_a_natural_diagonal_return(self):
+        a, b = self.note(0, 0, 0, 'right'), self.note(1, 0, .6, 'up')
+        self.assertFalse(swing_edge(a, b, 'right', 'up'))
+        b.update(x=-.6, direction='upleft')
+        self.assertTrue(swing_edge(a, b, 'right', 'upleft'))
+
+    def test_dot_note_cannot_hide_an_impossible_reset(self):
+        a = self.note(0, 0, 0, 'right')
+        b = self.note(1, -.9, -.9)
+        c = self.note(2, -.9, .9, 'upleft')
+        # 各辺を独立に調べるだけなら通るが、中間タップで振れる方向が一致しない。
+        self.assertTrue(any(swing_edge(a, b, 'right', v) for v in DIR_NAMES))
+        self.assertTrue(any(swing_edge(b, c, v, 'upleft') for v in DIR_NAMES))
+        self.assertTrue(audit_swing_flow([a, b, c])['failures'])
+        c.update(beat=3, time=3*BEAT*1000)
+        self.assertFalse(audit_swing_flow([a, b, c])['failures'])
+
+    def test_follow_through_counts_even_when_center_travel_is_small(self):
+        a, b = self.note(0, 0, 0, 'right'), self.note(1, -1.8, 0)
+        self.assertLess(abs(b['x']-a['x'])/BEAT, 4.5)
+        self.assertTrue(audit_swing_flow([a, b])['failures'])
+        b['x'] = -1.3
+        self.assertFalse(audit_swing_flow([a, b])['failures'])
+
+    def test_gold_skip_branch_cannot_be_hidden_by_a_successful_take(self):
+        a = self.note(0, -1, 0)
+        gold = self.note(1, 0, 0)
+        b = self.note(2, -.5, 0, 'left')
+        self.assertFalse(audit_swing_flow([a, gold, b])['failures'])
+        gold['color'] = 'gold'
+        audit = audit_swing_flow([a, gold, b])
+        self.assertFalse(audit['allGoldAssignmentsFeasible'])
+        self.assertTrue(any(f['hand'] == 'blue' and f['previous'] == 0 for f in audit['failures']))
+        b['direction'] = 'none'
+        self.assertTrue(audit_swing_flow([a, gold, b])['allGoldAssignmentsFeasible'])
 
 
 if __name__ == '__main__':

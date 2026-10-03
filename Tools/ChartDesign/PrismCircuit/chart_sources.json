@@ -526,7 +526,7 @@
     },
     {
       "beat": 98,
-      "color": "red",
+      "color": "gold",
       "motif": "chorus_walk",
       "contour": "fan",
       "intendedSwing": "free",
@@ -539,7 +539,7 @@
     },
     {
       "beat": 100,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_walk",
       "contour": "fan",
       "intendedSwing": "free",
@@ -552,7 +552,7 @@
     },
     {
       "beat": 102,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_walk",
       "contour": "fan",
       "intendedSwing": "free",
@@ -574,6 +574,19 @@
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 104,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        734
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -643,7 +656,7 @@
     },
     {
       "beat": 114,
-      "color": "red",
+      "color": "gold",
       "motif": "chorus_walk",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -656,7 +669,7 @@
     },
     {
       "beat": 116,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_walk",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -669,7 +682,7 @@
     },
     {
       "beat": 118,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_walk",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -691,6 +704,19 @@
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 120,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        936
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -760,7 +786,7 @@
     },
     {
       "beat": 130,
-      "color": "red",
+      "color": "gold",
       "motif": "chorus_walk",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -773,7 +799,7 @@
     },
     {
       "beat": 132,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_walk",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -786,7 +812,7 @@
     },
     {
       "beat": 134,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_walk",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -808,6 +834,19 @@
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 136,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1159
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -877,7 +916,7 @@
     },
     {
       "beat": 146,
-      "color": "red",
+      "color": "gold",
       "motif": "chorus_walk",
       "contour": "wave",
       "intendedSwing": "free",
@@ -890,7 +929,7 @@
     },
     {
       "beat": 148,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_walk",
       "contour": "wave",
       "intendedSwing": "free",
@@ -903,7 +942,7 @@
     },
     {
       "beat": 150,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_walk",
       "contour": "wave",
       "intendedSwing": "free",
@@ -925,6 +964,19 @@
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 152,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1393
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -1297,7 +1349,7 @@
     },
     {
       "beat": 226,
-      "color": "blue",
+      "color": "gold",
       "motif": "chorus_walk",
       "contour": "stair",
       "intendedSwing": "free",
@@ -1336,7 +1388,7 @@
     },
     {
       "beat": 232,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_walk",
       "contour": "stair",
       "intendedSwing": "free",
@@ -1345,6 +1397,19 @@
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 232,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1936
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -1414,7 +1479,7 @@
     },
     {
       "beat": 242,
-      "color": "blue",
+      "color": "gold",
       "motif": "chorus_walk",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -1453,7 +1518,7 @@
     },
     {
       "beat": 248,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_walk",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -1462,6 +1527,19 @@
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 248,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2189
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -1531,7 +1609,7 @@
     },
     {
       "beat": 258,
-      "color": "blue",
+      "color": "gold",
       "motif": "chorus_walk",
       "contour": "fan",
       "intendedSwing": "free",
@@ -1570,7 +1648,7 @@
     },
     {
       "beat": 264,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_walk",
       "contour": "fan",
       "intendedSwing": "free",
@@ -1579,6 +1657,19 @@
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 264,
+      "color": "red",
+      "motif": "chorus_walk",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2449
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -1728,7 +1819,7 @@
     },
     {
       "beat": 18,
-      "color": "red",
+      "color": "gold",
       "motif": "verse_walk",
       "contour": "walk",
       "intendedSwing": "free",
@@ -1741,7 +1832,7 @@
     },
     {
       "beat": 20,
-      "color": "blue",
+      "color": "red",
       "motif": "verse_walk",
       "contour": "walk",
       "intendedSwing": "free",
@@ -1754,7 +1845,7 @@
     },
     {
       "beat": 22,
-      "color": "red",
+      "color": "blue",
       "motif": "verse_walk",
       "contour": "walk",
       "intendedSwing": "free",
@@ -1780,7 +1871,7 @@
     },
     {
       "beat": 24,
-      "color": "blue",
+      "color": "gold",
       "motif": "verse_walk",
       "contour": "walk",
       "intendedSwing": "free",
@@ -1835,7 +1926,7 @@
       "color": "blue",
       "motif": "verse_backbeat",
       "contour": "walk",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         155
       ],
@@ -1858,7 +1949,7 @@
     },
     {
       "beat": 32,
-      "color": "blue",
+      "color": "red",
       "motif": "verse_walk",
       "contour": "stair",
       "intendedSwing": "free",
@@ -1871,7 +1962,7 @@
     },
     {
       "beat": 34,
-      "color": "red",
+      "color": "blue",
       "motif": "verse_walk",
       "contour": "stair",
       "intendedSwing": "free",
@@ -1884,7 +1975,7 @@
     },
     {
       "beat": 36,
-      "color": "blue",
+      "color": "red",
       "motif": "verse_walk",
       "contour": "stair",
       "intendedSwing": "free",
@@ -1897,7 +1988,7 @@
     },
     {
       "beat": 38,
-      "color": "red",
+      "color": "gold",
       "motif": "verse_walk",
       "contour": "stair",
       "intendedSwing": "free",
@@ -1923,7 +2014,7 @@
     },
     {
       "beat": 40,
-      "color": "blue",
+      "color": "gold",
       "motif": "verse_walk",
       "contour": "stair",
       "intendedSwing": "free",
@@ -1936,7 +2027,7 @@
     },
     {
       "beat": 42,
-      "color": "red",
+      "color": "blue",
       "motif": "verse_walk",
       "contour": "stair",
       "intendedSwing": "free",
@@ -1949,7 +2040,7 @@
     },
     {
       "beat": 44,
-      "color": "blue",
+      "color": "red",
       "motif": "verse_walk",
       "contour": "stair",
       "intendedSwing": "free",
@@ -1962,7 +2053,7 @@
     },
     {
       "beat": 46,
-      "color": "red",
+      "color": "blue",
       "motif": "verse_walk",
       "contour": "stair",
       "intendedSwing": "free",
@@ -1978,7 +2069,7 @@
       "color": "blue",
       "motif": "verse_backbeat",
       "contour": "stair",
-      "intendedSwing": "free",
+      "intendedSwing": "down",
       "sourceEventIds": [
         276
       ],
@@ -1991,7 +2082,7 @@
       "color": "red",
       "motif": "verse_backbeat",
       "contour": "stair",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         273
       ],
@@ -2014,7 +2105,7 @@
     },
     {
       "beat": 50,
-      "color": "red",
+      "color": "gold",
       "motif": "verse_walk",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -2027,7 +2118,7 @@
     },
     {
       "beat": 52,
-      "color": "blue",
+      "color": "red",
       "motif": "verse_walk",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -2040,7 +2131,7 @@
     },
     {
       "beat": 54,
-      "color": "red",
+      "color": "blue",
       "motif": "verse_walk",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -2066,7 +2157,7 @@
     },
     {
       "beat": 56,
-      "color": "blue",
+      "color": "gold",
       "motif": "verse_walk",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -2144,7 +2235,7 @@
     },
     {
       "beat": 64,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -2157,7 +2248,7 @@
     },
     {
       "beat": 65,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -2170,7 +2261,7 @@
     },
     {
       "beat": 66,
-      "color": "blue",
+      "color": "gold",
       "motif": "build_steps",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -2251,7 +2342,7 @@
       "color": "blue",
       "motif": "build_steps",
       "contour": "ribbon",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         464
       ],
@@ -2287,7 +2378,7 @@
     },
     {
       "beat": 74,
-      "color": "red",
+      "color": "gold",
       "motif": "build_steps",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -2300,7 +2391,7 @@
     },
     {
       "beat": 75,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -2313,7 +2404,7 @@
     },
     {
       "beat": 76,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -2326,7 +2417,7 @@
     },
     {
       "beat": 77,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -2339,7 +2430,7 @@
     },
     {
       "beat": 78,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -2352,7 +2443,7 @@
     },
     {
       "beat": 79,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -2365,7 +2456,7 @@
     },
     {
       "beat": 80,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "stair",
       "intendedSwing": "free",
@@ -2378,7 +2469,7 @@
     },
     {
       "beat": 81,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "stair",
       "intendedSwing": "free",
@@ -2391,7 +2482,7 @@
     },
     {
       "beat": 82,
-      "color": "red",
+      "color": "gold",
       "motif": "build_steps",
       "contour": "stair",
       "intendedSwing": "free",
@@ -2553,7 +2644,7 @@
     },
     {
       "beat": 97,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "fan",
       "intendedSwing": "free",
@@ -2566,10 +2657,10 @@
     },
     {
       "beat": 98,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "fan",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         656
       ],
@@ -2579,7 +2670,7 @@
     },
     {
       "beat": 99,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "fan",
       "intendedSwing": "free",
@@ -2592,15 +2683,28 @@
     },
     {
       "beat": 100,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "fan",
-      "intendedSwing": "free",
+      "intendedSwing": "upleft",
       "sourceEventIds": [
         689
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 100,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        682
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -2696,10 +2800,10 @@
     },
     {
       "beat": 108,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "fan",
-      "intendedSwing": "free",
+      "intendedSwing": "left",
       "sourceEventIds": [
         791
       ],
@@ -2708,8 +2812,21 @@
       ]
     },
     {
+      "beat": 108,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "downright",
+      "sourceEventIds": [
+        784
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
       "beat": 109.5,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "fan",
       "intendedSwing": "free",
@@ -2761,7 +2878,7 @@
     },
     {
       "beat": 113,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -2774,10 +2891,10 @@
     },
     {
       "beat": 114,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "right",
       "sourceEventIds": [
         858
       ],
@@ -2787,7 +2904,7 @@
     },
     {
       "beat": 115,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -2800,10 +2917,10 @@
     },
     {
       "beat": 116,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "pendulum",
-      "intendedSwing": "free",
+      "intendedSwing": "upleft",
       "sourceEventIds": [
         891
       ],
@@ -2812,8 +2929,21 @@
       ]
     },
     {
-      "beat": 118,
+      "beat": 116,
       "color": "red",
+      "motif": "chorus_melody",
+      "contour": "pendulum",
+      "intendedSwing": "upright",
+      "sourceEventIds": [
+        884
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 118,
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -2904,10 +3034,10 @@
     },
     {
       "beat": 124,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "pendulum",
-      "intendedSwing": "free",
+      "intendedSwing": "left",
       "sourceEventIds": [
         995
       ],
@@ -2916,8 +3046,21 @@
       ]
     },
     {
+      "beat": 124,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        988
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
       "beat": 125.5,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -2969,7 +3112,7 @@
     },
     {
       "beat": 129,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -2982,10 +3125,10 @@
     },
     {
       "beat": 130,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "ribbon",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1069
       ],
@@ -2995,7 +3138,7 @@
     },
     {
       "beat": 131,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -3008,15 +3151,28 @@
     },
     {
       "beat": 132,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "ribbon",
-      "intendedSwing": "free",
+      "intendedSwing": "down",
       "sourceEventIds": [
         1106
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 132,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        1099
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -3112,15 +3268,28 @@
     },
     {
       "beat": 140,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "ribbon",
-      "intendedSwing": "free",
+      "intendedSwing": "up",
       "sourceEventIds": [
         1224
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 140,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1217
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -3177,7 +3346,7 @@
     },
     {
       "beat": 145,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "wave",
       "intendedSwing": "free",
@@ -3190,10 +3359,10 @@
     },
     {
       "beat": 146,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "wave",
-      "intendedSwing": "right",
+      "intendedSwing": "left",
       "sourceEventIds": [
         1303
       ],
@@ -3203,7 +3372,7 @@
     },
     {
       "beat": 147,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "wave",
       "intendedSwing": "free",
@@ -3216,15 +3385,28 @@
     },
     {
       "beat": 148,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "wave",
-      "intendedSwing": "free",
+      "intendedSwing": "down",
       "sourceEventIds": [
         1340
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 148,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "wave",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        1333
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -3297,7 +3479,7 @@
       "color": "red",
       "motif": "chorus_melody",
       "contour": "wave",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1424
       ],
@@ -3320,10 +3502,10 @@
     },
     {
       "beat": 156,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "wave",
-      "intendedSwing": "free",
+      "intendedSwing": "down",
       "sourceEventIds": [
         1460
       ],
@@ -3332,8 +3514,21 @@
       ]
     },
     {
+      "beat": 156,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "wave",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        1453
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
       "beat": 157.5,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "wave",
       "intendedSwing": "free",
@@ -3359,7 +3554,7 @@
     },
     {
       "beat": 160,
-      "color": "red",
+      "color": "blue",
       "motif": "quiet_keys",
       "contour": "walk",
       "intendedSwing": "free",
@@ -3385,7 +3580,7 @@
     },
     {
       "beat": 164,
-      "color": "red",
+      "color": "gold",
       "motif": "quiet_keys",
       "contour": "walk",
       "intendedSwing": "free",
@@ -3437,7 +3632,7 @@
     },
     {
       "beat": 172,
-      "color": "red",
+      "color": "blue",
       "motif": "quiet_keys",
       "contour": "walk",
       "intendedSwing": "free",
@@ -3450,7 +3645,7 @@
     },
     {
       "beat": 173.5,
-      "color": "blue",
+      "color": "red",
       "motif": "quiet_keys",
       "contour": "walk",
       "intendedSwing": "free",
@@ -3463,7 +3658,7 @@
     },
     {
       "beat": 176,
-      "color": "red",
+      "color": "blue",
       "motif": "quiet_keys",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -3489,7 +3684,7 @@
     },
     {
       "beat": 180,
-      "color": "blue",
+      "color": "gold",
       "motif": "quiet_keys",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -3502,7 +3697,7 @@
     },
     {
       "beat": 181.5,
-      "color": "red",
+      "color": "blue",
       "motif": "quiet_keys",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -3528,7 +3723,7 @@
     },
     {
       "beat": 186,
-      "color": "blue",
+      "color": "red",
       "motif": "quiet_keys",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -3541,7 +3736,7 @@
     },
     {
       "beat": 188,
-      "color": "red",
+      "color": "blue",
       "motif": "quiet_keys",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -3554,7 +3749,7 @@
     },
     {
       "beat": 189.5,
-      "color": "blue",
+      "color": "red",
       "motif": "quiet_keys",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -3567,7 +3762,7 @@
     },
     {
       "beat": 192,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -3580,7 +3775,7 @@
     },
     {
       "beat": 193,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -3593,7 +3788,7 @@
     },
     {
       "beat": 194,
-      "color": "red",
+      "color": "gold",
       "motif": "build_steps",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -3697,7 +3892,7 @@
     },
     {
       "beat": 201,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -3710,7 +3905,7 @@
     },
     {
       "beat": 202,
-      "color": "red",
+      "color": "gold",
       "motif": "build_steps",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -3814,7 +4009,7 @@
     },
     {
       "beat": 210,
-      "color": "red",
+      "color": "gold",
       "motif": "build_steps",
       "contour": "wave",
       "intendedSwing": "free",
@@ -3827,7 +4022,7 @@
     },
     {
       "beat": 211,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "wave",
       "intendedSwing": "free",
@@ -3840,7 +4035,7 @@
     },
     {
       "beat": 212,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "wave",
       "intendedSwing": "free",
@@ -3853,7 +4048,7 @@
     },
     {
       "beat": 213,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "wave",
       "intendedSwing": "free",
@@ -3866,7 +4061,7 @@
     },
     {
       "beat": 214,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "wave",
       "intendedSwing": "free",
@@ -3879,7 +4074,7 @@
     },
     {
       "beat": 215,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "wave",
       "intendedSwing": "free",
@@ -3892,7 +4087,7 @@
     },
     {
       "beat": 216,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "wave",
       "intendedSwing": "free",
@@ -3905,7 +4100,7 @@
     },
     {
       "beat": 217,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "wave",
       "intendedSwing": "free",
@@ -3918,7 +4113,7 @@
     },
     {
       "beat": 218,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "wave",
       "intendedSwing": "free",
@@ -3992,7 +4187,7 @@
       "color": "red",
       "motif": "chorus_melody",
       "contour": "stair",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1839
       ],
@@ -4015,10 +4210,10 @@
     },
     {
       "beat": 228,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "stair",
-      "intendedSwing": "free",
+      "intendedSwing": "up",
       "sourceEventIds": [
         1878
       ],
@@ -4027,8 +4222,21 @@
       ]
     },
     {
+      "beat": 228,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "stair",
+      "intendedSwing": "upright",
+      "sourceEventIds": [
+        1871
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
       "beat": 229.5,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "stair",
       "intendedSwing": "free",
@@ -4080,7 +4288,7 @@
     },
     {
       "beat": 233,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "stair",
       "intendedSwing": "free",
@@ -4093,10 +4301,10 @@
     },
     {
       "beat": 234,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "stair",
-      "intendedSwing": "downleft",
+      "intendedSwing": "downright",
       "sourceEventIds": [
         1967
       ],
@@ -4109,7 +4317,7 @@
       "color": "blue",
       "motif": "chorus_open",
       "contour": "stair",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1988
       ],
@@ -4122,7 +4330,7 @@
       "color": "red",
       "motif": "chorus_open",
       "contour": "stair",
-      "intendedSwing": "free",
+      "intendedSwing": "down",
       "sourceEventIds": [
         1980
       ],
@@ -4135,12 +4343,25 @@
       "color": "blue",
       "motif": "chorus_melody",
       "contour": "stair",
-      "intendedSwing": "free",
+      "intendedSwing": "down",
       "sourceEventIds": [
         2006
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 236,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1999
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -4213,7 +4434,7 @@
       "color": "red",
       "motif": "chorus_melody",
       "contour": "ribbon",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2092
       ],
@@ -4236,10 +4457,10 @@
     },
     {
       "beat": 244,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "ribbon",
-      "intendedSwing": "free",
+      "intendedSwing": "down",
       "sourceEventIds": [
         2131
       ],
@@ -4248,8 +4469,21 @@
       ]
     },
     {
-      "beat": 246,
+      "beat": 244,
       "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "down",
+      "sourceEventIds": [
+        2124
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 246,
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -4301,7 +4535,7 @@
     },
     {
       "beat": 249,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -4314,10 +4548,10 @@
     },
     {
       "beat": 250,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "ribbon",
-      "intendedSwing": "upleft",
+      "intendedSwing": "upright",
       "sourceEventIds": [
         2223
       ],
@@ -4330,7 +4564,7 @@
       "color": "blue",
       "motif": "chorus_open",
       "contour": "ribbon",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2244
       ],
@@ -4343,7 +4577,7 @@
       "color": "red",
       "motif": "chorus_open",
       "contour": "ribbon",
-      "intendedSwing": "free",
+      "intendedSwing": "up",
       "sourceEventIds": [
         2236
       ],
@@ -4356,12 +4590,25 @@
       "color": "blue",
       "motif": "chorus_melody",
       "contour": "ribbon",
-      "intendedSwing": "free",
+      "intendedSwing": "up",
       "sourceEventIds": [
         2262
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 252,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2255
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -4418,7 +4665,7 @@
     },
     {
       "beat": 257.5,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "fan",
       "intendedSwing": "free",
@@ -4431,10 +4678,10 @@
     },
     {
       "beat": 258,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "fan",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2352
       ],
@@ -4444,7 +4691,7 @@
     },
     {
       "beat": 259,
-      "color": "blue",
+      "color": "red",
       "motif": "chorus_melody",
       "contour": "fan",
       "intendedSwing": "free",
@@ -4457,15 +4704,28 @@
     },
     {
       "beat": 260,
-      "color": "red",
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "fan",
-      "intendedSwing": "free",
+      "intendedSwing": "upleft",
       "sourceEventIds": [
         2391
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 260,
+      "color": "red",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "up",
+      "sourceEventIds": [
+        2384
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -4586,8 +4846,21 @@
       ]
     },
     {
-      "beat": 269.5,
+      "beat": 268,
       "color": "red",
+      "motif": "chorus_melody",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2515
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 269.5,
+      "color": "blue",
       "motif": "chorus_melody",
       "contour": "fan",
       "intendedSwing": "free",
@@ -4639,7 +4912,7 @@
     },
     {
       "beat": 274,
-      "color": "red",
+      "color": "gold",
       "motif": "ending_echo",
       "contour": "walk",
       "intendedSwing": "free",
@@ -4652,7 +4925,7 @@
     },
     {
       "beat": 276,
-      "color": "blue",
+      "color": "red",
       "motif": "ending_echo",
       "contour": "walk",
       "intendedSwing": "free",
@@ -4665,7 +4938,7 @@
     },
     {
       "beat": 278,
-      "color": "red",
+      "color": "gold",
       "motif": "ending_echo",
       "contour": "walk",
       "intendedSwing": "free",
@@ -4748,7 +5021,7 @@
       "color": "blue",
       "motif": "verse_melody",
       "contour": "walk",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         51
       ],
@@ -4757,11 +5030,24 @@
       ]
     },
     {
-      "beat": 18,
+      "beat": 16,
       "color": "red",
       "motif": "verse_melody",
       "contour": "walk",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        44
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 18,
+      "color": "gold",
+      "motif": "verse_melody",
+      "contour": "walk",
+      "intendedSwing": "free",
       "sourceEventIds": [
         61
       ],
@@ -4771,10 +5057,10 @@
     },
     {
       "beat": 19,
-      "color": "blue",
+      "color": "red",
       "motif": "verse_melody",
       "contour": "walk",
-      "intendedSwing": "upleft",
+      "intendedSwing": "free",
       "sourceEventIds": [
         66
       ],
@@ -4784,10 +5070,10 @@
     },
     {
       "beat": 20,
-      "color": "red",
+      "color": "blue",
       "motif": "verse_melody",
       "contour": "walk",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         81
       ],
@@ -4797,10 +5083,10 @@
     },
     {
       "beat": 21.5,
-      "color": "blue",
+      "color": "red",
       "motif": "verse_melody",
       "contour": "walk",
-      "intendedSwing": "right",
+      "intendedSwing": "left",
       "sourceEventIds": [
         88
       ],
@@ -4823,7 +5109,7 @@
     },
     {
       "beat": 24,
-      "color": "red",
+      "color": "blue",
       "motif": "verse_melody",
       "contour": "walk",
       "intendedSwing": "free",
@@ -4836,7 +5122,7 @@
     },
     {
       "beat": 25.5,
-      "color": "blue",
+      "color": "red",
       "motif": "verse_melody",
       "contour": "walk",
       "intendedSwing": "free",
@@ -4849,10 +5135,10 @@
     },
     {
       "beat": 27,
-      "color": "red",
+      "color": "gold",
       "motif": "verse_melody",
       "contour": "walk",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         126
       ],
@@ -4865,7 +5151,7 @@
       "color": "blue",
       "motif": "verse_melody",
       "contour": "walk",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         141
       ],
@@ -4878,7 +5164,7 @@
       "color": "red",
       "motif": "verse_melody",
       "contour": "walk",
-      "intendedSwing": "upleft",
+      "intendedSwing": "free",
       "sourceEventIds": [
         151
       ],
@@ -4891,7 +5177,7 @@
       "color": "blue",
       "motif": "verse_backbeat",
       "contour": "walk",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         155
       ],
@@ -4926,11 +5212,24 @@
       ]
     },
     {
-      "beat": 33.5,
+      "beat": 32,
       "color": "red",
       "motif": "verse_melody",
       "contour": "stair",
       "intendedSwing": "down",
+      "sourceEventIds": [
+        165
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 33.5,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "stair",
+      "intendedSwing": "free",
       "sourceEventIds": [
         180
       ],
@@ -4940,10 +5239,10 @@
     },
     {
       "beat": 35,
-      "color": "blue",
+      "color": "red",
       "motif": "verse_melody",
       "contour": "stair",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         187
       ],
@@ -4953,10 +5252,10 @@
     },
     {
       "beat": 36,
-      "color": "red",
+      "color": "blue",
       "motif": "verse_melody",
       "contour": "stair",
-      "intendedSwing": "upright",
+      "intendedSwing": "upleft",
       "sourceEventIds": [
         202
       ],
@@ -4966,10 +5265,10 @@
     },
     {
       "beat": 38,
-      "color": "blue",
+      "color": "gold",
       "motif": "verse_melody",
       "contour": "stair",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         212
       ],
@@ -5073,7 +5372,7 @@
       "color": "red",
       "motif": "verse_backbeat",
       "contour": "stair",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         273
       ],
@@ -5086,7 +5385,7 @@
       "color": "blue",
       "motif": "verse_melody",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         291
       ],
@@ -5095,11 +5394,24 @@
       ]
     },
     {
-      "beat": 50,
+      "beat": 48,
       "color": "red",
       "motif": "verse_melody",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        284
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 50,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "pendulum",
+      "intendedSwing": "right",
       "sourceEventIds": [
         301
       ],
@@ -5109,10 +5421,10 @@
     },
     {
       "beat": 51,
-      "color": "blue",
+      "color": "gold",
       "motif": "verse_melody",
       "contour": "pendulum",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         306
       ],
@@ -5125,7 +5437,7 @@
       "color": "red",
       "motif": "verse_melody",
       "contour": "pendulum",
-      "intendedSwing": "upright",
+      "intendedSwing": "free",
       "sourceEventIds": [
         321
       ],
@@ -5138,7 +5450,7 @@
       "color": "blue",
       "motif": "verse_melody",
       "contour": "pendulum",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         328
       ],
@@ -5187,10 +5499,10 @@
     },
     {
       "beat": 59,
-      "color": "red",
+      "color": "gold",
       "motif": "verse_melody",
       "contour": "pendulum",
-      "intendedSwing": "downleft",
+      "intendedSwing": "free",
       "sourceEventIds": [
         366
       ],
@@ -5203,7 +5515,7 @@
       "color": "blue",
       "motif": "verse_melody",
       "contour": "pendulum",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         381
       ],
@@ -5212,11 +5524,24 @@
       ]
     },
     {
-      "beat": 62,
+      "beat": 60,
       "color": "red",
       "motif": "verse_melody",
       "contour": "pendulum",
       "intendedSwing": "free",
+      "sourceEventIds": [
+        374
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
+      "beat": 62,
+      "color": "blue",
+      "motif": "verse_melody",
+      "contour": "pendulum",
+      "intendedSwing": "right",
       "sourceEventIds": [
         391
       ],
@@ -5229,7 +5554,7 @@
       "color": "blue",
       "motif": "verse_backbeat",
       "contour": "pendulum",
-      "intendedSwing": "free",
+      "intendedSwing": "left",
       "sourceEventIds": [
         395
       ],
@@ -5242,7 +5567,7 @@
       "color": "red",
       "motif": "verse_backbeat",
       "contour": "pendulum",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         393
       ],
@@ -5252,10 +5577,10 @@
     },
     {
       "beat": 64,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "ribbon",
-      "intendedSwing": "upleft",
+      "intendedSwing": "upright",
       "sourceEventIds": [
         408
       ],
@@ -5265,7 +5590,7 @@
     },
     {
       "beat": 65,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "ribbon",
       "intendedSwing": "up",
@@ -5278,10 +5603,10 @@
     },
     {
       "beat": 66,
-      "color": "blue",
+      "color": "gold",
       "motif": "build_steps",
       "contour": "ribbon",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         422
       ],
@@ -5294,7 +5619,7 @@
       "color": "red",
       "motif": "build_steps",
       "contour": "ribbon",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         425
       ],
@@ -5307,7 +5632,7 @@
       "color": "blue",
       "motif": "build_steps",
       "contour": "ribbon",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         436
       ],
@@ -5359,7 +5684,7 @@
       "color": "blue",
       "motif": "build_steps",
       "contour": "ribbon",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         464
       ],
@@ -5382,10 +5707,10 @@
     },
     {
       "beat": 73,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "ribbon",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         471
       ],
@@ -5395,10 +5720,10 @@
     },
     {
       "beat": 74,
-      "color": "red",
+      "color": "gold",
       "motif": "build_steps",
       "contour": "ribbon",
-      "intendedSwing": "upleft",
+      "intendedSwing": "free",
       "sourceEventIds": [
         478
       ],
@@ -5411,7 +5736,7 @@
       "color": "blue",
       "motif": "build_steps",
       "contour": "ribbon",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         481
       ],
@@ -5421,10 +5746,10 @@
     },
     {
       "beat": 76,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "ribbon",
-      "intendedSwing": "free",
+      "intendedSwing": "up",
       "sourceEventIds": [
         492
       ],
@@ -5433,8 +5758,21 @@
       ]
     },
     {
+      "beat": 76,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        489
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
       "beat": 77,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -5447,10 +5785,10 @@
     },
     {
       "beat": 78,
-      "color": "red",
+      "color": "gold",
       "motif": "build_steps",
       "contour": "ribbon",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         506
       ],
@@ -5463,7 +5801,7 @@
       "color": "blue",
       "motif": "build_steps",
       "contour": "ribbon",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         509
       ],
@@ -5476,7 +5814,7 @@
       "color": "red",
       "motif": "build_alternation",
       "contour": "stair",
-      "intendedSwing": "downleft",
+      "intendedSwing": "free",
       "sourceEventIds": [
         520
       ],
@@ -5515,7 +5853,7 @@
       "color": "blue",
       "motif": "build_alternation",
       "contour": "stair",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         530
       ],
@@ -5528,7 +5866,7 @@
       "color": "red",
       "motif": "build_alternation",
       "contour": "stair",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         535
       ],
@@ -5593,7 +5931,7 @@
       "color": "blue",
       "motif": "build_alternation",
       "contour": "stair",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         555
       ],
@@ -5606,7 +5944,7 @@
       "color": "red",
       "motif": "build_alternation",
       "contour": "stair",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         559
       ],
@@ -5645,7 +5983,7 @@
       "color": "blue",
       "motif": "build_alternation",
       "contour": "stair",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         566
       ],
@@ -5658,7 +5996,7 @@
       "color": "red",
       "motif": "build_alternation",
       "contour": "stair",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         570
       ],
@@ -5697,7 +6035,7 @@
       "color": "blue",
       "motif": "build_alternation",
       "contour": "stair",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         586
       ],
@@ -5723,7 +6061,7 @@
       "color": "blue",
       "motif": "build_alternation",
       "contour": "stair",
-      "intendedSwing": "down",
+      "intendedSwing": "downright",
       "sourceEventIds": [
         591
       ],
@@ -5736,7 +6074,7 @@
       "color": "red",
       "motif": "build_alternation",
       "contour": "stair",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         597
       ],
@@ -5810,10 +6148,10 @@
     },
     {
       "beat": 97,
-      "color": "blue",
+      "color": "red",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         646
       ],
@@ -5823,10 +6161,10 @@
     },
     {
       "beat": 97.5,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         654
       ],
@@ -5836,10 +6174,10 @@
     },
     {
       "beat": 98.5,
-      "color": "blue",
+      "color": "red",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "free",
+      "intendedSwing": "right",
       "sourceEventIds": [
         664
       ],
@@ -5849,10 +6187,10 @@
     },
     {
       "beat": 99,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "free",
+      "intendedSwing": "left",
       "sourceEventIds": [
         674
       ],
@@ -5875,7 +6213,7 @@
     },
     {
       "beat": 101,
-      "color": "blue",
+      "color": "gold",
       "motif": "hook_arc",
       "contour": "fan",
       "intendedSwing": "free",
@@ -5888,7 +6226,7 @@
     },
     {
       "beat": 102,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "fan",
       "intendedSwing": "free",
@@ -5897,6 +6235,19 @@
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 102,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        704
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -5930,7 +6281,7 @@
       "color": "blue",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         741
       ],
@@ -5939,11 +6290,24 @@
       ]
     },
     {
+      "beat": 104,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        734
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
       "beat": 105,
       "color": "red",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         748
       ],
@@ -5956,7 +6320,7 @@
       "color": "blue",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "down",
+      "intendedSwing": "downright",
       "sourceEventIds": [
         756
       ],
@@ -5982,7 +6346,7 @@
       "color": "blue",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         776
       ],
@@ -6034,7 +6398,7 @@
       "color": "blue",
       "motif": "chorus_open",
       "contour": "fan",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         825
       ],
@@ -6047,7 +6411,7 @@
       "color": "red",
       "motif": "chorus_open",
       "contour": "fan",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         817
       ],
@@ -6083,10 +6447,10 @@
     },
     {
       "beat": 113,
-      "color": "blue",
+      "color": "red",
       "motif": "hook_arc",
       "contour": "pendulum",
-      "intendedSwing": "right",
+      "intendedSwing": "left",
       "sourceEventIds": [
         846
       ],
@@ -6096,10 +6460,10 @@
     },
     {
       "beat": 113.5,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "right",
       "sourceEventIds": [
         856
       ],
@@ -6109,10 +6473,10 @@
     },
     {
       "beat": 114.5,
-      "color": "blue",
+      "color": "red",
       "motif": "hook_arc",
       "contour": "pendulum",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         866
       ],
@@ -6122,10 +6486,10 @@
     },
     {
       "beat": 115,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "pendulum",
-      "intendedSwing": "up",
+      "intendedSwing": "left",
       "sourceEventIds": [
         876
       ],
@@ -6148,7 +6512,7 @@
     },
     {
       "beat": 117,
-      "color": "blue",
+      "color": "gold",
       "motif": "hook_arc",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -6161,7 +6525,7 @@
     },
     {
       "beat": 118,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -6173,11 +6537,24 @@
       ]
     },
     {
+      "beat": 118,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "pendulum",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        910
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
       "beat": 119,
       "color": "blue",
       "motif": "chorus_open",
       "contour": "pendulum",
-      "intendedSwing": "free",
+      "intendedSwing": "left",
       "sourceEventIds": [
         927
       ],
@@ -6200,10 +6577,10 @@
     },
     {
       "beat": 120.0,
-      "color": "blue",
+      "color": "red",
       "motif": "eighth_weave",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         943
       ],
@@ -6213,10 +6590,10 @@
     },
     {
       "beat": 120.5,
-      "color": "red",
+      "color": "blue",
       "motif": "eighth_weave",
       "contour": "pendulum",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         945
       ],
@@ -6226,10 +6603,10 @@
     },
     {
       "beat": 121.0,
-      "color": "blue",
+      "color": "red",
       "motif": "eighth_weave",
       "contour": "pendulum",
-      "intendedSwing": "down",
+      "intendedSwing": "left",
       "sourceEventIds": [
         950
       ],
@@ -6239,10 +6616,10 @@
     },
     {
       "beat": 121.5,
-      "color": "red",
+      "color": "blue",
       "motif": "eighth_weave",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "right",
       "sourceEventIds": [
         958
       ],
@@ -6252,10 +6629,10 @@
     },
     {
       "beat": 122.0,
-      "color": "blue",
+      "color": "red",
       "motif": "eighth_weave",
       "contour": "pendulum",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         963
       ],
@@ -6265,10 +6642,10 @@
     },
     {
       "beat": 122.5,
-      "color": "red",
+      "color": "blue",
       "motif": "eighth_weave",
       "contour": "pendulum",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         970
       ],
@@ -6278,10 +6655,10 @@
     },
     {
       "beat": 123.0,
-      "color": "blue",
+      "color": "red",
       "motif": "eighth_weave",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "right",
       "sourceEventIds": [
         980
       ],
@@ -6304,7 +6681,7 @@
     },
     {
       "beat": 125,
-      "color": "red",
+      "color": "blue",
       "motif": "eighth_weave",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -6317,7 +6694,7 @@
     },
     {
       "beat": 125.5,
-      "color": "blue",
+      "color": "red",
       "motif": "eighth_weave",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -6330,10 +6707,10 @@
     },
     {
       "beat": 126,
-      "color": "red",
+      "color": "blue",
       "motif": "eighth_weave",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "right",
       "sourceEventIds": [
         1013
       ],
@@ -6343,10 +6720,10 @@
     },
     {
       "beat": 126.5,
-      "color": "blue",
+      "color": "red",
       "motif": "eighth_weave",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "right",
       "sourceEventIds": [
         1015
       ],
@@ -6356,10 +6733,10 @@
     },
     {
       "beat": 127,
-      "color": "red",
+      "color": "blue",
       "motif": "eighth_weave",
       "contour": "pendulum",
-      "intendedSwing": "right",
+      "intendedSwing": "left",
       "sourceEventIds": [
         1028
       ],
@@ -6372,7 +6749,7 @@
       "color": "blue",
       "motif": "chorus_open",
       "contour": "ribbon",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1048
       ],
@@ -6385,7 +6762,7 @@
       "color": "red",
       "motif": "chorus_open",
       "contour": "ribbon",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1040
       ],
@@ -6398,12 +6775,25 @@
       "color": "blue",
       "motif": "hook_arc",
       "contour": "ribbon",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1057
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 129,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1053
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -6424,7 +6814,7 @@
       "color": "blue",
       "motif": "hook_arc",
       "contour": "ribbon",
-      "intendedSwing": "free",
+      "intendedSwing": "right",
       "sourceEventIds": [
         1078
       ],
@@ -6525,10 +6915,10 @@
     },
     {
       "beat": 136,
-      "color": "blue",
+      "color": "red",
       "motif": "hook_arc",
       "contour": "ribbon",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1166
       ],
@@ -6538,7 +6928,7 @@
     },
     {
       "beat": 136.5,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -6551,10 +6941,10 @@
     },
     {
       "beat": 137.5,
-      "color": "blue",
+      "color": "red",
       "motif": "hook_arc",
       "contour": "ribbon",
-      "intendedSwing": "upright",
+      "intendedSwing": "upleft",
       "sourceEventIds": [
         1184
       ],
@@ -6564,7 +6954,7 @@
     },
     {
       "beat": 138,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "ribbon",
       "intendedSwing": "up",
@@ -6589,6 +6979,19 @@
       ]
     },
     {
+      "beat": 139,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1199
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
       "beat": 140,
       "color": "gold",
       "motif": "chorus_gold_reply",
@@ -6603,7 +7006,7 @@
     },
     {
       "beat": 141,
-      "color": "red",
+      "color": "gold",
       "motif": "hook_arc",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -6628,6 +7031,19 @@
       ]
     },
     {
+      "beat": 142,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1243
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
       "beat": 143,
       "color": "blue",
       "motif": "chorus_open",
@@ -6645,7 +7061,7 @@
       "color": "red",
       "motif": "chorus_open",
       "contour": "ribbon",
-      "intendedSwing": "right",
+      "intendedSwing": "up",
       "sourceEventIds": [
         1256
       ],
@@ -6671,7 +7087,7 @@
       "color": "red",
       "motif": "chorus_open",
       "contour": "wave",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1275
       ],
@@ -6693,11 +7109,24 @@
       ]
     },
     {
-      "beat": 146,
+      "beat": 145,
       "color": "red",
       "motif": "hook_arc",
       "contour": "wave",
       "intendedSwing": "right",
+      "sourceEventIds": [
+        1290
+      ],
+      "roles": [
+        "snare"
+      ]
+    },
+    {
+      "beat": 146,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "wave",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1303
       ],
@@ -6746,7 +7175,7 @@
     },
     {
       "beat": 149,
-      "color": "blue",
+      "color": "gold",
       "motif": "hook_arc",
       "contour": "wave",
       "intendedSwing": "free",
@@ -6759,7 +7188,7 @@
     },
     {
       "beat": 150,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "wave",
       "intendedSwing": "free",
@@ -6771,11 +7200,24 @@
       ]
     },
     {
+      "beat": 150,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1363
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
       "beat": 151,
       "color": "blue",
       "motif": "chorus_open",
       "contour": "wave",
-      "intendedSwing": "up",
+      "intendedSwing": "upleft",
       "sourceEventIds": [
         1382
       ],
@@ -6801,7 +7243,7 @@
       "color": "blue",
       "motif": "eighth_weave",
       "contour": "wave",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1400
       ],
@@ -6840,7 +7282,7 @@
       "color": "red",
       "motif": "eighth_weave",
       "contour": "wave",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1424
       ],
@@ -6901,6 +7343,19 @@
       ]
     },
     {
+      "beat": 157,
+      "color": "red",
+      "motif": "eighth_weave",
+      "contour": "wave",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1465
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
       "beat": 158,
       "color": "red",
       "motif": "eighth_weave",
@@ -6918,7 +7373,7 @@
       "color": "blue",
       "motif": "eighth_weave",
       "contour": "wave",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1485
       ],
@@ -6967,7 +7422,7 @@
     },
     {
       "beat": 164,
-      "color": "red",
+      "color": "blue",
       "motif": "quiet_keys",
       "contour": "walk",
       "intendedSwing": "free",
@@ -6980,7 +7435,7 @@
     },
     {
       "beat": 165.5,
-      "color": "blue",
+      "color": "red",
       "motif": "quiet_keys",
       "contour": "walk",
       "intendedSwing": "free",
@@ -6993,7 +7448,7 @@
     },
     {
       "beat": 167,
-      "color": "red",
+      "color": "blue",
       "motif": "quiet_keys",
       "contour": "walk",
       "intendedSwing": "free",
@@ -7032,7 +7487,7 @@
     },
     {
       "beat": 172,
-      "color": "red",
+      "color": "blue",
       "motif": "quiet_keys",
       "contour": "walk",
       "intendedSwing": "free",
@@ -7045,7 +7500,7 @@
     },
     {
       "beat": 173.5,
-      "color": "blue",
+      "color": "red",
       "motif": "quiet_keys",
       "contour": "walk",
       "intendedSwing": "free",
@@ -7058,7 +7513,7 @@
     },
     {
       "beat": 175,
-      "color": "red",
+      "color": "blue",
       "motif": "quiet_keys",
       "contour": "walk",
       "intendedSwing": "free",
@@ -7071,7 +7526,7 @@
     },
     {
       "beat": 176,
-      "color": "blue",
+      "color": "red",
       "motif": "quiet_keys",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -7084,7 +7539,7 @@
     },
     {
       "beat": 178,
-      "color": "red",
+      "color": "blue",
       "motif": "quiet_keys",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -7149,7 +7604,7 @@
     },
     {
       "beat": 186,
-      "color": "red",
+      "color": "blue",
       "motif": "quiet_keys",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -7162,7 +7617,7 @@
     },
     {
       "beat": 188,
-      "color": "blue",
+      "color": "red",
       "motif": "quiet_keys",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -7175,7 +7630,7 @@
     },
     {
       "beat": 189.5,
-      "color": "red",
+      "color": "blue",
       "motif": "quiet_keys",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -7188,7 +7643,7 @@
     },
     {
       "beat": 191,
-      "color": "blue",
+      "color": "red",
       "motif": "quiet_keys",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -7201,10 +7656,10 @@
     },
     {
       "beat": 192,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "pendulum",
-      "intendedSwing": "right",
+      "intendedSwing": "left",
       "sourceEventIds": [
         1584
       ],
@@ -7214,7 +7669,7 @@
     },
     {
       "beat": 193,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -7227,10 +7682,10 @@
     },
     {
       "beat": 194,
-      "color": "red",
+      "color": "gold",
       "motif": "build_steps",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1598
       ],
@@ -7243,7 +7698,7 @@
       "color": "blue",
       "motif": "build_steps",
       "contour": "pendulum",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1601
       ],
@@ -7256,7 +7711,7 @@
       "color": "red",
       "motif": "build_steps",
       "contour": "pendulum",
-      "intendedSwing": "upright",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1612
       ],
@@ -7269,7 +7724,7 @@
       "color": "blue",
       "motif": "build_steps",
       "contour": "pendulum",
-      "intendedSwing": "free",
+      "intendedSwing": "up",
       "sourceEventIds": [
         1619
       ],
@@ -7334,7 +7789,7 @@
       "color": "blue",
       "motif": "build_steps",
       "contour": "pendulum",
-      "intendedSwing": "down",
+      "intendedSwing": "right",
       "sourceEventIds": [
         1647
       ],
@@ -7344,10 +7799,10 @@
     },
     {
       "beat": 202,
-      "color": "red",
+      "color": "gold",
       "motif": "build_steps",
       "contour": "pendulum",
-      "intendedSwing": "downleft",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1654
       ],
@@ -7357,7 +7812,7 @@
     },
     {
       "beat": 203,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "pendulum",
       "intendedSwing": "free",
@@ -7370,10 +7825,10 @@
     },
     {
       "beat": 204,
-      "color": "red",
+      "color": "blue",
       "motif": "build_steps",
       "contour": "pendulum",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1668
       ],
@@ -7382,11 +7837,24 @@
       ]
     },
     {
+      "beat": 204,
+      "color": "red",
+      "motif": "build_steps",
+      "contour": "pendulum",
+      "intendedSwing": "right",
+      "sourceEventIds": [
+        1665
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
       "beat": 205,
       "color": "blue",
       "motif": "build_steps",
       "contour": "pendulum",
-      "intendedSwing": "free",
+      "intendedSwing": "right",
       "sourceEventIds": [
         1675
       ],
@@ -7396,10 +7864,10 @@
     },
     {
       "beat": 206,
-      "color": "red",
+      "color": "gold",
       "motif": "build_steps",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1682
       ],
@@ -7409,10 +7877,10 @@
     },
     {
       "beat": 207,
-      "color": "blue",
+      "color": "red",
       "motif": "build_steps",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1685
       ],
@@ -7422,10 +7890,10 @@
     },
     {
       "beat": 208,
-      "color": "red",
+      "color": "blue",
       "motif": "build_alternation",
       "contour": "wave",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1696
       ],
@@ -7435,7 +7903,7 @@
     },
     {
       "beat": 208.5,
-      "color": "blue",
+      "color": "red",
       "motif": "build_alternation",
       "contour": "wave",
       "intendedSwing": "up",
@@ -7448,10 +7916,10 @@
     },
     {
       "beat": 209,
-      "color": "red",
+      "color": "blue",
       "motif": "build_alternation",
       "contour": "wave",
-      "intendedSwing": "right",
+      "intendedSwing": "left",
       "sourceEventIds": [
         1705
       ],
@@ -7461,10 +7929,10 @@
     },
     {
       "beat": 209.5,
-      "color": "blue",
+      "color": "red",
       "motif": "build_alternation",
       "contour": "wave",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1706
       ],
@@ -7474,7 +7942,7 @@
     },
     {
       "beat": 210,
-      "color": "red",
+      "color": "blue",
       "motif": "build_alternation",
       "contour": "wave",
       "intendedSwing": "free",
@@ -7487,7 +7955,7 @@
     },
     {
       "beat": 210.5,
-      "color": "blue",
+      "color": "red",
       "motif": "build_alternation",
       "contour": "wave",
       "intendedSwing": "free",
@@ -7500,7 +7968,7 @@
     },
     {
       "beat": 211,
-      "color": "red",
+      "color": "blue",
       "motif": "build_alternation",
       "contour": "wave",
       "intendedSwing": "down",
@@ -7513,7 +7981,7 @@
     },
     {
       "beat": 211.5,
-      "color": "blue",
+      "color": "red",
       "motif": "build_alternation",
       "contour": "wave",
       "intendedSwing": "down",
@@ -7526,10 +7994,10 @@
     },
     {
       "beat": 212,
-      "color": "red",
+      "color": "blue",
       "motif": "build_alternation",
       "contour": "wave",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1726
       ],
@@ -7539,10 +8007,10 @@
     },
     {
       "beat": 212.5,
-      "color": "blue",
+      "color": "red",
       "motif": "build_alternation",
       "contour": "wave",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1731
       ],
@@ -7552,7 +8020,7 @@
     },
     {
       "beat": 213,
-      "color": "red",
+      "color": "blue",
       "motif": "build_alternation",
       "contour": "wave",
       "intendedSwing": "free",
@@ -7565,7 +8033,7 @@
     },
     {
       "beat": 213.5,
-      "color": "blue",
+      "color": "red",
       "motif": "build_alternation",
       "contour": "wave",
       "intendedSwing": "free",
@@ -7578,10 +8046,10 @@
     },
     {
       "beat": 214,
-      "color": "red",
+      "color": "blue",
       "motif": "build_alternation",
       "contour": "wave",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1741
       ],
@@ -7591,7 +8059,7 @@
     },
     {
       "beat": 214.5,
-      "color": "blue",
+      "color": "red",
       "motif": "build_alternation",
       "contour": "wave",
       "intendedSwing": "free",
@@ -7604,10 +8072,10 @@
     },
     {
       "beat": 215,
-      "color": "red",
+      "color": "blue",
       "motif": "build_alternation",
       "contour": "wave",
-      "intendedSwing": "upright",
+      "intendedSwing": "upleft",
       "sourceEventIds": [
         1746
       ],
@@ -7617,10 +8085,10 @@
     },
     {
       "beat": 215.5,
-      "color": "blue",
+      "color": "red",
       "motif": "build_alternation",
       "contour": "wave",
-      "intendedSwing": "upleft",
+      "intendedSwing": "upright",
       "sourceEventIds": [
         1747
       ],
@@ -7630,7 +8098,7 @@
     },
     {
       "beat": 216,
-      "color": "red",
+      "color": "blue",
       "motif": "build_alternation",
       "contour": "wave",
       "intendedSwing": "free",
@@ -7643,7 +8111,7 @@
     },
     {
       "beat": 216.5,
-      "color": "blue",
+      "color": "red",
       "motif": "build_alternation",
       "contour": "wave",
       "intendedSwing": "free",
@@ -7656,10 +8124,10 @@
     },
     {
       "beat": 217,
-      "color": "red",
+      "color": "blue",
       "motif": "build_alternation",
       "contour": "wave",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1766
       ],
@@ -7669,10 +8137,10 @@
     },
     {
       "beat": 217.5,
-      "color": "blue",
+      "color": "red",
       "motif": "build_alternation",
       "contour": "wave",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1767
       ],
@@ -7682,7 +8150,7 @@
     },
     {
       "beat": 218,
-      "color": "red",
+      "color": "blue",
       "motif": "build_alternation",
       "contour": "wave",
       "intendedSwing": "free",
@@ -7695,10 +8163,10 @@
     },
     {
       "beat": 218.5,
-      "color": "blue",
+      "color": "red",
       "motif": "build_alternation",
       "contour": "wave",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1774
       ],
@@ -7775,7 +8243,7 @@
       "color": "red",
       "motif": "hook_arc",
       "contour": "stair",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1835
       ],
@@ -7788,7 +8256,7 @@
       "color": "blue",
       "motif": "hook_arc",
       "contour": "stair",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1848
       ],
@@ -7824,7 +8292,7 @@
     },
     {
       "beat": 229,
-      "color": "blue",
+      "color": "gold",
       "motif": "hook_arc",
       "contour": "stair",
       "intendedSwing": "free",
@@ -7837,7 +8305,7 @@
     },
     {
       "beat": 230,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "stair",
       "intendedSwing": "free",
@@ -7846,6 +8314,19 @@
       ],
       "roles": [
         "hook"
+      ]
+    },
+    {
+      "beat": 230,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "stair",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        1899
+      ],
+      "roles": [
+        "kick"
       ]
     },
     {
@@ -7931,7 +8412,7 @@
       "color": "blue",
       "motif": "hook_arc",
       "contour": "stair",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1967
       ],
@@ -7944,7 +8425,7 @@
       "color": "blue",
       "motif": "spectrum_open",
       "contour": "stair",
-      "intendedSwing": "free",
+      "intendedSwing": "down",
       "sourceEventIds": [
         1988
       ],
@@ -8009,7 +8490,7 @@
       "color": "blue",
       "motif": "spectrum_open",
       "contour": "stair",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2049
       ],
@@ -8061,7 +8542,7 @@
       "color": "blue",
       "motif": "hook_arc",
       "contour": "ribbon",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2077
       ],
@@ -8074,7 +8555,7 @@
       "color": "red",
       "motif": "hook_arc",
       "contour": "ribbon",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2088
       ],
@@ -8087,7 +8568,7 @@
       "color": "blue",
       "motif": "hook_arc",
       "contour": "ribbon",
-      "intendedSwing": "free",
+      "intendedSwing": "right",
       "sourceEventIds": [
         2101
       ],
@@ -8123,7 +8604,7 @@
     },
     {
       "beat": 245,
-      "color": "blue",
+      "color": "gold",
       "motif": "hook_arc",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -8136,7 +8617,7 @@
     },
     {
       "beat": 246,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "ribbon",
       "intendedSwing": "free",
@@ -8148,11 +8629,24 @@
       ]
     },
     {
+      "beat": 246,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "ribbon",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2157
+      ],
+      "roles": [
+        "bass"
+      ]
+    },
+    {
       "beat": 247,
       "color": "blue",
       "motif": "spectrum_open",
       "contour": "ribbon",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2177
       ],
@@ -8165,7 +8659,7 @@
       "color": "red",
       "motif": "spectrum_open",
       "contour": "ribbon",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2169
       ],
@@ -8201,10 +8695,10 @@
     },
     {
       "beat": 249,
-      "color": "blue",
+      "color": "red",
       "motif": "eighth_weave",
       "contour": "ribbon",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2206
       ],
@@ -8214,10 +8708,10 @@
     },
     {
       "beat": 249.5,
-      "color": "red",
+      "color": "blue",
       "motif": "eighth_weave",
       "contour": "ribbon",
-      "intendedSwing": "upleft",
+      "intendedSwing": "upright",
       "sourceEventIds": [
         2216
       ],
@@ -8227,7 +8721,7 @@
     },
     {
       "beat": 250,
-      "color": "blue",
+      "color": "red",
       "motif": "eighth_weave",
       "contour": "ribbon",
       "intendedSwing": "up",
@@ -8308,7 +8802,7 @@
       "color": "blue",
       "motif": "eighth_weave",
       "contour": "ribbon",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2286
       ],
@@ -8360,7 +8854,7 @@
       "color": "red",
       "motif": "spectrum_open",
       "contour": "fan",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2320
       ],
@@ -8373,7 +8867,7 @@
       "color": "blue",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2338
       ],
@@ -8386,7 +8880,7 @@
       "color": "red",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2348
       ],
@@ -8399,7 +8893,7 @@
       "color": "blue",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "free",
+      "intendedSwing": "left",
       "sourceEventIds": [
         2361
       ],
@@ -8412,7 +8906,7 @@
       "color": "red",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "free",
+      "intendedSwing": "right",
       "sourceEventIds": [
         2373
       ],
@@ -8435,7 +8929,7 @@
     },
     {
       "beat": 261,
-      "color": "blue",
+      "color": "gold",
       "motif": "hook_arc",
       "contour": "fan",
       "intendedSwing": "free",
@@ -8448,7 +8942,7 @@
     },
     {
       "beat": 262,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "fan",
       "intendedSwing": "free",
@@ -8457,6 +8951,19 @@
       ],
       "roles": [
         "kick"
+      ]
+    },
+    {
+      "beat": 262,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2417
+      ],
+      "roles": [
+        "bass"
       ]
     },
     {
@@ -8513,10 +9020,10 @@
     },
     {
       "beat": 265,
-      "color": "blue",
+      "color": "red",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2466
       ],
@@ -8526,10 +9033,10 @@
     },
     {
       "beat": 265.5,
-      "color": "red",
+      "color": "blue",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "downleft",
+      "intendedSwing": "downright",
       "sourceEventIds": [
         2476
       ],
@@ -8539,7 +9046,7 @@
     },
     {
       "beat": 266,
-      "color": "blue",
+      "color": "red",
       "motif": "hook_arc",
       "contour": "fan",
       "intendedSwing": "down",
@@ -8555,7 +9062,7 @@
       "color": "blue",
       "motif": "spectrum_open",
       "contour": "fan",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2504
       ],
@@ -8568,7 +9075,7 @@
       "color": "red",
       "motif": "spectrum_open",
       "contour": "fan",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2496
       ],
@@ -8620,7 +9127,7 @@
       "color": "blue",
       "motif": "hook_arc",
       "contour": "fan",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2546
       ],
@@ -8629,11 +9136,24 @@
       ]
     },
     {
+      "beat": 270,
+      "color": "red",
+      "motif": "hook_arc",
+      "contour": "fan",
+      "intendedSwing": "free",
+      "sourceEventIds": [
+        2543
+      ],
+      "roles": [
+        "kick"
+      ]
+    },
+    {
       "beat": 271,
       "color": "blue",
       "motif": "spectrum_open",
       "contour": "fan",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2557
       ],
@@ -8682,7 +9202,7 @@
     },
     {
       "beat": 274,
-      "color": "red",
+      "color": "gold",
       "motif": "ending_echo",
       "contour": "walk",
       "intendedSwing": "free",
@@ -8695,7 +9215,7 @@
     },
     {
       "beat": 276,
-      "color": "red",
+      "color": "blue",
       "motif": "ending_echo",
       "contour": "walk",
       "intendedSwing": "free",
@@ -8708,7 +9228,7 @@
     },
     {
       "beat": 278,
-      "color": "red",
+      "color": "gold",
       "motif": "ending_echo",
       "contour": "walk",
       "intendedSwing": "free",

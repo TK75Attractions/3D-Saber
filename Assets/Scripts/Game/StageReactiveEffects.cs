@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// 全背景共通の舞台反応。Perfectの光をノーツの横位置に対応する左右の縁へ送る。
+// 全背景共通の舞台反応。成功の光(Perfect 最大、Great/Good は弱め)をノーツの横位置に対応する左右の縁へ送る。
 // 独自Updateは持たず、GamePlayManagerの曲時計でのみ進む。
 [ExecuteAlways]
 public sealed class StageReactiveEffects : MonoBehaviour
@@ -162,35 +162,39 @@ public sealed class StageReactiveEffects : MonoBehaviour
     void Cut(CuttableNote note, JudgmentTier tier, Vector3 point, Vector3 velocity)
     {
         // 降格後の確定判定だけを使う。ロング途中・時間切れは祝福しない。
-        bool perfect = CanReact && tier == JudgmentTier.Perfect && note != null && note.IsCut && !note.IsMissed &&
+        // 床の縁の帯は Great/Good にも弱めに出す。背景ごとの動きと織り目は Perfect 限定。
+        bool valid = CanReact && note != null && note.IsCut && !note.IsMissed &&
             Finite(note.HitTime) && FloorLaneForX(note.transform.position.x) >= 0;
+        float gain = valid ? JudgmentTierHelper.StageReactionGain(tier) : 0f;
+        bool perfect = valid && tier == JudgmentTier.Perfect;
         ResolveWeave(note, perfect);
         Untrack(note);
-        if (!perfect) return;
-        if (themeResponse != null) themeResponse.OnPerfect(FloorLaneForX(note.transform.position.x));
-        if (meteorWorld != null) meteorWorld.OnMeteorPerfect(FloorLaneForX(note.transform.position.x));
+        if (gain <= 0f) return;
+        if (perfect && themeResponse != null) themeResponse.OnPerfect(FloorLaneForX(note.transform.position.x));
+        if (perfect && meteorWorld != null) meteorWorld.OnMeteorPerfect(FloorLaneForX(note.transform.position.x));
         if (note.RequiredCutCount > 1)
         {
-            AddWave(note, WaveKind.Release, 1);
+            AddWave(note, WaveKind.Release, gain);
             ReleaseCount++;
             return;
         }
         int hand = Hand(note);
         for (int i = 0; i < waves.Length; i++)
         {
-            // 譜面上同時で、別の手が短い時間内に切った組だけを一つの左右反応へ変える。
-            if (!waves[i].active || waves[i].kind != WaveKind.Cut || waves[i].gain < .9f ||
+            // 譜面上同時で、別の手が短い時間内に切った組だけを一つの左右反応へ変える(強さは良い方)。
+            if (!waves[i].active || waves[i].kind != WaveKind.Cut || waves[i].gain <= 0f ||
                 waves[i].hand == 0 || hand == 0 || waves[i].hand == hand || waves[i].age > .16f ||
                 Math.Abs(waves[i].chartTime - note.HitTime) > NoteSpawner.SimultaneousEpsilonSeconds) continue;
             waves[i].kind = WaveKind.Pair;
             waves[i].age = 0;
+            waves[i].gain = Mathf.Max(waves[i].gain, gain);
             waves[i].laneMask |= 1 << FloorLaneForX(note.transform.position.x);
             waves[i].color = new Color(.68f, .88f, 1.35f);
             PairCount++;
             CountWaves();
             return;
         }
-        AddWave(note, WaveKind.Cut, 1);
+        AddWave(note, WaveKind.Cut, gain);
     }
 
     void ResolveWeave(CuttableNote note, bool perfect)

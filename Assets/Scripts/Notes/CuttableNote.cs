@@ -42,6 +42,7 @@ public class CuttableNote : MonoBehaviour
         LastCutCorrectDirection = true; LastCutterHand = SaberHand.Any;
         LastCutSongTime = null;
         firstPiece = secondPiece = null;
+        hasPendingFlash = false;
         lastHitPoint = Vector3.zero; lastVelocity = Vector3.right; cracksUsed = 0;
         foreach (var crack in ownedCracks) if (crack.visual != null) crack.visual.SetActive(false);
         if (countLabel != null) countLabel.gameObject.SetActive(false);
@@ -112,8 +113,19 @@ public class CuttableNote : MonoBehaviour
     }
     // 直前の切断で飛ばした2片(Perfect の演出から呼ぶ)。再利用ノーツへ持ち越さない。
     private SlicePieceDecay firstPiece, secondPiece;
+    // 判定の通知(OnCut の中)は2片を作る前に来るので、まだ片が無ければ予約して、作った直後に光らせる。
+    private bool hasPendingFlash;
+    private Color pendingFlashColor;
+    private float pendingFlashSeconds;
     public void FlashSlices(Color color, float seconds)
     {
+        if (firstPiece == null && secondPiece == null && IsCut && !IsMissed)
+        {
+            hasPendingFlash = true;
+            pendingFlashColor = color;
+            pendingFlashSeconds = seconds;
+            return;
+        }
         if (firstPiece != null) firstPiece.Flash(color, seconds);
         if (secondPiece != null) secondPiece.Flash(color, seconds);
     }
@@ -389,6 +401,12 @@ public class CuttableNote : MonoBehaviour
         Vector3 separationWorld = cutNormalWorld * sliceSeparationImpulse + cutVelocity * saberVelocityScale;
         SpawnPiece(first, separationWorld); SpawnPiece(second, -separationWorld);
         firstPiece = first; secondPiece = second;
+        if (hasPendingFlash)
+        {
+            hasPendingFlash = false;
+            first.Flash(pendingFlashColor, pendingFlashSeconds);
+            second.Flash(pendingFlashColor, pendingFlashSeconds);
+        }
         return true;
     }
     private void SpawnPiece(SlicePieceDecay piece, Vector3 velocity)

@@ -1,4 +1,4 @@
-"""PRISM CIRCUIT v3: 同時の高さ・矢印と位置・フレーズの配置差を検証する。
+"""PRISM CIRCUIT v4: 両手アクセントと金の応答、振り抜きまで含むフリック監査。
 
 標準ライブラリだけで譜面を再生成・検証できる。chart.py は音声付きの全工程。
 python chart_v2.py --output <folder> [--deployed <song folder>]
@@ -24,6 +24,73 @@ DIRECTIONS = {
     'upleft': (-1, 1), 'upright': (1, 1),
     'downleft': (-1, -1), 'downright': (1, -1),
 }
+HALF_SWING = .25  # 切断位置の前後を含めた仮想の振り幅（物理メートルではない）
+SWING_SPEED_LIMIT = 5.5
+ENTRY_COSINE = math.sqrt(.5)  # 45度以内でフリックへ進入する
+DIR_NAMES = tuple(DIRECTIONS)
+UNIT_DIRECTIONS = {name: tuple(x/math.hypot(*v) for x in v) for name, v in DIRECTIONS.items()}
+
+
+def dot(a, b):
+    return sum(x*y for x, y in zip(a, b))
+
+
+def swing_edge(a, b, before, after):
+    """前打点中心→振り抜き→次打点の手前→中心までを、打点間の時間と照合。"""
+    gap = (b['time']-a['time']-a.get('lengthMs', 0))/1000
+    if gap <= 0:
+        return False
+    av, bv = UNIT_DIRECTIONS[before], UNIT_DIRECTIONS[after]
+    delta = (b['x']-a['x'], b['y']-a['y'])
+    if b['direction'] != 'none':
+        distance = math.hypot(*delta)
+        if distance < .08 or dot(delta, bv)/distance < ENTRY_COSINE-.00001:
+            return False
+    if gap < 2*BEAT-.00001:
+        # 自由タップを挟んだときも実際の振り方向を追い、暗黙のリセットを隠さない。
+        limit = -.5 if a['direction'] != 'none' and b['direction'] != 'none' else 0
+        if dot(av, bv) > limit+.00001:
+            return False
+    connector = tuple(delta[i]-HALF_SWING*(av[i]+bv[i]) for i in (0, 1))
+    speed = (2*HALF_SWING+math.hypot(*connector))/gap
+    return speed <= SWING_SPEED_LIMIT+.00001
+
+
+def audit_swing_flow(notes):
+    """金を取る/取らない全分岐を、可能な振り方向集合として圧縮して調べる。
+
+    集合の和を取らず、分岐ごとの集合を残すため、一方の手で成功する経路で
+    別の取り方の不成立を隠さない。自由タップも8方向のいずれかを実際に振る。
+    """
+    failures = []
+    max_states = 1
+    for hand in ('blue', 'red'):
+        states = {(-1, 255)}
+        for index, n in enumerate(notes):
+            if n['color'] not in (hand, 'gold'):
+                continue
+            allowed = (DIR_NAMES.index(n['direction']),) if n['direction'] != 'none' else range(8)
+            optional = n['color'] == 'gold' and n['count'] == 1
+            next_states = set(states) if optional else set()
+            for previous, mask in sorted(states):
+                reachable = 0
+                for out_dir in allowed:
+                    if previous == -1 or any(mask & (1 << in_dir) and swing_edge(notes[previous], n, DIR_NAMES[in_dir], DIR_NAMES[out_dir]) for in_dir in range(8)):
+                        reachable |= 1 << out_dir
+                if reachable:
+                    # 長い金ロールの最終カットは任意方向。入口と出口の回復は別途照合する。
+                    next_states.add((index, 255 if n['count'] > 1 else reachable))
+                else:
+                    failures.append(dict(hand=hand, previous=previous, note=index,
+                                         fromBeat=notes[previous]['beat'] if previous >= 0 else None, beat=n['beat']))
+                    # 診断は次の問題も列挙できるよう、中立姿勢から再開する。
+                    next_states.add((index, 255))
+            states = next_states
+            max_states = max(max_states, len(states))
+    return dict(failures=failures, allGoldAssignmentsFeasible=not failures,
+                optionalGoldTaps=sum(n['color'] == 'gold' and n['count'] == 1 for n in notes),
+                halfSwingUnits=HALF_SWING, swingTravelLimitUnitsPerSecond=SWING_SPEED_LIMIT,
+                maxEntryAngleDegrees=45, rapidArrowMinimumTurnDegrees=120, maxBranchStates=max_states)
 
 
 def sounds_at(beat):
@@ -177,6 +244,25 @@ def phrase_specs(diff):
                         'chorus_gold_reply' if kind == 'gold' else
                         'eighth_weave' if pos in (6, 7) else 'hook_arc', kind)
     specs.sort(key=lambda s: s['beat'])
+    # 大きな和音は両手へ、主題・ベースの応答は金へ。増加点を音楽の句で指定する。
+    pair_beats = {
+        'easy': {bar*4 for bar in range(24, 68) if (bar < 40 or bar >= 56) and bar % 4 == 2},
+        'normal': {bar*4 for bar in range(24, 68) if (bar < 40 or bar >= 56) and bar % 2 == 1},
+        'hard': {16, 32, 48, 60, 76, 204, 102, 104, 118, 129, 139, 142, 145, 150, 157, 230, 246, 262, 270},
+    }[diff]
+    gold_beats = {
+        'easy': {bar*4+2 for bar in range(24, 68) if (bar < 40 or bar >= 56) and bar % 4 == 0},
+        'normal': {24, 40, 56, 18, 38, 50, 66, 74, 82, 194, 202, 210, 164, 180, 274, 278},
+        'hard': {18, 27, 38, 51, 59, 66, 74, 78, 194, 202, 206, 101, 117, 141, 149, 229, 245, 261, 274, 278},
+    }[diff]
+    by_beat = {s['beat']: s for s in specs}
+    for beat in sorted(pair_beats | gold_beats):
+        spec = by_beat[beat]
+        if spec['kind'] != 'single':
+            raise ValueError(f'Accent already occupied: {diff}@{beat}')
+        spec['kind'] = 'pair' if beat in pair_beats else 'gold'
+        if spec['kind'] == 'pair':
+            spec['sources'].append(source_at(beat, ('kick', 'snare', 'clap', 'chord_stab', 'crash', 'bass'), spec['sources']))
     if len({s['beat'] for s in specs}) != len(specs):
         raise ValueError('意図しない重複打点がある')
     return specs
@@ -239,15 +325,16 @@ def choose_direction(note, previous, previous_direction, eligible, pair):
     if horizontal:
         candidates.append(horizontal)
     for direction in candidates:
-        v = DIRECTIONS[direction]
+        v = UNIT_DIRECTIONS[direction]
         if pair and ((note['color'] == 'blue' and v[0] > 0) or (note['color'] == 'red' and v[0] < 0)):
             continue
         if previous_direction != 'none':
-            old = DIRECTIONS[previous_direction]
-            if sum(x*y for x, y in zip(old, v)) > 0:
+            old = UNIT_DIRECTIONS[previous_direction]
+            limit = -.5 if note['beat']-previous['end'] < 2 else 0
+            if dot(old, v) > limit+.00001:
                 continue
-        # 現在位置へ向かう動きと矢印を一致させる。
-        if dx*v[0] + dy*v[1] > .07:
+        # 横から進入して縦に切らせるような浅い一致を除き、45度以内にする。
+        if math.hypot(dx, dy) >= .08 and (dx*v[0] + dy*v[1])/math.hypot(dx, dy) >= ENTRY_COSINE-.00001:
             return direction
     return 'none'
 
@@ -293,7 +380,7 @@ def build(diff):
                 eligible = (hard and not (bar < 4 or 40 <= bar < 48 or bar >= 68)) or (
                     not easy and not hard and (kind == 'pair' or
                         spec['motif'] == 'chorus_melody' and beat % 8 == 2))
-                direction = choose_direction(dict(x=x, y=y, color=color), previous, flow[color], eligible, kind == 'pair')
+                direction = choose_direction(dict(beat=beat, x=x, y=y, color=color), previous, flow[color], eligible, kind == 'pair')
                 intent = direction if direction != 'none' else 'free'
                 flow[color] = direction
                 totals[color] += 1
@@ -310,8 +397,11 @@ def build(diff):
                 last[hand] = dict(end=beat + spec['length'], x=x, y=y, color=color)
                 if color == 'gold':
                     flow[hand] = 'none'
-        next_hand = 'red' if colors[-1] == 'blue' else 'blue' if colors[-1] == 'red' else next_hand
-    chart = dict(_comment='Prism Circuit v3: level doubles, six musical movement contours, high up/low down arrows and free gold replies. Longs are repeated cuts.',
+        if kind == 'pair':
+            next_hand = min(('blue', 'red'), key=lambda h: (totals[h], h == next_hand))
+        elif kind != 'gold':
+            next_hand = 'red' if colors[-1] == 'blue' else 'blue'
+    chart = dict(_comment='Prism Circuit v4: stronger level doubles and gold replies; flick entry, follow-through and both gold-hand choices audited. Longs are repeated cuts.',
                  bpm=BPM, coordScale=1., offsetMs=0., beatZeroMs=0.,
                  displayLevel={'easy': 3, 'normal': 5, 'hard': 8}[diff],
                  timeSignatures=[dict(beat=0, numerator=4, denominator=4)], notes=notes)
@@ -433,14 +523,18 @@ def validate(chart, diff, provenance=None):
                 av, bv = DIRECTIONS[a['direction']], DIRECTIONS[b['direction']]
                 check(sum(x * y for x, y in zip(av, bv)) <= 0, f'double direction {hand}@{b["beat"]}')
     stats = metrics(chart)
+    if all(n['direction'] == 'none' or n['direction'] in DIRECTIONS for n in ns):
+        stats['swingAudit'] = audit_swing_flow(ns)
+        check(not stats['swingAudit']['failures'], f'swing flow {stats["swingAudit"]["failures"][:3]}')
     check(stats['firstSeconds'] >= 3 and META['durationSeconds'] - stats['lastSeconds'] >= 3, 'lead/tail')
     check(stats['maxTravelUnitsPerSecond'] <= 4.5, 'travel speed')
     check(stats['mostRepeatedBarLayout'] <= 4, 'repeated layout')
     check(stats['uniqueBarLayouts'] >= {'easy': 20, 'normal': 35, 'hard': 45}[diff], 'layout variety')
     check(abs(stats['colors'].get('red', 0) - stats['colors'].get('blue', 0)) <= 5, 'hand load')
-    check(7 <= stats['goldPercent'] <= 18, 'gold budget')
-    check({'easy': 6, 'normal': 18, 'hard': 28}[diff] <= stats['simultaneousPairs'], 'pair budget')
-    check(stats['pairOnsetPercent'] <= {'easy': 10, 'normal': 18, 'hard': 22}[diff], 'pair excess')
+    check(12 <= stats['goldPercent'] <= 22, 'gold budget')
+    check({'easy': 13, 'normal': 34, 'hard': 46}[diff] <= stats['simultaneousPairs'], 'pair budget')
+    check(stats['pairOnsetPercent'] <= {'easy': 17, 'normal': 24, 'hard': 25}[diff], 'pair excess')
+    check(stats['types'].get('direction', 0) >= {'easy': 0, 'normal': 30, 'hard': 70}[diff], 'flick vocabulary')
     section_stats = {s['name']: s for s in stats['sections']}
     check(section_stats['Weightless']['nps'] < section_stats['Prism']['nps'] * .6, 'no breathing section')
     check(section_stats['Weightless']['pairs'] == 0, 'quiet pair excess')
@@ -461,7 +555,7 @@ def validate(chart, diff, provenance=None):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--output', type=Path, default=OUT / 'RechartV3')
+    parser.add_argument('--output', type=Path, default=OUT / 'RechartV4')
     parser.add_argument('--deployed', type=Path)
     args = parser.parse_args()
     charts, sources, report = {}, {}, {}

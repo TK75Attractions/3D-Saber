@@ -169,26 +169,44 @@ public class StageReactiveEffectsTests
         Assert.AreEqual(0, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount);
     }
 
-    [TestCase(0, JudgmentTier.Perfect, 1)]
-    [TestCase(.10, JudgmentTier.Great, 0)]
-    [TestCase(.15, JudgmentTier.Good, 0)]
-    [TestCase(.19, JudgmentTier.Bad, 0)]
-    [TestCase(.40, JudgmentTier.Miss, 0)]
-    [TestCase(-.055, JudgmentTier.Great, 0)]
-    [TestCase(-.075, JudgmentTier.Good, 0)]
-    [TestCase(-.095, JudgmentTier.Bad, 0)]
-    [TestCase(-.15, JudgmentTier.Miss, 0)]
-    public void OnlyFinalPerfectJudgmentLightsStageAndCutSparks(double error, JudgmentTier tier, int count)
+    // 2026-10-03(爽快感カタログ 連1): 床の縁の帯は Perfect/Great/Good で出す(強さは段階で変える)。背景固有の動きは Perfect 限定のまま。
+    [TestCase(0, JudgmentTier.Perfect, 1, 1)]
+    [TestCase(.10, JudgmentTier.Great, 1, 0)]
+    [TestCase(.15, JudgmentTier.Good, 1, 0)]
+    [TestCase(.19, JudgmentTier.Bad, 0, 0)]
+    [TestCase(.40, JudgmentTier.Miss, 0, 0)]
+    [TestCase(-.055, JudgmentTier.Great, 1, 0)]
+    [TestCase(-.075, JudgmentTier.Good, 1, 0)]
+    [TestCase(-.095, JudgmentTier.Bad, 0, 0)]
+    [TestCase(-.15, JudgmentTier.Miss, 0, 0)]
+    public void FloorLightsForPerfectGreatGoodButThemeMotionOnlyForPerfect(double error, JudgmentTier tier, int waves, int themed)
     {
         Spawn(N()); Cut(0, error); effects.Tick(1.1);
         Assert.AreEqual(tier, score.LastTier);
-        Assert.AreEqual(count, effects.ActiveWaveCount);
-        // 2026-09-23: 切断位置の演出だけは判定段階化(Perfect/Great/Good は出す、Bad/Miss は出さない)。床・背景は Perfect 限定のまま。
+        Assert.AreEqual(waves, effects.ActiveWaveCount);
+        // 2026-09-23: 切断位置の演出は判定段階化(Perfect/Great/Good は出す、Bad/Miss は出さない)。
         Assert.AreEqual(GameplayCutFeedback.Draws(tier) ? 1 : 0, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount,
             "切断演出は Perfect/Great/Good だけに出す");
-        Assert.AreEqual(count, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount,
-            "Obsidianのラッチも最終Perfectと同じ結果を返す");
-        if (count == 0) Assert.AreEqual(0, effects.GetComponent<MeshFilter>().sharedMesh.vertexCount);
+        Assert.AreEqual(themed, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount,
+            "Obsidianのラッチは最終Perfectだけで動く");
+        if (waves == 0) Assert.AreEqual(0, effects.GetComponent<MeshFilter>().sharedMesh.vertexCount);
+    }
+
+    [Test]
+    public void WeakerTiersDrawDimmerFloorLight()
+    {
+        float Brightness(double error)
+        {
+            Cleanup(); Setup();
+            Spawn(N()); Cut(0, error); effects.Tick(1.1);
+            float max = 0;
+            foreach (var c in effects.GetComponent<MeshFilter>().sharedMesh.colors) max = Mathf.Max(max, c.maxColorComponent * c.a);
+            return max;
+        }
+        float perfect = Brightness(0), great = Brightness(.10), good = Brightness(.15);
+        Assert.Greater(perfect, great, "Perfect が一番明るい");
+        Assert.Greater(great, good, "Great は Good より明るい");
+        Assert.Greater(good, 0f, "Good でも光る");
     }
 
     [TestCase(1)] [TestCase(3)]
@@ -197,8 +215,8 @@ public class StageReactiveEffectsTests
         var n = N(1000, "blue", cuts); n.direction = "right";
         Spawn(n); for (int i = 0; i < cuts; i++) Cut(0);
         Assert.AreEqual(JudgmentTier.Great, score.LastTier);
-        Assert.AreEqual(0, effects.ActiveWaveCount); Assert.AreEqual(0, effects.ReleaseCount);
-        // 方向降格後の Great でも切断位置の演出は Great 相当で出る(床・背景の Perfect 反応は出ない)。
+        // 方向降格後の Great は、床の帯を Great の強さで出す。背景の Perfect 反応は出ない。
+        Assert.AreEqual(1, effects.ActiveWaveCount); Assert.AreEqual(cuts > 1 ? 1 : 0, effects.ReleaseCount);
         Assert.AreEqual(1, spawner.GetComponentInChildren<GameplayCutFeedback>().ActiveCount);
         Assert.AreEqual(0, effects.GetComponentInChildren<StageThemeResponse>().ActiveResponseCount);
     }

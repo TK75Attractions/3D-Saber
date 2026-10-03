@@ -19,6 +19,7 @@ public class GateBeatPulse : MonoBehaviour
     private ScoreManager score;
     private bool subscribed;
     private double lastPerfect = double.NegativeInfinity;
+    private float lastGain = 1f;
     public float CurrentIntensity { get; private set; }
 
     // JudgeGate の枠を見つけてパルスを付ける(冪等)。ゲートが無ければ null。
@@ -86,10 +87,13 @@ public class GateBeatPulse : MonoBehaviour
 
     private void OnJudgment(JudgmentTier tier, int awarded)
     {
-        if (!isActiveAndEnabled || tier != JudgmentTier.Perfect) return;
-        // 同時斬りも加算せず1回分の上限で再点灯する。
+        float gain = JudgmentTierHelper.StageReactionGain(tier);
+        if (!isActiveAndEnabled || gain <= 0f) return;
+        // 同時斬りも加算せず1回分の上限で再点灯する。光っている最中の弱い判定では暗くしない。
+        if (gain < CurrentIntensity) return;
         lastPerfect = Time.unscaledTimeAsDouble;
-        ApplyIntensity(1f);
+        lastGain = gain;
+        ApplyIntensity(gain);
     }
 
     public static float PerfectIntensity01(double now, double perfectTime, float decay)
@@ -112,7 +116,7 @@ public class GateBeatPulse : MonoBehaviour
 
     public void Tick(double now)
     {
-        ApplyIntensity(PerfectIntensity01(now, lastPerfect, decaySeconds));
+        ApplyIntensity(PerfectIntensity01(now, lastPerfect, decaySeconds) * lastGain);
     }
 
     private void ApplyIntensity(float intensity)

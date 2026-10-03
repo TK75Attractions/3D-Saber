@@ -1,5 +1,5 @@
 {
-  "_comment": "Prism Circuit v3: level doubles, six musical movement contours, high up/low down arrows and free gold replies. Longs are repeated cuts.",
+  "_comment": "Prism Circuit v4: stronger level doubles and gold replies; flick entry, follow-through and both gold-hand choices audited. Longs are repeated cuts.",
   "bpm": 148,
   "coordScale": 1.0,
   "offsetMs": 0.0,
@@ -417,30 +417,30 @@
     {
       "beat": 98,
       "time": 39729.73,
-      "x": 1.2,
+      "x": 0.0,
       "y": -0.1,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1
     },
     {
       "beat": 100,
       "time": 40540.541,
-      "x": -1.4,
+      "x": 1.4,
       "y": 0.2,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1
     },
     {
       "beat": 102,
       "time": 41351.351,
-      "x": 1.4,
+      "x": -1.4,
       "y": 0.4,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1
     },
@@ -451,6 +451,16 @@
       "y": 0.2,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1
+    },
+    {
+      "beat": 104,
+      "time": 42162.162,
+      "x": 1.2,
+      "y": 0.2,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1
     },
@@ -507,30 +517,30 @@
     {
       "beat": 114,
       "time": 46216.216,
-      "x": 1.0,
+      "x": 0.0,
       "y": 0.0,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1
     },
     {
       "beat": 116,
       "time": 47027.027,
-      "x": -1.3,
+      "x": 1.3,
       "y": 0.2,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1
     },
     {
       "beat": 118,
       "time": 47837.838,
-      "x": 1.0,
+      "x": -1.0,
       "y": 0.2,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1
     },
@@ -541,6 +551,16 @@
       "y": 0.0,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1
+    },
+    {
+      "beat": 120,
+      "time": 48648.649,
+      "x": 1.4,
+      "y": 0.0,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1
     },
@@ -597,30 +617,30 @@
     {
       "beat": 130,
       "time": 52702.703,
-      "x": 1.2,
-      "y": 0.2,
+      "x": 0.0,
+      "y": 0.1,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1
     },
     {
       "beat": 132,
       "time": 53513.514,
-      "x": -1.0,
+      "x": 1.0,
       "y": -0.2,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1
     },
     {
       "beat": 134,
       "time": 54324.324,
-      "x": 1.3,
+      "x": -1.3,
       "y": -0.4,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1
     },
@@ -631,6 +651,16 @@
       "y": -0.1,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1
+    },
+    {
+      "beat": 136,
+      "time": 55135.135,
+      "x": 1.4,
+      "y": -0.1,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1
     },
@@ -687,30 +717,30 @@
     {
       "beat": 146,
       "time": 59189.189,
-      "x": 1.4,
-      "y": 0.1,
+      "x": 0.0,
+      "y": 0.0,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1
     },
     {
       "beat": 148,
       "time": 60000.0,
-      "x": -1.2,
+      "x": 1.2,
       "y": -0.3,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1
     },
     {
       "beat": 150,
       "time": 60810.811,
-      "x": 1.0,
+      "x": -1.0,
       "y": -0.1,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1
     },
@@ -721,6 +751,16 @@
       "y": 0.3,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1
+    },
+    {
+      "beat": 152,
+      "time": 61621.622,
+      "x": 1.3,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1
     },
@@ -1008,10 +1048,10 @@
     {
       "beat": 226,
       "time": 91621.622,
-      "x": -1.2,
+      "x": 0.0,
       "y": -0.1,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1
     },
@@ -1030,6 +1070,16 @@
       "time": 93243.243,
       "x": -1.4,
       "y": 0.4,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1
+    },
+    {
+      "beat": 232,
+      "time": 94054.054,
+      "x": -1.3,
+      "y": 0.1,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1098,10 +1148,10 @@
     {
       "beat": 242,
       "time": 98108.108,
-      "x": -1.2,
-      "y": 0.2,
+      "x": 0.0,
+      "y": 0.1,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1
     },
@@ -1120,6 +1170,16 @@
       "time": 99729.73,
       "x": -1.3,
       "y": -0.4,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1
+    },
+    {
+      "beat": 248,
+      "time": 100540.541,
+      "x": -1.4,
+      "y": -0.1,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1188,10 +1248,10 @@
     {
       "beat": 258,
       "time": 104594.595,
-      "x": -1.2,
+      "x": 0.0,
       "y": -0.1,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1
     },
@@ -1210,6 +1270,16 @@
       "time": 106216.216,
       "x": -1.4,
       "y": 0.4,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1
+    },
+    {
+      "beat": 264,
+      "time": 107027.027,
+      "x": -1.2,
+      "y": 0.2,
       "type": "tap",
       "color": "blue",
       "direction": "none",

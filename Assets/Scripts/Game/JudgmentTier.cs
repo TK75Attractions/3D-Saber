@@ -57,6 +57,21 @@ public static class JudgmentTierHelper
         }
     }
 
+    // 床の縁の帯とゲート発光の強さ。Perfect を最大にして Great/Good にも弱めに出す(Bad/Miss は出さない)。
+    // 背景ごとの大きな動きと織り目は Perfect 限定のまま(StageReactiveEffects)。
+    public const float StageGainGreat = .70f;
+    public const float StageGainGood = .45f;
+    public static float StageReactionGain(JudgmentTier t)
+    {
+        switch (t)
+        {
+            case JudgmentTier.Perfect: return 1f;
+            case JudgmentTier.Great: return StageGainGreat;
+            case JudgmentTier.Good: return StageGainGood;
+            default: return 0f;
+        }
+    }
+
     public static string Label(JudgmentTier t)
     {
         switch (t)

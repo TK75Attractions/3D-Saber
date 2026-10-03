@@ -41,18 +41,30 @@ public class GatePerfectPulseTests
         }
     }
 
-    [TestCase(JudgmentTier.Great)]
-    [TestCase(JudgmentTier.Good)]
-    [TestCase(JudgmentTier.Bad)]
-    [TestCase(JudgmentTier.Miss)]
-    public void OnlyPerfectTriggers(JudgmentTier tier)
+    // 2026-10-03: Great/Good も弱めに光らせる(爽快感カタログ 連1)。Bad/Miss は光らない。
+    [TestCase(JudgmentTier.Great, .70f)]
+    [TestCase(JudgmentTier.Good, .45f)]
+    [TestCase(JudgmentTier.Bad, 0f)]
+    [TestCase(JudgmentTier.Miss, 0f)]
+    public void TierSetsPulseStrengthAndPerfectIsBrightest(JudgmentTier tier, float expected)
     {
         score.RegisterHit(tier);
-        Assert.AreEqual(0f, pulse.CurrentIntensity);
+        Assert.AreEqual(expected, pulse.CurrentIntensity, .0001f);
         score.RegisterHit(JudgmentTier.Perfect);
         Assert.AreEqual(1f, pulse.CurrentIntensity);
         var material = pulse.transform.Find("GateTop").GetComponent<MeshRenderer>().sharedMaterial;
         Assert.Greater(material.GetColor("_EmissionColor").maxColorComponent, GameStageSkin.GateEmission);
+    }
+
+    [Test]
+    public void WeakerJudgmentDoesNotDimAnActivePerfectPulse()
+    {
+        score.RegisterHit(JudgmentTier.Perfect);
+        score.RegisterHit(JudgmentTier.Good);
+        Assert.AreEqual(1f, pulse.CurrentIntensity);
+        pulse.Tick(Time.unscaledTimeAsDouble + 1);
+        score.RegisterHit(JudgmentTier.Great);
+        Assert.AreEqual(.70f, pulse.CurrentIntensity, .0001f);
     }
 
     [Test]
