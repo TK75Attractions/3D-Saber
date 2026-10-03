@@ -4,19 +4,23 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import ipaddress
 import json
+import os
 import queue
 import shutil
 import subprocess
 import sys
 import time
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from datetime import datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from threading import Lock, Thread
 from typing import Any
 
+from phone_saber_precheck_text import explain_precheck
 from phone_saber_session_log import log_fields, session_log_context
 from phone_saber_session_report import write_session_report
 
@@ -41,10 +45,59 @@ from phone_saber_triage_protocol import (
 )
 
 
+TOOLS_DIR = Path(__file__).resolve().parent
+
+
 @dataclass(frozen=True)
 class AnalysisJob:
     bundle: Path
     source: str
+
+
+@dataclass
+class CodeSnapshot:
+    """The Tools modules this process loaded, so /health can say when they changed on disk.
+
+    2026-10-03 audit: a receiver started at 14:51 kept the 600 s Codex timeout after
+    0aeeb8f (15:14) raised it to 1500 s, and the 16:01 upload timed out at 600 s.
+    """
+
+    files: dict[Path, tuple[int, int, str]] = field(default_factory=dict)
+
+    @staticmethod
+    def _digest(path: Path) -> str:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    @classmethod
+    def capture(cls, tools_dir: Path = TOOLS_DIR) -> "CodeSnapshot":
+        snapshot = cls()
+        for module in list(sys.modules.values()):
+            filename = getattr(module, "__file__", None)
+            if not filename or not filename.endswith(".py"):
+                continue
+            try:
+                path = Path(filename).resolve()
+                if path.parent != tools_dir or path.name.startswith("test_"):
+                    continue
+                stat = path.stat()
+                snapshot.files[path] = (stat.st_mtime_ns, stat.st_size, cls._digest(path))
+            except OSError:
+                continue
+        return snapshot
+
+    def changed_files(self) -> list[str]:
+        changed: list[str] = []
+        for path, (mtime_ns, size, digest) in sorted(self.files.items()):
+            try:
+                stat = path.stat()
+                if (stat.st_mtime_ns, stat.st_size) == (mtime_ns, size):
+                    continue
+                if stat.st_size == size and self._digest(path) == digest:
+                    continue  # touched (for example by a checkout) but identical
+            except OSError:
+                pass  # removed or unreadable counts as changed
+            changed.append(path.name)
+        return changed
 
 
 class TriageHTTPServer(ThreadingHTTPServer):
@@ -78,6 +131,11 @@ class TriageHTTPServer(ThreadingHTTPServer):
         self.repair_mode = repair_mode or (
             "automatic" if analysis_mode == "automatic" else "disabled")
         self.analysis_queue: queue.Queue[AnalysisJob] = queue.Queue(maxsize=4)
+        self.started_at = time.time()
+        self.code_snapshot = CodeSnapshot.capture()
+        self._activity_lock = Lock()
+        self.uploads_in_progress = 0
+        self.analysis_running: str | None = None
         if analysis_mode != "disabled":
             Thread(target=self._analysis_worker, name="phonesaber-codex-worker", daemon=True).start()
 
@@ -142,12 +200,42 @@ class TriageHTTPServer(ThreadingHTTPServer):
             job = self.analysis_queue.get()
             bundle = job.bundle
             started = time.monotonic()
+            with self._activity_lock:
+                self.analysis_running = bundle.name
             with session_log_context(bundle, source=job.source):
                 try:
                     self._process_analysis(bundle, started)
                 finally:
+                    with self._activity_lock:
+                        self.analysis_running = None
                     self.analysis_queue.task_done()
                     self.request_overview("analysis_finished")
+
+    def upload_started(self) -> None:
+        with self._activity_lock:
+            self.uploads_in_progress += 1
+
+    def upload_finished(self) -> None:
+        with self._activity_lock:
+            self.uploads_in_progress -= 1
+
+    def health(self) -> dict[str, Any]:
+        """Readiness plus what a launcher needs to decide whether a restart is safe."""
+        changed = self.code_snapshot.changed_files()
+        with self._activity_lock:
+            running = self.analysis_running
+            uploads = self.uploads_in_progress
+        queued = self.analysis_queue.qsize()
+        return {
+            "status": "ready", "service": "phonesaber-triage",
+            "pid": os.getpid(),
+            "startedAt": datetime.fromtimestamp(self.started_at).astimezone().isoformat(timespec="seconds"),
+            "uptimeSeconds": int(time.time() - self.started_at),
+            "codeChangedSinceStart": bool(changed), "changedFiles": changed,
+            "analysis": {"mode": self.analysis_mode, "running": running, "queued": queued},
+            "uploadsInProgress": uploads,
+            "idle": running is None and queued == 0 and uploads == 0,
+        }
 
     def _process_analysis(self, bundle: Path, started: float) -> None:
         try:
@@ -163,6 +251,9 @@ class TriageHTTPServer(ThreadingHTTPServer):
                     dry_run=self.analysis_mode == "dry-run",
                 )
             print(f"[codex] {log_fields()} {result}", flush=True)
+            if result["status"] == "precheck_failed":
+                print(f"[PHONE_SABER][PRECHECK] {log_fields()} "
+                      f"{explain_precheck(result.get('reasonCodes') or [])}", flush=True)
             subprocess_label = "codex read-only" if result["status"] == "completed" else "none"
             print(f"[AUTO_REPAIR][ANALYSIS] {log_fields()} elapsed={time.monotonic() - started:.1f}s "
                   f"subprocess={subprocess_label} result={result['status']}", flush=True)
@@ -183,9 +274,16 @@ class TriageHTTPServer(ThreadingHTTPServer):
                 print(f"[auto-repair] {log_fields()} could not persist MODEL_UNAVAILABLE status: {report_error}",
                       flush=True)
         except Exception as exc:
+            # The full description (with 16 KB stdout/stderr tails) is printed once;
+            # the follow-up line keeps only its first line so logs stay greppable.
             print(f"[AUTO_REPAIR][ANALYSIS] {log_fields()} elapsed={time.monotonic() - started:.1f}s "
                   f"subprocess=codex read-only result=FAIL {exc}", flush=True)
-            print(f"[codex] {log_fields()} analysis failed; bundle preserved: {exc}", flush=True)
+            headline = (str(exc).splitlines() or [type(exc).__name__])[0][:300]
+            print(f"[codex] {log_fields()} analysis failed; bundle preserved: {headline}", flush=True)
+            codes = getattr(exc, "reason_codes", None)
+            if codes:
+                print(f"[PHONE_SABER][PRECHECK] {log_fields()} {explain_precheck(codes, str(exc))}",
+                      flush=True)
 
 
 class TriageRequestHandler(BaseHTTPRequestHandler):
@@ -196,7 +294,7 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
         if self.path != "/health":
             self._reply(404, {"error": "not found"})
             return
-        self._reply(200, {"status": "ready", "service": "phonesaber-triage"})
+        self._reply(200, self.server.health())
 
     def do_POST(self) -> None:  # noqa: N802 - stdlib handler API
         if self.path != "/v1/bundle":
@@ -215,14 +313,27 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
             self._reply(411, {"error": "Content-Length is required"})
             return
         if length < 8 or length > MAX_BUNDLE_BYTES:
+            print(f"[triage] rejected upload from {self.client_address[0]}: Content-Length={length} "
+                  f"outside 8..{MAX_BUNDLE_BYTES} bytes (413)", flush=True)
             self._reply(413, {"error": "bundle exceeds receiver limits"})
             return
+        # Counted until the analysis is queued, so /health never reports idle while a
+        # received bundle still waits for its report or its queue slot.
+        self.server.upload_started()
+        try:
+            self._receive(length)
+        finally:
+            self.server.upload_finished()
+
+    def _receive(self, length: int) -> None:
         try:
             bundle = receive_bundle(self.rfile, length, self.server.inbox)
         except FileExistsError as exc:
+            print(f"[triage] rejected duplicate upload from {self.client_address[0]} (409): {exc}", flush=True)
             self._reply(409, {"error": str(exc)})
             return
         except (BundleError, OSError) as exc:
+            print(f"[triage] rejected upload from {self.client_address[0]} (400): {exc}", flush=True)
             self._reply(400, {"error": str(exc)})
             return
         with session_log_context(bundle, source="new_upload"):

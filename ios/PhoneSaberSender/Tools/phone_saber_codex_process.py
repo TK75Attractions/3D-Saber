@@ -18,6 +18,14 @@ from pathlib import Path
 from typing import Any
 
 LOG_DIR = Path.home() / "Library/Logs/PhoneSaber/codex"
+# Tests set this so fake-CLI captures never land in the operator's real log
+# directory (2026-10-03 audit: ~3,200 of ~3,300 files there came from unit tests).
+LOG_DIR_ENV = "PHONESABER_CODEX_LOG_DIR"
+
+
+def default_log_dir() -> Path:
+    configured = os.environ.get(LOG_DIR_ENV)
+    return Path(configured) if configured else LOG_DIR
 DISPLAY_TAIL = 16 * 1024
 SECRET_KEY = re.compile(r"(?i)(?:api.?key|token|cookie|authorization|password|secret|credential)")
 # JSON, TOML, environment assignments, query strings and CLI credential flags.
@@ -266,7 +274,7 @@ def run_codex(command: list[str], *, cwd: Path, prompt: str, model: str,
         "stdout": stdout, "stderr": stderr, "errors": events,
         "error_code": code, "output_error": redactor(detail),
     }
-    path = (log_dir or LOG_DIR) / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex + ".json")
+    path = (log_dir or default_log_dir()) / (datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S") + "-" + uuid.uuid4().hex + ".json")
     run = CodexRun(completed, diagnostic, path, redactor)
     run.save()
     if code:

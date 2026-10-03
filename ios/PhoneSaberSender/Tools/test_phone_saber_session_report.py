@@ -24,6 +24,8 @@ from phone_saber_triage_protocol import CONTENT_TYPE
 from phone_saber_triage_receiver import TriageHTTPServer
 from test_phone_saber_triage_codex import write_codex_bundle
 from test_phone_saber_tracking_diagnostics import write_tracking_bundle
+from phone_saber_test_isolation import isolate_codex_logs as setUpModule  # noqa: F401,E402
+from phone_saber_test_isolation import restore_codex_logs as tearDownModule  # noqa: F401,E402
 
 MIB = 1024 * 1024
 

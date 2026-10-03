@@ -15,6 +15,8 @@ import socket
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.request
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -27,6 +29,10 @@ LOG_DIR = Path.home() / "Library" / "Logs" / "PhoneSaber"
 DEFAULT_PORT = 8765
 LOG_RETENTION_COUNT = 50
 LOCK_FILE_NAME = ".launcher.lock"
+HEALTH_TIMEOUT_SECONDS = 1.5
+# How long a restart waits for the previous launcher to release its lock.
+RESTART_WAIT_SECONDS = 20.0
+NO_RESTART_ENV = "PHONESABER_NO_AUTO_RESTART"
 
 
 class LauncherError(RuntimeError):
@@ -151,10 +157,15 @@ def collect_git_snapshot(repo_root: Path) -> GitSnapshot:
     )
 
 
-def _emit(message: str, log_file: IO[str] | None = None) -> None:
+def _stamp() -> str:
+    return datetime.now().strftime("[%Y-%m-%d %H:%M:%S] ")
+
+
+def _emit(message: str, log_file: IO[str] | None = None, *, stamp: bool = True) -> None:
+    """Terminal gets the plain line; the saved log gets a timestamp so events can be dated."""
     print(message, flush=True)
     if log_file is not None:
-        log_file.write(message + "\n")
+        log_file.write((_stamp() if stamp else "") + message + "\n")
         log_file.flush()
 
 
@@ -181,7 +192,7 @@ def _emit_banner(
         lines.append("The receiver will continue; the existing auto-repair safety gate blocks edits unless main is clean and synchronized.")
     lines.append("========================================")
     for line in lines:
-        _emit(line, log_file)
+        _emit(line, log_file, stamp=False)
 
 
 def _read_lock_metadata(lock_file: IO[str]) -> dict[str, str]:
@@ -322,6 +333,101 @@ def _announce_duplicate(
             _emit(f"Latest launcher log (owner not confirmed): {latest}")
 
 
+def fetch_receiver_health(port: int = DEFAULT_PORT,
+                          timeout: float = HEALTH_TIMEOUT_SECONDS) -> dict | None:
+    """GET /health of a receiver on this Mac; None when it is not a PhoneSaber receiver."""
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/health", timeout=timeout) as response:  # noqa: S310
+            if response.status != 200:
+                return None
+            payload = json.loads(response.read(65536).decode("utf-8", "replace"))
+    except (OSError, ValueError, urllib.error.URLError):
+        return None
+    if not isinstance(payload, dict) or payload.get("service") != "phonesaber-triage":
+        return None
+    return payload
+
+
+@dataclass(frozen=True)
+class RestartDecision:
+    restart: bool
+    pid: int | None
+    lines: tuple[str, ...]
+
+
+MANUAL_RESTART = ("新しいコードを使うには、受信側の Terminal で Ctrl+C で止めてから Start PhoneSaber を"
+                  "起動し直す(解析中なら終わってから)")
+
+
+def assess_running_receiver(health: dict | None, metadata: dict[str, str], repo_root: Path, *,
+                            allow_restart: bool = True) -> RestartDecision:
+    """Decide whether an already running receiver is stale and safe to replace.
+
+    A restart is chosen only when every condition holds: the receiver reports that
+    its loaded Tools code changed on disk, this launcher family started it (the lock
+    names the same pid and repository), and it is idle (no analysis running or
+    queued, no upload being received). Anything else only prints what to do.
+    """
+    if health is None:
+        return RestartDecision(False, None, (
+            "受信側の /health に応答がないので、コードが最新かは確認できない。",))
+    if "codeChangedSinceStart" not in health:
+        return RestartDecision(False, None, (
+            "WARNING: 受信側は、コード変更の検出より前の版で動いている(古いコード)。",
+            MANUAL_RESTART))
+    started = health.get("startedAt", "?")
+    if not health.get("codeChangedSinceStart"):
+        return RestartDecision(False, None, (f"受信側のコードは最新(起動 {started})。",))
+    changed = ", ".join(str(name) for name in health.get("changedFiles") or []) or "?"
+    lines = [f"WARNING: 受信側は古いコードで動いている(起動 {started}。その後に変更: {changed})。"]
+    try:
+        pid = int(health.get("pid"))
+    except (TypeError, ValueError):
+        pid = None
+    owned = pid is not None and metadata.get("pid") == str(pid)
+    if owned:
+        try:
+            owned = Path(metadata.get("repo", "")).resolve() == repo_root.resolve()
+        except OSError:
+            owned = False
+    if not allow_restart:
+        return RestartDecision(False, pid, (*lines, "自動再起動は無効(--no-restart / "
+                                            f"{NO_RESTART_ENV}=1)。", MANUAL_RESTART))
+    if not owned:
+        return RestartDecision(False, pid, (*lines, "Start PhoneSaber が起動した受信側ではないので、自動では止めない。",
+                                            MANUAL_RESTART))
+    analysis = health.get("analysis") if isinstance(health.get("analysis"), dict) else {}
+    if not health.get("idle"):
+        busy = (f"解析中={analysis.get('running') or 'なし'}、待ち={analysis.get('queued', '?')}、"
+                f"受信中={health.get('uploadsInProgress', '?')}")
+        return RestartDecision(False, pid, (*lines, f"今は作業中({busy})なので再起動しない。"
+                                            "終わってから Start PhoneSaber をもう一度ダブルクリックする。"))
+    return RestartDecision(True, pid, (*lines, f"待機中なので、古い受信側(pid {pid})を止めて新しいコードで起動し直す。"))
+
+
+def _request_stop(pid: int) -> bool:
+    """SIGINT to the receiver's process group, as Ctrl+C in its own Terminal would do."""
+    try:
+        if os.getpgid(pid) == pid:
+            os.killpg(pid, signal.SIGINT)
+        else:
+            os.kill(pid, signal.SIGINT)
+    except ProcessLookupError:
+        return True
+    except PermissionError:
+        return False
+    return True
+
+
+def _wait_for_lock(log_dir: Path, timeout: float) -> IO[str] | None:
+    deadline = time.monotonic() + timeout
+    while True:
+        lock_file, _ = _acquire_single_instance_lock(log_dir)
+        if lock_file is not None or time.monotonic() >= deadline:
+            return lock_file
+        time.sleep(0.2)
+
+
 def _signal_handler(signum: int, _frame: object) -> None:
     raise StopRequested(signum)
 
@@ -385,7 +491,7 @@ def _stop_process_group(process: subprocess.Popen[str], log_file: IO[str]) -> No
 def _forward_receiver_line(line: str, log_file: IO[str]) -> None:
     sys.stdout.write(line)
     sys.stdout.flush()
-    log_file.write(line)
+    log_file.write(_stamp() + line)
     log_file.flush()
     if "[triage] listening on " in line:
         _emit("[PHONE_SABER][WAITING]", log_file)
@@ -404,18 +510,47 @@ def run_receiver(
     *,
     receiver_command: Sequence[str] | None = None,
     listener_finder=find_existing_receiver,
+    health_fetcher=fetch_receiver_health,
+    allow_restart: bool = True,
+    stopper=_request_stop,
+    restart_wait: float = RESTART_WAIT_SECONDS,
 ) -> int:
-    """Run a receiver command while holding the single-instance lock and log."""
+    """Run a receiver command while holding the single-instance lock and log.
+
+    If a receiver is already running, report whether it runs stale code and, only
+    when assess_running_receiver allows it, stop it and start a fresh one.
+    """
     log_dir.mkdir(parents=True, exist_ok=True)
     lock_file, existing = _acquire_single_instance_lock(log_dir)
+    restarted = False
     if lock_file is None:
         _announce_duplicate(log_dir=log_dir, metadata=existing)
-        return 0
+        decision = assess_running_receiver(health_fetcher(DEFAULT_PORT), existing, repo_root,
+                                           allow_restart=allow_restart)
+        for line in decision.lines:
+            _emit(line)
+        if not decision.restart or decision.pid is None:
+            return 0
+        _emit(f"[PHONE_SABER][RESTART] stopping stale receiver pid {decision.pid}")
+        if not stopper(decision.pid):
+            _emit("[PHONE_SABER][RESTART] could not signal the old receiver. " + MANUAL_RESTART)
+            return 1
+        lock_file = _wait_for_lock(log_dir, restart_wait)
+        if lock_file is None:
+            _emit(f"[PHONE_SABER][RESTART] the old receiver did not stop within {restart_wait:.0f} s. "
+                  "その Terminal を確認する。")
+            return 1
+        restarted = True
 
     try:
         listener = listener_finder(DEFAULT_PORT)
         if listener is not None:
             _announce_duplicate(log_dir=log_dir, listener=listener)
+            if not restarted:
+                decision = assess_running_receiver(health_fetcher(DEFAULT_PORT), {}, repo_root,
+                                                   allow_restart=False)
+                for line in decision.lines:
+                    _emit(line)
             return 0
 
         log_path = _next_log_path(log_dir)
@@ -426,6 +561,8 @@ def run_receiver(
         ]
         with log_path.open("a", encoding="utf-8", errors="replace") as log_file:
             _emit_banner(snapshot, log_path, "STARTING", log_file)
+            if restarted:
+                _emit("[PHONE_SABER][RESTART] previous receiver stopped; starting with the current code", log_file)
             _emit("[PHONE_SABER][START]", log_file)
             previous_handlers: dict[int, object] = {}
             process: subprocess.Popen[str] | None = None
@@ -479,6 +616,10 @@ def _parse_args(argv: Sequence[str] | None) -> argparse.Namespace:
         "--dry-run", action="store_true",
         help="resolve the repository and show Git status without starting the receiver",
     )
+    parser.add_argument(
+        "--no-restart", action="store_true",
+        help=f"never stop a running receiver, even an idle one running stale code (also {NO_RESTART_ENV}=1)",
+    )
     return parser.parse_args(argv)
 
 
@@ -499,7 +640,8 @@ def main(argv: Sequence[str] | None = None) -> int:
         print(f"PhoneSaber receiver script not found: {RECEIVER_SCRIPT}", file=sys.stderr)
         return 2
     try:
-        return run_receiver(repo_root, snapshot, LOG_DIR)
+        allow_restart = not args.no_restart and os.environ.get(NO_RESTART_ENV) != "1"
+        return run_receiver(repo_root, snapshot, LOG_DIR, allow_restart=allow_restart)
     except (LauncherError, OSError) as exc:
         print(f"PhoneSaber launcher error: {exc}", file=sys.stderr)
         return 2

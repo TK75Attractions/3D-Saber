@@ -23,6 +23,8 @@ from phone_saber_session_log import log_fields, session_log_context
 from phone_saber_triage_protocol import CONTENT_TYPE
 from test_phone_saber_auto_repair import prepared_bundle
 from test_phone_saber_triage_codex import EMPTY_ANALYSIS, fake_codex, write_codex_bundle
+from phone_saber_test_isolation import isolate_codex_logs as setUpModule  # noqa: F401,E402
+from phone_saber_test_isolation import restore_codex_logs as tearDownModule  # noqa: F401,E402
 
 
 class ReceiverObservabilityTests(unittest.TestCase):

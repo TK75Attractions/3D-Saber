@@ -130,6 +130,28 @@ class ReceiverTests(StatusTestCase):
         checks = status.check_receiver(self.ctx(runner=runner, http=lambda url, timeout: (200, body)))
         self.assertEqual([c.level for c in checks], ["OK", "WARN"])
 
+    def test_health_reported_stale_code_wins_over_head_heuristic(self):
+        body = json.dumps({"status": "ready", "service": "phonesaber-triage", "pid": 15,
+                           "startedAt": "2026-10-03T14:51:41+09:00", "codeChangedSinceStart": True,
+                           "changedFiles": ["phone_saber_triage_codex.py"], "idle": False,
+                           "analysis": {"mode": "automatic", "running": "phone_saber_triage_x", "queued": 1},
+                           "uploadsInProgress": 0})
+        runner = FakeRunner({"lsof": ok(LSOF_HEADER + "python3 15 me 3u IPv4 0x1 0t0 TCP *:8765 (LISTEN)\n")})
+        checks = status.check_receiver(self.ctx(runner=runner, http=lambda url, timeout: (200, body)))
+        self.assertEqual([c.level for c in checks], ["OK", "WARN", "INFO"])
+        self.assertIn("phone_saber_triage_codex.py", checks[1].detail)
+        self.assertIn("終わってから", checks[1].hints[0])
+        self.assertIn("phone_saber_triage_x", checks[2].detail)
+        self.assertNotIn(["ps"], [call[:1] for call in runner.calls])  # no HEAD-time heuristic needed
+
+    def test_health_reported_current_code_is_quiet(self):
+        body = json.dumps({"status": "ready", "service": "phonesaber-triage", "pid": 15,
+                           "codeChangedSinceStart": False, "changedFiles": [], "idle": True,
+                           "analysis": {"mode": "automatic", "running": None, "queued": 0},
+                           "uploadsInProgress": 0})
+        checks = status.check_receiver(self.ctx(http=lambda url, timeout: (200, body)))
+        self.assertEqual([c.level for c in checks], ["OK"])
+
 
 class UnityPortTests(StatusTestCase):
     def test_both_ports_bound_by_unity(self):
@@ -276,6 +298,35 @@ class InboxTests(StatusTestCase):
         self.assertEqual(checks[1].level, "WARN")
         self.assertIn("CLI_TIMEOUT", checks[1].detail)
         self.assertIn("phone_saber_triage_codex.py", checks[1].hints[-1])
+
+    def test_precheck_failure_in_log_is_explained_in_japanese(self):
+        self.make_bundle("s4")
+        self.write_receiver_log("triage-1.log",
+                                "[AUTO_REPAIR][ANALYSIS] sessionID=s4 source=new_upload elapsed=0.0s "
+                                "subprocess=codex read-only result=FAIL PRECHECK_FAILED frameMappingMissing: "
+                                "frame context exceeds its size limit: frames/a.json is 41350 bytes > 32768\n",
+                                link_latest=True)
+        checks = status.check_inbox(self.ctx())
+        self.assertEqual(checks[1].level, "WARN")
+        self.assertIn("32KB", checks[1].hints[0])
+
+    def test_storage_reports_unanalysed_bundles_and_codex_logs(self):
+        done = self.make_bundle("done", -10)
+        (done / "analysis_report.json").write_text("{}", encoding="utf-8")
+        self.make_bundle("a_pending", -5)
+        self.make_bundle("b_pending")
+        logs = self.home / "Library" / "Logs" / "PhoneSaber" / "codex"
+        logs.mkdir(parents=True)
+        for index in range(3):
+            (logs / f"{index}.json").write_text("{}", encoding="utf-8")
+        before = sorted(p.relative_to(self.home) for p in self.home.rglob("*"))
+        checks = status.check_storage(self.ctx())
+        self.assertEqual(checks[0].level, "INFO")
+        self.assertIn("inbox 3 bundle", checks[0].detail)
+        self.assertIn("Codex 記録 3 件", checks[0].detail)
+        self.assertIn("解析結果なし 2 件", checks[0].detail)
+        self.assertIn("b_pending, a_pending", checks[0].hints[0])
+        self.assertEqual(before, sorted(p.relative_to(self.home) for p in self.home.rglob("*")))
 
     def test_analysis_running(self):
         self.make_bundle("s3")

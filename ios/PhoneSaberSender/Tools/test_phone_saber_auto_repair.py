@@ -25,6 +25,8 @@ from test_phone_saber_triage_codex import EMPTY_ANALYSIS, fake_codex, write_code
 from phone_saber_triage_codex import ANALYSIS_MODEL, ANALYSIS_REASONING_EFFORT
 from phone_saber_triage_protocol import CONTENT_TYPE
 from phone_saber_triage_receiver import TriageHTTPServer
+from phone_saber_test_isolation import isolate_codex_logs as setUpModule  # noqa: F401,E402
+from phone_saber_test_isolation import restore_codex_logs as tearDownModule  # noqa: F401,E402
 
 
 SOURCE = repair.REPAIR_FILES[0]

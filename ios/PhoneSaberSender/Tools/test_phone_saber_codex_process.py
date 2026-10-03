@@ -29,6 +29,9 @@ class CodexProcessTests(unittest.TestCase):
         self.logs = self.root / "logs"
         self.addCleanup(patch.stopall)
         patch.object(process, "LOG_DIR", self.logs).start()
+        # These tests read captures from self.logs, so the test-wide override must not apply.
+        patch.dict(os.environ).start()
+        os.environ.pop(process.LOG_DIR_ENV, None)
 
     def executable(self, body: str) -> Path:
         binary = self.root / "codex"
@@ -272,6 +275,55 @@ class RedactionComplexityTests(unittest.TestCase):
                 # for "keyword run". Generous bound so a loaded host cannot flake.
                 self.assertLess(time.perf_counter() - started, 5.0)
         self.assertEqual(redactor("token=abc " + "x" * size)[:22], 'token="[REDACTED]" xxx')
+
+
+class LogDirectoryIsolationTests(unittest.TestCase):
+    """Unit tests must never write fake-CLI captures into ~/Library/Logs/PhoneSaber/codex.
+
+    2026-10-03 audit: about 3,200 of the 3,300 files there came from fake CLIs in tests.
+    """
+
+    # Anything that can reach run_codex: fake CLIs, analysis, repair, or a receiver.
+    REACHES_CODEX = ("fake_codex(", "codex_path=", "analyze_bundle(", "repair_bundle(",
+                     "TriageHTTPServer(", "run_codex(")
+
+    def test_environment_override_wins_over_the_default_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            override = Path(temporary) / "override"
+            with patch.object(process, "LOG_DIR", Path(temporary) / "default"), \
+                    patch.dict(os.environ, {process.LOG_DIR_ENV: str(override)}):
+                self.assertEqual(process.default_log_dir(), override)
+                binary = Path(temporary) / "codex"
+                binary.write_text(f"#!{sys.executable}\nprint('ok')\n")
+                binary.chmod(0o700)
+                run = process.run_codex([str(binary), "exec"], cwd=Path(temporary), prompt="",
+                                        model="m", effort="e", timeout=10)
+            self.assertEqual(run.log_path.parent, override)
+            self.assertFalse((Path(temporary) / "default").exists())
+
+    def test_every_test_module_that_can_reach_codex_isolates_its_logs(self) -> None:
+        tools = Path(__file__).resolve().parent
+        missing = []
+        for module in sorted(tools.glob("test_*.py")):
+            source = module.read_text(encoding="utf-8")
+            if module.name == Path(__file__).name or not any(term in source for term in self.REACHES_CODEX):
+                continue
+            if "isolate_codex_logs as setUpModule" not in source \
+                    or "restore_codex_logs as tearDownModule" not in source:
+                missing.append(module.name)
+        self.assertEqual(missing, [], "add the phone_saber_test_isolation module fixtures")
+
+    def test_isolation_fixture_sets_and_restores_the_variable(self) -> None:
+        from phone_saber_test_isolation import isolate_codex_logs, restore_codex_logs
+        with patch.dict(os.environ):
+            os.environ.pop(process.LOG_DIR_ENV, None)
+            isolate_codex_logs()
+            directory = Path(os.environ[process.LOG_DIR_ENV])
+            self.assertTrue(directory.is_dir())
+            self.assertNotEqual(process.default_log_dir(), process.LOG_DIR)
+            restore_codex_logs()
+            self.assertNotIn(process.LOG_DIR_ENV, os.environ)
+            self.assertFalse(directory.exists())
 
 
 if __name__ == "__main__":

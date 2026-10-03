@@ -18,6 +18,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import phone_saber_triage_protocol as protocol
 from phone_saber_triage_receiver import TriageHTTPServer
+from phone_saber_test_isolation import isolate_codex_logs as setUpModule  # noqa: F401,E402
+from phone_saber_test_isolation import restore_codex_logs as tearDownModule  # noqa: F401,E402
 
 
 def png_bytes(width: int = 16, height: int = 12) -> bytes:

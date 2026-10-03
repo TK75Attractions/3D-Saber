@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import contextlib
 import io
+import json
 import os
 import select
 import shutil
@@ -301,6 +302,8 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
                         log_dir,
                         receiver_command=[sys.executable, str(fake_receiver)],
                         listener_finder=lambda _port: self.fail("port check must not run after lock detects duplicate"),
+                        health_fetcher=lambda _port: None,
+                        stopper=lambda _pid: self.fail("an unconfirmed receiver must never be stopped"),
                     )
             finally:
                 lock.close()
@@ -430,6 +433,137 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
                         pass
                 if process.stdout is not None:
                     process.stdout.close()
+
+
+
+def stale_health(pid: int, **overrides) -> dict:
+    health = {"status": "ready", "service": "phonesaber-triage", "pid": pid,
+              "startedAt": "2026-10-03T14:51:41+09:00", "codeChangedSinceStart": True,
+              "changedFiles": ["phone_saber_triage_codex.py"],
+              "analysis": {"mode": "automatic", "running": None, "queued": 0},
+              "uploadsInProgress": 0, "idle": True}
+    health.update(overrides)
+    return health
+
+
+class StaleReceiverTests(unittest.TestCase):
+    """Start PhoneSaber replaces a stale receiver only when it is owned and idle.
+
+    2026-10-03 audit: a receiver started at 14:51 kept the 600 s Codex timeout after
+    0aeeb8f (15:14) and the 16:01 upload timed out at 600 s.
+    """
+
+    def setUp(self) -> None:
+        temporary = tempfile.TemporaryDirectory()
+        self.addCleanup(temporary.cleanup)
+        self.repo = Path(temporary.name) / "repo"
+        self.repo.mkdir()
+        self.owned = {"pid": "4242", "repo": str(self.repo), "log": "x.log"}
+
+    def assess(self, health, metadata=None, **kwargs):
+        return launcher.assess_running_receiver(
+            health, self.owned if metadata is None else metadata, self.repo, **kwargs)
+
+    def test_restart_only_when_stale_owned_and_idle(self) -> None:
+        decision = self.assess(stale_health(4242))
+        self.assertTrue(decision.restart)
+        self.assertEqual(decision.pid, 4242)
+        self.assertIn("phone_saber_triage_codex.py", "\n".join(decision.lines))
+
+    def test_no_restart_cases_explain_what_to_do(self) -> None:
+        cases = {
+            "unreachable": (None, None, "応答がない"),
+            "current": (stale_health(4242, codeChangedSinceStart=False, changedFiles=[]), None, "最新"),
+            "old receiver without the field": ({"status": "ready", "service": "phonesaber-triage"}, None,
+                                               "Ctrl+C"),
+            "other pid": (stale_health(999), None, "自動では止めない"),
+            "other repository": (stale_health(4242), {**self.owned, "repo": "/elsewhere"}, "自動では止めない"),
+            "no lock owner": (stale_health(4242), {}, "自動では止めない"),
+            "analysis running": (stale_health(4242, idle=False, analysis={
+                "mode": "automatic", "running": "phone_saber_triage_x", "queued": 1}), None, "解析中=phone_saber_triage_x"),
+            "upload in progress": (stale_health(4242, idle=False, uploadsInProgress=1), None, "受信中=1"),
+        }
+        for name, (health, metadata, expected) in cases.items():
+            with self.subTest(name):
+                decision = self.assess(health, metadata)
+                self.assertFalse(decision.restart)
+                self.assertIn(expected, "\n".join(decision.lines))
+        decision = self.assess(stale_health(4242), allow_restart=False)
+        self.assertFalse(decision.restart)
+        self.assertIn("--no-restart", "\n".join(decision.lines))
+
+    def test_busy_stale_receiver_is_reported_and_left_running(self) -> None:
+        log_dir = Path(self.repo.parent) / "logs"
+        log_dir.mkdir()
+        lock, _ = launcher._acquire_single_instance_lock(log_dir)
+        assert lock is not None
+        self.addCleanup(lock.close)
+        launcher._write_lock_metadata(lock, pid=4242, repo_root=self.repo, log_path=log_dir / "a.log")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = launcher.run_receiver(
+                self.repo, snapshot_for(self.repo), log_dir,
+                receiver_command=[sys.executable, "-c", "raise SystemExit(9)"],
+                listener_finder=lambda _port: self.fail("must not start"),
+                health_fetcher=lambda _port: stale_health(4242, idle=False, uploadsInProgress=1),
+                stopper=lambda _pid: self.fail("a busy receiver must not be stopped"))
+        self.assertEqual(code, 0)
+        self.assertIn("古いコード", output.getvalue())
+        self.assertIn("再起動しない", output.getvalue())
+
+    def test_idle_stale_receiver_is_stopped_and_replaced(self) -> None:
+        if not hasattr(signal, "SIGINT"):
+            self.skipTest("SIGINT is unavailable")
+        root = self.repo.parent
+        log_dir = root / "logs"
+        old_receiver = root / "old_receiver.py"
+        old_receiver.write_text(
+            "import time\n"
+            "print('[triage] listening on 0.0.0.0:8765; inbox=test', flush=True)\n"
+            "try:\n    time.sleep(60)\nexcept KeyboardInterrupt:\n    print('old receiver stopped', flush=True)\n",
+            encoding="utf-8")
+        old_launcher = root / "old_launcher.py"
+        old_launcher.write_text(
+            "import sys\nfrom pathlib import Path\n"
+            f"sys.path.insert(0, {str(TOOLS_SOURCE)!r})\n"
+            "import phone_saber_receiver_launcher as launcher\n"
+            f"repo = Path({str(self.repo)!r})\n"
+            "snapshot = launcher.GitSnapshot(repo, 'main', '## main', False, 0, 0)\n"
+            f"sys.exit(launcher.run_receiver(repo, snapshot, Path({str(log_dir)!r}), "
+            f"receiver_command=[sys.executable, '-u', {str(old_receiver)!r}], listener_finder=lambda _p: None))\n",
+            encoding="utf-8")
+        process = subprocess.Popen([sys.executable, "-u", str(old_launcher)], stdout=subprocess.PIPE,
+                                   stderr=subprocess.STDOUT, text=True)
+        self.addCleanup(lambda: process.poll() is None and process.kill())
+        transcript = []
+        assert process.stdout is not None
+        deadline = time.monotonic() + 15
+        while time.monotonic() < deadline:
+            line = process.stdout.readline()
+            transcript.append(line)
+            if "Receiver status: RUNNING" in line:
+                break
+        metadata = json.loads((log_dir / launcher.LOCK_FILE_NAME).read_text(encoding="utf-8"))
+        receiver_pid = int(metadata["pid"])
+        new_receiver = root / "new_receiver.py"
+        new_receiver.write_text("print('new receiver ran', flush=True)\n", encoding="utf-8")
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            code = launcher.run_receiver(
+                self.repo, snapshot_for(self.repo), log_dir,
+                receiver_command=[sys.executable, str(new_receiver)],
+                listener_finder=lambda _port: None,
+                health_fetcher=lambda _port: stale_health(receiver_pid),
+                restart_wait=15)
+        rest, _ = process.communicate(timeout=15)
+        transcript.append(rest)
+        self.assertEqual(code, 0, output.getvalue())
+        self.assertEqual(process.returncode, 0, "".join(transcript))
+        self.assertIn("old receiver stopped", "".join(transcript))
+        self.assertIn("new receiver ran", output.getvalue())
+        saved = (log_dir / "latest.log").resolve().read_text(encoding="utf-8")
+        self.assertIn("[PHONE_SABER][RESTART] previous receiver stopped", saved)
+        self.assertRegex(saved, r"\[\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\] new receiver ran")
 
 
 if __name__ == "__main__":

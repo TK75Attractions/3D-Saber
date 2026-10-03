@@ -85,7 +85,7 @@ iPhone で Stop ─→ triage bundle
 
 `ios/PhoneSaberSender/Tools/PhoneSaber Status.command`(中身は `phone_saber_status.py`)。デスクトップのリンクは `install_phone_saber_launcher.command` が置きます。読み取りのみで、数秒で終わります。
 
-- 受信側: `127.0.0.1:8765/health` が `ready` か。受信側の起動後に repo が更新されていれば WARN(再起動で新しいコード)。
+- 受信側: `127.0.0.1:8765/health` が `ready` か。受信側が読み込んだコードが起動後に変わっていれば WARN。待機中なら Start PhoneSaber をもう一度ダブルクリックすると自動で起動し直す(解析中・受信中は止めない)。
 - Unity: UDP 5005/5006 を誰が受信しているか(`lsof`)。Unity 以外なら NG(port の取り合い)。
 - P2P bridge: `PhoneSaberP2PBridge` の process があるか。
 - Unity Console(`~/Library/Logs/Unity/Editor.log`): 直近の Play 以降の `last 10s` 集計(直近5回の `maxGapMs`)、最後の接続イベント(`peer alive` / `no ping` など)、警告、診断 relay。Editor.log の行には時刻が無いので、ファイルの最終更新時刻を出します。

@@ -36,6 +36,8 @@ from phone_saber_triage_protocol import CONTENT_TYPE, pack_bundle
 from phone_saber_triage_receiver import TriageHTTPServer
 from phone_saber_auto_repair import repair_bundle, repair_gate
 from test_phone_saber_triage_protocol import write_bundle
+from phone_saber_test_isolation import isolate_codex_logs as setUpModule  # noqa: F401,E402
+from phone_saber_test_isolation import restore_codex_logs as tearDownModule  # noqa: F401,E402
 
 
 EMPTY_ANALYSIS = {

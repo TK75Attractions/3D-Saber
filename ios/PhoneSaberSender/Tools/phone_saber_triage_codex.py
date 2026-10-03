@@ -313,8 +313,11 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
         unique_image_paths.add(image_path)
         unique_context_paths.add(context_path)
         unique_image_basenames.add(normalized_basename)
-        if context_path.stat().st_size > min(MAX_CONTEXT_BYTES, MAX_CODEX_CONTEXT_BYTES):
-            raise BundleError("frame context exceeds its size limit")
+        context_limit = min(MAX_CONTEXT_BYTES, MAX_CODEX_CONTEXT_BYTES)
+        context_size = context_path.stat().st_size
+        if context_size > context_limit:
+            raise BundleError(f"frame context exceeds its size limit: {context_relative} is "
+                              f"{context_size} bytes > {context_limit}")
         _validate_context(context_path, session_id, image.get("frameID"))
         validate_mapping(json.loads(context_path.read_text(encoding="utf-8")), image, session_id)
         with image_path.open("rb") as image_file:

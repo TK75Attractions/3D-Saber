@@ -15,6 +15,8 @@ from phone_saber_triage_codex import (input_plan, analyze_bundle, _codex_prompt,
 from phone_saber_tracking_diagnostics import temporal_events, sufficient_temporal, validate_compound
 from phone_saber_auto_repair import repair_gate, REPO_ROOT
 from test_phone_saber_triage_codex import write_codex_bundle, fake_codex, EMPTY_ANALYSIS
+from phone_saber_test_isolation import isolate_codex_logs as setUpModule  # noqa: F401,E402
+from phone_saber_test_isolation import restore_codex_logs as tearDownModule  # noqa: F401,E402
 
 
 def endpoint(x: int = 0, length: int = 100) -> dict:

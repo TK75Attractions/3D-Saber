@@ -28,6 +28,8 @@ from datetime import datetime
 from pathlib import Path
 from typing import Callable, Optional
 
+from phone_saber_precheck_text import explain_precheck
+
 
 RECEIVER_PORT = 8765
 RED_PORT = 5005
@@ -189,7 +191,10 @@ def check_receiver(ctx: Context) -> list[Check]:
             payload = {}
         if payload.get("service") == "phonesaber-triage" and payload.get("status") == "ready":
             checks = [Check("OK", "受信側(Start PhoneSaber)", f"起動中: {url} = ready")]
-            checks.extend(_receiver_age(ctx, listeners))
+            if "codeChangedSinceStart" in payload:
+                checks.extend(_receiver_health_details(payload))
+            else:
+                checks.extend(_receiver_age(ctx, listeners))
             return checks
         return [Check("NG", "受信側(Start PhoneSaber)",
                       f"TCP {RECEIVER_PORT} に PhoneSaber 以外のサーバーがいる: {response[1][:80]!r}",
@@ -202,6 +207,26 @@ def check_receiver(ctx: Context) -> list[Check]:
     return [Check("NG", "受信側(Start PhoneSaber)", f"起動していない(TCP {RECEIVER_PORT} に応答なし)",
                   ["デスクトップの Start PhoneSaber をダブルクリック(診断 bundle の受信と Codex 解析に必要。"
                    "ゲームの座標には不要)"])]
+
+
+def _receiver_health_details(payload: dict) -> list[Check]:
+    """/health が自分で報告する「読み込んだコードが起動後に変わったか」と作業状態を表示する。"""
+    checks: list[Check] = []
+    started = payload.get("startedAt", "?")
+    if payload.get("codeChangedSinceStart"):
+        changed = ", ".join(str(name) for name in payload.get("changedFiles") or []) or "?"
+        hint = ("待機中なので、Start PhoneSaber をもう一度ダブルクリックすると自動で起動し直す"
+                if payload.get("idle") else
+                "今は作業中。終わってから Start PhoneSaber をもう一度ダブルクリックすると自動で起動し直す")
+        checks.append(Check("WARN", "受信側のコード", f"古いコードで動いている(起動 {started}。その後に変更: {changed})",
+                            [hint]))
+    analysis = payload.get("analysis") if isinstance(payload.get("analysis"), dict) else {}
+    running = analysis.get("running")
+    queued = analysis.get("queued", 0)
+    if running or queued or payload.get("uploadsInProgress"):
+        checks.append(Check("INFO", "受信側の作業", f"解析中: {running or 'なし'} / 待ち {queued} 件 / "
+                            f"受信中 {payload.get('uploadsInProgress', 0)} 件"))
+    return checks
 
 
 def _receiver_age(ctx: Context, listeners: list[dict]) -> list[Check]:
@@ -435,8 +460,7 @@ def check_inbox(ctx: Context) -> list[Check]:
             checks.append(Check("OK", "Codex 解析", "完了(analysis_report.md を開く)"))
         elif codes:
             checks.append(Check("WARN", "Codex 解析", f"precheck で中止: {', '.join(codes)[:200]}",
-                                ["選ばれた画像に時間方向の証拠が足りない(短すぎる録画など)。"
-                                 "saber を映して数秒以上振る録画を撮り直す"]))
+                                [explain_precheck(codes)]))
         else:
             checks.append(Check("INFO", "Codex 解析", "analysis_report.json あり(Codex は実行されていない)"))
         return checks
@@ -449,11 +473,49 @@ def check_inbox(ctx: Context) -> list[Check]:
         hints = [f"手動で再実行: python3 phone_saber_triage_codex.py \"{bundle}\""]
         if "CLI_TIMEOUT" in reason:
             hints.insert(0, "Codex の timeout。bundle は残っているので、空いた時間に手動で再実行する")
+        elif "PRECHECK_FAILED" in reason:
+            codes = re.findall(r"\b[a-z]+[A-Z]\w*(?:Missing|Invalid)\b", reason.split(":", 1)[0])
+            hints = [explain_precheck(codes, reason)]
         checks.append(Check("WARN", "Codex 解析", f"失敗: {reason[:160]}", hints))
     else:
         checks.append(Check("INFO", "Codex 解析", "結果なし(受信側の latest.log に記録が無い。--no-codex で起動した可能性)",
                             [f"必要なら手動で: python3 phone_saber_triage_codex.py \"{bundle}\""]))
     return checks
+
+
+def _tree_usage(path: Path, pattern: str = "*") -> tuple[int, int]:
+    """(ファイル数, バイト数)。読めないものは数えない。"""
+    count = size = 0
+    try:
+        for item in path.rglob(pattern):
+            try:
+                if item.is_file() and not item.is_symlink():
+                    count += 1
+                    size += item.stat().st_size
+            except OSError:
+                continue
+    except OSError:
+        pass
+    return count, size
+
+
+def check_storage(ctx: Context) -> list[Check]:
+    """診断の保存量と、解析結果が無い bundle の数を報告する(何も消さない)。"""
+    try:
+        bundles = sorted(p for p in ctx.inbox.iterdir() if p.is_dir() and p.name.startswith(INBOX_PREFIX))
+    except OSError:
+        return []
+    pending = [p.name[len(INBOX_PREFIX):] for p in bundles if not (p / "analysis_report.json").is_file()]
+    _, inbox_bytes = _tree_usage(ctx.inbox)
+    codex_count, codex_bytes = _tree_usage(ctx.home / "Library" / "Logs" / "PhoneSaber" / "codex", "*.json")
+    detail = (f"inbox {len(bundles)} bundle / {inbox_bytes / 1e6:.0f} MB、Codex 記録 {codex_count} 件 / "
+              f"{codex_bytes / 1e6:.0f} MB、解析結果なし {len(pending)} 件")
+    hints = []
+    if pending:
+        shown = ", ".join(list(reversed(pending))[:3])
+        hints.append(f"解析結果なし(新しい順に最大3件): {shown}。手動で: python3 phone_saber_triage_codex.py <bundle>"
+                     "(precheck で止まる古い録画もある)")
+    return [Check("INFO", "診断の保存量(自動では消さない)", detail, hints)]
 
 
 def git_state(ctx: Context, label: str, root: Optional[Path]) -> Check:
@@ -546,6 +608,7 @@ def collect(ctx: Context) -> list[Check]:
     checks.extend(bridge)
     checks.extend(check_editor_log(ctx, bridge_running=bridge[0].level == "OK"))
     checks.extend(check_inbox(ctx))
+    checks.extend(check_storage(ctx))
     checks.append(git_state(ctx, "school-festival", ctx.repo_root))
     checks.append(git_state(ctx, "3D-Saber", ctx.unity_root))
     checks.extend(check_codex(ctx))

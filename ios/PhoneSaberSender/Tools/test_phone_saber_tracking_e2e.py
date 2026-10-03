@@ -18,6 +18,8 @@ import phone_saber_auto_repair as repair
 from test_phone_saber_triage_codex import fake_codex, EMPTY_ANALYSIS
 from test_phone_saber_tracking_diagnostics import tracking_analysis
 from test_phone_saber_auto_repair import miniature_repo, fake_git, BASE
+from phone_saber_test_isolation import isolate_codex_logs as setUpModule  # noqa: F401,E402
+from phone_saber_test_isolation import restore_codex_logs as tearDownModule  # noqa: F401,E402
 
 
 @unittest.skipUnless(sys.platform == "darwin", "actual AVFoundation capture harness requires macOS")
