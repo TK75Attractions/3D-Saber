@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import signal
 import socket
 import struct
 import subprocess
@@ -212,6 +213,40 @@ class P2PBridgeLauncherTests(unittest.TestCase):
             usage = subprocess.run([str(first), "--help"], capture_output=True, text=True)
             self.assertEqual(usage.returncode, 2)
             self.assertIn("--no-bonjour", usage.stderr)
+
+    def test_stale_partial_builds_are_removed_but_recent_ones_kept(self):
+        with tempfile.TemporaryDirectory() as directory:
+            folder = Path(directory)
+            stale = folder / f".{launcher.BINARY_NAME}.111.tmp"
+            fresh = folder / f".{launcher.BINARY_NAME}.222.tmp"
+            stale.write_bytes(b"x")
+            fresh.write_bytes(b"x")
+            old = time.time() - 3600
+            os.utime(stale, (old, old))
+            launcher._remove_stale_temporaries(folder)
+            self.assertFalse(stale.exists())
+            self.assertTrue(fresh.exists(), "a build in progress is not disturbed")
+
+    def test_terminating_the_launcher_mid_build_stops_the_compiler(self):
+        if not (sys.platform == "darwin" and shutil.which("xcrun")):
+            self.skipTest("requires the macOS Swift toolchain")
+        with tempfile.TemporaryDirectory() as directory:
+            process = subprocess.Popen([sys.executable, "-B", launcher.__file__, "--build-only",
+                                        "--rebuild", "--cache-dir", directory],
+                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            deadline = time.monotonic() + 10
+            compiler = None
+            while time.monotonic() < deadline and compiler is None:
+                found = subprocess.run(["/usr/bin/pgrep", "-P", str(process.pid)], capture_output=True, text=True)
+                compiler = found.stdout.split()[0] if found.stdout.strip() else None
+                time.sleep(0.05)
+            self.assertIsNotNone(compiler, "compiler child started")
+            process.terminate()
+            self.assertEqual(process.wait(timeout=10), 128 + signal.SIGTERM)
+            time.sleep(0.5)
+            alive = subprocess.run(["/bin/kill", "-0", compiler], capture_output=True)
+            self.assertNotEqual(alive.returncode, 0, "swiftc must not outlive the launcher")
+            self.assertEqual(list(Path(directory).rglob("*.tmp")), [])
 
     def test_bridge_arguments_follow_a_double_dash(self):
         calls = {}

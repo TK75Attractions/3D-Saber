@@ -17,8 +17,10 @@ from __future__ import annotations
 import argparse
 import hashlib
 import os
+import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 TOOLS_DIR = Path(__file__).resolve().parent
@@ -44,17 +46,46 @@ def build(cache_dir: Path = DEFAULT_CACHE, *, force: bool = False) -> Path:
     if target.is_file() and os.access(target, os.X_OK) and not force:
         return target
     target.parent.mkdir(parents=True, exist_ok=True)
+    _remove_stale_temporaries(target.parent)
     temporary = target.with_name(f".{BINARY_NAME}.{os.getpid()}.tmp")
     # Absolute xcrun: Unity launches this script with a minimal PATH.
     xcrun = "/usr/bin/xcrun" if os.path.exists("/usr/bin/xcrun") else "xcrun"
     command = [xcrun, "swiftc", "-O", "-parse-as-library", *map(str, SOURCES), "-o", str(temporary)]
     print(f"[P2P] building bridge: {' '.join(command)}", flush=True)
-    completed = subprocess.run(command, capture_output=True, text=True)
-    if completed.returncode != 0:
+    compiler = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+    def stop_compiler(signum, _frame):
+        # Unity stopping Play during the first build: never leave swiftc running.
+        compiler.terminate()
+        try:
+            compiler.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            compiler.kill()
         temporary.unlink(missing_ok=True)
-        raise RuntimeError(f"bridge build failed:\n{completed.stderr}")
+        raise SystemExit(128 + signum)
+
+    previous = {sig: signal.signal(sig, stop_compiler) for sig in (signal.SIGTERM, signal.SIGINT)}
+    try:
+        _, stderr = compiler.communicate()
+    finally:
+        for sig, handler in previous.items():
+            signal.signal(sig, handler)
+    if compiler.returncode != 0:
+        temporary.unlink(missing_ok=True)
+        raise RuntimeError(f"bridge build failed:\n{stderr}")
     os.replace(temporary, target)
     return target
+
+
+def _remove_stale_temporaries(directory: Path, older_than: float = 600) -> None:
+    """Partial outputs of interrupted builds (pid-named, so never another live build's)."""
+    now = time.time()
+    for leftover in directory.glob(f".{BINARY_NAME}.*.tmp"):
+        try:
+            if now - leftover.stat().st_mtime > older_than:
+                leftover.unlink()
+        except OSError:
+            pass
 
 
 def main(argv: list[str] | None = None) -> int:
