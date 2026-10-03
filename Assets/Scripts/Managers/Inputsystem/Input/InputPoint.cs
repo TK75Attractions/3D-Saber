@@ -32,7 +32,10 @@ public class InputPoint : MonoBehaviour
     const int ReceiverJoinTimeoutMilliseconds = 2000;
     PhoneSaberBonjourPublisher bonjourPublisher;
     // iPhone からの P2P 経路用 bridge(座標を 127.0.0.1:5005/5006 へ転送するだけ)。受信処理は変えない。
+    // Bonjour と同じく、5005/5006 の両方を bind できている間だけ動かす(iPhone が LAN へ戻れるように)。
     PhoneSaberP2PBridgeProcess p2pBridge;
+    // SetReceiverAlive は受信 thread で動くため、Application.dataPath は main thread で控えておく。
+    string p2pDataPath;
     public int port = 5005;
     public int port2 = 5006;
 
@@ -293,7 +296,7 @@ public class InputPoint : MonoBehaviour
             bonjourPublisher = new PhoneSaberBonjourPublisher();
             p2pBridge?.Dispose();
             p2pBridge = new PhoneSaberP2PBridgeProcess();
-            p2pBridge.Start(port, port2, Application.dataPath);
+            p2pDataPath = Application.dataPath;
 
             networkShutdown = false;
             receiverAlive1 = false;
@@ -786,9 +789,15 @@ public class InputPoint : MonoBehaviour
             else receiverAlive1 = alive;
 
             if (networkShutdown || !receiverAlive1 || !receiverAlive2)
+            {
                 bonjourPublisher?.Stop();
+                p2pBridge?.Stop();
+            }
             else
+            {
                 bonjourPublisher?.Start(port);
+                p2pBridge?.Start(port, port2, p2pDataPath);
+            }
         }
     }
 
