@@ -20,6 +20,8 @@ from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
+from phone_saber_test_isolation import isolate_codex_logs as setUpModule  # noqa: F401,E402
+from phone_saber_test_isolation import restore_codex_logs as tearDownModule  # noqa: F401,E402
 import phone_saber_sessions_overview as overview_tool
 from phone_saber_sessions_overview import (
     OVERVIEW_BASENAME, build_overview, codex_status, read_receiver_logs, render_html, render_markdown,
