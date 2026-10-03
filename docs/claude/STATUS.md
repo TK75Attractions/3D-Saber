@@ -1,16 +1,16 @@
 # PhoneSaber STATUS
 
 ## ユーザー待ち
-- **iPhone 実機 Debug Recording を1回**(2026-10-03 更新。main 7449bc7 以降のビルドで撮る)
-  1. Xcode で main の最新の PhoneSaberSender を iPhone に入れる(Debug build)。
-  2. Mac で Start PhoneSaber を起動する。
-  3. iPhone で Debug Recording を ON にする。診断対象の色は BOTH のまま。カメラは正立・固定(三脚など)。背景の赤い物(ラベル・カラビナ)は片付けない。
-  4. 録画を開始し、**区間ラベル**を切り替えながら撮る(合計 5 分以内):
-     - 「saberあり」: 赤・青の saber を点灯させて画面内に映し、大きく速く振る swing を数回。画面端への出入りも含める。
-     - 「saberなし」: saber を画面外に出すか消灯して約 10 秒。
-     - 「赤い物隠し」: 赤いラベル・カラビナを布などで隠して約 10 秒(saber はなし)。
-  5. Stop すると triage bundle が Mac に自動転送され、`<inbox>/<bundle>.report.md` に1ページの要約ができる。
-  - 解析で見ること: saberなし / 赤い物隠し区間の赤の誤検出率(`phone_saber_segments.py`)、本物の saber での CASE A の有無、shadow R7e の判定、露出、memoryHeadroom。
+- **iPhone 実機 Debug Recording を2本**(2026-10-04 更新。main 96a144f 以降の Debug build で撮る。手順の詳細は docs/claude/analysis/2026-10-03_background_fp_rule_study.md)
+  - 準備:三脚で正立・固定、診断対象の色は BOTH、背景の赤い物(ラベル・カラビナ・コンセントのラベル)は片付けない。Mac で Start PhoneSaber を起動(古い受信側は Ctrl+C で止めてから)。
+  - 録画1(露出実験=自動、5 分以内。区間ラベルを切り替えながら):
+    1. 「saberなし」20 秒。
+    2. 「saberあり」赤だけ点灯:0.5m・1.5m・3m で各 3 秒静止 → 先端をカメラに向けて 3 秒 → ゆっくり振る → 速く 5 回(うち 2 回はカメラへ突く)。
+    3. 点灯した赤 saber をラベル・カラビナ・コンセントのラベルの 30cm 手前で各 3 秒 → それらの前を横切って振る。
+    4. 青だけ点灯で 2 を短く。
+    5. 「赤い物隠し」10 秒。
+  - 録画2:露出実験を 1/120 秒(東日本なら 1/100 秒)にして 1〜3 を繰り返す。
+  - 目的:R7e / PF22 を本番に上げてよいかの判定(点灯した赤 saber が写る frame で shadow 不採用 0、saberなし区間で赤 winner の 80% 以上を不採用)。
 
 ## 現在の仮説と確度
 - **2026-10-02 の再解析で見直した。** 既存の代表例(005850_489 f2537、013205_087 f255、010049_190 f660–664)は、
@@ -51,9 +51,21 @@
      既存 23 bundle では PF22 が未検出に変えるジャンプは 16 件中 1 件(144936_295 f2552)だけ。10-02 のラベル・カラビナは purity 0.53–0.79 で防げない。
    - 採用に必要な capture: 点灯した赤 saber を 0.5–3m、3部屋以上、昼/夜、固定露出/自動露出。同じ部屋で消灯時の赤い物。±1EV の露出振り。
 
+- **2026-10-04 背景誤検出ルールの比較**(docs/claude/analysis/2026-10-03_background_fp_rule_study.md、129 frame × 2 色を目視でラベル付け):
+  R7e+PF22 で formal 40/40、背景ベンチ FP 7/8→0/8、saber 不在時の赤の背景 winner 54→26、実 saber の取りこぼし 0、選ばれたジャンプ 17 件中 10 件が未検出に変わる。
+  ただし差は小さく(R7e の clipped 判定 +0.10、PF22 の purity ±0.04)、明るさ +8% で効果がほぼ消える。手持ちカメラの session(155919)と青の背景誤検出は、どのルールでも直らない。
+  → 推奨:R7e を先に(単独 commit)、PF22 を次に。ただし実 saber の shadow 記録が足りないので、まだ本番に入れない(上の録画が必要)。
+
 ---
 
 ## 作業ログ(新しい順)
+
+### 2026-10-04
+- 受信側の点検と修正:/health で古いコードのまま動いているかを表示、Start PhoneSaber が自分で起動した受信側だけ安全に再起動、ログに時刻と理由、test が本物のログ置き場に書かない。
+  (調査結果:docs/claude/analysis/2026-10-03_receiver_log_audit.md)テスト由来の codex ログ 3,958 件はゴミ箱へ移した(本物 12 件は残した)。
+- 全 session の一覧ページ `phone_saber_sessions_overview.html`(受信のたびに自動更新、`PhoneSaber Overview.command`)。デスクトップに PhoneSaber Status を追加。
+- verify は実行ごとに専用の Simulator を作る(並列実行で test runner が kill される問題を解消)。2台目の Mac 用の setup(docs/claude/SECOND_MAC_SETUP.md)。
+- 背景誤検出ルールの比較(上の「次にやること」参照、phone_saber_rule_study.py)。production の認識は変更なし。
 
 ### 2026-10-03(夜)
 - 当日用 runbook(docs/claude/EVENT_DAY_RUNBOOK.md)と読み取り専用の点検 `PhoneSaber Status.command`(phone_saber_status.py)を追加(5723323)。
