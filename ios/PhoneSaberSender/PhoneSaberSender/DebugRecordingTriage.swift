@@ -2238,6 +2238,12 @@ struct DebugCandidateGeometry: Equatable {
                                    "meanColorPurity": round4(shadow.meanColorPurity),
                                    "shadowR7eEligible": shadow.shadowEligible] as [String: Any]
         }
+        if let shadow = value.shadowPF22 {
+            // Evidence only, not applied to recognition. Its inputs are the
+            // shadowR7e meanColorPurity / clippedWhiteRatio above.
+            result["shadowPF22"] = ["applied": false,
+                                    "shadowPF22Eligible": shadow.shadowEligible] as [String: Any]
+        }
         return result
     }
 

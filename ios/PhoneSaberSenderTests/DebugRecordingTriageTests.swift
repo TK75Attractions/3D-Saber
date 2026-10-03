@@ -1496,6 +1496,9 @@ extension DebugBridgeDropoutTests {
         XCTAssertEqual(emitter["emitterScoreThreshold"] as? Double, 0.42)
         XCTAssertNotNil(emitter["bladeLengthSupport"] as? Double)
         XCTAssertEqual((emitter["shadowR7e"] as? [String: Any])?["applied"] as? Bool, false)
+        let pf22 = try XCTUnwrap(emitter["shadowPF22"] as? [String: Any])
+        XCTAssertEqual(pf22["applied"] as? Bool, false)
+        XCTAssertNotNil(pf22["purityMargin"] as? Double, "the triage snapshot keeps the full verdict")
         let neighbour = try XCTUnwrap(frames.first { $0["frameID"] as? Int == 12 }?["red"] as? [String: Any])
         XCTAssertTrue((neighbour["candidateDecisionTrace"] as? [[String: Any]] ?? []).allSatisfy {
             $0["emitterDiagnostics"] == nil })
@@ -1504,6 +1507,8 @@ extension DebugBridgeDropoutTests {
         XCTAssertTrue(entries.allSatisfy { ($0["emitter"] as? [String: Any])?["emitterScore"] is Double })
         XCTAssertTrue(entries.allSatisfy {
             (($0["emitter"] as? [String: Any])?["shadowR7e"] as? [String: Any])?["applied"] as? Bool == false })
+        XCTAssertTrue(entries.allSatisfy {
+            (($0["emitter"] as? [String: Any])?["shadowPF22"] as? [String: Any])?["shadowPF22Eligible"] is Bool })
         if let neighbourGeometry = try? redGeometry(context, frame: 12) {
             XCTAssertTrue((neighbourGeometry["candidates"] as? [[String: Any]] ?? []).allSatisfy {
                 $0["emitter"] == nil })

@@ -59,6 +59,14 @@ SHADOW_R7E = object_field({
         "applied", "usedFallbackDensity", "ruleSatisfied", "shadowR7eEligible")},
 })
 
+# Shadow verdict of the offline red purity-floor rule PF22 (evidence only,
+# applied:false). Absent from bundles recorded before it existed.
+SHADOW_PF22 = object_field({
+    **{name: scalar("number") for name in (
+        "meanColorPurity", "clippedWhiteRatio", "purityMargin", "clippedWhiteMargin")},
+    **{name: scalar("boolean") for name in ("applied", "ruleSatisfied", "shadowPF22Eligible")},
+})
+
 # Debug Recording diagnostic path only; absent in older bundles.
 EMITTER_DIAGNOSTICS = object_field({
     **{name: scalar("number") for name in (
@@ -76,6 +84,7 @@ EMITTER_DIAGNOSTICS = object_field({
         "hasEmitterCore", "coreByHighValueRatio", "coreByPeakAndMean", "coreByClippedWhite",
         "baseEligible", "compactRedGate")},
     "shadowR7e": SHADOW_R7E,
+    "shadowPF22": SHADOW_PF22,
 }, nullable=True)
 
 FRAME_CAMERA = object_field({

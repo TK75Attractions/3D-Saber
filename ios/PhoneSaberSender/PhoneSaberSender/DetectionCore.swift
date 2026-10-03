@@ -313,6 +313,9 @@ struct SaberEmitterDiagnostics: Equatable {
     /// Red candidates only: offline-explored "R7e" matte-red rule, evaluated as
     /// evidence and NEVER applied to eligibility, ranking or output.
     let shadowR7e: SaberShadowR7eVerdict?
+    /// Red candidates only: offline-explored purity-floor rule "PF22", evaluated
+    /// as evidence and NEVER applied to eligibility, ranking or output.
+    let shadowPF22: SaberShadowPurityFloorVerdict?
 
     static let emitterScoreThreshold = 0.42
     var emitterScoreMargin: Double { emitterScore - Self.emitterScoreThreshold }
@@ -363,6 +366,36 @@ struct SaberShadowR7eVerdict: Equatable {
             || d240 >= Self.thickBodyDensityThreshold
             || (d240 >= Self.saturatedBodyDensityThreshold
                 && meanColorPurity >= Self.saturatedBodyPurityThreshold)
+        shadowEligible = baseEligible && ruleSatisfied
+    }
+}
+
+/// Shadow verdict of the offline red-eligibility rule "PF22"
+/// (meanColorPurity >= 0.22 || clippedWhiteRatio >= 0.35), explored in
+/// docs/claude/analysis/2026-10-03_motion_blur_and_blue_jumps.md: a barely-red
+/// candidate (wall label, skin) is not an emitter unless its LED core is
+/// clipped white. Evidence only, not applied: the purity margin is small
+/// (labels 0.15–0.19) and it rests on one event, so recognition ignores it.
+/// Inputs are the production `meanPurity` and `clippedRatio` of the candidate.
+struct SaberShadowPurityFloorVerdict: Equatable {
+    static let purityThreshold = 0.22
+    static let clippedWhiteExemptionThreshold = 0.35
+
+    let meanColorPurity: Double
+    let clippedWhiteRatio: Double
+    /// The rule's OR expression alone.
+    let ruleSatisfied: Bool
+    /// baseEligible && ruleSatisfied: what eligibility would be if PF22 applied.
+    let shadowEligible: Bool
+
+    var purityMargin: Double { meanColorPurity - Self.purityThreshold }
+    var clippedWhiteMargin: Double { clippedWhiteRatio - Self.clippedWhiteExemptionThreshold }
+
+    init(meanColorPurity: Double, clippedWhiteRatio: Double, baseEligible: Bool) {
+        self.meanColorPurity = meanColorPurity
+        self.clippedWhiteRatio = clippedWhiteRatio
+        ruleSatisfied = meanColorPurity >= Self.purityThreshold
+            || clippedWhiteRatio >= Self.clippedWhiteExemptionThreshold
         shadowEligible = baseEligible && ruleSatisfied
     }
 }
@@ -1053,7 +1086,10 @@ private func saberEmitterDiagnostics(
         shadowR7e: evidence.color == .red ? SaberShadowR7eVerdict(
             bodyDensity: bodyDensity, pointCount: points.count, majorLength: majorLength,
             maskWidth: width, maskHeight: height, clippedWhiteRatio: clippedRatio,
-            meanColorPurity: meanPurity, baseEligible: baseEligible) : nil
+            meanColorPurity: meanPurity, baseEligible: baseEligible) : nil,
+        shadowPF22: evidence.color == .red ? SaberShadowPurityFloorVerdict(
+            meanColorPurity: meanPurity, clippedWhiteRatio: clippedRatio,
+            baseEligible: baseEligible) : nil
     )
 }
 

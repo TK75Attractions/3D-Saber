@@ -20,8 +20,9 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import phone_saber_session_report as report_tool
+import phone_saber_pf22_check as pf22_check
 from phone_saber_background_evidence import (
-    background_evidence, normalize_emitter, normalize_shadow, peak_from_term, render_lines)
+    background_evidence, normalize_emitter, normalize_shadow, peak_from_term, pf22_verdict, render_lines)
 from phone_saber_hotspots import static_hotspots
 from phone_saber_session_report import build_report, render_markdown
 from phone_saber_tracking_diagnostics import validate_candidate_geometry, validate_emitter_diagnostics
@@ -249,6 +250,127 @@ class BackgroundEvidenceSectionTests(unittest.TestCase):
         self.assertEqual(section["shadowR7eTally"]["byCluster"]["unclustered"]["winners"], 13)
         self.assertEqual(section["clusters"], [])
         self.assertIn("static hotspots n/a", "\n".join(render_lines(section)))
+
+
+def pf22_trace(index, purity, clipped, *, eligible=True):
+    return {"index": index, "sourceType": "color-emitter", "eligible": eligible, "finalScore": 50.0,
+            "rejectionReasons": [], "rules": [], "meanColorPurity": purity, "clippedWhiteRatio": clipped}
+
+
+def pf22_frames(*, with_recorded: bool = True) -> list[dict]:
+    """One frame per context (all selected). Red winners 200-206, a blue event at 207."""
+    switch = {"candidateSwitch": True, "midpointDisplacement": 40.0}
+
+    def jump(px):
+        return {"candidateSwitch": False, "midpointDisplacement": px}
+
+    def red(trace_entries, *, eligible_count, tracking=None, selected=0, geometry_block=None):
+        block = {"detected": True, "predictionUsed": False, "eligibleCandidateCount": eligible_count,
+                 "selectedCandidateType": "color-emitter", "candidateDecisionTrace": trace_entries}
+        if selected is not None:
+            block["selectedCandidateIndex"] = selected
+        if tracking is not None:
+            block["tracking"] = tracking
+        if geometry_block is not None:
+            block["candidateGeometry"] = geometry_block
+        return block
+
+    reds = {
+        200: red([pf22_trace(0, 0.6, 0.0)], eligible_count=1),                              # saber: keep
+        201: red([pf22_trace(0, 0.18, 0.0)], eligible_count=1, tracking=switch),           # label only
+        202: red([pf22_trace(0, 0.18, 0.0), pf22_trace(1, 0.6, 0.0)], eligible_count=2,
+                 tracking=jump(300.0)),                                                    # saber survives
+        203: red([pf22_trace(0, 0.15, 0.35)], eligible_count=1, tracking=jump(150.0)),     # clipped exemption
+        204: red([pf22_trace(0, 0.2, 0.0)], eligible_count=2, tracking=jump(220.0)),       # 2nd unknown
+        205: red([pf22_trace(0, 0.9, 0.0, eligible=False), pf22_trace(1, 0.1, 0.0)], eligible_count=1,
+                 tracking=jump(120.0), selected=None),                                     # old format
+    }
+    if with_recorded:
+        cand = geo_cand(0, [50.0, 50.0], [40, 40, 60, 60], 45.0, rank=1)
+        cand["emitter"] = {"emitterScore": 0.6, "emitterScoreMargin": 0.18, "hasEmitterCore": True,
+                           "shadowPF22": {"applied": False, "shadowPF22Eligible": False}}
+        reds[206] = red([], eligible_count=1, geometry_block=geometry([cand]))
+    frames = [{"frameID": fid, "timestamp": fid / 30, "red": block, "blue": {"detected": False}}
+              for fid, block in sorted(reds.items())]
+    frames.append({"frameID": 207, "timestamp": 207 / 30, "red": {"detected": False},
+                   "blue": {"detected": True, "predictionUsed": False, "selectedCandidateIndex": 0,
+                            "eligibleCandidateCount": 1, "tracking": switch,
+                            "candidateDecisionTrace": [pf22_trace(0, 0.1, 0.0)]}})
+    return frames
+
+
+class ShadowPF22Tests(unittest.TestCase):
+    def test_verdict_boundaries_and_sources(self):
+        self.assertEqual(pf22_verdict(None, 0.22, 0.0, True)["verdict"], "keep")
+        self.assertEqual(pf22_verdict(None, 0.2199, 0.0, True)["verdict"], "reject")
+        self.assertEqual(pf22_verdict(None, 0.15, 0.35, True)["verdict"], "keep")
+        self.assertEqual(pf22_verdict(None, 0.15, 0.3499, True)["verdict"], "reject")
+        self.assertEqual(pf22_verdict(None, 0.9, 1.0, False)["verdict"], "reject")  # never more eligible
+        recomputed = pf22_verdict(None, 0.18, 0.0, True)
+        self.assertEqual((recomputed["source"], recomputed["purityMargin"], recomputed["clippedWhiteMargin"]),
+                         ("recomputed", -0.04, -0.35))
+        recorded = pf22_verdict({"applied": False, "shadowPF22Eligible": True, "ruleSatisfied": True}, 0.1, 0.0, True)
+        self.assertEqual((recorded["source"], recorded["verdict"]), ("recorded", "keep"))  # recorded wins
+        self.assertIsNone(pf22_verdict(None, None, 0.0, True))
+        self.assertIsNone(pf22_verdict(None, 0.5, 0.0, None))
+
+    def test_recorded_verdict_follows_the_schema(self):
+        full = dict(copy.deepcopy(EMITTER), shadowPF22={
+            "applied": False, "ruleSatisfied": True, "shadowPF22Eligible": True, "meanColorPurity": 0.88,
+            "clippedWhiteRatio": 0.0, "purityMargin": 0.66, "clippedWhiteMargin": -0.35})
+        validate_emitter_diagnostics(full)
+        validate_emitter_diagnostics(dict(GEOMETRY_EMITTER, shadowPF22={"applied": False,
+                                                                        "shadowPF22Eligible": False}))
+        for bad in ({"applied": True, "shadowPF22Eligible": False}, {"applied": False},
+                    {"applied": False, "shadowPF22Eligible": False, "extra": 1},
+                    {"applied": False, "shadowPF22Eligible": "no"}):
+            with self.assertRaises(Exception):
+                validate_emitter_diagnostics(dict(GEOMETRY_EMITTER, shadowPF22=bad))
+
+    def test_tally_winners_eligible_and_events(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = write_contexts(Path(tmp), pf22_frames(), chunk=1)
+            section = background_evidence(bundle, None)
+            tally = section["shadowPF22Tally"]
+            self.assertEqual(tally["winners"], {"frames": 7, "withVerdict": 7, "pf22WouldReject": 5,
+                                                "pf22Keeps": 2, "pf22NA": 0,
+                                                "verdictSources": {"recomputed": 6, "recorded": 1}})
+            self.assertEqual(tally["eligibleCandidates"], {"candidates": 8, "withVerdict": 8,
+                                                           "pf22WouldReject": 5, "pf22Keeps": 3})
+            events = tally["events"]
+            self.assertEqual((events["red"], events["blueNotApplicable"]), (5, 1))
+            self.assertEqual(events["pf22Outcomes"], {"unchanged": 1, "winnerChanges": 1, "noDetection": 2,
+                                                      "unknown": 1, "n/a": 0})
+            self.assertEqual(events["r7eOutcomes"]["n/a"], 5)  # no R7e evidence on these frames
+            outcome = {r["frameID"]: r["pf22Outcome"] for r in events["rows"]}
+            self.assertEqual(outcome, {201: "noDetection", 202: "winnerChanges", 203: "unchanged",
+                                       204: "unknown", 205: "noDetection", 207: "n/a"})
+            # Selected-frame winners alongside the R7e tally (hotspots unavailable: unclustered):
+            # the R7e rows (205 has no selectedCandidateIndex there) plus the blue winner, n/a.
+            self.assertEqual(tally["selectedWinnersTotal"], {"winners": 7, "pf22WouldReject": 4,
+                                                             "pf22Keeps": 2, "pf22NA": 1})
+            # The R7e tally itself is unchanged by the PF22 addition.
+            self.assertEqual(section["shadowR7eTally"]["total"]["r7eWouldReject"], 0)
+            text = "\n".join(render_lines(section))
+            self.assertIn("### shadow PF22 tally", text)
+            self.assertIn("**would reject 5**, keep 2, n/a 0", text)
+            self.assertIn("  - PF22: unchanged 1, winnerChanges 1, noDetection 2, unknown 1, n/a 0", text)
+            self.assertIn("| 201 | true | 40 | color-emitter | 0.18 | 0 | noDetection | n/a |", text)
+            out = io.StringIO()
+            with contextlib.redirect_stdout(out):
+                self.assertEqual(pf22_check.main([str(bundle)]), 0)
+            self.assertIn("| 7 (7) | 5 | 8 (8) | 5 | 5 | 2 | 1 | 1 | 1 | 0 |", out.getvalue())
+            self.assertIn("frame 201: noDetection", out.getvalue())
+
+    def test_bundle_without_emitter_evidence_still_recomputes_pf22(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            bundle = write_contexts(Path(tmp), pf22_frames(with_recorded=False), chunk=1)
+            section = background_evidence(bundle, None)
+            self.assertFalse(section["emitterEvidenceAvailable"])
+            self.assertEqual(section["shadowPF22Tally"]["winners"]["pf22WouldReject"], 4)
+            text = "\n".join(render_lines(section))
+            self.assertIn("- n/a — no `emitterDiagnostics`", text)
+            self.assertIn("### shadow PF22 tally", text)
 
 
 class OldBundleTests(unittest.TestCase):

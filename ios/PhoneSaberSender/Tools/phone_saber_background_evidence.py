@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Background false-positive evidence: emitter terms, shadow R7e verdict and exposure.
+"""Background false-positive evidence: emitter terms, shadow R7e / PF22 verdicts and exposure.
 
 Read-only, free and offline (no model call). Used by the session report section
 「背景誤検出の証拠(emitter / shadow R7e / 露出)」. It reads the triage contexts of a
@@ -19,6 +19,17 @@ heuristic hint, and ``shadowR7e`` is a shadow verdict (``applied: false``) of an
 offline rule that production eligibility, ranking and UDP never read. A
 "would reject" count says only that the recorded R7e expression was false for a
 candidate production accepted. Bundles without these fields yield ``n/a``.
+
+``shadowPF22`` is the second shadow verdict (red purity floor:
+``meanColorPurity >= 0.22 OR clippedWhiteRatio >= 0.35``, also ``applied: false``).
+Its inputs are plain candidate fields, so where a bundle predates the recorded
+verdict it is RECOMPUTED offline from the decision-trace / selectedCandidate
+``meanColorPurity`` + ``clippedWhiteRatio`` (or the geometry ``shadowR7e``
+copies, rounded to 4 decimals) of production-eligible red candidates. The PF22
+tally covers every red winner in the contexts (not only selected frames), the
+eligible candidates, and the selected-frame red jump / candidateSwitch events:
+an event "becomes no-detection" only when the rule rejects every eligible
+candidate of that frame and the frame's eligible list is fully known.
 """
 from __future__ import annotations
 
@@ -40,6 +51,13 @@ R7E_CLIPPED_WHITE = 0.35
 R7E_THICK_BODY_D240 = 4.2
 R7E_SATURATED_D240 = 3.5
 R7E_SATURATED_PURITY = 0.60
+# Shadow PF22 (red purity floor): meanColorPurity >= 0.22 OR clippedWhiteRatio >= 0.35.
+PF22_PURITY = 0.22
+PF22_CLIPPED_WHITE = 0.35
+# A selected-frame tracking event: candidateSwitch, or a winner midpoint jump of
+# at least this many pixels (the session report's REPLAY_JUMP_PX).
+EVENT_JUMP_PX = 100.0
+EVENT_OUTCOMES = ("unchanged", "winnerChanges", "noDetection", "unknown", "n/a")
 R7E_MARGIN_KEYS = ("clippedWhiteMargin", "thickBodyMargin", "saturatedBodyDensityMargin",
                    "saturatedBodyPurityMargin")
 EXTRA_KEYS = ("baseEligible", "bladeLengthSupport", "localContrast", "emitterTexture", "coreSupport",
@@ -50,8 +68,8 @@ CAMERA_ROW_KEYS = ("iso", "exposureDurationSeconds", "exposureBiasEV", "brightne
 # peakTerm = clamp01((peak - 200) / 55) * 0.32
 PEAK_TERM_WEIGHT, PEAK_FLOOR, PEAK_RANGE = 0.32, 200.0, 55.0
 FEW_FRAMES = 3
-NOTE = ("evidence only, NOT ground truth: likelyBackground is a hint and shadowR7e is a shadow verdict "
-        "(applied:false) that production eligibility/ranking/UDP never read")
+NOTE = ("evidence only, NOT ground truth: likelyBackground is a hint and shadowR7e / shadowPF22 are shadow "
+        "verdicts (applied:false) that production eligibility/ranking/UDP never read")
 
 
 def _number(value: Any) -> float | None:
@@ -111,6 +129,31 @@ def normalize_shadow(raw: Any) -> dict | None:
             "margins": {k: _round(v) for k, v in margins.items()}, "marginsSource": source}
 
 
+def pf22_verdict(raw: Any, purity: Any = None, clipped: Any = None, eligible: Any = None) -> dict | None:
+    """Shadow PF22 verdict: the recorded ``shadowPF22`` when present, otherwise
+    recomputed from the candidate's meanColorPurity / clippedWhiteRatio and its
+    production eligibility. None when neither is available."""
+    purity, clipped = _number(purity), _number(clipped)
+    if isinstance(raw, dict) and isinstance(raw.get("shadowPF22Eligible"), bool):
+        purity = _number(raw.get("meanColorPurity")) if _number(raw.get("meanColorPurity")) is not None else purity
+        clipped = _number(raw.get("clippedWhiteRatio")) if _number(raw.get("clippedWhiteRatio")) is not None \
+            else clipped
+        eligible_after, source = raw["shadowPF22Eligible"], "recorded"
+        rule = _bool(raw.get("ruleSatisfied"))
+        if rule is None and None not in (purity, clipped):
+            rule = purity >= PF22_PURITY or clipped >= PF22_CLIPPED_WHITE
+    elif None not in (purity, clipped) and isinstance(eligible, bool):
+        rule = purity >= PF22_PURITY or clipped >= PF22_CLIPPED_WHITE
+        eligible_after, source = eligible and rule, "recomputed"
+    else:
+        return None
+    return {"applied": False, "source": source, "shadowPF22Eligible": eligible_after,
+            "verdict": "keep" if eligible_after else "reject", "ruleSatisfied": rule,
+            "meanColorPurity": purity, "clippedWhiteRatio": clipped,
+            "purityMargin": None if purity is None else _round(purity - PF22_PURITY),
+            "clippedWhiteMargin": None if clipped is None else _round(clipped - PF22_CLIPPED_WHITE)}
+
+
 def normalize_emitter(raw: Any, source: str) -> dict | None:
     """One candidate's emitter evidence. ``source`` is ``decisionTrace`` (full
     ``emitterDiagnostics``) or ``candidateGeometry`` (compact ``emitter``)."""
@@ -130,7 +173,8 @@ def normalize_emitter(raw: Any, source: str) -> dict | None:
               "terms": {TERM_LABELS[k]: v for k, v in terms.items()}, "dominantTerms": dominant,
               "hasEmitterCore": _bool(raw.get("hasEmitterCore")),
               "coreInputs": core or None,
-              "shadowR7e": normalize_shadow(raw.get("shadowR7e"))}
+              "shadowR7e": normalize_shadow(raw.get("shadowR7e")),
+              "shadowPF22Recorded": isinstance(raw.get("shadowPF22"), dict)}
     for key in EXTRA_KEYS:
         value = raw.get(key)
         result[key] = value if isinstance(value, bool) else _number(value)
@@ -162,12 +206,37 @@ def _contexts(root: Path):
             yield path.name, context
 
 
+def _first_eligible_in_prefix(data: dict) -> int | None:
+    """First eligible decision-trace index when the trace covers indices 0..k without a gap."""
+    entries = {e["index"]: e for e in data.get("candidateDecisionTrace") or []
+               if isinstance(e, dict) and _int(e.get("index")) is not None}
+    position = 0
+    while position in entries:
+        if entries[position].get("eligible") is True:
+            return position
+        position += 1
+    return None
+
+
 def collect(root: Path) -> dict:
     """Index evidence by (color, frameID, candidateIndex); cameras by frameID."""
     evidence: dict[tuple[str, int, int], dict] = {}
     peaks: dict[tuple[str, int, int], float] = {}
     cameras: dict[int, dict] = {}
     winners: dict[tuple[str, int], dict] = {}
+    # PF22 (red only): verdict per candidate, preferring recorded over full-precision
+    # recomputation over the 4-decimal geometry copies.
+    pf22: dict[tuple[str, int, int], dict] = {}
+    pf22_rank: dict[tuple[str, int, int], int] = {}
+    eligible_flags: dict[tuple[str, int, int], bool] = {}
+    eligible_counts: dict[tuple[str, int], int] = {}
+    frame_winners: dict[tuple[str, int], int] = {}
+    events: dict[tuple[str, int], dict] = {}
+
+    def offer_pf22(key: tuple[str, int, int], verdict: dict | None, rank: int) -> None:
+        if verdict is not None and rank > pf22_rank.get(key, -1):
+            pf22[key], pf22_rank[key] = verdict, rank
+
     reduced = 0
     compaction: Counter = Counter()
     contexts = 0
@@ -187,11 +256,23 @@ def collect(root: Path) -> dict:
                 data = frame.get(color)
                 if not isinstance(data, dict):
                     continue
+                if _int(data.get("eligibleCandidateCount")) is not None:
+                    eligible_counts[(color, frame_id)] = max(eligible_counts.get((color, frame_id), 0),
+                                                             data["eligibleCandidateCount"])
                 for entry in data.get("candidateDecisionTrace") or []:
                     index = _int(entry.get("index")) if isinstance(entry, dict) else None
                     if index is None:
                         continue
                     key = (color, frame_id, index)
+                    if isinstance(entry.get("eligible"), bool):
+                        eligible_flags[key] = entry["eligible"]
+                    if color == "red":
+                        diagnostics = entry.get("emitterDiagnostics")
+                        recorded = diagnostics.get("shadowPF22") if isinstance(diagnostics, dict) else None
+                        offer_pf22(key, pf22_verdict(recorded, entry.get("meanColorPurity"),
+                                                     entry.get("clippedWhiteRatio"),
+                                                     _bool(entry.get("eligible"))),
+                                   3 if isinstance(recorded, dict) else 2)
                     if _number(entry.get("peakValue")) is not None:
                         peaks.setdefault(key, _number(entry["peakValue"]))
                     normalized = normalize_emitter(entry.get("emitterDiagnostics"), "decisionTrace")
@@ -201,6 +282,14 @@ def collect(root: Path) -> dict:
                 if isinstance(selected, dict) and _int(selected.get("index")) is not None \
                         and _number(selected.get("peakValue")) is not None:
                     peaks.setdefault((color, frame_id, selected["index"]), _number(selected["peakValue"]))
+                if color == "red" and isinstance(selected, dict) and _int(selected.get("index")) is not None:
+                    key = (color, frame_id, selected["index"])
+                    eligible_flags.setdefault(key, True)  # the selected candidate is production-eligible
+                    diagnostics = selected.get("emitterDiagnostics")
+                    recorded = diagnostics.get("shadowPF22") if isinstance(diagnostics, dict) else None
+                    offer_pf22(key, pf22_verdict(recorded, selected.get("meanColorPurity"),
+                                                 selected.get("clippedWhiteRatio"), True),
+                               3 if isinstance(recorded, dict) else 2)
                 geometry = data.get("candidateGeometry")
                 candidates = geometry.get("candidates") if isinstance(geometry, dict) else None
                 rank_one = None
@@ -213,20 +302,45 @@ def collect(root: Path) -> dict:
                     if entry.get("emitterDiagnosticsReduced") is True:
                         reduced += 1
                     key = (color, frame_id, index)
+                    if isinstance(entry.get("eligible"), bool):
+                        eligible_flags.setdefault(key, entry["eligible"])
+                    emitter = entry.get("emitter")
+                    if color == "red" and isinstance(emitter, dict):
+                        recorded = emitter.get("shadowPF22")
+                        r7e = emitter.get("shadowR7e") if isinstance(emitter.get("shadowR7e"), dict) else {}
+                        offer_pf22(key, pf22_verdict(recorded, r7e.get("meanColorPurity"),
+                                                     r7e.get("clippedWhiteRatio"), _bool(entry.get("eligible"))),
+                                   3 if isinstance(recorded, dict) else 1)
                     normalized = normalize_emitter(entry.get("emitter"), "candidateGeometry")
                     if normalized is not None and key not in evidence:
                         evidence[key] = normalized
-                if frame_id != selected_id or data.get("detected") is not True \
-                        or data.get("predictionUsed") is True:
+                if data.get("detected") is not True or data.get("predictionUsed") is True:
                     continue
                 index = _int(data.get("selectedCandidateIndex"))
                 index = rank_one if index is None else index
+                # Older contexts lack selectedCandidateIndex: production selects the first
+                # eligible candidate in list order, known when the trace is a list prefix.
+                winner = index if index is not None else _first_eligible_in_prefix(data)
+                if winner is not None:
+                    frame_winners.setdefault((color, frame_id), winner)
+                if frame_id != selected_id:
+                    continue
+                tracking = data.get("tracking") if isinstance(data.get("tracking"), dict) else {}
+                jump = _number(tracking.get("midpointDisplacement"))
+                if winner is not None and (tracking.get("candidateSwitch") is True
+                                           or (jump is not None and jump >= EVENT_JUMP_PX)):
+                    events.setdefault((color, frame_id), {
+                        "candidateSwitch": tracking.get("candidateSwitch") is True,
+                        "midpointDisplacementPx": _round(jump, 1), "candidateIndex": winner,
+                        "selectedCandidateType": data.get("selectedCandidateType")})
                 if index is not None:
                     winners.setdefault((color, frame_id), {
                         "candidateIndex": index, "selectedCandidateType": data.get("selectedCandidateType"),
                         "finalScore": _number(data.get("score"))})
     return {"contexts": contexts, "evidence": evidence, "peaks": peaks, "cameras": cameras,
             "winners": winners, "emitterDiagnosticsReduced": reduced,
+            "pf22": pf22, "eligibleFlags": eligible_flags, "eligibleCounts": eligible_counts,
+            "frameWinners": frame_winners, "events": events,
             "emitterCompaction": {k: v for k, v in compaction.items() if "Emitter" in k}}
 
 
@@ -342,6 +456,82 @@ def _cluster_evidence(cluster: dict, collected: dict) -> dict:
 TALLY_GROUPS = ("likelyBackground", "notLikelyBackground", "unclustered")
 
 
+def _r7e_of(collected: dict, key: tuple[str, int, int]) -> str | None:
+    shadow = (collected["evidence"].get(key) or {}).get("shadowR7e")
+    return None if not shadow or shadow["verdict"] == "n/a" else shadow["verdict"]
+
+
+def _pf22_of(collected: dict, key: tuple[str, int, int]) -> str | None:
+    verdict = collected["pf22"].get(key)
+    return verdict["verdict"] if verdict else None
+
+
+def event_outcome(collected: dict, color: str, frame_id: int, winner: int, verdict_of) -> str:
+    """What a shadow rule would have done to a frame's output: ``unchanged`` (keeps
+    the winner), ``winnerChanges`` (another eligible candidate survives),
+    ``noDetection`` (every eligible candidate rejected), ``unknown`` (winner
+    rejected but the eligible list or a verdict is missing), ``n/a`` (no winner verdict)."""
+    winner_verdict = verdict_of(collected, (color, frame_id, winner))
+    if winner_verdict is None:
+        return "n/a"
+    if winner_verdict == "keep":
+        return "unchanged"
+    eligible = [index for (c, f, index), flag in collected["eligibleFlags"].items()
+                if c == color and f == frame_id and flag]
+    if winner not in eligible:
+        eligible.append(winner)
+    count = collected["eligibleCounts"].get((color, frame_id))
+    verdicts = [verdict_of(collected, (color, frame_id, index)) for index in sorted(eligible)]
+    if any(v == "keep" for v in verdicts):
+        return "winnerChanges"
+    if count is None or len(eligible) < count or any(v is None for v in verdicts):
+        return "unknown"
+    return "noDetection"
+
+
+def pf22_tally(collected: dict) -> dict:
+    """Red-only PF22 counts over every winner, eligible candidate and selected-frame event."""
+    red_winners = sorted((f, i) for (c, f), i in collected["frameWinners"].items() if c == "red")
+    winner_verdicts = Counter(_pf22_of(collected, ("red", f, i)) or "n/a" for f, i in red_winners)
+    sources = Counter(collected["pf22"][("red", f, i)]["source"] for f, i in red_winners
+                      if ("red", f, i) in collected["pf22"])
+    eligible_keys = sorted(k for k, flag in collected["eligibleFlags"].items() if flag and k[0] == "red")
+    eligible_verdicts = Counter(_pf22_of(collected, k) or "n/a" for k in eligible_keys)
+    outcomes = Counter()
+    rows = []
+    for (color, frame_id), event in sorted(collected["events"].items(), key=lambda i: (i[0][1], i[0][0])):
+        row = {"frameID": frame_id, "color": color, **event}
+        if color == "red":
+            winner = event["candidateIndex"]
+            pf22 = collected["pf22"].get(("red", frame_id, winner))
+            row.update(pf22Outcome=event_outcome(collected, color, frame_id, winner, _pf22_of),
+                       r7eOutcome=event_outcome(collected, color, frame_id, winner, _r7e_of),
+                       winnerMeanColorPurity=_round((pf22 or {}).get("meanColorPurity")),
+                       winnerClippedWhiteRatio=_round((pf22 or {}).get("clippedWhiteRatio")))
+            outcomes[row["pf22Outcome"]] += 1
+        else:
+            row.update(pf22Outcome="n/a", r7eOutcome="n/a")
+        rows.append(row)
+    red_events = [r for r in rows if r["color"] == "red"]
+    return {
+        "definition": ("red only. winners = every detected (not predicted) red frame in the contexts; eligible = "
+                       "production-eligible red candidates; events = selected-frame red candidateSwitch or "
+                       f"midpoint jump >= {EVENT_JUMP_PX:g}px. Verdicts are recorded shadowPF22 or recomputed from "
+                       "meanColorPurity/clippedWhiteRatio"),
+        "winners": {"frames": len(red_winners), "withVerdict": len(red_winners) - winner_verdicts.get("n/a", 0),
+                    "pf22WouldReject": winner_verdicts.get("reject", 0), "pf22Keeps": winner_verdicts.get("keep", 0),
+                    "pf22NA": winner_verdicts.get("n/a", 0), "verdictSources": dict(sources)},
+        "eligibleCandidates": {"candidates": len(eligible_keys),
+                               "withVerdict": len(eligible_keys) - eligible_verdicts.get("n/a", 0),
+                               "pf22WouldReject": eligible_verdicts.get("reject", 0),
+                               "pf22Keeps": eligible_verdicts.get("keep", 0)},
+        "events": {"red": len(red_events), "blueNotApplicable": len(rows) - len(red_events),
+                   "pf22Outcomes": {k: outcomes.get(k, 0) for k in EVENT_OUTCOMES},
+                   "r7eOutcomes": {k: sum(1 for r in red_events if r["r7eOutcome"] == k) for k in EVENT_OUTCOMES},
+                   "rows": rows},
+    }
+
+
 def background_evidence(bundle: Path, hotspots: dict | None) -> dict:
     """The report section as data. ``hotspots`` must come from
     ``static_hotspots(..., include_members=True)``; None means unavailable."""
@@ -356,6 +546,8 @@ def background_evidence(bundle: Path, hotspots: dict | None) -> dict:
     winners = []
     tally = {group: {"winners": 0, "withEvidence": 0, "r7eWouldReject": 0, "r7eKeeps": 0, "r7eNA": 0}
              for group in TALLY_GROUPS}
+    pf22_groups = {group: {"winners": 0, "pf22WouldReject": 0, "pf22Keeps": 0, "pf22NA": 0}
+                   for group in TALLY_GROUPS}
     for (color, frame_id), winner in sorted(collected["winners"].items(), key=lambda i: (i[0][1], i[0][0])):
         key = (color, frame_id, winner["candidateIndex"])
         evidence = collected["evidence"].get(key)
@@ -368,14 +560,20 @@ def background_evidence(bundle: Path, hotspots: dict | None) -> dict:
         bucket["winners"] += 1
         bucket["withEvidence"] += evidence is not None
         bucket[{"reject": "r7eWouldReject", "keep": "r7eKeeps"}.get(verdict, "r7eNA")] += 1
+        pf22_verdict_text = (_pf22_of(collected, key) or "n/a") if color == "red" else "n/a"
+        pf22_groups[group]["winners"] += 1
+        pf22_groups[group][{"reject": "pf22WouldReject", "keep": "pf22Keeps"}.get(pf22_verdict_text,
+                                                                                  "pf22NA")] += 1
         peak = collected["peaks"].get(key)
         winners.append({"frameID": frame_id, "color": color, **winner,
                         "clusterID": cluster.get("clusterID") if cluster else None,
                         "likelyBackground": cluster.get("likelyBackground") is True if cluster else None,
-                        "evidence": evidence, "r7eVerdict": verdict,
+                        "evidence": evidence, "r7eVerdict": verdict, "pf22Verdict": pf22_verdict_text,
+                        "pf22": collected["pf22"].get(key),
                         "peakValue": peak if peak is not None else peak_from_term(evidence),
                         "camera": _camera_row(collected["cameras"].get(frame_id))})
     totals = {k: sum(tally[g][k] for g in TALLY_GROUPS) for k in tally["unclustered"]}
+    pf22_totals = {k: sum(pf22_groups[g][k] for g in TALLY_GROUPS) for k in pf22_groups["unclustered"]}
     shown = [c for c in clusters if c.get("likelyBackground")
              or any(w["clusterID"] == c.get("clusterID") and w["evidence"] for w in winners)]
     return {
@@ -392,6 +590,8 @@ def background_evidence(bundle: Path, hotspots: dict | None) -> dict:
         "shadowR7eTally": {"byCluster": tally, "total": totals,
                            "definition": "selected-frame winners (production eligible) whose recorded "
                                          "shadowR7eEligible is false = R7e would have changed the output"},
+        "shadowPF22Tally": {**pf22_tally(collected),
+                            "selectedWinnersByCluster": pf22_groups, "selectedWinnersTotal": pf22_totals},
         "clusters": [_cluster_evidence(c, collected) for c in shown],
         "exposure": exposure_section(collected["cameras"]),
     }
@@ -470,6 +670,44 @@ def _group_line(label: str, stats: dict) -> str:
             f"({stats['peakValueFrames']} frames){few}")
 
 
+def pf22_lines(tally: Any, max_event_rows: int = 12) -> list[str]:
+    """The shadow PF22 subsection; also shown for bundles without emitter evidence,
+    because PF22 is recomputable from plain candidate fields."""
+    if not isinstance(tally, dict):
+        return []
+    w, e, ev = tally["winners"], tally["eligibleCandidates"], tally["events"]
+    lines = ["### shadow PF22 tally (red purity ≥ 0.22 unless clippedWhite ≥ 0.35; applied:false)", "",
+             "`would reject` = production が eligible とした赤 candidate で、PF22 の式が false"
+             "(適用していたら eligible から外れた)。記録がない bundle は meanColorPurity / clippedWhiteRatio から再計算。", ""]
+    sources = ", ".join(f"{k} {v}" for k, v in sorted(w["verdictSources"].items())) or "none"
+    lines.append(f"- red winners (all context frames): {w['frames']}, with verdict {w['withVerdict']} ({sources}): "
+                 f"**would reject {w['pf22WouldReject']}**, keep {w['pf22Keeps']}, n/a {w['pf22NA']}")
+    lines.append(f"- eligible red candidates: {e['candidates']}, with verdict {e['withVerdict']}: "
+                 f"would reject {e['pf22WouldReject']}, keep {e['pf22Keeps']}")
+    sel = tally.get("selectedWinnersTotal")
+    if sel:
+        lines.append(f"- selected-frame winners (same rows as the R7e table): {sel['winners']}, PF22 would reject "
+                     f"{sel['pf22WouldReject']}, keep {sel['pf22Keeps']}, n/a {sel['pf22NA']}")
+    pf, r7 = ev["pf22Outcomes"], ev["r7eOutcomes"]
+    lines.append(f"- selected-frame red jump (≥{EVENT_JUMP_PX:g}px) / candidateSwitch events: {ev['red']}"
+                 + (f" (blue {ev['blueNotApplicable']}: n/a, red-only rules)" if ev["blueNotApplicable"] else ""))
+    lines.append("  - PF22: " + ", ".join(f"{k} {pf[k]}" for k in EVENT_OUTCOMES))
+    lines.append("  - R7e: " + ", ".join(f"{k} {r7[k]}" for k in EVENT_OUTCOMES))
+    red_rows = [r for r in ev["rows"] if r["color"] == "red"]
+    if red_rows:
+        lines.append("")
+        lines.append("| frame | switch | jump px | winner type | purity | clippedWhite | PF22 | R7e |")
+        lines.append("| --- | --- | --- | --- | --- | --- | --- | --- |")
+        for r in red_rows[:max_event_rows]:
+            lines.append(f"| {r['frameID']} | {_f(r['candidateSwitch'])} | {_f(r['midpointDisplacementPx'])} | "
+                         f"{_f(r.get('selectedCandidateType'))} | {_f(r.get('winnerMeanColorPurity'))} | "
+                         f"{_f(r.get('winnerClippedWhiteRatio'))} | {r['pf22Outcome']} | {r['r7eOutcome']} |")
+        if len(red_rows) > max_event_rows:
+            lines.append(f"- … {len(red_rows) - max_event_rows} more events in `--json`")
+    lines.append("")
+    return lines
+
+
 def render_lines(section: Any, max_winner_rows: int = 24, max_other_clusters: int = 6) -> list[str]:
     lines = ["## 背景誤検出の証拠(emitter / shadow R7e / 露出)", ""]
     try:
@@ -485,6 +723,9 @@ def render_lines(section: Any, max_winner_rows: int = 24, max_other_clusters: in
                          f"{len(section['winners'])}, none with evidence")
             if section["emitterCompaction"]:
                 lines.append(f"- emitter compaction steps: {_f(json.dumps(section['emitterCompaction']))}")
+            pf22 = pf22_lines(section.get("shadowPF22Tally"))
+            if pf22:
+                lines.extend([""] + pf22)
             return lines
         lines.append(f"- contexts {section['contextsRead']}, candidates with emitter evidence "
                      f"{section['candidatesWithEvidence']} (full {section['candidatesWithFullEvidence']}, "
@@ -509,6 +750,7 @@ def render_lines(section: Any, max_winner_rows: int = 24, max_other_clusters: in
             lines.append(f"| {group} | {row['winners']} | {row['withEvidence']} | {row['r7eWouldReject']} "
                          f"| {row['r7eKeeps']} | {row['r7eNA']} |")
         lines.append("")
+        lines.extend(pf22_lines(section.get("shadowPF22Tally")))
         winners = section["winners"]
         lines.append(f"### selected-frame winners ({len(winners)})")
         lines.append("")

@@ -137,8 +137,9 @@ To protect the streamed file's size budget, the streamed `*_metadata.json`
 carries only the compact subset that the candidate's other fields cannot
 reproduce: `emitterScore`, `emitterScoreMargin`, `hasEmitterCore`,
 `baseEligible`, `bladeLengthSupport`, `meanSecondChannel`, `meanMinChannel`,
-`nearWhiteFraction` and `shadowR7e` with `applied`, `d240`, `ruleSatisfied`,
-`shadowR7eEligible` (about 2 KiB per busy frame). The triage snapshot, and so
+`nearWhiteFraction`, `shadowR7e` with `applied`, `d240`, `ruleSatisfied`,
+`shadowR7eEligible`, and `shadowPF22` with `applied`, `ruleSatisfied`,
+`shadowPF22Eligible` (about 2 KiB per busy frame). The triage snapshot, and so
 every compact context, carries all fields below.
 
 | Field | JSON type | Meaning |
@@ -158,6 +159,7 @@ every compact context, carries all fields below.
 | `nearWhiteFraction` | number | Share of samples with `value >= 245 AND chroma <= 38` (the clipped-white test). |
 | `brightSecondChannelFraction` | number, optional | Share of samples whose middle channel is `>= 100` (the bright-core floor). |
 | `shadowR7e` | object, red only, optional | Shadow verdict of the offline "R7e" rule. **Evidence only, not applied.** |
+| `shadowPF22` | object, red only, optional | Shadow verdict of the offline "PF22" purity-floor rule. **Evidence only, not applied.** Absent from bundles recorded before it existed. |
 
 `shadowR7e` records the rule
 `clippedWhiteRatio >= 0.35 OR d240 >= 4.2 OR (d240 >= 3.5 AND meanColorPurity >= 0.60)`,
@@ -171,6 +173,21 @@ expression) and `shadowR7eEligible` (`baseEligible AND ruleSatisfied`). The
 thresholds come from a small offline exploration with tiny margins; production
 eligibility, ranking and UDP output never read this object. It exists to
 collect real distributions before any production decision.
+
+`shadowPF22` records the red purity floor
+`meanColorPurity >= 0.22 OR clippedWhiteRatio >= 0.35` (a barely-red candidate —
+wall label, skin — is not an emitter unless its LED core is clipped white;
+explored offline in `docs/claude/analysis/2026-10-03_motion_blur_and_blue_jumps.md`,
+where it kept formal 40/40 and turned the 20261003_144936_295 f2552 label jump
+into no detection). Its inputs are the candidate's own `meanColorPurity` and
+`clippedWhiteRatio`. Fields: `applied` (always `false`), `ruleSatisfied` (the OR
+expression), `shadowPF22Eligible` (`baseEligible AND ruleSatisfied`) and, in the
+triage snapshot only, `meanColorPurity`, `clippedWhiteRatio`, `purityMargin`
+(`meanColorPurity - 0.22`) and `clippedWhiteMargin` (`clippedWhiteRatio - 0.35`).
+The purity margin is small (labels 0.15–0.19) and the rule rests on one event,
+so production eligibility, ranking and UDP output never read this object.
+Because its inputs are plain candidate fields, `phone_saber_pf22_check.py`
+recomputes it for older bundles.
 
 ## Per-frame camera state
 
@@ -341,7 +358,9 @@ Each geometry entry may carry an optional compact `emitter` object (a subset of
 fields, `hasEmitterCore`, `bladeLengthSupport`, `localContrast`,
 `emitterTexture`, `coreSupport`, `meanSecondChannel`, `meanMinChannel`,
 `nearWhiteFraction` and, for red, `shadowR7e` with `applied: false`, `d240`,
-`clippedWhiteRatio`, `meanColorPurity`, `shadowR7eEligible`).
+`clippedWhiteRatio`, `meanColorPurity`, `shadowR7eEligible`, and `shadowPF22`
+with `applied: false`, `shadowPF22Eligible` — its inputs are the `shadowR7e`
+purity and clipped-white values).
 
 ### Compact triage contexts
 

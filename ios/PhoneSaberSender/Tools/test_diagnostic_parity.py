@@ -52,6 +52,8 @@ class DiagnosticParityTests(unittest.TestCase):
         self.assertEqual(summary["mismatched"], [])
         self.assertGreater(summary["emitterTraces"], 0)
         self.assertGreater(summary["shadowVerdicts"], 0)
+        # PF22 is computed for exactly the same (red) candidates as R7e.
+        self.assertEqual(summary["shadowPF22Verdicts"], summary["shadowVerdicts"])
 
 
 if __name__ == "__main__":

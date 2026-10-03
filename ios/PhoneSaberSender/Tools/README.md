@@ -105,7 +105,21 @@ ISO / exposure time / bias ranges and, per flagged cluster, median ISO, exposure
 and peak value for eligible vs ineligible (and R7e keep vs reject) frames; the
 peak is the trace value, or inverted from `peakTerm` when that is not clamped.
 All of it is evidence, not ground truth: R7e is `applied: false` and never read
-by production. Bundles without the fields print `n/a`; the Swift E2E harness
+by production. The subsection 「shadow PF22 tally」 does the same for the second
+shadow rule PF22 (red `meanColorPurity >= 0.22 OR clippedWhiteRatio >= 0.35`,
+`applied: false`): red winners and eligible red candidates it would reject, and
+what it would do to the selected-frame red candidateSwitch / ≥100px jump events
+(`noDetection` only when every eligible candidate of the frame is known and
+rejected; `winnerChanges`, `unchanged`, `unknown`), with the R7e outcome beside
+it. Where a bundle predates the recorded verdict, PF22 is recomputed from the
+decision-trace / selectedCandidate `meanColorPurity` and `clippedWhiteRatio`.
+Across bundles:
+
+```bash
+ios/PhoneSaberSender/Tools/phone_saber_pf22_check.py /path/to/bundle [/path/to/bundle2 ...] [--json]
+```
+
+Bundles without the fields print `n/a`; the Swift E2E harness
 writes neither field (no radiance map, no Exif), so its test adds them to a copy
 of a real recorder bundle and checks the strict input contract still passes.
 

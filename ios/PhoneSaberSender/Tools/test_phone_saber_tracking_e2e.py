@@ -541,10 +541,16 @@ class TrackingPipelineE2ETests(unittest.TestCase):
             self.assertTrue(red and all(w["evidence"] for w in red))
             self.assertTrue(all(w["r7eVerdict"] == "reject" for w in red))  # SHADOW: shadowR7eEligible false
             self.assertEqual(evidence["shadowR7eTally"]["total"]["r7eWouldReject"], len(red))
+            # Every red winner gets a PF22 verdict (recomputed from the recorder's own
+            # meanColorPurity / clippedWhiteRatio, which win over the added geometry copies).
+            self.assertTrue(all(w["pf22Verdict"] in {"keep", "reject"} for w in red))
+            pf22 = evidence["shadowPF22Tally"]["selectedWinnersTotal"]
+            self.assertEqual(pf22["pf22Keeps"] + pf22["pf22WouldReject"], len(red))
             self.assertEqual(evidence["exposure"]["iso"]["range"], [320.0, 320.0])
             text = render_markdown(augmented)
             section = text.split(heading)[1].split("\n## ")[0]
             self.assertIn("### shadow R7e tally", section)
+            self.assertIn("### shadow PF22 tally", section)
             self.assertIn("**would reject**", section)
             self.assertIn("- ISO 320–320", section)
 

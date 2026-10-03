@@ -3520,6 +3520,88 @@ extension DetectionCoreTests {
             $0.endpointDiagnosticTrace?.emitter != nil && $0.endpointDiagnosticTrace?.emitter?.shadowR7e == nil })
     }
 
+    func testShadowPF22VerdictBoundaries() {
+        typealias PF22 = SaberShadowPurityFloorVerdict
+        XCTAssertEqual(PF22.purityThreshold, 0.22)
+        XCTAssertEqual(PF22.clippedWhiteExemptionThreshold, 0.35)
+        // Purity floor: 0.22 itself passes, just below fails without the exemption.
+        XCTAssertTrue(PF22(meanColorPurity: 0.22, clippedWhiteRatio: 0, baseEligible: true).shadowEligible)
+        let below = PF22(meanColorPurity: 0.2199, clippedWhiteRatio: 0, baseEligible: true)
+        XCTAssertFalse(below.ruleSatisfied)
+        XCTAssertFalse(below.shadowEligible)
+        XCTAssertEqual(below.purityMargin, 0.2199 - 0.22, accuracy: 1e-12)
+        // Clipped-white exemption: 0.35 itself exempts a low-purity candidate, just below does not.
+        let exempt = PF22(meanColorPurity: 0.15, clippedWhiteRatio: 0.35, baseEligible: true)
+        XCTAssertTrue(exempt.ruleSatisfied)
+        XCTAssertTrue(exempt.shadowEligible)
+        XCTAssertEqual(exempt.clippedWhiteMargin, 0, accuracy: 1e-12)
+        XCTAssertFalse(PF22(meanColorPurity: 0.15, clippedWhiteRatio: 0.3499, baseEligible: true).shadowEligible)
+        // The wall-label winner of 20261003_144936_295 f2552 (purity 0.18, clip 0) would be rejected.
+        XCTAssertFalse(PF22(meanColorPurity: 0.18, clippedWhiteRatio: 0, baseEligible: true).shadowEligible)
+        // Never more eligible than production.
+        let ineligible = PF22(meanColorPurity: 0.9, clippedWhiteRatio: 1, baseEligible: false)
+        XCTAssertTrue(ineligible.ruleSatisfied)
+        XCTAssertFalse(ineligible.shadowEligible)
+    }
+
+    func testShadowPF22VerdictIsRecordedButNeverChangesEligibility() throws {
+        func analysis(_ diagnostics: Bool, _ image: (bytes: [UInt8], width: Int, height: Int, bytesPerRow: Int))
+            -> SaberFrameAnalysis {
+            analyzeSabers(in: image.bytes, width: image.width, height: image.height,
+                          bytesPerRow: image.bytesPerRow, redThreshold: ColorThreshold(),
+                          blueThreshold: ColorThreshold(), collectPipelineDiagnostics: diagnostics)
+        }
+        for thickness in [6, 24] {
+            let image = syntheticRedBar(thickness: thickness)
+            let on = analysis(true, image), off = analysis(false, image)
+            assertIdenticalRecognition(off, on, "red bar \(thickness)")
+            for candidate in on.candidates[.red] ?? [] {
+                let emitter = try XCTUnwrap(candidate.endpointDiagnosticTrace?.emitter)
+                let shadow = try XCTUnwrap(emitter.shadowPF22)
+                // Inputs are the production values of the candidate itself.
+                XCTAssertEqual(shadow.meanColorPurity, candidate.meanColorPurity)
+                XCTAssertEqual(shadow.clippedWhiteRatio, candidate.clippedWhiteRatio)
+                XCTAssertEqual(shadow.ruleSatisfied, candidate.meanColorPurity >= 0.22
+                               || candidate.clippedWhiteRatio >= 0.35)
+                XCTAssertEqual(shadow.shadowEligible, emitter.baseEligible && shadow.ruleSatisfied)
+            }
+        }
+        let winner = try XCTUnwrap(analysis(true, syntheticRedBar(thickness: 6)).candidates[.red]?
+            .first(where: \.isEmitterEligible))
+        let verdict = try XCTUnwrap(winner.endpointDiagnosticTrace?.emitter?.shadowPF22)
+        let recorded = try XCTUnwrap(DebugRecordingCandidate(index: 0, candidate: winner,
+                                                             selectedIndex: 0).emitterDiagnostics?.shadowPF22)
+        XCTAssertFalse(recorded.applied)
+        XCTAssertEqual(recorded.shadowPF22Eligible, verdict.shadowEligible)
+        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(recorded)) as? [String: Any])
+        XCTAssertEqual(Set(json.keys), ["applied", "ruleSatisfied", "shadowPF22Eligible", "meanColorPurity",
+                                        "clippedWhiteRatio", "purityMargin", "clippedWhiteMargin"])
+        let streamedEncoder = JSONEncoder()
+        streamedEncoder.userInfo[.debugRecordingStreamedMetadata] = true
+        let streamed = try XCTUnwrap(JSONSerialization.jsonObject(with: streamedEncoder.encode(recorded))
+            as? [String: Any])
+        XCTAssertEqual(Set(streamed.keys), ["applied", "ruleSatisfied", "shadowPF22Eligible"])
+        // Older bundles without the field still decode.
+        let emitterJSON = try JSONEncoder().encode(try XCTUnwrap(DebugRecordingCandidate(
+            index: 0, candidate: winner, selectedIndex: 0).emitterDiagnostics))
+        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with: emitterJSON) as? [String: Any])
+        XCTAssertNotNil(legacy.removeValue(forKey: "shadowPF22"))
+        let decoded = try JSONDecoder().decode(DebugRecordingEmitterDiagnostics.self,
+                                               from: JSONSerialization.data(withJSONObject: legacy))
+        XCTAssertNil(decoded.shadowPF22)
+        // Triage candidate geometry carries the compact verdict.
+        let geometry = DebugCandidateGeometry.emitterDictionary(try XCTUnwrap(winner.endpointDiagnosticTrace?.emitter))
+        let compact = try XCTUnwrap(geometry["shadowPF22"] as? [String: Any])
+        XCTAssertEqual(compact["applied"] as? Bool, false)
+        XCTAssertEqual(compact["shadowPF22Eligible"] as? Bool, verdict.shadowEligible)
+
+        // Blue candidates never carry the red-only shadow verdict.
+        let blueCandidates = analysis(true, try fixtureBGRA("blue-led-bright-large-05")).candidates[.blue] ?? []
+        XCTAssertFalse(blueCandidates.isEmpty)
+        XCTAssertTrue(blueCandidates.allSatisfy {
+            $0.endpointDiagnosticTrace?.emitter != nil && $0.endpointDiagnosticTrace?.emitter?.shadowPF22 == nil })
+    }
+
     func testFrameCameraCombinesExifAndDeviceStateWithoutInventingValues() throws {
         XCTAssertNil(DebugRecordingFrameCamera.make(exif: nil, device: nil, now: 10))
         let exif: [String: Any] = [kCGImagePropertyExifISOSpeedRatings as String: [320],
@@ -3603,6 +3685,10 @@ extension DetectionCoreTests {
             XCTAssertEqual(shadow["applied"] as? Bool, false)
             XCTAssertNotNil(shadow["shadowR7eEligible"] as? Bool)
             XCTAssertNil(shadow["thickBodyMargin"])
+            let pf22 = try XCTUnwrap(emitter["shadowPF22"] as? [String: Any])
+            XCTAssertEqual(pf22["applied"] as? Bool, false)
+            XCTAssertNotNil(pf22["shadowPF22Eligible"] as? Bool)
+            XCTAssertNil(pf22["purityMargin"])
         }
         let decoded = try JSONDecoder().decode(DebugRecordingMetadata.self, from: data)
         XCTAssertEqual(decoded.frames.first?.camera?.iso, 250)
