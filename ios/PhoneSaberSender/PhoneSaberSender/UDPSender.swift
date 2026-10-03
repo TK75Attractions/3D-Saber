@@ -70,6 +70,7 @@ final class UDPSender {
     private var updateHandlersForTesting: [(( [Int: String], [Int: String], String?) -> Void)?] = []
     private var rejectedCompletionCount = 0
     private var supersededPendingCount = 0
+    private var discardedForP2PCount = 0
 #if DEBUG
     private var freezeDiagnosticsEnabled = false
     private var lastSendStartByPort: [Int: TimeInterval] = [:]
@@ -402,6 +403,23 @@ final class UDPSender {
         }
     }
 
+    /// Drops coordinates still waiting for a LAN port (and in-flight ones on
+    /// ports that are not ready, which a reconnect would resend), so a LAN port
+    /// that becomes ready later never delivers them after newer coordinates went
+    /// over the P2P link. Called only by the P2P route; unused while P2P is off.
+    func discardPendingCoordinates() {
+        queue.async { [weak self] in
+            guard let self, self.isRunning else { return }
+            for port in self.configuredPorts {
+                if self.pendingByPort.removeValue(forKey: port) != nil { self.discardedForP2PCount += 1 }
+                if self.phases[port] != .ready, self.activeByPort.removeValue(forKey: port) != nil {
+                    self.watchdogWork.removeValue(forKey: port)?.cancel()
+                    self.discardedForP2PCount += 1
+                }
+            }
+        }
+    }
+
     func snapshot(completion: @escaping (Snapshot) -> Void) {
         queue.async { completion(Snapshot(states: self.states, errors: self.mergedErrors(),
                                           lastError: self.currentError())) }
@@ -474,6 +492,8 @@ final class UDPSender {
 
     var rejectedCompletionCountForTesting: Int { queue.sync { rejectedCompletionCount } }
     var supersededPendingCountForTesting: Int { queue.sync { supersededPendingCount } }
+    var discardedForP2PCountForTesting: Int { queue.sync { discardedForP2PCount } }
+    var pendingCountForTesting: Int { queue.sync { pendingByPort.count } }
     func connectionGenerationForTesting(port: Int) -> Int { queue.sync { portGenerations[port, default: 0] } }
     func reconnectCountForTesting(port: Int) -> Int { queue.sync { reconnectCounts[port, default: 0] } }
     func watchdogTimeoutCountForTesting(port: Int) -> Int { queue.sync { watchdogTimeoutCounts[port, default: 0] } }

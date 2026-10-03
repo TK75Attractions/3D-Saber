@@ -82,6 +82,107 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertFalse(monitor.isUsable(at: 11))
     }
 
+    func testLivenessNeedsConsecutivePongsAfterGoingStale() {
+        var monitor = P2PLivenessMonitor(timing: .init(staleAfter: 1.5, reconnectAfter: 4, connectTimeout: 4,
+                                                       recoveryPongs: 3, recoveryMaxGap: 0.5))
+        monitor.connectionStarted(at: 0)
+        monitor.pongReceived(at: 0.1)
+        XCTAssertTrue(monitor.isUsable(at: 0.2), "the first link of a run is usable on its first pong")
+        XCTAssertFalse(monitor.isUsable(at: 1.7), "stale")
+        monitor.pongReceived(at: 1.7)
+        XCTAssertFalse(monitor.isUsable(at: 1.7), "one pong after going stale is not enough")
+        monitor.pongReceived(at: 1.95)
+        XCTAssertFalse(monitor.isUsable(at: 1.95))
+        monitor.pongReceived(at: 2.2)
+        XCTAssertTrue(monitor.isUsable(at: 2.2), "three consecutive pongs")
+
+        // At the stale edge (a pong every 1.6 s) the link never flips back to P2P.
+        var now = 2.2
+        for _ in 0..<5 {
+            now += 1.6
+            monitor.pongReceived(at: now)
+            XCTAssertFalse(monitor.isUsable(at: now), "t=\(now)")
+        }
+        // Pongs too far apart do not count as consecutive.
+        for _ in 0..<4 {
+            now += 0.6
+            monitor.pongReceived(at: now)
+            XCTAssertFalse(monitor.isUsable(at: now), "t=\(now)")
+        }
+        for _ in 0..<2 { now += 0.25; monitor.pongReceived(at: now) }
+        XCTAssertTrue(monitor.isUsable(at: now), "healthy again")
+
+        // A replacement connection must earn usability too.
+        monitor.connectionEnded()
+        XCTAssertFalse(monitor.isUsable(at: now))
+        XCTAssertFalse(monitor.shouldReconnect(at: now + 100), "no connection, nothing to reconnect")
+        monitor.connectionStarted(at: now)
+        monitor.pongReceived(at: now + 0.05)
+        XCTAssertFalse(monitor.isUsable(at: now + 0.05))
+        monitor.pongReceived(at: now + 0.3)
+        monitor.pongReceived(at: now + 0.55)
+        XCTAssertTrue(monitor.isUsable(at: now + 0.55))
+
+        // Switching P2P off and on starts over: one pong is enough again.
+        monitor.reset()
+        monitor.connectionStarted(at: 50)
+        monitor.pongReceived(at: 50.1)
+        XCTAssertTrue(monitor.isUsable(at: 50.1))
+    }
+
+    func testReconnectBackoffDoublesUpToFourSecondsAndResets() {
+        var backoff = P2PReconnectBackoff(initial: 0.25, maximum: 4)
+        XCTAssertTrue(backoff.mayConnect(at: 0))
+        let delays = (0..<7).map { _ in backoff.connectionLost(at: 10) }
+        XCTAssertEqual(delays, [0.25, 0.5, 1, 2, 4, 4, 4])
+        XCTAssertFalse(backoff.mayConnect(at: 13.9))
+        XCTAssertTrue(backoff.mayConnect(at: 14))
+        backoff.reset()
+        XCTAssertTrue(backoff.mayConnect(at: 10))
+        XCTAssertEqual(backoff.connectionLost(at: 20), 0.25, "first pong resets the delay")
+    }
+
+    // MARK: Service choice, interface and browse errors
+
+    func testServiceSelectionKeepsTheFirstChosenMacWhileItIsAdvertised() {
+        var selection = P2PServiceSelection()
+        XCTAssertNil(selection.choose(from: []))
+        XCTAssertEqual(selection.choose(from: ["Saber Mac B"]), "Saber Mac B")
+        XCTAssertEqual(selection.choose(from: ["Saber Mac A", "Saber Mac B"]), "Saber Mac B",
+                       "a second Mac that sorts first never steals the link")
+        XCTAssertNil(selection.choose(from: []), "nothing advertised for a moment")
+        XCTAssertEqual(selection.choose(from: ["Saber Mac A", "Saber Mac B"]), "Saber Mac B", "lock kept")
+        XCTAssertEqual(selection.choose(from: ["Saber Mac C", "Saber Mac A"]), "Saber Mac A",
+                       "switches only when the locked Mac disappears; then the first name")
+        XCTAssertEqual(selection.choose(from: ["Saber Mac A", "Saber Mac B"]), "Saber Mac A")
+        selection.reset()
+        XCTAssertEqual(selection.choose(from: ["Saber Mac B", "Saber Mac A"]), "Saber Mac A")
+
+        XCTAssertEqual(P2PLinkState.connected(service: "Saber Mac", interface: "awdl0").label,
+                       "P2P Connected (awdl0 · Saber Mac)")
+    }
+
+    func testInterfaceLabelPrefersTheInterfaceTheLinkIsScopedTo() {
+        // AWDL and infrastructure Wi-Fi are both `.wifi`: the scope decides.
+        XCTAssertEqual(P2PInterfaceLabel.pick(scoped: [nil, "awdl0"],
+                                              available: [("en0", true), ("awdl0", true)]), "awdl0")
+        XCTAssertEqual(P2PInterfaceLabel.pick(scoped: [nil, nil],
+                                              available: [("lo0", false), ("en0", true)]), "en0")
+        XCTAssertEqual(P2PInterfaceLabel.pick(scoped: [""], available: [("en0", false)]), "en0")
+        XCTAssertEqual(P2PInterfaceLabel.pick(scoped: [], available: []), "?")
+    }
+
+    func testBrowseErrorsExplainTheMissingLocalNetworkPermission() {
+        let denied = NWError.dns(DNSServiceErrorType(-65570))
+        XCTAssertEqual(P2PBrowseErrorText.describe(denied, waiting: true),
+                       "ローカルネットワークの許可が必要: 設定 > PhoneSaberSender")
+        XCTAssertEqual(P2PBrowseErrorText.describe(denied, waiting: false), P2PBrowseErrorText.localNetworkDenied)
+        XCTAssertEqual(P2PLinkState.failed(reason: P2PBrowseErrorText.localNetworkDenied).label,
+                       "P2P Failed (ローカルネットワークの許可が必要: 設定 > PhoneSaberSender)")
+        XCTAssertTrue(P2PBrowseErrorText.describe(.posix(.ENETDOWN), waiting: true).hasPrefix("browse waiting: "))
+        XCTAssertTrue(P2PBrowseErrorText.describe(.dns(-65537), waiting: false).hasPrefix("browse: "))
+    }
+
     // MARK: Round-trip statistics
 
     func testRoundTripStatsSummariseLatencyAndLostPings() {
@@ -114,6 +215,8 @@ final class P2PTransportTests: XCTestCase {
         var timing = P2PSender.Timing()
         timing.pingInterval = 0.05
         timing.liveness = .init(staleAfter: 0.3, reconnectAfter: 0.8, connectTimeout: 0.8)
+        timing.reconnectInitialDelay = 0.05
+        timing.reconnectMaximumDelay = 0.4
         return timing
     }
 
@@ -178,6 +281,67 @@ final class P2PTransportTests: XCTestCase {
             if case .failure = result { rejected.fulfill() }
         }
         await fulfillment(of: [rejected], timeout: 2)
+    }
+
+    func testAStuckCoordinateSendDropsTheLinkAfterTheWatchdog() async throws {
+        let bridge = try FakeBridge()
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        let stuck = LockedBox(true)
+        let datagrams = LockedBox(0)
+        var timing = fastTiming()
+        timing.sendWatchdogTimeout = 0.15
+        let sender = P2PSender(timing: timing, endpointOverride: .hostPort(host: "127.0.0.1", port: port),
+                               coordinateSendHook: { _, completion in
+                                   datagrams.mutate { $0 += 1 }
+                                   if !stuck.value { completion(nil) }  // stuck: .contentProcessed never fires
+                               })
+        defer { sender.stop() }
+        sender.start()
+        let connected = await waitFor { sender.isUsable }
+        XCTAssertTrue(connected)
+        XCTAssertEqual(sender.connectCountForTesting, 1)
+
+        sender.send("1,2,3,4", to: 5005) { _ in XCTFail("a stuck send never completes") }
+        sender.send("5,6,7,8", to: 5005) { _ in XCTFail("the waiting coordinate is dropped with the link") }
+        let stalled = await waitFor { sender.stalledSendCountForTesting == 1 }
+        XCTAssertTrue(stalled, "watchdog fires although pings are still answered")
+        XCTAssertEqual(datagrams.value, 1, "only the in-flight coordinate reached the link")
+        let rebuilt = await waitFor { sender.connectCountForTesting >= 2 }
+        XCTAssertTrue(rebuilt, "the stuck link is rebuilt after the backoff")
+
+        stuck.mutate { $0 = false }
+        let recovered = await waitFor { sender.isUsable }
+        XCTAssertTrue(recovered)
+        let delivered = expectation(description: "delivered")
+        sender.send("9,9,9,9", to: 5006) { result in
+            if case .success = result { delivered.fulfill() }
+        }
+        await fulfillment(of: [delivered], timeout: 2)
+        XCTAssertEqual(sender.stalledSendCountForTesting, 1)
+    }
+
+    func testForegroundRecoveryRebuildsAStaleLinkAndOnlyPingsALiveOne() async throws {
+        let bridge = try FakeBridge()
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        let now = LockedBox<TimeInterval>(100)
+        let sender = P2PSender(timing: fastTiming(), endpointOverride: .hostPort(host: "127.0.0.1", port: port),
+                               clock: { now.value })
+        defer { sender.stop() }
+        sender.start()
+        let connected = await waitFor { sender.isUsable }
+        XCTAssertTrue(connected)
+
+        sender.recoverIfNeeded()
+        XCTAssertEqual(sender.connectCountForTesting, 1, "a link with a recent pong is kept")
+
+        now.mutate { $0 += 30 }  // suspended in the background: no pong for 30 s
+        sender.recoverIfNeeded()
+        XCTAssertEqual(sender.connectCountForTesting, 2, "rebuilt at once, without waiting for the backoff")
+        let recovered = await waitFor { sender.isUsable }
+        XCTAssertTrue(recovered, "fresh pongs make the rebuilt link usable")
+        XCTAssertEqual(sender.connectCountForTesting, 2)
     }
 
     /// Opt-in (needs a bridge running on this Mac with Bonjour, forwarding to
@@ -315,6 +479,84 @@ final class P2PTransportTests: XCTestCase {
                                             at: 1, dimensions: (640, 480))
         let sent = await waitFor { lanPackets.value.contains { $0.1 == 5005 } }
         XCTAssertTrue(sent)
+    }
+
+    @MainActor
+    func testLANNeverDeliversACoordinateQueuedBeforeP2PReturned() async throws {
+        let bridge = try FakeBridge()
+        bridge.answering = false
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        let lanPackets = LockedBox<[(String, Int)]>([])
+        let lan = UDPSender { text, port, completion in
+            lanPackets.mutate { $0.append((text, port)) }
+            completion(.success(1))
+        }
+        let p2p = P2PSender(timing: fastTiming(), endpointOverride: .hostPort(host: "127.0.0.1", port: port))
+        let viewModel = CameraViewModel(sender: lan, p2pSender: p2p, p2pEnabled: true, idleTimerUpdater: { _ in })
+        defer { viewModel.stop(); p2p.stop(); lan.stop() }
+        viewModel.startForTesting()
+        lan.simulateConnectionStateForTesting(port: 5006, state: .waiting)
+
+        // P2P down, LAN BLUE port not ready: the coordinate waits in UDPSender.
+        let dimensions = (width: 640, height: 480)
+        viewModel.processDetectedForTesting([(.blue, (PixelPoint(x: 30, y: 40), PixelPoint(x: 130, y: 40)))],
+                                            at: 1, dimensions: dimensions)
+        let queued = await waitFor { lan.pendingCountForTesting == 1 }
+        XCTAssertTrue(queued)
+
+        // P2P comes back and carries newer coordinates.
+        bridge.answering = true
+        let usable = await waitFor { p2p.isUsable }
+        XCTAssertTrue(usable)
+        viewModel.processDetectedForTesting([(.blue, (PixelPoint(x: 300, y: 40), PixelPoint(x: 400, y: 40)))],
+                                            at: 2, dimensions: dimensions)
+        let viaP2P = await waitFor { bridge.coordinates.contains { $0.color == .blue } }
+        XCTAssertTrue(viaP2P)
+        let discarded = await waitFor { lan.discardedForP2PCountForTesting >= 1 }
+        XCTAssertTrue(discarded)
+
+        // The LAN port becoming ready later must not deliver the old coordinate.
+        lan.simulateConnectionStateForTesting(port: 5006, state: .ready)
+        XCTAssertEqual(lan.pendingCountForTesting, 0)
+        try await Task.sleep(for: .milliseconds(100))
+        XCTAssertTrue(lanPackets.value.isEmpty, "\(lanPackets.value)")
+    }
+
+    @MainActor
+    func testFallbackWithoutLANCountsTheDroppedCoordinate() async throws {
+        let bridge = try FakeBridge()
+        bridge.answering = false
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        let lanPackets = LockedBox<[(String, Int)]>([])
+        let lan = UDPSender { text, port, completion in
+            lanPackets.mutate { $0.append((text, port)) }
+            completion(.success(1))
+        }
+        let p2p = P2PSender(timing: fastTiming(), endpointOverride: .hostPort(host: "127.0.0.1", port: port))
+        let viewModel = CameraViewModel(sender: lan, p2pSender: p2p, p2pEnabled: true, idleTimerUpdater: { _ in })
+        defer { viewModel.stop(); p2p.stop(); lan.stop() }
+        viewModel.startForTesting(host: "", manual: false)
+        XCTAssertFalse(viewModel.lanConfiguredForTesting)
+
+        // Usable when route() checks, gone when the P2P queue sends: the fallback runs with no LAN.
+        p2p.overrideUsabilityForTesting(true)
+        viewModel.processDetectedForTesting([(.red, (PixelPoint(x: 10, y: 20), PixelPoint(x: 110, y: 20)))],
+                                            at: 1, dimensions: (640, 480))
+        let counted = await waitUntilMain { viewModel.p2pNoRouteCountForTesting == 1 }
+        XCTAssertTrue(counted, "dropped coordinate is counted like the no-route branch")
+        XCTAssertEqual(viewModel.redCompletedCount + viewModel.redErrorCount, 0, "no completion, as without P2P")
+
+        // Neither link usable at route() time: the existing no-route branch counts too.
+        p2p.overrideUsabilityForTesting(false)
+        viewModel.processDetectedForTesting([(.red, (PixelPoint(x: 12, y: 20), PixelPoint(x: 112, y: 20)))],
+                                            at: 2, dimensions: (640, 480))
+        let countedAgain = await waitUntilMain { viewModel.p2pNoRouteCountForTesting == 2 }
+        XCTAssertTrue(countedAgain)
+        XCTAssertTrue(lanPackets.value.isEmpty)
+        XCTAssertTrue(bridge.coordinates.isEmpty)
+        p2p.overrideUsabilityForTesting(nil)
     }
 
     // MARK: Helpers

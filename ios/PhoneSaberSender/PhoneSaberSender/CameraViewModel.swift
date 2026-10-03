@@ -349,7 +349,10 @@ final class CameraViewModel: NSObject, ObservableObject {
     private static let p2pEnabledKey = "PhoneSaber.p2pEnabled"
     /// True once `sender` has a LAN destination for the current run.
     private var lanConfigured = false
+    /// Coordinates dropped because neither P2P nor LAN could take them.
     private var p2pNoRouteCount = 0
+    /// Whether the previous coordinate took the P2P link (P2P on only).
+    private var routedViaP2P = false
     private let pathMonitor = NWPathMonitor()
     private let bonjourDiscovery = BonjourDiscovery()
     @Published var running = false
@@ -598,6 +601,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         publishCameraLifecycle(at: now)
         guard isActive else { return }
         bonjourDiscovery.ensureRunning()
+        if p2pEnabled { p2pSender.recoverIfNeeded() }
         guard running else { return }
         sender.recoverIfNeeded()
         if shouldRecover {
@@ -855,7 +859,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
         updateIdleTimerPolicy()
         sessionRunner.stopSynchronously()
-        sender.stop(); lanConfigured = false; _ = processor.reset(); activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
+        sender.stop(); lanConfigured = false; routedViaP2P = false; _ = processor.reset(); activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
     }
 
     private func configureAndStart(isRecovery: Bool = false, recoveryGeneration: Int? = nil) {
@@ -1365,19 +1369,30 @@ final class CameraViewModel: NSObject, ObservableObject {
                        onSendStarted: ((TimeInterval, Int) -> Void)?,
                        completion: @escaping (Result<TimeInterval, Error>) -> Void) {
         if p2pEnabled && p2pSender.isUsable {
+            if !routedViaP2P {
+                // Back on P2P: a coordinate still queued for a LAN port that is not
+                // ready must never arrive after the newer ones sent over P2P.
+                routedViaP2P = true
+                sender.discardPendingCoordinates()
+            }
             let lan = sender
             let lanAvailable = lanConfigured
             p2pSender.send(text, to: port, onSendStarted: onSendStarted, completion: completion,
-                           fallback: {
+                           fallback: { [weak self] in
                                // The link dropped after the check: hand this coordinate to LAN.
                                if lanAvailable {
                                    lan.send(text, to: port, onSendStarted: onSendStarted, completion: completion)
+                               } else {
+                                   // Same as the no-route branch below: counted, no completion.
+                                   Task { @MainActor in self?.p2pNoRouteCount += 1 }
                                }
                            })
         } else if lanConfigured {
+            routedViaP2P = false
             sender.send(text, to: port, onSendStarted: onSendStarted, completion: completion)
         } else {
             // Neither link is up yet (P2P searching, no LAN host): nothing to send to.
+            routedViaP2P = false
             p2pNoRouteCount += 1
         }
     }
@@ -1393,9 +1408,17 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func startP2P() {
         p2pSender.start(onState: { [weak self] state in
-            Task { @MainActor in self?.p2pState = state }
+            Task { @MainActor in
+                guard let self, self.p2pEnabled else { return }
+                self.p2pState = state
+                // P2P carries coordinates again: drop anything LAN still queues.
+                if state.isConnected { self.sender.discardPendingCoordinates() }
+            }
         }, onStats: { [weak self] summary in
-            Task { @MainActor in self?.p2pRoundTrip = summary }
+            Task { @MainActor in
+                guard let self, self.p2pEnabled else { return }
+                self.p2pRoundTrip = summary
+            }
         })
     }
 
@@ -1503,7 +1526,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         if manual { hostSelection.setManual(host, resolvedHost: "", serviceName: "") }
         self.host = host
         let currentGeneration = lifecycleGeneration
-        configureLAN(host: host, generation: currentGeneration)
+        // An empty host mirrors a P2P-only start (no LAN destination yet).
+        if host.isEmpty { lanConfigured = false } else { configureLAN(host: host, generation: currentGeneration) }
         _ = processor.reset()
         recomputeErrorMessage()
     }

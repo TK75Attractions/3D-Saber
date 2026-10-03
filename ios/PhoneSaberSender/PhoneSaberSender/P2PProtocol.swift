@@ -151,6 +151,12 @@ struct P2PSequenceFilter {
 /// Liveness of the P2P link, decided only from pong arrival times so it can be
 /// unit-tested with a manual clock. The link carries coordinates only while
 /// `isUsable`; otherwise the sender falls back to the existing LAN UDP path.
+///
+/// Hysteresis: the first link of a run is usable on its first pong. Once the
+/// link has gone stale (or a later connection replaces it), it needs
+/// `recoveryPongs` consecutive pongs, each within `recoveryMaxGap` of the
+/// previous one, before it carries coordinates again. Without this, a link at
+/// the stale edge flipped P2P / LAN on every single pong.
 struct P2PLivenessMonitor {
     struct Timing: Equatable {
         /// No pong for this long: stop using P2P (fall back to LAN).
@@ -159,28 +165,65 @@ struct P2PLivenessMonitor {
         var reconnectAfter: TimeInterval = 4
         /// Time allowed for the first pong of a new connection.
         var connectTimeout: TimeInterval = 4
+        /// Consecutive pongs needed before a link that went stale is used again.
+        var recoveryPongs: Int = 3
+        /// Pongs further apart than this do not count as consecutive.
+        var recoveryMaxGap: TimeInterval = 0.5
     }
 
     let timing: Timing
     private(set) var connectionStartedAt: TimeInterval?
     private(set) var lastPongAt: TimeInterval?
+    /// True while a link that went stale has not yet proven itself again.
+    private(set) var recovering = false
+    private var everUsable = false
+    private var streak = 0
 
     init(timing: Timing = Timing()) { self.timing = timing }
 
+    /// A new connection starts. After the first usable link of this run it must
+    /// earn usability again with `recoveryPongs` consecutive pongs.
     mutating func connectionStarted(at now: TimeInterval) {
         connectionStartedAt = now
         lastPongAt = nil
+        streak = 0
+        recovering = everUsable
     }
 
-    mutating func pongReceived(at now: TimeInterval) { lastPongAt = now }
+    /// The connection is gone (reconnect pending). Keeps the hysteresis memory.
+    mutating func connectionEnded() {
+        connectionStartedAt = nil
+        lastPongAt = nil
+        streak = 0
+        recovering = everUsable
+    }
 
+    mutating func pongReceived(at now: TimeInterval) {
+        if let lastPongAt, now - lastPongAt > timing.staleAfter {
+            // The link was stale before this pong: it has to recover first.
+            recovering = everUsable
+        }
+        if let lastPongAt, now - lastPongAt <= timing.recoveryMaxGap {
+            streak += 1
+        } else {
+            streak = 1
+        }
+        lastPongAt = now
+        if recovering && streak >= timing.recoveryPongs { recovering = false }
+        if !recovering { everUsable = true }
+    }
+
+    /// Forget everything (P2P switched off / sender stopped).
     mutating func reset() {
         connectionStartedAt = nil
         lastPongAt = nil
+        recovering = false
+        everUsable = false
+        streak = 0
     }
 
     func isUsable(at now: TimeInterval) -> Bool {
-        guard let lastPongAt else { return false }
+        guard let lastPongAt, !recovering else { return false }
         return now - lastPongAt <= timing.staleAfter
     }
 
