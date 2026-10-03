@@ -436,6 +436,69 @@ class SessionReportExposureExperimentTests(unittest.TestCase):
         render_markdown(report)
 
 
+class SessionReportGuidedRecordingTests(unittest.TestCase):
+    """The opt-in guided recording in summary.json: per-step rates and swing frames."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.bundle = Path(self.tmp.name) / "phone_saber_triage_sample_session"
+        write_codex_bundle(self.bundle)
+
+    def set_guided(self, value, manual_image: bool = False) -> None:
+        path = self.bundle / "summary.json"
+        summary = json.loads(path.read_text())
+        summary["guidedRecording"] = value
+        if manual_image:
+            summary["images"][0]["failureType"] = "manual_capture"
+        path.write_text(json.dumps(summary))
+
+    def test_manual_or_old_bundle_reports_na(self):
+        report = build_report(self.bundle)
+        self.assertEqual(report["inputContract"], "PASS")
+        self.assertFalse(report["guidedRecording"]["present"])
+        text = render_markdown(report)
+        self.assertIn("## ガイド付き録画 (guidedRecording)", text)
+        self.assertIn("n/a — manual recording", text)
+
+    def test_per_step_rates_reuse_the_label_table_and_pass_the_contract(self):
+        from test_phone_saber_metadata_schema import guided_recording_sample
+        guided = guided_recording_sample()
+        guided["losslessCaptures"].append({"stepIndex": 1, "frameID": 100})  # the bundle's image
+        self.set_guided(guided, manual_image=True)
+        input_plan(self.bundle)  # accepted by the triage input contract
+        report = build_report(self.bundle)
+        self.assertEqual(report["inputContract"], "PASS")
+        section = report["guidedRecording"]
+        self.assertTrue(section["valid"])
+        self.assertEqual(section["stepsReached"], 2)
+        steps = section["steps"]
+        self.assertAlmostEqual(steps[0]["red"]["detectionRate"], 0.2)
+        self.assertTrue(steps[0]["falsePositiveStep"])
+        self.assertAlmostEqual(steps[1]["red"]["detectionRate"], 200 / 240)
+        self.assertIsNone(steps[2]["red"]["detectionRate"])
+        self.assertEqual(steps[1]["losslessFrameIDs"], [100, 1185, 1230])
+        self.assertEqual([i["frameID"] for i in section["selectedSwingImages"]], [100])
+        text = render_markdown(report)
+        self.assertIn("script `shooting_plan_2026_10_04` v1, outcome **completed**", text)
+        self.assertIn("| 0 | no_saber (saberなし) | noSaber (誤検出) | 600 | 120 | 20.0% | 0 | 0.0% | 300–899 | - |",
+                      text)
+        self.assertIn("| 2 | red_objects_covered (赤い物隠し) | noSaberCovered (誤検出) | 0 | 0 | n/a | 0 | n/a "
+                      "| not reached | - |", text)
+        self.assertIn("swing lossless frames in this bundle: 1", text)
+        # The per-label table keeps its exact shape.
+        self.assertIn("| label | frames | RED detected | RED rate | BLUE detected | BLUE rate |", text)
+
+    def test_malformed_guided_object_is_rejected_by_the_contract_but_report_degrades(self):
+        self.set_guided({"scriptID": "x", "outcome": "done"})
+        with self.assertRaisesRegex(Exception, "guided recording is malformed"):
+            input_plan(self.bundle)
+        report = build_report(self.bundle)
+        self.assertTrue(report["inputContract"].startswith("FAIL"))
+        self.assertFalse(report["guidedRecording"]["valid"])
+        self.assertIn("malformed", render_markdown(report))
+
+
 class ReceiverReportHookTests(unittest.TestCase):
     def post(self, root: Path, *, patch_report=None) -> tuple[int, str, Path, mock.Mock]:
         inbox = root / "inbox"

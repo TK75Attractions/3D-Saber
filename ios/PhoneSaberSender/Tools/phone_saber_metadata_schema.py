@@ -267,6 +267,91 @@ SEGMENT_SUMMARY = object_field({
     "markers": array_field(SEGMENT_MARKER),
 })
 
+# Opt-in guided Debug Recording (root and summary.json `guidedRecording`, Swift
+# DebugGuidedRecordingSummary). Absent in manual recordings and in recordings
+# made before guided mode existed. Per-step counts cover hold frames only.
+GUIDED_OUTCOMES = ("completed", "cancelled", "incomplete")
+GUIDED_STEP = object_field({
+    "index": scalar("integer", required=True),
+    "id": scalar("string", required=True),
+    "title": scalar("string"),
+    "label": scalar("string", required=True),
+    "plannedLeadInSeconds": scalar("number"),
+    "plannedHoldSeconds": scalar("number"),
+    "plannedLosslessCaptures": scalar("integer"),
+    **{name: scalar("integer") for name in ("leadInStartFrameID", "holdStartFrameID", "holdEndFrameID")},
+    **{name: scalar("number") for name in ("leadInStartTimestamp", "holdStartTimestamp", "holdEndTimestamp")},
+    "frames": scalar("integer", required=True),
+    "red": SEGMENT_COLOR_COUNTS,
+    "blue": SEGMENT_COLOR_COUNTS,
+}, required=True)
+GUIDED_RECORDING = object_field({
+    "formatVersion": scalar("integer"),
+    "scriptID": scalar("string", required=True),
+    "scriptVersion": scalar("integer", required=True),
+    "outcome": scalar("string", required=True),
+    "plannedSeconds": scalar("number"),
+    "steps": array_field(GUIDED_STEP, required=True),
+    "losslessCaptures": array_field(object_field({
+        "stepIndex": scalar("integer", required=True),
+        "frameID": scalar("integer", required=True),
+    }, required=True)),
+    "definition": scalar("string"),
+})
+
+
+def guided_recording_errors(value: Any) -> list[str]:
+    """Strict check of a `guidedRecording` object (empty list = valid)."""
+    if not isinstance(value, dict):
+        return ["guidedRecording must be an object"]
+    errors: list[str] = []
+    fields = GUIDED_RECORDING.fields or {}
+    for key, field in fields.items():
+        if key not in value:
+            if field.required:
+                errors.append(f"guidedRecording.{key} is missing")
+        elif not _matches_kind(value[key], field.kind):
+            errors.append(f"guidedRecording.{key} must be {field.kind}")
+    unknown = set(value) - set(fields)
+    if unknown:
+        errors.append("unknown guidedRecording keys: " + ", ".join(sorted(unknown)))
+    if "outcome" in value and value["outcome"] not in GUIDED_OUTCOMES:
+        errors.append("unknown guidedRecording.outcome")
+    steps = value.get("steps") if isinstance(value.get("steps"), list) else []
+    step_fields = GUIDED_STEP.fields or {}
+    for position, step in enumerate(steps):
+        if not isinstance(step, dict):
+            errors.append(f"guidedRecording.steps[{position}] is malformed")
+            continue
+        for key, field in step_fields.items():
+            if key not in step:
+                if field.required:
+                    errors.append(f"guidedRecording.steps[{position}].{key} is missing")
+            elif field.kind == "object":
+                counts = step[key]
+                if not isinstance(counts, dict) or any(
+                        not _matches_kind(counts.get(name), "integer")
+                        for name in ("detectedFrames", "measuredFrames")):
+                    errors.append(f"guidedRecording.steps[{position}].{key} is malformed")
+            elif not _matches_kind(step[key], field.kind):
+                errors.append(f"guidedRecording.steps[{position}].{key} must be {field.kind}")
+        if step.get("index") != position:
+            errors.append(f"guidedRecording.steps[{position}].index is out of order")
+        if "label" in step and step["label"] not in SEGMENT_LABELS:
+            errors.append(f"guidedRecording.steps[{position}].label is unknown")
+        unknown_step = set(step) - set(step_fields)
+        if unknown_step:
+            errors.append(f"unknown guidedRecording.steps[{position}] keys: " + ", ".join(sorted(unknown_step)))
+    captures = value.get("losslessCaptures", [])
+    if isinstance(captures, list):
+        for position, capture in enumerate(captures):
+            if not isinstance(capture, dict) or not _matches_kind(capture.get("frameID"), "integer") \
+                    or not _matches_kind(capture.get("stepIndex"), "integer") \
+                    or not 0 <= capture["stepIndex"] < max(len(steps), 1):
+                errors.append(f"guidedRecording.losslessCaptures[{position}] is malformed")
+    return errors
+
+
 ROOT = object_field({
     "sessionID": scalar("string", required=True),
     "width": scalar("integer", required=True),
@@ -291,6 +376,8 @@ ROOT = object_field({
     # Whole-session shadow R7e / PF22 counters; absent in older recordings.
     # The shape is checked strictly by shadow_rule_tally_errors().
     "shadowRuleTally": object_field({}),
+    # Opt-in guided recording (script, step boundaries, per-step counts).
+    "guidedRecording": GUIDED_RECORDING,
 }, required=True)
 
 

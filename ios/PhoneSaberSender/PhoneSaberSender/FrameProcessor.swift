@@ -105,6 +105,9 @@ final class FrameProcessor: @unchecked Sendable {
     /// Operator segment label for Debug Recording metadata, guarded by
     /// pendingLock. Never read by recognition, tracking or UDP output.
     private var debugSegmentLabel: DebugSegmentLabel = .unlabeled
+    /// Guided recording step of the following recorded frames (metadata only),
+    /// guarded by pendingLock like the segment label.
+    private var debugGuidedPhase: DebugGuidedPhase?
     private let rawFrameDirectory: () throws -> URL
     private lazy var rawFrameContext = CIContext(options: [.cacheIntermediates: false])
     var currentGeneration: Int {
@@ -303,6 +306,7 @@ final class FrameProcessor: @unchecked Sendable {
 
     func startDebugRecording(diagnosticColors: DebugDiagnosticColors = .both,
                              cameraExposureExperiment: CameraExposureExperimentState? = nil,
+                             guidedScript: GuidedRecordingScript? = nil,
                              completion: @escaping (Result<String, Error>) -> Void) {
         queue.async { [weak self] in
             guard let self else { return }
@@ -315,7 +319,8 @@ final class FrameProcessor: @unchecked Sendable {
                 }
                 let recorder = try DebugVideoRecorder(directory: self.rawFrameDirectory(),
                                                       diagnosticColors: diagnosticColors,
-                                                      cameraExposureExperiment: cameraExposureExperiment)
+                                                      cameraExposureExperiment: cameraExposureExperiment,
+                                                      guidedScript: guidedScript)
                 try recorder.prepare(width: dimensions.0, height: dimensions.1)
                 self.debugVideoRecorder = recorder
                 completion(.success(recorder.sessionID))
@@ -369,6 +374,19 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.lock()
         debugSegmentLabel = label
         pendingLock.unlock()
+    }
+
+    /// Same single-slot contract as `setDebugSegmentLabel`.
+    func setDebugGuidedPhase(_ phase: DebugGuidedPhase?) {
+        pendingLock.lock()
+        debugGuidedPhase = phase
+        pendingLock.unlock()
+    }
+
+    /// Queued before a Stop issued afterwards, so the outcome reaches the
+    /// recorder before it finishes.
+    func setDebugGuidedOutcome(_ outcome: DebugGuidedOutcome) {
+        queue.async { [weak self] in self?.debugVideoRecorder?.setGuidedOutcome(outcome) }
     }
 
     var debugSegmentLabelForTesting: DebugSegmentLabel {
@@ -534,6 +552,7 @@ final class FrameProcessor: @unchecked Sendable {
             pendingLock.lock()
             let deviceState = debugCameraDeviceState
             let segmentLabel = debugSegmentLabel
+            let guidedPhase = debugGuidedPhase
             pendingLock.unlock()
             let camera = DebugRecordingFrameCamera.make(
                 exif: DebugRecordingFrameCamera.exifAttachment(of: sampleBuffer),
@@ -546,7 +565,8 @@ final class FrameProcessor: @unchecked Sendable {
                 analysis: analysis,
                 processingTimeSeconds: processingTimeSeconds,
                 camera: camera,
-                segmentLabel: segmentLabel
+                segmentLabel: segmentLabel,
+                guidedPhase: guidedPhase
             )
             if case .reachedLimit(let reason) = appendResult {
                 onDebugRecordingLimitReached?(reason)

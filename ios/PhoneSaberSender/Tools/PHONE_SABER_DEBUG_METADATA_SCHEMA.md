@@ -27,6 +27,7 @@ The top-level JSON object has these fields:
 | `cameraSamples` | array of camera sample objects | Optional | Camera state snapshots emitted by diagnostic-capable builds. |
 | `cameraExposureExperiment` | camera exposure experiment object | Optional | Opt-in shutter experiment in effect at Start (see "Camera exposure experiment"). Absent in older recordings, which always used auto exposure. |
 | `shadowRuleTally` | shadow rule tally object | Optional | Whole-session counts of the shadow R7e / PF22 verdicts over every recorded frame (see "Whole-session shadow rule tally"). Absent in older recordings. Evidence only, never applied. |
+| `guidedRecording` | guided recording object | Optional | Opt-in guided recording (ガイド付き録画): script, step boundaries and per-step counts (see "Guided recording"). Absent in manual and older recordings. |
 
 `frames` is the only field required to identify an analyzable session. A missing
 or non-array `frames` value is a structural error. Other missing or mistyped
@@ -481,3 +482,40 @@ no-saber labels; `unlabeled` is shown separately and counted toward neither),
 columns prefer the recorded whole-session tally, marked 全) and
 `phone_saber_pf22_check.py` (whole-session table first). Older bundles show n/a and
 keep their selected-frame tallies.
+
+## Guided recording (additive, version 1)
+
+Opt-in. The Debug Recording box has a button ガイド付き録画を開始 next to the manual
+Start Recording (which is unchanged and stays the default). A guided recording runs
+a fixed, versioned step script (`GuidedRecordingScript.shootingPlanV1` in
+`GuidedRecording.swift`, the 2026-10-04 shooting plan in `docs/claude/STATUS.md`):
+each step has an unlabeled lead-in (spoken Japanese cue, then a 3-2-1 countdown) and
+a hold that carries the step's segment label. The labels go through the same path as
+the manual 区間ラベル picker, so `segmentMarkers` / `segmentSummary` are written as
+usual. During swing steps the existing one-shot lossless capture is requested every
+1.5 s (at most 6 per guided recording instead of 3; the 128 MiB buffered, 256 MiB
+retained and 64 MiB lossless-disk caps are unchanged). The script stops the
+recording at the end (auto-transfer as usual); Cancel stops it at once. Like the
+segment label, the current step reaches the recorder through the frame mailbox and
+never reaches recognition, tracking or UDP.
+
+Root `guidedRecording` (also copied to triage `summary.json`):
+
+| Field | JSON type | Meaning |
+| --- | --- | --- |
+| `formatVersion` | integer | Object format version; currently `1`. |
+| `scriptID`, `scriptVersion` | string, integer | Script that ran (`shooting_plan_2026_10_04`, version 1). Any change to steps or timings gets a new version. |
+| `outcome` | string | `completed` (the script stopped the recording), `cancelled` (Cancel), `incomplete` (the recording ended first: limit, background, interruption). |
+| `plannedSeconds` | number | Planned duration of the script. |
+| `steps` | array | One object per script step, in order: `index`, `id`, `title`, `label` (segment label of the hold), `plannedLeadInSeconds`, `plannedHoldSeconds`, `plannedLosslessCaptures`, `leadInStartFrameID` / `leadInStartTimestamp`, `holdStartFrameID` / `holdStartTimestamp`, `holdEndFrameID` / `holdEndTimestamp` (first lead-in frame, first and last hold frame actually recorded; absent when the step was not reached), `frames` (hold frames), `red` / `blue` (`{detectedFrames, measuredFrames}` over hold frames, same definitions as `segmentSummary`). |
+| `losslessCaptures` | array of `{stepIndex, frameID}` | Lossless frames captured while the guide ran (`manual_frame_<frameID>.png`). At most 32 entries. |
+| `definition` | string | Human-readable definition of the counts. |
+
+Under a `noSaber` / `noSaberCovered` step every detected frame is a false positive.
+In the triage bundle a guided recording keeps up to 4 of its swing lossless frames
+ahead of bridge and tracking units (one per step first); manual recordings keep the
+previous selection. `phone_saber_metadata_schema.py` types the field and offers the
+strict `guided_recording_errors`, which the triage input contract applies to
+`summary.json`; `phone_saber_session_report.py` shows the ガイド付き録画 section
+(per-step table in the same shape as the per-label table, and which swing frames
+are in the bundle) and `n/a` for bundles without it.

@@ -15,6 +15,8 @@ The whole-session shadow section reads the recorded ``shadowRuleTally`` (every
 recorded frame, per label and exposure bucket, via phone_saber_shadow_tally.py);
 it is preferred over the selected-frame shadow tallies, which remain for older
 bundles.
+The ガイド付き録画 section (optional ``guidedRecording``) shows the same rates per
+step of the guided script (hold frames only) and the swing lossless frames kept.
 
     phone_saber_session_report.py <bundle_dir> [--output report.md] [--json]
 
@@ -35,7 +37,7 @@ from typing import Any, Callable
 from phone_saber_background_evidence import background_evidence, render_lines as background_evidence_lines
 from phone_saber_hotspots import static_hotspots
 from phone_saber_metadata_schema import (
-    FALSE_POSITIVE_SEGMENT_LABELS, SEGMENT_LABELS, camera_exposure_experiment_errors)
+    FALSE_POSITIVE_SEGMENT_LABELS, SEGMENT_LABELS, camera_exposure_experiment_errors, guided_recording_errors)
 from phone_saber_segments import SegmentInputError, analyze as segment_analyze, label_for_frame
 from phone_saber_shadow_tally import render_lines as shadow_tally_lines, tally_view
 from phone_saber_selection_replay import Policy, gap_distribution, load_sequences, quantiles, replay
@@ -276,6 +278,45 @@ def _image_kind(image: dict) -> str:
     return "incident"
 
 
+def guided_section(summary: dict) -> dict:
+    """Opt-in guided recording: per-step detection / false-positive rates (hold frames)."""
+    value = summary.get("guidedRecording")
+    if value is None:
+        return {"present": False,
+                "note": "n/a — manual recording (no guidedRecording; older builds and manual mode omit it)"}
+    errors = guided_recording_errors(value)
+    if errors:
+        return {"present": True, "valid": False, "note": "; ".join(errors[:3])}
+    captures_by_step: dict[int, list[int]] = {}
+    step_of_frame: dict[int, int] = {}
+    for capture in value.get("losslessCaptures") or []:
+        captures_by_step.setdefault(capture["stepIndex"], []).append(capture["frameID"])
+        step_of_frame[capture["frameID"]] = capture["stepIndex"]
+    steps = []
+    for step in value["steps"]:
+        entry = dict(step)
+        frames = step.get("frames", 0)
+        for color in ("red", "blue"):
+            counts = dict(step.get(color) or {"detectedFrames": 0, "measuredFrames": 0})
+            counts["detectionRate"] = counts["detectedFrames"] / frames if frames else None
+            entry[color] = counts
+        entry["falsePositiveStep"] = step.get("label") in FALSE_POSITIVE_SEGMENT_LABELS
+        entry["losslessFrameIDs"] = sorted(captures_by_step.get(step["index"], []))
+        steps.append(entry)
+    ids = {step["index"]: step["id"] for step in value["steps"]}
+    images = [{"path": image.get("path"), "frameID": image.get("frameID"),
+               "stepIndex": step_of_frame[image.get("frameID")], "stepID": ids.get(step_of_frame[image.get("frameID")])}
+              for image in summary.get("images") or []
+              if isinstance(image, dict) and image.get("frameID") in step_of_frame
+              and (image.get("failureType") == "manual_capture"
+                   or "manual_frame_" in str(image.get("sourceFile") or image.get("path")))]
+    return {"present": True, "valid": True, "scriptID": value["scriptID"],
+            "scriptVersion": value["scriptVersion"], "outcome": value["outcome"],
+            "plannedSeconds": value.get("plannedSeconds"),
+            "stepsReached": sum(1 for step in value["steps"] if step.get("holdStartFrameID") is not None),
+            "steps": steps, "selectedSwingImages": images}
+
+
 def segments_section(bundle: Path, summary: dict) -> dict:
     """Operator segment labels (ground truth): rates, RED verdict and the label of each image."""
     stats, note = None, None
@@ -430,6 +471,7 @@ def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MA
         "dropoutSummary": summary.get("dropoutSummary"),
         "inputContract": "PASS" if plan is not None else f"FAIL ({contract_error})",
         "segments": segments,
+        "guidedRecording": _guard(errors, "guided_recording", lambda: guided_section(summary)),
         "cameraExposureExperiment": _guard(errors, "camera_exposure_experiment",
                                            lambda: exposure_experiment_section(summary)),
         # Whole-session shadow R7e / PF22 counts recorded on the iPhone (preferred
@@ -480,6 +522,49 @@ def _color_table(report: dict) -> list[str]:
 
 
 SEGMENT_MARKERS_SHOWN = 20
+RATE_TABLE_HEADER = ["| label | frames | RED detected | RED rate | BLUE detected | BLUE rate |",
+                     "| --- | --- | --- | --- | --- | --- |"]
+
+
+def _rate_row(leading: list[str], entry: dict) -> str:
+    """One row of the per-label (or per-step) detection-rate table."""
+    red, blue = entry.get("red") or {}, entry.get("blue") or {}
+    return "| " + " | ".join(leading + [
+        _fmt(entry.get("frames")), _fmt(red.get("detectedFrames")), _pct(red.get("detectionRate")),
+        _fmt(blue.get("detectedFrames")), _pct(blue.get("detectionRate"))]) + " |"
+
+
+def _guided_lines(guided: Any) -> list[str]:
+    lines = ["## ガイド付き録画 (guidedRecording)", ""]
+    try:
+        if not isinstance(guided, dict) or not guided.get("present"):
+            return lines + [f"- {(guided or {}).get('note', NA) if isinstance(guided, dict) else NA}"]
+        if not guided.get("valid"):
+            return lines + [f"- malformed — {guided.get('note')}"]
+        lines.append(f"- script `{guided.get('scriptID')}` v{guided.get('scriptVersion')}, "
+                     f"outcome **{guided.get('outcome')}**, planned {_fmt(guided.get('plannedSeconds'))}s, "
+                     f"steps reached {guided.get('stepsReached')}/{len(guided.get('steps') or [])}")
+        lines.append("- 各 step の hold 区間だけを数える(lead-in は unlabeled)。`noSaber` / `noSaberCovered` の"
+                     "step の検出はすべて誤検出。数値は根拠で、production の閾値ではない")
+        lines.append("")
+        lines.append("| # | step | " + RATE_TABLE_HEADER[0][2:] + " hold frames | lossless |")
+        lines.append("| --- | --- | " + RATE_TABLE_HEADER[1][2:] + " --- | --- |")
+        for step in guided.get("steps") or []:
+            label = step.get("label")
+            name = f"{label} (誤検出)" if label in FALSE_POSITIVE_SEGMENT_LABELS else _fmt(label)
+            span = (f"{_fmt(step.get('holdStartFrameID'))}–{_fmt(step.get('holdEndFrameID'))}"
+                    if step.get("holdStartFrameID") is not None else "not reached")
+            captures = ", ".join(str(c) for c in step.get("losslessFrameIDs") or []) or "-"
+            lines.append(_rate_row([str(step.get("index")), f"{step.get('id')} ({_fmt(step.get('title'))})", name],
+                                   step)[:-1] + f"| {span} | {captures} |")
+        images = guided.get("selectedSwingImages") or []
+        lines.append("")
+        lines.append(f"- swing lossless frames in this bundle: {len(images)}"
+                     + (" — " + ", ".join(f"`{i['path']}` (step {i['stepIndex']} {i['stepID']})" for i in images)
+                        if images else ""))
+    except Exception as exc:  # noqa: BLE001 - rendering must never break the report
+        lines.append(f"- n/a ({type(exc).__name__}: {exc})")
+    return lines
 
 
 def _segment_lines(segments: Any) -> list[str]:
@@ -497,15 +582,11 @@ def _segment_lines(segments: Any) -> list[str]:
             lines.append(f"- frames {segments.get('totalFrames')}, markers {len(markers)}"
                          " (rate = 検出 frame / その区間の frame。no-saber 区間では誤検出率)")
             lines.append("")
-            lines.append("| label | frames | RED detected | RED rate | BLUE detected | BLUE rate |")
-            lines.append("| --- | --- | --- | --- | --- | --- |")
+            lines.extend(RATE_TABLE_HEADER)
             for label in SEGMENT_LABELS:
                 entry = labels.get(label) or {}
-                red, blue = entry.get("red") or {}, entry.get("blue") or {}
                 name = f"{label} (誤検出)" if label in FALSE_POSITIVE_SEGMENT_LABELS else label
-                lines.append(f"| {name} | {_fmt(entry.get('frames'))} | {_fmt(red.get('detectedFrames'))} | "
-                             f"{_pct(red.get('detectionRate'))} | {_fmt(blue.get('detectedFrames'))} | "
-                             f"{_pct(blue.get('detectionRate'))} |")
+                lines.append(_rate_row([name], entry))
             lines.append("")
             for marker in markers[:SEGMENT_MARKERS_SHOWN]:
                 lines.append(f"- from frame {_fmt(marker.get('frameID'))} ({_fmt(marker.get('timestamp'))}s) → "
@@ -610,6 +691,8 @@ def render_markdown(report: dict) -> str:
     out.extend(_color_table(report))
     add("")
     out.extend(_segment_lines(report.get("segments")))
+    add("")
+    out.extend(_guided_lines(report.get("guidedRecording")))
     add("")
 
     add("## 露出実験 (cameraExposureExperiment)")

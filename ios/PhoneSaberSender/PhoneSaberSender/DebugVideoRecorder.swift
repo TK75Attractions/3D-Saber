@@ -1914,6 +1914,10 @@ final class DebugVideoRecorder {
     private var segmentLedger = DebugSegmentLedger()
     /// Whole-session shadow R7e / PF22 counters (diagnostic only; root `shadowRuleTally`).
     private var shadowRuleTally: DebugShadowRuleTally
+    /// Opt-in guided recording (root `guidedRecording`); nil omits the key.
+    private var guidedLedger: DebugGuidedLedger?
+    /// Guided recordings may request more lossless frames than manual ones.
+    private let manualLosslessCaptureLimit: Int
     private let forensicPolicy: DebugForensicCapturePolicy
     private let clock: () -> TimeInterval
     private var startedAt: TimeInterval?
@@ -1927,6 +1931,7 @@ final class DebugVideoRecorder {
     var bridgeRetainedBytesForTesting: Int { bridgeRetainedBytes() }
     var segmentLedgerForTesting: DebugSegmentLedger { segmentLedger }
     var shadowRuleTallyForTesting: DebugShadowRuleTally { shadowRuleTally }
+    var guidedLedgerForTesting: DebugGuidedLedger? { guidedLedger }
     var injectedBridgeAfterCopyFailureFrameIDForTesting: UInt64?
 #endif
     private(set) var droppedFrameCount = 0
@@ -1936,6 +1941,7 @@ final class DebugVideoRecorder {
          forensicPolicy: DebugForensicCapturePolicy = .production,
          diagnosticColors: DebugDiagnosticColors = .both,
          cameraExposureExperiment: CameraExposureExperimentState? = nil,
+         guidedScript: GuidedRecordingScript? = nil,
          clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try DebugRecordingStorage.validateStartCapacity(at: directory)
@@ -1953,6 +1959,10 @@ final class DebugVideoRecorder {
         self.cameraExposureExperiment = cameraExposureExperiment
         shadowRuleTally = DebugShadowRuleTally(activeColors: diagnosticColors.colorNames,
                                                exposureExperimentSetting: cameraExposureExperiment?.setting.rawValue)
+        self.guidedLedger = guidedScript.map(DebugGuidedLedger.init(script:))
+        self.manualLosslessCaptureLimit = guidedScript == nil
+            ? DebugRecordingLimits.maximumManualLosslessCaptures
+            : DebugRecordingLimits.maximumGuidedLosslessCaptures
         self.clock = clock
         triageAccumulator.activeColors = Set(diagnosticColors.colorNames)
         triageAccumulator.absenceIsIncident = false
@@ -1972,12 +1982,18 @@ final class DebugVideoRecorder {
         completion: @escaping (Result<UInt64, DebugVideoRecorderError>) -> Void
     ) -> Bool {
         guard !isFinishing, manualCaptureCompletion == nil else { return false }
-        guard manualLosslessCaptureCount < DebugRecordingLimits.maximumManualLosslessCaptures else {
+        guard manualLosslessCaptureCount < manualLosslessCaptureLimit else {
             completion(.failure(.manualCaptureLimitReached))
             return true
         }
         manualCaptureCompletion = completion
         return true
+    }
+
+    /// Guided recordings only: how the script ended (called before finish).
+    func setGuidedOutcome(_ outcome: DebugGuidedOutcome) {
+        guard !isFinishing else { return }
+        guidedLedger?.setOutcome(outcome)
     }
 
     func appendCameraSample(_ sample: DebugRecordingCameraSample) {
@@ -2002,7 +2018,8 @@ final class DebugVideoRecorder {
         analysis: SaberFrameAnalysis? = nil,
         processingTimeSeconds: Double = 0,
         camera: DebugRecordingFrameCamera? = nil,
-        segmentLabel: DebugSegmentLabel = .unlabeled
+        segmentLabel: DebugSegmentLabel = .unlabeled,
+        guidedPhase: DebugGuidedPhase? = nil
     ) -> DebugRecordingAppendResult {
         guard !isFinishing else { return .skipped }
         if startedAt == nil { startedAt = clock() }
@@ -2176,6 +2193,10 @@ final class DebugVideoRecorder {
         }
         shadowRuleTally.observe(frameID: frameID, timestamp: frame.presentationTimeSeconds, label: segmentLabel,
                                 exposureSeconds: camera?.exposureDurationSeconds, colors: shadowObservations)
+        guidedLedger?.observe(frameID: frameID, timestamp: frame.presentationTimeSeconds, phase: guidedPhase,
+                              detected: ["red": frame.red.detected, "blue": frame.blue.detected],
+                              measured: ["red": redDetectionSucceeded, "blue": blueDetectionSucceeded],
+                              losslessCaptured: frame.manualCaptured)
         overlayFrames.append(DebugOverlayFrame(red: freshRed, blue: freshBlue))
         recordedFrameCount += 1
 
@@ -3070,6 +3091,7 @@ final class DebugVideoRecorder {
         if let cameraExposureExperiment {
             result["cameraExposureExperiment"] = cameraExposureExperiment.metadataDictionary
         }
+        if let guidedLedger { result["guidedRecording"] = guidedLedger.summary.jsonObject }
         return result
     }
 
@@ -3108,7 +3130,7 @@ final class DebugVideoRecorder {
               bufferedLosslessBytes + byteCount <= DebugRecordingLimits.maximumBufferedLosslessBytes,
               motionRetainedBytes() + bufferedLosslessBytes + byteCount
                 <= DebugMotionThresholds.maximumRetainedBGRABytes,
-              manualLosslessCaptureCount < DebugRecordingLimits.maximumManualLosslessCaptures || !manual else {
+              manualLosslessCaptureCount < manualLosslessCaptureLimit || !manual else {
             return false
         }
         let pngBound = Int64(byteCount) + max(Int64(byteCount) / 100, 64 * 1_024)

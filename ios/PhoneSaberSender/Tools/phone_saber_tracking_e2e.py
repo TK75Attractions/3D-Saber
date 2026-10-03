@@ -25,7 +25,7 @@ def capture_bundles(destination: Path) -> dict:
     binary = destination / "capture-harness"
     command = ["xcrun", "swiftc", "-O", "-D", "DEBUG"] + [str(source / name) for name in (
         "DetectionCore.swift", "BGRADetection.swift", "FrameProcessor.swift",
-        "DebugVideoRecorder.swift", "DebugRecordingTriage.swift")] + [str(support),
+        "DebugVideoRecorder.swift", "DebugRecordingTriage.swift", "GuidedRecording.swift")] + [str(support),
         str(REPO / "ios/PhoneSaberSenderTests/TrackingDiagnosticsCaptureHarness.swift"), "-o", str(binary)]
     compiled = subprocess.run(command, text=True, capture_output=True, timeout=180)
     if compiled.returncode:

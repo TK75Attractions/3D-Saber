@@ -31,6 +31,8 @@
 		A00000000000000000000017 /* P2PProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000017 /* P2PProtocol.swift */; };
 		A00000000000000000000018 /* P2PSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000018 /* P2PSender.swift */; };
 		A00000000000000000000019 /* P2PTransportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000019 /* P2PTransportTests.swift */; };
+		A0000000000000000000A001 /* GuidedRecording.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A001 /* GuidedRecording.swift */; };
+		A0000000000000000000A002 /* GuidedRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A002 /* GuidedRecordingTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -70,6 +72,8 @@
 		B10000000000000000000014 /* DebugRecordingTriage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugRecordingTriage.swift; sourceTree = "<group>"; };
 		B10000000000000000000015 /* DebugRecordingTriageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugRecordingTriageTests.swift; sourceTree = "<group>"; };
 		B10000000000000000000016 /* DebugBundleTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugBundleTransfer.swift; sourceTree = "<group>"; };
+		B1000000000000000000A001 /* GuidedRecording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedRecording.swift; sourceTree = "<group>"; };
+		B1000000000000000000A002 /* GuidedRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedRecordingTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -107,6 +111,7 @@
 				B10000000000000000000006 /* FrameProcessor.swift */,
 				B10000000000000000000011 /* DebugVideoRecorder.swift */,
 				B10000000000000000000014 /* DebugRecordingTriage.swift */,
+				B1000000000000000000A001 /* GuidedRecording.swift */,
 				B10000000000000000000016 /* DebugBundleTransfer.swift */,
 				B10000000000000000000008 /* UDPSender.swift */,
 				B10000000000000000000017 /* P2PProtocol.swift */,
@@ -125,6 +130,7 @@
 				B10000000000000000000009 /* DetectionCoreTests.swift */,
 				B10000000000000000000015 /* DebugRecordingTriageTests.swift */,
 				B10000000000000000000019 /* P2PTransportTests.swift */,
+				B1000000000000000000A002 /* GuidedRecordingTests.swift */,
 				D00000000000000000000004 /* Fixtures */,
 			);
 			path = ../PhoneSaberSenderTests;
@@ -263,6 +269,7 @@
 				A00000000000000000000006 /* FrameProcessor.swift in Sources */,
 				A00000000000000000000011 /* DebugVideoRecorder.swift in Sources */,
 				A00000000000000000000014 /* DebugRecordingTriage.swift in Sources */,
+				A0000000000000000000A001 /* GuidedRecording.swift in Sources */,
 				A00000000000000000000016 /* DebugBundleTransfer.swift in Sources */,
 				A00000000000000000000008 /* UDPSender.swift in Sources */,
 				A00000000000000000000017 /* P2PProtocol.swift in Sources */,
@@ -281,6 +288,7 @@
 				A00000000000000000000009 /* DetectionCoreTests.swift in Sources */,
 				A00000000000000000000015 /* DebugRecordingTriageTests.swift in Sources */,
 				A00000000000000000000019 /* P2PTransportTests.swift in Sources */,
+				A0000000000000000000A002 /* GuidedRecordingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

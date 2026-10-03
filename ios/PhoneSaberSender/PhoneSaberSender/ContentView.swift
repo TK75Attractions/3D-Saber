@@ -122,6 +122,27 @@ struct ContentView: View {
                                               model.debugRecordingFinalizing || model.manualLosslessCapturePending ||
                                               model.debugManualLosslessCaptureCount >= DebugRecordingLimits.maximumManualLosslessCaptures)
                             }
+                            Button { model.startGuidedRecording() } label: {
+                                Label("ガイド付き録画を開始（約\(Int(model.guidedRecordingScript.totalSeconds.rounded(.up)) / 60)分\(Int(model.guidedRecordingScript.totalSeconds.rounded(.up)) % 60)秒）",
+                                      systemImage: "speaker.wave.2")
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(!model.debugRecordingEnabled || !model.running ||
+                                      model.debugRecordingActive || model.debugRecordingFinalizing)
+                            DisclosureGroup("ガイド付き録画の手順") {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    ForEach(Array(model.guidedRecordingScript.steps.enumerated()), id: \.offset) { index, step in
+                                        Text("\(index + 1). \(step.title) — \(Int(step.holdSeconds))秒・\(step.label.title)"
+                                             + (step.losslessCaptures > 0 ? "・lossless \(step.losslessCaptures)枚" : ""))
+                                    }
+                                }
+                                .font(.caption2)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .font(.caption)
+                            Text("ガイド付き: iPhoneを置いたまま、音声とカウントダウンの指示どおりに動いてください。区間ラベルの切替、振りの区間のlossless保存（最大\(DebugRecordingLimits.maximumGuidedLosslessCaptures)枚）、最後の停止と転送は自動です。手動の録画は従来どおりです。")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                             Picker("区間ラベル", selection: $model.debugSegmentLabel) {
                                 ForEach(DebugSegmentLabel.allCases) { Text($0.title).tag($0) }
                             }
@@ -331,6 +352,13 @@ struct ContentView: View {
             .navigationTitle("Phone Saber Sender")
             .quickLookPreview($recordingPreviewURL)
         }
+        .overlay {
+            if model.guidedRecordingRunning {
+                GuidedRecordingOverlay(status: model.guidedRecordingStatus,
+                                       losslessCount: model.debugManualLosslessCaptureCount,
+                                       cancel: { model.cancelGuidedRecording() })
+            }
+        }
         .task { model.refreshDebugRecordingSessions() }
         .onAppear { model.sceneDidChange(isActive: scenePhase == .active) }
         .confirmationDialog(
@@ -361,6 +389,58 @@ struct ContentView: View {
             path.addLine(to: aspectFillPoint(endpoints.1, source: model.sourceDimensions, view: (size.width, size.height)))
         }
         context.stroke(path, with: .color(color), lineWidth: 5)
+    }
+}
+
+/// Full-screen guide readable from about 3 m while the iPhone sits on a tripod.
+private struct GuidedRecordingOverlay: View {
+    let status: GuidedRecordingStatus?
+    let losslessCount: Int
+    let cancel: () -> Void
+
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+            VStack(spacing: 12) {
+                if let status {
+                    let inHold: Bool = { if case .hold = status.phase { return true }; return false }()
+                    Text("ステップ \(status.stepIndex + 1) / \(status.stepCount)")
+                        .font(.system(size: 28, weight: .semibold))
+                        .foregroundStyle(.white.opacity(0.75))
+                    Text(inHold ? status.title : "次: \(status.title)")
+                        .font(.system(size: 46, weight: .bold))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                        .minimumScaleFactor(0.4)
+                        .lineLimit(3)
+                    Text("\(status.secondsRemaining)")
+                        .font(.system(size: 170, weight: .heavy, design: .rounded).monospacedDigit())
+                        .foregroundStyle(inHold ? Color.green : Color.yellow)
+                        .minimumScaleFactor(0.5)
+                        .lineLimit(1)
+                    Text(inHold ? "記録中・\(status.label.title)" : "準備")
+                        .font(.system(size: 38, weight: .bold))
+                        .foregroundStyle(inHold ? Color.green : Color.yellow)
+                    Text("全体の残り 約\(status.totalSecondsRemaining)秒　lossless \(losslessCount)/\(DebugRecordingLimits.maximumGuidedLosslessCaptures)")
+                        .font(.system(size: 20).monospacedDigit())
+                        .foregroundStyle(.white.opacity(0.75))
+                } else {
+                    Text("ガイド付き録画を開始しています…")
+                        .font(.system(size: 40, weight: .bold))
+                        .foregroundStyle(.white)
+                        .multilineTextAlignment(.center)
+                }
+                Spacer(minLength: 0)
+                Button(role: .destructive, action: cancel) {
+                    Text("キャンセル（ここで録画を止める）")
+                        .font(.title2.bold())
+                        .frame(maxWidth: .infinity, minHeight: 56)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(.red)
+            }
+            .padding()
+        }
     }
 }
 

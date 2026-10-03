@@ -14,6 +14,7 @@ from phone_saber_metadata_schema import (
     CURRENT_FORMAT_VERSION,
     LEGACY_FORMAT_VERSION,
     camera_exposure_experiment_errors,
+    guided_recording_errors,
     load_metadata_file,
     validate_document,
 )
@@ -163,6 +164,72 @@ class CameraExposureExperimentSchemaTests(unittest.TestCase):
         self.assertIn("unknown cameraExposureExperiment.setting", errors)
         self.assertIn("cameraExposureExperiment.appliedMaxExposureSeconds must be number", errors)
         self.assertIn("unknown cameraExposureExperiment keys: other", errors)
+
+
+def guided_recording_sample() -> dict:
+    """Shape written by Swift DebugGuidedRecordingSummary (format version 1)."""
+    def counts(detected: int, measured: int) -> dict:
+        return {"detectedFrames": detected, "measuredFrames": measured}
+    return {
+        "formatVersion": 1, "scriptID": "shooting_plan_2026_10_04", "scriptVersion": 1,
+        "outcome": "completed", "plannedSeconds": 218, "definition": "…",
+        "steps": [
+            {"index": 0, "id": "no_saber", "title": "saberなし", "label": "noSaber",
+             "plannedLeadInSeconds": 10, "plannedHoldSeconds": 20, "plannedLosslessCaptures": 0,
+             "leadInStartFrameID": 1, "leadInStartTimestamp": 0.03, "holdStartFrameID": 300,
+             "holdStartTimestamp": 10.0, "holdEndFrameID": 899, "holdEndTimestamp": 30.0,
+             "frames": 600, "red": counts(120, 110), "blue": counts(0, 0)},
+            {"index": 1, "id": "red_fast_swing", "title": "赤 速く", "label": "sabersVisible",
+             "plannedLeadInSeconds": 8, "plannedHoldSeconds": 8, "plannedLosslessCaptures": 3,
+             "leadInStartFrameID": 900, "leadInStartTimestamp": 30.0, "holdStartFrameID": 1140,
+             "holdStartTimestamp": 38.0, "holdEndFrameID": 1379, "holdEndTimestamp": 46.0,
+             "frames": 240, "red": counts(200, 190), "blue": counts(3, 3)},
+            {"index": 2, "id": "red_objects_covered", "title": "赤い物隠し", "label": "noSaberCovered",
+             "plannedLeadInSeconds": 15, "plannedHoldSeconds": 10, "plannedLosslessCaptures": 0,
+             "frames": 0, "red": counts(0, 0), "blue": counts(0, 0)},
+        ],
+        "losslessCaptures": [{"stepIndex": 1, "frameID": 1185}, {"stepIndex": 1, "frameID": 1230}],
+    }
+
+
+class GuidedRecordingSchemaTests(unittest.TestCase):
+    BASE = {"formatVersion": CURRENT_FORMAT_VERSION, "sessionID": "s", "width": 4, "height": 4, "frames": []}
+
+    def test_field_is_optional_so_old_and_manual_sessions_validate(self):
+        validated = validate_document(dict(self.BASE))
+        self.assertEqual(validated.report.warning_count, 0)
+        self.assertNotIn("guidedRecording", validated.document)
+        for path in (LEGACY_SESSION, RED_SESSION, BLUE_SESSION):
+            self.assertNotIn("guidedRecording", load_metadata_file(path).document)
+
+    def test_recorded_guided_object_validates_and_is_preserved(self):
+        guided = guided_recording_sample()
+        validated = validate_document({**self.BASE, "guidedRecording": guided})
+        self.assertEqual(validated.report.warning_count, 0, validated.report.warnings)
+        self.assertEqual(validated.document["guidedRecording"], guided)
+        self.assertEqual(guided_recording_errors(guided), [])
+
+    def test_strict_helper_rejects_malformed_objects(self):
+        self.assertEqual(guided_recording_errors([]), ["guidedRecording must be an object"])
+        guided = guided_recording_sample()
+        guided["outcome"] = "finished"
+        guided["extra"] = 1
+        guided["steps"][1]["label"] = "saber"
+        guided["steps"][2]["index"] = 5
+        guided["steps"][0]["red"] = {"detectedFrames": "many"}
+        guided["losslessCaptures"].append({"stepIndex": 9, "frameID": 1})
+        del guided["scriptVersion"]
+        errors = guided_recording_errors(guided)
+        for expected in ("unknown guidedRecording.outcome", "unknown guidedRecording keys: extra",
+                         "guidedRecording.steps[1].label is unknown",
+                         "guidedRecording.steps[2].index is out of order",
+                         "guidedRecording.steps[0].red is malformed",
+                         "guidedRecording.losslessCaptures[2] is malformed",
+                         "guidedRecording.scriptVersion is missing"):
+            self.assertIn(expected, errors)
+        # The tolerant validator warns instead of failing.
+        validated = validate_document({**self.BASE, "guidedRecording": {"scriptID": 3}})
+        self.assertTrue(any("guidedRecording" in key for key in validated.report.warnings))
 
 
 if __name__ == "__main__":

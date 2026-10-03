@@ -678,9 +678,16 @@ enum DebugRecordingTriageBuilder {
             $0.eventIndex == DebugRecordingTriageLimits.trackingEventIndex
         }.sorted { $0.frameID < $1.frameID }
         let trackingSignificant = (trackingReferences.first?.score ?? 0) >= DebugMotionThresholds.eventScore
-        let bridgeImageBudget = trackingSignificant
+        // Guided recordings (opt-in) exist to keep swing frames: up to
+        // guidedManualImageReserve of their lossless captures are taken first.
+        // Absent `guidedRecording` (every manual recording) reserves nothing.
+        let guidedReserved = Set(DebugGuidedTriageReserve.pick(
+            manualFrameIDs: uniqueByName.values.filter(\.isManual).map(\.frameID),
+            guided: metadata["guidedRecording"] as? [String: Any],
+            limit: min(DebugRecordingTriageLimits.guidedManualImageReserve, requestedLimit)))
+        let bridgeImageBudget = (trackingSignificant
             ? requestedLimit - min(trackingReferences.count, DebugRecordingTriageLimits.minimumTrackingWindow)
-            : requestedLimit
+            : requestedLimit) - guidedReserved.count
 
         // Bridge events are complete temporal units: all three originals or nothing.
         if boundedAbsence, let directory {
@@ -711,7 +718,7 @@ enum DebugRecordingTriageBuilder {
         // separate files from bridge PNGs of the same frame, so a bridge event that
         // overlaps the window (often the after-success is the instability peak) never
         // removes frames from it.
-        let slots = requestedLimit - selected.count
+        let slots = requestedLimit - selected.count - guidedReserved.count
         let trackingCount = trackingReferences.count
         var trackingWindow: Set<UInt64>?
         var trackingWindowInfo: [String: Int]?
@@ -733,6 +740,9 @@ enum DebugRecordingTriageBuilder {
                 ? trackingFits && (trackingWindow?.contains($0.frameID) ?? true)
                 : !bridgeFrameIDs.contains($0.frameID)
         }.sorted { lhs, rhs in
+            let lhsGuided = lhs.isManual && guidedReserved.contains(lhs.frameID)
+            let rhsGuided = rhs.isManual && guidedReserved.contains(rhs.frameID)
+            if lhsGuided != rhsGuided { return lhsGuided }
             // A sized window owns exactly the remaining slots; nothing may take one first.
             if trackingWindow != nil,
                (lhs.eventIndex == trackingIndex) != (rhs.eventIndex == trackingIndex) {
@@ -980,6 +990,9 @@ enum DebugRecordingTriageBuilder {
             if let tally = metadata["shadowRuleTally"] as? [String: Any] {
                 summary["shadowRuleTally"] = annotatedShadowRuleTally(
                     tally, imageEntries: imageEntries, metadata: metadata)
+            }
+            if let guided = metadata["guidedRecording"] as? [String: Any] {
+                summary["guidedRecording"] = guided
             }
             if metadata["activeColors"] != nil {
                 summary["activeColors"] = colors.filter { active.contains($0) }

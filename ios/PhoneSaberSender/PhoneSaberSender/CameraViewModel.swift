@@ -424,6 +424,18 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var lastDebugRecordingResult: DebugRecordingResult?
     @Published private(set) var debugRecordingSessions: [DebugRecordingSessionSummary] = []
     @Published private(set) var debugRecordingCleanupStatus = ""
+    /// Opt-in guided recording (ガイド付き録画). Manual recording is unchanged
+    /// and stays the default; these are only set by `startGuidedRecording`.
+    @Published private(set) var guidedRecordingRunning = false
+    @Published private(set) var guidedRecordingStatus: GuidedRecordingStatus?
+    let guidedRecordingScript = GuidedRecordingScript.shootingPlanV1
+    /// Replaced in tests so nothing is spoken.
+    var makeGuidedCuePlayer: @MainActor () -> GuidedRecordingCuePlaying = { SpeechGuidedRecordingCuePlayer() }
+    private var guidedScheduler: GuidedRecordingScheduler?
+    private var guidedStartTime: TimeInterval = 0
+    private var guidedTask: Task<Void, Never>?
+    /// Kept after the guide ends so the closing cue can finish speaking.
+    private var guidedCues: GuidedRecordingCuePlaying?
 #if DEBUG
     @Published var freezeDiagnosticsEnabled = false {
         didSet {
@@ -1649,7 +1661,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         processor.requestRawFrameSave()
     }
 
-    func startDebugRecording() {
+    func startDebugRecording(guidedScript: GuidedRecordingScript? = nil) {
         guard DebugRecordingLifecyclePolicy.mayStart(
             enabled: debugRecordingEnabled, cameraRunning: running,
             active: debugRecordingActive, finalizing: debugRecordingFinalizing
@@ -1662,8 +1674,10 @@ final class CameraViewModel: NSObject, ObservableObject {
         debugRecordingStatus = "録画を開始しています…"
         processor.updateDebugCameraDeviceState(nil)
         debugSegmentLabel = .unlabeled
+        processor.setDebugGuidedPhase(nil)
         processor.startDebugRecording(diagnosticColors: debugDiagnosticColors,
-                                      cameraExposureExperiment: cameraExposureExperimentSnapshot()) { [weak self] result in
+                                      cameraExposureExperiment: cameraExposureExperimentSnapshot(),
+                                      guidedScript: guidedScript) { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }
                 switch result {
@@ -1672,10 +1686,12 @@ final class CameraViewModel: NSObject, ObservableObject {
                     self.debugRecordingStatus = "録画中: \(sessionID)"
                     self.refreshDebugRecordingSessions()
                     self.scheduleDebugRecordingMaximumDurationStop()
+                    if guidedScript != nil { self.beginGuidedSchedule() }
                 case .failure(let error):
                     guard self.debugRecordingActive, !self.debugRecordingFinalizing else { return }
                     self.debugRecordingActive = false
                     self.debugRecordingStatus = "録画開始失敗: \(error.localizedDescription)"
+                    self.teardownGuidedRecording(stopAudioImmediately: true)
                 }
             }
         }
@@ -1683,6 +1699,9 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     func stopDebugRecording(reason: DebugRecordingFinishReason = .user) {
         guard DebugRecordingLifecyclePolicy.mayStop(active: debugRecordingActive, finalizing: debugRecordingFinalizing) else { return }
+        // Any other stop (background, interruption, limit) ends the guide too;
+        // the metadata outcome then stays "incomplete".
+        if guidedRecordingRunning { teardownGuidedRecording(stopAudioImmediately: true) }
         debugRecordingActive = false
         manualLosslessCapturePending = false
         debugRecordingFinalizing = true
@@ -1735,6 +1754,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func completeDebugRecording(_ result: Result<DebugRecordingResult, Error>) {
+        if guidedRecordingRunning { teardownGuidedRecording(stopAudioImmediately: true) }
         endRecordingBackgroundTask()
         debugRecordingMaximumDurationTask?.cancel()
         debugRecordingActive = false
@@ -1806,6 +1826,107 @@ final class CameraViewModel: NSObject, ObservableObject {
                 }
             }
         }
+    }
+}
+
+// MARK: - Guided recording (ガイド付き録画)
+
+extension CameraViewModel {
+    /// Starts a Debug Recording that follows `guidedRecordingScript`: labels,
+    /// spoken cues, countdowns and swing lossless captures run by themselves,
+    /// and the recording stops (and auto-transfers as usual) at the end.
+    func startGuidedRecording() {
+        guard !guidedRecordingRunning, guidedRecordingScript.validationErrors.isEmpty,
+              DebugRecordingLifecyclePolicy.mayStart(
+                enabled: debugRecordingEnabled, cameraRunning: running,
+                active: debugRecordingActive, finalizing: debugRecordingFinalizing) else { return }
+        guidedRecordingRunning = true
+        guidedRecordingStatus = nil
+        guidedCues?.cancel()
+        let cues = makeGuidedCuePlayer()
+        guidedCues = cues
+        cues.begin()
+        startDebugRecording(guidedScript: guidedRecordingScript)
+    }
+
+    /// Stops the guide and the recording at once; frames so far are kept and
+    /// the metadata outcome is "cancelled".
+    func cancelGuidedRecording() {
+        guard guidedRecordingRunning else { return }
+        guidedScheduler?.cancel()
+        finishGuidedRecording(.cancelled)
+    }
+
+    private func beginGuidedSchedule() {
+        guard guidedRecordingRunning, guidedScheduler == nil else { return }
+        guidedScheduler = GuidedRecordingScheduler(script: guidedRecordingScript)
+        guidedStartTime = ProcessInfo.processInfo.systemUptime
+        tickGuidedRecording(at: guidedStartTime)
+        guidedTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 100_000_000)
+                guard let self, !Task.isCancelled else { return }
+                self.tickGuidedRecording(at: ProcessInfo.processInfo.systemUptime)
+            }
+        }
+    }
+
+    private func tickGuidedRecording(at now: TimeInterval) {
+        guard var scheduler = guidedScheduler else { return }
+        guard debugRecordingActive, !debugRecordingFinalizing else {
+            teardownGuidedRecording(stopAudioImmediately: true)
+            return
+        }
+        let elapsed = now - guidedStartTime
+        let actions = scheduler.advance(to: elapsed)
+        guidedScheduler = scheduler
+        for action in actions where guidedRecordingRunning {
+            applyGuided(action)
+        }
+        guard guidedRecordingRunning else { return }
+        let status = scheduler.status(at: elapsed)
+        if status != guidedRecordingStatus { guidedRecordingStatus = status }
+    }
+
+    private func applyGuided(_ action: GuidedRecordingAction) {
+        switch action {
+        case .setPhase(let phase):
+            processor.setDebugGuidedPhase(phase)
+        case .setLabel(let label):
+            // The same path as the manual 区間ラベル picker (didSet → processor).
+            if debugSegmentLabel != label { debugSegmentLabel = label }
+        case .speak(let text):
+            guidedCues?.speak(text)
+        case .countdown(let value):
+            guidedCues?.countdown(value)
+        case .captureLossless:
+            // The existing one-shot capture API; skipped while one is pending
+            // or when the guided limit is used up (the recorder enforces the
+            // limit and the memory/disk caps again).
+            if !manualLosslessCapturePending,
+               debugManualLosslessCaptureCount < DebugRecordingLimits.maximumGuidedLosslessCaptures {
+                captureNextLosslessFrame()
+            }
+        case .finish:
+            finishGuidedRecording(.completed)
+        }
+    }
+
+    private func finishGuidedRecording(_ outcome: DebugGuidedOutcome) {
+        // Queued on the processing queue ahead of the Stop below.
+        processor.setDebugGuidedOutcome(outcome)
+        teardownGuidedRecording(stopAudioImmediately: outcome != .completed)
+        stopDebugRecording(reason: .user)
+    }
+
+    private func teardownGuidedRecording(stopAudioImmediately: Bool) {
+        guidedTask?.cancel()
+        guidedTask = nil
+        guidedScheduler = nil
+        guidedRecordingStatus = nil
+        guidedRecordingRunning = false
+        processor.setDebugGuidedPhase(nil)
+        if stopAudioImmediately { guidedCues?.cancel() } else { guidedCues?.end() }
     }
 }
 

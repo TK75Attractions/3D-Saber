@@ -1752,3 +1752,56 @@ extension DebugBridgeDropoutTests {
         XCTAssertEqual(((copied["winnerRejectionSamples"] as? [String: Any])?["pf22"] as? [[String: Any]])?.count, 0)
     }
 }
+
+// MARK: Guided recording reserve (ガイド付き録画)
+
+extension DebugBridgeDropoutTests {
+    private func guidedSelection(guided: Bool) throws -> DebugRecordingTriageSelection {
+        let directory = try temporaryDirectory()
+        let events = (0..<2).map { event($0 + 1, color: "red", start: 10 + $0 * 10) }
+        try writeImages(events, to: directory)
+        for frame in 100...110 { try Data("png".utf8).write(to: directory.appendingPathComponent("motion_\(frame).png")) }
+        let manual: [(frameID: Int, step: Int)] = [(40, 5), (50, 6), (60, 6), (70, 6), (80, 10), (120, 12)]
+        var frames = (0..<130).map { frame($0, red: line(100), blue: line(100, 300)) }
+        for capture in manual {
+            frames[capture.frameID]["manualCaptured"] = true
+            frames[capture.frameID]["manualFileName"] = "manual_frame_\(capture.frameID).png"
+            try Data("png".utf8).write(to: directory.appendingPathComponent("manual_frame_\(capture.frameID).png"))
+        }
+        var document = try XCTUnwrap(JSONSerialization.jsonObject(with: self.document(
+            frames: frames, events: events)) as? [String: Any])
+        document["motionEvents"] = [trackingMotionEvent(peak: 105, score: 2.0)]
+        document["motionSummary"] = ["events": [[DebugRecordingTriageLimits.trackingEventIndex, "red", 2.0, "retained"]]]
+        if guided {
+            document["guidedRecording"] = ["formatVersion": 1, "scriptID": "s", "scriptVersion": 1,
+                "losslessCaptures": manual.map { ["stepIndex": $0.step, "frameID": $0.frameID] }]
+        }
+        return try DebugRecordingTriageBuilder.selectImages(
+            metadataData: JSONSerialization.data(withJSONObject: document), forensicDirectoryURL: directory).selection
+    }
+
+    func testGuidedRecordingKeepsOneSwingFramePerStepAheadOfEventUnits() throws {
+        let selection = try guidedSelection(guided: true)
+        let manual = selection.images.filter { $0.fileName.hasPrefix("manual_frame_") }
+        // One per swing step first (steps 5, 6, 10, 12), within the reserve.
+        XCTAssertEqual(manual.map(\.frameID).sorted(), [40, 50, 80, 120])
+        XCTAssertLessThanOrEqual(selection.images.count, DebugRecordingTriageLimits.defaultImageCount)
+        // The tracking event still keeps a contiguous window with its peak.
+        let tracking = selection.images.filter { $0.eventIndex == DebugRecordingTriageLimits.trackingEventIndex }
+        XCTAssertGreaterThanOrEqual(tracking.count, DebugRecordingTriageLimits.minimumTrackingWindow)
+        let ids = tracking.map(\.frameID).sorted()
+        XCTAssertEqual(ids, Array(ids[0]...(ids[0] + UInt64(ids.count - 1))))
+        XCTAssertTrue(tracking.contains { $0.role == "peak" })
+        XCTAssertEqual(selection.trackingWindow?["selected"], tracking.count)
+    }
+
+    func testManualRecordingSelectionIsUnchangedByTheGuidedReserve() throws {
+        // Without `guidedRecording` the same manual frames get no reserved slot:
+        // the bridge event and the tracking window come first, as before.
+        let selection = try guidedSelection(guided: false)
+        let tracking = selection.images.filter { $0.eventIndex == DebugRecordingTriageLimits.trackingEventIndex }
+        XCTAssertGreaterThanOrEqual(tracking.count, DebugRecordingTriageLimits.minimumTrackingWindow)
+        XCTAssertFalse(selection.images.filter { $0.bridge != nil }.isEmpty)
+        XCTAssertLessThan(selection.images.filter { $0.fileName.hasPrefix("manual_frame_") }.count, 4)
+    }
+}
