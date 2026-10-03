@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 // セーバーでUIを操作する「セーバーポインタ」。
@@ -92,12 +93,22 @@ public class SaberUIPointer : MonoBehaviour
     private Vector3 smoothedPosition;
     private bool hasSmoothed;
 
+    // 判定調整では選曲と同じ照準を使う。従来の結果画面のポインターは維持する。
+    private SongSelectAimGraphic aimReticle;
+    private readonly SongSelectAimTracker aimTracker = new SongSelectAimTracker();
+    private Vector2 aimPosition, lastMouse;
+    private int aimSource;
+    private bool hasAimPosition, mouseNeedsMove;
+    public float AimProgress01 => aimTracker.Progress01;
+    public RectTransform AimReticle => aimReticle != null ? aimReticle.rectTransform : null;
+
     public Button HoveredForTest => hovered;
     // メニュー時に、判定面の入力範囲を画面全体の UI へ写す。
     // セーバー本体・判定用の座標は変えず、ライブ試し切り中は下端の操作帯だけを使う。
     public bool RemapToFullScreen { get; set; }
     // ライブ判定調整だけ、下端の操作帯を対象にする。ほかの画面は従来どおり。
     public bool BottomControlsOnly { get; set; }
+    public RectTransform BottomControlArea { get; set; }
     public bool RespectRaycastBlockers { get; set; }
     // 選曲の立体ノーツは速度付き斬撃のみ。滞留クリックを重ねて発火しない。
     public bool SlashOnly { get; set; }
@@ -105,14 +116,98 @@ public class SaberUIPointer : MonoBehaviour
         width > 0 && height > 0 && position.x >= 0 && position.x <= width && position.y >= 0 && position.y <= height * .18f;
 
     // 曲選択などのシーンに設置する。UDP受信機も確保する(無ければ作る)。
-    public static SaberUIPointer Build()
+    public static SaberUIPointer Build(bool useAimReticle = false)
     {
         InputPoint.EnsureInstance();
         var go = new GameObject("SaberUIPointer");
         var pointer = go.AddComponent<SaberUIPointer>();
         pointer.cam = Camera.main;
-        pointer.BuildCursor();
+        if (useAimReticle) pointer.BuildAimCursor();
+        else pointer.BuildCursor();
         return pointer;
+    }
+
+    private void BuildAimCursor()
+    {
+        var go = new GameObject("SaberAimCanvas", typeof(Canvas), typeof(CanvasScaler));
+        go.transform.SetParent(transform, false);
+        overlayCanvas = go.GetComponent<Canvas>();
+        overlayCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        overlayCanvas.sortingOrder = 900;
+        var scaler = go.GetComponent<CanvasScaler>();
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920, 1080);
+        scaler.matchWidthOrHeight = .5f;
+        float size = (SongSelectAimGraphic.ReticleRadius + SongSelectAimGraphic.RingWidth) * 2 + 12;
+        aimReticle = SongSelectVisuals.Rect(go.transform, "AimReticle", Vector2.zero, new Vector2(size, size))
+            .gameObject.AddComponent<SongSelectAimGraphic>();
+        aimReticle.raycastTarget = false;
+        aimReticle.gameObject.SetActive(false);
+    }
+
+    private void UpdateAim()
+    {
+        var input = InputPoint.Instance;
+        var mouse = Mouse.current;
+        Vector2 mousePoint = mouse != null ? mouse.position.ReadValue() : lastMouse;
+        int source = input != null && input.IsRecentlyActive(.2f) ? 1 : mouse != null ? 2 : 0;
+        if (source != aimSource)
+        {
+            aimTracker.Cancel(); hasAimPosition = false;
+            // 追跡が途切れても、古いマウス位置で勝手に操作を始めない。
+            if (aimSource == 1 && source != 1) { mouseNeedsMove = true; lastMouse = mousePoint; }
+            if (source == 1) mouseNeedsMove = false;
+            aimSource = source;
+        }
+        if (mouseNeedsMove && Vector2.Distance(lastMouse, mousePoint) > 3) mouseNeedsMove = false;
+        // 選曲と同じ入力座標。ゲーム内のセーバーの可動域や表示位置は変えない。
+        Vector2 point = source == 1 ? Vector2.Scale(input.NormalizedPosition, new Vector2(Screen.width, Screen.height)) : mousePoint;
+        bool valid = (Application.isFocused || Application.isBatchMode) && source != 0 && !mouseNeedsMove;
+        if (!hasAimPosition || source != 1) aimPosition = point;
+        else aimPosition = Vector2.Lerp(aimPosition, point, 1 - Mathf.Exp(-Time.unscaledDeltaTime / .045f));
+        hasAimPosition = valid;
+        TickAimAt(aimPosition, Time.unscaledDeltaTime, valid, source == 2 && mouse.leftButton.wasPressedThisFrame);
+    }
+
+    // 実入力と実シーン試験で共通の入口。照準は常に表示し、試し切り中は下端のボタンだけ受け付ける。
+    public void TickAimAt(Vector2 point, float dt, bool inputAvailable = true, bool clicked = false)
+    {
+        if (aimReticle == null) return;
+        if (!inputAvailable || ScreenTransition.IsBusy || !new Rect(0, 0, Screen.width, Screen.height).Contains(point))
+        {
+            aimTracker.Cancel(); SetHovered(null); aimReticle.gameObject.SetActive(false); return;
+        }
+        // 4:3などでも実際の操作帯に合わせる。画面高の固定割合ではボタンが範囲外になる。
+        bool allowed = !BottomControlsOnly || (BottomControlArea != null
+            ? SongSelectAimPointer.RectOnScreen(BottomControlArea).Contains(point)
+            : IsInsideBottomControls(point, Screen.width, Screen.height));
+        Button target = allowed ? RaycastButton(point) : null;
+        SetHovered(target);
+        Rect area = target != null ? SongSelectAimPointer.RectOnScreen((RectTransform)target.transform) : default;
+        // 通常クリックでもホールドを解除するまで同じ操作を繰り返さない。
+        if (clicked && target != null) aimTracker.BlockUntilExit(area);
+        var dwell = target != null ? target.GetComponent<SaberDwellTarget>() : null;
+        bool fire = aimTracker.Tick(target, area, point, dt, target != null && !SlashOnly,
+            dwell != null ? dwell.dwellSeconds : SongSelectAimTracker.HoldSeconds);
+        aimReticle.gameObject.SetActive(true);
+        var canvasCamera = overlayCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : overlayCanvas.worldCamera;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)overlayCanvas.transform, point, canvasCamera, out var local);
+        aimReticle.rectTransform.anchoredPosition = local;
+        aimReticle.Show(aimTracker.Progress01, aimTracker.NeedsRelease);
+        if (fire) Click(target, point);
+    }
+
+    private void OnDisable()
+    {
+        if (aimReticle == null) return;
+        aimTracker.Cancel(); SetHovered(null); hasAimPosition = false;
+        aimReticle.gameObject.SetActive(false);
+    }
+
+    private void OnApplicationFocus(bool focused)
+    {
+        // 非アクティブ中にUpdateが止まる設定でも、復帰時へ進捗を持ち越さない。
+        if (!focused) OnDisable();
     }
 
     private void BuildCursor()
@@ -164,6 +259,7 @@ public class SaberUIPointer : MonoBehaviour
 
     void Update()
     {
+        if (aimReticle != null) { UpdateAim(); return; }
         var ip = InputPoint.Instance;
         bool active = !ScreenTransition.IsBusy && ip != null && ip.IsRecentlyActive(StaleSeconds) && cam != null;
         if (!active)

@@ -81,7 +81,8 @@ public sealed class CalibrationController : MonoBehaviour
             if (hud.flickWarningText != null) hud.flickWarningText.gameObject.SetActive(false);
         }
         Overlay = CalibrationOverlay.Ensure(); Overlay.Bind(this);
-        pointer = SaberUIPointer.Build();
+        pointer = SaberUIPointer.Build(useAimReticle: true);
+        pointer.BottomControlArea = Overlay.transform.Find("Controls") as RectTransform;
         pointer.RemapToFullScreen = true;
         pointer.RespectRaycastBlockers = true;
         AudioSettings.OnAudioConfigurationChanged += AudioConfigurationChanged;

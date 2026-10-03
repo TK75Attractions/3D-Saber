@@ -1,0 +1,16 @@
+Human model: Quaternius — Universal Base Characters, Standard (free), Superhero_Male_FullBody.
+Official page: https://quaternius.com/packs/universalbasecharacters.html
+Official download: https://quaternius.itch.io/universal-base-characters
+License: CC0 1.0 Universal — Public Domain Dedication
+https://creativecommons.org/publicdomain/zero/1.0/
+Retrieved: 2026-10-03
+
+Adaptations for 3D-Saber: proportions, material palette, finger grip, right-arm animation,
+and original saber mesh. The white/cool-silver body and coral-red right hand are intentional.
+
+Original distributor's license statement:
+License:
+CC0 1.0 Universal (CC0 1.0)
+Public Domain Dedication
+https://creativecommons.org/publicdomain/zero/1.0/
+Models by @Quaternius

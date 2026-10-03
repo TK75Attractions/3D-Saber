@@ -44,6 +44,9 @@ public static class GameSession
     public static bool IsCalibrationMode;
     // 判定調整との往復だけで引き継ぐ選曲時間。時間切れ・受け取り後は null に戻す。
     public static double? CalibrationSelectionSeconds;
+    // 判定調整から戻るときだけ復元する曲と難易度。並び順の変更に備えて名前で保持する。
+    public static string CalibrationSelectionSongId;
+    public static string CalibrationSelectionDifficulty;
 
     // 判定オフセット（ミリ秒）。SongSelect でユーザーが調整して PlayerPrefs に保存。
     // GamePlayManager がプレイ開始時にこの値を実効オフセットに加算する。

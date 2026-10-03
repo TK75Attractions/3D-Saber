@@ -86,6 +86,11 @@ public class SongSelectSkin : MonoBehaviour
     {
         if (!ScreenTransition.Load("Game", ScreenTransition.Style.Calibration)) return;
         var skin = Object.FindFirstObjectByType<SongSelectSkin>();
+        var controller = Object.FindFirstObjectByType<SongSelectController>();
+        GameSession.CalibrationSelectionSongId = controller != null ? controller.SongIdAt(controller.SelectedIndex) : null;
+        GameSession.CalibrationSelectionDifficulty = controller != null && controller.difficultyNames != null
+            && controller.SelectedDifficultyIndex >= 0 && controller.SelectedDifficultyIndex < controller.difficultyNames.Length
+            ? controller.difficultyNames[controller.SelectedDifficultyIndex] : null;
         GameSession.CalibrationSelectionSeconds = skin != null ? skin.RemainingSeconds : 100;
         GameSession.IsCalibrationMode = true;
     }

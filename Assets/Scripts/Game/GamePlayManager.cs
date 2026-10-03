@@ -729,7 +729,12 @@ public class GamePlayManager : MonoBehaviour
         if (ScreenTransition.Load(returnSceneName, ScreenTransition.Style.Back))
         {
             GameSession.IsCalibrationMode = false;
-            if (returnSceneName != "SongSelect") GameSession.CalibrationSelectionSeconds = null;
+            if (returnSceneName != "SongSelect")
+            {
+                GameSession.CalibrationSelectionSeconds = null;
+                GameSession.CalibrationSelectionSongId = null;
+                GameSession.CalibrationSelectionDifficulty = null;
+            }
         }
     }
 

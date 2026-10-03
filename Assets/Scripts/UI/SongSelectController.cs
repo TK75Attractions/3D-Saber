@@ -77,9 +77,16 @@ public class SongSelectController : MonoBehaviour
     void Start()
     {
         Populate();
+        // 判定調整との往復だけで選択を戻し、タイトルからの新規選曲には持ち越さない。
+        int restoredIndex = songIds.IndexOf(GameSession.CalibrationSelectionSongId);
+        int restoredDifficulty = difficultyNames == null ? -1
+            : System.Array.IndexOf(difficultyNames, GameSession.CalibrationSelectionDifficulty);
+        GameSession.CalibrationSelectionSongId = null;
+        GameSession.CalibrationSelectionDifficulty = null;
+        if (restoredIndex >= 0 && restoredDifficulty >= 0) selectedDifficulty = restoredDifficulty;
         BindStartButton();
         BindDifficultyButtons();
-        if (songIds.Count > 0) Select(0);
+        if (songIds.Count > 0) Select(restoredIndex >= 0 ? restoredIndex : 0);
     }
 
     void Update()

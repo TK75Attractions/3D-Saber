@@ -8,6 +8,128 @@ using UnityEngine.TestTools;
 
 public class CalibrationFlowPlayTests
 {
+    [UnityTest] public IEnumerator AimHoldAdjustsOnceAndRequiresLeavingBeforeAnotherChange()
+    {
+        var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
+        var pointer=Object.FindFirstObjectByType<SaberUIPointer>();
+        Assert.NotNull(pointer.AimReticle);
+        pointer.enabled=false; c.ChangeOffset(-c.Draft.OffsetMs); c.Overlay.Refresh();
+        Vector2 point=AimPoint(c,"Controls/Adjust1");
+        HoldAim(pointer,point,9); Assert.AreEqual(0,c.Draft.OffsetMs);
+        Assert.AreEqual(.9f,pointer.AimProgress01,.001f);
+        Assert.True(pointer.AimReticle.gameObject.activeSelf);
+        Assert.Less(Vector2.Distance(point,RectTransformUtility.WorldToScreenPoint(null,pointer.AimReticle.position)),1);
+        HoldAim(pointer,point,1); Assert.AreEqual(1,c.Draft.OffsetMs);
+        HoldAim(pointer,point,20); Assert.AreEqual(1,c.Draft.OffsetMs,"置いたままで連発しない");
+        HoldAim(pointer,new Vector2(Screen.width*.5f,Screen.height*.5f),2);
+        HoldAim(pointer,point,10); Assert.AreEqual(2,c.Draft.OffsetMs);
+        yield return null;
+    }
+
+    [UnityTest] public IEnumerator AimCancelsInterruptedHoldsAndDoesNotRepeatMouseClicks()
+    {
+        var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
+        var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
+        c.ChangeOffset(-c.Draft.OffsetMs); c.Overlay.Refresh();
+        Vector2 point=AimPoint(c,"Controls/Adjust1");
+        HoldAim(pointer,point,9); pointer.SendMessage("OnApplicationFocus",false);
+        Assert.False(pointer.AimReticle.gameObject.activeSelf); Assert.Zero(pointer.AimProgress01);
+        HoldAim(pointer,point,9); pointer.TickAimAt(point,.1f,false); Assert.Zero(pointer.AimProgress01);
+        HoldAim(pointer,point,9); Assert.Zero(c.Draft.OffsetMs);
+        pointer.TickAimAt(point,.3f); Assert.Zero(pointer.AimProgress01);
+        HoldAim(pointer,point,9); Assert.Zero(c.Draft.OffsetMs);
+        pointer.TickAimAt(point,.01f,true,true);
+        c.Overlay.transform.Find("Controls/Adjust1").GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+        HoldAim(pointer,point,20); Assert.AreEqual(1,c.Draft.OffsetMs,"クリック後の置きっぱなしも再実行しない");
+        yield return null;
+    }
+
+    [UnityTest] public IEnumerator AimCanStartAndPausePracticeWhileOnlyBottomControlsAcceptHolds()
+    {
+        var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
+        var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
+        Vector2 play=AimPoint(c,"Controls/PlayPause");
+        HoldAim(pointer,play,10); Assert.True(c.IsLive);
+        yield return null;
+        HoldAim(pointer,play,20); Assert.True(c.IsLive,"開始した場所に置いても停止しない");
+        Vector2 back=AimPoint(c,"Header/Back");
+        HoldAim(pointer,back,20); Assert.True(c.IsLive);
+        Assert.IsNull(pointer.HoveredForTest); Assert.True(pointer.AimReticle.gameObject.activeSelf);
+        Assert.Zero(pointer.AimProgress01,"上端へ照準しても試し切り中は操作を受け付けない");
+        HoldAim(pointer,AimPoint(c,"Controls/PlayPause"),10);
+        Assert.False(c.IsRunning,$"target={pointer.HoveredForTest?.name}, progress={pointer.AimProgress01}, position={play}, screen={Screen.width}x{Screen.height}");
+        yield return null;
+    }
+
+    [UnityTest] public IEnumerator AimUsesDialogButtonsAndCannotReachTheControlsBehindThem()
+    {
+        var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
+        var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
+        c.ChangeOffset(-c.Draft.OffsetMs); c.Overlay.OpenSettings();
+        yield return null;
+        HoldAim(pointer,AimPoint(c,"Controls/Adjust1"),15); Assert.Zero(c.Draft.OffsetMs);
+        Assert.Zero(pointer.AimProgress01);
+        HoldAim(pointer,AimPoint(c,"AudioSettings/SettingsCard/Close"),10);
+        Assert.False(c.Overlay.IsSettingsOpen,$"target={pointer.HoveredForTest?.name}, progress={pointer.AimProgress01}");
+        c.ChangeOffset(saved==1?2:1); c.Overlay.OnBackClicked(); Assert.True(c.Overlay.IsExitDialogOpen);
+        yield return null;
+        HoldAim(pointer,AimPoint(c,"UnsavedChanges/Dialog/Continue"),2);
+        HoldAim(pointer,AimPoint(c,"UnsavedChanges/Dialog/Continue"),10); Assert.False(c.Overlay.IsExitDialogOpen);
+        yield return null;
+    }
+
+    [UnityTest] public IEnumerator AimFollowsMouseAndTrackedCoordinatesAndHidesWhenTrackingExpires()
+    {
+        var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
+        var input=InputPoint.Instance;
+        double previous=input.LastReceivedTime;
+        Vector2 previousPosition=input.NormalizedPosition;
+        var originalSettings=UnityEngine.InputSystem.InputSystem.settings;
+        var settings=Object.Instantiate(originalSettings);
+        UnityEngine.InputSystem.InputSystem.settings=settings;
+        settings.backgroundBehavior=UnityEngine.InputSystem.InputSettings.BackgroundBehavior.IgnoreFocus;
+#if UNITY_EDITOR
+        settings.editorInputBehaviorInPlayMode=UnityEngine.InputSystem.InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
+#endif
+        var mouse=UnityEngine.InputSystem.InputSystem.AddDevice<UnityEngine.InputSystem.Mouse>();
+        var update=typeof(SaberUIPointer).GetMethod("Update",BindingFlags.Instance|BindingFlags.NonPublic);
+        try
+        {
+            Vector2 mousePoint=new Vector2(Screen.width*.4f,Screen.height*.5f);
+            typeof(InputPoint).GetProperty("LastReceivedTime").SetValue(input,-1000d);
+            UnityEngine.InputSystem.InputSystem.QueueStateEvent(mouse,new UnityEngine.InputSystem.LowLevel.MouseState{position=mousePoint});
+            yield return null; update.Invoke(pointer,null);
+            Assert.True(pointer.AimReticle.gameObject.activeSelf);
+            Assert.Less(Vector2.Distance(mousePoint,RectTransformUtility.WorldToScreenPoint(null,pointer.AimReticle.position)),1);
+            Vector2 normalized=new Vector2(.75f,.15f);
+            typeof(InputPoint).GetProperty("NormalizedPosition").SetValue(input,normalized);
+            typeof(InputPoint).GetProperty("LastReceivedTime").SetValue(input,Time.realtimeSinceStartupAsDouble);
+            update.Invoke(pointer,null);
+            Assert.Less(Vector2.Distance(Vector2.Scale(normalized,new Vector2(Screen.width,Screen.height)),
+                RectTransformUtility.WorldToScreenPoint(null,pointer.AimReticle.position)),1,"選曲と同じ画面座標を使う");
+            typeof(InputPoint).GetProperty("LastReceivedTime").SetValue(input,-1000d);
+            update.Invoke(pointer,null); Assert.False(pointer.AimReticle.gameObject.activeSelf);
+            mousePoint+=Vector2.right*20;
+            UnityEngine.InputSystem.InputSystem.QueueStateEvent(mouse,new UnityEngine.InputSystem.LowLevel.MouseState{position=mousePoint});
+            yield return null; update.Invoke(pointer,null); Assert.True(pointer.AimReticle.gameObject.activeSelf);
+        }
+        finally
+        {
+            UnityEngine.InputSystem.InputSystem.RemoveDevice(mouse);
+            UnityEngine.InputSystem.InputSystem.settings=originalSettings; Object.Destroy(settings);
+            typeof(InputPoint).GetProperty("LastReceivedTime").SetValue(input,previous);
+            typeof(InputPoint).GetProperty("NormalizedPosition").SetValue(input,previousPosition);
+        }
+    }
+
+    static Vector2 AimPoint(CalibrationController controller,string path)
+    {
+        Canvas.ForceUpdateCanvases();
+        return RectTransformUtility.WorldToScreenPoint(null,controller.Overlay.transform.Find(path).position);
+    }
+    static void HoldAim(SaberUIPointer pointer,Vector2 point,int frames)
+    { for(int i=0;i<frames;i++) pointer.TickAimAt(point,.1f); }
+
     [UnityTest] public IEnumerator ConnectionLabelsFollowTheAssignedHandsInsteadOfPortOrder()
     {
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;var input=InputPoint.Instance;
