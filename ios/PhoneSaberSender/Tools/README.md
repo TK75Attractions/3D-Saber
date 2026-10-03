@@ -273,6 +273,19 @@ python3 ios/PhoneSaberSender/Tools/phone_saber_codex_probe.py
 `~/Library/Logs/PhoneSaber/codex/`へ保存します。CLI schema拒否の原因・修正・
 保存session再試験は [CODEX_CLI_VERIFICATION.md](CODEX_CLI_VERIFICATION.md) を参照してください。
 
+## Event-day status check (read-only)
+
+`phone_saber_status.py` (or double-click `PhoneSaber Status.command`) prints one
+Japanese OK / WARN / NG line per item in a few seconds: the triage receiver
+(`GET 127.0.0.1:8765/health`), who binds UDP 5005/5006 (`lsof`; non-Unity owner =
+port conflict), the `PhoneSaberP2PBridge` process, the latest `[PhoneSaber][P2P]
+last 10s ... maxGapMs...` stats, connection events and warnings since the last
+Play in `~/Library/Logs/Unity/Editor.log`, the newest inbox bundle with its
+`.report.md` and Codex analysis result, git state of school-festival and
+3D-Saber (no fetch, `GIT_OPTIONAL_LOCKS=0`), and the Codex CLI. It never starts,
+stops, sends or writes anything. Exit status: 2 with NG, 1 with WARN, else 0.
+Operating and troubleshooting steps: [docs/claude/EVENT_DAY_RUNBOOK.md](../../../docs/claude/EVENT_DAY_RUNBOOK.md).
+
 ## P2P bridge (optional)
 
 `phone_saber_p2p_bridge.py` (or `Start PhoneSaber P2P Bridge.command`) builds and
