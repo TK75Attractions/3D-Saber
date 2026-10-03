@@ -36,7 +36,7 @@ from phone_saber_codex_process import CodexProcessError, run_codex
 
 from phone_saber_metadata_schema import (
     SEGMENT_LABELS, camera_exposure_experiment_errors, guided_recording_errors, segment_summary_errors,
-    shadow_rule_tally_errors)
+    selection_notes_errors, shadow_rule_tally_errors)
 
 from phone_saber_triage_protocol import (
     MAX_BUNDLE_BYTES,
@@ -229,7 +229,8 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
                             "incidentCount", "incidents", "images", "limits", "groundTruth",
                             "summaryScope", "retainedIncidentContextFrames",
                             "motionEventSummary", "activeColors", "bridgeDropoutSummary",
-                            "segmentSummary", "cameraExposureExperiment", "shadowRuleTally", "guidedRecording"}
+                            "segmentSummary", "cameraExposureExperiment", "shadowRuleTally", "guidedRecording",
+                            "selectionNotes"}
     if not set(summary).issubset(allowed_summary_keys):
         raise BundleError("summary.json contains non-triage or full-session metadata")
     if "cameraExposureExperiment" in summary:
@@ -245,6 +246,10 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
         guided_errors = guided_recording_errors(summary["guidedRecording"])
         if guided_errors:
             raise BundleError("guided recording is malformed: " + "; ".join(guided_errors[:3]))
+    if "selectionNotes" in summary:
+        note_errors = selection_notes_errors(summary["selectionNotes"])
+        if note_errors:
+            raise BundleError("selection notes are malformed: " + "; ".join(note_errors[:3]))
     segment_errors = segment_summary_errors(summary["segmentSummary"]) \
         if "segmentSummary" in summary else []
     if segment_errors:

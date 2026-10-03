@@ -1805,3 +1805,134 @@ extension DebugBridgeDropoutTests {
         XCTAssertLessThan(selection.images.filter { $0.fileName.hasPrefix("manual_frame_") }.count, 4)
     }
 }
+
+// MARK: - Start/stop handling periods (synthetic frame streams)
+
+final class DebugHandlingPeriodTests: XCTestCase {
+    private typealias Retention = DebugHandlingAwareRetention<UInt64>
+    private typealias Frame = (id: UInt64, time: Double, score: Double, lit: Bool)
+
+    /// Feeds ranked frames the way the recorder does, then resolves at Stop.
+    private func run(_ frames: [Frame], capacity: Int = 1, end: Double? = nil) -> Retention {
+        var retention = Retention(capacity: capacity)
+        for frame in frames {
+            retention.advance(to: frame.time)
+            let period = DebugHandlingPeriod.period(at: frame.time, end: nil)
+            let preference = DebugEventPreference(handlingPeriod: period != nil, score: frame.score,
+                                                  sabersVisible: frame.lit)
+            if retention.wouldRetain(timestamp: frame.time, preference: preference) {
+                retention.insert(.init(payload: frame.id, frameID: frame.id, timestamp: frame.time,
+                                       period: period, preference: preference))
+            }
+        }
+        retention.finish(end: end ?? frames.last?.time ?? 0)
+        return retention
+    }
+
+    /// 30 fps stream with background score `base` and spikes at the given frames.
+    private func stream(seconds: Double, base: Double = 1,
+                        spikes: [UInt64: Double] = [:], lit: Set<UInt64> = []) -> [Frame] {
+        (0..<UInt64(seconds * 30)).map { id in (id, Double(id) / 30, spikes[id] ?? base, lit.contains(id)) }
+    }
+
+    func testPeriodBoundaries() {
+        XCTAssertEqual(DebugHandlingPeriod.period(at: 0, end: nil), "start")
+        XCTAssertEqual(DebugHandlingPeriod.period(at: 2.99, end: nil), "start")
+        XCTAssertNil(DebugHandlingPeriod.period(at: 3.0, end: nil))
+        XCTAssertNil(DebugHandlingPeriod.period(at: 50, end: nil), "the stop period is unknown while recording")
+        XCTAssertNil(DebugHandlingPeriod.period(at: 85, end: 90))
+        XCTAssertEqual(DebugHandlingPeriod.period(at: 85.01, end: 90), "stop")
+        XCTAssertEqual(DebugHandlingPeriod.period(at: 1, end: 2), "start", "start wins in very short recordings")
+    }
+
+    // The 10-04 pattern: background-to-background jumps while walking to / from
+    // the phone outrank every swing. The swing in the middle must be chosen.
+    func testSwingBeatsHigherStartAndStopJumps() throws {
+        let chosen = try XCTUnwrap(run(stream(seconds: 90, spikes: [72: 82.7, 1_500: 20, 2_682: 61.7])).best)
+        XCTAssertEqual(chosen.frameID, 1_500)
+        XCTAssertNil(chosen.period)
+        XCTAssertFalse(chosen.preference.handlingPeriod)
+    }
+
+    func testStopJumpLosesEvenAfterLeadingForSeconds() {
+        // Leader at 85.3 s is still pending at Stop (89.97 s): it is in the stop period.
+        XCTAssertEqual(run(stream(seconds: 90, spikes: [1_200: 10, 2_560: 99])).best?.frameID, 1_200)
+        // The same jump before the last 5 s settles and wins on score.
+        XCTAssertEqual(run(stream(seconds: 90, spikes: [1_200: 10, 2_500: 99])).best?.frameID, 2_500)
+    }
+
+    func testLeaderSettledJustBeforeTheStopPeriodSurvivesRisingStopJumps() {
+        // Rising scores near the end: the oldest pending leader is spared, so the
+        // best frame older than the last 5 s (84.0 s) is still available at Stop.
+        let retention = run(stream(seconds: 90, spikes: [2_400: 10, 2_520: 20, 2_580: 30, 2_640: 40, 2_690: 50]))
+        XCTAssertEqual(retention.best?.frameID, 2_520)
+        XCTAssertNil(retention.best?.period)
+    }
+
+    func testHandlingEventIsKeptWhenNothingElseQualifies() throws {
+        // Every frame of a 6 s recording lies in a handling period: plain score
+        // order, and the kept event is marked as in a handling period.
+        let start = try XCTUnwrap(run(stream(seconds: 6, spikes: [10: 40, 120: 30])).best)
+        XCTAssertEqual(start.frameID, 10)
+        XCTAssertEqual(start.period, "start")
+        XCTAssertTrue(start.preference.handlingPeriod)
+        let stop = try XCTUnwrap(run(stream(seconds: 6, spikes: [10: 40, 150: 50])).best)
+        XCTAssertEqual(stop.frameID, 150)
+        XCTAssertEqual(stop.period, "stop")
+        XCTAssertTrue(stop.preference.handlingPeriod)
+    }
+
+    func testShortRecordingsKeepThePlainTopScoresWithEarlierFirstOnTies() {
+        // The behaviour before handling periods existed, whenever every event is in one.
+        var generator = SystemRandomNumberGenerator()
+        for _ in 0..<50 {
+            let frames: [Frame] = (0..<60).map {
+                (UInt64($0), Double($0) / 30, Double(Int.random(in: 0...8, using: &generator)), false)
+            }
+            let expected = frames.reduce(frames[0]) { $1.score > $0.score ? $1 : $0 }.id
+            XCTAssertEqual(run(frames).best?.frameID, expected)
+            let ranked = frames.sorted { $0.score != $1.score ? $0.score > $1.score : $0.id < $1.id }
+            XCTAssertEqual(run(frames, capacity: 2).settled.map(\.frameID).sorted(),
+                           ranked.prefix(2).map(\.id).sorted())
+        }
+    }
+
+    func testSabersVisibleLabelIsOnlyATieBreak() {
+        // Equal scores: the lit-saber frame wins although it is later.
+        XCTAssertEqual(run(stream(seconds: 30, spikes: [300: 20, 600: 20], lit: [600])).best?.frameID, 600)
+        // Different scores: the score decides, not the label.
+        XCTAssertEqual(run(stream(seconds: 30, spikes: [300: 21, 600: 20], lit: [600])).best?.frameID, 300)
+        // Unlabelled equal scores: the earlier frame stays.
+        XCTAssertEqual(run(stream(seconds: 30, spikes: [300: 20, 600: 20])).best?.frameID, 300)
+    }
+
+    func testBridgeRetentionPrefersTwoEventsOutsideTheHandlingPeriods() {
+        // Gaps as scores: a start loss, two mid-recording losses, a long switch-off at the end.
+        let events: [Frame] = [(15, 0.5, 0.40, false), (900, 30, 0.10, false),
+                               (1_800, 60, 0.20, false), (2_670, 89, 1.23, false)]
+        let retention = run(events, capacity: 2, end: 90.4)
+        XCTAssertEqual(retention.settled.map(\.frameID).sorted(), [900, 1_800])
+        XCTAssertTrue(retention.settled.allSatisfy { $0.period == nil })
+        // One event outside: the better handling event still fills the second slot.
+        let sparse = run([(15, 0.5, 0.40, false), (900, 30, 0.10, false), (2_670, 89, 1.23, false)],
+                         capacity: 2, end: 90.4)
+        XCTAssertEqual(sparse.settled.map(\.frameID).sorted(), [900, 2_670])
+        XCTAssertEqual(sparse.settled.first { $0.frameID == 2_670 }?.period, "stop")
+    }
+
+    func testDominatedEventsAreRejectedAndPendingStaysBounded() {
+        var retention = Retention(capacity: 1)
+        retention.insert(.init(payload: 1, frameID: 1, timestamp: 10, period: nil,
+                               preference: DebugEventPreference(handlingPeriod: false, score: 10)))
+        XCTAssertFalse(retention.wouldRetain(timestamp: 11, preference: DebugEventPreference(handlingPeriod: false, score: 5)))
+        XCTAssertFalse(retention.wouldRetain(timestamp: 11, preference: DebugEventPreference(handlingPeriod: false, score: 10)),
+                       "the earlier event wins ties")
+        XCTAssertTrue(retention.wouldRetain(timestamp: 11, preference: DebugEventPreference(handlingPeriod: false, score: 11)))
+        for index in 2...20 {
+            retention.insert(.init(payload: UInt64(index), frameID: UInt64(index), timestamp: 10 + Double(index) / 30,
+                                   period: nil, preference: DebugEventPreference(handlingPeriod: false, score: Double(10 + index))))
+            XCTAssertLessThanOrEqual(retention.pending.count, 2)
+            XCTAssertEqual(retention.pending.first?.frameID, 1, "the oldest leader is spared")
+        }
+    }
+}

@@ -1708,6 +1708,8 @@ private struct DebugBridgePending {
     var dropout: DebugMotionPixelFrame?
     var context: [UInt64: DebugRecordingFrameMetadata]
     var missingTail: [UInt64] = []
+    /// Operator label at the dropout frame was sabersVisible (tie-break only).
+    var sabersVisible = false
 
     var retainedBytes: Int { (before?.byteCount ?? 0) + (dropout?.byteCount ?? 0) }
 
@@ -1866,8 +1868,13 @@ final class DebugVideoRecorder {
     private var motionPreRoll: [DebugMotionPixelFrame] = []
     private var motionCaptures: [DebugMotionCapturedEvent] = []
     private var trackingRecent: [DebugMotionPixelFrame] = []
-    private var trackingCapture: DebugMotionCapturedEvent?
-    private var trackingRankings: [(frameID: UInt64, color: String, components: [String: Double])] = []
+    /// One tracking event; handling periods (start/stop) are de-prioritised.
+    private var trackingSelection = DebugHandlingAwareRetention<DebugMotionCapturedEvent>(capacity: 1)
+    private var trackingCapture: DebugMotionCapturedEvent? { trackingSelection.best?.payload }
+    private var trackingRankings: [(frameID: UInt64, color: String, components: [String: Double],
+                                    timestamp: Double)] = []
+    /// Operator segment label of the frame being appended (tie-break only).
+    private var currentSegmentLabel: DebugSegmentLabel = .unlabeled
     private var trackingMissingContext = false
 #if DEBUG
     var injectedTrackingCopyFailureFrameIDForTesting: UInt64?
@@ -1906,7 +1913,9 @@ final class DebugVideoRecorder {
     private var bridgeTrackers: [String: DebugBridgeTracker] = [:]
     private var lastDetectedFrames: [String: DebugRetainedBlueFrame] = [:]
     private var bridgePending: [String: DebugBridgePending] = [:]
-    private var bridgeCaptures: [DebugBridgeCapturedEvent] = []
+    private var bridgeSelection = DebugHandlingAwareRetention<DebugBridgeCapturedEvent>(
+        capacity: DebugBridgeThresholds.maximumEvents)
+    private var bridgeCaptures: [DebugBridgeCapturedEvent] { bridgeSelection.all.map(\.payload) }
     private var bridgeEventCounter = 0
     private var bridgeStats: [String: Int] = [:]
     private var bridgeRejections: [String: Int] = [:]
@@ -2110,6 +2119,7 @@ final class DebugVideoRecorder {
         }
         olderTrackingFrame = previousTrackingFrame
         previousTrackingFrame = frame
+        currentSegmentLabel = segmentLabel
         observeMotionFrame(pixelBuffer: pixelBuffer, frame: &frame, width: width, height: height)
         let motionMs = max(0, (clock() - motionStarted) * 1000)
         motionObservationCount += 1
@@ -2288,7 +2298,7 @@ final class DebugVideoRecorder {
                 && frame.candidateDiagnostics?.red.selectedCandidate?.centroid != nil)
             || (diagnosticColors.includes("blue")
                 && frame.candidateDiagnostics?.blue.selectedCandidate?.centroid != nil)
-        if hasTrackingEvidence || trackingCapture != nil {
+        if hasTrackingEvidence || !trackingSelection.isEmpty {
             retainTrackingFrame(pixelFrame)
         } else {
             for hit in hits { retainMotionEvent(hit, current: pixelFrame) }
@@ -2300,7 +2310,7 @@ final class DebugVideoRecorder {
                 motionCaptures[index].post = pixelFrame
             }
         }
-        if trackingCapture == nil && recordedFrameCount % DebugMotionThresholds.preRollStride == 0 {
+        if trackingSelection.isEmpty && recordedFrameCount % DebugMotionThresholds.preRollStride == 0 {
             motionPreRoll.append(pixelFrame)
             motionPreRoll.removeAll {
                 frame.presentationTimeSeconds - $0.timestamp > DebugMotionThresholds.preRollSeconds
@@ -2406,9 +2416,11 @@ final class DebugVideoRecorder {
         let score = rankedScore(color)
         for color in activeNames {
             if let components = rankedComponents(color) {
-                trackingRankings.append((source.frameID, color, components))
+                trackingRankings.append((source.frameID, color, components, source.timestamp))
             }
         }
+        // Leaders older than the stop handling period can no longer fall into it.
+        trackingSelection.advance(to: source.timestamp)
 #if DEBUG
         if source.frameID == injectedTrackingCopyFailureFrameIDForTesting {
             trackingMissingContext = true
@@ -2428,22 +2440,27 @@ final class DebugVideoRecorder {
         let preceding = trackingRecent.filter {
             source.frameID > $0.frameID && source.frameID - $0.frameID <= 5
         }
-        let existingPreCount = trackingCapture.flatMap { capture in
-            capture.temporalFrames.firstIndex { $0.frameID == capture.at.frameID }
-        } ?? -1
-        if score > (trackingCapture?.peakScore ?? -1)
-            || (score == trackingCapture?.peakScore && preceding.count > existingPreCount) {
+        // Following context for every retained window this frame belongs to.
+        trackingSelection.updatePayloads { capture, _ in
+            if frame.frameID > capture.at.frameID, frame.frameID - capture.at.frameID <= 5 {
+                capture.temporalFrames.append(frame)
+                capture.endTime = frame.timestamp
+            }
+        }
+        // Ranking score first, as before; outside the handling periods ranks above
+        // it, a sabersVisible label and then more preceding context break ties.
+        let period = DebugHandlingPeriod.period(at: frame.timestamp, end: nil)
+        let entry = DebugHandlingAwareRetention<DebugMotionCapturedEvent>.Entry(
+            payload: DebugMotionCapturedEvent(index: Self.trackingEventIndex,
+                color: color, peakScore: score, endTime: frame.timestamp,
+                pre: nil, at: frame, post: nil, temporalFrames: preceding + [frame]),
+            frameID: frame.frameID, timestamp: frame.timestamp, period: period,
+            preference: DebugEventPreference(handlingPeriod: period != nil, score: score,
+                sabersVisible: currentSegmentLabel == .sabersVisible, tieBreak: preceding.count))
+        if trackingSelection.wouldRetain(timestamp: entry.timestamp, preference: entry.preference) {
             motionCaptures.removeAll()
             motionPreRoll.removeAll()
-            trackingCapture = DebugMotionCapturedEvent(index: Self.trackingEventIndex,
-                color: color, peakScore: score, endTime: frame.timestamp,
-                pre: nil, at: frame, post: nil, temporalFrames: preceding + [frame])
-        } else if var capture = trackingCapture,
-                  frame.frameID > capture.at.frameID,
-                  frame.frameID - capture.at.frameID <= 5 {
-            capture.temporalFrames.append(frame)
-            capture.endTime = frame.timestamp
-            trackingCapture = capture
+            trackingSelection.insert(entry)
         }
         trackingRecent.append(frame)
         if trackingRecent.count > 5 { trackingRecent.removeFirst() }
@@ -2451,7 +2468,7 @@ final class DebugVideoRecorder {
 
     private func trackingRetainedBytes() -> Int {
         var unique: [UInt64: Int] = [:]
-        for frame in trackingRecent + (trackingCapture?.temporalFrames ?? []) {
+        for frame in trackingRecent + trackingSelection.all.flatMap(\.payload.temporalFrames) {
             unique[frame.frameID] = frame.byteCount
         }
         return unique.values.reduce(0, +)
@@ -2493,6 +2510,10 @@ final class DebugVideoRecorder {
                     "contextIncomplete": trackingMissingContext || capture.temporalFrames.count != 11,
                     "signals": [DebugMotionSignal(kind: "tracking_instability", color: capture.color,
                         value: finalScore, threshold: 1, score: finalScore).dictionary]]
+                if let info = trackingSelectionInfo() {
+                    entry["handlingPeriod"] = info.handlingPeriod
+                    entry["selectionNotes"] = info.notes
+                }
             } else {
                 entry = motionDetector.events[capture.index].dictionary
             }
@@ -2583,6 +2604,7 @@ final class DebugVideoRecorder {
                     "maximumEventImages": DebugMotionThresholds.maximumEventImages,
                     "maximumRetainedBGRABytes": DebugMotionThresholds.maximumRetainedBGRABytes]]
         if let capture = trackingCapture {
+            let info = trackingSelectionInfo()
             let maximum = trackingRankings.max {
                 DebugTrackingDiagnostics.rankingScore($0.components)
                     < DebugTrackingDiagnostics.rankingScore($1.components)
@@ -2593,7 +2615,11 @@ final class DebugVideoRecorder {
                 "retainedPeakFrameID": capture.at.frameID, "retainedPeakColor": capture.color,
                 "retainedPeakScore": capture.peakScore, "temporalFramesRetained": capture.temporalFrames.count,
                 "highestRankedFrameMissing": (maximum?.frameID != capture.at.frameID || maximum?.color != capture.color)
-                    && (maximum.map { DebugTrackingDiagnostics.rankingScore($0.components) } ?? 0) > capture.peakScore,
+                    && (maximum.map { DebugTrackingDiagnostics.rankingScore($0.components) } ?? 0) > capture.peakScore
+                    && info?.deprioritised != true,
+                "handlingPeriod": info?.handlingPeriod ?? false,
+                "highestRankedFrameDeprioritised": info?.deprioritised ?? false,
+                "handlingPeriodSeconds": DebugHandlingPeriod.dictionary,
                 "contextIncomplete": trackingMissingContext || capture.temporalFrames.count != 11]
         }
         return result
@@ -2627,6 +2653,7 @@ final class DebugVideoRecorder {
 #else
         let injectedFailure: DebugRecordingFailureStage? = nil
 #endif
+        resolveHandlingPeriods()
         let selectedMotionEvents = motionEventEntries()
         let selectedMotionSummary = motionSummary()
         if let minimum = minimumAvailableMemory {
@@ -2923,9 +2950,14 @@ final class DebugVideoRecorder {
     /// Frames before the first or after the last success never start or close one.
     private func observeBridge(pixelBuffer: CVPixelBuffer, frame: DebugRecordingFrameMetadata,
                                width: Int, height: Int) {
-        for index in bridgeCaptures.indices where bridgeCaptures[index].followingRemaining > 0 {
-            bridgeCaptures[index].context[frame.frameID] = frame
-            bridgeCaptures[index].followingRemaining -= 1
+        bridgeSelection.updatePayloads { event, _ in
+            guard event.followingRemaining > 0 else { return }
+            event.context[frame.frameID] = frame
+            event.followingRemaining -= 1
+        }
+        // Events older than the stop handling period can no longer fall into it.
+        for _ in bridgeSelection.advance(to: frame.presentationTimeSeconds) {
+            bumpBridge("evictedForLongerEvent")
         }
         for color in diagnosticColors.colorNames {
             let detection = color == "red" ? frame.red : frame.blue
@@ -2956,6 +2988,7 @@ final class DebugVideoRecorder {
                     context: Dictionary(recentMetadata.map { ($0.frameID, $0) },
                                         uniquingKeysWith: { first, _ in first }))
                 pending.context[frame.frameID] = frame
+                pending.sabersVisible = currentSegmentLabel == .sabersVisible
                 if !pending.exceedsMaximumGap(at: frame.presentationTimeSeconds),
                    let retained = lastDetectedFrames[color],
                    retained.frameID == run.prior.last?.frameID,
@@ -3002,41 +3035,93 @@ final class DebugVideoRecorder {
             return
         }
         let gap = after.timestamp - beforeSample.timestamp
-        var weakestToEvict: Int?
-        if bridgeCaptures.count >= DebugBridgeThresholds.maximumEvents {
-            // Longer losses of a continuous saber are the more informative ones.
-            guard let weakest = bridgeCaptures.indices.min(by: {
-                bridgeCaptures[$0].gapSeconds < bridgeCaptures[$1].gapSeconds
-            }), gap > bridgeCaptures[weakest].gapSeconds else {
-                rejectBridge("lower_rank")
-                return
-            }
-            weakestToEvict = weakest
+        // Longer losses of a continuous saber are the more informative ones; a
+        // loss in the start/stop handling period ranks below any other.
+        let period = DebugHandlingPeriod.period(at: dropout.timestamp, end: nil)
+        let preference = DebugEventPreference(handlingPeriod: period != nil, score: gap,
+                                              sabersVisible: pending.sabersVisible)
+        guard bridgeSelection.wouldRetain(timestamp: dropout.timestamp, preference: preference) else {
+            rejectBridge("lower_rank")
+            return
         }
-        // Copy first: a stored event is evicted only once its replacement exists.
+        pending.context[current.frameID] = current.metadata
+        let eventID = bridgeEventCounter + 1
+        func entry(_ afterFrame: DebugMotionPixelFrame) -> DebugHandlingAwareRetention<DebugBridgeCapturedEvent>.Entry {
+            .init(payload: DebugBridgeCapturedEvent(
+                id: eventID, color: color, before: before, dropout: dropout, after: afterFrame,
+                beforeSample: beforeSample, afterSample: after, missingFrameCount: run.missing.count,
+                assessment: assessment, context: pending.context,
+                followingRemaining: DebugBridgeThresholds.followingContextFrames),
+                frameID: dropout.frameID, timestamp: dropout.timestamp, period: period,
+                preference: preference)
+        }
+        // Copy first: a stored event is dropped only once its replacement exists.
+        var trial = bridgeSelection
+        let releasing = trial.insert(entry(current)).reduce(0) { $0 + $1.payload.retainedBytes }
         var copyAllowed = true
 #if DEBUG
         if current.frameID == injectedBridgeAfterCopyFailureFrameIDForTesting { copyAllowed = false }
 #endif
         guard copyAllowed,
-              canRetainMotion(pending.retainedBytes + current.byteCount,
-                              releasing: weakestToEvict.map { bridgeCaptures[$0].retainedBytes } ?? 0),
+              canRetainMotion(pending.retainedBytes + current.byteCount, releasing: releasing),
               let afterCopy = independentCopy(of: current) else {
             rejectBridge("memory_unavailable")
             return
         }
-        if let weakestToEvict {
-            bridgeCaptures.remove(at: weakestToEvict)
-            bumpBridge("evictedForLongerEvent")
-        }
-        bridgeEventCounter += 1
-        pending.context[current.frameID] = current.metadata
-        bridgeCaptures.append(DebugBridgeCapturedEvent(
-            id: bridgeEventCounter, color: color, before: before, dropout: dropout, after: afterCopy,
-            beforeSample: beforeSample, afterSample: after, missingFrameCount: run.missing.count,
-            assessment: assessment, context: pending.context,
-            followingRemaining: DebugBridgeThresholds.followingContextFrames))
+        bridgeEventCounter = eventID
+        for _ in bridgeSelection.insert(entry(afterCopy)) { bumpBridge("evictedForLongerEvent") }
         bumpBridge("accepted")
+    }
+
+    /// At Stop: whatever is still pending lies in the stop handling period and
+    /// competes as such; the tracking event is chosen the same way.
+    private func resolveHandlingPeriods() {
+        guard let end = latestRecordedFrameTiming?.1 else { return }
+        for _ in bridgeSelection.finish(end: end) { bumpBridge("evictedForLongerEvent") }
+        trackingSelection.finish(end: end)
+    }
+
+    private static func bridgeSelectionNotes(
+        _ selected: DebugHandlingAwareRetention<DebugBridgeCapturedEvent>.Entry) -> [String] {
+        var notes = [DebugHandlingPeriod.note(selected.period, frameID: selected.payload.dropout.frameID,
+                                              timestamp: selected.payload.dropout.timestamp)]
+        notes.append(selected.period == nil
+            ? "ranked by gap among bridge dropouts outside the handling periods"
+            : "kept although in a handling period: fewer bridge dropouts outside the handling periods were accepted")
+        if selected.preference.sabersVisible { notes.append("dropout frame is labelled sabersVisible (preferred on ties)") }
+        return notes
+    }
+
+    /// Why the tracking event was kept: handling period of its center frame and
+    /// any higher-ranked frame that a handling period pushed below it.
+    private func trackingSelectionInfo() -> (handlingPeriod: Bool, deprioritised: Bool, notes: [String])? {
+        guard let chosen = trackingSelection.best else { return nil }
+        let capture = chosen.payload
+        let end = latestRecordedFrameTiming?.1
+        var notes = [DebugHandlingPeriod.note(chosen.period, frameID: capture.at.frameID,
+                                              timestamp: capture.at.timestamp)]
+        let scored = trackingRankings.map {
+            (frameID: $0.frameID, timestamp: $0.timestamp, score: DebugTrackingDiagnostics.rankingScore($0.components))
+        }
+        var deprioritised = false
+        if chosen.period != nil {
+            if let outside = scored.filter({ DebugHandlingPeriod.period(at: $0.timestamp, end: end) == nil })
+                .max(by: { $0.score < $1.score }) {
+                notes.append(String(format: "fallback: the best ranked frame outside the handling periods "
+                    + "(frame %llu, score %.2f) has no retained window", outside.frameID, outside.score))
+            } else {
+                notes.append("fallback: no ranked frame lies outside the handling periods")
+            }
+        } else if let maximum = scored.max(by: { $0.score < $1.score }), maximum.score > capture.peakScore,
+                  let period = DebugHandlingPeriod.period(at: maximum.timestamp, end: end) {
+            deprioritised = true
+            notes.append(String(format: "highest-ranked frame %llu (score %.2f) is in the ", maximum.frameID, maximum.score)
+                + "\(period) handling period and was de-prioritised")
+        } else {
+            notes.append("best retained window outside the handling periods")
+        }
+        if chosen.preference.sabersVisible { notes.append("center frame is labelled sabersVisible (preferred on ties)") }
+        return (chosen.period != nil, deprioritised, notes)
     }
 
     private func diagnosticsMetadata() -> [String: Any] {
@@ -3047,7 +3132,8 @@ final class DebugVideoRecorder {
             windows[color] = ["firstSuccessFrameID": first.frameID, "lastSuccessFrameID": last.frameID,
                               "firstSuccessTime": first.timestamp, "lastSuccessTime": last.timestamp]
         }
-        let events = bridgeCaptures.sorted { $0.id < $1.id }.map { event -> [String: Any] in
+        let events = bridgeSelection.all.sorted { $0.payload.id < $1.payload.id }.map { selected -> [String: Any] in
+            let event = selected.payload
             func image(_ role: String, _ frame: DebugMotionPixelFrame) -> [String: Any] {
                 var entry: [String: Any] = ["role": role, "frameID": frame.frameID,
                     "timestamp": frame.timestamp, "fileName": event.fileName(role, frame)]
@@ -3072,7 +3158,9 @@ final class DebugVideoRecorder {
                                "scope": "diagnostic image selection only; not a recognition rule"],
                 "images": [image("before_success", event.before), image("dropout", event.dropout),
                            image("after_success", event.after)],
-                "annotation": annotation]
+                "annotation": annotation,
+                "handlingPeriod": selected.period != nil,
+                "selectionNotes": Self.bridgeSelectionNotes(selected)]
         }
         let unclosed = diagnosticColors.colorNames.filter { bridgeTrackers[$0]?.unclosedRun != nil }.count
         var summary: [String: Any] = ["observedDropouts": bridgeStats["observedDropouts", default: 0],

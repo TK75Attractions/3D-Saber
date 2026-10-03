@@ -519,3 +519,37 @@ strict `guided_recording_errors`, which the triage input contract applies to
 `summary.json`; `phone_saber_session_report.py` shows the ガイド付き録画 section
 (per-step table in the same shape as the per-label table, and which swing frames
 are in the bundle) and `n/a` for bundles without it.
+
+## Start/stop handling periods (additive, version 1)
+
+Start and Stop are tapped on the iPhone, so the first and last seconds of a recording
+show the operator walking away from / back to the phone. Events whose center frame
+lies in the first `startSeconds` (3 s) or the last `stopSeconds` (5 s) of the
+recording are **de-prioritised, never excluded**: the tracking event and the two
+retained bridge events are chosen outside these periods first (then by the existing
+ranking score / gap, then a `sabersVisible` segment label as a tie-break). When no
+event outside them exists, one inside is still kept and marked. Segment labels never
+exclude an event: events under `noSaber` / `noSaberCovered` remain background
+false-positive evidence. Diagnostic image selection only (`DebugHandlingPeriod`);
+recognition, scoring, eligibility and UDP never read it.
+
+The stop period is known only at Stop, so the recorder keeps recent leaders
+provisionally until they are older than `stopSeconds` (`DebugHandlingAwareRetention`;
+at most `capacity + 1` provisional events). When every event lies in a handling
+period (for example a recording shorter than 8 s) the choice is the plain ranking
+of earlier builds.
+
+| Field | Where | Meaning |
+| --- | --- | --- |
+| `handlingPeriod` | tracking entry of root `motionEvents`; each `bridgeDropoutEvents` entry | `true` when the center frame (tracking peak / bridge dropout frame) lies in a handling period. |
+| `selectionNotes` | same entries | Short strings: the period of the center frame, why it was kept (for example a higher-ranked frame in a handling period that was de-prioritised, or a fallback), and a `sabersVisible` tie-break. |
+| `handlingPeriod`, `highestRankedFrameDeprioritised`, `handlingPeriodSeconds` | `motionSummary.trackingCapture` | The kept window's period, whether the recording maximum was pushed below it by a handling period (then `highestRankedFrameMissing` stays `false`), and `{startSeconds, stopSeconds}`. |
+| `selectionNotes` | `summary.json` root (optional) | `{handlingPeriodSeconds: {startSeconds, stopSeconds}, events: [...]}`; each event has exactly `kind` (`tracking` / `bridge`), `eventID`, `centerFrameID`, `handlingPeriod`, `selected` and `notes` (the recorder notes plus whether it reached the bundle). |
+
+The triage bundle orders bridge events the same way (`handlingPeriod: false` first,
+then the longest gap, then a `sabersVisible` dropout frame). Bundles recorded before
+this feature have none of these fields and keep their old order; all readers treat
+them as valid. `phone_saber_metadata_schema.selection_notes_errors` is the strict
+check that `phone_saber_triage_codex.py` applies to `summary.json` (at most 8 events,
+1–8 notes of at most 300 characters each, no unknown keys);
+`phone_saber_session_report.py` prints the notes under "Tracking event".

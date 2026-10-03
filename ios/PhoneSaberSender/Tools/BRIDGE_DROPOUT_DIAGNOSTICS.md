@@ -30,6 +30,12 @@ and undirected orientation change. Allowances grow with the interval and scale w
 the saber's length. See `DebugBridgeThresholds` (diagnostic image selection only); the
 values used are stored in every event's `assessment.thresholds`.
 
+Retention and bundle order: losses in the first 3 s or last 5 s of the recording (the
+operator walking to / from the phone, sabers switched off before Stop) rank below every
+other loss, then the longest gap first. They are still kept when nothing else exists and
+then carry `handlingPeriod: true`. See "Start/stop handling periods" in
+[PHONE_SABER_DEBUG_METADATA_SCHEMA.md](PHONE_SABER_DEBUG_METADATA_SCHEMA.md).
+
 ## One event, three frames, one example
 
 Each event stores `before_success`, `dropout` and `after_success` original lossless PNGs
@@ -141,6 +147,10 @@ the start/end of an absence, reported through bridge events). Candidate switches
 changes, geometry discontinuities and score collapses still rank exactly as before; the
 toggle only added 2.0 and could outrank a real candidate switch (also 2.0) at the end of
 a recording. The per-frame `tracking` measurements recorded in metadata are unchanged.
+
+Frames centred in the first 3 s or last 5 s of the recording rank below every other
+frame (de-prioritised, not excluded; `handlingPeriod` / `selectionNotes` say why the kept
+window was chosen). Within and outside those periods the ranking score is unchanged.
 
 ## Not included
 

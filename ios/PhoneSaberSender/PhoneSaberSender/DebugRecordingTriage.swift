@@ -696,8 +696,10 @@ enum DebugRecordingTriageBuilder {
                 guard let id = integer(frame["frameID"]) else { return nil }
                 return (id, index)
             })
+            // Longest gap first; events the recorder marked as in a start/stop
+            // handling period rank last, a sabersVisible label breaks ties.
             let events = (metadata["bridgeDropoutEvents"] as? [[String: Any]] ?? []).sorted {
-                (number($0["gapSeconds"]) ?? 0) > (number($1["gapSeconds"]) ?? 0)
+                bridgePreference($0, metadata: metadata).isPreferred(over: bridgePreference($1, metadata: metadata))
             }
             var taken = 0
             for event in events where taken < DebugBridgeThresholds.maximumEvents {
@@ -994,6 +996,9 @@ enum DebugRecordingTriageBuilder {
             if let guided = metadata["guidedRecording"] as? [String: Any] {
                 summary["guidedRecording"] = guided
             }
+            if let notes = selectionNotes(metadata: metadata, selection: selection) {
+                summary["selectionNotes"] = notes
+            }
             if metadata["activeColors"] != nil {
                 summary["activeColors"] = colors.filter { active.contains($0) }
                 var bridge = metadata["bridgeDropoutSummary"] as? [String: Any] ?? [:]
@@ -1126,6 +1131,49 @@ enum DebugRecordingTriageBuilder {
         guard let attributes = try? FileManager.default.attributesOfItem(
             atPath: directory.appendingPathComponent(name).path) else { return nil }
         return (attributes[.size] as? NSNumber)?.int64Value
+    }
+
+    private static func bridgePreference(_ event: [String: Any], metadata: [String: Any]) -> DebugEventPreference {
+        DebugEventPreference(handlingPeriod: event["handlingPeriod"] as? Bool == true,
+            score: number(event["gapSeconds"]) ?? 0,
+            sabersVisible: integer(event["dropoutFrameID"]).flatMap { segmentLabel(metadata, frameID: $0) }
+                == DebugSegmentLabel.sabersVisible.rawValue)
+    }
+
+    /// summary.json `selectionNotes`: why the tracking and bridge events were
+    /// kept (recorder notes) and whether they reached the bundle. nil for
+    /// recordings made before handling periods existed.
+    static func selectionNotes(metadata: [String: Any],
+                               selection: DebugRecordingTriageSelection) -> [String: Any]? {
+        var events: [[String: Any]] = []
+        let trackingIndex = DebugRecordingTriageLimits.trackingEventIndex
+        if let tracking = (metadata["motionEvents"] as? [[String: Any]] ?? []).first(where: {
+               $0["eventIndex"] as? Int == trackingIndex }),
+           var notes = tracking["selectionNotes"] as? [String] {
+            let count = selection.images.filter { $0.eventIndex == trackingIndex }.count
+            notes.append(count > 0 ? "selected: \(count) frame window in the bundle"
+                : (selection.bridgePriorityEventIDs.contains(trackingIndex)
+                    ? "not selected: left out whole so bridge dropout events fit the image limit"
+                    : "not selected: image or byte limit"))
+            events.append(["kind": "tracking", "eventID": trackingIndex,
+                "centerFrameID": integer(tracking["centerFrameID"]) ?? 0,
+                "handlingPeriod": tracking["handlingPeriod"] as? Bool == true,
+                "selected": count > 0, "notes": notes])
+        }
+        let selectedBridge = Set(selection.images.compactMap { $0.bridge?.eventID })
+        for event in metadata["bridgeDropoutEvents"] as? [[String: Any]] ?? [] {
+            guard var notes = event["selectionNotes"] as? [String],
+                  let id = integer(event["eventID"]).map({ Int($0) }) else { continue }
+            let selected = selectedBridge.contains(id)
+            notes.append(selected ? "selected: before/dropout/after originals in the bundle"
+                                  : "not selected: image or byte limit reached by preferred events")
+            events.append(["kind": "bridge", "eventID": id,
+                "centerFrameID": integer(event["dropoutFrameID"]) ?? 0,
+                "handlingPeriod": event["handlingPeriod"] as? Bool == true,
+                "selected": selected, "notes": notes])
+        }
+        guard !events.isEmpty else { return nil }
+        return ["handlingPeriodSeconds": DebugHandlingPeriod.dictionary, "events": events]
     }
 
     /// before_success, dropout, annotated_dropout (optional), after_success for one
@@ -2403,5 +2451,218 @@ struct DebugFrameGeometry: Equatable {
         if let red { result["red"] = red.dictionary }
         if let blue { result["blue"] = blue.dictionary }
         return result
+    }
+}
+
+// MARK: - Recording handling periods (diagnostic event selection only)
+
+/// Start and Stop are tapped on the iPhone, so the first and last seconds of a
+/// Debug Recording show the operator walking away from / back to the phone
+/// (people close to the lens, a finger on it, sabers being switched off).
+/// Events centred there are de-prioritised, never excluded: one is still kept
+/// when nothing else qualifies, and it is then marked `handlingPeriod: true`.
+/// Segment labels never exclude an event (noSaber / noSaberCovered events are
+/// background false-positive evidence); `sabersVisible` is only a tie-break.
+/// Diagnostic image selection only; never reaches recognition, scoring or UDP.
+enum DebugHandlingPeriod {
+    /// 10-02..10-04 bundles: start-side events centred 0.8-2.4 s after Start.
+    static let startSeconds = 3.0
+    /// 10-04 bundles: stop-side events (a jump while reaching for Stop, sabers
+    /// switched off) centred 1.0-3.6 s before the last frame.
+    static let stopSeconds = 5.0
+
+    static var dictionary: [String: Double] {
+        ["startSeconds": startSeconds, "stopSeconds": stopSeconds]
+    }
+
+    /// "start" / "stop" / nil. `end` is the last recorded frame time; nil while
+    /// recording, when only the start period is known.
+    static func period(at timestamp: Double, end: Double?) -> String? {
+        if timestamp < startSeconds { return "start" }
+        if let end, end - timestamp < stopSeconds { return "stop" }
+        return nil
+    }
+
+    static func note(_ period: String?, frameID: UInt64, timestamp: Double) -> String {
+        let at = String(format: "center frame %llu at %.2f s", frameID, timestamp)
+        switch period {
+        case "start": return at + String(format: " is in the start handling period (first %.0f s)", startSeconds)
+        case "stop": return at + String(format: " is in the stop handling period (last %.0f s)", stopSeconds)
+        default: return at + String(format: " is outside the handling periods (first %.0f s, last %.0f s)",
+                                    startSeconds, stopSeconds)
+        }
+    }
+}
+
+/// Order of diagnostic events: outside the handling periods first, then the
+/// existing score (tracking ranking score, or bridge gap), then a lit-saber
+/// segment label (`sabersVisible`) as a tie-break, then `tieBreak`.
+struct DebugEventPreference: Equatable {
+    var handlingPeriod: Bool
+    var score: Double
+    var sabersVisible: Bool = false
+    /// Last tie-break; higher wins (tracking: preceding context frames).
+    var tieBreak: Int = 0
+
+    func isPreferred(over other: DebugEventPreference) -> Bool {
+        if handlingPeriod != other.handlingPeriod { return !handlingPeriod }
+        if score != other.score { return score > other.score }
+        if sabersVisible != other.sabersVisible { return sabersVisible }
+        return tieBreak > other.tieBreak
+    }
+}
+
+/// Keeps the `capacity` most preferred events of a recording online, although
+/// whether an event lies in the stop handling period is known only at Stop.
+/// Start-period events settle at once (their period is already known). Other
+/// events younger than `stopSeconds` stay pending; once older they settle and
+/// compete for the `capacity` slots. A pending event that `capacity` settled or
+/// earlier pending events are at least as good as can never be kept and is
+/// dropped at once; beyond `capacity + 1` pending events the weakest one other
+/// than the oldest is dropped. At Stop the remaining pending events lie in the
+/// stop handling period and settle as such. When every event lies in a handling
+/// period (short recordings) the result is the plain top-`capacity` by score,
+/// earlier event first on ties, as before handling periods existed.
+struct DebugHandlingAwareRetention<Payload> {
+    struct Entry {
+        var payload: Payload
+        let frameID: UInt64
+        let timestamp: Double
+        /// "start" / "stop" / nil (see DebugHandlingPeriod.period).
+        var period: String?
+        var preference: DebugEventPreference
+        /// Insertion order, assigned by `insert`; orders entries with equal timestamps.
+        fileprivate(set) var sequence = 0
+
+        init(payload: Payload, frameID: UInt64, timestamp: Double, period: String?,
+             preference: DebugEventPreference) {
+            self.payload = payload
+            self.frameID = frameID
+            self.timestamp = timestamp
+            self.period = period
+            self.preference = preference
+        }
+
+        fileprivate func isEarlier(than other: Entry) -> Bool {
+            timestamp != other.timestamp ? timestamp < other.timestamp : sequence < other.sequence
+        }
+    }
+
+    let capacity: Int
+    private var nextSequence = 1
+    private(set) var settled: [Entry] = []
+    /// Ordered by timestamp.
+    private(set) var pending: [Entry] = []
+
+    init(capacity: Int) { self.capacity = max(1, capacity) }
+
+    var all: [Entry] { settled + pending }
+    var isEmpty: Bool { settled.isEmpty && pending.isEmpty }
+
+    /// Most preferred retained entry; the earlier entry wins ties.
+    var best: Entry? {
+        all.sorted { $0.isEarlier(than: $1) }.reduce(nil) { current, entry in
+            guard let current else { return entry }
+            return entry.preference.isPreferred(over: current.preference) ? entry : current
+        }
+    }
+
+    /// Whether `capacity` settled or earlier pending entries are at least as good
+    /// as an event with this preference, so that it can never be kept.
+    private func dominated(timestamp: Double, sequence: Int, preference: DebugEventPreference) -> Bool {
+        let settledBetter = settled.filter { !preference.isPreferred(over: $0.preference) }.count
+        let earlierBetter = pending.filter {
+            ($0.timestamp != timestamp ? $0.timestamp < timestamp : $0.sequence < sequence)
+                && !preference.isPreferred(over: $0.preference)
+        }.count
+        return settledBetter + earlierBetter >= capacity
+    }
+
+    private func dominated(_ entry: Entry) -> Bool {
+        dominated(timestamp: entry.timestamp, sequence: entry.sequence, preference: entry.preference)
+    }
+
+    /// Whether a new event would be retained (assuming it settles outside the
+    /// stop period). Lets callers skip copying pixels for it.
+    func wouldRetain(timestamp: Double, preference: DebugEventPreference) -> Bool {
+        !dominated(timestamp: timestamp, sequence: nextSequence, preference: preference)
+    }
+
+    /// Adds an event. Returns the entries dropped (possibly the new one).
+    @discardableResult
+    mutating func insert(_ newEntry: Entry) -> [Entry] {
+        var entry = newEntry
+        entry.sequence = nextSequence
+        nextSequence += 1
+        // Already in a handling period (start): nothing left to learn, settle now.
+        if entry.preference.handlingPeriod { return settle(entry) }
+        let position = pending.firstIndex { entry.isEarlier(than: $0) } ?? pending.count
+        pending.insert(entry, at: position)
+        var dropped: [Entry] = []
+        var index = 0
+        while index < pending.count {
+            if dominated(pending[index]) {
+                dropped.append(pending.remove(at: index))
+            } else {
+                index += 1
+            }
+        }
+        while pending.count > capacity + 1 {
+            // The oldest pending entry settles first; spare it.
+            guard let weakest = pending.indices.dropFirst().min(by: {
+                Self.weaker(pending[$0], than: pending[$1])
+            }) else { break }
+            dropped.append(pending.remove(at: weakest))
+        }
+        return dropped
+    }
+
+    /// Strict weakness order: less preferred, or equally preferred but later.
+    private static func weaker(_ lhs: Entry, than rhs: Entry) -> Bool {
+        if rhs.preference.isPreferred(over: lhs.preference) { return true }
+        if lhs.preference.isPreferred(over: rhs.preference) { return false }
+        return rhs.isEarlier(than: lhs)
+    }
+
+    private mutating func settle(_ entry: Entry) -> [Entry] {
+        settled.append(entry)
+        guard settled.count > capacity,
+              let weakest = settled.indices.min(by: { Self.weaker(settled[$0], than: settled[$1]) }) else {
+            return []
+        }
+        return [settled.remove(at: weakest)]
+    }
+
+    /// Settles pending entries at least `stopSeconds` older than `now` (the
+    /// latest recorded frame time). Returns the entries dropped.
+    @discardableResult
+    mutating func advance(to now: Double) -> [Entry] {
+        var dropped: [Entry] = []
+        while let first = pending.first, now - first.timestamp >= DebugHandlingPeriod.stopSeconds {
+            pending.removeFirst()
+            dropped += settle(first)
+        }
+        return dropped
+    }
+
+    /// At Stop (`end` = last recorded frame time): what is still pending lies in
+    /// the stop handling period. Returns the entries dropped.
+    @discardableResult
+    mutating func finish(end: Double) -> [Entry] {
+        var dropped = advance(to: end)
+        let remaining = pending
+        pending.removeAll()
+        for var entry in remaining {
+            entry.period = entry.period ?? "stop"
+            entry.preference.handlingPeriod = true
+            dropped += settle(entry)
+        }
+        return dropped
+    }
+
+    /// Mutates payloads in place (for example to append following context).
+    mutating func updatePayloads(_ body: (inout Payload, Entry) -> Void) {
+        for index in settled.indices { body(&settled[index].payload, settled[index]) }
+        for index in pending.indices { body(&pending[index].payload, pending[index]) }
     }
 }

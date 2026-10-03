@@ -210,6 +210,9 @@ def tracking_section(summary: dict) -> dict:
         "ledgerCodes": dict(Counter(str(e[3]) for e in ledger)) if ledger else None,
         "bridgePriorityEvents": [{"eventIndex": e[0], "color": e[1], "peakScore": e[2]}
                                  for e in ledger if e[3] == "bridge_priority"],
+        # Why the tracking / bridge events were kept (start/stop handling periods);
+        # absent in bundles recorded before handling periods existed.
+        "selectionNotes": summary.get("selectionNotes") if isinstance(summary.get("selectionNotes"), dict) else None,
     }
 
 
@@ -758,6 +761,21 @@ def render_markdown(report: dict) -> str:
         f"event {e['eventIndex']} {e['color']} score {_fmt(e['peakScore'])}" for e in priority)
         if priority else ("n/a (no selection-code ledger in this bundle)" if tracking.get("ledgerCodes") is None
                           else "none (tracking event was not yielded to bridge events)")))
+    notes = tracking.get("selectionNotes")
+    events = notes.get("events") if isinstance(notes, dict) else None
+    if not isinstance(events, list) or not events:
+        add("- selection notes: n/a (bundle predates start/stop handling periods)")
+    else:
+        periods = notes.get("handlingPeriodSeconds") if isinstance(notes.get("handlingPeriodSeconds"), dict) else {}
+        add(f"- selection notes (handling periods: first {_fmt(periods.get('startSeconds'))} s, "
+            f"last {_fmt(periods.get('stopSeconds'))} s):")
+        for event in events:
+            if not isinstance(event, dict):
+                continue
+            text = "; ".join(str(n) for n in event.get("notes", []) if isinstance(n, str))
+            add(f"  - {_fmt(event.get('kind'))} {_fmt(event.get('eventID'))} "
+                f"(center {_fmt(event.get('centerFrameID'))}, handlingPeriod {_fmt(event.get('handlingPeriod'))}, "
+                f"selected {_fmt(event.get('selected'))}): {text}")
     add("")
 
     add("## Bridge dropout events")

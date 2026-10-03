@@ -765,3 +765,42 @@ def shadow_rule_tally_errors(tally: Any) -> list[str]:
     if "definition" in tally and (not isinstance(tally["definition"], str) or len(tally["definition"]) > 2000):
         errors.append("shadowRuleTally.definition is malformed")
     return errors
+
+
+# summary.json `selectionNotes` (optional; absent in bundles recorded before the
+# start/stop handling periods): why the tracking and bridge events were kept.
+SELECTION_NOTE_KINDS = ("tracking", "bridge")
+SELECTION_NOTE_EVENT_KEYS = {"kind", "eventID", "centerFrameID", "handlingPeriod", "selected", "notes"}
+MAX_SELECTION_NOTE_EVENTS = 8
+MAX_SELECTION_NOTES_PER_EVENT = 8
+MAX_SELECTION_NOTE_CHARS = 300
+
+
+def selection_notes_errors(value: Any) -> list[str]:
+    """Strict check of summary.json `selectionNotes` (empty list = valid)."""
+    if not isinstance(value, dict) or set(value) != {"handlingPeriodSeconds", "events"}:
+        return ["selectionNotes must be an object with handlingPeriodSeconds and events"]
+    errors: list[str] = []
+    periods = value["handlingPeriodSeconds"]
+    if not isinstance(periods, dict) or set(periods) != {"startSeconds", "stopSeconds"} \
+            or not all(_matches_kind(item, "number") and item >= 0 for item in periods.values()):
+        errors.append("selectionNotes.handlingPeriodSeconds is malformed")
+    events = value["events"]
+    if not isinstance(events, list) or not 1 <= len(events) <= MAX_SELECTION_NOTE_EVENTS:
+        return errors + ["selectionNotes.events is malformed"]
+    for index, event in enumerate(events):
+        path = f"selectionNotes.events[{index}]"
+        if not isinstance(event, dict) or set(event) != SELECTION_NOTE_EVENT_KEYS:
+            errors.append(f"{path} is malformed")
+            continue
+        if event["kind"] not in SELECTION_NOTE_KINDS or not _count(event["eventID"]) \
+                or not _count(event["centerFrameID"]):
+            errors.append(f"{path} has an invalid kind or id")
+        if not isinstance(event["handlingPeriod"], bool) or not isinstance(event["selected"], bool):
+            errors.append(f"{path} flags must be booleans")
+        notes = event["notes"]
+        if not isinstance(notes, list) or not 1 <= len(notes) <= MAX_SELECTION_NOTES_PER_EVENT \
+                or not all(isinstance(note, str) and 0 < len(note) <= MAX_SELECTION_NOTE_CHARS
+                           for note in notes):
+            errors.append(f"{path}.notes is malformed")
+    return errors

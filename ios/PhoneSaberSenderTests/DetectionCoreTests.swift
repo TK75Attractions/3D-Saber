@@ -4128,3 +4128,108 @@ extension DetectionCoreTests {
         XCTAssertEqual(run().samples("r7e"), tally.samples("r7e"))
     }
 }
+
+// MARK: - Start/stop handling periods in the recorder (synthetic frame streams)
+
+extension DetectionCoreTests {
+    /// Three 15-frame blocks at 0 s (start period), 10 s and 20 s (stop period).
+    /// A vertical flip at the start and end blocks outranks a small shift in the
+    /// middle block; only the middle block lies outside the handling periods.
+    func testTrackingEventOutsideTheHandlingPeriodsIsPreferredAndExplained() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberHandlingPeriod-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory)
+        let starts: [Int64] = [0, 300, 600]
+        for start in starts {
+            for offset in Int64(0)..<15 {
+                let value = start + offset
+                let buffer = solidPixelBuffer(width: 64, height: 48)
+                let flip = offset == 6 && start != 300
+                let shift = offset == 6 && start == 300 ? 6 : 0
+                let points = (8...52).flatMap { x in (20...24).map { y in
+                    flip ? PixelPoint(x: 30 + (y - 22), y: x - 5) : PixelPoint(x: x, y: y + shift)
+                } }
+                let candidate = try XCTUnwrap(saberCandidate(from: points, width: 64, height: 48,
+                                                             collectEndpointDiagnostics: true))
+                let analysis = SaberFrameAnalysis(candidates: [.red: [candidate]], selected: [.red: candidate.endpoints])
+                CVPixelBufferLockBaseAddress(buffer, [])
+                XCTAssertEqual(recorder.append(pixelBuffer: buffer,
+                    presentationTime: CMTime(value: CMTimeValue(value), timescale: 30),
+                    frameID: UInt64(5_000 + value),
+                    results: [DetectedSaber(endpoints: candidate.endpoints, color: .red, isFresh: true)],
+                    analysis: analysis), .accepted)
+                CVPixelBufferUnlockBaseAddress(buffer, [])
+                Thread.sleep(forTimeInterval: 0.02)
+            }
+        }
+        let recording: DebugRecordingResult = try await withCheckedThrowingContinuation {
+            continuation in recorder.finish { continuation.resume(with: $0) }
+        }
+        let metadata = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: recording.metadataURL)) as? [String: Any])
+        let tracking = try XCTUnwrap((metadata["motionEvents"] as? [[String: Any]])?.first {
+            $0["eventIndex"] as? Int == DebugRecordingTriageLimits.trackingEventIndex })
+        let center = try XCTUnwrap(tracking["centerFrameID"] as? Int)
+        XCTAssertTrue((5_300...5_314).contains(center), "center \(center) must be in the middle block")
+        XCTAssertEqual(tracking["handlingPeriod"] as? Bool, false)
+        let maximum = try XCTUnwrap(tracking["recordingMaxFrameID"] as? Int)
+        XCTAssertFalse((5_300...5_314).contains(maximum), "a flip in a handling period ranks highest")
+        XCTAssertGreaterThan(try XCTUnwrap(tracking["recordingMaxScore"] as? Double),
+                             try XCTUnwrap(tracking["peakScore"] as? Double))
+        let notes = try XCTUnwrap(tracking["selectionNotes"] as? [String])
+        XCTAssertTrue(notes[0].contains("outside the handling periods"), notes[0])
+        XCTAssertTrue(notes.contains { $0.contains("handling period and was de-prioritised") }, "\(notes)")
+        let capture = try XCTUnwrap((metadata["motionSummary"] as? [String: Any])?["trackingCapture"] as? [String: Any])
+        XCTAssertEqual(capture["highestRankedFrameMissing"] as? Bool, false)
+        XCTAssertEqual(capture["highestRankedFrameDeprioritised"] as? Bool, true)
+        XCTAssertEqual(capture["handlingPeriod"] as? Bool, false)
+
+        let bundle = try XCTUnwrap(recording.triageBundleURL, recording.triageErrorMessage ?? "missing bundle")
+        let summary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+        let images = try XCTUnwrap(summary["images"] as? [[String: Any]])
+            .filter { $0["eventIndex"] as? Int == DebugRecordingTriageLimits.trackingEventIndex }
+        XCTAssertEqual(images.count, 11)
+        XCTAssertTrue(images.allSatisfy { (5_300...5_314).contains($0["frameID"] as? Int ?? 0) })
+        let selection = try XCTUnwrap(summary["selectionNotes"] as? [String: Any])
+        XCTAssertEqual(selection["handlingPeriodSeconds"] as? [String: Double],
+                       ["startSeconds": DebugHandlingPeriod.startSeconds, "stopSeconds": DebugHandlingPeriod.stopSeconds])
+        let event = try XCTUnwrap((selection["events"] as? [[String: Any]])?.first)
+        XCTAssertEqual(event["kind"] as? String, "tracking")
+        XCTAssertEqual(event["centerFrameID"] as? Int, center)
+        XCTAssertEqual(event["handlingPeriod"] as? Bool, false)
+        XCTAssertEqual(event["selected"] as? Bool, true)
+        XCTAssertEqual((event["notes"] as? [String])?.last, "selected: 11 frame window in the bundle")
+    }
+
+    /// Losses at 0.33 s (start), 10 s and 20 s (stop, 0.3 s before the last frame).
+    /// Before handling periods the two longest gaps (start and stop) were kept.
+    func testBridgeEventOutsideTheHandlingPeriodsDisplacesAStopPeriodLoss() async throws {
+        let red = bridgeSaber(.red)
+        let (recording, metadata) = try await recordBridge([
+            (1, 9, [red]), (2, 10, []), (3, 11, []), (4, 12, []), (5, 13, [red]),
+            (6, 299, [red]), (7, 300, [red]), (8, 301, []), (9, 302, [red]),
+            (10, 599, [red]), (11, 600, [red]), (12, 601, []), (13, 602, []), (14, 603, [red]),
+            (15, 605, [red]), (16, 610, [red])], colors: .red)
+        let events = bridgeEvents(metadata)
+        XCTAssertEqual(events.compactMap { $0["dropoutFrameID"] as? Int }, [2, 8])
+        XCTAssertEqual(events.compactMap { $0["handlingPeriod"] as? Bool }, [true, false])
+        XCTAssertTrue((events[0]["selectionNotes"] as? [String])?.first?.contains("start handling period") == true)
+        let bridgeSummary = try XCTUnwrap(metadata["bridgeDropoutSummary"] as? [String: Any])
+        XCTAssertEqual(bridgeSummary["accepted"] as? Int, 3)
+        XCTAssertEqual(bridgeSummary["evictedForLongerEvent"] as? Int, 1)
+        XCTAssertEqual(bridgeSummary["retained"] as? Int, 2)
+
+        let bundle = try XCTUnwrap(recording.triageBundleURL)
+        let summary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+        // Outside the handling periods first, although its gap is the shortest.
+        let order = try XCTUnwrap(summary["images"] as? [[String: Any]]).compactMap { $0["bridgeEventID"] as? Int }
+        XCTAssertEqual(order.first, events[1]["eventID"] as? Int)
+        let notes = try XCTUnwrap((summary["selectionNotes"] as? [String: Any])?["events"] as? [[String: Any]])
+        XCTAssertEqual(notes.compactMap { $0["kind"] as? String }, ["bridge", "bridge"])
+        XCTAssertEqual(notes.compactMap { $0["handlingPeriod"] as? Bool }, [true, false])
+        XCTAssertEqual(notes.compactMap { $0["selected"] as? Bool }, [true, true])
+    }
+}
