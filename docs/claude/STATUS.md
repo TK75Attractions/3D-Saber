@@ -55,6 +55,11 @@
 ## 作業ログ(新しい順)
 
 ### 2026-10-03(午後)
+- 実機なしの改善(並列):iOS P2P の review 指摘(正しい Mac への固定、送信 watchdog 3 秒、ヒステリシス、backoff、前面復帰、
+  ローカルネットワーク許可の表示、接続中の検索停止)、Unity 側の bridge 自動起動の改善(受信できる間だけ起動、テストで起動しない、
+  Mac 名入りの service 名)、1 秒未満の録画は自動転送しない、Codex 解析に要約を渡し timeout 時は high で1回だけ再試行。
+- 調査(docs/claude/analysis/2026-10-03_motion_blur_and_blue_jumps.md):frame 2552 の勝者はズボンではなく壁コンセントのラベル。
+  露出 1/50s のブレが主因。155919_297 の青のジャンプは saber が写っていない背景どうしの往復(誤検出)。
 - 実機テスト2回目:体感は良好(遅延・判定のブレとも改善)。受信側に 413 が 17 回出ていたのは、こちらの test 実行時に
   Simulator が test 用 bundle を本物の receiver へ自動転送していたため(P2P relay / LAN の両方が Simulator から見える)。
   → test 実行中は自動転送しないよう修正。155608_448 は 1 frame だけの録画で、precheck 失敗は正しい挙動。

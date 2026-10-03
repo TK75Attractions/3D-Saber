@@ -189,7 +189,10 @@ final class P2PSender {
         var browserWaitingRetryDelay: TimeInterval = 10
         /// A coordinate whose send has not completed after this long means the
         /// link is stuck even if pings still get through: drop it, use LAN.
-        var sendWatchdogTimeout: TimeInterval = 0.5
+        /// Well above the AWDL stalls measured on 2026-10-03 (170-300 ms, up to
+        /// ~1 s), which recover by themselves: reconnecting there would turn a
+        /// short stall into a longer outage. This only catches a real hang.
+        var sendWatchdogTimeout: TimeInterval = 3
         var reconnectInitialDelay: TimeInterval = 0.25
         var reconnectMaximumDelay: TimeInterval = 4
     }
