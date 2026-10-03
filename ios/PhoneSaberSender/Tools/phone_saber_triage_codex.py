@@ -34,7 +34,8 @@ from phone_saber_session_log import log_fields, session_log_context
 
 from phone_saber_codex_process import CodexProcessError, run_codex
 
-from phone_saber_metadata_schema import SEGMENT_LABELS, segment_summary_errors
+from phone_saber_metadata_schema import (
+    SEGMENT_LABELS, camera_exposure_experiment_errors, segment_summary_errors)
 
 from phone_saber_triage_protocol import (
     MAX_BUNDLE_BYTES,
@@ -227,9 +228,14 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
                             "incidentCount", "incidents", "images", "limits", "groundTruth",
                             "summaryScope", "retainedIncidentContextFrames",
                             "motionEventSummary", "activeColors", "bridgeDropoutSummary",
-                            "segmentSummary"}
+                            "segmentSummary", "cameraExposureExperiment"}
     if not set(summary).issubset(allowed_summary_keys):
         raise BundleError("summary.json contains non-triage or full-session metadata")
+    if "cameraExposureExperiment" in summary:
+        experiment_errors = camera_exposure_experiment_errors(summary["cameraExposureExperiment"])
+        if experiment_errors:
+            raise BundleError("camera exposure experiment is malformed: "
+                              + "; ".join(experiment_errors[:3]))
     segment_errors = segment_summary_errors(summary["segmentSummary"]) \
         if "segmentSummary" in summary else []
     if segment_errors:
@@ -1053,6 +1059,7 @@ Evidence rules:
 - The annotated_dropout image is the original dropout PNG with the position interpolated between the two successful detections drawn on it (yellow dashed expected position, green before, magenta after). It is a viewing aid for locating the saber, never ground truth: do not cite it as the only evidence, and an overlay line does not prove a saber is present. Judge pixels on the original images.
 - To separate candidate-selection failures use each selected frame's candidateGeometry (all eligible candidates unless candidatesTruncated, with centroid, bbox, componentArea, sourceType, finalScore, scoreBreakdown, rawPCA and final endpoints) and matchToPreviousWinner (centroid distance, bbox IoU, area ratio, span ratio, orientation difference against the previous frame's winner; list order and index are not identity). CASE A: a candidate matching the previous winner is still eligible but another, distant candidate wins narrowly. CASE B: no eligible candidate matches the previous winner (ineligible or never generated; check rejectionReasons and candidatesTruncated). CASE C: the winner matches the previous winner but rawPCA/final endpoints break. eligibleOmittedCount > 0 means some eligible candidates were not recorded; do not conclude from absence then.
 - segmentLabel (per context) and segmentSummary (summary.json) are operator labels for the recording interval: sabersVisible = lit sabers in view; noSaber = no saber or sabers off, background only; noSaberCovered = background only with the red background objects covered; unlabeled = no statement. A detection under noSaber or noSaberCovered is a false-positive suspect; still state what the PNG pixels show.
+- cameraExposureExperiment (summary.json, optional) is the operator's opt-in camera shutter experiment at Start: setting auto leaves exposure untouched; maxShutter1_100/1_120/1_240 cap the auto-exposure maximum shutter time (ISO stays auto) and capActive tells whether the cap was really applied. Absence means auto exposure. It is capture context for motion blur, not a recognition rule.
 - Only colors listed in activeColors are diagnosed. Absence of any other color is not a failure and must not appear in findings.
 - Include tracking_assessment for tracking events: confirm visible temporal instability only if pixels support it, cite at least three ordered mapped temporal images spanning before/peak/after, identify first_unstable_stage, and describe concrete_cause, concrete_production_change, expected_effect, regression_risk. Leave unsupported proposal text empty and request evidence; never force actionable.
 - Do not edit, create, or propose applying production code. Return a concise JSON object matching the supplied schema exactly.

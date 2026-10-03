@@ -25,6 +25,7 @@ The top-level JSON object has these fields:
 | `height` | integer | Required | Recorded frame height in pixels. |
 | `frames` | array of frame objects | Required | Frames accepted by the raw video writer, in recording order. |
 | `cameraSamples` | array of camera sample objects | Optional | Camera state snapshots emitted by diagnostic-capable builds. |
+| `cameraExposureExperiment` | camera exposure experiment object | Optional | Opt-in shutter experiment in effect at Start (see "Camera exposure experiment"). Absent in older recordings, which always used auto exposure. |
 
 `frames` is the only field required to identify an analyzable session. A missing
 or non-array `frames` value is a structural error. Other missing or mistyped
@@ -200,6 +201,34 @@ fields:
 | `exposureDurationMs`, `iso`, `whiteBalanceRedGain`, `whiteBalanceGreenGain`, `whiteBalanceBlueGain`, `lensPosition` | number | Required |
 | `exposureMode`, `whiteBalanceMode`, `focusMode`, `activeFormat`, `activeFormatFPSRanges` | string | Required |
 | `activeMinFPS`, `activeMaxFPS` | number | Optional |
+
+## Camera exposure experiment
+
+`cameraExposureExperiment` is optional and additive. The app writes it at the
+root of the metadata (and copies it to the triage `summary.json`) when a Debug
+Recording starts; recorders created without a setting (tests, older callers)
+omit it. The experiment is chosen in the app's Debug Recording box
+("露出実験") and cannot change while a recording is active. It only caps the
+auto exposure algorithm's maximum shutter time via
+`AVCaptureDevice.activeMaxExposureDuration` (ISO stays auto); `auto`, the
+default, leaves the device exposure untouched. It never changes recognition,
+scoring or UDP.
+
+| Field | JSON type | Meaning |
+| --- | --- | --- |
+| `formatVersion` | integer, optional | Object format version; currently `1`. |
+| `setting` | string, required | `auto`, `maxShutter1_100`, `maxShutter1_120` or `maxShutter1_240`. |
+| `status` | string, required | `auto` (untouched), `autoRestored` (cap reset to the device default), `applied`, `clamped` (cap clamped to the active format's exposure range), `notNeeded` (device default already at or below the request; untouched), `unsupported` / `failed` (stayed auto; see `detail`), `pending` (camera not configured yet). |
+| `capActive` | boolean, optional | Whether a cap set by the app is in effect (`applied` or `clamped`). |
+| `requestedMaxExposureSeconds`, `appliedMaxExposureSeconds` | number, optional | Requested and applied maximum shutter time. |
+| `defaultMaxExposureSeconds` | number, optional | Device default `activeMaxExposureDuration` for the active format, read before capping. |
+| `formatMinExposureSeconds`, `formatMaxExposureSeconds` | number, optional | Active format exposure range used for clamping. |
+| `observedMaxExposureSeconds` | number, optional | `activeMaxExposureDuration` read back from the device at Start. |
+| `detail` | string, optional | Reason for `unsupported` / `failed`. |
+
+The per-frame effect is visible in `frames[].camera.exposureDurationSeconds`.
+`phone_saber_session_report.py` shows the object in its 露出実験 section and
+reports `n/a` for bundles without it.
 
 ## FrameProcessor diagnostics and regression tools
 

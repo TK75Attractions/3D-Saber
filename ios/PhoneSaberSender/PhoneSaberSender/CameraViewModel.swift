@@ -374,6 +374,9 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var p2pEnabled = true
     @Published private(set) var p2pState: P2PLinkState = .disabled
     @Published private(set) var p2pRoundTrip: P2PRoundTripStats.Summary?
+    /// Opt-in exposure experiment (default auto = device exposure untouched).
+    @Published private(set) var cameraExposureExperiment: CameraExposureExperiment = .auto
+    @Published private(set) var cameraExposureExperimentState = CameraExposureExperimentState.initial
     @Published var threshold = 145
     @Published var dominance = 25
     @Published var measurementMode = false
@@ -468,12 +471,18 @@ final class CameraViewModel: NSObject, ObservableObject {
     private var cameraRecoveryAttempted = false
     private var cameraRecoveryGeneration = 0
     private var cameraLifecycleEnabled = true
+    /// Camera the exposure experiment was applied to, and its own default
+    /// activeMaxExposureDuration read before this app capped it.
+    private weak var exposureExperimentCamera: AVCaptureDevice?
+    private var exposureExperimentDefaultMaximum = CMTime.invalid
+    private var exposureExperimentCapActive = false
 
     init(
         processor: FrameProcessor = FrameProcessor(),
         sender: UDPSender = UDPSender(),
         p2pSender: P2PSender = P2PSender(),
         p2pEnabled: Bool? = nil,
+        cameraExposureExperiment: CameraExposureExperiment? = nil,
         authorizationStatus: @escaping () -> AVAuthorizationStatus = { AVCaptureDevice.authorizationStatus(for: .video) },
         requestAccess: @escaping (@escaping (Bool) -> Void) -> Void = { completion in AVCaptureDevice.requestAccess(for: .video, completionHandler: completion) },
         idleTimerUpdater: @escaping @MainActor (Bool) -> Void = { disabled in
@@ -488,6 +497,12 @@ final class CameraViewModel: NSObject, ObservableObject {
         let underTest = NSClassFromString("XCTestCase") != nil
         self.p2pEnabled = p2pEnabled
             ?? (underTest ? false : UserDefaults.standard.object(forKey: Self.p2pEnabledKey) as? Bool ?? true)
+        // Tests always start from auto unless they opt in, like P2P above.
+        let exposureExperiment = cameraExposureExperiment
+            ?? (underTest ? .auto : CameraExposureExperiment.stored(in: .standard))
+        self.cameraExposureExperiment = exposureExperiment
+        self.cameraExposureExperimentState = exposureExperiment == .auto
+            ? .initial : CameraExposureExperimentState(setting: exposureExperiment, status: .pending)
         self.authorizationStatus = authorizationStatus
         self.requestAccess = requestAccess
         self.idleTimerUpdater = idleTimerUpdater
@@ -957,6 +972,10 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
         }
         session.commitConfiguration()
+        // After the format is committed: a format change resets the device's
+        // activeMaxExposureDuration, so the experiment is (re)applied here.
+        // With the default auto setting this does not touch the device.
+        applyCameraExposureExperiment(to: camera)
 #if DEBUG
         activeCamera = camera
         updateCameraConfiguration(camera)
@@ -1422,6 +1441,94 @@ final class CameraViewModel: NSObject, ObservableObject {
         })
     }
 
+    // MARK: Camera exposure experiment
+
+    /// Whether the exposure experiment picker may change now (one setting per
+    /// Debug Recording session).
+    var cameraExposureExperimentEditable: Bool {
+        !debugRecordingActive && !debugRecordingFinalizing
+    }
+
+    func setCameraExposureExperiment(_ setting: CameraExposureExperiment) {
+        guard setting != cameraExposureExperiment, cameraExposureExperimentEditable else { return }
+        cameraExposureExperiment = setting
+        if NSClassFromString("XCTestCase") == nil { setting.store(in: .standard) }
+        if running, let camera = exposureExperimentCamera {
+            applyCameraExposureExperiment(to: camera)
+        } else if setting == .auto && !exposureExperimentCapActive {
+            cameraExposureExperimentState = .initial
+        } else {
+            cameraExposureExperimentState = CameraExposureExperimentState(setting: setting, status: .pending)
+        }
+        print("[Exposure] experiment=\(setting.rawValue) by user")
+    }
+
+    /// Applies the current experiment. Auto with no cap of ours on the device
+    /// returns without touching the device (the pre-experiment behaviour).
+    /// A cap this app set is always reset to the device default first, so the
+    /// default is re-read for the current format before a new cap is planned.
+    private func applyCameraExposureExperiment(to camera: AVCaptureDevice) {
+        if exposureExperimentCamera !== camera {
+            exposureExperimentCapActive = false
+            exposureExperimentDefaultMaximum = .invalid
+        }
+        exposureExperimentCamera = camera
+        let setting = cameraExposureExperiment
+        guard setting != .auto || exposureExperimentCapActive else {
+            cameraExposureExperimentState = .initial
+            return
+        }
+        do {
+            try camera.lockForConfiguration()
+            defer { camera.unlockForConfiguration() }
+            let wasCapped = exposureExperimentCapActive
+            if wasCapped {
+                // kCMTimeInvalid restores the device default for the active format.
+                camera.activeMaxExposureDuration = .invalid
+                exposureExperimentCapActive = false
+            }
+            exposureExperimentDefaultMaximum = camera.activeMaxExposureDuration
+            let format = camera.activeFormat
+            let autoExposure = camera.exposureMode == .continuousAutoExposure
+                || camera.exposureMode == .autoExpose
+            var (action, state) = CameraExposureExperimentPlanner.plan(
+                setting: setting, capActive: false,
+                formatMinimum: format.minExposureDuration, formatMaximum: format.maxExposureDuration,
+                defaultMaximum: exposureExperimentDefaultMaximum, autoExposureActive: autoExposure)
+            if case .setMaximum(let duration) = action {
+                camera.activeMaxExposureDuration = duration
+                exposureExperimentCapActive = true
+            }
+            if setting == .auto && wasCapped { state.status = .autoRestored }
+            state.observedMaxExposureSeconds = CameraExposureExperimentPlanner.seconds(
+                camera.activeMaxExposureDuration)
+            cameraExposureExperimentState = state
+        } catch {
+            cameraExposureExperimentState = CameraExposureExperimentState(
+                setting: setting, status: .failed,
+                requestedMaxExposureSeconds: setting.requestedMaxExposureDuration
+                    .flatMap(CameraExposureExperimentPlanner.seconds),
+                detail: error.localizedDescription)
+        }
+        let state = cameraExposureExperimentState
+        print("[Exposure] setting=\(setting.rawValue) status=\(state.status.rawValue) "
+              + "applied=\(state.appliedMaxExposureSeconds.map { String(format: "%.5f", $0) } ?? "-")s "
+              + "default=\(state.defaultMaxExposureSeconds.map { String(format: "%.5f", $0) } ?? "-")s "
+              + "observed=\(state.observedMaxExposureSeconds.map { String(format: "%.5f", $0) } ?? "-")s"
+              + (state.detail.map { " detail=\($0)" } ?? ""))
+    }
+
+    /// The experiment state for Debug Recording metadata, with the device's
+    /// current activeMaxExposureDuration read back (read only).
+    private func cameraExposureExperimentSnapshot() -> CameraExposureExperimentState {
+        var state = cameraExposureExperimentState
+        if let camera = exposureExperimentCamera {
+            state.observedMaxExposureSeconds = CameraExposureExperimentPlanner.seconds(
+                camera.activeMaxExposureDuration)
+        }
+        return state
+    }
+
     func setP2PEnabled(_ enabled: Bool) {
         guard enabled != p2pEnabled else { return }
         p2pEnabled = enabled
@@ -1555,7 +1662,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         debugRecordingStatus = "録画を開始しています…"
         processor.updateDebugCameraDeviceState(nil)
         debugSegmentLabel = .unlabeled
-        processor.startDebugRecording(diagnosticColors: debugDiagnosticColors) { [weak self] result in
+        processor.startDebugRecording(diagnosticColors: debugDiagnosticColors,
+                                      cameraExposureExperiment: cameraExposureExperimentSnapshot()) { [weak self] result in
             Task { @MainActor in
                 guard let self else { return }
                 switch result {

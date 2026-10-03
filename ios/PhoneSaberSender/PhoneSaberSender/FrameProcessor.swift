@@ -302,6 +302,7 @@ final class FrameProcessor: @unchecked Sendable {
     }
 
     func startDebugRecording(diagnosticColors: DebugDiagnosticColors = .both,
+                             cameraExposureExperiment: CameraExposureExperimentState? = nil,
                              completion: @escaping (Result<String, Error>) -> Void) {
         queue.async { [weak self] in
             guard let self else { return }
@@ -313,7 +314,8 @@ final class FrameProcessor: @unchecked Sendable {
                     throw DebugVideoRecorderError.cameraNotReady
                 }
                 let recorder = try DebugVideoRecorder(directory: self.rawFrameDirectory(),
-                                                      diagnosticColors: diagnosticColors)
+                                                      diagnosticColors: diagnosticColors,
+                                                      cameraExposureExperiment: cameraExposureExperiment)
                 try recorder.prepare(width: dimensions.0, height: dimensions.1)
                 self.debugVideoRecorder = recorder
                 completion(.success(recorder.sessionID))

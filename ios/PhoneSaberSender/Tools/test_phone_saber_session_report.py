@@ -376,6 +376,64 @@ class SessionReportSegmentTests(unittest.TestCase):
         self.assertIn("counts by segment label: n/a", render_markdown(report))
 
 
+class SessionReportExposureExperimentTests(unittest.TestCase):
+    """The opt-in camera exposure experiment in summary.json (optional field)."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.bundle = Path(self.tmp.name) / "phone_saber_triage_sample_session"
+        write_codex_bundle(self.bundle)
+
+    def set_experiment(self, value) -> None:
+        path = self.bundle / "summary.json"
+        summary = json.loads(path.read_text())
+        summary["cameraExposureExperiment"] = value
+        path.write_text(json.dumps(summary))
+
+    def test_old_bundle_without_the_field_reports_na(self):
+        report = build_report(self.bundle)
+        self.assertEqual(report["inputContract"], "PASS")
+        self.assertFalse(report["cameraExposureExperiment"]["present"])
+        text = render_markdown(report)
+        self.assertIn("## 露出実験 (cameraExposureExperiment)", text)
+        self.assertIn("n/a — not recorded", text)
+
+    def test_applied_cap_is_shown_and_passes_the_input_contract(self):
+        self.set_experiment({"formatVersion": 1, "setting": "maxShutter1_120", "status": "applied",
+                             "capActive": True, "requestedMaxExposureSeconds": 1 / 120,
+                             "appliedMaxExposureSeconds": 1 / 120, "defaultMaxExposureSeconds": 1 / 30,
+                             "observedMaxExposureSeconds": 1 / 120})
+        input_plan(self.bundle)  # accepted by the triage input contract
+        report = build_report(self.bundle)
+        self.assertEqual(report["inputContract"], "PASS")
+        section = report["cameraExposureExperiment"]
+        self.assertTrue(section["valid"])
+        self.assertIn("cap ACTIVE", section["verdict"])
+        text = render_markdown(report)
+        self.assertIn("setting: maxShutter1_120 / status: applied / capActive: true", text)
+        self.assertIn("8.33 ms (1/120 s)", text)
+        self.assertIn("33.33 ms (1/30 s)", text)
+
+    def test_auto_and_unapplied_requests_are_explicit(self):
+        self.set_experiment({"setting": "auto", "status": "auto", "capActive": False})
+        self.assertIn("device exposure untouched", build_report(self.bundle)["cameraExposureExperiment"]["verdict"])
+        self.set_experiment({"setting": "maxShutter1_100", "status": "unsupported", "capActive": False,
+                             "detail": "active format has no valid exposure range"})
+        verdict = build_report(self.bundle)["cameraExposureExperiment"]["verdict"]
+        self.assertIn("NOT applied (unsupported)", verdict)
+        self.assertIn("no valid exposure range", verdict)
+
+    def test_malformed_experiment_is_rejected_by_the_contract_but_report_degrades(self):
+        self.set_experiment({"setting": "maxShutter1_999", "status": "applied", "extra": 1})
+        with self.assertRaisesRegex(Exception, "camera exposure experiment is malformed"):
+            input_plan(self.bundle)
+        report = build_report(self.bundle)
+        self.assertTrue(report["inputContract"].startswith("FAIL"))
+        self.assertIn("malformed", report["cameraExposureExperiment"]["verdict"])
+        render_markdown(report)
+
+
 class ReceiverReportHookTests(unittest.TestCase):
     def post(self, root: Path, *, patch_report=None) -> tuple[int, str, Path, mock.Mock]:
         inbox = root / "inbox"

@@ -3834,3 +3834,42 @@ extension DetectionCoreTests {
         XCTAssertEqual((unlabeled.metadata?["segmentMarkers"] as? [Any])?.count, 0)
     }
 }
+
+extension DetectionCoreTests {
+    func testDebugRecordingRecordsCameraExposureExperimentOnlyWhenProvided() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberExposureExperiment-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let oldPreference = UserDefaults.standard.object(forKey: DebugBundleTransfer.preferenceKey)
+        UserDefaults.standard.set(false, forKey: DebugBundleTransfer.preferenceKey)
+        defer { UserDefaults.standard.set(oldPreference, forKey: DebugBundleTransfer.preferenceKey) }
+        let state = CameraExposureExperimentState(
+            setting: .maxShutter1_100, status: .applied, requestedMaxExposureSeconds: 0.01,
+            appliedMaxExposureSeconds: 0.01, defaultMaxExposureSeconds: 1.0 / 30,
+            observedMaxExposureSeconds: 0.01)
+        func record(_ experiment: CameraExposureExperimentState?, date: Date) async throws -> [String: Any] {
+            let recorder = try DebugVideoRecorder(directory: directory, date: date,
+                                                  cameraExposureExperiment: experiment)
+            let buffer = solidPixelBuffer(width: 64, height: 48)
+            CVPixelBufferLockBaseAddress(buffer, .readOnly)
+            _ = recorder.append(pixelBuffer: buffer, presentationTime: CMTime(value: 1, timescale: 30),
+                                frameID: 1, results: [])
+            CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+            let recording: DebugRecordingResult = try await withCheckedThrowingContinuation { continuation in
+                recorder.finish { continuation.resume(with: $0) }
+            }
+            let data = try Data(contentsOf: recording.metadataURL)
+            // Existing Codable readers ignore the additive root field.
+            XCTAssertNoThrow(try JSONDecoder().decode(DebugRecordingMetadata.self, from: data))
+            return try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        }
+        let withExperiment = try await record(state, date: Date(timeIntervalSince1970: 10))
+        let recorded = try XCTUnwrap(withExperiment["cameraExposureExperiment"] as? [String: Any])
+        XCTAssertEqual(recorded["setting"] as? String, "maxShutter1_100")
+        XCTAssertEqual(recorded["status"] as? String, "applied")
+        XCTAssertEqual(recorded["capActive"] as? Bool, true)
+        XCTAssertEqual(try XCTUnwrap(recorded["appliedMaxExposureSeconds"] as? Double), 0.01, accuracy: 1e-12)
+        let withoutExperiment = try await record(nil, date: Date(timeIntervalSince1970: 20))
+        XCTAssertNil(withoutExperiment["cameraExposureExperiment"])
+    }
+}

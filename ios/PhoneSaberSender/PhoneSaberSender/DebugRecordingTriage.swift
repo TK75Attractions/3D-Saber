@@ -974,6 +974,9 @@ enum DebugRecordingTriageBuilder {
                 segments["markers"] = metadata["segmentMarkers"] as? [[String: Any]] ?? []
                 summary["segmentSummary"] = segments
             }
+            if let experiment = metadata["cameraExposureExperiment"] as? [String: Any] {
+                summary["cameraExposureExperiment"] = experiment
+            }
             if metadata["activeColors"] != nil {
                 summary["activeColors"] = colors.filter { active.contains($0) }
                 var bridge = metadata["bridgeDropoutSummary"] as? [String: Any] ?? [:]

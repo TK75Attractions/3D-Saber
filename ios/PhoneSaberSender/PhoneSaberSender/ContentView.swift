@@ -96,6 +96,19 @@ struct ContentView: View {
                             Text("選んだ色以外の未検出は診断の失敗として数えません（認識とUDP送信は常に両色）")
                                 .font(.caption2)
                                 .foregroundStyle(.secondary)
+                            Text("露出実験（最大シャッター時間・ISOは自動）")
+                                .font(.caption)
+                            Picker("露出実験", selection: Binding(
+                                get: { model.cameraExposureExperiment },
+                                set: { model.setCameraExposureExperiment($0) }
+                            )) {
+                                ForEach(CameraExposureExperiment.allCases) { Text($0.title).tag($0) }
+                            }
+                            .pickerStyle(.segmented)
+                            .disabled(!model.cameraExposureExperimentEditable)
+                            Text("実験用。自動(既定)はカメラ露出を一切変更しません。速い振りのブレ確認用で、画面が暗くなる・ノイズが増えることがあります。録画中は変更できません。状態: \(model.cameraExposureExperimentState.displayText)")
+                                .font(.caption2)
+                                .foregroundStyle(model.cameraExposureExperimentState.capActive ? .orange : .secondary)
                             Toggle("Stop後にtriage bundleをMacへ自動転送",
                                    isOn: $autoTransferDebugBundles)
                             HStack {

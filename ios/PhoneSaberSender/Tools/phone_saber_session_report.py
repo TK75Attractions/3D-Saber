@@ -30,7 +30,8 @@ from typing import Any, Callable
 
 from phone_saber_background_evidence import background_evidence, render_lines as background_evidence_lines
 from phone_saber_hotspots import static_hotspots
-from phone_saber_metadata_schema import FALSE_POSITIVE_SEGMENT_LABELS, SEGMENT_LABELS
+from phone_saber_metadata_schema import (
+    FALSE_POSITIVE_SEGMENT_LABELS, SEGMENT_LABELS, camera_exposure_experiment_errors)
 from phone_saber_segments import SegmentInputError, analyze as segment_analyze, label_for_frame
 from phone_saber_selection_replay import Policy, gap_distribution, load_sequences, quantiles, replay
 from phone_saber_tracking_diagnostics import (
@@ -147,6 +148,35 @@ def memory_section(summary: dict) -> dict:
                           "retained-BGRA budget could exhaust memory")
             result["verdict"] = (f"{level} — {detail}; at frame "
                                  f"{_fmt(headroom.get('minimumFrameID'))}")
+    return result
+
+
+def _ms(seconds: Any) -> str:
+    if isinstance(seconds, bool) or not isinstance(seconds, (int, float)) or seconds <= 0:
+        return NA
+    return f"{seconds * 1000:.2f} ms (1/{1 / seconds:.0f} s)"
+
+
+def exposure_experiment_section(summary: dict) -> dict:
+    """The opt-in camera exposure experiment recorded at Start (summary.json)."""
+    value = summary.get("cameraExposureExperiment")
+    if value is None:
+        return {"present": False,
+                "verdict": "n/a — not recorded (bundle predates the switch; those builds always used auto exposure)"}
+    errors = camera_exposure_experiment_errors(value)
+    if errors:
+        return {"present": True, "valid": False, "verdict": "malformed — " + "; ".join(errors[:3])}
+    result = {"present": True, "valid": True, **value}
+    setting, status = value.get("setting"), value.get("status")
+    if setting == "auto":
+        result["verdict"] = "auto exposure (device exposure untouched)" if status == "auto" else \
+            f"auto exposure ({status})"
+    elif value.get("capActive") is True:
+        result["verdict"] = (f"cap ACTIVE — max shutter {_ms(value.get('appliedMaxExposureSeconds'))}, "
+                             f"device default {_ms(value.get('defaultMaxExposureSeconds'))}; ISO stays auto")
+    else:
+        result["verdict"] = (f"{setting} requested but NOT applied ({status}); exposure stayed auto"
+                             + (f": {value['detail']}" if value.get("detail") else ""))
     return result
 
 
@@ -395,6 +425,8 @@ def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MA
         "dropoutSummary": summary.get("dropoutSummary"),
         "inputContract": "PASS" if plan is not None else f"FAIL ({contract_error})",
         "segments": segments,
+        "cameraExposureExperiment": _guard(errors, "camera_exposure_experiment",
+                                           lambda: exposure_experiment_section(summary)),
         "memory": _guard(errors, "memory", lambda: memory_section(summary)),
         "tracking": _guard(errors, "tracking", lambda: tracking_section(summary)),
         "bridgeDropoutSummary": summary.get("bridgeDropoutSummary"),
@@ -570,6 +602,22 @@ def render_markdown(report: dict) -> str:
     out.extend(_color_table(report))
     add("")
     out.extend(_segment_lines(report.get("segments")))
+    add("")
+
+    add("## 露出実験 (cameraExposureExperiment)")
+    add("")
+    experiment = report.get("cameraExposureExperiment") or {}
+    if experiment.get("present") and experiment.get("valid"):
+        add(f"- setting: {_fmt(experiment.get('setting'))} / status: {_fmt(experiment.get('status'))} "
+            f"/ capActive: {_fmt(experiment.get('capActive'))}")
+        add(f"- requested max shutter: {_ms(experiment.get('requestedMaxExposureSeconds'))}, "
+            f"applied: {_ms(experiment.get('appliedMaxExposureSeconds'))}, "
+            f"observed at Start: {_ms(experiment.get('observedMaxExposureSeconds'))}")
+        add(f"- device default max: {_ms(experiment.get('defaultMaxExposureSeconds'))}, "
+            f"format range: {_ms(experiment.get('formatMinExposureSeconds'))} … "
+            f"{_ms(experiment.get('formatMaxExposureSeconds'))}")
+    add(f"- **verdict: {experiment.get('verdict', NA)}**")
+    add("- 実際の各 frame の露出時間は 背景誤検出の証拠 の exposure 欄 (frames[].camera) を参照。")
     add("")
 
     add("## メモリ (motionEventSummary.runtime)")

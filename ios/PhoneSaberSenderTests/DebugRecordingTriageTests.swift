@@ -1,3 +1,4 @@
+import CoreMedia
 import Foundation
 import XCTest
 @testable import PhoneSaberSender
@@ -1533,5 +1534,169 @@ extension DebugBridgeDropoutTests {
                 $0["emitterDiagnostics"] != nil }
             XCTAssertTrue(traced || compaction.contains("selectedDecisionTraceEmitterDiagnosticsDropped"))
         }
+    }
+}
+
+// MARK: - Camera exposure experiment (opt-in; never touches recognition)
+
+final class CameraExposureExperimentTests: XCTestCase {
+    private typealias Planner = CameraExposureExperimentPlanner
+    private let formatMin = CMTime(value: 1, timescale: 10_000)      // 0.1 ms
+    private let formatMax = CMTime(value: 1, timescale: 2)           // 500 ms
+    private let defaultMax = CMTime(value: 1, timescale: 30)         // 33.3 ms
+
+    func testDefaultIsAutoAndUnknownStoredValuesDecodeToAuto() {
+        XCTAssertEqual(CameraExposureExperiment(storedValue: nil), .auto)
+        XCTAssertEqual(CameraExposureExperiment(storedValue: "bogus"), .auto)
+        XCTAssertEqual(CameraExposureExperiment(storedValue: 100), .auto)
+        XCTAssertEqual(CameraExposureExperiment(storedValue: "maxShutter1_120"), .maxShutter1_120)
+        XCTAssertEqual(CameraExposureExperimentState.initial.setting, .auto)
+        XCTAssertEqual(CameraExposureExperimentState.initial.status, .auto)
+        XCTAssertFalse(CameraExposureExperimentState.initial.capActive)
+    }
+
+    func testPersistenceRoundTripUsesStableKey() throws {
+        let suite = "PhoneSaberExposureTests-\(UUID().uuidString)"
+        let defaults = try XCTUnwrap(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        XCTAssertEqual(CameraExposureExperiment.stored(in: defaults), .auto)
+        for setting in CameraExposureExperiment.allCases {
+            setting.store(in: defaults)
+            XCTAssertEqual(CameraExposureExperiment.stored(in: defaults), setting)
+            XCTAssertEqual(defaults.string(forKey: "PhoneSaber.cameraExposureExperiment"), setting.rawValue)
+        }
+    }
+
+    func testOptionMapsToExactShutterDuration() {
+        XCTAssertNil(CameraExposureExperiment.auto.requestedMaxExposureDuration)
+        XCTAssertEqual(CameraExposureExperiment.maxShutter1_100.requestedMaxExposureDuration,
+                       CMTime(value: 1, timescale: 100))
+        XCTAssertEqual(CameraExposureExperiment.maxShutter1_120.requestedMaxExposureDuration,
+                       CMTime(value: 1, timescale: 120))
+        XCTAssertEqual(CameraExposureExperiment.maxShutter1_240.requestedMaxExposureDuration,
+                       CMTime(value: 1, timescale: 240))
+        XCTAssertEqual(Set(CameraExposureExperiment.allCases.map(\.title)).count,
+                       CameraExposureExperiment.allCases.count)
+    }
+
+    func testAutoLeavesDeviceUntouchedUnlessThisAppCappedIt() {
+        let untouched = Planner.plan(setting: .auto, capActive: false, formatMinimum: formatMin,
+                                     formatMaximum: formatMax, defaultMaximum: defaultMax,
+                                     autoExposureActive: true)
+        XCTAssertEqual(untouched.action, .leaveUntouched)
+        XCTAssertEqual(untouched.state.status, .auto)
+        let restored = Planner.plan(setting: .auto, capActive: true, formatMinimum: formatMin,
+                                    formatMaximum: formatMax, defaultMaximum: defaultMax,
+                                    autoExposureActive: true)
+        XCTAssertEqual(restored.action, .resetToDefault)
+        XCTAssertEqual(restored.state.status, .autoRestored)
+    }
+
+    func testCapAppliedWithinFormatRange() {
+        let result = Planner.plan(setting: .maxShutter1_120, capActive: false, formatMinimum: formatMin,
+                                  formatMaximum: formatMax, defaultMaximum: defaultMax,
+                                  autoExposureActive: true)
+        XCTAssertEqual(result.action, .setMaximum(CMTime(value: 1, timescale: 120)))
+        XCTAssertEqual(result.state.status, .applied)
+        XCTAssertTrue(result.state.capActive)
+        XCTAssertEqual(try XCTUnwrap(result.state.appliedMaxExposureSeconds), 1.0 / 120, accuracy: 1e-12)
+        XCTAssertEqual(try XCTUnwrap(result.state.defaultMaxExposureSeconds), 1.0 / 30, accuracy: 1e-12)
+    }
+
+    func testCapIsClampedToFormatMinimumAndMaximum() {
+        let narrowMin = CMTime(value: 1, timescale: 200)  // 5 ms floor
+        let floor = Planner.plan(setting: .maxShutter1_240, capActive: false, formatMinimum: narrowMin,
+                                 formatMaximum: formatMax, defaultMaximum: defaultMax,
+                                 autoExposureActive: true)
+        XCTAssertEqual(floor.action, .setMaximum(narrowMin))
+        XCTAssertEqual(floor.state.status, .clamped)
+        XCTAssertEqual(Planner.clamp(CMTime(value: 1, timescale: 10), minimum: formatMin,
+                                     maximum: CMTime(value: 1, timescale: 50)),
+                       CMTime(value: 1, timescale: 50))
+        XCTAssertNil(Planner.clamp(CMTime(value: 1, timescale: 100), minimum: .invalid, maximum: formatMax))
+        XCTAssertNil(Planner.clamp(CMTime(value: 1, timescale: 100), minimum: formatMax, maximum: formatMin))
+    }
+
+    func testFallsBackToAutoWhenUnsupportedOrNotNeeded() {
+        let invalidFormat = Planner.plan(setting: .maxShutter1_100, capActive: false, formatMinimum: .invalid,
+                                         formatMaximum: .invalid, defaultMaximum: defaultMax,
+                                         autoExposureActive: true)
+        XCTAssertEqual(invalidFormat.action, .leaveUntouched)
+        XCTAssertEqual(invalidFormat.state.status, .unsupported)
+        XCTAssertFalse(invalidFormat.state.capActive)
+        let manualExposure = Planner.plan(setting: .maxShutter1_100, capActive: true, formatMinimum: formatMin,
+                                          formatMaximum: formatMax, defaultMaximum: defaultMax,
+                                          autoExposureActive: false)
+        XCTAssertEqual(manualExposure.action, .resetToDefault)
+        XCTAssertEqual(manualExposure.state.status, .unsupported)
+        // A device default already shorter than the request is left alone, so
+        // the experiment can never lengthen the shutter.
+        let shortDefault = Planner.plan(setting: .maxShutter1_100, capActive: false, formatMinimum: formatMin,
+                                        formatMaximum: formatMax, defaultMaximum: CMTime(value: 1, timescale: 125),
+                                        autoExposureActive: true)
+        XCTAssertEqual(shortDefault.action, .leaveUntouched)
+        XCTAssertEqual(shortDefault.state.status, .notNeeded)
+    }
+
+    func testMetadataDictionaryOmitsNilFieldsAndIsJSONSerializable() throws {
+        let auto = CameraExposureExperimentState.initial.metadataDictionary
+        XCTAssertEqual(auto["setting"] as? String, "auto")
+        XCTAssertEqual(auto["status"] as? String, "auto")
+        XCTAssertEqual(auto["capActive"] as? Bool, false)
+        XCTAssertNil(auto["appliedMaxExposureSeconds"])
+        let applied = Planner.plan(setting: .maxShutter1_100, capActive: false, formatMinimum: formatMin,
+                                   formatMaximum: formatMax, defaultMaximum: defaultMax,
+                                   autoExposureActive: true).state.metadataDictionary
+        XCTAssertEqual(applied["setting"] as? String, "maxShutter1_100")
+        XCTAssertEqual(applied["capActive"] as? Bool, true)
+        XCTAssertEqual(try XCTUnwrap(applied["appliedMaxExposureSeconds"] as? Double), 0.01, accuracy: 1e-12)
+        XCTAssertTrue(JSONSerialization.isValidJSONObject(applied))
+    }
+
+    @MainActor
+    func testViewModelStartsAutoUnderTestAndPersistsNothing() {
+        let model = CameraViewModel(p2pEnabled: false, idleTimerUpdater: { _ in })
+        XCTAssertEqual(model.cameraExposureExperiment, .auto)
+        XCTAssertEqual(model.cameraExposureExperimentState.status, .auto)
+        XCTAssertTrue(model.cameraExposureExperimentEditable)
+        let before = UserDefaults.standard.object(forKey: CameraExposureExperiment.storageKey) as? String
+        model.setCameraExposureExperiment(.maxShutter1_120)
+        XCTAssertEqual(model.cameraExposureExperiment, .maxShutter1_120)
+        // Camera not running: applied at the next start.
+        XCTAssertEqual(model.cameraExposureExperimentState.status, .pending)
+        model.setCameraExposureExperiment(.auto)
+        XCTAssertEqual(model.cameraExposureExperimentState.status, .auto)
+        XCTAssertEqual(UserDefaults.standard.object(forKey: CameraExposureExperiment.storageKey) as? String, before)
+    }
+}
+
+extension DebugBridgeDropoutTests {
+    func testTriageSummaryCopiesCameraExposureExperimentWhenPresent() throws {
+        let directory = try temporaryDirectory()
+        let frames = (0..<8).map { frame($0, red: line(100), blue: line(200)) }
+        var document = try XCTUnwrap(JSONSerialization.jsonObject(
+            with: self.document(frames: frames, events: [])) as? [String: Any])
+        let experiment = CameraExposureExperimentState(
+            setting: .maxShutter1_120, status: .applied, requestedMaxExposureSeconds: 1.0 / 120,
+            appliedMaxExposureSeconds: 1.0 / 120).metadataDictionary
+        document["cameraExposureExperiment"] = experiment
+        let bundle = try DebugRecordingTriageBuilder.build(
+            metadataData: JSONSerialization.data(withJSONObject: document),
+            metadataURL: directory.appendingPathComponent("metadata.json"),
+            forensicDirectoryURL: directory)
+        let summary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+        let copied = try XCTUnwrap(summary["cameraExposureExperiment"] as? [String: Any])
+        XCTAssertEqual(copied["setting"] as? String, "maxShutter1_120")
+        XCTAssertEqual(copied["status"] as? String, "applied")
+
+        let legacyDirectory = try temporaryDirectory()
+        let legacy = try DebugRecordingTriageBuilder.build(
+            metadataData: self.document(frames: frames, events: []),
+            metadataURL: legacyDirectory.appendingPathComponent("metadata.json"),
+            forensicDirectoryURL: legacyDirectory)
+        let legacySummary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: legacy.appendingPathComponent("summary.json"))) as? [String: Any])
+        XCTAssertNil(legacySummary["cameraExposureExperiment"])
     }
 }

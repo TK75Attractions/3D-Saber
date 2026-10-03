@@ -13,6 +13,7 @@ import compare_phone_saber_sessions as session_comparison
 from phone_saber_metadata_schema import (
     CURRENT_FORMAT_VERSION,
     LEGACY_FORMAT_VERSION,
+    camera_exposure_experiment_errors,
     load_metadata_file,
     validate_document,
 )
@@ -129,6 +130,39 @@ class PhoneSaberMetadataSchemaTests(unittest.TestCase):
     def test_missing_frames_array_is_a_structural_error(self):
         with self.assertRaisesRegex(ValueError, "frames array"):
             validate_document({"sessionID": "no-frames"})
+
+
+class CameraExposureExperimentSchemaTests(unittest.TestCase):
+    BASE = {"formatVersion": CURRENT_FORMAT_VERSION, "sessionID": "s", "width": 4, "height": 4, "frames": []}
+
+    def test_field_is_optional_so_old_sessions_validate_without_new_warnings(self):
+        validated = validate_document(dict(self.BASE))
+        self.assertEqual(validated.report.warning_count, 0)
+        self.assertNotIn("cameraExposureExperiment", validated.document)
+
+    def test_recorded_experiment_validates_and_is_preserved(self):
+        experiment = {"formatVersion": 1, "setting": "maxShutter1_100", "status": "clamped",
+                      "capActive": True, "requestedMaxExposureSeconds": 0.01,
+                      "appliedMaxExposureSeconds": 0.0125, "formatMinExposureSeconds": 0.0125,
+                      "formatMaxExposureSeconds": 0.5, "defaultMaxExposureSeconds": 0.0333}
+        validated = validate_document({**self.BASE, "cameraExposureExperiment": experiment})
+        self.assertEqual(validated.report.warning_count, 0)
+        self.assertEqual(validated.document["cameraExposureExperiment"], experiment)
+        self.assertEqual(camera_exposure_experiment_errors(experiment), [])
+
+    def test_mistyped_fields_warn_and_helper_reports_errors(self):
+        validated = validate_document({**self.BASE, "cameraExposureExperiment": {
+            "setting": "auto", "status": "auto", "capActive": "yes"}})
+        self.assertIn("cameraExposureExperiment.capActive: expected boolean; treated as unknown",
+                      validated.report.warnings)
+        validated = validate_document({**self.BASE, "cameraExposureExperiment": {"setting": "auto"}})
+        self.assertTrue(any("cameraExposureExperiment.status" in key for key in validated.report.warnings))
+        self.assertEqual(camera_exposure_experiment_errors([]), ["cameraExposureExperiment must be an object"])
+        errors = camera_exposure_experiment_errors({"setting": "fast", "status": "applied",
+                                                   "appliedMaxExposureSeconds": "1/100", "other": 1})
+        self.assertIn("unknown cameraExposureExperiment.setting", errors)
+        self.assertIn("cameraExposureExperiment.appliedMaxExposureSeconds must be number", errors)
+        self.assertIn("unknown cameraExposureExperiment keys: other", errors)
 
 
 if __name__ == "__main__":

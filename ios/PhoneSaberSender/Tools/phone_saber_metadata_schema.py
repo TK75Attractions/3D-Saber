@@ -185,6 +185,43 @@ CAMERA_SAMPLE = object_field({
     "activeMaxFPS": scalar("number", nullable=True),
 }, required=True)
 
+# Opt-in camera exposure experiment chosen at Debug Recording Start (root and
+# summary.json `cameraExposureExperiment`). Absent in older recordings, which
+# always used plain auto exposure. Settings and statuses mirror the Swift
+# CameraExposureExperiment / CameraExposureExperimentState.Status raw values.
+CAMERA_EXPOSURE_EXPERIMENT_SETTINGS = ("auto", "maxShutter1_100", "maxShutter1_120", "maxShutter1_240")
+CAMERA_EXPOSURE_EXPERIMENT_STATUSES = ("auto", "autoRestored", "applied", "clamped", "notNeeded",
+                                       "unsupported", "failed", "pending")
+CAMERA_EXPOSURE_EXPERIMENT = object_field({
+    "formatVersion": scalar("integer"),
+    "setting": scalar("string", required=True),
+    "status": scalar("string", required=True),
+    "capActive": scalar("boolean"),
+    **{name: scalar("number") for name in (
+        "requestedMaxExposureSeconds", "appliedMaxExposureSeconds", "defaultMaxExposureSeconds",
+        "formatMinExposureSeconds", "formatMaxExposureSeconds", "observedMaxExposureSeconds")},
+    "detail": scalar("string"),
+})
+
+
+def camera_exposure_experiment_errors(value: Any) -> list[str]:
+    """Problems with a `cameraExposureExperiment` object (empty list = valid)."""
+    if not isinstance(value, dict):
+        return ["cameraExposureExperiment must be an object"]
+    errors: list[str] = []
+    if value.get("setting") not in CAMERA_EXPOSURE_EXPERIMENT_SETTINGS:
+        errors.append("unknown cameraExposureExperiment.setting")
+    if value.get("status") not in CAMERA_EXPOSURE_EXPERIMENT_STATUSES:
+        errors.append("unknown cameraExposureExperiment.status")
+    for key, field in (CAMERA_EXPOSURE_EXPERIMENT.fields or {}).items():
+        if key in value and key not in ("setting", "status") and not _matches_kind(value[key], field.kind):
+            errors.append(f"cameraExposureExperiment.{key} must be {field.kind}")
+    unknown = set(value) - set(CAMERA_EXPOSURE_EXPERIMENT.fields or {})
+    if unknown:
+        errors.append("unknown cameraExposureExperiment keys: " + ", ".join(sorted(unknown)))
+    return errors
+
+
 SEGMENT_LABELS = ("unlabeled", "sabersVisible", "noSaber", "noSaberCovered")
 # Labels under which every detection of a color is a false positive.
 FALSE_POSITIVE_SEGMENT_LABELS = ("noSaber", "noSaberCovered")
@@ -240,6 +277,8 @@ ROOT = object_field({
     # Operator segment labels (ground truth); absent in older recordings.
     "segmentMarkers": array_field(SEGMENT_MARKER),
     "segmentSummary": SEGMENT_SUMMARY,
+    # Opt-in exposure experiment at Start; absent in older recordings (auto).
+    "cameraExposureExperiment": CAMERA_EXPOSURE_EXPERIMENT,
 }, required=True)
 
 

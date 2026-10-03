@@ -5,6 +5,221 @@ import Foundation
 import ImageIO
 import os
 
+// MARK: Camera exposure experiment (opt-in, diagnostics)
+// Lives here (not in CameraViewModel.swift) so the host-built tracking e2e
+// harness, which compiles the recorder without the UIKit view model, sees it.
+
+/// Opt-in camera exposure experiment for Debug Recording on a real device.
+/// `.auto` is the default and leaves AVCaptureDevice exposure untouched (the
+/// behaviour before this switch existed). The other options cap the auto
+/// exposure algorithm's maximum shutter time via `activeMaxExposureDuration`,
+/// which keeps auto ISO, to test whether a shorter shutter reduces motion blur.
+/// Recognition, scoring and UDP are not affected by this setting.
+enum CameraExposureExperiment: String, CaseIterable, Identifiable, Equatable {
+    case auto
+    case maxShutter1_100 = "maxShutter1_100"
+    case maxShutter1_120 = "maxShutter1_120"
+    case maxShutter1_240 = "maxShutter1_240"
+
+    static let storageKey = "PhoneSaber.cameraExposureExperiment"
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .auto: return "自動(既定)"
+        case .maxShutter1_100: return "1/100秒"
+        case .maxShutter1_120: return "1/120秒"
+        case .maxShutter1_240: return "1/240秒"
+        }
+    }
+
+    /// Denominator of the requested maximum shutter time (1/N s); nil for auto.
+    var maximumShutterDenominator: Int32? {
+        switch self {
+        case .auto: return nil
+        case .maxShutter1_100: return 100
+        case .maxShutter1_120: return 120
+        case .maxShutter1_240: return 240
+        }
+    }
+
+    var requestedMaxExposureDuration: CMTime? {
+        maximumShutterDenominator.map { CMTime(value: 1, timescale: $0) }
+    }
+
+    /// Unknown or missing stored values decode to `.auto`.
+    init(storedValue: Any?) {
+        self = (storedValue as? String).flatMap(Self.init(rawValue:)) ?? .auto
+    }
+
+    static func stored(in defaults: UserDefaults) -> CameraExposureExperiment {
+        CameraExposureExperiment(storedValue: defaults.object(forKey: storageKey))
+    }
+
+    func store(in defaults: UserDefaults) {
+        defaults.set(rawValue, forKey: Self.storageKey)
+    }
+}
+
+/// What the camera owner must do to the device for an exposure experiment.
+enum CameraExposureExperimentAction: Equatable {
+    /// Do not touch the device exposure at all.
+    case leaveUntouched
+    /// Set `activeMaxExposureDuration` to kCMTimeInvalid (device default).
+    case resetToDefault
+    /// Set `activeMaxExposureDuration` to this value (already clamped).
+    case setMaximum(CMTime)
+}
+
+/// Outcome of applying the experiment, shown in the UI and written to Debug
+/// Recording metadata (`cameraExposureExperiment`). Values are seconds.
+struct CameraExposureExperimentState: Equatable {
+    enum Status: String, Equatable {
+        /// Auto exposure; the device was not touched.
+        case auto
+        /// Auto exposure restored (activeMaxExposureDuration reset to default).
+        case autoRestored
+        /// Requested cap applied as is.
+        case applied
+        /// Cap applied after clamping to the active format's exposure range.
+        case clamped
+        /// The device default maximum is already at or below the request.
+        case notNeeded
+        /// The active format or exposure mode cannot take the cap; stays auto.
+        case unsupported
+        /// lockForConfiguration failed; stays auto.
+        case failed
+        /// Camera not configured yet; applied at the next camera start.
+        case pending
+    }
+
+    var setting: CameraExposureExperiment
+    var status: Status
+    var requestedMaxExposureSeconds: Double?
+    var appliedMaxExposureSeconds: Double?
+    var defaultMaxExposureSeconds: Double?
+    var formatMinExposureSeconds: Double?
+    var formatMaxExposureSeconds: Double?
+    /// activeMaxExposureDuration read back from the device (when sampled).
+    var observedMaxExposureSeconds: Double?
+    var detail: String?
+
+    static let initial = CameraExposureExperimentState(setting: .auto, status: .auto)
+
+    init(setting: CameraExposureExperiment, status: Status,
+         requestedMaxExposureSeconds: Double? = nil, appliedMaxExposureSeconds: Double? = nil,
+         defaultMaxExposureSeconds: Double? = nil, formatMinExposureSeconds: Double? = nil,
+         formatMaxExposureSeconds: Double? = nil, observedMaxExposureSeconds: Double? = nil,
+         detail: String? = nil) {
+        self.setting = setting
+        self.status = status
+        self.requestedMaxExposureSeconds = requestedMaxExposureSeconds
+        self.appliedMaxExposureSeconds = appliedMaxExposureSeconds
+        self.defaultMaxExposureSeconds = defaultMaxExposureSeconds
+        self.formatMinExposureSeconds = formatMinExposureSeconds
+        self.formatMaxExposureSeconds = formatMaxExposureSeconds
+        self.observedMaxExposureSeconds = observedMaxExposureSeconds
+        self.detail = detail
+    }
+
+    /// The device exposure differs from the pre-experiment behaviour.
+    var capActive: Bool { status == .applied || status == .clamped }
+
+    /// Root metadata / summary.json object. Optional fields are omitted when nil.
+    var metadataDictionary: [String: Any] {
+        var result: [String: Any] = ["formatVersion": 1, "setting": setting.rawValue,
+                                     "status": status.rawValue, "capActive": capActive]
+        func put(_ key: String, _ value: Double?) {
+            guard let value, value.isFinite else { return }
+            result[key] = (value * 1_000_000_000).rounded() / 1_000_000_000
+        }
+        put("requestedMaxExposureSeconds", requestedMaxExposureSeconds)
+        put("appliedMaxExposureSeconds", appliedMaxExposureSeconds)
+        put("defaultMaxExposureSeconds", defaultMaxExposureSeconds)
+        put("formatMinExposureSeconds", formatMinExposureSeconds)
+        put("formatMaxExposureSeconds", formatMaxExposureSeconds)
+        put("observedMaxExposureSeconds", observedMaxExposureSeconds)
+        if let detail { result["detail"] = detail }
+        return result
+    }
+
+    /// One line for the UI.
+    var displayText: String {
+        func ms(_ seconds: Double?) -> String {
+            guard let seconds, seconds.isFinite, seconds > 0 else { return "-" }
+            return String(format: "%.2f ms", seconds * 1000)
+        }
+        switch status {
+        case .auto: return "自動露出(カメラ設定は変更していません)"
+        case .autoRestored: return "自動露出に戻しました(最大露出時間を既定値にリセット)"
+        case .applied: return "適用中: 最大露出時間 \(ms(appliedMaxExposureSeconds))(ISOは自動)"
+        case .clamped: return "適用中(範囲内に補正): 最大露出時間 \(ms(appliedMaxExposureSeconds))(要求 \(ms(requestedMaxExposureSeconds)))"
+        case .notNeeded: return "既定の最大露出時間 \(ms(defaultMaxExposureSeconds)) が要求以下のため変更なし"
+        case .unsupported: return "このカメラ形式では非対応のため自動のまま\(detail.map { ": \($0)" } ?? "")"
+        case .failed: return "設定に失敗したため自動のまま\(detail.map { ": \($0)" } ?? "")"
+        case .pending: return "次回カメラ開始時に適用します"
+        }
+    }
+}
+
+/// Pure planning of the exposure experiment, testable without a device.
+enum CameraExposureExperimentPlanner {
+    static func seconds(_ time: CMTime) -> Double? {
+        guard time.isValid, time.isNumeric else { return nil }
+        let value = CMTimeGetSeconds(time)
+        return value.isFinite && value > 0 ? value : nil
+    }
+
+    /// Clamps `requested` into [minimum, maximum]. Returns nil if the range is unusable.
+    static func clamp(_ requested: CMTime, minimum: CMTime, maximum: CMTime) -> CMTime? {
+        guard seconds(minimum) != nil, seconds(maximum) != nil,
+              CMTimeCompare(minimum, maximum) <= 0 else { return nil }
+        if CMTimeCompare(requested, minimum) < 0 { return minimum }
+        if CMTimeCompare(requested, maximum) > 0 { return maximum }
+        return requested
+    }
+
+    /// - Parameters:
+    ///   - capActive: the device currently carries a cap this app set.
+    ///   - defaultMaximum: the device's own activeMaxExposureDuration before any
+    ///     cap (read while uncapped); invalid when unknown.
+    ///   - autoExposureActive: the device is in an auto exposure mode, so the
+    ///     cap has an effect.
+    static func plan(setting: CameraExposureExperiment, capActive: Bool,
+                     formatMinimum: CMTime, formatMaximum: CMTime, defaultMaximum: CMTime,
+                     autoExposureActive: Bool)
+        -> (action: CameraExposureExperimentAction, state: CameraExposureExperimentState) {
+        let restore: CameraExposureExperimentAction = capActive ? .resetToDefault : .leaveUntouched
+        guard let requested = setting.requestedMaxExposureDuration else {
+            return (restore, CameraExposureExperimentState(
+                setting: .auto, status: capActive ? .autoRestored : .auto,
+                defaultMaxExposureSeconds: seconds(defaultMaximum)))
+        }
+        var state = CameraExposureExperimentState(
+            setting: setting, status: .unsupported,
+            requestedMaxExposureSeconds: seconds(requested),
+            defaultMaxExposureSeconds: seconds(defaultMaximum),
+            formatMinExposureSeconds: seconds(formatMinimum),
+            formatMaxExposureSeconds: seconds(formatMaximum))
+        guard autoExposureActive else {
+            state.detail = "auto exposure is not active"
+            return (restore, state)
+        }
+        guard let clamped = clamp(requested, minimum: formatMinimum, maximum: formatMaximum) else {
+            state.detail = "active format has no valid exposure range"
+            return (restore, state)
+        }
+        if seconds(defaultMaximum) != nil, CMTimeCompare(clamped, defaultMaximum) >= 0 {
+            state.status = .notNeeded
+            return (restore, state)
+        }
+        state.status = CMTimeCompare(clamped, requested) == 0 ? .applied : .clamped
+        state.appliedMaxExposureSeconds = seconds(clamped)
+        return (.setMaximum(clamped), state)
+    }
+}
+
 struct DebugRecordingResult {
     let sessionID: String
     let rawVideoURL: URL
@@ -1365,6 +1580,9 @@ final class DebugVideoRecorder {
     private var previousLengths: [SaberColor: Double] = [:]
     private var manualCaptureCompletion: ((Result<UInt64, DebugVideoRecorderError>) -> Void)?
     private let diagnosticColors: DebugDiagnosticColors
+    /// Opt-in exposure experiment in effect at Start (root `cameraExposureExperiment`).
+    /// nil (tests, older callers) omits the key.
+    private let cameraExposureExperiment: CameraExposureExperimentState?
     private var bridgeTrackers: [String: DebugBridgeTracker] = [:]
     private var lastDetectedFrames: [String: DebugRetainedBlueFrame] = [:]
     private var bridgePending: [String: DebugBridgePending] = [:]
@@ -1394,6 +1612,7 @@ final class DebugVideoRecorder {
     init(directory: URL, date: Date = Date(),
          forensicPolicy: DebugForensicCapturePolicy = .production,
          diagnosticColors: DebugDiagnosticColors = .both,
+         cameraExposureExperiment: CameraExposureExperimentState? = nil,
          clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) throws {
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         try DebugRecordingStorage.validateStartCapacity(at: directory)
@@ -1408,6 +1627,7 @@ final class DebugVideoRecorder {
         forensicDirectoryURL = directory.appendingPathComponent("\(sessionID)_forensic", isDirectory: true)
         self.forensicPolicy = forensicPolicy
         self.diagnosticColors = diagnosticColors
+        self.cameraExposureExperiment = cameraExposureExperiment
         self.clock = clock
         triageAccumulator.activeColors = Set(diagnosticColors.colorNames)
         triageAccumulator.absenceIsIncident = false
@@ -2508,9 +2728,14 @@ final class DebugVideoRecorder {
             "retained": events.count,
             "scope": "A dropout counts only when a success exists on both sides; start/end absences and long absences are not diagnosed."]
         if bridgeCaptures.isEmpty { summary["note"] = "no bridge dropout was retained" }
-        return ["activeColors": diagnosticColors.colorNames, "diagnosticWindows": windows,
-                "bridgeDropoutEvents": events, "bridgeDropoutSummary": summary,
-                "segmentMarkers": segmentLedger.markerEntries, "segmentSummary": segmentLedger.summary]
+        var result: [String: Any] = [
+            "activeColors": diagnosticColors.colorNames, "diagnosticWindows": windows,
+            "bridgeDropoutEvents": events, "bridgeDropoutSummary": summary,
+            "segmentMarkers": segmentLedger.markerEntries, "segmentSummary": segmentLedger.summary]
+        if let cameraExposureExperiment {
+            result["cameraExposureExperiment"] = cameraExposureExperiment.metadataDictionary
+        }
+        return result
     }
 
     private func jumpDetected(_ current: (PixelPoint, PixelPoint)?,
