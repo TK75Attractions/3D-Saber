@@ -162,6 +162,19 @@ final class P2PTransportTests: XCTestCase {
                        "P2P Connected (awdl0 · Saber Mac)")
     }
 
+    func testDiagnosticsUploadsGoToTheMacTheCoordinateLinkLockedOnto() {
+        let both = ["Saber Mac A", "Saber Mac B"]
+        XCTAssertEqual(P2PDiagnosticsServicePicker.pick(from: both, preferred: "Saber Mac B", final: false),
+                       "Saber Mac B", "not the name that sorts first")
+        XCTAssertNil(P2PDiagnosticsServicePicker.pick(from: ["Saber Mac A"], preferred: "Saber Mac B", final: false),
+                     "waits while the preferred Mac may still resolve")
+        XCTAssertEqual(P2PDiagnosticsServicePicker.pick(from: ["Saber Mac A"], preferred: "Saber Mac B", final: true),
+                       "Saber Mac A", "after discovery, any relay beats LAN-only")
+        XCTAssertEqual(P2PDiagnosticsServicePicker.pick(from: ["Saber Mac B", "Saber Mac A"], preferred: nil,
+                                                        final: false), "Saber Mac A", "no link: first name as before")
+        XCTAssertNil(P2PDiagnosticsServicePicker.pick(from: [], preferred: nil, final: true))
+    }
+
     func testInterfaceLabelPrefersTheInterfaceTheLinkIsScopedTo() {
         // AWDL and infrastructure Wi-Fi are both `.wifi`: the scope decides.
         XCTAssertEqual(P2PInterfaceLabel.pick(scoped: [nil, "awdl0"],

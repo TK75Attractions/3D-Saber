@@ -44,6 +44,36 @@ struct P2PServiceSelection: Equatable {
     mutating func reset() { locked = nil }
 }
 
+/// The Mac the coordinate link locked onto (`P2PServiceSelection`), shared so
+/// diagnostics uploads go to that same Mac when several advertise the relay
+/// (before, uploads took the first name and could reach a different Mac).
+enum P2PPreferredMac {
+    private static let lock = NSLock()
+    private static var name: String?
+
+    static var current: String? {
+        lock.lock(); defer { lock.unlock() }
+        return name
+    }
+
+    static func set(_ value: String?) {
+        lock.lock(); defer { lock.unlock() }
+        name = value
+    }
+}
+
+/// Which `_phonesaber-dp2p._tcp` service a diagnostics upload uses: the
+/// coordinate link's Mac when it advertises the relay; otherwise the first
+/// name, but only once discovery is over (`final`), so the preferred Mac is
+/// not skipped just because its record resolved a moment later.
+enum P2PDiagnosticsServicePicker {
+    static func pick(from names: [String], preferred: String?, final: Bool) -> String? {
+        if let preferred, names.contains(preferred) { return preferred }
+        if preferred != nil && !final { return nil }
+        return names.min()
+    }
+}
+
 /// Exponential reconnect delay (immediate connection failures used to retry
 /// about four times per second). Reset by the first pong of a connection.
 struct P2PReconnectBackoff: Equatable {
@@ -307,6 +337,7 @@ final class P2PSender {
             ticker?.cancel(); ticker = nil
             candidate = nil
             selection.reset()
+            P2PPreferredMac.set(nil)
             monitor.reset()
             backoff.reset()
             pending.removeAll()
@@ -472,6 +503,7 @@ final class P2PSender {
         }
         let changed = candidate?.name != chosen.name
         candidate = (chosen.endpoint, chosen.name)
+        P2PPreferredMac.set(chosen.name)
         let now = clock()
         if connection == nil {
             if backoff.mayConnect(at: now) { connect() }  // otherwise the ticker connects

@@ -413,12 +413,17 @@ final class P2PBundleUploader {
     private var file: FileHandle?
     private var response = Data()
     private var serviceName = ""
+    private let preferredService: () -> String?
+    /// Latest discovery results, used once more when discovery times out.
+    private var discovered: [(endpoint: NWEndpoint, name: String)] = []
     /// Kept until `finish`, so a caller may drop its reference while the upload runs.
     private var keepAlive: P2PBundleUploader?
 
     init(serviceType: String = PhoneSaberP2P.diagnosticsServiceType, endpointOverride: NWEndpoint? = nil,
-         discoveryTimeout: TimeInterval = 3, transferTimeout: TimeInterval = 180) {
+         discoveryTimeout: TimeInterval = 3, transferTimeout: TimeInterval = 180,
+         preferredService: @escaping () -> String? = { P2PPreferredMac.current }) {
         self.serviceType = serviceType
+        self.preferredService = preferredService
         self.endpointOverride = endpointOverride
         self.discoveryTimeout = discoveryTimeout
         self.transferTimeout = transferTimeout
@@ -442,24 +447,33 @@ final class P2PBundleUploader {
             self.browser = browser
             browser.browseResultsChangedHandler = { [weak self] results, _ in
                 guard let self, self.connection == nil else { return }
-                let services = results.compactMap { result -> (NWEndpoint, String)? in
+                self.discovered = results.compactMap { result -> (endpoint: NWEndpoint, name: String)? in
                     if case .service(let name, _, _, _) = result.endpoint { return (result.endpoint, name) }
                     return nil
-                }.sorted { $0.1 < $1.1 }
-                guard let first = services.first else { return }
-                self.browser?.cancel()
-                self.browser = nil
-                self.connect(to: first.0, name: first.1, size: size.int64Value)
+                }
+                self.connectToDiscovered(final: false, size: size.int64Value)
             }
             browser.stateUpdateHandler = { [weak self] state in
                 if case .failed = state { self?.finish(.notFound) }
             }
             browser.start(queue: queue)
             queue.asyncAfter(deadline: .now() + discoveryTimeout) { [weak self] in
-                guard let self, self.connection == nil else { return }
-                self.finish(.notFound)
+                guard let self, self.connection == nil, self.completion != nil else { return }
+                if !self.connectToDiscovered(final: true, size: size.int64Value) { self.finish(.notFound) }
             }
         }
+    }
+
+    /// Connects to the service `P2PDiagnosticsServicePicker` chooses; false when none yet.
+    @discardableResult
+    private func connectToDiscovered(final: Bool, size: Int64) -> Bool {
+        guard let name = P2PDiagnosticsServicePicker.pick(from: discovered.map(\.name),
+                                                          preferred: preferredService(), final: final),
+              let chosen = discovered.first(where: { $0.name == name }) else { return false }
+        browser?.cancel()
+        browser = nil
+        connect(to: chosen.endpoint, name: chosen.name, size: size)
+        return true
     }
 
     func cancel() {
