@@ -17,6 +17,10 @@ public class TitleSceneSkin : MonoBehaviour
     private Image flashImage;
     private bool transitioning;
     private AudioClip slashChimeLow, slashChimeHigh;
+    // 開始ノーツを切った後の問いかけ。「はい」なら Game シーンの練習へ、「いいえ」なら選曲へ。
+    private Canvas canvasRef;
+    private TitleTutorialPrompt prompt;
+    public const string TutorialSceneName = "Game";
 
     void Start()
     {
@@ -25,6 +29,7 @@ public class TitleSceneSkin : MonoBehaviour
         var canvas = titleCtl.GetComponent<Canvas>();
         if (canvas == null) canvas = titleCtl.GetComponentInParent<Canvas>();
         if (canvas == null) return;
+        canvasRef = canvas;
         TitleConceptSelection.BeginTitle();
 
         var cam = Camera.main;
@@ -245,16 +250,47 @@ public class TitleSceneSkin : MonoBehaviour
     void HandleSlashed()
     {
         if (transitioning || ScreenTransition.IsBusy || titleCtl == null) return;
-        if (!ScreenTransition.Load(titleCtl.songSelectSceneName, ScreenTransition.Style.Forward,
-            progress => { if (presentationMotion != null) presentationMotion.SetDeparture(progress); },
-            TitlePresentationMotion.DepartureDuration)) return;
+        // 3D の開始ノーツが無い環境(カメラ無し)は、従来どおり前進演出つきで選曲へ。
+        if (startNote == null || presentationMotion == null || canvasRef == null)
+        {
+            if (!ScreenTransition.Load(titleCtl.songSelectSceneName, ScreenTransition.Style.Forward,
+                progress => { if (presentationMotion != null) presentationMotion.SetDeparture(progress); },
+                TitlePresentationMotion.DepartureDuration)) return;
+            transitioning = true;
+            LockStartTarget();
+            PlaySlashChime();
+            return;
+        }
+        // 幕の中で「チュートリアルをしますか？」と問いかけ、答えで行き先を分ける。
         transitioning = true;
+        LockStartTarget();
+        PlaySlashChime();
+        prompt = TitleTutorialPrompt.Begin(canvasRef, presentationMotion, HandlePromptAnswer);
+    }
+
+    void LockStartTarget()
+    {
+        if (startTargetGroup == null) return;
+        startTargetGroup.interactable = false;
+        startTargetGroup.blocksRaycasts = false;
+    }
+
+    void HandlePromptAnswer(bool tutorial)
+    {
+        if (titleCtl == null) return;
+        GameSession.TutorialPending = tutorial;
+        string scene = tutorial ? TutorialSceneName : titleCtl.songSelectSceneName;
+        if (ScreenTransition.Load(scene, ScreenTransition.Style.Forward)) return;
+        // 読み込めないときは問いかけを閉じ、タイトルを操作できる状態に戻す。
+        GameSession.TutorialPending = false;
+        if (prompt != null) Destroy(prompt.gameObject);
+        prompt = null;
+        transitioning = false;
         if (startTargetGroup != null)
         {
-            startTargetGroup.interactable = false;
-            startTargetGroup.blocksRaycasts = false;
+            startTargetGroup.interactable = true;
+            startTargetGroup.blocksRaycasts = true;
         }
-        PlaySlashChime();
     }
 
     void PlaySlashChime()

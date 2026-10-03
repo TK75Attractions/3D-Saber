@@ -42,6 +42,9 @@ public static class GameSession
     // Game シーンへ遷移する。Game シーンの GamePlayManager がこれを見て、
     // 合成譜面 + メトロノームを再生する。
     public static bool IsCalibrationMode;
+    // タイトルの問いかけで「はい」を選んだとき true。Game シーンの GamePlayManager が読んだら消し、
+    // 曲の代わりに練習(TutorialController)を回してから選曲へ進む。得点・実績は残さない。
+    public static bool TutorialPending;
     // 判定調整との往復だけで引き継ぐ選曲時間。時間切れ・受け取り後は null に戻す。
     public static double? CalibrationSelectionSeconds;
     // 判定調整から戻るときだけ復元する曲と難易度。並び順の変更に備えて名前で保持する。

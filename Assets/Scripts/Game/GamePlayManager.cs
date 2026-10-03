@@ -137,6 +137,11 @@ public class GamePlayManager : MonoBehaviour
     private CalibrationController calibration;
     public CalibrationController Calibration => calibration;
 
+    // --- チュートリアル(タイトルの問いかけで「はい」)。判定調整と同じ形のモード分岐 ---
+    private bool inTutorial;
+    private TutorialController tutorial;
+    public TutorialController Tutorial => tutorial;
+
     IEnumerator Start()
     {
         if (songPlayer == null || noteSpawner == null || scoreManager == null)
@@ -214,6 +219,15 @@ public class GamePlayManager : MonoBehaviour
         if (GameSession.IsCalibrationMode)
         {
             StartCalibration();
+            ready = true;
+            yield break;
+        }
+
+        // --- チュートリアル(フラグは読んだら消す。終わったら選曲へ) ---
+        if (GameSession.TutorialPending)
+        {
+            GameSession.TutorialPending = false;
+            StartTutorial();
             ready = true;
             yield break;
         }
@@ -648,6 +662,13 @@ public class GamePlayManager : MonoBehaviour
             return;
         }
 
+        // 2a'. チュートリアル分岐：無音の時計で練習の型を流す。終わりは TutorialController が選曲へ移す。
+        if (inTutorial)
+        {
+            if (tutorial != null) tutorial.Tick(Time.unscaledDeltaTime);
+            return;
+        }
+
         // 2b. 開始予約中の負の曲時計でも先読みする。停止後はSongTime=0へ巻き戻して進めない。
         if (songPlayer.IsScheduled)
         {
@@ -722,6 +743,32 @@ public class GamePlayManager : MonoBehaviour
     void UpdateCalibration()
     {
         if (calibration != null) calibration.Tick(Time.unscaledDeltaTime);
+    }
+
+    // --- チュートリアル実装 ---
+
+    void StartTutorial()
+    {
+        inTutorial = true;
+        // 舞台・刃 2 本・判定・NoteSpawner・床ガイドは上で本番と同じに用意済み。小節線だけ出さない。
+        if (barLineSpawner != null)
+        {
+            barLineSpawner.gameObject.SetActive(false);
+            barLineSpawner = null;
+        }
+        var sabers = new System.Collections.Generic.List<SaberTracker>();
+        if (cutJudge != null && cutJudge.saber != null) sabers.Add(cutJudge.saber);
+        if (cutJudge2 != null && cutJudge2.saber != null) sabers.Add(cutJudge2.saber);
+        tutorial = gameObject.AddComponent<TutorialController>();
+        tutorial.Initialize(songPlayer, noteSpawner, scoreManager, extraOffsetSeconds, sabers.ToArray(), longNoteCutSfx, goldNoteSfx);
+        gatePerfectPulse = GateBeatPulse.Ensure(TutorialProgram.Bpm, 0, songPlayer, scoreManager);
+        if (stageFloor != null) stageReactions = StageReactiveEffects.Create(stageFloor, noteSpawner, stagePerformance);
+    }
+
+    // チュートリアルの終わり(スキップ含む)。難易度はまだ決まっていないので選曲へ進む。
+    public static bool ExitTutorial(string nextSceneName = "SongSelect")
+    {
+        return ScreenTransition.Load(nextSceneName, ScreenTransition.Style.Forward);
     }
 
     public static void ExitCalibration(string returnSceneName = "SongSelect")

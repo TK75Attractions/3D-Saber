@@ -194,19 +194,19 @@ public class SongSelectSkin : MonoBehaviour
     }
     void BuildTitle()
     {
-        PanelAt("TitleShadow", 960, 788, 716, 108, Ink, 5, 30);
-        var panel = PanelAt("SongTitlePanel", 960, 788, 700, 92, Cyan, 5);
+        PanelAt("TitleShadow", 960, 1000, 716, 108, Ink, 5, 30);
+        var panel = PanelAt("SongTitlePanel", 960, 1000, 700, 92, Cyan, 5);
         var t = Label(panel.transform, "PanelSongTitle", "", 58, new Vector2(0, -2), new Vector2(660, 74), UISkinKit.FontAsset("Oxanium-ExtraBold"));
         t.enableAutoSizing = true; t.fontSizeMin = 26; t.fontSizeMax = 58; songTitle = Ruby(t, "");
     }
     void BuildDifficulties()
     {
-        var tray = PanelAt("DifficultyTray", 960, 952, 720, 124, new Color(.09f, .19f, .29f), 4, 62); tray.color = new Color(.024f, .043f, .082f);
+        var tray = PanelAt("DifficultyTray", 960, 828, 720, 124, new Color(.09f, .19f, .29f), 4, 62); tray.color = new Color(.024f, .043f, .082f);
         ctl.difficultyButtons = new Button[3];
         for (int i = 0; i < 3; i++)
         {
             int index = i;
-            var root = Rect("Difficulty" + i, 730 + 230 * i, 954, 190, 196);
+            var root = Rect("Difficulty" + i, 730 + 230 * i, 830, 190, 196);
             var face = Graphic(root, "Circle", new Vector2(0, 2), new Vector2(124, 124), SongSelectDiscGraphic.Shape.Cover, Ink);
             var ring = Graphic(root, "CircleEdge", new Vector2(0, 2), new Vector2(124, 124), SongSelectDiscGraphic.Shape.Ring, DifficultyColor(i)); ring.Width = 9;
             difficultyFaces[i] = face;

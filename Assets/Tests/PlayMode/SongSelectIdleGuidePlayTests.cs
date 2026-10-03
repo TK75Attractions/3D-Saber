@@ -32,8 +32,8 @@ public class SongSelectIdleGuidePlayTests
         SceneManager.SetActiveScene(SceneManager.CreateScene("IdleGuideCleanup"));
         yield return SceneManager.UnloadSceneAsync(scene);
         yield return null;
-        Assert.True(guide == null, "案内とメッシュは選曲画面と一緒に解放する");
-        Assert.False(Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None).Any(t => t.name == "SongSelectHumanStage"), "専用カメラと人体も選曲画面と一緒に解放する");
+        Assert.True(guide == null, "案内は選曲画面と一緒に解放する");
+        Assert.False(Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None).Any(t => t.name == "SongSelectHumanStage"), "3D描画用のステージを生成しない");
     }
     [UnityTest] public IEnumerator IdleShowsGuideAndRaycastsStillReachDiscs()
     {
@@ -47,43 +47,39 @@ public class SongSelectIdleGuidePlayTests
         EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = target.ScreenRect().center }, hits);
         Assert.IsNotEmpty(hits); Assert.AreEqual(target, hits[0].gameObject.GetComponentInParent<SongSelectDiscTarget>());
         var model = guide.GetComponentInChildren<SongSelectGuideModel>(); Assert.NotNull(model);
-        Assert.NotNull(model.GetComponent<CanvasRenderer>(), "人形を実際に描画するRendererが必要");
+        Assert.NotNull(model.GetComponent<CanvasRenderer>(), "2DアニメーションをUIに描画する");
         model.SetPose(0); Canvas.ForceUpdateCanvases(); Assert.True(model.IsReady);
-        Assert.IsInstanceOf<RenderTexture>(model.mainTexture);
-        var body = Object.FindObjectsByType<SkinnedMeshRenderer>(FindObjectsSortMode.None).Single(r => r.name == "GuideHumanBody");
-        Assert.Greater(body.sharedMesh.vertexCount, 6000, "骨格に追従する実際の人体メッシュを使う");
-        var hand = body.bones.Single(b => b.name == "hand_r");
-        var lowered = hand.position;
-        var baked = new Mesh(); body.BakeMesh(baked); var restingMesh = baked.vertices;
-        foreach (string finger in new[] { "thumb", "index", "middle", "ring", "pinky" })
-            Assert.True(body.bones.Any(b => b.name == finger + "_03_r"), "右手の各指にも骨がある");
-        var grip = hand.GetComponentsInChildren<Transform>().Single(t => t.name == "RightHandGrip");
-        var localGrip = grip.localPosition;
+        Assert.IsInstanceOf<Texture2D>(model.mainTexture);
+        Assert.GreaterOrEqual(model.mainTexture.width, 1600, "画面上で読める解像度のイラストを使う");
+        Assert.AreEqual(0, model.FrameIndex);
+        var resting = model.canvasRenderer.GetMesh().uv;
         model.SetPose(2); Canvas.ForceUpdateCanvases();
-        Assert.Greater(hand.position.y - lowered.y, .3f, "右腕を上げてかざす");
-        body.BakeMesh(baked); CollectionAssert.AreNotEqual(restingMesh, baked.vertices, "骨だけでなく表面のメッシュも変形する");
-        Assert.AreEqual(localGrip, grip.localPosition, "柄は動作中も右手から離れない");
-        model.SetPose(5.2f); Assert.Less(Vector3.Distance(lowered, hand.position), .003f, "一周して自然に最初の姿勢へ戻る");
-        Object.Destroy(baked);
+        Assert.AreEqual(7, model.FrameIndex, "右腕を上げたコマまで再生する");
+        CollectionAssert.AreNotEqual(resting, model.canvasRenderer.GetMesh().uv, "表示するイラストが切り替わる");
+        model.SetPose(SongSelectGuideModel.LoopSeconds); Canvas.ForceUpdateCanvases();
+        CollectionAssert.AreEqual(resting, model.canvasRenderer.GetMesh().uv, "一周して最初のコマへ戻る");
+        var seen = new HashSet<int>();
+        for (int i = 0; i <= 45; i++) { model.SetPose(i / 30f); seen.Add(model.FrameIndex); }
+        Assert.AreEqual(8, seen.Count, "腕を上げる途中の全コマを使う");
+        model.SetPose(float.NaN); Assert.AreEqual(0, model.FrameIndex);
         yield return null;
     }
-    [UnityTest] public IEnumerator PreviewStopsWhenHiddenAndReleasesItsTexture()
+    [UnityTest] public IEnumerator IllustrationStopsWhenHiddenAndUsesNo3DPreview()
     {
         int originalMask = Camera.main.cullingMask;
-        Assert.IsNull(GameObject.Find("SongSelectHumanStage"), "表示前は人体を生成しない");
+        var cameras = Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
         guide.Tick(10, true);
         var model = guide.GetComponentInChildren<SongSelectGuideModel>();
         Assert.True(model.IsReady);
-        var texture = model.mainTexture as RenderTexture;
-        var stage = GameObject.Find("SongSelectHumanStage"); Assert.NotNull(stage);
-        texture.Release(); model.SetPose(2);
-        Assert.True(texture.IsCreated(), "描画用テクスチャが失われたら再確保する");
-        Assert.AreSame(stage, GameObject.Find("SongSelectHumanStage"), "再確保時に人体を重複生成しない");
-        var camera = stage.GetComponentInChildren<Camera>(); Assert.NotNull(camera); Assert.False(camera.enabled);
+        Assert.False(model.mainTexture is RenderTexture);
+        Assert.AreEqual(cameras.Length, Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None).Length);
+        Assert.IsNull(GameObject.Find("SongSelectHumanStage"));
         Assert.AreEqual(originalMask, Camera.main.cullingMask);
-        guide.RegisterActivity(); Assert.False(stage.activeSelf);
+        model.SetPose(2); int frame = model.FrameIndex;
+        guide.RegisterActivity(); Assert.False(model.gameObject.activeInHierarchy);
+        model.SetPose(0); Assert.AreEqual(frame, model.FrameIndex, "非表示中はコマを進めない");
         Object.Destroy(model.gameObject); yield return null; yield return null;
-        Assert.True(texture == null); Assert.True(stage == null);
+        Assert.True(model == null);
     }
     [UnityTest] public IEnumerator MovingTheActualAimPathHidesGuideWithoutChangingSelection()
     {

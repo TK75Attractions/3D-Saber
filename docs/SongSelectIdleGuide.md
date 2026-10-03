@@ -1,22 +1,22 @@
 # 選曲画面の右手操作案内
 
-選曲画面に入って最初の10秒間、操作がないと「右手で照準を合わせてね！」を表示する。背後から見た人体モデルが右腕を上げ、赤いセイバーをかざす動きを5.2秒で繰り返す。
+選曲画面に入って最初の10秒間、操作がないと「右手で照準を合わせてね！」を表示する。白い服の人物が赤い右手でセイバーを持ち上げる2Dアニメーションを、5.2秒で繰り返す。
 
 - 照準を動かす、対象に照準をためる、クリック、スクロール、キー、ゲームパッド、曲・難易度の変更で案内を終了する。10秒より前に操作した場合も、その選曲画面では表示しない。再入場時に最初から判定する。
 - センサー受信自体、静止時の小さな揺れ、入力断、入力源の切り替えは操作とみなさない。追跡は画面短辺の1.8%、マウスは0.6%の累積移動で操作と判定する。
 - 画面遷移中・フォーカスがない間は時間を数えず、案内も表示しない。通常の100秒カウントダウンや試聴は既存のまま動く。
-- 案内はレイキャストを遮らない。表示中でもそのまま曲や難易度を狙える。右手はモデル本人の右側で、左右を反転しない。
+- 案内はレイキャストを遮らない。表示中でもそのまま曲や難易度を狙える。背中側から見せるため、本人の右手が画面でも右側に見える。
 
-## 人体と動作
+## 2Dアニメーション素材
 
-人体は [Quaternius Universal Base Characters](https://quaternius.com/packs/universalbasecharacters.html) の無料 Standard 配布に含まれる `Superhero_Male_FullBody` を使用。制作者配布のライセンスは CC0 1.0。`Assets/Resources/UI/SongSelectHuman/LICENSE.txt` に出典と利用条件を保存した。
+`Assets/Resources/UI/SongSelectAnime/RightHandGuide.png` は透明背景の8コマ（横4×縦2）。以前の3D版の姿勢・構図・白と赤の配色を参考に、内蔵image_genで制作した2Dイラスト。全身を同じ枠で切り出し、足元を固定する。正確な生成指示は `Tools/SongSelectAnime/generation-prompts.txt` に保存した。
 
-球や棒の組み合わせから、指まで骨格のある連続した人体メッシュへ置換。体の幅を調整し、白系の体・赤い右手とセイバーの配色を維持した。肩・肘・手首と各指の関節で姿勢を作り、上腕・前腕の長さを保つ二関節IKをベイク。柄は `hand_r/RightHandGrip` に固定する。Blender編集ソースは `Tools/SongSelectHuman/RightHandHuman.blend`。
+開始時は腕を下げ、約1.1秒かけて上げる。照準を合わせる姿勢を保ち、約0.9秒で腕を戻す。コマの切り替えだけで再生し、表示されていない間は進めない。LOWでも同じ説明動作を維持する。
 
-実行用の `RightHandHuman.fbx` は Legacy アニメーション `RightHandAim` を内包する。秒数を指定して同じ姿勢を再現でき、停止やLOW設定に影響されない。Blenderから更新する場合はメッシュ・Armature・Emptyのみを選択し、Forward=-Z / Up=Y、Add Leaf Bones無効、アニメーションのサンプリング1フレーム・Simplify=0で書き出す。
+`SongSelectGuideModel` は既存の呼び出しとの互換性のため名前を保っているが、実装は2DのUI描画のみ。表示時にPNGを読み込み、画像の参照範囲を切り替える。3D人体・専用カメラ・RenderTexture・照明・コライダーは生成しない。画像は共有リソースとして扱い、UI破棄時に直接破棄しない。
 
-## 描画と検証
+参考にした3D素材は `Tools/SongSelectHuman/Reference3DAssets/SongSelectHuman`、Blender編集元は `Tools/SongSelectHuman/RightHandHuman.blend` に保存する。参照元は [Quaternius Universal Base Characters](https://quaternius.com/packs/universalbasecharacters.html) のCC0モデルで、元のライセンスも素材とともに保持。これらはAssets外の参考資料とし、案内の実行には使用しない。
 
-`SongSelectGuideModel` は表示時にモデルと640×672のRenderTextureを生成し、専用カメラで30fps描画する。遠方のレイヤー30に隔離し、メインカメラの設定や照明は変更しない。専用シェーダー `GuideStudio` で明暗と輪郭光を付け、UIへ透過合成する。案内を隠すとモデルも無効化し、画面破棄時にカメラ・テクスチャ・生成マテリアルを解放する。追加のコライダーや音はない。
+## 検証
 
-`SongSelectIdleStateTests` は10秒境界、初回操作、フォーカス、静止ノイズ、ゆっくりした移動を確認。`SongSelectIdleGuidePlayTests` は実シーン、照準による解除、選択、透過レイキャスト、人体メッシュの変形、指の骨格、右手への柄の追従、ループ、描画停止とリソース解放を確認する。センサー実機・プロジェクターでの見え方は別途確認する。
+`SongSelectIdleStateTests` は10秒境界、初回操作、フォーカス、静止ノイズ、ゆっくりした移動を確認する。`SongSelectIdleGuidePlayTests` は実シーンでの表示、全8コマとループ、2D画像の切り替え、追加カメラを生成しないこと、照準での解除、選択、透過レイキャスト、非表示中の停止を確認する。720p・1080p・LOW設定でもプレビューを確認する。センサー実機とプロジェクターでの見え方は別途確認する。
