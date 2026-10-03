@@ -42,6 +42,14 @@ enum DebugRecordingFinishReason: Equatable {
 
 enum DebugRecordingLimits {
     static let maximumDurationSeconds: TimeInterval = 5 * 60
+    /// About one second at 30 fps. Shorter recordings (e.g. Stop pressed right
+    /// after Start) cannot show a temporal event and only fail the analysis
+    /// precheck, so their triage bundle stays on the phone instead of uploading.
+    static let minimumFramesForAutomaticTransfer = 30
+
+    static func shouldAutoTransfer(recordedFrames: Int) -> Bool {
+        recordedFrames >= minimumFramesForAutomaticTransfer
+    }
     static let maximumDiskUsageBytes: Int64 = 864 * 1_024 * 1_024
     static let minimumFreeSpaceReserveBytes: Int64 = 128 * 1_024 * 1_024
     static let maximumMetadataBytes: Int64 = 220 * 1_024 * 1_024
@@ -2257,7 +2265,11 @@ final class DebugVideoRecorder {
                         throw DebugVideoRecorderError.diskUsageLimitReached
                     }
                     if let triageBundleURL {
-                        DebugBundleTransfer.shared.enqueue(bundleURL: triageBundleURL)
+                        if DebugRecordingLimits.shouldAutoTransfer(recordedFrames: frameCount) {
+                            DebugBundleTransfer.shared.enqueue(bundleURL: triageBundleURL)
+                        } else {
+                            print("[DebugTriageTransfer] skipped: recording too short (\(frameCount) frames); bundle kept at \(triageBundleURL.path)")
+                        }
                     }
                     completion(.success(DebugRecordingResult(
                         sessionID: currentSessionID,

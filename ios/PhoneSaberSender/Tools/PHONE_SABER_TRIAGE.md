@@ -172,3 +172,10 @@ relay (`_phonesaber-dp2p._tcp`), which pipes the unchanged HTTP upload to this
 receiver on 127.0.0.1:8765. The receiver itself is unchanged; the iPhone tries
 P2P first for about 3 s and otherwise uses the LAN Bonjour path. See
 [../P2P_BRIDGE.md](../P2P_BRIDGE.md).
+
+## Very short recordings
+
+Recordings shorter than about one second (fewer than 30 frames, e.g. Stop pressed
+right after Start) keep their triage bundle on the phone and are not uploaded:
+they cannot contain a temporal event and would only fail the analysis precheck
+(2026-10-03: a one-frame recording reached the receiver and failed precheck).

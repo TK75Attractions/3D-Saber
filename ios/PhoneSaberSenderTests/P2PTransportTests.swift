@@ -200,6 +200,14 @@ final class P2PTransportTests: XCTestCase {
 
     // MARK: Triage bundle upload over P2P
 
+    func testOnlyRecordingsOfAboutOneSecondOrMoreAreAutoTransferred() {
+        XCTAssertFalse(DebugRecordingLimits.shouldAutoTransfer(recordedFrames: 0))
+        XCTAssertFalse(DebugRecordingLimits.shouldAutoTransfer(recordedFrames: 1))
+        XCTAssertFalse(DebugRecordingLimits.shouldAutoTransfer(recordedFrames: 29))
+        XCTAssertTrue(DebugRecordingLimits.shouldAutoTransfer(recordedFrames: 30))
+        XCTAssertTrue(DebugRecordingLimits.shouldAutoTransfer(recordedFrames: 2958))
+    }
+
     func testTestRunsNeverUploadTriageBundlesToARealReceiver() {
         let key = DebugBundleTransfer.preferenceKey
         let old = UserDefaults.standard.object(forKey: key)
