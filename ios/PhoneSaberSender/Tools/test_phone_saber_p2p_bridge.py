@@ -172,6 +172,30 @@ class P2PBridgeTests(unittest.TestCase):
         self.assertIn("fallback to LAN", self.log())
 
 
+@unittest.skipUnless(sys.platform == "darwin" and shutil.which("xcrun"), "requires the macOS Swift toolchain")
+class P2PBridgeParentWatchTests(unittest.TestCase):
+    def test_bridge_exits_when_the_launching_process_is_gone(self):
+        with tempfile.TemporaryDirectory() as directory:
+            binary = launcher.build(Path(directory))
+            parent = subprocess.Popen(["/bin/sleep", "60"])
+            bridge = subprocess.Popen([str(binary), "--no-bonjour", "--loopback-only",
+                                       "--listen-port", str(free_udp_port()),
+                                       "--exit-with-parent", str(parent.pid)],
+                                      stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            try:
+                time.sleep(1.5)
+                self.assertIsNone(bridge.poll(), "keeps running while the parent lives")
+                parent.kill()
+                parent.wait()
+                self.assertEqual(bridge.wait(timeout=5), 0)
+                self.assertIn("parent process", bridge.stdout.read())
+            finally:
+                if bridge.poll() is None:
+                    bridge.kill()
+                if parent.poll() is None:
+                    parent.kill()
+
+
 class P2PBridgeLauncherTests(unittest.TestCase):
     def test_build_is_cached_per_source_revision(self):
         if not (sys.platform == "darwin" and shutil.which("xcrun")):

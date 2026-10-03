@@ -45,7 +45,9 @@ def build(cache_dir: Path = DEFAULT_CACHE, *, force: bool = False) -> Path:
         return target
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = target.with_name(f".{BINARY_NAME}.{os.getpid()}.tmp")
-    command = ["xcrun", "swiftc", "-O", "-parse-as-library", *map(str, SOURCES), "-o", str(temporary)]
+    # Absolute xcrun: Unity launches this script with a minimal PATH.
+    xcrun = "/usr/bin/xcrun" if os.path.exists("/usr/bin/xcrun") else "xcrun"
+    command = [xcrun, "swiftc", "-O", "-parse-as-library", *map(str, SOURCES), "-o", str(temporary)]
     print(f"[P2P] building bridge: {' '.join(command)}", flush=True)
     completed = subprocess.run(command, capture_output=True, text=True)
     if completed.returncode != 0:

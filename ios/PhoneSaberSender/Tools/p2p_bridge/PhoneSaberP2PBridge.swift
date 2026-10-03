@@ -22,11 +22,15 @@ struct BridgeOptions {
     var bluePort = UInt16(PhoneSaberP2P.bluePort)
     var statsInterval: TimeInterval = 10
     var peerIdleTimeout: TimeInterval = 10
+    /// Exit when this process is gone (Unity launches the bridge and passes its pid,
+    /// so a crashed or force-quit Editor never leaves an orphaned bridge behind).
+    var exitWithParent: pid_t?
 
     static let usage = """
     usage: PhoneSaberP2PBridge [--name NAME] [--no-bonjour] [--listen-port N] [--loopback-only]
                                [--forward-host HOST] [--red-port N] [--blue-port N]
                                [--stats-interval SECONDS] [--peer-idle-timeout SECONDS]
+                               [--exit-with-parent PID]
     """
 
     static func parse(_ arguments: [String]) -> BridgeOptions? {
@@ -44,6 +48,7 @@ struct BridgeOptions {
             case "--blue-port": guard let v = value().flatMap(UInt16.init) else { return nil }; options.bluePort = v
             case "--stats-interval": guard let v = value().flatMap(Double.init), v > 0 else { return nil }; options.statsInterval = v
             case "--peer-idle-timeout": guard let v = value().flatMap(Double.init), v > 0 else { return nil }; options.peerIdleTimeout = v
+            case "--exit-with-parent": guard let v = value().flatMap(Int32.init), v > 0 else { return nil }; options.exitWithParent = v
             case "-h", "--help": return nil
             default: return nil
             }
@@ -284,6 +289,21 @@ enum PhoneSaberP2PBridgeMain {
             FileHandle.standardError.write(Data("[P2P] cannot start listener: \(error)\n".utf8))
             exit(1)
         }
+        if let parent = options.exitWithParent {
+            let watchdog = DispatchSource.makeTimerSource(queue: .main)
+            watchdog.schedule(deadline: .now() + 1, repeating: 1)
+            watchdog.setEventHandler {
+                // kill(pid, 0) only probes; ESRCH means the parent has exited.
+                if kill(parent, 0) != 0 && errno == ESRCH {
+                    print("[P2P] parent process \(parent) exited; stopping")
+                    bridge.stop()
+                    exit(0)
+                }
+            }
+            watchdog.resume()
+            parentWatchdog = watchdog
+            print("[P2P] will exit with parent process \(parent)")
+        }
         for signalNumber in [SIGINT, SIGTERM] {
             signal(signalNumber, SIG_IGN)
             let source = DispatchSource.makeSignalSource(signal: signalNumber, queue: .main)
@@ -299,4 +319,5 @@ enum PhoneSaberP2PBridgeMain {
     }
 
     private static var signalSources: [DispatchSourceSignal] = []
+    private static var parentWatchdog: DispatchSourceTimer?
 }

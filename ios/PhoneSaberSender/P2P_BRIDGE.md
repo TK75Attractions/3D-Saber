@@ -66,14 +66,26 @@ PhoneSaberSender (iPhone)
 
 ## 起動方法(Mac)
 
+**通常は何もしなくてよい**: Unity(3D-Saber)で Play を押すと、`InputPoint` が UDP 受信を始めるのと同時に
+`PhoneSaberP2PBridgeProcess` が bridge を自動で起動します。Play を止める、Unity を終了する、script を
+再 compile する、のいずれかで自動的に止まります。Unity が異常終了しても、bridge は `--exit-with-parent` で自分から終了します。
+
+- Unity は、Unity project(`3D-Saber`)と同じ階層にある `school-festival` repo の
+  `ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py` を `/usr/bin/python3` で実行します。
+  場所が違う場合は、環境変数 `PHONESABER_P2P_BRIDGE_SCRIPT` で launcher の path を指定します。
+- 自動起動を止めたいときは、環境変数 `PHONESABER_P2P_BRIDGE=0` を設定します。
+- bridge のログは Unity の Console に `[PhoneSaber][P2P] ...` として出ます。
+- launcher が見つからない場合や起動に失敗した場合は、Console に警告を1回だけ出します。P2P なしで、従来の LAN 受信だけで動きます。
+
+Unity を使わずに単独で動かす場合(診断など)は、次を実行します。
+
 ```bash
 "ios/PhoneSaberSender/Tools/Start PhoneSaber P2P Bridge.command"
 ```
 
 初回は Swift の bridge を自動で build します(`~/Library/Caches/PhoneSaber/p2p-bridge/` に保存し、
-source が変わったときだけ build し直します)。止めるときは Ctrl-C です。
-引数は `--` の後ろに書きます。例: `-- --name "Saber Mac"`。
-Unity と既存の Start PhoneSaber(triage receiver)とは独立しているので、並べて起動してかまいません。
+source が変わったときだけ build し直します)。そのため、Unity からの初回起動だけ数秒〜十数秒かかります。
+止めるときは Ctrl-C です。引数は `--` の後ろに書きます。例: `-- --name "Saber Mac"`。
 
 macOS が「ローカルネットワーク」へのアクセス許可を求めたら、bridge を起動したアプリ(Terminal など)を許可してください。
 
@@ -82,12 +94,12 @@ macOS が「ローカルネットワーク」へのアクセス許可を求め�
 | 手順 | 内容 | 期待結果 |
 |---|---|---|
 | A | Mac を学校 Wi-Fi に接続する。iPhone は学校 Wi-Fi に**参加しない**(Wi-Fi 自体は ON のまま)。Personal Hotspot は OFF。 | |
-| B | Mac で `Start PhoneSaber P2P Bridge.command` を起動し、Unity を再生する。 | `[P2P] listening ...` と `Bonjour registered` が出る |
+| B | Unity で Play を押す(bridge は自動で起動する)。 | Unity の Console に `[PhoneSaber][P2P] listening ...` と `Bonjour registered` が出る |
 | C | iPhone で PhoneSaberSender を起動し、「P2P優先」を ON にして開始する。初回はローカルネットワークの許可を求められる。 | |
 | D | 画面の「経路」を確認する。 | `P2P Connected (awdl0)`。Mac に `peer connected` と `RED received` / `BLUE received` が出る |
 | E | Mac で Codex やブラウザを使いながら saber を振る。 | Unity に座標が届き続ける。インターネットも使える |
 | F | iPhone のモバイルデータ通信を OFF にする。 | P2P の送信が続く(cellular は最初から禁止しています) |
-| G | bridge を Ctrl-C で止める。 | 約 1.5 秒で「経路」が LAN か Reconnecting になる。LAN の Mac が見つかっていれば、Unity への送信が LAN で続く。bridge を再起動すると P2P に戻る |
+| G | `PHONESABER_P2P_BRIDGE=0` で Unity を起動し直す(または Terminal で bridge の process を止める)。 | 約 1.5 秒で「経路」が LAN か Reconnecting になる。LAN の Mac が見つかっていれば、Unity への送信が LAN で続く。bridge が戻ると P2P に戻る |
 
 補足:
 
@@ -112,7 +124,9 @@ macOS が「ローカルネットワーク」へのアクセス許可を求め�
 ## rollback
 
 - その場で戻す: iPhone の「P2P優先」を OFF にします。従来の LAN だけの動作になり、bridge も不要です。
-- Mac 側: bridge を起動しなければ、何も変わりません(Unity と既存の Bonjour は触っていません)。
+- Mac 側: 環境変数 `PHONESABER_P2P_BRIDGE=0` で Unity の自動起動を止めます。Unity の受信と既存の Bonjour は変わりません。
+- Unity のコードを戻す: 3D-Saber で、bridge 自動起動を追加した commit を `git revert` します
+  (`PhoneSaberP2PBridgeProcess.cs` とその test、`InputPoint.cs` の起動・停止の4行)。
 - コードを戻す: P2P を追加した commit を `git revert <commit>` します。追加したのは新しいファイル
   (`P2PProtocol.swift`、`P2PSender.swift`、`Tools/p2p_bridge/`、`Tools/phone_saber_p2p_bridge.py`、
   `Start PhoneSaber P2P Bridge.command`、tests)と、`CameraViewModel.swift` の経路選択、`ContentView.swift` の表示、
