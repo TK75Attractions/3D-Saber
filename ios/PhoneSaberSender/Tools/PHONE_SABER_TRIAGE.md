@@ -13,7 +13,7 @@ The coordinate path remains UDP 5005/5006. Triage upload does not call or wait o
 
 ## Quick start on macOS
 
-1. On the first use, double-click `install_phone_saber_launcher.command` in this folder. It adds Desktop links for `Start PhoneSaber.command`, `Open PhoneSaber Log.command` and `Open Latest PhoneSaber Images.command`. Running the installer again is safe; it keeps links that already point to these launchers and does not replace other Desktop items.
+1. On the first use, double-click `install_phone_saber_launcher.command` in this folder. It adds Desktop links for `Start PhoneSaber.command`, `Open PhoneSaber Log.command`, `Open Latest PhoneSaber Images.command` and the read-only `PhoneSaber Status.command`. Running the installer again is safe; it keeps links that already point to these launchers, only adds the missing ones (for example the Status link on an older install), and does not replace other Desktop items.
 2. Before recording, double-click **Start PhoneSaber** on the Desktop. It resolves this repository even when launched through the Desktop link, shows the branch and Git state, then starts the same receiver used by the direct command below. A non-main branch or dirty tree produces a warning and does not trigger cleanup or reset. The receiver can still collect and analyze bundles; the existing repair safety gate blocks source edits unless `main` is clean and synchronized with `origin/main`.
 3. After recording, press Stop on the iPhone. To inspect live output or recent history, double-click **Open PhoneSaber Log** on the Desktop.
 

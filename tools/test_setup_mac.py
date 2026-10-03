@@ -32,7 +32,7 @@ class SetupMacTests(unittest.TestCase):
         tools.mkdir(parents=True)
         for name in (*setup.MODEL_PINS, "phone_saber_receiver_launcher.py", "Start PhoneSaber.command",
                      "Open PhoneSaber Log.command", "Open Latest PhoneSaber Images.command",
-                     "install_phone_saber_launcher.command"):
+                     "PhoneSaber Status.command", "install_phone_saber_launcher.command"):
             shutil.copy2(SOURCE_REPO / setup.TOOLS / name, tools / name)
         project = self.repo / "ios/PhoneSaberSender/PhoneSaberSender.xcodeproj"
         project.mkdir(parents=True)
@@ -114,8 +114,33 @@ class SetupMacTests(unittest.TestCase):
         viewer = self.home / "Desktop/Open Latest PhoneSaber Images.command"
         self.assertTrue(viewer.is_symlink())
         self.assertEqual(viewer.resolve(), (self.repo / setup.TOOLS / viewer.name).resolve())
+        status = self.home / "Desktop/PhoneSaber Status.command"
+        self.assertTrue(status.is_symlink())
+        self.assertEqual(status.resolve(), (self.repo / setup.TOOLS / status.name).resolve())
         viewer.unlink()
         self.assertFalse(setup.launcher_links(self.repo, self.home))
+
+    def test_launcher_list_matches_installer(self):
+        installer = (SOURCE_REPO / setup.TOOLS / "install_phone_saber_launcher.command").read_text()
+        for name in setup.DESKTOP_LAUNCHERS:
+            self.assertIn(f'"$desktop_dir/{name}"', installer)
+        self.assertEqual(installer.count('"$desktop_dir/'), len(setup.DESKTOP_LAUNCHERS))
+
+    def test_setup_upgrades_previous_install_with_status_link(self):
+        desktop = self.home / "Desktop"
+        desktop.mkdir()
+        for name in setup.DESKTOP_LAUNCHERS[:3]:
+            (desktop / name).symlink_to((self.repo / setup.TOOLS).resolve() / name)
+        start = desktop / "Start PhoneSaber.command"
+        before = os.lstat(start)
+        self.assertFalse(setup.launcher_links(self.repo, self.home))
+        env = {**os.environ, "HOME": str(self.home)}
+        installer = self.repo / setup.TOOLS / "install_phone_saber_launcher.command"
+        result = subprocess.run(["/bin/bash", str(installer)], env=env, capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertTrue(setup.launcher_links(self.repo, self.home))
+        after = os.lstat(start)
+        self.assertEqual((after.st_ino, after.st_mtime_ns), (before.st_ino, before.st_mtime_ns))
 
     def test_log_generation_and_secret_not_copied(self):
         fake = self.fake_system()

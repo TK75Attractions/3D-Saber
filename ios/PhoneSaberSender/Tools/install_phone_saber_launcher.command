@@ -17,16 +17,19 @@ names=(
     "Start PhoneSaber.command"
     "Open PhoneSaber Log.command"
     "Open Latest PhoneSaber Images.command"
+    "PhoneSaber Status.command"
 )
 sources=(
     "$tools_dir/Start PhoneSaber.command"
     "$tools_dir/Open PhoneSaber Log.command"
     "$tools_dir/Open Latest PhoneSaber Images.command"
+    "$tools_dir/PhoneSaber Status.command"
 )
 destinations=(
     "$desktop_dir/Start PhoneSaber.command"
     "$desktop_dir/Open PhoneSaber Log.command"
     "$desktop_dir/Open Latest PhoneSaber Images.command"
+    "$desktop_dir/PhoneSaber Status.command"
 )
 
 # Check all destinations before creating any link so a name conflict never

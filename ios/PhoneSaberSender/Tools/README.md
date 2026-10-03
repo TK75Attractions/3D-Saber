@@ -298,6 +298,10 @@ Play in `~/Library/Logs/Unity/Editor.log`, the newest inbox bundle with its
 `.report.md` and Codex analysis result, git state of school-festival and
 3D-Saber (no fetch, `GIT_OPTIONAL_LOCKS=0`), and the Codex CLI. It never starts,
 stops, sends or writes anything. Exit status: 2 with NG, 1 with WARN, else 0.
+`install_phone_saber_launcher.command` (also run by `setup_mac.command`) puts a
+`PhoneSaber Status.command` link on the Desktop next to `Start PhoneSaber`;
+re-running it on an older install only adds the missing link and leaves the
+existing ones (and a running receiver) untouched.
 Operating and troubleshooting steps: [docs/claude/EVENT_DAY_RUNBOOK.md](../../../docs/claude/EVENT_DAY_RUNBOOK.md).
 
 ## P2P bridge (optional)

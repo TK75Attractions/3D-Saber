@@ -1,7 +1,7 @@
 # PhoneSaber 縁日当日の運用手順(runbook)
 
 当日に「動かす」「おかしいときに直す」ための1枚です。根拠のファイル名を `()` に書いています。
-迷ったら、まず Mac で **`PhoneSaber Status.command`** をダブルクリックしてください(読み取りのみ。何も変えません)。
+迷ったら、まず Mac のデスクトップの **`PhoneSaber Status.command`** をダブルクリックしてください(読み取りのみ。何も変えません)。
 
 ## 1. 全体の流れ
 
@@ -34,7 +34,7 @@ iPhone で Stop ─→ triage bundle
 | ☐ | iPhone に main の最新の PhoneSaberSender を Xcode で入れる | `docs/claude/STATUS.md` |
 | ☐ | Mac で `school-festival` と `3D-Saber` が同じフォルダに並んでいる(Unity はその隣の `ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py` を起動する。違う場所なら環境変数 `PHONESABER_P2P_BRIDGE_SCRIPT`) | `PhoneSaberP2PBridgeProcess.cs` |
 | ☐ | bridge を一度 build しておく(Unity を開くと裏で1回 build。初回は数秒〜十数秒。`~/Library/Caches/PhoneSaber/p2p-bridge/` に保存) | `P2P_BRIDGE.md`「起動方法」 |
-| ☐ | デスクトップに Start PhoneSaber などを置く: `Tools/install_phone_saber_launcher.command` を1回ダブルクリック | `PHONE_SABER_TRIAGE.md` |
+| ☐ | デスクトップに Start PhoneSaber と PhoneSaber Status などを置く: `Tools/install_phone_saber_launcher.command` を1回ダブルクリック(以前に入れた Mac でも、もう一度実行すれば足りない Status だけ追加。既存のリンクと動いている受信側はそのまま) | `PHONE_SABER_TRIAGE.md` |
 | ☐ | Codex CLI がログイン済み(`PhoneSaber Status.command` で `[OK] Codex CLI`)。無くても受信と要約は動く | `PHONE_SABER_TRIAGE.md` |
 | ☐ | **iPhone のローカルネットワーク許可**: 設定 > PhoneSaberSender > ローカルネットワーク を ON。拒否中は `P2P Failed (ローカルネットワークの許可が必要: 設定 > PhoneSaberSender)` と出る | `P2P_BRIDGE.md`「表示とログ」 |
 | ☐ | **Mac のローカルネットワーク許可**: 初回に macOS が聞いてきたら、bridge を起動したアプリ(通常は Unity。単独起動なら Terminal)を許可。システム設定 > プライバシーとセキュリティ > ローカルネットワーク で確認 | `P2P_BRIDGE.md`「起動方法」 |
@@ -83,7 +83,7 @@ iPhone で Stop ─→ triage bundle
 
 ## 6. 状態チェックツール(`PhoneSaber Status.command`)
 
-`ios/PhoneSaberSender/Tools/PhoneSaber Status.command`(中身は `phone_saber_status.py`)。読み取りのみで、数秒で終わります。
+`ios/PhoneSaberSender/Tools/PhoneSaber Status.command`(中身は `phone_saber_status.py`)。デスクトップのリンクは `install_phone_saber_launcher.command` が置きます。読み取りのみで、数秒で終わります。
 
 - 受信側: `127.0.0.1:8765/health` が `ready` か。受信側の起動後に repo が更新されていれば WARN(再起動で新しいコード)。
 - Unity: UDP 5005/5006 を誰が受信しているか(`lsof`)。Unity 以外なら NG(port の取り合い)。

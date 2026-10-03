@@ -31,6 +31,7 @@ def make_repo(parent: Path, name: str = "縁日 workspace") -> tuple[Path, Path]
         "Start PhoneSaber.command",
         "Open PhoneSaber Log.command",
         "Open Latest PhoneSaber Images.command",
+        "PhoneSaber Status.command",
         "install_phone_saber_launcher.command",
         "phone_saber_open_images.py",
         "phone_saber_receiver_launcher.py",
@@ -106,7 +107,7 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
             self.assertIn("repository not found at expected path", result.stderr)
             self.assertIn("school-festival repository", result.stderr)
 
-    def test_installer_dry_run_and_idempotent_three_desktop_links(self) -> None:
+    def test_installer_dry_run_and_idempotent_four_desktop_links(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
             repo, tools = make_repo(root)
@@ -129,6 +130,7 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
                 "Start PhoneSaber.command",
                 "Open PhoneSaber Log.command",
                 "Open Latest PhoneSaber Images.command",
+                "PhoneSaber Status.command",
             )
             links = [desktop / name for name in launchers]
             targets = [link.resolve() for link in links]
@@ -139,6 +141,90 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
             second = subprocess.run(command, cwd=root, env=env, check=False, capture_output=True, text=True)
             self.assertEqual(second.returncode, 0, second.stderr)
             self.assertEqual([link.resolve() for link in links], targets)
+
+    def test_installer_upgrade_adds_status_link_without_touching_existing_links(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repo, tools = make_repo(root)
+            home = root / "home"
+            desktop = home / "Desktop"
+            desktop.mkdir(parents=True)
+            env = {**os.environ, "HOME": str(home)}
+            # An install made before the status link existed (the installer links
+            # to the physical, symlink-resolved Tools path).
+            previous = (
+                "Start PhoneSaber.command",
+                "Open PhoneSaber Log.command",
+                "Open Latest PhoneSaber Images.command",
+            )
+            for name in previous:
+                (desktop / name).symlink_to(tools.resolve() / name)
+            before = {name: os.lstat(desktop / name) for name in previous}
+            command = ["bash", str(tools / "install_phone_saber_launcher.command")]
+
+            dry_run = subprocess.run(
+                [*command, "--dry-run"], cwd=root, env=env, check=False,
+                capture_output=True, text=True,
+            )
+            self.assertEqual(dry_run.returncode, 0, dry_run.stderr)
+            self.assertIn("already installed: " + str(desktop / "Start PhoneSaber.command"), dry_run.stdout)
+            self.assertIn("would install: " + str(desktop / "PhoneSaber Status.command"), dry_run.stdout)
+            self.assertFalse(os.path.lexists(desktop / "PhoneSaber Status.command"))
+
+            result = subprocess.run(command, cwd=root, env=env, check=False, capture_output=True, text=True)
+            self.assertEqual(result.returncode, 0, result.stderr)
+            for name in previous:
+                after = os.lstat(desktop / name)
+                # Same inode and mtime: the existing link was left in place, not recreated.
+                self.assertEqual((after.st_ino, after.st_mtime_ns), (before[name].st_ino, before[name].st_mtime_ns))
+            status_link = desktop / "PhoneSaber Status.command"
+            self.assertTrue(status_link.is_symlink())
+            self.assertEqual(os.readlink(status_link), str(tools.resolve() / "PhoneSaber Status.command"))
+
+    def test_installer_refuses_to_replace_conflicting_status_item(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repo, tools = make_repo(root)
+            home = root / "home"
+            desktop = home / "Desktop"
+            desktop.mkdir(parents=True)
+            conflict = desktop / "PhoneSaber Status.command"
+            conflict.write_text("user file\n", encoding="utf-8")
+            env = {**os.environ, "HOME": str(home)}
+            result = subprocess.run(
+                ["bash", str(tools / "install_phone_saber_launcher.command")],
+                cwd=root, env=env, check=False, capture_output=True, text=True,
+            )
+            self.assertEqual(result.returncode, 1)
+            self.assertIn("Refusing to replace existing Desktop item", result.stderr)
+            self.assertEqual(conflict.read_text(encoding="utf-8"), "user file\n")
+            # All-or-nothing: no other link is created when one name conflicts.
+            self.assertEqual(sorted(path.name for path in desktop.iterdir()), [conflict.name])
+
+    def test_desktop_status_link_runs_status_tool_from_repository(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repo, tools = make_repo(root)
+            # Stand-in for phone_saber_status.py so the test never probes the real Mac.
+            (tools / "phone_saber_status.py").write_text(
+                "import pathlib, sys\n"
+                "print('status stub', pathlib.Path(__file__).resolve().parent, sys.argv[1:])\n",
+                encoding="utf-8",
+            )
+            home = root / "home"
+            env = {**os.environ, "HOME": str(home)}
+            install = subprocess.run(
+                ["bash", str(tools / "install_phone_saber_launcher.command")],
+                cwd=root, env=env, check=False, capture_output=True, text=True,
+            )
+            self.assertEqual(install.returncode, 0, install.stderr)
+            result = subprocess.run(
+                ["bash", str(home / "Desktop" / "PhoneSaber Status.command"), "--json"],
+                cwd=root, env=env, check=False, capture_output=True, text=True,
+                stdin=subprocess.DEVNULL,
+            )
+            self.assertEqual(result.returncode, 0, result.stderr)
+            self.assertIn(f"status stub {tools.resolve()} ['--json']", result.stdout)
 
     def test_receiver_output_is_streamed_saved_and_latest_is_updated(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

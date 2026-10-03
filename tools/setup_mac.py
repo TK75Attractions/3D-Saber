@@ -105,9 +105,13 @@ def editor_present(version: str) -> bool:
     return any(path.is_file() for path in candidates)
 
 
+# Keep in sync with install_phone_saber_launcher.command.
+DESKTOP_LAUNCHERS = ("Start PhoneSaber.command", "Open PhoneSaber Log.command",
+                     "Open Latest PhoneSaber Images.command", "PhoneSaber Status.command")
+
+
 def launcher_links(repo: Path, home: Path) -> bool:
-    for name in ("Start PhoneSaber.command", "Open PhoneSaber Log.command",
-                 "Open Latest PhoneSaber Images.command"):
+    for name in DESKTOP_LAUNCHERS:
         link = home / "Desktop" / name
         if not link.is_symlink() or link.resolve() != (repo / TOOLS / name).resolve():
             return False
