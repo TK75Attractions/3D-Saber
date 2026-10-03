@@ -9,6 +9,10 @@ public sealed class ClearAchievementPresentation : MonoBehaviour
     public const float Duration = 3.1f;
     public const float OpenDuration = .78f;
     public bool IsAllPerfect { get; private set; }
+    // FULL COMBO は金の和音、ALL PERFECT はさらに明るい和音(爽快感カタログ 山4)。表示と同時に鳴らす。
+    public const float ChordVolume = .55f;
+    AudioClip chordClip;
+    public AudioClip ChordClip => chordClip;
     public float FrameHalfWidth { get; private set; }
 
     readonly List<Material> ownedMaterials = new List<Material>();
@@ -30,6 +34,13 @@ public sealed class ClearAchievementPresentation : MonoBehaviour
     void Build(bool allPerfect)
     {
         IsAllPerfect = allPerfect;
+        chordClip = ProceduralSfx.Clip(allPerfect ? "AllPerfectChord" : "FullComboChord", ProceduralSfx.Chord(allPerfect));
+        if (Application.isPlaying)
+        {
+            var source = gameObject.AddComponent<AudioSource>();
+            source.playOnAwake = false; source.spatialBlend = 0;
+            source.PlayOneShot(chordClip, ChordVolume);
+        }
         var canvas = gameObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 810;
@@ -201,5 +212,6 @@ public sealed class ClearAchievementPresentation : MonoBehaviour
     {
         foreach (var material in ownedMaterials) if (material != null) Destroy(material);
         if (faceRamp != null) Destroy(faceRamp);
+        if (chordClip != null) Destroy(chordClip);
     }
 }

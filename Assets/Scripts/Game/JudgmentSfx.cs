@@ -1,7 +1,8 @@
 using UnityEngine;
 
 // ScoreManager.OnJudgment を購読し、ティアごとに判定音を鳴らす。
-// AudioClip が未指定なら同梱の切断音を使い、素材が無い場合だけ合成音へ戻す。
+// AudioClip が未指定なら同梱の判定別の切断音(Saber_NoteCut_Perfect など)を使い、無ければ共通の切断音、
+// 素材が無い場合だけ合成音へ戻す。判定別の音は Perfect ほど重く明るい(爽快感カタログ 手1)。
 [RequireComponent(typeof(AudioSource))]
 public class JudgmentSfx : MonoBehaviour
 {
@@ -28,9 +29,17 @@ public class JudgmentSfx : MonoBehaviour
     private AudioClip defaultFlickClip;
     private AudioClip defaultLongFinishClip;
     private AudioClip defaultMissClip;
+    private AudioClip defaultPerfectClip, defaultGreatClip, defaultGoodClip, defaultBadClip;
     private bool defaultClipLoaded;
     // 自動生成したビープ音をキャッシュ
     private AudioClip genPerfect, genGreat, genGood, genBad, genMiss;
+    // サビの間(爽快感カタログ 山1)は、成功したカットに明るい余韻を足す(Perfect の通常カット音には元から入っている)。
+    // 本編の ChorusDrop が毎フレーム 0..1 を設定する。
+    public const float ChorusSparkleThreshold = .5f;
+    public const float ChorusSparkleVolume = .32f;
+    public float ChorusLevel { get; set; }
+    public int SparkleCount { get; private set; }
+    private AudioClip genSparkle;
 
     void Awake()
     {
@@ -57,7 +66,8 @@ public class JudgmentSfx : MonoBehaviour
         UISkinKit.SafeDestroy(genGood);
         UISkinKit.SafeDestroy(genBad);
         UISkinKit.SafeDestroy(genMiss);
-        genPerfect = genGreat = genGood = genBad = genMiss = null;
+        UISkinKit.SafeDestroy(genSparkle);
+        genPerfect = genGreat = genGood = genBad = genMiss = genSparkle = null;
     }
 
     private void OnJudgment(JudgmentTier tier, int award)
@@ -65,6 +75,20 @@ public class JudgmentSfx : MonoBehaviour
         AudioClip clip = ClipForCurrentJudgment(tier);
         if (clip == null) return;
         source.PlayOneShot(clip, VolumeFor(tier));
+        if (WantsChorusSparkle(tier, clip))
+        {
+            genSparkle ??= ProceduralSfx.Clip("ChorusSparkle", ProceduralSfx.Sparkle());
+            source.PlayOneShot(genSparkle, volume * ChorusSparkleVolume);
+            SparkleCount++;
+        }
+    }
+
+    // サビ中の成功したカットで、明るい余韻をまだ含まない音のときだけ足す。
+    public bool WantsChorusSparkle(JudgmentTier tier, AudioClip played)
+    {
+        if (ChorusLevel < ChorusSparkleThreshold || played == null) return false;
+        if (tier != JudgmentTier.Perfect && tier != JudgmentTier.Great && tier != JudgmentTier.Good) return false;
+        return !(tier == JudgmentTier.Perfect && played == ClipFor(JudgmentTier.Perfect));
     }
 
     // 再生音量。Miss だけ missVolumeScale で抑える。
@@ -107,10 +131,10 @@ public class JudgmentSfx : MonoBehaviour
         AudioClip cut = LoadDefaultCutClip();
         switch (tier)
         {
-            case JudgmentTier.Perfect: return perfectClip != null ? perfectClip : (cut != null ? cut : (genPerfect ??= Beep(880f, 0.16f)));
-            case JudgmentTier.Great:   return greatClip   != null ? greatClip   : (cut != null ? cut : (genGreat   ??= Beep(660f, 0.14f)));
-            case JudgmentTier.Good:    return goodClip    != null ? goodClip    : (cut != null ? cut : (genGood    ??= Beep(440f, 0.12f)));
-            case JudgmentTier.Bad:     return badClip     != null ? badClip     : (cut != null ? cut : (genBad     ??= Beep(220f, 0.10f)));
+            case JudgmentTier.Perfect: return perfectClip != null ? perfectClip : (defaultPerfectClip != null ? defaultPerfectClip : (cut != null ? cut : (genPerfect ??= Beep(880f, 0.16f))));
+            case JudgmentTier.Great:   return greatClip   != null ? greatClip   : (defaultGreatClip   != null ? defaultGreatClip   : (cut != null ? cut : (genGreat   ??= Beep(660f, 0.14f))));
+            case JudgmentTier.Good:    return goodClip    != null ? goodClip    : (defaultGoodClip    != null ? defaultGoodClip    : (cut != null ? cut : (genGood    ??= Beep(440f, 0.12f))));
+            case JudgmentTier.Bad:     return badClip     != null ? badClip     : (defaultBadClip     != null ? defaultBadClip     : (cut != null ? cut : (genBad     ??= Beep(220f, 0.10f))));
             default:                   return missClip    != null ? missClip    : (defaultMissClip != null ? defaultMissClip : (genMiss ??= Buzz(110f, 0.18f)));
         }
     }
@@ -123,6 +147,10 @@ public class JudgmentSfx : MonoBehaviour
             defaultFlickClip = Resources.Load<AudioClip>("Audio/SFX/Saber_FlickCut");
             defaultLongFinishClip = Resources.Load<AudioClip>("Audio/SFX/Saber_LongFinish");
             defaultMissClip = Resources.Load<AudioClip>("Audio/SFX/Saber_Miss");
+            defaultPerfectClip = Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut_Perfect");
+            defaultGreatClip = Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut_Great");
+            defaultGoodClip = Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut_Good");
+            defaultBadClip = Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut_Bad");
             defaultClipLoaded = true;
         }
         return defaultCutClip;

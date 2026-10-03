@@ -9,7 +9,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
 {
     public const int MaxBursts = 12;
     public const float BurstLifetime = .24f;
-    const float SlashLifetime = .075f;
+    const float SlashLifetime = .11f;
     const float FlashLifetime = .07f;
     public const int SparkCount = 12;      // Perfect の火花本数(Great 8 / Good 4 / LOW 2)
     public const int ShardCount = 6;       // Perfect だけの光片
@@ -26,7 +26,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
         public Vector3 position;
         public Vector2 direction;
         public Color color;
-        public float age, scale, gain, hue;
+        public float age, scale, gain, hue, release;
     }
 
     // 判定段階ごとの量。LOW(演出控えめ)は火花2本・光片なし・一重リング・中心フラッシュなし。
@@ -164,6 +164,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
         bursts[slot] = new Burst {
             active = true, tier = drawn, position = position, direction = direction, color = accent,
             scale = scale, age = 0f, gain = 1f / Mathf.Sqrt(1f + .12f * (ActiveCount - 1)),
+            release = note.RequiredCutCount > 1 ? 1.18f : 1f,
             hue = Mathf.Repeat(position.x * .37f + position.y * .61f + .13f, 1f)
         };
         RebuildMesh();
@@ -200,20 +201,22 @@ public sealed class GameplayCutFeedback : MonoBehaviour
             float t = Mathf.Clamp01(burst.age / BurstLifetime);
             float life = 1f - t;
             float eased = 1f - life * life;          // 立ち上がりを速く、終わりをゆっくり
-            float size = burst.scale * style.size;
+            float size = burst.scale * style.size * (reduced ? 1f : burst.release);
             float gain = burst.gain * style.gain * accentScale;
             Vector3 direction = new Vector3(burst.direction.x, burst.direction.y, 0f);
             Vector3 normal = new Vector3(-direction.y, direction.x, 0f);
 
-            // 斬撃の光(振った方向へ抜ける短い帯)
+            // 切断点から振った先へ抜ける帯を主役にする。先端を細くし、向きが一目で分かる。
             float slash = Mathf.Pow(Mathf.Clamp01(1f - burst.age / SlashLifetime), 2f) * gain;
             if (slash > .001f)
             {
-                Vector3 center = burst.position + direction * (burst.age * 1.5f * size);
-                float length = (1.16f + burst.age * 2f) * size;
-                Streak(center, direction, length, .11f * size, WithAlpha(burst.color, slash * .4f));
-                Streak(center, direction, length * .93f, .032f * size,
-                    WithAlpha(Color.Lerp(burst.color, Color.white, .9f), slash * .96f));
+                float travel = 1f - Mathf.Pow(1f - Mathf.Clamp01(burst.age / SlashLifetime), 2f);
+                float reach = reduced ? .6f : 1f;
+                float length = (1.6f + travel * .8f) * size * reach;
+                Vector3 center = burst.position + direction * ((.28f + travel * .7f) * size * reach);
+                Taper(center, direction, length, .16f * size, .012f * size, WithAlpha(burst.color, slash * .65f));
+                Taper(center, direction, length * .95f, .045f * size, .006f * size,
+                    WithAlpha(Color.Lerp(burst.color, Color.white, .9f), slash));
             }
 
             // 衝撃波リング。Perfect は虹色(回転)の二重で2本目が少し遅れて広がる、Great/Good はノーツ色を白へ寄せた一重。
@@ -224,8 +227,8 @@ public sealed class GameplayCutFeedback : MonoBehaviour
                 float tr = Mathf.Clamp01((burst.age - lag) / (BurstLifetime - lag));
                 float easedR = 1f - (1f - tr) * (1f - tr);
                 float radius = size * (.14f + easedR * 1.15f);
-                float width = size * (.16f * (1f - tr * .6f) + .02f) * (r == 0 ? 1f : .7f);
-                float alpha = Mathf.Pow(1f - tr, .9f) * gain * (r == 0 ? 1f : .7f);
+                float width = size * (.11f * (1f - tr * .6f) + .015f) * (r == 0 ? 1f : .7f);
+                float alpha = Mathf.Pow(1f - tr, .9f) * gain * (r == 0 ? .68f : .48f);
                 if (alpha < .002f) continue;
                 for (int s = 0; s < RingSegments; s++)
                 {
@@ -257,7 +260,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
                 float flashLength = size * (.9f + flashT * .5f), flashWidth = size * .3f * (1f - flashT * .5f);
                 Color white = WithAlpha(Color.white, (1f - flashT) * (1f - flashT) * gain * .85f);
                 Streak(burst.position, direction, flashLength, flashWidth, white);
-                Streak(burst.position, normal, flashLength * .8f, flashWidth, white);
+                Streak(burst.position, normal, flashLength * .38f, flashWidth * .6f, WithAlpha(white, white.a * .6f));
             }
 
             // 火花: 主に振った方向へ飛ばし、少数だけ後方へ散らす。細い白い芯は短く減衰する。

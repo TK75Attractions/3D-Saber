@@ -150,6 +150,7 @@ public class FavoriteEffectsPlayTests
             manager.noteSpawner.Tick(1); Draw(1);
             Assert.AreEqual(4, notes.Count, "同時刻4列のノーツを生成できません。");
             int perfectMask = 0;
+            int floorMask = 0;
             for (int lane = 0; lane < 4; lane++)
             {
                 var current = notes.Find(note => note != null && note.isActiveAndEnabled &&
@@ -161,14 +162,16 @@ public class FavoriteEffectsPlayTests
                 Assert.AreEqual(succeeds ? JudgmentTier.Perfect : JudgmentTier.Great,
                     manager.scoreManager.LastTier, "混在判定が再現できません: " + lane);
                 if (succeeds) perfectMask |= 1 << lane;
+                floorMask |= 1 << lane;
                 Assert.AreEqual(perfectMask, response.ActiveLaneMask,
                     "同時判定でGreat列の素材が応答したか、Perfect列が抜けました。");
-                Assert.AreEqual(perfectMask, effects.ActiveFloorLaneMask,
-                    "同時判定でGreat列の床が応答したか、Perfect列が抜けました。");
+                // 2026-10-03: 床の縁の帯は Great にも弱めに出す(素材の応答は Perfect 限定のまま)。
+                Assert.AreEqual(floorMask, effects.ActiveFloorLaneMask,
+                    "同時判定で切った列の床が抜けました。");
             }
             Draw(1.25);
             Assert.AreEqual(5, response.ActiveLaneMask);
-            Assert.AreEqual(5, effects.ActiveFloorLaneMask);
+            Assert.AreEqual(15, effects.ActiveFloorLaneMask);
             Assert.AreEqual(2, response.ActiveResponseCount);
 
             var longChart = Single(2); longChart.notes[0].type = "long"; longChart.notes[0].count = 4;
@@ -250,6 +253,7 @@ public class FavoriteEffectsPlayTests
         }
         SetChart(simultaneous); yield return null; manager.noteSpawner.Tick(1); Draw(1);
         int perfectMask = 0;
+        int floorMask = 0;
         for (int lane = 0; lane < 4; lane++)
         {
             var current = notes.Find(n => n != null && n.isActiveAndEnabled && !n.IsFinalized &&
@@ -260,8 +264,9 @@ public class FavoriteEffectsPlayTests
                 perfect ? CutDirection.Up : CutDirection.Right);
             Assert.AreEqual(perfect ? JudgmentTier.Perfect : JudgmentTier.Great, manager.scoreManager.LastTier);
             if (perfect) perfectMask |= 1 << lane;
+            floorMask |= 1 << lane;
             Assert.AreEqual(perfectMask, scenic.MeteorLaneMask, "最終Greatの実列へ岩の反応を出さない");
-            Assert.AreEqual(perfectMask, effects.ActiveFloorLaneMask);
+            Assert.AreEqual(floorMask, effects.ActiveFloorLaneMask, "床の帯は Great にも弱めに出す");
         }
         Draw(1.30); Assert.AreEqual(2, scenic.ActiveMeteorResponseCount);
         SetChart(Single(1)); yield return null; manager.noteSpawner.Tick(1); Draw(1);
@@ -366,6 +371,7 @@ public class FavoriteEffectsPlayTests
         Draw(9);
         var shape=mesh.vertices;var center=marine.WorldCenter;
         int mask=0;
+        int floorMask=0;
         for(int lane=0;lane<4;lane++)
         {
             var note=notes.Find(n=>n!=null && n.isActiveAndEnabled && !n.IsFinalized &&
@@ -375,8 +381,9 @@ public class FavoriteEffectsPlayTests
             Cut(note,9,(perfect?Vector3.up:Vector3.right)*6,perfect?CutDirection.Up:CutDirection.Right);
             Assert.AreEqual(perfect?JudgmentTier.Perfect:JudgmentTier.Great,manager.scoreManager.LastTier);
             if(perfect)mask|=1<<lane;
+            floorMask|=1<<lane;
             Draw(9);
-            Assert.AreEqual(mask,effects.ActiveFloorLaneMask);Assert.AreEqual(mask,coral.ActiveLaneMask);
+            Assert.AreEqual(floorMask,effects.ActiveFloorLaneMask);Assert.AreEqual(mask,coral.ActiveLaneMask);
             Assert.AreEqual(center,marine.WorldCenter);CollectionAssert.AreEqual(shape,mesh.vertices);
         }
         Draw(9.25);
@@ -467,6 +474,7 @@ public class FavoriteEffectsPlayTests
         var peak = curtainMesh.vertices;
         CollectionAssert.AreNotEqual(rest, peak, "明示区間で幕が実際に畳まれる");
         int perfectMask = 0;
+        int floorMask = 0;
         for (int lane = 0; lane < 4; lane++)
         {
             var note = notes.Find(n => n != null && n.isActiveAndEnabled && !n.IsFinalized &&
@@ -477,7 +485,8 @@ public class FavoriteEffectsPlayTests
                 perfect ? CutDirection.Up : CutDirection.Right);
             Assert.AreEqual(perfect ? JudgmentTier.Perfect : JudgmentTier.Great, manager.scoreManager.LastTier);
             if (perfect) perfectMask |= 1 << lane;
-            Assert.AreEqual(perfectMask, effects.ActiveFloorLaneMask, "Greatの実列へ成功床を追加しない");
+            floorMask |= 1 << lane;
+            Assert.AreEqual(floorMask, effects.ActiveFloorLaneMask, "床の帯は Great にも弱めに出す");
             Draw(10);
             CollectionAssert.AreEqual(peak, curtainMesh.vertices, "曲同期の幕を成功・方向降格で動かさない");
         }

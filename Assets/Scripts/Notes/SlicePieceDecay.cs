@@ -4,9 +4,12 @@ using UnityEngine;
 public class SlicePieceDecay : MonoBehaviour
 {
     public float life = 1.2f, fadeStart = .6f;
-    float age, damping;
+    float age, damping, gravityScale = 1f;
     Vector3 velocity, angularVelocity;
     bool gravity, released;
+    public Vector3 Velocity => velocity;
+    public Vector3 AngularVelocity => angularVelocity;
+    public float GravityScale => gravity ? gravityScale : 0f;
     MeshRenderer mr;
     Material ownedMat;
     Mesh ownedMesh;
@@ -64,8 +67,15 @@ public class SlicePieceDecay : MonoBehaviour
     public void Launch(NoteFragmentPool pool, Vector3 speed, Vector3 spin, bool useGravity, float duration, float fade, float drag)
     {
         // 通常の切断片とロングの細片を共通で速く飛ばす。寿命と回転は維持する。
-        Pool=pool; velocity=speed * 1.9f; angularVelocity=spin; gravity=useGravity; life=duration; fadeStart=fade;
+        Pool=pool; velocity=speed * 1.9f; angularVelocity=spin; gravity=useGravity; gravityScale=1f; life=duration; fadeStart=fade;
         damping=drag; age=0; released=false; flashAge=float.PositiveInfinity; gameObject.SetActive(true);
+    }
+    // 本編の「流れる破片」(手5)。Launch の後に呼び、ノーツの前進の勢いを足して軽い重力で落とす。
+    // 切断の初速(Launch 内の 1.9 倍)には掛けない。
+    public void Flow(Vector3 drift, float gravityScale)
+    {
+        if(released) return;
+        velocity+=drift; gravity=true; this.gravityScale=Mathf.Max(0f,gravityScale);
     }
     void Update() { Step(Time.deltaTime); }
     public void Step(float dt)
@@ -73,7 +83,7 @@ public class SlicePieceDecay : MonoBehaviour
         if(released || dt < 0 || float.IsNaN(dt) || float.IsInfinity(dt)) return;
         age+=dt;
         StepFlash(dt);
-        if(gravity) velocity+=Physics.gravity*dt;
+        if(gravity) velocity+=Physics.gravity*(gravityScale*dt);
         velocity*=Mathf.Exp(-damping*dt); transform.position+=velocity*dt;
         transform.Rotate(angularVelocity*(Mathf.Rad2Deg*dt),Space.World);
         angularVelocity*=Mathf.Exp(-.2f*dt);

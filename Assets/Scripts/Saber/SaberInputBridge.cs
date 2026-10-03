@@ -350,6 +350,13 @@ public class SaberInputBridge : MonoBehaviour
     }
 
     // ブレードの色を実行時に変更する(手の色分け用)。生成済みのマテリアル/ラインにも反映する。
+    // この棒でノーツが切れたとき(手8)。刃の見た目だけに伝え、判定や入力の値は変えない。
+    public SaberBladeVisual BladeVisual => bladeVisual;
+    public void NotifyCut()
+    {
+        if (bladeVisual != null) bladeVisual.NotifyCut();
+    }
+
     public void SetBladeColor(Color c)
     {
         bladeColor = c;

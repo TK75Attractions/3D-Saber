@@ -12,6 +12,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     readonly List<RaycastResult> hits = new List<RaycastResult>();
     SongSelectController controller;
     SongSelectSlashNav navigation;
+    SongSelectIdleGuide idleGuide;
     RectTransform overlay, upDock, downDock;
     SongSelectAimGraphic reticle, impact;
     Target hovered;
@@ -33,10 +34,11 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         public Rect area;
     }
 
-    public static SongSelectAimPointer Build(SongSelectController ctl, Canvas canvas, SongSelectSlashNav nav)
+    public static SongSelectAimPointer Build(SongSelectController ctl, Canvas canvas, SongSelectSlashNav nav, SongSelectIdleGuide guide = null)
     {
         var aim = new GameObject("SongSelectAimPointer").AddComponent<SongSelectAimPointer>();
         aim.controller = ctl; aim.navigation = nav;
+        aim.idleGuide = guide;
         aim.upDock = canvas.transform.Find("NavUpDock") as RectTransform;
         aim.downDock = canvas.transform.Find("NavDownDock") as RectTransform;
         foreach (var dock in new[] { aim.upDock, aim.downDock })
@@ -102,6 +104,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         shotAge += Mathf.Max(0, dt);
         if (impact != null) impact.Show(0, false, shotAge);
         bool active = inputAvailable && !ScreenTransition.IsBusy;
+        if (idleGuide != null) idleGuide.ObservePointer(point, active, sourceKind == 1);
         if (!active)
         {
             CancelCharge();
@@ -121,6 +124,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         bool repeat = next.disc != null && next.disc.RepeatWhileHeld;
         bool fire = tracker.Tick(next.key, Expand(area, Padding), point, dt, ready,
             next.disc != null ? next.disc.HoldSeconds : 1, next.disc != null && next.disc.Circle, repeat);
+        if (idleGuide != null && (fire || tracker.Progress01 >= .1f)) idleGuide.RegisterActivity();
         // 曲送りをため続けている間は試聴を始めない。送るたびに鳴りかけて途切れるのを防ぐ。
         if (repeat && tracker.Progress01 > 0 && controller != null && controller.ChartPreview != null) controller.ChartPreview.HoldOff();
         if (reticle != null)

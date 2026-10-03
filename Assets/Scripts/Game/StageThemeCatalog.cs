@@ -12,16 +12,14 @@ public enum StageTheme
     CrystalGrotto = 7,
     AstralOrbit = 8,
     DesertSanctum = 9,
-    PulseArray = 10,
-    AuroraLake = 11,
-    RainyCity = 12,
-    SunlitOcean = 13
+    PulseArray = 10
+    // 削除済みの写真背景ID 11〜13は再利用しない。既存背景の保存値を維持する。
 }
 
 // 背景だけの乱数系列。譜面・演出などが使う UnityEngine.Random の状態を変えない。
 public static class StageThemeCatalog
 {
-    public const int Count = 14;
+    public const int Count = 11;
     private static readonly System.Random random = new System.Random();
     private static int previous = -1;
 
@@ -56,16 +54,11 @@ public static class StageThemeCatalog
             case StageTheme.AstralOrbit: return "Astral Orbit";
             case StageTheme.DesertSanctum: return "Desert Sanctum";
             case StageTheme.PulseArray: return "Pulse Array";
-            case StageTheme.AuroraLake: return "Aurora Lake";
-            case StageTheme.RainyCity: return "Rainy City";
-            case StageTheme.SunlitOcean: return "Sunlit Ocean";
             default: return "Obsidian Relay";
         }
     }
 
     public static bool IsScenic(StageTheme theme) => theme >= StageTheme.AbyssalRuins && theme <= StageTheme.DesertSanctum;
-
-    public static bool IsPhotographic(StageTheme theme) => theme >= StageTheme.AuroraLake && theme <= StageTheme.SunlitOcean;
 
     // 彩度は端の埋め込み灯に限定。赤/青ノーツと混同しない低輝度の環境色。
     public static Color Accent(StageTheme theme)

@@ -96,6 +96,8 @@ public class SfxLifetimePlayTests
         Set(sfx, "defaultClipLoaded", true);
         Set(sfx, "defaultCutClip", null);
         Set(sfx, "defaultMissClip", null);
+        // 2026-10-03: 判定別の同梱音(爽快感カタログ 手1)も無い状態にして、合成の代わりの音を確かめる。
+        foreach (var field in new[] { "defaultPerfectClip", "defaultGreatClip", "defaultGoodClip", "defaultBadClip" }) Set(sfx, field, null);
         var tiers = new[] { JudgmentTier.Perfect, JudgmentTier.Great, JudgmentTier.Good, JudgmentTier.Bad, JudgmentTier.Miss };
         var clips = tiers.Select(sfx.ClipFor).ToArray();
         for (int i = 0; i < tiers.Length; i++) Assert.AreSame(clips[i], sfx.ClipFor(tiers[i]));

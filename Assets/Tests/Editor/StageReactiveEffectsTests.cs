@@ -258,8 +258,9 @@ public class StageReactiveEffectsTests
         Spawn(a, b); Cut(0); Cut(1);
         Assert.AreEqual(1, effects.PairCount); Assert.AreEqual(3, effects.ActiveFloorLaneMask);
         notes.Clear(); Spawn(a, b); Cut(0); Cut(1, .15);
-        Assert.AreEqual(0, effects.PairCount); Assert.AreEqual(1, effects.ActiveWaveCount);
-        Assert.AreEqual(1, effects.ActiveFloorLaneMask);
+        // 片方が Good なら左右の組にはしない。Good の列にも弱い床の帯は出る(2026-10-03)。
+        Assert.AreEqual(0, effects.PairCount); Assert.AreEqual(2, effects.ActiveWaveCount);
+        Assert.AreEqual(3, effects.ActiveFloorLaneMask);
     }
 
     [Test]

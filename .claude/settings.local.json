@@ -80,7 +80,10 @@
       "PowerShell($d = Get-CimInstance Win32_LogicalDisk -Filter \"DeviceID='C:'\"; \"Free GB: {0:N2} / Total GB: {1:N2}\" -f \\($d.FreeSpace/1GB\\), \\($d.Size/1GB\\); & C:\\\\pinokio\\\\bin\\\\miniconda\\\\python.exe -c \"import sys; print\\(sys.version\\); import numpy; print\\('numpy', numpy.__version__\\)\"; & C:\\\\pinokio\\\\bin\\\\miniconda\\\\python.exe -c \"import scipy; print\\('scipy', scipy.__version__\\)\"; Get-ChildItem C:\\\\Users\\\\shike\\\\dev\\\\tools | Select-Object Name, LastWriteTime)",
       "Bash(py --version)",
       "Bash(xargs wc -l)",
-      "Bash(sort -k2)"
+      "Bash(sort -k2)",
+      "Skill(schedule)",
+      "Skill(schedule:*)",
+      "PowerShell($gh = Get-Command gh -ErrorAction SilentlyContinue; if \\($gh\\) { $gh.Source; gh auth status } else { \"gh CLI not installed\" })"
     ],
     "defaultMode": "bypassPermissions"
   }

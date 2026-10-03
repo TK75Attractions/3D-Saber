@@ -61,8 +61,20 @@ public class JudgmentSfxTests
         Assert.AreEqual(48000, cut.frequency);
         Assert.AreEqual(1, cut.channels);
         Assert.AreEqual(0.16f, cut.length, 0.001f);
+        // 2026-10-03(手1): 判定ごとに別の切断音。Perfect ほど重く明るく、長い。
+        var seen = new System.Collections.Generic.HashSet<AudioClip>();
+        float previous = float.MaxValue;
         foreach (var tier in new[] { JudgmentTier.Perfect, JudgmentTier.Great, JudgmentTier.Good, JudgmentTier.Bad })
-            Assert.AreSame(cut, sfx.ClipFor(tier));
+        {
+            var clip = sfx.ClipFor(tier);
+            Assert.AreSame(Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut_" + tier), clip, "判定別の同梱音: " + tier);
+            Assert.AreEqual(48000, clip.frequency);
+            Assert.AreEqual(1, clip.channels);
+            Assert.IsTrue(seen.Add(clip), "判定ごとに違う音");
+            Assert.LessOrEqual(clip.length, previous, "上の判定ほど余韻が長い");
+            previous = clip.length;
+        }
+        Assert.IsFalse(seen.Contains(sfx.ClipFor(JudgmentTier.Miss)));
         Assert.AreNotSame(cut, sfx.ClipFor(JudgmentTier.Miss));
     }
 
@@ -91,7 +103,7 @@ public class JudgmentSfxTests
         var tap = sfx.ClipForCut(JudgmentTier.Perfect, CutDirection.None, 1);
         var flick = sfx.ClipForCut(JudgmentTier.Perfect, CutDirection.Up, 1);
         var longEnd = sfx.ClipForCut(JudgmentTier.Perfect, CutDirection.None, 4);
-        Assert.AreSame(Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut"), tap);
+        Assert.AreSame(Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut_Perfect"), tap);
         Assert.AreSame(Resources.Load<AudioClip>("Audio/SFX/Saber_FlickCut"), flick);
         Assert.AreSame(Resources.Load<AudioClip>("Audio/SFX/Saber_LongFinish"), longEnd);
         Assert.IsNotNull(flick);
@@ -103,7 +115,7 @@ public class JudgmentSfxTests
         Assert.AreSame(sfx.ClipFor(JudgmentTier.Miss), sfx.ClipForCut(JudgmentTier.Miss, CutDirection.Up, 1));
     }
 
-    [TestCase(1, "none", false, "Saber_NoteCut")]
+    [TestCase(1, "none", false, "Saber_NoteCut_Perfect")]
     [TestCase(1, "up", false, "Saber_FlickCut")]
     [TestCase(3, "up", false, "Saber_LongFinish")]
     [TestCase(3, "none", true, null)]

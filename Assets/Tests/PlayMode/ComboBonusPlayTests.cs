@@ -85,7 +85,11 @@ public class ComboBonusPlayTests
         Assert.AreEqual(120, GameSession.FinalMaxCombo);
         Assert.AreEqual(12000, GameSession.FinalComboBonus);
         var block = GameObject.Find("ResultStats").transform.Find("ScoreBlock");
-        Assert.AreEqual("48,000", block.Find("ScoreValue").GetComponent<TMP_Text>().text);
+        // 2026-10-03(爽快感カタログ 山4): スコアは 0 から約1.5秒でカウントアップする。止まった値を確かめる。
+        var scoreText = block.Find("ScoreValue").GetComponent<TMP_Text>();
+        float countDeadline = Time.realtimeSinceStartup + 4;
+        while (scoreText.text != "48,000" && Time.realtimeSinceStartup < countDeadline) yield return null;
+        Assert.AreEqual("48,000", scoreText.text);
         Assert.AreEqual("120", block.Find("MaxComboValue").GetComponent<TMP_Text>().text);
         Assert.AreEqual(48000, HighScoreStore.Load(songId, "Normal").entries[0].score);
         Assert.AreEqual(1, HighScoreStore.Load(songId, "Normal").entries.Count);

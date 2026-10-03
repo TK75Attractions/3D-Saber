@@ -32,6 +32,8 @@ public class NoteSpawner : MonoBehaviour
     public float longMaxVisualZScale = 6f;
     // 着地ゴースト(判定面の固定枠+収縮枠。NoteTimingCue)を各ノーツに付ける。
     public bool buildTimingCues = true;
+    // 割れた破片にノーツの前進の勢いを残して手前へ流す(爽快感カタログ 手5)。新規フィールドなのでシーンの値は無くコード既定値が効く。
+    public bool flowDebris = true;
 
     private ChartData chart;
     private int nextIndex;
@@ -287,6 +289,9 @@ public class NoteSpawner : MonoBehaviour
         note.IsGold = !string.IsNullOrEmpty(nd.color) && nd.color.ToLowerInvariant() == "gold";
         // 担当ハンド（blue=左手 / red=右手 / gold・無色=どちらでも）。ロングにも同じルールを適用。
         note.RequiredHand = SaberHandHelper.FromColor(nd.color);
+        // 流れる破片: タップはノーツと同じ向き・速さで流れている(spawnZ → judgeZ)。ロングは判定面に留まるので勢いを残さない。
+        note.FlowDebris = flowDebris;
+        note.FlowNoteVelocity = note.RequiredCutCount > 1 ? Vector3.zero : new Vector3(0f, 0f, -Speed);
 
         // 旧プレハブにある面ステッカー等を剥がして、クリスタル＋ネオン外観に置き換える。
         // NoteVisuals 自身が冪等で、既存プレハブにも安全に被せられる。

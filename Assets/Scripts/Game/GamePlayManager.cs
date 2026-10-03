@@ -129,6 +129,8 @@ public class GamePlayManager : MonoBehaviour
     private FloorRenderer stageFloor;
     private StagePerformanceTimeline stagePerformance = new StagePerformanceTimeline();
     private StageReactiveEffects stageReactions;
+    // サビ入りのドロップとサビ中の強調(爽快感カタログ 山1)。
+    private ChorusDrop chorusDrop;
 
     // --- キャリブレーション（判定調整）モード ---
     private bool inCalibration;
@@ -176,6 +178,8 @@ public class GamePlayManager : MonoBehaviour
         if (cameraImuJudgment == null) cameraImuJudgment = GetComponent<CameraImuJudgment>();
         if (cameraImuJudgment == null) cameraImuJudgment = gameObject.AddComponent<CameraImuJudgment>();
         cameraImuJudgment.Configure(noteSpawner, cutJudge, cutJudge2);
+        // 切れた手の刃だけを光らせる(爽快感カタログ 手8)。
+        SaberCutFlash.Attach(gameObject, scoreManager, cutJudge, cutJudge2);
         if (useOverhauledStage)
         {
             // 新テーマ:格子剥がし+判定ゲート+カメラ背景/フォグは GameStageSkin に集約。
@@ -296,6 +300,8 @@ public class GamePlayManager : MonoBehaviour
         playFeedback = GameplayFeedbackPresenter.Create(noteSpawner, scoreManager);
         if (stageFloor != null) stageFloor.SetRhythm(chart);
         if (stageFloor != null) stageReactions = StageReactiveEffects.Create(stageFloor, noteSpawner, stagePerformance);
+        chorusDrop = ChorusDrop.Create(transform, stagePerformance, songPlayer, chart.bpm,
+            stageFloor != null ? stageFloor.transform : null, Object.FindFirstObjectByType<JudgmentSfx>());
 
         // 判定ゲートはPerfectが確定した瞬間だけ発光する。拍や単なる接触では光らせない。
         if (useOverhauledStage)
@@ -632,6 +638,7 @@ public class GamePlayManager : MonoBehaviour
             if (foundryStageMotion != null) foundryStageMotion.Tick(time,chorus);
             if (scenicStageWorld != null) scenicStageWorld.Tick(time,chorus,stagePerformance.EvaluateEclipse(time));
             if (stageReactions != null) stageReactions.Tick(time);
+            if (chorusDrop != null && !inCalibration) chorusDrop.Tick(time, Time.unscaledDeltaTime);
         }
 
         // 2a. キャリブレーション分岐：時計は AudioSettings.dspTime ベース、終了せずループ
@@ -669,6 +676,7 @@ public class GamePlayManager : MonoBehaviour
         finished = true;
         StopAllCoroutines();
         if (songPlayer != null) songPlayer.Stop();
+        if (chorusDrop != null) chorusDrop.ResetEffects();
         var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
         if (countdown != null) Destroy(countdown.gameObject);
     }
@@ -732,6 +740,7 @@ public class GamePlayManager : MonoBehaviour
             $"duration={songPlayer.Duration:F1}s lastNote={lastNoteTime:F1}s alive={noteSpawner.AliveCount}");
         songPlayer.Stop();
         if (stageReactions != null) stageReactions.ResetState();
+        if (chorusDrop != null) chorusDrop.ResetEffects();
         if (playFeedback != null) playFeedback.gameObject.SetActive(false);
         StartCoroutine(FinishWithAchievements());
     }

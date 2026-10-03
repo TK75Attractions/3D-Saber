@@ -23,6 +23,13 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     public string FullComboLabel => fc != null ? fc.text : "";
     public string EndingLabel => ending != null ? ending.text : "";
     public int LatestMilestone => latestMilestone;
+    // 曲の締めの札に音を付ける(爽快感カタログ 山4)。札は FULL COMBO でも TRACK CLEAR でも同じ短く上がる音。
+    // FULL COMBO / ALL PERFECT の和音は、続く ClearAchievementPresentation が鳴らす。
+    public const float OutroVolume = .5f;
+    AudioSource outroSource;
+    AudioClip outroClip;
+    public bool OutroSoundPlayed { get; private set; }
+    public AudioClip OutroClip => outroClip;
 
     public static GameplayFeedbackPresenter Create(NoteSpawner spawner, ScoreManager score)
     {
@@ -133,10 +140,24 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
         ending.text = full ? "FULL COMBO" : "TRACK CLEAR";
         ending.color = full ? new Color(.6f, .94f, .88f) : new Color(.88f, .92f, .97f);
         endingDetail.text = score == null ? "" : "BEST CHAIN  " + score.MaxCombo + "    /    SCORE  " + score.Score.ToString("N0");
+        PlayOutroSound();
+    }
+    void PlayOutroSound()
+    {
+        if (outroClip == null) outroClip = ProceduralSfx.Clip("TrackClearRise", ProceduralSfx.Rise());
+        OutroSoundPlayed = true;
+        if (!Application.isPlaying) return;
+        if (outroSource == null)
+        {
+            outroSource = gameObject.AddComponent<AudioSource>();
+            outroSource.playOnAwake = false; outroSource.spatialBlend = 0;
+        }
+        outroSource.PlayOneShot(outroClip, OutroVolume);
     }
     void OnDestroy()
     {
         if (score != null) score.OnJudgment -= Scored;
+        UISkinKit.SafeDestroy(outroClip);
     }
     static RectTransform Rect(Transform parent, string name, Vector2 size, Vector2 position)
     {

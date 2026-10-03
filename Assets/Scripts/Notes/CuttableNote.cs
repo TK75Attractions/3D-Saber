@@ -43,6 +43,7 @@ public class CuttableNote : MonoBehaviour
         LastCutSongTime = null;
         firstPiece = secondPiece = null;
         hasPendingFlash = false;
+        FlowDebris = false; FlowNoteVelocity = Vector3.zero;
         lastHitPoint = Vector3.zero; lastVelocity = Vector3.right; cracksUsed = 0;
         foreach (var crack in ownedCracks) if (crack.visual != null) crack.visual.SetActive(false);
         if (countLabel != null) countLabel.gameObject.SetActive(false);
@@ -102,6 +103,18 @@ public class CuttableNote : MonoBehaviour
     [Header("Shatter (long note)")]
     public int shatterDebrisCount = 6;
     public float shatterDebrisSpeed = 3f;
+
+    // 本編の「流れる破片」(爽快感カタログ 手5)。NoteSpawner が出すノーツだけ有効にする(選曲画面・テストのノーツは従来どおり)。
+    // 割れた片にノーツの前進の勢いを残し、軽い重力と、振った向きに沿った回転で画面の手前へ抜けさせる。
+    // 切断の初速(SlicePieceDecay の 1.9 倍)は変えない。
+    public const float FlowMomentumKeep = .6f;
+    public const float FlowGravityScale = .35f;
+    public const float FlowPieceLife = 1.1f;
+    public const float FlowFadeStart = .55f;
+    public const float FlowSpin = 6f;
+    [System.NonSerialized] public bool FlowDebris;
+    // ノーツが流れている速度(ワールド)。ロングは判定面に留まるので 0。
+    [System.NonSerialized] public Vector3 FlowNoteVelocity;
 
     // 最終カット時に発火（タップなら1回、ロングなら全部切れた瞬間に1回）。
     public event System.Action<CuttableNote, Vector3, Vector3> OnCut;
@@ -310,9 +323,21 @@ public class CuttableNote : MonoBehaviour
     {
         WarmCracks(cracksUsed + 1);
         var crack = ownedCracks[cracksUsed++].visual;
-        crack.transform.localPosition = new Vector3(Random.Range(-.3f,.3f), Random.Range(-.3f,.3f), -.55f);
-        crack.transform.localRotation = Quaternion.Euler(0,0,Random.Range(0f,360f));
-        crack.transform.localScale = new Vector3(.04f,Random.Range(.5f,.95f),.03f); crack.SetActive(true);
+        // 当たった位置・振った方向に傷を残し、完了が近いほど既存の傷も太く長くする。
+        // 成功の光は最終判定まで出さず、ノーツ本体や判定形状は動かさない。
+        Vector3 localHit = transform.InverseTransformPoint(lastHitPoint);
+        Vector3 localDirection = transform.InverseTransformDirection(lastVelocity);
+        float angle = localDirection.sqrMagnitude > .0001f
+            ? Mathf.Atan2(localDirection.y, localDirection.x) * Mathf.Rad2Deg - 90f : 0f;
+        float offset = ((cracksUsed - 1) % 3 - 1) * .09f;
+        crack.transform.localPosition = new Vector3(Mathf.Clamp(localHit.x + offset, -.28f, .28f),
+            Mathf.Clamp(localHit.y - offset, -.28f, .28f), -.55f);
+        crack.transform.localRotation = Quaternion.Euler(0, 0, angle + ((cracksUsed & 1) == 0 ? 12f : -12f));
+        float progress = Mathf.Clamp01(CutsAchieved / (float)Mathf.Max(1, RequiredCutCount - 1));
+        for (int i = 0; i < cracksUsed; i++)
+            ownedCracks[i].visual.transform.localScale = new Vector3(Mathf.Lerp(.025f, .055f, progress),
+                Mathf.Lerp(.38f, .88f, progress) * (1f - (i % 3) * .08f), .03f);
+        crack.SetActive(true);
     }
 
     private void ShatterAndDestroy(Vector3 hitPoint, Vector3 cutVelocity)
@@ -351,15 +376,30 @@ public class CuttableNote : MonoBehaviour
     {
         var renderer = GetComponent<MeshRenderer>();
         var material = renderer != null ? renderer.sharedMaterial : null;
+        Vector3 motion = new Vector3(cutVelocity.x, cutVelocity.y, 0f).normalized;
+        if (motion.sqrMagnitude < .0001f) motion = Vector3.right;
+        Vector3 normal = Vector3.Cross(motion, Vector3.forward);
+        Vector3 carry = Vector3.ClampMagnitude(cutVelocity, 14f) * .15f;
         for (int i = 0; i < shatterDebrisCount; i++)
         {
             var piece = RentPiece(material, false);
             piece.transform.position = transform.position + Random.insideUnitSphere * .3f;
             piece.transform.rotation = Random.rotation;
             piece.transform.localScale = Vector3.one * Random.Range(.06f,.14f);
-            piece.Launch(FragmentPool, Random.insideUnitSphere * shatterDebrisSpeed + cutVelocity * .15f,
-                Random.insideUnitSphere * (pieceAngularImpulse * 1.5f), pieceUseGravity, pieceLife, pieceFadeStart, 0f);
+            // 最終打だけ、切断面の両側へ扇状に開いてから振った先へ抜ける。
+            float side = (i & 1) == 0 ? 1f : -1f;
+            Vector3 fan = (motion * .6f + normal * (side * (.55f + (i % 3) * .3f))
+                + Vector3.forward * Random.Range(-.18f, .18f)).normalized;
+            piece.Launch(FragmentPool, fan * shatterDebrisSpeed + carry,
+                Random.insideUnitSphere * (pieceAngularImpulse * 1.5f), pieceUseGravity, PieceLife, PieceFadeStart, 0f);
+            ApplyFlow(piece);
         }
+    }
+    float PieceLife => FlowDebris ? Mathf.Min(pieceLife, FlowPieceLife) : pieceLife;
+    float PieceFadeStart => FlowDebris ? Mathf.Min(pieceFadeStart, FlowFadeStart) : pieceFadeStart;
+    void ApplyFlow(SlicePieceDecay piece)
+    {
+        if (FlowDebris && piece != null) piece.Flow(FlowNoteVelocity * FlowMomentumKeep, FlowGravityScale);
     }
     private SlicePieceDecay RentPiece(Material material, bool sliced)
     {
@@ -398,8 +438,20 @@ public class CuttableNote : MonoBehaviour
         {
             first.Release(); second.Release(); return false;
         }
-        Vector3 separationWorld = cutNormalWorld * sliceSeparationImpulse + cutVelocity * saberVelocityScale;
-        SpawnPiece(first, separationWorld); SpawnPiece(second, -separationWorld);
+        // 二片は切断面から逆向きに開き、両方とも振った先へ運ばれる。
+        // メニューの切断は従来の飛び方を維持する。共通の飛散速度1.9倍はLaunch側で適用。
+        Vector3 carry = Vector3.ClampMagnitude(cutVelocity, 14f) * saberVelocityScale;
+        float release = RequiredCutCount > 1 ? 1.22f : 1f;
+        Vector3 separationWorld = cutNormalWorld * (sliceSeparationImpulse * release);
+        if (DirectionVisualOnly)
+        {
+            Vector3 legacy = cutNormalWorld * sliceSeparationImpulse + cutVelocity * saberVelocityScale;
+            SpawnPiece(first, legacy, cutNormalWorld); SpawnPiece(second, -legacy, cutNormalWorld);
+        }
+        else
+        {
+            SpawnPiece(first, separationWorld + carry, cutNormalWorld); SpawnPiece(second, -separationWorld + carry, cutNormalWorld);
+        }
         firstPiece = first; secondPiece = second;
         if (hasPendingFlash)
         {
@@ -409,11 +461,14 @@ public class CuttableNote : MonoBehaviour
         }
         return true;
     }
-    private void SpawnPiece(SlicePieceDecay piece, Vector3 velocity)
+    private void SpawnPiece(SlicePieceDecay piece, Vector3 velocity, Vector3 spinAxis)
     {
         piece.transform.position = transform.position; piece.transform.rotation = transform.rotation;
         piece.transform.localScale = transform.lossyScale;
-        piece.Launch(FragmentPool, velocity, Random.insideUnitSphere * pieceAngularImpulse,
-            pieceUseGravity, pieceLife, pieceFadeStart, .1f);
+        Vector3 spin = FlowDebris
+            ? spinAxis * FlowSpin + Random.insideUnitSphere * (pieceAngularImpulse * .25f)
+            : Random.insideUnitSphere * pieceAngularImpulse;
+        piece.Launch(FragmentPool, velocity, spin, pieceUseGravity, PieceLife, PieceFadeStart, .1f);
+        ApplyFlow(piece);
     }
 }

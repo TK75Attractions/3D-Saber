@@ -44,6 +44,8 @@ public class ResultSkin : MonoBehaviour
     static readonly Color GlowBlue = new Color(56f / 255f, 184f / 255f, 1f); // #38B8FF
 
     private ResultReveal reveal;
+    // スコアのカウントアップと音(爽快感カタログ 山4)が書き換える数字。
+    private TextMeshProUGUI scoreValueText;
     private static Sprite backdropGradient; // 縦3停止グラデ(共有キャッシュ)
 
     void Start()
@@ -79,6 +81,9 @@ public class ResultSkin : MonoBehaviour
         BuildJudgeList(root.transform);
         BuildDistributionBar(root.transform);
         DailyRankingPresentation.Build(root.transform, reveal, GameSession.FinalDailyRanking);
+        // スコアのカウントアップ・ランクの「ドン」・順位の演出の後の静かなループ曲。
+        ResultSoundtrack.Build(root.transform, reveal, scoreValueText, GameSession.FinalScore, DelayScoreBlock, DelayRing,
+            Mathf.Max(3f, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .2f));
         StyleBackButton(canvas);
         BuildSkipHint(root.transform);
         var pointer = SaberUIPointer.Build();
@@ -389,6 +394,7 @@ public class ResultSkin : MonoBehaviour
             new Vector2(-540f, 110f), new Vector2(430f, 122f), FontStyles.Normal, 1f, chakra);
         scoreValue.enableVertexGradient = true;
         scoreValue.colorGradient = new VertexGradient(Color.white, Color.white, DeepCyan, DeepCyan);
+        scoreValueText = scoreValue;
 
         // MAX COMBO(数値だけ 1.36s に遅れて出る)
         UISkinKit.MakeTMP(block.transform, "MaxComboLabel", "MAX COMBO", 28f,

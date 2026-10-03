@@ -60,12 +60,19 @@ public sealed class StagePerformanceTimeline
         return value;
     }
 
-    public float Evaluate(double songSeconds)
+    public float Evaluate(double songSeconds) => Evaluate(songSeconds, 0f);
+
+    // サビ(強度 .65 以上の区間)だけの強さ。低強度の助走区間は含めない(山1のサビ中の強調用)。
+    public const float StrongIntensity = .65f;
+    public float EvaluateStrong(double songSeconds) => Evaluate(songSeconds, StrongIntensity);
+
+    float Evaluate(double songSeconds, float minIntensity)
     {
         if (!Finite(songSeconds) || songSeconds < 0 || sections == null) return 0;
         float result = 0;
         foreach (var section in sections)
         {
+            if (section != null && Finite(section.intensity) && section.intensity < minIntensity) continue;
             if (section == null || !Finite(section.startSeconds) || !Finite(section.endSeconds) ||
                 section.startSeconds < 0 || section.endSeconds <= section.startSeconds ||
                 !Finite(section.intensity) || !Finite(section.fadeInSeconds) || !Finite(section.fadeOutSeconds)) continue;

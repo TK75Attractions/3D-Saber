@@ -142,7 +142,7 @@ public class CalibrationFlowPlayTests
         foreach(var sfx in sounds)
         {
             Assert.AreEqual(0f,sfx.volume,"待機中も通常の判定音を鳴らさない");
-            Assert.AreSame(Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut"),sfx.ClipFor(JudgmentTier.Perfect));
+            Assert.AreSame(Resources.Load<AudioClip>("Audio/SFX/Saber_NoteCut_Perfect"),sfx.ClipFor(JudgmentTier.Perfect));
             Assert.AreSame(Resources.Load<AudioClip>("Audio/SFX/Saber_Miss"),sfx.ClipFor(JudgmentTier.Miss));
         }
         c.Begin(CalibrationRunMode.Practice);yield return null;

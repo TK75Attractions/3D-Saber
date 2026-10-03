@@ -68,7 +68,8 @@ public class SongSelectSkin : MonoBehaviour
         BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildAchievements(); BuildActions();
         ctl.OnSelectionChanged += SelectionChanged; ctl.OnDifficultyChanged += DifficultyChanged;
         SelectionChanged(ctl.SelectedIndex); animation = 1; AnimateDiscs();
-        SongSelectAimPointer.Build(ctl, canvas, null);
+        var guide = SongSelectIdleGuide.Build(ctl, layout);
+        SongSelectAimPointer.Build(ctl, canvas, null, guide);
         countdown.Reset(GameSession.CalibrationSelectionSeconds ?? 100);
         GameSession.CalibrationSelectionSeconds = null;
         timer.text = Mathf.CeilToInt((float)countdown.Remaining).ToString();

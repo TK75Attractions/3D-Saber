@@ -13,6 +13,9 @@ public sealed class JudgeGateFrame : MonoBehaviour
     private Material originalPanelMaterial;
     private Material panelCopy;
     private bool built;
+    // 判定面の半分の幅と高さ(ゲート枠の内側)。サビ入りのリング(ChorusDrop)が枠に重ねるために使う。
+    public float HalfWidth { get; private set; }
+    public float HalfHeight { get; private set; }
 
     public void OwnPanelMaterial(MeshRenderer renderer, Material original, Material replacement)
     {
@@ -25,6 +28,7 @@ public sealed class JudgeGateFrame : MonoBehaviour
         if (built) return;
         built = true;
         float hw = Mathf.Abs(panelSize.x) * .5f, hh = Mathf.Abs(panelSize.y) * .5f;
+        HalfWidth = hw; HalfHeight = hh;
         float cut = Mathf.Min(.31f, Mathf.Min(hw, hh) * .18f);
         float t = GameStageSkin.GateBarThickness;
         var metal = MakeSurface("GraphiteHousing", new Color(.062f, .092f, .118f), .05f);
