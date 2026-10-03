@@ -3,7 +3,29 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
-UNITY_CANDIDATE="${UNITY_PROJECT_PATH:-$(cd "$REPO_ROOT/.." && pwd -P)/3D-Saber}"
+# 3D-Saber is a sibling of the main school-festival checkout. A linked Git
+# worktree (for example .claude/worktrees/<name>) has no such sibling, so fall
+# back to the main checkout that owns the shared Git directory.
+UNITY_PATH_EXPLICIT=false
+REPO_IS_LINKED_WORKTREE=false
+REPO_MAIN_ROOT="$REPO_ROOT"
+repo_git_dir="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-dir 2>/dev/null || true)"
+repo_common_dir="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+if [[ -n "$repo_git_dir" && -n "$repo_common_dir" && "$repo_git_dir" != "$repo_common_dir" ]]; then
+  REPO_IS_LINKED_WORKTREE=true
+  if [[ "$(basename "$repo_common_dir")" == ".git" && -d "$(dirname "$repo_common_dir")" ]]; then
+    REPO_MAIN_ROOT="$(cd "$(dirname "$repo_common_dir")" && pwd -P)"
+  fi
+fi
+if [[ -n "${UNITY_PROJECT_PATH:-}" ]]; then
+  UNITY_PATH_EXPLICIT=true
+  UNITY_CANDIDATE="$UNITY_PROJECT_PATH"
+else
+  UNITY_CANDIDATE="$(cd "$REPO_ROOT/.." && pwd -P)/3D-Saber"
+  if [[ ! -d "$UNITY_CANDIDATE" && "$REPO_MAIN_ROOT" != "$REPO_ROOT" ]]; then
+    UNITY_CANDIDATE="$(cd "$REPO_MAIN_ROOT/.." && pwd -P)/3D-Saber"
+  fi
+fi
 if [[ -d "$UNITY_CANDIDATE" ]]; then
   UNITY_ROOT="$(cd "$UNITY_CANDIDATE" && pwd -P)"
 else
@@ -236,6 +258,117 @@ run_unity_test() {
   fi
 }
 
+IOS_SIMULATOR_TEMPLATE_ID=""
+IOS_SIMULATOR_TEMP_ID=""
+IOS_SIMULATOR_TEMP_NAME=""
+IOS_SIMULATOR_MODE=""
+# Private simulators are named PhoneSaber-verify-<owning pid>-<run id>.
+TEMP_SIMULATOR_PREFIX="PhoneSaber-verify-"
+
+# Shut down and delete only this run's private simulator (by UDID). Safe to call
+# repeatedly; it never touches any other device.
+delete_temp_simulator() {
+  local udid="$IOS_SIMULATOR_TEMP_ID"
+  [[ -n "$udid" ]] || return 0
+  IOS_SIMULATOR_TEMP_ID=""
+  local saved_exit="$LAST_EXIT"
+  run_logged_command "iOS temporary simulator shutdown" ios-simulator-shutdown \
+    xcrun simctl shutdown "$udid"
+  run_logged_command "iOS temporary simulator delete" ios-simulator-delete \
+    xcrun simctl delete "$udid"
+  LAST_EXIT="$saved_exit"
+}
+trap delete_temp_simulator EXIT
+trap 'exit 129' HUP
+trap 'exit 130' INT
+trap 'exit 143' TERM
+
+# Delete PhoneSaber-verify-* simulators left behind by runs that were killed
+# before their EXIT trap ran. A device is kept while its owning PID is still a
+# verify_phone_saber.sh process.
+cleanup_stale_temp_simulators() {
+  run_logged_command "iOS stale temporary simulator inventory" ios-simulator-stale-inventory \
+    xcrun simctl list devices -j
+  [[ "$LAST_EXIT" -eq 0 ]] || return 0
+  local finder
+  finder='import json, os, re, subprocess, sys
+try:
+    data = json.load(open(sys.argv[1], encoding="utf-8"))
+except (OSError, ValueError) as error:
+    print("Could not read simulator inventory: %s" % error, file=sys.stderr)
+    sys.exit(2)
+pattern = re.compile("^" + re.escape(sys.argv[2]) + r"(\d+)-")
+for devices in data.get("devices", {}).values():
+    for device in devices:
+        match = pattern.match(device.get("name", ""))
+        if not match:
+            continue
+        pid = int(match.group(1))
+        try:
+            os.kill(pid, 0)
+            alive = True
+        except ProcessLookupError:
+            alive = False
+        except PermissionError:
+            alive = True
+        if alive:
+            command = subprocess.run(["/bin/ps", "-p", str(pid), "-o", "command="],
+                                     capture_output=True, text=True).stdout
+            if "verify_phone_saber" in command:
+                print("keep %s %s (pid %d is running)" % (device["name"], device["udid"], pid), file=sys.stderr)
+                continue
+        print("stale %s %s" % (device["name"], device["udid"]), file=sys.stderr)
+        print(device["udid"])'
+  run_logged_command "iOS stale temporary simulator selection" ios-simulator-stale-selection \
+    python3 -c "$finder" "$RUN_DIR/ios-simulator-stale-inventory.stdout.log" "$TEMP_SIMULATOR_PREFIX"
+  [[ "$LAST_EXIT" -eq 0 ]] || return 0
+  local stale_udid index=0
+  while IFS= read -r stale_udid; do
+    [[ "$stale_udid" =~ ^[0-9A-Fa-f-]{36}$ ]] || continue
+    index=$((index + 1))
+    run_logged_command "iOS stale temporary simulator shutdown" "ios-simulator-stale-$index-shutdown" \
+      xcrun simctl shutdown "$stale_udid"
+    run_logged_command "iOS stale temporary simulator delete" "ios-simulator-stale-$index-delete" \
+      xcrun simctl delete "$stale_udid"
+  done < "$RUN_DIR/ios-simulator-stale-selection.stdout.log"
+  LAST_EXIT=0
+}
+
+# Create this run's private simulator with the template's device type and
+# runtime. Leaves IOS_SIMULATOR_TEMP_ID empty on failure.
+create_temp_simulator() {
+  local template_id="$1"
+  local lookup
+  lookup='import json, sys
+try:
+    data = json.load(open(sys.argv[1], encoding="utf-8"))
+except (OSError, ValueError) as error:
+    print("Could not read simulator inventory: %s" % error, file=sys.stderr)
+    sys.exit(2)
+for runtime, devices in data.get("devices", {}).items():
+    for device in devices:
+        if device.get("udid") == sys.argv[2] and device.get("deviceTypeIdentifier"):
+            print(device["deviceTypeIdentifier"], runtime)
+            sys.exit(0)
+print("Template simulator %s has no device type/runtime in the inventory" % sys.argv[2], file=sys.stderr)
+sys.exit(1)'
+  run_logged_command "iOS temporary simulator template" ios-simulator-template \
+    python3 -c "$lookup" "$RUN_DIR/ios-simulator-discovery.stdout.log" "$template_id"
+  [[ "$LAST_EXIT" -eq 0 ]] || return 0
+  local device_type="" runtime=""
+  read -r device_type runtime < "$RUN_DIR/ios-simulator-template.stdout.log"
+  [[ -n "$device_type" && -n "$runtime" ]] || return 0
+  IOS_SIMULATOR_TEMP_NAME="${TEMP_SIMULATOR_PREFIX}$$-${RUN_DIR##*/}"
+  run_logged_command "iOS temporary simulator create" ios-simulator-create \
+    xcrun simctl create "$IOS_SIMULATOR_TEMP_NAME" "$device_type" "$runtime"
+  [[ "$LAST_EXIT" -eq 0 ]] || return 0
+  local udid
+  udid="$(tr -d '[:space:]' < "$RUN_DIR/ios-simulator-create.stdout.log")"
+  if [[ "$udid" =~ ^[0-9A-Fa-f-]{36}$ ]]; then
+    IOS_SIMULATOR_TEMP_ID="$udid"
+  fi
+}
+
 printf 'PhoneSaber verification started\n'
 printf 'Logs: %s\n' "$RUN_DIR"
 
@@ -262,11 +395,34 @@ sys.exit(1)'
     run_logged_command "iOS simulator selection" ios-simulator-selection \
       python3 -c "$selector" "$RUN_DIR/ios-simulator-discovery.stdout.log"
     if [[ "$LAST_EXIT" -eq 0 ]]; then
-      IOS_SIMULATOR_ID="$(cat "$RUN_DIR/ios-simulator-selection.stdout.log")"
+      IOS_SIMULATOR_TEMPLATE_ID="$(cat "$RUN_DIR/ios-simulator-selection.stdout.log")"
+      IOS_SIMULATOR_ID="$IOS_SIMULATOR_TEMPLATE_ID"
+      IOS_SIMULATOR_MODE="shared"
     fi
   fi
+  # Parallel verifications (one per AI session/worktree) used to share the
+  # selected simulator, and one run's xcodebuild killed the other's test runner.
+  # Give this run a private simulator of the same device type and runtime; the
+  # selected device is only the template and is never booted, erased, or
+  # deleted here. Set PHONESABER_IOS_SIMULATOR_ID to opt out.
+  if [[ -n "$IOS_SIMULATOR_TEMPLATE_ID" ]]; then
+    cleanup_stale_temp_simulators
+    create_temp_simulator "$IOS_SIMULATOR_TEMPLATE_ID"
+    if [[ -n "$IOS_SIMULATOR_TEMP_ID" ]]; then
+      IOS_SIMULATOR_ID="$IOS_SIMULATOR_TEMP_ID"
+      IOS_SIMULATOR_MODE="temporary $IOS_SIMULATOR_TEMP_NAME"
+      run_logged_command "iOS temporary simulator boot" ios-simulator-boot \
+        xcrun simctl bootstatus "$IOS_SIMULATOR_TEMP_ID" -b
+    else
+      printf 'WARNING: could not create a private simulator; falling back to shared %s (parallel runs may interfere)\n' \
+        "$IOS_SIMULATOR_TEMPLATE_ID"
+    fi
+  fi
+else
+  IOS_SIMULATOR_MODE="override PHONESABER_IOS_SIMULATOR_ID"
 fi
 if [[ -n "$IOS_SIMULATOR_ID" ]]; then
+  printf 'iOS Simulator: %s (%s)\n' "$IOS_SIMULATOR_ID" "$IOS_SIMULATOR_MODE"
   IOS_SIMULATOR_DESTINATION="platform=iOS Simulator,id=$IOS_SIMULATOR_ID"
   # Keep XCTest on one simulator and one worker for stable production verification.
   # Skip post-test simulator diagnostics: `simctl diagnose` could hold xcodebuild
@@ -308,6 +464,8 @@ if [[ -n "$IOS_SIMULATOR_ID" ]]; then
   elif [[ -z "$IOS_XCTEST_CLASSIFICATION" ]]; then
     IOS_XCTEST_CLASSIFICATION="CLASSIFIER_ERROR"
   fi
+  # Free the private simulator now; the EXIT trap is only the safety net.
+  delete_temp_simulator
 else
   IOS_XCTEST_CLASSIFICATION="NOT_RUN"
   mark_not_run "iOS XCTest" ios-xctest FAIL "No iPhone Simulator UDID could be selected; inspect the simulator discovery and selection logs."
@@ -484,6 +642,17 @@ if [[ "$UNITY_ROOT_VALID" == true ]]; then
       fi
     fi
   fi
+elif [[ "$UNITY_PATH_EXPLICIT" == false && "$REPO_IS_LINKED_WORKTREE" == true ]]; then
+  # Auto-detection from a linked worktree found no 3D-Saber project, neither next
+  # to the worktree nor next to the main checkout. The Unity stages are optional
+  # here, so report NOT_RUN rather than a false FAIL. An explicit
+  # UNITY_PROJECT_PATH and the main checkout keep the strict FAIL below.
+  UNITY_CAPABILITY_STATUS="NOT_RUN"
+  UNITY_EDITMODE_STATUS="NOT_RUN"
+  UNITY_PLAYMODE_STATUS="NOT_RUN"
+  UNITY_COMPILE_STATUS="NOT_RUN"
+  UNITY_BLOCK_REASON="3D-Saber was not found next to this worktree or the main checkout ($UNITY_CANDIDATE); set UNITY_PROJECT_PATH to check Unity."
+  mark_not_run "Unity project discovery" unity-project-not-found NOT_RUN "$UNITY_BLOCK_REASON"
 else
   UNITY_CAPABILITY_STATUS="FAIL"
   mark_not_run "Unity EditMode" unity-editmode-invalid-project FAIL "UNITY_PROJECT_PATH does not identify the 3D-Saber Git project; expected Assets/, Packages/, and ProjectSettings/."
