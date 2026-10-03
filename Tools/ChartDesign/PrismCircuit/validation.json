@@ -97,28 +97,28 @@
     }
   },
   "normal": {
-    "notes": 246,
-    "cuts": 252,
-    "averageNps": 2.054,
-    "peak4SecondNps": 3.25,
-    "peak4SecondCuts": 3.25,
+    "notes": 232,
+    "cuts": 238,
+    "averageNps": 1.937,
+    "peak4SecondNps": 3.0,
+    "peak4SecondCuts": 3.0,
     "minSameHandMs": 405.405,
-    "maxTravelUnitsPerSecond": 4.193,
+    "maxTravelUnitsPerSecond": 3.708,
     "firstSeconds": 3.243243,
     "lastSeconds": 113.513514,
     "types": {
-      "tap": 206,
-      "direction": 38,
-      "long": 2
+      "tap": 215,
+      "long": 2,
+      "direction": 15
     },
     "colors": {
-      "blue": 103,
-      "red": 103,
+      "blue": 96,
+      "red": 96,
       "gold": 40
     },
     "simultaneousPairs": 37,
-    "goldPercent": 16.26,
-    "pairOnsetPercent": 17.7,
+    "goldPercent": 17.24,
+    "pairOnsetPercent": 18.97,
     "sections": [
       {
         "name": "Signal",
@@ -143,8 +143,8 @@
       },
       {
         "name": "Prism",
-        "notes": 72,
-        "nps": 2.775,
+        "notes": 64,
+        "nps": 2.467,
         "gold": 8,
         "pairs": 16
       },
@@ -164,8 +164,8 @@
       },
       {
         "name": "Full spectrum",
-        "notes": 57,
-        "nps": 2.929,
+        "notes": 51,
+        "nps": 2.621,
         "gold": 6,
         "pairs": 15
       },
@@ -180,9 +180,9 @@
     "minRollCutMs": 405.405,
     "unequalHeightPairs": 0,
     "opposedHeightArrows": 0,
-    "uniquePositions": 98,
-    "uniqueBarLayouts": 62,
-    "mostRepeatedBarLayout": 1,
+    "uniquePositions": 88,
+    "uniqueBarLayouts": 60,
+    "mostRepeatedBarLayout": 2,
     "swingAudit": {
       "failures": [],
       "allGoldAssignmentsFeasible": true,
@@ -196,7 +196,7 @@
   },
   "hard": {
     "notes": 328,
-    "cuts": 340,
+    "cuts": 334,
     "averageNps": 2.739,
     "peak4SecondNps": 5.0,
     "peak4SecondCuts": 5.0,
@@ -275,7 +275,7 @@
         "pairs": 1
       }
     ],
-    "minRollCutMs": 202.703,
+    "minRollCutMs": 405.405,
     "unequalHeightPairs": 0,
     "opposedHeightArrows": 0,
     "uniquePositions": 112,
@@ -291,31 +291,5 @@
       "rapidArrowMinimumTurnDegrees": 120,
       "maxBranchStates": 4
     }
-  },
-  "audio": {
-    "durationSeconds": 119.75675736961452,
-    "sampleRate": 44100,
-    "channels": 2,
-    "alignmentSamples": [
-      0,
-      0,
-      0,
-      0,
-      0
-    ],
-    "truePeak4xDb": -2.669,
-    "loudness": {
-      "input_i": "-14.00",
-      "input_tp": "-2.67",
-      "input_lra": "4.00",
-      "input_thresh": "-24.09",
-      "output_i": "-13.21",
-      "output_tp": "-1.50",
-      "output_lra": "3.60",
-      "output_thresh": "-23.28",
-      "normalization_type": "dynamic",
-      "target_offset": "-0.79"
-    },
-    "sha256": "2f13a2b132937d3a1f7963e7e0fc352a78d9c68353ef226bb69b7186e9579ba5"
   }
 }

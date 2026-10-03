@@ -405,6 +405,50 @@ def build(diff):
                  bpm=BPM, coordScale=1., offsetMs=0., beatZeroMs=0.,
                  displayLevel={'easy': 3, 'normal': 5, 'hard': 8}[diff],
                  timeSignatures=[dict(beat=0, numerator=4, denominator=4)], notes=notes)
+    return first_sight_revision(chart, provenance, diff)
+
+
+
+def first_sight_revision(chart, provenance, diff):
+    """初見改訂: 両手のアクセントを残し、前後の振り方向に自由を作る。"""
+    if diff == 'easy':
+        return chart, provenance
+    if diff == 'normal':
+        # サビの金の応答を4拍目から3拍目の実在する音へ移す。
+        # 直前の細かい単発を譲り、両手着地まで2拍を確保する。
+        replies = {n['beat']: n['beat']-1 for n,p in zip(chart['notes'], provenance)
+                   if p['motif'] == 'chorus_gold_reply'}
+        kept = [(n,p) for n,p in zip(chart['notes'], provenance)
+                if not any(new-.5 <= n['beat'] <= new and n['color'] != 'gold'
+                           for new in replies.values())]
+        chart['notes'], provenance = map(list, zip(*kept))
+        for n,p in zip(chart['notes'], provenance):
+            if n['beat'] in replies:
+                beat = replies[n['beat']]
+                n.update(beat=beat, time=round(beat*BEAT*1000,3))
+                p['beat'] = beat
+                event = source_at(beat, ('hook','kick','snare','bass','chord_stab'))
+                p['sourceEventIds'] = [event]
+                p['roles'] = [EVENTS[event]['role']]
+        relax = set()
+        for hand in ('blue', 'red'):
+            seq = [(i, n) for i, n in enumerate(chart['notes']) if n['color'] in (hand, 'gold')]
+            for (ai, a), (bi, b) in zip(seq, seq[1:]):
+                if b['time']-a['time']-a.get('lengthMs', 0) < 600:
+                    relax.update((ai, bi))
+        for i in relax:
+            n = chart['notes'][i]
+            if n['direction'] != 'none':
+                n.update(direction='none', type='tap')
+                provenance[i]['intendedSwing'] = 'free'
+    else:
+        # 3拍のスネアロールは四分刻み4回。初見で両手交互を読めなくても入れる。
+        for n, p in zip(chart['notes'], provenance):
+            if n['beat'] in (92, 220) and n['count'] == 7:
+                n['count'] = 4
+                p['sourceEventIds'] = p['sourceEventIds'][::2]
+                p['roles'] = p['roles'][::2]
+    chart['_comment'] += ' First-sight revision 2026-10-03: recovery around doubles and quarter-note rolls.'
     return chart, provenance
 
 
@@ -490,6 +534,7 @@ def validate(chart, diff, provenance=None):
             check(n['beat'] % 1 == 0 and n['direction'] == 'none', f'easy vocabulary {label}')
         if n['type'] == 'long':
             check(n['count'] >= 2 and n.get('lengthMs', 0) > 0, f'long data {label}')
+            check(n['lengthMs']/(n['count']-1) >= 400-.001, f'first sight roll recovery {label}')
             end = n['time'] + n['lengthMs']
             check(not any(o is not n and n['time'] <= o['time'] <= end + .001 for o in ns), f'long conflict {label}')
             for k in range(n['count']):
@@ -513,6 +558,8 @@ def validate(chart, diff, provenance=None):
         for a, b in zip(seq, seq[1:]):
             gap = (b['time'] - a['time'] - a.get('lengthMs', 0)) / 1000
             check(gap >= (2 if diff == 'easy' else 1) * BEAT - .00001, f'hand interval {hand}@{b["beat"]}')
+            if diff == 'normal' and (a['direction'] != 'none' or b['direction'] != 'none'):
+                check(gap >= .6-.00001, f'first sight flick recovery {hand}@{b["beat"]}')
             if a['color'] == 'gold':
                 check(b['direction'] == 'none', f'gold forced exit {hand}@{b["beat"]}')
             if b['direction'] != 'none':
@@ -534,7 +581,7 @@ def validate(chart, diff, provenance=None):
     check(12 <= stats['goldPercent'] <= 22, 'gold budget')
     check({'easy': 13, 'normal': 34, 'hard': 46}[diff] <= stats['simultaneousPairs'], 'pair budget')
     check(stats['pairOnsetPercent'] <= {'easy': 17, 'normal': 24, 'hard': 25}[diff], 'pair excess')
-    check(stats['types'].get('direction', 0) >= {'easy': 0, 'normal': 30, 'hard': 70}[diff], 'flick vocabulary')
+    check(stats['types'].get('direction', 0) >= {'easy': 0, 'normal': 15, 'hard': 70}[diff], 'flick vocabulary')
     section_stats = {s['name']: s for s in stats['sections']}
     check(section_stats['Weightless']['nps'] < section_stats['Prism']['nps'] * .6, 'no breathing section')
     check(section_stats['Weightless']['pairs'] == 0, 'quiet pair excess')

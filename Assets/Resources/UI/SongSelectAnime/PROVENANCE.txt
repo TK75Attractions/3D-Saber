@@ -1,10 +1,12 @@
-RightHandGuide.png — 2D anime tutorial animation, 8 poses, 4 columns x 2 rows.
-Created on 2026-10-03 with the built-in image_gen tool.
-Original alpha channel preserved. No separate background or text is baked into the image.
-Generation prompts: Tools/SongSelectAnime/generation-prompts.txt
+RightHandGuide.png — prerecorded mannequin animation, 24 poses, 6 columns x 4 rows.
+Each pose is 512x512; atlas is 3072x2048 with alpha transparency.
+Rendered on 2026-10-03 directly from the project's saved RightHandHuman.blend using Blender 4.3.2.
+The actual white mannequin, red right glove, saber, skeleton, and animation are reused.
+Fixed camera and lighting for every frame. No generated character illustration is used.
 
-Pose and palette references: the prior RightHandHuman Blender renders from this project.
-Underlying reference model: Quaternius, Universal Base Characters (Standard), CC0 1.0.
+Editable source: Tools/SongSelectHuman/RightHandHuman.blend
+Rebuild scripts: Tools/SongSelectMannequin/render_frames.py and BuildAtlas.ps1
+Model: Quaternius, Universal Base Characters (Standard), CC0 1.0.
 https://quaternius.com/packs/universalbasecharacters.html
 https://creativecommons.org/publicdomain/zero/1.0/
-Reference assets and their original license are retained under Tools/SongSelectHuman.
+Original model assets and license: Tools/SongSelectHuman/Reference3DAssets/SongSelectHuman.

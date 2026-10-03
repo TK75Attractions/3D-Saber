@@ -50,21 +50,22 @@ public class SongSelectIdleGuidePlayTests
         Assert.NotNull(model.GetComponent<CanvasRenderer>(), "2DアニメーションをUIに描画する");
         model.SetPose(0); Canvas.ForceUpdateCanvases(); Assert.True(model.IsReady);
         Assert.IsInstanceOf<Texture2D>(model.mainTexture);
-        Assert.GreaterOrEqual(model.mainTexture.width, 1600, "画面上で読める解像度のイラストを使う");
+        Assert.AreEqual(3072, model.mainTexture.width, "人体模型の512pxコマを横6枚に並べた素材を使う");
+        Assert.AreEqual(2048, model.mainTexture.height);
         Assert.AreEqual(0, model.FrameIndex);
         var resting = model.canvasRenderer.GetMesh().uv;
         model.SetPose(2); Canvas.ForceUpdateCanvases();
-        Assert.AreEqual(7, model.FrameIndex, "右腕を上げたコマまで再生する");
-        CollectionAssert.AreNotEqual(resting, model.canvasRenderer.GetMesh().uv, "表示するイラストが切り替わる");
+        Assert.AreEqual(23, model.FrameIndex, "右腕を上げたコマまで再生する");
+        CollectionAssert.AreNotEqual(resting, model.canvasRenderer.GetMesh().uv, "表示する模型のコマが切り替わる");
         model.SetPose(SongSelectGuideModel.LoopSeconds); Canvas.ForceUpdateCanvases();
         CollectionAssert.AreEqual(resting, model.canvasRenderer.GetMesh().uv, "一周して最初のコマへ戻る");
         var seen = new HashSet<int>();
         for (int i = 0; i <= 45; i++) { model.SetPose(i / 30f); seen.Add(model.FrameIndex); }
-        Assert.AreEqual(8, seen.Count, "腕を上げる途中の全コマを使う");
+        Assert.AreEqual(24, seen.Count, "腕を上げる途中の全コマを使う");
         model.SetPose(float.NaN); Assert.AreEqual(0, model.FrameIndex);
         yield return null;
     }
-    [UnityTest] public IEnumerator IllustrationStopsWhenHiddenAndUsesNo3DPreview()
+    [UnityTest] public IEnumerator PrerenderedAnimationStopsWhenHiddenAndUsesNo3DPreview()
     {
         int originalMask = Camera.main.cullingMask;
         var cameras = Object.FindObjectsByType<Camera>(FindObjectsInactive.Include, FindObjectsSortMode.None);

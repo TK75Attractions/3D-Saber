@@ -124,4 +124,27 @@ public class SchoolSongFlowTests
             judge.RunJudge();
         }
     }
+
+    [Test]
+    public void FirstSightHardPreservesRecoveryAndAvoidsForcedResets()
+    {
+        var chart=ChartLoader.LoadFromStreamingAssets("Epilogue","hard");
+        foreach(var n in chart.notes.Where(n=>n.IsLong))
+            Assert.GreaterOrEqual(n.lengthMs/(n.count-1),399.9f);
+        foreach(var hand in new[]{"blue","red"})
+        {
+            var ns=chart.notes.Where(n=>n.color==hand || n.color=="gold").ToArray();
+            for(int i=1;i<ns.Length;i++)
+            {
+                var a=ns[i-1]; var b=ns[i];
+                if(Mathf.Abs(b.time-a.time)<.01f) continue; // 一振りの同時スタック
+                float gap=b.time-a.time-a.lengthMs;
+                Assert.GreaterOrEqual(gap,399.9f,"細かい伴奏で同手の回復を潰さない");
+                if(gap<1200 && a.IsDirection && b.IsDirection)
+                    Assert.LessOrEqual(Vector2.Dot(CutDirectionHelper.ToVector(CutDirectionHelper.Parse(a.direction)),
+                        CutDirectionHelper.ToVector(CutDirectionHelper.Parse(b.direction))),.001f,
+                        "間引いた後に同方向への素早い振り直しを残さない");
+            }
+        }
+    }
 }

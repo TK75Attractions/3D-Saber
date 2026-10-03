@@ -218,4 +218,26 @@ public class PrismCircuitSongTests
             }
         }
     }
+
+    [Test]
+    public void FirstSightNormalAllowsRecoveryAroundFlicks()
+    {
+        var chart=ChartLoader.LoadFromStreamingAssets(SongId,"normal");
+        foreach(var hand in new[]{"blue","red"})
+        {
+            var ns=chart.notes.Where(n=>n.color==hand || n.color=="gold").ToArray();
+            for(int i=1;i<ns.Length;i++)
+                if(ns[i-1].IsDirection || ns[i].IsDirection)
+                    Assert.GreaterOrEqual(ns[i].time-ns[i-1].time-ns[i-1].lengthMs,599.9f,
+                        "通常譜面のフリックは構え直しの時間も確保する");
+        }
+    }
+
+    [TestCase("normal")]
+    [TestCase("hard")]
+    public void FirstSightRollDoesNotRequireFastHandAlternation(string difficulty)
+    {
+        foreach(var n in ChartLoader.LoadFromStreamingAssets(SongId,difficulty).notes.Where(n=>n.IsLong))
+            Assert.GreaterOrEqual(n.lengthMs/(n.count-1),399.9f,"一手でも入りやすい連続切り");
+    }
 }

@@ -1,5 +1,5 @@
 {
-  "_comment": "Prism Circuit v4: stronger level doubles and gold replies; flick entry, follow-through and both gold-hand choices audited. Longs are repeated cuts.",
+  "_comment": "Prism Circuit v4: stronger level doubles and gold replies; flick entry, follow-through and both gold-hand choices audited. Longs are repeated cuts. First-sight revision 2026-10-03: recovery around doubles and quarter-note rolls.",
   "bpm": 148,
   "coordScale": 1.0,
   "offsetMs": 0.0,
@@ -891,7 +891,7 @@
       "type": "long",
       "color": "gold",
       "direction": "none",
-      "count": 7,
+      "count": 4,
       "lengthMs": 1216.216
     },
     {
@@ -2482,7 +2482,7 @@
       "type": "long",
       "color": "gold",
       "direction": "none",
-      "count": 7,
+      "count": 4,
       "lengthMs": 1216.216
     },
     {

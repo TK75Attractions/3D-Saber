@@ -2069,7 +2069,7 @@
       "color": "blue",
       "motif": "verse_backbeat",
       "contour": "stair",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         276
       ],
@@ -2225,7 +2225,7 @@
       "color": "red",
       "motif": "verse_backbeat",
       "contour": "pendulum",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         393
       ],
@@ -2699,7 +2699,7 @@
       "color": "red",
       "motif": "chorus_melody",
       "contour": "fan",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         682
       ],
@@ -2708,29 +2708,16 @@
       ]
     },
     {
-      "beat": 101.5,
-      "color": "blue",
-      "motif": "chorus_melody",
-      "contour": "fan",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        699
-      ],
-      "roles": [
-        "bass"
-      ]
-    },
-    {
-      "beat": 103,
+      "beat": 102,
       "color": "gold",
       "motif": "chorus_gold_reply",
       "contour": "fan",
       "intendedSwing": "free",
       "sourceEventIds": [
-        717
+        707
       ],
       "roles": [
-        "kick"
+        "hook"
       ]
     },
     {
@@ -2803,7 +2790,7 @@
       "color": "blue",
       "motif": "chorus_melody",
       "contour": "fan",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         791
       ],
@@ -2825,26 +2812,13 @@
       ]
     },
     {
-      "beat": 109.5,
-      "color": "red",
-      "motif": "chorus_melody",
-      "contour": "fan",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        804
-      ],
-      "roles": [
-        "hook"
-      ]
-    },
-    {
-      "beat": 111,
+      "beat": 110,
       "color": "gold",
       "motif": "chorus_gold_reply",
       "contour": "fan",
       "intendedSwing": "free",
       "sourceEventIds": [
-        825
+        809
       ],
       "roles": [
         "hook"
@@ -2933,7 +2907,7 @@
       "color": "red",
       "motif": "chorus_melody",
       "contour": "pendulum",
-      "intendedSwing": "upright",
+      "intendedSwing": "free",
       "sourceEventIds": [
         884
       ],
@@ -2943,8 +2917,8 @@
     },
     {
       "beat": 118,
-      "color": "blue",
-      "motif": "chorus_melody",
+      "color": "gold",
+      "motif": "chorus_gold_reply",
       "contour": "pendulum",
       "intendedSwing": "free",
       "sourceEventIds": [
@@ -2952,19 +2926,6 @@
       ],
       "roles": [
         "kick"
-      ]
-    },
-    {
-      "beat": 119,
-      "color": "gold",
-      "motif": "chorus_gold_reply",
-      "contour": "pendulum",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        927
-      ],
-      "roles": [
-        "hook"
       ]
     },
     {
@@ -3037,7 +2998,7 @@
       "color": "blue",
       "motif": "chorus_melody",
       "contour": "pendulum",
-      "intendedSwing": "left",
+      "intendedSwing": "free",
       "sourceEventIds": [
         995
       ],
@@ -3059,26 +3020,13 @@
       ]
     },
     {
-      "beat": 125.5,
-      "color": "red",
-      "motif": "chorus_melody",
-      "contour": "pendulum",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        1005
-      ],
-      "roles": [
-        "bass"
-      ]
-    },
-    {
-      "beat": 127,
+      "beat": 126,
       "color": "gold",
       "motif": "chorus_gold_reply",
       "contour": "pendulum",
       "intendedSwing": "free",
       "sourceEventIds": [
-        1028
+        1013
       ],
       "roles": [
         "hook"
@@ -3167,7 +3115,7 @@
       "color": "red",
       "motif": "chorus_melody",
       "contour": "ribbon",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1099
       ],
@@ -3176,29 +3124,16 @@
       ]
     },
     {
-      "beat": 133.5,
-      "color": "blue",
-      "motif": "chorus_melody",
-      "contour": "ribbon",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        1119
-      ],
-      "roles": [
-        "bass"
-      ]
-    },
-    {
-      "beat": 135,
+      "beat": 134,
       "color": "gold",
       "motif": "chorus_gold_reply",
       "contour": "ribbon",
       "intendedSwing": "free",
       "sourceEventIds": [
-        1140
+        1128
       ],
       "roles": [
-        "kick"
+        "hook"
       ]
     },
     {
@@ -3271,7 +3206,7 @@
       "color": "blue",
       "motif": "chorus_melody",
       "contour": "ribbon",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1224
       ],
@@ -3294,25 +3229,12 @@
     },
     {
       "beat": 142,
-      "color": "red",
-      "motif": "chorus_melody",
-      "contour": "ribbon",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        1246
-      ],
-      "roles": [
-        "hook"
-      ]
-    },
-    {
-      "beat": 143,
       "color": "gold",
       "motif": "chorus_gold_reply",
       "contour": "ribbon",
       "intendedSwing": "free",
       "sourceEventIds": [
-        1264
+        1246
       ],
       "roles": [
         "hook"
@@ -3401,7 +3323,7 @@
       "color": "red",
       "motif": "chorus_melody",
       "contour": "wave",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1333
       ],
@@ -3410,29 +3332,16 @@
       ]
     },
     {
-      "beat": 149.5,
-      "color": "blue",
-      "motif": "chorus_melody",
-      "contour": "wave",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        1358
-      ],
-      "roles": [
-        "hook"
-      ]
-    },
-    {
-      "beat": 151,
+      "beat": 150,
       "color": "gold",
       "motif": "chorus_gold_reply",
       "contour": "wave",
       "intendedSwing": "free",
       "sourceEventIds": [
-        1382
+        1361
       ],
       "roles": [
-        "hook"
+        "kick"
       ]
     },
     {
@@ -3505,7 +3414,7 @@
       "color": "blue",
       "motif": "chorus_melody",
       "contour": "wave",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1460
       ],
@@ -3527,26 +3436,13 @@
       ]
     },
     {
-      "beat": 157.5,
-      "color": "red",
-      "motif": "chorus_melody",
-      "contour": "wave",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        1473
-      ],
-      "roles": [
-        "bass"
-      ]
-    },
-    {
-      "beat": 159,
+      "beat": 158,
       "color": "gold",
       "motif": "chorus_gold_reply",
       "contour": "wave",
       "intendedSwing": "free",
       "sourceEventIds": [
-        1499
+        1482
       ],
       "roles": [
         "hook"
@@ -3882,7 +3778,7 @@
       "color": "red",
       "motif": "build_steps",
       "contour": "pendulum",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1637
       ],
@@ -4213,7 +4109,7 @@
       "color": "blue",
       "motif": "chorus_melody",
       "contour": "stair",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1878
       ],
@@ -4235,29 +4131,16 @@
       ]
     },
     {
-      "beat": 229.5,
-      "color": "red",
-      "motif": "chorus_melody",
-      "contour": "stair",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        1893
-      ],
-      "roles": [
-        "bass"
-      ]
-    },
-    {
-      "beat": 231,
+      "beat": 230,
       "color": "gold",
       "motif": "chorus_gold_reply",
       "contour": "stair",
       "intendedSwing": "free",
       "sourceEventIds": [
-        1916
+        1902
       ],
       "roles": [
-        "kick"
+        "hook"
       ]
     },
     {
@@ -4304,7 +4187,7 @@
       "color": "blue",
       "motif": "chorus_melody",
       "contour": "stair",
-      "intendedSwing": "downright",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1967
       ],
@@ -4330,7 +4213,7 @@
       "color": "red",
       "motif": "chorus_open",
       "contour": "stair",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         1980
       ],
@@ -4343,7 +4226,7 @@
       "color": "blue",
       "motif": "chorus_melody",
       "contour": "stair",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2006
       ],
@@ -4365,26 +4248,13 @@
       ]
     },
     {
-      "beat": 237.5,
-      "color": "red",
-      "motif": "chorus_melody",
-      "contour": "stair",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        2023
-      ],
-      "roles": [
-        "hook"
-      ]
-    },
-    {
-      "beat": 239,
+      "beat": 238,
       "color": "gold",
       "motif": "chorus_gold_reply",
       "contour": "stair",
       "intendedSwing": "free",
       "sourceEventIds": [
-        2049
+        2030
       ],
       "roles": [
         "hook"
@@ -4460,7 +4330,7 @@
       "color": "blue",
       "motif": "chorus_melody",
       "contour": "ribbon",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2131
       ],
@@ -4483,8 +4353,8 @@
     },
     {
       "beat": 246,
-      "color": "blue",
-      "motif": "chorus_melody",
+      "color": "gold",
+      "motif": "chorus_gold_reply",
       "contour": "ribbon",
       "intendedSwing": "free",
       "sourceEventIds": [
@@ -4492,19 +4362,6 @@
       ],
       "roles": [
         "kick"
-      ]
-    },
-    {
-      "beat": 247,
-      "color": "gold",
-      "motif": "chorus_gold_reply",
-      "contour": "ribbon",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        2177
-      ],
-      "roles": [
-        "hook"
       ]
     },
     {
@@ -4551,7 +4408,7 @@
       "color": "blue",
       "motif": "chorus_melody",
       "contour": "ribbon",
-      "intendedSwing": "upright",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2223
       ],
@@ -4577,7 +4434,7 @@
       "color": "red",
       "motif": "chorus_open",
       "contour": "ribbon",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2236
       ],
@@ -4590,7 +4447,7 @@
       "color": "blue",
       "motif": "chorus_melody",
       "contour": "ribbon",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2262
       ],
@@ -4612,26 +4469,13 @@
       ]
     },
     {
-      "beat": 253.5,
-      "color": "red",
-      "motif": "chorus_melody",
-      "contour": "ribbon",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        2277
-      ],
-      "roles": [
-        "bass"
-      ]
-    },
-    {
-      "beat": 255,
+      "beat": 254,
       "color": "gold",
       "motif": "chorus_gold_reply",
       "contour": "ribbon",
       "intendedSwing": "free",
       "sourceEventIds": [
-        2304
+        2286
       ],
       "roles": [
         "hook"
@@ -4720,7 +4564,7 @@
       "color": "red",
       "motif": "chorus_melody",
       "contour": "fan",
-      "intendedSwing": "up",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2384
       ],
@@ -4730,8 +4574,8 @@
     },
     {
       "beat": 262,
-      "color": "blue",
-      "motif": "chorus_melody",
+      "color": "gold",
+      "motif": "chorus_gold_reply",
       "contour": "fan",
       "intendedSwing": "free",
       "sourceEventIds": [
@@ -4739,19 +4583,6 @@
       ],
       "roles": [
         "kick"
-      ]
-    },
-    {
-      "beat": 263,
-      "color": "gold",
-      "motif": "chorus_gold_reply",
-      "contour": "fan",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        2437
-      ],
-      "roles": [
-        "hook"
       ]
     },
     {
@@ -4798,7 +4629,7 @@
       "color": "red",
       "motif": "chorus_melody",
       "contour": "fan",
-      "intendedSwing": "downleft",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2483
       ],
@@ -4811,7 +4642,7 @@
       "color": "blue",
       "motif": "chorus_open",
       "contour": "fan",
-      "intendedSwing": "down",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2504
       ],
@@ -4824,7 +4655,7 @@
       "color": "red",
       "motif": "chorus_open",
       "contour": "fan",
-      "intendedSwing": "right",
+      "intendedSwing": "free",
       "sourceEventIds": [
         2496
       ],
@@ -4859,29 +4690,16 @@
       ]
     },
     {
-      "beat": 269.5,
-      "color": "blue",
-      "motif": "chorus_melody",
-      "contour": "fan",
-      "intendedSwing": "free",
-      "sourceEventIds": [
-        2537
-      ],
-      "roles": [
-        "bass"
-      ]
-    },
-    {
-      "beat": 271,
+      "beat": 270,
       "color": "gold",
       "motif": "chorus_gold_reply",
       "contour": "fan",
       "intendedSwing": "free",
       "sourceEventIds": [
-        2557
+        2546
       ],
       "roles": [
-        "kick"
+        "hook"
       ]
     },
     {
@@ -6103,17 +5921,11 @@
       "intendedSwing": "free",
       "sourceEventIds": [
         609,
-        612,
         614,
-        617,
         619,
-        622,
         624
       ],
       "roles": [
-        "snare",
-        "snare",
-        "snare",
         "snare",
         "snare",
         "snare",
@@ -8182,17 +7994,11 @@
       "intendedSwing": "free",
       "sourceEventIds": [
         1785,
-        1788,
         1790,
-        1793,
         1795,
-        1798,
         1800
       ],
       "roles": [
-        "snare",
-        "snare",
-        "snare",
         "snare",
         "snare",
         "snare",

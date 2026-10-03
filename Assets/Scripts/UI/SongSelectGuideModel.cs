@@ -1,18 +1,13 @@
 using UnityEngine;
 using UnityEngine.UI;
 
-// 既存の呼び出し口を保ち、右手の案内を透過2Dアニメーションで描く。
+// 保存済みの人体模型から書き出した透過コマ画像で、右手の案内を描く。
 // 背面の構図にすることで、本人の右手を画面でも右側に見せる。
 [RequireComponent(typeof(CanvasRenderer))]
 public sealed class SongSelectGuideModel : MaskableGraphic
 {
     public const float LoopSeconds = 5.2f;
-    const int Columns = 4, Rows = 2, FrameCount = Columns * Rows;
-    // イラスト各コマの靴底と左右の靴の中心を、先頭コマの位置にそろえる（素材ピクセル単位）。
-    static readonly Vector2[] Registration = {
-        new Vector2(0, 0), new Vector2(1.5f, -1), new Vector2(6, -1), new Vector2(6.5f, -1),
-        new Vector2(0, -7.5f), new Vector2(1.5f, -7.5f), new Vector2(6, -7.5f), new Vector2(6.5f, -7.5f)
-    };
+    const int Columns = 6, Rows = 4, FrameCount = Columns * Rows;
     Texture2D atlas;
     SongSelectDiscGraphic reticle;
     bool attemptedLoad;
@@ -26,8 +21,9 @@ public sealed class SongSelectGuideModel : MaskableGraphic
         if (!isActiveAndEnabled || !EnsureAnimation()) return;
         if (float.IsNaN(seconds) || float.IsInfinity(seconds)) seconds = 0;
         float cycle = Mathf.Repeat(Mathf.Max(0, seconds), LoopSeconds);
-        float raised = Mathf.SmoothStep(0, 1, (cycle - .35f) / 1.1f)
-            * (1 - Mathf.SmoothStep(0, 1, (cycle - 4.1f) / .9f));
+        // 加減速は模型から書き出した動作に含まれるため、コマは等間隔で進める。
+        float raised = Mathf.Clamp01((cycle - .35f) / 1.1f)
+            * (1 - Mathf.Clamp01((cycle - 4.1f) / .9f));
         int next = Mathf.Min(FrameCount - 1, Mathf.FloorToInt(raised * FrameCount));
         if (frameIndex != next) { frameIndex = next; SetVerticesDirty(); }
         var tint = SongSelectSkin.Cyan;
@@ -46,7 +42,7 @@ public sealed class SongSelectGuideModel : MaskableGraphic
             Debug.LogError("右手の案内用2Dアニメーションが見つかりません。", this);
             return false;
         }
-        reticle = SongSelectSkin.Graphic(transform, "DemonstrationAim", new Vector2(96, 160),
+        reticle = SongSelectSkin.Graphic(transform, "DemonstrationAim", new Vector2(88, 177),
             new Vector2(46, 46), SongSelectDiscGraphic.Shape.Ring, Color.clear);
         reticle.Width = 2;
         SetMaterialDirty(); SetVerticesDirty();
@@ -62,9 +58,8 @@ public sealed class SongSelectGuideModel : MaskableGraphic
         float width = Mathf.Min(bounds.width, bounds.height * aspect);
         float height = width / aspect;
         var rect = new Rect(bounds.center.x - width * .5f, bounds.center.y - height * .5f, width, height);
-        rect.position += Registration[frameIndex] * (height / (atlas.height / (float)Rows));
 
-        // 素材は左上から横4コマずつ。余白を含めた固定枠で足元の位置を保つ。
+        // 素材は左上から横6コマずつ。同じ模型・カメラの固定枠なので足元はずれない。
         float left = (frameIndex % Columns) / (float)Columns;
         float right = left + 1f / Columns;
         float top = 1 - (frameIndex / Columns) / (float)Rows;

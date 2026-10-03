@@ -152,3 +152,17 @@ class SwingAuditTests(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class FirstSightRecoveryTests(unittest.TestCase):
+    def test_rejects_roll_that_requires_unannounced_fast_alternation(self):
+        chart, _ = build('hard')
+        next(n for n in chart['notes'] if n['count'] > 1)['count'] = 7
+        with self.assertRaisesRegex(ValueError, 'first sight roll recovery'):
+            validate(chart, 'hard')
+
+    def test_rejects_direction_at_short_normal_recovery(self):
+        chart, _ = build('normal')
+        next(n for n in chart['notes'] if n['beat'] == 236 and n['color'] == 'blue').update(type='direction',direction='down')
+        with self.assertRaisesRegex(ValueError, 'first sight flick recovery'):
+            validate(chart, 'normal')
