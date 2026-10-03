@@ -57,12 +57,16 @@ PhoneSaberSender (iPhone)
 
 - iPhone の画面:「経路: P2P Connected (awdl0) / LAN Connected / Manual IP / Reconnecting / Failed」と、
   P2P の状態(`P2P Searching`、`P2P Connecting`、`P2P Reconnecting`、`P2P Failed`、`P2P Off`)。
+  P2P 接続中は、ping の往復時間(RTT)も出す:`P2P RTT 中央値 … ms / p95 … ms / 最大 … ms / ping欠落 …%`
+  (直近 40 回の ping。2 秒以内に pong が来なかった ping を「欠落」に数える)。
 - Mac の bridge のログ(毎フレームは出しません):
   - `[P2P] listening ...`、`[P2P] Bonjour registered ...`
   - `[P2P] peer connected ...`、`[P2P] peer alive ...`
   - `[P2P] RED received ...` / `[P2P] BLUE received ...`(送信元 session ごとに最初の 1 回だけ)
   - `[P2P] no ping for 3s; iPhone falls back to LAN (fallback to LAN)`
-  - 10 秒ごとの集計(`RED=… BLUE=… stale=… malformed=…`)
+  - 10 秒ごとの集計(`RED=… BLUE=… stale=… malformed=… maxGapMsRED=… maxGapMsBLUE=…`)。
+    `maxGapMs` は、座標が届く間隔の最大値(2 秒を超える間隔は saber が見えていないとみなして除外)。
+    AWDL が一瞬止まると、ここが大きくなる。
 
 ## 起動方法(Mac)
 
@@ -96,7 +100,7 @@ macOS が「ローカルネットワーク」へのアクセス許可を求め�
 | A | Mac を学校 Wi-Fi に接続する。iPhone は学校 Wi-Fi に**参加しない**(Wi-Fi 自体は ON のまま)。Personal Hotspot は OFF。 | |
 | B | Unity で Play を押す(bridge は自動で起動する)。 | Unity の Console に `[PhoneSaber][P2P] listening ...` と `Bonjour registered` が出る |
 | C | iPhone で PhoneSaberSender を起動し、「P2P優先」を ON にして開始する。初回はローカルネットワークの許可を求められる。 | |
-| D | 画面の「経路」を確認する。 | `P2P Connected (awdl0)`。Mac に `peer connected` と `RED received` / `BLUE received` が出る |
+| D | 画面の「経路」を確認する。 | `P2P Connected (awdl0)`。Mac に `peer connected` と `RED received` / `BLUE received` が出る。`P2P RTT` の中央値と最大値、Mac の `maxGapMs` を控えておく(LAN と比べるため) |
 | E | Mac で Codex やブラウザを使いながら saber を振る。 | Unity に座標が届き続ける。インターネットも使える |
 | F | iPhone のモバイルデータ通信を OFF にする。 | P2P の送信が続く(cellular は最初から禁止しています) |
 | G | `PHONESABER_P2P_BRIDGE=0` で Unity を起動し直す(または Terminal で bridge の process を止める)。 | 約 1.5 秒で「経路」が LAN か Reconnecting になる。LAN の Mac が見つかっていれば、Unity への送信が LAN で続く。bridge が戻ると P2P に戻る |

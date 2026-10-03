@@ -24,6 +24,74 @@ enum P2PLinkState: Equatable {
     var isConnected: Bool { if case .connected = self { return true } else { return false } }
 }
 
+/// Round-trip time of the liveness pings (ping -> bridge pong), so the UI can
+/// show how fast the P2P hop really is (AWDL vs infrastructure Wi-Fi). Pure
+/// value logic with explicit timestamps for unit tests.
+struct P2PRoundTripStats: Equatable {
+    struct Summary: Equatable {
+        var lastMs: Double
+        var medianMs: Double
+        var p95Ms: Double
+        var maxMs: Double
+        var samples: Int
+        /// Pings without a pong within `expireAfter`, over the recent outcomes.
+        var lostPercent: Double
+    }
+
+    let window: Int
+    let expireAfter: TimeInterval
+    private var outstanding: [UInt64: TimeInterval] = [:]
+    private var roundTrips: [Double] = []
+    private var outcomes: [Bool] = []
+
+    init(window: Int = 40, expireAfter: TimeInterval = 2) {
+        self.window = window
+        self.expireAfter = expireAfter
+    }
+
+    mutating func pingSent(_ sequence: UInt64, at now: TimeInterval) {
+        outstanding[sequence] = now
+    }
+
+    /// Returns the round trip in seconds when the pong answers a known ping.
+    @discardableResult
+    mutating func pongReceived(_ sequence: UInt64, at now: TimeInterval) -> TimeInterval? {
+        guard let sentAt = outstanding.removeValue(forKey: sequence) else { return nil }
+        let roundTrip = max(0, now - sentAt)
+        append(&roundTrips, roundTrip)
+        append(&outcomes, true)
+        return roundTrip
+    }
+
+    mutating func expire(at now: TimeInterval) {
+        for (sequence, sentAt) in outstanding where now - sentAt > expireAfter {
+            outstanding.removeValue(forKey: sequence)
+            append(&outcomes, false)
+        }
+    }
+
+    mutating func reset() {
+        outstanding.removeAll()
+        roundTrips.removeAll()
+        outcomes.removeAll()
+    }
+
+    var summary: Summary? {
+        guard let last = roundTrips.last else { return nil }
+        let sorted = roundTrips.sorted()
+        func percentile(_ q: Double) -> Double { sorted[min(sorted.count - 1, Int((Double(sorted.count - 1) * q).rounded()))] }
+        let lost = outcomes.filter { !$0 }.count
+        return Summary(lastMs: last * 1000, medianMs: percentile(0.5) * 1000, p95Ms: percentile(0.95) * 1000,
+                       maxMs: (sorted.last ?? 0) * 1000, samples: sorted.count,
+                       lostPercent: outcomes.isEmpty ? 0 : Double(lost) * 100 / Double(outcomes.count))
+    }
+
+    private func append<T>(_ values: inout [T], _ value: T) {
+        values.append(value)
+        if values.count > window { values.removeFirst(values.count - window) }
+    }
+}
+
 /// Sends coordinates to the Mac bridge (`_phonesaber-p2p._udp`) with
 /// Network.framework peer-to-peer Wi-Fi allowed (`includePeerToPeer`) and
 /// cellular prohibited. It never blocks the caller: all work runs on its own
@@ -75,6 +143,9 @@ final class P2PSender {
     private var state: P2PLinkState = .disabled
     private var interfaceName = "?"
     private var stateHandler: ((P2PLinkState) -> Void)?
+    private var statsHandler: ((P2PRoundTripStats.Summary?) -> Void)?
+    private var roundTrips = P2PRoundTripStats()
+    private var lastStatsPublishedAt: TimeInterval = -.infinity
 
     private let usableLock = NSLock()
     private var usableFlag = false
@@ -94,11 +165,15 @@ final class P2PSender {
         return usableFlag
     }
 
-    func start(onState: ((P2PLinkState) -> Void)? = nil) {
+    /// `onStats` receives the ping round-trip summary about once per second
+    /// (nil while there is no measurement, e.g. after a reconnect).
+    func start(onState: ((P2PLinkState) -> Void)? = nil,
+               onStats: ((P2PRoundTripStats.Summary?) -> Void)? = nil) {
         queue.async { [weak self] in
             guard let self, !self.running else { return }
             self.running = true
             self.stateHandler = onState
+            self.statsHandler = onStats
             self.startTicker()
             if let endpointOverride = self.endpointOverride {
                 self.candidate = (endpointOverride, "\(endpointOverride)")
@@ -271,7 +346,9 @@ final class P2PSender {
                 guard self.connectionGeneration == generation else { return }
                 if let data, case .success(let message) = P2PMessage.decode(data),
                    message.kind == .pong, message.session == self.session {
-                    self.monitor.pongReceived(at: self.clock())
+                    let now = self.clock()
+                    self.roundTrips.pongReceived(message.sequence, at: now)
+                    self.monitor.pongReceived(at: now)
                     self.refreshUsability()
                 }
                 if error == nil { self.receive(on: connection, generation: generation) }
@@ -284,6 +361,8 @@ final class P2PSender {
         connection?.cancel()
         connection = nil
         monitor.reset()
+        roundTrips.reset()
+        statsHandler?(nil)
         inFlight.removeAll()
         pending.removeAll()  // stale coordinates are not worth delivering late
         refreshUsability()
@@ -320,11 +399,17 @@ final class P2PSender {
         }
         sendPing()
         refreshUsability()
+        roundTrips.expire(at: now)
+        if now - lastStatsPublishedAt >= 1 {
+            lastStatsPublishedAt = now
+            statsHandler?(roundTrips.summary)
+        }
     }
 
     private func sendPing() {
         guard let connection else { return }
         sequence &+= 1
+        roundTrips.pingSent(sequence, at: clock())
         connection.send(content: P2PMessage.ping(session: session, sequence: sequence).encoded(),
                         completion: .idempotent)
     }
@@ -385,6 +470,7 @@ final class P2PSender {
     // MARK: Testing
 
     var stateForTesting: P2PLinkState { queue.sync { state } }
+    var roundTripSummaryForTesting: P2PRoundTripStats.Summary? { queue.sync { roundTrips.summary } }
     var supersededCountForTesting: Int { queue.sync { supersededCount } }
     var sessionForTesting: UInt32 { session }
 }

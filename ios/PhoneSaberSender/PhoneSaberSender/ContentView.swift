@@ -48,6 +48,11 @@ struct ContentView: View {
                             set: { model.setP2PEnabled($0) }
                         ))
                             .font(.footnote)
+                        if model.p2pState.isConnected, let rtt = model.p2pRoundTrip {
+                            Text(String(format: "P2P RTT 中央値 %.1f ms / p95 %.1f ms / 最大 %.1f ms / ping欠落 %.0f%%",
+                                        rtt.medianMs, rtt.p95Ms, rtt.maxMs, rtt.lostPercent))
+                                .font(.caption2.monospacedDigit()).foregroundStyle(.secondary)
+                        }
                         if model.p2pEnabled && !model.p2pState.isConnected {
                             Text("\(model.p2pState.label)。届かない間は LAN(Bonjour / 手動IP)で送ります")
                                 .font(.caption2).foregroundStyle(.secondary)

@@ -370,6 +370,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var connectionMode = "Auto (Bonjour)"
     @Published private(set) var p2pEnabled = true
     @Published private(set) var p2pState: P2PLinkState = .disabled
+    @Published private(set) var p2pRoundTrip: P2PRoundTripStats.Summary?
     @Published var threshold = 145
     @Published var dominance = 25
     @Published var measurementMode = false
@@ -1391,9 +1392,11 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func startP2P() {
-        p2pSender.start { [weak self] state in
+        p2pSender.start(onState: { [weak self] state in
             Task { @MainActor in self?.p2pState = state }
-        }
+        }, onStats: { [weak self] summary in
+            Task { @MainActor in self?.p2pRoundTrip = summary }
+        })
     }
 
     func setP2PEnabled(_ enabled: Bool) {
@@ -1405,6 +1408,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         } else {
             p2pSender.stop()
             p2pState = .disabled
+            p2pRoundTrip = nil
         }
 #if DEBUG
         print("[P2P] \(enabled ? "enabled" : "disabled") by user")

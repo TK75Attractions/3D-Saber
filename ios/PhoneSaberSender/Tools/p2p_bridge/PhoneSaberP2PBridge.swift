@@ -103,6 +103,10 @@ final class P2PBridge {
     private var filter = P2PSequenceFilter()
     private var announcedSessions: Set<String> = []
     private var counts: [String: Int] = [:]
+    /// Largest gap between consecutive forwarded coordinates per color in the
+    /// current stats interval (gaps over 2 s are the saber being away, not stalls).
+    private var lastArrival: [P2PColor: TimeInterval] = [:]
+    private var maxGap: [P2PColor: TimeInterval] = [:]
     private var lastPingAt: TimeInterval?
     private var peerLostLogged = true
     private var timer: DispatchSourceTimer?
@@ -231,6 +235,10 @@ final class P2PBridge {
                     announcedSessions.insert(key)
                     log("\(message.color.label) received (session \(message.session), from \(peers[id]?.label ?? "?"))")
                 }
+                if let previous = lastArrival[message.color], time - previous <= 2 {
+                    maxGap[message.color] = max(maxGap[message.color] ?? 0, time - previous)
+                }
+                lastArrival[message.color] = time
                 if forwarder.forward(message.body, color: message.color) {
                     counts[message.color.label, default: 0] += 1
                 } else {
@@ -260,9 +268,15 @@ final class P2PBridge {
             if time - lastStats >= self.options.statsInterval {
                 lastStats = time
                 if !self.counts.isEmpty {
-                    let summary = self.counts.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }
+                    var summary = self.counts.sorted { $0.key < $1.key }.map { "\($0.key)=\($0.value)" }
+                    for color in [P2PColor.red, .blue] {
+                        if let gap = self.maxGap[color] {
+                            summary.append("maxGapMs\(color.label)=\(Int((gap * 1000).rounded()))")
+                        }
+                    }
                     self.log("last \(Int(self.options.statsInterval))s: \(summary.joined(separator: " ")) peers=\(self.peers.count)")
                     self.counts.removeAll()
+                    self.maxGap.removeAll()
                 }
             }
         }

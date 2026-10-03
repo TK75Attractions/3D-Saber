@@ -154,6 +154,7 @@ class P2PBridgeTests(unittest.TestCase):
         self.assertEqual(log.count("RED received"), 1)
         self.assertLess(len(log.splitlines()), 15, log)
         self.assertRegex(log, r"RED=\d+")
+        self.assertRegex(log, r"maxGapMsRED=\d+", "largest arrival gap is reported for stall diagnosis")
 
     def test_bridge_restart_resumes_forwarding_for_the_same_phone(self):
         self.assertEqual(self.ping(11, 1), datagram(PONG, RED, 11, 1))

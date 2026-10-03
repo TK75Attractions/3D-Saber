@@ -82,6 +82,32 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertFalse(monitor.isUsable(at: 11))
     }
 
+    // MARK: Round-trip statistics
+
+    func testRoundTripStatsSummariseLatencyAndLostPings() {
+        var stats = P2PRoundTripStats(window: 10, expireAfter: 2)
+        XCTAssertNil(stats.summary)
+        for (index, ms) in [3.0, 5, 4, 20, 4].enumerated() {
+            let sequence = UInt64(index + 1)
+            stats.pingSent(sequence, at: Double(index))
+            XCTAssertEqual(stats.pongReceived(sequence, at: Double(index) + ms / 1000)!, ms / 1000, accuracy: 1e-9)
+        }
+        XCTAssertNil(stats.pongReceived(99, at: 10), "unknown or duplicate pong is ignored")
+        stats.pingSent(6, at: 10)
+        stats.pingSent(7, at: 10.5)
+        stats.expire(at: 12.2)                           // 6 is lost, 7 still pending
+        let summary = try! XCTUnwrap(stats.summary)
+        XCTAssertEqual(summary.samples, 5)
+        XCTAssertEqual(summary.lastMs, 4, accuracy: 1e-6)
+        XCTAssertEqual(summary.medianMs, 4, accuracy: 1e-6)
+        XCTAssertEqual(summary.maxMs, 20, accuracy: 1e-6)
+        XCTAssertEqual(summary.p95Ms, 20, accuracy: 1e-6)
+        XCTAssertEqual(summary.lostPercent, 100.0 / 6, accuracy: 1e-6)
+        XCTAssertNil(stats.pongReceived(6, at: 12.3), "a pong after expiry does not count")
+        stats.reset()
+        XCTAssertNil(stats.summary)
+    }
+
     // MARK: Loopback link against a fake bridge
 
     private func fastTiming() -> P2PSender.Timing {
@@ -102,6 +128,9 @@ final class P2PTransportTests: XCTestCase {
         let connected = await waitFor { sender.isUsable }
         XCTAssertTrue(connected, "pong makes the link usable")
         if case .connected = sender.stateForTesting {} else { XCTFail("state \(sender.stateForTesting)") }
+        let measured = await waitFor { (sender.roundTripSummaryForTesting?.samples ?? 0) >= 3 }
+        XCTAssertTrue(measured, "pongs produce round-trip samples")
+        XCTAssertLessThan(sender.roundTripSummaryForTesting?.medianMs ?? .infinity, 100, "loopback is fast")
 
         sender.send("100,200,300,400", to: 5005) { _ in }
         sender.send("ts=1.000000;5,6,7,8", to: 5006) { _ in }
