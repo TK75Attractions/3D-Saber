@@ -27,12 +27,17 @@ struct BridgeOptions {
     var exitWithParent: pid_t?
     /// Testing aid: make the listener fail once after this many seconds.
     var simulateListenerFailureAfter: TimeInterval?
+    /// Diagnostics relay: iPhone triage uploads over peer-to-peer Wi-Fi are piped to
+    /// the local receiver (phone_saber_triage_receiver.py, TCP 8765). 0 disables.
+    var diagnosticsPort = UInt16(PhoneSaberP2P.diagnosticsReceiverPort)
+    var diagnosticsListenPort: UInt16 = 0
 
     static let usage = """
     usage: PhoneSaberP2PBridge [--name NAME] [--no-bonjour] [--listen-port N] [--loopback-only]
                                [--forward-host HOST] [--red-port N] [--blue-port N]
                                [--stats-interval SECONDS] [--peer-idle-timeout SECONDS]
                                [--exit-with-parent PID] [--simulate-listener-failure-after SECONDS]
+                               [--diag-port N (0 = no diagnostics relay)] [--diag-listen-port N]
     """
 
     static func parse(_ arguments: [String]) -> BridgeOptions? {
@@ -52,6 +57,8 @@ struct BridgeOptions {
             case "--peer-idle-timeout": guard let v = value().flatMap(Double.init), v > 0 else { return nil }; options.peerIdleTimeout = v
             case "--exit-with-parent": guard let v = value().flatMap(Int32.init), v > 0 else { return nil }; options.exitWithParent = v
             case "--simulate-listener-failure-after": guard let v = value().flatMap(Double.init), v > 0 else { return nil }; options.simulateListenerFailureAfter = v
+            case "--diag-port": guard let v = value().flatMap(UInt16.init) else { return nil }; options.diagnosticsPort = v
+            case "--diag-listen-port": guard let v = value().flatMap(UInt16.init) else { return nil }; options.diagnosticsListenPort = v
             case "-h", "--help": return nil
             default: return nil
             }
@@ -94,6 +101,123 @@ final class LocalForwarder {
             }
         }
         return sent == body.count
+    }
+}
+
+/// Pipes each peer-to-peer TCP connection from the iPhone (triage bundle upload,
+/// plain HTTP) to the local diagnostics receiver, byte for byte in both directions.
+/// The receiver accepts loopback peers, so it needs no change.
+final class DiagnosticsRelay {
+    private let options: BridgeOptions
+    private let queue = DispatchQueue(label: "PhoneSaberP2PBridge.diagnostics")
+    private var listener: NWListener?
+    private var restartAttempts = 0
+    private var stopped = false
+
+    init(options: BridgeOptions) { self.options = options }
+
+    private func log(_ message: String) {
+        print("[P2P] diag relay: \(message)")
+        fflush(stdout)
+    }
+
+    func start() throws {
+        let parameters = NWParameters.tcp
+        parameters.includePeerToPeer = true
+        if options.loopbackOnly { parameters.requiredInterfaceType = .loopback }
+        let listener = try NWListener(using: parameters,
+                                      on: NWEndpoint.Port(rawValue: options.diagnosticsListenPort) ?? .any)
+        if options.bonjour {
+            listener.service = NWListener.Service(name: options.serviceName,
+                                                  type: PhoneSaberP2P.diagnosticsServiceType)
+        }
+        listener.stateUpdateHandler = { [weak self, weak listener] state in
+            guard let self, let listener, self.listener === listener else { return }
+            switch state {
+            case .ready:
+                self.restartAttempts = 0
+                self.log("listening on TCP \(listener.port?.rawValue ?? 0) → 127.0.0.1:\(self.options.diagnosticsPort)")
+            case .failed(let error):
+                listener.cancel()
+                self.listener = nil
+                self.restartAttempts += 1
+                let delay = min(30, pow(2, Double(min(self.restartAttempts - 1, 5))))
+                self.log("listener failed: \(error); restarting in \(Int(delay))s")
+                self.queue.asyncAfter(deadline: .now() + delay) { [weak self] in
+                    guard let self, !self.stopped, self.listener == nil else { return }
+                    try? self.start()
+                }
+            default:
+                break
+            }
+        }
+        listener.newConnectionHandler = { [weak self] inbound in self?.relay(inbound) }
+        self.listener = listener
+        listener.start(queue: queue)
+    }
+
+    func stop() {
+        queue.sync {
+            stopped = true
+            listener?.cancel()
+        }
+    }
+
+    private func relay(_ inbound: NWConnection) {
+        guard let port = NWEndpoint.Port(rawValue: options.diagnosticsPort) else { return }
+        let outbound = NWConnection(host: "127.0.0.1", port: port, using: .tcp)
+        let label = "\(inbound.endpoint)"
+        var bytes = 0
+        var closed = false
+        func close(_ reason: String) {
+            guard !closed else { return }
+            closed = true
+            inbound.cancel()
+            outbound.cancel()
+            log("upload from \(label) closed after \(bytes) bytes (\(reason))")
+        }
+        func pipe(from source: NWConnection, to destination: NWConnection, counting: Bool) {
+            source.receive(minimumIncompleteLength: 1, maximumLength: 256 * 1024) { data, _, isComplete, error in
+                if let data, !data.isEmpty {
+                    if counting { bytes += data.count }
+                    destination.send(content: data, completion: .contentProcessed { sendError in
+                        if let sendError { close("send: \(sendError)") }
+                    })
+                }
+                if isComplete {
+                    // Half-close: the HTTP request is complete; keep reading the response.
+                    destination.send(content: nil, contentContext: .finalMessage, isComplete: true,
+                                     completion: .contentProcessed { _ in
+                                         if !counting { close("done") }
+                                     })
+                    return
+                }
+                if let error { close("\(error)"); return }
+                pipe(from: source, to: destination, counting: counting)
+            }
+        }
+        log("upload from \(label) → 127.0.0.1:\(options.diagnosticsPort)")
+        inbound.stateUpdateHandler = { state in
+            if case .failed(let error) = state { close("iPhone side: \(error)") }
+        }
+        var outboundReady = false
+        outbound.stateUpdateHandler = { state in
+            switch state {
+            case .ready:
+                outboundReady = true
+                pipe(from: inbound, to: outbound, counting: true)
+                pipe(from: outbound, to: inbound, counting: false)
+            case .failed(let error), .waiting(let error):
+                close(outboundReady ? "receiver closed: \(error)"
+                                    : "receiver not reachable (Start PhoneSaber running?): \(error)")
+            default:
+                break
+            }
+        }
+        inbound.start(queue: queue)
+        outbound.start(queue: queue)
+        // An abandoned upload must not keep sockets open forever.
+        queue.asyncAfter(deadline: .now() + 300) { close("timeout") }
     }
 }
 
@@ -346,6 +470,16 @@ enum PhoneSaberP2PBridgeMain {
             FileHandle.standardError.write(Data("[P2P] cannot start listener: \(error)\n".utf8))
             exit(1)
         }
+        if options.diagnosticsPort != 0 {
+            let relay = DiagnosticsRelay(options: options)
+            do {
+                try relay.start()
+                diagnosticsRelay = relay
+            } catch {
+                // Coordinates keep working; only P2P triage uploads are unavailable.
+                print("[P2P] diag relay: cannot start: \(error)")
+            }
+        }
         if let parent = options.exitWithParent {
             let watchdog = DispatchSource.makeTimerSource(queue: .main)
             watchdog.schedule(deadline: .now() + 1, repeating: 1)
@@ -377,4 +511,5 @@ enum PhoneSaberP2PBridgeMain {
 
     private static var signalSources: [DispatchSourceSignal] = []
     private static var parentWatchdog: DispatchSourceTimer?
+    private static var diagnosticsRelay: DiagnosticsRelay?
 }

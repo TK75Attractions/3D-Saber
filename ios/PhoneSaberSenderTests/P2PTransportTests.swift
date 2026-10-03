@@ -198,6 +198,52 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertEqual(unity.receive(timeout: 3), "11,22,33,44")
     }
 
+    // MARK: Triage bundle upload over P2P
+
+    func testBundleUploaderSendsTheHTTPRequestAndReadsTheStatus() async throws {
+        let receiver = try FakeHTTPReceiver(status: 201)
+        defer { receiver.stop() }
+        let port = try await receiver.ready()
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("p2p-upload-\(UUID()).psbt")
+        let payload = Data((0..<(700 * 1024)).map { UInt8($0 % 251) })
+        try payload.write(to: file)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let uploader = P2PBundleUploader(endpointOverride: .hostPort(host: "127.0.0.1", port: port))
+        let outcome = await withCheckedContinuation { continuation in
+            uploader.upload(fileURL: file) { continuation.resume(returning: $0) }
+        }
+        guard case .uploaded = outcome else { return XCTFail("\(outcome)") }
+        let request = receiver.request
+        XCTAssertTrue(request.starts(with: Data("POST /v1/bundle HTTP/1.1\r\n".utf8)))
+        XCTAssertNotNil(request.range(of: Data("Content-Length: \(payload.count)\r\n".utf8)))
+        let headerEnd = try XCTUnwrap(request.range(of: Data("\r\n\r\n".utf8)))
+        XCTAssertEqual(request[headerEnd.upperBound...], payload[...], "body unchanged")
+    }
+
+    func testBundleUploaderReportsHTTPErrorsAndMissingReceivers() async throws {
+        let receiver = try FakeHTTPReceiver(status: 413)
+        defer { receiver.stop() }
+        let port = try await receiver.ready()
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("p2p-upload-\(UUID()).psbt")
+        try Data("x".utf8).write(to: file)
+        defer { try? FileManager.default.removeItem(at: file) }
+        let rejected = await withCheckedContinuation { continuation in
+            P2PBundleUploader(endpointOverride: .hostPort(host: "127.0.0.1", port: port))
+                .upload(fileURL: file) { continuation.resume(returning: $0) }
+        }
+        guard case .failed = rejected else { return XCTFail("\(rejected)") }
+        // No service of this (test-only) type exists: fall through to LAN quickly.
+        let started = Date()
+        let missing = await withCheckedContinuation { continuation in
+            P2PBundleUploader(serviceType: "_psbt-none._tcp", discoveryTimeout: 0.3)
+                .upload(fileURL: file) { continuation.resume(returning: $0) }
+        }
+        guard case .notFound = missing else { return XCTFail("\(missing)") }
+        XCTAssertLessThan(Date().timeIntervalSince(started), 3)
+        XCTAssertEqual(P2PBundleUploader.statusCode(Data("HTTP/1.0 201 Created\r\n\r\n".utf8)), 201)
+        XCTAssertNil(P2PBundleUploader.statusCode(Data("garbage".utf8)))
+    }
+
     // MARK: CameraViewModel routing
 
     @MainActor
@@ -383,4 +429,67 @@ final class LocalUDPReceiver {
     }
 
     func close() { Darwin.close(fd) }
+}
+
+/// Loopback TCP stand-in for the diagnostics receiver: records the request and
+/// answers with a fixed HTTP status once the request is complete.
+final class FakeHTTPReceiver: @unchecked Sendable {
+    private let listener: NWListener
+    private let queue = DispatchQueue(label: "FakeHTTPReceiver")
+    private let received = LockedBox(Data())
+    private let status: Int
+
+    init(status: Int) throws {
+        self.status = status
+        let parameters = NWParameters.tcp
+        parameters.requiredInterfaceType = .loopback
+        listener = try NWListener(using: parameters, on: .any)
+        listener.newConnectionHandler = { [weak self] connection in
+            guard let self else { return }
+            connection.start(queue: self.queue)
+            self.read(connection)
+        }
+    }
+
+    var request: Data { received.value }
+
+    func ready() async throws -> NWEndpoint.Port {
+        try await withCheckedThrowingContinuation { continuation in
+            let resumed = LockedBox(false)
+            listener.stateUpdateHandler = { [weak self] state in
+                guard !resumed.value else { return }
+                switch state {
+                case .ready: resumed.mutate { $0 = true }; continuation.resume(returning: self!.listener.port!)
+                case .failed(let error): resumed.mutate { $0 = true }; continuation.resume(throwing: error)
+                default: break
+                }
+            }
+            listener.start(queue: queue)
+        }
+    }
+
+    private func read(_ connection: NWConnection) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 256 * 1024) { [weak self] data, _, isComplete, _ in
+            guard let self else { return }
+            if let data { self.received.mutate { $0.append(data) } }
+            if isComplete || self.requestComplete() {
+                let reply = "HTTP/1.0 \(self.status) X\r\nContent-Length: 2\r\n\r\n{}"
+                connection.send(content: Data(reply.utf8), contentContext: .finalMessage, isComplete: true,
+                                completion: .contentProcessed { _ in connection.cancel() })
+                return
+            }
+            self.read(connection)
+        }
+    }
+
+    private func requestComplete() -> Bool {
+        let request = received.value
+        guard let headerEnd = request.range(of: Data("\r\n\r\n".utf8)),
+              let header = String(data: request[..<headerEnd.lowerBound], encoding: .ascii),
+              let line = header.split(separator: "\r\n").first(where: { $0.hasPrefix("Content-Length: ") }),
+              let length = Int(line.dropFirst("Content-Length: ".count)) else { return false }
+        return request.count - headerEnd.upperBound >= length
+    }
+
+    func stop() { queue.sync { listener.cancel() } }
 }

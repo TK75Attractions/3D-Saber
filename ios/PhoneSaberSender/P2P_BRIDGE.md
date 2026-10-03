@@ -35,6 +35,22 @@ PhoneSaberSender (iPhone)
 - **送信は認識とは別の queue** で行います。色ごとに「送信中の 1 件 + 最新の 1 件」しか保持しないので、
   詰まっても古い座標が溜まりません(既存の UDPSender と同じ方針)。
 
+## 診断 bundle(Debug Recording の自動転送)も P2P で送る
+
+Debug Recording の Stop 後に送る triage bundle も、P2P で届くようにしました。
+
+```text
+iPhone(DebugBundleTransfer)
+  ├─ [P2P 優先] Network.framework TCP(includePeerToPeer、cellular 禁止)── Bonjour `_phonesaber-dp2p._tcp`
+  │      └─ Mac の P2P bridge(Unity が自動起動)内の「診断 relay」── 127.0.0.1:8765(既存の受信側、変更なし)
+  └─ [fallback] 従来の LAN 転送(Bonjour `_phonesaber-diag._tcp` → HTTP)
+```
+
+- iPhone は、転送のたびにまず P2P の relay を約 3 秒探します。見つかれば P2P で送り、見つからなければ従来の LAN 転送を行います。
+- 送る中身(HTTP の `POST /v1/bundle` と bundle の byte 列)は LAN 転送と同じです。relay は byte を変えずに中継します。
+- 受信側(Start PhoneSaber の receiver)はそのままで、変更はありません。receiver が起動していないと relay は接続を閉じ、iPhone は LAN を試してから再試行します。
+- Mac のログ(Unity の Console)には `[P2P] diag relay: upload from … closed after N bytes (done)` が出ます。
+
 ## fallback の条件
 
 座標は、次の順に、使える最初の経路で送ります。

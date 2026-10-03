@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import Network
 
 private struct DebugBundleManifestFile: Encodable {
     let path: String
@@ -60,8 +61,9 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
     private var discoveryTimeout: DispatchWorkItem?
     private var attempt = 0
     private var phase: AttemptPhase = .idle
+    private var p2pUploader: P2PBundleUploader?
 
-    private enum AttemptPhase { case idle, searching, resolving, uploading, finished }
+    private enum AttemptPhase { case idle, p2p, searching, resolving, uploading, finished }
 
     private override init() { super.init() }
 
@@ -111,6 +113,34 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
             return
         }
         attempt = number
+        // Peer-to-peer Wi-Fi first (the Mac bridge relays to the receiver), so a
+        // phone that only reaches the Mac over AWDL can still deliver; otherwise
+        // the existing LAN Bonjour path below runs unchanged.
+        phase = .p2p
+        let uploader = P2PBundleUploader()
+        p2pUploader = uploader
+        uploader.upload(fileURL: activePackageURL!) { [weak self] outcome in
+            DispatchQueue.main.async {
+                guard let self, self.p2pUploader === uploader, self.attempt == number,
+                      self.phase == .p2p else { return }
+                self.p2pUploader = nil
+                switch outcome {
+                case .uploaded(let service):
+                    print("[DebugTriageTransfer] uploaded selected bundle over P2P via \(service)")
+                    self.finishCurrentBundle()
+                case .notFound:
+                    self.startLANAttempt(number)
+                case .failed(let error):
+                    print("[DebugTriageTransfer] P2P upload failed (\(error.localizedDescription)); trying LAN")
+                    self.startLANAttempt(number)
+                }
+            }
+        }
+    }
+
+    private func startLANAttempt(_ number: Int) {
+        precondition(Thread.isMainThread)
+        guard attempt == number, activeBundleURL != nil, activePackageURL != nil else { return }
         phase = .searching
         resolvedService = nil
         let browser = NetServiceBrowser()
@@ -208,6 +238,8 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
     }
 
     private func stopDiscovery() {
+        p2pUploader?.cancel()
+        p2pUploader = nil
         discoveryTimeout?.cancel()
         discoveryTimeout = nil
         browser?.stop()
@@ -350,5 +382,178 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
             digest.update(data: chunk)
         }
         return digest.finalize().map { String(format: "%02x", $0) }.joined()
+    }
+}
+
+
+/// Uploads one triage package over Network.framework with peer-to-peer Wi-Fi
+/// allowed (cellular prohibited) to the Mac P2P bridge's diagnostics relay
+/// (`_phonesaber-dp2p._tcp`), which pipes it to the unchanged receiver. Same HTTP
+/// request as the LAN path (POST /v1/bundle, Content-Length, Connection: close).
+final class P2PBundleUploader {
+    enum Outcome { case uploaded(String), notFound, failed(Error) }
+
+    struct UploadError: LocalizedError {
+        let message: String
+        var errorDescription: String? { message }
+    }
+
+    private let queue = DispatchQueue(label: "PhoneSaberSender.diag-p2p", qos: .utility)
+    private let serviceType: String
+    private let endpointOverride: NWEndpoint?
+    private let discoveryTimeout: TimeInterval
+    private let transferTimeout: TimeInterval
+    private var browser: NWBrowser?
+    private var connection: NWConnection?
+    private var completion: ((Outcome) -> Void)?
+    private var file: FileHandle?
+    private var response = Data()
+    private var serviceName = ""
+    /// Kept until `finish`, so a caller may drop its reference while the upload runs.
+    private var keepAlive: P2PBundleUploader?
+
+    init(serviceType: String = PhoneSaberP2P.diagnosticsServiceType, endpointOverride: NWEndpoint? = nil,
+         discoveryTimeout: TimeInterval = 3, transferTimeout: TimeInterval = 180) {
+        self.serviceType = serviceType
+        self.endpointOverride = endpointOverride
+        self.discoveryTimeout = discoveryTimeout
+        self.transferTimeout = transferTimeout
+    }
+
+    func upload(fileURL: URL, completion: @escaping (Outcome) -> Void) {
+        queue.async { [self] in
+            self.keepAlive = self
+            self.completion = completion
+            guard let size = (try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size]) as? NSNumber,
+                  let handle = try? FileHandle(forReadingFrom: fileURL) else {
+                finish(.failed(UploadError(message: "package unreadable")))
+                return
+            }
+            file = handle
+            if let endpointOverride {
+                connect(to: endpointOverride, name: "\(endpointOverride)", size: size.int64Value)
+                return
+            }
+            let browser = NWBrowser(for: .bonjour(type: serviceType, domain: nil), using: parameters())
+            self.browser = browser
+            browser.browseResultsChangedHandler = { [weak self] results, _ in
+                guard let self, self.connection == nil else { return }
+                let services = results.compactMap { result -> (NWEndpoint, String)? in
+                    if case .service(let name, _, _, _) = result.endpoint { return (result.endpoint, name) }
+                    return nil
+                }.sorted { $0.1 < $1.1 }
+                guard let first = services.first else { return }
+                self.browser?.cancel()
+                self.browser = nil
+                self.connect(to: first.0, name: first.1, size: size.int64Value)
+            }
+            browser.stateUpdateHandler = { [weak self] state in
+                if case .failed = state { self?.finish(.notFound) }
+            }
+            browser.start(queue: queue)
+            queue.asyncAfter(deadline: .now() + discoveryTimeout) { [weak self] in
+                guard let self, self.connection == nil else { return }
+                self.finish(.notFound)
+            }
+        }
+    }
+
+    func cancel() {
+        queue.async { [weak self] in
+            self?.completion = nil
+            self?.finish(.notFound)
+        }
+    }
+
+    private func parameters() -> NWParameters {
+        let parameters = NWParameters.tcp
+        parameters.includePeerToPeer = true
+        parameters.prohibitedInterfaceTypes = [.cellular]
+        return parameters
+    }
+
+    private func connect(to endpoint: NWEndpoint, name: String, size: Int64) {
+        serviceName = name
+        let connection = NWConnection(to: endpoint, using: parameters())
+        self.connection = connection
+        connection.stateUpdateHandler = { [weak self] state in
+            guard let self else { return }
+            switch state {
+            case .ready:
+                let header = "POST /v1/bundle HTTP/1.1\r\nHost: phonesaber\r\n"
+                    + "Content-Type: application/vnd.phonesaber.triage-v1\r\n"
+                    + "Content-Length: \(size)\r\nConnection: close\r\n\r\n"
+                connection.send(content: Data(header.utf8), completion: .contentProcessed { error in
+                    if let error { self.finish(.failed(error)) } else { self.sendNextChunk() }
+                })
+                self.receiveResponse()
+            case .failed(let error):
+                self.finish(.failed(error))
+            case .waiting(let error):
+                self.finish(.failed(error))
+            default:
+                break
+            }
+        }
+        connection.start(queue: queue)
+        queue.asyncAfter(deadline: .now() + transferTimeout) { [weak self] in
+            self?.finish(.failed(UploadError(message: "P2P upload timed out")))
+        }
+    }
+
+    private func sendNextChunk() {
+        guard let connection, let file else { return }
+        let chunk = (try? file.read(upToCount: 256 * 1024)) ?? Data()
+        if chunk.isEmpty {
+            // Request complete; the relay half-closes towards the receiver.
+            connection.send(content: nil, contentContext: .finalMessage, isComplete: true,
+                            completion: .contentProcessed { _ in })
+            return
+        }
+        connection.send(content: chunk, completion: .contentProcessed { [weak self] error in
+            if let error { self?.finish(.failed(error)) } else { self?.sendNextChunk() }
+        })
+    }
+
+    private func receiveResponse() {
+        connection?.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { [weak self] data, _, isComplete, error in
+            guard let self else { return }
+            if let data { self.response.append(data) }
+            if let status = Self.statusCode(self.response), isComplete || error != nil || self.response.count > 64 * 1024
+                || self.response.range(of: Data("\r\n\r\n".utf8)) != nil {
+                if (200..<300).contains(status) {
+                    self.finish(.uploaded(self.serviceName))
+                } else {
+                    self.finish(.failed(UploadError(message: "receiver HTTP \(status)")))
+                }
+                return
+            }
+            if isComplete || error != nil {
+                self.finish(.failed(error ?? UploadError(message: "connection closed without a response")))
+                return
+            }
+            self.receiveResponse()
+        }
+    }
+
+    static func statusCode(_ response: Data) -> Int? {
+        guard let line = String(data: response.prefix(64), encoding: .ascii)?
+                .split(separator: "\r\n", maxSplits: 1).first,
+              line.hasPrefix("HTTP/1.") else { return nil }
+        let fields = line.split(separator: " ")
+        return fields.count >= 2 ? Int(fields[1]) : nil
+    }
+
+    private func finish(_ outcome: Outcome) {
+        browser?.cancel()
+        browser = nil
+        connection?.cancel()
+        connection = nil
+        try? file?.close()
+        file = nil
+        let completion = self.completion
+        self.completion = nil
+        completion?(outcome)
+        keepAlive = nil
     }
 }

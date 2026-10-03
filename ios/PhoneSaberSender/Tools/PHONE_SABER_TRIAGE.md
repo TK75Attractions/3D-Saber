@@ -163,3 +163,12 @@ original pre/event/post PNGs within the existing image and transport limits.
 Luna receives measured signs and selection reasons. These heuristics do not prove
 a real saber; latency-only images cannot support recognition repair. See
 [Debug Recording motion evidence](DEBUG_MOTION_EVENTS.md).
+
+## Peer-to-peer upload
+
+When the iPhone reaches the Mac only over Apple peer-to-peer Wi-Fi (not on the
+same LAN), triage bundles go through the Unity-started P2P bridge's diagnostics
+relay (`_phonesaber-dp2p._tcp`), which pipes the unchanged HTTP upload to this
+receiver on 127.0.0.1:8765. The receiver itself is unchanged; the iPhone tries
+P2P first for about 3 s and otherwise uses the LAN Bonjour path. See
+[../P2P_BRIDGE.md](../P2P_BRIDGE.md).

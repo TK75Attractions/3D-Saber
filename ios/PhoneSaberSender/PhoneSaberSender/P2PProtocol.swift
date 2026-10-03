@@ -16,6 +16,10 @@ import Foundation
 /// The bridge forwards the body bytes unchanged to 127.0.0.1:5005 (RED) or :5006 (BLUE).
 enum PhoneSaberP2P {
     static let serviceType = "_phonesaber-p2p._udp"
+    /// TCP relay to the Mac's diagnostics receiver (triage bundles), same peer-to-peer
+    /// reach as the coordinate link. DNS-SD service names are limited to 15 characters.
+    static let diagnosticsServiceType = "_phonesaber-dp2p._tcp"
+    static let diagnosticsReceiverPort = 8765
     static let magic: [UInt8] = Array("PSP2".utf8)
     static let version: UInt8 = 1
     static let headerSize = 20

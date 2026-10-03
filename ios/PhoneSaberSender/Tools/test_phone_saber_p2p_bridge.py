@@ -236,6 +236,88 @@ class P2PBridgeListenerRestartTests(unittest.TestCase):
             self.assertEqual(log_path.read_text().count("listening on UDP %d" % port), 2)
 
 
+def free_tcp_port() -> int:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as probe:
+        probe.bind(("127.0.0.1", 0))
+        return probe.getsockname()[1]
+
+
+@unittest.skipUnless(sys.platform == "darwin" and shutil.which("xcrun"), "requires the macOS Swift toolchain")
+class DiagnosticsRelayTests(unittest.TestCase):
+    """Triage uploads over the bridge's TCP relay reach the local receiver unchanged."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.cache = tempfile.TemporaryDirectory(prefix="phonesaber-diag-relay-")
+        cls.addClassCleanup(cls.cache.cleanup)
+        cls.binary = launcher.build(Path(cls.cache.name))
+
+    def start_bridge(self, receiver_port: int) -> int:
+        relay_port = free_tcp_port()
+        log = (Path(self.cache.name) / f"{self.id().rsplit('.', 1)[-1]}.log").open("w")
+        self.addCleanup(log.close)
+        bridge = subprocess.Popen([str(self.binary), "--no-bonjour", "--loopback-only",
+                                   "--listen-port", str(free_udp_port()), "--red-port", str(free_udp_port()),
+                                   "--blue-port", str(free_udp_port()), "--diag-port", str(receiver_port),
+                                   "--diag-listen-port", str(relay_port)], stdout=log, stderr=subprocess.STDOUT)
+        self.addCleanup(lambda: (bridge.terminate(), bridge.wait(5)))
+        self.log_path = Path(log.name)
+        deadline = time.monotonic() + 10
+        while "diag relay: listening" not in self.log_path.read_text() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        self.assertIn("diag relay: listening", self.log_path.read_text())
+        return relay_port
+
+    def test_an_http_upload_is_piped_to_the_receiver_and_the_reply_comes_back(self):
+        from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+        import threading
+        received = {}
+
+        class Receiver(BaseHTTPRequestHandler):
+            def do_POST(self):
+                received["path"] = self.path
+                received["body"] = self.rfile.read(int(self.headers["Content-Length"]))
+                body = b'{"accepted": true}'
+                self.send_response(201)
+                self.send_header("Content-Length", str(len(body)))
+                self.end_headers()
+                self.wfile.write(body)
+
+            def log_message(self, *args):
+                pass
+
+        server = ThreadingHTTPServer(("127.0.0.1", 0), Receiver)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.shutdown)
+        relay_port = self.start_bridge(server.server_address[1])
+        payload = os.urandom(2 * 1024 * 1024)
+        with socket.create_connection(("127.0.0.1", relay_port), timeout=10) as client:
+            client.sendall(b"POST /v1/bundle HTTP/1.1\r\nHost: phonesaber\r\n"
+                           b"Content-Type: application/vnd.phonesaber.triage-v1\r\n"
+                           b"Content-Length: %d\r\nConnection: close\r\n\r\n" % len(payload) + payload)
+            client.shutdown(socket.SHUT_WR)
+            reply = b""
+            while chunk := client.recv(65536):
+                reply += chunk
+        self.assertTrue(reply.startswith(b"HTTP/1.0 201") or reply.startswith(b"HTTP/1.1 201"), reply[:80])
+        self.assertEqual(received["path"], "/v1/bundle")
+        self.assertEqual(received["body"], payload, "bytes arrive unchanged")
+        time.sleep(0.3)
+        self.assertRegex(self.log_path.read_text(), r"closed after \d+ bytes \((done|receiver closed)")
+        self.assertNotIn("not reachable", self.log_path.read_text())
+
+    def test_a_missing_receiver_closes_the_upload_instead_of_hanging(self):
+        relay_port = self.start_bridge(free_tcp_port())
+        with socket.create_connection(("127.0.0.1", relay_port), timeout=10) as client:
+            client.sendall(b"POST /v1/bundle HTTP/1.1\r\nContent-Length: 1\r\n\r\nx")
+            try:
+                closed = client.recv(1024) == b""
+            except ConnectionResetError:
+                closed = True
+            self.assertTrue(closed, "connection is closed, the iPhone retries or uses LAN")
+        self.assertIn("receiver not reachable", self.log_path.read_text())
+
+
 class P2PBridgeLauncherTests(unittest.TestCase):
     def test_build_is_cached_per_source_revision(self):
         if not (sys.platform == "darwin" and shutil.which("xcrun")):
