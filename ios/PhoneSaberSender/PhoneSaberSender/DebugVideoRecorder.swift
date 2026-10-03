@@ -1174,6 +1174,279 @@ struct DebugSegmentLedger {
     }
 }
 
+/// Whole-session tally of the shadow R7e / PF22 verdicts over EVERY recorded
+/// frame (root and summary.json `shadowRuleTally`). Diagnostic only: it reads
+/// the verdicts the `collectPipelineDiagnostics` branch already attached to
+/// each candidate, never runs detector work, and never reaches recognition,
+/// ranking, tracking or UDP. Counters only (O(1) memory), updated once per
+/// recorded frame on the processing queue. Inputs are read in production list
+/// order and fixed color / label / bucket order; no Set or Dictionary order
+/// enters any count.
+struct DebugShadowRuleTally {
+    static let colors = ["red", "blue"]
+    static let rules = ["r7e", "pf22"]
+    /// Frame IDs kept per rule where the rule would reject the WINNER.
+    static let sampleLimit = 6
+    /// Exposure is bucketed at nominal shutter limits; 2 % tolerance keeps a
+    /// nominal 1/120 s frame (Exif 0.008333) inside `le1_120`.
+    static let exposureTolerance = 1.02
+
+    enum ExposureBucket: String, CaseIterable {
+        case le1_240, le1_120, le1_60, gt1_60, unknown
+
+        init(seconds: Double?) {
+            guard let seconds, seconds.isFinite, seconds > 0 else { self = .unknown; return }
+            let tolerance = DebugShadowRuleTally.exposureTolerance
+            if seconds <= tolerance / 240 { self = .le1_240 }
+            else if seconds <= tolerance / 120 { self = .le1_120 }
+            else if seconds <= tolerance / 60 { self = .le1_60 }
+            else { self = .gt1_60 }
+        }
+    }
+
+    /// The shadow verdicts of one eligible candidate; nil fields mean "no verdict"
+    /// (blue candidates, or a candidate without a diagnostic trace).
+    struct Verdicts: Equatable {
+        var r7eEligible: Bool?
+        var pf22Eligible: Bool?
+        var meanColorPurity: Double?
+        var clippedWhiteRatio: Double?
+        var d240: Double?
+
+        init(r7e: SaberShadowR7eVerdict?, pf22: SaberShadowPurityFloorVerdict?) {
+            r7eEligible = r7e?.shadowEligible
+            pf22Eligible = pf22?.shadowEligible
+            meanColorPurity = r7e?.meanColorPurity ?? pf22?.meanColorPurity
+            clippedWhiteRatio = r7e?.clippedWhiteRatio ?? pf22?.clippedWhiteRatio
+            d240 = r7e?.d240
+        }
+
+        init(_ candidate: SaberCandidate) {
+            let emitter = candidate.endpointDiagnosticTrace?.emitter
+            self.init(r7e: emitter?.shadowR7e, pf22: emitter?.shadowPF22)
+        }
+
+        func eligible(_ rule: String) -> Bool? { rule == "r7e" ? r7eEligible : pf22Eligible }
+    }
+
+    /// Eligible candidates of one color in production list order; the first is the winner
+    /// (the same candidate `DebugRecordingColorCandidates.selectedCandidateIndex` names).
+    struct ColorObservation: Equatable {
+        var eligible: [Verdicts]
+
+        init(eligible: [Verdicts]) { self.eligible = eligible }
+
+        init(_ candidates: [SaberCandidate]) {
+            eligible = candidates.filter(\.isEmitterEligible).map(Verdicts.init)
+        }
+    }
+
+    struct RuleCounts: Equatable {
+        var winnersJudged = 0
+        var winnersRejected = 0
+        var eligibleJudged = 0
+        var eligibleRejected = 0
+        /// Winner rejected and every eligible candidate of the frame judged and
+        /// rejected too: the color would have no detection under the rule.
+        var noEligibleLeft = 0
+
+        var dictionary: [String: Any] {
+            ["winnersJudged": winnersJudged, "winnersRejected": winnersRejected,
+             "eligibleJudged": eligibleJudged, "eligibleRejected": eligibleRejected,
+             "noEligibleLeft": noEligibleLeft]
+        }
+    }
+
+    struct ColorCounts: Equatable {
+        /// Frames whose color had at least one eligible candidate (a winner).
+        var winners = 0
+        var eligibleCandidates = 0
+        var r7e = RuleCounts()
+        var pf22 = RuleCounts()
+        var bothWinnersJudged = 0
+        var bothWinnersRejected = 0
+
+        var dictionary: [String: Any] {
+            ["winners": winners, "eligibleCandidates": eligibleCandidates,
+             "r7e": r7e.dictionary, "pf22": pf22.dictionary,
+             "both": ["winnersJudged": bothWinnersJudged, "winnersRejected": bothWinnersRejected]]
+        }
+    }
+
+    struct Bucket: Equatable {
+        var frames = 0
+        /// Indexed like `DebugShadowRuleTally.colors`.
+        var colors = [ColorCounts](repeating: ColorCounts(), count: DebugShadowRuleTally.colors.count)
+    }
+
+    struct Sample: Equatable {
+        let frameID: UInt64
+        let timestamp: Double
+        let label: DebugSegmentLabel
+        let color: String
+        let exposureBucket: ExposureBucket
+        let winner: Verdicts
+
+        var dictionary: [String: Any] {
+            var result: [String: Any] = ["frameID": frameID, "timestamp": timestamp,
+                                         "label": label.rawValue, "color": color,
+                                         "exposureBucket": exposureBucket.rawValue]
+            func put(_ key: String, _ value: Double?) {
+                guard let value, value.isFinite else { return }
+                result[key] = DebugCandidateGeometry.round4(value)
+            }
+            put("meanColorPurity", winner.meanColorPurity)
+            put("clippedWhiteRatio", winner.clippedWhiteRatio)
+            put("d240", winner.d240)
+            if let r7e = winner.r7eEligible { result["shadowR7eEligible"] = r7e }
+            if let pf22 = winner.pf22Eligible { result["shadowPF22Eligible"] = pf22 }
+            return result
+        }
+    }
+
+    /// Bounded, deterministic, time-spread sample: keeps every `stride`-th offer
+    /// and halves itself (doubling the stride) when it overflows, so the kept
+    /// frames stay evenly spread over all offers. O(limit) memory.
+    struct StrideSampler: Equatable {
+        private(set) var samples: [Sample] = []
+        private(set) var stride = 1
+        private(set) var offered = 0
+
+        mutating func offer(_ sample: Sample) {
+            defer { offered += 1 }
+            guard offered % stride == 0 else { return }
+            samples.append(sample)
+            if samples.count > DebugShadowRuleTally.sampleLimit {
+                samples = samples.enumerated().filter { $0.offset % 2 == 0 }.map(\.element)
+                stride *= 2
+            }
+        }
+    }
+
+    let activeColors: [String]
+    /// Session-wide exposure experiment setting (one per recording), when known.
+    let exposureExperimentSetting: String?
+    private(set) var total = Bucket()
+    private(set) var byLabel = [Bucket](repeating: Bucket(), count: DebugSegmentLabel.allCases.count)
+    private(set) var byExposure = [Bucket](repeating: Bucket(), count: ExposureBucket.allCases.count)
+    /// Indexed like `rules`. Only frames outside the noSaber / noSaberCovered
+    /// labels are sampled: a rejection there is expected; one elsewhere (a lit
+    /// saber, or an unlabeled stretch) is what a human must check on a PNG.
+    private(set) var samplers = [StrideSampler](repeating: StrideSampler(), count: DebugShadowRuleTally.rules.count)
+
+    init(activeColors: [String] = DebugShadowRuleTally.colors, exposureExperimentSetting: String? = nil) {
+        self.activeColors = Self.colors.filter(activeColors.contains)
+        self.exposureExperimentSetting = exposureExperimentSetting
+    }
+
+    mutating func observe(frameID: UInt64, timestamp: Double, label: DebugSegmentLabel,
+                          exposureSeconds: Double?, colors observations: [String: ColorObservation]) {
+        let labelIndex = DebugSegmentLabel.allCases.firstIndex(of: label) ?? 0
+        let exposure = ExposureBucket(seconds: exposureSeconds)
+        let exposureIndex = ExposureBucket.allCases.firstIndex(of: exposure) ?? 0
+        total.frames += 1
+        byLabel[labelIndex].frames += 1
+        byExposure[exposureIndex].frames += 1
+        for (colorIndex, color) in Self.colors.enumerated() where activeColors.contains(color) {
+            guard let observation = observations[color], let winner = observation.eligible.first else { continue }
+            var counts = ColorCounts()
+            counts.winners = 1
+            counts.eligibleCandidates = observation.eligible.count
+            for (ruleIndex, rule) in Self.rules.enumerated() {
+                var ruleCounts = RuleCounts()
+                for candidate in observation.eligible {
+                    guard let eligible = candidate.eligible(rule) else { continue }
+                    ruleCounts.eligibleJudged += 1
+                    if !eligible { ruleCounts.eligibleRejected += 1 }
+                }
+                if let winnerEligible = winner.eligible(rule) {
+                    ruleCounts.winnersJudged = 1
+                    if !winnerEligible {
+                        ruleCounts.winnersRejected = 1
+                        if ruleCounts.eligibleRejected == observation.eligible.count { ruleCounts.noEligibleLeft = 1 }
+                        if !DebugSegmentLabel.falsePositiveLabels.contains(label) {
+                            samplers[ruleIndex].offer(Sample(frameID: frameID, timestamp: timestamp, label: label,
+                                                             color: color, exposureBucket: exposure, winner: winner))
+                        }
+                    }
+                }
+                if rule == "r7e" { counts.r7e = ruleCounts } else { counts.pf22 = ruleCounts }
+            }
+            if let r7e = winner.r7eEligible, let pf22 = winner.pf22Eligible {
+                counts.bothWinnersJudged = 1
+                if !r7e && !pf22 { counts.bothWinnersRejected = 1 }
+            }
+            Self.add(counts, to: &total.colors[colorIndex])
+            Self.add(counts, to: &byLabel[labelIndex].colors[colorIndex])
+            Self.add(counts, to: &byExposure[exposureIndex].colors[colorIndex])
+        }
+    }
+
+    private static func add(_ rule: RuleCounts, to target: inout RuleCounts) {
+        target.winnersJudged += rule.winnersJudged
+        target.winnersRejected += rule.winnersRejected
+        target.eligibleJudged += rule.eligibleJudged
+        target.eligibleRejected += rule.eligibleRejected
+        target.noEligibleLeft += rule.noEligibleLeft
+    }
+
+    private static func add(_ counts: ColorCounts, to target: inout ColorCounts) {
+        target.winners += counts.winners
+        target.eligibleCandidates += counts.eligibleCandidates
+        add(counts.r7e, to: &target.r7e)
+        add(counts.pf22, to: &target.pf22)
+        target.bothWinnersJudged += counts.bothWinnersJudged
+        target.bothWinnersRejected += counts.bothWinnersRejected
+    }
+
+    func counts(_ color: String, label: DebugSegmentLabel? = nil) -> ColorCounts {
+        guard let colorIndex = Self.colors.firstIndex(of: color) else { return ColorCounts() }
+        guard let label, let labelIndex = DebugSegmentLabel.allCases.firstIndex(of: label) else {
+            return total.colors[colorIndex]
+        }
+        return byLabel[labelIndex].colors[colorIndex]
+    }
+
+    func samples(_ rule: String) -> [Sample] {
+        Self.rules.firstIndex(of: rule).map { samplers[$0].samples } ?? []
+    }
+
+    private func bucketDictionary(_ bucket: Bucket) -> [String: Any] {
+        var result: [String: Any] = ["frames": bucket.frames]
+        for (index, color) in Self.colors.enumerated() where activeColors.contains(color) {
+            result[color] = bucket.colors[index].dictionary
+        }
+        return result
+    }
+
+    /// Root and summary.json `shadowRuleTally`.
+    var summary: [String: Any] {
+        var labels: [String: Any] = [:]
+        for (index, label) in DebugSegmentLabel.allCases.enumerated() {
+            labels[label.rawValue] = bucketDictionary(byLabel[index])
+        }
+        var exposures: [String: Any] = [:]
+        for (index, bucket) in ExposureBucket.allCases.enumerated() where byExposure[index].frames > 0 {
+            exposures[bucket.rawValue] = bucketDictionary(byExposure[index])
+        }
+        var samples: [String: Any] = [:]
+        var offered: [String: Any] = [:]
+        for (index, rule) in Self.rules.enumerated() {
+            samples[rule] = samplers[index].samples.map(\.dictionary)
+            offered[rule] = samplers[index].offered
+        }
+        var result: [String: Any] = [
+            "formatVersion": 1, "applied": false, "rules": Self.rules, "colors": activeColors,
+            "totalFrames": total.frames, "total": bucketDictionary(total),
+            "byLabel": labels, "byExposure": exposures,
+            "winnerRejectionSamples": samples, "winnerRejectionsOffered": offered,
+            "sampleLimit": Self.sampleLimit,
+            "definition": "Evidence only; never applied to recognition. Every recorded frame is counted. winners = frames with >=1 eligible candidate of the color; the winner is the first eligible candidate in production order. <rule>.winnersRejected = winners whose shadow verdict is not eligible; eligibleJudged/eligibleRejected count every eligible candidate; noEligibleLeft = the winner and every other eligible candidate rejected (the color would have no detection). Only red carries verdicts. byExposure buckets frames by frames[].camera.exposureDurationSeconds (le1_240 <= 1.02/240 s, le1_120 <= 1.02/120 s, le1_60 <= 1.02/60 s, gt1_60, unknown). winnerRejectionSamples: up to sampleLimit frames per rule whose winner the rule would reject, outside noSaber/noSaberCovered, evenly spread over the winnerRejectionsOffered rejections."]
+        if let exposureExperimentSetting { result["exposureExperimentSetting"] = exposureExperimentSetting }
+        return result
+    }
+}
+
 struct DebugRecordingMetadata: Codable, Equatable {
     static let currentFormatVersion = 1
 
@@ -1639,6 +1912,8 @@ final class DebugVideoRecorder {
     private var bridgeRejections: [String: Int] = [:]
     private var recentMetadata: [DebugRecordingFrameMetadata] = []
     private var segmentLedger = DebugSegmentLedger()
+    /// Whole-session shadow R7e / PF22 counters (diagnostic only; root `shadowRuleTally`).
+    private var shadowRuleTally: DebugShadowRuleTally
     private let forensicPolicy: DebugForensicCapturePolicy
     private let clock: () -> TimeInterval
     private var startedAt: TimeInterval?
@@ -1651,6 +1926,7 @@ final class DebugVideoRecorder {
     var motionRetainedBytesForTesting: Int { motionRetainedBytes() + bufferedLosslessBytes }
     var bridgeRetainedBytesForTesting: Int { bridgeRetainedBytes() }
     var segmentLedgerForTesting: DebugSegmentLedger { segmentLedger }
+    var shadowRuleTallyForTesting: DebugShadowRuleTally { shadowRuleTally }
     var injectedBridgeAfterCopyFailureFrameIDForTesting: UInt64?
 #endif
     private(set) var droppedFrameCount = 0
@@ -1675,6 +1951,8 @@ final class DebugVideoRecorder {
         self.forensicPolicy = forensicPolicy
         self.diagnosticColors = diagnosticColors
         self.cameraExposureExperiment = cameraExposureExperiment
+        shadowRuleTally = DebugShadowRuleTally(activeColors: diagnosticColors.colorNames,
+                                               exposureExperimentSetting: cameraExposureExperiment?.setting.rawValue)
         self.clock = clock
         triageAccumulator.activeColors = Set(diagnosticColors.colorNames)
         triageAccumulator.absenceIsIncident = false
@@ -1889,6 +2167,15 @@ final class DebugVideoRecorder {
                               label: segmentLabel,
                               detected: ["red": frame.red.detected, "blue": frame.blue.detected],
                               measured: ["red": redDetectionSucceeded, "blue": blueDetectionSucceeded])
+        // Reads the shadow verdicts already attached to this frame's candidates; no detector work.
+        var shadowObservations: [String: DebugShadowRuleTally.ColorObservation] = [:]
+        if let analysis {
+            for (color, name) in [(SaberColor.red, "red"), (.blue, "blue")] where diagnosticColors.includes(name) {
+                shadowObservations[name] = DebugShadowRuleTally.ColorObservation(analysis.candidates[color] ?? [])
+            }
+        }
+        shadowRuleTally.observe(frameID: frameID, timestamp: frame.presentationTimeSeconds, label: segmentLabel,
+                                exposureSeconds: camera?.exposureDurationSeconds, colors: shadowObservations)
         overlayFrames.append(DebugOverlayFrame(red: freshRed, blue: freshBlue))
         recordedFrameCount += 1
 
@@ -2778,7 +3065,8 @@ final class DebugVideoRecorder {
         var result: [String: Any] = [
             "activeColors": diagnosticColors.colorNames, "diagnosticWindows": windows,
             "bridgeDropoutEvents": events, "bridgeDropoutSummary": summary,
-            "segmentMarkers": segmentLedger.markerEntries, "segmentSummary": segmentLedger.summary]
+            "segmentMarkers": segmentLedger.markerEntries, "segmentSummary": segmentLedger.summary,
+            "shadowRuleTally": shadowRuleTally.summary]
         if let cameraExposureExperiment {
             result["cameraExposureExperiment"] = cameraExposureExperiment.metadataDictionary
         }

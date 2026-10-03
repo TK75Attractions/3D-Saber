@@ -16,8 +16,10 @@ Per session: date/time, frames and approximate duration, active colors, median
 exposure (frames[].camera) and the optional ``cameraExposureExperiment``,
 selected-frame >=100px jumps and candidateSwitch (the same rows the shadow PF22
 tally uses), whole-recording endpoint_jump / candidate_switch signal counts,
-CASE hints (countForTally rows only), shadow R7e / PF22 tallies (recorded
-``shadowPF22`` or recomputed for older bundles), static-hotspot count, the upload
+CASE hints (countForTally rows only), shadow R7e / PF22 tallies (the recorded
+whole-session ``shadowRuleTally`` when present — every recorded frame, split into
+saberあり / saberなし / 未設定 — else the selected-frame tallies, with ``shadowPF22``
+recomputed for older bundles), static-hotspot count, the upload
 route (receiver log: 127.0.0.1 = P2P relay, private address = LAN), Codex
 analysis status (analysis_report.json, else the receiver log) and links to the
 one-page ``.report.md`` and ``analysis_report.md``.
@@ -48,6 +50,7 @@ from typing import Any, Callable
 from urllib.parse import quote
 
 from phone_saber_background_evidence import EVENT_JUMP_PX, _contexts
+from phone_saber_shadow_tally import GROUPS as SHADOW_GROUPS
 from phone_saber_session_report import (
     build_report, report_path_for, write_session_report, write_text_atomic)
 
@@ -241,6 +244,19 @@ def _exposure_experiment(section: Any) -> dict:
             "verdict": section.get("verdict")}
 
 
+def _whole_session(view: Any) -> dict | None:
+    """Compact whole-session shadow tally (red) of one session; None when not recorded."""
+    if not isinstance(view, dict) or not view.get("valid") or not view.get("colorActive"):
+        return None
+    groups = {name: {"winners": g["winners"],
+                     **{rule: [g[rule]["winnersRejected"], g[rule]["winnersJudged"]] for rule in ("r7e", "pf22")}}
+              for name, g in view["groups"].items()}
+    return {"frames": view["totalFrames"], "exposureExperimentSetting": view.get("exposureExperimentSetting"),
+            "groups": groups,
+            "promotion": {rule: {k: v["status"] for k, v in check.items()}
+                          for rule, check in view["promotion"].items()}}
+
+
 def _relative_link(target: Path | str | None, output_dir: Path) -> str | None:
     if target is None:
         return None
@@ -329,6 +345,8 @@ def session_row(bundle: Path, logs: dict[str, dict], output_dir: Path) -> dict:
             "verdictSources": pf22_winners.get("verdictSources") or {},
             "eventOutcomes": _get(pf22, "events", "pf22Outcomes"),
         } if pf22_winners else None,
+        # Recorded over every frame of the session; preferred over the two tallies above.
+        "shadowWholeSession": _whole_session(report.get("shadowRuleTally")),
         "likelyBackgroundClusters": hotspots.get("likelyBackgroundCount") if hotspots else None,
         "redFalsePositiveVerdict": _get(report, "segments", "redFalsePositiveVerdict", "verdict"),
         "route": route_label(log.get("from")),
@@ -380,10 +398,27 @@ def totals(rows: list[dict]) -> dict:
         "r7eWinners": _sum([(r["shadowR7e"] or {}).get("winners") for r in rows]),
         "pf22WouldReject": _sum([(r["shadowPF22"] or {}).get("wouldReject") for r in rows]),
         "pf22WithVerdict": _sum([(r["shadowPF22"] or {}).get("withVerdict") for r in rows]),
+        "wholeSessionShadow": _whole_session_totals(rows),
         "codex": dict(Counter(r["codex"]["status"] for r in rows)),
         "routes": dict(Counter(r["route"]["route"] or "n/a" for r in rows)),
         "sessionsWithErrors": sum(1 for r in rows if r["errors"]),
     }
+
+
+def _whole_session_totals(rows: list[dict]) -> dict:
+    """Red winners over every recorded frame, summed over sessions that recorded the tally."""
+    recorded = [r["shadowWholeSession"] for r in rows if r.get("shadowWholeSession")]
+    result: dict[str, Any] = {"sessions": len(recorded), "frames": sum(w["frames"] for w in recorded)}
+    for group in SHADOW_GROUPS:
+        for rule in ("r7e", "pf22"):
+            pairs = [w["groups"][group][rule] for w in recorded]
+            result[f"{group}.{rule}"] = [sum(p[0] for p in pairs), sum(p[1] for p in pairs)]
+    return result
+
+
+def _pair(pair: list[int]) -> str:
+    rejected, judged = pair
+    return f"{rejected}/{judged}" + (f" ({rejected / judged * 100:.0f}%)" if judged else "")
 
 
 # --- formatting helpers ----------------------------------------------------------
@@ -424,7 +459,18 @@ def _case(row: dict) -> str:
     return text + (f" ?{unknown}" if unknown else "")
 
 
+def _whole_cell(row: dict, rule: str) -> str | None:
+    whole = row.get("shadowWholeSession")
+    if not whole:
+        return None
+    rejected, judged = whole["groups"]["total"][rule]
+    return f"全 {rejected}/{judged}" if judged else "全 n/a"
+
+
 def _r7e(row: dict) -> str:
+    whole = _whole_cell(row, "r7e")
+    if whole:
+        return whole
     tally = row["shadowR7e"]
     if not tally or not tally.get("winners"):
         return NA
@@ -433,12 +479,20 @@ def _r7e(row: dict) -> str:
 
 
 def _pf22(row: dict) -> str:
+    whole = _whole_cell(row, "pf22")
+    if whole:
+        return whole
     tally = row["shadowPF22"]
     if not tally or not tally.get("withVerdict"):
         return NA
     sources = tally.get("verdictSources") or {}
     mark = "" if sources.get("recorded") else "*"
     return f"{tally.get('wouldReject', 0)}/{tally['withVerdict']}{mark}"
+
+
+def _shadow_title(row: dict, key: str) -> str | None:
+    value = row.get("shadowWholeSession") or row[key]
+    return json.dumps(value, ensure_ascii=False) if value else None
 
 
 def _signals(row: dict) -> str:
@@ -473,6 +527,7 @@ def render_markdown(overview: dict) -> str:
         f" / none {case.get('none', 0)}",
         f"- shadow R7e 却下 {_t(t['r7eWouldReject'])} / winners {_t(t['r7eWinners'])}、shadow PF22 却下 "
         f"{_t(t['pf22WouldReject'])} / 判定あり {_t(t['pf22WithVerdict'])}(red winners)",
+        *_whole_session_lines(t["wholeSessionShadow"]),
         "- Codex: " + ", ".join(f"{CODEX_LABELS.get(k, k)} {v}" for k, v in sorted(t["codex"].items())),
         "",
         "| " + " | ".join(COLUMNS) + " |",
@@ -494,6 +549,7 @@ def render_markdown(overview: dict) -> str:
               f"- ≥100px / switch: 選択フレーム(bundle に入った event 窓)の中だけ。全体 jump は録画全体の "
               "endpoint_jump シグナル数(motionEventSummary、09-30 以降)。",
               "- R7e / PF22 = 却下になる winner 数 / 判定できた winner 数(shadow、applied:false)。"
+              "「全」は iPhone が録画の全 frame で数えた shadowRuleTally(優先)。それ以外は選択フレームだけ。"
               "PF22 の * は記録なし(古い bundle)で meanColorPurity / clippedWhiteRatio から再計算。",
               "- 背景候補 = likelyBackground の静的ホットスポット数(hint)。長さの ≈ は 30 fps と仮定した推定。",
               "- 経路は受信ログから: 127.0.0.1 = P2P 中継、プライベートアドレス = LAN。ログに無ければ n/a。",
@@ -652,6 +708,15 @@ def _tile(key: str, value: str, detail: str = "") -> str:
             f'<div class="d">{_e(detail)}</div></div>')
 
 
+def _whole_session_lines(whole: dict) -> list[str]:
+    if not whole["sessions"]:
+        return ["- 全 frame の shadow 集計 (shadowRuleTally): 記録のある session なし(新しいビルドの録画が必要)"]
+    return [f"- 全 frame の shadow 集計({whole['sessions']} session、{whole['frames']} frames、赤 winner): "
+            f"R7e 却下 saberあり {_pair(whole['sabersVisible.r7e'])} / saberなし {_pair(whole['background.r7e'])}"
+            f" / 未設定 {_pair(whole['unlabeled.r7e'])}; PF22 却下 saberあり {_pair(whole['sabersVisible.pf22'])}"
+            f" / saberなし {_pair(whole['background.pf22'])} / 未設定 {_pair(whole['unlabeled.pf22'])}"]
+
+
 def render_html(overview: dict) -> str:
     rows, t = overview["sessions"], overview["totals"]
     case = t["caseHints"]
@@ -666,6 +731,14 @@ def render_html(overview: dict) -> str:
         _tile("shadow R7e 却下", f"{_t(t['r7eWouldReject'])} / {_t(t['r7eWinners'])}", "winners(適用しない)"),
         _tile("shadow PF22 却下", f"{_t(t['pf22WouldReject'])} / {_t(t['pf22WithVerdict'])}",
               "red winners(適用しない)"),
+        _tile("全 frame shadow R7e 却下",
+              _pair(t["wholeSessionShadow"]["total.r7e"]) if t["wholeSessionShadow"]["sessions"] else NA,
+              f"saberあり {_pair(t['wholeSessionShadow']['sabersVisible.r7e'])} / saberなし "
+              f"{_pair(t['wholeSessionShadow']['background.r7e'])}(記録 {t['wholeSessionShadow']['sessions']} 件)"),
+        _tile("全 frame shadow PF22 却下",
+              _pair(t["wholeSessionShadow"]["total.pf22"]) if t["wholeSessionShadow"]["sessions"] else NA,
+              f"saberあり {_pair(t['wholeSessionShadow']['sabersVisible.pf22'])} / saberなし "
+              f"{_pair(t['wholeSessionShadow']['background.pf22'])}"),
         _tile("Codex 解析", f"{codex.get('ok', 0)} 完了",
               " / ".join(f"{CODEX_LABELS.get(k, k)} {v}" for k, v in sorted(codex.items()) if k != "ok")),
     ])
@@ -713,8 +786,8 @@ def render_html(overview: dict) -> str:
             _cell(_t(sel["candidateSwitch"])),
             _cell(_signals(row), title=f"candidate_switch シグナル {_t(row['wholeRecordingSignals']['candidateSwitch'])}"),
             _cell(_case(row), title=json.dumps(row["caseHints"], ensure_ascii=False) if row["caseHints"] else None),
-            _cell(_r7e(row), title=json.dumps(row["shadowR7e"], ensure_ascii=False) if row["shadowR7e"] else None),
-            _cell(_pf22(row), title=json.dumps(row["shadowPF22"], ensure_ascii=False) if row["shadowPF22"] else None),
+            _cell(_r7e(row), title=_shadow_title(row, "shadowR7e")),
+            _cell(_pf22(row), title=_shadow_title(row, "shadowPF22")),
             _cell(_t(row["likelyBackgroundClusters"])),
             _cell(row["route"]["label"], left=True, title=row["route"]["from"]),
             f'<td class="l" title="{_e(codex_title)}">{codex_inner}</td>',
@@ -738,7 +811,7 @@ def render_html(overview: dict) -> str:
 <li>≥100px / switch: bundle に入った選択フレーム(event 窓)の中だけを数える(shadow PF22 tally と同じ行)。n/a は tracking 記録の無い古い bundle。</li>
 <li>全体 jump: 録画全体の endpoint_jump シグナル数と 1 分あたり(motionEventSummary.signalDistributions)。セルにマウスを置くと candidate_switch シグナル数。</li>
 <li>CASE: candidate_selection_audit の hint(countForTally=true の行だけ)。?n は unknown 系。gate には使わない。</li>
-<li>R7e / PF22: 却下になる winner 数 / 判定できた winner 数(shadow、applied:false)。PF22 の * は記録なしで再計算した古い bundle。</li>
+<li>R7e / PF22: 却下になる winner 数 / 判定できた winner 数(shadow、applied:false)。「全」は iPhone が録画の全 frame で数えた shadowRuleTally(優先、セルにマウスを置くと区間ラベル別)。それ以外は選択フレームだけ。PF22 の * は記録なしで再計算した古い bundle。</li>
 <li>背景候補: likelyBackground の静的ホットスポット数(hint)。長さの ≈ は 30 fps と仮定した推定。</li>
 <li>経路: 受信ログの送信元。127.0.0.1 = P2P 中継(PhoneSaberP2PBridge)、プライベートアドレス = LAN。</li>
 <li>要約が「なし」の session は <code>phone_saber_sessions_overview.py --write-missing-reports</code>(または PhoneSaber Overview.command)で作れる。</li>

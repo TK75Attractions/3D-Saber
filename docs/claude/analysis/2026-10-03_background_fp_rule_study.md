@@ -142,6 +142,11 @@ eligible な候補の中心が、前の frame からどれだけ動いたか(最
   - 区間ラベル(saberあり / saberなし)ごとに「winner が shadow で却下された frame 数」を全 frame で数える必要がある。
     あわせて、saberあり区間で却下された frame の PNG を数枚保存する。
   - これは diagnostics の追加で、production の認識は変わらない。§2 の範囲で自律的に進めてよい作業。
+  - **2026-10-04 実装**: root / summary.json の `shadowRuleTally`(全 frame、色・区間ラベル・frame ごとの露出別)。
+    PNG は追加しない(画像上限 12 枚・context 32KB・bridge/tracking の優先を変えないため)。代わりに、
+    saberなし区間以外で winner を却下した frame ID を規則ごとに最大 6 件、時間的に分散して列挙する
+    (既に選択画像なら `image`)。`phone_saber_shadow_tally.py` / session report / overview / pf22_check で表示。
+    スキーマは PHONE_SABER_DEBUG_METADATA_SCHEMA.md「Whole-session shadow rule tally」。
 - (d) PF22 の shadow は、まだどの capture にも入っていない(ead64f7 以降のビルドが必要)。
 - (e) saber を静止して持った frame。静的ルールを将来検討する場合だけ必要。
 

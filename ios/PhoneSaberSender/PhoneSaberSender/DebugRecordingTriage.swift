@@ -977,6 +977,10 @@ enum DebugRecordingTriageBuilder {
             if let experiment = metadata["cameraExposureExperiment"] as? [String: Any] {
                 summary["cameraExposureExperiment"] = experiment
             }
+            if let tally = metadata["shadowRuleTally"] as? [String: Any] {
+                summary["shadowRuleTally"] = annotatedShadowRuleTally(
+                    tally, imageEntries: imageEntries, metadata: metadata)
+            }
             if metadata["activeColors"] != nil {
                 summary["activeColors"] = colors.filter { active.contains($0) }
                 var bridge = metadata["bridgeDropoutSummary"] as? [String: Any] ?? [:]
@@ -1163,6 +1167,34 @@ enum DebugRecordingTriageBuilder {
             label = value
         }
         return label
+    }
+
+    /// summary.json copy of the root `shadowRuleTally`. Each listed winner-rejection
+    /// sample additionally states whether its frame already is a selected image
+    /// (`image`, `frameContextPath`) or a retained context frame
+    /// (`retainedContext`). No image is added or displaced for these samples:
+    /// they are listed so a human can open the frame from the full recording.
+    static func annotatedShadowRuleTally(_ tally: [String: Any], imageEntries: [[String: Any]],
+                                         metadata: [String: Any]) -> [String: Any] {
+        var result = tally
+        guard var samples = tally["winnerRejectionSamples"] as? [String: Any] else { return result }
+        let retained = Set(frames(metadata).compactMap { integer($0["frameID"]) })
+        for rule in DebugShadowRuleTally.rules {
+            guard let list = samples[rule] as? [[String: Any]] else { continue }
+            samples[rule] = list.map { sample -> [String: Any] in
+                guard let id = integer(sample["frameID"]) else { return sample }
+                var entry = sample
+                entry["retainedContext"] = retained.contains(id)
+                if let image = imageEntries.first(where: {
+                    integer($0["frameID"]) == id && ($0["auxiliary"] as? Bool) != true }) {
+                    entry["image"] = image["path"]
+                    entry["frameContextPath"] = image["frameContextPath"]
+                }
+                return entry
+            }
+        }
+        result["winnerRejectionSamples"] = samples
+        return result
     }
 
     /// Consumers reject a context above 32 KiB; stay well below it.

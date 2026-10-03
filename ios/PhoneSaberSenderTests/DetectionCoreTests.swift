@@ -2566,7 +2566,7 @@ final class DetectionCoreTests: XCTestCase {
         let metadataData = try Data(contentsOf: recording.metadataURL)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: metadataData) as? [String: Any])
         XCTAssertEqual(Set(json.keys), Set(["formatVersion", "sessionID", "width", "height", "frames", "cameraSamples", "motionEvents", "motionSummary", "udpTransmissions", "activeColors", "diagnosticWindows", "bridgeDropoutEvents", "bridgeDropoutSummary",
-                                                "segmentMarkers", "segmentSummary"]))
+                                                "segmentMarkers", "segmentSummary", "shadowRuleTally"]))
         // Existing Codable readers ignore the additive motion root fields.
         let metadata = try JSONDecoder().decode(DebugRecordingMetadata.self, from: metadataData)
         XCTAssertEqual(metadata.frames.filter(\.manualCaptured).count,
@@ -3918,6 +3918,35 @@ extension DetectionCoreTests {
         let falsePositives = try XCTUnwrap(segmentSummary["falsePositiveFrames"] as? [String: [String: Int]])
         XCTAssertEqual(falsePositives["noSaber"]?["red"], ids.filter { expected($0) == .noSaber }.count)
         XCTAssertEqual((unlabeled.metadata?["segmentMarkers"] as? [Any])?.count, 0)
+
+        // The whole-session shadow tally (outputs above are unchanged with it on) counts
+        // every recorded frame per label and agrees with the streamed per-frame verdicts.
+        let tally = try XCTUnwrap(metadata["shadowRuleTally"] as? [String: Any])
+        XCTAssertEqual(tally["applied"] as? Bool, false)
+        XCTAssertEqual(tally["totalFrames"] as? Int, ids.count)
+        let tallyLabels = try XCTUnwrap(tally["byLabel"] as? [String: [String: Any]])
+        for label in DebugSegmentLabel.allCases {
+            XCTAssertEqual(tallyLabels[label.rawValue]?["frames"] as? Int,
+                           ids.filter { expected($0) == label }.count, label.rawValue)
+        }
+        XCTAssertEqual((tally["byExposure"] as? [String: [String: Any]])?["unknown"]?["frames"] as? Int, ids.count)
+        let red = try XCTUnwrap((tally["total"] as? [String: Any])?["red"] as? [String: Any])
+        let streamedWinners = frames.compactMap { frame -> [String: Any]? in
+            ((frame["candidateDiagnostics"] as? [String: Any])?["red"] as? [String: Any])?["selectedCandidate"]
+                as? [String: Any]
+        }
+        XCTAssertGreaterThan(streamedWinners.count, 0)
+        XCTAssertEqual(red["winners"] as? Int, streamedWinners.count)
+        for rule in ["r7e", "pf22"] {
+            let key = rule == "r7e" ? "shadowR7e" : "shadowPF22"
+            let verdicts = streamedWinners.compactMap {
+                (($0["emitterDiagnostics"] as? [String: Any])?[key] as? [String: Any])?[key + "Eligible"] as? Bool
+            }
+            XCTAssertEqual(verdicts.count, streamedWinners.count, rule)
+            let counts = try XCTUnwrap(red[rule] as? [String: Int])
+            XCTAssertEqual(counts["winnersJudged"], verdicts.count, rule)
+            XCTAssertEqual(counts["winnersRejected"], verdicts.filter { !$0 }.count, rule)
+        }
     }
 }
 
@@ -3955,7 +3984,147 @@ extension DetectionCoreTests {
         XCTAssertEqual(recorded["status"] as? String, "applied")
         XCTAssertEqual(recorded["capActive"] as? Bool, true)
         XCTAssertEqual(try XCTUnwrap(recorded["appliedMaxExposureSeconds"] as? Double), 0.01, accuracy: 1e-12)
+        // The whole-session shadow tally names the session's experiment setting.
+        XCTAssertEqual((withExperiment["shadowRuleTally"] as? [String: Any])?["exposureExperimentSetting"] as? String,
+                       "maxShutter1_100")
         let withoutExperiment = try await record(nil, date: Date(timeIntervalSince1970: 20))
         XCTAssertNil(withoutExperiment["cameraExposureExperiment"])
+        let tally = try XCTUnwrap(withoutExperiment["shadowRuleTally"] as? [String: Any])
+        XCTAssertNil(tally["exposureExperimentSetting"])
+        XCTAssertEqual(tally["totalFrames"] as? Int, 1)
+    }
+}
+
+// MARK: Whole-session shadow rule tally (diagnostic only; never applied)
+
+extension DetectionCoreTests {
+    private typealias Tally = DebugShadowRuleTally
+
+    /// Synthetic verdicts with independent R7e / PF22 outcomes. R7e passes on a thick
+    /// body (d240 5 >= 4.2) and fails on a thin one (d240 1, no clipped white);
+    /// PF22 passes on purity 0.30 and fails on 0.10.
+    private func shadowVerdicts(r7e: Bool?, pf22: Bool?) -> Tally.Verdicts {
+        let purity = pf22 == false ? 0.10 : 0.30
+        return Tally.Verdicts(
+            r7e: r7e.map { SaberShadowR7eVerdict(bodyDensity: $0 ? 5 : 1, pointCount: 10, majorLength: 10,
+                                                 maskWidth: 240, maskHeight: 240, clippedWhiteRatio: 0,
+                                                 meanColorPurity: purity, baseEligible: true) },
+            pf22: pf22.map { _ in SaberShadowPurityFloorVerdict(meanColorPurity: purity, clippedWhiteRatio: 0,
+                                                               baseEligible: true) })
+    }
+
+    func testShadowRuleTallyCountsSyntheticVerdictStreamsAcrossLabelSwitches() throws {
+        var tally = Tally(activeColors: ["red", "blue"], exposureExperimentSetting: "maxShutter1_120")
+        let pass = shadowVerdicts(r7e: true, pf22: true)
+        let r7eOnly = shadowVerdicts(r7e: false, pf22: true)      // R7e rejects
+        let pf22Only = shadowVerdicts(r7e: true, pf22: false)     // PF22 rejects
+        let both = shadowVerdicts(r7e: false, pf22: false)        // both reject
+        let none = shadowVerdicts(r7e: nil, pf22: nil)            // blue / no trace
+        XCTAssertEqual(r7eOnly.r7eEligible, false)
+        XCTAssertEqual(r7eOnly.pf22Eligible, true)
+        XCTAssertEqual(pf22Only.r7eEligible, true)
+        XCTAssertEqual(pf22Only.pf22Eligible, false)
+        func observe(_ id: UInt64, _ label: DebugSegmentLabel, red: [Tally.Verdicts]?,
+                     blue: [Tally.Verdicts]? = nil, exposure: Double? = 1.0 / 120) {
+            var colors: [String: Tally.ColorObservation] = [:]
+            if let red { colors["red"] = Tally.ColorObservation(eligible: red) }
+            if let blue { colors["blue"] = Tally.ColorObservation(eligible: blue) }
+            tally.observe(frameID: id, timestamp: Double(id) / 30, label: label,
+                          exposureSeconds: exposure, colors: colors)
+        }
+        observe(1, .unlabeled, red: [pass], blue: [none])
+        observe(2, .unlabeled, red: [r7eOnly, pass])                 // winner rejected, one eligible survives
+        observe(3, .sabersVisible, red: [both], exposure: 1.0 / 250) // nothing left under either rule
+        observe(4, .sabersVisible, red: [], blue: [none])            // no red winner
+        observe(5, .noSaber, red: [pf22Only, both], exposure: 1.0 / 30)
+        observe(6, .noSaber, red: [both, both], exposure: nil)
+        observe(7, .noSaberCovered, red: nil)
+        observe(8, .unlabeled, red: [pass, none])                    // an eligible candidate without verdict
+
+        let total = tally.counts("red")
+        XCTAssertEqual(total.winners, 6)
+        XCTAssertEqual(total.eligibleCandidates, 10)
+        XCTAssertEqual(total.r7e, Tally.RuleCounts(winnersJudged: 6, winnersRejected: 3, eligibleJudged: 9,
+                                                   eligibleRejected: 5, noEligibleLeft: 2))
+        XCTAssertEqual(total.pf22, Tally.RuleCounts(winnersJudged: 6, winnersRejected: 3, eligibleJudged: 9,
+                                                    eligibleRejected: 5, noEligibleLeft: 3))
+        XCTAssertEqual(total.bothWinnersJudged, 6)
+        XCTAssertEqual(total.bothWinnersRejected, 2)
+        XCTAssertEqual(tally.counts("red", label: .sabersVisible).r7e.winnersRejected, 1)
+        XCTAssertEqual(tally.counts("red", label: .noSaber).winners, 2)
+        XCTAssertEqual(tally.counts("red", label: .noSaber).pf22.winnersRejected, 2)
+        XCTAssertEqual(tally.counts("red", label: .noSaber).r7e.winnersRejected, 1)
+        XCTAssertEqual(tally.counts("red", label: .unlabeled).r7e.winnersRejected, 1)
+        XCTAssertEqual(tally.counts("red", label: .noSaberCovered).winners, 0)
+        // Blue winners exist but never carry the red-only verdicts.
+        XCTAssertEqual(tally.counts("blue").winners, 2)
+        XCTAssertEqual(tally.counts("blue").r7e.winnersJudged, 0)
+        XCTAssertEqual(tally.counts("blue").pf22.eligibleJudged, 0)
+
+        // Samples: only rejected winners outside noSaber / noSaberCovered.
+        XCTAssertEqual(tally.samples("r7e").map(\.frameID), [2, 3])
+        XCTAssertEqual(tally.samples("pf22").map(\.frameID), [3])
+        XCTAssertEqual(tally.samples("r7e").map(\.label), [.unlabeled, .sabersVisible])
+        XCTAssertEqual(tally.samples("r7e").last?.exposureBucket, .le1_240)
+
+        let summary = tally.summary
+        XCTAssertNoThrow(try JSONSerialization.data(withJSONObject: summary))
+        XCTAssertEqual(summary["applied"] as? Bool, false)
+        XCTAssertEqual(summary["totalFrames"] as? Int, 8)
+        XCTAssertEqual(summary["exposureExperimentSetting"] as? String, "maxShutter1_120")
+        XCTAssertEqual(summary["colors"] as? [String], ["red", "blue"])
+        let byLabel = try XCTUnwrap(summary["byLabel"] as? [String: [String: Any]])
+        XCTAssertEqual(Set(byLabel.keys), Set(DebugSegmentLabel.allCases.map(\.rawValue)))
+        XCTAssertEqual(DebugSegmentLabel.allCases.map { byLabel[$0.rawValue]?["frames"] as? Int }, [3, 2, 2, 1])
+        let noSaberRed = try XCTUnwrap(byLabel["noSaber"]?["red"] as? [String: Any])
+        XCTAssertEqual((noSaberRed["both"] as? [String: Int])?["winnersRejected"], 1)
+        let byExposure = try XCTUnwrap(summary["byExposure"] as? [String: [String: Any]])
+        XCTAssertEqual(byExposure.mapValues { $0["frames"] as? Int },
+                       ["le1_120": 5, "le1_240": 1, "gt1_60": 1, "unknown": 1])
+        let samples = try XCTUnwrap(summary["winnerRejectionSamples"] as? [String: [[String: Any]]])
+        XCTAssertEqual(samples["r7e"]?.compactMap { $0["frameID"] as? UInt64 }, [2, 3])
+        XCTAssertEqual(samples["r7e"]?.first?["shadowR7eEligible"] as? Bool, false)
+        XCTAssertEqual(samples["r7e"]?.first?["d240"] as? Double, 1)
+        XCTAssertEqual(summary["winnerRejectionsOffered"] as? [String: Int], ["r7e": 2, "pf22": 1])
+
+        // A RED-only session reports only red; a missing exposure setting is omitted.
+        let redOnly = Tally(activeColors: ["red"]).summary
+        XCTAssertEqual(redOnly["colors"] as? [String], ["red"])
+        XCTAssertNil(redOnly["exposureExperimentSetting"])
+        XCTAssertNil((redOnly["total"] as? [String: Any])?["blue"])
+    }
+
+    func testShadowRuleTallyExposureBucketsAndBoundedTimeSpreadSamples() {
+        XCTAssertEqual(Tally.ExposureBucket(seconds: 0.008333), .le1_120)
+        XCTAssertEqual(Tally.ExposureBucket(seconds: 1.0 / 240), .le1_240)
+        XCTAssertEqual(Tally.ExposureBucket(seconds: 0.01), .le1_60)
+        XCTAssertEqual(Tally.ExposureBucket(seconds: 1.0 / 30), .gt1_60)
+        XCTAssertEqual(Tally.ExposureBucket(seconds: nil), .unknown)
+        XCTAssertEqual(Tally.ExposureBucket(seconds: .nan), .unknown)
+        XCTAssertEqual(Tally.ExposureBucket(seconds: 0), .unknown)
+
+        let rejected = shadowVerdicts(r7e: false, pf22: true)
+        func run() -> Tally {
+            var tally = Tally(activeColors: ["red"])
+            for id in 0..<1_000 {
+                tally.observe(frameID: UInt64(id), timestamp: Double(id) / 30, label: .unlabeled,
+                              exposureSeconds: nil, colors: ["red": Tally.ColorObservation(eligible: [rejected])])
+            }
+            return tally
+        }
+        let tally = run()
+        let ids = tally.samples("r7e").map(\.frameID)
+        XCTAssertLessThanOrEqual(ids.count, Tally.sampleLimit)
+        XCTAssertGreaterThanOrEqual(ids.count, Tally.sampleLimit / 2)
+        XCTAssertEqual(ids.first, 0)
+        XCTAssertEqual(ids, ids.sorted())
+        // Evenly spread: constant gaps that reach late into the recording.
+        XCTAssertEqual(Set(zip(ids.dropFirst(), ids).map { $0 - $1 }).count, 1)
+        XCTAssertGreaterThan(ids.last ?? 0, 500)
+        XCTAssertTrue(tally.samples("pf22").isEmpty)
+        XCTAssertEqual(tally.counts("red").r7e.winnersRejected, 1_000)
+        XCTAssertEqual(tally.summary["winnerRejectionsOffered"] as? [String: Int], ["r7e": 1_000, "pf22": 0])
+        // Deterministic: the same stream gives the same samples.
+        XCTAssertEqual(run().samples("r7e"), tally.samples("r7e"))
     }
 }

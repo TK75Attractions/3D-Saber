@@ -288,6 +288,9 @@ ROOT = object_field({
     "segmentSummary": SEGMENT_SUMMARY,
     # Opt-in exposure experiment at Start; absent in older recordings (auto).
     "cameraExposureExperiment": CAMERA_EXPOSURE_EXPERIMENT,
+    # Whole-session shadow R7e / PF22 counters; absent in older recordings.
+    # The shape is checked strictly by shadow_rule_tally_errors().
+    "shadowRuleTally": object_field({}),
 }, required=True)
 
 
@@ -433,6 +436,12 @@ def validate_document(value: Any) -> ValidatedMetadata:
                     and marker["label"] not in SEGMENT_LABELS:
                 warn(f"segmentMarkers[{index}].label", "unknown segment label; treated as unknown")
                 marker.pop("label", None)
+    tally = normalized.get("shadowRuleTally")
+    if tally is not None:
+        tally_errors = shadow_rule_tally_errors(tally)
+        if tally_errors:
+            warn("shadowRuleTally", "inconsistent (" + "; ".join(tally_errors[:3]) + "); treated as unknown")
+            normalized.pop("shadowRuleTally", None)
     normalized["frames"] = frames
     report = ValidationReport(format_version=format_version, warnings=dict(sorted(warnings.items())))
     return ValidatedMetadata(document=normalized, frames=frames, report=report)
@@ -523,4 +532,149 @@ def segment_summary_errors(summary: Any) -> list[str]:
                               "markerCount", "droppedMarkerCount", "definition", "markers"}
     if unknown:
         errors.append(f"segmentSummary has unknown keys: {sorted(unknown)}")
+    return errors
+
+
+# --- Whole-session shadow rule tally (root and summary.json `shadowRuleTally`) ---
+
+SHADOW_RULES = ("r7e", "pf22")
+SHADOW_EXPOSURE_BUCKETS = ("le1_240", "le1_120", "le1_60", "gt1_60", "unknown")
+SHADOW_RULE_COUNT_KEYS = ("winnersJudged", "winnersRejected", "eligibleJudged", "eligibleRejected",
+                          "noEligibleLeft")
+SHADOW_TALLY_KEYS = {"formatVersion", "applied", "rules", "colors", "totalFrames", "total", "byLabel",
+                     "byExposure", "winnerRejectionSamples", "winnerRejectionsOffered", "sampleLimit",
+                     "definition", "exposureExperimentSetting"}
+SHADOW_SAMPLE_KEYS = {"frameID", "timestamp", "label", "color", "exposureBucket", "meanColorPurity",
+                      "clippedWhiteRatio", "d240", "shadowR7eEligible", "shadowPF22Eligible",
+                      # summary.json only (DebugRecordingTriageBuilder.annotatedShadowRuleTally).
+                      "retainedContext", "image", "frameContextPath"}
+
+
+def _shadow_color_errors(counts: Any, frames: int, path: str) -> list[str]:
+    if not isinstance(counts, dict) or set(counts) != {"winners", "eligibleCandidates", "r7e", "pf22", "both"}:
+        return [f"{path} is malformed"]
+    winners, eligible = counts["winners"], counts["eligibleCandidates"]
+    if not _count(winners) or not _count(eligible) or winners > frames or eligible < winners:
+        return [f"{path} winners/eligibleCandidates are inconsistent"]
+    errors = []
+    for rule in SHADOW_RULES:
+        rule_counts = counts[rule]
+        if not isinstance(rule_counts, dict) or set(rule_counts) != set(SHADOW_RULE_COUNT_KEYS) \
+                or not all(_count(rule_counts[key]) for key in SHADOW_RULE_COUNT_KEYS):
+            errors.append(f"{path}.{rule} is malformed")
+            continue
+        c = rule_counts
+        if not (c["winnersRejected"] <= c["winnersJudged"] <= winners
+                and c["eligibleRejected"] <= c["eligibleJudged"] <= eligible
+                and c["winnersJudged"] <= c["eligibleJudged"] and c["winnersRejected"] <= c["eligibleRejected"]
+                and c["noEligibleLeft"] <= c["winnersRejected"]):
+            errors.append(f"{path}.{rule} counts are inconsistent")
+    both = counts["both"]
+    if not isinstance(both, dict) or set(both) != {"winnersJudged", "winnersRejected"} \
+            or not all(_count(value) for value in both.values()):
+        errors.append(f"{path}.both is malformed")
+    elif not errors and not (both["winnersRejected"] <= both["winnersJudged"] <= winners
+                             and all(both["winnersRejected"] <= counts[r]["winnersRejected"] for r in SHADOW_RULES)):
+        errors.append(f"{path}.both counts are inconsistent")
+    return errors
+
+
+def _shadow_bucket_errors(bucket: Any, colors: list[str], path: str) -> list[str]:
+    if not isinstance(bucket, dict) or not _count(bucket.get("frames")) \
+            or set(bucket) != {"frames", *colors}:
+        return [f"{path} is malformed"]
+    errors = []
+    for color in colors:
+        errors.extend(_shadow_color_errors(bucket[color], bucket["frames"], f"{path}.{color}"))
+    return errors
+
+
+def _shadow_leaves(bucket: dict, colors: list[str]) -> list[int]:
+    """Every counter of a valid bucket in a fixed order (for sum checks)."""
+    values = [bucket["frames"]]
+    for color in colors:
+        counts = bucket[color]
+        values += [counts["winners"], counts["eligibleCandidates"]]
+        for rule in SHADOW_RULES:
+            values += [counts[rule][key] for key in SHADOW_RULE_COUNT_KEYS]
+        values += [counts["both"]["winnersJudged"], counts["both"]["winnersRejected"]]
+    return values
+
+
+def shadow_rule_tally_errors(tally: Any) -> list[str]:
+    """Strict check of shadowRuleTally (metadata root or summary.json); empty list = valid.
+
+    Counts are non-negative integers that nest (rejected <= judged <= winners),
+    byLabel and byExposure each add up to `total`, and the listed samples are
+    bounded, outside noSaber / noSaberCovered and never more than were offered.
+    """
+    if not isinstance(tally, dict):
+        return ["shadowRuleTally must be an object"]
+    unknown = set(tally) - SHADOW_TALLY_KEYS
+    if unknown:
+        return [f"shadowRuleTally has unknown keys: {sorted(unknown)}"]
+    if tally.get("applied") is not False:
+        return ["shadowRuleTally.applied must be false (evidence only)"]
+    colors = tally.get("colors")
+    if not isinstance(colors, list) or not colors or len(set(colors)) != len(colors) \
+            or not set(colors) <= {"red", "blue"}:
+        return ["shadowRuleTally.colors is malformed"]
+    if tally.get("rules") != list(SHADOW_RULES):
+        return ["shadowRuleTally.rules is malformed"]
+    for key in ("formatVersion", "totalFrames", "sampleLimit"):
+        if not _count(tally.get(key)):
+            return [f"shadowRuleTally.{key} is malformed"]
+    errors = _shadow_bucket_errors(tally.get("total"), colors, "shadowRuleTally.total")
+    if errors:
+        return errors
+    total = tally["total"]
+    if total["frames"] != tally["totalFrames"]:
+        errors.append("shadowRuleTally.totalFrames does not match total.frames")
+    for group, allowed in (("byLabel", SEGMENT_LABELS), ("byExposure", SHADOW_EXPOSURE_BUCKETS)):
+        buckets = tally.get(group)
+        if not isinstance(buckets, dict) or not set(buckets) <= set(allowed):
+            errors.append(f"shadowRuleTally.{group} is malformed")
+            continue
+        group_errors = []
+        for name in allowed:
+            if name in buckets:
+                group_errors.extend(_shadow_bucket_errors(buckets[name], colors, f"shadowRuleTally.{group}.{name}"))
+        errors.extend(group_errors)
+        if not group_errors:
+            sums = [sum(values) for values in zip(*(_shadow_leaves(buckets[n], colors)
+                                                   for n in allowed if n in buckets))] \
+                if buckets else [0] * len(_shadow_leaves(total, colors))
+            if sums != _shadow_leaves(total, colors):
+                errors.append(f"shadowRuleTally.{group} does not add up to total")
+    samples, offered = tally.get("winnerRejectionSamples"), tally.get("winnerRejectionsOffered")
+    if not isinstance(samples, dict) or set(samples) != set(SHADOW_RULES) \
+            or not isinstance(offered, dict) or set(offered) != set(SHADOW_RULES):
+        errors.append("shadowRuleTally samples are malformed")
+        return errors
+    for rule in SHADOW_RULES:
+        rejected = sum(total[color][rule]["winnersRejected"] for color in colors)
+        listed = samples[rule]
+        if not _count(offered[rule]) or offered[rule] > rejected or not isinstance(listed, list) \
+                or len(listed) > min(tally["sampleLimit"], offered[rule]):
+            errors.append(f"shadowRuleTally.winnerRejectionSamples.{rule} exceeds its bound")
+            continue
+        previous = None
+        for index, sample in enumerate(listed):
+            path = f"shadowRuleTally.winnerRejectionSamples.{rule}[{index}]"
+            if not isinstance(sample, dict) or not set(sample) <= SHADOW_SAMPLE_KEYS \
+                    or not _count(sample.get("frameID")) or not _matches_kind(sample.get("timestamp"), "number") \
+                    or sample.get("label") not in SEGMENT_LABELS \
+                    or sample.get("label") in FALSE_POSITIVE_SEGMENT_LABELS \
+                    or sample.get("color") not in colors \
+                    or sample.get("exposureBucket", "unknown") not in SHADOW_EXPOSURE_BUCKETS:
+                errors.append(f"{path} is malformed")
+                continue
+            if previous is not None and sample["frameID"] <= previous:
+                errors.append(f"{path} frameID is not increasing")
+            previous = sample["frameID"]
+    if "exposureExperimentSetting" in tally \
+            and tally["exposureExperimentSetting"] not in CAMERA_EXPOSURE_EXPERIMENT_SETTINGS:
+        errors.append("shadowRuleTally.exposureExperimentSetting is unknown")
+    if "definition" in tally and (not isinstance(tally["definition"], str) or len(tally["definition"]) > 2000):
+        errors.append("shadowRuleTally.definition is malformed")
     return errors

@@ -35,7 +35,7 @@ from phone_saber_session_log import log_fields, session_log_context
 from phone_saber_codex_process import CodexProcessError, run_codex
 
 from phone_saber_metadata_schema import (
-    SEGMENT_LABELS, camera_exposure_experiment_errors, segment_summary_errors)
+    SEGMENT_LABELS, camera_exposure_experiment_errors, segment_summary_errors, shadow_rule_tally_errors)
 
 from phone_saber_triage_protocol import (
     MAX_BUNDLE_BYTES,
@@ -228,7 +228,7 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
                             "incidentCount", "incidents", "images", "limits", "groundTruth",
                             "summaryScope", "retainedIncidentContextFrames",
                             "motionEventSummary", "activeColors", "bridgeDropoutSummary",
-                            "segmentSummary", "cameraExposureExperiment"}
+                            "segmentSummary", "cameraExposureExperiment", "shadowRuleTally"}
     if not set(summary).issubset(allowed_summary_keys):
         raise BundleError("summary.json contains non-triage or full-session metadata")
     if "cameraExposureExperiment" in summary:
@@ -236,6 +236,10 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
         if experiment_errors:
             raise BundleError("camera exposure experiment is malformed: "
                               + "; ".join(experiment_errors[:3]))
+    tally_errors = shadow_rule_tally_errors(summary["shadowRuleTally"]) \
+        if "shadowRuleTally" in summary else []
+    if tally_errors:
+        raise BundleError("shadow rule tally is malformed: " + "; ".join(tally_errors[:3]))
     segment_errors = segment_summary_errors(summary["segmentSummary"]) \
         if "segmentSummary" in summary else []
     if segment_errors:

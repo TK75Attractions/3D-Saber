@@ -11,6 +11,10 @@ The 区間ラベル section reads the operator segment labels (``segmentSummary`
 phone_saber_segments.py, per-context ``segmentLabel``): per-label detection and
 false-positive rates, noSaber vs noSaberCovered RED comparison, and which selected
 images lie in a background-only segment; CASE hints are also tallied per label.
+The whole-session shadow section reads the recorded ``shadowRuleTally`` (every
+recorded frame, per label and exposure bucket, via phone_saber_shadow_tally.py);
+it is preferred over the selected-frame shadow tallies, which remain for older
+bundles.
 
     phone_saber_session_report.py <bundle_dir> [--output report.md] [--json]
 
@@ -33,6 +37,7 @@ from phone_saber_hotspots import static_hotspots
 from phone_saber_metadata_schema import (
     FALSE_POSITIVE_SEGMENT_LABELS, SEGMENT_LABELS, camera_exposure_experiment_errors)
 from phone_saber_segments import SegmentInputError, analyze as segment_analyze, label_for_frame
+from phone_saber_shadow_tally import render_lines as shadow_tally_lines, tally_view
 from phone_saber_selection_replay import Policy, gap_distribution, load_sequences, quantiles, replay
 from phone_saber_tracking_diagnostics import (
     BRIDGE_ANNOTATED_ROLE,
@@ -427,6 +432,9 @@ def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MA
         "segments": segments,
         "cameraExposureExperiment": _guard(errors, "camera_exposure_experiment",
                                            lambda: exposure_experiment_section(summary)),
+        # Whole-session shadow R7e / PF22 counts recorded on the iPhone (preferred
+        # over the selected-frame tallies under backgroundEvidence).
+        "shadowRuleTally": _guard(errors, "shadow_rule_tally", lambda: tally_view(summary)),
         "memory": _guard(errors, "memory", lambda: memory_section(summary)),
         "tracking": _guard(errors, "tracking", lambda: tracking_section(summary)),
         "bridgeDropoutSummary": summary.get("bridgeDropoutSummary"),
@@ -618,6 +626,11 @@ def render_markdown(report: dict) -> str:
             f"{_ms(experiment.get('formatMaxExposureSeconds'))}")
     add(f"- **verdict: {experiment.get('verdict', NA)}**")
     add("- 実際の各 frame の露出時間は 背景誤検出の証拠 の exposure 欄 (frames[].camera) を参照。")
+    add("")
+
+    tally = report.get("shadowRuleTally")
+    out.extend(shadow_tally_lines(tally if isinstance(tally, dict) else
+                                  {"present": False, "note": "could not be read"}))
     add("")
 
     add("## メモリ (motionEventSummary.runtime)")

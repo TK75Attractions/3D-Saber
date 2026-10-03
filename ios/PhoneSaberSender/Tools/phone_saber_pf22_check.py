@@ -11,6 +11,11 @@ red winners and eligible red candidates PF22 would reject, and what it would do
 to the selected-frame red jump / candidateSwitch events (``noDetection`` only
 when every eligible candidate of the frame is known and rejected).
 
+Bundles from newer recorders also carry ``shadowRuleTally``: PF22 and R7e counted
+by the iPhone over EVERY recorded frame. That whole-session table is printed
+first and is the one to use for promotion (saberあり / saberなし / 未設定); the
+selected-frame table below it stays for older bundles and for the events.
+
     phone_saber_pf22_check.py <bundle_dir> [<bundle_dir> ...] [--json]
 """
 from __future__ import annotations
@@ -21,17 +26,54 @@ import sys
 from pathlib import Path
 
 from phone_saber_background_evidence import EVENT_OUTCOMES, collect, pf22_tally
+from phone_saber_shadow_tally import tally_view
+
+
+def whole_session(bundle: Path) -> dict:
+    """Recorded whole-session tally (red); ``present`` False when absent or unreadable."""
+    try:
+        summary = json.loads((bundle / "summary.json").read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return {"present": False, "note": "summary.json unreadable"}
+    return tally_view(summary)
 
 
 def session_row(bundle: Path) -> dict:
     tally = pf22_tally(collect(bundle))
     return {"bundle": bundle.name, **{k: tally[k] for k in ("winners", "eligibleCandidates")},
             "events": {k: v for k, v in tally["events"].items() if k != "rows"},
-            "eventRows": [r for r in tally["events"]["rows"] if r["color"] == "red"]}
+            "eventRows": [r for r in tally["events"]["rows"] if r["color"] == "red"],
+            "wholeSession": whole_session(bundle)}
+
+
+def _pair(counts: dict) -> str:
+    judged, rejected = counts["winnersJudged"], counts["winnersRejected"]
+    return f"{rejected}/{judged} ({rejected / judged * 100:.0f}%)" if judged else "n/a"
+
+
+def render_whole_session(rows: list[dict]) -> list[str]:
+    lines = ["Whole session (recorded shadowRuleTally, every frame; red winners rejected/judged):", "",
+             "| session | frames | PF22 total | PF22 saberあり | PF22 saberなし | PF22 未設定 "
+             "| R7e total | R7e saberあり | R7e saberなし | R7e 未設定 |",
+             "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]
+    for row in rows:
+        view = row["wholeSession"]
+        name = row["bundle"].removeprefix("phone_saber_triage_")
+        if not view.get("present") or not view.get("valid") or not view.get("colorActive"):
+            reason = "invalid" if view.get("present") and not view.get("valid") else "not recorded"
+            lines.append(f"| {name} | {reason} | n/a | n/a | n/a | n/a | n/a | n/a | n/a | n/a |")
+            continue
+        g = view["groups"]
+        cells = [_pair(g[group][rule]) for rule in ("pf22", "r7e")
+                 for group in ("total", "sabersVisible", "background", "unlabeled")]
+        lines.append(f"| {name} | {view['totalFrames']} | " + " | ".join(cells) + " |")
+    lines.append("")
+    return lines
 
 
 def render(rows: list[dict]) -> str:
-    lines = ["| session | red winners (with verdict) | PF22 would reject | eligible red (with verdict) "
+    lines = render_whole_session(rows) + ["Selected frames only (retained contexts):", ""]
+    lines += ["| session | red winners (with verdict) | PF22 would reject | eligible red (with verdict) "
              "| eligible would reject | red events | → noDetection | → winnerChanges | unchanged | unknown/n/a "
              "| R7e → noDetection |",
              "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |"]

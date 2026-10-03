@@ -70,6 +70,19 @@ ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --outpu
 ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --json
 ```
 
+Newer recordings also carry `shadowRuleTally`: the shadow R7e / PF22 verdicts
+counted on the iPhone over every recorded frame, per segment label (including
+`unlabeled`) and per-frame exposure bucket, plus up to six frame IDs per rule whose
+winner the rule would reject outside the no-saber labels (listed, never added as
+images). The session report, the overview (R7e / PF22 columns marked 全) and
+`phone_saber_pf22_check.py` prefer it over the selected-frame tallies;
+`phone_saber_shadow_tally.py` prints it alone with the two promotion checks of the
+2026-10-03 rule study. Evidence only: the rules are never applied.
+
+```bash
+ios/PhoneSaberSender/Tools/phone_saber_shadow_tally.py /path/to/bundle [/path/to/other] [--json]
+```
+
 ### Cross-session overview (セッション一覧)
 
 `phone_saber_sessions_overview.py` (or double-click `PhoneSaber Overview.command`)
