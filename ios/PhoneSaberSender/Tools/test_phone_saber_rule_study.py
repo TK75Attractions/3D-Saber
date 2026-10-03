@@ -69,12 +69,13 @@ class LabelTests(unittest.TestCase):
 
     def test_committed_label_table_is_complete_and_parseable(self):
         labels = study.load_labels(LABELS)
-        self.assertEqual(len(labels), 129)
+        # The table grows as new captures are labelled (129 frames on 10-03, 151 on 10-04).
+        self.assertGreaterEqual(len(labels), 151)
         kinds = {"saber": 0, "absent": 0, "unknown": 0}
         for value in labels.values():
             for truth in value.values():
                 kinds["unknown" if truth == "?" else "absent" if truth is None else "saber"] += 1
-        self.assertEqual(sum(kinds.values()), 258)
+        self.assertEqual(sum(kinds.values()), 2 * len(labels), "one row per frame and colour")
         self.assertGreater(kinds["saber"], 80)
         with LABELS.open(newline="", encoding="utf-8") as handle:
             header = next(csv.reader(handle))
