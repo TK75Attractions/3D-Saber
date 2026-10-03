@@ -10,6 +10,11 @@
 - 進捗ログ: docs/claude/STATUS.md(なければ作る。§7)
 - 一般的な構成・コーディング規約は AGENTS.md を参照。
 
+## 0. 言語(必須)
+- ユーザーへの返答・報告・進捗の一言・最終まとめは、**必ず日本語**で書く。英語で返答しない。
+- 思考過程(内部の推論)は英語でもよい。
+- コード、コマンド、識別子、commit message など、repo の慣習が英語のものはそのままでよい。
+
 ## 1. 絶対に守ること(自律でも例外なし)
 - branch は main 一本。通常の commit / push のみ。
 - git push --force、git reset --hard、git clean は禁止。
