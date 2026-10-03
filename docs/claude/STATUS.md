@@ -54,6 +54,13 @@
 
 ## 作業ログ(新しい順)
 
+### 2026-10-03(午後)
+- 実機テスト(phonesaber_20261003_144936_295、P2P 経由):診断 bundle は P2P relay 経由で受信できた。
+  Codex 解析は 600 秒で timeout(入力が増えたため)→ 1500 秒に延長。
+- 剣のラグの原因:AWDL の転送の詰まり。Unity の Editor.log の bridge 集計で `maxGapMs` が 170〜300 ms(ときに約 1 秒)。
+  iPhone の認識処理時間は中央値 28.5 ms で以前と同じ。memoryHeadroom の最小は 2.0 GB(256 MiB 上限は問題なし)。
+  対策:P2P の通信に `serviceClass = .interactiveVoice` を設定(効果は実機で要確認)。
+
 ### 2026-10-03(午前)
 - 09ffdcd: Mac ↔ iPhone の P2P(peer-to-peer Wi-Fi)通信を追加。LAN(Bonjour / 手動 IP)へ自動で戻る。認識処理と Unity は変更なし。
   XCTest 177/177(任意実行の 1 件は skip)、Python 277/277、formal 40/40、Release PASS。実機での AWDL 確認は未実施(手順は ios/PhoneSaberSender/P2P_BRIDGE.md)。

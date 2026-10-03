@@ -269,6 +269,8 @@ final class P2PBridge {
     private func startListener(on port: NWEndpoint.Port) throws {
         let parameters = NWParameters.udp
         parameters.includePeerToPeer = true
+        // Same latency hint as the iPhone side (pongs and the AWDL schedule).
+        parameters.serviceClass = .interactiveVoice
         if options.loopbackOnly {
             parameters.requiredInterfaceType = .loopback
         }

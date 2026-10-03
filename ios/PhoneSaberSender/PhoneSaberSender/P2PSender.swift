@@ -231,6 +231,11 @@ final class P2PSender {
         parameters.includePeerToPeer = true
         // The link must never use mobile data; Wi-Fi infrastructure and AWDL are fine.
         parameters.prohibitedInterfaceTypes = [.cellular]
+        // Real-time traffic class: asks the OS to treat this as latency-sensitive.
+        // Field data (2026-10-03): over awdl0 while the Mac stayed on school Wi-Fi,
+        // coordinates stalled 170-300 ms (up to ~1 s) every 10 s window as the Wi-Fi
+        // radio alternated channels. This is a hint only; measure maxGapMs on device.
+        parameters.serviceClass = .interactiveVoice
         return parameters
     }
 

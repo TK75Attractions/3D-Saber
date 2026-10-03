@@ -54,7 +54,9 @@ MAX_REPORT_BYTES = 512 * 1024
 MAX_CODEX_SUMMARY_BYTES = 256 * 1024
 MAX_CODEX_CONTEXT_BYTES = 32 * 1024
 MAX_CODEX_METADATA_BYTES = 768 * 1024
-CODEX_TIMEOUT_SECONDS = 600
+# Analysis of 12 images plus per-candidate emitter / geometry contexts took longer
+# than 10 minutes on 2026-10-03 (gpt-6-luna, effort max); allow 25 minutes.
+CODEX_TIMEOUT_SECONDS = 1500
 ANALYSIS_MODEL = "gpt-6-luna"
 ANALYSIS_REASONING_EFFORT = "max"
 ESCALATION_MODEL = "gpt-6-sol"

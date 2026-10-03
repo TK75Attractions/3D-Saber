@@ -37,7 +37,7 @@ Structured Outputsの全フィールドrequired要件は
 - 最終response: `--output-schema <temporary schema.json>` と
   `--output-last-message <temporary response.json>`。responseは別途JSON/schema検証。
   再分析前に前のresponseを消し、古いresponseの再利用を防ぐ。
-- timeout: analysis 600秒、repair/review 900秒。最小probeは120秒。
+- timeout: analysis 1500秒(2026-10-03 に 600 秒から延長。emitter 証拠などで入力が増え、600 秒で打ち切られたため)、repair/review 900秒。最小probeは120秒。
   version取得には別途10秒上限。
 - environment: 親processをそのまま継承し、overrideしない。ログに変数名を保存し、
   値は出さない。今回`CODEX_HOME`未指定で`~/.codex`が使われた。
