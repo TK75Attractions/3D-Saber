@@ -54,6 +54,10 @@
 
 ## 作業ログ(新しい順)
 
+### 2026-10-03(午前)
+- 09ffdcd: Mac ↔ iPhone の P2P(peer-to-peer Wi-Fi)通信を追加。LAN(Bonjour / 手動 IP)へ自動で戻る。認識処理と Unity は変更なし。
+  XCTest 177/177(任意実行の 1 件は skip)、Python 277/277、formal 40/40、Release PASS。実機での AWDL 確認は未実施(手順は ios/PhoneSaberSender/P2P_BRIDGE.md)。
+
 ### 2026-10-03(朝)
 - 7449bc7: Debug Recording の区間ラベル(未設定 / saberあり / saberなし / 赤い物隠し)。区間ごとの検出率と誤検出率を `phone_saber_segments.py` で集計。
   認識結果は不変(録画なし / ラベルなし / ラベル切替の3通りで同一出力を確認)。XCTest 168/168、Python 267/267、formal 40/40、Release PASS。
