@@ -192,7 +192,7 @@ def validate_candidate_geometry(value: Any, eligible_count: Any = None) -> None:
     if any(isinstance(c, bool) or not isinstance(c, int) or c < 0 for c in counts) \
             or not isinstance(value["candidatesTruncated"], bool) \
             or not isinstance(value["previousFrameGeometryAvailable"], bool) \
-            or not isinstance(value["candidates"], list) or len(value["candidates"]) > 18:
+            or not isinstance(value["candidates"], list) or len(value["candidates"]) > 24:
         raise BundleError("invalid candidate geometry counts")
     eligible = [c for c in value["candidates"] if isinstance(c, dict) and c.get("eligible") is True]
     ineligible = [c for c in value["candidates"] if isinstance(c, dict) and c.get("eligible") is False]

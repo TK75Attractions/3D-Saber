@@ -1304,6 +1304,20 @@ enum DebugRecordingTriageBuilder {
         (value as? [Any])?.compactMap { number($0) } ?? []
     }
 
+    /// Ineligible candidates ordered by centroid distance to `anchor` (the previous
+    /// winner), list order breaking ties; unchanged when there is no anchor.
+    static func nearestFirst(_ candidates: [[String: Any]], to anchor: [Double]) -> [[String: Any]] {
+        guard anchor.count == 2 else { return candidates }
+        func distance(_ candidate: [String: Any]) -> Double {
+            let c = doubles(candidate["centroid"])
+            return c.count == 2 ? hypot(c[0] - anchor[0], c[1] - anchor[1]) : .infinity
+        }
+        return candidates.enumerated().sorted { lhs, rhs in
+            let (a, b) = (distance(lhs.element), distance(rhs.element))
+            return a != b ? a < b : lhs.offset < rhs.offset
+        }.map(\.element)
+    }
+
     /// Geometry correspondence of one candidate to the previous frame's winner:
     /// independent of list order and candidate index.
     private static func matchMetrics(_ candidate: [String: Any], _ winner: [String: Any]) -> [String: Any] {
@@ -1353,9 +1367,6 @@ enum DebugRecordingTriageBuilder {
         let eligible = stored.filter { $0["eligible"] as? Bool == true }.sorted {
             (integer($0["eligibleRank"]) ?? 0) < (integer($1["eligibleRank"]) ?? 0)
         }
-        let ineligible = stored.filter { $0["eligible"] as? Bool != true }
-        let keptEligible = Array(eligible.prefix(eligibleLimit))
-        let keptIneligible = Array(ineligible.prefix(ineligibleLimit))
         var previous: (UInt64, [String: Any])?
         for offset in 1...3 where frameID >= UInt64(offset) {
             let id = frameID - UInt64(offset)
@@ -1364,6 +1375,14 @@ enum DebugRecordingTriageBuilder {
                 break
             }
         }
+        // When ineligible candidates must be trimmed, keep those nearest the previous
+        // winner first: a rejected real saber (e.g. motion-blurred, failing
+        // hasEmitterCore) sits there, and it is what decides CASE B. Field case
+        // 20261003_144936_295 f2552 lost it to the list-order cut.
+        let ineligible = nearestFirst(stored.filter { $0["eligible"] as? Bool != true },
+                                      to: doubles(previous?.1["centroid"]))
+        let keptEligible = Array(eligible.prefix(eligibleLimit))
+        let keptIneligible = Array(ineligible.prefix(ineligibleLimit))
         let entries = (keptEligible + keptIneligible).enumerated().map { position, candidate -> [String: Any] in
             var entry = candidate
             if let previous { entry["matchToPreviousWinner"] = matchMetrics(candidate, previous.1) }
@@ -2247,7 +2266,9 @@ struct DebugCandidateGeometry: Equatable {
 /// `eligibleLimit`; what was left out is stated explicitly, never implied.
 struct DebugCandidateGeometrySet: Equatable {
     static let eligibleLimit = 12
-    static let ineligibleLimit = 6
+    /// Raised from 6 (2026-10-03): the rejected real saber could fall beyond the
+    /// first six in list order; contexts then keep the ones nearest the previous winner.
+    static let ineligibleLimit = 12
 
     let totalCandidateCount: Int
     let eligibleCandidateCount: Int

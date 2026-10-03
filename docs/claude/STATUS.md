@@ -55,6 +55,10 @@
 ## 作業ログ(新しい順)
 
 ### 2026-10-03(午後)
+- Codex 再解析(1500 秒の制限内で 962 秒で完了、decision: needs_capture):本物の saber で初めて CASE B を確認。
+  f2552 で、速く振った赤 saber の動きぶれ領域が hasEmitterCore=0・emitterScore 0.305(<0.42)で不採用になり、
+  ズボンの小さな赤い領域(purity 0.18)が唯一の eligible として勝って飛んだ。ただし不採用候補 4 件が保存されず、原因を断定できなかった。
+  → 不採用候補の保存数を 6→12 に増やし、削るときは直前の winner に近いものを優先して残すようにした。
 - 実機テスト(phonesaber_20261003_144936_295、P2P 経由):診断 bundle は P2P relay 経由で受信できた。
   Codex 解析は 600 秒で timeout(入力が増えたため)→ 1500 秒に延長。
 - 剣のラグの原因:AWDL の転送の詰まり。Unity の Editor.log の bridge 集計で `maxGapMs` が 170〜300 ms(ときに約 1 秒)。

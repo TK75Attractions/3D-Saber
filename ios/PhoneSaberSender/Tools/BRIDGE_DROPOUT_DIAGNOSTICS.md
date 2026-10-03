@@ -90,7 +90,9 @@ ineligible; **C** the winner is right but its PCA/endpoints break.
 Recorded per frame and active color (in memory with the frame, written only into the
 triage snapshot of retained event frames, never into the streamed full metadata, so a
 long recording does not approach its size limit): every eligible candidate up to 12 and
-up to 6 ineligible ones, each with `listIndex`, `eligible`, `eligibleRank` (1 = winner),
+up to 12 ineligible ones (6 before 2026-10-03; when a context must trim ineligible
+candidates it keeps those nearest the previous winner, where a rejected real saber
+sits), each with `listIndex`, `eligible`, `eligibleRank` (1 = winner),
 `sourceType`, `finalScore`, full `scoreBreakdown`, `centroid` (`centroidSource`:
 `trace` or `bboxCenter`), `bbox`, `componentArea`, `rawPCASpan`, `rawPCAEndpoints`,
 `finalOutputEndpoints`, `rejectionReasons`.

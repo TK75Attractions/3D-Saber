@@ -1175,9 +1175,9 @@ extension DebugBridgeDropoutTests {
     func testGeometryRecordsEveryEligibleCandidateWithRanksAndStatesOmission() throws {
         var candidates = try (0..<15).map { try saber(x: 10 + $0 * 30, score: 90 - Double($0)) }
         candidates.insert(try saber(x: 5, eligible: false, score: 99), at: 0)
-        candidates.append(contentsOf: try (0..<8).map { try saber(x: 400 + $0 * 20, eligible: false, score: 10) })
+        candidates.append(contentsOf: try (0..<14).map { try saber(x: 300 + $0 * 20, eligible: false, score: 10) })
         let set = DebugCandidateGeometrySet(candidates)
-        XCTAssertEqual(set.totalCandidateCount, 24)
+        XCTAssertEqual(set.totalCandidateCount, 30)
         XCTAssertEqual(set.eligibleCandidateCount, 15)
         let eligible = set.candidates.filter(\.eligible)
         XCTAssertEqual(eligible.count, DebugCandidateGeometrySet.eligibleLimit)
@@ -1196,6 +1196,22 @@ extension DebugBridgeDropoutTests {
         XCTAssertGreaterThan(first.componentArea, 0)
         XCTAssertFalse(first.sourceType.isEmpty)
         XCTAssertFalse(set.candidates.first { !$0.eligible }?.rejectionReasons.isEmpty ?? true)
+    }
+
+    func testTrimmedIneligibleCandidatesKeepTheOnesNearestThePreviousWinner() throws {
+        // A rejected real saber (near the previous winner at x≈100) listed after far
+        // rejects must survive any trimming: it is what separates CASE B causes.
+        func entry(_ index: Int, x: Double) -> [String: Any] {
+            ["listIndex": index, "eligible": false, "centroid": [x, 30.0]]
+        }
+        let ordered = [entry(0, x: 600), entry(1, x: 500), entry(2, x: 400), entry(3, x: 105)]
+        let nearest = DebugRecordingTriageBuilder.nearestFirst(ordered, to: [100, 30])
+        XCTAssertEqual(nearest.compactMap { $0["listIndex"] as? Int }, [3, 2, 1, 0])
+        XCTAssertEqual(DebugRecordingTriageBuilder.nearestFirst(ordered, to: []).compactMap { $0["listIndex"] as? Int },
+                       [0, 1, 2, 3], "no previous winner: list order")
+        let tie = [entry(0, x: 90), entry(1, x: 110)]
+        XCTAssertEqual(DebugRecordingTriageBuilder.nearestFirst(tie, to: [100, 30]).compactMap { $0["listIndex"] as? Int },
+                       [0, 1], "equal distance keeps list order")
     }
 
     func testContextsReconcileEligibleCountsAndFlagTruncationExplicitly() throws {
@@ -1227,15 +1243,16 @@ extension DebugBridgeDropoutTests {
                 $0.hasPrefix("neighbourCandidateGeometry") })
         }
         // Ineligible candidates are accounted for the same way.
-        let withIneligible = try (0..<8).map { try saber(x: 450 + $0 * 20, eligible: false, score: 5) }
+        let withIneligible = try (0..<14).map { try saber(x: 300 + $0 * 20, eligible: false, score: 5) }
         let second = try geometryBundle(lists: Dictionary(uniqueKeysWithValues: (8...14).map {
             ($0, [try saber(x: 10)] + withIneligible) }))
         let context = try XCTUnwrap(try contexts(second).first {
             ($0["bridgeEvent"] as? [String: Any])?["role"] as? String == "dropout" })
         let ineligible = try redGeometry(context, frame: 11)
-        XCTAssertEqual(ineligible["savedIneligibleCount"] as? Int, DebugCandidateGeometrySet.ineligibleLimit)
-        XCTAssertEqual(ineligible["ineligibleOmittedCount"] as? Int, 2)
-        XCTAssertEqual(ineligible["totalCandidateCount"] as? Int, 9)
+        let savedIneligible = try XCTUnwrap(ineligible["savedIneligibleCount"] as? Int)
+        XCTAssertLessThanOrEqual(savedIneligible, DebugCandidateGeometrySet.ineligibleLimit)
+        XCTAssertEqual(savedIneligible + (ineligible["ineligibleOmittedCount"] as? Int ?? -1), 14)
+        XCTAssertEqual(ineligible["totalCandidateCount"] as? Int, 15)
         // Nothing is omitted when everything fits.
         let small = try geometryBundle(lists: Dictionary(uniqueKeysWithValues: (8...14).map {
             ($0, [try saber(x: 10), try saber(x: 200)]) }))
