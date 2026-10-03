@@ -375,15 +375,37 @@ def latest_bundle(inbox: Path) -> Optional[Path]:
     return max(bundles, key=lambda p: p.stat().st_mtime)
 
 
+RECEIVER_LOGS_TO_SEARCH = 5
+
+
 def _last_analysis_log(ctx: Context, session_id: str) -> Optional[str]:
-    text = read_tail(ctx.receiver_log, RECEIVER_LOG_TAIL_BYTES)
-    if text is None:
-        return None
-    found = None
-    for line in text.splitlines():
-        if f"sessionID={session_id}" in line and "[AUTO_REPAIR][ANALYSIS]" in line:
-            found = line.strip()
-    return found
+    """受信側のログ(latest.log と、新しい順に数個の triage-*.log)から、その session の最後の解析結果行を探す。
+    受信側を起動し直すと latest.log は新しいファイルを指すので、前の run のログも見る。"""
+    log_dir = ctx.receiver_log.parent
+    try:
+        runs = sorted(log_dir.glob("triage-*.log"), key=lambda p: p.stat().st_mtime, reverse=True)
+    except OSError:
+        runs = []
+    paths = [ctx.receiver_log] + [p for p in runs[:RECEIVER_LOGS_TO_SEARCH]]
+    seen: set = set()
+    for path in paths:
+        try:
+            key = path.resolve()
+        except OSError:
+            continue
+        if key in seen:
+            continue
+        seen.add(key)
+        text = read_tail(path, RECEIVER_LOG_TAIL_BYTES)
+        if text is None:
+            continue
+        found = None
+        for line in text.splitlines():
+            if f"sessionID={session_id}" in line and "[AUTO_REPAIR][ANALYSIS]" in line:
+                found = line.strip()
+        if found:
+            return found
+    return None
 
 
 def check_inbox(ctx: Context) -> list[Check]:
@@ -441,6 +463,10 @@ def git_state(ctx: Context, label: str, root: Optional[Path]) -> Check:
     branch = ctx.run(base + ["rev-parse", "--abbrev-ref", "HEAD"])
     status = ctx.run(base + ["status", "--porcelain", "--untracked-files=no"])
     counts = ctx.run(base + ["rev-list", "--left-right", "--count", "HEAD...@{upstream}"])
+    compared = "upstream"
+    if counts is None or counts.returncode != 0:
+        counts = ctx.run(base + ["rev-list", "--left-right", "--count", "HEAD...origin/main"])
+        compared = "origin/main"
     if branch is None or branch.returncode != 0:
         return Check("WARN", f"git {label}", f"git を実行できない: {root}")
     name = branch.stdout.strip()
@@ -456,7 +482,7 @@ def git_state(ctx: Context, label: str, root: Optional[Path]) -> Check:
         fetch_age = file_age(ctx, Path(common.stdout.strip()) / "FETCH_HEAD")
         if fetch_age is not None:
             fetch_note = f"、最終 fetch {format_age(fetch_age)}"
-    distance = "upstream なし" if ahead is None else f"{ahead} ahead / {behind} behind"
+    distance = "比較先なし" if ahead is None else f"{compared} と比べて {ahead} ahead / {behind} behind"
     detail = f"{name}、未commit {dirty} 件、{distance}{fetch_note}({root})"
     hints = []
     if behind:
