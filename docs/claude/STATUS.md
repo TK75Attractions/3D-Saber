@@ -1,15 +1,16 @@
 # PhoneSaber STATUS
 
 ## ユーザー待ち
-- **iPhone 実機 Debug Recording を1回**(2026-10-02 依頼、同日に条件を追加)
-  - 事前に main の最新版の PhoneSaberSender を Xcode で iPhone にインストールする(Debug build。memoryHeadroom・bridge・candidate geometry・emitter 証拠・shadow R7e・露出記録を含む)。
-  - Mac で Start PhoneSaber を起動し、iPhone で Debug Recording ON、診断対象の色は BOTH のまま。
-  - **赤・青の saber を点灯させ、画面内に映した状態で**撮る(既存の 10-02 session は saber が映っていない、または消灯していた)。
-  - カメラは正立・固定(三脚など)。背景の赤い物(ラベル・カラビナ)はあえて片付けない(背景誤検出の比較のため)。
-  - 棒を大きく速く振る swing を数回。画面端への出入り(フレームアウト → フレームイン)も含める。
-  - 最後に約 10 秒、saber を画面外に出すか消灯した区間を入れる(背景だけの区間の比較用)。
-  - 可能なら、その背景だけの区間を「赤ラベル・カラビナを布などで隠した状態」でもう1回撮る(背景誤検出の確定用。隠すと往復が消えれば確定)。
-  - Stop 後に triage bundle を Mac へ自動転送(diagnostics-inbox に届けば、こちらで解析を開始する)。
+- **iPhone 実機 Debug Recording を1回**(2026-10-03 更新。main 7449bc7 以降のビルドで撮る)
+  1. Xcode で main の最新の PhoneSaberSender を iPhone に入れる(Debug build)。
+  2. Mac で Start PhoneSaber を起動する。
+  3. iPhone で Debug Recording を ON にする。診断対象の色は BOTH のまま。カメラは正立・固定(三脚など)。背景の赤い物(ラベル・カラビナ)は片付けない。
+  4. 録画を開始し、**区間ラベル**を切り替えながら撮る(合計 5 分以内):
+     - 「saberあり」: 赤・青の saber を点灯させて画面内に映し、大きく速く振る swing を数回。画面端への出入りも含める。
+     - 「saberなし」: saber を画面外に出すか消灯して約 10 秒。
+     - 「赤い物隠し」: 赤いラベル・カラビナを布などで隠して約 10 秒(saber はなし)。
+  5. Stop すると triage bundle が Mac に自動転送され、`<inbox>/<bundle>.report.md` に1ページの要約ができる。
+  - 解析で見ること: saberなし / 赤い物隠し区間の赤の誤検出率(`phone_saber_segments.py`)、本物の saber での CASE A の有無、shadow R7e の判定、露出、memoryHeadroom。
 
 ## 現在の仮説と確度
 - **2026-10-02 の再解析で見直した。** 既存の代表例(005850_489 f2537、013205_087 f255、010049_190 f660–664)は、
@@ -52,6 +53,12 @@
 ---
 
 ## 作業ログ(新しい順)
+
+### 2026-10-03(朝)
+- 7449bc7: Debug Recording の区間ラベル(未設定 / saberあり / saberなし / 赤い物隠し)。区間ごとの検出率と誤検出率を `phone_saber_segments.py` で集計。
+  認識結果は不変(録画なし / ラベルなし / ラベル切替の3通りで同一出力を確認)。XCTest 168/168、Python 267/267、formal 40/40、Release PASS。
+- 02aafa4: session report に「背景誤検出の証拠(emitter / shadow R7e / 露出)」の節を追加。
+- worktree と一時 branch はすべて削除し、main だけの状態。
 
 ### 2026-10-03(深夜、並列作業の続き)
 - 1ad12f9: 診断 on/off の parity test を、全 candidate で bit 一致に厳格化(通常の hash seed でも一致)。XCTest 162/162、Python 245/245、formal 40/40。
