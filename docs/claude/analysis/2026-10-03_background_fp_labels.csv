@@ -257,3 +257,47 @@ session,frame,color,truth,saber_box,note,winner_base,winner_r7e,winner_pf22,winn
 20261003_155919_297,5322,blue,unknown,,skin,none,none,none,none,none,none,,
 20261003_155919_297,5331,red,absent,,skin,bg,bg,bg,bg,bg,bg,color-mask,52 4 332 360
 20261003_155919_297,5331,blue,unknown,,skin,unk,unk,unk,unk,unk,unk,color-mask,446 4 472 20
+20261004_005325_638,198,red,absent,,"auto exp; blue-lit close-up, orange cloth left edge, red clip lower right",bg,bg,bg,bg,bg,bg,color-mask,4 356 16 384
+20261004_005325_638,198,blue,absent,,lit blue saber off-frame left; blue spill on shirt/feet/box,bg,bg,bg,bg,bg,bg,color-emitter,86 352 192 512
+20261004_005325_638,199,red,absent,,"auto exp; blue-lit close-up, orange cloth left edge, red clip lower right",bg,none,bg,none,bg,none,color-mask,4 356 14 384
+20261004_005325_638,199,blue,absent,,lit blue saber off-frame left; blue spill on shirt/feet/box,bg,bg,bg,bg,bg,bg,color-emitter,88 350 194 512
+20261004_005325_638,200,red,absent,,"auto exp; blue-lit close-up, orange cloth left edge, red clip lower right",bg,bg,bg,bg,bg,bg,color-mask,464 520 470 532
+20261004_005325_638,200,blue,absent,,lit blue saber off-frame left; blue spill on shirt/feet/box,bg,bg,bg,bg,bg,bg,color-emitter,188 56 250 150
+20261004_005325_638,201,red,absent,,"auto exp; blue-lit close-up, orange cloth left edge, red clip lower right",bg,bg,bg,bg,bg,bg,color-mask,4 358 14 384
+20261004_005325_638,201,blue,absent,,lit blue saber off-frame left; blue spill on shirt/feet/box,bg,bg,bg,bg,bg,bg,color-emitter,196 56 250 150
+20261004_005325_638,202,red,absent,,"auto exp; blue-lit close-up, orange cloth left edge, red clip lower right",bg,bg,bg,bg,bg,bg,color-mask,4 358 14 384
+20261004_005325_638,202,blue,absent,,lit blue saber off-frame left; blue spill on shirt/feet/box,bg,bg,bg,bg,bg,bg,color-emitter,188 54 250 150
+20261004_005325_638,203,red,absent,,"auto exp; blue-lit close-up, orange cloth left edge, red clip lower right",bg,none,bg,none,bg,none,color-mask,4 360 14 382
+20261004_005325_638,203,blue,absent,,lit blue saber off-frame left; blue spill on shirt/feet/box,bg,bg,bg,bg,bg,bg,color-emitter,178 54 256 152
+20261004_005325_638,204,red,absent,,"auto exp; blue-lit toes, orange cloth left edge, red clip lower right",bg,bg,bg,bg,bg,bg,color-emitter,288 76 312 116
+20261004_005325_638,204,blue,unknown,,"blue glow at left edge (saber at/over edge?), blurred blue blob in right hand",unk,unk,unk,unk,unk,unk,core-line,10 40 22 446
+20261004_005325_638,205,red,absent,,"auto exp; blue-lit toes, orange cloth left edge, red clip lower right",none,none,none,none,none,none,,
+20261004_005325_638,205,blue,saber,0 215 30 290,"lit blue saber clipped by left edge, motion blur; blurred blue blob in right hand",real,real,real,real,real,real,core-line,0 224 32 404
+20261004_005325_638,3302,red,absent,,"unlit sabers held; orange cloth left edge, red clip lower right",bg,none,bg,none,bg,none,color-sparse-raw,462 518 468 530
+20261004_005325_638,3302,blue,absent,,unlit sabers held; ceiling light,bg,bg,bg,bg,bg,bg,core-halo,298 322 318 330
+20261004_005325_638,3303,red,absent,,"unlit sabers held; orange cloth left edge, red clip lower right",bg,none,bg,none,bg,none,color-sparse-raw,462 518 468 530
+20261004_005325_638,3303,blue,absent,,unlit sabers held; ceiling light,none,none,none,none,none,none,,
+20261004_005325_638,3306,red,absent,,"unlit sabers held; orange cloth left edge, red clip lower right",bg,none,bg,none,bg,none,core-halo,4 360 14 382
+20261004_005325_638,3306,blue,absent,,unlit sabers held; ceiling light,bg,bg,bg,bg,bg,bg,color-sparse-raw,308 322 318 330
+20261004_005855_691,12548,red,saber,240 238 268 314,"max shutter 1/100; red saber held still, sharp",real,real,real,real,real,real,core-halo,244 250 262 312
+20261004_005855_691,12548,blue,saber,172 228 198 314,"max shutter 1/100; blue saber held still, sharp",real,real,real,real,real,real,connected-core,174 240 194 312
+20261004_005855_691,12549,red,saber,248 238 278 314,max shutter 1/100; red saber held still,real,real,real,real,real,real,color-mask,254 254 268 306
+20261004_005855_691,12549,blue,absent,,blue saber just switched off (unlit),none,none,none,none,none,none,,
+20261004_005855_691,12585,red,absent,,"unlit sabers raised; orange cloth left edge, red clip lower right",bg,none,bg,none,bg,none,core-halo,14 326 26 350
+20261004_005855_691,12585,blue,absent,,unlit sabers raised; ceiling light,bg,bg,bg,bg,bg,bg,core-halo,278 350 296 374
+20261004_005855_691,12626,red,absent,,"stop: fingers on lens, orange cloth left edge, red clip",bg,bg,bg,bg,bg,bg,color-mask,4 326 20 364
+20261004_005855_691,12626,blue,absent,,stop: fingers on lens,none,none,none,none,none,none,,
+20261004_005855_691,12627,red,absent,,"stop: fingers on lens, orange cloth left edge, red clip",bg,bg,bg,bg,bg,bg,color-close,4 334 20 374
+20261004_005855_691,12627,blue,absent,,stop: fingers on lens,none,none,none,none,none,none,,
+20261004_005855_691,12628,red,absent,,"stop: blurred camera handling, orange cloth, red clip",bg,bg,bg,bg,bg,bg,color-mask,468 520 474 536
+20261004_005855_691,12628,blue,absent,,stop: blurred camera handling,none,none,none,none,none,none,,
+20261004_005855_691,12629,red,absent,,"stop: blurred camera handling, orange cloth, skin",bg,none,bg,none,bg,none,color-close,4 406 22 440
+20261004_005855_691,12629,blue,absent,,stop: blurred camera handling,none,none,none,none,none,none,,
+20261004_005855_691,12630,red,absent,,"stop: blurred camera handling, orange cloth, skin",bg,bg,bg,bg,bg,bg,color-close,4 452 34 490
+20261004_005855_691,12630,blue,absent,,stop: blurred camera handling,none,none,none,none,none,none,,
+20261004_005855_691,12631,red,absent,,"stop: blurred camera handling, skin",none,none,none,none,none,none,,
+20261004_005855_691,12631,blue,absent,,stop: blurred camera handling,none,none,none,none,none,none,,
+20261004_005855_691,12632,red,absent,,"stop: blurred camera handling, skin",bg,bg,bg,bg,bg,bg,color-mask,222 290 274 332
+20261004_005855_691,12632,blue,absent,,stop: blurred camera handling,none,none,none,none,none,none,,
+20261004_005855_691,12633,red,absent,,"stop: blurred camera handling, skin",none,none,none,none,none,none,,
+20261004_005855_691,12633,blue,absent,,stop: blurred camera handling,none,none,none,none,none,none,,
