@@ -268,6 +268,24 @@ class CodexTriageTests(unittest.TestCase):
                     self.assertFalse(status["repairExecuted"])
                     self.assertEqual(len(json.loads((root / "spy.json").read_text())["calls"]), 2)
 
+    def test_analysis_timeout_at_max_retries_once_at_high_with_the_local_digest(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "bundle"
+            write_codex_bundle(bundle)
+            spy = Path(directory) / "spy.json"
+            codex = fake_codex(Path(directory), spy, analysis=EMPTY_ANALYSIS, sleep_on_max=5)
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                result = analyze_bundle(bundle, codex_path=str(codex), timeout_seconds=1)
+            self.assertEqual(result["status"], "completed")
+            report = json.loads((bundle / "analysis_report.json").read_text())
+            self.assertEqual(report["analysisReasoningEffort"], "high")
+            self.assertIn("retrying once at effort=high", output.getvalue())
+            calls = json.loads(spy.read_text())["calls"]
+            self.assertEqual(len(calls), 1, "only the retry reached the spy; the max call timed out first")
+            self.assertIn("Local digest", calls[0]["prompt"])
+            self.assertNotIn(str(bundle), calls[0]["prompt"], "no local paths in the digest")
+
     def test_dry_run_lists_only_selected_png_and_compact_context(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "bundle"
@@ -312,7 +330,9 @@ class CodexTriageTests(unittest.TestCase):
             self.assertEqual(invoked["image_flag_count"], 4)
             self.assertTrue(all(path.endswith(f"/images/image_{index:02d}.png")
                                 for index, path in enumerate(invoked["images"], start=1)))
-            self.assertEqual(invoked["prompt"], _codex_prompt("sample_session", plan.images, plan.root))
+            # The prompt is the fixed instructions plus the bounded local digest.
+            self.assertTrue(invoked["prompt"].startswith(_codex_prompt("sample_session", plan.images, plan.root)))
+            self.assertIn("Local digest", invoked["prompt"])
             self.assertIsNone(invoked["positional_prompt"])
             self.assertTrue(invoked["stdin_sentinel"])
             self.assertEqual(set(invoked["files"]), {
@@ -641,7 +661,7 @@ def eligibility_assessment(decision: str, reason: str) -> dict:
 
 def fake_codex(root: Path, spy_path: Path, *, analysis: dict | None = None,
                fail: bool = False, model_error: str | None = None,
-               responses: list[dict] | None = None) -> Path:
+               responses: list[dict] | None = None, sleep_on_max: float = 0) -> Path:
     executable = root / "fake-codex"
     response_json = json.dumps(analysis or EMPTY_ANALYSIS, ensure_ascii=False)
     response_sequence = json.dumps(responses or [], ensure_ascii=False)
@@ -655,6 +675,9 @@ if args == ["--version"]:
 prompt = sys.stdin.read()
 model = args[args.index('--model') + 1] if '--model' in args else None
 effort_config = args[args.index('-c') + 1] if '-c' in args else None
+if {sleep_on_max!r} and effort_config and '"max"' in effort_config:
+    import time
+    time.sleep({sleep_on_max!r})
 if {fail or model_error is not None!r}:
     pathlib.Path({spy_literal}).write_text(json.dumps({{'model': model, 'effort_config': effort_config, 'args': args}}), encoding='utf-8')
     print({(model_error or 'simulated Codex failure')!r}, file=sys.stderr)

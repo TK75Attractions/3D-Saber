@@ -59,6 +59,11 @@ MAX_CODEX_METADATA_BYTES = 768 * 1024
 CODEX_TIMEOUT_SECONDS = 1500
 ANALYSIS_MODEL = "gpt-6-luna"
 ANALYSIS_REASONING_EFFORT = "max"
+# 2026-10-03: a 12-image bundle ran out of even 1500 s at effort max (16 commands in
+# 25 min: reasoning-bound, not tool-bound). One retry at this effort keeps the
+# analysis from ending with nothing; bundles that finish at max are unaffected.
+ANALYSIS_TIMEOUT_FALLBACK_EFFORT = "high"
+LOCAL_DIGEST_MAX_CHARS = 14000
 ESCALATION_MODEL = "gpt-6-sol"
 ESCALATION_REASONING_EFFORT = "high"
 MODEL_UNAVAILABLE_PATTERNS = (
@@ -633,6 +638,13 @@ def _analyze_bundle(
             json.dumps(_output_schema(plan.image_ids), ensure_ascii=False), encoding="utf-8"
         )
         prompt = _codex_prompt(plan.session_id, plan.images, plan.root)
+        digest = _local_digest(plan.root)
+        if digest:
+            prompt += ("\n\nLocal digest (deterministic, computed by phone_saber_session_report.py from the "
+                       "same summary.json and selected contexts). Use it to avoid re-deriving numbers with "
+                       "repeated file reads; verify anything you rely on against the contexts, and judge "
+                       "saber presence only from the PNG pixels. It is not ground truth and not a repair "
+                       "instruction.\n" + digest)
         command = [
             binary,
             "exec",
@@ -678,7 +690,16 @@ def _analyze_bundle(
                   f"elapsed={time.monotonic() - started:.1f}s", flush=True)
             return result
 
-        analysis = run_analysis(ANALYSIS_MODEL, ANALYSIS_REASONING_EFFORT, prompt, "ANALYSIS")
+        analysis_effort = ANALYSIS_REASONING_EFFORT
+        try:
+            analysis = run_analysis(ANALYSIS_MODEL, ANALYSIS_REASONING_EFFORT, prompt, "ANALYSIS")
+        except CodexFailed as exc:
+            if "CLI_TIMEOUT" not in str(exc) or isinstance(exc, (CodexModelUnavailable, CodexUnavailable)):
+                raise
+            print(f"[AUTO_REPAIR][ANALYSIS] {log_fields()} result=timeout effort={ANALYSIS_REASONING_EFFORT}; "
+                  f"retrying once at effort={ANALYSIS_TIMEOUT_FALLBACK_EFFORT}", flush=True)
+            analysis_effort = ANALYSIS_TIMEOUT_FALLBACK_EFFORT
+            analysis = run_analysis(ANALYSIS_MODEL, analysis_effort, prompt, "ANALYSIS_RETRY")
         traces = _decision_trace_summary(plan)
         affected = set(analysis["repair_assessment"]["affected_colors"])
         relevant_traces = [item for item in traces if not affected or item["color"].upper() in affected]
@@ -700,7 +721,7 @@ def _analyze_bundle(
                 "Compound rejection conditions describe the trigger; satisfied does not mean FAIL. "
                 "Keep all visual and repair safety requirements.\n" +
                 json.dumps({"decisionTraces": relevant_traces, "trackingEvents": relevant_events}, ensure_ascii=False))
-            analysis = run_analysis(ANALYSIS_MODEL, ANALYSIS_REASONING_EFFORT,
+            analysis = run_analysis(ANALYSIS_MODEL, analysis_effort,
                                     enriched_prompt, "REANALYSIS")
             reanalysis_executed = True
         if _needs_second_opinion(analysis, traces, events):
@@ -727,7 +748,7 @@ def _analyze_bundle(
         "formatVersion": 3,
         "sessionID": plan.session_id,
         "analysisModel": ANALYSIS_MODEL,
-        "analysisReasoningEffort": ANALYSIS_REASONING_EFFORT,
+        "analysisReasoningEffort": analysis_effort,
         "analysisExecuted": True,
         "precheck": precheck,
         "analysisReanalysisExecuted": reanalysis_executed,
@@ -979,6 +1000,20 @@ def _output_schema(image_ids: tuple[str, ...]) -> dict[str, Any]:
         "type": "string", "enum": list(image_ids),
     }
     return schema
+
+
+def _local_digest(bundle_root: Path) -> str:
+    """The free one-page session report as plain text, bounded; empty if it cannot be built."""
+    try:
+        from phone_saber_session_report import build_report, render_markdown
+        text = render_markdown(build_report(bundle_root))
+    except Exception:  # noqa: BLE001 - the digest is an optional hint
+        return ""
+    # Local paths are meaningless inside the Codex sandbox.
+    text = "\n".join(line for line in text.splitlines() if not line.startswith("- bundle: "))
+    if len(text) > LOCAL_DIGEST_MAX_CHARS:
+        text = text[:LOCAL_DIGEST_MAX_CHARS] + "\n… (digest truncated)"
+    return text
 
 
 def _codex_prompt(session_id: str, images: tuple[CodexInputImage, ...], bundle_root: Path) -> str:
