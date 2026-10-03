@@ -14,7 +14,7 @@ import time
 from dataclasses import dataclass
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
-from threading import Thread
+from threading import Lock, Thread
 from typing import Any
 
 from phone_saber_session_log import log_fields, session_log_context
@@ -60,8 +60,17 @@ class TriageHTTPServer(ThreadingHTTPServer):
         max_images: int = DEFAULT_MAX_IMAGES,
         codex_path: str | None = None,
         repair_mode: str | None = None,
+        overview: bool = False,
+        logs_dir: Path | None = None,
     ) -> None:
         super().__init__(address, TriageRequestHandler)
+        # Cross-session overview page (phone_saber_sessions_overview.py), regenerated
+        # in the background after each upload / analysis; off unless main() enables it.
+        self.overview_enabled = overview
+        self.overview_logs_dir = logs_dir
+        self._overview_lock = Lock()
+        self._overview_pending = False
+        self._overview_running = False
         self.inbox = inbox
         self.analysis_mode = analysis_mode
         self.max_images = max_images
@@ -82,6 +91,38 @@ class TriageHTTPServer(ThreadingHTTPServer):
             return None
         print(f"[PHONE_SABER][REPORT] {log_fields()} path={path}", flush=True)
         return path
+
+    def request_overview(self, reason: str) -> None:
+        """Regenerate the cross-session overview on a background thread.
+
+        Requests coalesce (one worker; a request during a run triggers one more run).
+        The import and the run are inside the worker, so neither a broken overview
+        module nor a failing run can affect receiving or analysis."""
+        if not self.overview_enabled:
+            return
+        with self._overview_lock:
+            self._overview_pending = True
+            if self._overview_running:
+                return
+            self._overview_running = True
+        Thread(target=self._overview_worker, args=(reason,), name="phonesaber-overview", daemon=True).start()
+
+    def _overview_worker(self, reason: str) -> None:
+        while True:
+            with self._overview_lock:
+                if not self._overview_pending:
+                    self._overview_running = False
+                    return
+                self._overview_pending = False
+            started = time.monotonic()
+            try:
+                from phone_saber_sessions_overview import write_overview
+                path, _, overview = write_overview(self.inbox, logs_dir=self.overview_logs_dir)
+                print(f"[PHONE_SABER][OVERVIEW] reason={reason} sessions={overview['totals']['sessions']} "
+                      f"elapsed={time.monotonic() - started:.1f}s path={path}", flush=True)
+            except Exception as exc:  # noqa: BLE001 - the overview is optional
+                print(f"[PHONE_SABER][OVERVIEW] reason={reason} result=FAIL {type(exc).__name__}: {exc}; "
+                      "receiving and analysis continue", flush=True)
 
     def enqueue_analysis(self, bundle: Path, *, source: str = "manual_retry",
                          reason: str = "explicit_request") -> bool:
@@ -106,6 +147,7 @@ class TriageHTTPServer(ThreadingHTTPServer):
                     self._process_analysis(bundle, started)
                 finally:
                     self.analysis_queue.task_done()
+                    self.request_overview("analysis_finished")
 
     def _process_analysis(self, bundle: Path, started: float) -> None:
         try:
@@ -191,6 +233,7 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
             # into the bundle, which the read-only report must not race with.
             self.server.write_report(bundle)
         self.server.enqueue_analysis(bundle, source="new_upload", reason="post_received")
+        self.server.request_overview("new_upload")
         self._reply(201, {"accepted": True, "bundle": bundle.name})
 
     def log_message(self, fmt: str, *args: Any) -> None:
@@ -255,6 +298,8 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--max-images", type=int, default=DEFAULT_MAX_IMAGES,
                         help=f"Codex image limit (default {DEFAULT_MAX_IMAGES}, hard max {MAX_IMAGES})")
     parser.add_argument("--codex-path", help="explicit Codex CLI executable; defaults to installed Codex")
+    parser.add_argument("--no-overview", action="store_true",
+                        help="do not regenerate <inbox>/phone_saber_sessions_overview.html after uploads")
     return parser.parse_args(argv)
 
 
@@ -285,7 +330,9 @@ def main(argv: list[str] | None = None) -> int:
                                   analysis_mode=mode, max_images=args.max_images,
                                   codex_path=args.codex_path,
                                   repair_mode="dry-run" if args.repair_dry_run else
-                                  "automatic" if mode == "automatic" else "disabled")
+                                  "automatic" if mode == "automatic" else "disabled",
+                                  overview=not args.no_overview,
+                                  logs_dir=Path.home() / "Library" / "Logs" / "PhoneSaber")
     except OSError as exc:
         print(f"cannot start PhoneSaber diagnostics receiver: {exc}", file=sys.stderr)
         return 2

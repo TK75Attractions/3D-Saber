@@ -70,6 +70,48 @@ ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --outpu
 ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --json
 ```
 
+### Cross-session overview (セッション一覧)
+
+`phone_saber_sessions_overview.py` (or double-click `PhoneSaber Overview.command`)
+scans every `phone_saber_triage_*` bundle in the diagnostics inbox and writes one
+self-contained page, `<inbox>/phone_saber_sessions_overview.html` (inline CSS and
+SVG, no network, Japanese labels, light/dark, phone width), plus the compact
+`<inbox>/phone_saber_sessions_overview.md`. Bundles are only read; each row is built
+with `phone_saber_session_report.build_report` (so the tracking diagnostics,
+background evidence, R7e / PF22 and CASE logic are the same code).
+
+- Headline tiles: sessions and recording minutes, selected-frame ≥100px jumps and
+  candidateSwitch, CASE A/B/C (countForTally rows only), shadow R7e / PF22 would-reject
+  counts, Codex results.
+- Trend charts (oldest → newest; sessions before the first recorded value are left out):
+  whole-recording `endpoint_jump` signals per minute (`motionEventSummary.signalDistributions`,
+  recordings since 09-30) and the median exposure time of the selected frames
+  (`frames[].camera`, since 10-03).
+- One row per session (newest first): date/time, approximate length (frameID/timestamp
+  spread of the selected images, else 30 fps, marked ≈), frames, active colors, median
+  exposure and the optional `cameraExposureExperiment`, selected-frame ≥100px jumps and
+  candidateSwitch (the shadow PF22 tally rows; n/a without tracking), whole-recording
+  jump signals, CASE hints, R7e and PF22 `reject/judged` winners (`*` = PF22 recomputed
+  because the bundle predates the recorded `shadowPF22`), likelyBackground hotspots, the
+  upload route from the receiver log (`127.0.0.1` = P2P relay, private address = LAN),
+  the Codex status (`analysis_report.json`, else the last `[AUTO_REPAIR][ANALYSIS]` log
+  line: 完了 / precheck で中止 / timeout / 失敗 / 実行中) linked to `analysis_report.md`,
+  and a link to the one-page `.report.md`. An input-contract failure is flagged on
+  the row (CASE hints are then n/a).
+
+The receiver regenerates the page in a background thread after each
+upload and after each analysis (requests coalesce; any failure is logged as
+`[PHONE_SABER][OVERVIEW] ... result=FAIL` and never affects receiving or analysis;
+`--no-overview` turns it off). The launcher also writes the missing one-page
+reports beside older bundles (`--write-missing-reports`, never inside a bundle) and
+opens the page.
+
+```bash
+ios/PhoneSaberSender/Tools/phone_saber_sessions_overview.py --open
+ios/PhoneSaberSender/Tools/phone_saber_sessions_overview.py --write-missing-reports
+ios/PhoneSaberSender/Tools/phone_saber_sessions_overview.py --inbox /path/to/inbox --output-dir /tmp/overview --json
+```
+
 `phone_saber_hotspots.py` is the read-only static-hotspot map for background
 false positives (matte red labels, carabiners). It clusters every recorded
 candidate position per color by centroid distance / bbox IoU and reports, per
