@@ -68,7 +68,11 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
     private override init() { super.init() }
 
     static var automaticTransferEnabled: Bool {
-        UserDefaults.standard.object(forKey: preferenceKey) as? Bool ?? true
+        // Unit tests record real triage bundles on a simulator that shares the Mac's
+        // network: they must never upload to the developer's receiver (2026-10-03 a
+        // test run posted test bundles to the live receiver through the P2P relay).
+        if NSClassFromString("XCTestCase") != nil { return false }
+        return UserDefaults.standard.object(forKey: preferenceKey) as? Bool ?? true
     }
 
     func enqueue(bundleURL: URL) {

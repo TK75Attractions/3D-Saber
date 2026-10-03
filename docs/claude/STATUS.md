@@ -55,6 +55,9 @@
 ## 作業ログ(新しい順)
 
 ### 2026-10-03(午後)
+- 実機テスト2回目:体感は良好(遅延・判定のブレとも改善)。受信側に 413 が 17 回出ていたのは、こちらの test 実行時に
+  Simulator が test 用 bundle を本物の receiver へ自動転送していたため(P2P relay / LAN の両方が Simulator から見える)。
+  → test 実行中は自動転送しないよう修正。155608_448 は 1 frame だけの録画で、precheck 失敗は正しい挙動。
 - Codex 再解析(1500 秒の制限内で 962 秒で完了、decision: needs_capture):本物の saber で初めて CASE B を確認。
   f2552 で、速く振った赤 saber の動きぶれ領域が hasEmitterCore=0・emitterScore 0.305(<0.42)で不採用になり、
   ズボンの小さな赤い領域(purity 0.18)が唯一の eligible として勝って飛んだ。ただし不採用候補 4 件が保存されず、原因を断定できなかった。

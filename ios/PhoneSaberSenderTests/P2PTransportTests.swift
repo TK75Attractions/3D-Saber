@@ -200,6 +200,15 @@ final class P2PTransportTests: XCTestCase {
 
     // MARK: Triage bundle upload over P2P
 
+    func testTestRunsNeverUploadTriageBundlesToARealReceiver() {
+        let key = DebugBundleTransfer.preferenceKey
+        let old = UserDefaults.standard.object(forKey: key)
+        defer { UserDefaults.standard.set(old, forKey: key) }
+        UserDefaults.standard.set(true, forKey: key)
+        XCTAssertFalse(DebugBundleTransfer.automaticTransferEnabled)
+    }
+
+
     func testBundleUploaderSendsTheHTTPRequestAndReadsTheStatus() async throws {
         let receiver = try FakeHTTPReceiver(status: 201)
         defer { receiver.stop() }
