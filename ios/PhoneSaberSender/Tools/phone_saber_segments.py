@@ -52,6 +52,18 @@ def _empty_counts() -> dict[str, dict[str, Any]]:
             for label in SEGMENT_LABELS}
 
 
+def label_for_frame(markers: list[dict[str, Any]], frame_id: int,
+                    marker_ids: list[int] | None = None) -> str:
+    """Label of a frame: the newest marker at or before it (``unlabeled`` before the first).
+
+    ``markers`` must already pass ``segment_marker_errors`` (strictly increasing frame IDs).
+    """
+    if marker_ids is None:
+        marker_ids = [marker["frameID"] for marker in markers]
+    position = bisect.bisect_right(marker_ids, frame_id) - 1
+    return markers[position]["label"] if position >= 0 else "unlabeled"
+
+
 def counts_from_metadata(document: dict[str, Any]) -> tuple[dict[str, Any], list[dict[str, Any]], list[str]]:
     """Recompute per-label counts from frames and segmentMarkers."""
     warnings: list[str] = []
@@ -69,8 +81,7 @@ def counts_from_metadata(document: dict[str, Any]) -> tuple[dict[str, Any], list
         if not isinstance(frame_id, int) or isinstance(frame_id, bool):
             warnings.append("frame without an integer frameID skipped")
             continue
-        position = bisect.bisect_right(marker_ids, frame_id) - 1
-        label = markers[position]["label"] if position >= 0 else "unlabeled"
+        label = label_for_frame(markers, frame_id, marker_ids)
         entry = by_label[label]
         entry["frames"] += 1
         for color in COLORS:

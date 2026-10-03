@@ -207,6 +207,175 @@ class SessionReportTallyTests(unittest.TestCase):
         self.assertNotIn("tracking event was not yielded", text)
 
 
+SEGMENT_MARKERS = [{"frameID": 50, "timestamp": 50 / 30, "label": "sabersVisible"},
+                   {"frameID": 104, "timestamp": 104 / 30, "label": "noSaber"},
+                   {"frameID": 108, "timestamp": 108 / 30, "label": "noSaberCovered"}]
+
+
+def segment_counts(red_no_saber: int = 36, red_covered: int = 0, *, no_saber_frames: int = 120,
+                   covered_frames: int = 90) -> dict:
+    return {
+        "unlabeled": {"frames": 50, "red": {"detectedFrames": 10, "measuredFrames": 10},
+                      "blue": {"detectedFrames": 0, "measuredFrames": 0}},
+        "sabersVisible": {"frames": 200, "red": {"detectedFrames": 190, "measuredFrames": 180},
+                          "blue": {"detectedFrames": 150, "measuredFrames": 150}},
+        "noSaber": {"frames": no_saber_frames, "red": {"detectedFrames": red_no_saber,
+                                                       "measuredFrames": red_no_saber},
+                    "blue": {"detectedFrames": 0, "measuredFrames": 0}},
+        "noSaberCovered": {"frames": covered_frames, "red": {"detectedFrames": red_covered,
+                                                             "measuredFrames": red_covered},
+                           "blue": {"detectedFrames": 0, "measuredFrames": 0}},
+    }
+
+
+def add_segments(bundle: Path, by_label: dict, *, context_labels: bool = True,
+                 markers: list | None = None) -> None:
+    """Add the recorder's summary.json segmentSummary and (optionally) per-context segmentLabel."""
+    from phone_saber_segments import label_for_frame
+    from test_phone_saber_segments import recorder_summary
+    markers = SEGMENT_MARKERS if markers is None else markers
+    path = bundle / "summary.json"
+    summary = json.loads(path.read_text())
+    summary["segmentSummary"] = {**recorder_summary(by_label, markers), "markers": markers}
+    path.write_text(json.dumps(summary))
+    if context_labels:
+        for image in summary["images"]:
+            context_path = bundle / image["frameContextPath"]
+            context = json.loads(context_path.read_text())
+            context["segmentLabel"] = label_for_frame(markers, image["frameID"])
+            context_path.write_text(json.dumps(context))
+
+
+class SessionReportSegmentTests(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self.tmp.cleanup)
+        self.root = Path(self.tmp.name)
+        self.bundle = self.root / "phone_saber_triage_sample_session"
+
+    def test_old_bundle_without_segment_fields_is_na(self):
+        write_tracking_bundle(self.bundle)
+        report = build_report(self.bundle)
+        segments = report["segments"]
+        self.assertFalse(segments["available"])
+        self.assertFalse(segments["imageLabelsAvailable"])
+        self.assertIn("no segmentSummary", segments["note"])
+        self.assertEqual(segments["redFalsePositiveVerdict"]["verdict"], "n/a")
+        self.assertTrue(all(i["segmentLabel"] is None for i in segments["images"]))
+        self.assertEqual(report["errors"], [])
+        text = render_markdown(report)
+        section = text.split("## 区間ラベル(ground truth)\n\n")[1].split("\n## ")[0]
+        self.assertIn("- n/a — summary.json has no segmentSummary", section)
+        self.assertIn("**RED 誤検出 noSaber vs noSaberCovered(証拠): n/a — noSaber 0 frames", section)
+        self.assertIn("segmentLabel n/a (contexts have no segmentLabel)", section)
+        self.assertLess(text.index("## 区間ラベル"), text.index("## メモリ"), "section is near the top")
+
+    def test_labeled_bundle_rates_verdict_and_background_only_images(self):
+        write_tracking_bundle(self.bundle)
+        add_segments(self.bundle, segment_counts(red_no_saber=36, red_covered=0))
+        before = snapshot(self.bundle)
+        input_plan(self.bundle)  # the strict contract accepts the recorder's fields
+        report = build_report(self.bundle)
+        self.assertEqual(snapshot(self.bundle), before)
+        self.assertEqual(report["inputContract"], "PASS")
+        self.assertEqual(report["errors"], [])
+        segments = report["segments"]
+        self.assertTrue(segments["available"])
+        self.assertEqual(segments["totalFrames"], 460)
+        self.assertEqual(segments["labels"]["noSaber"]["red"]["detectionRate"], 0.3)
+        self.assertEqual(segments["falsePositive"]["noSaber"]["red"]["falsePositiveFrames"], 36)
+        verdict = segments["redFalsePositiveVerdict"]
+        self.assertEqual(verdict["verdict"], "disappeared")
+        self.assertEqual(verdict["noSaber"], {"frames": 120, "falsePositiveFrames": 36, "falsePositiveRate": 0.3})
+        labels = {i["frameID"]: i["segmentLabel"] for i in segments["images"]}
+        self.assertEqual(labels[100], "sabersVisible")
+        self.assertEqual(labels[104], "noSaber")
+        self.assertEqual(labels[110], "noSaberCovered")
+        self.assertTrue(all(i["labelSource"] == "context" for i in segments["images"]))
+        self.assertEqual(segments["backgroundOnlyImages"],
+                         [f"images/image_{n:02d}.png" for n in range(5, 12)])
+        text = render_markdown(report)
+        section = text.split("## 区間ラベル(ground truth)\n\n")[1].split("\n## ")[0]
+        self.assertIn("| noSaber (誤検出) | 120 | 36 | 30.0% | 0 | 0.0% |", section)
+        self.assertIn("| sabersVisible | 200 | 190 | 95.0% | 150 | 75.0% |", section)
+        self.assertIn("(証拠): noSaber 36/120 (30.0%) → noSaberCovered 0/90 (0.0%): "
+                      "赤い背景物を隠すと RED 誤検出が消えた", section)
+        self.assertIn("selected images in 背景のみの区間: 7/11 (tracking/bridge event images: 7)", section)
+        self.assertIn("`images/image_06.png` frame 105 red tracking(peak): **noSaber — 背景のみの区間**", section)
+        self.assertIn("`images/image_01.png` frame 100 red tracking(before): sabersVisible", section)
+        self.assertIn("- from frame 104 (3.467s) → noSaber", section)
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            self.assertEqual(report_tool.main([str(self.bundle), "--json"]), 0)
+        self.assertEqual(json.loads(out.getvalue())["segments"]["redFalsePositiveVerdict"]["verdict"],
+                         "disappeared")
+
+    def test_labels_fall_back_to_markers_when_contexts_lack_them(self):
+        write_tracking_bundle(self.bundle)
+        add_segments(self.bundle, segment_counts(), context_labels=False)
+        segments = build_report(self.bundle)["segments"]
+        self.assertTrue(all(i["labelSource"] == "markers" for i in segments["images"]))
+        self.assertEqual(segments["images"][4]["segmentLabel"], "noSaber")
+        self.assertIn("(from markers)", render_markdown(build_report(self.bundle)))
+
+    def test_red_verdict_wording(self):
+        from phone_saber_session_report import red_false_positive_verdict
+        def verdict(n, c, nf=120, cf=90):
+            labels = {"noSaber": {"frames": nf, "red": {"detectedFrames": n,
+                                                         "detectionRate": n / nf if nf else None}},
+                      "noSaberCovered": {"frames": cf, "red": {"detectedFrames": c,
+                                                                "detectionRate": c / cf if cf else None}}}
+            return red_false_positive_verdict(labels)
+        self.assertEqual(verdict(36, 0)["verdict"], "disappeared")
+        self.assertEqual(verdict(36, 9)["verdict"], "reduced")
+        self.assertEqual(verdict(36, 27)["verdict"], "not_reduced")
+        self.assertEqual(verdict(0, 0)["verdict"], "none")
+        self.assertEqual(verdict(0, 5)["verdict"], "only_covered")
+        short = verdict(36, 0, cf=29)
+        self.assertEqual(short["verdict"], "n/a")
+        self.assertIn("noSaberCovered 29 frames", short["text"])
+        self.assertEqual(verdict(36, 0, cf=0)["verdict"], "n/a")
+        self.assertEqual(red_false_positive_verdict(None)["verdict"], "n/a")
+
+    def test_missing_covered_segment_is_na_in_the_report(self):
+        write_tracking_bundle(self.bundle)
+        add_segments(self.bundle, segment_counts(covered_frames=0, red_covered=0), markers=SEGMENT_MARKERS[:2])
+        segments = build_report(self.bundle)["segments"]
+        self.assertEqual(segments["redFalsePositiveVerdict"]["verdict"], "n/a")
+        self.assertIn("noSaberCovered 0 frames", segments["redFalsePositiveVerdict"]["text"])
+
+    def test_case_hint_counts_are_split_by_segment_label(self):
+        write_tracking_bundle(self.bundle)
+        add_segments(self.bundle, segment_counts())
+        rows = [{"imageID": "image_002", "frameID": 101, "color": "red", "hint": "A", "countForTally": True},
+                {"imageID": "image_006", "frameID": 105, "color": "red", "hint": "A", "countForTally": True},
+                {"imageID": "image_007", "frameID": 106, "color": "red", "hint": "A", "countForTally": False},
+                {"imageID": "image_010", "frameID": 109, "color": "red", "hint": "B", "countForTally": True},
+                {"imageID": "image_003", "frameID": 102, "color": "red", "hint": "none", "countForTally": True}]
+        with mock.patch.object(report_tool, "candidate_selection_audit", return_value=rows):
+            report = build_report(self.bundle)
+        self.assertEqual(report["caseHintCounts"], {"A": 2, "B": 1, "none": 1})
+        self.assertEqual(report["caseHintCountsBySegment"],
+                         {"sabersVisible": {"A": 1, "none": 1}, "noSaber": {"A": 1},
+                          "noSaberCovered": {"B": 1}})
+        self.assertEqual([r["segmentLabel"] for r in report["caseHints"]],
+                         ["sabersVisible", "noSaber", "noSaberCovered"])
+        text = render_markdown(report)
+        self.assertIn("- counts by segment label: sabersVisible A=1, none=1; noSaber (背景のみの区間) A=1; "
+                      "noSaberCovered (背景のみの区間) B=1", text)
+        self.assertIn("CASE A frame 105 red (image_006) [noSaber]:", text)
+
+    def test_case_hint_counts_by_segment_is_none_without_labels(self):
+        write_codex_bundle(self.bundle)
+        rows = [{"imageID": "image_001", "frameID": 100, "color": "red", "hint": "A", "countForTally": True}]
+        with mock.patch.object(report_tool, "candidate_selection_audit", return_value=rows):
+            report = build_report(self.bundle)
+        self.assertEqual(report["caseHintCounts"], {"A": 1})
+        self.assertIsNone(report["caseHintCountsBySegment"])
+        self.assertNotIn("segmentLabel", report["caseHints"][0])
+        self.assertIn("counts by segment label: n/a", render_markdown(report))
+
+
 class ReceiverReportHookTests(unittest.TestCase):
     def post(self, root: Path, *, patch_report=None) -> tuple[int, str, Path, mock.Mock]:
         inbox = root / "inbox"

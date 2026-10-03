@@ -94,7 +94,13 @@ budget (`unavailable` on the Simulator/macOS), the tracking capture and
 `bridgeDropoutSummary.trackingWindow`, `bridge_priority` ledger codes, bridge events,
 CASE A/B/C hint counts, a small selection-replay sweep (evidence, not production
 values), `tracking_preflight`, and the CLAUDE.md §5 checklist with the original PNGs
-to open first (annotated images are listed as viewing aids only). A failure is logged
+to open first (annotated images are listed as viewing aids only). The 「区間ラベル(ground
+truth)」 section near the top reads the operator segment labels (`segmentSummary`,
+per-context `segmentLabel`): per-label RED/BLUE detection and false-positive rates, an
+evidence verdict on `noSaber` vs `noSaberCovered` RED false positives (`n/a` below 30
+frames per segment), the label of each selected image (flagged 背景のみの区間 under a
+no-saber label) and CASE hints per label (`caseHintCountsBySegment`; only CASE A under
+`sabersVisible` can support fix A); `--json` has it under `segments`. A failure is logged
 as `[PHONE_SABER][REPORT] ... result=FAIL` and never affects receiving or analysis.
 Run it by hand on any bundle (fields missing from older bundles print `n/a`):
 `python3 ios/PhoneSaberSender/Tools/phone_saber_session_report.py <bundle> [--output report.md] [--json]`.

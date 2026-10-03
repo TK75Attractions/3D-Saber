@@ -7,6 +7,10 @@ offline selection replay) and never writes into the bundle, because the bundle
 input contract rejects any extra file. Fields absent from older bundles are
 shown as ``n/a``. The background false-positive evidence section (emitter
 terms, shadow R7e verdict, exposure) is labelled as evidence, not ground truth.
+The 区間ラベル section reads the operator segment labels (``segmentSummary`` via
+phone_saber_segments.py, per-context ``segmentLabel``): per-label detection and
+false-positive rates, noSaber vs noSaberCovered RED comparison, and which selected
+images lie in a background-only segment; CASE hints are also tallied per label.
 
     phone_saber_session_report.py <bundle_dir> [--output report.md] [--json]
 
@@ -26,6 +30,8 @@ from typing import Any, Callable
 
 from phone_saber_background_evidence import background_evidence, render_lines as background_evidence_lines
 from phone_saber_hotspots import static_hotspots
+from phone_saber_metadata_schema import FALSE_POSITIVE_SEGMENT_LABELS, SEGMENT_LABELS
+from phone_saber_segments import SegmentInputError, analyze as segment_analyze, label_for_frame
 from phone_saber_selection_replay import Policy, gap_distribution, load_sequences, quantiles, replay
 from phone_saber_tracking_diagnostics import (
     BRIDGE_ANNOTATED_ROLE,
@@ -35,7 +41,7 @@ from phone_saber_tracking_diagnostics import (
     tracking_preflight,
 )
 from phone_saber_triage_codex import input_plan
-from phone_saber_triage_protocol import MAX_IMAGES, MAX_SUMMARY_BYTES
+from phone_saber_triage_protocol import MAX_CONTEXT_BYTES, MAX_IMAGES, MAX_SUMMARY_BYTES
 
 NA = "n/a"
 MIB = 1024 * 1024
@@ -48,6 +54,12 @@ REPLAY_MAX_DISTANCE = 0.5
 REPLAY_MIN_IOU = 0.2
 REPLAY_JUMP_PX = 100.0
 REPORT_SUFFIX = ".report.md"
+# Report-only wording rule for the noSaber vs noSaberCovered comparison (never a
+# production threshold): each segment needs this many frames, and "reduced" means
+# the covered RED false-positive rate is at most half of the uncovered one.
+SEGMENT_VERDICT_MIN_FRAMES = 30
+SEGMENT_REDUCED_FRACTION = 0.5
+BACKGROUND_ONLY_TEXT = "背景のみの区間"
 
 
 def _get(value: Any, *keys: str) -> Any:
@@ -164,6 +176,132 @@ def tracking_section(summary: dict) -> dict:
     }
 
 
+def _pct(rate: Any) -> str:
+    return NA if not isinstance(rate, (int, float)) or isinstance(rate, bool) else f"{rate * 100:.1f}%"
+
+
+def red_false_positive_verdict(labels: dict | None) -> dict:
+    """Evidence wording for noSaber vs noSaberCovered RED false positives."""
+    sides = {}
+    for label in FALSE_POSITIVE_SEGMENT_LABELS:
+        entry = (labels or {}).get(label) or {}
+        red = entry.get("red") or {}
+        sides[label] = {"frames": entry.get("frames", 0), "falsePositiveFrames": red.get("detectedFrames", 0),
+                        "falsePositiveRate": red.get("detectionRate")}
+    result = {"minFrames": SEGMENT_VERDICT_MIN_FRAMES, **sides}
+    uncovered, covered = sides["noSaber"], sides["noSaberCovered"]
+    if labels is None or any(side["frames"] < SEGMENT_VERDICT_MIN_FRAMES for side in sides.values()):
+        frames = ", ".join(f"{label} {side['frames']} frames" for label, side in sides.items())
+        return {**result, "verdict": "n/a",
+                "text": f"n/a — {frames}(比較には各 ≥{SEGMENT_VERDICT_MIN_FRAMES} frames が必要)"}
+    def side_text(label: str) -> str:
+        side = sides[label]
+        return f"{label} {side['falsePositiveFrames']}/{side['frames']} ({_pct(side['falsePositiveRate'])})"
+    pair = f"{side_text('noSaber')} → {side_text('noSaberCovered')}"
+    n, c = uncovered["falsePositiveRate"], covered["falsePositiveRate"]
+    if n == 0 and c == 0:
+        verdict, meaning = "none", "どちらの区間でも RED 誤検出なし。この capture では背景 RED 誤検出の証拠なし"
+    elif n == 0:
+        verdict, meaning = "only_covered", ("隠した状態でだけ RED 誤検出。隠した赤い物が原因ではない証拠"
+                                            "(別の背景物・照明を ORIGINAL PNG で確認)")
+    elif c == 0:
+        verdict, meaning = "disappeared", "赤い背景物を隠すと RED 誤検出が消えた。背景の赤い物が原因という証拠"
+    elif c <= n * SEGMENT_REDUCED_FRACTION:
+        verdict, meaning = "reduced", ("隠すと RED 誤検出が半分以下に減った。背景の赤い物が主な原因という証拠"
+                                       "(残りは別の要因)")
+    else:
+        verdict, meaning = "not_reduced", ("隠しても RED 誤検出が減らない。隠した物以外(別の背景物・照明・反射)"
+                                           "が原因という証拠")
+    return {**result, "verdict": verdict, "text": f"{pair}: {meaning}"}
+
+
+def _context_segment_label(bundle: Path, relative: Any) -> str | None:
+    """segmentLabel of one selected frame context; None when absent or unreadable."""
+    if not isinstance(relative, str) or not relative.startswith("frames/") or ".." in relative.split("/"):
+        return None
+    path = bundle / relative
+    try:
+        if path.is_symlink() or not path.is_file() or not _inside(path, bundle) \
+                or path.stat().st_size > MAX_CONTEXT_BYTES:
+            return None
+        context = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, UnicodeError, json.JSONDecodeError):
+        return None
+    label = context.get("segmentLabel") if isinstance(context, dict) else None
+    return label if label in SEGMENT_LABELS else None
+
+
+def _image_kind(image: dict) -> str:
+    if str(image.get("failureType", "")).endswith("tracking_instability"):
+        return "tracking"
+    if "bridgeEventID" in image:
+        return "bridge"
+    if "eventIndex" in image:
+        return "motion"
+    return "incident"
+
+
+def segments_section(bundle: Path, summary: dict) -> dict:
+    """Operator segment labels (ground truth): rates, RED verdict and the label of each image."""
+    stats, note = None, None
+    try:
+        stats = segment_analyze(bundle)
+    except SegmentInputError as exc:
+        note = f"n/a — {exc}"
+    markers = stats["markers"] if stats else None
+    images = []
+    for image in summary.get("images") or []:
+        if not isinstance(image, dict):
+            continue
+        frame_id = image.get("frameID")
+        label, source = _context_segment_label(bundle, image.get("frameContextPath")), "context"
+        if label is None and markers is not None and isinstance(frame_id, int) \
+                and not isinstance(frame_id, bool):
+            label, source = label_for_frame(markers, frame_id), "markers"
+        images.append({"path": image.get("path"), "frameID": frame_id, "color": image.get("color"),
+                       "kind": _image_kind(image), "role": image.get("role"),
+                       "failureType": image.get("failureType"),
+                       "segmentLabel": label, "labelSource": source if label is not None else None,
+                       "backgroundOnly": label in FALSE_POSITIVE_SEGMENT_LABELS})
+    return {
+        "available": stats is not None,
+        "note": note,
+        "totalFrames": stats["totalFrames"] if stats else None,
+        "labels": stats["labels"] if stats else None,
+        "falsePositive": stats["falsePositive"] if stats else None,
+        "markers": markers,
+        "warnings": stats["warnings"] if stats else [],
+        "redFalsePositiveVerdict": red_false_positive_verdict(stats["labels"] if stats else None),
+        "imageLabelsAvailable": any(i["segmentLabel"] is not None for i in images),
+        "images": images,
+        "backgroundOnlyImages": [i["path"] for i in images if i["backgroundOnly"]],
+    }
+
+
+def segment_label_of(segments: Any, frame_id: Any) -> str | None:
+    """Label of a frame from the selected images (contexts) or, failing that, the markers."""
+    if not isinstance(segments, dict):
+        return None
+    for image in segments.get("images") or []:
+        if image.get("frameID") == frame_id and image.get("segmentLabel") is not None:
+            return image["segmentLabel"]
+    markers = segments.get("markers")
+    if markers is not None and isinstance(frame_id, int) and not isinstance(frame_id, bool):
+        return label_for_frame(markers, frame_id)
+    return None
+
+
+def case_hint_counts_by_segment(rows: list[dict], segments: Any) -> dict | None:
+    """caseHintCounts split by segment label; None when the bundle has no labels at all."""
+    if not isinstance(segments, dict) or not (segments.get("available") or segments.get("imageLabelsAvailable")):
+        return None
+    counts: dict[str, Counter] = {}
+    for row in rows:
+        label = segment_label_of(segments, row.get("frameID")) or "unknown"
+        counts.setdefault(label, Counter())[str(row.get("hint"))] += 1
+    return {label: dict(counter) for label, counter in counts.items()}
+
+
 def replay_section(bundle: Path, margins: tuple[float, ...], holds: tuple[int, ...]) -> dict:
     sequences = load_sequences([bundle])
     correspondence = Policy(margins[0] if margins else 0.0, REPLAY_MAX_DISTANCE, REPLAY_MIN_IOU, 1)
@@ -235,6 +373,14 @@ def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MA
     # tracking) must not be counted twice — the audit marks the row to tally.
     tallied = [r for r in audit or [] if r.get("countForTally", True)]
     hint_counts = dict(Counter(str(r.get("hint")) for r in tallied)) if audit is not None else None
+    segments = _guard(errors, "segments", lambda: segments_section(bundle, summary))
+    by_segment = _guard(errors, "caseHintCountsBySegment",
+                        lambda: case_hint_counts_by_segment(tallied, segments)) if audit is not None else None
+    case_rows = None
+    if audit is not None:
+        case_rows = [r for r in tallied if r.get("hint") != "none"]
+        if by_segment is not None:
+            case_rows = [{**r, "segmentLabel": segment_label_of(segments, r.get("frameID"))} for r in case_rows]
     # Hotspots are computed once with members (for joining per-candidate emitter
     # evidence); the report's staticHotspots keeps the member-free shape.
     hotspots = _guard(errors, "static_hotspots", lambda: static_hotspots(bundle, include_members=True))
@@ -248,13 +394,18 @@ def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MA
         "redBlueDetectionSummary": summary.get("redBlueDetectionSummary"),
         "dropoutSummary": summary.get("dropoutSummary"),
         "inputContract": "PASS" if plan is not None else f"FAIL ({contract_error})",
+        "segments": segments,
         "memory": _guard(errors, "memory", lambda: memory_section(summary)),
         "tracking": _guard(errors, "tracking", lambda: tracking_section(summary)),
         "bridgeDropoutSummary": summary.get("bridgeDropoutSummary"),
         "bridgeEvents": _guard(errors, "bridge_summary",
                                lambda: bridge_summary(plan)) if plan is not None else None,
         "caseHintCounts": hint_counts,
-        "caseHints": [r for r in tallied if r.get("hint") != "none"] if audit is not None else None,
+        # Same rows as caseHintCounts, split by the operator segment label of the
+        # frame (None when the bundle has no labels): CASE A under noSaber /
+        # noSaberCovered is a switch between background objects, not a saber.
+        "caseHintCountsBySegment": by_segment,
+        "caseHints": case_rows,
         "selectionReplay": _guard(errors, "selection_replay",
                                   lambda: replay_section(bundle, margins, holds)),
         "staticHotspots": _strip_members(hotspots),
@@ -285,6 +436,68 @@ def _color_table(report: dict) -> list[str]:
         lines.append("| " + " | ".join([color] + [_fmt(d.get(k)) for k in (
             "frames", "detectedFrames", "missedFrames", "candidateZeroFrames", "eligibleZeroFrames")]
             + [_fmt(o.get(k)) for k in ("dropoutTransitions", "recoveredTransitions", "falseFrames")]) + " |")
+    return lines
+
+
+SEGMENT_MARKERS_SHOWN = 20
+
+
+def _segment_lines(segments: Any) -> list[str]:
+    lines = ["## 区間ラベル(ground truth)", ""]
+    try:
+        if not isinstance(segments, dict):
+            return lines + ["- n/a"]
+        lines.append("- operator が iPhone で付けた区間ラベル。`noSaber` / `noSaberCovered` 中の検出はすべて"
+                     "誤検出(false positive)。数値は根拠で、production の閾値ではない")
+        labels = segments.get("labels")
+        if not segments.get("available") or not isinstance(labels, dict):
+            lines.append(f"- {segments.get('note') or 'n/a'}")
+        else:
+            markers = segments.get("markers") or []
+            lines.append(f"- frames {segments.get('totalFrames')}, markers {len(markers)}"
+                         " (rate = 検出 frame / その区間の frame。no-saber 区間では誤検出率)")
+            lines.append("")
+            lines.append("| label | frames | RED detected | RED rate | BLUE detected | BLUE rate |")
+            lines.append("| --- | --- | --- | --- | --- | --- |")
+            for label in SEGMENT_LABELS:
+                entry = labels.get(label) or {}
+                red, blue = entry.get("red") or {}, entry.get("blue") or {}
+                name = f"{label} (誤検出)" if label in FALSE_POSITIVE_SEGMENT_LABELS else label
+                lines.append(f"| {name} | {_fmt(entry.get('frames'))} | {_fmt(red.get('detectedFrames'))} | "
+                             f"{_pct(red.get('detectionRate'))} | {_fmt(blue.get('detectedFrames'))} | "
+                             f"{_pct(blue.get('detectionRate'))} |")
+            lines.append("")
+            for marker in markers[:SEGMENT_MARKERS_SHOWN]:
+                lines.append(f"- from frame {_fmt(marker.get('frameID'))} ({_fmt(marker.get('timestamp'))}s) → "
+                             f"{marker.get('label')}")
+            if len(markers) > SEGMENT_MARKERS_SHOWN:
+                lines.append(f"- … {len(markers) - SEGMENT_MARKERS_SHOWN} more markers (see --json)")
+        verdict = segments.get("redFalsePositiveVerdict") or {}
+        lines.append(f"- **RED 誤検出 noSaber vs noSaberCovered(証拠): {verdict.get('text', NA)}**")
+        images = segments.get("images") or []
+        if not images:
+            lines.append("- selected images: none")
+        elif not segments.get("imageLabelsAvailable"):
+            lines.append("- selected images: segmentLabel n/a (contexts have no segmentLabel)")
+        else:
+            flagged = segments.get("backgroundOnlyImages") or []
+            event_flagged = [i for i in images if i["backgroundOnly"] and i["kind"] in {"tracking", "bridge"}]
+            lines.append(f"- selected images in {BACKGROUND_ONLY_TEXT}: {len(flagged)}/{len(images)} "
+                         f"(tracking/bridge event images: {len(event_flagged)})"
+                         + (" — operator ラベル上 saber なし: saber の不安定ではなく背景誤検出として扱う"
+                            "(ORIGINAL PNG で確認)" if event_flagged else ""))
+            for image in images:
+                label = image["segmentLabel"]
+                shown = (f"**{label} — {BACKGROUND_ONLY_TEXT}**" if image["backgroundOnly"]
+                         else _fmt(label))
+                source = " (from markers)" if image.get("labelSource") == "markers" else ""
+                role = f"({image['role']})" if image.get("role") else ""
+                lines.append(f"  - `{image['path']}` frame {_fmt(image['frameID'])} {_fmt(image['color'])} "
+                             f"{image['kind']}{role}: {shown}{source}")
+        for warning in segments.get("warnings") or []:
+            lines.append(f"- warning: {warning}")
+    except Exception as exc:  # noqa: BLE001 - rendering must never break the report
+        lines.append(f"- n/a ({type(exc).__name__}: {exc})")
     return lines
 
 
@@ -355,6 +568,8 @@ def render_markdown(report: dict) -> str:
         add(f"- {key}: {_fmt(report.get(key))}")
     add("")
     out.extend(_color_table(report))
+    add("")
+    out.extend(_segment_lines(report.get("segments")))
     add("")
 
     add("## メモリ (motionEventSummary.runtime)")
@@ -434,10 +649,21 @@ def render_markdown(report: dict) -> str:
             "bundles before geometry recording are always empty)")
     else:
         add("- counts: " + ", ".join(f"{k}={v}" for k, v in sorted(counts.items())))
+        by_segment = report.get("caseHintCountsBySegment")
+        if by_segment is None:
+            add("- counts by segment label: n/a (no segment labels in this bundle)")
+        else:
+            order = [label for label in (*SEGMENT_LABELS, "unknown") if label in by_segment]
+            add("- counts by segment label: " + "; ".join(
+                f"{label}{' (' + BACKGROUND_ONLY_TEXT + ')' if label in FALSE_POSITIVE_SEGMENT_LABELS else ''} "
+                + ", ".join(f"{k}={v}" for k, v in sorted(by_segment[label].items())) for label in order))
+            add("  - 修正 A の根拠候補は sabersVisible の CASE A だけ(それでも ORIGINAL PNG で確認)。"
+                "noSaber / noSaberCovered の CASE A は背景物どうしの往復")
         for row in report.get("caseHints") or []:
             extra = {k: row[k] for k in ("scoreMargin", "bCause", "endpointDiscontinuity",
                                          "candidatesTruncated") if k in row}
-            add(f"  - CASE {row['hint']} frame {row['frameID']} {row['color']} ({row['imageID']}): "
+            segment = f" [{row['segmentLabel']}]" if row.get("segmentLabel") else ""
+            add(f"  - CASE {row['hint']} frame {row['frameID']} {row['color']} ({row['imageID']}){segment}: "
                 f"{row.get('detail')} {_fmt(extra)}")
     add("")
 

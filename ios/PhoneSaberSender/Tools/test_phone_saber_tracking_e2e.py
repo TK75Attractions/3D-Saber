@@ -460,6 +460,20 @@ class TrackingPipelineE2ETests(unittest.TestCase):
         self.assertGreater(report["selectionReplay"]["sequences"], 0)
         self.assertTrue(report["imagesToOpen"]["bridgeOriginals"])
         self.assertTrue(report["imagesToOpen"]["annotatedViewingAidOnly"])
+        # The real recorder always writes segmentSummary and per-context segmentLabel;
+        # the harness never changes the label, so every frame is unlabeled.
+        segments = report["segments"]
+        self.assertTrue(segments["available"])
+        self.assertEqual(segments["markers"], [])
+        self.assertEqual(segments["labels"]["unlabeled"]["frames"], segments["totalFrames"])
+        self.assertEqual(segments["totalFrames"], report["recordedFrameCount"])
+        self.assertEqual(segments["redFalsePositiveVerdict"]["verdict"], "n/a")
+        self.assertTrue(segments["images"])
+        self.assertTrue(all(i["segmentLabel"] == "unlabeled" and i["labelSource"] == "context"
+                            for i in segments["images"]))
+        self.assertEqual(segments["backgroundOnlyImages"], [])
+        self.assertGreaterEqual(report["caseHintCountsBySegment"]["unlabeled"].get("A", 0), 1)
+        self.assertIn("## 区間ラベル(ground truth)", text)
 
     def test_R_bridge_event_inside_the_tracking_window_keeps_the_window_and_its_peak(self):
         # The loss (before 1013, dropout 1014, after 1015) shares frames with the

@@ -115,6 +115,13 @@ during Debug Recording (区間ラベル: `sabersVisible` / `noSaber` /
 label. A detection under `noSaber` or `noSaberCovered` is a false positive, so
 comparing those two rows shows whether covering the red background objects
 removed the RED false positives. See `PHONE_SABER_DEBUG_METADATA_SCHEMA.md`.
+The session report shows the same counts in its 「区間ラベル(ground truth)」
+section (near the top), a one-line evidence verdict comparing the `noSaber` and
+`noSaberCovered` RED false-positive rates (`n/a` when either segment has fewer
+than 30 frames), the label of every selected image (images in `noSaber` /
+`noSaberCovered` are flagged 背景のみの区間: such tracking/bridge events are
+background false positives, not saber instability) and CASE hints split by label
+(`caseHintCountsBySegment`). `--json` carries it under `segments`.
 
 ```bash
 ios/PhoneSaberSender/Tools/phone_saber_segments.py /path/to/bundle
