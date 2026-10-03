@@ -1,16 +1,7 @@
 # PhoneSaber STATUS
 
 ## ユーザー待ち
-- **iPhone 実機 Debug Recording を2本**(2026-10-04 更新。main 96a144f 以降の Debug build で撮る。手順の詳細は docs/claude/analysis/2026-10-03_background_fp_rule_study.md)
-  - 準備:三脚で正立・固定、診断対象の色は BOTH、背景の赤い物(ラベル・カラビナ・コンセントのラベル)は片付けない。Mac で Start PhoneSaber を起動(古い受信側は Ctrl+C で止めてから)。
-  - 録画1(露出実験=自動、5 分以内。区間ラベルを切り替えながら):
-    1. 「saberなし」20 秒。
-    2. 「saberあり」赤だけ点灯:0.5m・1.5m・3m で各 3 秒静止 → 先端をカメラに向けて 3 秒 → ゆっくり振る → 速く 5 回(うち 2 回はカメラへ突く)。
-    3. 点灯した赤 saber をラベル・カラビナ・コンセントのラベルの 30cm 手前で各 3 秒 → それらの前を横切って振る。
-    4. 青だけ点灯で 2 を短く。
-    5. 「赤い物隠し」10 秒。
-  - 録画2:露出実験を 1/120 秒(東日本なら 1/100 秒)にして 1〜3 を繰り返す。
-  - 目的:R7e / PF22 を本番に上げてよいかの判定(点灯した赤 saber が写る frame で shadow 不採用 0、saberなし区間で赤 winner の 80% 以上を不採用)。
+- なし(2026-10-04 夜の2本は受信・解析済み)。次の撮影は「ガイド付き録画」(区間ラベルと剣を振る間の lossless 保存を自動化、実装中)ができてから依頼する。
 
 ## 現在の仮説と確度
 - **2026-10-02 の再解析で見直した。** 既存の代表例(005850_489 f2537、013205_087 f255、010049_190 f660–664)は、
@@ -33,6 +24,12 @@
   「ぐわんぐわん」への寄与は未確定(既存の記録では winner は変わっていない)だが、次の capture は決定的な認識で撮れる。
 
 ## 次にやること
+- **2026-10-04 実機2本(005325_638 自動露出 / 005855_691 1/100 秒)**(docs/claude/analysis/2026-10-04_real_saber_sessions.md):
+  bundle に残った frame は録画の最初と最後(準備・停止中)だけで、剣を振る場面が1枚もなかった。tracking event が準備中の背景どうしの約 490px ジャンプを選んだため。
+  本物の saber 上の CASE A/B/C は 0(保留 1)。修正 A の gate は未達。Codex も2本とも needs_capture(1,058 秒 / 642 秒で完了、時間切れなし)。
+  shadow 昇格テストは未達:点灯した赤 saber は 2 frame だけ(R7e/PF22 とも不採用 0)、背景の赤 winner は R7e で 9/17(目標 80%)。
+  露出:1/100 で静止した saber は十分明るい(emitterScore 0.80–0.86)が、ISO が上がるので背景の誤検出は減らない。既定は自動のままを推奨。
+  → 対策(実装中、診断のみ):録画全体での shadow 集計、最初と最後の数秒を event に選びにくくする、ガイド付き録画。
 1. 新しい実機 session が届いたら、bundle のコピーで次の2つを実行する。
    - `python3 ios/PhoneSaberSender/Tools/phone_saber_triage_codex.py --dry-run <copy>`(CASE hint)
    - `python3 ios/PhoneSaberSender/Tools/phone_saber_selection_replay.py <copy>`(score gap の分布と replay)
@@ -61,6 +58,7 @@
 ## 作業ログ(新しい順)
 
 ### 2026-10-04
+- 実機2本を解析(上記)。ラベル表に 22 frame を追加(904faba)。Codex 解析は時間内に完了。
 - 受信側の点検と修正:/health で古いコードのまま動いているかを表示、Start PhoneSaber が自分で起動した受信側だけ安全に再起動、ログに時刻と理由、test が本物のログ置き場に書かない。
   (調査結果:docs/claude/analysis/2026-10-03_receiver_log_audit.md)テスト由来の codex ログ 3,958 件はゴミ箱へ移した(本物 12 件は残した)。
 - 全 session の一覧ページ `phone_saber_sessions_overview.html`(受信のたびに自動更新、`PhoneSaber Overview.command`)。デスクトップに PhoneSaber Status を追加。
