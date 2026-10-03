@@ -198,6 +198,44 @@ class P2PBridgeParentWatchTests(unittest.TestCase):
                     parent.kill()
 
 
+@unittest.skipUnless(sys.platform == "darwin" and shutil.which("xcrun"), "requires the macOS Swift toolchain")
+class P2PBridgeListenerRestartTests(unittest.TestCase):
+    def test_a_failed_listener_is_rebuilt_on_the_same_port_instead_of_exiting(self):
+        with tempfile.TemporaryDirectory() as directory:
+            binary = launcher.build(Path(directory))
+            unity = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            unity.bind(("127.0.0.1", 0))
+            unity.settimeout(1)
+            self.addCleanup(unity.close)
+            port = free_udp_port()
+            log_path = Path(directory) / "bridge.log"
+            with log_path.open("w") as log:
+                bridge = subprocess.Popen(
+                    [str(binary), "--no-bonjour", "--loopback-only", "--listen-port", str(port),
+                     "--red-port", str(unity.getsockname()[1]), "--blue-port", str(free_udp_port()),
+                     "--simulate-listener-failure-after", "1"], stdout=log, stderr=subprocess.STDOUT)
+            self.addCleanup(lambda: bridge.poll() is None and (bridge.terminate(), bridge.wait(5)))
+            phone = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            phone.settimeout(0.5)
+            self.addCleanup(phone.close)
+            deadline = time.monotonic() + 8
+            while "restarting in" not in log_path.read_text() and time.monotonic() < deadline:
+                time.sleep(0.05)
+            self.assertIn("restarting in 1s", log_path.read_text())
+            self.assertIsNone(bridge.poll(), "the bridge process keeps running")
+            answered = None
+            while answered is None and time.monotonic() < deadline:
+                phone.sendto(datagram(PING, RED, 5, 1), ("127.0.0.1", port))
+                try:
+                    answered = phone.recvfrom(64)[0]
+                except socket.timeout:
+                    pass
+            self.assertEqual(answered, datagram(PONG, RED, 5, 1), log_path.read_text())
+            phone.sendto(datagram(COORDINATES, RED, 5, 2, b"1,2,3,4"), ("127.0.0.1", port))
+            self.assertEqual(unity.recvfrom(64)[0], b"1,2,3,4")
+            self.assertEqual(log_path.read_text().count("listening on UDP %d" % port), 2)
+
+
 class P2PBridgeLauncherTests(unittest.TestCase):
     def test_build_is_cached_per_source_revision(self):
         if not (sys.platform == "darwin" and shutil.which("xcrun")):

@@ -64,6 +64,7 @@ PhoneSaberSender (iPhone)
   - `[P2P] peer connected ...`、`[P2P] peer alive ...`
   - `[P2P] RED received ...` / `[P2P] BLUE received ...`(送信元 session ごとに最初の 1 回だけ)
   - `[P2P] no ping for 3s; iPhone falls back to LAN (fallback to LAN)`
+  - `[P2P] listener failed: …; restarting in …s`(待ち受けが失敗しても process は終了せず、同じ port で張り直す。sleep からの復帰などで起こりうる)
   - 10 秒ごとの集計(`RED=… BLUE=… stale=… malformed=… maxGapMsRED=… maxGapMsBLUE=…`)。
     `maxGapMs` は、座標が届く間隔の最大値(2 秒を超える間隔は saber が見えていないとみなして除外)。
     AWDL が一瞬止まると、ここが大きくなる。

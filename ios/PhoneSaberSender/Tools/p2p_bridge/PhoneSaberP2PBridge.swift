@@ -25,12 +25,14 @@ struct BridgeOptions {
     /// Exit when this process is gone (Unity launches the bridge and passes its pid,
     /// so a crashed or force-quit Editor never leaves an orphaned bridge behind).
     var exitWithParent: pid_t?
+    /// Testing aid: make the listener fail once after this many seconds.
+    var simulateListenerFailureAfter: TimeInterval?
 
     static let usage = """
     usage: PhoneSaberP2PBridge [--name NAME] [--no-bonjour] [--listen-port N] [--loopback-only]
                                [--forward-host HOST] [--red-port N] [--blue-port N]
                                [--stats-interval SECONDS] [--peer-idle-timeout SECONDS]
-                               [--exit-with-parent PID]
+                               [--exit-with-parent PID] [--simulate-listener-failure-after SECONDS]
     """
 
     static func parse(_ arguments: [String]) -> BridgeOptions? {
@@ -49,6 +51,7 @@ struct BridgeOptions {
             case "--stats-interval": guard let v = value().flatMap(Double.init), v > 0 else { return nil }; options.statsInterval = v
             case "--peer-idle-timeout": guard let v = value().flatMap(Double.init), v > 0 else { return nil }; options.peerIdleTimeout = v
             case "--exit-with-parent": guard let v = value().flatMap(Int32.init), v > 0 else { return nil }; options.exitWithParent = v
+            case "--simulate-listener-failure-after": guard let v = value().flatMap(Double.init), v > 0 else { return nil }; options.simulateListenerFailureAfter = v
             case "-h", "--help": return nil
             default: return nil
             }
@@ -110,6 +113,9 @@ final class P2PBridge {
     private var lastPingAt: TimeInterval?
     private var peerLostLogged = true
     private var timer: DispatchSourceTimer?
+    private var boundPort: NWEndpoint.Port?
+    private var restartAttempts = 0
+    private var stopped = false
 
     init?(options: BridgeOptions) {
         guard let forwarder = LocalForwarder(host: options.forwardHost, redPort: options.redPort,
@@ -126,27 +132,38 @@ final class P2PBridge {
     }
 
     func start() throws {
+        try startListener(on: NWEndpoint.Port(rawValue: options.listenPort) ?? .any)
+        startTimer()
+        if let after = options.simulateListenerFailureAfter {
+            queue.asyncAfter(deadline: .now() + after) { [weak self] in
+                self?.log("simulating a listener failure (test option)")
+                self?.listenerFailed("simulated")
+            }
+        }
+    }
+
+    private func startListener(on port: NWEndpoint.Port) throws {
         let parameters = NWParameters.udp
         parameters.includePeerToPeer = true
         if options.loopbackOnly {
             parameters.requiredInterfaceType = .loopback
         }
-        let port = NWEndpoint.Port(rawValue: options.listenPort) ?? .any
         let listener = try NWListener(using: parameters, on: port)
         if options.bonjour {
             listener.service = NWListener.Service(name: options.serviceName, type: PhoneSaberP2P.serviceType)
         }
-        listener.stateUpdateHandler = { [weak self] state in
-            guard let self else { return }
+        listener.stateUpdateHandler = { [weak self, weak listener] state in
+            guard let self, let listener, self.listener === listener else { return }
             switch state {
             case .ready:
+                self.restartAttempts = 0
+                if let bound = listener.port { self.boundPort = bound }
                 let bound = listener.port.map { "\($0.rawValue)" } ?? "?"
                 let service = self.options.bonjour
                     ? "service \"\(self.options.serviceName)\" \(PhoneSaberP2P.serviceType)" : "no Bonjour"
                 self.log("listening on UDP \(bound) (\(service), peer-to-peer enabled); forwarding RED→\(self.options.forwardHost):\(self.options.redPort) BLUE→\(self.options.forwardHost):\(self.options.bluePort)")
             case .failed(let error):
-                self.log("listener failed: \(error); exiting")
-                exit(1)
+                self.listenerFailed("\(error)")
             case .waiting(let error):
                 self.log("listener waiting: \(error)")
             default:
@@ -159,11 +176,37 @@ final class P2PBridge {
         listener.newConnectionHandler = { [weak self] connection in self?.accept(connection) }
         self.listener = listener
         listener.start(queue: queue)
-        startTimer()
+    }
+
+    /// A failed listener (e.g. mDNSResponder restarting after sleep/wake) is
+    /// rebuilt with backoff instead of exiting: Unity starts the bridge only once
+    /// per Play, so exiting would end P2P until the next Play. The previous port
+    /// is tried first so the iPhone's resolved address stays valid.
+    private func listenerFailed(_ reason: String) {
+        listener?.cancel()
+        listener = nil
+        restartAttempts += 1
+        let delay = min(30, pow(2, Double(min(restartAttempts - 1, 5))))
+        log("listener failed: \(reason); restarting in \(Int(delay))s (attempt \(restartAttempts))")
+        queue.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, !self.stopped, self.listener == nil else { return }
+            let preferred = self.boundPort ?? NWEndpoint.Port(rawValue: self.options.listenPort) ?? .any
+            do {
+                try self.startListener(on: preferred)
+            } catch {
+                self.log("cannot reopen UDP \(preferred.rawValue): \(error); using any free port")
+                do {
+                    try self.startListener(on: .any)
+                } catch {
+                    self.listenerFailed("\(error)")
+                }
+            }
+        }
     }
 
     func stop() {
         queue.sync {
+            stopped = true
             timer?.cancel()
             listener?.cancel()
             peers.values.forEach { $0.connection.cancel() }
