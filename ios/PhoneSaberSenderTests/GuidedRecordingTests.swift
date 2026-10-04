@@ -34,24 +34,27 @@ final class GuidedRecordingTests: XCTestCase {
     // MARK: Script
 
     func testShootingPlanScriptIsValidAndMatchesTheRequestedPlan() {
-        let script = GuidedRecordingScript.shootingPlanV1
+        let script = GuidedRecordingScript.shootingPlanV2
         XCTAssertEqual(script.validationErrors, [])
-        XCTAssertEqual(script.version, 1)
+        XCTAssertEqual(script.version, 2)
         XCTAssertEqual(Set(script.steps.map(\.id)).count, script.steps.count)
         XCTAssertLessThanOrEqual(script.totalSeconds, DebugRecordingLimits.maximumDurationSeconds - 30)
         XCTAssertEqual(script.plannedLosslessCaptures, DebugRecordingLimits.maximumGuidedLosslessCaptures)
-        // saberなし 20 s first, 赤い物隠し 10 s last, saberあり in between.
+        // saberなし 20 s first, saberなし 10 s last, saberあり in between; no step
+        // assumes particular objects in the scene (v1 asked for red labels).
         XCTAssertEqual(script.steps.first?.label, .noSaber)
         XCTAssertEqual(script.steps.first?.holdSeconds, 20)
-        XCTAssertEqual(script.steps.last?.label, .noSaberCovered)
+        XCTAssertEqual(script.steps.last?.label, .noSaber)
         XCTAssertEqual(script.steps.last?.holdSeconds, 10)
         XCTAssertTrue(script.steps.dropFirst().dropLast().allSatisfy { $0.label == .sabersVisible })
         let ids = script.steps.map(\.id)
         for required in ["red_still_0_5m", "red_still_1_5m", "red_still_3m", "red_end_on",
-                         "red_slow_swing", "red_fast_swing", "red_near_label", "red_cross_swing",
-                         "blue_still_1_5m", "blue_swing"] {
+                         "red_slow_swing", "red_fast_swing", "red_cross_swing",
+                         "blue_still_1_5m", "blue_swing", "both_swing"] {
             XCTAssertTrue(ids.contains(required), required)
         }
+        XCTAssertFalse(script.steps.contains { $0.label == .noSaberCovered })
+        XCTAssertFalse(script.steps.contains { $0.cue.contains("ラベル") || $0.cue.contains("カラビナ") || $0.cue.contains("赤い物") })
         // Lossless captures only during swing steps.
         XCTAssertTrue(script.steps.filter { $0.losslessCaptures > 0 }.allSatisfy { $0.id.hasSuffix("swing") })
         XCTAssertTrue(script.steps.allSatisfy { !$0.cue.isEmpty && !$0.title.isEmpty })

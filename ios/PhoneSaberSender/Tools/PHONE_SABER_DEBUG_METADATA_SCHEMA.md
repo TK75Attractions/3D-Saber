@@ -487,8 +487,8 @@ keep their selected-frame tallies.
 
 Opt-in. The Debug Recording box has a button ガイド付き録画を開始 next to the manual
 Start Recording (which is unchanged and stays the default). A guided recording runs
-a fixed, versioned step script (`GuidedRecordingScript.shootingPlanV1` in
-`GuidedRecording.swift`, the 2026-10-04 shooting plan in `docs/claude/STATUS.md`):
+a fixed, versioned step script (`GuidedRecordingScript.shootingPlanV2` in
+`GuidedRecording.swift`; v1 `shooting_plan_2026_10_04` also had red-object steps):
 each step has an unlabeled lead-in (spoken Japanese cue, then a 3-2-1 countdown) and
 a hold that carries the step's segment label. The labels go through the same path as
 the manual 区間ラベル picker, so `segmentMarkers` / `segmentSummary` are written as

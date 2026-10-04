@@ -70,16 +70,17 @@ struct GuidedRecordingScript: Equatable, Sendable {
     var totalSeconds: Double { steps.reduce(0) { $0 + $1.leadInSeconds + $1.holdSeconds } }
     var plannedLosslessCaptures: Int { steps.reduce(0) { $0 + $1.losslessCaptures } }
 
-    /// The 2026-10-04 shooting plan in docs/claude/STATUS.md "ユーザー待ち" (録画1):
-    /// saberなし 20 s → red only: still at 0.5 / 1.5 / 3 m, end-on, slow swings,
-    /// fast swings (2 thrusts) → red 30 cm in front of the red label / carabiner /
-    /// outlet label, then swings across them → blue only, short → 赤い物隠し 10 s.
-    /// Still holds are 4 s (the plan's 3 s plus ~1 s reaction time). Lead-ins
-    /// include the spoken cue, walking time and the 3-2-1 countdown.
-    /// Changing any value requires a new `version` (metadata records it).
-    static let shootingPlanV1 = GuidedRecordingScript(
-        id: "shooting_plan_2026_10_04",
-        version: 1,
+    /// Shooting plan v2 (2026-10-05). No assumption about objects in the scene:
+    /// v1 asked for red labels / a carabiner / an outlet label and for covering
+    /// them, which the operator's room does not have. saberなし 20 s → red only:
+    /// still at 0.5 / 1.5 / 3 m, end-on, slow swings, fast swings (2 thrusts),
+    /// a swing across the whole frame → blue only: still, swings → both lit,
+    /// swings → saberなし 10 s. Still holds are 4 s (3 s plus ~1 s reaction
+    /// time). Lead-ins include the spoken cue, walking time and the 3-2-1
+    /// countdown. Changing any value requires a new `version` (metadata records it).
+    static let shootingPlanV2 = GuidedRecordingScript(
+        id: "shooting_plan_2026_10_05",
+        version: 2,
         steps: [
             GuidedRecordingStep(id: "no_saber", title: "saberなし（2本とも消灯）",
                 cue: "ガイド付き録画を始めます。セイバーを2本とも消して、カメラの前で待ってください。",
@@ -102,17 +103,8 @@ struct GuidedRecordingScript: Equatable, Sendable {
             GuidedRecordingStep(id: "red_fast_swing", title: "赤 速く5回（2回は突く）",
                 cue: "赤を速く5回振ってください。そのうち2回は、カメラに向けて突いてください。",
                 leadInSeconds: 8, holdSeconds: 8, label: .sabersVisible, losslessCaptures: 3),
-            GuidedRecordingStep(id: "red_near_label", title: "赤 ラベルの30cm手前で静止",
-                cue: "赤いラベルの30センチ手前で、赤を止めてください。",
-                leadInSeconds: 9, holdSeconds: 4, label: .sabersVisible, losslessCaptures: 0),
-            GuidedRecordingStep(id: "red_near_carabiner", title: "赤 カラビナの30cm手前で静止",
-                cue: "次は、赤いカラビナの30センチ手前で止めてください。",
-                leadInSeconds: 8, holdSeconds: 4, label: .sabersVisible, losslessCaptures: 0),
-            GuidedRecordingStep(id: "red_near_outlet", title: "赤 コンセントのラベルの30cm手前で静止",
-                cue: "次は、コンセントのラベルの30センチ手前で止めてください。",
-                leadInSeconds: 8, holdSeconds: 4, label: .sabersVisible, losslessCaptures: 0),
-            GuidedRecordingStep(id: "red_cross_swing", title: "赤 赤い物の前を横切って振る",
-                cue: "赤い物の前を横切るように、赤を振ってください。",
+            GuidedRecordingStep(id: "red_cross_swing", title: "赤 画面の端から端まで横切って振る",
+                cue: "赤を、画面の端から端まで横切るように振ってください。",
                 leadInSeconds: 7, holdSeconds: 8, label: .sabersVisible, losslessCaptures: 1),
             GuidedRecordingStep(id: "blue_still_1_5m", title: "青だけ 1.5m 静止",
                 cue: "赤を消して、青だけ点灯して、1.5メートルで止めてください。",
@@ -120,11 +112,14 @@ struct GuidedRecordingScript: Equatable, Sendable {
             GuidedRecordingStep(id: "blue_swing", title: "青 ゆっくり→速く振る",
                 cue: "青を、ゆっくり振ってから、速く振ってください。",
                 leadInSeconds: 7, holdSeconds: 8, label: .sabersVisible, losslessCaptures: 1),
-            GuidedRecordingStep(id: "red_objects_covered", title: "赤い物隠し（2本とも消灯）",
-                cue: "両方消して、背景の赤い物を、布などで隠してください。隠したら、カメラの前で待ってください。",
-                leadInSeconds: 15, holdSeconds: 10, label: .noSaberCovered, losslessCaptures: 0),
+            GuidedRecordingStep(id: "both_swing", title: "赤と青 両方点灯して振る",
+                cue: "赤も点灯して、両方を自由に振ってください。",
+                leadInSeconds: 8, holdSeconds: 10, label: .sabersVisible, losslessCaptures: 0),
+            GuidedRecordingStep(id: "no_saber_end", title: "saberなし（2本とも消灯）",
+                cue: "両方消して、カメラの前で待ってください。",
+                leadInSeconds: 8, holdSeconds: 10, label: .noSaber, losslessCaptures: 0),
         ],
-        closingCue: "録画を終わります。赤い物を元に戻してください。おつかれさまでした。"
+        closingCue: "録画を終わります。おつかれさまでした。"
     )
 
     /// Problems that would make the script unsafe to run (empty = valid).
