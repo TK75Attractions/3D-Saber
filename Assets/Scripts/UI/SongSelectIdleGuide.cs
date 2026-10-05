@@ -4,7 +4,7 @@ using UnityEngine.InputSystem;
 using UnityEngine.InputSystem.Controls;
 using UnityEngine.UI;
 
-// 最初の10秒間操作がないときだけ、右手の使い方を選曲UI上に重ねる。
+// 入場直後に右手の使い方を案内し、10秒経っても未操作なら再び選曲UI上に重ねる。
 [DefaultExecutionOrder(200)]
 public sealed class SongSelectIdleGuide : MonoBehaviour
 {
@@ -84,8 +84,10 @@ public sealed class SongSelectIdleGuide : MonoBehaviour
     public void Tick(float seconds, bool active)
     {
         state.Tick(seconds, active);
-        if (!active || !state.ShouldShow) { Hide(); return; }
-        if (!IsVisible) { card.gameObject.SetActive(true); age = frameAge = 0; }
+        // フォーカス復帰では途中から再開し、入場時の案内と再案内の間でだけ巻き戻す。
+        if (!state.ShouldShow) { age = frameAge = 0; Hide(); return; }
+        if (!active) { Hide(); return; }
+        if (!IsVisible) card.gameObject.SetActive(true);
         float dt = float.IsNaN(seconds) || float.IsInfinity(seconds) ? 0 : Mathf.Max(0, seconds);
         age += dt; frameAge += dt;
         group.alpha = Mathf.Clamp01(age / .24f);

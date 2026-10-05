@@ -35,18 +35,33 @@ public class SongSelectIdleGuidePlayTests
         Assert.True(guide == null, "案内は選曲画面と一緒に解放する");
         Assert.False(Object.FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None).Any(t => t.name == "SongSelectHumanStage"), "3D描画用のステージを生成しない");
     }
-    [UnityTest] public IEnumerator IdleShowsGuideAndRaycastsStillReachDiscs()
+    [UnityTest] public IEnumerator EntryGuideShowsOnFirstUpdatesAndReturnsAfterIdleDelay()
     {
+        guide.enabled = true;
+        yield return null;
+        yield return null;
+        Assert.True(guide.IsVisible, "入場直後の通常の更新で案内を表示する");
+        guide.enabled = false;
+        guide.Tick(5.3f, true); Assert.False(guide.IsVisible, "一周したら一旦閉じる");
+        Assert.False(guide.Completed, "案内を見ただけでは操作済みにしない");
+        guide.Tick(3, true); Assert.False(guide.IsVisible);
+        guide.Tick(2, true); Assert.True(guide.IsVisible, "未操作なら10秒後にもう一度案内する");
+    }
+    [UnityTest] public IEnumerator EntryAndIdleGuideDoNotBlockDiscsAndUseTheSameAnimation()
+    {
+        guide.Tick(.25f, true); Assert.True(guide.IsVisible);
+        Canvas.ForceUpdateCanvases();
+        var target = controller.startButton.GetComponent<SongSelectDiscTarget>();
+        AssertGuideDoesNotBlock(target);
+        var entryModel = guide.GetComponentInChildren<SongSelectGuideModel>();
+        Assert.NotNull(entryModel); Assert.True(entryModel.IsReady);
         guide.Tick(9, true); Assert.False(guide.IsVisible);
         guide.Tick(1.01f, true); Assert.True(guide.IsVisible);
         guide.Tick(.25f, true); Canvas.ForceUpdateCanvases();
         var label = guide.GetComponentInChildren<TextMeshProUGUI>(); Assert.NotNull(label);
-        foreach (var graphic in guide.GetComponentsInChildren<Graphic>()) Assert.False(graphic.raycastTarget, graphic.name);
-        var target = controller.startButton.GetComponent<SongSelectDiscTarget>();
-        var hits = new List<RaycastResult>();
-        EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = target.ScreenRect().center }, hits);
-        Assert.IsNotEmpty(hits); Assert.AreEqual(target, hits[0].gameObject.GetComponentInParent<SongSelectDiscTarget>());
+        AssertGuideDoesNotBlock(target);
         var model = guide.GetComponentInChildren<SongSelectGuideModel>(); Assert.NotNull(model);
+        Assert.AreSame(entryModel, model, "入場時も再案内も同じ人体模型のアニメーションを使う");
         Assert.NotNull(model.GetComponent<CanvasRenderer>(), "2DアニメーションをUIに描画する");
         model.SetPose(0); Canvas.ForceUpdateCanvases(); Assert.True(model.IsReady);
         Assert.IsInstanceOf<Texture2D>(model.mainTexture);
@@ -64,6 +79,13 @@ public class SongSelectIdleGuidePlayTests
         Assert.AreEqual(24, seen.Count, "腕を上げる途中の全コマを使う");
         model.SetPose(float.NaN); Assert.AreEqual(0, model.FrameIndex);
         yield return null;
+    }
+    void AssertGuideDoesNotBlock(SongSelectDiscTarget target)
+    {
+        foreach (var graphic in guide.GetComponentsInChildren<Graphic>()) Assert.False(graphic.raycastTarget, graphic.name);
+        var hits = new List<RaycastResult>();
+        EventSystem.current.RaycastAll(new PointerEventData(EventSystem.current) { position = target.ScreenRect().center }, hits);
+        Assert.IsNotEmpty(hits); Assert.AreEqual(target, hits[0].gameObject.GetComponentInParent<SongSelectDiscTarget>());
     }
     [UnityTest] public IEnumerator PrerenderedAnimationStopsWhenHiddenAndUsesNo3DPreview()
     {
@@ -131,16 +153,17 @@ public class SongSelectIdleGuidePlayTests
     [UnityTest] public IEnumerator SustainedAimBeforeDeadlineSuppressesGuideEvenOnTwoSecondTarget()
     {
         var target = controller.startButton.GetComponent<SongSelectDiscTarget>();
-        guide.Tick(3, true);
+        guide.Tick(3, true); Assert.True(guide.IsVisible);
         for (int i = 0; i < 3; i++) aim.TickAt(target.ScreenRect().center, .1f);
         Assert.False(guide.Completed, "長押し時間に関係なく短い横切りでは終了しない");
         aim.TickAt(target.ScreenRect().center, .11f);
-        Assert.True(guide.Completed); Assert.Zero(aim.ShotCount);
+        Assert.True(guide.Completed); Assert.False(guide.IsVisible); Assert.Zero(aim.ShotCount);
         guide.Tick(20, true); Assert.False(guide.IsVisible);
         yield return null;
     }
     [UnityTest] public IEnumerator ButtonSelectionBeforeDeadlineSuppressesGuide()
     {
+        guide.Tick(.25f, true); Assert.True(guide.IsVisible);
         controller.difficultyButtons[1].onClick.Invoke(); guide.Tick(20, true);
         Assert.True(guide.Completed); Assert.False(guide.IsVisible);
         yield return null;
@@ -148,6 +171,11 @@ public class SongSelectIdleGuidePlayTests
     [UnityTest] public IEnumerator InactiveScreenHidesGuideAndDoesNotConsumeTheTenSeconds()
     {
         guide.Tick(50, false); Assert.False(guide.IsVisible);
+        guide.Tick(2, true); Assert.True(guide.IsVisible, "遷移や非フォーカスで入場時の案内を飛ばさない");
+        var model = guide.GetComponentInChildren<SongSelectGuideModel>(); Assert.AreEqual(23, model.FrameIndex);
+        guide.Tick(50, false); Assert.False(guide.IsVisible);
+        guide.Tick(.1f, true); Assert.True(guide.IsVisible);
+        Assert.AreEqual(23, model.FrameIndex, "復帰後も最初からではなく途中のポーズから再開する");
         guide.Tick(10, true); Assert.True(guide.IsVisible);
         guide.Tick(1, false); Assert.False(guide.IsVisible);
         guide.Tick(.3f, true); Assert.True(guide.IsVisible);
