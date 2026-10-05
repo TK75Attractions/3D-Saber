@@ -70,6 +70,8 @@ ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --outpu
 ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --json
 ```
 
+調査の結論(採用・却下したルールと根拠)は [FINDINGS](../../../docs/claude/FINDINGS.md)、残作業は [STATUS](../../../docs/claude/STATUS.md) にまとめている。
+
 ### Cross-session overview (セッション一覧)
 
 `phone_saber_sessions_overview.py` (or double-click `PhoneSaber Overview.command`)
@@ -111,7 +113,7 @@ ios/PhoneSaberSender/Tools/phone_saber_sessions_overview.py --inbox /path/to/inb
 ```
 
 `phone_saber_hotspots.py` is the read-only static-hotspot map for background
-false positives (matte red labels, carabiners). It clusters every recorded
+false positives. It clusters every recorded
 candidate position per color by centroid distance / bbox IoU and reports, per
 cluster, the representative bbox/centroid, frames present, eligible/winning
 fractions, max/median `finalScore`, source types and the selected images that
@@ -208,8 +210,8 @@ selection, which causes large output jumps. Each listed color in
 `background_negative_benchmark.json` must not be detected; any detection is a
 false positive. One control frame is already rejected and must stay rejected.
 
-Why it is separate from the formal corpus: 7 of the 8 frames are detected
-today, so they are known failures. Adding them to the 40/40 lossless gate would
+Why it is separate from the formal corpus: the 2026-10-02 baseline detected
+7 of the 8 frames, so they were known failures. Adding them to the 40/40 lossless gate would
 break the gate before an eligibility fix exists. This benchmark only measures
 progress. It exits 0 unless you pass `--strict`, and it is not wired into
 `tools/verify_phone_saber.sh`.
