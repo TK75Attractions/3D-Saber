@@ -8,6 +8,7 @@ import sys
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import phone_saber_skin_study as skin
 import phone_saber_deep_red_study as deep
+import phone_saber_residual_fp_study as residual
 
 
 class FeatureTests(unittest.TestCase):
@@ -244,6 +245,82 @@ class DeepRedTests(unittest.TestCase):
         self.assertEqual(summary['gains']['1.0']['rejected'], {'skin': 1, 'saber': 1})
         self.assertEqual(summary['grid_margins'][0]['positive_min'], 0)
         self.assertEqual(summary['outcomes'][0]['after_rank'], 1)
+
+
+class ResidualTests(unittest.TestCase):
+    def test_deep_blue_strict_ratios_floor_and_full_pixel_denominator(self):
+        raw = DeepRedTests.raw([(72, 0, 180), (0, 117, 180),
+                               (71, 116, 180), (0, 0, 179), (255, 255, 255)])
+        f = residual.pixel_metrics(raw, list(range(5)), 'blue')
+        self.assertEqual(f['deep_count'], 1)
+        self.assertEqual(f['deep_fraction'], 0.2)
+        self.assertEqual(f['neutral_fraction'], 0.2)
+        self.assertEqual(f['clipped_fraction'], 0.2)
+
+    def test_warm_fraction_matches_production_bg95_integer_boundary(self):
+        raw = DeepRedTests.raw([(200, 100, 95), (200, 100, 96), (255, 255, 255)])
+        self.assertEqual(residual.pixel_metrics(raw, [0, 1, 2], 'red')['warm_fraction'], 1 / 3)
+
+    def test_ring_excludes_domain_and_does_not_fill_bbox_interior(self):
+        import numpy as np
+        points = [[0, 0], [4, 4]]
+        base = residual.domain_indices(points, 10, 10, 1)
+        self.assertEqual(base.tolist(), deep.pixel_indices(points, 10, 10, 1))
+        ring = np.setdiff1d(residual.domain_indices(points, 10, 10, 2), base)
+        self.assertFalse(np.intersect1d(base, ring).size)
+        self.assertNotIn(44, base)
+        self.assertNotIn(44, ring)
+        with self.assertRaises(ValueError):
+            residual.domain_indices(points, 10, 10, -1)
+
+    def test_two_colour_reselection_preserves_input_and_original_ineligibility(self):
+        rows = {}
+        for color in ('red', 'blue'):
+            rows[color] = [dict(color=color, rank=k,
+                features={'deep_count': count},
+                candidate={'eligible': eligible, 'endpoints': [{'x': k, 'y': 0}] * 2})
+                for k, (count, eligible) in enumerate([(0, True), (5, False), (2, True)])]
+        analysis = {'colors': {c: {'candidates': [r['candidate'] for r in rs],
+                                   'selected': rs[0]['candidate']['endpoints']}
+                               for c, rs in rows.items()}}
+        before = copy.deepcopy(analysis)
+        output = residual.filtered(analysis, rows,
+                                   lambda row: residual.accepts(row, {'blue_deep_count': 1}))
+        self.assertEqual(analysis, before)
+        self.assertEqual(output['colors']['red'], before['colors']['red'])
+        self.assertEqual(output['colors']['blue']['selected'], rows['blue'][2]['candidate']['endpoints'])
+        self.assertFalse(output['colors']['blue']['candidates'][1]['eligible'])
+
+    def test_white_halo_requires_both_conditions_and_has_no_deep_exemption(self):
+        rule = {'white': {'red': dict(metric='neutral_fraction', core=.8, halo=.05, radius=4)}}
+        row = dict(color='red', features={'neutral_fraction': .8, 'deep_count': 50,
+                                         'ring4': {'halo_fraction': .05}})
+        self.assertFalse(residual.accepts(row, rule))
+        row['features']['ring4']['halo_fraction'] = .050001
+        self.assertTrue(residual.accepts(row, rule))
+        row['features']['ring4']['halo_fraction'] = 0
+        row['features']['neutral_fraction'] = .799999
+        self.assertTrue(residual.accepts(row, rule))
+
+    def test_extra_blue_truth_does_not_inherit_red_absence(self):
+        self.assertIsNone(skin.EXTRA_TRUTHS[6288])
+        self.assertEqual(residual.EXTRA_BLUE_TRUTHS[6288], [285, 435, 390, 485])
+
+    def test_unknown_edge_output_loss_is_reported_outside_confirmed_recall(self):
+        candidate = {'eligible': True, 'endpoints': [{'x': 0, 'y': 0}] * 2,
+                     'bounding_box': {'min_x': 0, 'min_y': 0, 'max_x': 2, 'max_y': 2}}
+        row = dict(color='blue', rank=0, candidate=candidate,
+                   features={'deep_count': 0}, label='unk')
+        frame = dict(session='synthetic', frame=1, source='labels', gain=1.0,
+                     truths={'red': None, 'blue': '?'}, rows={'red': [], 'blue': [row]},
+                     formal_base=[])
+        summary = residual.evaluate({'frames': [frame]}, [], {'blue_deep_count': 1})
+        blue = summary['gains']['1.0']['colors']['blue']
+        self.assertEqual(blue['correct_base'], 0)
+        self.assertEqual(blue['unknown_base'], 1)
+        self.assertEqual(blue['unknown_kept'], 0)
+        self.assertEqual(blue['absent_base'], 0)
+        self.assertEqual(blue['unknown_changed'][0]['deep_count'], 0)
 
 
 if __name__ == '__main__':
