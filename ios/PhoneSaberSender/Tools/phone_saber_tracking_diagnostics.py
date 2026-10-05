@@ -129,9 +129,30 @@ EMITTER_NUMBER_KEYS = {
 EMITTER_INTEGER_KEYS = {"sampleCount", "colorSampleCount", "maxSecondChannel"}
 EMITTER_BOOL_KEYS = {"hasEmitterCore", "coreByHighValueRatio", "coreByPeakAndMean", "coreByClippedWhite",
                      "baseEligible", "compactRedGate"}
+WARM_NO_DEEP_RED_KEYS = {"applied", "deepCount", "warmCount", "pixelCount", "warmFrac", "rejected"}
+
+
+def valid_warm_no_deep_red(value: Any) -> bool:
+    """Production RED gate verdict (8363024), recorded in emitterDiagnostics."""
+    # rejectionReason is omitted when nil.
+    return isinstance(value, dict) and WARM_NO_DEEP_RED_KEYS <= set(value) \
+        and set(value) <= WARM_NO_DEEP_RED_KEYS | {"rejectionReason"} \
+        and all(isinstance(value[k], bool) for k in ("applied", "rejected")) \
+        and all(isinstance(value[k], int) and not isinstance(value[k], bool) and value[k] >= 0
+                for k in ("deepCount", "warmCount", "pixelCount")) \
+        and value["warmCount"] <= value["pixelCount"] and number(value["warmFrac"]) \
+        and 0 <= value["warmFrac"] <= 1 \
+        and value.get("rejectionReason") in (None, "warmNoDeepRed") \
+        and (value["rejected"] == (value.get("rejectionReason") == "warmNoDeepRed"))
+
+
 def validate_emitter_diagnostics(value: Any) -> None:
     # Retired shadow keys are accepted without interpreting their payloads.
-    allowed = EMITTER_NUMBER_KEYS | EMITTER_INTEGER_KEYS | EMITTER_BOOL_KEYS | {"shadowR7e", "shadowPF22"}
+    allowed = EMITTER_NUMBER_KEYS | EMITTER_INTEGER_KEYS | EMITTER_BOOL_KEYS \
+        | {"shadowR7e", "shadowPF22", "warmNoDeepRed"}
+    if isinstance(value, dict) and "warmNoDeepRed" in value \
+            and not valid_warm_no_deep_red(value["warmNoDeepRed"]):
+        raise BundleError("invalid emitter diagnostics: warmNoDeepRed")
     if not isinstance(value, dict) or not {"emitterScore", "emitterScoreMargin", "hasEmitterCore"} <= set(value) \
             or not set(value) <= allowed \
             or not all(number(value[k]) for k in EMITTER_NUMBER_KEYS & set(value)) \

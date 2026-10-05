@@ -94,3 +94,19 @@ class LegacyDiagnosticsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class WarmNoDeepRedDiagnosticsTests(unittest.TestCase):
+    def test_production_warm_no_deep_red_verdict_is_accepted_in_both_encodings(self):
+        from phone_saber_tracking_diagnostics import validate_emitter_diagnostics, BundleError
+        base = {"emitterScore": 0.8, "emitterScoreMargin": 0.38, "hasEmitterCore": True}
+        kept = {"applied": True, "deepCount": 29, "warmCount": 105, "pixelCount": 351,
+                "warmFrac": 0.299, "rejected": False}
+        validate_emitter_diagnostics({**base, "warmNoDeepRed": kept})
+        validate_emitter_diagnostics({**base, "warmNoDeepRed": {**kept, "rejectionReason": None}})
+        validate_emitter_diagnostics({**base, "warmNoDeepRed": {
+            **kept, "deepCount": 0, "warmFrac": 0.9, "warmCount": 316, "rejected": True,
+            "rejectionReason": "warmNoDeepRed"}})
+        for broken in ({**kept, "rejected": True}, {**kept, "warmCount": 400}, {**kept, "extra": 1}):
+            with self.assertRaises(BundleError):
+                validate_emitter_diagnostics({**base, "warmNoDeepRed": broken})

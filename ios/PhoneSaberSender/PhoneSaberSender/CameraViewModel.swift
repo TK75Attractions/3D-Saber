@@ -1494,8 +1494,11 @@ final class CameraViewModel: NSObject, ObservableObject {
             try camera.lockForConfiguration()
             defer { camera.unlockForConfiguration() }
             let wasCapped = exposureExperimentCapActive
-            if wasCapped {
-                // kCMTimeInvalid restores the device default for the active format.
+            if wasCapped || setting != .auto {
+                // kCMTimeInvalid restores the device default for the active format. Also done
+                // before every capped setting: a cap left on the device (earlier run, before a
+                // reconfiguration) was read as the "default" on 2026-10-06 and the experiment
+                // skipped itself as notNeeded while the camera then ran at 1/30 s.
                 camera.activeMaxExposureDuration = .invalid
                 exposureExperimentCapActive = false
             }
@@ -1533,6 +1536,16 @@ final class CameraViewModel: NSObject, ObservableObject {
     /// The experiment state for Debug Recording metadata, with the device's
     /// current activeMaxExposureDuration read back (read only).
     private func cameraExposureExperimentSnapshot() -> CameraExposureExperimentState {
+        // A camera reconfiguration can reset activeMaxExposureDuration after the cap was
+        // applied; re-apply when the device no longer honours the requested cap.
+        if let camera = exposureExperimentCamera,
+           let requested = cameraExposureExperiment.requestedMaxExposureDuration,
+           let observed = CameraExposureExperimentPlanner.seconds(camera.activeMaxExposureDuration),
+           let wanted = CameraExposureExperimentPlanner.seconds(requested),
+           observed > wanted * 1.02 {
+            print("[Exposure] cap not in effect at recording start (\(observed)s > \(wanted)s); re-applying")
+            applyCameraExposureExperiment(to: camera)
+        }
         var state = cameraExposureExperimentState
         if let camera = exposureExperimentCamera {
             state.observedMaxExposureSeconds = CameraExposureExperimentPlanner.seconds(
