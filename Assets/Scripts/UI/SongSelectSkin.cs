@@ -31,6 +31,7 @@ public class SongSelectSkin : MonoBehaviour
     TextMeshProUGUI timer, achievementDifficulty;
     SongSelectRubyText songTitle;
     SongSelectCorridor corridor;
+    MenuSignalNoise hardNoise;
     RectTransform layout;
     float animation = 1;
     bool built;
@@ -66,6 +67,7 @@ public class SongSelectSkin : MonoBehaviour
         ctl.suppressDefaultDifficultyTint = true;
         corridor = SongSelectCorridor.Build(layout, ctl);
         BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildAchievements(); BuildActions();
+        hardNoise = MenuSignalNoise.BuildScreenOverlay(canvas);
         ctl.OnSelectionChanged += SelectionChanged; ctl.OnDifficultyChanged += DifficultyChanged;
         SelectionChanged(ctl.SelectedIndex); animation = 1; AnimateDiscs();
         var guide = SongSelectIdleGuide.Build(ctl, layout);
@@ -292,6 +294,7 @@ public class SongSelectSkin : MonoBehaviour
     }
     void DifficultyChanged(int selected)
     {
+        hardNoise.SetHardSelected(string.Equals(ctl.difficultyNames[selected], "Hard", System.StringComparison.OrdinalIgnoreCase));
         for (int i = 0; i < 3; i++)
         {
             bool active = i == selected; int level = ctl.DifficultyDisplayLevelAt(i);

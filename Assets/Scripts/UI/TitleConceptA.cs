@@ -116,6 +116,7 @@ public static class TitleConceptA
         rt.anchoredPosition = position;
         rt.sizeDelta = new Vector2(900f, 126f);
         go.GetComponent<TitleConceptAWordmark>().Configure(value, accent);
+        MenuSignalNoise.AttachToLogo(go.GetComponent<TitleConceptAWordmark>());
     }
 
     static Image Image(Transform parent, string name, Vector2 position, Vector2 size, Color tint)
