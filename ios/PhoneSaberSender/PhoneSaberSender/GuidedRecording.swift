@@ -78,13 +78,15 @@ struct GuidedRecordingScript: Equatable, Sendable {
     /// swings → saberなし 10 s. Still holds are 4 s (3 s plus ~1 s reaction
     /// time). Lead-ins include the spoken cue, walking time and the 3-2-1
     /// countdown. Changing any value requires a new `version` (metadata records it).
-    static let shootingPlanV2 = GuidedRecordingScript(
-        id: "shooting_plan_2026_10_05",
-        version: 2,
+    /// v3 (2026-10-06): one lossless frame in the first saberなし hold (what the red false
+    /// positive is was not visible in the v2 bundles), so the fast swing keeps 2 of its 3.
+    static let shootingPlanV3 = GuidedRecordingScript(
+        id: "shooting_plan_2026_10_06",
+        version: 3,
         steps: [
             GuidedRecordingStep(id: "no_saber", title: "saberなし（2本とも消灯）",
                 cue: "ガイド付き録画を始めます。セイバーを2本とも消して、カメラの前で待ってください。",
-                leadInSeconds: 10, holdSeconds: 20, label: .noSaber, losslessCaptures: 0),
+                leadInSeconds: 10, holdSeconds: 20, label: .noSaber, losslessCaptures: 1),
             GuidedRecordingStep(id: "red_still_0_5m", title: "赤だけ 0.5m 静止",
                 cue: "赤だけ点灯して、カメラから50センチで止めてください。",
                 leadInSeconds: 9, holdSeconds: 4, label: .sabersVisible, losslessCaptures: 0),
@@ -102,7 +104,7 @@ struct GuidedRecordingScript: Equatable, Sendable {
                 leadInSeconds: 7, holdSeconds: 8, label: .sabersVisible, losslessCaptures: 1),
             GuidedRecordingStep(id: "red_fast_swing", title: "赤 速く5回（2回は突く）",
                 cue: "赤を速く5回振ってください。そのうち2回は、カメラに向けて突いてください。",
-                leadInSeconds: 8, holdSeconds: 8, label: .sabersVisible, losslessCaptures: 3),
+                leadInSeconds: 8, holdSeconds: 8, label: .sabersVisible, losslessCaptures: 2),
             GuidedRecordingStep(id: "red_cross_swing", title: "赤 画面の端から端まで横切って振る",
                 cue: "赤を、画面の端から端まで横切るように振ってください。",
                 leadInSeconds: 7, holdSeconds: 8, label: .sabersVisible, losslessCaptures: 1),
@@ -154,9 +156,10 @@ extension DebugRecordingLimits {
 }
 
 extension DebugRecordingTriageLimits {
-    /// Triage-bundle slots a guided recording keeps for its lossless swing frames
+    /// Triage-bundle slots a guided recording keeps for its lossless frames (swings and the
+    /// first saberなし hold, one per step first)
     /// ahead of bridge and tracking units (out of `defaultImageCount`).
-    static let guidedManualImageReserve = 4
+    static let guidedManualImageReserve = 5
 }
 
 enum GuidedRecordingAction: Equatable {

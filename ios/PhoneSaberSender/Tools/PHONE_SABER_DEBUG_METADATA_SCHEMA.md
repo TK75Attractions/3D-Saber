@@ -399,7 +399,7 @@ and detection rates per label and color, and the false-positive rates under
 
 Opt-in. The Debug Recording box has a button ガイド付き録画を開始 next to the manual
 Start Recording (which is unchanged and stays the default). A guided recording runs
-a fixed, versioned step script (`GuidedRecordingScript.shootingPlanV2` in
+a fixed, versioned step script (`GuidedRecordingScript.shootingPlanV3` in
 `GuidedRecording.swift`; v1 `shooting_plan_2026_10_04` also had red-object steps):
 each step has an unlabeled lead-in (spoken Japanese cue, then a 3-2-1 countdown) and
 a hold that carries the step's segment label. The labels go through the same path as
@@ -424,7 +424,7 @@ Root `guidedRecording` (also copied to triage `summary.json`):
 | `definition` | string | Human-readable definition of the counts. |
 
 Under a `noSaber` / `noSaberCovered` step every detected frame is a false positive.
-In the triage bundle a guided recording keeps up to 4 of its swing lossless frames
+In the triage bundle a guided recording keeps up to 5 of its lossless frames (swings and, since v3, one in the first saberなし hold)
 ahead of bridge and tracking units (one per step first); manual recordings keep the
 previous selection. `phone_saber_metadata_schema.py` types the field and offers the
 strict `guided_recording_errors`, which the triage input contract applies to

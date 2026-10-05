@@ -51,7 +51,7 @@ from phone_saber_triage_protocol import (
 
 DEFAULT_MAX_IMAGES = 12
 PER_FAILURE_TYPE = 2
-GUIDED_MANUAL_CAPTURE_IMAGES = 4
+GUIDED_MANUAL_CAPTURE_IMAGES = 5
 EXPECTED_SUMMARY_SCOPE = "retained incident candidates and nearby context"
 MAX_REPORT_BYTES = 512 * 1024
 MAX_CODEX_SUMMARY_BYTES = 256 * 1024
@@ -403,7 +403,7 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
             role=image.get("role") if bridge_image is not None else None,
             auxiliary=bool(bridge_image is not None and image.get("role") == BRIDGE_ANNOTATED_ROLE),
         ))
-    # A guided recording keeps up to GUIDED_MANUAL_CAPTURE_IMAGES swing lossless
+    # A guided recording keeps up to GUIDED_MANUAL_CAPTURE_IMAGES lossless
     # frames (DebugRecordingTriage), which the Mac rejected before 2026-10-05.
     manual_limit = GUIDED_MANUAL_CAPTURE_IMAGES if "guidedRecording" in summary else PER_FAILURE_TYPE
     if any(count > (11 if kind.endswith("tracking_instability") else

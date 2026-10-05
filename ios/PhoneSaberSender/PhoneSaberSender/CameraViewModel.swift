@@ -428,7 +428,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     /// and stays the default; these are only set by `startGuidedRecording`.
     @Published private(set) var guidedRecordingRunning = false
     @Published private(set) var guidedRecordingStatus: GuidedRecordingStatus?
-    let guidedRecordingScript = GuidedRecordingScript.shootingPlanV2
+    let guidedRecordingScript = GuidedRecordingScript.shootingPlanV3
     /// Replaced in tests so nothing is spoken.
     var makeGuidedCuePlayer: @MainActor () -> GuidedRecordingCuePlaying = { SpeechGuidedRecordingCuePlayer() }
     private var guidedScheduler: GuidedRecordingScheduler?

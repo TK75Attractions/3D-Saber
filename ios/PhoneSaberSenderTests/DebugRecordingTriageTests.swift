@@ -1772,8 +1772,8 @@ extension DebugBridgeDropoutTests {
     func testGuidedRecordingKeepsOneSwingFramePerStepAheadOfEventUnits() throws {
         let selection = try guidedSelection(guided: true)
         let manual = selection.images.filter { $0.fileName.hasPrefix("manual_frame_") }
-        // One per swing step first (steps 5, 6, 10, 12), within the reserve.
-        XCTAssertEqual(manual.map(\.frameID).sorted(), [40, 50, 80, 120])
+        // One per step first (steps 5, 6, 10, 12), then a second round up to the reserve of 5.
+        XCTAssertEqual(manual.map(\.frameID).sorted(), [40, 50, 60, 80, 120])
         XCTAssertLessThanOrEqual(selection.images.count, DebugRecordingTriageLimits.defaultImageCount)
         // The tracking event still keeps a contiguous window with its peak.
         let tracking = selection.images.filter { $0.eventIndex == DebugRecordingTriageLimits.trackingEventIndex }

@@ -34,9 +34,9 @@ final class GuidedRecordingTests: XCTestCase {
     // MARK: Script
 
     func testShootingPlanScriptIsValidAndMatchesTheRequestedPlan() {
-        let script = GuidedRecordingScript.shootingPlanV2
+        let script = GuidedRecordingScript.shootingPlanV3
         XCTAssertEqual(script.validationErrors, [])
-        XCTAssertEqual(script.version, 2)
+        XCTAssertEqual(script.version, 3)
         XCTAssertEqual(Set(script.steps.map(\.id)).count, script.steps.count)
         XCTAssertLessThanOrEqual(script.totalSeconds, DebugRecordingLimits.maximumDurationSeconds - 30)
         XCTAssertEqual(script.plannedLosslessCaptures, DebugRecordingLimits.maximumGuidedLosslessCaptures)
@@ -56,7 +56,11 @@ final class GuidedRecordingTests: XCTestCase {
         XCTAssertFalse(script.steps.contains { $0.label == .noSaberCovered })
         XCTAssertFalse(script.steps.contains { $0.cue.contains("ラベル") || $0.cue.contains("カラビナ") || $0.cue.contains("赤い物") })
         // Lossless captures only during swing steps.
-        XCTAssertTrue(script.steps.filter { $0.losslessCaptures > 0 }.allSatisfy { $0.id.hasSuffix("swing") })
+        // Lossless frames in swing steps, plus one in the first saberなし hold (what the
+        // false positive is), so every guided bundle shows the background.
+        XCTAssertTrue(script.steps.filter { $0.losslessCaptures > 0 }.allSatisfy {
+            $0.id.hasSuffix("swing") || $0.id == "no_saber" })
+        XCTAssertEqual(script.steps.first?.losslessCaptures, 1)
         XCTAssertTrue(script.steps.allSatisfy { !$0.cue.isEmpty && !$0.title.isEmpty })
         // The scheduler really issues every planned capture.
         XCTAssertEqual(GuidedRecordingScheduler(script: script).plannedCaptureTimes.count,
