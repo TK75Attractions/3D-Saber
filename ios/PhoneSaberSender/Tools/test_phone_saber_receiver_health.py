@@ -1,7 +1,7 @@
 """Receiver /health (stale code, activity), rejection logging and readable failure lines.
 
 Regression tests for the 2026-10-03 receiver log audit
-(docs/claude/analysis/2026-10-03_receiver_log_audit.md).
+(summarised in docs/claude/FINDINGS.md).
 """
 
 from __future__ import annotations

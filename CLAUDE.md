@@ -62,7 +62,7 @@ candidate selection では説明できない例もある(いずれも phonesaber
 - frame 660:eligible が1件だけなのに約437px のジャンプ
 - frame 665:raw PCA の tail が伸びる(raw span 46→218px、robust 46→52px)
 
-**2026-10-02 再解析での見直し**(詳細は docs/claude/STATUS.md と docs/claude/analysis/):
+**2026-10-02 再解析での見直し**(詳細は docs/claude/STATUS.md と docs/claude/FINDINGS.md):
 上記の代表例(2537 / 255 / 660–664)は、original PNG に点灯した赤 saber が映っていない。
 赤の出力は、背景の赤ラベルと赤カラビナの間を往復している。つまり「僅差のすり替え」は起きているが、
 本物の saber の上では未確認。修正 A の根拠には、本物の saber が映った capture での CASE A が必要。
