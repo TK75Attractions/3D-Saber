@@ -22,6 +22,12 @@ private func pointJSON(_ point: PixelPoint) -> [String: Int] {
 
 private func candidateJSON(_ candidate: SaberCandidate) -> [String: Any] {
     [
+        "warmNoDeepRed": candidate.warmNoDeepRed.map { verdict in
+            ["applied": verdict.applied, "deepCount": verdict.deepCount,
+             "warmCount": verdict.warmCount, "pixelCount": verdict.pixelCount,
+             "warmFrac": verdict.warmFrac, "rejected": verdict.rejected,
+             "rejectionReason": verdict.rejectionReason.map { $0 as Any } ?? NSNull()] as [String: Any]
+        } ?? NSNull(),
         "source": candidate.source,
         "score": candidate.score,
         "eligible": candidate.isEmitterEligible,

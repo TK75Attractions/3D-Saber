@@ -2323,6 +2323,12 @@ struct DebugCandidateGeometry: Equatable {
             "coreSupport": round4(value.coreSupport),
             "meanMinChannel": round4(value.meanMinChannel),
             "nearWhiteFraction": round4(value.nearWhiteFraction)]
+        if let verdict = value.warmNoDeepRed {
+            result["warmNoDeepRed"] = ["applied": true, "deepCount": verdict.deepCount,
+                "warmCount": verdict.warmCount, "pixelCount": verdict.pixelCount,
+                "warmFrac": verdict.warmFrac, "rejected": verdict.rejected,
+                "rejectionReason": verdict.rejectionReason.map { $0 as Any } ?? NSNull()] as [String: Any]
+        }
         if let second = value.meanSecondChannel { result["meanSecondChannel"] = round4(second) }
         if let shadow = value.shadowR7e {
             // Evidence only, not applied to recognition.

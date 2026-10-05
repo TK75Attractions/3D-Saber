@@ -1479,6 +1479,50 @@ extension DebugBridgeDropoutTests {
             forensicDirectoryURL: directory)
     }
 
+    func testWarmNoDeepRedContextsKeepAppliedEvidenceWithinPreflightLimit() throws {
+        func candidate(x: Int, rejected: Bool = false) throws -> SaberCandidate {
+            var value = try emitterSaber(x: x, eligible: !rejected)
+            let verdict = SaberWarmNoDeepRedVerdict(deepCount: rejected ? 0 : 1,
+                                                    warmCount: 8, pixelCount: 10)
+            value.warmNoDeepRed = verdict
+            value.endpointDiagnosticTrace?.emitter?.warmNoDeepRed = verdict
+            if rejected {
+                value.diagnosticRejections.append(SaberEligibilityDecision(
+                    name: "warmNoDeepRed", value: verdict.warmFrac, comparison: "<", threshold: 0.30))
+            }
+            return value
+        }
+        let small = try emitterBundle(red: [candidate(x: 200, rejected: true), candidate(x: 10)], blue: [])
+        let context = try XCTUnwrap(try contexts(small).first {
+            ($0["bridgeEvent"] as? [String: Any])?["role"] as? String == "dropout" })
+        let frames = try XCTUnwrap(context["frames"] as? [[String: Any]])
+        let selected = try XCTUnwrap(frames.first { $0["frameID"] as? Int == 11 })
+        let red = try XCTUnwrap(selected["red"] as? [String: Any])
+        let traces = try XCTUnwrap(red["candidateDecisionTrace"] as? [[String: Any]])
+        let rejected = try XCTUnwrap(traces.first {
+            ($0["rejectionReasons"] as? [String])?.contains("warmNoDeepRed") == true })
+        let emitter = try XCTUnwrap(rejected["emitterDiagnostics"] as? [String: Any])
+        let rule = try XCTUnwrap(emitter["warmNoDeepRed"] as? [String: Any])
+        XCTAssertEqual(rule["applied"] as? Bool, true)
+        XCTAssertEqual(rule["deepCount"] as? Int, 0)
+        XCTAssertEqual(rule["warmFrac"] as? Double, 0.8)
+        XCTAssertEqual(rule["rejectionReason"] as? String, "warmNoDeepRed")
+        let geometry = try redGeometry(context, frame: 11)
+        let entries = try XCTUnwrap(geometry["candidates"] as? [[String: Any]])
+        XCTAssertTrue(entries.contains {
+            (($0["emitter"] as? [String: Any])?["warmNoDeepRed"] as? [String: Any])?["applied"] as? Bool == true })
+
+        let many = try (0..<12).map { try candidate(x: 10 + $0 * 30) }
+            + (try (0..<6).map { try candidate(x: 450 + $0 * 20, rejected: true) })
+        let blue = try (0..<12).map { try emitterSaber(x: 10 + $0 * 30) }
+        let large = try emitterBundle(red: many, blue: blue)
+        for bundle in [small, large] {
+            for context in try contexts(bundle) {
+                XCTAssertLessThan(try JSONSerialization.data(withJSONObject: context).count, 32 * 1024)
+            }
+        }
+    }
+
     func testContextsCarryEmitterEvidenceAndCameraWithinTheLimit() throws {
         // Small frame: everything fits, nothing is reduced.
         let small = try emitterBundle(red: [try emitterSaber(x: 10), try emitterSaber(x: 200, score: 70)], blue: [])

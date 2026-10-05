@@ -552,6 +552,8 @@ struct DebugRecordingEmitterDiagnostics: Codable, Equatable {
     let shadowR7e: DebugRecordingShadowR7e?
     /// Red only. Evidence only, not applied to recognition. Absent from older bundles.
     let shadowPF22: DebugRecordingShadowPF22?
+    /// Applied production RED support verdict; absent from older bundles.
+    let warmNoDeepRed: SaberWarmNoDeepRedVerdict?
     // Full fields (triage snapshot only; absent from the streamed metadata).
     // The terms and ratios below are reproducible from the candidate's own
     // peak/mean/high/purity/clipped values and score breakdown.
@@ -600,6 +602,7 @@ struct DebugRecordingEmitterDiagnostics: Codable, Equatable {
         nearWhiteFraction = r(value.nearWhiteFraction)
         shadowR7e = value.shadowR7e.map(DebugRecordingShadowR7e.init)
         shadowPF22 = value.shadowPF22.map(DebugRecordingShadowPF22.init)
+        warmNoDeepRed = value.warmNoDeepRed
         emitterScoreThreshold = SaberEmitterDiagnostics.emitterScoreThreshold
         coreByHighValueRatio = value.coreByHighValueRatio
         coreByPeakAndMean = value.coreByPeakAndMean
@@ -618,7 +621,7 @@ struct DebugRecordingEmitterDiagnostics: Codable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case emitterScore, emitterScoreMargin, hasEmitterCore, baseEligible, bladeLengthSupport
-        case meanSecondChannel, meanMinChannel, nearWhiteFraction, shadowR7e, shadowPF22
+        case meanSecondChannel, meanMinChannel, nearWhiteFraction, shadowR7e, shadowPF22, warmNoDeepRed
         case peakTerm, meanTerm, highValueTerm, purityTerm, clippedWhiteTerm, localContrast
         case emitterTexture, coreSupport, emitterScoreThreshold, coreByHighValueRatio, coreByPeakAndMean, coreByClippedWhite
         case compactRedGate, majorLengthSamples, brightnessVariation, longitudinalCoreCoverage
@@ -638,6 +641,7 @@ struct DebugRecordingEmitterDiagnostics: Codable, Equatable {
         try c.encode(nearWhiteFraction, forKey: .nearWhiteFraction)
         try c.encodeIfPresent(shadowR7e, forKey: .shadowR7e)
         try c.encodeIfPresent(shadowPF22, forKey: .shadowPF22)
+        try c.encodeIfPresent(warmNoDeepRed, forKey: .warmNoDeepRed)
         guard encoder.userInfo[.debugRecordingStreamedMetadata] as? Bool != true else { return }
         try c.encodeIfPresent(peakTerm, forKey: .peakTerm)
         try c.encodeIfPresent(meanTerm, forKey: .meanTerm)

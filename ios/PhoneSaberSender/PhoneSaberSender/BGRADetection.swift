@@ -362,6 +362,37 @@ private func coreLineProposals(coreMask: [UInt8], colorMask: [UInt8],
     return proposals
 }
 
+/// Read the study's dilate1 domain directly from the original (possibly padded) BGRA.
+/// Set is used only for membership, never iterated; all decisions use integer counts.
+func redWarmNoDeepRedSupport(points: [PixelPoint], baseAddress: UnsafePointer<UInt8>,
+                            width: Int, height: Int, bytesPerRow: Int,
+                            sampleStep: Int) -> SaberWarmNoDeepRedVerdict {
+    var seen = Set<Int>()
+    var deepCount = 0, warmCount = 0, pixelCount = 0
+    for point in points {
+        let x = point.x * sampleStep, y = point.y * sampleStep
+        guard x >= 0, x < width, y >= 0, y < height else { continue }
+        for yy in max(0, y - 1)...min(height - 1, y + 1) {
+            for xx in max(0, x - 1)...min(width - 1, x + 1) {
+                guard seen.insert(yy * width + xx).inserted else { continue }
+                let offset = yy * bytesPerRow + xx * 4
+                let b = Int(baseAddress[offset]), g = Int(baseAddress[offset + 1])
+                let r = Int(baseAddress[offset + 2])
+                pixelCount += 1
+                if r >= 180 && g * 100 < 40 * r && b * 100 < 65 * r {
+                    deepCount += 1
+                }
+                if r >= 120 && g * 100 >= 45 * r && g * 100 <= 92 * r
+                    && b * 100 <= 95 * g {
+                    warmCount += 1
+                }
+            }
+        }
+    }
+    return SaberWarmNoDeepRedVerdict(deepCount: deepCount, warmCount: warmCount,
+                                    pixelCount: pixelCount)
+}
+
 /// Scan BGRA once for both colors, then clean and score the two compact masks.
 /// Coordinates remain in the source image's coordinate system.
 func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, bytesPerRow: Int,
@@ -980,6 +1011,25 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             }
         }
         candidates.sort { $0.score > $1.score }
+        // Apply only after every existing eligibility gate and ranking. Scores and
+        // ranked order stay intact; selection below takes the first surviving RED.
+        if color == .red {
+            for index in candidates.indices where candidates[index].isEmitterEligible {
+                let verdict = redWarmNoDeepRedSupport(
+                    points: candidates[index].redSupportSamplePoints, baseAddress: baseAddress,
+                    width: width, height: height, bytesPerRow: bytesPerRow, sampleStep: step)
+                candidates[index].warmNoDeepRed = verdict
+                candidates[index].endpointDiagnosticTrace?.emitter?.warmNoDeepRed = verdict
+                if verdict.rejected {
+                    candidates[index].isEmitterEligible = false
+                    if collectPipelineDiagnostics {
+                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                            name: "warmNoDeepRed", value: verdict.warmFrac,
+                            comparison: "<", threshold: 0.30))
+                    }
+                }
+            }
+        }
         let scaled = candidates.map { candidate in
             SaberCandidate(
                 source: candidate.source,
@@ -1026,6 +1076,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 componentArea: candidate.componentArea * step * step,
                 pointCount: candidate.pointCount,
                 usedPointLEDFallback: candidate.usedPointLEDFallback,
+                warmNoDeepRed: candidate.warmNoDeepRed,
                 diagnosticRejections: candidate.diagnosticRejections,
                 endpointDiagnosticTrace: candidate.endpointDiagnosticTrace.map { trace in
                     SaberEndpointDiagnosticTrace(

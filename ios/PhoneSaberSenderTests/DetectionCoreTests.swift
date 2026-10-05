@@ -4233,3 +4233,166 @@ extension DetectionCoreTests {
         XCTAssertEqual(notes.compactMap { $0["selected"] as? Bool }, [true, true])
     }
 }
+
+// MARK: - Applied deep-red / warm support gate
+
+extension DetectionCoreTests {
+    private func warmSupport(_ pixels: [(UInt8, UInt8, UInt8)], points: [PixelPoint]? = nil,
+                             width: Int? = nil, height: Int = 1, padding: Int = 0,
+                             sampleStep: Int = 1) -> SaberWarmNoDeepRedVerdict {
+        let width = width ?? pixels.count
+        let stride = width * 4 + padding
+        var bytes = Array(repeating: UInt8(0), count: stride * height)
+        for (index, rgb) in pixels.enumerated() {
+            let offset = (index / width) * stride + (index % width) * 4
+            bytes[offset] = rgb.2; bytes[offset + 1] = rgb.1
+            bytes[offset + 2] = rgb.0; bytes[offset + 3] = 255
+        }
+        return bytes.withUnsafeBufferPointer {
+            redWarmNoDeepRedSupport(
+                points: points ?? pixels.indices.map { PixelPoint(x: $0 % width, y: $0 / width) },
+                baseAddress: $0.baseAddress!, width: width, height: height,
+                bytesPerRow: stride, sampleStep: sampleStep)
+        }
+    }
+
+    func testWarmNoDeepRedSyntheticSkinBlobIsRejected() {
+        let verdict = warmSupport(Array(repeating: (190, 130, 105), count: 25), width: 5, height: 5)
+        XCTAssertEqual(verdict.deepCount, 0)
+        XCTAssertEqual(verdict.warmFrac, 1)
+        XCTAssertTrue(verdict.rejected)
+        XCTAssertEqual(verdict.rejectionReason, "warmNoDeepRed")
+        XCTAssertTrue(verdict.applied)
+    }
+
+    func testWarmNoDeepRedKeepsDeepEmitterWithWhiteCorePinkAndNeutralWhite() {
+        let deepWithCore = warmSupport([(250, 40, 30), (255, 255, 255), (190, 130, 105)])
+        XCTAssertEqual(deepWithCore.deepCount, 1)
+        XCTAssertGreaterThanOrEqual(deepWithCore.warmFrac, 0.30)
+        XCTAssertFalse(deepWithCore.rejected)
+        for rgb in [(250, 215, 235), (250, 245, 235), (255, 255, 255)] as [(UInt8, UInt8, UInt8)] {
+            let verdict = warmSupport(Array(repeating: rgb, count: 9), width: 3, height: 3)
+            XCTAssertEqual(verdict.deepCount, 0)
+            XCTAssertEqual(verdict.warmFrac, 0)
+            XCTAssertFalse(verdict.rejected)
+        }
+    }
+
+    func testWarmNoDeepRedUsesUniqueClippedOriginalNeighborhoodAndPaddedStride() {
+        // Only the unsampled middle pixel is deep: a resized mask/sample-only pass
+        // would miss it. Duplicate points and overlapping neighborhoods count once.
+        let pixels: [(UInt8, UInt8, UInt8)] = [(190, 130, 105), (180, 71, 116), (190, 130, 105),
+                                             (0, 0, 0), (0, 0, 0), (0, 0, 0)]
+        let points = [PixelPoint(x: 0, y: 0), PixelPoint(x: 1, y: 0), PixelPoint(x: 0, y: 0)]
+        let verdict = warmSupport(pixels, points: points, width: 3, height: 2, padding: 16, sampleStep: 2)
+        XCTAssertEqual(verdict.pixelCount, 6)
+        XCTAssertEqual(verdict.deepCount, 1)
+        XCTAssertEqual(verdict.warmCount, 2)
+        XCTAssertEqual(verdict, warmSupport(pixels, points: points.reversed(), width: 3,
+                                          height: 2, padding: 16, sampleStep: 2))
+        XCTAssertFalse(verdict.rejected)
+    }
+
+    func testWarmNoDeepRedIntegerBoundariesAndThirtyPercent() {
+        // Deep bounds are strict; the absolute floors and all warm bounds inclusive.
+        for rgb in [(180, 71, 116), (200, 79, 129)] as [(UInt8, UInt8, UInt8)] {
+            XCTAssertEqual(warmSupport([rgb]).deepCount, 1)
+        }
+        for rgb in [(179, 0, 0), (180, 72, 0), (200, 0, 130)] as [(UInt8, UInt8, UInt8)] {
+            XCTAssertEqual(warmSupport([rgb]).deepCount, 0)
+        }
+        for rgb in [(120, 54, 0), (200, 90, 0), (200, 184, 0), (200, 100, 95)] as [(UInt8, UInt8, UInt8)] {
+            XCTAssertEqual(warmSupport([rgb]).warmCount, 1)
+        }
+        for rgb in [(119, 60, 0), (200, 89, 0), (200, 185, 0), (200, 100, 96)] as [(UInt8, UInt8, UInt8)] {
+            XCTAssertEqual(warmSupport([rgb]).warmCount, 0)
+        }
+        XCTAssertTrue(warmSupport(Array(repeating: (190, 130, 105), count: 3)
+                                 + Array(repeating: (0, 0, 0), count: 7)).rejected)
+        XCTAssertFalse(warmSupport(Array(repeating: (190, 130, 105), count: 2)
+                                  + Array(repeating: (0, 0, 0), count: 8)).rejected)
+    }
+
+    private func warmGateImage(halo: (UInt8, UInt8, UInt8)) -> [UInt8] {
+        var bytes = Array(repeating: UInt8(0), count: 480 * 640 * 4)
+        for y in 300..<320 {
+            for x in 60..<420 {
+                let rgb: (UInt8, UInt8, UInt8) = (306..<314).contains(y) ? (255, 255, 255) : halo
+                let offset = (y * 480 + x) * 4
+                bytes[offset] = rgb.2; bytes[offset + 1] = rgb.1
+                bytes[offset + 2] = rgb.0; bytes[offset + 3] = 255
+            }
+        }
+        return bytes
+    }
+
+    func testWarmNoDeepRedProductionSelectionAndRecording() throws {
+        // A brighter skin-like halo reaches existing eligibility, so this checks
+        // the new production rejection rather than the existing brightness gate.
+        let bytes = warmGateImage(halo: (250, 170, 140))
+        let analysis = analyzeSabers(in: bytes, width: 480, height: 640, bytesPerRow: 480 * 4,
+                                    redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                                    collectPipelineDiagnostics: true)
+        let rejected = try XCTUnwrap(analysis.candidates[.red]?.first { $0.warmNoDeepRed?.rejected == true })
+        XCTAssertNil(analysis.selected[.red])
+        XCTAssertFalse(rejected.isEmitterEligible)
+        let verdict = try XCTUnwrap(rejected.warmNoDeepRed)
+        let recording = DebugRecordingCandidate(index: 0, candidate: rejected, selectedIndex: nil)
+        XCTAssertTrue(recording.rejectionReasons.contains("warmNoDeepRed"))
+        XCTAssertEqual(recording.emitterDiagnostics?.warmNoDeepRed, verdict)
+        for streamed in [false, true] {
+            let encoder = JSONEncoder()
+            encoder.userInfo[.debugRecordingStreamedMetadata] = streamed
+            let data = try encoder.encode(recording)
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            let emitter = try XCTUnwrap(json["emitterDiagnostics"] as? [String: Any])
+            let rule = try XCTUnwrap(emitter["warmNoDeepRed"] as? [String: Any])
+            XCTAssertEqual(rule["applied"] as? Bool, true)
+            XCTAssertEqual(rule["deepCount"] as? Int, verdict.deepCount)
+            XCTAssertEqual(rule["warmFrac"] as? Double, verdict.warmFrac)
+            XCTAssertEqual(rule["rejectionReason"] as? String, "warmNoDeepRed")
+            XCTAssertEqual((emitter["shadowR7e"] as? [String: Any])?["applied"] as? Bool, false)
+            XCTAssertEqual((emitter["shadowPF22"] as? [String: Any])?["applied"] as? Bool, false)
+        }
+        for halo in [(250, 40, 30), (250, 215, 218)] as [(UInt8, UInt8, UInt8)] {
+            let kept = analyzeSabers(in: warmGateImage(halo: halo), width: 480, height: 640,
+                                     bytesPerRow: 480 * 4, redThreshold: ColorThreshold(),
+                                     blueThreshold: ColorThreshold(), collectPipelineDiagnostics: true)
+            XCTAssertNotNil(kept.selected[.red])
+            let winner = try XCTUnwrap(kept.candidates[.red]?.first { $0.isEmitterEligible })
+            XCTAssertFalse(try XCTUnwrap(winner.warmNoDeepRed).rejected)
+        }
+        let blue = analyzeSabers(in: warmGateImage(halo: (30, 40, 250)), width: 480, height: 640,
+                                 bytesPerRow: 480 * 4, redThreshold: ColorThreshold(),
+                                 blueThreshold: ColorThreshold(), collectPipelineDiagnostics: true)
+        XCTAssertNotNil(blue.selected[.blue])
+        XCTAssertTrue(try XCTUnwrap(blue.candidates[.blue]).allSatisfy {
+            $0.warmNoDeepRed == nil && $0.endpointDiagnosticTrace?.emitter?.warmNoDeepRed == nil
+                && !$0.diagnosticRejections.contains { $0.name == "warmNoDeepRed" }
+        })
+    }
+}
+
+
+extension DetectionCoreTests {
+    func testWarmNoDeepRedReselectsFirstRemainingRankedCandidate() throws {
+        var bytes = warmGateImage(halo: (250, 170, 140))
+        for y in 400..<416 {
+            for x in 60..<160 {
+                let offset = (y * 480 + x) * 4
+                bytes[offset] = 30; bytes[offset + 1] = 40
+                bytes[offset + 2] = 250; bytes[offset + 3] = 255
+            }
+        }
+        let analysis = analyzeSabers(in: bytes, width: 480, height: 640, bytesPerRow: 480 * 4,
+                                    redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                                    collectPipelineDiagnostics: true)
+        let red = try XCTUnwrap(analysis.candidates[.red])
+        XCTAssertTrue(try XCTUnwrap(red.first?.warmNoDeepRed).rejected)
+        let winner = try XCTUnwrap(red.first { $0.isEmitterEligible })
+        XCTAssertGreaterThan(try XCTUnwrap(winner.warmNoDeepRed).deepCount, 0)
+        XCTAssertEqual(analysis.selected[.red]?.0, winner.endpoints.0)
+        XCTAssertEqual(analysis.selected[.red]?.1, winner.endpoints.1)
+        XCTAssertGreaterThan(winner.endpoints.0.y, 390)
+    }
+}

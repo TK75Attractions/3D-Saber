@@ -201,3 +201,39 @@ session表は元画像、各session cellは「PNG/可視；剣base→影；背�
 | formal | 35/18；17→17；1→1 | – | – |
 formal source groupも全元期待値PASS維持: Fixtures5→5、101530_202 2→2、113614_837 1→1、091430_020 1→1、IMG_5933 2→2、143446_247 17→17、134817_916 8→8、forensic-20260921 2→2、211845 2→2。
 再現: `python3.12 -B ios/PhoneSaberSender/Tools/phone_saber_deep_red_study.py --json /private/tmp/phonesaber-warm-red-results.json`、`--summarize-from /private/tmp/phonesaber-warm-red-results.json --json /private/tmp/phonesaber-warm-red-summary.json`。要求unittestは20/20 PASS、`git diff --check` PASS。Swift・threshold・fixture・ラベル変更なし、commitなし、private PNGコピーなし。gainはAE/AWBの保証でなく、赤ラベル／カラビナの存在も仮定しない。
+
+
+## Production適用（2026-10-05、ユーザー明示承認）
+
+ユーザーが今回明示承認したのは、最終節の **deepCount=0 AND warmFrac>=.30、b0=.95、dilate1** のみ。
+BGRADetection.swift の既存eligibilityとscore sortの後でRED候補へ適用し、元順位で最初の残存eligibleを選ぶ。
+DetectionCore.swiftはscoringに実際に使ったsample pointsを保持し、scale後は解放する。元BGRAをsampleStep（通常2）で参照し、1px正方形近傍をclip・重複除去。
+Setはmembershipだけに使い、反復しない。deep/warm画素境界と30%判定は全て整数比較。
+他のthreshold・BLUE・score・endpoint/PCA・UDP・R7e/PF22（applied=false）・32KB preflight上限は未変更。
+Debug Recordingのcandidate rejectionReasonsにwarmNoDeepRed、emitter diagnosticsとtriage contextにapplied=true、deepCount/warmCount/pixelCount/warmFrac、rejectedとrejectionReasonを追加。
+VideoDetectionDiagnosticとformal lossless runnerも共有analyzeSabers経由で新判定を使う。録画・private PNGはrepoへコピーしていない。
+
+XCTestへ7件追加：RGB190/130/105の肌blob、deep-red＋white coreの免除、pale pink/magenta（250/215/235、B>=G）とneutral whiteの免除、整数境界と30%境界、重複・clip・padded stride・非sample画素のdeep支持、実候補の却下・再選択・BLUE非適用・streamed/snapshot JSON、applied evidence付きcompact contextの32KB regression。
+production integrationでは既存brightness/eligibilityを通る明るいwarm halo（250/170/140）を使い、新ruleによる却下を確認する。
+pale haloのみが既存generationを通る保証はしない；production保持テストにはB>=Gの250/215/218を使い、250/215/235の画素定義は直接supportテストで確認する。
+既存のparity/golden/formal期待値の変更は **0件**。DiagnosticParityHarnessのbit署名に新support verdictを追加しただけで、旧bit一致の条件は維持。
+
+凍結済み`/private/tmp/phonesaber-warm-red-results.json`と`/private/tmp/crosscheck_warm_red.py`で独立cross-check。
+旧production3ファイルのHEAD SHA256をstudy source SHAと照合し、全198 PNGの元SHA256も検証した。
+元画像gain1.00のb0=.95/w=.30 shadow再選択との **mismatches=0**。
+候補4,249件の元診断値・順位・eligibilityとRED/BLUE出力を照合、eligible REDのdeep/warm/count/fractionも一致。
+RED出力が変わる43枚も全てshadowと一致、BLUEは全枚不変。
+private report：`/private/tmp/phonesaber-production-warm-crosscheck.json`、実行log：`/private/tmp/phonesaber-production-warm-crosscheck.log`。
+
+公式`nice -n 10 tools/verify_phone_saber.sh`は実行し、環境エラー後に1回retryした。
+初回log：`.verify-logs/phone-saber/20261005-102230/`。
+retryはwritableなCLANG_MODULE_CACHE_PATH/SWIFT_MODULECACHE_PATHを設定：`.verify-logs/phone-saber/20261005-102411/`。
+**全gate PASSは未達。** retry summaryはiOS XCTest FAIL（NOT_RUN）、Detection PASS、Lossless PASS（40/40、現期待値）、Tools FAIL、iOS Release FAIL、Diff Check PASS。
+CoreSimulatorのXPC接続とLibrary logへのアクセスはsandboxが拒否し、private simulatorを作れずXCTestは未実行。
+ReleaseはSwiftUI State macro serverのmalformed responseで失敗。Toolsはloopback bind等のOperation not permitted、disk capacity取得0による既存headroom gate、launcher/startup subprocessの失敗（422件、failures8/errors33/skipped1）。gateを弱めていない。
+独立したbit parityテストは全fixture・diagnostics off/on/profile・両hash seedでPASS。
+study unittestは20/20 PASS。新XCTestのmacOS抽出実行は`/private/tmp/phonesaber-warm-full-build.log`と`/private/tmp/phonesaber-warm-full-xctest.log`に記録（実production recorder/triageもcompile、iOS全suiteの代替とは扱わない）。
+変更は未commit。承認されたrule以外のrecognition差分は自己レビューでなし。
+macOS抽出XCTestは新7件＋既存compact context3件の **10/10 PASS**。実production recorder/triageを使い、新applied evidence/rejectionReasonがcontextへ届くことと、軽量・多数候補のcontextが32KB未満であることも確認した。
+全公式gateのiOS suite確認を、sandbox制限のない開発環境で再実行する必要がある。
+実機での誤検出・小さい剣・色/露出差・latencyの再試験も未実施。赤ラベルやカラビナの存在は前提にしない。

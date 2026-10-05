@@ -245,7 +245,7 @@ final class SaberEndpointDiagnosticTrace {
     let diffusedBlueBody: Bool
     let gatingValues: [String: Double]
     /// Emitter-eligibility evidence; nil when the candidate had no valid evidence.
-    let emitter: SaberEmitterDiagnostics?
+    var emitter: SaberEmitterDiagnostics?
 
     init(centroidX: Double, centroidY: Double, bodyEndpoints: (PixelPoint, PixelPoint)?,
          minimumArea: Int, bodyPointCount: Int, establishedContinuousBody: Bool,
@@ -316,6 +316,9 @@ struct SaberEmitterDiagnostics: Equatable {
     /// Red candidates only: offline-explored purity-floor rule "PF22", evaluated
     /// as evidence and NEVER applied to eligibility, ranking or output.
     let shadowPF22: SaberShadowPurityFloorVerdict?
+
+    /// Applied final RED selection gate, copied from the original BGRA support pass.
+    var warmNoDeepRed: SaberWarmNoDeepRedVerdict? = nil
 
     static let emitterScoreThreshold = 0.42
     var emitterScoreMargin: Double { emitterScore - Self.emitterScoreThreshold }
@@ -400,6 +403,28 @@ struct SaberShadowPurityFloorVerdict: Equatable {
     }
 }
 
+/// Production RED-only verdict on unique original pixels in the dilate1 domain.
+/// Fractions are diagnostic values; the decision uses exact integer comparisons.
+struct SaberWarmNoDeepRedVerdict: Codable, Equatable {
+    let applied: Bool
+    let deepCount: Int
+    let warmCount: Int
+    let pixelCount: Int
+    let warmFrac: Double
+    let rejected: Bool
+    let rejectionReason: String?
+
+    init(deepCount: Int, warmCount: Int, pixelCount: Int) {
+        applied = true
+        self.deepCount = deepCount
+        self.warmCount = warmCount
+        self.pixelCount = pixelCount
+        warmFrac = pixelCount > 0 ? Double(warmCount) / Double(pixelCount) : 0
+        rejected = deepCount == 0 && pixelCount > 0 && warmCount * 100 >= pixelCount * 30
+        rejectionReason = rejected ? "warmNoDeepRed" : nil
+    }
+}
+
 struct SaberCandidate {
     var source: String = "color-mask"
     var radiance: Double = 0
@@ -435,6 +460,9 @@ struct SaberCandidate {
     let componentArea: Int
     let pointCount: Int
     let usedPointLEDFallback: Bool
+    /// Scoring samples in mask coordinates, retained only until final RED selection.
+    var redSupportSamplePoints: [PixelPoint] = []
+    var warmNoDeepRed: SaberWarmNoDeepRedVerdict? = nil
     /// Populated only for Debug Recording, at the production rejection site.
     var diagnosticRejections: [SaberEligibilityDecision] = []
     var endpointDiagnosticTrace: SaberEndpointDiagnosticTrace? = nil
@@ -993,6 +1021,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                           componentArea: points.count,
                           pointCount: points.count,
                           usedPointLEDFallback: usedPointLEDFallback)
+    if evidence?.color == .red { candidate.redSupportSamplePoints = points }
     if collectEndpointDiagnostics {
         candidate.endpointDiagnosticTrace = SaberEndpointDiagnosticTrace(
             centroidX: meanX, centroidY: meanY,
