@@ -16,9 +16,11 @@ public sealed class ScreenTransition : MonoBehaviour
     static ScreenTransition instance;
     readonly List<EventSystem> blockedSystems = new List<EventSystem>();
     ScreenTransitionGraphic curtain;
+    HardSongIntro hardIntro;
     bool busy;
     public static bool IsBusy => instance != null && instance.busy;
     public static bool IsArriving => IsBusy && instance.arriving;
+    public static bool IsHardIntro => IsBusy && instance.hardIntro != null;
     bool arriving;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -40,6 +42,31 @@ public sealed class ScreenTransition : MonoBehaviour
     public static void Quit()
     {
         if (!IsBusy) Ensure().Begin(null, Style.Back, null, CloseDuration);
+    }
+
+    // 選曲からのHARD開始だけに挟む。リザルト再挑戦・校正・通常遷移には波及させない。
+    public static bool LoadGame(string sceneName, string songId, string title, int level, string difficulty)
+    {
+        if (!HardIntroTimeline.EnabledFor(difficulty)) return Load(sceneName);
+        if (IsBusy) return false;
+        if (string.IsNullOrEmpty(sceneName) || !Application.CanStreamedLevelBeLoaded(sceneName))
+        {
+            Debug.LogWarning("画面を読み込めません: " + sceneName);
+            return false;
+        }
+        var owner = Ensure();
+        try { owner.hardIntro = HardSongIntro.Create(owner.transform, songId, title, level); }
+        catch (Exception error)
+        {
+            // 素材が使えない環境でも開始操作を失わず、通常の幕へ戻す。
+            Debug.LogException(error);
+            return Load(sceneName);
+        }
+        owner.busy = true; owner.arriving = false;
+        owner.gameObject.SetActive(true); owner.BlockInput();
+        SceneManager.sceneLoaded += owner.OnSceneLoaded;
+        owner.StartCoroutine(owner.RunHard(sceneName));
+        return true;
     }
 
     static ScreenTransition Ensure()
@@ -89,6 +116,42 @@ public sealed class ScreenTransition : MonoBehaviour
     }
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode) { BlockInput(); }
+
+    IEnumerator RunHard(string sceneName)
+    {
+        try
+        {
+            curtain.SetProgress(0, Style.Forward);
+            double origin = AudioSettings.dspTime + .05;
+            hardIntro.PlaySignal(origin);
+            AsyncOperation loading = null;
+            bool requested = false;
+            while (true)
+            {
+                float elapsed = Mathf.Max(0, (float)(AudioSettings.dspTime - origin));
+                hardIntro.SetTime(Mathf.Min(elapsed, HardIntroTimeline.PlayStart));
+                if (!requested && elapsed >= HardIntroTimeline.PhotoStart)
+                {
+                    // 写真で全面を覆った後にゲームを読む。曲のDSP予約はIsBusyで待たせる。
+                    requested = true; arriving = true;
+                    try { loading = SceneManager.LoadSceneAsync(sceneName); }
+                    catch (Exception error) { Debug.LogException(error); }
+                    if (loading == null) yield break;
+                }
+                if (elapsed >= HardIntroTimeline.PlayStart && loading != null && loading.isDone) break;
+                yield return null;
+            }
+            yield return null; yield return null; BlockInput();
+            // 読み込みが遅い場合も最後の文字と線を保ち、完成したゲーム画面へ溶かす。
+            for (float t = HardIntroTimeline.PlayStart; t < HardIntroTimeline.Duration; t += Time.unscaledDeltaTime)
+            {
+                hardIntro.SetTime(t);
+                yield return null;
+            }
+            hardIntro.SetTime(HardIntroTimeline.Duration);
+        }
+        finally { Release(); gameObject.SetActive(false); }
+    }
 
     IEnumerator Run(string sceneName, Style style, Action<float> departure, float duration)
     {
@@ -140,6 +203,7 @@ public sealed class ScreenTransition : MonoBehaviour
 
     void Release()
     {
+        if (hardIntro != null) { hardIntro.Hide(); Destroy(hardIntro.gameObject); hardIntro = null; }
         SceneManager.sceneLoaded -= OnSceneLoaded;
         foreach (var events in blockedSystems) if (events != null) events.enabled = true;
         blockedSystems.Clear();
@@ -151,5 +215,11 @@ public sealed class ScreenTransition : MonoBehaviour
     {
         Release();
         if (instance == this) instance = null;
+    }
+
+    void OnDisable()
+    {
+        if (!busy) return;
+        StopAllCoroutines(); Release();
     }
 }

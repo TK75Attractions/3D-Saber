@@ -533,7 +533,8 @@ public class SongSelectController : MonoBehaviour
             OnDifficultyChanged?.Invoke(selectedDifficulty);
             return;
         }
-        if (!ScreenTransition.Load(gameSceneName)) return;
+        if (!ScreenTransition.LoadGame(gameSceneName, songIds[selectedIndex],
+            DisplaySongTitle(songIds[selectedIndex]), CurrentDifficultyDisplayLevel(), difficultyNames[selectedDifficulty])) return;
         StopPreview();
         GameSession.IsCalibrationMode = false;
         GameSession.SelectedSongId = songIds[selectedIndex];

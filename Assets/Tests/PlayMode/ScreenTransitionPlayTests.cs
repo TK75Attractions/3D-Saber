@@ -84,16 +84,25 @@ public class ScreenTransitionPlayTests
             Assert.AreEqual(concept, TitleConceptSelection.Current);
             var ctl = Object.FindFirstObjectByType<TitleMenuController>();
             ctl.OnStartButton();
-            Assert.True(ScreenTransition.IsBusy);
             Assert.AreEqual("Title", SceneManager.GetActiveScene().name, "退出演出の前にシーンを破棄しない");
-            ctl.OnStartButton();
-            Assert.False(ScreenTransition.Load("Result"), "二重遷移を受け付けない");
             var motion = Object.FindFirstObjectByType<TitlePresentationMotion>();
             Assert.NotNull(motion);
             while (motion != null && motion.Departure < .2f) yield return null;
             Assert.NotNull(motion);
             Assert.Greater(motion.Departure, .1f);
             Capture("title-" + concept + "-departure");
+            // 現在のタイトルは、前進演出の後にチュートリアルの問いかけを挟む。
+            // 「いいえ」を選んでから共通遷移を検証し、旧仕様の即時遷移を前提にしない。
+            double promptDeadline = Time.realtimeSinceStartupAsDouble + 4;
+            TitleTutorialPrompt prompt = null;
+            while (Time.realtimeSinceStartupAsDouble < promptDeadline &&
+                ((prompt = Object.FindFirstObjectByType<TitleTutorialPrompt>()) == null || !prompt.IsOpen)) yield return null;
+            Assert.NotNull(prompt); Assert.True(prompt.IsOpen);
+            prompt.Choose(false, "transition-test");
+            while (!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < promptDeadline) yield return null;
+            Assert.True(ScreenTransition.IsBusy);
+            ctl.OnStartButton();
+            Assert.False(ScreenTransition.Load("Result"), "二重遷移を受け付けない");
             yield return WaitForTransition();
             AssertReady("SongSelect");
             var back = GameObject.Find("BackToTitle").GetComponent<Button>();
