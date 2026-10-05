@@ -297,6 +297,8 @@ public class InputPoint : MonoBehaviour
             p2pBridge?.Dispose();
             p2pBridge = new PhoneSaberP2PBridgeProcess();
             p2pDataPath = Application.dataPath;
+            // iPhone の Debug Recording を受け取る診断の受信側も、ターミナルを開かずに使えるようにする。
+            PhoneSaberTriageReceiverLauncher.EnsureStarted(p2pDataPath);
 
             networkShutdown = false;
             receiverAlive1 = false;
