@@ -94,3 +94,5 @@ iPhone で Stop ─→ triage bundle
 - Codex CLI があるか。
 
 終了コードは NG あり 2、WARN のみ 1、すべて OK 0。Terminal から `python3 ios/PhoneSaberSender/Tools/phone_saber_status.py` でも動きます。
+
+> 2026-10-05: Unity の Play で、診断の受信側(Start PhoneSaber と同じもの)も自動で起動する。Start PhoneSaber を別に開く必要はない(開いても重複はしない)。無効化は `PHONESABER_TRIAGE_RECEIVER=0`。
