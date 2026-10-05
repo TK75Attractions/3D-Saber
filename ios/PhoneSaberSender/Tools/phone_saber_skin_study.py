@@ -104,6 +104,11 @@ def build_harness(directory: Path) -> Path:
     diag = replace_once(diag, '        "source": candidate.source,',
                         '        "study_points": candidate.studyPoints,\n'
                         '        "study_color_flags": candidate.studyColorFlags,\n'
+                        '        "study_rejections": candidate.diagnosticRejections.map { ["name": $0.name, "value": $0.value.map { $0 as Any } ?? NSNull(), "comparison": $0.comparison.map { $0 as Any } ?? NSNull(), "threshold": $0.threshold.map { $0 as Any } ?? NSNull()] },\n'
+                        '        "study_gates": candidate.endpointDiagnosticTrace?.gatingValues ?? [:],\n'
+                        '        "study_compact_red": candidate.isCompactRed,\n'
+                        '        "study_base_eligible": candidate.endpointDiagnosticTrace?.emitter?.baseEligible ?? candidate.isEmitterEligible,\n'
+                        '        "study_emitter_score": candidate.endpointDiagnosticTrace?.emitter?.emitterScore ?? 0,\n'
                         '        "clipped_white": candidate.clippedWhiteRatio,\n'
                         '        "brightness_variation": candidate.brightnessVariation,\n'
                         '        "width_variation": candidate.widthVariation,\n'
