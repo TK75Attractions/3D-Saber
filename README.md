@@ -82,3 +82,7 @@ setupは、Gitに入っていないワークスペースのファイル（`../..
 Unity側を別の場所にcloneした場合は `./setup_mac.command --3d-saber "/path/to/3D-Saber"` を使用します。`--check` は書き込みなしの環境確認、`--verify` は通常setupに加えてセットアップツール自身のテストも実行します。通常setupはGit LFSを導入済みなら初期化し、Unity assetを取得して、既存のinstaller経由でDesktop launcherを設置します。Homebrewがあれば不足したGit LFSを `brew install git-lfs` で導入します。Homebrew、[Codex CLI](https://learn.chatgpt.com/docs/codex/cli)、Xcode、Unity Hub/Editor、iPhoneの署名と実機実行は画面の案内に従い手動で用意してください。Codex CLIの認証は `codex login` で本人が行います。Makinas fontは別途ローカルに設置しますが、EditModeテスト用のNotoSansJP-Lightはリポジトリに含まれています。
 
 通常setupの報告は `~/Library/Logs/PhoneSaber/setup-latest.log` に保存されます。`--check` はログも作りません。終了コードは `0` が準備完了、`1` が必須処理の失敗、`2` が手動作業ありです。通常setupはPhoneSaber Toolsのテスト、Python構文、`git diff --check` を実行します。受信プロセス、Unityの長いPlayModeテスト、iOS実機テストは起動しません。iOS/Unityの全テストが必要な場合は既存の `./tools/verify_phone_saber.sh` を使います。
+
+## 開発の状況と調査結果
+
+残作業は [STATUS](docs/claude/STATUS.md) の優先順リスト、過去の調査と採用・見送りの根拠は [FINDINGS](docs/claude/FINDINGS.md) を参照してください。ラベル・数値一覧は `docs/claude/data/`、当日の手順は [運用手順](docs/claude/EVENT_DAY_RUNBOOK.md) にあります。

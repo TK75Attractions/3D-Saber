@@ -1,176 +1,48 @@
 # PhoneSaber STATUS
 
 ## ユーザー待ち
-- **実機再試験(production 変更後)**:main の最新版を Debug build で入れて、ガイド付き録画 v2(約3分12秒)を1本撮る。
-  見ること:saberなし区間の赤の誤検出(前回 598/598)が減ったか、赤い剣を振っている間に見失わないか、肌が写っていても剣を追えるか。
-  - 部屋には元々赤い物はない(2026-10-05 にユーザーが確認)。赤いラベル・カラビナなどを前提にした手順や依頼はしない。
-- formal fixture `red_short_component_last_true_89`:期待される端点 (422,146)–(444,146) は窓の上で、本物の剣は右下。
-  ユーザーの決定は「剣の位置に直す」(2026-10-05)。ただし今の検出器はまだ窓を選ぶので、期待値だけ直すと 39/40 になる。
-  白っぽい光と剣を見分けるルール W を試したが、淡いピンクの剣(min/max 0.86)まで外れ、効果は fixture 89 の1枚だけだったので採用しなかった(docs/claude/analysis/2026-10-05_residual_fp_study.md)。期待値は窓のまま。窓と淡い剣の両方が写った新しい capture が増えたら再検討する。
+
+- `8363024` 以降の Debug build でガイド付き録画 v2（約 3 分 12 秒）を 1 本。saberなしの肌・照明、赤/青の静止・速い振り・画面端を撮る。青の淡い端片の点灯状態も確認する（下の 1・3）。部屋に赤い物はなく、配置・隠蔽は不要。
+- fixture 89 は「剣の位置に直す」と決定済み。再承認待ちではなく、正しい検出と端点の証拠待ち（下の 5）。
 
 ## 現在の仮説と確度
-- **2026-10-02 の再解析で見直した。** 既存の代表例(005850_489 f2537、013205_087 f255、010049_190 f660–664)は、
-  original PNG に**点灯した赤 saber が映っていない**。赤い出力は、背景の赤ラベル(左)と赤カラビナ(右下)の間を往復している。
-  - したがって「僅差の candidate すり替え(CASE A)」は起きているが、**本物の saber の上では未確認**。
-    いまの例に修正 A を入れても、誤った背景出力が安定するだけ。修正 A の根拠にはならない。
-  - より有力な見方: saber 不在時に背景の赤い物が eligible になる(背景誤検出 / eligibility の問題)。**確度は「高」**(2026-10-02 解析)。
-    production の detector を offline で再現(端末の score と完全一致)した結果、赤ラベル・カラビナは emitterScore 0.68–0.73(閾値 0.42)で eligible を通る。
-    赤の「value」は max channel = R なので、つや消しの赤い物でも R が飽和すれば LED と区別できない。白い芯(core)の証拠は必須ではない。
-    10-01 の実 saber 映像でも、赤ラベルは 14 frame 中 13 frame で eligible のまま控えており、端から見た saber(score 40.2)にラベル(55.1)が勝つ frame もあった。
-    単独できれいに分ける特徴はない(mean value の AUC 0.92 が最良だが露出に依存し、保護対象の正例 device_normal_red_390 と重なる)。
-    詳細: docs/claude/analysis/2026-10-02_background_false_positives.md
-  - 本物の saber が関わる例は 1 件だけ(20260930_234740_348 f4023 blue。CASE B 寄り。画面外に出た可能性あり、event frame の PNG なし)。
-  - CASE C(raw PCA tail): 010049_190 f665(raw 218 / robust 52)の 1 件。対象は背景物。
-- score gap の分布(winner − runner-up、agent の再解析): ジャンプ開始 5 件はすべて ≤3.2。
-  ただし安定 frame でも 26% が <3 なので、margin だけではジャンプを切り分けられない(n=5、すべて背景物)。
-- 修正 A の gate(本物の saber で CASE A を、別々の swing で 2 event 以上)は**未達**。production は変更しない。
-- **認識の非決定性を修正済み(bbc1f32)**: core-line 候補の score が Set の反復順(起動ごと・frame ごとに変わる)に依存していた。
-  最大 4.3 点揺れ、eligibility の閾値(0.30)をまたぐ例もあった。点を並べ替えるだけの1行修正で、144 画像で winner/eligibility/端点は不変、formal 40/40。
-  「ぐわんぐわん」への寄与は未確定(既存の記録では winner は変わっていない)だが、次の capture は決定的な認識で撮れる。
+
+- 高: 肌・照明・背景の誤検出と、速い振りのブレによる eligibility 消失。代表的な旧 CASE A は背景同士で、修正 A の gate は未達。
+- 高: AWDL の詰まりは認識とは別の遅延原因。interactiveVoice の改善効果は実機未確認。
+- 確認済み: score の決定性は `bbc1f32` で修正。赤 warmNoDeepRed は `8363024` で採用、公式 verify 全 PASS。実機再試験は未了。
+- 保留: 青 deep support の採否。W は淡いピンク剣を失うため不採用。fixture 89 は窓期待値のまま。根拠・数値・却下案は [FINDINGS.md](FINDINGS.md)。
 
 ## 次にやること
-- **2026-10-05 残りの誤検出の分類**(docs/claude/analysis/2026-10-05_residual_fp_study.md、Codex 実施・Claude 確認):warmNoDeepRed の後に残る誤った出力を、198 枚の元画像で全件分類した(赤は「その他」41・布 11 が多く、青は白い光・窓 12・布 9)。
-  青の「濃い青の画素(B≥180, R<.40B, G<.65B)があれば採用」は、青の剣なし誤検出を 29→18 にし、今正しい出力を全部保つ。ただし手持ちカメラの session で、点灯しているか分からない淡い青の端を落とすので、まだ本番には入れない(次のガイド付き録画の青のステップで確かめる)。
-- **2026-10-05 production 変更:赤の warmNoDeepRed**(docs/claude/analysis/2026-10-05_deep_red_support_study.md):
-  赤の eligible 候補のうち「濃い赤の画素(G/R<.40, B/R<.65, R≥180)が 0」かつ「暖色の画素(R≥120, .45≤G/R≤.92, B/G≤.95)が 30% 以上」のものを外し、次に順位の高い eligible を選ぶ。
-  根拠:198 枚の元画像(明るさ ±8%)で、今正しく出ている剣 147/147 を維持、formal 40/40、肌・照明 134/144 を除外、saberなしの誤検出 80→55、232850 の saberなし 9→0。
-  本番の検出器と調査の判定は 198 枚で一致(0 mismatch)。処理時間の中央値 13.9→14.2 ms。窓のような白っぽい光と、青い照明の下で白っぽく写る剣は対象外。
-- **2026-10-05 肌・照明 vs 赤 LED の offline 調査**(docs/claude/analysis/2026-10-05_skin_vs_led_study.md、Codex 実施・Claude 確認):
-  余裕を持って分けられる特徴はなかった。最良の弱い候補(色相 > 11° かつ coreSupportRatio < 0.28)は formal 40/40 を保ち、232850 の saber なし誤検出を 9→4 にするが、明るさ +8% では効かない。本番には入れない。
-- **2026-10-04 ガイド付き録画(232850_471、1/100 秒)**(docs/claude/analysis/2026-10-04_guided_recording_232850.md):
-  saberなし区間でも赤が 100% 検出される。正体は**顔・足の肌と天井照明**(既知の赤い物ではない)。本番でもプレイヤーの肌は写るので重要。
-  剣を振る lossless 4 枚はすべて正しい剣の上で、CASE A/B/C はない。R7e 67% / PF22 2% で、昇格は支持できない。
-- **2026-10-04 実機2本(005325_638 自動露出 / 005855_691 1/100 秒)**(docs/claude/analysis/2026-10-04_real_saber_sessions.md):
-  bundle に残った frame は録画の最初と最後(準備・停止中)だけで、剣を振る場面が1枚もなかった。tracking event が準備中の背景どうしの約 490px ジャンプを選んだため。
-  本物の saber 上の CASE A/B/C は 0(保留 1)。修正 A の gate は未達。Codex も2本とも needs_capture(1,058 秒 / 642 秒で完了、時間切れなし)。
-  shadow 昇格テストは未達:点灯した赤 saber は 2 frame だけ(R7e/PF22 とも不採用 0)、背景の赤 winner は R7e で 9/17(目標 80%)。
-  露出:1/100 で静止した saber は十分明るい(emitterScore 0.80–0.86)が、ISO が上がるので背景の誤検出は減らない。既定は自動のままを推奨。
-  → 対策(実装中、診断のみ):録画全体での shadow 集計、最初と最後の数秒を event に選びにくくする、ガイド付き録画。
-1. 新しい実機 session が届いたら、bundle のコピーで次の2つを実行する。
-   - `python3 ios/PhoneSaberSender/Tools/phone_saber_triage_codex.py --dry-run <copy>`(CASE hint)
-   - `python3 ios/PhoneSaberSender/Tools/phone_saber_selection_replay.py <copy>`(score gap の分布と replay)
-   そのうえで original PNG を見て、**本物の saber が映っているか**を最初に確認し、CASE A/B/C を判定する。
-2. summary.json の motionEventSummary.runtime.memoryHeadroom.minimumAvailableBytes で、256MiB 上限の余裕を判断する。
-3. 背景誤検出の測定基盤: `run_background_negative_benchmark.py`(formal 40 件とは分離。private 画像は commit せず、inbox の path と sha256 で参照)。baseline は false positive 7/8。
-   新しい capture が届くと、受信時に `<inbox>/<bundle>.report.md`(無料の1ページ要約)が自動で作られる。
-4. 修正方針の判断(**要ユーザー判断**): 修正 A(時間的一貫性)より先に「背景の赤い物の eligibility」を直すべきかどうか。
-   eligibility の変更は production の recognition 変更になるので、gate(証拠・regression・実機再試験)を満たしてから行う。
-   - offline 探索の結果(docs/claude/analysis/2026-10-03_eligibility_rule_exploration.md):最良の候補 R7e
-     (赤のみ:clippedWhite ≥ 0.35、または太さ d240 ≥ 4.2、または d240 ≥ 3.5 かつ purity ≥ 0.60)で、
-     formal 40/40、背景 FP 8→0、実 saber の取りこぼし 0、blue は不変。
-   - ただし**採用は見送り**。決め手の差が太さ 0.3px 程度しかなく、明るさ +8% で背景 FP が 7/8 に戻る。
-     部屋 3 つ程度・5 session 程度からの当てはめで、証拠が足りない。差分案は 2026-10-03_r7e_candidate_rule.diff.txt(未適用)。
-   - R7e と PF22(赤 purity ≥ 0.22、ただし clippedWhite ≥ 0.35 は除外)を shadow(計算するが適用しない)として Debug Recording に記録済み。
-     既存 23 bundle では PF22 が未検出に変えるジャンプは 16 件中 1 件(144936_295 f2552)だけ。10-02 のラベル・カラビナは purity 0.53–0.79 で防げない。
-   - 採用に必要な capture: 点灯した赤 saber を 0.5–3m、3部屋以上、昼/夜、固定露出/自動露出。同じ部屋で消灯時の赤い物。±1EV の露出振り。
 
-- **2026-10-04 背景誤検出ルールの比較**(docs/claude/analysis/2026-10-03_background_fp_rule_study.md、129 frame × 2 色を目視でラベル付け):
-  R7e+PF22 で formal 40/40、背景ベンチ FP 7/8→0/8、saber 不在時の赤の背景 winner 54→26、実 saber の取りこぼし 0、選ばれたジャンプ 17 件中 10 件が未検出に変わる。
-  ただし差は小さく(R7e の clipped 判定 +0.10、PF22 の purity ±0.04)、明るさ +8% で効果がほぼ消える。手持ちカメラの session(155919)と青の背景誤検出は、どのルールでも直らない。
-  → 推奨:R7e を先に(単独 commit)、PF22 を次に。ただし実 saber の shadow 記録が足りないので、まだ本番に入れない(上の録画が必要)。
+優先順。旧改善候補もここへ統合した。実装済みの機能は再実装せず、未確認の動作を検証する。
 
----
+1. **warmNoDeepRed の実機再試験** — 理由: offline の改善が実環境でも有効か確認する。必要: 実機録画、未使用 ORIGINAL の目視、saberなし FP と小さい/淡い剣の保持を比較。担当: user（撮影）/ Claude（解析）。
+2. **ブレ・露出と候補消失の比較** — 理由: CASE B と速振りの取りこぼしが残る。必要: 実機で同じ振りを自動/1/100 秒で比較、距離 0.5–3m・端からの向き・昼夜を含む lossless。B が多ければ生成前の棄却 component を記録するコード、既定露出変更時はユーザー判断。担当: user（撮影・判断）/ Claude（解析・コード）。
+3. **青 deep support の採否** — 理由: FP 29→18 の効果はあるが、落とす淡い端片の点灯真値が未確定。必要: 実機で点灯真値、遠い/淡い/ぶれた青・画面端・青光の肌や布を確認。診断コードと回帰、証拠後の採否判断。本番未適用。担当: Claude（診断・評価）/ user（撮影・判断）。
+4. **残存背景・肌・布への対策** — 理由: 赤 59・青 37 の誤出力が残る。必要: 別人・別場所の点灯/OFF 対、発光 halo・点 LED 列の比較、診断コード。静的マスクは固定背景のみの案として、静止剣を消さない証拠とユーザー判断が必要。担当: Claude（解析・コード）/ user（撮影・判断）。
+5. **fixture 89 の窓期待値を解消** — 理由: 公式正例が窓で、期待値だけ直すと 39/40。必要: 窓と淡い剣が共存する実機証拠、画像外 1px の端点審査、検出器コードと回帰。ユーザーの修正方針は決定済み。W は再採用しない。担当: Claude（修正・検証）/ user（撮影）。
+6. **CASE A/B/C に基づく選択・端点修正** — 理由: 背景対策後も本物の不安定さが残る可能性。必要: bundle コピーで triage dry-run と selection replay、ORIGINAL と全 eligible を照合。A は別 swing で 2 event 以上の gate 後にコード、B は生成/eligibility、C は A と別変更で長い剣・分離 LED を保護。担当: Claude（判定・コード）/ user（追加撮影・再試験）。
+7. **P2P/LAN の遅延・復帰検証** — 理由: AWDL に 170–300ms、ときに約 1 秒以上の空白。必要: 会場 Wi-Fi の実機比較、RTT/p95/max・到着間隔・end-to-end 計測、ネット使用中・切断・前面復帰・2 台 Mac・LAN 退避の確認。許容値のユーザー判断、不具合があればコード。担当: user（実機・目標）/ Claude（計測・修正）。
+8. **Mac の計測画面・受信ツール検証** — 理由: 自動テストだけでは実ブラウザと実 UDP を確認できない。必要: 実機で開始/停止/再開・CSV 保存・結果フォルダ・失敗統計を操作、表示から受信までの同一時計計測を確認。Unity との port 競合も確認し、必要なコード修正。担当: Claude（検証・コード）/ user（カメラ操作）。
+9. **Mac 診断受信・旧 bundle の整理** — 理由: 古い process・precheck・解析欠落を運用で見落とさない。必要: `/health`・安全な再起動・転送失敗後の再送・report/overview を検証。234740/155919 の手動再解析候補を確認、旧 010049 の 32KB 超過は上限を維持。必要なコード修正。担当: Claude。
+10. **Unity の入力契約・短い途切れの扱い** — 理由: 正しい最新座標をゲームへ反映し、古い入力を残さない。必要: 3D-Saber の compile/EditMode/PlayMode と実機で、1920×1080 の向き・端点・最新値・未検出時を確認。≤200ms の補間/外挿は誤出力を延ばす危険も比較し、ユーザー判断後にコード。認識不安定の原因調査は iPhone で行う。担当: Claude（検証・コード）/ user（体感・判断）。
+11. **30 分以上の連続運転** — 理由: 発熱・fps・電池・保存量の時間変化は未確認。必要: thermalState/fps/電池/処理時間/到着間隔/メモリの診断コードと実機試験。256MiB 上限の memoryHeadroom、低電池・復帰も確認。担当: Claude（診断・解析）/ user（長時間運転）。
+12. **会場リハーサルと起動・復旧手順** — 理由: 自動起動だけでは当日の復旧まで保証しない。必要: 当日 Mac と iPhone で [runbook](EVENT_DAY_RUNBOOK.md) を通し、照明・固定配置・署名/許可・通信・予備経路・終了を確認。[2 台目 Mac](SECOND_MAC_SETUP.md) の setup も検証。receiver/bridge の監視・安全な再起動をコード化するか判断。担当: user（会場試験・判断）/ Claude（手順・コード）。
+13. **Codex 解析の費用・ログ保持** — 理由: needs_capture に長時間・高 effort を費やし、inbox/実ログも増える。必要: high 既定・必要時のみ max の費用/精度比較とコード、保存期間・削除対象のユーザー判断。テストログ隔離と失敗記録を保つ。担当: Claude（比較・コード）/ user（費用・保持方針）。
+14. **有線 USB 経路の試作判断** — 理由: AWDL が会場で不安定な場合の選択肢。必要: ケーブル運用のユーザー判断、usbmuxd/TCP のコード、切断復帰と end-to-end 遅延の実機比較。既存 UDP 座標互換を保ち、TCP 滞留も測る。担当: user（判断・接続）/ Claude（設計・コード）。
+15. **Mac カメラ直接認識の将来比較** — 理由: ユーザーが将来の構成候補として保持。必要: Mac 内蔵/USB カメラの配置・精度・端点・遅延の実機比較、採用判断と必要なコード。Continuity Camera は別の無線比較経路で、ローカル縮小/FPS を通信遅延改善と扱わない。担当: user（構成判断・撮影）/ Claude（比較・コード）。
 
-## 作業ログ(新しい順)
+## 作業ログ
 
-### 2026-10-05
-- 赤の warmNoDeepRed を production に入れた(ユーザー承認済み、上記)。公式 verify 全 PASS。
-- Unity の Play で診断の受信側も自動起動(3D-Saber 9613d60)。Start PhoneSaber を開かなくても Debug Recording が届く。受信側は Unity を閉じても残る(Codex 解析を止めないため)。
-- ガイド付き録画の bundle が Mac の事前チェック(同じ種類の画像は2枚まで)で弾かれていたのを修正(9661ec2)。ガイド付き録画 v2(赤い物を前提にしない、60f1933)。
-
-### 2026-10-04
-- 診断の改善(認識は変更なし):録画全体の shadow R7e/PF22 集計(431555c)、ガイド付き録画(ded9bba)、録画の最初 3 秒・最後 5 秒の event を選びにくくする(2a82db8)。
-- 実機2本を解析(上記)。ラベル表に 22 frame を追加(904faba)。Codex 解析は時間内に完了。
-- 受信側の点検と修正:/health で古いコードのまま動いているかを表示、Start PhoneSaber が自分で起動した受信側だけ安全に再起動、ログに時刻と理由、test が本物のログ置き場に書かない。
-  (調査結果:docs/claude/analysis/2026-10-03_receiver_log_audit.md)テスト由来の codex ログ 3,958 件はゴミ箱へ移した(本物 12 件は残した)。
-- 全 session の一覧ページ `phone_saber_sessions_overview.html`(受信のたびに自動更新、`PhoneSaber Overview.command`)。デスクトップに PhoneSaber Status を追加。
-- verify は実行ごとに専用の Simulator を作る(並列実行で test runner が kill される問題を解消)。2台目の Mac 用の setup(docs/claude/SECOND_MAC_SETUP.md)。
-- 背景誤検出ルールの比較(上の「次にやること」参照、phone_saber_rule_study.py)。production の認識は変更なし。
-
-### 2026-10-03(夜)
-- 当日用 runbook(docs/claude/EVENT_DAY_RUNBOOK.md)と読み取り専用の点検 `PhoneSaber Status.command`(phone_saber_status.py)を追加(5723323)。
-- Mac が2台あると診断 bundle が座標と別の Mac に届く問題を修正:座標で固定した Mac に送る(36d9d93)。
-- 露出実験スイッチ(Debug Recording 欄、自動(既定)/ 1/100 / 1/120 / 1/240 秒、activeMaxExposureDuration で上限、ISO は自動)。
-  自動ではカメラ設定に触れない。metadata・session report に記録(63eca9d)。
-- shadow PF22 を記録(diagnostic only、parity bit 一致)。既存 23 bundle の集計は上の「次にやること」4 を参照(4316ce3)。
-- 検証:並列 verify が同じ Simulator を共有して test runner が kill される問題があり、`PHONESABER_IOS_SIMULATOR_ID` で専用 Simulator を指定して PASS。
-
-### 2026-10-03(午後)
-- 実機なしの改善(並列):iOS P2P の review 指摘(正しい Mac への固定、送信 watchdog 3 秒、ヒステリシス、backoff、前面復帰、
-  ローカルネットワーク許可の表示、接続中の検索停止)、Unity 側の bridge 自動起動の改善(受信できる間だけ起動、テストで起動しない、
-  Mac 名入りの service 名)、1 秒未満の録画は自動転送しない、Codex 解析に要約を渡し timeout 時は high で1回だけ再試行。
-- 調査(docs/claude/analysis/2026-10-03_motion_blur_and_blue_jumps.md):frame 2552 の勝者はズボンではなく壁コンセントのラベル。
-  露出 1/50s のブレが主因。155919_297 の青のジャンプは saber が写っていない背景どうしの往復(誤検出)。
-- 実機テスト2回目:体感は良好(遅延・判定のブレとも改善)。受信側に 413 が 17 回出ていたのは、こちらの test 実行時に
-  Simulator が test 用 bundle を本物の receiver へ自動転送していたため(P2P relay / LAN の両方が Simulator から見える)。
-  → test 実行中は自動転送しないよう修正。155608_448 は 1 frame だけの録画で、precheck 失敗は正しい挙動。
-- Codex 再解析(1500 秒の制限内で 962 秒で完了、decision: needs_capture):本物の saber で初めて CASE B を確認。
-  f2552 で、速く振った赤 saber の動きぶれ領域が hasEmitterCore=0・emitterScore 0.305(<0.42)で不採用になり、
-  ズボンの小さな赤い領域(purity 0.18)が唯一の eligible として勝って飛んだ。ただし不採用候補 4 件が保存されず、原因を断定できなかった。
-  → 不採用候補の保存数を 6→12 に増やし、削るときは直前の winner に近いものを優先して残すようにした。
-- 実機テスト(phonesaber_20261003_144936_295、P2P 経由):診断 bundle は P2P relay 経由で受信できた。
-  Codex 解析は 600 秒で timeout(入力が増えたため)→ 1500 秒に延長。
-- 剣のラグの原因:AWDL の転送の詰まり。Unity の Editor.log の bridge 集計で `maxGapMs` が 170〜300 ms(ときに約 1 秒)。
-  iPhone の認識処理時間は中央値 28.5 ms で以前と同じ。memoryHeadroom の最小は 2.0 GB(256 MiB 上限は問題なし)。
-  対策:P2P の通信に `serviceClass = .interactiveVoice` を設定(効果は実機で要確認)。
-
-### 2026-10-03(午前)
-- 09ffdcd: Mac ↔ iPhone の P2P(peer-to-peer Wi-Fi)通信を追加。LAN(Bonjour / 手動 IP)へ自動で戻る。認識処理と Unity は変更なし。
-  XCTest 177/177(任意実行の 1 件は skip)、Python 277/277、formal 40/40、Release PASS。実機での AWDL 確認は未実施(手順は ios/PhoneSaberSender/P2P_BRIDGE.md)。
-
-### 2026-10-03(朝)
-- 7449bc7: Debug Recording の区間ラベル(未設定 / saberあり / saberなし / 赤い物隠し)。区間ごとの検出率と誤検出率を `phone_saber_segments.py` で集計。
-  認識結果は不変(録画なし / ラベルなし / ラベル切替の3通りで同一出力を確認)。XCTest 168/168、Python 267/267、formal 40/40、Release PASS。
-- 02aafa4: session report に「背景誤検出の証拠(emitter / shadow R7e / 露出)」の節を追加。
-- worktree と一時 branch はすべて削除し、main だけの状態。
-
-### 2026-10-03(深夜、並列作業の続き)
-- 1ad12f9: 診断 on/off の parity test を、全 candidate で bit 一致に厳格化(通常の hash seed でも一致)。XCTest 162/162、Python 245/245、formal 40/40。
-- 31ad94c: Debug Recording に emitter の証拠(emitterScore と各項、閾値までの余裕、channel 統計)、shadow R7e 判定(適用しない)、frame ごとの露出(ISO・露光時間・bias・WB)を記録。
-  診断 on/off で認識結果が bit 一致することを確認(固定 seed で 52 画像)。
-- bbc1f32: core-line の scoring を Set 反復順から独立させた(認識の非決定性の修正)。
-- d55294c: 新 tool の review 指摘を修正。session report の CASE 二重計上(B=2→1)、replay で同じ sessionID の bundle が上書きし合う問題、
-  hotspot の2乗時間(4000 件で2–3秒、upload 応答の前に走る)、深さ 1000–8000 の JSON で receiver がログ保存前に落ちる残りの経路。XCTest 155/155、Python 239/239。
-- 116130f: R7e(赤の eligibility 候補ルール)の offline 探索結果を記録。採用は見送り(理由は「次にやること 4」)。
-- 312f63c: Codex 出力の深い入れ子で receiver が RecursionError で落ちる問題を修正(ログ保存前に落ちていた)。
-- 67597e4: credential redaction の正規表現が長い単語列で3乗時間になっていた(20KB で約12秒、`"token"*40000` は数時間)。
-  出力を変えない線形時間の形に置き換え(差分 fuzz 約670万件で不一致なし)。
-- 4a38f53: 静的ホットスポット解析(背景誤検出の候補を自動で示す)。既存 2 session で赤ラベルを背景として検出。session report にも表示。
-- R7e の offline 探索(上の「次にやること 4」)。
-
-### 2026-10-02(夜、並列作業)
-- cf3a873: bridge event が tracking 窓と重なると peak が bundle から落ち、precheck が失敗する不具合を修正(高)。
-  失効した bridge copy を Stop 前に解放(中)、event 入れ替えは copy 成功後に evict(低)。XCTest 155/155、Python 220/220。
-- b2d74dc: docs と code の不一致を修正(256MiB 上限、tracking 窓 11/8/5、toggle の扱い、bridge_priority、Desktop link 3つ、UI の上限表示 768→864MiB)。
-- ebb398a: 1ページの session report(`phone_saber_session_report.py`)と、receiver での自動生成。
-- 23b667f: 背景ネガティブ benchmark(baseline: false positive 7/8)。
-- 014c4d2: 負荷で揺れる timing test を堅牢化(budget は据え置き、median 判定)。
-- bdd684e: verify で `-collect-test-diagnostics never`(テスト後の simctl diagnose で最大10分止まる問題の対策)。selection replay tool を追加。
-- 並列 agent の運用: 編集する agent は別の git worktree で作業し、lead が review → main に取り込み → 全 verify → push。worktree と一時 branch は取り込み後に削除。
-
-### 2026-10-02
-- 背景誤検出の解析(read-only agent): production detector を offline で再現し、赤ラベル・カラビナが eligible を通る理由を特定。
-  formal corpus に「つや消しの赤い物」の hard negative がないことも確認。報告は docs/claude/analysis/2026-10-02_background_false_positives.md。
-- ecbebc8: CASE audit と candidate geometry validator を強化(recovery hint、countForTally、validator を Swift 出力に厳密化、クラッシュ修正)。
-- 既存 bundle 20 件を横断で再解析(read-only agent、表は docs/claude/analysis/2026-10-02_jump_events.csv)。
-  ジャンプ/切替 17 件。CASE A 寄り 5 件はすべて背景物どうしの往復で、点灯 saber は映っていない(2537 / 255 は original PNG を目視で確認済み)。
-  例B は phonesaber_20261002_010049_190(f660: eligible 1→1 で 437px、f665: raw 218 / robust 52)。
-- 「push しない」指示を受けた(2026-10-02 04:2x)。同日夜に「push はどんどんしてよい」と再指示があり、以降は検証 PASS ごとに push している。
-- 40986a2(ローカル): Debug Recording 中に os_proc_available_memory() の最小値を記録
-  (motionSummary.runtime.memoryHeadroom と Stop 時のログ)。macOS の host harness では API が使えないため #if os(iOS)。
-  検証: XCTest 150/150、formal 40/40、Python 182/182、Release PASS、diff-check PASS。
-  初回は Python E2E(macOS 向けコンパイル)で 'unavailable in macOS' になり、上記の分岐で修正。
-- a93658e(ローカル): triage の --dry-run に BRIDGE_SUMMARY と CANDIDATE_AUDIT を追加(有料の model 呼び出しなしで CASE hint を得られる)。
-  既存 bundle 2件のコピーで実行した結果、geometry 記録より前の bundle なので audit は空(想定どおり)。
-- 6bf2cf3(push 済み): 未commitだった diagnostics 改善一式、CLAUDE.md、回帰テストを commit。
-  検証: XCTest 150/150、formal 40/40、Python 182/182、Release PASS、diff-check PASS。
-- CLAUDE.md(運用ルール)を repo root に追加。
-- 未commitの diagnostics 改善(15変更+新規2)を §3 と照合し、一致を確認。
-  production の recognition コードパス(BGRADetection.swift / DetectionCore.swift / UDPSender.swift)に差分なし。
-  FrameProcessor.swift の差分は、Debug Recorder へ diagnosticColors を渡すだけ。
-- 既存 session の回帰確認(新しい選択ロジック: toggle 成分をランキングから除外、bridge と共存する場合は 8 frame 窓):
-  - phonesaber_20261002_005850_489: peak 2538(red、score 74.52、detectedToggle=0、旧ランキングの記録最大値)。
-    toggle を除外しても、ほかの frame の score は下がるだけなので、peak 2538 は最上位のまま。
-    窓は peak を中心に取るため、onset 2537(color-close → color-sparse-raw、約422px)は、11枚の窓にも 8枚の窓にも入る。
-  - phonesaber_20261002_013205_087: peak 256(red、score 90.30、detectedToggle=0)。同じ理由で onset 255 は窓に入る。
-  - 回帰テスト `testRecordedCandidateSwitchOnsetStaysInTheWindowBesideABridgeEvent` を追加。
+- 2026-10-05 / 文書整理: FINDINGS に調査を統合、CSV を data へ移動、残作業を一本化（未commit、今回の検証はリンク確認・diff-check）。
+- 2026-10-05 / 残存 FP・W: `cc47927`、`5888bb5`、`5fee717`。全件分類、青 D は保留、淡い剣を失う W は不採用（研究テスト 27 PASS、D formal 40/40）。
+- 2026-10-05 / 赤の認識: `43f6b61`、`06a18c5`、`8363024`。hue/深赤単独は見送り、warmNoDeepRed 採用（公式 verify 全 PASS、formal 40/40、198 枚 mismatch 0、要実機再試験）。
+- 2026-10-05 / 診断転送・起動: `9661ec2`、`fb6dc17`、3D-Saber `9613d60`。ガイドの swing 4 枚を受理、Unity Play で受信側起動（会場確認未了）。
+- 2026-10-04 / 撮影・解析: `904faba`、`7823070`、`ded9bba`、`2a82db8`、`60f1933`。2 本は振りの証拠不足、ガイド v2、肌・照明 FP を確認（CASE A gate 未達、実機再試験待ち）。
+- 2026-10-04 / 旧 shadow 比較: `f70dcde`、`431555c`。R7e/PF22 を当時集計したが昇格せず（formal 40/40、露出感度・実機証拠不足）。
+- 2026-10-04 / Mac 運用: `6ac28ca`、`a2faab5`、`d5e547c`、`96a144f`。古い受信コード・ログ隔離、一覧、2 台目 setup、負荷依存テスト対策（6ac28ca: Tools 366 件 OK・1 skip、実機運用未確認）。
+- 2026-10-03 / P2P 改善: `0aeeb8f`、`1c751df`、`36d9d93`、`63eca9d`、`5723323`、`4def143`。通信優先度・復帰・Mac 固定、露出実験、runbook、検証用 Simulator 分離（verify PASS、効果は実機待ち）。
+- 2026-10-03 / 解析・診断: `59383b3`、`f88fa50`、`a18816a`、`ad25839`。不採用候補 12 件、test/短録画の転送停止、解析 25 分＋high 再試行（144936 は CASE B、155919 は背景）。
+- 2026-10-03 / P2P 導入: `09ffdcd`、`152397c`、`06362f7`。LAN fallback・診断 relay・RTT（導入時 XCTest 177、Python 277、formal 40/40、Release PASS）。
+- 2026-10-03 / 決定性・解析基盤: `bbc1f32`、`1ad12f9`、`31ad94c`、`7449bc7`、`67597e4`、`312f63c`、`d55294c`、`4a38f53`。score 固定・bit parity・emitter/露出・区間・解析耐性・hotspot（formal 40/40、当時 verify PASS）。
+- 2026-10-02 / 診断・背景再解析: `6bf2cf3`、`a93658e`、`40986a2`、`ecbebc8`、`bdd684e`、`cf3a873`、`ebb398a`、`23b667f`、`b2d74dc`。窓・CASE・メモリ・report/benchmark（XCTest 150→155、Python 182→220、formal 40/40、背景 FP 7/8）。

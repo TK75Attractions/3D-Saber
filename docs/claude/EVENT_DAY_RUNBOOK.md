@@ -1,6 +1,6 @@
 # PhoneSaber 縁日当日の運用手順(runbook)
 
-当日に「動かす」「おかしいときに直す」ための1枚です。根拠のファイル名を `()` に書いています。
+当日に「動かす」「おかしいときに直す」ための1枚です。調査の根拠は [FINDINGS.md](FINDINGS.md)、残作業は [STATUS.md](STATUS.md) にまとめています。
 迷ったら、まず Mac のデスクトップの **`PhoneSaber Status.command`** をダブルクリックしてください(読み取りのみ。何も変えません)。
 
 ## 1. 全体の流れ
@@ -19,12 +19,12 @@ iPhone で Stop ─→ triage bundle
   ├─ P2P 優先: bridge 内の「診断 relay」(`_phonesaber-dp2p._tcp`)─→ 127.0.0.1:8765
   └─ fallback: LAN(Bonjour `_phonesaber-diag._tcp`)─→ Mac:8765
         ↓
-  受信側(デスクトップの Start PhoneSaber)→ inbox に保存 → 1ページ要約 `.report.md`(無料・すぐ)→ Codex 解析
+  受信側(Unity Play で自動起動 / Start PhoneSaber)→ inbox に保存 → 1ページ要約 `.report.md`(無料・すぐ)→ Codex 解析
 ```
 
 - P2P は追加の経路です。bridge が無くても、iPhone と Mac が同じ LAN なら従来どおり LAN で届きます(`ios/PhoneSaberSender/P2P_BRIDGE.md`)。
 - bridge は Unity が **5005 と 5006 の両方を受信できている間だけ** 動きます(`3D-Saber/.../InputPoint.cs` の `SetReceiverAlive`)。
-- 受信側(Start PhoneSaber)は診断の受け取り専用です。止まっていてもゲームの座標は届きます(`Tools/PHONE_SABER_TRIAGE.md`)。
+- 受信側は診断専用です。Unity Play で自動起動し、止まっていてもゲームの座標は届きます。Unity を閉じても解析のため残ります。Start PhoneSaber からの単独起動もできます。
 - inbox: `~/Library/Application Support/PhoneSaber/diagnostics-inbox/`。受信側のログ: `~/Library/Logs/PhoneSaber/latest.log`。
 
 ## 2. 前日までの準備(チェックリスト)
@@ -41,18 +41,18 @@ iPhone で Stop ─→ triage bundle
 | ☐ | iPhone の **Wi-Fi は ON**(学校 Wi-Fi に参加しなくてよい。参加していなければ AWDL `awdl0` になる)。**インターネット共有(Personal Hotspot)は OFF**。モバイルデータは関係ない(P2P は cellular を使わない) | `P2P_BRIDGE.md`「実機での確認手順」A・F |
 | ☐ | Mac は学校 Wi-Fi のままでよい(Codex などのネットは学校 Wi-Fi で続く) | `P2P_BRIDGE.md` 冒頭 |
 | ☐ | iPhone の「**P2P優先**」toggle を ON(既定 ON、設定は保存される)。OFF にすると従来の LAN だけの動作 | `P2P_BRIDGE.md`「fallback の条件」 |
-| ☐ | **カメラ**: 正立・固定(三脚など)。画面内に赤・青・ピンクの物(ラベル、カラビナ、コンセントのラベル、青いシート、お菓子の袋、ノート PC の画面)を置かない。レンズに指をかけない | `STATUS.md`、`docs/claude/analysis/2026-10-02_background_false_positives.md`、`2026-10-03_motion_blur_and_blue_jumps.md` |
-| ☐ | **露出の注意**: アプリは露出を固定していない(自動露出)。暗い部屋では 1/50 秒になり、速い振りでブレて剣を見失う。会場はなるべく明るく。固定露出(東日本 1/100、西日本 1/120)は**未実装の助言**で、比較 capture が必要 | `2026-10-03_motion_blur_and_blue_jumps.md` §3 |
+| ☐ | **カメラ**: 正立・固定。レンズに指をかけない。saberなしで肌・照明・画面・布の誤検出を確認し、必要なら画角・照明を調整する。赤い物の配置・隠蔽は不要 | [FINDINGS](FINDINGS.md)、[STATUS](STATUS.md) |
+| ☐ | **露出**: 既定は自動。暗所の 1/50 秒では速い振りがぶれる。Debug Recording に露出上限（1/100・1/120・1/240 秒）の実験スイッチはあるが、既定を変える根拠は未確認。当日に設定を試行錯誤しない | [FINDINGS](FINDINGS.md) |
 
 ## 3. 当日の起動順
 
-1. Mac: デスクトップの **Start PhoneSaber** をダブルクリック → `Receiver status: RUNNING (TCP 8765)` を確認。
-2. Mac: Unity で 3D-Saber を開き **Play**。bridge は自動で起動する(止めるのは Play 停止・Unity 終了・script 再 compile。異常終了でも `--exit-with-parent` で消える)。
+1. Mac: Unity で 3D-Saber を開き **Play**。bridge と診断受信側が自動で起動する。
+2. Mac: **PhoneSaber Status.command** で受信側・bridge・UDP 5005/5006 を確認。診断だけ単独で使うときは **Start PhoneSaber** を開く。
 3. iPhone: PhoneSaberSender を起動 →「P2P優先」ON →「通常送信を開始」。
-4. Mac: **PhoneSaber Status.command** をダブルクリックし、NG が無いことを確認。
-5. 剣を振って、下の「正常な状態」を確認する。
+4. 剣を振って、下の「正常な状態」と送信先 Mac 名を確認する。
 
-終わるとき: Unity の Play を止める(bridge も止まる)→ Start PhoneSaber のウィンドウで Ctrl+C。
+終わるとき: Unity の Play を止める（bridge も止まる）。診断受信側は残る。
+Start PhoneSaber から単独起動した受信側を止める場合は、そのウィンドウで Ctrl+C。
 
 ## 4. 正常な状態
 
@@ -71,11 +71,11 @@ iPhone で Stop ─→ triage bundle
 | 症状 | 主な原因 | 対処 |
 |---|---|---|
 | **剣がラグい・カクつく** | AWDL の一時的な詰まり。Mac が学校 Wi-Fi と AWDL のチャンネルを行き来するため。実測で `maxGapMs` 170〜300 ms、ときに約 1 秒(座標数は正常)。iPhone の認識時間(中央値約 28 ms)は原因ではなかった(`P2P_BRIDGE.md`「遅延について」) | Status ツールか Unity Console の `maxGapMs`、iPhone の `P2P RTT` を見る。続くなら iPhone と Mac を**同じ Wi-Fi** に入れて「P2P優先」を **OFF**(LAN で送る) |
-| **saber が無いのに剣が跳ぶ・出る** | 背景の赤・青い物が「光る棒」として通ってしまう(赤ラベル・カラビナは emitterScore 0.68〜0.73 で閾値 0.42 を超える)。青はシート・お菓子の袋の白飛び・PC 画面、赤はレンズの指・露出オーバーの肌でも起きた(`2026-10-02_background_false_positives.md`、`2026-10-03_motion_blur_and_blue_jumps.md` §2) | 画面内の赤・青・ピンクの物を片付けるか布で隠す。カメラの向きを変える。カメラを手で持たず固定する。認識の閾値は当日いじらない(`CLAUDE.md` §1) |
-| **速く振ると剣が消える・別の場所に飛ぶ** | モーションブラー。1/50 秒の露出で刃の先端が約 85 px ぶれ、光が広がって emitter の証拠が閾値を下回る。本物が消えた frame で背景のピンクのラベルが勝った(`2026-10-03_motion_blur_and_blue_jumps.md` §1・§3) | 会場を明るくする/背景の赤・ピンクの物を除く。固定露出は未実装(上の「露出の注意」) |
+| **saber が無いのに剣が跳ぶ・出る** | 肌・照明・画面・布などの誤検出。warmNoDeepRed 後も残る（[FINDINGS](FINDINGS.md)） | カメラを固定し、レンズを覆わず、照明・画角を調整する。背景だけでなく人が入った状態も確認する。閾値は当日いじらない |
+| **速く振ると剣が消える・別の場所に飛ぶ** | ブレで本物が不採用になり、背景が勝つ。1/50 秒で先端約 85px のブレがあった（[FINDINGS](FINDINGS.md)） | 会場の照明・画角を確認する。露出上限は事前の実機比較で確認した設定だけ使う。swing の lossless を残す |
 | **P2P がつながらない**(`P2P Searching` / `P2P Failed` のまま) | ① iPhone のローカルネットワーク許可が無い ② Mac 側の許可が無い ③ bridge が動いていない(Unity が Play 前、5005/5006 のどちらかを受信できていない、`PHONESABER_P2P_BRIDGE=0`、一度異常終了すると次の script compile まで自動起動しない)④ iPhone の Wi-Fi が OFF、Hotspot が ON(`P2P_BRIDGE.md`、`PhoneSaberP2PBridgeProcess.cs`) | Status ツールで `P2P bridge` と `UDP 5005/5006` を見る。Unity Console の `[PhoneSaber][P2P] bridge …` 警告を確認。異常終了後は Unity で script を再 compile するか Editor を再起動。だめなら「P2P優先」OFF + 同じ Wi-Fi |
 | **LAN に戻ってしまう**(Unity に `no ping for 3s; iPhone falls back to LAN`) | iPhone は最後の pong から 1.5 秒で LAN に切り替える。座標の送信が 3 秒詰まっても LAN に戻して張り直す。pong が 0.5 秒以内の間隔で 3 回続けば自動で P2P に戻る(`P2P_BRIDGE.md`「fallback の条件」) | 待てば戻る。iPhone が学校 Wi-Fi にいない構成では LAN の経路が無いので `Reconnecting` で待つ。頻発するなら同じ Wi-Fi + P2P OFF |
-| **診断(bundle)が Mac に届かない** | ① 受信側(Start PhoneSaber)が止まっている(relay は接続を閉じ、iPhone は LAN を試す)② 録画が約 1 秒未満(30 frame 未満は送らない)③「Stop後にtriage bundleをMacへ自動転送」が OFF ④ P2P relay は bridge の一部なので Unity の Play 中だけ(`PHONE_SABER_TRIAGE.md`、`DebugBundleTransfer.swift`) | Status ツールで `受信側` を確認。Unity Console の `diag relay: upload from … closed after N bytes (…)`、`latest.log` の `[triage] received` を見る。3 回失敗しても bundle は iPhone に残る |
+| **診断(bundle)が Mac に届かない** | ① 診断受信側が止まっている(relay は接続を閉じ、iPhone は LAN を試す)② 録画が約 1 秒未満(30 frame 未満は送らない)③「Stop後にtriage bundleをMacへ自動転送」が OFF ④ P2P relay は bridge の一部なので Unity の Play 中だけ(`PHONE_SABER_TRIAGE.md`、`DebugBundleTransfer.swift`) | Status ツールで `受信側` を確認。Unity Console の `diag relay: upload from … closed after N bytes (…)`、`latest.log` の `[triage] received` を見る。3 回失敗しても bundle は iPhone に残る |
 | **Codex が timeout する** | 解析は最大 25 分。timeout なら effort high で1回だけ再試行(`phone_saber_triage_codex.py` の `CODEX_TIMEOUT_SECONDS`)。それでも失敗すると bundle を残して終わる。受信側を再起動しても自動で再解析しない | `.report.md`(無料の1ページ要約)は先にできているのでそれを見る。後で手動: `python3 ios/PhoneSaberSender/Tools/phone_saber_triage_codex.py "<inbox>/phone_saber_triage_<session>"` |
 | **413 / precheck で止まる** | 413: 受信側の上限(512 MiB)を超えたか壊れた upload(iPhone 側は 64 MiB・20 枚に制限しているので普通は出ない)。precheck: 選ばれた画像に時間方向の証拠が足りない(例 `temporalEvidenceMissing`。1 frame の録画で実際に起きた)。context 1 件 32 KiB の上限は変えない(`phone_saber_triage_receiver.py`、`phone_saber_triage_protocol.py` の `MAX_BUNDLE_BYTES`、`DebugBundleTransfer.swift`、`phone_saber_tracking_diagnostics.py` の `tracking_preflight`、`CLAUDE.md` §1) | Status ツールの `Codex 解析` に reasonCodes が出る。saber を映して数秒以上振る録画を撮り直す |
 | **Unity に座標が届かない** | 5005/5006 を別の process が使っている(2つ目の Unity、古い受信 script など)。Unity は失敗すると `[PhoneSaber][RED] receiver failed: …` を出し、間隔を伸ばしながら bind をやり直す。どちらかが受信できない間は bridge も止まる(`InputPoint.cs`) | Status ツールの `Unity 受信 UDP` に、port を使っている process 名と pid が出る。その process を止めて Play し直す |
@@ -95,4 +95,4 @@ iPhone で Stop ─→ triage bundle
 
 終了コードは NG あり 2、WARN のみ 1、すべて OK 0。Terminal から `python3 ios/PhoneSaberSender/Tools/phone_saber_status.py` でも動きます。
 
-> 2026-10-05: Unity の Play で、診断の受信側(Start PhoneSaber と同じもの)も自動で起動する。Start PhoneSaber を別に開く必要はない(開いても重複はしない)。無効化は `PHONESABER_TRIAGE_RECEIVER=0`。
+> 診断受信側の自動起動を無効にする場合は `PHONESABER_TRIAGE_RECEIVER=0`。Start PhoneSaber を別に開いても重複起動しません。

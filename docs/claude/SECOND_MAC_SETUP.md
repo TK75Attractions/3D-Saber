@@ -41,7 +41,7 @@
 
 診断 bundle は Git に入れていません(約 60MB、iPhone の撮影画像を含むため)。持ち運び Mac の
 `~/Library/Application Support/PhoneSaber/diagnostics-inbox` をフォルダごと AirDrop などで送り、家の Mac の同じ場所に置きます。
-解析ツール(session report、`phone_saber_pf22_check.py` など)はこのフォルダを読みます。
+解析ツール（session report、overview など）はこのフォルダを読みます。調査の結論は [FINDINGS.md](FINDINGS.md)、残作業は [STATUS.md](STATUS.md) にまとめています。
 
 ## ワークスペースのファイルを直したとき
 

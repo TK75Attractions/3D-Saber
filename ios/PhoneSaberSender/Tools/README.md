@@ -70,18 +70,11 @@ ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --outpu
 ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --json
 ```
 
-Newer recordings also carry `shadowRuleTally`: the shadow R7e / PF22 verdicts
-counted on the iPhone over every recorded frame, per segment label (including
-`unlabeled`) and per-frame exposure bucket, plus up to six frame IDs per rule whose
-winner the rule would reject outside the no-saber labels (listed, never added as
-images). The session report, the overview (R7e / PF22 columns marked 全) and
-`phone_saber_pf22_check.py` prefer it over the selected-frame tallies;
-`phone_saber_shadow_tally.py` prints it alone with the two promotion checks of the
-2026-10-03 rule study. Evidence only: the rules are never applied.
-
-```bash
-ios/PhoneSaberSender/Tools/phone_saber_shadow_tally.py /path/to/bundle [/path/to/other] [--json]
-```
+過去の録画では R7e/PF22 を shadow として全 frame・区間・露出別に集計した。
+本番には適用せず、実機の肌・照明では効果と証拠が足りなかった。
+この記録と専用の比較ツールは整理対象になった。結果は
+[調査まとめ](../../../docs/claude/FINDINGS.md)、残作業は
+[STATUS](../../../docs/claude/STATUS.md) を参照する。
 
 ### Cross-session overview (セッション一覧)
 
@@ -90,27 +83,13 @@ scans every `phone_saber_triage_*` bundle in the diagnostics inbox and writes on
 self-contained page, `<inbox>/phone_saber_sessions_overview.html` (inline CSS and
 SVG, no network, Japanese labels, light/dark, phone width), plus the compact
 `<inbox>/phone_saber_sessions_overview.md`. Bundles are only read; each row is built
-with `phone_saber_session_report.build_report` (so the tracking diagnostics,
-background evidence, R7e / PF22 and CASE logic are the same code).
+with `phone_saber_session_report.build_report`.
 
-- Headline tiles: sessions and recording minutes, selected-frame ≥100px jumps and
-  candidateSwitch, CASE A/B/C (countForTally rows only), shadow R7e / PF22 would-reject
-  counts, Codex results.
-- Trend charts (oldest → newest; sessions before the first recorded value are left out):
-  whole-recording `endpoint_jump` signals per minute (`motionEventSummary.signalDistributions`,
-  recordings since 09-30) and the median exposure time of the selected frames
-  (`frames[].camera`, since 10-03).
-- One row per session (newest first): date/time, approximate length (frameID/timestamp
-  spread of the selected images, else 30 fps, marked ≈), frames, active colors, median
-  exposure and the optional `cameraExposureExperiment`, selected-frame ≥100px jumps and
-  candidateSwitch (the shadow PF22 tally rows; n/a without tracking), whole-recording
-  jump signals, CASE hints, R7e and PF22 `reject/judged` winners (`*` = PF22 recomputed
-  because the bundle predates the recorded `shadowPF22`), likelyBackground hotspots, the
-  upload route from the receiver log (`127.0.0.1` = P2P relay, private address = LAN),
-  the Codex status (`analysis_report.json`, else the last `[AUTO_REPAIR][ANALYSIS]` log
-  line: 完了 / precheck で中止 / timeout / 失敗 / 実行中) linked to `analysis_report.md`,
-  and a link to the one-page `.report.md`. An input-contract failure is flagged on
-  the row (CASE hints are then n/a).
+一覧は session の長さ・frame 数・診断色・露出・ジャンプ・CASE hint・受信経路・
+Codex の状態と report へのリンクをまとめる。欠けた旧フィールドは `n/a`。
+CASE は `countForTally=true` の行だけを数え、物体真値は ORIGINAL PNG で確認する。
+過去の R7e/PF22 比較値は本番認識や正解ラベルではない。結論は
+[調査まとめ](../../../docs/claude/FINDINGS.md) に統合した。
 
 The receiver regenerates the page in a background thread after each
 upload and after each analysis (requests coalesce; any failure is logged as
@@ -126,7 +105,7 @@ ios/PhoneSaberSender/Tools/phone_saber_sessions_overview.py --inbox /path/to/inb
 ```
 
 `phone_saber_hotspots.py` is the read-only static-hotspot map for background
-false positives (matte red labels, carabiners). It clusters every recorded
+false positives. It clusters every recorded
 candidate position per color by centroid distance / bbox IoU and reports, per
 cluster, the representative bbox/centroid, frames present, eligible/winning
 fractions, max/median `finalScore`, source types and the selected images that
@@ -144,53 +123,20 @@ ios/PhoneSaberSender/Tools/phone_saber_hotspots.py /path/to/bundle [/path/to/bun
 ios/PhoneSaberSender/Tools/phone_saber_hotspots.py /path/to/bundle --json
 ```
 
-The session report section 「背景誤検出の証拠(emitter / shadow R7e / 露出)」
-(`phone_saber_background_evidence.py`; `backgroundEvidence` in `--json`) reads the
-selected-frame evidence recorded since 31ad94c: full decision-trace
-`emitterDiagnostics`, the compact geometry `emitter`, and frame `camera`. For each
-selected-frame winner (`selectedCandidateIndex`) and each `likelyBackground`
-cluster (joined by `static_hotspots(include_members=True)` on frame and candidate
-index) it shows `emitterScore` and its margin to 0.42, the dominant terms,
-`hasEmitterCore` and its three inputs (full evidence only), and the shadow R7e
-verdict with its four margins (recomputed from the documented thresholds for the
-compact subset, marked "computed"). The key tally counts winners whose recorded
-`shadowR7eEligible` is false — R7e would have changed the output — split by
-whether the winner's cluster is `likelyBackground`. Exposure shows per-bundle
-ISO / exposure time / bias ranges and, per flagged cluster, median ISO, exposure
-and peak value for eligible vs ineligible (and R7e keep vs reject) frames; the
-peak is the trace value, or inverted from `peakTerm` when that is not clamped.
-All of it is evidence, not ground truth: R7e is `applied: false` and never read
-by production. The subsection 「shadow PF22 tally」 does the same for the second
-shadow rule PF22 (red `meanColorPurity >= 0.22 OR clippedWhiteRatio >= 0.35`,
-`applied: false`): red winners and eligible red candidates it would reject, and
-what it would do to the selected-frame red candidateSwitch / ≥100px jump events
-(`noDetection` only when every eligible candidate of the frame is known and
-rejected; `winnerChanges`, `unchanged`, `unknown`), with the R7e outcome beside
-it. Where a bundle predates the recorded verdict, PF22 is recomputed from the
-decision-trace / selectedCandidate `meanColorPurity` and `clippedWhiteRatio`.
-Across bundles:
+背景誤検出の診断は `phone_saber_background_evidence.py` が読み取る。
+`emitterDiagnostics`、geometry の `emitter`、frame の `camera` から、
+emitterScore と閾値 0.42 までの余裕、露光・ISO・bias を確認する。
+記録のない旧 bundle は `n/a`。特徴量や静的 hotspot は正解ラベルではない。
+旧 R7e/PF22 の shadow 判定は当時の比較に使い、本番へ昇格しなかった。
+赤の採用済み変更 warmNoDeepRed（`8363024`）と却下案の根拠は
+[調査まとめ](../../../docs/claude/FINDINGS.md) に残した。
 
-```bash
-ios/PhoneSaberSender/Tools/phone_saber_pf22_check.py /path/to/bundle [/path/to/bundle2 ...] [--json]
-```
-
-Bundles without the fields print `n/a`; the Swift E2E harness
-writes neither field (no radiance map, no Exif), so its test adds them to a copy
-of a real recorder bundle and checks the strict input contract still passes.
-
-`phone_saber_segments.py` reads the operator segment labels set on the iPhone
-during Debug Recording (区間ラベル: `sabersVisible` / `noSaber` /
-`noSaberCovered` / `unlabeled`) and prints frames and per-color detection rates per
-label. A detection under `noSaber` or `noSaberCovered` is a false positive, so
-comparing those two rows shows whether covering the red background objects
-removed the RED false positives. See `PHONE_SABER_DEBUG_METADATA_SCHEMA.md`.
-The session report shows the same counts in its 「区間ラベル(ground truth)」
-section (near the top), a one-line evidence verdict comparing the `noSaber` and
-`noSaberCovered` RED false-positive rates (`n/a` when either segment has fewer
-than 30 frames), the label of every selected image (images in `noSaber` /
-`noSaberCovered` are flagged 背景のみの区間: such tracking/bridge events are
-background false positives, not saber instability) and CASE hints split by label
-(`caseHintCountsBySegment`). `--json` carries it under `segments`.
+`phone_saber_segments.py` は iPhone の区間ラベルを読み、色別の検出率を出す。
+`sabersVisible` / `noSaber` / `unlabeled`、旧録画の `noSaberCovered` を扱う。
+剣なしの区間の検出は誤検出。剣ありでも色ごとの点灯と物体位置を ORIGINAL で確認する。
+ガイド付き録画 v2 は赤い背景物の配置・隠蔽を前提にしない。
+report は区間集計・画像の区間・CASE hint を示す。JSON は `segments`。
+フィールド定義は [スキーマ](PHONE_SABER_DEBUG_METADATA_SCHEMA.md) を参照する。
 
 ```bash
 ios/PhoneSaberSender/Tools/phone_saber_segments.py /path/to/bundle
@@ -239,8 +185,8 @@ selection, which causes large output jumps. Each listed color in
 `background_negative_benchmark.json` must not be detected; any detection is a
 false positive. One control frame is already rejected and must stay rejected.
 
-Why it is separate from the formal corpus: 7 of the 8 frames are detected
-today, so they are known failures. Adding them to the 40/40 lossless gate would
+Why it is separate from the formal corpus: the 2026-10-02 baseline detected
+7 of the 8 frames, so they were known failures. Adding them to the 40/40 lossless gate would
 break the gate before an eligibility fix exists. This benchmark only measures
 progress. It exits 0 unless you pass `--strict`, and it is not wired into
 `tools/verify_phone_saber.sh`.
