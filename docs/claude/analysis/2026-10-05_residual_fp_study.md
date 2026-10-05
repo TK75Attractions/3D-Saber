@@ -94,3 +94,8 @@ BLUE unknown元出力11件中Dで同一保持7件。上の3件に加え、002509
 
 追加tool: `ios/PhoneSaberSender/Tools/phone_saber_residual_fp_study.py`。raw export: `python3 -B ios/PhoneSaberSender/Tools/phone_saber_residual_fp_study.py --json /private/tmp/phonesaber-residual-current.json`。最終gate再評価は`--summarize-from`（既定W＋D）、grid再探索は`--summarize-from`＋`--explore`。任意gateは`--rule-json`（W＋D ruleは`{"blue_deep_count":1,"white":{"red":{"metric":"neutral_fraction","core":0.8,"halo":0.05,"radius":4}}}`）。JSONと目視用contact sheet/cropはrepo外だけに保存。CSVは本文用の数値一覧でPNGを含まない。
 検証: `python3 -B -m unittest discover -s ios/PhoneSaberSender/Tools -p 'test_phone_saber_skin_study.py'` **27 tests PASS**、`git diff --check` PASS。新規testはBLUE境界・現warm B/G=.95境界・ring集合・色別再選択/不変性・6288独立truth・unknown出力の損失を別集計することを確認。元gainformal baseline40/40、D40/40、W＋D39/39＋89実剣。
+
+## 2026-10-05 Claude の判断:W は production に入れない
+W を実装して公式 verify を回したところ、合成の淡いピンクの剣(RGB 250,215,218、min/max 0.86)が「白い光」として外れた。
+fixture 89 の窓の画素は min/max の中央値 0.94・p10 0.87、青い照明下の淡い剣(formal 82/84)は芯付近の画素の p90 が 0.87–0.90 で、差が小さい。
+W の効果は fixture 89 の1枚だけで、淡い剣を失う危険に見合わないため採用しない。fixture 89 の期待値は窓のまま残す(直すと公式 gate が 39/40 になる)。
