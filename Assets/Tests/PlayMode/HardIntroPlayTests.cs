@@ -29,12 +29,12 @@ public class HardIntroPlayTests
         foreach (var pair in saved) pair.Key.SetValue(null, pair.Value); saved.Clear();
         DisplaySettings.ResetReducedEffectsCacheForTest(); Time.timeScale = 1;
     }
-    static IEnumerator OpenSelection()
+    static IEnumerator OpenSelection(string songId = "Epilogue")
     {
         yield return SceneManager.LoadSceneAsync("SongSelect"); yield return null; yield return null;
         var select = Object.FindFirstObjectByType<SongSelectController>();
-        for (int i = 0; i < select.SongCount; i++) if (select.SongIdAt(i) == "Epilogue") { select.Select(i); break; }
-        Assert.AreEqual("Epilogue", select.SongIdAt(select.SelectedIndex));
+        for (int i = 0; i < select.SongCount; i++) if (select.SongIdAt(i) == songId) { select.Select(i); break; }
+        Assert.AreEqual(songId, select.SongIdAt(select.SelectedIndex));
     }
     static IEnumerator WaitUntilReady(float timeout = 40)
     {
@@ -81,6 +81,21 @@ public class HardIntroPlayTests
             Assert.True(ScreenTransition.IsBusy); Assert.False(ScreenTransition.IsHardIntro);
             Assert.IsNull(Object.FindFirstObjectByType<HardSongIntro>());
             yield return WaitUntilReady(15); Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
+        }
+    }
+    [UnityTest] public IEnumerator OtherSongsHardUsesTheOrdinaryTransition()
+    {
+        foreach (string songId in new[] { "Andalusia", "ElDorado" })
+        {
+            yield return OpenSelection(songId);
+            var select = Object.FindFirstObjectByType<SongSelectController>();
+            select.SetDifficulty(2); select.StartGame();
+            Assert.True(ScreenTransition.IsBusy); Assert.False(ScreenTransition.IsHardIntro);
+            Assert.IsNull(Object.FindFirstObjectByType<HardSongIntro>(), songId + "に校歌の演出を出さない");
+            Assert.AreEqual(songId, GameSession.SelectedSongId);
+            yield return WaitUntilReady(15);
+            Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
+            Assert.IsNull(Object.FindFirstObjectByType<HardSongIntro>());
         }
     }
     [UnityTest] public IEnumerator InterruptedIntroStopsAudioAndRestoresOnlyEnabledInput()

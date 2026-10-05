@@ -3,10 +3,13 @@ using UnityEngine;
 
 public class HardIntroTimelineTests
 {
-    [TestCase("Hard", true)] [TestCase("HARD", true)] [TestCase("easy", false)]
-    [TestCase("Normal", false)] [TestCase(null, false)]
-    public void OnlyHardUsesTheIntro(string difficulty, bool expected)
-    { Assert.AreEqual(expected, HardIntroTimeline.EnabledFor(difficulty)); }
+    [TestCase("Epilogue", "Hard", true)] [TestCase("epilogue", "HARD", true)]
+    [TestCase("Epilogue", "easy", false)] [TestCase("Epilogue", "Normal", false)]
+    [TestCase("Epilogue", null, false)] [TestCase("Andalusia", "Hard", false)]
+    [TestCase("ElDorado", "HARD", false)] [TestCase("Epilogue2", "Hard", false)]
+    [TestCase(null, "Hard", false)]
+    public void OnlySchoolAnthemHardUsesTheIntro(string songId, string difficulty, bool expected)
+    { Assert.AreEqual(expected, HardIntroTimeline.EnabledFor(songId, difficulty)); }
 
     [Test]
     public void PhotosAreContiguousAndFirstAttachmentIsLast()

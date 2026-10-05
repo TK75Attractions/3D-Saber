@@ -44,10 +44,10 @@ public sealed class ScreenTransition : MonoBehaviour
         if (!IsBusy) Ensure().Begin(null, Style.Back, null, CloseDuration);
     }
 
-    // 選曲からのHARD開始だけに挟む。リザルト再挑戦・校正・通常遷移には波及させない。
+    // 選曲から校歌のHARDを開始するときだけに挟む。他曲や再挑戦は通常遷移を使う。
     public static bool LoadGame(string sceneName, string songId, string title, int level, string difficulty)
     {
-        if (!HardIntroTimeline.EnabledFor(difficulty)) return Load(sceneName);
+        if (!HardIntroTimeline.EnabledFor(songId, difficulty)) return Load(sceneName);
         if (IsBusy) return false;
         if (string.IsNullOrEmpty(sceneName) || !Application.CanStreamedLevelBeLoaded(sceneName))
         {

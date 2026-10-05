@@ -9,7 +9,9 @@ public static class HardIntroTimeline
     public const float ClearEnd = 19.5f, LineStart = 19.65f, LineEnd = 22f, PlayStart = 22.8f;
     public const float NameStart = 18.25f, NameEnd = 19.15f, LevelStart = 19.2f, LevelEnd = 20.1f;
     public const float MorseStart = .55f, MorseEnd = 17.1f;
-    public static bool EnabledFor(string difficulty) => string.Equals(difficulty, "hard", StringComparison.OrdinalIgnoreCase);
+    public static bool EnabledFor(string songId, string difficulty) =>
+        string.Equals(songId, "Epilogue", StringComparison.OrdinalIgnoreCase) &&
+        string.Equals(difficulty, "hard", StringComparison.OrdinalIgnoreCase);
     public static float Smooth(float a, float b, float time) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(a, b, time));
     public static int PhotoAt(float time) => time < PhotoStart || time >= TitleStart ? -1 : time < 8.8f ? 0 : time < 13.2f ? 1 : 2;
     public static float PhotoBegin(int index) => index == 0 ? PhotoStart : index == 1 ? 8.8f : 13.2f;
