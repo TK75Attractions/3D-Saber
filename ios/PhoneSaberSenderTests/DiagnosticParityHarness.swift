@@ -67,7 +67,7 @@ enum DiagnosticParityHarness {
             .filter { $0.pathExtension.lowercased() == "png" }
             .sorted { $0.path < $1.path }
         var compared: [String] = [], mismatched: [String] = []
-        var emitterTraces = 0, shadowVerdicts = 0, shadowPF22Verdicts = 0
+        var emitterTraces = 0
         for url in files {
             guard let image = load(url) else { continue }
             func run(_ diagnostics: Bool, _ profile: Bool) -> SaberFrameAnalysis {
@@ -83,15 +83,12 @@ enum DiagnosticParityHarness {
                 mismatched.append(name)
             }
             for candidate in on.candidates.values.joined() {
-                guard let emitter = candidate.endpointDiagnosticTrace?.emitter else { continue }
+                guard candidate.endpointDiagnosticTrace?.emitter != nil else { continue }
                 emitterTraces += 1
-                if emitter.shadowR7e != nil { shadowVerdicts += 1 }
-                if emitter.shadowPF22 != nil { shadowPF22Verdicts += 1 }
             }
         }
         let summary: [String: Any] = ["compared": compared, "mismatched": mismatched,
-                                      "emitterTraces": emitterTraces, "shadowVerdicts": shadowVerdicts,
-                                      "shadowPF22Verdicts": shadowPF22Verdicts]
+                                      "emitterTraces": emitterTraces]
         let data = try JSONSerialization.data(withJSONObject: summary, options: [.sortedKeys])
         FileHandle.standardOutput.write(data)
     }

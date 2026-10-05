@@ -26,7 +26,6 @@ The top-level JSON object has these fields:
 | `frames` | array of frame objects | Required | Frames accepted by the raw video writer, in recording order. |
 | `cameraSamples` | array of camera sample objects | Optional | Camera state snapshots emitted by diagnostic-capable builds. |
 | `cameraExposureExperiment` | camera exposure experiment object | Optional | Opt-in shutter experiment in effect at Start (see "Camera exposure experiment"). Absent in older recordings, which always used auto exposure. |
-| `shadowRuleTally` | shadow rule tally object | Optional | Whole-session counts of the shadow R7e / PF22 verdicts over every recorded frame (see "Whole-session shadow rule tally"). Absent in older recordings. Evidence only, never applied. |
 | `guidedRecording` | guided recording object | Optional | Opt-in guided recording (ガイド付き録画): script, step boundaries and per-step counts (see "Guided recording"). Absent in manual and older recordings. |
 
 `frames` is the only field required to identify an analyzable session. A missing
@@ -139,9 +138,7 @@ To protect the streamed file's size budget, the streamed `*_metadata.json`
 carries only the compact subset that the candidate's other fields cannot
 reproduce: `emitterScore`, `emitterScoreMargin`, `hasEmitterCore`,
 `baseEligible`, `bladeLengthSupport`, `meanSecondChannel`, `meanMinChannel`,
-`nearWhiteFraction`, `shadowR7e` with `applied`, `d240`, `ruleSatisfied`,
-`shadowR7eEligible`, and `shadowPF22` with `applied`, `ruleSatisfied`,
-`shadowPF22Eligible` (about 2 KiB per busy frame). The triage snapshot, and so
+`nearWhiteFraction` and the applied `warmNoDeepRed` verdict. The triage snapshot, and so
 every compact context, carries all fields below.
 
 | Field | JSON type | Meaning |
@@ -160,36 +157,10 @@ every compact context, carries all fields below.
 | `meanSecondChannel`, `maxSecondChannel` | number / integer, optional | Mean and maximum of the middle channel (null when the evidence had no radiance map). |
 | `nearWhiteFraction` | number | Share of samples with `value >= 245 AND chroma <= 38` (the clipped-white test). |
 | `brightSecondChannelFraction` | number, optional | Share of samples whose middle channel is `>= 100` (the bright-core floor). |
-| `shadowR7e` | object, red only, optional | Shadow verdict of the offline "R7e" rule. **Evidence only, not applied.** |
-| `shadowPF22` | object, red only, optional | Shadow verdict of the offline "PF22" purity-floor rule. **Evidence only, not applied.** Absent from bundles recorded before it existed. |
 
-`shadowR7e` records the rule
-`clippedWhiteRatio >= 0.35 OR d240 >= 4.2 OR (d240 >= 3.5 AND meanColorPurity >= 0.60)`,
-where `d` is the dominant-body axial density (`points / majorLength` when no body
-density was established) and `d240 = d * 240 / min(maskWidth, maskHeight)`.
-Fields: `applied` (always `false`), `density`, `fallbackDensity`,
-`usedFallbackDensity`, `d240`, `clippedWhiteRatio`, `meanColorPurity`, the
-margins `clippedWhiteMargin`, `thickBodyMargin`, `saturatedBodyDensityMargin`,
-`saturatedBodyPurityMargin` (value minus threshold), `ruleSatisfied` (the OR
-expression) and `shadowR7eEligible` (`baseEligible AND ruleSatisfied`). The
-thresholds come from a small offline exploration with tiny margins; production
-eligibility, ranking and UDP output never read this object. It exists to
-collect real distributions before any production decision.
-
-`shadowPF22` records the red purity floor
-`meanColorPurity >= 0.22 OR clippedWhiteRatio >= 0.35` (a barely-red candidate —
-wall label, skin — is not an emitter unless its LED core is clipped white;
-explored offline in `docs/claude/analysis/2026-10-03_motion_blur_and_blue_jumps.md`,
-where it kept formal 40/40 and turned the 20261003_144936_295 f2552 label jump
-into no detection). Its inputs are the candidate's own `meanColorPurity` and
-`clippedWhiteRatio`. Fields: `applied` (always `false`), `ruleSatisfied` (the OR
-expression), `shadowPF22Eligible` (`baseEligible AND ruleSatisfied`) and, in the
-triage snapshot only, `meanColorPurity`, `clippedWhiteRatio`, `purityMargin`
-(`meanColorPurity - 0.22`) and `clippedWhiteMargin` (`clippedWhiteRatio - 0.35`).
-The purity margin is small (labels 0.15–0.19) and the rule rests on one event,
-so production eligibility, ranking and UDP output never read this object.
-Because its inputs are plain candidate fields, `phone_saber_pf22_check.py`
-recomputes it for older bundles.
+Retired `shadowR7e` / `shadowPF22` emitter fields and root / summary
+`shadowRuleTally` remain accepted as legacy optional fields. Readers ignore their
+payloads; reports and overview pages do not render them. New recordings omit them.
 
 ## Per-frame camera state
 
@@ -359,10 +330,7 @@ Each geometry entry may carry an optional compact `emitter` object (a subset of
 `emitterDiagnostics`: `emitterScore`, `emitterScoreMargin`, the five `*Term`
 fields, `hasEmitterCore`, `bladeLengthSupport`, `localContrast`,
 `emitterTexture`, `coreSupport`, `meanSecondChannel`, `meanMinChannel`,
-`nearWhiteFraction` and, for red, `shadowR7e` with `applied: false`, `d240`,
-`clippedWhiteRatio`, `meanColorPurity`, `shadowR7eEligible`, and `shadowPF22`
-with `applied: false`, `shadowPF22Eligible` — its inputs are the `shadowR7e`
-purity and clipped-white values).
+`nearWhiteFraction` and, for red, the applied `warmNoDeepRed` verdict).
 
 ### Compact triage contexts
 
@@ -426,62 +394,6 @@ and detection rates per label and color, and the false-positive rates under
 `frames` and `segmentMarkers` and warns when they differ from the recorded
 `segmentSummary`. Older metadata counts every frame as `unlabeled`; an older
 `summary.json` without `segmentSummary` exits with status 2.
-
-## Whole-session shadow rule tally (additive, version 1)
-
-The shadow R7e and PF22 verdicts (`emitterDiagnostics.shadowR7e` /
-`shadowPF22`, red only, `applied: false`) are attached to every candidate while
-Debug Recording collects pipeline diagnostics, but the bundle keeps them only for
-the retained context frames. `DebugShadowRuleTally` therefore counts them on the
-iPhone over EVERY recorded frame (counters only, O(1) memory, updated in
-`DebugVideoRecorder.append` after the frame is accepted; it reads the verdicts that
-are already there and does no detector work). Recognition, ranking, eligibility,
-tracking and UDP never read it. Root `shadowRuleTally` in `*_metadata.json`, copied
-into `summary.json`:
-
-| Field | JSON type | Meaning |
-| --- | --- | --- |
-| `formatVersion` | integer | `1`. |
-| `applied` | boolean | Always `false`. |
-| `rules` | array | `["r7e", "pf22"]`. |
-| `colors` | array | Diagnostic (active) colors, in `red`, `blue` order. Only red carries verdicts; blue counts winners only. |
-| `totalFrames` | integer | Every recorded frame. |
-| `total` | bucket | Counts over the whole session. |
-| `byLabel` | object | All four segment labels (`unlabeled`, `sabersVisible`, `noSaber`, `noSaberCovered`), each a bucket; they add up to `total`. |
-| `byExposure` | object | Non-empty per-frame exposure buckets from `frames[].camera.exposureDurationSeconds`: `le1_240` (≤ 1.02/240 s), `le1_120` (≤ 1.02/120 s), `le1_60` (≤ 1.02/60 s), `gt1_60`, `unknown` (no camera state); they add up to `total`. |
-| `exposureExperimentSetting` | string | Optional. The session-wide `cameraExposureExperiment.setting` (one per recording). |
-| `winnerRejectionSamples` | object | Per rule, at most `sampleLimit` (6) frames whose WINNER the rule would reject, outside `noSaber` / `noSaberCovered` (a rejection there is expected; one under `sabersVisible` or `unlabeled` needs an ORIGINAL PNG check). Kept by stride decimation, so they are evenly spread over all such rejections and deterministic. Each `{frameID, timestamp, label, color, exposureBucket, meanColorPurity, clippedWhiteRatio, d240, shadowR7eEligible, shadowPF22Eligible}`. |
-| `winnerRejectionsOffered` | object | Per rule, how many rejections the samples were drawn from. |
-| `sampleLimit`, `definition` | integer, string | Bound and plain-language definition. |
-
-A bucket is `{frames, red: counts, blue: counts}` (active colors only). `counts`
-is `{winners, eligibleCandidates, r7e: rule, pf22: rule, both: {winnersJudged,
-winnersRejected}}`: `winners` are frames with at least one eligible candidate of
-the color; the winner is the first eligible candidate in production order (the
-one `selectedCandidateIndex` names). `rule` is `{winnersJudged, winnersRejected,
-eligibleJudged, eligibleRejected, noEligibleLeft}`: a winner or eligible candidate
-is judged when it carries the verdict and rejected when the verdict's
-`shadow…Eligible` is false; `noEligibleLeft` counts rejected winners whose frame
-had no eligible candidate the rule would keep (the color would have no detection).
-
-In `summary.json` each sample additionally states `retainedContext` (the frame is
-in the bundle's retained context frames) and, when the frame already is a selected
-image, `image` and `frameContextPath` (never the annotated copy). No image is added
-or displaced for the samples: the image budget (12 by default) and the 32 KiB
-context limit are unchanged, and bridge / tracking images keep their priority.
-
-`phone_saber_metadata_schema.shadow_rule_tally_errors` checks the object strictly
-(nesting rejected ≤ judged ≤ winners, label / exposure sums equal `total`, samples
-bounded and outside the no-saber labels, no unknown keys). `validate_document`
-warns about and drops an inconsistent root tally; `phone_saber_triage_codex.py`
-rejects a bundle whose `summary.json` tally is inconsistent. Readers:
-`phone_saber_shadow_tally.py` (per-bundle view and the two promotion checks of the
-2026-10-03 rule study: zero rejections under `sabersVisible`, ≥ 80 % under the
-no-saber labels; `unlabeled` is shown separately and counted toward neither),
-`phone_saber_session_report.py`, `phone_saber_sessions_overview.py` (the R7e / PF22
-columns prefer the recorded whole-session tally, marked 全) and
-`phone_saber_pf22_check.py` (whole-session table first). Older bundles show n/a and
-keep their selected-frame tallies.
 
 ## Guided recording (additive, version 1)
 

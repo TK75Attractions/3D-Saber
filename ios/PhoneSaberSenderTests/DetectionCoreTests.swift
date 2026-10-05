@@ -2566,7 +2566,7 @@ final class DetectionCoreTests: XCTestCase {
         let metadataData = try Data(contentsOf: recording.metadataURL)
         let json = try XCTUnwrap(JSONSerialization.jsonObject(with: metadataData) as? [String: Any])
         XCTAssertEqual(Set(json.keys), Set(["formatVersion", "sessionID", "width", "height", "frames", "cameraSamples", "motionEvents", "motionSummary", "udpTransmissions", "activeColors", "diagnosticWindows", "bridgeDropoutEvents", "bridgeDropoutSummary",
-                                                "segmentMarkers", "segmentSummary", "shadowRuleTally"]))
+                                                "segmentMarkers", "segmentSummary"]))
         // Existing Codable readers ignore the additive motion root fields.
         let metadata = try JSONDecoder().decode(DebugRecordingMetadata.self, from: metadataData)
         XCTAssertEqual(metadata.frames.filter(\.manualCaptured).count,
@@ -3295,7 +3295,7 @@ final class DetectionCoreTests: XCTestCase {
     }
 }
 
-// MARK: - Emitter diagnostics and shadow verdicts (Debug Recording only)
+// MARK: - Emitter diagnostics (Debug Recording only)
 
 extension DetectionCoreTests {
     /// Every fixture image bundled with the tests, plus synthetic red bars.
@@ -3461,147 +3461,6 @@ extension DetectionCoreTests {
         XCTAssertTrue((analysis.candidates[.blue] ?? []).isEmpty)
     }
 
-    func testShadowR7eVerdictIsRecordedButNeverChangesEligibility() throws {
-        // A thin (3-sample) matte-like red bar: eligible in production, without
-        // clipped white and with a thin body, so the shadow R7e rule rejects it.
-        let thin = syntheticRedBar(thickness: 6)
-        func analysis(_ diagnostics: Bool, _ image: (bytes: [UInt8], width: Int, height: Int, bytesPerRow: Int))
-            -> SaberFrameAnalysis {
-            analyzeSabers(in: image.bytes, width: image.width, height: image.height,
-                          bytesPerRow: image.bytesPerRow, redThreshold: ColorThreshold(),
-                          blueThreshold: ColorThreshold(), collectPipelineDiagnostics: diagnostics)
-        }
-        let on = analysis(true, thin), off = analysis(false, thin)
-        assertIdenticalRecognition(off, on, "thin red")
-        XCTAssertNotNil(off.selected[.red], "production still selects the thin bar")
-        let winner = try XCTUnwrap(on.candidates[.red]?.first(where: \.isEmitterEligible))
-        let emitter = try XCTUnwrap(winner.endpointDiagnosticTrace?.emitter)
-        let shadow = try XCTUnwrap(emitter.shadowR7e)
-        XCTAssertTrue(winner.isEmitterEligible)
-        XCTAssertTrue(emitter.baseEligible)
-        XCTAssertFalse(shadow.ruleSatisfied)
-        XCTAssertFalse(shadow.shadowEligible, "the shadow verdict differs from production")
-        XCTAssertEqual(shadow.clippedWhiteRatio, winner.clippedWhiteRatio)
-        XCTAssertEqual(shadow.meanColorPurity, winner.meanColorPurity)
-        // Recomputation from the published candidate (mask units: step 2).
-        let maskShort = Double(min(thin.width, thin.height) / 2)
-        let bodyDensity = winner.axialDensity * 2
-        XCTAssertEqual(shadow.density, bodyDensity)
-        XCTAssertEqual(shadow.fallbackDensity, Double(winner.pointCount) / max(winner.rawPCASpan / 2, 1))
-        let chosen = bodyDensity > 0 ? bodyDensity : shadow.fallbackDensity
-        XCTAssertEqual(shadow.usedFallbackDensity, !(bodyDensity > 0))
-        XCTAssertEqual(shadow.d240, chosen * 240 / maskShort, accuracy: 1e-12)
-        XCTAssertLessThan(shadow.d240, 3.5)
-        XCTAssertEqual(shadow.thickBodyMargin, shadow.d240 - 4.2, accuracy: 1e-12)
-        XCTAssertEqual(shadow.clippedWhiteMargin, shadow.clippedWhiteRatio - 0.35, accuracy: 1e-12)
-        let recorded = try XCTUnwrap(DebugRecordingCandidate(index: 0, candidate: winner,
-                                                             selectedIndex: 0).emitterDiagnostics?.shadowR7e)
-        XCTAssertFalse(recorded.applied)
-        XCTAssertFalse(recorded.shadowR7eEligible)
-        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(recorded)) as? [String: Any])
-        XCTAssertEqual(Set(json.keys), ["applied", "density", "fallbackDensity", "usedFallbackDensity", "d240",
-            "clippedWhiteRatio", "meanColorPurity", "clippedWhiteMargin", "thickBodyMargin",
-            "saturatedBodyDensityMargin", "saturatedBodyPurityMargin", "ruleSatisfied", "shadowR7eEligible"])
-
-        // A thick bar satisfies the rule; production is again unchanged by collection.
-        let thick = syntheticRedBar(thickness: 24)
-        let thickOn = analysis(true, thick)
-        assertIdenticalRecognition(analysis(false, thick), thickOn, "thick red")
-        let thickWinner = try XCTUnwrap(thickOn.candidates[.red]?.first(where: \.isEmitterEligible))
-        let thickShadow = try XCTUnwrap(thickWinner.endpointDiagnosticTrace?.emitter?.shadowR7e)
-        XCTAssertTrue(thickShadow.ruleSatisfied)
-        XCTAssertTrue(thickShadow.shadowEligible)
-
-        // Blue candidates never carry the red-only shadow verdict.
-        let blue = try fixtureBGRA("blue-led-bright-large-05")
-        let blueCandidates = analysis(true, blue).candidates[.blue] ?? []
-        XCTAssertFalse(blueCandidates.isEmpty)
-        XCTAssertTrue(blueCandidates.allSatisfy {
-            $0.endpointDiagnosticTrace?.emitter != nil && $0.endpointDiagnosticTrace?.emitter?.shadowR7e == nil })
-    }
-
-    func testShadowPF22VerdictBoundaries() {
-        typealias PF22 = SaberShadowPurityFloorVerdict
-        XCTAssertEqual(PF22.purityThreshold, 0.22)
-        XCTAssertEqual(PF22.clippedWhiteExemptionThreshold, 0.35)
-        // Purity floor: 0.22 itself passes, just below fails without the exemption.
-        XCTAssertTrue(PF22(meanColorPurity: 0.22, clippedWhiteRatio: 0, baseEligible: true).shadowEligible)
-        let below = PF22(meanColorPurity: 0.2199, clippedWhiteRatio: 0, baseEligible: true)
-        XCTAssertFalse(below.ruleSatisfied)
-        XCTAssertFalse(below.shadowEligible)
-        XCTAssertEqual(below.purityMargin, 0.2199 - 0.22, accuracy: 1e-12)
-        // Clipped-white exemption: 0.35 itself exempts a low-purity candidate, just below does not.
-        let exempt = PF22(meanColorPurity: 0.15, clippedWhiteRatio: 0.35, baseEligible: true)
-        XCTAssertTrue(exempt.ruleSatisfied)
-        XCTAssertTrue(exempt.shadowEligible)
-        XCTAssertEqual(exempt.clippedWhiteMargin, 0, accuracy: 1e-12)
-        XCTAssertFalse(PF22(meanColorPurity: 0.15, clippedWhiteRatio: 0.3499, baseEligible: true).shadowEligible)
-        // The wall-label winner of 20261003_144936_295 f2552 (purity 0.18, clip 0) would be rejected.
-        XCTAssertFalse(PF22(meanColorPurity: 0.18, clippedWhiteRatio: 0, baseEligible: true).shadowEligible)
-        // Never more eligible than production.
-        let ineligible = PF22(meanColorPurity: 0.9, clippedWhiteRatio: 1, baseEligible: false)
-        XCTAssertTrue(ineligible.ruleSatisfied)
-        XCTAssertFalse(ineligible.shadowEligible)
-    }
-
-    func testShadowPF22VerdictIsRecordedButNeverChangesEligibility() throws {
-        func analysis(_ diagnostics: Bool, _ image: (bytes: [UInt8], width: Int, height: Int, bytesPerRow: Int))
-            -> SaberFrameAnalysis {
-            analyzeSabers(in: image.bytes, width: image.width, height: image.height,
-                          bytesPerRow: image.bytesPerRow, redThreshold: ColorThreshold(),
-                          blueThreshold: ColorThreshold(), collectPipelineDiagnostics: diagnostics)
-        }
-        for thickness in [6, 24] {
-            let image = syntheticRedBar(thickness: thickness)
-            let on = analysis(true, image), off = analysis(false, image)
-            assertIdenticalRecognition(off, on, "red bar \(thickness)")
-            for candidate in on.candidates[.red] ?? [] {
-                let emitter = try XCTUnwrap(candidate.endpointDiagnosticTrace?.emitter)
-                let shadow = try XCTUnwrap(emitter.shadowPF22)
-                // Inputs are the production values of the candidate itself.
-                XCTAssertEqual(shadow.meanColorPurity, candidate.meanColorPurity)
-                XCTAssertEqual(shadow.clippedWhiteRatio, candidate.clippedWhiteRatio)
-                XCTAssertEqual(shadow.ruleSatisfied, candidate.meanColorPurity >= 0.22
-                               || candidate.clippedWhiteRatio >= 0.35)
-                XCTAssertEqual(shadow.shadowEligible, emitter.baseEligible && shadow.ruleSatisfied)
-            }
-        }
-        let winner = try XCTUnwrap(analysis(true, syntheticRedBar(thickness: 6)).candidates[.red]?
-            .first(where: \.isEmitterEligible))
-        let verdict = try XCTUnwrap(winner.endpointDiagnosticTrace?.emitter?.shadowPF22)
-        let recorded = try XCTUnwrap(DebugRecordingCandidate(index: 0, candidate: winner,
-                                                             selectedIndex: 0).emitterDiagnostics?.shadowPF22)
-        XCTAssertFalse(recorded.applied)
-        XCTAssertEqual(recorded.shadowPF22Eligible, verdict.shadowEligible)
-        let json = try XCTUnwrap(JSONSerialization.jsonObject(with: JSONEncoder().encode(recorded)) as? [String: Any])
-        XCTAssertEqual(Set(json.keys), ["applied", "ruleSatisfied", "shadowPF22Eligible", "meanColorPurity",
-                                        "clippedWhiteRatio", "purityMargin", "clippedWhiteMargin"])
-        let streamedEncoder = JSONEncoder()
-        streamedEncoder.userInfo[.debugRecordingStreamedMetadata] = true
-        let streamed = try XCTUnwrap(JSONSerialization.jsonObject(with: streamedEncoder.encode(recorded))
-            as? [String: Any])
-        XCTAssertEqual(Set(streamed.keys), ["applied", "ruleSatisfied", "shadowPF22Eligible"])
-        // Older bundles without the field still decode.
-        let emitterJSON = try JSONEncoder().encode(try XCTUnwrap(DebugRecordingCandidate(
-            index: 0, candidate: winner, selectedIndex: 0).emitterDiagnostics))
-        var legacy = try XCTUnwrap(JSONSerialization.jsonObject(with: emitterJSON) as? [String: Any])
-        XCTAssertNotNil(legacy.removeValue(forKey: "shadowPF22"))
-        let decoded = try JSONDecoder().decode(DebugRecordingEmitterDiagnostics.self,
-                                               from: JSONSerialization.data(withJSONObject: legacy))
-        XCTAssertNil(decoded.shadowPF22)
-        // Triage candidate geometry carries the compact verdict.
-        let geometry = DebugCandidateGeometry.emitterDictionary(try XCTUnwrap(winner.endpointDiagnosticTrace?.emitter))
-        let compact = try XCTUnwrap(geometry["shadowPF22"] as? [String: Any])
-        XCTAssertEqual(compact["applied"] as? Bool, false)
-        XCTAssertEqual(compact["shadowPF22Eligible"] as? Bool, verdict.shadowEligible)
-
-        // Blue candidates never carry the red-only shadow verdict.
-        let blueCandidates = analysis(true, try fixtureBGRA("blue-led-bright-large-05")).candidates[.blue] ?? []
-        XCTAssertFalse(blueCandidates.isEmpty)
-        XCTAssertTrue(blueCandidates.allSatisfy {
-            $0.endpointDiagnosticTrace?.emitter != nil && $0.endpointDiagnosticTrace?.emitter?.shadowPF22 == nil })
-    }
-
     func testFrameCameraCombinesExifAndDeviceStateWithoutInventingValues() throws {
         XCTAssertNil(DebugRecordingFrameCamera.make(exif: nil, device: nil, now: 10))
         let exif: [String: Any] = [kCGImagePropertyExifISOSpeedRatings as String: [320],
@@ -3672,7 +3531,7 @@ extension DetectionCoreTests {
             XCTAssertEqual(camera["exposureTargetOffset"] as? Double, 0.125)
             XCTAssertEqual(camera["whiteBalanceGains"] as? [Double], [2, 1, 1.5])
             XCTAssertGreaterThanOrEqual(camera["deviceSampleAgeSeconds"] as? Double ?? -1, 0)
-            // The recorded red winner carries its emitter evidence and shadow verdict.
+            // The recorded red winner carries its emitter evidence.
             let red = (recorded["candidateDiagnostics"] as? [String: Any])?["red"] as? [String: Any]
             let selected = try XCTUnwrap(red?["selectedCandidate"] as? [String: Any])
             let emitter = try XCTUnwrap(selected["emitterDiagnostics"] as? [String: Any])
@@ -3681,14 +3540,6 @@ extension DetectionCoreTests {
             // The streamed file keeps the compact subset; the triage snapshot has the rest.
             XCTAssertNil(emitter["emitterScoreThreshold"])
             XCTAssertNil(emitter["sampleCount"])
-            let shadow = try XCTUnwrap(emitter["shadowR7e"] as? [String: Any])
-            XCTAssertEqual(shadow["applied"] as? Bool, false)
-            XCTAssertNotNil(shadow["shadowR7eEligible"] as? Bool)
-            XCTAssertNil(shadow["thickBodyMargin"])
-            let pf22 = try XCTUnwrap(emitter["shadowPF22"] as? [String: Any])
-            XCTAssertEqual(pf22["applied"] as? Bool, false)
-            XCTAssertNotNil(pf22["shadowPF22Eligible"] as? Bool)
-            XCTAssertNil(pf22["purityMargin"])
         }
         let decoded = try JSONDecoder().decode(DebugRecordingMetadata.self, from: data)
         XCTAssertEqual(decoded.frames.first?.camera?.iso, 250)
@@ -3919,34 +3770,6 @@ extension DetectionCoreTests {
         XCTAssertEqual(falsePositives["noSaber"]?["red"], ids.filter { expected($0) == .noSaber }.count)
         XCTAssertEqual((unlabeled.metadata?["segmentMarkers"] as? [Any])?.count, 0)
 
-        // The whole-session shadow tally (outputs above are unchanged with it on) counts
-        // every recorded frame per label and agrees with the streamed per-frame verdicts.
-        let tally = try XCTUnwrap(metadata["shadowRuleTally"] as? [String: Any])
-        XCTAssertEqual(tally["applied"] as? Bool, false)
-        XCTAssertEqual(tally["totalFrames"] as? Int, ids.count)
-        let tallyLabels = try XCTUnwrap(tally["byLabel"] as? [String: [String: Any]])
-        for label in DebugSegmentLabel.allCases {
-            XCTAssertEqual(tallyLabels[label.rawValue]?["frames"] as? Int,
-                           ids.filter { expected($0) == label }.count, label.rawValue)
-        }
-        XCTAssertEqual((tally["byExposure"] as? [String: [String: Any]])?["unknown"]?["frames"] as? Int, ids.count)
-        let red = try XCTUnwrap((tally["total"] as? [String: Any])?["red"] as? [String: Any])
-        let streamedWinners = frames.compactMap { frame -> [String: Any]? in
-            ((frame["candidateDiagnostics"] as? [String: Any])?["red"] as? [String: Any])?["selectedCandidate"]
-                as? [String: Any]
-        }
-        XCTAssertGreaterThan(streamedWinners.count, 0)
-        XCTAssertEqual(red["winners"] as? Int, streamedWinners.count)
-        for rule in ["r7e", "pf22"] {
-            let key = rule == "r7e" ? "shadowR7e" : "shadowPF22"
-            let verdicts = streamedWinners.compactMap {
-                (($0["emitterDiagnostics"] as? [String: Any])?[key] as? [String: Any])?[key + "Eligible"] as? Bool
-            }
-            XCTAssertEqual(verdicts.count, streamedWinners.count, rule)
-            let counts = try XCTUnwrap(red[rule] as? [String: Int])
-            XCTAssertEqual(counts["winnersJudged"], verdicts.count, rule)
-            XCTAssertEqual(counts["winnersRejected"], verdicts.filter { !$0 }.count, rule)
-        }
     }
 }
 
@@ -3984,148 +3807,8 @@ extension DetectionCoreTests {
         XCTAssertEqual(recorded["status"] as? String, "applied")
         XCTAssertEqual(recorded["capActive"] as? Bool, true)
         XCTAssertEqual(try XCTUnwrap(recorded["appliedMaxExposureSeconds"] as? Double), 0.01, accuracy: 1e-12)
-        // The whole-session shadow tally names the session's experiment setting.
-        XCTAssertEqual((withExperiment["shadowRuleTally"] as? [String: Any])?["exposureExperimentSetting"] as? String,
-                       "maxShutter1_100")
         let withoutExperiment = try await record(nil, date: Date(timeIntervalSince1970: 20))
         XCTAssertNil(withoutExperiment["cameraExposureExperiment"])
-        let tally = try XCTUnwrap(withoutExperiment["shadowRuleTally"] as? [String: Any])
-        XCTAssertNil(tally["exposureExperimentSetting"])
-        XCTAssertEqual(tally["totalFrames"] as? Int, 1)
-    }
-}
-
-// MARK: Whole-session shadow rule tally (diagnostic only; never applied)
-
-extension DetectionCoreTests {
-    private typealias Tally = DebugShadowRuleTally
-
-    /// Synthetic verdicts with independent R7e / PF22 outcomes. R7e passes on a thick
-    /// body (d240 5 >= 4.2) and fails on a thin one (d240 1, no clipped white);
-    /// PF22 passes on purity 0.30 and fails on 0.10.
-    private func shadowVerdicts(r7e: Bool?, pf22: Bool?) -> Tally.Verdicts {
-        let purity = pf22 == false ? 0.10 : 0.30
-        return Tally.Verdicts(
-            r7e: r7e.map { SaberShadowR7eVerdict(bodyDensity: $0 ? 5 : 1, pointCount: 10, majorLength: 10,
-                                                 maskWidth: 240, maskHeight: 240, clippedWhiteRatio: 0,
-                                                 meanColorPurity: purity, baseEligible: true) },
-            pf22: pf22.map { _ in SaberShadowPurityFloorVerdict(meanColorPurity: purity, clippedWhiteRatio: 0,
-                                                               baseEligible: true) })
-    }
-
-    func testShadowRuleTallyCountsSyntheticVerdictStreamsAcrossLabelSwitches() throws {
-        var tally = Tally(activeColors: ["red", "blue"], exposureExperimentSetting: "maxShutter1_120")
-        let pass = shadowVerdicts(r7e: true, pf22: true)
-        let r7eOnly = shadowVerdicts(r7e: false, pf22: true)      // R7e rejects
-        let pf22Only = shadowVerdicts(r7e: true, pf22: false)     // PF22 rejects
-        let both = shadowVerdicts(r7e: false, pf22: false)        // both reject
-        let none = shadowVerdicts(r7e: nil, pf22: nil)            // blue / no trace
-        XCTAssertEqual(r7eOnly.r7eEligible, false)
-        XCTAssertEqual(r7eOnly.pf22Eligible, true)
-        XCTAssertEqual(pf22Only.r7eEligible, true)
-        XCTAssertEqual(pf22Only.pf22Eligible, false)
-        func observe(_ id: UInt64, _ label: DebugSegmentLabel, red: [Tally.Verdicts]?,
-                     blue: [Tally.Verdicts]? = nil, exposure: Double? = 1.0 / 120) {
-            var colors: [String: Tally.ColorObservation] = [:]
-            if let red { colors["red"] = Tally.ColorObservation(eligible: red) }
-            if let blue { colors["blue"] = Tally.ColorObservation(eligible: blue) }
-            tally.observe(frameID: id, timestamp: Double(id) / 30, label: label,
-                          exposureSeconds: exposure, colors: colors)
-        }
-        observe(1, .unlabeled, red: [pass], blue: [none])
-        observe(2, .unlabeled, red: [r7eOnly, pass])                 // winner rejected, one eligible survives
-        observe(3, .sabersVisible, red: [both], exposure: 1.0 / 250) // nothing left under either rule
-        observe(4, .sabersVisible, red: [], blue: [none])            // no red winner
-        observe(5, .noSaber, red: [pf22Only, both], exposure: 1.0 / 30)
-        observe(6, .noSaber, red: [both, both], exposure: nil)
-        observe(7, .noSaberCovered, red: nil)
-        observe(8, .unlabeled, red: [pass, none])                    // an eligible candidate without verdict
-
-        let total = tally.counts("red")
-        XCTAssertEqual(total.winners, 6)
-        XCTAssertEqual(total.eligibleCandidates, 10)
-        XCTAssertEqual(total.r7e, Tally.RuleCounts(winnersJudged: 6, winnersRejected: 3, eligibleJudged: 9,
-                                                   eligibleRejected: 5, noEligibleLeft: 2))
-        XCTAssertEqual(total.pf22, Tally.RuleCounts(winnersJudged: 6, winnersRejected: 3, eligibleJudged: 9,
-                                                    eligibleRejected: 5, noEligibleLeft: 3))
-        XCTAssertEqual(total.bothWinnersJudged, 6)
-        XCTAssertEqual(total.bothWinnersRejected, 2)
-        XCTAssertEqual(tally.counts("red", label: .sabersVisible).r7e.winnersRejected, 1)
-        XCTAssertEqual(tally.counts("red", label: .noSaber).winners, 2)
-        XCTAssertEqual(tally.counts("red", label: .noSaber).pf22.winnersRejected, 2)
-        XCTAssertEqual(tally.counts("red", label: .noSaber).r7e.winnersRejected, 1)
-        XCTAssertEqual(tally.counts("red", label: .unlabeled).r7e.winnersRejected, 1)
-        XCTAssertEqual(tally.counts("red", label: .noSaberCovered).winners, 0)
-        // Blue winners exist but never carry the red-only verdicts.
-        XCTAssertEqual(tally.counts("blue").winners, 2)
-        XCTAssertEqual(tally.counts("blue").r7e.winnersJudged, 0)
-        XCTAssertEqual(tally.counts("blue").pf22.eligibleJudged, 0)
-
-        // Samples: only rejected winners outside noSaber / noSaberCovered.
-        XCTAssertEqual(tally.samples("r7e").map(\.frameID), [2, 3])
-        XCTAssertEqual(tally.samples("pf22").map(\.frameID), [3])
-        XCTAssertEqual(tally.samples("r7e").map(\.label), [.unlabeled, .sabersVisible])
-        XCTAssertEqual(tally.samples("r7e").last?.exposureBucket, .le1_240)
-
-        let summary = tally.summary
-        XCTAssertNoThrow(try JSONSerialization.data(withJSONObject: summary))
-        XCTAssertEqual(summary["applied"] as? Bool, false)
-        XCTAssertEqual(summary["totalFrames"] as? Int, 8)
-        XCTAssertEqual(summary["exposureExperimentSetting"] as? String, "maxShutter1_120")
-        XCTAssertEqual(summary["colors"] as? [String], ["red", "blue"])
-        let byLabel = try XCTUnwrap(summary["byLabel"] as? [String: [String: Any]])
-        XCTAssertEqual(Set(byLabel.keys), Set(DebugSegmentLabel.allCases.map(\.rawValue)))
-        XCTAssertEqual(DebugSegmentLabel.allCases.map { byLabel[$0.rawValue]?["frames"] as? Int }, [3, 2, 2, 1])
-        let noSaberRed = try XCTUnwrap(byLabel["noSaber"]?["red"] as? [String: Any])
-        XCTAssertEqual((noSaberRed["both"] as? [String: Int])?["winnersRejected"], 1)
-        let byExposure = try XCTUnwrap(summary["byExposure"] as? [String: [String: Any]])
-        XCTAssertEqual(byExposure.mapValues { $0["frames"] as? Int },
-                       ["le1_120": 5, "le1_240": 1, "gt1_60": 1, "unknown": 1])
-        let samples = try XCTUnwrap(summary["winnerRejectionSamples"] as? [String: [[String: Any]]])
-        XCTAssertEqual(samples["r7e"]?.compactMap { $0["frameID"] as? UInt64 }, [2, 3])
-        XCTAssertEqual(samples["r7e"]?.first?["shadowR7eEligible"] as? Bool, false)
-        XCTAssertEqual(samples["r7e"]?.first?["d240"] as? Double, 1)
-        XCTAssertEqual(summary["winnerRejectionsOffered"] as? [String: Int], ["r7e": 2, "pf22": 1])
-
-        // A RED-only session reports only red; a missing exposure setting is omitted.
-        let redOnly = Tally(activeColors: ["red"]).summary
-        XCTAssertEqual(redOnly["colors"] as? [String], ["red"])
-        XCTAssertNil(redOnly["exposureExperimentSetting"])
-        XCTAssertNil((redOnly["total"] as? [String: Any])?["blue"])
-    }
-
-    func testShadowRuleTallyExposureBucketsAndBoundedTimeSpreadSamples() {
-        XCTAssertEqual(Tally.ExposureBucket(seconds: 0.008333), .le1_120)
-        XCTAssertEqual(Tally.ExposureBucket(seconds: 1.0 / 240), .le1_240)
-        XCTAssertEqual(Tally.ExposureBucket(seconds: 0.01), .le1_60)
-        XCTAssertEqual(Tally.ExposureBucket(seconds: 1.0 / 30), .gt1_60)
-        XCTAssertEqual(Tally.ExposureBucket(seconds: nil), .unknown)
-        XCTAssertEqual(Tally.ExposureBucket(seconds: .nan), .unknown)
-        XCTAssertEqual(Tally.ExposureBucket(seconds: 0), .unknown)
-
-        let rejected = shadowVerdicts(r7e: false, pf22: true)
-        func run() -> Tally {
-            var tally = Tally(activeColors: ["red"])
-            for id in 0..<1_000 {
-                tally.observe(frameID: UInt64(id), timestamp: Double(id) / 30, label: .unlabeled,
-                              exposureSeconds: nil, colors: ["red": Tally.ColorObservation(eligible: [rejected])])
-            }
-            return tally
-        }
-        let tally = run()
-        let ids = tally.samples("r7e").map(\.frameID)
-        XCTAssertLessThanOrEqual(ids.count, Tally.sampleLimit)
-        XCTAssertGreaterThanOrEqual(ids.count, Tally.sampleLimit / 2)
-        XCTAssertEqual(ids.first, 0)
-        XCTAssertEqual(ids, ids.sorted())
-        // Evenly spread: constant gaps that reach late into the recording.
-        XCTAssertEqual(Set(zip(ids.dropFirst(), ids).map { $0 - $1 }).count, 1)
-        XCTAssertGreaterThan(ids.last ?? 0, 500)
-        XCTAssertTrue(tally.samples("pf22").isEmpty)
-        XCTAssertEqual(tally.counts("red").r7e.winnersRejected, 1_000)
-        XCTAssertEqual(tally.summary["winnerRejectionsOffered"] as? [String: Int], ["r7e": 1_000, "pf22": 0])
-        // Deterministic: the same stream gives the same samples.
-        XCTAssertEqual(run().samples("r7e"), tally.samples("r7e"))
     }
 }
 
@@ -4351,8 +4034,6 @@ extension DetectionCoreTests {
             XCTAssertEqual(rule["deepCount"] as? Int, verdict.deepCount)
             XCTAssertEqual(rule["warmFrac"] as? Double, verdict.warmFrac)
             XCTAssertEqual(rule["rejectionReason"] as? String, "warmNoDeepRed")
-            XCTAssertEqual((emitter["shadowR7e"] as? [String: Any])?["applied"] as? Bool, false)
-            XCTAssertEqual((emitter["shadowPF22"] as? [String: Any])?["applied"] as? Bool, false)
         }
         for halo in [(250, 40, 30), (250, 215, 218)] as [(UInt8, UInt8, UInt8)] {
             let kept = analyzeSabers(in: warmGateImage(halo: halo), width: 480, height: 640,

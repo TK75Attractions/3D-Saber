@@ -310,97 +310,11 @@ struct SaberEmitterDiagnostics: Equatable {
     /// second channel >= 100: the production bright-core second-channel floor.
     let brightSecondChannelFraction: Double?
 
-    /// Red candidates only: offline-explored "R7e" matte-red rule, evaluated as
-    /// evidence and NEVER applied to eligibility, ranking or output.
-    let shadowR7e: SaberShadowR7eVerdict?
-    /// Red candidates only: offline-explored purity-floor rule "PF22", evaluated
-    /// as evidence and NEVER applied to eligibility, ranking or output.
-    let shadowPF22: SaberShadowPurityFloorVerdict?
-
     /// Applied final RED selection gate, copied from the original BGRA support pass.
     var warmNoDeepRed: SaberWarmNoDeepRedVerdict? = nil
 
     static let emitterScoreThreshold = 0.42
     var emitterScoreMargin: Double { emitterScore - Self.emitterScoreThreshold }
-}
-
-/// Shadow verdict of the offline red-eligibility rule "R7e"
-/// (clippedWhiteRatio >= 0.35 || d240 >= 4.2 || (d240 >= 3.5 && purity >= 0.60)).
-/// Evidence only, not applied: its thresholds were fitted to ~5 sessions with
-/// tiny margins, so recognition ignores it entirely. Recorded to collect real
-/// distributions of the deciding features.
-struct SaberShadowR7eVerdict: Equatable {
-    static let clippedWhiteThreshold = 0.35
-    static let thickBodyDensityThreshold = 4.2
-    static let saturatedBodyDensityThreshold = 3.5
-    static let saturatedBodyPurityThreshold = 0.60
-    /// Short side (mask samples) the density is normalised to.
-    static let referenceShortSide = 240.0
-
-    /// Dominant-body axial density (production `body.density`).
-    let density: Double
-    /// points / majorLength, used when no body density was established.
-    let fallbackDensity: Double
-    let usedFallbackDensity: Bool
-    /// Chosen density scaled to a 240-sample short side.
-    let d240: Double
-    let clippedWhiteRatio: Double
-    let meanColorPurity: Double
-    /// The rule's OR expression alone.
-    let ruleSatisfied: Bool
-    /// baseEligible && ruleSatisfied: what eligibility would be if R7e applied.
-    let shadowEligible: Bool
-
-    var clippedWhiteMargin: Double { clippedWhiteRatio - Self.clippedWhiteThreshold }
-    var thickBodyMargin: Double { d240 - Self.thickBodyDensityThreshold }
-    var saturatedBodyDensityMargin: Double { d240 - Self.saturatedBodyDensityThreshold }
-    var saturatedBodyPurityMargin: Double { meanColorPurity - Self.saturatedBodyPurityThreshold }
-
-    init(bodyDensity: Double, pointCount: Int, majorLength: Double, maskWidth: Int, maskHeight: Int,
-         clippedWhiteRatio: Double, meanColorPurity: Double, baseEligible: Bool) {
-        density = bodyDensity
-        fallbackDensity = Double(pointCount) / max(majorLength, 1.0)
-        usedFallbackDensity = !(bodyDensity > 0)
-        let chosen = usedFallbackDensity ? fallbackDensity : bodyDensity
-        d240 = chosen * Self.referenceShortSide / Double(max(min(maskWidth, maskHeight), 1))
-        self.clippedWhiteRatio = clippedWhiteRatio
-        self.meanColorPurity = meanColorPurity
-        ruleSatisfied = clippedWhiteRatio >= Self.clippedWhiteThreshold
-            || d240 >= Self.thickBodyDensityThreshold
-            || (d240 >= Self.saturatedBodyDensityThreshold
-                && meanColorPurity >= Self.saturatedBodyPurityThreshold)
-        shadowEligible = baseEligible && ruleSatisfied
-    }
-}
-
-/// Shadow verdict of the offline red-eligibility rule "PF22"
-/// (meanColorPurity >= 0.22 || clippedWhiteRatio >= 0.35), explored in
-/// docs/claude/analysis/2026-10-03_motion_blur_and_blue_jumps.md: a barely-red
-/// candidate (wall label, skin) is not an emitter unless its LED core is
-/// clipped white. Evidence only, not applied: the purity margin is small
-/// (labels 0.15–0.19) and it rests on one event, so recognition ignores it.
-/// Inputs are the production `meanPurity` and `clippedRatio` of the candidate.
-struct SaberShadowPurityFloorVerdict: Equatable {
-    static let purityThreshold = 0.22
-    static let clippedWhiteExemptionThreshold = 0.35
-
-    let meanColorPurity: Double
-    let clippedWhiteRatio: Double
-    /// The rule's OR expression alone.
-    let ruleSatisfied: Bool
-    /// baseEligible && ruleSatisfied: what eligibility would be if PF22 applied.
-    let shadowEligible: Bool
-
-    var purityMargin: Double { meanColorPurity - Self.purityThreshold }
-    var clippedWhiteMargin: Double { clippedWhiteRatio - Self.clippedWhiteExemptionThreshold }
-
-    init(meanColorPurity: Double, clippedWhiteRatio: Double, baseEligible: Bool) {
-        self.meanColorPurity = meanColorPurity
-        self.clippedWhiteRatio = clippedWhiteRatio
-        ruleSatisfied = meanColorPurity >= Self.purityThreshold
-            || clippedWhiteRatio >= Self.clippedWhiteExemptionThreshold
-        shadowEligible = baseEligible && ruleSatisfied
-    }
 }
 
 /// Production RED-only verdict on unique original pixels in the dilate1 domain.
@@ -1044,7 +958,6 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
             emitter: evidence.flatMap { evidence in
                 evidence.isValid(width: width, height: height) ? saberEmitterDiagnostics(
                     points: points, width: width, height: height, evidence: evidence,
-                    bodyDensity: body.density,
                     emitterScore: emitterScore, peakValue: peakValue, meanValue: meanValue,
                     highRatio: highRatio, meanPurity: meanPurity, clippedRatio: clippedRatio,
                     baseEligible: isEmitterEligible, isCompactRed: isCompactRed,
@@ -1063,7 +976,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
 /// emitter score into its addends and reads the component's own samples.
 private func saberEmitterDiagnostics(
     points: [PixelPoint], width: Int, height: Int, evidence: SaberEvidence,
-    bodyDensity: Double, emitterScore: Double, peakValue: Int, meanValue: Double, highRatio: Double,
+    emitterScore: Double, peakValue: Int, meanValue: Double, highRatio: Double,
     meanPurity: Double, clippedRatio: Double, baseEligible: Bool, isCompactRed: Bool,
     majorLength: Double, bladeLengthSupport: Double, localContrast: Double,
     emitterTexture: Double, brightnessVariation: Double, coreSupport: Double,
@@ -1111,14 +1024,7 @@ private func saberEmitterDiagnostics(
         maxSecondChannel: hasRadiance ? maxSecond : nil,
         meanMinChannel: Double(minSum) / count,
         nearWhiteFraction: Double(nearWhite) / count,
-        brightSecondChannelFraction: hasRadiance ? Double(brightSecond) / count : nil,
-        shadowR7e: evidence.color == .red ? SaberShadowR7eVerdict(
-            bodyDensity: bodyDensity, pointCount: points.count, majorLength: majorLength,
-            maskWidth: width, maskHeight: height, clippedWhiteRatio: clippedRatio,
-            meanColorPurity: meanPurity, baseEligible: baseEligible) : nil,
-        shadowPF22: evidence.color == .red ? SaberShadowPurityFloorVerdict(
-            meanColorPurity: meanPurity, clippedWhiteRatio: clippedRatio,
-            baseEligible: baseEligible) : nil
+        brightSecondChannelFraction: hasRadiance ? Double(brightSecond) / count : nil
     )
 }
 

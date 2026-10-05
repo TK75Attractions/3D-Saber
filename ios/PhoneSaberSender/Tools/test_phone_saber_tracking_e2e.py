@@ -507,7 +507,7 @@ class TrackingPipelineE2ETests(unittest.TestCase):
         import shutil
         from phone_saber_session_report import build_report, render_markdown
         from test_phone_saber_emitter_diagnostics import CAMERA, EMITTER, GEOMETRY_EMITTER
-        heading = "## 背景誤検出の証拠(emitter / shadow R7e / 露出)"
+        heading = "## 背景誤検出の証拠(emitter / 露出)"
         source = Path(self.captures["candidate-switch"]["bundle"])
         report = build_report(source)
         self.assertEqual(report["errors"], [])
@@ -541,19 +541,9 @@ class TrackingPipelineE2ETests(unittest.TestCase):
             evidence = augmented["backgroundEvidence"]
             red = [w for w in evidence["winners"] if w["color"] == "red"]
             self.assertTrue(red and all(w["evidence"] for w in red))
-            self.assertTrue(all(w["r7eVerdict"] == "reject" for w in red))  # SHADOW: shadowR7eEligible false
-            self.assertEqual(evidence["shadowR7eTally"]["total"]["r7eWouldReject"], len(red))
-            # Every red winner gets a PF22 verdict (recomputed from the recorder's own
-            # meanColorPurity / clippedWhiteRatio, which win over the added geometry copies).
-            self.assertTrue(all(w["pf22Verdict"] in {"keep", "reject"} for w in red))
-            pf22 = evidence["shadowPF22Tally"]["selectedWinnersTotal"]
-            self.assertEqual(pf22["pf22Keeps"] + pf22["pf22WouldReject"], len(red))
             self.assertEqual(evidence["exposure"]["iso"]["range"], [320.0, 320.0])
             text = render_markdown(augmented)
             section = text.split(heading)[1].split("\n## ")[0]
-            self.assertIn("### shadow R7e tally", section)
-            self.assertIn("### shadow PF22 tally", section)
-            self.assertIn("**would reject**", section)
             self.assertIn("- ISO 320–320", section)
 
 

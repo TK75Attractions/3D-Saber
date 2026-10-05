@@ -41,7 +41,7 @@ def snapshot(root: Path) -> dict[str, str]:
 
 
 def old_bundle(inbox: Path, session_id: str = OLD_ID) -> Path:
-    """A bundle from before motionEventSummary / tracking / camera / PF22 / exposure experiment."""
+    """A bundle from before motionEventSummary / tracking / camera / exposure experiment."""
     bundle = inbox / f"phone_saber_triage_{session_id}"
     write_codex_bundle(bundle)
     return bundle
@@ -72,7 +72,6 @@ def new_bundle(inbox: Path, session_id: str = NEW_ID, *, experiment: bool = True
     context["frames"][0]["red"] = {
         "detected": True, "detectionSucceeded": True, "predictionUsed": False, "eligibleCandidateCount": 1,
         "selectedCandidateIndex": 0, "selectedCandidateType": "core-line", "score": 50.0,
-        # purity 0.10 < 0.22 and clipped white 0 -> recomputed PF22 rejects this winner
         "selectedCandidate": {"index": 0, "meanColorPurity": 0.10, "clippedWhiteRatio": 0.0},
         "tracking": {"candidateSwitch": True, "midpointDisplacement": 150.0}}
     red_context.write_text(json.dumps(context))
@@ -115,8 +114,6 @@ class OverviewRowTests(unittest.TestCase):
         self.assertFalse(row["selectedFrames"]["trackingRecorded"])
         self.assertIsNone(row["selectedFrames"]["jumpsAtLeast100px"])
         self.assertIsNone(row["wholeRecordingSignals"]["endpointJump"])
-        self.assertEqual(overview_tool._pf22(row), "n/a")
-        self.assertEqual(overview_tool._r7e(row), "n/a")
         self.assertEqual(row["inputContract"], "PASS")
         self.assertEqual(row["route"]["label"], "n/a")
         self.assertEqual(row["codex"]["status"], "none")
@@ -139,20 +136,6 @@ class OverviewRowTests(unittest.TestCase):
         signals = row["wholeRecordingSignals"]
         self.assertEqual((signals["endpointJump"], signals["endpointJumpPerMinute"]), (12, 12.0))
         self.assertEqual(signals["candidateSwitchPerMinute"], 5.0)
-        self.assertEqual(row["shadowPF22"]["wouldReject"], 1)
-        self.assertEqual(row["shadowPF22"]["verdictSources"], {"recomputed": 1})
-
-    def test_recorded_pf22_field_is_preferred_and_marked(self):
-        bundle = new_bundle(self.inbox)
-        path = bundle / "frames" / "frame_100_1.json"
-        context = json.loads(path.read_text())
-        context["frames"][0]["red"]["selectedCandidate"]["emitterDiagnostics"] = {
-            "shadowPF22": {"applied": False, "ruleSatisfied": True, "shadowPF22Eligible": True}}
-        path.write_text(json.dumps(context))
-        row = self.rows()[NEW_ID]
-        self.assertEqual(row["shadowPF22"]["wouldReject"], 0)
-        self.assertEqual(row["shadowPF22"]["verdictSources"], {"recorded": 1})
-        self.assertNotIn("0/1*", render_markdown(build_overview(self.inbox)))
 
     def test_case_hints_use_only_tally_rows(self):
         old_bundle(self.inbox)
@@ -278,7 +261,6 @@ class OverviewOutputTests(unittest.TestCase):
         self.assertIn("上限 1/240 s", text)
         self.assertIn("4 ms", text)
         self.assertIn("12 (12/分)", text)
-        self.assertIn("1/1*", text)  # PF22 recomputed, marked
         self.assertEqual(len([line for line in text.splitlines() if "`phonesaber_" in line]), 2)
 
     def test_missing_reports_only_on_request_and_linked(self):

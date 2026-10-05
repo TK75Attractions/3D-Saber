@@ -36,7 +36,7 @@ from phone_saber_codex_process import CodexProcessError, run_codex
 
 from phone_saber_metadata_schema import (
     SEGMENT_LABELS, camera_exposure_experiment_errors, guided_recording_errors, segment_summary_errors,
-    selection_notes_errors, shadow_rule_tally_errors)
+    selection_notes_errors)
 
 from phone_saber_triage_protocol import (
     MAX_BUNDLE_BYTES,
@@ -234,15 +234,13 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
                             "selectionNotes"}
     if not set(summary).issubset(allowed_summary_keys):
         raise BundleError("summary.json contains non-triage or full-session metadata")
+    # Legacy optional diagnostic field; never used in triage analysis.
+    summary.pop("shadowRuleTally", None)
     if "cameraExposureExperiment" in summary:
         experiment_errors = camera_exposure_experiment_errors(summary["cameraExposureExperiment"])
         if experiment_errors:
             raise BundleError("camera exposure experiment is malformed: "
                               + "; ".join(experiment_errors[:3]))
-    tally_errors = shadow_rule_tally_errors(summary["shadowRuleTally"]) \
-        if "shadowRuleTally" in summary else []
-    if tally_errors:
-        raise BundleError("shadow rule tally is malformed: " + "; ".join(tally_errors[:3]))
     if "guidedRecording" in summary:
         guided_errors = guided_recording_errors(summary["guidedRecording"])
         if guided_errors:

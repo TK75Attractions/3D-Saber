@@ -1444,7 +1444,6 @@ extension DebugBridgeDropoutTests {
         var candidate = try XCTUnwrap(saberCandidate(from: points, width: 640, height: 480,
                                                     evidence: Self.redEvidence,
                                                     collectEndpointDiagnostics: true))
-        XCTAssertNotNil(candidate.endpointDiagnosticTrace?.emitter?.shadowR7e)
         candidate.isEmitterEligible = eligible
         candidate.score = score
         return candidate
@@ -1539,20 +1538,12 @@ extension DebugBridgeDropoutTests {
         let emitter = try XCTUnwrap(trace["emitterDiagnostics"] as? [String: Any])
         XCTAssertEqual(emitter["emitterScoreThreshold"] as? Double, 0.42)
         XCTAssertNotNil(emitter["bladeLengthSupport"] as? Double)
-        XCTAssertEqual((emitter["shadowR7e"] as? [String: Any])?["applied"] as? Bool, false)
-        let pf22 = try XCTUnwrap(emitter["shadowPF22"] as? [String: Any])
-        XCTAssertEqual(pf22["applied"] as? Bool, false)
-        XCTAssertNotNil(pf22["purityMargin"] as? Double, "the triage snapshot keeps the full verdict")
         let neighbour = try XCTUnwrap(frames.first { $0["frameID"] as? Int == 12 }?["red"] as? [String: Any])
         XCTAssertTrue((neighbour["candidateDecisionTrace"] as? [[String: Any]] ?? []).allSatisfy {
             $0["emitterDiagnostics"] == nil })
         let geometry = try redGeometry(context, frame: 11)
         let entries = try XCTUnwrap(geometry["candidates"] as? [[String: Any]])
         XCTAssertTrue(entries.allSatisfy { ($0["emitter"] as? [String: Any])?["emitterScore"] is Double })
-        XCTAssertTrue(entries.allSatisfy {
-            (($0["emitter"] as? [String: Any])?["shadowR7e"] as? [String: Any])?["applied"] as? Bool == false })
-        XCTAssertTrue(entries.allSatisfy {
-            (($0["emitter"] as? [String: Any])?["shadowPF22"] as? [String: Any])?["shadowPF22Eligible"] is Bool })
         if let neighbourGeometry = try? redGeometry(context, frame: 12) {
             XCTAssertTrue((neighbourGeometry["candidates"] as? [[String: Any]] ?? []).allSatisfy {
                 $0["emitter"] == nil })
@@ -1749,52 +1740,6 @@ extension DebugBridgeDropoutTests {
         XCTAssertNil(legacySummary["cameraExposureExperiment"])
     }
 
-    func testTriageSummaryListsShadowRejectionSamplesWithoutAddingOrDisplacingImages() throws {
-        // A thin, pure red winner: shadow R7e rejects it, PF22 keeps it.
-        let thin = DebugShadowRuleTally.Verdicts(
-            r7e: SaberShadowR7eVerdict(bodyDensity: 1, pointCount: 10, majorLength: 10, maskWidth: 240,
-                                       maskHeight: 240, clippedWhiteRatio: 0, meanColorPurity: 0.5,
-                                       baseEligible: true),
-            pf22: SaberShadowPurityFloorVerdict(meanColorPurity: 0.5, clippedWhiteRatio: 0, baseEligible: true))
-        var tally = DebugShadowRuleTally(activeColors: ["red", "blue"])
-        for id: UInt64 in [11, 13, 500] {
-            tally.observe(frameID: id, timestamp: Double(id) / 30, label: .unlabeled, exposureSeconds: nil,
-                          colors: ["red": DebugShadowRuleTally.ColorObservation(eligible: [thin])])
-        }
-        let events = [event(1, color: "red", start: 10)]
-        func build(withTally: Bool) throws -> [String: Any] {
-            let directory = try temporaryDirectory()
-            try writeImages(events, to: directory)
-            var document = try XCTUnwrap(JSONSerialization.jsonObject(
-                with: self.document(frames: bridgeFrames(), events: events)) as? [String: Any])
-            if withTally { document["shadowRuleTally"] = tally.summary }
-            let bundle = try DebugRecordingTriageBuilder.build(
-                metadataData: JSONSerialization.data(withJSONObject: document),
-                metadataURL: directory.appendingPathComponent("metadata.json"),
-                forensicDirectoryURL: directory)
-            return try XCTUnwrap(JSONSerialization.jsonObject(with:
-                Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
-        }
-        let summary = try build(withTally: true)
-        let legacy = try build(withTally: false)
-        XCTAssertNil(legacy["shadowRuleTally"])
-        // The image selection is identical with and without the tally.
-        XCTAssertEqual(summary["selectedImageCount"] as? Int, legacy["selectedImageCount"] as? Int)
-        XCTAssertEqual((summary["images"] as? [[String: Any]])?.compactMap { $0["path"] as? String },
-                       (legacy["images"] as? [[String: Any]])?.compactMap { $0["path"] as? String })
-        let copied = try XCTUnwrap(summary["shadowRuleTally"] as? [String: Any])
-        XCTAssertEqual(copied["totalFrames"] as? Int, 3)
-        let samples = try XCTUnwrap((copied["winnerRejectionSamples"] as? [String: Any])?["r7e"] as? [[String: Any]])
-        XCTAssertEqual(samples.compactMap { $0["frameID"] as? Int }, [11, 13, 500])
-        // Frame 11 is the bridge dropout original (never the annotated copy).
-        let image = try XCTUnwrap(samples[0]["image"] as? String)
-        XCTAssertTrue(image.hasSuffix("bridge_event_1_dropout_11.png"), image)
-        XCTAssertNotNil(samples[0]["frameContextPath"] as? String)
-        XCTAssertEqual(samples.map { $0["retainedContext"] as? Bool }, [true, true, false])
-        XCTAssertNil(samples[1]["image"])
-        XCTAssertNil(samples[2]["image"])
-        XCTAssertEqual(((copied["winnerRejectionSamples"] as? [String: Any])?["pf22"] as? [[String: Any]])?.count, 0)
-    }
 }
 
 // MARK: Guided recording reserve (ガイド付き録画)

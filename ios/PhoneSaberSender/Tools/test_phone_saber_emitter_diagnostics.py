@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Optional emitter diagnostics, shadow R7e verdict and per-frame camera state.
+"""Optional emitter diagnostics and per-frame camera state.
 
-All three are additive Debug Recording fields: validators must accept them when
+Both are additive Debug Recording fields: validators must accept them when
 present and keep accepting older bundles that omit them.
 """
 from __future__ import annotations
@@ -22,11 +22,6 @@ from phone_saber_triage_protocol import BundleError
 from test_phone_saber_candidate_geometry import block, candidate
 
 
-SHADOW = {"applied": False, "density": 2.95, "fallbackDensity": 3.1, "usedFallbackDensity": False,
-          "d240": 2.95, "clippedWhiteRatio": 0.0, "meanColorPurity": 0.88, "clippedWhiteMargin": -0.35,
-          "thickBodyMargin": -1.25, "saturatedBodyDensityMargin": -0.55, "saturatedBodyPurityMargin": 0.28,
-          "ruleSatisfied": False, "shadowR7eEligible": False}
-
 EMITTER = {"emitterScore": 0.894, "emitterScoreThreshold": 0.42, "emitterScoreMargin": 0.474,
            "peakTerm": 0.290909, "meanTerm": 0.217895, "highValueTerm": 0.28, "purityTerm": 0.1056,
            "clippedWhiteTerm": 0.0, "hasEmitterCore": True, "coreByHighValueRatio": True,
@@ -36,15 +31,12 @@ EMITTER = {"emitterScore": 0.894, "emitterScoreThreshold": 0.42, "emitterScoreMa
            "longitudinalCoreCoverage": 0.0, "longitudinalHighCoverage": 1.0, "sampleCount": 300,
            "colorSampleCount": 300, "meanMaxChannel": 250.0, "meanSecondChannel": 40.0,
            "maxSecondChannel": 40, "meanMinChannel": 30.0, "nearWhiteFraction": 0.0,
-           "brightSecondChannelFraction": 0.0, "shadowR7e": SHADOW}
+           "brightSecondChannelFraction": 0.0}
 
 GEOMETRY_EMITTER = {key: EMITTER[key] for key in (
     "emitterScore", "emitterScoreMargin", "peakTerm", "meanTerm", "highValueTerm", "purityTerm",
     "clippedWhiteTerm", "hasEmitterCore", "bladeLengthSupport", "localContrast", "emitterTexture",
     "coreSupport", "meanSecondChannel", "meanMinChannel", "nearWhiteFraction")}
-GEOMETRY_EMITTER["shadowR7e"] = {"applied": False, "d240": 2.95, "clippedWhiteRatio": 0.0,
-                                 "meanColorPurity": 0.88, "shadowR7eEligible": False}
-
 CAMERA = {"source": "exif+device", "iso": 320, "exposureDurationSeconds": 0.008333, "exposureBiasEV": 0,
           "brightnessValue": 1.5, "fNumber": 1.78, "exposureTargetBias": 0, "exposureTargetOffset": -0.125,
           "whiteBalanceGains": [1.9, 1.0, 2.1], "deviceSampleAgeSeconds": 0.1}
@@ -62,12 +54,11 @@ class EmitterDiagnosticsValidationTests(unittest.TestCase):
         validate_candidate_geometry(block([with_emitter, reduced]))
         validate_candidate_geometry(block([candidate(0, rank=1)]))  # older bundle
 
-    def test_geometry_rejects_malformed_or_applied_emitter_evidence(self):
+    def test_geometry_rejects_malformed_emitter_evidence(self):
         for mutate in (
                 lambda c: c["emitter"].__setitem__("emitterScore", "high"),
                 lambda c: c["emitter"].__setitem__("unknownKey", 1),
                 lambda c: c["emitter"].pop("emitterScoreMargin"),
-                lambda c: c["emitter"]["shadowR7e"].__setitem__("applied", True),
                 lambda c: c.__setitem__("emitterDiagnosticsReduced", True)):
             entry = candidate(0, rank=1)
             entry["emitter"] = copy.deepcopy(GEOMETRY_EMITTER)
@@ -79,7 +70,6 @@ class EmitterDiagnosticsValidationTests(unittest.TestCase):
         _validate_decision_trace([dict(TRACE, emitterDiagnostics=copy.deepcopy(EMITTER))], "context.json")
         _validate_decision_trace([dict(TRACE)], "context.json")
         blue = copy.deepcopy(EMITTER)
-        del blue["shadowR7e"]  # the shadow verdict is red-only
         blue["meanSecondChannel"] = None
         with self.assertRaises(BundleError):  # compact traces never contain nulls here
             _validate_decision_trace([dict(TRACE, emitterDiagnostics=blue)], "context.json")
@@ -128,8 +118,7 @@ class EmitterDiagnosticsValidationTests(unittest.TestCase):
         self.assertEqual(warnings(frame(camera=CAMERA, candidate={"emitterDiagnostics": EMITTER})), set())
         self.assertTrue(any("camera.iso" in key for key in
                             warnings(frame(camera=dict(CAMERA, iso="high")))))
-        self.assertTrue(any("emitterDiagnostics.shadowR7e.applied" in key for key in warnings(
-            frame(candidate={"emitterDiagnostics": dict(EMITTER, shadowR7e=dict(SHADOW, applied="no"))}))))
+
 
 
 if __name__ == "__main__":

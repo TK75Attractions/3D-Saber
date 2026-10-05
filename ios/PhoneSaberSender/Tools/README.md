@@ -70,19 +70,6 @@ ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --outpu
 ios/PhoneSaberSender/Tools/phone_saber_session_report.py /path/to/bundle --json
 ```
 
-Newer recordings also carry `shadowRuleTally`: the shadow R7e / PF22 verdicts
-counted on the iPhone over every recorded frame, per segment label (including
-`unlabeled`) and per-frame exposure bucket, plus up to six frame IDs per rule whose
-winner the rule would reject outside the no-saber labels (listed, never added as
-images). The session report, the overview (R7e / PF22 columns marked 全) and
-`phone_saber_pf22_check.py` prefer it over the selected-frame tallies;
-`phone_saber_shadow_tally.py` prints it alone with the two promotion checks of the
-2026-10-03 rule study. Evidence only: the rules are never applied.
-
-```bash
-ios/PhoneSaberSender/Tools/phone_saber_shadow_tally.py /path/to/bundle [/path/to/other] [--json]
-```
-
 ### Cross-session overview (セッション一覧)
 
 `phone_saber_sessions_overview.py` (or double-click `PhoneSaber Overview.command`)
@@ -91,11 +78,10 @@ self-contained page, `<inbox>/phone_saber_sessions_overview.html` (inline CSS an
 SVG, no network, Japanese labels, light/dark, phone width), plus the compact
 `<inbox>/phone_saber_sessions_overview.md`. Bundles are only read; each row is built
 with `phone_saber_session_report.build_report` (so the tracking diagnostics,
-background evidence, R7e / PF22 and CASE logic are the same code).
+background evidence and CASE logic are the same code).
 
 - Headline tiles: sessions and recording minutes, selected-frame ≥100px jumps and
-  candidateSwitch, CASE A/B/C (countForTally rows only), shadow R7e / PF22 would-reject
-  counts, Codex results.
+  candidateSwitch, CASE A/B/C (countForTally rows only), Codex results.
 - Trend charts (oldest → newest; sessions before the first recorded value are left out):
   whole-recording `endpoint_jump` signals per minute (`motionEventSummary.signalDistributions`,
   recordings since 09-30) and the median exposure time of the selected frames
@@ -103,9 +89,8 @@ background evidence, R7e / PF22 and CASE logic are the same code).
 - One row per session (newest first): date/time, approximate length (frameID/timestamp
   spread of the selected images, else 30 fps, marked ≈), frames, active colors, median
   exposure and the optional `cameraExposureExperiment`, selected-frame ≥100px jumps and
-  candidateSwitch (the shadow PF22 tally rows; n/a without tracking), whole-recording
-  jump signals, CASE hints, R7e and PF22 `reject/judged` winners (`*` = PF22 recomputed
-  because the bundle predates the recorded `shadowPF22`), likelyBackground hotspots, the
+  candidateSwitch (selected-frame tracking events; n/a without tracking), whole-recording
+  jump signals, CASE hints, likelyBackground hotspots, the
   upload route from the receiver log (`127.0.0.1` = P2P relay, private address = LAN),
   the Codex status (`analysis_report.json`, else the last `[AUTO_REPAIR][ANALYSIS]` log
   line: 完了 / precheck で中止 / timeout / 失敗 / 実行中) linked to `analysis_report.md`,
@@ -144,35 +129,19 @@ ios/PhoneSaberSender/Tools/phone_saber_hotspots.py /path/to/bundle [/path/to/bun
 ios/PhoneSaberSender/Tools/phone_saber_hotspots.py /path/to/bundle --json
 ```
 
-The session report section 「背景誤検出の証拠(emitter / shadow R7e / 露出)」
+The session report section 「背景誤検出の証拠(emitter / 露出)」
 (`phone_saber_background_evidence.py`; `backgroundEvidence` in `--json`) reads the
 selected-frame evidence recorded since 31ad94c: full decision-trace
 `emitterDiagnostics`, the compact geometry `emitter`, and frame `camera`. For each
 selected-frame winner (`selectedCandidateIndex`) and each `likelyBackground`
 cluster (joined by `static_hotspots(include_members=True)` on frame and candidate
 index) it shows `emitterScore` and its margin to 0.42, the dominant terms,
-`hasEmitterCore` and its three inputs (full evidence only), and the shadow R7e
-verdict with its four margins (recomputed from the documented thresholds for the
-compact subset, marked "computed"). The key tally counts winners whose recorded
-`shadowR7eEligible` is false — R7e would have changed the output — split by
-whether the winner's cluster is `likelyBackground`. Exposure shows per-bundle
-ISO / exposure time / bias ranges and, per flagged cluster, median ISO, exposure
-and peak value for eligible vs ineligible (and R7e keep vs reject) frames; the
-peak is the trace value, or inverted from `peakTerm` when that is not clamped.
-All of it is evidence, not ground truth: R7e is `applied: false` and never read
-by production. The subsection 「shadow PF22 tally」 does the same for the second
-shadow rule PF22 (red `meanColorPurity >= 0.22 OR clippedWhiteRatio >= 0.35`,
-`applied: false`): red winners and eligible red candidates it would reject, and
-what it would do to the selected-frame red candidateSwitch / ≥100px jump events
-(`noDetection` only when every eligible candidate of the frame is known and
-rejected; `winnerChanges`, `unchanged`, `unknown`), with the R7e outcome beside
-it. Where a bundle predates the recorded verdict, PF22 is recomputed from the
-decision-trace / selectedCandidate `meanColorPurity` and `clippedWhiteRatio`.
-Across bundles:
-
-```bash
-ios/PhoneSaberSender/Tools/phone_saber_pf22_check.py /path/to/bundle [/path/to/bundle2 ...] [--json]
-```
+`hasEmitterCore` and its three inputs (full evidence only). Exposure shows
+per-bundle ISO / exposure time / bias ranges and, per flagged cluster, median
+ISO, exposure and peak value for eligible vs ineligible frames. The peak is the
+trace value, or inverted from `peakTerm` when that is not clamped. All of it is
+evidence, not ground truth. Legacy `shadowR7e`, `shadowPF22` and
+`shadowRuleTally` fields are accepted but ignored and never rendered.
 
 Bundles without the fields print `n/a`; the Swift E2E harness
 writes neither field (no radiance map, no Exif), so its test adds them to a copy

@@ -129,37 +129,8 @@ EMITTER_NUMBER_KEYS = {
 EMITTER_INTEGER_KEYS = {"sampleCount", "colorSampleCount", "maxSecondChannel"}
 EMITTER_BOOL_KEYS = {"hasEmitterCore", "coreByHighValueRatio", "coreByPeakAndMean", "coreByClippedWhite",
                      "baseEligible", "compactRedGate"}
-SHADOW_R7E_NUMBER_KEYS = {"density", "fallbackDensity", "d240", "clippedWhiteRatio", "meanColorPurity",
-                          "clippedWhiteMargin", "thickBodyMargin", "saturatedBodyDensityMargin",
-                          "saturatedBodyPurityMargin"}
-SHADOW_R7E_BOOL_KEYS = {"applied", "usedFallbackDensity", "ruleSatisfied", "shadowR7eEligible"}
-
-
-def validate_shadow_r7e(value: Any) -> None:
-    """Shadow R7e verdict: evidence only, so `applied` must never be true."""
-    if not isinstance(value, dict) or not {"applied", "shadowR7eEligible"} <= set(value) \
-            or not set(value) <= SHADOW_R7E_NUMBER_KEYS | SHADOW_R7E_BOOL_KEYS \
-            or value["applied"] is not False \
-            or not all(number(value[k]) for k in SHADOW_R7E_NUMBER_KEYS & set(value)) \
-            or not all(isinstance(value[k], bool) for k in SHADOW_R7E_BOOL_KEYS & set(value)):
-        raise BundleError("invalid shadow R7e verdict")
-
-
-SHADOW_PF22_NUMBER_KEYS = {"meanColorPurity", "clippedWhiteRatio", "purityMargin", "clippedWhiteMargin"}
-SHADOW_PF22_BOOL_KEYS = {"applied", "ruleSatisfied", "shadowPF22Eligible"}
-
-
-def validate_shadow_pf22(value: Any) -> None:
-    """Shadow PF22 purity-floor verdict: evidence only, so `applied` must never be true."""
-    if not isinstance(value, dict) or not {"applied", "shadowPF22Eligible"} <= set(value) \
-            or not set(value) <= SHADOW_PF22_NUMBER_KEYS | SHADOW_PF22_BOOL_KEYS \
-            or value["applied"] is not False \
-            or not all(number(value[k]) for k in SHADOW_PF22_NUMBER_KEYS & set(value)) \
-            or not all(isinstance(value[k], bool) for k in SHADOW_PF22_BOOL_KEYS & set(value)):
-        raise BundleError("invalid shadow PF22 verdict")
-
-
 def validate_emitter_diagnostics(value: Any) -> None:
+    # Retired shadow keys are accepted without interpreting their payloads.
     allowed = EMITTER_NUMBER_KEYS | EMITTER_INTEGER_KEYS | EMITTER_BOOL_KEYS | {"shadowR7e", "shadowPF22"}
     if not isinstance(value, dict) or not {"emitterScore", "emitterScoreMargin", "hasEmitterCore"} <= set(value) \
             or not set(value) <= allowed \
@@ -168,10 +139,6 @@ def validate_emitter_diagnostics(value: Any) -> None:
                        for k in EMITTER_INTEGER_KEYS & set(value)) \
             or not all(isinstance(value[k], bool) for k in EMITTER_BOOL_KEYS & set(value)):
         raise BundleError("invalid emitter diagnostics")
-    if "shadowR7e" in value:
-        validate_shadow_r7e(value["shadowR7e"])
-    if "shadowPF22" in value:
-        validate_shadow_pf22(value["shadowPF22"])
 
 
 CAMERA_NUMBER_KEYS = {"iso", "exposureDurationSeconds", "exposureBiasEV", "brightnessValue", "fNumber",
