@@ -8,6 +8,10 @@ Unity 2D game project ("3D-Saber") targeting Unity **6000.3.9f1** with the Unive
 
 In-code comments are written in Japanese. Preserve that convention when editing existing files.
 
+## Completion workflow
+
+After implementing and verifying requested changes, commit all changes made for the task and push the current branch to its configured remote. The user has authorized this as the default workflow; complete the commit and push without asking for confirmation each time.
+
 ## Build / Run / Test
 
 There is no CLI build pipeline. All builds, play-testing, and tests run through the Unity Editor:

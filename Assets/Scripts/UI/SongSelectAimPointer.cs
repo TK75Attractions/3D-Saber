@@ -104,7 +104,6 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         shotAge += Mathf.Max(0, dt);
         if (impact != null) impact.Show(0, false, shotAge);
         bool active = inputAvailable && !ScreenTransition.IsBusy;
-        if (idleGuide != null) idleGuide.ObservePointer(point, active, sourceKind == 1);
         if (!active)
         {
             CancelCharge();
@@ -124,7 +123,8 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         bool repeat = next.disc != null && next.disc.RepeatWhileHeld;
         bool fire = tracker.Tick(next.key, Expand(area, Padding), point, dt, ready,
             next.disc != null ? next.disc.HoldSeconds : 1, next.disc != null && next.disc.Circle, repeat);
-        if (idleGuide != null && (fire || tracker.Progress01 >= .1f)) idleGuide.RegisterActivity();
+        // 手ぶれ・持ち直し・的の横切りでは案内を止めず、同じ的を狙い続けたときに操作とみなす。
+        if (idleGuide != null && (fire || tracker.HeldSeconds >= SongSelectIdleState.AimActivitySeconds)) idleGuide.RegisterActivity();
         // 曲送りをため続けている間は試聴を始めない。送るたびに鳴りかけて途切れるのを防ぐ。
         if (repeat && tracker.Progress01 > 0 && controller != null && controller.ChartPreview != null) controller.ChartPreview.HoldOff();
         if (reticle != null)

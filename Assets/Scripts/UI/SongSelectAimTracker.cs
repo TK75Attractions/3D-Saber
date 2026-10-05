@@ -12,6 +12,7 @@ public sealed class SongSelectAimTracker
     bool releaseCircle;
     Rect releaseArea;
     public float Progress01 => Mathf.Clamp01(held / duration);
+    public float HeldSeconds => held;
     public bool NeedsRelease { get; private set; }
 
     public bool Tick(object target, Rect area, Vector2 point, float dt, bool ready, float holdSeconds = HoldSeconds, bool circle = false, bool repeat = false)

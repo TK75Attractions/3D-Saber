@@ -77,11 +77,6 @@ public sealed class SongSelectIdleGuide : MonoBehaviour
         return false;
     }
 
-    public void ObservePointer(Vector2 point, bool valid, bool tracked)
-    {
-        state.ObservePointer(point / Mathf.Max(1, Mathf.Min(Screen.width, Screen.height)), tracked ? 1 : 2, valid);
-        if (state.Completed) Hide();
-    }
     public void RegisterActivity() { state.RegisterActivity(); Hide(); }
     void SelectionChanged(int index) { RegisterActivity(); }
 

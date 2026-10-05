@@ -82,25 +82,61 @@ public class SongSelectIdleGuidePlayTests
         Object.Destroy(model.gameObject); yield return null; yield return null;
         Assert.True(model == null);
     }
-    [UnityTest] public IEnumerator MovingTheActualAimPathHidesGuideWithoutChangingSelection()
+    [UnityTest] public IEnumerator JitterSlowDriftAndRepositioningStillShowGuideAtTenSeconds()
     {
         int selected = controller.SelectedIndex;
-        guide.Tick(10, true); Assert.True(guide.IsVisible);
-        aim.TickAt(new Vector2(10, 10), .01f);
-        aim.TickAt(new Vector2(120, 10), .01f);
-        Assert.False(guide.IsVisible); Assert.True(guide.Completed);
+        for (int i = 0; i < 90; i++)
+        {
+            aim.TickAt(new Vector2(10 + i, 10 + i % 3), .1f);
+            guide.Tick(.1f, true);
+        }
+        Assert.False(guide.IsVisible); Assert.False(guide.Completed);
+        aim.TickAt(new Vector2(Screen.width - 10, 10), .1f);
+        guide.Tick(1.01f, true); Assert.True(guide.IsVisible);
+        aim.TickAt(new Vector2(10, 10), .1f, false);
+        aim.TickAt(new Vector2(120, 10), .1f);
+        Assert.True(guide.IsVisible); Assert.False(guide.Completed);
         Assert.AreEqual(selected, controller.SelectedIndex);
-        guide.Tick(60, true); Assert.False(guide.IsVisible);
+        guide.Tick(60, true); Assert.True(guide.IsVisible);
         yield return null;
     }
     [UnityTest] public IEnumerator AimingAtTargetHidesGuideBeforeShotAndDoesNotBlockSelection()
     {
         guide.Tick(10, true); Assert.True(guide.IsVisible);
         var target = controller.difficultyButtons[1].GetComponent<SongSelectDiscTarget>();
-        aim.TickAt(target.ScreenRect().center, .1f);
+        for (int i = 0; i < 3; i++) aim.TickAt(target.ScreenRect().center + new Vector2(i % 2, 0), .1f);
+        Assert.True(guide.IsVisible); Assert.False(guide.Completed);
+        aim.TickAt(target.ScreenRect().center, .11f);
         Assert.False(guide.IsVisible); Assert.Zero(aim.ShotCount);
-        for (int i = 0; i < 9; i++) aim.TickAt(target.ScreenRect().center, .1f);
+        for (int i = 0; i < 6; i++) aim.TickAt(target.ScreenRect().center, .1f);
         Assert.AreEqual(1, controller.SelectedDifficultyIndex); Assert.AreEqual(1, aim.ShotCount);
+        yield return null;
+    }
+    [UnityTest] public IEnumerator BriefPassesTargetChangesAndInputLossDoNotAccumulateAsActivity()
+    {
+        var first = controller.difficultyButtons[0].GetComponent<SongSelectDiscTarget>().ScreenRect().center;
+        var second = controller.difficultyButtons[1].GetComponent<SongSelectDiscTarget>().ScreenRect().center;
+        for (int pass = 0; pass < 10; pass++)
+        {
+            for (int i = 0; i < 3; i++) aim.TickAt(first, .1f);
+            for (int i = 0; i < 3; i++) aim.TickAt(second, .1f);
+            aim.TickAt(second, .1f, false);
+            for (int i = 0; i < 3; i++) aim.TickAt(second, .1f);
+            aim.TickAt(new Vector2(10, 10), .1f);
+        }
+        guide.Tick(10, true);
+        Assert.True(guide.IsVisible); Assert.False(guide.Completed); Assert.Zero(aim.ShotCount);
+        yield return null;
+    }
+    [UnityTest] public IEnumerator SustainedAimBeforeDeadlineSuppressesGuideEvenOnTwoSecondTarget()
+    {
+        var target = controller.startButton.GetComponent<SongSelectDiscTarget>();
+        guide.Tick(3, true);
+        for (int i = 0; i < 3; i++) aim.TickAt(target.ScreenRect().center, .1f);
+        Assert.False(guide.Completed, "長押し時間に関係なく短い横切りでは終了しない");
+        aim.TickAt(target.ScreenRect().center, .11f);
+        Assert.True(guide.Completed); Assert.Zero(aim.ShotCount);
+        guide.Tick(20, true); Assert.False(guide.IsVisible);
         yield return null;
     }
     [UnityTest] public IEnumerator ButtonSelectionBeforeDeadlineSuppressesGuide()
