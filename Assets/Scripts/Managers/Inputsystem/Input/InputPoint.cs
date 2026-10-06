@@ -39,6 +39,9 @@ public class InputPoint : MonoBehaviour
     // SetReceiverAlive は受信 thread で動くため、Application.dataPath は main thread で控えておく。
     string p2pDataPath;
     string phoneSaberStation;
+    // 運営表示だけの統計。既存の受理数や座標・最終有効入力時刻とは独立させる。
+    readonly PhoneSaberPacketStatistics redInputStats = new PhoneSaberPacketStatistics();
+    readonly PhoneSaberPacketStatistics blueInputStats = new PhoneSaberPacketStatistics();
     public int port = 5005;
     public int port2 = 5006;
 
@@ -105,6 +108,20 @@ public class InputPoint : MonoBehaviour
             lock (networkLifecycleLock)
                 return bonjourPublisher != null && bonjourPublisher.IsPublishing;
         }
+    }
+    public string StationLabel
+    {
+        get { lock (networkLifecycleLock) return phoneSaberStation ?? ""; }
+    }
+    public bool DiscoveryResponderRunning
+    {
+        get { lock (networkLifecycleLock) return discoveryResponder != null && discoveryResponder.IsRunning; }
+    }
+
+    // receive thread が書いた情報を一括コピーする。呼び出し側は統計を変更できない。
+    public PhoneSaberInputStats ReadInputStats(bool secondStick = false)
+    {
+        return (secondStick ? blueInputStats : redInputStats).Read(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
     }
     public int ReceiverRestartCount => Volatile.Read(ref receiverRestartCount1);
     public int ReceiverRestartCount2 => Volatile.Read(ref receiverRestartCount2);
@@ -303,6 +320,8 @@ public class InputPoint : MonoBehaviour
             p2pBridge = new PhoneSaberP2PBridgeProcess();
             p2pDataPath = Application.dataPath;
             phoneSaberStation = PhoneSaberStation.Read();
+            redInputStats.Reset(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
+            blueInputStats.Reset(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
             // iPhone の Debug Recording を受け取る診断の受信側も、ターミナルを開かずに使えるようにする。
             PhoneSaberTriageReceiverLauncher.EnsureStarted(p2pDataPath);
 
@@ -375,17 +394,31 @@ public class InputPoint : MonoBehaviour
             string message = StripOptionalTimestamp(Encoding.UTF8.GetString(data).Trim());
 
             string[] parts = message.Split(',');
-            if (parts.Length != 2 && parts.Length != 4) continue;
+            if (parts.Length != 2 && parts.Length != 4)
+            {
+                RecordInputStats(secondStick, receiveTimestampTicks, endPoint, false);
+                continue;
+            }
 
             if (!float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float a) ||
-                !float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float b)) continue;
+                !float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float b))
+            {
+                RecordInputStats(secondStick, receiveTimestampTicks, endPoint, false);
+                continue;
+            }
 
             bool isStick = parts.Length == 4;
             float c = 0f;
             float d = 0f;
             if (isStick &&
                 (!float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out c) ||
-                 !float.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out d))) continue;
+                 !float.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out d)))
+            {
+                RecordInputStats(secondStick, receiveTimestampTicks, endPoint, false);
+                continue;
+            }
+
+            RecordInputStats(secondStick, receiveTimestampTicks, endPoint, true);
 
             // メインスレッドと衝突しないようロック
             lock (targetLock)
@@ -443,6 +476,12 @@ public class InputPoint : MonoBehaviour
                 }
             }
         }
+    }
+
+    void RecordInputStats(bool secondStick, long timestampTicks, IPEndPoint sender, bool parsed)
+    {
+        (secondStick ? blueInputStats : redInputStats).Record(
+            SwingMonotonicClock.ToSeconds(timestampTicks), sender.Address.ToString(), parsed);
     }
 
     static string StripOptionalTimestamp(string message)
