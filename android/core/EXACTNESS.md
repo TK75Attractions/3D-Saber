@@ -33,3 +33,12 @@ Exactness risks and their handling:
 Verification includes every candidate and stored production scalar, not just the
 winner. Hardware recognition and end-to-end Wi-Fi latency remain Phase 2 work;
 local resize or reported FPS is not evidence of reduced wireless latency.
+
+## Android (bionic libm) との差(2026-10-06 に確認)
+NDK 30 の arm64 build(`-ffp-contract=off`)を Android 17 / API 37 の arm64 emulator で実行し、
+Mac の C++ core(= Swift と bit 一致)と 237 枚の PNG(formal fixture + inbox の元画像)で比べた。
+- 最終出力(赤・青の selected 端点)は 237/237 枚で一致。
+- 候補の内部値は 184 枚で最終 bit(1 ulp)だけ異なる(`atan2` / `sin` / `cos` / `hypot` / `log2` / `pow` の丸めが
+  Apple の libm と bionic で違うため)。非 selected 候補の形が変わった例が 2 件。
+- Apple の libm の結果を Android で bit 単位に再現する方法はないので、受け入れる。点数がほぼ同点の場面でだけ、
+  まれに選択が iPhone と変わる可能性がある。

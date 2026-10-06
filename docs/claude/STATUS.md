@@ -35,6 +35,8 @@ Android 作業: Phase 2 の Kotlin/CameraX/JNI/UDP探索/NSD/UDP・日本語UI�
 
 ## 作業ログ
 
+- 2026-10-06 / Android・Windows: C++ core(`b0efcc2`、Mac で Swift と 248 枚 bit 一致)、Android アプリ(`a61dd1a`、build と JVM テスト 16 件 PASS、emulator で起動・画面表示を確認)、Unity の Android 用 PC 探索応答 UDP 5007(3D-Saber `170fd79`)。Android の libm では選択結果 237/237 一致・内部値は 1 ulp 差(android/core/EXACTNESS.md)。実機(AQUOS sense9)と Windows での受信は未確認。
+
 - 2026-10-06 / Android Phase 2: 本番senderのGradleプロジェクト、薄いJNI、portrait画素回転、180ms expiry、最新フレームのみのUDP、UDP/Bonjour探索、手入力IP保存、日本語UIとJVMテストを追加。未commit。Swift/core変更なし。Androidビルド・テスト実行・NDK bit parity・実機検証は未実施。
 
 - 2026-10-06 / Android Phase 1: `android/core/` に C++17 の本番認識・状態遷移・UDP文字列、PNG CLI、Swift reference 比較、Make/CMake を追加。Swift 本番・threshold・UDP形式・fixture期待値は無変更。Python 3.12 / clang++ -O2 -Wall -Wextra -Werror: formal 40/40（35 PNG）、inbox original 213 PNG（annotated 5除外）、248画像×3入力経路の全候補/production double bit一致、状態遷移541操作・合成18ケースとも mismatch 0。core test、比較器 unittest 4件、ASan/UBSan PNG smoke、git diff --check と新規ファイル空白チェック PASS。Android libm/NDK の bit parity と実機検証は Phase 2。日本語計画は `android/README.md`、exactness リスクは `android/core/EXACTNESS.md`。
