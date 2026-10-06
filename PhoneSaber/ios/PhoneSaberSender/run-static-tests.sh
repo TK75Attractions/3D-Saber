@@ -22,3 +22,24 @@ xcrun swiftc -O \
     -module-cache-path "$module_cache" \
     -o "$binary"
 "$binary"
+
+# シミュレータ不要で、Xcodeと同じ端末状態のXCTestを実行する。
+cat > "$build_dir/main.swift" <<'SWIFT'
+import XCTest
+import Darwin
+let suite = DeviceHealthTests.defaultTestSuite
+suite.run()
+guard let run = suite.testRun, run.executionCount == 4, run.hasSucceeded else { exit(1) }
+SWIFT
+xctest_developer="$(xcode-select -p)/Platforms/MacOSX.platform/Developer"
+xctest_frameworks="$xctest_developer/Library/Frameworks"
+xcrun swiftc -O -D DEVICE_HEALTH_STANDALONE \
+    "$source_dir/DeviceHealth.swift" \
+    "$script_dir/../PhoneSaberSenderTests/DeviceHealthTests.swift" \
+    "$build_dir/main.swift" \
+    -I "$xctest_developer/usr/lib" -L "$xctest_developer/usr/lib" \
+    -F "$xctest_frameworks" -Xlinker -rpath -Xlinker "$xctest_frameworks" \
+    -Xlinker -rpath -Xlinker "$xctest_developer/usr/lib" \
+    -module-cache-path "$module_cache" \
+    -o "$build_dir/device-health-tests"
+"$build_dir/device-health-tests"

@@ -40,11 +40,14 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
     private var core: NativeCore? = null
     private var expiry: ScheduledFuture<*>? = null
     private val rotation = RotationHelper()
+    private val healthMeter = DeviceHealthMeter()
+    fun healthRates(): HealthRates = healthMeter.snapshot(System.nanoTime() / 1e9)
 
     fun start(brightness: Int, dominance: Int) {
         val token = synchronized(gate) {
             running = true
             status = Status()
+            healthMeter.reset(System.nanoTime() / 1e9)
             ++generation
         }
         executor.execute {
@@ -105,9 +108,12 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                             val pixels = rotation.orient(plane.buffer, image.width, image.height,
                                 plane.rowStride, plane.pixelStride, image.imageInfo.rotationDegrees)
                             val processor = core ?: return@setAnalyzer
+                            val jniStarted = System.nanoTime()
                             val results = processor.process(pixels, started / 1e9, brightness, dominance)
+                            val jniEnded = System.nanoTime()
                             synchronized(gate) {
                                 if (running && token == generation) {
+                                    healthMeter.processed(jniEnded / 1e9, (jniEnded - jniStarted) / 1e6)
                                     sender.offer(results, started)
                                     status = describe(results, "${pixels.width}×${pixels.height} / 30 fps要求")
                                 }

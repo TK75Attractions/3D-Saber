@@ -358,6 +358,12 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published var running = false
     @Published var redEndpoints: (PixelPoint, PixelPoint)?
     @Published var blueEndpoints: (PixelPoint, PixelPoint)?
+    nonisolated private let healthMeter = DeviceHealthMeter()
+    @Published private(set) var deviceHealthLine = "端末状態を確認中"
+    @Published private(set) var deviceHealthWarning: String?
+    private var lastHealthPublish = 0.0
+    private var lastThermalState: ProcessInfo.ThermalState?
+    private var requestedHealthFPS = 30.0
     @Published var fps = 0.0
     @Published var status = "停止中"
     @Published var errorMessage: String?
@@ -523,6 +529,13 @@ final class CameraViewModel: NSObject, ObservableObject {
         self.idleTimerUpdater = idleTimerUpdater
         super.init()
         registerCameraSessionObservers()
+        UIDevice.current.isBatteryMonitoringEnabled = true
+        sessionObserverTokens.append(NotificationCenter.default.addObserver(
+            forName: ProcessInfo.thermalStateDidChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true) }
+        })
+        publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
         pathMonitor.pathUpdateHandler = { [weak self] path in
             let status: String
             switch path.status {
@@ -544,6 +557,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         updateDiagnosticDestination()
         bonjourDiscovery.start()
         if self.p2pEnabled { startP2P() }
+        processor.onHealthSample = { [healthMeter] time, milliseconds, generation in
+            healthMeter.processed(at: time, milliseconds: milliseconds, generation: generation)
+        }
         processor.onResult = { [weak self] results, width, height, processingStart, generation, trace in
             Task { @MainActor in self?.handle(results, width: width, height: height, processingStart: processingStart, generation: generation, trace: trace) }
         }
@@ -748,6 +764,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func pollCameraFrameHealth(at time: TimeInterval) {
+        publishDeviceHealth(at: time)
         guard cameraLifecycleEnabled, running else { return }
         let becameStalled = cameraLifecycle.evaluateStall(at: time)
         publishCameraLifecycle(at: time)
@@ -757,6 +774,38 @@ final class CameraViewModel: NSObject, ObservableObject {
             if sceneIsActive && !cameraRecoveryAttempted {
                 scheduleCameraRecovery(alreadyMarkedRecovering: false)
             }
+        }
+    }
+
+    private func publishDeviceHealth(at time: TimeInterval, force: Bool = false) {
+        guard force || time - lastHealthPublish >= 1 else { return }
+        lastHealthPublish = time
+        let state = ProcessInfo.processInfo.thermalState
+        let thermal = DeviceThermalLevel(state: state)
+        if let previous = lastThermalState, previous != state {
+            print("[DeviceHealth] 発熱: \(DeviceThermalLevel(state: previous).title) → \(thermal.title)")
+        }
+        lastThermalState = state
+        let rates = running ? healthMeter.snapshot(at: time) : DeviceHealthRates()
+        let battery = deviceBatterySnapshot()
+        if debugRecordingActive {
+            processor.updateDebugDeviceHealthState(DebugDeviceHealthState(
+                thermalState: thermal.metadataValue, batteryLevel: battery.level, batteryState: battery.state))
+        }
+        deviceHealthLine = "発熱 \(thermal.title) / \(DeviceHealthText.battery(level: battery.level, state: battery.title))\n" + DeviceHealthText.timing(rates)
+        deviceHealthWarning = DeviceHealthText.warning(thermal: thermal, rates: rates,
+                                                       requestedFPS: requestedHealthFPS, running: running)
+    }
+
+    private func deviceBatterySnapshot() -> (level: Double?, state: String, title: String?) {
+        let value = Double(UIDevice.current.batteryLevel)
+        let level = value.isFinite && (0...1).contains(value) ? value : nil
+        switch UIDevice.current.batteryState {
+        case .charging: return (level, "charging", "充電中")
+        case .full: return (level, "full", "満充電")
+        case .unplugged: return (level, "unplugged", "未充電")
+        case .unknown: return (level, "unknown", nil)
+        @unknown default: return (level, "unknown", nil)
         }
     }
 
@@ -917,6 +966,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         cameraRecoveryAttempted = false
         if debugRecordingActive { stopDebugRecording() }
         running = false
+        publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
         cameraWatchdogTask?.cancel()
         cameraWatchdogTask = nil
         cameraLifecycle.stop()
@@ -980,6 +1030,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 #else
         let targetFPS = 30.0
 #endif
+        requestedHealthFPS = targetFPS
         let selectedIndex = preferredCameraFormatIndex(options: formatOptions, targetFPS: targetFPS)
         let format = selectedIndex.map { camera.formats[$0] } ?? camera.formats.min { left, right in
             let lhs = CMVideoFormatDescriptionGetDimensions(left.formatDescription)
@@ -1050,6 +1101,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         resetStartState()
         processor.configureThresholds(red: configuredThreshold, blue: configuredThreshold)
         frameCount = 0; fpsStart = CACurrentMediaTime(); _ = processor.reset(); status = "送信中"
+        healthMeter.reset(at: ProcessInfo.processInfo.systemUptime, generation: processor.currentGeneration)
+        publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
         startCameraWatchdog()
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
         sessionRunner.start { [weak self] succeeded in
@@ -1318,6 +1371,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             let gains = camera.deviceWhiteBalanceGains
             let minDuration = CMTimeGetSeconds(camera.activeVideoMinFrameDuration)
             let maxDuration = CMTimeGetSeconds(camera.activeVideoMaxFrameDuration)
+            let battery = deviceBatterySnapshot()
             processor.recordDebugCameraSample(DebugRecordingCameraSample(
                 frameID: nil, presentationTimeSeconds: nil,
                 exposureDurationMs: CMTimeGetSeconds(camera.exposureDuration) * 1000,
@@ -1332,7 +1386,10 @@ final class CameraViewModel: NSObject, ObservableObject {
                 activeFormat: "\(size.width)×\(size.height)",
                 activeFormatFPSRanges: ranges.isEmpty ? "Not available" : ranges,
                 activeMinFPS: maxDuration > 0 && maxDuration.isFinite ? 1 / maxDuration : nil,
-                activeMaxFPS: minDuration > 0 && minDuration.isFinite ? 1 / minDuration : nil
+                activeMaxFPS: minDuration > 0 && minDuration.isFinite ? 1 / minDuration : nil,
+                thermalState: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState).metadataValue,
+                batteryLevel: battery.level,
+                batteryState: battery.state
             ))
         }
     }
@@ -1726,6 +1783,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         // Reserve the state immediately so a rapid app Stop queues recorder
         // finalization after recorder creation instead of leaving it orphaned.
         debugRecordingActive = true
+        publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
         debugRecordingStatus = "録画を開始しています…"
         processor.updateDebugCameraDeviceState(nil)
         debugSegmentLabel = .unlabeled
@@ -1988,6 +2046,7 @@ extension CameraViewModel {
 extension CameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
     nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         let frameTime = ProcessInfo.processInfo.systemUptime
+        healthMeter.cameraFrame(at: frameTime)
         processor.submit(sampleBuffer)
         Task { @MainActor [weak self] in self?.receiveCameraFrame(at: frameTime) }
     }

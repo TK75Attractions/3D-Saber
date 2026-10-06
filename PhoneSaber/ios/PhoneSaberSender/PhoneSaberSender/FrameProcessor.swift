@@ -49,6 +49,7 @@ enum HostMonotonicClock {
 final class FrameProcessor: @unchecked Sendable {
     let queue = DispatchQueue(label: "PhoneSaberSender.frames", qos: .userInteractive)
     var onResult: (([DetectedSaber], Int, Int, TimeInterval, Int, FrameTrace?) -> Void)?
+    var onHealthSample: ((TimeInterval, Double, Int) -> Void)?
     var onRawFrameSaved: ((Result<URL, Error>) -> Void)?
 #if DEBUG
     var onPerformance: ((FramePerformanceSample) -> Void)?
@@ -102,6 +103,8 @@ final class FrameProcessor: @unchecked Sendable {
     /// Newest AVCaptureDevice exposure state, guarded by pendingLock. Read
     /// only while a Debug Recording is active.
     private var debugCameraDeviceState: DebugCameraDeviceState?
+    // 最新の端末状態だけを保持。録画メタデータ以外には使わない。
+    private var debugDeviceHealthState: DebugDeviceHealthState?
     /// Operator segment label for Debug Recording metadata, guarded by
     /// pendingLock. Never read by recognition, tracking or UDP output.
     private var debugSegmentLabel: DebugSegmentLabel = .unlabeled
@@ -367,6 +370,12 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.unlock()
     }
 
+    func updateDebugDeviceHealthState(_ state: DebugDeviceHealthState) {
+        pendingLock.lock()
+        debugDeviceHealthState = state
+        pendingLock.unlock()
+    }
+
     /// Sets the ground-truth label stamped on the following recorded frames.
     /// A single slot under the mailbox lock: the caller never waits for the
     /// processing queue, and the first frame read after this call carries it.
@@ -511,9 +520,8 @@ final class FrameProcessor: @unchecked Sendable {
             (.red, sabers[.red]),
             (.blue, sabers[.blue])
         ]
-#if DEBUG
         let detectionEnd = clock()
-#endif
+        onHealthSample?(ProcessInfo.processInfo.systemUptime, max(0, (detectionEnd - processingStart) * 1000), generation)
         // Detection has finished reading BGRA. Keep the lock only when a
         // requested recording or raw save still needs the pixel buffer.
 #if DEBUG
@@ -551,12 +559,13 @@ final class FrameProcessor: @unchecked Sendable {
             // pushed device state. Neither read can block on the camera.
             pendingLock.lock()
             let deviceState = debugCameraDeviceState
+            let healthState = debugDeviceHealthState
             let segmentLabel = debugSegmentLabel
             let guidedPhase = debugGuidedPhase
             pendingLock.unlock()
             let camera = DebugRecordingFrameCamera.make(
                 exif: DebugRecordingFrameCamera.exifAttachment(of: sampleBuffer),
-                device: deviceState, now: clock())
+                device: deviceState, now: clock(), health: healthState)
             let appendResult = debugVideoRecorder.append(
                 pixelBuffer: pixelBuffer,
                 presentationTime: CMSampleBufferGetPresentationTimeStamp(sampleBuffer),

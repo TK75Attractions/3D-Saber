@@ -182,14 +182,18 @@ def validate_emitter_diagnostics(value: Any) -> None:
 
 
 CAMERA_NUMBER_KEYS = {"iso", "exposureDurationSeconds", "exposureBiasEV", "brightnessValue", "fNumber",
-                      "exposureTargetBias", "exposureTargetOffset", "deviceSampleAgeSeconds"}
+                      "exposureTargetBias", "exposureTargetOffset", "deviceSampleAgeSeconds", "batteryLevel"}
+CAMERA_HEALTH_KEYS = {"thermalState", "batteryState"}
 
 
 def validate_frame_camera(value: Any) -> None:
-    """Optional per-frame exposure state (`frames[].camera`)."""
+    """Optional per-frame exposure/health state (`frames[].camera`)."""
     if not isinstance(value, dict) or value.get("source") not in {"exif", "device", "exif+device"} \
-            or not set(value) <= CAMERA_NUMBER_KEYS | {"source", "whiteBalanceGains"} \
+            or not set(value) <= CAMERA_NUMBER_KEYS | CAMERA_HEALTH_KEYS | {"source", "whiteBalanceGains"} \
             or not all(number(value[k]) for k in CAMERA_NUMBER_KEYS & set(value)) \
+            or ("batteryLevel" in value and not 0 <= value["batteryLevel"] <= 1) \
+            or ("thermalState" in value and value["thermalState"] not in ("nominal", "fair", "serious", "critical", "unknown")) \
+            or ("batteryState" in value and value["batteryState"] not in ("charging", "full", "unplugged", "unknown")) \
             or ("whiteBalanceGains" in value and not numeric_array(value["whiteBalanceGains"], 3)):
         raise BundleError("invalid frame camera state")
 

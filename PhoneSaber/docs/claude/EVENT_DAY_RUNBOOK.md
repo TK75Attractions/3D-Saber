@@ -97,6 +97,26 @@ Start PhoneSaber から単独起動した受信側を止める場合は、その
 
 **Windows / Mac 共通**: ゲーム画面(Editor は Game view)にフォーカスして **F8**(Mac は設定により Fn + F8)で運営 Overlay を開閉する。起動時は非表示。台名、RED / BLUE の直近1秒の packet 数、不正 payload を含む最終受信の経過・送信元 IP・解析 OK / NG、探索/Bonjour/P2P/受信機の状態を確認する。Mac の `127.0.0.1` は P2P bridge、それ以外は LAN。1秒を超えて受信がない色には日本語の警告が出る。Windows の Bonjour / P2P は未対応。
 
+通常送信画面の端末状態行は、箱の中で数時間使うときの確認用です。
+「発熱 正常 / やや高い / 高い / 危険」はOSの熱状態です（iPhoneは
+nominal / fair / serious / critical、AndroidはNONE / LIGHT・MODERATE / SEVERE /
+CRITICAL以上）。温度を摂氏で測った値ではありません。電池は残量%と
+充電中・満充電・未充電を表示し、取得できない値は「不明」になります。
+
+iPhoneの「カメラ / 処理 fps」、Androidの「解析 fps」は直近5秒の実測です。
+処理中央値は同じ窓のiPhoneの検出処理時間（画素アクセスを含む）、AndroidのJNI呼び出し時間です。
+送信fpsやUnityの受信fps、無線遅延とは別の値です。開始から3秒後以降、
+要求カメラfpsの70%未満（30fpsなら21fps未満、iPhoneの60fps設定なら42fps未満）で
+注意行が出ます。iPhoneはカメラ・処理のどちらが低くても対象です。
+高い・危険はfpsに関係なく注意行が出ます。アプリは熱やfpsを理由にカメラfps・認識を自動変更しません。
+
+**高い / 危険のときは箱を開け、送風・通風を増やし、プロジェクターの排熱から端末を離す。**
+電池残量と充電表示を確認し、残量が減るなら給電・ケーブルを確認して充電する。
+充電中も熱は増えるので通風を確保する。危険が続く場合は送信を手動停止し、
+冷えるまで待つか予備端末へ交代する。fpsだけが低い場合もまず箱を開けて通風・電源を確認し、
+送信fps・PCの受信状況と合わせて切り分ける。実機で熱状態が変わるとiPhoneのConsole /
+AndroidのLogcat（DeviceHealth）にも記録されます。iPhoneのDebug Recordingには熱状態と電池も残ります。
+
 | どこ | 正常 | 根拠 |
 |---|---|---|
 | iPhone「経路」 | `P2P Connected (awdl0 · Phone Saber Unity P2P (<Mac名>))`。同じ Wi-Fi にいると `en0` になることもある | `P2P_BRIDGE.md`、`P2PSender.swift` |
