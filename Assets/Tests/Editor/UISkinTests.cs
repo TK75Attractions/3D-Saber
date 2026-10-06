@@ -206,8 +206,8 @@ public class UISkinTests
     [TestCase(0, "3")]
     [TestCase(1, "2")]
     [TestCase(2, "1")]
-    [TestCase(3, "START!")]
-    [TestCase(9, "START!")]
+    [TestCase(3, "START")]
+    [TestCase(9, "START")]
     public void StartCountdown_UsesRequestedLabels(int step, string expected)
     {
         Assert.AreEqual(expected, GameStartCountdown.TokenForStep(step));

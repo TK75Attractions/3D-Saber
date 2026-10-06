@@ -95,7 +95,7 @@ public class SongLeadInPlayTests
             double scheduled = (double)typeof(SongPlayer).GetField("startDspTime", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(manager.songPlayer);
             Assert.That(scheduled, Is.EqualTo(countdown.SongStartDspTime).Within(.00001), "STARTと音の開始は同じDSP時計");
             double firstBeat = (double)typeof(GameStartCountdown).GetField("firstBeatDspTime", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(countdown);
-            Assert.That(scheduled - firstBeat, Is.EqualTo(3 * GameStartCountdown.BeatSeconds(92)).Within(.00001), "待ち時間を足しても拍間隔を引き伸ばさない");
+            Assert.That(scheduled - firstBeat, Is.EqualTo(3 * GameStartCountdown.CountSeconds(92)).Within(.00001), "待ち時間を足しても拍間隔を引き伸ばさない");
             Assert.Less(AudioSettings.dspTime, firstBeat, "冒頭ノーツはカウント前から助走する");
             Assert.AreEqual(0f, countdown.GetComponent<CanvasGroup>().alpha, "3の表示だけがクリック音より先行しない");
         }
@@ -129,12 +129,49 @@ public class SongLeadInPlayTests
         var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
         Assert.NotNull(countdown);
         double remaining = countdown.SongStartDspTime - AudioSettings.dspTime;
-        Assert.LessOrEqual(remaining, .12 + 3 * GameStartCountdown.BeatSeconds(118) + .02);
+        Assert.LessOrEqual(remaining, .12 + 3 * GameStartCountdown.CountSeconds(118) + .02);
         Assert.Greater(remaining, .5);
         Assert.IsNull(firstNote, "まだ先読み範囲に入らないノーツは生成しない");
         manager.songPlayer.Stop();
         yield return null;
         Assert.IsNull(firstNote);
+    }
+
+    // 2026-10-05 の新しい 3・2・1: 拍ごとにゲートの辺が点き、数字は次の拍で斬られ、START の後は元の見た目に戻る。
+    [UnityTest]
+    public IEnumerator CountInLightsTheGateEdgesPerBeatAndRestoresThemAfterStart()
+    {
+        yield return OpenGame(true);
+        var countdown = Object.FindFirstObjectByType<GameStartCountdown>();
+        Assert.NotNull(countdown);
+        var gate = Object.FindFirstObjectByType<JudgeGateFrame>();
+        Assert.NotNull(gate, "本編シーンに判定ゲートがある");
+        var left = gate.transform.Find("GateLeft").GetComponent<MeshRenderer>();
+        var right = gate.transform.Find("GateRight").GetComponent<MeshRenderer>();
+        var floor = manager.noteSpawner.FloorGuide;
+        double first = countdown.FirstBeatDspTime, c = countdown.CountLength, end = countdown.EndDspTime;
+        var block = new MaterialPropertyBlock();
+
+        while (AudioSettings.dspTime < first + c * .5) yield return null;
+        left.GetPropertyBlock(block); Color l = block.GetColor("_EmissionColor");
+        right.GetPropertyBlock(block); Color r = block.GetColor("_EmissionColor");
+        Assert.Greater(l.b, l.r, "3: 左の辺が青く点く");
+        Assert.Less(r.maxColorComponent, l.maxColorComponent, "まだ点かない右の辺は暗い");
+        if (floor != null) Assert.Greater(floor.CountTintAmount, 0f, "床の判定線も色付く");
+        Assert.IsTrue(countdown.NumberAt(0).Root.gameObject.activeSelf, "「3」が出ている");
+
+        while (AudioSettings.dspTime < first + c * 1.15) yield return null;
+        Assert.IsTrue(countdown.NumberAt(0).ShowingPieces, "次の拍で「3」が斬られて割れる");
+        while (AudioSettings.dspTime < first + c * 1.5) yield return null;
+        right.GetPropertyBlock(block); r = block.GetColor("_EmissionColor");
+        Assert.Greater(r.r, r.b, "2: 右の辺が赤く点く");
+
+        while (countdown != null && AudioSettings.dspTime < end + .5) yield return null;
+        yield return null;
+        Assert.IsTrue(countdown == null, "START の演出が終わったら消える");
+        Assert.IsFalse(left.HasPropertyBlock(), "ゲートの辺は元の材質の見た目に戻る");
+        Assert.IsFalse(right.HasPropertyBlock());
+        if (floor != null) Assert.AreEqual(0f, floor.CountTintAmount, "床も白に戻る");
     }
 
     [UnityTest]

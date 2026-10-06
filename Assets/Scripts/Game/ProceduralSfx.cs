@@ -94,6 +94,57 @@ public static class ProceduralSfx
         return Normalize(s, .6f);
     }
 
+    // カウントイン(3・2・1)の拍の音。立ち上がり3ms・長さ70msの短い音(G5)にして、鳴ったと感じる時刻を拍の頭にそろえる。
+    public static float[] CountTick(float seconds = .07f)
+    {
+        var s = new float[Samples(seconds)];
+        for (int i = 0; i < s.Length; i++)
+        {
+            float t = i / (float)Rate;
+            float env = Mathf.Clamp01(t / .003f) * Mathf.Exp(-t * 34f);
+            float body = Triangle(783.99f, t) + (float)System.Math.Sin(2 * System.Math.PI * 1567.98 * t) * .22f;
+            s[i] = body * env * Tail(t, seconds);
+        }
+        return Normalize(s, .75f);
+    }
+
+    // カウントインで数字を斬る音。高い帯域を上へ掃く短いノイズ(90ms)。
+    public static float[] CountSwish(float seconds = .09f)
+    {
+        var s = new float[Samples(seconds)];
+        uint seed = 11;
+        float low = 0, band = 0;
+        for (int i = 0; i < s.Length; i++)
+        {
+            float t = i / (float)Rate;
+            float k = Mathf.Clamp01(t / seconds);
+            // 状態変数フィルタで、中心が 1.5kHz → 5.5kHz へ上がる帯域だけを通す
+            float g = 2f * Mathf.Sin(Mathf.PI * Mathf.Lerp(1500f, 5500f, k) / Rate);
+            float high = Noise(ref seed) - low - .9f * band;
+            band += g * high;
+            low += g * band;
+            s[i] = band * Mathf.Clamp01(t / .004f) * (1 - k * .7f) * Tail(t, seconds);
+        }
+        return Normalize(s, .7f);
+    }
+
+    // カウントインの START。拍の音より1オクターブ上(G6)で約6倍の長さにし、和音と「ドン」で厚くする(時報の最後の音と同じ考え方)。
+    public static float[] CountStart(float seconds = .45f)
+    {
+        var don = Don(seconds);
+        var s = new float[Samples(seconds)];
+        float[] chord = { 783.99f, 987.77f, 1174.66f }; // G5 B5 D6
+        for (int i = 0; i < s.Length; i++)
+        {
+            float t = i / (float)Rate;
+            float lead = Triangle(1567.98f, t) * Mathf.Clamp01(t / .003f) * Mathf.Exp(-t * 6.5f);
+            float sum = 0;
+            for (int n = 0; n < chord.Length; n++) sum += Bell(t, chord[n], 5.5f);
+            s[i] = (lead * .55f + sum / chord.Length * .6f + don[Mathf.Min(i, don.Length - 1)] * .55f) * Tail(t, seconds);
+        }
+        return Normalize(s, .88f);
+    }
+
     // リザルトの静かなループ曲(柔らかい和音の4小節)。最後と最初がつながるよう、周波数をループ長で割り切れる値に丸める。
     // 高い音を含まないので LoopRate で作り、正弦は回転の漸化式で進めて読み込み時の負荷を抑える。
     public const int LoopRate = 22050;
@@ -191,6 +242,7 @@ public static class ProceduralSfx
         => (float)(System.Math.Sin(2 * System.Math.PI * hz * t) + .25 * System.Math.Sin(2 * System.Math.PI * hz * 2.01 * t))
            * Mathf.Exp(-t * decay) * Mathf.Clamp01(t / .004f);
     static float Tail(float t, float seconds) => Mathf.Clamp01((seconds - t) / .03f);
+    static float Triangle(float hz, float t) { float p = hz * t; p -= Mathf.Floor(p); return 4f * Mathf.Abs(p - .5f) - 1f; }
     static float Noise(ref uint seed) { seed = seed * 1664525u + 1013904223u; return (seed >> 8) / 8388608f - 1f; }
     static float[] Normalize(float[] s, float peak)
     {
