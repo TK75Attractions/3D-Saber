@@ -73,6 +73,8 @@ sysinfo.txt
 mono_crash.*
 
 # Builds
+# Player builds (PhoneSaber/windows/Start-Saber-*.bat expect Builds/Windows/)
+/Builds/
 *.apk
 *.aab
 *.unitypackage

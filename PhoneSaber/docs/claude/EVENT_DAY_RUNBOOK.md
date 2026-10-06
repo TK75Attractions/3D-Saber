@@ -12,7 +12,7 @@ PC(Mac か Windows)で Unity のゲームを動かし、スマホ(iPhone か And
 
 ### 最初に1回だけ
 - **Mac**: `git lfs install` → `git clone https://github.com/TK75Attractions/3D-Saber.git` → `3D-Saber/PhoneSaber/setup_mac.command` をダブルクリック(デスクトップに PhoneSaber のアイコン)。Unity Hub で 3D-Saber を開く(6000.3.9f1)。
-- **Windows**: Git LFS を入れて同じく clone → Unity Hub で開く(6000.3.9f1)。初めて Play したときのファイアウォールの画面で「プライベート ネットワーク」を許可する(UDP 5005 / 5006 / 5007)。
+- **Windows**: Git LFS を入れて同じく clone → Unity Hub で開く(6000.3.9f1)。[Windows 当日用キット](../../windows/README.md)にビルド(File > Build Profiles)、台 A / B の起動 bat、管理者 PowerShell の `Allow-PhoneSaber-Firewall.ps1`(Private profile の UDP 5005〜5007)とホットスポットの手順をまとめている。
 - **iPhone**: Mac の Xcode で `PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender.xcodeproj` を開き、iPhone をつないで ▶。
 - **Android(AQUOS sense9)**: 開発者向けオプションで USB デバッグを ON。Android Studio で `PhoneSaber/android` を開き、つないで ▶。
 
@@ -20,6 +20,7 @@ PC(Mac か Windows)で Unity のゲームを動かし、スマホ(iPhone か And
 - **各 PC の Unity Editor(Mac / Windows)**: Play 前に `Tools > PhoneSaber > Station > A` または `B` を選ぶ。PlayerPrefs の `PhoneSaber.Station` に保存され、次の Play から適用される。
 - **ビルドしたゲーム**: 起動引数 `-phonesaberStation A`(もう一方は `B`)を付ける。Windows なら `Game.exe -phonesaberStation A`、Mac なら `open -a "/path/to/Game.app" --args -phonesaberStation A`。環境変数 `PHONESABER_STATION=A` でも指定できる。優先順は **起動引数 → 環境変数 → PlayerPrefs**。台名は16文字以内の英数字・`-`・`_`(通常は A / B)。Unity Console の探索/Bonjour/P2P 公開ログで台名を確認する。
 - **各スマホ(iPhone / Android)**: アプリの接続設定の **「台」**を、その PC と同じ **A / B** にしてから送信を開始する。設定は保存される。指定した台の PC だけを自動探索する。iPhone の P2P と診断 relay も同じ台に限定される。
+- **Windows Player の簡単な起動**: `PhoneSaber/windows/Start-Saber-A.bat` / `Start-Saber-B.bat` の先頭で exe の場所を合わせてダブルクリック(既定 `Builds/Windows/3D-Saber.exe`)。Editor と Player は同じ PC で同時に起動しない(UDP port が競合する)。
 - **手動 IP は常に優先**。自動探索で見つからないときは、その台の PC の IP を確認して入力する(Windows + iPhone は従来どおり手動 IP が必要)。台設定は座標の受信を拒否する仕組みではなく、スマホの自動送信先を選ぶための設定。
 - **1 台だけで従来どおり使うとき**: PC は `Station > None`、スマホは **指定なし**、起動引数/環境変数も未設定にする。どこにも台を設定しなければ従来と同じ動作。環境変数/起動引数を使った PC は、それを外してから None に戻す。
 
@@ -93,6 +94,8 @@ iPhone で Stop ─→ triage bundle
 Start PhoneSaber から単独起動した受信側を止める場合は、そのウィンドウで Ctrl+C。
 
 ## 4. 正常な状態
+
+**Windows / Mac 共通**: ゲーム画面(Editor は Game view)にフォーカスして **F8**(Mac は設定により Fn + F8)で運営 Overlay を開閉する。起動時は非表示。台名、RED / BLUE の直近1秒の packet 数、不正 payload を含む最終受信の経過・送信元 IP・解析 OK / NG、探索/Bonjour/P2P/受信機の状態を確認する。Mac の `127.0.0.1` は P2P bridge、それ以外は LAN。1秒を超えて受信がない色には日本語の警告が出る。Windows の Bonjour / P2P は未対応。
 
 | どこ | 正常 | 根拠 |
 |---|---|---|
