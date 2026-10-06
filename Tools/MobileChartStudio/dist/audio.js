@@ -1,6 +1,6 @@
 import { clamp } from './core.js';
 export class SongAudio {
-  constructor() { this.context = null; this.buffer = null; this.source = null; this.playing = false; this.position = 0; this.rate = 1; this.startOffset = 0; this.startedAt = 0; this.clicks = []; }
+  constructor() { this.context = null; this.buffer = null; this.source = null; this.playing = false; this.position = 0; this.rate = 1; this.startOffset = 0; this.startedAt = 0; this.clicks = []; this.playRequest = 0; }
   async unlock() {
     if (!this.context) {
       const Audio = window.AudioContext || window.webkitAudioContext;
@@ -38,8 +38,10 @@ export class SongAudio {
     return this.playing ? this.startOffset + (this.outputContextTime(eventTime) - this.startedAt) * this.rate : this.position;
   }
   time(eventTime) { return clamp(this.rawTime(eventTime), this.playing ? this.startOffset : 0, this.duration); }
-  async play({ rate = 1, countBeats = 0, bpm = 120 } = {}) {
+  async play({ rate = 1, countBeats = 0, bpm = 120, metronome = false, beatOrigin = 0, end = this.duration } = {}) {
+    const request = ++this.playRequest;
     await this.unlock();
+    if (request !== this.playRequest) return false;
     if (!this.buffer) throw new Error('先に音源を開いてください。');
     this.pause();
     if (this.position >= this.duration - .01) this.position = 0;
@@ -49,9 +51,31 @@ export class SongAudio {
     this.source = this.context.createBufferSource(); this.source.buffer = this.buffer;
     this.source.playbackRate.value = rate; this.source.connect(this.context.destination);
     this.source.start(this.startedAt, this.position); this.playing = true;
+    this.endPosition = clamp(end, this.position, this.duration);
+    this.source.stop(this.startedAt + (this.endPosition - this.position) / rate);
     for (let i = 0; i < countBeats; i++) this.click(i === 0 ? 1000 : 680, this.context.currentTime + .08 + i * beatWall, .09);
+    if (metronome) {
+      const beatSong = 60 / bpm;
+      let beat = Math.ceil((this.position - beatOrigin) / beatSong - 1e-8);
+      const schedule = () => {
+        const now = this.context.currentTime;
+        // 非表示などで遅れても、過去のクリックをまとめて鳴らさない。
+        beat = Math.max(beat, Math.ceil((this.startOffset + (now - this.startedAt) * rate - beatOrigin) / beatSong - 1e-8));
+        let songTime = beatOrigin + beat * beatSong;
+        while (songTime < this.endPosition) {
+          const when = this.startedAt + (songTime - this.startOffset) / rate;
+          if (when > now + .12) break;
+          if (when >= now) this.click(820, when, .035);
+          songTime = beatOrigin + (++beat) * beatSong;
+        }
+      };
+      schedule(); this.metronomeTimer = setInterval(schedule, 25);
+    }
+    return true;
   }
   pause() {
+    this.playRequest++;
+    clearInterval(this.metronomeTimer); this.metronomeTimer = null;
     if (this.playing) this.position = Math.max(this.startOffset, this.time());
     this.playing = false;
     if (this.source) { try { this.source.stop(); } catch {} this.source.disconnect(); this.source = null; }

@@ -1,5 +1,5 @@
-const CACHE = 'saber-tap-shell-v3';
-const SHELL = ['./', './index.html', './style.css', './app.js', './core.js', './audio.js', './storage.js', './wav.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
+const CACHE = 'saber-tap-shell-v4-20261007b';
+const SHELL = ['./', './index.html', './style.css', './app.js', './core.js', './editing.js', './audio.js', './storage.js', './wav.js', './manifest.webmanifest', './icon-192.png', './icon-512.png'];
 self.addEventListener('install', event => event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(SHELL)).then(() => self.skipWaiting())));
 self.addEventListener('activate', event => event.waitUntil(Promise.all([caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('saber-tap-shell-') && key !== CACHE).map(key => caches.delete(key)))), self.clients.claim()])));
 self.addEventListener('fetch', event => {

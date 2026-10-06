@@ -22,3 +22,20 @@ test('seeking and 0.5 playback remain in source-song seconds',()=>{
   a.playing=true;a.startOffset=25;a.startedAt=100;a.rate=.5;a.outputContextTime=()=>104;
   assert.equal(a.time(),27);a.pause();assert.equal(a.position,27);a.seek(999);assert.equal(a.time(),60);
 });
+test('stopping while audio unlocks cannot start an invisible recording',async()=>{
+  const a=new SongAudio();let release;a.unlock=()=>new Promise(resolve=>release=resolve);a.buffer={duration:30};
+  const pending=a.play();a.pause();release();assert.equal(await pending,false);assert.equal(a.playing,false);
+});
+test('range endpoint is scheduled on the audio clock; metronome follows origin and speed',async t=>{
+  let scheduled,cleared=false;const stops=[],clicks=[];
+  t.mock.method(globalThis,'setInterval',fn=>{scheduled=fn;return 1;});
+  t.mock.method(globalThis,'clearInterval',()=>{cleared=true;});
+  const a=new SongAudio();a.unlock=async()=>{};a.buffer={duration:10};a.position=.8;
+  a.context={currentTime:0,destination:{},createBufferSource:()=>({playbackRate:{},connect(){},start(){},stop:when=>stops.push(when),disconnect(){}})};
+  a.click=(frequency,when)=>clicks.push(when);
+  await a.play({rate:.5,bpm:120,beatOrigin:.2,metronome:true,end:2.3});
+  assert.ok(Math.abs(stops[0]-3.08)<1e-8);
+  a.context.currentTime=.8;scheduled();assert.ok(Math.abs(clicks[0]-.88)<1e-8);
+  a.context.currentTime=2.8;scheduled();assert.ok(Math.abs(clicks.at(-1)-2.88)<1e-8);
+  a.pause();assert.equal(cleared,true);assert.equal(a.metronomeTimer,null);
+});
