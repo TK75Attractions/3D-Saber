@@ -1449,9 +1449,9 @@ extension DebugBridgeDropoutTests {
         return candidate
     }
 
-    private func emitterBundle(red: [SaberCandidate], blue: [SaberCandidate]) throws -> URL {
+    private func emitterBundle(red: [SaberCandidate], blue: [SaberCandidate], eventColor: String = "red") throws -> URL {
         let directory = try temporaryDirectory()
-        let events = [event(1, color: "red", start: 10)]
+        let events = [event(1, color: eventColor, start: 10)]
         try writeImages(events, to: directory)
         let encoder = JSONEncoder()
         func colorDiagnostics(_ list: [SaberCandidate]) throws -> Any {
@@ -1515,6 +1515,49 @@ extension DebugBridgeDropoutTests {
             + (try (0..<6).map { try candidate(x: 450 + $0 * 20, rejected: true) })
         let blue = try (0..<12).map { try emitterSaber(x: 10 + $0 * 30) }
         let large = try emitterBundle(red: many, blue: blue)
+        for bundle in [small, large] {
+            for context in try contexts(bundle) {
+                XCTAssertLessThan(try JSONSerialization.data(withJSONObject: context).count, 32 * 1024)
+            }
+        }
+    }
+
+    func testBlueNoDeepSupportContextsKeepAppliedEvidenceWithinPreflightLimit() throws {
+        func candidate(x: Int, rejected: Bool = false) throws -> SaberCandidate {
+            var value = try emitterSaber(x: x, eligible: !rejected)
+            let verdict = SaberBlueNoDeepSupportVerdict(deepCount: rejected ? 0 : 1,
+                                                    pixelCount: 10)
+            value.blueNoDeepSupport = verdict
+            value.endpointDiagnosticTrace?.emitter?.blueNoDeepSupport = verdict
+            if rejected {
+                value.diagnosticRejections.append(SaberEligibilityDecision(
+                    name: "blueNoDeepSupport", value: Double(verdict.deepCount), comparison: ">=", threshold: 1))
+            }
+            return value
+        }
+        let small = try emitterBundle(red: [], blue: [candidate(x: 200, rejected: true), candidate(x: 10)], eventColor: "blue")
+        let context = try XCTUnwrap(try contexts(small).first {
+            ($0["bridgeEvent"] as? [String: Any])?["role"] as? String == "dropout" })
+        let frames = try XCTUnwrap(context["frames"] as? [[String: Any]])
+        let selected = try XCTUnwrap(frames.first { $0["frameID"] as? Int == 11 })
+        let blue = try XCTUnwrap(selected["blue"] as? [String: Any])
+        let traces = try XCTUnwrap(blue["candidateDecisionTrace"] as? [[String: Any]])
+        let rejected = try XCTUnwrap(traces.first {
+            ($0["rejectionReasons"] as? [String])?.contains("blueNoDeepSupport") == true })
+        let emitter = try XCTUnwrap(rejected["emitterDiagnostics"] as? [String: Any])
+        let rule = try XCTUnwrap(emitter["blueNoDeepSupport"] as? [String: Any])
+        XCTAssertEqual(rule["applied"] as? Bool, true)
+        XCTAssertEqual(rule["deepCount"] as? Int, 0)
+        XCTAssertEqual(rule["rejectionReason"] as? String, "blueNoDeepSupport")
+        let geometry = try XCTUnwrap(blue["candidateGeometry"] as? [String: Any])
+        let entries = try XCTUnwrap(geometry["candidates"] as? [[String: Any]])
+        XCTAssertTrue(entries.contains {
+            (($0["emitter"] as? [String: Any])?["blueNoDeepSupport"] as? [String: Any])?["applied"] as? Bool == true })
+
+        let many = try (0..<12).map { try candidate(x: 10 + $0 * 30) }
+            + (try (0..<6).map { try candidate(x: 450 + $0 * 20, rejected: true) })
+        let red = try (0..<12).map { try emitterSaber(x: 10 + $0 * 30) }
+        let large = try emitterBundle(red: red, blue: many, eventColor: "blue")
         for bundle in [small, large] {
             for context in try contexts(bundle) {
                 XCTAssertLessThan(try JSONSerialization.data(withJSONObject: context).count, 32 * 1024)

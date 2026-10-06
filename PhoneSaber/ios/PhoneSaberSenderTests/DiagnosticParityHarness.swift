@@ -45,6 +45,9 @@ enum DiagnosticParityHarness {
                     lines.append("warmNoDeepRed \(support.deepCount),\(support.warmCount),\(support.pixelCount) "
                         + "warmFrac=\(support.warmFrac.bitPattern) rejected=\(support.rejected)")
                 }
+                if let support = c.blueNoDeepSupport {
+                    lines.append("blueNoDeepSupport \(support.deepCount),\(support.pixelCount) rejected=\(support.rejected)")
+                }
                 lines.append("\(color) \(c.source) eligible=\(c.isEmitterEligible) compact=\(c.isCompactRed) "
                     + "end=\(c.endpoints.0.x),\(c.endpoints.0.y),\(c.endpoints.1.x),\(c.endpoints.1.y) "
                     + "raw=\(c.comparisonEndpoints.0.x),\(c.comparisonEndpoints.0.y),"

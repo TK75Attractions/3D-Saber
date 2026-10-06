@@ -16,7 +16,7 @@
 - 高: 肌・照明・背景の誤検出と、速い振りのブレによる eligibility 消失。代表的な旧 CASE A は背景同士で、修正 A の gate は未達。
 - 高: AWDL の詰まりは認識とは別の遅延原因。interactiveVoice の改善効果は実機未確認。
 - 確認済み: score の決定性は `bbc1f32` で修正。赤 warmNoDeepRed は `8363024` で採用、公式 verify 全 PASS。実機再試験は未了。
-- 保留: 青 deep support の採否。W は淡いピンク剣を失うため不採用。fixture 89 は窓期待値のまま。根拠・数値・却下案は [FINDINGS.md](FINDINGS.md)。
+- 採用（2026-10-06、この worktree は未commit）: 青 blueNoDeepSupport。W は淡いピンク剣を失うため不採用。fixture 89 は窓期待値のまま。根拠・数値・却下案は [FINDINGS.md](FINDINGS.md)。
 
 ## 次にやること
 
@@ -35,7 +35,7 @@ Android 作業: Phase 2 の Kotlin/CameraX/JNI/UDP探索/NSD/UDP・日本語UI�
 
 1. **warmNoDeepRed の実機再試験** — 理由: offline の改善が実環境でも有効か確認する。必要: 実機録画、未使用 ORIGINAL の目視、saberなし FP と小さい/淡い剣の保持を比較。担当: user（撮影）/ Claude（解析）。
 2. **ブレ・露出と候補消失の比較** — 理由: CASE B と速振りの取りこぼしが残る。必要: 実機で同じ振りを自動/1/100 秒で比較、距離 0.5–3m・端からの向き・昼夜を含む lossless。B が多ければ生成前の棄却 component を記録するコード、既定露出変更時はユーザー判断。担当: user（撮影・判断）/ Claude（解析・コード）。
-3. **青 deep support の採否** — 理由: FP 29→18 の効果はあるが、落とす淡い端片の点灯真値が未確定。必要: 実機で点灯真値、遠い/淡い/ぶれた青・画面端・青光の肌や布を確認。診断コードと回帰、証拠後の採否判断。本番未適用。担当: Claude（診断・評価）/ user（撮影・判断）。
+3. **blueNoDeepSupport の実機再試験** — 10-06 に本番採用（この worktree、未commit）。理由: offline FP 29→18、既存正解187/187保持だが、落とす淡い端片の点灯真値は未確定。必要: 遠い/淡い/ぶれた青・画面端・青光の肌や布を確認し、Simulator verify と Android build を実行。担当: Claude（検証・評価）/ user（撮影）。
 4. **残存背景・肌・布への対策** — 理由: 赤 59・青 37 の誤出力が残る。必要: 別人・別場所の点灯/OFF 対、発光 halo・点 LED 列の比較、診断コード。静的マスクは固定背景のみの案として、静止剣を消さない証拠とユーザー判断が必要。担当: Claude（解析・コード）/ user（撮影・判断）。
 5. **fixture 89 の窓期待値を解消** — 理由: 公式正例が窓で、期待値だけ直すと 39/40。必要: 窓と淡い剣が共存する実機証拠、画像外 1px の端点審査、検出器コードと回帰。ユーザーの修正方針は決定済み。W は再採用しない。担当: Claude（修正・検証）/ user（撮影）。
 6. **CASE A/B/C に基づく選択・端点修正** — 理由: 背景対策後も本物の不安定さが残る可能性。必要: bundle コピーで triage dry-run と selection replay、ORIGINAL と全 eligible を照合。A は別 swing で 2 event 以上の gate 後にコード、B は生成/eligibility、C は A と別変更で長い剣・分離 LED を保護。担当: Claude（判定・コード）/ user（追加撮影・再試験）。
@@ -50,6 +50,8 @@ Android 作業: Phase 2 の Kotlin/CameraX/JNI/UDP探索/NSD/UDP・日本語UI�
 15. **Mac カメラ直接認識の将来比較** — 理由: ユーザーが将来の構成候補として保持。必要: Mac 内蔵/USB カメラの配置・精度・端点・遅延の実機比較、採用判断と必要なコード。Continuity Camera は別の無線比較経路で、ローカル縮小/FPS を通信遅延改善と扱わない。担当: user（構成判断・撮影）/ Claude（比較・コード）。
 
 ## 作業ログ
+
+- 2026-10-06 / blueNoDeepSupport を Swift/C++ に本番採用（ユーザー指示で未commit）。整数・unique clipped 原画素 dilate1、全 gate/順位後に再選択、emitter/decision trace と Mac schema/validator を更新。formal 40/40・期待値無変更、BLUE変更は formal PNG 5/35（BLUE期待fixtureは0）＋inbox 38/234（25未検出/13再選択）、RED変更0/269、[全変更一覧](data/2026-10-06_blue_no_deep_support_output_changes.csv)。static Swift / C++・targeted Mac host XCTest 8/8（両encoding/32KB）PASS、parity 269 PNG×3経路・541遷移・27合成で mismatch 0。emitter/schema/triage Python 10件PASS、Python全suiteはsandbox等で8failure/33error/1skip（381test）。git diff --check PASS。Simulator verify/Android build は Claude が後続実行。
 
 - 2026-10-06 / 剣なし録画2本(163345_325 約25秒、163444_198 約17秒、校舎の吹き抜け・屋外光、人は遠い、1/100 秒、P2P で受信): 赤の誤検出 9.7% / 11.3%、青 3.2% / 27.3%。赤は遠くの人のあたり(ほぼ白に近い暖色 RGB 約 252,231,222。B/G 0.96 で warmNoDeepRed の暖色条件 0.95 をわずかに外れる)。青は明るい空色の領域(RGB 約 202,234,245、濃い青の画素 0)で、保留中の「濃い青の画素で採用」ルールなら消える。3 回の Capture Lossless で Mac の precheck が止まっていた不具合を修正(`2ab0813`)。
 

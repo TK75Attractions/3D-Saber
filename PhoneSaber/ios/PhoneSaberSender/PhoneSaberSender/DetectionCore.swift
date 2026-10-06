@@ -312,6 +312,8 @@ struct SaberEmitterDiagnostics: Equatable {
 
     /// Applied final RED selection gate, copied from the original BGRA support pass.
     var warmNoDeepRed: SaberWarmNoDeepRedVerdict? = nil
+    /// 最終の青支持判定。元画像の整数 count をそのまま診断へコピーする。
+    var blueNoDeepSupport: SaberBlueNoDeepSupportVerdict? = nil
 
     static let emitterScoreThreshold = 0.42
     var emitterScoreMargin: Double { emitterScore - Self.emitterScoreThreshold }
@@ -336,6 +338,23 @@ struct SaberWarmNoDeepRedVerdict: Codable, Equatable {
         warmFrac = pixelCount > 0 ? Double(warmCount) / Double(pixelCount) : 0
         rejected = deepCount == 0 && pixelCount > 0 && warmCount * 100 >= pixelCount * 30
         rejectionReason = rejected ? "warmNoDeepRed" : nil
+    }
+}
+
+/// 元画像の dilate1 領域に濃い青があるかを整数だけで判定する。
+struct SaberBlueNoDeepSupportVerdict: Codable, Equatable {
+    let applied: Bool
+    let deepCount: Int
+    let pixelCount: Int
+    let rejected: Bool
+    let rejectionReason: String?
+
+    init(deepCount: Int, pixelCount: Int) {
+        applied = true
+        self.deepCount = deepCount
+        self.pixelCount = pixelCount
+        rejected = deepCount == 0
+        rejectionReason = rejected ? "blueNoDeepSupport" : nil
     }
 }
 
@@ -374,9 +393,10 @@ struct SaberCandidate {
     let componentArea: Int
     let pointCount: Int
     let usedPointLEDFallback: Bool
-    /// Scoring samples in mask coordinates, retained only until final RED selection.
-    var redSupportSamplePoints: [PixelPoint] = []
+    /// 最終の赤・青支持判定まで保持する mask 座標の production sample points。
+    var supportSamplePoints: [PixelPoint] = []
     var warmNoDeepRed: SaberWarmNoDeepRedVerdict? = nil
+    var blueNoDeepSupport: SaberBlueNoDeepSupportVerdict? = nil
     /// Populated only for Debug Recording, at the production rejection site.
     var diagnosticRejections: [SaberEligibilityDecision] = []
     var endpointDiagnosticTrace: SaberEndpointDiagnosticTrace? = nil
@@ -935,7 +955,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                           componentArea: points.count,
                           pointCount: points.count,
                           usedPointLEDFallback: usedPointLEDFallback)
-    if evidence?.color == .red { candidate.redSupportSamplePoints = points }
+    if evidence != nil { candidate.supportSamplePoints = points }
     if collectEndpointDiagnostics {
         candidate.endpointDiagnosticTrace = SaberEndpointDiagnosticTrace(
             centroidX: meanX, centroidY: meanY,

@@ -393,6 +393,31 @@ func redWarmNoDeepRedSupport(points: [PixelPoint], baseAddress: UnsafePointer<UI
                                     pixelCount: pixelCount)
 }
 
+/// 赤と同じ元画像の dilate1 領域。Set は重複判定専用で反復しない。
+func blueNoDeepSupport(points: [PixelPoint], baseAddress: UnsafePointer<UInt8>,
+                       width: Int, height: Int, bytesPerRow: Int,
+                       sampleStep: Int) -> SaberBlueNoDeepSupportVerdict {
+    var seen = Set<Int>()
+    var deepCount = 0, pixelCount = 0
+    for point in points {
+        let x = point.x * sampleStep, y = point.y * sampleStep
+        guard x >= 0, x < width, y >= 0, y < height else { continue }
+        for yy in max(0, y - 1)...min(height - 1, y + 1) {
+            for xx in max(0, x - 1)...min(width - 1, x + 1) {
+                guard seen.insert(yy * width + xx).inserted else { continue }
+                let offset = yy * bytesPerRow + xx * 4
+                let b = Int(baseAddress[offset]), g = Int(baseAddress[offset + 1])
+                let r = Int(baseAddress[offset + 2])
+                pixelCount += 1
+                if b >= 180 && r * 100 < 40 * b && g * 100 < 65 * b {
+                    deepCount += 1
+                }
+            }
+        }
+    }
+    return SaberBlueNoDeepSupportVerdict(deepCount: deepCount, pixelCount: pixelCount)
+}
+
 /// Scan BGRA once for both colors, then clean and score the two compact masks.
 /// Coordinates remain in the source image's coordinate system.
 func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, bytesPerRow: Int,
@@ -1016,7 +1041,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
         if color == .red {
             for index in candidates.indices where candidates[index].isEmitterEligible {
                 let verdict = redWarmNoDeepRedSupport(
-                    points: candidates[index].redSupportSamplePoints, baseAddress: baseAddress,
+                    points: candidates[index].supportSamplePoints, baseAddress: baseAddress,
                     width: width, height: height, bytesPerRow: bytesPerRow, sampleStep: step)
                 candidates[index].warmNoDeepRed = verdict
                 candidates[index].endpointDiagnosticTrace?.emitter?.warmNoDeepRed = verdict
@@ -1026,6 +1051,24 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                         candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
                             name: "warmNoDeepRed", value: verdict.warmFrac,
                             comparison: "<", threshold: 0.30))
+                    }
+                }
+            }
+        }
+        // 既存 gate と順位を確定してから青支持を確認し、次の eligible を選ぶ。
+        if color == .blue {
+            for index in candidates.indices where candidates[index].isEmitterEligible {
+                let verdict = blueNoDeepSupport(
+                    points: candidates[index].supportSamplePoints, baseAddress: baseAddress,
+                    width: width, height: height, bytesPerRow: bytesPerRow, sampleStep: step)
+                candidates[index].blueNoDeepSupport = verdict
+                candidates[index].endpointDiagnosticTrace?.emitter?.blueNoDeepSupport = verdict
+                if verdict.rejected {
+                    candidates[index].isEmitterEligible = false
+                    if collectPipelineDiagnostics {
+                        candidates[index].diagnosticRejections.append(SaberEligibilityDecision(
+                            name: "blueNoDeepSupport", value: Double(verdict.deepCount),
+                            comparison: ">=", threshold: 1))
                     }
                 }
             }
@@ -1077,6 +1120,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 pointCount: candidate.pointCount,
                 usedPointLEDFallback: candidate.usedPointLEDFallback,
                 warmNoDeepRed: candidate.warmNoDeepRed,
+                blueNoDeepSupport: candidate.blueNoDeepSupport,
                 diagnosticRejections: candidate.diagnosticRejections,
                 endpointDiagnosticTrace: candidate.endpointDiagnosticTrace.map { trace in
                     SaberEndpointDiagnosticTrace(

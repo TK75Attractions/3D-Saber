@@ -2,7 +2,7 @@
 
 2026-10-06 のrepo統合: Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/`。Git root から `bash PhoneSaber/tools/verify_phone_saber.sh` を実行。旧 school-festival は履歴を保って統合・アーカイブ済み。
 
-2026-10-05 時点。残作業は [STATUS.md](STATUS.md)、当日の手順は [EVENT_DAY_RUNBOOK.md](EVENT_DAY_RUNBOOK.md)。
+2026-10-06 時点。残作業は [STATUS.md](STATUS.md)、当日の手順は [EVENT_DAY_RUNBOOK.md](EVENT_DAY_RUNBOOK.md)。
 旧 `analysis/` の個別メモと未適用 diff は統合して削除した。原文・試作差分は Git 履歴に残る。
 R7e/PF22 の shadow 記録と一回限りの調査スクリプトは、当時の比較に使った。以下はその結果を保存したもの。
 ユーザーの現在の部屋には赤い物がない。過去画像のラベル・カラビナの記述は、現在の撮影条件ではない。
@@ -87,6 +87,19 @@ warmNoDeepRed の定義:
 - 保持側余白は .212。ただし肌・光との全体分離余白はなく、+8% の 232850 では別背景へ移って FP 9/9 が残った。
   147/147 は「既存正解を保った」数字で、全可視剣の recall 100% ではない。未生成・ineligible・順位負けは残る。
 
+### blueNoDeepSupport — 2026-10-06 採用（この worktree、未commit）
+
+- ユーザーの本番変更指示により、保留していた青 D を Swift / Android C++ core に採用。全既存 eligibility とランキングの後、eligible BLUE のみに適用し、最初の生存候補へ再選択する。残らなければ未検出。
+- 画素領域は赤と同じ D（production sample 点 × step、原 buffer、周囲 1px 正方形の合併、unique、画像端で clip）。deep blue は `B >= 180 AND R*100 < 40*B AND G*100 < 65*B`。`deepCount == 0` のみ却下。整数比較、Set は membership だけで反復せず、score・順位・端点算出・RED・UDP の規則は維持。
+- 採用根拠（既存の offline 調査）: 198 ORIGINAL、gain .92/1.00/1.08 で現在正しい BLUE 187/187 を保持、formal 40/40、nominal saberなし青 FP 29→18。独立標本数や全可視剣 recall を意味しない。
+- 追加の実機根拠: 2026-10-06 の saberなし `163444_198` は青 FP 27.3%。明るい空色 RGB 約 202,234,245 に deep-blue pixel 0。別候補に深青支持があれば再選択されるため、この規則だけで session 全 FP が 0 になるとは限らない。
+- この worktree の before/after（default step=2）: formal 35 PNG 中 BLUE 出力変更 5（全て RED fixture 用 PNG）、BLUE の formal 期待値に変更 0、40 色別期待値すべて PASS。inbox ORIGINAL 234 枚中 38 変更（25 未検出、13 別候補）。annotated 8 枚は除外。全 269 枚で RED 出力変更 0。
+- formal で BLUE が変わる PNG は `forensic-20260921/frame_1000.png`, `frame_1048.png` と `lossless-regression/phonesaber_20260923_143446_247/` の `red_dropout_false_83.png`, `red_dropout_last_true_82.png`, `red_dropout_recovered_84.png`。BLUE 出力は全て別候補へ移る。期待値・tolerance・manifest は無変更。
+- **変更全43件の一覧（5 formal＋38 inbox）**: [CSV](data/2026-10-06_blue_no_deep_support_output_changes.csv)。corpus-relative path、SHA-256、before/after BLUE 端点を保存。inbox の同じ画像の別ファイルも1件ずつ数え、private PNG / 詳細 JSON は repo に追加しない。
+- `155919 f5321/f5331` の淡い端片は採用後に未検出となる。点灯真値は依然未確定で、成功例に数えない。遠い・淡い・ぶれた青、画面端の実機保持は引き続き確認する。確定正解の最小 deep count 14 は全実剣の下限ではない。
+- diagnostics は `deepCount`, `pixelCount`, `rejected` と `blueNoDeepSupport` 理由を emitter / decision trace に記録し、streamed metadata / triage geometry へ伝播。Mac の emitter validator と metadata schema を同時更新し、両 encoding と triage trace/geometry の入力契約をテスト。32KB preflight 上限は無変更。
+- 検証: `run_lossless_regression` 40/40、static Swift・C++ core test PASS。追加の XCTest 6 件＋赤青 context 2 件を元のテスト関数と本番 source snapshot から Mac host で実行し 8/8 PASS（両 metadata encoding と 32KB を含む。Simulator の全 verify とは別）。Mac C++ / Swift parity は 269 PNG × 3 入力経路、541 状態遷移、27 合成ケースで mismatch 0。diagnostics の hash seed 切替・収集 on/off の bit parity も PASS。Python tools の広範囲 suite は 381 test で 8 failure / 33 error / 1 skip（socket の sandbox 拒否、録画容量取得が 0、bridge compiler 監視）。今回の emitter/schema/triage 契約テスト 10 件は PASS。Simulator verify / Android build は Claude の後続検証。
+
 ## 試したが採用しなかったもの
 
 | 案 | 結果 | 見送りの理由 |
@@ -97,7 +110,6 @@ warmNoDeepRed の定義:
 | hue>11° AND coreSupportRatio<.28 | formal 40/40、既存正解 147/147 保持、232850 FP 9→4。 | +8% で FP 9/9、青光下の肌・照明が残る。全体分離余白なし。 |
 | deep red count≥1 のみ | 肌・光候補 144/144 を除外、FP 80→51。 | 白・magenta の実剣も失い formal 37/40。warm 条件を足した最終案だけ採用した。 |
 | W: RED neutralFrac≥.80 AND ring4HaloFrac≤.05 | fixture 89 は実剣へ移る。他 39 fixture とラベル済み正解は保持。 | 合成の淡いピンク剣 RGB 250/215/218（min/max .86）を失う。効果が窓 1 例だけなので不採用（`5888bb5`）。 |
-| 青 deep support D: B≥180, R<.40B, G<.65B の画素 count≥1 | nominal 青 FP 29→18、確定正解 187/187（全 gain）、formal 40/40。 | 採否保留。155919 f5321/f5331 の淡い端片が点灯剣なら支持 0 の反例になる。 |
 | 青 bpf22 / bmean225 | bpf22 は背景 1/19 のみ改善、bmean225 は formal 35/40。 | 効果不足・実剣の損失。 |
 | 静止候補の一律除外、時間的 G1 | 背景を抑える場面はあった。 | 静止した剣も 2.2px/frame、背景との差 1–2px。G1 は誤った背景も追い続けた。 |
 | emitter の緩和・compact purity .35 | ブレた候補を拾った。 | 前腕の誤軸、または formal 39/40。 |
@@ -129,7 +141,7 @@ warmNoDeepRed の定義:
 ## 未解決の問いと判断条件
 
 - 実機で warmNoDeepRed は肌・照明 FP を減らし、小さい剣・淡い剣・速い振りを維持できるか。別人・別照明・距離 0.5–3m の未使用 capture が必要。
-- 青の淡い端片は点灯剣か。D の採否は真値と実機保持の確認後に決める。確定正解の最小 deep count 14 は全実剣の下限ではない。
+- 青の淡い端片は点灯剣か。blueNoDeepSupport は 10-06 に採用したが、その真値と遠い・淡い青の実機保持は未確認。確定正解の最小 deep count 14 は全実剣の下限ではない。
 - CASE A の gate は未達。別々の swing で 2 event 以上、正しい剣 candidate が eligible のまま遠方候補に僅差で負ける証拠が必要。
   初期ジャンプ 5 件の score gap は全て ≤3.2 だが、安定 frame も 26% が <3。margin だけでは判別できない。
 - 修正 B は A と別変更。raw/robust 乖離、単独 body、弱い tail、分離 LED でないこと、妥当な body PCA が条件。長い剣・分離 LED の短縮を防ぐ。

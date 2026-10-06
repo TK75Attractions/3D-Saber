@@ -146,13 +146,32 @@ def valid_warm_no_deep_red(value: Any) -> bool:
         and (value["rejected"] == (value.get("rejectionReason") == "warmNoDeepRed"))
 
 
+BLUE_NO_DEEP_SUPPORT_KEYS = {"applied", "deepCount", "pixelCount", "rejected"}
+
+
+def valid_blue_no_deep_support(value: Any) -> bool:
+    """Production BLUE verdict; nil rejectionReason may be omitted by Swift."""
+    return isinstance(value, dict) and BLUE_NO_DEEP_SUPPORT_KEYS <= set(value) \
+        and set(value) <= BLUE_NO_DEEP_SUPPORT_KEYS | {"rejectionReason"} \
+        and value["applied"] is True and isinstance(value["rejected"], bool) \
+        and all(isinstance(value[k], int) and not isinstance(value[k], bool) and value[k] >= 0
+                for k in ("deepCount", "pixelCount")) \
+        and value["deepCount"] <= value["pixelCount"] \
+        and value["rejected"] == (value["deepCount"] == 0) \
+        and value.get("rejectionReason") in (None, "blueNoDeepSupport") \
+        and value["rejected"] == (value.get("rejectionReason") == "blueNoDeepSupport")
+
+
 def validate_emitter_diagnostics(value: Any) -> None:
     # Retired shadow keys are accepted without interpreting their payloads.
     allowed = EMITTER_NUMBER_KEYS | EMITTER_INTEGER_KEYS | EMITTER_BOOL_KEYS \
-        | {"shadowR7e", "shadowPF22", "warmNoDeepRed"}
+        | {"shadowR7e", "shadowPF22", "warmNoDeepRed", "blueNoDeepSupport"}
     if isinstance(value, dict) and "warmNoDeepRed" in value \
             and not valid_warm_no_deep_red(value["warmNoDeepRed"]):
         raise BundleError("invalid emitter diagnostics: warmNoDeepRed")
+    if isinstance(value, dict) and "blueNoDeepSupport" in value \
+            and not valid_blue_no_deep_support(value["blueNoDeepSupport"]):
+        raise BundleError("invalid emitter diagnostics: blueNoDeepSupport")
     if not isinstance(value, dict) or not {"emitterScore", "emitterScoreMargin", "hasEmitterCore"} <= set(value) \
             or not set(value) <= allowed \
             or not all(number(value[k]) for k in EMITTER_NUMBER_KEYS & set(value)) \

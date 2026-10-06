@@ -43,6 +43,13 @@ static void candidate(const Candidate& c) {
                   << ",\"pixelCount\":" << v.pixel_count << ",\"warmFrac\":" << v.warm_fraction
                   << ",\"rejected\":" << v.rejected << ",\"rejectionReason\":" << (v.rejected ? "\"warmNoDeepRed\"" : "null") << '}';
     } else std::cout << "null";
+    std::cout << ",\"blueNoDeepSupport\":";
+    if (c.blue_no_deep_support) {
+        auto v = *c.blue_no_deep_support;
+        std::cout << "{\"applied\":true,\"deepCount\":" << v.deep_count
+                  << ",\"pixelCount\":" << v.pixel_count << ",\"rejected\":" << v.rejected
+                  << ",\"rejectionReason\":" << (v.rejected ? "\"blueNoDeepSupport\"" : "null") << '}';
+    } else std::cout << "null";
     std::cout << ",\"source\":\"" << c.source << "\",\"score\":" << c.score << ",\"eligible\":" << c.eligible << ",\"endpoints\":";
     endpoints(c.endpoints);
     auto box = c.bounding_box;

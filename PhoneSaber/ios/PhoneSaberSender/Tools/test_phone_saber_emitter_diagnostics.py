@@ -81,6 +81,21 @@ class EmitterDiagnosticsValidationTests(unittest.TestCase):
             _validate_decision_trace([dict(TRACE, emitterDiagnostics=bad)], "context.json")
         validate_emitter_diagnostics(EMITTER)
 
+    def test_blue_gate_verdict_passes_triage_trace_and_geometry_contract(self):
+        for deep_count in (0, 1):
+            verdict = {"applied": True, "deepCount": deep_count, "pixelCount": 10,
+                       "rejected": deep_count == 0}
+            if not deep_count:
+                verdict["rejectionReason"] = "blueNoDeepSupport"
+            emitter = {**EMITTER, "blueNoDeepSupport": verdict}
+            reasons = ["blueNoDeepSupport"] if not deep_count else []
+            _validate_decision_trace([dict(TRACE, eligible=bool(deep_count),
+                rejectionReasons=reasons, emitterDiagnostics=emitter)], "context.json")
+            entry = candidate(0, eligible=bool(deep_count), rank=1 if deep_count else None)
+            entry["emitter"] = {**GEOMETRY_EMITTER, "blueNoDeepSupport": verdict}
+            entry["rejectionReasons"] = reasons
+            validate_candidate_geometry(block([entry]))
+
     def test_frame_camera_validation(self):
         validate_frame_camera(CAMERA)
         validate_frame_camera({"source": "exif", "iso": 100})

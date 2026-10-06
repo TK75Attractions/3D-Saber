@@ -140,7 +140,8 @@ To protect the streamed file's size budget, the streamed `*_metadata.json`
 carries only the compact subset that the candidate's other fields cannot
 reproduce: `emitterScore`, `emitterScoreMargin`, `hasEmitterCore`,
 `baseEligible`, `bladeLengthSupport`, `meanSecondChannel`, `meanMinChannel`,
-`nearWhiteFraction` and the applied `warmNoDeepRed` verdict. The triage snapshot, and so
+`nearWhiteFraction` and the applied color-specific verdict (`warmNoDeepRed` for RED,
+`blueNoDeepSupport` for BLUE). The triage snapshot, and so
 every compact context, carries all fields below.
 
 | Field | JSON type | Meaning |
@@ -332,7 +333,17 @@ Each geometry entry may carry an optional compact `emitter` object (a subset of
 `emitterDiagnostics`: `emitterScore`, `emitterScoreMargin`, the five `*Term`
 fields, `hasEmitterCore`, `bladeLengthSupport`, `localContrast`,
 `emitterTexture`, `coreSupport`, `meanSecondChannel`, `meanMinChannel`,
-`nearWhiteFraction` and, for red, the applied `warmNoDeepRed` verdict).
+`nearWhiteFraction` and the applied `warmNoDeepRed` / `blueNoDeepSupport` verdict).
+
+`blueNoDeepSupport` carries `applied`, `deepCount`, `pixelCount`, `rejected`, and
+optional `rejectionReason` (`"blueNoDeepSupport"` when rejected; nil is omitted or
+encoded as null). It counts unique, clipped original pixels within a one-pixel
+square of the production sample points multiplied by sample step. Deep blue is
+`B >= 180 && R*100 < 40*B && G*100 < 65*B`. It runs on eligible BLUE candidates
+after all existing gates and ranking, rejecting `deepCount == 0`. Counts and
+comparisons use integers. The decision trace records the same reason; full and
+streamed emitter metadata and compact geometry include the applied verdict.
+Existing compaction and the 32KB preflight limit remain in force.
 
 ### Compact triage contexts
 

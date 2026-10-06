@@ -3,7 +3,57 @@
 #include <iostream>
 using namespace phonesaber;
 static FrameAnalysis detection(Endpoints e) { FrameAnalysis a; a.selected[0] = e; return a; }
+// 元画素の非 sample 支持、白芯、次候補への選択と RED の維持を確認する。
+static void blue_support_tests() {
+    constexpr int width = 480, height = 640, stride = width*4+13;
+    auto image = [](int r, int g, int b) {
+        std::vector<uint8_t> pixels(stride*height,0);
+        for (int y = 300; y < 320; ++y) for (int x = 60; x < 420; ++x) {
+            auto* pixel = pixels.data()+y*stride+x*4;
+            bool white = y >= 306 && y < 314;
+            pixel[0] = white ? 255 : b; pixel[1] = white ? 255 : g;
+            pixel[2] = white ? 255 : r; pixel[3] = 255;
+        }
+        return pixels;
+    };
+    auto detect = [](const std::vector<uint8_t>& pixels) {
+        return analyze({pixels.data(),width,height,stride,pixels.size(),PixelFormat::bgra});
+    };
+    auto pale = image(140,170,250);
+    auto rejected = detect(pale);
+    assert(!rejected.selected[1] && !rejected.candidates[1].empty());
+    assert(rejected.candidates[1].front().blue_no_deep_support->rejected);
+    auto deep = detect(image(30,40,250));
+    assert(deep.selected[1] && deep.candidates[1].front().blue_no_deep_support->deep_count > 0);
+    auto one_deep = pale;
+    auto* pixel = one_deep.data()+301*stride+61*4;
+    pixel[0] = 180; pixel[1] = 116; pixel[2] = 71;
+    auto kept = detect(one_deep);
+    assert(kept.selected[1] && kept.candidates[1].front().blue_no_deep_support->deep_count == 1);
+    for (auto rgb : {std::array<int,3>{0,0,179}, {80,129,200}, {79,130,200}}) {
+        pixel[0] = rgb[2]; pixel[1] = rgb[1]; pixel[2] = rgb[0];
+        assert(!detect(one_deep).selected[1]);
+    }
+    auto red = detect(image(250,40,30));
+    assert(red.selected[0]);
+    for (const auto& c : red.candidates[0]) assert(!c.blue_no_deep_support);
+    assert(!detect(image(250,170,140)).selected[0]);
+    for (int y = 400; y < 416; ++y) for (int x = 60; x < 160; ++x) {
+        auto* p = pale.data()+y*stride+x*4;
+        p[0] = 250; p[1] = 40; p[2] = 30; p[3] = 255;
+    }
+    auto fallback = detect(pale);
+    assert(fallback.candidates[1].front().blue_no_deep_support->rejected);
+    assert(fallback.selected[1] && fallback.selected[1]->first.y > 390);
+    for (const auto& c : fallback.candidates[1]) if (c.eligible) {
+        assert(c.blue_no_deep_support->deep_count > 0);
+        assert(fallback.selected[1]->first.x == c.endpoints.first.x);
+        assert(fallback.selected[1]->first.y == c.endpoints.first.y);
+        break;
+    }
+}
 int main() {
+    blue_support_tests();
     FrameProcessor p;
     auto a = p.process(detection({{10,20},{30,40}}),100,100,1.0);
     assert(a.size() == 1 && a[0].fresh && !a[0].predicted && a[0].port == 5005);

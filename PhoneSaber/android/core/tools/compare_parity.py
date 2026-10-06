@@ -142,7 +142,8 @@ def compare_image(cli: Path, swift: Path, path: Path, ref) -> tuple[dict, list[s
 def compare_synthetic(cli: Path, swift: Path) -> tuple[int, list[str]]:
     width, height = 97, 73
     errors = []
-    cases = ("empty", "red", "blue", "clipped", "warm", "point-led")
+    cases = ("empty", "red", "blue", "clipped", "warm", "point-led",
+             "sky-blue", "pale-one-deep", "blue-fallthrough")
     for case in cases:
         bgra = bytearray(bytes((18, 18, 18, 255)) * (width * height))
         for y in range(12, 62):
@@ -152,10 +153,21 @@ def compare_synthetic(cli: Path, swift: Path) -> tuple[int, list[str]]:
                 r, g, b = (255, 20, 20) if case in ("red", "point-led") else (80, 100, 255)
                 if case == "warm":
                     r, g, b = 255, 140, 95
-                if case == "clipped" and x in (45, 46):
+                if case in ("sky-blue", "pale-one-deep", "blue-fallthrough"):
+                    r, g, b = 140, 170, 250
+                if case in ("clipped", "sky-blue", "pale-one-deep", "blue-fallthrough") and x in (45, 46):
                     r, g, b = 255, 255, 255
                 offset = (y * width + x) * 4
                 bgra[offset:offset + 4] = bytes((b, g, r, (x + y) % 256))
+        if case == "pale-one-deep":
+            # step=2/3 では非 sample だが dilate1 内にある唯一の濃青。
+            offset = (13 * width + 46) * 4
+            bgra[offset:offset + 4] = bytes((180, 116, 71, 255))
+        if case == "blue-fallthrough":
+            for y in range(24, 48):
+                for x in range(75, 82):
+                    offset = (y * width + x) * 4
+                    bgra[offset:offset + 4] = bytes((250, 40, 30, 255))
         for step in (1, 2, 3):
             expected = json.loads(run([str(swift), str(width), str(height), str(step)], bytes(bgra)).splitlines()[0])
             for format_name, stride, pixels in (("bgra", width * 4, bytes(bgra)), ("rgba", width * 4 + 13, rgba_padded(bytes(bgra), width, height))):

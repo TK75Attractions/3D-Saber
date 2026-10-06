@@ -17,7 +17,7 @@ struct Evidence {
 };
 struct Scored {
     Candidate candidate;
-    Points red_support;
+    Points support_points;
 };
 Mask dilate(const Mask& mask, int width, int height, int radius);
 Mask erode(const Mask& mask, int width, int height, int radius);

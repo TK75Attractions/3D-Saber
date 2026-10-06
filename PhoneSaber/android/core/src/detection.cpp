@@ -292,7 +292,7 @@ std::optional<Scored> score_component(const Points& points, int w, int h,
     c.retained_body_ratio = body.retained; c.raw_pca_span = major_length;
     c.robust_interval_endpoints = body.endpoints; c.robust_body_length = body.length; c.axial_density = body.density;
     c.component_area = int(points.size()); c.point_count = int(points.size()); c.used_point_led_fallback = fallback;
-    return Scored{c,e.color == SaberColor::red ? points : Points{}};
+    return Scored{c,points};
 }
 std::vector<Scored> components(const Mask& mask, int w, int h, const Evidence& e,
                                int* pixel_count, int minimum_override) {

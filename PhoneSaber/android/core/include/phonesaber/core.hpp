@@ -30,6 +30,10 @@ struct WarmNoDeepRed {
     double warm_fraction = 0;
     bool rejected = false;
 };
+struct BlueNoDeepSupport {
+    int deep_count = 0, pixel_count = 0;
+    bool rejected = false;
+};
 struct ScoreBreakdown {
     double proposal_penalty = 0, radiance = 0, length = 0, aspect = 0, extent = 0;
     double width_consistency = 0, area = 0, peak_brightness = 0, mean_brightness = 0;
@@ -58,6 +62,7 @@ struct Candidate {
     int component_area = 0, point_count = 0;
     bool used_point_led_fallback = false;
     std::optional<WarmNoDeepRed> warm_no_deep_red;
+    std::optional<BlueNoDeepSupport> blue_no_deep_support;
 };
 struct FrameAnalysis {
     // Fixed red/blue order, including when a color is absent.

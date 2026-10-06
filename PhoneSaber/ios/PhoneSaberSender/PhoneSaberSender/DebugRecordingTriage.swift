@@ -2297,6 +2297,11 @@ struct DebugCandidateGeometry: Equatable {
                 "warmFrac": verdict.warmFrac, "rejected": verdict.rejected,
                 "rejectionReason": verdict.rejectionReason.map { $0 as Any } ?? NSNull()] as [String: Any]
         }
+        if let verdict = value.blueNoDeepSupport {
+            result["blueNoDeepSupport"] = ["applied": true, "deepCount": verdict.deepCount,
+                "pixelCount": verdict.pixelCount, "rejected": verdict.rejected,
+                "rejectionReason": verdict.rejectionReason.map { $0 as Any } ?? NSNull()] as [String: Any]
+        }
         if let second = value.meanSecondChannel { result["meanSecondChannel"] = round4(second) }
         return result
     }

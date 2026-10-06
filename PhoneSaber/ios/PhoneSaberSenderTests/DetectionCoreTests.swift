@@ -1613,7 +1613,12 @@ final class DetectionCoreTests: XCTestCase {
                     minimumArea: max(4, (fixture.width / 2) * (fixture.height / 2) / 2_000),
                     minimumFrameDimension: min(fixture.width, fixture.height) / 2
                 ), 0, name)
-                XCTAssertGreaterThanOrEqual(selected.score, bridgedCandidate.score, name)
+                // Among ELIGIBLE candidates the short body must outrank the bridged span. Since
+                // blueNoDeepSupport (2026-10-06) a bridged candidate can be ineligible instead;
+                // in frame_1073 the selection then moved from the window onto the real blue saber.
+                if bridgedCandidate.isEmitterEligible {
+                    XCTAssertGreaterThanOrEqual(selected.score, bridgedCandidate.score, name)
+                }
             }
             XCTAssertLessThan(selected.rawPCASpan, expectedRawSpan * 0.5, name)
             XCTAssertLessThan(length, 160, name)
@@ -4074,6 +4079,139 @@ extension DetectionCoreTests {
         XCTAssertGreaterThan(try XCTUnwrap(winner.warmNoDeepRed).deepCount, 0)
         XCTAssertEqual(analysis.selected[.red]?.0, winner.endpoints.0)
         XCTAssertEqual(analysis.selected[.red]?.1, winner.endpoints.1)
+        XCTAssertGreaterThan(winner.endpoints.0.y, 390)
+    }
+}
+
+// MARK: - Applied deep-blue support gate
+
+extension DetectionCoreTests {
+    private func blueSupport(_ pixels: [(UInt8, UInt8, UInt8)], points: [PixelPoint]? = nil,
+                             width: Int? = nil, height: Int = 1, padding: Int = 0,
+                             sampleStep: Int = 1) -> SaberBlueNoDeepSupportVerdict {
+        let width = width ?? pixels.count
+        let stride = width * 4 + padding
+        var bytes = Array(repeating: UInt8(0), count: stride * height)
+        for (index, rgb) in pixels.enumerated() {
+            let offset = (index / width) * stride + (index % width) * 4
+            bytes[offset] = rgb.2; bytes[offset + 1] = rgb.1
+            bytes[offset + 2] = rgb.0; bytes[offset + 3] = 255
+        }
+        return bytes.withUnsafeBufferPointer {
+            blueNoDeepSupport(
+                points: points ?? pixels.indices.map { PixelPoint(x: $0 % width, y: $0 / width) },
+                baseAddress: $0.baseAddress!, width: width, height: height,
+                bytesPerRow: stride, sampleStep: sampleStep)
+        }
+    }
+
+    func testBlueNoDeepSupportSkyBlueBlobIsRejected() {
+        let verdict = blueSupport(Array(repeating: (202, 234, 245), count: 25), width: 5, height: 5)
+        XCTAssertEqual(verdict.deepCount, 0)
+        XCTAssertEqual(verdict.pixelCount, 25)
+        XCTAssertTrue(verdict.rejected)
+        XCTAssertTrue(verdict.applied)
+        XCTAssertEqual(verdict.rejectionReason, "blueNoDeepSupport")
+    }
+
+    func testBlueNoDeepSupportKeepsDeepLEDWithWhiteCoreAndOneDeepPixelInPaleBlue() {
+        for pixels in [[(30, 40, 250), (255, 255, 255)],
+                       [(202, 234, 245), (180, 116, 255), (71, 116, 180)]] as [[(UInt8, UInt8, UInt8)]] {
+            let verdict = blueSupport(pixels)
+            XCTAssertEqual(verdict.deepCount, 1)
+            XCTAssertFalse(verdict.rejected)
+            XCTAssertNil(verdict.rejectionReason)
+        }
+    }
+
+    func testBlueNoDeepSupportUsesUniqueClippedOriginalNeighborhoodAndPaddedStride() {
+        // 濃い青は step=2 の非 sample 画素だけに置く。重複と領域外も確認する。
+        let pixels: [(UInt8, UInt8, UInt8)] = [(202, 234, 245), (71, 116, 180), (202, 234, 245),
+                                             (0, 0, 0), (0, 0, 0), (0, 0, 0)]
+        let points = [PixelPoint(x: 0, y: 0), PixelPoint(x: 1, y: 0), PixelPoint(x: 0, y: 0),
+                      PixelPoint(x: -1, y: 0), PixelPoint(x: 2, y: 0)]
+        let verdict = blueSupport(pixels, points: points, width: 3, height: 2, padding: 16, sampleStep: 2)
+        XCTAssertEqual(verdict.pixelCount, 6)
+        XCTAssertEqual(verdict.deepCount, 1)
+        XCTAssertFalse(verdict.rejected)
+        let empty = blueSupport(pixels, points: [], width: 3, height: 2)
+        XCTAssertEqual(empty.pixelCount, 0)
+        XCTAssertTrue(empty.rejected)
+    }
+
+    func testBlueNoDeepSupportIntegerBoundaries() {
+        for rgb in [(71, 116, 180), (79, 129, 200)] as [(UInt8, UInt8, UInt8)] {
+            XCTAssertEqual(blueSupport([rgb]).deepCount, 1)
+        }
+        for rgb in [(0, 0, 179), (80, 129, 200), (79, 130, 200)] as [(UInt8, UInt8, UInt8)] {
+            XCTAssertEqual(blueSupport([rgb]).deepCount, 0)
+        }
+    }
+
+    func testBlueNoDeepSupportProductionSelectionRecordingAndRedUnaffected() throws {
+        // この明るい空色 halo は既存 eligibility を通るため新 gate の適用を確認できる。
+        let bytes = warmGateImage(halo: (140, 170, 250))
+        let analysis = analyzeSabers(in: bytes, width: 480, height: 640, bytesPerRow: 480 * 4,
+                                    redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                                    collectPipelineDiagnostics: true)
+        let rejected = try XCTUnwrap(analysis.candidates[.blue]?.first { $0.blueNoDeepSupport?.rejected == true })
+        XCTAssertNil(analysis.selected[.blue])
+        XCTAssertFalse(rejected.isEmitterEligible)
+        let verdict = try XCTUnwrap(rejected.blueNoDeepSupport)
+        let recording = DebugRecordingCandidate(index: 0, candidate: rejected, selectedIndex: nil)
+        XCTAssertTrue(recording.rejectionReasons.contains("blueNoDeepSupport"))
+        XCTAssertEqual(recording.emitterDiagnostics?.blueNoDeepSupport, verdict)
+        for streamed in [false, true] {
+            let encoder = JSONEncoder()
+            encoder.userInfo[.debugRecordingStreamedMetadata] = streamed
+            let data = try encoder.encode(recording)
+            let json = try XCTUnwrap(JSONSerialization.jsonObject(with: data) as? [String: Any])
+            let emitter = try XCTUnwrap(json["emitterDiagnostics"] as? [String: Any])
+            let rule = try XCTUnwrap(emitter["blueNoDeepSupport"] as? [String: Any])
+            XCTAssertEqual(rule["deepCount"] as? Int, 0)
+            XCTAssertEqual(rule["pixelCount"] as? Int, verdict.pixelCount)
+            XCTAssertEqual(rule["rejectionReason"] as? String, "blueNoDeepSupport")
+        }
+        var oneDeep = bytes
+        let offset = (301 * 480 + 61) * 4
+        oneDeep[offset] = 250; oneDeep[offset + 1] = 40; oneDeep[offset + 2] = 30
+        for image in [warmGateImage(halo: (30, 40, 250)), oneDeep] {
+            let kept = analyzeSabers(in: image, width: 480, height: 640, bytesPerRow: 480 * 4,
+                                     redThreshold: ColorThreshold(), blueThreshold: ColorThreshold())
+            XCTAssertNotNil(kept.selected[.blue])
+            let winner = try XCTUnwrap(kept.candidates[.blue]?.first { $0.isEmitterEligible })
+            XCTAssertGreaterThan(try XCTUnwrap(winner.blueNoDeepSupport).deepCount, 0)
+        }
+        for (halo, detected) in [((250, 40, 30), true), ((250, 170, 140), false)] as [((UInt8, UInt8, UInt8), Bool)] {
+            let red = analyzeSabers(in: warmGateImage(halo: halo), width: 480, height: 640,
+                                    bytesPerRow: 480 * 4, redThreshold: ColorThreshold(),
+                                    blueThreshold: ColorThreshold(), collectPipelineDiagnostics: true)
+            XCTAssertEqual(red.selected[.red] != nil, detected)
+            XCTAssertTrue(try XCTUnwrap(red.candidates[.red]).allSatisfy {
+                $0.blueNoDeepSupport == nil && $0.endpointDiagnosticTrace?.emitter?.blueNoDeepSupport == nil
+                    && !$0.diagnosticRejections.contains { $0.name == "blueNoDeepSupport" }
+            })
+        }
+    }
+
+    func testBlueNoDeepSupportReselectsFirstRemainingRankedCandidate() throws {
+        var bytes = warmGateImage(halo: (140, 170, 250))
+        for y in 400..<416 {
+            for x in 60..<160 {
+                let offset = (y * 480 + x) * 4
+                bytes[offset] = 250; bytes[offset + 1] = 40
+                bytes[offset + 2] = 30; bytes[offset + 3] = 255
+            }
+        }
+        let analysis = analyzeSabers(in: bytes, width: 480, height: 640, bytesPerRow: 480 * 4,
+                                    redThreshold: ColorThreshold(), blueThreshold: ColorThreshold(),
+                                    collectPipelineDiagnostics: true)
+        let blue = try XCTUnwrap(analysis.candidates[.blue])
+        XCTAssertTrue(try XCTUnwrap(blue.first?.blueNoDeepSupport).rejected)
+        let winner = try XCTUnwrap(blue.first { $0.isEmitterEligible })
+        XCTAssertGreaterThan(try XCTUnwrap(winner.blueNoDeepSupport).deepCount, 0)
+        XCTAssertEqual(analysis.selected[.blue]?.0, winner.endpoints.0)
+        XCTAssertEqual(analysis.selected[.blue]?.1, winner.endpoints.1)
         XCTAssertGreaterThan(winner.endpoints.0.y, 390)
     }
 }

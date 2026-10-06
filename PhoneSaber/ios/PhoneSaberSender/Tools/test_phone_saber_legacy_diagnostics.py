@@ -92,8 +92,6 @@ class LegacyDiagnosticsTests(unittest.TestCase):
             self.assertEqual(snapshot(bundle), before)
 
 
-if __name__ == "__main__":
-    unittest.main()
 
 
 class WarmNoDeepRedDiagnosticsTests(unittest.TestCase):
@@ -110,3 +108,47 @@ class WarmNoDeepRedDiagnosticsTests(unittest.TestCase):
         for broken in ({**kept, "rejected": True}, {**kept, "warmCount": 400}, {**kept, "extra": 1}):
             with self.assertRaises(BundleError):
                 validate_emitter_diagnostics({**base, "warmNoDeepRed": broken})
+
+
+class BlueNoDeepSupportDiagnosticsTests(unittest.TestCase):
+    def test_production_verdict_passes_streamed_and_triage_contract(self):
+        from phone_saber_tracking_diagnostics import validate_emitter_diagnostics, BundleError
+        from phone_saber_metadata_schema import CURRENT_FORMAT_VERSION, SCORE_BREAKDOWN, validate_document
+        base = {"emitterScore": 0.8, "emitterScoreMargin": 0.38, "hasEmitterCore": True}
+        kept = {"applied": True, "deepCount": 1, "pixelCount": 351, "rejected": False}
+        for verdict in (kept, {**kept, "rejectionReason": None},
+                        {**kept, "deepCount": 0, "rejected": True,
+                         "rejectionReason": "blueNoDeepSupport"}):
+            emitter = {**base, "blueNoDeepSupport": verdict}
+            with self.subTest(verdict=verdict):
+                validate_emitter_diagnostics(emitter)
+                entry = {"index": 0, "selected": False, "sourceType": "color-close",
+                         "eligible": not verdict["rejected"], "finalScore": 80,
+                         "scoreBreakdown": {key: 0 for key in SCORE_BREAKDOWN.fields},
+                         "rawPCAEndpoints": {"first": {"x": 0, "y": 0}, "second": {"x": 1, "y": 1}},
+                         "finalOutputEndpoints": {"first": {"x": 0, "y": 0}, "second": {"x": 1, "y": 1}}, "rawPCASpan": 1, "robustMainIntervalLength": 1,
+                         "continuity": 1, "density": 1, "maxGap": 0, "componentArea": 1,
+                         "pointCount": 1, "usedPointLEDFallback": False, "emitterDiagnostics": emitter}
+                colors = {"totalCandidateCount": 1, "eligibleCandidateCount": int(not verdict["rejected"]),
+                          "maskPixelCount": 1, "morphologyPixelCount": 1, "connectedComponentCount": 1,
+                          "topCandidates": [entry]}
+                document = {"formatVersion": CURRENT_FORMAT_VERSION, "sessionID": "blue-gate",
+                            "width": 4, "height": 4, "frames": [{"frameID": 1, "presentationTimeSeconds": 0,
+                            "red": {"detected": False, "predicted": False},
+                            "blue": {"detected": False, "predicted": False}, "redDetectionSucceeded": False,
+                            "blueDetectionSucceeded": False, "forensicCaptured": False, "manualCaptured": False,
+                            "candidateDiagnostics": {"red": colors, "blue": colors}}]}
+                validated = validate_document(document)
+                self.assertEqual(validated.report.warning_count, 0, validated.report.warnings)
+                saved = validated.frames[0]["candidateDiagnostics"]["blue"]["topCandidates"][0]
+                self.assertEqual(saved["emitterDiagnostics"], emitter)
+        for broken in ({**kept, "rejected": True}, {**kept, "deepCount": 400},
+                       {**kept, "deepCount": True}, {**kept, "pixelCount": -1},
+                       {**kept, "applied": False}, {**kept, "extra": 1},
+                       {**kept, "rejectionReason": "warmNoDeepRed"}):
+            with self.subTest(broken=broken), self.assertRaises(BundleError):
+                validate_emitter_diagnostics({**base, "blueNoDeepSupport": broken})
+
+
+if __name__ == "__main__":
+    unittest.main()

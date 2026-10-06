@@ -201,6 +201,26 @@ static WarmNoDeepRed warm_support(const Points& points, const PixelBuffer& p, in
     v.rejected = v.deep_count == 0 && v.pixel_count > 0 && int64_t(v.warm_count)*100 >= int64_t(v.pixel_count)*30;
     return v;
 }
+// 赤と同じ元画像 dilate1 領域。set は重複判定だけに使用する。
+static BlueNoDeepSupport blue_support(const Points& points, const PixelBuffer& p, int step) {
+    std::set<int> seen;
+    BlueNoDeepSupport v;
+    int red_offset = p.format == PixelFormat::bgra ? 2 : 0, blue_offset = 2-red_offset;
+    for (auto point : points) {
+        int x = point.x*step, y = point.y*step;
+        if (x < 0 || x >= p.width || y < 0 || y >= p.height) continue;
+        for (int yy = std::max(0,y-1); yy <= std::min(p.height-1,y+1); ++yy)
+            for (int xx = std::max(0,x-1); xx <= std::min(p.width-1,x+1); ++xx) {
+                if (!seen.insert(yy*p.width+xx).second) continue;
+                const auto* pixel = p.data+std::size_t(yy)*p.row_stride+xx*4;
+                int r = pixel[red_offset], g = pixel[1], b = pixel[blue_offset];
+                ++v.pixel_count;
+                if (b >= 180 && r*100 < 40*b && g*100 < 65*b) ++v.deep_count;
+            }
+    }
+    v.rejected = v.deep_count == 0;
+    return v;
+}
 static bool any(const Mask& mask) { return std::find(mask.begin(),mask.end(),1) != mask.end(); }
 } // namespace phonesaber::detail
 
@@ -370,8 +390,12 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
         for (auto& scored : candidates) {
             auto& c = scored.candidate;
             if (color == SaberColor::red && c.eligible) {
-                c.warm_no_deep_red = warm_support(scored.red_support,p,step);
+                c.warm_no_deep_red = warm_support(scored.support_points,p,step);
                 if (c.warm_no_deep_red->rejected) c.eligible = false;
+            }
+            if (color == SaberColor::blue && c.eligible) {
+                c.blue_no_deep_support = blue_support(scored.support_points,p,step);
+                if (c.blue_no_deep_support->rejected) c.eligible = false;
             }
             auto scale = [step](PixelPoint p) -> PixelPoint { return {p.x*step,p.y*step}; };
             c.comparison_endpoints = {scale(c.comparison_endpoints.first),scale(c.comparison_endpoints.second)};

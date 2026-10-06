@@ -65,6 +65,11 @@ EMITTER_DIAGNOSTICS = object_field({
     **{name: scalar("boolean") for name in (
         "hasEmitterCore", "coreByHighValueRatio", "coreByPeakAndMean", "coreByClippedWhite",
         "baseEligible", "compactRedGate")},
+    # Production BLUE gate verdict; absent from older recordings.
+    "blueNoDeepSupport": object_field({
+        "applied": scalar("boolean"), "deepCount": scalar("integer"),
+        "pixelCount": scalar("integer"), "rejected": scalar("boolean"),
+        "rejectionReason": scalar("string", nullable=True)}, nullable=True),
     # Production RED gate verdict (warmNoDeepRed, 8363024).
     "warmNoDeepRed": object_field({
         "applied": scalar("boolean"), "deepCount": scalar("integer"), "warmCount": scalar("integer"),

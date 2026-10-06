@@ -550,6 +550,7 @@ struct DebugRecordingEmitterDiagnostics: Codable, Equatable {
     let nearWhiteFraction: Double
     /// Applied production RED support verdict; absent from older bundles.
     let warmNoDeepRed: SaberWarmNoDeepRedVerdict?
+    let blueNoDeepSupport: SaberBlueNoDeepSupportVerdict?
     // Full fields (triage snapshot only; absent from the streamed metadata).
     // The terms and ratios below are reproducible from the candidate's own
     // peak/mean/high/purity/clipped values and score breakdown.
@@ -597,6 +598,7 @@ struct DebugRecordingEmitterDiagnostics: Codable, Equatable {
         meanMinChannel = r(value.meanMinChannel)
         nearWhiteFraction = r(value.nearWhiteFraction)
         warmNoDeepRed = value.warmNoDeepRed
+        blueNoDeepSupport = value.blueNoDeepSupport
         emitterScoreThreshold = SaberEmitterDiagnostics.emitterScoreThreshold
         coreByHighValueRatio = value.coreByHighValueRatio
         coreByPeakAndMean = value.coreByPeakAndMean
@@ -615,7 +617,7 @@ struct DebugRecordingEmitterDiagnostics: Codable, Equatable {
 
     private enum CodingKeys: String, CodingKey {
         case emitterScore, emitterScoreMargin, hasEmitterCore, baseEligible, bladeLengthSupport
-        case meanSecondChannel, meanMinChannel, nearWhiteFraction, warmNoDeepRed
+        case meanSecondChannel, meanMinChannel, nearWhiteFraction, warmNoDeepRed, blueNoDeepSupport
         case peakTerm, meanTerm, highValueTerm, purityTerm, clippedWhiteTerm, localContrast
         case emitterTexture, coreSupport, emitterScoreThreshold, coreByHighValueRatio, coreByPeakAndMean, coreByClippedWhite
         case compactRedGate, majorLengthSamples, brightnessVariation, longitudinalCoreCoverage
@@ -634,6 +636,7 @@ struct DebugRecordingEmitterDiagnostics: Codable, Equatable {
         try c.encode(meanMinChannel, forKey: .meanMinChannel)
         try c.encode(nearWhiteFraction, forKey: .nearWhiteFraction)
         try c.encodeIfPresent(warmNoDeepRed, forKey: .warmNoDeepRed)
+        try c.encodeIfPresent(blueNoDeepSupport, forKey: .blueNoDeepSupport)
         guard encoder.userInfo[.debugRecordingStreamedMetadata] as? Bool != true else { return }
         try c.encodeIfPresent(peakTerm, forKey: .peakTerm)
         try c.encodeIfPresent(meanTerm, forKey: .meanTerm)

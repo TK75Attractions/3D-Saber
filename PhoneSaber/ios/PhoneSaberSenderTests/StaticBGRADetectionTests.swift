@@ -124,9 +124,82 @@ private func assertCase(_ name: String, image: StaticImage, color: SaberColor,
     guard abs(length - expectedLength) <= lengthTolerance else { fatalError("\(name): length \(length)") }
 }
 
+// simulator を使わずに新 gate の元画素領域と最終選択を検証する。
+private func assertBlueNoDeepSupport() {
+    func support(_ rgb: (UInt8, UInt8, UInt8)) -> SaberBlueNoDeepSupportVerdict {
+        let bytes = [rgb.2, rgb.1, rgb.0, 255]
+        return bytes.withUnsafeBufferPointer {
+            blueNoDeepSupport(points: [PixelPoint(x: 0, y: 0)], baseAddress: $0.baseAddress!,
+                              width: 1, height: 1, bytesPerRow: 4, sampleStep: 2)
+        }
+    }
+    precondition(support((202, 234, 245)).rejected)
+    for rgb in [(71, 116, 180), (79, 129, 200)] as [(UInt8, UInt8, UInt8)] {
+        precondition(support(rgb).deepCount == 1 && !support(rgb).rejected)
+    }
+    for rgb in [(0, 0, 179), (80, 129, 200), (79, 130, 200)] as [(UInt8, UInt8, UInt8)] {
+        precondition(support(rgb).deepCount == 0 && support(rgb).rejected)
+    }
+    var tiny = StaticImage(width: 3, height: 2, padding: 16)
+    tiny.pixel(1, 0, red: 71, green: 116, blue: 180)
+    let verdict = tiny.bytes.withUnsafeBufferPointer {
+        blueNoDeepSupport(points: [PixelPoint(x: 0, y: 0), PixelPoint(x: 1, y: 0),
+                                   PixelPoint(x: 0, y: 0), PixelPoint(x: -1, y: 0), PixelPoint(x: 2, y: 0)],
+                          baseAddress: $0.baseAddress!, width: 3, height: 2,
+                          bytesPerRow: tiny.bytesPerRow, sampleStep: 2)
+    }
+    precondition(verdict.pixelCount == 6 && verdict.deepCount == 1 && !verdict.rejected)
+    func blade(_ halo: (UInt8, UInt8, UInt8)) -> StaticImage {
+        var image = StaticImage(width: 480, height: 640, padding: 13)
+        for y in 300..<320 {
+            for x in 60..<420 {
+                let rgb = (306..<314).contains(y) ? (255, 255, 255) : halo
+                image.pixel(x, y, red: rgb.0, green: rgb.1, blue: rgb.2)
+            }
+        }
+        return image
+    }
+    func analyze(_ image: StaticImage, diagnostics: Bool = true) -> SaberFrameAnalysis {
+        analyzeSabers(in: image.bytes, width: image.width, height: image.height,
+                      bytesPerRow: image.bytesPerRow, redThreshold: ColorThreshold(),
+                      blueThreshold: ColorThreshold(), collectPipelineDiagnostics: diagnostics)
+    }
+    let pale = blade((140, 170, 250))
+    let rejected = analyze(pale)
+    precondition(rejected.selected[.blue] == nil)
+    precondition(rejected.candidates[.blue]!.first!.blueNoDeepSupport!.rejected)
+    precondition(rejected.candidates[.blue]!.first!.diagnosticRejections.contains { $0.name == "blueNoDeepSupport" })
+    precondition(rejected.candidates[.blue]!.first!.endpointDiagnosticTrace!.emitter!.blueNoDeepSupport!.rejected)
+    var oneDeep = pale
+    oneDeep.pixel(61, 301, red: 30, green: 40, blue: 250)
+    for image in [blade((30, 40, 250)), oneDeep] {
+        for diagnostics in [false, true] {
+            let kept = analyze(image, diagnostics: diagnostics)
+            precondition(kept.selected[.blue] != nil)
+            let winner = kept.candidates[.blue]!.first { $0.isEmitterEligible }!
+            precondition(winner.blueNoDeepSupport!.deepCount > 0)
+        }
+    }
+    let red = analyze(blade((250, 40, 30)))
+    precondition(red.selected[.red] != nil)
+    precondition(red.candidates[.red]!.allSatisfy { $0.blueNoDeepSupport == nil })
+    precondition(analyze(blade((250, 170, 140))).selected[.red] == nil)
+    var fallback = pale
+    for y in 400..<416 {
+        for x in 60..<160 { fallback.pixel(x, y, red: 30, green: 40, blue: 250) }
+    }
+    let next = analyze(fallback)
+    precondition(next.candidates[.blue]!.first!.blueNoDeepSupport!.rejected)
+    let winner = next.candidates[.blue]!.first { $0.isEmitterEligible }!
+    precondition(winner.endpoints.0.y > 390 && winner.blueNoDeepSupport!.deepCount > 0)
+    precondition(next.selected[.blue]!.0 == winner.endpoints.0 && next.selected[.blue]!.1 == winner.endpoints.1)
+    print("blueNoDeepSupport: integer boundaries, original pixels, diagnostics, RED and fall-through passed")
+}
+
 @main
 enum StaticBGRADetectionTests {
     static func main() {
+        assertBlueNoDeepSupport()
         let cases: [(String, SaberColor, PixelPoint, PixelPoint, Int, Int)] = [
             ("red horizontal", .red, PixelPoint(x: 12, y: 20), PixelPoint(x: 92, y: 20), 128, 64),
             ("red vertical", .red, PixelPoint(x: 24, y: 8), PixelPoint(x: 24, y: 56), 128, 64),
