@@ -51,6 +51,8 @@ Android 作業: Phase 2 の Kotlin/CameraX/JNI/UDP探索/NSD/UDP・日本語UI�
 
 ## 作業ログ
 
+- 2026-10-06 / 剣なし録画2本(163345_325 約25秒、163444_198 約17秒、校舎の吹き抜け・屋外光、人は遠い、1/100 秒、P2P で受信): 赤の誤検出 9.7% / 11.3%、青 3.2% / 27.3%。赤は遠くの人のあたり(ほぼ白に近い暖色 RGB 約 252,231,222。B/G 0.96 で warmNoDeepRed の暖色条件 0.95 をわずかに外れる)。青は明るい空色の領域(RGB 約 202,234,245、濃い青の画素 0)で、保留中の「濃い青の画素で採用」ルールなら消える。3 回の Capture Lossless で Mac の precheck が止まっていた不具合を修正(`2ab0813`)。
+
 - 2026-10-06 / Android・Windows: C++ core(`b0efcc2`、Mac で Swift と 248 枚 bit 一致)、Android アプリ(`a61dd1a`、build と JVM テスト 16 件 PASS、emulator で起動・画面表示を確認)、Unity の Android 用 PC 探索応答 UDP 5007(3D-Saber `170fd79`)。Android の libm では選択結果 237/237 一致・内部値は 1 ulp 差(android/core/EXACTNESS.md)。実機(AQUOS sense9)と Windows での受信は未確認。
 
 - 2026-10-06 / Android Phase 2: 本番senderのGradleプロジェクト、薄いJNI、portrait画素回転、180ms expiry、最新フレームのみのUDP、UDP/Bonjour探索、手入力IP保存、日本語UIとJVMテストを追加。未commit。Swift/core変更なし。Androidビルド・テスト実行・NDK bit parity・実機検証は未実施。
