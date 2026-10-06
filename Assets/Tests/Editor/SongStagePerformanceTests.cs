@@ -9,7 +9,7 @@ public class SongStagePerformanceTests
 {
     [Serializable] private sealed class SourceInfo { public string audioSha256; public string timeOrigin; }
 
-    [TestCase("2_23_AM",2,196.075)] [TestCase("ElDorado",4,223.248)] [TestCase("Epilogue",3,166.408707)]
+    [TestCase("2_23_AM",2,196.075)] [TestCase("ElDorado",3,144.065306)] [TestCase("Epilogue",3,166.408707)]
     [TestCase("Morning",2,165.329)] [TestCase("揺籠",4,184.24163)] [TestCase("NeonParade",2,121.9)]
     [TestCase("製作中",2,174.864)]
     public void AuthoredSectionsMatchAudioAndRemainSmooth(string song,int count,double duration)
@@ -59,7 +59,7 @@ public class SongStagePerformanceTests
         }
     }
 
-    [TestCase("2_23_AM",95)] [TestCase("ElDorado",153)] [TestCase("Epilogue",150)]
+    [TestCase("2_23_AM",95)] [TestCase("ElDorado",85.803)] [TestCase("Epilogue",150)]
     [TestCase("Morning",76)] [TestCase("揺籠",81)] [TestCase("揺籠",136)]
     [TestCase("NeonParade",75)] [TestCase("NeonParade",120.5)]
     [TestCase("製作中",125)] [TestCase("製作中",173)]

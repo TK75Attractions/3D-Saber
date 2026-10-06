@@ -161,7 +161,7 @@ public class LightFormationTimelineTests
         Assert.AreEqual(1,later.EvaluateLightFormation(1.5e100));
     }
 
-    [TestCase("2_23_AM",129.333,150.667)] [TestCase("ElDorado",167.4,186.6)]
+    [TestCase("2_23_AM",129.333,150.667)] [TestCase("ElDorado",100.203,119.403)]
     [TestCase("Epilogue",111.208,145.401)] [TestCase("Morning",113.898,130.169)]
     [TestCase("揺籠",140.245,165.361)]
     public void ExistingSongsUseOneAuthoredLongSection(string song, double start, double end)

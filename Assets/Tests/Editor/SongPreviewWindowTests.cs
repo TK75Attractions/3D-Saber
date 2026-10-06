@@ -3,7 +3,7 @@ using NUnit.Framework;
 
 public class SongPreviewWindowTests
 {
-    [TestCase("ElDorado",167.4,223.248)] [TestCase("Epilogue",133.859,166.408707)]
+    [TestCase("ElDorado",100.203,144.065306)] [TestCase("Epilogue",133.859,166.408707)]
     [TestCase("揺籠",140.245,184.24163)] [TestCase("Morning",113.898,165.329)]
     [TestCase("2_23_AM",129.333,196.075)] [TestCase("NeonParade",88.615,121.9)]
     [TestCase("製作中",134.713878,174.864)]

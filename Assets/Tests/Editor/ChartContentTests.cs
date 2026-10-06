@@ -51,7 +51,8 @@ public class ChartContentTests
         {
             ChartData chart = ChartLoader.LoadFromStreamingAssets("ElDorado", diff);
             AssertChartIsSane("ElDorado", diff, chart);
-            Assert.Greater(chart.notes.Count, 80, diff + ": ノーツ数");
+            // 2026-10-06提供の短縮版(144秒)。旧223秒版の物量を要求しない。
+            Assert.Greater(chart.notes.Count, 40, diff + ": 短縮版のノーツ数");
         }
     }
 

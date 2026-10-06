@@ -151,7 +151,7 @@ public class MarinePassTimelineTests
         Assert.AreEqual(-1, later.EvaluateMarinePassAge(2e100));
     }
 
-    [TestCase("2_23_AM", 133, 147)] [TestCase("ElDorado", 170, 184)]
+    [TestCase("2_23_AM", 133, 147)] [TestCase("ElDorado", 102.803, 116.803)]
     [TestCase("Epilogue", 121.3045, 135.3045)] [TestCase("揺籠", 145.803, 159.803)]
     public void ExistingSongsUseTheAuthoredCentralWindowWithoutDifficultyOrPhraseInference(string song, double start, double end)
     {
