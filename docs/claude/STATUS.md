@@ -13,6 +13,8 @@
 
 ## 次にやること
 
+Android 作業: 2026-10-06 のユーザー決定で、iPhone/Mac は維持し sense9 の本番 sender を追加。Phase 1 の C++ core/parity は完了。次は Phase 2 の SDK/NDK 整備と Kotlin/CameraX/JNI/NSD/UDP アプリ（診断は iPhone/Mac のみ）。Studio 本体は既存だが platforms/build-tools/NDK/CMake は未整備。
+
 優先順。旧改善候補もここへ統合した。実装済みの機能は再実装せず、未確認の動作を検証する。
 
 1. **warmNoDeepRed の実機再試験** — 理由: offline の改善が実環境でも有効か確認する。必要: 実機録画、未使用 ORIGINAL の目視、saberなし FP と小さい/淡い剣の保持を比較。担当: user（撮影）/ Claude（解析）。
@@ -32,6 +34,8 @@
 15. **Mac カメラ直接認識の将来比較** — 理由: ユーザーが将来の構成候補として保持。必要: Mac 内蔵/USB カメラの配置・精度・端点・遅延の実機比較、採用判断と必要なコード。Continuity Camera は別の無線比較経路で、ローカル縮小/FPS を通信遅延改善と扱わない。担当: user（構成判断・撮影）/ Claude（比較・コード）。
 
 ## 作業ログ
+
+- 2026-10-06 / Android Phase 1: `android/core/` に C++17 の本番認識・状態遷移・UDP文字列、PNG CLI、Swift reference 比較、Make/CMake を追加。Swift 本番・threshold・UDP形式・fixture期待値は無変更。Python 3.12 / clang++ -O2 -Wall -Wextra -Werror: formal 40/40（35 PNG）、inbox original 213 PNG（annotated 5除外）、248画像×3入力経路の全候補/production double bit一致、状態遷移541操作・合成18ケースとも mismatch 0。core test、比較器 unittest 4件、ASan/UBSan PNG smoke、git diff --check と新規ファイル空白チェック PASS。Android libm/NDK の bit parity と実機検証は Phase 2。日本語計画は `android/README.md`、exactness リスクは `android/core/EXACTNESS.md`。
 
 - 2026-10-06 / 実機 1/100 秒(005910_095, 010346_502): 露出上限が実際にかかった。赤の横切り 72%→99.6%、先端向け 96.6%→100%。saberなしの赤の誤検出は 1本目 3.5%、2本目 100%(正体の画像なし)→ ガイド v3 で saberなし区間の画像も保存、Mac の上限を 5 枚に。
 
