@@ -25,6 +25,7 @@ android {
             version = "3.22.1"
         }
     }
+    buildFeatures { buildConfig = true }
     buildTypes {
         release {
             isMinifyEnabled = false

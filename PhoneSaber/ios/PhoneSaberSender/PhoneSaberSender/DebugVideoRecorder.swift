@@ -1097,6 +1097,9 @@ struct DebugRecordingCameraSample: Codable, Equatable {
     let activeFormatFPSRanges: String
     let activeMinFPS: Double?
     let activeMaxFPS: Double?
+    var thermalState: String? = nil
+    var batteryLevel: Double? = nil
+    var batteryState: String? = nil
 }
 
 /// Latest AVCaptureDevice exposure state, pushed by the camera owner while a
@@ -1110,6 +1113,13 @@ struct DebugCameraDeviceState: Equatable {
     let whiteBalanceGains: [Double]?
     /// Host clock (HostMonotonicClock) time at which the device was read.
     let sampledAt: TimeInterval
+}
+
+// 通常・Releaseビルドでも録画中に保存する端末状態。認識には使わない。
+struct DebugDeviceHealthState: Equatable {
+    let thermalState: String
+    let batteryLevel: Double?
+    let batteryState: String
 }
 
 /// Per-frame camera exposure state in Debug Recording metadata (`frames[].camera`).
@@ -1130,6 +1140,9 @@ struct DebugRecordingFrameCamera: Codable, Equatable {
     /// Device white-balance gains [red, green, blue].
     var whiteBalanceGains: [Double]?
     var deviceSampleAgeSeconds: Double?
+    var thermalState: String?
+    var batteryLevel: Double?
+    var batteryState: String?
 
     private static func round6(_ value: Double) -> Double { (value * 1_000_000).rounded() / 1_000_000 }
 
@@ -1142,7 +1155,7 @@ struct DebugRecordingFrameCamera: Codable, Equatable {
 
     /// Combines this frame's Exif attachment with the newest device state.
     static func make(exif: [String: Any]?, device: DebugCameraDeviceState?,
-                     now: TimeInterval) -> DebugRecordingFrameCamera? {
+                     now: TimeInterval, health: DebugDeviceHealthState? = nil) -> DebugRecordingFrameCamera? {
         var camera = DebugRecordingFrameCamera(
             source: "",
             iso: finite(exif?[kCGImagePropertyExifISOSpeedRatings as String]),
@@ -1166,7 +1179,12 @@ struct DebugRecordingFrameCamera: Codable, Equatable {
             }
             camera.deviceSampleAgeSeconds = round6(max(0, now - device.sampledAt))
         }
-        switch (hasExif, device != nil) {
+        if let health {
+            camera.thermalState = health.thermalState
+            camera.batteryLevel = health.batteryLevel
+            camera.batteryState = health.batteryState
+        }
+        switch (hasExif, device != nil || health != nil) {
         case (true, true): camera.source = "exif+device"
         case (true, false): camera.source = "exif"
         case (false, true): camera.source = "device"

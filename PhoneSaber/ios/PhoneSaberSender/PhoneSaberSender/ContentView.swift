@@ -93,6 +93,11 @@ struct ContentView: View {
                             }
                         }.frame(height: 280)
                     }.clipped()
+                    Text(model.deviceHealthLine)
+                        .font(.footnote.monospacedDigit())
+                    if let warning = model.deviceHealthWarning {
+                        Text(warning).font(.footnote).foregroundStyle(.orange)
+                    }
                     GroupBox("Debug Recording") {
                         VStack(alignment: .leading, spacing: 8) {
                             Toggle("Debug Recording: \(model.debugRecordingEnabled ? "ON" : "OFF")",
