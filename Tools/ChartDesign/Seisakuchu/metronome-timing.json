@@ -1,0 +1,908 @@
+{
+  "song": "製作中",
+  "referenceFile": "メトロノーム入りです。.mp3",
+  "referenceSha256": "29ffec9ba55b4c83386a62d56ead4f6c5fbaa3eaff05fa136e815b36a64b3d6d",
+  "originalAudioSha256": "bc5601889c272cffb9a362842a1331b541ea4734e2793a8a675339ef3999855d",
+  "bpm": 196,
+  "beatZeroMs": 20.0,
+  "measuredBpm": 196.000071,
+  "matchedTiming95PercentileMs": 1.2492,
+  "clickCount": 558,
+  "measureCount": 99,
+  "lastClickSeconds": 170.530204,
+  "finalMeasureEndSeconds": 170.836327,
+  "finalMeasureEvidence": "The last accent at beat 552 is followed by five regular clicks (553..557); no clicks from 558. Its 6/4 length is inferred from that terminal group, not a subsequent downbeat.",
+  "method": "Independent matched filters for 770 Hz regular click and accent partials at 2090/4550/5930 Hz. Reference musical notation BPM196 explicitly selected by user. Original audio and note times retained.",
+  "meterChanges": [
+    {
+      "beat": 0,
+      "numerator": 5,
+      "denominator": 4
+    },
+    {
+      "beat": 60,
+      "numerator": 4,
+      "denominator": 4
+    },
+    {
+      "beat": 76,
+      "numerator": 5,
+      "denominator": 4
+    },
+    {
+      "beat": 96,
+      "numerator": 4,
+      "denominator": 4
+    },
+    {
+      "beat": 152,
+      "numerator": 11,
+      "denominator": 4
+    },
+    {
+      "beat": 196,
+      "numerator": 6,
+      "denominator": 4
+    },
+    {
+      "beat": 208,
+      "numerator": 5,
+      "denominator": 4
+    },
+    {
+      "beat": 248,
+      "numerator": 6,
+      "denominator": 4
+    },
+    {
+      "beat": 356,
+      "numerator": 4,
+      "denominator": 4
+    },
+    {
+      "beat": 396,
+      "numerator": 11,
+      "denominator": 4
+    },
+    {
+      "beat": 484,
+      "numerator": 6,
+      "denominator": 4
+    },
+    {
+      "beat": 496,
+      "numerator": 5,
+      "denominator": 4
+    },
+    {
+      "beat": 536,
+      "numerator": 4,
+      "denominator": 4
+    },
+    {
+      "beat": 552,
+      "numerator": 6,
+      "denominator": 4
+    }
+  ],
+  "bars": [
+    {
+      "measure": 1,
+      "beat": 0,
+      "beats": 5,
+      "gridSeconds": 0.02,
+      "measuredClickSeconds": 0.019333,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 2,
+      "beat": 5,
+      "beats": 5,
+      "gridSeconds": 1.550612,
+      "measuredClickSeconds": 1.551083,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 3,
+      "beat": 10,
+      "beats": 5,
+      "gridSeconds": 3.081224,
+      "measuredClickSeconds": 3.08075,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 4,
+      "beat": 15,
+      "beats": 5,
+      "gridSeconds": 4.611837,
+      "measuredClickSeconds": 4.61125,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 5,
+      "beat": 20,
+      "beats": 5,
+      "gridSeconds": 6.142449,
+      "measuredClickSeconds": 6.142708,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 6,
+      "beat": 25,
+      "beats": 5,
+      "gridSeconds": 7.673061,
+      "measuredClickSeconds": 7.6735,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 7,
+      "beat": 30,
+      "beats": 5,
+      "gridSeconds": 9.203673,
+      "measuredClickSeconds": 9.2035,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 8,
+      "beat": 35,
+      "beats": 5,
+      "gridSeconds": 10.734286,
+      "measuredClickSeconds": 10.734708,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 9,
+      "beat": 40,
+      "beats": 5,
+      "gridSeconds": 12.264898,
+      "measuredClickSeconds": 12.264667,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 10,
+      "beat": 45,
+      "beats": 5,
+      "gridSeconds": 13.79551,
+      "measuredClickSeconds": 13.794917,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 11,
+      "beat": 50,
+      "beats": 5,
+      "gridSeconds": 15.326122,
+      "measuredClickSeconds": 15.325125,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 12,
+      "beat": 55,
+      "beats": 5,
+      "gridSeconds": 16.856735,
+      "measuredClickSeconds": 16.85675,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 13,
+      "beat": 60,
+      "beats": 4,
+      "gridSeconds": 18.387347,
+      "measuredClickSeconds": 18.386333,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 14,
+      "beat": 64,
+      "beats": 4,
+      "gridSeconds": 19.611837,
+      "measuredClickSeconds": 19.61125,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 15,
+      "beat": 68,
+      "beats": 4,
+      "gridSeconds": 20.836327,
+      "measuredClickSeconds": 20.835917,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 16,
+      "beat": 72,
+      "beats": 4,
+      "gridSeconds": 22.060816,
+      "measuredClickSeconds": 22.060333,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 17,
+      "beat": 76,
+      "beats": 5,
+      "gridSeconds": 23.285306,
+      "measuredClickSeconds": 23.285458,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 18,
+      "beat": 81,
+      "beats": 5,
+      "gridSeconds": 24.815918,
+      "measuredClickSeconds": 24.81575,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 19,
+      "beat": 86,
+      "beats": 5,
+      "gridSeconds": 26.346531,
+      "measuredClickSeconds": 26.347375,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 20,
+      "beat": 91,
+      "beats": 5,
+      "gridSeconds": 27.877143,
+      "measuredClickSeconds": 27.877167,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 21,
+      "beat": 96,
+      "beats": 4,
+      "gridSeconds": 29.407755,
+      "measuredClickSeconds": 29.407792,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 22,
+      "beat": 100,
+      "beats": 4,
+      "gridSeconds": 30.632245,
+      "measuredClickSeconds": 30.63225,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 23,
+      "beat": 104,
+      "beats": 4,
+      "gridSeconds": 31.856735,
+      "measuredClickSeconds": 31.856625,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 24,
+      "beat": 108,
+      "beats": 4,
+      "gridSeconds": 33.081224,
+      "measuredClickSeconds": 33.08075,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 25,
+      "beat": 112,
+      "beats": 4,
+      "gridSeconds": 34.305714,
+      "measuredClickSeconds": 34.306042,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 26,
+      "beat": 116,
+      "beats": 4,
+      "gridSeconds": 35.530204,
+      "measuredClickSeconds": 35.529958,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 27,
+      "beat": 120,
+      "beats": 4,
+      "gridSeconds": 36.754694,
+      "measuredClickSeconds": 36.754208,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 28,
+      "beat": 124,
+      "beats": 4,
+      "gridSeconds": 37.979184,
+      "measuredClickSeconds": 37.979375,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 29,
+      "beat": 128,
+      "beats": 4,
+      "gridSeconds": 39.203673,
+      "measuredClickSeconds": 39.203,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 30,
+      "beat": 132,
+      "beats": 4,
+      "gridSeconds": 40.428163,
+      "measuredClickSeconds": 40.427708,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 31,
+      "beat": 136,
+      "beats": 4,
+      "gridSeconds": 41.652653,
+      "measuredClickSeconds": 41.652708,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 32,
+      "beat": 140,
+      "beats": 4,
+      "gridSeconds": 42.877143,
+      "measuredClickSeconds": 42.877625,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 33,
+      "beat": 144,
+      "beats": 4,
+      "gridSeconds": 44.101633,
+      "measuredClickSeconds": 44.101375,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 34,
+      "beat": 148,
+      "beats": 4,
+      "gridSeconds": 45.326122,
+      "measuredClickSeconds": 45.325667,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 35,
+      "beat": 152,
+      "beats": 11,
+      "gridSeconds": 46.550612,
+      "measuredClickSeconds": 46.550958,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 36,
+      "beat": 163,
+      "beats": 11,
+      "gridSeconds": 49.917959,
+      "measuredClickSeconds": 49.917125,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 37,
+      "beat": 174,
+      "beats": 11,
+      "gridSeconds": 53.285306,
+      "measuredClickSeconds": 53.284708,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 38,
+      "beat": 185,
+      "beats": 11,
+      "gridSeconds": 56.652653,
+      "measuredClickSeconds": 56.6535,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 39,
+      "beat": 196,
+      "beats": 6,
+      "gridSeconds": 60.02,
+      "measuredClickSeconds": 60.020458,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 40,
+      "beat": 202,
+      "beats": 6,
+      "gridSeconds": 61.856735,
+      "measuredClickSeconds": 61.85625,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 41,
+      "beat": 208,
+      "beats": 5,
+      "gridSeconds": 63.693469,
+      "measuredClickSeconds": 63.693458,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 42,
+      "beat": 213,
+      "beats": 5,
+      "gridSeconds": 65.224082,
+      "measuredClickSeconds": 65.22325,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 43,
+      "beat": 218,
+      "beats": 5,
+      "gridSeconds": 66.754694,
+      "measuredClickSeconds": 66.75375,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 44,
+      "beat": 223,
+      "beats": 5,
+      "gridSeconds": 68.285306,
+      "measuredClickSeconds": 68.285625,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 45,
+      "beat": 228,
+      "beats": 5,
+      "gridSeconds": 69.815918,
+      "measuredClickSeconds": 69.815583,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 46,
+      "beat": 233,
+      "beats": 5,
+      "gridSeconds": 71.346531,
+      "measuredClickSeconds": 71.347375,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 47,
+      "beat": 238,
+      "beats": 5,
+      "gridSeconds": 72.877143,
+      "measuredClickSeconds": 72.87675,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 48,
+      "beat": 243,
+      "beats": 5,
+      "gridSeconds": 74.407755,
+      "measuredClickSeconds": 74.407167,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 49,
+      "beat": 248,
+      "beats": 6,
+      "gridSeconds": 75.938367,
+      "measuredClickSeconds": 75.938833,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 50,
+      "beat": 254,
+      "beats": 6,
+      "gridSeconds": 77.775102,
+      "measuredClickSeconds": 77.775542,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 51,
+      "beat": 260,
+      "beats": 6,
+      "gridSeconds": 79.611837,
+      "measuredClickSeconds": 79.612292,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 52,
+      "beat": 266,
+      "beats": 6,
+      "gridSeconds": 81.448571,
+      "measuredClickSeconds": 81.449,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 53,
+      "beat": 272,
+      "beats": 6,
+      "gridSeconds": 83.285306,
+      "measuredClickSeconds": 83.285125,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 54,
+      "beat": 278,
+      "beats": 6,
+      "gridSeconds": 85.122041,
+      "measuredClickSeconds": 85.122375,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 55,
+      "beat": 284,
+      "beats": 6,
+      "gridSeconds": 86.958776,
+      "measuredClickSeconds": 86.958292,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 56,
+      "beat": 290,
+      "beats": 6,
+      "gridSeconds": 88.79551,
+      "measuredClickSeconds": 88.795042,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 57,
+      "beat": 296,
+      "beats": 6,
+      "gridSeconds": 90.632245,
+      "measuredClickSeconds": 90.632667,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 58,
+      "beat": 302,
+      "beats": 6,
+      "gridSeconds": 92.46898,
+      "measuredClickSeconds": 92.469,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 59,
+      "beat": 308,
+      "beats": 6,
+      "gridSeconds": 94.305714,
+      "measuredClickSeconds": 94.306125,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 60,
+      "beat": 314,
+      "beats": 6,
+      "gridSeconds": 96.142449,
+      "measuredClickSeconds": 96.142333,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 61,
+      "beat": 320,
+      "beats": 6,
+      "gridSeconds": 97.979184,
+      "measuredClickSeconds": 97.979208,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 62,
+      "beat": 326,
+      "beats": 6,
+      "gridSeconds": 99.815918,
+      "measuredClickSeconds": 99.816333,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 63,
+      "beat": 332,
+      "beats": 6,
+      "gridSeconds": 101.652653,
+      "measuredClickSeconds": 101.65225,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 64,
+      "beat": 338,
+      "beats": 6,
+      "gridSeconds": 103.489388,
+      "measuredClickSeconds": 103.488792,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 65,
+      "beat": 344,
+      "beats": 6,
+      "gridSeconds": 105.326122,
+      "measuredClickSeconds": 105.325292,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 66,
+      "beat": 350,
+      "beats": 6,
+      "gridSeconds": 107.162857,
+      "measuredClickSeconds": 107.162458,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 67,
+      "beat": 356,
+      "beats": 4,
+      "gridSeconds": 108.999592,
+      "measuredClickSeconds": 108.999375,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 68,
+      "beat": 360,
+      "beats": 4,
+      "gridSeconds": 110.224082,
+      "measuredClickSeconds": 110.2235,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 69,
+      "beat": 364,
+      "beats": 4,
+      "gridSeconds": 111.448571,
+      "measuredClickSeconds": 111.449,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 70,
+      "beat": 368,
+      "beats": 4,
+      "gridSeconds": 112.673061,
+      "measuredClickSeconds": 112.6735,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 71,
+      "beat": 372,
+      "beats": 4,
+      "gridSeconds": 113.897551,
+      "measuredClickSeconds": 113.896708,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 72,
+      "beat": 376,
+      "beats": 4,
+      "gridSeconds": 115.122041,
+      "measuredClickSeconds": 115.121583,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 73,
+      "beat": 380,
+      "beats": 4,
+      "gridSeconds": 116.346531,
+      "measuredClickSeconds": 116.346708,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 74,
+      "beat": 384,
+      "beats": 4,
+      "gridSeconds": 117.57102,
+      "measuredClickSeconds": 117.571542,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 75,
+      "beat": 388,
+      "beats": 4,
+      "gridSeconds": 118.79551,
+      "measuredClickSeconds": 118.795542,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 76,
+      "beat": 392,
+      "beats": 4,
+      "gridSeconds": 120.02,
+      "measuredClickSeconds": 120.019417,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 77,
+      "beat": 396,
+      "beats": 11,
+      "gridSeconds": 121.24449,
+      "measuredClickSeconds": 121.244917,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 78,
+      "beat": 407,
+      "beats": 11,
+      "gridSeconds": 124.611837,
+      "measuredClickSeconds": 124.611833,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 79,
+      "beat": 418,
+      "beats": 11,
+      "gridSeconds": 127.979184,
+      "measuredClickSeconds": 127.979667,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 80,
+      "beat": 429,
+      "beats": 11,
+      "gridSeconds": 131.346531,
+      "measuredClickSeconds": 131.347,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 81,
+      "beat": 440,
+      "beats": 11,
+      "gridSeconds": 134.713878,
+      "measuredClickSeconds": 134.714375,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 82,
+      "beat": 451,
+      "beats": 11,
+      "gridSeconds": 138.081224,
+      "measuredClickSeconds": 138.081667,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 83,
+      "beat": 462,
+      "beats": 11,
+      "gridSeconds": 141.448571,
+      "measuredClickSeconds": 141.448167,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 84,
+      "beat": 473,
+      "beats": 11,
+      "gridSeconds": 144.815918,
+      "measuredClickSeconds": 144.815917,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 85,
+      "beat": 484,
+      "beats": 6,
+      "gridSeconds": 148.183265,
+      "measuredClickSeconds": 148.183667,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 86,
+      "beat": 490,
+      "beats": 6,
+      "gridSeconds": 150.02,
+      "measuredClickSeconds": 150.019167,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 87,
+      "beat": 496,
+      "beats": 5,
+      "gridSeconds": 151.856735,
+      "measuredClickSeconds": 151.85675,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 88,
+      "beat": 501,
+      "beats": 5,
+      "gridSeconds": 153.387347,
+      "measuredClickSeconds": 153.3875,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 89,
+      "beat": 506,
+      "beats": 5,
+      "gridSeconds": 154.917959,
+      "measuredClickSeconds": 154.917333,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 90,
+      "beat": 511,
+      "beats": 5,
+      "gridSeconds": 156.448571,
+      "measuredClickSeconds": 156.449042,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 91,
+      "beat": 516,
+      "beats": 5,
+      "gridSeconds": 157.979184,
+      "measuredClickSeconds": 157.97875,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 92,
+      "beat": 521,
+      "beats": 5,
+      "gridSeconds": 159.509796,
+      "measuredClickSeconds": 159.510125,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 93,
+      "beat": 526,
+      "beats": 5,
+      "gridSeconds": 161.040408,
+      "measuredClickSeconds": 161.040417,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 94,
+      "beat": 531,
+      "beats": 5,
+      "gridSeconds": 162.57102,
+      "measuredClickSeconds": 162.571458,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 95,
+      "beat": 536,
+      "beats": 4,
+      "gridSeconds": 164.101633,
+      "measuredClickSeconds": 164.101042,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 96,
+      "beat": 540,
+      "beats": 4,
+      "gridSeconds": 165.326122,
+      "measuredClickSeconds": 165.326125,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 97,
+      "beat": 544,
+      "beats": 4,
+      "gridSeconds": 166.550612,
+      "measuredClickSeconds": 166.550625,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 98,
+      "beat": 548,
+      "beats": 4,
+      "gridSeconds": 167.775102,
+      "measuredClickSeconds": 167.775583,
+      "endEvidence": "next-accent"
+    },
+    {
+      "measure": 99,
+      "beat": 552,
+      "beats": 6,
+      "gridSeconds": 168.999592,
+      "measuredClickSeconds": 168.999917,
+      "endEvidence": "six final clicks followed by tail"
+    }
+  ],
+  "charts": {
+    "chart.json": {
+      "notes": 278,
+      "firstTimeMs": 2468.98,
+      "lastTimeMs": 168999.592,
+      "beforeSha256": "a24a493f3fb2e60b37efc7161337f176d8066836199b3f978e263a3b3f4a0385"
+    },
+    "chart_easy.json": {
+      "notes": 160,
+      "firstTimeMs": 2468.98,
+      "lastTimeMs": 168999.592,
+      "beforeSha256": "3deebb9ccdf4baadf715d3b8c0391ce570cd18c596a2e4ec8b47c0204fa2460f"
+    },
+    "chart_normal.json": {
+      "notes": 278,
+      "firstTimeMs": 2468.98,
+      "lastTimeMs": 168999.592,
+      "beforeSha256": "a24a493f3fb2e60b37efc7161337f176d8066836199b3f978e263a3b3f4a0385"
+    },
+    "chart_hard.json": {
+      "notes": 350,
+      "firstTimeMs": 2468.98,
+      "lastTimeMs": 168999.592,
+      "beforeSha256": "61a626df938b883758a101da49c5e935e740473bd270c49b0419a87986e4cdd9"
+    }
+  }
+}
