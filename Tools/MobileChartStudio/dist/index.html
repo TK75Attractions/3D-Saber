@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#101521"><meta name="description" content="曲を聴いて、タップと長押しで3D-Saberの譜面を作る。音源と下書きはこの端末に保存。">
+  <title>Saber Tap Studio — スマホ譜面エディター</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%23101521'/%3E%3Cpath d='M17 45V19h10v26z' fill='%235dceff'/%3E%3Cpath d='M37 19h10v26H37z' fill='%23ff6385'/%3E%3C/svg%3E">
+  <link rel="manifest" href="manifest.webmanifest"><link rel="apple-touch-icon" href="icon-192.png"><link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="studio">
+  <header class="topbar"><div class="brand"><span class="mark" aria-hidden="true">▰</span><div><strong>Saber Tap Studio</strong><small>3D-SABER / CHART RECORDER</small></div></div><button id="libraryButton" class="subtle">曲・保存</button></header>
+  <section class="song-strip" aria-label="現在の曲"><div class="song-copy"><span class="eyebrow" id="difficultyLabel">NEW CHART</span><h1 id="songTitle">曲を読み込んではじめよう</h1><span id="saveStatus" class="muted">音源と下書きは、この端末に保存します</span></div><label class="button primary compact">音源を開く<input type="file" id="audioFile" accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac,.flac" hidden></label></section>
+  <div class="workspace">
+    <section class="performance" aria-label="譜面を録音">
+      <div class="surface-head"><div class="segmented" aria-label="動作モード"><button id="recordMode" class="active" aria-pressed="true">録音</button><button id="previewMode" aria-pressed="false">確認</button></div><span id="noteCount" class="mono">0 NOTES</span><button id="focusButton" class="subtle" aria-pressed="false">集中</button></div>
+      <div class="stage-wrap"><canvas id="stage" aria-label="ノーツの接近プレビュー"></canvas><div id="stageMessage">音源を開くと、曲に合わせて記録できます</div><span class="stage-label">PREVIEW</span></div>
+      <div class="transport"><button id="backButton" aria-label="5秒戻る">−5秒</button><button id="playButton" class="primary play" disabled>録音開始</button><button id="forwardButton" aria-label="5秒進む">＋5秒</button></div>
+      <div class="timeline-wrap"><div class="time-line"><span id="timeReadout" class="mono">0:00.000</span><span id="transportStatus">待機中</span><span id="durationReadout" class="mono muted">0:00</span></div><canvas id="waveform" aria-hidden="true"></canvas><input id="seek" type="range" min="0" max="1" value="0" step="0.001" aria-label="再生位置"></div>
+      <div class="pad-toolbar"><div class="segmented colors" aria-label="ノーツの色"><button data-color="auto" class="active" aria-pressed="true">左右で色分け</button><button data-color="blue" aria-pressed="false">青</button><button data-color="red" aria-pressed="false">赤</button><button data-color="gold" aria-pressed="false">金</button></div><button id="undoButton" class="subtle" disabled>戻す</button><button id="redoButton" class="subtle" disabled>やり直す</button></div>
+      <div id="pad" class="pad" role="group" aria-label="ノーツ入力パッド。左は青、右は赤。押した位置を記録。長押しでロング。">
+        <div class="pad-grid" aria-hidden="true"></div><span class="pad-hand left">BLUE<br><small>左手</small></span><span class="pad-hand right">RED<br><small>右手</small></span><span class="pad-center">TAP / HOLD</span><div id="touches" aria-hidden="true"></div>
+      </div><p id="padHint" class="hint">押した場所にノーツを配置。長押しでロング、2本指で同時押し。</p>
+    </section>
+    <aside class="editing" aria-label="譜面の調整">
+      <details open class="panel"><summary>録音の設定</summary><div class="fields">
+        <label>BPM<input id="bpm" type="number" min="20" max="400" step="0.01" value="120" inputmode="decimal"></label>
+        <label>拍にそろえる<select id="snap"><option value="0">なし</option><option value="1">4分音符</option><option value="0.5">8分音符</option><option value="0.25">16分音符</option><option value="0.3333333333333333">8分三連</option></select></label>
+        <label>再生速度<select id="speed"><option value="1">1.0倍</option><option value="0.75">0.75倍</option><option value="0.5">0.5倍</option></select></label>
+        <label>長押しの回数<select id="longCount"><option value="auto">長さから自動</option><option>2</option><option>3</option><option>4</option><option>6</option><option>8</option></select></label>
+        <label>矢印<select id="direction"><option value="none">なし</option><option value="up">上</option><option value="down">下</option><option value="left">左</option><option value="right">右</option><option value="upleft">左上</option><option value="upright">右上</option><option value="downleft">左下</option><option value="downright">右下</option></select></label>
+        <label>難易度<select id="difficulty"><option value="easy">EASY</option><option value="normal" selected>NORMAL</option><option value="hard">HARD</option></select></label>
+        <label class="check"><input id="countIn" type="checkbox" checked> 4拍のカウント</label><label class="check"><input id="clickSound" type="checkbox" checked> タップ音</label>
+      </div><details class="advanced"><summary>タイミングの調整</summary><div class="fields"><label>拍の始まり (ms)<input id="beatZero" type="number" step="1" value="0"></label><label>譜面オフセット (ms)<input id="offset" type="number" step="1" value="0"></label><label>入力補正 (ms)<input id="latency" type="number" min="-500" max="500" step="5" value="0"></label><label>表示レベル<input id="level" type="number" min="0" max="10" value="0"></label></div><p class="hint">入力補正を＋にすると、新しく打つノーツを早めに記録します。拍にそろえる設定は、新しい入力だけに適用します。</p><p class="hint">速度を下げると音程も下がります。Bluetoothでは遅れが大きくなることがあります。</p></details></details>
+      <section class="panel notes-panel"><div class="section-title"><h2>ノーツを直す</h2><button id="nearestButton" class="subtle">現在位置へ</button></div><p id="emptyNotes" class="hint">記録したノーツがここに並びます。選ぶと時刻・位置・回数を直せます。</p><div id="noteList" class="note-list" role="list" aria-label="記録したノーツ"></div><div id="noteEditor" hidden><div class="fields"><label>音源上の時刻 (秒)<input id="noteTime" type="number" step="0.01"></label><label>色<select id="noteColor"><option value="blue">青</option><option value="red">赤</option><option value="gold">金</option><option value="default">指定なし</option></select></label><label>X<input id="noteX" type="number" step="0.1"></label><label>Y<input id="noteY" type="number" step="0.1"></label><label>カット回数<input id="noteCuts" type="number" min="1" max="99"></label><label>長さ (秒)<input id="noteLength" type="number" min="0" step="0.01"></label><label>方向<select id="noteDirection"></select></label></div><div class="row"><button id="updateNote" class="primary">変更を適用</button><button id="deleteNote" class="danger">削除</button></div></div></section>
+      <section class="panel export-panel"><h2>ゲームで使う</h2><div class="row"><button id="exportButton" class="primary">譜面を書き出す</button><label class="button">譜面を開く<input id="chartFile" type="file" accept=".json,application/json" hidden></label></div><div class="row"><button id="exportAudioButton">音源をWAV保存</button></div><p class="hint">chart_easy / normal / hard.json を保存。PCの3D-Saber譜面エディターで読み込めます。M4Aなどの音源はWAV保存して、一緒にPCへ渡せます。</p></section>
+    </aside>
+  </div>
+  <footer><span id="offlineStatus">オフラインの準備中</span><button id="helpButton" class="subtle">使い方</button></footer>
+</main>
+<dialog id="library"><div class="dialog-head"><h2>この端末の曲</h2><button class="subtle" data-close="library">閉じる</button></div><p class="hint">音源はアップロードされません。ブラウザのデータを消す前に、譜面を書き出してください。</p><label id="projectNameLabel" hidden>編集中の曲名<input id="projectName" type="text" maxlength="120"></label><label class="button primary">新しい音源を開く<input id="libraryAudioFile" type="file" accept="audio/*,.mp3,.m4a,.wav,.ogg,.aac,.flac" hidden></label><div id="projectList"></div></dialog>
+<dialog id="help"><div class="dialog-head"><h2>曲を聴いて、譜面を作る</h2><button class="subtle" data-close="help">閉じる</button></div><ol><li>スマホの「ファイル」から音源を開きます。</li><li>「録音開始」で曲を再生。パッドをタップすると、その位置と時刻を記録します。</li><li>長押しは複数回切るロングになります。押し続けた長さを保存し、回数は後から直せます。</li><li>「確認」でノーツが流れる様子を見ます。戻して録音すると、前のノーツに追加できます。</li><li>ノーツ一覧で修正し、「譜面を書き出す」で保存します。</li></ol><p>iPhoneは共有メニューから「ホーム画面に追加」、Androidはブラウザのメニューからインストールできます。「オフラインで使用できます」の表示後は、保存済みの音源で作業できます。</p><p class="hint">同じ曲の別の譜面を開くと、現在の下書きは別の下書きとして残ります。画面を閉じたり別のアプリへ切り替えると、録音は一時停止します。本編のセイバー判定を再現する採点機能ではありません。</p></dialog>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+<script type="module" src="app.js"></script>
+</body></html>

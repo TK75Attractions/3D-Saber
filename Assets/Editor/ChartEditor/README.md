@@ -1,5 +1,7 @@
 # 3D Saber 譜面エディター 利用ガイド
 
+スマホで曲を聴きながらタップ・長押しで作る場合は、[Saber Tap Studio](../../../Tools/MobileChartStudio/README.md)を使えます。端末内で音源と下書きを保存し、このUnityエディターと同じ譜面JSONを書き出します。
+
 このツールは、3D Saber 専用の新しい **Unity EditorWindow 版譜面エディター**です。
 `Assets/Note-Recorder/` にある旧譜面エディターとは別物で、旧シーンを開いたり Play モードに入ったりする必要はありません。
 
