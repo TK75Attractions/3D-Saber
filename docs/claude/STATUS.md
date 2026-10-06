@@ -13,7 +13,7 @@
 
 ## 次にやること
 
-Android 作業: 2026-10-06 のユーザー決定で、iPhone/Mac は維持し sense9 の本番 sender を追加。Phase 1 の C++ core/parity は完了。次は Phase 2 の SDK/NDK 整備と Kotlin/CameraX/JNI/NSD/UDP アプリ（診断は iPhone/Mac のみ）。Studio 本体は既存だが platforms/build-tools/NDK/CMake は未整備。
+Android 作業: Phase 2 の Kotlin/CameraX/JNI/UDP探索/NSD/UDP・日本語UI・JVMテストをこのworktreeに追加（ユーザー指定で未commit）。SDK API 37/build-tools 36.0.0は既存、NDK 30.0.16248370/CMake 3.22.1の導入とAndroid Studioでの初回ビルド・JVMテスト・sense9/Windows/Mac実機確認が次。sandboxでは依存取得・ビルド・テスト実行は行わず静的確認のみ。Swift/coreアルゴリズム/UDP仕様を維持し、Androidに診断/P2Pは追加しない。手順は `android/README.md`。
 
 優先順。旧改善候補もここへ統合した。実装済みの機能は再実装せず、未確認の動作を検証する。
 
@@ -34,6 +34,8 @@ Android 作業: 2026-10-06 のユーザー決定で、iPhone/Mac は維持し se
 15. **Mac カメラ直接認識の将来比較** — 理由: ユーザーが将来の構成候補として保持。必要: Mac 内蔵/USB カメラの配置・精度・端点・遅延の実機比較、採用判断と必要なコード。Continuity Camera は別の無線比較経路で、ローカル縮小/FPS を通信遅延改善と扱わない。担当: user（構成判断・撮影）/ Claude（比較・コード）。
 
 ## 作業ログ
+
+- 2026-10-06 / Android Phase 2: 本番senderのGradleプロジェクト、薄いJNI、portrait画素回転、180ms expiry、最新フレームのみのUDP、UDP/Bonjour探索、手入力IP保存、日本語UIとJVMテストを追加。未commit。Swift/core変更なし。Androidビルド・テスト実行・NDK bit parity・実機検証は未実施。
 
 - 2026-10-06 / Android Phase 1: `android/core/` に C++17 の本番認識・状態遷移・UDP文字列、PNG CLI、Swift reference 比較、Make/CMake を追加。Swift 本番・threshold・UDP形式・fixture期待値は無変更。Python 3.12 / clang++ -O2 -Wall -Wextra -Werror: formal 40/40（35 PNG）、inbox original 213 PNG（annotated 5除外）、248画像×3入力経路の全候補/production double bit一致、状態遷移541操作・合成18ケースとも mismatch 0。core test、比較器 unittest 4件、ASan/UBSan PNG smoke、git diff --check と新規ファイル空白チェック PASS。Android libm/NDK の bit parity と実機検証は Phase 2。日本語計画は `android/README.md`、exactness リスクは `android/core/EXACTNESS.md`。
 

@@ -1,0 +1,196 @@
+package jp.phonesaber.sender
+
+import android.Manifest
+import android.content.pm.PackageManager
+import android.net.Network
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.text.InputType
+import android.view.Gravity
+import android.view.ViewGroup
+import android.view.WindowManager
+import android.widget.Button
+import android.widget.EditText
+import android.widget.LinearLayout
+import android.widget.ScrollView
+import android.widget.SeekBar
+import android.widget.TextView
+import android.widget.Toast
+import androidx.activity.ComponentActivity
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.view.PreviewView
+import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import java.util.Locale
+
+class MainActivity : ComponentActivity() {
+    private val main = Handler(Looper.getMainLooper())
+    private lateinit var sender: LatestUdpSender
+    private lateinit var camera: CameraSession
+    private lateinit var discovery: PcDiscovery
+    private lateinit var pcStatus: TextView
+    private lateinit var detection: TextView
+    private lateinit var startStop: Button
+    private lateinit var brightnessSlider: SeekBar
+    private lateinit var dominanceSlider: SeekBar
+    private var destination: Destination? = null
+    private var wifi: Network? = null
+    private var sending = false
+    private var foreground = false
+    private var brightness = 145
+    private var dominance = 25
+    private var lastStats = 0L
+    private val permission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+        if (granted && foreground) startSending()
+        else if (!granted) toast("カメラの許可が必要です。設定から許可してください")
+    }
+    private val refresh = object : Runnable {
+        override fun run() {
+            if (!foreground) return
+            val now = System.nanoTime()
+            val elapsed = (now - lastStats) / 1e9
+            val red = sender.redSent.getAndSet(0) / elapsed
+            val blue = sender.blueSent.getAndSet(0) / elapsed
+            lastStats = now
+            val status = camera.status
+            detection.text = if (sending) String.format(Locale.JAPAN,
+                "赤: %s / 送信 %.1f fps\n青: %s / 送信 %.1f fps\n%s\n%s",
+                status.red, red, status.blue, blue, status.dimensions, sender.error ?: "")
+                else "停止中\n赤: 未検出 / 送信 0 fps\n青: 未検出 / 送信 0 fps"
+            main.postDelayed(this, 1000)
+        }
+    }
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+        sender = LatestUdpSender()
+        val density = resources.displayMetrics.density
+        fun dp(value: Int) = (value * density).toInt()
+        val panel = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+        }
+        val scroll = ScrollView(this).apply { addView(panel) }
+        setContentView(scroll)
+        ViewCompat.setOnApplyWindowInsetsListener(scroll) { view, insets ->
+            val bars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
+            view.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
+        fun label(text: String) = TextView(this).apply {
+            this.text = text; textSize = 17f
+            panel.addView(this, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT))
+        }
+        label("PhoneSaber — PCへ送信").apply { textSize = 23f; gravity = Gravity.CENTER_HORIZONTAL }
+        val preview = PreviewView(this).apply { scaleType = PreviewView.ScaleType.FIT_CENTER }
+        panel.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(250)))
+        pcStatus = label("PCを探索中")
+        val prefs = getSharedPreferences("destination", MODE_PRIVATE)
+        val address = EditText(this).apply {
+            hint = "PCのIPv4（例: 192.168.1.10）"
+            inputType = InputType.TYPE_CLASS_PHONE
+            setSingleLine(true)
+            setText(prefs.getString("ip", ""))
+            panel.addView(this)
+        }
+        Button(this).apply {
+            text = "手入力を保存（空欄で自動探索）"
+            panel.addView(this)
+            setOnClickListener {
+                val text = address.text.toString().trim()
+                val parsed = ManualAddress.parse(text)
+                if (text.isNotEmpty() && parsed == null) toast("PCのIPv4アドレスを入力してください")
+                else {
+                    prefs.edit().putString("ip", text).apply()
+                    discovery.setManual(parsed)
+                }
+            }
+        }
+        startStop = Button(this).apply {
+            text = "開始"; panel.addView(this)
+            setOnClickListener {
+                if (sending) stopSending()
+                else if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA)
+                    != PackageManager.PERMISSION_GRANTED) permission.launch(Manifest.permission.CAMERA)
+                else startSending()
+            }
+        }
+        detection = label("停止中")
+        fun slider(title: String, initial: Int, change: (Int) -> Unit): SeekBar {
+            val value = label("$title: $initial")
+            return SeekBar(this).apply {
+                max = 255; progress = initial
+                panel.addView(this)
+                setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
+                    override fun onProgressChanged(bar: SeekBar, progress: Int, fromUser: Boolean) {
+                        value.text = "$title: $progress"; change(progress)
+                    }
+                    override fun onStartTrackingTouch(bar: SeekBar) = Unit
+                    override fun onStopTrackingTouch(bar: SeekBar) = Unit
+                })
+            }
+        }
+        brightnessSlider = slider("認識の閾値（明るさ）", brightness) { brightness = it }
+        dominanceSlider = slider("色の優位差", dominance) { dominance = it }
+        label("既定値: 明るさ145 / 色の優位差25\n彩度30 / 赤・青共通。変更は停止中に行います。")
+        camera = CameraSession(this, preview, sender) { message -> stopSending(); toast(message) }
+        discovery = PcDiscovery(this) { pc, network, message ->
+            val changed = destination != pc || wifi != network
+            if (sending && changed) {
+                stopSending()
+                toast("送信先またはWi-Fiが変わりました。確認して開始してください")
+            }
+            destination = pc; wifi = network
+            pcStatus.text = if (pc == null) "PC: 未設定\n$message" else
+                "PC: ${pc.name}\n${pc.address.hostAddress}（${pc.source}）\n$message"
+        }
+        discovery.setManual(ManualAddress.parse(prefs.getString("ip", "") ?: ""))
+    }
+
+    override fun onStart() {
+        super.onStart()
+        foreground = true
+        discovery.start()
+        lastStats = System.nanoTime()
+        main.postDelayed(refresh, 1000)
+    }
+
+    private fun startSending() {
+        if (sending || !foreground) return
+        if (destination == null || wifi == null) { toast("同じWi-FiでPCを探索するか、IPを手入力してください"); return }
+        sender.configure(destination, wifi)
+        sending = true
+        startStop.text = "停止"
+        brightnessSlider.isEnabled = false; dominanceSlider.isEnabled = false
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        camera.start(brightness, dominance)
+    }
+
+    private fun stopSending() {
+        sending = false
+        camera.stop()
+        startStop.text = "開始"
+        brightnessSlider.isEnabled = true; dominanceSlider.isEnabled = true
+        window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        detection.text = "停止中\n赤: 未検出 / 送信 0 fps\n青: 未検出 / 送信 0 fps"
+    }
+
+    override fun onStop() {
+        foreground = false
+        main.removeCallbacks(refresh)
+        stopSending()
+        discovery.stop()
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        camera.close()
+        sender.close()
+        super.onDestroy()
+    }
+
+    private fun toast(message: String) { Toast.makeText(this, message, Toast.LENGTH_LONG).show() }
+}

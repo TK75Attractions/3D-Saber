@@ -1,11 +1,155 @@
-# Android sender（Phase 1）
+# Android 本番 sender（Phase 2）
 
 2026-10-06 の決定: iPhone/Mac の本番・診断は維持し、AQUOS sense9
 （Android 14 / Snapdragon 7s Gen 2）用の本番 sender を追加する。
 Windows または Mac の Unity と同じ Wi-Fi に接続し、既存の UDP 契約を使う。
 Android に Debug Recording、診断受信、計測 UI を移植しない。
 
-## Phase 1 の実装
+
+## AQUOS sense9 でのビルド・インストール
+
+対象は AQUOS sense9（Android 14 / API 34、Snapdragon 7s Gen 2）。
+`android/` 自体を Android Studio の **Open** で開く（リポジトリルートではない）。
+この worktree の変更は未commit。Swift、core のアルゴリズム、UDP仕様は変更していない。
+
+1. SDK Manager → SDK Platforms で Android API 37 を用意する。この環境には
+   `platforms/android-37.0` と `build-tools/36.0.0` が既にある。
+2. SDK Tools → **Show Package Details** を有効にし、**NDK (Side by side)
+   30.0.16248370（r30 LTS）** と **CMake 3.22.1** をインストールする。
+   Gradle JDK は Studio の Embedded JDK（17以上）を選ぶ。
+3. オンラインの開発環境で Gradle Sync を実行する。Gradle 9.8.0、AGP 9.2.1、
+   AGP 内蔵 Kotlin、AndroidX / CameraX 1.6.2 を使う。別の Kotlin Android plugin は不要。
+   `compileSdk=37 / targetSdk=35 / minSdk=29`、ABI は `arm64-v8a` のみ。
+   API 37 を扱える Android Studio を使う（Panda 3 2025.3.3 Patch 1 以降）。
+4. sense9 の設定 → デバイス情報 → ビルド番号を7回タップし、開発者向けオプションの
+   **USBデバッグ** を有効にする。USB接続し、PCのRSAキーを端末で許可する。
+   Android Studio の実行先に sense9 を選び、`app` を **Run** する。
+5. 端末と Windows/Mac を同じ Wi-Fi に接続し、Unity の Play/受信を開始する。
+   PC欄の名前・IPを確認して **開始**。カメラ権限の許可は初回だけ。
+   見つからなければPCのIPv4を入力して保存。空欄を保存すると自動探索に戻る。
+
+端末で使う画面は「開始/停止」「PC名・IP・探索状態/手入力」「赤/青の検出・予測・保持状態」
+「色別送信fps」「認識の閾値（明るさ145、色の優位差25）」だけ。
+両色共通の既定彩度30、sample step=2は固定。閾値変更は停止中に行う。
+送信中は画面を点灯状態に保つ。画面を離れる・停止・Wi-Fiや送信先が変わると停止し、
+確認後に開始し直す。Debug Recording、診断、計測モード、P2Pはない。
+
+Gradle wrapper は公式の Gradle 9.8.0(SHA-256 確認済み)で `gradle wrapper` により生成した。
+2026-10-06 に Mac で `./gradlew assembleDebug testDebugUnitTest` が通った(JVM テスト 16 件)。
+
+```bash
+cd android
+./gradlew :app:testDebugUnitTest :app:assembleDebug
+./gradlew :app:installDebug
+# Windows は gradlew.bat を使う
+```
+
+APKは `app/build/outputs/apk/debug/app-debug.apk`。Run/debug APKにも診断機能は含めない。
+公開配布用の署名鍵・keystoreはこのプロジェクトに入れていない。
+
+ツール版の参照: [AGP 9.2 の互換表](https://developer.android.com/build/releases/agp-9-2-0-release-notes)、
+[Gradle 9.8.0](https://docs.gradle.org/9.8.0/release-notes.html)、
+[NDK r30](https://developer.android.com/ndk/downloads)、
+[CameraX](https://developer.android.com/jetpack/androidx/releases/camera)。
+
+## Windows / Mac とPC探索
+
+Windows Defender Firewall の「アプリを許可」で Unity Editor（または実行したゲーム）を
+**プライベートネットワーク**で許可する。受信の詳細規則を使う場合は、同じUnity実行ファイルへ
+**UDP 5005–5007** を許可する。5005=赤、5006=青、5007=探索応答。
+Macもファイアウォールが有効ならUnityの受信を許可する。
+ゲストWi-Fi・APのクライアント分離・VPNがあると探索や座標受信ができない場合がある。
+
+- UDP探索: Wi-Fiへbindした一時ポートのソケットから2秒ごとにASCII
+  `PHONESABER_DISCOVER 1` を `255.255.255.255:5007` と各IPv4サブネットの
+  directed broadcastへ送る（prefix 1–30）。Unityの
+  `PhoneSaberDiscoveryResponder.cs` が同じソケットへunicastで返す
+  `PHONESABER_UNITY 1 red=5005 blue=5006 name=<PC>` を解析する。
+  パケットの送信元IPを使用する。広告ポートの値も検証し、固定契約5005/5006に
+  合わない応答は採用しない。8秒応答がないUDP候補は失効する。
+- Bonjour: Android NSDで既存の `_phonesaber._udp.` を探索・直列resolveする。
+  API 33以上ではWi-Fi networkを指定し、API 34以上ではIPv4を優先する。
+  座標の送信ポートはBonjourサービスの広告ポートによらず5005/5006。
+  サービス消失で候補を解除する。Android自身はサービスを公開しない。
+- 自動探索は最初に見つかったPCを維持する。複数PCがある会場では意図したPCの
+  IPv4を手入力して保存する。SharedPreferencesの手入力は自動探索より優先する。
+  UDPには受信確認がないため、表示するPCは「探索で発見した送信先」であり接続保証ではない。
+- 探索中（画面表示中）は `WifiManager.MulticastLock` を保持し、停止・画面終了・
+  ネットワーク切替でソケット/NSD/lockを解放する。Wi-Fi networkへのbindは、モバイル通信が
+  default networkでも座標がWi-Fiを使うため。Wi-Fiスキャン/接続変更APIは使わないため、
+  `NEARBY_WIFI_DEVICES` や位置情報の実行時権限は要求しない。
+
+## カメラ・座標・送信の一致条件
+
+本番iPhoneは `CameraViewModel` の `preferredCameraFormatIndex` で30fps対応の
+640×480以下の最大サイズを選び、それがなければ30fps対応の最小サイズを使う。
+AVFoundationの非ミラー `.portrait`、32BGRA、stabilization off、自動露出が既定。
+通常VGAなら**検出入力は480×640のportrait**で、出力座標は1920×1080に正規化する。
+Androidも背面カメラ・同じサイズ選択方針、固定AE range [30,30]、自動露出・手ぶれ補正offを要求する。
+固定30fpsを広告しないカメラではエラーにし、別fpsへ黙って切り替えない。
+実際のサイズは画面に表示する。AE/ISPによって実際のフレーム間隔が変わる可能性は残る。
+
+CameraXは `OUTPUT_IMAGE_FORMAT_RGBA_8888` / `STRATEGY_KEEP_ONLY_LATEST`。
+`ImageProxy.planes[0]` のbyte順R,G,B,A（[API仕様](https://developer.android.com/reference/androidx/camera/core/ImageAnalysis)）を使い、
+pixel stride=4、row strideとposition/limitを検証する。target rotationは常に
+`Surface.ROTATION_0`（portrait）。CameraXの自動画素回転は無効で、
+`imageInfo.rotationDegrees` の時計回り回転を **検出前** に適用する。
+画面回転・Unity座標変換を追加せず、背面の非ミラー画像をx右/y下に揃える。
+
+| 元画像の点 (x,y)、サイズW×H | コアへ渡す点 | コアのサイズ |
+| --- | --- | --- |
+| 0° | (x,y) | W×H |
+| 90° | (H−1−y,x) | H×W |
+| 180° | (W−1−x,H−1−y) | W×H |
+| 270° | (y,W−1−x) | H×W |
+
+回転はRGBの値・チャンネル・alphaを変えない。0°かつstride×heightの全バイトがある場合は
+DirectByteBufferのsliceをそのままJNIへ渡す。90/180/270°は再利用するdirect scratchへ
+画素を1回コピーする。最終行のpaddingを省略する0°のplaneも、既存コアのstorage条件を
+満たすためtight strideへ詰め直す。検出後に端点だけ回転するとsample step=2の格子が
+変わるので、その方式は使わない。viewport crop・resize・gamma変換は追加しない。
+CameraXのYUV→RGBA変換とiPhoneのBGRA生成はISP/色変換が異なり、入力の完全一致は保証しない。
+
+JNIは `core.hpp` の `FrameProcessor` public APIだけを呼ぶ。カメラ/expiryは同じ直列executor、
+ImageProxyはJNIが戻るまで保持し必ずfinallyでcloseする。セッションの開始/停止では
+コアを作り直してreset相当とし、180ms期限は `next_expiry` / `expire` で予約する。
+期限処理は送信しない。破棄したCameraXフレームを欠落フレームとして数えない。
+
+`FrameResult.text` のfresh結果だけを背景UDP workerへ渡す。文字列はコアが生成した
+通常のASCII `x1,y1,x2,y2` をそのまま送る。RED=5005 / BLUE=5006、
+output=1920×1080、mirrorX/Y=false。各辺の「寸法−1」で正規化し、Swiftと同じ四捨五入は
+既存コアが行う。最大3処理フレームの予測はfreshなので送るが、held/expired/absentは送らない。
+ゼロ座標、heartbeat、送信停止パケットを追加しない。
+コアにある `ts=%.6f;...` は既存measurement modeとの互換APIだが、Androidでは
+`measurement_mode=false` を固定し、計測UI/タイムスタンプを有効にしない。
+
+UDPは待機フレーム1個の置換mailboxでnewest-wins、ノンブロッキングソケット。
+新しいフレームは空結果も含めて古い待機フレームを置き換え、送信失敗・socket満杯は破棄する。
+再送FIFOはない。処理開始から180ms以上古い結果は送信直前に破棄する。
+停止後のin-flight検出結果は世代チェックで破棄し、停止/送信先変更でmailbox/socketも消す。
+送信fpsは色別の成功したOS送信回数/秒で、Unity受信fpsや無線遅延の測定ではない。
+
+## 検証状況と残る確認
+
+このPhase 2では、ユーザー指定により **Gradle/AGP/NDKのダウンロード、Gradle Sync、
+Androidビルド、JVMテスト実行、APKインストールを行っていない**。
+
+SDKにはNDK/CMakeがまだない。Android Studioで上記パッケージを入れてから
+JVMテストとビルドを実行する必要がある。
+
+JVMテスト（`app/src/test`）には探索応答parser・不正応答・ポート契約・手入力IP、
+コアpayloadの無加工routing・fresh/held/predicted、0/90/180/270°回転・row padding・
+非zero plane position・チャンネル保持・scratch再利用・不正入力を追加した。
+JNI/CameraX/NSD/ライフサイクルのinstrumented testは未実装。
+
+実機で必要な確認: sense9のRGBA配置/stride、VGA→480×640の向きと画面四隅のUnity mapping、
+permission拒否/再許可、開始/停止/再開・画面終了・Wi-Fi切替時の資源解放と古い送信の破棄、
+Windows UDP探索/ファイアウォール、Mac UDP/Bonjour探索、手入力IPの再起動後保持、
+赤/青の候補・端点、実処理/送信fps、発熱・長時間運転、両OSのUnity受信とend-to-end遅延。
+**Android NDK/bionic上のbit parityは未確立**。MacのPhase 1 parity成功だけでは証明できない。
+既存corpusをNDK上で検証する作業が残る（[core/EXACTNESS.md](core/EXACTNESS.md)）。
+
+## Phase 1 の実装（維持）
 
 `core/include/phonesaber/core.hpp` がプラットフォーム非依存の C++17 API。
 標準ライブラリ以外の依存はなく、JNI、CameraX、ソケット、OS 時計を含まない。
@@ -34,40 +178,6 @@ RED=5005、BLUE=5006、既定出力1920×1080、mirrorX/mirrorY=false。
 source/output 各辺の「寸法−1」で正規化して四捨五入する既存仕様を維持する。
 端点の入れ替え以外の平滑化や候補の時間方向選好は、現在の本番経路に存在しない。
 
-## Phase 2 のアプリ構成（未実装）
-
-```text
-Kotlin / CameraX ImageAnalysis（RGBA_8888, KEEP_ONLY_LATEST）
-  → portrait の画素バッファと row stride
-  → JNI（DirectByteBuffer、C++ FrameProcessor を直列所有）
-  → fresh の payload
-  → Kotlin UDP sender → 同一 Wi-Fi の Unity（5005 / 5006）
-```
-
-- CameraX の `OUTPUT_IMAGE_FORMAT_RGBA_8888` を使い、ImageProxy の実際の
-  channel 配置・pixel stride・row stride を端末で確認する。`rotationDegrees` を
-  解決してからサンプリングする。座標だけ回転すると sample step の格子が変わるため、
-  iPhone 相当の入力画像の向きを先に統一する。前面/背面カメラのミラーも明示設定する。
-- Kotlin の `NsdManager` で、Unity が公開する既存 Bonjour サービス
-  `_phonesaber._udp`（Android API では通常 `_phonesaber._udp.`）を検出・resolve。
-  resolve したホストへ、色別の既存固定ポート5005/5006で送る。手動 IP 入力も用意する。
-  Android アプリ自身を診断受信サービスとして公開しない。
-- カメラ権限、ローカルネットワークの利用、ネットワーク変更時の再探索、
-  session lifecycle、executor、JNI バッファ寿命、必ず `ImageProxy.close()` する所有関係を実装する。
-- 開始/停止・カメラ変更では `reset()`、解像度変更ではコアの履歴リセットを使う。
-  世代の古い callback の破棄と `running` チェックは Kotlin 側で行う。
-  iPhone と同じ180msの期限で `next_expiry()` / `expire()` を呼び、休止中も履歴を消す。
-  期限処理は UDP を送らない。カメラ停止を「欠落フレーム」として繰り返し入力しない。
-- NDK の arm64-v8a ライブラリ、Gradle/manifest、最小 UI、実機 APK は Phase 2。
-  sense9 で画素配置・向き・候補・端点、処理時間、発熱、Windows/Mac Unity 受信を確認する。
-  画質/ISP/露出差があるため、同じアルゴリズムでも実カメラの入力が同一になる保証はない。
-
-依頼時は Android Studio/SDK 未導入の前提だった。今回の環境確認では
-`/Applications/Android Studio.app` は存在し、`~/Library/Android/sdk` には
-emulator/system-images/licenses がある。一方 platforms、build-tools、cmdline-tools、NDK はない。
-Phase 2 には Android SDK/NDK と CMake の開発環境を完成させる必要がある。
-この Phase 1 ではインストールや Android ビルドを行っていない。
-
 ## Mac でのビルドと parity
 
 リポジトリルートから:
@@ -86,7 +196,7 @@ Swift module cache も一時ディレクトリに置く。比較は入力を読�
 
 ```bash
 /tmp/phonesaber-cpp-core/phonesaber-png path/to/original.png
-# 将来の NDK/JNI からも同じ静的ライブラリをリンクする
+# Android app の JNI も同じ静的ライブラリをリンクする
 cmake -S android/core -B /tmp/phonesaber-cmake -DCMAKE_BUILD_TYPE=Release
 cmake --build /tmp/phonesaber-cmake
 # Mac PNG CLI も作る場合は configure に -DPHONESABER_BUILD_TOOLS=ON
