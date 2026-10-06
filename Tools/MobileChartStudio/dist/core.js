@@ -51,18 +51,29 @@ export function quantizeMs(rawMs, chart, step = 0) {
   const tick = (60000 / chart.bpm) * step;
   return chart.beatZeroMs + Math.round((rawMs - chart.beatZeroMs) / tick) * tick;
 }
+export function snapInputMs(rawMs, chart, options) {
+  if (options.snapMode==='off' || !(options.snap>0)) return rawMs;
+  const nearest=quantizeMs(rawMs,chart,options.snap);
+  // 従来の設定にはsnapModeがないため、既存の「すべて整列」を維持する。
+  if (options.snapMode!=='near') return nearest;
+  const desired=Number.isFinite(options.snapWindowMs)?clamp(options.snapWindowMs,0,50):35;
+  // スローでも実時間で同じ許容幅。細かい刻みですべての入力を吸着させない。
+  const window=Math.min(desired*(options.rate||1),60000/chart.bpm*options.snap*.24);
+  return Math.abs(nearest-rawMs)<=window+1e-7?nearest:rawMs;
+}
 export function makeNote(gesture, endAudio, chart, options) {
   const rate = options.rate || 1;
   const correction = (options.latencyMs || 0) * rate;
   const startAudioMs = Math.max(0, gesture.startAudio * 1000 - correction);
-  const raw = quantizeMs(startAudioMs - chart.offsetMs, chart, options.snap);
+  const raw = snapInputMs(startAudioMs - chart.offsetMs, chart, options);
   const time = Math.max(-chart.offsetMs, raw);
-  const end = quantizeMs(Math.max(startAudioMs, endAudio * 1000 - correction) - chart.offsetMs, chart, options.snap);
+  const end = snapInputMs(Math.max(startAudioMs, endAudio * 1000 - correction) - chart.offsetMs, chart, options);
   const held = (endAudio - gesture.startAudio) / rate >= .24;
   const lengthMs = held ? Math.max(50, end - time) : 0;
   const automatic = clamp(1 + Math.round(lengthMs / (60000 / chart.bpm)), 2, 99);
   const count = held ? (options.longCount === 'auto' ? automatic : clamp(Number(options.longCount), 2, 99)) : 1;
-  const direction = options.direction || 'none';
+  const flick = !held && options.flickEnabled!==false && DIRECTIONS.includes(gesture.flickDirection) && gesture.flickDirection!=='none';
+  const direction = flick ? gesture.flickDirection : options.direction || 'none';
   const color = options.color === 'auto' ? (gesture.x < 0 ? 'blue' : 'red') : options.color;
   return { __editorId: noteId(), time: +time.toFixed(3), beat: +((time - chart.beatZeroMs) / (60000 / chart.bpm)).toFixed(6),
     x: +(gesture.x / chart.coordScale).toFixed(6), y: +(gesture.y / chart.coordScale).toFixed(6),

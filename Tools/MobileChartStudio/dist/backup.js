@@ -1,10 +1,11 @@
 import { exportChart, parseChart, DIRECTIONS, clamp } from './core.js';
+import { inputPreferences } from './gestures.js';
 const MAGIC = new TextEncoder().encode('SABERSTUDIO1\n');
 const MAX_META = 32 * 1024 * 1024, MAX_AUDIO = 100 * 1024 * 1024;
 const invalid = () => new Error('Saber Tap Studioのバックアップを選んでください。ファイルが途中で壊れていないか確認してください。');
 function safeSettings(value) {
   const s=value&&typeof value==='object'?value:{};
-  return {snap:[0,1,.5,.25,1/3].includes(s.snap)?s.snap:0,rate:[1,.75,.5].includes(s.rate)?s.rate:1,
+  return {...inputPreferences(s),rate:[1,.75,.5].includes(s.rate)?s.rate:1,
     longCount:['auto','2','3','4','6','8'].includes(String(s.longCount))?String(s.longCount):'auto',direction:DIRECTIONS.includes(s.direction)?s.direction:'none',
     color:['auto','blue','red','gold'].includes(s.color)?s.color:'auto',latencyMs:Number.isFinite(s.latencyMs)?clamp(s.latencyMs,-500,500):0,
     countIn:typeof s.countIn==='boolean'?s.countIn:true,clickSound:typeof s.clickSound==='boolean'?s.clickSound:true,metronome:typeof s.metronome==='boolean'?s.metronome:false};
