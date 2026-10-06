@@ -962,7 +962,8 @@ def _commit_push(repo: Path, bundle: Path, state: dict[str, Any], changed: list[
     if _git(repo, "branch", "--show-current") != "main" or _git(repo, "rev-parse", "HEAD") != base:
         raise RepairError("main HEAD changed before commit")
     status = _git(repo, "status", "--porcelain")
-    touched = {line[3:] for line in status.splitlines() if line}
+    prefix = _git(repo, "rev-parse", "--show-prefix")
+    touched = {os.path.relpath(line[3:], prefix or ".") for line in status.splitlines() if line}
     if touched != set(changed):
         raise RepairError(f"unexpected changes before commit: {sorted(touched ^ set(changed))}")
     _git(repo, "fetch", "origin")
@@ -1011,7 +1012,9 @@ def _discover_owned_commit(repo: Path, state: dict[str, Any]) -> None:
         return
     parent = _git(repo, "rev-parse", "HEAD^")
     message = _git(repo, "log", "-1", "--format=%s")
-    changed = set(_git(repo, "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD").splitlines())
+    prefix = _git(repo, "rev-parse", "--show-prefix")
+    changed = {os.path.relpath(path, prefix or ".") for path in
+               _git(repo, "diff-tree", "--no-commit-id", "--name-only", "-r", "HEAD").splitlines()}
     if parent != state.get("baseHead") or message != f"Repair PhoneSaber recognition from {state['sessionID']}" \
             or changed != set(state.get("ownedFiles", {})):
         raise RepairError("HEAD changed after interrupted commit; refusing to alter it")

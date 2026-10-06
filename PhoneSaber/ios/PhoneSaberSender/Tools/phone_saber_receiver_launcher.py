@@ -87,15 +87,16 @@ class ExistingListener:
 
 
 def resolve_repository_root(helper_path: Path = Path(__file__)) -> Path:
-    """Resolve this helper's repository without relying on the caller's cwd."""
+    """Resolve PhoneSaber inside the Unity checkout without relying on cwd."""
     resolved_helper = helper_path.resolve()
     if len(resolved_helper.parents) < 4:
         raise LauncherError(f"cannot resolve repository from launcher path: {resolved_helper}")
     expected_root = resolved_helper.parents[3]
-    if not (expected_root / ".git").exists():
+    git_root = expected_root.parent
+    if expected_root.name != "PhoneSaber" or not (git_root / ".git").exists():
         raise LauncherError(
             f"repository not found at expected path: {expected_root}\n"
-            "Keep this launcher inside ios/PhoneSaberSender/Tools in the school-festival repository."
+            "Keep this launcher inside PhoneSaber/ios/PhoneSaberSender/Tools in the 3D-Saber repository."
         )
     try:
         result = subprocess.run(
@@ -108,11 +109,11 @@ def resolve_repository_root(helper_path: Path = Path(__file__)) -> Path:
         detail = result.stderr.strip() or "git could not identify the repository root"
         raise LauncherError(f"repository check failed for {expected_root}: {detail}")
     actual_root = Path(result.stdout.strip()).resolve()
-    if actual_root != expected_root.resolve():
+    if actual_root != git_root.resolve():
         raise LauncherError(
             f"launcher resolved to {expected_root}, but Git reports a different repository: {actual_root}"
         )
-    return actual_root
+    return expected_root
 
 
 def _git_output(repo_root: Path, *args: str, required: bool = True) -> str:

@@ -1,5 +1,7 @@
 # PhoneSaber Debug Recording metadata schema
 
+These tools live in the single 3D-Saber repository under `PhoneSaber/`. Run the commands below from `PhoneSaber/` unless specified otherwise; the Unity project is its parent directory.
+
 This document defines the JSON written beside a PhoneSaber debug recording and
 the compatibility rules used by the Python analysis tools. The machine-checked
 field shapes live in `phone_saber_metadata_schema.py`.

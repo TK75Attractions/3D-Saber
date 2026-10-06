@@ -103,3 +103,10 @@ InitTestScene*.unity*
 
 # Auto-generated scenes by play mode tests
 /[Aa]ssets/[Ii]nit[Tt]est[Ss]cene*.unity*
+
+# PhoneSaber subtree outputs (its nested .gitignore files also apply)
+/PhoneSaber/.verify-logs/
+/PhoneSaber/.claude/worktrees/
+/PhoneSaber/android/**/build/
+/PhoneSaber/android/**/.cxx/
+/PhoneSaber/android/local.properties

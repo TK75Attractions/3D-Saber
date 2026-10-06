@@ -1,5 +1,7 @@
 # PhoneSaber Debug Recording triage
 
+These tools live in the single 3D-Saber repository under `PhoneSaber/`. Run the commands below from `PhoneSaber/` unless specified otherwise; the Unity project is its parent directory.
+
 ## Phases
 
 - Phase A creates a `phone_saber_triage_<session>` directory after Stop. It contains only `summary.json`, `prompt.md`, selected lossless PNG files, and at most five compact context frames per image. H.264 files and complete session metadata stay outside the bundle.
@@ -114,7 +116,7 @@ not retry it. The queue limit remains four waiting jobs; a full queue preserves 
 new upload for a later explicit manual invocation.
 
 The existing manual CLIs require an explicit bundle path identifying one session.
-Run from the repository root, replacing `<sessionID>` with the desired session:
+Run from the `PhoneSaber/` directory, replacing `<sessionID>` with the desired session:
 
 ```sh
 bundle="$HOME/Library/Application Support/PhoneSaber/diagnostics-inbox/phone_saber_triage_<sessionID>"

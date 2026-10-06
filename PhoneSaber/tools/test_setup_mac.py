@@ -20,14 +20,13 @@ class SetupMacTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory(prefix="セットアップ space ")
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        self.repo = self.root / "school-festival"
+        self.repo = self.root / "3D-Saber" / "PhoneSaber"
         self.unity = self.root / "3D-Saber"
         self.home = self.root / "other user"
         self.home.mkdir()
-        for path in (self.repo, self.unity):
-            path.mkdir()
-            subprocess.run(["git", "init", "-q", "-b", "main", str(path)], check=True)
-            subprocess.run(["git", "-C", str(path), "remote", "add", "origin", "https://example.invalid/repo.git"], check=True)
+        self.repo.mkdir(parents=True)
+        subprocess.run(["git", "init", "-q", "-b", "main", str(self.unity)], check=True)
+        subprocess.run(["git", "-C", str(self.unity), "remote", "add", "origin", "https://example.invalid/repo.git"], check=True)
         tools = self.repo / setup.TOOLS
         tools.mkdir(parents=True)
         for name in (*setup.MODEL_PINS, "phone_saber_receiver_launcher.py", "Start PhoneSaber.command",

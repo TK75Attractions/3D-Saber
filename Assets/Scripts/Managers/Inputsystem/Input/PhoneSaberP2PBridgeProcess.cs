@@ -7,11 +7,11 @@ using UnityEngine;
 // PhoneSaberSender の P2P(peer-to-peer Wi-Fi)用 bridge を、InputPoint の受信 socket が揃っている間だけ動かす。
 // bridge は iPhone からの座標を P2P で受け取り、本文を変えずに 127.0.0.1:5005 / 5006 へ転送する。
 // InputPoint の UDP 受信はそのままで、bridge は追加の経路にすぎない(起動できなくても従来の LAN 受信は動く)。
-// bridge 本体と build 手順は school-festival repo の ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py にある。
+// bridge 本体と build 手順は PhoneSaber/ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py にある。
 // 開始/停止は Bonjour publisher と同じく InputPoint.SetReceiverAlive から(受信 thread 上で)呼ばれる。
 public sealed class PhoneSaberP2PBridgeProcess : IDisposable
 {
-    // 既定では Unity project(3D-Saber)と並んでいる school-festival repo の launcher を使う。
+    // 既定では Unity project 内の PhoneSaber の launcher を使う。
     public const string LauncherRelativePath = "ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py";
     // 起動 script の場所を変えるときの環境変数。PHONESABER_P2P_BRIDGE=0 / off で自動起動しない。
     public const string ScriptEnvironmentVariable = "PHONESABER_P2P_BRIDGE_SCRIPT";
@@ -63,14 +63,13 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
         get { lock (Gate) return ProcessIsRunning(process); }
     }
 
-    // Unity project の Assets から、隣の school-festival repo の launcher を探す。
+    // Unity project の Assets から、プロジェクト内の PhoneSaber の launcher を探す。
     public static string ResolveLauncherPath(string dataPath, Func<string, string> environment)
     {
         string configured = environment(ScriptEnvironmentVariable);
         if (!string.IsNullOrWhiteSpace(configured)) return configured.Trim();
         string projectRoot = Path.GetFullPath(Path.Combine(dataPath, ".."));
-        string workspace = Path.GetDirectoryName(projectRoot);
-        return workspace == null ? null : Path.Combine(workspace, "school-festival", LauncherRelativePath);
+        return Path.Combine(projectRoot, "PhoneSaber", LauncherRelativePath);
     }
 
     public static bool IsDisabled(Func<string, string> environment)

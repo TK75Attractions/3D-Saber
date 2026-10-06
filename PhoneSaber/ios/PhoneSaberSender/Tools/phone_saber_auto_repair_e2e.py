@@ -80,7 +80,7 @@ def replace_once(source, before, after):
 
 
 def real_snapshot():
-    if git(REPO, "rev-parse", "--show-toplevel") != str(REPO.resolve()):
+    if git(REPO, "rev-parse", "--show-toplevel") != str(REPO.parent.resolve()):
         raise E2EError("script is outside its expected Git repository")
     snapshot = {
         "head": git(REPO, "rev-parse", "HEAD"),
@@ -129,7 +129,7 @@ def create_clone(root):
     root = require_temp(root)
     clone, bare = root / "clone", root / "origin.git"
     command(["git", "clone", "--no-local", "--branch", "main", "--single-branch",
-             str(REPO), str(clone)])
+             str(REPO.parent), str(clone)])
     if "github.com" in git(clone, "remote", "-v").lower():
         raise E2EError("GitHub remote found immediately after cloning")
     command(["git", "init", "--bare", str(bare)])
@@ -137,7 +137,7 @@ def create_clone(root):
     git(clone, "remote", "add", "origin", str(bare))
     assert_local_remote(clone, bare)
     push_local(clone, bare)
-    return clone, bare
+    return clone / "PhoneSaber", bare
 
 
 def instrument_source(normal, cutoff=0):
@@ -550,7 +550,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--allow-real-codex", action="store_true",
                         help="explicitly allow the paid Luna/max and Sol/high CLI calls")
-    parser.add_argument("--unity-project", type=Path, default=REPO.parent / "3D-Saber")
+    parser.add_argument("--unity-project", type=Path, default=REPO.parent)
     parser.add_argument("--simulator-id", default="")
     args = parser.parse_args()
     if not args.allow_real_codex:

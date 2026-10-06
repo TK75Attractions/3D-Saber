@@ -1,5 +1,7 @@
 # Debug Recording motion evidence
 
+These tools live in the single 3D-Saber repository under `PhoneSaber/`. Run the commands below from `PhoneSaber/` unless specified otherwise; the Unity project is its parent directory.
+
 This extension selects evidence automatically during Debug Recording. It does
 not change production segmentation, eligibility, ranking, endpoints, UDP,
 reviewer requirements or the formal corpus. It does not establish ground truth.

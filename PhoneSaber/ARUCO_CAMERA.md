@@ -16,7 +16,7 @@
 ## マーカー生成
 
 ```bash
-cd "/Users/satoshi/縁日/GitHub/school-festival"
+cd "/Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber"
 python3 generate_aruco_markers.py
 ```
 
@@ -25,7 +25,7 @@ python3 generate_aruco_markers.py
 ## 実行
 
 ```bash
-cd "/Users/satoshi/縁日/GitHub/school-festival"
+cd "/Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber"
 python3 aruco_camera.py --camera 0 --show
 ```
 

@@ -25,7 +25,8 @@ TOOLS_SOURCE = Path(__file__).resolve().parent
 
 
 def make_repo(parent: Path, name: str = "縁日 workspace") -> tuple[Path, Path]:
-    repo = parent / name
+    git_root = parent / name
+    repo = git_root / "PhoneSaber"
     tools = repo / "ios" / "PhoneSaberSender" / "Tools"
     tools.mkdir(parents=True)
     for filename in (
@@ -38,17 +39,17 @@ def make_repo(parent: Path, name: str = "縁日 workspace") -> tuple[Path, Path]
         "phone_saber_receiver_launcher.py",
     ):
         shutil.copy2(TOOLS_SOURCE / filename, tools / filename)
-    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
-    subprocess.run(["git", "checkout", "-qb", "main"], cwd=repo, check=True)
-    subprocess.run(["git", "config", "user.name", "PhoneSaber Test"], cwd=repo, check=True)
+    subprocess.run(["git", "init", "-q"], cwd=git_root, check=True)
+    subprocess.run(["git", "checkout", "-qb", "main"], cwd=git_root, check=True)
+    subprocess.run(["git", "config", "user.name", "PhoneSaber Test"], cwd=git_root, check=True)
     subprocess.run(
-        ["git", "config", "user.email", "phonesaber-test@example.invalid"], cwd=repo, check=True,
+        ["git", "config", "user.email", "phonesaber-test@example.invalid"], cwd=git_root, check=True,
     )
     (repo / "initial.txt").write_text("fixture\n", encoding="utf-8")
-    subprocess.run(["git", "add", "initial.txt"], cwd=repo, check=True)
-    subprocess.run(["git", "add", "ios"], cwd=repo, check=True)
-    subprocess.run(["git", "commit", "-qm", "fixture"], cwd=repo, check=True)
-    subprocess.run(["git", "update-ref", "refs/remotes/origin/main", "HEAD"], cwd=repo, check=True)
+    subprocess.run(["git", "add", "PhoneSaber/initial.txt"], cwd=git_root, check=True)
+    subprocess.run(["git", "add", "PhoneSaber/ios"], cwd=git_root, check=True)
+    subprocess.run(["git", "commit", "-qm", "fixture"], cwd=git_root, check=True)
+    subprocess.run(["git", "update-ref", "refs/remotes/origin/main", "HEAD"], cwd=git_root, check=True)
     return repo, tools
 
 
@@ -93,6 +94,40 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
             self.assertIn("WARNING: working tree has uncommitted changes", dirty.stdout)
             self.assertTrue((repo / "local-change.txt").exists())
 
+    def test_linked_worktree_uses_its_own_phone_saber_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            repo, _ = make_repo(root)
+            worktree = root / "別の worktree"
+            subprocess.run(["git", "-C", str(repo), "worktree", "add", "-qb", "test-worktree",
+                            str(worktree)], check=True, capture_output=True)
+            helper = worktree / "PhoneSaber/ios/PhoneSaberSender/Tools/phone_saber_receiver_launcher.py"
+            self.assertEqual(launcher.resolve_repository_root(helper), (worktree / "PhoneSaber").resolve())
+            # Git state includes Unity changes outside PhoneSaber too.
+            (worktree / "unity-change.txt").write_text("local change")
+            self.assertTrue(launcher.collect_git_snapshot(worktree / "PhoneSaber").dirty)
+
+    def test_installer_migrates_only_old_sibling_launcher_symlinks(self) -> None:
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            _, tools = make_repo(root)
+            desktop = root / "home/Desktop"
+            desktop.mkdir(parents=True)
+            names = ("Start PhoneSaber.command", "Open PhoneSaber Log.command",
+                     "Open Latest PhoneSaber Images.command", "PhoneSaber Status.command")
+            for name in names:
+                (desktop / name).symlink_to(root.resolve() / "school-festival/ios/PhoneSaberSender/Tools" / name)
+            command = ["bash", str(tools / "install_phone_saber_launcher.command")]
+            env = {**os.environ, "HOME": str(desktop.parent)}
+            dry = subprocess.run([*command, "--dry-run"], env=env, capture_output=True, text=True)
+            self.assertEqual(dry.returncode, 0, dry.stderr)
+            self.assertEqual((desktop / names[0]).readlink(),
+                             root.resolve() / "school-festival/ios/PhoneSaberSender/Tools" / names[0])
+            installed = subprocess.run(command, env=env, capture_output=True, text=True)
+            self.assertEqual(installed.returncode, 0, installed.stderr)
+            for name in names:
+                self.assertEqual((desktop / name).resolve(), tools.resolve() / name)
+
     def test_missing_repository_has_a_clear_error(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:
             root = Path(temporary)
@@ -106,7 +141,7 @@ class PhoneSaberReceiverLauncherTests(unittest.TestCase):
             )
             self.assertEqual(result.returncode, 2)
             self.assertIn("repository not found at expected path", result.stderr)
-            self.assertIn("school-festival repository", result.stderr)
+            self.assertIn("3D-Saber repository", result.stderr)
 
     def test_installer_dry_run_and_idempotent_four_desktop_links(self) -> None:
         with tempfile.TemporaryDirectory() as temporary:

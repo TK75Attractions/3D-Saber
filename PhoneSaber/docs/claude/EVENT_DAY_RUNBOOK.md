@@ -1,5 +1,7 @@
 # PhoneSaber 縁日当日の運用手順(runbook)
 
+2026-10-06 のrepo統合: Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/`。Git root から `bash PhoneSaber/tools/verify_phone_saber.sh` を実行。旧 school-festival は履歴を保って統合・アーカイブ済み。
+
 当日に「動かす」「おかしいときに直す」ための1枚です。調査の根拠は [FINDINGS.md](FINDINGS.md)、残作業は [STATUS.md](STATUS.md) にまとめています。
 迷ったら、まず Mac のデスクトップの **`PhoneSaber Status.command`** をダブルクリックしてください(読み取りのみ。何も変えません)。
 
@@ -32,7 +34,7 @@ iPhone で Stop ─→ triage bundle
 | | 項目 | 根拠 |
 |---|---|---|
 | ☐ | iPhone に main の最新の PhoneSaberSender を Xcode で入れる | `docs/claude/STATUS.md` |
-| ☐ | Mac で `school-festival` と `3D-Saber` が同じフォルダに並んでいる(Unity はその隣の `ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py` を起動する。違う場所なら環境変数 `PHONESABER_P2P_BRIDGE_SCRIPT`) | `PhoneSaberP2PBridgeProcess.cs` |
+| ☐ | Mac で単一の `3D-Saber` repo があり、Unity root 内の `PhoneSaber/ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py` を起動できる。違う場所なら環境変数 `PHONESABER_P2P_BRIDGE_SCRIPT` | `PhoneSaberP2PBridgeProcess.cs` |
 | ☐ | bridge を一度 build しておく(Unity を開くと裏で1回 build。初回は数秒〜十数秒。`~/Library/Caches/PhoneSaber/p2p-bridge/` に保存) | `P2P_BRIDGE.md`「起動方法」 |
 | ☐ | デスクトップに Start PhoneSaber と PhoneSaber Status などを置く: `Tools/install_phone_saber_launcher.command` を1回ダブルクリック(以前に入れた Mac でも、もう一度実行すれば足りない Status だけ追加。既存のリンクと動いている受信側はそのまま) | `PHONE_SABER_TRIAGE.md` |
 | ☐ | Codex CLI がログイン済み(`PhoneSaber Status.command` で `[OK] Codex CLI`)。無くても受信と要約は動く | `PHONE_SABER_TRIAGE.md` |
@@ -90,7 +92,7 @@ Start PhoneSaber から単独起動した受信側を止める場合は、その
 - P2P bridge: `PhoneSaberP2PBridge` の process があるか。
 - Unity Console(`~/Library/Logs/Unity/Editor.log`): 直近の Play 以降の `last 10s` 集計(直近5回の `maxGapMs`)、最後の接続イベント(`peer alive` / `no ping` など)、警告、診断 relay。Editor.log の行には時刻が無いので、ファイルの最終更新時刻を出します。
 - 診断: inbox の最新 bundle、`.report.md` の有無、Codex 解析の結果(完了 / precheck 中止 / 実行中 / timeout)。
-- git: school-festival と 3D-Saber の branch、未commit、origin との差(fetch はしない)。
+- git: 単一の 3D-Saber repo の branch、未commit、origin との差(fetch はしない)。
 - Codex CLI があるか。
 
 終了コードは NG あり 2、WARN のみ 1、すべて OK 0。Terminal から `python3 ios/PhoneSaberSender/Tools/phone_saber_status.py` でも動きます。

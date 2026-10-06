@@ -2,17 +2,17 @@
 
 ## Project Structure & Module Organization
 
-This repository tracks red/blue illuminated sabers and sends coordinates to an external Unity project.
+This directory tracks red/blue illuminated sabers and sends coordinates to the Unity project in its parent directory. The Git and Unity root is `3D-Saber/`; PhoneSaber tools and apps live in `PhoneSaber/`. Clone only `https://github.com/TK75Attractions/3D-Saber.git` with Git LFS installed, then run `PhoneSaber/setup_mac.command`.
 
 - Root Python scripts provide basic (`camera.py`), smartphone-only (`smartphone_camera.py`), ArUco, and stereo tracking.
 - `native_capture.py` wraps `native/ContinuityCapture.m`, the macOS AVFoundation adapter. Generated libraries live in ignored `.native-camera/`.
 - Root `test_*.py` files contain automated tests; `native/test_capture.m` tests native frame handling.
 - `camera_thresholds.json` stores detection settings; `stereo_chessboard.svg` is a calibration asset. Mode-specific Markdown guides document setup.
-- `main.cpp` contains Arduino/ESP32 BLE/IMU firmware. Unity and the BLE bridge live in the sibling `3D-Saber` repository, not here.
+- `main.cpp` contains Arduino/ESP32 BLE/IMU firmware. Unity and the BLE bridge live in the parent directory (`../Assets/` and `../Tools/`).
 
 ## Build, Test, and Development Commands
 
-Run from this repository's root using Python 3.12:
+Run from the `PhoneSaber/` directory using Python 3.12:
 
 ```bash
 python3 -m venv .venv

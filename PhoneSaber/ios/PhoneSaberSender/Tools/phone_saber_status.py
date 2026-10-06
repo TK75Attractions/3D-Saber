@@ -588,16 +588,8 @@ def resolve_unity_root(ctx_runner: Runner, repo_root: Path) -> Optional[Path]:
     configured = os.environ.get("PHONESABER_UNITY_PROJECT")
     if configured:
         return Path(configured).expanduser()
-    candidates = [repo_root.parent / "3D-Saber"]
-    # worktree(.claude/worktrees/...)から実行したときは、本体 checkout の隣を見る。
-    common = ctx_runner(["git", "-C", str(repo_root), "rev-parse", "--path-format=absolute", "--git-common-dir"],
-                        COMMAND_TIMEOUT_SECONDS)
-    if common is not None and common.returncode == 0 and common.stdout.strip():
-        candidates.append(Path(common.stdout.strip()).parent.parent / "3D-Saber")
-    for candidate in candidates:
-        if (candidate / "Assets").is_dir():
-            return candidate
-    return candidates[0]
+    # 同じ worktree の Unity project を使う。
+    return repo_root.parent
 
 
 def collect(ctx: Context) -> list[Check]:
@@ -609,8 +601,7 @@ def collect(ctx: Context) -> list[Check]:
     checks.extend(check_editor_log(ctx, bridge_running=bridge[0].level == "OK"))
     checks.extend(check_inbox(ctx))
     checks.extend(check_storage(ctx))
-    checks.append(git_state(ctx, "school-festival", ctx.repo_root))
-    checks.append(git_state(ctx, "3D-Saber", ctx.unity_root))
+    checks.append(git_state(ctx, "3D-Saber", ctx.repo_root.parent))
     checks.extend(check_codex(ctx))
     return checks
 

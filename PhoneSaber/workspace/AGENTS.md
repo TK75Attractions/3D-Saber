@@ -4,8 +4,8 @@
 
 ## 主な場所
 
-- `GitHub/school-festival/`: iPhone版 `ios/PhoneSaberSender/` と、Mac/Python診断ツール、テスト。
-- `GitHub/3D-Saber/`: 本番のUnityプロジェクト。
+- `GitHub/3D-Saber/`: 唯一の本番リポジトリ。Unity root はここ、iPhone/Android と Mac/Python診断ツール、テストは `PhoneSaber/` 内。
+- 旧 `school-festival` repo は2026-10-06に履歴ごと `3D-Saber/PhoneSaber/` へ統合し、アーカイブ済み。別途cloneしない。
 - 旧 `GitHub/school-festival-experimental-recognition/` worktree は2026-09-28のブランチ整理で存在しません（確認済み）。作り直す場合はGit worktreeとして扱い、通常フォルダとして移動・削除しないでください。
 - `docs/`: ワークスペース全体の設計資料。認識・通信・Unity入力・計測に関わる作業前に `docs/ennichi-camera-system.md` を確認してください。
 - `PROJECT_STRUCTURE.md`: 詳細な構成説明。

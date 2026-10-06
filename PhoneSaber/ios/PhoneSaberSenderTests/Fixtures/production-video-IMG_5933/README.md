@@ -17,7 +17,7 @@ edges, and the unrelated-bright-object line-bridging regression. This video
 does not contain a clearly controlled no-saber frame, so negative-scene
 coverage continues to come from the existing synthetic tests.
 
-From the repository root, regenerate the candidate JSON, annotated keyframes,
+From the `PhoneSaber/` directory, regenerate the candidate JSON, annotated keyframes,
 summary, and annotated video with:
 
 ```bash

@@ -1,6 +1,8 @@
 # 実機再試験前のtracking verification（2026-10-01）
 
-対象はschool-festivalのmain、診断・解析・verificationのみ。production認識、HSV/brightness/eligibility、candidate scoring/ranking、PCA/body/fallback、final endpoint selection、UDP、Unityは変更しない。
+単一repoの Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/` 内です。以下のコマンドは、指定がない限り Git root から `cd PhoneSaber` して実行します。
+
+対象は3D-Saber/PhoneSaber（旧school-festival）のmain、診断・解析・verificationのみ。production認識、HSV/brightness/eligibility、candidate scoring/ranking、PCA/body/fallback、final endpoint selection、UDP、Unityは変更しない。
 
 ## Analysis前のpreflight
 

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Install the 縁日 workspace files that live outside any Git repository.
 
-The workspace root (two levels above this repo, e.g. ~/縁日) holds AGENTS.md,
+The workspace root (three levels above PhoneSaber, e.g. ~/縁日) holds AGENTS.md,
 PROJECT_STRUCTURE.md and docs/ennichi-camera-system.md, and ~/.claude/CLAUDE.md
 holds the user's "always report in Japanese" rule. None of them are in Git, so
 a second Mac lacks them. Their copies are kept in workspace/ of this repo.
@@ -38,8 +38,8 @@ def install(source: Path, target: Path, check: bool) -> str:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    parser.add_argument("--workspace", type=Path, default=REPO.parent.parent,
-                        help="workspace root (default: two levels above the repo)")
+    parser.add_argument("--workspace", type=Path, default=REPO.parents[2],
+                        help="workspace root (default: three levels above PhoneSaber)")
     parser.add_argument("--claude-home", type=Path, default=Path.home() / ".claude",
                         help="Claude Code settings folder (default: ~/.claude)")
     parser.add_argument("--check", action="store_true", help="report only, write nothing")

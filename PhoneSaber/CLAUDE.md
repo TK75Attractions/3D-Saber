@@ -4,11 +4,13 @@
 ユーザーの許可を待たずに、調査 → 実装 → 検証 → commit → push まで自律的に進めてください。
 ユーザーに頼むのは、物理的にユーザーしかできないことだけです(§6)。
 
-- repo: /Users/satoshi/縁日/GitHub/school-festival
+- repo: /Users/satoshi/縁日/GitHub/3D-Saber
+- PhoneSaber tools: PhoneSaber/（以下のツール用相対パスはこのディレクトリ基準）
 - Unity: /Users/satoshi/縁日/GitHub/3D-Saber
-- 公式検証: tools/verify_phone_saber.sh
-- 進捗ログ: docs/claude/STATUS.md(なければ作る。§7)
-- 一般的な構成・コーディング規約は AGENTS.md を参照。
+- 公式検証: PhoneSaber/tools/verify_phone_saber.sh（Git root から実行）
+- 進捗ログ: PhoneSaber/docs/claude/STATUS.md(なければ作る。§7)
+- 一般的な構成・コーディング規約は PhoneSaber/AGENTS.md を参照。
+- 新規環境は Git LFS を導入し、`git clone https://github.com/TK75Attractions/3D-Saber.git` の1回だけ。`git lfs pull` 後、`PhoneSaber/setup_mac.command` を実行。旧 school-festival はアーカイブ済み。
 
 ## 0. 言語(必須)
 - ユーザーへの返答・報告・進捗の一言・最終まとめは、**必ず日本語**で書く。英語で返答しない。

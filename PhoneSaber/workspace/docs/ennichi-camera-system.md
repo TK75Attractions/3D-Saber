@@ -37,7 +37,7 @@ iPhone camera → iPhone 内の棒／マーカー認識 → 最新座標のみ U
 
 対象は赤・青の発光した棒である。移植先は iOS/Swift であり、Python/OpenCV をそのまま実行する前提ではない。
 
-`GitHub/school-festival/camera.py` の比較的良好だった方式は次を再現可能な形で移植する。
+`GitHub/3D-Saber/PhoneSaber/camera.py` の比較的良好だった方式は次を再現可能な形で移植する。
 
 1. BGR フレームを HSV へ変換する。
 2. 赤は OpenCV HSV の hue 境界をまたぐ二つの範囲（既定 H=170..179 または 0..10, S=70..255, V=100..255）、青は H=99..124, S=137..255, V=168..255 でマスクする。閾値は実画像で再調整可能にする。
@@ -94,7 +94,7 @@ Mac 側に本番受信と分離可能な総合デバッグ画面を用意する�
 
 ### 対象リポジトリと実経路
 
-主な経路は `GitHub/school-festival/ios/PhoneSaberSender` の iOS アプリから、`GitHub/3D-Saber` の Unity プロジェクトである。2026-09-12時点ではワークスペース直下にHello World版の別プロジェクトがあったが、2026-09-24に安全確認のうえ削除済み。現在の本番版は `GitHub/school-festival/ios/PhoneSaberSender/` である。
+主な経路は `GitHub/3D-Saber/PhoneSaber/ios/PhoneSaberSender` の iOS アプリから、`GitHub/3D-Saber` の Unity プロジェクトである。2026-09-12時点ではワークスペース直下にHello World版の別プロジェクトがあったが、2026-09-24に安全確認のうえ削除済み。現在の本番版は `GitHub/3D-Saber/PhoneSaber/ios/PhoneSaberSender/` である。
 
 ```text
 iPhone: CameraViewModel / AVCaptureVideoDataOutput (BGRA, back camera)
@@ -105,7 +105,7 @@ iPhone: CameraViewModel / AVCaptureVideoDataOutput (BGRA, back camera)
   → SaberInputBridge が端点を描画・判定に使用
 ```
 
-Mac 単体の調査・計測系は `GitHub/school-festival/udp_receive_probe.py`、`saber_camera_test.html`、`start_phone_saber_latency.command` にある。これは UDP 受信とブラウザ画面を開く仕組みであり、Unity と同じポートを同時には使えない。
+Mac 単体の調査・計測系は `GitHub/3D-Saber/PhoneSaber/udp_receive_probe.py`、`saber_camera_test.html`、`start_phone_saber_latency.command` にある。これは UDP 受信とブラウザ画面を開く仕組みであり、Unity と同じポートを同時には使えない。
 
 ### `camera.py` が比較的良かった理由
 
@@ -127,7 +127,7 @@ iOS は手入力 host と固定 5005/5006 を使用し、Bonjour の公開・探
 
 ### テスト画像・既存検証資産
 
-`GitHub/school-festival` に実写の棒・誤検出用静止画は追跡されていない。現状の自動テストは OpenCV/Swift ともに合成画像（線、ノイズ、BGRA バッファ）を生成する。根ディレクトリの `target.png` は存在するが、棒認識の実写 fixture と確認できない。次フェーズ前に、許可済みの実写サンプルを `GitHub/school-festival/testdata/` 等へ追加するか、入手不能として合成テストとの限界を明記する。
+`GitHub/3D-Saber/PhoneSaber` に実写の棒・誤検出用静止画は追跡されていない。現状の自動テストは OpenCV/Swift ともに合成画像（線、ノイズ、BGRA バッファ）を生成する。根ディレクトリの `target.png` は存在するが、棒認識の実写 fixture と確認できない。次フェーズ前に、許可済みの実写サンプルを `GitHub/3D-Saber/PhoneSaber/testdata/` 等へ追加するか、入手不能として合成テストとの限界を明記する。
 
 ## 初回調査時点の次フェーズ案（2026-09-12）
 
@@ -135,11 +135,11 @@ iOS は手入力 host と固定 5005/5006 を使用し、Bonjour の公開・探
 
 Phase 2 は「iPhone 側認識精度改善・最新フレーム優先・低遅延座標送信」に限定する。主な対象は以下である。
 
-- `GitHub/school-festival/ios/PhoneSaberSender/PhoneSaberSender/DetectionCore.swift`: HSV 相当の色判定、形状条件、端点推定の純粋ロジック。
-- `GitHub/school-festival/ios/PhoneSaberSender/PhoneSaberSender/BGRADetection.swift`: BGRA から低解像度マスクを作り、上記候補選択へ接続する処理。
-- `GitHub/school-festival/ios/PhoneSaberSender/PhoneSaberSender/FrameProcessor.swift`: 最新フレーム優先を明示し、fresh/stale と保持の契約を整理する処理。
-- `GitHub/school-festival/ios/PhoneSaberSender/PhoneSaberSender/CameraViewModel.swift` と `UDPSender.swift`: 送信頻度、検出有無、診断値、設定の集約。Bonjour は Phase 2 の対象外でも設定の分散を増やさない。
-- `GitHub/school-festival/ios/PhoneSaberSenderTests/StaticBGRADetectionTests.swift`、`DetectionCoreTests.swift`: 実写 fixture が得られればその回帰テストと、最新フレーム／fresh-only送信のテスト。
+- `GitHub/3D-Saber/PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender/DetectionCore.swift`: HSV 相当の色判定、形状条件、端点推定の純粋ロジック。
+- `GitHub/3D-Saber/PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender/BGRADetection.swift`: BGRA から低解像度マスクを作り、上記候補選択へ接続する処理。
+- `GitHub/3D-Saber/PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender/FrameProcessor.swift`: 最新フレーム優先を明示し、fresh/stale と保持の契約を整理する処理。
+- `GitHub/3D-Saber/PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender/CameraViewModel.swift` と `UDPSender.swift`: 送信頻度、検出有無、診断値、設定の集約。Bonjour は Phase 2 の対象外でも設定の分散を増やさない。
+- `GitHub/3D-Saber/PhoneSaber/ios/PhoneSaberSenderTests/StaticBGRADetectionTests.swift`、`DetectionCoreTests.swift`: 実写 fixture が得られればその回帰テストと、最新フレーム／fresh-only送信のテスト。
 
 Unity の `GitHub/3D-Saber/Assets/Scripts/Managers/Inputsystem/Input/InputPoint.cs` と `GitHub/3D-Saber/Assets/Scripts/Saber/SaberInputBridge.cs` は、Phase 2 では既存 UDP 互換を保つ確認対象とする。Mac 発見・総合 GUI・自動 end-to-end 計測は別フェーズで `udp_receive_probe.py` を部品として再利用しつつ設計する。
 

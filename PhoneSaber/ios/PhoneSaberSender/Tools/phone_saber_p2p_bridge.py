@@ -6,6 +6,8 @@ peer-to-peer Wi-Fi (`_phonesaber-p2p._udp`) and forwards the unchanged payload t
 127.0.0.1:5005 (RED) / 127.0.0.1:5006 (BLUE) for the existing Unity InputPoint.
 It is optional: without it the iPhone keeps using the existing LAN UDP path.
 
+Run these examples from PhoneSaber/ inside the Unity Git checkout:
+
     python3 ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py            # build if needed, run
     python3 ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py --build-only
     python3 ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py -- --name "Saber Mac"

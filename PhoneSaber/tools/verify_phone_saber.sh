@@ -3,28 +3,20 @@ set -u
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
-# 3D-Saber is a sibling of the main school-festival checkout. A linked Git
-# worktree (for example .claude/worktrees/<name>) has no such sibling, so fall
-# back to the main checkout that owns the shared Git directory.
+# PhoneSaber lives inside the Unity Git checkout, including linked worktrees.
 UNITY_PATH_EXPLICIT=false
 REPO_IS_LINKED_WORKTREE=false
-REPO_MAIN_ROOT="$REPO_ROOT"
-repo_git_dir="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-dir 2>/dev/null || true)"
-repo_common_dir="$(git -C "$REPO_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
+GIT_ROOT="$(cd "$REPO_ROOT/.." && pwd -P)"
+repo_git_dir="$(git -C "$GIT_ROOT" rev-parse --path-format=absolute --git-dir 2>/dev/null || true)"
+repo_common_dir="$(git -C "$GIT_ROOT" rev-parse --path-format=absolute --git-common-dir 2>/dev/null || true)"
 if [[ -n "$repo_git_dir" && -n "$repo_common_dir" && "$repo_git_dir" != "$repo_common_dir" ]]; then
   REPO_IS_LINKED_WORKTREE=true
-  if [[ "$(basename "$repo_common_dir")" == ".git" && -d "$(dirname "$repo_common_dir")" ]]; then
-    REPO_MAIN_ROOT="$(cd "$(dirname "$repo_common_dir")" && pwd -P)"
-  fi
 fi
 if [[ -n "${UNITY_PROJECT_PATH:-}" ]]; then
   UNITY_PATH_EXPLICIT=true
   UNITY_CANDIDATE="$UNITY_PROJECT_PATH"
 else
-  UNITY_CANDIDATE="$(cd "$REPO_ROOT/.." && pwd -P)/3D-Saber"
-  if [[ ! -d "$UNITY_CANDIDATE" && "$REPO_MAIN_ROOT" != "$REPO_ROOT" ]]; then
-    UNITY_CANDIDATE="$(cd "$REPO_MAIN_ROOT/.." && pwd -P)/3D-Saber"
-  fi
+  UNITY_CANDIDATE="$GIT_ROOT"
 fi
 if [[ -d "$UNITY_CANDIDATE" ]]; then
   UNITY_ROOT="$(cd "$UNITY_CANDIDATE" && pwd -P)"
@@ -643,15 +635,13 @@ if [[ "$UNITY_ROOT_VALID" == true ]]; then
     fi
   fi
 elif [[ "$UNITY_PATH_EXPLICIT" == false && "$REPO_IS_LINKED_WORKTREE" == true ]]; then
-  # Auto-detection from a linked worktree found no 3D-Saber project, neither next
-  # to the worktree nor next to the main checkout. The Unity stages are optional
-  # here, so report NOT_RUN rather than a false FAIL. An explicit
+  # A sparse linked worktree may omit the Unity project. An explicit
   # UNITY_PROJECT_PATH and the main checkout keep the strict FAIL below.
   UNITY_CAPABILITY_STATUS="NOT_RUN"
   UNITY_EDITMODE_STATUS="NOT_RUN"
   UNITY_PLAYMODE_STATUS="NOT_RUN"
   UNITY_COMPILE_STATUS="NOT_RUN"
-  UNITY_BLOCK_REASON="3D-Saber was not found next to this worktree or the main checkout ($UNITY_CANDIDATE); set UNITY_PROJECT_PATH to check Unity."
+  UNITY_BLOCK_REASON="Unity project directories were not found in this worktree ($UNITY_CANDIDATE); set UNITY_PROJECT_PATH to check Unity."
   mark_not_run "Unity project discovery" unity-project-not-found NOT_RUN "$UNITY_BLOCK_REASON"
 else
   UNITY_CAPABILITY_STATUS="FAIL"
@@ -670,10 +660,10 @@ report_stage "Unity PlayMode" "$UNITY_PLAYMODE_STATUS"
 report_stage "Unity Compile" "$UNITY_COMPILE_STATUS"
 report_stage "Unity capability" "$UNITY_CAPABILITY_STATUS"
 
-run_logged_command "school-festival git diff --check" diff-check-school-festival \
-  git -C "$REPO_ROOT" diff --check
-school_diff_exit="$LAST_EXIT"
-if [[ "$school_diff_exit" -eq 0 ]]; then DIFF_CHECK_STATUS="PASS"; fi
+run_logged_command "3D-Saber git diff --check" diff-check-repository \
+  git -C "$GIT_ROOT" diff --check
+repo_diff_exit="$LAST_EXIT"
+if [[ "$repo_diff_exit" -eq 0 ]]; then DIFF_CHECK_STATUS="PASS"; fi
 report_stage "Diff Check" "$DIFF_CHECK_STATUS"
 
 printf '\nPhoneSaber verification summary\n'

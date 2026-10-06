@@ -12,9 +12,11 @@ iPhone PhoneSaberSender
 
 BonjourはMacのホストを見つけるために使います。座標データは引き続きUDPで送ります。UnityとMac/Pythonのデバッグ受信ツールは同じUDPポートを使うため、同時には起動しません。
 
+2026-10-06 に本番repoを統合しました。`GitHub/` 内は `3D-Saber/` の1つだけを使い、PhoneSaber はその `PhoneSaber/` 内にあります。旧 `school-festival` はアーカイブ済みで、別途cloneは不要です。
+
 ## 主なプロジェクト
 
-### `GitHub/school-festival/`
+### `GitHub/3D-Saber/PhoneSaber/`（同一repo内）
 
 iPhoneの認識・送信アプリと、カメラや通信を調べるMac側ツールを含みます。
 
@@ -36,7 +38,7 @@ Mac側のPython受信ツールはUnityの代替受信先ではなく、診断用
 
 ### 旧 `school-festival-experimental-recognition` worktree
 
-ブランチ `experimental-recognition-20260923` 用のGit worktreeでしたが、2026-09-28のブランチ整理後は存在しません。`school-festival` のブランチは `main` のみです。再作成する場合はGit worktreeとして扱い、通常フォルダとして移動・削除しません。
+ブランチ `experimental-recognition-20260923` 用のGit worktreeでしたが、2026-09-28のブランチ整理後は存在しません。旧 `school-festival` repo は2026-10-06に履歴ごと `GitHub/3D-Saber/PhoneSaber/` へ統合し、アーカイブ済みです。`GitHub/` の本番repoは `3D-Saber/` の1つだけです。再作成する場合はGit worktreeとして扱い、通常フォルダとして移動・削除しません。
 
 ## ドキュメント
 
@@ -46,7 +48,7 @@ Mac側のPython受信ツールはUnityの代替受信先ではなく、診断用
 
 - `3D弾幕/`、`譜面制作/`、`My project/` は、それぞれ独立したUnity試作プロジェクトです。PhoneSaberの本番経路で使うUnityプロジェクトは `GitHub/3D-Saber/` です。
 - `BeatSaver_device/`、`acceration.detect/`、`testforxiao/` などはESP32/PlatformIO系の試作です。
-- 旧PhoneSaberSender（ルート直下のHello World版）は2026-09-24に削除済みです。本番版は `GitHub/school-festival/ios/PhoneSaberSender/` です。
+- 旧PhoneSaberSender（ルート直下のHello World版）は2026-09-24に削除済みです。本番版は `GitHub/3D-Saber/PhoneSaber/ios/PhoneSaberSender/` です。
 - `.stl`、`.3mf`、`.gcode`、`.ai`、`.png` などはハードウェアの設計・製作資料です。`make_reinforced_stl.rb` は補強STLを生成します。
 
 ## ローカルコピーを削除したリポジトリ

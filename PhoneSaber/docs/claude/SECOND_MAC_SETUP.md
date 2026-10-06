@@ -14,13 +14,15 @@
 ## 家の Mac で1回だけやること
 
 1. Xcode、Python 3、Git、[Homebrew](https://brew.sh) を入れる。Unity Hub と Unity 6000.3.9f1 は、Unity を開く予定があれば入れる。
-2. 同じ場所に clone する(ユーザー名が違っても、`~/縁日/GitHub/` の形にしておけば手順は同じです)。
+2. Git LFS を導入し、単一リポジトリを clone する(ユーザー名が違っても、`~/縁日/GitHub/` の形にしておけば手順は同じです)。
 
    ```bash
    mkdir -p ~/縁日/GitHub && cd ~/縁日/GitHub
-   git clone https://github.com/setasato/school-festival.git
+   brew install git-lfs
+   git lfs install
    git clone https://github.com/TK75Attractions/3D-Saber.git
-   cd school-festival && ./setup_mac.command
+   cd 3D-Saber && git lfs pull
+   ./PhoneSaber/setup_mac.command
    ```
 
    `setup_mac.command` は、Git に入っていないワークスペースのファイルも置きます(上書きはしません)。
@@ -29,7 +31,7 @@
 
    すでに違う内容のファイルがあると、`<名前>.from-repo` を横に置いて知らせるので、手で見比べてください。
 3. 最後に出る `MANUAL ACTION REQUIRED` をこなす(`codex login`、Xcode の署名など)。
-4. Claude Code を入れてログインし、`~/縁日/GitHub/school-festival` で次を実行する。
+4. Claude Code を入れてログインし、`~/縁日/GitHub/3D-Saber` で次を実行する。
 
    ```bash
    claude remote-control --name "家Mac"
@@ -45,6 +47,6 @@
 
 ## ワークスペースのファイルを直したとき
 
-`~/縁日/AGENTS.md` などは Git の外にあるので、直したら `school-festival/workspace/` の同名ファイルにも同じ変更を入れて push してください。
-もう一台では `python3 tools/install_workspace_files.py` を実行すると、違いが `.from-repo` として出てきます。
+`~/縁日/AGENTS.md` などは Git の外にあるので、直したら `3D-Saber/PhoneSaber/workspace/` の同名ファイルにも同じ変更を入れて push してください。
+もう一台では `python3 PhoneSaber/tools/install_workspace_files.py` を実行すると、違いが `.from-repo` として出てきます。
 `--check` を付けると、何も書かずに状態だけ表示します。

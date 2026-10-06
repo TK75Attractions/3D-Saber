@@ -48,9 +48,9 @@ class StatusTestCase(unittest.TestCase):
         self.home = self.root / "home"
         self.inbox = self.home / "inbox"
         self.inbox.mkdir(parents=True)
-        self.repo = self.root / "school-festival"
-        (self.repo / ".git").mkdir(parents=True)
         self.unity = self.root / "3D-Saber"
+        self.repo = self.unity / "PhoneSaber"
+        self.repo.mkdir(parents=True)
         (self.unity / ".git").mkdir(parents=True)
         self.now = time.time()
 
@@ -338,11 +338,11 @@ class InboxTests(StatusTestCase):
 class GitAndCodexTests(StatusTestCase):
     def test_clean_synchronized_main(self):
         runner = FakeRunner({
-            f"git -C {self.repo} rev-parse --abbrev-ref": ok("main\n"),
-            f"git -C {self.repo} status": ok(""),
-            f"git -C {self.repo} rev-list": ok("0\t0\n"),
+            f"git -C {self.unity} rev-parse --abbrev-ref": ok("main\n"),
+            f"git -C {self.unity} status": ok(""),
+            f"git -C {self.unity} rev-list": ok("0\t0\n"),
         })
-        check = status.git_state(self.ctx(runner=runner), "school-festival", self.repo)
+        check = status.git_state(self.ctx(runner=runner), "3D-Saber", self.unity)
         self.assertEqual(check.level, "OK")
 
     def test_behind_and_dirty_without_upstream(self):
@@ -362,7 +362,7 @@ class GitAndCodexTests(StatusTestCase):
 
     def test_git_commands_are_read_only(self):
         runner = FakeRunner({"git": ok("main\n")})
-        status.git_state(self.ctx(runner=runner), "school-festival", self.repo)
+        status.git_state(self.ctx(runner=runner), "3D-Saber", self.unity)
         subcommands = {call[3] for call in runner.calls}
         self.assertTrue(subcommands <= {"rev-parse", "status", "rev-list"}, subcommands)
 

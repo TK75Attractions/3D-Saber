@@ -30,15 +30,15 @@ def run(*args: str, cwd: Path | None = None, timeout: int = 30) -> subprocess.Co
 
 
 def discover_unity(repo: Path, override: Path | None) -> Path:
-    return (override if override is not None else repo.parent / "3D-Saber").expanduser().resolve()
+    return (override if override is not None else repo.parent).expanduser().resolve()
 
 
 def inspect_git(path: Path) -> tuple[bool, str]:
     if not path.is_dir():
         return False, "directory missing"
     root = run("git", "-C", str(path), "rev-parse", "--show-toplevel")
-    if root.returncode != 0 or Path(root.stdout.strip()).resolve() != path.resolve():
-        return False, "not an independent Git repository"
+    if root.returncode != 0 or not path.resolve().is_relative_to(Path(root.stdout.strip()).resolve()):
+        return False, "not inside a Git repository"
     branch = run("git", "-C", str(path), "branch", "--show-current").stdout.strip() or "detached HEAD"
     dirty = bool(run("git", "-C", str(path), "status", "--porcelain").stdout.strip())
     origin = run("git", "-C", str(path), "remote", "get-url", "origin").returncode == 0
@@ -169,7 +169,7 @@ def perform(repo: Path, unity: Path, home: Path, check: bool, verify: bool) -> t
     git = run("git", "--version")
     report.add("OK" if git.returncode == 0 else "ERROR", "Git", git.stdout.strip() if git.returncode == 0 else "install Xcode Command Line Tools")
     repo_state: dict[str, tuple[bool, str]] = {}
-    for label, path in (("school-festival", repo), ("3D-Saber", unity)):
+    for label, path in (("PhoneSaber", repo), ("3D-Saber", unity)):
         good, detail = inspect_git(path) if git.returncode == 0 else (False, "Git unavailable")
         repo_state[label] = good, detail
         report.add("OK" if good else "ERROR", label, f"{path} ({detail})")
@@ -272,7 +272,7 @@ def perform(repo: Path, unity: Path, home: Path, check: bool, verify: bool) -> t
         report.add("OK" if tests.returncode == 0 else "ERROR", "PhoneSaber Tools tests", "passed" if tests.returncode == 0 else "failed")
         syntax = run("python3", "-B", "-c", "import ast, pathlib, sys; [ast.parse(p.read_text(encoding='utf-8'), filename=str(p)) for p in pathlib.Path(sys.argv[1]).glob('*.py')]", str(repo / TOOLS), timeout=60)
         report.add("OK" if syntax.returncode == 0 else "ERROR", "Python syntax")
-        diff = run("git", "-C", str(repo), "diff", "--check")
+        diff = run("git", "-C", str(repo.parent), "diff", "--check")
         report.add("OK" if diff.returncode == 0 else "ERROR", "git diff --check")
         if verify:
             own = run("python3", "-B", "-m", "unittest", "discover", "-s", str(repo / "tools"), "-p", "test_setup_mac.py", cwd=repo, timeout=120)

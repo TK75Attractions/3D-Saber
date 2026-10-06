@@ -1,5 +1,7 @@
 # PhoneSaber STATUS
 
+2026-10-06 のrepo統合: Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/`。Git root から `bash PhoneSaber/tools/verify_phone_saber.sh` を実行。旧 school-festival は履歴を保って統合・アーカイブ済み。
+
 ## ユーザー待ち
 
 - 最新の main(ガイド付き録画 v3)を入れて、露出 1/100 秒で1本。v3 は最初の saberなし区間でも画像を1枚保存するので、赤の誤検出の正体を画像で確認できる。

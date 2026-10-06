@@ -1,5 +1,7 @@
 # PhoneSaber Codex CLI 障害の検証（2026-10-02 JST）
 
+単一repoの Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/` 内です。以下のコマンドは、指定がない限り Git root から `cd PhoneSaber` して実行します。
+
 ## 原因と修正範囲
 
 `codex exec` は起動・認証に成功した後、APIのHTTP 400で終了していた。

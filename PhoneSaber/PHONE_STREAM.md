@@ -5,7 +5,7 @@
 3. 既存のカメラとBLEブリッジを終了し、Macで次を実行する。
 
 ```sh
-cd "/Users/satoshi/縁日/GitHub/school-festival"
+cd "/Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber"
 python3 start_phone_stream.py --imu-stick red
 ```
 

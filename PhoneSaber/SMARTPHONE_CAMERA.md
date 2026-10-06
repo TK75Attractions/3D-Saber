@@ -8,7 +8,7 @@ Mac取得後の縮小だけではなく、カメラの`activeFormat`とフレー
 ただし、連係カメラ内部の無線ビットレートは公開されていないため、通信量が減ったとは断定できません。
 
 ```bash
-cd "/Users/satoshi/縁日/GitHub/school-festival"
+cd "/Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber"
 python3 smartphone_camera.py --capture-backend native --width 640 --height 480 --fps 30 --preview-only
 ```
 
@@ -102,7 +102,7 @@ Macカメラとステレオ校正を使わず、スマホ映像だけで赤・�
 ## 実行
 
 ```bash
-cd "/Users/satoshi/縁日/GitHub/school-festival"
+cd "/Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber"
 python3 smartphone_camera.py --camera 0 --show
 ```
 
@@ -136,7 +136,7 @@ python3 Tools/mac_ble_udp_bridge.py
 IMUを赤い棒へ付けた例:
 
 ```bash
-cd "/Users/satoshi/縁日/GitHub/school-festival"
+cd "/Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber"
 python3 smartphone_camera.py --camera 0 --imu-stick red --imu-axis z --show
 ```
 

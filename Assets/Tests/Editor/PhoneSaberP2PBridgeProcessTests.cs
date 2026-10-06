@@ -33,14 +33,24 @@ public class PhoneSaberP2PBridgeProcessTests
     }
 
     [Test]
-    public void LauncherIsFoundInTheSiblingSchoolFestivalRepository()
+    public void LauncherIsFoundInsideTheUnityProject()
     {
         string workspace = Path.Combine(Path.GetTempPath(), "someone", "ws");
         string dataPath = Path.Combine(workspace, "3D-Saber", "Assets");
         string path = PhoneSaberP2PBridgeProcess.ResolveLauncherPath(dataPath, EmptyEnvironment);
-        string expected = Path.Combine(Path.GetFullPath(workspace), "school-festival",
+        string expected = Path.Combine(Path.GetFullPath(workspace), "3D-Saber", "PhoneSaber",
                                        PhoneSaberP2PBridgeProcess.LauncherRelativePath);
         Assert.AreEqual(Path.GetFullPath(expected), Path.GetFullPath(path));
+    }
+
+    [Test]
+    public void TriageLauncherIsFoundInsideTheUnityProject()
+    {
+        string projectRoot = Path.Combine(Path.GetTempPath(), "縁日 workspace", "任意の worktree");
+        string path = PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(Path.Combine(projectRoot, "Assets"));
+        string expected = Path.Combine(projectRoot, "PhoneSaber", PhoneSaberTriageReceiverLauncher.LauncherRelativePath);
+        Assert.AreEqual(Path.GetFullPath(expected), Path.GetFullPath(path));
+        Assert.IsNull(PhoneSaberTriageReceiverLauncher.ResolveLauncherPath(null));
     }
 
     [Test]

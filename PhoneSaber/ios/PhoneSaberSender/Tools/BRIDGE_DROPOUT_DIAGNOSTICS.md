@@ -1,5 +1,7 @@
 # Bridge dropout diagnostics, active color and compact contexts
 
+These tools live in the single 3D-Saber repository under `PhoneSaber/`. Run the commands below from `PhoneSaber/` unless specified otherwise; the Unity project is its parent directory.
+
 Scope: Debug Recording image selection and the Mac-side evidence contract only.
 Recognition thresholds, HSV, scoring, candidate ranking, eligibility, PCA, robust
 endpoint, fallback, UDP, Unity and the repair safety gate's pass conditions are not

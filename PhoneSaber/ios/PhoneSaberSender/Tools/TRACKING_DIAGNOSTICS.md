@@ -1,6 +1,8 @@
 # PhoneSaber tracking diagnostics / repair evidence
 
-対象は `school-festival` の `main`。認識閾値、HSV、候補生成・順位・eligibility、PCA/body/fallbackの採用条件、UDP payloadは変更していない。今回のproductionファイルへの編集は診断収集の追加だけで、実機の根本原因を確定した修正ではない。
+単一repoの Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/` 内です。以下のコマンドは、指定がない限り Git root から `cd PhoneSaber` して実行します。
+
+対象は `3D-Saber/PhoneSaber`（旧 school-festival）の `main`。認識閾値、HSV、候補生成・順位・eligibility、PCA/body/fallbackの採用条件、UDP payloadは変更していない。今回のproductionファイルへの編集は診断収集の追加だけで、実機の根本原因を確定した修正ではない。
 
 ## 変更ファイル一覧
 

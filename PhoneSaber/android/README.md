@@ -1,5 +1,7 @@
 # Android 本番 sender（Phase 2）
 
+単一repoの Git root は Unity project です。Android Studio では `PhoneSaber/android/` を開きます。以下のコマンドは Git root から `cd PhoneSaber` して実行します。
+
 2026-10-06 の決定: iPhone/Mac の本番・診断は維持し、AQUOS sense9
 （Android 14 / Snapdragon 7s Gen 2）用の本番 sender を追加する。
 Windows または Mac の Unity と同じ Wi-Fi に接続し、既存の UDP 契約を使う。
@@ -9,7 +11,7 @@ Android に Debug Recording、診断受信、計測 UI を移植しない。
 ## AQUOS sense9 でのビルド・インストール
 
 対象は AQUOS sense9（Android 14 / API 34、Snapdragon 7s Gen 2）。
-`android/` 自体を Android Studio の **Open** で開く（リポジトリルートではない）。
+`PhoneSaber/android/` 自体を Android Studio の **Open** で開く（リポジトリルートではない）。
 この worktree の変更は未commit。Swift、core のアルゴリズム、UDP仕様は変更していない。
 
 1. SDK Manager → SDK Platforms で Android API 37 を用意する。この環境には
@@ -180,7 +182,7 @@ source/output 各辺の「寸法−1」で正規化して四捨五入する既�
 
 ## Mac でのビルドと parity
 
-リポジトリルートから:
+`PhoneSaber/` から:
 
 ```bash
 make -C android/core

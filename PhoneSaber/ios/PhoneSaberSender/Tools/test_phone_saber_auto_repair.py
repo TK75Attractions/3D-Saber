@@ -81,7 +81,7 @@ def prepared_bundle(root: Path, *, actionable: bool = True, count: int = 1,
 
 
 def miniature_repo(root: Path) -> Path:
-    repo = root / "repo"
+    repo = root / "repo" / "PhoneSaber"
     for relative in repair.REPAIR_FILES:
         target = repo / relative
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -729,11 +729,12 @@ class GitSafetyTests(unittest.TestCase):
     def test_real_commit_push_uses_main_and_stops_if_origin_moves(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            origin, repo, bundle = root / "origin.git", root / "repo", root / "bundle"
+            origin, repo, bundle = root / "origin.git", root / "repo" / "PhoneSaber", root / "bundle"
             bundle.mkdir()
             subprocess.run(["git", "init", "--bare", str(origin)], check=True,
                            capture_output=True)
-            subprocess.run(["git", "init", "-b", "main", str(repo)], check=True,
+            repo.mkdir(parents=True)
+            subprocess.run(["git", "init", "-b", "main", str(repo.parent)], check=True,
                            capture_output=True)
             def git(location: Path, *args: str) -> str:
                 completed = subprocess.run(["git", *args], cwd=location, check=True,
@@ -755,7 +756,7 @@ class GitSafetyTests(unittest.TestCase):
                      "startedAt": time.time()}
             commit = repair._commit_push(repo, bundle, state, [SOURCE])
             self.assertEqual(git(origin, "rev-parse", "refs/heads/main"), commit)
-            self.assertEqual(git(repo, "show", "--pretty=format:", "--name-only", "HEAD"), SOURCE)
+            self.assertEqual(git(repo, "show", "--pretty=format:", "--name-only", "HEAD"), "PhoneSaber/" + SOURCE)
             self.assertEqual(git(repo, "status", "--porcelain"), "")
 
             source.write_text("second candidate\n")
@@ -764,8 +765,8 @@ class GitSafetyTests(unittest.TestCase):
                            check=True, capture_output=True)
             git(peer, "config", "user.name", "Peer")
             git(peer, "config", "user.email", "peer@example.com")
-            (peer / "unrelated.txt").write_text("remote update\n")
-            git(peer, "add", "unrelated.txt")
+            (peer / "PhoneSaber/unrelated.txt").write_text("remote update\n")
+            git(peer, "add", "PhoneSaber/unrelated.txt")
             git(peer, "commit", "-m", "remote update")
             git(peer, "push", "origin", "main")
             second = {"sessionID": "sample_session", "baseHead": commit,
@@ -773,23 +774,33 @@ class GitSafetyTests(unittest.TestCase):
             with self.assertRaisesRegex(repair.RepairError, "BLOCKED_REMOTE_CHANGED"):
                 repair._commit_push(repo, bundle, second, [SOURCE])
             self.assertEqual(git(repo, "rev-parse", "HEAD"), commit)
-            self.assertEqual(git(repo, "diff", "--name-only"), SOURCE)
+            self.assertEqual(git(repo, "diff", "--name-only"), "PhoneSaber/" + SOURCE)
             git(repo, "add", SOURCE)
             git(repo, "commit", "-m", "Repair PhoneSaber recognition from sample_session")
             unpushed = git(repo, "rev-parse", "HEAD")
-            rollback_state = {"commit": unpushed, "baseHead": commit}
+            rollback_state = {"baseHead": commit, "phase": "committing",
+                              "sessionID": "sample_session", "ownedFiles": {SOURCE: "hash"}}
+            repair._discover_owned_commit(repo, rollback_state)
+            self.assertEqual(rollback_state["commit"], unpushed)
+            (repo.parent / "Assets").mkdir()
+            (repo.parent / "Assets/unrelated.cs").write_text("Unity change")
+            with self.assertRaisesRegex(repair.RepairError, "unexpected changes"):
+                repair._commit_push(repo, bundle,
+                                    {"baseHead": unpushed, "originHead": commit}, [SOURCE])
+            (repo.parent / "Assets/unrelated.cs").unlink()
             repair._uncommit_unpushed(repo, rollback_state, [SOURCE])
             self.assertEqual(git(repo, "rev-parse", "HEAD"), commit)
             self.assertEqual(git(repo, "diff", "--cached", "--name-only"), "")
-            self.assertEqual(git(repo, "diff", "--name-only"), SOURCE)
+            self.assertEqual(git(repo, "diff", "--name-only"), "PhoneSaber/" + SOURCE)
 
     def test_main_clean_and_remote_equal_are_required(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            origin, repo = root / "origin.git", root / "repo"
+            origin, repo = root / "origin.git", root / "repo" / "PhoneSaber"
             subprocess.run(["git", "init", "--bare", str(origin)], check=True,
                            capture_output=True)
-            subprocess.run(["git", "init", "-b", "main", str(repo)], check=True,
+            repo.mkdir(parents=True)
+            subprocess.run(["git", "init", "-b", "main", str(repo.parent)], check=True,
                            capture_output=True)
             def git(*args: str) -> str:
                 result = subprocess.run(["git", *args], cwd=repo, check=True,
@@ -834,10 +845,11 @@ class GitSafetyTests(unittest.TestCase):
     def test_xcode_user_state_is_ignored_but_source_still_blocks_repair(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
-            origin, repo = root / "origin.git", root / "repo"
+            origin, repo = root / "origin.git", root / "repo" / "PhoneSaber"
             subprocess.run(["git", "init", "--bare", str(origin)], check=True,
                            capture_output=True)
-            subprocess.run(["git", "init", "-b", "main", str(repo)], check=True,
+            repo.mkdir(parents=True)
+            subprocess.run(["git", "init", "-b", "main", str(repo.parent)], check=True,
                            capture_output=True)
             def git(*args: str) -> str:
                 result = subprocess.run(["git", *args], cwd=repo, check=True,

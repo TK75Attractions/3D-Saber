@@ -1,5 +1,7 @@
 # PhoneSaberSender 同一試行の遅延計測
 
+単一repoの Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/` 内です。以下のコマンドは、指定がない限り Git root から `cd PhoneSaber` して実行します。
+
 > **P2P(peer-to-peer Wi-Fi)通信**: Mac を学校 Wi-Fi につないだまま、iPhone → Mac の座標だけを Apple の
 > peer-to-peer Wi-Fi で直接送る追加機能があります。P2P が使えないときは、下の LAN(Bonjour / 手動 IP)に自動で戻ります。
 > 構成・fallback 条件・実機での確認手順・rollback は [P2P_BRIDGE.md](P2P_BRIDGE.md) を参照してください。
@@ -11,7 +13,7 @@
 3. iPhoneで「通常送信を開始」を押します。自動発見ができない場合だけ、手動IP欄にMacのIPv4を入力してください。送信形式は従来どおり赤=UDP 5005、青=UDP 5006、`x1,y1,x2,y2` です。
 
 ```sh
-open /Users/satoshi/縁日/GitHub/school-festival/start_phone_saber_latency.command
+open /Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber/start_phone_saber_latency.command
 ```
 
 ライブ画面にはMacが受信した各packetの受信Unix時刻、iPhone `ts`、`(Mac受信時刻 - iPhone ts) × 1000`、色、受信順、赤青別の件数と最新値が表示されます。差分はMacとiPhoneの時計差を含み、iPhone内部処理時間や表示時刻との照合値とは別の値です。tsなし・不正・非有限値は未計測として表示され、受信件数には含まれますが有効差分件数には含まれません。
@@ -35,7 +37,7 @@ open /Users/satoshi/縁日/GitHub/school-festival/start_phone_saber_latency.comm
 macOSのSwiftツールチェーンだけで、本番の `detectSaber` を行パディング付きBGRA静止画へ適用する回帰テストを実行できます。カメラ、UDP、iOS Simulatorは使用しません。
 
 ```sh
-cd /Users/satoshi/縁日/GitHub/school-festival
+cd /Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber
 bash ios/PhoneSaberSender/run-static-tests.sh
 ```
 
@@ -51,8 +53,8 @@ bash ios/PhoneSaberSender/run-static-tests.sh
 
 ## 再レビュー修正の検証（2026-09-11）
 
-- 正常実行: `cd /Users/satoshi/縁日/GitHub/school-festival && bash ios/PhoneSaberSender/run-static-tests.sh` は終了コード0、14検査すべて成功しました。
-- 別作業ディレクトリ: `cd /private/tmp && bash '/Users/satoshi/縁日/GitHub/school-festival/ios/PhoneSaberSender/run-static-tests.sh'` は終了コード0、14検査成功。空白を含むパス: `space_root=$(mktemp -d); mkdir -p "$space_root/tree with spaces/ios"; cp -R ios/PhoneSaberSender "$space_root/tree with spaces/ios/PhoneSaberSender"; cp -R ios/PhoneSaberSenderTests "$space_root/tree with spaces/ios/PhoneSaberSenderTests"; (cd "$space_root/tree with spaces" && bash 'ios/PhoneSaberSender/run-static-tests.sh')` は終了コード0、14検査成功でした。スクリプトは自身のディレクトリを基準に解決し、cwdと空白を含むパスに依存しません。
+- 正常実行: `cd /Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber && bash ios/PhoneSaberSender/run-static-tests.sh` は終了コード0、14検査すべて成功しました。
+- 別作業ディレクトリ: `cd /private/tmp && bash '/Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber/ios/PhoneSaberSender/run-static-tests.sh'` は終了コード0、14検査成功。空白を含むパス: `space_root=$(mktemp -d); mkdir -p "$space_root/tree with spaces/ios"; cp -R ios/PhoneSaberSender "$space_root/tree with spaces/ios/PhoneSaberSender"; cp -R ios/PhoneSaberSenderTests "$space_root/tree with spaces/ios/PhoneSaberSenderTests"; (cd "$space_root/tree with spaces" && bash 'ios/PhoneSaberSender/run-static-tests.sh')` は終了コード0、14検査成功でした。スクリプトは自身のディレクトリを基準に解決し、cwdと空白を含むパスに依存しません。
 - 一時ディレクトリ: `trap` で正常終了・コンパイル失敗の双方に `mktemp` のビルドディレクトリを削除する実装を確認しました。正常終了後は専用一時ディレクトリが削除され、リポジトリ内に生成物はありません。コンパイル失敗時のcleanupはコード上の対応であり、この環境では故意のコンパイル失敗を起こす実行までは未実施です。
 - `bash -n ios/PhoneSaberSender/run-static-tests.sh` と `xcrun swiftc -frontend -parse ios/PhoneSaberSender/PhoneSaberSender/*.swift ios/PhoneSaberSenderTests/*.swift` は終了コード0です。XCTest実行と実機カメラ確認は、既存記録どおりSimulatorサービス不通・実機未接続のため未実施です。
 
@@ -70,7 +72,7 @@ bash ios/PhoneSaberSender/run-static-tests.sh
 今回の修正後に実行したコマンドと結果は次の通りです。コマンド出力は `/private/tmp/task-20260910143433-rerun2/logs/` に保存しました。
 
 ```sh
-cd /Users/satoshi/縁日/GitHub/school-festival
+cd /Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber
 python3 -B -c 'import py_compile,tempfile; from pathlib import Path; d=tempfile.TemporaryDirectory(); [py_compile.compile(p,cfile=str(Path(d.name)/(Path(p).name+"c")),doraise=True) for p in ("udp_receive_probe.py","test_udp_receive_probe.py")]; d.cleanup()'
 python3 -B -m unittest test_udp_receive_probe -v
 python3 -B -m unittest discover -v
@@ -95,7 +97,7 @@ py_compile、probe単体テスト、Swift parse、HTML parserは終了コード0
 ## 再レビュー対応追補（2026-09-10）
 
 - 変更一覧: `test_udp_receive_probe.py` はCtrl-Cテストの一時ログ寿命をrun・統計assert・再bindまで延長し、実run既知標本を赤 `1/10 ms`・青 `5.5 ms` に固定しました。さらに全体・色別の件数、平均、中央値、p50、p95を明示検証し、入力幅1000で距離 `.02` の採用、`.021` の拒否、拒否後の有効packet採用を検証する送信列にしました。閾値比較は `1e-12` の表現誤差だけを許容します。`saber_camera_test.html` は保存時に試行を停止・固定し、固定済みtrialのstate集合と終了時刻を再保存で書き換えないようにしました。保存前の一時停止→継続は従来どおり可能で、保存後は「新しい試行」からのみ続行します。
-- 正確な再検証コマンドと結果: `cd /Users/satoshi/縁日/GitHub/school-festival && python3 -B -m unittest test_udp_receive_probe -v`（終了コード0、23件、成功16・skip7）。7件のskipはすべて `PermissionError: [Errno 1] Operation not permitted` によるUDP bind権限制限で、コード不具合や一般OSErrorによるskipではありません。`python3 -B -c 'import py_compile,tempfile; from pathlib import Path; d=tempfile.TemporaryDirectory(); [py_compile.compile(p,cfile=str(Path(d.name)/(Path(p).name+"c")),doraise=True) for p in ("udp_receive_probe.py","test_udp_receive_probe.py")]; print("py_compile OK"); d.cleanup()'`（終了コード0）、`python3 -B -c 'from html.parser import HTMLParser; from pathlib import Path; p=HTMLParser(); p.feed(Path("saber_camera_test.html").read_text(encoding="utf-8")); p.close(); print("HTML parse OK")'`（終了コード0）、`git diff --check`（終了コード0）も成功しました。
+- 正確な再検証コマンドと結果: `cd /Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber && python3 -B -m unittest test_udp_receive_probe -v`（終了コード0、23件、成功16・skip7）。7件のskipはすべて `PermissionError: [Errno 1] Operation not permitted` によるUDP bind権限制限で、コード不具合や一般OSErrorによるskipではありません。`python3 -B -c 'import py_compile,tempfile; from pathlib import Path; d=tempfile.TemporaryDirectory(); [py_compile.compile(p,cfile=str(Path(d.name)/(Path(p).name+"c")),doraise=True) for p in ("udp_receive_probe.py","test_udp_receive_probe.py")]; print("py_compile OK"); d.cleanup()'`（終了コード0）、`python3 -B -c 'from html.parser import HTMLParser; from pathlib import Path; p=HTMLParser(); p.feed(Path("saber_camera_test.html").read_text(encoding="utf-8")); p.close(); print("HTML parse OK")'`（終了コード0）、`git diff --check`（終了コード0）も成功しました。
 - 実run統合テスト（既知統計、閾値境界、Ctrl-C再bind）は上記bind権限制限で実行不能です。これは環境による未実施であり、テストコードの構文・単体ロジック検証成功とは区別します。file://ブラウザ表示、保存→継続→再保存のDOM実操作、実機iPhone、Unity Editor、実Mac受信も未検証です。`node` が利用できないためJavaScriptエンジン実行検査も未実施です。
 - 今回のログ保存先: `/private/tmp/task-20260910143433-rerun3/logs/`（単体テスト、py_compile、HTML parser、diff check）。実機手順の表示ログ保存先は引き続き `/tmp/saber-display-log.json` です。今回の結果に過去ログ・実機ログは再利用していません。
 

@@ -11,6 +11,7 @@ if [ "$#" -eq 1 ]; then
 fi
 
 tools_dir="$(CDPATH='' cd -P -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+legacy_tools_dir="$(CDPATH='' cd -P -- "$tools_dir/../../../../.." && pwd)/school-festival/ios/PhoneSaberSender/Tools"
 desktop_dir="${HOME:?HOME is not set}/Desktop"
 
 names=(
@@ -32,7 +33,7 @@ destinations=(
     "$desktop_dir/PhoneSaber Status.command"
 )
 
-# Check all destinations before creating any link so a name conflict never
+# Check all destinations before creating any link so an unrelated name conflict never
 # replaces or partially obscures an existing Desktop file.
 for index in "${!names[@]}"; do
     destination="${destinations[$index]}"
@@ -42,6 +43,9 @@ for index in "${!names[@]}"; do
         exit 1
     fi
     if [ -L "$destination" ] && [ "$(readlink "$destination")" = "$source" ]; then
+        continue
+    fi
+    if [ -L "$destination" ] && [ "$(readlink "$destination")" = "$legacy_tools_dir/${names[$index]}" ]; then
         continue
     fi
     if [ -e "$destination" ] || [ -L "$destination" ]; then
@@ -68,7 +72,9 @@ mkdir -p "$desktop_dir"
 for index in "${!names[@]}"; do
     destination="${destinations[$index]}"
     source="${sources[$index]}"
-    if [ ! -L "$destination" ]; then
+    if [ -L "$destination" ] && [ "$(readlink "$destination")" = "$legacy_tools_dir/${names[$index]}" ]; then
+        ln -sfn "$source" "$destination"
+    elif [ ! -L "$destination" ]; then
         ln -s "$source" "$destination"
     fi
 done

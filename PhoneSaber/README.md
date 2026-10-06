@@ -1,5 +1,9 @@
-# school-festival
-rosin
+# PhoneSaber
+
+PhoneSaber tools and sender apps live in `PhoneSaber/` inside the single
+[3D-Saber repository](https://github.com/TK75Attractions/3D-Saber).
+Unless a command says otherwise, run it from this `PhoneSaber/` directory.
+Unity is the parent directory (`Assets/`, `Packages/`, `ProjectSettings/`).
 
 ## Camera tracking
 
@@ -36,7 +40,7 @@ measurement uncertainty.
 
 ## PhoneSaber verification
 
-Run the complete automated verification from the `school-festival` repository:
+Run the complete automated verification from the `PhoneSaber/` directory (or run `bash PhoneSaber/tools/verify_phone_saber.sh` from the Git root):
 
 ```bash
 ./tools/verify_phone_saber.sh
@@ -47,15 +51,14 @@ serially on one Simulator, with parallel test execution disabled and the worker
 count capped at one. It also runs the dedicated static BGRA Detection tests,
 the lossless fixture regression, PhoneSaber Tools unittests, an iOS Release
 build, a read-only Unity Editor capability check, and `git diff --check` for
-`school-festival`. Set `PHONESABER_VERIFY_UNITY_RUN=1` only when you intend to
-run Unity EditMode, PlayMode, and compile checks in the separate `3D-Saber`
-project. Every command's stdout and stderr and Xcode result bundles are saved under
+the whole `3D-Saber` repository. Set `PHONESABER_VERIFY_UNITY_RUN=1` only when you intend to
+run Unity EditMode, PlayMode, and compile checks in the parent Unity project. Every command's stdout and stderr and Xcode result bundles are saved under
 `.verify-logs/phone-saber/<run timestamp>/`.
 The iOS logs also include the xcresult summary and
 `ios-xctest-classification.stdout.log`, which separates assertion failures,
 worker kills, other execution failures, and passing runs.
 
-By default the Unity project is expected at the sibling path `../3D-Saber`.
+By default the Unity project is expected at the parent path `..`, including in linked worktrees.
 Set `UNITY_PROJECT_PATH` if it is elsewhere. Set `UNITY_EDITOR` to select a
 Unity Editor executable, or `PHONESABER_IOS_SIMULATOR_ID` to choose an installed
 iPhone Simulator explicitly. If the Unity Editor already has the target
@@ -65,21 +68,24 @@ a failure, and `2` when a stage is blocked.
 
 ## 新しいMacへの移行
 
-1. `school-festival` と `3D-Saber` を同じフォルダへ clone します。
-2. `school-festival/setup_mac.command` を実行します（Finderからダブルクリックも可能）。
+1. Git LFS を導入し、`3D-Saber` を1回だけ clone します。PhoneSaber は同梱されています。
+2. `3D-Saber/PhoneSaber/setup_mac.command` を実行します（Finderからダブルクリックも可能）。
 3. 最後に表示される `MANUAL ACTION REQUIRED` を実施します。
 4. Desktop の `Start PhoneSaber.command` を起動します。
 
 ```bash
-git clone https://github.com/setasato/school-festival.git
+brew install git-lfs
+git lfs install
 git clone https://github.com/TK75Attractions/3D-Saber.git
-cd school-festival
+cd 3D-Saber
+git lfs pull
+cd PhoneSaber
 ./setup_mac.command
 ```
 
-setupは、Gitに入っていないワークスペースのファイル（`../../AGENTS.md` など、`~/.claude/CLAUDE.md`）も `workspace/` から非破壊で置きます。家のMacと持ち運びMacの2台で使う手順は [docs/claude/SECOND_MAC_SETUP.md](docs/claude/SECOND_MAC_SETUP.md) を参照してください。
+setupは、Gitに入っていないワークスペースのファイル（`../../../AGENTS.md` など、`~/.claude/CLAUDE.md`）も `workspace/` から非破壊で置きます。家のMacと持ち運びMacの2台で使う手順は [docs/claude/SECOND_MAC_SETUP.md](docs/claude/SECOND_MAC_SETUP.md) を参照してください。
 
-Unity側を別の場所にcloneした場合は `./setup_mac.command --3d-saber "/path/to/3D-Saber"` を使用します。`--check` は書き込みなしの環境確認、`--verify` は通常setupに加えてセットアップツール自身のテストも実行します。通常setupはGit LFSを導入済みなら初期化し、Unity assetを取得して、既存のinstaller経由でDesktop launcherを設置します。Homebrewがあれば不足したGit LFSを `brew install git-lfs` で導入します。Homebrew、[Codex CLI](https://learn.chatgpt.com/docs/codex/cli)、Xcode、Unity Hub/Editor、iPhoneの署名と実機実行は画面の案内に従い手動で用意してください。Codex CLIの認証は `codex login` で本人が行います。Makinas fontは別途ローカルに設置しますが、EditModeテスト用のNotoSansJP-Lightはリポジトリに含まれています。
+Unity project の場所を明示したい場合は `./setup_mac.command --3d-saber "/path/to/3D-Saber"` を使用します。`--check` は書き込みなしの環境確認、`--verify` は通常setupに加えてセットアップツール自身のテストも実行します。通常setupはGit LFSを導入済みなら初期化し、Unity assetを取得して、既存のinstaller経由でDesktop launcherを設置します。Homebrewがあれば不足したGit LFSを `brew install git-lfs` で導入します。Homebrew、[Codex CLI](https://learn.chatgpt.com/docs/codex/cli)、Xcode、Unity Hub/Editor、iPhoneの署名と実機実行は画面の案内に従い手動で用意してください。Codex CLIの認証は `codex login` で本人が行います。Makinas fontは別途ローカルに設置しますが、EditModeテスト用のNotoSansJP-Lightはリポジトリに含まれています。
 
 通常setupの報告は `~/Library/Logs/PhoneSaber/setup-latest.log` に保存されます。`--check` はログも作りません。終了コードは `0` が準備完了、`1` が必須処理の失敗、`2` が手動作業ありです。通常setupはPhoneSaber Toolsのテスト、Python構文、`git diff --check` を実行します。受信プロセス、Unityの長いPlayModeテスト、iOS実機テストは起動しません。iOS/Unityの全テストが必要な場合は既存の `./tools/verify_phone_saber.sh` を使います。
 

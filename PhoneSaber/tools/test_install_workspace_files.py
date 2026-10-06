@@ -3,6 +3,7 @@ import io
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 import install_workspace_files as kit
 
@@ -36,6 +37,18 @@ class InstallWorkspaceFilesTests(unittest.TestCase):
             self.assertEqual((claude / "CLAUDE.md").read_text(encoding="utf-8"), "my own rules\n")
             self.assertTrue((claude / "CLAUDE.md.from-repo").exists())
             self.assertIn("differs", out)
+
+    def test_default_workspace_is_three_levels_above_phone_saber(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            workspace = Path(tmp) / "縁日"
+            repo = workspace / "GitHub/3D-Saber/PhoneSaber"
+            claude = Path(tmp) / "claude"
+            with mock.patch.object(kit, "REPO", repo):
+                code, output = self.run_tool("--claude-home", str(claude), "--check")
+            self.assertEqual(code, 2)
+            self.assertIn(str(workspace / "AGENTS.md"), output)
+            self.assertNotIn(str(repo.parent / "AGENTS.md"), output)
+            self.assertFalse(workspace.exists())
 
     def test_check_writes_nothing(self):
         with tempfile.TemporaryDirectory() as tmp:

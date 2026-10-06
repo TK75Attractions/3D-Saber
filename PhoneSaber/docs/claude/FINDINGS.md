@@ -1,5 +1,7 @@
 # PhoneSaber 調査結果のまとめ
 
+2026-10-06 のrepo統合: Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/`。Git root から `bash PhoneSaber/tools/verify_phone_saber.sh` を実行。旧 school-festival は履歴を保って統合・アーカイブ済み。
+
 2026-10-05 時点。残作業は [STATUS.md](STATUS.md)、当日の手順は [EVENT_DAY_RUNBOOK.md](EVENT_DAY_RUNBOOK.md)。
 旧 `analysis/` の個別メモと未適用 diff は統合して削除した。原文・試作差分は Git 履歴に残る。
 R7e/PF22 の shadow 記録と一回限りの調査スクリプトは、当時の比較に使った。以下はその結果を保存したもの。

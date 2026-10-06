@@ -61,7 +61,7 @@ def main():
             if server.poll() is not None:
                 raise RuntimeError('Receiver stopped. Check the log above (port conflict or configuration).')
             if args.imu_stick != 'none':
-                bridge = root.parent / '3D-Saber/Tools/mac_ble_udp_bridge.py'
+                bridge = root.parent / 'Tools/mac_ble_udp_bridge.py'
                 children.append(subprocess.Popen([sys.executable, str(bridge)]))
             tracker = subprocess.Popen([sys.executable, str(root / 'smartphone_camera.py'),
                 '--source', f'rtsp://127.0.0.1:8554/{token}', '--show',

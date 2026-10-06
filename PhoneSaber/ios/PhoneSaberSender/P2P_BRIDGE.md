@@ -1,5 +1,7 @@
 # PhoneSaber P2P(peer-to-peer Wi-Fi)通信
 
+単一repoの Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/` 内です。以下のコマンドは、指定がない限り Git root から `cd PhoneSaber` して実行します。
+
 iPhone → Mac の座標送信だけを、学校 Wi-Fi やテザリングを通さず、Apple の peer-to-peer Wi-Fi
 (AWDL)で直接送る**追加機能**です。Mac は学校 Wi-Fi につないだまま、インターネット通信(Codex / Claude など)は
 学校 Wi-Fi 経由で続けられます。P2P が使えないときは、従来の LAN(Bonjour / 手動 IP)の UDP に自動で戻ります。
@@ -105,8 +107,8 @@ iPhone(DebugBundleTransfer)
 `PhoneSaberP2PBridgeProcess` が bridge を自動で起動します。Play を止める、Unity を終了する、script を
 再 compile する、のいずれかで自動的に止まります。Unity が異常終了しても、bridge は `--exit-with-parent` で自分から終了します。
 
-- Unity は、Unity project(`3D-Saber`)と同じ階層にある `school-festival` repo の
-  `ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py` を `/usr/bin/python3` で実行します。
+- Unity は、Unity project(`3D-Saber`)内の
+  `PhoneSaber/ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py` を `/usr/bin/python3` で実行します。
   場所が違う場合は、環境変数 `PHONESABER_P2P_BRIDGE_SCRIPT` で launcher の path を指定します。
 - 自動起動を止めたいときは、環境変数 `PHONESABER_P2P_BRIDGE=0` を設定します。
 - bridge のログは Unity の Console に `[PhoneSaber][P2P] ...` として出ます。

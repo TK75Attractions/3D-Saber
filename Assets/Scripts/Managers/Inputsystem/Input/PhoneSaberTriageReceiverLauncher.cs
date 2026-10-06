@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 
 // Play 開始時に、iPhone の Debug Recording を受け取る診断の受信側
-// (school-festival の Start PhoneSaber と同じ launcher)を裏で起動する。
+// (PhoneSaber の Start PhoneSaber と同じ launcher)を裏で起動する。
 // すでに動いていれば launcher が重複を検知してすぐ終わり、古いコードのまま待機中の
 // 受信側は launcher が入れ替える。Codex 解析を途中で止めないよう、Unity を閉じても受信側は残す。
 // PHONESABER_TRIAGE_RECEIVER=0 で無効。テスト中は PhoneSaberP2PBridgeProcess.AutoStartEnabled(false)に従う。
@@ -17,13 +17,12 @@ public static class PhoneSaberTriageReceiverLauncher
     const double MinimumIntervalSeconds = 30;
     static DateTime lastLaunchUtc = DateTime.MinValue;
 
-    // Unity project の Assets から、隣の school-festival repo の launcher を探す。
+    // Unity project の Assets から、プロジェクト内の PhoneSaber の launcher を探す。
     public static string ResolveLauncherPath(string dataPath)
     {
         if (string.IsNullOrEmpty(dataPath)) return null;
         string projectRoot = Path.GetFullPath(Path.Combine(dataPath, ".."));
-        string workspace = Path.GetDirectoryName(projectRoot);
-        return workspace == null ? null : Path.Combine(workspace, "school-festival", LauncherRelativePath);
+        return Path.Combine(projectRoot, "PhoneSaber", LauncherRelativePath);
     }
 
     // sh で裏に回し、出力は捨てる(launcher 自身が ~/Library/Logs/PhoneSaber に記録する)。

@@ -1,5 +1,7 @@
 # PhoneSaberSender evaluation tools
 
+These tools live in the single 3D-Saber repository under `PhoneSaber/`. Run the commands below from `PhoneSaber/` unless specified otherwise; the Unity project is its parent directory.
+
 These tools read saved lossless fixtures and Debug Recording metadata. They do
 not alter or re-run detection for session metadata.
 
@@ -168,7 +170,7 @@ ios/PhoneSaberSender/Tools/phone_saber_segments.py /path/to/bundle
 ios/PhoneSaberSender/Tools/phone_saber_segments.py /path/to/session_metadata.json --json
 ```
 
-Run the lossless fixture suite from the repository root:
+Run the lossless fixture suite from the `PhoneSaber/` directory:
 
 ```bash
 ios/PhoneSaberSender/Tools/run_lossless_regression.py
@@ -321,8 +323,8 @@ Japanese OK / WARN / NG line per item in a few seconds: the triage receiver
 port conflict), the `PhoneSaberP2PBridge` process, the latest `[PhoneSaber][P2P]
 last 10s ... maxGapMs...` stats, connection events and warnings since the last
 Play in `~/Library/Logs/Unity/Editor.log`, the newest inbox bundle with its
-`.report.md` and Codex analysis result, git state of school-festival and
-3D-Saber (no fetch, `GIT_OPTIONAL_LOCKS=0`), and the Codex CLI. It never starts,
+`.report.md` and Codex analysis result, git state of the single
+3D-Saber repository (no fetch, `GIT_OPTIONAL_LOCKS=0`), and the Codex CLI. It never starts,
 stops, sends or writes anything. Exit status: 2 with NG, 1 with WARN, else 0.
 `install_phone_saber_launcher.command` (also run by `setup_mac.command`) puts a
 `PhoneSaber Status.command` link on the Desktop next to `Start PhoneSaber`;
