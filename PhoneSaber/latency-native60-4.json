@@ -1,0 +1,1385 @@
+{
+  "measurement": "display submission to BGR frame returned to Python; includes display phase, exposure, transfer and retrieval, excludes tracking and preview presentation",
+  "warning": "Not isolated wireless latency. Preview rendering can affect subsequent scheduling, and local processing timing alone cannot establish overall improvement when camera acquisition, transfer, and optical latency may dominate. 60+ decoded IDs and >=85% requested FPS required. Compare multiple runs with fixed camera/light/effects. Lower resolution still needs red/blue detection validation.",
+  "results": [
+    {
+      "profile": "native 640x480 60 FPS",
+      "camera": {
+        "active_format": {
+          "fps_ranges": [
+            {
+              "max": 60,
+              "min": 1
+            }
+          ],
+          "height": 480,
+          "index": 1,
+          "subtype": 875704438,
+          "width": 640
+        },
+        "actual": {
+          "format_index": 1,
+          "height": 480,
+          "max_fps": 30,
+          "max_frame_duration": 0.03333333333333333,
+          "min_fps": 30,
+          "min_frame_duration": 0.03333333333333333,
+          "width": 640
+        },
+        "callback_output": {
+          "dimensions_source": "FrameMailbox CVPixelBuffer callback output; not wireless transport resolution",
+          "pixel_format": "BGRA",
+          "requested_height": 480,
+          "requested_width": 640
+        },
+        "frame_duration": 0.03333333333333333,
+        "id": "037FAC85-FE89-4A81-89BC-796000000001",
+        "late_frames_discarded": true,
+        "name": "‎テロやめなさいのカメラ",
+        "requested": {
+          "fps": 60,
+          "height": 480,
+          "width": 640
+        },
+        "selected": {
+          "format": {
+            "fps_ranges": [
+              {
+                "max": 60,
+                "min": 1
+              }
+            ],
+            "height": 480,
+            "index": 1,
+            "subtype": 875704438,
+            "width": 640
+          },
+          "format_index": 1
+        },
+        "selected_format_index": 1,
+        "transport_bitrate": "not exposed by Continuity Camera"
+      },
+      "frames_consumed": 358,
+      "requested": {
+        "width": 640,
+        "height": 480,
+        "fps": 60
+      },
+      "actual_sizes": [
+        [
+          640,
+          480
+        ]
+      ],
+      "input_fps": 24.011010217527563,
+      "measured": {
+        "frame_sizes": [
+          [
+            640,
+            480
+          ]
+        ],
+        "fps": 24.011010217527563,
+        "valid": false,
+        "warnings": [
+          "実測FPS 24.011 が要求値 60.000 の未達",
+          "60FPS要求なのに実測FPSが30未満: 24.011"
+        ]
+      },
+      "valid": false,
+      "consumer_fps": 23.877244143892312,
+      "frame_interval_p90_ms": 47.29878359939903,
+      "since_available_median_ms": 7.718916982412338,
+      "target_interval_p90_ms": 35.03625001758337,
+      "optical": {
+        "count": 213,
+        "valid": false,
+        "p10_ms": 125.54333300795406,
+        "median_ms": 139.57337499596179,
+        "p90_ms": 153.35535019403324,
+        "consumer_median_ms": 7.200082938652486,
+        "warning": "実測FPS 24.011 が要求値 60.000 の未達; 60FPS要求なのに実測FPSが30未満: 24.011"
+      },
+      "samples": [
+        {
+          "id": 9,
+          "display_to_available_ms": 148.31925003090873,
+          "display_to_consumer_ms": 152.6916250004433,
+          "available_to_consumer_ms": 4.372374969534576
+        },
+        {
+          "id": 11,
+          "display_to_available_ms": 124.60570805706084,
+          "display_to_consumer_ms": 133.88300000224262,
+          "available_to_consumer_ms": 9.277291945181787
+        },
+        {
+          "id": 12,
+          "display_to_available_ms": 134.76695795543492,
+          "display_to_consumer_ms": 148.3244999544695,
+          "available_to_consumer_ms": 13.557541999034584
+        },
+        {
+          "id": 15,
+          "display_to_available_ms": 142.60870800353587,
+          "display_to_consumer_ms": 162.90279099484906,
+          "available_to_consumer_ms": 20.29408299131319
+        },
+        {
+          "id": 16,
+          "display_to_available_ms": 142.66445802059025,
+          "display_to_consumer_ms": 148.00187502987683,
+          "available_to_consumer_ms": 5.3374170092865825
+        },
+        {
+          "id": 23,
+          "display_to_available_ms": 143.02762399893254,
+          "display_to_consumer_ms": 152.80954097397625,
+          "available_to_consumer_ms": 9.781916975043714
+        },
+        {
+          "id": 25,
+          "display_to_available_ms": 138.29454098595306,
+          "display_to_consumer_ms": 150.0974170048721,
+          "available_to_consumer_ms": 11.80287601891905
+        },
+        {
+          "id": 26,
+          "display_to_available_ms": 141.94279100047424,
+          "display_to_consumer_ms": 149.83816700987518,
+          "available_to_consumer_ms": 7.895376009400934
+        },
+        {
+          "id": 29,
+          "display_to_available_ms": 135.16400003572926,
+          "display_to_consumer_ms": 136.9041670113802,
+          "available_to_consumer_ms": 1.7401669756509364
+        },
+        {
+          "id": 31,
+          "display_to_available_ms": 127.94979097088799,
+          "display_to_consumer_ms": 141.19370799744502,
+          "available_to_consumer_ms": 13.243917026557028
+        },
+        {
+          "id": 32,
+          "display_to_available_ms": 136.1741250148043,
+          "display_to_consumer_ms": 142.99595798365772,
+          "available_to_consumer_ms": 6.821832968853414
+        },
+        {
+          "id": 35,
+          "display_to_available_ms": 133.34120804211125,
+          "display_to_consumer_ms": 137.56520801689476,
+          "available_to_consumer_ms": 4.22399997478351
+        },
+        {
+          "id": 41,
+          "display_to_available_ms": 139.73283302038908,
+          "display_to_consumer_ms": 154.6579580171965,
+          "available_to_consumer_ms": 14.925124996807426
+        },
+        {
+          "id": 44,
+          "display_to_available_ms": 134.3131239991635,
+          "display_to_consumer_ms": 140.46399999642745,
+          "available_to_consumer_ms": 6.150875997263938
+        },
+        {
+          "id": 46,
+          "display_to_available_ms": 123.75233299098909,
+          "display_to_consumer_ms": 125.8493330096826,
+          "available_to_consumer_ms": 2.0970000186935067
+        },
+        {
+          "id": 48,
+          "display_to_available_ms": 113.99708298267797,
+          "display_to_consumer_ms": 124.73154201870784,
+          "available_to_consumer_ms": 10.734459036029875
+        },
+        {
+          "id": 50,
+          "display_to_available_ms": 145.67324897507206,
+          "display_to_consumer_ms": 154.61066598072648,
+          "available_to_consumer_ms": 8.937417005654424
+        },
+        {
+          "id": 54,
+          "display_to_available_ms": 138.2300829864107,
+          "display_to_consumer_ms": 141.8181660119444,
+          "available_to_consumer_ms": 3.588083025533706
+        },
+        {
+          "id": 56,
+          "display_to_available_ms": 129.16862504789606,
+          "display_to_consumer_ms": 136.12045801710337,
+          "available_to_consumer_ms": 6.951832969207317
+        },
+        {
+          "id": 61,
+          "display_to_available_ms": 119.65945799602196,
+          "display_to_consumer_ms": 124.19745896477252,
+          "available_to_consumer_ms": 4.538000968750566
+        },
+        {
+          "id": 64,
+          "display_to_available_ms": 127.75508302729577,
+          "display_to_consumer_ms": 139.61475004907697,
+          "available_to_consumer_ms": 11.859667021781206
+        },
+        {
+          "id": 70,
+          "display_to_available_ms": 137.38741702400148,
+          "display_to_consumer_ms": 137.93458399595693,
+          "available_to_consumer_ms": 0.5471669719554484
+        },
+        {
+          "id": 72,
+          "display_to_available_ms": 129.74504102021456,
+          "display_to_consumer_ms": 140.0348330498673,
+          "available_to_consumer_ms": 10.289792029652745
+        },
+        {
+          "id": 73,
+          "display_to_available_ms": 137.15433300239965,
+          "display_to_consumer_ms": 143.69437500135973,
+          "available_to_consumer_ms": 6.540041998960078
+        },
+        {
+          "id": 76,
+          "display_to_available_ms": 129.71254100557417,
+          "display_to_consumer_ms": 131.06108299689367,
+          "available_to_consumer_ms": 1.3485419913195074
+        },
+        {
+          "id": 78,
+          "display_to_available_ms": 131.11991598270833,
+          "display_to_consumer_ms": 146.40737499576062,
+          "available_to_consumer_ms": 15.287459013052285
+        },
+        {
+          "id": 79,
+          "display_to_available_ms": 135.7647490222007,
+          "display_to_consumer_ms": 146.9698330038227,
+          "available_to_consumer_ms": 11.20508398162201
+        },
+        {
+          "id": 82,
+          "display_to_available_ms": 133.93400004133582,
+          "display_to_consumer_ms": 136.43191702431068,
+          "available_to_consumer_ms": 2.497916982974857
+        },
+        {
+          "id": 84,
+          "display_to_available_ms": 128.9617499569431,
+          "display_to_consumer_ms": 129.22395794885233,
+          "available_to_consumer_ms": 0.2622079919092357
+        },
+        {
+          "id": 90,
+          "display_to_available_ms": 115.12887402204797,
+          "display_to_consumer_ms": 125.26775000151247,
+          "available_to_consumer_ms": 10.138875979464501
+        },
+        {
+          "id": 93,
+          "display_to_available_ms": 128.67645802907646,
+          "display_to_consumer_ms": 135.79241698607802,
+          "available_to_consumer_ms": 7.115958957001567
+        },
+        {
+          "id": 96,
+          "display_to_available_ms": 131.58700003987178,
+          "display_to_consumer_ms": 138.35000002291054,
+          "available_to_consumer_ms": 6.762999983038753
+        },
+        {
+          "id": 98,
+          "display_to_available_ms": 149.37454101163894,
+          "display_to_consumer_ms": 160.50195804564282,
+          "available_to_consumer_ms": 11.127417034003884
+        },
+        {
+          "id": 100,
+          "display_to_available_ms": 143.1976659805514,
+          "display_to_consumer_ms": 156.1130409827456,
+          "available_to_consumer_ms": 12.915375002194196
+        },
+        {
+          "id": 102,
+          "display_to_available_ms": 130.41966600576416,
+          "display_to_consumer_ms": 141.1304579814896,
+          "available_to_consumer_ms": 10.710791975725442
+        },
+        {
+          "id": 104,
+          "display_to_available_ms": 126.58858305076137,
+          "display_to_consumer_ms": 134.61204199120402,
+          "available_to_consumer_ms": 8.023458940442652
+        },
+        {
+          "id": 105,
+          "display_to_available_ms": 133.4030830184929,
+          "display_to_consumer_ms": 138.6908749700524,
+          "available_to_consumer_ms": 5.287791951559484
+        },
+        {
+          "id": 107,
+          "display_to_available_ms": 125.62470801640302,
+          "display_to_consumer_ms": 136.6360830143094,
+          "available_to_consumer_ms": 11.011374997906387
+        },
+        {
+          "id": 108,
+          "display_to_available_ms": 138.87129101203755,
+          "display_to_consumer_ms": 149.79908301029354,
+          "available_to_consumer_ms": 10.927791998255998
+        },
+        {
+          "id": 112,
+          "display_to_available_ms": 120.62504200730473,
+          "display_to_consumer_ms": 134.5962089835666,
+          "available_to_consumer_ms": 13.971166976261884
+        },
+        {
+          "id": 115,
+          "display_to_available_ms": 135.01670805271715,
+          "display_to_consumer_ms": 137.50795798841864,
+          "available_to_consumer_ms": 2.4912499357014894
+        },
+        {
+          "id": 118,
+          "display_to_available_ms": 128.99337499402463,
+          "display_to_consumer_ms": 140.89083397993818,
+          "available_to_consumer_ms": 11.897458985913545
+        },
+        {
+          "id": 119,
+          "display_to_available_ms": 138.75620800536126,
+          "display_to_consumer_ms": 139.5524999825284,
+          "available_to_consumer_ms": 0.7962919771671295
+        },
+        {
+          "id": 124,
+          "display_to_available_ms": 139.51162504963577,
+          "display_to_consumer_ms": 152.2475000238046,
+          "available_to_consumer_ms": 12.735874974168837
+        },
+        {
+          "id": 127,
+          "display_to_available_ms": 150.62366699567065,
+          "display_to_consumer_ms": 161.99395898729563,
+          "available_to_consumer_ms": 11.370291991624981
+        },
+        {
+          "id": 131,
+          "display_to_available_ms": 136.38079102383927,
+          "display_to_consumer_ms": 149.02404102031142,
+          "available_to_consumer_ms": 12.64324999647215
+        },
+        {
+          "id": 134,
+          "display_to_available_ms": 134.78291599312797,
+          "display_to_consumer_ms": 136.03829097701237,
+          "available_to_consumer_ms": 1.2553749838843942
+        },
+        {
+          "id": 135,
+          "display_to_available_ms": 143.24554201448336,
+          "display_to_consumer_ms": 157.2602500091307,
+          "available_to_consumer_ms": 14.014707994647324
+        },
+        {
+          "id": 137,
+          "display_to_available_ms": 130.87908300803974,
+          "display_to_consumer_ms": 144.2694580182433,
+          "available_to_consumer_ms": 13.39037501020357
+        },
+        {
+          "id": 138,
+          "display_to_available_ms": 130.58020797325298,
+          "display_to_consumer_ms": 144.29333299631253,
+          "available_to_consumer_ms": 13.713125023059547
+        },
+        {
+          "id": 142,
+          "display_to_available_ms": 128.55012400541455,
+          "display_to_consumer_ms": 140.65162499900907,
+          "available_to_consumer_ms": 12.101500993594527
+        },
+        {
+          "id": 143,
+          "display_to_available_ms": 129.30016603786498,
+          "display_to_consumer_ms": 140.64737502485514,
+          "available_to_consumer_ms": 11.347208986990154
+        },
+        {
+          "id": 146,
+          "display_to_available_ms": 146.63058298174292,
+          "display_to_consumer_ms": 153.55399996042252,
+          "available_to_consumer_ms": 6.923416978679597
+        },
+        {
+          "id": 148,
+          "display_to_available_ms": 137.200707977172,
+          "display_to_consumer_ms": 140.06733300630003,
+          "available_to_consumer_ms": 2.866625029128045
+        },
+        {
+          "id": 150,
+          "display_to_available_ms": 125.9889579960145,
+          "display_to_consumer_ms": 141.99945802101865,
+          "available_to_consumer_ms": 16.01050002500415
+        },
+        {
+          "id": 153,
+          "display_to_available_ms": 131.76012499025092,
+          "display_to_consumer_ms": 140.76279196888208,
+          "available_to_consumer_ms": 9.002666978631169
+        },
+        {
+          "id": 155,
+          "display_to_available_ms": 126.9232080085203,
+          "display_to_consumer_ms": 137.50787504250184,
+          "available_to_consumer_ms": 10.584667033981532
+        },
+        {
+          "id": 157,
+          "display_to_available_ms": 127.65283300541341,
+          "display_to_consumer_ms": 134.40770900342613,
+          "available_to_consumer_ms": 6.7548759980127215
+        },
+        {
+          "id": 159,
+          "display_to_available_ms": 124.77200001012534,
+          "display_to_consumer_ms": 140.91229200130329,
+          "available_to_consumer_ms": 16.140291991177946
+        },
+        {
+          "id": 160,
+          "display_to_available_ms": 142.58945803157985,
+          "display_to_consumer_ms": 156.3065830268897,
+          "available_to_consumer_ms": 13.71712499530986
+        },
+        {
+          "id": 162,
+          "display_to_available_ms": 137.96816702233627,
+          "display_to_consumer_ms": 144.37483402434736,
+          "available_to_consumer_ms": 6.4066670020110905
+        },
+        {
+          "id": 164,
+          "display_to_available_ms": 124.71395800821483,
+          "display_to_consumer_ms": 130.15212496975437,
+          "available_to_consumer_ms": 5.438166961539537
+        },
+        {
+          "id": 166,
+          "display_to_available_ms": 128.25149996206164,
+          "display_to_consumer_ms": 142.4545839545317,
+          "available_to_consumer_ms": 14.203083992470056
+        },
+        {
+          "id": 167,
+          "display_to_available_ms": 142.54925004206598,
+          "display_to_consumer_ms": 146.04545902693644,
+          "available_to_consumer_ms": 3.4962089848704636
+        },
+        {
+          "id": 169,
+          "display_to_available_ms": 137.67045800341293,
+          "display_to_consumer_ms": 141.6823749896139,
+          "available_to_consumer_ms": 4.0119169862009585
+        },
+        {
+          "id": 174,
+          "display_to_available_ms": 139.84766701469198,
+          "display_to_consumer_ms": 153.2043750048615,
+          "available_to_consumer_ms": 13.356707990169525
+        },
+        {
+          "id": 175,
+          "display_to_available_ms": 134.10124997608364,
+          "display_to_consumer_ms": 138.20691697765142,
+          "available_to_consumer_ms": 4.105667001567781
+        },
+        {
+          "id": 179,
+          "display_to_available_ms": 116.90904101124033,
+          "display_to_consumer_ms": 123.99083300260827,
+          "available_to_consumer_ms": 7.081791991367936
+        },
+        {
+          "id": 180,
+          "display_to_available_ms": 122.88820801768452,
+          "display_to_consumer_ms": 135.72629203554243,
+          "available_to_consumer_ms": 12.83808401785791
+        },
+        {
+          "id": 182,
+          "display_to_available_ms": 116.32566701155156,
+          "display_to_consumer_ms": 122.43841699091718,
+          "available_to_consumer_ms": 6.112749979365617
+        },
+        {
+          "id": 183,
+          "display_to_available_ms": 132.58991605835035,
+          "display_to_consumer_ms": 136.75791601417586,
+          "available_to_consumer_ms": 4.167999955825508
+        },
+        {
+          "id": 186,
+          "display_to_available_ms": 139.8432080168277,
+          "display_to_consumer_ms": 140.577582991682,
+          "available_to_consumer_ms": 0.7343749748542905
+        },
+        {
+          "id": 190,
+          "display_to_available_ms": 118.94387396750972,
+          "display_to_consumer_ms": 129.43733297288418,
+          "available_to_consumer_ms": 10.493459005374461
+        },
+        {
+          "id": 193,
+          "display_to_available_ms": 123.19754104828462,
+          "display_to_consumer_ms": 129.49566601309925,
+          "available_to_consumer_ms": 6.298124964814633
+        },
+        {
+          "id": 194,
+          "display_to_available_ms": 127.66275001922622,
+          "display_to_consumer_ms": 136.37462502811104,
+          "available_to_consumer_ms": 8.711875008884817
+        },
+        {
+          "id": 196,
+          "display_to_available_ms": 117.73512500803918,
+          "display_to_consumer_ms": 118.51879197638482,
+          "available_to_consumer_ms": 0.7836669683456421
+        },
+        {
+          "id": 208,
+          "display_to_available_ms": 132.90349999442697,
+          "display_to_consumer_ms": 144.14641697658226,
+          "available_to_consumer_ms": 11.242916982155293
+        },
+        {
+          "id": 211,
+          "display_to_available_ms": 124.4137910543941,
+          "display_to_consumer_ms": 137.87400000728667,
+          "available_to_consumer_ms": 13.460208952892572
+        },
+        {
+          "id": 214,
+          "display_to_available_ms": 131.66474999161437,
+          "display_to_consumer_ms": 137.44966697413474,
+          "available_to_consumer_ms": 5.784916982520372
+        },
+        {
+          "id": 217,
+          "display_to_available_ms": 134.38300002599135,
+          "display_to_consumer_ms": 140.96045901533216,
+          "available_to_consumer_ms": 6.577458989340812
+        },
+        {
+          "id": 218,
+          "display_to_available_ms": 138.9785420615226,
+          "display_to_consumer_ms": 139.62458400055766,
+          "available_to_consumer_ms": 0.646041939035058
+        },
+        {
+          "id": 220,
+          "display_to_available_ms": 123.18987504113466,
+          "display_to_consumer_ms": 124.21720899874344,
+          "available_to_consumer_ms": 1.0273339576087892
+        },
+        {
+          "id": 223,
+          "display_to_available_ms": 135.8438750030473,
+          "display_to_consumer_ms": 138.11025000177324,
+          "available_to_consumer_ms": 2.2663749987259507
+        },
+        {
+          "id": 227,
+          "display_to_available_ms": 123.14262398285791,
+          "display_to_consumer_ms": 125.46683300752193,
+          "available_to_consumer_ms": 2.3242090246640146
+        },
+        {
+          "id": 229,
+          "display_to_available_ms": 138.54487502248958,
+          "display_to_consumer_ms": 143.67100002709776,
+          "available_to_consumer_ms": 5.126125004608184
+        },
+        {
+          "id": 231,
+          "display_to_available_ms": 133.09012504760176,
+          "display_to_consumer_ms": 137.20329198986292,
+          "available_to_consumer_ms": 4.113166942261159
+        },
+        {
+          "id": 239,
+          "display_to_available_ms": 139.6995410323143,
+          "display_to_consumer_ms": 155.2457080106251,
+          "available_to_consumer_ms": 15.546166978310794
+        },
+        {
+          "id": 244,
+          "display_to_available_ms": 121.10395799390972,
+          "display_to_consumer_ms": 122.52879195148125,
+          "available_to_consumer_ms": 1.4248339575715363
+        },
+        {
+          "id": 249,
+          "display_to_available_ms": 129.69787401380017,
+          "display_to_consumer_ms": 133.5592910181731,
+          "available_to_consumer_ms": 3.8614170043729246
+        },
+        {
+          "id": 251,
+          "display_to_available_ms": 125.32858300255612,
+          "display_to_consumer_ms": 132.4427499785088,
+          "available_to_consumer_ms": 7.114166975952685
+        },
+        {
+          "id": 252,
+          "display_to_available_ms": 132.61666597099975,
+          "display_to_consumer_ms": 145.9212499903515,
+          "available_to_consumer_ms": 13.30458401935175
+        },
+        {
+          "id": 255,
+          "display_to_available_ms": 142.2600829973817,
+          "display_to_consumer_ms": 153.41587498551235,
+          "available_to_consumer_ms": 11.155791988130659
+        },
+        {
+          "id": 257,
+          "display_to_available_ms": 133.39470804203302,
+          "display_to_consumer_ms": 140.64612501533702,
+          "available_to_consumer_ms": 7.2514169733040035
+        },
+        {
+          "id": 262,
+          "display_to_available_ms": 137.9911660333164,
+          "display_to_consumer_ms": 153.33708300022408,
+          "available_to_consumer_ms": 15.34591696690768
+        },
+        {
+          "id": 265,
+          "display_to_available_ms": 142.6344170467928,
+          "display_to_consumer_ms": 155.89100000215694,
+          "available_to_consumer_ms": 13.256582955364138
+        },
+        {
+          "id": 267,
+          "display_to_available_ms": 118.1307079968974,
+          "display_to_consumer_ms": 128.75554099446163,
+          "available_to_consumer_ms": 10.624832997564226
+        },
+        {
+          "id": 268,
+          "display_to_available_ms": 127.05745798302814,
+          "display_to_consumer_ms": 129.5967500191182,
+          "available_to_consumer_ms": 2.539292036090046
+        },
+        {
+          "id": 270,
+          "display_to_available_ms": 126.20904197683558,
+          "display_to_consumer_ms": 137.51949998550117,
+          "available_to_consumer_ms": 11.310458008665591
+        },
+        {
+          "id": 271,
+          "display_to_available_ms": 140.8398330095224,
+          "display_to_consumer_ms": 152.89458294864744,
+          "available_to_consumer_ms": 12.054749939125031
+        },
+        {
+          "id": 274,
+          "display_to_available_ms": 143.1923329946585,
+          "display_to_consumer_ms": 149.91224999539554,
+          "available_to_consumer_ms": 6.719917000737041
+        },
+        {
+          "id": 278,
+          "display_to_available_ms": 133.2585000200197,
+          "display_to_consumer_ms": 139.56779200816527,
+          "available_to_consumer_ms": 6.30929198814556
+        },
+        {
+          "id": 279,
+          "display_to_available_ms": 135.90887503232807,
+          "display_to_consumer_ms": 138.42600001953542,
+          "available_to_consumer_ms": 2.517124987207353
+        },
+        {
+          "id": 280,
+          "display_to_available_ms": 148.46870803739876,
+          "display_to_consumer_ms": 153.03083299659193,
+          "available_to_consumer_ms": 4.56212495919317
+        },
+        {
+          "id": 283,
+          "display_to_available_ms": 136.96199900005013,
+          "display_to_consumer_ms": 138.24183301767334,
+          "available_to_consumer_ms": 1.279834017623216
+        },
+        {
+          "id": 286,
+          "display_to_available_ms": 146.30775002297014,
+          "display_to_consumer_ms": 157.87004196317866,
+          "available_to_consumer_ms": 11.562291940208524
+        },
+        {
+          "id": 289,
+          "display_to_available_ms": 133.4067500429228,
+          "display_to_consumer_ms": 140.60683298157528,
+          "available_to_consumer_ms": 7.200082938652486
+        },
+        {
+          "id": 290,
+          "display_to_available_ms": 132.13812501635402,
+          "display_to_consumer_ms": 137.15645798947662,
+          "available_to_consumer_ms": 5.018332973122597
+        },
+        {
+          "id": 292,
+          "display_to_available_ms": 121.46829103585333,
+          "display_to_consumer_ms": 125.28162501985207,
+          "available_to_consumer_ms": 3.8133339839987457
+        },
+        {
+          "id": 295,
+          "display_to_available_ms": 139.625417010393,
+          "display_to_consumer_ms": 140.53462498122826,
+          "available_to_consumer_ms": 0.9092079708352685
+        },
+        {
+          "id": 298,
+          "display_to_available_ms": 141.33916597347707,
+          "display_to_consumer_ms": 150.47991595929489,
+          "available_to_consumer_ms": 9.14074998581782
+        },
+        {
+          "id": 301,
+          "display_to_available_ms": 148.19683297537267,
+          "display_to_consumer_ms": 157.0559999672696,
+          "available_to_consumer_ms": 8.859166991896927
+        },
+        {
+          "id": 303,
+          "display_to_available_ms": 143.8012080034241,
+          "display_to_consumer_ms": 156.0244580032304,
+          "available_to_consumer_ms": 12.223249999806285
+        },
+        {
+          "id": 305,
+          "display_to_available_ms": 116.40345805790275,
+          "display_to_consumer_ms": 124.76925004739314,
+          "available_to_consumer_ms": 8.36579198949039
+        },
+        {
+          "id": 308,
+          "display_to_available_ms": 131.87512499280274,
+          "display_to_consumer_ms": 134.48395900195464,
+          "available_to_consumer_ms": 2.6088340091519058
+        },
+        {
+          "id": 315,
+          "display_to_available_ms": 113.57624898664653,
+          "display_to_consumer_ms": 122.92941601481289,
+          "available_to_consumer_ms": 9.353167028166354
+        },
+        {
+          "id": 316,
+          "display_to_available_ms": 135.88750001508743,
+          "display_to_consumer_ms": 138.12587497523054,
+          "available_to_consumer_ms": 2.238374960143119
+        },
+        {
+          "id": 318,
+          "display_to_available_ms": 130.82974997814745,
+          "display_to_consumer_ms": 136.99533295584843,
+          "available_to_consumer_ms": 6.1655829777009785
+        },
+        {
+          "id": 319,
+          "display_to_available_ms": 137.3117909533903,
+          "display_to_consumer_ms": 139.09499999135733,
+          "available_to_consumer_ms": 1.7832090379670262
+        },
+        {
+          "id": 321,
+          "display_to_available_ms": 123.37183300405741,
+          "display_to_consumer_ms": 123.93570801941678,
+          "available_to_consumer_ms": 0.5638750153593719
+        },
+        {
+          "id": 324,
+          "display_to_available_ms": 135.55908302078024,
+          "display_to_consumer_ms": 139.42537497496232,
+          "available_to_consumer_ms": 3.8662919541820884
+        },
+        {
+          "id": 328,
+          "display_to_available_ms": 122.94583301991224,
+          "display_to_consumer_ms": 124.11370896734297,
+          "available_to_consumer_ms": 1.1678759474307299
+        },
+        {
+          "id": 330,
+          "display_to_available_ms": 145.56537399766967,
+          "display_to_consumer_ms": 150.43462498579174,
+          "available_to_consumer_ms": 4.869250988122076
+        },
+        {
+          "id": 333,
+          "display_to_available_ms": 149.14279099320993,
+          "display_to_consumer_ms": 160.61216598609462,
+          "available_to_consumer_ms": 11.469374992884696
+        },
+        {
+          "id": 337,
+          "display_to_available_ms": 126.97062501683831,
+          "display_to_consumer_ms": 138.50420800736174,
+          "available_to_consumer_ms": 11.533582990523428
+        },
+        {
+          "id": 339,
+          "display_to_available_ms": 124.30241599213332,
+          "display_to_consumer_ms": 133.35379195632413,
+          "available_to_consumer_ms": 9.051375964190811
+        },
+        {
+          "id": 340,
+          "display_to_available_ms": 138.65058298688382,
+          "display_to_consumer_ms": 149.70491698477417,
+          "available_to_consumer_ms": 11.054333997890353
+        },
+        {
+          "id": 343,
+          "display_to_available_ms": 139.49216599576175,
+          "display_to_consumer_ms": 150.07612499175593,
+          "available_to_consumer_ms": 10.58395899599418
+        },
+        {
+          "id": 346,
+          "display_to_available_ms": 132.95841705985367,
+          "display_to_consumer_ms": 138.19841702934355,
+          "available_to_consumer_ms": 5.2399999694898725
+        },
+        {
+          "id": 349,
+          "display_to_available_ms": 135.66258299397305,
+          "display_to_consumer_ms": 141.2938330322504,
+          "available_to_consumer_ms": 5.631250038277358
+        },
+        {
+          "id": 350,
+          "display_to_available_ms": 140.02129202708602,
+          "display_to_consumer_ms": 152.28849998675287,
+          "available_to_consumer_ms": 12.267207959666848
+        },
+        {
+          "id": 351,
+          "display_to_available_ms": 139.35079099610448,
+          "display_to_consumer_ms": 153.35991699248552,
+          "available_to_consumer_ms": 14.009125996381044
+        },
+        {
+          "id": 353,
+          "display_to_available_ms": 129.63075004518032,
+          "display_to_consumer_ms": 138.41266703093424,
+          "available_to_consumer_ms": 8.781916985753924
+        },
+        {
+          "id": 354,
+          "display_to_available_ms": 137.8483329899609,
+          "display_to_consumer_ms": 140.8969999756664,
+          "available_to_consumer_ms": 3.048666985705495
+        },
+        {
+          "id": 356,
+          "display_to_available_ms": 133.95404198672622,
+          "display_to_consumer_ms": 138.65049998275936,
+          "available_to_consumer_ms": 4.696457996033132
+        },
+        {
+          "id": 358,
+          "display_to_available_ms": 117.51737503800541,
+          "display_to_consumer_ms": 123.00970801152289,
+          "available_to_consumer_ms": 5.4923329735174775
+        },
+        {
+          "id": 362,
+          "display_to_available_ms": 136.03037502616644,
+          "display_to_consumer_ms": 143.054416985251,
+          "available_to_consumer_ms": 7.02404195908457
+        },
+        {
+          "id": 364,
+          "display_to_available_ms": 128.43833299120888,
+          "display_to_consumer_ms": 142.30291702551767,
+          "available_to_consumer_ms": 13.864584034308791
+        },
+        {
+          "id": 367,
+          "display_to_available_ms": 132.62274902081117,
+          "display_to_consumer_ms": 139.33870801702142,
+          "available_to_consumer_ms": 6.715958996210247
+        },
+        {
+          "id": 369,
+          "display_to_available_ms": 124.87458297982812,
+          "display_to_consumer_ms": 126.34174997219816,
+          "available_to_consumer_ms": 1.4671669923700392
+        },
+        {
+          "id": 370,
+          "display_to_available_ms": 132.75824999436736,
+          "display_to_consumer_ms": 140.11879201279953,
+          "available_to_consumer_ms": 7.36054201843217
+        },
+        {
+          "id": 371,
+          "display_to_available_ms": 138.76125001115724,
+          "display_to_consumer_ms": 152.82845799811184,
+          "available_to_consumer_ms": 14.0672079869546
+        },
+        {
+          "id": 373,
+          "display_to_available_ms": 122.88074899697676,
+          "display_to_consumer_ms": 137.37933296943083,
+          "available_to_consumer_ms": 14.498583972454071
+        },
+        {
+          "id": 376,
+          "display_to_available_ms": 139.70370800234377,
+          "display_to_consumer_ms": 142.87500001955777,
+          "available_to_consumer_ms": 3.1712920172140002
+        },
+        {
+          "id": 378,
+          "display_to_available_ms": 132.20691605238244,
+          "display_to_consumer_ms": 138.21141701191664,
+          "available_to_consumer_ms": 6.004500959534198
+        },
+        {
+          "id": 379,
+          "display_to_available_ms": 133.03662405814976,
+          "display_to_consumer_ms": 139.27583303302526,
+          "available_to_consumer_ms": 6.23920897487551
+        },
+        {
+          "id": 382,
+          "display_to_available_ms": 139.8067909758538,
+          "display_to_consumer_ms": 149.90358299110085,
+          "available_to_consumer_ms": 10.096792015247047
+        },
+        {
+          "id": 385,
+          "display_to_available_ms": 140.564916015137,
+          "display_to_consumer_ms": 141.92433300195262,
+          "available_to_consumer_ms": 1.3594169868156314
+        },
+        {
+          "id": 387,
+          "display_to_available_ms": 139.73874901421368,
+          "display_to_consumer_ms": 153.61520799342543,
+          "available_to_consumer_ms": 13.876458979211748
+        },
+        {
+          "id": 389,
+          "display_to_available_ms": 120.67262397613376,
+          "display_to_consumer_ms": 122.01091600582004,
+          "available_to_consumer_ms": 1.3382920296862721
+        },
+        {
+          "id": 398,
+          "display_to_available_ms": 128.71658301446587,
+          "display_to_consumer_ms": 135.66120801260695,
+          "available_to_consumer_ms": 6.94462499814108
+        },
+        {
+          "id": 400,
+          "display_to_available_ms": 148.88729102676734,
+          "display_to_consumer_ms": 150.73504101019353,
+          "available_to_consumer_ms": 1.8477499834261835
+        },
+        {
+          "id": 403,
+          "display_to_available_ms": 143.10112403472885,
+          "display_to_consumer_ms": 143.96366599248722,
+          "available_to_consumer_ms": 0.8625419577583671
+        },
+        {
+          "id": 405,
+          "display_to_available_ms": 135.6593330274336,
+          "display_to_consumer_ms": 140.09812503354624,
+          "available_to_consumer_ms": 4.438792006112635
+        },
+        {
+          "id": 407,
+          "display_to_available_ms": 128.96574899787083,
+          "display_to_consumer_ms": 139.82141599990427,
+          "available_to_consumer_ms": 10.855667002033442
+        },
+        {
+          "id": 411,
+          "display_to_available_ms": 118.73529199510813,
+          "display_to_consumer_ms": 123.41637496137992,
+          "available_to_consumer_ms": 4.681082966271788
+        },
+        {
+          "id": 414,
+          "display_to_available_ms": 134.8470410448499,
+          "display_to_consumer_ms": 146.30270801717415,
+          "available_to_consumer_ms": 11.455666972324252
+        },
+        {
+          "id": 419,
+          "display_to_available_ms": 123.85533301858231,
+          "display_to_consumer_ms": 128.96666704909876,
+          "available_to_consumer_ms": 5.111334030516446
+        },
+        {
+          "id": 420,
+          "display_to_available_ms": 134.56124998629093,
+          "display_to_consumer_ms": 146.23895898694173,
+          "available_to_consumer_ms": 11.677709000650793
+        },
+        {
+          "id": 426,
+          "display_to_available_ms": 121.1829159874469,
+          "display_to_consumer_ms": 128.51541698910296,
+          "available_to_consumer_ms": 7.3325010016560555
+        },
+        {
+          "id": 427,
+          "display_to_available_ms": 135.4358330136165,
+          "display_to_consumer_ms": 139.2112079774961,
+          "available_to_consumer_ms": 3.7753749638795853
+        },
+        {
+          "id": 430,
+          "display_to_available_ms": 131.65679102530703,
+          "display_to_consumer_ms": 137.57712504593655,
+          "available_to_consumer_ms": 5.920334020629525
+        },
+        {
+          "id": 433,
+          "display_to_available_ms": 134.57570801256225,
+          "display_to_consumer_ms": 142.21066696336493,
+          "available_to_consumer_ms": 7.634958950802684
+        },
+        {
+          "id": 434,
+          "display_to_available_ms": 136.06945797801018,
+          "display_to_consumer_ms": 139.88783402601257,
+          "available_to_consumer_ms": 3.818376048002392
+        },
+        {
+          "id": 436,
+          "display_to_available_ms": 119.54066599719226,
+          "display_to_consumer_ms": 126.185292028822,
+          "available_to_consumer_ms": 6.644626031629741
+        },
+        {
+          "id": 439,
+          "display_to_available_ms": 137.2277910122648,
+          "display_to_consumer_ms": 140.04520804155618,
+          "available_to_consumer_ms": 2.8174170292913914
+        },
+        {
+          "id": 442,
+          "display_to_available_ms": 140.28770802542567,
+          "display_to_consumer_ms": 144.36224999371916,
+          "available_to_consumer_ms": 4.074541968293488
+        },
+        {
+          "id": 444,
+          "display_to_available_ms": 132.59100000141189,
+          "display_to_consumer_ms": 140.69700002437457,
+          "available_to_consumer_ms": 8.10600002296269
+        },
+        {
+          "id": 446,
+          "display_to_available_ms": 124.86783298663795,
+          "display_to_consumer_ms": 138.86433298466727,
+          "available_to_consumer_ms": 13.996499998029321
+        },
+        {
+          "id": 450,
+          "display_to_available_ms": 122.14699998730794,
+          "display_to_consumer_ms": 124.60379197727889,
+          "available_to_consumer_ms": 2.4567919899709523
+        },
+        {
+          "id": 453,
+          "display_to_available_ms": 127.91070796083659,
+          "display_to_consumer_ms": 133.99045896949247,
+          "available_to_consumer_ms": 6.079751008655876
+        },
+        {
+          "id": 454,
+          "display_to_available_ms": 132.24220799747854,
+          "display_to_consumer_ms": 143.08620803058147,
+          "available_to_consumer_ms": 10.84400003310293
+        },
+        {
+          "id": 456,
+          "display_to_available_ms": 123.51537501672283,
+          "display_to_consumer_ms": 124.05400001443923,
+          "available_to_consumer_ms": 0.538624997716397
+        },
+        {
+          "id": 460,
+          "display_to_available_ms": 113.4359990246594,
+          "display_to_consumer_ms": 121.99966597836465,
+          "available_to_consumer_ms": 8.563666953705251
+        },
+        {
+          "id": 462,
+          "display_to_available_ms": 146.9831239664927,
+          "display_to_consumer_ms": 155.76095797587186,
+          "available_to_consumer_ms": 8.777834009379148
+        },
+        {
+          "id": 466,
+          "display_to_available_ms": 129.7552500036545,
+          "display_to_consumer_ms": 138.03758303401992,
+          "available_to_consumer_ms": 8.282333030365407
+        },
+        {
+          "id": 472,
+          "display_to_available_ms": 132.6834579813294,
+          "display_to_consumer_ms": 139.01937496848404,
+          "available_to_consumer_ms": 6.335916987154633
+        },
+        {
+          "id": 475,
+          "display_to_available_ms": 133.8956659892574,
+          "display_to_consumer_ms": 136.95104100042954,
+          "available_to_consumer_ms": 3.0553750111721456
+        },
+        {
+          "id": 479,
+          "display_to_available_ms": 113.59254101989791,
+          "display_to_consumer_ms": 126.54812500113621,
+          "available_to_consumer_ms": 12.955583981238306
+        },
+        {
+          "id": 482,
+          "display_to_available_ms": 129.35595802264288,
+          "display_to_consumer_ms": 137.4680000008084,
+          "available_to_consumer_ms": 8.112041978165507
+        },
+        {
+          "id": 485,
+          "display_to_available_ms": 133.71312397066504,
+          "display_to_consumer_ms": 138.54329095920548,
+          "available_to_consumer_ms": 4.830166988540441
+        },
+        {
+          "id": 488,
+          "display_to_available_ms": 136.78641599835828,
+          "display_to_consumer_ms": 146.4213749859482,
+          "available_to_consumer_ms": 9.634958987589926
+        },
+        {
+          "id": 491,
+          "display_to_available_ms": 135.22504206048325,
+          "display_to_consumer_ms": 146.00287500070408,
+          "available_to_consumer_ms": 10.777832940220833
+        },
+        {
+          "id": 493,
+          "display_to_available_ms": 137.19404203584418,
+          "display_to_consumer_ms": 139.54337500035763,
+          "available_to_consumer_ms": 2.349332964513451
+        },
+        {
+          "id": 495,
+          "display_to_available_ms": 116.83304200414568,
+          "display_to_consumer_ms": 126.66599999647588,
+          "available_to_consumer_ms": 9.832957992330194
+        },
+        {
+          "id": 498,
+          "display_to_available_ms": 133.86783300666139,
+          "display_to_consumer_ms": 139.97579202987254,
+          "available_to_consumer_ms": 6.107959023211151
+        },
+        {
+          "id": 501,
+          "display_to_available_ms": 149.0148330340162,
+          "display_to_consumer_ms": 161.7604999919422,
+          "available_to_consumer_ms": 12.745666957926005
+        },
+        {
+          "id": 504,
+          "display_to_available_ms": 135.54891699459404,
+          "display_to_consumer_ms": 137.518833973445,
+          "available_to_consumer_ms": 1.9699169788509607
+        },
+        {
+          "id": 506,
+          "display_to_available_ms": 134.06366598792374,
+          "display_to_consumer_ms": 149.65450001182035,
+          "available_to_consumer_ms": 15.590834023896605
+        },
+        {
+          "id": 508,
+          "display_to_available_ms": 128.15795798087493,
+          "display_to_consumer_ms": 136.4285000017844,
+          "available_to_consumer_ms": 8.270542020909488
+        },
+        {
+          "id": 511,
+          "display_to_available_ms": 123.99166700197384,
+          "display_to_consumer_ms": 124.72550000529736,
+          "available_to_consumer_ms": 0.7338330033235252
+        },
+        {
+          "id": 513,
+          "display_to_available_ms": 127.46570800663903,
+          "display_to_consumer_ms": 133.80641699768603,
+          "available_to_consumer_ms": 6.340708991046995
+        },
+        {
+          "id": 514,
+          "display_to_available_ms": 137.2368329903111,
+          "display_to_consumer_ms": 145.06616699509323,
+          "available_to_consumer_ms": 7.82933400478214
+        },
+        {
+          "id": 518,
+          "display_to_available_ms": 123.41125000966713,
+          "display_to_consumer_ms": 133.83083400549367,
+          "available_to_consumer_ms": 10.419583995826542
+        },
+        {
+          "id": 521,
+          "display_to_available_ms": 136.06004102621228,
+          "display_to_consumer_ms": 149.019833013881,
+          "available_to_consumer_ms": 12.959791987668723
+        },
+        {
+          "id": 523,
+          "display_to_available_ms": 130.59862499358132,
+          "display_to_consumer_ms": 134.520584018901,
+          "available_to_consumer_ms": 3.9219590253196657
+        },
+        {
+          "id": 524,
+          "display_to_available_ms": 155.3870000061579,
+          "display_to_consumer_ms": 169.59166701417416,
+          "available_to_consumer_ms": 14.204667008016258
+        },
+        {
+          "id": 527,
+          "display_to_available_ms": 137.067332980223,
+          "display_to_consumer_ms": 139.57337499596179,
+          "available_to_consumer_ms": 2.5060420157387853
+        },
+        {
+          "id": 530,
+          "display_to_available_ms": 132.96054204693064,
+          "display_to_consumer_ms": 142.37387501634657,
+          "available_to_consumer_ms": 9.413332969415933
+        },
+        {
+          "id": 534,
+          "display_to_available_ms": 114.11229096120223,
+          "display_to_consumer_ms": 126.93133298307657,
+          "available_to_consumer_ms": 12.819042021874338
+        },
+        {
+          "id": 536,
+          "display_to_available_ms": 145.02525003626943,
+          "display_to_consumer_ms": 154.20462499605492,
+          "available_to_consumer_ms": 9.179374959785491
+        },
+        {
+          "id": 538,
+          "display_to_available_ms": 138.18508299300447,
+          "display_to_consumer_ms": 146.92504197591916,
+          "available_to_consumer_ms": 8.739958982914686
+        },
+        {
+          "id": 539,
+          "display_to_available_ms": 137.93804100714624,
+          "display_to_consumer_ms": 151.3454999658279,
+          "available_to_consumer_ms": 13.407458958681673
+        },
+        {
+          "id": 541,
+          "display_to_available_ms": 127.35820800298825,
+          "display_to_consumer_ms": 136.69704197673127,
+          "available_to_consumer_ms": 9.338833973743021
+        },
+        {
+          "id": 542,
+          "display_to_available_ms": 138.91137402970344,
+          "display_to_consumer_ms": 139.88824997795746,
+          "available_to_consumer_ms": 0.976875948254019
+        },
+        {
+          "id": 544,
+          "display_to_available_ms": 135.15179097885266,
+          "display_to_consumer_ms": 145.98379097878933,
+          "available_to_consumer_ms": 10.83199999993667
+        },
+        {
+          "id": 546,
+          "display_to_available_ms": 119.33537403820083,
+          "display_to_consumer_ms": 127.88483302574605,
+          "available_to_consumer_ms": 8.549458987545222
+        },
+        {
+          "id": 549,
+          "display_to_available_ms": 127.51045799814165,
+          "display_to_consumer_ms": 132.1197499637492,
+          "available_to_consumer_ms": 4.609291965607554
+        },
+        {
+          "id": 551,
+          "display_to_available_ms": 133.29320802586153,
+          "display_to_consumer_ms": 138.91070801764727,
+          "available_to_consumer_ms": 5.617499991785735
+        },
+        {
+          "id": 553,
+          "display_to_available_ms": 121.07141601154581,
+          "display_to_consumer_ms": 121.66687496937811,
+          "available_to_consumer_ms": 0.5954589578323066
+        },
+        {
+          "id": 556,
+          "display_to_available_ms": 121.9178750179708,
+          "display_to_consumer_ms": 129.94220899417996,
+          "available_to_consumer_ms": 8.024333976209164
+        },
+        {
+          "id": 559,
+          "display_to_available_ms": 131.73470803303644,
+          "display_to_consumer_ms": 132.23383302101865,
+          "available_to_consumer_ms": 0.4991249879822135
+        },
+        {
+          "id": 561,
+          "display_to_available_ms": 137.31474900851026,
+          "display_to_consumer_ms": 146.37608302291483,
+          "available_to_consumer_ms": 9.061334014404565
+        },
+        {
+          "id": 563,
+          "display_to_available_ms": 115.90795801021159,
+          "display_to_consumer_ms": 130.13758300803602,
+          "available_to_consumer_ms": 14.22962499782443
+        }
+      ]
+    }
+  ]
+}

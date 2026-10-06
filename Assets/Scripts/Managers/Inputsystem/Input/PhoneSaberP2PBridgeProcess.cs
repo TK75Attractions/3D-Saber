@@ -7,11 +7,11 @@ using UnityEngine;
 // PhoneSaberSender の P2P(peer-to-peer Wi-Fi)用 bridge を、InputPoint の受信 socket が揃っている間だけ動かす。
 // bridge は iPhone からの座標を P2P で受け取り、本文を変えずに 127.0.0.1:5005 / 5006 へ転送する。
 // InputPoint の UDP 受信はそのままで、bridge は追加の経路にすぎない(起動できなくても従来の LAN 受信は動く)。
-// bridge 本体と build 手順は school-festival repo の ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py にある。
+// bridge 本体と build 手順は PhoneSaber/ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py にある。
 // 開始/停止は Bonjour publisher と同じく InputPoint.SetReceiverAlive から(受信 thread 上で)呼ばれる。
 public sealed class PhoneSaberP2PBridgeProcess : IDisposable
 {
-    // 既定では Unity project(3D-Saber)と並んでいる school-festival repo の launcher を使う。
+    // 既定では Unity project 内の PhoneSaber の launcher を使う。
     public const string LauncherRelativePath = "ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py";
     // 起動 script の場所を変えるときの環境変数。PHONESABER_P2P_BRIDGE=0 / off で自動起動しない。
     public const string ScriptEnvironmentVariable = "PHONESABER_P2P_BRIDGE_SCRIPT";
@@ -63,14 +63,13 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
         get { lock (Gate) return ProcessIsRunning(process); }
     }
 
-    // Unity project の Assets から、隣の school-festival repo の launcher を探す。
+    // Unity project の Assets から、プロジェクト内の PhoneSaber の launcher を探す。
     public static string ResolveLauncherPath(string dataPath, Func<string, string> environment)
     {
         string configured = environment(ScriptEnvironmentVariable);
         if (!string.IsNullOrWhiteSpace(configured)) return configured.Trim();
         string projectRoot = Path.GetFullPath(Path.Combine(dataPath, ".."));
-        string workspace = Path.GetDirectoryName(projectRoot);
-        return workspace == null ? null : Path.Combine(workspace, "school-festival", LauncherRelativePath);
+        return Path.Combine(projectRoot, "PhoneSaber", LauncherRelativePath);
     }
 
     public static bool IsDisabled(Func<string, string> environment)
@@ -79,14 +78,16 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
         return value != null && (value.Trim() == "0" || value.Trim().Equals("off", StringComparison.OrdinalIgnoreCase));
     }
 
-    // "Phone Saber Unity P2P (<Mac の名前>)"。制御文字・引用符を除き、全体を 63 UTF-8 byte 以内に収める。
-    public static string BuildServiceName(string machineName)
+    // "Phone Saber Unity P2P (<Mac の名前>) A"(台未指定では末尾なし)。全体を 63 UTF-8 byte 以内に収める。
+    public static string BuildServiceName(string machineName, string station = "")
     {
         string cleaned = SanitizeMachineName(machineName);
+        string label = PhoneSaberStation.Normalize(station);
+        string suffix = label.Length == 0 ? "" : " " + label;
         string prefix = ServiceNameBase + " (";
-        int budget = MaxServiceNameBytes - Encoding.UTF8.GetByteCount(prefix) - 1;
+        int budget = MaxServiceNameBytes - Encoding.UTF8.GetByteCount(prefix + suffix) - 1;
         cleaned = TruncateUtf8(cleaned, budget).TrimEnd();
-        return cleaned.Length == 0 ? ServiceNameBase : prefix + cleaned + ")";
+        return (cleaned.Length == 0 ? ServiceNameBase : prefix + cleaned + ")") + suffix;
     }
 
     static string SanitizeMachineName(string machineName)
@@ -142,14 +143,14 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
                 line.Contains("bridge build failed") || line.Contains("diag relay: cannot"));
     }
 
-    public bool Start(int redPort, int bluePort, string dataPath)
+    public bool Start(int redPort, int bluePort, string dataPath, string station = "")
     {
-        return Start(redPort, bluePort, dataPath, Environment.GetEnvironmentVariable);
+        return Start(redPort, bluePort, dataPath, Environment.GetEnvironmentVariable, station);
     }
 
     // テストは environment を差し替えて、利用者の環境変数に左右されないようにする
     // (SaberTests.Editor へは SaberGameAssemblyInfo.cs の InternalsVisibleTo で公開)。
-    internal bool Start(int redPort, int bluePort, string dataPath, Func<string, string> environment)
+    internal bool Start(int redPort, int bluePort, string dataPath, Func<string, string> environment, string station = "")
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         if (!AutoStartEnabled || environment == null) return false;
@@ -171,7 +172,7 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
             {
                 int parentPid;
                 using (var current = Process.GetCurrentProcess()) parentPid = current.Id;
-                string serviceName = BuildServiceName(Environment.MachineName);
+                string serviceName = BuildServiceName(Environment.MachineName, station);
                 var state = new LaunchState();
                 var started = new Process
                 {

@@ -1,0 +1,20 @@
+.native-camera/
+__pycache__/
+tests/debug_detection/
+latency_results/
+/.verify-logs/
+# Temporary git worktrees used by parallel Claude Code agents
+/.claude/worktrees/
+
+# Python bytecode and local environments
+*.py[cod]
+.venv/
+venv/
+
+# macOS, Windows, and Xcode per-user files
+.DS_Store*
+Thumbs.db*
+desktop.ini*
+xcuserdata/
+*.xcuserstate
+DerivedData/

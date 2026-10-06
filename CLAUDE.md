@@ -4,9 +4,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project
 
-Unity 2D game project ("3D-Saber") targeting Unity **6000.3.9f1** with the Universal Render Pipeline. Uses the new Input System (`com.unity.inputsystem`) — not legacy `UnityEngine.Input`. Note the repo is nested: the Unity project root is `3D-Saber-main/`, which contains `Assets/`, `Packages/`, `ProjectSettings/`, and the `.slnx` solution files. Open that inner folder in Unity Hub, not the outer wrapper folder.
+Unity 2D game project ("3D-Saber") targeting Unity **6000.3.9f1** with the Universal Render Pipeline. Uses the new Input System (`com.unity.inputsystem`) — not legacy `UnityEngine.Input`. The Unity project root is this repository directory, which contains `Assets/`, `Packages/`, `ProjectSettings/`, and the `.slnx` solution files. Open this directory in Unity Hub.
 
 In-code comments are written in Japanese. Preserve that convention when editing existing files.
+
+## PhoneSaber subtree
+
+PhoneSaber sender apps, Mac launchers, diagnostics, and history are in [PhoneSaber/](PhoneSaber/README.md).
+Read [PhoneSaber/CLAUDE.md](PhoneSaber/CLAUDE.md) and [PhoneSaber/AGENTS.md](PhoneSaber/AGENTS.md) for that code.
+One clone (`git clone https://github.com/TK75Attractions/3D-Saber.git`) with Git LFS is sufficient; run `git lfs install`, `git lfs pull`, and `./PhoneSaber/setup_mac.command`.
+Verification is `bash PhoneSaber/tools/verify_phone_saber.sh`. Unity uses this checkout as the project root; `PhoneSaber/` is outside `Assets/` and is not imported.
 
 ## Build / Run / Test
 

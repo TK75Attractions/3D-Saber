@@ -1,0 +1,941 @@
+{
+  "schemaVersion": 1,
+  "baseline": {
+    "commit": "9611e347459592bd2133800641af526d93aa935d",
+    "sourceArtifact": "2026-09-23 interleaved candidate comparison; raw PNGs copied byte-for-byte from device captures or existing fixtures.",
+    "endpointPolicy": "expectedEndpoint records the selected existing baseline output; tolerance is in source-image pixels and endpoint order is reversible."
+  },
+  "failureClasses": {
+    "A": {
+      "name": "normal-positive-and-key-frames",
+      "description": "Normal RED/BLUE positives, blue diffuser positives, and the requested frame 0220 / 0600 checks."
+    },
+    "B": {
+      "name": "point-led",
+      "description": "Sparse BLUE point-LED recognition with nearby curtain reflections."
+    },
+    "C": {
+      "name": "blue-frame-global-cancellation",
+      "description": "A rejected BLUE core-line candidate must not globally cancel an independent valid candidate."
+    },
+    "D": {
+      "name": "blue-raw-tail-core-line",
+      "description": "Reject extended BLUE raw-tail line candidates while preserving a valid local blade or a true dropout."
+    },
+    "E": {
+      "name": "negative-scenes",
+      "description": "No-blade, background, and hard-negative scenes must not produce the targeted color."
+    },
+    "F": {
+      "name": "red-short-component",
+      "description": "Keep valid compact RED components recoverable through candidate selection."
+    },
+    "G": {
+      "name": "red-long-core-line-endpoint",
+      "description": "Choose the RED blade over a long bridged core-line and keep floor/raw-tail endpoints local."
+    }
+  },
+  "fixtures": [
+    {
+      "name": "blue_diffuser_03",
+      "path": "blue-led-with-left-curtain-reflection-03.png",
+      "color": "BLUE",
+      "truth": "positive",
+      "failureClass": "A",
+      "scenario": "blue-diffuser-positive",
+      "sourceSession": "Fixtures",
+      "frameID": null,
+      "expectedDetected": true,
+      "expectedCandidateType": "connected-core",
+      "expectedEndpoint": [
+        {
+          "x": 192,
+          "y": 332
+        },
+        {
+          "x": 218,
+          "y": 470
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Preserve pale blue diffuser recognition with curtain reflections.",
+      "sha256": "8fa4e16f33eed9fa85a59f62c590892a401e824d525be72c64f0bb76868accdc"
+    },
+    {
+      "name": "blue_diffuser_04",
+      "path": "blue-led-with-left-curtain-reflection-04.png",
+      "color": "BLUE",
+      "truth": "positive",
+      "failureClass": "A",
+      "scenario": "blue-diffuser-positive",
+      "sourceSession": "Fixtures",
+      "frameID": null,
+      "expectedDetected": true,
+      "expectedCandidateType": "connected-core",
+      "expectedEndpoint": [
+        {
+          "x": 192,
+          "y": 164
+        },
+        {
+          "x": 222,
+          "y": 288
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Preserve a normal pale-blue diffuser positive.",
+      "sha256": "279c929f404c7fcb3f9ffabf32bf539269dc947ec6f932fdb41fc8720137f2a8"
+    },
+    {
+      "name": "blue_normal_05",
+      "path": "blue-led-bright-large-05.png",
+      "color": "BLUE",
+      "truth": "positive",
+      "failureClass": "A",
+      "scenario": "blue-normal-positive",
+      "sourceSession": "Fixtures",
+      "frameID": null,
+      "expectedDetected": true,
+      "expectedCandidateType": "connected-core",
+      "expectedEndpoint": [
+        {
+          "x": 274,
+          "y": 376
+        },
+        {
+          "x": 276,
+          "y": 260
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Preserve normal large blue-emitter recognition.",
+      "sha256": "1ed82a25a5d7361cad0cb7e572779acfbf26e573fd527a9f5b302a36e07908e2"
+    },
+    {
+      "name": "device_normal_red_390",
+      "path": "lossless-regression/phonesaber_20260922_101530_202/frame_390.png",
+      "color": "RED",
+      "truth": "positive",
+      "failureClass": "A",
+      "scenario": "red-normal-positive",
+      "sourceSession": "phonesaber_20260922_101530_202",
+      "frameID": 390,
+      "expectedDetected": true,
+      "expectedCandidateType": "color-mask",
+      "expectedEndpoint": [
+        {
+          "x": 146,
+          "y": 242
+        },
+        {
+          "x": 204,
+          "y": 252
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Preserve a normal RED positive from the 2026-09-22 device session.",
+      "sha256": "c4a76403f416981fb84df300b9dae428c497ad2a769de1178cc816e85a4f3729"
+    },
+    {
+      "name": "device_normal_blue_390",
+      "path": "lossless-regression/phonesaber_20260922_101530_202/frame_390.png",
+      "color": "BLUE",
+      "truth": "positive",
+      "failureClass": "A",
+      "scenario": "blue-normal-positive",
+      "sourceSession": "phonesaber_20260922_101530_202",
+      "frameID": 390,
+      "expectedDetected": true,
+      "expectedCandidateType": "color-emitter",
+      "expectedEndpoint": [
+        {
+          "x": 130,
+          "y": 212
+        },
+        {
+          "x": 166,
+          "y": 224
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Preserve a normal BLUE positive from the 2026-09-22 device session.",
+      "sha256": "c4a76403f416981fb84df300b9dae428c497ad2a769de1178cc816e85a4f3729"
+    },
+    {
+      "name": "device_normal_red_397",
+      "path": "lossless-regression/phonesaber_20260923_113614_837/frame_397.png",
+      "color": "RED",
+      "truth": "positive",
+      "failureClass": "A",
+      "scenario": "red-normal-positive",
+      "sourceSession": "phonesaber_20260923_113614_837",
+      "frameID": 397,
+      "expectedDetected": true,
+      "expectedCandidateType": "color-mask",
+      "expectedEndpoint": [
+        {
+          "x": 238,
+          "y": 230
+        },
+        {
+          "x": 284,
+          "y": 248
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Preserve a normal RED positive from the school session.",
+      "sha256": "6819af101fc615f6abd05a4f596f3fc46abecfe7fd8c70c5832c27c10e8dfcff"
+    },
+    {
+      "name": "device_normal_blue_1249",
+      "path": "lossless-regression/phonesaber_20260923_091430_020/blue_dropout_false_1249.png",
+      "color": "BLUE",
+      "truth": "positive",
+      "failureClass": "A",
+      "scenario": "blue-normal-positive",
+      "sourceSession": "phonesaber_20260923_091430_020",
+      "frameID": 1249,
+      "expectedDetected": true,
+      "expectedCandidateType": "color-mask",
+      "expectedEndpoint": [
+        {
+          "x": 198,
+          "y": 330
+        },
+        {
+          "x": 238,
+          "y": 386
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Preserve a normal BLUE positive from the school session.",
+      "sha256": "21bb564541a5854a22f2776f4807a3be23cd00e1b59fcd8353a1af3baf3c3dee"
+    },
+    {
+      "name": "production_blue_frame_0220",
+      "path": "production-video-IMG_5933/frame-0220.png",
+      "color": "BLUE",
+      "truth": "positive",
+      "failureClass": "A",
+      "scenario": "blue-frame-0220",
+      "sourceSession": "production-video-IMG_5933",
+      "frameID": 220,
+      "expectedDetected": true,
+      "expectedCandidateType": "color-mask",
+      "expectedEndpoint": [
+        {
+          "x": 38,
+          "y": 558
+        },
+        {
+          "x": 50,
+          "y": 616
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Keep BLUE detectable in the foreshortened, partly occluded frame 0220.",
+      "sha256": "b35d9b6045c64dc02677ebd610d284d97556b91764138dfc2df5ef940d9879fb"
+    },
+    {
+      "name": "production_blue_frame_0600",
+      "path": "production-video-IMG_5933/frame-0600.png",
+      "color": "BLUE",
+      "truth": "positive",
+      "failureClass": "A",
+      "scenario": "blue-frame-0600",
+      "sourceSession": "production-video-IMG_5933",
+      "frameID": 600,
+      "expectedDetected": true,
+      "expectedCandidateType": "core-line",
+      "expectedEndpoint": [
+        {
+          "x": 44,
+          "y": 546
+        },
+        {
+          "x": 202,
+          "y": 542
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Keep BLUE detectable during motion at the screen edge in frame 0600.",
+      "sha256": "bb4583b4b909e9980e27c6d4ac6ad4bc179f0ad48fe101f1a737235346dcd7ad"
+    },
+    {
+      "name": "point_led_01",
+      "path": "blue-led-with-curtain-reflection-01.png",
+      "color": "BLUE",
+      "truth": "positive",
+      "failureClass": "B",
+      "scenario": "point-led",
+      "sourceSession": "Fixtures",
+      "frameID": null,
+      "expectedDetected": true,
+      "expectedCandidateType": "connected-core",
+      "expectedEndpoint": [
+        {
+          "x": 226,
+          "y": 208
+        },
+        {
+          "x": 238,
+          "y": 366
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Preserve sparse point-LED fallback recognition.",
+      "sha256": "888f846de44be2ff456f6a15188335617f100da78bcd1616bf49eeb6545c1c4d"
+    },
+    {
+      "name": "point_led_02",
+      "path": "blue-led-with-curtain-reflection-02.png",
+      "color": "BLUE",
+      "truth": "positive",
+      "failureClass": "B",
+      "scenario": "point-led",
+      "sourceSession": "Fixtures",
+      "frameID": null,
+      "expectedDetected": true,
+      "expectedCandidateType": "connected-core",
+      "expectedEndpoint": [
+        {
+          "x": 238,
+          "y": 420
+        },
+        {
+          "x": 254,
+          "y": 280
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Preserve the second sparse point-LED fallback case.",
+      "sha256": "ba52eae443fad3c65ec3182771c77cb1a154915278e256d142118515a403299d"
+    },
+    {
+      "name": "blue_candidate_local_cancellation_251",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_251.png",
+      "color": "BLUE",
+      "truth": "positive",
+      "failureClass": "C",
+      "scenario": "blue-frame-global-cancellation",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 251,
+      "expectedDetected": true,
+      "expectedCandidateType": "core-line",
+      "expectedEndpoint": [
+        {
+          "x": 174,
+          "y": 296
+        },
+        {
+          "x": 180,
+          "y": 258
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "A rejected BLUE line must not cancel the independent valid candidate for this frame.",
+      "sha256": "1dac776e018d1b9f34a7e6f4224f51f593418985ae63726525f86351194eed92"
+    },
+    {
+      "name": "blue_raw_tail_254",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_254.png",
+      "color": "BLUE",
+      "truth": "positive",
+      "failureClass": "D",
+      "scenario": "blue-raw-tail-core-line",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 254,
+      "expectedDetected": true,
+      "expectedCandidateType": "core-line",
+      "expectedEndpoint": [
+        {
+          "x": 178,
+          "y": 304
+        },
+        {
+          "x": 178,
+          "y": 276
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [
+        "core-line-weak-raw-tail"
+      ],
+      "regressionProtected": "Reject the extended raw tail while keeping the local BLUE blade candidate.",
+      "sha256": "cefdfbd2a1707d2b20916aa18984e919833b48a4655e9831ba8a2db77d51ab5b"
+    },
+    {
+      "name": "blue_raw_tail_256",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_256.png",
+      "color": "BLUE",
+      "truth": "positive",
+      "failureClass": "D",
+      "scenario": "blue-raw-tail-core-line",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 256,
+      "expectedDetected": true,
+      "expectedCandidateType": "color-mask",
+      "expectedEndpoint": [
+        {
+          "x": 174,
+          "y": 284
+        },
+        {
+          "x": 184,
+          "y": 314
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [
+        "core-line-weak-raw-tail"
+      ],
+      "regressionProtected": "Reject a second extended raw tail without losing the BLUE blade.",
+      "sha256": "2e138d6c8b8eca2b49c6134111f04e3745e057e7d0888d401cbd74a8d0f67281"
+    },
+    {
+      "name": "blue_raw_tail_false_361",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/blue_dropout_false_361.png",
+      "color": "BLUE",
+      "truth": "negative",
+      "failureClass": "D",
+      "scenario": "blue-raw-tail-negative",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 361,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Do not turn a BLUE dropout/background tail into a detection.",
+      "sha256": "204b3f035543306e73d4b1f202bf3b6244f8cd83a60ff0d6c8fb7332b5e4ad18"
+    },
+    {
+      "name": "no_blade_red_103",
+      "path": "lossless-regression/phonesaber_20260922_134817_916/frame_103.png",
+      "color": "RED",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "no-blade",
+      "sourceSession": "phonesaber_20260922_134817_916",
+      "frameID": 103,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Reject RED in a device-captured frame with no illuminated blade.",
+      "sha256": "2f61f9449fff688434c35b06f804876670f736549e618c18c56a1ca0becab06c"
+    },
+    {
+      "name": "no_blade_blue_103",
+      "path": "lossless-regression/phonesaber_20260922_134817_916/frame_103.png",
+      "color": "BLUE",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "no-blade",
+      "sourceSession": "phonesaber_20260922_134817_916",
+      "frameID": 103,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Reject BLUE in a device-captured frame with no illuminated blade.",
+      "sha256": "2f61f9449fff688434c35b06f804876670f736549e618c18c56a1ca0becab06c"
+    },
+    {
+      "name": "background_red_131",
+      "path": "lossless-regression/phonesaber_20260922_134817_916/frame_131.png",
+      "color": "RED",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "background-negative",
+      "sourceSession": "phonesaber_20260922_134817_916",
+      "frameID": 131,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Reject RED in a real-device background frame.",
+      "sha256": "78ee533b5d477dfa29318da880d40ca4619d6e44c616d901b9178abf706ee35d"
+    },
+    {
+      "name": "background_blue_131",
+      "path": "lossless-regression/phonesaber_20260922_134817_916/frame_131.png",
+      "color": "BLUE",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "background-negative",
+      "sourceSession": "phonesaber_20260922_134817_916",
+      "frameID": 131,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Reject BLUE in a real-device background frame.",
+      "sha256": "78ee533b5d477dfa29318da880d40ca4619d6e44c616d901b9178abf706ee35d"
+    },
+    {
+      "name": "background_red_136",
+      "path": "lossless-regression/phonesaber_20260922_134817_916/frame_136.png",
+      "color": "RED",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "background-negative",
+      "sourceSession": "phonesaber_20260922_134817_916",
+      "frameID": 136,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Reject RED in a real-device background frame.",
+      "sha256": "e1d1d279096dcb55ad0844991f54aad850a419d7931b36edef066a75b744c7cf"
+    },
+    {
+      "name": "background_blue_136",
+      "path": "lossless-regression/phonesaber_20260922_134817_916/frame_136.png",
+      "color": "BLUE",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "background-negative",
+      "sourceSession": "phonesaber_20260922_134817_916",
+      "frameID": 136,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Reject BLUE in a real-device background frame.",
+      "sha256": "e1d1d279096dcb55ad0844991f54aad850a419d7931b36edef066a75b744c7cf"
+    },
+    {
+      "name": "background_red_139",
+      "path": "lossless-regression/phonesaber_20260922_134817_916/frame_139.png",
+      "color": "RED",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "background-negative",
+      "sourceSession": "phonesaber_20260922_134817_916",
+      "frameID": 139,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Reject RED in a real-device background frame.",
+      "sha256": "15d22b694c0128856c542ea15c5332c57df5791d703fd8e806d1dea5dc36cf3c"
+    },
+    {
+      "name": "background_blue_139",
+      "path": "lossless-regression/phonesaber_20260922_134817_916/frame_139.png",
+      "color": "BLUE",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "background-negative",
+      "sourceSession": "phonesaber_20260922_134817_916",
+      "frameID": 139,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Reject BLUE in a real-device background frame.",
+      "sha256": "15d22b694c0128856c542ea15c5332c57df5791d703fd8e806d1dea5dc36cf3c"
+    },
+    {
+      "name": "blue_broad_coreless_59",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_59.png",
+      "color": "BLUE",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "blue-broad-coreless-hard-negative",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 59,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [
+        "color-emitter-broad-coreless"
+      ],
+      "regressionProtected": "Reject a broad coreless BLUE emitter-shaped region.",
+      "sha256": "74a3531b2f427b3e07504aaaca86ff36ab4aac3e099ee0868ef02ac3ceeee275"
+    },
+    {
+      "name": "blue_broad_coreless_62",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_62.png",
+      "color": "BLUE",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "blue-broad-coreless-hard-negative",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 62,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [
+        "color-emitter-broad-coreless"
+      ],
+      "regressionProtected": "Reject a broad coreless BLUE emitter-shaped region.",
+      "sha256": "5c66b7e688a5e8d3dbf5ccb370b8aadf4124e7d69d2460d311624bda230f2ff3"
+    },
+    {
+      "name": "blue_broad_coreless_63",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_63.png",
+      "color": "BLUE",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "blue-broad-coreless-hard-negative",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 63,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [
+        "color-emitter-broad-coreless"
+      ],
+      "regressionProtected": "Reject a broad coreless BLUE emitter-shaped region.",
+      "sha256": "5b630dcacb7aee43eb24026fd342221725513e453c0ccf76844320023e45b4a1"
+    },
+    {
+      "name": "blue_broad_coreless_64",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_64.png",
+      "color": "BLUE",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "blue-broad-coreless-hard-negative",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 64,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [
+        "color-emitter-broad-coreless"
+      ],
+      "regressionProtected": "Reject a broad coreless BLUE emitter-shaped region.",
+      "sha256": "cd0d4cc440684b9f4ee1454325aefd3e006e73afda1e8431e245e3eb93ffb384"
+    },
+    {
+      "name": "blue_broad_coreless_65",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_65.png",
+      "color": "BLUE",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "blue-broad-coreless-hard-negative",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 65,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [
+        "color-emitter-broad-coreless"
+      ],
+      "regressionProtected": "Reject a broad coreless BLUE emitter-shaped region.",
+      "sha256": "dd150a31b30dd336e961cc37b43abb0f3e261af0221b51e799bf381883173c7c"
+    },
+    {
+      "name": "red_hard_negative_83",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_false_83.png",
+      "color": "RED",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "red-hard-negative",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 83,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Reject the RED candidate in a hard negative frame.",
+      "sha256": "5ff9dbaddccaff8dfa9d1fdf62830e85c2bacbdbb5456a626aa6cee0a1953fe7"
+    },
+    {
+      "name": "red_hard_negative_90",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_false_90.png",
+      "color": "RED",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "red-hard-negative",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 90,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Reject the RED candidate in a hard negative frame.",
+      "sha256": "67f21cb35fd247125c7c3ad07203dca302f842c02e4e9dc121691457c1e9f013"
+    },
+    {
+      "name": "red_hard_negative_348",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_false_348.png",
+      "color": "RED",
+      "truth": "negative",
+      "failureClass": "E",
+      "scenario": "red-hard-negative",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 348,
+      "expectedDetected": false,
+      "expectedCandidateType": null,
+      "expectedEndpoint": null,
+      "endpointTolerancePx": null,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Reject the RED candidate in a hard negative frame.",
+      "sha256": "c69a828af90b3b84bebb5183f00f1ee5492a3162b3c951b1d551c333c6c3403d"
+    },
+    {
+      "name": "red_short_component_last_true_82",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_last_true_82.png",
+      "color": "RED",
+      "truth": "positive",
+      "failureClass": "F",
+      "scenario": "red-short-component-positive",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 82,
+      "expectedDetected": true,
+      "expectedCandidateType": "core-halo",
+      "expectedEndpoint": [
+        {
+          "x": 468,
+          "y": 582
+        },
+        {
+          "x": 472,
+          "y": 608
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Keep the compact RED component detected at the last-known-good frame.",
+      "sha256": "249260b95e1ed589669515e67484f9e1a2189502594d5f7ab375295d2a407bbf"
+    },
+    {
+      "name": "red_short_component_last_true_89",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_last_true_89.png",
+      "color": "RED",
+      "truth": "positive",
+      "failureClass": "F",
+      "scenario": "red-short-component-positive",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 89,
+      "expectedDetected": true,
+      "expectedCandidateType": "core-halo",
+      "expectedEndpoint": [
+        {
+          "x": 422,
+          "y": 146
+        },
+        {
+          "x": 444,
+          "y": 146
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Keep the compact RED component detected at the last-known-good frame.",
+      "sha256": "be223939a7dbda7d88bd70a54cb3a50b1f75f175aef26c89bb896f3ef61930ac"
+    },
+    {
+      "name": "red_short_component_recovered_84",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_recovered_84.png",
+      "color": "RED",
+      "truth": "positive",
+      "failureClass": "F",
+      "scenario": "red-short-component-positive",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 84,
+      "expectedDetected": true,
+      "expectedCandidateType": "color-sparse-raw",
+      "expectedEndpoint": [
+        {
+          "x": 468,
+          "y": 590
+        },
+        {
+          "x": 476,
+          "y": 608
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Recover the compact RED component after dropout without changing the selected axis.",
+      "sha256": "1f15edb8e702d322229f164746bae182d8bdc45baf6e1ca57f21ce5ba7e1c299"
+    },
+    {
+      "name": "red_short_component_recovered_112",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_recovered_112.png",
+      "color": "RED",
+      "truth": "positive",
+      "failureClass": "F",
+      "scenario": "red-short-component-positive",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 112,
+      "expectedDetected": true,
+      "expectedCandidateType": "core-halo",
+      "expectedEndpoint": [
+        {
+          "x": 252,
+          "y": 582
+        },
+        {
+          "x": 276,
+          "y": 636
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Recover the compact RED component after dropout without changing the selected axis.",
+      "sha256": "7bc7f49a7c41f9ee81f1954024d02bdba08adb8161317e703080caa683d8709f"
+    },
+    {
+      "name": "red_short_component_recovered_351",
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_recovered_351.png",
+      "color": "RED",
+      "truth": "positive",
+      "failureClass": "F",
+      "scenario": "red-short-component-positive",
+      "sourceSession": "phonesaber_20260923_143446_247",
+      "frameID": 351,
+      "expectedDetected": true,
+      "expectedCandidateType": "core-halo",
+      "expectedEndpoint": [
+        {
+          "x": 234,
+          "y": 384
+        },
+        {
+          "x": 258,
+          "y": 352
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Recover the compact RED component after dropout without changing the selected axis.",
+      "sha256": "a5384da5b0ebdb29948d4448369d042d50d226c7d4df53042d975606c6c08f4a"
+    },
+    {
+      "name": "red_long_core_line_1000",
+      "path": "forensic-20260921/frame_1000.png",
+      "color": "RED",
+      "truth": "positive",
+      "failureClass": "G",
+      "scenario": "red-long-core-line-endpoint",
+      "sourceSession": "forensic-20260921",
+      "frameID": 1000,
+      "expectedDetected": true,
+      "expectedCandidateType": "connected-core",
+      "expectedEndpoint": [
+        {
+          "x": 322,
+          "y": 374
+        },
+        {
+          "x": 396,
+          "y": 406
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Keep the RED blade candidate and its trimmed floor/raw-tail endpoint.",
+      "sha256": "e35b5a084eef73ff58d2c66f89eb924b162475e68a2ba24c8a15c160f94a8ba5"
+    },
+    {
+      "name": "red_long_core_line_1048",
+      "path": "forensic-20260921/frame_1048.png",
+      "color": "RED",
+      "truth": "positive",
+      "failureClass": "G",
+      "scenario": "red-long-core-line-endpoint",
+      "sourceSession": "forensic-20260921",
+      "frameID": 1048,
+      "expectedDetected": true,
+      "expectedCandidateType": "core-line",
+      "expectedEndpoint": [
+        {
+          "x": 262,
+          "y": 430
+        },
+        {
+          "x": 310,
+          "y": 508
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Keep the RED blade candidate and its trimmed floor/raw-tail endpoint.",
+      "sha256": "26a4aa281e552c4ab2a7bd37d438622ad4c460d12c4fbe9ba06822863c0062ed"
+    },
+    {
+      "name": "red_long_core_line_919",
+      "path": "forensic-20260921-211845/frame_919.png",
+      "color": "RED",
+      "truth": "positive",
+      "failureClass": "G",
+      "scenario": "red-long-core-line-endpoint",
+      "sourceSession": "forensic-20260921-211845",
+      "frameID": 919,
+      "expectedDetected": true,
+      "expectedCandidateType": "core-line",
+      "expectedEndpoint": [
+        {
+          "x": 312,
+          "y": 488
+        },
+        {
+          "x": 322,
+          "y": 514
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Keep the RED blade candidate and its trimmed floor/raw-tail endpoint.",
+      "sha256": "39821cf667a39217df942f2d68694f61b3548bb4d66c503121a9e3e3c77aef86"
+    },
+    {
+      "name": "red_long_core_line_1091",
+      "path": "forensic-20260921-211845/frame_1091.png",
+      "color": "RED",
+      "truth": "positive",
+      "failureClass": "G",
+      "scenario": "red-long-core-line-endpoint",
+      "sourceSession": "forensic-20260921-211845",
+      "frameID": 1091,
+      "expectedDetected": true,
+      "expectedCandidateType": "core-line",
+      "expectedEndpoint": [
+        {
+          "x": 314,
+          "y": 458
+        },
+        {
+          "x": 320,
+          "y": 494
+        }
+      ],
+      "endpointTolerancePx": 3,
+      "expectedRejectedCandidateTypes": [],
+      "regressionProtected": "Keep the RED blade candidate and its trimmed floor/raw-tail endpoint.",
+      "sha256": "d0a2cd326939f58d9f8583e749deb0e405fb6c3f9c3d50252f6038c1176b972b"
+    }
+  ]
+}

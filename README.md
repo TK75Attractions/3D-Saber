@@ -3,6 +3,14 @@
 Unity 6000.3.9f1 project. Hardware-free Swing input setup and latency simulation
 are documented in [Tools/README_mock_bridge.md](Tools/README_mock_bridge.md).
 
+## PhoneSaber tools and sender apps
+
+The iPhone/Android apps, Mac launchers, diagnostics, and their full history are
+included in [PhoneSaber/](PhoneSaber/README.md). Clone this repository once with
+Git LFS installed (`git lfs install`), run `git lfs pull`, then
+`./PhoneSaber/setup_mac.command`. Verification: `bash PhoneSaber/tools/verify_phone_saber.sh`.
+PhoneSaber is outside `Assets/`, so Unity does not import it.
+
 ## Phone Saber camera input on macOS
 
 On macOS, entering Play Mode starts the existing UDP receivers on red port 5005

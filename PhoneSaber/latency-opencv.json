@@ -1,0 +1,173 @@
+{
+  "measurement": "display submission to BGR frame returned to Python; includes display phase, exposure, transfer and retrieval, excludes tracking and preview presentation",
+  "warning": "Not isolated wireless latency. 60+ decoded IDs and >=85% requested FPS required. Compare multiple runs with fixed camera/light/effects. Lower resolution still needs red/blue detection validation.",
+  "results": [
+    {
+      "profile": "opencv 640x360 30 FPS",
+      "camera": {
+        "opencv_index": 0,
+        "reported_fps": 30.0
+      },
+      "frames_consumed": 358,
+      "actual_sizes": [
+        [
+          1280,
+          720
+        ]
+      ],
+      "input_fps": 30.28515518493684,
+      "consumer_fps": 29.949585598400144,
+      "frame_interval_p90_ms": 37.35363280866295,
+      "since_available_median_ms": 7.243978994665667,
+      "target_interval_p90_ms": 36.29414140013978,
+      "optical": {
+        "count": 23,
+        "valid": false,
+        "p10_ms": 109.06950796488672,
+        "median_ms": 144.34133400209248,
+        "p90_ms": 417.1169749926776,
+        "consumer_median_ms": 9.830125025473535
+      },
+      "samples": [
+        {
+          "id": 17,
+          "display_to_available_ms": 356.6717499634251,
+          "display_to_consumer_ms": 368.13337495550513,
+          "available_to_consumer_ms": 11.461624992080033
+        },
+        {
+          "id": 131,
+          "display_to_available_ms": 1134.6480830106884,
+          "display_to_consumer_ms": 1146.2516249739565,
+          "available_to_consumer_ms": 11.603541963268071
+        },
+        {
+          "id": 190,
+          "display_to_available_ms": 417.60541597614065,
+          "display_to_consumer_ms": 429.3628750019707,
+          "available_to_consumer_ms": 11.75745902583003
+        },
+        {
+          "id": 226,
+          "display_to_available_ms": 135.58262505102903,
+          "display_to_consumer_ms": 146.67025004746392,
+          "available_to_consumer_ms": 11.087624996434897
+        },
+        {
+          "id": 233,
+          "display_to_available_ms": 129.38574998406693,
+          "display_to_consumer_ms": 130.30308397719637,
+          "available_to_consumer_ms": 0.9173339931294322
+        },
+        {
+          "id": 234,
+          "display_to_available_ms": 128.69512499310076,
+          "display_to_consumer_ms": 140.46308398246765,
+          "available_to_consumer_ms": 11.767958989366889
+        },
+        {
+          "id": 243,
+          "display_to_available_ms": 135.84379199892282,
+          "display_to_consumer_ms": 149.67779198195785,
+          "available_to_consumer_ms": 13.833999983035028
+        },
+        {
+          "id": 251,
+          "display_to_available_ms": 108.32970798946917,
+          "display_to_consumer_ms": 110.92920799273998,
+          "available_to_consumer_ms": 2.599500003270805
+        },
+        {
+          "id": 258,
+          "display_to_available_ms": 439.94149996433407,
+          "display_to_consumer_ms": 442.65612500021234,
+          "available_to_consumer_ms": 2.714625035878271
+        },
+        {
+          "id": 287,
+          "display_to_available_ms": 101.43583302851766,
+          "display_to_consumer_ms": 107.88029100513086,
+          "available_to_consumer_ms": 6.444457976613194
+        },
+        {
+          "id": 293,
+          "display_to_available_ms": 121.94400001317263,
+          "display_to_consumer_ms": 126.64720800239593,
+          "available_to_consumer_ms": 4.703207989223301
+        },
+        {
+          "id": 300,
+          "display_to_available_ms": 135.47675003064796,
+          "display_to_consumer_ms": 144.34133400209248,
+          "available_to_consumer_ms": 8.864583971444517
+        },
+        {
+          "id": 308,
+          "display_to_available_ms": 137.91470899013802,
+          "display_to_consumer_ms": 145.24458401137963,
+          "available_to_consumer_ms": 7.329875021241605
+        },
+        {
+          "id": 319,
+          "display_to_available_ms": 106.33283300558105,
+          "display_to_consumer_ms": 108.60458295792341,
+          "available_to_consumer_ms": 2.271749952342361
+        },
+        {
+          "id": 321,
+          "display_to_available_ms": 134.7407079883851,
+          "display_to_consumer_ms": 141.24541595811024,
+          "available_to_consumer_ms": 6.504707969725132
+        },
+        {
+          "id": 328,
+          "display_to_available_ms": 112.49220801983029,
+          "display_to_consumer_ms": 124.85150003340095,
+          "available_to_consumer_ms": 12.359292013570666
+        },
+        {
+          "id": 337,
+          "display_to_available_ms": 114.10633299965411,
+          "display_to_consumer_ms": 124.66983299236745,
+          "available_to_consumer_ms": 10.563499992713332
+        },
+        {
+          "id": 343,
+          "display_to_available_ms": 136.2969169858843,
+          "display_to_consumer_ms": 148.30320799956098,
+          "available_to_consumer_ms": 12.006291013676673
+        },
+        {
+          "id": 347,
+          "display_to_available_ms": 101.9664999912493,
+          "display_to_consumer_ms": 106.48479202063754,
+          "available_to_consumer_ms": 4.518292029388249
+        },
+        {
+          "id": 364,
+          "display_to_available_ms": 135.19012497272342,
+          "display_to_consumer_ms": 145.02024999819696,
+          "available_to_consumer_ms": 9.830125025473535
+        },
+        {
+          "id": 371,
+          "display_to_available_ms": 138.2785000023432,
+          "display_to_consumer_ms": 148.62074999837205,
+          "available_to_consumer_ms": 10.34224999602884
+        },
+        {
+          "id": 383,
+          "display_to_available_ms": 136.28245802829042,
+          "display_to_consumer_ms": 143.43537500826642,
+          "available_to_consumer_ms": 7.152916979975998
+        },
+        {
+          "id": 429,
+          "display_to_available_ms": 132.03941704705358,
+          "display_to_consumer_ms": 145.19545901566744,
+          "available_to_consumer_ms": 13.156041968613863
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.22.1)
+project(phonesaber_jni LANGUAGES CXX)
+add_subdirectory("${CMAKE_CURRENT_SOURCE_DIR}/../../../../core" "${CMAKE_CURRENT_BINARY_DIR}/core")
+add_library(phonesaber_jni SHARED phonesaber_jni.cpp)
+target_link_libraries(phonesaber_jni PRIVATE phonesaber_core)
+target_compile_features(phonesaber_jni PRIVATE cxx_std_17)
+target_compile_options(phonesaber_jni PRIVATE -Wall -Wextra -Werror -ffp-contract=off)
