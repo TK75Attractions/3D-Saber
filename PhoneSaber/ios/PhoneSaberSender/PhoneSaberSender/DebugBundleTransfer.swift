@@ -120,6 +120,10 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         // Peer-to-peer Wi-Fi first (the Mac bridge relays to the receiver), so a
         // phone that only reaches the Mac over AWDL can still deliver; otherwise
         // the existing LAN Bonjour path below runs unchanged.
+        if P2PPreferredMac.coordinateDestination.manual {
+            startLANAttempt(number)
+            return
+        }
         phase = .p2p
         let uploader = P2PBundleUploader()
         p2pUploader = uploader
@@ -145,6 +149,17 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
     private func startLANAttempt(_ number: Int) {
         precondition(Thread.isMainThread)
         guard attempt == number, activeBundleURL != nil, activePackageURL != nil else { return }
+        // 台指定時の LAN fallback も、座標で選んだ PC に固定する。
+        let destination = P2PPreferredMac.coordinateDestination
+        if destination.manual || !destination.station.isEmpty {
+            guard let url = Self.receiverURL(hostName: destination.lanHost, port: 8765) else {
+                retryCurrentBundle(after: DebugBundleTransferError.discoveryTimeout)
+                return
+            }
+            phase = .uploading
+            upload(to: url, attemptNumber: number)
+            return
+        }
         phase = .searching
         resolvedService = nil
         let browser = NetServiceBrowser()
@@ -414,6 +429,7 @@ final class P2PBundleUploader {
     private var response = Data()
     private var serviceName = ""
     private let preferredService: () -> String?
+    private let station: String
     /// Latest discovery results, used once more when discovery times out.
     private var discovered: [(endpoint: NWEndpoint, name: String)] = []
     /// Kept until `finish`, so a caller may drop its reference while the upload runs.
@@ -421,9 +437,11 @@ final class P2PBundleUploader {
 
     init(serviceType: String = PhoneSaberP2P.diagnosticsServiceType, endpointOverride: NWEndpoint? = nil,
          discoveryTimeout: TimeInterval = 3, transferTimeout: TimeInterval = 180,
-         preferredService: @escaping () -> String? = { P2PPreferredMac.current }) {
+         preferredService: @escaping () -> String? = { P2PPreferredMac.current },
+         station: String? = nil) {
         self.serviceType = serviceType
         self.preferredService = preferredService
+        self.station = station ?? P2PPreferredMac.coordinateDestination.station
         self.endpointOverride = endpointOverride
         self.discoveryTimeout = discoveryTimeout
         self.transferTimeout = transferTimeout
@@ -468,7 +486,7 @@ final class P2PBundleUploader {
     @discardableResult
     private func connectToDiscovered(final: Bool, size: Int64) -> Bool {
         guard let name = P2PDiagnosticsServicePicker.pick(from: discovered.map(\.name),
-                                                          preferred: preferredService(), final: final),
+                                                          preferred: preferredService(), final: final, station: station),
               let chosen = discovered.first(where: { $0.name == name }) else { return false }
         browser?.cancel()
         browser = nil

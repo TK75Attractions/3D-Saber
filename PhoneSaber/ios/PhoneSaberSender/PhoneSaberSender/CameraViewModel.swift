@@ -371,6 +371,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var discoveredMacName = ""
     @Published private(set) var discoveredMacIP = ""
     @Published private(set) var connectionMode = "Auto (Bonjour)"
+    @Published private(set) var station = ""
     @Published private(set) var p2pEnabled = true
     @Published private(set) var p2pState: P2PLinkState = .disabled
     @Published private(set) var p2pRoundTrip: P2PRoundTripStats.Summary?
@@ -509,6 +510,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         let underTest = NSClassFromString("XCTestCase") != nil
         self.p2pEnabled = p2pEnabled
             ?? (underTest ? false : UserDefaults.standard.object(forKey: Self.p2pEnabledKey) as? Bool ?? true)
+        self.station = underTest ? "" : (UserDefaults.standard.string(forKey: PhoneSaberStation.preferenceKey)
+            .flatMap { PhoneSaberStation.choices.contains($0) ? $0 : nil } ?? "")
         // Tests always start from auto unless they opt in, like P2P above.
         let exposureExperiment = cameraExposureExperiment
             ?? (underTest ? .auto : CameraExposureExperiment.stored(in: .standard))
@@ -537,6 +540,8 @@ final class CameraViewModel: NSObject, ObservableObject {
                 self?.receiveBonjourUpdate(update)
             }
         }
+        bonjourDiscovery.station = station
+        updateDiagnosticDestination()
         bonjourDiscovery.start()
         if self.p2pEnabled { startP2P() }
         processor.onResult = { [weak self] results, width, height, processingStart, generation, trace in
@@ -810,22 +815,55 @@ final class CameraViewModel: NSObject, ObservableObject {
         bonjourDiscovery.start()
     }
 
+    // 台変更は停止中のみ。旧台の自動送信先と P2P の lock を破棄する。
+    func setStation(_ value: String) {
+        guard !running, value != station, PhoneSaberStation.choices.contains(value) else { return }
+        p2pSender.stop()
+        p2pState = .disabled
+        p2pRoundTrip = nil
+        station = value
+        UserDefaults.standard.set(value, forKey: PhoneSaberStation.preferenceKey)
+        discoveredMacName = ""
+        discoveredMacIP = ""
+        if hostSelection.source != .manual {
+            hostSelection = DestinationHostSelection()
+            host = ""
+            connectionMode = hostSelection.source.rawValue
+        }
+        updateDiagnosticDestination()
+        bonjourDiscovery.station = value
+        bonjourDiscovery.start()
+        if p2pEnabled { startP2P() }
+    }
+
+    private func updateDiagnosticDestination() {
+        P2PPreferredMac.configure(station: station, lanHost: host, manual: hostSelection.source == .manual)
+    }
+
     func setManualHost(_ value: String) {
         hostSelection.setManual(value, resolvedHost: discoveredMacIP, serviceName: discoveredMacName)
         host = hostSelection.host
         connectionMode = hostSelection.source.rawValue
+        updateDiagnosticDestination()
+        if hostSelection.source == .manual {
+            p2pSender.stop()
+            p2pState = .disabled
+            p2pRoundTrip = nil
+        } else if p2pEnabled { startP2P() }
 #if DEBUG
         print("[Host] source=\(hostSelection.source.rawValue) resolved=\(discoveredMacIP)")
 #endif
     }
 
     private func receiveBonjourUpdate(_ update: BonjourDiscoveryUpdate) {
+        guard update.name.isEmpty || PhoneSaberStation.matches(service: update.name, station: station) else { return }
         networkDiscoveryStatus = update.status
         discoveredMacName = update.name
         discoveredMacIP = update.ip
         if hostSelection.applyBonjour(host: update.ip, serviceName: update.name) {
             host = hostSelection.host
             connectionMode = hostSelection.source.rawValue
+            updateDiagnosticDestination()
 #if DEBUG
             print("[Host] source=\(hostSelection.source.rawValue) resolved=\(update.ip) service=\(update.name)")
 #endif
@@ -1399,7 +1437,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private func route(_ text: String, port: Int,
                        onSendStarted: ((TimeInterval, Int) -> Void)?,
                        completion: @escaping (Result<TimeInterval, Error>) -> Void) {
-        if p2pEnabled && p2pSender.isUsable {
+        if hostSelection.source != .manual && p2pEnabled && p2pSender.isUsable {
             if !routedViaP2P {
                 // Back on P2P: a coordinate still queued for a LAN port that is not
                 // ready must never arrive after the newer ones sent over P2P.
@@ -1438,16 +1476,20 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func startP2P() {
-        p2pSender.start(onState: { [weak self] state in
+        guard hostSelection.source != .manual else { return }
+        let requestedStation = station
+        p2pSender.start(station: station, onState: { [weak self] state in
             Task { @MainActor in
-                guard let self, self.p2pEnabled else { return }
+                guard let self, self.p2pEnabled, self.hostSelection.source != .manual,
+                      self.station == requestedStation else { return }
                 self.p2pState = state
                 // P2P carries coordinates again: drop anything LAN still queues.
                 if state.isConnected { self.sender.discardPendingCoordinates() }
             }
         }, onStats: { [weak self] summary in
             Task { @MainActor in
-                guard let self, self.p2pEnabled else { return }
+                guard let self, self.p2pEnabled, self.hostSelection.source != .manual,
+                      self.station == requestedStation else { return }
                 self.p2pRoundTrip = summary
             }
         })
@@ -1572,8 +1614,8 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     /// The path coordinates take right now, for the UI.
     var transportLabel: String {
-        if p2pEnabled && p2pState.isConnected { return p2pState.label }
-        guard running else { return p2pEnabled ? p2pState.label : "停止中" }
+        if hostSelection.source != .manual && p2pEnabled && p2pState.isConnected { return p2pState.label }
+        guard running else { return hostSelection.source == .manual ? "Manual IP" : p2pEnabled ? p2pState.label : "停止中" }
         if lanConfigured {
             let portStates = [senderStates[5005], senderStates[5006]].compactMap { $0 }
             let lan = hostSelection.source == .manual ? "Manual IP" : "LAN Connected"
@@ -2061,6 +2103,7 @@ private struct BonjourDiscoveryUpdate {
 /// The service advertises red UDP 5005; blue remains the existing 5006 on the
 /// resolved host, preserving the payload and transport contract.
 private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetServiceDelegate {
+    var station = ""
     var onUpdate: ((BonjourDiscoveryUpdate) -> Void)?
     private let browser = NetServiceBrowser()
     private var resolving: Set<NetService> = []
@@ -2086,7 +2129,8 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
         isSearching = true
         let timeout = DispatchWorkItem { [weak self] in
             guard let self, self.resolving.isEmpty else { return }
-            self.report("No service found; Manual IP required (探索継続中)")
+            self.report(self.station.isEmpty ? "No service found; Manual IP required (探索継続中)"
+                : "台\(self.station)の PC が見つかりません（探索継続中）")
         }
         searchTimeout = timeout
         DispatchQueue.main.asyncAfter(deadline: .now() + 10, execute: timeout)
@@ -2107,6 +2151,7 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
     }
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didRemove service: NetService, moreComing: Bool) {
+        guard PhoneSaberStation.matches(service: service.name, station: station) else { return }
         resolving.remove(service)
         service.stop()
         report("Service removed: \(service.name); Manual IP available")
@@ -2118,7 +2163,8 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
 
     func netServiceBrowser(_ browser: NetServiceBrowser, didFind service: NetService,
                            moreComing: Bool) {
-        guard !resolving.contains(service) else { return }
+        guard PhoneSaberStation.matches(service: service.name, station: station),
+              !resolving.contains(service) else { return }
         searchTimeout?.cancel()
         report("Found: \(service.name)", name: service.name)
         resolving.insert(service)
@@ -2133,6 +2179,7 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
     }
 
     func netServiceDidResolveAddress(_ sender: NetService) {
+        guard resolving.contains(sender), PhoneSaberStation.matches(service: sender.name, station: station) else { return }
         let ip = sender.addresses?.compactMap(ipv4Address).first ?? ""
         let name = sender.name
         let status = ip.isEmpty ? "Resolve failed: IPv4なし; Manual IP required" : "Resolved: \(ip) / Ready"

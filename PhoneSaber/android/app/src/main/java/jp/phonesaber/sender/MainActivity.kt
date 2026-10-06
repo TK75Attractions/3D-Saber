@@ -8,6 +8,7 @@ import android.os.Handler
 import android.os.Looper
 import android.text.InputType
 import android.view.Gravity
+import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.Button
@@ -89,6 +90,20 @@ class MainActivity : ComponentActivity() {
         panel.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(250)))
         pcStatus = label("PCを探索中")
         val prefs = getSharedPreferences("destination", MODE_PRIVATE)
+        label("台（PC と同じ台を指定）")
+        val stations = listOf("", "A", "B")
+        val stationGroup = android.widget.RadioGroup(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            stations.forEach { station ->
+                addView(android.widget.RadioButton(this@MainActivity).apply {
+                    id = View.generateViewId()
+                    tag = station
+                    text = if (station.isEmpty()) "指定なし" else station
+                    isChecked = station == (prefs.getString("station", "") ?: "")
+                })
+            }
+            panel.addView(this)
+        }
         val address = EditText(this).apply {
             hint = "PCのIPv4（例: 192.168.1.10）"
             inputType = InputType.TYPE_CLASS_PHONE
@@ -146,6 +161,13 @@ class MainActivity : ComponentActivity() {
             destination = pc; wifi = network
             pcStatus.text = if (pc == null) "PC: 未設定\n$message" else
                 "PC: ${pc.name}\n${pc.address.hostAddress}（${pc.source}）\n$message"
+        }
+        discovery.setStation(prefs.getString("station", "")?.takeIf { it in stations } ?: "")
+        stationGroup.setOnCheckedChangeListener { group, id ->
+            if (id == View.NO_ID) return@setOnCheckedChangeListener
+            val station = group.findViewById<android.widget.RadioButton>(id).tag as String
+            prefs.edit().putString("station", station).apply()
+            discovery.setStation(station)
         }
         discovery.setManual(ManualAddress.parse(prefs.getString("ip", "") ?: ""))
     }

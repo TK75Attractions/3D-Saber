@@ -37,10 +37,18 @@ class PcDiscovery(context: Context,
     private var listener: NsdManager.DiscoveryListener? = null
     private var callback: ConnectivityManager.NetworkCallback? = null
     private var manual: Destination? = null
+    private var station = ""
     private data class Found(val destination: Destination, val seen: Long)
     private val found = linkedMapOf<String, Found>()
     private var selectedKey: String? = null
     private var warning = ""
+
+    fun setStation(value: String) {
+        if (station == value) return
+        station = value
+        if (active) restartDiscovery(network?.let(connectivity::getLinkProperties))
+        else { found.clear(); selectedKey = null; publish() }
+    }
 
     fun setManual(address: InetAddress?) {
         manual = address?.let { Destination(it, "手入力", "手入力") }
@@ -153,7 +161,7 @@ class PcDiscovery(context: Context,
                 if (!reply.compatible || packet.port != Ports.DISCOVERY ||
                     packet.address.isAnyLocalAddress || packet.address.isMulticastAddress) continue
                 main.post {
-                    if (active && token == generation) {
+                    if (active && token == generation && StationMatcher.reply(station, reply)) {
                         val destination = Destination(packet.address, reply.name, "UDP探索")
                         val key = "udp:${packet.address.hostAddress}"
                         if (key in found || found.size < 16) found[key] = Found(destination, System.nanoTime())
@@ -200,7 +208,8 @@ class PcDiscovery(context: Context,
                                     info.hostAddresses.firstOrNull { it is Inet4Address }
                                         ?: info.hostAddresses.firstOrNull()
                                 } else info.host
-                                if (info.serviceName in present && host != null && !host.isAnyLocalAddress) {
+                                if (info.serviceName in present && StationMatcher.service(station, info.serviceName) &&
+                                    host != null && !host.isAnyLocalAddress) {
                                     // Bonjour service port is discovery metadata. Coordinates use fixed ports.
                                     val key = "nsd:${info.serviceName}"
                                     if (key in found || found.size < 16) found[key] = Found(
@@ -227,7 +236,8 @@ class PcDiscovery(context: Context,
             override fun onStopDiscoveryFailed(type: String, code: Int) = Unit
             override fun onServiceFound(info: NsdServiceInfo) {
                 main.post {
-                    if (!active || token != generation || !present.add(info.serviceName)) return@post
+                    if (!active || token != generation || !StationMatcher.service(station, info.serviceName) ||
+                        !present.add(info.serviceName)) return@post
                     if (queue.size < 16) { queue.add(info); resolveNext() }
                 }
             }
@@ -256,6 +266,7 @@ class PcDiscovery(context: Context,
         if (selectedKey?.let(found::containsKey) != true) selectedKey = found.keys.firstOrNull()
         val destination = manual ?: selectedKey?.let { found[it]?.destination }
         val message = if (network == null) "同じ Wi-Fi に接続してください" else if (warning.isNotEmpty()) warning
+            else if (destination == null && station.isNotEmpty()) "台${station}の PC が見つかりません（探索中・手入力も可能）"
             else if (destination == null) "PCを探索中（見つからない場合は手入力）" else "同じ Wi-Fi の送信先"
         onUpdate(destination, network, message)
     }

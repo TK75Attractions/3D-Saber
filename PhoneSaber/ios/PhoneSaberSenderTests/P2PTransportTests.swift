@@ -144,6 +144,47 @@ final class P2PTransportTests: XCTestCase {
 
     // MARK: Service choice, interface and browse errors
 
+    func testStationFiltersLANP2PAndDiagnosticsSelection() {
+        let a = "Phone Saber Unity P2P (Mac Z) A"
+        let b = "Phone Saber Unity P2P (Mac A) B"
+        let legacy = "Phone Saber Unity P2P (Old Mac)"
+        XCTAssertTrue(PhoneSaberStation.matches(service: "Phone Saber Unity A", station: "A"))
+        for name in ["Phone Saber Unity", "Phone Saber Unity B", "Phone Saber Unity AA", "Phone Saber UnityA"] {
+            XCTAssertFalse(PhoneSaberStation.matches(service: name, station: "A"))
+            XCTAssertTrue(PhoneSaberStation.matches(service: name, station: ""))
+        }
+        var selection = P2PServiceSelection()
+        XCTAssertEqual(selection.choose(from: [b, legacy, a], station: "A"), a)
+        XCTAssertNil(selection.choose(from: [b, legacy], station: "A"))
+        XCTAssertEqual(selection.choose(from: [a, b], station: "B"), b, "old lock cannot bypass station")
+        XCTAssertNil(P2PDiagnosticsServicePicker.pick(from: [b, legacy], preferred: a, final: true, station: "A"))
+        XCTAssertEqual(P2PDiagnosticsServicePicker.pick(from: [a, b], preferred: b, final: true, station: "A"), a)
+        XCTAssertNil(P2PDiagnosticsServicePicker.pick(from: [a, b], preferred: b, final: false, station: "A"))
+        XCTAssertEqual(P2PDiagnosticsServicePicker.pick(from: [a, b], preferred: b, final: false), b)
+    }
+
+    @MainActor
+    func testStationChangeClearsAutomaticHostAndPreservesManualHost() {
+        let model = CameraViewModel(p2pEnabled: false, idleTimerUpdater: { _ in })
+        let saved = UserDefaults.standard.object(forKey: PhoneSaberStation.preferenceKey)
+        defer {
+            UserDefaults.standard.set(saved, forKey: PhoneSaberStation.preferenceKey)
+            P2PPreferredMac.configure(station: "", lanHost: "", manual: false)
+        }
+        model.applyBonjourForTesting(host: "192.168.1.1", serviceName: "Phone Saber Unity")
+        model.setStation("A")
+        XCTAssertEqual(model.host, "")
+        model.applyBonjourForTesting(host: "192.168.1.2", serviceName: "Phone Saber Unity B")
+        XCTAssertEqual(model.host, "")
+        model.applyBonjourForTesting(host: "192.168.1.3", serviceName: "Phone Saber Unity A")
+        XCTAssertEqual(model.host, "192.168.1.3")
+        model.setManualHost("192.168.1.9")
+        model.setStation("B")
+        model.applyBonjourForTesting(host: "192.168.1.2", serviceName: "Phone Saber Unity B")
+        XCTAssertEqual(model.host, "192.168.1.9")
+        XCTAssertEqual(model.transportLabel, "Manual IP")
+    }
+
     func testServiceSelectionKeepsTheFirstChosenMacWhileItIsAdvertised() {
         var selection = P2PServiceSelection()
         XCTAssertNil(selection.choose(from: []))
@@ -453,7 +494,7 @@ final class P2PTransportTests: XCTestCase {
         let p2p = P2PSender(timing: fastTiming(), endpointOverride: .hostPort(host: "127.0.0.1", port: port))
         let viewModel = CameraViewModel(sender: lan, p2pSender: p2p, p2pEnabled: true, idleTimerUpdater: { _ in })
         defer { viewModel.stop(); p2p.stop(); lan.stop() }
-        viewModel.startForTesting()
+        viewModel.startForTesting(manual: false)
         let ready = await waitFor { p2p.isUsable }
         XCTAssertTrue(ready)
         let labelled = await waitUntilMain { viewModel.transportLabel.hasPrefix("P2P Connected") }
@@ -473,8 +514,30 @@ final class P2PTransportTests: XCTestCase {
                                             at: 2, dimensions: dimensions)
         let viaLAN = await waitFor { lanPackets.value.contains { $0.1 == 5006 } }
         XCTAssertTrue(viaLAN, "LAN carries coordinates while P2P is down, with no restart")
-        let labelledLAN = await waitUntilMain { viewModel.transportLabel == "Manual IP" }
+        let labelledLAN = await waitUntilMain { viewModel.transportLabel == "LAN Connected" }
         XCTAssertTrue(labelledLAN, viewModel.transportLabel)
+    }
+
+    @MainActor
+    func testManualIPWinsEvenWhenP2PIsUsable() async {
+        let packets = LockedBox<[(String, Int)]>([])
+        let lan = UDPSender { text, port, completion in
+            packets.mutate { $0.append((text, port)) }
+            completion(.success(1))
+        }
+        let p2p = P2PSender()
+        p2p.overrideUsabilityForTesting(true)
+        let model = CameraViewModel(sender: lan, p2pSender: p2p, p2pEnabled: false, idleTimerUpdater: { _ in })
+        defer { model.stop(); p2p.stop(); lan.stop() }
+        model.startForTesting()
+        let saved = UserDefaults.standard.object(forKey: "PhoneSaber.p2pEnabled")
+        defer { UserDefaults.standard.set(saved, forKey: "PhoneSaber.p2pEnabled") }
+        model.setP2PEnabled(true)
+        model.processDetectedForTesting([(.red, (PixelPoint(x: 10, y: 20), PixelPoint(x: 110, y: 20)))],
+                                        at: 1, dimensions: (640, 480))
+        let sent = await waitFor { packets.value.contains { $0.1 == 5005 } }
+        XCTAssertTrue(sent)
+        XCTAssertFalse(model.transportLabel.hasPrefix("P2P"))
     }
 
     @MainActor
@@ -508,7 +571,7 @@ final class P2PTransportTests: XCTestCase {
         let p2p = P2PSender(timing: fastTiming(), endpointOverride: .hostPort(host: "127.0.0.1", port: port))
         let viewModel = CameraViewModel(sender: lan, p2pSender: p2p, p2pEnabled: true, idleTimerUpdater: { _ in })
         defer { viewModel.stop(); p2p.stop(); lan.stop() }
-        viewModel.startForTesting()
+        viewModel.startForTesting(manual: false)
         lan.simulateConnectionStateForTesting(port: 5006, state: .waiting)
 
         // P2P down, LAN BLUE port not ready: the coordinate waits in UDPSender.

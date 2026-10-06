@@ -78,14 +78,16 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
         return value != null && (value.Trim() == "0" || value.Trim().Equals("off", StringComparison.OrdinalIgnoreCase));
     }
 
-    // "Phone Saber Unity P2P (<Mac の名前>)"。制御文字・引用符を除き、全体を 63 UTF-8 byte 以内に収める。
-    public static string BuildServiceName(string machineName)
+    // "Phone Saber Unity P2P (<Mac の名前>) A"(台未指定では末尾なし)。全体を 63 UTF-8 byte 以内に収める。
+    public static string BuildServiceName(string machineName, string station = "")
     {
         string cleaned = SanitizeMachineName(machineName);
+        string label = PhoneSaberStation.Normalize(station);
+        string suffix = label.Length == 0 ? "" : " " + label;
         string prefix = ServiceNameBase + " (";
-        int budget = MaxServiceNameBytes - Encoding.UTF8.GetByteCount(prefix) - 1;
+        int budget = MaxServiceNameBytes - Encoding.UTF8.GetByteCount(prefix + suffix) - 1;
         cleaned = TruncateUtf8(cleaned, budget).TrimEnd();
-        return cleaned.Length == 0 ? ServiceNameBase : prefix + cleaned + ")";
+        return (cleaned.Length == 0 ? ServiceNameBase : prefix + cleaned + ")") + suffix;
     }
 
     static string SanitizeMachineName(string machineName)
@@ -141,14 +143,14 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
                 line.Contains("bridge build failed") || line.Contains("diag relay: cannot"));
     }
 
-    public bool Start(int redPort, int bluePort, string dataPath)
+    public bool Start(int redPort, int bluePort, string dataPath, string station = "")
     {
-        return Start(redPort, bluePort, dataPath, Environment.GetEnvironmentVariable);
+        return Start(redPort, bluePort, dataPath, Environment.GetEnvironmentVariable, station);
     }
 
     // テストは environment を差し替えて、利用者の環境変数に左右されないようにする
     // (SaberTests.Editor へは SaberGameAssemblyInfo.cs の InternalsVisibleTo で公開)。
-    internal bool Start(int redPort, int bluePort, string dataPath, Func<string, string> environment)
+    internal bool Start(int redPort, int bluePort, string dataPath, Func<string, string> environment, string station = "")
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         if (!AutoStartEnabled || environment == null) return false;
@@ -170,7 +172,7 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
             {
                 int parentPid;
                 using (var current = Process.GetCurrentProcess()) parentPid = current.Id;
-                string serviceName = BuildServiceName(Environment.MachineName);
+                string serviceName = BuildServiceName(Environment.MachineName, station);
                 var state = new LaunchState();
                 var started = new Process
                 {

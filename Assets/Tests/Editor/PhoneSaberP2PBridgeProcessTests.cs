@@ -33,6 +33,47 @@ public class PhoneSaberP2PBridgeProcessTests
     }
 
     [Test]
+    public void StationSourcesRespectPriorityAndExplicitNone()
+    {
+        Assert.AreEqual("A", PhoneSaberStation.Resolve(new[] { "Unity", "-phonesaberStation", " A " }, "B", "B"));
+        Assert.AreEqual("B", PhoneSaberStation.Resolve(new[] { "Unity" }, " B ", "A"));
+        Assert.AreEqual("A", PhoneSaberStation.Resolve(null, null, "A"));
+        Assert.AreEqual("", PhoneSaberStation.Resolve(null, null, null));
+        Assert.AreEqual("", PhoneSaberStation.Resolve(new[] { "-phonesaberStation", "" }, "B", "A"));
+        Assert.AreEqual("", PhoneSaberStation.Resolve(null, "", "A"));
+        Assert.AreEqual("B", PhoneSaberStation.Resolve(new[] { "-phonesaberStation" }, "B", "A"));
+        Assert.AreEqual("B", PhoneSaberStation.Resolve(new[] { "-phonesaberStation", "-batchmode" }, "B", "A"));
+    }
+
+    [TestCase(" A ", "A")]
+    [TestCase("台A", "")]
+    [TestCase("A B", "")]
+    [TestCase("A\"B", "")]
+    [TestCase("A=1", "")]
+    [TestCase("abcdefghijklmnopq", "")]
+    [TestCase("Stage-1", "Stage-1")]
+    public void StationLabelsAreSafeTokens(string input, string expected)
+    {
+        Assert.AreEqual(expected, PhoneSaberStation.Normalize(input));
+    }
+
+    [Test]
+    public void StationDiscoveryMetadataKeepsLegacyFields()
+    {
+        const string legacy = "PHONESABER_UNITY 1 red=5005 blue=5006 name=My_PC";
+        Assert.AreEqual(legacy, PhoneSaberDiscoveryResponder.BuildReply(5005, 5006, "My PC"));
+        Assert.AreEqual(legacy + " station=A", PhoneSaberDiscoveryResponder.BuildReply(5005, 5006, "My PC", "A"));
+        Assert.AreEqual("Phone Saber Unity", PhoneSaberBonjourPublisher.BuildServiceName(""));
+        Assert.AreEqual("Phone Saber Unity B", PhoneSaberBonjourPublisher.BuildServiceName("B"));
+        Assert.AreEqual("Phone Saber Unity P2P (Studio Mac) A", PhoneSaberP2PBridgeProcess.BuildServiceName("Studio Mac", "A"));
+        Assert.AreEqual("Phone Saber Unity P2P B", PhoneSaberP2PBridgeProcess.BuildServiceName(null, "B"));
+        string longName = PhoneSaberP2PBridgeProcess.BuildServiceName(new string('瀬', 100) + "\U0001F600", "A");
+        Assert.LessOrEqual(Encoding.UTF8.GetByteCount(longName), 63);
+        StringAssert.EndsWith(") A", longName);
+        Assert.IsFalse(longName.Contains("\uFFFD"));
+    }
+
+    [Test]
     public void LauncherIsFoundInsideTheUnityProject()
     {
         string workspace = Path.Combine(Path.GetTempPath(), "someone", "ws");

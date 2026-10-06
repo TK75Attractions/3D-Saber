@@ -16,6 +16,13 @@ PC(Mac か Windows)で Unity のゲームを動かし、スマホ(iPhone か And
 - **iPhone**: Mac の Xcode で `PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender.xcodeproj` を開き、iPhone をつないで ▶。
 - **Android(AQUOS sense9)**: 開発者向けオプションで USB デバッグを ON。Android Studio で `PhoneSaber/android` を開き、つないで ▶。
 
+### 同じ Wi-Fi で 2 台(A / B)を並べるとき
+- **各 PC の Unity Editor(Mac / Windows)**: Play 前に `Tools > PhoneSaber > Station > A` または `B` を選ぶ。PlayerPrefs の `PhoneSaber.Station` に保存され、次の Play から適用される。
+- **ビルドしたゲーム**: 起動引数 `-phonesaberStation A`(もう一方は `B`)を付ける。Windows なら `Game.exe -phonesaberStation A`、Mac なら `open -a "/path/to/Game.app" --args -phonesaberStation A`。環境変数 `PHONESABER_STATION=A` でも指定できる。優先順は **起動引数 → 環境変数 → PlayerPrefs**。台名は16文字以内の英数字・`-`・`_`(通常は A / B)。Unity Console の探索/Bonjour/P2P 公開ログで台名を確認する。
+- **各スマホ(iPhone / Android)**: アプリの接続設定の **「台」**を、その PC と同じ **A / B** にしてから送信を開始する。設定は保存される。指定した台の PC だけを自動探索する。iPhone の P2P と診断 relay も同じ台に限定される。
+- **手動 IP は常に優先**。自動探索で見つからないときは、その台の PC の IP を確認して入力する(Windows + iPhone は従来どおり手動 IP が必要)。台設定は座標の受信を拒否する仕組みではなく、スマホの自動送信先を選ぶための設定。
+- **1 台だけで従来どおり使うとき**: PC は `Station > None`、スマホは **指定なし**、起動引数/環境変数も未設定にする。どこにも台を設定しなければ従来と同じ動作。環境変数/起動引数を使った PC は、それを外してから None に戻す。
+
 ### 毎回
 1. PC で Unity を開いて **Play**(Mac では P2P ブリッジと診断の受信側も自動で起動する)。
 2. スマホと PC を同じ Wi-Fi につなぐ(Mac + iPhone は P2P で直接つながるので不要)。
@@ -110,7 +117,7 @@ Start PhoneSaber から単独起動した受信側を止める場合は、その
 | **Codex が timeout する** | 解析は最大 25 分。timeout なら effort high で1回だけ再試行(`phone_saber_triage_codex.py` の `CODEX_TIMEOUT_SECONDS`)。それでも失敗すると bundle を残して終わる。受信側を再起動しても自動で再解析しない | `.report.md`(無料の1ページ要約)は先にできているのでそれを見る。後で手動: `python3 ios/PhoneSaberSender/Tools/phone_saber_triage_codex.py "<inbox>/phone_saber_triage_<session>"` |
 | **413 / precheck で止まる** | 413: 受信側の上限(512 MiB)を超えたか壊れた upload(iPhone 側は 64 MiB・20 枚に制限しているので普通は出ない)。precheck: 選ばれた画像に時間方向の証拠が足りない(例 `temporalEvidenceMissing`。1 frame の録画で実際に起きた)。context 1 件 32 KiB の上限は変えない(`phone_saber_triage_receiver.py`、`phone_saber_triage_protocol.py` の `MAX_BUNDLE_BYTES`、`DebugBundleTransfer.swift`、`phone_saber_tracking_diagnostics.py` の `tracking_preflight`、`CLAUDE.md` §1) | Status ツールの `Codex 解析` に reasonCodes が出る。saber を映して数秒以上振る録画を撮り直す |
 | **Unity に座標が届かない** | 5005/5006 を別の process が使っている(2つ目の Unity、古い受信 script など)。Unity は失敗すると `[PhoneSaber][RED] receiver failed: …` を出し、間隔を伸ばしながら bind をやり直す。どちらかが受信できない間は bridge も止まる(`InputPoint.cs`) | Status ツールの `Unity 受信 UDP` に、port を使っている process 名と pid が出る。その process を止めて Play し直す |
-| **近くに Mac が2台ある** | 座標: iPhone は最初に選んだ Mac(service 名 `Phone Saber Unity P2P (<Mac名>)` の辞書順で最初)に固定し、消えたときだけ乗り換える。診断 bundle も、座標で固定した Mac に送る(その Mac の relay が見つからないときだけ、ほかの Mac に送る)。LAN の Bonjour 名 `Phone Saber Unity` には Mac 名が付かない(`P2PSender.swift`、`DebugBundleTransfer.swift`、`3D-Saber/AGENTS.md`) | 本番以外の Mac では Unity を Play しない(または `PHONESABER_P2P_BRIDGE=0`)。iPhone の「経路」に出る Mac 名を確認。LAN なら手動 IP を入れる |
+| **近くに PC が2台ある** | 台未指定では、従来どおり最初の PC が選ばれる | §0 の手順で PC とスマホを同じ **台 A / B** にする。Unity の Play を開始し直し、スマホの送信先を確認。手動 IP を使う場合はその台の PC の IP を指定する |
 
 ## 6. 状態チェックツール(`PhoneSaber Status.command`)
 

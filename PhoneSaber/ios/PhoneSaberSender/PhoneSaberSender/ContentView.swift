@@ -17,8 +17,18 @@ struct ContentView: View {
             ScrollView {
                 VStack(spacing: 12) {
                     GroupBox("接続") {
+                        Picker("台", selection: Binding(
+                            get: { model.station }, set: { model.setStation($0) }
+                        )) {
+                            Text("指定なし").tag("")
+                            Text("A").tag("A")
+                            Text("B").tag("B")
+                        }
+                        .disabled(model.running)
                         Button("Macを再検索") { model.retryDiscovery() }
                             .disabled(model.running)
+                        Text(model.networkDiscoveryStatus)
+                            .font(.caption).foregroundStyle(.secondary)
                         Text(model.networkStateLabel)
                             .font(.headline)
                         Text(model.cameraState.displayLabel)
