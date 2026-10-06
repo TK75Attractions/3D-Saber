@@ -5,6 +5,35 @@
 当日に「動かす」「おかしいときに直す」ための1枚です。調査の根拠は [FINDINGS.md](FINDINGS.md)、残作業は [STATUS.md](STATUS.md) にまとめています。
 迷ったら、まず Mac のデスクトップの **`PhoneSaber Status.command`** をダブルクリックしてください(読み取りのみ。何も変えません)。
 
+## 0. 端末の組み合わせと使い方(Mac / Windows / iPhone / Android)
+
+PC(Mac か Windows)で Unity のゲームを動かし、スマホ(iPhone か Android)で剣を認識して座標を UDP 5005(赤)/ 5006(青)へ送る。
+リポジトリは 3D-Saber の1つだけ(PhoneSaber/ はその中)。
+
+### 最初に1回だけ
+- **Mac**: `git lfs install` → `git clone https://github.com/TK75Attractions/3D-Saber.git` → `3D-Saber/PhoneSaber/setup_mac.command` をダブルクリック(デスクトップに PhoneSaber のアイコン)。Unity Hub で 3D-Saber を開く(6000.3.9f1)。
+- **Windows**: Git LFS を入れて同じく clone → Unity Hub で開く(6000.3.9f1)。初めて Play したときのファイアウォールの画面で「プライベート ネットワーク」を許可する(UDP 5005 / 5006 / 5007)。
+- **iPhone**: Mac の Xcode で `PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender.xcodeproj` を開き、iPhone をつないで ▶。
+- **Android(AQUOS sense9)**: 開発者向けオプションで USB デバッグを ON。Android Studio で `PhoneSaber/android` を開き、つないで ▶。
+
+### 毎回
+1. PC で Unity を開いて **Play**(Mac では P2P ブリッジと診断の受信側も自動で起動する)。
+2. スマホと PC を同じ Wi-Fi につなぐ(Mac + iPhone は P2P で直接つながるので不要)。
+3. スマホのアプリで送信を開始する。
+
+| 組み合わせ | 開始の操作 | PC の見つけ方 | 診断録画 |
+| --- | --- | --- | --- |
+| Mac + iPhone(推奨) | 「通常送信を開始」 | 自動(P2P、なければ Wi-Fi の Bonjour) | ○ |
+| Mac + Android | 「開始」 | 自動(UDP 5007 の探索 / NSD) | × |
+| Windows + Android | 「開始」 | 自動(UDP 5007 の探索) | × |
+| Windows + iPhone | 「通常送信を開始」 | **Windows の IP を「手動IP」に入力**(iPhone は Bonjour で探すが Windows は出していない) | × |
+
+- Windows の IP は、コマンドプロンプトで `ipconfig` を実行し「IPv4 アドレス」を見る。
+- Android で見つからないときは、PC の IP を入れて「手入力を保存」。
+- 学校などの Wi-Fi で届かないとき(端末どうしの通信が禁止されている): PC のモバイルホットスポットを ON にして、スマホをそこにつなぐ。
+- 診断(Debug Recording・ガイド付き録画・自動解析)は iPhone + Mac だけ。
+- 2026-10-06 時点で未確認: Android アプリの実機(AQUOS)での動作、Windows での座標受信。最初の試験では、アプリの「送信 fps」と Unity で剣が動くかを確認する。
+
 ## 1. 全体の流れ
 
 ```text
