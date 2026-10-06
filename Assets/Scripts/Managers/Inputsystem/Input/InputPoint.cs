@@ -31,6 +31,8 @@ public class InputPoint : MonoBehaviour
     const int ReceiverMaximumBackoffMilliseconds = 2000;
     const int ReceiverJoinTimeoutMilliseconds = 2000;
     PhoneSaberBonjourPublisher bonjourPublisher;
+    // Android 版が同じ Wi-Fi 上の PC(Windows / Mac)を見つけるための UDP 5007 応答。
+    PhoneSaberDiscoveryResponder discoveryResponder;
     // iPhone からの P2P 経路用 bridge(座標を 127.0.0.1:5005/5006 へ転送するだけ)。受信処理は変えない。
     // Bonjour と同じく、5005/5006 の両方を bind できている間だけ動かす(iPhone が LAN へ戻れるように)。
     PhoneSaberP2PBridgeProcess p2pBridge;
@@ -294,6 +296,8 @@ public class InputPoint : MonoBehaviour
             receiverStopSignal2?.Dispose();
             bonjourPublisher?.Dispose();
             bonjourPublisher = new PhoneSaberBonjourPublisher();
+            discoveryResponder?.Dispose();
+            discoveryResponder = new PhoneSaberDiscoveryResponder();
             p2pBridge?.Dispose();
             p2pBridge = new PhoneSaberP2PBridgeProcess();
             p2pDataPath = Application.dataPath;
@@ -718,6 +722,8 @@ public class InputPoint : MonoBehaviour
             {
                 bonjourPublisher?.Dispose();
                 bonjourPublisher = null;
+                discoveryResponder?.Dispose();
+                discoveryResponder = null;
                 p2pBridge?.Dispose();
                 p2pBridge = null;
                 receiverAlive1 = false;
@@ -729,6 +735,8 @@ public class InputPoint : MonoBehaviour
             receiverAlive2 = false;
             bonjourPublisher?.Dispose();
             bonjourPublisher = null;
+            discoveryResponder?.Dispose();
+            discoveryResponder = null;
             p2pBridge?.Dispose();
             p2pBridge = null;
             RecordReceiverExit(false, "intentional shutdown", true);
@@ -793,11 +801,13 @@ public class InputPoint : MonoBehaviour
             if (networkShutdown || !receiverAlive1 || !receiverAlive2)
             {
                 bonjourPublisher?.Stop();
+                discoveryResponder?.Stop();
                 p2pBridge?.Stop();
             }
             else
             {
                 bonjourPublisher?.Start(port);
+                discoveryResponder?.Start(port, port2);
                 p2pBridge?.Start(port, port2, p2pDataPath);
             }
         }
