@@ -11,6 +11,7 @@ public class SongStagePerformanceTests
 
     [TestCase("2_23_AM",2,196.075)] [TestCase("ElDorado",4,223.248)] [TestCase("Epilogue",3,166.408707)]
     [TestCase("Morning",2,165.329)] [TestCase("揺籠",4,184.24163)] [TestCase("NeonParade",2,121.9)]
+    [TestCase("製作中",2,174.864)]
     public void AuthoredSectionsMatchAudioAndRemainSmooth(string song,int count,double duration)
     {
         string folder=Path.Combine(Application.streamingAssetsPath,"Songs",song);
@@ -46,7 +47,7 @@ public class SongStagePerformanceTests
     {
         var songs=Directory.GetDirectories(Path.Combine(Application.streamingAssetsPath,"Songs"))
             .Where(p=>Directory.GetFiles(p,"chart*.json").Length>0).ToArray();
-        CollectionAssert.AreEquivalent(new[]{"2_23_AM","ElDorado","Epilogue","Morning","揺籠","Andalusia","NeonParade","PrismCircuit"},
+        CollectionAssert.AreEquivalent(new[]{"2_23_AM","ElDorado","Epilogue","Morning","揺籠","Andalusia","NeonParade","PrismCircuit","製作中"},
             songs.Select(Path.GetFileName).ToArray());
         foreach(var folder in songs)
         {
@@ -61,6 +62,7 @@ public class SongStagePerformanceTests
     [TestCase("2_23_AM",95)] [TestCase("ElDorado",153)] [TestCase("Epilogue",150)]
     [TestCase("Morning",76)] [TestCase("揺籠",81)] [TestCase("揺籠",136)]
     [TestCase("NeonParade",75)] [TestCase("NeonParade",120.5)]
+    [TestCase("製作中",125)] [TestCase("製作中",173)]
     public void BreaksAndAfterglowReturnToAmbient(string song,double seconds)
     {
         Assert.AreEqual(0,StagePerformanceTimeline.Load(song).Evaluate(seconds));

@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "displayName": "製作中",
+  "timeOrigin": "audio-file-start",
+  "previewStartSeconds": 134.713878,
+  "hideBarLines": false,
+  "audioSha256": "bc5601889c272cffb9a362842a1331b541ea4734e2793a8a675339ef3999855d",
+  "_comment": "区間名は音量・音色の解析に基づく便宜上の名称。原音源のテンポ・音量は変更しない。",
+  "sections": [
+    {
+      "label": "第1ピーク",
+      "startSeconds": 48.999592,
+      "endSeconds": 75.938367,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.6,
+      "intensity": 0.8,
+      "anticipationSeconds": 1.22449,
+      "impactSeconds": 0.6
+    },
+    {
+      "label": "最終ピーク",
+      "startSeconds": 134.713878,
+      "endSeconds": 164.101633,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.6,
+      "intensity": 1.0,
+      "anticipationSeconds": 1.22449,
+      "impactSeconds": 0.6
+    }
+  ]
+}

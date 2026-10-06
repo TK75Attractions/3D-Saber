@@ -46,7 +46,7 @@ public class SongPreviewSynchronizationPlayTests
         double deadline = Time.realtimeSinceStartupAsDouble + 15;
         while ((controller.SongCount == 0 || controller.ChartPreview == null)
             && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
-        string[] songs = { "2_23_AM", "Andalusia", "ElDorado", "Epilogue", "Morning", "揺籠", "NeonParade" };
+        string[] songs = { "2_23_AM", "Andalusia", "ElDorado", "Epilogue", "Morning", "揺籠", "NeonParade", "製作中" };
         AudioSettings.GetDSPBufferSize(out int frames, out _);
         foreach (string id in songs)
         {
