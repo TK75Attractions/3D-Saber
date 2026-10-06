@@ -29,6 +29,7 @@ class PcDiscovery(context: Context,
     private val nsd = requireNotNull(context.getSystemService(NsdManager::class.java))
     private val multicast = requireNotNull(context.applicationContext.getSystemService(WifiManager::class.java))
         .createMulticastLock("PhoneSaber-discovery").apply { setReferenceCounted(false) }
+    private var allowNonWifi = false
     private var active = false
     private var lifecycle = 0
     @Volatile private var generation = 0
@@ -42,6 +43,18 @@ class PcDiscovery(context: Context,
     private val found = linkedMapOf<String, Found>()
     private var selectedKey: String? = null
     private var warning = ""
+
+    fun setDeveloperNetworkOverride(enabled: Boolean) {
+        val allowed = BuildConfig.DEBUG && enabled
+        if (allowNonWifi == allowed) return
+        val restart = active
+        if (restart) stop()
+        allowNonWifi = allowed
+        if (restart) start() else publish()
+    }
+
+    private fun isWifi(value: Network) = connectivity.getNetworkCapabilities(value)
+        ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
 
     fun setStation(value: String) {
         if (station == value) return
@@ -65,23 +78,27 @@ class PcDiscovery(context: Context,
             override fun onLinkPropertiesChanged(wifi: Network, properties: LinkProperties) {
                 main.post { if (active && session == lifecycle && wifi == network) restartDiscovery(properties) }
             }
+            override fun onCapabilitiesChanged(wifi: Network, capabilities: NetworkCapabilities) {
+                main.post { if (active && session == lifecycle && wifi == network) publish() }
+            }
             override fun onLost(wifi: Network) {
                 main.post {
                     if (active && session == lifecycle && wifi == network) {
                         switchNetwork(null)
-                        connectivity.allNetworks.firstOrNull { candidate ->
-                            connectivity.getNetworkCapabilities(candidate)
-                                ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
-                        }?.let(::switchNetwork)
+                        if (allowNonWifi) connectivity.activeNetwork?.let(::switchNetwork)
+                        else connectivity.allNetworks.firstOrNull(::isWifi)?.let(::switchNetwork)
                     }
                 }
             }
         }
         callback = events
-        connectivity.registerNetworkCallback(request, events)
-        connectivity.allNetworks.firstOrNull {
-            connectivity.getNetworkCapabilities(it)?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) == true
-        }?.let(::switchNetwork)
+        if (allowNonWifi) {
+            connectivity.registerDefaultNetworkCallback(events)
+            connectivity.activeNetwork?.let(::switchNetwork)
+        } else {
+            connectivity.registerNetworkCallback(request, events)
+            connectivity.allNetworks.firstOrNull(::isWifi)?.let(::switchNetwork)
+        }
         publish()
     }
 
@@ -96,6 +113,8 @@ class PcDiscovery(context: Context,
         found.clear(); selectedKey = null; warning = ""
         publish()
         val wifi = network ?: return
+        // 開発用の非Wi-Fi経路は手入力だけ。Wi-Fi探索・multicast lockは使わない。
+        if (!isWifi(wifi)) return
         val token = generation
         try { multicast.acquire() } catch (e: Exception) {
             warning = "探索ロック失敗: ${e.localizedMessage}"
@@ -265,7 +284,9 @@ class PcDiscovery(context: Context,
     private fun publish() {
         if (selectedKey?.let(found::containsKey) != true) selectedKey = found.keys.firstOrNull()
         val destination = manual ?: selectedKey?.let { found[it]?.destination }
-        val message = if (network == null) "同じ Wi-Fi に接続してください" else if (warning.isNotEmpty()) warning
+        val message = if (network == null) "同じ Wi-Fi に接続してください"
+            else if (allowNonWifi && !isWifi(network!!)) "開発用: 非Wi-Fi経路（PCのIPを手入力してください）"
+            else if (warning.isNotEmpty()) warning
             else if (destination == null && station.isNotEmpty()) "台${station}の PC が見つかりません（探索中・手入力も可能）"
             else if (destination == null) "PCを探索中（見つからない場合は手入力）" else "同じ Wi-Fi の送信先"
         onUpdate(destination, network, message)

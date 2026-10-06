@@ -172,6 +172,11 @@ own sample-buffer attachment and describe exactly that frame; device values
 are the newest AVCaptureDevice state pushed (about every 0.2 s, DEBUG builds)
 while recording, with its age. The processing queue never calls
 AVCaptureDevice.
+Thermal/battery values are read on the main actor at recording start, then about
+once per second (and on thermal notifications), in both Debug and Release builds.
+`source` includes `device` when a phone health snapshot contributed, even without
+an AVCaptureDevice exposure snapshot. `deviceSampleAgeSeconds` still describes
+only the exposure snapshot, not the phone health values.
 
 | Field | JSON type | Meaning |
 | --- | --- | --- |
@@ -181,6 +186,16 @@ AVCaptureDevice.
 | `exposureTargetBias`, `exposureTargetOffset` | number, optional | Device exposure target bias and metering offset (EV). |
 | `whiteBalanceGains` | array of 3 numbers, optional | Device white-balance gains `[red, green, blue]`. |
 | `deviceSampleAgeSeconds` | number, optional | Age of the device values when the frame was recorded. |
+| `thermalState` | string, optional | `nominal`, `fair`, `serious`, `critical`, or `unknown` from `ProcessInfo.thermalState`. UI: 正常 / やや高い / 高い / 危険 / 不明. |
+| `batteryLevel` | number, optional | Battery fraction in `[0, 1]`; omitted when unavailable. |
+| `batteryState` | string, optional | `charging`, `full`, `unplugged`, or `unknown`. |
+
+These health fields are additive under format version 1. Old recordings and
+bundles that omit them remain valid. The metadata reader accepts absent/null
+optional values. The strict Mac triage context validator accepts these exact
+keys and enums, a finite battery fraction in `[0, 1]`, and omitted unknown battery
+levels; compact contexts never encode nulls. Other unexpected camera keys remain
+rejected, and the 32 KiB context limit is unchanged.
 
 ## Camera samples
 
@@ -194,6 +209,11 @@ fields:
 | `exposureDurationMs`, `iso`, `whiteBalanceRedGain`, `whiteBalanceGreenGain`, `whiteBalanceBlueGain`, `lensPosition` | number | Required |
 | `exposureMode`, `whiteBalanceMode`, `focusMode`, `activeFormat`, `activeFormatFPSRanges` | string | Required |
 | `activeMinFPS`, `activeMaxFPS` | number | Optional |
+| `thermalState`, `batteryState` | string | Optional; same values as per-frame camera state |
+| `batteryLevel` | number | Optional; same fraction as per-frame camera state |
+
+Camera samples (Debug builds) also include these health fields when available.
+Per-frame health remains available in Release Debug Recording without this array.
 
 ## Camera exposure experiment
 

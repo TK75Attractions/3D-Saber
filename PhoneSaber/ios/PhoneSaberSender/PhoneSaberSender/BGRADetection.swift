@@ -362,19 +362,51 @@ private func coreLineProposals(coreMask: [UInt8], colorMask: [UInt8],
     return proposals
 }
 
+/// Unique-pixel bookkeeping for the dilate1 domain: a bitmap over the domain's bounding box
+/// instead of a hashed Set (same membership, same visiting order, much cheaper per pixel).
+struct Dilate1Visited {
+    let x0: Int, y0: Int, w: Int
+    var bits: [Bool]
+
+    init(points: [PixelPoint], sampleStep: Int, width: Int, height: Int) {
+        var minX = Int.max, minY = Int.max, maxX = Int.min, maxY = Int.min
+        for point in points {
+            let x = point.x * sampleStep, y = point.y * sampleStep
+            guard x >= 0, x < width, y >= 0, y < height else { continue }
+            minX = min(minX, x); maxX = max(maxX, x); minY = min(minY, y); maxY = max(maxY, y)
+        }
+        if minX > maxX {
+            x0 = 0; y0 = 0; w = 0; bits = []
+            return
+        }
+        x0 = max(0, minX - 1); y0 = max(0, minY - 1)
+        w = min(width - 1, maxX + 1) - x0 + 1
+        let h = min(height - 1, maxY + 1) - y0 + 1
+        bits = Array(repeating: false, count: w * h)
+    }
+
+    /// True the first time a pixel is seen (like Set.insert(_:).inserted).
+    @inline(__always) mutating func insert(x: Int, y: Int) -> Bool {
+        let index = (y - y0) * w + (x - x0)
+        if bits[index] { return false }
+        bits[index] = true
+        return true
+    }
+}
+
 /// Read the study's dilate1 domain directly from the original (possibly padded) BGRA.
-/// Set is used only for membership, never iterated; all decisions use integer counts.
+/// Membership via Dilate1Visited (never iterated); all decisions use integer counts.
 func redWarmNoDeepRedSupport(points: [PixelPoint], baseAddress: UnsafePointer<UInt8>,
                             width: Int, height: Int, bytesPerRow: Int,
                             sampleStep: Int) -> SaberWarmNoDeepRedVerdict {
-    var seen = Set<Int>()
+    var seen = Dilate1Visited(points: points, sampleStep: sampleStep, width: width, height: height)
     var deepCount = 0, warmCount = 0, pixelCount = 0
     for point in points {
         let x = point.x * sampleStep, y = point.y * sampleStep
         guard x >= 0, x < width, y >= 0, y < height else { continue }
         for yy in max(0, y - 1)...min(height - 1, y + 1) {
             for xx in max(0, x - 1)...min(width - 1, x + 1) {
-                guard seen.insert(yy * width + xx).inserted else { continue }
+                guard seen.insert(x: xx, y: yy) else { continue }
                 let offset = yy * bytesPerRow + xx * 4
                 let b = Int(baseAddress[offset]), g = Int(baseAddress[offset + 1])
                 let r = Int(baseAddress[offset + 2])
@@ -393,18 +425,18 @@ func redWarmNoDeepRedSupport(points: [PixelPoint], baseAddress: UnsafePointer<UI
                                     pixelCount: pixelCount)
 }
 
-/// 赤と同じ元画像の dilate1 領域。Set は重複判定専用で反復しない。
+/// 赤と同じ元画像の dilate1 領域。重複判定は Dilate1Visited(反復しない)。
 func blueNoDeepSupport(points: [PixelPoint], baseAddress: UnsafePointer<UInt8>,
                        width: Int, height: Int, bytesPerRow: Int,
                        sampleStep: Int) -> SaberBlueNoDeepSupportVerdict {
-    var seen = Set<Int>()
+    var seen = Dilate1Visited(points: points, sampleStep: sampleStep, width: width, height: height)
     var deepCount = 0, pixelCount = 0
     for point in points {
         let x = point.x * sampleStep, y = point.y * sampleStep
         guard x >= 0, x < width, y >= 0, y < height else { continue }
         for yy in max(0, y - 1)...min(height - 1, y + 1) {
             for xx in max(0, x - 1)...min(width - 1, x + 1) {
-                guard seen.insert(yy * width + xx).inserted else { continue }
+                guard seen.insert(x: xx, y: yy) else { continue }
                 let offset = yy * bytesPerRow + xx * 4
                 let b = Int(baseAddress[offset]), g = Int(baseAddress[offset + 1])
                 let r = Int(baseAddress[offset + 2])

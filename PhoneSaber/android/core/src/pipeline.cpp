@@ -1,4 +1,5 @@
 // Production path from BGRADetection.swift; no diagnostic observers/profiling.
+#include <climits>
 #include "internal.hpp"
 
 namespace phonesaber::detail {
@@ -180,8 +181,32 @@ static std::vector<Points> core_lines(const Mask& core, const Mask& color, int w
     }
     return proposals;
 }
+// dilate1 領域の重複判定。bounding box 上の bitmap(std::set と同じ判定・同じ走査順で、速い)。
+struct Dilate1Visited {
+    int x0 = 0, y0 = 0, w = 0;
+    std::vector<unsigned char> bits;
+    Dilate1Visited(const Points& points, const PixelBuffer& p, int step) {
+        int min_x = INT_MAX, min_y = INT_MAX, max_x = INT_MIN, max_y = INT_MIN;
+        for (auto point : points) {
+            int x = point.x*step, y = point.y*step;
+            if (x < 0 || x >= p.width || y < 0 || y >= p.height) continue;
+            min_x = std::min(min_x,x); max_x = std::max(max_x,x); min_y = std::min(min_y,y); max_y = std::max(max_y,y);
+        }
+        if (min_x > max_x) return;
+        x0 = std::max(0,min_x-1); y0 = std::max(0,min_y-1);
+        w = std::min(p.width-1,max_x+1)-x0+1;
+        int h = std::min(p.height-1,max_y+1)-y0+1;
+        bits.assign(std::size_t(w)*std::size_t(h),0);
+    }
+    bool insert(int x, int y) {
+        auto& bit = bits[std::size_t(y-y0)*std::size_t(w)+std::size_t(x-x0)];
+        if (bit) return false;
+        bit = 1;
+        return true;
+    }
+};
 static WarmNoDeepRed warm_support(const Points& points, const PixelBuffer& p, int step) {
-    std::set<int> seen;
+    Dilate1Visited seen(points,p,step);
     WarmNoDeepRed v;
     int red_offset = p.format == PixelFormat::bgra ? 2 : 0, blue_offset = 2-red_offset;
     for (auto point : points) {
@@ -189,7 +214,7 @@ static WarmNoDeepRed warm_support(const Points& points, const PixelBuffer& p, in
         if (x < 0 || x >= p.width || y < 0 || y >= p.height) continue;
         for (int yy = std::max(0,y-1); yy <= std::min(p.height-1,y+1); ++yy)
             for (int xx = std::max(0,x-1); xx <= std::min(p.width-1,x+1); ++xx) {
-                if (!seen.insert(yy*p.width+xx).second) continue;
+                if (!seen.insert(xx,yy)) continue;
                 const auto* pixel = p.data+std::size_t(yy)*p.row_stride+xx*4;
                 int r = pixel[red_offset], g = pixel[1], b = pixel[blue_offset];
                 ++v.pixel_count;
@@ -201,9 +226,9 @@ static WarmNoDeepRed warm_support(const Points& points, const PixelBuffer& p, in
     v.rejected = v.deep_count == 0 && v.pixel_count > 0 && int64_t(v.warm_count)*100 >= int64_t(v.pixel_count)*30;
     return v;
 }
-// 赤と同じ元画像 dilate1 領域。set は重複判定だけに使用する。
+// 赤と同じ元画像 dilate1 領域。重複判定は Dilate1Visited。
 static BlueNoDeepSupport blue_support(const Points& points, const PixelBuffer& p, int step) {
-    std::set<int> seen;
+    Dilate1Visited seen(points,p,step);
     BlueNoDeepSupport v;
     int red_offset = p.format == PixelFormat::bgra ? 2 : 0, blue_offset = 2-red_offset;
     for (auto point : points) {
@@ -211,7 +236,7 @@ static BlueNoDeepSupport blue_support(const Points& points, const PixelBuffer& p
         if (x < 0 || x >= p.width || y < 0 || y >= p.height) continue;
         for (int yy = std::max(0,y-1); yy <= std::min(p.height-1,y+1); ++yy)
             for (int xx = std::max(0,x-1); xx <= std::min(p.width-1,x+1); ++xx) {
-                if (!seen.insert(yy*p.width+xx).second) continue;
+                if (!seen.insert(xx,yy)) continue;
                 const auto* pixel = p.data+std::size_t(yy)*p.row_stride+xx*4;
                 int r = pixel[red_offset], g = pixel[1], b = pixel[blue_offset];
                 ++v.pixel_count;

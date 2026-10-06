@@ -77,7 +77,14 @@ EMITTER_DIAGNOSTICS = object_field({
         "rejectionReason": scalar("string", nullable=True)}, nullable=True),
 }, nullable=True)
 
+DEVICE_HEALTH_FIELDS = {
+    "thermalState": scalar("string", nullable=True),
+    "batteryLevel": scalar("number", nullable=True),
+    "batteryState": scalar("string", nullable=True),
+}
+
 FRAME_CAMERA = object_field({
+    **DEVICE_HEALTH_FIELDS,
     "source": scalar("string"),
     **{name: scalar("number", nullable=True) for name in (
         "iso", "exposureDurationSeconds", "exposureBiasEV", "brightnessValue", "fNumber",
@@ -167,6 +174,7 @@ FRAME = object_field({
 }, required=True)
 
 CAMERA_SAMPLE = object_field({
+    **DEVICE_HEALTH_FIELDS,
     "frameID": scalar("integer", nullable=True),
     "presentationTimeSeconds": scalar("number", nullable=True),
     "exposureDurationMs": scalar("number", required=True),

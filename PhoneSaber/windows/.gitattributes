@@ -1,0 +1,3 @@
+# Windows の起動・管理スクリプトは checkout 時も CRLF に揃える。
+*.bat text eol=crlf
+*.ps1 text eol=crlf

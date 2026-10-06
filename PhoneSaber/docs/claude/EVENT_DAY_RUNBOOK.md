@@ -12,7 +12,7 @@ PC(Mac か Windows)で Unity のゲームを動かし、スマホ(iPhone か And
 
 ### 最初に1回だけ
 - **Mac**: `git lfs install` → `git clone https://github.com/TK75Attractions/3D-Saber.git` → `3D-Saber/PhoneSaber/setup_mac.command` をダブルクリック(デスクトップに PhoneSaber のアイコン)。Unity Hub で 3D-Saber を開く(6000.3.9f1)。
-- **Windows**: Git LFS を入れて同じく clone → Unity Hub で開く(6000.3.9f1)。初めて Play したときのファイアウォールの画面で「プライベート ネットワーク」を許可する(UDP 5005 / 5006 / 5007)。
+- **Windows**: Git LFS を入れて同じく clone → Unity Hub で開く(6000.3.9f1)。[Windows 当日用キット](../../windows/README.md)にビルド(File > Build Profiles)、台 A / B の起動 bat、管理者 PowerShell の `Allow-PhoneSaber-Firewall.ps1`(Private profile の UDP 5005〜5007)とホットスポットの手順をまとめている。
 - **iPhone**: Mac の Xcode で `PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender.xcodeproj` を開き、iPhone をつないで ▶。
 - **Android(AQUOS sense9)**: 開発者向けオプションで USB デバッグを ON。Android Studio で `PhoneSaber/android` を開き、つないで ▶。
 
@@ -20,6 +20,7 @@ PC(Mac か Windows)で Unity のゲームを動かし、スマホ(iPhone か And
 - **各 PC の Unity Editor(Mac / Windows)**: Play 前に `Tools > PhoneSaber > Station > A` または `B` を選ぶ。PlayerPrefs の `PhoneSaber.Station` に保存され、次の Play から適用される。
 - **ビルドしたゲーム**: 起動引数 `-phonesaberStation A`(もう一方は `B`)を付ける。Windows なら `Game.exe -phonesaberStation A`、Mac なら `open -a "/path/to/Game.app" --args -phonesaberStation A`。環境変数 `PHONESABER_STATION=A` でも指定できる。優先順は **起動引数 → 環境変数 → PlayerPrefs**。台名は16文字以内の英数字・`-`・`_`(通常は A / B)。Unity Console の探索/Bonjour/P2P 公開ログで台名を確認する。
 - **各スマホ(iPhone / Android)**: アプリの接続設定の **「台」**を、その PC と同じ **A / B** にしてから送信を開始する。設定は保存される。指定した台の PC だけを自動探索する。iPhone の P2P と診断 relay も同じ台に限定される。
+- **Windows Player の簡単な起動**: `PhoneSaber/windows/Start-Saber-A.bat` / `Start-Saber-B.bat` の先頭で exe の場所を合わせてダブルクリック(既定 `Builds/Windows/3D-Saber.exe`)。Editor と Player は同じ PC で同時に起動しない(UDP port が競合する)。
 - **手動 IP は常に優先**。自動探索で見つからないときは、その台の PC の IP を確認して入力する(Windows + iPhone は従来どおり手動 IP が必要)。台設定は座標の受信を拒否する仕組みではなく、スマホの自動送信先を選ぶための設定。
 - **1 台だけで従来どおり使うとき**: PC は `Station > None`、スマホは **指定なし**、起動引数/環境変数も未設定にする。どこにも台を設定しなければ従来と同じ動作。環境変数/起動引数を使った PC は、それを外してから None に戻す。
 
@@ -93,6 +94,28 @@ iPhone で Stop ─→ triage bundle
 Start PhoneSaber から単独起動した受信側を止める場合は、そのウィンドウで Ctrl+C。
 
 ## 4. 正常な状態
+
+**Windows / Mac 共通**: ゲーム画面(Editor は Game view)にフォーカスして **F8**(Mac は設定により Fn + F8)で運営 Overlay を開閉する。起動時は非表示。台名、RED / BLUE の直近1秒の packet 数、不正 payload を含む最終受信の経過・送信元 IP・解析 OK / NG、探索/Bonjour/P2P/受信機の状態を確認する。Mac の `127.0.0.1` は P2P bridge、それ以外は LAN。1秒を超えて受信がない色には日本語の警告が出る。Windows の Bonjour / P2P は未対応。
+
+通常送信画面の端末状態行は、箱の中で数時間使うときの確認用です。
+「発熱 正常 / やや高い / 高い / 危険」はOSの熱状態です（iPhoneは
+nominal / fair / serious / critical、AndroidはNONE / LIGHT・MODERATE / SEVERE /
+CRITICAL以上）。温度を摂氏で測った値ではありません。電池は残量%と
+充電中・満充電・未充電を表示し、取得できない値は「不明」になります。
+
+iPhoneの「カメラ / 処理 fps」、Androidの「解析 fps」は直近5秒の実測です。
+処理中央値は同じ窓のiPhoneの検出処理時間（画素アクセスを含む）、AndroidのJNI呼び出し時間です。
+送信fpsやUnityの受信fps、無線遅延とは別の値です。開始から3秒後以降、
+要求カメラfpsの70%未満（30fpsなら21fps未満、iPhoneの60fps設定なら42fps未満）で
+注意行が出ます。iPhoneはカメラ・処理のどちらが低くても対象です。
+高い・危険はfpsに関係なく注意行が出ます。アプリは熱やfpsを理由にカメラfps・認識を自動変更しません。
+
+**高い / 危険のときは箱を開け、送風・通風を増やし、プロジェクターの排熱から端末を離す。**
+電池残量と充電表示を確認し、残量が減るなら給電・ケーブルを確認して充電する。
+充電中も熱は増えるので通風を確保する。危険が続く場合は送信を手動停止し、
+冷えるまで待つか予備端末へ交代する。fpsだけが低い場合もまず箱を開けて通風・電源を確認し、
+送信fps・PCの受信状況と合わせて切り分ける。実機で熱状態が変わるとiPhoneのConsole /
+AndroidのLogcat（DeviceHealth）にも記録されます。iPhoneのDebug Recordingには熱状態と電池も残ります。
 
 | どこ | 正常 | 根拠 |
 |---|---|---|

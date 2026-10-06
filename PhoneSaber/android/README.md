@@ -5,14 +5,15 @@
 2026-10-06 の決定: iPhone/Mac の本番・診断は維持し、AQUOS sense9
 （Android 14 / Snapdragon 7s Gen 2）用の本番 sender を追加する。
 Windows または Mac の Unity と同じ Wi-Fi に接続し、既存の UDP 契約を使う。
-Android に Debug Recording、診断受信、計測 UI を移植しない。
+Android に Debug Recording、診断受信、measurement mode を移植しない。
+長時間運転用の端末状態（発熱・電池・実測解析fps・JNI処理中央値）は通常画面に表示する。
 
 
 ## AQUOS sense9 でのビルド・インストール
 
 対象は AQUOS sense9（Android 14 / API 34、Snapdragon 7s Gen 2）。
 `PhoneSaber/android/` 自体を Android Studio の **Open** で開く（リポジトリルートではない）。
-この worktree の変更は未commit。Swift、core のアルゴリズム、UDP仕様は変更していない。
+core のアルゴリズムとUDP仕様は維持する。
 
 1. SDK Manager → SDK Platforms で Android API 37 を用意する。この環境には
    `platforms/android-37.0` と `build-tools/36.0.0` が既にある。
@@ -31,7 +32,12 @@ Android に Debug Recording、診断受信、計測 UI を移植しない。
    見つからなければPCのIPv4を入力して保存。空欄を保存すると自動探索に戻る。
 
 端末で使う画面は「開始/停止」「PC名・IP・探索状態/手入力」「赤/青の検出・予測・保持状態」
-「色別送信fps」「認識の閾値（明るさ145、色の優位差25）」だけ。
+「色別送信fps」「認識の閾値（明るさ145、色の優位差25）」がある。
+端末状態行には「発熱 正常 / やや高い / 高い / 危険」、電池%・充電状態、
+直近5秒の実測解析fpsとJNI処理msの中央値も表示する。高い・危険、または開始3秒後から
+解析fpsが要求30fpsの70%未満（21fps未満）になると注意行を出す。
+カメラfpsや認識を自動調整しない。長時間運転の対処は
+[当日runbook](../docs/claude/EVENT_DAY_RUNBOOK.md#4-正常な状態) を参照。
 両色共通の既定彩度30、sample step=2は固定。閾値変更は停止中に行う。
 送信中は画面を点灯状態に保つ。画面を離れる・停止・Wi-Fiや送信先が変わると停止し、
 確認後に開始し直す。Debug Recording、診断、計測モード、P2Pはない。
@@ -48,6 +54,54 @@ cd android
 
 APKは `app/build/outputs/apk/debug/app-debug.apk`。Run/debug APKにも診断機能は含めない。
 公開配布用の署名鍵・keystoreはこのプロジェクトに入れていない。
+
+## MacのAndroidエミュレータで送信経路を確認（開発用）
+
+Debugビルドだけに「**開発用: 非Wi-Fiで送信を許可（手入力IP必須）**」スイッチがある。
+初期値はOFFで保存しない。ONのときはactive networkを使い、仮想Ethernet/携帯回線でも
+手入力IPへ送信できる。非Wi-Fiでの自動探索は行わない。Releaseにはスイッチを表示せず、
+手入力IPがあってもWi-Fiを必須にする。切替・送信先変更・ネットワーク変更・画面終了では
+停止するので、確認して開始し直す。
+
+1. MacのAndroid Studio → Device Managerで **ARM64 (`arm64-v8a`)** のAPI 29以上のAVDを用意する。
+   APKのABIはarm64だけなのでx86_64 AVDではJNIを読み込めない。背面カメラは
+   webcam、またはVirtual Sceneに設定する。固定AE [30,30]を広告するカメラが必要で、
+   非対応のエラーが出るAVDではカメラ設定/イメージを変える（アプリは要求fpsを緩めない）。
+2. `cd PhoneSaber/android` → `./gradlew :app:testDebugUnitTest :app:assembleDebug`。
+   `adb devices`でAVDのserialを確認し、
+   `adb -s <serial> install -r app/build/outputs/apk/debug/app-debug.apk`。
+   アプリを起動してカメラ権限を許可する。
+3. MacでUnityをPlayし、UDP 5005/5006の受信を開始する。別の受信確認用にはUnityを停止して
+   次のスクリプトをMacのTerminalで動かす（同じポートを同時に2つの受信側で使わない）。
+
+   ```bash
+   python3 -u - <<'PY'
+   import select
+   import socket
+   sockets = []
+   for port in (5005, 5006):
+       sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+       sock.bind(("0.0.0.0", port))
+       sockets.append(sock)
+   print("UDP 5005/5006を待機中（Ctrl+Cで終了）")
+   while True:
+       for sock in select.select(sockets, [], [])[0]:
+           payload, peer = sock.recvfrom(1024)
+           print(sock.getsockname()[1], peer, payload.decode("ascii"))
+   PY
+   ```
+
+4. AVDでWi-FiをOFFにし、仮想携帯回線等のactive networkを残す。アプリの開発用スイッチをON、
+   PCのIPv4に **`10.0.2.2`** を入力して保存し「開始」。これはAndroid Emulatorから
+   ホストMacへ届く特別なアドレスで、MacのLAN IPではない。
+5. webcamに赤/青の点灯したsaberを映す。Virtual Sceneの場合はExtended Controls →
+   Cameraで赤/青の棒の画像を配置し、プレビューに映す。解析fpsとJNI中央値が更新され、
+   「検出」または「予測」のときに色別送信fpsが増え、Macに
+   `x1,y1,x2,y2`が届くことを確認する。CameraX → JNI → C++ core → UDPが確認対象。
+   「保持（送信なし）」/未検出だけなら送信されないので入力画像・画角を確認する。
+6. スイッチOFFでは非Wi-Fiで開始できないこと、停止後に送信が止まり、再開始できることを確認する。
+   Releaseでも非Wi-Fiを拒否することを別途確認する。エミュレータの成功では
+   sense9の熱・カメラISP・実Wi-Fi・Android上のbit parityまでは確認できない。
 
 ツール版の参照: [AGP 9.2 の互換表](https://developer.android.com/build/releases/agp-9-2-0-release-notes)、
 [Gradle 9.8.0](https://docs.gradle.org/9.8.0/release-notes.html)、
@@ -133,15 +187,14 @@ UDPは待機フレーム1個の置換mailboxでnewest-wins、ノンブロッキ�
 
 ## 検証状況と残る確認
 
-このPhase 2では、ユーザー指定により **Gradle/AGP/NDKのダウンロード、Gradle Sync、
-Androidビルド、JVMテスト実行、APKインストールを行っていない**。
-
-SDKにはNDK/CMakeがまだない。Android Studioで上記パッケージを入れてから
-JVMテストとビルドを実行する必要がある。
+上記の2026-10-06ビルド結果は端末状態・開発用ネットワーク設定を追加する前のもの。
+今回追加したJVMテストとDebug/Releaseビルド、上記エミュレータの実送信は改めて確認する。
 
 JVMテスト（`app/src/test`）には探索応答parser・不正応答・ポート契約・手入力IP、
 コアpayloadの無加工routing・fresh/held/predicted、0/90/180/270°回転・row padding・
 非zero plane position・チャンネル保持・scratch再利用・不正入力を追加した。
+端末状態の日本語分類/表示、警告境界・ウォームアップ、直近5秒の中央値・失速時の失効、
+およびReleaseのWi-Fi必須・Debugの手入力IP/明示ON条件もJVMテストに含む。
 JNI/CameraX/NSD/ライフサイクルのinstrumented testは未実装。
 
 実機で必要な確認: sense9のRGBA配置/stride、VGA→480×640の向きと画面四隅のUnity mapping、
