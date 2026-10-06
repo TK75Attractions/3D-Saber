@@ -1,8 +1,10 @@
 import { COLORS, clamp, clone, blankChart, parseChart, exportChart, audioTime, longSeconds, makeNote, formatTime, hasVariableGrid, quantizeMs, History } from './core.js';
-import { RecordingTake, TapTempo } from './editing.js';
+import { RecordingTake, TapTempo, rangeNotes, transformRange, copyChart } from './editing.js';
+import { createBackup, readBackup } from './backup.js';
+import { timelineWindow, visibleNotes, paintTimeline, timelineHit } from './timeline.js';
 import { SongAudio } from './audio.js';
 import { encodeWav } from './wav.js';
-import { saveProject, listProjects, getProject, saveAudio, getAudio } from './storage.js';
+import { saveProject, listProjects, getProject, saveAudio, getAudio, saveProjectWithAudio } from './storage.js';
 const $ = id => document.getElementById(id), audio = new SongAudio();
 let chart = blankChart(), history = new History(), project = null, selected = null;
 let mode = 'record', color = 'auto', loading = false, saving = false, saveFailed = false, starting = false;
@@ -10,10 +12,15 @@ let saveTimer, toastTimer, persistChain = Promise.resolve(), flashes = [], lastF
 let take = null, lastTake = null, playbackEnd = Infinity, saveRevision = 0, pendingSaves = 0;
 const tapTempo = new TapTempo();
 const touches = new Map();
+let mapStart=0, mapBoxes=[], mapLastPaint=0, batchRange=null;
 const uid = () => crypto.randomUUID?.() || `p${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const settings = () => ({ snap: Number($('snap').value), rate: Number($('speed').value), longCount: $('longCount').value, direction: $('direction').value, color, latencyMs: clamp(Number($('latency').value)||0,-500,500), countIn:$('countIn').checked, clickSound:$('clickSound').checked, metronome:$('metronome').checked });
 const preference = (key, value) => { try { if (value !== undefined) localStorage.setItem(key, value); else return localStorage.getItem(key); } catch {} };
-function toast(message) { $('toast').textContent = message; $('toast').hidden = false; clearTimeout(toastTimer); toastTimer = setTimeout(() => $('toast').hidden = true, 5000); }
+function toast(message) {
+  const notice=$('toast'), dialog=document.activeElement?.closest('dialog[open]') || [...document.querySelectorAll('dialog[open]')].at(-1);
+  (dialog || document.body).append(notice);notice.textContent=message;notice.hidden=false;
+  clearTimeout(toastTimer);toastTimer=setTimeout(()=>notice.hidden=true,5000);
+}
 function fail(error) { console.error(error); toast(error?.message || '処理に失敗しました。内容を確認してください。'); }
 function run(action) { return async event => { try { await action(event); } catch (e) { fail(e); } }; }
 function status(message) { $('saveStatus').textContent = message; }
@@ -28,6 +35,7 @@ function refresh() {
   $('exportButton').disabled = !project || loading;
   $('exportAudioButton').disabled = !audio.buffer || loading;
   $('libraryButton').disabled = loading;
+  for(const id of ['timelineButton','batchButton','duplicateButton','backupButton','createCopy'])$(id).disabled=!project||loading||starting;
   $('retryTake').disabled = !lastTake || audio.playing || loading || starting;
   $('takeStatus').textContent = take ? `今回 ${take.notes.length} ノーツ${take.replace ? ' · 区間を録り直し中' : ''}` : lastTake ? `直前の録音 ${lastTake.count} ノーツ` : '1回の録音をまとめて戻せます';
   for (const id of ['rangeStart','rangeEnd','rangeEnabled','replaceRange','setRangeStart','setRangeEnd']) $(id).disabled = !audio.buffer || loading || audio.playing || starting;
@@ -38,6 +46,7 @@ function refresh() {
   for(const name of ['record','preview']){ $(name+'Mode').classList.toggle('active',mode===name);$(name+'Mode').setAttribute('aria-pressed',mode===name); }
   $('padHint').textContent = mode === 'record' ? '押した場所にノーツを配置。長押しでロング、2本指で同時押し。' : '確認モード。ノーツの配置とタイミングを見返せます。タップでは追加されません。';
   $('seek').max = audio.duration || 1; $('durationReadout').textContent = formatTime(audio.duration);
+  if($('timelineDialog').open)renderMap();
 }
 function fillChartFields() { $('bpm').value=chart.bpm;$('offset').value=chart.offsetMs;$('beatZero').value=chart.beatZeroMs;$('level').value=chart.displayLevel; }
 function snapshotProject() { return {...project,chart:clone(chart),difficulty:$('difficulty').value,position:audio.time(),settings:settings(),updated:Date.now()}; }
@@ -63,6 +72,7 @@ function stop({finish=true}={}) {
 function resetSession() {
   take=null;lastTake=null;tapTempo.reset();$('tempoReadout').textContent='曲の拍に合わせて4回以上';$('applyTempo').disabled=true;
   $('rangeEnabled').checked=false;$('replaceRange').checked=false;$('rangeStart').value=0;$('rangeEnd').value=audio.duration.toFixed(3);$('noteDialog').close();
+  mapStart=0;batchRange=null;for(const id of ['timelineDialog','batchDialog','duplicateDialog'])$(id).close();
 }
 function restoreSettings(value={}) {
   for(const id of ['snap','longCount','direction'])if(value[id]!==undefined)$(id).value=value[id];
@@ -130,6 +140,78 @@ function downloadAudio() {
   const url=URL.createObjectURL(new Blob([encodeWav(audio.buffer)],{type:'audio/wav'})),link=document.createElement('a');
   link.href=url;link.download='audio.wav';document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
   toast('本編用のaudio.wavを書き出しました。譜面JSONと同じ曲フォルダーに置いてください。');
+}
+function downloadBlob(blob,name) {
+  const url=URL.createObjectURL(blob),link=document.createElement('a');link.href=url;link.download=name;document.body.append(link);link.click();link.remove();setTimeout(()=>URL.revokeObjectURL(url),60000);
+}
+async function downloadBackup() {
+  if(!project||loading)return;stop();const value=snapshotProject();loading=true;refresh();
+  try{
+    await persist();const source=await getAudio(value.audioId);
+    const safeName=value.name.replace(/[<>:"/\\|?*\u0000-\u001f]/g,'_').slice(0,80)||'chart';
+    downloadBlob(createBackup(value,source),`Saber-${safeName}-${value.difficulty}.saber`);
+    toast('音源・譜面・設定をバックアップしました。別の端末では「バックアップを開く」で復元できます。');
+  }finally{loading=false;refresh();}
+}
+async function restoreBackup(file) {
+  if(!file||loading)return;stop();loading=true;refresh();status('バックアップを確認中…');
+  try{
+    const value=await readBackup(file),buffer=await audio.decode(value.audio.blob);await persist();
+    const audioId=uid(),next={id:uid(),audioId,audioName:value.audio.name,name:value.name,difficulty:value.difficulty,chart:value.chart,settings:value.settings,position:clamp(value.position,0,buffer.duration),updated:Date.now()};
+    await saveProjectWithAudio(next,{id:audioId,...value.audio});
+    project=next;chart=next.chart;history=new History();selected=null;audio.buffer=buffer;audio.seek(next.position);
+    $('difficulty').value=next.difficulty;restoreSettings(next.settings);resetSession();fillChartFields();renderNotes();drawWaveform();$('library').close();await persist();
+    toast('新しい下書きとして復元しました。元の下書きも残っています。');
+  }catch(error){status(project?'読み込みを中止しました。現在の下書きはそのままです。':'バックアップを読み込めませんでした。');throw error;}
+  finally{loading=false;refresh();}
+}
+function showCopyDialog() {
+  if(!project||loading)return;stop();$('library').close();$('copyName').value=project.name+' のコピー';$('copyDifficulty').value=$('difficulty').value==='normal'?'hard':'normal';$('copyContent').value='copy';$('duplicateDialog').showModal();
+}
+async function createProjectCopy() {
+  if(!project||loading)return;stop();loading=true;refresh();
+  try{
+    const next={...snapshotProject(),id:uid(),chart:copyChart(chart,$('copyContent').value==='empty'),name:$('copyName').value.trim().slice(0,120)||project.name+' のコピー',difficulty:$('copyDifficulty').value,position:0,updated:Date.now()};
+    if(!['easy','normal','hard'].includes(next.difficulty))throw new Error('難易度を選んでください。');
+    await persist();await saveProject(next);project=next;chart=next.chart;history=new History();selected=null;audio.seek(0);$('difficulty').value=next.difficulty;resetSession();fillChartFields();renderNotes();await persist();toast('新しい下書きを作りました。元の譜面は「曲・保存」に残っています。');
+  }finally{loading=false;refresh();}
+}
+function mapWindow(){return timelineWindow(audio.duration,mapStart,Number($('mapZoom').value));}
+function paintMap() {
+  if(!$('timelineDialog').open)return;
+  let range=null;try{range=readRange(false);}catch{}
+  mapBoxes=paintTimeline($('chartMap'),chart,audio.buffer,mapWindow(),audio.time(),selected,range);
+  $('mapPosition').textContent=formatTime(audio.time(),true);
+}
+function renderMap() {
+  if(!$('timelineDialog').open)return;const window=mapWindow();mapStart=window.start;paintMap();
+  const counts={blue:0,red:0,gold:0,default:0};for(const note of chart.notes)counts[note.color]++;
+  $('mapStats').textContent=`青 ${counts.blue} · 赤 ${counts.red} · 金 ${counts.gold}${counts.default?' · 他 '+counts.default:''} / 合計 ${chart.notes.length}`;
+  $('mapRange').textContent=`${formatTime(window.start,true)} 〜 ${formatTime(window.end,true)}`;
+  $('mapPrevious').disabled=window.start<=0;$('mapNext').disabled=window.end>=audio.duration;
+  $('mapPlay').textContent=audio.playing?'一時停止':'ここから聴く';
+  $('mapSelection').textContent=`編集区間 A ${formatTime(Number($('rangeStart').value),true)} / B ${formatTime(Number($('rangeEnd').value),true)}`;
+  const list=$('mapNotes');list.replaceChildren();const visible=visibleNotes(chart,window);
+  for(const note of visible.slice(0,100)){const button=document.createElement('button');button.className='map-note';button.style.setProperty('--note-color',COLORS[note.color]);button.textContent=`${formatTime(audioTime(note,chart),true)} ${ {blue:'青',red:'赤',gold:'金',default:'他'}[note.color]}${note.count>1?' ×'+note.count:''}`;button.onclick=()=>selectNote(note.__editorId);list.append(button);}
+  if(!visible.length){const p=document.createElement('p');p.className='hint';p.textContent='この範囲にノーツはありません。';list.append(p);}
+  if(visible.length>100){const p=document.createElement('p');p.className='hint';p.textContent=`この表示には${visible.length}個あります。一覧は先頭100個です。表示幅を狭めて選んでください。`;list.append(p);}
+}
+function showTimeline() {
+  if(!project||loading)return;stop();mapStart=Math.max(0,audio.time()-(Number($('mapZoom').value)||audio.duration)/3);$('timelineDialog').showModal();renderMap();
+}
+function showBatch() {
+  if(!project||loading)return;stop();batchRange=readRange(false);$('batchColor').value='all';$('batchDestination').value=batchRange.end.toFixed(3);$('batchRangeLabel').textContent=`A ${formatTime(batchRange.start,true)} 〜 B ${formatTime(batchRange.end,true)}`;refreshBatch();$('batchDialog').showModal();
+}
+function refreshBatch() {
+  if(!batchRange)return;const count=rangeNotes(chart,{...batchRange,color:$('batchColor').value}).length;
+  $('batchCount').textContent=`対象 ${count} ノーツ`;for(const id of ['applyShift','applyCopy','applyMirror'])$(id).disabled=count===0;
+}
+function applyBatch(kind) {
+  if(!batchRange||loading)return;stop();
+  const value=Number($(kind==='shift'?'batchShift':'batchDestination').value);
+  const result=transformRange(chart,{...batchRange,color:$('batchColor').value},{kind,value,swapColors:$('batchSwapColors').checked},audio.duration);
+  const from=clamp(batchRange.start+result.deltaSeconds,0,audio.duration),to=clamp(batchRange.end+result.deltaSeconds,0,audio.duration);
+  commit(()=>{chart=result.chart;selected=null;});$('rangeStart').value=from.toFixed(3);$('rangeEnd').value=to.toFixed(3);audio.seek(from);$('batchDialog').close();renderMap();renderNotes(from);toast(`${result.count}ノーツを${kind==='copy'?'コピー':kind==='mirror'?'左右反転':'移動'}しました。「戻す」で取り消せます。`);
 }
 function renderNotes(centerTime) {
   const list=$('noteList');list.replaceChildren();$('emptyNotes').hidden=chart.notes.length>0;let start=0;
@@ -230,12 +312,13 @@ function tick(now) {
   $('transportStatus').textContent=loading?'読み込み中':countdown>0?`カウント ${Math.min(4,countdown)}`:audio.playing?(mode==='record'?'録音中':'確認中'):'一時停止';
   $('stageMessage').textContent=loading?'音源を読み込み中…':!audio.buffer?'音源を開くと、曲に合わせて記録できます':countdown>0?String(Math.min(4,countdown)):'';
   for(const touch of touches.values()){const duration=Math.max(0,t-touch.startAudio);if(duration/touch.options.rate>=.24)touch.marker.textContent=`×${makeNote(touch,t,chart,touch.options).count}`;}
+  if($('timelineDialog').open&&now-mapLastPaint>100){paintMap();mapLastPaint=now;}
   drawStage(t,now);requestAnimationFrame(tick);
 }
-async function togglePlayback() {
+async function togglePlayback({useRange=true}={}) {
   if(starting||loading)return;if(audio.playing){stop();return;}starting=true;refresh();
   try{
-    const range=readRange();
+    const range=useRange?readRange():null;
     if(range)audio.seek(range.start);else if(audio.position>=audio.duration-.01)audio.seek(0);
     playbackEnd=range?.end??audio.duration;
     const started=await audio.play({rate:Number($('speed').value),countBeats:mode==='record'&&$('countIn').checked?4:0,bpm:chart.bpm,metronome:$('metronome').checked,beatOrigin:(chart.beatZeroMs+chart.offsetMs)/1000,end:playbackEnd});
@@ -244,8 +327,8 @@ async function togglePlayback() {
     lastFrameTime=audio.time();
   }finally{starting=false;refresh();}
 }
-function readRange() {
-  if(!$('rangeEnabled').checked)return null;
+function readRange(enabledOnly=true) {
+  if(enabledOnly&&!$('rangeEnabled').checked)return null;
   const start=Number($('rangeStart').value),end=Number($('rangeEnd').value);
   if(!Number.isFinite(start)||!Number.isFinite(end)||start<0||end>audio.duration+.001||end-start<.1)throw new Error('区間は音源内で、AよりBを0.1秒以上後にしてください。');
   return{start,end:Math.min(end,audio.duration)};
@@ -291,6 +374,27 @@ for(const id of ['speed','snap','longCount','direction','latency','difficulty','
 document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();persist().catch(fail);}});window.addEventListener('pagehide',()=>{stop();persist().catch(()=>{});});window.addEventListener('beforeunload',e=>{if(saving||saveFailed||saveTimer||touches.size){e.preventDefault();e.returnValue='';}});window.addEventListener('resize',drawWaveform);
 window.addEventListener('keydown',run(async e=>{if(['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)||document.querySelector('dialog[open]'))return;if(e.code==='Space'){e.preventDefault();if(audio.buffer)await togglePlayback();}if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();$(e.shiftKey?'redoButton':'undoButton').click();}}));
 $('exportAudioButton').addEventListener('click',run(downloadAudio));
+$('backupButton').addEventListener('click',run(downloadBackup));
+for(const id of ['backupFile','libraryBackupFile'])$(id).addEventListener('change',run(async event=>{try{await restoreBackup(event.target.files[0]);}finally{event.target.value='';}}));
+$('duplicateButton').onclick=showCopyDialog;$('createCopy').addEventListener('click',run(createProjectCopy));
+$('timelineButton').onclick=showTimeline;$('timelineDialog').addEventListener('close',()=>stop());
+$('mapZoom').onchange=()=>{mapStart=Math.max(0,audio.time()-(Number($('mapZoom').value)||audio.duration)/3);renderMap();};
+for(const[id,direction]of[['mapPrevious',-1],['mapNext',1]])$(id).onclick=()=>{mapStart+=mapWindow().span*.8*direction;renderMap();};
+$('mapCurrent').onclick=()=>{mapStart=Math.max(0,audio.time()-mapWindow().span/3);renderMap();};
+$('mapPlay').addEventListener('click',run(async()=>{if(!audio.playing)mode='preview';await togglePlayback({useRange:false});}));
+for(const[id,field]of[['mapSetA','rangeStart'],['mapSetB','rangeEnd']])$(id).onclick=()=>{stop();$(field).value=audio.time().toFixed(3);lastTake=null;refresh();};
+let mapPointer=null;
+$('chartMap').addEventListener('pointerdown',event=>{mapPointer={x:event.clientX,y:event.clientY};});
+$('chartMap').addEventListener('pointercancel',()=>mapPointer=null);
+$('chartMap').addEventListener('pointerup',event=>{
+  const start=mapPointer;mapPointer=null;if(!start||Math.hypot(start.x-event.clientX,start.y-event.clientY)>10)return;
+  const rect=$('chartMap').getBoundingClientRect(),x=event.clientX-rect.left,y=event.clientY-rect.top,note=timelineHit(mapBoxes,x,y);
+  if(note)selectNote(note.__editorId);else{const window=mapWindow();seek(window.start+clamp((x-34)/(rect.width-46),0,1)*window.span);renderMap();}
+});
+for(const id of ['batchButton','mapBatch'])$(id).addEventListener('click',run(showBatch));
+$('batchColor').onchange=refreshBatch;
+for(const[id,kind]of[['applyShift','shift'],['applyCopy','copy'],['applyMirror','mirror']])$(id).addEventListener('click',run(()=>applyBatch(kind)));
+window.addEventListener('resize',()=>renderMap());
 async function setupOffline(){
   if(!('serviceWorker'in navigator)||!window.isSecureContext){$('offlineStatus').textContent='オフライン機能はHTTPSで使用できます';return;}
   try{

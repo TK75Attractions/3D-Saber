@@ -1,4 +1,46 @@
-import { audioTime, clamp, clone } from './core.js';
+import { audioTime, clamp, clone, noteId, longSeconds, parseChart, exportChart } from './core.js';
+
+export function rangeNotes(chart, {start, end, color = 'all'}) {
+  if (![start, end].every(Number.isFinite) || start < 0 || end <= start) throw new Error('開始Aと終了Bを確認してください。');
+  return chart.notes.filter(n => audioTime(n, chart) >= start && audioTime(n, chart) < end && (color === 'all' || n.color === color));
+}
+
+// 変更後の全ノーツを検証してから返す。途中まで適用した譜面は作らない。
+export function transformRange(chart, range, operation, duration) {
+  const selected = rangeNotes(chart, range);
+  if (!selected.length) throw new Error('この区間に対象のノーツがありません。');
+  if (!['shift', 'copy', 'mirror'].includes(operation.kind)) throw new Error('未対応の区間操作です。');
+  if (!Number.isFinite(duration) || duration <= 0) throw new Error('音源を開いてください。');
+  if (operation.kind !== 'mirror' && !Number.isFinite(operation.value)) throw new Error('移動量・コピー先を数値で入力してください。');
+  if (operation.kind === 'copy' && chart.notes.length + selected.length > 50000) throw new Error('コピーするとノーツ数の上限を超えます。');
+  const deltaMs = operation.kind === 'shift' ? operation.value : operation.kind === 'copy' ? (operation.value - range.start) * 1000 : 0;
+  const mirrored = {left:'right', right:'left', upleft:'upright', upright:'upleft', downleft:'downright', downright:'downleft'};
+  const modified = selected.map(original => {
+    const note = clone(original);
+    if (operation.kind === 'mirror') {
+      note.x = -note.x;
+      note.direction = mirrored[note.direction] || note.direction;
+      if (operation.swapColors) note.color = note.color === 'blue' ? 'red' : note.color === 'red' ? 'blue' : note.color;
+    } else {
+      note.time = +(note.time + deltaMs).toFixed(3);
+      note.beat = +(note.beat + deltaMs * chart.bpm / 60000).toFixed(6);
+      const time = audioTime(note, chart);
+      if (time < 0 || time + longSeconds(note) > duration + .000001) throw new Error('ノーツやロングの終わりが音源の外に出ます。移動量・コピー先を調整してください。');
+    }
+    if (operation.kind === 'copy') note.__editorId = noteId();
+    return note;
+  });
+  const result = clone(chart), replacements = new Map(modified.map(n => [n.__editorId, n]));
+  result.notes = operation.kind === 'copy' ? [...result.notes, ...modified] : result.notes.map(n => replacements.get(n.__editorId) || n);
+  result.notes.sort((a,b) => a.time - b.time);
+  return {chart:result, count:selected.length, deltaSeconds:deltaMs/1000};
+}
+
+export function copyChart(chart, empty = false) {
+  const result = parseChart(exportChart(chart));
+  if (empty) result.notes = [];
+  return result;
+}
 
 // 区間は [開始, 終了)。途中停止では再生した部分だけを置き換える。
 // 一度も入力しなかった録音と、カウント中の中断は既存ノーツを消さない。

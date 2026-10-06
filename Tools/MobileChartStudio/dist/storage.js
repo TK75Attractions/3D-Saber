@@ -22,3 +22,14 @@ export const listProjects = () => request('projects', 'readonly', s => s.getAll(
 export const getProject = id => request('projects', 'readonly', s => s.get(id));
 export const saveAudio = (id, blob, name) => request('audio', 'readwrite', s => s.put({ id, blob, name }));
 export const getAudio = id => request('audio', 'readonly', s => s.get(id));
+
+// 復元時は音源と譜面を同じトランザクションで保存し、片方だけを残さない。
+export async function saveProjectWithAudio(project, audio) {
+  const db = await database();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['projects','audio'], 'readwrite');
+    tx.objectStore('audio').put(audio);tx.objectStore('projects').put(project);
+    tx.oncomplete = () => resolve();
+    tx.onabort = tx.onerror = () => reject(tx.error || new Error('バックアップを端末に保存できませんでした。'));
+  });
+}
