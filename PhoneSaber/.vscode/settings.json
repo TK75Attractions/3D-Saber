@@ -1,0 +1,6 @@
+{
+  "python.defaultInterpreterPath": "/Users/satoshi/.pyenv/versions/3.12.1/bin/python",
+  "code-runner.executorMap": {
+    "python": "/Users/satoshi/.pyenv/versions/3.12.1/bin/python -u"
+  }
+}

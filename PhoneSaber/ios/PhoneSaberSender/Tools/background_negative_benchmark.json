@@ -1,0 +1,130 @@
+{
+  "schemaVersion": 1,
+  "description": "Informational background hard-negative benchmark: matte red background objects (label strip, carabiner, basket) with no lit saber. Every detection of an expected color is a false positive. Not part of the lossless 40/40 gate.",
+  "inboxRoot": "~/Library/Application Support/PhoneSaber/diagnostics-inbox",
+  "privacy": "Source PNGs are private home recordings that show a person. Never copy them into this repository; reference them only by inbox-relative path and SHA-256.",
+  "baseline": {
+    "measuredOn": "2026-10-02",
+    "detector": "unmodified production DetectionCore.swift + BGRADetection.swift via VideoDetectionDiagnostic (default thresholds, sample step 2)",
+    "falsePositives": 7,
+    "available": 8
+  },
+  "images": [
+    {
+      "id": "carabiner_vs_label_005850_2537",
+      "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_05_motion_event_1000000000_onset_2537.png",
+      "sha256": "a3835b4759aaf21f84c7ec74aa2a118b0af1eecb3eedb6353ed92ceacfe64d18",
+      "sourceSession": "20261002_005850_489",
+      "frameID": 2537,
+      "expectedNotDetected": [
+        "RED",
+        "BLUE"
+      ],
+      "content": "Red carabiner and red label strip in a near-tie (60.82 vs 60.61), no lit saber; produced a large RED output jump.",
+      "baselineStatus": {
+        "RED": "known_detected",
+        "BLUE": "rejected"
+      }
+    },
+    {
+      "id": "label_005850_2533",
+      "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_01_motion_event_1000000000_before_2533.png",
+      "sha256": "1192f7bacd0dd96ec571abf7e0ca99c9cdc3d8e2a6c90f6bc677d57fa54c0781",
+      "sourceSession": "20261002_005850_489",
+      "frameID": 2533,
+      "expectedNotDetected": [
+        "RED"
+      ],
+      "content": "Matte red label strip, no lit saber.",
+      "baselineStatus": {
+        "RED": "known_detected"
+      }
+    },
+    {
+      "id": "label_white_text_013205_256",
+      "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_06_motion_event_1000000000_peak_256.png",
+      "sha256": "9712bb0a81c96656eec511b7d4d587a5dcb3fbe4db99539e4315443e00711a5d",
+      "sourceSession": "20261002_013205_087",
+      "frameID": 256,
+      "expectedNotDetected": [
+        "RED"
+      ],
+      "content": "Red label strip with white text (core support ~0.57), no lit saber; hardest label case.",
+      "baselineStatus": {
+        "RED": "known_detected"
+      }
+    },
+    {
+      "id": "carabiner_vs_label_013205_255",
+      "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_05_motion_event_1000000000_onset_255.png",
+      "sha256": "5c31a5a834613c9983ee7078440b204746a1e7b9a8a07b45fb10c651e55a2fe4",
+      "sourceSession": "20261002_013205_087",
+      "frameID": 255,
+      "expectedNotDetected": [
+        "RED"
+      ],
+      "content": "Red carabiner versus red label strip, no lit saber.",
+      "baselineStatus": {
+        "RED": "known_detected"
+      }
+    },
+    {
+      "id": "control_label_carabiners_013205_282",
+      "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_12_red_dropout_false_282.png",
+      "sha256": "37bdd0010114463e902429e859219461731294301368abe7a4c3b87941093432",
+      "sourceSession": "20261002_013205_087",
+      "frameID": 282,
+      "expectedNotDetected": [
+        "RED"
+      ],
+      "content": "Control: label strip plus two carabiners at lower exposure (label peak ~232), no lit saber; already rejected and must stay rejected.",
+      "baselineStatus": {
+        "RED": "rejected"
+      }
+    },
+    {
+      "id": "blurred_carabiner_010049_662",
+      "path": "phone_saber_triage_phonesaber_20261002_010049_190/images/image_07_motion_event_1000000000_after_662.png",
+      "sha256": "fea4f3571d48a92c6114c50b65f03c9d6b29e55bf2fc8137711a4a07a561e845",
+      "sourceSession": "20261002_010049_190",
+      "frameID": 662,
+      "expectedNotDetected": [
+        "RED"
+      ],
+      "content": "Motion-blurred red carabiner, no lit saber.",
+      "baselineStatus": {
+        "RED": "known_detected"
+      }
+    },
+    {
+      "id": "label_unlit_sabers_003921_24174",
+      "path": "phone_saber_triage_phonesaber_20261001_003921_526/images/image_02_motion_event_0_event_post_24174.png",
+      "sha256": "f3cbf25e0082810565b788837cbb9285dd1300e3536851a907a70184c2423539",
+      "sourceSession": "20261001_003921_526",
+      "frameID": 24174,
+      "expectedNotDetected": [
+        "RED",
+        "BLUE"
+      ],
+      "content": "Red label strip with unlit sabers, recorded on a different day.",
+      "baselineStatus": {
+        "RED": "known_detected",
+        "BLUE": "rejected"
+      }
+    },
+    {
+      "id": "red_basket_152331_96",
+      "path": "phone_saber_triage_phonesaber_20260929_152331_131/images/image_02_blue_dropout_false_96.png",
+      "sha256": "a9c811bd5ccdad9008adfaeae1f9dd8411f964a5c0e474cbd84290ed92c89cec",
+      "sourceSession": "20260929_152331_131",
+      "frameID": 96,
+      "expectedNotDetected": [
+        "RED"
+      ],
+      "content": "Blurred red basket in a different room, no lit saber.",
+      "baselineStatus": {
+        "RED": "known_detected"
+      }
+    }
+  ]
+}

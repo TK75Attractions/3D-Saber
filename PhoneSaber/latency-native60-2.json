@@ -1,0 +1,10 @@
+{
+  "measurement": "display submission to BGR frame returned to Python; includes display phase, exposure, transfer and retrieval, excludes tracking and preview presentation",
+  "warning": "Not isolated wireless latency. Preview rendering can affect subsequent scheduling, and local processing timing alone cannot establish overall improvement when camera acquisition, transfer, and optical latency may dominate. 60+ decoded IDs and >=85% requested FPS required. Compare multiple runs with fixed camera/light/effects. Lower resolution still needs red/blue detection validation.",
+  "results": [
+    {
+      "profile": "native60",
+      "error": "*** -[AVCaptureDevice_Tundra setActiveVideoMinFrameDuration:] Not supported - Supported ranges: (\n    \"<AVFrameRateRange: 0x8918d01f0 1.00 - 60.00 (1000000 / 1000000 - 1000000 / 60000000)>\"\n), tried to set maxFrameRate to 60.002399 (16666 / 1000000)"
+    }
+  ]
+}

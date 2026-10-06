@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="297mm" height="210mm" viewBox="0 0 297 210">
+  <title>Stereo calibration chessboard: 9 by 6 inner corners</title>
+  <defs>
+    <pattern id="checker" width="50" height="50" patternUnits="userSpaceOnUse">
+      <rect width="50" height="50" fill="white"/>
+      <rect x="0" y="0" width="25" height="25" fill="black"/>
+      <rect x="25" y="25" width="25" height="25" fill="black"/>
+    </pattern>
+  </defs>
+  <!-- 10 by 7 squares = 9 by 6 inner corners; each square is 25 mm. -->
+  <rect x="23.5" y="17.5" width="250" height="175" fill="url(#checker)" stroke="black" stroke-width="0.5"/>
+</svg>

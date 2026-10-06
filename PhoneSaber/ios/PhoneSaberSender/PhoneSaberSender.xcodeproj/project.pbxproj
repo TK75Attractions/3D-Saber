@@ -1,0 +1,441 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 71;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		A00000000000000000000001 /* BGRADetection.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000001 /* BGRADetection.swift */; };
+		A00000000000000000000002 /* CameraPreview.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000002 /* CameraPreview.swift */; };
+		A00000000000000000000003 /* CameraViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000003 /* CameraViewModel.swift */; };
+		A00000000000000000000004 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000004 /* ContentView.swift */; };
+		A00000000000000000000005 /* DetectionCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000005 /* DetectionCore.swift */; };
+		A00000000000000000000006 /* FrameProcessor.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000006 /* FrameProcessor.swift */; };
+		A00000000000000000000007 /* PhoneSaberSenderApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000007 /* PhoneSaberSenderApp.swift */; };
+		A00000000000000000000008 /* UDPSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000008 /* UDPSender.swift */; };
+		A00000000000000000000011 /* DebugVideoRecorder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000011 /* DebugVideoRecorder.swift */; };
+		A00000000000000000000009 /* DetectionCoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000009 /* DetectionCoreTests.swift */; };
+		A0000000000000000000000A /* blue-led-with-curtain-reflection-01.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000A /* blue-led-with-curtain-reflection-01.png */; };
+		A0000000000000000000000B /* blue-led-with-curtain-reflection-02.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000B /* blue-led-with-curtain-reflection-02.png */; };
+		A0000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png */; };
+		A0000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png */; };
+		A0000000000000000000000E /* blue-led-bright-large-05.png in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000E /* blue-led-bright-large-05.png */; };
+		A0000000000000000000000F /* production-video-IMG_5933 in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000000F /* production-video-IMG_5933 */; };
+		A00000000000000000000012 /* forensic-20260921 in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000012 /* forensic-20260921 */; };
+		A00000000000000000000013 /* forensic-20260921-211845 in Resources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000013 /* forensic-20260921-211845 */; };
+		A00000000000000000000014 /* DebugRecordingTriage.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000014 /* DebugRecordingTriage.swift */; };
+		A00000000000000000000015 /* DebugRecordingTriageTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000015 /* DebugRecordingTriageTests.swift */; };
+		A00000000000000000000016 /* DebugBundleTransfer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000016 /* DebugBundleTransfer.swift */; };
+		A00000000000000000000017 /* P2PProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000017 /* P2PProtocol.swift */; };
+		A00000000000000000000018 /* P2PSender.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000018 /* P2PSender.swift */; };
+		A00000000000000000000019 /* P2PTransportTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B10000000000000000000019 /* P2PTransportTests.swift */; };
+		A0000000000000000000A001 /* GuidedRecording.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A001 /* GuidedRecording.swift */; };
+		A0000000000000000000A002 /* GuidedRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A002 /* GuidedRecordingTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E00000000000000000000004 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = E00000000000000000000000 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = E00000000000000000000001;
+			remoteInfo = PhoneSaberSender;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		B10000000000000000000000 /* PhoneSaberSender.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PhoneSaberSender.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B10000000000000000000001 /* BGRADetection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BGRADetection.swift; sourceTree = "<group>"; };
+		B10000000000000000000002 /* CameraPreview.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraPreview.swift; sourceTree = "<group>"; };
+		B10000000000000000000003 /* CameraViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CameraViewModel.swift; sourceTree = "<group>"; };
+		B10000000000000000000004 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		B10000000000000000000005 /* DetectionCore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionCore.swift; sourceTree = "<group>"; };
+		B10000000000000000000006 /* FrameProcessor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FrameProcessor.swift; sourceTree = "<group>"; };
+		B10000000000000000000007 /* PhoneSaberSenderApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PhoneSaberSenderApp.swift; sourceTree = "<group>"; };
+		B10000000000000000000008 /* UDPSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UDPSender.swift; sourceTree = "<group>"; };
+		B10000000000000000000017 /* P2PProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PProtocol.swift; sourceTree = "<group>"; };
+		B10000000000000000000018 /* P2PSender.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PSender.swift; sourceTree = "<group>"; };
+		B10000000000000000000019 /* P2PTransportTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = P2PTransportTests.swift; sourceTree = "<group>"; };
+		B10000000000000000000011 /* DebugVideoRecorder.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugVideoRecorder.swift; sourceTree = "<group>"; };
+		B10000000000000000000009 /* DetectionCoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionCoreTests.swift; sourceTree = "<group>"; };
+		B10000000000000000000010 /* PhoneSaberSenderTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = PhoneSaberSenderTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		B1000000000000000000000A /* blue-led-with-curtain-reflection-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-with-curtain-reflection-01.png"; sourceTree = "<group>"; };
+		B1000000000000000000000B /* blue-led-with-curtain-reflection-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-with-curtain-reflection-02.png"; sourceTree = "<group>"; };
+		B1000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-with-left-curtain-reflection-03.png"; sourceTree = "<group>"; };
+		B1000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-with-left-curtain-reflection-04.png"; sourceTree = "<group>"; };
+		B1000000000000000000000E /* blue-led-bright-large-05.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "blue-led-bright-large-05.png"; sourceTree = "<group>"; };
+		B1000000000000000000000F /* production-video-IMG_5933 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "production-video-IMG_5933"; sourceTree = "<group>"; };
+		B10000000000000000000012 /* forensic-20260921 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "forensic-20260921"; sourceTree = "<group>"; };
+		B10000000000000000000013 /* forensic-20260921-211845 */ = {isa = PBXFileReference; lastKnownFileType = folder; path = "forensic-20260921-211845"; sourceTree = "<group>"; };
+		B10000000000000000000014 /* DebugRecordingTriage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugRecordingTriage.swift; sourceTree = "<group>"; };
+		B10000000000000000000015 /* DebugRecordingTriageTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugRecordingTriageTests.swift; sourceTree = "<group>"; };
+		B10000000000000000000016 /* DebugBundleTransfer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DebugBundleTransfer.swift; sourceTree = "<group>"; };
+		B1000000000000000000A001 /* GuidedRecording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedRecording.swift; sourceTree = "<group>"; };
+		B1000000000000000000A002 /* GuidedRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedRecordingTests.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		C00000000000000000000001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C00000000000000000000002 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		D00000000000000000000000 = {
+			isa = PBXGroup;
+			children = (
+				D00000000000000000000001 /* PhoneSaberSender */,
+				D00000000000000000000002 /* ../PhoneSaberSenderTests */,
+				D00000000000000000000003 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		D00000000000000000000001 /* PhoneSaberSender */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000005 /* DetectionCore.swift */,
+				B10000000000000000000001 /* BGRADetection.swift */,
+				B10000000000000000000006 /* FrameProcessor.swift */,
+				B10000000000000000000011 /* DebugVideoRecorder.swift */,
+				B10000000000000000000014 /* DebugRecordingTriage.swift */,
+				B1000000000000000000A001 /* GuidedRecording.swift */,
+				B10000000000000000000016 /* DebugBundleTransfer.swift */,
+				B10000000000000000000008 /* UDPSender.swift */,
+				B10000000000000000000017 /* P2PProtocol.swift */,
+				B10000000000000000000018 /* P2PSender.swift */,
+				B10000000000000000000003 /* CameraViewModel.swift */,
+				B10000000000000000000002 /* CameraPreview.swift */,
+				B10000000000000000000004 /* ContentView.swift */,
+				B10000000000000000000007 /* PhoneSaberSenderApp.swift */,
+			);
+			path = PhoneSaberSender;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000002 /* ../PhoneSaberSenderTests */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000009 /* DetectionCoreTests.swift */,
+				B10000000000000000000015 /* DebugRecordingTriageTests.swift */,
+				B10000000000000000000019 /* P2PTransportTests.swift */,
+				B1000000000000000000A002 /* GuidedRecordingTests.swift */,
+				D00000000000000000000004 /* Fixtures */,
+			);
+			path = ../PhoneSaberSenderTests;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000004 /* Fixtures */ = {
+			isa = PBXGroup;
+			children = (
+				B1000000000000000000000A /* blue-led-with-curtain-reflection-01.png */,
+				B1000000000000000000000B /* blue-led-with-curtain-reflection-02.png */,
+				B1000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png */,
+				B1000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png */,
+				B1000000000000000000000E /* blue-led-bright-large-05.png */,
+				B1000000000000000000000F /* production-video-IMG_5933 */,
+				B10000000000000000000012 /* forensic-20260921 */,
+				B10000000000000000000013 /* forensic-20260921-211845 */,
+			);
+			path = Fixtures;
+			sourceTree = "<group>";
+		};
+		D00000000000000000000003 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				B10000000000000000000000 /* PhoneSaberSender.app */,
+				B10000000000000000000010 /* PhoneSaberSenderTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		E00000000000000000000001 /* PhoneSaberSender */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F00000000000000000000001 /* Build configuration list for PBXNativeTarget "PhoneSaberSender" */;
+			buildPhases = (
+				C00000000000000000000003 /* Resources */,
+				C00000000000000000000001 /* Frameworks */,
+				C00000000000000000000004 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PhoneSaberSender;
+			productName = PhoneSaberSender;
+			productReference = B10000000000000000000000 /* PhoneSaberSender.app */;
+			productType = "com.apple.product-type.application";
+		};
+		E00000000000000000000002 /* PhoneSaberSenderTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F00000000000000000000002 /* Build configuration list for PBXNativeTarget "PhoneSaberSenderTests" */;
+			buildPhases = (
+				C00000000000000000000005 /* Resources */,
+				C00000000000000000000002 /* Frameworks */,
+				C00000000000000000000006 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				E00000000000000000000003 /* PBXTargetDependency */,
+			);
+			name = PhoneSaberSenderTests;
+			productName = PhoneSaberSenderTests;
+			productReference = B10000000000000000000010 /* PhoneSaberSenderTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		E00000000000000000000000 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					E00000000000000000000001 = {
+						CreatedOnToolsVersion = 26.6;
+					};
+					E00000000000000000000002 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = E00000000000000000000001;
+					};
+				};
+			};
+			buildConfigurationList = F00000000000000000000000 /* Build configuration list for PBXProject "PhoneSaberSender" */;
+			compatibilityVersion = "Xcode 16.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = D00000000000000000000000;
+			productRefGroup = D00000000000000000000003 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				E00000000000000000000001 /* PhoneSaberSender */,
+				E00000000000000000000002 /* PhoneSaberSenderTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		C00000000000000000000003 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C00000000000000000000005 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A0000000000000000000000A /* blue-led-with-curtain-reflection-01.png in Resources */,
+				A0000000000000000000000B /* blue-led-with-curtain-reflection-02.png in Resources */,
+				A0000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png in Resources */,
+				A0000000000000000000000D /* blue-led-with-left-curtain-reflection-04.png in Resources */,
+				A0000000000000000000000E /* blue-led-bright-large-05.png in Resources */,
+				A0000000000000000000000F /* production-video-IMG_5933 in Resources */,
+				A00000000000000000000012 /* forensic-20260921 in Resources */,
+				A00000000000000000000013 /* forensic-20260921-211845 in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		C00000000000000000000004 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000000005 /* DetectionCore.swift in Sources */,
+				A00000000000000000000001 /* BGRADetection.swift in Sources */,
+				A00000000000000000000006 /* FrameProcessor.swift in Sources */,
+				A00000000000000000000011 /* DebugVideoRecorder.swift in Sources */,
+				A00000000000000000000014 /* DebugRecordingTriage.swift in Sources */,
+				A0000000000000000000A001 /* GuidedRecording.swift in Sources */,
+				A00000000000000000000016 /* DebugBundleTransfer.swift in Sources */,
+				A00000000000000000000008 /* UDPSender.swift in Sources */,
+				A00000000000000000000017 /* P2PProtocol.swift in Sources */,
+				A00000000000000000000018 /* P2PSender.swift in Sources */,
+				A00000000000000000000003 /* CameraViewModel.swift in Sources */,
+				A00000000000000000000002 /* CameraPreview.swift in Sources */,
+				A00000000000000000000004 /* ContentView.swift in Sources */,
+				A00000000000000000000007 /* PhoneSaberSenderApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C00000000000000000000006 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A00000000000000000000009 /* DetectionCoreTests.swift in Sources */,
+				A00000000000000000000015 /* DebugRecordingTriageTests.swift in Sources */,
+				A00000000000000000000019 /* P2PTransportTests.swift in Sources */,
+				A0000000000000000000A002 /* GuidedRecordingTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		E00000000000000000000003 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = E00000000000000000000001 /* PhoneSaberSender */;
+			targetProxy = E00000000000000000000004 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		F10000000000000000000001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES;
+				CLANG_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		F10000000000000000000002 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES;
+				CLANG_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+			};
+			name = Release;
+		};
+		F10000000000000000000003 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Q6V25P8DUU;
+				ENABLE_TESTABILITY = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PhoneSaberSender;
+				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "赤と青のLED付き棒を検出するためカメラを使用します。";
+				INFOPLIST_FILE = BonjourInfo.plist;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "検出した棒の座標と選択済み診断bundleを同じネットワーク上のMacへ送信します。";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.satoshi.PhoneSaberSender;
+				PRODUCT_NAME = PhoneSaberSender;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		F10000000000000000000004 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = Q6V25P8DUU;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = PhoneSaberSender;
+				INFOPLIST_KEY_LSRequiresIPhoneOS = YES;
+				INFOPLIST_KEY_NSCameraUsageDescription = "赤と青のLED付き棒を検出するためカメラを使用します。";
+				INFOPLIST_FILE = BonjourInfo.plist;
+				INFOPLIST_KEY_NSLocalNetworkUsageDescription = "検出した棒の座標と選択済み診断bundleを同じネットワーク上のMacへ送信します。";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.satoshi.PhoneSaberSender;
+				PRODUCT_NAME = PhoneSaberSender;
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		F10000000000000000000005 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.PhoneSaberSenderTests;
+				PRODUCT_NAME = PhoneSaberSenderTests;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PhoneSaberSender.app/PhoneSaberSender";
+			};
+			name = Debug;
+		};
+		F10000000000000000000006 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGNING_ALLOWED = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.example.PhoneSaberSenderTests;
+				PRODUCT_NAME = PhoneSaberSenderTests;
+				SWIFT_VERSION = 5.0;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PhoneSaberSender.app/PhoneSaberSender";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		F00000000000000000000000 /* Build configuration list for PBXProject "PhoneSaberSender" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F10000000000000000000001 /* Debug */,
+				F10000000000000000000002 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F00000000000000000000001 /* Build configuration list for PBXNativeTarget "PhoneSaberSender" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F10000000000000000000003 /* Debug */,
+				F10000000000000000000004 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		F00000000000000000000002 /* Build configuration list for PBXNativeTarget "PhoneSaberSenderTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				F10000000000000000000005 /* Debug */,
+				F10000000000000000000006 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = E00000000000000000000000 /* Project object */;
+}

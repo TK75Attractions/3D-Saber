@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>NSCameraUsageDescription</key>
+	<string>赤と青のLED付き棒を検出するためカメラを使用します。</string>
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>検出した棒の座標を同じネットワーク上のMacへ送信します。</string>
+</dict>
+</plist>

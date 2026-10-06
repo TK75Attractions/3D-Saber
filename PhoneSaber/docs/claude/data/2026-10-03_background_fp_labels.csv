@@ -1,0 +1,303 @@
+session,frame,color,truth,saber_box,note,winner_base,winner_r7e,winner_pf22,winner_r7e_pf22,winner_bpf22,winner_r7e_pf22_bpf22,base_winner_source,base_winner_bbox
+20260927_230332_382,1339,red,saber,420 15 480 165,,none,none,none,none,none,none,,
+20260927_230332_382,1339,blue,saber,330 50 405 245,,real,real,real,real,real,real,connected-core,338 58 396 234
+20260927_230332_382,1342,red,saber,420 15 480 165,,none,none,none,none,none,none,,
+20260927_230332_382,1342,blue,saber,330 50 405 245,,real,real,real,real,real,real,connected-core,334 60 394 232
+20260927_230332_382,1420,red,saber,240 220 305 305,,real,real,real,real,real,real,core-halo,254 236 294 292
+20260927_230332_382,1420,blue,saber,170 240 235 395,,real,real,real,real,real,real,connected-core,170 250 226 404
+20260927_230332_382,1580,red,saber,265 195 385 405,,real,real,real,real,real,real,connected-core,288 216 346 376
+20260927_230332_382,1580,blue,saber,195 215 255 395,,real,real,real,real,real,real,connected-core,188 226 248 390
+20260928_013117_739,758,red,absent,,"laptop screen, blue blanket",none,none,none,none,none,none,,
+20260928_013117_739,758,blue,absent,,"laptop screen, blue blanket",bg,bg,bg,bg,bg,bg,color-emitter,302 18 474 74
+20260928_013117_739,759,red,absent,,"laptop screen, blue blanket",bg,bg,bg,bg,bg,bg,core-line,278 46 324 82
+20260928_013117_739,759,blue,absent,,"laptop screen, blue blanket",bg,bg,bg,bg,bg,bg,connected-core,418 330 470 336
+20260929_140729_518,798,red,absent,,"laptop screen, unlit saber",none,none,none,none,none,none,,
+20260929_140729_518,798,blue,absent,,"laptop screen, unlit saber",bg,bg,bg,bg,bg,bg,connected-core,136 66 368 112
+20260929_140729_518,816,red,absent,,unlit saber,none,none,none,none,none,none,,
+20260929_140729_518,816,blue,absent,,unlit saber,none,none,none,none,none,none,,
+20260929_140729_518,820,red,absent,,unlit saber,none,none,none,none,none,none,,
+20260929_140729_518,820,blue,absent,,unlit saber,none,none,none,none,none,none,,
+20260929_152037_074,93,red,absent,,"skin, window",bg,bg,bg,bg,bg,bg,core-halo,314 4 396 36
+20260929_152037_074,93,blue,absent,,"skin, window",bg,bg,bg,bg,bg,bg,core-line,180 0 238 50
+20260929_152037_074,96,red,absent,,"skin, window",bg,bg,bg,bg,bg,bg,connected-core,324 68 384 110
+20260929_152037_074,96,blue,absent,,"skin, window",bg,bg,bg,bg,bg,bg,core-line,200 0 386 40
+20260929_152037_074,147,red,absent,,daylight window/curtain,none,none,none,none,none,none,,
+20260929_152037_074,147,blue,absent,,daylight window/curtain,bg,bg,bg,bg,bg,bg,color-mask,328 4 474 322
+20260929_152037_074,156,red,absent,,daylight window/curtain,none,none,none,none,none,none,,
+20260929_152037_074,156,blue,absent,,daylight window/curtain,bg,bg,bg,bg,bg,bg,core-line,302 236 352 476
+20260929_152331_131,91,red,absent,,"tablet screen, curtain",none,none,none,none,none,none,,
+20260929_152331_131,91,blue,absent,,"tablet screen, curtain",bg,bg,bg,bg,bg,bg,core-line,350 442 478 522
+20260929_152331_131,96,red,absent,,red basket blurred,bg,none,bg,none,bg,none,color-emitter,306 534 354 556
+20260929_152331_131,96,blue,absent,,red basket blurred,none,none,none,none,none,none,,
+20260929_185841_367,326,red,absent,,,none,none,none,none,none,none,,
+20260929_185841_367,326,blue,absent,,,none,none,none,none,none,none,,
+20260929_185841_367,339,red,absent,,,none,none,none,none,none,none,,
+20260929_185841_367,339,blue,absent,,,none,none,none,none,none,none,,
+20260929_185841_367,344,red,absent,,,none,none,none,none,none,none,,
+20260929_185841_367,344,blue,absent,,,none,none,none,none,none,none,,
+20260929_190505_735,1259,red,absent,,"diffuse blue glow, saber off-frame?",none,none,none,none,none,none,,
+20260929_190505_735,1259,blue,unknown,,"diffuse blue glow, saber off-frame?",none,none,none,none,none,none,,
+20260929_190505_735,1267,red,absent,,pink wall,bg,bg,bg,bg,bg,bg,color-emitter,218 264 446 464
+20260929_190505_735,1267,blue,absent,,pink wall,none,none,none,none,none,none,,
+20260929_191853_743,2997,red,absent,,,none,none,none,none,none,none,,
+20260929_191853_743,2997,blue,absent,,,none,none,none,none,none,none,,
+20260929_191853_743,3004,red,unknown,,"blurred bright spots, unclear",unk,unk,unk,unk,unk,unk,connected-core,238 372 306 630
+20260929_191853_743,3004,blue,absent,,"blurred bright spots, unclear",none,none,none,none,none,none,,
+20260929_192926_896,1380,red,absent,,blurred keyboard,none,none,none,none,none,none,,
+20260929_192926_896,1380,blue,absent,,blurred keyboard,bg,bg,bg,bg,bg,bg,connected-core,290 586 362 630
+20260929_192926_896,1501,red,saber,140 195 225 275,,none,none,none,none,none,none,,
+20260929_192926_896,1501,blue,saber,130 240 245 335,,real,real,real,real,real,real,connected-core,132 178 246 334
+20260929_192926_896,1568,red,saber,155 220 250 320,,none,none,none,none,none,none,,
+20260929_192926_896,1568,blue,saber,195 290 250 360,,real,real,real,real,real,real,core-line,210 234 222 358
+20260929_203439_379,1124,red,saber,185 215 215 320,,real,real,real,real,real,real,core-line,190 124 224 308
+20260929_203439_379,1124,blue,saber,235 205 300 320,,real,real,real,real,real,real,core-line,196 222 292 334
+20260929_203439_379,1178,red,absent,,,none,none,none,none,none,none,,
+20260929_203439_379,1178,blue,saber,255 215 315 320,,real,real,real,real,real,real,connected-core,266 220 316 314
+20260929_203439_379,1358,red,unknown,,red end-on ball near hand?,none,none,none,none,none,none,,
+20260929_203439_379,1358,blue,saber,45 340 145 440,red end-on ball near hand?,real,real,real,real,real,real,core-line,88 210 192 432
+20260929_203710_701,5452,red,absent,,foot skin,bg,bg,bg,bg,bg,bg,color-emitter,112 606 128 634
+20260929_203710_701,5452,blue,absent,,foot skin,none,none,none,none,none,none,,
+20260929_203710_701,5455,red,absent,,"floor, skin",none,none,none,none,none,none,,
+20260929_203710_701,5455,blue,absent,,"floor, skin",none,none,none,none,none,none,,
+20260929_203710_701,5464,red,absent,,skin,none,none,none,none,none,none,,
+20260929_203710_701,5464,blue,absent,,skin,none,none,none,none,none,none,,
+20260929_220028_395,1255,red,absent,,laptop screen,none,none,none,none,none,none,,
+20260929_220028_395,1255,blue,absent,,laptop screen,bg,bg,bg,bg,bg,bg,core-halo,152 146 260 214
+20260930_005824_838,709,red,absent,,,none,none,none,none,none,none,,
+20260930_005824_838,709,blue,absent,,,none,none,none,none,none,none,,
+20260930_234740_348,2439,red,saber,440 195 480 230,,bg,bg,bg,bg,bg,bg,connected-core,34 504 148 556
+20260930_234740_348,2439,blue,saber,110 250 165 445,,real,real,real,real,real,real,core-line,154 218 170 448
+20260930_234740_348,2441,red,saber,395 220 480 340,,real,real,real,real,real,real,connected-core,406 226 470 322
+20260930_234740_348,2441,blue,saber,95 250 140 465,,real,real,real,real,real,real,core-line,94 232 112 460
+20260930_234740_348,2463,red,saber,0 325 105 420,,real,real,real,real,real,real,connected-core,8 334 92 414
+20260930_234740_348,2463,blue,saber,95 330 150 435,,real,real,real,real,real,real,core-line,88 320 136 434
+20260930_234740_348,2512,red,saber,295 215 365 320,,real,real,real,real,real,real,connected-core,300 216 364 314
+20260930_234740_348,2512,blue,saber,240 180 320 270,,real,real,real,real,real,real,core-line,246 192 314 254
+20260930_234740_348,3495,red,saber,215 190 290 225,,real,real,real,real,real,real,color-mask,220 198 272 214
+20260930_234740_348,3495,blue,saber,165 295 270 365,,real,real,real,real,real,real,core-line,48 262 256 342
+20260930_234740_348,4015,red,saber,280 140 415 275,,none,none,none,none,none,none,,
+20260930_234740_348,4015,blue,saber,220 110 320 235,,real,real,real,real,real,real,connected-core,236 102 344 236
+20260930_234740_348,4021,red,saber,370 215 480 270,,none,none,none,none,none,none,,
+20260930_234740_348,4021,blue,saber,320 110 480 240,,real,real,real,real,real,real,connected-core,318 112 470 242
+20260930_234740_348,4095,red,absent,,foot skin,bg,none,bg,none,bg,none,color-emitter,200 466 216 524
+20260930_234740_348,4095,blue,absent,,foot skin,none,none,none,none,none,none,,
+20261001_002509_264,69683,red,unknown,,blurred orange blob,unk,unk,unk,unk,unk,unk,connected-core,418 494 470 546
+20261001_002509_264,69683,blue,absent,,blurred orange blob,none,none,none,none,none,none,,
+20261001_002509_264,69684,red,unknown,,,unk,unk,unk,unk,unk,unk,core-halo,392 480 474 534
+20261001_002509_264,69684,blue,absent,,,none,none,none,none,none,none,,
+20261001_002509_264,69743,red,saber,270 290 480 335,,real,real,real,real,real,real,color-mask,384 292 474 326
+20261001_002509_264,69743,blue,unknown,,,none,none,none,none,none,none,,
+20261001_002509_264,70998,red,saber,270 305 300 330,end-on,none,none,none,none,none,none,,
+20261001_002509_264,70998,blue,saber,160 285 200 330,end-on,bg,bg,bg,bg,bg,bg,core-line,454 282 478 432
+20261001_002509_264,72881,red,saber,270 295 315 335,end-on sabers; label strip,bg,real,bg,real,bg,real,color-close,60 262 102 274
+20261001_002509_264,72881,blue,saber,155 230 200 280,end-on sabers; label strip,bg,bg,bg,bg,bg,bg,color-mask,446 340 474 444
+20261001_002509_264,75152,red,saber,255 305 290 350,,real,real,real,real,real,real,color-emitter,266 320 274 342
+20261001_002509_264,75152,blue,saber,190 315 245 385,,real,real,real,real,real,real,core-line,198 310 270 398
+20261001_002509_264,75589,red,saber,310 330 440 375,,real,real,real,real,real,real,color-emitter,366 340 436 368
+20261001_002509_264,75589,blue,saber,80 300 160 345,,real,real,real,real,real,real,connected-core,82 312 152 342
+20261001_002509_264,75607,red,saber,205 340 255 395,,real,real,real,real,real,real,color-mask,208 352 240 384
+20261001_002509_264,75607,blue,saber,185 340 225 405,,real,real,real,real,real,real,core-line,190 338 204 400
+20261001_002509_264,75625,red,saber,150 295 235 330,,real,real,real,real,real,real,core-halo,160 302 228 322
+20261001_002509_264,75625,blue,saber,160 330 195 415,,real,real,real,real,real,real,connected-core,166 342 192 412
+20261001_002509_264,76899,red,absent,,"unlit sabers, arm skin",bg,bg,bg,bg,bg,bg,core-halo,264 476 314 500
+20261001_002509_264,76899,blue,absent,,"unlit sabers, arm skin",none,none,none,none,none,none,,
+20261001_003921_526,18124,red,unknown,,dark blur,none,none,none,none,none,none,,
+20261001_003921_526,18124,blue,unknown,,dark blur,unk,unk,unk,unk,unk,unk,core-halo,444 568 474 634
+20261001_003921_526,18140,red,saber,280 370 360 470,very blurred,none,none,none,none,none,none,,
+20261001_003921_526,18140,blue,saber,400 370 480 600,very blurred,real,real,real,real,real,real,connected-core,368 294 470 630
+20261001_003921_526,18155,red,saber,340 185 440 375,red saber white-clipped,none,none,none,none,none,none,,
+20261001_003921_526,18155,blue,absent,,red saber white-clipped,bg,bg,bg,bg,bg,bg,connected-core,408 280 470 410
+20261001_003921_526,18215,red,saber,395 225 435 410,red saber white-clipped; orange streak,bg,none,bg,none,bg,none,core-line,346 542 478 614
+20261001_003921_526,18215,blue,absent,,red saber white-clipped; orange streak,bg,bg,bg,bg,bg,bg,core-line,402 58 418 492
+20261001_003921_526,18246,red,saber,335 280 420 385,,real,real,real,real,real,real,core-halo,354 286 416 376
+20261001_003921_526,18246,blue,saber,175 380 220 420,,real,real,real,real,real,real,core-line,202 274 216 422
+20261001_003921_526,20533,red,saber,200 330 270 375,,real,real,real,real,real,real,core-line,206 334 300 370
+20261001_003921_526,20533,blue,saber,240 345 280 410,,real,real,real,real,real,real,core-line,248 308 308 406
+20261001_003921_526,20551,red,saber,310 325 350 380,,real,real,real,real,real,real,color-mask,306 318 344 376
+20261001_003921_526,20551,blue,saber,195 320 240 385,,real,real,real,real,real,real,connected-core,198 322 234 386
+20261001_003921_526,20568,red,saber,190 240 270 285,,real,real,real,real,real,real,connected-core,200 250 258 280
+20261001_003921_526,20568,blue,saber,225 325 265 385,,real,real,real,real,real,real,core-line,220 268 264 390
+20261001_003921_526,24174,red,absent,,"label strip, unlit sabers",bg,none,bg,none,bg,none,color-close,140 266 164 268
+20261001_003921_526,24174,blue,absent,,"label strip, unlit sabers",none,none,none,none,none,none,,
+20261001_005134_111,15608,red,absent,,,none,none,none,none,none,none,,
+20261001_005134_111,15608,blue,absent,,,none,none,none,none,none,none,,
+20261001_005134_111,15623,red,absent,,,none,none,none,none,none,none,,
+20261001_005134_111,15623,blue,absent,,,none,none,none,none,none,none,,
+20261001_005134_111,16171,red,saber,150 310 240 355,,real,real,real,real,real,real,connected-core,156 322 208 346
+20261001_005134_111,16171,blue,saber,130 230 175 265,,bg,bg,bg,bg,bg,bg,color-mask,414 262 474 428
+20261001_005134_111,17572,red,saber,255 285 280 310,red end-on,none,none,none,none,none,none,,
+20261001_005134_111,17572,blue,saber,15 260 105 300,red end-on,real,real,real,real,real,real,connected-core,8 256 106 300
+20261001_005134_111,17923,red,saber,165 305 235 340,,real,real,real,real,real,real,connected-core,178 314 228 332
+20261001_005134_111,17923,blue,saber,195 345 245 405,,real,real,real,real,real,real,core-line,198 324 248 412
+20261001_005134_111,17940,red,saber,215 160 250 260,,real,real,real,real,real,real,color-emitter,222 164 248 242
+20261001_005134_111,17940,blue,saber,160 405 190 480,,real,real,real,real,real,real,connected-core,166 410 180 474
+20261001_005134_111,17997,red,saber,270 325 345 375,,real,real,real,real,real,real,connected-core,290 340 338 378
+20261001_005134_111,17997,blue,saber,180 340 240 410,,real,real,real,real,real,real,core-line,216 312 240 408
+20261001_005134_111,18326,red,saber,255 295 285 325,red end-on,none,none,none,none,none,none,,
+20261001_005134_111,18326,blue,saber,160 320 190 375,red end-on,real,real,real,real,real,real,core-line,166 314 244 380
+20261001_005134_111,21300,red,saber,225 410 250 500,,real,real,real,real,real,real,connected-core,230 426 244 496
+20261001_005134_111,21300,blue,saber,165 405 205 490,,real,real,real,real,real,real,connected-core,172 408 200 482
+20261001_005134_111,22875,red,absent,,"finger skin, yellow object",bg,bg,bg,bg,bg,bg,color-mask,434 188 474 210
+20261001_005134_111,22875,blue,absent,,"finger skin, yellow object",none,none,none,none,none,none,,
+20261002_005850_489,274,red,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_005850_489,274,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_005850_489,2533,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,66 248 106 252
+20261002_005850_489,2533,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_005850_489,2534,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,66 248 104 252
+20261002_005850_489,2534,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_005850_489,2535,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,66 248 104 252
+20261002_005850_489,2535,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_005850_489,2536,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,66 248 104 252
+20261002_005850_489,2536,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_005850_489,2537,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-sparse-raw,434 478 438 490
+20261002_005850_489,2537,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_005850_489,2538,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,66 248 104 252
+20261002_005850_489,2538,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_005850_489,2539,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,66 248 104 252
+20261002_005850_489,2539,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_005850_489,2540,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,66 248 104 252
+20261002_005850_489,2540,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_005850_489,2541,red,absent,,"label strip + carabiner, no lit saber",bg,bg,bg,bg,bg,bg,color-close,66 248 104 252
+20261002_005850_489,2541,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_005850_489,2542,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,66 248 104 252
+20261002_005850_489,2542,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_005850_489,2543,red,absent,,"label strip + carabiner, no lit saber",bg,bg,bg,bg,bg,bg,core-line,24 204 88 252
+20261002_005850_489,2543,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,594,red,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,594,blue,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,656,red,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,656,blue,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,657,red,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,657,blue,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,658,red,absent,,"label strip + carabiner, lamp, no lit saber",bg,bg,bg,bg,bg,bg,color-mask,42 436 88 464
+20261002_010049_190,658,blue,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,659,red,absent,,"label strip + carabiner, lamp, no lit saber",bg,bg,bg,bg,bg,bg,color-mask,52 396 98 422
+20261002_010049_190,659,blue,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,660,red,absent,,"label strip + carabiner, lamp, no lit saber",bg,none,bg,none,bg,none,core-halo,452 616 456 634
+20261002_010049_190,660,blue,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,661,red,absent,,"label strip + carabiner, lamp, no lit saber",bg,bg,bg,bg,bg,bg,core-line,68 342 226 362
+20261002_010049_190,661,blue,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,662,red,absent,,"label strip + carabiner, lamp, no lit saber",bg,none,bg,none,bg,none,color-close,446 566 456 606
+20261002_010049_190,662,blue,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,663,red,absent,,"label strip + carabiner, lamp, no lit saber",bg,none,bg,none,bg,none,color-mask,450 566 454 586
+20261002_010049_190,663,blue,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,664,red,absent,,"label strip + carabiner, lamp, no lit saber",bg,bg,bg,bg,bg,bg,core-halo,74 298 118 312
+20261002_010049_190,664,blue,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,665,red,absent,,"label strip + carabiner, lamp, no lit saber",bg,bg,bg,bg,bg,bg,core-line,76 242 286 300
+20261002_010049_190,665,blue,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_010049_190,666,red,absent,,"label strip + carabiner, lamp, no lit saber",bg,bg,bg,bg,bg,bg,core-line,84 230 294 288
+20261002_010049_190,666,blue,absent,,"label strip + carabiner, lamp, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,251,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,22 284 42 288
+20261002_013205_087,251,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,252,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,22 284 44 288
+20261002_013205_087,252,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,253,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-mask,24 284 46 290
+20261002_013205_087,253,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,254,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,core-halo,22 280 50 288
+20261002_013205_087,254,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,255,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-sparse-raw,402 500 406 510
+20261002_013205_087,255,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,256,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,core-halo,24 280 58 288
+20261002_013205_087,256,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,257,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,24 270 62 288
+20261002_013205_087,257,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,258,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,24 282 64 288
+20261002_013205_087,258,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,259,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,color-close,24 282 64 288
+20261002_013205_087,259,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,260,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,connected-core,24 270 72 288
+20261002_013205_087,260,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,261,red,absent,,"label strip + carabiner, no lit saber",bg,none,bg,none,bg,none,connected-core,22 270 70 288
+20261002_013205_087,261,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,282,red,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261002_013205_087,282,blue,absent,,"label strip + carabiner, no lit saber",none,none,none,none,none,none,,
+20261003_144936_295,1907,red,absent,,sleeve/skin red,bg,none,bg,none,bg,none,color-emitter,4 558 14 600
+20261003_144936_295,1907,blue,saber,320 15 480 175,sleeve/skin red,real,real,real,real,real,real,core-line,450 30 478 166
+20261003_144936_295,1908,red,absent,,sleeve/skin red,none,none,none,none,none,none,,
+20261003_144936_295,1908,blue,saber,320 15 480 175,sleeve/skin red,real,real,real,real,real,real,core-line,466 20 476 158
+20261003_144936_295,1911,red,absent,,sleeve/skin red,bg,none,bg,none,bg,none,color-emitter,4 538 14 578
+20261003_144936_295,1911,blue,saber,320 15 480 175,sleeve/skin red,real,real,real,real,real,real,core-line,452 26 478 160
+20261003_144936_295,2550,red,saber,230 200 430 280,outlet label (pink) in background,real,real,real,real,real,real,connected-core,274 222 390 276
+20261003_144936_295,2550,blue,saber,100 240 240 390,outlet label (pink) in background,real,real,real,real,real,real,connected-core,120 262 214 376
+20261003_144936_295,2551,red,saber,230 200 385 285,outlet label (pink) in background,real,real,real,real,real,real,connected-core,252 216 334 262
+20261003_144936_295,2551,blue,saber,100 240 240 390,outlet label (pink) in background,real,real,real,real,real,real,connected-core,126 264 216 376
+20261003_144936_295,2552,red,saber,180 190 280 250,outlet label (pink) in background,bg,bg,none,none,bg,none,color-mask,342 64 362 76
+20261003_144936_295,2552,blue,saber,100 240 240 390,outlet label (pink) in background,real,real,real,real,real,real,connected-core,128 264 222 378
+20261003_144936_295,2553,red,saber,80 185 245 245,outlet label (pink) in background,real,real,real,real,real,real,color-emitter,124 198 210 228
+20261003_144936_295,2553,blue,saber,110 250 250 390,outlet label (pink) in background,real,real,real,real,real,real,connected-core,134 266 232 376
+20261003_144936_295,2554,red,saber,30 185 235 245,outlet label (pink) in background,real,real,real,real,real,real,connected-core,76 198 184 234
+20261003_144936_295,2554,blue,saber,120 255 270 390,outlet label (pink) in background,real,real,real,real,real,real,connected-core,140 266 244 372
+20261003_144936_295,2555,red,saber,20 195 235 250,outlet label (pink) in background,real,real,real,real,real,real,connected-core,72 206 178 242
+20261003_144936_295,2555,blue,saber,130 250 280 390,outlet label (pink) in background,real,real,real,real,real,real,connected-core,146 266 258 368
+20261003_144936_295,2556,red,saber,70 195 235 255,outlet label (pink) in background,real,real,real,real,real,real,core-halo,44 208 184 258
+20261003_144936_295,2556,blue,saber,140 250 290 380,outlet label (pink) in background,real,real,real,real,real,real,connected-core,154 266 272 358
+20261003_144936_295,2557,red,saber,65 200 235 255,outlet label (pink) in background,real,real,real,real,real,real,connected-core,108 214 190 254
+20261003_144936_295,2557,blue,saber,140 245 300 365,outlet label (pink) in background,real,real,real,real,real,real,connected-core,150 242 284 348
+20261003_155608_448,8,red,saber,450 330 480 520,laptop screen red,bg,none,bg,none,bg,none,color-mask,266 262 280 270
+20261003_155608_448,8,blue,saber,395 335 480 525,laptop screen red,real,real,real,real,real,real,core-line,468 344 478 496
+20261003_155919_297,5216,red,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,color-mask,60 136 92 156
+20261003_155919_297,5216,blue,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,connected-core,326 8 402 16
+20261003_155919_297,5217,red,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,core-halo,4 606 28 634
+20261003_155919_297,5217,blue,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,connected-core,334 8 388 10
+20261003_155919_297,5218,red,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,core-halo,4 564 68 634
+20261003_155919_297,5218,blue,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,connected-core,38 108 82 140
+20261003_155919_297,5219,red,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,core-line,0 542 36 638
+20261003_155919_297,5219,blue,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,connected-core,352 140 406 204
+20261003_155919_297,5220,red,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,color-emitter,46 572 60 594
+20261003_155919_297,5220,blue,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,core-halo,36 92 78 126
+20261003_155919_297,5221,red,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,core-line,0 550 142 584
+20261003_155919_297,5221,blue,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,connected-core,356 98 416 184
+20261003_155919_297,5222,red,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,core-line,20 504 182 544
+20261003_155919_297,5222,blue,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",none,none,none,none,none,none,,
+20261003_155919_297,5223,red,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,bg,bg,core-line,34 474 198 516
+20261003_155919_297,5223,blue,absent,,"hand-held camera, desks/laptop/snack bag/blue sheet/finger",bg,bg,bg,bg,none,none,color-mask,328 70 400 170
+20261003_155919_297,5321,red,absent,,skin; blue fragment at frame edge,bg,bg,bg,bg,bg,bg,connected-core,16 8 204 404
+20261003_155919_297,5321,blue,unknown,,skin; blue fragment at frame edge,unk,unk,unk,unk,unk,unk,color-mask,448 4 472 16
+20261003_155919_297,5322,red,absent,,skin,bg,bg,bg,bg,bg,bg,connected-core,16 8 204 402
+20261003_155919_297,5322,blue,unknown,,skin,none,none,none,none,none,none,,
+20261003_155919_297,5331,red,absent,,skin,bg,bg,bg,bg,bg,bg,color-mask,52 4 332 360
+20261003_155919_297,5331,blue,unknown,,skin,unk,unk,unk,unk,unk,unk,color-mask,446 4 472 20
+20261004_005325_638,198,red,absent,,"auto exp; blue-lit close-up, orange cloth left edge, red clip lower right",bg,bg,bg,bg,bg,bg,color-mask,4 356 16 384
+20261004_005325_638,198,blue,absent,,lit blue saber off-frame left; blue spill on shirt/feet/box,bg,bg,bg,bg,bg,bg,color-emitter,86 352 192 512
+20261004_005325_638,199,red,absent,,"auto exp; blue-lit close-up, orange cloth left edge, red clip lower right",bg,none,bg,none,bg,none,color-mask,4 356 14 384
+20261004_005325_638,199,blue,absent,,lit blue saber off-frame left; blue spill on shirt/feet/box,bg,bg,bg,bg,bg,bg,color-emitter,88 350 194 512
+20261004_005325_638,200,red,absent,,"auto exp; blue-lit close-up, orange cloth left edge, red clip lower right",bg,bg,bg,bg,bg,bg,color-mask,464 520 470 532
+20261004_005325_638,200,blue,absent,,lit blue saber off-frame left; blue spill on shirt/feet/box,bg,bg,bg,bg,bg,bg,color-emitter,188 56 250 150
+20261004_005325_638,201,red,absent,,"auto exp; blue-lit close-up, orange cloth left edge, red clip lower right",bg,bg,bg,bg,bg,bg,color-mask,4 358 14 384
+20261004_005325_638,201,blue,absent,,lit blue saber off-frame left; blue spill on shirt/feet/box,bg,bg,bg,bg,bg,bg,color-emitter,196 56 250 150
+20261004_005325_638,202,red,absent,,"auto exp; blue-lit close-up, orange cloth left edge, red clip lower right",bg,bg,bg,bg,bg,bg,color-mask,4 358 14 384
+20261004_005325_638,202,blue,absent,,lit blue saber off-frame left; blue spill on shirt/feet/box,bg,bg,bg,bg,bg,bg,color-emitter,188 54 250 150
+20261004_005325_638,203,red,absent,,"auto exp; blue-lit close-up, orange cloth left edge, red clip lower right",bg,none,bg,none,bg,none,color-mask,4 360 14 382
+20261004_005325_638,203,blue,absent,,lit blue saber off-frame left; blue spill on shirt/feet/box,bg,bg,bg,bg,bg,bg,color-emitter,178 54 256 152
+20261004_005325_638,204,red,absent,,"auto exp; blue-lit toes, orange cloth left edge, red clip lower right",bg,bg,bg,bg,bg,bg,color-emitter,288 76 312 116
+20261004_005325_638,204,blue,unknown,,"blue glow at left edge (saber at/over edge?), blurred blue blob in right hand",unk,unk,unk,unk,unk,unk,core-line,10 40 22 446
+20261004_005325_638,205,red,absent,,"auto exp; blue-lit toes, orange cloth left edge, red clip lower right",none,none,none,none,none,none,,
+20261004_005325_638,205,blue,saber,0 215 30 290,"lit blue saber clipped by left edge, motion blur; blurred blue blob in right hand",real,real,real,real,real,real,core-line,0 224 32 404
+20261004_005325_638,3302,red,absent,,"unlit sabers held; orange cloth left edge, red clip lower right",bg,none,bg,none,bg,none,color-sparse-raw,462 518 468 530
+20261004_005325_638,3302,blue,absent,,unlit sabers held; ceiling light,bg,bg,bg,bg,bg,bg,core-halo,298 322 318 330
+20261004_005325_638,3303,red,absent,,"unlit sabers held; orange cloth left edge, red clip lower right",bg,none,bg,none,bg,none,color-sparse-raw,462 518 468 530
+20261004_005325_638,3303,blue,absent,,unlit sabers held; ceiling light,none,none,none,none,none,none,,
+20261004_005325_638,3306,red,absent,,"unlit sabers held; orange cloth left edge, red clip lower right",bg,none,bg,none,bg,none,core-halo,4 360 14 382
+20261004_005325_638,3306,blue,absent,,unlit sabers held; ceiling light,bg,bg,bg,bg,bg,bg,color-sparse-raw,308 322 318 330
+20261004_005855_691,12548,red,saber,240 238 268 314,"max shutter 1/100; red saber held still, sharp",real,real,real,real,real,real,core-halo,244 250 262 312
+20261004_005855_691,12548,blue,saber,172 228 198 314,"max shutter 1/100; blue saber held still, sharp",real,real,real,real,real,real,connected-core,174 240 194 312
+20261004_005855_691,12549,red,saber,248 238 278 314,max shutter 1/100; red saber held still,real,real,real,real,real,real,color-mask,254 254 268 306
+20261004_005855_691,12549,blue,absent,,blue saber just switched off (unlit),none,none,none,none,none,none,,
+20261004_005855_691,12585,red,absent,,"unlit sabers raised; orange cloth left edge, red clip lower right",bg,none,bg,none,bg,none,core-halo,14 326 26 350
+20261004_005855_691,12585,blue,absent,,unlit sabers raised; ceiling light,bg,bg,bg,bg,bg,bg,core-halo,278 350 296 374
+20261004_005855_691,12626,red,absent,,"stop: fingers on lens, orange cloth left edge, red clip",bg,bg,bg,bg,bg,bg,color-mask,4 326 20 364
+20261004_005855_691,12626,blue,absent,,stop: fingers on lens,none,none,none,none,none,none,,
+20261004_005855_691,12627,red,absent,,"stop: fingers on lens, orange cloth left edge, red clip",bg,bg,bg,bg,bg,bg,color-close,4 334 20 374
+20261004_005855_691,12627,blue,absent,,stop: fingers on lens,none,none,none,none,none,none,,
+20261004_005855_691,12628,red,absent,,"stop: blurred camera handling, orange cloth, red clip",bg,bg,bg,bg,bg,bg,color-mask,468 520 474 536
+20261004_005855_691,12628,blue,absent,,stop: blurred camera handling,none,none,none,none,none,none,,
+20261004_005855_691,12629,red,absent,,"stop: blurred camera handling, orange cloth, skin",bg,none,bg,none,bg,none,color-close,4 406 22 440
+20261004_005855_691,12629,blue,absent,,stop: blurred camera handling,none,none,none,none,none,none,,
+20261004_005855_691,12630,red,absent,,"stop: blurred camera handling, orange cloth, skin",bg,bg,bg,bg,bg,bg,color-close,4 452 34 490
+20261004_005855_691,12630,blue,absent,,stop: blurred camera handling,none,none,none,none,none,none,,
+20261004_005855_691,12631,red,absent,,"stop: blurred camera handling, skin",none,none,none,none,none,none,,
+20261004_005855_691,12631,blue,absent,,stop: blurred camera handling,none,none,none,none,none,none,,
+20261004_005855_691,12632,red,absent,,"stop: blurred camera handling, skin",bg,bg,bg,bg,bg,bg,color-mask,222 290 274 332
+20261004_005855_691,12632,blue,absent,,stop: blurred camera handling,none,none,none,none,none,none,,
+20261004_005855_691,12633,red,absent,,"stop: blurred camera handling, skin",none,none,none,none,none,none,,
+20261004_005855_691,12633,blue,absent,,stop: blurred camera handling,none,none,none,none,none,none,,
