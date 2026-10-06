@@ -508,10 +508,12 @@ class CodexTriageTests(unittest.TestCase):
                 input_plan(bundle, max_images=21)
 
     def test_guided_recording_may_keep_four_swing_lossless_frames(self) -> None:
-        # Guided recordings keep up to 5 lossless frames; manual ones stay at 2.
+        # Guided recordings keep up to 5 lossless frames; manual ones up to 3.
         from test_phone_saber_metadata_schema import guided_recording_sample
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "bundle"
+            write_codex_bundle(bundle, image_count=3, failure_types=("manual_capture",) * 3)
+            self.assertEqual(len(input_plan(bundle).images), 3)  # a manual recording keeps all 3
             write_codex_bundle(bundle, image_count=5, failure_types=("manual_capture",) * 5)
             with self.assertRaisesRegex(BundleError, "per-failure-type"):
                 input_plan(bundle)
