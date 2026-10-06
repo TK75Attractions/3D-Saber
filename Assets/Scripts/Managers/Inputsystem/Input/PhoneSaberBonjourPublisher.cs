@@ -43,7 +43,13 @@ public sealed class PhoneSaberBonjourPublisher : IDisposable
         }
     }
 
-    public bool Start(int port)
+    public static string BuildServiceName(string station)
+    {
+        string label = PhoneSaberStation.Normalize(station);
+        return ServiceName + (label.Length == 0 ? "" : " " + label);
+    }
+
+    public bool Start(int port, string station = "")
     {
 #if UNITY_EDITOR_OSX || UNITY_STANDALONE_OSX
         lock (Gate)
@@ -54,10 +60,11 @@ public sealed class PhoneSaberBonjourPublisher : IDisposable
             StopProcessLocked();
             try
             {
+                string serviceName = BuildServiceName(station);
                 var startInfo = new ProcessStartInfo
                 {
                     FileName = "/usr/bin/dns-sd",
-                    Arguments = $"-R \"{ServiceName}\" {ServiceType} {Domain} {port}",
+                    Arguments = $"-R \"{serviceName}\" {ServiceType} {Domain} {port}",
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
@@ -74,7 +81,7 @@ public sealed class PhoneSaberBonjourPublisher : IDisposable
                 process.BeginErrorReadLine();
                 owner = this;
                 UnityEngine.Debug.Log(
-                    $"[PhoneSaber] Bonjour published: {ServiceName} ({ServiceType}) port {port}");
+                    $"[PhoneSaber] Bonjour published: {serviceName} ({ServiceType}) port {port}");
                 return true;
             }
             catch (Exception exception)

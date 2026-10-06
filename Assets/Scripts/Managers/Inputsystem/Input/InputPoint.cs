@@ -38,6 +38,7 @@ public class InputPoint : MonoBehaviour
     PhoneSaberP2PBridgeProcess p2pBridge;
     // SetReceiverAlive は受信 thread で動くため、Application.dataPath は main thread で控えておく。
     string p2pDataPath;
+    string phoneSaberStation;
     public int port = 5005;
     public int port2 = 5006;
 
@@ -301,6 +302,7 @@ public class InputPoint : MonoBehaviour
             p2pBridge?.Dispose();
             p2pBridge = new PhoneSaberP2PBridgeProcess();
             p2pDataPath = Application.dataPath;
+            phoneSaberStation = PhoneSaberStation.Read();
             // iPhone の Debug Recording を受け取る診断の受信側も、ターミナルを開かずに使えるようにする。
             PhoneSaberTriageReceiverLauncher.EnsureStarted(p2pDataPath);
 
@@ -806,9 +808,9 @@ public class InputPoint : MonoBehaviour
             }
             else
             {
-                bonjourPublisher?.Start(port);
-                discoveryResponder?.Start(port, port2);
-                p2pBridge?.Start(port, port2, p2pDataPath);
+                bonjourPublisher?.Start(port, phoneSaberStation);
+                discoveryResponder?.Start(port, port2, phoneSaberStation);
+                p2pBridge?.Start(port, port2, p2pDataPath, phoneSaberStation);
             }
         }
     }

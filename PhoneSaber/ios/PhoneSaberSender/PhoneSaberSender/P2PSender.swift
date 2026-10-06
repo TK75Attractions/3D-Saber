@@ -24,6 +24,16 @@ enum P2PLinkState: Equatable {
     var isConnected: Bool { if case .connected = self { return true } else { return false } }
 }
 
+// 台未指定は従来どおり。台は service 名の独立した末尾 token として照合する。
+enum PhoneSaberStation {
+    static let preferenceKey = "PhoneSaber.station"
+    static let choices = ["", "A", "B"]
+
+    static func matches(service name: String, station: String) -> Bool {
+        station.isEmpty || name.hasSuffix(" " + station)
+    }
+}
+
 /// Which advertised bridge to use when several Macs publish
 /// `_phonesaber-p2p._udp`. Locks onto the first chosen service name and keeps
 /// it while it is still advertised, so a second Mac whose name sorts first
@@ -34,7 +44,8 @@ struct P2PServiceSelection: Equatable {
 
     /// Returns the service to use, or nil when nothing is advertised (the lock
     /// is kept, so the same Mac wins again when it comes back with others).
-    mutating func choose(from available: [String]) -> String? {
+    mutating func choose(from names: [String], station: String = "") -> String? {
+        let available = names.filter { PhoneSaberStation.matches(service: $0, station: station) }
         if let locked, available.contains(locked) { return locked }
         guard let first = available.min() else { return nil }
         locked = first
@@ -50,6 +61,17 @@ struct P2PServiceSelection: Equatable {
 enum P2PPreferredMac {
     private static let lock = NSLock()
     private static var name: String?
+    private static var destination = (station: "", lanHost: "", manual: false)
+
+    static var coordinateDestination: (station: String, lanHost: String, manual: Bool) {
+        lock.lock(); defer { lock.unlock() }
+        return destination
+    }
+
+    static func configure(station: String, lanHost: String, manual: Bool) {
+        lock.lock(); defer { lock.unlock() }
+        destination = (station, lanHost, manual)
+    }
 
     static var current: String? {
         lock.lock(); defer { lock.unlock() }
@@ -67,7 +89,8 @@ enum P2PPreferredMac {
 /// name, but only once discovery is over (`final`), so the preferred Mac is
 /// not skipped just because its record resolved a moment later.
 enum P2PDiagnosticsServicePicker {
-    static func pick(from names: [String], preferred: String?, final: Bool) -> String? {
+    static func pick(from advertised: [String], preferred: String?, final: Bool, station: String = "") -> String? {
+        let names = advertised.filter { PhoneSaberStation.matches(service: $0, station: station) }
         if let preferred, names.contains(preferred) { return preferred }
         if preferred != nil && !final { return nil }
         return names.min()
@@ -260,6 +283,7 @@ final class P2PSender {
     private var browser: NWBrowser?
     private var browserRestart: DispatchWorkItem?
     private var selection = P2PServiceSelection()
+    private var station = ""
     private var candidate: (endpoint: NWEndpoint, name: String)?
     private var connection: NWConnection?
     /// Service name the current connection was opened to (the UI shows it).
@@ -308,11 +332,12 @@ final class P2PSender {
     /// `onStats` receives the ping round-trip summary about once per second
     /// (nil while there is no measurement, e.g. after a reconnect).
     /// Both handlers run on this sender's private queue.
-    func start(onState: ((P2PLinkState) -> Void)? = nil,
+    func start(station: String = "", onState: ((P2PLinkState) -> Void)? = nil,
                onStats: ((P2PRoundTripStats.Summary?) -> Void)? = nil) {
         queue.async { [weak self] in
             guard let self, !self.running else { return }
             self.running = true
+            self.station = station
             self.stateHandler = onState
             self.statsHandler = onStats
             self.startTicker()
@@ -494,7 +519,7 @@ final class P2PSender {
             if case .service(let name, _, _, _) = result.endpoint { return (result.endpoint, name) }
             return nil
         }
-        guard let name = selection.choose(from: services.map(\.name)),
+        guard let name = selection.choose(from: services.map(\.name), station: station),
               let chosen = services.first(where: { $0.name == name }) else {
             // Keep a live connection; liveness decides when it is gone.
             candidate = nil

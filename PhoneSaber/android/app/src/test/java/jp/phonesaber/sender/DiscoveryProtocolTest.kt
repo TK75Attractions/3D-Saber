@@ -4,6 +4,23 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DiscoveryProtocolTest {
+    @Test fun stationMatcherRequiresExactMetadataOnlyWhenConfigured() {
+        val legacy = DiscoveryProtocol.parse("PHONESABER_UNITY 1 red=5005 blue=5006 name=PC")!!
+        val a = DiscoveryProtocol.parse("PHONESABER_UNITY 1 red=5005 blue=5006 name=PC station=A")!!
+        val b = DiscoveryProtocol.parse("PHONESABER_UNITY 1 station=B name=PC blue=5006 red=5005")!!
+        listOf(legacy, a, b).forEach { assertTrue(StationMatcher.reply("", it)) }
+        assertTrue(StationMatcher.reply("A", a))
+        assertFalse(StationMatcher.reply("A", b))
+        assertFalse(StationMatcher.reply("A", legacy))
+        assertTrue(StationMatcher.service("A", "Phone Saber Unity A"))
+        assertTrue(StationMatcher.service("B", "Phone Saber Unity B"))
+        listOf("Phone Saber Unity", "Phone Saber Unity B", "Phone Saber Unity AA", "Phone Saber UnityA")
+            .forEach { assertFalse(StationMatcher.service("A", it)) }
+        assertTrue(StationMatcher.service("", "Phone Saber Unity B"))
+        assertNull(DiscoveryProtocol.parse("PHONESABER_UNITY 1 red=5005 blue=5006 name=PC station=A station=B"))
+        assertNull(DiscoveryProtocol.parse("PHONESABER_UNITY 1 red=5005 blue=5006 name=PC station="))
+    }
+
     @Test fun responderReplyAndFieldOrder() {
         val reply = DiscoveryProtocol.parse("PHONESABER_UNITY 1 red=5005 blue=5006 name=My_PC")!!
         assertEquals("My_PC", reply.name)

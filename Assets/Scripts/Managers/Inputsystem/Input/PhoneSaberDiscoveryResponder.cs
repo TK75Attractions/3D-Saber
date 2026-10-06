@@ -26,10 +26,12 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
         get { lock (gate) return running; }
     }
 
-    public static string BuildReply(int redPort, int bluePort, string machineName)
+    public static string BuildReply(int redPort, int bluePort, string machineName, string station = "")
     {
         string name = string.IsNullOrWhiteSpace(machineName) ? "Unity" : machineName.Replace(' ', '_');
-        return $"{ReplyPrefix} red={redPort} blue={bluePort} name={name}";
+        string label = PhoneSaberStation.Normalize(station);
+        return $"{ReplyPrefix} red={redPort} blue={bluePort} name={name}" +
+               (label.Length == 0 ? "" : $" station={label}");
     }
 
     public static bool IsRequest(byte[] data, int length)
@@ -38,7 +40,7 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
         return Encoding.ASCII.GetString(data, 0, length).Trim() == Request;
     }
 
-    public bool Start(int redPort, int bluePort)
+    public bool Start(int redPort, int bluePort, string station = "")
     {
         // テスト中は他の自動起動と同じく何も開かない(port 5007 を占有しない)。
         if (!PhoneSaberP2PBridgeProcess.AutoStartEnabled) return false;
@@ -54,10 +56,10 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
                 client.Client.ReceiveTimeout = 500;
                 socket = client;
                 running = true;
-                byte[] reply = Encoding.ASCII.GetBytes(BuildReply(redPort, bluePort, Environment.MachineName));
+                byte[] reply = Encoding.ASCII.GetBytes(BuildReply(redPort, bluePort, Environment.MachineName, station));
                 thread = new Thread(() => Loop(client, reply)) { IsBackground = true, Name = "PhoneSaberDiscovery" };
                 thread.Start();
-                UnityEngine.Debug.Log($"[PhoneSaber] Android discovery responder on UDP {Port}");
+                UnityEngine.Debug.Log($"[PhoneSaber] Android discovery responder on UDP {Port} station={station}");
                 return true;
             }
             catch (Exception exception)
@@ -113,4 +115,54 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
         }
         Stop();
     }
+}
+
+// 台設定は main thread で読み、受信 thread には値だけ渡す(PlayerPrefs は thread 非対応)。
+public static class PhoneSaberStation
+{
+    public const string PlayerPrefsKey = "PhoneSaber.Station";
+    public const string EnvironmentVariable = "PHONESABER_STATION";
+    public const string Argument = "-phonesaberStation";
+
+    // UDP の field と process 引数に安全な、短い台名のみ使う。
+    public static string Normalize(string value)
+    {
+        string label = value == null ? "" : value.Trim();
+        if (label.Length > 16) return "";
+        foreach (char c in label)
+            if (!(c >= 'A' && c <= 'Z') && !(c >= 'a' && c <= 'z') &&
+                !(c >= '0' && c <= '9') && c != '-' && c != '_') return "";
+        return label;
+    }
+
+    public static string Resolve(string[] arguments, string environment, string preference)
+    {
+        if (arguments != null)
+            for (int i = 0; i + 1 < arguments.Length; i++)
+                if (arguments[i] == Argument && !arguments[i + 1].StartsWith("-"))
+                    return Normalize(arguments[i + 1]);
+        return Normalize(environment ?? preference);
+    }
+
+    public static string Read()
+    {
+        return Resolve(Environment.GetCommandLineArgs(), Environment.GetEnvironmentVariable(EnvironmentVariable),
+                       UnityEngine.PlayerPrefs.GetString(PlayerPrefsKey, ""));
+    }
+
+#if UNITY_EDITOR
+    [UnityEditor.MenuItem("Tools/PhoneSaber/Station/A")]
+    static void SetA() => Save("A");
+    [UnityEditor.MenuItem("Tools/PhoneSaber/Station/B")]
+    static void SetB() => Save("B");
+    [UnityEditor.MenuItem("Tools/PhoneSaber/Station/None")]
+    static void SetNone() => Save("");
+
+    static void Save(string value)
+    {
+        UnityEngine.PlayerPrefs.SetString(PlayerPrefsKey, value);
+        UnityEngine.PlayerPrefs.Save();
+        UnityEngine.Debug.Log($"[PhoneSaber] Station preference={value}; effective station={Read()} (次の Play で適用)");
+    }
+#endif
 }
