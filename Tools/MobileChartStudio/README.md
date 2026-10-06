@@ -1,6 +1,6 @@
 # Saber Tap Studio
 
-スマホで開く：[Saber Tap Studio](https://saber-tap-studio.metuji48.chatgpt.site)（作成者本人向けの非公開URL）。
+スマホで開く：[Saber Tap Studio](https://saber-tap-studio.metuji48.chatgpt.site)（ログイン不要）。URLを知っていれば利用できます。音源と下書きは各端末内に保存されます。
 
 スマホの音源を聴きながら、タップと長押しで3D-Saberの譜面を作るエディターです。インストール不要でブラウザから使え、音源と下書きは端末のIndexedDBに保存します。サーバーへの音源・譜面の送信、解析API、外部CDNは使いません。
 
