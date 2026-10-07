@@ -462,6 +462,12 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var debugCameraConfiguration = DebugCameraConfiguration.unavailable
     @Published private(set) var debugFrameIntervalStatistics: CameraFrameIntervalStatistics?
     @Published private(set) var debugSupports60FPS = false
+    /// F9 遅延テスト用: 送信中だけ 30⇄60fps を30秒ごとに切り替える（保存しない）。
+    /// PC 側は赤の受信数（約30/約60 件/秒）でどちらの区間かを判別する。
+    @Published var debugAlternateFPS = false {
+        didSet { scheduleFPSAlternation() }
+    }
+    private var fpsAlternationTask: Task<Void, Never>?
     @Published private(set) var debug60FPSFormats = "Start the camera to inspect this device"
     @Published var debugDetailedProfilingEnabled = false {
         didSet { processor.setDetailedProfilingEnabled(debugDetailedProfilingEnabled) }
@@ -1047,10 +1053,10 @@ final class CameraViewModel: NSObject, ObservableObject {
         start()
     }
 
-    func selectCameraFPS(_ fps: Int) {
+    func selectCameraFPS(_ fps: Int, persist: Bool = true) {
         guard fps == 30 || fps == 60, fps != cameraFPS else { return }
         cameraFPS = fps
-        if NSClassFromString("XCTestCase") == nil {
+        if persist && NSClassFromString("XCTestCase") == nil {
             UserDefaults.standard.set(fps, forKey: Self.cameraFPSKey)
         }
         if running {
@@ -1060,6 +1066,27 @@ final class CameraViewModel: NSObject, ObservableObject {
             start()
         }
     }
+
+#if DEBUG
+    private func scheduleFPSAlternation() {
+        fpsAlternationTask?.cancel()
+        fpsAlternationTask = nil
+        guard debugAlternateFPS else {
+            // 終了したら保存済みの設定へ戻す。
+            selectCameraFPS(UserDefaults.standard.integer(forKey: Self.cameraFPSKey) == 30 ? 30 : 60, persist: false)
+            return
+        }
+        fpsAlternationTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 30_000_000_000)
+                guard let self, !Task.isCancelled, self.debugAlternateFPS else { return }
+                if self.running && self.supports60FPS {
+                    self.selectCameraFPS(self.cameraFPS == 60 ? 30 : 60, persist: false)
+                }
+            }
+        }
+    }
+#endif
 
     private func persistSendingIntent() {
         if NSClassFromString("XCTestCase") == nil {

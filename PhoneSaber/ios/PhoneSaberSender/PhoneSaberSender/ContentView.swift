@@ -278,6 +278,7 @@ struct ContentView: View {
                                 Text("60 FPS").tag(60)
                             }
                             .pickerStyle(.segmented)
+                            Toggle("fps自動比較（30秒ごとに30⇄60・保存しない。PCのF9遅延テスト用）", isOn: $model.debugAlternateFPS)
                             DebugInfoRow(label: "60 FPS formats", value: model.debug60FPSFormats)
                             DebugInfoRow(label: "Device", value: model.debugCameraConfiguration.device)
                             DebugInfoRow(label: "Position", value: model.debugCameraConfiguration.position)

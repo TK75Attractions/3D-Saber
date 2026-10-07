@@ -71,7 +71,7 @@ public class PhoneSaberLatencyProbeTests
         Assert.AreEqual(1, loop.SamplesMs.Count);
         Assert.AreEqual(85.0, loop.SamplesMs[0], 1e-6);
         Assert.AreEqual(1, loop.TotalSamples);
-        StringAssert.StartsWith("median-ms=85 p95-ms=85 min-ms=85 max-ms=85 n=1 total=1 misses=0", loop.LogDetail());
+        StringAssert.StartsWith("median-ms=85 p95-ms=85 min-ms=85 max-ms=85 n=1 total=1 misses=0 rejected=0", loop.LogDetail());
     }
 
     [Test]
@@ -99,5 +99,31 @@ public class PhoneSaberLatencyProbeTests
         Assert.IsFalse(loop.Waiting);
         Assert.AreEqual(1, loop.Misses);
         StringAssert.Contains("失敗 1 回", loop.Summary());
+    }
+
+    [Test]
+    public void RejectsImplausiblyFastAndWrongSideResponses()
+    {
+        var loop = new PhoneSaberLatencyLoop();
+        loop.Reset(0);
+        // 1回目: 左(-0.5)→右(+0.5)。両側の位置を覚える。
+        loop.Tick(1.0, 0.99, -0.5f, true);
+        loop.Tick(1.10, 1.08, 0.5f, true);
+        Assert.AreEqual(1, loop.TotalSamples);
+        double next = 1.10 + 1.0;
+        loop.Tick(next, next - 0.01, 0.5f, true);
+        Assert.IsTrue(loop.Waiting);
+        Assert.AreEqual(0, loop.Side);
+        // 切替直後 10ms の大きな揺れはありえないので捨てる。
+        loop.Tick(next + 0.02, next + 0.01, -0.3f, true);
+        Assert.AreEqual(1, loop.Rejected);
+        Assert.IsTrue(loop.Waiting);
+        // 右側に近い値（逆方向）も捨てる。
+        loop.Tick(next + 0.06, next + 0.05, 0.95f, true);
+        Assert.AreEqual(2, loop.Rejected);
+        // 左側に戻った値を応答として採用する。
+        loop.Tick(next + 0.10, next + 0.09, -0.5f, true);
+        Assert.AreEqual(2, loop.TotalSamples);
+        Assert.AreEqual(90.0, loop.SamplesMs[1], 1e-6);
     }
 }

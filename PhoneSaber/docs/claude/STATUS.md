@@ -39,6 +39,11 @@
 
 ## 作業ログ
 
+### 2026-10-08 F9 の誤判定除去と自動 A/B
+- 10-07 夜の F9（60fps、P2P 162ms / LAN 157ms）は最小 11/19ms を含み信頼できない。原因は旧版がワールド座標で閾値0.3を判定していたこと（71595c4 で正規化座標に修正済み）と条件の違い。
+- F9: 25ms未満・逆方向の応答を棄却（rejected）、左右の棒位置を学習して切替先に近い応答だけ採用。15回ごとに maxQueuedFrames 1/2 を交互にし latency-block を記録。iPhone Debug に「fps自動比較」（30秒ごとに30⇄60、保存しない）。集計は `PhoneSaber/tools/latency_report.py`。
+- 検証: verify 全段 PASS、Unity は Roslyn コンパイル＋判定ロジックを .NET で単体実行（EditMode 未実行）、latency_report の unittest 2/2。
+
 ### 2026-10-07 iPhone 60fps を本番既定に、F9 結果の自動記録
 - 実測（Mac+iPhone、P2P）: F9 画面→受信 中央値120ms/p95 140ms（30fps）。iPhone 撮影→送信 30fps 50ms → 60fps 37ms。
 - iPhone: 「詳細設定→カメラ」に 30/60fps（既定60、保存、60非対応端末は30）。認識・UDP形式は不変。Unity: maxQueuedFrames=1（990aa4a）。F9 は20回ごとに events.log へ median/p95・赤pkt/s・経路・描画fpsを自動記録、Play停止時も記録。

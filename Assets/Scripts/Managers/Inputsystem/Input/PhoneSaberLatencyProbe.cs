@@ -17,6 +17,13 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
     GUIStyle textStyle;
     // 20回ごとにイベントログへ自動記録する（手入力なしで後から比較できるように）。
     const int LogEvery = 20;
+    // PC 側の設定は同じ条件のまま交互に切り替えて比べる（時間・照明・置き方の差を打ち消す）。
+    // ブロックごとに latency-block を記録し、PhoneSaber/tools/latency_report.py で集計する。
+    const int BlockSize = 15;
+    static readonly int[] QueuedFrameVariants = { 1, 2 };
+    int blockIndex, blockStartTotal, blockStartPackets;
+    double blockStartedAt;
+    readonly List<double> blockSamples = new List<double>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void CreateAtStartup()
@@ -35,16 +42,47 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         if (keyboard != null && keyboard.f9Key.wasPressedThisFrame)
         {
             if (active) Finish();
-            else { active = true; loggedSamples = 0; loop.Reset(now); }
+            else { active = true; loggedSamples = 0; loop.Reset(now); blockIndex = 0; StartBlock(now); }
         }
         if (!active) return;
         var input = InputPoint.Instance;
         bool hasPacket = input != null && input.HasValidStickEndpoints;
         float x = hasPacket ? ReadNormalizedX(input) : 0f;
         double packetTime = input != null ? input.LastReceivedMonotonicTime : double.NegativeInfinity;
+        int before = loop.TotalSamples;
         loop.Tick(now, packetTime, x, hasPacket);
         int total = loop.TotalSamples;
+        if (total > before) blockSamples.Add(loop.SamplesMs[loop.SamplesMs.Count - 1]);
         if (total >= loggedSamples + LogEvery) { loggedSamples = total; Record("latency-loop"); }
+        if (blockSamples.Count >= BlockSize) { RecordBlock(now); blockIndex++; StartBlock(now); }
+    }
+
+    void StartBlock(double now)
+    {
+        QualitySettings.maxQueuedFrames = QueuedFrameVariants[blockIndex % QueuedFrameVariants.Length];
+        blockSamples.Clear();
+        blockStartTotal = loop.TotalSamples;
+        blockStartedAt = now;
+        blockStartPackets = InputPoint.Instance != null ? InputPoint.Instance.ReceivedPacketCount : 0;
+    }
+
+    void RecordBlock(double now)
+    {
+        var input = InputPoint.Instance;
+        double seconds = Math.Max(1e-3, now - blockStartedAt);
+        // 受信数はブロック全体の平均（赤）。スマホの fps（30/60）の判別に使う。
+        double redRate = input != null ? (input.ReceivedPacketCount - blockStartPackets) / seconds : 0;
+        string route = input != null
+            ? PhoneSaberStatsDisplay.ClassifyRoute(input.ReadInputStats().SenderIP, PhoneSaberBonjourPublisher.IsSupported).Replace(' ', '-')
+            : "none";
+        var stats = new PhoneSaberTimingStats(blockSamples.ToArray());
+        string detail = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            "block={0} max-queued-frames={1} median-ms={2:0} p95-ms={3:0} n={4} red-pkt-per-s={5:0.0} route={6} " +
+            "platform={7} editor={8} rejected={9} misses={10}",
+            blockIndex, QualitySettings.maxQueuedFrames, stats.MedianMs, stats.P95Ms, stats.Count, redRate, route,
+            Application.platform, Application.isEditor, loop.Rejected, loop.Misses);
+        PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "RED", "latency-block", detail);
+        PhoneSaberEventLog.Current?.Flush();
     }
 
     // 閾値は [-1, 1] の単位。ワールド座標を使うと台の scale・感度で判定が変わる。
@@ -58,6 +96,7 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
     {
         active = false;
         Record("latency-loop-end");
+        QualitySettings.maxQueuedFrames = 1; // 通常運転の値へ戻す（PhoneSaberOperatorOverlay と同じ）。
     }
 
     void Record(string kind)
@@ -118,12 +157,16 @@ public sealed class PhoneSaberLatencyLoop
 {
     // 受信 x は [-1, 1]。棒は画面の 25% と 75% なので、本来 1.0 前後動く。
     public const float MoveThreshold = 0.3f;
+    // カメラ露光＋認識＋通信がこれより速いことはない。下回るのは揺れ・誤認識による偽の応答。
+    public const double MinPlausibleMs = 25.0;
     public const double TimeoutSeconds = 1.5;
     public const int MaxSamples = 60;
     readonly System.Random random;
     readonly List<double> samples = new List<double>();
     double switchAt, nextSwitchAt, lastPacketTime;
     float? baseline;
+    // 左右それぞれの棒の受信位置（落ち着いた値の移動平均）。両方わかったら、切替先の側に近い値だけを応答とする。
+    readonly float?[] sideX = new float?[2];
 
     public PhoneSaberLatencyLoop(int seed = 7) { random = new System.Random(seed); Reset(0); }
 
@@ -133,11 +176,15 @@ public sealed class PhoneSaberLatencyLoop
     public IReadOnlyList<double> SamplesMs => samples;
     // 保持数の上限（MaxSamples）に関係なく、この測定で得た回数。
     public int TotalSamples { get; private set; }
+    // 早すぎる・逆方向の動きとして捨てた回数。
+    public int Rejected { get; private set; }
 
     public void Reset(double now)
     {
         samples.Clear();
         TotalSamples = 0;
+        Rejected = 0;
+        sideX[0] = sideX[1] = null;
         Misses = 0;
         Waiting = false;
         baseline = null;
@@ -154,7 +201,11 @@ public sealed class PhoneSaberLatencyLoop
         {
             if (fresh && packetTime > switchAt && baseline.HasValue && Math.Abs(x - baseline.Value) > MoveThreshold)
             {
-                samples.Add((packetTime - switchAt) * 1000.0);
+                double latencyMs = (packetTime - switchAt) * 1000.0;
+                bool towardNewSide = !sideX[0].HasValue || !sideX[1].HasValue ||
+                    Math.Abs(x - sideX[Side].Value) < Math.Abs(x - sideX[1 - Side].Value);
+                if (latencyMs < MinPlausibleMs || !towardNewSide) { Rejected++; return; }
+                samples.Add(latencyMs);
                 TotalSamples++;
                 if (samples.Count > MaxSamples) samples.RemoveAt(0);
                 Waiting = false;
@@ -170,7 +221,11 @@ public sealed class PhoneSaberLatencyLoop
             }
             return;
         }
-        if (fresh) baseline = x;
+        if (fresh)
+        {
+            baseline = x;
+            sideX[Side] = sideX[Side].HasValue ? sideX[Side].Value * 0.8f + x * 0.2f : x;
+        }
         // 直前まで受信が続いている（棒を認識している）ときだけ切り替える。
         if (now >= nextSwitchAt && baseline.HasValue && now - lastPacketTime < 0.2)
         {
@@ -188,8 +243,8 @@ public sealed class PhoneSaberLatencyLoop
         if (samples.Count == 0) return $"n=0 misses={Misses}";
         var stats = new PhoneSaberTimingStats(samples.ToArray());
         return string.Format(System.Globalization.CultureInfo.InvariantCulture,
-            "median-ms={0:0} p95-ms={1:0} min-ms={2:0} max-ms={3:0} n={4} total={5} misses={6}",
-            stats.MedianMs, stats.P95Ms, stats.MinMs, stats.MaxMs, stats.Count, TotalSamples, Misses);
+            "median-ms={0:0} p95-ms={1:0} min-ms={2:0} max-ms={3:0} n={4} total={5} misses={6} rejected={7}",
+            stats.MedianMs, stats.P95Ms, stats.MinMs, stats.MaxMs, stats.Count, TotalSamples, Misses, Rejected);
     }
 
     public string Summary()
