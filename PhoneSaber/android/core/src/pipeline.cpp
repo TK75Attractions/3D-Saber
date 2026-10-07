@@ -317,11 +317,16 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
         }
         for (const auto& proposal : core_lines(core,raw,w,h)) {
             // Swift Set is only used for membership. Its scoring order is sorted row-major.
-            std::set<int> indices;
-            for (auto point : proposal) if (point.x >= 0 && point.x < w && point.y >= 0 && point.y < h) indices.insert(point.y*w+point.x);
+            std::vector<int> indices;
+            indices.reserve(proposal.size());
+            for (auto point : proposal) if (point.x >= 0 && point.x < w && point.y >= 0 && point.y < h) indices.push_back(point.y*w+point.x);
+            std::sort(indices.begin(),indices.end());
+            indices.erase(std::unique(indices.begin(),indices.end()),indices.end());
             Points unique;
-            for (int index : indices) unique.push_back({index%w,index/w});
-            auto scored = score_component(unique,w,h,nullptr,&indices,evidence,"core-line");
+            unique.reserve(indices.size());
+            Mask proposal_mask(w*h);
+            for (int index : indices) { unique.push_back({index%w,index/w}); proposal_mask[index] = 1; }
+            auto scored = score_component(unique,w,h,&proposal_mask,evidence,"core-line");
             if (!scored) continue;
             auto& c = scored->candidate;
             if (std::any_of(candidates.begin(),candidates.end(),[&](const Scored& e){return axis_distance(e.candidate,c)<=10.0 || subsegment(c,e.candidate);})) continue;
