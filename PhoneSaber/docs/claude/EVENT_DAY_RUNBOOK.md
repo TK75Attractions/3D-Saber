@@ -103,6 +103,7 @@ packet数・最終受信時刻には不正payloadも含む。初回受信前は�
 - 片道は有効ts＋解析OKのみ。tsなし／破損時は間隔だけ。片道サンプルがなければ同期チェックONでも「間隔のみ」。モード切替後は5秒待つ。再起動／送信元IP変更で窓をリセットする。
 - tsは両アプリとも検出後・文字列生成時。送信キュー・bridge・PC受信待ちは含むが、撮影・認識・Unity描画は含まない。**画面全体の遅延ではない**。同期後も時計誤差より小さい遅延は判断できない。
 - 未検出や処理fps低下でも間隔が開く。スマホの解析／送信fpsと併せて読む。「間隔のみ」の良好では一定の大きな片道遅延を検出できない。
+- **画面全体の遅延は F9 遅延テスト**で測る（画面の赤い棒をスマホで撮り、切替→赤の受信位置の切替まで。表示・カメラ・認識・Wi-Fi・受信を含む）。結果は20回ごとに `events.log` の `latency-loop`（median/p95・赤pkt/s＝スマホfps・経路・描画fps）へ自動で残る。2026-10-07 Mac+iPhone(P2P)・30fpsで中央値120ms／p95 140ms、iPhoneの撮影→送信は30fps 50ms・60fps 37ms。
 
 ### 台ごとの位置補正（F7）
 
@@ -140,7 +141,7 @@ F8で台・両色・無受信時間・経路・判定を見る。イベントロ
 Mac＋iPhoneの追加確認:
 
 - 経路は `P2P Connected (awdl0 · Phone Saber Unity P2P (<Mac名>))`。同じWi-Fiでは `en0` の場合もある。RTTは直近40回の中央値／p95／最大／ping欠落率（0%が理想）。
-- Unity Consoleは起動時 `listening on UDP`／`Bonjour registered`、接続時 `peer connected`／`RED received`／`BLUE received`（sessionごとに1回）、復帰時 `peer alive`。10秒ごとの `last 10s` のRED／BLUE・maxGapMs・peersも見る。30fpsなら間隔約33ms、10秒約300件、過去の実測は約32件/秒。bridgeは両色の受信機が生きている間だけ動く。
+- Unity Consoleは起動時 `listening on UDP`／`Bonjour registered`、接続時 `peer connected`／`RED received`／`BLUE received`（sessionごとに1回）、復帰時 `peer alive`。10秒ごとの `last 10s` のRED／BLUE・maxGapMs・peersも見る。iPhoneは2026-10-07から既定60fps（詳細設定→カメラで30へ戻せる）で間隔約17ms・約60件/秒、Androidは30fpsで約33ms・約30件/秒。bridgeは両色の受信機が生きている間だけ動く。
 - **PhoneSaber Status.command**は読み取りのみ・数秒。受信側 `/health`、UDP使用者、bridge、Editor.logの直近Play以降の集計5回・接続・警告・relay、最新bundle／report／解析状態、Git branch／差分（fetchなし）、Codex CLIを確認する。Editor.logは行時刻がないため最終更新時刻を表示。通常は全項目OK、maxGapMsは同ツール独自に<150msでOK、150〜499でWARN、≥500でNG。終了コードはOK=0／WARN=1／NG=2。
 
 ### 診断を使う場合（Mac＋iPhone）

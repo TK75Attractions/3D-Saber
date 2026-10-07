@@ -13,7 +13,10 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
 {
     readonly PhoneSaberLatencyLoop loop = new PhoneSaberLatencyLoop();
     bool active;
+    int loggedSamples;
     GUIStyle textStyle;
+    // 20回ごとにイベントログへ自動記録する（手入力なしで後から比較できるように）。
+    const int LogEvery = 20;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void CreateAtStartup()
@@ -32,7 +35,7 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         if (keyboard != null && keyboard.f9Key.wasPressedThisFrame)
         {
             if (active) Finish();
-            else { active = true; loop.Reset(now); }
+            else { active = true; loggedSamples = 0; loop.Reset(now); }
         }
         if (!active) return;
         var input = InputPoint.Instance;
@@ -40,14 +43,37 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         float x = hasPacket ? (input.LocalStickRawA.x + input.LocalStickRawB.x) * 0.5f : 0f;
         double packetTime = input != null ? input.LastReceivedMonotonicTime : double.NegativeInfinity;
         loop.Tick(now, packetTime, x, hasPacket);
+        int total = loop.TotalSamples;
+        if (total >= loggedSamples + LogEvery) { loggedSamples = total; Record("latency-loop"); }
     }
+
+    // Play 停止・シーン破棄でも途中結果を残す。
+    void OnDisable() { if (active) Finish(); }
 
     void Finish()
     {
         active = false;
-        string summary = loop.Summary();
-        Debug.Log("[PhoneSaber] latency loop " + summary);
-        PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "RED", "latency-loop", summary);
+        Record("latency-loop-end");
+    }
+
+    void Record(string kind)
+    {
+        var input = InputPoint.Instance;
+        string context = "";
+        if (input != null)
+        {
+            var red = input.ReadInputStats();
+            // 赤の pkt/s でスマホのカメラ fps（30/60）が分かる。経路は Mac の P2P bridge か LAN か。
+            context = string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                " red-pkt-per-s={0} route={1} sender={2}", red.PacketsPerSecond,
+                PhoneSaberStatsDisplay.ClassifyRoute(red.SenderIP, PhoneSaberBonjourPublisher.IsSupported).Replace(' ', '-'),
+                red.SenderIP);
+        }
+        string detail = loop.LogDetail() + context +
+            $" platform={Application.platform} editor={Application.isEditor} " +
+            $"render-fps={(1f / Mathf.Max(Time.smoothDeltaTime, 1e-4f)):0} max-queued-frames={QualitySettings.maxQueuedFrames}";
+        Debug.Log("[PhoneSaber] " + kind + " " + detail);
+        PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "RED", kind, detail);
         PhoneSaberEventLog.Current?.Flush();
     }
 
@@ -101,10 +127,13 @@ public sealed class PhoneSaberLatencyLoop
     public bool Waiting { get; private set; }
     public int Misses { get; private set; }
     public IReadOnlyList<double> SamplesMs => samples;
+    // 保持数の上限（MaxSamples）に関係なく、この測定で得た回数。
+    public int TotalSamples { get; private set; }
 
     public void Reset(double now)
     {
         samples.Clear();
+        TotalSamples = 0;
         Misses = 0;
         Waiting = false;
         baseline = null;
@@ -122,6 +151,7 @@ public sealed class PhoneSaberLatencyLoop
             if (fresh && packetTime > switchAt && baseline.HasValue && Math.Abs(x - baseline.Value) > MoveThreshold)
             {
                 samples.Add((packetTime - switchAt) * 1000.0);
+                TotalSamples++;
                 if (samples.Count > MaxSamples) samples.RemoveAt(0);
                 Waiting = false;
                 baseline = x;
@@ -147,6 +177,16 @@ public sealed class PhoneSaberLatencyLoop
     }
 
     void ScheduleNext(double now) => nextSwitchAt = now + 0.6 + random.NextDouble() * 0.4;
+
+    // イベントログ用。ASCII の key=value で、直近 MaxSamples 回の統計。
+    public string LogDetail()
+    {
+        if (samples.Count == 0) return $"n=0 misses={Misses}";
+        var stats = new PhoneSaberTimingStats(samples.ToArray());
+        return string.Format(System.Globalization.CultureInfo.InvariantCulture,
+            "median-ms={0:0} p95-ms={1:0} min-ms={2:0} max-ms={3:0} n={4} total={5} misses={6}",
+            stats.MedianMs, stats.P95Ms, stats.MinMs, stats.MaxMs, stats.Count, TotalSamples, Misses);
+    }
 
     public string Summary()
     {

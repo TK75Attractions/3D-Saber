@@ -461,7 +461,6 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var debugPerformanceRows = DebugPerformanceRow.placeholders
     @Published private(set) var debugCameraConfiguration = DebugCameraConfiguration.unavailable
     @Published private(set) var debugFrameIntervalStatistics: CameraFrameIntervalStatistics?
-    @Published private(set) var debugRequestedFPS = 30
     @Published private(set) var debugSupports60FPS = false
     @Published private(set) var debug60FPSFormats = "Start the camera to inspect this device"
     @Published var debugDetailedProfilingEnabled = false {
@@ -509,6 +508,11 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
         }
     }
+    /// 本番のカメラ fps（既定60）。2026-10-07 の Mac+iPhone 実測で撮影→送信が 50→37ms。
+    /// 60fps の形式がない端末は30fpsで動かす。認識・UDP形式は変えない。
+    static let cameraFPSKey = "cameraFPS"
+    @Published private(set) var cameraFPS: Int = UserDefaults.standard.integer(forKey: CameraViewModel.cameraFPSKey) == 30 ? 30 : 60
+    @Published private(set) var supports60FPS = true
     @Published private(set) var automaticResumeMessage = ""
     @Published private(set) var cameraRecoveryMessage = ""
     private var cameraRecoveryGeneration = 0
@@ -1043,15 +1047,12 @@ final class CameraViewModel: NSObject, ObservableObject {
         start()
     }
 
-#if DEBUG
-    func selectDebugCameraFPS(_ fps: Int) {
-        guard fps == 30 || fps == 60, fps != debugRequestedFPS else { return }
-        guard fps != 60 || debugSupports60FPS else {
-            cameraErrorMessage = "This back wide camera has no selected-format candidate for 60 FPS"
-            recomputeErrorMessage()
-            return
+    func selectCameraFPS(_ fps: Int) {
+        guard fps == 30 || fps == 60, fps != cameraFPS else { return }
+        cameraFPS = fps
+        if NSClassFromString("XCTestCase") == nil {
+            UserDefaults.standard.set(fps, forKey: Self.cameraFPSKey)
         }
-        debugRequestedFPS = fps
         if running {
             // A full stop/reconfigure keeps activeFormat, frame durations, the
             // output connection and the one-slot processor generation atomic.
@@ -1059,7 +1060,6 @@ final class CameraViewModel: NSObject, ObservableObject {
             start()
         }
     }
-#endif
 
     private func persistSendingIntent() {
         if NSClassFromString("XCTestCase") == nil {
@@ -1145,15 +1145,13 @@ final class CameraViewModel: NSObject, ObservableObject {
                 frameRateRanges: format.videoSupportedFrameRateRanges.map { $0.minFrameRate...$0.maxFrameRate }
             )
         }
-#if DEBUG
         let sixtyFPSOptions = formatOptions.filter { supportsFrameRate(60, ranges: $0.frameRateRanges) }
-        debugSupports60FPS = !sixtyFPSOptions.isEmpty
+        supports60FPS = !sixtyFPSOptions.isEmpty
+#if DEBUG
+        debugSupports60FPS = supports60FPS
         debug60FPSFormats = Self.formatSummary(sixtyFPSOptions)
-        if debugRequestedFPS == 60 && !debugSupports60FPS { debugRequestedFPS = 30 }
-        let targetFPS = Double(debugRequestedFPS)
-#else
-        let targetFPS = 30.0
 #endif
+        let targetFPS = cameraFPS == 60 && supports60FPS ? 60.0 : 30.0
         requestedHealthFPS = targetFPS
         let selectedIndex = preferredCameraFormatIndex(options: formatOptions, targetFPS: targetFPS)
         let format = selectedIndex.map { camera.formats[$0] } ?? camera.formats.min { left, right in

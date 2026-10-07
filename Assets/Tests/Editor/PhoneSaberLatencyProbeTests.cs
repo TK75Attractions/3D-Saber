@@ -19,6 +19,8 @@ public class PhoneSaberLatencyProbeTests
         Assert.IsFalse(loop.Waiting);
         Assert.AreEqual(1, loop.SamplesMs.Count);
         Assert.AreEqual(85.0, loop.SamplesMs[0], 1e-6);
+        Assert.AreEqual(1, loop.TotalSamples);
+        StringAssert.StartsWith("median-ms=85 p95-ms=85 min-ms=85 max-ms=85 n=1 total=1 misses=0", loop.LogDetail());
     }
 
     [Test]

@@ -39,6 +39,11 @@
 
 ## 作業ログ
 
+### 2026-10-07 iPhone 60fps を本番既定に、F9 結果の自動記録
+- 実測（Mac+iPhone、P2P）: F9 画面→受信 中央値120ms/p95 140ms（30fps）。iPhone 撮影→送信 30fps 50ms → 60fps 37ms。
+- iPhone: 「詳細設定→カメラ」に 30/60fps（既定60、保存、60非対応端末は30）。認識・UDP形式は不変。Unity: maxQueuedFrames=1（990aa4a）。F9 は20回ごとに events.log へ median/p95・赤pkt/s・経路・描画fpsを自動記録、Play停止時も記録。
+- 検証: verify 全段 PASS、Unity は Roslyn コンパイルのみ。次: P2P と LAN の F9 比較（ログから自動判定）。
+
 ### 2026-10-07 遅延の計測手段と即効の改善（全機種）
 - Unity: F9 遅延テスト（画面に赤い棒を左右交互→スマホで撮影→赤の受信位置が切り替わるまで。表示・カメラ・認識・Wi-Fi・受信を含む）。InputPoint を DefaultExecutionOrder(-2000)、SaberInputBridge を -1500 にし、受信の取り込み→剣の移動の順を固定（最大1フレームの遅れを除去）。
 - Android: 送信中は WIFI_MODE_FULL_LOW_LATENCY ロック。端末状態行に「撮影→送信」（センサー露光時刻→JNI完了）の中央値。

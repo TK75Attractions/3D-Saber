@@ -271,8 +271,8 @@ struct ContentView: View {
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Camera Configuration").font(.subheadline.weight(.semibold))
                             Picker("Capture rate", selection: Binding(
-                                get: { model.debugRequestedFPS },
-                                set: { model.selectDebugCameraFPS($0) }
+                                get: { model.cameraFPS },
+                                set: { model.selectCameraFPS($0) }
                             )) {
                                 Text("30 FPS").tag(30)
                                 Text("60 FPS").tag(60)
@@ -332,6 +332,21 @@ struct ContentView: View {
                     }
                     #endif
                     DisclosureGroup("詳細設定") {
+                        GroupBox("カメラ") {
+                            Picker("カメラ fps", selection: Binding(
+                                get: { model.cameraFPS },
+                                set: { model.selectCameraFPS($0) }
+                            )) {
+                                Text("60 fps（低遅延・既定）").tag(60)
+                                Text("30 fps").tag(30)
+                            }
+                            .pickerStyle(.segmented)
+                            Text(model.supports60FPS
+                                 ? "60 fpsは撮影から送信までが約13ms短い（2026-10-07実測）。発熱や処理落ちが続くときだけ30 fpsにします。"
+                                 : "この端末のカメラは60 fpsに対応していないため、30 fpsで動きます。")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        }
                         GroupBox("接続・出力") {
                             Toggle("遅延計測モード", isOn: $model.measurementMode)
                                 .disabled(model.running)
