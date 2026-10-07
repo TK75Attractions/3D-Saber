@@ -23,6 +23,7 @@ class PcDiscovery(context: Context,
                   private val onUpdate: (Destination?, Network?, String) -> Unit) {
     private val mainExecutor = androidx.core.content.ContextCompat.getMainExecutor(context)
     private var resolveBusy = false
+    private var resolveRequest = 0
     private var resumeResolve: (() -> Unit)? = null
     private val main = Handler(Looper.getMainLooper())
     private val connectivity = requireNotNull(context.getSystemService(ConnectivityManager::class.java))
@@ -43,6 +44,14 @@ class PcDiscovery(context: Context,
     private val found = linkedMapOf<String, Found>()
     private var selectedKey: String? = null
     private var warning = ""
+    private val prefs = context.getSharedPreferences("destination", Context.MODE_PRIVATE)
+    private var preferredPc = prefs.getString("preferredPc", null)
+    private var lastRefresh = 0L
+
+    fun clearPreferredPc() {
+        preferredPc = null
+        prefs.edit().remove("preferredPc").apply()
+    }
 
     fun setDeveloperNetworkOverride(enabled: Boolean) {
         val allowed = BuildConfig.DEBUG && enabled
@@ -108,9 +117,11 @@ class PcDiscovery(context: Context,
         restartDiscovery(wifi?.let(connectivity::getLinkProperties))
     }
 
-    private fun restartDiscovery(properties: LinkProperties?) {
+    private fun restartDiscovery(properties: LinkProperties?, preserveSelection: Boolean = false) {
+        lastRefresh = System.nanoTime()
         endDiscovery()
-        found.clear(); selectedKey = null; warning = ""
+        if (!preserveSelection) { found.clear(); selectedKey = null }
+        warning = ""
         publish()
         val wifi = network ?: return
         // 開発用の非Wi-Fi経路は手入力だけ。Wi-Fi探索・multicast lockは使わない。
@@ -150,8 +161,15 @@ class PcDiscovery(context: Context,
             override fun run() {
                 if (!active || token != generation) return
                 val now = System.nanoTime()
-                found.entries.removeAll { it.value.destination.source == "UDP探索" &&
-                    now - it.value.seen > 8_000_000_000L }
+                found.entries.removeAll {
+                    val lifetime = if (it.value.destination.source == "UDP探索") 8_000_000_000L else 45_000_000_000L
+                    now - it.value.seen > lifetime
+                }
+                // 探索socket/NSDの失敗・古いDNS解決からも自動復帰する。
+                if (now - lastRefresh >= 30_000_000_000L) {
+                    restartDiscovery(network?.let(connectivity::getLinkProperties), preserveSelection = true)
+                    return
+                }
                 publish()
                 main.postDelayed(this, 1000)
             }
@@ -209,11 +227,23 @@ class PcDiscovery(context: Context,
             if (resolveBusy) { resumeResolve = { resolveNext() }; return }
             val service = queue.removeFirst()
             resolveBusy = true
+            val request = ++resolveRequest
             resumeResolve = null
+            // suspendやOS側の欠落callbackでresolverが永久にbusyにならないようにする。
+            main.postDelayed({
+                if (resolveBusy && request == resolveRequest) {
+                    resolveRequest++
+                    resolveBusy = false
+                    if (active && token == generation) {
+                        warning = "Bonjour解決を再試行中"; publish(); resolveNext()
+                    } else resumeResolve?.also { resumeResolve = null }?.invoke()
+                }
+            }, 6000)
             try {
                 nsd.resolveService(service, object : NsdManager.ResolveListener {
                     override fun onResolveFailed(info: NsdServiceInfo, code: Int) {
                         main.post {
+                            if (request != resolveRequest) return@post
                             resolveBusy = false
                             if (token == generation) resolveNext()
                             else resumeResolve?.also { resumeResolve = null }?.invoke()
@@ -221,6 +251,7 @@ class PcDiscovery(context: Context,
                     }
                     override fun onServiceResolved(info: NsdServiceInfo) {
                         main.post {
+                            if (request != resolveRequest) return@post
                             resolveBusy = false
                             if (active && token == generation) {
                                 val host = if (android.os.Build.VERSION.SDK_INT >= 34) {
@@ -282,8 +313,16 @@ class PcDiscovery(context: Context,
     }
 
     private fun publish() {
-        if (selectedKey?.let(found::containsKey) != true) selectedKey = found.keys.firstOrNull()
+        if (selectedKey?.let(found::containsKey) != true) {
+            selectedKey = found.entries.firstOrNull {
+                station.isNotEmpty() || preferredPc == null || it.value.destination.name == preferredPc
+            }?.key
+        }
         val destination = manual ?: selectedKey?.let { found[it]?.destination }
+        if (manual == null && destination != null && preferredPc == null) {
+            preferredPc = destination.name
+            prefs.edit().putString("preferredPc", preferredPc).apply()
+        }
         val message = if (network == null) "同じ Wi-Fi に接続してください"
             else if (allowNonWifi && !isWifi(network!!)) "開発用: 非Wi-Fi経路（PCのIPを手入力してください）"
             else if (warning.isNotEmpty()) warning

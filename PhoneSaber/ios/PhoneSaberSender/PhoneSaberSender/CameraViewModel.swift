@@ -33,6 +33,8 @@ struct DestinationHostSelection: Equatable {
         }
     }
 
+    mutating func restoreBonjourService(_ name: String) { bonjourServiceName = name }
+
     @discardableResult
     mutating func applyBonjour(host resolvedHost: String, serviceName: String) -> Bool {
         guard !resolvedHost.isEmpty, source != .manual,
@@ -283,9 +285,9 @@ struct CameraLifecycleStateMachine {
     }
 
     @discardableResult
-    mutating func setForeground(_ active: Bool, at time: TimeInterval) -> Bool {
+    mutating func setForeground(_ active: Bool, at time: TimeInterval, allowRecovery: Bool = true) -> Bool {
         isForeground = active
-        guard active, isSending else { return false }
+        guard active, isSending, allowRecovery else { return false }
         _ = evaluateStall(at: time)
         switch state {
         case .stalled, .interrupted, .failed:
@@ -493,7 +495,22 @@ final class CameraViewModel: NSObject, ObservableObject {
     private var sessionObserverTokens: [NSObjectProtocol] = []
     private var sceneIsActive = true
     private var cameraRecoveryInProgress = false
-    private var cameraRecoveryAttempted = false
+    private var cameraBackoff = RecoveryBackoff()
+    private var cameraRecoveryTask: Task<Void, Never>?
+    private var cameraRecoveryExhausted = false
+    private var resumePolicy = SendingResumePolicy()
+    private var permissionPending = false
+    private var automaticResumePending = false
+    private var lastDiscoveryRefresh = 0.0
+    @Published var autoStartSending = false {
+        didSet {
+            if NSClassFromString("XCTestCase") == nil {
+                UserDefaults.standard.set(autoStartSending, forKey: SendingResumePolicy.autoStartKey)
+            }
+        }
+    }
+    @Published private(set) var automaticResumeMessage = ""
+    @Published private(set) var cameraRecoveryMessage = ""
     private var cameraRecoveryGeneration = 0
     private var cameraLifecycleEnabled = true
     /// Camera the exposure experiment was applied to, and its own default
@@ -520,6 +537,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         // Unit tests opt in explicitly, so a bridge running on the developer's Mac
         // can never reroute the existing LAN tests.
         let underTest = NSClassFromString("XCTestCase") != nil
+        self.autoStartSending = !underTest && UserDefaults.standard.bool(forKey: SendingResumePolicy.autoStartKey)
+        self.resumePolicy = SendingResumePolicy(wasSending: !underTest && UserDefaults.standard.bool(forKey: SendingResumePolicy.wasSendingKey))
         self.mirrorX = underTest ? false : UserDefaults.standard.bool(forKey: Self.mirrorXKey)
         self.mirrorY = underTest ? false : UserDefaults.standard.bool(forKey: Self.mirrorYKey)
         self.p2pEnabled = p2pEnabled
@@ -536,6 +555,15 @@ final class CameraViewModel: NSObject, ObservableObject {
         self.requestAccess = requestAccess
         self.idleTimerUpdater = idleTimerUpdater
         super.init()
+        if !underTest {
+            let manual = UserDefaults.standard.string(forKey: "PhoneSaber.manualHost") ?? ""
+            self.hostSelection.setManual(manual, resolvedHost: "", serviceName: "")
+            if manual.isEmpty {
+                self.hostSelection.restoreBonjourService(UserDefaults.standard.string(forKey: "PhoneSaber.bonjourService") ?? "")
+            }
+            self.host = self.hostSelection.host
+            self.connectionMode = self.hostSelection.source.rawValue
+        }
         registerCameraSessionObservers()
         UIDevice.current.isBatteryMonitoringEnabled = true
         sessionObserverTokens.append(NotificationCenter.default.addObserver(
@@ -553,7 +581,19 @@ final class CameraViewModel: NSObject, ObservableObject {
             @unknown default: status = "判定中"
             }
             let interface = path.availableInterfaces.map { String(describing: $0.type) }.joined(separator: ", ")
-            Task { @MainActor in self?.pathStatus = status; self?.pathInterface = interface }
+            Task { @MainActor in
+                guard let self else { return }
+                self.pathStatus = status; self.pathInterface = interface
+                if self.running && self.cameraLifecycleEnabled {
+                    if self.hostSelection.source == .manual {
+                        self.configureLAN(host: self.host, generation: self.lifecycleGeneration)
+                    } else {
+                        self.sender.stop()
+                        self.lanConfigured = false
+                    }
+                }
+                self.refreshNetworkDiscovery()
+            }
         }
         pathMonitor.start(queue: DispatchQueue(label: "PhoneSaberSender.path"))
         bonjourDiscovery.onUpdate = { [weak self] update in
@@ -649,26 +689,34 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     func sceneDidChange(isActive: Bool) {
         if !isActive && debugRecordingActive { stopDebugRecording(reason: .background) }
+        let wasInactive = !sceneIsActive
         sceneIsActive = isActive
         updateIdleTimerPolicy()
         let now = ProcessInfo.processInfo.systemUptime
-        let recoveryRequested = cameraLifecycle.setForeground(isActive, at: now)
+        let recoveryRequested = cameraLifecycle.setForeground(isActive, at: now, allowRecovery: !cameraRecoveryExhausted)
         let shouldRecover = cameraLifecycleEnabled && recoveryRequested
         publishCameraLifecycle(at: now)
         guard isActive else { return }
+        if resumePolicy.foreground(autoStart: autoStartSending), !running {
+            automaticResumePending = true
+            start()
+        } else if running && automaticResumePending == false && wasInactive {
+            automaticResumePending = true
+        }
+        refreshNetworkDiscovery()
         bonjourDiscovery.ensureRunning()
         if p2pEnabled { p2pSender.recoverIfNeeded() }
         guard running else { return }
         sender.recoverIfNeeded()
         if shouldRecover {
-            cameraRecoveryAttempted = false
             scheduleCameraRecovery(alreadyMarkedRecovering: true)
         }
     }
 
     func retryCameraRecovery() {
         guard running, sceneIsActive, cameraLifecycleEnabled else { return }
-        cameraRecoveryAttempted = false
+        cameraBackoff.reset()
+        cameraRecoveryExhausted = false
         scheduleCameraRecovery(alreadyMarkedRecovering: false)
     }
 
@@ -680,9 +728,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func handleCameraInterruptionEnded() {
-        guard running else { return }
+        guard running, !cameraRecoveryExhausted else { return }
         if sceneIsActive {
-            cameraRecoveryAttempted = false
             let now = ProcessInfo.processInfo.systemUptime
             if cameraLifecycle.interruptionEnded(at: now) {
                 publishCameraLifecycle(at: now)
@@ -703,29 +750,45 @@ final class CameraViewModel: NSObject, ObservableObject {
         cameraErrorMessage = message
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
         recomputeErrorMessage()
-        if sceneIsActive && !cameraRecoveryAttempted {
+        if sceneIsActive {
             scheduleCameraRecovery(alreadyMarkedRecovering: false)
         }
     }
 
     private func scheduleCameraRecovery(alreadyMarkedRecovering: Bool) {
-        guard running, sceneIsActive, cameraLifecycleEnabled, !cameraRecoveryInProgress else { return }
+        guard running, sceneIsActive, cameraLifecycleEnabled, !cameraRecoveryInProgress, !cameraRecoveryExhausted else { return }
         if debugRecordingActive { stopDebugRecording(reason: .runtimeFailure) }
         let now = ProcessInfo.processInfo.systemUptime
         if !alreadyMarkedRecovering && !cameraLifecycle.beginRecovery(at: now) { return }
+        guard let delay = cameraBackoff.nextDelay(at: now) else {
+            cameraRecoveryExhausted = true
+            cameraLifecycle.runtimeError("カメラの復旧が15分間できません。権限・端末を確認してください")
+            cameraRecoveryMessage = "カメラの復旧が15分間できません。「カメラを再開」で再試行できます"
+            publishCameraLifecycle(at: now)
+            return
+        }
         cameraRecoveryInProgress = true
-        cameraRecoveryAttempted = true
+        cameraRecoveryMessage = "カメラを再接続中…（\(Int(delay))秒後に再試行）"
         cameraRecoveryGeneration += 1
         let recoveryGeneration = cameraRecoveryGeneration
         let runGeneration = lifecycleGeneration
         _ = processor.reset()
         publishCameraLifecycle(at: now)
-        sessionRunner.stop { [weak self] in
-            guard let self,
+        cameraRecoveryTask = Task { @MainActor [weak self] in
+            try? await Task.sleep(for: .seconds(delay))
+            guard let self, !Task.isCancelled,
                   self.lifecycleGeneration == runGeneration,
-                  self.cameraRecoveryGeneration == recoveryGeneration,
-                  self.running else { return }
-            self.configureAndStart(isRecovery: true, recoveryGeneration: recoveryGeneration)
+                  self.cameraRecoveryGeneration == recoveryGeneration, self.running else { return }
+            guard self.sceneIsActive else {
+                self.cameraRecoveryInProgress = false
+                self.cameraLifecycle.runtimeError("前面への復帰を待っています")
+                return
+            }
+            self.sessionRunner.stop { [weak self] in
+                guard let self, self.lifecycleGeneration == runGeneration,
+                      self.cameraRecoveryGeneration == recoveryGeneration, self.running else { return }
+                self.configureAndStart(isRecovery: true, recoveryGeneration: recoveryGeneration)
+            }
         }
     }
 
@@ -776,10 +839,14 @@ final class CameraViewModel: NSObject, ObservableObject {
         guard cameraLifecycleEnabled, running else { return }
         let becameStalled = cameraLifecycle.evaluateStall(at: time)
         publishCameraLifecycle(at: time)
+        if sceneIsActive && time - lastDiscoveryRefresh >= 30 { refreshNetworkDiscovery() }
+        if sceneIsActive && cameraState.canRetry && !cameraRecoveryInProgress && !cameraRecoveryExhausted {
+            scheduleCameraRecovery(alreadyMarkedRecovering: false)
+        }
         if becameStalled {
             cameraErrorMessage = "カメラframeが2秒以上届いていません"
             recomputeErrorMessage()
-            if sceneIsActive && !cameraRecoveryAttempted {
+            if sceneIsActive {
                 scheduleCameraRecovery(alreadyMarkedRecovering: false)
             }
         }
@@ -821,7 +888,12 @@ final class CameraViewModel: NSObject, ObservableObject {
         guard running, cameraLifecycleEnabled else { return }
         cameraLifecycle.receivedFrame(at: time)
         guard cameraLifecycle.state == .live else { return }
-        cameraRecoveryAttempted = false
+        cameraBackoff.receivedFrame(at: time)
+        cameraRecoveryMessage = ""
+        if automaticResumePending {
+            automaticResumeMessage = "自動で送信を再開しました"
+            automaticResumePending = false
+        }
         cameraErrorMessage = nil
         publishCameraLifecycle(at: time)
         recomputeErrorMessage()
@@ -837,7 +909,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func updateIdleTimerPolicy() {
-        let shouldPreventSleep = running && sceneIsActive
+        let shouldPreventSleep = (running || resumePolicy.wantsSending) && sceneIsActive
         guard screenSleepPreventionActive != shouldPreventSleep else { return }
         screenSleepPreventionActive = shouldPreventSleep
         idleTimerUpdater(shouldPreventSleep)
@@ -845,21 +917,29 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     deinit {
         cameraWatchdogTask?.cancel()
+        cameraRecoveryTask?.cancel()
+        pathMonitor.cancel()
         sessionObserverTokens.forEach(NotificationCenter.default.removeObserver)
     }
 
     func start() {
-        guard !running else { return }
+        guard !running, !permissionPending else { return }
+        resumePolicy.start()
+        persistSendingIntent()
+        updateIdleTimerPolicy()
         lifecycleGeneration += 1
         let requestedGeneration = lifecycleGeneration
         switch authorizationStatus() {
         case .authorized: configureAndStart()
         case .notDetermined:
+            permissionPending = true
             requestAccess { [weak self] granted in
                 Task { @MainActor in
                     guard let self else { return }
                     self.authorizationCallbackCount += 1
                     guard self.lifecycleGeneration == requestedGeneration, !self.running else { return }
+                    self.permissionPending = false
+                    guard self.sceneIsActive else { return }
                     granted ? self.configureAndStart() : self.fail("カメラ権限がありません")
                 }
             }
@@ -879,6 +959,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         p2pState = .disabled
         p2pRoundTrip = nil
         station = value
+        UserDefaults.standard.removeObject(forKey: "PhoneSaber.bonjourService")
         UserDefaults.standard.set(value, forKey: PhoneSaberStation.preferenceKey)
         discoveredMacName = ""
         discoveredMacIP = ""
@@ -898,6 +979,10 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     func setManualHost(_ value: String) {
+        if NSClassFromString("XCTestCase") == nil {
+            UserDefaults.standard.set(value, forKey: "PhoneSaber.manualHost")
+            UserDefaults.standard.removeObject(forKey: "PhoneSaber.bonjourService")
+        }
         hostSelection.setManual(value, resolvedHost: discoveredMacIP, serviceName: discoveredMacName)
         host = hostSelection.host
         connectionMode = hostSelection.source.rawValue
@@ -917,7 +1002,15 @@ final class CameraViewModel: NSObject, ObservableObject {
         networkDiscoveryStatus = update.status
         discoveredMacName = update.name
         discoveredMacIP = update.ip
-        if hostSelection.applyBonjour(host: update.ip, serviceName: update.name) {
+        if update.removed && hostSelection.source != .manual && hostSelection.bonjourServiceName == update.name {
+            sender.stop()
+            lanConfigured = false
+        }
+        if hostSelection.applyBonjour(host: update.ip, serviceName: update.name) ||
+            (!update.ip.isEmpty && hostSelection.source != .manual && hostSelection.bonjourServiceName == update.name && !lanConfigured) {
+            if NSClassFromString("XCTestCase") == nil {
+                UserDefaults.standard.set(update.name, forKey: "PhoneSaber.bonjourService")
+            }
             host = hostSelection.host
             connectionMode = hostSelection.source.rawValue
             updateDiagnosticDestination()
@@ -967,11 +1060,41 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 #endif
 
+    private func persistSendingIntent() {
+        if NSClassFromString("XCTestCase") == nil {
+            UserDefaults.standard.set(resumePolicy.wantsSending, forKey: SendingResumePolicy.wasSendingKey)
+        }
+    }
+
+    private func refreshNetworkDiscovery() {
+        lastDiscoveryRefresh = ProcessInfo.processInfo.systemUptime
+        bonjourDiscovery.start()
+        if p2pEnabled { p2pSender.recoverIfNeeded() }
+        if running { sender.recoverIfNeeded() }
+    }
+
+    var sendingRequested: Bool { running || resumePolicy.wantsSending }
+
+    var pcReconnectMessage: String? {
+        guard running, !(hostSelection.source != .manual && p2pState.isConnected),
+              pathStatus == "経路なし" || !lanConfigured || senderStates.values.contains(where: { $0 == "waiting" || $0 == "failed" }) else { return nil }
+        return "PC を再接続中…"
+    }
+
     func stop() {
+        resumePolicy.stop()
+        persistSendingIntent()
+        permissionPending = false
+        automaticResumePending = false
+        automaticResumeMessage = ""
+        cameraRecoveryMessage = ""
+        cameraRecoveryTask?.cancel()
+        cameraRecoveryTask = nil
         lifecycleGeneration += 1
         cameraRecoveryGeneration += 1
         cameraRecoveryInProgress = false
-        cameraRecoveryAttempted = false
+        cameraBackoff.reset()
+        cameraRecoveryExhausted = false
         if debugRecordingActive { stopDebugRecording() }
         running = false
         publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
@@ -994,21 +1117,13 @@ final class CameraViewModel: NSObject, ObservableObject {
         resetDebugPerformance()
 #endif
         recomputeErrorMessage()
-        // With P2P enabled the camera may start before (or without) a LAN host:
-        // coordinates go over P2P once the bridge answers, LAN is added when found.
-        guard !configuredHost.isEmpty || p2pEnabled else {
-            if isRecovery {
-                cameraRecoveryInProgress = false
-                cameraLifecycle.restartFinished(succeeded: false, at: ProcessInfo.processInfo.systemUptime,
-                                                error: "送信先Macが設定されていません")
-                publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
-            } else {
-                cameraLifecycle.stop()
-                publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
-            }
-            fail("Macを検索中です。見つからない場合は手動IPを入力してください", cameraFailure: false)
-            return
+        if !isRecovery {
+            cameraLifecycle.requestStart(at: ProcessInfo.processInfo.systemUptime)
         }
+        running = true
+        cameraLifecycleEnabled = true
+        updateIdleTimerPolicy()
+        startCameraWatchdog()
         let configuredThreshold = ColorThreshold(brightness: UInt8(clamping: threshold), dominance: UInt8(clamping: dominance))
         session.beginConfiguration()
         session.inputs.forEach { session.removeInput($0) }
@@ -1091,15 +1206,9 @@ final class CameraViewModel: NSObject, ObservableObject {
 #endif
         processor.configureCaptureSynchronizationClock(session.synchronizationClock)
         let currentGeneration = lifecycleGeneration
-        if !isRecovery {
-            cameraLifecycle.requestStart(at: ProcessInfo.processInfo.systemUptime)
-        }
-        cameraLifecycleEnabled = true
-        running = true
-        updateIdleTimerPolicy()
         if configuredHost.isEmpty {
             lanConfigured = false
-            activeDestination = "P2P待機中(LAN未設定)"
+            activeDestination = "PC を再接続中…"
         } else {
             configureLAN(host: configuredHost, generation: currentGeneration)
             activeDestination = "\(configuredHost):5005 / \(configuredHost):5006"
@@ -1111,7 +1220,6 @@ final class CameraViewModel: NSObject, ObservableObject {
         frameCount = 0; fpsStart = CACurrentMediaTime(); _ = processor.reset(); status = "送信中"
         healthMeter.reset(at: ProcessInfo.processInfo.systemUptime, generation: processor.currentGeneration)
         publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
-        startCameraWatchdog()
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
         sessionRunner.start { [weak self] succeeded in
             self?.finishCameraStart(succeeded: succeeded, lifecycle: currentGeneration,
@@ -1726,6 +1834,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private func fail(_ message: String, cameraFailure: Bool = true) {
         cameraErrorMessage = message
         if cameraFailure {
+            cameraRecoveryInProgress = false
             cameraLifecycle.fail(message)
             publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
         }
@@ -2164,6 +2273,7 @@ private struct BonjourDiscoveryUpdate {
     let status: String
     let name: String
     let ip: String
+    var removed = false
 }
 
 /// Discovery runs on the main run loop, outside the capture and UDP queues.
@@ -2177,11 +2287,11 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
     private var searchTimeout: DispatchWorkItem?
     private var isSearching = false
 
-    private func report(_ status: String, name: String = "", ip: String = "") {
+    private func report(_ status: String, name: String = "", ip: String = "", removed: Bool = false) {
 #if DEBUG
         print("[Bonjour] \(status) main=\(Thread.isMainThread)")
 #endif
-        onUpdate?(BonjourDiscoveryUpdate(status: status, name: name, ip: ip))
+        onUpdate?(BonjourDiscoveryUpdate(status: status, name: name, ip: ip, removed: removed))
     }
 
     func start() {
@@ -2221,7 +2331,7 @@ private final class BonjourDiscovery: NSObject, NetServiceBrowserDelegate, NetSe
         guard PhoneSaberStation.matches(service: service.name, station: station) else { return }
         resolving.remove(service)
         service.stop()
-        report("Service removed: \(service.name); Manual IP available")
+        report("PC を再接続中…", name: service.name, removed: true)
     }
 
     func netServiceWillResolve(_ sender: NetService) {

@@ -30,6 +30,8 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
     private val gate = Any()
     @Volatile private var generation = 0
     @Volatile private var running = false
+    @Volatile var lastFrameAt = 0.0
+        private set
     @Volatile var status = Status()
         private set
     private val executor = ScheduledThreadPoolExecutor(1).apply { removeOnCancelPolicy = true }
@@ -47,6 +49,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
         val token = synchronized(gate) {
             running = true
             status = Status()
+            lastFrameAt = 0.0
             healthMeter.reset(System.nanoTime() / 1e9)
             ++generation
         }
@@ -113,6 +116,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                             val jniEnded = System.nanoTime()
                             synchronized(gate) {
                                 if (running && token == generation) {
+                                    lastFrameAt = jniEnded / 1e9
                                     healthMeter.processed(jniEnded / 1e9, (jniEnded - jniStarted) / 1e6)
                                     sender.offer(results, started)
                                     status = describe(results, "${pixels.width}×${pixels.height} / 30 fps要求")
@@ -130,7 +134,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                 val camera = cameras.bindToLifecycle(owner, CameraSelector.DEFAULT_BACK_CAMERA, frames, preview)
                 cameraState = camera.cameraInfo.cameraState
                 cameraState?.observe(owner) { state ->
-                    state.error?.let { fail(token, "カメラエラー (${it.code})。停止して再度開始してください") }
+                    state.error?.let { fail(token, "カメラエラー (${it.code})") }
                 }
             } catch (e: Exception) { fail(token, "カメラ開始失敗: ${e.localizedMessage}") }
         }, ContextCompat.getMainExecutor(previewView.context))

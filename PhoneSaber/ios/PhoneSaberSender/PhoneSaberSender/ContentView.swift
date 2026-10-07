@@ -76,8 +76,19 @@ struct ContentView: View {
                             .autocorrectionDisabled(true)
                             .textInputAutocapitalization(.never)
                             .disabled(model.running)
-                        Button(model.running ? "停止" : "通常送信を開始") {
-                            model.running ? model.stop() : model.start()
+                        Toggle("起動時に送信を自動開始", isOn: $model.autoStartSending)
+                            .font(.footnote)
+                        if !model.automaticResumeMessage.isEmpty {
+                            Text(model.automaticResumeMessage).font(.footnote).foregroundStyle(.green)
+                        }
+                        if !model.cameraRecoveryMessage.isEmpty {
+                            Text(model.cameraRecoveryMessage).font(.footnote).foregroundStyle(.orange)
+                        }
+                        if let message = model.pcReconnectMessage {
+                            Text(message).font(.footnote).foregroundStyle(.orange)
+                        }
+                        Button(model.sendingRequested ? "停止" : "通常送信を開始") {
+                            model.sendingRequested ? model.stop() : model.start()
                         }
                         .buttonStyle(.borderedProminent)
                         Text("BonjourでMacを自動発見します。見つからない時だけ手動IPを入力します。")
