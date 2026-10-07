@@ -23,6 +23,15 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     GUIStyle textStyle;
     GUIStyle warningStyle;
     GUIStyle toggleStyle;
+    GUIStyle buttonStyle;
+    InputPoint calibrationInput;
+    string calibrationStation;
+    bool calibrationBlue;
+    int calibrationCorner = -1;
+    double captureStarted = -1;
+    string calibrationMessage = "未設定時は従来どおりの座標です。";
+    readonly Vector2[] calibrationCorners = new Vector2[4];
+    static readonly string[] CornerNames = { "左上", "右上", "右下", "左下" };
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void CreateAtStartup()
@@ -42,6 +51,9 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             overlay = new GameObject("PhoneSaber Operator Overlay").AddComponent<PhoneSaberOperatorOverlay>();
         DontDestroyOnLoad(overlay.gameObject);
         // Domain Reload / Scene Reload を無効にした Editor でも毎回非表示で始める。
+        overlay.CancelCalibration();
+        overlay.calibrationBlue = false;
+        overlay.calibrationMessage = "未設定時は従来どおりの座標です。";
         overlay.visible = false;
         overlay.clocksSynchronized = false;
         overlay.startedAt = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
@@ -68,13 +80,126 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         if (keyboard != null && keyboard.f8Key.wasPressedThisFrame)
         {
             visible = !visible;
+            if (!visible && calibrationCorner >= 0)
+            {
+                CancelCalibration();
+                calibrationMessage = "測定をキャンセルしました。";
+            }
             nextRefresh = 0;
         }
+        if (keyboard != null && keyboard.f7Key.wasPressedThisFrame)
+        {
+            visible = true;
+            AdvanceCalibration();
+            nextRefresh = 0;
+        }
+        PollCalibration(logNow);
         if (!visible) return;
         double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
         if (now < nextRefresh) return;
         nextRefresh = now + 0.2;
         Refresh(now);
+    }
+
+    void CancelCalibration()
+    {
+        calibrationInput?.PositionCapture.Cancel();
+        calibrationInput = null;
+        calibrationCorner = -1;
+        captureStarted = -1;
+    }
+
+    void AdvanceCalibration()
+    {
+        if (captureStarted >= 0) return;
+        if (calibrationCorner < 0)
+        {
+            var input = InputPoint.Instance;
+            if (input == null || !input.isActiveAndEnabled)
+            {
+                calibrationMessage = "受信機がありません。ゲームを起動して送信を開始してください。";
+                return;
+            }
+            calibrationInput = input;
+            calibrationStation = input.StationLabel;
+            calibrationCorner = 0;
+            calibrationMessage = "プレイヤーは所定の立ち位置に立ち、点灯した剣の中点を指定の隅で静止させてください。";
+            return;
+        }
+        captureStarted = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+        calibrationInput.PositionCapture.Begin(calibrationBlue, captureStarted);
+        calibrationMessage = "採取中：剣を動かさず、そのまま約1秒待ってください。";
+    }
+
+    void PollCalibration(double now)
+    {
+        if (calibrationCorner < 0) return;
+        if (calibrationInput == null || calibrationInput != InputPoint.Instance ||
+            !calibrationInput.isActiveAndEnabled || calibrationInput.StationLabel != calibrationStation)
+        {
+            CancelCalibration();
+            calibrationMessage = "受信機または台が変わりました。最初から測定してください。";
+            return;
+        }
+        if (captureStarted < 0 || now < captureStarted + PhoneSaberPositionCapture.Duration) return;
+        captureStarted = -1;
+        if (!calibrationInput.PositionCapture.Finish(out var point, out var error))
+        {
+            calibrationMessage = error;
+            return;
+        }
+        calibrationCorners[calibrationCorner++] = point;
+        if (calibrationCorner < 4)
+        {
+            calibrationMessage = $"採取済み ({point.x:F0}, {point.y:F0})。次の隅へ剣を移動して静止させてください。";
+            return;
+        }
+        bool saved = calibrationInput.SavePositionCalibration(calibrationCorners, out error);
+        CancelCalibration();
+        calibrationMessage = saved ? "4隅を保存し、位置補正をONにしました。剣を動かして届く範囲を確認してください。" :
+            "保存できません：" + error + " 最初から測定し直してください。";
+        nextRefresh = 0;
+    }
+
+    void DrawCalibration()
+    {
+        var input = InputPoint.Instance;
+        GUILayout.Label("台ごとの位置補正 [F7: 開始 / 隅を採取]", textStyle);
+        GUILayout.Label("状態: " + (input != null && input.PositionCalibrationEnabled ? "ON" : "OFF") +
+            (input != null && input.HasPositionCalibration ? "（保存済み）" : "（未設定・従来の座標）"), textStyle);
+        GUILayout.Label("カメラは画面下の箱からプレイヤーを撮影。立ち位置は画面から約2.7〜3.1m、プレイ範囲は直径1.5m。\n" +
+            "点灯した剣の中点で左上→右上→右下→左下を測定します。画面の剣の位置ではなく、実際に振る範囲の隅に合わせてください。", textStyle);
+        GUILayout.Label(calibrationMessage, warningStyle);
+        bool previousEnabled = GUI.enabled;
+        GUI.enabled = previousEnabled && calibrationCorner < 0;
+        calibrationBlue = GUILayout.Toggle(calibrationBlue, "BLUEの剣を採取（OFFならRED）", toggleStyle);
+        GUI.enabled = previousEnabled;
+        if (calibrationCorner >= 0)
+        {
+            GUILayout.Label($"{calibrationCorner + 1}/4: {CornerNames[calibrationCorner]}で剣を静止 → F7で1秒採取", textStyle);
+            GUI.enabled = previousEnabled && captureStarted < 0;
+            if (GUILayout.Button("この隅を採取 [F7]", buttonStyle)) AdvanceCalibration();
+            GUI.enabled = previousEnabled;
+            if (GUILayout.Button("測定をキャンセル（保存済みの設定は維持）", buttonStyle))
+            {
+                CancelCalibration();
+                calibrationMessage = "測定をキャンセルしました。";
+            }
+        }
+        else
+        {
+            if (GUILayout.Button("4隅の測定を開始 [F7]", buttonStyle)) AdvanceCalibration();
+            GUI.enabled = previousEnabled && input != null && input.HasPositionCalibration;
+            bool enabled = input != null && input.PositionCalibrationEnabled;
+            bool selected = GUILayout.Toggle(enabled, "位置補正をON（この台だけ）", toggleStyle);
+            if (selected != enabled && input != null) input.SetPositionCalibrationEnabled(selected);
+            if (GUILayout.Button("この台の位置補正をリセット（OFFに戻す）", buttonStyle) && input != null)
+            {
+                input.ResetPositionCalibration();
+                calibrationMessage = "この台の位置補正を削除し、従来の座標に戻しました。";
+            }
+            GUI.enabled = previousEnabled;
+        }
     }
 
     void Refresh(double now)
@@ -126,6 +251,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             toggleStyle = new GUIStyle(GUI.skin.toggle) { font = font, fontSize = 18, wordWrap = true };
             toggleStyle.normal.textColor = Color.white;
             toggleStyle.onNormal.textColor = Color.white;
+            buttonStyle = new GUIStyle(GUI.skin.button) { font = font, fontSize = 18, wordWrap = true };
         }
         Matrix4x4 previousMatrix = GUI.matrix;
         int previousDepth = GUI.depth;
@@ -141,6 +267,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         GUILayout.Label($"PhoneSaber 運営表示 [F8: 開閉]  |  台: {(string.IsNullOrEmpty(station) ? "指定なし" : station)}", textStyle);
         // 日本語の折り返しが増えても、下の色や警告を切り落とさない。
         scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+        DrawCalibration();
+        GUILayout.Space(8);
         GUILayout.Label(services, textStyle);
         bool synchronized = GUILayout.Toggle(clocksSynchronized,
             "スマホとPCのNTP同期を確認済み（片道遅延も判定）", toggleStyle);
