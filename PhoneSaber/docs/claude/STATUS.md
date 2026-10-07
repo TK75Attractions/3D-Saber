@@ -1,89 +1,62 @@
 # PhoneSaber STATUS
 
-2026-10-06 のrepo統合: Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/`。Git root から `bash PhoneSaber/tools/verify_phone_saber.sh` を実行。旧 school-festival は履歴を保って統合・アーカイブ済み。
-
 ## ユーザー待ち
 
-**剣なしでできること(2026-10-07。Mac + iPhone で。上から順に)**
-1. iPhone に最新版を入れる:Xcode で `3D-Saber/PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender.xcodeproj` を開き、iPhone をつないで ▶。
-2. Unity で Play → **F8** で運営表示が出るか(台名、赤・青の受信 fps、1 秒以上届かないときの注意)。剣がないので受信 0 でよい。表示が出ることと崩れないことだけ見る。
-3. iPhone の送信画面に「発熱 / 電池 / fps / 処理中央値」の行が出るか。
-4. **剣なしの Debug Recording を2本**(露出 1/100 秒、区間ラベルを「saberなし」にしてから開始、各 1〜2 分):① 窓や空が映る明るい場所、② 人(肌・服)が前を動く場所。Capture Lossless を2〜3回。青のルール(空色の誤検出が消えるはず)と、赤の残りの誤検出を確かめる。
-5. **長時間の放置テスト(30 分〜1 時間)**:iPhone を充電しながら送信を開始したまま置き、ときどき「発熱」の行を見る(できれば箱やケースに入れて、本番に近い状態で)。最後に発熱・fps を教えてもらう。
-6. AQUOS が手元にあるとき:Android アプリを入れて、台番号・F8 の運営表示で受信 fps が増えるか(剣なしなら 0 のまま)を見る。
+2026-10-07時点。最新版を実機に入れて確認する。手順は[当日runbook](EVENT_DAY_RUNBOOK.md)。
 
-帰ったらやること(上から順に。iPhone は最新の main を入れ直す。Android は Android Studio で `PhoneSaber/android` を開いて ▶)。
-1. **iPhone + Mac:ガイド付き録画 v3 を1本**(露出 1/100 秒)。最初の saberなし区間の画像で、赤の誤検出の正体を確かめる。
-2. **Android(AQUOS)を初めて動かす**:Mac で Unity を Play → アプリで「開始」。見ること:PC が自動で見つかるか、「送信 fps」が出るか、Unity で剣が正しい向き・位置で動くか(左右・上下が逆になっていないか)。
-3. ~~台番号の確認~~ 2026-10-06 に Mac + iPhone で確認済み。Android でも同じ確認をする。
-4. Windows を使える日に:Windows の Unity で Play → Android から送って受信できるか。ファイアウォールの許可画面が出たら「プライベート ネットワーク」を許可。
-5. 会場か、それに近い場所で撮れる日に:本番と同じ距離(画面から約 2.7〜3.1m、プレイ範囲は直径 1.5m)でガイド付き録画。プレイヤーの後ろを人が歩く状態と、ゲームの映像を投影している状態を含める。頭上まで振ったときに画面から外れないかも見る。
+1. **剣あり・iPhone＋Macのガイド付き録画v3**: 露出1/100秒で1本。最初の「saberなし」の画像、赤・青の静止／速振り／先端向けを残す。遠い・淡い青、画面端も確認。会場に近い距離（画面から2.7〜3.1m、範囲直径1.5m）で、背後の人・投影中・頭上の振りを含める。
+2. **AndroidをAQUOS sense9で動かす**: [Android README](../../android/README.md)で導入し、MacのUnityへ送信。台A/Bの探索、両色の送信・F8受信、向き・四隅、反転保存、権限、開始／停止／前面復帰／再起動／Wi-Fi切替を確認。JNIエミュレータ試験の成功とは別に、実カメラとWi-Fiを確認する。
+3. **Windows実行**: [Windowsキット](../../windows/README.md)で最新版をビルドし、Androidから両色を受信。A/B探索、Private／firewall、ホットスポット、F8・F7、監視の異常終了後再起動／正常Quitを確認。iPhoneを使う場合は手動IP。
+4. **Unity EditMode Test Runner**: `Window > General > Test Runner` でEditModeを実行。F8統計・位置補正・台別保存を含むテストの結果を共有する。Roslynでのコンパイル確認は済んでいるがEditor内では未実行。
+5. **30分〜1時間の連続運転**: 本番の箱・給電・配置で送信し、発熱・電池・処理／送信／受信fps・処理中央値・到着間隔・メモリを記録。途中で前面復帰・Wi-Fi切替・アプリ再起動を試し、停止後は前面復帰だけでは再開しないことも確認。遅延計測は確認後OFFへ。
+6. **剣なしの Debug Recording を2本**(剣がなくてもできる): 露出1/100秒、区間ラベル「saberなし」で開始、各1〜2分、Capture Lossless を2〜3回。① 窓や空が映る明るい場所(青のルールの確認)、② 人の肌・服が前を動く場所(赤の残りの誤検出)。
 
 ## 現在の仮説と確度
 
-- 高: 肌・照明・背景の誤検出と、速い振りのブレによる eligibility 消失。代表的な旧 CASE A は背景同士で、修正 A の gate は未達。
-- 高: AWDL の詰まりは認識とは別の遅延原因。interactiveVoice の改善効果は実機未確認。
-- 確認済み: score の決定性は `bbc1f32` で修正。赤 warmNoDeepRed は `8363024` で採用、公式 verify 全 PASS。実機再試験は未了。
-- 採用（2026-10-06、この worktree は未commit）: 青 blueNoDeepSupport。W は淡いピンク剣を失うため不採用。fixture 89 は窓期待値のまま。根拠・数値・却下案は [FINDINGS.md](FINDINGS.md)。
+- **高**: 肌・照明・背景の誤検出と、速振りのブレによる候補消失が主因。旧CASE A代表例は背景同士で、実剣の選択修正gateは未達。
+- **高**: AWDLの詰まりは認識とは別の遅延原因。interactiveVoiceの実機効果は未確認。F8で間隔・同期時の片道時計差を比較できるが、画面全体の遅延ではない。
+- **確認済み**: score決定性は `bbc1f32`、赤warmNoDeepRedは `8363024`。10-06の実機v2では最初の剣なし赤FPが598/598→0/598。ただし別の背景FP・小さい／淡い剣の保持は追加確認が必要。
+- **採用済み**: 青blueNoDeepSupportは `fa5db16`。formal 40/40、既存正解187/187保持、剣なし青FP 29→18（offline）。遠い・淡い・ぶれた青の実機確認は未了。Wは淡いピンク剣を失うため不採用、fixture 89は窓期待値のまま。
+- **実装済み・実機待ち**: 台指定、F8、両OSキット・監視・イベントログ、端末状態、自動復帰、反転、遅延確認、座標再生、F7位置補正。Mac＋iPhoneの台指定は確認済み。Android JNIはAPI 37 ARM64エミュレータで正式35 PNG／40期待値を確認（35/35 PASS）。内部浮動小数点のbit一致や実カメラの一致は保証しない。
+
+根拠・残存FP・却下案は[FINDINGS](FINDINGS.md)。同文書とAndroid READMEの過去の「未commit／未実行」は、下の採用・検証commitを参照する。
 
 ## 次にやること
 
-- 長時間イベント向けの送信復旧（2026-10-07、未commit）: Claude が simulator verify と Android build を実行する。実機では送信中の前面復帰・アプリ再起動・Wi-Fi切替・カメラ中断・停止後の非再開を確認する。設定と自動動作は [EVENT_DAY_RUNBOOK.md](EVENT_DAY_RUNBOOK.md) を参照。
+優先順。実装済み機能は実機で確認し、不具合が出た箇所を直す。
 
-**2026-10-06 本番の配置(会場3D配置ページ)から追加**:2台が背中合わせ、個別入場・一方通行、プレイヤーは画面から約 2.7〜3.1m、プレイ範囲は直径 1.5m、PC・スマホは下の箱。本番は Mac+iPhone と Windows+Android になりそうだが未確定。
-- A台・B台の取り違え防止:台番号の設定を実装済み(`ad0b5a4`)。2026-10-06 に Mac + iPhone で確認済み(同じ台だけつながる)。
-- プレイヤーの背後の幕(待機列の人の肌・服の誤検出を防ぐ。設営で対応)。
-- 会場の距離・照明・投影中・背後の人ありでのガイド付き録画。投影の光や画面の赤・青の演出がプレイヤーに当たったときの誤検出を確かめる。
-- 台ごとの位置合わせ(カメラ座標と画面の対応。A と B で距離が違う)。
-- 箱の中の熱と電源(長時間の連続運転、充電しながら、換気)。回転率(1 人の時間、自動でタイトルへ戻る)。Windows で接続状態が見えるようにする。照明のちらつき(東日本 1/100、西日本 1/120)。
-- 剣を一瞬見失ったときの見せ方、判定タイミングの合わせ込み(本番の組み合わせで遅延を測る)、床のプレイ範囲表示などの安全。
-- B台の一時停止キーはやらない(ユーザー判断 2026-10-06)。
-
-Android 作業: Phase 2 の Kotlin/CameraX/JNI/UDP探索/NSD/UDP・日本語UI・JVMテストをこのworktreeに追加（ユーザー指定で未commit）。SDK API 37/build-tools 36.0.0は既存、NDK 30.0.16248370/CMake 3.22.1の導入とAndroid Studioでの初回ビルド・JVMテスト・sense9/Windows/Mac実機確認が次。sandboxでは依存取得・ビルド・テスト実行は行わず静的確認のみ。Swift/coreアルゴリズム/UDP仕様を維持し、Androidに診断/P2Pは追加しない。手順は `android/README.md`。
-
-優先順。旧改善候補もここへ統合した。実装済みの機能は再実装せず、未確認の動作を検証する。
-
-1. **warmNoDeepRed の実機再試験** — 理由: offline の改善が実環境でも有効か確認する。必要: 実機録画、未使用 ORIGINAL の目視、saberなし FP と小さい/淡い剣の保持を比較。担当: user（撮影）/ Claude（解析）。
-2. **ブレ・露出と候補消失の比較** — 理由: CASE B と速振りの取りこぼしが残る。必要: 実機で同じ振りを自動/1/100 秒で比較、距離 0.5–3m・端からの向き・昼夜を含む lossless。B が多ければ生成前の棄却 component を記録するコード、既定露出変更時はユーザー判断。担当: user（撮影・判断）/ Claude（解析・コード）。
-3. **blueNoDeepSupport の実機再試験** — 10-06 に本番採用（この worktree、未commit）。理由: offline FP 29→18、既存正解187/187保持だが、落とす淡い端片の点灯真値は未確定。必要: 遠い/淡い/ぶれた青・画面端・青光の肌や布を確認し、Simulator verify と Android build を実行。担当: Claude（検証・評価）/ user（撮影）。
-4. **残存背景・肌・布への対策** — 理由: 赤 59・青 37 の誤出力が残る。必要: 別人・別場所の点灯/OFF 対、発光 halo・点 LED 列の比較、診断コード。静的マスクは固定背景のみの案として、静止剣を消さない証拠とユーザー判断が必要。担当: Claude（解析・コード）/ user（撮影・判断）。
-5. **fixture 89 の窓期待値を解消** — 理由: 公式正例が窓で、期待値だけ直すと 39/40。必要: 窓と淡い剣が共存する実機証拠、画像外 1px の端点審査、検出器コードと回帰。ユーザーの修正方針は決定済み。W は再採用しない。担当: Claude（修正・検証）/ user（撮影）。
-6. **CASE A/B/C に基づく選択・端点修正** — 理由: 背景対策後も本物の不安定さが残る可能性。必要: bundle コピーで triage dry-run と selection replay、ORIGINAL と全 eligible を照合。A は別 swing で 2 event 以上の gate 後にコード、B は生成/eligibility、C は A と別変更で長い剣・分離 LED を保護。担当: Claude（判定・コード）/ user（追加撮影・再試験）。
-7. **P2P/LAN の遅延・復帰検証** — 理由: AWDL に 170–300ms、ときに約 1 秒以上の空白。必要: 会場 Wi-Fi の実機比較、RTT/p95/max・到着間隔・end-to-end 計測、ネット使用中・切断・前面復帰・2 台 Mac・LAN 退避の確認。許容値のユーザー判断、不具合があればコード。担当: user（実機・目標）/ Claude（計測・修正）。
-8. **Mac の計測画面・受信ツール検証** — 理由: 自動テストだけでは実ブラウザと実 UDP を確認できない。必要: 実機で開始/停止/再開・CSV 保存・結果フォルダ・失敗統計を操作、表示から受信までの同一時計計測を確認。Unity との port 競合も確認し、必要なコード修正。担当: Claude（検証・コード）/ user（カメラ操作）。
-9. **Mac 診断受信・旧 bundle の整理** — 理由: 古い process・precheck・解析欠落を運用で見落とさない。必要: `/health`・安全な再起動・転送失敗後の再送・report/overview を検証。234740/155919 の手動再解析候補を確認、旧 010049 の 32KB 超過は上限を維持。必要なコード修正。担当: Claude。
-10. **Unity の入力契約・短い途切れの扱い** — 理由: 正しい最新座標をゲームへ反映し、古い入力を残さない。必要: 3D-Saber の compile/EditMode/PlayMode と実機で、1920×1080 の向き・端点・最新値・未検出時を確認。≤200ms の補間/外挿は誤出力を延ばす危険も比較し、ユーザー判断後にコード。認識不安定の原因調査は iPhone で行う。担当: Claude（検証・コード）/ user（体感・判断）。
-11. **30 分以上の連続運転** — 理由: 発熱・fps・電池・保存量の時間変化は未確認。必要: thermalState/fps/電池/処理時間/到着間隔/メモリの診断コードと実機試験。256MiB 上限の memoryHeadroom、低電池・復帰も確認。担当: Claude（診断・解析）/ user（長時間運転）。
-12. **会場リハーサルと起動・復旧手順** — 理由: 自動起動だけでは当日の復旧まで保証しない。必要: 当日 Mac と iPhone で [runbook](EVENT_DAY_RUNBOOK.md) を通し、照明・固定配置・署名/許可・通信・予備経路・終了を確認。[2 台目 Mac](SECOND_MAC_SETUP.md) の setup も検証。receiver/bridge の監視・安全な再起動をコード化するか判断。担当: user（会場試験・判断）/ Claude（手順・コード）。
-13. **Codex 解析の費用・ログ保持** — 理由: needs_capture に長時間・高 effort を費やし、inbox/実ログも増える。必要: high 既定・必要時のみ max の費用/精度比較とコード、保存期間・削除対象のユーザー判断。テストログ隔離と失敗記録を保つ。担当: Claude（比較・コード）/ user（費用・保持方針）。
-14. **有線 USB 経路の試作判断** — 理由: AWDL が会場で不安定な場合の選択肢。必要: ケーブル運用のユーザー判断、usbmuxd/TCP のコード、切断復帰と end-to-end 遅延の実機比較。既存 UDP 座標互換を保ち、TCP 滞留も測る。担当: user（判断・接続）/ Claude（設計・コード）。
-15. **Mac カメラ直接認識の将来比較** — 理由: ユーザーが将来の構成候補として保持。必要: Mac 内蔵/USB カメラの配置・精度・端点・遅延の実機比較、採用判断と必要なコード。Continuity Camera は別の無線比較経路で、ローカル縮小/FPS を通信遅延改善と扱わない。担当: user（構成判断・撮影）/ Claude（比較・コード）。
+1. **本番の端末構成を通す**: 上のAQUOS／Windows／Test Runner結果を確認。F8・反転・F7・A/B保存、1920×1080の端点・最新入力・未検出時、開始／停止／復帰を実機とPlayModeで確認する。
+2. **ガイドv3を解析**: ORIGINALを目視し、赤・青ルールの背景FPと小さい／淡い剣の保持を比較。自動露出／1/100秒、距離0.5〜3m・端からの向き・昼夜の速振りを比較する。既定露出変更はユーザー判断。
+3. **本番の遅延・切断復帰を比較**: F8のp95／最大間隔、同期時の片道差、P2P RTT、画面全体の遅延を別々に測る。会場Wi-Fi・ネット使用中・2台Mac・LAN退避を同条件で比較し、許容値を決める。
+4. **連続運転と復旧を確認**: 発熱・fps・電池・保存量・memoryHeadroom、低電池・カメラ中断・再接続・監視再起動を評価。録画256MiB上限の余裕を別端末でも確認する。
+5. **残存背景FPとfixture 89**: 別人・別場所の点灯／OFF対、halo・点LED列を比較。窓と淡い剣の共存証拠、画像外1pxの端点を再審査し、認識と回帰を直す。期待値だけ変えると39/40。Wは再採用しない。静的マスクは固定背景だけの案で、静止剣の保持証拠とユーザー判断が必要。
+6. **CASE A/B/Cを分けて調査**: bundleコピーでtriage dry-run／selection replayを行い、ORIGINALと全eligibleを照合。Aは別swingで実剣が僅差で負ける2event以上のgate後に修正。Bが多ければ生成前の棄却componentを記録。Cの端点修正はAと別にし、長い剣・分離LEDを保護。200ms以下の補間／外挿も誤出力の延長を比べ、ユーザー判断後に変更する。
+7. **Mac計測画面を実操作**: 開始／停止／再開、CSV保存・結果フォルダ・失敗統計・実UDP・同一時計の表示→受信計測・Unityとのポート競合を確認する。
+8. **診断受信と旧bundleを確認**: `/health`、安全な再起動、転送失敗後の再送、report／overviewを通す。234740／155919は手動再解析候補。旧010049の32KB超過は上限を維持する。
+9. **会場でrunbookを通す**: 署名・権限、固定配置、背後の幕、投影・照明、箱の熱・電源、予備経路、終了、[2台目Mac](SECOND_MAC_SETUP.md)を確認。床の範囲表示、回転率・タイトル復帰・判定タイミングも確認。本番構成はMac＋iPhone／Windows＋Androidが候補で未確定。B台の一時停止キーは追加しない（10-06のユーザー判断）。
+10. **解析費用とログ保持を整理**: high既定／必要時maxの費用・精度を比較し、needs_captureへの長時間解析を減らす。inbox／実ログの保持期間・削除対象はユーザー判断。テストログ隔離と失敗記録を保つ。
+11. **将来の構成を比較**: AWDLが不安定ならUSB/usbmuxd/TCPを試すか判断し、座標互換・滞留・切断復帰・画面全体の遅延を測る。Mac内蔵／USBカメラ直接認識は精度・端点・配置・遅延を比較して採否を決める。Continuity Cameraは別の無線経路で、縮小／FPSだけを通信遅延改善と扱わない。
 
 ## 作業ログ
 
-### 2026-10-07 — iPhone / Android の長時間イベント送信復旧
+以下は履歴に記録された検証結果。今回の文書整理で再実行したものではない。
 
-- 保存した送信意思による前面復帰・再起動時の自動再開。日本語の復帰表示。停止ボタンで意思を消去。「起動時に送信を自動開始」は既定OFF、当日はON。
-- iPhone の既存AVCapture通知・watchdogを拡張、Android はCameraX再bindと映像停止監視。再試行は1〜30秒、連続15分失敗で警告、10秒の安定復帰でリセット。停止時は予約済み再試行を無効化する。
-- ネットワーク切替で送信を停止せず、同じ台の探索・再解決を継続。LANのPC名・iPhone手動IPも保存。Android探索の定期更新は既存経路を保持し、NSD callback欠落はtimeoutで解放する。前面の送信・復旧待ち中は画面自動ロックを防ぐ。
-- XCTestの純粋ロジック8件（macOS上のstandalone runner）、JUnitの純粋ロジック7件がPASS。iOSモデルのSwift typecheck、Android Kotlinソースtypecheck、Xcode projectのplutil、PhoneSaber範囲のdiff --checkがPASS。full SwiftUI typecheckはsandboxのmacro plugin server制約で不可。simulator verify / Android buildはユーザー指定どおりClaudeが担当する。
-- repo全体のdiff --checkは既存のUnityフォントasset（LFS filterを無効化して読んだ実体）の末尾空白を報告する。変更していない。sandboxは共有git/LFS領域への書込不可。recognition・閾値・UDP payload・fixturesは変更なし。ユーザー指定でcommit / pushしない。
-- 2026-10-07 / 当日のネットワーク判定: Unity F8に色別の直近5秒の間隔/片道時計差（中央値/p95/最大）と良好/注意/不良を追加。現在の無受信時間も判定、NTP確認チェックOFFでは間隔のみ。iPhoneの未公開だった既存計測モードとAndroidの既存C++ formatterを「遅延計測モード」（既定OFF、保存なし）で公開。認識・payload形式・ゲーム・scene/prefab/.meta変更なし。runbook/Android READMEに手順・暫定閾値・時計差/認識欠落の限界を記載。sandbox内のKotlin JVM直接コンパイル＋JUnit 27/27、JNI host syntax PASS、変更範囲の `git diff --check -- Assets/Scripts Assets/Tests PhoneSaber` PASS。C#純関数の境界・窓・並行性EditModeテストを追加しコードレビュー済み（未実行）。Unity Editor Roslyn/テスト実行、iOS/Android本ビルド・実機/Overlay表示確認はClaude後続。全repo Git操作はshared Git LFSのsandbox外書き込みで制限されるためfont等の既存ファイルは未変更。
-
-- 2026-10-06 / blueNoDeepSupport を Swift/C++ に本番採用（ユーザー指示で未commit）。整数・unique clipped 原画素 dilate1、全 gate/順位後に再選択、emitter/decision trace と Mac schema/validator を更新。formal 40/40・期待値無変更、BLUE変更は formal PNG 5/35（BLUE期待fixtureは0）＋inbox 38/234（25未検出/13再選択）、RED変更0/269、[全変更一覧](data/2026-10-06_blue_no_deep_support_output_changes.csv)。static Swift / C++・targeted Mac host XCTest 8/8（両encoding/32KB）PASS、parity 269 PNG×3経路・541遷移・27合成で mismatch 0。emitter/schema/triage Python 10件PASS、Python全suiteはsandbox等で8failure/33error/1skip（381test）。git diff --check PASS。Simulator verify/Android build は Claude が後続実行。
-
-- 2026-10-06 / 剣なし録画2本(163345_325 約25秒、163444_198 約17秒、校舎の吹き抜け・屋外光、人は遠い、1/100 秒、P2P で受信): 赤の誤検出 9.7% / 11.3%、青 3.2% / 27.3%。赤は遠くの人のあたり(ほぼ白に近い暖色 RGB 約 252,231,222。B/G 0.96 で warmNoDeepRed の暖色条件 0.95 をわずかに外れる)。青は明るい空色の領域(RGB 約 202,234,245、濃い青の画素 0)で、保留中の「濃い青の画素で採用」ルールなら消える。3 回の Capture Lossless で Mac の precheck が止まっていた不具合を修正(`2ab0813`)。
-
-- 2026-10-06 / Android・Windows: C++ core(`b0efcc2`、Mac で Swift と 248 枚 bit 一致)、Android アプリ(`a61dd1a`、build と JVM テスト 16 件 PASS、emulator で起動・画面表示を確認)、Unity の Android 用 PC 探索応答 UDP 5007(3D-Saber `170fd79`)。Android の libm では選択結果 237/237 一致・内部値は 1 ulp 差(android/core/EXACTNESS.md)。実機(AQUOS sense9)と Windows での受信は未確認。
-
-- 2026-10-06 / Android Phase 2: 本番senderのGradleプロジェクト、薄いJNI、portrait画素回転、180ms expiry、最新フレームのみのUDP、UDP/Bonjour探索、手入力IP保存、日本語UIとJVMテストを追加。未commit。Swift/core変更なし。Androidビルド・テスト実行・NDK bit parity・実機検証は未実施。
-
-- 2026-10-06 / Android Phase 1: `android/core/` に C++17 の本番認識・状態遷移・UDP文字列、PNG CLI、Swift reference 比較、Make/CMake を追加。Swift 本番・threshold・UDP形式・fixture期待値は無変更。Python 3.12 / clang++ -O2 -Wall -Wextra -Werror: formal 40/40（35 PNG）、inbox original 213 PNG（annotated 5除外）、248画像×3入力経路の全候補/production double bit一致、状態遷移541操作・合成18ケースとも mismatch 0。core test、比較器 unittest 4件、ASan/UBSan PNG smoke、git diff --check と新規ファイル空白チェック PASS。Android libm/NDK の bit parity と実機検証は Phase 2。日本語計画は `android/README.md`、exactness リスクは `android/core/EXACTNESS.md`。
-
-- 2026-10-06 / 実機 1/100 秒(005910_095, 010346_502): 露出上限が実際にかかった。赤の横切り 72%→99.6%、先端向け 96.6%→100%。saberなしの赤の誤検出は 1本目 3.5%、2本目 100%(正体の画像なし)→ ガイド v3 で saberなし区間の画像も保存、Mac の上限を 5 枚に。
-
-- 2026-10-06 / 実機 v2(004003_239): 最初の saberなし区間の赤の誤検出 598/598→**0/598**(warmNoDeepRed が実機で効いた)。赤の静止・振りは 97–100%、横切りは 72%(画面外を含む)。最後の saberなし 149/302、青だけの区間の赤 74%/63% は棚の上のオレンジ色の物(RGB 約 189,107,102、濃い赤の画素あり)。Mac の入力チェックが新しい診断を弾いていた不具合と、露出 1/100 秒がかからない不具合を修正(`8f9a347`)。tracking event(先端を向けた静止で数 frame 見失った所)は tracking 履歴不足で Codex 解析が precheck 止まり。
-
+- 2026-10-07 / 台別位置補正 `0631d2c`: F7で4隅採取・保存・ON/OFF・台別リセット。Windows／MacのruntimeとEditModeテストはRoslynコンパイルPASS、Editor実行・実機は未了。
+- 2026-10-07 / Android JNI正式回帰 `44dafd8`: API 37 ARM64エミュレータで35/35 PASS（40色別期待値・両色の端点／payload・RGBA hash・padding）。内部doubleのbit一致とCameraX実画像は対象外。
+- 2026-10-07 / F8ネットワーク確認 `d1ca0dc`: 直近5秒の間隔／片道時計差・判定、両アプリの計測スイッチ。commit記録ではmerge後にUnity compile・iOS verify・Android build検証、実機比較・Editorテストは未了。
+- 2026-10-07 / 剣なし座標再生 `d3b8832`: synthetic／保存track・診断bundle読取抽出、遅延・欠落・誤検出・台探索。ツール単体テストPASS（localhostのみ）、ゲーム内動作は要確認。
+- 2026-10-07 / スマホ自動復帰 `18d8a78`: 送信意思保存、前面復帰／再起動、カメラ再試行、同じ台への再探索、自動ロック防止。公式verify・Android Debug build／unit tests PASS、実機復帰・長時間は未了。
+- 2026-10-07 / PC監視・Macキット・ログ `7506dd6`: 異常終了5秒後の再起動、正常Quit／STOP、5世代イベントログ、背景受信・スリープ防止。両OSのRoslyn compile・Mac監視mock PASS、Windows実行は未了。
+- 2026-10-07 / 反転設定 `18541a7`: Androidに左右／上下反転、両アプリで保存（既定OFF）。公式verify・Android Debug build・JVM 27件PASS、実機の向きは要確認。
+- 2026-10-07 / 端末状態・Android開発モード `80a07b9`: 発熱・電池・実測fps・処理中央値、エミュレータ用非Wi-Fi手動送信。公式verify・Android Debug build・JVM 24件PASS、実機の熱は未確認。
+- 2026-10-07 / 赤青支持画素走査の高速化 `eaa07cb`: 判定不変、明るいframe平均52→20.7ms。269 PNG・541遷移・27合成でSwift/C++差分0、formal 40/40・公式verify PASS。
+- 2026-10-07 / F8運営表示・Windowsキット `2f3c0fb`: 台・両色の受信／解析・経路・探索・無受信警告、台別bat・Private UDP許可。Roslyn compile PASS、Windows／Editor実操作は未了。
+- 2026-10-06 / 青ルール採用 `fa5db16`: deep-blue支持なしのeligible候補を却下・再選択。BLUE変更はformal 5/35＋inbox 38/234、RED変更0/269（[一覧](data/2026-10-06_blue_no_deep_support_output_changes.csv)）。formal 40/40、269 PNG×3経路・541遷移・27合成で差分0、公式verify・Android build／unit tests PASS、実機青の再試験待ち。
+- 2026-10-06 / 台指定 `1132754`（merge `ad0b5a4`）、確認 `fe4cee7`: PC／スマホのA/B、P2P／診断も台を限定。Mac＋iPhoneで同じ台だけ接続することを実機確認済み、Android／Windowsは未確認。
+- 2026-10-06 / 剣なし録画・手動capture受理 `689f3ee`、`2ab0813`: 163345_325／163444_198（1/100秒、P2P）は赤FP 9.7%／11.3%、青3.2%／27.3%。赤は白に近い暖色、青は深青支持0の空色。手動録画のlossless 3枚を受理する修正を実施。
+- 2026-10-06 / Android core／sender／PC探索 `b0efcc2`、`a61dd1a`、`170fd79`、`33feead`: Mac Swift/C++ 248画像×3経路・541遷移・18合成でbit差分0、formal 40/40、Android build・JVM 16件PASS。bionicは237/237 selected出力一致、内部値は1ulp差。AQUOS／Windows受信は未確認。
+- 2026-10-06 / 実機赤・露出・ガイドv3 `8f9a347`、`461ac03`、`4a841f4`: v2最初の剣なし赤598/598→0/598、棚の橙色FPは残存。1/100秒で横切り72%→99.6%・先端向け96.6%→100%、別の剣なし区間は3.5%／100%で画像不足。露出上限・診断schemaを修正し、v3に最初の剣なし画像と5枠を追加。公式verify PASS、v3実機待ち。
+- 2026-10-06 / repo統合・運用案内 `344b4b7`、`93452ce`、`9cd6697`: Git／Unityルートを3D-Saber、ツールをPhoneSaberへ統一し、4組み合わせの手順を整理。公式verify・Android build／unit tests・変更C# compile PASS。
 - 2026-10-05 / 整理: `af20a7b` shadow R7e/PF22 記録と一度きりの調査ツールを削除（旧 bundle は引き続き読める）、`376ddcc` FINDINGS に調査を統合・残作業を一本化（公式 verify 全 PASS）。
 - 2026-10-05 / 残存 FP・W: `cc47927`、`5888bb5`、`5fee717`。全件分類、青 D は保留、淡い剣を失う W は不採用（研究テスト 27 PASS、D formal 40/40）。
 - 2026-10-05 / 赤の認識: `43f6b61`、`06a18c5`、`8363024`。hue/深赤単独は見送り、warmNoDeepRed 採用（公式 verify 全 PASS、formal 40/40、198 枚 mismatch 0、要実機再試験）。
