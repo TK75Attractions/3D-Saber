@@ -39,6 +39,12 @@
 
 ## 作業ログ
 
+### 2026-10-08 認識の高速化（Swift / C++、結果は bit 一致）
+- C++ core（a264ad7）: 明るい480×640で 12.0→5.0、25.1→10.1 ms/frame（Mac M5）。膨張・収縮を十字の反復に、std::set を bitmap に、Evidence を参照に。parity 269/269・JNI 35/35（エミュレータ）。
+- iOS（289b992）: XCTest の明るいフレーム 20.7→12.4 ms（シミュレータ）。verify 全段 PASS、parity 0 mismatch。統合後の main でも parity 269/269 一致。
+- いずれも Codex gpt-6.1-sol が実装、Claude がレビュー・検証。詳細は perf_core_detection.md / perf_ios_detection.md。
+- 次: AQUOS で解析 fps と JNI 中央値を確認し、Android も 60fps を試す。iPhone は F9（fps自動比較 ON）で効果を確認。
+
 ### 2026-10-08 iPhone を LAN 優先・P2P 予備に
 - F9 自動 A/B（Mac+iPhone, Editor）: LAN 中央値 133〜157ms / p95 約210〜220ms、P2P 166〜255ms / 350〜415ms。60fps 区間（赤 約37件/秒）は30fps区間より 30〜40ms 速い。maxQueuedFrames 1/2 は差なし。
 - iPhone: LANLivenessProbe が Unity の探索応答（UDP 5007）へ0.5秒ごとに問い合わせ、1.5秒以内に応答があれば LAN、なければ P2P。トグル名を「P2P予備」に。
