@@ -2,6 +2,16 @@ plugins {
     id("com.android.application")
 }
 
+// 正式manifestだけをbuild内へ配置し、PNGは既存iOS fixtureを直接参照する。
+val fixtureManifestAssets = layout.buildDirectory.dir("generated/androidTest/manifestAssets")
+val copyFixtureManifest by tasks.registering(Sync::class) {
+    from("../../ios/PhoneSaberSender/Tools/lossless_regression_manifest.json")
+    into(fixtureManifestAssets)
+}
+tasks.matching { it.name == "mergeDebugAndroidTestAssets" }.configureEach {
+    dependsOn(copyFixtureManifest)
+}
+
 android {
     namespace = "jp.phonesaber.sender"
     compileSdk = 37
@@ -14,6 +24,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += "arm64-v8a" }
         externalNativeBuild {
             cmake { arguments += "-DANDROID_STL=c++_shared" }
@@ -26,6 +37,11 @@ android {
         }
     }
     buildFeatures { buildConfig = true }
+    sourceSets.getByName("androidTest") {
+        assets.srcDir("../../ios/PhoneSaberSenderTests/Fixtures")
+        // AGP 9 は Provider を SourceSet に渡せないので、同じ場所を File で指定する。
+        assets.srcDir(fixtureManifestAssets.get().asFile)
+    }
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -48,4 +64,6 @@ dependencies {
     implementation("androidx.camera:camera-lifecycle:1.6.2")
     implementation("androidx.camera:camera-view:1.6.2")
     testImplementation("junit:junit:4.13.2")
+    androidTestImplementation("androidx.test:runner:1.6.2")
+    androidTestImplementation("junit:junit:4.13.2")
 }

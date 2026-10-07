@@ -202,7 +202,7 @@ JVMテスト（`app/src/test`）には探索応答parser・不正応答・ポー
 非zero plane position・チャンネル保持・scratch再利用・不正入力を追加した。
 端末状態の日本語分類/表示、警告境界・ウォームアップ、直近5秒の中央値・失速時の失効、
 およびReleaseのWi-Fi必須・Debugの手入力IP/明示ON条件もJVMテストに含む。
-JNI/CameraX/NSD/ライフサイクルのinstrumented testは未実装。
+JNIの正式lossless fixture testは下記を参照。CameraX/NSD/ライフサイクルのinstrumented testは未実装。
 
 実機で必要な確認: sense9のRGBA配置/stride、VGA→480×640の向きと画面四隅のUnity mapping、
 permission拒否/再許可、開始/停止/再開・画面終了・Wi-Fi切替時の資源解放と古い送信の破棄、
@@ -210,6 +210,65 @@ Windows UDP探索/ファイアウォール、Mac UDP/Bonjour探索、手入力IP
 赤/青の候補・端点、実処理/送信fps、発熱・長時間運転、両OSのUnity受信とend-to-end遅延。
 **Android NDK/bionic上のbit parityは未確立**。MacのPhase 1 parity成功だけでは証明できない。
 既存corpusをNDK上で検証する作業が残る（[core/EXACTNESS.md](core/EXACTNESS.md)）。
+
+## JNIの正式lossless fixture test
+
+`app/src/androidTest` の `NativeCoreLosslessTest` は正式manifestの40件（35 unique PNG）を
+Androidでdecodeし、本番カメラと同じ `NativeCore.process` JNIへ渡す。
+GradleのandroidTest assetsは `../ios/PhoneSaberSenderTests/Fixtures` を直接参照し、
+`../ios/PhoneSaberSender/Tools/lossless_regression_manifest.json` だけをbuild内へコピーする。
+PNGをAndroidソースへ複製しない。manifestの実パスに空白はない。
+
+`BitmapFactory` はARGB_8888、sRGB、スケーリング・premultiply無効でdecodeし、
+ARGB整数からRGBA bytesへ明示的に変換する。全画素のalpha=255と、Mac PNG CLIの
+無変換RGBA SHA-256を検査するため、色空間変換などが画素を変えた場合は認識前に失敗する。
+0度の `RotationHelper` を通し、tight strideと13 bytesの行末paddingの両方を検証する。
+各入力でNativeCoreを作り直し、履歴・予測・端点順序の持ち越しを防ぐ。
+
+RED/BLUEの有無、fresh/非予測、ポート、既定1920×1080・反転OFFのpayloadをMac期待値と
+完全一致で比較する。Debug限定JNI probeは既存 `analyze` を読み取り専用で呼び、元画像の
+selected端点を両色とも順序込みで完全一致、candidateTypeも一致で検査する。
+さらに全40件のmanifestについてdetected、candidateType、順序反転を許す平均端点距離と
+`endpointTolerancePx`、`expectedRejectedCandidateTypes` を既存
+`run_lossless_regression.py` と同じ条件で検査する。probeはReleaseにリンクしない。
+候補の内部浮動小数点値のbit一致やCameraXのISP出力は、このtestの検証範囲に含まれない。
+
+Mac生成の `app/src/androidTest/assets/native_fixture_expectations.json` をソース管理対象として
+置く。再生成はarm64 MacでGit rootから実行する（clang++/make/zlib、Python 3が必要）:
+
+```bash
+python3 -B PhoneSaber/android/core/tools/generate_android_fixture_expectations.py
+```
+
+generatorは既存C++ `tools/png_cli.cpp` を一時ディレクトリでbuildして全正式PNGを処理し、
+既存manifest loader/evaluatorでSHA-256と40件の期待値を検証してからJSONを書き出す。
+payloadは既存 `tools/frame_cli.cpp` と既定のcore座標変換で生成する。
+正式manifest・PNG・認識アルゴリズムは変更しない。生成コマンドはJSONにも記録する。
+
+ARM64、API 29以上のemulatorまたはUSB deviceで実行する。このMacのAVDは `psparity`:
+
+```bash
+# Android StudioのDevice Managerでpsparityを起動するか、Terminalで:
+"$HOME/Library/Android/sdk/emulator/emulator" -avd psparity
+# 別Terminal:
+cd PhoneSaber/android
+export JAVA_HOME="/Applications/Android Studio.app/Contents/jbr/Contents/Home"
+export ANDROID_HOME="$HOME/Library/Android/sdk"
+"$ANDROID_HOME/platform-tools/adb" devices
+./gradlew connectedDebugAndroidTest
+```
+
+deviceの場合はUSBデバッグの認証を済ませる。複数のdeviceがある場合は
+`ANDROID_SERIAL=<serial> ./gradlew connectedDebugAndroidTest` で選択する。
+カメラ権限・Unity・Wi-Fi送信は不要。レポートは
+`app/build/reports/androidTests/connected/debug/index.html`。
+初回はAndroidX test runner等の依存取得にネットワークが必要で、未cacheのoffline buildは通らない。
+サンドボックスでは `~/.gradle` のlock書き込みやGradle daemonのsocketも制限される場合がある。
+今回のサンドボックス検証ではMac oracle生成と正式40/40、oracleの再生成時のbyte一致、
+NDK 30のarm64 Debug/Release CMake buildが成功した（probeのDebug存在・Release不在も確認）。
+KotlinのAndroid API型検査も一時的なInstrumentationRegistry stubで通ったが、
+Gradleはcache lock書き込み拒否、別の一時cacheでもlock管理socketの拒否で起動できず、
+JVMテスト・APK build・instrumented実行は未確認。実行結果は上記コマンドで確認する。
 
 ## Phase 1 の実装（維持）
 

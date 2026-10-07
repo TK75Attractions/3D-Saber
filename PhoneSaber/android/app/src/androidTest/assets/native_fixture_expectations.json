@@ -1,0 +1,1061 @@
+{
+  "schemaVersion": 1,
+  "generatorCommand": "python3 -B PhoneSaber/android/core/tools/generate_android_fixture_expectations.py",
+  "outputWidth": 1920,
+  "outputHeight": 1080,
+  "formalFixtureCount": 40,
+  "images": [
+    {
+      "path": "blue-led-bright-large-05.png",
+      "sha256": "1ed82a25a5d7361cad0cb7e572779acfbf26e573fd527a9f5b302a36e07908e2",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "92869340a5e30ef8fbf6b70ea067e6cecfc375401cbdec07389ca4a07ad62d00",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 274,
+              "y": 376
+            },
+            {
+              "x": 276,
+              "y": 260
+            }
+          ],
+          "candidateType": "connected-core",
+          "payload": "1098,635,1106,439"
+        }
+      }
+    },
+    {
+      "path": "blue-led-with-curtain-reflection-01.png",
+      "sha256": "888f846de44be2ff456f6a15188335617f100da78bcd1616bf49eeb6545c1c4d",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "b71ad8e46fb183659f7c75c5a3684a66e90c86d80327015110fce80e9b060112",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 226,
+              "y": 208
+            },
+            {
+              "x": 238,
+              "y": 366
+            }
+          ],
+          "candidateType": "connected-core",
+          "payload": "905,351,953,618"
+        }
+      }
+    },
+    {
+      "path": "blue-led-with-curtain-reflection-02.png",
+      "sha256": "ba52eae443fad3c65ec3182771c77cb1a154915278e256d142118515a403299d",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "f6619c706f1adfde80a8eb67e38e968d96d4d8421e8d8bfccd7e83fd65dc044d",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 238,
+              "y": 420
+            },
+            {
+              "x": 254,
+              "y": 280
+            }
+          ],
+          "candidateType": "connected-core",
+          "payload": "953,709,1018,473"
+        }
+      }
+    },
+    {
+      "path": "blue-led-with-left-curtain-reflection-03.png",
+      "sha256": "8fa4e16f33eed9fa85a59f62c590892a401e824d525be72c64f0bb76868accdc",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "ccc080483a560d4585b9cb3b3c4ad658b0855b39c74496bb77e91da789c07387",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 192,
+              "y": 332
+            },
+            {
+              "x": 218,
+              "y": 470
+            }
+          ],
+          "candidateType": "connected-core",
+          "payload": "769,561,873,794"
+        }
+      }
+    },
+    {
+      "path": "blue-led-with-left-curtain-reflection-04.png",
+      "sha256": "279c929f404c7fcb3f9ffabf32bf539269dc947ec6f932fdb41fc8720137f2a8",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "e0fe38839c5e84a5135fa5d297eb889f4d592a31a92d94ca2d38b619162bbbe6",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 192,
+              "y": 164
+            },
+            {
+              "x": 222,
+              "y": 288
+            }
+          ],
+          "candidateType": "connected-core",
+          "payload": "769,277,889,486"
+        }
+      }
+    },
+    {
+      "path": "forensic-20260921/frame_1000.png",
+      "sha256": "e35b5a084eef73ff58d2c66f89eb924b162475e68a2ba24c8a15c160f94a8ba5",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "ae62f1e342580ac87c8c9f13b0d6f7805adf4463177c2e8d2a6ab0c49fe70cf4",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 322,
+              "y": 374
+            },
+            {
+              "x": 396,
+              "y": 406
+            }
+          ],
+          "candidateType": "connected-core",
+          "payload": "1290,632,1586,686"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 442,
+              "y": 166
+            },
+            {
+              "x": 444,
+              "y": 128
+            }
+          ],
+          "candidateType": "color-mask",
+          "payload": "1771,280,1779,216"
+        }
+      }
+    },
+    {
+      "path": "forensic-20260921/frame_1048.png",
+      "sha256": "26a4aa281e552c4ab2a7bd37d438622ad4c460d12c4fbe9ba06822863c0062ed",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "32f9c2985dffd28bc2a756a7363d68a33748a6c1f4440faa140b410c0fd84378",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 262,
+              "y": 430
+            },
+            {
+              "x": 310,
+              "y": 508
+            }
+          ],
+          "candidateType": "core-line",
+          "payload": "1050,726,1242,858"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 52,
+              "y": 484
+            },
+            {
+              "x": 128,
+              "y": 398
+            }
+          ],
+          "candidateType": "connected-core",
+          "payload": "208,817,513,672"
+        }
+      }
+    },
+    {
+      "path": "forensic-20260921-211845/frame_1091.png",
+      "sha256": "d0a2cd326939f58d9f8583e749deb0e405fb6c3f9c3d50252f6038c1176b972b",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "07d375f4310372edb68fb1f361e02ceffdcda6d08142b996028b8cad1cab1ad6",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 314,
+              "y": 458
+            },
+            {
+              "x": 320,
+              "y": 494
+            }
+          ],
+          "candidateType": "core-line",
+          "payload": "1258,773,1282,834"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 140,
+              "y": 592
+            },
+            {
+              "x": 168,
+              "y": 448
+            }
+          ],
+          "candidateType": "core-line",
+          "payload": "561,1000,673,756"
+        }
+      }
+    },
+    {
+      "path": "forensic-20260921-211845/frame_919.png",
+      "sha256": "39821cf667a39217df942f2d68694f61b3548bb4d66c503121a9e3e3c77aef86",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "2eb3fcd5fc71734256374ae7a93350663053bf71ba5c5f23013c20beff8a1464",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 312,
+              "y": 488
+            },
+            {
+              "x": 322,
+              "y": 514
+            }
+          ],
+          "candidateType": "core-line",
+          "payload": "1250,824,1290,868"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 176,
+              "y": 400
+            },
+            {
+              "x": 230,
+              "y": 414
+            }
+          ],
+          "candidateType": "color-emitter",
+          "payload": "705,675,921,699"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260922_101530_202/frame_390.png",
+      "sha256": "c4a76403f416981fb84df300b9dae428c497ad2a769de1178cc816e85a4f3729",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "4c48152cc971120992e675c644e23753581cdf999fe308a7ca16032a379409ff",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 146,
+              "y": 242
+            },
+            {
+              "x": 204,
+              "y": 252
+            }
+          ],
+          "candidateType": "color-mask",
+          "payload": "585,409,817,426"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 130,
+              "y": 212
+            },
+            {
+              "x": 166,
+              "y": 224
+            }
+          ],
+          "candidateType": "color-emitter",
+          "payload": "521,358,665,378"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260922_134817_916/frame_103.png",
+      "sha256": "2f61f9449fff688434c35b06f804876670f736549e618c18c56a1ca0becab06c",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "16c26cf7ad4c4fdc8fe81285a06bb0528bfa00ae2d5f599f9e581f8ba380ad3e",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260922_134817_916/frame_131.png",
+      "sha256": "78ee533b5d477dfa29318da880d40ca4619d6e44c616d901b9178abf706ee35d",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "974e23a827293145e824ffcc5adcfa56fd3c784452818b46a6043f99647ed1d5",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260922_134817_916/frame_136.png",
+      "sha256": "e1d1d279096dcb55ad0844991f54aad850a419d7931b36edef066a75b744c7cf",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "0e6d4868cdcc96667c4be2c5d1849d6b41d692b0d4bb75458f9c64cbb686d386",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260922_134817_916/frame_139.png",
+      "sha256": "15d22b694c0128856c542ea15c5332c57df5791d703fd8e806d1dea5dc36cf3c",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "618de1f8b07df42f5b5784353405d652449f914773dda0c896618249de232bd0",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_091430_020/blue_dropout_false_1249.png",
+      "sha256": "21bb564541a5854a22f2776f4807a3be23cd00e1b59fcd8353a1af3baf3c3dee",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "5d6fa4435345a2f3c5f10783b8d54da71311825e5aeca8fcf1a447f9afffca60",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 170,
+              "y": 348
+            },
+            {
+              "x": 210,
+              "y": 310
+            }
+          ],
+          "candidateType": "connected-core",
+          "payload": "681,588,841,523"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 198,
+              "y": 330
+            },
+            {
+              "x": 238,
+              "y": 386
+            }
+          ],
+          "candidateType": "color-mask",
+          "payload": "793,557,953,652"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_113614_837/frame_397.png",
+      "sha256": "6819af101fc615f6abd05a4f596f3fc46abecfe7fd8c70c5832c27c10e8dfcff",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "a1f84c165dde64fe6a297c9781074841e5ee5433aec368a924d838ad5a1a86ce",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 238,
+              "y": 230
+            },
+            {
+              "x": 284,
+              "y": 248
+            }
+          ],
+          "candidateType": "color-mask",
+          "payload": "953,388,1138,419"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 238,
+              "y": 288
+            },
+            {
+              "x": 294,
+              "y": 330
+            }
+          ],
+          "candidateType": "connected-core",
+          "payload": "953,486,1178,557"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/blue_dropout_false_361.png",
+      "sha256": "204b3f035543306e73d4b1f202bf3b6244f8cd83a60ff0d6c8fb7332b5e4ad18",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "b9ec258618c2ff7abd6bae16659dcd1a07f7f137519c5d322793b7641cf27afe",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 276,
+              "y": 342
+            },
+            {
+              "x": 284,
+              "y": 366
+            }
+          ],
+          "candidateType": "color-mask",
+          "payload": "1106,577,1138,618"
+        },
+        "blue": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_251.png",
+      "sha256": "1dac776e018d1b9f34a7e6f4224f51f593418985ae63726525f86351194eed92",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "1e2c1de42cced2743159c0e428af26c47ec4672fb1dbf3614c53334b7e2db03e",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 278,
+              "y": 260
+            },
+            {
+              "x": 286,
+              "y": 302
+            }
+          ],
+          "candidateType": "color-mask",
+          "payload": "1114,439,1146,510"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 174,
+              "y": 296
+            },
+            {
+              "x": 180,
+              "y": 258
+            }
+          ],
+          "candidateType": "core-line",
+          "payload": "697,500,721,436"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_254.png",
+      "sha256": "cefdfbd2a1707d2b20916aa18984e919833b48a4655e9831ba8a2db77d51ab5b",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "f391395ff33011a65abe398d6a2317388c813d197dad939670e4740941a10570",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 272,
+              "y": 268
+            },
+            {
+              "x": 286,
+              "y": 308
+            }
+          ],
+          "candidateType": "color-mask",
+          "payload": "1090,453,1146,520"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 178,
+              "y": 304
+            },
+            {
+              "x": 178,
+              "y": 276
+            }
+          ],
+          "candidateType": "core-line",
+          "payload": "713,513,713,466"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_256.png",
+      "sha256": "2e138d6c8b8eca2b49c6134111f04e3745e057e7d0888d401cbd74a8d0f67281",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "8721265d092f8e1af35a9d6a807f481cc1fdd43970b5c5ae4de80d85c7caa38c",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 272,
+              "y": 274
+            },
+            {
+              "x": 284,
+              "y": 312
+            }
+          ],
+          "candidateType": "color-mask",
+          "payload": "1090,463,1138,527"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 174,
+              "y": 284
+            },
+            {
+              "x": 184,
+              "y": 314
+            }
+          ],
+          "candidateType": "color-mask",
+          "payload": "697,480,737,530"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_59.png",
+      "sha256": "74a3531b2f427b3e07504aaaca86ff36ab4aac3e099ee0868ef02ac3ceeee275",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "6e1a9f34edb51513696067264bac6fe7ffe0f6b2d50b2ad5b247ecc3e6830e89",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_62.png",
+      "sha256": "5c66b7e688a5e8d3dbf5ccb370b8aadf4124e7d69d2460d311624bda230f2ff3",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "5ffb10036d17d6f27c33b1db5ddc75027fc2f7da9d89b21b510accda40c6159b",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_63.png",
+      "sha256": "5b630dcacb7aee43eb24026fd342221725513e453c0ccf76844320023e45b4a1",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "358abf57f40d4456e1ff98a2aff0397bf3d21f00055e6664b4f227d2e7c35a45",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_64.png",
+      "sha256": "cd0d4cc440684b9f4ee1454325aefd3e006e73afda1e8431e245e3eb93ffb384",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "aa600f96df22db2aff417d3020853570813d6b83669cc15c8a6c165335756bdc",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/frame_65.png",
+      "sha256": "dd150a31b30dd336e961cc37b43abb0f3e261af0221b51e799bf381883173c7c",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "673b3994264c1a6c4d1ca060fdb671988da6094e2225bbd7a5f9ddfa458ac442",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_false_348.png",
+      "sha256": "c69a828af90b3b84bebb5183f00f1ee5492a3162b3c951b1d551c333c6c3403d",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "c36b171a1662a8115b388ddb600a06e4e7721d99ba5b3216947f58dad6867dfa",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 222,
+              "y": 342
+            },
+            {
+              "x": 236,
+              "y": 384
+            }
+          ],
+          "candidateType": "core-line",
+          "payload": "889,577,945,648"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_false_83.png",
+      "sha256": "5ff9dbaddccaff8dfa9d1fdf62830e85c2bacbdbb5456a626aa6cee0a1953fe7",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "176caac41b5ef5d138b32b5997b3f369daac1390da7c6f9ca0496f810d02bc3c",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 318,
+              "y": 254
+            },
+            {
+              "x": 478,
+              "y": 248
+            }
+          ],
+          "candidateType": "core-line",
+          "payload": "1274,429,1915,419"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_false_90.png",
+      "sha256": "67f21cb35fd247125c7c3ad07203dca302f842c02e4e9dc121691457c1e9f013",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "f29f30dd2e1c3a5ec082be427236801b42cb0b6c5a5d28e79491ebdd3f93dc05",
+      "colors": {
+        "red": {
+          "selected": null,
+          "candidateType": null,
+          "payload": null
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 438,
+              "y": 592
+            },
+            {
+              "x": 452,
+              "y": 476
+            }
+          ],
+          "candidateType": "core-halo",
+          "payload": "1755,1000,1811,804"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_last_true_82.png",
+      "sha256": "249260b95e1ed589669515e67484f9e1a2189502594d5f7ab375295d2a407bbf",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "69f50e9fd01a951c5db6e7887b09385de358f47aba0af833b655946e7efe491b",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 468,
+              "y": 582
+            },
+            {
+              "x": 472,
+              "y": 608
+            }
+          ],
+          "candidateType": "core-halo",
+          "payload": "1875,983,1891,1027"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 276,
+              "y": 212
+            },
+            {
+              "x": 474,
+              "y": 274
+            }
+          ],
+          "candidateType": "core-halo",
+          "payload": "1106,358,1899,463"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_last_true_89.png",
+      "sha256": "be223939a7dbda7d88bd70a54cb3a50b1f75f175aef26c89bb896f3ef61930ac",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "f097b5301bec6563e2881abb6e4d5ba2cf1117da7257e16a0953602f53ec42f7",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 422,
+              "y": 146
+            },
+            {
+              "x": 444,
+              "y": 146
+            }
+          ],
+          "candidateType": "core-halo",
+          "payload": "1691,247,1779,247"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 436,
+              "y": 588
+            },
+            {
+              "x": 456,
+              "y": 458
+            }
+          ],
+          "candidateType": "core-halo",
+          "payload": "1747,993,1827,773"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_recovered_112.png",
+      "sha256": "7bc7f49a7c41f9ee81f1954024d02bdba08adb8161317e703080caa683d8709f",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "707128502e8a16c52afbf91ea5737133a55fe270fa85dee9981a6ecc32dac789",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 252,
+              "y": 582
+            },
+            {
+              "x": 276,
+              "y": 636
+            }
+          ],
+          "candidateType": "core-halo",
+          "payload": "1010,983,1106,1074"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 180,
+              "y": 616
+            },
+            {
+              "x": 204,
+              "y": 532
+            }
+          ],
+          "candidateType": "core-line",
+          "payload": "721,1040,817,898"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_recovered_351.png",
+      "sha256": "a5384da5b0ebdb29948d4448369d042d50d226c7d4df53042d975606c6c08f4a",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "be84b82dff10f85a654775eb75c52e27b28266d0f4b56149fafe556afcf495f4",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 234,
+              "y": 384
+            },
+            {
+              "x": 258,
+              "y": 352
+            }
+          ],
+          "candidateType": "core-halo",
+          "payload": "937,648,1034,594"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 218,
+              "y": 340
+            },
+            {
+              "x": 238,
+              "y": 406
+            }
+          ],
+          "candidateType": "core-line",
+          "payload": "873,574,953,686"
+        }
+      }
+    },
+    {
+      "path": "lossless-regression/phonesaber_20260923_143446_247/red_dropout_recovered_84.png",
+      "sha256": "1f15edb8e702d322229f164746bae182d8bdc45baf6e1ca57f21ce5ba7e1c299",
+      "width": 480,
+      "height": 640,
+      "rgbaSha256": "08e0a9aba584bfabf4979b58b632c95ee280d1666d8c2bfef2c96d7be1691e4c",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 468,
+              "y": 590
+            },
+            {
+              "x": 476,
+              "y": 608
+            }
+          ],
+          "candidateType": "color-sparse-raw",
+          "payload": "1875,996,1907,1027"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 304,
+              "y": 228
+            },
+            {
+              "x": 474,
+              "y": 268
+            }
+          ],
+          "candidateType": "core-halo",
+          "payload": "1218,385,1899,453"
+        }
+      }
+    },
+    {
+      "path": "production-video-IMG_5933/frame-0220.png",
+      "sha256": "b35d9b6045c64dc02677ebd610d284d97556b91764138dfc2df5ef940d9879fb",
+      "width": 512,
+      "height": 910,
+      "rgbaSha256": "2b6ae6a8166a1feb660a72dfa57295b9f468c7b8cc2be40926ac70d9a8c45ccb",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 34,
+              "y": 418
+            },
+            {
+              "x": 54,
+              "y": 402
+            }
+          ],
+          "candidateType": "color-mask",
+          "payload": "128,496,203,477"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 38,
+              "y": 558
+            },
+            {
+              "x": 50,
+              "y": 616
+            }
+          ],
+          "candidateType": "color-mask",
+          "payload": "143,662,188,731"
+        }
+      }
+    },
+    {
+      "path": "production-video-IMG_5933/frame-0600.png",
+      "sha256": "bb4583b4b909e9980e27c6d4ac6ad4bc179f0ad48fe101f1a737235346dcd7ad",
+      "width": 512,
+      "height": 910,
+      "rgbaSha256": "25e07ac8d8246e222a34026eae05c41b8438a89c30a6ed03e7b8bb7d8407e749",
+      "colors": {
+        "red": {
+          "selected": [
+            {
+              "x": 88,
+              "y": 388
+            },
+            {
+              "x": 122,
+              "y": 298
+            }
+          ],
+          "candidateType": "color-mask",
+          "payload": "330,461,458,354"
+        },
+        "blue": {
+          "selected": [
+            {
+              "x": 44,
+              "y": 546
+            },
+            {
+              "x": 202,
+              "y": 542
+            }
+          ],
+          "candidateType": "core-line",
+          "payload": "165,648,759,643"
+        }
+      }
+    }
+  ]
+}
