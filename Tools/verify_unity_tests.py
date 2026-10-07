@@ -77,15 +77,26 @@ def parse_result(path: Path) -> tuple[str, str]:
         return "NO_XML", "result XML was not generated"
     try:
         root = ET.parse(path).getroot()
-    except ET.ParseError as error:
+    except (OSError, ET.ParseError) as error:
         return "MALFORMED", f"result XML is malformed: {error}"
-    failed = int(root.attrib.get("failed", "0"))
-    passed = root.attrib.get("passed", "0")
-    total = root.attrib.get("total", root.attrib.get("testcasecount", "?"))
+    if root.tag != "test-run":
+        return "MALFORMED", f"unexpected result XML root: {root.tag}"
+    try:
+        total = int(root.attrib["total"] if "total" in root.attrib else root.attrib["testcasecount"])
+        passed = int(root.attrib["passed"])
+        failed = int(root.attrib["failed"])
+        skipped = int(root.attrib.get("skipped", "0"))
+        inconclusive = int(root.attrib.get("inconclusive", "0"))
+    except (KeyError, ValueError) as error:
+        return "MALFORMED", f"invalid result counts: {error}"
+    counts = (total, passed, failed, skipped, inconclusive)
+    if any(count < 0 for count in counts) or passed + failed + skipped + inconclusive != total:
+        return "MALFORMED", f"inconsistent result counts: {counts}"
     result = root.attrib.get("result", "unknown")
-    if result == "Passed" and failed == 0:
-        return "PASS", f"{passed}/{total} passed"
-    return "FAIL", f"{passed}/{total} passed result={result} failed={failed}"
+    detail = f"{passed}/{total} passed result={result} failed={failed} skipped={skipped} inconclusive={inconclusive}"
+    if result == "Passed" and passed > 0 and failed == 0 and inconclusive == 0:
+        return "PASS", detail
+    return "FAIL", detail
 
 
 def run_group(
@@ -102,6 +113,9 @@ def run_group(
     result_path = log_dir / f"{name}.xml"
     log_path = log_dir / f"{name}.log"
     console_path = log_dir / f"{name}.console.log"
+    # 同じ出力先で再実行しても、前回の成功結果やロックログを参照しない。
+    result_path.unlink(missing_ok=True)
+    log_path.unlink(missing_ok=True)
     command = [
         str(unity),
         "-batchmode",
