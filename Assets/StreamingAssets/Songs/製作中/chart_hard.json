@@ -1,7 +1,7 @@
 {
   "bpm": 120,
   "coordScale": 1,
-  "offsetMs": -110,
+  "offsetMs": 110,
   "beatZeroMs": 0,
   "displayLevel": 0,
   "timeSignatures": [],
