@@ -18,7 +18,7 @@ enum class ThermalLevel(val title: String) {
 }
 
 data class HealthRates(val analysisFps: Double = 0.0, val medianJniMs: Double? = null,
-                       val ready: Boolean = false)
+                       val ready: Boolean = false, val medianCaptureToSendMs: Double? = null)
 
 object DeviceHealthText {
     fun batteryState(status: Int): String? = when (status) {
@@ -33,7 +33,8 @@ object DeviceHealthText {
 
     fun timing(rates: HealthRates): String {
         val median = rates.medianJniMs?.let { String.format(Locale.JAPAN, "%.1f ms", it) } ?: "未計測"
-        return String.format(Locale.JAPAN, "解析 %.1f fps / JNI中央値 %s（直近5秒）", rates.analysisFps, median)
+        val age = rates.medianCaptureToSendMs?.let { String.format(Locale.JAPAN, " / 撮影→送信 %.0f ms", it) } ?: ""
+        return String.format(Locale.JAPAN, "解析 %.1f fps / JNI中央値 %s%s（直近5秒）", rates.analysisFps, median, age)
     }
 
     fun warning(thermal: ThermalLevel, rates: HealthRates, requestedFps: Double, running: Boolean): String? {
@@ -49,23 +50,32 @@ object DeviceHealthText {
 class DeviceHealthMeter {
     private var started = 0.0
     private val samples = ArrayDeque<Pair<Double, Double>>()
-    @Synchronized fun reset(at: Double) { started = at; samples.clear() }
-    @Synchronized fun processed(at: Double, milliseconds: Double) {
+    // センサー露光時刻から JNI 処理完了（送信キュー投入）までの経過。時刻源が不明な端末では記録しない。
+    private val ages = ArrayDeque<Pair<Double, Double>>()
+    @Synchronized fun reset(at: Double) { started = at; samples.clear(); ages.clear() }
+    @Synchronized fun processed(at: Double, milliseconds: Double, captureToSendMs: Double? = null) {
         if (!milliseconds.isFinite() || milliseconds < 0) return
         samples.addLast(at to milliseconds)
+        if (captureToSendMs != null && captureToSendMs.isFinite() && captureToSendMs in 0.0..2000.0)
+            ages.addLast(at to captureToSendMs)
         prune(at)
         while (samples.size > 1200) samples.removeFirst()
+        while (ages.size > 1200) ages.removeFirst()
     }
     private fun prune(at: Double) {
         while (samples.isNotEmpty() && samples.first().first <= at - 5.0) samples.removeFirst()
+        while (ages.isNotEmpty() && ages.first().first <= at - 5.0) ages.removeFirst()
+    }
+    private fun median(values: List<Double>): Double? {
+        val sorted = values.sorted()
+        val n = sorted.size
+        return if (n == 0) null else if (n % 2 == 0) (sorted[n / 2 - 1] + sorted[n / 2]) / 2 else sorted[n / 2]
     }
     @Synchronized fun snapshot(at: Double): HealthRates {
         prune(at)
         val elapsed = at - started
         if (elapsed <= 0) return HealthRates()
-        val sorted = samples.map { it.second }.sorted()
-        val n = sorted.size
-        val median = if (n == 0) null else if (n % 2 == 0) (sorted[n / 2 - 1] + sorted[n / 2]) / 2 else sorted[n / 2]
-        return HealthRates(n / minOf(5.0, elapsed), median, elapsed >= 3.0)
+        return HealthRates(samples.size / minOf(5.0, elapsed), median(samples.map { it.second }), elapsed >= 3.0,
+            median(ages.map { it.second }))
     }
 }

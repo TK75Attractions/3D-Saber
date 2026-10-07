@@ -58,6 +58,21 @@ final class DeviceHealthTests: XCTestCase {
         XCTAssertFalse(meter.snapshot(at: 111).ready)
     }
 
+
+    func testCaptureToSendMedianIgnoresUnconvertibleAndOutOfRangeValues() {
+        let meter = DeviceHealthMeter()
+        meter.reset(at: 100, generation: 1)
+        meter.processed(at: 101.0, milliseconds: 10, generation: 1, captureToSendMs: 60)
+        meter.processed(at: 101.1, milliseconds: 10, generation: 1, captureToSendMs: 80)
+        meter.processed(at: 101.2, milliseconds: 10, generation: 1, captureToSendMs: -5)
+        meter.processed(at: 101.3, milliseconds: 10, generation: 1, captureToSendMs: 1e7)
+        meter.processed(at: 101.4, milliseconds: 10, generation: 1)
+        XCTAssertEqual(meter.snapshot(at: 102).medianCaptureToSendMs, 70)
+        XCTAssertTrue(DeviceHealthText.timing(meter.snapshot(at: 102)).contains("撮影→送信 70 ms"))
+        XCTAssertNil(meter.snapshot(at: 107).medianCaptureToSendMs)
+        XCTAssertFalse(DeviceHealthText.timing(DeviceHealthRates()).contains("撮影"))
+    }
+
 #if !DEVICE_HEALTH_STANDALONE
     func testRecordingHealthIsOptionalAndEncodesWithoutExposureSnapshot() throws {
         let health = DebugDeviceHealthState(thermalState: "serious", batteryLevel: 0.42, batteryState: "charging")

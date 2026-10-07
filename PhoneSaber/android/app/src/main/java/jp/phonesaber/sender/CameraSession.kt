@@ -5,6 +5,7 @@ import android.hardware.camera2.CameraCharacteristics
 import android.hardware.camera2.CaptureRequest
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.util.Range
 import android.view.Surface
 import androidx.camera.camera2.interop.Camera2CameraInfo
@@ -71,6 +72,11 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                 val info = CameraSelector.DEFAULT_BACK_CAMERA.filter(cameras.availableCameraInfos).firstOrNull()
                     ?: error("背面カメラがありません")
                 val camera2 = Camera2CameraInfo.from(info)
+                // 撮影→送信の表示用。REALTIME 以外の端末は CLOCK_MONOTONIC（System.nanoTime）とみなし、
+                // 0〜2秒の範囲外は DeviceHealthMeter が捨てる。
+                val realtimeSensorClock = camera2.getCameraCharacteristic(
+                    CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE) ==
+                    CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME
                 val ranges = camera2.getCameraCharacteristic(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES)
                 require(ranges?.contains(Range(30, 30)) == true) { "このカメラは固定30 fpsに対応していません" }
                 val map = camera2.getCameraCharacteristic(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
@@ -114,10 +120,12 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                             val jniStarted = System.nanoTime()
                             val results = processor.process(pixels, started / 1e9, brightness, dominance)
                             val jniEnded = System.nanoTime()
+                            val sensorNow = if (realtimeSensorClock) SystemClock.elapsedRealtimeNanos() else jniEnded
+                            val captureToSendMs = (sensorNow - image.imageInfo.timestamp) / 1e6
                             synchronized(gate) {
                                 if (running && token == generation) {
                                     lastFrameAt = jniEnded / 1e9
-                                    healthMeter.processed(jniEnded / 1e9, (jniEnded - jniStarted) / 1e6)
+                                    healthMeter.processed(jniEnded / 1e9, (jniEnded - jniStarted) / 1e6, captureToSendMs)
                                     sender.offer(results, started)
                                     status = describe(results, "${pixels.width}×${pixels.height} / 30 fps要求")
                                 }

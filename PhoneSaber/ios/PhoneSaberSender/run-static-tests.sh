@@ -29,7 +29,7 @@ import XCTest
 import Darwin
 let suite = DeviceHealthTests.defaultTestSuite
 suite.run()
-guard let run = suite.testRun, run.executionCount == 4, run.hasSucceeded else { exit(1) }
+guard let run = suite.testRun, run.executionCount == 5, run.hasSucceeded else { exit(1) }
 SWIFT
 xctest_developer="$(xcode-select -p)/Platforms/MacOSX.platform/Developer"
 xctest_frameworks="$xctest_developer/Library/Frameworks"

@@ -6,6 +6,8 @@ using System.Threading;
 using System.Globalization;
 using System;
 
+// 受信値の取り込みを、読む側（SaberInputBridge・遅延テスト等）より先に行い、1フレーム遅れを防ぐ。
+[DefaultExecutionOrder(-2000)]
 public class InputPoint : MonoBehaviour
 {
     // Singleton（どこからでもアクセスするため）

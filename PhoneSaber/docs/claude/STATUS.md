@@ -39,6 +39,13 @@
 
 ## 作業ログ
 
+### 2026-10-07 遅延の計測手段と即効の改善（全機種）
+- Unity: F9 遅延テスト（画面に赤い棒を左右交互→スマホで撮影→赤の受信位置が切り替わるまで。表示・カメラ・認識・Wi-Fi・受信を含む）。InputPoint を DefaultExecutionOrder(-2000)、SaberInputBridge を -1500 にし、受信の取り込み→剣の移動の順を固定（最大1フレームの遅れを除去）。
+- Android: 送信中は WIFI_MODE_FULL_LOW_LATENCY ロック。端末状態行に「撮影→送信」（センサー露光時刻→JNI完了）の中央値。
+- iPhone: 端末状態行に「撮影→送信」（AVCapture ホスト時刻→認識完了）の中央値。
+- Windows: firewall スクリプトを Private+Public・LocalSubnet 限定に変更し、Unity の受信 Block 規則を無効化（ホットスポットが Public 扱いで受信できなかったため）。
+- 認識・UDP 形式・閾値は変更なし。検証: verify 全段 PASS（Detection は件数定数 4→5 の修正後に単独再実行）、Android unit 35/35、Unity は Roslyn でコンパイルのみ（EditMode は未実行）。
+
 ### 2026-10-07 Android実機（AQUOS sense9）で送信できない問題を修正
 - 症状: 剣が映っても「未検出・送信0」、解析2〜8fps。原因1: Debug APKでC++ coreが-O0になり1フレーム約300ms→送信側の180ms鮮度制限で全破棄。原因2: RotationHelperの1バイトずつのget/putで約80ms。
 - 修正: core/JNIを-O2固定、回転をInt単位の一括コピーに。sense9で解析30.4fps・JNI中央値17〜33ms、Windows Unityで両色受信を確認。

@@ -11,6 +11,7 @@ import android.os.PowerManager
 import android.util.Log
 import android.widget.Switch
 import android.net.Network
+import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -37,6 +38,11 @@ import java.util.Locale
 class MainActivity : ComponentActivity() {
     private val main = Handler(Looper.getMainLooper())
     private lateinit var sender: LatestUdpSender
+    private val lowLatencyWifi by lazy {
+        applicationContext.getSystemService(WifiManager::class.java)
+            .createWifiLock(WifiManager.WIFI_MODE_FULL_LOW_LATENCY, "PhoneSaber:sending")
+            .apply { setReferenceCounted(false) }
+    }
     private lateinit var camera: CameraSession
     private lateinit var discovery: PcDiscovery
     private lateinit var pcStatus: TextView
@@ -328,6 +334,9 @@ class MainActivity : ComponentActivity() {
         mirrorXSwitch.isEnabled = false; mirrorYSwitch.isEnabled = false
         measurementSwitch.isEnabled = false
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        // 送信中は Wi-Fi の省電力（ビーコン待ちの送信まとめ）を止め、遅延とばらつきを減らす。
+        // 低遅延モードは前面・画面点灯中だけ有効になる（Android 10+ / minSdk 29）。
+        if (!lowLatencyWifi.isHeld) lowLatencyWifi.acquire()
         startCamera()
     }
 
@@ -394,6 +403,7 @@ class MainActivity : ComponentActivity() {
         mirrorXSwitch.isEnabled = true; mirrorYSwitch.isEnabled = true
         measurementSwitch.isEnabled = true
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (lowLatencyWifi.isHeld) lowLatencyWifi.release()
         detection.text = "停止中\n赤: 未検出 / 送信 0 fps\n青: 未検出 / 送信 0 fps"
         updateRecoveryStatus()
         updateHealth()

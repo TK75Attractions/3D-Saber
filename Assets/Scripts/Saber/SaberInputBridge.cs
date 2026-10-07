@@ -6,6 +6,8 @@ using UnityEngine;
 //   SaberCutJudge は HasBlade を見て、線分でノーツ判定する。
 // 単点モード（useBladeMode=false）: 従来通り LocalPosition（中点）を transform.position に書く。
 // InputPoint が無い／データ未到着の場合はマウスフォールバック（任意）。
+// InputPoint（-2000）の直後、判定・UI（既定 0 以降）より前に剣を動かす。
+[DefaultExecutionOrder(-1500)]
 public class SaberInputBridge : MonoBehaviour
 {
     [Header("Source")]

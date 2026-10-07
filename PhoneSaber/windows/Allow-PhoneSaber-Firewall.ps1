@@ -3,9 +3,11 @@ param()
 
 $ErrorActionPreference = 'Stop'
 
-# 当日用の信頼できるネットワークだけに、座標・探索の UDP 受信を許可します。
-Write-Host 'PhoneSaber: Private profile の UDP 5005 (RED), 5006 (BLUE), 5007 (探索) を許可します。'
-Write-Host '管理者権限が必要です。Public profile は許可せず、再実行しても規則は増えません。'
+# 座標・探索の UDP 受信を、同じネットワーク（ローカルサブネット）の端末からだけ許可します。
+# Windows のモバイルホットスポットは Public 扱いになることがあるため（2026-10-07 に確認）、
+# Private と Public の両方で許可し、送信元をローカルサブネットに限定します。
+Write-Host 'PhoneSaber: UDP 5005 (RED), 5006 (BLUE), 5007 (探索) を、同じネットワークの端末から受信できるようにします。'
+Write-Host '管理者権限が必要です。Private / Public（ホットスポット）で有効、送信元は LocalSubnet のみ。再実行しても規則は増えません。'
 
 $identity = [Security.Principal.WindowsIdentity]::GetCurrent()
 $principal = New-Object Security.Principal.WindowsPrincipal($identity)
@@ -18,22 +20,22 @@ foreach ($port in @(5005, 5006, 5007)) {
     $settings = @{
         PolicyStore = 'PersistentStore'
         Name = $ruleName
-        DisplayName = "PhoneSaber Event UDP $port (Private)"
-        Description = 'PhoneSaber 当日用: RED 5005 / BLUE 5006 / Android 探索 5007。Private のみ。'
+        DisplayName = "PhoneSaber Event UDP $port (LocalSubnet)"
+        Description = 'PhoneSaber 当日用: RED 5005 / BLUE 5006 / Android 探索 5007。Private/Public、送信元は LocalSubnet のみ。'
         Direction = 'Inbound'
         Action = 'Allow'
         Enabled = 'True'
-        Profile = 'Private'
+        Profile = 'Private,Public'
         Protocol = 'UDP'
         LocalPort = $port
         RemotePort = 'Any'
         LocalAddress = 'Any'
-        RemoteAddress = 'Any'
+        RemoteAddress = 'LocalSubnet'
         Program = 'Any'
         Service = 'Any'
         InterfaceType = 'Any'
     }
-    # 固定名で作成・更新し、前回の規則を有効な Private 限定設定に戻します。
+    # 固定名で作成・更新し、前回の規則をこの設定に揃えます。
     $existing = Get-NetFirewallRule -PolicyStore PersistentStore -Name $ruleName -ErrorAction SilentlyContinue
     if ($null -eq $existing) {
         New-NetFirewallRule @settings | Out-Null
@@ -47,4 +49,14 @@ foreach ($port in @(5005, 5006, 5007)) {
     }
 }
 
-Write-Host '完了。接続先 Wi-Fi / ホットスポットがプライベートであることを確認してゲームを起動してください。'
+# 初回の「アクセスを許可しますか」を閉じる・キャンセルすると、Windows が Unity 用の受信 Block 規則を作る。
+# Block は Allow より優先されるため、上の許可があっても受信できない。Unity の受信 Block 規則だけ無効にする。
+$blocked = @(Get-NetFirewallRule -Direction Inbound -Action Block -ErrorAction SilentlyContinue |
+    Where-Object { $_.Enabled -eq 'True' -and $_.DisplayName -match 'Unity' })
+foreach ($rule in $blocked) {
+    Disable-NetFirewallRule -Name $rule.Name
+    Write-Host "無効化: Unity の受信ブロック規則 '$($rule.DisplayName)' ($($rule.Profile))"
+}
+if ($blocked.Count -eq 0) { Write-Host 'Unity の受信ブロック規則はありません。' }
+
+Write-Host '完了。スマホと同じ Wi-Fi / ホットスポットにつないでゲームを起動してください。'

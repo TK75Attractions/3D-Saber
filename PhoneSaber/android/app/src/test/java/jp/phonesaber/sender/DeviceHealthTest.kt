@@ -47,4 +47,18 @@ class DeviceHealthTest {
         assertFalse(meter.snapshot(111.0).ready)
         assertNull(meter.snapshot(111.0).medianJniMs)
     }
+
+    @Test fun captureToSendMedianIgnoresUnknownClockValues() {
+        val meter = DeviceHealthMeter()
+        meter.reset(100.0)
+        meter.processed(101.0, 10.0, 60.0)
+        meter.processed(101.1, 10.0, 80.0)
+        meter.processed(101.2, 10.0, -5.0)
+        meter.processed(101.3, 10.0, 1.0e7)
+        meter.processed(101.4, 10.0)
+        assertEquals(70.0, meter.snapshot(102.0).medianCaptureToSendMs!!, 0.000001)
+        assertTrue(DeviceHealthText.timing(meter.snapshot(102.0)).contains("撮影→送信 70 ms"))
+        assertNull(meter.snapshot(107.0).medianCaptureToSendMs)
+        assertTrue(!DeviceHealthText.timing(HealthRates(medianJniMs = 1.0)).contains("撮影"))
+    }
 }

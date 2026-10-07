@@ -605,8 +605,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         updateDiagnosticDestination()
         bonjourDiscovery.start()
         if self.p2pEnabled { startP2P() }
-        processor.onHealthSample = { [healthMeter] time, milliseconds, generation in
-            healthMeter.processed(at: time, milliseconds: milliseconds, generation: generation)
+        processor.onHealthSample = { [healthMeter] time, milliseconds, generation, captureToSendMs in
+            healthMeter.processed(at: time, milliseconds: milliseconds, generation: generation,
+                                  captureToSendMs: captureToSendMs)
         }
         processor.onResult = { [weak self] results, width, height, processingStart, generation, trace in
             Task { @MainActor in self?.handle(results, width: width, height: height, processingStart: processingStart, generation: generation, trace: trace) }

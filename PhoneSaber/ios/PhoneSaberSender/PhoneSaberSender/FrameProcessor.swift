@@ -49,7 +49,9 @@ enum HostMonotonicClock {
 final class FrameProcessor: @unchecked Sendable {
     let queue = DispatchQueue(label: "PhoneSaberSender.frames", qos: .userInteractive)
     var onResult: (([DetectedSaber], Int, Int, TimeInterval, Int, FrameTrace?) -> Void)?
-    var onHealthSample: ((TimeInterval, Double, Int) -> Void)?
+    /// (time, detection ms, generation, capture→detection-end ms). The last value is nil when
+    /// AVCapture's clock could not be converted to the host clock.
+    var onHealthSample: ((TimeInterval, Double, Int, Double?) -> Void)?
     var onRawFrameSaved: ((Result<URL, Error>) -> Void)?
 #if DEBUG
     var onPerformance: ((FramePerformanceSample) -> Void)?
@@ -521,7 +523,8 @@ final class FrameProcessor: @unchecked Sendable {
             (.blue, sabers[.blue])
         ]
         let detectionEnd = clock()
-        onHealthSample?(ProcessInfo.processInfo.systemUptime, max(0, (detectionEnd - processingStart) * 1000), generation)
+        onHealthSample?(ProcessInfo.processInfo.systemUptime, max(0, (detectionEnd - processingStart) * 1000), generation,
+                        captureHostTime.map { (detectionEnd - $0) * 1000 })
         // Detection has finished reading BGRA. Keep the lock only when a
         // requested recording or raw save still needs the pixel buffer.
 #if DEBUG
