@@ -43,7 +43,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
     private val healthMeter = DeviceHealthMeter()
     fun healthRates(): HealthRates = healthMeter.snapshot(System.nanoTime() / 1e9)
 
-    fun start(brightness: Int, dominance: Int, mirrors: MirrorSettings) {
+    fun start(brightness: Int, dominance: Int, mirrors: MirrorSettings, measurementMode: Boolean = false) {
         val token = synchronized(gate) {
             running = true
             status = Status()
@@ -54,7 +54,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
             expiry?.cancel(false); expiry = null
             core?.close(); core = null
             if (running && token == generation) {
-                try { core = NativeCore(mirrors) }
+                try { core = NativeCore(mirrors, measurementMode) }
                 catch (e: LinkageError) { fail(token, "ネイティブライブラリを読み込めません: ${e.localizedMessage}") }
                 catch (e: Exception) { fail(token, "コア初期化失敗: ${e.localizedMessage}") }
             }

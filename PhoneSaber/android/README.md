@@ -5,7 +5,8 @@
 2026-10-06 の決定: iPhone/Mac の本番・診断は維持し、AQUOS sense9
 （Android 14 / Snapdragon 7s Gen 2）用の本番 sender を追加する。
 Windows または Mac の Unity と同じ Wi-Fi に接続し、既存の UDP 契約を使う。
-Android に Debug Recording、診断受信、measurement mode を移植しない。
+Android に Debug Recording、診断受信は移植しない。
+当日のネットワーク確認用に既存C++ measurement modeをJNIから公開し、「遅延計測モード」を追加（既定OFF、保存しない）。
 長時間運転用の端末状態（発熱・電池・実測解析fps・JNI処理中央値）は通常画面に表示する。
 
 
@@ -41,7 +42,10 @@ core のアルゴリズムとUDP仕様は維持する。
 両色共通の既定彩度30、sample step=2は固定。閾値変更は停止中に行う。
 反転はAndroidの閾値の下、iPhoneの「詳細設定」→「検出」にある「左右反転」「上下反転」で設定・保存する（既定OFF、Androidは停止中のみ変更可）。同じ台ではiPhoneとAndroidを同じ反転設定にする。
 送信中は画面を点灯状態に保つ。画面を離れる・停止・Wi-Fiや送信先が変わると停止し、
-確認後に開始し直す。Debug Recording、診断、計測モード、P2Pはない。
+確認後に開始し直す。Debug Recording、診断、P2Pはない。
+「遅延計測モード」は停止中だけ変更でき、iPhoneと同じラベル。
+ONで開始すると既存の `ts=<epoch>;x1,y1,x2,y2` を送り、PCのF8で直近5秒の間隔・片道差・判定を確認する。
+片道差にはスマホとPCのNTP同期が必要。間隔は同期不要。手順と判定閾値は[当日runbook](../docs/claude/EVENT_DAY_RUNBOOK.md#会場でのネットワーク確認f8)。
 
 Gradle wrapper は公式の Gradle 9.8.0(SHA-256 確認済み)で `gradle wrapper` により生成した。
 2026-10-06 に Mac で `./gradlew assembleDebug testDebugUnitTest` が通った(JVM テスト 16 件)。
@@ -177,8 +181,10 @@ ImageProxyはJNIが戻るまで保持し必ずfinallyでcloseする。セッシ�
 output=1920×1080、mirrorX/Yは保存した設定（既定false）を使う。各辺の「寸法−1」で正規化し、Swiftと同じ四捨五入は
 既存コアが行う。最大3処理フレームの予測はfreshなので送るが、held/expired/absentは送らない。
 ゼロ座標、heartbeat、送信停止パケットを追加しない。
-コアにある `ts=%.6f;...` は既存measurement modeとの互換APIだが、Androidでは
-`measurement_mode=false` を固定し、計測UI/タイムスタンプを有効にしない。
+計測スイッチONのセッションだけ、JNIから既存C++の `measurement_mode` を有効にする。
+JNIは検出後・文字列生成直前に壁時計のUnix epoch秒を採り、両色へ渡す。
+既存 `ts=%.6f;...` formatterをそのまま使い、Kotlin/UDP workerは無加工で転送する。
+撮影・認識時間は片道差に含まない。OFFの通常経路・認識・fresh/held/予測は変更しない。
 
 UDPは待機フレーム1個の置換mailboxでnewest-wins、ノンブロッキングソケット。
 新しいフレームは空結果も含めて古い待機フレームを置き換え、送信失敗・socket満杯は破棄する。
@@ -228,8 +234,8 @@ monotonic time と、各色の送信時点の Unix epoch を呼び出し側か�
 予測は実検出履歴を書き換えず、送信停止にゼロ座標・空文字・heartbeat を使わない。
 
 通常 payload は厳密に `x1,y1,x2,y2`。
-既存 measurement mode の文字列関数も `ts=%.6f;x1,y1,x2,y2` と互換で実装しているが、
-Android 本番 UI に診断モードを追加する予定はない。
+既存 measurement mode の文字列関数は `ts=%.6f;x1,y1,x2,y2` と互換で、
+当日用の「遅延計測モード」から利用する（既定OFF）。Debug Recordingなどの診断モードは追加しない。
 RED=5005、BLUE=5006、既定出力1920×1080、mirrorX/mirrorY=false。
 source/output 各辺の「寸法−1」で正規化して四捨五入する既存仕様を維持する。
 端点の入れ替え以外の平滑化や候補の時間方向選好は、現在の本番経路に存在しない。

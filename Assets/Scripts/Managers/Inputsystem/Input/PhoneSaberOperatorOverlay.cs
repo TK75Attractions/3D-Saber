@@ -5,6 +5,8 @@ using UnityEngine.InputSystem;
 public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
 {
     bool visible;
+    bool clocksSynchronized;
+    Vector2 scrollPosition;
     double startedAt;
     double nextRefresh;
     string fallbackStation;
@@ -16,6 +18,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     string blueWarning;
     GUIStyle textStyle;
     GUIStyle warningStyle;
+    GUIStyle toggleStyle;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void CreateAtStartup()
@@ -26,6 +29,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         DontDestroyOnLoad(overlay.gameObject);
         // Domain Reload / Scene Reload を無効にした Editor でも毎回非表示で始める。
         overlay.visible = false;
+        overlay.clocksSynchronized = false;
         overlay.startedAt = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
         overlay.fallbackStation = PhoneSaberStation.Read();
     }
@@ -53,8 +57,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         var blue = input != null ? input.ReadInputStats(true) : empty;
         bool mac = PhoneSaberBonjourPublisher.IsSupported;
         station = input != null ? input.StationLabel : fallbackStation;
-        redText = PhoneSaberStatsDisplay.Format("RED", input != null ? input.port : 5005, red, mac);
-        blueText = PhoneSaberStatsDisplay.Format("BLUE", input != null ? input.port2 : 5006, blue, mac);
+        redText = PhoneSaberStatsDisplay.Format("RED", input != null ? input.port : 5005, red, mac, clocksSynchronized);
+        blueText = PhoneSaberStatsDisplay.Format("BLUE", input != null ? input.port2 : 5006, blue, mac, clocksSynchronized);
         redWarning = PhoneSaberStatsDisplay.Warning("RED", red);
         blueWarning = PhoneSaberStatsDisplay.Warning("BLUE", blue);
         services = $"探索 UDP 5007: {State(true, input != null && input.DiscoveryResponderRunning)}\n" +
@@ -77,26 +81,39 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             textStyle.normal.textColor = Color.white;
             warningStyle = new GUIStyle(textStyle);
             warningStyle.normal.textColor = new Color(1f, 0.75f, 0.2f);
+            toggleStyle = new GUIStyle(GUI.skin.toggle) { font = font, fontSize = 18, wordWrap = true };
+            toggleStyle.normal.textColor = Color.white;
+            toggleStyle.onNormal.textColor = Color.white;
         }
         Matrix4x4 previousMatrix = GUI.matrix;
         int previousDepth = GUI.depth;
         Color previousColour = GUI.color;
-        float scale = Mathf.Min(1f, Screen.width / 840f, Screen.height / 430f);
+        float scale = Mathf.Min(1f, Screen.width / 840f, Screen.height / 730f);
         GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one * scale);
         GUI.depth = -10000;
         // 明るいゲーム背景でも受信状態と警告が読めるよう、表示部分を暗く覆う。
         GUI.color = new Color(0.03f, 0.03f, 0.03f, 0.96f);
-        GUI.DrawTexture(new Rect(10, 10, 820, 410), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(10, 10, 820, 710), Texture2D.whiteTexture);
         GUI.color = Color.white;
-        GUILayout.BeginArea(new Rect(10, 10, 820, 410), GUI.skin.box);
+        GUILayout.BeginArea(new Rect(10, 10, 820, 710), GUI.skin.box);
         GUILayout.Label($"PhoneSaber 運営表示 [F8: 開閉]  |  台: {(string.IsNullOrEmpty(station) ? "指定なし" : station)}", textStyle);
+        // 日本語の折り返しが増えても、下の色や警告を切り落とさない。
+        scrollPosition = GUILayout.BeginScrollView(scrollPosition);
         GUILayout.Label(services, textStyle);
+        bool synchronized = GUILayout.Toggle(clocksSynchronized,
+            "スマホとPCのNTP同期を確認済み（片道遅延も判定）", toggleStyle);
+        if (synchronized != clocksSynchronized) { clocksSynchronized = synchronized; nextRefresh = 0; }
         GUILayout.Space(8);
         GUILayout.Label(redText, textStyle);
         if (!string.IsNullOrEmpty(redWarning)) GUILayout.Label(redWarning, warningStyle);
         GUILayout.Space(8);
         GUILayout.Label(blueText, textStyle);
         if (!string.IsNullOrEmpty(blueWarning)) GUILayout.Label(blueWarning, warningStyle);
+        GUILayout.Space(8);
+        GUILayout.Label("片道時計差=PC受信壁時計−ts。NTP同期時のみ有効（負値は時計差）。\n" +
+            "受信間隔は同期不要。良好 p95<50/最大<150 ms、注意 p95<100/最大<500 ms。\n" +
+            "最大間隔は現在の無受信時間も判定。両色を認識させ20サンプル以上で確認。", textStyle);
+        GUILayout.EndScrollView();
         GUILayout.EndArea();
         GUI.matrix = previousMatrix;
         GUI.depth = previousDepth;

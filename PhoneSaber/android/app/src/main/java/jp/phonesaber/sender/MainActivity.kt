@@ -60,6 +60,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var dominanceSlider: SeekBar
     private lateinit var mirrorXSwitch: Switch
     private lateinit var mirrorYSwitch: Switch
+    private lateinit var measurementSwitch: Switch
     private var mirrors = MirrorSettings()
     private var destination: Destination? = null
     private var wifi: Network? = null
@@ -216,6 +217,13 @@ class MainActivity : ComponentActivity() {
         }
         mirrorXSwitch = mirrorSwitch("左右反転", mirrors.mirrorX) { mirrors = mirrors.copy(mirrorX = it) }
         mirrorYSwitch = mirrorSwitch("上下反転", mirrors.mirrorY) { mirrors = mirrors.copy(mirrorY = it) }
+        // 保存しない運営用の計測設定。アプリ起動時は必ずOFF。
+        measurementSwitch = Switch(this).apply {
+            text = "遅延計測モード"
+            isChecked = false
+            panel.addView(this)
+        }
+        label("計測時は ts= を付けます。片道遅延にはスマホとPCのNTP時計同期が必要です。\n受信間隔は同期不要。PCのF8で確認。変更は停止中のみ。")
         camera = CameraSession(this, preview, sender) { message -> stopSending(); toast(message) }
         discovery = PcDiscovery(this) { pc, network, message ->
             val connectivity = getSystemService(ConnectivityManager::class.java)
@@ -272,8 +280,9 @@ class MainActivity : ComponentActivity() {
         startStop.text = "停止"
         brightnessSlider.isEnabled = false; dominanceSlider.isEnabled = false
         mirrorXSwitch.isEnabled = false; mirrorYSwitch.isEnabled = false
+        measurementSwitch.isEnabled = false
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        camera.start(brightness, dominance, mirrors)
+        camera.start(brightness, dominance, mirrors, measurementSwitch.isChecked)
     }
 
     private fun stopSending() {
@@ -283,6 +292,7 @@ class MainActivity : ComponentActivity() {
         startStop.text = "開始"
         brightnessSlider.isEnabled = true; dominanceSlider.isEnabled = true
         mirrorXSwitch.isEnabled = true; mirrorYSwitch.isEnabled = true
+        measurementSwitch.isEnabled = true
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         detection.text = "停止中\n赤: 未検出 / 送信 0 fps\n青: 未検出 / 送信 0 fps"
         updateHealth()
