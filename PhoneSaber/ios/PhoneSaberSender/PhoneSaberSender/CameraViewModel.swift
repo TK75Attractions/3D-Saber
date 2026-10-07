@@ -347,6 +347,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     /// only while the bridge answers pings; otherwise the LAN `sender` is used.
     private let p2pSender: P2PSender
     private static let p2pEnabledKey = "PhoneSaber.p2pEnabled"
+    private static let mirrorXKey = "PhoneSaber.mirrorX"
+    private static let mirrorYKey = "PhoneSaber.mirrorY"
     /// True once `sender` has a LAN destination for the current run.
     private var lanConfigured = false
     /// Coordinates dropped because neither P2P nor LAN could take them.
@@ -389,8 +391,12 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published var measurementMode = false
     @Published var outputWidth = 1920
     @Published var outputHeight = 1080
-    @Published var mirrorX = false
-    @Published var mirrorY = false
+    @Published var mirrorX = false {
+        didSet { UserDefaults.standard.set(mirrorX, forKey: Self.mirrorXKey) }
+    }
+    @Published var mirrorY = false {
+        didSet { UserDefaults.standard.set(mirrorY, forKey: Self.mirrorYKey) }
+    }
     @Published private(set) var activeDestination = "未設定"
     @Published private(set) var redDetectionCount = 0
     @Published private(set) var blueDetectionCount = 0
@@ -514,6 +520,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         // Unit tests opt in explicitly, so a bridge running on the developer's Mac
         // can never reroute the existing LAN tests.
         let underTest = NSClassFromString("XCTestCase") != nil
+        self.mirrorX = underTest ? false : UserDefaults.standard.bool(forKey: Self.mirrorXKey)
+        self.mirrorY = underTest ? false : UserDefaults.standard.bool(forKey: Self.mirrorYKey)
         self.p2pEnabled = p2pEnabled
             ?? (underTest ? false : UserDefaults.standard.object(forKey: Self.p2pEnabledKey) as? Bool ?? true)
         self.station = underTest ? "" : (UserDefaults.standard.string(forKey: PhoneSaberStation.preferenceKey)

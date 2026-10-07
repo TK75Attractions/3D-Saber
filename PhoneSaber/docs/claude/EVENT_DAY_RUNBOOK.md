@@ -9,6 +9,7 @@
 
 PC(Mac か Windows)で Unity のゲームを動かし、スマホ(iPhone か Android)で剣を認識して座標を UDP 5005(赤)/ 5006(青)へ送る。
 リポジトリは 3D-Saber の1つだけ(PhoneSaber/ はその中)。
+反転はiPhoneの「詳細設定」→「検出」、Androidの閾値の下の「左右反転」「上下反転」で設定・保存する（既定OFF、Androidは停止中のみ変更可）。同じ台ではiPhoneとAndroidを同じ反転設定にする。
 
 ### 最初に1回だけ
 - **Mac**: `git lfs install` → `git clone https://github.com/TK75Attractions/3D-Saber.git` → `3D-Saber/PhoneSaber/setup_mac.command` をダブルクリック(デスクトップに PhoneSaber のアイコン)。Unity Hub で 3D-Saber を開く(6000.3.9f1)。
