@@ -6,6 +6,9 @@ target_compile_features(phonesaber_core PUBLIC cxx_std_17)
 target_include_directories(phonesaber_core PUBLIC include)
 # Swift does not contract multiply/add. Never use fast-math or reassociate sums.
 target_compile_options(phonesaber_core PRIVATE -Wall -Wextra -Werror -ffp-contract=off)
+# Debug APK(Android Studio の Run)でも -O0 にしない。-O0 では sense9 で1フレーム約300msかかり、
+# 送信側の 180ms 鮮度制限で全フレームが破棄される。Mac parity tool と同じ -O2 に揃える。
+target_compile_options(phonesaber_core PRIVATE -O2)
 option(PHONESABER_BUILD_TOOLS "Build Mac parity tools (not required by JNI)" OFF)
 if(PHONESABER_BUILD_TOOLS)
     find_package(ZLIB REQUIRED)

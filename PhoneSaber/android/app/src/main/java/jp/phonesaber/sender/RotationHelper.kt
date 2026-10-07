@@ -6,6 +6,7 @@ import java.nio.ByteBuffer
 class RotationHelper {
     data class Pixels(val buffer: ByteBuffer, val width: Int, val height: Int, val rowStride: Int)
     private var scratch = ByteBuffer.allocateDirect(0)
+    private var rowInts = IntArray(0)
 
     fun orient(source: ByteBuffer, width: Int, height: Int, rowStride: Int,
                pixelStride: Int, degrees: Int): Pixels {
@@ -24,20 +25,28 @@ class RotationHelper {
         require(bytes <= Int.MAX_VALUE)
         if (scratch.capacity() != bytes.toInt()) scratch = ByteBuffer.allocateDirect(bytes.toInt())
         // Also packs a 0-degree plane if its last row omits padding (the core needs stride*height).
-        // Read/write bytes only: preserve channels, alpha and exact original RGB values.
-        for (y in 0 until height) for (x in 0 until width) {
-            val outX: Int
-            val outY: Int
-            when (degrees) {
-                0 -> { outX = x; outY = y }
-                90 -> { outX = height - 1 - y; outY = x }
-                180 -> { outX = width - 1 - x; outY = height - 1 - y }
-                else -> { outX = y; outY = width - 1 - x }
+        // Move whole 4-byte pixels as Ints (same byte order on both sides): channels, alpha and
+        // exact original RGB values are preserved. Per-byte get/put took ~80ms/frame on sense9.
+        val pixelsIn = IntArray(width)
+        if (rowInts.size != outWidth * outHeight) rowInts = IntArray(outWidth * outHeight)
+        val out = rowInts
+        val order = input.order()
+        for (y in 0 until height) {
+            val row = input.duplicate().order(order)
+            row.position(y * rowStride)
+            row.asIntBuffer().get(pixelsIn, 0, width)
+            for (x in 0 until width) {
+                val index = when (degrees) {
+                    0 -> y * outWidth + x
+                    90 -> x * outWidth + (height - 1 - y)
+                    180 -> (height - 1 - y) * outWidth + (width - 1 - x)
+                    else -> (width - 1 - x) * outWidth + y
+                }
+                out[index] = pixelsIn[x]
             }
-            val src = y * rowStride + x * 4
-            val dst = (outY * outWidth + outX) * 4
-            for (channel in 0..3) scratch.put(dst + channel, input.get(src + channel))
         }
+        scratch.clear()
+        scratch.order(order).asIntBuffer().put(out)
         scratch.clear()
         return Pixels(scratch, outWidth, outHeight, outWidth * 4)
     }
