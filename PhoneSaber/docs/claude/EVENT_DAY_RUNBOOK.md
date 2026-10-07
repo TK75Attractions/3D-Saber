@@ -7,7 +7,7 @@
 1. **ゲームが消えた** → A/B の監視起動なら5秒待つ。繰り返すなら監視を止め、ログを保存して予備PCへ。
 2. **剣が動かない** → **F8**（Macは必要ならFn+F8）。台・RED/BLUE・送信元・無受信警告を確認。スマホを前面に戻し、送信とカメラ固定を確認。
 3. **違う台が動く／受信0** → PCとスマホの台を同じA/Bに。手動IPはそのPCの現在のIP。**Windows+iPhoneは手動IP必須**。受信機が停止なら二重起動を止める。
-4. **通信できない** → 同じWi-Fiへ。学校Wi-Fiで端末間通信が禁止ならPCのホットスポットへ切り替え、IPを入れ直す。WindowsはPrivate設定と[ファイアウォール許可](../../windows/README.md)。Mac+iPhoneのP2P不調なら同じWi-Fi＋P2P優先OFF。
+4. **通信できない** → 同じWi-Fiへ。学校Wi-Fiで端末間通信が禁止ならPCのホットスポットへ切り替え、IPを入れ直す。WindowsはPrivate設定と[ファイアウォール許可](../../windows/README.md)。Mac+iPhoneは同じWi-FiでUnityの応答（UDP 5007）がある間LANで送り、届かないときだけP2P予備へ切り替わる（2026-10-08〜）。
 5. **スマホが熱い／fps低下** → 箱を開けて送風、排熱から離し給電を確認。危険が続くなら送信停止・冷却／予備端末。
 
 ログの場所はF8に表示。イベントログの現行＋`.1`〜`.4`と、起動スクリプト横のログを保存する。監視停止と通常終了は[終了手順](#6-終了手順)、詳しい対処は[トラブル表](#5-トラブル表)。
@@ -37,7 +37,7 @@ Git／Unityのルートは `3D-Saber/`、スマホアプリ・ツールは `Phon
 
 | 組み合わせ | 送信先の選び方 | 開始ボタン | 診断録画 |
 | --- | --- | --- | --- |
-| Mac＋iPhone（推奨） | P2P優先、使えなければ同じWi-FiのBonjour／手動IP | 通常送信を開始 | ○ |
+| Mac＋iPhone（推奨） | 同じWi-FiのLAN（Unityの5007応答で確認）、届かなければP2P予備 | 通常送信を開始 | ○ |
 | Mac＋Android | 同じWi-Fi、UDP 5007探索／NSD | 開始 | × |
 | Windows＋Android | 同じWi-Fi、UDP 5007探索 | 開始 | × |
 | Windows＋iPhone | 同じWi-Fi、WindowsのIPv4を手動IPへ | 通常送信を開始 | × |
@@ -45,7 +45,7 @@ Git／Unityのルートは `3D-Saber/`、スマホアプリ・ツールは `Phon
 **手動IPは自動探索より優先**。Windowsは `ipconfig` で使用中の接続のIPv4を見る。Androidは入力後「手入力を保存」、空欄保存で探索へ戻る。台指定は自動送信先を選ぶ機能で、違う台からのUDP受信を拒否する機能ではない。iPhoneのP2P・診断relayも同じ台に限定される。
 
 - ☐ **Mac＋iPhoneのP2P**: [P2P手順](../../ios/PhoneSaberSender/P2P_BRIDGE.md)でbridgeを一度ビルドする。Editorは1セッションに1回裏でビルドし、キャッシュは `~/Library/Caches/PhoneSaber/p2p-bridge/`。標準スクリプトは `PhoneSaber/ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py`。**built .appは `PHONESABER_P2P_BRIDGE_SCRIPT` に利用可能なlauncherを指定**する。なければLANで使う。
-- ☐ iPhoneのWi-FiはON、インターネット共有はOFF、P2P優先はON（既定ON・保存）。同じSSIDへの参加は不要、モバイルデータは使わない。Macは学校Wi-Fiでインターネットを使い続けられる。Macのローカルネットワーク許可はbridgeを起動するUnity／Terminalに与える。
+- ☐ iPhoneのWi-FiはON、インターネット共有はOFF、P2P予備はON（既定ON・保存）。LANの方が速い（F9実測で中央値約45ms・p95約半分）ので、できるだけMacと同じWi-Fiにつなぐ。端末間通信が禁止のWi-Fiでは自動でP2Pへ退避する。モバイルデータは使わない。Macは学校Wi-Fiでインターネットを使い続けられる。Macのローカルネットワーク許可はbridgeを起動するUnity／Terminalに与える。
 - ☐ **診断はMac＋iPhoneのみ**。[診断手順](../../ios/PhoneSaberSender/Tools/PHONE_SABER_TRIAGE.md)でデスクトップのStart PhoneSaber／PhoneSaber Statusを用意する。既存Macもinstallerの再実行で不足リンクだけ追加できる。Codex CLIのログインを確認（なくても受信と無料要約は動く）。
 - ☐ 本番の組み合わせで両色、A/Bの取り違え防止、通常終了・異常終了、Wi-Fi切替・前面復帰・アプリ再起動・停止後の非再開を試す。**AQUOS実機・Windows受信・長時間運転は未確認**。Mac＋iPhoneの台指定は10-06に確認済み。
 - ☐ 剣なしの運営練習は[Saber Motion Replay](../../tools/README_saber_motion_replay.md)。実機送信を止めて使い、練習の位置補正は最後にリセットする。
@@ -131,7 +131,7 @@ F8の「位置補正をON」で一時OFF、「この台の位置補正をリセ�
 - 高い／危険、fps低下、電池減少は箱の通風・排熱・給電を確認。充電でも熱は増える。危険が続けば手動停止して冷却／交代。熱状態の変化はiPhone Console／Android Logcat（DeviceHealth）、iPhone診断録画には熱と電池も残る。
 - 送信意思を保存し、中断後の前面復帰・アプリ再起動で再開する。自動開始OFFでも送信中だった場合は復帰。停止ボタンは意思を消し、前面復帰だけでは再開しない。ただし自動開始ONなら次のアプリ起動で開始する。診断／ガイド録画は自動再開しない。
 - カメラ中断・エラー・映像停止は1→2→4→8→16→最大30秒で再試行。15分失敗で警告、10秒安定で回数リセット。iPhone「カメラを再開」、Android停止→開始でも再試行できる。
-- Wi-Fi切替でも送信意思を保ち「PCを再接続中…」。同じ台を再探索・再解決（約30秒ごとにも更新）。LANの選択PC名を保存、手動IPは優先なのでIP変更時に更新する。iPhoneはP2P優先／LAN退避を維持し、ネット再接続には15分の打切りはない。別PCへ移すときは停止して台・IPを変える。
+- Wi-Fi切替でも送信意思を保ち「PCを再接続中…」。同じ台を再探索・再解決（約30秒ごとにも更新）。LANの選択PC名を保存、手動IPは優先なのでIP変更時に更新する。iPhoneはLAN（Unity応答あり）優先／P2P退避を維持し、ネット再接続には15分の打切りはない。別PCへ移すときは停止して台・IPを変える。
 - 送信／復旧待ちの前面画面は自動ロックを防ぐ。OSによる終了後のアプリ起動、強制ロック解除、電源切れの復旧はスタッフが行う。
 
 ### PCの受信とログ
@@ -162,7 +162,7 @@ inboxは `~/Library/Application Support/PhoneSaber/diagnostics-inbox/`、ログ�
 | 別台が動く／台が見つからない | 台不一致・古い手動IP | スマホとF8の台を合わせ、正しいlauncherでPCを起動し直す。手動IPを修正／解除 |
 | 学校Wi-Fiだけ届かない | 端末間通信の隔離 | PCのホットスポット（Macはインターネット共有）へ。A/BのSSIDを区別し、新しいIPを入力 |
 | Windowsだけ入力／探索なし | Public設定・firewall | [Windows README](../../windows/README.md)で共有接続もPrivate、UDP 5005〜5007許可。iPhoneは手動IP |
-| Mac＋iPhoneのP2P未接続／ラグ／LANへ戻る | 権限・Wi-Fi OFF・bridge・詰まり | 両端の許可、Wi-Fi ON／個人用Hotspot OFF、Status、built .appのbridge指定を確認。直らなければ同じWi-Fi＋P2P優先OFF |
+| Mac＋iPhoneのP2P未接続／ラグ／LANへ戻る | 権限・Wi-Fi OFF・bridge・詰まり | 両端の許可、Wi-Fi ON／個人用Hotspot OFF、Status、built .appのbridge指定を確認。LANへ戻る表示は正常（LANの方が速い）。P2Pでラグなら同じWi-Fiへつなぐ |
 | カメラ復旧待ちが続く | 中断・カメラ使用不可 | 権限確認。iPhone「カメラを再開」、Android停止→開始。台とF8の両色の復帰を確認 |
 | 熱い／fps低下／電池減少 | 箱内の熱・排熱・給電不足 | 箱を開け送風、排熱から離し給電確認。危険が続けば停止して冷却／予備端末 |
 | 受信OKだが剣が逆／ずれる／飛ぶ | 反転・設置・ブレ・誤検出 | レンズ・固定・画角・照明を確認。反転を直したらF7再測定。剣なし／人ありでも試す。閾値は当日変えない |

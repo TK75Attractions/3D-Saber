@@ -510,3 +510,88 @@ final class UDPSender {
 
     private func publish() { updateHandler?(states, mergedErrors(), currentError()) }
 }
+
+/// LAN 経路の生存確認。Unity の探索応答（UDP 5007、Android の自動探索と同じ要求）へ 0.5 秒ごとに
+/// unicast で問い合わせ、1.5 秒以内に応答があれば LAN が Unity まで届いているとみなす。
+/// UDP の座標送信は届いたか分からないため、P2P より LAN を優先してよいかの判断にだけ使う。
+/// 2026-10-07 の F9 実測では LAN が P2P より中央値で約45ms、p95で約2倍速かった。
+final class LANLivenessProbe {
+    static let port: UInt16 = 5007
+    static let request = "PHONESABER_DISCOVER 1"
+    static let replyPrefix = "PHONESABER_UNITY 1"
+    static let aliveWindow: TimeInterval = 1.5
+
+    private let queue = DispatchQueue(label: "PhoneSaberSender.lanProbe")
+    private let lock = NSLock()
+    private let clock: () -> TimeInterval
+    private var host = ""
+    private var connection: NWConnection?
+    private var timer: DispatchSourceTimer?
+    private var lastReply = -Double.infinity
+
+    init(clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) {
+        self.clock = clock
+    }
+
+    /// 同じ host なら何もしない（応答履歴を保つ）。
+    func start(host: String) {
+        lock.lock()
+        let same = host == self.host && timer != nil
+        lock.unlock()
+        if same { return }
+        stop()
+        guard !host.isEmpty else { return }
+        let timer = DispatchSource.makeTimerSource(queue: queue)
+        timer.schedule(deadline: .now(), repeating: 0.5)
+        timer.setEventHandler { [weak self] in self?.tick() }
+        lock.lock(); self.host = host; self.timer = timer; lock.unlock()
+        timer.resume()
+    }
+
+    func stop() {
+        lock.lock()
+        let timer = self.timer, connection = self.connection
+        self.timer = nil; self.connection = nil; host = ""; lastReply = -Double.infinity
+        lock.unlock()
+        timer?.cancel()
+        connection?.cancel()
+    }
+
+    var isAlive: Bool {
+        lock.lock(); defer { lock.unlock() }
+        return clock() - lastReply <= Self.aliveWindow
+    }
+
+    func recordReplyForTesting(_ text: String) { handle(Data(text.utf8)) }
+
+    private func tick() {
+        lock.lock()
+        let host = self.host
+        var connection = self.connection
+        lock.unlock()
+        guard !host.isEmpty, let port = NWEndpoint.Port(rawValue: Self.port) else { return }
+        if let current = connection, case .failed = current.state { current.cancel(); connection = nil }
+        if let current = connection, case .cancelled = current.state { connection = nil }
+        if connection == nil {
+            let created = NWConnection(host: NWEndpoint.Host(host), port: port, using: .udp)
+            created.start(queue: queue)
+            receive(on: created)
+            lock.lock(); self.connection = created; lock.unlock()
+            connection = created
+        }
+        connection?.send(content: Data(Self.request.utf8), completion: .idempotent)
+    }
+
+    private func receive(on connection: NWConnection) {
+        connection.receiveMessage { [weak self, weak connection] data, _, _, error in
+            guard let self, let connection else { return }
+            if let data { self.handle(data) }
+            if error == nil { self.receive(on: connection) }
+        }
+    }
+
+    private func handle(_ data: Data) {
+        guard let text = String(data: data, encoding: .ascii), text.hasPrefix(Self.replyPrefix) else { return }
+        lock.lock(); lastReply = clock(); lock.unlock()
+    }
+}

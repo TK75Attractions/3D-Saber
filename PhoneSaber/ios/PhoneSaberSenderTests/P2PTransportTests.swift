@@ -655,6 +655,22 @@ final class P2PTransportTests: XCTestCase {
         }
         return condition()
     }
+
+    func testLANLivenessProbeRequiresARecentUnityReply() {
+        var now = 100.0
+        let probe = LANLivenessProbe(clock: { now })
+        XCTAssertFalse(probe.isAlive)
+        probe.recordReplyForTesting("PHONESABER_UNITY 1 red=5005 blue=5006 name=Mac station=A")
+        XCTAssertTrue(probe.isAlive)
+        now += LANLivenessProbe.aliveWindow + 0.1
+        XCTAssertFalse(probe.isAlive, "応答が途絶えたら P2P へ退避できる")
+        probe.recordReplyForTesting("PHONESABER_DISCOVER 1")
+        XCTAssertFalse(probe.isAlive, "Unity の応答以外では生存とみなさない")
+        probe.recordReplyForTesting("PHONESABER_UNITY 1 red=5005 blue=5006 name=Mac")
+        XCTAssertTrue(probe.isAlive)
+        probe.stop()
+        XCTAssertFalse(probe.isAlive)
+    }
 }
 
 final class LockedBox<Value>: @unchecked Sendable {

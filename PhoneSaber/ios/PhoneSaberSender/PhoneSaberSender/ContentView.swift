@@ -53,7 +53,7 @@ struct ContentView: View {
                             .font(.footnote).foregroundStyle(.secondary)
                         Text("経路: \(model.transportLabel)")
                             .font(.footnote.weight(.semibold))
-                        Toggle("P2P優先 (peer-to-peer Wi-Fi・Mac側 P2P bridge)", isOn: Binding(
+                        Toggle("P2P予備（LANでUnityに届かないときだけ peer-to-peer Wi-Fi・Mac側 P2P bridge で送る）", isOn: Binding(
                             get: { model.p2pEnabled },
                             set: { model.setP2PEnabled($0) }
                         ))

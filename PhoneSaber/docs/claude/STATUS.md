@@ -39,6 +39,12 @@
 
 ## 作業ログ
 
+### 2026-10-08 iPhone を LAN 優先・P2P 予備に
+- F9 自動 A/B（Mac+iPhone, Editor）: LAN 中央値 133〜157ms / p95 約210〜220ms、P2P 166〜255ms / 350〜415ms。60fps 区間（赤 約37件/秒）は30fps区間より 30〜40ms 速い。maxQueuedFrames 1/2 は差なし。
+- iPhone: LANLivenessProbe が Unity の探索応答（UDP 5007）へ0.5秒ごとに問い合わせ、1.5秒以内に応答があれば LAN、なければ P2P。トグル名を「P2P予備」に。
+- iPhone は60fps要求でも約37件/秒（Debug ビルドも -O。認識が20ms台）。Swift と C++ core の bit 一致高速化を Codex に委任（perf/ios-detection, perf/core-detection）。
+- 検証: verify は Tools の P2P bridge 起動待ちテスト1件のみ失敗（Codex 2本並行の負荷）、単独再実行2回 PASS。他段 PASS、新テスト testLANLivenessProbeRequiresARecentUnityReply PASS。
+
 ### 2026-10-08 F9 の誤判定除去と自動 A/B
 - 10-07 夜の F9（60fps、P2P 162ms / LAN 157ms）は最小 11/19ms を含み信頼できない。原因は旧版がワールド座標で閾値0.3を判定していたこと（71595c4 で正規化座標に修正済み）と条件の違い。
 - F9: 25ms未満・逆方向の応答を棄却（rejected）、左右の棒位置を学習して切替先に近い応答だけ採用。15回ごとに maxQueuedFrames 1/2 を交互にし latency-block を記録。iPhone Debug に「fps自動比較」（30秒ごとに30⇄60、保存しない）。集計は `PhoneSaber/tools/latency_report.py`。

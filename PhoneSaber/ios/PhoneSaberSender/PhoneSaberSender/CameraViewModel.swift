@@ -353,6 +353,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private static let mirrorYKey = "PhoneSaber.mirrorY"
     /// True once `sender` has a LAN destination for the current run.
     private var lanConfigured = false
+    private let lanProbe = LANLivenessProbe()
     /// Coordinates dropped because neither P2P nor LAN could take them.
     private var p2pNoRouteCount = 0
     /// Whether the previous coordinate took the P2P link (P2P on only).
@@ -599,7 +600,7 @@ final class CameraViewModel: NSObject, ObservableObject {
                         self.configureLAN(host: self.host, generation: self.lifecycleGeneration)
                     } else {
                         self.sender.stop()
-                        self.lanConfigured = false
+                        self.lanConfigured = false; self.lanProbe.stop()
                     }
                 }
                 self.refreshNetworkDiscovery()
@@ -1015,7 +1016,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         discoveredMacIP = update.ip
         if update.removed && hostSelection.source != .manual && hostSelection.bonjourServiceName == update.name {
             sender.stop()
-            lanConfigured = false
+            lanConfigured = false; lanProbe.stop()
         }
         if hostSelection.applyBonjour(host: update.ip, serviceName: update.name) ||
             (!update.ip.isEmpty && hostSelection.source != .manual && hostSelection.bonjourServiceName == update.name && !lanConfigured) {
@@ -1133,7 +1134,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
         updateIdleTimerPolicy()
         sessionRunner.stopSynchronously()
-        sender.stop(); lanConfigured = false; routedViaP2P = false; _ = processor.reset(); activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
+        sender.stop(); lanConfigured = false; lanProbe.stop(); routedViaP2P = false; _ = processor.reset(); activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
     }
 
     private func configureAndStart(isRecovery: Bool = false, recoveryGeneration: Int? = nil) {
@@ -1233,7 +1234,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         processor.configureCaptureSynchronizationClock(session.synchronizationClock)
         let currentGeneration = lifecycleGeneration
         if configuredHost.isEmpty {
-            lanConfigured = false
+            lanConfigured = false; lanProbe.stop()
             activeDestination = "PC を再接続中…"
         } else {
             configureLAN(host: configuredHost, generation: currentGeneration)
@@ -1636,7 +1637,10 @@ final class CameraViewModel: NSObject, ObservableObject {
     private func route(_ text: String, port: Int,
                        onSendStarted: ((TimeInterval, Int) -> Void)?,
                        completion: @escaping (Result<TimeInterval, Error>) -> Void) {
-        if hostSelection.source != .manual && p2pEnabled && p2pSender.isUsable {
+        // LAN が Unity の応答で確認できている間は LAN を使う（P2P より速く、ばらつきも小さい）。
+        // 確認できないとき（端末間通信の禁止・Wi-Fi なし等）だけ P2P へ退避する。
+        let lanVerified = lanConfigured && lanProbe.isAlive
+        if hostSelection.source != .manual && p2pEnabled && p2pSender.isUsable && !lanVerified {
             if !routedViaP2P {
                 // Back on P2P: a coordinate still queued for a LAN port that is not
                 // ready must never arrive after the newer ones sent over P2P.
@@ -1667,6 +1671,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func configureLAN(host: String, generation: Int) {
         lanConfigured = true
+        lanProbe.start(host: host)
         sender.configure(host: host) { [weak self] states, errors, _ in
             Task { @MainActor in
                 self?.applySenderUpdate(states: states, errors: errors, generation: generation)
@@ -1813,7 +1818,9 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     /// The path coordinates take right now, for the UI.
     var transportLabel: String {
-        if hostSelection.source != .manual && p2pEnabled && p2pState.isConnected { return p2pState.label }
+        if hostSelection.source != .manual && p2pEnabled && p2pState.isConnected && !(lanConfigured && lanProbe.isAlive) {
+            return p2pState.label
+        }
         guard running else { return hostSelection.source == .manual ? "Manual IP" : p2pEnabled ? p2pState.label : "停止中" }
         if lanConfigured {
             let portStates = [senderStates[5005], senderStates[5006]].compactMap { $0 }
@@ -1901,7 +1908,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         self.host = host
         let currentGeneration = lifecycleGeneration
         // An empty host mirrors a P2P-only start (no LAN destination yet).
-        if host.isEmpty { lanConfigured = false } else { configureLAN(host: host, generation: currentGeneration) }
+        if host.isEmpty { lanConfigured = false; lanProbe.stop() } else { configureLAN(host: host, generation: currentGeneration) }
         _ = processor.reset()
         recomputeErrorMessage()
     }
