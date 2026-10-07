@@ -1,4 +1,4 @@
-#include "phonesaber/core.hpp"
+#include "../src/internal.hpp"
 #include <cassert>
 #include <iostream>
 using namespace phonesaber;
@@ -52,7 +52,43 @@ static void blue_support_tests() {
         break;
     }
 }
+// 元の菱形走査を独立した参照にして、小画像を全列挙し境界も確認する。
+static detail::Mask reference_morphology(const detail::Mask& input, int w, int h, int radius, bool erosion) {
+    if (radius <= 0) return input;
+    detail::Mask out(input.size());
+    for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
+        if (erosion && (x < radius || y < radius || x >= w-radius || y >= h-radius)) continue;
+        bool value = erosion;
+        for (int dy = -radius; dy <= radius; ++dy) for (int dx = -radius; dx <= radius; ++dx) {
+            if (std::abs(dx)+std::abs(dy) > radius) continue;
+            int px = x+dx, py = y+dy;
+            bool on = px >= 0 && px < w && py >= 0 && py < h && input[py*w+px] != 0;
+            value = erosion ? value && on : value || on;
+        }
+        out[y*w+x] = value;
+    }
+    return out;
+}
+static void morphology_tests() {
+    uint32_t random = 0x51ab3u;
+    for (int h : {1,2,3,5,9,17}) for (int w : {1,2,3,5,9,17}) {
+        int cases = w*h <= 9 ? 1 << (w*h) : 64;
+        for (int pattern = 0; pattern < cases; ++pattern) {
+            detail::Mask input(w*h);
+            for (int i = 0; i < w*h; ++i) {
+                random = random*1664525u+1013904223u;
+                input[i] = w*h <= 9 ? (pattern >> i)&1
+                    : (random >> 24) < unsigned(pattern*4) ? uint8_t(random >> 16)|1 : 0;
+            }
+            for (int radius = 0; radius <= 4; ++radius) {
+                assert(detail::dilate(input,w,h,radius) == reference_morphology(input,w,h,radius,false));
+                assert(detail::erode(input,w,h,radius) == reference_morphology(input,w,h,radius,true));
+            }
+        }
+    }
+}
 int main() {
+    morphology_tests();
     blue_support_tests();
     FrameProcessor p;
     auto a = p.process(detection({{10,20},{30,40}}),100,100,1.0);

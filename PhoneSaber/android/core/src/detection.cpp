@@ -32,32 +32,52 @@ std::optional<Endpoints> principal_axis_endpoints(const std::vector<PixelPoint>&
     return Endpoints{points[li], points[hi_index]};
 }
 namespace detail {
+// 半径 r の菱形は半径 1 の十字を r 回適用したものと等しい。
+// 整数マスクだけを処理し、浮動小数点の走査・加算順には触れない。
 Mask dilate(const Mask& input, int w, int h, int radius) {
     if (radius <= 0) return input;
-    Mask out(input.size());
-    for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) if (input[y*w+x]) {
-        for (int ny = std::max(0,y-radius); ny <= std::min(h-1,y+radius); ++ny)
-            for (int nx = std::max(0,x-radius); nx <= std::min(w-1,x+radius); ++nx)
-                if (std::abs(nx-x)+std::abs(ny-y) <= radius) out[ny*w+nx] = 1;
+    Mask out(input.size()), scratch;
+    if (radius > 1) scratch.resize(input.size());
+    const Mask* source = &input;
+    Mask* target = &out;
+    for (int pass = 0; pass < radius; ++pass) {
+        for (int y = 0; y < h; ++y) {
+            const auto* row = source->data()+y*w;
+            // 画像外のゼロを中心値で代用しても OR の結果は同じ。
+            const auto* above = y > 0 ? row-w : row;
+            const auto* below = y+1 < h ? row+w : row;
+            auto* dest = target->data()+y*w;
+            if (w == 1) { dest[0] = (row[0] | above[0] | below[0]) != 0; continue; }
+            dest[0] = (row[0] | row[1] | above[0] | below[0]) != 0;
+            for (int x = 1; x < w-1; ++x)
+                dest[x] = (row[x] | row[x-1] | row[x+1] | above[x] | below[x]) != 0;
+            dest[w-1] = (row[w-1] | row[w-2] | above[w-1] | below[w-1]) != 0;
+        }
+        source = target;
+        target = target == &out ? &scratch : &out;
     }
-    return out;
+    return source == &out ? std::move(out) : std::move(scratch);
 }
 Mask erode(const Mask& input, int w, int h, int radius) {
     if (radius <= 0) return input;
-    Mask out(input.size());
+    Mask out(input.size()), scratch;
     if (w <= radius*2 || h <= radius*2) return out;
-    for (int y = radius; y < h-radius; ++y) for (int x = radius; x < w-radius; ++x) {
-        bool survives = true;
-        for (int ny = y-radius; ny <= y+radius; ++ny) {
-            for (int nx = x-radius; nx <= x+radius; ++nx) {
-                if (std::abs(nx-x)+std::abs(ny-y) > radius) continue;
-                if (input[ny*w+nx] == 0) { survives = false; break; }
-            }
-            if (!survives) break;
+    if (radius > 1) scratch.resize(input.size());
+    const Mask* source = &input;
+    Mask* target = &out;
+    for (int pass = 0; pass < radius; ++pass) {
+        // 境界は初期値のゼロのまま。反復により元の半径分だけ消える。
+        for (int y = 1; y < h-1; ++y) {
+            const auto* row = source->data()+y*w;
+            auto* dest = target->data()+y*w;
+            for (int x = 1; x < w-1; ++x)
+                dest[x] = (row[x] != 0) & (row[x-1] != 0) & (row[x+1] != 0)
+                    & (row[x-w] != 0) & (row[x+w] != 0);
         }
-        if (survives) out[y*w+x] = 1;
+        source = target;
+        target = target == &out ? &scratch : &out;
     }
-    return out;
+    return source == &out ? std::move(out) : std::move(scratch);
 }
 Mask close(const Mask& input, int w, int h, int radius) {
     return erode(dilate(input,w,h,radius),w,h,radius);
@@ -142,7 +162,7 @@ static Body dominant_body(const Points& points, double mx, double my, double ax,
     return body;
 }
 std::optional<Scored> score_component(const Points& points, int w, int h,
-                                     const Mask* component_mask, const std::set<int>* indices,
+                                     const Mask* component_mask,
                                      const Evidence& e, const std::string& source, int minimum_override) {
     int standard_minimum = std::max(4,minimum_override >= 0 ? minimum_override : int(double(w*h)*0.0005));
     int minimum = e.color == SaberColor::red ? std::min(standard_minimum,20) : standard_minimum;
@@ -198,7 +218,22 @@ std::optional<Scored> score_component(const Points& points, int w, int h,
     double width_variation = std::sqrt(variance_width)/std::max(mean_width,1.0);
     int raw_count = 0, peak = 0, high_count = 0, outside_count = 0, core_count = 0;
     double value_sum = 0, value_square_sum = 0, purity_sum = 0, outside_sum = 0, radiance_sum = 0;
-    std::set<int> clipped;
+    // clipped は個数のみ使用する。bbox+半径2の bitmap で同じ重複を除く。
+    BoundingBox box{std::numeric_limits<int>::max(),std::numeric_limits<int>::max(),
+                    std::numeric_limits<int>::min(),std::numeric_limits<int>::min()};
+    for (auto p : points) {
+        box.min_x = std::min(box.min_x,p.x); box.min_y = std::min(box.min_y,p.y);
+        box.max_x = std::max(box.max_x,p.x); box.max_y = std::max(box.max_y,p.y);
+    }
+    int clipped_x = std::max(0,box.min_x-2), clipped_y = std::max(0,box.min_y-2);
+    int clipped_width = std::min(w-1,box.max_x+2)-clipped_x+1;
+    int clipped_height = std::min(h-1,box.max_y+2)-clipped_y+1;
+    Mask clipped_seen(std::size_t(clipped_width)*clipped_height);
+    int clipped_count = 0;
+    auto insert_clipped = [&](int x, int y) {
+        auto& seen = clipped_seen[std::size_t(y-clipped_y)*clipped_width+x-clipped_x];
+        if (!seen) { seen = 1; ++clipped_count; }
+    };
     std::vector<bool> high_bins(bins), core_bins(bins);
     const std::array<PixelPoint,4> neighbors{{{-2,0},{2,0},{0,-2},{0,2}}};
     for (auto p : points) {
@@ -210,19 +245,19 @@ std::optional<Scored> score_component(const Points& points, int w, int h,
             ++raw_count; value_sum += double(value); value_square_sum += double(value*value);
             purity_sum += double(chroma)/double(std::max(value,1)); peak = std::max(peak,value);
             if (value >= 220) { ++high_count; high_bins[axial_bin(p)] = true; }
-        } else if (value >= 245 && chroma <= 38) { clipped.insert(index); high_bins[axial_bin(p)] = true; }
+        } else if (value >= 245 && chroma <= 38) { insert_clipped(p.x,p.y); high_bins[axial_bin(p)] = true; }
         for (int dy = -2; dy <= 2; ++dy) for (int dx = -2; dx <= 2; ++dx) {
             if (std::abs(dx)+std::abs(dy) > 2) continue;
             int px = p.x+dx, py = p.y+dy;
             if (px < 0 || px >= w || py < 0 || py >= h) continue;
             int neighbor = py*w+px;
-            if (!e.color_mask[neighbor] && e.value[neighbor] >= 245 && e.chroma[neighbor] <= 45) clipped.insert(neighbor);
+            if (!e.color_mask[neighbor] && e.value[neighbor] >= 245 && e.chroma[neighbor] <= 45) insert_clipped(px,py);
         }
         for (auto offset : neighbors) {
             int px = p.x+offset.x, py = p.y+offset.y;
             if (px < 0 || px >= w || py < 0 || py >= h) continue;
             int neighbor = py*w+px;
-            bool belongs = component_mask ? (*component_mask)[neighbor] != 0 : indices && indices->count(neighbor);
+            bool belongs = component_mask && (*component_mask)[neighbor] != 0;
             if (belongs) continue;
             outside_sum += double(e.value[neighbor]); ++outside_count;
         }
@@ -238,10 +273,10 @@ std::optional<Scored> score_component(const Points& points, int w, int h,
     double high_coverage = double(std::count(high_bins.begin(),high_bins.end(),true))/double(bins);
     double core_support = double(core_count)/double(std::max<std::size_t>(points.size(),1));
     double core_coverage = double(std::count(core_bins.begin(),core_bins.end(),true))/double(bins);
-    double clipped_ratio = std::min(double(clipped.size())/double(raw_count+int(clipped.size())),0.25)/0.25;
+    double clipped_ratio = std::min(double(clipped_count)/double(raw_count+int(clipped_count)),0.25)/0.25;
     double emitter_score = clamp01((double(peak)-200.0)/55.0)*0.32
         + clamp01((mean-160.0)/95.0)*0.23 + high*0.28 + purity*0.12 + clipped_ratio*0.05;
-    bool has_core = high >= 0.08 || (peak >= 242 && mean >= 190) || !clipped.empty();
+    bool has_core = high >= 0.08 || (peak >= 242 && mean >= 190) || clipped_count != 0;
     bool eligible = peak >= 218 && has_core && emitter_score >= 0.42;
     if (compact) eligible = eligible && peak >= 230 && high >= 0.50 && purity >= 0.50;
     Endpoints raw{{rounded(mx+ax*min_major),rounded(my+ay*min_major)},
@@ -256,12 +291,6 @@ std::optional<Scored> score_component(const Points& points, int w, int h,
     bool fallback = true;
     if (int(body.points.size()) >= minimum && body.retained < 0.85 && (established || dense_line || trimmed_line || blue_body)) {
         if (auto endpoints = principal_axis_endpoints(body.points)) { final = *endpoints; fallback = false; }
-    }
-    BoundingBox box{std::numeric_limits<int>::max(),std::numeric_limits<int>::max(),
-                    std::numeric_limits<int>::min(),std::numeric_limits<int>::min()};
-    for (auto p : points) {
-        box.min_x = std::min(box.min_x,p.x); box.min_y = std::min(box.min_y,p.y);
-        box.max_x = std::max(box.max_x,p.x); box.max_y = std::max(box.max_y,p.y);
     }
     double diagonal = std::hypot(double(w),double(h));
     double peak_normalized = clamp01((double(peak)-200.0)/55.0), mean_normalized = clamp01((mean-160.0)/95.0);
@@ -312,7 +341,7 @@ std::vector<Scored> components(const Mask& mask, int w, int h, const Evidence& e
                 }
         }
         if (pixel_count) *pixel_count += int(points.size());
-        if (auto c = score_component(points,w,h,&mask,nullptr,e,"color-mask",minimum_override)) candidates.push_back(std::move(*c));
+        if (auto c = score_component(points,w,h,&mask,e,"color-mask",minimum_override)) candidates.push_back(std::move(*c));
     }
     std::stable_sort(candidates.begin(),candidates.end(),[](const auto& a,const auto& b){return a.candidate.score>b.candidate.score;});
     return candidates;
