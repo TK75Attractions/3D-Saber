@@ -42,6 +42,8 @@ public class InputPoint : MonoBehaviour
     // 運営表示だけの統計。既存の受理数や座標・最終有効入力時刻とは独立させる。
     readonly PhoneSaberPacketStatistics redInputStats = new PhoneSaberPacketStatistics();
     readonly PhoneSaberPacketStatistics blueInputStats = new PhoneSaberPacketStatistics();
+    PhoneSaberConnectionEvents redConnectionEvents;
+    PhoneSaberConnectionEvents blueConnectionEvents;
     public int port = 5005;
     public int port2 = 5006;
 
@@ -320,6 +322,13 @@ public class InputPoint : MonoBehaviour
             p2pBridge = new PhoneSaberP2PBridgeProcess();
             p2pDataPath = Application.dataPath;
             phoneSaberStation = PhoneSaberStation.Read();
+            double eventStart = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+            string eventStation = phoneSaberStation;
+            redConnectionEvents = new PhoneSaberConnectionEvents(eventStart, PhoneSaberBonjourPublisher.IsSupported,
+                (kind, detail) => PhoneSaberEventLog.Record(eventStation, "RED", kind, detail));
+            blueConnectionEvents = new PhoneSaberConnectionEvents(eventStart, PhoneSaberBonjourPublisher.IsSupported,
+                (kind, detail) => PhoneSaberEventLog.Record(eventStation, "BLUE", kind, detail));
+            PhoneSaberEventLog.Record(eventStation, "SYSTEM", "receivers-starting", "ports=" + port + "," + port2);
             redInputStats.Reset(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
             blueInputStats.Reset(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
             // iPhone の Debug Recording を受け取る診断の受信側も、ターミナルを開かずに使えるようにする。
@@ -354,6 +363,8 @@ public class InputPoint : MonoBehaviour
                 client = new UdpClient(secondStick ? port2 : port);
                 SetReceiverClient(secondStick, client);
                 SetReceiverAlive(secondStick, true);
+                PhoneSaberEventLog.Record(phoneSaberStation, secondStick ? "BLUE" : "RED", "receiver-start",
+                    "port=" + (secondStick ? port2 : port));
                 backoffMilliseconds = ReceiverInitialBackoffMilliseconds;
                 ReceiveData(client, secondStick ? lockObj2 : lockObj, secondStick);
                 if (!networkShutdown) exitReason = "receive loop returned unexpectedly";
@@ -379,6 +390,8 @@ public class InputPoint : MonoBehaviour
             if (secondStick) Interlocked.Increment(ref receiverRestartCount2);
             else Interlocked.Increment(ref receiverRestartCount1);
             RecordReceiverExit(secondStick, exitReason ?? "unknown receiver failure", false);
+            PhoneSaberEventLog.Record(phoneSaberStation, secondStick ? "BLUE" : "RED", "receiver-restart",
+                "count=" + (secondStick ? ReceiverRestartCount2 : ReceiverRestartCount) + " delay-ms=" + backoffMilliseconds);
             if (stopSignal == null || stopSignal.WaitOne(backoffMilliseconds)) break;
             backoffMilliseconds = Math.Min(backoffMilliseconds * 2, ReceiverMaximumBackoffMilliseconds);
         }
@@ -480,6 +493,8 @@ public class InputPoint : MonoBehaviour
 
     void RecordInputStats(bool secondStick, long timestampTicks, IPEndPoint sender, bool parsed)
     {
+        (secondStick ? blueConnectionEvents : redConnectionEvents)?.Packet(
+            SwingMonotonicClock.ToSeconds(timestampTicks), sender.Address.ToString());
         (secondStick ? blueInputStats : redInputStats).Record(
             SwingMonotonicClock.ToSeconds(timestampTicks), sender.Address.ToString(), parsed);
     }
@@ -500,6 +515,12 @@ public class InputPoint : MonoBehaviour
         // Join timeout後も旧threadが完全終了するまでは重複起動せず、終了確認後にだけ再開する。
         if (networkShutdown && isActiveAndEnabled && Instance == this) StartNetworkServices();
         FlushReceiverDiagnostics();
+        if (!networkShutdown)
+        {
+            double eventNow = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+            redConnectionEvents?.Poll(eventNow);
+            blueConnectionEvents?.Poll(eventNow);
+        }
         float x = 0, y = 0;
         bool updated = false;
         bool updatedStick = false;
@@ -857,6 +878,7 @@ public class InputPoint : MonoBehaviour
     void RecordReceiverExit(bool secondStick, string reason, bool intentional)
     {
         string color = secondStick ? "BLUE" : "RED";
+        PhoneSaberEventLog.Record(phoneSaberStation, color, intentional ? "receiver-stop" : "receiver-failed", reason);
         string diagnostic = $"[PhoneSaber][{color}] receiver {(intentional ? "stopped" : "failed")}: {reason}";
         if (secondStick)
         {
@@ -887,7 +909,14 @@ public class InputPoint : MonoBehaviour
         return false;
     }
 
-    void OnDisable() => StopNetworkServices();
-    void OnApplicationQuit() => StopNetworkServices();
-    void OnDestroy() => StopNetworkServices();
+    void StopAndFlushEvents()
+    {
+        StopNetworkServices();
+        // Join 後に main thread で書き出す。終了時の受信機停止も保存する。
+        PhoneSaberEventLog.Current?.Flush();
+    }
+
+    void OnDisable() => StopAndFlushEvents();
+    void OnApplicationQuit() => StopAndFlushEvents();
+    void OnDestroy() => StopAndFlushEvents();
 }

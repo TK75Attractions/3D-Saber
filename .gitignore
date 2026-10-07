@@ -112,3 +112,11 @@ InitTestScene*.unity*
 /PhoneSaber/android/**/build/
 /PhoneSaber/android/**/.cxx/
 /PhoneSaber/android/local.properties
+
+# PhoneSaber watchdog launchers write these next to the scripts
+/PhoneSaber/windows/*.log
+/PhoneSaber/windows/*.STOP
+/PhoneSaber/windows/STOP
+/PhoneSaber/mac/*.log
+/PhoneSaber/mac/*.STOP
+/PhoneSaber/mac/STOP

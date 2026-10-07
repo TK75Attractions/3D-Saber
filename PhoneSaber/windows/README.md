@@ -20,6 +20,7 @@ Windows + Android を基本構成にします。Windows + iPhone は iPhone の�
 
 - **Editor**: Play 前に **Tools > PhoneSaber > Station > A** または **B** を選びます。設定は保存され、次の Play に適用されます。
 - **ビルド済み Player**: `Start-Saber-A.bat` / `Start-Saber-B.bat` を使います。それぞれ先頭の `GAME_EXE` を実際の exe のパスに合わせてください。既定は、このキットから相対指定した `../../Builds/Windows/3D-Saber.exe` です。空白・日本語を含むパスも引用符付きで起動します。
+- bat はゲーム終了まで待機し、**終了コード0なら監視終了、非0なら5秒後に自動再起動**します。ウィンドウに再起動回数を表示し、同じフォルダの `Start-Saber-A.log` / `B.log` に時刻・終了コード・回数を追記します。正常終了はゲームの Quit。監視停止は **Ctrl+C → バッチ終了に Y**、または空の `Start-Saber-A.STOP` / `B.STOP` (両台なら `STOP`) を作成します。STOP は現在のゲームを強制終了せず、終了後の再起動を止めます。次回起動前に削除してください。
 - bat は `-phonesaberStation A` / `B` を渡します。設定の優先順は **起動引数 → 環境変数 `PHONESABER_STATION` → PlayerPrefs** です。
 - Android / iPhone の接続設定の **「台」** も同じ **A / B** にして送信を開始します。手動 IP は台の自動探索より優先されるため、必ず該当 PC の IP を使います。台設定は UDP の受信を拒否する機能ではありません。
 - **Editor とビルド済み Player を同時起動しないでください**。同じ PC 上で UDP 5005 / 5006 が競合します。
@@ -56,5 +57,7 @@ Get-NetFirewallRule -Name 'PhoneSaber-Event-UDP-500*' | Remove-NetFirewallRule
 - **1秒を超えて datagram が届かない色**には日本語の警告が出ます。両色の数字と送信元 IP を確認してから剣を振り、ゲーム内の動作も確認します。packet の受信・解析 OK は認識品質の保証ではありません。
 - Android の **探索 UDP 5007**、Bonjour、P2P bridge、各色の UDP 受信機の ON / 停止も表示します。Windows の Bonjour / P2P は **未対応**。Mac の送信元 `127.0.0.1` は **P2P bridge**、それ以外は **LAN** と表示します (IP による経路の目安です)。
 - 数字が 0 のままなら、スマホの送信開始、台・手動 IP、同じネットワーク、Private profile の許可を確認します。受信機が停止なら、もう一つの Unity / Player がポートを使っていないか確認します。
+
+F8 にイベントログのパスも表示します。`Application.persistentDataPath/PhoneSaber/events.log` と4世代、各1 MiBまでに受信機の開始・停止・再試行、1秒超の途絶と復帰、送信元・経路・台名を記録します。ディスクへの書込は main thread だけで行い、書込失敗時も受信を続けます。ゲーム起動時にバックグラウンド実行とスリープ防止を設定します。
 
 会場に持ち込む前に、実際の Windows PC + スマホで両色の受信・探索・ホットスポットを確認してください。

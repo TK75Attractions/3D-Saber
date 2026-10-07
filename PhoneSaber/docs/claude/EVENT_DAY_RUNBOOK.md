@@ -1,9 +1,19 @@
 # PhoneSaber 縁日当日の運用手順(runbook)
 
+## 困ったら (運営カード・全組み合わせ共通)
+
+1. **ゲームが消えた** → 台 A/B の watchdog 起動なら5秒待つ。繰り返すなら STOP を作成し、隣の launcher ログと F8 のイベントログを保存して予備 PC へ。Editor は watchdog 対象外。
+2. **剣が動かない** → **F8** (Mac は Fn+F8)で台・RED/BLUE・送信元・無音警告を確認。スマホのアプリを前面に戻し、送信開始・カメラ固定を確認。
+3. **台が違う / 受信0** → PC とスマホを同じ A/B に。手動 IP は該当 PC の現在の IP。**Windows+iPhone は手動 IP 必須**。受信機停止なら二重起動を止める。
+4. **通信できない** → 同じ Wi-Fi。学校 Wi-Fi が隔離なら PC のホットスポット + スマホをその SSID へ (IP を入れ直す)。Windows は Private network + [firewall script](../../windows/README.md#3-ファイアウォール-最初に1回管理者)。Mac+iPhone の P2P だけ不調なら同じ Wi-Fi + P2P優先 OFF。
+5. **スマホが熱い / fps 低下** → 箱を開けて送風、排熱から離し給電を確認。危険が続くなら送信停止・冷却 / 予備端末。**F8 のログパスを控える** (現行 + `.1`〜`.4`も保存)。
+
+詳細は §5。通常終了はゲームの Quit。watchdog 停止は Terminal / bat の Ctrl+C、またはスクリプト横に `Start-Saber-A.STOP` / `B.STOP` (両台なら `STOP`)。STOP は次回前に削除。
+
 2026-10-06 のrepo統合: Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/`。Git root から `bash PhoneSaber/tools/verify_phone_saber.sh` を実行。旧 school-festival は履歴を保って統合・アーカイブ済み。
 
 当日に「動かす」「おかしいときに直す」ための1枚です。調査の根拠は [FINDINGS.md](FINDINGS.md)、残作業は [STATUS.md](STATUS.md) にまとめています。
-迷ったら、まず Mac のデスクトップの **`PhoneSaber Status.command`** をダブルクリックしてください(読み取りのみ。何も変えません)。
+Mac の詳細診断はデスクトップの **`PhoneSaber Status.command`** (読み取りのみ)。
 
 ## 0. 端末の組み合わせと使い方(Mac / Windows / iPhone / Android)
 
@@ -19,14 +29,14 @@ PC(Mac か Windows)で Unity のゲームを動かし、スマホ(iPhone か And
 
 ### 同じ Wi-Fi で 2 台(A / B)を並べるとき
 - **各 PC の Unity Editor(Mac / Windows)**: Play 前に `Tools > PhoneSaber > Station > A` または `B` を選ぶ。PlayerPrefs の `PhoneSaber.Station` に保存され、次の Play から適用される。
-- **ビルドしたゲーム**: 起動引数 `-phonesaberStation A`(もう一方は `B`)を付ける。Windows なら `Game.exe -phonesaberStation A`、Mac なら `open -a "/path/to/Game.app" --args -phonesaberStation A`。環境変数 `PHONESABER_STATION=A` でも指定できる。優先順は **起動引数 → 環境変数 → PlayerPrefs**。台名は16文字以内の英数字・`-`・`_`(通常は A / B)。Unity Console の探索/Bonjour/P2P 公開ログで台名を確認する。
+- **ビルドしたゲーム**: 起動引数 `-phonesaberStation A`(もう一方は `B`)を付ける。Windows なら `Game.exe -phonesaberStation A`、Mac なら [Mac watchdog](../../mac/README.md) の `Start-Saber-A.command` / `B.command`。環境変数 `PHONESABER_STATION=A` でも指定できる。優先順は **起動引数 → 環境変数 → PlayerPrefs**。台名は16文字以内の英数字・`-`・`_`(通常は A / B)。Unity Console の探索/Bonjour/P2P 公開ログで台名を確認する。
 - **各スマホ(iPhone / Android)**: アプリの接続設定の **「台」**を、その PC と同じ **A / B** にしてから送信を開始する。設定は保存される。指定した台の PC だけを自動探索する。iPhone の P2P と診断 relay も同じ台に限定される。
 - **Windows Player の簡単な起動**: `PhoneSaber/windows/Start-Saber-A.bat` / `Start-Saber-B.bat` の先頭で exe の場所を合わせてダブルクリック(既定 `Builds/Windows/3D-Saber.exe`)。Editor と Player は同じ PC で同時に起動しない(UDP port が競合する)。
 - **手動 IP は常に優先**。自動探索で見つからないときは、その台の PC の IP を確認して入力する(Windows + iPhone は従来どおり手動 IP が必要)。台設定は座標の受信を拒否する仕組みではなく、スマホの自動送信先を選ぶための設定。
 - **1 台だけで従来どおり使うとき**: PC は `Station > None`、スマホは **指定なし**、起動引数/環境変数も未設定にする。どこにも台を設定しなければ従来と同じ動作。環境変数/起動引数を使った PC は、それを外してから None に戻す。
 
 ### 毎回
-1. PC で Unity を開いて **Play**(Mac では P2P ブリッジと診断の受信側も自動で起動する)。
+1. 本番は [Windows bat](../../windows/README.md) / [Mac command](../../mac/README.md) の台 A/B watchdog でビルド済みゲームを起動。Editor なら Unity の **Play** (watchdog 対象外)。Mac の built `.app` の P2P は bridge launcher の指定が必要。
 2. スマホと PC を同じ Wi-Fi につなぐ(Mac + iPhone は P2P で直接つながるので不要)。
 3. スマホのアプリで送信を開始する。
 
@@ -130,18 +140,23 @@ AndroidのLogcat（DeviceHealth）にも記録されます。iPhoneのDebug Reco
 
 ## 5. 症状 → 原因 → 対処
 
+「共通」は Mac+iPhone / Mac+Android / Windows+Android / Windows+iPhone のすべて。まず F8 で受信を確認します。
+
 | 症状 | 主な原因 | 対処 |
 |---|---|---|
-| **剣がラグい・カクつく** | AWDL の一時的な詰まり。Mac が学校 Wi-Fi と AWDL のチャンネルを行き来するため。実測で `maxGapMs` 170〜300 ms、ときに約 1 秒(座標数は正常)。iPhone の認識時間(中央値約 28 ms)は原因ではなかった(`P2P_BRIDGE.md`「遅延について」) | Status ツールか Unity Console の `maxGapMs`、iPhone の `P2P RTT` を見る。続くなら iPhone と Mac を**同じ Wi-Fi** に入れて「P2P優先」を **OFF**(LAN で送る) |
-| **saber が無いのに剣が跳ぶ・出る** | 肌・照明・画面・布などの誤検出。warmNoDeepRed 後も残る（[FINDINGS](FINDINGS.md)） | カメラを固定し、レンズを覆わず、照明・画角を調整する。背景だけでなく人が入った状態も確認する。閾値は当日いじらない |
-| **速く振ると剣が消える・別の場所に飛ぶ** | ブレで本物が不採用になり、背景が勝つ。1/50 秒で先端約 85px のブレがあった（[FINDINGS](FINDINGS.md)） | 会場の照明・画角を確認する。露出上限は事前の実機比較で確認した設定だけ使う。swing の lossless を残す |
-| **P2P がつながらない**(`P2P Searching` / `P2P Failed` のまま) | ① iPhone のローカルネットワーク許可が無い ② Mac 側の許可が無い ③ bridge が動いていない(Unity が Play 前、5005/5006 のどちらかを受信できていない、`PHONESABER_P2P_BRIDGE=0`、一度異常終了すると次の script compile まで自動起動しない)④ iPhone の Wi-Fi が OFF、Hotspot が ON(`P2P_BRIDGE.md`、`PhoneSaberP2PBridgeProcess.cs`) | Status ツールで `P2P bridge` と `UDP 5005/5006` を見る。Unity Console の `[PhoneSaber][P2P] bridge …` 警告を確認。異常終了後は Unity で script を再 compile するか Editor を再起動。だめなら「P2P優先」OFF + 同じ Wi-Fi |
-| **LAN に戻ってしまう**(Unity に `no ping for 3s; iPhone falls back to LAN`) | iPhone は最後の pong から 1.5 秒で LAN に切り替える。座標の送信が 3 秒詰まっても LAN に戻して張り直す。pong が 0.5 秒以内の間隔で 3 回続けば自動で P2P に戻る(`P2P_BRIDGE.md`「fallback の条件」) | 待てば戻る。iPhone が学校 Wi-Fi にいない構成では LAN の経路が無いので `Reconnecting` で待つ。頻発するなら同じ Wi-Fi + P2P OFF |
-| **診断(bundle)が Mac に届かない** | ① 診断受信側が止まっている(relay は接続を閉じ、iPhone は LAN を試す)② 録画が約 1 秒未満(30 frame 未満は送らない)③「Stop後にtriage bundleをMacへ自動転送」が OFF ④ P2P relay は bridge の一部なので Unity の Play 中だけ(`PHONE_SABER_TRIAGE.md`、`DebugBundleTransfer.swift`) | Status ツールで `受信側` を確認。Unity Console の `diag relay: upload from … closed after N bytes (…)`、`latest.log` の `[triage] received` を見る。3 回失敗しても bundle は iPhone に残る |
-| **Codex が timeout する** | 解析は最大 25 分。timeout なら effort high で1回だけ再試行(`phone_saber_triage_codex.py` の `CODEX_TIMEOUT_SECONDS`)。それでも失敗すると bundle を残して終わる。受信側を再起動しても自動で再解析しない | `.report.md`(無料の1ページ要約)は先にできているのでそれを見る。後で手動: `python3 ios/PhoneSaberSender/Tools/phone_saber_triage_codex.py "<inbox>/phone_saber_triage_<session>"` |
-| **413 / precheck で止まる** | 413: 受信側の上限(512 MiB)を超えたか壊れた upload(iPhone 側は 64 MiB・20 枚に制限しているので普通は出ない)。precheck: 選ばれた画像に時間方向の証拠が足りない(例 `temporalEvidenceMissing`。1 frame の録画で実際に起きた)。context 1 件 32 KiB の上限は変えない(`phone_saber_triage_receiver.py`、`phone_saber_triage_protocol.py` の `MAX_BUNDLE_BYTES`、`DebugBundleTransfer.swift`、`phone_saber_tracking_diagnostics.py` の `tracking_preflight`、`CLAUDE.md` §1) | Status ツールの `Codex 解析` に reasonCodes が出る。saber を映して数秒以上振る録画を撮り直す |
-| **Unity に座標が届かない** | 5005/5006 を別の process が使っている(2つ目の Unity、古い受信 script など)。Unity は失敗すると `[PhoneSaber][RED] receiver failed: …` を出し、間隔を伸ばしながら bind をやり直す。どちらかが受信できない間は bridge も止まる(`InputPoint.cs`) | Status ツールの `Unity 受信 UDP` に、port を使っている process 名と pid が出る。その process を止めて Play し直す |
-| **近くに PC が2台ある** | 台未指定では、従来どおり最初の PC が選ばれる | §0 の手順で PC とスマホを同じ **台 A / B** にする。Unity の Play を開始し直し、スマホの送信先を確認。手動 IP を使う場合はその台の PC の IP を指定する |
+| **入力なし・F8 が1秒超の無音** (共通) | 未送信・接続切れ・送信先違い | スマホのアプリを前面へ、送信開始。台・手動 IP・同じ Wi-Fi を確認。Windows+iPhone は `ipconfig` の IPv4 を手動 IP に入力 |
+| **F8 の受信機が停止** (共通) | Editor / Player / 古い受信ツールのポート競合 | 同じ PC の重複起動を止める。受信機は自動再試行するので F8 の ON を確認。Mac は Status で UDP 5005/5006 の使用者を見る |
+| **別の台が動く / 台を見つけない** (共通) | A/B 不一致・古い手動 IP | F8 の台とスマホの台を一致させ、送信先名を確認。PC は正しい台の launcher で起動し直す。手動 IP は台探索より優先なので修正 / 解除 |
+| **学校 Wi-Fi だけ届かない** (LAN の全組み合わせ) | 端末間通信の隔離 | PC のホットスポット (Mac はインターネット共有) を使い、スマホをその SSID へ。PC の新しい IP を手動入力。Windows の共有接続も Private にする |
+| **Windows だけ入力 / 探索なし** (Android / iPhone) | firewall / Public profile | 信頼する Wi-Fi を Private に設定し、管理者 PowerShell で [Allow-PhoneSaber-Firewall.ps1](../../windows/README.md#3-ファイアウォール-最初に1回管理者) を実行 (UDP 5005〜5007)。iPhone は探索せず手動 IP |
+| **Mac+iPhone の P2P が未接続 / ラグ / LAN に戻る** | 権限・Wi-Fi OFF・bridge 未起動・P2P の詰まり | 両端のローカルネットワーク許可、iPhone の Wi-Fi ON / 個人用 Hotspot OFF、Mac Status を確認。built `.app` は bridge 指定を確認。直らなければ同じ Wi-Fi + P2P優先 OFF + LAN |
+| **スマホが熱い / 処理 fps が落ちる** (共通) | 箱内の熱・排熱・給電不足 | 箱を開け送風、プロジェクター排熱から離し給電確認。高い / 危険が続くなら送信を停止して冷却 / 予備端末 (§4)。当日に認識設定を変えない |
+| **F8 は受信 OK なのに剣がおかしい** (共通) | レンズが隠れた・カメラ移動・画角 / 照明 / ブレ | レンズと固定位置を確認し、剣が映る画角に戻す。照明・反転設定を確認。背景だけ / 人が入る状態の両方で試す。認識閾値は当日いじらない |
+| **スマホアプリを閉じてから無音** (共通) | カメラ / 送信の停止 | ロック解除しアプリを前面へ戻して送信開始。台と送信先を再確認し、F8 の両色が復帰するか見る |
+| **ゲームが crash / 消えた** (共通・built Player) | Player 異常終了 | watchdog なら5秒待つ。正常 Quit は再起動しない。繰り返すなら STOP を作り、launcher のログと F8 に出るイベントログ (全5世代) を保存、予備 PC へ。Editor は手動で Play し直す |
+| **iPhone の診断 bundle / 解析が届かない** (Mac+iPhone のみ) | 診断受信側停止・録画が短い・転送 OFF | Mac Status の受信側を確認。Start PhoneSaber で診断受信側を起動し、数秒以上録画して Stop。無料の `.report.md` を先に確認。詳しくは [診断手順](../../ios/PhoneSaberSender/Tools/PHONE_SABER_TRIAGE.md) |
+
+F8 の **イベントログ** は `Application.persistentDataPath/PhoneSaber/events.log`。受信機の開始・停止・再試行、色ごとの1秒超の途絶と復帰、送信元 IP / 経路変化、台名を UTC 時刻付きで残します。現行と `.1`〜`.4` の計5ファイル (各1 MiBまで、古い順に削除)。P2P bridge の `127.0.0.1` はスマホ本体の IP ではありません。書込失敗は F8 に表示され、受信は続きます。
 
 ## 6. 状態チェックツール(`PhoneSaber Status.command`)
 

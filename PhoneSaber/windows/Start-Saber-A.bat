@@ -1,7 +1,11 @@
 @echo off
+setlocal EnableExtensions DisableDelayedExpansion
 chcp 65001 >nul
 rem 実際のビルド先に合わせて、次の exe パスを変更してください。
 set "GAME_EXE=%~dp0..\..\Builds\Windows\3D-Saber.exe"
+set "LOG_FILE=%~dp0Start-Saber-A.log"
+set "STOP_FILE=%~dp0Start-Saber-A.STOP"
+set "RESTART_COUNT=0"
 
 if not exist "%GAME_EXE%" (
     echo ゲーム exe が見つかりません: "%GAME_EXE%"
@@ -10,11 +14,25 @@ if not exist "%GAME_EXE%" (
     exit /b 1
 )
 
-rem exe のフォルダを作業ディレクトリにし、台名を起動引数で指定します。
-for %%I in ("%GAME_EXE%") do start "" /D "%%~dpI" "%%~fI" -phonesaberStation A
-if errorlevel 1 (
-    echo ゲームを起動できませんでした。
-    pause
-    exit /b 1
-)
+rem /wait で Player の終了コードを待つ。Ctrl+C はバッチを終了して再起動を止める。
+:launch
+if exist "%STOP_FILE%" goto stopped
+if exist "%~dp0STOP" goto stopped
+>>"%LOG_FILE%" echo [%date% %time%] station=A launch restart=%RESTART_COUNT%
+echo 台 A を起動します。再起動回数: %RESTART_COUNT%  [Ctrl+C: 監視終了]
+for %%I in ("%GAME_EXE%") do start "" /wait /D "%%~dpI" "%%~fI" -phonesaberStation A
+set "GAME_EXIT=%ERRORLEVEL%"
+>>"%LOG_FILE%" echo [%date% %time%] station=A exit-code=%GAME_EXIT% restart=%RESTART_COUNT%
+if "%GAME_EXIT%"=="0" exit /b 0
+if exist "%STOP_FILE%" goto stopped
+if exist "%~dp0STOP" goto stopped
+set /a RESTART_COUNT+=1 >nul
+echo 異常終了 code=%GAME_EXIT%。5秒後に再起動します。
+rem 待機の失敗(Ctrl+C 等)を再起動と扱わない。
+timeout /t 5 /nobreak >nul
+if errorlevel 1 goto stopped
+goto launch
+
+:stopped
+>>"%LOG_FILE%" echo [%date% %time%] station=A watchdog-stopped restart=%RESTART_COUNT%
 exit /b 0

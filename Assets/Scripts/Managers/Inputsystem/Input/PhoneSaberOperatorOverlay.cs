@@ -1,3 +1,5 @@
+using System;
+using System.IO;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -5,6 +7,8 @@ using UnityEngine.InputSystem;
 public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
 {
     bool visible;
+    double nextLogFlush;
+    string quitMarker;
     double startedAt;
     double nextRefresh;
     string fallbackStation;
@@ -20,6 +24,16 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void CreateAtStartup()
     {
+        // 当日用の設定は PhoneSaber 起動時に保証する。PlayerSettings は変更しない。
+        Application.runInBackground = true;
+        if (Screen.sleepTimeout != SleepTimeout.NeverSleep)
+            Screen.sleepTimeout = SleepTimeout.NeverSleep;
+        try
+        {
+            PhoneSaberEventLog.Current = new PhoneSaberEventLog(
+                Path.Combine(Application.persistentDataPath, "PhoneSaber", "events.log"));
+        }
+        catch { PhoneSaberEventLog.Current = null; }
         var overlay = FindFirstObjectByType<PhoneSaberOperatorOverlay>();
         if (overlay == null)
             overlay = new GameObject("PhoneSaber Operator Overlay").AddComponent<PhoneSaberOperatorOverlay>();
@@ -28,10 +42,24 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         overlay.visible = false;
         overlay.startedAt = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
         overlay.fallbackStation = PhoneSaberStation.Read();
+        overlay.nextLogFlush = 0;
+        overlay.quitMarker = null;
+        string[] args = Environment.GetCommandLineArgs();
+        for (int i = 1; i + 1 < args.Length; i++)
+            if (args[i] == "-phonesaberQuitMarker") overlay.quitMarker = args[++i];
+        PhoneSaberEventLog.Record(overlay.fallbackStation, "SYSTEM", "session-start",
+            "run-in-background=true sleep=never");
+        PhoneSaberEventLog.Current?.Flush();
     }
 
     void Update()
     {
+        double logNow = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+        if (logNow >= nextLogFlush)
+        {
+            PhoneSaberEventLog.Current?.Flush();
+            nextLogFlush = logNow + (string.IsNullOrEmpty(PhoneSaberEventLog.Current?.LastError) ? 0.25 : 5.0);
+        }
         var keyboard = Keyboard.current;
         if (keyboard != null && keyboard.f8Key.wasPressedThisFrame)
         {
@@ -64,6 +92,20 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             $"BLUE {(input != null && input.ReceiverAlive2 ? "ON" : "停止")}";
     }
 
+    void OnApplicationQuit()
+    {
+        PhoneSaberEventLog.Record(fallbackStation, "SYSTEM", "session-quit", "exit-code=" + Environment.ExitCode);
+        // 満杯のキューも終了時は全部書き出す(通常時は1回128件まで)。
+        for (int i = 0; i < 5; i++) PhoneSaberEventLog.Current?.Flush();
+        // open -W はアプリの crash status を返さないため、正常終了の印を launcher に返す。
+        try
+        {
+            if (!string.IsNullOrEmpty(quitMarker) && Environment.ExitCode == 0)
+                File.WriteAllText(quitMarker, "clean-quit\n");
+        }
+        catch { /* launcher の診断失敗でも正常終了を妨げない。 */ }
+    }
+
     static string State(bool supported, bool running) => !supported ? "未対応" : running ? "ON" : "停止";
 
     void OnGUI()
@@ -81,14 +123,14 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         Matrix4x4 previousMatrix = GUI.matrix;
         int previousDepth = GUI.depth;
         Color previousColour = GUI.color;
-        float scale = Mathf.Min(1f, Screen.width / 840f, Screen.height / 430f);
+        float scale = Mathf.Min(1f, Screen.width / 840f, Screen.height / 530f);
         GUI.matrix = Matrix4x4.TRS(Vector3.zero, Quaternion.identity, Vector3.one * scale);
         GUI.depth = -10000;
         // 明るいゲーム背景でも受信状態と警告が読めるよう、表示部分を暗く覆う。
         GUI.color = new Color(0.03f, 0.03f, 0.03f, 0.96f);
-        GUI.DrawTexture(new Rect(10, 10, 820, 410), Texture2D.whiteTexture);
+        GUI.DrawTexture(new Rect(10, 10, 820, 510), Texture2D.whiteTexture);
         GUI.color = Color.white;
-        GUILayout.BeginArea(new Rect(10, 10, 820, 410), GUI.skin.box);
+        GUILayout.BeginArea(new Rect(10, 10, 820, 510), GUI.skin.box);
         GUILayout.Label($"PhoneSaber 運営表示 [F8: 開閉]  |  台: {(string.IsNullOrEmpty(station) ? "指定なし" : station)}", textStyle);
         GUILayout.Label(services, textStyle);
         GUILayout.Space(8);
@@ -97,6 +139,11 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         GUILayout.Space(8);
         GUILayout.Label(blueText, textStyle);
         if (!string.IsNullOrEmpty(blueWarning)) GUILayout.Label(blueWarning, warningStyle);
+        GUILayout.Space(8);
+        var log = PhoneSaberEventLog.Current;
+        GUILayout.Label("イベントログ: " + (log?.LogPath ?? "作成できません"), textStyle);
+        if (log != null && !string.IsNullOrEmpty(log.LastError))
+            GUILayout.Label("ログ書込失敗: " + log.LastError, warningStyle);
         GUILayout.EndArea();
         GUI.matrix = previousMatrix;
         GUI.depth = previousDepth;
