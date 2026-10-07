@@ -28,6 +28,8 @@
 
 ## 次にやること
 
+- 長時間イベント向けの送信復旧（2026-10-07、未commit）: Claude が simulator verify と Android build を実行する。実機では送信中の前面復帰・アプリ再起動・Wi-Fi切替・カメラ中断・停止後の非再開を確認する。設定と自動動作は [EVENT_DAY_RUNBOOK.md](EVENT_DAY_RUNBOOK.md) を参照。
+
 **2026-10-06 本番の配置(会場3D配置ページ)から追加**:2台が背中合わせ、個別入場・一方通行、プレイヤーは画面から約 2.7〜3.1m、プレイ範囲は直径 1.5m、PC・スマホは下の箱。本番は Mac+iPhone と Windows+Android になりそうだが未確定。
 - A台・B台の取り違え防止:台番号の設定を実装済み(`ad0b5a4`)。2026-10-06 に Mac + iPhone で確認済み(同じ台だけつながる)。
 - プレイヤーの背後の幕(待機列の人の肌・服の誤検出を防ぐ。設営で対応)。
@@ -58,6 +60,14 @@ Android 作業: Phase 2 の Kotlin/CameraX/JNI/UDP探索/NSD/UDP・日本語UI�
 15. **Mac カメラ直接認識の将来比較** — 理由: ユーザーが将来の構成候補として保持。必要: Mac 内蔵/USB カメラの配置・精度・端点・遅延の実機比較、採用判断と必要なコード。Continuity Camera は別の無線比較経路で、ローカル縮小/FPS を通信遅延改善と扱わない。担当: user（構成判断・撮影）/ Claude（比較・コード）。
 
 ## 作業ログ
+
+### 2026-10-07 — iPhone / Android の長時間イベント送信復旧（この worktree、未commit）
+
+- 保存した送信意思による前面復帰・再起動時の自動再開。日本語の復帰表示。停止ボタンで意思を消去。「起動時に送信を自動開始」は既定OFF、当日はON。
+- iPhone の既存AVCapture通知・watchdogを拡張、Android はCameraX再bindと映像停止監視。再試行は1〜30秒、連続15分失敗で警告、10秒の安定復帰でリセット。停止時は予約済み再試行を無効化する。
+- ネットワーク切替で送信を停止せず、同じ台の探索・再解決を継続。LANのPC名・iPhone手動IPも保存。Android探索の定期更新は既存経路を保持し、NSD callback欠落はtimeoutで解放する。前面の送信・復旧待ち中は画面自動ロックを防ぐ。
+- XCTestの純粋ロジック8件（macOS上のstandalone runner）、JUnitの純粋ロジック7件がPASS。iOSモデルのSwift typecheck、Android Kotlinソースtypecheck、Xcode projectのplutil、PhoneSaber範囲のdiff --checkがPASS。full SwiftUI typecheckはsandboxのmacro plugin server制約で不可。simulator verify / Android buildはユーザー指定どおりClaudeが担当する。
+- repo全体のdiff --checkは既存のUnityフォントasset（LFS filterを無効化して読んだ実体）の末尾空白を報告する。変更していない。sandboxは共有git/LFS領域への書込不可。recognition・閾値・UDP payload・fixturesは変更なし。ユーザー指定でcommit / pushしない。
 
 - 2026-10-06 / blueNoDeepSupport を Swift/C++ に本番採用（ユーザー指示で未commit）。整数・unique clipped 原画素 dilate1、全 gate/順位後に再選択、emitter/decision trace と Mac schema/validator を更新。formal 40/40・期待値無変更、BLUE変更は formal PNG 5/35（BLUE期待fixtureは0）＋inbox 38/234（25未検出/13再選択）、RED変更0/269、[全変更一覧](data/2026-10-06_blue_no_deep_support_output_changes.csv)。static Swift / C++・targeted Mac host XCTest 8/8（両encoding/32KB）PASS、parity 269 PNG×3経路・541遷移・27合成で mismatch 0。emitter/schema/triage Python 10件PASS、Python全suiteはsandbox等で8failure/33error/1skip（381test）。git diff --check PASS。Simulator verify/Android build は Claude が後続実行。
 

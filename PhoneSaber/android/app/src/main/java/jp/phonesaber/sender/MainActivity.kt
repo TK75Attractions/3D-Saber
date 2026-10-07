@@ -64,12 +64,24 @@ class MainActivity : ComponentActivity() {
     private var destination: Destination? = null
     private var wifi: Network? = null
     private var sending = false
+    private lateinit var resumePolicy: SendingResumePolicy
+    private val prefs by lazy { getSharedPreferences("destination", MODE_PRIVATE) }
+    private val cameraBackoff = RecoveryBackoff()
+    private var cameraStarted = false
+    private var cameraStartedAt = 0.0
+    private var cameraRetry: Runnable? = null
+    private var cameraRecoveryMessage = ""
+    private var automaticResumePending = false
+    private var automaticResumeMessage = ""
+    private var permissionPending = false
+    private lateinit var recoveryStatus: TextView
     private var foreground = false
     private var brightness = 145
     private var dominance = 25
     private var lastStats = 0L
     private val permission = registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
-        if (granted && foreground) startSending()
+        permissionPending = false
+        if (granted && foreground && resumePolicy.wantsSending) startSending()
         else if (!granted) toast("カメラの許可が必要です。設定から許可してください")
     }
     private val refresh = object : Runnable {
@@ -77,11 +89,25 @@ class MainActivity : ComponentActivity() {
             if (!foreground) return
             if (sending && developerNetworkOverride) {
                 val connectivity = getSystemService(ConnectivityManager::class.java)
-                if (connectivity.activeNetwork != sendingNetwork) {
-                    stopSending()
-                    toast("ネットワークが変わりました。確認して開始してください")
+                if (connectivity.activeNetwork != sendingNetwork) updateSendingDestination()
+            }
+            if (sending && cameraStarted) {
+                val now = System.nanoTime() / 1e9
+                val lastFrame = camera.lastFrameAt
+                if (lastFrame > 0) {
+                    cameraBackoff.receivedFrame(lastFrame)
+                    cameraRecoveryMessage = ""
+                    if (automaticResumePending) {
+                        automaticResumeMessage = "自動で送信を再開しました"
+                        automaticResumePending = false
+                    }
+                }
+                if ((lastFrame > 0 && now - lastFrame >= 3) ||
+                    (lastFrame == 0.0 && now - cameraStartedAt >= 10)) {
+                    recoverCamera("カメラの映像が届いていません")
                 }
             }
+            updateRecoveryStatus()
             updateHealth()
             val now = System.nanoTime()
             val elapsed = (now - lastStats) / 1e9
@@ -100,6 +126,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         sender = LatestUdpSender()
+        resumePolicy = SendingResumePolicy(prefs.getBoolean(SendingResumePolicy.WAS_SENDING_KEY, false))
         power = getSystemService(PowerManager::class.java)
         battery = getSystemService(BatteryManager::class.java)
         val density = resources.displayMetrics.density
@@ -125,7 +152,6 @@ class MainActivity : ComponentActivity() {
         panel.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(250)))
         health = label("端末状態を確認中")
         pcStatus = label("PCを探索中")
-        val prefs = getSharedPreferences("destination", MODE_PRIVATE)
         label("台（PC と同じ台を指定）")
         val stations = listOf("", "A", "B")
         val stationGroup = android.widget.RadioGroup(this).apply {
@@ -164,10 +190,22 @@ class MainActivity : ComponentActivity() {
         startStop = Button(this).apply {
             text = "開始"; panel.addView(this)
             setOnClickListener {
-                if (sending) stopSending()
-                else if (ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.CAMERA)
-                    != PackageManager.PERMISSION_GRANTED) permission.launch(Manifest.permission.CAMERA)
-                else startSending()
+                if (resumePolicy.wantsSending) stopSending()
+                else {
+                    resumePolicy.start()
+                    persistSendingIntent()
+                    automaticResumeMessage = ""
+                    requestSending()
+                }
+            }
+        }
+        recoveryStatus = label("")
+        Switch(this).apply {
+            text = "起動時に送信を自動開始"
+            isChecked = prefs.getBoolean(SendingResumePolicy.AUTO_START_KEY, false)
+            panel.addView(this)
+            setOnCheckedChangeListener { _, enabled ->
+                prefs.edit().putBoolean(SendingResumePolicy.AUTO_START_KEY, enabled).apply()
             }
         }
         detection = label("停止中")
@@ -216,26 +254,21 @@ class MainActivity : ComponentActivity() {
         }
         mirrorXSwitch = mirrorSwitch("左右反転", mirrors.mirrorX) { mirrors = mirrors.copy(mirrorX = it) }
         mirrorYSwitch = mirrorSwitch("上下反転", mirrors.mirrorY) { mirrors = mirrors.copy(mirrorY = it) }
-        camera = CameraSession(this, preview, sender) { message -> stopSending(); toast(message) }
+        camera = CameraSession(this, preview, sender) { message -> recoverCamera(message) }
         discovery = PcDiscovery(this) { pc, network, message ->
-            val connectivity = getSystemService(ConnectivityManager::class.java)
-            val isWifi = network?.let { connectivity.getNetworkCapabilities(it)
-                ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } == true
-            val permitted = SendingNetworkPolicy.canSend(BuildConfig.DEBUG, developerNetworkOverride,
-                network != null, isWifi, manualDestination)
-            val changed = destination != pc || wifi != network || !permitted
-            if (sending && changed) {
-                stopSending()
-                toast("送信先またはネットワークが変わりました。確認して開始してください")
-            }
             destination = pc; wifi = network
+            updateSendingDestination()
             pcStatus.text = if (pc == null) "PC: 未設定\n$message" else
                 "PC: ${pc.name}\n${pc.address.hostAddress}（${pc.source}）\n$message"
+            updateRecoveryStatus()
         }
         discovery.setStation(prefs.getString("station", "")?.takeIf { it in stations } ?: "")
         stationGroup.setOnCheckedChangeListener { group, id ->
             if (id == View.NO_ID) return@setOnCheckedChangeListener
             val station = group.findViewById<android.widget.RadioButton>(id).tag as String
+            // 台を意図的に変更したときは停止してから新しい台を選ぶ。
+            stopSending()
+            discovery.clearPreferredPc()
             prefs.edit().putString("station", station).apply()
             discovery.setStation(station)
         }
@@ -250,34 +283,101 @@ class MainActivity : ComponentActivity() {
         thermalStatus = power.currentThermalStatus
         power.addThermalStatusListener(ContextCompat.getMainExecutor(this), thermalListener)
         updateHealth()
+        if (resumePolicy.foreground(prefs.getBoolean(SendingResumePolicy.AUTO_START_KEY, false))) {
+            automaticResumePending = true
+            persistSendingIntent()
+            cameraBackoff.reset()
+            requestSending()
+        }
         discovery.start()
         lastStats = System.nanoTime()
         main.postDelayed(refresh, 1000)
     }
 
+    private fun persistSendingIntent() {
+        // 次の異常終了にも停止操作が確実に反映されるよう同期保存する。
+        prefs.edit().putBoolean(SendingResumePolicy.WAS_SENDING_KEY, resumePolicy.wantsSending).commit()
+    }
+
+    private fun requestSending() {
+        if (!foreground || !resumePolicy.wantsSending) return
+        startStop.text = "停止"
+        window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED) {
+            recoveryStatus.text = "カメラの許可を待っています"
+            if (!permissionPending) {
+                permissionPending = true
+                permission.launch(Manifest.permission.CAMERA)
+            }
+        } else startSending()
+    }
+
     private fun startSending() {
-        if (sending || !foreground) return
-        val connectivity = getSystemService(ConnectivityManager::class.java)
-        val selectedNetwork = wifi
-        val isWifi = selectedNetwork?.let { connectivity.getNetworkCapabilities(it)
-            ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } == true
-        if (destination == null || !SendingNetworkPolicy.canSend(BuildConfig.DEBUG, developerNetworkOverride,
-                selectedNetwork != null, isWifi, manualDestination)) {
-            toast(if (BuildConfig.DEBUG) "同じWi-FiでPCを探索するか、開発用設定と手入力IPを確認してください"
-                else "同じWi-FiでPCを探索するか、IPを手入力してください"); return
-        }
-        sendingNetwork = selectedNetwork
-        sender.configure(destination, wifi)
+        if (sending || !foreground || !resumePolicy.wantsSending) return
         sending = true
         startStop.text = "停止"
         brightnessSlider.isEnabled = false; dominanceSlider.isEnabled = false
         mirrorXSwitch.isEnabled = false; mirrorYSwitch.isEnabled = false
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        startCamera()
+    }
+
+    private fun updateSendingDestination() {
+        if (!sending || !foreground) return
+        val connectivity = getSystemService(ConnectivityManager::class.java)
+        val selectedNetwork = wifi
+        val isWifi = selectedNetwork?.let { connectivity.getNetworkCapabilities(it)
+            ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } == true
+        val allowed = SendingNetworkPolicy.canSend(BuildConfig.DEBUG, developerNetworkOverride,
+            selectedNetwork != null, isWifi, manualDestination)
+        sendingNetwork = if (allowed) selectedNetwork else null
+        sender.configure(if (allowed) destination else null, sendingNetwork)
+    }
+
+    private fun startCamera() {
+        if (!sending || !foreground || !resumePolicy.wantsSending) return
+        cameraStarted = true
+        cameraStartedAt = System.nanoTime() / 1e9
+        updateSendingDestination()
         camera.start(brightness, dominance, mirrors)
     }
 
-    private fun stopSending() {
+    private fun recoverCamera(message: String) {
+        if (!sending || !foreground || cameraRetry != null || !cameraStarted) return
+        cameraStarted = false
+        camera.stop()
+        val delay = cameraBackoff.nextDelay(System.nanoTime() / 1e9)
+        if (delay == null) {
+            cameraRecoveryMessage = "カメラの復旧が15分間できません。権限・端末を確認し、停止→開始してください"
+        } else {
+            cameraRecoveryMessage = "カメラを再接続中…（${delay.toInt()}秒後に再試行）\n$message"
+            val retry = Runnable { cameraRetry = null; startCamera() }
+            cameraRetry = retry
+            main.postDelayed(retry, (delay * 1000).toLong())
+        }
+        updateRecoveryStatus()
+    }
+
+    private fun updateRecoveryStatus() {
+        if (!::recoveryStatus.isInitialized) return
+        val reconnect = sending && (destination == null || sendingNetwork == null || sender.error != null)
+        recoveryStatus.text = listOf(automaticResumeMessage, cameraRecoveryMessage,
+            if (reconnect) "PC を再接続中…" else "").filter { it.isNotEmpty() }.joinToString("\n")
+    }
+
+    private fun stopSending(clearIntent: Boolean = true) {
+        if (clearIntent) {
+            resumePolicy.stop()
+            persistSendingIntent()
+            automaticResumePending = false
+            automaticResumeMessage = ""
+            discovery.clearPreferredPc()
+        }
+        cameraRetry?.let(main::removeCallbacks); cameraRetry = null
+        cameraBackoff.reset()
+        cameraRecoveryMessage = ""
         sending = false
+        cameraStarted = false
         sendingNetwork = null
         camera.stop()
         startStop.text = "開始"
@@ -285,6 +385,7 @@ class MainActivity : ComponentActivity() {
         mirrorXSwitch.isEnabled = true; mirrorYSwitch.isEnabled = true
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         detection.text = "停止中\n赤: 未検出 / 送信 0 fps\n青: 未検出 / 送信 0 fps"
+        updateRecoveryStatus()
         updateHealth()
     }
 
@@ -292,7 +393,7 @@ class MainActivity : ComponentActivity() {
         foreground = false
         power.removeThermalStatusListener(thermalListener)
         main.removeCallbacks(refresh)
-        stopSending()
+        stopSending(clearIntent = false)
         discovery.stop()
         super.onStop()
     }
