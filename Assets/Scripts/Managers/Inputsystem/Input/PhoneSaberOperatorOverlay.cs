@@ -38,6 +38,9 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     {
         // 当日用の設定は PhoneSaber 起動時に保証する。PlayerSettings は変更しない。
         Application.runInBackground = true;
+        // 描画の先行キューを1フレームに制限し、剣の位置が画面に出るまでの待ちを減らす（既定は2）。
+        // 対応しないグラフィックスAPIでは Unity が無視する。
+        QualitySettings.maxQueuedFrames = 1;
         if (Screen.sleepTimeout != SleepTimeout.NeverSleep)
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
         try
