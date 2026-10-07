@@ -114,6 +114,35 @@ class UDPReceiveProbeTests(unittest.TestCase):
         self.assertFalse(next(item for item in snapshot["history"] if item["order"] == 104)["validTimestamp"])
         json.dumps(snapshot, allow_nan=False)
 
+    def test_live_state_retains_latest_when_color_is_evicted_from_history(self):
+        state = LiveState()
+        state.record(5006, parse_packet(b"1,2,3,4"), 10.0, 1, "blue")
+        state.record(5006, parse_packet(b"ts=1.0;5,6,7,8"), 10.0, 2, "blue")
+        for order in range(3, 106):
+            state.record(5005, parse_packet(b"1,2,3,4"), 10.0, order, "red")
+        snapshot = state.snapshot()
+        self.assertEqual(snapshot["counts"]["red"], 103)
+        self.assertEqual(snapshot["counts"]["blue"], 2)
+        self.assertEqual(len(snapshot["history"]), 100)
+        self.assertEqual(snapshot["history"][0]["order"], 6)
+        self.assertFalse(any(item["color"] == "blue" for item in snapshot["history"]))
+        self.assertEqual(snapshot["latest"]["blue"]["order"], 2)
+        self.assertEqual(snapshot["latest"]["blue"]["payload"], "5,6,7,8")
+        self.assertTrue(snapshot["latest"]["blue"]["validTimestamp"])
+        self._assert_latest_matches_bounded_history(snapshot)
+
+    def _assert_latest_matches_bounded_history(self, payload):
+        for color in ("red", "blue"):
+            latest = payload["latest"][color]
+            self.assertIsNotNone(latest)
+            retained = next((item for item in reversed(payload["history"])
+                             if item["color"] == color), None)
+            if retained is not None:
+                self.assertEqual(latest, retained)
+            else:
+                # 別ソケットの受信順によって、その色の最新も履歴上限から押し出される。
+                self.assertLess(latest["order"], payload["history"][0]["order"])
+
     def test_live_status_exposes_bonjour_and_network_configuration(self):
         snapshot = LiveState(bound_ports=(5005, 5006)).snapshot()
         network = snapshot["network"]
@@ -252,9 +281,8 @@ class UDPReceiveProbeTests(unittest.TestCase):
             self.assertEqual(payload["history"][-1]["order"], 105)
             self.assertLess(payload["latest"]["red"]["arrivalMinusPhoneMs"], 0)
             # Separate UDP sockets may interleave; global order is not send order.
-            for color in ("red", "blue"):
-                latest = next(item for item in reversed(payload["history"]) if item["color"] == color)
-                self.assertEqual(payload["latest"][color]["order"], latest["order"])
+            self._assert_latest_matches_bounded_history(payload)
+            self.assertEqual(payload["latest"]["blue"]["payload"], "5,6,7,8")
             self.assertEqual(payload["latest"]["blue"]["validTimestamp"], True)
             self.assertGreaterEqual(payload["counts"]["blue"], 2)
             json.dumps(payload, allow_nan=False)
