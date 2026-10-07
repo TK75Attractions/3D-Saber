@@ -189,3 +189,17 @@ python3 mac_ble_udp_bridge.py --device-address <address-or-uuid>
 
 `mock_imu_bridge.py` の50 Hz raw `IMU:` streamは旧位置fallback確認専用であり、
 Swing入力の主経路ではない。Swing統合テストには`virtual_imu.py`を使用する。
+
+## PhoneSaber 座標の hardware-free replay（UDP 5005 / 5006）
+
+電話のカメラ座標を再生する場合は
+[PhoneSaber の Saber Motion Replay](../PhoneSaber/tools/README_saber_motion_replay.md) を使います。
+既存の IMU / SWING モックとは payload と受信経路が違うため、CLI は `PhoneSaber/tools/` に置いています。
+Debug Recording triage の read-only 抽出、合成 swing、JSON/CSV track、台別 discovery と
+latency / jitter / loss / dropout / 背景誤検出を提供します。
+
+```bash
+# Git root から実行（既定: localhost、30 fps、RED/BLUE）。
+python3 -B PhoneSaber/tools/saber_motion_replay.py play --synthetic figure-eight
+python3 -B PhoneSaber/tools/saber_motion_replay.py play --synthetic slash-left --station A --dropout 2:200
+```
