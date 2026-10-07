@@ -67,6 +67,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var mirrorXSwitch: Switch
     private lateinit var mirrorYSwitch: Switch
     private lateinit var measurementSwitch: Switch
+    private lateinit var fps60Switch: Switch
     private var mirrors = MirrorSettings()
     private var destination: Destination? = null
     private var wifi: Network? = null
@@ -268,6 +269,14 @@ class MainActivity : ComponentActivity() {
             panel.addView(this)
         }
         label("計測時は ts= を付けます。片道遅延にはスマホとPCのNTP時計同期が必要です。\n受信間隔は同期不要。PCのF8で確認。変更は停止中のみ。")
+        // 既定 ON。iPhone の 60fps で撮影→送信が約13ms短縮（2026-10-07 実測）。非対応端末は自動で 30fps。
+        fps60Switch = Switch(this).apply {
+            text = "カメラ 60fps（低遅延）"
+            isChecked = prefs.getInt("cameraFps", 60) == 60
+            setOnCheckedChangeListener { _, on -> prefs.edit().putInt("cameraFps", if (on) 60 else 30).apply() }
+            panel.addView(this)
+        }
+        label("発熱や処理落ち（解析fpsの注意）が続くときだけ OFF にします。変更は停止中のみ。")
         camera = CameraSession(this, preview, sender) { message -> recoverCamera(message) }
         discovery = PcDiscovery(this) { pc, network, message ->
             destination = pc; wifi = network
@@ -333,6 +342,7 @@ class MainActivity : ComponentActivity() {
         brightnessSlider.isEnabled = false; dominanceSlider.isEnabled = false
         mirrorXSwitch.isEnabled = false; mirrorYSwitch.isEnabled = false
         measurementSwitch.isEnabled = false
+        fps60Switch.isEnabled = false
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         // 送信中は Wi-Fi の省電力（ビーコン待ちの送信まとめ）を止め、遅延とばらつきを減らす。
         // 低遅延モードは前面・画面点灯中だけ有効になる（Android 10+ / minSdk 29）。
@@ -357,7 +367,8 @@ class MainActivity : ComponentActivity() {
         cameraStarted = true
         cameraStartedAt = System.nanoTime() / 1e9
         updateSendingDestination()
-        camera.start(brightness, dominance, mirrors, measurementSwitch.isChecked)
+        camera.start(brightness, dominance, mirrors, measurementSwitch.isChecked,
+            if (fps60Switch.isChecked) 60 else 30)
     }
 
     private fun recoverCamera(message: String) {
@@ -402,6 +413,7 @@ class MainActivity : ComponentActivity() {
         brightnessSlider.isEnabled = true; dominanceSlider.isEnabled = true
         mirrorXSwitch.isEnabled = true; mirrorYSwitch.isEnabled = true
         measurementSwitch.isEnabled = true
+        fps60Switch.isEnabled = true
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         if (lowLatencyWifi.isHeld) lowLatencyWifi.release()
         detection.text = "停止中\n赤: 未検出 / 送信 0 fps\n青: 未検出 / 送信 0 fps"
@@ -430,7 +442,7 @@ class MainActivity : ComponentActivity() {
         val percent = battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY).takeIf { it in 0..100 }
         val state = registerReceiver(null, IntentFilter(Intent.ACTION_BATTERY_CHANGED))
             ?.getIntExtra(BatteryManager.EXTRA_STATUS, -1) ?: -1
-        val warning = DeviceHealthText.warning(level, rates, 30.0, sending)
+        val warning = DeviceHealthText.warning(level, rates, camera.activeFps.toDouble(), sending)
         health.text = "発熱 ${level.title} / ${DeviceHealthText.battery(percent, DeviceHealthText.batteryState(state))}\n" +
             DeviceHealthText.timing(rates) + (warning?.let { "\n$it" } ?: "")
     }

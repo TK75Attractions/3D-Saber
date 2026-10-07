@@ -35,6 +35,9 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
         private set
     @Volatile var status = Status()
         private set
+    // 実際に要求しているカメラ fps（60 非対応の端末・解像度では 30）。
+    @Volatile var activeFps = 30
+        private set
     private val executor = ScheduledThreadPoolExecutor(1).apply { removeOnCancelPolicy = true }
     private var provider: ProcessCameraProvider? = null
     private var analysis: ImageAnalysis? = null
@@ -46,7 +49,8 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
     private val healthMeter = DeviceHealthMeter()
     fun healthRates(): HealthRates = healthMeter.snapshot(System.nanoTime() / 1e9)
 
-    fun start(brightness: Int, dominance: Int, mirrors: MirrorSettings, measurementMode: Boolean = false) {
+    fun start(brightness: Int, dominance: Int, mirrors: MirrorSettings, measurementMode: Boolean = false,
+              preferredFps: Int = 30) {
         val token = synchronized(gate) {
             running = true
             status = Status()
@@ -78,13 +82,21 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                     CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE) ==
                     CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME
                 val ranges = camera2.getCameraCharacteristic(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES)
-                require(ranges?.contains(Range(30, 30)) == true) { "このカメラは固定30 fpsに対応していません" }
                 val map = camera2.getCameraCharacteristic(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                // 60fps は AE の固定 [60,60] と、VGA 以下で 1/60 秒以内に出せる YUV 解像度がある場合だけ。
+                val vga60 = map?.getOutputSizes(ImageFormat.YUV_420_888)?.any { size ->
+                    maxOf(size.width, size.height) <= 640 && minOf(size.width, size.height) <= 480 &&
+                        map.getOutputMinFrameDuration(ImageFormat.YUV_420_888, size) <= 16_666_667L
+                } == true
+                val fps = if (preferredFps == 60 && ranges?.contains(Range(60, 60)) == true && vga60) 60 else 30
+                require(ranges?.contains(Range(fps, fps)) == true) { "このカメラは固定30 fpsに対応していません" }
+                activeFps = fps
+                val maxFrameDuration = if (fps == 60) 16_666_667L else 33_333_334L
                 val selector = ResolutionSelector.Builder()
                     .setResolutionFilter { sizes, _ ->
                         val supported = sizes.filter { size ->
                             val duration = map?.getOutputMinFrameDuration(ImageFormat.YUV_420_888, size) ?: 0L
-                            duration == 0L || duration <= 33_333_334L
+                            duration == 0L || duration <= maxFrameDuration
                         }
                         val compact = supported.filter { maxOf(it.width, it.height) <= 640 &&
                             minOf(it.width, it.height) <= 480 }
@@ -99,7 +111,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                     .setOutputImageRotationEnabled(false) // RotationHelper performs exact byte rotation once.
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 Camera2Interop.Extender(builder)
-                    .setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(30, 30))
+                    .setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(fps, fps))
                     .setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
                     .setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, false)
                     .setCaptureRequestOption(CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE,
@@ -127,7 +139,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                                     lastFrameAt = jniEnded / 1e9
                                     healthMeter.processed(jniEnded / 1e9, (jniEnded - jniStarted) / 1e6, captureToSendMs)
                                     sender.offer(results, started)
-                                    status = describe(results, "${pixels.width}×${pixels.height} / 30 fps要求")
+                                    status = describe(results, "${pixels.width}×${pixels.height} / $fps fps要求")
                                 }
                             }
                             scheduleExpiry(token)
