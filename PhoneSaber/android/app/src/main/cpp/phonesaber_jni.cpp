@@ -49,7 +49,7 @@ Java_jp_phonesaber_sender_NativeCore_destroy(JNIEnv*, jobject, jlong handle) {
 extern "C" JNIEXPORT jobjectArray JNICALL
 Java_jp_phonesaber_sender_NativeCore_process(JNIEnv* env, jobject, jlong handle,
     jobject buffer, jint width, jint height, jint stride, jdouble time,
-    jint brightness, jint dominance) {
+    jint brightness, jint dominance, jboolean mirror_x, jboolean mirror_y) {
     const auto* data = static_cast<const uint8_t*>(env->GetDirectBufferAddress(buffer));
     const jlong capacity = env->GetDirectBufferCapacity(buffer);
     if (!handle || !data || width <= 0 || height <= 0 || width > 32768 || height > 32768 ||
@@ -64,9 +64,11 @@ Java_jp_phonesaber_sender_NativeCore_process(JNIEnv* env, jobject, jlong handle,
             static_cast<std::size_t>(capacity), phonesaber::PixelFormat::rgba};
         const phonesaber::ColorThreshold threshold{static_cast<uint8_t>(brightness),
             static_cast<uint8_t>(dominance), 30};
-        // Production only: OutputConfig defaults keep measurement_mode=false,
-        // 1920x1080, no mirrors. All coordinates/text/ports come from the public core API.
-        return results(env, processor(handle)->process(pixels, time, {}, {}, threshold, threshold));
+        // 出力寸法・通常payloadは既定のまま、反転だけを公開APIへ渡す。
+        phonesaber::OutputConfig output;
+        output.mirror_x = mirror_x == JNI_TRUE;
+        output.mirror_y = mirror_y == JNI_TRUE;
+        return results(env, processor(handle)->process(pixels, time, output, {}, threshold, threshold));
     } catch (const std::exception& error) {
         fail(env, "java/lang/IllegalStateException", error.what()); return nullptr;
     }

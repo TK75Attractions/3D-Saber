@@ -39,6 +39,7 @@ core のアルゴリズムとUDP仕様は維持する。
 カメラfpsや認識を自動調整しない。長時間運転の対処は
 [当日runbook](../docs/claude/EVENT_DAY_RUNBOOK.md#4-正常な状態) を参照。
 両色共通の既定彩度30、sample step=2は固定。閾値変更は停止中に行う。
+反転はAndroidの閾値の下、iPhoneの「詳細設定」→「検出」にある「左右反転」「上下反転」で設定・保存する（既定OFF、Androidは停止中のみ変更可）。同じ台ではiPhoneとAndroidを同じ反転設定にする。
 送信中は画面を点灯状態に保つ。画面を離れる・停止・Wi-Fiや送信先が変わると停止し、
 確認後に開始し直す。Debug Recording、診断、計測モード、P2Pはない。
 
@@ -173,7 +174,7 @@ ImageProxyはJNIが戻るまで保持し必ずfinallyでcloseする。セッシ�
 
 `FrameResult.text` のfresh結果だけを背景UDP workerへ渡す。文字列はコアが生成した
 通常のASCII `x1,y1,x2,y2` をそのまま送る。RED=5005 / BLUE=5006、
-output=1920×1080、mirrorX/Y=false。各辺の「寸法−1」で正規化し、Swiftと同じ四捨五入は
+output=1920×1080、mirrorX/Yは保存した設定（既定false）を使う。各辺の「寸法−1」で正規化し、Swiftと同じ四捨五入は
 既存コアが行う。最大3処理フレームの予測はfreshなので送るが、held/expired/absentは送らない。
 ゼロ座標、heartbeat、送信停止パケットを追加しない。
 コアにある `ts=%.6f;...` は既存measurement modeとの互換APIだが、Androidでは

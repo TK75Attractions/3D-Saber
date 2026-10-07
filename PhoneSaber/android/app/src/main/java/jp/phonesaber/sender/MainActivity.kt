@@ -58,6 +58,9 @@ class MainActivity : ComponentActivity() {
     private lateinit var startStop: Button
     private lateinit var brightnessSlider: SeekBar
     private lateinit var dominanceSlider: SeekBar
+    private lateinit var mirrorXSwitch: Switch
+    private lateinit var mirrorYSwitch: Switch
+    private var mirrors = MirrorSettings()
     private var destination: Destination? = null
     private var wifi: Network? = null
     private var sending = false
@@ -197,6 +200,22 @@ class MainActivity : ComponentActivity() {
         brightnessSlider = slider("認識の閾値（明るさ）", brightness) { brightness = it }
         dominanceSlider = slider("色の優位差", dominance) { dominance = it }
         label("既定値: 明るさ145 / 色の優位差25\n彩度30 / 赤・青共通。変更は停止中に行います。")
+        mirrors = MirrorSettings.load { key, default -> prefs.getBoolean(key, default) }
+        fun mirrorSwitch(title: String, initial: Boolean, change: (Boolean) -> Unit) = Switch(this).apply {
+            text = title
+            isChecked = initial
+            panel.addView(this)
+            setOnCheckedChangeListener { _, enabled ->
+                if (!sending) {
+                    change(enabled)
+                    val editor = prefs.edit()
+                    mirrors.save { key, value -> editor.putBoolean(key, value) }
+                    editor.apply()
+                }
+            }
+        }
+        mirrorXSwitch = mirrorSwitch("左右反転", mirrors.mirrorX) { mirrors = mirrors.copy(mirrorX = it) }
+        mirrorYSwitch = mirrorSwitch("上下反転", mirrors.mirrorY) { mirrors = mirrors.copy(mirrorY = it) }
         camera = CameraSession(this, preview, sender) { message -> stopSending(); toast(message) }
         discovery = PcDiscovery(this) { pc, network, message ->
             val connectivity = getSystemService(ConnectivityManager::class.java)
@@ -252,8 +271,9 @@ class MainActivity : ComponentActivity() {
         sending = true
         startStop.text = "停止"
         brightnessSlider.isEnabled = false; dominanceSlider.isEnabled = false
+        mirrorXSwitch.isEnabled = false; mirrorYSwitch.isEnabled = false
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        camera.start(brightness, dominance)
+        camera.start(brightness, dominance, mirrors)
     }
 
     private fun stopSending() {
@@ -262,6 +282,7 @@ class MainActivity : ComponentActivity() {
         camera.stop()
         startStop.text = "開始"
         brightnessSlider.isEnabled = true; dominanceSlider.isEnabled = true
+        mirrorXSwitch.isEnabled = true; mirrorYSwitch.isEnabled = true
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         detection.text = "停止中\n赤: 未検出 / 送信 0 fps\n青: 未検出 / 送信 0 fps"
         updateHealth()
