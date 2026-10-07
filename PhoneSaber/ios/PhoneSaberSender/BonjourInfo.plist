@@ -2,17 +2,17 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>NSBonjourServices</key>
-    <array>
-        <string>_phonesaber._udp</string>
-        <string>_phonesaber-p2p._udp</string>
-        <string>_phonesaber-dp2p._tcp</string>
-        <string>_phonesaber-diag._tcp</string>
-    </array>
-    <key>NSAppTransportSecurity</key>
-    <dict>
-        <key>NSAllowsLocalNetworking</key>
-        <true/>
-    </dict>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+	</dict>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_phonesaber._udp</string>
+		<string>_phonesaber-p2p._udp</string>
+		<string>_phonesaber-dp2p._tcp</string>
+		<string>_phonesaber-diag._tcp</string>
+	</array>
 </dict>
 </plist>
