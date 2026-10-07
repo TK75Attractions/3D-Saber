@@ -40,12 +40,16 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         if (!active) return;
         var input = InputPoint.Instance;
         bool hasPacket = input != null && input.HasValidStickEndpoints;
-        float x = hasPacket ? (input.LocalStickRawA.x + input.LocalStickRawB.x) * 0.5f : 0f;
+        float x = hasPacket ? ReadNormalizedX(input) : 0f;
         double packetTime = input != null ? input.LastReceivedMonotonicTime : double.NegativeInfinity;
         loop.Tick(now, packetTime, x, hasPacket);
         int total = loop.TotalSamples;
         if (total >= loggedSamples + LogEvery) { loggedSamples = total; Record("latency-loop"); }
     }
+
+    // 閾値は [-1, 1] の単位。ワールド座標を使うと台の scale・感度で判定が変わる。
+    internal static float ReadNormalizedX(InputPoint input)
+        => (input.LocalStickA.x + input.LocalStickB.x) * 0.5f;
 
     // Play 停止・シーン破棄でも途中結果を残す。
     void OnDisable() { if (active) Finish(); }
