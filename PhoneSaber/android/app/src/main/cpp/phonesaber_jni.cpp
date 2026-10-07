@@ -2,6 +2,7 @@
 #include <phonesaber/core.hpp>
 #include <exception>
 #include <new>
+#include <chrono>
 
 namespace {
 phonesaber::FrameProcessor* processor(jlong handle) {
@@ -49,7 +50,7 @@ Java_jp_phonesaber_sender_NativeCore_destroy(JNIEnv*, jobject, jlong handle) {
 extern "C" JNIEXPORT jobjectArray JNICALL
 Java_jp_phonesaber_sender_NativeCore_process(JNIEnv* env, jobject, jlong handle,
     jobject buffer, jint width, jint height, jint stride, jdouble time,
-    jint brightness, jint dominance, jboolean mirror_x, jboolean mirror_y) {
+    jint brightness, jint dominance, jboolean mirror_x, jboolean mirror_y, jboolean measurement_mode) {
     const auto* data = static_cast<const uint8_t*>(env->GetDirectBufferAddress(buffer));
     const jlong capacity = env->GetDirectBufferCapacity(buffer);
     if (!handle || !data || width <= 0 || height <= 0 || width > 32768 || height > 32768 ||
@@ -64,10 +65,18 @@ Java_jp_phonesaber_sender_NativeCore_process(JNIEnv* env, jobject, jlong handle,
             static_cast<std::size_t>(capacity), phonesaber::PixelFormat::rgba};
         const phonesaber::ColorThreshold threshold{static_cast<uint8_t>(brightness),
             static_cast<uint8_t>(dominance), 30};
-        // 出力寸法・通常payloadは既定のまま、反転だけを公開APIへ渡す。
+        // 出力寸法・認識は既定のまま、反転と既存の計測APIを公開する。
         phonesaber::OutputConfig output;
         output.mirror_x = mirror_x == JNI_TRUE;
         output.mirror_y = mirror_y == JNI_TRUE;
+        output.measurement_mode = measurement_mode == JNI_TRUE;
+        if (output.measurement_mode) {
+            const auto analysis = phonesaber::analyze(pixels, threshold, threshold);
+            // iPhone と同じく検出後・文字列生成直前の Unix epoch。カメラ時刻ではない。
+            const double epoch = std::chrono::duration<double>(
+                std::chrono::system_clock::now().time_since_epoch()).count();
+            return results(env, processor(handle)->process(analysis, width, height, time, output, {epoch, epoch}));
+        }
         return results(env, processor(handle)->process(pixels, time, output, {}, threshold, threshold));
     } catch (const std::exception& error) {
         fail(env, "java/lang/IllegalStateException", error.what()); return nullptr;

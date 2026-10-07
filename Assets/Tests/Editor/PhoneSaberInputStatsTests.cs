@@ -5,6 +5,208 @@ using NUnit.Framework;
 public class PhoneSaberInputStatsTests
 {
     [Test]
+    public void TimingUsesAveragedMedianAndNearestRankP95()
+    {
+        var values = new double[20];
+        for (int i = 0; i < values.Length; i++) values[i] = 20 - i;
+        var stats = new PhoneSaberTimingStats(values);
+        Assert.AreEqual(20, stats.Count);
+        Assert.AreEqual(10.5, stats.MedianMs);
+        Assert.AreEqual(19, stats.P95Ms);
+        Assert.AreEqual(20, stats.MaxMs);
+        Assert.AreEqual(1, stats.MinMs);
+        var odd = new PhoneSaberTimingStats(new[] { 40.0, 10.0, 20.0 });
+        Assert.AreEqual(20, odd.MedianMs);
+        Assert.AreEqual(40, odd.P95Ms);
+        Assert.AreEqual(0, new PhoneSaberTimingStats(new double[0]).Count);
+    }
+
+    [Test]
+    public void GapsIncludeUntimestampedAndInvalidDatagramsButDelayNeedsParsedTimestamp()
+    {
+        var statistics = new PhoneSaberPacketStatistics();
+        statistics.Reset(0);
+        statistics.Record(0, "phone", true, 1000.01, 1000);
+        Assert.AreEqual(0, statistics.Read(0).ArrivalGaps.Count);
+        statistics.Record(0.02, "phone", false, 1000.02, 1000);
+        statistics.Record(0.06, "phone", true);
+        statistics.Record(0.09, "phone", true, 1000.02, 1000.03);
+        var snapshot = statistics.Read(0.09);
+        Assert.AreEqual(3, snapshot.ArrivalGaps.Count);
+        Assert.AreEqual(30, snapshot.ArrivalGaps.MedianMs, 1e-8);
+        Assert.AreEqual(40, snapshot.ArrivalGaps.P95Ms, 1e-8);
+        Assert.AreEqual(40, snapshot.ArrivalGaps.MaxMs, 1e-8);
+        Assert.AreEqual(2, snapshot.OneWayDelay.Count);
+        Assert.AreEqual(0, snapshot.OneWayDelay.MedianMs, 1e-8);
+        Assert.AreEqual(-10, snapshot.OneWayDelay.MinMs, 1e-8);
+        Assert.AreEqual(10, snapshot.OneWayDelay.MaxMs, 1e-8);
+    }
+
+    [Test]
+    public void FiveSecondWindowExpiresAtBoundaryIncludingWhileSilent()
+    {
+        var statistics = new PhoneSaberPacketStatistics();
+        statistics.Reset(0);
+        statistics.Record(0, "phone", true, 1000.01, 1000);
+        statistics.Record(1, "phone", true, 1001.02, 1001);
+        var before = statistics.Read(4.99);
+        Assert.AreEqual(2, before.OneWayDelay.Count);
+        Assert.AreEqual(1, before.ArrivalGaps.Count);
+        Assert.AreEqual(1, statistics.Read(5).OneWayDelay.Count);
+        var silent = statistics.Read(6);
+        Assert.AreEqual(0, silent.OneWayDelay.Count);
+        Assert.AreEqual(0, silent.ArrivalGaps.Count);
+        Assert.AreEqual("不良", PhoneSaberStatsDisplay.Verdict(silent));
+        Assert.AreEqual(2, before.OneWayDelay.Count);
+        // 復帰した datagram の時刻で、長い空白も新しい窓へ入る。
+        statistics.Record(6.1, "phone", true);
+        Assert.AreEqual(5100, statistics.Read(6.1).ArrivalGaps.MaxMs, 1e-8);
+    }
+
+    [Test]
+    public void TimingIsBoundedAndResetAndSenderChangeDiscardPreviousTiming()
+    {
+        var statistics = new PhoneSaberPacketStatistics();
+        statistics.Reset(0);
+        for (int i = 0; i < 3000; i++) statistics.Record(i / 1000.0, "red", true, 1000.01, 1000);
+        var red = statistics.Read(3);
+        Assert.AreEqual(PhoneSaberPacketStatistics.MaximumTimingSamples, red.ArrivalGaps.Count);
+        Assert.AreEqual(PhoneSaberPacketStatistics.MaximumTimingSamples, red.OneWayDelay.Count);
+        statistics.Record(3.1, "anotherPhone", true);
+        Assert.AreEqual(0, statistics.Read(3.1).ArrivalGaps.Count);
+        Assert.AreEqual(0, statistics.Read(3.1).OneWayDelay.Count);
+        statistics.Reset(4);
+        statistics.Record(4.1, "red", true);
+        Assert.AreEqual(0, statistics.Read(4.1).ArrivalGaps.Count);
+        Assert.AreEqual(0, statistics.Read(4.1).OneWayDelay.Count);
+    }
+
+    [TestCase("ts=1791234567.123456;1,2,3,4", 1791234567.123456)]
+    [TestCase("ts=1000;1,2", 1000)]
+    [TestCase("ts=NaN;1,2", null)]
+    [TestCase("ts=Infinity;1,2", null)]
+    [TestCase("ts=1e999;1,2", null)]
+    [TestCase("ts=-1;1,2", null)]
+    [TestCase("ts=0;1,2", null)]
+    [TestCase("ts=;1,2", null)]
+    [TestCase("ts=oops;1,2", null)]
+    [TestCase("ts=1,25;1,2", null)]
+    [TestCase("ts=1000", null)]
+    [TestCase("timestamp=1000;1,2", null)]
+    [TestCase("1,2,3,4", null)]
+    [TestCase(null, null)]
+    public void TimestampReaderAcceptsFinitePositiveEpochOnly(string payload, double? expected)
+    {
+        Assert.AreEqual(expected, PhoneSaberPacketStatistics.ReadSendEpoch(payload));
+    }
+
+    [Test]
+    public void InvalidEpochsAreExcludedAndClockJumpsCannotChangeGaps()
+    {
+        var statistics = new PhoneSaberPacketStatistics();
+        statistics.Reset(0);
+        statistics.Record(0, "phone", true, double.NaN, 1000);
+        statistics.Record(0.02, "phone", true, 1000, double.PositiveInfinity);
+        statistics.Record(0.04, "phone", true, 1000, 0);
+        Assert.AreEqual(0, statistics.Read(0.04).OneWayDelay.Count);
+        statistics.Record(0.06, "phone", true, 1100, 1000);
+        Assert.AreEqual(20, statistics.Read(0.06).ArrivalGaps.MedianMs, 1e-8);
+        Assert.AreEqual(100000, statistics.Read(0.06).OneWayDelay.MaxMs);
+    }
+
+    static PhoneSaberInputStats Quality(double p95Gap, double maxGap, double age = 0,
+        double? delay = null, int count = 20)
+    {
+        var gaps = new double[count];
+        for (int i = 0; i < count; i++) gaps[i] = p95Gap;
+        if (count > 0) gaps[count - 1] = maxGap;
+        var delays = delay.HasValue ? new double[count] : new double[0];
+        for (int i = 0; i < delays.Length; i++) delays[i] = delay.Value;
+        return new PhoneSaberInputStats(true, 30, age, "phone", true,
+            new PhoneSaberTimingStats(gaps), new PhoneSaberTimingStats(delays));
+    }
+
+    [TestCase(49.9, 149.9, "良好")]
+    [TestCase(50, 149, "注意")]
+    [TestCase(99.9, 499.9, "注意")]
+    [TestCase(100, 100, "不良")]
+    [TestCase(30, 150, "注意")]
+    [TestCase(30, 500, "不良")]
+    public void VerdictUsesDocumentedGapThresholds(double p95, double max, string expected)
+    {
+        Assert.AreEqual(expected, PhoneSaberStatsDisplay.Verdict(Quality(p95, max)));
+    }
+
+    [Test]
+    public void VerdictIncludesCurrentSilenceAndWarmupAndOnlyUsesDelayWithClockConfirmation()
+    {
+        Assert.AreEqual("注意（計測中）", PhoneSaberStatsDisplay.Verdict(Quality(30, 30, count: 19)));
+        Assert.AreEqual("注意", PhoneSaberStatsDisplay.Verdict(Quality(30, 30, age: 0.15)));
+        Assert.AreEqual("不良", PhoneSaberStatsDisplay.Verdict(Quality(30, 30, age: 0.5)));
+        Assert.AreEqual("良好", PhoneSaberStatsDisplay.Verdict(Quality(30, 30, delay: 5000)));
+        Assert.AreEqual("良好", PhoneSaberStatsDisplay.Verdict(Quality(30, 30), true));
+        Assert.AreEqual("良好", PhoneSaberStatsDisplay.Verdict(Quality(30, 30, delay: 49.9), true));
+        Assert.AreEqual("注意", PhoneSaberStatsDisplay.Verdict(Quality(30, 30, delay: 50), true));
+        Assert.AreEqual("不良", PhoneSaberStatsDisplay.Verdict(Quality(30, 30, delay: 100), true));
+        Assert.AreEqual("注意（時計差を確認）", PhoneSaberStatsDisplay.Verdict(Quality(30, 30, delay: -1), true));
+        Assert.AreEqual("不良", PhoneSaberStatsDisplay.Verdict(new PhoneSaberInputStats(true, 30, 0, "phone", false)));
+    }
+
+    [Test]
+    public void DelayMaximumAndSampleWarmupAreAlsoUsedOnlyWhenSynchronized()
+    {
+        var gap = Quality(30, 30).ArrivalGaps;
+        var values = new double[20];
+        values[19] = 150;
+        var stats = new PhoneSaberInputStats(true, 30, 0, "phone", true, gap, new PhoneSaberTimingStats(values));
+        Assert.AreEqual("注意", PhoneSaberStatsDisplay.Verdict(stats, true));
+        values[19] = 500;
+        stats = new PhoneSaberInputStats(true, 30, 0, "phone", true, gap, new PhoneSaberTimingStats(values));
+        Assert.AreEqual("不良", PhoneSaberStatsDisplay.Verdict(stats, true));
+        stats = new PhoneSaberInputStats(true, 30, 0, "phone", true, gap, new PhoneSaberTimingStats(new[] { 1.0 }));
+        Assert.AreEqual("注意（計測中）", PhoneSaberStatsDisplay.Verdict(stats, true));
+        stats = new PhoneSaberInputStats(true, 30, 0, "phone", true, gap,
+            new PhoneSaberTimingStats(new[] { -1.0, 5000.0 }));
+        Assert.AreEqual("注意（時計差を確認）", PhoneSaberStatsDisplay.Verdict(stats, true));
+    }
+
+    [Test]
+    public void ConcurrentReadsAndReceivesProduceConsistentBoundedSnapshots()
+    {
+        var statistics = new PhoneSaberPacketStatistics();
+        statistics.Reset(0);
+        var writer = System.Threading.Tasks.Task.Run(() =>
+        {
+            for (int i = 0; i < 1000; i++) statistics.Record(i / 1000.0, "phone", true, 1000.02, 1000);
+        });
+        var reader = System.Threading.Tasks.Task.Run(() =>
+        {
+            for (int i = 0; i < 1000; i++)
+            {
+                // 読み取りで窓を進めず、受信とコピーの競合だけを検証する。
+                var snapshot = statistics.Read(0);
+                Assert.LessOrEqual(snapshot.ArrivalGaps.Count, PhoneSaberPacketStatistics.MaximumTimingSamples);
+                Assert.LessOrEqual(snapshot.OneWayDelay.Count, PhoneSaberPacketStatistics.MaximumTimingSamples);
+                if (snapshot.OneWayDelay.Count > 0) Assert.AreEqual(20, snapshot.OneWayDelay.MedianMs, 1e-8);
+            }
+        });
+        System.Threading.Tasks.Task.WaitAll(writer, reader);
+        Assert.AreEqual(999, statistics.Read(1).ArrivalGaps.Count);
+        Assert.AreEqual(1000, statistics.Read(1).OneWayDelay.Count);
+    }
+
+    [Test]
+    public void FormattingReportsMissingTimestampAndWhichMetricsDriveVerdict()
+    {
+        string text = PhoneSaberStatsDisplay.Format("RED", 5005, Quality(30, 30), false, true);
+        StringAssert.Contains("受信間隔（直近5秒）: 中央値 30.0 / p95 30.0 / 最大 30.0 ms", text);
+        StringAssert.Contains("片道時計差（tsあり）: --（サンプルなし）", text);
+        StringAssert.Contains("判定: 良好（間隔のみ）", text);
+        StringAssert.Contains("判定: 注意（間隔＋片道）",
+            PhoneSaberStatsDisplay.Format("BLUE", 5006, Quality(30, 30, delay: 50), false, true));
+    }
+
+    [Test]
     public void RateCountsAllDatagramsInTrailingSecondAndFallsToZero()
     {
         var statistics = new PhoneSaberPacketStatistics();
@@ -33,10 +235,15 @@ public class PhoneSaberInputStatsTests
         var blue = new PhoneSaberPacketStatistics();
         red.Reset(10);
         blue.Reset(10);
-        red.Record(10.25, "127.0.0.1", true);
+        red.Record(10.25, "127.0.0.1", true, 1000.01, 1000);
+        red.Record(10.3, "127.0.0.1", true, 1000.01, 1000);
         Assert.IsFalse(blue.Read(10.5).HasPacket);
         Assert.AreEqual(0.5, blue.Read(10.5).SecondsSinceLastPacket);
         Assert.IsTrue(red.Read(10.5).HasPacket);
+        Assert.AreEqual(1, red.Read(10.5).ArrivalGaps.Count);
+        Assert.AreEqual(2, red.Read(10.5).OneWayDelay.Count);
+        Assert.AreEqual(0, blue.Read(10.5).ArrivalGaps.Count);
+        Assert.AreEqual(0, blue.Read(10.5).OneWayDelay.Count);
         red.Reset(20);
         var reset = red.Read(20.5);
         Assert.IsFalse(reset.HasPacket);

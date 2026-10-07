@@ -31,8 +31,14 @@ class PayloadRoutingTest {
     }
 
     @Test fun doesNotReformatCoreMeasurementText() {
-        // Core supports this contract; Android production never enables measurement_mode.
+        // 計測モードもコアの文字列をそのまま送る。保持中は ts があっても送らない。
         val text = "ts=1791234567.123456;1,2,3,4"
-        assertEquals(text, PayloadRouting.datagrams(arrayOf(NativeResult(0, true, false, 5005, text))).single().text)
+        val packets = PayloadRouting.datagrams(arrayOf(
+            NativeResult(0, true, false, 5005, text),
+            NativeResult(1, true, true, 5006, text),
+            NativeResult(1, false, false, 5006, text)))
+        assertEquals(listOf(CoordinateDatagram(5005, text), CoordinateDatagram(5006, text)), packets)
+        for (packet in packets) assertArrayEquals(text.toByteArray(Charsets.US_ASCII),
+            packet.text.toByteArray(Charsets.US_ASCII))
     }
 }

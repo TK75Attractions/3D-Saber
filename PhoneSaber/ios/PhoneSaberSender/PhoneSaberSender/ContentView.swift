@@ -87,7 +87,7 @@ struct ContentView: View {
                         if let message = model.pcReconnectMessage {
                             Text(message).font(.footnote).foregroundStyle(.orange)
                         }
-                        Button(model.sendingRequested ? "停止" : "通常送信を開始") {
+                        Button(model.sendingRequested ? "停止" : (model.measurementMode ? "遅延計測を開始" : "通常送信を開始")) {
                             model.sendingRequested ? model.stop() : model.start()
                         }
                         .buttonStyle(.borderedProminent)
@@ -333,6 +333,8 @@ struct ContentView: View {
                     #endif
                     DisclosureGroup("詳細設定") {
                         GroupBox("接続・出力") {
+                            Toggle("遅延計測モード", isOn: $model.measurementMode)
+                                .disabled(model.running)
                             Text("送信先Mac: \(model.host.isEmpty ? "自動発見待ち" : model.host)")
                                 .font(.headline)
                             Text("赤: UDP 5005　青: UDP 5006")
@@ -364,8 +366,7 @@ struct ContentView: View {
                                 ShareLink(item: url) { Label("保存画像を共有", systemImage: "square.and.arrow.up") }
                             }
                         }
-                        Button("通常送信を開始") {
-                            model.measurementMode = false
+                        Button(model.measurementMode ? "遅延計測を開始" : "通常送信を開始") {
                             model.start()
                         }
                         .disabled(model.running)

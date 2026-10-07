@@ -61,13 +61,14 @@ Android 作業: Phase 2 の Kotlin/CameraX/JNI/UDP探索/NSD/UDP・日本語UI�
 
 ## 作業ログ
 
-### 2026-10-07 — iPhone / Android の長時間イベント送信復旧（この worktree、未commit）
+### 2026-10-07 — iPhone / Android の長時間イベント送信復旧
 
 - 保存した送信意思による前面復帰・再起動時の自動再開。日本語の復帰表示。停止ボタンで意思を消去。「起動時に送信を自動開始」は既定OFF、当日はON。
 - iPhone の既存AVCapture通知・watchdogを拡張、Android はCameraX再bindと映像停止監視。再試行は1〜30秒、連続15分失敗で警告、10秒の安定復帰でリセット。停止時は予約済み再試行を無効化する。
 - ネットワーク切替で送信を停止せず、同じ台の探索・再解決を継続。LANのPC名・iPhone手動IPも保存。Android探索の定期更新は既存経路を保持し、NSD callback欠落はtimeoutで解放する。前面の送信・復旧待ち中は画面自動ロックを防ぐ。
 - XCTestの純粋ロジック8件（macOS上のstandalone runner）、JUnitの純粋ロジック7件がPASS。iOSモデルのSwift typecheck、Android Kotlinソースtypecheck、Xcode projectのplutil、PhoneSaber範囲のdiff --checkがPASS。full SwiftUI typecheckはsandboxのmacro plugin server制約で不可。simulator verify / Android buildはユーザー指定どおりClaudeが担当する。
 - repo全体のdiff --checkは既存のUnityフォントasset（LFS filterを無効化して読んだ実体）の末尾空白を報告する。変更していない。sandboxは共有git/LFS領域への書込不可。recognition・閾値・UDP payload・fixturesは変更なし。ユーザー指定でcommit / pushしない。
+- 2026-10-07 / 当日のネットワーク判定: Unity F8に色別の直近5秒の間隔/片道時計差（中央値/p95/最大）と良好/注意/不良を追加。現在の無受信時間も判定、NTP確認チェックOFFでは間隔のみ。iPhoneの未公開だった既存計測モードとAndroidの既存C++ formatterを「遅延計測モード」（既定OFF、保存なし）で公開。認識・payload形式・ゲーム・scene/prefab/.meta変更なし。runbook/Android READMEに手順・暫定閾値・時計差/認識欠落の限界を記載。sandbox内のKotlin JVM直接コンパイル＋JUnit 27/27、JNI host syntax PASS、変更範囲の `git diff --check -- Assets/Scripts Assets/Tests PhoneSaber` PASS。C#純関数の境界・窓・並行性EditModeテストを追加しコードレビュー済み（未実行）。Unity Editor Roslyn/テスト実行、iOS/Android本ビルド・実機/Overlay表示確認はClaude後続。全repo Git操作はshared Git LFSのsandbox外書き込みで制限されるためfont等の既存ファイルは未変更。
 
 - 2026-10-06 / blueNoDeepSupport を Swift/C++ に本番採用（ユーザー指示で未commit）。整数・unique clipped 原画素 dilate1、全 gate/順位後に再選択、emitter/decision trace と Mac schema/validator を更新。formal 40/40・期待値無変更、BLUE変更は formal PNG 5/35（BLUE期待fixtureは0）＋inbox 38/234（25未検出/13再選択）、RED変更0/269、[全変更一覧](data/2026-10-06_blue_no_deep_support_output_changes.csv)。static Swift / C++・targeted Mac host XCTest 8/8（両encoding/32KB）PASS、parity 269 PNG×3経路・541遷移・27合成で mismatch 0。emitter/schema/triage Python 10件PASS、Python全suiteはsandbox等で8failure/33error/1skip（381test）。git diff --check PASS。Simulator verify/Android build は Claude が後続実行。
 

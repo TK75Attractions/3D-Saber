@@ -404,19 +404,23 @@ public class InputPoint : MonoBehaviour
             IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
             byte[] data = client.Receive(ref endPoint);
             long receiveTimestampTicks = SwingMonotonicClock.Timestamp;
-            string message = StripOptionalTimestamp(Encoding.UTF8.GetString(data).Trim());
+            // ソケット受信直後の壁時計。解析・main thread 待ちを遅延に含めない。
+            double receiveEpoch = (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
+            string originalMessage = Encoding.UTF8.GetString(data).Trim();
+            double? sentEpoch = PhoneSaberPacketStatistics.ReadSendEpoch(originalMessage);
+            string message = StripOptionalTimestamp(originalMessage);
 
             string[] parts = message.Split(',');
             if (parts.Length != 2 && parts.Length != 4)
             {
-                RecordInputStats(secondStick, receiveTimestampTicks, endPoint, false);
+                RecordInputStats(secondStick, receiveTimestampTicks, endPoint, false, receiveEpoch, sentEpoch);
                 continue;
             }
 
             if (!float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float a) ||
                 !float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float b))
             {
-                RecordInputStats(secondStick, receiveTimestampTicks, endPoint, false);
+                RecordInputStats(secondStick, receiveTimestampTicks, endPoint, false, receiveEpoch, sentEpoch);
                 continue;
             }
 
@@ -427,11 +431,11 @@ public class InputPoint : MonoBehaviour
                 (!float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out c) ||
                  !float.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out d)))
             {
-                RecordInputStats(secondStick, receiveTimestampTicks, endPoint, false);
+                RecordInputStats(secondStick, receiveTimestampTicks, endPoint, false, receiveEpoch, sentEpoch);
                 continue;
             }
 
-            RecordInputStats(secondStick, receiveTimestampTicks, endPoint, true);
+            RecordInputStats(secondStick, receiveTimestampTicks, endPoint, true, receiveEpoch, sentEpoch);
 
             // メインスレッドと衝突しないようロック
             lock (targetLock)
@@ -491,12 +495,13 @@ public class InputPoint : MonoBehaviour
         }
     }
 
-    void RecordInputStats(bool secondStick, long timestampTicks, IPEndPoint sender, bool parsed)
+    void RecordInputStats(bool secondStick, long timestampTicks, IPEndPoint sender, bool parsed,
+        double receiveEpoch, double? sentEpoch)
     {
         (secondStick ? blueConnectionEvents : redConnectionEvents)?.Packet(
             SwingMonotonicClock.ToSeconds(timestampTicks), sender.Address.ToString());
         (secondStick ? blueInputStats : redInputStats).Record(
-            SwingMonotonicClock.ToSeconds(timestampTicks), sender.Address.ToString(), parsed);
+            SwingMonotonicClock.ToSeconds(timestampTicks), sender.Address.ToString(), parsed, receiveEpoch, sentEpoch);
     }
 
     static string StripOptionalTimestamp(string message)
