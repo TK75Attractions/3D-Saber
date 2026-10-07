@@ -129,6 +129,39 @@ station 指定時は台名を完全一致で絞ります。候補が0台また�
 Unity が Play 中で、discovery が有効なことと同一LANであることが必要です。
 `--dry-run` は station 指定があっても discovery を実行しません。
 
+## 位置補正の練習（実機なし）
+
+Unityのタイトル／メニューでF8を開き、台名を確認する。実機からの送信は止める。
+以下はカメラ画像内の `(480,270)`〜`(1440,810)` をプレイ範囲として、各隅の静止REDを30秒送るトラックを作る例。
+JSONの座標も実機と同じ1920×1080のカメラ座標であり、補正済みの座標を送らない。
+
+```bash
+python3 - <<'PY'
+import json
+from pathlib import Path
+out = Path("/tmp/saber-position-calibration")
+out.mkdir(parents=True, exist_ok=True)
+for name, x, y in [("TL", 480, 270), ("TR", 1440, 270), ("BR", 1440, 810), ("BL", 480, 810)]:
+    track = {"version": 1, "size": [1920, 1080], "sample_period": 1/30, "duration": 30,
+             "frames": [{"t": i/30, "red": {"detected": True, "endpoint": [x-60, y, x+60, y]}}
+                        for i in range(900)]}
+    (out / f"{name}.json").write_text(json.dumps(track), encoding="utf-8")
+PY
+python3 -B PhoneSaber/tools/saber_motion_replay.py play --track /tmp/saber-position-calibration/TL.json --color red
+```
+
+Windowsでは`python3`を`python`へ、必要なら出力フォルダーを書き込み可能な一時フォルダーへ置き換える。
+送信開始後にゲームへ戻り、F7で測定を開始、左上の案内で**もう一度F7**を押して1秒採取する。
+採取後はTerminalへ戻ってCtrl+Cで止める。上のplayコマンドのファイル名を **TR → BR → BL** に変えて順に送信し、
+ゲームではそれぞれの隅の案内でF7を1回押す。30秒を過ぎたら同じトラックを再生してから採取する。
+青で練習する場合はJSONの`red`を`blue`へ、`--color red`を`--color blue`へ変え、F8でBLUEの採取を選ぶ。
+
+4隅の保存後にON表示を確認し、`--synthetic figure-eight --duration 15`などで動く範囲を比較する。
+OFFで従来の範囲に戻り、ONで保存した領域へ戻ること、同じ台で再起動後も設定が残ることを確認する。
+台B（またはA）に切り替えて再起動すると別の未設定状態になる。片方のリセットがもう片方に影響しないことも確認する。
+同じ隅のトラックを4回採取すれば、不正な4隅として保存を拒否し、前の設定を維持することを試せる。
+最後に練習した台の「位置補正をリセット」を押し、当日の実際の配置で測定し直す。
+
 ## テスト
 
 ```bash

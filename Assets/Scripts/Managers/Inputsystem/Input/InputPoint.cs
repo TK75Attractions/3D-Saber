@@ -130,6 +130,36 @@ public class InputPoint : MonoBehaviour
     public string LastReceiverExitReason => lastReceiverExitReason1;
     public string LastReceiverExitReason2 => lastReceiverExitReason2;
 
+    // 保存と座標補正は main thread、採取だけは receive thread から行う。
+    PhoneSaberPositionCalibration positionCalibration;
+    bool positionCalibrationEnabled;
+    public PhoneSaberPositionCapture PositionCapture { get; } = new PhoneSaberPositionCapture();
+    public bool HasPositionCalibration => positionCalibration != null;
+    public bool PositionCalibrationEnabled => positionCalibrationEnabled && positionCalibration != null;
+
+    public bool SavePositionCalibration(Vector2[] corners, out string error)
+    {
+        if (!PhoneSaberPositionCalibration.TryCreate(corners, out var calibration, out error)) return false;
+        PhoneSaberPositionCalibrationStore.Save(StationLabel, calibration);
+        positionCalibration = calibration;
+        positionCalibrationEnabled = true;
+        return true;
+    }
+
+    public void SetPositionCalibrationEnabled(bool enabled)
+    {
+        positionCalibrationEnabled = enabled && HasPositionCalibration;
+        PhoneSaberPositionCalibrationStore.SetEnabled(StationLabel, positionCalibrationEnabled);
+    }
+
+    public void ResetPositionCalibration()
+    {
+        PositionCapture.Cancel();
+        PhoneSaberPositionCalibrationStore.Reset(StationLabel);
+        positionCalibration = null;
+        positionCalibrationEnabled = false;
+    }
+
     // スレッド同期用
     object lockObj = new object();
     object lockObj2 = new object();
@@ -228,9 +258,9 @@ public class InputPoint : MonoBehaviour
 
     // 入力座標が既に -1..1 の範囲で来る場合と、ピクセル座標で来る場合の両対応を行う。
     // 小さな絶対値 (<=1.5) はそのまま正規化値とみなし、大きければピクセル幅で正規化する。
-    float NormalizeAxis(float v, float span)
+    float NormalizeAxis(float v, float span, bool forcePixels = false)
     {
-        if (Mathf.Abs(v) <= 1.5f)
+        if (!forcePixels && Mathf.Abs(v) <= 1.5f)
         {
             return Mathf.Clamp(v, -1f, 1f);
         }
@@ -242,11 +272,12 @@ public class InputPoint : MonoBehaviour
     // 入力が正規化(-1..1、両軸とも |v|<=1.5)かピクセルかを点単位で自動判別する。
     //   direct モード: 正規化を期待 → ピクセルなら正規化へ変換
     //   legacy モード: カメラ座標(ピクセル)を期待 → 正規化ならピクセルへ変換
+    // 位置補正済みの点は必ずピクセルなので、forcePixels で (0,0) の誤判別も避ける。
     // 棒1・棒2の両方がこの関数を通ることで変換の対称性を保証する
     // (棒2だけ direct+ピクセルで素通しになり画面隅に張り付くバグの再発防止)。
-    public static Vector2 CanonicalizePoint(float x, float y, float width, float height, bool directMapping)
+    public static Vector2 CanonicalizePoint(float x, float y, float width, float height, bool directMapping, bool forcePixels = false)
     {
-        bool isNormalized = Mathf.Abs(x) <= 1.5f && Mathf.Abs(y) <= 1.5f;
+        bool isNormalized = !forcePixels && Mathf.Abs(x) <= 1.5f && Mathf.Abs(y) <= 1.5f;
         if (directMapping)
         {
             return isNormalized
@@ -259,9 +290,9 @@ public class InputPoint : MonoBehaviour
     }
 
     // NormalizedPosition(0..1)用の変換。こちらも棒1/棒2共通の純関数。
-    public static Vector2 Normalized01(float x, float y, float width, float height)
+    public static Vector2 Normalized01(float x, float y, float width, float height, bool forcePixels = false)
     {
-        bool isNormalized = Mathf.Abs(x) <= 1.5f && Mathf.Abs(y) <= 1.5f;
+        bool isNormalized = !forcePixels && Mathf.Abs(x) <= 1.5f && Mathf.Abs(y) <= 1.5f;
         return isNormalized
             ? new Vector2((x + 1f) * 0.5f, (y + 1f) * 0.5f)
             : new Vector2(x / width, y / height);
@@ -322,6 +353,8 @@ public class InputPoint : MonoBehaviour
             p2pBridge = new PhoneSaberP2PBridgeProcess();
             p2pDataPath = Application.dataPath;
             phoneSaberStation = PhoneSaberStation.Read();
+            positionCalibration = PhoneSaberPositionCalibrationStore.Load(phoneSaberStation, out positionCalibrationEnabled);
+            PositionCapture.Cancel();
             double eventStart = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
             string eventStation = phoneSaberStation;
             redConnectionEvents = new PhoneSaberConnectionEvents(eventStart, PhoneSaberBonjourPublisher.IsSupported,
@@ -436,6 +469,10 @@ public class InputPoint : MonoBehaviour
             }
 
             RecordInputStats(secondStick, receiveTimestampTicks, endPoint, true, receiveEpoch, sentEpoch);
+
+            // 補正前のカメラ座標を、採取中の指定色だけ記録する。
+            if (isStick) PositionCapture.Add(secondStick, new Vector2(a, b), new Vector2(c, d),
+                SwingMonotonicClock.ToSeconds(receiveTimestampTicks));
 
             // メインスレッドと衝突しないようロック
             lock (targetLock)
@@ -613,12 +650,14 @@ public class InputPoint : MonoBehaviour
             }
         }
 
+        bool calibrated = PositionCalibrationEnabled;
         if (updated)
         {
             LastRaw = new Vector2(x, y);
+            if (calibrated) CalibrateCoordinates(ref x, ref y, ref x1a, ref y1a, ref x1b, ref y1b, updatedStick);
             // 中点: 正規化/ピクセルの判別と単位揃えは棒1・棒2共通の純関数で行う
-            NormalizedPosition = ApplySensitivity01(Normalized01(x, y, camWidth, camHeight), sensitivity);
-            Vector2 mid1 = CanonicalizePoint(x, y, camWidth, camHeight, useDirectWorldMapping);
+            NormalizedPosition = ApplySensitivity01(Normalized01(x, y, camWidth, camHeight, calibrated), sensitivity);
+            Vector2 mid1 = CanonicalizePoint(x, y, camWidth, camHeight, useDirectWorldMapping, calibrated);
             // 感度は中点に掛け、端点は同じ量だけ平行移動する(棒の長さ・角度を保つ)
             Vector2 sensMid1 = ApplySensitivity(mid1, sensitivity, useDirectWorldMapping, camWidth, camHeight);
             Vector2 delta1 = sensMid1 - mid1;
@@ -627,16 +666,16 @@ public class InputPoint : MonoBehaviour
             HasValidStickEndpoints = updatedStick;
             if (updatedStick)
             {
-                Vector2 end1a = CanonicalizePoint(x1a, y1a, camWidth, camHeight, useDirectWorldMapping) + delta1;
-                Vector2 end1b = CanonicalizePoint(x1b, y1b, camWidth, camHeight, useDirectWorldMapping) + delta1;
+                Vector2 end1a = CanonicalizePoint(x1a, y1a, camWidth, camHeight, useDirectWorldMapping, calibrated) + delta1;
+                Vector2 end1b = CanonicalizePoint(x1b, y1b, camWidth, camHeight, useDirectWorldMapping, calibrated) + delta1;
                 LocalStickRawA = ToLocalPosition(end1a.x, end1a.y);
                 LocalStickRawB = ToLocalPosition(end1b.x, end1b.y);
 
                 // -1..1 正規化は既存の NormalizeAxis で扱う（混在対応）
-                float nxA = NormalizeAxis(x1a, camWidth);
-                float nyA = NormalizeAxis(y1a, camHeight);
-                float nxB = NormalizeAxis(x1b, camWidth);
-                float nyB = NormalizeAxis(y1b, camHeight);
+                float nxA = NormalizeAxis(x1a, camWidth, calibrated);
+                float nyA = NormalizeAxis(y1a, camHeight, calibrated);
+                float nxB = NormalizeAxis(x1b, camWidth, calibrated);
+                float nyB = NormalizeAxis(y1b, camHeight, calibrated);
 
                 LocalStickA = new Vector2(nxA, nyA);
                 LocalStickB = new Vector2(nxB, nyB);
@@ -662,11 +701,12 @@ public class InputPoint : MonoBehaviour
         if (updated2)
         {
             LastRaw2 = new Vector2(x2, y2);
+            if (calibrated) CalibrateCoordinates(ref x2, ref y2, ref x2a, ref y2a, ref x2b, ref y2b, updatedStick2);
             // 棒2も棒1と同一の純関数で変換する。
             // (旧実装は direct モードでピクセル→正規化の変換が抜けており、
             //  ピクセル送信のトラッカーだと棒2だけ画面隅に張り付くバグがあった)
-            NormalizedPosition2 = ApplySensitivity01(Normalized01(x2, y2, camWidth, camHeight), sensitivity);
-            Vector2 mid2 = CanonicalizePoint(x2, y2, camWidth, camHeight, useDirectWorldMapping);
+            NormalizedPosition2 = ApplySensitivity01(Normalized01(x2, y2, camWidth, camHeight, calibrated), sensitivity);
+            Vector2 mid2 = CanonicalizePoint(x2, y2, camWidth, camHeight, useDirectWorldMapping, calibrated);
             // 棒1と同じく: 感度は中点、端点は平行移動
             Vector2 sensMid2 = ApplySensitivity(mid2, sensitivity, useDirectWorldMapping, camWidth, camHeight);
             Vector2 delta2 = sensMid2 - mid2;
@@ -675,15 +715,15 @@ public class InputPoint : MonoBehaviour
             HasValidStickEndpoints2 = updatedStick2;
             if (updatedStick2)
             {
-                Vector2 end2a = CanonicalizePoint(x2a, y2a, camWidth, camHeight, useDirectWorldMapping) + delta2;
-                Vector2 end2b = CanonicalizePoint(x2b, y2b, camWidth, camHeight, useDirectWorldMapping) + delta2;
+                Vector2 end2a = CanonicalizePoint(x2a, y2a, camWidth, camHeight, useDirectWorldMapping, calibrated) + delta2;
+                Vector2 end2b = CanonicalizePoint(x2b, y2b, camWidth, camHeight, useDirectWorldMapping, calibrated) + delta2;
                 LocalStickRawA2 = ToLocalPosition(end2a.x, end2a.y);
                 LocalStickRawB2 = ToLocalPosition(end2b.x, end2b.y);
 
-                float nxA2 = NormalizeAxis(x2a, camWidth);
-                float nyA2 = NormalizeAxis(y2a, camHeight);
-                float nxB2 = NormalizeAxis(x2b, camWidth);
-                float nyB2 = NormalizeAxis(y2b, camHeight);
+                float nxA2 = NormalizeAxis(x2a, camWidth, calibrated);
+                float nyA2 = NormalizeAxis(y2a, camHeight, calibrated);
+                float nxB2 = NormalizeAxis(x2b, camWidth, calibrated);
+                float nyB2 = NormalizeAxis(y2b, camHeight, calibrated);
 
                 LocalStickA2 = new Vector2(nxA2, nyA2);
                 LocalStickB2 = new Vector2(nxB2, nyB2);
@@ -727,6 +767,21 @@ public class InputPoint : MonoBehaviour
             );
         }
         //Debug.Log(LocalStickA + " " + LocalStickB);
+    }
+
+    // 両色とも同じ main thread の補正を通し、端点補正後に中点を計算する。
+    void CalibrateCoordinates(ref float x, ref float y, ref float ax, ref float ay, ref float bx, ref float by, bool stick)
+    {
+        Vector2 mid;
+        if (stick)
+        {
+            Vector2 a = positionCalibration.Map(new Vector2(ax, ay));
+            Vector2 b = positionCalibration.Map(new Vector2(bx, by));
+            ax = a.x; ay = a.y; bx = b.x; by = b.y;
+            mid = (a + b) * 0.5f;
+        }
+        else mid = positionCalibration.Map(new Vector2(x, y));
+        x = mid.x; y = mid.y;
     }
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
