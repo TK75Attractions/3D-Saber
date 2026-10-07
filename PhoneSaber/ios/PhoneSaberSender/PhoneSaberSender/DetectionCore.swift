@@ -163,12 +163,17 @@ func supportedBlueDiffuserMask(strictMask: [UInt8], relaxedMask: [UInt8],
 private func binaryDilate(_ input: [UInt8], width: Int, height: Int, radius: Int) -> [UInt8] {
     guard radius > 0 else { return input }
     var output = Array(repeating: UInt8(0), count: input.count)
-    for y in 0..<height {
-        for x in 0..<width where input[y * width + x] != 0 {
-            for ny in max(0, y - radius)...min(height - 1, y + radius) {
-                for nx in max(0, x - radius)...min(width - 1, x + radius) {
-                    guard abs(nx - x) + abs(ny - y) <= radius else { continue }
-                    output[ny * width + nx] = 1
+    input.withUnsafeBufferPointer { source in
+        output.withUnsafeMutableBufferPointer { destination in
+            for y in 0..<height {
+                for x in 0..<width where source[y * width + x] != 0 {
+                    for ny in max(0, y - radius)...min(height - 1, y + radius) {
+                        // 元の Manhattan 近傍の各行は連続区間。全要素への 1 の代入をまとめる。
+                        let reach = radius - abs(ny - y)
+                        let first = max(0, x - reach)
+                        let last = min(width - 1, x + reach)
+                        memset(destination.baseAddress! + ny * width + first, 1, last - first + 1)
+                    }
                 }
             }
         }
@@ -180,19 +185,25 @@ private func binaryErode(_ input: [UInt8], width: Int, height: Int, radius: Int)
     guard radius > 0 else { return input }
     var output = Array(repeating: UInt8(0), count: input.count)
     guard width > radius * 2, height > radius * 2 else { return output }
-    for y in radius..<(height - radius) {
-        for x in radius..<(width - radius) {
-            var survives = true
-            for ny in (y - radius)...(y + radius) {
-                for nx in (x - radius)...(x + radius) {
-                    guard abs(nx - x) + abs(ny - y) <= radius else { continue }
-                    guard input[ny * width + nx] == 0 else { continue }
-                    survives = false
-                    break
+    input.withUnsafeBufferPointer { source in
+        output.withUnsafeMutableBufferPointer { destination in
+            for y in radius..<(height - radius) {
+                for x in radius..<(width - radius) {
+                    // 中心も必須の近傍要素なので、0 なら残りの読み出しは不要。
+                    guard source[y * width + x] != 0 else { continue }
+                    var survives = true
+                    for ny in (y - radius)...(y + radius) {
+                        let reach = radius - abs(ny - y)
+                        for nx in (x - reach)...(x + reach) {
+                            guard source[ny * width + nx] == 0 else { continue }
+                            survives = false
+                            break
+                        }
+                        if !survives { break }
+                    }
+                    if survives { destination[y * width + x] = 1 }
                 }
-                if !survives { break }
             }
-            if survives { output[y * width + x] = 1 }
         }
     }
     return output
@@ -606,7 +617,7 @@ private func largestZeroRun(in counts: [Int], range: Range<Int>) -> Int {
 }
 
 private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: Int,
-                                  componentMask: [UInt8]?, componentIndices: Set<Int>? = nil,
+                                  componentMask: [UInt8]?,
                                   evidence: SaberEvidence?,
                                   source: String = "color-mask",
                                   stageProfile: SaberCandidateStageProfile? = nil,
@@ -709,7 +720,9 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
         var puritySum = 0.0
         var measuredPeakValue = 0
         var highCount = 0
-        var clippedWhiteIndices = Set<Int>()
+        // membership と個数だけを使うため、ハッシュ集合を同じ画素領域の bitmap に置き換える。
+        var clippedWhiteMask = Array(repeating: false, count: width * height)
+        var clippedWhiteCount = 0
         var outsideValueSum = 0.0
         var outsideCount = 0
         var highAxisBins = Array(repeating: false, count: binCount)
@@ -717,69 +730,76 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
         var coreCount = 0
         let neighborOffsets = [(-2, 0), (2, 0), (0, -2), (0, 2)]
 
-        for point in points {
-            let index = point.y * width + point.x
-            if evidence.radiance.count == evidence.value.count {
-                radianceSum += pow(Double(evidence.radiance[index]) / 255.0, 2)
-            }
-            let value = Int(evidence.value[index])
-            let chroma = Int(evidence.chroma[index])
-            if evidence.coreMask[index] != 0 {
-                coreCount += 1
-                let dx = Double(point.x) - meanX
-                let dy = Double(point.y) - meanY
-                let major = dx * axis.0 + dy * axis.1
-                let normalized = clamp01((major - minMajor) / max(maxMajor - minMajor, 1.0))
-                coreAxisBins[min(binCount - 1, Int(normalized * Double(binCount)))] = true
-            }
-            if evidence.colorMask[index] != 0 {
-                rawCount += 1
-                valueSum += Double(value)
-                valueSquareSum += Double(value * value)
-                puritySum += Double(chroma) / Double(max(value, 1))
-                measuredPeakValue = max(measuredPeakValue, value)
-                if value >= 220 {
-                    highCount += 1
+        clippedWhiteMask.withUnsafeMutableBufferPointer { clippedWhite in
+            for point in points {
+                let index = point.y * width + point.x
+                if evidence.radiance.count == evidence.value.count {
+                    radianceSum += pow(Double(evidence.radiance[index]) / 255.0, 2)
+                }
+                let value = Int(evidence.value[index])
+                let chroma = Int(evidence.chroma[index])
+                if evidence.coreMask[index] != 0 {
+                    coreCount += 1
+                    let dx = Double(point.x) - meanX
+                    let dy = Double(point.y) - meanY
+                    let major = dx * axis.0 + dy * axis.1
+                    let normalized = clamp01((major - minMajor) / max(maxMajor - minMajor, 1.0))
+                    coreAxisBins[min(binCount - 1, Int(normalized * Double(binCount)))] = true
+                }
+                if evidence.colorMask[index] != 0 {
+                    rawCount += 1
+                    valueSum += Double(value)
+                    valueSquareSum += Double(value * value)
+                    puritySum += Double(chroma) / Double(max(value, 1))
+                    measuredPeakValue = max(measuredPeakValue, value)
+                    if value >= 220 {
+                        highCount += 1
+                        let dx = Double(point.x) - meanX
+                        let dy = Double(point.y) - meanY
+                        let major = dx * axis.0 + dy * axis.1
+                        let normalized = clamp01((major - minMajor) / max(maxMajor - minMajor, 1.0))
+                        highAxisBins[min(binCount - 1, Int(normalized * Double(binCount)))] = true
+                    }
+                } else if value >= 245 && chroma <= 38 {
+                    // A clipped LED becomes white and falls outside the color mask.
+                    // close can bridge it back into the selected component.
+                    if !clippedWhite[index] {
+                        clippedWhite[index] = true
+                        clippedWhiteCount += 1
+                    }
                     let dx = Double(point.x) - meanX
                     let dy = Double(point.y) - meanY
                     let major = dx * axis.0 + dy * axis.1
                     let normalized = clamp01((major - minMajor) / max(maxMajor - minMajor, 1.0))
                     highAxisBins[min(binCount - 1, Int(normalized * Double(binCount)))] = true
                 }
-            } else if value >= 245 && chroma <= 38 {
-                // A clipped LED becomes white and falls outside the color mask.
-                // close can bridge it back into the selected component.
-                clippedWhiteIndices.insert(index)
-                let dx = Double(point.x) - meanX
-                let dy = Double(point.y) - meanY
-                let major = dx * axis.0 + dy * axis.1
-                let normalized = clamp01((major - minMajor) / max(maxMajor - minMajor, 1.0))
-                highAxisBins[min(binCount - 1, Int(normalized * Double(binCount)))] = true
-            }
-            // White-clipped LED centers often sit immediately beside, rather
-            // than inside, the HSV color component. Count each nearby sample
-            // once so a diffuse reflection cannot gain simply from its area.
-            for dy in -2...2 {
-                for dx in -2...2 where abs(dx) + abs(dy) <= 2 {
+                // White-clipped LED centers often sit immediately beside, rather
+                // than inside, the HSV color component. Count each nearby sample
+                // once so a diffuse reflection cannot gain simply from its area.
+                for dy in -2...2 {
+                    for dx in -2...2 where abs(dx) + abs(dy) <= 2 {
+                        let nx = point.x + dx, ny = point.y + dy
+                        guard nx >= 0, nx < width, ny >= 0, ny < height else { continue }
+                        let neighbor = ny * width + nx
+                        if evidence.colorMask[neighbor] == 0,
+                           evidence.value[neighbor] >= 245,
+                           evidence.chroma[neighbor] <= 45 {
+                            if !clippedWhite[neighbor] {
+                                clippedWhite[neighbor] = true
+                                clippedWhiteCount += 1
+                            }
+                        }
+                    }
+                }
+                for (dx, dy) in neighborOffsets {
                     let nx = point.x + dx, ny = point.y + dy
                     guard nx >= 0, nx < width, ny >= 0, ny < height else { continue }
                     let neighbor = ny * width + nx
-                    if evidence.colorMask[neighbor] == 0,
-                       evidence.value[neighbor] >= 245,
-                       evidence.chroma[neighbor] <= 45 {
-                        clippedWhiteIndices.insert(neighbor)
-                    }
+                    let belongsToComponent = componentMask.map { $0[neighbor] != 0 } ?? false
+                    guard !belongsToComponent else { continue }
+                    outsideValueSum += Double(evidence.value[neighbor])
+                    outsideCount += 1
                 }
-            }
-            for (dx, dy) in neighborOffsets {
-                let nx = point.x + dx, ny = point.y + dy
-                guard nx >= 0, nx < width, ny >= 0, ny < height else { continue }
-                let neighbor = ny * width + nx
-                let belongsToComponent = componentMask.map { $0[neighbor] != 0 }
-                    ?? componentIndices?.contains(neighbor) ?? false
-                guard !belongsToComponent else { continue }
-                outsideValueSum += Double(evidence.value[neighbor])
-                outsideCount += 1
             }
         }
         guard rawCount >= 3 else { return nil }
@@ -800,7 +820,6 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
         longitudinalHighCoverage = Double(highAxisBins.filter { $0 }.count) / Double(binCount)
         coreSupportRatio = Double(coreCount) / Double(max(points.count, 1))
         longitudinalCoreCoverage = Double(coreAxisBins.filter { $0 }.count) / Double(binCount)
-        let clippedWhiteCount = clippedWhiteIndices.count
         clippedRatio = min(Double(clippedWhiteCount) / Double(rawCount + clippedWhiteCount), 0.25) / 0.25
         emitterScore = clamp01((Double(peakValue) - 200.0) / 55.0) * 0.32
             + clamp01((meanValue - 160.0) / 95.0) * 0.23
@@ -1102,25 +1121,31 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
     return candidates.sorted { $0.score > $1.score }
 }
 
-/// Scores an already-connected compact proposal without allocating and
-/// rescanning a full-frame mask. Used by bright-core line proposals only.
+/// 接続済みの core-line proposal を直接採点する。bitmap は重複・所属判定専用で、
+/// 全画素の再走査や連結成分の再探索は行わない。
 func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
                     evidence: SaberEvidence? = nil,
                     source: String = "color-mask",
                     stageProfile: SaberCandidateStageProfile? = nil,
                     collectEndpointDiagnostics: Bool = false) -> SaberCandidate? {
-    let uniqueIndices = Set(points.compactMap { point -> Int? in
-        guard point.x >= 0, point.x < width, point.y >= 0, point.y < height else { return nil }
-        return point.y * width + point.x
-    })
-    // Set iteration order is seeded per process (and per instance), so sort the
-    // unique indices into row-major order. Every downstream floating-point sum,
-    // axial-bin assignment and principal-axis tie then sees one fixed order, making
-    // core-line scores identical across launches and frames (they could differ by
-    // up to 4.3 points when an axial bin boundary flipped).
+    guard width > 0, height > 0 else { return nil }
+    var componentMask = Array(repeating: UInt8(0), count: width * height)
+    var uniqueIndices: [Int] = []
+    uniqueIndices.reserveCapacity(points.count)
+    componentMask.withUnsafeMutableBufferPointer { mask in
+        for point in points {
+            guard point.x >= 0, point.x < width, point.y >= 0, point.y < height else { continue }
+            let index = point.y * width + point.x
+            if mask[index] == 0 {
+                mask[index] = 1
+                uniqueIndices.append(index)
+            }
+        }
+    }
+    // bitmap は所属判定専用。従来と同じ row-major 順で全浮動小数点演算を行う。
     let uniquePoints = uniqueIndices.sorted().map { PixelPoint(x: $0 % width, y: $0 / width) }
     return scoredSaberComponent(uniquePoints, width: width, height: height,
-                                componentMask: nil, componentIndices: uniqueIndices,
+                                componentMask: componentMask,
                                 evidence: evidence, source: source,
                                 stageProfile: stageProfile,
                                 collectEndpointDiagnostics: collectEndpointDiagnostics)

@@ -196,9 +196,55 @@ private func assertBlueNoDeepSupport() {
     print("blueNoDeepSupport: integer boundaries, original pixels, diagnostics, RED and fall-through passed")
 }
 
+// 菱形の定義から全画素を調べる参照実装。行区間化・unsafe アクセスの境界を検証する。
+private func assertLosslessMorphology() {
+    func reference(_ mask: [UInt8], _ width: Int, _ height: Int,
+                   _ radius: Int, erode: Bool) -> [UInt8] {
+        guard radius > 0 else { return mask }
+        return mask.indices.map { index in
+            let x = index % width, y = index / width
+            if erode && (x < radius || y < radius
+                || x >= width - radius || y >= height - radius) { return 0 }
+            let neighbors = mask.indices.filter {
+                abs($0 % width - x) + abs($0 / width - y) <= radius
+            }
+            let matches = erode ? neighbors.allSatisfy { mask[$0] != 0 }
+                : neighbors.contains { mask[$0] != 0 }
+            return matches ? 1 : 0
+        }
+    }
+    func check(_ mask: [UInt8], width: Int, height: Int) {
+        for radius in 0...4 {
+            let dilated = reference(mask, width, height, radius, erode: false)
+            let eroded = reference(mask, width, height, radius, erode: true)
+            precondition(dilateSaberMask(mask, width: width, height: height, radius: radius) == dilated)
+            precondition(closeSaberMask(mask, width: width, height: height, radius: radius)
+                == reference(dilated, width, height, radius, erode: true))
+            precondition(openSaberMask(mask, width: width, height: height, radius: radius)
+                == reference(eroded, width, height, radius, erode: false))
+        }
+    }
+    // 3x3 の全パターンで、空・密・端・過大半径と非二値入力を網羅する。
+    for pattern in 0..<512 {
+        check((0..<9).map { pattern & (1 << $0) == 0 ? 0 : 255 }, width: 3, height: 3)
+    }
+    var state: UInt64 = 0x51abe2
+    for (width, height) in [(1, 9), (9, 1), (7, 11), (13, 9)] {
+        for density in [1, 3, 7] {
+            let mask: [UInt8] = (0..<(width * height)).map { _ in
+                state = state &* 6364136223846793005 &+ 1
+                return (state >> 32) % 8 < density ? UInt8(truncatingIfNeeded: state) | 1 : 0
+            }
+            check(mask, width: width, height: height)
+        }
+    }
+    print("lossless morphology: exhaustive masks, diamond radii 0...4, edges and nonbinary inputs passed")
+}
+
 @main
 enum StaticBGRADetectionTests {
     static func main() {
+        assertLosslessMorphology()
         assertBlueNoDeepSupport()
         let cases: [(String, SaberColor, PixelPoint, PixelPoint, Int, Int)] = [
             ("red horizontal", .red, PixelPoint(x: 12, y: 20), PixelPoint(x: 92, y: 20), 128, 64),
