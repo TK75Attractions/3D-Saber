@@ -3,11 +3,15 @@
 #include <exception>
 #include <new>
 #include <chrono>
+#include "rgba_rotation.hpp"
 
 namespace {
-phonesaber::FrameProcessor* processor(jlong handle) {
-    return reinterpret_cast<phonesaber::FrameProcessor*>(handle);
-}
+struct Session {
+    phonesaber::FrameProcessor processor;
+    phonesaber::android::RgbaRotation rotation;
+};
+Session* session(jlong handle) { return reinterpret_cast<Session*>(handle); }
+phonesaber::FrameProcessor* processor(jlong handle) { return &session(handle)->processor; }
 void fail(JNIEnv* env, const char* kind, const char* message) {
     jclass type = env->FindClass(kind);
     if (type) { env->ThrowNew(type, message); env->DeleteLocalRef(type); }
@@ -35,17 +39,36 @@ jobjectArray results(JNIEnv* env, const std::vector<phonesaber::FrameResult>& va
     env->DeleteLocalRef(type);
     return array;
 }
+jobjectArray process_pixels(JNIEnv* env, jlong handle, const phonesaber::PixelBuffer& pixels,
+    jdouble time, jint brightness, jint dominance, jboolean mirror_x, jboolean mirror_y, jboolean measurement_mode) {
+    const phonesaber::ColorThreshold threshold{static_cast<uint8_t>(brightness),
+        static_cast<uint8_t>(dominance), 30};
+    // 出力寸法・認識は既定のまま、反転と既存の計測APIを公開する。
+    phonesaber::OutputConfig output;
+    output.mirror_x = mirror_x == JNI_TRUE;
+    output.mirror_y = mirror_y == JNI_TRUE;
+    output.measurement_mode = measurement_mode == JNI_TRUE;
+    if (output.measurement_mode) {
+        const auto analysis = phonesaber::analyze(pixels, threshold, threshold);
+        // iPhone と同じく検出後・文字列生成直前の Unix epoch。カメラ時刻ではない。
+        const double epoch = std::chrono::duration<double>(
+            std::chrono::system_clock::now().time_since_epoch()).count();
+        return results(env, processor(handle)->process(analysis, pixels.width, pixels.height, time, output, {epoch, epoch}));
+    }
+    return results(env, processor(handle)->process(pixels, time, output, {}, threshold, threshold));
+}
+
 }
 extern "C" JNIEXPORT jlong JNICALL
 Java_jp_phonesaber_sender_NativeCore_create(JNIEnv* env, jobject) {
-    try { return reinterpret_cast<jlong>(new phonesaber::FrameProcessor()); }
+    try { return reinterpret_cast<jlong>(new Session()); }
     catch (const std::exception& error) {
         fail(env, "java/lang/IllegalStateException", error.what()); return 0;
     }
 }
 extern "C" JNIEXPORT void JNICALL
 Java_jp_phonesaber_sender_NativeCore_destroy(JNIEnv*, jobject, jlong handle) {
-    delete processor(handle);
+    delete session(handle);
 }
 extern "C" JNIEXPORT jobjectArray JNICALL
 Java_jp_phonesaber_sender_NativeCore_process(JNIEnv* env, jobject, jlong handle,
@@ -63,21 +86,7 @@ Java_jp_phonesaber_sender_NativeCore_process(JNIEnv* env, jobject, jlong handle,
     try {
         const phonesaber::PixelBuffer pixels{data, width, height, static_cast<std::size_t>(stride),
             static_cast<std::size_t>(capacity), phonesaber::PixelFormat::rgba};
-        const phonesaber::ColorThreshold threshold{static_cast<uint8_t>(brightness),
-            static_cast<uint8_t>(dominance), 30};
-        // 出力寸法・認識は既定のまま、反転と既存の計測APIを公開する。
-        phonesaber::OutputConfig output;
-        output.mirror_x = mirror_x == JNI_TRUE;
-        output.mirror_y = mirror_y == JNI_TRUE;
-        output.measurement_mode = measurement_mode == JNI_TRUE;
-        if (output.measurement_mode) {
-            const auto analysis = phonesaber::analyze(pixels, threshold, threshold);
-            // iPhone と同じく検出後・文字列生成直前の Unix epoch。カメラ時刻ではない。
-            const double epoch = std::chrono::duration<double>(
-                std::chrono::system_clock::now().time_since_epoch()).count();
-            return results(env, processor(handle)->process(analysis, width, height, time, output, {epoch, epoch}));
-        }
-        return results(env, processor(handle)->process(pixels, time, output, {}, threshold, threshold));
+        return process_pixels(env, handle, pixels, time, brightness, dominance, mirror_x, mirror_y, measurement_mode);
     } catch (const std::exception& error) {
         fail(env, "java/lang/IllegalStateException", error.what()); return nullptr;
     }
@@ -93,4 +102,27 @@ Java_jp_phonesaber_sender_NativeCore_expire(JNIEnv* env, jobject, jlong handle, 
 extern "C" JNIEXPORT jdouble JNICALL
 Java_jp_phonesaber_sender_NativeCore_nextExpiry(JNIEnv*, jobject, jlong handle) {
     return handle ? processor(handle)->next_expiry().value_or(-1.0) : -1.0;
+}
+
+extern "C" JNIEXPORT jobjectArray JNICALL
+Java_jp_phonesaber_sender_NativeCore_processRotated(JNIEnv* env, jobject, jlong handle,
+    jobject buffer, jint position, jint remaining, jint width, jint height, jint stride,
+    jint degrees, jdouble time, jint brightness, jint dominance,
+    jboolean mirror_x, jboolean mirror_y, jboolean measurement_mode) {
+    const auto* data = static_cast<const uint8_t*>(env->GetDirectBufferAddress(buffer));
+    const jlong capacity = env->GetDirectBufferCapacity(buffer);
+    if (!handle || !data || position < 0 || remaining < 0 || position > capacity || remaining > capacity-position ||
+        stride < 0 || brightness < 0 || brightness > 255 || dominance < 0 || dominance > 255) {
+        fail(env, "java/lang/IllegalArgumentException", "Invalid direct RGBA buffer or threshold");
+        return nullptr;
+    }
+    try {
+        const auto pixels = session(handle)->rotation.orient(data+position, static_cast<std::size_t>(remaining),
+            width, height, static_cast<std::size_t>(stride), degrees);
+        return process_pixels(env, handle, pixels, time, brightness, dominance, mirror_x, mirror_y, measurement_mode);
+    } catch (const std::invalid_argument& error) {
+        fail(env, "java/lang/IllegalArgumentException", error.what()); return nullptr;
+    } catch (const std::exception& error) {
+        fail(env, "java/lang/IllegalStateException", error.what()); return nullptr;
+    }
 }

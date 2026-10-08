@@ -1,4 +1,5 @@
 #include "../src/internal.hpp"
+#include "../../app/src/main/cpp/rgba_rotation.hpp"
 #include <cassert>
 #include <iostream>
 using namespace phonesaber;
@@ -87,7 +88,48 @@ static void morphology_tests() {
         }
     }
 }
+// 未整列/padding/最終行省略の回転を、独立した逆写像と比較する。ASan/UBSanでも実行する。
+static void rotation_tests() {
+    android::RgbaRotation rotation;
+    uint32_t random = 0x51ab3u;
+    for (int w : {1,2,3,17,640}) for (int h : {1,2,5,19,480}) for (int padding : {0,1,13}) {
+        std::size_t stride = std::size_t(w)*4+padding;
+        std::vector<uint8_t> input(stride*h+5);
+        for (auto& byte : input) { random = random*1664525u+1013904223u; byte = uint8_t(random >> 24); }
+        const auto* source = input.data()+1;
+        for (bool last_padding : {false,true}) for (int degrees : {0,90,180,270}) {
+            std::size_t size = stride*(h-1)+w*4+(last_padding ? padding : 0);
+            auto out = rotation.orient(source,size,w,h,stride,degrees);
+            int ow = degrees%180 == 0 ? w : h, oh = degrees%180 == 0 ? h : w;
+            assert(out.width == ow && out.height == oh && out.format == PixelFormat::rgba);
+            for (int y = 0; y < oh; ++y) for (int x = 0; x < ow; ++x) {
+                int sx = degrees == 90 ? y : degrees == 180 ? w-1-x : degrees == 270 ? w-1-y : x;
+                int sy = degrees == 90 ? h-1-x : degrees == 180 ? h-1-y : degrees == 270 ? x : y;
+                for (int c = 0; c < 4; ++c)
+                    assert(out.data[std::size_t(y)*out.row_stride+x*4+c] == source[std::size_t(sy)*stride+sx*4+c]);
+            }
+            if (degrees == 0 && last_padding) assert(out.data == source && out.row_stride == stride);
+            else {
+                auto again = rotation.orient(source,size,w,h,stride,degrees);
+                assert(again.data == out.data && again.row_stride == std::size_t(ow)*4);
+            }
+        }
+    }
+    auto rejected = [&](const uint8_t* p, std::size_t size, int w, int h, std::size_t stride, int degrees) {
+        bool caught = false;
+        try { rotation.orient(p,size,w,h,stride,degrees); }
+        catch (const std::invalid_argument&) { caught = true; }
+        assert(caught);
+    };
+    uint8_t bytes[32]{};
+    rejected(bytes,27,3,2,16,90);
+    rejected(bytes,32,3,2,11,90);
+    rejected(bytes,32,3,2,16,45);
+    rejected(bytes,32,0,2,16,90);
+    rejected(nullptr,32,3,2,16,90);
+}
 int main() {
+    rotation_tests();
     morphology_tests();
     blue_support_tests();
     FrameProcessor p;

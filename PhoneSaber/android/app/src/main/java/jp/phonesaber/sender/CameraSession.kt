@@ -45,7 +45,6 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
     // These fields are accessed only on executor.
     private var core: NativeCore? = null
     private var expiry: ScheduledFuture<*>? = null
-    private val rotation = RotationHelper()
     private val healthMeter = DeviceHealthMeter()
     fun healthRates(): HealthRates = healthMeter.snapshot(System.nanoTime() / 1e9)
 
@@ -108,7 +107,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                     .setTargetRotation(Surface.ROTATION_0) // Fixed portrait independent of physical/device UI rotation.
                     .setResolutionSelector(selector)
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
-                    .setOutputImageRotationEnabled(false) // RotationHelper performs exact byte rotation once.
+                    .setOutputImageRotationEnabled(false) // JNI 内で同じ向きへ byte 単位で回転。
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
                 Camera2Interop.Extender(builder)
                     .setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(fps, fps))
@@ -126,11 +125,11 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                             val started = System.nanoTime()
                             val plane = image.planes.single()
                             // No viewport crop, resize, channel swap or mirroring.
-                            val pixels = rotation.orient(plane.buffer, image.width, image.height,
-                                plane.rowStride, plane.pixelStride, image.imageInfo.rotationDegrees)
                             val processor = core ?: return@setAnalyzer
                             val jniStarted = System.nanoTime()
-                            val results = processor.process(pixels, started / 1e9, brightness, dominance)
+                            val degrees = image.imageInfo.rotationDegrees
+                            val results = processor.processCamera(plane.buffer, image.width, image.height,
+                                plane.rowStride, plane.pixelStride, degrees, started / 1e9, brightness, dominance)
                             val jniEnded = System.nanoTime()
                             val sensorNow = if (realtimeSensorClock) SystemClock.elapsedRealtimeNanos() else jniEnded
                             val captureToSendMs = (sensorNow - image.imageInfo.timestamp) / 1e6
@@ -139,7 +138,9 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                                     lastFrameAt = jniEnded / 1e9
                                     healthMeter.processed(jniEnded / 1e9, (jniEnded - jniStarted) / 1e6, captureToSendMs)
                                     sender.offer(results, started)
-                                    status = describe(results, "${pixels.width}×${pixels.height} / $fps fps要求")
+                                    val width = if (degrees % 180 == 0) image.width else image.height
+                                    val height = if (degrees % 180 == 0) image.height else image.width
+                                    status = describe(results, "${width}×${height} / $fps fps要求")
                                 }
                             }
                             scheduleExpiry(token)
