@@ -262,17 +262,27 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
     std::array<Mask,2> masks{Mask(w*h),Mask(w*h)}, emitters{Mask(w*h),Mask(w*h)};
     Mask relaxed(w*h), bright(w*h), value(w*h), chroma(w*h), radiance(w*h);
     int red_offset = p.format == PixelFormat::bgra ? 2 : 0, blue_offset = 2-red_offset;
+    int diffuser_brightness = std::max(110,int(blue.brightness)-25);
+    int diffuser_dominance = std::max(8,int(blue.dominance)-17);
+    int diffuser_green_dominance = std::max(2,diffuser_dominance/4);
     for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
         const auto* pixel = p.data+std::size_t(y*step)*p.row_stride+x*step*4;
         int r = pixel[red_offset], g = pixel[1], b = pixel[blue_offset], i = y*w+x;
+        // 整数の明度・chroma は丸めた HSV 値と同じ。実際の述語の先頭条件で hue 計算を絞る。
+        int maximum = std::max(r,std::max(g,b)), minimum = std::min(r,std::min(g,b));
+        int delta = maximum-minimum, second = r+g+b-maximum-minimum;
+        radiance[i] = uint8_t(second); value[i] = uint8_t(maximum); chroma[i] = uint8_t(delta);
+        if (maximum >= 235 && second >= 100) bright[i] = 1;
+        bool possible_red = maximum >= red.brightness && delta >= red.dominance;
+        bool possible_blue = maximum >= blue.brightness && delta >= blue.dominance;
+        bool possible_diffuser = b >= diffuser_brightness && b-r >= diffuser_dominance
+            && b-g >= diffuser_green_dominance;
+        if (!possible_red && !possible_blue && !possible_diffuser) continue;
         auto hsv_value = hsv(r,g,b);
-        int second = r+g+b-std::max({r,g,b})-std::min({r,g,b});
-        radiance[i] = uint8_t(second); value[i] = uint8_t(rounded(hsv_value.value)); chroma[i] = uint8_t(rounded(hsv_value.chroma));
-        if (hsv_value.value >= 235 && second >= 100) bright[i] = 1;
         bool emitter = hsv_value.value >= 215 && hsv_value.chroma/std::max(hsv_value.value,1.0) >= 0.35;
-        if (strict(hsv_value,SaberColor::red,red)) { masks[0][i] = 1; if (emitter) emitters[0][i] = 1; }
-        if (strict(hsv_value,SaberColor::blue,blue)) { masks[1][i] = 1; if (emitter) emitters[1][i] = 1; }
-        if (diffuser(r,g,b,hsv_value,blue)) relaxed[i] = 1;
+        if (possible_red && strict(hsv_value,SaberColor::red,red)) { masks[0][i] = 1; if (emitter) emitters[0][i] = 1; }
+        if (possible_blue && strict(hsv_value,SaberColor::blue,blue)) { masks[1][i] = 1; if (emitter) emitters[1][i] = 1; }
+        if (possible_diffuser && diffuser(r,g,b,hsv_value,blue)) relaxed[i] = 1;
     }
     Mask support = dilate(masks[1],w,h,2);
     for (int i = 0; i < w*h; ++i) if (relaxed[i] && support[i]) masks[1][i] = 1;
