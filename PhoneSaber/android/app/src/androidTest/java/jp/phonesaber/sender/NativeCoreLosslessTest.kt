@@ -46,9 +46,13 @@ class NativeCoreLosslessTest(private val path: String, private val expected: JSO
             buffer.flip()
             // 0度のカメラ経路と同じslice/stride。fixture間に予測や端点順序の履歴を持ち越さない。
             val pixels = RotationHelper().orient(buffer, width, height, stride, 4, 0)
-            val results = NativeCore(MirrorSettings()).use { core ->
+            val legacy = NativeCore(MirrorSettings()).use { core ->
                 core.process(pixels, 1.0, 145, 25)
             }
+            val results = NativeCore(MirrorSettings()).use { core ->
+                core.processCamera(buffer, width, height, stride, 4, 0, 1.0, 145, 25)
+            }
+            assertArrayEquals("$path stride=$stride camera/legacy JNI", legacy, results)
             val analysis = JSONObject(NativeFixtureProbe.analyze(
                 pixels.buffer, pixels.width, pixels.height, pixels.rowStride))
             val expectedColors = expected.getJSONObject("colors")
