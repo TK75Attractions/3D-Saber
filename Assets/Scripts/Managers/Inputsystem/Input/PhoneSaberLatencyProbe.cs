@@ -204,15 +204,19 @@ public sealed class PhoneSaberLatencyLoop
                 double latencyMs = (packetTime - switchAt) * 1000.0;
                 bool towardNewSide = !sideX[0].HasValue || !sideX[1].HasValue ||
                     Math.Abs(x - sideX[Side].Value) < Math.Abs(x - sideX[1 - Side].Value);
-                if (latencyMs < MinPlausibleMs || !towardNewSide) { Rejected++; return; }
-                samples.Add(latencyMs);
-                TotalSamples++;
-                if (samples.Count > MaxSamples) samples.RemoveAt(0);
-                Waiting = false;
-                baseline = x;
-                ScheduleNext(now);
+                if (latencyMs < MinPlausibleMs || !towardNewSide) Rejected++;
+                else
+                {
+                    samples.Add(latencyMs);
+                    TotalSamples++;
+                    if (samples.Count > MaxSamples) samples.RemoveAt(0);
+                    Waiting = false;
+                    baseline = x;
+                    ScheduleNext(now);
+                }
             }
-            else if (now - switchAt > TimeoutSeconds)
+            // 逆方向の受信が続く場合も、採用できないまま期限を過ぎたら失敗として進める。
+            if (Waiting && now - switchAt > TimeoutSeconds)
             {
                 Misses++;
                 Waiting = false;
