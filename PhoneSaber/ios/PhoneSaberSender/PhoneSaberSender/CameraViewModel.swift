@@ -337,6 +337,253 @@ private final class CaptureSessionRunner: @unchecked Sendable {
     }
 }
 
+// 最新の表示値と累積カウンタを保持する。UI 処理中はこのロックを保持しない。
+// フレーム・送信の各通知は Task を作らず、最新値・累積値と診断の既存窓を更新する。
+final class CameraUIPendingState: @unchecked Sendable {
+    struct Snapshot {
+        var processed = 0
+        var rejected = 0
+        var redDetections = 0
+        var blueDetections = 0
+        var redAttempts = 0
+        var blueAttempts = 0
+        var redCompleted = 0
+        var blueCompleted = 0
+        var redErrors = 0
+        var blueErrors = 0
+        var noRoute = 0
+        var redEndpoints: (PixelPoint, PixelPoint)?
+        var blueEndpoints: (PixelPoint, PixelPoint)?
+        var dimensions = (width: 1, height: 1)
+        var lastEpoch: TimeInterval?
+        var lastLocalSendMs: Double?
+        var sendErrors: [Int: String] = [:]
+        var firstCameraFrame: TimeInterval?
+        var lastCameraFrame: TimeInterval?
+        var fps = 0.0
+#if DEBUG
+        var performanceMetrics: [String: PerformanceMetric] = [:]
+        var frameIntervalStatistics: CameraFrameIntervalStatistics?
+#endif
+    }
+
+    private let lock = NSLock()
+    private var state = Snapshot()
+    private var dirty = false
+    private var running = false
+    private var processorGeneration = 0
+    private var lifecycleGeneration = 0
+    private var frameCount = 0
+    private var fpsStart = CACurrentMediaTime()
+#if DEBUG
+    private var previousTrace: FrameTrace?
+    private var diagnosticEventTimes: [String: [TimeInterval]] = [:]
+#endif
+
+    func setAcceptance(running: Bool, processor: Int, lifecycle: Int) {
+        lock.lock(); defer { lock.unlock() }
+        self.running = running
+        processorGeneration = processor
+        lifecycleGeneration = lifecycle
+    }
+
+    func reset() {
+        lock.lock(); defer { lock.unlock() }
+        let noRoute = state.noRoute
+        state = Snapshot()
+        state.noRoute = noRoute
+        dirty = false
+        frameCount = 0
+        fpsStart = CACurrentMediaTime()
+#if DEBUG
+        previousTrace = nil
+        diagnosticEventTimes = [:]
+#endif
+    }
+
+    func takeSnapshot() -> Snapshot? {
+        lock.lock(); defer { lock.unlock() }
+        guard dirty else { return nil }
+        let snapshot = state
+        state.firstCameraFrame = nil
+        state.lastCameraFrame = nil
+        dirty = false
+        return snapshot
+    }
+
+    func cameraFrame(at time: TimeInterval) {
+        lock.lock(); defer { lock.unlock() }
+        guard running else { return }
+        if state.firstCameraFrame == nil { state.firstCameraFrame = time }
+        state.lastCameraFrame = time
+        dirty = true
+    }
+
+    func frame(_ results: [DetectedSaber], width: Int, height: Int, generation: Int,
+               lifecycle: Int?, redEpoch: TimeInterval?, blueEpoch: TimeInterval?, trace: FrameTrace?,
+               redEnqueuedAt: TimeInterval?, blueEnqueuedAt: TimeInterval?, requestMs: Double) {
+        lock.lock(); defer { lock.unlock() }
+        dirty = true
+        guard running, generation == processorGeneration, lifecycle == lifecycleGeneration else {
+            state.rejected += 1
+            return
+        }
+        state.processed += 1
+        state.dimensions = (width, height)
+        state.redEndpoints = nil
+        state.blueEndpoints = nil
+        for result in results {
+            switch result.color {
+            case .red:
+                state.redEndpoints = result.endpoints
+                if result.isFresh {
+                    state.redAttempts += 1
+                    if !result.isPredicted { state.redDetections += 1 }
+                }
+            case .blue:
+                state.blueEndpoints = result.endpoints
+                if result.isFresh {
+                    state.blueAttempts += 1
+                    if !result.isPredicted { state.blueDetections += 1 }
+                }
+            }
+            if result.isFresh { state.lastEpoch = result.color == .red ? redEpoch : blueEpoch }
+        }
+        frameCount += 1
+        let elapsed = CACurrentMediaTime() - fpsStart
+        if elapsed >= 1 { state.fps = Double(frameCount) / elapsed; frameCount = 0; fpsStart = CACurrentMediaTime() }
+#if DEBUG
+        if let trace { recordFrameTrace(trace) }
+        for enqueueAt in [redEnqueuedAt, blueEnqueuedAt].compactMap({ $0 }) {
+            recordEventRate("UDP enqueue rate")
+            if let trace {
+                addPerformance("Detection → UDP enqueue", value: max(0, (enqueueAt - trace.detectionEnd) * 1000))
+                addPerformance("Post-capture total", value: max(0, (enqueueAt - trace.callbackHostTime) * 1000))
+            }
+        }
+        addPerformance("UDP request", value: requestMs)
+#endif
+    }
+
+    func completed(port: Int, generation: Int, result: Result<TimeInterval, Error>, processingStart: TimeInterval) {
+        // Error の文字列化はロック外で行う。
+        let message: String?
+        if case .failure(let error) = result { message = error.localizedDescription } else { message = nil }
+        lock.lock(); defer { lock.unlock() }
+        guard running, generation == lifecycleGeneration else { return }
+        dirty = true
+        switch result {
+        case .success(let completedAt):
+            state.sendErrors[port] = nil
+            if port == 5005 { state.redCompleted += 1 } else { state.blueCompleted += 1 }
+            state.lastLocalSendMs = max(0, (completedAt - processingStart) * 1000)
+        case .failure:
+            if port == 5005 { state.redErrors += 1 } else { state.blueErrors += 1 }
+            state.sendErrors[port] = message
+        }
+    }
+
+    func noRoute(generation: Int) {
+        lock.lock(); defer { lock.unlock() }
+        guard running, generation == lifecycleGeneration else { return }
+        state.noRoute += 1
+        dirty = true
+    }
+#if DEBUG
+    func resetPerformance() {
+        lock.lock(); defer { lock.unlock() }
+        state.performanceMetrics = [:]
+        state.frameIntervalStatistics = nil
+        previousTrace = nil
+        diagnosticEventTimes = [:]
+    }
+
+    func performanceSnapshot() -> (metrics: [String: PerformanceMetric], intervals: CameraFrameIntervalStatistics?) {
+        lock.lock(); defer { lock.unlock() }
+        return (state.performanceMetrics, state.frameIntervalStatistics)
+    }
+
+    func recordUIWork(_ milliseconds: Double) {
+        lock.lock(); defer { lock.unlock() }
+        addPerformance("UI / overlay state", value: milliseconds)
+    }
+
+    func recordDebugPerformanceForTesting(name: String, value: Double) {
+        lock.lock(); defer { lock.unlock() }
+        addPerformance(name, value: value)
+    }
+
+    func udpQueueStart(_ wait: TimeInterval, replaced: Int, generation: Int) {
+        lock.lock(); defer { lock.unlock() }
+        guard running, generation == lifecycleGeneration else { return }
+        recordUDPQueueStart(wait, replaced: replaced)
+        dirty = true
+    }
+
+    func recordPerformance(_ sample: FramePerformanceSample) {
+        lock.lock(); defer { lock.unlock() }
+        dirty = true
+        let profile = sample.detector
+        addPerformance("Pixel buffer access", value: sample.pixelBufferAccessMs)
+        addPerformance("BGRA + RGB→HSV + masks", value: profile.pixelScanHSVMaskMs)
+        addPerformance("Close / open", value: profile.morphologyMs)
+        addPerformance("Components + shape/brightness/contrast/PCA", value: profile.componentAndScoreMs)
+        addPerformance("Component traversal / proposal overhead", value: profile.componentTraversalAndProposalOverheadMs)
+        addPerformance("Shape + PCA axis", value: profile.shapeAndAxisMs)
+        addPerformance("Brightness / contrast / color score", value: profile.brightnessContrastColorMs)
+        addPerformance("Endpoints + bounds", value: profile.endpointAndBoundsMs)
+        addPerformance("Bright-core proposals", value: profile.lineProposalMs)
+        addPerformance("Proposal detailed score", value: profile.lineScoreMs)
+        addPerformance("Final selection / scaling", value: profile.selectionMs)
+        addPerformance("Detection total", value: profile.totalMs)
+    }
+
+    private func recordFrameTrace(_ trace: FrameTrace) {
+        if let capture = trace.captureHostTime, trace.callbackHostTime >= capture {
+            addPerformance("Camera / AVFoundation age", value: (trace.callbackHostTime - capture) * 1000)
+        }
+        state.frameIntervalStatistics = trace.inputFrameIntervalStatistics
+        addPerformance("Callback → processing start", value: max(0, (trace.processingStart - trace.callbackHostTime) * 1000))
+        addPerformance("Detection", value: max(0, (trace.detectionEnd - trace.processingStart) * 1000))
+        if let previous = previousTrace {
+            let elapsed = trace.callbackHostTime - previous.callbackHostTime
+            if elapsed > 0 {
+                addPerformance("Input FPS", value: Double(trace.receivedFrames - previous.receivedFrames) / elapsed)
+                addPerformance("Processed FPS", value: Double(trace.processedFrames - previous.processedFrames) / elapsed)
+                addPerformance("Replaced frames", value: Double(trace.replacedFrames - previous.replacedFrames) / elapsed)
+            }
+        }
+        previousTrace = trace
+    }
+
+    private func recordUDPQueueStart(_ wait: TimeInterval, replaced: Int) {
+        addPerformance("UDP queue wait", value: wait * 1000)
+        addPerformance("UDP replaced sends", value: Double(replaced))
+        recordEventRate("UDP actual send rate")
+    }
+
+    private func recordEventRate(_ name: String) {
+        let now = HostMonotonicClock.now()
+        var events = diagnosticEventTimes[name, default: []]
+        events.append(now)
+        events = events.filter { now - $0 <= 2 }
+        diagnosticEventTimes[name] = events
+        guard let first = events.first, now > first else { return }
+        addPerformance(name, value: Double(events.count - 1) / (now - first))
+    }
+
+    private func addPerformance(_ name: String, value: Double) {
+        var metric = state.performanceMetrics[name, default: PerformanceMetric()]
+        metric.latest = value
+        metric.values.append(value)
+        if metric.values.count > 120 { metric.values.removeFirst() }
+        metric.maximum = max(metric.maximum, value)
+        state.performanceMetrics[name] = metric
+    }
+
+#endif
+}
+
 @MainActor
 final class CameraViewModel: NSObject, ObservableObject {
     let session = AVCaptureSession()
@@ -356,6 +603,10 @@ final class CameraViewModel: NSObject, ObservableObject {
     private let lanProbe: LANLivenessProbe
     /// Coordinates dropped because neither P2P nor LAN could take them.
     private var p2pNoRouteCount = 0
+    nonisolated let uiPending = CameraUIPendingState()
+    private var uiTimer: DispatchSourceTimer?
+    private(set) var uiSnapshotCountForTesting = 0
+    static let uiPublishInterval: TimeInterval = 1.0 / 12
     nonisolated private let delivery: CoordinateDelivery
     private let pathMonitor = NWPathMonitor()
     private let bonjourDiscovery = BonjourDiscovery()
@@ -478,19 +729,11 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published var debugDetailedProfilingEnabled = false {
         didSet { processor.setDetailedProfilingEnabled(debugDetailedProfilingEnabled) }
     }
-    private var performanceMetrics: [String: PerformanceMetric] = [:]
     private var lastPerformancePublish = 0.0
     private var lastCameraSampleTime = 0.0
-    private var previousTrace: FrameTrace?
-    private var diagnosticEventTimes: [String: [TimeInterval]] = [:]
-    private var latestDiagnosticSequence: UInt64 = 0
-    private var latestFrameCounts = (received: 0, processed: 0, replaced: 0)
     private(set) var debugPerformancePublishCountForTesting = 0
     private weak var activeCamera: AVCaptureDevice?
-    private var latestFrameIntervalStatistics: CameraFrameIntervalStatistics?
 #endif
-    private var frameCount = 0
-    private var fpsStart = CACurrentMediaTime()
     private var lifecycleGeneration = 0 { didSet { updateDeliverySettings() } }
     private var cameraErrorMessage: String?
     private var connectionErrorMessage: String?
@@ -583,6 +826,14 @@ final class CameraViewModel: NSObject, ObservableObject {
             self.host = self.hostSelection.host
             self.connectionMode = self.hostSelection.source.rawValue
         }
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(deadline: .now() + Self.uiPublishInterval, repeating: Self.uiPublishInterval,
+                       leeway: .milliseconds(5))
+        timer.setEventHandler { [weak self] in
+            MainActor.assumeIsolated { self?.publishPendingUI() }
+        }
+        uiTimer = timer
+        timer.resume()
         registerCameraSessionObservers()
         UIDevice.current.isBatteryMonitoringEnabled = true
         sessionObserverTokens.append(NotificationCenter.default.addObserver(
@@ -633,9 +884,19 @@ final class CameraViewModel: NSObject, ObservableObject {
             guard let self else { return }
             let sent = self.sendResults(results, width: width, height: height,
                                         processingStart: processingStart, generation: generation)
-            Task { @MainActor [weak self] in
-                self?.handle(results, width: width, height: height, generation: generation, trace: trace, sent: sent)
-            }
+#if DEBUG
+            let redEnqueuedAt = sent?.redEnqueuedAt
+            let blueEnqueuedAt = sent?.blueEnqueuedAt
+            let requestMs = sent?.requestMs ?? 0
+#else
+            let redEnqueuedAt: TimeInterval? = nil
+            let blueEnqueuedAt: TimeInterval? = nil
+            let requestMs = 0.0
+#endif
+            self.uiPending.frame(results, width: width, height: height, generation: generation,
+                                 lifecycle: sent?.lifecycleGeneration, redEpoch: sent?.redEpoch,
+                                 blueEpoch: sent?.blueEpoch, trace: trace, redEnqueuedAt: redEnqueuedAt,
+                                 blueEnqueuedAt: blueEnqueuedAt, requestMs: requestMs)
         }
         processor.onRawFrameSaved = { [weak self] result in
             Task { @MainActor in
@@ -663,7 +924,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
 #if DEBUG
         processor.onPerformance = { [weak self] sample in
-            Task { @MainActor in self?.recordPerformance(sample) }
+            self?.uiPending.recordPerformance(sample)
         }
 #endif
     }
@@ -893,9 +1154,10 @@ final class CameraViewModel: NSObject, ObservableObject {
             processor.updateDebugDeviceHealthState(DebugDeviceHealthState(
                 thermalState: thermal.metadataValue, batteryLevel: battery.level, batteryState: battery.state))
         }
-        deviceHealthLine = "発熱 \(thermal.title) / \(DeviceHealthText.battery(level: battery.level, state: battery.title))\n" + DeviceHealthText.timing(rates)
-        deviceHealthWarning = DeviceHealthText.warning(thermal: thermal, rates: rates,
-                                                       requestedFPS: requestedHealthFPS, running: running)
+        let line = "発熱 \(thermal.title) / \(DeviceHealthText.battery(level: battery.level, state: battery.title))\n" + DeviceHealthText.timing(rates)
+        assignIfChanged(\.deviceHealthLine, line)
+        assignIfChanged(\.deviceHealthWarning, DeviceHealthText.warning(thermal: thermal, rates: rates,
+                                                       requestedFPS: requestedHealthFPS, running: running))
     }
 
     private func deviceBatterySnapshot() -> (level: Double?, state: String, title: String?) {
@@ -915,7 +1177,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         cameraLifecycle.receivedFrame(at: time)
         guard cameraLifecycle.state == .live else { return }
         cameraBackoff.receivedFrame(at: time)
-        cameraRecoveryMessage = ""
+        assignIfChanged(\.cameraRecoveryMessage, "")
         if automaticResumePending {
             automaticResumeMessage = "自動で送信を再開しました"
             automaticResumePending = false
@@ -926,11 +1188,11 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func publishCameraLifecycle(at time: TimeInterval) {
-        cameraState = cameraLifecycle.state
+        assignIfChanged(\.cameraState, cameraLifecycle.state)
         if let lastFrameAt = cameraLifecycle.lastFrameAt, time >= lastFrameAt {
-            lastCameraFrameAge = time - lastFrameAt
+            assignIfChanged(\.lastCameraFrameAge, time - lastFrameAt)
         } else {
-            lastCameraFrameAge = nil
+            assignIfChanged(\.lastCameraFrameAge, nil)
         }
     }
 
@@ -942,6 +1204,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     deinit {
+        uiTimer?.cancel()
         cameraWatchdogTask?.cancel()
         cameraRecoveryTask?.cancel()
         pathMonitor.cancel()
@@ -1125,6 +1388,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     func stop() {
+        publishPendingUI()
         resumePolicy.stop()
         persistSendingIntent()
         permissionPending = false
@@ -1258,7 +1522,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         connectionMode = hostSelection.source.rawValue
         resetStartState()
         processor.configureThresholds(red: configuredThreshold, blue: configuredThreshold)
-        frameCount = 0; fpsStart = CACurrentMediaTime(); resetProcessor(); status = "送信中"
+        resetProcessor(); status = "送信中"
         healthMeter.reset(at: ProcessInfo.processInfo.systemUptime, generation: processor.currentGeneration)
         publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
@@ -1287,6 +1551,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func updateDeliverySettings() {
+        uiPending.setAcceptance(running: running, processor: processor.currentGeneration, lifecycle: lifecycleGeneration)
         var settings = CoordinateDelivery.Settings()
         settings.running = running
         settings.processorGeneration = processor.currentGeneration
@@ -1327,28 +1592,13 @@ final class CameraViewModel: NSObject, ObservableObject {
             let sendRequestStart = ProcessInfo.processInfo.systemUptime
 #endif
             let completion: (Result<TimeInterval, Error>) -> Void = { [weak self] result in
-                Task { @MainActor in
-                    guard let self, self.running, self.lifecycleGeneration == sendGeneration else { return }
-                    switch result {
-                    case .success(let completedAt):
-                        self.sendErrorMessages[port] = nil
-                        if port == 5005 { self.redCompletedCount += 1 } else { self.blueCompletedCount += 1 }
-                        self.lastLocalSendMs = max(0, (completedAt - processingStart) * 1000)
-                    case .failure(let error):
-                        if port == 5005 { self.redErrorCount += 1 } else { self.blueErrorCount += 1 }
-                        self.sendErrorMessages[port] = "UDP送信失敗 (\(self.host):\(port)): \(error.localizedDescription)"
-                        self.status = "送信エラー"
-                    }
-                    self.recomputeErrorMessage()
-                }
+                self?.uiPending.completed(port: port, generation: sendGeneration, result: result,
+                                          processingStart: processingStart)
             }
 #if DEBUG
             let onSendStarted: ((TimeInterval, Int) -> Void)? = { [weak self] queueWait, replaced in
                 result.diagnosticSendStarted?(coordinates)
-                Task { @MainActor in
-                    guard let self, self.running, self.lifecycleGeneration == sendGeneration else { return }
-                    self.recordUDPQueueStart(queueWait, replaced: replaced)
-                }
+                self?.uiPending.udpQueueStart(queueWait, replaced: replaced, generation: sendGeneration)
             }
 #else
             let onSendStarted: ((TimeInterval, Int) -> Void)? = result.diagnosticSendStarted.map { callback in
@@ -1357,10 +1607,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 #endif
             delivery.route(text, port: port, settings: settings, onSendStarted: onSendStarted,
                            completion: completion, noRoute: { [weak self] in
-                               Task { @MainActor in
-                                   guard let self, self.running, self.lifecycleGeneration == sendGeneration else { return }
-                                   self.p2pNoRouteCount += 1
-                               }
+                               self?.uiPending.noRoute(generation: sendGeneration)
                            })
 #if DEBUG
             metrics.requestMs += (ProcessInfo.processInfo.systemUptime - sendRequestStart) * 1000
@@ -1369,142 +1616,73 @@ final class CameraViewModel: NSObject, ObservableObject {
         return metrics
     }
 
-    private func handle(_ results: [DetectedSaber], width: Int, height: Int,
-                        generation: Int, trace: FrameTrace?, sent: SendMetrics?) {
+    // UI ロックを解放したスナップショットだけを MainActor で公開する。
+    func publishPendingUI() {
 #if DEBUG
         let uiStart = ProcessInfo.processInfo.systemUptime
 #endif
-        guard running, generation == processor.currentGeneration,
-              let sent, sent.lifecycleGeneration == lifecycleGeneration else {
-            rejectedFrameCallbackCount += 1
-            return
-        }
-        processedFrameCount += 1
-#if DEBUG
-        if let trace { recordFrameTrace(trace) }
-        for enqueueAt in [sent.redEnqueuedAt, sent.blueEnqueuedAt].compactMap({ $0 }) {
-            recordEventRate("UDP enqueue rate")
-            if let trace {
-                addPerformance("Detection → UDP enqueue", value: max(0, (enqueueAt - trace.detectionEnd) * 1000))
-                addPerformance("Post-capture total", value: max(0, (enqueueAt - trace.callbackHostTime) * 1000))
+        guard let snapshot = uiPending.takeSnapshot() else { return }
+        uiSnapshotCountForTesting += 1
+        assignIfChanged(\.processedFrameCount, snapshot.processed)
+        assignIfChanged(\.rejectedFrameCallbackCount, snapshot.rejected)
+        assignIfChanged(\.redDetectionCount, snapshot.redDetections)
+        assignIfChanged(\.blueDetectionCount, snapshot.blueDetections)
+        assignIfChanged(\.redAttemptCount, snapshot.redAttempts)
+        assignIfChanged(\.blueAttemptCount, snapshot.blueAttempts)
+        assignIfChanged(\.redCompletedCount, snapshot.redCompleted)
+        assignIfChanged(\.blueCompletedCount, snapshot.blueCompleted)
+        assignIfChanged(\.redErrorCount, snapshot.redErrors)
+        assignIfChanged(\.blueErrorCount, snapshot.blueErrors)
+        p2pNoRouteCount = snapshot.noRoute
+        if running, snapshot.processed > 0 {
+            assignEndpointsIfChanged(\.redEndpoints, snapshot.redEndpoints)
+            assignEndpointsIfChanged(\.blueEndpoints, snapshot.blueEndpoints)
+            if sourceDimensions.width != snapshot.dimensions.width || sourceDimensions.height != snapshot.dimensions.height {
+                sourceDimensions = snapshot.dimensions
             }
+            assignIfChanged(\.lastSentEpoch, snapshot.lastEpoch)
+            assignIfChanged(\.fps, snapshot.fps)
         }
-#endif
-        sourceDimensions = (width, height)
-        var redSeen = false
-        var blueSeen = false
-        for result in results {
-            switch result.color {
-            case .red:
-                redEndpoints = result.endpoints
-                redSeen = true
-                if result.isFresh {
-                    redAttemptCount += 1
-                    if !result.isPredicted { redDetectionCount += 1 }
-                }
-            case .blue:
-                blueEndpoints = result.endpoints
-                blueSeen = true
-                if result.isFresh {
-                    blueAttemptCount += 1
-                    if !result.isPredicted { blueDetectionCount += 1 }
+        assignIfChanged(\.lastLocalSendMs, snapshot.lastLocalSendMs)
+        if running {
+            sendErrorMessages = [:]
+            for port in snapshot.sendErrors.keys.sorted() {
+                if let message = snapshot.sendErrors[port] {
+                    sendErrorMessages[port] = "UDP送信失敗 (\(host):\(port)): \(message)"
                 }
             }
-            if result.isFresh { lastSentEpoch = result.color == .red ? sent.redEpoch : sent.blueEpoch }
+            if let first = snapshot.firstCameraFrame { receiveCameraFrame(at: first) }
+            if let last = snapshot.lastCameraFrame, last != snapshot.firstCameraFrame { receiveCameraFrame(at: last) }
         }
-        if !redSeen { redEndpoints = nil }
-        if !blueSeen { blueEndpoints = nil }
-        frameCount += 1
-        let elapsed = CACurrentMediaTime() - fpsStart
-        if elapsed >= 1 { fps = Double(frameCount) / elapsed; frameCount = 0; fpsStart = CACurrentMediaTime() }
+        recomputeErrorMessage()
 #if DEBUG
-        addPerformance("UDP request", value: sent.requestMs)
-        addPerformance("UI / overlay state", value: (ProcessInfo.processInfo.systemUptime - uiStart) * 1000)
+        uiPending.recordUIWork((ProcessInfo.processInfo.systemUptime - uiStart) * 1000)
         publishPerformanceIfNeeded()
 #endif
     }
 
+    private func assignIfChanged<Value: Equatable>(_ keyPath: ReferenceWritableKeyPath<CameraViewModel, Value>, _ value: Value) {
+        if self[keyPath: keyPath] != value { self[keyPath: keyPath] = value }
+    }
+
+    private func assignEndpointsIfChanged(_ keyPath: ReferenceWritableKeyPath<CameraViewModel, (PixelPoint, PixelPoint)?>,
+                                          _ value: (PixelPoint, PixelPoint)?) {
+        let previous = self[keyPath: keyPath]
+        if previous?.0 != value?.0 || previous?.1 != value?.1 { self[keyPath: keyPath] = value }
+    }
+
 #if DEBUG
     private func resetDebugPerformance() {
-        performanceMetrics = [:]
-        previousTrace = nil
-        diagnosticEventTimes = [:]
-        latestDiagnosticSequence = 0
-        latestFrameCounts = (0, 0, 0)
+        uiPending.resetPerformance()
         debugPerformanceRows = DebugPerformanceRow.placeholders
         debugFrameIntervalStatistics = nil
-        latestFrameIntervalStatistics = nil
         lastPerformancePublish = 0
         lastCameraSampleTime = 0
         debugPerformancePublishCountForTesting = 0
     }
 
-    private func recordPerformance(_ sample: FramePerformanceSample) {
-        let profile = sample.detector
-        addPerformance("Pixel buffer access", value: sample.pixelBufferAccessMs)
-        addPerformance("BGRA + RGB→HSV + masks", value: profile.pixelScanHSVMaskMs)
-        addPerformance("Close / open", value: profile.morphologyMs)
-        addPerformance("Components + shape/brightness/contrast/PCA", value: profile.componentAndScoreMs)
-        addPerformance("Component traversal / proposal overhead", value: profile.componentTraversalAndProposalOverheadMs)
-        addPerformance("Shape + PCA axis", value: profile.shapeAndAxisMs)
-        addPerformance("Brightness / contrast / color score", value: profile.brightnessContrastColorMs)
-        addPerformance("Endpoints + bounds", value: profile.endpointAndBoundsMs)
-        addPerformance("Bright-core proposals", value: profile.lineProposalMs)
-        addPerformance("Proposal detailed score", value: profile.lineScoreMs)
-        addPerformance("Final selection / scaling", value: profile.selectionMs)
-        addPerformance("Detection total", value: profile.totalMs)
-        publishPerformanceIfNeeded()
-    }
-
-    private func recordFrameTrace(_ trace: FrameTrace) {
-        latestDiagnosticSequence = trace.sequence
-        latestFrameCounts = (trace.receivedFrames, trace.processedFrames, trace.replacedFrames)
-        if let capture = trace.captureHostTime, trace.callbackHostTime >= capture {
-            addPerformance("Camera / AVFoundation age", value: (trace.callbackHostTime - capture) * 1000)
-        }
-        latestFrameIntervalStatistics = trace.inputFrameIntervalStatistics
-        addPerformance("Callback → processing start", value: max(0, (trace.processingStart - trace.callbackHostTime) * 1000))
-        addPerformance("Detection", value: max(0, (trace.detectionEnd - trace.processingStart) * 1000))
-        if let previous = previousTrace {
-            let elapsed = trace.callbackHostTime - previous.callbackHostTime
-            if elapsed > 0 {
-                addPerformance("Input FPS", value: Double(trace.receivedFrames - previous.receivedFrames) / elapsed)
-                addPerformance("Processed FPS", value: Double(trace.processedFrames - previous.processedFrames) / elapsed)
-                addPerformance("Replaced frames", value: Double(trace.replacedFrames - previous.replacedFrames) / elapsed)
-            }
-        }
-        previousTrace = trace
-        publishPerformanceIfNeeded()
-    }
-
-    private func recordUDPQueueStart(_ wait: TimeInterval, replaced: Int) {
-        addPerformance("UDP queue wait", value: wait * 1000)
-        addPerformance("UDP replaced sends", value: Double(replaced))
-        recordEventRate("UDP actual send rate")
-        publishPerformanceIfNeeded()
-    }
-
-    private func recordEventRate(_ name: String) {
-        let now = HostMonotonicClock.now()
-        var events = diagnosticEventTimes[name, default: []]
-        events.append(now)
-        events = events.filter { now - $0 <= 2 }
-        diagnosticEventTimes[name] = events
-        guard let first = events.first, now > first else { return }
-        addPerformance(name, value: Double(events.count - 1) / (now - first))
-    }
-
-    private func addPerformance(_ name: String, value: Double) {
-        var metric = performanceMetrics[name, default: PerformanceMetric()]
-        metric.latest = value
-        metric.values.append(value)
-        if metric.values.count > 120 { metric.values.removeFirst() }
-        metric.maximum = max(metric.maximum, value)
-        performanceMetrics[name] = metric
-    }
-
     func recordDebugPerformanceForTesting(name: String, value: Double) {
-        addPerformance(name, value: value)
+        uiPending.recordDebugPerformanceForTesting(name: name, value: value)
         publishPerformanceIfNeeded()
     }
 
@@ -1514,10 +1692,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         lastPerformancePublish = now
         debugPerformancePublishCountForTesting += 1
         if let activeCamera { updateCameraConfiguration(activeCamera) }
-        if debugFrameIntervalStatistics != latestFrameIntervalStatistics {
-            debugFrameIntervalStatistics = latestFrameIntervalStatistics
-        }
-        debugPerformanceRows = DebugPerformanceRow.rows(from: performanceMetrics)
+        let snapshot = uiPending.performanceSnapshot()
+        assignIfChanged(\.debugFrameIntervalStatistics, snapshot.intervals)
+        assignIfChanged(\.debugPerformanceRows, DebugPerformanceRow.rows(from: snapshot.metrics))
     }
 
     private func updateCameraConfiguration(_ camera: AVCaptureDevice) {
@@ -1690,10 +1867,6 @@ final class CameraViewModel: NSObject, ObservableObject {
         let unique = Set(options.map { "\($0.width)×\($0.height)" })
         return unique.isEmpty ? "Not supported" : unique.sorted().joined(separator: ", ")
     }
-#endif
-
-#if !DEBUG
-    private func recordUDPQueueStart(_ wait: TimeInterval, replaced: Int) { }
 #endif
 
     // MARK: Transport (LAN 確認済みを優先、P2P へ退避)
@@ -1872,25 +2045,25 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         acceptedSenderUpdateCount += 1
         acceptedSenderUpdateGeneration = generation
-        senderStates = states
-        senderErrors = errors
+        assignIfChanged(\.senderStates, states)
+        assignIfChanged(\.senderErrors, errors)
         let hasConnectionIssue = states.values.contains { $0 == "waiting" || $0 == "failed" }
         connectionErrorMessage = hasConnectionIssue ? states.keys.sorted().compactMap { errors[$0] }.first(where: { !$0.isEmpty }) : nil
         recomputeErrorMessage()
     }
 
     private func recomputeErrorMessage() {
-        errorMessage = cameraErrorMessage ?? connectionErrorMessage ?? sendErrorMessages.values.first
+        assignIfChanged(\.errorMessage, cameraErrorMessage ?? connectionErrorMessage ?? sendErrorMessages.values.first)
         if cameraErrorMessage != nil {
-            status = "カメラエラー"
+            assignIfChanged(\.status, "カメラエラー")
         } else if connectionErrorMessage != nil {
-            status = "接続エラー"
+            assignIfChanged(\.status, "接続エラー")
         } else if !sendErrorMessages.isEmpty {
-            status = "送信エラー"
+            assignIfChanged(\.status, "送信エラー")
         } else if running {
-            status = "送信中"
+            assignIfChanged(\.status, "送信中")
         } else {
-            status = "停止中"
+            assignIfChanged(\.status, "停止中")
         }
     }
 
@@ -1905,6 +2078,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func resetStartState() {
+        uiPending.reset()
+        uiSnapshotCountForTesting = 0
         redDetectionCount = 0; blueDetectionCount = 0
         redAttemptCount = 0; blueAttemptCount = 0
         redCompletedCount = 0; blueCompletedCount = 0
@@ -2228,7 +2403,7 @@ extension CameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
         let frameTime = ProcessInfo.processInfo.systemUptime
         healthMeter.cameraFrame(at: frameTime)
         processor.submit(sampleBuffer)
-        Task { @MainActor [weak self] in self?.receiveCameraFrame(at: frameTime) }
+        uiPending.cameraFrame(at: frameTime)
     }
 }
 
@@ -2264,7 +2439,7 @@ struct DebugCameraConfiguration: Equatable {
     )
 }
 
-fileprivate struct PerformanceMetric {
+struct PerformanceMetric {
     var latest = 0.0
     var maximum = 0.0
     var values: [Double] = []
@@ -2276,7 +2451,7 @@ fileprivate struct PerformanceMetric {
     }
 }
 
-struct DebugPerformanceRow: Identifiable {
+struct DebugPerformanceRow: Identifiable, Equatable {
     let category: String
     let label: String
     let source: String

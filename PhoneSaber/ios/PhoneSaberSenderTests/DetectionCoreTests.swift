@@ -311,6 +311,195 @@ final class DetectionCoreTests: XCTestCase {
     }
 
     @MainActor
+    func test60FPSResultCallbacksUseAtMost15UISnapshotsPerSecond() async {
+        let model = CameraViewModel(processor: FrameProcessor(expiryScheduler: nil),
+                                    sender: UDPSender { _, _, completion in completion(.success(ProcessInfo.processInfo.systemUptime)) },
+                                    p2pEnabled: false, idleTimerUpdater: { _ in })
+        defer { model.stop() }
+        model.startForTesting()
+        let ready = await waitUntil { model.networkStateLabel == "NETWORK READY" }
+        XCTAssertTrue(ready)
+        let callback = model.processor.onResult
+        let generation = model.processor.currentGeneration
+        var assignments = 0
+        let observer = model.objectWillChange.sink { assignments += 1 }
+        let before = model.uiSnapshotCountForTesting
+        let start = ProcessInfo.processInfo.systemUptime
+        // カメラや認識を使わず、検出キューから60fpsで結果通知を送る。
+        await Task.detached {
+            for index in 0..<60 {
+                let deadline = start + (Double(index) + 0.5) / 60
+                let delay = max(0, deadline - ProcessInfo.processInfo.systemUptime)
+                try? await Task.sleep(nanoseconds: UInt64(delay * 1e9))
+                let endpoints = (PixelPoint(x: index, y: 10), PixelPoint(x: index + 100, y: 10))
+                callback?([DetectedSaber(endpoints: endpoints, color: .red, isFresh: true),
+                           DetectedSaber(endpoints: endpoints, color: .blue, isFresh: true)],
+                          640, 480, ProcessInfo.processInfo.systemUptime, generation, nil)
+            }
+        }.value
+        let finished = await waitUntil { model.processedFrameCount == 60 }
+        XCTAssertTrue(finished)
+        XCTAssertEqual(model.redDetectionCount, 60)
+        XCTAssertEqual(model.blueDetectionCount, 60)
+        XCTAssertEqual(model.redAttemptCount, 60)
+        XCTAssertEqual(model.blueAttemptCount, 60)
+        let updates = model.uiSnapshotCountForTesting - before
+        XCTAssertLessThanOrEqual(updates, 15)
+        XCTAssertLessThan(assignments, 250, "変更前は同条件で毎秒1000回以上の Published 代入")
+        print("[ios-ui-load] frames=60 snapshots=\(updates) publishedAssignments=\(assignments)")
+        withExtendedLifetime(observer) {}
+    }
+
+    @MainActor
+    func testUIBatchKeepsEveryCounterAndDoesNotRepublishIdenticalValues() async {
+        let sender = UDPSender { _, _, completion in completion(.success(100)) }
+        let model = CameraViewModel(processor: FrameProcessor(expiryScheduler: nil), sender: sender,
+                                    p2pEnabled: false, idleTimerUpdater: { _ in })
+        defer { model.stop() }
+        model.startForTesting()
+        let ready = await waitUntil { model.networkStateLabel == "NETWORK READY" }
+        XCTAssertTrue(ready)
+        var assignments = 0
+        let observer = model.objectWillChange.sink { assignments += 1 }
+        let generation = model.processor.currentGeneration
+        let endpoints = (PixelPoint(x: 2, y: 3), PixelPoint(x: 12, y: 13))
+        // MainActor を解放せず180フレーム分の表示通知を投入。表示はまだ変化しない。
+        // UDP の latest-slot による置換とは分離し、受け取った完了通知をすべて数える。
+        for _ in 0..<180 {
+            model.uiPending.frame([
+                DetectedSaber(endpoints: endpoints, color: .red, isFresh: true),
+                DetectedSaber(endpoints: endpoints, color: .blue, isFresh: true)
+            ], width: 640, height: 480, generation: generation, lifecycle: 1,
+               redEpoch: nil, blueEpoch: nil, trace: nil,
+               redEnqueuedAt: nil, blueEnqueuedAt: nil, requestMs: 0)
+            model.uiPending.completed(port: 5005, generation: 1, result: .success(100), processingStart: 100)
+            model.uiPending.completed(port: 5006, generation: 1, result: .success(100), processingStart: 100)
+        }
+        XCTAssertEqual(model.processedFrameCount, 0)
+        XCTAssertEqual(assignments, 0)
+        model.publishPendingUI()
+        XCTAssertEqual(model.processedFrameCount, 180)
+        XCTAssertEqual(model.redDetectionCount, 180)
+        XCTAssertEqual(model.blueDetectionCount, 180)
+        XCTAssertEqual(model.redAttemptCount, 180)
+        XCTAssertEqual(model.blueAttemptCount, 180)
+        let allCompleted = await waitUntil { model.redCompletedCount == 180 && model.blueCompletedCount == 180 }
+        XCTAssertTrue(allCompleted)
+        XCTAssertEqual(model.redErrorCount + model.blueErrorCount, 0)
+        let before = assignments
+        // 未検出・停止直前にも通知が届くが、変化がない値は再公開しない。
+        model.processor.onResult?([
+            DetectedSaber(endpoints: endpoints, color: .red, isFresh: false),
+            DetectedSaber(endpoints: endpoints, color: .blue, isFresh: false)
+        ], 640, 480, 100, generation, nil)
+        model.publishPendingUI()
+        XCTAssertEqual(assignments - before, 1, "処理フレーム数だけが変わる")
+        let unchanged = assignments
+        model.publishPendingUI()
+        XCTAssertEqual(assignments, unchanged)
+        withExtendedLifetime(observer) {}
+    }
+
+    func testUIPendingStatePreservesFreshPredictedHeldMissingAndCompletionSemantics() throws {
+        let pending = CameraUIPendingState()
+        pending.setAcceptance(running: true, processor: 7, lifecycle: 9)
+        let endpoints = (PixelPoint(x: 1, y: 2), PixelPoint(x: 3, y: 4))
+        func frame(_ results: [DetectedSaber], generation: Int = 7) {
+            pending.frame(results, width: 640, height: 480, generation: generation, lifecycle: 9,
+                          redEpoch: 42, blueEpoch: 43, trace: nil,
+                          redEnqueuedAt: nil, blueEnqueuedAt: nil, requestMs: 0)
+        }
+        frame([DetectedSaber(endpoints: endpoints, color: .red, isFresh: true),
+               DetectedSaber(endpoints: endpoints, color: .blue, isFresh: true, isPredicted: true)])
+        frame([DetectedSaber(endpoints: endpoints, color: .red, isFresh: false)])
+        pending.completed(port: 5005, generation: 9, result: .failure(NSError(domain: "test", code: 1)), processingStart: 100)
+        pending.completed(port: 5005, generation: 9, result: .success(100.01), processingStart: 100)
+        pending.completed(port: 5006, generation: 8, result: .success(100.02), processingStart: 100)
+        pending.noRoute(generation: 9)
+        pending.cameraFrame(at: 100)
+        pending.cameraFrame(at: 100.1)
+        frame([], generation: 6)
+        let snapshot = try XCTUnwrap(pending.takeSnapshot())
+        XCTAssertEqual(snapshot.processed, 2)
+        XCTAssertEqual(snapshot.rejected, 1)
+        XCTAssertEqual(snapshot.redDetections, 1)
+        XCTAssertEqual(snapshot.blueDetections, 0)
+        XCTAssertEqual(snapshot.redAttempts, 1)
+        XCTAssertEqual(snapshot.blueAttempts, 1)
+        XCTAssertEqual(snapshot.redCompleted, 1)
+        XCTAssertEqual(snapshot.blueCompleted, 0)
+        XCTAssertEqual(snapshot.redErrors, 1)
+        XCTAssertTrue(snapshot.sendErrors.isEmpty, "成功時は該当ポートのエラーを解除")
+        XCTAssertEqual(snapshot.lastLocalSendMs ?? 0, 10, accuracy: 0.000001)
+        XCTAssertEqual(snapshot.noRoute, 1)
+        XCTAssertEqual(snapshot.redEndpoints?.0, endpoints.0)
+        XCTAssertNil(snapshot.blueEndpoints)
+        XCTAssertEqual(snapshot.lastEpoch, 43)
+        XCTAssertEqual(snapshot.firstCameraFrame, 100)
+        XCTAssertEqual(snapshot.lastCameraFrame, 100.1)
+        XCTAssertNil(pending.takeSnapshot())
+        frame([])
+        XCTAssertNil(pending.takeSnapshot()?.redEndpoints)
+        pending.reset()
+        pending.setAcceptance(running: true, processor: 8, lifecycle: 10)
+        frame([])
+        let stale = try XCTUnwrap(pending.takeSnapshot())
+        XCTAssertEqual(stale.processed, 0)
+        XCTAssertEqual(stale.rejected, 1)
+        XCTAssertEqual(stale.redCompleted, 0)
+    }
+
+    @MainActor
+    func testLateFrameAfterStopCannotRestoreOverlayOrSendErrors() {
+        let model = CameraViewModel(processor: FrameProcessor(expiryScheduler: nil),
+                                    sender: UDPSender { _, _, completion in completion(.success(1)) },
+                                    p2pEnabled: false, idleTimerUpdater: { _ in })
+        model.startForTesting()
+        let generation = model.processor.currentGeneration
+        let endpoints = (PixelPoint(x: 1, y: 2), PixelPoint(x: 3, y: 4))
+        model.processor.onResult?([DetectedSaber(endpoints: endpoints, color: .red, isFresh: true)],
+                                  640, 480, 1, generation, nil)
+        model.publishPendingUI()
+        XCTAssertNotNil(model.redEndpoints)
+        model.stop()
+        model.processor.onResult?([], 640, 480, 1, generation, nil)
+        model.publishPendingUI()
+        XCTAssertEqual(model.rejectedFrameCallbackCount, 1)
+        XCTAssertNil(model.redEndpoints)
+        XCTAssertNil(model.errorMessage)
+        XCTAssertEqual(model.status, "停止中")
+    }
+
+    func testUIConsumerSnapshotDoesNotHoldProducerLock() throws {
+        let pending = CameraUIPendingState()
+        pending.setAcceptance(running: true, processor: 1, lifecycle: 1)
+        pending.cameraFrame(at: 100)
+        let snapshot = try XCTUnwrap(pending.takeSnapshot())
+        let finished = DispatchSemaphore(value: 0)
+        // UI がスナップショットを保持していても、producer の処理は進む。
+        DispatchQueue.global().async {
+            for _ in 0..<180 {
+                pending.completed(port: 5005, generation: 1, result: .success(100), processingStart: 100)
+            }
+            finished.signal()
+        }
+        XCTAssertEqual(finished.wait(timeout: .now() + 2), .success)
+        XCTAssertEqual(pending.takeSnapshot()?.redCompleted, 180)
+        XCTAssertEqual(snapshot.redCompleted, 0, "公開中のスナップショットは後続通知で変化しない")
+    }
+
+    func testUIBatchRetainsAllDiagnosticSamples() {
+        let pending = CameraUIPendingState()
+        for value in 1...150 { pending.recordDebugPerformanceForTesting(name: "Detection", value: Double(value)) }
+        let metric = pending.performanceSnapshot().metrics["Detection"]
+        XCTAssertEqual(metric?.values.count, 120)
+        XCTAssertEqual(metric?.values.first, 31)
+        XCTAssertEqual(metric?.latest, 150)
+        XCTAssertEqual(metric?.median, 91)
+        XCTAssertEqual(metric?.maximum, 150)
+    }
+
+    @MainActor
     func testDebugPerformanceRowsExposeNamedUnavailableMetricsBeforeCapture() {
         let viewModel = CameraViewModel(
             authorizationStatus: { .denied },
@@ -1905,7 +2094,7 @@ final class DetectionCoreTests: XCTestCase {
         let endpoints = (PixelPoint(x: 2, y: 3), PixelPoint(x: 12, y: 13))
         viewModel.startForTesting()
         viewModel.processDetectedForTesting([(.red, endpoints)], at: 300, dimensions: (20, 20))
-        let oldQueued = await waitUntil { completions.valuesCountForTesting > 0 }; XCTAssertTrue(oldQueued)
+        let oldQueued = await waitUntil { completions.valuesCountForTesting > 0 && viewModel.redAttemptCount == 1 }; XCTAssertTrue(oldQueued)
         let oldCompletion = completions.removeFirst()
         XCTAssertEqual(viewModel.redAttemptCount, 1)
         viewModel.stop()

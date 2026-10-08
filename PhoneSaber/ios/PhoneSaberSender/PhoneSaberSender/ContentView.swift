@@ -1,3 +1,4 @@
+import AVFoundation
 import QuickLook
 import SwiftUI
 
@@ -95,15 +96,9 @@ struct ContentView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
-                    ZStack {
-                        CameraPreview(session: model.session).frame(height: 280)
-                        GeometryReader { proxy in
-                            Canvas { context, size in
-                                draw(model.redEndpoints, color: .red, context: &context, size: size)
-                                draw(model.blueEndpoints, color: .blue, context: &context, size: size)
-                            }
-                        }.frame(height: 280)
-                    }.clipped()
+                    CameraDisplay(session: model.session, red: model.redEndpoints, blue: model.blueEndpoints,
+                                  width: model.sourceDimensions.width, height: model.sourceDimensions.height)
+                        .equatable()
                     Text(model.deviceHealthLine)
                         .font(.footnote.monospacedDigit())
                     if let warning = model.deviceHealthWarning {
@@ -424,12 +419,37 @@ struct ContentView: View {
             model.sceneDidChange(isActive: phase == .active)
         }
     }
+}
+
+// カウンタ・接続状態の更新では preview の再設定や同じ overlay の描画を繰り返さない。
+private struct CameraDisplay: View, Equatable {
+    let session: AVCaptureSession
+    let red: (PixelPoint, PixelPoint)?
+    let blue: (PixelPoint, PixelPoint)?
+    let width: Int
+    let height: Int
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.session === rhs.session && lhs.width == rhs.width && lhs.height == rhs.height
+            && lhs.red?.0 == rhs.red?.0 && lhs.red?.1 == rhs.red?.1
+            && lhs.blue?.0 == rhs.blue?.0 && lhs.blue?.1 == rhs.blue?.1
+    }
+
+    var body: some View {
+        ZStack {
+            CameraPreview(session: session).frame(height: 280)
+            Canvas { context, size in
+                draw(red, color: .red, context: &context, size: size)
+                draw(blue, color: .blue, context: &context, size: size)
+            }.frame(height: 280)
+        }.clipped()
+    }
 
     private func draw(_ endpoints: (PixelPoint, PixelPoint)?, color: Color, context: inout GraphicsContext, size: CGSize) {
         guard let endpoints else { return }
         let path = Path { path in
-            path.move(to: aspectFillPoint(endpoints.0, source: model.sourceDimensions, view: (size.width, size.height)))
-            path.addLine(to: aspectFillPoint(endpoints.1, source: model.sourceDimensions, view: (size.width, size.height)))
+            path.move(to: aspectFillPoint(endpoints.0, source: (width, height), view: (size.width, size.height)))
+            path.addLine(to: aspectFillPoint(endpoints.1, source: (width, height), view: (size.width, size.height)))
         }
         context.stroke(path, with: .color(color), lineWidth: 5)
     }
