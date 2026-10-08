@@ -41,6 +41,11 @@
 
 ## 作業ログ
 
+### 2026-10-09 最適化 第2弾（Codex 3本）
+- Unity 受信の割り当て削減（3a092bd, 8b67212）: parser 42.4MB→0、統計 512MB→0、UDP 受信 39.2→27.2MB / 10万packet（Unity Mono）。独自 EndPoint は Windows Player 安全性のため不採用、標準 IPEndPoint＋IP文字列キャッシュ。
+- iOS UI 12Hz 集約（834c45b）: MainActor 更新 240→12 回/秒、@Published 通知 1,381→110 回/秒。統合 main で verify 全段 PASS。
+- 見送り: Android 送信経路の直送化（ブランチ opt/android-pipeline, 5830f17）。enqueue→send p50 0.126→0.087ms と体感差なし、送信スレッド同期の書き換えで実機未検証のリスクが上回るため。AQUOS で問題が出たら再検討。
+
 ### 2026-10-09 最適化 第1弾（Codex 4本、Claude レビュー・検証）
 - iOS 送信経路（ba2d876）: 座標を検出キューから直接送信（MainActor 待ち 約10ms→ほぼ0、Mac ハーネス）。
 - iOS 認識 2周目（d1d9726）: シミュレータ明るいフレーム 12.4→5.4ms（初期 20.7ms）、空フレーム 2.2→0.6ms。bit 一致。
