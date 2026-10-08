@@ -477,39 +477,78 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
     var redMaskPixelCount = 0
     var blueMaskPixelCount = 0
     let scanStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
-    for sampleY in 0..<maskHeight {
-        let y = sampleY * step
-        for sampleX in 0..<maskWidth {
-            let x = sampleX * step
-            let offset = y * bytesPerRow + x * 4
-            let blue = baseAddress[offset]
-            let green = baseAddress[offset + 1]
-            let red = baseAddress[offset + 2]
-            let index = sampleY * maskWidth + sampleX
-            let hsv = saberHSV(red, green, blue)
-            // The second strongest channel distinguishes a white/cyan LED
-            // core from single-channel clipping in a saturated reflection.
-            let secondChannel = Int(red) + Int(green) + Int(blue)
-                - Int(max(red, green, blue)) - Int(min(red, green, blue))
-            radianceMap[index] = UInt8(secondChannel)
-            valueMap[index] = UInt8(clamping: Int(hsv.value.rounded()))
-            chromaMap[index] = UInt8(clamping: Int(hsv.chroma.rounded()))
-            if hsv.value >= 235 && secondChannel >= 100 { brightCoreMask[index] = 1 }
-            let isEmitterPixel = hsv.value >= 215
-                && hsv.chroma / max(hsv.value, 1) >= 0.35
-            if matchesSaberHSV(hsv, color: .red, threshold: redThreshold) {
-                redMask[index] = 1
-                redMaskPixelCount += 1
-                if isEmitterPixel { redEmitterMask[index] = 1 }
-            }
-            if matchesSaberHSV(hsv, color: .blue, threshold: blueThreshold) {
-                blueMask[index] = 1
-                blueMaskPixelCount += 1
-                if isEmitterPixel { blueEmitterMask[index] = 1 }
-            }
-            if matchesBlueDiffuserPixel(red, green, blue, hsv: hsv,
-                                        threshold: blueThreshold) {
-                blueDiffuserMask[index] = 1
+    // 整数の明度・chroma は HSV の Double 値と厳密に同じ。必要な画素だけ hue を計算する。
+    let relaxedBrightness = max(SaberColorModelThresholds.diffuserBlueMinimumBrightness,
+                                Int(blueThreshold.brightness) - SaberColorModelThresholds.diffuserBlueBrightnessOffset)
+    let relaxedDominance = max(SaberColorModelThresholds.diffuserBlueMinimumRedDominance,
+                              Int(blueThreshold.dominance) - SaberColorModelThresholds.diffuserBlueDominanceOffset)
+    let greenDominance = max(SaberColorModelThresholds.diffuserBlueMinimumGreenDominance,
+                            relaxedDominance / 4)
+    redMask.withUnsafeMutableBufferPointer { redMaskBuffer in
+        blueMask.withUnsafeMutableBufferPointer { blueMaskBuffer in
+            blueDiffuserMask.withUnsafeMutableBufferPointer { blueDiffuserMaskBuffer in
+                redEmitterMask.withUnsafeMutableBufferPointer { redEmitterMaskBuffer in
+                    blueEmitterMask.withUnsafeMutableBufferPointer { blueEmitterMaskBuffer in
+                        brightCoreMask.withUnsafeMutableBufferPointer { brightCoreMaskBuffer in
+                            valueMap.withUnsafeMutableBufferPointer { valueMapBuffer in
+                                chromaMap.withUnsafeMutableBufferPointer { chromaMapBuffer in
+                                    radianceMap.withUnsafeMutableBufferPointer { radianceMapBuffer in
+                                        let redMask = redMaskBuffer.baseAddress!
+                                        let blueMask = blueMaskBuffer.baseAddress!
+                                        let blueDiffuserMask = blueDiffuserMaskBuffer.baseAddress!
+                                        let redEmitterMask = redEmitterMaskBuffer.baseAddress!
+                                        let blueEmitterMask = blueEmitterMaskBuffer.baseAddress!
+                                        let brightCoreMask = brightCoreMaskBuffer.baseAddress!
+                                        let valueMap = valueMapBuffer.baseAddress!
+                                        let chromaMap = chromaMapBuffer.baseAddress!
+                                        let radianceMap = radianceMapBuffer.baseAddress!
+                                        for sampleY in 0..<maskHeight {
+                                            let row = baseAddress + sampleY * step * bytesPerRow
+                                            let maskRow = sampleY * maskWidth
+                                            for sampleX in 0..<maskWidth {
+                                                let offset = sampleX * step * 4
+                                                let blue = row[offset], green = row[offset + 1], red = row[offset + 2]
+                                                let index = maskRow + sampleX
+                                                let maximum = max(red, max(green, blue))
+                                                let minimum = min(red, min(green, blue))
+                                                let chroma = maximum - minimum
+                                                let secondChannel = Int(red) + Int(green) + Int(blue)
+                                                    - Int(maximum) - Int(minimum)
+                                                radianceMap[index] = UInt8(secondChannel)
+                                                valueMap[index] = maximum
+                                                chromaMap[index] = chroma
+                                                if maximum >= 235 && secondChannel >= 100 { brightCoreMask[index] = 1 }
+                                                let possibleRed = maximum >= redThreshold.brightness && chroma >= redThreshold.dominance
+                                                let possibleBlue = maximum >= blueThreshold.brightness && chroma >= blueThreshold.dominance
+                                                let possibleDiffuser = Int(blue) >= relaxedBrightness
+                                                    && Int(blue) - Int(red) >= relaxedDominance
+                                                    && Int(blue) - Int(green) >= greenDominance
+                                                guard possibleRed || possibleBlue || possibleDiffuser else { continue }
+                                                let hsv = saberHSV(red, green, blue)
+                                                let isEmitterPixel = hsv.value >= 215
+                                                    && hsv.chroma / max(hsv.value, 1) >= 0.35
+                                                if possibleRed && matchesSaberHSV(hsv, color: .red, threshold: redThreshold) {
+                                                    redMask[index] = 1
+                                                    redMaskPixelCount += 1
+                                                    if isEmitterPixel { redEmitterMask[index] = 1 }
+                                                }
+                                                if possibleBlue && matchesSaberHSV(hsv, color: .blue, threshold: blueThreshold) {
+                                                    blueMask[index] = 1
+                                                    blueMaskPixelCount += 1
+                                                    if isEmitterPixel { blueEmitterMask[index] = 1 }
+                                                }
+                                                if possibleDiffuser && matchesBlueDiffuserPixel(red, green, blue, hsv: hsv,
+                                                                                               threshold: blueThreshold) {
+                                                    blueDiffuserMask[index] = 1
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

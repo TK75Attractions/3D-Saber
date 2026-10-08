@@ -1,4 +1,6 @@
 import Foundation
+import CoreGraphics
+import ImageIO
 
 private struct StaticImage {
     let width: Int
@@ -241,9 +243,228 @@ private func assertLosslessMorphology() {
     print("lossless morphology: exhaustive masks, diamond radii 0...4, edges and nonbinary inputs passed")
 }
 
+// 任意の PNG を XCTest と同じ CoreGraphics BGRA 経路で読み込む native -O 計測用。
+private func loadStaticPNG(_ path: String) -> StaticImage {
+    let url = URL(fileURLWithPath: path)
+    guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+          let image = CGImageSourceCreateImageAtIndex(source, 0, nil) else {
+        fatalError("cannot load PNG: \(path)")
+    }
+    var result = StaticImage(width: image.width, height: image.height)
+    result.bytes.withUnsafeMutableBytes { raw in
+        let context = CGContext(data: raw.baseAddress!, width: image.width, height: image.height,
+                                bitsPerComponent: 8, bytesPerRow: image.width * 4,
+                                space: CGColorSpaceCreateDeviceRGB(),
+                                bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
+                                    | CGBitmapInfo.byteOrder32Little.rawValue)!
+        context.draw(image, in: CGRect(x: 0, y: 0, width: image.width, height: image.height))
+    }
+    return result
+}
+
+// Double を十進文字列に丸めず、候補の全 stored property（診断も含む）を比較する。
+// profile の実時間だけを除外する。Dictionary の反復順は使用しない。
+private func losslessSignature(_ value: Any) -> String {
+    if let double = value as? Double { return "Double:\(double.bitPattern)" }
+    let mirror = Mirror(reflecting: value)
+    let type = String(reflecting: type(of: value))
+    if mirror.children.isEmpty { return "\(type):\(String(reflecting: value))" }
+    if mirror.displayStyle == .dictionary || mirror.displayStyle == .set {
+        return type + "[" + mirror.children.map { losslessSignature($0.value) }.sorted()
+            .joined(separator: ";") + "]"
+    }
+    return type + "[" + mirror.children.map {
+        ($0.label ?? "") + "=" + losslessSignature($0.value)
+    }.joined(separator: ";") + "]"
+}
+
+private func frameSignature(_ analysis: SaberFrameAnalysis) -> String {
+    [SaberColor.red, .blue].map { color in
+        losslessSignature(analysis.candidates[color] ?? [])
+            + losslessSignature(analysis.selected[color] as Any)
+            + losslessSignature(analysis.pipelineDiagnostics?[color] as Any)
+    }.joined(separator: "\n")
+}
+
+private func profileCountSignature(_ profile: SaberDetectionProfile) -> String {
+    losslessSignature([profile.colorPixelCount, profile.brightCorePixelCount,
+                       profile.lineProposalCount, profile.candidateCount, profile.connectedComponentCount])
+}
+
+private func staticAnalysis(_ image: StaticImage, step: Int = 2,
+                            threshold: ColorThreshold = ColorThreshold(),
+                            profile: Bool = false) -> SaberFrameAnalysis {
+    analyzeSabers(in: image.bytes, width: image.width, height: image.height,
+                  bytesPerRow: image.bytesPerRow, redThreshold: threshold, blueThreshold: threshold,
+                  sampleStep: step, collectProfile: profile, collectPipelineDiagnostics: true)
+}
+
+private func nativeBenchmark(path: String, iterations: Int) {
+    precondition(iterations > 0)
+    let bright = loadStaticPNG(path)
+    let blank = StaticImage(width: bright.width, height: bright.height)
+    let threshold = ColorThreshold()
+    for (name, image) in [("empty", blank), ("bright", bright)] {
+        func run(profile: Bool = false) -> SaberFrameAnalysis {
+            analyzeSabers(in: image.bytes, width: image.width, height: image.height,
+                          bytesPerRow: image.bytesPerRow, redThreshold: threshold,
+                          blueThreshold: threshold, collectProfile: profile)
+        }
+        for _ in 0..<5 { _ = run() }
+        var samples: [Double] = []
+        var candidateCount = 0
+        for _ in 0..<iterations {
+            let start = ProcessInfo.processInfo.systemUptime
+            let analysis = run()
+            samples.append((ProcessInfo.processInfo.systemUptime - start) * 1000)
+            for color in [SaberColor.red, .blue] { candidateCount += analysis.candidates[color]?.count ?? 0 }
+        }
+        let ordered = samples.sorted()
+        print(String(format: "[NativeTiming] %@ %dx%d n=%d avg=%.3f median=%.3f p90=%.3f max=%.3f ms candidates=%d",
+                     name, image.width, image.height, iterations,
+                     samples.reduce(0, +) / Double(iterations), ordered[iterations / 2],
+                     ordered[Int(ceil(Double(iterations) * 0.9)) - 1], ordered.last!, candidateCount))
+        var scan = 0.0, morphology = 0.0, components = 0.0, evidence = 0.0, traversal = 0.0
+        var lineProposal = 0.0, lineScore = 0.0
+        for _ in 0..<iterations {
+            let profile = run(profile: true).profile!
+            scan += profile.pixelScanHSVMaskMs; morphology += profile.morphologyMs
+            components += profile.componentAndScoreMs; evidence += profile.brightnessContrastColorMs
+            traversal += profile.connectedComponentsMs
+            lineProposal += profile.lineProposalMs; lineScore += profile.lineScoreMs
+        }
+        let n = Double(iterations)
+        print(String(format: "[NativeStages] %@ scanMask=%.3f morphology=%.3f components=%.3f BFS=%.3f evidence=%.3f lineProposal=%.3f lineScore=%.3f ms",
+                     name, scan / n, morphology / n, components / n, traversal / n,
+                     evidence / n, lineProposal / n, lineScore / n))
+    }
+}
+
+private func assertLosslessPixelScan() {
+    precondition(supportedBlueDiffuserMask(strictMask: [], relaxedMask: [], width: 0, height: 4) == [])
+    let palette: [(UInt8, UInt8, UInt8)] = [
+        (0, 0, 0), (255, 255, 255), (110, 110, 110), (145, 145, 145),
+        (235, 100, 100), (255, 0, 0), (0, 0, 255), (255, 85, 0),
+        (255, 0, 85), (0, 255, 255), (85, 0, 255), (0, 85, 255),
+        (90, 108, 110), (102, 108, 110), (140, 170, 250), (145, 120, 120)
+    ]
+    let thresholds = [ColorThreshold(), ColorThreshold(brightness: 0, dominance: 0, saturation: 0),
+                      ColorThreshold(brightness: 255, dominance: 255, saturation: 255),
+                      ColorThreshold(brightness: 110, dominance: 8, saturation: 10)]
+    for (width, height) in [(1, 1), (1, 19), (23, 1), (37, 29)] {
+        var image = StaticImage(width: width, height: height, padding: 13)
+        for y in 0..<height {
+            for x in 0..<width {
+                let rgb = palette[(x + y * width) % palette.count]
+                image.pixel(x, y, red: rgb.0, green: rgb.1, blue: rgb.2)
+            }
+        }
+        for step in [1, 2, 3, 8, 64] {
+            for threshold in thresholds {
+                let maskWidth = (width + step - 1) / step, maskHeight = (height + step - 1) / step
+                var red: [UInt8] = [], blue: [UInt8] = [], relaxed: [UInt8] = []
+                var cores = 0
+                for y in stride(from: 0, to: height, by: step) {
+                    for x in stride(from: 0, to: width, by: step) {
+                        let offset = y * image.bytesPerRow + x * 4
+                        let b = image.bytes[offset], g = image.bytes[offset + 1], r = image.bytes[offset + 2]
+                        let hsv = saberHSV(r, g, b)
+                        red.append(matchesSaberHSV(hsv, color: .red, threshold: threshold) ? 1 : 0)
+                        blue.append(matchesSaberHSV(hsv, color: .blue, threshold: threshold) ? 1 : 0)
+                        relaxed.append(matchesBlueDiffuserPixel(r, g, b, hsv: hsv, threshold: threshold) ? 1 : 0)
+                        let second = Int(r) + Int(g) + Int(b) - Int(max(r, g, b)) - Int(min(r, g, b))
+                        if hsv.value >= 235 && second >= 100 { cores += 1 }
+                    }
+                }
+                let supported = supportedBlueDiffuserMask(strictMask: blue, relaxedMask: relaxed,
+                                                          width: maskWidth, height: maskHeight)
+                let actual = staticAnalysis(image, step: step, threshold: threshold, profile: true)
+                let redCount = red.reduce(0) { $0 + Int($1) }, blueCount = supported.reduce(0) { $0 + Int($1) }
+                precondition(actual.pipelineDiagnostics?[.red]?.maskPixelCount == redCount)
+                precondition(actual.pipelineDiagnostics?[.blue]?.maskPixelCount == blueCount)
+                precondition(actual.profile?.colorPixelCount == redCount + blueCount)
+                precondition(actual.profile?.brightCorePixelCount == cores)
+            }
+        }
+    }
+    print("lossless pixel scan: reference HSV, threshold extremes, odd sizes, padding and sample steps passed")
+}
+
+private func assertLosslessProposalMembership() {
+    let width = 73, height = 59
+    for x in [0, 1, 31, width - 2, width - 1] {
+        let points = (0..<height).map { PixelPoint(x: x, y: $0) }
+        var mask = Array(repeating: UInt8(0), count: width * height)
+        for point in points { mask[point.y * width + point.x] = 1 }
+        let evidence = SaberEvidence(color: .blue,
+                                     radiance: Array(repeating: 100, count: mask.count),
+                                     value: Array(repeating: 255, count: mask.count),
+                                     chroma: Array(repeating: 0, count: mask.count),
+                                     colorMask: mask, coreMask: mask)
+        let canonical = saberCandidate(from: points, width: width, height: height,
+                                       evidence: evidence, collectEndpointDiagnostics: true)
+        precondition(canonical != nil)
+        let fullFrame = saberCandidates(in: mask, width: width, height: height,
+                                        evidence: evidence, collectEndpointDiagnostics: true)
+        precondition(fullFrame.count == 1)
+        precondition(losslessSignature(canonical!) == losslessSignature(fullFrame[0]))
+        let duplicated = points.reversed() + points + [PixelPoint(x: -1, y: 0),
+                                                       PixelPoint(x: width, y: height - 1)]
+        let actual = saberCandidate(from: duplicated, width: width, height: height,
+                                    evidence: evidence, collectEndpointDiagnostics: true)
+        precondition(losslessSignature(canonical as Any) == losslessSignature(actual as Any))
+    }
+    precondition(saberCandidate(from: [], width: width, height: height) == nil)
+    precondition(saberCandidate(from: [PixelPoint(x: -1, y: 0)], width: width, height: height) == nil)
+    print("lossless proposal membership: duplicates, invalid coordinates, clipped-white bbox and frame edges passed")
+}
+
+// 同じテストソースを変更前・変更後の core とリンクし、出力を cmp で厳密に比較できる。
+private func printLosslessSignatures(paths: [String]) {
+    var state: UInt64 = 0x10_5de7ec72
+    for index in 0..<48 {
+        var image = StaticImage(width: 33 + index % 5, height: 41 + index % 7, padding: 13)
+        for y in 0..<image.height {
+            for x in 0..<image.width {
+                state = state &* 6364136223846793005 &+ 1
+                let value = UInt8(truncatingIfNeeded: state >> 32)
+                image.pixel(x, y, red: value, green: UInt8(truncatingIfNeeded: state >> 40),
+                            blue: UInt8(truncatingIfNeeded: state >> 48))
+            }
+        }
+        image.bar(from: PixelPoint(x: index % 5, y: 0),
+                  to: PixelPoint(x: image.width / 2, y: image.height - 1),
+                  color: index % 2 == 0 ? .red : .blue)
+        let thresholds = [ColorThreshold(), ColorThreshold(brightness: 0, dominance: 0, saturation: 0),
+                          ColorThreshold(brightness: 255, dominance: 255, saturation: 255),
+                          ColorThreshold(brightness: 110, dominance: 8, saturation: 10)]
+        let step = [1, 2, 3, 8][index % 4]
+        let result = staticAnalysis(image, step: step, threshold: thresholds[(index / 4) % 4])
+        let profiled = staticAnalysis(image, step: step, threshold: thresholds[(index / 4) % 4], profile: true)
+        precondition(frameSignature(result) == frameSignature(profiled))
+        print("synthetic \(index):" + frameSignature(result) + profileCountSignature(profiled.profile!))
+    }
+    for path in paths {
+        let image = loadStaticPNG(path)
+        let analysis = staticAnalysis(image, profile: true)
+        print(path + ":" + frameSignature(analysis) + profileCountSignature(analysis.profile!))
+    }
+}
+
 @main
 enum StaticBGRADetectionTests {
     static func main() {
+        if CommandLine.arguments.count >= 3, CommandLine.arguments[1] == "--benchmark" {
+            nativeBenchmark(path: CommandLine.arguments[2],
+                            iterations: CommandLine.arguments.count > 3 ? Int(CommandLine.arguments[3])! : 100)
+            return
+        }
+        if CommandLine.arguments.dropFirst().first == "--lossless-signatures" {
+            printLosslessSignatures(paths: Array(CommandLine.arguments.dropFirst(2)))
+            return
+        }
+        assertLosslessPixelScan()
+        assertLosslessProposalMembership()
         assertLosslessMorphology()
         assertBlueNoDeepSupport()
         let cases: [(String, SaberColor, PixelPoint, PixelPoint, Int, Int)] = [
