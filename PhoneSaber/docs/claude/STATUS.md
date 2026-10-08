@@ -39,6 +39,13 @@
 
 ## 作業ログ
 
+### 2026-10-09 最適化 第1弾（Codex 4本、Claude レビュー・検証）
+- iOS 送信経路（ba2d876）: 座標を検出キューから直接送信（MainActor 待ち 約10ms→ほぼ0、Mac ハーネス）。
+- iOS 認識 2周目（d1d9726）: シミュレータ明るいフレーム 12.4→5.4ms（初期 20.7ms）、空フレーム 2.2→0.6ms。bit 一致。
+- Android（44476a4）: 回転を JNI 内へ（回転 約45%短縮）、エミュレータ JNI 38/38。
+- Unity（977d5c6）: 剣の遅延補正（F8 で 0/20/40/60ms、既定 OFF。まず 20ms を試す）、受信フラグの競合修正。
+- 統合後 main で verify 全段 PASS、parity 0 mismatch。実機確認待ち: iPhone/AQUOS の F9・60fps 維持、Unity Test Runner。
+
 ### 2026-10-08 認識の高速化（Swift / C++、結果は bit 一致）
 - C++ core（a264ad7）: 明るい480×640で 12.0→5.0、25.1→10.1 ms/frame（Mac M5）。膨張・収縮を十字の反復に、std::set を bitmap に、Evidence を参照に。parity 269/269・JNI 35/35（エミュレータ）。
 - iOS（289b992）: XCTest の明るいフレーム 20.7→12.4 ms（シミュレータ）。verify 全段 PASS、parity 0 mismatch。統合後の main でも parity 269/269 一致。
