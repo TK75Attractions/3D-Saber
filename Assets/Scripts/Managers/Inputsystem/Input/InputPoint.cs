@@ -1,7 +1,6 @@
 using UnityEngine;
 using System.Net;
 using System.Net.Sockets;
-using System.Text;
 using System.Threading;
 using System.Globalization;
 using System;
@@ -450,43 +449,30 @@ public class InputPoint : MonoBehaviour
 
     void ReceiveData(UdpClient client, object targetLock, bool secondStick)
     {
-        IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+        // 送信元は標準の IPEndPoint で受ける（独自 EndPoint は OS・runtime 依存の挙動を避けるため使わない）。
+        // 受信 buffer と送信元 IP 文字列だけを再利用し、packet ごとの byte[] と文字列を作らない。
+        EndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
+        IPAddress lastSenderAddress = null;
+        string senderIP = "";
+        var data = new byte[PhoneSaberPacketParser.MaximumDatagramBytes];
+        var parser = new PhoneSaberPacketParser();
+        Socket socket = client.Client;
         while (!networkShutdown)
         {
-            byte[] data = client.Receive(ref endPoint);
+            int length = socket.ReceiveFrom(data, 0, data.Length, SocketFlags.None, ref endPoint);
             long receiveTimestampTicks = SwingMonotonicClock.Timestamp;
+            IPAddress senderAddress = ((IPEndPoint)endPoint).Address;
+            if (!senderAddress.Equals(lastSenderAddress))
+            {
+                lastSenderAddress = senderAddress;
+                senderIP = senderAddress.ToString();
+            }
             // ソケット受信直後の壁時計。解析・main thread 待ちを遅延に含めない。
             double receiveEpoch = (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
-            string originalMessage = Encoding.UTF8.GetString(data).Trim();
-            double? sentEpoch = PhoneSaberPacketStatistics.ReadSendEpoch(originalMessage);
-            string message = StripOptionalTimestamp(originalMessage);
-
-            string[] parts = message.Split(',');
-            if (parts.Length != 2 && parts.Length != 4)
-            {
-                RecordInputStats(secondStick, receiveTimestampTicks, endPoint, false, receiveEpoch, sentEpoch);
-                continue;
-            }
-
-            if (!float.TryParse(parts[0], NumberStyles.Float, CultureInfo.InvariantCulture, out float a) ||
-                !float.TryParse(parts[1], NumberStyles.Float, CultureInfo.InvariantCulture, out float b))
-            {
-                RecordInputStats(secondStick, receiveTimestampTicks, endPoint, false, receiveEpoch, sentEpoch);
-                continue;
-            }
-
-            bool isStick = parts.Length == 4;
-            float c = 0f;
-            float d = 0f;
-            if (isStick &&
-                (!float.TryParse(parts[2], NumberStyles.Float, CultureInfo.InvariantCulture, out c) ||
-                 !float.TryParse(parts[3], NumberStyles.Float, CultureInfo.InvariantCulture, out d)))
-            {
-                RecordInputStats(secondStick, receiveTimestampTicks, endPoint, false, receiveEpoch, sentEpoch);
-                continue;
-            }
-
-            RecordInputStats(secondStick, receiveTimestampTicks, endPoint, true, receiveEpoch, sentEpoch);
+            bool parsed = parser.TryParse(data.AsSpan(0, length), out bool isStick,
+                out float a, out float b, out float c, out float d, out double? sentEpoch);
+            RecordInputStats(secondStick, receiveTimestampTicks, senderIP, parsed, receiveEpoch, sentEpoch);
+            if (!parsed) continue;
 
             // 補正前のカメラ座標を、採取中の指定色だけ記録する。
             if (isStick) PositionCapture.Add(secondStick, new Vector2(a, b), new Vector2(c, d),
@@ -548,23 +534,13 @@ public class InputPoint : MonoBehaviour
         }
     }
 
-    void RecordInputStats(bool secondStick, long timestampTicks, IPEndPoint sender, bool parsed,
+    void RecordInputStats(bool secondStick, long timestampTicks, string senderIP, bool parsed,
         double receiveEpoch, double? sentEpoch)
     {
         (secondStick ? blueConnectionEvents : redConnectionEvents)?.Packet(
-            SwingMonotonicClock.ToSeconds(timestampTicks), sender.Address.ToString());
+            SwingMonotonicClock.ToSeconds(timestampTicks), senderIP);
         (secondStick ? blueInputStats : redInputStats).Record(
-            SwingMonotonicClock.ToSeconds(timestampTicks), sender.Address.ToString(), parsed, receiveEpoch, sentEpoch);
-    }
-
-    static string StripOptionalTimestamp(string message)
-    {
-        int prefixLength = message.StartsWith("ts=", StringComparison.Ordinal) ? 3 :
-            message.StartsWith("timestamp=", StringComparison.Ordinal) ? 10 : 0;
-        if (prefixLength == 0) return message;
-        int separator = message.IndexOf(';', prefixLength);
-        if (separator > prefixLength) return message.Substring(separator + 1);
-        return message;
+            SwingMonotonicClock.ToSeconds(timestampTicks), senderIP, parsed, receiveEpoch, sentEpoch);
     }
 
     void Update()
