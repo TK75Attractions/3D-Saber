@@ -102,6 +102,44 @@ public class PhoneSaberLatencyProbeTests
     }
 
     [Test]
+    public void WrongSidePacketsDoNotPreventTimeoutOrNextMeasurement()
+    {
+        var loop = new PhoneSaberLatencyLoop();
+        loop.Tick(1.0, 0.99, -0.5f, true);
+        loop.Tick(1.10, 1.08, 0.5f, true);
+        loop.Tick(2.10, 2.09, 0.5f, true);
+        // 切替後も逆側への新しい受信が毎フレーム続く。
+        for (int i = 1; i <= 89; i++)
+        {
+            double now = 2.10 + i / 60.0;
+            loop.Tick(now, now - 0.005, 0.95f, true);
+        }
+        Assert.IsTrue(loop.Waiting);
+        loop.Tick(3.70, 3.695, 0.95f, true);
+        Assert.IsFalse(loop.Waiting);
+        Assert.AreEqual(1, loop.Misses);
+        Assert.Greater(loop.Rejected, 0);
+        Assert.AreEqual(1, loop.TotalSamples, "逆方向の受信を測定値へ加えない");
+        loop.Tick(5.0, 4.99, -0.5f, true);
+        Assert.IsTrue(loop.Waiting, "失敗後も次の測定へ進める");
+        loop.Tick(5.10, 5.08, 0.5f, true);
+        Assert.IsFalse(loop.Waiting);
+        Assert.AreEqual(2, loop.TotalSamples);
+        Assert.AreEqual(1, loop.Misses);
+    }
+
+    [Test]
+    public void DelayedTickStillAcceptsPacketReceivedBeforeTimeout()
+    {
+        var loop = new PhoneSaberLatencyLoop();
+        loop.Tick(1.0, 0.99, -0.5f, true);
+        loop.Tick(2.7, 1.08, 0.5f, true);
+        Assert.IsFalse(loop.Waiting);
+        Assert.AreEqual(0, loop.Misses);
+        Assert.AreEqual(80.0, loop.SamplesMs[0], 1e-6);
+    }
+
+    [Test]
     public void RejectsImplausiblyFastAndWrongSideResponses()
     {
         var loop = new PhoneSaberLatencyLoop();
