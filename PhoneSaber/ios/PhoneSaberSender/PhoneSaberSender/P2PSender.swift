@@ -269,6 +269,7 @@ final class P2PSender {
         let text: String
         let enqueuedAt: TimeInterval
         let onSendStarted: ((TimeInterval, Int) -> Void)?
+        let isCurrent: (() -> Bool)?
         let completion: (Result<TimeInterval, Error>) -> Void
     }
 
@@ -398,11 +399,12 @@ final class P2PSender {
     func send(_ text: String, to port: Int,
               onSendStarted: ((TimeInterval, Int) -> Void)? = nil,
               completion: @escaping (Result<TimeInterval, Error>) -> Void,
-              fallback: (() -> Void)? = nil) {
+              fallback: (() -> Void)? = nil,
+              isCurrent: (() -> Bool)? = nil) {
         let request = PendingSend(text: text, enqueuedAt: HostMonotonicClock.now(),
-                                  onSendStarted: onSendStarted, completion: completion)
+                                  onSendStarted: onSendStarted, isCurrent: isCurrent, completion: completion)
         queue.async { [weak self] in
-            guard let self else { return }
+            guard let self, request.isCurrent?() != false else { return }
             guard let color = P2PColor(port: port) else {
                 completion(.failure(SendError.invalidPayload))
                 return
@@ -699,6 +701,7 @@ final class P2PSender {
     // MARK: Sending
 
     private func transmit(_ request: PendingSend, color: P2PColor) {
+        guard request.isCurrent?() != false else { return }
         guard let connection else {
             request.completion(.failure(SendError.notUsable))
             return

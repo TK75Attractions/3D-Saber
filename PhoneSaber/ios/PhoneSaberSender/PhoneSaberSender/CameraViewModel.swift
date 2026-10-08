@@ -352,15 +352,14 @@ final class CameraViewModel: NSObject, ObservableObject {
     private static let mirrorXKey = "PhoneSaber.mirrorX"
     private static let mirrorYKey = "PhoneSaber.mirrorY"
     /// True once `sender` has a LAN destination for the current run.
-    private var lanConfigured = false
-    private let lanProbe = LANLivenessProbe()
+    private var lanConfigured = false { didSet { updateDeliverySettings() } }
+    private let lanProbe: LANLivenessProbe
     /// Coordinates dropped because neither P2P nor LAN could take them.
     private var p2pNoRouteCount = 0
-    /// Whether the previous coordinate took the P2P link (P2P on only).
-    private var routedViaP2P = false
+    nonisolated private let delivery: CoordinateDelivery
     private let pathMonitor = NWPathMonitor()
     private let bonjourDiscovery = BonjourDiscovery()
-    @Published var running = false
+    @Published var running = false { didSet { updateDeliverySettings() } }
     @Published var redEndpoints: (PixelPoint, PixelPoint)?
     @Published var blueEndpoints: (PixelPoint, PixelPoint)?
     nonisolated private let healthMeter = DeviceHealthMeter()
@@ -383,7 +382,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var discoveredMacIP = ""
     @Published private(set) var connectionMode = "Auto (Bonjour)"
     @Published private(set) var station = ""
-    @Published private(set) var p2pEnabled = true
+    @Published private(set) var p2pEnabled = true { didSet { updateDeliverySettings() } }
     @Published private(set) var p2pState: P2PLinkState = .disabled
     @Published private(set) var p2pRoundTrip: P2PRoundTripStats.Summary?
     /// Opt-in exposure experiment (default auto = device exposure untouched).
@@ -391,14 +390,20 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var cameraExposureExperimentState = CameraExposureExperimentState.initial
     @Published var threshold = 145
     @Published var dominance = 25
-    @Published var measurementMode = false
-    @Published var outputWidth = 1920
-    @Published var outputHeight = 1080
+    @Published var measurementMode = false { didSet { updateDeliverySettings() } }
+    @Published var outputWidth = 1920 { didSet { updateDeliverySettings() } }
+    @Published var outputHeight = 1080 { didSet { updateDeliverySettings() } }
     @Published var mirrorX = false {
-        didSet { UserDefaults.standard.set(mirrorX, forKey: Self.mirrorXKey) }
+        didSet {
+            UserDefaults.standard.set(mirrorX, forKey: Self.mirrorXKey)
+            updateDeliverySettings()
+        }
     }
     @Published var mirrorY = false {
-        didSet { UserDefaults.standard.set(mirrorY, forKey: Self.mirrorYKey) }
+        didSet {
+            UserDefaults.standard.set(mirrorY, forKey: Self.mirrorYKey)
+            updateDeliverySettings()
+        }
     }
     @Published private(set) var activeDestination = "未設定"
     @Published private(set) var redDetectionCount = 0
@@ -486,11 +491,11 @@ final class CameraViewModel: NSObject, ObservableObject {
 #endif
     private var frameCount = 0
     private var fpsStart = CACurrentMediaTime()
-    private var lifecycleGeneration = 0
+    private var lifecycleGeneration = 0 { didSet { updateDeliverySettings() } }
     private var cameraErrorMessage: String?
     private var connectionErrorMessage: String?
     private var sendErrorMessages: [Int: String] = [:]
-    private var hostSelection = DestinationHostSelection()
+    private var hostSelection = DestinationHostSelection() { didSet { updateDeliverySettings() } }
     private var debugRecordingMaximumDurationTask: Task<Void, Never>?
     private let authorizationStatus: () -> AVAuthorizationStatus
     private let requestAccess: (@escaping (Bool) -> Void) -> Void
@@ -545,6 +550,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         self.processor = processor
         self.sender = sender
         self.p2pSender = p2pSender
+        let probe = LANLivenessProbe()
+        self.lanProbe = probe
+        self.delivery = CoordinateDelivery(sender: sender, p2pSender: p2pSender, lanProbe: probe)
         // Unit tests opt in explicitly, so a bridge running on the developer's Mac
         // can never reroute the existing LAN tests.
         let underTest = NSClassFromString("XCTestCase") != nil
@@ -599,8 +607,8 @@ final class CameraViewModel: NSObject, ObservableObject {
                     if self.hostSelection.source == .manual {
                         self.configureLAN(host: self.host, generation: self.lifecycleGeneration)
                     } else {
-                        self.sender.stop()
-                        self.lanConfigured = false; self.lanProbe.stop()
+                        self.lanConfigured = false
+                        self.sender.stop(); self.lanProbe.stop()
                     }
                 }
                 self.refreshNetworkDiscovery()
@@ -620,8 +628,14 @@ final class CameraViewModel: NSObject, ObservableObject {
             healthMeter.processed(at: time, milliseconds: milliseconds, generation: generation,
                                   captureToSendMs: captureToSendMs)
         }
+        updateDeliverySettings()
         processor.onResult = { [weak self] results, width, height, processingStart, generation, trace in
-            Task { @MainActor in self?.handle(results, width: width, height: height, processingStart: processingStart, generation: generation, trace: trace) }
+            guard let self else { return }
+            let sent = self.sendResults(results, width: width, height: height,
+                                        processingStart: processingStart, generation: generation)
+            Task { @MainActor [weak self] in
+                self?.handle(results, width: width, height: height, generation: generation, trace: trace, sent: sent)
+            }
         }
         processor.onRawFrameSaved = { [weak self] result in
             Task { @MainActor in
@@ -784,7 +798,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         cameraRecoveryGeneration += 1
         let recoveryGeneration = cameraRecoveryGeneration
         let runGeneration = lifecycleGeneration
-        _ = processor.reset()
+        resetProcessor()
         publishCameraLifecycle(at: now)
         cameraRecoveryTask = Task { @MainActor [weak self] in
             try? await Task.sleep(for: .seconds(delay))
@@ -1015,8 +1029,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         discoveredMacName = update.name
         discoveredMacIP = update.ip
         if update.removed && hostSelection.source != .manual && hostSelection.bonjourServiceName == update.name {
-            sender.stop()
-            lanConfigured = false; lanProbe.stop()
+            lanConfigured = false
+            sender.stop(); lanProbe.stop()
         }
         if hostSelection.applyBonjour(host: update.ip, serviceName: update.name) ||
             (!update.ip.isEmpty && hostSelection.source != .manual && hostSelection.bonjourServiceName == update.name && !lanConfigured) {
@@ -1134,7 +1148,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
         updateIdleTimerPolicy()
         sessionRunner.stopSynchronously()
-        sender.stop(); lanConfigured = false; lanProbe.stop(); routedViaP2P = false; _ = processor.reset(); activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
+        sender.stop(); lanConfigured = false; lanProbe.stop(); resetProcessor(); activeDestination = "未設定"; status = "停止中"; redEndpoints = nil; blueEndpoints = nil; senderStates = [:]; senderErrors = [:]; cameraErrorMessage = nil; connectionErrorMessage = nil; sendErrorMessages = [:]; recomputeErrorMessage()
     }
 
     private func configureAndStart(isRecovery: Bool = false, recoveryGeneration: Int? = nil) {
@@ -1244,7 +1258,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         connectionMode = hostSelection.source.rawValue
         resetStartState()
         processor.configureThresholds(red: configuredThreshold, blue: configuredThreshold)
-        frameCount = 0; fpsStart = CACurrentMediaTime(); _ = processor.reset(); status = "送信中"
+        frameCount = 0; fpsStart = CACurrentMediaTime(); resetProcessor(); status = "送信中"
         healthMeter.reset(at: ProcessInfo.processInfo.systemUptime, generation: processor.currentGeneration)
         publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
@@ -1254,64 +1268,62 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
     }
 
-    private func handle(_ results: [DetectedSaber], width: Int, height: Int, processingStart: TimeInterval, generation: Int, trace: FrameTrace?) {
+    private struct SendMetrics {
+        let lifecycleGeneration: Int
+        var redEpoch: TimeInterval?
+        var blueEpoch: TimeInterval?
 #if DEBUG
-        let uiStart = ProcessInfo.processInfo.systemUptime
-        var udpRequestMs = 0.0
+        var redEnqueuedAt: TimeInterval?
+        var blueEnqueuedAt: TimeInterval?
+        var requestMs = 0.0
 #endif
-        guard running, generation == processor.currentGeneration else {
-            rejectedFrameCallbackCount += 1
-            return
-        }
-        processedFrameCount += 1
-#if DEBUG
-        if let trace { recordFrameTrace(trace) }
-#endif
-        sourceDimensions = (width, height)
-        var redSeen = false
-        var blueSeen = false
-        for result in results {
-            guard result.isFresh else {
-                switch result.color {
-                case .red: redEndpoints = result.endpoints; redSeen = true
-                case .blue: blueEndpoints = result.endpoints; blueSeen = true
-                }
-                continue
-            }
-            let coordinates = payload(for: result.endpoints, source: (width, height), output: (outputWidth, outputHeight), mirrorX: mirrorX, mirrorY: mirrorY)
+    }
+
+    private func resetProcessor() {
+        // reset が検出キューの終了を待つ間も旧世代の送信・fallback を拒否する。
+        delivery.suspend()
+        _ = processor.reset()
+        updateDeliverySettings()
+    }
+
+    private func updateDeliverySettings() {
+        var settings = CoordinateDelivery.Settings()
+        settings.running = running
+        settings.processorGeneration = processor.currentGeneration
+        settings.lifecycleGeneration = lifecycleGeneration
+        settings.outputWidth = outputWidth
+        settings.outputHeight = outputHeight
+        settings.mirrorX = mirrorX
+        settings.mirrorY = mirrorY
+        settings.measurementMode = measurementMode
+        settings.manual = hostSelection.source == .manual
+        settings.p2pEnabled = p2pEnabled
+        settings.lanConfigured = lanConfigured
+        delivery.update(settings)
+    }
+
+    // 検出キューで payload と経路を確定。UI の描画・診断更新は送信を待たせない。
+    nonisolated private func sendResults(_ results: [DetectedSaber], width: Int, height: Int,
+                                        processingStart: TimeInterval, generation: Int) -> SendMetrics? {
+        guard let settings = delivery.snapshot(generation: generation) else { return nil }
+        var metrics = SendMetrics(lifecycleGeneration: settings.lifecycleGeneration)
+        for result in results where result.isFresh {
+            let coordinates = payload(for: result.endpoints, source: (width, height),
+                                      output: (settings.outputWidth, settings.outputHeight),
+                                      mirrorX: settings.mirrorX, mirrorY: settings.mirrorY)
             let text: String
-            if measurementMode {
-                let sentEpoch = Date().timeIntervalSince1970
-                lastSentEpoch = sentEpoch
-                text = timestampedPayload(coordinates, timestamp: sentEpoch)
-            } else {
-                lastSentEpoch = nil
-                text = coordinates
-            }
-            let port: Int
-            switch result.color {
-            case .red:
-                redEndpoints = result.endpoints
-                if !result.isPredicted { redDetectionCount += 1 }
-                port = 5005
-                redSeen = true
-            case .blue:
-                blueEndpoints = result.endpoints
-                if !result.isPredicted { blueDetectionCount += 1 }
-                port = 5006
-                blueSeen = true
-            }
-            if result.color == .red { redAttemptCount += 1 } else { blueAttemptCount += 1 }
-            let sendGeneration = lifecycleGeneration
+            if settings.measurementMode {
+                let epoch = Date().timeIntervalSince1970
+                if result.color == .red { metrics.redEpoch = epoch }
+                else { metrics.blueEpoch = epoch }
+                text = timestampedPayload(coordinates, timestamp: epoch)
+            } else { text = coordinates }
+            let port = result.color == .red ? 5005 : 5006
+            let sendGeneration = settings.lifecycleGeneration
 #if DEBUG
             let enqueueAt = HostMonotonicClock.now()
-            recordEventRate("UDP enqueue rate")
-            if let trace {
-                addPerformance("Detection → UDP enqueue", value: max(0, (enqueueAt - trace.detectionEnd) * 1000))
-                addPerformance("Post-capture total", value: max(0, (enqueueAt - trace.callbackHostTime) * 1000))
-            }
-#endif
-#if DEBUG
+            if result.color == .red { metrics.redEnqueuedAt = enqueueAt }
+            else { metrics.blueEnqueuedAt = enqueueAt }
             let sendRequestStart = ProcessInfo.processInfo.systemUptime
 #endif
             let completion: (Result<TimeInterval, Error>) -> Void = { [weak self] result in
@@ -1333,17 +1345,72 @@ final class CameraViewModel: NSObject, ObservableObject {
 #if DEBUG
             let onSendStarted: ((TimeInterval, Int) -> Void)? = { [weak self] queueWait, replaced in
                 result.diagnosticSendStarted?(coordinates)
-                Task { @MainActor in self?.recordUDPQueueStart(queueWait, replaced: replaced) }
+                Task { @MainActor in
+                    guard let self, self.running, self.lifecycleGeneration == sendGeneration else { return }
+                    self.recordUDPQueueStart(queueWait, replaced: replaced)
+                }
             }
 #else
             let onSendStarted: ((TimeInterval, Int) -> Void)? = result.diagnosticSendStarted.map { callback in
                 { _, _ in callback(coordinates) }
             }
 #endif
-            route(text, port: port, onSendStarted: onSendStarted, completion: completion)
+            delivery.route(text, port: port, settings: settings, onSendStarted: onSendStarted,
+                           completion: completion, noRoute: { [weak self] in
+                               Task { @MainActor in
+                                   guard let self, self.running, self.lifecycleGeneration == sendGeneration else { return }
+                                   self.p2pNoRouteCount += 1
+                               }
+                           })
 #if DEBUG
-            udpRequestMs += (ProcessInfo.processInfo.systemUptime - sendRequestStart) * 1000
+            metrics.requestMs += (ProcessInfo.processInfo.systemUptime - sendRequestStart) * 1000
 #endif
+        }
+        return metrics
+    }
+
+    private func handle(_ results: [DetectedSaber], width: Int, height: Int,
+                        generation: Int, trace: FrameTrace?, sent: SendMetrics?) {
+#if DEBUG
+        let uiStart = ProcessInfo.processInfo.systemUptime
+#endif
+        guard running, generation == processor.currentGeneration,
+              let sent, sent.lifecycleGeneration == lifecycleGeneration else {
+            rejectedFrameCallbackCount += 1
+            return
+        }
+        processedFrameCount += 1
+#if DEBUG
+        if let trace { recordFrameTrace(trace) }
+        for enqueueAt in [sent.redEnqueuedAt, sent.blueEnqueuedAt].compactMap({ $0 }) {
+            recordEventRate("UDP enqueue rate")
+            if let trace {
+                addPerformance("Detection → UDP enqueue", value: max(0, (enqueueAt - trace.detectionEnd) * 1000))
+                addPerformance("Post-capture total", value: max(0, (enqueueAt - trace.callbackHostTime) * 1000))
+            }
+        }
+#endif
+        sourceDimensions = (width, height)
+        var redSeen = false
+        var blueSeen = false
+        for result in results {
+            switch result.color {
+            case .red:
+                redEndpoints = result.endpoints
+                redSeen = true
+                if result.isFresh {
+                    redAttemptCount += 1
+                    if !result.isPredicted { redDetectionCount += 1 }
+                }
+            case .blue:
+                blueEndpoints = result.endpoints
+                blueSeen = true
+                if result.isFresh {
+                    blueAttemptCount += 1
+                    if !result.isPredicted { blueDetectionCount += 1 }
+                }
+            }
+            if result.isFresh { lastSentEpoch = result.color == .red ? sent.redEpoch : sent.blueEpoch }
         }
         if !redSeen { redEndpoints = nil }
         if !blueSeen { blueEndpoints = nil }
@@ -1351,7 +1418,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         let elapsed = CACurrentMediaTime() - fpsStart
         if elapsed >= 1 { fps = Double(frameCount) / elapsed; frameCount = 0; fpsStart = CACurrentMediaTime() }
 #if DEBUG
-        addPerformance("UDP request", value: udpRequestMs)
+        addPerformance("UDP request", value: sent.requestMs)
         addPerformance("UI / overlay state", value: (ProcessInfo.processInfo.systemUptime - uiStart) * 1000)
         publishPerformanceIfNeeded()
 #endif
@@ -1629,54 +1696,17 @@ final class CameraViewModel: NSObject, ObservableObject {
     private func recordUDPQueueStart(_ wait: TimeInterval, replaced: Int) { }
 #endif
 
-    // MARK: Transport (P2P first, then the existing LAN UDP path)
-
-    /// Picks the transport for one coordinate without blocking: P2P while the
-    /// bridge answers pings, otherwise the existing LAN `sender` (Bonjour or
-    /// manual IP). Payload and RED 5005 / BLUE 5006 are identical on both.
-    private func route(_ text: String, port: Int,
-                       onSendStarted: ((TimeInterval, Int) -> Void)?,
-                       completion: @escaping (Result<TimeInterval, Error>) -> Void) {
-        // LAN が Unity の応答で確認できている間は LAN を使う（P2P より速く、ばらつきも小さい）。
-        // 確認できないとき（端末間通信の禁止・Wi-Fi なし等）だけ P2P へ退避する。
-        let lanVerified = lanConfigured && lanProbe.isAlive
-        if hostSelection.source != .manual && p2pEnabled && p2pSender.isUsable && !lanVerified {
-            if !routedViaP2P {
-                // Back on P2P: a coordinate still queued for a LAN port that is not
-                // ready must never arrive after the newer ones sent over P2P.
-                routedViaP2P = true
-                sender.discardPendingCoordinates()
-            }
-            let lan = sender
-            let lanAvailable = lanConfigured
-            p2pSender.send(text, to: port, onSendStarted: onSendStarted, completion: completion,
-                           fallback: { [weak self] in
-                               // The link dropped after the check: hand this coordinate to LAN.
-                               if lanAvailable {
-                                   lan.send(text, to: port, onSendStarted: onSendStarted, completion: completion)
-                               } else {
-                                   // Same as the no-route branch below: counted, no completion.
-                                   Task { @MainActor in self?.p2pNoRouteCount += 1 }
-                               }
-                           })
-        } else if lanConfigured {
-            routedViaP2P = false
-            sender.send(text, to: port, onSendStarted: onSendStarted, completion: completion)
-        } else {
-            // Neither link is up yet (P2P searching, no LAN host): nothing to send to.
-            routedViaP2P = false
-            p2pNoRouteCount += 1
-        }
-    }
+    // MARK: Transport (LAN 確認済みを優先、P2P へ退避)
 
     private func configureLAN(host: String, generation: Int) {
-        lanConfigured = true
+        lanConfigured = false
         lanProbe.start(host: host)
         sender.configure(host: host) { [weak self] states, errors, _ in
             Task { @MainActor in
                 self?.applySenderUpdate(states: states, errors: errors, generation: generation)
             }
         }
+        lanConfigured = true
     }
 
     private func startP2P() {
@@ -1909,7 +1939,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         let currentGeneration = lifecycleGeneration
         // An empty host mirrors a P2P-only start (no LAN destination yet).
         if host.isEmpty { lanConfigured = false; lanProbe.stop() } else { configureLAN(host: host, generation: currentGeneration) }
-        _ = processor.reset()
+        resetProcessor()
         recomputeErrorMessage()
     }
 

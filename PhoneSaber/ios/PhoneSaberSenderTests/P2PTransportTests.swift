@@ -1,3 +1,4 @@
+#if !PIPELINE_ROUTING_STANDALONE
 import Network
 @testable import PhoneSaberSender
 import XCTest
@@ -635,6 +636,35 @@ final class P2PTransportTests: XCTestCase {
         p2p.overrideUsabilityForTesting(nil)
     }
 
+    @MainActor
+    func testCoordinatesStartSendingWhileMainActorIsOccupied() {
+        let started = DispatchSemaphore(value: 0)
+        let packets = LockedBox<[(String, Int)]>([])
+        let lan = UDPSender { text, port, completion in
+            packets.mutate { $0.append((text, port)) }
+            started.signal()
+            completion(.success(ProcessInfo.processInfo.systemUptime))
+        }
+        let processor = FrameProcessor(expiryScheduler: nil)
+        let model = CameraViewModel(processor: processor, sender: lan, p2pEnabled: false, idleTimerUpdater: { _ in })
+        defer { model.stop(); lan.stop() }
+        model.startForTesting()
+        model.outputWidth = 1280
+        model.outputHeight = 960
+        model.mirrorX = true
+        model.measurementMode = true
+        let endpoints = (PixelPoint(x: 10, y: 20), PixelPoint(x: 110, y: 20))
+        model.processDetectedForTesting([(.red, endpoints)], at: 1, dimensions: (640, 480))
+        // MainActor を意図的に待機させても検出→送信は完了する。
+        XCTAssertEqual(started.wait(timeout: .now() + 1), .success)
+        let packet = packets.value.first
+        XCTAssertEqual(packet?.1, 5005)
+        XCTAssertTrue(packet?.0.hasPrefix("ts=") == true)
+        let coordinates = packet?.0.split(separator: ";").last.map(String.init)
+        XCTAssertEqual(coordinates, payload(for: endpoints, source: (640, 480), output: (1280, 960),
+                                           mirrorX: true, mirrorY: false))
+    }
+
     // MARK: Helpers
 
     private func waitFor(timeout: TimeInterval = 3, _ condition: @escaping () -> Bool) async -> Bool {
@@ -843,4 +873,178 @@ final class FakeHTTPReceiver: @unchecked Sendable {
     }
 
     func stop() { queue.sync { listener.cancel() } }
+}
+
+#else
+import XCTest
+import Foundation
+#endif
+
+// このクラスは Mac の standalone XCTest でも同じ production 経路を検証する。
+final class CoordinateDeliveryTests: XCTestCase {
+    private func settings() -> CoordinateDelivery.Settings {
+        var value = CoordinateDelivery.Settings()
+        value.running = true
+        value.processorGeneration = 7
+        value.lifecycleGeneration = 3
+        value.lanConfigured = true
+        value.p2pEnabled = true
+        return value
+    }
+
+    func testVerifiedLANAndManualIPKeepPendingLANCoordinates() {
+        for manual in [false, true] {
+            let sent = expectation(description: "BLUE via LAN")
+            let lan = UDPSender { text, port, completion in
+                XCTAssertEqual(text, "1,2,3,4")
+                XCTAssertEqual(port, 5006)
+                completion(.success(1))
+                sent.fulfill()
+            }
+            let p2p = P2PSender()
+            p2p.overrideUsabilityForTesting(true)
+            let probe = LANLivenessProbe()
+            if !manual { probe.recordReplyForTesting("PHONESABER_UNITY 1") }
+            let delivery = CoordinateDelivery(sender: lan, p2pSender: p2p, lanProbe: probe)
+            defer { lan.stop(); p2p.stop(); probe.stop() }
+            var config = settings()
+            config.manual = manual
+            delivery.update(config)
+            lan.configure(host: "127.0.0.1")
+            lan.simulateConnectionStateForTesting(port: 5005, state: .waiting)
+            lan.send("5,6,7,8", to: 5005, completion: { _ in XCTFail("RED still waiting") })
+            XCTAssertEqual(lan.pendingCountForTesting, 1)
+            delivery.route("1,2,3,4", port: 5006, settings: config, onSendStarted: nil,
+                           completion: { _ in }, noRoute: { XCTFail("LAN exists") })
+            wait(for: [sent], timeout: 2)
+            XCTAssertEqual(lan.pendingCountForTesting, 1)
+            XCTAssertEqual(lan.discardedForP2PCountForTesting, 0)
+        }
+    }
+
+    func testP2PCheckThenLinkLossFallsBackToLANAndDiscardsOlderWaitingCoordinates() {
+        let sent = expectation(description: "fallback via LAN")
+        let lan = UDPSender { text, port, completion in
+            XCTAssertEqual(text, "1,2,3,4")
+            XCTAssertEqual(port, 5006)
+            completion(.success(1))
+            sent.fulfill()
+        }
+        let p2p = P2PSender()
+        // route 時だけ usable。送信キューでは未接続なので fallback を実行する。
+        p2p.overrideUsabilityForTesting(true)
+        let delivery = CoordinateDelivery(sender: lan, p2pSender: p2p, lanProbe: LANLivenessProbe())
+        defer { lan.stop(); p2p.stop() }
+        let config = settings()
+        delivery.update(config)
+        lan.configure(host: "127.0.0.1")
+        lan.simulateConnectionStateForTesting(port: 5005, state: .waiting)
+        lan.send("5,6,7,8", to: 5005, completion: { _ in XCTFail("obsolete RED") })
+        XCTAssertEqual(lan.pendingCountForTesting, 1)
+        delivery.route("1,2,3,4", port: 5006, settings: config, onSendStarted: nil,
+                       completion: { _ in }, noRoute: { XCTFail("LAN exists") })
+        wait(for: [sent], timeout: 2)
+        XCTAssertEqual(lan.pendingCountForTesting, 0)
+        XCTAssertEqual(lan.discardedForP2PCountForTesting, 1)
+    }
+
+    func testNoRouteAndFallbackWithoutLANAreCountedWithoutCompletion() {
+        for usable in [false, true] {
+            let dropped = expectation(description: "no route")
+            let lan = UDPSender { _, _, _ in XCTFail("no LAN") }
+            let p2p = P2PSender()
+            p2p.overrideUsabilityForTesting(usable)
+            defer { lan.stop(); p2p.stop() }
+            let delivery = CoordinateDelivery(sender: lan, p2pSender: p2p, lanProbe: LANLivenessProbe())
+            var config = settings()
+            config.lanConfigured = false
+            delivery.update(config)
+            delivery.route("1,2,3,4", port: 5005, settings: config, onSendStarted: nil,
+                           completion: { _ in XCTFail("no completion") }, noRoute: { dropped.fulfill() })
+            wait(for: [dropped], timeout: 2)
+        }
+    }
+
+    func testP2PRejectsCancelledRequestBeforeFallbackOrCompletion() {
+        let p2p = P2PSender()
+        p2p.send("1,2,3,4", to: 5005,
+                 onSendStarted: { _, _ in XCTFail("cancelled start") },
+                 completion: { _ in XCTFail("cancelled completion") },
+                 fallback: { XCTFail("cancelled fallback") }, isCurrent: { false })
+        // stop の同期処理をバリアにし、先行する send が検査されたことを保証する。
+        p2p.stop()
+    }
+
+    func testStoppedAndOldGenerationsAreRejectedBeforeRouting() {
+        let lan = UDPSender { _, _, _ in XCTFail("obsolete frame") }
+        let p2p = P2PSender()
+        defer { lan.stop(); p2p.stop() }
+        let delivery = CoordinateDelivery(sender: lan, p2pSender: p2p, lanProbe: LANLivenessProbe())
+        let old = settings()
+        for change in 0..<3 {
+            var current = old
+            if change == 0 { current.running = false }
+            if change == 1 { current.processorGeneration += 1 }
+            if change == 2 { current.lifecycleGeneration += 1 }
+            delivery.update(current)
+            delivery.route("1,2,3,4", port: 5005, settings: old, onSendStarted: nil,
+                           completion: { _ in XCTFail("obsolete completion") }, noRoute: { XCTFail("obsolete drop") })
+        }
+        XCTAssertNil(delivery.snapshot(generation: old.processorGeneration - 1))
+        delivery.update(old)
+        XCTAssertNotNil(delivery.snapshot(generation: old.processorGeneration))
+        delivery.suspend()
+        XCTAssertNil(delivery.snapshot(generation: old.processorGeneration))
+    }
+
+    func testPendingCoordinatesAreRevalidatedAfterRecoveryAndCompletion() {
+        for recovery in [false, true] {
+            let active = expectation(description: "first active")
+            let completed = expectation(description: "first completed")
+            let callback = PipelineLockedValue<((Result<TimeInterval, Error>) -> Void)?>(nil)
+            let packets = PipelineLockedValue<[String]>([])
+            let lan = UDPSender { text, _, completion in
+                packets.mutate { $0.append(text) }
+                callback.mutate { $0 = completion }
+                active.fulfill()
+            }
+            let p2p = P2PSender()
+            defer { lan.stop(); p2p.stop() }
+            let delivery = CoordinateDelivery(sender: lan, p2pSender: p2p, lanProbe: LANLivenessProbe())
+            var config = settings()
+            config.p2pEnabled = false
+            delivery.update(config)
+            lan.configure(host: "127.0.0.1")
+            if recovery { lan.simulateConnectionStateForTesting(port: 5005, state: .waiting) }
+            delivery.route("1,2,3,4", port: 5005, settings: config, onSendStarted: nil,
+                           completion: { _ in completed.fulfill() }, noRoute: {})
+            if !recovery { wait(for: [active], timeout: 2) }
+            delivery.route("5,6,7,8", port: 5005, settings: config, onSendStarted: nil,
+                           completion: { _ in XCTFail("stale completion") }, noRoute: {})
+            XCTAssertEqual(lan.pendingCountForTesting, 1)
+            config.processorGeneration += 1
+            delivery.update(config)
+            if recovery {
+                lan.simulateConnectionStateForTesting(port: 5005, state: .ready)
+                XCTAssertEqual(lan.pendingCountForTesting, 0)
+                XCTAssertTrue(packets.value.isEmpty)
+                // 未使用の expectation は正常に終了させる。
+                active.fulfill(); completed.fulfill()
+                wait(for: [active, completed], timeout: 2)
+            } else {
+                callback.value?(.success(1))
+                wait(for: [completed], timeout: 2)
+                XCTAssertEqual(lan.pendingCountForTesting, 0)
+                XCTAssertEqual(packets.value, ["1,2,3,4"])
+            }
+        }
+    }
+}
+
+private final class PipelineLockedValue<Value>: @unchecked Sendable {
+    private let lock = NSLock()
+    private var stored: Value
+    init(_ value: Value) { stored = value }
+    var value: Value { lock.lock(); defer { lock.unlock() }; return stored }
+    func mutate(_ body: (inout Value) -> Void) { lock.lock(); defer { lock.unlock() }; body(&stored) }
 }
