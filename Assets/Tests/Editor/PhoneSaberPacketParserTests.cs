@@ -72,7 +72,7 @@ public static class PhoneSaberParserTestCorpus
             "1,2,3,4;", "ts=1;", "ts=1;1,2;garbage", "1,2\0", "1,2\0\0", "1,2\0x",
             new string('0', 65000) + "1,2", "ts=" + new string('0', 64000) + "1;1,2,3,4" })
             yield return Encoding.UTF8.GetBytes(payload);
-        var random = new Random(0x5005);
+        var random = new System.Random(0x5005);
         for (int i = 0; i < 20000; i++)
         {
             float value = BitConverter.Int32BitsToSingle(random.Next() ^ (i % 2 == 0 ? int.MinValue : 0));
