@@ -1,0 +1,1610 @@
+{
+  "title": "3D-Saber 改善100件",
+  "date": "2026-10-08",
+  "count": 100,
+  "scope": "3サブエージェントと本体担当で各25件を実装。既存譜面の配置・タイミング・音源は今回変更していない。",
+  "validation": {
+    "unity": {
+      "editmode": {
+        "Passed": 1655,
+        "Failed": 0,
+        "Skipped": 0,
+        "Inconclusive": 1
+      },
+      "playmode": {
+        "Passed": 51,
+        "Failed": 0,
+        "Skipped": 0,
+        "Inconclusive": 0
+      }
+    },
+    "studioTests": {
+      "passed": 67,
+      "failed": 0
+    },
+    "chartRoundTrips": 27,
+    "browser": "390px幅、製作中HARD314ノーツで一括時刻移動、変更件数プレビュー、Undo、下書き再読込、密度・配置診断を確認。横はみ出し・console errorなし。",
+    "limits": "macOS専用のP2Pプロセステスト1件はWindows環境で対象外。実機コントローラーと端末固有の音声遅延は未測定。"
+  },
+  "site": {
+    "url": "https://saber-tap-studio.metuji48.chatgpt.site",
+    "version": 4,
+    "status": "published"
+  },
+  "items": [
+    {
+      "id": "S01",
+      "area": "スマホ譜面制作",
+      "title": "全曲のms移動",
+      "problem": "既存の区間移動では全曲を選ぶためにA/Bを指定する必要があり、110ms遅れを直接まとめて直す導線がない。",
+      "change": "曲全体を既定対象にしたms移動を追加。負数で早め、変更件数を確認後に適用する。",
+      "benefit": "全曲のms移動をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "-110ms移動、offset維持、ロング長維持、1回Undo、音源境界のテスト。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S02",
+      "area": "スマホ譜面制作",
+      "title": "同時押しの高さを統一",
+      "problem": "左右を別々に録音した同時ノーツのYをまとめてそろえられない。",
+      "change": "同時グループのYを平均にそろえる。0〜50msの同時許容幅を選べる。",
+      "benefit": "同時押しの高さを統一をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "高さ平均、許容幅、隣の拍へ連鎖しないグループ境界を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S03",
+      "area": "スマホ譜面制作",
+      "title": "同時ロングの回数を最大へ統一",
+      "problem": "同時ロングの左右回数の不一致を個別に見つけて直す必要がある。",
+      "change": "同時ロングのcountを最大へそろえ、tapと長さを保持する。暗黙長の旧ノーツも長さを固定して保持する。",
+      "benefit": "同時ロングの回数を最大へ統一をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "3/5回→5/5回、tapの1回保持、暗黙長1.4秒の保持を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S04",
+      "area": "スマホ譜面制作",
+      "title": "左右の位置を中心対称化",
+      "problem": "Yだけでなく左右の距離にも手打ちのばらつきが残る。",
+      "change": "同時青赤の絶対X平均を半径とし、青を左・赤を右の対称位置へそろえる。",
+      "benefit": "左右の位置を中心対称化をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "-0.7/+1.3→-1/+1、金と単独ノーツ保持、座標スケール保持を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S05",
+      "area": "スマホ譜面制作",
+      "title": "録音済みノーツへの近接拍補正",
+      "problem": "近い拍だけ補正する機能は新規入力に限られ、既に作った譜面へ適用できない。",
+      "change": "対象ノーツの近い拍だけを最大20/35/50ms幅で補正する。",
+      "benefit": "録音済みノーツへの近接拍補正をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "近い520ms→500ms、遠い560ms維持、ロング長保持を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S06",
+      "area": "スマホ譜面制作",
+      "title": "ロング終端だけを拍へ整列",
+      "problem": "始点を変えずに複数ロングの終わりをそろえる操作がない。",
+      "change": "指定刻みでロング終端だけ整列。開始時刻は固定し、0長や音源外は適用を中止する。",
+      "benefit": "ロング終端だけを拍へ整列をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "620ms長→625ms長、始点維持、音源外終端の拒否を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S07",
+      "area": "スマホ譜面制作",
+      "title": "A–Bの一括削除",
+      "problem": "不要な録音区間を一覧から1ノーツずつ消す必要がある。",
+      "change": "曲全体/A–Bと色で選んだノーツを、件数確認後に削除できる。",
+      "benefit": "A–Bの一括削除をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "offset付きA含む/B含まない範囲と色フィルターを検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S08",
+      "area": "スマホ譜面制作",
+      "title": "完全重複ノーツの除去",
+      "problem": "追記録音や区間コピーで完全に同じノーツが重なっても除去方法がない。",
+      "change": "編集ID以外の全プロパティが一致するノーツのみ1個残す。",
+      "benefit": "完全重複ノーツの除去をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "対称同時押し、異なるbeat、未知メタデータを保持し重複だけ除去するテスト。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S09",
+      "area": "スマホ譜面制作",
+      "title": "区間の色を一括変更",
+      "problem": "片手パートを別の手や金ノーツへ変えるには個別編集が必要。",
+      "change": "曲全体/A–Bと元色で絞り、青・赤・金・指定なしへ変更できる。",
+      "benefit": "区間の色を一括変更をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "選択区間外の色と他属性の保持を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S10",
+      "area": "スマホ譜面制作",
+      "title": "区間の矢印を一括変更",
+      "problem": "複数ノーツを同方向のフリックへ、または通常タップへ戻す操作がない。",
+      "change": "8方向と矢印なしをまとめて設定し、tap/direction/longの種別も正しく維持する。",
+      "benefit": "区間の矢印を一括変更をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "通常→direction→tap、ロング種別保持を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S11",
+      "area": "スマホ譜面制作",
+      "title": "ロング回数の一括指定",
+      "problem": "長いパート全体のロング回数を同じ数へ変えるには個別作業が必要。",
+      "change": "対象のロングだけ2〜99回へ変更し、長さと通常ノーツを保持する。",
+      "benefit": "ロング回数の一括指定をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "tap保持とcount4→9、暗黙長保持、範囲外回数の拒否を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S12",
+      "area": "スマホ譜面制作",
+      "title": "配置をまとめて平行移動",
+      "problem": "録音パート全体が上下左右へ偏ったとき、まとめて位置を動かせない。",
+      "change": "画面上のX/Y移動量を指定して、coordScaleを考慮し選択配置を移動する。",
+      "benefit": "配置をまとめて平行移動をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "scale2の座標変換とパッド外移動の全体中止を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S13",
+      "area": "スマホ譜面制作",
+      "title": "配置と矢印の上下反転",
+      "problem": "既存の左右反転だけでは上下を入れ替えた配置パターンを作れない。",
+      "change": "Yと上下を含む矢印を同時に反転。時刻・色・Xは保持する。",
+      "benefit": "配置と矢印の上下反転をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "斜め方向反転、水平矢印保持、2回反転で元に戻ることを検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S14",
+      "area": "スマホ譜面制作",
+      "title": "見直すノーツを診断して選択",
+      "problem": "音源外、画面外、重複、同手ロングの重なりを一括で見つける画面がない。",
+      "change": "確認候補を時刻付きで表示し、選ぶと該当ノーツの編集画面を開く。意図した配置もあるため自動修正はしない。",
+      "benefit": "見直すノーツを診断して選択をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "各問題の検出、編集IDの保持、元譜面を変更しないことを検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S15",
+      "area": "スマホ譜面制作",
+      "title": "密度と左右・種別の統計",
+      "problem": "全体ノーツ数だけでは休符・混雑・左右の偏りを探しにくい。",
+      "change": "色/種別数、平均・最大2秒密度、10秒バケットを表示。バケットから試聴位置へ移動できる。",
+      "benefit": "密度と左右・種別の統計をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html",
+        "Tools/MobileChartStudio/dist/style.css"
+      ],
+      "verification": [
+        "無音バケット、色/種別集計、最大密度とその位置を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S16",
+      "area": "スマホ譜面制作",
+      "title": "前後のノーツ時刻へジャンプ",
+      "problem": "5秒送りだけでは疎な譜面の次の入力位置へ正確に移動しにくい。",
+      "change": "前/次ノーツの時刻へ停止状態でシークする操作を追加。",
+      "benefit": "前後のノーツ時刻へジャンプをスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "同時刻重複を飛ばす、offset考慮、端点のクランプを検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S17",
+      "area": "スマホ譜面制作",
+      "title": "拍単位でシーク",
+      "problem": "5秒移動から拍単位のA/Bを指定しづらい。",
+      "change": "現在位置から前/次の拍へ、BPM・拍原点・offsetを考慮して移動する。",
+      "benefit": "拍単位でシークをスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "拍上と拍の間、負方向、原点+offsetの計算を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S18",
+      "area": "スマホ譜面制作",
+      "title": "現在位置から拍原点を設定",
+      "problem": "拍の始まりmsを音源を聴きながら数値転記する必要がある。",
+      "change": "今の位置を拍の始まりへ設定し、ノーツ時刻を保ったままbeat表現を追従させる。",
+      "benefit": "現在位置から拍原点を設定をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "現在位置−offsetを拍原点へ設定、beat追従、元時刻・元譜面の保持を自動テストで検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S19",
+      "area": "スマホ譜面制作",
+      "title": "名前付きブックマーク",
+      "problem": "サビや直したい場所へ戻るための時刻の記憶・転記が必要。",
+      "change": "名前付き目印を最大100個保存し、ワンタップで移動。下書きと.saberに含める。",
+      "benefit": "名前付きブックマークをスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/backup.js",
+        "Tools/MobileChartStudio/dist/app.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "時刻/名前検証、整列、日本語タイトルと元音源を含むバックアップ往復。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S20",
+      "area": "スマホ譜面制作",
+      "title": "元音源をそのまま書き出し",
+      "problem": "音源の単独出力がWAVだけで、スマホ上で容量が増える。",
+      "change": "保存済みBlobを元の名前・形式のままダウンロードできる。",
+      "benefit": "元音源をそのまま書き出しをスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "同じ元Blobを渡す経路のコード検査、バイナリバックアップ一致の既存/新規テスト。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S21",
+      "area": "スマホ譜面制作",
+      "title": "下書きを曲名・難易度で検索",
+      "problem": "曲や難易度の下書きが増えると一覧を見続ける必要がある。",
+      "change": "曲名・難易度を大文字小文字と全角差を吸収して検索し、表示件数も出す。",
+      "benefit": "下書きを曲名・難易度で検索をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/app.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "日本語名、全角HARD、大小英字、空検索を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S22",
+      "area": "スマホ譜面制作",
+      "title": "不要な下書きと未使用音源を削除",
+      "problem": "新規音源・復元・難易度コピーを増やすと保存領域を整理できない。",
+      "change": "削除確認を追加。同じ音源を使う下書きがなくなったときだけ、同一トランザクションで音源も削除する。",
+      "benefit": "不要な下書きと未使用音源を削除をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/storage.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/app.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "NORMAL削除でHARDと共有音源保持、最後の下書きで音源解放、他曲保持を検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S23",
+      "area": "スマホ譜面制作",
+      "title": "確認モードのA–Bループ",
+      "problem": "短い区間を繰り返し聴くたび再生操作が必要。",
+      "change": "確認モード・指定区間に限ってB到達後Aから再生。録音・全曲試聴・中断時にはループしない。",
+      "benefit": "確認モードのA–Bループをスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/app.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html",
+        "Tools/MobileChartStudio/dist/backup.js"
+      ],
+      "verification": [
+        "既存の区間音声停止予約テスト、開始/停止とループ条件をコード検査。統合ブラウザQA対象。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S24",
+      "area": "スマホ譜面制作",
+      "title": "音源と入力・拍音を個別音量調整",
+      "problem": "曲が大きい/小さいとタップやメトロノームの確認がしづらい。",
+      "change": "音源用Gainとフィードバック音量を分け、再生中にも変更可能。設定を下書き/.saberへ保存する。",
+      "benefit": "音源と入力・拍音を個別音量調整をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/audio.js",
+        "Tools/MobileChartStudio/dist/app.js",
+        "Tools/MobileChartStudio/dist/backup.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "音量独立、ミュート、範囲クランプ、音声時計不変、設定バックアップの検証。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "S25",
+      "area": "スマホ譜面制作",
+      "title": "入力位置の任意グリッド",
+      "problem": "タップ位置の高さや左右位置を最初から一定間隔に置きにくい。",
+      "change": "自由配置を既定のまま0.25/0.5/1.0間隔を選択可能にする。色は補正後でなく実際に押した側を採用する。",
+      "benefit": "入力位置の任意グリッドをスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/app.js",
+        "Tools/MobileChartStudio/dist/backup.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "verification": [
+        "自由配置保持、座標の丸め・端点・設定復元、左右色のコード検査。"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V01",
+      "area": "演出・ノーツの見やすさ",
+      "title": "ロング終端まで小節線を続ける",
+      "problem": "最終ノーツの開始時刻しか小節線の終端に含めていなかった",
+      "change": "lengthMsと旧形式の保持時間を含む曲末まで生成",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/BarLineSpawner.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.BarLinesContinueThroughAnAuthoredLongTail"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V02",
+      "area": "演出・ノーツの見やすさ",
+      "title": "巻き戻し後の小節線を復元",
+      "problem": "再生位置を戻しても生成位置が進んだままだった",
+      "change": "現在の小節を二分探索し再生成",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/BarLineSpawner.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.RewindRecreatesTheCurrentMeasureInsteadOfWaitingForTheOldTime"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V03",
+      "area": "演出・ノーツの見やすさ",
+      "title": "小節線を再利用して連続生成の負荷を抑える",
+      "problem": "小節ごとにGameObjectを生成・破棄していた",
+      "change": "上限24本のプールで再利用",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/BarLineSpawner.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.ConsecutiveMeasuresReuseObjects"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V04",
+      "area": "演出・ノーツの見やすさ",
+      "title": "強調小節線の素材を共有・回収",
+      "problem": "プレハブ色の強調ごとにMaterialを複製し回収していなかった",
+      "change": "元素材別に強調素材を共有し所有元で解放",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/BarLineSpawner.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.PrefabAccentMaterialIsReusedAndOriginalIsUntouched"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V05",
+      "area": "演出・ノーツの見やすさ",
+      "title": "小節線の出現と退場を滑らかにする",
+      "problem": "出現・消滅が瞬間的で視界に飛び込んでいた",
+      "change": "到達時の明るさを維持して両端だけフェード",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/BarLineSpawner.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.BarOpacityFadesWithoutMutatingSharedStyle"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V06",
+      "area": "演出・ノーツの見やすさ",
+      "title": "床でも単打とロング開始を見分ける",
+      "problem": "同じ色では床の形が同じだった",
+      "change": "ロング開始を二重線で表示",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/FloorTimingGuide.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.LongOnsetUsesADoubleMarkInsteadOfATapMark"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V07",
+      "area": "演出・ノーツの見やすさ",
+      "title": "ロング保持中の残り時間を床に表示",
+      "problem": "開始から130msで床案内が消え長い保持が見えなかった",
+      "change": "実長に同期する残り時間バーを追加",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/FloorTimingGuide.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.LongTimeGuidePersistsUntilTheAuthoredEnd"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V08",
+      "area": "演出・ノーツの見やすさ",
+      "title": "ロングの残り切断回数を床でも追える",
+      "problem": "時間の進みと切断の達成率を区別できなかった",
+      "change": "残り回数に比例する最大8分割の目盛りを追加",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/FloorTimingGuide.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.RemainingCutProgressChangesWithoutChangingTheClock"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V09",
+      "area": "演出・ノーツの見やすさ",
+      "title": "高密度区間の直近ノーツを優先表示",
+      "problem": "案内上限256個を生成順で使い切ると直近の案内が欠けた",
+      "change": "上限を超えた場合だけ到達時刻との距離で優先",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/FloorTimingGuide.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.CrowdedGuidesPrioritizeNotesNearestTheJudgmentTime"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V10",
+      "area": "演出・ノーツの見やすさ",
+      "title": "非表示ノーツの床残像を防ぐ",
+      "problem": "非アクティブになったノーツもLiveNotes内なら表示された",
+      "change": "非表示・無効座標を案内から除外",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/FloorTimingGuide.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.InactiveNotesLeaveNoPhantomFloorMarkers"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V11",
+      "area": "演出・ノーツの見やすさ",
+      "title": "投影時の床判定線を読みやすくする",
+      "problem": "床の固定線は投影モードでも細いままだった",
+      "change": "暗い下敷きと白線を一緒に拡幅",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/FloorTimingGuide.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.ProjectionModeBroadensTheFixedJudgmentAnchor"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V12",
+      "area": "演出・ノーツの見やすさ",
+      "title": "同時線を2D/Forward描画の両方で安定表示",
+      "problem": "汎用Unlit依存で頂点色と透明度の扱いが一致しなかった",
+      "change": "ビルドに含まれるNoteGuideシェーダーと一度のアルファ適用",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/SimultaneousNoteLink.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.SimultaneousLinkUsesABuildIncludedVertexColorShader"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V13",
+      "area": "演出・ノーツの見やすさ",
+      "title": "同時線がノーツの矢印を横切らない",
+      "problem": "線の端点が本体中心だった",
+      "change": "輪郭間の空間だけを結ぶ",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/SimultaneousNoteLink.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.LinkOnlyJoinsTheGapBetweenNoteFaces"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V14",
+      "area": "演出・ノーツの見やすさ",
+      "title": "カット済みノーツの同時線を即時に隠す",
+      "problem": "削除予約からフレーム終端まで線が残った",
+      "change": "無効ペア検出時に描画を止める",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/SimultaneousNoteLink.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.RetiredLinkIsHiddenBeforeDeferredDestruction"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V15",
+      "area": "演出・ノーツの見やすさ",
+      "title": "再利用ノーツのガイド設定を切り替えられる",
+      "problem": "初期化済みでは追加ONにできずOFFでも枠を再表示した",
+      "change": "設定に従って不足分を構築し既存分を表示切替",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/NoteTimingCue.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.PooledCueCanTurnItsOptionalGhostAndRingOffAndOn"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V16",
+      "area": "演出・ノーツの見やすさ",
+      "title": "投影用の着地枠を通常表示へ戻せる",
+      "problem": "Initializeが太さと透明度の設定そのものを書き換えていた",
+      "change": "元設定を保持しモード変更時に枠を再構成",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/NoteTimingCue.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.ProjectionCueStyleDoesNotPermanentlyMutateUserSettings"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V17",
+      "area": "演出・ノーツの見やすさ",
+      "title": "着地枠の消え方を曲時計へ合わせる",
+      "problem": "停止・低速確認でもTime.deltaTimeで枠だけ消えた",
+      "change": "残り曲時間の差でフェードを進める",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/NoteTimingCue.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.CueEndFadeUsesTheChartClockAndFreezesOnPause"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V18",
+      "area": "演出・ノーツの見やすさ",
+      "title": "プレビューで着地枠が編集位置へ追従",
+      "problem": "ノーツを動かしても初期化時の位置に枠が残った",
+      "change": "毎TickでXYを本体へ追従",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/NoteTimingCue.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.EditingNotePositionMovesBothLandingFrames"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V19",
+      "area": "演出・ノーツの見やすさ",
+      "title": "先送り後に過去のサビ演出を出さない",
+      "problem": "大きく先送りすると過去の入口を毎フレーム再生した",
+      "change": "シークを検出し過去の入口を飛ばす",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Game/ChorusDrop.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.ForwardSeekDoesNotPlayOldChorusEntriesOnePerFrame"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V20",
+      "area": "演出・ノーツの見やすさ",
+      "title": "停止中にサビのリングと背景移動を止める",
+      "problem": "同じ曲時刻でも渡された実時間で演出が進んだ",
+      "change": "曲時計の差分だけで演出を進める",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Game/ChorusDrop.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.PausingFreezesTheChorusRingAndStageKick"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V21",
+      "area": "演出・ノーツの見やすさ",
+      "title": "曲の再設定でサビ演出の状態を復元",
+      "problem": "再Setupで前曲の音量と舞台変位が残りリングも増えた",
+      "change": "前の演出を終了して所有リングを交換",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Game/ChorusDrop.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.RebindingRestoresOldSongVolumeAndReplacesItsRing"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V22",
+      "area": "演出・ノーツの見やすさ",
+      "title": "LOW切替を進行中のサビ演出にも反映",
+      "problem": "開始済みのリングと背景移動はLOWでも続いた",
+      "change": "切替直後に視覚演出だけを終了して位置を戻す",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Game/ChorusDrop.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.SwitchingToLowCancelsAlreadyRunningMotionImmediately"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V23",
+      "area": "演出・ノーツの見やすさ",
+      "title": "連続カットの演出が誤ってPerfectにならない",
+      "problem": "演出枠を再利用する際に古いPerfect判定を引き継いだ",
+      "change": "同時同位置の統合だけ良い判定を採用し通常交換は新判定を使う",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Notes/GameplayCutFeedback.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.FeedbackEvictionDoesNotBorrowTheOldPerfectTier"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V24",
+      "area": "演出・ノーツの見やすさ",
+      "title": "ロング終端にも曲同期の照明を添える",
+      "problem": "照明キューは開始音だけで長い保持の終わりを扱わなかった",
+      "change": "指定lengthMsの終端を密度制限付きキューへ追加",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Game/StageLightCues.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.LongReleaseAddsASongSynchronizedLightCue"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "V25",
+      "area": "演出・ノーツの見やすさ",
+      "title": "背景の食の選択を譜面配列順に依存させない",
+      "problem": "同強度・同開始で長さが違う区間の食が並べ方で変わった",
+      "change": "同条件のとき終了時刻で選択を一意化",
+      "benefit": "",
+      "files": [
+        "Assets/Scripts/Game/StagePerformanceTimeline.cs"
+      ],
+      "verification": [
+        "VisualGuidanceImprovementTests.EclipseSelectionIsIndependentOfEqualStartSectionOrder"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U01",
+      "area": "選曲・リザルト",
+      "title": "難易度別譜面だけの曲を選曲に掲載",
+      "problem": "chart.jsonが必須で、chart_hard.jsonなどだけを保存した曲が一覧から落ちる。",
+      "change": "標準3難易度のいずれかのファイルも曲フォルダーの登録条件に含め、遊べる譜面の検査を継続。",
+      "benefit": "HARDだけ制作した曲もゲームから選べる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectController.cs"
+      ],
+      "verification": [
+        "DifficultyOnlySongIsListedAndSelectsPlayableHard"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U02",
+      "area": "選曲・リザルト",
+      "title": "曲切替時に遊べる難易度へ合わせる",
+      "problem": "前の曲の難易度を引き継いだ先が未制作だと、開始ボタンが無効になり理由を探す必要がある。",
+      "change": "曲が変わる時のみ、近い制作済み難易度へ切り替える。同距離なら易しい側を優先。",
+      "benefit": "HARDだけの製作中なども選曲直後に開始できる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectController.cs"
+      ],
+      "verification": [
+        "DifficultyOnlySongIsListedAndSelectsPlayableHard / SongChartAvailabilityTests"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U03",
+      "area": "選曲・リザルト",
+      "title": "上下キーで未制作の難易度を飛ばす",
+      "problem": "相対的な難易度送りが空の難易度で止まり、遊べない状態になる。",
+      "change": "相対送りで制作済みの難易度だけを循環。数字キーなどの明示選択は従来の拒否動作を維持。",
+      "benefit": "矢印で遊べる難易度を比較しやすい。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectController.cs"
+      ],
+      "verification": [
+        "RelativeDifficultyNavigationSkipsUnmadeChartBothDirections"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U04",
+      "area": "選曲・リザルト",
+      "title": "同じ曲の再選択で試聴を中断しない",
+      "problem": "Selectが同じインデックスでも試聴のキャンセルと再ロードを行う。",
+      "change": "同じ曲のSelectは何も変更せず、明示的な再試聴は専用操作に分離。",
+      "benefit": "同じ盤への操作が音切れ・待ち直しを起こさない。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectController.cs"
+      ],
+      "verification": [
+        "ReSelectingCurrentSongDoesNotNotifyOrRestartPreview"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U05",
+      "area": "選曲・リザルト",
+      "title": "曲一覧の再構築で重複行を除去",
+      "problem": "Populateを再実行すると以前生成したボタンが残り、行が二重になる。",
+      "change": "自分が生成した行を破棄して作り直し、曲IDで現在の選択位置を保持。装飾の子は消さない。",
+      "benefit": "一覧再読込後も同じ曲に戻り、ボタンが増殖しない。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectController.cs"
+      ],
+      "verification": [
+        "RepopulateReplacesOwnedRowsWithoutRemovingOtherChildren"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U06",
+      "area": "選曲・リザルト",
+      "title": "キーボード操作を常時案内",
+      "problem": "矢印・1/2/3・Enter・Escapeの操作が選曲画面から分からない。",
+      "change": "盤を隠さないヘッダー下の空間に短い操作一覧を表示。",
+      "benefit": "セーバー以外の操作方法を初見で確認できる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectSkin.cs"
+      ],
+      "verification": [
+        "コード・配置レビュー。Unity描画確認は親の統合検証"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U07",
+      "area": "選曲・リザルト",
+      "title": "曲数と一覧内の現在位置を表示",
+      "problem": "円形に循環する盤では全体の曲数や現在位置が分からない。",
+      "change": "左下の盤と実績パネルの間に「現在 / 全曲数」を表示。",
+      "benefit": "全曲を探したかどうか判断しやすい。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectSkin.cs"
+      ],
+      "verification": [
+        "コード・配置レビュー。Unity描画確認は親の統合検証"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U08",
+      "area": "選曲・リザルト",
+      "title": "譜面がない時に復旧手順を表示",
+      "problem": "遊べる曲がゼロだと盤がない画面だけが残る。",
+      "change": "曲なしメッセージと、ノーツ入り譜面を保存し選曲を開き直す案内を表示。",
+      "benefit": "読み込みの故障と未制作を見分け、次の作業が分かる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectSkin.cs"
+      ],
+      "verification": [
+        "コード・配置レビュー。Unity描画確認は親の統合検証"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U09",
+      "area": "選曲・リザルト",
+      "title": "未制作難易度を言葉で示す",
+      "problem": "レベルが横棒の無効ボタンだけで、未制作なのか不明。",
+      "change": "遊べない難易度名の位置に「未制作」を表示。",
+      "benefit": "押せない難易度の理由がその場で分かる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectSkin.cs"
+      ],
+      "verification": [
+        "SongChartAvailabilityTests / コード・配置レビュー"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U10",
+      "area": "選曲・リザルト",
+      "title": "BPM・ノーツ数・譜面時間を選曲で比較",
+      "problem": "レベル表示だけではテンポや譜面のボリュームを確認できない。",
+      "change": "読み取り専用集計でBPM、総ノーツ数、最後のロング終端までの譜面時間を表示。",
+      "benefit": "曲の速さと所要負荷を開始前に比較できる。",
+      "files": [
+        "Assets/Scripts/UI/SongChartInsights.cs"
+      ],
+      "verification": [
+        "ChartInsightsPreserveOrderAndCountLongDurationAndSimultaneousGroups"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U11",
+      "area": "選曲・リザルト",
+      "title": "ロング・フリック・同時押しの構成を案内",
+      "problem": "選択中の譜面がどの操作を多く要求するか開始前に分からない。",
+      "change": "ロング本数、フリック数、同時押しの組数を別行で表示。",
+      "benefit": "苦手な操作の練習曲を選びやすい。",
+      "files": [
+        "Assets/Scripts/UI/SongChartInsights.cs"
+      ],
+      "verification": [
+        "ChartInsightsPreserveOrderAndCountLongDurationAndSimultaneousGroups"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U12",
+      "area": "選曲・リザルト",
+      "title": "試聴の準備・再生・終了・失敗を見える化",
+      "problem": "無音が選曲待ち、ロード、終了、音源不在のどれか分からない。",
+      "change": "試聴状態を明示し、再生中は抜粋の経過時間と長さを表示。",
+      "benefit": "無音の原因と試聴の進み具合を判断できる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectChartPreview.cs"
+      ],
+      "verification": [
+        "MissingAudioReportsFailureAndAllowsFreshRetry"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U13",
+      "area": "選曲・リザルト",
+      "title": "同じ曲をもう一度試聴",
+      "problem": "10秒の試聴後にもう一度聴くには別の曲へ動かして戻す必要がある。",
+      "change": "終了・失敗後に押せる「再試聴」ボタンを追加。",
+      "benefit": "確認したい部分を同じ難易度のまま聴き直せる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectController.cs"
+      ],
+      "verification": [
+        "MissingAudioReportsFailureAndAllowsFreshRetry / コード・配置レビュー"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U14",
+      "area": "選曲・リザルト",
+      "title": "試聴だけを消音し設定を保存",
+      "problem": "試聴が常に鳴り、画面内に停止音量の操作がない。",
+      "change": "試聴音ON/OFFを追加し、プレビュー用AudioSourceだけに適用、画面を開き直しても保持。",
+      "benefit": "周囲へ音を出さず選曲し、本編の音量設定は保てる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectChartPreview.cs"
+      ],
+      "verification": [
+        "PreviewMuteOnlyChangesPreviewAndSurvivesReinitialization"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U15",
+      "area": "選曲・リザルト",
+      "title": "試聴開始失敗から再試行できる",
+      "problem": "音声時計が始まらない場合は再生中のまま永久に待機し、無効な抜粋ではロード状態とクリップが残る。",
+      "change": "開始監視・リクエスト期限・無効クリップ破棄を追加し、失敗状態へ戻す。",
+      "benefit": "音声デバイスやデコードの失敗時にも選曲を続けて再試行できる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectChartPreview.cs"
+      ],
+      "verification": [
+        "MissingAudioReportsFailureAndAllowsFreshRetry / タイムアウト経路はコードレビュー"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U16",
+      "area": "選曲・リザルト",
+      "title": "画面外の間に選曲制限時間を減らさない",
+      "problem": "別アプリへ切り替えている間も100秒が経過し、意図せず曲が始まる。",
+      "change": "フォーカス外・曲なし・遊べない譜面の選択中はタイマーを停止。",
+      "benefit": "画面に戻った時に選曲の続きから操作できる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectSkin.cs"
+      ],
+      "verification": [
+        "コードレビュー、既存カウントダウン回帰テストは親の統合検証"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U17",
+      "area": "選曲・リザルト",
+      "title": "縦長・横長のジャケットの歪みを修正",
+      "problem": "円形ジャケットへ画像全体を正方形に縮めており、縦横比が違うと人物や文字が変形する。",
+      "change": "中心の正方形を切り抜くUVを計算し、Spriteの部分領域も尊重。旧ImageにもpreserveAspectを適用。",
+      "benefit": "画像の形を保ったジャケット表示になる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectDiscGraphic.cs"
+      ],
+      "verification": [
+        "PortraitCoverKeepsSquarePixelsAndSpriteSubrectangle"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U18",
+      "area": "選曲・リザルト",
+      "title": "結果から同じ曲へ再挑戦",
+      "problem": "結果の操作がタイトルへ戻るだけで、再度曲と難易度を選び直す必要がある。",
+      "change": "演出終了後の「もう一度」を追加。譜面の可用性を再確認して同じ曲・難易度を開始。",
+      "benefit": "練習を途切れさせず同じ譜面へ挑める。",
+      "files": [
+        "Assets/Scripts/UI/ResultController.cs"
+      ],
+      "verification": [
+        "コードレビュー、ResultNavigationPlayTestsによる旧BACK回帰確認は親の統合検証"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U19",
+      "area": "選曲・リザルト",
+      "title": "結果から選曲へ直接戻り曲と難易度を復元",
+      "problem": "別難易度を試すだけでもタイトルを経由し、選曲位置を失う。",
+      "change": "「選曲へ」ボタンと一回だけ消費する曲ID・難易度の引継ぎを追加。タイトル経由には持ち越さない。",
+      "benefit": "同じ曲の別難易度を続けて比較できる。",
+      "files": [
+        "Assets/Scripts/UI/ResultController.cs"
+      ],
+      "verification": [
+        "ResultSelectionIsConsumedOnlyOnce / コードレビュー"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U20",
+      "area": "選曲・リザルト",
+      "title": "判定内訳に割合を添える",
+      "problem": "PERFECTなどの個数だけでは長さの異なる譜面の成績を比較しにくい。",
+      "change": "各判定行へ総判定数に対する百分率を表示。判定ゼロは--。",
+      "benefit": "得意・苦手の割合が曲をまたいで分かる。",
+      "files": [
+        "Assets/Scripts/UI/ResultSkin.cs"
+      ],
+      "verification": [
+        "EmptyResultDoesNotCongratulateAFalsePerfectOrRank / 表示式テスト"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U21",
+      "area": "選曲・リザルト",
+      "title": "自己ベストとの差を表示",
+      "problem": "自己ベスト値と今回値はあるが、あと何点かを暗算する必要がある。",
+      "change": "前回ベストと今回点の差、同点、初記録を区別して表示。",
+      "benefit": "次回の得点目標がすぐ分かる。",
+      "files": [
+        "Assets/Scripts/UI/ResultImprovementSummary.cs"
+      ],
+      "verification": [
+        "BestDifferenceDistinguishesFirstTieImprovementAndGap"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U22",
+      "area": "選曲・リザルト",
+      "title": "次ランクまでの精度差を表示",
+      "problem": "現在ランクだけでは次にどれくらい精度を伸ばせばいいか分からない。",
+      "change": "ゲームの実ランク閾値から次ランクと必要な精度ポイントを表示。僅差を0へ丸めない。",
+      "benefit": "次の達成目標を具体的に把握できる。",
+      "files": [
+        "Assets/Scripts/UI/ResultImprovementSummary.cs"
+      ],
+      "verification": [
+        "NextRankGoalUsesRealThresholdsAndNeverRoundsSmallGapToZero"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U23",
+      "area": "選曲・リザルト",
+      "title": "FC・APに向けた判定の目標を表示",
+      "problem": "失敗が少ない結果でもFC/APに何が足りなかったか読み取りづらい。",
+      "change": "BAD+MISSをFCの課題、FC後はGREAT+GOODをAPの課題として表示し、AP時は達成を明示。",
+      "benefit": "次のプレイで改善する対象が分かる。",
+      "files": [
+        "Assets/Scripts/UI/ResultImprovementSummary.cs"
+      ],
+      "verification": [
+        "AchievementGoalCountsBadAsComboBreakAndGreatAsApGap"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U24",
+      "area": "選曲・リザルト",
+      "title": "結果にプレイした難易度を表示",
+      "problem": "同じ曲の結果に難易度がなく、比較やスクリーンショットで区別しづらい。",
+      "change": "曲名の下へ難易度を表示。ゲーム内MASTERと譜面名HARDの対応も併記。",
+      "benefit": "製作中HARDの記録をNORMALと混同しにくい。",
+      "files": [
+        "Assets/Scripts/UI/ResultSkin.cs"
+      ],
+      "verification": [
+        "BestDifferenceDistinguishesFirstTieImprovementAndGap / コード・配置レビュー"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "U25",
+      "area": "選曲・リザルト",
+      "title": "終了後のスキップ案内を操作案内へ切替",
+      "problem": "結果演出が終わってもCLICK / ANY KEY TO SKIPが残り、まだ待ち時間があるように見える。",
+      "change": "演出時計に同期し、終了後はボタン操作とBACKの行き先を案内。",
+      "benefit": "結果を見終わった後の操作が分かる。",
+      "files": [
+        "Assets/Scripts/UI/ResultSkin.cs"
+      ],
+      "verification": [
+        "コードレビュー、ResultNavigationPlayTestsは親の統合検証"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G01",
+      "area": "再生・判定・保存の安定性",
+      "title": "破損・BOM付きJSONの読み込み復旧",
+      "problem": "ParseはFromJsonの例外を外へ伝播し、BOMや空白だけの入力も直接渡していた。",
+      "change": "BOM/空白を除去し、不正JSONは警告と空譜面を返す。",
+      "benefit": "編集中の不完全な書き出しで選曲画面・本編の起動処理が停止しない。",
+      "files": [
+        "Assets/Scripts/Chart/ChartLoader.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.BrokenJsonDoesNotCrashTheSongBrowser",
+        "GameplayReliabilityTests.UnicodeBomAndSurroundingWhitespaceDoNotHideAChart"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G02",
+      "area": "再生・判定・保存の安定性",
+      "title": "壊れたノーツだけを読み飛ばす",
+      "problem": "JsonUtilityは配列中のnullを既定値ノーツへ変換し、0秒・中央の意図しないノーツを作っていた。非有限の座標も描画へ渡っていた。",
+      "change": "JSON上の明示null位置と非有限の時刻/座標を除外し、時刻0・座標0を含む有効な作者データは保持する。",
+      "benefit": "1つの不正ノーツのために有効な譜面全体が失われない。",
+      "files": [
+        "Assets/Scripts/Chart/ChartLoader.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.NullRecordsDoNotDiscardTheOtherNotes",
+        "GameplayReliabilityTests.RemovingExplicitNullKeepsARealZeroTimeCenterNoteAndIgnoresNestedNulls"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G03",
+      "area": "再生・判定・保存の安定性",
+      "title": "同時押しの作者順を維持",
+      "problem": "List.Sortの同時刻要素の順序は安定ではなく、生成・同時押しリンクの順番が入れ替わり得た。",
+      "change": "安定したOrderByで時刻順に並べる。",
+      "benefit": "同時押しの左右・多重ノーツが書き出し時の並びを維持する。",
+      "files": [
+        "Assets/Scripts/Chart/ChartLoader.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.EqualTimeNotesKeepAuthorOrderAfterSorting"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G04",
+      "area": "再生・判定・保存の安定性",
+      "title": "書き出し文字列の空白で色・方向を失わない",
+      "problem": "color/direction/typeに前後空白があるとPrefab・手・フリック方向の照合に失敗した。",
+      "change": "文字列の前後空白と大小文字を統一し、未指定は既定の値を補う。",
+      "benefit": "他のエディターで作成した譜面も意図した色・方向で遊べる。",
+      "files": [
+        "Assets/Scripts/Chart/ChartLoader.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.WhitespaceInExportedKindsDoesNotLoseTheColorOrFlick"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G05",
+      "area": "再生・判定・保存の安定性",
+      "title": "壊れた譜面メタデータで描画・拍表示を崩さない",
+      "problem": "coordScale=0は全ノーツを中央へ潰し、不正BPM/offsetはガイド・時刻を壊した。",
+      "change": "無効なメタデータにのみ有効な既定値を使い、拍子マップの不正・重複指定を正規化。",
+      "benefit": "ノーツの時刻・配置そのものを補正せず、表示可能な譜面を維持する。",
+      "files": [
+        "Assets/Scripts/Chart/ChartLoader.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.InvalidMetadataCannotCollapseAllNotesToTheCenter",
+        "GameplayReliabilityTests.MeterDuplicatesUseLastDefinitionWithoutMovingNotes"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G06",
+      "area": "再生・判定・保存の安定性",
+      "title": "編集中のファイルロックで停止しない",
+      "problem": "File.Exists後のReadAllTextにはロック・アクセス拒否・読み込み途中の削除への対処がなかった。",
+      "change": "IO/アクセス例外を警告と空譜面へ変換する。",
+      "benefit": "外部エディターや同期中のファイルでゲーム全体が例外停止しない。",
+      "files": [
+        "Assets/Scripts/Chart/ChartLoader.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.AChartLockedByItsEditorDoesNotCrashTheGame"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G07",
+      "area": "再生・判定・保存の安定性",
+      "title": "ロングの指定実長を曲末判定へ反映",
+      "problem": "生成側はlengthMsを使うのに、本編の切り詰め・終了時刻だけ(count-1)*0.7を使い、44回ロング等を誤削除/過剰待機させていた。",
+      "change": "NoteData.LingerSecondsで実長計算を共通化する。",
+      "benefit": "指定された長さのロングが曲末で消えたり、演奏後に不必要に長く待たされたりしない。",
+      "files": [
+        "Assets/Scripts/Game/GamePlayManager.cs",
+        "Assets/Scripts/Chart/ChartData.cs",
+        "Assets/Scripts/Notes/NoteSpawner.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.ExplicitLongDurationWinsOverTheCutCountEstimate",
+        "既存LongNoteLengthTests/LongNoteScoringIntegrationTestsの一括実行を親に依頼"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G08",
+      "area": "再生・判定・保存の安定性",
+      "title": "選曲後に空になった譜面を成功扱いしない",
+      "problem": "選曲時の確認後にファイルが変更・削除されると、本編は空譜面でも進行して結果へ到達した。",
+      "change": "本編読み込み後に有効ノーツを確認し、空なら選曲へ戻す。正常な開始だけ結果IDを再初期化。",
+      "benefit": "未制作・読み込み失敗の曲を誤ってクリア結果にしない。",
+      "files": [
+        "Assets/Scripts/Game/GamePlayManager.cs"
+      ],
+      "verification": [
+        "起動コルーチンの分岐をコードレビュー",
+        "既存SongChartAvailabilityPlayTestsの一括実行を親に依頼"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G09",
+      "area": "再生・判定・保存の安定性",
+      "title": "ロングの実カット物量を難易度推定に反映",
+      "problem": "2回ロングも44回ロングも同じ1ノーツとして密度を数え、lengthMsも無視していた。",
+      "change": "平均密度は必要カット数とロング終端、ピーク密度は指定時間内のロング切断密度も考慮。既存係数は維持。",
+      "benefit": "短時間に何十回も切る譜面の負荷が選曲の自動難易度へ反映される。作者指定displayLevelは変更しない。",
+      "files": [
+        "Assets/Scripts/Chart/ChartDifficultyRater.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.LongDifficultyUsesRequiredCutsAndTheAvailableTime",
+        "Python独立計算: ElDorado Easy4/Normal5/Hard9、既存テストの帯域条件内"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G10",
+      "area": "再生・判定・保存の安定性",
+      "title": "音源読み込み失敗時に別曲を再生しない",
+      "problem": "LoadAudioの全候補が失敗すると、SongPlayerに元から割り当てられたClipを残していた。",
+      "change": "ロード開始時に旧音源の所有資源を解放し、Clipを空にする。",
+      "benefit": "譜面と関係のないシーン既定音源や以前の音源が流れない。",
+      "files": [
+        "Assets/Scripts/Game/GamePlayManager.cs"
+      ],
+      "verification": [
+        "LoadAudio成功/全失敗の分岐をコードレビュー"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G11",
+      "area": "再生・判定・保存の安定性",
+      "title": "音源読み込みの永久待ちを防ぐ",
+      "problem": "UnityWebRequestのタイムアウトが未設定で、同期ストレージ等の停止時に開始処理が待ち続けた。",
+      "change": "各候補の読み込みに20秒の上限を設け、失敗後は次形式へ進む。",
+      "benefit": "アクセスできない音源でゲーム開始画面が戻らなくなることを防ぐ。",
+      "files": [
+        "Assets/Scripts/Game/GamePlayManager.cs"
+      ],
+      "verification": [
+        "リクエスト設定・usingによる解放・候補継続をコードレビュー"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G12",
+      "area": "再生・判定・保存の安定性",
+      "title": "OS中断中の譜面時計を止めて再開",
+      "problem": "音声・アプリが中断されてもscheduledとDSP基準時計は進行扱いで、復帰時に大量MISSになる可能性があった。",
+      "change": "Pause/Resumeを追加し、開始前の残り時間・演奏中のサンプル位置を保持。本編更新も中断する。",
+      "benefit": "アプリの中断から同じ位置へ戻ってプレイを続けられる。",
+      "files": [
+        "Assets/Scripts/Game/SongPlayer.cs",
+        "Assets/Scripts/Game/GamePlayManager.cs"
+      ],
+      "verification": [
+        "SongPlayerRecoveryPlayTests.PauseBeforeStartPreservesTheRemainingLeadIn",
+        "SongPlayerRecoveryPlayTests.PauseDuringPlaybackFreezesBothAudioAndTheJudgmentClock"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G13",
+      "area": "再生・判定・保存の安定性",
+      "title": "極短音源を観測し損ねても曲が終わる",
+      "problem": "最初のSongTime読取より前に音源が終わりtimeSamples=0になると、同期待ちが永久に0を返した。",
+      "change": "正常な同期待ちには猶予を残し、終了した音源を観測し損ねた場合はDSP時計へ復帰する。",
+      "benefit": "短い音源や開始フレームの遅延で譜面とリザルトが停止しない。",
+      "files": [
+        "Assets/Scripts/Game/SongPlayer.cs"
+      ],
+      "verification": [
+        "SongPlayerRecoveryPlayTests.ClipWhichEndsBeforeTheFirstClockReadDoesNotFreezeAtZero"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G14",
+      "area": "再生・判定・保存の安定性",
+      "title": "音源差し替え・無効化で旧予約を解除",
+      "problem": "Clipのsetterは音源だけを差し替えてscheduledと時刻を残し、コンポーネント無効化時も音が継続した。",
+      "change": "異なるClipへの切替とOnDisableでStopして予約と同期状態を解除する。",
+      "benefit": "別の音源が前曲の途中時刻から始まる・無効なプレイヤーの音だけ鳴る症状を防ぐ。",
+      "files": [
+        "Assets/Scripts/Game/SongPlayer.cs"
+      ],
+      "verification": [
+        "SongPlayerRecoveryPlayTests.ReplacingTheClipCancelsTheOldSongSchedule",
+        "SongPlayerRecoveryPlayTests.DisablingSongPlayerAlsoStopsItsSoundAndSchedule"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G15",
+      "area": "再生・判定・保存の安定性",
+      "title": "前回の誤フリック・手・EARLY/LATEを持ち越さない",
+      "problem": "ResetはLastWasWrongFlick/LastCutHand/LastErrorValid等を消さず、直接RegisterHitも前ノーツの属性を使った。",
+      "change": "判定属性のリセットを共通化し、ノーツ由来の採点と属性なしの直接採点を分離。",
+      "benefit": "リトライ直後や直接採点で、誤フリック表示・金音・振動・時間誤差が前回のまま出ない。",
+      "files": [
+        "Assets/Scripts/Game/ScoreManager.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.ReplayResetClearsWrongFlickAndThePreviousHand",
+        "GameplayReliabilityTests.DirectJudgmentsDoNotReuseThePreviousCutSfxOrHapticContext",
+        "GameplayReliabilityTests.ResetAlsoClearsThePreviousTapTimingError"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G16",
+      "area": "再生・判定・保存の安定性",
+      "title": "採点の再接続で欠落・二重購読を防ぐ",
+      "problem": "Bindは生成イベントだけに購読し既に画面にいるノーツを取りこぼし、旧ノーツのOnCut購読は外さなかった。",
+      "change": "表示中ノーツへ再接続し、追跡集合とOnRetiredで重複・古い購読を解除。",
+      "benefit": "途中のUI/採点再接続で切れたのに得点しない、古いノーツが別のプレイに加点する症状を防ぐ。",
+      "files": [
+        "Assets/Scripts/Game/ScoreManager.cs",
+        "Assets/Scripts/Notes/CuttableNote.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.BindingAfterSpawnStillScoresTheVisibleNoteOnce",
+        "GameplayReliabilityTests.DetachingScoreStopsTheOldVisibleNotesFromScoring"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G17",
+      "area": "再生・判定・保存の安定性",
+      "title": "Spawner単体の破棄で表示ノーツを残さない",
+      "problem": "OnDestroyはpoolKeysだけを破棄し、非プールのliveNotesが外部noteRootに残る場合があった。",
+      "change": "生成方式に関係なく所有するliveNotesを片付ける。",
+      "benefit": "表示の再構築や練習終了後に古いノーツ・判定対象が残らない。",
+      "files": [
+        "Assets/Scripts/Notes/NoteSpawner.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.RemovingOnlyTheSpawnerAlsoRemovesUnpooledNotes",
+        "SongPlayerRecoveryPlayTests.DestroyingOnlyASpawnerRemovesItsUnpooledNotesFromAnExternalRoot"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G18",
+      "area": "再生・判定・保存の安定性",
+      "title": "時間切れロングの残数を消す",
+      "problem": "MarkMissでノーツは無効になるが、切断残数ラベルは表示されたままだった。",
+      "change": "MISS確定時に残数ラベルも非表示にする。",
+      "benefit": "もう切れないノーツの数字に誘導されず、次のノーツへ移れる。",
+      "files": [
+        "Assets/Scripts/Notes/CuttableNote.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.TimedOutLongHidesTheRemainingCount"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G19",
+      "area": "再生・判定・保存の安定性",
+      "title": "非表示ノーツを遅延入力で切らない",
+      "problem": "CutCoreはIsCut/IsMissedだけを確認し、プール待機や無効化されたノーツへの直接コールを受理した。",
+      "change": "無効・非アクティブなノーツへのカットを受け付けない。",
+      "benefit": "画面から消えたノーツの遅延コールで得点や破片が発生しない。",
+      "files": [
+        "Assets/Scripts/Notes/CuttableNote.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.DisabledNotesCannotBeCutByALateCallback"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G20",
+      "area": "再生・判定・保存の安定性",
+      "title": "不正ランキング行・精度の復旧",
+      "problem": "Insertにnull/順不同の行を渡すと停止・誤挿入し、Loadのaccuracyは範囲外やNaNを保持していた。",
+      "change": "有効なスコア行を安定ソートし、入力負点を拒否、精度を有限な0..1へ揃える。",
+      "benefit": "一部破損した保存データがあってもランキングを表示でき、500%等の精度を出さない。",
+      "files": [
+        "Assets/Scripts/Game/HighScoreStore.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.BadRankingRowsDoNotBreakInsertionOrShowImpossibleAccuracy"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G21",
+      "area": "再生・判定・保存の安定性",
+      "title": "編集用結果オブジェクトからランキングを独立",
+      "problem": "Insertは呼び出し元のHighScoreEntry参照をそのまま保存していた。",
+      "change": "挿入時にスナップショットを作る。",
+      "benefit": "次の結果を作るため同じEntryを書き換えても、確定済み順位の点数・精度が変わらない。",
+      "files": [
+        "Assets/Scripts/Game/HighScoreStore.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.InsertingAnEditableResultTakesAnIndependentSnapshot"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G22",
+      "area": "再生・判定・保存の安定性",
+      "title": "成績保存の失敗でもリザルトへ進む",
+      "problem": "PlayerPrefs保存例外が本編終了コルーチンや結果UI作成へ伝播していた。",
+      "change": "保存エラーを警告と失敗値で返し、画面進行を継続する。",
+      "benefit": "保存容量/アクセス問題があっても今回の成績を見られる。保存成功とは報告しない。",
+      "files": [
+        "Assets/Scripts/Game/HighScoreStore.cs",
+        "Assets/Scripts/Game/SongAchievementStore.cs"
+      ],
+      "verification": [
+        "Recordの例外経路と呼び出し側をコードレビュー; OS容量不足の実機注入は未実施"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G23",
+      "area": "再生・判定・保存の安定性",
+      "title": "難易度表記の違いで実績を分裂させない",
+      "problem": "実績キーは難易度文字列をそのまま連結し、Hard/hardが別集計だった。",
+      "change": "既存の標準キーEasy/Normal/Hardを保ちながら大小文字・前後空白を同じキーへ解決。",
+      "benefit": "同じHARDの達成人数が表記ゆれで別々に見えない。",
+      "files": [
+        "Assets/Scripts/Game/SongAchievementStore.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.AchievementDifficultyAliasesUseTheExistingStandardKey"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G24",
+      "area": "再生・判定・保存の安定性",
+      "title": "過去結果の再表示による実績人数の水増し防止",
+      "problem": "lastRunIdだけの確認ではrun1→run2→run1でrun1を再加算した。",
+      "change": "直近128回のIDを保持し、旧形式lastRunIdも履歴へ引き継ぐ。",
+      "benefit": "結果画面の再生成や再通知が別の達成プレイとして数えられない。",
+      "files": [
+        "Assets/Scripts/Game/SongAchievementStore.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.RedisplayingAnEarlierRunDoesNotCountItAsAnotherPlayer",
+        "GameplayReliabilityTests.ExistingAchievementCountsAndLastRunSurviveTheNewHistoryFormat"
+      ],
+      "status": "implemented"
+    },
+    {
+      "id": "G25",
+      "area": "再生・判定・保存の安定性",
+      "title": "保存設定の破損でノーツが停止しない",
+      "problem": "速度設定のNaNはMathf.Clampを通り、保存済み判定オフセットはgetterで範囲確認されなかった。",
+      "change": "速度の非有限値は既定に戻し、判定オフセットは既存許容範囲で読み取る。",
+      "benefit": "通常の設定値を変えず、破損した値だけで譜面全体が消える・数日ずれる症状を防ぐ。",
+      "files": [
+        "Assets/Scripts/Game/GameSession.cs"
+      ],
+      "verification": [
+        "GameplayReliabilityTests.CorruptPreferencesDoNotFreezeNotesOrMoveTheChartOutOfRange"
+      ],
+      "status": "implemented"
+    }
+  ]
+}

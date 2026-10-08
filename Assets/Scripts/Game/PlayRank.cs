@@ -24,7 +24,9 @@ public static class PlayRankHelper
     // 判定カウント → 精度(0..1)。まだ何も判定していないときは 1(満点スタート)。
     public static float Accuracy(int perfect, int great, int good, int bad, int miss)
     {
-        int judged = perfect + great + good + bad + miss;
+        perfect = System.Math.Max(0, perfect); great = System.Math.Max(0, great);
+        good = System.Math.Max(0, good); bad = System.Math.Max(0, bad); miss = System.Math.Max(0, miss);
+        long judged = (long)perfect + great + good + bad + miss;
         if (judged <= 0) return 1f;
         long earned =
             (long)perfect * JudgmentTierHelper.BasePoints(JudgmentTier.Perfect) +
@@ -41,6 +43,8 @@ public static class PlayRankHelper
     public static float TotalAccuracy(int perfect, int great, int good, int bad, int totalNotes)
     {
         if (totalNotes <= 0) return 0f;
+        perfect = System.Math.Max(0, perfect); great = System.Math.Max(0, great);
+        good = System.Math.Max(0, good); bad = System.Math.Max(0, bad);
         long earned =
             (long)perfect * JudgmentTierHelper.BasePoints(JudgmentTier.Perfect) +
             (long)great * JudgmentTierHelper.BasePoints(JudgmentTier.Great) +

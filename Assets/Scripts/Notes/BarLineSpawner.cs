@@ -25,6 +25,12 @@ public class BarLineSpawner : MonoBehaviour
     private Material lineMaterial;
     private Material accentMaterial;
     private readonly List<(GameObject obj, double time)> live = new List<(GameObject, double)>();
+    readonly Stack<GameObject> pool = new Stack<GameObject>();
+    readonly Dictionary<Material, Material> prefabAccents = new Dictionary<Material, Material>();
+    MaterialPropertyBlock fadeBlock;
+    double lastSongTime = double.NaN;
+    public int PooledCount => pool.Count;
+    public int CreatedCount { get; private set; }
 
     public float Speed => approachTime > 0.0001f ? (spawnZ - judgeZ) / approachTime : 0f;
 
@@ -34,6 +40,7 @@ public class BarLineSpawner : MonoBehaviour
     public void SetChart(ChartData chart, double extraOffsetSeconds = 0)
     {
         nextBarIndex = 0;
+        lastSongTime = double.NaN;
         Cleanup();
         barTimes.Clear();
         if (chart == null || chart.bpm <= 0 || float.IsNaN(chart.bpm) || float.IsInfinity(chart.bpm)) return;
@@ -43,7 +50,12 @@ public class BarLineSpawner : MonoBehaviour
         if (chart.notes != null && chart.notes.Count > 0)
         {
             foreach (var note in chart.notes)
-                if (note != null) end = System.Math.Max(end, note.TimeSeconds);
+                if (note != null && Finite(note.time))
+                {
+                    double tail = note.count > 1 ? (note.lengthMs > 0 && Finite(note.lengthMs)
+                        ? note.lengthMs / 1000.0 : (note.count - 1) * .7) : 0;
+                    end = System.Math.Max(end, note.TimeSeconds + tail);
+                }
             end += 4.0 + offset;
         }
         var meter = new ChartMeterMap(chart.timeSignatures, beatsPerBar);
@@ -53,6 +65,15 @@ public class BarLineSpawner : MonoBehaviour
 
     public void Tick(double songTime)
     {
+        if (!isActiveAndEnabled || !Finite(songTime)) return;
+        if (Finite(lastSongTime) && songTime < lastSongTime - .001)
+        {
+            Cleanup();
+            int index = barTimes.BinarySearch(songTime - despawnAfterSeconds);
+            nextBarIndex = index < 0 ? ~index : index;
+        }
+        lastSongTime = songTime;
+        UpdateLive(songTime);
         SpawnDue(songTime);
         UpdateLive(songTime);
     }
@@ -72,8 +93,18 @@ public class BarLineSpawner : MonoBehaviour
     private void SpawnBar(double barTime)
     {
         if (barLinePrefab == null) return;
-        var go = Instantiate(barLinePrefab, new Vector3(0f, 0f, spawnZ), Quaternion.identity, root);
+        GameObject go = null;
+        while (pool.Count > 0 && go == null) go = pool.Pop();
+        if (go == null)
+        {
+            go = Instantiate(barLinePrefab, new Vector3(0f, 0f, spawnZ), Quaternion.identity, root);
+            CreatedCount++;
+        }
         go.SetActive(true);
+        foreach (var renderer in go.GetComponentsInChildren<MeshRenderer>()) renderer.SetPropertyBlock(null);
+        var sourceLine = barLinePrefab.transform.Find("Line");
+        var reusedLine = go.transform.Find("Line");
+        if (sourceLine != null && reusedLine != null) reusedLine.localScale = sourceLine.localScale;
 
         bool accented = accentEvery > 0 && nextBarIndex % accentEvery == 0;
         if (overrideVisual)
@@ -82,19 +113,29 @@ public class BarLineSpawner : MonoBehaviour
         }
 
         // accentEvery 毎に強調（少し明るく）
-        else if (accented)
+        else
         {
             var mr = go.GetComponentInChildren<MeshRenderer>();
-            if (mr != null && mr.sharedMaterial != null)
+            var original = barLinePrefab.GetComponentInChildren<MeshRenderer>();
+            if (mr != null && original != null && original.sharedMaterial != null)
             {
-                var mat = new Material(mr.sharedMaterial);
-                if (mat.HasProperty("_BaseColor"))
+                var source = original.sharedMaterial;
+                if (!accented) mr.sharedMaterial = source;
+                else
                 {
-                    Color c = mat.GetColor("_BaseColor");
-                    mat.SetColor("_BaseColor", c * 1.6f);
-                    if (mat.HasProperty("_EmissionColor")) mat.SetColor("_EmissionColor", c * 2.0f);
+                    if (!prefabAccents.TryGetValue(source, out var mat) || mat == null)
+                    {
+                        mat = new Material(source) { name = "BarLine/PrefabAccent" };
+                        if (mat.HasProperty("_BaseColor"))
+                        {
+                            Color c = source.GetColor("_BaseColor");
+                            mat.SetColor("_BaseColor", c * 1.6f);
+                            if (mat.HasProperty("_EmissionColor")) mat.SetColor("_EmissionColor", c * 2.0f);
+                        }
+                        prefabAccents[source] = mat;
+                    }
+                    mr.sharedMaterial = mat;
                 }
-                mr.sharedMaterial = mat;
             }
         }
         live.Add((go, barTime));
@@ -110,9 +151,25 @@ public class BarLineSpawner : MonoBehaviour
             double dt = time - songTime;
             float z = judgeZ + speed * (float)dt;
             go.transform.position = new Vector3(0f, 0f, z);
+            // 生成・退場の境目だけをフェードし、小節の到達時は本来の濃さを保つ。
+            if (overrideVisual)
+            {
+                // Unity のネイティブオブジェクトはシリアライズ時ではなく、実行時に作成する。
+                if (fadeBlock == null) fadeBlock = new MaterialPropertyBlock();
+                float alpha = Mathf.Clamp01((float)(approachTime - dt) / .12f)
+                    * Mathf.Clamp01((float)(dt + despawnAfterSeconds) / .18f);
+                foreach (var renderer in go.GetComponentsInChildren<MeshRenderer>())
+                {
+                    var mat = renderer.sharedMaterial;
+                    if (mat == null || !mat.HasProperty("_BaseColor")) continue;
+                    Color color = mat.GetColor("_BaseColor"); color.a *= alpha;
+                    fadeBlock.Clear(); fadeBlock.SetColor("_BaseColor", color);
+                    renderer.SetPropertyBlock(fadeBlock);
+                }
+            }
             if (dt < -despawnAfterSeconds)
             {
-                SafeDestroy(go);
+                Recycle(go);
                 live.RemoveAt(i);
             }
         }
@@ -162,6 +219,9 @@ public class BarLineSpawner : MonoBehaviour
     private void OnDestroy()
     {
         Cleanup();
+        while (pool.Count > 0) SafeDestroy(pool.Pop());
+        foreach (var material in prefabAccents.Values) SafeDestroy(material);
+        prefabAccents.Clear();
         if (lineMaterial != null) SafeDestroy(lineMaterial);
         if (accentMaterial != null) SafeDestroy(accentMaterial);
     }
@@ -170,10 +230,19 @@ public class BarLineSpawner : MonoBehaviour
     {
         foreach (var (go, _) in live)
         {
-            if (go != null) SafeDestroy(go);
+            if (go != null) Recycle(go);
         }
         live.Clear();
     }
+
+    void Recycle(GameObject go)
+    {
+        if (go == null) return;
+        go.SetActive(false);
+        if (pool.Count < 24) pool.Push(go); else SafeDestroy(go);
+    }
+    void OnDisable() { Cleanup(); lastSongTime = double.NaN; nextBarIndex = 0; }
+    static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
 
     private static void SafeDestroy(Object go)
     {

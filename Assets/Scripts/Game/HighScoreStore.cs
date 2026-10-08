@@ -26,7 +26,7 @@ public static class HighScoreStore
 
     public static string Key(string songId, string difficulty)
     {
-        string diff = string.IsNullOrEmpty(difficulty) ? "normal" : difficulty.ToLowerInvariant();
+        string diff = string.IsNullOrWhiteSpace(difficulty) ? "normal" : difficulty.Trim().ToLowerInvariant();
         return "hiscore_" + songId + "_" + diff;
     }
 
@@ -41,7 +41,7 @@ public static class HighScoreStore
             // 一部が不正・順不同でも有効な記録を残す。同点の記録順は変えない。
             // 読み取りだけでは保存先を書き換えず、次のRecordで保存する。
             table.entries = table.entries.Where(e => e != null && e.score >= 0)
-                .OrderByDescending(e => e.score).Take(MaxEntries).ToList();
+                .OrderByDescending(e => e.score).Take(MaxEntries).Select(Snapshot).ToList();
             return table;
         }
         catch (Exception)
@@ -57,8 +57,17 @@ public static class HighScoreStore
         int index = Insert(table, entry, MaxEntries);
         if (index >= 0)
         {
-            PlayerPrefs.SetString(Key(songId, difficulty), JsonUtility.ToJson(table));
-            PlayerPrefs.Save();
+            try
+            {
+                PlayerPrefs.SetString(Key(songId, difficulty), JsonUtility.ToJson(table));
+                PlayerPrefs.Save();
+            }
+            catch (Exception exception)
+            {
+                Debug.LogWarning("HighScoreStore: 記録を保存できませんでした。" + exception.GetType().Name);
+                // 成績画面は表示し続けるが、保存成功を表す挿入番号は返さない。
+                return -1;
+            }
         }
         return index;
     }
@@ -67,7 +76,8 @@ public static class HighScoreStore
     // 挿入位置を返し、圏外なら -1(table は変更しない)。純粋ロジック。
     public static int Insert(HighScoreTable table, HighScoreEntry entry, int maxEntries)
     {
-        if (table == null || table.entries == null || entry == null || maxEntries <= 0) return -1;
+        if (table == null || table.entries == null || entry == null || entry.score < 0 || maxEntries <= 0) return -1;
+        table.entries = table.entries.Where(e => e != null && e.score >= 0).OrderByDescending(e => e.score).ToList();
         int index = table.entries.Count;
         for (int i = 0; i < table.entries.Count; i++)
         {
@@ -78,10 +88,19 @@ public static class HighScoreStore
             }
         }
         if (index >= maxEntries) return -1;
-        table.entries.Insert(index, entry);
+        table.entries.Insert(index, Snapshot(entry));
         while (table.entries.Count > maxEntries) table.entries.RemoveAt(table.entries.Count - 1);
         return index;
     }
+
+    // 結果を保存した後に呼び出し元がEntryを書き換えても、ランキングの内容は変えない。
+    static HighScoreEntry Snapshot(HighScoreEntry entry) => new HighScoreEntry
+    {
+        score = entry.score,
+        rank = entry.rank,
+        date = entry.date,
+        accuracy = float.IsNaN(entry.accuracy) || float.IsInfinity(entry.accuracy) ? 0 : Mathf.Clamp01(entry.accuracy)
+    };
 
     public static void Clear(string songId, string difficulty)
     {

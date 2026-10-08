@@ -1,6 +1,11 @@
 import { clamp } from './core.js';
 export class SongAudio {
-  constructor() { this.context = null; this.buffer = null; this.source = null; this.playing = false; this.position = 0; this.rate = 1; this.startOffset = 0; this.startedAt = 0; this.clicks = []; this.playRequest = 0; }
+  constructor() { this.context = null; this.buffer = null; this.source = null; this.playing = false; this.position = 0; this.rate = 1; this.startOffset = 0; this.startedAt = 0; this.clicks = []; this.playRequest = 0; this.songVolume = 1; this.feedbackVolume = 1; this.songGain = null; }
+  setVolumes(song, feedback) {
+    this.songVolume = Number.isFinite(song) ? clamp(song, 0, 1) : 1;
+    this.feedbackVolume = Number.isFinite(feedback) ? clamp(feedback, 0, 1) : 1;
+    if (this.songGain) this.songGain.gain.value = this.songVolume;
+  }
   async unlock() {
     if (!this.context) {
       const Audio = window.AudioContext || window.webkitAudioContext;
@@ -49,7 +54,9 @@ export class SongAudio {
     const beatWall = 60 / bpm / rate;
     this.startedAt = this.context.currentTime + .08 + countBeats * beatWall;
     this.source = this.context.createBufferSource(); this.source.buffer = this.buffer;
-    this.source.playbackRate.value = rate; this.source.connect(this.context.destination);
+    this.source.playbackRate.value = rate;
+    this.songGain = this.context.createGain(); this.songGain.gain.value = this.songVolume;
+    this.source.connect(this.songGain); this.songGain.connect(this.context.destination);
     this.source.start(this.startedAt, this.position); this.playing = true;
     this.endPosition = clamp(end, this.position, this.duration);
     this.source.stop(this.startedAt + (this.endPosition - this.position) / rate);
@@ -79,12 +86,14 @@ export class SongAudio {
     if (this.playing) this.position = Math.max(this.startOffset, this.time());
     this.playing = false;
     if (this.source) { try { this.source.stop(); } catch {} this.source.disconnect(); this.source = null; }
+    if (this.songGain) { this.songGain.disconnect(); this.songGain = null; }
     for (const click of this.clicks) { try { click.stop(); } catch {} }
     this.clicks = [];
   }
   seek(value) { this.pause(); this.position = clamp(value, 0, this.duration); }
   click(frequency = 600, when, volume = .055) {
-    if (!this.context || this.context.state !== 'running') return;
+    if (!this.context || this.context.state !== 'running' || this.feedbackVolume === 0) return;
+    volume *= this.feedbackVolume;
     const start = when ?? this.context.currentTime;
     const osc = this.context.createOscillator(), gain = this.context.createGain();
     osc.type = 'sine'; osc.frequency.setValueAtTime(frequency, start); osc.frequency.exponentialRampToValueAtTime(frequency * .6, start + .045);

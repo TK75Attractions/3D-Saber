@@ -31,7 +31,7 @@ test('range endpoint is scheduled on the audio clock; metronome follows origin a
   t.mock.method(globalThis,'setInterval',fn=>{scheduled=fn;return 1;});
   t.mock.method(globalThis,'clearInterval',()=>{cleared=true;});
   const a=new SongAudio();a.unlock=async()=>{};a.buffer={duration:10};a.position=.8;
-  a.context={currentTime:0,destination:{},createBufferSource:()=>({playbackRate:{},connect(){},start(){},stop:when=>stops.push(when),disconnect(){}})};
+  a.context={currentTime:0,destination:{},createGain:()=>({gain:{},connect(){},disconnect(){}}),createBufferSource:()=>({playbackRate:{},connect(){},start(){},stop:when=>stops.push(when),disconnect(){}})};
   a.click=(frequency,when)=>clicks.push(when);
   await a.play({rate:.5,bpm:120,beatOrigin:.2,metronome:true,end:2.3});
   assert.ok(Math.abs(stops[0]-3.08)<1e-8);

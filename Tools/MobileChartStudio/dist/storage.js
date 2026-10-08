@@ -23,6 +23,23 @@ export const getProject = id => request('projects', 'readonly', s => s.get(id));
 export const saveAudio = (id, blob, name) => request('audio', 'readwrite', s => s.put({ id, blob, name }));
 export const getAudio = id => request('audio', 'readonly', s => s.get(id));
 
+// 同じ音源を使う難易度が残っていれば、その音源は削除しない。
+export async function deleteProject(id) {
+  const db = await database();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(['projects','audio'], 'readwrite'), projects = tx.objectStore('projects');
+    const list = projects.getAll();
+    list.onsuccess = () => {
+      const project = list.result.find(item => item.id === id);
+      if (!project) return;
+      projects.delete(id);
+      if (!list.result.some(item => item.id !== id && item.audioId === project.audioId)) tx.objectStore('audio').delete(project.audioId);
+    };
+    tx.oncomplete = () => resolve();
+    tx.onabort = tx.onerror = () => reject(tx.error || new Error('下書きを削除できませんでした。'));
+  });
+}
+
 // 復元時は音源と譜面を同じトランザクションで保存し、片方だけを残さない。
 export async function saveProjectWithAudio(project, audio) {
   const db = await database();

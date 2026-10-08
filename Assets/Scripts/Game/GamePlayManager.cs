@@ -244,6 +244,15 @@ public class GamePlayManager : MonoBehaviour
         }
 
         ChartData chart = ChartLoader.LoadFromStreamingAssets(songId, GameSession.SelectedDifficulty);
+        if (chart.notes.Count == 0)
+        {
+            // 選曲後にファイルが変わっても、空譜面の成功結果を残さない。
+            Debug.LogWarning("GamePlayManager: 遊べるノーツが無いため選曲へ戻ります。");
+            ScreenTransition.Load("SongSelect", ScreenTransition.Style.Back);
+            yield break;
+        }
+        GameSession.SelectedSongId = songId;
+        GameSession.ResetResult();
         stagePerformance = StagePerformanceTimeline.Load(songId);
 
         // 音源を先にロードして、譜面長を音源に合わせて切り詰められるようにする。
@@ -267,7 +276,7 @@ public class GamePlayManager : MonoBehaviour
             foreach (var n in chart.notes)
             {
                 double eff = n.TimeSeconds + offsetSec;
-                double endTime = eff + (n.count > 1 ? (n.count - 1) * perCut : 0.0);
+                double endTime = eff + n.LingerSeconds(perCut);
                 if (endTime > audioLen + trimGraceSeconds) wouldRemove++;
             }
 
@@ -284,8 +293,7 @@ public class GamePlayManager : MonoBehaviour
                 chart.notes.RemoveAll(n =>
                 {
                     double eff = n.TimeSeconds + offsetSec;
-                    double endTime = eff;
-                    if (n.count > 1) endTime += (n.count - 1) * perCut;
+                    double endTime = eff + n.LingerSeconds(perCut);
                     return endTime > audioLen + trimGraceSeconds;
                 });
                 int removed = before - chart.notes.Count;
@@ -303,7 +311,7 @@ public class GamePlayManager : MonoBehaviour
             foreach (var n in chart.notes)
             {
                 double eff = n.TimeSeconds + offsetSec;
-                double endTime = eff + (n.count > 1 ? (n.count - 1) * perCut : 0);
+                double endTime = eff + n.LingerSeconds(perCut);
                 if (endTime > lastNoteTime) lastNoteTime = endTime;
             }
         }
@@ -564,6 +572,10 @@ public class GamePlayManager : MonoBehaviour
 
     private IEnumerator LoadAudio(string songId)
     {
+        // 読み込み失敗時にシーンや前の曲の音源を誤って鳴らさない。
+        ReleaseOwnedSongClip();
+        songPlayer.Stop();
+        songPlayer.Clip = null;
         string dir = Path.Combine(Application.streamingAssetsPath, "Songs", songId);
         string[] candidates = { "audio.ogg", "audio.wav", "audio.mp3" };
         foreach (var name in candidates)
@@ -574,6 +586,7 @@ public class GamePlayManager : MonoBehaviour
             // #・%・日本語・空白を含む曲フォルダーも、選曲プレビューと同じ方法で扱う。
             using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip(new System.Uri(full).AbsoluteUri, type))
             {
+                req.timeout = 20;
                 yield return req.SendWebRequest();
                 if (req.result == UnityWebRequest.Result.Success)
                 {
@@ -628,7 +641,7 @@ public class GamePlayManager : MonoBehaviour
             ReturnToTitle();
             return;
         }
-        if (finished || !ready) return;
+        if (finished || !ready || (songPlayer != null && songPlayer.IsPaused)) return;
 
         // 判定と採点が同じ曲時計を見るよう、前フレームの受付可否を更新する。
         // 負の開始予約時刻にも対応し、停止時の SongTime=0 では巻き戻さない。
@@ -685,7 +698,7 @@ public class GamePlayManager : MonoBehaviour
         double endThreshold = System.Math.Max(songPlayer.Duration + endWaitSeconds,
                                               lastNoteTime + outroSeconds);
         if (songPlayer.IsPlaying && songPlayer.SongTime >= endThreshold
-            && noteSpawner.AliveCount == 0)
+            && noteSpawner.AliveCount == 0 && noteSpawner.NextIndex >= noteSpawner.TotalNoteCount)
         {
             finished = true;
             FinishGame();

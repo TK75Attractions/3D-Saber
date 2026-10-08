@@ -191,6 +191,23 @@ public class ResultNavigationPlayTests
         Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
     }
 
+    [UnityTest]
+    public IEnumerator RetryingHardSongKeepsDifficultyWithoutRepeatingSelectionIntro()
+    {
+        GameSession.SelectedSongId = "Epilogue";
+        GameSession.SelectedSongTitle = "校歌";
+        GameSession.SelectedDifficulty = "Hard";
+        var controller = Object.FindFirstObjectByType<ResultController>();
+        controller.RetrySong();
+        Assert.True(ScreenTransition.IsBusy);
+        Assert.False(ScreenTransition.IsHardIntro, "再挑戦は選曲開始専用の24秒演出を繰り返さない");
+        Assert.AreEqual("Epilogue", GameSession.SelectedSongId);
+        Assert.AreEqual("Hard", GameSession.SelectedDifficulty);
+        Assert.AreEqual(0, GameSession.FinalScore);
+        yield return WaitForTransition();
+        Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
+    }
+
     static IEnumerator WaitForTransition()
     {
         double deadline = Time.realtimeSinceStartupAsDouble + 10;

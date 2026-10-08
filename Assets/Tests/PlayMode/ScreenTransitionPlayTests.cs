@@ -57,9 +57,11 @@ public class ScreenTransitionPlayTests
 
     public static IEnumerator WaitForTransition()
     {
-        double deadline = Time.realtimeSinceStartupAsDouble + 20;
+        // 校歌HARDは24秒の演出を最後まで見せる仕様。通常の遷移待ち20秒とは分けて数える。
+        double presentation = ScreenTransition.IsHardIntro ? HardIntroTimeline.Duration : 0;
+        double deadline = Time.realtimeSinceStartupAsDouble + presentation + 20;
         while (ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
-        Assert.False(ScreenTransition.IsBusy, "画面の暗転や入力ロックが残らない");
+        Assert.False(ScreenTransition.IsBusy, "予定された演出と読込猶予の後に暗転や入力ロックが残らない");
     }
 
     static void AssertReady(string scene)

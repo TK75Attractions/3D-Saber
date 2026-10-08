@@ -8,7 +8,7 @@ using UnityEngine;
 using UnityEngine.TestTools;
 
 // P2P bridge の自動起動で、起動 script の場所・引数・公開名・無効化・所有者判定が正しいことを確認する。
-// 本物の bridge は起動しない(AutoStartEnabled はアセンブリ全体で false。所有者テストは sleep するだけの偽 launcher)。
+// 本物の bridge は起動しない(各テスト開始時に AutoStartEnabled を false にし、所有者テストは偽 launcher を使う)。
 public class PhoneSaberP2PBridgeProcessTests
 {
     static Func<string, string> Env(Dictionary<string, string> values) =>
@@ -22,6 +22,8 @@ public class PhoneSaberP2PBridgeProcessTests
     public void SaveAutoStart()
     {
         savedAutoStart = PhoneSaberP2PBridgeProcess.AutoStartEnabled;
+        // 同じ名前空間の SetUpFixture の列挙順序に依存せず、このクラスでも起動を抑止する。
+        PhoneSaberP2PBridgeProcess.AutoStartEnabled = false;
         PhoneSaberP2PBridgeProcess.ResetStateForTests();
     }
 
@@ -185,8 +187,8 @@ public class PhoneSaberP2PBridgeProcessTests
     [Test]
     public void TestsRunWithAutoStartDisabled()
     {
-        // SetUpFixture(PhoneSaberP2PBridgeEditorTestDefaults)が効いていること。
-        Assert.IsFalse(savedAutoStart);
+        // 他のテストやアセンブリ設定が true を残していても、各テストは false から始まる。
+        Assert.IsFalse(PhoneSaberP2PBridgeProcess.AutoStartEnabled);
     }
 
     [Test]
@@ -196,7 +198,7 @@ public class PhoneSaberP2PBridgeProcessTests
         var bridge = new PhoneSaberP2PBridgeProcess();
         try
         {
-            PhoneSaberP2PBridgeProcess.AutoStartEnabled = false;
+            Assert.IsFalse(PhoneSaberP2PBridgeProcess.AutoStartEnabled, "SetUpで無効化した状態をStartでも守る");
             Assert.IsFalse(bridge.Start(5005, 5006, Application.dataPath, LauncherEnvironment(launcher)));
             Assert.IsFalse(PhoneSaberP2PBridgeProcess.IsRunning);
             LogAssert.NoUnexpectedReceived();
@@ -216,10 +218,14 @@ public class PhoneSaberP2PBridgeProcessTests
         try
         {
             PhoneSaberP2PBridgeProcess.AutoStartEnabled = true;
-            LogAssert.Expect(LogType.Warning, new Regex("launcher not found"));
+            // WindowsではP2P起動処理へ入らないため、Mac用launcherの警告も出さない。
+            if (PhoneSaberP2PBridgeProcess.IsSupported)
+                LogAssert.Expect(LogType.Warning, new Regex("launcher not found"));
             Assert.IsFalse(bridge.Start(5005, 5006, missingAssets, EmptyEnvironment));
+            Assert.IsFalse(PhoneSaberP2PBridgeProcess.IsRunning);
             // 2 回目は同じ警告を繰り返さない。
             Assert.IsFalse(bridge.Start(5005, 5006, missingAssets, EmptyEnvironment));
+            Assert.IsFalse(PhoneSaberP2PBridgeProcess.IsRunning);
             LogAssert.NoUnexpectedReceived();
         }
         finally

@@ -43,4 +43,11 @@ public class NoteData
 
     public bool IsLong => count > 1 || (type != null && type.ToLowerInvariant() == "long");
     public bool IsDirection => !string.IsNullOrEmpty(direction) && direction.ToLowerInvariant() != "none";
+
+    // 切り詰め・曲終了・生成のすべてで同じ実長を使う。作者の lengthMs 指定を優先する。
+    public double LingerSeconds(float secondsPerCut)
+    {
+        if (count <= 1) return 0;
+        return lengthMs > 0 ? lengthMs / 1000.0 : (count - 1) * (double)Math.Max(0, secondsPerCut);
+    }
 }

@@ -1,0 +1,277 @@
+[
+  {
+    "id": "V01",
+    "title": "ロング終端まで小節線を続ける",
+    "problem": "最終ノーツの開始時刻しか小節線の終端に含めていなかった",
+    "change": "lengthMsと旧形式の保持時間を含む曲末まで生成",
+    "files": [
+      "Assets/Scripts/Notes/BarLineSpawner.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.BarLinesContinueThroughAnAuthoredLongTail",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V02",
+    "title": "巻き戻し後の小節線を復元",
+    "problem": "再生位置を戻しても生成位置が進んだままだった",
+    "change": "現在の小節を二分探索し再生成",
+    "files": [
+      "Assets/Scripts/Notes/BarLineSpawner.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.RewindRecreatesTheCurrentMeasureInsteadOfWaitingForTheOldTime",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V03",
+    "title": "小節線を再利用して連続生成の負荷を抑える",
+    "problem": "小節ごとにGameObjectを生成・破棄していた",
+    "change": "上限24本のプールで再利用",
+    "files": [
+      "Assets/Scripts/Notes/BarLineSpawner.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.ConsecutiveMeasuresReuseObjects",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V04",
+    "title": "強調小節線の素材を共有・回収",
+    "problem": "プレハブ色の強調ごとにMaterialを複製し回収していなかった",
+    "change": "元素材別に強調素材を共有し所有元で解放",
+    "files": [
+      "Assets/Scripts/Notes/BarLineSpawner.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.PrefabAccentMaterialIsReusedAndOriginalIsUntouched",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V05",
+    "title": "小節線の出現と退場を滑らかにする",
+    "problem": "出現・消滅が瞬間的で視界に飛び込んでいた",
+    "change": "到達時の明るさを維持して両端だけフェード",
+    "files": [
+      "Assets/Scripts/Notes/BarLineSpawner.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.BarOpacityFadesWithoutMutatingSharedStyle",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V06",
+    "title": "床でも単打とロング開始を見分ける",
+    "problem": "同じ色では床の形が同じだった",
+    "change": "ロング開始を二重線で表示",
+    "files": [
+      "Assets/Scripts/Notes/FloorTimingGuide.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.LongOnsetUsesADoubleMarkInsteadOfATapMark",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V07",
+    "title": "ロング保持中の残り時間を床に表示",
+    "problem": "開始から130msで床案内が消え長い保持が見えなかった",
+    "change": "実長に同期する残り時間バーを追加",
+    "files": [
+      "Assets/Scripts/Notes/FloorTimingGuide.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.LongTimeGuidePersistsUntilTheAuthoredEnd",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V08",
+    "title": "ロングの残り切断回数を床でも追える",
+    "problem": "時間の進みと切断の達成率を区別できなかった",
+    "change": "残り回数に比例する最大8分割の目盛りを追加",
+    "files": [
+      "Assets/Scripts/Notes/FloorTimingGuide.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.RemainingCutProgressChangesWithoutChangingTheClock",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V09",
+    "title": "高密度区間の直近ノーツを優先表示",
+    "problem": "案内上限256個を生成順で使い切ると直近の案内が欠けた",
+    "change": "上限を超えた場合だけ到達時刻との距離で優先",
+    "files": [
+      "Assets/Scripts/Notes/FloorTimingGuide.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.CrowdedGuidesPrioritizeNotesNearestTheJudgmentTime",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V10",
+    "title": "非表示ノーツの床残像を防ぐ",
+    "problem": "非アクティブになったノーツもLiveNotes内なら表示された",
+    "change": "非表示・無効座標を案内から除外",
+    "files": [
+      "Assets/Scripts/Notes/FloorTimingGuide.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.InactiveNotesLeaveNoPhantomFloorMarkers",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V11",
+    "title": "投影時の床判定線を読みやすくする",
+    "problem": "床の固定線は投影モードでも細いままだった",
+    "change": "暗い下敷きと白線を一緒に拡幅",
+    "files": [
+      "Assets/Scripts/Notes/FloorTimingGuide.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.ProjectionModeBroadensTheFixedJudgmentAnchor",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V12",
+    "title": "同時線を2D/Forward描画の両方で安定表示",
+    "problem": "汎用Unlit依存で頂点色と透明度の扱いが一致しなかった",
+    "change": "ビルドに含まれるNoteGuideシェーダーと一度のアルファ適用",
+    "files": [
+      "Assets/Scripts/Notes/SimultaneousNoteLink.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.SimultaneousLinkUsesABuildIncludedVertexColorShader",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V13",
+    "title": "同時線がノーツの矢印を横切らない",
+    "problem": "線の端点が本体中心だった",
+    "change": "輪郭間の空間だけを結ぶ",
+    "files": [
+      "Assets/Scripts/Notes/SimultaneousNoteLink.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.LinkOnlyJoinsTheGapBetweenNoteFaces",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V14",
+    "title": "カット済みノーツの同時線を即時に隠す",
+    "problem": "削除予約からフレーム終端まで線が残った",
+    "change": "無効ペア検出時に描画を止める",
+    "files": [
+      "Assets/Scripts/Notes/SimultaneousNoteLink.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.RetiredLinkIsHiddenBeforeDeferredDestruction",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V15",
+    "title": "再利用ノーツのガイド設定を切り替えられる",
+    "problem": "初期化済みでは追加ONにできずOFFでも枠を再表示した",
+    "change": "設定に従って不足分を構築し既存分を表示切替",
+    "files": [
+      "Assets/Scripts/Notes/NoteTimingCue.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.PooledCueCanTurnItsOptionalGhostAndRingOffAndOn",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V16",
+    "title": "投影用の着地枠を通常表示へ戻せる",
+    "problem": "Initializeが太さと透明度の設定そのものを書き換えていた",
+    "change": "元設定を保持しモード変更時に枠を再構成",
+    "files": [
+      "Assets/Scripts/Notes/NoteTimingCue.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.ProjectionCueStyleDoesNotPermanentlyMutateUserSettings",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V17",
+    "title": "着地枠の消え方を曲時計へ合わせる",
+    "problem": "停止・低速確認でもTime.deltaTimeで枠だけ消えた",
+    "change": "残り曲時間の差でフェードを進める",
+    "files": [
+      "Assets/Scripts/Notes/NoteTimingCue.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.CueEndFadeUsesTheChartClockAndFreezesOnPause",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V18",
+    "title": "プレビューで着地枠が編集位置へ追従",
+    "problem": "ノーツを動かしても初期化時の位置に枠が残った",
+    "change": "毎TickでXYを本体へ追従",
+    "files": [
+      "Assets/Scripts/Notes/NoteTimingCue.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.EditingNotePositionMovesBothLandingFrames",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V19",
+    "title": "先送り後に過去のサビ演出を出さない",
+    "problem": "大きく先送りすると過去の入口を毎フレーム再生した",
+    "change": "シークを検出し過去の入口を飛ばす",
+    "files": [
+      "Assets/Scripts/Game/ChorusDrop.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.ForwardSeekDoesNotPlayOldChorusEntriesOnePerFrame",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V20",
+    "title": "停止中にサビのリングと背景移動を止める",
+    "problem": "同じ曲時刻でも渡された実時間で演出が進んだ",
+    "change": "曲時計の差分だけで演出を進める",
+    "files": [
+      "Assets/Scripts/Game/ChorusDrop.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.PausingFreezesTheChorusRingAndStageKick",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V21",
+    "title": "曲の再設定でサビ演出の状態を復元",
+    "problem": "再Setupで前曲の音量と舞台変位が残りリングも増えた",
+    "change": "前の演出を終了して所有リングを交換",
+    "files": [
+      "Assets/Scripts/Game/ChorusDrop.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.RebindingRestoresOldSongVolumeAndReplacesItsRing",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V22",
+    "title": "LOW切替を進行中のサビ演出にも反映",
+    "problem": "開始済みのリングと背景移動はLOWでも続いた",
+    "change": "切替直後に視覚演出だけを終了して位置を戻す",
+    "files": [
+      "Assets/Scripts/Game/ChorusDrop.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.SwitchingToLowCancelsAlreadyRunningMotionImmediately",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V23",
+    "title": "連続カットの演出が誤ってPerfectにならない",
+    "problem": "演出枠を再利用する際に古いPerfect判定を引き継いだ",
+    "change": "同時同位置の統合だけ良い判定を採用し通常交換は新判定を使う",
+    "files": [
+      "Assets/Scripts/Notes/GameplayCutFeedback.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.FeedbackEvictionDoesNotBorrowTheOldPerfectTier",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V24",
+    "title": "ロング終端にも曲同期の照明を添える",
+    "problem": "照明キューは開始音だけで長い保持の終わりを扱わなかった",
+    "change": "指定lengthMsの終端を密度制限付きキューへ追加",
+    "files": [
+      "Assets/Scripts/Game/StageLightCues.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.LongReleaseAddsASongSynchronizedLightCue",
+    "status": "implemented; integration results in Improvement100.json"
+  },
+  {
+    "id": "V25",
+    "title": "背景の食の選択を譜面配列順に依存させない",
+    "problem": "同強度・同開始で長さが違う区間の食が並べ方で変わった",
+    "change": "同条件のとき終了時刻で選択を一意化",
+    "files": [
+      "Assets/Scripts/Game/StagePerformanceTimeline.cs"
+    ],
+    "validation": "VisualGuidanceImprovementTests.EclipseSelectionIsIndependentOfEqualStartSectionOrder",
+    "status": "implemented; integration results in Improvement100.json"
+  }
+]

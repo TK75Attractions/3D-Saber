@@ -62,10 +62,17 @@ public class NoteTimingCue : MonoBehaviour
     private Material approachMat;
     private float endFadeAlpha = 1f;
     private bool initialized;
+    bool builtProjector;
+    float targetJudgeZ;
+    double lastRemaining = double.NaN;
+    float GhostAlpha => DisplaySettings.ProjectorMode ? Mathf.Max(ghostMaxAlpha, .9f) : ghostMaxAlpha;
+    float ApproachAlpha => DisplaySettings.ProjectorMode ? Mathf.Max(approachMaxAlpha, 1f) : approachMaxAlpha;
 
     // NoteSpawner.SpawnOne から呼ぶ。judgeZ は着地枠の Z 位置。
     public void Initialize(CuttableNote ownerNote, float judgeZ)
     {
+        targetJudgeZ = judgeZ;
+        lastRemaining = double.NaN;
         note = ownerNote != null ? ownerNote : GetComponent<CuttableNote>();
         visuals = GetComponent<NoteVisuals>();
         if (visuals != null)
@@ -83,26 +90,30 @@ public class NoteTimingCue : MonoBehaviour
             }
         }
 
-        // プロジェクターモード: 細い枠は灰色地で消えるので太く・濃く
-        if (DisplaySettings.ProjectorMode)
+        // モード変更で作った太枠を、次の通常プレイへ持ち越さない。
+        if (initialized && builtProjector != DisplaySettings.ProjectorMode)
         {
-            ghostThickness = Mathf.Max(ghostThickness, 0.08f);
-            approachThickness = Mathf.Max(approachThickness, 0.06f);
-            ghostMaxAlpha = Mathf.Max(ghostMaxAlpha, 0.9f);
-            approachMaxAlpha = Mathf.Max(approachMaxAlpha, 1f);
+            if (ghostRoot != null) { ghostRoot.SetActive(false); SafeDestroyGo(ghostRoot); }
+            if (approachRoot != null) { approachRoot.SetActive(false); SafeDestroyGo(approachRoot); }
+            SafeDestroy(ghostMat); SafeDestroy(approachMat);
+            ghostRoot = approachRoot = null; ghostMat = approachMat = null;
         }
-
+        builtProjector = DisplaySettings.ProjectorMode;
+        if (buildRing && ringRoot == null) BuildRing();
+        if (buildGhost && ghostRoot == null) BuildGhost(judgeZ);
         endFadeAlpha=1; InWindow=false;
+        if (visuals != null) visuals.SetEmissionBoost(1f);
         if(initialized) {
             Vector3 ls=transform.lossyScale;
             ghostBaseScale=new Vector3(Mathf.Abs(ls.x)*1.04f,Mathf.Abs(ls.y)*1.04f,1);
             ResetRoot(ghostRoot,judgeZ+ghostZBias); ResetRoot(approachRoot,judgeZ+approachZBias);
-            if(ringRoot != null) ringRoot.gameObject.SetActive(true);
+            if(ringRoot != null) ringRoot.gameObject.SetActive(buildRing);
+            if(ghostRoot != null) ghostRoot.SetActive(buildGhost);
+            if(approachRoot != null) approachRoot.SetActive(buildGhost);
             ApplyColor(ghostMat,baseColor,0,1.2f); ApplyColor(approachMat,baseColor,0,1.2f);
+            ApplyColor(ringMat,baseColor,0,1.5f);
             return;
         }
-        if (buildRing) BuildRing();
-        if (buildGhost) BuildGhost(judgeZ);
         initialized = true;
     }
 
@@ -133,10 +144,17 @@ public class NoteTimingCue : MonoBehaviour
     public void Tick(double dt, float approachTime, float earlyWindow, float lateWindow)
     {
         if (!initialized) return;
+        if (double.IsNaN(dt) || double.IsInfinity(dt)) { HideForPool(); return; }
+        float elapsed = double.IsNaN(lastRemaining) ? 0 : (float)System.Math.Max(0, lastRemaining - dt);
+        lastRemaining = dt;
+        // 編集プレビューで位置を動かしても、着地先の枠だけ元の場所に残さない。
+        Vector3 position = transform.position;
+        if (ghostRoot != null) ghostRoot.transform.position = new Vector3(position.x, position.y, targetJudgeZ + ghostZBias);
+        if (approachRoot != null) approachRoot.transform.position = new Vector3(position.x, position.y, targetJudgeZ + approachZBias);
 
         if (note != null && (note.IsMissed || note.IsCut))
         {
-            TickAfterEnd();
+            TickAfterEnd(elapsed);
             return;
         }
 
@@ -160,12 +178,12 @@ public class NoteTimingCue : MonoBehaviour
         Color gc = inWindow ? readyColor : baseColor;
         if (ghostRoot != null)
         {
-            float ga = inWindow ? ghostMaxAlpha : ramp * ghostMaxAlpha;
+            float ga = inWindow ? GhostAlpha : ramp * GhostAlpha;
             ApplyColor(ghostMat, gc, ga, inWindow ? 2.4f : 1.4f);
         }
         if (approachRoot != null)
         {
-            float aa = inWindow ? approachMaxAlpha : ramp * approachMaxAlpha;
+            float aa = inWindow ? ApproachAlpha : ramp * ApproachAlpha;
             ApplyColor(approachMat, gc, aa, inWindow ? 2.6f : 1.5f);
             float gs = ComputeGhostScale(dt, ghostVisibleSeconds, ghostStartScale);
             approachRoot.transform.localScale = new Vector3(
@@ -174,11 +192,11 @@ public class NoteTimingCue : MonoBehaviour
     }
 
     // Miss / Cut 後はすっとフェードアウトして消す（ノーツ本体は別途流れる/砕ける）。
-    private void TickAfterEnd()
+    private void TickAfterEnd(float elapsed)
     {
         InWindow = false;
         if (visuals != null) visuals.SetEmissionBoost(1f);
-        endFadeAlpha = Mathf.Clamp01(endFadeAlpha - Time.deltaTime / Mathf.Max(0.01f, missFadeSeconds));
+        endFadeAlpha = Mathf.Clamp01(endFadeAlpha - elapsed / Mathf.Max(0.01f, missFadeSeconds));
         float a = endFadeAlpha;
         if (ringRoot != null)
         {
@@ -275,7 +293,7 @@ public class NoteTimingCue : MonoBehaviour
         ghostRoot.transform.position = new Vector3(p.x, p.y, judgeZ + ghostZBias);
         ghostRoot.transform.localScale = ghostBaseScale;
         ghostMat = MakeCueMaterial();
-        BuildFrame(ghostRoot.transform, 0.5f, ghostThickness, ghostMat);
+        BuildFrame(ghostRoot.transform, 0.5f, DisplaySettings.ProjectorMode ? Mathf.Max(ghostThickness, .08f) : ghostThickness, ghostMat);
         ApplyColor(ghostMat, baseColor, 0f, 1.2f);
 
         // 収縮枠: 出現時は大きく(ghostStartScale倍)。Tick が HitTime に向けて固定枠へ収縮させる。
@@ -284,7 +302,7 @@ public class NoteTimingCue : MonoBehaviour
         approachRoot.transform.localScale = new Vector3(
             ghostBaseScale.x * ghostStartScale, ghostBaseScale.y * ghostStartScale, 1f);
         approachMat = MakeCueMaterial();
-        BuildFrame(approachRoot.transform, 0.5f, approachThickness, approachMat);
+        BuildFrame(approachRoot.transform, 0.5f, DisplaySettings.ProjectorMode ? Mathf.Max(approachThickness, .06f) : approachThickness, approachMat);
         ApplyColor(approachMat, baseColor, 0f, 1.2f);
         // 内側の塗り(GhostFill)は廃止:判定面付近を霞ませる原因だった。枠だけで場所は十分伝わる。
     }

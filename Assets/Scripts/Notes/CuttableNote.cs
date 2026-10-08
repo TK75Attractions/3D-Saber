@@ -154,6 +154,7 @@ public class CuttableNote : MonoBehaviour
 
     void OnDestroy()
     {
+        OnRetired?.Invoke(this);
         OnDisable();
         if (countLabel != null) SafeDestroyGo(countLabel.gameObject);
         // ノーツの完了・ミス後の破棄・シーン退出のどの経路でも、ひびの材質を残さない。
@@ -202,7 +203,7 @@ public class CuttableNote : MonoBehaviour
     bool CutCore(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand,
         double? swingSongTime, float directionTolerance, double? judgedSongTime = null)
     {
-        if (IsCut || IsMissed || IsFinalized) return false;
+        if (!isActiveAndEnabled || IsCut || IsMissed || IsFinalized) return false;
 
         if (RequireJudgeableOnCut && !IsJudgeable && !swingSongTime.HasValue) return false;
         if (MinimumCutSpeed > 0f && !(cutVelocity.magnitude >= MinimumCutSpeed)) return false;
@@ -262,6 +263,7 @@ public class CuttableNote : MonoBehaviour
         IsMissed = true;
         IsJudgeable = false;
         IsFinalized = true;
+        if (countLabel != null) countLabel.gameObject.SetActive(false);
         DimVisual();
 
         if (CutsAchieved > 0)

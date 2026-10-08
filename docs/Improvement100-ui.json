@@ -1,0 +1,311 @@
+{
+  "area": "Unity UI",
+  "items": [
+    {
+      "id": "U01",
+      "title": "難易度別譜面だけの曲を選曲に掲載",
+      "problem": "chart.jsonが必須で、chart_hard.jsonなどだけを保存した曲が一覧から落ちる。",
+      "change": "標準3難易度のいずれかのファイルも曲フォルダーの登録条件に含め、遊べる譜面の検査を継続。",
+      "benefit": "HARDだけ制作した曲もゲームから選べる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectController.cs"
+      ],
+      "verification": "DifficultyOnlySongIsListedAndSelectsPlayableHard",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U02",
+      "title": "曲切替時に遊べる難易度へ合わせる",
+      "problem": "前の曲の難易度を引き継いだ先が未制作だと、開始ボタンが無効になり理由を探す必要がある。",
+      "change": "曲が変わる時のみ、近い制作済み難易度へ切り替える。同距離なら易しい側を優先。",
+      "benefit": "HARDだけの製作中なども選曲直後に開始できる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectController.cs"
+      ],
+      "verification": "DifficultyOnlySongIsListedAndSelectsPlayableHard / SongChartAvailabilityTests",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U03",
+      "title": "上下キーで未制作の難易度を飛ばす",
+      "problem": "相対的な難易度送りが空の難易度で止まり、遊べない状態になる。",
+      "change": "相対送りで制作済みの難易度だけを循環。数字キーなどの明示選択は従来の拒否動作を維持。",
+      "benefit": "矢印で遊べる難易度を比較しやすい。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectController.cs"
+      ],
+      "verification": "RelativeDifficultyNavigationSkipsUnmadeChartBothDirections",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U04",
+      "title": "同じ曲の再選択で試聴を中断しない",
+      "problem": "Selectが同じインデックスでも試聴のキャンセルと再ロードを行う。",
+      "change": "同じ曲のSelectは何も変更せず、明示的な再試聴は専用操作に分離。",
+      "benefit": "同じ盤への操作が音切れ・待ち直しを起こさない。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectController.cs"
+      ],
+      "verification": "ReSelectingCurrentSongDoesNotNotifyOrRestartPreview",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U05",
+      "title": "曲一覧の再構築で重複行を除去",
+      "problem": "Populateを再実行すると以前生成したボタンが残り、行が二重になる。",
+      "change": "自分が生成した行を破棄して作り直し、曲IDで現在の選択位置を保持。装飾の子は消さない。",
+      "benefit": "一覧再読込後も同じ曲に戻り、ボタンが増殖しない。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectController.cs"
+      ],
+      "verification": "RepopulateReplacesOwnedRowsWithoutRemovingOtherChildren",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U06",
+      "title": "キーボード操作を常時案内",
+      "problem": "矢印・1/2/3・Enter・Escapeの操作が選曲画面から分からない。",
+      "change": "盤を隠さないヘッダー下の空間に短い操作一覧を表示。",
+      "benefit": "セーバー以外の操作方法を初見で確認できる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectSkin.cs"
+      ],
+      "verification": "コード・配置レビュー。Unity描画確認は親の統合検証",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U07",
+      "title": "曲数と一覧内の現在位置を表示",
+      "problem": "円形に循環する盤では全体の曲数や現在位置が分からない。",
+      "change": "左下の盤と実績パネルの間に「現在 / 全曲数」を表示。",
+      "benefit": "全曲を探したかどうか判断しやすい。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectSkin.cs"
+      ],
+      "verification": "コード・配置レビュー。Unity描画確認は親の統合検証",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U08",
+      "title": "譜面がない時に復旧手順を表示",
+      "problem": "遊べる曲がゼロだと盤がない画面だけが残る。",
+      "change": "曲なしメッセージと、ノーツ入り譜面を保存し選曲を開き直す案内を表示。",
+      "benefit": "読み込みの故障と未制作を見分け、次の作業が分かる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectSkin.cs"
+      ],
+      "verification": "コード・配置レビュー。Unity描画確認は親の統合検証",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U09",
+      "title": "未制作難易度を言葉で示す",
+      "problem": "レベルが横棒の無効ボタンだけで、未制作なのか不明。",
+      "change": "遊べない難易度名の位置に「未制作」を表示。",
+      "benefit": "押せない難易度の理由がその場で分かる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectSkin.cs"
+      ],
+      "verification": "SongChartAvailabilityTests / コード・配置レビュー",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U10",
+      "title": "BPM・ノーツ数・譜面時間を選曲で比較",
+      "problem": "レベル表示だけではテンポや譜面のボリュームを確認できない。",
+      "change": "読み取り専用集計でBPM、総ノーツ数、最後のロング終端までの譜面時間を表示。",
+      "benefit": "曲の速さと所要負荷を開始前に比較できる。",
+      "files": [
+        "Assets/Scripts/UI/SongChartInsights.cs"
+      ],
+      "verification": "ChartInsightsPreserveOrderAndCountLongDurationAndSimultaneousGroups",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U11",
+      "title": "ロング・フリック・同時押しの構成を案内",
+      "problem": "選択中の譜面がどの操作を多く要求するか開始前に分からない。",
+      "change": "ロング本数、フリック数、同時押しの組数を別行で表示。",
+      "benefit": "苦手な操作の練習曲を選びやすい。",
+      "files": [
+        "Assets/Scripts/UI/SongChartInsights.cs"
+      ],
+      "verification": "ChartInsightsPreserveOrderAndCountLongDurationAndSimultaneousGroups",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U12",
+      "title": "試聴の準備・再生・終了・失敗を見える化",
+      "problem": "無音が選曲待ち、ロード、終了、音源不在のどれか分からない。",
+      "change": "試聴状態を明示し、再生中は抜粋の経過時間と長さを表示。",
+      "benefit": "無音の原因と試聴の進み具合を判断できる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectChartPreview.cs"
+      ],
+      "verification": "MissingAudioReportsFailureAndAllowsFreshRetry",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U13",
+      "title": "同じ曲をもう一度試聴",
+      "problem": "10秒の試聴後にもう一度聴くには別の曲へ動かして戻す必要がある。",
+      "change": "終了・失敗後に押せる「再試聴」ボタンを追加。",
+      "benefit": "確認したい部分を同じ難易度のまま聴き直せる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectController.cs"
+      ],
+      "verification": "MissingAudioReportsFailureAndAllowsFreshRetry / コード・配置レビュー",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U14",
+      "title": "試聴だけを消音し設定を保存",
+      "problem": "試聴が常に鳴り、画面内に停止音量の操作がない。",
+      "change": "試聴音ON/OFFを追加し、プレビュー用AudioSourceだけに適用、画面を開き直しても保持。",
+      "benefit": "周囲へ音を出さず選曲し、本編の音量設定は保てる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectChartPreview.cs"
+      ],
+      "verification": "PreviewMuteOnlyChangesPreviewAndSurvivesReinitialization",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U15",
+      "title": "試聴開始失敗から再試行できる",
+      "problem": "音声時計が始まらない場合は再生中のまま永久に待機し、無効な抜粋ではロード状態とクリップが残る。",
+      "change": "開始監視・リクエスト期限・無効クリップ破棄を追加し、失敗状態へ戻す。",
+      "benefit": "音声デバイスやデコードの失敗時にも選曲を続けて再試行できる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectChartPreview.cs"
+      ],
+      "verification": "MissingAudioReportsFailureAndAllowsFreshRetry / タイムアウト経路はコードレビュー",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U16",
+      "title": "画面外の間に選曲制限時間を減らさない",
+      "problem": "別アプリへ切り替えている間も100秒が経過し、意図せず曲が始まる。",
+      "change": "フォーカス外・曲なし・遊べない譜面の選択中はタイマーを停止。",
+      "benefit": "画面に戻った時に選曲の続きから操作できる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectSkin.cs"
+      ],
+      "verification": "コードレビュー、既存カウントダウン回帰テストは親の統合検証",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U17",
+      "title": "縦長・横長のジャケットの歪みを修正",
+      "problem": "円形ジャケットへ画像全体を正方形に縮めており、縦横比が違うと人物や文字が変形する。",
+      "change": "中心の正方形を切り抜くUVを計算し、Spriteの部分領域も尊重。旧ImageにもpreserveAspectを適用。",
+      "benefit": "画像の形を保ったジャケット表示になる。",
+      "files": [
+        "Assets/Scripts/UI/SongSelectDiscGraphic.cs"
+      ],
+      "verification": "PortraitCoverKeepsSquarePixelsAndSpriteSubrectangle",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U18",
+      "title": "結果から同じ曲へ再挑戦",
+      "problem": "結果の操作がタイトルへ戻るだけで、再度曲と難易度を選び直す必要がある。",
+      "change": "演出終了後の「もう一度」を追加。譜面の可用性を再確認して同じ曲・難易度を開始。",
+      "benefit": "練習を途切れさせず同じ譜面へ挑める。",
+      "files": [
+        "Assets/Scripts/UI/ResultController.cs"
+      ],
+      "verification": "コードレビュー、ResultNavigationPlayTestsによる旧BACK回帰確認は親の統合検証",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U19",
+      "title": "結果から選曲へ直接戻り曲と難易度を復元",
+      "problem": "別難易度を試すだけでもタイトルを経由し、選曲位置を失う。",
+      "change": "「選曲へ」ボタンと一回だけ消費する曲ID・難易度の引継ぎを追加。タイトル経由には持ち越さない。",
+      "benefit": "同じ曲の別難易度を続けて比較できる。",
+      "files": [
+        "Assets/Scripts/UI/ResultController.cs"
+      ],
+      "verification": "ResultSelectionIsConsumedOnlyOnce / コードレビュー",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U20",
+      "title": "判定内訳に割合を添える",
+      "problem": "PERFECTなどの個数だけでは長さの異なる譜面の成績を比較しにくい。",
+      "change": "各判定行へ総判定数に対する百分率を表示。判定ゼロは--。",
+      "benefit": "得意・苦手の割合が曲をまたいで分かる。",
+      "files": [
+        "Assets/Scripts/UI/ResultSkin.cs"
+      ],
+      "verification": "EmptyResultDoesNotCongratulateAFalsePerfectOrRank / 表示式テスト",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U21",
+      "title": "自己ベストとの差を表示",
+      "problem": "自己ベスト値と今回値はあるが、あと何点かを暗算する必要がある。",
+      "change": "前回ベストと今回点の差、同点、初記録を区別して表示。",
+      "benefit": "次回の得点目標がすぐ分かる。",
+      "files": [
+        "Assets/Scripts/UI/ResultImprovementSummary.cs"
+      ],
+      "verification": "BestDifferenceDistinguishesFirstTieImprovementAndGap",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U22",
+      "title": "次ランクまでの精度差を表示",
+      "problem": "現在ランクだけでは次にどれくらい精度を伸ばせばいいか分からない。",
+      "change": "ゲームの実ランク閾値から次ランクと必要な精度ポイントを表示。僅差を0へ丸めない。",
+      "benefit": "次の達成目標を具体的に把握できる。",
+      "files": [
+        "Assets/Scripts/UI/ResultImprovementSummary.cs"
+      ],
+      "verification": "NextRankGoalUsesRealThresholdsAndNeverRoundsSmallGapToZero",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U23",
+      "title": "FC・APに向けた判定の目標を表示",
+      "problem": "失敗が少ない結果でもFC/APに何が足りなかったか読み取りづらい。",
+      "change": "BAD+MISSをFCの課題、FC後はGREAT+GOODをAPの課題として表示し、AP時は達成を明示。",
+      "benefit": "次のプレイで改善する対象が分かる。",
+      "files": [
+        "Assets/Scripts/UI/ResultImprovementSummary.cs"
+      ],
+      "verification": "AchievementGoalCountsBadAsComboBreakAndGreatAsApGap",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U24",
+      "title": "結果にプレイした難易度を表示",
+      "problem": "同じ曲の結果に難易度がなく、比較やスクリーンショットで区別しづらい。",
+      "change": "曲名の下へ難易度を表示。ゲーム内MASTERと譜面名HARDの対応も併記。",
+      "benefit": "製作中HARDの記録をNORMALと混同しにくい。",
+      "files": [
+        "Assets/Scripts/UI/ResultSkin.cs"
+      ],
+      "verification": "BestDifferenceDistinguishesFirstTieImprovementAndGap / コード・配置レビュー",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "U25",
+      "title": "終了後のスキップ案内を操作案内へ切替",
+      "problem": "結果演出が終わってもCLICK / ANY KEY TO SKIPが残り、まだ待ち時間があるように見える。",
+      "change": "演出時計に同期し、終了後はボタン操作とBACKの行き先を案内。",
+      "benefit": "結果を見終わった後の操作が分かる。",
+      "files": [
+        "Assets/Scripts/UI/ResultSkin.cs"
+      ],
+      "verification": "コードレビュー、ResultNavigationPlayTestsは親の統合検証",
+      "status": "implemented; integration results in Improvement100.json"
+    }
+  ],
+  "validation": "Unityコンパイル・EditMode/PlayMode実行は親エージェントが統合実施。ここでは実装と静的レビューを完了。",
+  "limitations": [
+    "実機セーバーでの操作感・投影環境の視認性は未検証。",
+    "元の曲JSON、判定幅、音源、ステージ演出は変更していない。"
+  ],
+  "status": "implemented; integration results in Improvement100.json"
+}

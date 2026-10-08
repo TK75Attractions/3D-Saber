@@ -21,6 +21,7 @@ public class SimultaneousNoteLink : MonoBehaviour
 
     public static SimultaneousNoteLink Create(CuttableNote a, CuttableNote b, Transform parent)
     {
+        if (!IsAlive(a) || !IsAlive(b) || a == b) return null;
         var go = new GameObject("SimulLink");
         if (parent != null) go.transform.SetParent(parent, false);
         var link = go.AddComponent<SimultaneousNoteLink>();
@@ -42,7 +43,7 @@ public class SimultaneousNoteLink : MonoBehaviour
         line.numCapVertices = 2;
         line.alignment = LineAlignment.View;
 
-        var sh = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+        var sh = Resources.Load<Shader>("Effects/NoteGuide") ?? Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
         ownedMaterial = new Material(sh);
         Color c = new Color(1f, 1f, 1f, DefaultAlpha);
         // 半透明設定(URP Unlit)。対応プロパティが無いシェーダでは色のみ。
@@ -51,8 +52,9 @@ public class SimultaneousNoteLink : MonoBehaviour
         if (ownedMaterial.HasProperty("_DstBlend")) ownedMaterial.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
         if (ownedMaterial.HasProperty("_ZWrite")) ownedMaterial.SetFloat("_ZWrite", 0f);
         ownedMaterial.renderQueue = 3000;
-        if (ownedMaterial.HasProperty("_BaseColor")) ownedMaterial.SetColor("_BaseColor", c);
-        else ownedMaterial.color = c;
+        // 専用シェーダーで頂点色をそのまま使い、透明度を二重乗算しない。
+        if (ownedMaterial.HasProperty("_BaseColor")) ownedMaterial.SetColor("_BaseColor", Color.white);
+        else ownedMaterial.color = Color.white;
         line.sharedMaterial = ownedMaterial;
         line.startColor = c;
         line.endColor = c;
@@ -63,7 +65,7 @@ public class SimultaneousNoteLink : MonoBehaviour
         // ノーツの移動(NoteSpawner.UpdateLive)が終わった後に追従させる
         if (!Refresh())
         {
-            Destroy(gameObject);
+            if (Application.isPlaying) Destroy(gameObject); else DestroyImmediate(gameObject);
         }
     }
 
@@ -80,17 +82,36 @@ public class SimultaneousNoteLink : MonoBehaviour
     // 端点をノーツ現在位置へ更新する。ペアが両方生存していれば true(テストから直接呼べる)。
     public bool Refresh()
     {
-        if (!IsAlive(noteA) || !IsAlive(noteB) || noteA.SpawnVersion != versionA || noteB.SpawnVersion != versionB) return false;
+        if (!IsAlive(noteA) || !IsAlive(noteB) || noteA.SpawnVersion != versionA || noteB.SpawnVersion != versionB)
+        {
+            if (line != null) line.enabled = false;
+            return false;
+        }
         if (line != null)
         {
-            line.SetPosition(0, noteA.transform.position);
-            line.SetPosition(1, noteB.transform.position);
+            Vector3 a = noteA.transform.position, b = noteB.transform.position;
+            Vector3 direction = b - a;
+            float distance = direction.magnitude;
+            float trimA = EdgeDistance(noteA, direction.normalized);
+            float trimB = EdgeDistance(noteB, direction.normalized);
+            line.enabled = distance > trimA + trimB + .01f;
+            // 本体の矢印・残数の上を横切らず、輪郭間だけを結ぶ。
+            line.SetPosition(0, a + direction.normalized * Mathf.Min(trimA, distance * .5f));
+            line.SetPosition(1, b - direction.normalized * Mathf.Min(trimB, distance * .5f));
         }
         return true;
     }
 
+    static float EdgeDistance(CuttableNote note, Vector3 direction)
+    {
+        Vector3 size = note.transform.lossyScale;
+        float x = Mathf.Abs(direction.x) > .0001f ? Mathf.Abs(size.x) * .52f / Mathf.Abs(direction.x) : float.PositiveInfinity;
+        float y = Mathf.Abs(direction.y) > .0001f ? Mathf.Abs(size.y) * .52f / Mathf.Abs(direction.y) : float.PositiveInfinity;
+        return Mathf.Min(x, y, .8f);
+    }
+
     private static bool IsAlive(CuttableNote n)
     {
-        return n != null && !n.IsCut && !n.IsMissed && n.gameObject.activeInHierarchy;
+        return n != null && !n.IsCut && !n.IsMissed && !n.IsFinalized && n.gameObject.activeInHierarchy;
     }
 }

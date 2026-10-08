@@ -78,16 +78,27 @@ public sealed class SongSelectDiscGraphic : MaskableGraphic
             corner < 2 ? r.yMax - radius : r.yMin + radius);
         return center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * radius;
     }
+    // 円形への中央トリミング。縦長・横長のジャケットを押し潰さず、Spriteの部分領域も守る。
+    public static Rect CoverUvRect(Sprite sprite)
+    {
+        if (sprite == null || sprite.texture == null) return new Rect(0, 0, 1, 1);
+        Rect r = sprite.rect;
+        float side = Mathf.Min(r.width, r.height);
+        return new Rect((r.center.x - side * .5f) / sprite.texture.width,
+            (r.center.y - side * .5f) / sprite.texture.height,
+            side / sprite.texture.width, side / sprite.texture.height);
+    }
     void Circle(VertexHelper vh, float radius, Color c, bool texture)
     {
+        Rect uv = texture ? CoverUvRect(Artwork) : new Rect(0, 0, 1, 1);
         for (int i = 0; i < 128; i++)
         {
             float a = i * Mathf.PI * 2 / 128, b = (i + 1) * Mathf.PI * 2 / 128;
             Vector2 p = new Vector2(Mathf.Cos(a), Mathf.Sin(a)), q = new Vector2(Mathf.Cos(b), Mathf.Sin(b));
             int start = vh.currentVertCount;
-            vh.AddVert(Vector2.zero, c, new Vector2(.5f, .5f));
-            vh.AddVert(p * radius, c, p * .5f + Vector2.one * .5f);
-            vh.AddVert(q * radius, c, q * .5f + Vector2.one * .5f);
+            vh.AddVert(Vector2.zero, c, uv.center);
+            vh.AddVert(p * radius, c, uv.center + Vector2.Scale(p, uv.size) * .5f);
+            vh.AddVert(q * radius, c, uv.center + Vector2.Scale(q, uv.size) * .5f);
             vh.AddTriangle(start, start + 1, start + 2);
         }
     }

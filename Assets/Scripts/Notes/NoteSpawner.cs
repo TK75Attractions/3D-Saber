@@ -91,7 +91,7 @@ public class NoteSpawner : MonoBehaviour
         foreach(var data in chart.notes) {
             var key=Key(data); if(key.Item1 == null) continue;
             if(!groups.TryGetValue(key,out var group)) group=(data,new List<(double,int)>());
-            double linger=data.count <= 1 ? 0 : data.lengthMs > 0 ? data.lengthMs/1000.0 : (data.count-1)*secondsPerLongCut;
+            double linger=data.LingerSeconds(secondsPerLongCut);
             group.events.Add((EffectiveTime(data)-approachTime,1));
             group.events.Add((EffectiveTime(data)+judgeWindow+linger+missGrace+despawnAfterMissSeconds+.05,-1));
             groups[key]=group;
@@ -224,6 +224,10 @@ public class NoteSpawner : MonoBehaviour
         if (cutFeedback != null) SafeDestroy(cutFeedback.gameObject);
         cutFeedback = null;
         if (FloorGuide != null) SafeDestroy(FloorGuide.gameObject);
+        // 非プールノーツや外部noteRootも、このSpawnerの破棄で確実に片付ける。
+        foreach (var note in liveNotes)
+            if (note != null && !poolKeys.ContainsKey(note)) SafeDestroy(note.gameObject);
+        liveNotes.Clear();
         foreach(var note in poolKeys.Keys) if(note != null) SafeDestroy(note.gameObject);
         poolKeys.Clear(); idleNotes.Clear(); idleCount=0;
         if(idleRoot != null) SafeDestroy(idleRoot.gameObject);

@@ -113,8 +113,12 @@ public class SimultaneousNoteLinkTests
         link.noteB.transform.position = new Vector3(2f, -1f, 5f);
         Assert.IsTrue(link.Refresh());
 
-        Assert.AreEqual(new Vector3(-2f, 1f, 5f), link.Line.GetPosition(0));
-        Assert.AreEqual(new Vector3(2f, -1f, 5f), link.Line.GetPosition(1));
+        Vector3 a = link.Line.GetPosition(0), b = link.Line.GetPosition(1);
+        Assert.Greater(a.x, -2f, "線は左ノーツの輪郭から始まる");
+        Assert.Less(b.x, 2f, "線は右ノーツの輪郭で終わる");
+        Assert.AreEqual(5f, a.z); Assert.AreEqual(5f, b.z);
+        Assert.AreEqual(0f, a.y + a.x * .5f, .0001f);
+        Assert.AreEqual(0f, b.y + b.x * .5f, .0001f);
     }
 
     [Test]

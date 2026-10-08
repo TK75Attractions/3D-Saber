@@ -61,7 +61,7 @@ public static class GameSession
 
     public static int JudgmentOffsetMs
     {
-        get => PlayerPrefs.GetInt(JudgmentOffsetMsKey, JudgmentOffsetDefaultMs);
+        get => Mathf.Clamp(PlayerPrefs.GetInt(JudgmentOffsetMsKey, JudgmentOffsetDefaultMs), JudgmentOffsetMinMs, JudgmentOffsetMaxMs);
         set
         {
             int clamped = Mathf.Clamp(value, JudgmentOffsetMinMs, JudgmentOffsetMaxMs);
@@ -86,17 +86,17 @@ public static class GameSession
 
     public static float NoteApproachTime
     {
-        get => Mathf.Clamp(
-            PlayerPrefs.GetFloat(NoteApproachTimeKey, NoteApproachTimeDefault),
-            NoteApproachTimeMin,
-            NoteApproachTimeMax);
+        get => SafeApproachTime(PlayerPrefs.GetFloat(NoteApproachTimeKey, NoteApproachTimeDefault));
         set
         {
-            float clamped = Mathf.Clamp(value, NoteApproachTimeMin, NoteApproachTimeMax);
+            float clamped = SafeApproachTime(value);
             PlayerPrefs.SetFloat(NoteApproachTimeKey, clamped);
             PlayerPrefs.Save();
         }
     }
+
+    private static float SafeApproachTime(float value) => float.IsNaN(value) || float.IsInfinity(value)
+        ? NoteApproachTimeDefault : Mathf.Clamp(value, NoteApproachTimeMin, NoteApproachTimeMax);
 
     public static void ResetNoteApproachTime()
     {

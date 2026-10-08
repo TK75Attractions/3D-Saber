@@ -115,7 +115,8 @@ public class ScenicStageWorldTests
     [Test]
     public void AllThemesAreSelectedPerPlayNotPerSong()
     {
-        Assert.AreEqual(14,StageThemeCatalog.Count); Assert.AreEqual(StageThemeCatalog.Count,Enum.GetValues(typeof(StageTheme)).Length);
+        // 写真背景3種は削除済み。現行11テーマと列挙値の一致・全テーマの抽選は引き続き確認する。
+        Assert.AreEqual(11,StageThemeCatalog.Count); Assert.AreEqual(StageThemeCatalog.Count,Enum.GetValues(typeof(StageTheme)).Length);
         string original = GameSession.SelectedSongId;
         var randomState = UnityEngine.Random.state;
         try

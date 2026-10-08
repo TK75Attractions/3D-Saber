@@ -27,6 +27,28 @@ public class ResultController : MonoBehaviour
 
     public void OnBackButton()
     {
-        ScreenTransition.Load(titleSceneName, ScreenTransition.Style.Back);
+        if (ScreenTransition.Load(titleSceneName, ScreenTransition.Style.Back)) ResultSelectionReturn.Remember(null, null);
+    }
+
+    public bool CanRetry()
+    {
+        if (string.IsNullOrEmpty(GameSession.SelectedSongId)) return false;
+        try { return ChartDifficultyRater.Rate(ChartLoader.LoadFromStreamingAssets(GameSession.SelectedSongId, GameSession.SelectedDifficulty)) > 0; }
+        catch (System.Exception) { return false; }
+    }
+
+    public void RetrySong()
+    {
+        if (ScreenTransition.IsBusy || !CanRetry()) return;
+        // 校歌HARDの長い導入は選曲からの初回開始用。結果からの再挑戦は通常の幕だけで戻る。
+        if (!ScreenTransition.Load("Game")) return;
+        GameSession.IsCalibrationMode = false;
+        GameSession.ResetResult();
+    }
+
+    public void ReturnToSongSelect()
+    {
+        if (!ScreenTransition.Load("SongSelect", ScreenTransition.Style.Back)) return;
+        ResultSelectionReturn.Remember(GameSession.SelectedSongId, GameSession.SelectedDifficulty);
     }
 }

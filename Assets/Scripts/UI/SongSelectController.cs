@@ -54,6 +54,8 @@ public class SongSelectController : MonoBehaviour
 
     private readonly List<string> songIds = new List<string>();
     private readonly List<Text> songLabels = new List<Text>();
+    private readonly List<GameObject> generatedRows = new List<GameObject>();
+    private readonly Dictionary<string, SongChartInsights> insightsCache = new Dictionary<string, SongChartInsights>();
     private int selectedIndex = -1;
     private int selectedDifficulty = 0; // 初期選択は Easy
     private SongSelectChartPreview chartPreview;
@@ -77,10 +79,12 @@ public class SongSelectController : MonoBehaviour
     void Start()
     {
         Populate();
-        // 判定調整との往復だけで選択を戻し、タイトルからの新規選曲には持ち越さない。
-        int restoredIndex = songIds.IndexOf(GameSession.CalibrationSelectionSongId);
+        // 判定調整・結果からの選曲復帰では選択を戻し、タイトルからの新規選曲には持ち越さない。
+        string returnSong, returnDifficulty;
+        ResultSelectionReturn.Consume(out returnSong, out returnDifficulty);
+        int restoredIndex = songIds.IndexOf(GameSession.CalibrationSelectionSongId ?? returnSong);
         int restoredDifficulty = difficultyNames == null ? -1
-            : System.Array.IndexOf(difficultyNames, GameSession.CalibrationSelectionDifficulty);
+            : System.Array.IndexOf(difficultyNames, GameSession.CalibrationSelectionDifficulty ?? returnDifficulty);
         GameSession.CalibrationSelectionSongId = null;
         GameSession.CalibrationSelectionDifficulty = null;
         if (restoredIndex >= 0 && restoredDifficulty >= 0) selectedDifficulty = restoredDifficulty;
@@ -156,8 +160,10 @@ public class SongSelectController : MonoBehaviour
         var result = new List<string>();
         foreach (var dir in Directory.GetDirectories(root))
         {
-            string chart = Path.Combine(dir, "chart.json");
-            if (!File.Exists(chart)) continue;
+            bool hasChart = File.Exists(Path.Combine(dir, "chart.json"));
+            foreach (string difficulty in StandardDifficulties)
+                hasChart |= File.Exists(Path.Combine(dir, "chart_" + difficulty.ToLowerInvariant() + ".json"));
+            if (!hasChart) continue;
             string songId = Path.GetFileName(dir);
             if (playableOnly && !HasPlayableChart(songId, StandardDifficulties)) continue;
             result.Add(songId);
@@ -206,6 +212,15 @@ public class SongSelectController : MonoBehaviour
     // テストからも呼べるように公開(Start から呼ばれる一覧構築)
     public void Populate()
     {
+        string previousSong = SongIdAt(selectedIndex);
+        StopPreview();
+        foreach (var row in generatedRows)
+        {
+            if (row == null) continue;
+            row.SetActive(false); UISkinKit.SafeDestroy(row);
+        }
+        generatedRows.Clear();
+        insightsCache.Clear();
         levelCache.Clear();
         authoredLevelCache.Clear();
         songIds.Clear();
@@ -216,6 +231,9 @@ public class SongSelectController : MonoBehaviour
         {
             if (!HasPlayableChart(songIds[i], difficultyNames)) lockedIndices.Add(i);
         }
+        selectedIndex = songIds.IndexOf(previousSong);
+        if (selectedIndex >= 0) StartPreview(songIds[selectedIndex]);
+        RefreshDifficultyDisplay();
         RefreshStartAvailability();
         if (scrollContent == null || buttonPrefab == null) return;
 
@@ -223,11 +241,14 @@ public class SongSelectController : MonoBehaviour
         {
             int captured = i;
             GameObject go = Instantiate(buttonPrefab, scrollContent);
+            generatedRows.Add(go);
             Button btn = go.GetComponent<Button>();
             Text label = go.GetComponentInChildren<Text>();
             songLabels.Add(label);
             if (btn != null) btn.onClick.AddListener(() => Select(captured));
         }
+        RefreshLabels();
+        ScrollToSelected();
     }
 
     private void BindStartButton()
@@ -250,7 +271,18 @@ public class SongSelectController : MonoBehaviour
     public void Select(int idx)
     {
         if (idx < 0 || idx >= songIds.Count) return;
+        if (selectedIndex == idx) return;
         selectedIndex = idx;
+        // 曲送り後に未制作の難易度で行き止まらない。近い難易度を優先する。
+        if (DifficultyLevelAt(selectedDifficulty) <= 0 && difficultyNames != null)
+        {
+            for (int distance = 1; distance < difficultyNames.Length; distance++)
+            {
+                int lower = selectedDifficulty - distance, higher = selectedDifficulty + distance;
+                if (lower >= 0 && DifficultyLevelAt(lower) > 0) { selectedDifficulty = lower; break; }
+                if (higher < difficultyNames.Length && DifficultyLevelAt(higher) > 0) { selectedDifficulty = higher; break; }
+            }
+        }
         RefreshLabels();
         ScrollToSelected();
         LoadJacket(songIds[idx]);
@@ -366,7 +398,7 @@ public class SongSelectController : MonoBehaviour
 
     private void RefreshDifficultyDisplay()
     {
-        if (difficultyDisplay == null) return;
+        if (difficultyDisplay == null || difficultyNames == null || difficultyNames.Length == 0) return;
         string name = difficultyNames[Mathf.Clamp(selectedDifficulty, 0, difficultyNames.Length - 1)];
         int level = CurrentDifficultyDisplayLevel();
         difficultyDisplay.text = level > 0 ? $"{name}  {level}" : name;
@@ -402,6 +434,7 @@ public class SongSelectController : MonoBehaviour
         if (jacketImage == null) return;
         var cover = LoadCover(songId);
         jacketImage.sprite = cover;
+        jacketImage.preserveAspect = true;
         jacketImage.color = cover != null ? Color.white : ColorFromHash(songId);
     }
 
@@ -449,6 +482,7 @@ public class SongSelectController : MonoBehaviour
     private void StartPreview(string songId)
     {
         if (!Application.isPlaying || previewSource == null || SelectedSongLocked) return;
+        if (difficultyNames == null || selectedDifficulty >= difficultyNames.Length) return;
         EnsureChartPreview();
         chartPreview.Select(songId, difficultyNames[selectedDifficulty], previewDuration);
     }
@@ -466,6 +500,24 @@ public class SongSelectController : MonoBehaviour
     {
         EnsureChartPreview();
         chartPreview.Attach(panel);
+    }
+
+    public SongChartInsights CurrentChartInsights()
+    {
+        if (selectedIndex < 0 || selectedIndex >= songIds.Count || difficultyNames == null
+            || selectedDifficulty < 0 || selectedDifficulty >= difficultyNames.Length) return SongChartInsights.Empty;
+        string key = songIds[selectedIndex] + "::" + difficultyNames[selectedDifficulty];
+        if (insightsCache.TryGetValue(key, out var value)) return value;
+        try { value = SongChartInsights.From(ChartLoader.LoadFromStreamingAssets(songIds[selectedIndex], difficultyNames[selectedDifficulty])); }
+        catch (System.Exception) { value = SongChartInsights.Empty; }
+        insightsCache[key] = value;
+        return value;
+    }
+
+    public void ReplayPreview()
+    {
+        if (!ScreenTransition.IsBusy && selectedIndex >= 0 && selectedIndex < songIds.Count)
+            StartPreview(songIds[selectedIndex]);
     }
 
     public void StopPreview() { if (chartPreview != null) chartPreview.Cancel(); else if (previewSource != null) previewSource.Stop(); }
@@ -488,7 +540,13 @@ public class SongSelectController : MonoBehaviour
     public void ChangeDifficulty(int delta)
     {
         if (difficultyNames == null || difficultyNames.Length == 0) return;
-        SetDifficulty((selectedDifficulty + delta + difficultyNames.Length) % difficultyNames.Length);
+        if (delta == 0) return;
+        int direction = delta < 0 ? -1 : 1;
+        for (int step = 1; step <= difficultyNames.Length; step++)
+        {
+            int index = (selectedDifficulty + direction * step + difficultyNames.Length) % difficultyNames.Length;
+            if (selectedIndex < 0 || DifficultyLevelAt(index) > 0) { SetDifficulty(index); return; }
+        }
     }
 
     public void SetDifficulty(int idx)

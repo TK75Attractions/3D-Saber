@@ -11,6 +11,9 @@ public sealed class FloorTimingGuide : MonoBehaviour
     readonly List<Vector3> vertices = new List<Vector3>(8192);
     readonly List<Color> colors = new List<Color>(8192);
     readonly List<int> triangles = new List<int>(16384);
+    readonly List<CuttableNote> candidates = new List<CuttableNote>(MaxMarkers);
+    double priorityTime;
+    float priorityCutSeconds;
     Mesh mesh;
     Material material;
     MeshRenderer display;
@@ -19,6 +22,7 @@ public sealed class FloorTimingGuide : MonoBehaviour
     Color countLeft = Color.white, countRight = Color.white;
     float countLeftAmount, countRightAmount;
     public int MarkerCount { get; private set; }
+    public int LongProgressCount { get; private set; }
     public float JudgmentZ { get; private set; }
     public float CountTintAmount => Mathf.Max(countLeftAmount, countRightAmount);
 
@@ -54,21 +58,43 @@ public sealed class FloorTimingGuide : MonoBehaviour
     {
         if (!isActiveAndEnabled || spawner == null || !spawner.isActiveAndEnabled ||
             double.IsNaN(songTime) || double.IsInfinity(songTime)) { Clear(); return; }
-        vertices.Clear(); colors.Clear(); triangles.Clear(); MarkerCount = 0;
+        vertices.Clear(); colors.Clear(); triangles.Clear(); MarkerCount = LongProgressCount = 0;
         JudgmentZ = spawner.judgeZ;
+        if (!Finite(JudgmentZ)) { Clear(); return; }
         // 中央の白い固定線と暗い下敷き。中心がノーツの判定面と一致する。
-        Bar(0, JudgmentZ, 7.2f, .19f, Ink, 0);
+        float visibility = DisplaySettings.ProjectorMode ? 1.45f : 1f;
+        Bar(0, JudgmentZ, 7.2f, .19f * visibility, Ink, 0);
         var lineColor = new Color(.83f, .93f, 1);
-        if (countLeftAmount <= 0 && countRightAmount <= 0) Bar(0, JudgmentZ, 7.2f, .065f, lineColor, .003f);
+        if (countLeftAmount <= 0 && countRightAmount <= 0) Bar(0, JudgmentZ, 7.2f, .065f * visibility, lineColor, .003f);
         else
         {
-            Bar(-1.8f, JudgmentZ, 3.6f, .065f, Color.Lerp(lineColor, countLeft, countLeftAmount), .003f);
-            Bar(1.8f, JudgmentZ, 3.6f, .065f, Color.Lerp(lineColor, countRight, countRightAmount), .003f);
+            Bar(-1.8f, JudgmentZ, 3.6f, .065f * visibility, Color.Lerp(lineColor, countLeft, countLeftAmount), .003f);
+            Bar(1.8f, JudgmentZ, 3.6f, .065f * visibility, Color.Lerp(lineColor, countRight, countRightAmount), .003f);
         }
+        candidates.Clear();
         foreach (var note in spawner.LiveNotes)
         {
-            if (note == null || note.IsCut || note.IsMissed || note.IsFinalized) continue;
+            if (note == null || !note.gameObject.activeInHierarchy || note.IsCut || note.IsMissed || note.IsFinalized || !Finite(note.HitTime)) continue;
+            Vector3 p = note.transform.position;
+            if (!Finite(p.x) || !Finite(p.y) || !Finite(p.z)) continue;
+            candidates.Add(note);
+        }
+        // 高密度譜面では遠いノーツより、今まさに切るノーツの案内を優先する。
+        if (candidates.Count > MaxMarkers) { priorityTime = songTime; priorityCutSeconds = spawner.secondsPerLongCut; candidates.Sort(ComparePriority); }
+        foreach (var note in candidates)
+        {
+            if (MarkerCount + LongProgressCount >= MaxMarkers) break;
             double remaining = note.HitTime - songTime;
+            if (note.RequiredCutCount > 1 && remaining < -.13)
+            {
+                double duration = spawner.LingerSecondsFor(note);
+                if (duration > 0 && -remaining < duration)
+                {
+                    DrawLongProgress(note, Mathf.Clamp01((float)(1 + remaining / duration)), visibility);
+                    LongProgressCount++;
+                }
+                continue;
+            }
             // 到着後は短く消す。ロングの開始時刻も同じ基準で示す。
             if (remaining < -.13 || MarkerCount >= MaxMarkers) continue;
             var position = note.transform.position;
@@ -85,6 +111,12 @@ public sealed class FloorTimingGuide : MonoBehaviour
                 Bar(position.x, position.z, size * 1.22f, .24f, ink, .006f);
                 Bar(position.x, position.z, size * 1.12f, .12f, tint, .009f);
                 Bar(position.x, position.z, size * .68f, .035f, new Color(1, 1, 1, alpha), .012f);
+                if (note.RequiredCutCount > 1)
+                {
+                    // 二重の後縁で、同じ色の単打とロングの開始を見分ける。
+                    Bar(position.x, position.z + .31f, size * 1.12f, .09f * visibility, ink, .006f);
+                    Bar(position.x, position.z + .31f, size, .035f * visibility, tint, .012f);
+                }
             }
             else
             {
@@ -96,6 +128,40 @@ public sealed class FloorTimingGuide : MonoBehaviour
         mesh.Clear(); mesh.SetVertices(vertices); mesh.SetColors(colors); mesh.SetTriangles(triangles, 0, true);
         display.enabled = true;
     }
+
+    int ComparePriority(CuttableNote a, CuttableNote b)
+    {
+        int order = Priority(a).CompareTo(Priority(b));
+        return order != 0 ? order : a.HitTime.CompareTo(b.HitTime);
+    }
+
+    double Priority(CuttableNote note)
+    {
+        double duration = note.OverrideLingerSeconds > 0 ? note.OverrideLingerSeconds : (note.RequiredCutCount - 1) * priorityCutSeconds;
+        if (note.RequiredCutCount > 1 && priorityTime >= note.HitTime && priorityTime < note.HitTime + duration) return 0;
+        return System.Math.Abs(note.HitTime - priorityTime);
+    }
+
+    void DrawLongProgress(CuttableNote note, float timeLeft, float visibility)
+    {
+        float x = note.transform.position.x;
+        Color tint = note.IsGold ? UISkinPalette.NoteGold : note.RequiredHand == SaberHand.Left ? UISkinPalette.LogoBlue : UISkinPalette.LogoRed;
+        tint.a = .85f;
+        // 上段は残り時間、下段は残り切断回数。高さを占有せず判定線の手前に収める。
+        const float width = 1.1f;
+        Bar(x, JudgmentZ - .34f, width + .10f, .16f * visibility, Ink, .006f);
+        Bar(x - width * (1 - timeLeft) / 2, JudgmentZ - .34f, width * timeLeft, .065f * visibility, tint, .009f);
+        int segments = Mathf.Min(8, Mathf.Max(1, note.RequiredCutCount));
+        float cutsLeft = Mathf.Clamp01(note.RemainingCuts / (float)Mathf.Max(1, note.RequiredCutCount));
+        for (int i = 0; i < segments; i++)
+        {
+            float center = x - width / 2 + width * (i + .5f) / segments;
+            Bar(center, JudgmentZ - .61f, width / segments * .76f, .075f * visibility, Ink, .006f);
+            float fill = Mathf.Clamp01(cutsLeft * segments - i);
+            if (fill > 0) Bar(center, JudgmentZ - .61f, width / segments * .65f * fill, .035f * visibility, tint, .012f);
+        }
+    }
+    static bool Finite(double value) => !double.IsNaN(value) && !double.IsInfinity(value);
 
     void Bar(float x, float z, float width, float depth, Color color, float bias)
     {
@@ -125,7 +191,8 @@ public sealed class FloorTimingGuide : MonoBehaviour
     void Vertex(Vector3 world, Color color) { vertices.Add(transform.InverseTransformPoint(world)); colors.Add(color); }
     public void Clear()
     {
-        MarkerCount = 0;
+        MarkerCount = LongProgressCount = 0;
+        candidates.Clear();
         if (mesh != null) mesh.Clear();
         if (display != null) display.enabled = false;
     }

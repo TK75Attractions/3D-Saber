@@ -94,11 +94,14 @@ public class SongChartAvailabilityTests
     }
 
     [Test]
-    public void SelectingAnEmptyDifficultyDisablesStart()
+    public void SelectingSongChoosesPlayableDifficultyAndExplicitEmptySelectionDisablesStart()
     {
         Write(songId, "chart_hard.json", ReadyChart);
         controller.Populate();
         SelectSong(songId);
+        Assert.AreEqual(2, controller.SelectedDifficultyIndex, "曲変更時は遊べる難易度に合わせる");
+        Assert.IsTrue(controller.startButton.interactable);
+        controller.SetDifficulty(0);
         Assert.AreEqual(0, controller.CurrentDifficultyLevel());
         Assert.IsFalse(controller.startButton.interactable);
     }
@@ -122,17 +125,33 @@ public class SongChartAvailabilityTests
     }
 
     [Test]
-    public void ChangingSongsRefreshesStartForTheSelectedDifficulty()
+    public void ChangingSongsChoosesPlayableDifficultyBeforeNotifyingTheSkin()
     {
         string other = CreateSong();
         Write(songId, "chart_easy.json", ReadyChart);
         Write(other, "chart_hard.json", ReadyChart);
         controller.Populate();
         SelectSong(songId);
+        Assert.AreEqual(0, controller.SelectedDifficultyIndex);
         Assert.IsTrue(controller.startButton.interactable);
+
+        int notifiedDifficulty = -1;
+        bool? notifiedStart = null;
+        controller.OnSelectionChanged += _ =>
+        {
+            notifiedDifficulty = controller.SelectedDifficultyIndex;
+            notifiedStart = controller.startButton.interactable;
+        };
         SelectSong(other);
-        Assert.IsFalse(controller.startButton.interactable);
+        Assert.AreEqual(2, controller.SelectedDifficultyIndex, "Easyがない曲では制作済みHardへ切り替える");
+        Assert.AreEqual(2, notifiedDifficulty, "スキンへの通知時点で難易度も揃っている");
+        Assert.AreEqual(true, notifiedStart);
+        Assert.IsTrue(controller.startButton.interactable);
+
         SelectSong(songId);
+        Assert.AreEqual(0, controller.SelectedDifficultyIndex, "Hardがない曲へ戻ると制作済みEasyへ切り替える");
+        Assert.AreEqual(0, notifiedDifficulty);
+        Assert.AreEqual(true, notifiedStart);
         Assert.IsTrue(controller.startButton.interactable);
     }
 
@@ -145,6 +164,10 @@ public class SongChartAvailabilityTests
         Write(songId, "chart_hard.json", ReadyChart);
         controller.Populate();
         SelectSong(songId);
+        // 曲変更時の自動選択後、今回検証する未制作・壊れたEasyを明示的に選ぶ。
+        controller.SetDifficulty(0);
+        Assert.AreEqual(0, controller.CurrentDifficultyLevel());
+        Assert.IsFalse(controller.startButton.interactable);
         string oldSong = GameSession.SelectedSongId;
         int oldScore = GameSession.FinalScore;
         try

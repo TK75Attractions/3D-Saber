@@ -1,3 +1,5 @@
+import { installRefinementUI } from './refinement-ui.js';
+import { positionInput, safeBookmarks } from './refinement.js';
 import { COLORS, clamp, clone, blankChart, parseChart, exportChart, audioTime, longSeconds, makeNote, formatTime, hasVariableGrid, quantizeMs, History } from './core.js';
 import { RecordingTake, TapTempo, rangeNotes, transformRange, copyChart } from './editing.js';
 import { createBackup, readBackup } from './backup.js';
@@ -7,15 +9,16 @@ import { SongAudio } from './audio.js';
 import { encodeWav } from './wav.js';
 import { saveProject, listProjects, getProject, saveAudio, getAudio, saveProjectWithAudio } from './storage.js';
 const $ = id => document.getElementById(id), audio = new SongAudio();
+let refinementUI;
 let chart = blankChart(), history = new History(), project = null, selected = null;
 let mode = 'record', color = 'auto', loading = false, saving = false, saveFailed = false, starting = false;
 let saveTimer, toastTimer, persistChain = Promise.resolve(), flashes = [], lastFrameTime = 0;
-let take = null, lastTake = null, playbackEnd = Infinity, saveRevision = 0, pendingSaves = 0;
+let take = null, lastTake = null, playbackEnd = Infinity, saveRevision = 0, pendingSaves = 0, loopingRange = false;
 const tapTempo = new TapTempo();
 const touches = new Map();
 let mapStart=0, mapBoxes=[], mapLastPaint=0, batchRange=null;
 const uid = () => crypto.randomUUID?.() || `p${Date.now()}-${Math.random().toString(36).slice(2)}`;
-const settings = () => ({ snap: Number($('snap').value), snapMode:$('snapMode').value, snapWindowMs:Number($('snapWindowMs').value), flickEnabled:$('flickEnabled').checked, flickSensitivity:$('flickSensitivity').value, rate: Number($('speed').value), longCount: $('longCount').value, direction: $('direction').value, color, latencyMs: clamp(Number($('latency').value)||0,-500,500), countIn:$('countIn').checked, clickSound:$('clickSound').checked, metronome:$('metronome').checked });
+const settings = () => ({ positionGrid:Number($('positionGrid').value), songVolume:Number($('songVolume').value), feedbackVolume:Number($('feedbackVolume').value), previewLoop:$('previewLoop').checked, snap: Number($('snap').value), snapMode:$('snapMode').value, snapWindowMs:Number($('snapWindowMs').value), flickEnabled:$('flickEnabled').checked, flickSensitivity:$('flickSensitivity').value, rate: Number($('speed').value), longCount: $('longCount').value, direction: $('direction').value, color, latencyMs: clamp(Number($('latency').value)||0,-500,500), countIn:$('countIn').checked, clickSound:$('clickSound').checked, metronome:$('metronome').checked });
 const preference = (key, value) => { try { if (value !== undefined) localStorage.setItem(key, value); else return localStorage.getItem(key); } catch {} };
 function toast(message) {
   const notice=$('toast'), dialog=document.activeElement?.closest('dialog[open]') || [...document.querySelectorAll('dialog[open]')].at(-1);
@@ -49,6 +52,7 @@ function refresh() {
   refreshInputOptions();
   $('seek').max = audio.duration || 1; $('durationReadout').textContent = formatTime(audio.duration);
   if($('timelineDialog').open)renderMap();
+  refinementUI?.refresh();
 }
 function refreshInputOptions() {
   const mode=$('snapMode').value;
@@ -74,7 +78,7 @@ function cancelTouches() {for(const touch of touches.values())touch.marker.remov
 function stop({finish=true}={}) {
   const end=Math.min(audio.time(),playbackEnd);
   if(finish&&audio.playing)for(const pointerId of [...touches.keys()])endTouch(pointerId,end);else cancelTouches();
-  audio.pause();audio.position=end;playbackEnd=Infinity;
+  audio.pause();audio.position=end;playbackEnd=Infinity;loopingRange=false;
   if(take){if(take.notes.length){chart=take.compose(end);lastTake={before:take.before,start:take.start,count:take.notes.length};changed();}take=null;}
   refresh();if(project){clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist().catch(fail),100);}
 }
@@ -85,6 +89,9 @@ function resetSession() {
   mapStart=0;batchRange=null;for(const id of ['timelineDialog','batchDialog','duplicateDialog'])$(id).close();
 }
 function restoreSettings(value={}) {
+  $('positionGrid').value=[.25,.5,1].includes(value.positionGrid)?value.positionGrid:0;
+  $('songVolume').value=Number.isFinite(value.songVolume)?clamp(value.songVolume,0,1):1;$('feedbackVolume').value=Number.isFinite(value.feedbackVolume)?clamp(value.feedbackVolume,0,1):1;
+  audio.setVolumes(Number($('songVolume').value),Number($('feedbackVolume').value));$('previewLoop').checked=value.previewLoop===true;
   const input=inputPreferences(value);for(const id of ['snap','snapMode','snapWindowMs','flickSensitivity'])$(id).value=input[id];$('flickEnabled').checked=input.flickEnabled;
   for(const id of ['longCount','direction'])if(value[id]!==undefined)$(id).value=value[id];
   $('speed').value=[1,.75,.5].includes(Number(value.rate))?value.rate:1;
@@ -125,9 +132,9 @@ async function showLibrary() {
     const row=document.createElement('div');row.className='project';const button=document.createElement('button');button.className='open-project';
     const title=document.createElement('strong');title.textContent=item.name;const caption=document.createElement('small');
     caption.textContent=`${(item.difficulty||'normal').toUpperCase()} · ${item.chart?.notes?.length||0} notes · ${new Date(item.updated).toLocaleString('ja-JP')}`;
-    button.append(title,caption);button.addEventListener('click',run(()=>openProject(item.id)));row.append(button);$('projectList').append(row);
+    button.append(title,caption);button.addEventListener('click',run(()=>openProject(item.id)));row.append(button);refinementUI?.decorateProject(row,item);$('projectList').append(row);
   }
-  $('library').showModal();
+  if(!$('library').open)$('library').showModal();refinementUI?.refreshLibrary();
 }
 async function importChart(file) {
   if(!file||loading)return;if(!project)throw new Error('先に、この譜面に合う音源を開いてください。');
@@ -168,7 +175,7 @@ async function restoreBackup(file) {
   if(!file||loading)return;stop();loading=true;refresh();status('バックアップを確認中…');
   try{
     const value=await readBackup(file),buffer=await audio.decode(value.audio.blob);await persist();
-    const audioId=uid(),next={id:uid(),audioId,audioName:value.audio.name,name:value.name,difficulty:value.difficulty,chart:value.chart,settings:value.settings,position:clamp(value.position,0,buffer.duration),updated:Date.now()};
+    const audioId=uid(),next={id:uid(),audioId,audioName:value.audio.name,name:value.name,difficulty:value.difficulty,chart:value.chart,settings:value.settings,bookmarks:safeBookmarks(value.bookmarks,buffer.duration),position:clamp(value.position,0,buffer.duration),updated:Date.now()};
     await saveProjectWithAudio(next,{id:audioId,...value.audio});
     project=next;chart=next.chart;history=new History();selected=null;audio.buffer=buffer;audio.seek(next.position);
     $('difficulty').value=next.difficulty;restoreSettings(next.settings);resetSession();fillChartFields();renderNotes();drawWaveform();$('library').close();await persist();
@@ -278,10 +285,11 @@ function startTouch(event) {
   if(loading||!audio.playing){toast('「録音開始」で曲を流してからタップしてください。');return;}
   if(mode!=='record'||!take||audio.rawTime(event.timeStamp)<audio.startOffset||audio.time(event.timeStamp)>=playbackEnd)return;
   if(chart.notes.length+touches.size>=50000){toast('ノーツ数の上限です。');return;}
-  const rect=$('pad').getBoundingClientRect(),px=clamp((event.clientX-rect.left)/rect.width,0,1),py=clamp((event.clientY-rect.top)/rect.height,0,1);
+  const rect=$('pad').getBoundingClientRect(),rawX=clamp((event.clientX-rect.left)/rect.width,0,1),rawY=clamp((event.clientY-rect.top)/rect.height,0,1);
+  const inputPosition=positionInput((rawX-.5)*5,(.5-rawY)*3,Number($('positionGrid').value)),px=inputPosition.x/5+.5,py=.5-inputPosition.y/3;
   const marker=document.createElement('div');marker.className='touch-marker';marker.style.left=`${px*100}%`;marker.style.top=`${py*100}%`;
-  const opts=settings(),chosen=opts.color==='auto'?(px<.5?'blue':'red'):opts.color;marker.style.color=COLORS[chosen];marker.textContent='•';$('touches').append(marker);
-  touches.set(event.pointerId,{startAudio:audio.time(event.timeStamp),x:(px-.5)*5,y:(.5-py)*3,options:opts,marker,stroke:beginStroke(event.clientX,event.clientY,event.timeStamp),flickDirection:'none'});$('pad').setPointerCapture(event.pointerId);
+  const opts=settings(),chosen=opts.color==='auto'?(rawX<.5?'blue':'red'):opts.color;marker.style.color=COLORS[chosen];marker.textContent='•';$('touches').append(marker);
+  touches.set(event.pointerId,{startAudio:audio.time(event.timeStamp),x:(px-.5)*5,y:(.5-py)*3,options:{...opts,color:chosen},marker,stroke:beginStroke(event.clientX,event.clientY,event.timeStamp),flickDirection:'none'});$('pad').setPointerCapture(event.pointerId);
   if($('clickSound').checked)audio.click(chosen==='blue'?570:chosen==='red'?760:950);
 }
 function moveTouch(event) {
@@ -328,7 +336,7 @@ function drawStage(t,now) {
   flashes=flashes.filter(f=>now-f.when<260);for(const f of flashes){const age=(now-f.when)/260;ctx.globalAlpha=1-age;ctx.strokeStyle=COLORS[f.color];ctx.lineWidth=2;const x=w/2+f.x/5*w*.82,y=gate-f.y/3*h*.55,size=22+age*36;ctx.strokeRect(x-size/2,y-size/2,size,size);}ctx.globalAlpha=1;
 }
 function tick(now) {
-  if(audio.playing&&audio.rawTime()>=Math.min(audio.duration,playbackEnd)){stop();toast('区間の終わりまで再生しました。');}if(audio.playing&&audio.context.state!=='running'){stop();toast('音声が中断されたため、一時停止しました。');}
+  if(audio.playing&&audio.rawTime()>=Math.min(audio.duration,playbackEnd)){const loop=mode==='preview'&&loopingRange&&$('previewLoop').checked&&$('rangeEnabled').checked;stop();if(loop)togglePlayback().catch(fail);else toast('区間の終わりまで再生しました。');}if(audio.playing&&audio.context.state!=='running'){stop();toast('音声が中断されたため、一時停止しました。');}
   const t=audio.time();
   if(audio.playing&&mode==='preview'&&$('clickSound').checked)for(const n of chart.notes){const hit=audioTime(n,chart);if(hit>lastFrameTime&&hit<=t&&t-lastFrameTime<.2)audio.click(n.color==='blue'?570:n.color==='red'?760:950);}
   lastFrameTime=t;$('timeReadout').textContent=formatTime(t,true);$('seek').value=t;
@@ -343,6 +351,7 @@ async function togglePlayback({useRange=true}={}) {
   if(starting||loading)return;if(audio.playing){stop();return;}starting=true;refresh();
   try{
     const range=useRange?readRange():null;
+    loopingRange=!!range;
     if(range)audio.seek(range.start);else if(audio.position>=audio.duration-.01)audio.seek(0);
     playbackEnd=range?.end??audio.duration;
     const started=await audio.play({rate:Number($('speed').value),countBeats:mode==='record'&&$('countIn').checked?4:0,bpm:chart.bpm,metronome:$('metronome').checked,beatOrigin:(chart.beatZeroMs+chart.offsetMs)/1000,end:playbackEnd});
@@ -394,7 +403,8 @@ for(const[id,field]of[['setRangeStart','rangeStart'],['setRangeEnd','rangeEnd']]
 $('tapTempo').onclick=()=>{const result=tapTempo.tap(performance.now());$('tempoReadout').textContent=result.bpm?`${result.bpm} BPM · ${result.count}回`:`${result.count}回 · あと${Math.max(1,4-result.count)}回`; $('applyTempo').disabled=!result.bpm||loading;};
 $('applyTempo').onclick=()=>{const result=tapTempo.result();if(!result.bpm||loading)return;stop();commit(()=>chart.bpm=result.bpm);fillChartFields();toast('BPMを設定しました。録音済みノーツの時刻はそのままです。');};
 for(const[id,field,min,max]of[['bpm','bpm',20,400],['offset','offsetMs',-600000,600000],['beatZero','beatZeroMs',-600000,600000],['level','displayLevel',0,10]])$(id).addEventListener('change',run(()=>{stop();const v=Number($(id).value);if(!Number.isFinite(v)||v<min||v>max){fillChartFields();throw new Error('設定値の範囲を確認してください。');}commit(()=>{chart[field]=v;});}));
-for(const id of ['speed','snap','snapMode','snapWindowMs','flickEnabled','flickSensitivity','longCount','direction','latency','difficulty','metronome','countIn','clickSound'])$(id).addEventListener('change',()=>{stop();refresh();if(['snap','snapMode'].includes(id)&&$('snapMode').value!=='off'&&hasVariableGrid(chart))toast('テンポ変化のある曲では、固定BPMへの整列でずれることがあります。');});
+for(const id of ['positionGrid','previewLoop','speed','snap','snapMode','snapWindowMs','flickEnabled','flickSensitivity','longCount','direction','latency','difficulty','metronome','countIn','clickSound'])$(id).addEventListener('change',()=>{stop();refresh();if(['snap','snapMode'].includes(id)&&$('snapMode').value!=='off'&&hasVariableGrid(chart))toast('テンポ変化のある曲では、固定BPMへの整列でずれることがあります。');});
+for(const id of ['songVolume','feedbackVolume'])$(id).addEventListener('input',()=>{audio.setVolumes(Number($('songVolume').value),Number($('feedbackVolume').value));if(project){clearTimeout(saveTimer);saveTimer=setTimeout(()=>persist().catch(fail),180);}});
 document.addEventListener('visibilitychange',()=>{if(document.hidden){stop();persist().catch(fail);}});window.addEventListener('pagehide',()=>{stop();persist().catch(()=>{});});window.addEventListener('beforeunload',e=>{if(saving||saveFailed||saveTimer||touches.size){e.preventDefault();e.returnValue='';}});window.addEventListener('resize',drawWaveform);
 window.addEventListener('keydown',run(async e=>{if(['INPUT','SELECT','TEXTAREA','BUTTON'].includes(e.target.tagName)||document.querySelector('dialog[open]'))return;if(e.code==='Space'){e.preventDefault();if(audio.buffer)await togglePlayback();}if((e.ctrlKey||e.metaKey)&&e.key==='z'){e.preventDefault();$(e.shiftKey?'redoButton':'undoButton').click();}}));
 $('exportAudioButton').addEventListener('click',run(downloadAudio));
@@ -441,4 +451,5 @@ async function init(){
   refresh();fillChartFields();renderNotes();requestAnimationFrame(tick);setupOffline();registerTools();
   try{const projects=await listProjects(),last=preference('saber-last-project');if(projects.length){const recent=projects.find(p=>p.id===last)||projects.sort((a,b)=>b.updated-a.updated)[0];status(`前回の下書き：${recent.name} — 「曲・保存」から再開`);}}catch{status('端末の保存が利用できません。ブラウザの通常モードで開いてください。');}
 }
+refinementUI=installRefinementUI({getState:()=>({chart,project,audio,mode,loading}),mutate:next=>commit(()=>{chart=next;selected=null;}),stop,seek,persist,run,toast,selectNote,downloadBlob,fillChartFields,showLibrary,clearProject:()=>{project=null;chart=blankChart();history=new History();selected=null;audio.seek(0);audio.buffer=null;resetSession();fillChartFields();renderNotes();drawWaveform();refresh();status('下書きを削除しました。音源を開くか別の下書きを選んでください。');}});
 init();

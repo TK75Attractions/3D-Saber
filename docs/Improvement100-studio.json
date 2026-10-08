@@ -1,0 +1,373 @@
+{
+  "scope": "Saber Tap Studio",
+  "date": "2026-10-07",
+  "count": 25,
+  "items": [
+    {
+      "id": "S01",
+      "title": "全曲のms移動",
+      "problem": "既存の区間移動では全曲を選ぶためにA/Bを指定する必要があり、110ms遅れを直接まとめて直す導線がない。",
+      "change": "曲全体を既定対象にしたms移動を追加。負数で早め、変更件数を確認後に適用する。",
+      "userBenefit": "全曲のms移動をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "-110ms移動、offset維持、ロング長維持、1回Undo、音源境界のテスト。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S02",
+      "title": "同時押しの高さを統一",
+      "problem": "左右を別々に録音した同時ノーツのYをまとめてそろえられない。",
+      "change": "同時グループのYを平均にそろえる。0〜50msの同時許容幅を選べる。",
+      "userBenefit": "同時押しの高さを統一をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "高さ平均、許容幅、隣の拍へ連鎖しないグループ境界を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S03",
+      "title": "同時ロングの回数を最大へ統一",
+      "problem": "同時ロングの左右回数の不一致を個別に見つけて直す必要がある。",
+      "change": "同時ロングのcountを最大へそろえ、tapと長さを保持する。暗黙長の旧ノーツも長さを固定して保持する。",
+      "userBenefit": "同時ロングの回数を最大へ統一をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "3/5回→5/5回、tapの1回保持、暗黙長1.4秒の保持を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S04",
+      "title": "左右の位置を中心対称化",
+      "problem": "Yだけでなく左右の距離にも手打ちのばらつきが残る。",
+      "change": "同時青赤の絶対X平均を半径とし、青を左・赤を右の対称位置へそろえる。",
+      "userBenefit": "左右の位置を中心対称化をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "-0.7/+1.3→-1/+1、金と単独ノーツ保持、座標スケール保持を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S05",
+      "title": "録音済みノーツへの近接拍補正",
+      "problem": "近い拍だけ補正する機能は新規入力に限られ、既に作った譜面へ適用できない。",
+      "change": "対象ノーツの近い拍だけを最大20/35/50ms幅で補正する。",
+      "userBenefit": "録音済みノーツへの近接拍補正をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "近い520ms→500ms、遠い560ms維持、ロング長保持を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S06",
+      "title": "ロング終端だけを拍へ整列",
+      "problem": "始点を変えずに複数ロングの終わりをそろえる操作がない。",
+      "change": "指定刻みでロング終端だけ整列。開始時刻は固定し、0長や音源外は適用を中止する。",
+      "userBenefit": "ロング終端だけを拍へ整列をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "620ms長→625ms長、始点維持、音源外終端の拒否を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S07",
+      "title": "A–Bの一括削除",
+      "problem": "不要な録音区間を一覧から1ノーツずつ消す必要がある。",
+      "change": "曲全体/A–Bと色で選んだノーツを、件数確認後に削除できる。",
+      "userBenefit": "A–Bの一括削除をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "offset付きA含む/B含まない範囲と色フィルターを検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S08",
+      "title": "完全重複ノーツの除去",
+      "problem": "追記録音や区間コピーで完全に同じノーツが重なっても除去方法がない。",
+      "change": "編集ID以外の全プロパティが一致するノーツのみ1個残す。",
+      "userBenefit": "完全重複ノーツの除去をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "対称同時押し、異なるbeat、未知メタデータを保持し重複だけ除去するテスト。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S09",
+      "title": "区間の色を一括変更",
+      "problem": "片手パートを別の手や金ノーツへ変えるには個別編集が必要。",
+      "change": "曲全体/A–Bと元色で絞り、青・赤・金・指定なしへ変更できる。",
+      "userBenefit": "区間の色を一括変更をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "選択区間外の色と他属性の保持を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S10",
+      "title": "区間の矢印を一括変更",
+      "problem": "複数ノーツを同方向のフリックへ、または通常タップへ戻す操作がない。",
+      "change": "8方向と矢印なしをまとめて設定し、tap/direction/longの種別も正しく維持する。",
+      "userBenefit": "区間の矢印を一括変更をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "通常→direction→tap、ロング種別保持を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S11",
+      "title": "ロング回数の一括指定",
+      "problem": "長いパート全体のロング回数を同じ数へ変えるには個別作業が必要。",
+      "change": "対象のロングだけ2〜99回へ変更し、長さと通常ノーツを保持する。",
+      "userBenefit": "ロング回数の一括指定をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "tap保持とcount4→9、暗黙長保持、範囲外回数の拒否を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S12",
+      "title": "配置をまとめて平行移動",
+      "problem": "録音パート全体が上下左右へ偏ったとき、まとめて位置を動かせない。",
+      "change": "画面上のX/Y移動量を指定して、coordScaleを考慮し選択配置を移動する。",
+      "userBenefit": "配置をまとめて平行移動をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "scale2の座標変換とパッド外移動の全体中止を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S13",
+      "title": "配置と矢印の上下反転",
+      "problem": "既存の左右反転だけでは上下を入れ替えた配置パターンを作れない。",
+      "change": "Yと上下を含む矢印を同時に反転。時刻・色・Xは保持する。",
+      "userBenefit": "配置と矢印の上下反転をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "斜め方向反転、水平矢印保持、2回反転で元に戻ることを検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S14",
+      "title": "見直すノーツを診断して選択",
+      "problem": "音源外、画面外、重複、同手ロングの重なりを一括で見つける画面がない。",
+      "change": "確認候補を時刻付きで表示し、選ぶと該当ノーツの編集画面を開く。意図した配置もあるため自動修正はしない。",
+      "userBenefit": "見直すノーツを診断して選択をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "各問題の検出、編集IDの保持、元譜面を変更しないことを検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S15",
+      "title": "密度と左右・種別の統計",
+      "problem": "全体ノーツ数だけでは休符・混雑・左右の偏りを探しにくい。",
+      "change": "色/種別数、平均・最大2秒密度、10秒バケットを表示。バケットから試聴位置へ移動できる。",
+      "userBenefit": "密度と左右・種別の統計をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html",
+        "Tools/MobileChartStudio/dist/style.css"
+      ],
+      "validation": "無音バケット、色/種別集計、最大密度とその位置を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S16",
+      "title": "前後のノーツ時刻へジャンプ",
+      "problem": "5秒送りだけでは疎な譜面の次の入力位置へ正確に移動しにくい。",
+      "change": "前/次ノーツの時刻へ停止状態でシークする操作を追加。",
+      "userBenefit": "前後のノーツ時刻へジャンプをスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "同時刻重複を飛ばす、offset考慮、端点のクランプを検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S17",
+      "title": "拍単位でシーク",
+      "problem": "5秒移動から拍単位のA/Bを指定しづらい。",
+      "change": "現在位置から前/次の拍へ、BPM・拍原点・offsetを考慮して移動する。",
+      "userBenefit": "拍単位でシークをスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "拍上と拍の間、負方向、原点+offsetの計算を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S18",
+      "title": "現在位置から拍原点を設定",
+      "problem": "拍の始まりmsを音源を聴きながら数値転記する必要がある。",
+      "change": "今の位置を拍の始まりへ設定し、ノーツ時刻を保ったままbeat表現を追従させる。",
+      "userBenefit": "現在位置から拍原点を設定をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "現在位置−offsetを拍原点へ設定、beat追従、元時刻・元譜面の保持を自動テストで検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S19",
+      "title": "名前付きブックマーク",
+      "problem": "サビや直したい場所へ戻るための時刻の記憶・転記が必要。",
+      "change": "名前付き目印を最大100個保存し、ワンタップで移動。下書きと.saberに含める。",
+      "userBenefit": "名前付きブックマークをスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/backup.js",
+        "Tools/MobileChartStudio/dist/app.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "時刻/名前検証、整列、日本語タイトルと元音源を含むバックアップ往復。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S20",
+      "title": "元音源をそのまま書き出し",
+      "problem": "音源の単独出力がWAVだけで、スマホ上で容量が増える。",
+      "change": "保存済みBlobを元の名前・形式のままダウンロードできる。",
+      "userBenefit": "元音源をそのまま書き出しをスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "同じ元Blobを渡す経路のコード検査、バイナリバックアップ一致の既存/新規テスト。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S21",
+      "title": "下書きを曲名・難易度で検索",
+      "problem": "曲や難易度の下書きが増えると一覧を見続ける必要がある。",
+      "change": "曲名・難易度を大文字小文字と全角差を吸収して検索し、表示件数も出す。",
+      "userBenefit": "下書きを曲名・難易度で検索をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/app.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "日本語名、全角HARD、大小英字、空検索を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S22",
+      "title": "不要な下書きと未使用音源を削除",
+      "problem": "新規音源・復元・難易度コピーを増やすと保存領域を整理できない。",
+      "change": "削除確認を追加。同じ音源を使う下書きがなくなったときだけ、同一トランザクションで音源も削除する。",
+      "userBenefit": "不要な下書きと未使用音源を削除をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/storage.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/app.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "NORMAL削除でHARDと共有音源保持、最後の下書きで音源解放、他曲保持を検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S23",
+      "title": "確認モードのA–Bループ",
+      "problem": "短い区間を繰り返し聴くたび再生操作が必要。",
+      "change": "確認モード・指定区間に限ってB到達後Aから再生。録音・全曲試聴・中断時にはループしない。",
+      "userBenefit": "確認モードのA–Bループをスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/app.js",
+        "Tools/MobileChartStudio/dist/refinement-ui.js",
+        "Tools/MobileChartStudio/dist/index.html",
+        "Tools/MobileChartStudio/dist/backup.js"
+      ],
+      "validation": "既存の区間音声停止予約テスト、開始/停止とループ条件をコード検査。統合ブラウザQA対象。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S24",
+      "title": "音源と入力・拍音を個別音量調整",
+      "problem": "曲が大きい/小さいとタップやメトロノームの確認がしづらい。",
+      "change": "音源用Gainとフィードバック音量を分け、再生中にも変更可能。設定を下書き/.saberへ保存する。",
+      "userBenefit": "音源と入力・拍音を個別音量調整をスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/audio.js",
+        "Tools/MobileChartStudio/dist/app.js",
+        "Tools/MobileChartStudio/dist/backup.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "音量独立、ミュート、範囲クランプ、音声時計不変、設定バックアップの検証。",
+      "status": "implemented; integration results in Improvement100.json"
+    },
+    {
+      "id": "S25",
+      "title": "入力位置の任意グリッド",
+      "problem": "タップ位置の高さや左右位置を最初から一定間隔に置きにくい。",
+      "change": "自由配置を既定のまま0.25/0.5/1.0間隔を選択可能にする。色は補正後でなく実際に押した側を採用する。",
+      "userBenefit": "入力位置の任意グリッドをスマホ内だけで行える。",
+      "files": [
+        "Tools/MobileChartStudio/dist/refinement.js",
+        "Tools/MobileChartStudio/dist/app.js",
+        "Tools/MobileChartStudio/dist/backup.js",
+        "Tools/MobileChartStudio/dist/index.html"
+      ],
+      "validation": "自由配置保持、座標の丸め・端点・設定復元、左右色のコード検査。",
+      "status": "implemented; integration results in Improvement100.json"
+    }
+  ],
+  "validationSummary": {
+    "nodeTests": 67,
+    "realChartsRoundTrip": 27,
+    "javascriptSyntax": "passed",
+    "htmlIds": "no duplicates or missing referenced IDs",
+    "browserQA": "親エージェントによる統合検証待ち",
+    "deviceLimitations": "iPhone/Android実機タッチ・Bluetooth未確認",
+    "nodeResult": "67 passed, 0 failed, 0 skipped"
+  },
+  "status": "implemented; integration results in Improvement100.json"
+}

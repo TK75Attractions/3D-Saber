@@ -45,7 +45,7 @@ public class ResultSkin : MonoBehaviour
 
     private ResultReveal reveal;
     // スコアのカウントアップと音(爽快感カタログ 山4)が書き換える数字。
-    private TextMeshProUGUI scoreValueText;
+    private TextMeshProUGUI scoreValueText, skipHint;
     private static Sprite backdropGradient; // 縦3停止グラデ(共有キャッシュ)
 
     void Start()
@@ -85,6 +85,7 @@ public class ResultSkin : MonoBehaviour
         ResultSoundtrack.Build(root.transform, reveal, scoreValueText, GameSession.FinalScore, DelayScoreBlock, DelayRing,
             Mathf.Max(3f, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .2f));
         StyleBackButton(canvas);
+        BuildContinueButtons(root.transform, ctl);
         BuildSkipHint(root.transform);
         var pointer = SaberUIPointer.Build();
         pointer.RemapToFullScreen = true;
@@ -277,6 +278,9 @@ public class ResultSkin : MonoBehaviour
             t.verticalOverflow = VerticalWrapMode.Overflow;
         }
         Reveal(row, DelayTitle, 0.5f, FromBelow);
+        var difficulty = UISkinKit.MakeTMP(parent, "PlayedDifficulty", ResultImprovementSummary.Difficulty(GameSession.SelectedDifficulty), 25,
+            UISkinPalette.Cyan, TextAlignmentOptions.Center, new Vector2(0, 420), new Vector2(700, 32), FontStyles.Bold, 2);
+        Reveal(difficulty.gameObject, DelayTitle, .5f, FromBelow);
     }
 
     // ---- 中央カラム(RANK ワードマーク + 六角バッジ + ACCURACY) ----
@@ -366,6 +370,17 @@ public class ResultSkin : MonoBehaviour
             UISkinPalette.Cyan, TextAlignmentOptions.Center,
             Vector2.zero, new Vector2(10f, 58f), FontStyles.Normal, 0f, chakra);
         Reveal(accRow, DelayAccuracy, 0.5f, FromBelow);
+        long judged = ResultImprovementSummary.JudgedCount(GameSession.FinalPerfect, GameSession.FinalGreat,
+            GameSession.FinalGood, GameSession.FinalBad, GameSession.FinalMiss);
+        var next = UISkinKit.MakeTMP(parent, "NextRankGoal", ResultImprovementSummary.NextRank(accuracy, judged), 24,
+            UISkinPalette.OffWhite, TextAlignmentOptions.MidlineLeft, new Vector2(-535, -173), new Vector2(460, 40), FontStyles.Normal);
+        next.enableAutoSizing = true; next.fontSizeMin = 19; next.fontSizeMax = 24;
+        Reveal(next.gameObject, DelayAccuracy, .5f, FromLeft);
+        var achievement = UISkinKit.MakeTMP(parent, "AchievementGoal", ResultImprovementSummary.Achievement(GameSession.FinalPerfect,
+            GameSession.FinalGreat, GameSession.FinalGood, GameSession.FinalBad, GameSession.FinalMiss), 22,
+            UISkinPalette.OffWhite, TextAlignmentOptions.MidlineLeft, new Vector2(560, -176), new Vector2(480, 38), FontStyles.Normal);
+        achievement.enableAutoSizing = true; achievement.fontSizeMin = 18; achievement.fontSizeMax = 22;
+        Reveal(achievement.gameObject, DelayDistribution, .5f, FromRight);
     }
 
     // ---- SCORE ブロック(左カラム) ----
@@ -419,7 +434,8 @@ public class ResultSkin : MonoBehaviour
         if (string.IsNullOrEmpty(songId)) return; // シーン直起動などは行ごと省略
 
         var table = HighScoreStore.Load(songId, GameSession.SelectedDifficulty);
-        int prevBest = table.entries.Count > 0 ? table.entries[0].score : 0;
+        bool hasPrevious = table.entries.Count > 0;
+        int prevBest = hasPrevious ? table.entries[0].score : 0;
         bool newRecord = GameSession.FinalScore > prevBest && GameSession.FinalScore > 0;
         // NEW RECORDの比較には以前の記録を使い、HI-SCOREには更新後の最高点を表示する。
         int shownScore = Mathf.Max(prevBest, GameSession.FinalScore);
@@ -436,6 +452,9 @@ public class ResultSkin : MonoBehaviour
             date = System.DateTime.Now.ToString("yyyy/MM/dd"),
         }, out _);
 
+        UISkinKit.MakeTMP(parent, "BestDifference", ResultImprovementSummary.BestDifference(GameSession.FinalScore, prevBest, hasPrevious), 25,
+            newRecord ? UISkinPalette.Cyan : UISkinPalette.OffWhite, TextAlignmentOptions.MidlineLeft,
+            new Vector2(-535, -116), new Vector2(450, 36), FontStyles.Normal);
         var row = new GameObject("HiScoreRow", typeof(RectTransform));
         row.transform.SetParent(parent, false);
         var rt = row.GetComponent<RectTransform>();
@@ -496,6 +515,11 @@ public class ResultSkin : MonoBehaviour
                 i == labels.Length - 1 ? UISkinPalette.SubtleGray : UISkinPalette.OffWhite,
                 TextAlignmentOptions.MidlineRight,
                 new Vector2(60f, 0f), new Vector2(280f, 56f), FontStyles.Normal, 0f, chakra);
+
+            long judged = ResultImprovementSummary.JudgedCount(counts[0], counts[1], counts[2], counts[3], counts[4]);
+            UISkinKit.MakeTMP(row.transform, "Percentage", ResultImprovementSummary.Percentage(counts[i], judged), 24,
+                UISkinPalette.SubtleGray, TextAlignmentOptions.MidlineRight,
+                new Vector2(274, 0), new Vector2(125, 44), FontStyles.Normal, 0, chakra);
 
             if (i < labels.Length - 1)
             {
@@ -601,14 +625,36 @@ public class ResultSkin : MonoBehaviour
         }
     }
 
+    void BuildContinueButtons(Transform parent, ResultController controller)
+    {
+        float delay = DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking);
+        var retry = UISkinKit.MakeNeonButton(parent, "RetrySong", "もう一度", new Vector2(-540, -466), new Vector2(420, 96),
+            UISkinPalette.Cyan, controller.RetrySong, 34);
+        retry.button.interactable = controller.CanRetry();
+        Reveal(retry.button.gameObject, delay, .45f, FromBelow);
+        var select = UISkinKit.MakeNeonButton(parent, "ReturnToSongSelect", "選曲へ", new Vector2(540, -466), new Vector2(420, 96),
+            UISkinPalette.LogoBlue, controller.ReturnToSongSelect, 34);
+        Reveal(select.button.gameObject, delay, .45f, FromBelow);
+    }
+
     void BuildSkipHint(Transform parent)
     {
-        var hint = UISkinKit.MakeTMP(parent, "SkipHint", "CLICK / ANY KEY TO SKIP", 26f,
-            UISkinPalette.SubtleGray, TextAlignmentOptions.MidlineRight,
-            new Vector2(610f, -466f), new Vector2(580f, 40f), FontStyles.Normal, 2f,
+        skipHint = UISkinKit.MakeTMP(parent, "SkipHint", "CLICK / ANY KEY TO SKIP", 20f,
+            UISkinPalette.SubtleGray, TextAlignmentOptions.Center,
+            new Vector2(0, -526), new Vector2(1500, 26), FontStyles.Normal, 1f,
             UISkinKit.FontAsset("Oxanium-Bold"));
-        Reveal(hint.gameObject, DelaySkipHint, 0.45f, Vector2.zero); // フェードのみ
+        Reveal(skipHint.gameObject, DelaySkipHint, 0.45f, Vector2.zero);
+        if (reveal != null) reveal.TimeChanged += UpdateSkipHint;
     }
+
+    void UpdateSkipHint(float seconds)
+    {
+        if (skipHint == null) return;
+        skipHint.text = seconds >= DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .45f
+            ? "セーバーをボタンに合わせて選択  /  マウスでクリック  /  BACKでタイトルへ"
+            : "CLICK / ANY KEY TO SKIP";
+    }
+    void OnDestroy() { if (reveal != null) reveal.TimeChanged -= UpdateSkipHint; }
 
     // ---- 小物 ----
 

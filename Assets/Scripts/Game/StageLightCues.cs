@@ -16,7 +16,12 @@ public sealed class StageLightCues
         if (chart?.notes != null)
             foreach (var note in chart.notes)
                 if (note != null && Finite(note.time) && note.TimeSeconds + offset >= 0)
+                {
                     sorted.Add(note.TimeSeconds + offset);
+                    // 長い保持区間の終わりも曲の節目として扱い、開始音だけで照明を終わらせない。
+                    if (note.count > 1 && note.lengthMs > 0 && Finite(note.lengthMs))
+                        sorted.Add(note.TimeSeconds + offset + note.lengthMs / 1000.0);
+                }
         sorted.Sort();
         var selected = new List<double>();
         foreach (double time in sorted)

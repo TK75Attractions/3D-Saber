@@ -1,11 +1,14 @@
 import { exportChart, parseChart, DIRECTIONS, clamp } from './core.js';
 import { inputPreferences } from './gestures.js';
+import { safeBookmarks } from './refinement.js';
 const MAGIC = new TextEncoder().encode('SABERSTUDIO1\n');
 const MAX_META = 32 * 1024 * 1024, MAX_AUDIO = 100 * 1024 * 1024;
 const invalid = () => new Error('Saber Tap Studioのバックアップを選んでください。ファイルが途中で壊れていないか確認してください。');
 function safeSettings(value) {
   const s=value&&typeof value==='object'?value:{};
   return {...inputPreferences(s),rate:[1,.75,.5].includes(s.rate)?s.rate:1,
+    positionGrid:[.25,.5,1].includes(s.positionGrid)?s.positionGrid:0,
+    songVolume:Number.isFinite(s.songVolume)?clamp(s.songVolume,0,1):1,feedbackVolume:Number.isFinite(s.feedbackVolume)?clamp(s.feedbackVolume,0,1):1,previewLoop:s.previewLoop===true,
     longCount:['auto','2','3','4','6','8'].includes(String(s.longCount))?String(s.longCount):'auto',direction:DIRECTIONS.includes(s.direction)?s.direction:'none',
     color:['auto','blue','red','gold'].includes(s.color)?s.color:'auto',latencyMs:Number.isFinite(s.latencyMs)?clamp(s.latencyMs,-500,500):0,
     countIn:typeof s.countIn==='boolean'?s.countIn:true,clickSound:typeof s.clickSound==='boolean'?s.clickSound:true,metronome:typeof s.metronome==='boolean'?s.metronome:false};
@@ -13,7 +16,7 @@ function safeSettings(value) {
 
 export function createBackup(project, source) {
   if (!source?.blob || source.blob.size > MAX_AUDIO || !source.blob.size) throw new Error('バックアップする音源が見つかりません。');
-  const metadata = {version:1, name:project.name, difficulty:project.difficulty, position:project.position, settings:project.settings || {}, chart:exportChart(project.chart), audio:{name:source.name, type:source.blob.type, size:source.blob.size}};
+  const metadata = {version:1, name:project.name, difficulty:project.difficulty, position:project.position, bookmarks:safeBookmarks(project.bookmarks), settings:project.settings || {}, chart:exportChart(project.chart), audio:{name:source.name, type:source.blob.type, size:source.blob.size}};
   const bytes = new TextEncoder().encode(JSON.stringify(metadata));
   if (bytes.length > MAX_META) throw new Error('譜面情報が大きすぎてバックアップできません。');
   const length = new Uint8Array(4);new DataView(length.buffer).setUint32(0, bytes.length, true);
@@ -33,5 +36,5 @@ export async function readBackup(file) {
   if (metadata?.version !== 1 || typeof metadata.name !== 'string' || !['easy','normal','hard'].includes(metadata.difficulty) || !metadata.audio || !Number.isSafeInteger(metadata.audio.size) || metadata.audio.size <= 0 || metadata.audio.size > MAX_AUDIO || metadata.audio.size !== file.size - headerSize - length) throw invalid();
   const chart = parseChart(metadata.chart);
   const blob = file.slice(headerSize + length, file.size, typeof metadata.audio.type === 'string' ? metadata.audio.type.slice(0,100) : '');
-  return {name:metadata.name.slice(0,120) || '復元した曲', difficulty:metadata.difficulty, position:Number.isFinite(metadata.position) ? Math.max(0,metadata.position) : 0, settings:safeSettings(metadata.settings), chart, audio:{name:typeof metadata.audio.name === 'string' ? metadata.audio.name.slice(0,240) : 'audio', blob}};
+  return {name:metadata.name.slice(0,120) || '復元した曲', difficulty:metadata.difficulty, position:Number.isFinite(metadata.position) ? Math.max(0,metadata.position) : 0, bookmarks:safeBookmarks(metadata.bookmarks), settings:safeSettings(metadata.settings), chart, audio:{name:typeof metadata.audio.name === 'string' ? metadata.audio.name.slice(0,240) : 'audio', blob}};
 }

@@ -145,6 +145,7 @@ public sealed class GameplayCutFeedback : MonoBehaviour
 
         int slot = -1;
         int oldest = 0;
+        bool merged = false;
         for (int i = 0; i < bursts.Length; i++)
         {
             if (!bursts[i].active && slot < 0) slot = i;
@@ -154,12 +155,13 @@ public sealed class GameplayCutFeedback : MonoBehaviour
                 && (bursts[i].position - position).sqrMagnitude < .09f)
             {
                 slot = i;
+                merged = true;
                 break;
             }
         }
         if (slot < 0) slot = oldest;
         // 同時切りをまとめるときは良い方の判定で描く。
-        JudgmentTier drawn = bursts[slot].active ? (JudgmentTier)Mathf.Min((int)tier, (int)bursts[slot].tier) : tier;
+        JudgmentTier drawn = merged ? (JudgmentTier)Mathf.Min((int)tier, (int)bursts[slot].tier) : tier;
         if (!bursts[slot].active) ActiveCount++;
         bursts[slot] = new Burst {
             active = true, tier = drawn, position = position, direction = direction, color = accent,

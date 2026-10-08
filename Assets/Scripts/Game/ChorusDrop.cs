@@ -67,6 +67,10 @@ public sealed class ChorusDrop : MonoBehaviour
     // テストからも呼ぶ。曲の AudioSource を直接渡せる。
     public void Setup(StagePerformanceTimeline song, AudioSource music, float bpm, Transform stageRoot, JudgmentSfx judgmentSfx)
     {
+        ResetEffects();
+        ReleaseRing();
+        ScheduledCount = FiredCount = 0;
+        gate = null;
         timeline = song ?? new StagePerformanceTimeline();
         songSource = music;
         sfx = judgmentSfx;
@@ -119,14 +123,16 @@ public sealed class ChorusDrop : MonoBehaviour
 
     public void Tick(double songTime, float deltaTime)
     {
-        if (!Finite(songTime)) return;
+        if (!isActiveAndEnabled || !Finite(songTime) || timeline == null) return;
+        double elapsed = Finite(lastTime) ? songTime - lastTime : 0;
         // 初回とシーク・巻き戻しでは、過ぎた入口を発火しない。
-        if (!Finite(lastTime) || songTime < lastTime - .05)
+        if (!Finite(lastTime) || songTime < lastTime - .05 || elapsed > .5)
         {
             if (Finite(lastTime)) ResetEffects();
             next = 0;
             while (next < entries.Count && entries[next] < songTime - .05) next++;
             scheduledFor = double.NaN;
+            elapsed = 0;
         }
         lastTime = songTime;
 
@@ -149,11 +155,13 @@ public sealed class ChorusDrop : MonoBehaviour
                 EndDuck();
                 // 処理落ちで予約できなかったときは、遅れすぎていなければすぐ鳴らす。
                 if (!SameTime(scheduledFor, entry) && until > -.1) ScheduleDon(0);
-                Fire();
+                if (until >= -.1) Fire();
                 next++;
             }
         }
-        Animate(Mathf.Clamp(deltaTime, 0f, .1f));
+        // 一時停止中は実時間でリングだけ進めない。LOWへの切り替えはすぐ反映する。
+        if (DisplaySettings.ReducedEffects) ClearVisualEffects();
+        else Animate((float)System.Math.Max(0, elapsed));
     }
 
     void ScheduleDon(double delay)
@@ -248,14 +256,19 @@ public sealed class ChorusDrop : MonoBehaviour
         EndDuck();
         if (dropSource != null) dropSource.Stop();
         scheduledFor = double.NaN;
+        ClearVisualEffects();
+        Chorus = 0;
+        SaberBladeVisual.ChorusBoost = 0;
+        if (sfx != null) sfx.ChorusLevel = 0;
+    }
+
+    void ClearVisualEffects()
+    {
         ringAge = -1f;
         if (ringRenderer != null) ringRenderer.enabled = false;
         if (ringMesh != null) ringMesh.Clear();
         if (kickAge >= 0 && stage != null) stage.position = stageBase;
         kickAge = -1f; KickOffset = 0;
-        Chorus = 0;
-        SaberBladeVisual.ChorusBoost = 0;
-        if (sfx != null) sfx.ChorusLevel = 0;
     }
 
     void OnDisable() { ResetEffects(); }
@@ -263,10 +276,16 @@ public sealed class ChorusDrop : MonoBehaviour
     void OnDestroy()
     {
         ResetEffects();
+        ReleaseRing();
+        UISkinKit.SafeDestroy(donClip);
+    }
+
+    void ReleaseRing()
+    {
         if (ringRenderer != null) UISkinKit.SafeDestroy(ringRenderer.gameObject);
         UISkinKit.SafeDestroy(ringMesh);
         UISkinKit.SafeDestroy(ringMaterial);
-        UISkinKit.SafeDestroy(donClip);
+        ringRenderer = null; ringMesh = null; ringMaterial = null;
     }
 
     static bool SameTime(double a, double b) => Finite(a) && System.Math.Abs(a - b) < 1e-6;

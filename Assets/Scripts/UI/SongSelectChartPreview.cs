@@ -8,6 +8,27 @@ using UnityEngine.Networking;
 public sealed class SongSelectChartPreview : MonoBehaviour
 {
     public const double SelectionDelaySeconds=1;
+    public enum PreviewState { Idle, Waiting, Loading, Playing, Complete, Unavailable, Failed }
+    const string MutedKey = "songSelectPreviewMuted";
+    public PreviewState State { get; private set; }
+    public bool Muted { get; private set; }
+    public string StatusText
+    {
+        get
+        {
+            switch (State)
+            {
+                case PreviewState.Waiting: return "試聴を準備中";
+                case PreviewState.Loading: return "音源を読み込み中";
+                case PreviewState.Playing: return (Muted ? "消音で試聴中 " : "試聴中 ")
+                    + SongChartInsights.Duration(Math.Max(0, SongTime - Window.Start)) + " / " + SongChartInsights.Duration(Window.Duration);
+                case PreviewState.Complete: return "試聴終了・もう一度聴けます";
+                case PreviewState.Unavailable: return "この難易度には試聴できる譜面がありません";
+                case PreviewState.Failed: return "音源を再生できません・再試聴で再試行";
+                default: return "曲を選ぶと試聴できます";
+            }
+        }
+    }
     private AudioSource source;
     private AudioClip ownedClip;
     private UnityWebRequest request;
@@ -40,7 +61,14 @@ public sealed class SongSelectChartPreview : MonoBehaviour
                 source.SetScheduledEndTime(scheduledDsp+Window.Duration);
                 clockSynchronized=true;
             }
-            return Window.Start+Math.Max(0,now-scheduledDsp);
+            double projected=Window.Start+Math.Max(0,now-scheduledDsp);
+            if(!source.isPlaying) return projected;
+            // 開始時の一回だけの同期では、圧縮音声のデコード位置が遅れた後もDSPが先行し続ける。
+            // DSPの連続性を使いつつ、実際の音声カーソルとの差を1バッファ以内に留める。
+            double decoded=source.timeSamples/(double)ownedClip.frequency;
+            AudioSettings.GetDSPBufferSize(out int frames,out _);
+            double buffer=frames/(double)Math.Max(1,AudioSettings.outputSampleRate);
+            return Math.Max(Window.Start,Math.Clamp(projected,decoded-buffer,decoded+buffer));
         }
     }
     public double SelectedAt { get; private set; }
@@ -49,12 +77,24 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     public double StartedAt { get; private set; }
     public SongChartPreviewView View => view;
 
-    public void Initialize(AudioSource audio) { source=audio; baseVolume=audio!=null?audio.volume:.7f; }
+    public void Initialize(AudioSource audio)
+    {
+        source=audio; baseVolume=audio!=null?audio.volume:.7f;
+        Muted=PlayerPrefs.GetInt(MutedKey,0)!=0;
+        if(source!=null) source.mute=Muted;
+    }
+    public void SetMuted(bool muted)
+    {
+        Muted=muted;
+        if(source!=null) source.mute=muted;
+        PlayerPrefs.SetInt(MutedKey,muted?1:0); PlayerPrefs.Save();
+    }
     public void Attach(RectTransform panel) { view?.Dispose(); view=new SongChartPreviewView(panel); }
     public void Select(string songId,string difficulty,float duration)
     {
         Cancel(); SongId=songId; Difficulty=difficulty; SelectedAt=SettledAt=Time.realtimeSinceStartupAsDouble;
         if(source==null || !isActiveAndEnabled || string.IsNullOrEmpty(songId)) return;
+        State=PreviewState.Waiting;
         loading=StartCoroutine(Load(songId,difficulty,duration,generation));
     }
 
@@ -72,13 +112,15 @@ public sealed class SongSelectChartPreview : MonoBehaviour
         ChartData chart=null;
         try { chart=ChartLoader.LoadFromStreamingAssets(songId,difficulty); }
         catch(Exception e) { Debug.LogWarning("譜面プレビューを読み込めません: "+e.Message); }
-        if(chart?.notes==null || chart.notes.Count==0) { loading=null; yield break; }
+        if(chart?.notes==null || chart.notes.Count==0) { State=PreviewState.Unavailable; loading=null; yield break; }
+        State=PreviewState.Loading;
         string dir=Path.Combine(Application.streamingAssetsPath,"Songs",songId);
         foreach(var name in new[]{"audio.ogg","audio.wav","audio.mp3"})
         {
             string full=Path.Combine(dir,name); if(!File.Exists(full)) continue;
             AudioType type=name.EndsWith(".ogg")?AudioType.OGGVORBIS:name.EndsWith(".wav")?AudioType.WAV:AudioType.MPEG;
             request=UnityWebRequestMultimedia.GetAudioClip(new Uri(full).AbsoluteUri,type);
+            request.timeout=10;
             ((DownloadHandlerAudioClip)request.downloadHandler).streamAudio=true;
             yield return request.SendWebRequest();
             if(token!=generation) yield break;
@@ -88,7 +130,11 @@ public sealed class SongSelectChartPreview : MonoBehaviour
             if(ownedClip==null) continue;
             var timeline=StagePerformanceTimeline.Load(songId);
             Window=SongPreviewWindow.Resolve(timeline,ownedClip.length,duration);
-            if(token!=generation || !Window.IsValid) yield break;
+            if(token!=generation) yield break;
+            if(!Window.IsValid)
+            {
+                Destroy(ownedClip); ownedClip=null; continue;
+            }
             // 音だけのディスク選曲でも同じDSP時計を使う。旧譜面表示は任意。
             view?.Prepare(chart,Window,timeline,Difficulty);
             source.clip=ownedClip; source.loop=false; source.pitch=1;
@@ -100,9 +146,9 @@ public sealed class SongSelectChartPreview : MonoBehaviour
             source.PlayScheduled(scheduledDsp);
             source.SetScheduledEndTime(scheduledDsp+Window.Duration);
             StartedAt=Time.realtimeSinceStartupAsDouble+.05;
-            IsPlaying=true; loading=null; yield break;
+            IsPlaying=true; State=PreviewState.Playing; loading=null; yield break;
         }
-        loading=null;
+        State=PreviewState.Failed; loading=null;
     }
 
     public void Tick()
@@ -110,9 +156,16 @@ public sealed class SongSelectChartPreview : MonoBehaviour
         if(!IsPlaying || source==null) return;
         if(AudioSettings.dspTime<scheduledDsp) return;
         double time=SongTime;
-        if(!clockSynchronized) return;
+        if(!clockSynchronized)
+        {
+            // オーディオデバイスが開始できない場合も「試聴中」のまま固めない。
+            if(Time.realtimeSinceStartupAsDouble-StartedAt>3) { State=PreviewState.Failed; Finish(); }
+            return;
+        }
         double elapsed=time-Window.Start;
-        if(elapsed>=Window.Duration) { stoppedSongTime=Window.Start+Window.Duration; Finish(); return; }
+        if(elapsed>=Window.Duration) { stoppedSongTime=Window.Start+Window.Duration; State=PreviewState.Complete; Finish(); return; }
+        if(!source.isPlaying && Time.realtimeSinceStartupAsDouble-StartedAt>.5)
+        { State=PreviewState.Failed; Finish(); return; }
         float gain=Mathf.Min(Mathf.Clamp01((float)(elapsed/.08)),Mathf.Clamp01((float)((Window.Duration-elapsed)/.25)));
         source.volume=baseVolume*gain;
         view?.Show(); view?.Tick(time);
@@ -123,7 +176,7 @@ public sealed class SongSelectChartPreview : MonoBehaviour
         generation++;
         if(loading!=null) { StopCoroutine(loading); loading=null; }
         if(request!=null) { request.Abort(); request.Dispose(); request=null; }
-        Finish();
+        Finish(); State=PreviewState.Idle;
     }
     private void Finish()
     {

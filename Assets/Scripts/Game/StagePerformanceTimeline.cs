@@ -102,7 +102,8 @@ public sealed class StagePerformanceTimeline
                 !Finite(section.fadeInSeconds) || !Finite(section.fadeOutSeconds)) continue;
             float strength = Mathf.Clamp01(section.intensity);
             if (selected == null || strength > strongest ||
-                (strength == strongest && section.startSeconds > selected.startSeconds))
+                (strength == strongest && (section.startSeconds > selected.startSeconds ||
+                (section.startSeconds == selected.startSeconds && section.endSeconds > selected.endSeconds))))
             {
                 selected = section;
                 strongest = strength;

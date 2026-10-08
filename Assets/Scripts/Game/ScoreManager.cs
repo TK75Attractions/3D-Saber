@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 public class ScoreManager : MonoBehaviour
@@ -39,9 +40,11 @@ public class ScoreManager : MonoBehaviour
     public event System.Action<JudgmentTier, int, bool> OnJudgmentEx; // (tier, awarded, wasWrongFlick)
 
     private NoteSpawner bound;
+    private readonly HashSet<CuttableNote> observedNotes = new HashSet<CuttableNote>();
 
     public void Bind(NoteSpawner spawner)
     {
+        foreach (var note in new List<CuttableNote>(observedNotes)) DetachNote(note);
         if (bound != null)
         {
             bound.OnNoteSpawned -= HandleSpawned;
@@ -52,6 +55,8 @@ public class ScoreManager : MonoBehaviour
         {
             bound.OnNoteSpawned += HandleSpawned;
             bound.OnNoteMissed += HandleMissed;
+            // 生成後にUIや採点コンポーネントが再接続されても、表示中のノーツを採点する。
+            foreach (var note in bound.LiveNotes) HandleSpawned(note);
         }
     }
 
@@ -73,6 +78,15 @@ public class ScoreManager : MonoBehaviour
         GoodCount = 0;
         BadCount = 0;
         LastTier = JudgmentTier.Miss;
+        ClearLastCut();
+    }
+
+    private void ClearLastCut()
+    {
+        LastWasWrongFlick = false;
+        LastErrorValid = false;
+        LastErrorMs = 0;
+        LastCutHand = SaberHand.Any;
         LastCutWasGold = false;
         LastCutDirection = CutDirection.None;
         LastCutCount = 1;
@@ -81,11 +95,22 @@ public class ScoreManager : MonoBehaviour
 
     private void HandleSpawned(CuttableNote note)
     {
+        if (note == null || note.IsFinalized || !observedNotes.Add(note)) return;
         note.OnCut += HandleCut;
+        note.OnRetired += DetachNote;
+    }
+
+    private void DetachNote(CuttableNote note)
+    {
+        observedNotes.Remove(note);
+        if (note == null) return;
+        note.OnCut -= HandleCut;
+        note.OnRetired -= DetachNote;
     }
 
     private void HandleCut(CuttableNote note, Vector3 point, Vector3 velocity)
     {
+        if (IsFinalized || note == null) return;
         LastCutHand = note.LastCutterHand;
         LastCutWasGold = note.IsGold;
         LastCutDirection = note.RequiredDirection;
@@ -116,7 +141,7 @@ public class ScoreManager : MonoBehaviour
             tier = DowngradeTier(tier);
         }
         LastWasWrongFlick = wrongDir;
-        RegisterHit(tier);
+        RegisterHitWithContext(tier);
         note.NotifyJudgment(tier, point, velocity);
     }
 
@@ -167,6 +192,14 @@ public class ScoreManager : MonoBehaviour
     public void RegisterHit(JudgmentTier tier)
     {
         if (IsFinalized) return;
+        ClearLastCut();
+        RegisterHitWithContext(tier);
+    }
+
+    private void RegisterHitWithContext(JudgmentTier tier)
+    {
+        if (IsFinalized) return;
+        if ((int)tier < (int)JudgmentTier.Perfect || (int)tier > (int)JudgmentTier.Miss) return;
         LastTier = tier;
         if (tier == JudgmentTier.Miss)
         {
@@ -203,12 +236,7 @@ public class ScoreManager : MonoBehaviour
         MissCount++;
         Combo = 0;
         LastTier = JudgmentTier.Miss;
-        LastErrorValid = false;
-        LastCutHand = SaberHand.Any;
-        LastCutWasGold = false;
-        LastCutDirection = CutDirection.None;
-        LastCutCount = 1;
-        LastCutTimedOut = false;
+        ClearLastCut();
         OnJudgment?.Invoke(JudgmentTier.Miss, 0);
         OnJudgmentEx?.Invoke(JudgmentTier.Miss, 0, false);
     }
