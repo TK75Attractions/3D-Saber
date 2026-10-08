@@ -72,18 +72,22 @@ public class SaberInputBridge : MonoBehaviour
     CameraSaberSample cameraSample;
     double cameraSourceStamp = double.NegativeInfinity;
     bool hasCameraSample;
+    readonly PhoneSaberEndpointPredictor endpointPredictor = new PhoneSaberEndpointPredictor();
+    InputPoint predictionInput;
+    int predictionStickIndex;
+    int predictionRevision;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
     double lastFreezeApplyTime = double.NegativeInfinity;
 #endif
 
-    // 表示に適用した新規Camera入力のスナップショット。マウス・補間フレームは含めない。
+    // 表示へ渡した新規Camera入力の予測前スナップショット。マウス・補間フレームは含めない。
     public bool TryGetCameraSample(out CameraSaberSample sample)
     {
         sample = cameraSample;
         return isActiveAndEnabled && hasCameraSample && !UsingMouseFallback && useInputPoint;
     }
 
-    void RecordCameraSample(InputPoint input)
+    void RecordCameraSample(InputPoint input, Vector3? receivedA = null, Vector3? receivedB = null)
     {
         double stamp = stickIndex == 2
             ? input.LastReceivedMonotonicTime2
@@ -113,7 +117,8 @@ public class SaberInputBridge : MonoBehaviour
         // InputPointがUDP receive()時に記録した、SwingEventと同じOS monotonic clock。
         // Update順序やTime.timeScaleによる推定誤差を判定時刻へ持ち込まない。
         cameraSample = new CameraSaberSample(stamp,
-            HasBlade ? WorldEndA : transform.position, HasBlade ? WorldEndB : transform.position,
+            receivedA ?? (HasBlade ? WorldEndA : transform.position),
+            receivedB ?? (HasBlade ? WorldEndB : transform.position),
             stickIndex == 2 ? CameraSaberColor.Blue : CameraSaberColor.Red);
         hasCameraSample = true;
     }
@@ -140,7 +145,39 @@ public class SaberInputBridge : MonoBehaviour
         }
     }
 
-    void OnDisable() { HideBlade(); }
+    void OnDisable() { HideBlade(); ResetPrediction(); }
+
+    void ResetPrediction()
+    {
+        endpointPredictor.Reset();
+        predictionInput = null;
+    }
+
+    void PredictEndpoints(InputPoint input, ref Vector2 a, ref Vector2 b)
+    {
+        // parser の受理条件は変えず、予測できない値は既存経路へそのまま渡す。
+        if (float.IsNaN(a.x) || float.IsInfinity(a.x) || float.IsNaN(a.y) || float.IsInfinity(a.y) ||
+            float.IsNaN(b.x) || float.IsInfinity(b.x) || float.IsNaN(b.y) || float.IsInfinity(b.y))
+        {
+            ResetPrediction();
+            return;
+        }
+        if (predictionInput != input || predictionStickIndex != stickIndex ||
+            predictionRevision != input.PredictionRevision)
+        {
+            endpointPredictor.Reset();
+            predictionInput = input;
+            predictionStickIndex = stickIndex;
+            predictionRevision = input.PredictionRevision;
+        }
+        // 最新の適用サンプルだけを使う。Unity が間引いた packet をキューで追いかけない。
+        // 速度の時計は Update 時刻ではなく、UDP receive 完了時の monotonic 時刻。
+        double stamp = stickIndex == 2 ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime;
+        if (double.IsNaN(stamp) || double.IsInfinity(stamp)) { ResetPrediction(); return; }
+        endpointPredictor.AddSample(stamp, a, b);
+        endpointPredictor.Predict(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp),
+            input.PredictionHorizonMilliseconds, out a, out b);
+    }
 
     void EnsureBladeLine()
     {
@@ -270,10 +307,17 @@ public class SaberInputBridge : MonoBehaviour
             (!useBladeMode || HasValidStickEndpoints()))
         {
             var ip = InputPoint.Instance;
+            Vector3? receivedA = null, receivedB = null;
             if (useBladeMode)
             {
                 Vector2 endA = stickIndex == 2 ? ip.LocalStickRawA2 : ip.LocalStickRawA;
                 Vector2 endB = stickIndex == 2 ? ip.LocalStickRawB2 : ip.LocalStickRawB;
+                bool predicting = ip.PredictionHorizonMilliseconds > 0;
+                Vector3 observedA = new Vector3(endA.x, endA.y, fixedZ);
+                Vector3 observedB = new Vector3(endB.x, endB.y, fixedZ);
+                // OFF は元の端点・演算順のまま。単点・マウス経路には予測を掛けない。
+                if (predicting) PredictEndpoints(ip, ref endA, ref endB);
+                else ResetPrediction();
                 Vector3 a = new Vector3(endA.x, endA.y, fixedZ);
                 Vector3 b = new Vector3(endB.x, endB.y, fixedZ);
                 if (remapToCameraView && ResolveViewExtents())
@@ -284,11 +328,29 @@ public class SaberInputBridge : MonoBehaviour
                     Vector3 shift = mapped - mid;
                     a += shift;
                     b += shift;
+                    if (predicting)
+                    {
+                        Vector3 observedMid = (observedA + observedB) * 0.5f;
+                        Vector3 observedMapped = RemapPoint(observedMid, sourceHalfExtents, viewCenter, viewHalfExtents, fixedZ);
+                        Vector3 observedShift = observedMapped - observedMid;
+                        observedA += observedShift;
+                        observedB += observedShift;
+                    }
+                }
+                if (predicting)
+                {
+                    // receive 時刻の Camera/IMU 照合・診断へ未来の端点を混ぜない。
+                    // OFF と同じ写像・クランプを通した観測値を記録する。
+                    if (clampToBounds)
+                        (observedA, observedB) = ClampBladeKeepingLength(observedA, observedB, EffectiveMinBounds, EffectiveMaxBounds);
+                    receivedA = observedA;
+                    receivedB = observedB;
                 }
                 ApplyBladeImmediate(a, b);
             }
             else
             {
+                ResetPrediction();
                 Vector2 mid = stickIndex == 2 ? ip.LocalPosition2 : ip.LocalPosition;
                 Vector3 p = new Vector3(mid.x, mid.y, fixedZ);
                 if (remapToCameraView && ResolveViewExtents())
@@ -302,9 +364,11 @@ public class SaberInputBridge : MonoBehaviour
                 Debug.Log($"[SaberInputBridge] stick{stickIndex} endA={WorldEndA} endB={WorldEndB}");
             }
             UsingMouseFallback = false;
-            RecordCameraSample(ip);
+            RecordCameraSample(ip, receivedA, receivedB);
             consumed = true;
         }
+
+        if (!consumed) ResetPrediction();
 
         if (!consumed && fallbackToMouse)
         {

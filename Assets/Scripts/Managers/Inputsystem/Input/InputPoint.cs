@@ -101,6 +101,17 @@ public class InputPoint : MonoBehaviour
     public bool HasValidStickEndpoints { get; private set; }
     public bool HasValidStickEndpoints2 { get; private set; }
 
+    // 予測設定と履歴の世代は main thread 専用。受信・認識結果には触れない。
+    public int PredictionHorizonMilliseconds { get; private set; }
+    public int PredictionRevision { get; private set; }
+
+    public void SetPredictionHorizonMilliseconds(int milliseconds)
+    {
+        PredictionHorizonMilliseconds = PhoneSaberPredictionSettings.Clamp(milliseconds);
+        PredictionRevision++;
+        PhoneSaberPredictionSettings.Save(StationLabel, PredictionHorizonMilliseconds);
+    }
+
     // 色ごとのreceiver診断。一方の異常は反対色の状態に影響させない。
     public bool ReceiverAlive => receiverAlive1;
     public bool ReceiverAlive2 => receiverAlive2;
@@ -145,12 +156,14 @@ public class InputPoint : MonoBehaviour
         PhoneSaberPositionCalibrationStore.Save(StationLabel, calibration);
         positionCalibration = calibration;
         positionCalibrationEnabled = true;
+        PredictionRevision++;
         return true;
     }
 
     public void SetPositionCalibrationEnabled(bool enabled)
     {
         positionCalibrationEnabled = enabled && HasPositionCalibration;
+        PredictionRevision++;
         PhoneSaberPositionCalibrationStore.SetEnabled(StationLabel, positionCalibrationEnabled);
     }
 
@@ -160,6 +173,7 @@ public class InputPoint : MonoBehaviour
         PhoneSaberPositionCalibrationStore.Reset(StationLabel);
         positionCalibration = null;
         positionCalibrationEnabled = false;
+        PredictionRevision++;
     }
 
     // スレッド同期用
@@ -356,6 +370,8 @@ public class InputPoint : MonoBehaviour
             p2pDataPath = Application.dataPath;
             phoneSaberStation = PhoneSaberStation.Read();
             positionCalibration = PhoneSaberPositionCalibrationStore.Load(phoneSaberStation, out positionCalibrationEnabled);
+            PredictionHorizonMilliseconds = PhoneSaberPredictionSettings.Load(phoneSaberStation);
+            PredictionRevision++;
             PositionCapture.Cancel();
             double eventStart = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
             string eventStation = phoneSaberStation;
@@ -434,9 +450,9 @@ public class InputPoint : MonoBehaviour
 
     void ReceiveData(UdpClient client, object targetLock, bool secondStick)
     {
+        IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
         while (!networkShutdown)
         {
-            IPEndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
             byte[] data = client.Receive(ref endPoint);
             long receiveTimestampTicks = SwingMonotonicClock.Timestamp;
             // ソケット受信直後の壁時計。解析・main thread 待ちを遅延に含めない。
@@ -486,7 +502,6 @@ public class InputPoint : MonoBehaviour
                 {
                     Interlocked.Increment(ref receivedCountPort2Window);
                     Interlocked.Increment(ref receivedPacketCountPort2);
-                    HasValidStickEndpoints2 = isStick;
                     if (isStick)
                     {
                         rawX2a = a;
@@ -510,7 +525,6 @@ public class InputPoint : MonoBehaviour
                 {
                     Interlocked.Increment(ref receivedCountPort1Window);
                     Interlocked.Increment(ref receivedPacketCountPort1);
-                    HasValidStickEndpoints = isStick;
                     if (isStick)
                     {
                         rawX1a = a;
@@ -545,12 +559,11 @@ public class InputPoint : MonoBehaviour
 
     static string StripOptionalTimestamp(string message)
     {
-        foreach (string prefix in new[] { "ts=", "timestamp=" })
-        {
-            if (!message.StartsWith(prefix, StringComparison.Ordinal)) continue;
-            int separator = message.IndexOf(';', prefix.Length);
-            if (separator > prefix.Length) return message.Substring(separator + 1);
-        }
+        int prefixLength = message.StartsWith("ts=", StringComparison.Ordinal) ? 3 :
+            message.StartsWith("timestamp=", StringComparison.Ordinal) ? 10 : 0;
+        if (prefixLength == 0) return message;
+        int separator = message.IndexOf(';', prefixLength);
+        if (separator > prefixLength) return message.Substring(separator + 1);
         return message;
     }
 
@@ -581,6 +594,8 @@ public class InputPoint : MonoBehaviour
 #endif
 
         // スレッドから受け取った値をコピー
+        // 有効フラグもこの座標スナップショットと一緒に main thread で公開する。
+        // receive thread が次の packet のフラグだけを先に公開してはいけない。
         lock (lockObj)
         {
             if (hasNewData)

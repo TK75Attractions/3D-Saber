@@ -32,6 +32,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     string calibrationMessage = "未設定時は従来どおりの座標です。";
     readonly Vector2[] calibrationCorners = new Vector2[4];
     static readonly string[] CornerNames = { "左上", "右上", "右下", "左下" };
+    static readonly int[] PredictionHorizons = { 0, 20, 40, 60 };
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void CreateAtStartup()
@@ -205,6 +206,27 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         }
     }
 
+    void DrawPrediction()
+    {
+        var input = InputPoint.Instance;
+        int horizon = input != null ? input.PredictionHorizonMilliseconds : 0;
+        GUILayout.Label($"剣の遅延補償: {(horizon == 0 ? "OFF" : horizon + " ms")}（この台に保存）", textStyle);
+        bool previousEnabled = GUI.enabled;
+        GUI.enabled = previousEnabled && input != null && calibrationCorner < 0;
+        GUILayout.BeginHorizontal();
+        foreach (int milliseconds in PredictionHorizons)
+        {
+            string label = milliseconds == 0 ? "0 ms / OFF" : milliseconds + " ms";
+            if (GUILayout.Button((horizon == milliseconds ? "● " : "") + label, buttonStyle) &&
+                horizon != milliseconds)
+                input.SetPredictionHorizonMilliseconds(milliseconds);
+        }
+        GUILayout.EndHorizontal();
+        GUI.enabled = previousEnabled;
+        GUILayout.Label("初期値はOFF。20 msから試してください。折り返しでは行き過ぎが増えます。\n" +
+            "端点の移動上限は0.35、受信が100 ms止まると予測量はゼロに戻ります。", textStyle);
+    }
+
     void Refresh(double now)
     {
         var input = InputPoint.Instance;
@@ -270,6 +292,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         GUILayout.Label($"PhoneSaber 運営表示 [F8: 開閉]  |  台: {(string.IsNullOrEmpty(station) ? "指定なし" : station)}", textStyle);
         // 日本語の折り返しが増えても、下の色や警告を切り落とさない。
         scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+        DrawPrediction();
+        GUILayout.Space(8);
         DrawCalibration();
         GUILayout.Space(8);
         GUILayout.Label(services, textStyle);
