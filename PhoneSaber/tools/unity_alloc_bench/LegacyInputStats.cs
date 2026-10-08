@@ -1,3 +1,5 @@
+namespace Legacy
+{
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -15,22 +17,6 @@ public readonly struct PhoneSaberTimingStats
     {
         Array.Sort(values);
         Count = values.Length;
-        if (Count == 0) { MedianMs = P95Ms = MaxMs = MinMs = 0; return; }
-        int middle = Count / 2;
-        MedianMs = Count % 2 == 0 ? (values[middle - 1] + values[middle]) / 2 : values[middle];
-        P95Ms = values[(int)Math.Ceiling(Count * 0.95) - 1];
-        MinMs = values[0];
-        MaxMs = values[Count - 1];
-    }
-
-    static readonly Comparison<double> CompareTiming = (left, right) => left.CompareTo(right);
-
-    // List の有効範囲を既存の比較順でソートする。Mono の Array.Sort(range) は
-    // 呼ぶたびに delegate を作るため、保持済み Comparison を渡せる経路を使う。
-    internal PhoneSaberTimingStats(List<double> values)
-    {
-        values.Sort(CompareTiming);
-        Count = values.Count;
         if (Count == 0) { MedianMs = P95Ms = MaxMs = MinMs = 0; return; }
         int middle = Count / 2;
         MedianMs = Count % 2 == 0 ? (values[middle - 1] + values[middle]) / 2 : values[middle];
@@ -73,16 +59,15 @@ public sealed class PhoneSaberPacketStatistics
     public const double TimingWindowSeconds = 5.0;
     public const int MaximumTimingSamples = 2048;
     readonly object gate = new object();
-    readonly Queue<double> recentPackets = new Queue<double>(256);
-    readonly Queue<TimingSample> gaps = new Queue<TimingSample>(MaximumTimingSamples);
-    readonly Queue<TimingSample> delays = new Queue<TimingSample>(MaximumTimingSamples);
+    readonly Queue<double> recentPackets = new Queue<double>();
+    readonly Queue<TimingSample> gaps = new Queue<TimingSample>();
+    readonly Queue<TimingSample> delays = new Queue<TimingSample>();
     readonly struct TimingSample
     {
         public readonly double At;
         public readonly double Ms;
         public TimingSample(double at, double ms) { At = at; Ms = ms; }
     }
-    readonly List<double> timingScratch = new List<double>(MaximumTimingSamples);
     double startedAt;
     double lastPacketAt;
     bool hasPacket;
@@ -162,22 +147,20 @@ public sealed class PhoneSaberPacketStatistics
         samples.Enqueue(new TimingSample(now, ms));
     }
 
-    PhoneSaberTimingStats Summarize(Queue<TimingSample> samples)
+    static PhoneSaberTimingStats Summarize(Queue<TimingSample> samples)
     {
-        timingScratch.Clear();
-        foreach (var sample in samples) timingScratch.Add(sample.Ms);
-        return new PhoneSaberTimingStats(timingScratch);
+        var values = new double[samples.Count];
+        int index = 0;
+        foreach (var sample in samples) values[index++] = sample.Ms;
+        return new PhoneSaberTimingStats(values);
     }
 
     // 座標解析から独立。壊れた ts は遅延統計に入れず、既存の座標受信は変えない。
     public static double? ReadSendEpoch(string message)
-        => message == null ? null : ReadSendEpoch(message.AsSpan());
-
-    public static double? ReadSendEpoch(ReadOnlySpan<char> message)
     {
-        if (!message.StartsWith("ts=".AsSpan(), StringComparison.Ordinal)) return null;
-        int separator = message.Slice(3).IndexOf(';') + 3;
-        if (separator <= 3 || !double.TryParse(message.Slice(3, separator - 3),
+        if (message == null || !message.StartsWith("ts=", StringComparison.Ordinal)) return null;
+        int separator = message.IndexOf(';', 3);
+        if (separator <= 3 || !double.TryParse(message.Substring(3, separator - 3),
             NumberStyles.Float, CultureInfo.InvariantCulture, out double epoch) ||
             double.IsNaN(epoch) || double.IsInfinity(epoch) || epoch <= 0) return null;
         return epoch;
@@ -236,4 +219,6 @@ public static class PhoneSaberStatsDisplay
     {
         return IsStale(stats) ? $"警告: {colour} のUDP入力が1秒以上届いていません。送信先・接続・ファイアウォールを確認してください。" : "";
     }
+}
+
 }
