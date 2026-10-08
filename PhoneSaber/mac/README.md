@@ -1,6 +1,6 @@
 # Mac 当日用ゲーム監視 (台 A / B)
 
-Unity の File > Build Profiles で macOS Player をビルドし、`Start-Saber-A.command` / `Start-Saber-B.command` の `GAME_APP` をその `.app` に合わせてダブルクリックします。既定は `Builds/Mac/3D-Saber.app`。空白・日本語のパスにも対応します。Editor と Player、複数の launcher を同じ PC で同時に起動しないでください。
+Unity の **Tools > PhoneSaber > Build > macOS Player**（または File > Build Profiles）で macOS Player をビルドし、`Start-Saber-A.command` / `Start-Saber-B.command` の `GAME_APP` をその `.app` に合わせてダブルクリックします。既定は `Builds/Mac/3D-Saber.app`（上のメニューの出力先と同じ）。Editor を開いたままでも、プロジェクトを別フォルダへ複製して `Unity -batchmode -quit -projectPath <複製> -executeMethod PhoneSaberPlayerBuild.BuildMac` でビルドできる。空白・日本語のパスにも対応します。Editor と Player、複数の launcher を同じ PC で同時に起動しないでください。
 
 - `open -W -n ... --args -phonesaberStation A` / `B` で待機し、異常終了なら5秒後に再起動。Terminal に再起動回数を表示し、同じフォルダの `Start-Saber-A.log` / `B.log` に時刻・終了コード・回数を追記します。
 - **今回の変更を含む Unity build が必要です。** `open -W` はアプリの終了コードを返さないため、Unity の `OnApplicationQuit` が書く一時的な正常終了マーカーも確認します。正常 quit + open 終了0なら監視終了。印がない crash / 強制終了は `exit-code=1` (推定)として再起動します。`open-exit-code` もログに残します。

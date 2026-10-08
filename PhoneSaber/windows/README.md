@@ -14,7 +14,7 @@ Windows + Android を基本構成にします。Windows + iPhone は iPhone の�
    ```
 
 2. Unity Hub で **6000.3.9f1** と Windows Build Support (使用するバックエンドに対応したモジュール) を入れます。`Assets/`、`Packages/`、`ProjectSettings/` が並ぶ **repo root** を Unity project として開きます。`PhoneSaber/` はスマホアプリ・ツールの置き場です。
-3. Unity の **File > Build Profiles** で Windows の profile を選択・有効化し、既存の Scene List を使って **Build** します。保存先の例は `Builds/Windows/3D-Saber.exe`。exe、`*_Data`、UnityPlayer.dll など出力一式を同じフォルダに保ちます。Overlay は通常ビルドにも入るので Development Build は不要です。
+3. Unity の **Tools > PhoneSaber > Build > Windows Player**（Windows Build Support が必要）、または **File > Build Profiles** で Windows の profile を選択・有効化し、既存の Scene List を使って **Build** します。保存先の例は `Builds/Windows/3D-Saber.exe`。exe、`*_Data`、UnityPlayer.dll など出力一式を同じフォルダに保ちます。Overlay は通常ビルドにも入るので Development Build は不要です。
 
 ## 2. 台 A / B の設定と起動
 
