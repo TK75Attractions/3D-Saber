@@ -39,6 +39,7 @@ final class UDPSender {
         let text: String
         let enqueuedAt: TimeInterval
         let onSendStarted: ((TimeInterval, Int) -> Void)?
+        let isCurrent: (() -> Bool)?
         let completion: (Result<TimeInterval, Error>) -> Void
     }
 
@@ -121,13 +122,15 @@ final class UDPSender {
 
     func send(_ text: String, to port: Int,
               onSendStarted: ((TimeInterval, Int) -> Void)? = nil,
+              isCurrent: (() -> Bool)? = nil,
               completion: @escaping (Result<TimeInterval, Error>) -> Void) {
+        let enqueuedAt = HostMonotonicClock.now()
         queue.async { [weak self] in
-            guard let self else { return }
+            guard let self, isCurrent?() != false else { return }
             self.nextSendID &+= 1
             let request = PendingSend(id: self.nextSendID, text: text,
-                                      enqueuedAt: HostMonotonicClock.now(),
-                                      onSendStarted: onSendStarted, completion: completion)
+                                      enqueuedAt: enqueuedAt,
+                                      onSendStarted: onSendStarted, isCurrent: isCurrent, completion: completion)
             guard self.isRunning, self.configuredPorts.contains(port) else {
                 completion(.failure(SendError.notConfigured(host: self.configuredHost, port: port)))
                 return
@@ -280,6 +283,7 @@ final class UDPSender {
     }
 
     private func start(_ request: PendingSend, port: Int) {
+        guard request.isCurrent?() != false else { return }
         guard isRunning, phases[port] == .ready else {
             pendingByPort[port] = request
             return
@@ -593,5 +597,95 @@ final class LANLivenessProbe {
     private func handle(_ data: Data) {
         guard let text = String(data: data, encoding: .ascii), text.hasPrefix(Self.replyPrefix) else { return }
         lock.lock(); lastReply = clock(); lock.unlock()
+    }
+}
+
+/// 検出キューから直接送信するための設定スナップショットと経路選択。
+/// UI は設定変更時だけ書き込み、フレームは MainActor を待たない。
+final class CoordinateDelivery: @unchecked Sendable {
+    struct Settings {
+        var running = false
+        var processorGeneration = 0
+        var lifecycleGeneration = 0
+        var outputWidth = 1920
+        var outputHeight = 1080
+        var mirrorX = false
+        var mirrorY = false
+        var measurementMode = false
+        var manual = false
+        var p2pEnabled = false
+        var lanConfigured = false
+    }
+
+    private let lock = NSLock()
+    private var settings = Settings()
+    private var routedViaP2P = false
+    private let sender: UDPSender
+    private let p2pSender: P2PSender
+    private let lanProbe: LANLivenessProbe
+
+    init(sender: UDPSender, p2pSender: P2PSender, lanProbe: LANLivenessProbe) {
+        self.sender = sender
+        self.p2pSender = p2pSender
+        self.lanProbe = lanProbe
+    }
+
+    func update(_ settings: Settings) {
+        lock.lock(); defer { lock.unlock() }
+        self.settings = settings
+        if !settings.running { routedViaP2P = false }
+    }
+
+    func suspend() {
+        lock.lock(); settings.running = false; routedViaP2P = false; lock.unlock()
+    }
+
+    func snapshot(generation: Int) -> Settings? {
+        lock.lock(); defer { lock.unlock() }
+        guard settings.running, settings.processorGeneration == generation else { return nil }
+        return settings
+    }
+
+    private func isCurrent(_ request: Settings) -> Bool {
+        lock.lock(); defer { lock.unlock() }
+        return matches(request)
+    }
+
+    private func matches(_ request: Settings) -> Bool {
+        settings.running && settings.processorGeneration == request.processorGeneration
+            && settings.lifecycleGeneration == request.lifecycleGeneration
+    }
+
+    func route(_ text: String, port: Int, settings request: Settings,
+               onSendStarted: ((TimeInterval, Int) -> Void)?,
+               completion: @escaping (Result<TimeInterval, Error>) -> Void,
+               noRoute: @escaping () -> Void) {
+        // 設定変更・停止と enqueue の順序を固定する。送信自体は非同期なので待たない。
+        lock.lock(); defer { lock.unlock() }
+        guard matches(request) else { return }
+        let valid: () -> Bool = { [weak self] in self?.isCurrent(request) == true }
+        let lanVerified = settings.lanConfigured && lanProbe.isAlive
+        if !settings.manual && settings.p2pEnabled && p2pSender.isUsable && !lanVerified {
+            if !routedViaP2P {
+                routedViaP2P = true
+                sender.discardPendingCoordinates()
+            }
+            p2pSender.send(text, to: port, onSendStarted: onSendStarted, completion: completion,
+                           fallback: { [weak self] in
+                               guard let self else { return }
+                               self.lock.lock(); defer { self.lock.unlock() }
+                               guard self.matches(request) else { return }
+                               if self.settings.lanConfigured {
+                                   self.sender.send(text, to: port, onSendStarted: onSendStarted,
+                                                    isCurrent: valid, completion: completion)
+                               } else { noRoute() }
+                           }, isCurrent: valid)
+        } else if settings.lanConfigured {
+            routedViaP2P = false
+            sender.send(text, to: port, onSendStarted: onSendStarted, isCurrent: valid, completion: completion)
+        } else {
+            routedViaP2P = false
+            noRoute()
+        }
     }
 }
