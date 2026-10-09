@@ -49,6 +49,8 @@
 - Android（86a350c, review-android.md）: IPv6 RA/DHCP の LinkProperties 通知のたびに PC 選択を消していた（会場 Wi-Fi で数分ごとに途切れうる）、前回 PC を名前だけで照合、カメラ起動の例外、エラー文、画面再生成で閾値が戻る。unit 47/47。
 - Mac launcher（b41ae3f）: built .app でも P2P 予備経路が起動するよう open --env で bridge の場所を渡す（実 Player では未確認）。
 - PlayMode 全件を小分け実行するツール（45e8ecf, unity_playmode_batches.py）: 6 run・211 pass・crash 0、既知の Calibration 2件のみ失敗。
+- Windows kit（d3d4b58, review-windows-kit.md）: Player の受信 Block 規則（表示名 ServTechSlash）を firewall スクリプトが拾えず無効化できなかった、標準入力リダイレクト時に再起動待ちの timeout が失敗して1回目のクラッシュで監視終了、STOP 残存時に無言で閉じる。Windows 実機では未実行（確認5項目はレビュー文書末尾）。
+- docs（41b79e9）: スタッフ手順・runbook・P2P/iOS/Android README・CLAUDE.md/AGENTS.md を現行コードに合わせた（LAN 優先、P2P は launcher が自動、Thread.Abort の古い記述を削除）。
 - 実機で確認すること: iPhone 開始直後の停止→開始でカメラが止まらない／Mac の IP 変更後に LAN 表示へ戻る、Android を IPv6 のある Wi-Fi で10分以上送信して途切れない／Unity 再起動後に同じ PC へ戻る、built .app の F8 で P2P bridge ON。
 
 ### 2026-10-07〜10 遅延・負荷の最適化（まとめ。詳細は各 docs/claude/*.md と commit message）
