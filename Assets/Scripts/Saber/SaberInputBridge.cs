@@ -73,6 +73,10 @@ public class SaberInputBridge : MonoBehaviour
     double cameraSourceStamp = double.NegativeInfinity;
     bool hasCameraSample;
     readonly PhoneSaberEndpointPredictor endpointPredictor = new PhoneSaberEndpointPredictor();
+    readonly PhoneSaberEndpointFilter endpointFilter = new PhoneSaberEndpointFilter();
+    InputPoint filterInput;
+    int filterStickIndex, filterInputRevision, filterSettingsRevision, filterMode;
+    string filterStation;
     InputPoint predictionInput;
     int predictionStickIndex;
     int predictionRevision;
@@ -145,12 +149,51 @@ public class SaberInputBridge : MonoBehaviour
         }
     }
 
-    void OnDisable() { HideBlade(); ResetPrediction(); }
+    void OnDisable() { HideBlade(); ResetEndpointProcessing(); }
 
     void ResetPrediction()
     {
         endpointPredictor.Reset();
         predictionInput = null;
+    }
+
+    void ResetEndpointProcessing()
+    {
+        endpointFilter.Reset();
+        filterInput = null;
+        ResetPrediction();
+    }
+
+    int ResolveFilterMode(InputPoint input)
+    {
+        string station = input.StationLabel;
+        int mode = filterMode;
+        // 通常フレームはキー文字列を作り直さず、保存・入力源変更時だけ設定を読み直す。
+        if (filterInput != input || filterStation != station || filterSettingsRevision != PhoneSaberFilterSettings.Revision)
+            mode = PhoneSaberFilterSettings.Load(station);
+        filterSettingsRevision = PhoneSaberFilterSettings.Revision;
+        // 台・入力源・位置補正・強さの切替時は古い履歴を混ぜない。
+        if (filterInput != input || filterStickIndex != stickIndex || filterStation != station ||
+            filterInputRevision != input.PredictionRevision || filterMode != mode)
+        {
+            endpointFilter.Reset();
+            // フィルタを使っていない間の予測履歴は、従来の予測側だけで管理する。
+            if (filterMode != PhoneSaberEndpointFilter.Off || mode != PhoneSaberEndpointFilter.Off)
+                ResetPrediction();
+            filterInput = input;
+            filterStickIndex = stickIndex;
+            filterStation = station;
+            filterInputRevision = input.PredictionRevision;
+            filterMode = mode;
+        }
+        return mode;
+    }
+
+    void FilterEndpoints(InputPoint input, int mode, ref Vector2 a, ref Vector2 b)
+    {
+        double stamp = stickIndex == 2 ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime;
+        // 無効値は既存経路へそのまま渡す。次の有効受信から再開する。
+        endpointFilter.Apply(stamp, a, b, mode, out a, out b);
     }
 
     void PredictEndpoints(InputPoint input, ref Vector2 a, ref Vector2 b)
@@ -312,10 +355,14 @@ public class SaberInputBridge : MonoBehaviour
             {
                 Vector2 endA = stickIndex == 2 ? ip.LocalStickRawA2 : ip.LocalStickRawA;
                 Vector2 endB = stickIndex == 2 ? ip.LocalStickRawB2 : ip.LocalStickRawB;
+                int mode = ResolveFilterMode(ip);
+                bool filtering = mode != PhoneSaberEndpointFilter.Off;
                 bool predicting = ip.PredictionHorizonMilliseconds > 0;
+                bool processing = filtering || predicting;
                 Vector3 observedA = new Vector3(endA.x, endA.y, fixedZ);
                 Vector3 observedB = new Vector3(endB.x, endB.y, fixedZ);
-                // OFF は元の端点・演算順のまま。単点・マウス経路には予測を掛けない。
+                // フィルタ→予測の順。両方 OFF は元の端点・演算順のまま。
+                if (filtering) FilterEndpoints(ip, mode, ref endA, ref endB);
                 if (predicting) PredictEndpoints(ip, ref endA, ref endB);
                 else ResetPrediction();
                 Vector3 a = new Vector3(endA.x, endA.y, fixedZ);
@@ -328,7 +375,7 @@ public class SaberInputBridge : MonoBehaviour
                     Vector3 shift = mapped - mid;
                     a += shift;
                     b += shift;
-                    if (predicting)
+                    if (processing)
                     {
                         Vector3 observedMid = (observedA + observedB) * 0.5f;
                         Vector3 observedMapped = RemapPoint(observedMid, sourceHalfExtents, viewCenter, viewHalfExtents, fixedZ);
@@ -337,9 +384,9 @@ public class SaberInputBridge : MonoBehaviour
                         observedB += observedShift;
                     }
                 }
-                if (predicting)
+                if (processing)
                 {
-                    // receive 時刻の Camera/IMU 照合・診断へ未来の端点を混ぜない。
+                    // receive 時刻の Camera/IMU 照合・診断へフィルタ・予測を混ぜない。
                     // OFF と同じ写像・クランプを通した観測値を記録する。
                     if (clampToBounds)
                         (observedA, observedB) = ClampBladeKeepingLength(observedA, observedB, EffectiveMinBounds, EffectiveMaxBounds);
@@ -350,7 +397,7 @@ public class SaberInputBridge : MonoBehaviour
             }
             else
             {
-                ResetPrediction();
+                ResetEndpointProcessing();
                 Vector2 mid = stickIndex == 2 ? ip.LocalPosition2 : ip.LocalPosition;
                 Vector3 p = new Vector3(mid.x, mid.y, fixedZ);
                 if (remapToCameraView && ResolveViewExtents())
@@ -368,7 +415,7 @@ public class SaberInputBridge : MonoBehaviour
             consumed = true;
         }
 
-        if (!consumed) ResetPrediction();
+        if (!consumed) ResetEndpointProcessing();
 
         if (!consumed && fallbackToMouse)
         {
