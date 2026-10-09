@@ -20,6 +20,7 @@ public class PhoneSaberOperatorControlsPlayTests
     public IEnumerator SetUp()
     {
         keyboard = InputSystem.AddDevice<Keyboard>();
+        keyboard.MakeCurrent(); // 運営表示は Keyboard.current を読む。
         overlay = Object.FindFirstObjectByType<PhoneSaberOperatorOverlay>();
         probe = Object.FindFirstObjectByType<PhoneSaberLatencyProbe>();
         Assert.IsNotNull(overlay);
