@@ -34,3 +34,17 @@
 Roslyn + Unity 同梱 reference + SaberGame assembly による Editor script 単独コンパイル PASS（exit0、warningなし）。初回 uncapped run は平均送信37.85Hz（profile run14.18Hz）と60Hz条件未達のため不採用。無制限 run の recorder は11400 samples / 10秒（約1140fps）で、実運用の frame pacing を表さない。さらに binary log のみでは ProfilerDriver の frame history が空だったため、保存後の LoadProfile を追加した。これらの初回値を60Hzの性能結果としては使わない。
 
 120fps cap / Ultra / Metal の再計測結果、EditMode、公式 verify を下に追記する。
+
+## 実測（2026-10-10、Claude、main 27fbcd5 相当、batchmode コピー、Game / ElDorado normal、合成 60Hz 赤青）
+
+| 実行 | GC/フレーム 中央値 / p95 | main thread 中央値 / p95 |
+|---|---:|---:|
+| 通常 | 498,456 B / 505,348 B | 8.301 ms / 8.402 ms |
+| `-phonesaberFrameCostProfile`（marker 別） | 86,272 B / 93,164 B | 8.307 ms / 8.709 ms |
+
+marker 別の割り当て（profile run の合計）:
+- Editor 拡張 `LevelPlayInstallMenuItem.UpdateMenuItem` 51.4 MB、`InAppPurchasingInstallMenuItem.UpdateMenuItem` 49.8 MB、Package Manager 0.66 MB → **Editor 内だけ**で、Player には存在しない。
+- ゲーム `GamePlayManager.Update` 203,692 B / 5,186 回 ≒ **39 B/フレーム**。
+- PhoneSaber UDP 受信 159,600 B / 3,600 packet ≒ **44 B/packet**（標準 IPEndPoint の ReceiveFrom、想定どおり）。
+
+結論: 「1フレーム約500KB」は Editor の Play 計測に含まれる Editor 自身の割り当て。ゲームと PhoneSaber の受信は Player でほぼ割り当てなし。対応不要。
