@@ -84,6 +84,7 @@ Mask close(const Mask& input, int w, int h, int radius) {
 }
 struct Body {
     Points points;
+    std::size_t point_count = 0;
     double continuity = 1;
     int gap = 0;
     double retained = 1;
@@ -98,11 +99,11 @@ static int zero_run(const std::vector<int>& counts, int start, int end) {
     }
     return largest;
 }
-static Body dominant_body(const Points& points, double mx, double my, double ax, double ay) {
-    Body body; body.points = points;
+static Body dominant_body(const Points& points, const std::vector<double>& projections,
+                          double mx, double my, double ax, double ay) {
+    // 全点を保持する経路では点数だけ使う。PCA fallback が読む選択点だけを所有する。
+    Body body; body.point_count = points.size();
     if (points.size() < 6) return body;
-    std::vector<double> projections;
-    for (auto p : points) projections.push_back((double(p.x)-mx)*ax+(double(p.y)-my)*ay);
     double lo = *std::min_element(projections.begin(),projections.end());
     double hi = *std::max_element(projections.begin(),projections.end());
     int bins = std::max(1,int(std::ceil(hi-lo))+1);
@@ -146,19 +147,23 @@ static Body dominant_body(const Points& points, double mx, double my, double ax,
     for (auto group : groups) if (group_score(best) < group_score(group)) best = group;
     int allowance = std::min(3,std::max(1,rounded(double(peak)*0.22)));
     int body_start = std::max(0,best.first-allowance), body_end = std::min(bins-1,best.second+allowance);
-    Points selected;
-    for (std::size_t i = 0; i < points.size(); ++i)
-        if (point_bins[i] >= body_start && point_bins[i] <= body_end) selected.push_back(points[i]);
-    if (selected.size() < 4) { body.continuity = 0; body.gap = bins; return body; }
+    int selected_count = std::accumulate(counts.begin()+body_start,counts.begin()+body_end+1,0);
+    if (selected_count < 4) { body.continuity = 0; body.gap = bins; return body; }
     int dense_count = 0;
     for (int i = body_start; i <= body_end; ++i) if (counts[i] >= dense_threshold) ++dense_count;
-    body.points = std::move(selected);
+    // 全点が残る場合 retained=1 なので PCA fallback は使われない。
+    if (std::size_t(selected_count) != points.size()) {
+        body.points.reserve(selected_count);
+        for (std::size_t i = 0; i < points.size(); ++i)
+            if (point_bins[i] >= body_start && point_bins[i] <= body_end) body.points.push_back(points[i]);
+    }
+    body.point_count = std::size_t(selected_count);
     body.continuity = double(dense_count)/double(body_end-body_start+1);
     body.gap = zero_run(counts,body_start,body_end+1);
-    body.retained = double(body.points.size())/double(points.size());
+    body.retained = double(body.point_count)/double(points.size());
     body.endpoints = endpoints(body_start,body_end);
     body.length = double(body_end-body_start+1);
-    body.density = double(body.points.size())/double(body_end-body_start+1);
+    body.density = double(body.point_count)/double(body_end-body_start+1);
     return body;
 }
 std::optional<Scored> score_component(const Points& points, int w, int h,
@@ -182,9 +187,13 @@ std::optional<Scored> score_component(const Points& points, int w, int h,
     double ax = std::cos(angle), ay = std::sin(angle), nx = -ay, ny = ax;
     double min_major = std::numeric_limits<double>::max(), max_major = -min_major;
     double min_minor = min_major, max_minor = -min_major;
+    // 同じ式の binary64 投影を再利用する。加算順・丸め・点の順序は変えない。
+    std::vector<double> projections;
+    projections.reserve(points.size());
     for (auto p : points) {
         double dx = double(p.x)-mx, dy = double(p.y)-my;
         double major = dx*ax+dy*ay, minor = dx*nx+dy*ny;
+        projections.push_back(major);
         min_major = std::min(min_major,major); max_major = std::max(max_major,major);
         min_minor = std::min(min_minor,minor); max_minor = std::max(max_minor,minor);
     }
@@ -194,27 +203,31 @@ std::optional<Scored> score_component(const Points& points, int w, int h,
     double extent = double(points.size())/std::max(major_length*minor_length,1.0);
     if (major_length < std::max(4.0,double(std::min(w,h))*0.025)
         || aspect < (e.color == SaberColor::red ? 1.0 : 1.5) || extent < 0.10) return std::nullopt;
-    Body body = dominant_body(points,mx,my,ax,ay);
+    Body body = dominant_body(points,projections,mx,my,ax,ay);
     int bins = std::max(4,std::min(12,int(std::ceil(major_length))));
-    std::vector<double> bin_min(bins,std::numeric_limits<double>::max()), bin_max(bins,-std::numeric_limits<double>::max());
-    auto axial_bin = [&](PixelPoint p) {
-        double dx = double(p.x)-mx, dy = double(p.y)-my;
-        double major = dx*ax+dy*ay;
+    // bins は従来どおり 4..12。固定サイズの作業域で小さい heap 確保を避ける。
+    std::array<double,12> bin_min, bin_max;
+    bin_min.fill(std::numeric_limits<double>::max()); bin_max.fill(-std::numeric_limits<double>::max());
+    auto axial_bin = [&](double major) {
         double normalized = clamp01((major-min_major)/std::max(max_major-min_major,1.0));
         return std::min(bins-1,int(normalized*double(bins)));
     };
-    for (auto p : points) {
+    std::vector<uint8_t> axial_bins(points.size());
+    for (std::size_t i = 0; i < points.size(); ++i) {
+        auto p = points[i];
         double dx = double(p.x)-mx, dy = double(p.y)-my;
         double minor = dx*nx+dy*ny;
-        int bin = axial_bin(p);
+        int bin = axial_bin(projections[i]);
+        axial_bins[i] = uint8_t(bin);
         bin_min[bin] = std::min(bin_min[bin],minor); bin_max[bin] = std::max(bin_max[bin],minor);
     }
-    std::vector<double> widths;
-    for (int i = 0; i < bins; ++i) if (bin_max[i] >= bin_min[i]) widths.push_back(bin_max[i]-bin_min[i]+1.0);
-    double mean_width = std::accumulate(widths.begin(),widths.end(),0.0)/double(std::max<std::size_t>(widths.size(),1));
+    std::array<double,12> widths;
+    int width_count = 0;
+    for (int i = 0; i < bins; ++i) if (bin_max[i] >= bin_min[i]) widths[width_count++] = bin_max[i]-bin_min[i]+1.0;
+    double mean_width = std::accumulate(widths.begin(),widths.begin()+width_count,0.0)/double(std::max(width_count,1));
     double variance_width = 0;
-    for (double width : widths) variance_width += std::pow(width-mean_width,2);
-    variance_width /= double(std::max<std::size_t>(widths.size(),1));
+    for (int i = 0; i < width_count; ++i) variance_width += std::pow(widths[i]-mean_width,2);
+    variance_width /= double(std::max(width_count,1));
     double width_variation = std::sqrt(variance_width)/std::max(mean_width,1.0);
     int raw_count = 0, peak = 0, high_count = 0, outside_count = 0, core_count = 0;
     double value_sum = 0, value_square_sum = 0, purity_sum = 0, outside_sum = 0, radiance_sum = 0;
@@ -234,24 +247,33 @@ std::optional<Scored> score_component(const Points& points, int w, int h,
         auto& seen = clipped_seen[std::size_t(y-clipped_y)*clipped_width+x-clipped_x];
         if (!seen) { seen = 1; ++clipped_count; }
     };
-    std::vector<bool> high_bins(bins), core_bins(bins);
+    std::array<bool,12> high_bins{}, core_bins{};
     const std::array<PixelPoint,4> neighbors{{{-2,0},{2,0},{0,-2},{0,2}}};
-    for (auto p : points) {
+    // 元の y→x 菱形走査と同じ順。内部画素では境界判定をまとめて省く。
+    const std::array<PixelPoint,13> clipped_offsets{{{0,-2},{-1,-1},{0,-1},{1,-1},
+        {-2,0},{-1,0},{0,0},{1,0},{2,0},{-1,1},{0,1},{1,1},{0,2}}};
+    for (std::size_t i = 0; i < points.size(); ++i) {
+        auto p = points[i];
         int index = p.y*w+p.x;
         radiance_sum += std::pow(double(e.radiance[index])/255.0,2);
         int value = e.value[index], chroma = e.chroma[index];
-        if (e.core_mask[index]) { ++core_count; core_bins[axial_bin(p)] = true; }
+        if (e.core_mask[index]) { ++core_count; core_bins[axial_bins[i]] = true; }
         if (e.color_mask[index]) {
             ++raw_count; value_sum += double(value); value_square_sum += double(value*value);
             purity_sum += double(chroma)/double(std::max(value,1)); peak = std::max(peak,value);
-            if (value >= 220) { ++high_count; high_bins[axial_bin(p)] = true; }
-        } else if (value >= 245 && chroma <= 38) { insert_clipped(p.x,p.y); high_bins[axial_bin(p)] = true; }
-        for (int dy = -2; dy <= 2; ++dy) for (int dx = -2; dx <= 2; ++dx) {
-            if (std::abs(dx)+std::abs(dy) > 2) continue;
-            int px = p.x+dx, py = p.y+dy;
-            if (px < 0 || px >= w || py < 0 || py >= h) continue;
+            if (value >= 220) { ++high_count; high_bins[axial_bins[i]] = true; }
+        } else if (value >= 245 && chroma <= 38) { insert_clipped(p.x,p.y); high_bins[axial_bins[i]] = true; }
+        auto visit_clipped = [&](int px, int py) {
             int neighbor = py*w+px;
             if (!e.color_mask[neighbor] && e.value[neighbor] >= 245 && e.chroma[neighbor] <= 45) insert_clipped(px,py);
+        };
+        if (p.x >= 2 && p.x < w-2 && p.y >= 2 && p.y < h-2) {
+            for (auto offset : clipped_offsets) visit_clipped(p.x+offset.x,p.y+offset.y);
+        } else {
+            for (auto offset : clipped_offsets) {
+                int px = p.x+offset.x, py = p.y+offset.y;
+                if (px >= 0 && px < w && py >= 0 && py < h) visit_clipped(px,py);
+            }
         }
         for (auto offset : neighbors) {
             int px = p.x+offset.x, py = p.y+offset.y;
@@ -270,9 +292,9 @@ std::optional<Scored> score_component(const Points& points, int w, int h,
     double texture = clamp01((variation-0.22)/0.10)*clamp01((0.65-variation)/0.20);
     double outside_mean = outside_count > 0 ? outside_sum/double(outside_count) : 0;
     double contrast = clamp01((mean-outside_mean)/100.0);
-    double high_coverage = double(std::count(high_bins.begin(),high_bins.end(),true))/double(bins);
+    double high_coverage = double(std::count(high_bins.begin(),high_bins.begin()+bins,true))/double(bins);
     double core_support = double(core_count)/double(std::max<std::size_t>(points.size(),1));
-    double core_coverage = double(std::count(core_bins.begin(),core_bins.end(),true))/double(bins);
+    double core_coverage = double(std::count(core_bins.begin(),core_bins.begin()+bins,true))/double(bins);
     double clipped_ratio = std::min(double(clipped_count)/double(raw_count+int(clipped_count)),0.25)/0.25;
     double emitter_score = clamp01((double(peak)-200.0)/55.0)*0.32
         + clamp01((mean-160.0)/95.0)*0.23 + high*0.28 + purity*0.12 + clipped_ratio*0.05;
@@ -283,13 +305,13 @@ std::optional<Scored> score_component(const Points& points, int w, int h,
                   {rounded(mx+ax*max_major),rounded(my+ay*max_major)}};
     bool established = source != "core-line" && body.continuity >= 0.90;
     bool dense_line = source == "core-line" && body.gap <= 2 && body.density >= 4.0;
-    bool trimmed_line = source == "core-line" && body.retained <= 0.30 && body.gap <= 2 && int(body.points.size()) >= minimum;
+    bool trimmed_line = source == "core-line" && body.retained <= 0.30 && body.gap <= 2 && int(body.point_count) >= minimum;
     bool blue_body = e.color == SaberColor::blue && source == "core-line" && body.retained < 0.65
-        && body.continuity >= 0.80 && body.gap <= 2 && int(body.points.size()) >= minimum
+        && body.continuity >= 0.80 && body.gap <= 2 && int(body.point_count) >= minimum
         && purity >= 0.40 && core_support >= 0.35;
     Endpoints final = raw;
     bool fallback = true;
-    if (int(body.points.size()) >= minimum && body.retained < 0.85 && (established || dense_line || trimmed_line || blue_body)) {
+    if (int(body.point_count) >= minimum && body.retained < 0.85 && (established || dense_line || trimmed_line || blue_body)) {
         if (auto endpoints = principal_axis_endpoints(body.points)) { final = *endpoints; fallback = false; }
     }
     double diagonal = std::hypot(double(w),double(h));
@@ -327,17 +349,18 @@ std::vector<Scored> components(const Mask& mask, int w, int h, const Evidence& e
                                int* pixel_count, int minimum_override) {
     Mask remaining = mask;
     std::vector<Scored> candidates;
-    std::vector<int> queue;
+    // 発見順と FIFO の取り出し順は同じ。点列そのものをキューにして除算・複製を省く。
+    Points points;
     for (int seed = 0; seed < int(remaining.size()); ++seed) if (remaining[seed]) {
-        remaining[seed] = 0; queue.clear(); queue.push_back(seed);
-        std::size_t head = 0; Points points;
-        while (head < queue.size()) {
-            int value = queue[head++], x = value%w, y = value/w;
-            points.push_back({x,y});
+        remaining[seed] = 0; points.clear(); points.push_back({seed%w,seed/w});
+        std::size_t head = 0;
+        while (head < points.size()) {
+            auto point = points[head++];
+            int x = point.x, y = point.y;
             for (int ny = std::max(0,y-1); ny <= std::min(h-1,y+1); ++ny)
                 for (int nx = std::max(0,x-1); nx <= std::min(w-1,x+1); ++nx) {
                     int neighbor = ny*w+nx;
-                    if (remaining[neighbor]) { remaining[neighbor] = 0; queue.push_back(neighbor); }
+                    if (remaining[neighbor]) { remaining[neighbor] = 0; points.push_back({nx,ny}); }
                 }
         }
         if (pixel_count) *pixel_count += int(points.size());

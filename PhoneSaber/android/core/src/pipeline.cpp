@@ -88,7 +88,7 @@ static void prefer_trusted(std::vector<Scored>& candidates, int dimension) {
         if (trusted_blue(candidates[i].candidate,dimension)
             && (!trusted || candidates[*trusted].candidate.score < candidates[i].candidate.score)) trusted = i;
     if (!trusted) return;
-    Candidate t = candidates[*trusted].candidate;
+    const Candidate& t = candidates[*trusted].candidate;
     for (std::size_t i = 0; i < candidates.size(); ++i) {
         auto& c = candidates[i].candidate;
         if (i == *trusted || !c.eligible || c.core_support >= 0.50 || c.high_value_ratio >= 0.80 || c.score < t.score) continue;
@@ -108,22 +108,25 @@ static std::vector<Points> core_lines(const Mask& core, const Mask& color, int w
     int diagonal = int(std::ceil(std::hypot(double(w),double(h))));
     int minimum_votes = std::max(4,int(double(std::min(w,h))*0.025));
     std::vector<Peak> peaks;
+    std::vector<int> votes(diagonal*2+1);
     constexpr double pi = 0x1.921fb54442d18p+1;
     for (int degrees = 0; degrees < 180; degrees += 10) {
         double radians = double(degrees)*pi/180.0;
         double ax = std::cos(radians), ay = std::sin(radians), nx = -ay, ny = ax;
-        std::vector<int> votes(diagonal*2+1);
+        std::fill(votes.begin(),votes.end(),0);
         for (auto p : points) ++votes[rounded(double(p.x)*nx+double(p.y)*ny)+diagonal];
         for (int i = 0; i < int(votes.size()); ++i) if (votes[i] >= minimum_votes) peaks.push_back({ax,ay,i-diagonal,votes[i]});
     }
     std::stable_sort(peaks.begin(),peaks.end(),[](const Peak& a,const Peak& b){return a.votes>b.votes;});
     std::vector<Points> proposals;
     std::vector<Peak> accepted;
+    Points neighborhood, inliers;
+    neighborhood.reserve(points.size()); inliers.reserve(points.size());
     int examined = 0;
     for (auto initial : peaks) {
         if (proposals.size() >= 18 || examined >= 180) break;
         ++examined;
-        Points neighborhood;
+        neighborhood.clear();
         for (auto p : points) if (std::abs(double(p.x)*-initial.ay+double(p.y)*initial.ax-double(initial.rho)) <= 6) neighborhood.push_back(p);
         if (int(neighborhood.size()) < minimum_votes) continue;
         double mx = 0, my = 0;
@@ -139,7 +142,7 @@ static std::vector<Points> core_lines(const Mask& core, const Mask& color, int w
         Peak peak{ax,ay,rounded(-ay*mx+ax*my),initial.votes};
         if (std::any_of(accepted.begin(),accepted.end(),[&](const Peak& p){return std::abs(p.rho-peak.rho)<=3 && std::abs(p.ax*peak.ay-p.ay*peak.ax)<0.18;})) continue;
         double nx = -peak.ay, ny = peak.ax;
-        Points inliers;
+        inliers.clear();
         for (auto p : points) if (std::abs(double(p.x)*nx+double(p.y)*ny-double(peak.rho)) <= 2.0) inliers.push_back(p);
         if (int(inliers.size()) < minimum_votes) continue;
         double min_t = std::numeric_limits<double>::max(), max_t = -min_t;
@@ -165,11 +168,13 @@ static std::vector<Points> core_lines(const Mask& core, const Mask& color, int w
         min_y = std::max(0,min_y-4); max_y = std::min(h-1,max_y+4);
         Points proposal;
         for (int y = min_y; y <= max_y; ++y) for (int x = min_x; x <= max_x; ++x) {
+            // 非支持画素は候補に入らないので、投影の前に整数 mask で除外する。
+            int index = y*w+x;
+            if (!core[index] && !color[index]) continue;
             double t = double(x)*peak.ax+double(y)*peak.ay;
             if (t < min_t-1 || t > max_t+1) continue;
             double distance = std::abs(double(x)*nx+double(y)*ny-double(peak.rho));
-            int index = y*w+x;
-            if (distance <= 3.0 && (core[index] || color[index])) proposal.push_back({x,y});
+            if (distance <= 3.0) proposal.push_back({x,y});
         }
         double t = min_t;
         while (t <= max_t) {
@@ -309,7 +314,7 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
         int standard = std::max(4,int(double(w*h)*0.0005)), sparse = std::max(6,standard/3);
         int mask_count = int(std::count(raw.begin(),raw.end(),1));
         if (mask_count >= sparse && int64_t(morphology_count)*5 < int64_t(mask_count)*3) {
-            for (auto c : components(raw,w,h,evidence,nullptr,sparse)) {
+            for (auto& c : components(raw,w,h,evidence,nullptr,sparse)) {
                 c.candidate.source = "color-sparse-raw";
                 auto existing = std::find_if(candidates.begin(),candidates.end(),[&](const Scored& e){return axis_distance(e.candidate,c.candidate) <= 3.0;});
                 if (existing == candidates.end()) candidates.push_back(std::move(c));
@@ -319,13 +324,17 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
         if (any(emitter)) add_unique(components(close(emitter,w,h,close_radius),w,h,evidence),"color-emitter");
         if (any(core)) {
             add_unique(components(close(halo,w,h,close_radius),w,h,evidence),"core-halo");
-            for (auto c : components(close(core,w,h,4),w,h,evidence)) {
+            for (auto& c : components(close(core,w,h,4),w,h,evidence)) {
                 double length = point_distance(c.candidate.comparison_endpoints.second,c.candidate.comparison_endpoints.first);
                 if (length < std::max(12.0,double(std::min(w,h))*0.10)) continue;
                 c.candidate.source = "connected-core"; candidates.push_back(std::move(c));
             }
         }
-        for (const auto& proposal : core_lines(core,raw,w,h)) {
+        auto proposals = core_lines(core,raw,w,h);
+        // 採点だけが読む bitmap。候補間で使用した位置だけ消し、全画像の再確保を避ける。
+        Mask proposal_mask;
+        if (!proposals.empty()) proposal_mask.resize(w*h);
+        for (const auto& proposal : proposals) {
             // Swift Set is only used for membership. Its scoring order is sorted row-major.
             std::vector<int> indices;
             indices.reserve(proposal.size());
@@ -334,9 +343,9 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
             indices.erase(std::unique(indices.begin(),indices.end()),indices.end());
             Points unique;
             unique.reserve(indices.size());
-            Mask proposal_mask(w*h);
             for (int index : indices) { unique.push_back({index%w,index/w}); proposal_mask[index] = 1; }
             auto scored = score_component(unique,w,h,&proposal_mask,evidence,"core-line");
+            for (int index : indices) proposal_mask[index] = 0;
             if (!scored) continue;
             auto& c = scored->candidate;
             if (std::any_of(candidates.begin(),candidates.end(),[&](const Scored& e){return axis_distance(e.candidate,c)<=10.0 || subsegment(c,e.candidate);})) continue;
@@ -383,7 +392,7 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
                 }
             }
             for (std::size_t i = 0; i < candidates.size(); ++i) {
-                Candidate line = candidates[i].candidate;
+                const Candidate& line = candidates[i].candidate;
                 if (!line.eligible || line.source != "core-line" || !line.used_point_led_fallback
                     || line.raw_pca_span < line.robust_body_length*4.0 || line.retained_body_ratio >= 0.50 || line.core_support >= 0.30) continue;
                 bool local_body = std::any_of(candidates.begin(),candidates.end(),[&](const Scored& scored){
@@ -416,12 +425,15 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
                 }
             }
         }
-        auto complete = candidates;
+        // eligibility の snapshot は維持し、ここでは読まない支持点列を複製しない。
+        std::vector<Candidate> complete;
+        complete.reserve(candidates.size());
+        for (const auto& scored : candidates) complete.push_back(scored.candidate);
         for (auto& scored : candidates) {
             auto& c = scored.candidate;
             if (!c.eligible || c.source == "connected-core") continue;
             if (color == SaberColor::blue && trusted_blue(c,std::min(w,h))) continue;
-            if (std::any_of(complete.begin(),complete.end(),[&](const Scored& e){return e.candidate.eligible && !line_source(e.candidate) && subsegment(c,e.candidate);})) {
+            if (std::any_of(complete.begin(),complete.end(),[&](const Candidate& e){return e.eligible && !line_source(e) && subsegment(c,e);})) {
                 c.eligible = false; c.source += "-subsegment";
                 c.score_breakdown.proposal_penalty = -c.score*0.5; c.score = c.score_breakdown.total();
             }
