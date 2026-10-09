@@ -37,4 +37,5 @@ int main(int argc, char** argv) {
             std::cerr << argv[file] << ": results=" << result_count << '\n';
         }
     } catch (const std::exception& error) { std::cerr << error.what() << '\n'; return 2; }
+    return 0;
 }

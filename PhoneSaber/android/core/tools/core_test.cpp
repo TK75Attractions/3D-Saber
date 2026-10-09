@@ -1,6 +1,7 @@
 #include "../src/internal.hpp"
 #include "../../app/src/main/cpp/rgba_rotation.hpp"
 #include <cassert>
+#include <cstring>
 #include <iostream>
 using namespace phonesaber;
 static FrameAnalysis detection(Endpoints e) { FrameAnalysis a; a.selected[0] = e; return a; }
@@ -88,6 +89,68 @@ static void morphology_tests() {
         }
     }
 }
+// 独立した整数 FIFO 参照で、BFS 点順・同点順・不採用成分を含む pixel_count を確認する。
+static void component_order_tests() {
+    using namespace detail;
+    uint32_t random = 0x51ab3u;
+    for (int w : {9,17,31}) {
+        int h = w+2;
+        Mask value(w*h), chroma(w*h), radiance(w*h), core(w*h);
+        for (int i = 0; i < w*h; ++i) {
+            value[i] = uint8_t(215+i%41); chroma[i] = uint8_t(80+i%110);
+            radiance[i] = uint8_t(i%256); core[i] = i%3 == 0;
+        }
+        for (int pattern = 0; pattern < 640; ++pattern) {
+            Mask mask(w*h);
+            for (int i = 0; i < w*h; ++i) {
+                random = random*1664525u+1013904223u;
+                if (pattern >= 512) mask[i] = (random >> 24) < 24;
+            }
+            if (pattern < 512) {
+                int x0 = pattern%3 == 0 ? 0 : w-3, y0 = pattern%2 == 0 ? 0 : h-3;
+                for (int y = 0; y < 3; ++y) for (int x = 0; x < 3; ++x)
+                    mask[(y0+y)*w+x0+x] = (pattern >> (y*3+x))&1;
+            } else {
+                for (int y = 0; y < h; ++y) mask[y*w+(pattern%2 ? w/2 : y%w)] = 1;
+            }
+            for (auto color : {SaberColor::red,SaberColor::blue}) {
+                Evidence evidence{color,radiance,value,chroma,mask,core};
+                Mask remaining = mask;
+                std::vector<Scored> expected;
+                int expected_count = 0;
+                for (int seed = 0; seed < w*h; ++seed) if (remaining[seed]) {
+                    remaining[seed] = 0;
+                    std::vector<int> queue{seed};
+                    Points points;
+                    for (std::size_t head = 0; head < queue.size(); ++head) {
+                        int index = queue[head], x = index%w, y = index/w;
+                        points.push_back({x,y});
+                        for (int yy = std::max(0,y-1); yy <= std::min(h-1,y+1); ++yy)
+                            for (int xx = std::max(0,x-1); xx <= std::min(w-1,x+1); ++xx) {
+                                int next = yy*w+xx;
+                                if (remaining[next]) { remaining[next] = 0; queue.push_back(next); }
+                            }
+                    }
+                    expected_count += int(points.size());
+                    if (auto scored = score_component(points,w,h,&mask,evidence,"color-mask",4))
+                        expected.push_back(std::move(*scored));
+                }
+                std::stable_sort(expected.begin(),expected.end(),[](const Scored& a,const Scored& b){return a.candidate.score>b.candidate.score;});
+                int count = 0;
+                auto actual = components(mask,w,h,evidence,&count,4);
+                assert(count == expected_count && actual.size() == expected.size());
+                for (std::size_t i = 0; i < actual.size(); ++i) {
+                    assert(std::memcmp(&actual[i].candidate.score,&expected[i].candidate.score,sizeof(double)) == 0);
+                    assert(actual[i].support_points.size() == expected[i].support_points.size());
+                    for (std::size_t j = 0; j < actual[i].support_points.size(); ++j) {
+                        assert(actual[i].support_points[j].x == expected[i].support_points[j].x);
+                        assert(actual[i].support_points[j].y == expected[i].support_points[j].y);
+                    }
+                }
+            }
+        }
+    }
+}
 // 未整列/padding/最終行省略の回転を、独立した逆写像と比較する。ASan/UBSanでも実行する。
 static void rotation_tests() {
     android::RgbaRotation rotation;
@@ -131,6 +194,7 @@ static void rotation_tests() {
 int main() {
     rotation_tests();
     morphology_tests();
+    component_order_tests();
     blue_support_tests();
     FrameProcessor p;
     auto a = p.process(detection({{10,20},{30,40}}),100,100,1.0);
