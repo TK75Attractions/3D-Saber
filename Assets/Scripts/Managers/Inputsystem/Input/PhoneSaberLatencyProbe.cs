@@ -13,6 +13,7 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
 {
     readonly PhoneSaberLatencyLoop loop = new PhoneSaberLatencyLoop();
     bool active;
+    PhoneSaberGuiRenderer guiRenderer;
     int loggedSamples;
     GUIStyle textStyle;
     // 20回ごとにイベントログへ自動記録する（手入力なしで後から比較できるように）。
@@ -33,16 +34,37 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
             probe = new GameObject("PhoneSaber Latency Probe").AddComponent<PhoneSaberLatencyProbe>();
         DontDestroyOnLoad(probe.gameObject);
         probe.active = false;
+        probe.EnsureGuiRenderer();
+        probe.guiRenderer.enabled = false;
+    }
+
+    void Awake() => EnsureGuiRenderer();
+
+    void EnsureGuiRenderer()
+    {
+        if (guiRenderer != null) return;
+        guiRenderer = gameObject.AddComponent<PhoneSaberLatencyGuiRenderer>();
+        // この表示は固定 Rect のみで、GUILayout の準備も不要。
+        guiRenderer.Initialize(DrawGUI, false);
     }
 
     void Update()
     {
         var keyboard = Keyboard.current;
+        bool toggle = keyboard != null && keyboard.f9Key.wasPressedThisFrame;
+        // 非表示フレームでは Stopwatch の読み出し・秒への変換もしない。
+        if (!active && !toggle) return;
         double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
-        if (keyboard != null && keyboard.f9Key.wasPressedThisFrame)
+        if (toggle)
         {
             if (active) Finish();
-            else { active = true; loggedSamples = 0; loop.Reset(now); blockIndex = 0; StartBlock(now); }
+            else
+            {
+                active = true;
+                EnsureGuiRenderer();
+                guiRenderer.enabled = true;
+                loggedSamples = 0; loop.Reset(now); blockIndex = 0; StartBlock(now);
+            }
         }
         if (!active) return;
         var input = InputPoint.Instance;
@@ -63,7 +85,8 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         blockSamples.Clear();
         blockStartTotal = loop.TotalSamples;
         blockStartedAt = now;
-        blockStartPackets = InputPoint.Instance != null ? InputPoint.Instance.ReceivedPacketCount : 0;
+        var input = InputPoint.Instance;
+        blockStartPackets = input != null ? input.ReceivedPacketCount : 0;
     }
 
     void RecordBlock(double now)
@@ -90,11 +113,16 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         => (input.LocalStickA.x + input.LocalStickB.x) * 0.5f;
 
     // Play 停止・シーン破棄でも途中結果を残す。
-    void OnDisable() { if (active) Finish(); }
+    void OnDisable()
+    {
+        if (guiRenderer != null) guiRenderer.enabled = false;
+        if (active) Finish();
+    }
 
     void Finish()
     {
         active = false;
+        if (guiRenderer != null) guiRenderer.enabled = false;
         Record("latency-loop-end");
         QualitySettings.maxQueuedFrames = 1; // 通常運転の値へ戻す（PhoneSaberOperatorOverlay と同じ）。
     }
@@ -120,7 +148,7 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         PhoneSaberEventLog.Current?.Flush();
     }
 
-    void OnGUI()
+    void DrawGUI()
     {
         if (!active) return;
         if (textStyle == null)

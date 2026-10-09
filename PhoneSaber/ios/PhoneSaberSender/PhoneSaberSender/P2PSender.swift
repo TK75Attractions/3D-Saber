@@ -718,21 +718,33 @@ final class P2PSender {
         request.onSendStarted?(max(0, HostMonotonicClock.now() - request.enqueuedAt), supersededCount)
         let generation = connectionGeneration
         scheduleSendWatchdog(color: color, sendID: sendID, generation: generation)
-        let finished: (Error?) -> Void = { [weak self] error in
-            guard let self else { return }
-            self.queue.async {
-                guard self.connectionGeneration == generation, self.inFlight[color] == sendID else { return }
-                self.inFlight[color] = nil
-                self.sendWatchdogs.removeValue(forKey: color)?.cancel()
-                request.completion(error.map { .failure($0) } ?? .success(ProcessInfo.processInfo.systemUptime))
-                if let next = self.pending.removeValue(forKey: color) { self.transmit(next, color: color) }
-            }
-        }
         if let coordinateSendHook {
-            coordinateSendHook(message.encoded(), finished)
+            // テスト hook は任意のキューから完了できるため、ここだけ戻す。
+            coordinateSendHook(message.encoded()) { [weak self] error in
+                guard let self else { return }
+                self.queue.async {
+                    self.finish(request, color: color, sendID: sendID, generation: generation, error: error)
+                }
+            }
         } else {
-            connection.send(content: message.encoded(), completion: .contentProcessed { finished($0) })
+            // Network completion は接続を開始したキューへ直接届く。
+            connection.send(content: message.encoded(), completion: .contentProcessed { [weak self] error in
+                self?.finish(request, color: color, sendID: sendID, generation: generation, error: error)
+            })
         }
+    }
+
+    private func finish(_ request: PendingSend, color: P2PColor, sendID: UInt64,
+                        generation: Int, error: Error?) {
+#if DEBUG
+        // 本番では Network の契約（start(queue:) のキューで完了通知）に任せ、当日に落とさない。
+        dispatchPrecondition(condition: .onQueue(queue))
+#endif
+        guard connectionGeneration == generation, inFlight[color] == sendID else { return }
+        inFlight[color] = nil
+        sendWatchdogs.removeValue(forKey: color)?.cancel()
+        request.completion(error.map { .failure($0) } ?? .success(ProcessInfo.processInfo.systemUptime))
+        if let next = pending.removeValue(forKey: color) { transmit(next, color: color) }
     }
 
     /// A send that never completes would hold its color forever while pings
