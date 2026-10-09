@@ -562,10 +562,15 @@ final class SaberCandidateStageProfile {
     var endpointAndBoundsMs = 0.0
 }
 
+// 元の dy→dx の菱形走査と同じ順。内部画素は境界判定を一度にまとめる。
+private let clippedDiamondOffsets = [(0, -2), (-1, -1), (0, -1), (1, -1),
+    (-2, 0), (-1, 0), (0, 0), (1, 0), (2, 0), (-1, 1), (0, 1), (1, 1), (0, 2)]
+
 private func clamp01(_ value: Double) -> Double { min(max(value, 0), 1) }
 
 private struct DominantLongitudinalBody {
     let points: [PixelPoint]
+    let pointCount: Int
     let continuity: Double
     let largestGap: Int
     let retainedRatio: Double
@@ -580,28 +585,26 @@ private struct DominantLongitudinalBody {
 /// Small gaps remain inside the selected interval and are therefore preserved.
 private func dominantLongitudinalBody(
     in points: [PixelPoint],
+    projections: [Double],
     meanX: Double,
     meanY: Double,
     axis: (Double, Double)
 ) -> DominantLongitudinalBody {
     guard points.count >= 6 else {
-        return DominantLongitudinalBody(points: points, continuity: 1,
+        return DominantLongitudinalBody(points: [], pointCount: points.count, continuity: 1,
                                         largestGap: 0, retainedRatio: 1,
                                         intervalEndpoints: nil,
                                         intervalLength: 0, density: 0)
     }
-    let projections = points.map {
-        (Double($0.x) - meanX) * axis.0 + (Double($0.y) - meanY) * axis.1
-    }
     guard let minProjection = projections.min(), let maxProjection = projections.max() else {
-        return DominantLongitudinalBody(points: points, continuity: 1,
+        return DominantLongitudinalBody(points: [], pointCount: points.count, continuity: 1,
                                         largestGap: 0, retainedRatio: 1,
                                         intervalEndpoints: nil,
                                         intervalLength: 0, density: 0)
     }
     let binCount = max(1, Int((maxProjection - minProjection).rounded(.up)) + 1)
     guard binCount >= 8 else {
-        return DominantLongitudinalBody(points: points, continuity: 1,
+        return DominantLongitudinalBody(points: [], pointCount: points.count, continuity: 1,
                                         largestGap: 0, retainedRatio: 1,
                                         intervalEndpoints: nil,
                                         intervalLength: 0, density: 0)
@@ -630,7 +633,7 @@ private func dominantLongitudinalBody(
     guard peakCount >= 4 else {
         let occupied = counts.filter { $0 > 0 }.count
         return DominantLongitudinalBody(
-            points: points, continuity: Double(occupied) / Double(binCount),
+            points: [], pointCount: points.count, continuity: Double(occupied) / Double(binCount),
             largestGap: largestZeroRun(in: counts, range: 0..<binCount), retainedRatio: 1,
             intervalEndpoints: intervalEndpoints(0, binCount - 1),
             intervalLength: Double(binCount),
@@ -640,7 +643,7 @@ private func dominantLongitudinalBody(
     let denseThreshold = max(2, Int((Double(peakCount) * 0.30).rounded(.up)))
     let denseBins = counts.indices.filter { counts[$0] >= denseThreshold }
     guard let firstDense = denseBins.first else {
-        return DominantLongitudinalBody(points: points, continuity: 0,
+        return DominantLongitudinalBody(points: [], pointCount: points.count, continuity: 0,
                                         largestGap: binCount, retainedRatio: 1,
                                         intervalEndpoints: intervalEndpoints(0, binCount - 1),
                                         intervalLength: Double(binCount),
@@ -670,24 +673,27 @@ private func dominantLongitudinalBody(
     let bodyStart = max(0, best.lowerBound - edgeAllowance)
     let bodyEnd = min(binCount - 1, best.upperBound + edgeAllowance)
     let bodyRange = bodyStart...bodyEnd
-    let bodyPoints = points.indices.compactMap { bodyRange.contains(pointBins[$0]) ? points[$0] : nil }
-    guard bodyPoints.count >= 4 else {
-        return DominantLongitudinalBody(points: points, continuity: 0,
+    let bodyPointCount = counts[bodyRange].reduce(0, +)
+    guard bodyPointCount >= 4 else {
+        return DominantLongitudinalBody(points: [], pointCount: points.count, continuity: 0,
                                         largestGap: binCount, retainedRatio: 1,
                                         intervalEndpoints: intervalEndpoints(0, binCount - 1),
                                         intervalLength: Double(binCount),
                                         density: Double(points.count) / Double(binCount))
     }
+    // retained=1 の経路は点数だけを読む。PCA は retained<0.85 のときだけ選択点を使う。
+    let bodyPoints = bodyPointCount == points.count ? []
+        : points.indices.compactMap { bodyRange.contains(pointBins[$0]) ? points[$0] : nil }
     let denseInBody = counts[bodyRange].filter { $0 >= denseThreshold }.count
     let continuity = Double(denseInBody) / Double(bodyRange.count)
     return DominantLongitudinalBody(
-        points: bodyPoints,
+        points: bodyPoints, pointCount: bodyPointCount,
         continuity: continuity,
         largestGap: largestZeroRun(in: counts, range: bodyStart..<(bodyEnd + 1)),
-        retainedRatio: Double(bodyPoints.count) / Double(points.count),
+        retainedRatio: Double(bodyPointCount) / Double(points.count),
         intervalEndpoints: intervalEndpoints(bodyStart, bodyEnd),
         intervalLength: Double(bodyRange.count),
-        density: Double(bodyPoints.count) / Double(bodyRange.count)
+        density: Double(bodyPointCount) / Double(bodyRange.count)
     )
 }
 
@@ -737,10 +743,14 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
     var maxMajor = -Double.greatestFiniteMagnitude
     var minMinor = Double.greatestFiniteMagnitude
     var maxMinor = -Double.greatestFiniteMagnitude
+    // 同じ式・同じ点順の binary64 投影を一度だけ求め、body と軸 bin で再利用する。
+    var projections: [Double] = []
+    projections.reserveCapacity(points.count)
     for point in points {
         let dx = Double(point.x) - meanX
         let dy = Double(point.y) - meanY
         let major = dx * axis.0 + dy * axis.1
+        projections.append(major)
         let minor = dx * normal.0 + dy * normal.1
         minMajor = min(minMajor, major); maxMajor = max(maxMajor, major)
         minMinor = min(minMinor, minor); maxMinor = max(maxMinor, minor)
@@ -756,29 +766,36 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
           extent >= 0.10 else { return nil }
     // The additional longitudinal histogram is only useful for candidates
     // that already pass the cheap geometric gate.
-    let body = dominantLongitudinalBody(in: points, meanX: meanX, meanY: meanY, axis: axis)
+    let body = dominantLongitudinalBody(in: points, projections: projections, meanX: meanX, meanY: meanY, axis: axis)
 
     let binCount = max(4, min(12, Int(majorLength.rounded(.up))))
-    var binMin = Array(repeating: Double.greatestFiniteMagnitude, count: binCount)
-    var binMax = Array(repeating: -Double.greatestFiniteMagnitude, count: binCount)
-    for point in points {
+    // bin は従来どおり 4...12。固定長の作業域を使い、縮約は元と同じ逐次加算にする。
+    var binMin = SIMD16<Double>(repeating: Double.greatestFiniteMagnitude)
+    var binMax = SIMD16<Double>(repeating: -Double.greatestFiniteMagnitude)
+    var axialBins = Array(repeating: UInt8(0), count: points.count)
+    for index in points.indices {
+        let point = points[index]
         let dx = Double(point.x) - meanX
         let dy = Double(point.y) - meanY
-        let major = dx * axis.0 + dy * axis.1
         let minor = dx * normal.0 + dy * normal.1
-        let normalized = clamp01((major - minMajor) / max(maxMajor - minMajor, 1.0))
+        let normalized = clamp01((projections[index] - minMajor) / max(maxMajor - minMajor, 1.0))
         let bin = min(binCount - 1, Int(normalized * Double(binCount)))
+        axialBins[index] = UInt8(bin)
         binMin[bin] = min(binMin[bin], minor)
         binMax[bin] = max(binMax[bin], minor)
     }
-    let widths = binMin.indices.compactMap { index -> Double? in
-        // Empty bins use finite sentinels; isFinite alone admitted them and
-        // overflowed the variance to NaN, violating the score sort ordering.
-        guard binMax[index] >= binMin[index] else { return nil }
-        return binMax[index] - binMin[index] + 1.0
+    var widths = SIMD16<Double>(repeating: 0)
+    var widthCount = 0
+    for index in 0..<binCount where binMax[index] >= binMin[index] {
+        widths[widthCount] = binMax[index] - binMin[index] + 1.0
+        widthCount += 1
     }
-    let meanWidth = widths.reduce(0, +) / Double(max(widths.count, 1))
-    let widthVariance = widths.reduce(0) { $0 + pow($1 - meanWidth, 2) } / Double(max(widths.count, 1))
+    var widthSum = 0.0
+    for index in 0..<widthCount { widthSum += widths[index] }
+    let meanWidth = widthSum / Double(max(widthCount, 1))
+    var widthVarianceSum = 0.0
+    for index in 0..<widthCount { widthVarianceSum += pow(widths[index] - meanWidth, 2) }
+    let widthVariance = widthVarianceSum / Double(max(widthCount, 1))
     let widthVariation = sqrt(widthVariance) / max(meanWidth, 1.0)
 
     if let stageProfile {
@@ -824,8 +841,8 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
         var clippedWhiteCount = 0
         var outsideValueSum = 0.0
         var outsideCount = 0
-        var highAxisBins = Array(repeating: false, count: binCount)
-        var coreAxisBins = Array(repeating: false, count: binCount)
+        var highAxisBins = SIMD16<UInt8>(repeating: 0)
+        var coreAxisBins = SIMD16<UInt8>(repeating: 0)
         var coreCount = 0
         let neighborOffsets = [(-2, 0), (2, 0), (0, -2), (0, 2)]
 
@@ -834,7 +851,9 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                 clippedWhiteMask.withUnsafeMutableBufferPointer { clippedWhite in
                     let clippedWhite = clippedWhite.baseAddress!
                     let componentPixels = componentPixels.baseAddress!
-                    for point in points {
+                    for pointIndex in points.indices {
+                        let point = points[pointIndex]
+                        let axialBin = Int(axialBins[pointIndex])
                         let index = point.y * width + point.x
                         if let radiance = pixels.radiance {
                             radianceSum += pow(Double(radiance[index]) / 255.0, 2)
@@ -843,11 +862,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                         let chroma = Int(pixels.chroma[index])
                         if pixels.coreMask[index] != 0 {
                             coreCount += 1
-                            let dx = Double(point.x) - meanX
-                            let dy = Double(point.y) - meanY
-                            let major = dx * axis.0 + dy * axis.1
-                            let normalized = clamp01((major - minMajor) / max(maxMajor - minMajor, 1.0))
-                            coreAxisBins[min(binCount - 1, Int(normalized * Double(binCount)))] = true
+                            coreAxisBins[axialBin] = 1
                         }
                         if pixels.colorMask[index] != 0 {
                             rawCount += 1
@@ -857,11 +872,7 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                             measuredPeakValue = max(measuredPeakValue, value)
                             if value >= 220 {
                                 highCount += 1
-                                let dx = Double(point.x) - meanX
-                                let dy = Double(point.y) - meanY
-                                let major = dx * axis.0 + dy * axis.1
-                                let normalized = clamp01((major - minMajor) / max(maxMajor - minMajor, 1.0))
-                                highAxisBins[min(binCount - 1, Int(normalized * Double(binCount)))] = true
+                                highAxisBins[axialBin] = 1
                             }
                         } else if value >= 245 && chroma <= 38 {
                             // A clipped LED becomes white and falls outside the color mask.
@@ -871,29 +882,32 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
                                 clippedWhite[clippedIndex] = true
                                 clippedWhiteCount += 1
                             }
-                            let dx = Double(point.x) - meanX
-                            let dy = Double(point.y) - meanY
-                            let major = dx * axis.0 + dy * axis.1
-                            let normalized = clamp01((major - minMajor) / max(maxMajor - minMajor, 1.0))
-                            highAxisBins[min(binCount - 1, Int(normalized * Double(binCount)))] = true
+                            highAxisBins[axialBin] = 1
                         }
                         // White-clipped LED centers often sit immediately beside, rather
                         // than inside, the HSV color component. Count each nearby sample
                         // once so a diffuse reflection cannot gain simply from its area.
-                        for dy in -2...2 {
-                            for dx in -2...2 where abs(dx) + abs(dy) <= 2 {
+                        @inline(__always) func visitClipped(_ nx: Int, _ ny: Int) {
+                            let neighbor = ny * width + nx
+                            if pixels.colorMask[neighbor] == 0,
+                               pixels.value[neighbor] >= 245,
+                               pixels.chroma[neighbor] <= 45 {
+                                let clippedIndex = (ny - clippedMinY) * clippedWidth + nx - clippedMinX
+                                if !clippedWhite[clippedIndex] {
+                                    clippedWhite[clippedIndex] = true
+                                    clippedWhiteCount += 1
+                                }
+                            }
+                        }
+                        if point.x >= 2, point.x < width - 2, point.y >= 2, point.y < height - 2 {
+                            for (dx, dy) in clippedDiamondOffsets {
+                                visitClipped(point.x + dx, point.y + dy)
+                            }
+                        } else {
+                            for (dx, dy) in clippedDiamondOffsets {
                                 let nx = point.x + dx, ny = point.y + dy
                                 guard nx >= 0, nx < width, ny >= 0, ny < height else { continue }
-                                let neighbor = ny * width + nx
-                                if pixels.colorMask[neighbor] == 0,
-                                   pixels.value[neighbor] >= 245,
-                                   pixels.chroma[neighbor] <= 45 {
-                                    let clippedIndex = (ny - clippedMinY) * clippedWidth + nx - clippedMinX
-                                    if !clippedWhite[clippedIndex] {
-                                        clippedWhite[clippedIndex] = true
-                                        clippedWhiteCount += 1
-                                    }
-                                }
+                                visitClipped(nx, ny)
                             }
                         }
                         for (dx, dy) in neighborOffsets {
@@ -925,9 +939,9 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
             * clamp01((0.65 - brightnessVariation) / 0.20)
         let outsideMean = outsideCount > 0 ? outsideValueSum / Double(outsideCount) : 0
         localContrast = clamp01((meanValue - outsideMean) / 100.0)
-        longitudinalHighCoverage = Double(highAxisBins.filter { $0 }.count) / Double(binCount)
+        longitudinalHighCoverage = Double((0..<binCount).reduce(0) { $0 + Int(highAxisBins[$1]) }) / Double(binCount)
         coreSupportRatio = Double(coreCount) / Double(max(points.count, 1))
-        longitudinalCoreCoverage = Double(coreAxisBins.filter { $0 }.count) / Double(binCount)
+        longitudinalCoreCoverage = Double((0..<binCount).reduce(0) { $0 + Int(coreAxisBins[$1]) }) / Double(binCount)
         clippedRatio = min(Double(clippedWhiteCount) / Double(rawCount + clippedWhiteCount), 0.25) / 0.25
         emitterScore = clamp01((Double(peakValue) - 200.0) / 55.0) * 0.32
             + clamp01((meanValue - 160.0) / 95.0) * 0.23
@@ -984,16 +998,16 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
     let hasStronglyTrimmedSupportedCoreLine = source == "core-line"
         && body.retainedRatio <= EndpointSelectionThresholds.stronglyTrimmedRetainedRatio
         && body.largestGap <= EndpointSelectionThresholds.coreLineMaximumGap
-        && body.points.count >= minimumArea
+        && body.pointCount >= minimumArea
     let hasDiffusedBlueCoreLineBody = evidence?.color == .blue
         && source == "core-line"
         && body.retainedRatio < EndpointSelectionThresholds.diffuserRetainedRatio
         && body.continuity >= EndpointSelectionThresholds.diffuserContinuity
         && body.largestGap <= EndpointSelectionThresholds.coreLineMaximumGap
-        && body.points.count >= minimumArea
+        && body.pointCount >= minimumArea
         && meanPurity >= EndpointSelectionThresholds.diffuserColorPurity
         && coreSupportRatio >= EndpointSelectionThresholds.diffuserCoreSupport
-    if body.points.count >= minimumArea,
+    if body.pointCount >= minimumArea,
        body.retainedRatio < 0.85,
        (hasEstablishedContinuousBody
         || hasDenseTrimmedCoreLine
@@ -1080,12 +1094,12 @@ private func scoredSaberComponent(_ points: [PixelPoint], width: Int, height: In
         candidate.endpointDiagnosticTrace = SaberEndpointDiagnosticTrace(
             centroidX: meanX, centroidY: meanY,
             bodyEndpoints: adoptedBodyEndpoints,
-            minimumArea: minimumArea, bodyPointCount: body.points.count,
+            minimumArea: minimumArea, bodyPointCount: body.pointCount,
             establishedContinuousBody: hasEstablishedContinuousBody,
             denseTrimmedCoreLine: hasDenseTrimmedCoreLine,
             stronglyTrimmedCoreLine: hasStronglyTrimmedSupportedCoreLine,
             diffusedBlueBody: hasDiffusedBlueCoreLineBody,
-            gatingValues: ["bodyPointCount": Double(body.points.count), "minimumArea": Double(minimumArea),
+            gatingValues: ["bodyPointCount": Double(body.pointCount), "minimumArea": Double(minimumArea),
                 "retainedBodyRatio": body.retainedRatio, "retainedBodyLimit": 0.85,
                 "continuity": body.continuity, "connectedBodyContinuityThreshold": EndpointSelectionThresholds.connectedBodyContinuity,
                 "largestGap": Double(body.largestGap), "coreLineMaximumGapThreshold": Double(EndpointSelectionThresholds.coreLineMaximumGap),
@@ -1227,10 +1241,27 @@ func saberCandidates(in mask: [UInt8], width: Int, height: Int,
     return candidates.sorted { $0.score > $1.score }
 }
 
-/// 接続済みの core-line proposal を直接採点する。bitmap は重複・所属判定専用で、
-/// 全画素の再走査や連結成分の再探索は行わない。
+// 色ごと・フレームごとの proposal 群で再利用する。候補はこの作業域を保持しない。
+struct SaberProposalWorkspace {
+    var membership: [UInt8] = []
+    var uniqueIndices: [Int] = []
+}
+
+/// 接続済み proposal を直接採点する。bitmap は重複・所属判定専用。
 func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
                     evidence: SaberEvidence? = nil,
+                    source: String = "color-mask",
+                    stageProfile: SaberCandidateStageProfile? = nil,
+                    collectEndpointDiagnostics: Bool = false) -> SaberCandidate? {
+    var workspace = SaberProposalWorkspace()
+    return saberCandidate(from: points, width: width, height: height, evidence: evidence,
+                          workspace: &workspace, source: source, stageProfile: stageProfile,
+                          collectEndpointDiagnostics: collectEndpointDiagnostics)
+}
+
+func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
+                    evidence: SaberEvidence? = nil,
+                    workspace: inout SaberProposalWorkspace,
                     source: String = "color-mask",
                     stageProfile: SaberCandidateStageProfile? = nil,
                     collectEndpointDiagnostics: Bool = false) -> SaberCandidate? {
@@ -1243,23 +1274,28 @@ func saberCandidate(from points: [PixelPoint], width: Int, height: Int,
         maxX = max(maxX, point.x); maxY = max(maxY, point.y)
     }
     let localWidth = maxX - minX + 1, localHeight = maxY - minY + 1
-    var membership = Array(repeating: UInt8(0), count: localWidth * localHeight)
-    var uniqueIndices: [Int] = []
-    uniqueIndices.reserveCapacity(validPoints.count)
-    membership.withUnsafeMutableBufferPointer { buffer in
+    let area = localWidth * localHeight
+    if workspace.membership.count < area {
+        workspace.membership.append(contentsOf: repeatElement(0, count: area - workspace.membership.count))
+    }
+    workspace.uniqueIndices.removeAll(keepingCapacity: true)
+    workspace.uniqueIndices.reserveCapacity(validPoints.count)
+    workspace.membership.withUnsafeMutableBufferPointer { buffer in
         let mask = buffer.baseAddress!
+        mask.update(repeating: 0, count: area)
         for point in validPoints {
             let localIndex = (point.y - minY) * localWidth + point.x - minX
             if mask[localIndex] == 0 {
                 mask[localIndex] = 1
-                uniqueIndices.append(point.y * width + point.x)
+                workspace.uniqueIndices.append(point.y * width + point.x)
             }
         }
     }
-    let componentMask = SaberComponentMask(pixels: membership, minX: minX, minY: minY,
+    let componentMask = SaberComponentMask(pixels: workspace.membership, minX: minX, minY: minY,
                                             width: localWidth, height: localHeight)
     // bitmap は所属判定専用。従来と同じ row-major 順で全浮動小数点演算を行う。
-    let uniquePoints = uniqueIndices.sorted().map { PixelPoint(x: $0 % width, y: $0 / width) }
+    workspace.uniqueIndices.sort()
+    let uniquePoints = workspace.uniqueIndices.map { PixelPoint(x: $0 % width, y: $0 / width) }
     return scoredSaberComponent(uniquePoints, width: width, height: height,
                                 componentMask: componentMask,
                                 evidence: evidence, source: source,

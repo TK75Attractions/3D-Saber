@@ -41,6 +41,12 @@
 
 ## 作業ログ
 
+### 2026-10-09〜10 最適化 第5弾（Codex 並列 + Claude 監修・相互レビュー）
+- main へ統合（opt/integration, 8079625）: Android core 4周目、iOS 送信の割り当て・dispatch 削減、iOS 認識3周目（XCTest 明るいフレーム 5.4→3.3ms）、HUD/UI の毎フレーム文字列・TMP 再設定の削減、Player の通常 Log の stack trace 省略。verify 全段 PASS、parity 0、JNI 38/38、EditMode 1692/1692。XCTest の P2P fallback テスト失敗は実 Unity の Bonjour 広告を拾う環境要因で、テスト側の分離で解消。
+- ツール: recognition_benchmark.py（ORIGINAL 601枚の基準値。剣なし FP 赤 56/83・青 9/32、異常窓中心の偏ったコーパス）、fixb_offline.py（修正B: 一律 robust 置換で静止青ぶれ 139→13px だが formal 5件失敗、保守的 gate は変更0）。
+- 保留（ブランチのみ）: opt/android-energy・opt/android-startup（探索/起動順の変更、実機再接続の確認待ち）、opt/unity-phonesaber-frame（OnGUI を表示中だけ。PlayMode の操作テストが batchmode の Enlighten クラッシュで未実行）、opt/unity-frame-cost（未実行）、opt/android-pipeline・opt/ios-debug-load（効果小で不採用）。
+- 既知: Unity PlayMode batchmode は Enlighten worker の segv で途中終了することがある（origin/main でも）。Calibration の PlayMode 2件は main でも失敗。
+
 ### 2026-10-09 最適化 第4弾（ぶれ）
 - 揺れ補正フィルタ（305fe04）: One Euro 型、F8 内ボタンで OFF/弱/中、既定 OFF。実データで静止ぶれ -12〜16%、中の追加遅れ平均 2.85ms。Codex の「F8 で循環・Shift+F8 で開閉」はスタッフ操作と衝突するため取り消し。EditMode 1692/1692。
 - ぶれ原因分析（2081695, docs/claude/jitter-analysis.md）: 最終出力の A/B 反転 0、大ジャンプ56中34は剣なし（背景FP）、静止青で raw PCA に背景が入り 53〜58px 変動（修正B領域）。上位の改善案はすべて新しい実機 capture が必要（§4 gate 未達）。

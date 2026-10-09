@@ -334,16 +334,21 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
         // 採点だけが読む bitmap。候補間で使用した位置だけ消し、全画像の再確保を避ける。
         Mask proposal_mask;
         if (!proposals.empty()) proposal_mask.resize(w*h);
+        // proposal ごとの整数作業域を再利用する。候補の支持点は score_component が所有コピーする。
+        std::vector<int> indices;
+        Points unique;
         for (const auto& proposal : proposals) {
-            // Swift Set is only used for membership. Its scoring order is sorted row-major.
-            std::vector<int> indices;
+            // bitmap で先に重複を除き、従来と同じ row-major 順で採点する。
+            indices.clear();
+            unique.clear();
             indices.reserve(proposal.size());
-            for (auto point : proposal) if (point.x >= 0 && point.x < w && point.y >= 0 && point.y < h) indices.push_back(point.y*w+point.x);
+            for (auto point : proposal) if (point.x >= 0 && point.x < w && point.y >= 0 && point.y < h) {
+                int index = point.y*w+point.x;
+                if (!proposal_mask[index]) { proposal_mask[index] = 1; indices.push_back(index); }
+            }
             std::sort(indices.begin(),indices.end());
-            indices.erase(std::unique(indices.begin(),indices.end()),indices.end());
-            Points unique;
             unique.reserve(indices.size());
-            for (int index : indices) { unique.push_back({index%w,index/w}); proposal_mask[index] = 1; }
+            for (int index : indices) unique.push_back({index%w,index/w});
             auto scored = score_component(unique,w,h,&proposal_mask,evidence,"core-line");
             for (int index : indices) proposal_mask[index] = 0;
             if (!scored) continue;

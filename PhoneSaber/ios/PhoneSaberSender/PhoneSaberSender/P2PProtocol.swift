@@ -73,11 +73,23 @@ struct P2PMessage: Equatable {
     }
 
     func encoded() -> Data {
-        var data = Data(PhoneSaberP2P.magic)
-        data.append(contentsOf: [PhoneSaberP2P.version, kind.rawValue, color.rawValue, 0])
-        withUnsafeBytes(of: session.bigEndian) { data.append(contentsOf: $0) }
-        withUnsafeBytes(of: sequence.bigEndian) { data.append(contentsOf: $0) }
-        data.append(body)
+        // header + body を一度だけ確保し、append による拡張・コピーを避ける。
+        var data = Data(count: PhoneSaberP2P.headerSize + body.count)
+        data.withUnsafeMutableBytes { (bytes: UnsafeMutableRawBufferPointer) in
+            for index in PhoneSaberP2P.magic.indices { bytes[index] = PhoneSaberP2P.magic[index] }
+            bytes[4] = PhoneSaberP2P.version
+            bytes[5] = kind.rawValue
+            bytes[6] = color.rawValue
+            // reserved byte は Data(count:) のゼロ初期化を使う。
+            withUnsafeBytes(of: session.bigEndian) {
+                bytes.baseAddress!.advanced(by: 8).copyMemory(from: $0.baseAddress!, byteCount: $0.count)
+            }
+            withUnsafeBytes(of: sequence.bigEndian) {
+                bytes.baseAddress!.advanced(by: 12).copyMemory(from: $0.baseAddress!, byteCount: $0.count)
+            }
+            body.copyBytes(to: bytes.baseAddress!.advanced(by: PhoneSaberP2P.headerSize)
+                .assumingMemoryBound(to: UInt8.self), count: body.count)
+        }
         return data
     }
 

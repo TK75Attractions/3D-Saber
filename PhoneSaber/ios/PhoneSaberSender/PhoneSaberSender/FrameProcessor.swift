@@ -710,8 +710,8 @@ final class FrameProcessor: @unchecked Sendable {
 
     private func scheduleExpiry(width: Int, height: Int, generation: Int) {
         expiryWorkItem?.cancel()
-        guard let expiry = tracks.values.compactMap({ track in
-            track.endpoints.map { _ in track.lastSeen + holdDuration }
+        guard let expiry = tracks.values.lazy.compactMap({ track in
+            track.endpoints.map { _ in track.lastSeen + self.holdDuration }
         }).min() else { return }
         let item = DispatchWorkItem { [weak self] in
             guard let self else { return }

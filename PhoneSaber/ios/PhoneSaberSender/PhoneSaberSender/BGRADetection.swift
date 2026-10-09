@@ -126,23 +126,50 @@ private func candidateAxisDistance(_ lhs: SaberCandidate, _ rhs: SaberCandidate)
 }
 
 private func candidateIsSubsegment(_ shorter: SaberCandidate, of longer: SaberCandidate) -> Bool {
-    let longDX = Double(longer.comparisonEndpoints.1.x - longer.comparisonEndpoints.0.x)
-    let longDY = Double(longer.comparisonEndpoints.1.y - longer.comparisonEndpoints.0.y)
+    candidateIsSubsegment(shorter.comparisonEndpoints, of: longer.comparisonEndpoints)
+}
+
+private func candidateIsSubsegment(_ shorter: (PixelPoint, PixelPoint), of longer: (PixelPoint, PixelPoint)) -> Bool {
+    let longDX = Double(longer.1.x - longer.0.x)
+    let longDY = Double(longer.1.y - longer.0.y)
     let longLength = hypot(longDX, longDY)
-    let shortDX = Double(shorter.comparisonEndpoints.1.x - shorter.comparisonEndpoints.0.x)
-    let shortDY = Double(shorter.comparisonEndpoints.1.y - shorter.comparisonEndpoints.0.y)
+    let shortDX = Double(shorter.1.x - shorter.0.x)
+    let shortDY = Double(shorter.1.y - shorter.0.y)
     let shortLength = hypot(shortDX, shortDY)
     guard longLength >= shortLength * 1.50, shortLength > 0 else { return false }
     let axisX = longDX / longLength, axisY = longDY / longLength
     let shortAxisX = shortDX / shortLength, shortAxisY = shortDY / shortLength
     guard abs(axisX * shortAxisX + axisY * shortAxisY) >= 0.94 else { return false }
     let normalX = -axisY, normalY = axisX
-    return [shorter.comparisonEndpoints.0, shorter.comparisonEndpoints.1].allSatisfy { point in
-        let dx = Double(point.x - longer.comparisonEndpoints.0.x)
-        let dy = Double(point.y - longer.comparisonEndpoints.0.y)
+    return [shorter.0, shorter.1].allSatisfy { point in
+        let dx = Double(point.x - longer.0.x)
+        let dy = Double(point.y - longer.0.y)
         let along = dx * axisX + dy * axisY
         let across = abs(dx * normalX + dy * normalY)
         return along >= -6.0 && along <= longLength + 6.0 && across <= 6.0
+    }
+}
+
+// eligibility/source はスナップショット作成時に絞り込み、読み取る geometry だけを所有する。
+private struct CandidateBodySnapshot {
+    let source: String
+    let comparisonEndpoints: (PixelPoint, PixelPoint)
+    let boundingBox: SaberBoundingBox
+    let rawPCASpan: Double
+    let meanColorPurity: Double
+    let highValueRatio: Double
+    let longitudinalContinuity: Double
+    let axialDensity: Double
+
+    init(_ candidate: SaberCandidate) {
+        source = candidate.source
+        comparisonEndpoints = candidate.comparisonEndpoints
+        boundingBox = candidate.boundingBox
+        rawPCASpan = candidate.rawPCASpan
+        meanColorPurity = candidate.meanColorPurity
+        highValueRatio = candidate.highValueRatio
+        longitudinalContinuity = candidate.longitudinalContinuity
+        axialDensity = candidate.axialDensity
     }
 }
 
@@ -265,11 +292,12 @@ private func coreLineProposals(coreMask: [UInt8], colorMask: [UInt8],
     let diagonal = Int(ceil(hypot(Double(width), Double(height))))
     let minimumVotes = max(4, Int(Double(min(width, height)) * 0.025))
     var peaks: [CoreLinePeak] = []
+    var votes = Array(repeating: 0, count: diagonal * 2 + 1)
     for degrees in stride(from: 0, to: 180, by: 10) {
         let radians = Double(degrees) * .pi / 180.0
         let axisX = cos(radians), axisY = sin(radians)
         let normalX = -axisY, normalY = axisX
-        var votes = Array(repeating: 0, count: diagonal * 2 + 1)
+        votes.withUnsafeMutableBufferPointer { $0.baseAddress!.update(repeating: 0, count: $0.count) }
         for point in points {
             let rho = Int((Double(point.x) * normalX + Double(point.y) * normalY).rounded())
             votes[rho + diagonal] += 1
@@ -282,6 +310,11 @@ private func coreLineProposals(coreMask: [UInt8], colorMask: [UInt8],
     peaks.sort { $0.votes > $1.votes }
     var proposals: [[PixelPoint]] = []
     var accepted: [CoreLinePeak] = []
+    // proposal ごとの一時配列を再利用し、点の走査順と逐次加算を保つ。
+    var neighborhood: [PixelPoint] = [], inliers: [PixelPoint] = [], projections: [Double] = []
+    neighborhood.reserveCapacity(points.count)
+    inliers.reserveCapacity(points.count)
+    projections.reserveCapacity(points.count)
     var examinedCount = 0
     for initialPeak in peaks {
         guard proposals.count < 18, examinedCount < 180 else { break }
@@ -289,8 +322,10 @@ private func coreLineProposals(coreMask: [UInt8], colorMask: [UInt8],
         // Refit a local core cloud rather than returning the 10-degree Hough
         // bin as geometry. A cross-section through a wide glow must not become
         // an independent short blade just because it has a high mean value.
-        let neighborhood = points.filter {
-            abs(Double($0.x) * -initialPeak.axisY + Double($0.y) * initialPeak.axisX - Double(initialPeak.rho)) <= 6
+        neighborhood.removeAll(keepingCapacity: true)
+        for point in points where abs(Double(point.x) * -initialPeak.axisY
+            + Double(point.y) * initialPeak.axisX - Double(initialPeak.rho)) <= 6 {
+            neighborhood.append(point)
         }
         guard neighborhood.count >= minimumVotes else { continue }
         let mx = neighborhood.reduce(0.0) { $0 + Double($1.x) } / Double(neighborhood.count)
@@ -310,11 +345,14 @@ private func coreLineProposals(coreMask: [UInt8], colorMask: [UInt8],
         }
         if duplicate { continue }
         let normalX = -peak.axisY, normalY = peak.axisX
-        let inliers = points.filter {
-            abs(Double($0.x) * normalX + Double($0.y) * normalY - Double(peak.rho)) <= 2.0
+        inliers.removeAll(keepingCapacity: true)
+        for point in points where abs(Double(point.x) * normalX
+            + Double(point.y) * normalY - Double(peak.rho)) <= 2.0 {
+            inliers.append(point)
         }
         guard inliers.count >= minimumVotes else { continue }
-        let projections = inliers.map { Double($0.x) * peak.axisX + Double($0.y) * peak.axisY }
+        projections.removeAll(keepingCapacity: true)
+        for point in inliers { projections.append(Double(point.x) * peak.axisX + Double(point.y) * peak.axisY) }
         guard let minT = projections.min(), let maxT = projections.max(),
               maxT - minT >= max(Double(min(width, height)) * 0.06, 24.0) else { continue }
         let nearbyCoreCount = points.reduce(into: 0) { count, point in
@@ -338,11 +376,13 @@ private func coreLineProposals(coreMask: [UInt8], colorMask: [UInt8],
         proposal.reserveCapacity(inliers.count * 2)
         for y in minY...maxY {
             for x in minX...maxX {
+                // 非支持画素は整数 mask で先に除外する。投影の式は変えない。
+                let index = y * width + x
+                guard coreMask[index] != 0 || colorMask[index] != 0 else { continue }
                 let t = Double(x) * peak.axisX + Double(y) * peak.axisY
                 guard t >= minT - 1, t <= maxT + 1 else { continue }
                 let distance = abs(Double(x) * normalX + Double(y) * normalY - Double(peak.rho))
-                let index = y * width + x
-                if distance <= 3.0 && (coreMask[index] != 0 || colorMask[index] != 0) {
+                if distance <= 3.0 {
                     proposal.append(PixelPoint(x: x, y: y))
                 }
             }
@@ -732,10 +772,11 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             profile.lineProposalCount += proposals.count
         }
         let lineScoreStart = collectProfile ? ProcessInfo.processInfo.systemUptime : 0
+        var proposalWorkspace = SaberProposalWorkspace()
         for proposal in proposals {
             if var candidate = saberCandidate(from: proposal, width: maskWidth,
                                               height: maskHeight, evidence: evidence,
-                                              source: "core-line",
+                                              workspace: &proposalWorkspace, source: "core-line",
                                               stageProfile: candidateStageProfile, collectEndpointDiagnostics: collectPipelineDiagnostics),
                !candidates.contains(where: {
                 candidateAxisDistance($0, candidate) <= 10.0
@@ -834,9 +875,8 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             // candidates. Reject only candidates without their own coherent
             // color/body or bright connected-core evidence. The rejected line
             // itself stays ineligible under the existing proposal quality gate.
-            let rejectedLines = candidates.filter { $0.source == "core-line-low-confidence" }
-            let rejectedLineScore = rejectedLines.map(\.score).max()
-            let eligibleScore = candidates.filter(\.isEmitterEligible).map(\.score).max()
+            let rejectedLineScore = candidates.lazy.filter { $0.source == "core-line-low-confidence" }.map(\.score).max()
+            let eligibleScore = candidates.lazy.filter(\.isEmitterEligible).map(\.score).max()
             let hasTrustedEmitter = candidates.contains {
                 isTrustedBlueEmitter($0, minimumFrameDimension: min(maskWidth, maskHeight))
             }
@@ -937,9 +977,9 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
             }
         }
         if color == .red {
-            let connected = candidates.filter {
+            let connected = Array(candidates.lazy.filter {
                 $0.isEmitterEligible && !$0.source.hasPrefix("core-line")
-            }
+            }.map(CandidateBodySnapshot.init))
             for index in candidates.indices where candidates[index].isEmitterEligible {
                 let proposal = candidates[index]
                 if proposal.source == "core-line",
@@ -1042,22 +1082,22 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 }
             }
         }
-        let completeCandidates = candidates
+        let completeCandidates = Array(candidates.lazy.filter {
+            $0.isEmitterEligible && !$0.source.hasPrefix("core-line")
+        }.map(CandidateBodySnapshot.init))
         for index in candidates.indices where candidates[index].isEmitterEligible
             && candidates[index].source != "connected-core" {
             if color == .blue,
                isTrustedBlueEmitter(candidates[index],
                                     minimumFrameDimension: min(maskWidth, maskHeight)) { continue }
             if completeCandidates.contains(where: {
-                $0.isEmitterEligible && !$0.source.hasPrefix("core-line")
-                    && candidateIsSubsegment(candidates[index], of: $0)
+                candidateIsSubsegment(candidates[index].comparisonEndpoints, of: $0.comparisonEndpoints)
             }) {
                 candidates[index].isEmitterEligible = false
                 candidates[index].source += "-subsegment"
                 if collectPipelineDiagnostics {
                     if let body = completeCandidates.first(where: {
-                        $0.isEmitterEligible && !$0.source.hasPrefix("core-line")
-                            && candidateIsSubsegment(candidates[index], of: $0)
+                        candidateIsSubsegment(candidates[index].comparisonEndpoints, of: $0.comparisonEndpoints)
                     }) {
                         let long = hypot(Double(body.comparisonEndpoints.1.x
                             - body.comparisonEndpoints.0.x),

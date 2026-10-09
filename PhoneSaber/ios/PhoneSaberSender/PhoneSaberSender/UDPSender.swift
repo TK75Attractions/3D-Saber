@@ -331,12 +331,11 @@ final class UDPSender {
         }
         connection.send(content: data, completion: .contentProcessed { [weak self, weak connection] error in
             guard let self else { return }
-            self.queue.async {
-                self.finish(request, port: port, configurationGeneration: configureGeneration,
-                            portGeneration: portGeneration, connection: connection,
-                            result: error.map { .failure($0) }
-                                ?? .success(ProcessInfo.processInfo.systemUptime))
-            }
+            // Network completion は start(queue:) に指定した同じキューで呼ばれる。
+            self.finish(request, port: port, configurationGeneration: configureGeneration,
+                        portGeneration: portGeneration, connection: connection,
+                        result: error.map { .failure($0) }
+                            ?? .success(ProcessInfo.processInfo.systemUptime))
         })
     }
 
@@ -361,6 +360,10 @@ final class UDPSender {
     private func finish(_ request: PendingSend, port: Int, configurationGeneration: Int,
                         portGeneration: Int, connection: NWConnection?,
                         result: Result<TimeInterval, Error>) {
+#if DEBUG
+        // 本番では Network の契約（start(queue:) のキューで完了通知）に任せ、当日に落とさない。
+        dispatchPrecondition(condition: .onQueue(queue))
+#endif
         guard isRunning, self.configurationGeneration == configurationGeneration,
               portGenerations[port] == portGeneration,
               activeByPort[port]?.id == request.id,
