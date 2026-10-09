@@ -61,14 +61,15 @@ def parse_results(path: Path) -> dict | None:
         return None
     try:
         root = ET.parse(path).getroot()
-    except ET.ParseError:
+        counts = {key: int(root.attrib[key]) for key in ("total", "passed", "failed", "skipped")}
+    except (ET.ParseError, KeyError, ValueError):
+        return None
+    # 空の結果や別形式の XML を成功とせず、既存の再試行・分割処理に渡す。
+    if root.tag != "test-run" or counts["total"] <= 0 or any(value < 0 for value in counts.values()):
         return None
     failed = [case.get("fullname", "") for case in root.iter("test-case") if case.get("result") == "Failed"]
     return {
-        "total": int(root.get("total", 0)),
-        "passed": int(root.get("passed", 0)),
-        "failed": int(root.get("failed", 0)),
-        "skipped": int(root.get("skipped", 0)),
+        **counts,
         "failed_tests": failed,
     }
 

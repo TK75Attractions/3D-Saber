@@ -1,3 +1,6 @@
+import contextlib
+import io
+import json
 import re
 import tempfile
 import unittest
@@ -8,6 +11,45 @@ import unity_playmode_batches as batches
 
 
 class UnityPlayModeBatchesTests(unittest.TestCase):
+    def test_empty_results_retry_and_fail_cli(self):
+        with tempfile.TemporaryDirectory() as folder:
+            def fake_unity(command, **kwargs):
+                Path(command[command.index("-testResults") + 1]).write_text(
+                    '<test-run total="0" passed="0" failed="0" skipped="0"/>')
+
+            with mock.patch.object(batches.subprocess, "run", side_effect=fake_unity) as launch:
+                with contextlib.redirect_stdout(io.StringIO()):
+                    result = batches.main(["--project", folder, "--out", folder, "--classes", "ExampleTests"])
+            self.assertEqual(result, 1)
+            self.assertEqual(launch.call_count, 2)
+            summary = json.loads((Path(folder) / "summary.json").read_text())
+            self.assertEqual(summary["crashed"], ["ExampleTests"])
+            self.assertEqual(summary["total"], 0)
+
+    def test_unusable_results_are_rejected(self):
+        reports = [
+            '<test-run/>',
+            '<test-run total="invalid" passed="0" failed="0" skipped="0"/>',
+            '<test-run total="1" passed="-1" failed="0" skipped="0"/>',
+            '<other total="1" passed="1" failed="0" skipped="0"/>',
+        ]
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "results.xml"
+            for report in reports:
+                with self.subTest(report=report):
+                    path.write_text(report)
+                    self.assertIsNone(batches.parse_results(path))
+
+    def test_valid_results_preserve_counts_and_failed_names(self):
+        with tempfile.TemporaryDirectory() as folder:
+            path = Path(folder) / "results.xml"
+            path.write_text('<test-run total="3" passed="1" failed="1" skipped="1">'
+                            '<test-case fullname="A.Pass" result="Passed"/>'
+                            '<test-case fullname="A.Fail" result="Failed"/>'
+                            '<test-case fullname="A.Skip" result="Skipped"/></test-run>')
+            self.assertEqual(batches.parse_results(path), {
+                "total": 3, "passed": 1, "failed": 1, "skipped": 1, "failed_tests": ["A.Fail"]})
+
     def test_discovers_only_classes_in_files_with_tests(self):
         with tempfile.TemporaryDirectory() as root:
             folder = Path(root)
