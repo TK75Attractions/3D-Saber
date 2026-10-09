@@ -9,7 +9,7 @@
 1. **剣あり・iPhone＋Macのガイド付き録画v3**: 露出1/100秒で1本。最初の「saberなし」の画像、赤・青の静止／速振り／先端向けを残す。遠い・淡い青、画面端も確認。会場に近い距離（画面から2.7〜3.1m、範囲直径1.5m）で、背後の人・投影中・頭上の振りを含める。
 2. **AndroidをAQUOS sense9で残りを確認**: 2026-10-07にWindowsホットスポット経由で両色の送信・F8受信・30fpsを確認済み。残りは台A/B探索、向き・四隅、反転保存、開始／停止／前面復帰／再起動／Wi-Fi切替。
 3. **Windows実行の残り**: 10-07にEditor Playで受信を確認（ホットスポットはPublic扱いのため全プロファイルでUDP 5005-5007を許可、UnityのBlock規則を無効化）。残りはビルド版＋bat監視、A/B探索、F7、異常終了後再起動／正常Quit。
-4. **Unity EditMode Test Runner**: `Window > General > Test Runner` でEditModeを実行。F8統計・位置補正・台別保存を含むテストの結果を共有する。Roslynでのコンパイル確認は済んでいるがEditor内では未実行。
+4. ~~Unity EditMode Test Runner~~: 2026-10-09 に Claude がプロジェクト複製の batchmode で実行し 1678/1678 PASS（e512a67）。Editor 内での再実行は不要。
 5. **30分〜1時間の連続運転**: 本番の箱・給電・配置で送信し、発熱・電池・処理／送信／受信fps・処理中央値・到着間隔・メモリを記録。途中で前面復帰・Wi-Fi切替・アプリ再起動を試し、停止後は前面復帰だけでは再開しないことも確認。遅延計測は確認後OFFへ。
 6. **剣なしの Debug Recording を2本**(剣がなくてもできる): 露出1/100秒、区間ラベル「saberなし」で開始、各1〜2分、Capture Lossless を2〜3回。① 窓や空が映る明るい場所(青のルールの確認)、② 人の肌・服が前を動く場所(赤の残りの誤検出)。
 
@@ -40,6 +40,12 @@
 11. **将来の構成を比較**: AWDLが不安定ならUSB/usbmuxd/TCPを試すか判断し、座標互換・滞留・切断復帰・画面全体の遅延を測る。Mac内蔵／USBカメラ直接認識は精度・端点・配置・遅延を比較して採否を決める。Continuity Cameraは別の無線経路で、縮小／FPSだけを通信遅延改善と扱わない。
 
 ## 作業ログ
+
+### 2026-10-09 最適化 第3弾 / Unity テスト初実行
+- Android core 3周目（b5b937a）: BFS・採点・core line の再計算と確保を削減、Mac 7.9〜22.3% 短縮、parity 0、JNI 38/38。
+- 予測の実データ評価（73cf24c）: 18録画で H=20ms の RMSE 0.762→0.760 とほぼ効果なし。既定 0ms 維持、減速抑制のみ採用。誤差の主因は30Hz認識の端点ぶれ・入替。
+- 見送り: iOS DEBUG 診断負荷（0.05→0.02ms/frame と効果小、Debug Recording 経路を触るため）。変更は保存していない。
+- Unity EditMode を batchmode（プロジェクト複製）で初実行: 1678 中 6 失敗→テスト側の修正で 1678/1678（e512a67）。Mac Player も batchmode ビルド可（13a3817、Builds/Mac/3D-Saber.app）。
 
 ### 2026-10-09 最適化 第2弾（Codex 3本）
 - Unity 受信の割り当て削減（3a092bd, 8b67212）: parser 42.4MB→0、統計 512MB→0、UDP 受信 39.2→27.2MB / 10万packet（Unity Mono）。独自 EndPoint は Windows Player 安全性のため不採用、標準 IPEndPoint＋IP文字列キャッシュ。
