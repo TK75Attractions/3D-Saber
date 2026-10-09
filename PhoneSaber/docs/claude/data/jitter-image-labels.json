@@ -1,0 +1,904 @@
+{
+  "labels": [
+    {
+      "session": "phonesaber_20260922_101530_202",
+      "color": "red",
+      "motion": "static",
+      "frames": [
+        390,
+        391,
+        392
+      ],
+      "note": "元PNGで手持ち姿勢がほぼ一定。小さい手ぶれは含む。",
+      "images": [
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_390.png",
+          "sha256": "c4a76403f416981fb84df300b9dae428c497ad2a769de1178cc816e85a4f3729"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_391.png",
+          "sha256": "d73cc6ab62a77bbc05b0ddac0c53bb303667c28478423bd80643bf43c01af06d"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_392.png",
+          "sha256": "1aa9083eaac4edc9e6f2bbd58e8537370f78b529355dc680514fbb17da4a110c"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20260922_101530_202",
+      "color": "red",
+      "motion": "static",
+      "frames": [
+        397,
+        398,
+        399,
+        400
+      ],
+      "note": "元PNGで手持ち姿勢がほぼ一定。小さい手ぶれは含む。",
+      "images": [
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_397.png",
+          "sha256": "5ce98607dd3d89336501038f823fb8814001567be4ebc1857a7813dec4ee05fe"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_398.png",
+          "sha256": "3d4a14d480d235c4d0b0912f822cdc630b19463e1f16f3ba88564948aa4f6f06"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_399.png",
+          "sha256": "4bc78e5210786bf652152d62c2995766be66d48f1ffd86d01a997a2c32106ef3"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_400.png",
+          "sha256": "a94656982bb8fbc4f262c6bbaabbb8bc22b80b04fb534116bcf7805da5fbed84"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20260922_101530_202",
+      "color": "red",
+      "motion": "static",
+      "frames": [
+        407,
+        408,
+        409,
+        410,
+        411
+      ],
+      "note": "元PNGで手持ち姿勢がほぼ一定。小さい手ぶれは含む。",
+      "images": [
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_407.png",
+          "sha256": "b2998f39a08d6453ed5184ed629ff2c52f665e09e5da70bc05c857d8715a6abe"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_408.png",
+          "sha256": "110b69ece8df73c0f291fcd82e763efc9b25fca984ec65f4be7a8ddb041df954"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_409.png",
+          "sha256": "75b663c9dd3526fff4cbfa1e6cfc0d7934d0ce5f863a11772f09a88baa02fed3"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_410.png",
+          "sha256": "9f54ccdbd917760b2f49cc3bcc64634ce7865586da850855dfb9ebd5aed01186"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_411.png",
+          "sha256": "e5515fce3d3d48ca5f47fc1b4a3178d89ee0221e7986a0ee81c2d39b0d3fa063"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20260922_101530_202",
+      "color": "blue",
+      "motion": "static",
+      "frames": [
+        390,
+        391,
+        392
+      ],
+      "note": "元PNGで手持ち姿勢がほぼ一定。小さい手ぶれは含む。",
+      "images": [
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_390.png",
+          "sha256": "c4a76403f416981fb84df300b9dae428c497ad2a769de1178cc816e85a4f3729"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_391.png",
+          "sha256": "d73cc6ab62a77bbc05b0ddac0c53bb303667c28478423bd80643bf43c01af06d"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_392.png",
+          "sha256": "1aa9083eaac4edc9e6f2bbd58e8537370f78b529355dc680514fbb17da4a110c"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20260922_101530_202",
+      "color": "blue",
+      "motion": "static",
+      "frames": [
+        397,
+        398,
+        399,
+        400
+      ],
+      "note": "元PNGで手持ち姿勢がほぼ一定。小さい手ぶれは含む。",
+      "images": [
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_397.png",
+          "sha256": "5ce98607dd3d89336501038f823fb8814001567be4ebc1857a7813dec4ee05fe"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_398.png",
+          "sha256": "3d4a14d480d235c4d0b0912f822cdc630b19463e1f16f3ba88564948aa4f6f06"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_399.png",
+          "sha256": "4bc78e5210786bf652152d62c2995766be66d48f1ffd86d01a997a2c32106ef3"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_400.png",
+          "sha256": "a94656982bb8fbc4f262c6bbaabbb8bc22b80b04fb534116bcf7805da5fbed84"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20260922_101530_202",
+      "color": "blue",
+      "motion": "static",
+      "frames": [
+        407,
+        408,
+        409,
+        410,
+        411
+      ],
+      "note": "元PNGで手持ち姿勢がほぼ一定。小さい手ぶれは含む。",
+      "images": [
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_407.png",
+          "sha256": "b2998f39a08d6453ed5184ed629ff2c52f665e09e5da70bc05c857d8715a6abe"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_408.png",
+          "sha256": "110b69ece8df73c0f291fcd82e763efc9b25fca984ec65f4be7a8ddb041df954"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_409.png",
+          "sha256": "75b663c9dd3526fff4cbfa1e6cfc0d7934d0ce5f863a11772f09a88baa02fed3"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_410.png",
+          "sha256": "9f54ccdbd917760b2f49cc3bcc64634ce7865586da850855dfb9ebd5aed01186"
+        },
+        {
+          "path": "phonesaber_20260922_101530_202_forensic/frame_411.png",
+          "sha256": "e5515fce3d3d48ca5f47fc1b4a3178d89ee0221e7986a0ee81c2d39b0d3fa063"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261003_144936_295",
+      "color": "red",
+      "motion": "moving",
+      "frames": [
+        2550,
+        2551,
+        2552,
+        2553,
+        2554,
+        2555,
+        2556,
+        2557
+      ],
+      "note": "赤は横振り・先端向け。青は手持ち姿勢がほぼ一定。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_05_motion_event_1000000000_before_2550.png",
+          "sha256": "e5ec058c6db4b26c389879ed0be00dcc7c7054357e6976036f4d889c2cbd5270"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_06_motion_event_1000000000_before_2551.png",
+          "sha256": "10c49ba2a6ee83fc15524bc2e2759558173767662da494c95423e918d72ba30f"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_07_motion_event_1000000000_onset_2552.png",
+          "sha256": "6b3d474f80e8f0b360d49267aad2f89c28d2d415915adade54e855c758ee4646"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_08_motion_event_1000000000_peak_2553.png",
+          "sha256": "cfdd5479e0b6b3da2c834a98101c82bb80b73f35ee4605982b6e246ec2935bd6"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_09_motion_event_1000000000_after_2554.png",
+          "sha256": "b1d0630ce12354811e80806b5c99d63a7f3eb8d94d88d515a6d4233362a3a003"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_10_motion_event_1000000000_after_2555.png",
+          "sha256": "dc1cf30cf074bc8c957aef7da4968747dc9243f40f481158e7e5e74daa00573f"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_11_motion_event_1000000000_after_2556.png",
+          "sha256": "33faf02588952b11960000e1b11ea51cb2f56f7c695df4f40fe46c78855be7ef"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_12_motion_event_1000000000_after_2557.png",
+          "sha256": "0c94daa8069ed1b7ab50caea68ee07dc6b61d13874b028735c4a60297efcc6a7"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261003_144936_295",
+      "color": "blue",
+      "motion": "static",
+      "frames": [
+        2550,
+        2551,
+        2552,
+        2553,
+        2554,
+        2555,
+        2556,
+        2557
+      ],
+      "note": "赤は横振り・先端向け。青は手持ち姿勢がほぼ一定。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_05_motion_event_1000000000_before_2550.png",
+          "sha256": "e5ec058c6db4b26c389879ed0be00dcc7c7054357e6976036f4d889c2cbd5270"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_06_motion_event_1000000000_before_2551.png",
+          "sha256": "10c49ba2a6ee83fc15524bc2e2759558173767662da494c95423e918d72ba30f"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_07_motion_event_1000000000_onset_2552.png",
+          "sha256": "6b3d474f80e8f0b360d49267aad2f89c28d2d415915adade54e855c758ee4646"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_08_motion_event_1000000000_peak_2553.png",
+          "sha256": "cfdd5479e0b6b3da2c834a98101c82bb80b73f35ee4605982b6e246ec2935bd6"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_09_motion_event_1000000000_after_2554.png",
+          "sha256": "b1d0630ce12354811e80806b5c99d63a7f3eb8d94d88d515a6d4233362a3a003"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_10_motion_event_1000000000_after_2555.png",
+          "sha256": "dc1cf30cf074bc8c957aef7da4968747dc9243f40f481158e7e5e74daa00573f"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_11_motion_event_1000000000_after_2556.png",
+          "sha256": "33faf02588952b11960000e1b11ea51cb2f56f7c695df4f40fe46c78855be7ef"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_144936_295/images/image_12_motion_event_1000000000_after_2557.png",
+          "sha256": "0c94daa8069ed1b7ab50caea68ee07dc6b61d13874b028735c4a60297efcc6a7"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261002_005850_489",
+      "color": "red",
+      "motion": "no_saber",
+      "frames": [
+        2533,
+        2534,
+        2535,
+        2536,
+        2537,
+        2538,
+        2539,
+        2540,
+        2541,
+        2542,
+        2543
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_01_motion_event_1000000000_before_2533.png",
+          "sha256": "1192f7bacd0dd96ec571abf7e0ca99c9cdc3d8e2a6c90f6bc677d57fa54c0781"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_02_motion_event_1000000000_before_2534.png",
+          "sha256": "03bd77d4a142942f4d20dcfa51090a1cc80ac4593c72ab70ee523351277861d1"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_03_motion_event_1000000000_before_2535.png",
+          "sha256": "5897cda1b6990051d946f1283a865954bd383726282ef38c116b579c44d4d856"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_04_motion_event_1000000000_before_2536.png",
+          "sha256": "dd7d6e5bb76ac8372f8154cabdc14eb05b5922436c1f62705f7f0c5776a86889"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_05_motion_event_1000000000_onset_2537.png",
+          "sha256": "a3835b4759aaf21f84c7ec74aa2a118b0af1eecb3eedb6353ed92ceacfe64d18"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_06_motion_event_1000000000_peak_2538.png",
+          "sha256": "f475935e5286a14a3bf074473cd609b411573d2037eee6813d97e5c8ed3d78ad"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_07_motion_event_1000000000_after_2539.png",
+          "sha256": "29ffdacae6a948fb179870da8b567d491e1624837c76e110fc47d46ad3350e58"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_08_motion_event_1000000000_after_2540.png",
+          "sha256": "c07f8c690c24aa922d9bd87d05631159ea464a2ac42cd4c19340d44828dac0b8"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_09_motion_event_1000000000_after_2541.png",
+          "sha256": "05531256c58ab5b67da03b10cc048cc4a3b124a5b7335ed5b45ff42e24293d57"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_10_motion_event_1000000000_after_2542.png",
+          "sha256": "38f740332b2b87860a10001b88e704399ed2d49eefa0b3a18577f8cf69f8ea31"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_005850_489/images/image_11_motion_event_1000000000_recovery_2543.png",
+          "sha256": "533d61a856ed7864a7606ab9338ea2c05817e23f8b1b478bdb6a570648d81a40"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261002_010049_190",
+      "color": "red",
+      "motion": "no_saber",
+      "frames": [
+        656,
+        657,
+        658,
+        659,
+        660,
+        661,
+        662,
+        663,
+        664,
+        665,
+        666
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_010049_190/images/image_01_motion_event_1000000000_before_656.png",
+          "sha256": "5a4c0eadfbaff1c4429df7c7468881045db6fa92fe1c12b956ccd9d5d9f8d80d"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_010049_190/images/image_02_motion_event_1000000000_before_657.png",
+          "sha256": "f692a96f1d87e75cbba9776229324e6c5aeec1a3080f859905b1ada61e848c8e"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_010049_190/images/image_03_motion_event_1000000000_before_658.png",
+          "sha256": "c29fb529b16bf410617e5079e61d46e7f2316f18aa4768a4dca72eea90a5cf15"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_010049_190/images/image_04_motion_event_1000000000_before_659.png",
+          "sha256": "47ebb1adec0af748c3ef0a8e9f923ab7b39cba110d984eb7deec6199e2d43ac7"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_010049_190/images/image_05_motion_event_1000000000_onset_660.png",
+          "sha256": "67e1b263c92054e0141f01ad6f04f537fca29ff1ceca5356ab815e44531b68fd"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_010049_190/images/image_06_motion_event_1000000000_peak_661.png",
+          "sha256": "f1c5268ceed6bd0a8771b6bc2652b13e41c977ff51a622ca94526e58ace438b9"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_010049_190/images/image_07_motion_event_1000000000_after_662.png",
+          "sha256": "fea4f3571d48a92c6114c50b65f03c9d6b29e55bf2fc8137711a4a07a561e845"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_010049_190/images/image_08_motion_event_1000000000_after_663.png",
+          "sha256": "6cbad6931a106f32e30e09171ecd614a1bdb1153e8d05c8fbc3f3256559165a6"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_010049_190/images/image_09_motion_event_1000000000_after_664.png",
+          "sha256": "1d2c1cd232b6d0f03611ab65acf3a3cd983b60fc6ff811c686cb9dfec499593c"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_010049_190/images/image_10_motion_event_1000000000_after_665.png",
+          "sha256": "35807bacc11523a92e482c5c87940c6f5f03c65a96de5cb5872a7fdc750ee774"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_010049_190/images/image_11_motion_event_1000000000_recovery_666.png",
+          "sha256": "2d35833dae6324c6b111635af868fcc70d7e5d57a7464810c2e22b56d1838fbf"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261002_013205_087",
+      "color": "red",
+      "motion": "no_saber",
+      "frames": [
+        251,
+        252,
+        253,
+        254,
+        255,
+        256,
+        257,
+        258,
+        259,
+        260,
+        261
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_01_motion_event_1000000000_before_251.png",
+          "sha256": "8132a15994ac2ab91ad425d81de3e64eccabedddb0ab3eb22bee0c0e3cbe9b12"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_02_motion_event_1000000000_before_252.png",
+          "sha256": "02deb51614f69a1bf59d92b7a6005cbb3a113a2e106d54cdd4a43e1d7a271146"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_03_motion_event_1000000000_before_253.png",
+          "sha256": "865aa59ebdb245a218e06a0aac0b8255465f06e4c9967eca5297a463f15cf91e"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_04_motion_event_1000000000_before_254.png",
+          "sha256": "1e05a10f4c6403ed821f60e6a16e388408e71efd3632689fadf67a112b40c90d"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_05_motion_event_1000000000_onset_255.png",
+          "sha256": "5c31a5a834613c9983ee7078440b204746a1e7b9a8a07b45fb10c651e55a2fe4"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_06_motion_event_1000000000_peak_256.png",
+          "sha256": "9712bb0a81c96656eec511b7d4d587a5dcb3fbe4db99539e4315443e00711a5d"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_07_motion_event_1000000000_after_257.png",
+          "sha256": "911a3316a3e1af30cd079ac7d4b3fad7e22376d213d47c789c1de38288198a92"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_08_motion_event_1000000000_after_258.png",
+          "sha256": "21ef7ed5bf236b60769148635f555f408583fdb5aa3a47db6f5eb87ed3e196a8"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_09_motion_event_1000000000_after_259.png",
+          "sha256": "baf387001bb7683cd4e09a0937c50ad8e0ccb5198d55d3ffb9078c5efee5f44c"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_10_motion_event_1000000000_after_260.png",
+          "sha256": "48425aec422e7fd92d373ee9b4cac53902b8b3f47e418fd2f00956657f261d2c"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261002_013205_087/images/image_11_motion_event_1000000000_recovery_261.png",
+          "sha256": "76551637aba38848874850c063945d1737693189e3077237e81044efc3a4c30d"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261003_155919_297",
+      "color": "red",
+      "motion": "no_saber",
+      "frames": [
+        5216,
+        5217,
+        5218,
+        5219,
+        5220,
+        5221,
+        5222,
+        5223
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_05_motion_event_1000000000_before_5216.png",
+          "sha256": "0a0fe912985b696e997242d3e3537080de4c83ab14dbe73a6ef385b2a64989c1"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_06_motion_event_1000000000_before_5217.png",
+          "sha256": "7ad3ce2d6ddca722446369ed2f08ec5c85fc7d6b641c80415c64f2b55ea99d75"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_07_motion_event_1000000000_onset_5218.png",
+          "sha256": "8c7e32f67914d9dcd253668de364808dd0988569d6e47bac8d94120ae801fb45"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_08_motion_event_1000000000_peak_5219.png",
+          "sha256": "cc7e8221c70908817cb3b5ce94b53de06c6b3d34f90b5a7db8ae4d27deaa5aa9"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_09_motion_event_1000000000_after_5220.png",
+          "sha256": "1df0137a2c9ddbe98247f2c1f3674ac06b8ecfa97272a037ed0d269a7b18d4ed"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_10_motion_event_1000000000_after_5221.png",
+          "sha256": "9521de773f9b7db904daff90e591e967d035526fa7037a11762b9826a94a9c39"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_11_motion_event_1000000000_after_5222.png",
+          "sha256": "29c8a2cef8fd8f0571eb8974021fce2147db7dfdd8e401afa235896ce1b274d9"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_12_motion_event_1000000000_after_5223.png",
+          "sha256": "b97d6513eb5b7c4f7b531db3449a6ca914df975296a430c260ac860f7443ba02"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261003_155919_297",
+      "color": "blue",
+      "motion": "no_saber",
+      "frames": [
+        5216,
+        5217,
+        5218,
+        5219,
+        5220,
+        5221,
+        5222,
+        5223
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_05_motion_event_1000000000_before_5216.png",
+          "sha256": "0a0fe912985b696e997242d3e3537080de4c83ab14dbe73a6ef385b2a64989c1"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_06_motion_event_1000000000_before_5217.png",
+          "sha256": "7ad3ce2d6ddca722446369ed2f08ec5c85fc7d6b641c80415c64f2b55ea99d75"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_07_motion_event_1000000000_onset_5218.png",
+          "sha256": "8c7e32f67914d9dcd253668de364808dd0988569d6e47bac8d94120ae801fb45"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_08_motion_event_1000000000_peak_5219.png",
+          "sha256": "cc7e8221c70908817cb3b5ce94b53de06c6b3d34f90b5a7db8ae4d27deaa5aa9"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_09_motion_event_1000000000_after_5220.png",
+          "sha256": "1df0137a2c9ddbe98247f2c1f3674ac06b8ecfa97272a037ed0d269a7b18d4ed"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_10_motion_event_1000000000_after_5221.png",
+          "sha256": "9521de773f9b7db904daff90e591e967d035526fa7037a11762b9826a94a9c39"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_11_motion_event_1000000000_after_5222.png",
+          "sha256": "29c8a2cef8fd8f0571eb8974021fce2147db7dfdd8e401afa235896ce1b274d9"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_12_motion_event_1000000000_after_5223.png",
+          "sha256": "b97d6513eb5b7c4f7b531db3449a6ca914df975296a430c260ac860f7443ba02"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261003_155919_297",
+      "color": "red",
+      "motion": "no_saber",
+      "frames": [
+        5321,
+        5322,
+        5331
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_01_bridge_event_2_before_success_5321.png",
+          "sha256": "4409cda5fdd84255202f2c140628c256d708b2a4aa7f4cb2ed8dad677f8e1b7d"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_02_bridge_event_2_dropout_5322.png",
+          "sha256": "a91675a4867dae172e187210c2289e2395c67e24fea7124c5f40dcd7193d9b37"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261003_155919_297/images/image_04_bridge_event_2_after_success_5331.png",
+          "sha256": "5cc5e997c52eb8f4e7c29fcac41c1925881f4dbb9acd63357e5a6ab4078c21de"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261004_005325_638",
+      "color": "red",
+      "motion": "no_saber",
+      "frames": [
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005325_638/images/image_05_motion_event_1000000000_before_198.png",
+          "sha256": "a4938956f44364b2832c1f3fe5283140dae4a83763589ea152faccae7ad13752"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005325_638/images/image_06_motion_event_1000000000_before_199.png",
+          "sha256": "1849a88563753f196bc3c37c801d5a58b4f356452ab3576efbfde399d893ae46"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005325_638/images/image_07_motion_event_1000000000_onset_200.png",
+          "sha256": "44fdc4e72e531f9535de78c0886c833fc646e565c9c18338aae951f23633888d"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005325_638/images/image_08_motion_event_1000000000_peak_201.png",
+          "sha256": "d468132f6b0a8a942a0f0657954f3f52892d3fb51571194bac5b35b5bbb8bfa2"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005325_638/images/image_09_motion_event_1000000000_after_202.png",
+          "sha256": "90310109fcf894c768b5e34db66a75630ea011df8227c258a2ac10c990d20eec"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005325_638/images/image_10_motion_event_1000000000_after_203.png",
+          "sha256": "6db61ada850525b7eae45862662740f94aa6d61b5e677d2e97959d2d94728b1d"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005325_638/images/image_11_motion_event_1000000000_after_204.png",
+          "sha256": "8ec8885809b86217920a8195e42ce275cd3d453f3f2fb107828939bdfb062010"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005325_638/images/image_12_motion_event_1000000000_after_205.png",
+          "sha256": "f1ebf0e1b9868abef09bf3f4fddc2aadb1405ab08c06100c8d09866341997b76"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261004_005855_691",
+      "color": "red",
+      "motion": "no_saber",
+      "frames": [
+        12626,
+        12627,
+        12628,
+        12629,
+        12630,
+        12631,
+        12632,
+        12633
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005855_691/images/image_05_motion_event_1000000000_before_12626.png",
+          "sha256": "011ae7c469e54718785de0c5bd751b77d26cab6a817918a9e2f8a93712688d2e"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005855_691/images/image_06_motion_event_1000000000_before_12627.png",
+          "sha256": "f384ce53d3412ae14e9fd7e3cfd675f1f239652cdf93f8931871c6383523fcd7"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005855_691/images/image_07_motion_event_1000000000_onset_12628.png",
+          "sha256": "325171dbb01255c950422f2644f2a7166b2af7467304155599556bd59c28d5b1"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005855_691/images/image_08_motion_event_1000000000_peak_12629.png",
+          "sha256": "90e3d23f3b44a137ce4a32f970653dbf65e1e197639b7f676d3931e1e9abc11c"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005855_691/images/image_09_motion_event_1000000000_after_12630.png",
+          "sha256": "bfa408242960dc248477367459404d7c8212d4231de39175965b83e85713bd8f"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005855_691/images/image_10_motion_event_1000000000_after_12631.png",
+          "sha256": "cfd3499782425bb38431dbd7aeba64448e66c6e7b79e29b2ba5f8a2e14c32b0c"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005855_691/images/image_11_motion_event_1000000000_after_12632.png",
+          "sha256": "2469777235df5ba6f8c9630f1cefb8d97b3888eb0d438e3731c853b1fea4f3c0"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_005855_691/images/image_12_motion_event_1000000000_after_12633.png",
+          "sha256": "637cd43c53bb2975dd859ee0b165128a06d3e4e1bd6592e035809184661d3acd"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261004_220440_308",
+      "color": "blue",
+      "motion": "no_saber",
+      "frames": [
+        620,
+        621,
+        622,
+        623,
+        624
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_220440_308/images/image_05_motion_event_1000000000_before_620.png",
+          "sha256": "6b52e63de54639fcc7c101c803781c6aa4b720fe08d4b41bd9cd45b4bcc9be1e"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_220440_308/images/image_06_motion_event_1000000000_before_621.png",
+          "sha256": "2062e87ea90f9854a336b30d792617d7232ef493cc0620ced435d114bac66745"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_220440_308/images/image_07_motion_event_1000000000_onset_622.png",
+          "sha256": "c3f7bc4e5ce2fbdf7a23cde7f18c9aa51f116931d04fd45e812453a1627560a3"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_220440_308/images/image_08_motion_event_1000000000_peak_623.png",
+          "sha256": "d06654051092d2c38884367655e1dfb4d1fb47fb1e816ff81695cd0d49faa4f7"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_220440_308/images/image_09_motion_event_1000000000_after_624.png",
+          "sha256": "1d02c1a1cafc76f5527c67f35b6b4ef31188d973b1f237f6cf71b0fc99c7fdfb"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261004_232850_471",
+      "color": "red",
+      "motion": "no_saber",
+      "frames": [
+        1248,
+        1249,
+        1250,
+        1251,
+        1252,
+        1253,
+        1254,
+        1255
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_232850_471/images/image_05_motion_event_1000000000_before_1248.png",
+          "sha256": "0d3449b35ff06a95b2c65a4b5d8e1de9cdb25cb092a7d485efeeece83d2046fa"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_232850_471/images/image_06_motion_event_1000000000_before_1249.png",
+          "sha256": "15c483c3d5c9db74a7d92322f75f5bc7e3dc41120b5efbc168aed2576103d8be"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_232850_471/images/image_07_motion_event_1000000000_onset_1250.png",
+          "sha256": "551b4c9e8b94454f043eeb2425989bd2f2881c7b08e03e97b6a1de6f3bfd318a"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_232850_471/images/image_08_motion_event_1000000000_peak_1251.png",
+          "sha256": "526029b375efa1243c2120569be33e662ebfd62138b7420284b57f7d17a56f85"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_232850_471/images/image_09_motion_event_1000000000_after_1252.png",
+          "sha256": "9ae3c16d90379ef066d1755b9d87f58bce22ad2a3f836cbb17b4b1b76630b9cd"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_232850_471/images/image_10_motion_event_1000000000_after_1253.png",
+          "sha256": "35acd4aeec2900063aceebaa48edd7f82fb04615687d0151b57085827835c3e2"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_232850_471/images/image_11_motion_event_1000000000_after_1254.png",
+          "sha256": "cf521e6d16093898526138109f4c9ccd7c480c99202ea6396333160df5386b7c"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261004_232850_471/images/image_12_motion_event_1000000000_after_1255.png",
+          "sha256": "6393a71c0c57c4d6fee56f8f5dcef855a575ef13d7e510ef9312876b864d2efb"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261006_010346_502",
+      "color": "red",
+      "motion": "no_saber",
+      "frames": [
+        8129,
+        8130,
+        8131,
+        8132,
+        8133,
+        8134,
+        8135,
+        8136
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_010346_502/images/image_05_motion_event_1000000000_before_8129.png",
+          "sha256": "950a905b741548dbf34005a62ff2999f9e018568373298ef531cfa8f8908dbb1"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_010346_502/images/image_06_motion_event_1000000000_before_8130.png",
+          "sha256": "91309792332b5caea66c6727a733094af2f185c0915df8bd7f3bab9b4d2d2883"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_010346_502/images/image_07_motion_event_1000000000_onset_8131.png",
+          "sha256": "7b6edcffe53a66695938c15b7563decf7b5359937f8e9b4f7e13045d9b57d7e0"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_010346_502/images/image_08_motion_event_1000000000_peak_8132.png",
+          "sha256": "626e3cf986f33de7a93fbad645a78b465fe7231cc76565ec6f9010ed45c9dea5"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_010346_502/images/image_09_motion_event_1000000000_after_8133.png",
+          "sha256": "524110e529179fc57c25389d03dea5dea233d1db93ad133d92f86f33dfc4ec0c"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_010346_502/images/image_10_motion_event_1000000000_after_8134.png",
+          "sha256": "e88552485539f39aed729cdfa6fd14e78ec0113f8c3dfb184babbea4783b3a48"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_010346_502/images/image_11_motion_event_1000000000_after_8135.png",
+          "sha256": "f3a0f334efce210e44e9e27d049e9f0ededc827e0ac2d3b48df72af66fed1298"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_010346_502/images/image_12_motion_event_1000000000_after_8136.png",
+          "sha256": "b84f5ce2429617fd4276a465c2c02bff0c8be1b687f8dd2154384495a8c19b5a"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261006_163345_325",
+      "color": "blue",
+      "motion": "no_saber",
+      "frames": [
+        177
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_163345_325/images/image_12_frame_177.png",
+          "sha256": "cbeb21e4a86bf77b2d7e4c838e2c1c1c126955792d2640a1203ce56b2cff79f2"
+        }
+      ]
+    },
+    {
+      "session": "phonesaber_20261006_163444_198",
+      "color": "blue",
+      "motion": "no_saber",
+      "frames": [
+        2127,
+        2128,
+        2129,
+        2130,
+        2131,
+        2132,
+        2133,
+        2134
+      ],
+      "note": "元PNGを目視。この色の点灯した実剣は見えない。背景・肌・光の出力。",
+      "images": [
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_163444_198/images/image_05_motion_event_1000000000_before_2127.png",
+          "sha256": "759fcace92320e32dbb5e82f0ee64530e8d500adb4813933cfb87d2366ed73d8"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_163444_198/images/image_06_motion_event_1000000000_before_2128.png",
+          "sha256": "fb0a928d4bd07751f7b6c93ec3dda2dfd041e3502721484657ac6597cd6be4be"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_163444_198/images/image_07_motion_event_1000000000_onset_2129.png",
+          "sha256": "537513972f84ccfe706006375773ce8e1d4d286c29757e5e0cd73b11cd926844"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_163444_198/images/image_08_motion_event_1000000000_peak_2130.png",
+          "sha256": "2a96b4a30a1f7cd37e9a60970dfa2d943d4b821521c5b734e1f7bd089bc9cba0"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_163444_198/images/image_09_motion_event_1000000000_after_2131.png",
+          "sha256": "55d336900d27bbd94a5f52c43c144f43a7758e11c83cfc5c7d6d4c155e12836b"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_163444_198/images/image_10_motion_event_1000000000_after_2132.png",
+          "sha256": "985a58afc944497b2ade6eb83ace4d2517ef1d9598ec567de083dd9cbc4141c2"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_163444_198/images/image_11_motion_event_1000000000_after_2133.png",
+          "sha256": "178cb75464336c6810d2a9764d21a2398e16c4aaa38a5925a0f4338d7f96a953"
+        },
+        {
+          "path": "phone_saber_triage_phonesaber_20261006_163444_198/images/image_12_motion_event_1000000000_after_2134.png",
+          "sha256": "7edbc9d600ab9498780a781ed31e5a652d4bc0d56bdb51fd317d25b3bd0ac4d7"
+        }
+      ]
+    }
+  ]
+}

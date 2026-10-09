@@ -45,6 +45,38 @@ def endpoint_values(color):
     return values if all(math.isfinite(v) for v in values) else (None,) * 4
 
 
+def diagnostic_frames(paths):
+    """Load recorded diagnostics, deduplicated by session/frame/color (read-only).
+
+    Unlike extract(), this keeps source IDs for local forensic reports. Overlapping
+    compact contexts retain the richest state; they are never separate samples.
+    It does not reconstruct missing candidates or recompute recognition.
+    """
+    records = {}
+    for path in recording_files(paths):
+        with path.open(encoding="utf-8") as stream:
+            documents = [json.loads(line) for line in stream if line.strip()] if path.suffix == ".jsonl" else [json.load(stream)]
+        for document in documents:
+            if isinstance(document, list):
+                document = {"frames": document}
+            if not isinstance(document, dict):
+                continue
+            session = document.get("sessionID", path.parent.parent.name if path.parent.name == "frames" else path.stem.removesuffix("_metadata"))
+            session = session.removeprefix("phone_saber_triage_")
+            for frame in document.get("frames", [document] if "frameID" in document else []):
+                for color in ("red", "blue"):
+                    state = frame.get(color)
+                    if not isinstance(state, dict):
+                        continue
+                    diagnostics = frame.get("candidateDiagnostics", {}).get(color, {})
+                    value = dict(diagnostics, **state)
+                    key = (session, frame.get("frameID"), color)
+                    # 同値なら先に読んだものを維持し、辞書の反復順で選ばない。
+                    if key not in records or len(json.dumps(value, sort_keys=True)) > len(json.dumps(records[key], sort_keys=True)):
+                        records[key] = value
+    return records
+
+
 def extract(paths, image_width=None, image_height=None):
     records, sources = {}, {}
     skipped_time = 0
