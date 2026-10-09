@@ -15,10 +15,17 @@ public class PhoneSaberOperatorControlsPlayTests
     PhoneSaberOperatorOverlay overlay;
     PhoneSaberLatencyProbe probe;
     GameObject inputObject;
+    InputSettings.BackgroundBehavior savedBackground;
+    InputSettings.EditorInputBehaviorInPlayMode savedEditorInput;
 
     [UnitySetUp]
     public IEnumerator SetUp()
     {
+        // batchmode には Game view のフォーカスが無く、既定ではキーボード入力が捨てられる。
+        savedBackground = InputSystem.settings.backgroundBehavior;
+        savedEditorInput = InputSystem.settings.editorInputBehaviorInPlayMode;
+        InputSystem.settings.backgroundBehavior = InputSettings.BackgroundBehavior.IgnoreFocus;
+        InputSystem.settings.editorInputBehaviorInPlayMode = InputSettings.EditorInputBehaviorInPlayMode.AllDeviceInputAlwaysGoesToGameView;
         keyboard = InputSystem.AddDevice<Keyboard>();
         keyboard.MakeCurrent(); // 運営表示は Keyboard.current を読む。
         overlay = Object.FindFirstObjectByType<PhoneSaberOperatorOverlay>();
@@ -41,6 +48,8 @@ public class PhoneSaberOperatorControlsPlayTests
         if (Field<bool>(probe, "active")) yield return Press(Key.F9);
         if (inputObject != null) Object.Destroy(inputObject);
         InputSystem.RemoveDevice(keyboard);
+        InputSystem.settings.backgroundBehavior = savedBackground;
+        InputSystem.settings.editorInputBehaviorInPlayMode = savedEditorInput;
         yield return null;
     }
 
@@ -53,7 +62,9 @@ public class PhoneSaberOperatorControlsPlayTests
         Assert.IsTrue(Field<bool>(overlay, "visible"));
         Assert.IsTrue(Renderer(overlay).enabled);
         Assert.IsTrue(Renderer(overlay).useGUILayout);
-        Assert.IsNotNull(Field<GUIStyle>(overlay, "textStyle"), "有効な描画側の OnGUI が運営表示へ届く");
+        // batchmode には GUI の描画イベントが無く OnGUI が呼ばれないため、画面のある実行でだけ確かめる。
+
+        if (!Application.isBatchMode) Assert.IsNotNull(Field<GUIStyle>(overlay, "textStyle"), "有効な描画側の OnGUI が運営表示へ届く");
         yield return Press(Key.F8);
         Assert.IsFalse(Field<bool>(overlay, "visible"));
         Assert.IsFalse(Renderer(overlay).enabled);
@@ -89,7 +100,9 @@ public class PhoneSaberOperatorControlsPlayTests
         Assert.IsTrue(Field<bool>(probe, "active"));
         Assert.IsTrue(Renderer(probe).enabled);
         Assert.IsFalse(Renderer(probe).useGUILayout);
-        Assert.IsNotNull(Field<GUIStyle>(probe, "textStyle"), "継承した OnGUI が遅延表示へ届く");
+        // batchmode には GUI の描画イベントが無く OnGUI が呼ばれないため、画面のある実行でだけ確かめる。
+
+        if (!Application.isBatchMode) Assert.IsNotNull(Field<GUIStyle>(probe, "textStyle"), "継承した OnGUI が遅延表示へ届く");
         yield return Press(Key.F9);
         Assert.IsFalse(Field<bool>(probe, "active"));
         Assert.IsFalse(Renderer(probe).enabled);
