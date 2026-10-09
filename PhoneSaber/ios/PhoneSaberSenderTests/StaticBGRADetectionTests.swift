@@ -325,18 +325,19 @@ private func nativeBenchmark(path: String, iterations: Int) {
                      samples.reduce(0, +) / Double(iterations), ordered[iterations / 2],
                      ordered[Int(ceil(Double(iterations) * 0.9)) - 1], ordered.last!, candidateCount))
         var scan = 0.0, morphology = 0.0, components = 0.0, evidence = 0.0, traversal = 0.0
-        var lineProposal = 0.0, lineScore = 0.0
+        var lineProposal = 0.0, lineScore = 0.0, shape = 0.0, endpoints = 0.0
         for _ in 0..<iterations {
             let profile = run(profile: true).profile!
             scan += profile.pixelScanHSVMaskMs; morphology += profile.morphologyMs
             components += profile.componentAndScoreMs; evidence += profile.brightnessContrastColorMs
             traversal += profile.connectedComponentsMs
+            shape += profile.shapeAndAxisMs; endpoints += profile.endpointAndBoundsMs
             lineProposal += profile.lineProposalMs; lineScore += profile.lineScoreMs
         }
         let n = Double(iterations)
-        print(String(format: "[NativeStages] %@ scanMask=%.3f morphology=%.3f components=%.3f BFS=%.3f evidence=%.3f lineProposal=%.3f lineScore=%.3f ms",
+        print(String(format: "[NativeStages] %@ scanMask=%.3f morphology=%.3f components=%.3f BFS=%.3f shapeAxis=%.3f evidence=%.3f endpoints=%.3f lineProposal=%.3f lineScore=%.3f ms",
                      name, scan / n, morphology / n, components / n, traversal / n,
-                     evidence / n, lineProposal / n, lineScore / n))
+                     shape / n, evidence / n, endpoints / n, lineProposal / n, lineScore / n))
     }
 }
 
@@ -419,6 +420,60 @@ private func assertLosslessProposalMembership() {
     print("lossless proposal membership: duplicates, invalid coordinates, clipped-white bbox and frame edges passed")
 }
 
+// 菱形の元の y→x 走査を独立に再現し、端/内部と全点保持の診断を検証する。
+private func assertLosslessScoringScratch() {
+    let width = 73, height = 59
+    for x in [0, 1, 2, 31, width - 3, width - 2, width - 1] {
+        var points: [PixelPoint] = []
+        var mask = Array(repeating: UInt8(0), count: width * height)
+        var value = mask, chroma = mask
+        for y in 0..<height {
+            for xx in x...min(width - 1, x + 4) {
+                points.append(PixelPoint(x: xx, y: y))
+                let index = y * width + xx
+                mask[index] = 1; value[index] = 250; chroma[index] = 160
+            }
+        }
+        for y in 0..<height {
+            for xx in 0..<width where mask[y * width + xx] == 0 && (xx + y * 3) % 13 == 0 {
+                value[y * width + xx] = 255; chroma[y * width + xx] = 45
+            }
+        }
+        var seen = Array(repeating: false, count: mask.count), clippedCount = 0
+        for point in points {
+            for dy in -2...2 {
+                for dx in -2...2 where abs(dx) + abs(dy) <= 2 {
+                    let xx = point.x + dx, yy = point.y + dy
+                    guard xx >= 0, xx < width, yy >= 0, yy < height else { continue }
+                    let index = yy * width + xx
+                    if mask[index] == 0 && value[index] >= 245 && chroma[index] <= 45 && !seen[index] {
+                        seen[index] = true; clippedCount += 1
+                    }
+                }
+            }
+        }
+        let evidence = SaberEvidence(color: .blue, value: value, chroma: chroma,
+                                     colorMask: mask, coreMask: mask)
+        let candidate = saberCandidate(from: points, width: width, height: height,
+                                      evidence: evidence, collectEndpointDiagnostics: true)!
+        let expectedRatio = min(Double(clippedCount) / Double(points.count + clippedCount), 0.25) / 0.25
+        precondition(candidate.clippedWhiteRatio.bitPattern == expectedRatio.bitPattern)
+        precondition(candidate.retainedBodyRatio == 1)
+        precondition(candidate.endpointDiagnosticTrace!.bodyPointCount == points.count)
+        precondition(candidate.usedPointLEDFallback)
+    }
+    var trimmed: [PixelPoint] = []
+    for x in 20...100 { for y in 45...55 { trimmed.append(PixelPoint(x: x, y: y)) } }
+    for x in 101...215 { trimmed.append(PixelPoint(x: x, y: 50)) }
+    for x in 216...228 { for y in 47...53 { trimmed.append(PixelPoint(x: x, y: y)) } }
+    let candidate = saberCandidate(from: trimmed, width: 260, height: 100,
+                                  collectEndpointDiagnostics: true)!
+    precondition(candidate.retainedBodyRatio < 0.85 && !candidate.usedPointLEDFallback)
+    precondition(candidate.endpointDiagnosticTrace!.bodyEndpoints != nil)
+    precondition(candidate.endpointDiagnosticTrace!.bodyPointCount < trimmed.count)
+    print("lossless scoring scratch: clipped-white diamond at edges/interior, retained count and trimmed PCA passed")
+}
+
 // 同じテストソースを変更前・変更後の core とリンクし、出力を cmp で厳密に比較できる。
 private func printLosslessSignatures(paths: [String]) {
     var state: UInt64 = 0x10_5de7ec72
@@ -444,6 +499,20 @@ private func printLosslessSignatures(paths: [String]) {
         precondition(frameSignature(result) == frameSignature(profiled))
         print("synthetic \(index):" + frameSignature(result) + profileCountSignature(profiled.profile!))
     }
+    for index in 0..<24 {
+        var image = StaticImage(width: 97, height: 73, padding: 13)
+        let x = [0, 1, 2, 48, 94, 96][index % 6]
+        let color: SaberColor = index % 2 == 0 ? .red : .blue
+        image.diffusedPaperBlade(from: PixelPoint(x: x, y: 0),
+                                 to: PixelPoint(x: x, y: 72), color: color, thickness: 3)
+        for y in stride(from: 0, to: image.height, by: 7) {
+            image.pixel(x, y, red: 255, green: 255, blue: 255)
+        }
+        image.bar(from: PixelPoint(x: 10, y: 50), to: PixelPoint(x: 80, y: 20),
+                  color: color, thickness: 2)
+        let result = staticAnalysis(image, step: 1 + index / 12, profile: true)
+        print("scoring-scratch \(index):" + frameSignature(result) + profileCountSignature(result.profile!))
+    }
     for path in paths {
         let image = loadStaticPNG(path)
         let analysis = staticAnalysis(image, profile: true)
@@ -465,6 +534,7 @@ enum StaticBGRADetectionTests {
         }
         assertLosslessPixelScan()
         assertLosslessProposalMembership()
+        assertLosslessScoringScratch()
         assertLosslessMorphology()
         assertBlueNoDeepSupport()
         let cases: [(String, SaberColor, PixelPoint, PixelPoint, Int, Int)] = [
