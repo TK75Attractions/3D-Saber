@@ -9,6 +9,8 @@ using Object = UnityEngine.Object;
 // 選曲専用の小さな3D世界をRTへ描く。本編のカメラ・霧・ポスト処理は変更しない。
 public sealed class SongSelectCorridor : MonoBehaviour
 {
+    static readonly Color[] DownbeatColors = { Color.white, SongSelectSkin.Cyan, new Color(1,.6f,.68f), new Color(.6f,.77f,1) };
+
     sealed class Geometry
     {
         public readonly List<Vector3> vertices = new List<Vector3>();
@@ -256,7 +258,8 @@ public sealed class SongSelectCorridor : MonoBehaviour
             foreach(var fired in waveTimes) { float age=t-(float)fired-i*.03f; if(age>=0 && age<.3f) intensity=Mathf.Max(intensity,Mathf.Sin(age/.3f*Mathf.PI)); }
             SetAlpha(runnerLights[i],intensity*.9f);
         }
-        waveTimes.RemoveAll(x=>t-x>1.2);
+        // 順序を保って後ろから除去し、毎フレームのキャプチャ付き predicate を作らない。
+        for(int i=waveTimes.Count-1;i>=0;i--) if(t-waveTimes[i]>1.2) waveTimes.RemoveAt(i);
         view.transform.localPosition=new Vector3(.3f*Mathf.Sin(t*.11f),3+.14f*Mathf.Sin(t*.17f),10);
         UpdateReflection();
     }
@@ -266,7 +269,7 @@ public sealed class SongSelectCorridor : MonoBehaviour
         if(beat.Downbeat)
         {
             l=r=wall=ring=fan=glow=1; barNumber++;
-            Color[] colors={Color.white,SongSelectSkin.Cyan,new Color(1,.6f,.68f),new Color(.6f,.77f,1)}; ringColor=colors[barNumber%4];
+            ringColor=DownbeatColors[barNumber%4];
             for(int i=0;i<8;i++) ringAngles[i]+=(barNumber%2==0?1:-1)*22.5f;
         }
         else { if(beat.Beat%2==0) l=.85f; else r=.85f; glow=.5f; }
