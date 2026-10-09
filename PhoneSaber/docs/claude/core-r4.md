@@ -17,7 +17,18 @@ Mac arm64、clang -O2 -ffp-contract=off、BGRA/step2。allocation_benchmarkは30
 | forensic-20260921/frame_1048.png | 2049→1986 | 7,768,195→7,678,831 | 6.288375→6.344750 |
 | lossless-regression/phonesaber_20260923_143446_247/red_dropout_last_true_89.png | 1590→1545 | 8,610,098→8,518,322 | 5.626541→6.304250 |
 
-速度はfixtureごとに前後/後前を交互、各300frame、7組のrun中央値の中央値。Unity長時間PlayMode・Android再build・parityと並行しており、fixtureにより測定負荷が異なる。最後のfixtureは約12%遅い値であり、**レイテンシ改善は確定できない**。成果として確認できたのはallocation回数2.7〜3.6%削減と要求byte削減。Android実機の性能・60fpsは未測定。
+上表の速度はfixtureごとに前後/後前を交互、各300frame、7組のrun中央値の中央値。Unity長時間PlayMode・Android再build・parityと並行しており、fixtureにより測定負荷が異なる。最後のfixtureは約12%遅い値であり、この並行負荷下の測定だけではレイテンシ改善を確定できない。
+
+Unity・Xcode・Gradle・emulator・parityの終了後、同一binary・同一手順・7組×300frameで再測定した。並行検証なしのrun中央値の中央値は以下（fixture順は上表と同じ）。
+
+| fixture | 前 ms | 後 ms | 短縮 |
+| --- | ---: | ---: | ---: |
+| bright | 1.221333 | 1.179250 | 3.45% |
+| curtain | 1.554541 | 1.490416 | 4.13% |
+| forensic1048 | 2.539084 | 2.466958 | 2.84% |
+| red dropout | 2.818583 | 2.726125 | 3.28% |
+
+最終差分のallocation回数は2.7〜3.6%削減し、並行検証なしの時間計測も4fixtureで2.8〜4.1%短縮した。rawは`benchmark-idle.json`に保存。Android実機の性能・60fpsは未測定。
 
 ## 最終差分の検証
 
