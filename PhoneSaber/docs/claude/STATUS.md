@@ -43,68 +43,15 @@
 
 ## 作業ログ
 
-### 2026-10-09〜10 最適化 第5弾（Codex 並列 + Claude 監修・相互レビュー）
-- main へ統合（opt/integration, 8079625）: Android core 4周目、iOS 送信の割り当て・dispatch 削減、iOS 認識3周目（XCTest 明るいフレーム 5.4→3.3ms）、HUD/UI の毎フレーム文字列・TMP 再設定の削減、Player の通常 Log の stack trace 省略。verify 全段 PASS、parity 0、JNI 38/38、EditMode 1692/1692。XCTest の P2P fallback テスト失敗は実 Unity の Bonjour 広告を拾う環境要因で、テスト側の分離で解消。
-- ツール: recognition_benchmark.py（ORIGINAL 601枚の基準値。剣なし FP 赤 56/83・青 9/32、異常窓中心の偏ったコーパス）、fixb_offline.py（修正B: 一律 robust 置換で静止青ぶれ 139→13px だが formal 5件失敗、保守的 gate は変更0）。
-- 保留（ブランチのみ）: opt/android-energy・opt/android-startup（探索/起動順の変更、実機再接続の確認待ち）、opt/unity-phonesaber-frame（OnGUI を表示中だけ。PlayMode の操作テストが batchmode の Enlighten クラッシュで未実行）、opt/unity-frame-cost（未実行）、opt/android-pipeline・opt/ios-debug-load（効果小で不採用）。
-- 既知: Unity PlayMode batchmode は Enlighten worker の segv で途中終了することがある（origin/main でも）。Calibration の PlayMode 2件は main でも失敗。
-
-### 2026-10-09 最適化 第4弾（ぶれ）
-- 揺れ補正フィルタ（305fe04）: One Euro 型、F8 内ボタンで OFF/弱/中、既定 OFF。実データで静止ぶれ -12〜16%、中の追加遅れ平均 2.85ms。Codex の「F8 で循環・Shift+F8 で開閉」はスタッフ操作と衝突するため取り消し。EditMode 1692/1692。
-- ぶれ原因分析（2081695, docs/claude/jitter-analysis.md）: 最終出力の A/B 反転 0、大ジャンプ56中34は剣なし（背景FP）、静止青で raw PCA に背景が入り 53〜58px 変動（修正B領域）。上位の改善案はすべて新しい実機 capture が必要（§4 gate 未達）。
-- 次に必要な実機データ: 剣あり/なしを同条件で（肌・窓・画面・包装別）、先端向け/速振りを露出 1/50 と 1/100 で。ガイド付き録画 v3 で取れる。
-
-### 2026-10-09 最適化 第3弾 / Unity テスト初実行
-- Android core 3周目（b5b937a）: BFS・採点・core line の再計算と確保を削減、Mac 7.9〜22.3% 短縮、parity 0、JNI 38/38。
-- 予測の実データ評価（73cf24c）: 18録画で H=20ms の RMSE 0.762→0.760 とほぼ効果なし。既定 0ms 維持、減速抑制のみ採用。誤差の主因は30Hz認識の端点ぶれ・入替。
-- 見送り: iOS DEBUG 診断負荷（0.05→0.02ms/frame と効果小、Debug Recording 経路を触るため）。変更は保存していない。
-- Unity EditMode を batchmode（プロジェクト複製）で初実行: 1678 中 6 失敗→テスト側の修正で 1678/1678（e512a67）。Mac Player も batchmode ビルド可（13a3817、Builds/Mac/3D-Saber.app）。
-
-### 2026-10-09 最適化 第2弾（Codex 3本）
-- Unity 受信の割り当て削減（3a092bd, 8b67212）: parser 42.4MB→0、統計 512MB→0、UDP 受信 39.2→27.2MB / 10万packet（Unity Mono）。独自 EndPoint は Windows Player 安全性のため不採用、標準 IPEndPoint＋IP文字列キャッシュ。
-- iOS UI 12Hz 集約（834c45b）: MainActor 更新 240→12 回/秒、@Published 通知 1,381→110 回/秒。統合 main で verify 全段 PASS。
-- 見送り: Android 送信経路の直送化（ブランチ opt/android-pipeline, 5830f17）。enqueue→send p50 0.126→0.087ms と体感差なし、送信スレッド同期の書き換えで実機未検証のリスクが上回るため。AQUOS で問題が出たら再検討。
-
-### 2026-10-09 最適化 第1弾（Codex 4本、Claude レビュー・検証）
-- iOS 送信経路（ba2d876）: 座標を検出キューから直接送信（MainActor 待ち 約10ms→ほぼ0、Mac ハーネス）。
-- iOS 認識 2周目（d1d9726）: シミュレータ明るいフレーム 12.4→5.4ms（初期 20.7ms）、空フレーム 2.2→0.6ms。bit 一致。
-- Android（44476a4）: 回転を JNI 内へ（回転 約45%短縮）、エミュレータ JNI 38/38。
-- Unity（977d5c6）: 剣の遅延補正（F8 で 0/20/40/60ms、既定 OFF。まず 20ms を試す）、受信フラグの競合修正。
-- 統合後 main で verify 全段 PASS、parity 0 mismatch。実機確認待ち: iPhone/AQUOS の F9・60fps 維持、Unity Test Runner。
-
-### 2026-10-08 認識の高速化（Swift / C++、結果は bit 一致）
-- C++ core（a264ad7）: 明るい480×640で 12.0→5.0、25.1→10.1 ms/frame（Mac M5）。膨張・収縮を十字の反復に、std::set を bitmap に、Evidence を参照に。parity 269/269・JNI 35/35（エミュレータ）。
-- iOS（289b992）: XCTest の明るいフレーム 20.7→12.4 ms（シミュレータ）。verify 全段 PASS、parity 0 mismatch。統合後の main でも parity 269/269 一致。
-- いずれも Codex gpt-6.1-sol が実装、Claude がレビュー・検証。詳細は perf_core_detection.md / perf_ios_detection.md。
-- 次: AQUOS で解析 fps と JNI 中央値を確認し、Android も 60fps を試す。iPhone は F9（fps自動比較 ON）で効果を確認。
-
-### 2026-10-08 iPhone を LAN 優先・P2P 予備に
-- F9 自動 A/B（Mac+iPhone, Editor）: LAN 中央値 133〜157ms / p95 約210〜220ms、P2P 166〜255ms / 350〜415ms。60fps 区間（赤 約37件/秒）は30fps区間より 30〜40ms 速い。maxQueuedFrames 1/2 は差なし。
-- iPhone: LANLivenessProbe が Unity の探索応答（UDP 5007）へ0.5秒ごとに問い合わせ、1.5秒以内に応答があれば LAN、なければ P2P。トグル名を「P2P予備」に。
-- iPhone は60fps要求でも約37件/秒（Debug ビルドも -O。認識が20ms台）。Swift と C++ core の bit 一致高速化を Codex に委任（perf/ios-detection, perf/core-detection）。
-- 検証: verify は Tools の P2P bridge 起動待ちテスト1件のみ失敗（Codex 2本並行の負荷）、単独再実行2回 PASS。他段 PASS、新テスト testLANLivenessProbeRequiresARecentUnityReply PASS。
-
-### 2026-10-08 F9 の誤判定除去と自動 A/B
-- 10-07 夜の F9（60fps、P2P 162ms / LAN 157ms）は最小 11/19ms を含み信頼できない。原因は旧版がワールド座標で閾値0.3を判定していたこと（71595c4 で正規化座標に修正済み）と条件の違い。
-- F9: 25ms未満・逆方向の応答を棄却（rejected）、左右の棒位置を学習して切替先に近い応答だけ採用。15回ごとに maxQueuedFrames 1/2 を交互にし latency-block を記録。iPhone Debug に「fps自動比較」（30秒ごとに30⇄60、保存しない）。集計は `PhoneSaber/tools/latency_report.py`。
-- 検証: verify 全段 PASS、Unity は Roslyn コンパイル＋判定ロジックを .NET で単体実行（EditMode 未実行）、latency_report の unittest 2/2。
-
-### 2026-10-07 iPhone 60fps を本番既定に、F9 結果の自動記録
-- 実測（Mac+iPhone、P2P）: F9 画面→受信 中央値120ms/p95 140ms（30fps）。iPhone 撮影→送信 30fps 50ms → 60fps 37ms。
-- iPhone: 「詳細設定→カメラ」に 30/60fps（既定60、保存、60非対応端末は30）。認識・UDP形式は不変。Unity: maxQueuedFrames=1（990aa4a）。F9 は20回ごとに events.log へ median/p95・赤pkt/s・経路・描画fpsを自動記録、Play停止時も記録。
-- 検証: verify 全段 PASS、Unity は Roslyn コンパイルのみ。次: P2P と LAN の F9 比較（ログから自動判定）。
-
-### 2026-10-07 遅延の計測手段と即効の改善（全機種）
-- Unity: F9 遅延テスト（画面に赤い棒を左右交互→スマホで撮影→赤の受信位置が切り替わるまで。表示・カメラ・認識・Wi-Fi・受信を含む）。InputPoint を DefaultExecutionOrder(-2000)、SaberInputBridge を -1500 にし、受信の取り込み→剣の移動の順を固定（最大1フレームの遅れを除去）。
-- Android: 送信中は WIFI_MODE_FULL_LOW_LATENCY ロック。端末状態行に「撮影→送信」（センサー露光時刻→JNI完了）の中央値。
-- iPhone: 端末状態行に「撮影→送信」（AVCapture ホスト時刻→認識完了）の中央値。
-- Windows: firewall スクリプトを Private+Public・LocalSubnet 限定に変更し、Unity の受信 Block 規則を無効化（ホットスポットが Public 扱いで受信できなかったため）。
-- 認識・UDP 形式・閾値は変更なし。検証: verify 全段 PASS（Detection は件数定数 4→5 の修正後に単独再実行）、Android unit 35/35、Unity は Roslyn でコンパイルのみ（EditMode は未実行）。
-
-### 2026-10-07 Android実機（AQUOS sense9）で送信できない問題を修正
-- 症状: 剣が映っても「未検出・送信0」、解析2〜8fps。原因1: Debug APKでC++ coreが-O0になり1フレーム約300ms→送信側の180ms鮮度制限で全破棄。原因2: RotationHelperの1バイトずつのget/putで約80ms。
-- 修正: core/JNIを-O2固定、回転をInt単位の一括コピーに。sense9で解析30.4fps・JNI中央値17〜33ms、Windows Unityで両色受信を確認。
-- 検証: Android unit 34/34、API 37 arm64エミュレータでJNI parity 35/35（-O2でもbit一致）。
+### 2026-10-07〜10 遅延・負荷の最適化（まとめ。詳細は各 docs/claude/*.md と commit message）
+- 計測: F9 遅延テスト（画面→受信、20回ごとに events.log、latency_report.py）、両スマホの「撮影→送信」、Unity frame cost（PhoneSaberFrameCost.cs: ゲーム約39B/フレーム、Editor 計測の500KB/フレームは Editor 拡張分）。
+- 経路: iPhone は LAN 優先（Unity の 5007 応答で確認）・P2P 予備。10-07 実測で LAN は P2P より中央値約45ms速く p95 約半分。iPhone 60fps 既定（撮影→送信 50→37ms）。
+- iPhone: 認識を bit 一致のまま 3 段階で高速化（XCTest 明るいフレーム 20.7→3.3ms、Mac native 2.3〜2.9ms）、座標を検出キューから直接送信（MainActor 待ち約10ms→ほぼ0）、UI 12Hz 集約、送信の割り当て・dispatch 削減、Release で落ちる queue precondition を DEBUG 限定に。
+- Android: Debug でも -O2（-O0 で全送信が鮮度切れだった）、C++ core を4段階で高速化（Mac 12.0→約1.2ms）、回転を JNI 内へ、60fps（対応時）、Wi-Fi 低遅延ロック。JNI parity 38/38（エミュレータ）。
+- Unity: 受信の割り当て削減（parser/統計 0）、HUD/UI の毎フレーム文字列・TMP 再設定削減、運営表示/F9 の OnGUI は表示中だけ、実行順固定、maxQueuedFrames=1、Player 通常 Log の stack trace 省略、任意の揺れ補正（OFF/弱/中）と遅延補正（0〜60ms、実データで効果小のため既定 OFF）、1クリック/バッチの Player ビルド、Windows firewall スクリプトを Public（ホットスポット）対応。
+- 検証基盤: Unity EditMode を batchmode（プロジェクト複製）で 1694/1694、PhoneSaber PlayMode 17/17（入力の focus を無視する設定が必要）。全 PlayMode は Enlighten の native クラッシュで途中終了することがある（main でも）。
+- 分析: recognition_benchmark.py（ORIGINAL 601枚、剣なし FP 赤56/83・青9/32）、修正B offline（静止青ぶれ 139→13px だが formal 5件失敗）、赤/青 FP 特徴（red-fp-features.md）、ぶれ原因（jitter-analysis.md）、予測の実データ評価（predict-real.md）。
+- 不採用/保留ブランチ: opt/android-energy・opt/android-startup（探索・起動順、実機確認待ち）、opt/android-pipeline・opt/ios-debug-load（効果小）。
 
 以下は履歴に記録された検証結果。今回の文書整理で再実行したものではない。
 
