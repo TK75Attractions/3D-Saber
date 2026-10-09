@@ -118,5 +118,7 @@ InitTestScene*.unity*
 /PhoneSaber/windows/*.STOP
 /PhoneSaber/windows/STOP
 /PhoneSaber/mac/*.log
+/PhoneSaber/mac/*.log.1
+/PhoneSaber/mac/.saber-watchdog.lock/
 /PhoneSaber/mac/*.STOP
 /PhoneSaber/mac/STOP
