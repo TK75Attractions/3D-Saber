@@ -338,6 +338,31 @@ final class P2PTransportTests: XCTestCase {
         await fulfillment(of: [rejected], timeout: 2)
     }
 
+    func testCoordinateHookCompletesInlineAndFromAnotherQueue() async throws {
+        for background in [false, true] {
+            let bridge = try FakeBridge()
+            defer { bridge.stop() }
+            let port = try await bridge.ready()
+            let sender = P2PSender(timing: fastTiming(),
+                                   endpointOverride: .hostPort(host: "127.0.0.1", port: port),
+                                   coordinateSendHook: { _, completion in
+                                       if background { DispatchQueue.global().async { completion(nil) } }
+                                       else { completion(nil) }
+                                   })
+            defer { sender.stop() }
+            sender.start()
+            let connected = await waitFor { sender.isUsable }
+            XCTAssertTrue(connected)
+            let delivered = expectation(description: "hook completed background=\(background)")
+            sender.send("1,2,3,4", to: 5005) { result in
+                if case .success = result { delivered.fulfill() }
+                else { XCTFail("hook completion failed") }
+            }
+            await fulfillment(of: [delivered], timeout: 2)
+            XCTAssertEqual(sender.stalledSendCountForTesting, 0)
+        }
+    }
+
     func testAStuckCoordinateSendDropsTheLinkAfterTheWatchdog() async throws {
         let bridge = try FakeBridge()
         defer { bridge.stop() }
