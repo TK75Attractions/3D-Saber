@@ -736,7 +736,10 @@ final class P2PSender {
 
     private func finish(_ request: PendingSend, color: P2PColor, sendID: UInt64,
                         generation: Int, error: Error?) {
+#if DEBUG
+        // 本番では Network の契約（start(queue:) のキューで完了通知）に任せ、当日に落とさない。
         dispatchPrecondition(condition: .onQueue(queue))
+#endif
         guard connectionGeneration == generation, inFlight[color] == sendID else { return }
         inFlight[color] = nil
         sendWatchdogs.removeValue(forKey: color)?.cancel()
