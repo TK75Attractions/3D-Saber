@@ -12,6 +12,9 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     const string MutedKey = "songSelectPreviewMuted";
     public PreviewState State { get; private set; }
     public bool Muted { get; private set; }
+    string playingStatusText;
+    double shownStatusSeconds, shownStatusDuration;
+    bool shownStatusMuted;
     public string StatusText
     {
         get
@@ -20,8 +23,20 @@ public sealed class SongSelectChartPreview : MonoBehaviour
             {
                 case PreviewState.Waiting: return "試聴を準備中";
                 case PreviewState.Loading: return "音源を読み込み中";
-                case PreviewState.Playing: return (Muted ? "消音で試聴中 " : "試聴中 ")
-                    + SongChartInsights.Duration(Math.Max(0, SongTime - Window.Start)) + " / " + SongChartInsights.Duration(Window.Duration);
+                case PreviewState.Playing:
+                    double seconds = Math.Max(0, SongTime - Window.Start);
+                    double shownSeconds = Math.Ceiling(seconds);
+                    // Duration の表示は秒単位。時計の読取は毎回行い、表示変更時だけ文字列を作る。
+                    if (playingStatusText == null || shownStatusSeconds != shownSeconds
+                        || shownStatusDuration != Window.Duration || shownStatusMuted != Muted)
+                    {
+                        shownStatusSeconds = shownSeconds;
+                        shownStatusDuration = Window.Duration;
+                        shownStatusMuted = Muted;
+                        playingStatusText = (Muted ? "消音で試聴中 " : "試聴中 ")
+                            + SongChartInsights.Duration(seconds) + " / " + SongChartInsights.Duration(Window.Duration);
+                    }
+                    return playingStatusText;
                 case PreviewState.Complete: return "試聴終了・もう一度聴けます";
                 case PreviewState.Unavailable: return "この難易度には試聴できる譜面がありません";
                 case PreviewState.Failed: return "音源を再生できません・再試聴で再試行";
