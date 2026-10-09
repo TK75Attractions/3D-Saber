@@ -39,7 +39,9 @@ public class InputPoint : MonoBehaviour
     PhoneSaberP2PBridgeProcess p2pBridge;
     // SetReceiverAlive は受信 thread で動くため、Application.dataPath は main thread で控えておく。
     string p2pDataPath;
-    string phoneSaberStation;
+    // main thread の StartNetworkServices だけが書く。読む側は lock を取らない
+    // (受信 thread が networkLifecycleLock を持ったまま外部 process を起動・停止しても、毎フレームの読み出しを止めない)。
+    volatile string phoneSaberStation;
     // 運営表示だけの統計。既存の受理数や座標・最終有効入力時刻とは独立させる。
     readonly PhoneSaberPacketStatistics redInputStats = new PhoneSaberPacketStatistics();
     readonly PhoneSaberPacketStatistics blueInputStats = new PhoneSaberPacketStatistics();
@@ -115,21 +117,24 @@ public class InputPoint : MonoBehaviour
     public bool ReceiverAlive => receiverAlive1;
     public bool ReceiverAlive2 => receiverAlive2;
     public bool BonjourPublicationEligible => !networkShutdown && receiverAlive1 && receiverAlive2;
+    // 表示・毎フレーム用の読み出しは networkLifecycleLock を取らない。参照の読み出しは atomic で、
+    // 停止直後の古い参照を読んでも、その publisher/responder 自身が停止済みとして false を返す。
     public bool BonjourPublisherRunning
     {
         get
         {
-            lock (networkLifecycleLock)
-                return bonjourPublisher != null && bonjourPublisher.IsPublishing;
+            var publisher = Volatile.Read(ref bonjourPublisher);
+            return publisher != null && publisher.IsPublishing;
         }
     }
-    public string StationLabel
-    {
-        get { lock (networkLifecycleLock) return phoneSaberStation ?? ""; }
-    }
+    public string StationLabel => phoneSaberStation ?? "";
     public bool DiscoveryResponderRunning
     {
-        get { lock (networkLifecycleLock) return discoveryResponder != null && discoveryResponder.IsRunning; }
+        get
+        {
+            var responder = Volatile.Read(ref discoveryResponder);
+            return responder != null && responder.IsRunning;
+        }
     }
 
     // receive thread が書いた情報を一括コピーする。呼び出し側は統計を変更できない。

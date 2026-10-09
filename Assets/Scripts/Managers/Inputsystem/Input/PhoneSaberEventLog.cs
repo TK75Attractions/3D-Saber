@@ -17,6 +17,8 @@ public sealed class PhoneSaberEventLog
     readonly Queue<string> pending = new Queue<string>();
     volatile bool hasPending;
     int dropped;
+    // 書込に失敗した行。Flush(main thread)だけが触り、次回の Flush で最初に書き直す(失敗で行を失わない)。
+    string retryLine;
     public string LogPath { get; }
     public string LastError { get; private set; } = "";
 
@@ -72,32 +74,45 @@ public sealed class PhoneSaberEventLog
         try
         {
             // 空の定期 Flush はロック不要。フラグの更新はキューと同じ lock 内で行う。
-            if (!hasPending) return;
+            if (!hasPending && retryLine == null) return;
             lock (gate)
             {
-                if (pending.Count == 0 && dropped == 0) { hasPending = false; return; }
+                if (pending.Count == 0 && dropped == 0 && retryLine == null) { hasPending = false; return; }
             }
             Directory.CreateDirectory(Path.GetDirectoryName(LogPath));
+            string rotationError = null;
             for (int i = 0; i < FlushBatchSize; i++)
             {
-                string line;
-                lock (gate)
+                string line = retryLine;
+                if (line == null)
                 {
-                    if (dropped > 0)
+                    lock (gate)
                     {
-                        line = Format(DateTimeOffset.UtcNow, "", "SYSTEM", "queue-overflow", "dropped=" + dropped);
-                        dropped = 0;
+                        if (dropped > 0)
+                        {
+                            line = Format(DateTimeOffset.UtcNow, "", "SYSTEM", "queue-overflow", "dropped=" + dropped);
+                            dropped = 0;
+                        }
+                        else if (pending.Count > 0) line = pending.Dequeue();
+                        else break;
                     }
-                    else if (pending.Count > 0) line = pending.Dequeue();
-                    else break;
                 }
+                // 書込が成功するまで保持し、例外で抜けても次回に同じ行から再開する。
+                retryLine = line;
                 byte[] bytes = Utf8.GetBytes(line);
                 long length = File.Exists(LogPath) ? new FileInfo(LogPath).Length : 0;
-                if (ShouldRotate(length, bytes.Length)) Rotate();
+                if (ShouldRotate(length, bytes.Length))
+                {
+                    // Windows で他のプロセスが古い世代を開いていると移動できない。
+                    // 世代交代に失敗しても記録は止めず、現行ファイルへ追記を続ける(上限超過は許容)。
+                    try { Rotate(); }
+                    catch (Exception e) { rotationError = "rotate " + e.GetType().Name; }
+                }
                 using (var stream = new FileStream(LogPath, FileMode.Append, FileAccess.Write, FileShare.Read))
                     stream.Write(bytes, 0, bytes.Length);
+                retryLine = null;
             }
-            LastError = "";
+            LastError = rotationError ?? "";
             lock (gate) hasPending = pending.Count != 0 || dropped != 0;
         }
         catch (Exception e) { LastError = e.GetType().Name; }
