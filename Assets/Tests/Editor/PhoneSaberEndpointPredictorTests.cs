@@ -31,9 +31,13 @@ public class PhoneSaberEndpointPredictorTests
                     predictor.Predict(number(1), (int)number(6), out var a, out var b);
                     float[] actual = { a.x, a.y, b.x, b.y };
                     for (int axis = 0; axis < 4; axis++)
-                        Assert.AreEqual(Convert.ToUInt32(row[axis + 7], 16),
-                            BitConverter.ToUInt32(BitConverter.GetBytes(actual[axis]), 0),
-                            $"予測 {predictions} 成分 {axis}");
+                    {
+                        uint expectedBits = Convert.ToUInt32(row[axis + 7], 16);
+                        uint actualBits = BitConverter.ToUInt32(BitConverter.GetBytes(actual[axis]), 0);
+                        // ±0 は位置として同じ。Unity の Mono と .NET で 0 の符号だけ異なる場合がある（10-09 に確認）。
+                        bool bothZero = (expectedBits & 0x7fffffffu) == 0 && (actualBits & 0x7fffffffu) == 0;
+                        if (!bothZero) Assert.AreEqual(expectedBits, actualBits, $"予測 {predictions} 成分 {axis}");
+                    }
                     predictions++;
                     break;
                 default: Assert.Fail("不明な共有ベクトル操作: " + row[0]); break;
@@ -228,15 +232,24 @@ public class PhoneSaberEndpointPredictorTests
         finally { UnityEngine.Object.DestroyImmediate(go); }
     }
 
-    [TestCase("1,2", "1,2")]
-    [TestCase("ts=123;1,2,3,4", "1,2,3,4")]
-    [TestCase("timestamp=123;1,2", "1,2")]
-    [TestCase("ts=;1,2", "ts=;1,2")]
-    [TestCase("timestamp=123", "timestamp=123")]
-    public void OptionalTimestampStrippingPreservesExistingFormat(string packet, string expected)
+    // 旧 InputPoint.StripOptionalTimestamp と同じ規則を、受信で使う PhoneSaberPacketParser で確認する。
+    // ts=/timestamp= は ';' までを外し、空の時刻や ';' のない形式は座標として受理しない。
+    [TestCase("1,2", true, false, 1f, 2f, 0f, 0f)]
+    [TestCase("ts=123;1,2,3,4", true, true, 1f, 2f, 3f, 4f)]
+    [TestCase("timestamp=123;1,2", true, false, 1f, 2f, 0f, 0f)]
+    [TestCase("ts=;1,2", false, false, 0f, 0f, 0f, 0f)]
+    [TestCase("timestamp=123", false, false, 0f, 0f, 0f, 0f)]
+    public void OptionalTimestampStrippingPreservesExistingFormat(string packet, bool parsed, bool stick,
+        float a, float b, float c, float d)
     {
-        var strip = typeof(InputPoint).GetMethod("StripOptionalTimestamp", BindingFlags.Static | BindingFlags.NonPublic);
-        Assert.AreEqual(expected, strip.Invoke(null, new object[] { packet }));
+        var parser = new PhoneSaberPacketParser();
+        bool ok = parser.TryParse(System.Text.Encoding.ASCII.GetBytes(packet), out bool isStick,
+            out float pa, out float pb, out float pc, out float pd, out double? _);
+        Assert.AreEqual(parsed, ok);
+        if (!parsed) return;
+        Assert.AreEqual(stick, isStick);
+        Assert.AreEqual(a, pa); Assert.AreEqual(b, pb);
+        if (stick) { Assert.AreEqual(c, pc); Assert.AreEqual(d, pd); }
     }
 
     [Test]
