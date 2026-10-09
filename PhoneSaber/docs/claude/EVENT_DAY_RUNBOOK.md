@@ -42,12 +42,12 @@ Git／Unityのルートは `3D-Saber/`、スマホアプリ・ツールは `Phon
 | Windows＋Android | 同じWi-Fi、UDP 5007探索 | 開始 | × |
 | Windows＋iPhone | 同じWi-Fi、WindowsのIPv4を手動IPへ | 通常送信を開始 | × |
 
-**手動IPは自動探索より優先**。Windowsは `ipconfig` で使用中の接続のIPv4を見る。Androidは入力後「手入力を保存」、空欄保存で探索へ戻る。台指定は自動送信先を選ぶ機能で、違う台からのUDP受信を拒否する機能ではない。iPhoneのP2P・診断relayも同じ台に限定される。
+**手動IPは自動探索より優先**（iPhoneは手動IPがあるとP2P予備も使わずそのIPへ送る）。Windowsは `ipconfig` で使用中の接続のIPv4を見る。Androidは入力後「手入力を保存」、空欄保存で探索へ戻る。台指定は自動送信先を選ぶ機能で、違う台からのUDP受信を拒否する機能ではない。iPhoneのP2P・診断relayも同じ台に限定される。
 
-- ☐ **Mac＋iPhoneのP2P**: [P2P手順](../../ios/PhoneSaberSender/P2P_BRIDGE.md)でbridgeを一度ビルドする。Editorは1セッションに1回裏でビルドし、キャッシュは `~/Library/Caches/PhoneSaber/p2p-bridge/`。標準スクリプトは `PhoneSaber/ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py`。**built .appは `PHONESABER_P2P_BRIDGE_SCRIPT` に利用可能なlauncherを指定**する。なければLANで使う。
+- ☐ **Mac＋iPhoneのP2P**: [P2P手順](../../ios/PhoneSaberSender/P2P_BRIDGE.md)でbridgeを一度ビルドする。Editorは1セッションに1回裏でビルドし、キャッシュは `~/Library/Caches/PhoneSaber/p2p-bridge/`。標準スクリプトは `PhoneSaber/ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py`。built .appには[Mac launcher](../../mac/README.md)（`saber-watchdog.sh`）がrepoのbridgeを `open --env PHONESABER_P2P_BRIDGE_SCRIPT=…` で自動で渡す（launcherログに `p2p-bridge=yes`）。.appを直接開いた場合やbridgeが見つからない場合はLANだけで動く。
 - ☐ iPhoneのWi-FiはON、インターネット共有はOFF、P2P予備はON（既定ON・保存）。LANの方が速い（F9実測で中央値約45ms・p95約半分）ので、できるだけMacと同じWi-Fiにつなぐ。端末間通信が禁止のWi-Fiでは自動でP2Pへ退避する。モバイルデータは使わない。Macは学校Wi-Fiでインターネットを使い続けられる。Macのローカルネットワーク許可はbridgeを起動するUnity／Terminalに与える。
 - ☐ **診断はMac＋iPhoneのみ**。[診断手順](../../ios/PhoneSaberSender/Tools/PHONE_SABER_TRIAGE.md)でデスクトップのStart PhoneSaber／PhoneSaber Statusを用意する。既存Macもinstallerの再実行で不足リンクだけ追加できる。Codex CLIのログインを確認（なくても受信と無料要約は動く）。
-- ☐ 本番の組み合わせで両色、A/Bの取り違え防止、通常終了・異常終了、Wi-Fi切替・前面復帰・アプリ再起動・停止後の非再開を試す。**AQUOS実機・Windows受信・長時間運転は未確認**。Mac＋iPhoneの台指定は10-06に確認済み。
+- ☐ 本番の組み合わせで両色、A/Bの取り違え防止、通常終了・異常終了、Wi-Fi切替・前面復帰・アプリ再起動・停止後の非再開を試す。Mac＋iPhoneの台指定は10-06に確認済み。Windows（Editor Play）＋AQUOSは10-07にホットスポット経由で両色の送信・F8受信のみ確認済み（30fps）。**Windowsのビルド版＋bat監視・A/B探索・F7、AQUOSの60fps・台探索・復帰、長時間運転は未確認**。
 - ☐ 剣なしの運営練習は[Saber Motion Replay](../../tools/README_saber_motion_replay.md)。実機送信を止めて使い、練習の位置補正は最後にリセットする。
 
 ## 2. 当日の起動順
@@ -83,7 +83,7 @@ Git／Unityのルートは `3D-Saber/`、スマホアプリ・ツールは `Phon
 
 F8 には補正の設定もある（どちらも台ごとに保存、**既定 OFF のまま運用**）。
 - **剣の揺れ補正**（OFF／弱／中）: 静止時のぶれを 12〜16% 減らす。中で振りの遅れが平均約3ms増える。実データで効果が小さいため、使うのは剣が止まって見える時に揺れが気になる場合だけ。
-- **遅延補正**（0／20／40／60 ms）: 18録画の実データでは効果がほぼ無く（ぶれが主因）、40ms以上は切り返しで行き過ぎる。通常は 0。
+- **剣の遅延補償**（0／20／40／60 ms）: 18録画の実データでは効果がほぼ無く（ぶれが主因）、40ms以上は切り返しで行き過ぎる。通常は 0。
 
 packet数・最終受信時刻には不正payloadも含む。初回受信前は開始からの経過を表示。受信・解析OKだけでは認識品質を保証しない。剣なし・未検出時は0でもよいが、点灯した両色でゲーム内の向き・位置・四隅を確認する。
 
@@ -93,13 +93,13 @@ packet数・最終受信時刻には不正payloadも含む。初回受信前は�
 2. 両色を継続認識させ、F8で **5秒以上**待つ。色別の直近5秒の「受信間隔」「片道時計差」の中央値／p95／最大(ms)を見る。
 3. 間隔は時計同期不要。片道は **PC受信の壁時計−スマホts**。両方の自動日時／NTP同期と時計差を確認した場合だけ「スマホとPCのNTP同期を確認済み」にチェック（起動時OFF・自動検証なし）。未確認なら「間隔のみ」を使う。負値は時計差の警告で、0には丸めない。
 
-| 判定 | 30fpsの暫定目安（各色。境界値は悪い側へ） |
+| 判定 | 暫定目安（各色、30／60fps共通。境界値は悪い側へ） |
 | --- | --- |
 | **良好** | 間隔p95 **<50ms**、最大と現在の無受信時間 **<150ms**、20サンプル以上。同期確認済みでtsがある場合は片道も同基準 |
 | **注意** | p95 **<100ms**、最大と現在の無受信時間 **<500ms**で良好に届かない。片道も判定するなら同基準。20サンプル未満は「計測中」、負の片道値は「時計差を確認」 |
 | **不良** | p95 **≥100ms**、最大／現在の無受信時間 **≥500ms**、未受信、最新payload解析NG。同期確認済みなら片道p95 **≥100ms**／最大 **≥500ms**も対象 |
 
-注意／不良なら送信先・許可・発熱・fpsを確認。P2Pなら同じWi-Fi＋P2P優先OFFのLANと、同じ点灯・動作で各20〜30秒比べる。p95と最大の詰まりを見る。終わったら計測OFFで通常送信へ戻す。
+注意／不良なら送信先・許可・発熱・fpsを確認。P2Pなら、iPhoneをMacと同じWi-Fiにつないだ（またはP2P予備OFFの）LANと、同じ点灯・動作で各20〜30秒比べる。p95と最大の詰まりを見る。終わったら計測OFFで通常送信へ戻す。
 
 計測の読み方:
 
@@ -131,7 +131,7 @@ F8の「位置補正をON」で一時OFF、「この台の位置補正をリセ�
 
 - 発熱はOSの状態（正常／やや高い／高い／危険）で、摂氏温度ではない。iPhoneはnominal／fair／serious／critical、AndroidはNONE／LIGHT・MODERATE／SEVERE／CRITICAL以上。電池は%と充電中／満充電／未充電、取得不能は「不明」。
 - iPhoneのカメラ／処理fps、Androidの解析fpsは直近5秒の実測。処理中央値はiPhoneの画素アクセス込み検出時間、AndroidのJNI時間。送信fps・PC受信fps・無線遅延とは別。
-- 開始3秒後から要求fpsの70%未満で注意（30fpsなら21、iPhoneの60fpsなら42未満）。iPhoneはカメラ／処理どちらも対象。高い／危険はfpsに関係なく注意。熱やfpsを理由に認識・カメラfpsを自動変更しない。
+- 開始3秒後から要求fpsの70%未満で注意（30fpsなら21、60fpsなら42未満）。iPhoneはカメラ／処理どちらも対象。高い／危険はfpsに関係なく注意。熱やfpsを理由に認識・カメラfpsを自動変更しない。
 - 高い／危険、fps低下、電池減少は箱の通風・排熱・給電を確認。充電でも熱は増える。危険が続けば手動停止して冷却／交代。熱状態の変化はiPhone Console／Android Logcat（DeviceHealth）、iPhone診断録画には熱と電池も残る。
 - 送信意思を保存し、中断後の前面復帰・アプリ再起動で再開する。自動開始OFFでも送信中だった場合は復帰。停止ボタンは意思を消し、前面復帰だけでは再開しない。ただし自動開始ONなら次のアプリ起動で開始する。診断／ガイド録画は自動再開しない。
 - カメラ中断・エラー・映像停止は1→2→4→8→16→最大30秒で再試行。15分失敗で警告、10秒安定で回数リセット。iPhone「カメラを再開」、Android停止→開始でも再試行できる。
@@ -145,7 +145,7 @@ F8で台・両色・無受信時間・経路・判定を見る。イベントロ
 Mac＋iPhoneの追加確認:
 
 - 経路は `P2P Connected (awdl0 · Phone Saber Unity P2P (<Mac名>))`。同じWi-Fiでは `en0` の場合もある。RTTは直近40回の中央値／p95／最大／ping欠落率（0%が理想）。
-- Unity Consoleは起動時 `listening on UDP`／`Bonjour registered`、接続時 `peer connected`／`RED received`／`BLUE received`（sessionごとに1回）、復帰時 `peer alive`。10秒ごとの `last 10s` のRED／BLUE・maxGapMs・peersも見る。iPhoneは2026-10-07から既定60fps（詳細設定→カメラで30へ戻せる）で間隔約17ms・約60件/秒、Androidは30fpsで約33ms・約30件/秒。bridgeは両色の受信機が生きている間だけ動く。
+- Unity Consoleは起動時 `listening on UDP`／`Bonjour registered`、接続時 `peer connected`／`RED received`／`BLUE received`（sessionごとに1回）、復帰時 `peer alive`。10秒ごとの `last 10s` のRED／BLUE・maxGapMs・peersも見る。iPhoneは2026-10-07から既定60fps（詳細設定→カメラで30へ戻せる）で間隔約17ms・約60件/秒、Androidは2026-10-08から「カメラ 60fps（低遅延）」既定ON（対応端末のみ60fps、非対応は30fpsで約33ms・約30件/秒。AQUOSでの60fps維持は未確認）。bridgeは両色の受信機が生きている間だけ動く。
 - **PhoneSaber Status.command**は読み取りのみ・数秒。受信側 `/health`、UDP使用者、bridge、Editor.logの直近Play以降の集計5回・接続・警告・relay、最新bundle／report／解析状態、Git branch／差分（fetchなし）、Codex CLIを確認する。Editor.logは行時刻がないため最終更新時刻を表示。通常は全項目OK、maxGapMsは同ツール独自に<150msでOK、150〜499でWARN、≥500でNG。終了コードはOK=0／WARN=1／NG=2。
 
 ### 診断を使う場合（Mac＋iPhone）
@@ -166,7 +166,7 @@ inboxは `~/Library/Application Support/PhoneSaber/diagnostics-inbox/`、ログ�
 | 別台が動く／台が見つからない | 台不一致・古い手動IP | スマホとF8の台を合わせ、正しいlauncherでPCを起動し直す。手動IPを修正／解除 |
 | 学校Wi-Fiだけ届かない | 端末間通信の隔離 | PCのホットスポット（Macはインターネット共有）へ。A/BのSSIDを区別し、新しいIPを入力 |
 | Windowsだけ入力／探索なし | Public設定・firewall | [Windows README](../../windows/README.md)で共有接続もPrivate、UDP 5005〜5007許可。iPhoneは手動IP |
-| Mac＋iPhoneのP2P未接続／ラグ／LANへ戻る | 権限・Wi-Fi OFF・bridge・詰まり | 両端の許可、Wi-Fi ON／個人用Hotspot OFF、Status、built .appのbridge指定を確認。LANへ戻る表示は正常（LANの方が速い）。P2Pでラグなら同じWi-Fiへつなぐ |
+| Mac＋iPhoneのP2P未接続／ラグ／LANへ戻る | 権限・Wi-Fi OFF・bridge・詰まり | 両端の許可、Wi-Fi ON／個人用Hotspot OFF、Status、launcherログの `p2p-bridge=yes` を確認。LANへ戻る表示は正常（LANの方が速い）。P2Pでラグなら同じWi-Fiへつなぐ |
 | カメラ復旧待ちが続く | 中断・カメラ使用不可 | 権限確認。iPhone「カメラを再開」、Android停止→開始。台とF8の両色の復帰を確認 |
 | 熱い／fps低下／電池減少 | 箱内の熱・排熱・給電不足 | 箱を開け送風、排熱から離し給電確認。危険が続けば停止して冷却／予備端末 |
 | 受信OKだが剣が逆／ずれる／飛ぶ | 反転・設置・ブレ・誤検出 | レンズ・固定・画角・照明を確認。反転を直したらF7再測定。剣なし／人ありでも試す。閾値は当日変えない |

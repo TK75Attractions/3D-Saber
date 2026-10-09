@@ -3,19 +3,20 @@
 単一repoの Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/` 内です。以下のコマンドは、指定がない限り Git root から `cd PhoneSaber` して実行します。
 
 iPhone → Mac の座標送信だけを、学校 Wi-Fi やテザリングを通さず、Apple の peer-to-peer Wi-Fi
-(AWDL)で直接送る**追加機能**です。Mac は学校 Wi-Fi につないだまま、インターネット通信(Codex / Claude など)は
-学校 Wi-Fi 経由で続けられます。P2P が使えないときは、従来の LAN(Bonjour / 手動 IP)の UDP に自動で戻ります。
+(AWDL)で直接送る**予備経路**です。Mac は学校 Wi-Fi につないだまま、インターネット通信(Codex / Claude など)は
+学校 Wi-Fi 経由で続けられます。2026-10-08 から **LAN 優先**です。LAN で Unity の応答(UDP 5007)がある間は LAN(Bonjour)で送り、
+届かないときだけ P2P を使います(F9 実測で LAN の方が中央値約45ms速い)。手動 IP があるときは P2P を使いません。
 
 ## 通信フロー
 
 ```text
 PhoneSaberSender (iPhone)
   └─ 認識(FrameProcessor など、変更なし)→ 座標文字列 "x1,y1,x2,y2"(変更なし)
-       ├─ [P2P 優先] P2PSender ── Network.framework UDP, includePeerToPeer=true, cellular 禁止
+       ├─ [予備: LAN で Unity の応答がないとき] P2PSender ── Network.framework UDP, includePeerToPeer=true, cellular 禁止
        │      └─ Bonjour `_phonesaber-p2p._udp` ── Mac: PhoneSaberP2PBridge
        │                                              ├─ RED  → 127.0.0.1:5005
        │                                              └─ BLUE → 127.0.0.1:5006 → Unity InputPoint.cs(変更なし)
-       └─ [fallback] UDPSender(既存) ── Bonjour `_phonesaber._udp` / 手動 IP ── Mac:5005 / 5006 → Unity
+       └─ [優先] UDPSender(既存) ── Bonjour `_phonesaber._udp` / 手動 IP ── Mac:5005 / 5006 → Unity
 ```
 
 - **service type は別にしました**: `_phonesaber-p2p._udp`(bridge が公開)。既存の `_phonesaber._udp`(Unity の
@@ -58,9 +59,12 @@ iPhone(DebugBundleTransfer)
 
 ## fallback の条件
 
-座標は、次の順に、使える最初の経路で送ります。
+座標は、次の順に、使える最初の経路で送ります(2026-10-08 から LAN 優先)。
 
-1. **P2P**: bridge が ping に pong を返している間だけ使います。UDP の「ready」だけでは使いません。
+0. **手動 IP**: 入力されていれば常にそこへ送り、P2P は使いません。
+1. **LAN(Bonjour)で Unity の応答あり**: 既存の `_phonesaber._udp` で見つけた Mac へ、Unity の探索応答(UDP 5007、
+   Android の自動探索と同じ要求)を 0.5 秒ごとに問い合わせ、1.5 秒以内に応答があれば LAN で送ります。
+2. **P2P**: LAN の応答がないときだけ。bridge が ping に pong を返している間だけ使います。UDP の「ready」だけでは使いません。
    - ping は 0.25 秒ごと。最後の pong から **1.5 秒** で P2P をやめ、LAN へ戻ります(ゲームの再起動は不要)。
    - pong が **4 秒** 来ない(または新しい接続で 4 秒以内に最初の pong が来ない)と、接続を張り直します。
    - pong が戻れば、自動で P2P に戻ります。bridge を再起動した場合も同じです。
@@ -70,8 +74,7 @@ iPhone(DebugBundleTransfer)
      実測の AWDL の一時的な詰まり(170〜300 ms、ときに約 1 秒)は自然に回復するので、それより十分長くしています。
    - 張り直しの間隔は 0.25 秒から 2 倍ずつ伸ばし、最大 4 秒です。pong が 1 回来たら 0.25 秒に戻します。
    - アプリが前面に戻ったときは、最近 pong がある接続には ping をすぐ送り、そうでなければ待たずに張り直します。
-2. **LAN(Bonjour)**: 既存の `_phonesaber._udp` で見つけた Mac の IP。
-3. **手動 IP**: 既存の手動入力欄。
+3. **LAN(Bonjour、応答未確認)**: P2P も使えないときは、見つかっている Mac の IP へそのまま送ります。
 
 その他の動作:
 
@@ -79,7 +82,7 @@ iPhone(DebugBundleTransfer)
 - P2P に戻ったとき、LAN 側で送信待ちの座標(port が ready でなかったもの)は捨てます。
   あとで LAN が ready になっても、古い座標が新しい座標の後に届くことはありません。
 - P2P が送る直前に使えなくなり、LAN も未設定のときは、その座標は送らずに数えるだけです(`p2pNoRouteCount`)。
-- 「P2P優先」toggle を OFF にすると、従来とまったく同じ LAN だけの動作になります(設定は保存されます)。
+- 「P2P予備」toggle(既定 ON)を OFF にすると、従来とまったく同じ LAN だけの動作になります(設定は保存されます)。
 - P2P が ON なら、LAN の送信先が未発見のままでも開始できます(従来は「Macを検索中」で開始できませんでした)。
   その場合、P2P が届くまでは座標を送りません。あとから LAN の Mac が見つかれば、LAN の fallback が自動で加わります。
 
@@ -110,6 +113,8 @@ iPhone(DebugBundleTransfer)
 - Unity は、Unity project(`3D-Saber`)内の
   `PhoneSaber/ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py` を `/usr/bin/python3` で実行します。
   場所が違う場合は、環境変数 `PHONESABER_P2P_BRIDGE_SCRIPT` で launcher の path を指定します。
+  built `.app` は repo の外から起動されるため、`PhoneSaber/mac/Start-Saber-A/B.command`(`saber-watchdog.sh`)が
+  この環境変数を `open --env` で自動的に渡します(launcher ログに `p2p-bridge=yes`)。
 - 自動起動を止めたいときは、環境変数 `PHONESABER_P2P_BRIDGE=0` を設定します。
 - bridge のログは Unity の Console に `[PhoneSaber][P2P] ...` として出ます。
 - launcher が見つからない場合や起動に失敗した場合は、Console に警告を1回だけ出します。P2P なしで、従来の LAN 受信だけで動きます。
@@ -135,7 +140,7 @@ macOS が「ローカルネットワーク」へのアクセス許可を求め�
 - 対策として、iPhone と bridge の両方の通信に `serviceClass = .interactiveVoice`(低遅延の traffic class)を付けた。
   これは OS へのヒントにすぎないため、効果は実機で `maxGapMs` と iPhone の `P2P RTT` を比べて確かめる。
 - それでも詰まる場合の選択肢:
-  - iPhone と Mac を同じ Wi-Fi に入れて LAN で送る(「P2P優先」を OFF)。
+  - iPhone と Mac を同じ Wi-Fi に入れて LAN で送る(LAN 優先なので自動で LAN になる。確実にするなら「P2P予備」を OFF)。
   - USB ケーブルでつなぐ方式(未実装。最も遅延が安定する)。
 
 ## 実機での確認手順
@@ -144,7 +149,7 @@ macOS が「ローカルネットワーク」へのアクセス許可を求め�
 |---|---|---|
 | A | Mac を学校 Wi-Fi に接続する。iPhone は学校 Wi-Fi に**参加しない**(Wi-Fi 自体は ON のまま)。Personal Hotspot は OFF。 | |
 | B | Unity で Play を押す(bridge は自動で起動する)。 | Unity の Console に `[PhoneSaber][P2P] listening ...` と `Bonjour registered` が出る |
-| C | iPhone で PhoneSaberSender を起動し、「P2P優先」を ON にして開始する。初回はローカルネットワークの許可を求められる。 | |
+| C | iPhone で PhoneSaberSender を起動し、「P2P予備」が ON(既定)で手動 IP が空なのを確認して開始する。初回はローカルネットワークの許可を求められる。 | |
 | D | 画面の「経路」を確認する。 | `P2P Connected (awdl0 · <Mac の service 名>)`。Mac に `peer connected` と `RED received` / `BLUE received` が出る。`P2P RTT` の中央値と最大値、Mac の `maxGapMs` を控えておく(LAN と比べるため) |
 | E | Mac で Codex やブラウザを使いながら saber を振る。 | Unity に座標が届き続ける。インターネットも使える |
 | F | iPhone のモバイルデータ通信を OFF にする。 | P2P の送信が続く(cellular は最初から禁止しています) |
@@ -155,13 +160,13 @@ macOS が「ローカルネットワーク」へのアクセス許可を求め�
 - G で LAN に戻るには、iPhone と Mac が同じ LAN にいて、Unity の Bonjour(`_phonesaber._udp`)が見つかっているか、
   手動 IP が入っている必要があります。A の構成(iPhone が学校 Wi-Fi にいない)では LAN の経路がないので、
   `Reconnecting` で待ち、bridge が戻ると P2P で再開します。
-- 「P2P優先」を OFF にすると、従来の LAN だけの動作になります。
+- 「P2P予備」を OFF にすると、従来の LAN だけの動作になります。
 
 ## テスト
 
 - `PhoneSaberSenderTests/P2PTransportTests.swift`: 形式の往復と payload 不変、不正な packet、重複と順序入れ替え、
   liveness による fallback と再接続の判定、loopback の偽 bridge を使った RED/BLUE の配送、bridge の停止と再開、
-  最新値の優先、CameraViewModel の経路選択(P2P 優先、P2P が落ちたら LAN、P2P OFF なら従来どおり)。
+  最新値の優先、CameraViewModel の経路選択(当初は P2P 優先、2026-10-08 から LAN 応答があれば LAN 優先、P2P が落ちたら LAN、P2P OFF なら従来どおり)。
   2026-10-03 の追加: Mac の固定選択、復帰の hysteresis、張り直しの backoff、interface 表示、許可エラーの文言、
   送信 watchdog(送信 hook で詰まりを再現)、前面復帰、P2P 復帰時の LAN 待ち座標の破棄、LAN なしの fallback の計数。
 - 任意実行: `TEST_RUNNER_PHONESABER_P2P_DISCOVERY_TEST=1` を付け、Mac で
@@ -175,7 +180,7 @@ macOS が「ローカルネットワーク」へのアクセス許可を求め�
 
 ## rollback
 
-- その場で戻す: iPhone の「P2P優先」を OFF にします。従来の LAN だけの動作になり、bridge も不要です。
+- その場で戻す: iPhone の「P2P予備」を OFF にします。従来の LAN だけの動作になり、bridge も不要です。
 - Mac 側: 環境変数 `PHONESABER_P2P_BRIDGE=0` で Unity の自動起動を止めます。Unity の受信と既存の Bonjour は変わりません。
 - Unity のコードを戻す: 3D-Saber で、bridge 自動起動を追加した commit を `git revert` します
   (`PhoneSaberP2PBridgeProcess.cs` とその test、`InputPoint.cs` の起動・停止の4行)。
