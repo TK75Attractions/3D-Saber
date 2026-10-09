@@ -19,7 +19,7 @@ Git／Unityのルートは `3D-Saber/`、スマホアプリ・ツールは `Phon
 ### PCごと
 
 - ☐ Git LFS付きで単一repoを用意し、Unity **6000.3.9f1**で開く。事前検証はルートで `bash PhoneSaber/tools/verify_phone_saber.sh`。
-- ☐ **Mac**: `PhoneSaber/setup_mac.command`を実行。[Macキット](../../mac/README.md)で最新版のゲームをビルドし、A/Bの `.command` のアプリ先を合わせる。
+- ☐ **Mac**: `PhoneSaber/setup_mac.command`を実行。Unity の **Tools > PhoneSaber > Build > macOS Player** で `Builds/Mac/3D-Saber.app` を作る（Editor を開いたままなら、プロジェクトを複製して `-batchmode -executeMethod PhoneSaberPlayerBuild.BuildMac`）。A/B の `.command` はこのパスを使う。詳細は[Macキット](../../mac/README.md)。
 - ☐ **Windows**: [Windowsキット](../../windows/README.md)でビルド一式、A/Bの `.bat`、Privateネットワーク、UDP **5005（赤）／5006（青）／5007（探索）**の許可を用意する。ビルド・管理者操作・予備ホットスポットの詳細も同README。
 - ☐ PC・スマホ・箱にA/Bの目印を付ける。同じPCでEditorとPlayer、複数launcher、座標受信ツールを同時起動しない。
 - ☐ Editorで試す場合はPlay前に `Tools > PhoneSaber > Station > A/B`。ビルドは台別launcherを使う。台設定の優先順は **起動引数 `-phonesaberStation` → 環境変数 `PHONESABER_STATION` → PlayerPrefs `PhoneSaber.Station`**。台名は16文字以内の英数字・`-`・`_`。
@@ -80,6 +80,10 @@ Git／Unityのルートは `3D-Saber/`、スマホアプリ・ツールは `Phon
 | 最終受信・送信元 | 継続受信、1秒超の無受信警告なし。送りたいPC・経路と一致 |
 | 受信機・探索 | 両色の受信機ON。Android探索はUDP 5007。WindowsのBonjour／P2P「未対応」は正常 |
 | 経路 | Macの `127.0.0.1` はP2P bridge、それ以外はLAN（IPによる目安。スマホ本体のIPとは限らない） |
+
+F8 には補正の設定もある（どちらも台ごとに保存、**既定 OFF のまま運用**）。
+- **剣の揺れ補正**（OFF／弱／中）: 静止時のぶれを 12〜16% 減らす。中で振りの遅れが平均約3ms増える。実データで効果が小さいため、使うのは剣が止まって見える時に揺れが気になる場合だけ。
+- **遅延補正**（0／20／40／60 ms）: 18録画の実データでは効果がほぼ無く（ぶれが主因）、40ms以上は切り返しで行き過ぎる。通常は 0。
 
 packet数・最終受信時刻には不正payloadも含む。初回受信前は開始からの経過を表示。受信・解析OKだけでは認識品質を保証しない。剣なし・未検出時は0でもよいが、点灯した両色でゲーム内の向き・位置・四隅を確認する。
 
