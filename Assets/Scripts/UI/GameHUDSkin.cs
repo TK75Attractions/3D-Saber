@@ -443,8 +443,15 @@ public class GameHUDSkin : MonoBehaviour
 
     private void RefreshStaticTexts()
     {
-        if (scoreValue != null && score != null) scoreValue.text = score.Score.ToString("000,000");
+        if (scoreValue != null && score != null)
+        {
+            shownScore = score.Score;
+            scoreValue.text = score.Score.ToString("000,000");
+        }
     }
+
+    // 表示中の値。変わったときだけ文字列・TMP メッシュを作り直す（毎フレームの GC とメッシュ再生成を避ける）。
+    int shownScore = int.MinValue, shownCombo = int.MinValue, shownMaxCombo = int.MinValue;
 
     // ---------------------------------------------------------------
     // 更新
@@ -454,7 +461,11 @@ public class GameHUDSkin : MonoBehaviour
         if (!IsBuilt) return;
         if (score != null)
         {
-            if (scoreValue != null) scoreValue.text = score.Score.ToString("000,000");
+            if (scoreValue != null && score.Score != shownScore)
+            {
+                shownScore = score.Score;
+                scoreValue.text = score.Score.ToString("000,000");
+            }
             UpdateCombo();
             UpdateMaxCombo();
         }
@@ -599,17 +610,22 @@ public class GameHUDSkin : MonoBehaviour
         if (combo <= 0)
         {
             comboValue.text = "";
+            shownCombo = int.MinValue;
             if (comboLabel != null) comboLabel.text = "";
             if (comboGlow != null) comboGlow.color = Color.clear;
             return;
         }
 
         // コンボ数に応じて色(既存の階調)とサイズが育つ。上端は白、下端がコンボ色の縦グラデ。
-        comboValue.text = combo.ToString();
         Color c = ComboColor(combo);
-        comboValue.fontSize = ComboFontSize(combo);
-        comboValue.enableVertexGradient = true;
-        comboValue.colorGradient = new VertexGradient(Color.white, Color.white, c, c);
+        if (combo != shownCombo)
+        {
+            shownCombo = combo;
+            comboValue.text = combo.ToString();
+            comboValue.fontSize = ComboFontSize(combo);
+            comboValue.enableVertexGradient = true;
+            comboValue.colorGradient = new VertexGradient(Color.white, Color.white, c, c);
+        }
         comboValue.color = Color.white;
         if (comboGlow != null) comboGlow.color = new Color(c.r, c.g, c.b, 0.20f * DisplaySettings.AccentScale);
         if (comboLabel != null)
@@ -630,10 +646,14 @@ public class GameHUDSkin : MonoBehaviour
         int maximum = score.MaxCombo;
         if (maximum > lastMaxCombo) maxComboPunchAge = 0f;
         lastMaxCombo = maximum;
-        maxComboValue.text = maximum.ToString();
-        maxComboValue.fontSize = Mathf.Lerp(64f, 84f, Mathf.Clamp01(maximum / 300f));
-        maxComboValue.enableVertexGradient = true;
-        maxComboValue.colorGradient = ComboBonusPresentation.Gradient(maximum);
+        if (maximum != shownMaxCombo)
+        {
+            shownMaxCombo = maximum;
+            maxComboValue.text = maximum.ToString();
+            maxComboValue.fontSize = Mathf.Lerp(64f, 84f, Mathf.Clamp01(maximum / 300f));
+            maxComboValue.enableVertexGradient = true;
+            maxComboValue.colorGradient = ComboBonusPresentation.Gradient(maximum);
+        }
         maxComboPunchAge += Time.deltaTime;
         float punch = DisplaySettings.ReducedEffects ? 0f : .10f * Mathf.Clamp01(1f - maxComboPunchAge / .18f);
         maxComboValue.rectTransform.localScale = Vector3.one * (1f + punch);

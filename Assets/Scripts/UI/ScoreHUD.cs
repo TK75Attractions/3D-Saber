@@ -147,11 +147,20 @@ public class ScoreHUD : MonoBehaviour
     {
         if (score != null)
         {
-            if (scoreText != null) scoreText.text = $"SCORE  {score.Score:N0}";
+            // 値が変わったときだけ文字列を作る（毎フレームの GC を避ける）。色は従来どおり毎フレーム。
+            if (scoreText != null && score.Score != shownScore)
+            {
+                shownScore = score.Score;
+                scoreText.text = $"SCORE  {score.Score:N0}";
+            }
             UpdateCombo();
             if (maxComboText != null)
             {
-                maxComboText.text = $"{score.MaxCombo}\n<size=30>MAX COMBO</size>";
+                if (score.MaxCombo != shownMaxCombo)
+                {
+                    shownMaxCombo = score.MaxCombo;
+                    maxComboText.text = $"{score.MaxCombo}\n<size=30>MAX COMBO</size>";
+                }
                 maxComboText.color = ComboBonusPresentation.Accent(score.MaxCombo);
             }
         }
@@ -181,6 +190,10 @@ public class ScoreHUD : MonoBehaviour
         }
     }
 
+    int shownScore = int.MinValue, shownCombo = int.MinValue, shownMaxCombo = int.MinValue;
+
+    bool shownComboUpperCase;
+
     void UpdateCombo()
     {
         if (comboText == null) return;
@@ -192,6 +205,7 @@ public class ScoreHUD : MonoBehaviour
         if (combo == 0 && lastCombo > 0)
         {
             comboText.text = "";
+            shownCombo = int.MinValue;
             lastCombo = 0;
             return;
         }
@@ -200,12 +214,18 @@ public class ScoreHUD : MonoBehaviour
         if (combo <= 0)
         {
             comboText.text = "";
+            shownCombo = int.MinValue;
             return;
         }
 
         // フォーマット
         string label = comboUpperCase ? "COMBO" : "combo";
-        comboText.text = $"{combo}\n<size=36>{label}</size>";
+        if (combo != shownCombo || comboUpperCase != shownComboUpperCase)
+        {
+            shownCombo = combo;
+            shownComboUpperCase = comboUpperCase;
+            comboText.text = $"{combo}\n<size=36>{label}</size>";
+        }
         comboText.supportRichText = true;
 
         // 色階調
