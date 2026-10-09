@@ -69,7 +69,7 @@ public sealed class PhoneSaberEndpointPredictor
 
     static Vector2 ConservativeVelocity(Vector2 previous, Vector2 current)
     {
-        // 直近3点の2区間で符号が一致する成分だけ、速度の小さい方を採用。
+        // 直近3点の2区間で符号が一致する成分だけ、小さい速度を基に減速も抑制。
         // 1区間だけの跳ねや折り返しで、古い速度を延長しない。
         return new Vector2(ConservativeAxis(previous.x, current.x), ConservativeAxis(previous.y, current.y));
     }
@@ -78,7 +78,11 @@ public sealed class PhoneSaberEndpointPredictor
     {
         if (!Finite(previous) || !Finite(current) || previous == 0 || current == 0 ||
             Math.Sign(previous) != Math.Sign(current)) return 0;
-        return Math.Abs(current) < Math.Abs(previous) ? current : previous;
+        if (Math.Abs(current) >= Math.Abs(previous)) return previous;
+        // 減速中は速度比でも抑制する。符号反転が届く前の外向き予測を減らす。
+        // 認識・端点・受信値は変更せず、任意の描画予測だけに適用。
+        float ratio = Math.Abs(current / previous);
+        return current * ratio;
     }
 
     Vector2 Displacement(Vector2 velocity, float seconds)

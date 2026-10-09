@@ -7,6 +7,7 @@ import csv
 import json
 import math
 import random
+import struct
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -16,17 +17,37 @@ DECAY_START = 1 / 30
 MAX_DISPLACEMENT = 0.35
 
 
+def f32(value):
+    """Round each Unity float operation separately; no reassociation / FMA."""
+    try:
+        return struct.unpack("<f", struct.pack("<f", value))[0]
+    except OverflowError:
+        return math.copysign(math.inf, value)
+
+
+def float_bits(value):
+    return struct.unpack("<I", struct.pack("<f", value))[0]
+
+
+def float_divide(value, denominator):
+    if denominator == 0:
+        return math.nan if value == 0 else math.copysign(math.inf, value * math.copysign(1, denominator))
+    return f32(value / denominator)
+
+
 class Predictor:
     """Same ordered, conservative two-interval estimate as the C# implementation.
 
-    Python uses doubles; this is an offline model, not a bit-parity oracle for
-    Unity float32. No detector, payload, or recognition code runs here.
+    Timestamps use doubles and Vector2 operations round to float32 in C# order.
+    Shared-vector tests compile the actual C# with a Vector2 stub (no Unity).
+    No detector, payload, or recognition code runs here.
     """
 
     def __init__(self, maximum_displacement=MAX_DISPLACEMENT):
+        maximum_displacement = f32(maximum_displacement)
         if not math.isfinite(maximum_displacement) or maximum_displacement < 0:
             raise ValueError("maximum_displacement must be finite and nonnegative")
-        self.limit = maximum_displacement
+        self.limit = f32(maximum_displacement)
         self.latest = (0.0,) * 4
         self.time = 0.0
         self.reset()
@@ -35,7 +56,7 @@ class Predictor:
         self.count = 0
 
     def add(self, timestamp, endpoints):
-        endpoints = tuple(endpoints)
+        endpoints = tuple(f32(v) for v in endpoints)
         if len(endpoints) != 4:
             raise ValueError("expected ax, ay, bx, by")
         if not all(math.isfinite(v) for v in (timestamp, *endpoints)):
@@ -47,15 +68,23 @@ class Predictor:
             self.count = 1
             self.velocity = self.previous_velocity = (0.0,) * 4
         else:
-            current = tuple((v - p) / gap for v, p in zip(endpoints, self.latest))
+            current = tuple(float_divide(f32(v - p), f32(gap)) for v, p in zip(endpoints, self.latest))
             self.velocity = current if self.count == 1 else tuple(
-                min(abs(p), abs(v)) * (1 if v > 0 else -1)
-                if p * v > 0 else 0.0
-                for p, v in zip(self.previous_velocity, current))
+                self.conservative_axis(p, v) for p, v in zip(self.previous_velocity, current))
             self.previous_velocity = current
             self.count = 2
         self.latest = endpoints
         self.time = timestamp
+
+    @staticmethod
+    def conservative_axis(previous, current):
+        if (not math.isfinite(previous) or not math.isfinite(current) or previous == 0 or current == 0 or
+                (previous > 0) != (current > 0)):
+            return 0.0
+        if abs(current) >= abs(previous):
+            return previous
+        ratio = abs(float_divide(current, previous))
+        return f32(current * ratio)
 
     def predict(self, now, horizon_ms):
         if horizon_ms <= 0 or self.count < 2 or not math.isfinite(now):
@@ -64,17 +93,31 @@ class Predictor:
         if age >= MAX_GAP:
             return self.latest
         decay = 1 if age <= DECAY_START else (MAX_GAP - age) / (MAX_GAP - DECAY_START)
-        seconds = min(horizon_ms, 60) * 0.001 * decay
+        seconds = f32(min(horizon_ms, 60) * 0.001 * decay)
         result = []
         for i in (0, 2):
-            dx, dy = self.velocity[i] * seconds, self.velocity[i + 1] * seconds
-            length = math.hypot(dx, dy)
+            if not all(math.isfinite(v) for v in self.velocity[i:i + 2]):
+                result.extend(f32(v + 0.0) for v in self.latest[i:i + 2])
+                continue
+            dx, dy = f32(self.velocity[i] * seconds), f32(self.velocity[i + 1] * seconds)
+            length = math.sqrt(dx * dx + dy * dy)
             if length > self.limit:
-                factor = self.limit / length
-                dx *= factor
-                dy *= factor
-            result.extend((self.latest[i] + dx, self.latest[i + 1] + dy))
+                factor = f32(self.limit / length)
+                dx = f32(dx * factor)
+                dy = f32(dy * factor)
+            result.extend((f32(self.latest[i] + dx), f32(self.latest[i + 1] + dy)))
         return tuple(result)
+
+
+class BaselinePredictor(Predictor):
+    """Frozen 977d5c6 estimator for reproducible before/after real replays."""
+
+    @staticmethod
+    def conservative_axis(previous, current):
+        if (not math.isfinite(previous) or not math.isfinite(current) or previous == 0 or current == 0 or
+                (previous > 0) != (current > 0)):
+            return 0.0
+        return current if abs(current) < abs(previous) else previous
 
 
 @dataclass(frozen=True)
@@ -208,6 +251,15 @@ def evaluate(samples, truth, render_hz=30):
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--csv", type=Path, help="truth trajectory CSV: capture_s,receive_s,ax,ay,bx,by")
+    parser.add_argument("--real", type=Path, help="real_motion_extract CSV/JSON (detector reference, not physical truth)")
+    parser.add_argument("--horizons", default=",".join(str(h) for h in range(61)), help="real replay horizons, default every integer 0..60")
+    parser.add_argument("--estimators", default="baseline,current,ls3,adaptive", help="real replay estimators (ls3/adaptive are offline only)")
+    parser.add_argument("--phases", default="0,0.25,0.5,0.75", help="render phase fractions for real replay")
+    parser.add_argument("--world-width", type=float, default=11)
+    parser.add_argument("--world-height", type=float, default=6)
+    parser.add_argument("--max-truth-gap", type=float, default=0.05)
+    parser.add_argument("--require-known-prediction", action="store_true")
+    parser.add_argument("--align-endpoints", action="store_true", help="diagnostic only: causal nearest-end matching, unlike runtime")
     parser.add_argument("--render-hz", type=int, default=30)
     parser.add_argument("--duration", type=float, default=12)
     parser.add_argument("--jitter-ms", type=float, default=6)
@@ -215,6 +267,29 @@ def main(argv=None):
     parser.add_argument("--seed", type=int, default=20261009)
     parser.add_argument("--json", type=Path, help="optional output outside version control")
     args = parser.parse_args(argv)
+    if args.real:
+        if args.csv:
+            parser.error("--real and --csv are mutually exclusive")
+        from real_motion_eval import evaluate_real
+        estimators = tuple(args.estimators.split(","))
+        if any(name not in ("baseline", "current", "ls3", "adaptive") for name in estimators):
+            parser.error("unknown estimator")
+        report = evaluate_real(args.real, tuple(int(h) for h in args.horizons.split(",")), estimators,
+                               phases=tuple(float(p) for p in args.phases.split(",")), latency_ms=args.latency_ms,
+                               world_width=args.world_width, world_height=args.world_height,
+                               max_truth_gap=args.max_truth_gap, allow_unknown_prediction=not args.require_known_prediction,
+                               align_endpoints=args.align_endpoints)
+        if args.json:
+            args.json.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+        print(report["limitation"])
+        print("render Hz estimator H future RMSE OFF same target live RMSE added reversal max")
+        for result in report["results"]:
+            def value(key):
+                number = result[key]
+                return f"{number:.6f}" if number is not None else "n/a"
+            print(f"{result['render_hz']:2} {result['estimator']:8} {result['horizon_ms']:2} "
+                  f"{value('future_rmse')} {value('off_future_rmse')} {value('live_rmse')} {value('added_overshoot_max')}")
+        return report
     if (args.render_hz <= 0 or args.duration <= 0 or args.jitter_ms < 0 or
             args.jitter_ms >= 1000 / 60 / 2 or args.latency_ms < args.jitter_ms):
         parser.error("require render-hz/duration > 0, 0 <= jitter-ms < 8.333, latency-ms >= jitter-ms")
@@ -232,7 +307,7 @@ def main(argv=None):
     report = dict(configuration=vars(args) | {"csv": str(args.csv) if args.csv else None,
                                              "json": str(args.json) if args.json else None},
                   units="world XY; Euclidean error per endpoint; overshoot per coordinate",
-                  precision="Python float64 model; not Unity bit-parity or physical latency measurement",
+                  precision="float32 Vector2 operations / float64 clocks; not physical latency measurement",
                   cases=cases)
     if args.json:
         args.json.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n", encoding="utf-8")

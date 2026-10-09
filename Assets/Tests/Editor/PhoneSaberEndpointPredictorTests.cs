@@ -1,12 +1,61 @@
 using System;
 using System.Reflection;
+using System.Globalization;
+using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 
 public class PhoneSaberEndpointPredictorTests
 {
+    [Test]
+    public void SharedOfflineVectorsMatchFloatBits()
+    {
+        // Python/.NET と同じ固定ベクトル。生成はテスト中に行わない。
+        string path = Path.Combine(Application.dataPath, "..", "PhoneSaber", "tools", "fixtures", "endpoint_predictor_vectors.csv");
+        PhoneSaberEndpointPredictor predictor = null;
+        int predictions = 0;
+        foreach (string line in File.ReadAllLines(path))
+        {
+            string[] row = line.Split(',');
+            Func<int, double> number = i => double.Parse(row[i], CultureInfo.InvariantCulture);
+            switch (row[0])
+            {
+                case "op": break;
+                case "new": predictor = new PhoneSaberEndpointPredictor((float)number(1)); break;
+                case "reset": predictor.Reset(); break;
+                case "add":
+                    predictor.AddSample(number(1), new Vector2((float)number(2), (float)number(3)),
+                        new Vector2((float)number(4), (float)number(5)));
+                    break;
+                case "predict":
+                    predictor.Predict(number(1), (int)number(6), out var a, out var b);
+                    float[] actual = { a.x, a.y, b.x, b.y };
+                    for (int axis = 0; axis < 4; axis++)
+                        Assert.AreEqual(Convert.ToUInt32(row[axis + 7], 16),
+                            BitConverter.ToUInt32(BitConverter.GetBytes(actual[axis]), 0),
+                            $"予測 {predictions} 成分 {axis}");
+                    predictions++;
+                    break;
+                default: Assert.Fail("不明な共有ベクトル操作: " + row[0]); break;
+            }
+        }
+        Assert.Greater(predictions, 200);
+    }
+
     static void Near(Vector2 expected, Vector2 actual) =>
         Assert.Less(Vector2.Distance(expected, actual), 1e-5f);
+
+    [Test]
+    public void DecelerationDampsEachAxisButAccelerationKeepsConservativeSpeed()
+    {
+        var predictor = new PhoneSaberEndpointPredictor();
+        predictor.AddSample(0, Vector2.zero, Vector2.zero);
+        predictor.AddSample(0.02, new Vector2(0.04f, 0.02f), new Vector2(-0.04f, -0.02f));
+        predictor.AddSample(0.04, new Vector2(0.06f, 0.06f), new Vector2(-0.06f, -0.06f));
+        predictor.Predict(0.04, 40, out var a, out var b);
+        Near(new Vector2(0.08f, 0.10f), a);
+        Near(new Vector2(-0.08f, -0.10f), b);
+    }
 
     [Test]
     public void OffReturnsIdenticalFloatBitsIncludingSignedZero()
