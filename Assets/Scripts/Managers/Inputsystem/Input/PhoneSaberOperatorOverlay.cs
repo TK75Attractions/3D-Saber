@@ -83,6 +83,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         var keyboard = Keyboard.current;
         if (keyboard != null && keyboard.f8Key.wasPressedThisFrame)
         {
+            // F8 は開閉だけ（スタッフマニュアルの操作）。揺れ補正は表示内のボタンでだけ変える。
             visible = !visible;
             if (!visible && calibrationCorner >= 0)
             {
@@ -227,6 +228,20 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             "端点の移動上限は0.35、受信が100 ms止まると予測量はゼロに戻ります。", textStyle);
     }
 
+    void DrawFilter()
+    {
+        var input = InputPoint.Instance;
+        string name = input != null ? input.StationLabel : fallbackStation;
+        int mode = PhoneSaberFilterSettings.Load(name);
+        GUILayout.Label($"剣の揺れ補正: {PhoneSaberFilterSettings.Label(mode)}（この台の両色に保存）", textStyle);
+        GUILayout.BeginHorizontal();
+        for (int value = PhoneSaberEndpointFilter.Off; value <= PhoneSaberEndpointFilter.Medium; value++)
+            if (GUILayout.Button((mode == value ? "● " : "") + PhoneSaberFilterSettings.Label(value), buttonStyle) && mode != value)
+                PhoneSaberFilterSettings.Save(name, value);
+        GUILayout.EndHorizontal();
+        GUILayout.Label("初期値はOFF。静止時の揺れを少し抑えます。速い振りにも小さな遅れが加わります。", textStyle);
+    }
+
     void Refresh(double now)
     {
         var input = InputPoint.Instance;
@@ -292,6 +307,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         GUILayout.Label($"PhoneSaber 運営表示 [F8: 開閉]  |  台: {(string.IsNullOrEmpty(station) ? "指定なし" : station)}", textStyle);
         // 日本語の折り返しが増えても、下の色や警告を切り落とさない。
         scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+        DrawFilter();
+        GUILayout.Space(8);
         DrawPrediction();
         GUILayout.Space(8);
         DrawCalibration();
