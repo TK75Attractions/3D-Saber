@@ -51,11 +51,24 @@ foreach ($port in @(5005, 5006, 5007)) {
 
 # 初回の「アクセスを許可しますか」を閉じる・キャンセルすると、Windows が Unity 用の受信 Block 規則を作る。
 # Block は Allow より優先されるため、上の許可があっても受信できない。Unity の受信 Block 規則だけ無効にする。
+# ビルド済み Player の規則の表示名は exe の説明（productName = ServTechSlash）になり 'Unity' を含まないため、
+# 規則の対象プログラム名（Editor の Unity.exe / Player の 3D-Saber.exe）でも判定する。
+$programNames = @('Unity.exe', '3D-Saber.exe')
 $blocked = @(Get-NetFirewallRule -Direction Inbound -Action Block -ErrorAction SilentlyContinue |
-    Where-Object { $_.Enabled -eq 'True' -and $_.DisplayName -match 'Unity' })
+    Where-Object {
+        if ($_.Enabled -ne 'True') { return $false }
+        if ($_.DisplayName -match 'Unity|ServTechSlash') { return $true }
+        $program = [string](($_ | Get-NetFirewallApplicationFilter -ErrorAction SilentlyContinue).Program)
+        return $programNames -contains (($program -split '\\')[-1])
+    })
 foreach ($rule in $blocked) {
-    Disable-NetFirewallRule -Name $rule.Name
-    Write-Host "無効化: Unity の受信ブロック規則 '$($rule.DisplayName)' ($($rule.Profile))"
+    # グループポリシー由来などで無効化できない規則があっても、残りの処理は続ける。
+    try {
+        Disable-NetFirewallRule -Name $rule.Name -ErrorAction Stop
+        Write-Host "無効化: Unity の受信ブロック規則 '$($rule.DisplayName)' ($($rule.Profile))"
+    } catch {
+        Write-Warning "無効化できませんでした: '$($rule.DisplayName)' ($($rule.Profile)): $($_.Exception.Message)"
+    }
 }
 if ($blocked.Count -eq 0) { Write-Host 'Unity の受信ブロック規則はありません。' }
 

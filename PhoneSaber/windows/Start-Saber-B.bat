@@ -14,7 +14,19 @@ if not exist "%GAME_EXE%" (
     exit /b 1
 )
 
-rem /wait で Player の終了コードを待つ。Ctrl+C はバッチを終了して再起動を止める。
+rem 前回の STOP が残っていると何も起動しないので、黙って閉じずに知らせる。
+set "STOP_FOUND="
+if exist "%STOP_FILE%" set "STOP_FOUND=%STOP_FILE%"
+if exist "%~dp0STOP" set "STOP_FOUND=%~dp0STOP"
+if defined STOP_FOUND (
+    >>"%LOG_FILE%" echo [%date% %time%] station=B not-started STOP-file restart=%RESTART_COUNT%
+    echo 停止ファイルがあるため起動しません: "%STOP_FOUND%"
+    echo このファイルを削除してから、もう一度起動してください。
+    pause
+    exit /b 1
+)
+
+rem /wait で Player の終了コードを待つ。Ctrl+C は「バッチ ジョブを終了しますか」で Y を選ぶと監視終了。
 :launch
 if exist "%STOP_FILE%" goto stopped
 if exist "%~dp0STOP" goto stopped
@@ -28,11 +40,18 @@ if exist "%STOP_FILE%" goto stopped
 if exist "%~dp0STOP" goto stopped
 set /a RESTART_COUNT+=1 >nul
 echo 異常終了 code=%GAME_EXIT%。5秒後に再起動します。
-rem 待機の失敗(Ctrl+C 等)を再起動と扱わない。
-timeout /t 5 /nobreak >nul
-if errorlevel 1 goto stopped
-goto launch
+rem 1秒ごとに STOP を確認しながら待つ。timeout は入力がリダイレクトされていると即失敗するので、
+rem そのときは ping で1秒待つ(待機の失敗を理由に監視を止めない)。
+set "WAIT_LEFT=5"
+:delay
+if exist "%STOP_FILE%" goto stopped
+if exist "%~dp0STOP" goto stopped
+if %WAIT_LEFT% LEQ 0 goto launch
+timeout /t 1 /nobreak >nul 2>&1 || ping -n 2 127.0.0.1 >nul
+set /a WAIT_LEFT-=1 >nul
+goto delay
 
 :stopped
->>"%LOG_FILE%" echo [%date% %time%] station=B watchdog-stopped restart=%RESTART_COUNT%
+>>"%LOG_FILE%" echo [%date% %time%] station=B watchdog-stopped STOP-file restart=%RESTART_COUNT%
+echo 停止ファイルを検出したため、監視を終了しました。次回起動前に削除してください。
 exit /b 0
