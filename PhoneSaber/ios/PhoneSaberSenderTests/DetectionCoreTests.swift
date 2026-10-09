@@ -1261,8 +1261,11 @@ final class DetectionCoreTests: XCTestCase {
         viewModel.startForTesting(host: "192.168.1.20", manual: false)
         let redBefore = sender.connectionGenerationForTesting(port: 5005)
         let blueBefore = sender.connectionGenerationForTesting(port: 5006)
+        XCTAssertEqual(viewModel.lanProbeHostForTesting, "192.168.1.20")
 
         viewModel.applyBonjourForTesting(host: "172.20.10.2", serviceName: "Festival Mac")
+        // LAN 生存確認も新しい IP を見る。旧 IP のままだと LAN が確認済みにならず P2P へ回り続ける。
+        XCTAssertEqual(viewModel.lanProbeHostForTesting, "172.20.10.2")
 
         let rebuilt = await waitUntil {
             sender.connectionGenerationForTesting(port: 5005) > redBefore &&

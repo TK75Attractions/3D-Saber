@@ -936,7 +936,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         guard running else {
             return host.isEmpty && !p2pState.isConnected ? "DISCOVERING" : "NETWORK IDLE"
         }
-        if p2pState.isConnected { return "NETWORK READY (P2P)" }
+        // 経路選択（CoordinateDelivery）と同じく、Unity 応答で確認済みの LAN を P2P より優先して表示する。
+        if p2pState.isConnected && !(lanConfigured && lanProbe.isAlive) { return "NETWORK READY (P2P)" }
         if !lanConfigured { return p2pEnabled ? "NETWORK SEARCHING (P2P)" : "NETWORK CONNECTING" }
         let portStates = [senderStates[5005], senderStates[5006]].compactMap { $0 }
         if portStates.count == 2 && portStates.allSatisfy({ $0.hasPrefix("ready") }) {
@@ -1084,7 +1085,14 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func finishCameraStart(succeeded: Bool, lifecycle: Int,
                                    recovery: Int?, isRecovery: Bool) {
-        guard lifecycleGeneration == lifecycle, running else {
+        switch CameraStartCompletionPolicy.action(completedLifecycle: lifecycle,
+                                                  currentLifecycle: lifecycleGeneration,
+                                                  running: running) {
+        case .apply:
+            break
+        case .ignore:
+            return
+        case .stopSession:
             sessionRunner.stop()
             return
         }
@@ -1312,6 +1320,9 @@ final class CameraViewModel: NSObject, ObservableObject {
             if running {
                 if lanConfigured {
                     sender.updateHost(update.ip)
+                    // 生存確認も新しい IP へ向ける。旧 IP のままだと LAN が確認済みにならず、
+                    // LAN で届くのに遅い P2P へ回り続ける。
+                    lanProbe.start(host: update.ip)
                 } else {
                     // Started on P2P alone; the LAN fallback becomes available now.
                     configureLAN(host: update.ip, generation: lifecycleGeneration)
@@ -2040,6 +2051,10 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     var p2pNoRouteCountForTesting: Int { p2pNoRouteCount }
     var lanConfiguredForTesting: Bool { lanConfigured }
+    var lanProbeHostForTesting: String { lanProbe.hostForTesting }
+    func recordLANReplyForTesting(_ text: String = LANLivenessProbe.replyPrefix) {
+        lanProbe.recordReplyForTesting(text)
+    }
 
     private func applySenderUpdate(states: [Int: String], errors: [Int: String], generation: Int) {
         guard running, lifecycleGeneration == generation else {

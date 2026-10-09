@@ -48,3 +48,18 @@ struct RecoveryBackoff {
 
     mutating func reset() { attempts = 0; failedSince = nil; healthySince = nil }
 }
+
+/// 古い startRunning の完了通知の扱い。停止→即再開や fps 切替では、前回の start が
+/// 終わる前に新しい run が始まる。そのとき古い完了通知で session を止めると、直列キュー上で
+/// 新しい startRunning の後に stopRunning が入り、新しい run のカメラが止まる
+/// （2秒の stall 検出と backoff 再起動まで座標が途切れる）。止めるのは送信停止中だけ。
+enum CameraStartCompletionPolicy {
+    enum Action: Equatable { case apply, ignore, stopSession }
+
+    static func action(completedLifecycle: Int, currentLifecycle: Int, running: Bool) -> Action {
+        if completedLifecycle == currentLifecycle && running { return .apply }
+        // 新しい run が session を持っている。stop() は既に同期で止めてから再開している。
+        if running { return .ignore }
+        return .stopSession
+    }
+}

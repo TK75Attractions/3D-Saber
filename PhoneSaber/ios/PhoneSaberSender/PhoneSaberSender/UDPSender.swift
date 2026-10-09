@@ -68,7 +68,9 @@ final class UDPSender {
     private var pendingByPort: [Int: PendingSend] = [:]
     private var nextSendID: UInt64 = 0
     private var updateHandler: (([Int: String], [Int: String], String?) -> Void)?
+#if DEBUG
     private var updateHandlersForTesting: [(( [Int: String], [Int: String], String?) -> Void)?] = []
+#endif
     private var rejectedCompletionCount = 0
     private var supersededPendingCount = 0
     private var discardedForP2PCount = 0
@@ -91,7 +93,10 @@ final class UDPSender {
             configuredPorts = Set(ports)
             isRunning = true
             updateHandler = onUpdate
+#if DEBUG
+            // テスト専用の履歴。本番では configure のたびに積み上がらないようにする。
             updateHandlersForTesting.append(onUpdate)
+#endif
             states = Dictionary(uniqueKeysWithValues: ports.map { ($0, "preparing") })
             phases = Dictionary(uniqueKeysWithValues: ports.map { ($0, .preparing) })
             connectionErrors = [:]
@@ -170,7 +175,9 @@ final class UDPSender {
         connection.stateUpdateHandler = { [weak self, weak connection] state in
             guard let self else { return }
             self.queue.async {
-                guard self.connections[port] === connection else { return }
+                // 解放済みの旧接続（nil）と、再接続待ちで空の connections[port]（nil）を
+                // 一致とみなさない。旧接続の cancelled/failed で表示や phase を上書きしない。
+                guard let connection, self.connections[port] === connection else { return }
                 switch state {
                 case .ready:
                     self.handleState(.ready, port: port, configurationGeneration: configureGeneration,
@@ -491,10 +498,12 @@ final class UDPSender {
     }
 
     func sendStaleUpdateForTesting(index: Int, states: [Int: String], errors: [Int: String]) {
+#if DEBUG
         queue.sync {
             guard updateHandlersForTesting.indices.contains(index) else { return }
             updateHandlersForTesting[index]?(states, errors, errors.values.first)
         }
+#endif
     }
 
     var rejectedCompletionCountForTesting: Int { queue.sync { rejectedCompletionCount } }
@@ -531,12 +540,17 @@ final class LANLivenessProbe {
     private let queue = DispatchQueue(label: "PhoneSaberSender.lanProbe")
     private let lock = NSLock()
     private let clock: () -> TimeInterval
+    /// 本番は常に 5007。テストだけが空きポートの偽 Unity を指定する。
+    private let probePort: UInt16
     private var host = ""
     private var connection: NWConnection?
     private var timer: DispatchSourceTimer?
     private var lastReply = -Double.infinity
+    private var createdConnectionCount = 0
 
-    init(clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) {
+    init(port: UInt16 = LANLivenessProbe.port,
+         clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) {
+        self.probePort = port
         self.clock = clock
     }
 
@@ -569,21 +583,44 @@ final class LANLivenessProbe {
         return clock() - lastReply <= Self.aliveWindow
     }
 
-    func recordReplyForTesting(_ text: String) { handle(Data(text.utf8)) }
+    func recordReplyForTesting(_ text: String) { handle(Data(text.utf8), from: nil) }
+
+    var hostForTesting: String {
+        lock.lock(); defer { lock.unlock() }
+        return host
+    }
+
+    var createdConnectionCountForTesting: Int {
+        lock.lock(); defer { lock.unlock() }
+        return createdConnectionCount
+    }
+
+    /// 受信待ちが error で終わった場合と同じ処理（次の tick で接続を作り直す）。
+    func simulateReceiveErrorForTesting() {
+        queue.sync {
+            lock.lock(); let current = connection; lock.unlock()
+            if let current { discard(current) }
+        }
+    }
 
     private func tick() {
         lock.lock()
         let host = self.host
         var connection = self.connection
         lock.unlock()
-        guard !host.isEmpty, let port = NWEndpoint.Port(rawValue: Self.port) else { return }
+        guard !host.isEmpty, let port = NWEndpoint.Port(rawValue: probePort) else { return }
         if let current = connection, case .failed = current.state { current.cancel(); connection = nil }
         if let current = connection, case .cancelled = current.state { connection = nil }
         if connection == nil {
             let created = NWConnection(host: NWEndpoint.Host(host), port: port, using: .udp)
+            // この tick の途中で stop / 別 host への start があったら、旧 host の接続を残さない。
+            lock.lock()
+            let stillCurrent = self.host == host
+            if stillCurrent { self.connection = created; createdConnectionCount += 1 }
+            lock.unlock()
+            guard stillCurrent else { return }
             created.start(queue: queue)
             receive(on: created)
-            lock.lock(); self.connection = created; lock.unlock()
             connection = created
         }
         connection?.send(content: Data(Self.request.utf8), completion: .idempotent)
@@ -592,14 +629,31 @@ final class LANLivenessProbe {
     private func receive(on connection: NWConnection) {
         connection.receiveMessage { [weak self, weak connection] data, _, _, error in
             guard let self, let connection else { return }
-            if let data { self.handle(data) }
-            if error == nil { self.receive(on: connection) }
+            if let data { self.handle(data, from: connection) }
+            if error == nil {
+                self.receive(on: connection)
+            } else {
+                // state が ready のままでも、受信待ちが無い接続では Unity の応答を二度と受け取れない
+                // （LAN が確認済みにならず P2P へ回り続ける）。次の tick で作り直す。
+                self.discard(connection)
+            }
         }
     }
 
-    private func handle(_ data: Data) {
+    private func discard(_ connection: NWConnection) {
+        lock.lock()
+        let current = self.connection === connection
+        if current { self.connection = nil }
+        lock.unlock()
+        if current { connection.cancel() }
+    }
+
+    /// `connection` が nil のときはテストからの記録。停止・host 変更後に届いた旧接続の応答は数えない。
+    private func handle(_ data: Data, from connection: NWConnection?) {
         guard let text = String(data: data, encoding: .ascii), text.hasPrefix(Self.replyPrefix) else { return }
-        lock.lock(); lastReply = clock(); lock.unlock()
+        lock.lock()
+        if connection == nil || self.connection === connection { lastReply = clock() }
+        lock.unlock()
     }
 }
 
