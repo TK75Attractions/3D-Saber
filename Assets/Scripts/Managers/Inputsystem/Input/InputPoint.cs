@@ -643,6 +643,9 @@ public class InputPoint : MonoBehaviour
             }
         }
 
+        // 両色とも更新がなく IMU も使わない場合、座標処理へ進む必要がない。
+        // 受信機監視・接続イベント・診断ログ・レート表示は上で従来どおり行う。
+        if (!updated && !updated2 && !useImuFallback) return;
         bool calibrated = PositionCalibrationEnabled;
         if (updated)
         {

@@ -72,6 +72,9 @@ public class SaberInputBridge : MonoBehaviour
     CameraSaberSample cameraSample;
     double cameraSourceStamp = double.NegativeInfinity;
     bool hasCameraSample;
+    Transform saberTransform;
+    // EditMode の直接呼出しでは Awake 前でも同じ Transform を解決する。
+    Transform SaberTransform => saberTransform ?? (saberTransform = transform);
     readonly PhoneSaberEndpointPredictor endpointPredictor = new PhoneSaberEndpointPredictor();
     readonly PhoneSaberEndpointFilter endpointFilter = new PhoneSaberEndpointFilter();
     InputPoint filterInput;
@@ -121,14 +124,15 @@ public class SaberInputBridge : MonoBehaviour
         // InputPointがUDP receive()時に記録した、SwingEventと同じOS monotonic clock。
         // Update順序やTime.timeScaleによる推定誤差を判定時刻へ持ち込まない。
         cameraSample = new CameraSaberSample(stamp,
-            receivedA ?? (HasBlade ? WorldEndA : transform.position),
-            receivedB ?? (HasBlade ? WorldEndB : transform.position),
+            receivedA ?? (HasBlade ? WorldEndA : SaberTransform.position),
+            receivedB ?? (HasBlade ? WorldEndB : SaberTransform.position),
             stickIndex == 2 ? CameraSaberColor.Blue : CameraSaberColor.Red);
         hasCameraSample = true;
     }
 
     void Awake()
     {
+        saberTransform = transform;
         if (targetCamera == null) targetCamera = Camera.main;
         if (useBladeMode) EnsureBladeLine();
     }
@@ -322,19 +326,15 @@ public class SaberInputBridge : MonoBehaviour
     public LineRenderer BladeOutlineForTest => bladeOutline;
 
     // この Bridge が読む棒のデータが「最近」届いているか(棒1/棒2で別管理)。
-    private bool IsStickRecentlyActive()
+    private bool IsStickRecentlyActive(InputPoint ip)
     {
-        var ip = InputPoint.Instance;
-        if (ip == null) return false;
         return stickIndex == 2
             ? ip.IsRecentlyActive2(inputPointStaleSeconds)
             : ip.IsRecentlyActive(inputPointStaleSeconds);
     }
 
-    private bool HasValidStickEndpoints()
+    private bool HasValidStickEndpoints(InputPoint ip)
     {
-        var ip = InputPoint.Instance;
-        if (ip == null) return false;
         return stickIndex == 2
             ? ip.HasValidStickEndpoints2
             : ip.HasValidStickEndpoints;
@@ -346,10 +346,10 @@ public class SaberInputBridge : MonoBehaviour
         bool consumed = false;
 
         // UDP データが「最近」来てるなら、それを使う。無音ならマウスフォールバック(なければ非表示)。
-        if (useInputPoint && IsStickRecentlyActive() &&
-            (!useBladeMode || HasValidStickEndpoints()))
+        var ip = useInputPoint ? InputPoint.Instance : null;
+        if (ip != null && IsStickRecentlyActive(ip) &&
+            (!useBladeMode || HasValidStickEndpoints(ip)))
         {
-            var ip = InputPoint.Instance;
             Vector3? receivedA = null, receivedB = null;
             if (useBladeMode)
             {
@@ -446,7 +446,7 @@ public class SaberInputBridge : MonoBehaviour
         if (useBladeMode)
         {
             float half = fallbackBladeLength * 0.5f;
-            Vector3 mid = transform.position;
+            Vector3 mid = SaberTransform.position;
             PublishBlade(new Vector3(mid.x - half, mid.y, fixedZ), new Vector3(mid.x + half, mid.y, fixedZ));
         }
         UsingMouseFallback = true;
@@ -503,14 +503,14 @@ public class SaberInputBridge : MonoBehaviour
         Vector3 mid = (a + b) * 0.5f;
         smoothedPosition = mid;
         hasSmoothedPosition = true;
-        transform.position = mid;
+        SaberTransform.position = mid;
 
         // A→B 方向に Z 軸回転。
         Vector3 dir = b - a;
         if (dir.sqrMagnitude > 0.0001f)
         {
             float ang = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
-            transform.rotation = Quaternion.Euler(0f, 0f, ang);
+            SaberTransform.rotation = Quaternion.Euler(0f, 0f, ang);
         }
 
         PublishBlade(a, b);
@@ -618,7 +618,7 @@ public class SaberInputBridge : MonoBehaviour
 
         smoothedPosition = targetPosition;
         hasSmoothedPosition = true;
-        transform.position = targetPosition;
+        SaberTransform.position = targetPosition;
         HasBlade = false; // 単点モードでは線分判定を使わない
     }
 
@@ -630,7 +630,7 @@ public class SaberInputBridge : MonoBehaviour
         {
             smoothedPosition = targetPosition;
             hasSmoothedPosition = true;
-            transform.position = targetPosition;
+            SaberTransform.position = targetPosition;
             HasBlade = false;
             return;
         }
@@ -638,7 +638,7 @@ public class SaberInputBridge : MonoBehaviour
         float dt = Time.deltaTime;
         float alpha = dt / (smoothingTau + dt);
         smoothedPosition = Vector3.Lerp(smoothedPosition, targetPosition, alpha);
-        transform.position = smoothedPosition;
+        SaberTransform.position = smoothedPosition;
         HasBlade = false;
     }
 

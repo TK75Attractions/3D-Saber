@@ -9,6 +9,56 @@ using NUnit.Framework;
 public class PhoneSaberEventLogTests
 {
     [Test]
+    public void EmptyPollingDoesNotCreateFilesAndFlushResumesAfterDrain()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-log-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(directory, "events.log");
+        try
+        {
+            var log = new PhoneSaberEventLog(path);
+            for (int i = 0; i < 100; i++) log.Flush();
+            Assert.IsFalse(Directory.Exists(directory));
+            log.Enqueue(DateTimeOffset.UtcNow, "A", "RED", "first", "");
+            log.Flush();
+            for (int i = 0; i < 100; i++) log.Flush();
+            // 1回128件の上限を超えても残りが次の Flush に届く。
+            for (int i = 0; i < 200; i++)
+                log.Enqueue(DateTimeOffset.UtcNow, "A", "BLUE", "next", "item=" + i);
+            log.Flush();
+            Assert.AreEqual(129, File.ReadAllLines(path).Length);
+            log.Flush();
+            Assert.AreEqual(201, File.ReadAllLines(path).Length);
+            Assert.AreEqual("", log.LastError);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Test]
+    public void ConcurrentEnqueueAndPollingKeepEveryLineInOrder()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-log-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(directory, "events.log");
+        try
+        {
+            var log = new PhoneSaberEventLog(path);
+            var writer = System.Threading.Tasks.Task.Run(() =>
+            {
+                for (int i = 0; i < 200; i++)
+                    log.Enqueue(DateTimeOffset.UtcNow, "A", "RED", "test", "item=" + i);
+            });
+            while (!writer.IsCompleted) { log.Flush(); System.Threading.Thread.Yield(); }
+            writer.GetAwaiter().GetResult();
+            for (int i = 0; i < 3; i++) log.Flush();
+            string[] lines = File.ReadAllLines(path);
+            Assert.AreEqual(200, lines.Length);
+            for (int i = 0; i < lines.Length; i++)
+                StringAssert.EndsWith("item=" + i, lines[i]);
+            Assert.AreEqual("", log.LastError);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Test]
     public void FormatUsesUtcAndOneBoundedLineRegardlessOfCulture()
     {
         var previous = CultureInfo.CurrentCulture;

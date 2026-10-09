@@ -15,6 +15,7 @@ public sealed class PhoneSaberEventLog
     public static PhoneSaberEventLog Current { get; set; }
     readonly object gate = new object();
     readonly Queue<string> pending = new Queue<string>();
+    volatile bool hasPending;
     int dropped;
     public string LogPath { get; }
     public string LastError { get; private set; } = "";
@@ -36,6 +37,7 @@ public sealed class PhoneSaberEventLog
             {
                 if (pending.Count >= QueueCapacity) { pending.Dequeue(); dropped++; }
                 pending.Enqueue(line);
+                hasPending = true;
             }
         }
         catch { /* 記録不能でも入力を継続する。 */ }
@@ -69,7 +71,12 @@ public sealed class PhoneSaberEventLog
     {
         try
         {
-            lock (gate) { if (pending.Count == 0 && dropped == 0) return; }
+            // 空の定期 Flush はロック不要。フラグの更新はキューと同じ lock 内で行う。
+            if (!hasPending) return;
+            lock (gate)
+            {
+                if (pending.Count == 0 && dropped == 0) { hasPending = false; return; }
+            }
             Directory.CreateDirectory(Path.GetDirectoryName(LogPath));
             for (int i = 0; i < FlushBatchSize; i++)
             {
@@ -91,6 +98,7 @@ public sealed class PhoneSaberEventLog
                     stream.Write(bytes, 0, bytes.Length);
             }
             LastError = "";
+            lock (gate) hasPending = pending.Count != 0 || dropped != 0;
         }
         catch (Exception e) { LastError = e.GetType().Name; }
     }
