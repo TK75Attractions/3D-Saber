@@ -10,6 +10,14 @@ RESTART_COUNT=0
 OPEN_PID=""
 MARKER_DIR="$(mktemp -d "${TMPDIR:-/tmp}/phonesaber-watchdog.XXXXXX")" || exit 1
 QUIT_MARKER="$MARKER_DIR/clean-quit"
+# built .app の中からは repo の P2P bridge launcher を見つけられないため、場所を環境変数で渡す。
+# 既に PHONESABER_P2P_BRIDGE_SCRIPT が設定されていればそれを優先。見つからなければ LAN だけで動く。
+BRIDGE_SCRIPT="${PHONESABER_P2P_BRIDGE_SCRIPT:-$SCRIPT_DIR/../ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py}"
+OPEN_ENV=()
+if [[ -f "$BRIDGE_SCRIPT" ]]; then
+    BRIDGE_SCRIPT="$(cd "$(dirname "$BRIDGE_SCRIPT")" && pwd -P)/$(basename "$BRIDGE_SCRIPT")"
+    OPEN_ENV=(--env "PHONESABER_P2P_BRIDGE_SCRIPT=$BRIDGE_SCRIPT")
+fi
 log() { printf '[%s] station=%s %s restart=%s\n' "$(date -u '+%Y-%m-%dT%H:%M:%SZ')" "$STATION" "$*" "$RESTART_COUNT" >> "$LOG_FILE"; }
 stopped() { [[ -e "$STOP_FILE" || -e "$SCRIPT_DIR/STOP" ]]; }
 cleanup() {
@@ -25,9 +33,9 @@ if [[ ! -d "$GAME_APP" ]]; then
 fi
 while ! stopped; do
     rm -f "$QUIT_MARKER"
-    log "launch"
+    log "launch p2p-bridge=${OPEN_ENV[1]:+yes}"
     printf '台 %s を起動します。再起動回数: %s [Ctrl+C: 監視終了]\n' "$STATION" "$RESTART_COUNT"
-    /usr/bin/open -W -n "$GAME_APP" --args -phonesaberStation "$STATION" -phonesaberQuitMarker "$QUIT_MARKER" &
+    /usr/bin/open -W -n ${OPEN_ENV[@]+"${OPEN_ENV[@]}"} "$GAME_APP" --args -phonesaberStation "$STATION" -phonesaberQuitMarker "$QUIT_MARKER" &
     OPEN_PID=$!
     wait "$OPEN_PID"
     OPEN_EXIT=$?
