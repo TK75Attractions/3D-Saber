@@ -135,6 +135,9 @@ Macもファイアウォールが有効ならUnityの受信を許可する。
 - 自動探索は最初に見つかったPCを維持する。複数PCがある会場では意図したPCの
   IPv4を手入力して保存する。SharedPreferencesの手入力は自動探索より優先する。
   UDPには受信確認がないため、表示するPCは「探索で発見した送信先」であり接続保証ではない。
+  前回のPCはUDP名（PC名）とBonjour名（Unity共通）が異なるため、名前かIPv4の一致で同じPCとみなす。
+  前回のPC以外だけが見つかっている間は、その旨と解除方法（停止）を表示する。
+  IPv4のbroadcast先が変わらないLinkProperties更新（IPv6のRA・lease時刻）では再探索せず、送信先を保つ。
 - 探索中（画面表示中）は `WifiManager.MulticastLock` を保持し、停止・画面終了・
   ネットワーク切替でソケット/NSD/lockを解放する。Wi-Fi networkへのbindは、モバイル通信が
   default networkでも座標がWi-Fiを使うため。Wi-Fiスキャン/接続変更APIは使わないため、
