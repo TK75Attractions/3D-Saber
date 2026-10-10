@@ -53,6 +53,7 @@
   - frame 21952 BLUE: winner core-line 端点 [16,66]-[310,114]（rawPCASpan 300px、score 108.7）。正しい候補（color-mask [14,66]-[52,76]、61.6）は eligible のまま rank 3。前後 frame（21954/21955）は正しい core-line [16,68]-[56,76]。
   - frame 21953 RED: winner core-line [14,30]-[90,118]（score 118.1）。正しい候補（core-halo [80,84]-[88,136]、63.4）は eligible rank 2。
   - 判定: 正しい候補は eligible に残るが、**僅差ではなく大差**（gap 47〜55点）で長い core-line が勝つ。CASE A（僅差のすり替え）の定義には合わない新しい型（core-line の過連結）。1 recording・同じ構えの中の連続 frame なので、修正 gate（別 swing で2 event 以上）は未達。会場に近い屋内条件で再現するかを次の capture で確認する。認識コードは未変更。
+- phonesaber_20261010_164236_960（手動 57秒、1/100秒、屋内・青緑の壁画が背景の別画角）: 検出率 RED 84.6% / BLUE 89.7%。ユーザーの体感も「判定はいい感じ」。ただし bundle の12枚はすべて録画末尾（停止しに来る場面、剣は消灯・手持ち）で、振っている最中の ORIGINAL が無い。末尾では壁画を BLUE（color-mask、端点間 約420px）、手を RED と誤検出。過連結がこの画角で出るかは画像が無く判定不能。次は振りの最中に lossless を残す（Capture Lossless か ガイド付き録画）。
 
 
 ### 2026-10-10 Claude 並列レビュー（iPhone / Unity / Android）と修正
