@@ -225,6 +225,173 @@ public class ChartRecordingWorkflowTests
         Assert.AreEqual(700, Document.notes[0].lengthMs, .01);
     }
 
+    [TestCase(KeyCode.H, 1, 3, 0)]
+    [TestCase(KeyCode.B, 0, 4, 0)]
+    [TestCase(KeyCode.H, 1, 3, 4)]
+    [TestCase(KeyCode.B, 0, 4, 4)]
+    public void OneKeyChordReadsClockOncePerEdgeAndPreservesBothPositions(KeyCode key, int bluePad, int redPad, int snap)
+    {
+        Document.offsetMs = 100;
+        Document.beatZeroMs = 50;
+        var blueXY = new Vector2(-1.234f, .567f);
+        var redXY = new Vector2(2.123f, -.891f);
+        Call("SetRecordingPosition", bluePad, blueXY, false);
+        Call("SetRecordingPosition", redPad, redXY, false);
+        Set("paletteType", SaberChartUtility.TypeDirection);
+        Set("paletteDirection", "up");
+        Set("recorder", new SaberChartRecorder(Document, 10, snap, 30, true, 3));
+        Set("isPlaying", true);
+        int reads = 0;
+        Set("recordingClockOverride", (Func<float?>)(() =>
+        {
+            reads++;
+            float value = seconds;
+            seconds += .004f; // 二度読むと量子化の境界をまたぐ音声時計。
+            return value;
+        }));
+        seconds = 1.429f;
+        Key(key);
+        Assert.AreEqual(1, reads, "左右を別々の時刻で記録しない");
+        Assert.AreEqual(2, Document.notes.Count);
+        var blue = Document.notes.Find(n => n.color == "blue");
+        var red = Document.notes.Find(n => n.color == "red");
+        Assert.AreEqual(snap == 0 ? 1299 : 1050, blue.time, .01);
+        Assert.AreEqual(blue.time, red.time);
+        Assert.AreEqual(blue.beat, red.beat);
+        Assert.AreEqual("direction", blue.type);
+        Assert.AreEqual("direction", red.type);
+        Assert.True((bool)Call("RecordingPadHeld", bluePad));
+        Assert.True((bool)Call("RecordingPadHeld", redPad));
+        Call("SetRecordingPosition", bluePad, Vector2.zero, false);
+        Call("SetRecordingPosition", redPad, Vector2.zero, false);
+        seconds = 1.929f;
+        Key(key, EventType.KeyUp);
+        Assert.AreEqual(2, reads, "終端も一度の音声時計でそろえる");
+        Assert.AreEqual(500, blue.lengthMs, .01);
+        Assert.AreEqual(blue.lengthMs, red.lengthMs);
+        Assert.AreEqual("long", blue.type);
+        Assert.AreEqual("long", red.type);
+        Assert.AreEqual(3, blue.count);
+        Assert.AreEqual(3, red.count);
+        Assert.AreEqual("up", blue.direction);
+        Assert.AreEqual("up", red.direction);
+        Assert.AreEqual(blueXY, new Vector2(blue.x, blue.y));
+        Assert.AreEqual(redXY, new Vector2(red.x, red.y));
+        Assert.False((bool)Call("RecordingPadHeld", bluePad));
+        Assert.False((bool)Call("RecordingPadHeld", redPad));
+    }
+
+    [Test]
+    public void ChordRepeatAndIndividualKeyReleaseDoNotSplitOrRepeatPair()
+    {
+        Arm();
+        Key(KeyCode.H);
+        seconds = 1.2f;
+        Key(KeyCode.H);
+        Key(KeyCode.F);
+        seconds = 1.6f;
+        Key(KeyCode.F, EventType.KeyUp);
+        Assert.True((bool)Call("RecordingPadHeld", 1), "単打を離しても同時打ちは保持する");
+        Assert.True((bool)Call("RecordingPadHeld", 3));
+        Key(KeyCode.H);
+        seconds = 2;
+        Key(KeyCode.H, EventType.KeyUp);
+        Assert.AreEqual(3, Document.notes.Count);
+        Assert.AreEqual(1000, Document.notes[0].lengthMs, .01);
+        Assert.AreEqual(1000, Document.notes[1].lengthMs, .01);
+        Assert.AreEqual(400, Document.notes[2].lengthMs, .01);
+        seconds = 2.2f;
+        Key(KeyCode.H);
+        seconds = 2.3f;
+        Key(KeyCode.H, EventType.KeyUp);
+        Assert.AreEqual(5, Document.notes.Count);
+        Assert.AreEqual("tap", Document.notes[3].type);
+        Assert.AreEqual("tap", Document.notes[4].type);
+    }
+
+    [Test]
+    public void ChordIgnoresTextFieldsAndModifiersButAlwaysReleasesBothNotes()
+    {
+        Arm();
+        Key(KeyCode.H, modifiers: EventModifiers.Control);
+        Key(KeyCode.B, modifiers: EventModifiers.Command);
+        Key(KeyCode.H, modifiers: EventModifiers.Alt);
+        EditorGUIUtility.editingTextField = true;
+        Key(KeyCode.H);
+        Key(KeyCode.B);
+        Assert.IsEmpty(Document.notes);
+        EditorGUIUtility.editingTextField = false;
+        Key(KeyCode.H);
+        Key(KeyCode.B);
+        EditorGUIUtility.editingTextField = true;
+        seconds = 1.5f;
+        Key(KeyCode.H, EventType.KeyUp, EventModifiers.Control);
+        Key(KeyCode.B, EventType.KeyUp, EventModifiers.Alt);
+        Assert.AreEqual(4, Document.notes.Count);
+        Assert.True(Document.notes.TrueForAll(n => n.type == "long" && n.lengthMs == 500));
+        foreach (int pad in new[] { 0, 1, 3, 4 }) Assert.False((bool)Call("RecordingPadHeld", pad));
+    }
+
+    [Test]
+    public void ChordsHeldThroughCountInRequireReleaseBeforeFirstNote()
+    {
+        Set("countingIn", true);
+        Key(KeyCode.H);
+        Key(KeyCode.B);
+        Assert.IsEmpty(Document.notes);
+        Set("countingIn", false);
+        Arm();
+        Key(KeyCode.H);
+        Key(KeyCode.B);
+        Assert.IsEmpty(Document.notes);
+        Key(KeyCode.H, EventType.KeyUp);
+        Key(KeyCode.B, EventType.KeyUp);
+        Key(KeyCode.H);
+        Key(KeyCode.B);
+        Assert.AreEqual(4, Document.notes.Count);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void StopOrFocusLossFinalizesChordsAndUndoRestoresWholeTake(bool loseFocus)
+    {
+        Arm();
+        Key(KeyCode.H);
+        seconds = 1.2f;
+        Key(KeyCode.B);
+        seconds = 1.9f;
+        if (loseFocus) Call("OnLostFocus");
+        else Key(KeyCode.Escape);
+        Assert.IsNull(Get<SaberChartRecorder>("recorder"));
+        Assert.False(Get<bool>("isPlaying"));
+        Assert.AreEqual(4, Document.notes.Count);
+        Assert.AreEqual(900, Document.notes[0].lengthMs, .01);
+        Assert.AreEqual(Document.notes[0].lengthMs, Document.notes[1].lengthMs);
+        Assert.AreEqual(700, Document.notes[2].lengthMs, .01);
+        Assert.AreEqual(Document.notes[2].lengthMs, Document.notes[3].lengthMs);
+        string recorded = SaberChartUtility.ToJson(Document, false);
+        Key(KeyCode.Z, modifiers: EventModifiers.Control);
+        Assert.IsEmpty(Document.notes);
+        Key(KeyCode.Y, modifiers: EventModifiers.Control);
+        Assert.AreEqual(recorded, SaberChartUtility.ToJson(Document, false));
+        Arm();
+        seconds = 2.2f;
+        Key(KeyCode.H);
+        Key(KeyCode.B);
+        Assert.AreEqual(8, Document.notes.Count, "停止後の新しい録音に押し続け状態を残さない");
+    }
+
+    [Test]
+    public void MissingAudioClockStopsChordWithoutCreatingHalfAPair()
+    {
+        Arm();
+        Set("recordingClockOverride", (Func<float?>)(() => null));
+        Key(KeyCode.H);
+        Assert.IsEmpty(Document.notes);
+        Assert.IsNull(Get<SaberChartRecorder>("recorder"));
+        Assert.False(window.hasUnsavedChanges);
+    }
+
     [Test]
     public void UndoWhileRecordingFinalizesThenRemovesWholeTake()
     {
@@ -496,7 +663,7 @@ public class ChartRecordingWorkflowTests
     }
 
     [UnityTest]
-    public IEnumerator RecordingPadsDrawAtMinimumWindowSizeAndMouseReleaseOutsideEndsLong()
+    public IEnumerator RecordingPadsAndChordsWorkAtMinimumSizeAndReleaseOutsideEndsLong()
     {
         window.position = new Rect(40, 40, 1050, 650);
         window.Show();
@@ -523,7 +690,7 @@ public class ChartRecordingWorkflowTests
 
         // XY入力は停止せずに任意位置へ打ち込める。調整だけのドラッグはノーツを増やさない。
         Set("recordPositionGrid", 0);
-        Rect panel = new Rect(252, 95, 498, (650 - 95 - 28 - 7) * .62f);
+        Rect panel = new Rect(252, 95, 498, (650 - 95 - 28 - 7) * .68f);
         Rect plane = (Rect)Call("RecordingPlaneRect", panel);
         Vector2 blue = (Vector2)Call("RecordingPositionToPoint", plane, new Vector2(1.2f, .9f));
         seconds = 2;
@@ -554,6 +721,38 @@ public class ChartRecordingWorkflowTests
         Assert.AreEqual(new Vector2(2.5f, 1.5f), Get<Vector2[]>("recordPositions")[2]);
         Assert.AreEqual(0, Document.notes[3].x, .001);
         Assert.AreEqual(0, Document.notes[3].y, .001);
+
+        // 同時打ちボタンとキーを併用し、枠外で離してもその入力の左右だけを確定する。
+        Rect innerChord = (Rect)Call("RecordingChordRect", panel, 0);
+        Rect outerChord = (Rect)Call("RecordingChordRect", panel, 1);
+        Assert.Less(innerChord.yMax, plane.yMin - 16, "同時打ちボタンがXY見出しへ重ならない");
+        Assert.Less(innerChord.xMax, outerChord.xMin);
+        Assert.Greater(plane.height, 150);
+        Assert.LessOrEqual(plane.yMax, panel.yMax - 38);
+        seconds = 5;
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = origin + innerChord.center });
+        Assert.AreEqual(6, Document.notes.Count);
+        Assert.AreEqual(Document.notes[4].time, Document.notes[5].time);
+        seconds = 5.2f;
+        Key(KeyCode.B);
+        seconds = 5.8f;
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = origin + new Vector2(30, 615) });
+        Assert.AreEqual(-1, Get<int>("recordMouseChord"));
+        Assert.AreEqual(800, Document.notes[4].lengthMs, .01);
+        Assert.AreEqual(Document.notes[4].lengthMs, Document.notes[5].lengthMs);
+        Assert.True((bool)Call("RecordingPadHeld", 0));
+        Assert.True((bool)Call("RecordingPadHeld", 4));
+        seconds = 5.95f;
+        Key(KeyCode.B, EventType.KeyUp);
+        Assert.AreEqual(750, Document.notes[6].lengthMs, .01);
+        Assert.AreEqual(Document.notes[6].lengthMs, Document.notes[7].lengthMs);
+        seconds = 6;
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = origin + outerChord.center });
+        seconds = 6.1f;
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = origin + outerChord.center });
+        Assert.AreEqual(10, Document.notes.Count);
+        Assert.AreEqual("tap", Document.notes[8].type);
+        Assert.AreEqual("tap", Document.notes[9].type);
         Key(KeyCode.Space);
         Set("expandPlaybackPreview", true);
         window.Repaint();

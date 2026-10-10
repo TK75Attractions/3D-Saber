@@ -10,6 +10,12 @@ namespace Saber.ChartEditor
         private static readonly string[] RecordLabels = { "D  青1", "F  青2", "G  金", "J  赤1", "K  赤2" };
         private static readonly float[] RecordX = { -1.7857143f, -.7142857f, 0f, .7142857f, 1.7857143f };
         private static readonly string[] RecordColors = { "blue", "blue", "gold", "red", "red" };
+        private static readonly KeyCode[] RecordChordKeys = { KeyCode.H, KeyCode.B };
+        private static readonly int[,] RecordChordPads = { { 1, 3 }, { 0, 4 } };
+        private static readonly string[] RecordChordLabels = { "H  同時打ち F＋J", "B  同時打ち D＋K" };
+        // 単打キー(0～4)、単打ボタン(5～9)、XY入力(10～14)とは別の保持状態を使う。
+        private const int RecordChordKeyInput = 20;
+        private const int RecordChordMouseInput = 30;
         [SerializeField] private bool recordMode;
         [SerializeField] private bool recordSnap = true;
         [SerializeField] private bool recordHold = true;
@@ -42,8 +48,10 @@ namespace Saber.ChartEditor
         private AudioClip countInClip;
         private float lastRecordingSeconds;
         private int recordMousePad = -1;
+        private int recordMouseChord = -1;
         private readonly double[] recordFlashes = new double[5];
         private readonly bool[] recordKeysDown = new bool[5];
+        private readonly bool[] recordChordKeysDown = new bool[2];
         // 音声時計だけを差し替えられるようにし、入力経路を音声機器なしでも検証する。
         private Func<float?> recordingClockOverride;
         private bool RecordingBusy => countingIn || recorder != null;
@@ -90,14 +98,14 @@ namespace Saber.ChartEditor
             GUILayout.EndHorizontal();
             recordPositionOnly = EditorGUILayout.ToggleLeft("XYパッドは位置調整のみ", recordPositionOnly);
             EditorGUILayout.HelpBox("1～5: 調整するキーを選択\n矢印: 位置移動 / Shift+矢印: 0.01刻み\nXYパッド: 左=青 / 右=赤 / Shift+左=金\nAlt+ドラッグ: 選択キーの位置だけ変更\n停止中は配置だけを調整できます。", MessageType.None);
-            EditorGUILayout.HelpBox("Rで録音開始、Space / Escで終了。\nD・F / G / J・Kは各マーカーの位置へ入力。\n方向は左の矢印、LONGは長押し。\n録音1回分をまとめてUndoできます。", MessageType.None);
+            EditorGUILayout.HelpBox("Rで録音開始、Space / Escで終了。\nD・F / G / J・Kは各マーカーの位置へ入力。\nH: F＋J / B: D＋Kを1回で同時打ち。\n左右それぞれのXYを使い、長押しも同じ長さ。\n方向は左の矢印、LONGは長押し。\n録音1回分をまとめてUndoできます。", MessageType.None);
         }
 
         private Rect DrawRecordingPad(Rect rect)
         {
             if (!recordMode) return rect;
             EnsureRecordingPositions();
-            Rect panel = new Rect(rect.x, rect.y, rect.width, Mathf.Min(390, rect.height * .62f));
+            Rect panel = new Rect(rect.x, rect.y, rect.width, Mathf.Min(426, rect.height * .68f));
             EditorGUI.DrawRect(panel, PanelColor);
             string label = countingIn ? $"開始まで {Mathf.Clamp(Mathf.CeilToInt((float)(countInEndsAt - EditorApplication.timeSinceStartup) * document.bpm / 60f), 1, 4)}"
                 : recorder != null ? $"● 録音中  +{recorder.AddedCount} NOTES" : "演奏して打ち込み";
@@ -117,7 +125,7 @@ namespace Saber.ChartEditor
             {
                 Rect pad = new Rect(panel.x + 8 + width * i, panel.y + 38, width - 4, 52);
                 Color color = NoteColor(RecordColors[i]);
-                bool lit = recorder != null && (recorder.IsHeld(i) || recorder.IsHeld(i + 5)) ||
+                bool lit = RecordingPadHeld(i) ||
                     EditorApplication.timeSinceStartup < recordFlashes[i];
                 EditorGUI.DrawRect(pad, Color.Lerp(PanelColor, color, lit ? .85f : .3f));
                 if (i == recordActivePad) DrawOutline(pad, color, 2);
@@ -125,7 +133,8 @@ namespace Saber.ChartEditor
                     { alignment = TextAnchor.MiddleCenter, normal = { textColor = Color.white } });
                 Vector2 xy = RecordingPosition(i);
                 GUI.Label(new Rect(pad.x, pad.y + 27, pad.width, 20), $"{xy.x:0.00}, {xy.y:0.00}", centeredSmallStyle);
-                if (input.type == EventType.MouseDown && input.button == 0 && pad.Contains(input.mousePosition) && recordXYButton < 0)
+                if (input.type == EventType.MouseDown && input.button == 0 && pad.Contains(input.mousePosition) &&
+                    recordMousePad < 0 && recordMouseChord < 0 && recordXYButton < 0)
                 {
                     SelectRecordingPad(i);
                     if (recorder != null)
@@ -145,12 +154,68 @@ namespace Saber.ChartEditor
                 GUIUtility.hotControl = 0;
                 input.Use();
             }
+            DrawRecordingChordPads(panel, input);
             DrawRecordingPlane(RecordingPlaneRect(panel));
             GUI.Label(new Rect(panel.x + 10, panel.yMax - 38, panel.width - 20, 18),
                 "XY: 左クリック 青 / 右 赤 / Shift+左 金 / Alt 位置調整", smallMutedStyle);
             GUI.Label(new Rect(panel.x + 10, panel.yMax - 20, panel.width - 20, 18),
                 $"調整 {RecordKeys[recordActivePad]}  ·  矢印で移動 / Shiftで微調整  ·  Space 終了", smallMutedStyle);
             return new Rect(rect.x, panel.yMax + PanelGap, rect.width, rect.height - panel.height - PanelGap);
+        }
+
+        private bool RecordingPadHeld(int pad)
+        {
+            if (recorder == null) return false;
+            if (recorder.IsHeld(pad) || recorder.IsHeld(pad + 5) || recorder.IsHeld(pad + 10)) return true;
+            for (int chord = 0; chord < RecordChordKeys.Length; chord++)
+                for (int member = 0; member < 2; member++)
+                    if (RecordChordPads[chord, member] == pad &&
+                        (recorder.IsHeld(RecordChordKeyInput + chord * 2 + member) ||
+                         recorder.IsHeld(RecordChordMouseInput + chord * 2 + member))) return true;
+            return false;
+        }
+
+        private Rect RecordingChordRect(Rect panel, int chord)
+        {
+            float width = (panel.width - 22) / 2;
+            return new Rect(panel.x + 8 + (width + 6) * chord, panel.y + 96, width, 30);
+        }
+
+        private void DrawRecordingChordPads(Rect panel, Event input)
+        {
+            int control = GUIUtility.GetControlID("SaberRecordingChord".GetHashCode(), FocusType.Passive, panel);
+            for (int chord = 0; chord < RecordChordKeys.Length; chord++)
+            {
+                Rect pad = RecordingChordRect(panel, chord);
+                bool lit = recorder != null && (recorder.IsHeld(RecordChordKeyInput + chord * 2) ||
+                    recorder.IsHeld(RecordChordMouseInput + chord * 2));
+                EditorGUI.DrawRect(new Rect(pad.x, pad.y, pad.width / 2, pad.height),
+                    Color.Lerp(PanelColor, NoteColor("blue"), lit ? .85f : .3f));
+                EditorGUI.DrawRect(new Rect(pad.center.x, pad.y, pad.width / 2, pad.height),
+                    Color.Lerp(PanelColor, NoteColor("red"), lit ? .85f : .3f));
+                GUI.Label(pad, new GUIContent(RecordChordLabels[chord], "青と赤を同じ時刻に入力。長押しで両方LONG。各キーのXY位置を使います。"),
+                    new GUIStyle(EditorStyles.boldLabel) { alignment = TextAnchor.MiddleCenter, normal = { textColor = Color.white } });
+                if (input.type == EventType.MouseDown && input.button == 0 && pad.Contains(input.mousePosition) &&
+                    recordMousePad < 0 && recordMouseChord < 0 && recordXYButton < 0)
+                {
+                    FinishTextEditing();
+                    if (recorder != null)
+                    {
+                        recordMouseChord = chord;
+                        GUIUtility.hotControl = control;
+                        RecordingChordPress(RecordChordMouseInput, chord);
+                    }
+                    else SetStatus("録音開始後に同時打ちできます。左右の位置は各キーのXYで調整します");
+                    input.Use();
+                }
+            }
+            if (input.rawType == EventType.MouseUp && input.button == 0 && recordMouseChord >= 0)
+            {
+                RecordingChordRelease(RecordChordMouseInput, recordMouseChord);
+                recordMouseChord = -1;
+                GUIUtility.hotControl = 0;
+                input.Use();
+            }
         }
 
         private void EnsureRecordingPositions()
@@ -262,8 +327,8 @@ namespace Saber.ChartEditor
 
         private Rect RecordingPlaneRect(Rect panel)
         {
-            float height = Mathf.Min(panel.height - 144, (panel.width - 40) * 3f / 5f);
-            return new Rect(panel.center.x - height * 5f / 6f, panel.y + 102, height * 5f / 3f, height);
+            float height = Mathf.Min(panel.height - 190, (panel.width - 40) * 3f / 5f);
+            return new Rect(panel.center.x - height * 5f / 6f, panel.y + 148, height * 5f / 3f, height);
         }
 
         private Vector2 RecordingPointToPosition(Rect plane, Vector2 point)
@@ -338,7 +403,8 @@ namespace Saber.ChartEditor
         {
             int control = GUIUtility.GetControlID("SaberRecordingXY".GetHashCode(), FocusType.Passive, plane);
             if (input.type == EventType.MouseDown && (input.button == 0 || input.button == 1) &&
-                plane.Contains(input.mousePosition) && recordMousePad < 0 && recordXYButton < 0 && !input.control && !input.command)
+                plane.Contains(input.mousePosition) && recordMousePad < 0 && recordMouseChord < 0 &&
+                recordXYButton < 0 && !input.control && !input.command)
             {
                 recordXYAdjusting = recorder == null || recordPositionOnly || input.alt;
                 int pad = recordActivePad;
@@ -422,7 +488,7 @@ namespace Saber.ChartEditor
             recorder = new SaberChartRecorder(document, audioClip.length, recordSnap ? CurrentSnap : 0,
                 recordInputOffsetMs, recordHold, recordLongCount);
             lastRecordingSeconds = playbackAudioStartSeconds;
-            SetStatus("録音中: D・F / J・K / G で入力、Spaceで終了");
+            SetStatus("録音中: D・F / J・K / G で単打、H=F＋J / B=D＋Kで同時打ち、Spaceで終了");
         }
 
         private bool TryRecordingPosition(out float seconds)
@@ -441,11 +507,36 @@ namespace Saber.ChartEditor
             if (recorder == null) return;
             if (!TryRecordingPosition(out float seconds)) { StopPreview(false); return; }
             lastRecordingSeconds = seconds;
+            RecordingPressAt(input, pad, seconds);
+        }
+
+        private void RecordingPressAt(int input, int pad, float seconds)
+        {
             string direction = paletteType == SaberChartUtility.TypeDirection ? paletteDirection : SaberChartUtility.DirectionNone;
             Vector2 position = RecordingPosition(pad);
             var note = recorder.Press(input, seconds, position.x, position.y, RecordColors[pad], direction);
             recordFlashes[pad] = EditorApplication.timeSinceStartup + .15;
             if (note != null) MarkChanged();
+            Repaint();
+        }
+
+        private void RecordingChordPress(int inputBase, int chord)
+        {
+            if (recorder == null) return;
+            if (!TryRecordingPosition(out float seconds)) { StopPreview(false); return; }
+            lastRecordingSeconds = seconds;
+            // 音声時計を一度だけ読み、Snapなしやグリッド境界でも左右の始点を一致させる。
+            for (int member = 0; member < 2; member++)
+                RecordingPressAt(inputBase + chord * 2 + member, RecordChordPads[chord, member], seconds);
+        }
+
+        private void RecordingChordRelease(int inputBase, int chord)
+        {
+            if (recorder == null) return;
+            if (TryRecordingPosition(out float seconds)) lastRecordingSeconds = seconds;
+            for (int member = 0; member < 2; member++)
+                recorder.Release(inputBase + chord * 2 + member, lastRecordingSeconds);
+            MarkChanged();
             Repaint();
         }
 
@@ -470,10 +561,11 @@ namespace Saber.ChartEditor
                 MarkChanged();
                 SetStatus(count > 0 ? $"{count}ノーツを録音しました。Ctrl+Zで録音分を取り消せます" : "入力なしで録音を終了しました");
             }
-            if (recordMousePad >= 0 || recordXYButton >= 0) GUIUtility.hotControl = 0;
-            recordMousePad = -1;
+            if (recordMousePad >= 0 || recordMouseChord >= 0 || recordXYButton >= 0) GUIUtility.hotControl = 0;
+            recordMousePad = recordMouseChord = -1;
             recordXYButton = recordXYInput = recordXYPad = -1;
             Array.Clear(recordKeysDown, 0, recordKeysDown.Length);
+            Array.Clear(recordChordKeysDown, 0, recordChordKeysDown.Length);
         }
 
         private void DisposeCountIn()
@@ -486,11 +578,20 @@ namespace Saber.ChartEditor
         private bool HandleRecordingKeyboard(Event input)
         {
             int pad = Array.IndexOf(RecordKeys, input.keyCode);
+            int chord = Array.IndexOf(RecordChordKeys, input.keyCode);
             // 入力欄や修飾キーの状態が途中で変わっても、離したキーは必ず解除する。
-            if (input.type == EventType.KeyUp && pad >= 0 && RecordingBusy)
+            if (input.type == EventType.KeyUp && (pad >= 0 || chord >= 0) && RecordingBusy)
             {
-                recordKeysDown[pad] = false;
-                RecordingRelease(pad);
+                if (pad >= 0)
+                {
+                    recordKeysDown[pad] = false;
+                    RecordingRelease(pad);
+                }
+                else
+                {
+                    recordChordKeysDown[chord] = false;
+                    RecordingChordRelease(RecordChordKeyInput, chord);
+                }
                 input.Use();
                 return true;
             }
@@ -514,6 +615,11 @@ namespace Saber.ChartEditor
             {
                 recordKeysDown[pad] = true;
                 if (recorder != null) RecordingPress(pad, pad);
+            }
+            if (!modified && chord >= 0 && !recordChordKeysDown[chord])
+            {
+                recordChordKeysDown[chord] = true;
+                if (recorder != null) RecordingChordPress(RecordChordKeyInput, chord);
             }
             // 保存・履歴操作だけは既存のショートカットへ渡し、先に録音を確定する。
             if ((input.control || input.command) && (input.keyCode == KeyCode.S || input.keyCode == KeyCode.Z || input.keyCode == KeyCode.Y)) return false;
