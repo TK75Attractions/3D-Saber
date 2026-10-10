@@ -143,9 +143,9 @@ public class ChartRecordingWorkflowTests
     public void SetUp()
     {
         shown = false;
-        foreach (string key in new[] { "SongId", "Difficulty", "Snap", "Measure", "Zoom" })
+        foreach (string key in new[] { "SongId", "Difficulty", "Snap", "Measure", "Zoom", "RecordingLayout" })
         {
-            preferences[key] = !EditorPrefs.HasKey(Prefix + key) ? null : key == "SongId" ? (object)EditorPrefs.GetString(Prefix + key)
+            preferences[key] = !EditorPrefs.HasKey(Prefix + key) ? null : key == "SongId" || key == "RecordingLayout" ? (object)EditorPrefs.GetString(Prefix + key)
                 : key == "Zoom" ? (object)EditorPrefs.GetFloat(Prefix + key) : EditorPrefs.GetInt(Prefix + key);
         }
         EditorPrefs.SetString(Prefix + "SongId", "__RecordingTest");
@@ -155,6 +155,11 @@ public class ChartRecordingWorkflowTests
         Set("document", new SaberChartDocument());
         Set("savedJson", SaberChartUtility.ToJson(Document, false));
         Set("recordMode", true);
+        Set("recordPositions", null);
+        Set("recordHeight", 1);
+        Set("recordActivePad", 1);
+        Set("recordPositionGrid", 2);
+        Set("recordPositionOnly", false);
         Set("recordingClockOverride", (Func<float?>)(() => seconds));
         textEditing = EditorGUIUtility.editingTextField;
         EditorGUIUtility.editingTextField = false;
@@ -331,6 +336,165 @@ public class ChartRecordingWorkflowTests
         Assert.False(Get<bool>("isPlaying"));
     }
 
+    [Test]
+    public void EachRecordingKeyHasIndependentPreciseXYAndHistoryPreservesThem()
+    {
+        var points = new[] { new Vector2(-2.321f, 1.234f), new Vector2(.127f, -.987f),
+            new Vector2(-.543f, 1.111f), new Vector2(2.345f, .456f), new Vector2(-1.234f, -1.432f) };
+        var keys = new[] { KeyCode.D, KeyCode.F, KeyCode.G, KeyCode.J, KeyCode.K };
+        var colors = new[] { "blue", "blue", "gold", "red", "red" };
+        for (int i = 0; i < points.Length; i++) Call("SetRecordingPosition", i, points[i], false);
+        Arm();
+        foreach (var key in keys) Key(key);
+        seconds = 1.1f;
+        Key(KeyCode.Space);
+        Assert.AreEqual(5, Document.notes.Count);
+        for (int i = 0; i < points.Length; i++)
+            Assert.True(Document.notes.Exists(n => Mathf.Abs(n.x - points[i].x) < .0001f &&
+                Mathf.Abs(n.y - points[i].y) < .0001f && n.color == colors[i]));
+        string recorded = SaberChartUtility.ToJson(Document, false);
+        Key(KeyCode.Z, modifiers: EventModifiers.Control);
+        Assert.IsEmpty(Document.notes);
+        Key(KeyCode.Y, modifiers: EventModifiers.Control);
+        Assert.AreEqual(recorded, SaberChartUtility.ToJson(Document, false));
+    }
+
+    [Test]
+    public void LivePositionChangesAffectNextNoteButNeverMoveHeldOrExistingNotes()
+    {
+        Call("SetRecordingPosition", 1, new Vector2(-2, 1.33f), false);
+        Arm();
+        Key(KeyCode.F);
+        Call("SetRecordingPosition", 1, new Vector2(2, -.78f), false);
+        seconds = 1.6f;
+        Key(KeyCode.F, EventType.KeyUp);
+        seconds = 2;
+        Key(KeyCode.F);
+        Assert.AreEqual(2, Document.notes.Count);
+        Assert.AreEqual(-2, Document.notes[0].x);
+        Assert.AreEqual(1.33f, Document.notes[0].y);
+        Assert.AreEqual(600, Document.notes[0].lengthMs, .01);
+        Assert.AreEqual(2, Document.notes[1].x);
+        Assert.AreEqual(-.78f, Document.notes[1].y);
+    }
+
+    [Test]
+    public void GridFreePlacementAndFineArrowMovementAreSeparateFromTimeSnap()
+    {
+        Set("recordPositionGrid", 4); // XY 32分割
+        Call("SetRecordingPosition", 0, new Vector2(.2f, .2f), true);
+        Assert.AreEqual(new Vector2(.15625f, .1875f), Get<Vector2[]>("recordPositions")[0]);
+        Set("recordPositionGrid", 0);
+        Call("SetRecordingPosition", 0, new Vector2(.123f, .234f), true);
+        Key(KeyCode.Alpha1);
+        Key(KeyCode.RightArrow, modifiers: EventModifiers.Shift);
+        Assert.AreEqual(.133f, Get<Vector2[]>("recordPositions")[0].x, .00001);
+        Key(KeyCode.UpArrow);
+        Assert.AreEqual(.284f, Get<Vector2[]>("recordPositions")[0].y, .00001);
+        Set("recordPositionGrid", 3); // XY 16分割
+        Key(KeyCode.Alpha5);
+        Call("SetRecordingPosition", 4, Vector2.zero, false);
+        Arm();
+        Key(KeyCode.UpArrow);
+        Key(KeyCode.LeftArrow);
+        Assert.AreEqual(new Vector2(-.3125f, .1875f), Get<Vector2[]>("recordPositions")[4]);
+        Assert.AreEqual(0, Get<float>("currentBeat"), "録音中の矢印はシークしない");
+        Assert.True(Get<bool>("isPlaying"));
+        Assert.IsEmpty(Document.notes);
+    }
+
+    [Test]
+    public void MirrorBoundsInvalidNumbersAndTextFieldsPreserveOtherPositions()
+    {
+        Call("SetRecordingPosition", 1, new Vector2(-1.23f, 1.11f), false);
+        Call("MirrorRecordingPosition");
+        Assert.AreEqual(new Vector2(1.23f, 1.11f), Get<Vector2[]>("recordPositions")[3]);
+        Call("SetRecordingPosition", 2, new Vector2(100, -100), false);
+        Assert.AreEqual(new Vector2(2.5f, -1.5f), Get<Vector2[]>("recordPositions")[2]);
+        Call("SetRecordingPosition", 2, new Vector2(float.NaN, 0), false);
+        Assert.AreEqual(new Vector2(2.5f, -1.5f), Get<Vector2[]>("recordPositions")[2]);
+        EditorGUIUtility.editingTextField = true;
+        Key(KeyCode.Alpha5);
+        Key(KeyCode.UpArrow);
+        Assert.AreEqual(1, Get<int>("recordActivePad"));
+        Assert.AreEqual(new Vector2(-1.23f, 1.11f), Get<Vector2[]>("recordPositions")[1]);
+        Assert.False(window.hasUnsavedChanges, "入力位置の設定だけでは譜面を変更しない");
+    }
+
+    [Test]
+    public void PlaneCoordinatesIncludeAllEdgesAndPreserveUpwardY()
+    {
+        var plane = new Rect(100, 200, 500, 300);
+        Assert.AreEqual(new Vector2(-2.5f, 1.5f), (Vector2)Call("RecordingPointToPosition", plane, new Vector2(100, 200)));
+        Assert.AreEqual(new Vector2(2.5f, -1.5f), (Vector2)Call("RecordingPointToPosition", plane, new Vector2(600, 500)));
+        Assert.AreEqual(Vector2.zero, (Vector2)Call("RecordingPointToPosition", plane, plane.center));
+        var expected = new Vector2(1.234f, -.987f);
+        var point = (Vector2)Call("RecordingPositionToPoint", plane, expected);
+        Assert.Less(Vector2.Distance(expected, (Vector2)Call("RecordingPointToPosition", plane, point)), .00001f);
+        Call("SetRecordingPosition", 3, expected, false);
+        Assert.AreEqual(3, (int)Call("RecordingMarkerAt", plane, point + new Vector2(3, -3)));
+        Assert.AreEqual(-1, (int)Call("RecordingMarkerAt", plane, plane.position));
+        Call("SetRecordingPosition", 1, expected, false);
+        Assert.AreEqual(1, (int)Call("RecordingMarkerAt", plane, point), "重なったときは選択マーカーを優先する");
+    }
+
+    [Test]
+    public void PreviousHeightIsMigratedOnceToIndependentPositions()
+    {
+        Set("recordHeight", 2);
+        Set("recordPositions", null);
+        Call("EnsureRecordingPositions");
+        foreach (var p in Get<Vector2[]>("recordPositions")) Assert.AreEqual(.8571429f, p.y);
+        Call("SetRecordingPosition", 1, new Vector2(-.25f, -.35f), false);
+        Set("recordHeight", 0);
+        Call("EnsureRecordingPositions");
+        Assert.AreEqual(new Vector2(-.25f, -.35f), Get<Vector2[]>("recordPositions")[1]);
+    }
+
+    [Test]
+    public void PreciseLayoutSettingsSurviveClosingAndReopening()
+    {
+        Call("SetRecordingPosition", 4, new Vector2(-1.234f, .567f), false);
+        Set("recordActivePad", 4);
+        Set("recordPositionGrid", 3);
+        Set("recordPositionOnly", true);
+        Call("SaveRecordingLayout");
+        Set("recordPositions", null);
+        Set("recordActivePad", 0);
+        Set("recordPositionGrid", 0);
+        Set("recordPositionOnly", false);
+        Call("LoadRecordingLayout");
+        Assert.AreEqual(new Vector2(-1.234f, .567f), Get<Vector2[]>("recordPositions")[4]);
+        Assert.AreEqual(4, Get<int>("recordActivePad"));
+        Assert.AreEqual(3, Get<int>("recordPositionGrid"));
+        Assert.True(Get<bool>("recordPositionOnly"));
+    }
+
+    [Test]
+    public void InvalidSavedLayoutFallsBackWithoutChangingChart()
+    {
+        EditorPrefs.SetString(Prefix + "RecordingLayout", "{broken");
+        Call("LoadRecordingLayout");
+        Call("EnsureRecordingPositions");
+        Assert.AreEqual(5, Get<Vector2[]>("recordPositions").Length);
+        Assert.IsEmpty(Document.notes);
+        Assert.False(window.hasUnsavedChanges);
+    }
+
+    [Test]
+    public void LosingFocusDuringPositionAdjustmentReleasesPointerWithoutStoppingAudition()
+    {
+        Set("isPlaying", true);
+        Set("recordXYButton", 0);
+        Set("recordXYPad", 1);
+        Set("recordXYAdjusting", true);
+        Call("OnLostFocus");
+        Assert.AreEqual(-1, Get<int>("recordXYButton"));
+        Assert.AreEqual(-1, Get<int>("recordXYPad"));
+        Assert.True(Get<bool>("isPlaying"));
+        Assert.IsEmpty(Document.notes);
+    }
+
     [UnityTest]
     public IEnumerator RecordingPadsDrawAtMinimumWindowSizeAndMouseReleaseOutsideEndsLong()
     {
@@ -356,6 +520,40 @@ public class ChartRecordingWorkflowTests
         window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = origin + new Vector2(30, 615) });
         Assert.False(Get<SaberChartRecorder>("recorder").IsHeld(5));
         Assert.AreEqual(600, Document.notes[0].lengthMs, .01);
+
+        // XY入力は停止せずに任意位置へ打ち込める。調整だけのドラッグはノーツを増やさない。
+        Set("recordPositionGrid", 0);
+        Rect panel = new Rect(252, 95, 498, (650 - 95 - 28 - 7) * .62f);
+        Rect plane = (Rect)Call("RecordingPlaneRect", panel);
+        Vector2 blue = (Vector2)Call("RecordingPositionToPoint", plane, new Vector2(1.2f, .9f));
+        seconds = 2;
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = origin + blue });
+        seconds = 2.1f;
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = origin + blue });
+        Assert.AreEqual(2, Document.notes.Count);
+        Assert.AreEqual("blue", Document.notes[1].color);
+        Assert.AreEqual(1.2f, Document.notes[1].x, .001);
+        Assert.AreEqual(.9f, Document.notes[1].y, .001);
+        Vector2 red = (Vector2)Call("RecordingPositionToPoint", plane, new Vector2(-1.4f, -1.1f));
+        seconds = 3;
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 1, mousePosition = origin + red });
+        seconds = 3.5f;
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 1, mousePosition = origin + new Vector2(30, 615) });
+        Assert.AreEqual("red", Document.notes[2].color);
+        Assert.AreEqual(-1.4f, Document.notes[2].x, .001);
+        Assert.AreEqual(-1.1f, Document.notes[2].y, .001);
+        Assert.AreEqual(500, Document.notes[2].lengthMs, .01);
+        seconds = 4;
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, modifiers = EventModifiers.Shift, mousePosition = origin + plane.center });
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = origin + plane.center });
+        Assert.AreEqual("gold", Document.notes[3].color);
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, modifiers = EventModifiers.Alt, mousePosition = origin + plane.center });
+        window.SendEvent(new Event { type = EventType.MouseDrag, button = 0, modifiers = EventModifiers.Alt, mousePosition = origin + new Vector2(plane.xMax, plane.yMin) });
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = origin + new Vector2(plane.xMax, plane.yMin) });
+        Assert.AreEqual(4, Document.notes.Count);
+        Assert.AreEqual(new Vector2(2.5f, 1.5f), Get<Vector2[]>("recordPositions")[2]);
+        Assert.AreEqual(0, Document.notes[3].x, .001);
+        Assert.AreEqual(0, Document.notes[3].y, .001);
         Key(KeyCode.Space);
         Set("expandPlaybackPreview", true);
         window.Repaint();

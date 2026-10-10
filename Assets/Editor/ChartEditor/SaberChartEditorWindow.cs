@@ -146,6 +146,7 @@ namespace Saber.ChartEditor
             SaberChartUtility.Normalize(document);
             savedJson ??= SaberChartUtility.ToJson(document, false);
             LoadPreferences();
+            LoadRecordingLayout();
             EnsureAudioForSong(false);
             EditorApplication.update += EditorTick;
         }
@@ -156,6 +157,7 @@ namespace Saber.ChartEditor
             StopPreview(false);
             DisposePlaybackPreview();
             SavePreferences();
+            SaveRecordingLayout();
         }
 
         public override void SaveChanges()
@@ -352,9 +354,11 @@ namespace Saber.ChartEditor
             useGameTiming = EditorGUILayout.ToggleLeft(new GUIContent(
                 $"ゲームと同じ表示補正（{GameSession.JudgmentOffsetMs:+0;-0;0}ms）",
                 "ゲームの判定調整と同じ量だけ再生カーソルを補正します。波形と保存する譜面時刻は変わりません。"), useGameTiming);
+            EditorGUI.EndDisabledGroup();
 
             DrawRecordingSettings();
 
+            EditorGUI.BeginDisabledGroup(RecordingBusy);
             GUILayout.Space(10f);
             SectionLabel("音源");
             EditorGUI.BeginChangeCheck();
@@ -432,17 +436,25 @@ namespace Saber.ChartEditor
             if (!showPlaybackPreview)
             {
                 DisposePlaybackPreview();
+                if (recordMode)
+                {
+                    if (GUI.Button(new Rect(rect.xMax - 94, rect.y, 86, 24), "3Dを見る")) showPlaybackPreview = true;
+                    rect = new Rect(rect.x, rect.y + 28, rect.width, rect.height - 28);
+                }
                 DrawTimeline(rect);
                 return;
             }
 
-            float previewHeight = expandPlaybackPreview ? rect.height : Mathf.Min(rect.width * 9f / 16f + 30f, rect.height * .46f);
+            float previewHeight = recordMode || expandPlaybackPreview ? rect.height : Mathf.Min(rect.width * 9f / 16f + 30f, rect.height * .46f);
             Rect previewRect = new Rect(rect.x, rect.y, rect.width, previewHeight);
             GUI.Box(previewRect, GUIContent.none, panelStyle);
             GUI.Label(new Rect(rect.x + 10f, rect.y + 5f, rect.width - 110f, 22f),
                 isPlaying ? "プレイ画面  /  再生中" : "プレイ画面  /  一時停止", smallMutedStyle);
-            if (GUI.Button(new Rect(rect.xMax - 94f, rect.y + 4f, 86f, 22f), expandPlaybackPreview ? "編集に戻る" : "拡大"))
-                expandPlaybackPreview = !expandPlaybackPreview;
+            if (GUI.Button(new Rect(rect.xMax - 94f, rect.y + 4f, 86f, 22f), recordMode ? "譜面を見る" : expandPlaybackPreview ? "編集に戻る" : "拡大"))
+            {
+                if (recordMode) showPlaybackPreview = false;
+                else expandPlaybackPreview = !expandPlaybackPreview;
+            }
             Rect viewport = new Rect(previewRect.x + 4f, previewRect.y + 30f, previewRect.width - 8f, previewRect.height - 34f);
             // 縦横比は固定。拡大してもノーツの画角を変えない。
             float width = Mathf.Min(viewport.width, viewport.height * 16f / 9f);
@@ -473,7 +485,7 @@ namespace Saber.ChartEditor
                 GUI.Label(viewport, playbackPreviewError, EditorStyles.wordWrappedLabel);
                 if (GUI.Button(new Rect(viewport.x, viewport.yMax - 26f, 88f, 24f), "再試行")) playbackPreviewError = null;
             }
-            if (!expandPlaybackPreview)
+            if (!recordMode && !expandPlaybackPreview)
                 DrawTimeline(new Rect(rect.x, previewRect.yMax + PanelGap, rect.width, rect.height - previewHeight - PanelGap));
         }
 
