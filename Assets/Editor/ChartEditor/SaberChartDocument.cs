@@ -20,6 +20,32 @@ namespace Saber.ChartEditor
         public float beatZeroMs;
         public List<ChartTimeSignature> timeSignatures = new List<ChartTimeSignature>();
         public List<SaberChartNote> notes = new List<SaberChartNote>();
+        // 本編が読まない項目(制作メモ _comment など)。読み込んだ綴りのまま保存し直す。
+        public List<SaberChartExtraField> extraFields = new List<SaberChartExtraField>();
+    }
+
+    [Serializable]
+    public sealed class SaberChartExtraField
+    {
+        public string key;
+        // 値の JSON 表記(文字列なら引用符つき)。
+        public string json;
+    }
+
+    /// <summary>
+    /// 譜面ファイルへ書く形。エディター内の作業用の項目(extraFields)は持たず、
+    /// 未知の項目は先頭へそのまま書き戻す。
+    /// </summary>
+    [Serializable]
+    public sealed class SaberChartFileData
+    {
+        public float bpm = 120f;
+        public float coordScale = 1f;
+        public float offsetMs;
+        public int displayLevel;
+        public float beatZeroMs;
+        public List<ChartTimeSignature> timeSignatures = new List<ChartTimeSignature>();
+        public List<SaberChartNote> notes = new List<SaberChartNote>();
     }
 
     [Serializable]
@@ -111,15 +137,68 @@ namespace Saber.ChartEditor
 
             if (document == null)
                 throw new FormatException("chart.json のルートオブジェクトを読み取れません。 ");
+            CollectExtraFields(json, document);
             Normalize(document);
             return document;
         }
 
+        // 譜面の項目として扱う名前。これ以外は extraFields に残して保存し直す。
+        private static readonly HashSet<string> KnownChartKeys = new HashSet<string>
+        {
+            "bpm", "coordScale", "offsetMs", "displayLevel", "beatZeroMs", "timeSignatures", "notes", "extraFields",
+        };
+
+        private static void CollectExtraFields(string json, SaberChartDocument document)
+        {
+            document.extraFields ??= new List<SaberChartExtraField>();
+            if (!SaberJson.TryParseObject(json, out SaberJsonObject root)) return;
+            foreach (var member in root.Members)
+            {
+                if (KnownChartKeys.Contains(member.Key)) continue;
+                document.extraFields.RemoveAll(field => field != null && field.key == member.Key);
+                document.extraFields.Add(new SaberChartExtraField
+                {
+                    key = member.Key,
+                    json = SaberJson.WriteCompact(member.Value),
+                });
+            }
+        }
+
+        /// <summary>エディター内の比較・履歴用の JSON。作業用の項目も含む。</summary>
         public static string ToJson(SaberChartDocument document, bool prettyPrint = true)
         {
             SaberChartDocument output = CopyRaw(document);
             Normalize(output);
             return JsonUtility.ToJson(output, prettyPrint);
+        }
+
+        /// <summary>
+        /// 譜面ファイルに書く JSON。本編と同じ項目に加え、読み込んだときの未知の項目
+        /// (制作メモなど)を先頭へそのまま戻す。
+        /// </summary>
+        public static string ToFileJson(SaberChartDocument document)
+        {
+            SaberChartDocument output = CopyRaw(document);
+            Normalize(output);
+            var file = new SaberChartFileData
+            {
+                bpm = output.bpm,
+                coordScale = output.coordScale,
+                offsetMs = output.offsetMs,
+                displayLevel = output.displayLevel,
+                beatZeroMs = output.beatZeroMs,
+                timeSignatures = output.timeSignatures,
+                notes = output.notes,
+            };
+            string json = JsonUtility.ToJson(file, true);
+            if (output.extraFields.Count == 0) return json;
+
+            int open = json.IndexOf('{');
+            if (open < 0) return json;
+            var extra = new System.Text.StringBuilder();
+            foreach (SaberChartExtraField field in output.extraFields)
+                extra.Append("\n    ").Append(SaberJson.Quote(field.key)).Append(": ").Append(field.json).Append(',');
+            return json.Insert(open + 1, extra.ToString());
         }
 
         public static SaberChartDocument Clone(SaberChartDocument source)
@@ -139,6 +218,9 @@ namespace Saber.ChartEditor
             if (document.displayLevel < 0 || document.displayLevel > 10) document.displayLevel = 0;
             document.notes ??= new List<SaberChartNote>();
             document.notes.RemoveAll(note => note == null);
+            document.extraFields ??= new List<SaberChartExtraField>();
+            document.extraFields.RemoveAll(field => field == null || string.IsNullOrEmpty(field.key) ||
+                KnownChartKeys.Contains(field.key) || !IsJsonValue(field.json));
 
             foreach (SaberChartNote note in document.notes)
             {
@@ -217,6 +299,39 @@ namespace Saber.ChartEditor
                 : (candidates[middle - 1] + candidates[middle]) * 0.5f;
         }
 
+        /// <summary>
+        /// 曲の設定(BPM・OFFSET・グリッド原点・拍子・座標倍率)を写す。ノーツ・表示レベル・制作メモは
+        /// 難易度ごとの値なので写さない。
+        /// </summary>
+        public static void CopySongSettings(SaberChartDocument from, SaberChartDocument to)
+        {
+            if (from == null || to == null) return;
+            to.bpm = from.bpm;
+            to.offsetMs = from.offsetMs;
+            to.beatZeroMs = from.beatZeroMs;
+            to.coordScale = from.coordScale;
+            to.timeSignatures = ChartMeterMap.Normalize(from.timeSignatures);
+        }
+
+        /// <summary>
+        /// すべてのノーツの拍の値が、1つの BPM と原点の格子に乗っているか(差のばらつきが50ms以内)。
+        /// 乗っていない譜面は、拍の値がテンポの変化などの情報を持つので、格子の変更で計算し直さない。
+        /// </summary>
+        public static bool BeatsFollowSingleGrid(SaberChartDocument document)
+        {
+            if (document?.notes == null || document.notes.Count == 0) return true;
+            float bpm = SafeBpm(document.bpm);
+            float min = float.PositiveInfinity, max = float.NegativeInfinity;
+            foreach (SaberChartNote note in document.notes)
+            {
+                if (note == null || !IsFinite(note.beat) || !IsFinite(note.time)) continue;
+                float difference = note.time - BeatToTimeMs(note.beat, bpm, 0f);
+                min = Mathf.Min(min, difference);
+                max = Mathf.Max(max, difference);
+            }
+            return float.IsInfinity(min) || max - min <= 50f;
+        }
+
         public static float BeatToTimeMs(float beat, float bpm, float beatZeroMs)
         {
             return Mathf.Max(0f, beat) * 60000f / SafeBpm(bpm) + beatZeroMs;
@@ -239,10 +354,12 @@ namespace Saber.ChartEditor
             SortNotes(document);
         }
 
-        /// <summary>本編で権威値となる time を保ったまま、補助値 beat だけを現在のグリッドへ合わせる。</summary>
+        /// <summary>
+        /// 本編で権威値となる time を保ったまま、補助値 beat だけを現在のグリッドへ合わせる。
+        /// ファイルのグリッド原点(beatZeroMs)は書き換えない。原点を変えるのは利用者が明示したときだけ。
+        /// </summary>
         public static void RecalculateBeatsFromTimes(SaberChartDocument document, float beatZeroMs)
         {
-            if (document != null) document.beatZeroMs = beatZeroMs;
             if (document?.notes == null) return;
             foreach (SaberChartNote note in document.notes)
             {
@@ -376,6 +493,20 @@ namespace Saber.ChartEditor
             return !float.IsNaN(value) && !float.IsInfinity(value);
         }
 
+        private static bool IsJsonValue(string json)
+        {
+            if (string.IsNullOrWhiteSpace(json)) return false;
+            try
+            {
+                SaberJson.Parse(json);
+                return true;
+            }
+            catch (FormatException)
+            {
+                return false;
+            }
+        }
+
         private static SaberChartDocument CopyRaw(SaberChartDocument source)
         {
             if (source == null) return new SaberChartDocument();
@@ -388,7 +519,11 @@ namespace Saber.ChartEditor
                 beatZeroMs = source.beatZeroMs,
                 timeSignatures = ChartMeterMap.Normalize(source.timeSignatures),
                 notes = new List<SaberChartNote>(),
+                extraFields = new List<SaberChartExtraField>(),
             };
+            if (source.extraFields != null)
+                foreach (SaberChartExtraField field in source.extraFields)
+                    if (field != null) copy.extraFields.Add(new SaberChartExtraField { key = field.key, json = field.json });
             if (source.notes == null) return copy;
             foreach (SaberChartNote note in source.notes)
                 copy.notes.Add(note?.Clone());

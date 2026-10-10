@@ -114,8 +114,22 @@ namespace Saber.ChartEditor
         private bool dragRecorded;
         private int dragNoteIndex = -1;
         private string dragSnapshot;
+        // クリックの手ぶれでノーツを動かさない。この距離を超えてから初めて移動として扱う。
+        private const float DragThresholdPixels = 4f;
+        private bool dragStarted;
+        private Vector2 dragStartMouse;
+        private float dragOriginalTime;
+        private float dragOriginalX;
+        private float dragOriginalBeat;
         private string statusMessage = "準備完了";
         private double statusUntil;
+
+        // 未保存の間だけ、5分ごとに Library へ下書きを残す。
+        private const double AutosaveIntervalSeconds = 300.0;
+        private double nextAutosaveAt;
+        private SaberChartDrafts.Draft pendingDraft;
+        // 新規・複製の譜面が既存ファイルを置き換えることを、利用者が確認済みの保存先。
+        private string confirmedOverwriteTarget;
 
         // 確認の選択とファイル操作を分離し、失敗時の編集状態も検証できるようにする。
         private Func<string, string, string, string, string, int> confirmChangesDialog = EditorUtility.DisplayDialogComplex;
@@ -123,6 +137,12 @@ namespace Saber.ChartEditor
 
         private int CurrentSnap => SnapDenominators[Mathf.Clamp(snapIndex, 0, SnapDenominators.Length - 1)];
         private string CurrentDifficulty => DifficultyValues[Mathf.Clamp(difficultyIndex, 0, DifficultyValues.Length - 1)];
+        // 保存先は「開いた場所」。画面上部の選択は、次に開く・作る先を選ぶだけ。
+        private string EditingSongId => !string.IsNullOrEmpty(loadedSongId) ? loadedSongId : songId?.Trim();
+        private string EditingDifficulty => !string.IsNullOrEmpty(loadedDifficulty) ? loadedDifficulty : CurrentDifficulty;
+        private int EditingDifficultyIndex => Mathf.Max(0, Array.IndexOf(DifficultyValues, EditingDifficulty));
+        private string EditingDifficultyLabel => DifficultyLabels[EditingDifficultyIndex];
+        private string HistoryStateKey => "3DSaber.ChartEditor.History." + GetInstanceID();
         private SaberChartNote SelectedNote =>
             document?.notes != null && selectedIndex >= 0 && selectedIndex < document.notes.Count
                 ? document.notes[selectedIndex]
@@ -148,6 +168,10 @@ namespace Saber.ChartEditor
             LoadPreferences();
             LoadRecordingLayout();
             EnsureAudioForSong(false);
+            RestoreHistoryState();
+            // Unity の「未保存」の印は再コンパイルをまたいで残らない。開き直すたびに内容から計算し直す。
+            UpdateDirtyState();
+            CheckForDraft();
             EditorApplication.update += EditorTick;
         }
 
@@ -158,6 +182,31 @@ namespace Saber.ChartEditor
             DisposePlaybackPreview();
             SavePreferences();
             SaveRecordingLayout();
+            SaveHistoryState();
+        }
+
+        private void OnDestroy()
+        {
+            // 閉じたウィンドウの履歴は持ち越さない(再コンパイルでは OnDestroy は呼ばれない)。
+            SessionState.EraseString(HistoryStateKey);
+        }
+
+        // 再コンパイルや Play 開始で Undo の履歴を失わないよう、エディターのセッション内に退避する。
+        private void SaveHistoryState()
+        {
+            if (!history.CanUndo && !history.CanRedo)
+            {
+                SessionState.EraseString(HistoryStateKey);
+                return;
+            }
+            SessionState.SetString(HistoryStateKey, history.Export(CurrentJson()));
+        }
+
+        private void RestoreHistoryState()
+        {
+            string exported = SessionState.GetString(HistoryStateKey, string.Empty);
+            SessionState.EraseString(HistoryStateKey);
+            if (!string.IsNullOrEmpty(exported)) history.Import(exported, CurrentJson());
         }
 
         public override void SaveChanges()
@@ -209,6 +258,17 @@ namespace Saber.ChartEditor
             int mode = GUILayout.Toolbar(recordMode ? recordStepMode ? 2 : 1 : 0, new[] { "編集", "録音", "ステップ" }, GUILayout.Width(210f));
             if (mode != (recordMode ? recordStepMode ? 2 : 1 : 0)) SetRecordingInputMode(mode);
             GUILayout.FlexibleSpace();
+            if (SelectionDiffersFromEditing())
+            {
+                // 選んだだけでは開かない。保存先は「編集中」のまま。
+                GUILayout.Label($"選択中の {songId?.Trim()} / {DifficultyLabels[Mathf.Clamp(difficultyIndex, 0, 2)]} は未読込",
+                    new GUIStyle(smallMutedStyle) { normal = { textColor = GoldColor } });
+                if (GUILayout.Button(new GUIContent("ここへ複製", "今の内容を、選択中の曲・難易度の新しい譜面として開きます（保存するまで書きません）"),
+                        EditorStyles.miniButton, GUILayout.Width(70f))) DuplicateToSelection();
+                if (GUILayout.Button(new GUIContent("選択を戻す", "選択を編集中の曲・難易度へ戻します"),
+                        EditorStyles.miniButton, GUILayout.Width(70f))) ResetSelectionToEditing();
+                GUILayout.Space(8f);
+            }
             showPlaybackPreview = GUILayout.Toggle(showPlaybackPreview, "プレイ画面", EditorStyles.miniButton, GUILayout.Width(90f));
             if (hasUnsavedChanges)
                 GUILayout.Label("● 未保存", new GUIStyle(smallMutedStyle) { normal = { textColor = GoldColor } });
@@ -217,28 +277,98 @@ namespace Saber.ChartEditor
             GUILayout.EndHorizontal();
 
             GUILayout.BeginHorizontal();
-            GUILayout.Label("保存先", smallMutedStyle, GUILayout.Width(44f));
-            string nextSongId = GUILayout.TextField(songId ?? string.Empty, GUILayout.MinWidth(120f), GUILayout.MaxWidth(260f));
+            GUILayout.Label(new GUIContent($"編集中  {EditingSongId} / {EditingDifficultyLabel}", "保存先です。上書きするのはこのファイルだけです。"),
+                new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = Color.white } }, GUILayout.MaxWidth(230f));
+            GUI.enabled = !RecordingBusy && SaberChartFileStore.IsValidSongId(EditingSongId, out _);
+            if (GUILayout.Button("保存", GUILayout.Width(52f))) SaveDocument();
+            GUI.enabled = !RecordingBusy;
+            if (GUILayout.Button("フォルダ", GUILayout.Width(62f))) RevealSongFolder();
+            GUILayout.Space(10f);
+            GUILayout.Label("開く・作る", smallMutedStyle, GUILayout.Width(52f));
+            string nextSongId = GUILayout.TextField(songId ?? string.Empty, GUILayout.MinWidth(90f), GUILayout.MaxWidth(200f));
             if (nextSongId != songId) songId = nextSongId;
-            if (GUILayout.Button("▾", EditorStyles.miniButton, GUILayout.Width(26f))) ShowSongMenu();
+            if (GUILayout.Button("▾", EditorStyles.miniButton, GUILayout.Width(24f))) ShowSongMenu();
 
-            int nextDifficulty = EditorGUILayout.Popup(difficultyIndex, DifficultyLabels, GUILayout.Width(88f));
+            int nextDifficulty = EditorGUILayout.Popup(difficultyIndex, DifficultyLabels, GUILayout.Width(72f));
             if (nextDifficulty != difficultyIndex) difficultyIndex = nextDifficulty;
 
-            GUILayout.Space(8f);
-            if (GUILayout.Button("新規", GUILayout.Width(58f))) NewDocument();
-            if (GUILayout.Button("読込", GUILayout.Width(58f))) LoadDocument();
-            GUI.enabled = !RecordingBusy && SaberChartFileStore.IsValidSongId(songId, out _);
-            if (GUILayout.Button("保存", GUILayout.Width(62f))) SaveDocument();
-            GUI.enabled = !RecordingBusy;
-            if (GUILayout.Button("フォルダ", GUILayout.Width(72f))) RevealSongFolder();
+            if (GUILayout.Button(new GUIContent("読込", "選択中の曲・難易度を開きます"), GUILayout.Width(48f))) LoadDocument();
+            if (GUILayout.Button(new GUIContent("新規", "選択中の曲・難易度に空の譜面を作ります"), GUILayout.Width(48f))) NewDocument();
             GUILayout.FlexibleSpace();
-            if (DestinationChanged())
-                GUILayout.Label("別の保存先", new GUIStyle(smallMutedStyle) { normal = { textColor = GoldColor } });
-            GUILayout.Label($"{document.notes.Count:N0} NOTES", smallMutedStyle, GUILayout.Width(92f));
+            GUILayout.Label($"{document.notes.Count:N0} NOTES", smallMutedStyle, GUILayout.Width(80f));
             GUILayout.EndHorizontal();
             GUILayout.EndArea();
         }
+
+        private bool SelectionDiffersFromEditing()
+        {
+            if (string.IsNullOrEmpty(loadedSongId) || string.IsNullOrEmpty(loadedDifficulty)) return false;
+            return !string.Equals(loadedSongId, songId?.Trim(), StringComparison.OrdinalIgnoreCase) ||
+                   !string.Equals(loadedDifficulty, CurrentDifficulty, StringComparison.OrdinalIgnoreCase);
+        }
+
+        private void ResetSelectionToEditing()
+        {
+            FinishTextEditing();
+            songId = EditingSongId;
+            difficultyIndex = EditingDifficultyIndex;
+            Repaint();
+        }
+
+        /// <summary>
+        /// 今の内容を、画面上部で選んだ曲・難易度の新しい譜面として開く。ファイルは保存するまで書かない。
+        /// 編集中の譜面に未保存の変更があれば、先に保存するかを選ばせる。
+        /// </summary>
+        private void DuplicateToSelection()
+        {
+            EndNoteDrag();
+            string targetSong = songId?.Trim();
+            string targetDifficulty = CurrentDifficulty;
+            if (!SaberChartFileStore.IsValidSongId(targetSong, out string reason))
+            {
+                EditorUtility.DisplayDialog("複製できません", reason, "OK");
+                return;
+            }
+            if (hasUnsavedChanges)
+            {
+                int choice = confirmChangesDialog(
+                    "未保存の変更",
+                    $"編集中の {EditingSongId} / {EditingDifficultyLabel} を保存してから複製しますか？",
+                    "保存して複製",
+                    "キャンセル",
+                    "保存せずに複製");
+                if (choice == 1) return;
+                if (choice == 0 && !SaveDocument()) return;
+            }
+            string targetLabel = DifficultyLabels[Mathf.Clamp(difficultyIndex, 0, DifficultyLabels.Length - 1)];
+            SaberChartDocument existing = SaberChartFileStore.TryLoadExact(targetSong, targetDifficulty);
+            if (SaberChartFileStore.ChartExists(targetSong, targetDifficulty) &&
+                !confirmDuplicateOverwrite($"{targetSong} / {targetLabel} は既にあります。",
+                    "複製した譜面を保存すると、このファイルを置き換えます（保存前のファイルはバックアップされます）。続けますか？"))
+                return;
+
+            SaberChartDocument copy = SaberChartUtility.Clone(document);
+            // 表示レベルと制作メモは難易度ごとの値。複製先に既存の譜面があればその値を引き継ぐ。
+            copy.displayLevel = existing?.displayLevel ?? 0;
+            copy.extraFields = existing?.extraFields ?? new List<SaberChartExtraField>();
+            StopPreview(false);
+            document = copy;
+            loadedSongId = targetSong;
+            loadedDifficulty = targetDifficulty;
+            confirmedOverwriteTarget = TargetKey(targetSong, targetDifficulty);
+            selectedIndex = -1;
+            history.Clear();
+            savedJson = null;
+            UpdateDirtyState();
+            EnsureAudioForSong(false);
+            SetStatus($"{targetSong} / {targetLabel} として開きました。保存するとファイルを書きます");
+        }
+
+        private Func<string, string, bool> confirmDuplicateOverwrite = (title, message) =>
+            EditorUtility.DisplayDialog(title, message, "続ける", "キャンセル");
+
+        private static string TargetKey(string song, string difficulty) =>
+            (song ?? string.Empty).Trim().ToLowerInvariant() + "/" + (difficulty ?? string.Empty).Trim().ToLowerInvariant();
 
         private void DrawLeftPanel(Rect rect)
         {
@@ -338,6 +468,7 @@ namespace Saber.ChartEditor
             GUILayout.BeginArea(new Rect(rect.x + 10f, rect.y + 10f, rect.width - 20f, rect.height - 20f));
             rightScroll = GUILayout.BeginScrollView(rightScroll, false, false);
 
+            DrawDraftBanner();
             SectionLabel("再生 / シーク");
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("|◀", GUILayout.Width(42f))) SeekToBeat(0f);
@@ -398,8 +529,9 @@ namespace Saber.ChartEditor
             DrawValidationSummary();
 
             GUILayout.Space(8f);
-            GUI.enabled = !RecordingBusy && SaberChartFileStore.IsValidSongId(songId, out _);
-            if (GUILayout.Button("保存して本編でテスト", GUILayout.Height(32f))) TestInGame();
+            GUI.enabled = !RecordingBusy && SaberChartFileStore.IsValidSongId(EditingSongId, out _);
+            // 変更がなければ保存せずに本編を開く。開いて試すだけでファイルを書き換えない。
+            if (GUILayout.Button(hasUnsavedChanges ? "保存して本編でテスト" : "本編でテスト（保存なし）", GUILayout.Height(32f))) TestInGame();
             GUI.enabled = !RecordingBusy;
             EditorGUI.EndDisabledGroup();
 
@@ -409,27 +541,65 @@ namespace Saber.ChartEditor
 
         private void DrawChartSettings()
         {
+            // 数値は Enter か欄を離れたときに確定する。1文字ごとに履歴を増やさない。
             EditorGUI.BeginChangeCheck();
-            float nextBpm = EditorGUILayout.FloatField("BPM", document.bpm);
-            float nextOffset = EditorGUILayout.FloatField("全体OFFSET (ms)", document.offsetMs);
-            float nextBeatZero = EditorGUILayout.FloatField("譜面グリッド原点 (ms / 0以上)", beatZeroMs);
-            float nextScale = EditorGUILayout.FloatField("座標倍率", document.coordScale);
-            if (!EditorGUI.EndChangeCheck()) return;
+            float nextBpm = EditorGUILayout.DelayedFloatField("BPM", document.bpm);
+            float nextOffset = EditorGUILayout.DelayedFloatField("全体OFFSET (ms)", document.offsetMs);
+            float nextBeatZero = EditorGUILayout.DelayedFloatField("譜面グリッド原点 (ms / 0以上)", beatZeroMs);
+            float nextScale = EditorGUILayout.DelayedFloatField("座標倍率", document.coordScale);
+            bool changed = EditorGUI.EndChangeCheck();
+            if (!Mathf.Approximately(document.beatZeroMs, beatZeroMs))
+            {
+                // 推定した原点は表示にだけ使う。本編の小節線はファイルの値のまま。
+                GUILayout.Label($"ファイルの原点は {document.beatZeroMs:0.#}ms のまま（本編の小節線はこちら）", smallMutedStyle);
+                if (GUILayout.Button(new GUIContent("表示中の原点をファイルにも書く",
+                        $"本編の小節線とカウントインが {beatZeroMs:0.#}ms 基準に変わります")))
+                    WriteDisplayedOriginToFile();
+            }
+            if (changed) ApplyChartSettings(nextBpm, nextOffset, nextBeatZero, nextScale);
+        }
 
+        private void ApplyChartSettings(float nextBpm, float nextOffset, float nextBeatZero, float nextScale)
+        {
+            if (float.IsNaN(nextBpm) || float.IsInfinity(nextBpm) || float.IsNaN(nextOffset) || float.IsInfinity(nextOffset) ||
+                float.IsNaN(nextBeatZero) || float.IsInfinity(nextBeatZero) || float.IsNaN(nextScale) || float.IsInfinity(nextScale))
+                return;
+            EndNoteDrag();
             string before = CurrentJson();
+            float safeBpm = Mathf.Max(1f, nextBpm);
             float safeBeatZero = Mathf.Max(0f, nextBeatZero);
-            bool timingChanged = !Mathf.Approximately(nextBpm, document.bpm) ||
-                                 !Mathf.Approximately(safeBeatZero, beatZeroMs);
-            document.bpm = Mathf.Max(1f, nextBpm);
+            bool bpmChanged = !Mathf.Approximately(safeBpm, document.bpm);
+            bool originChanged = !Mathf.Approximately(safeBeatZero, beatZeroMs);
+            // 拍の値が1つの格子に乗っていない譜面(テンポが変わる曲など)は、拍の値に曲のテンポの情報がある。
+            // そのときは格子を変えても拍の値を計算し直さない。
+            bool beatsFollowGrid = SaberChartUtility.BeatsFollowSingleGrid(document);
+            document.bpm = safeBpm;
             document.offsetMs = nextOffset;
-            beatZeroMs = safeBeatZero;
-            document.beatZeroMs = beatZeroMs;
             document.coordScale = Mathf.Max(0.0001f, nextScale);
+            if (originChanged)
+            {
+                // 原点の欄を直接変えたときだけ、ファイルの原点も変える(本編の小節線も動く)。
+                beatZeroMs = safeBeatZero;
+                document.beatZeroMs = safeBeatZero;
+            }
             // time が本編の判定時刻。BPM変更でも時刻は動かさず、補助値 beat だけ更新する。
-            if (timingChanged) SaberChartUtility.RecalculateBeatsFromTimes(document, beatZeroMs);
+            if ((bpmChanged || originChanged) && beatsFollowGrid)
+                SaberChartUtility.RecalculateBeatsFromTimes(document, beatZeroMs);
+            if (CurrentJson() == before) return;
             history.Record(before);
             MarkChanged();
             RestartPreviewIfPlaying();
+        }
+
+        private void WriteDisplayedOriginToFile()
+        {
+            EndNoteDrag();
+            string before = CurrentJson();
+            document.beatZeroMs = beatZeroMs;
+            if (CurrentJson() == before) return;
+            history.Record(before);
+            MarkChanged();
+            SetStatus($"ファイルの原点を {beatZeroMs:0.#}ms にしました（保存すると本編の小節線が変わります）");
         }
 
         private void DrawCenterPanel(Rect rect)
@@ -588,11 +758,12 @@ namespace Saber.ChartEditor
             int directionIndex = Mathf.Max(0, Array.IndexOf(DirectionValues, note.direction));
             int count = note.count;
 
+            // 数値は確定してから1回だけ履歴に残す(1文字ごとに Undo を増やさない)。
             EditorGUI.BeginChangeCheck();
-            float nextBeat = EditorGUILayout.FloatField("拍", beat);
-            float nextTime = EditorGUILayout.FloatField("時刻 (ms)", time);
-            float nextX = EditorGUILayout.FloatField("X", x);
-            float nextY = EditorGUILayout.FloatField("Y", y);
+            float nextBeat = EditorGUILayout.DelayedFloatField("拍", beat);
+            float nextTime = EditorGUILayout.DelayedFloatField("時刻 (ms)", time);
+            float nextX = EditorGUILayout.DelayedFloatField("X", x);
+            float nextY = EditorGUILayout.DelayedFloatField("Y", y);
             int nextTypeIndex = EditorGUILayout.Popup("種類", typeIndex, TypeLabels);
             int nextColorIndex = EditorGUILayout.Popup("色 / 手", colorIndex, ColorLabels);
             int nextDirectionIndex = EditorGUILayout.Popup("方向", directionIndex, DirectionLabels);
@@ -613,7 +784,7 @@ namespace Saber.ChartEditor
                 float shownBeats = effectiveMs / beatMs;
                 using (new EditorGUI.DisabledScope(nextAutoLength))
                 {
-                    nextLengthBeats = EditorGUILayout.FloatField("長さ (拍)", shownBeats);
+                    nextLengthBeats = EditorGUILayout.DelayedFloatField("長さ (拍)", shownBeats);
                 }
                 GUILayout.Label($"実効: {effectiveMs / 1000f:0.00}s", smallMutedStyle);
             }
@@ -623,12 +794,11 @@ namespace Saber.ChartEditor
                 SaberChartNote selected = note;
                 bool beatEdited = !Mathf.Approximately(nextBeat, beat);
                 bool timeEdited = !Mathf.Approximately(nextTime, time);
-                selected.beat = Mathf.Max(0f, nextBeat);
-                selected.time = Mathf.Max(0f, nextTime);
+                // 触った値だけを変える。拍も時刻も変えていなければ、保存済みの拍の値を保つ。
                 if (beatEdited && !timeEdited)
-                    selected.time = SaberChartUtility.BeatToTimeMs(selected.beat, document.bpm, beatZeroMs);
+                    SetNoteTime(selected, TimeAtBeat(Mathf.Max(0f, nextBeat)));
                 else if (timeEdited)
-                    selected.beat = SaberChartUtility.TimeMsToBeat(selected.time, document.bpm, beatZeroMs);
+                    SetNoteTime(selected, Mathf.Max(0f, nextTime));
                 selected.x = nextX;
                 selected.y = nextY;
                 selected.type = TypeValues[Mathf.Clamp(nextTypeIndex, 0, TypeValues.Length - 1)];
@@ -655,8 +825,11 @@ namespace Saber.ChartEditor
                     SaberChartUtility.DefaultXMin, SaberChartUtility.DefaultXMax);
                 paletteYLane = SaberChartUtility.LaneForCoordinate(selected.y, LaneCount,
                     SaberChartUtility.DefaultYMin, SaberChartUtility.DefaultYMax);
-                history.Record(before);
-                MarkChanged();
+                if (CurrentJson() != before)
+                {
+                    history.Record(before);
+                    MarkChanged();
+                }
             }
 
             GUILayout.BeginHorizontal();
@@ -932,10 +1105,7 @@ namespace Saber.ChartEditor
                     }
                     else
                     {
-                        draggingNote = true;
-                        dragNoteIndex = hit;
-                        dragRecorded = false;
-                        dragSnapshot = CurrentJson();
+                        BeginNoteDrag(hit, current.mousePosition);
                     }
                 }
                 else if (editTool == EditTool.Draw && laneRect.Contains(current.mousePosition))
@@ -954,23 +1124,7 @@ namespace Saber.ChartEditor
             if (current.type == EventType.MouseDrag && draggingNote && dragNoteIndex >= 0 &&
                 dragNoteIndex < document.notes.Count)
             {
-                if (!dragRecorded)
-                {
-                    history.Record(dragSnapshot);
-                    dragRecorded = true;
-                }
-
-                SaberChartNote note = document.notes[dragNoteIndex];
-                int lane = LaneAtX(current.mousePosition.x, laneRect);
-                float beat = SaberChartUtility.QuantizeBeat(BeatAtY(current.mousePosition.y, timelineRect), CurrentSnap, document);
-                note.x = SaberChartUtility.CoordinateForLane(lane, LaneCount,
-                    SaberChartUtility.DefaultXMin, SaberChartUtility.DefaultXMax);
-                note.beat = beat;
-                note.time = SaberChartUtility.BeatToTimeMs(beat, document.bpm, beatZeroMs);
-                paletteXLane = lane;
-                // ドラッグ中にJSON化すると時刻ソートでindexが変わるため、確定までは並べ替えない。
-                hasUnsavedChanges = true;
-                Repaint();
+                DragNoteTo(current.mousePosition, current.shift, timelineRect, laneRect);
                 current.Use();
                 return;
             }
@@ -980,6 +1134,83 @@ namespace Saber.ChartEditor
                 EndNoteDrag();
                 current.Use();
             }
+        }
+
+        private void BeginNoteDrag(int index, Vector2 mouse)
+        {
+            SaberChartNote note = document.notes[index];
+            draggingNote = true;
+            dragNoteIndex = index;
+            dragRecorded = false;
+            dragStarted = false;
+            dragStartMouse = mouse;
+            dragOriginalTime = note.time;
+            dragOriginalX = note.x;
+            dragOriginalBeat = note.beat;
+            dragSnapshot = CurrentJson();
+        }
+
+        private void DragNoteTo(Vector2 mouse, bool snapToGrid, Rect timelineRect, Rect laneRect)
+        {
+            if (!draggingNote || dragNoteIndex < 0 || dragNoteIndex >= document.notes.Count) return;
+            if (!dragStarted)
+            {
+                // 4px までのぶれは「選んだだけ」。位置も時刻も変えない。
+                if ((mouse - dragStartMouse).sqrMagnitude < DragThresholdPixels * DragThresholdPixels) return;
+                dragStarted = true;
+            }
+
+            SaberChartNote note = document.notes[dragNoteIndex];
+            (float time, float x) = DragTarget(mouse, snapToGrid, timelineRect, laneRect);
+            if (Mathf.Approximately(time, note.time) && Mathf.Approximately(x, note.x)) return;
+            if (!dragRecorded)
+            {
+                history.Record(dragSnapshot);
+                dragRecorded = true;
+            }
+            note.x = x;
+            if (Mathf.Approximately(time, dragOriginalTime))
+            {
+                // 元の位置へ戻したときは、保存されていた拍の値もそのまま戻す。
+                note.time = dragOriginalTime;
+                note.beat = dragOriginalBeat;
+            }
+            else
+            {
+                SetNoteTime(note, time);
+            }
+            paletteXLane = SaberChartUtility.LaneForCoordinate(note.x, LaneCount,
+                SaberChartUtility.DefaultXMin, SaberChartUtility.DefaultXMax);
+            // ドラッグ中にJSON化すると時刻ソートでindexが変わるため、確定までは並べ替えない。
+            hasUnsavedChanges = true;
+            Repaint();
+        }
+
+        /// <summary>
+        /// ドラッグ先の時刻と横位置。元の値からの相対移動で、時刻は Snap の整数倍、横は列の間隔の整数倍だけ動かす。
+        /// 録音した細かな時刻や位置の端数は保つ。Shift を押したときだけ、格子と列の中心へ吸い付ける。
+        /// </summary>
+        private (float time, float x) DragTarget(Vector2 mouse, bool snapToGrid, Rect timelineRect, Rect laneRect)
+        {
+            const float xMin = SaberChartUtility.DefaultXMin;
+            const float xMax = SaberChartUtility.DefaultXMax;
+            if (snapToGrid)
+            {
+                float beat = SaberChartUtility.QuantizeBeat(BeatAtY(mouse.y, timelineRect), CurrentSnap, document);
+                return (TimeAtBeat(beat),
+                    SaberChartUtility.CoordinateForLane(LaneAtX(mouse.x, laneRect), LaneCount, xMin, xMax));
+            }
+
+            float step = SaberChartUtility.SnapStep(CurrentSnap);
+            int steps = Mathf.RoundToInt((dragStartMouse.y - mouse.y) / Mathf.Max(1f, pixelsPerBeat) / step);
+            float time = steps == 0
+                ? dragOriginalTime
+                : Mathf.Max(0f, GridTimeAt(GridBeatAt(dragOriginalTime) + steps * step));
+            float laneWidth = Mathf.Max(1f, laneRect.width / LaneCount);
+            int lanes = Mathf.RoundToInt((mouse.x - dragStartMouse.x) / laneWidth);
+            float spacing = (xMax - xMin) / (LaneCount - 1);
+            float x = lanes == 0 ? dragOriginalX : Mathf.Clamp(dragOriginalX + lanes * spacing, xMin, xMax);
+            return (time, x);
         }
 
         private void EndNoteDrag()
@@ -993,6 +1224,7 @@ namespace Saber.ChartEditor
             }
             draggingNote = false;
             dragRecorded = false;
+            dragStarted = false;
             dragNoteIndex = -1;
             dragSnapshot = null;
         }
@@ -1018,7 +1250,7 @@ namespace Saber.ChartEditor
             var note = new SaberChartNote
             {
                 beat = beat,
-                time = SaberChartUtility.BeatToTimeMs(beat, document.bpm, beatZeroMs),
+                time = TimeAtBeat(beat),
                 x = x,
                 y = y,
                 type = paletteType,
@@ -1136,18 +1368,48 @@ namespace Saber.ChartEditor
             EndNoteDrag();
             if (!ConfirmAbandonChanges()) return;
             StopPreview(false);
-            document = new SaberChartDocument();
-            beatZeroMs = 0f;
+            string targetSong = songId?.Trim();
+            document = NewDocumentFor(targetSong, CurrentDifficulty, out string inheritedFrom, out float displayOrigin);
+            // 格子は引き継ぎ元と同じ位置に出す(ファイルの原点の値は引き継ぎ元のファイルと同じ)。
+            beatZeroMs = displayOrigin;
             currentBeat = 0f;
             // Easyの新規配置は表拍から始める。既存ノーツの時刻は変えない。
             if (CurrentDifficulty == "easy") snapIndex = 0;
             selectedIndex = -1;
-            loadedSongId = null;
-            loadedDifficulty = null;
+            // 新しい譜面の保存先は、作ったときに選んでいた曲・難易度。既存ファイルがあれば保存時に確認する。
+            loadedSongId = SaberChartFileStore.IsValidSongId(targetSong, out _) ? targetSong : null;
+            loadedDifficulty = loadedSongId != null ? CurrentDifficulty : null;
+            confirmedOverwriteTarget = null;
             history.Clear();
             savedJson = null;
-            hasUnsavedChanges = true;
-            SetStatus("新しい譜面を作成しました");
+            UpdateDirtyState();
+            SetStatus(inheritedFrom == null
+                ? "新しい譜面を作成しました"
+                : $"新しい譜面を作成しました（BPM・原点・拍子などは {inheritedFrom} から引き継ぎ）");
+        }
+
+        /// <summary>
+        /// 新しい空の譜面。同じ曲の他の難易度があれば、曲の設定(BPM・OFFSET・原点・拍子・座標倍率)を引き継ぐ。
+        /// ノーツ・表示レベル・制作メモは難易度ごとの値なので引き継がない。
+        /// </summary>
+        private static SaberChartDocument NewDocumentFor(string targetSong, string difficulty,
+            out string inheritedFrom, out float displayOrigin)
+        {
+            inheritedFrom = null;
+            displayOrigin = 0f;
+            var fresh = new SaberChartDocument();
+            if (!SaberChartFileStore.IsValidSongId(targetSong, out _)) return fresh;
+            foreach (string source in new[] { "normal", "hard", "easy" })
+            {
+                if (source == difficulty) continue;
+                SaberChartDocument other = SaberChartFileStore.TryLoadExact(targetSong, source);
+                if (other == null) continue;
+                SaberChartUtility.CopySongSettings(other, fresh);
+                displayOrigin = SaberChartUtility.EstimateBeatZeroMs(other);
+                inheritedFrom = DifficultyLabels[Array.IndexOf(DifficultyValues, source)];
+                break;
+            }
+            return fresh;
         }
 
         private void LoadDocument()
@@ -1173,10 +1435,13 @@ namespace Saber.ChartEditor
                 selectedIndex = -1;
                 loadedSongId = songId.Trim();
                 loadedDifficulty = CurrentDifficulty;
+                confirmedOverwriteTarget = null;
                 history.Clear();
                 savedJson = nextSavedJson;
                 hasUnsavedChanges = false;
+                nextAutosaveAt = 0;
                 EnsureAudioForSong(false);
+                CheckForDraft();
                 SetStatus(loadedPath == null ? "空の譜面を開きました" : $"読込: {Path.GetFileName(loadedPath)}");
             }
             catch (Exception exception)
@@ -1185,32 +1450,52 @@ namespace Saber.ChartEditor
             }
         }
 
+        /// <summary>
+        /// 開いた場所(編集中の曲・難易度)へ保存する。画面上部で別の曲・難易度を選んでいても、そちらには書かない。
+        /// 変更がなければファイルを書かない(開いて保存しただけで書式や値が変わらないように)。
+        /// </summary>
         private bool SaveDocument()
         {
             if (RecordingBusy) StopPreview(false);
             EndNoteDrag();
+            string targetSong = EditingSongId;
+            string targetDifficulty = EditingDifficulty;
+            if (!SaberChartFileStore.IsValidSongId(targetSong, out string reason))
+            {
+                EditorUtility.DisplayDialog("譜面を保存できません", reason, "OK");
+                return false;
+            }
+            bool exists = SaberChartFileStore.ChartExists(targetSong, targetDifficulty);
+            if (exists && !hasUnsavedChanges && savedJson != null)
+            {
+                SetStatus("変更はありません（ファイルは書き換えていません）");
+                return true;
+            }
+            string targetLabel = DifficultyLabels[Mathf.Max(0, Array.IndexOf(DifficultyValues, targetDifficulty))];
+            if (exists && savedJson == null && confirmedOverwriteTarget != TargetKey(targetSong, targetDifficulty))
+            {
+                // 新規の譜面で、既にある譜面を黙って置き換えない。
+                if (!confirmDuplicateOverwrite($"{targetSong} / {targetLabel} は既にあります。",
+                        "新しく作った譜面で、このファイルを置き換えますか？（置き換える前のファイルはバックアップされます）"))
+                    return false;
+            }
+
             try
             {
-                string destination = SaberChartFileStore.ChartPath(songId, CurrentDifficulty);
-                if (DestinationChanged() && !string.IsNullOrEmpty(destination) && File.Exists(destination))
-                {
-                    bool overwrite = EditorUtility.DisplayDialog(
-                        "別の保存先を上書きしますか？",
-                        $"現在開いている譜面とは別の保存先です。\n{destination}\n\nこのファイルを上書きしますか？",
-                        "上書きする",
-                        "キャンセル");
-                    if (!overwrite) return false;
-                }
-
-                // 本編で権威値となる time は動かさず、可読用 beat だけ現在のグリッドへ同期する。
-                SaberChartUtility.RecalculateBeatsFromTimes(document, beatZeroMs);
                 SaberChartUtility.Normalize(document);
-                destination = SaberChartFileStore.Save(document, songId, CurrentDifficulty);
-                loadedSongId = songId.Trim();
-                loadedDifficulty = CurrentDifficulty;
+                string destination = SaberChartFileStore.Save(document, targetSong, targetDifficulty);
+                loadedSongId = targetSong.Trim();
+                loadedDifficulty = targetDifficulty;
+                confirmedOverwriteTarget = null;
                 savedJson = CurrentJson();
                 hasUnsavedChanges = false;
-                SetStatus($"保存: {Path.GetFileName(destination)}");
+                nextAutosaveAt = 0;
+                SaberChartDrafts.DeleteFor(loadedSongId, loadedDifficulty);
+                pendingDraft = null;
+                if (targetDifficulty != "normal" && SaberChartFileStore.MissingNormalChart(targetSong))
+                    SetStatus($"保存: {Path.GetFileName(destination)}。Normal がまだ無いため、本編の Easy / Normal は選べません（chart.json は Normal から作ります）");
+                else
+                    SetStatus($"保存: {Path.GetFileName(destination)}");
                 return true;
             }
             catch (Exception exception)
@@ -1225,7 +1510,7 @@ namespace Saber.ChartEditor
             if (!hasUnsavedChanges) return true;
             int choice = confirmChangesDialog(
                 "未保存の変更",
-                "現在の譜面を保存してから続けますか？",
+                $"編集中の {EditingSongId} / {EditingDifficultyLabel} を保存してから続けますか？",
                 "保存",
                 "キャンセル",
                 "保存しない");
@@ -1263,7 +1548,7 @@ namespace Saber.ChartEditor
 
         private void RevealSongFolder()
         {
-            string folder = SaberChartFileStore.SongFolderPath(songId);
+            string folder = SaberChartFileStore.SongFolderPath(EditingSongId);
             if (folder == null)
             {
                 ShowNotification(new GUIContent("曲フォルダ名を確認してください"));
@@ -1275,14 +1560,14 @@ namespace Saber.ChartEditor
 
         private void EnsureAudioForSong(bool notify)
         {
-            AudioClip found = SaberChartFileStore.LoadAudioClip(songId);
+            AudioClip found = SaberChartFileStore.LoadAudioClip(EditingSongId);
             SetAudioClip(found);
             if (notify) SetStatus(found != null ? "曲フォルダの音源を読み込みました" : "音源が見つかりません");
         }
 
         private void ImportAudio()
         {
-            if (!SaberChartFileStore.IsValidSongId(songId, out string reason))
+            if (!SaberChartFileStore.IsValidSongId(EditingSongId, out string reason))
             {
                 EditorUtility.DisplayDialog("音源を取り込めません", reason, "OK");
                 return;
@@ -1302,7 +1587,7 @@ namespace Saber.ChartEditor
 
             try
             {
-                SetAudioClip(SaberChartFileStore.ImportAudio(source, songId, true));
+                SetAudioClip(SaberChartFileStore.ImportAudio(source, EditingSongId, true));
                 SetStatus("音源を取り込みました");
             }
             catch (Exception exception)
@@ -1313,7 +1598,7 @@ namespace Saber.ChartEditor
 
         private void HandleAudioClipSelection(AudioClip clip)
         {
-            if (clip == null || SaberChartFileStore.IsAudioClipForSong(clip, songId))
+            if (clip == null || SaberChartFileStore.IsAudioClipForSong(clip, EditingSongId))
             {
                 SetAudioClip(clip);
                 return;
@@ -1340,7 +1625,7 @@ namespace Saber.ChartEditor
                 : Path.GetFullPath(Path.Combine(projectRoot, assetPath));
             try
             {
-                SetAudioClip(SaberChartFileStore.ImportAudio(sourcePath, songId, true));
+                SetAudioClip(SaberChartFileStore.ImportAudio(sourcePath, EditingSongId, true));
                 SetStatus("選択した音源を曲フォルダへ取り込みました");
             }
             catch (Exception exception)
@@ -1412,6 +1697,7 @@ namespace Saber.ChartEditor
                 StopPreview(false);
                 return;
             }
+            TickAutosave();
             if (countingIn)
             {
                 if (EditorApplication.timeSinceStartup >= countInEndsAt) BeginRecordingSong();
@@ -1435,10 +1721,7 @@ namespace Saber.ChartEditor
             // 個人の表示補正を譜面や波形に焼き込まず、試聴中のカーソルだけへ適用する。
             if (useGameTiming) audioSeconds -= GameSession.JudgmentOffsetMs / 1000f;
             audioSeconds = Mathf.Max(playbackAudioStartSeconds, audioSeconds);
-            currentBeat = SaberChartUtility.TimeMsToBeat(
-                audioSeconds * 1000f - document.offsetMs,
-                document.bpm,
-                beatZeroMs);
+            currentBeat = BeatAtTime(audioSeconds * 1000f - document.offsetMs);
         }
 
         private void SeekToBeat(float beat)
@@ -1452,7 +1735,7 @@ namespace Saber.ChartEditor
 
         private float BeatToAudioSeconds(float beat)
         {
-            return (SaberChartUtility.BeatToTimeMs(beat, document.bpm, beatZeroMs) + document.offsetMs) / 1000f;
+            return (TimeAtBeat(beat) + document.offsetMs) / 1000f;
         }
 
         private float MaxBeat()
@@ -1461,11 +1744,23 @@ namespace Saber.ChartEditor
                 ? document.notes.Max(TimelineBeat) + 8f
                 : 32f;
             if (audioClip == null) return Mathf.Max(32f, notesMax);
-            float audioBeat = SaberChartUtility.TimeMsToBeat(
-                audioClip.length * 1000f - document.offsetMs,
-                document.bpm,
-                beatZeroMs);
+            float audioBeat = BeatAtTime(audioClip.length * 1000f - document.offsetMs);
             return Mathf.Max(4f, notesMax, audioBeat);
+        }
+
+        // 譜面の時刻(ms)と編集用の格子の拍の変換。拍は 0 未満にしない。
+        private float TimeAtBeat(float beat) => Mathf.Max(0f, GridTimeAt(Mathf.Max(0f, beat)));
+        private float BeatAtTime(float timeMs) => Mathf.Max(0f, GridBeatAt(timeMs));
+
+        // 格子の上の変換(負の拍も扱う)。ドラッグなど、元の値からの相対移動に使う。
+        private float GridTimeAt(float beat) => beat * 60000f / Mathf.Max(1f, document.bpm) + beatZeroMs;
+        private float GridBeatAt(float timeMs) => (timeMs - beatZeroMs) * Mathf.Max(1f, document.bpm) / 60000f;
+
+        /// <summary>時刻を変えたノーツだけ、拍の値を今の格子に合わせ直す。触っていないノーツの拍の値は保つ。</summary>
+        private void SetNoteTime(SaberChartNote note, float timeMs)
+        {
+            note.time = Mathf.Max(0f, timeMs);
+            note.beat = BeatAtTime(note.time);
         }
 
         private void Undo()
@@ -1533,7 +1828,7 @@ namespace Saber.ChartEditor
                        Mathf.Abs(TimelineBeat(note) - copy.beat) < 0.0001f &&
                        Mathf.Abs(note.x - copy.x) < 0.0001f &&
                        Mathf.Abs(note.y - copy.y) < 0.0001f));
-            copy.time = SaberChartUtility.BeatToTimeMs(copy.beat, document.bpm, beatZeroMs);
+            copy.time = TimeAtBeat(copy.beat);
             document.notes.Add(copy);
             SaberChartUtility.SortNotes(document);
             selectedIndex = document.notes.IndexOf(copy);
@@ -1542,10 +1837,18 @@ namespace Saber.ChartEditor
             SetStatus("ノーツを複製しました");
         }
 
+        // 本編はファイルを読むので、変更があるときだけ保存する。開いて試すだけなら書き換えない。
+        private bool SaveForTestIfNeeded()
+        {
+            if (!hasUnsavedChanges && SaberChartFileStore.ChartExists(EditingSongId, EditingDifficulty)) return true;
+            return SaveDocument();
+        }
+
         private void TestInGame()
         {
-            if (!SaveDocument()) return;
-            AudioClip packagedClip = SaberChartFileStore.LoadAudioClip(songId);
+            if (!SaveForTestIfNeeded()) return;
+            string testSong = EditingSongId;
+            AudioClip packagedClip = SaberChartFileStore.LoadAudioClip(testSong);
             if (packagedClip == null)
             {
                 bool continueSilent = EditorUtility.DisplayDialog(
@@ -1572,9 +1875,7 @@ namespace Saber.ChartEditor
                 return;
             }
 
-            SaberChartTestPlayBridge.Queue(
-                songId.Trim(),
-                DifficultyLabels[Mathf.Clamp(difficultyIndex, 0, DifficultyLabels.Length - 1)]);
+            SaberChartTestPlayBridge.Queue(testSong.Trim(), EditingDifficultyLabel);
             EditorSceneManager.OpenScene(gameScenePath);
             EditorApplication.EnterPlaymode();
         }
@@ -1619,7 +1920,7 @@ namespace Saber.ChartEditor
             }
             if (duplicates > 0) warnings.Add($"同時刻・同位置の重複: {duplicates}個");
 
-            AudioClip packagedClip = SaberChartFileStore.LoadAudioClip(songId);
+            AudioClip packagedClip = SaberChartFileStore.LoadAudioClip(EditingSongId);
             if (packagedClip == null)
             {
                 warnings.Add("曲フォルダに本編用音源がありません");
@@ -1662,6 +1963,94 @@ namespace Saber.ChartEditor
         private void UpdateDirtyState()
         {
             hasUnsavedChanges = string.IsNullOrEmpty(savedJson) || CurrentJson() != savedJson;
+            if (!hasUnsavedChanges) nextAutosaveAt = 0;
+            else if (nextAutosaveAt <= 0) nextAutosaveAt = EditorApplication.timeSinceStartup + AutosaveIntervalSeconds;
+        }
+
+        // 未保存の間だけ、一定間隔で下書きを残す。録音中・ドラッグ中は作業を止めないよう後回しにする。
+        private void TickAutosave()
+        {
+            if (!hasUnsavedChanges || nextAutosaveAt <= 0 || RecordingBusy || draggingNote) return;
+            if (EditorApplication.timeSinceStartup < nextAutosaveAt) return;
+            WriteDraftNow();
+        }
+
+        private bool WriteDraftNow()
+        {
+            nextAutosaveAt = EditorApplication.timeSinceStartup + AutosaveIntervalSeconds;
+            if (!SaberChartFileStore.IsValidSongId(EditingSongId, out _)) return false;
+            try
+            {
+                SaberChartDrafts.Write(EditingSongId, EditingDifficulty, document);
+                return true;
+            }
+            catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException)
+            {
+                // 下書きの失敗で作業を止めない。保存の操作はいつもどおりできる。
+                Debug.LogWarning("譜面の下書きを保存できませんでした: " + exception.Message);
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// 開いた譜面より新しい下書きがあれば、復元を案内する(Unity が落ちた後など)。
+        /// 編集中に未保存の変更があるときは案内しない(今の作業を優先する)。
+        /// </summary>
+        private void CheckForDraft()
+        {
+            pendingDraft = null;
+            if (hasUnsavedChanges || !SaberChartFileStore.IsValidSongId(EditingSongId, out _)) return;
+            SaberChartDrafts.Draft draft = SaberChartDrafts.LatestFor(EditingSongId, EditingDifficulty, out _);
+            if (draft == null) return;
+            string chartPath = SaberChartFileStore.ChartPath(EditingSongId, EditingDifficulty);
+            if (!string.IsNullOrEmpty(chartPath) && File.Exists(chartPath) &&
+                File.GetLastWriteTimeUtc(chartPath) >= draft.SavedAtUtc) return;
+            if (draft.document == CurrentJson()) return;
+            pendingDraft = draft;
+        }
+
+        private void DrawDraftBanner()
+        {
+            if (pendingDraft == null) return;
+            DateTime local = pendingDraft.SavedAtUtc.ToLocalTime();
+            EditorGUILayout.HelpBox($"保存していない下書きがあります（{local:M/d HH:mm}・{pendingDraft.noteCount}ノーツ）。\n" +
+                                    "Unity が終了する前の編集かもしれません。", MessageType.Warning);
+            GUILayout.BeginHorizontal();
+            if (GUILayout.Button("下書きを開く")) RestoreDraft();
+            if (GUILayout.Button("下書きを捨てる")) DiscardDraft();
+            GUILayout.EndHorizontal();
+            GUILayout.Space(8f);
+        }
+
+        private void RestoreDraft()
+        {
+            if (pendingDraft == null) return;
+            EndNoteDrag();
+            StopPreview(false);
+            SaberChartDocument restored;
+            try { restored = SaberChartUtility.FromJson(pendingDraft.document); }
+            catch (FormatException exception)
+            {
+                EditorUtility.DisplayDialog("下書きを開けません", exception.Message, "OK");
+                DiscardDraft();
+                return;
+            }
+            string before = CurrentJson();
+            document = restored;
+            beatZeroMs = SaberChartUtility.EstimateBeatZeroMs(document);
+            selectedIndex = -1;
+            // 下書きの前の状態へ Undo で戻れるようにする。
+            history.Record(before);
+            pendingDraft = null;
+            UpdateDirtyState();
+            SetStatus("下書きを開きました。保存するまでファイルは変わりません");
+        }
+
+        private void DiscardDraft()
+        {
+            if (pendingDraft != null) SaberChartDrafts.DeleteFor(pendingDraft.songId, pendingDraft.difficulty);
+            pendingDraft = null;
+            Repaint();
         }
 
         private string CurrentJson()
@@ -1669,18 +2058,11 @@ namespace Saber.ChartEditor
             return SaberChartUtility.ToJson(document, false);
         }
 
-        private bool DestinationChanged()
-        {
-            if (string.IsNullOrEmpty(loadedSongId) || string.IsNullOrEmpty(loadedDifficulty)) return true;
-            return !string.Equals(loadedSongId, songId?.Trim(), StringComparison.OrdinalIgnoreCase) ||
-                   !string.Equals(loadedDifficulty, CurrentDifficulty, StringComparison.OrdinalIgnoreCase);
-        }
-
         private float TimelineBeat(SaberChartNote note)
         {
             return note == null
                 ? 0f
-                : SaberChartUtility.TimeMsToBeat(note.time, document.bpm, beatZeroMs);
+                : BeatAtTime(note.time);
         }
 
         private void SyncPalettePositionFromSelected()

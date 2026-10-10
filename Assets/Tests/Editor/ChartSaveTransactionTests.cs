@@ -96,13 +96,25 @@ public class ChartSaveTransactionTests
     }
 
     [Test]
-    public void BlockedFirstFallbackDoesNotLeaveAnOrphanEasyChart()
+    public void BlockedFallbackDoesNotLeaveAnOrphanNormalChart()
+    {
+        File.Delete(normal);
+        File.Delete(legacy);
+        Directory.CreateDirectory(legacy);
+        Assert.Catch<Exception>(() => Save("normal"));
+        Assert.False(File.Exists(normal));
+        Assert.True(Directory.Exists(legacy), "既存の保存先障害物は勝手に削除しない");
+        AssertNoTemporaryDirectory();
+    }
+
+    [Test]
+    public void EasyIgnoresABlockedFallbackBecauseItNeverWritesIt()
     {
         File.Delete(legacy);
         Directory.CreateDirectory(legacy);
-        Assert.Catch<Exception>(() => Save("easy"));
-        Assert.False(File.Exists(Path.Combine(folder, "chart_easy.json")));
-        Assert.True(Directory.Exists(legacy), "既存の保存先障害物は勝手に削除しない");
+        string destination = Save("easy");
+        Assert.True(File.Exists(destination));
+        Assert.True(Directory.Exists(legacy), "予備の chart.json には触れない");
         Assert.AreEqual(OldNormal, File.ReadAllText(normal));
         AssertNoTemporaryDirectory();
     }
@@ -148,14 +160,25 @@ public class ChartSaveTransactionTests
         AssertNoTemporaryDirectory();
     }
 
-    [TestCase("easy")]
-    [TestCase("normal")]
-    [TestCase("hard")]
-    public void FirstSaveCreatesTheRequiredFallback(string difficulty)
+    [Test]
+    public void FirstNormalSaveCreatesTheFallback()
     {
         File.Delete(legacy);
-        string destination = Save(difficulty);
+        string destination = Save("normal");
         Assert.AreEqual(File.ReadAllText(destination), File.ReadAllText(legacy));
+        AssertNoTemporaryDirectory();
+    }
+
+    // Hard を先に保存しても chart.json に Hard の内容を入れない(Easy・Normal の代わりに出ないように)。
+    [TestCase("easy")]
+    [TestCase("hard")]
+    public void FirstEasyOrHardSaveDoesNotCreateTheFallback(string difficulty)
+    {
+        File.Delete(legacy);
+        File.Delete(normal);
+        string destination = Save(difficulty);
+        Assert.True(File.Exists(destination));
+        Assert.False(File.Exists(legacy));
         AssertNoTemporaryDirectory();
     }
 

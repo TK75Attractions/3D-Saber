@@ -84,19 +84,47 @@ namespace Saber.ChartEditor
             string folder = SongFolderPath(songId);
             Directory.CreateDirectory(folder);
             string destination = ChartPath(songId, difficulty);
-            string json = SaberChartUtility.ToJson(document, true);
+            string json = SaberChartUtility.ToFileJson(document);
             var targets = new List<(string path, string difficulty)> { (destination, difficulty) };
 
-            // 曲一覧の契約上 chart.json は必須。Normal は常に同期し、初回は他難易度でも作る。
+            // chart.json は Easy / Normal の読み込み先の予備。Normal と同じ内容に保ち、
+            // Hard や Easy を先に保存しても予備には書かない(Hard が Easy・Normal の代わりに出ないように)。
             string baseChart = Path.Combine(folder, "chart.json");
-            if (NormalizeDifficulty(difficulty) == "normal" || !File.Exists(baseChart))
-            {
-                if (!PathsEqual(destination, baseChart)) targets.Add((baseChart, "base"));
-            }
+            if (NormalizeDifficulty(difficulty) == "normal" && !PathsEqual(destination, baseChart))
+                targets.Add((baseChart, "base"));
 
             SaveTogether(targets, songId, json, folder);
             AssetDatabase.Refresh();
             return destination;
+        }
+
+        /// <summary>Normal(=chart.json の元)がまだ無い曲か。Easy / Hard だけ保存したときの注意に使う。</summary>
+        public static bool MissingNormalChart(string songId)
+        {
+            string folder = SongFolderPath(songId);
+            if (folder == null) return false;
+            return !File.Exists(Path.Combine(folder, "chart_normal.json")) &&
+                   !File.Exists(Path.Combine(folder, "chart.json"));
+        }
+
+        /// <summary>難易度のファイルがあるか(読み込みの予備 chart.json は数えない)。</summary>
+        public static bool ChartExists(string songId, string difficulty)
+        {
+            string path = ChartPath(songId, difficulty);
+            return !string.IsNullOrEmpty(path) && File.Exists(path);
+        }
+
+        /// <summary>
+        /// 指定の難易度ファイルだけを読む(chart.json への予備の読み込みはしない)。無ければ null。
+        /// 他の難易度との設定の比較や、上の難易度を重ねて見るときに使う。
+        /// </summary>
+        public static SaberChartDocument TryLoadExact(string songId, string difficulty)
+        {
+            string path = ChartPath(songId, difficulty);
+            if (string.IsNullOrEmpty(path) || !File.Exists(path)) return null;
+            try { return SaberChartUtility.FromJson(File.ReadAllText(path, Encoding.UTF8)); }
+            catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException ||
+                                              exception is FormatException) { return null; }
         }
 
         private static void SaveTogether(List<(string path, string difficulty)> targets,
@@ -439,8 +467,44 @@ namespace Saber.ChartEditor
         private readonly List<string> undo = new List<string>();
         private readonly List<string> redo = new List<string>();
 
+        [Serializable]
+        private sealed class Snapshot
+        {
+            public string current;
+            public List<string> undo = new List<string>();
+            public List<string> redo = new List<string>();
+        }
+
         public bool CanUndo => undo.Count > 0;
         public bool CanRedo => redo.Count > 0;
+        public int UndoCount => undo.Count;
+
+        /// <summary>
+        /// 再コンパイルや Play 開始の前に退避する文字列。current は退避したときの譜面で、
+        /// 戻すときに同じ譜面であることを確かめる(別の譜面の履歴を混ぜない)。
+        /// </summary>
+        public string Export(string currentJson)
+        {
+            var snapshot = new Snapshot { current = currentJson };
+            snapshot.undo.AddRange(undo);
+            snapshot.redo.AddRange(redo);
+            return JsonUtility.ToJson(snapshot);
+        }
+
+        public bool Import(string exported, string currentJson)
+        {
+            if (string.IsNullOrEmpty(exported)) return false;
+            Snapshot snapshot;
+            try { snapshot = JsonUtility.FromJson<Snapshot>(exported); }
+            catch (ArgumentException) { return false; }
+            if (snapshot == null || snapshot.current != currentJson) return false;
+            undo.Clear();
+            redo.Clear();
+            if (snapshot.undo != null) undo.AddRange(snapshot.undo.FindAll(item => !string.IsNullOrEmpty(item)));
+            if (snapshot.redo != null) redo.AddRange(snapshot.redo.FindAll(item => !string.IsNullOrEmpty(item)));
+            while (undo.Count > Capacity) undo.RemoveAt(0);
+            return true;
+        }
 
         public void Clear()
         {

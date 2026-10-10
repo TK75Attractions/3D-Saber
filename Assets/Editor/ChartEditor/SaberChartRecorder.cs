@@ -26,6 +26,8 @@ namespace Saber.ChartEditor
         private readonly float inputOffsetMs;
         private readonly bool holdToLong;
         private readonly int longCount;
+        // 編集用の格子の原点。ファイルの beatZeroMs(本編の小節線)とは別に、エディターが表示に使う値を受け取る。
+        private readonly float gridOriginMs;
         private readonly Dictionary<int, Stroke> held = new Dictionary<int, Stroke>();
         private readonly List<InputGroup> inputGroups = new List<InputGroup>();
         private int nextInputGroup;
@@ -38,7 +40,7 @@ namespace Saber.ChartEditor
         public int BeginInputGroup() => ++nextInputGroup;
 
         public SaberChartRecorder(SaberChartDocument document, float audioLength, int snap,
-            float inputOffsetMs, bool holdToLong, int longCount)
+            float inputOffsetMs, bool holdToLong, int longCount, float? gridOriginMs = null)
         {
             this.document = document ?? throw new ArgumentNullException(nameof(document));
             this.audioLength = Mathf.Max(0, audioLength);
@@ -46,6 +48,7 @@ namespace Saber.ChartEditor
             this.inputOffsetMs = inputOffsetMs;
             this.holdToLong = holdToLong;
             this.longCount = Mathf.Clamp(longCount, 2, 99);
+            this.gridOriginMs = gridOriginMs ?? document.beatZeroMs;
             BeforeJson = SaberChartUtility.ToJson(document, false);
         }
 
@@ -55,9 +58,9 @@ namespace Saber.ChartEditor
             float time = audioSeconds * 1000f - document.offsetMs - inputOffsetMs;
             if (snap > 0)
             {
-                float beat = SaberChartUtility.TimeMsToBeat(time, document.bpm, document.beatZeroMs);
+                float beat = SaberChartUtility.TimeMsToBeat(time, document.bpm, gridOriginMs);
                 time = SaberChartUtility.BeatToTimeMs(
-                    SaberChartUtility.QuantizeBeat(beat, snap, document), document.bpm, document.beatZeroMs);
+                    SaberChartUtility.QuantizeBeat(beat, snap, document), document.bpm, gridOriginMs);
             }
             return time;
         }
@@ -79,7 +82,7 @@ namespace Saber.ChartEditor
             var note = new SaberChartNote
             {
                 time = time,
-                beat = SaberChartUtility.TimeMsToBeat(time, document.bpm, document.beatZeroMs),
+                beat = SaberChartUtility.TimeMsToBeat(time, document.bpm, gridOriginMs),
                 x = x, y = y, color = color, direction = direction,
                 type = direction == SaberChartUtility.DirectionNone ? SaberChartUtility.TypeTap : SaberChartUtility.TypeDirection,
             };

@@ -109,7 +109,8 @@ public class ChartEditorWorkflowTests
             Assert.AreEqual(2, Document.timeSignatures.Count);
             Call("Undo");
             Assert.AreEqual(3, Document.timeSignatures.Count);
-            Set("beatZeroMs", 123f);
+            // 原点は欄で明示して変えたときだけファイルに書く。
+            Call("ApplyChartSettings", Document.bpm, Document.offsetMs, 123f, Document.coordScale);
             Set("songId", target);
             Assert.True((bool)Call("SaveDocument"));
             Set("document", new SaberChartDocument());

@@ -42,6 +42,7 @@ namespace Saber.ChartEditor
         private bool recordRetryKeyDown;
         private string recordTakeBeforeJson;
         private string recordTakeAfterJson;
+        private float recordTakeGridOriginMs;
         [Serializable]
         private sealed class RecordingPositionPreset
         {
@@ -473,7 +474,7 @@ namespace Saber.ChartEditor
 
         private List<SaberChartNote> RecordingStepNotes()
         {
-            float time = SaberChartUtility.BeatToTimeMs(currentBeat, document.bpm, beatZeroMs);
+            float time = TimeAtBeat(currentBeat);
             return document.notes.FindAll(note => Mathf.Abs(note.time - time) < 1f);
         }
 
@@ -529,7 +530,7 @@ namespace Saber.ChartEditor
                 {
                     var copy = note.Clone();
                     copy.time += delta;
-                    copy.beat = SaberChartUtility.TimeMsToBeat(copy.time, document.bpm, beatZeroMs);
+                    copy.beat = BeatAtTime(copy.time);
                     if (document.notes.Exists(n => Mathf.Abs(n.time - copy.time) < 1 && n.color == copy.color &&
                         Mathf.Abs(n.x - copy.x) < .0001f && Mathf.Abs(n.y - copy.y) < .0001f)) continue;
                     document.notes.Add(copy);
@@ -585,7 +586,7 @@ namespace Saber.ChartEditor
                 recordStepAdded = false;
             }
             string before = CurrentJson();
-            float time = SaberChartUtility.BeatToTimeMs(recordStepBeat, document.bpm, beatZeroMs);
+            float time = TimeAtBeat(recordStepBeat);
             int added = 0;
             for (int member = 0; member < (secondPad < 0 ? 1 : 2); member++)
             {
@@ -658,8 +659,8 @@ namespace Saber.ChartEditor
                 selectedIndex = -1;
                 MarkChanged();
             }
-            // 録音開始時に保存した原点を使う。先頭ノーツから再推定すると再開位置がずれる。
-            beatZeroMs = document.beatZeroMs;
+            // 録音開始時に覚えた原点を使う。先頭ノーツから再推定すると再開位置がずれる。
+            beatZeroMs = recordTakeGridOriginMs;
             currentBeat = recordReviewBeat;
             StartRecording();
         }
@@ -798,7 +799,7 @@ namespace Saber.ChartEditor
             EditorGUI.DrawRect(new Rect(plane.x, plane.center.y, plane.width, 1), MutedTextColor);
             DrawOutline(plane, MutedTextColor, 1);
 
-            float time = SaberChartUtility.BeatToTimeMs(currentBeat, document.bpm, beatZeroMs);
+            float time = TimeAtBeat(currentBeat);
             foreach (var note in document.notes)
             {
                 if (Mathf.Abs(note.time - time) > 300 || Mathf.Abs(note.x) > 2.5f || Mathf.Abs(note.y) > 1.5f) continue;
@@ -915,9 +916,10 @@ namespace Saber.ChartEditor
             DisposeCountIn();
             TogglePreview();
             if (!isPlaying) return;
-            document.beatZeroMs = beatZeroMs;
+            // 格子の原点は表示中の値を渡す。ファイルの原点(本編の小節線)は録音では書き換えない。
+            recordTakeGridOriginMs = beatZeroMs;
             recorder = new SaberChartRecorder(document, audioClip.length, recordSnap ? CurrentSnap : 0,
-                recordInputOffsetMs, recordHold, recordLongCount);
+                recordInputOffsetMs, recordHold, recordLongCount, beatZeroMs);
             lastRecordingSeconds = playbackAudioStartSeconds;
             recordReviewBeat = currentBeat;
             recordReviewAudioSeconds = playbackAudioStartSeconds;
@@ -933,7 +935,7 @@ namespace Saber.ChartEditor
             EndNoteDrag();
             FinishTextEditing();
             StopPreview(false);
-            SeekToBeat(SaberChartUtility.TimeMsToBeat(recordReviewAudioSeconds * 1000 - document.offsetMs, document.bpm, beatZeroMs));
+            SeekToBeat(BeatAtTime(recordReviewAudioSeconds * 1000 - document.offsetMs));
             TogglePreview();
             if (isPlaying) SetStatus("今回の録音開始位置から再生しています。Spaceで一時停止できます");
         }
