@@ -4,6 +4,12 @@ public class TitleMenuController : MonoBehaviour
 {
     public string songSelectSceneName = "SongSelect";
 
+    void Awake()
+    {
+        // 起動時と前の人からの交代時に、標準の判定・速度で始める。
+        GameSession.ResetPlayerSettings();
+    }
+
     public void OnStartButton()
     {
         if (ScreenTransition.IsBusy) return;

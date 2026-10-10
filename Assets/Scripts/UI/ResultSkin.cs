@@ -607,16 +607,17 @@ public class ResultSkin : MonoBehaviour
                 var rt = btn.GetComponent<RectTransform>();
                 rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
                 rt.pivot = new Vector2(0.5f, 0.5f);
-                rt.anchoredPosition = new Vector2(0f, -466f);
+                rt.anchoredPosition = new Vector2(-540f, -466f);
                 rt.sizeDelta = new Vector2(420f, 96f);
-                var parts = UISkinKit.RestyleButton(btn, UISkinPalette.Cyan, 40f, "◀ BACK");
-                if (parts.label != null) parts.label.characterSpacing = 4f;
+                // 「もう一度」の位置をタイトル帰還にし、既存BACKと二重に並べない。
+                var parts = UISkinKit.RestyleButton(btn, UISkinPalette.Cyan, 34f, "タイトルへ");
+                if (parts.label != null) parts.label.characterSpacing = 0f;
                 Reveal(btn.gameObject, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking), 0.45f, FromBelow);
                 // 暗転中は入力を止めているため、無効化中のEventSystemにも戻る先を設定する。
                 var events = EventSystem.current ?? Object.FindFirstObjectByType<EventSystem>();
                 if (events != null)
                 {
-                    // マウスで演出を飛ばした後も、Enterで唯一の操作へ戻れるようにする。
+                    // マウスで演出を飛ばした後も、Enterでタイトルへ戻れるようにする。
                     var module = events.GetComponent<InputSystemUIInputModule>();
                     if (module != null) module.deselectOnBackgroundClick = false;
                     events.SetSelectedGameObject(btn.gameObject);
@@ -628,10 +629,6 @@ public class ResultSkin : MonoBehaviour
     void BuildContinueButtons(Transform parent, ResultController controller)
     {
         float delay = DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking);
-        var retry = UISkinKit.MakeNeonButton(parent, "RetrySong", "もう一度", new Vector2(-540, -466), new Vector2(420, 96),
-            UISkinPalette.Cyan, controller.RetrySong, 34);
-        retry.button.interactable = controller.CanRetry();
-        Reveal(retry.button.gameObject, delay, .45f, FromBelow);
         var select = UISkinKit.MakeNeonButton(parent, "ReturnToSongSelect", "選曲へ", new Vector2(540, -466), new Vector2(420, 96),
             UISkinPalette.LogoBlue, controller.ReturnToSongSelect, 34);
         Reveal(select.button.gameObject, delay, .45f, FromBelow);
@@ -651,7 +648,7 @@ public class ResultSkin : MonoBehaviour
     {
         if (skipHint == null) return;
         skipHint.text = seconds >= DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .45f
-            ? "セーバーをボタンに合わせて選択  /  マウスでクリック  /  BACKでタイトルへ"
+            ? "セーバーをボタンに合わせて選択  /  マウスでクリック  /  Enterでタイトルへ"
             : "CLICK / ANY KEY TO SKIP";
     }
     void OnDestroy() { if (reveal != null) reveal.TimeChanged -= UpdateSkipHint; }

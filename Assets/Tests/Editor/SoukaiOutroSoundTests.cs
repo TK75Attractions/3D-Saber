@@ -129,13 +129,14 @@ public class SoukaiOutroSoundTests
     }
 
     [Test]
-    public void TrackEndingCardPlaysTheRisingSound()
+    public void TrackEndingKeepsTheRisingSoundWithoutTheDuplicateCard()
     {
         var feedback = GameplayFeedbackPresenter.Create(null, null); created.Add(feedback.gameObject);
         Assert.IsFalse(feedback.OutroSoundPlayed);
         feedback.BeginOutro();
         Assert.IsTrue(feedback.OutroSoundPlayed);
-        Assert.AreEqual("TRACK CLEAR", feedback.EndingLabel);
+        Assert.IsNull(feedback.transform.Find("TrackEnding"));
+        Assert.IsNull(feedback.transform.Find("FullComboStatus"));
         Assert.NotNull(feedback.OutroClip);
         Assert.Greater(feedback.OutroClip.length, .4f);
         feedback.BeginOutro();

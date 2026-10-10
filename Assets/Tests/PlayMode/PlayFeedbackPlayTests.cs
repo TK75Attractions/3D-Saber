@@ -54,12 +54,17 @@ public class PlayFeedbackPlayTests
         Assert.IsNull(feedback.transform.Find("Judgment0"),"ノーツ付近の説明札を生成しない");
         manager.scoreManager.Reset();
         for(int i=0;i<50;i++) manager.scoreManager.RegisterHit(JudgmentTier.Good);
-        Assert.AreEqual(50,feedback.LatestMilestone); Assert.AreEqual("FC ACTIVE",feedback.FullComboLabel);
+        Assert.AreEqual(50,feedback.LatestMilestone);
+        Assert.IsNull(feedback.transform.Find("FullComboStatus"));
+        feedback.Tick(.1f,10,100,90);
+        Assert.AreEqual(ComboFlameMode.Gold, feedback.FlameMode);
         manager.scoreManager.RegisterHit(JudgmentTier.Bad);
-        Assert.AreEqual("FC LOST",feedback.FullComboLabel,"BadでもFCは失われる");
-        manager.scoreManager.RegisterHit(JudgmentTier.Perfect); Assert.AreEqual("FC LOST",feedback.FullComboLabel);
+        manager.scoreManager.RegisterHit(JudgmentTier.Perfect);
+        for (int i=0;i<10;i++) feedback.Tick(.1f,10,100,90);
+        Assert.AreEqual(ComboFlameMode.None, feedback.FlameMode,"Bad以降は炎が消える");
+        Assert.IsNull(feedback.transform.Find("FullComboStatus"));
         feedback.BeginOutro(); feedback.Tick(.1f,10,10,8);
-        Assert.AreEqual("TRACK CLEAR",feedback.EndingLabel); Assert.IsTrue(feedback.OutroStarted);
+        Assert.IsNull(feedback.transform.Find("TrackEnding")); Assert.IsTrue(feedback.OutroStarted);
         yield return SceneManager.LoadSceneAsync("SongSelect");
         Assert.IsNull(Object.FindFirstObjectByType<GameplayFeedbackPresenter>(),"シーン終了時に演出と購読を回収");
     }

@@ -1,6 +1,6 @@
 # 判定の説明・コンボ・曲終了の演出
 
-2026-09-19。Fableの候補から実装後、ユーザーの「こういう判定表示は嫌だからさっきのやつにそこだけ戻してほしい」に従い、ノーツ付近の表示（②③⑤）を取り消した。現在は⑥⑧⑨を維持し、Perfect／Great／Good／Bad／Missとタイミングの表示は従来の画面下のGameHUDSkinに戻している。Great以下やロング途中への成功の追加光、判定・譜面・音源・速度閾値は変更しない。
+2026-09-19に実装し、その後の変更を下記に記録。2026-10-10現在はコンボ節目とFC/APの炎を維持し、重複していたFC状態の文字・曲末の簡易札を削除している。Perfect／Great／Good／Bad／Missとタイミングは従来の画面下のGameHUDSkinが表示する。判定・譜面・音源・速度閾値は今回変更していない。
 
 同日の追加依頼で、選曲画面のEFFECTS／PROJECTORボタンと対応する選択ノーツを削除した。保存済みの描画設定とF4による投影モード切替は維持する。選択ノーツの誤操作対策は候補提示の段階で、受付方式は変更していない。
 
@@ -12,8 +12,8 @@
 - [CHUNITHM公式オプション説明](https://chunithm.sega.jp/play/option/)：ノーツの判定結果の表示位置を調整する考え方を参考にした。初回の切断付近のラベルは取り消し、現在は従来の画面下の判定表示を使う。
 - [Synth Riders開発者更新、2020-10-16](https://store.steampowered.com/news/posts/?appids=885000&enddate=1602972734&feed=steam_community_announcements)：FlashとParticleの強度段階や表示先を分け、高速曲での見やすさを選べる。本作でも演出を抑える内部設定を導入した。選曲画面の切替ボタンは追加後にユーザーの希望で削除した。
 - [CHUNITHM公式更新、Version 2.16](https://info-chunithm.sega.jp/5429/)：CLEAR、FULL COMBOなどの達成表示を区別する設計を参考にする。本作のFC条件は本作固有で、Badもコンボを切るため除外する。
-- [Xbox Accessibility Guideline 103](https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/103)：重要な情報を複数の伝達手段で示す考え方を初回検討に参照。ノーツ付近の×や矢印の説明札は取り消した。現在も判定やFC状態は色と文字で伝える。
-- [Xbox Accessibility Guideline 117](https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/117)：動きや画面効果の調整を参考にする。LOWではHUDの判定文字の上昇、コンボの拡大、曲末ラインの伸長を止める。
+- [Xbox Accessibility Guideline 103](https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/103)：重要な情報を複数の伝達手段で示す考え方を初回検討に参照。ノーツ付近の×や矢印の説明札は取り消した。FC状態の補助文字も2026-10-10に削除した。
+- [Xbox Accessibility Guideline 117](https://learn.microsoft.com/en-us/xbox/accessibility/xbox-accessibility-guidelines/117)：動きや画面効果の調整を参考にする。LOWではHUDの判定文字の上昇、コンボの拡大を止める。曲末ラインは2026-10-10に簡易札とともに削除した。
 
 ## 現在の実装
 
@@ -23,8 +23,8 @@
 | ③ Miss | 対象付近の×付き札を取り消し。以前の画面下のMISS表示を使用。 |
 | ⑤ 判定位置 | 以前の画面下へ戻した。以前の文字の見た目、EARLY/LATE、FLICKの注意表示を使用。 |
 | ⑥ コンボ節目 | 50の倍数で短いCHAIN表示。標準では小さく拡大し、LOWは静止表示。全レーンを光らせない。 |
-| ⑧ FC維持 | 右上にFC READY / FC ACTIVE / FC LOST。開始前を達成扱いせず、BadまたはMiss以降は回復しない。色だけでなく文字でも状態を示す。 |
-| ⑨ 曲の締め | 全ノーツの判定と曲音源の終了を待ってFULL COMBO / TRACK CLEAR、最高コンボとスコア、短いライン。最終MissでもTRACK CLEARが成立。既存のリザルト遷移時刻は変えず、余韻の時間内に収める。LAST CUTの札は判定表示の変更とともに取り消し。 |
+| ⑧ FC維持 | FC READY / FC ACTIVE / FC LOSTの文字は削除。コンボ数字の背後にあるFC=金・AP=虹の炎を維持する。 |
+| ⑨ 曲の締め | FULL COMBO / TRACK CLEARの簡易札・付随する最高コンボ、スコア、ラインを削除。曲末の短い上昇音は維持し、正式なFULL COMBO / ALL PERFECTの達成演出とコンボボーナスは従来どおり一度だけ出す。 |
 | ⑩ 控えめ設定 | 選曲画面の切替ボタンは削除。保存済みの内部設定は維持。LOWは切断火花を8→2、光の強さを30%にし、床／舞台反応とHUDの拡大を抑える。刃・ノーツの本体・判定文字の可読性は維持。 |
 
 ①Great/Goodへの追加バースト、④速度で刃本体を暗く細くする表現、⑦ロング途中の追加点灯は採用していない。既存の切断、効果音、振動、ロングのひびと残数表示を引き続き使う。
@@ -35,7 +35,7 @@
 
 演出に使う英数字は曲開始前にフォントへ登録する。実時間テストの最大フレーム間隔と取りこぼし時刻の診断、404ノーツ成功という既存の検証条件は維持する。
 
-`PlayFeedbackTests`はFC、節目、終了条件を検証する。`PlayFeedbackPlayTests`は実Gameシーンで従来の画面下の判定の復帰、ノーツ付近の札が生成されないこと、FCと曲末を確認し、SongSelectに不要な設定ボタン／ノーツがないこと、開始・難易度操作の維持、LOW時の描画量、Perfect限定も検証する。
+`PlayFeedbackTests`はFC、節目、終了条件を検証する。`PlayFeedbackPlayTests`は実Gameシーンで画面下の判定・炎を維持し、FC状態文字と曲末の簡易札が生成されないことを確認する。`SoukaiOutroSoundTests`で曲末音、`ClearAchievementPlayTests`で正式な達成演出と精算を検証する。
 
 実機センサーの体感とプロジェクターへの実投影は未確認。実シーンの撮影では人工ノーツ・人工操作を使用する。継続的なFPSの実測は別途必要。
 
@@ -46,3 +46,7 @@
 ## 2026-09-23 追記: コンボ数の炎(AP=虹 / FC=金)
 
 ユーザー依頼「AP中なら虹色の炎、フルコンボ中なら金色の炎がコンボ数のところにだんだん強くなっていく。条件を満たさなくなったら消える」を実装。`GameplayFeedbackPresenter` が HUD のコンボ数字(sortingOrder 500)の下(499)に `ComboFlameGraphic` を置き、`ComboFlameLogic.DesiredMode`(判定が1つ以上・Bad/Miss 無し=金、さらに全 Perfect=虹)と `Intensity`(曲の進行割合、ユーザー指定)で毎フレーム描く。AP が崩れて FC が残るときは虹が 0.30 秒で消えてから金が 0.45 秒で同じ強さまで立ち上がる(`ComboFlameEnvelope`)。FC が崩れたら消えて戻らない。本数 5→12、高さ 48→200px。LOW は 4本で静止。画像・パーティクル・シェーダーは使わず UI の頂点色だけ。テストは `ComboFlameTests`。
+
+## 2026-10-10: 文化祭の1プレイごとの初期設定と結果操作
+
+結果の「もう一度」を「タイトルへ」に変更し、既存のBACKも同じボタンへ統合。「選曲へ」は維持する。タイトルを開いた時と結果から次の選曲へ進む時に、判定+60ms・ノーツ到着時間1.0秒（ふつう）へ戻す。その回の判定調整と試し切り、選曲との往復では変更を維持する。出力先別の判定保存値も次の回でリセットし、過去の客の設定が復活しないようにする。位置補正・表示設定・記録は変更しない。

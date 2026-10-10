@@ -113,6 +113,15 @@ public class CalibrationCountdownPlayTests
         Object.FindFirstObjectByType<SongSelectController>().ReturnToTitle();
         yield return ScreenTransitionPlayTests.WaitForTransition();
         Object.FindFirstObjectByType<TitleMenuController>().OnStartButton();
+        // タイトルではチュートリアル確認を挟むため、「いいえ」を選んで通常の選曲へ進む。
+        double promptDeadline=Time.realtimeSinceStartupAsDouble+5;
+        TitleTutorialPrompt prompt=null;
+        while(Time.realtimeSinceStartupAsDouble<promptDeadline &&
+            ((prompt=Object.FindFirstObjectByType<TitleTutorialPrompt>())==null || !prompt.IsOpen))yield return null;
+        Assert.NotNull(prompt);Assert.True(prompt.IsOpen);
+        prompt.Choose(false,"calibration-return-test");
+        while(!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble<promptDeadline)yield return null;
+        Assert.True(ScreenTransition.IsBusy);
         yield return ScreenTransitionPlayTests.WaitForTransition();yield return WaitForSelection();
         var fresh=Object.FindFirstObjectByType<SongSelectController>();
         Assert.AreEqual(0,fresh.SelectedIndex);Assert.AreEqual(0,fresh.SelectedDifficultyIndex);

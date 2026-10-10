@@ -2,16 +2,14 @@ using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
-// コンボ節目・FC状態・曲の締めを表示。判定文字は従来のGameHUDSkinに任せる。
+// コンボ節目・FC/APの炎・曲の締めの音を管理。達成の文字演出はClearAchievementPresentationに集約する。
 // GamePlayManagerが一か所からTickする。
 public sealed class GameplayFeedbackPresenter : MonoBehaviour
 {
     NoteSpawner spawner;
     ScoreManager score;
-    RectTransform outroRule;
-    TextMeshProUGUI fc, milestone, ending, endingDetail;
-    CanvasGroup endingGroup;
-    float milestoneAge = 99, endingAge = -1;
+    TextMeshProUGUI milestone;
+    float milestoneAge = 99;
     int latestMilestone;
     // コンボ数の後ろの炎(2026-09-23 ユーザー依頼): AP中は虹色、FC中は金色、曲の進行で強くなり、条件が崩れたら消える。
     ComboFlameGraphic flame;
@@ -19,11 +17,9 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     float flameTime;
     public ComboFlameMode FlameMode => flameEnvelope.Shown;
     public float FlameLevel => flameEnvelope.Level;
-    public bool OutroStarted => endingAge >= 0;
-    public string FullComboLabel => fc != null ? fc.text : "";
-    public string EndingLabel => ending != null ? ending.text : "";
+    public bool OutroStarted { get; private set; }
     public int LatestMilestone => latestMilestone;
-    // 曲の締めの札に音を付ける(爽快感カタログ 山4)。札は FULL COMBO でも TRACK CLEAR でも同じ短く上がる音。
+    // 曲の締めの短く上がる音。重複していたFULL COMBO / TRACK CLEARの簡易札は表示しない。
     // FULL COMBO / ALL PERFECT の和音は、続く ClearAchievementPresentation が鳴らす。
     public const float OutroVolume = .5f;
     AudioSource outroSource;
@@ -48,18 +44,8 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
         // 曲中の初回判定でフォントアトラスを増やさないよう、使う字を開始前に準備する。
         var labelFont = UISkinKit.FontAsset("Oxanium-Bold");
         if (labelFont != null) labelFont.TryAddCharacters("ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 /,.ms");
-        fc = Text(transform, "FullComboStatus", "FC READY", 21, new Vector2(280, 32), Vector2.zero, TextAlignmentOptions.TopRight);
-        TopRight(fc.rectTransform, new Vector2(-74, -376));
-        fc.color = new Color(.57f, .64f, .7f);
         milestone = Text(transform, "ComboMilestone", "", 25, new Vector2(300, 36), Vector2.zero, TextAlignmentOptions.TopRight);
         TopRight(milestone.rectTransform, new Vector2(-74, -414));
-        var endRoot = Rect(transform, "TrackEnding", new Vector2(720, 170), new Vector2(0, 15));
-        endingGroup = endRoot.gameObject.AddComponent<CanvasGroup>(); endingGroup.blocksRaycasts = endingGroup.interactable = false; endingGroup.alpha = 0;
-        var endBackground = endRoot.gameObject.AddComponent<Image>(); endBackground.color = new Color(.02f, .035f, .05f, .92f); endBackground.raycastTarget = false;
-        ending = Text(endRoot, "Title", "", 58, new Vector2(680, 76), new Vector2(0, 20));
-        endingDetail = Text(endRoot, "Detail", "", 20, new Vector2(680, 30), new Vector2(0, -39));
-        outroRule = Rect(endRoot, "FinishRule", new Vector2(0, 3), new Vector2(0, -69));
-        var line = outroRule.gameObject.AddComponent<Image>(); line.color = new Color(.3f, .85f, .87f); line.raycastTarget = false;
         BuildFlame();
         if (score != null) score.OnJudgment += Scored;
     }
@@ -104,42 +90,23 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
         if (score.Combo > 0 && IsMilestone(score.Combo))
         { latestMilestone = score.Combo; milestoneAge = 0; milestone.text = score.Combo + " CHAIN"; }
         if (score.Combo == 0) { milestoneAge = 99; milestone.text = ""; }
-        UpdateFullCombo();
-    }
-    void UpdateFullCombo()
-    {
-        if (score == null) return;
-        bool intact = FullComboEligible(score.HitCount, score.BadCount, score.MissCount);
-        fc.text = intact ? "FC ACTIVE" : score.BadCount + score.MissCount > 0 ? "FC LOST" : "FC READY";
-        fc.color = intact ? new Color(.57f, .86f, .84f) : new Color(.5f, .55f, .61f);
     }
 
     public void Tick(float delta, double songTime, double duration, double lastNote)
     {
         if (!isActiveAndEnabled) return;
         delta = Mathf.Clamp(delta, 0, .1f);
-        UpdateFullCombo();
         TickFlame(delta, songTime, duration);
         milestoneAge += delta;
         milestone.color = new Color(.79f, .9f, .93f, 1 - Mathf.InverseLerp(.6f, 1.1f, milestoneAge));
         milestone.rectTransform.localScale = Vector3.one * (1 + (DisplaySettings.ReducedEffects ? 0 : .12f) * Mathf.Clamp01(1 - milestoneAge / .22f));
         if (!OutroStarted && score != null && spawner != null && CanEnd(songTime, duration, lastNote, spawner.TotalNoteCount,
             score.HitCount + score.MissCount, spawner.NextIndex)) BeginOutro();
-        if (OutroStarted)
-        {
-            endingAge += delta;
-            endingGroup.alpha = Mathf.Clamp01(endingAge / .25f);
-            outroRule.sizeDelta = new Vector2(560 * (DisplaySettings.ReducedEffects ? 1 : Mathf.SmoothStep(0, 1, endingAge / .8f)), 3);
-        }
     }
     public void BeginOutro()
     {
         if (OutroStarted) return;
-        endingAge = 0;
-        bool full = score != null && FullComboEligible(score.HitCount, score.BadCount, score.MissCount);
-        ending.text = full ? "FULL COMBO" : "TRACK CLEAR";
-        ending.color = full ? new Color(.6f, .94f, .88f) : new Color(.88f, .92f, .97f);
-        endingDetail.text = score == null ? "" : "BEST CHAIN  " + score.MaxCombo + "    /    SCORE  " + score.Score.ToString("N0");
+        OutroStarted = true;
         PlayOutroSound();
     }
     void PlayOutroSound()

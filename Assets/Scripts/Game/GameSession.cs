@@ -1,7 +1,7 @@
 using UnityEngine;
 
 // シーン間で譜面選択とリザルトを受け渡す薄い静的ストア。
-// プレイヤー固有の判定オフセットは PlayerPrefs で永続化する。
+// 調整値はその回の画面間で共有し、タイトルまたは結果からの新しい選曲で標準へ戻す。
 public static class GameSession
 {
     public static string SelectedSongId;
@@ -101,6 +101,19 @@ public static class GameSession
     public static void ResetNoteApproachTime()
     {
         PlayerPrefs.DeleteKey(NoteApproachTimeKey);
+        PlayerPrefs.Save();
+    }
+
+    // 文化祭の1プレイごとの初期値。調整画面との往復や曲の開始では呼ばず、その回の調整は維持する。
+    // 出力先別の保存値も消し、切替操作で前の人の判定値が復活しないようにする。
+    // 端末の位置補正・表示設定・スコア記録は対象外。
+    public static void ResetPlayerSettings()
+    {
+        PlayerPrefs.DeleteKey(JudgmentOffsetMsKey);
+        PlayerPrefs.DeleteKey(NoteApproachTimeKey);
+        PlayerPrefs.DeleteKey(CalibrationDraft.ActiveKey);
+        PlayerPrefs.DeleteKey(CalibrationDraft.SpeakerKey);
+        PlayerPrefs.DeleteKey(CalibrationDraft.HeadphoneKey);
         PlayerPrefs.Save();
     }
 

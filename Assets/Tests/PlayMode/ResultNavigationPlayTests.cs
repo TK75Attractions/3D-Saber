@@ -28,10 +28,15 @@ public class ResultNavigationPlayTests
     Mouse mouse;
     InputSettings originalInputSettings;
     InputSettings testInputSettings;
+    readonly string[] settingKeys = { "judgmentOffsetMs", CalibrationDraft.ActiveKey, CalibrationDraft.SpeakerKey, CalibrationDraft.HeadphoneKey };
+    readonly Dictionary<string, int?> savedSettings = new Dictionary<string, int?>();
+    float? savedSpeed;
 
     [UnitySetUp]
     public IEnumerator SetUp()
     {
+        foreach (string key in settingKeys) savedSettings[key] = PlayerPrefs.HasKey(key) ? PlayerPrefs.GetInt(key) : (int?)null;
+        savedSpeed = PlayerPrefs.HasKey("noteApproachTime") ? PlayerPrefs.GetFloat("noteApproachTime") : (float?)null;
         // バッチ実行でも仮想キーボード・マウスをゲームへ送る。製品の設定アセットは変更しない。
         originalInputSettings = InputSystem.settings;
         testInputSettings = Object.Instantiate(originalInputSettings);
@@ -90,6 +95,11 @@ public class ResultNavigationPlayTests
         HighScoreStore.Clear(songId, "Normal");
         foreach (var entry in sessionValues) entry.Key.SetValue(null, entry.Value);
         sessionValues.Clear();
+        foreach (var setting in savedSettings)
+            if (setting.Value.HasValue) PlayerPrefs.SetInt(setting.Key, setting.Value.Value); else PlayerPrefs.DeleteKey(setting.Key);
+        savedSettings.Clear();
+        if (savedSpeed.HasValue) PlayerPrefs.SetFloat("noteApproachTime", savedSpeed.Value); else PlayerPrefs.DeleteKey("noteApproachTime");
+        PlayerPrefs.Save();
     }
 
     [UnityTest]
@@ -192,20 +202,41 @@ public class ResultNavigationPlayTests
     }
 
     [UnityTest]
-    public IEnumerator RetryingHardSongKeepsDifficultyWithoutRepeatingSelectionIntro()
+    public IEnumerator ResultOffersOneTitleButtonInsteadOfReplayAndResetsTheNextPlayersSettings()
     {
         GameSession.SelectedSongId = "Epilogue";
         GameSession.SelectedSongTitle = "校歌";
         GameSession.SelectedDifficulty = "Hard";
-        var controller = Object.FindFirstObjectByType<ResultController>();
-        controller.RetrySong();
+        GameSession.JudgmentOffsetMs = 180;
+        GameSession.NoteApproachTime = .5f;
+        Assert.AreEqual("タイトルへ", back.GetComponentInChildren<TMPro.TextMeshProUGUI>().text);
+        Assert.IsNull(GameObject.Find("RetrySong"));
+        Assert.AreEqual(2, Object.FindFirstObjectByType<ResultController>().GetComponent<Canvas>().GetComponentsInChildren<Button>(true).Length,
+            "タイトルへ・選曲への2操作にまとめ、BACKを重複させない");
+        reveal.Tick(999);
+        ExecuteEvents.Execute(back.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
         Assert.True(ScreenTransition.IsBusy);
-        Assert.False(ScreenTransition.IsHardIntro, "再挑戦は選曲開始専用の24秒演出を繰り返さない");
-        Assert.AreEqual("Epilogue", GameSession.SelectedSongId);
-        Assert.AreEqual("Hard", GameSession.SelectedDifficulty);
-        Assert.AreEqual(0, GameSession.FinalScore);
+        Assert.False(ScreenTransition.IsHardIntro);
         yield return WaitForTransition();
-        Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
+        Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
+        Assert.AreEqual(GameSession.JudgmentOffsetDefaultMs, GameSession.JudgmentOffsetMs);
+        Assert.AreEqual(GameSession.NoteApproachTimeDefault, GameSession.NoteApproachTime);
+    }
+
+    [UnityTest]
+    public IEnumerator SelectingAnotherSongStartsWithDefaultsAndKeepsTheSelectedChart()
+    {
+        GameSession.SelectedSongId = "Epilogue";
+        GameSession.SelectedDifficulty = "Easy";
+        GameSession.JudgmentOffsetMs = 180;
+        GameSession.NoteApproachTime = .5f;
+        Object.FindFirstObjectByType<ResultController>().ReturnToSongSelect();
+        yield return WaitForTransition();
+        Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
+        Assert.AreEqual(GameSession.JudgmentOffsetDefaultMs, GameSession.JudgmentOffsetMs);
+        Assert.AreEqual(GameSession.NoteApproachTimeDefault, GameSession.NoteApproachTime);
+        var selection = Object.FindFirstObjectByType<SongSelectController>();
+        Assert.AreEqual("Epilogue", selection.SongIdAt(selection.SelectedIndex));
     }
 
     static IEnumerator WaitForTransition()
