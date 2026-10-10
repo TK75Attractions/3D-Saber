@@ -731,17 +731,24 @@ namespace Saber.ChartEditor
 
         private void DrawTimeline(Rect rect)
         {
-            EditorGUI.DrawRect(rect, new Color(0.018f, 0.026f, 0.044f));
-            Rect laneRect = new Rect(rect.x + TimelineGutter, rect.y, rect.width - TimelineGutter - 12f, rect.height);
-            if (laneRect.width < 80f) return;
+            // 長いLONGや画面外の小節線を、隣のXYパッドまで描かない。
+            GUI.BeginGroup(rect);
+            try
+            {
+                rect = new Rect(Vector2.zero, rect.size);
+                EditorGUI.DrawRect(rect, new Color(0.018f, 0.026f, 0.044f));
+                Rect laneRect = new Rect(rect.x + TimelineGutter, rect.y, rect.width - TimelineGutter - 12f, rect.height);
+                if (laneRect.width < 80f) return;
 
-            DrawLaneBackgrounds(laneRect);
-            DrawWaveform(rect, laneRect);
-            DrawBeatGrid(rect, laneRect);
-            DrawNotes(laneRect);
-            DrawPlayhead(rect, laneRect);
-            HandleTimelineInput(rect, laneRect, Event.current);
-            DrawOutline(rect, new Color(0.12f, 0.2f, 0.28f), 1f);
+                DrawLaneBackgrounds(laneRect);
+                DrawWaveform(rect, laneRect);
+                DrawBeatGrid(rect, laneRect);
+                DrawNotes(laneRect);
+                DrawPlayhead(rect, laneRect);
+                HandleTimelineInput(rect, laneRect, Event.current);
+                DrawOutline(rect, new Color(0.12f, 0.2f, 0.28f), 1f);
+            }
+            finally { GUI.EndGroup(); }
         }
 
         private void DrawLaneBackgrounds(Rect laneRect)
@@ -821,15 +828,14 @@ namespace Saber.ChartEditor
             {
                 SaberChartNote note = document.notes[index];
                 Rect noteRect = NoteRect(note, laneRect);
-                if (noteRect.yMax < laneRect.y - 100f || noteRect.y > laneRect.yMax + 100f) continue;
+                float endY = noteRect.center.y;
+                if (note.type == SaberChartUtility.TypeLong)
+                    endY = YForBeat(TimelineBeat(note) + SaberChartUtility.EffectiveLongLengthMs(note) / 1000f * document.bpm / 60f, laneRect);
+                if (Mathf.Max(noteRect.yMax, endY) < laneRect.y || Mathf.Min(noteRect.y, endY) > laneRect.yMax) continue;
 
                 Color color = NoteColor(note.color);
                 if (note.type == SaberChartUtility.TypeLong)
                 {
-                    float durationBeats = Mathf.Max(0f,
-                        SaberChartUtility.EffectiveLongLengthMs(note) / 1000f * document.bpm / 60f);
-                    float timelineBeat = TimelineBeat(note);
-                    float endY = YForBeat(timelineBeat + durationBeats, laneRect);
                     Rect tail = new Rect(noteRect.center.x - noteRect.width * 0.28f,
                         Mathf.Min(endY, noteRect.center.y), noteRect.width * 0.56f,
                         Mathf.Abs(endY - noteRect.center.y));

@@ -35,6 +35,7 @@ namespace Saber.ChartEditor
         [SerializeField] private bool recordStepAdvance = true;
         [SerializeField] private RecordingPositionPreset[] recordPositionPresets;
         private readonly HashSet<int> recordStepHeld = new HashSet<int>();
+        private readonly HashSet<KeyCode> recordStepActionKeys = new HashSet<KeyCode>();
         private float recordStepBeat;
         private float recordStepNextBeat;
         private bool recordStepAdded;
@@ -139,6 +140,7 @@ namespace Saber.ChartEditor
                     GUILayout.EndHorizontal();
                 }
                 GUILayout.Label($"現在 {SaberChartUtility.FormatMusicalPosition(currentBeat, document, CurrentSnap)}", centeredSmallStyle);
+                DrawRecordingStepActions();
                 EditorGUILayout.HelpBox("音源なしでも入力できます。H / Bで同時打ち。\nTabで次へ、Shift+Tabで前へ。\n種類・方向・LONG回数は左側で選びます。", MessageType.None);
             }
             else
@@ -469,6 +471,109 @@ namespace Saber.ChartEditor
             FinishTextEditing();
         }
 
+        private List<SaberChartNote> RecordingStepNotes()
+        {
+            float time = SaberChartUtility.BeatToTimeMs(currentBeat, document.bpm, beatZeroMs);
+            return document.notes.FindAll(note => Mathf.Abs(note.time - time) < 1f);
+        }
+
+        private void DrawRecordingStepActions()
+        {
+            int count = RecordingStepNotes().Count;
+            GUILayout.Label($"この拍のノーツ: {count}個 / 同時打ちをまとめて編集", smallMutedStyle);
+            using (new EditorGUI.DisabledScope(!CanStepInput || recordStepHeld.Count > 0 || count == 0))
+            {
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button(new GUIContent("次へコピー", "この拍のノーツを次のSnapへコピー（Ctrl+D）。同じ位置・色の既存ノーツは残します。"))) EditRecordingStep(0);
+                if (GUILayout.Button(new GUIContent("左右反転", "この拍のX・赤青・カット方向を左右反転（Ctrl+M）"))) EditRecordingStep(1);
+                if (GUILayout.Button(new GUIContent("削除", "この拍のノーツをまとめて削除（Shift+Delete）。Ctrl+Zで戻せます。"))) EditRecordingStep(2);
+                GUILayout.EndHorizontal();
+            }
+            using (new EditorGUI.DisabledScope(!CanStepInput || recordStepHeld.Count > 0))
+            {
+                GUILayout.BeginHorizontal();
+                if (GUILayout.Button(new GUIContent("‹ 前のノーツ", "PageUp: 配置済みの前の時刻へ"))) JumpRecordingStep(-1);
+                if (GUILayout.Button(new GUIContent("次のノーツ ›", "PageDown: 配置済みの次の時刻へ"))) JumpRecordingStep(1);
+                GUILayout.EndHorizontal();
+            }
+        }
+
+        private void JumpRecordingStep(int direction)
+        {
+            if (!CanStepInput || recordStepHeld.Count > 0) return;
+            float target = direction > 0 ? float.PositiveInfinity : float.NegativeInfinity;
+            foreach (var note in document.notes)
+            {
+                float beat = TimelineBeat(note);
+                if (direction > 0 && beat > currentBeat + .0001f && beat < target ||
+                    direction < 0 && beat < currentBeat - .0001f && beat > target) target = beat;
+            }
+            if (float.IsInfinity(target)) { SetStatus("この先にノーツはありません"); return; }
+            SeekToBeat(target);
+            FinishTextEditing();
+        }
+
+        private void EditRecordingStep(int action)
+        {
+            if (!CanStepInput || recordStepHeld.Count > 0 || action < 0 || action > 2) return;
+            var notes = RecordingStepNotes();
+            if (notes.Count == 0) { SetStatus("この拍は空です。PageUp / PageDownで配置済みノーツへ移動できます"); return; }
+            EndNoteDrag();
+            string before = CurrentJson();
+            int changed = 0;
+            if (action == 0)
+            {
+                float next = RecordingStepNeighbor(currentBeat, 1);
+                float delta = (next - currentBeat) * 60000f / document.bpm;
+                foreach (var note in notes)
+                {
+                    var copy = note.Clone();
+                    copy.time += delta;
+                    copy.beat = SaberChartUtility.TimeMsToBeat(copy.time, document.bpm, beatZeroMs);
+                    if (document.notes.Exists(n => Mathf.Abs(n.time - copy.time) < 1 && n.color == copy.color &&
+                        Mathf.Abs(n.x - copy.x) < .0001f && Mathf.Abs(n.y - copy.y) < .0001f)) continue;
+                    document.notes.Add(copy);
+                    changed++;
+                }
+                // コピー先へ移るので、Ctrl+Dを押し直すだけで同じパターンを繰り返せる。
+                currentBeat = next;
+            }
+            else if (action == 1)
+            {
+                foreach (var note in notes)
+                {
+                    note.x = -note.x;
+                    if (note.color == "red") note.color = "blue";
+                    else if (note.color == "blue") note.color = "red";
+                    switch (note.direction)
+                    {
+                        case "left": note.direction = "right"; break;
+                        case "right": note.direction = "left"; break;
+                        case "upleft": note.direction = "upright"; break;
+                        case "upright": note.direction = "upleft"; break;
+                        case "downleft": note.direction = "downright"; break;
+                        case "downright": note.direction = "downleft"; break;
+                    }
+                }
+                changed = notes.Count;
+            }
+            else
+            {
+                foreach (var note in notes) document.notes.Remove(note);
+                changed = notes.Count;
+            }
+            SaberChartUtility.SortNotes(document);
+            if (CurrentJson() != before)
+            {
+                history.Record(before);
+                selectedIndex = -1;
+                MarkChanged();
+            }
+            FinishTextEditing();
+            SetStatus(action == 0 ? $"{changed}ノーツを次の拍へコピー（既存ノーツは保持）。Ctrl+Dで繰り返し" :
+                action == 1 ? $"この拍の{changed}ノーツを左右反転しました。Ctrl+Zで戻せます" : $"この拍の{changed}ノーツを削除しました。Ctrl+Zで戻せます");
+        }
+
         private void RecordingStepPress(int input, int firstPad, int secondPad = -1)
         {
             if (!CanStepInput || recordStepHeld.Contains(input)) return;
@@ -698,7 +803,11 @@ namespace Saber.ChartEditor
             {
                 if (Mathf.Abs(note.time - time) > 300 || Mathf.Abs(note.x) > 2.5f || Mathf.Abs(note.y) > 1.5f) continue;
                 Vector2 p = RecordingPositionToPoint(plane, new Vector2(note.x, note.y));
-                DrawOutline(new Rect(p.x - 7, p.y - 7, 14, 14), NoteColor(note.color), 1);
+                bool atStep = recordStepMode && Mathf.Abs(note.time - time) < 1f;
+                Color color = NoteColor(note.color);
+                if (recordStepMode && !atStep) color.a = .3f;
+                float size = atStep ? 11 : 7;
+                DrawOutline(new Rect(p.x - size, p.y - size, size * 2, size * 2), color, atStep ? 2 : 1);
             }
             // 選択中のマーカーを最後に描き、位置が重なっても調整対象を見失わないようにする。
             for (int draw = 0; draw <= RecordKeys.Length; draw++)
@@ -942,6 +1051,7 @@ namespace Saber.ChartEditor
 
         private bool HandleRecordingKeyboard(Event input)
         {
+            if (input.type == EventType.KeyUp) recordStepActionKeys.Remove(input.keyCode);
             int pad = Array.IndexOf(RecordKeys, input.keyCode);
             int chord = Array.IndexOf(RecordChordKeys, input.keyCode);
             int preset = (int)input.keyCode - (int)KeyCode.F1;
@@ -982,6 +1092,20 @@ namespace Saber.ChartEditor
             }
             if (input.type != EventType.KeyDown || EditorGUIUtility.editingTextField) return false;
             bool modified = input.control || input.command || input.alt;
+            bool stepCopy = (input.control || input.command) && !input.shift && !input.alt && input.keyCode == KeyCode.D;
+            bool stepMirror = (input.control || input.command) && !input.shift && !input.alt && input.keyCode == KeyCode.M;
+            bool stepDelete = !modified && input.shift && input.keyCode == KeyCode.Delete;
+            bool stepJump = !modified && !input.shift && (input.keyCode == KeyCode.PageUp || input.keyCode == KeyCode.PageDown);
+            if (recordMode && recordStepMode && (stepCopy || stepMirror || stepDelete || stepJump))
+            {
+                if (recordStepActionKeys.Add(input.keyCode))
+                {
+                    if (stepJump) JumpRecordingStep(input.keyCode == KeyCode.PageUp ? -1 : 1);
+                    else EditRecordingStep(stepCopy ? 0 : stepMirror ? 1 : 2);
+                }
+                input.Use();
+                return true;
+            }
             if (!modified && recordMode && preset >= 0 && preset < 3)
             {
                 if (!recordPresetKeysDown[preset])
@@ -1052,6 +1176,7 @@ namespace Saber.ChartEditor
 
         private void OnLostFocus()
         {
+            recordStepActionKeys.Clear();
             recordReviewKeyDown = false;
             recordRetryKeyDown = false;
             Array.Clear(recordPresetKeysDown, 0, recordPresetKeysDown.Length);

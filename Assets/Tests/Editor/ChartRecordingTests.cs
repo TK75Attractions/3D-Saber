@@ -249,6 +249,146 @@ public class ChartRecordingWorkflowTests
     }
 
     [Test]
+    public void StepGroupCopyPreservesChordPropertiesAndOneUndoRestoresAll()
+    {
+        Call("SetRecordingInputMode", 2);
+        Set("currentBeat", 2f);
+        Set("snapIndex", 0);
+        Set("beatZeroMs", 80f);
+        Document.beatZeroMs = 80;
+        Document.notes.Add(new SaberChartNote { time = 1080, beat = 2, x = -1.23f, y = .57f,
+            color = "blue", type = "long", count = 4, lengthMs = 875, direction = "upright" });
+        Document.notes.Add(new SaberChartNote { time = 1080, beat = 2, x = 1.67f, y = -.43f,
+            color = "red", type = "direction", direction = "downleft" });
+        string before = SaberChartUtility.ToJson(Document, false);
+        Key(KeyCode.D, modifiers: EventModifiers.Control);
+        Assert.AreEqual(4, Document.notes.Count);
+        Assert.AreEqual(3, Get<float>("currentBeat"));
+        var copy = Document.notes.Find(n => n.time == 1580 && n.color == "blue");
+        Assert.NotNull(copy);
+        Assert.AreEqual(3, copy.beat);
+        Assert.AreEqual(-1.23f, copy.x);
+        Assert.AreEqual(.57f, copy.y);
+        Assert.AreEqual("long", copy.type);
+        Assert.AreEqual("upright", copy.direction);
+        Assert.AreEqual(4, copy.count);
+        Assert.AreEqual(875, copy.lengthMs);
+        Key(KeyCode.D, modifiers: EventModifiers.Control);
+        Assert.AreEqual(4, Document.notes.Count, "押し続けで大量に複製しない");
+        Key(KeyCode.Z, modifiers: EventModifiers.Control);
+        Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+        Key(KeyCode.Y, modifiers: EventModifiers.Control);
+        Assert.AreEqual(4, Document.notes.Count);
+        Key(KeyCode.D, EventType.KeyUp);
+        Key(KeyCode.D, modifiers: EventModifiers.Control);
+        Assert.AreEqual(6, Document.notes.Count);
+        Assert.AreEqual(4, Get<float>("currentBeat"));
+    }
+
+    [Test]
+    public void StepGroupCopySkipsExistingNotesAndRespectsMeterBoundary()
+    {
+        Call("SetRecordingInputMode", 2);
+        Set("currentBeat", 3f);
+        Set("snapIndex", 0);
+        Document.timeSignatures.Add(new ChartTimeSignature { beat = 0, numerator = 7, denominator = 8 });
+        Document.notes.Add(new SaberChartNote { time = 1500, beat = 3, x = -1, color = "blue" });
+        Document.notes.Add(new SaberChartNote { time = 1500, beat = 3, x = 1, color = "red" });
+        var existing = new SaberChartNote { time = 1750, beat = 3.5f, x = -1, color = "blue", type = "long", count = 5, lengthMs = 987 };
+        Document.notes.Add(existing);
+        Call("EditRecordingStep", 0);
+        Assert.AreEqual(4, Document.notes.Count);
+        Assert.AreEqual(3.5f, Get<float>("currentBeat"));
+        Assert.AreSame(existing, Document.notes.Find(n => n.time == 1750 && n.color == "blue"));
+        Assert.AreEqual(987, existing.lengthMs);
+        Assert.NotNull(Document.notes.Find(n => n.time == 1750 && n.color == "red"));
+    }
+
+    [TestCase("left", "right")]
+    [TestCase("right", "left")]
+    [TestCase("upleft", "upright")]
+    [TestCase("upright", "upleft")]
+    [TestCase("downleft", "downright")]
+    [TestCase("downright", "downleft")]
+    [TestCase("up", "up")]
+    [TestCase("none", "none")]
+    public void StepGroupMirrorExchangesHandsAndDirectionsAndKeepsLongTiming(string direction, string expected)
+    {
+        Call("SetRecordingInputMode", 2);
+        Document.notes.Add(new SaberChartNote { x = -.61f, y = .78f, color = "blue", type = "long",
+            count = 3, lengthMs = 980, direction = direction });
+        Document.notes.Add(new SaberChartNote { x = 1.32f, color = "red" });
+        Document.notes.Add(new SaberChartNote { x = .3f, color = "gold" });
+        Document.notes.Add(new SaberChartNote { beat = 1, time = 500, x = -.4f, color = "blue" });
+        string before = SaberChartUtility.ToJson(Document, false);
+        Key(KeyCode.M, modifiers: EventModifiers.Control);
+        var mirror = Document.notes.Find(n => n.type == "long");
+        Assert.AreEqual(.61f, mirror.x);
+        Assert.AreEqual(.78f, mirror.y);
+        Assert.AreEqual("red", mirror.color);
+        Assert.AreEqual(expected, mirror.direction);
+        Assert.AreEqual(980, mirror.lengthMs);
+        Assert.AreEqual(3, mirror.count);
+        Assert.AreEqual(0, mirror.time);
+        Assert.AreEqual(-.3f, Document.notes.Find(n => n.color == "gold").x);
+        Assert.AreEqual(-.4f, Document.notes.Find(n => n.time == 500).x);
+        Key(KeyCode.M, modifiers: EventModifiers.Control);
+        Assert.AreEqual(.61f, mirror.x, "キーリピートで元へ反転しない");
+        Key(KeyCode.Z, modifiers: EventModifiers.Control);
+        Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+    }
+
+    [Test]
+    public void StepGroupDeleteAndJumpUseActualNoteTimeAndUndoTheWholeChord()
+    {
+        Call("SetRecordingInputMode", 2);
+        Document.notes.Add(new SaberChartNote { time = 733.5f, beat = 9, x = -1, color = "blue" });
+        Document.notes.Add(new SaberChartNote { time = 733.5f, beat = 9, x = 1, color = "red" });
+        Document.notes.Add(new SaberChartNote { time = 800, beat = 1.6f, color = "gold" });
+        string before = SaberChartUtility.ToJson(Document, false);
+        Key(KeyCode.PageDown);
+        Assert.AreEqual(1.467f, Get<float>("currentBeat"), .00001);
+        Assert.AreEqual(2, ((List<SaberChartNote>)Call("RecordingStepNotes")).Count);
+        Key(KeyCode.Delete, modifiers: EventModifiers.Shift);
+        Assert.AreEqual(1, Document.notes.Count);
+        Assert.AreEqual(800, Document.notes[0].time);
+        Key(KeyCode.Z, modifiers: EventModifiers.Control);
+        Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+        Key(KeyCode.PageDown, EventType.KeyUp);
+        Key(KeyCode.PageDown);
+        Assert.AreEqual(1.6f, Get<float>("currentBeat"), .00001);
+        Key(KeyCode.PageUp);
+        Assert.AreEqual(1.467f, Get<float>("currentBeat"), .00001);
+    }
+
+    [Test]
+    public void StepGroupActionsProtectTypingPlaybackAndHeldInput()
+    {
+        Call("SetRecordingInputMode", 2);
+        Set("recordStepAdvance", false);
+        Key(KeyCode.H);
+        string chord = SaberChartUtility.ToJson(Document, false);
+        Call("EditRecordingStep", 2);
+        Call("JumpRecordingStep", 1);
+        Assert.AreEqual(chord, SaberChartUtility.ToJson(Document, false));
+        Assert.AreEqual(0, Get<float>("currentBeat"));
+        Key(KeyCode.H, EventType.KeyUp);
+        EditorGUIUtility.editingTextField = true;
+        Key(KeyCode.Delete, modifiers: EventModifiers.Shift);
+        Assert.AreEqual(chord, SaberChartUtility.ToJson(Document, false));
+        EditorGUIUtility.editingTextField = false;
+        Set("isPlaying", true);
+        Key(KeyCode.D, modifiers: EventModifiers.Control);
+        Key(KeyCode.M, modifiers: EventModifiers.Control);
+        Key(KeyCode.Delete, modifiers: EventModifiers.Shift);
+        Assert.AreEqual(chord, SaberChartUtility.ToJson(Document, false));
+        Set("isPlaying", false);
+        Call("OnLostFocus");
+        Key(KeyCode.Delete, modifiers: EventModifiers.Shift);
+        Assert.IsEmpty(Document.notes);
+    }
+
+    [Test]
     public void StepChordWorksWithoutAudioAndUsesGridTimeRatherThanRecordingOffsets()
     {
         Call("SetRecordingInputMode", 2);
@@ -1151,6 +1291,38 @@ public class ChartRecordingWorkflowTests
         Assert.AreEqual(-1, Get<int>("recordXYPad"));
         Assert.True(Get<bool>("isPlaying"));
         Assert.IsEmpty(Document.notes);
+    }
+
+    [UnityTest]
+    public IEnumerator TimelineClippingPreservesMousePlacementAndDragging()
+    {
+        Call("SetRecordingInputMode", 0);
+        Set("showPlaybackPreview", false);
+        Set("currentBeat", 4f);
+        Set("pixelsPerBeat", 80f);
+        Set("snapIndex", 0);
+        window.position = new Rect(40, 40, 1050, 650);
+        window.Show(); shown = true; window.Focus();
+        yield return null;
+        window.Repaint();
+        yield return null;
+        Vector2 origin = window.rootVisualElement.worldBound.position;
+        var timeline = new Rect(252, 95, 498, 520);
+        float y = (float)Call("YForBeat", 4f, timeline);
+        Vector2 start = origin + new Vector2(314 + 53 * 2.5f, y);
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = start });
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = start });
+        Assert.AreEqual(1, Document.notes.Count);
+        Assert.AreEqual(4, Document.notes[0].beat);
+        Assert.AreEqual(SaberChartUtility.CoordinateForLane(2, 8, -2.5f, 2.5f), Document.notes[0].x);
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = start });
+        Vector2 end = start + new Vector2(53, -80);
+        window.SendEvent(new Event { type = EventType.MouseDrag, button = 0, mousePosition = end });
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = end });
+        Assert.AreEqual(1, Document.notes.Count);
+        Assert.AreEqual(5, Document.notes[0].beat);
+        Assert.AreEqual(SaberChartUtility.CoordinateForLane(3, 8, -2.5f, 2.5f), Document.notes[0].x);
+        LogAssert.NoUnexpectedReceived();
     }
 
     [UnityTest]
