@@ -147,6 +147,7 @@ namespace Saber.ChartEditor
             else
             {
                 EditorGUI.BeginDisabledGroup(RecordingBusy);
+                DrawLatencyPanel();
                 recordCountIn = EditorGUILayout.ToggleLeft("開始前に4拍カウント", recordCountIn);
                 recordSnap = EditorGUILayout.ToggleLeft("入力を左のSnapへそろえる", recordSnap);
                 recordHold = EditorGUILayout.ToggleLeft("250ms以上の長押しをLONGにする", recordHold);
@@ -154,10 +155,12 @@ namespace Saber.ChartEditor
                 if (recordAdvancedSettings)
                 {
                     recordLongCount = EditorGUILayout.IntSlider("LONGのカット回数", recordLongCount, 2, 12);
-                    recordInputOffsetMs = EditorGUILayout.FloatField(new GUIContent("入力補正 (ms)",
+                    float typedOffsetBefore = recordInputOffsetMs;
+                    recordInputOffsetMs = EditorGUILayout.DelayedFloatField(new GUIContent("入力補正 (ms)",
                         "押すのが遅れる場合は正の値を指定します。個人のゲーム表示補正は録音時刻へ適用しません。"), recordInputOffsetMs);
                     if (float.IsNaN(recordInputOffsetMs) || float.IsInfinity(recordInputOffsetMs)) recordInputOffsetMs = 0;
                     recordInputOffsetMs = Mathf.Clamp(recordInputOffsetMs, -1000, 1000);
+                    if (!Mathf.Approximately(recordInputOffsetMs, typedOffsetBefore)) SaveInputOffsetProfile("手入力");
                 }
                 EditorGUI.EndDisabledGroup();
                 using (new EditorGUI.DisabledScope(!CanRetryRecording()))
@@ -207,7 +210,7 @@ namespace Saber.ChartEditor
             EnsureRecordingPositions();
             Rect panel = new Rect(rect.x, rect.y, rect.width, Mathf.Min(426, rect.height * .68f));
             EditorGUI.DrawRect(panel, PanelColor);
-            string label = countingIn ? $"開始まで {Mathf.Clamp(Mathf.CeilToInt((float)(countInEndsAt - EditorApplication.timeSinceStartup) * document.bpm / 60f), 1, 4)}"
+            string label = countingIn ? $"開始まで {Mathf.Clamp(Mathf.CeilToInt((float)(countInEndsAt - EditorApplication.timeSinceStartup) * Grid.TempoAt(currentBeat) / 60f), 1, 4)}"
                 : recorder != null ? $"● 録音中  +{recorder.AddedCount} NOTES"
                 : recordStepMode ? $"ステップ {SaberChartUtility.FormatMusicalPosition(currentBeat, document, CurrentSnap)}" : "演奏して打ち込み";
             GUI.Label(new Rect(rect.x + 10, rect.y + 6, rect.width - 224, 24), label, sectionStyle);
@@ -827,7 +830,7 @@ namespace Saber.ChartEditor
             recordMode = true;
             selectedIndex = -1;
             if (!recordCountIn) { BeginRecordingSong(); return; }
-            float beatSeconds = 60f / Mathf.Max(1, document.bpm);
+            float beatSeconds = 60f / Mathf.Max(1f, Grid.TempoAt(currentBeat));
             const int rate = 22050;
             // プレビュー音声に4拍の短いクリックを流し、終了後に選択位置から曲を始める。
             float[] samples = new float[Mathf.CeilToInt(beatSeconds * 4 * rate)];
@@ -856,12 +859,15 @@ namespace Saber.ChartEditor
             countingIn = false;
             SaberChartAudioPreview.Stop();
             DisposeCountIn();
+            // 録音中はヒット音・メトロノームを鳴らさない(曲だけを聴いて打つ)。
+            suppressClicksForNextPlay = true;
             TogglePreview();
+            suppressClicksForNextPlay = false;
             if (!isPlaying) return;
             // 格子の原点は表示中の値を渡す。ファイルの原点(本編の小節線)は録音では書き換えない。
             recordTakeGridOriginMs = beatZeroMs;
             recorder = new SaberChartRecorder(document, audioClip.length, recordSnap ? CurrentSnap : 0,
-                recordInputOffsetMs, recordHold, recordLongCount, beatZeroMs);
+                recordInputOffsetMs, recordHold, recordLongCount, beatZeroMs, Grid);
             lastRecordingSeconds = playbackAudioStartSeconds;
             recordReviewBeat = currentBeat;
             recordReviewAudioSeconds = playbackAudioStartSeconds;
@@ -900,7 +906,7 @@ namespace Saber.ChartEditor
                 seconds = value ?? lastRecordingSeconds;
                 return value.HasValue;
             }
-            return SaberChartAudioPreview.TryGetPosition(audioClip, out seconds);
+            return SaberChartAudioPreview.TryGetPosition(playingClip ?? audioClip, out seconds);
         }
 
         private void RecordingPress(int input, int pad)
@@ -967,6 +973,7 @@ namespace Saber.ChartEditor
             {
                 if (TryRecordingPosition(out float seconds)) lastRecordingSeconds = seconds;
                 recorder.Finish(lastRecordingSeconds);
+                RememberTakeLatency(recorder);
                 int count = recorder.AddedCount;
                 recordTakeBeforeJson = recorder.BeforeJson;
                 recordTakeAfterJson = CurrentJson();

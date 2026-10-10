@@ -154,6 +154,8 @@ namespace Saber.ChartEditor
             SaberChartEditorWindow window = GetWindow<SaberChartEditorWindow>();
             window.titleContent = new GUIContent("3D Saber 譜面");
             window.minSize = new Vector2(1050f, 650f);
+            // 出力機器ごとの入力補正は、メニューから開いたときに読み込む(テストの窓では個人設定を使わない)。
+            window.LoadInputOffsetProfile();
             window.Show();
         }
 
@@ -183,6 +185,8 @@ namespace Saber.ChartEditor
             SavePreferences();
             SaveRecordingLayout();
             SaveHistoryState();
+            FinishLatencyCalibration(true);
+            DisposeClickMix();
         }
 
         private void OnDestroy()
@@ -489,6 +493,7 @@ namespace Saber.ChartEditor
             if (GUILayout.Button(isPlaying ? "一時停止" : "▶ 再生", GUILayout.Height(28f))) TogglePreview();
             if (GUILayout.Button("■", GUILayout.Width(36f))) StopPreview(true);
             GUILayout.EndHorizontal();
+            DrawClickToggles();
 
             EditorGUI.BeginDisabledGroup(RecordingBusy);
             float maxBeat = MaxBeat();
@@ -536,6 +541,7 @@ namespace Saber.ChartEditor
             SectionLabel("曲 / グリッド設定");
             DrawChartSettings();
             DrawSettingsMismatch();
+            DrawTempoMapPanel();
             GUILayout.Space(10f);
             DrawTimeSignatures();
 
@@ -610,7 +616,7 @@ namespace Saber.ChartEditor
                 document.beatZeroMs = safeBeatZero;
             }
             // time が本編の判定時刻。BPM変更でも時刻は動かさず、補助値 beat だけ更新する。
-            if ((bpmChanged || originChanged) && beatsFollowGrid)
+            if ((bpmChanged || originChanged) && beatsFollowGrid && (document.tempoMap == null || document.tempoMap.Count == 0))
                 SaberChartUtility.RecalculateBeatsFromTimes(document, beatZeroMs);
             if (CurrentJson() == before) return;
             history.Record(before);
@@ -804,11 +810,11 @@ namespace Saber.ChartEditor
             if (nextTypeIndex == 2)
             {
                 nextAutoLength = EditorGUILayout.Toggle("長さ自動 (回数×0.7s)", autoLength);
-                float beatMs = 60000f / Mathf.Max(1f, document.bpm);
                 float effectiveMs = note.lengthMs > 0f
                     ? note.lengthMs
                     : (Mathf.Max(2, nextCount) - 1) * SaberChartUtility.DefaultSecondsPerLongCut * 1000f;
-                float shownBeats = effectiveMs / beatMs;
+                // テンポ地図があっても、その場所のテンポで拍数を出す。
+                float shownBeats = GridBeatAt(note.time + effectiveMs) - GridBeatAt(note.time);
                 using (new EditorGUI.DisabledScope(nextAutoLength))
                 {
                     nextLengthBeats = EditorGUILayout.DelayedFloatField("長さ (拍)", shownBeats);
@@ -839,8 +845,8 @@ namespace Saber.ChartEditor
                 selected.count = selected.type == SaberChartUtility.TypeLong ? Mathf.Max(2, nextCount) : 1;
                 if (selected.type == SaberChartUtility.TypeLong && !nextAutoLength)
                 {
-                    float beatMs = 60000f / Mathf.Max(1f, document.bpm);
-                    selected.lengthMs = Mathf.Max(60f, nextLengthBeats * beatMs);
+                    float startBeat = GridBeatAt(selected.time);
+                    selected.lengthMs = Mathf.Max(60f, GridTimeAt(startBeat + Mathf.Max(0f, nextLengthBeats)) - selected.time);
                 }
                 else
                 {
@@ -1036,7 +1042,7 @@ namespace Saber.ChartEditor
                 Rect noteRect = NoteRect(note, laneRect);
                 float endY = noteRect.center.y;
                 if (note.type == SaberChartUtility.TypeLong)
-                    endY = YForBeat(TimelineBeat(note) + SaberChartUtility.EffectiveLongLengthMs(note) / 1000f * document.bpm / 60f, laneRect);
+                    endY = YForBeat(BeatAtTime(note.time + SaberChartUtility.EffectiveLongLengthMs(note)), laneRect);
                 if (Mathf.Max(noteRect.yMax, endY) < laneRect.y || Mathf.Min(noteRect.y, endY) > laneRect.yMax) continue;
 
                 Color color = NoteColor(note.color);
@@ -1347,6 +1353,8 @@ namespace Saber.ChartEditor
 
         private void HandleKeyboardShortcuts(Event current)
         {
+            // 遅れの測定中は、キーを全部測定に使う。
+            if (HandleCalibrationKey(current)) return;
             // 方向キーは録音の処理より先に見る(録音中のテンキーは次に打つノーツの方向)。
             if (HandleDirectionKey(current)) return;
             if (HandleRecordingKeyboard(current)) return;
@@ -1687,6 +1695,7 @@ namespace Saber.ChartEditor
         {
             if (audioClip == clip && waveform.Clip == clip) return;
             StopPreview(false);
+            DisposeClickMix();
             audioClip = clip;
             waveform.Build(clip);
             Repaint();
@@ -1709,7 +1718,9 @@ namespace Saber.ChartEditor
             }
 
             float seconds = Mathf.Clamp(BeatToAudioSeconds(currentBeat), 0f, Mathf.Max(0f, audioClip.length - 0.01f));
-            if (!SaberChartAudioPreview.Play(audioClip, seconds))
+            playingClip = PlaybackClipFor(audioClip);
+            suppressClicksForNextPlay = false;
+            if (!SaberChartAudioPreview.Play(playingClip, seconds))
             {
                 EditorUtility.DisplayDialog("音源を再生できません", SaberChartAudioPreview.LastError ?? "不明なエラー", "OK");
                 return;
@@ -1728,6 +1739,7 @@ namespace Saber.ChartEditor
             SaberChartAudioPreview.Stop();
             DisposeCountIn();
             isPlaying = false;
+            playingClip = null;
             if (resetToStart) currentBeat = 0f;
             Repaint();
         }
@@ -1748,6 +1760,7 @@ namespace Saber.ChartEditor
                 return;
             }
             TickAutosave();
+            TickLatencyCalibration();
             if (countingIn)
             {
                 if (EditorApplication.timeSinceStartup >= countInEndsAt) BeginRecordingSong();
@@ -1762,7 +1775,7 @@ namespace Saber.ChartEditor
         private void UpdatePlaybackPosition()
         {
             if (!isPlaying) return;
-            if (!SaberChartAudioPreview.TryGetPosition(audioClip, out float audioSeconds))
+            if (!SaberChartAudioPreview.TryGetPosition(playingClip ?? audioClip, out float audioSeconds))
             {
                 StopPreview(false);
                 return;
@@ -1803,8 +1816,8 @@ namespace Saber.ChartEditor
         private float BeatAtTime(float timeMs) => Mathf.Max(0f, GridBeatAt(timeMs));
 
         // 格子の上の変換(負の拍も扱う)。ドラッグなど、元の値からの相対移動に使う。
-        private float GridTimeAt(float beat) => beat * 60000f / Mathf.Max(1f, document.bpm) + beatZeroMs;
-        private float GridBeatAt(float timeMs) => (timeMs - beatZeroMs) * Mathf.Max(1f, document.bpm) / 60000f;
+        private float GridTimeAt(float beat) => Grid.TimeAt(beat);
+        private float GridBeatAt(float timeMs) => Grid.BeatAt(timeMs);
 
         /// <summary>時刻を変えたノーツだけ、拍の値を今の格子に合わせ直す。触っていないノーツの拍の値は保つ。</summary>
         private void SetNoteTime(SaberChartNote note, float timeMs)

@@ -24,6 +24,8 @@ namespace Saber.ChartEditor
         public List<SaberChartExtraField> extraFields = new List<SaberChartExtraField>();
         // 名前付きの目印(サビ・Aメロなど)。ファイルでは本編が読まない "editorMarkers" に書く。
         public List<SaberChartMarker> markers = new List<SaberChartMarker>();
+        // テンポの変わる曲のための、エディターの格子だけのテンポ地図。ファイルでは "editorTempoMap"(本編は読まない)。
+        public List<SaberChartTempoPoint> tempoMap = new List<SaberChartTempoPoint>();
     }
 
     [Serializable]
@@ -153,11 +155,12 @@ namespace Saber.ChartEditor
 
         // 譜面の項目として扱う名前。これ以外は extraFields に残して保存し直す。
         private const string MarkersFileKey = "editorMarkers";
+        private const string TempoMapFileKey = "editorTempoMap";
 
         private static readonly HashSet<string> KnownChartKeys = new HashSet<string>
         {
             "bpm", "coordScale", "offsetMs", "displayLevel", "beatZeroMs", "timeSignatures", "notes", "extraFields",
-            "markers", MarkersFileKey,
+            "markers", MarkersFileKey, "tempoMap", TempoMapFileKey,
         };
 
         private static void CollectExtraFields(string json, SaberChartDocument document)
@@ -173,6 +176,17 @@ namespace Saber.ChartEditor
                     if (!SaberJson.TryGetNumber(marker.Get("timeMs"), out double timeMs)) continue;
                     SaberJson.TryGetString(marker.Get("name"), out string name);
                     document.markers.Add(new SaberChartMarker { timeMs = (float)timeMs, name = name ?? string.Empty });
+                }
+            }
+            document.tempoMap ??= new List<SaberChartTempoPoint>();
+            if (document.tempoMap.Count == 0 && root.Get(TempoMapFileKey) is SaberJsonArray tempoArray)
+            {
+                foreach (SaberJsonNode item in tempoArray.Items)
+                {
+                    if (!(item is SaberJsonObject point)) continue;
+                    if (!SaberJson.TryGetNumber(point.Get("beat"), out double beat) ||
+                        !SaberJson.TryGetNumber(point.Get("timeMs"), out double timeMs)) continue;
+                    document.tempoMap.Add(new SaberChartTempoPoint { beat = (float)beat, timeMs = (float)timeMs });
                 }
             }
             foreach (var member in root.Members)
@@ -214,7 +228,7 @@ namespace Saber.ChartEditor
                 notes = output.notes,
             };
             string json = JsonUtility.ToJson(file, true);
-            if (output.extraFields.Count == 0 && output.markers.Count == 0) return json;
+            if (output.extraFields.Count == 0 && output.markers.Count == 0 && output.tempoMap.Count == 0) return json;
 
             int open = json.IndexOf('{');
             if (open < 0) return json;
@@ -233,6 +247,19 @@ namespace Saber.ChartEditor
                 }
                 extra.Append("\n    ").Append(SaberJson.Quote(MarkersFileKey)).Append(": ")
                     .Append(SaberJson.WriteCompact(markers)).Append(',');
+            }
+            if (output.tempoMap.Count > 0)
+            {
+                var points = new SaberJsonArray();
+                foreach (SaberChartTempoPoint point in output.tempoMap)
+                {
+                    var item = new SaberJsonObject();
+                    item.Set("beat", SaberJson.Number(Math.Round(point.beat, 4)));
+                    item.Set("timeMs", SaberJson.Number(Math.Round(point.timeMs, 3)));
+                    points.Items.Add(item);
+                }
+                extra.Append("\n    ").Append(SaberJson.Quote(TempoMapFileKey)).Append(": ")
+                    .Append(SaberJson.WriteCompact(points)).Append(',');
             }
             return json.Insert(open + 1, extra.ToString());
         }
@@ -265,6 +292,7 @@ namespace Saber.ChartEditor
                 marker.name ??= string.Empty;
             }
             document.markers.Sort((a, b) => a.timeMs.CompareTo(b.timeMs));
+            document.tempoMap = SaberChartGrid.Clean(document.tempoMap);
 
             foreach (SaberChartNote note in document.notes)
             {
@@ -355,8 +383,9 @@ namespace Saber.ChartEditor
             to.beatZeroMs = from.beatZeroMs;
             to.coordScale = from.coordScale;
             to.timeSignatures = ChartMeterMap.Normalize(from.timeSignatures);
-            // 目印は曲の構成(サビなど)なので、同じ曲の他の難易度でも使う。
+            // 目印とテンポ地図は曲の構成なので、同じ曲の他の難易度でも使う。
             to.markers = CopyMarkers(from.markers);
+            to.tempoMap = SaberChartGrid.Clean(from.tempoMap);
         }
 
         /// <summary>曲の設定(BPM・OFFSET・グリッド原点・拍子・座標倍率)の食い違いを、読める文で返す。</summary>
@@ -374,7 +403,18 @@ namespace Saber.ChartEditor
                 differences.Add($"拍子 {mine.timeSignatures?.Count ?? 0}件 / {other.timeSignatures?.Count ?? 0}件");
             if (Mathf.Abs(mine.coordScale - other.coordScale) > .0001f)
                 differences.Add($"座標倍率 {mine.coordScale:0.###} / {other.coordScale:0.###}");
+            if (!SameTempoMaps(mine.tempoMap, other.tempoMap))
+                differences.Add($"テンポ地図 {mine.tempoMap?.Count ?? 0}点 / {other.tempoMap?.Count ?? 0}点");
             return differences;
+        }
+
+        private static bool SameTempoMaps(List<SaberChartTempoPoint> a, List<SaberChartTempoPoint> b)
+        {
+            List<SaberChartTempoPoint> left = SaberChartGrid.Clean(a), right = SaberChartGrid.Clean(b);
+            if (left.Count != right.Count) return false;
+            for (int i = 0; i < left.Count; i++)
+                if (Mathf.Abs(left[i].beat - right[i].beat) > .0001f || Mathf.Abs(left[i].timeMs - right[i].timeMs) > .5f) return false;
+            return true;
         }
 
         private static bool SameTimeSignatures(List<ChartTimeSignature> a, List<ChartTimeSignature> b)
@@ -441,6 +481,18 @@ namespace Saber.ChartEditor
         /// 本編で権威値となる time を保ったまま、補助値 beat だけを現在のグリッドへ合わせる。
         /// ファイルのグリッド原点(beatZeroMs)は書き換えない。原点を変えるのは利用者が明示したときだけ。
         /// </summary>
+        /// <summary>格子(テンポ地図を含む)に合わせて拍の値を計算し直す。時刻は変えない。</summary>
+        public static void RecalculateBeatsFromTimes(SaberChartDocument document, Func<float, float> beatAt)
+        {
+            if (document?.notes == null || beatAt == null) return;
+            foreach (SaberChartNote note in document.notes)
+            {
+                if (note == null) continue;
+                note.beat = Mathf.Max(0f, beatAt(note.time));
+            }
+            SortNotes(document);
+        }
+
         public static void RecalculateBeatsFromTimes(SaberChartDocument document, float beatZeroMs)
         {
             if (document?.notes == null) return;
@@ -604,6 +656,7 @@ namespace Saber.ChartEditor
                 notes = new List<SaberChartNote>(),
                 extraFields = new List<SaberChartExtraField>(),
                 markers = CopyMarkers(source.markers),
+                tempoMap = SaberChartGrid.Clean(source.tempoMap),
             };
             if (source.extraFields != null)
                 foreach (SaberChartExtraField field in source.extraFields)

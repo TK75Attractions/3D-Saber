@@ -26,8 +26,10 @@ namespace Saber.ChartEditor
         private readonly float inputOffsetMs;
         private readonly bool holdToLong;
         private readonly int longCount;
-        // 編集用の格子の原点。ファイルの beatZeroMs(本編の小節線)とは別に、エディターが表示に使う値を受け取る。
-        private readonly float gridOriginMs;
+        // 編集用の格子(表示中の原点とテンポ地図)。ファイルの beatZeroMs(本編の小節線)とは別に受け取る。
+        private readonly SaberChartGrid grid;
+        // Snap する前の時刻と、いちばん近い格子との差(ms)。打ち込みの遅れの目安にする。
+        private readonly List<float> deviations = new List<float>();
         private readonly Dictionary<int, Stroke> held = new Dictionary<int, Stroke>();
         private readonly List<InputGroup> inputGroups = new List<InputGroup>();
         private int nextInputGroup;
@@ -35,12 +37,13 @@ namespace Saber.ChartEditor
         public int AddedCount { get; private set; }
         public bool CanUndoInput => inputGroups.Count > 0;
         public bool IsHeld(int input) => held.ContainsKey(input);
+        public IReadOnlyList<float> Deviations => deviations;
 
         // 1操作で入力する同時打ちに同じIDを渡し、取り消すときも左右をまとめる。
         public int BeginInputGroup() => ++nextInputGroup;
 
         public SaberChartRecorder(SaberChartDocument document, float audioLength, int snap,
-            float inputOffsetMs, bool holdToLong, int longCount, float? gridOriginMs = null)
+            float inputOffsetMs, bool holdToLong, int longCount, float? gridOriginMs = null, SaberChartGrid grid = null)
         {
             this.document = document ?? throw new ArgumentNullException(nameof(document));
             this.audioLength = Mathf.Max(0, audioLength);
@@ -48,21 +51,24 @@ namespace Saber.ChartEditor
             this.inputOffsetMs = inputOffsetMs;
             this.holdToLong = holdToLong;
             this.longCount = Mathf.Clamp(longCount, 2, 99);
-            this.gridOriginMs = gridOriginMs ?? document.beatZeroMs;
+            this.grid = grid ?? new SaberChartGrid(document.bpm, gridOriginMs ?? document.beatZeroMs, null);
             BeforeJson = SaberChartUtility.ToJson(document, false);
         }
 
         // 表示カーソルや個人の判定補正を使わず、音声位置からOFFSETを一度だけ引く。
+        private float RawTime(float audioSeconds) => audioSeconds * 1000f - document.offsetMs - inputOffsetMs;
+
         private float NoteTime(float audioSeconds)
         {
-            float time = audioSeconds * 1000f - document.offsetMs - inputOffsetMs;
-            if (snap > 0)
-            {
-                float beat = SaberChartUtility.TimeMsToBeat(time, document.bpm, gridOriginMs);
-                time = SaberChartUtility.BeatToTimeMs(
-                    SaberChartUtility.QuantizeBeat(beat, snap, document), document.bpm, gridOriginMs);
-            }
-            return time;
+            float time = RawTime(audioSeconds);
+            return snap > 0 ? SnapTime(time, snap) : time;
+        }
+
+        // 拍子の変更とテンポ地図を含む今の格子の、いちばん近い位置。
+        private float SnapTime(float time, int denominator)
+        {
+            float beat = Mathf.Max(0f, grid.BeatAt(time));
+            return grid.TimeAt(Mathf.Max(0f, SaberChartUtility.QuantizeBeat(beat, denominator, document)));
         }
 
         public SaberChartNote Press(int input, float audioSeconds, float x, float y,
@@ -72,7 +78,7 @@ namespace Saber.ChartEditor
                 return null;
             // OSのキーリピートは、無効時刻や重複で追加しなかったキーにも適用する。
             held.Add(input, new Stroke { audioSeconds = audioSeconds });
-            float rawTime = audioSeconds * 1000f - document.offsetMs - inputOffsetMs;
+            float rawTime = RawTime(audioSeconds);
             if (rawTime < 0) return null;
             float time = NoteTime(audioSeconds);
             if (time < 0 || time + document.offsetMs < 0 || time + document.offsetMs >= audioLength * 1000f)
@@ -82,7 +88,7 @@ namespace Saber.ChartEditor
             var note = new SaberChartNote
             {
                 time = time,
-                beat = SaberChartUtility.TimeMsToBeat(time, document.bpm, gridOriginMs),
+                beat = Mathf.Max(0f, grid.BeatAt(time)),
                 x = x, y = y, color = color, direction = direction,
                 type = direction == SaberChartUtility.DirectionNone ? SaberChartUtility.TypeTap : SaberChartUtility.TypeDirection,
             };
@@ -90,6 +96,8 @@ namespace Saber.ChartEditor
             SaberChartUtility.SortNotes(document);
             held[input].note = note;
             AddedCount++;
+            // Snap しないときも16分の格子に対する差を取る。曲頭の原点より前の打鍵は数えない。
+            if (rawTime >= grid.TimeAt(0f)) deviations.Add(rawTime - SnapTime(rawTime, snap > 0 ? snap : 16));
             if (inputGroup == 0) inputGroup = BeginInputGroup();
             if (inputGroups.Count == 0 || inputGroups[inputGroups.Count - 1].id != inputGroup)
                 inputGroups.Add(new InputGroup { id = inputGroup });
