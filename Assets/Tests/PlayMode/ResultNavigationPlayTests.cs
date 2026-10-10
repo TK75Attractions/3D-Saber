@@ -202,18 +202,21 @@ public class ResultNavigationPlayTests
     }
 
     [UnityTest]
-    public IEnumerator ResultOffersOneTitleButtonInsteadOfReplayAndResetsTheNextPlayersSettings()
+    public IEnumerator ResultOffersOneCenteredTitleButtonAndResetsTheNextPlayersSettings()
     {
         GameSession.SelectedSongId = "Epilogue";
         GameSession.SelectedSongTitle = "校歌";
         GameSession.SelectedDifficulty = "Hard";
         GameSession.JudgmentOffsetMs = 180;
         GameSession.NoteApproachTime = .5f;
-        Assert.AreEqual("タイトルへ", back.GetComponentInChildren<TMPro.TextMeshProUGUI>().text);
-        Assert.IsNull(GameObject.Find("RetrySong"));
-        Assert.AreEqual(2, Object.FindFirstObjectByType<ResultController>().GetComponent<Canvas>().GetComponentsInChildren<Button>(true).Length,
-            "タイトルへ・選曲への2操作にまとめ、BACKを重複させない");
         reveal.Tick(999);
+        Assert.AreEqual("タイトルへ", back.GetComponentInChildren<TMPro.TextMeshProUGUI>().text);
+        Assert.AreEqual(new Vector2(0f, -466f), back.GetComponent<RectTransform>().anchoredPosition);
+        Assert.IsNull(GameObject.Find("RetrySong"));
+        Assert.IsNull(GameObject.Find("ReturnToSongSelect"));
+        Assert.IsNull(GameObject.Find("SkipHint"));
+        Assert.AreEqual(1, Object.FindFirstObjectByType<ResultController>().GetComponent<Canvas>().GetComponentsInChildren<Button>(true).Length,
+            "中央のタイトルへボタンだけを表示する");
         ExecuteEvents.Execute(back.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
         Assert.True(ScreenTransition.IsBusy);
         Assert.False(ScreenTransition.IsHardIntro);
@@ -221,22 +224,6 @@ public class ResultNavigationPlayTests
         Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
         Assert.AreEqual(GameSession.JudgmentOffsetDefaultMs, GameSession.JudgmentOffsetMs);
         Assert.AreEqual(GameSession.NoteApproachTimeDefault, GameSession.NoteApproachTime);
-    }
-
-    [UnityTest]
-    public IEnumerator SelectingAnotherSongStartsWithDefaultsAndKeepsTheSelectedChart()
-    {
-        GameSession.SelectedSongId = "Epilogue";
-        GameSession.SelectedDifficulty = "Easy";
-        GameSession.JudgmentOffsetMs = 180;
-        GameSession.NoteApproachTime = .5f;
-        Object.FindFirstObjectByType<ResultController>().ReturnToSongSelect();
-        yield return WaitForTransition();
-        Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
-        Assert.AreEqual(GameSession.JudgmentOffsetDefaultMs, GameSession.JudgmentOffsetMs);
-        Assert.AreEqual(GameSession.NoteApproachTimeDefault, GameSession.NoteApproachTime);
-        var selection = Object.FindFirstObjectByType<SongSelectController>();
-        Assert.AreEqual("Epilogue", selection.SongIdAt(selection.SelectedIndex));
     }
 
     static IEnumerator WaitForTransition()

@@ -27,13 +27,6 @@ public class ResultController : MonoBehaviour
 
     public void OnBackButton()
     {
-        if (ScreenTransition.Load(titleSceneName, ScreenTransition.Style.Back)) ResultSelectionReturn.Remember(null, null);
-    }
-
-    public void ReturnToSongSelect()
-    {
-        if (!ScreenTransition.Load("SongSelect", ScreenTransition.Style.Back)) return;
-        GameSession.ResetPlayerSettings();
-        ResultSelectionReturn.Remember(GameSession.SelectedSongId, GameSession.SelectedDifficulty);
+        ScreenTransition.Load(titleSceneName, ScreenTransition.Style.Back);
     }
 }
