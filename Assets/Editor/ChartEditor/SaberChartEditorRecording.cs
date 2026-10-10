@@ -196,8 +196,8 @@ namespace Saber.ChartEditor
             recordHelpExpanded = EditorGUILayout.Foldout(recordHelpExpanded, "操作ガイド / ショートカット", true);
             if (recordHelpExpanded)
             {
-                EditorGUILayout.HelpBox("マーカーを左ドラッグ: 位置調整\n左右連動: D↔K / F↔Jを対称移動\n1～5: 調整するキーを選択\n矢印: 移動 / Shift+矢印: 0.01刻み\n空白クリック: 左=青 / 右=赤 / Shift+左=金\nAlt+ドラッグや位置調整モードでは入力しません。", MessageType.None);
-                EditorGUILayout.HelpBox("R: 録音開始 / Shift+R: 今回を録り直す\nSpace・Esc: 録音終了\nH: F＋J / B: D＋Kの同時打ち\nBackspace: 録音中の1打を取り消し\nEnter: 録音開始位置から聴き直し\nF1～F3: 配置呼出 / Shift付き: 配置保存\nCtrl+Zは録音を止め、1回分を取り消します。", MessageType.None);
+                EditorGUILayout.HelpBox("マーカーを左ドラッグ: 位置調整\n左右連動: D↔K / F↔Jを対称移動\n1～5: 調整するキーを選択\nAlt+矢印: 移動 / Alt+Shift+矢印: 0.01刻み\n矢印だけはシーク（録音中は無効）\n空白クリック: 左=青 / 右=赤 / Shift+左=金\nAlt+ドラッグや位置調整モードでは入力しません。", MessageType.None);
+                EditorGUILayout.HelpBox("R: 録音開始 / Shift+R: 今回を録り直す\nSpace・Esc: 録音終了\nH: F＋J / B: D＋Kの同時打ち\nBackspace: 直前の1打を取り消し（ステップも）\nテンキー: 録音中は次に打つノーツの方向\nEnter: 録音開始位置から聴き直し\nF1～F3: 配置呼出 / Shift付き: 配置保存\nCtrl+Zは録音を止め、1回分を取り消します。", MessageType.None);
             }
         }
 
@@ -502,77 +502,13 @@ namespace Saber.ChartEditor
         private void JumpRecordingStep(int direction)
         {
             if (!CanStepInput || recordStepHeld.Count > 0) return;
-            float target = direction > 0 ? float.PositiveInfinity : float.NegativeInfinity;
-            foreach (var note in document.notes)
-            {
-                float beat = TimelineBeat(note);
-                if (direction > 0 && beat > currentBeat + .0001f && beat < target ||
-                    direction < 0 && beat < currentBeat - .0001f && beat > target) target = beat;
-            }
-            if (float.IsInfinity(target)) { SetStatus("この先にノーツはありません"); return; }
-            SeekToBeat(target);
-            FinishTextEditing();
+            JumpToNote(direction);
         }
 
         private void EditRecordingStep(int action)
         {
             if (!CanStepInput || recordStepHeld.Count > 0 || action < 0 || action > 2) return;
-            var notes = RecordingStepNotes();
-            if (notes.Count == 0) { SetStatus("この拍は空です。PageUp / PageDownで配置済みノーツへ移動できます"); return; }
-            EndNoteDrag();
-            string before = CurrentJson();
-            int changed = 0;
-            if (action == 0)
-            {
-                float next = RecordingStepNeighbor(currentBeat, 1);
-                float delta = (next - currentBeat) * 60000f / document.bpm;
-                foreach (var note in notes)
-                {
-                    var copy = note.Clone();
-                    copy.time += delta;
-                    copy.beat = BeatAtTime(copy.time);
-                    if (document.notes.Exists(n => Mathf.Abs(n.time - copy.time) < 1 && n.color == copy.color &&
-                        Mathf.Abs(n.x - copy.x) < .0001f && Mathf.Abs(n.y - copy.y) < .0001f)) continue;
-                    document.notes.Add(copy);
-                    changed++;
-                }
-                // コピー先へ移るので、Ctrl+Dを押し直すだけで同じパターンを繰り返せる。
-                currentBeat = next;
-            }
-            else if (action == 1)
-            {
-                foreach (var note in notes)
-                {
-                    note.x = -note.x;
-                    if (note.color == "red") note.color = "blue";
-                    else if (note.color == "blue") note.color = "red";
-                    switch (note.direction)
-                    {
-                        case "left": note.direction = "right"; break;
-                        case "right": note.direction = "left"; break;
-                        case "upleft": note.direction = "upright"; break;
-                        case "upright": note.direction = "upleft"; break;
-                        case "downleft": note.direction = "downright"; break;
-                        case "downright": note.direction = "downleft"; break;
-                    }
-                }
-                changed = notes.Count;
-            }
-            else
-            {
-                foreach (var note in notes) document.notes.Remove(note);
-                changed = notes.Count;
-            }
-            SaberChartUtility.SortNotes(document);
-            if (CurrentJson() != before)
-            {
-                history.Record(before);
-                selectedIndex = -1;
-                MarkChanged();
-            }
-            FinishTextEditing();
-            SetStatus(action == 0 ? $"{changed}ノーツを次の拍へコピー（既存ノーツは保持）。Ctrl+Dで繰り返し" :
-                action == 1 ? $"この拍の{changed}ノーツを左右反転しました。Ctrl+Zで戻せます" : $"この拍の{changed}ノーツを削除しました。Ctrl+Zで戻せます");
+            EditBeatNotes(action);
         }
 
         private void RecordingStepPress(int input, int firstPad, int secondPad = -1)
@@ -609,6 +545,9 @@ namespace Saber.ChartEditor
             selectedIndex = -1;
             SaberChartUtility.SortNotes(document);
             history.Record(before);
+            // Backspace で「直前の1打」を取り消したときに戻る拍。
+            recordStepLastUndoCount = history.UndoCount;
+            recordStepLastBeat = recordStepBeat;
             MarkChanged();
             SetStatus($"{recordStepBeat:0.###}拍に{added}ノーツ配置。Ctrl+Zでこの入力を取り消せます");
         }
@@ -722,15 +661,18 @@ namespace Saber.ChartEditor
             FinishTextEditing();
         }
 
+        // 1〜5 で調整するキーを選び、Alt+矢印で位置を動かす(矢印だけはどのモードでもシーク)。
         private bool HandleRecordingPositionKey(Event input)
         {
+            bool plain = !input.control && !input.command && !input.alt;
             int number = (int)input.keyCode - (int)KeyCode.Alpha1;
-            if (number >= 0 && number < RecordKeys.Length)
+            if (plain && number >= 0 && number < RecordKeys.Length)
             {
                 SelectRecordingPad(number);
                 input.Use();
                 return true;
             }
+            if (!input.alt || input.control || input.command) return false;
             Vector2 direction;
             switch (input.keyCode)
             {
@@ -1070,7 +1012,7 @@ namespace Saber.ChartEditor
                 input.Use();
                 return true;
             }
-            if (input.type == EventType.KeyUp && input.keyCode == KeyCode.Backspace && RecordingBusy)
+            if (input.type == EventType.KeyUp && input.keyCode == KeyCode.Backspace && (RecordingBusy || recordMode && recordStepMode))
             {
                 recordUndoKeyDown = false;
                 input.Use();
@@ -1132,6 +1074,14 @@ namespace Saber.ChartEditor
                 input.Use();
                 return true;
             }
+            // ステップでも Backspace は「直前の1打を取り消す」。取り消した拍へ戻る。
+            if (!modified && CanStepInput && input.keyCode == KeyCode.Backspace)
+            {
+                if (!recordUndoKeyDown) UndoLastStepInput();
+                recordUndoKeyDown = true;
+                input.Use();
+                return true;
+            }
             if (!modified && recordMode && !RecordingBusy &&
                 (input.keyCode == KeyCode.Return || input.keyCode == KeyCode.KeypadEnter))
             {
@@ -1157,7 +1107,7 @@ namespace Saber.ChartEditor
                 input.Use();
                 return true;
             }
-            if (!modified && recordMode && HandleRecordingPositionKey(input)) return true;
+            if (recordMode && HandleRecordingPositionKey(input)) return true;
             if (!RecordingBusy && !CanStepInput) return false;
             if (!modified && pad >= 0 && !recordKeysDown[pad])
             {

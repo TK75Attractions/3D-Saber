@@ -940,7 +940,7 @@ public class ChartRecordingWorkflowTests
         Arm();
         Key(KeyCode.H);
         Call("SetRecordingHeight", .8571429f);
-        Key(KeyCode.RightArrow, modifiers: EventModifiers.Shift);
+        Key(KeyCode.RightArrow, modifiers: EventModifiers.Alt | EventModifiers.Shift);
         var positions = Get<Vector2[]>("recordPositions");
         Assert.AreEqual(-1.224f, positions[1].x, .00001);
         Assert.AreEqual(1.224f, positions[3].x, .00001);
@@ -1181,17 +1181,20 @@ public class ChartRecordingWorkflowTests
         Set("recordPositionGrid", 0);
         Call("SetRecordingPosition", 0, new Vector2(.123f, .234f), true);
         Key(KeyCode.Alpha1);
-        Key(KeyCode.RightArrow, modifiers: EventModifiers.Shift);
+        Key(KeyCode.RightArrow, modifiers: EventModifiers.Alt | EventModifiers.Shift);
         Assert.AreEqual(.133f, Get<Vector2[]>("recordPositions")[0].x, .00001);
-        Key(KeyCode.UpArrow);
+        Key(KeyCode.UpArrow, modifiers: EventModifiers.Alt);
         Assert.AreEqual(.284f, Get<Vector2[]>("recordPositions")[0].y, .00001);
         Set("recordPositionGrid", 3); // XY 16分割
         Key(KeyCode.Alpha5);
         Call("SetRecordingPosition", 4, Vector2.zero, false);
         Arm();
-        Key(KeyCode.UpArrow);
-        Key(KeyCode.LeftArrow);
+        Key(KeyCode.UpArrow, modifiers: EventModifiers.Alt);
+        Key(KeyCode.LeftArrow, modifiers: EventModifiers.Alt);
         Assert.AreEqual(new Vector2(-.3125f, .1875f), Get<Vector2[]>("recordPositions")[4]);
+        Key(KeyCode.RightArrow);
+        Key(KeyCode.UpArrow);
+        Assert.AreEqual(new Vector2(-.3125f, .1875f), Get<Vector2[]>("recordPositions")[4], "矢印だけでは位置を動かさない");
         Assert.AreEqual(0, Get<float>("currentBeat"), "録音中の矢印はシークしない");
         Assert.True(Get<bool>("isPlaying"));
         Assert.IsEmpty(Document.notes);
@@ -1209,7 +1212,7 @@ public class ChartRecordingWorkflowTests
         Assert.AreEqual(new Vector2(2.5f, -1.5f), Get<Vector2[]>("recordPositions")[2]);
         EditorGUIUtility.editingTextField = true;
         Key(KeyCode.Alpha5);
-        Key(KeyCode.UpArrow);
+        Key(KeyCode.UpArrow, modifiers: EventModifiers.Alt);
         Assert.AreEqual(1, Get<int>("recordActivePad"));
         Assert.AreEqual(new Vector2(-1.23f, 1.11f), Get<Vector2[]>("recordPositions")[1]);
         Assert.False(window.hasUnsavedChanges, "入力位置の設定だけでは譜面を変更しない");

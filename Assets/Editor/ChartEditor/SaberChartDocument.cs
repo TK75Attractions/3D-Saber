@@ -22,6 +22,15 @@ namespace Saber.ChartEditor
         public List<SaberChartNote> notes = new List<SaberChartNote>();
         // 本編が読まない項目(制作メモ _comment など)。読み込んだ綴りのまま保存し直す。
         public List<SaberChartExtraField> extraFields = new List<SaberChartExtraField>();
+        // 名前付きの目印(サビ・Aメロなど)。ファイルでは本編が読まない "editorMarkers" に書く。
+        public List<SaberChartMarker> markers = new List<SaberChartMarker>();
+    }
+
+    [Serializable]
+    public sealed class SaberChartMarker
+    {
+        public float timeMs;
+        public string name = string.Empty;
     }
 
     [Serializable]
@@ -143,15 +152,29 @@ namespace Saber.ChartEditor
         }
 
         // 譜面の項目として扱う名前。これ以外は extraFields に残して保存し直す。
+        private const string MarkersFileKey = "editorMarkers";
+
         private static readonly HashSet<string> KnownChartKeys = new HashSet<string>
         {
             "bpm", "coordScale", "offsetMs", "displayLevel", "beatZeroMs", "timeSignatures", "notes", "extraFields",
+            "markers", MarkersFileKey,
         };
 
         private static void CollectExtraFields(string json, SaberChartDocument document)
         {
             document.extraFields ??= new List<SaberChartExtraField>();
+            document.markers ??= new List<SaberChartMarker>();
             if (!SaberJson.TryParseObject(json, out SaberJsonObject root)) return;
+            if (document.markers.Count == 0 && root.Get(MarkersFileKey) is SaberJsonArray markerArray)
+            {
+                foreach (SaberJsonNode item in markerArray.Items)
+                {
+                    if (!(item is SaberJsonObject marker)) continue;
+                    if (!SaberJson.TryGetNumber(marker.Get("timeMs"), out double timeMs)) continue;
+                    SaberJson.TryGetString(marker.Get("name"), out string name);
+                    document.markers.Add(new SaberChartMarker { timeMs = (float)timeMs, name = name ?? string.Empty });
+                }
+            }
             foreach (var member in root.Members)
             {
                 if (KnownChartKeys.Contains(member.Key)) continue;
@@ -191,13 +214,26 @@ namespace Saber.ChartEditor
                 notes = output.notes,
             };
             string json = JsonUtility.ToJson(file, true);
-            if (output.extraFields.Count == 0) return json;
+            if (output.extraFields.Count == 0 && output.markers.Count == 0) return json;
 
             int open = json.IndexOf('{');
             if (open < 0) return json;
             var extra = new System.Text.StringBuilder();
             foreach (SaberChartExtraField field in output.extraFields)
                 extra.Append("\n    ").Append(SaberJson.Quote(field.key)).Append(": ").Append(field.json).Append(',');
+            if (output.markers.Count > 0)
+            {
+                var markers = new SaberJsonArray();
+                foreach (SaberChartMarker marker in output.markers)
+                {
+                    var item = new SaberJsonObject();
+                    item.Set("timeMs", SaberJson.Number(Math.Round(marker.timeMs, 3)));
+                    item.Set("name", SaberJson.String(marker.name));
+                    markers.Items.Add(item);
+                }
+                extra.Append("\n    ").Append(SaberJson.Quote(MarkersFileKey)).Append(": ")
+                    .Append(SaberJson.WriteCompact(markers)).Append(',');
+            }
             return json.Insert(open + 1, extra.ToString());
         }
 
@@ -221,6 +257,14 @@ namespace Saber.ChartEditor
             document.extraFields ??= new List<SaberChartExtraField>();
             document.extraFields.RemoveAll(field => field == null || string.IsNullOrEmpty(field.key) ||
                 KnownChartKeys.Contains(field.key) || !IsJsonValue(field.json));
+            document.markers ??= new List<SaberChartMarker>();
+            document.markers.RemoveAll(marker => marker == null || !IsFinite(marker.timeMs));
+            foreach (SaberChartMarker marker in document.markers)
+            {
+                marker.timeMs = Mathf.Max(0f, marker.timeMs);
+                marker.name ??= string.Empty;
+            }
+            document.markers.Sort((a, b) => a.timeMs.CompareTo(b.timeMs));
 
             foreach (SaberChartNote note in document.notes)
             {
@@ -311,6 +355,17 @@ namespace Saber.ChartEditor
             to.beatZeroMs = from.beatZeroMs;
             to.coordScale = from.coordScale;
             to.timeSignatures = ChartMeterMap.Normalize(from.timeSignatures);
+            // 目印は曲の構成(サビなど)なので、同じ曲の他の難易度でも使う。
+            to.markers = CopyMarkers(from.markers);
+        }
+
+        private static List<SaberChartMarker> CopyMarkers(List<SaberChartMarker> source)
+        {
+            var copy = new List<SaberChartMarker>();
+            if (source == null) return copy;
+            foreach (SaberChartMarker marker in source)
+                if (marker != null) copy.Add(new SaberChartMarker { timeMs = marker.timeMs, name = marker.name });
+            return copy;
         }
 
         /// <summary>
@@ -520,6 +575,7 @@ namespace Saber.ChartEditor
                 timeSignatures = ChartMeterMap.Normalize(source.timeSignatures),
                 notes = new List<SaberChartNote>(),
                 extraFields = new List<SaberChartExtraField>(),
+                markers = CopyMarkers(source.markers),
             };
             if (source.extraFields != null)
                 foreach (SaberChartExtraField field in source.extraFields)

@@ -433,6 +433,9 @@ namespace Saber.ChartEditor
                 }
                 GUILayout.EndHorizontal();
             }
+            GUILayout.Label("キー: QWE / ASD / ZXC（S=なし）・テンキー", smallMutedStyle);
+            directionAdvance = EditorGUILayout.ToggleLeft(new GUIContent("方向を付けたら次のノーツへ",
+                "キーで方向を付けたあと、次のノーツを選びます（ステップでは次の配置済みの拍へ）"), directionAdvance);
 
             GUILayout.Space(10f);
             SectionLabel("LONG カット回数");
@@ -487,7 +490,17 @@ namespace Saber.ChartEditor
             useGameTiming = EditorGUILayout.ToggleLeft(new GUIContent(
                 $"ゲームと同じ表示補正（{GameSession.JudgmentOffsetMs:+0;-0;0}ms）",
                 "ゲームの判定調整と同じ量だけ再生カーソルを補正します。波形と保存する譜面時刻は変わりません。"), useGameTiming);
+            DrawJumpControls();
+            DrawMarkerControls();
             EditorGUI.EndDisabledGroup();
+
+            if (!recordMode)
+            {
+                GUILayout.Space(10f);
+                EditorGUI.BeginDisabledGroup(RecordingBusy);
+                DrawRangePanel();
+                EditorGUI.EndDisabledGroup();
+            }
 
             DrawRecordingSettings();
 
@@ -916,8 +929,12 @@ namespace Saber.ChartEditor
                 DrawLaneBackgrounds(laneRect);
                 DrawWaveform(rect, laneRect);
                 DrawBeatGrid(rect, laneRect);
+                DrawRangeOnTimeline(rect, laneRect);
+                DrawMarkersOnTimeline(rect, laneRect);
                 DrawNotes(laneRect);
                 DrawPlayhead(rect, laneRect);
+                DrawSnapBadge(laneRect);
+                DrawOverview(rect, Event.current);
                 HandleTimelineInput(rect, laneRect, Event.current);
                 DrawOutline(rect, new Color(0.12f, 0.2f, 0.28f), 1f);
             }
@@ -1056,6 +1073,8 @@ namespace Saber.ChartEditor
         private void HandleTimelineInput(Rect timelineRect, Rect laneRect, Event current)
         {
             if (RecordingBusy) return;
+            // 範囲のドラッグは枠の外で離しても終える。
+            if (HandleRangeDrag(timelineRect, laneRect, current)) return;
             if (!timelineRect.Contains(current.mousePosition))
             {
                 if (current.type == EventType.MouseUp) EndNoteDrag();
@@ -1078,8 +1097,15 @@ namespace Saber.ChartEditor
                 }
                 else
                 {
-                    SeekToBeat(currentBeat + current.delta.y * SaberChartUtility.SnapStep(CurrentSnap) * 2f);
+                    // Snap によらず1ノッチ=1拍。Shift で Snap 1つ分。
+                    SeekToBeat(currentBeat + WheelSeekBeats(current.delta.y, current.shift));
                 }
+                current.Use();
+                return;
+            }
+
+            if (current.type == EventType.MouseDown && HandleMouseDownWhilePlaying(current.button, current.mousePosition, timelineRect))
+            {
                 current.Use();
                 return;
             }
@@ -1094,7 +1120,8 @@ namespace Saber.ChartEditor
 
             if (current.type == EventType.MouseDown && current.button == 0)
             {
-                int hit = FindNoteAt(current.mousePosition, laneRect);
+                int hit = FindNoteForClick(current.mousePosition, laneRect);
+                if (hit >= 0 && HasRangeSelection && !current.shift) ClearRange();
                 if (hit >= 0)
                 {
                     selectedIndex = hit;
@@ -1134,6 +1161,15 @@ namespace Saber.ChartEditor
                 EndNoteDrag();
                 current.Use();
             }
+        }
+
+        // 再生中のクリックはシークだけにする(聴きながらクリックしてノーツが増えないように)。
+        private bool HandleMouseDownWhilePlaying(int button, Vector2 mouse, Rect timelineRect)
+        {
+            if (!isPlaying) return false;
+            if (button == 0)
+                SeekToBeat(SaberChartUtility.QuantizeBeat(BeatAtY(mouse.y, timelineRect), CurrentSnap, document));
+            return true;
         }
 
         private void BeginNoteDrag(int index, Vector2 mouse)
@@ -1271,12 +1307,8 @@ namespace Saber.ChartEditor
 
         private Rect NoteRect(SaberChartNote note, Rect laneRect)
         {
-            int displayLane = SaberChartUtility.LaneForCoordinate(
-                note.x,
-                LaneCount,
-                SaberChartUtility.DefaultXMin,
-                SaberChartUtility.DefaultXMax);
-            float centerX = laneRect.x + (displayLane + 0.5f) * laneRect.width / LaneCount;
+            // 8列へ丸めず、実際の横位置で描く(列の間にあるノーツも見分けられるように)。
+            float centerX = NoteCenterX(note.x, laneRect);
             float width = Mathf.Clamp(laneRect.width / LaneCount - 7f, 20f, 56f);
             float height = note.type == SaberChartUtility.TypeLong ? 25f : 21f;
             float centerY = YForBeat(TimelineBeat(note), laneRect);
@@ -1299,6 +1331,8 @@ namespace Saber.ChartEditor
 
         private void HandleKeyboardShortcuts(Event current)
         {
+            // 方向キーは録音の処理より先に見る(録音中のテンキーは次に打つノーツの方向)。
+            if (HandleDirectionKey(current)) return;
             if (HandleRecordingKeyboard(current)) return;
             if (current.type != EventType.KeyDown || EditorGUIUtility.editingTextField) return;
             bool action = current.control || current.command;
@@ -1323,28 +1357,23 @@ namespace Saber.ChartEditor
                 Redo();
                 current.Use();
             }
-            else if (action && current.keyCode == KeyCode.D)
+            else if (HandleSelectionOrBeatShortcut(current) || HandleRangeKeys(current))
             {
-                DuplicateSelected();
-                current.Use();
+                // 「選択があれば選択、無ければ今の拍」の操作と、範囲の操作。
             }
             else if (current.keyCode == KeyCode.Space)
             {
                 TogglePreview();
                 current.Use();
             }
-            else if (current.keyCode == KeyCode.Delete || current.keyCode == KeyCode.Backspace)
+            else if (!action && (current.keyCode == KeyCode.Delete || current.keyCode == KeyCode.Backspace))
             {
-                DeleteSelected();
+                DeleteSelection();
                 current.Use();
             }
-            else if (current.keyCode == KeyCode.LeftArrow || current.keyCode == KeyCode.RightArrow)
+            else if (HandleArrowKeys(current))
             {
-                float direction = current.keyCode == KeyCode.RightArrow ? 1f : -1f;
-                SeekToBeat(current.shift
-                    ? (float)new ChartMeterMap(document.timeSignatures).AdjacentBar(currentBeat, direction > 0)
-                    : currentBeat + direction * SaberChartUtility.SnapStep(CurrentSnap));
-                current.Use();
+                // 矢印は常にシーク、Alt+矢印は位置。
             }
             else if (current.keyCode == KeyCode.Alpha1)
             {
@@ -1458,6 +1487,7 @@ namespace Saber.ChartEditor
         {
             if (RecordingBusy) StopPreview(false);
             EndNoteDrag();
+            FinishDirectionPass();
             string targetSong = EditingSongId;
             string targetDifficulty = EditingDifficulty;
             if (!SaberChartFileStore.IsValidSongId(targetSong, out string reason))
@@ -1675,6 +1705,7 @@ namespace Saber.ChartEditor
         {
             // 音声時計がまだ有効な間に、押し続けているノーツと録音の履歴を確定する。
             FinishRecording();
+            FinishDirectionPass();
             SaberChartAudioPreview.Stop();
             DisposeCountIn();
             isPlaying = false;
@@ -1766,6 +1797,7 @@ namespace Saber.ChartEditor
         private void Undo()
         {
             EndNoteDrag();
+            FinishDirectionPass();
             if (RecordingBusy) StopPreview(false);
             if (!history.CanUndo) return;
             StopPreview(false);
@@ -1781,6 +1813,7 @@ namespace Saber.ChartEditor
         private void Redo()
         {
             EndNoteDrag();
+            FinishDirectionPass();
             if (RecordingBusy) StopPreview(false);
             if (!history.CanRedo) return;
             StopPreview(false);
@@ -1941,10 +1974,11 @@ namespace Saber.ChartEditor
         {
             EditorGUI.DrawRect(rect, HeaderColor);
             string visibleStatus = EditorApplication.timeSinceStartup <= statusUntil ? statusMessage : "準備完了";
-            GUI.Label(new Rect(rect.x + 10f, rect.y + 4f, rect.width * 0.42f, 20f), visibleStatus, smallMutedStyle);
+            GUI.Label(new Rect(rect.x + 10f, rect.y + 4f, rect.width * 0.30f, 20f), visibleStatus, smallMutedStyle);
+            // モードごとに、いま効くキーだけを出す。
             GUI.Label(
-                new Rect(rect.x + rect.width * 0.42f, rect.y + 4f, rect.width * 0.57f - 10f, 20f),
-                "Space 再生  /  Ctrl+S 保存  /  Ctrl+Z/Y 履歴  /  Wheel シーク  /  Ctrl+Wheel ズーム",
+                new Rect(rect.x + rect.width * 0.30f, rect.y + 4f, rect.width * 0.69f - 10f, 20f),
+                FooterKeyGuide(),
                 new GUIStyle(smallMutedStyle) { alignment = TextAnchor.MiddleRight });
         }
 
