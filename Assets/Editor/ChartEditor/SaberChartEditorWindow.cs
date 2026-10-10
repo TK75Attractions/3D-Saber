@@ -12,7 +12,7 @@ namespace Saber.ChartEditor
     /// Playモード不要で使える、3D-Saber専用の縦型譜面エディター。
     /// 横軸にX、縦軸に時間を置き、右側の空間パッドでYも同時に扱う。
     /// </summary>
-    public sealed class SaberChartEditorWindow : EditorWindow
+    public sealed partial class SaberChartEditorWindow : EditorWindow
     {
         private enum EditTool
         {
@@ -187,8 +187,11 @@ namespace Saber.ChartEditor
                 Mathf.Max(120f, rightRect.xMin - leftRect.xMax - PanelGap * 2f),
                 contentHeight);
 
-            DrawHeader(headerRect);
-            DrawLeftPanel(leftRect);
+            using (new EditorGUI.DisabledScope(RecordingBusy))
+            {
+                DrawHeader(headerRect);
+                DrawLeftPanel(leftRect);
+            }
             DrawCenterPanel(timelineRect);
             DrawRightPanel(rightRect);
             DrawFooter(footerRect);
@@ -221,9 +224,9 @@ namespace Saber.ChartEditor
             GUILayout.Space(8f);
             if (GUILayout.Button("新規", GUILayout.Width(58f))) NewDocument();
             if (GUILayout.Button("読込", GUILayout.Width(58f))) LoadDocument();
-            GUI.enabled = SaberChartFileStore.IsValidSongId(songId, out _);
+            GUI.enabled = !RecordingBusy && SaberChartFileStore.IsValidSongId(songId, out _);
             if (GUILayout.Button("保存", GUILayout.Width(62f))) SaveDocument();
-            GUI.enabled = true;
+            GUI.enabled = !RecordingBusy;
             if (GUILayout.Button("フォルダ", GUILayout.Width(72f))) RevealSongFolder();
             GUILayout.FlexibleSpace();
             if (DestinationChanged())
@@ -309,11 +312,11 @@ namespace Saber.ChartEditor
             GUILayout.Space(10f);
             SectionLabel("履歴");
             GUILayout.BeginHorizontal();
-            GUI.enabled = history.CanUndo;
+            GUI.enabled = !RecordingBusy && history.CanUndo;
             if (GUILayout.Button("↶ 元に戻す")) Undo();
-            GUI.enabled = history.CanRedo;
+            GUI.enabled = !RecordingBusy && history.CanRedo;
             if (GUILayout.Button("↷ やり直し")) Redo();
-            GUI.enabled = true;
+            GUI.enabled = !RecordingBusy;
             GUILayout.EndHorizontal();
 
             GUILayout.Space(10f);
@@ -338,6 +341,7 @@ namespace Saber.ChartEditor
             if (GUILayout.Button("■", GUILayout.Width(36f))) StopPreview(true);
             GUILayout.EndHorizontal();
 
+            EditorGUI.BeginDisabledGroup(RecordingBusy);
             float maxBeat = MaxBeat();
             EditorGUI.BeginChangeCheck();
             float soughtBeat = EditorGUILayout.Slider(currentBeat, 0f, maxBeat);
@@ -348,6 +352,8 @@ namespace Saber.ChartEditor
             useGameTiming = EditorGUILayout.ToggleLeft(new GUIContent(
                 $"ゲームと同じ表示補正（{GameSession.JudgmentOffsetMs:+0;-0;0}ms）",
                 "ゲームの判定調整と同じ量だけ再生カーソルを補正します。波形と保存する譜面時刻は変わりません。"), useGameTiming);
+
+            DrawRecordingSettings();
 
             GUILayout.Space(10f);
             SectionLabel("音源");
@@ -386,9 +392,10 @@ namespace Saber.ChartEditor
             DrawValidationSummary();
 
             GUILayout.Space(8f);
-            GUI.enabled = SaberChartFileStore.IsValidSongId(songId, out _);
+            GUI.enabled = !RecordingBusy && SaberChartFileStore.IsValidSongId(songId, out _);
             if (GUILayout.Button("保存して本編でテスト", GUILayout.Height(32f))) TestInGame();
-            GUI.enabled = true;
+            GUI.enabled = !RecordingBusy;
+            EditorGUI.EndDisabledGroup();
 
             GUILayout.EndScrollView();
             GUILayout.EndArea();
@@ -421,6 +428,7 @@ namespace Saber.ChartEditor
 
         private void DrawCenterPanel(Rect rect)
         {
+            rect = DrawRecordingPad(rect);
             if (!showPlaybackPreview)
             {
                 DisposePlaybackPreview();
@@ -688,6 +696,7 @@ namespace Saber.ChartEditor
 
         private void SetSpatialPosition(int xLane, int yLane)
         {
+            if (RecordingBusy) return;
             FinishTextEditing();
             EndNoteDrag();
             paletteXLane = xLane;
@@ -853,6 +862,7 @@ namespace Saber.ChartEditor
 
         private void HandleTimelineInput(Rect timelineRect, Rect laneRect, Event current)
         {
+            if (RecordingBusy) return;
             if (!timelineRect.Contains(current.mousePosition))
             {
                 if (current.type == EventType.MouseUp) EndNoteDrag();
@@ -1037,6 +1047,7 @@ namespace Saber.ChartEditor
 
         private void HandleKeyboardShortcuts(Event current)
         {
+            if (HandleRecordingKeyboard(current)) return;
             if (current.type != EventType.KeyDown || EditorGUIUtility.editingTextField) return;
             bool action = current.control || current.command;
 
@@ -1156,6 +1167,7 @@ namespace Saber.ChartEditor
 
         private bool SaveDocument()
         {
+            if (RecordingBusy) StopPreview(false);
             EndNoteDrag();
             try
             {
@@ -1328,6 +1340,7 @@ namespace Saber.ChartEditor
 
         private void TogglePreview()
         {
+            if (RecordingBusy) { StopPreview(false); return; }
             if (isPlaying)
             {
                 UpdatePlaybackPosition();
@@ -1354,7 +1367,10 @@ namespace Saber.ChartEditor
 
         private void StopPreview(bool resetToStart)
         {
+            // 音声時計がまだ有効な間に、押し続けているノーツと録音の履歴を確定する。
+            FinishRecording();
             SaberChartAudioPreview.Stop();
+            DisposeCountIn();
             isPlaying = false;
             if (resetToStart) currentBeat = 0f;
             Repaint();
@@ -1370,6 +1386,17 @@ namespace Saber.ChartEditor
 
         private void EditorTick()
         {
+            if (RecordingBusy && EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                StopPreview(false);
+                return;
+            }
+            if (countingIn)
+            {
+                if (EditorApplication.timeSinceStartup >= countInEndsAt) BeginRecordingSong();
+                Repaint();
+                return;
+            }
             if (!isPlaying) return;
             UpdatePlaybackPosition();
             Repaint();
@@ -1383,6 +1410,7 @@ namespace Saber.ChartEditor
                 StopPreview(false);
                 return;
             }
+            if (recorder != null) lastRecordingSeconds = audioSeconds;
             // 個人の表示補正を譜面や波形に焼き込まず、試聴中のカーソルだけへ適用する。
             if (useGameTiming) audioSeconds -= GameSession.JudgmentOffsetMs / 1000f;
             audioSeconds = Mathf.Max(playbackAudioStartSeconds, audioSeconds);
@@ -1394,6 +1422,7 @@ namespace Saber.ChartEditor
 
         private void SeekToBeat(float beat)
         {
+            if (RecordingBusy) StopPreview(false);
             currentBeat = Mathf.Clamp(beat, 0f, MaxBeat());
             if (isPlaying) RestartPreviewIfPlaying();
             Repaint();
@@ -1420,6 +1449,7 @@ namespace Saber.ChartEditor
         private void Undo()
         {
             EndNoteDrag();
+            if (RecordingBusy) StopPreview(false);
             if (!history.CanUndo) return;
             StopPreview(false);
             document = history.Undo(document);
@@ -1432,6 +1462,7 @@ namespace Saber.ChartEditor
         private void Redo()
         {
             EndNoteDrag();
+            if (RecordingBusy) StopPreview(false);
             if (!history.CanRedo) return;
             StopPreview(false);
             document = history.Redo(document);
