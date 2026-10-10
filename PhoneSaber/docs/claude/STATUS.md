@@ -6,6 +6,8 @@
 
 0. **最適化の実機確認（最優先・数字の入力不要）**: Mac `git pull`→Unity Play、iPhone を Xcode で入れ直し（60fps 既定・LAN 優先・送信経路と認識の高速化・UI 12Hz）。iPhone と Mac を同じ Wi-Fi にして Debug Performance の「fps自動比較」ON → F9 を数分→F9。AQUOS は Mac に USB 接続すれば Claude が入れて 60fps 維持・JNI 中央値を確認。剣の遅延補正は F8 で 20ms を試し、振り心地を一言もらう。
 
+0b. **Mac 起動キットの確認（本番はビルド済みアプリ。10-10 決定）**: Unity の Play を止めて `PhoneSaber/mac/Start-Saber-A.command` をダブルクリック → F8 で P2P bridge が ON、強制終了（⌘⌥Esc）で5秒後に再起動、ゲーム内 Quit では再起動しない。
+
 1. **剣あり・iPhone＋Macのガイド付き録画v3**: 露出1/100秒で1本。最初の「saberなし」の画像、赤・青の静止／速振り／先端向けを残す。遠い・淡い青、画面端も確認。会場に近い距離（画面から2.7〜3.1m、範囲直径1.5m）で、背後の人・投影中・頭上の振りを含める。
 2. **AndroidをAQUOS sense9で残りを確認**: 2026-10-07にWindowsホットスポット経由で両色の送信・F8受信・30fpsを確認済み。残りは台A/B探索、向き・四隅、反転保存、開始／停止／前面復帰／再起動／Wi-Fi切替。
 3. **Windows実行の残り**: 10-07にEditor Playで受信を確認（ホットスポットはPublic扱いのため全プロファイルでUDP 5005-5007を許可、UnityのBlock規則を無効化）。残りはビルド版＋bat監視、A/B探索、F7、異常終了後再起動／正常Quit。
@@ -37,11 +39,22 @@
 6. **CASE A/B/Cを分けて調査**: bundleコピーでtriage dry-run／selection replayを行い、ORIGINALと全eligibleを照合。Aは別swingで実剣が僅差で負ける2event以上のgate後に修正。Bが多ければ生成前の棄却componentを記録。Cの端点修正はAと別にし、長い剣・分離LEDを保護。200ms以下の補間／外挿も誤出力の延長を比べ、ユーザー判断後に変更する。
 7. **Mac計測画面を実操作**: 開始／停止／再開、CSV保存・結果フォルダ・失敗統計・実UDP・同一時計の表示→受信計測・Unityとのポート競合を確認する。
 8. **診断受信と旧bundleを確認**: `/health`、安全な再起動、転送失敗後の再送、report／overviewを通す。234740／155919は手動再解析候補。旧010049の32KB超過は上限を維持する。
-9. **会場でrunbookを通す**: 署名・権限、固定配置、背後の幕、投影・照明、箱の熱・電源、予備経路、終了、[2台目Mac](SECOND_MAC_SETUP.md)を確認。床の範囲表示、回転率・タイトル復帰・判定タイミングも確認。本番構成はMac＋iPhone／Windows＋Androidが候補で未確定。B台の一時停止キーは追加しない（10-06のユーザー判断）。
+9. **会場でrunbookを通す**: 署名・権限、固定配置、背後の幕、投影・照明、箱の熱・電源、予備経路、終了、[2台目Mac](SECOND_MAC_SETUP.md)を確認。床の範囲表示、回転率・タイトル復帰・判定タイミングも確認。本番構成はMac＋iPhone／Windows＋Androidが候補で未確定。Mac はビルド済み `3D-Saber.app` を起動キット（Start-Saber-A/B.command）で回す（10-10のユーザー判断。Editor Play ではない）。B台の一時停止キーは追加しない（10-06のユーザー判断）。
 10. **解析費用とログ保持を整理**: high既定／必要時maxの費用・精度を比較し、needs_captureへの長時間解析を減らす。inbox／実ログの保持期間・削除対象はユーザー判断。テストログ隔離と失敗記録を保つ。
 11. **将来の構成を比較**: AWDLが不安定ならUSB/usbmuxd/TCPを試すか判断し、座標互換・滞留・切断復帰・画面全体の遅延を測る。Mac内蔵／USBカメラ直接認識は精度・端点・配置・遅延を比較して採否を決める。Continuity Cameraは別の無線経路で、縮小／FPSだけを通信遅延改善と扱わない。
 
 ## 作業ログ
+
+### 2026-10-10 学校での実機 capture（iPhone＋Mac、Claude 解析）
+- F9（Editor、iPhone テザリング経由 LAN、60fps、n=22）: 中央値 135ms、p95 179ms、最小 103ms。10-07 の LAN（30〜40fps、中央値 132〜150ms、p95 204〜347ms）と中央値は同等。1ブロックだけなので fps 自動比較は未成立。
+- 16:30:15 頃 Mac がテザリングから別 Wi-Fi（192.168.31.x、DHCP 16:30:24）へ切替。P2P も en0（テザリング回線）経由だったため LAN と同時に切れ、awdl0 で座標が戻ったのは 16:31:57（約100秒 無受信）。録画が原因ではない。つなぎ直しに100秒かかった理由は未特定。
+- phonesaber_20261010_163034_875（手動 43秒）: 手持ちで床の Mac 画面を撮影。剣なし。画面の色を RED 49.7% / BLUE 92.4% で検出（画面の誤検出の証拠としてのみ有効）。
+- phonesaber_20261010_163949_658（手動 60秒、1/100秒、屋外に面した明るい場所、剣は約5m 以上・逆光、ORIGINAL で赤・青の実剣を確認）: 検出率 RED 66.6% / BLUE 55.9%（移動中を含む）。**実剣がほぼ静止している frame で、剣と遠くの明るい点を1本につないだ core-line 候補が大差で winner になる**。
+  - frame 21952 BLUE: winner core-line 端点 [16,66]-[310,114]（rawPCASpan 300px、score 108.7）。正しい候補（color-mask [14,66]-[52,76]、61.6）は eligible のまま rank 3。前後 frame（21954/21955）は正しい core-line [16,68]-[56,76]。
+  - frame 21953 RED: winner core-line [14,30]-[90,118]（score 118.1）。正しい候補（core-halo [80,84]-[88,136]、63.4）は eligible rank 2。
+  - 判定: 正しい候補は eligible に残るが、**僅差ではなく大差**（gap 47〜55点）で長い core-line が勝つ。CASE A（僅差のすり替え）の定義には合わない新しい型（core-line の過連結）。1 recording・同じ構えの中の連続 frame なので、修正 gate（別 swing で2 event 以上）は未達。会場に近い屋内条件で再現するかを次の capture で確認する。認識コードは未変更。
+- phonesaber_20261010_164236_960（手動 57秒、1/100秒、屋内・青緑の壁画が背景の別画角）: 検出率 RED 84.6% / BLUE 89.7%。ユーザーの体感も「判定はいい感じ」。ただし bundle の12枚はすべて録画末尾（停止しに来る場面、剣は消灯・手持ち）で、振っている最中の ORIGINAL が無い。末尾では壁画を BLUE（color-mask、端点間 約420px）、手を RED と誤検出。過連結がこの画角で出るかは画像が無く判定不能。次は振りの最中に lossless を残す（Capture Lossless か ガイド付き録画）。
+
 
 ### 2026-10-10 Claude 並列レビュー（iPhone / Unity / Android）と修正
 - iPhone（5680fa9, review-ios-sender.md）: 開始直後の停止→開始で古い完了通知が新しい送信のカメラを止める（F1）、Bonjour の IP 変更後も LAN 生存確認が旧 IP を見続け P2P に回り続ける（F2）、生存確認の受信 error 後の再接続、LAN 送信中の「P2P」表示、など7件。verify 全段 PASS。
