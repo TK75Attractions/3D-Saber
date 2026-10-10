@@ -208,6 +208,9 @@ public class ChartRecordingWorkflowTests
         Set("recordMirrorPositions", false);
         Set("recordAdvancedSettings", false);
         Set("recordHelpExpanded", false);
+        Set("recordStepMode", false);
+        Set("recordStepAdvance", true);
+        Set("recordPositionPresets", null);
         Set("recordingClockOverride", (Func<float?>)(() => seconds));
         textEditing = EditorGUIUtility.editingTextField;
         EditorGUIUtility.editingTextField = false;
@@ -243,6 +246,303 @@ public class ChartRecordingWorkflowTests
     {
         Set("recorder", new SaberChartRecorder(Document, 10, 0, 0, true, 3));
         Set("isPlaying", true);
+    }
+
+    [Test]
+    public void StepChordWorksWithoutAudioAndUsesGridTimeRatherThanRecordingOffsets()
+    {
+        Call("SetRecordingInputMode", 2);
+        Set("audioClip", null);
+        Set("currentBeat", 2.13f);
+        Set("snapIndex", 1);
+        Set("beatZeroMs", 123f);
+        Document.beatZeroMs = 123;
+        Document.offsetMs = 456;
+        Set("recordInputOffsetMs", 789f);
+        Set("recordingClockOverride", (Func<float?>)(() => throw new InvalidOperationException("ステップ入力で音声時計を読まない")));
+        Key(KeyCode.H);
+        Key(KeyCode.H);
+        Assert.AreEqual(2, Document.notes.Count);
+        Assert.True(Document.notes.TrueForAll(n => n.time == 1123 && n.beat == 2 && n.type == "tap"));
+        Assert.AreEqual(2.13f, Get<float>("currentBeat"));
+        Assert.True((bool)Call("RecordingPadHeld", 1));
+        Key(KeyCode.H, EventType.KeyUp);
+        Assert.AreEqual(2.5f, Get<float>("currentBeat"));
+        Assert.False(Get<bool>("isPlaying"));
+        Assert.IsNull(Get<SaberChartRecorder>("recorder"));
+        Key(KeyCode.Z, modifiers: EventModifiers.Control);
+        Assert.IsEmpty(Document.notes);
+        Key(KeyCode.Y, modifiers: EventModifiers.Control);
+        Assert.AreEqual(2, Document.notes.Count, "同時打ちは1回のUndo/Redoで扱う");
+    }
+
+    [Test]
+    public void StepPhysicalChordWaitsForAllReleasesAndDuplicateDoesNotAdvance()
+    {
+        Call("SetRecordingInputMode", 2);
+        Set("snapIndex", 0);
+        Set("currentBeat", 4f);
+        Key(KeyCode.F);
+        Key(KeyCode.J);
+        seconds = 8;
+        Key(KeyCode.F, EventType.KeyUp);
+        Assert.AreEqual(4, Get<float>("currentBeat"));
+        Key(KeyCode.J, EventType.KeyUp);
+        Assert.AreEqual(5, Get<float>("currentBeat"));
+        Assert.AreEqual(2, Document.notes.Count);
+        Assert.True(Document.notes.TrueForAll(n => n.time == 2000 && n.type == "tap"));
+        Call("SeekToBeat", 4f);
+        Key(KeyCode.H);
+        Key(KeyCode.H, EventType.KeyUp);
+        Assert.AreEqual(2, Document.notes.Count);
+        Assert.AreEqual(4, Get<float>("currentBeat"), "重複だけの入力は時刻を進めない");
+    }
+
+    [TestCase("direction")]
+    [TestCase("long")]
+    public void StepUsesPaletteTypeAndCanStayAtSameBeat(string type)
+    {
+        Call("SetRecordingInputMode", 2);
+        Set("recordStepAdvance", false);
+        Set("paletteType", type);
+        Set("paletteDirection", "right");
+        Set("paletteCount", 4);
+        Key(KeyCode.B);
+        Key(KeyCode.B, EventType.KeyUp);
+        Assert.AreEqual(2, Document.notes.Count);
+        Assert.True(Document.notes.TrueForAll(n => n.type == type && n.count == (type == "long" ? 4 : 1) &&
+            n.direction == (type == "direction" ? "right" : "none") && n.lengthMs == 0));
+        Assert.AreEqual(0, Get<float>("currentBeat"));
+        Key(KeyCode.G);
+        Key(KeyCode.G, EventType.KeyUp);
+        Assert.AreEqual(3, Document.notes.Count);
+        Assert.True(Document.notes.TrueForAll(n => n.time == 0));
+    }
+
+    [Test]
+    public void StepAdvanceAndRestNavigationRespectFractionalBarsAndMeterChanges()
+    {
+        Call("SetRecordingInputMode", 2);
+        Set("snapIndex", 0);
+        Document.timeSignatures = new List<ChartTimeSignature>
+        {
+            new ChartTimeSignature { beat = 0, numerator = 7, denominator = 8 },
+            new ChartTimeSignature { beat = 5, numerator = 3, denominator = 4 },
+        };
+        Set("currentBeat", 3f);
+        Key(KeyCode.G);
+        Key(KeyCode.G, EventType.KeyUp);
+        Assert.AreEqual(3.5f, Get<float>("currentBeat"));
+        Key(KeyCode.Tab);
+        Assert.AreEqual(4.5f, Get<float>("currentBeat"));
+        Key(KeyCode.Tab);
+        Assert.AreEqual(5, Get<float>("currentBeat"));
+        Key(KeyCode.Tab, modifiers: EventModifiers.Shift);
+        Assert.AreEqual(4.5f, Get<float>("currentBeat"));
+        Key(KeyCode.Tab, modifiers: EventModifiers.Shift);
+        Assert.AreEqual(3.5f, Get<float>("currentBeat"));
+        Key(KeyCode.Tab, modifiers: EventModifiers.Shift);
+        Assert.AreEqual(3, Get<float>("currentBeat"));
+        Set("currentBeat", 0f);
+        Key(KeyCode.Tab, modifiers: EventModifiers.Shift);
+        Assert.AreEqual(0, Get<float>("currentBeat"));
+        Assert.AreEqual(1, Document.notes.Count, "休符移動ではノーツを追加しない");
+    }
+
+    [Test]
+    public void StepProtectsTextAndPlaybackAndDoesNotAdvanceAfterFocusLossOrSeek()
+    {
+        Call("SetRecordingInputMode", 2);
+        EditorGUIUtility.editingTextField = true;
+        Key(KeyCode.H);
+        Key(KeyCode.Tab);
+        EditorGUIUtility.editingTextField = false;
+        Key(KeyCode.J, modifiers: EventModifiers.Control);
+        Set("isPlaying", true);
+        Key(KeyCode.B);
+        Assert.IsEmpty(Document.notes);
+        Set("isPlaying", false);
+        Key(KeyCode.H);
+        Call("OnLostFocus");
+        Key(KeyCode.H, EventType.KeyUp);
+        Assert.AreEqual(0, Get<float>("currentBeat"));
+        Key(KeyCode.B);
+        Call("SeekToBeat", 8f);
+        Key(KeyCode.B, EventType.KeyUp);
+        Assert.AreEqual(8, Get<float>("currentBeat"));
+        Assert.AreEqual(4, Document.notes.Count);
+        Call("SetRecordingInputMode", 1);
+        Key(KeyCode.D);
+        Assert.AreEqual(4, Document.notes.Count, "録音モードの停止中はステップ配置しない");
+    }
+
+    [Test]
+    public void StepUndoDuringHoldDoesNotRecreateNotesFromKeyRepeat()
+    {
+        Call("SetRecordingInputMode", 2);
+        Key(KeyCode.H);
+        Key(KeyCode.Z, modifiers: EventModifiers.Control);
+        Key(KeyCode.H);
+        Assert.IsEmpty(Document.notes);
+        Key(KeyCode.H, EventType.KeyUp);
+        Assert.AreEqual(0, Get<float>("currentBeat"));
+        Key(KeyCode.H);
+        Assert.AreEqual(2, Document.notes.Count);
+    }
+
+    [Test]
+    public void StepSpacePlaysAudioWithoutRecordingAndCancelsPendingAdvance()
+    {
+        Call("SetRecordingInputMode", 2);
+        Set("currentBeat", 4f);
+        Key(KeyCode.D);
+        Key(KeyCode.Space);
+        Assert.True(Get<bool>("isPlaying"));
+        Assert.IsNull(Get<SaberChartRecorder>("recorder"));
+        Key(KeyCode.H);
+        Assert.AreEqual(1, Document.notes.Count);
+        Key(KeyCode.Space);
+        Assert.False(Get<bool>("isPlaying"));
+        float stoppedAt = Get<float>("currentBeat");
+        Key(KeyCode.D, EventType.KeyUp);
+        Assert.AreEqual(stoppedAt, Get<float>("currentBeat"));
+        Assert.AreEqual(1, Document.notes.Count);
+    }
+
+    [Test]
+    public void ThreePositionPresetsAreIndependentAndSurviveReload()
+    {
+        var expected = new[] { new Vector2(-1.234f, .678f), new Vector2(-.25f, 1.25f), new Vector2(2, -1.4f) };
+        for (int i = 0; i < 3; i++)
+        {
+            Call("SetRecordingPosition", 1, expected[i], false);
+            Set("recordPositionGrid", i);
+            Key((KeyCode)((int)KeyCode.F1 + i), modifiers: EventModifiers.Shift);
+            Call("SetRecordingPosition", 1, Vector2.zero, false);
+            Key((KeyCode)((int)KeyCode.F1 + i), modifiers: EventModifiers.Shift);
+            Key((KeyCode)((int)KeyCode.F1 + i), EventType.KeyUp);
+        }
+        Set("recordPositions", null);
+        Set("recordPositionPresets", null);
+        Call("LoadRecordingLayout");
+        for (int i = 0; i < 3; i++)
+        {
+            Key((KeyCode)((int)KeyCode.F1 + i));
+            Key((KeyCode)((int)KeyCode.F1 + i), EventType.KeyUp);
+            Assert.AreEqual(expected[i], Get<Vector2[]>("recordPositions")[1]);
+            Assert.AreEqual(i, Get<int>("recordPositionGrid"));
+        }
+        Assert.IsEmpty(Document.notes);
+        Assert.False(window.hasUnsavedChanges);
+    }
+
+    [Test]
+    public void PresetChangeDuringHoldOnlyAffectsFollowingNotes()
+    {
+        Call("SetRecordingMirror", true);
+        Call("SetRecordingPosition", 1, new Vector2(-1.2f, .8f), false);
+        Call("SaveRecordingPreset", 0);
+        Call("SetRecordingPosition", 1, new Vector2(-.4f, -.7f), false);
+        Call("SaveRecordingPreset", 1);
+        Call("RecallRecordingPreset", 0);
+        Arm();
+        Key(KeyCode.H);
+        Key(KeyCode.F2);
+        Assert.True(Get<bool>("recordMirrorPositions"));
+        seconds = 1.6f;
+        Key(KeyCode.H, EventType.KeyUp);
+        seconds = 2;
+        Key(KeyCode.H);
+        Assert.AreEqual(4, Document.notes.Count);
+        Assert.AreEqual(-1.2f, Document.notes[0].x);
+        Assert.AreEqual(.8f, Document.notes[0].y);
+        Assert.AreEqual(600, Document.notes[0].lengthMs, .01);
+        Assert.AreEqual(-.4f, Document.notes[2].x);
+        Assert.AreEqual(-.7f, Document.notes[2].y);
+    }
+
+    [Test]
+    public void MissingOrMalformedPresetDoesNotChangeCurrentLayout()
+    {
+        var xy = new Vector2(-1.234f, .567f);
+        Call("SetRecordingPosition", 1, xy, false);
+        EditorPrefs.SetString(Prefix + "RecordingLayout",
+            "{\"positions\":[{}, {\"x\":-1.234,\"y\":0.567}, {}, {}, {}],\"presets\":[{\"positions\":[{}]},null,null]}");
+        Set("recordPositions", null);
+        Set("recordPositionPresets", null);
+        Call("LoadRecordingLayout");
+        Call("RecallRecordingPreset", 0);
+        Call("RecallRecordingPreset", 1);
+        Assert.AreEqual(xy, Get<Vector2[]>("recordPositions")[1]);
+        Assert.IsEmpty(Document.notes);
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void RetakeFromLiveOrStoppedRewindsOnlyThisTakeAndCanBeUndone(bool stopFirst)
+    {
+        Document.notes.Add(new SaberChartNote { time = 100, x = -2, color = "gold" });
+        string baseline = SaberChartUtility.ToJson(Document, false);
+        Set("recordCountIn", false);
+        Set("currentBeat", 2f);
+        Call("StartRecording");
+        Key(KeyCode.H);
+        seconds = 1.4f;
+        Key(KeyCode.H, EventType.KeyUp);
+        string take = SaberChartUtility.ToJson(Document, false);
+        if (stopFirst) Key(KeyCode.Space);
+        Key(KeyCode.R, modifiers: EventModifiers.Shift);
+        Assert.True(Get<bool>("isPlaying"));
+        Assert.NotNull(Get<SaberChartRecorder>("recorder"));
+        Assert.AreEqual(1, Get<float>("playbackAudioStartSeconds"), .001);
+        Assert.AreEqual(baseline, SaberChartUtility.ToJson(Document, false));
+        var retry = Get<SaberChartRecorder>("recorder");
+        Key(KeyCode.R, modifiers: EventModifiers.Shift);
+        Assert.AreSame(retry, Get<SaberChartRecorder>("recorder"), "長押しリピートで再録音を繰り返さない");
+        Key(KeyCode.R, EventType.KeyUp);
+        Key(KeyCode.Space);
+        Key(KeyCode.Z, modifiers: EventModifiers.Control);
+        Assert.AreEqual(take, SaberChartUtility.ToJson(Document, false));
+        Key(KeyCode.Y, modifiers: EventModifiers.Control);
+        Assert.AreEqual(baseline, SaberChartUtility.ToJson(Document, false));
+        Key(KeyCode.R, modifiers: EventModifiers.Shift);
+        Assert.AreEqual(1, Get<float>("playbackAudioStartSeconds"), .001, "Undo/Redo後の再試行も元の音声位置を保つ");
+    }
+
+    [Test]
+    public void RetakeRefusesToRemoveEditsMadeAfterRecording()
+    {
+        Set("recordCountIn", false);
+        Call("StartRecording");
+        Key(KeyCode.H);
+        Key(KeyCode.H, EventType.KeyUp);
+        Key(KeyCode.Space);
+        Document.notes[0].y = 1.234f;
+        string edited = SaberChartUtility.ToJson(Document, false);
+        Key(KeyCode.R, modifiers: EventModifiers.Shift);
+        Assert.AreEqual(edited, SaberChartUtility.ToJson(Document, false));
+        Assert.IsNull(Get<SaberChartRecorder>("recorder"));
+        Assert.False(Get<bool>("isPlaying"));
+        Assert.That(Get<string>("statusMessage"), Does.Contain("録音後に譜面を編集"));
+    }
+
+    [Test]
+    public void CancelledRetakeCountInCanRestoreOriginalTake()
+    {
+        Set("recordCountIn", false);
+        Call("StartRecording");
+        Key(KeyCode.B);
+        Key(KeyCode.B, EventType.KeyUp);
+        Key(KeyCode.Space);
+        string take = SaberChartUtility.ToJson(Document, false);
+        Set("recordCountIn", true);
+        Key(KeyCode.R, modifiers: EventModifiers.Shift);
+        Assert.True(Get<bool>("countingIn"));
+        Assert.IsEmpty(Document.notes);
+        Key(KeyCode.Escape);
+        Key(KeyCode.Z, modifiers: EventModifiers.Control);
+        Assert.AreEqual(take, SaberChartUtility.ToJson(Document, false));
+        Assert.IsNull(Get<AudioClip>("countInClip"));
     }
 
     [Test]
@@ -552,6 +852,8 @@ public class ChartRecordingWorkflowTests
         Assert.AreEqual(2, Document.notes.Count);
         Key(KeyCode.Space);
         string recorded = SaberChartUtility.ToJson(Document, false);
+        Key(KeyCode.Z, modifiers: EventModifiers.Control);
+        Key(KeyCode.Y, modifiers: EventModifiers.Control);
         Set("currentBeat", 8f);
         Key(KeyCode.Return);
         Assert.True(Get<bool>("isPlaying"));
@@ -564,6 +866,12 @@ public class ChartRecordingWorkflowTests
         Key(KeyCode.Return, EventType.KeyUp);
         Key(KeyCode.Return);
         Assert.AreEqual(4, Get<float>("currentBeat"));
+        Key(KeyCode.Return, EventType.KeyUp);
+        Key(KeyCode.Space);
+        Document.bpm = 150;
+        Set("beatZeroMs", 100f);
+        Key(KeyCode.Return);
+        Assert.AreEqual(2, Get<float>("playbackAudioStartSeconds"), .001, "BPMや原点を調整しても聴き直しは元の音声位置から");
         Key(KeyCode.Return, EventType.KeyUp);
         Key(KeyCode.Space);
         Set("document", new SaberChartDocument());
@@ -976,6 +1284,25 @@ public class ChartRecordingWorkflowTests
         window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = mirrorToggle });
         Assert.False(Get<bool>("recordMirrorPositions"));
         Key(KeyCode.Space);
+        Call("SetRecordingInputMode", 2);
+        Set("audioClip", null);
+        Set("currentBeat", 16f);
+        Set("snapIndex", 3);
+        window.Repaint();
+        yield return null;
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = origin + innerChord.center });
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = origin + innerChord.center });
+        Assert.AreEqual(10, Document.notes.Count);
+        Assert.AreEqual(8000, Document.notes[8].time);
+        Assert.AreEqual(8000, Document.notes[9].time);
+        Assert.AreEqual(16.25f, Get<float>("currentBeat"));
+        Key(KeyCode.Z, modifiers: EventModifiers.Control);
+        Assert.AreEqual(8, Document.notes.Count);
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = origin + plane.center });
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = origin + plane.center });
+        Assert.AreEqual(9, Document.notes.Count);
+        Assert.AreEqual(8125, Document.notes[8].time);
+        Assert.AreEqual(16.5f, Get<float>("currentBeat"));
         Set("expandPlaybackPreview", true);
         window.Repaint();
         yield return null;

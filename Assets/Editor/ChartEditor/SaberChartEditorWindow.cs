@@ -206,8 +206,8 @@ namespace Saber.ChartEditor
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("3D SABER  /  CHART STUDIO", titleStyle, GUILayout.Width(360f));
-            int mode = GUILayout.Toolbar(recordMode ? 1 : 0, new[] { "編集", "打ち込み" }, GUILayout.Width(150f));
-            if (mode != (recordMode ? 1 : 0)) SetRecordingMode(mode == 1);
+            int mode = GUILayout.Toolbar(recordMode ? recordStepMode ? 2 : 1 : 0, new[] { "編集", "録音", "ステップ" }, GUILayout.Width(210f));
+            if (mode != (recordMode ? recordStepMode ? 2 : 1 : 0)) SetRecordingInputMode(mode);
             GUILayout.FlexibleSpace();
             showPlaybackPreview = GUILayout.Toggle(showPlaybackPreview, "プレイ画面", EditorStyles.miniButton, GUILayout.Width(90f));
             if (hasUnsavedChanges)
@@ -1355,6 +1355,7 @@ namespace Saber.ChartEditor
         private void TogglePreview()
         {
             if (RecordingBusy) { StopPreview(false); return; }
+            ClearRecordingStepInput();
             if (isPlaying)
             {
                 UpdatePlaybackPosition();
@@ -1437,6 +1438,7 @@ namespace Saber.ChartEditor
         private void SeekToBeat(float beat)
         {
             if (RecordingBusy) StopPreview(false);
+            ClearRecordingStepInput();
             currentBeat = Mathf.Clamp(beat, 0f, MaxBeat());
             if (isPlaying) RestartPreviewIfPlaying();
             Repaint();
@@ -1466,7 +1468,9 @@ namespace Saber.ChartEditor
             if (RecordingBusy) StopPreview(false);
             if (!history.CanUndo) return;
             StopPreview(false);
+            bool retainReview = recordReviewDocument == document;
             document = history.Undo(document);
+            if (retainReview) recordReviewDocument = document;
             beatZeroMs = SaberChartUtility.EstimateBeatZeroMs(document);
             selectedIndex = -1;
             UpdateDirtyState();
@@ -1479,7 +1483,9 @@ namespace Saber.ChartEditor
             if (RecordingBusy) StopPreview(false);
             if (!history.CanRedo) return;
             StopPreview(false);
+            bool retainReview = recordReviewDocument == document;
             document = history.Redo(document);
+            if (retainReview) recordReviewDocument = document;
             beatZeroMs = SaberChartUtility.EstimateBeatZeroMs(document);
             selectedIndex = -1;
             UpdateDirtyState();
