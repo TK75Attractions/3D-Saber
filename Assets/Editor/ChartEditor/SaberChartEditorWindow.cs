@@ -206,6 +206,8 @@ namespace Saber.ChartEditor
 
             GUILayout.BeginHorizontal();
             GUILayout.Label("3D SABER  /  CHART STUDIO", titleStyle, GUILayout.Width(360f));
+            int mode = GUILayout.Toolbar(recordMode ? 1 : 0, new[] { "編集", "打ち込み" }, GUILayout.Width(150f));
+            if (mode != (recordMode ? 1 : 0)) SetRecordingMode(mode == 1);
             GUILayout.FlexibleSpace();
             showPlaybackPreview = GUILayout.Toggle(showPlaybackPreview, "プレイ画面", EditorStyles.miniButton, GUILayout.Width(90f));
             if (hasUnsavedChanges)

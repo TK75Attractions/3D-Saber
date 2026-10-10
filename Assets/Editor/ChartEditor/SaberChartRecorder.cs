@@ -14,6 +14,12 @@ namespace Saber.ChartEditor
             public float audioSeconds;
         }
 
+        private sealed class InputGroup
+        {
+            public int id;
+            public readonly List<SaberChartNote> notes = new List<SaberChartNote>();
+        }
+
         private readonly SaberChartDocument document;
         private readonly float audioLength;
         private readonly int snap;
@@ -21,9 +27,15 @@ namespace Saber.ChartEditor
         private readonly bool holdToLong;
         private readonly int longCount;
         private readonly Dictionary<int, Stroke> held = new Dictionary<int, Stroke>();
+        private readonly List<InputGroup> inputGroups = new List<InputGroup>();
+        private int nextInputGroup;
         public string BeforeJson { get; }
         public int AddedCount { get; private set; }
+        public bool CanUndoInput => inputGroups.Count > 0;
         public bool IsHeld(int input) => held.ContainsKey(input);
+
+        // 1操作で入力する同時打ちに同じIDを渡し、取り消すときも左右をまとめる。
+        public int BeginInputGroup() => ++nextInputGroup;
 
         public SaberChartRecorder(SaberChartDocument document, float audioLength, int snap,
             float inputOffsetMs, bool holdToLong, int longCount)
@@ -51,7 +63,7 @@ namespace Saber.ChartEditor
         }
 
         public SaberChartNote Press(int input, float audioSeconds, float x, float y,
-            string color, string direction = SaberChartUtility.DirectionNone)
+            string color, string direction = SaberChartUtility.DirectionNone, int inputGroup = 0)
         {
             if (held.ContainsKey(input) || !Finite(audioSeconds) || audioSeconds < 0 || audioSeconds >= audioLength)
                 return null;
@@ -75,7 +87,26 @@ namespace Saber.ChartEditor
             SaberChartUtility.SortNotes(document);
             held[input].note = note;
             AddedCount++;
+            if (inputGroup == 0) inputGroup = BeginInputGroup();
+            if (inputGroups.Count == 0 || inputGroups[inputGroups.Count - 1].id != inputGroup)
+                inputGroups.Add(new InputGroup { id = inputGroup });
+            inputGroups[inputGroups.Count - 1].notes.Add(note);
             return note;
+        }
+
+        public int UndoLastInput()
+        {
+            if (!CanUndoInput) return 0;
+            var group = inputGroups[inputGroups.Count - 1];
+            inputGroups.RemoveAt(inputGroups.Count - 1);
+            int removed = 0;
+            foreach (var note in group.notes)
+                if (document.notes.Remove(note)) removed++;
+            foreach (var stroke in held.Values)
+                if (group.notes.Contains(stroke.note)) stroke.note = null;
+            // 押し続け状態は残し、OSリピートやキーを離したときに削除ノーツを復活させない。
+            AddedCount -= removed;
+            return removed;
         }
 
         public void Release(int input, float audioSeconds)

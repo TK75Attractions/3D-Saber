@@ -126,6 +126,51 @@ public class ChartRecordingTests
         Assert.AreEqual("tap", note.type, "量子化した始点と終点が同じならTAPにする");
         Assert.AreEqual(0, note.lengthMs);
     }
+
+    [Test]
+    public void UndoInputRemovesWholeChordAndNeverRevivesHeldNotes()
+    {
+        var existing = new SaberChartNote { time = 100, color = "gold" };
+        var doc = new SaberChartDocument { notes = new List<SaberChartNote> { existing } };
+        var take = new SaberChartRecorder(doc, 10, 0, 0, true, 3);
+        var first = take.Press(0, 1, -2, 0, "blue");
+        take.Release(0, 1.1f);
+        int group = take.BeginInputGroup();
+        take.Press(20, 2, -1, 1, "blue", inputGroup: group);
+        take.Press(21, 2, 1, 1, "red", inputGroup: group);
+        Assert.AreEqual(2, take.UndoLastInput());
+        Assert.AreEqual(1, take.AddedCount);
+        CollectionAssert.AreEqual(new[] { existing, first }, doc.notes);
+        Assert.IsNull(take.Press(20, 2.5f, -1, 1, "blue"), "取り消し後の押し続けリピートを追加しない");
+        take.Release(20, 3);
+        take.Release(21, 3);
+        Assert.AreEqual(2, doc.notes.Count);
+        Assert.AreEqual(1, take.UndoLastInput());
+        Assert.AreEqual(0, take.AddedCount);
+        Assert.False(take.CanUndoInput);
+        Assert.AreEqual(0, take.UndoLastInput());
+        take.Finish(4);
+        Assert.AreSame(existing, doc.notes[0]);
+        Assert.AreEqual("tap", existing.type);
+    }
+
+    [Test]
+    public void UndoPartiallyDuplicateChordOnlyRemovesNewNotes()
+    {
+        var doc = new SaberChartDocument();
+        var take = new SaberChartRecorder(doc, 10, 4, 0, true, 2);
+        var existing = take.Press(0, 1, -1, 0, "blue");
+        take.Release(0, 1.1f);
+        int group = take.BeginInputGroup();
+        Assert.IsNull(take.Press(20, 1.01f, -1, 0, "blue", inputGroup: group));
+        take.Press(21, 1.01f, 1, 0, "red", inputGroup: group);
+        Assert.AreEqual(1, take.UndoLastInput());
+        take.Finish(2);
+        Assert.AreEqual(1, doc.notes.Count);
+        Assert.AreSame(existing, doc.notes[0]);
+        Assert.AreEqual("tap", existing.type);
+        Assert.AreEqual(1, take.AddedCount);
+    }
 }
 
 public class ChartRecordingWorkflowTests
@@ -160,6 +205,9 @@ public class ChartRecordingWorkflowTests
         Set("recordActivePad", 1);
         Set("recordPositionGrid", 2);
         Set("recordPositionOnly", false);
+        Set("recordMirrorPositions", false);
+        Set("recordAdvancedSettings", false);
+        Set("recordHelpExpanded", false);
         Set("recordingClockOverride", (Func<float?>)(() => seconds));
         textEditing = EditorGUIUtility.editingTextField;
         EditorGUIUtility.editingTextField = false;
@@ -390,6 +438,137 @@ public class ChartRecordingWorkflowTests
         Assert.IsEmpty(Document.notes);
         Assert.IsNull(Get<SaberChartRecorder>("recorder"));
         Assert.False(window.hasUnsavedChanges);
+    }
+
+    [Test]
+    public void BackspaceRemovesOneInputWithoutStoppingAndRepeatCannotEraseMore()
+    {
+        Arm();
+        Key(KeyCode.K);
+        seconds = 1.1f;
+        Key(KeyCode.K, EventType.KeyUp);
+        seconds = 2;
+        Key(KeyCode.H);
+        seconds = 2.1f;
+        Key(KeyCode.Backspace);
+        Assert.AreEqual(1, Document.notes.Count);
+        Assert.True(Get<bool>("isPlaying"));
+        Assert.AreEqual(1, Get<SaberChartRecorder>("recorder").AddedCount);
+        Key(KeyCode.Backspace);
+        Key(KeyCode.H);
+        Assert.AreEqual(1, Document.notes.Count);
+        seconds = 2.6f;
+        Key(KeyCode.H, EventType.KeyUp);
+        Key(KeyCode.Backspace, EventType.KeyUp);
+        Key(KeyCode.Space);
+        Assert.AreEqual(1, Document.notes.Count);
+        Key(KeyCode.Z, modifiers: EventModifiers.Control);
+        Assert.IsEmpty(Document.notes);
+        Key(KeyCode.Y, modifiers: EventModifiers.Control);
+        Assert.AreEqual(1, Document.notes.Count, "取り消した同時打ちは録音全体のRedoでも復活しない");
+    }
+
+    [Test]
+    public void UndoInputProtectsTextFieldsAndEmptyTakeDoesNotCreateHistory()
+    {
+        Arm();
+        Key(KeyCode.H);
+        EditorGUIUtility.editingTextField = true;
+        Key(KeyCode.Backspace);
+        EditorGUIUtility.editingTextField = false;
+        Key(KeyCode.Backspace, modifiers: EventModifiers.Control);
+        Assert.AreEqual(2, Document.notes.Count);
+        Key(KeyCode.Backspace);
+        Assert.IsEmpty(Document.notes);
+        Assert.False(window.hasUnsavedChanges);
+        Key(KeyCode.Space);
+        var history = Get<object>("history");
+        Assert.False((bool)history.GetType().GetProperty("CanUndo").GetValue(history));
+        Arm();
+        seconds = 3;
+        Key(KeyCode.B);
+        Key(KeyCode.Backspace);
+        Assert.IsEmpty(Document.notes, "前の録音のBackspace保持状態を持ち越さない");
+    }
+
+    [Test]
+    public void LinkedPositionsFollowHeightAndFineMovementWithoutMovingRecordedNotes()
+    {
+        Call("SetRecordingPosition", 1, new Vector2(-1.234f, .567f), false);
+        Call("SetRecordingMirror", true);
+        Assert.AreEqual(new Vector2(1.234f, .567f), Get<Vector2[]>("recordPositions")[3]);
+        Arm();
+        Key(KeyCode.H);
+        Call("SetRecordingHeight", .8571429f);
+        Key(KeyCode.RightArrow, modifiers: EventModifiers.Shift);
+        var positions = Get<Vector2[]>("recordPositions");
+        Assert.AreEqual(-1.224f, positions[1].x, .00001);
+        Assert.AreEqual(1.224f, positions[3].x, .00001);
+        Assert.AreEqual(.8571429f, positions[1].y);
+        Assert.AreEqual(positions[1].y, positions[3].y);
+        Assert.True(Document.notes.TrueForAll(n => n.y == .567f));
+        Call("SetRecordingMirror", false);
+        Call("SetRecordingHeight", 0f);
+        Assert.AreEqual(0, positions[1].y);
+        Assert.AreEqual(.8571429f, positions[3].y);
+        Key(KeyCode.Alpha3);
+        Call("SetRecordingMirror", true);
+        Call("SetRecordingHeight", -.8571429f);
+        Assert.AreEqual(-.8571429f, positions[2].y);
+        Assert.AreEqual(0, positions[1].y, "金の調整では青赤を移動しない");
+    }
+
+    [Test]
+    public void RecordingModeSwitchFinishesTextEditingAndCannotInterruptTake()
+    {
+        EditorGUIUtility.editingTextField = true;
+        Set("rightScroll", new Vector2(0, 600));
+        Call("SetRecordingMode", false);
+        Assert.False(Get<bool>("recordMode"));
+        Assert.False(EditorGUIUtility.editingTextField);
+        Assert.AreEqual(Vector2.zero, Get<Vector2>("rightScroll"));
+        Call("SetRecordingMode", true);
+        Arm();
+        Key(KeyCode.F);
+        Call("SetRecordingMode", false);
+        Assert.True(Get<bool>("recordMode"));
+        Assert.True(Get<bool>("isPlaying"));
+        Assert.AreEqual(1, Document.notes.Count);
+    }
+
+    [UnityTest]
+    public IEnumerator ReviewStartsAtRecordedPositionWithoutRecordingOrChangingChart()
+    {
+        Set("recordCountIn", false);
+        Set("recordingClockOverride", null);
+        Set("currentBeat", 4f);
+        Call("StartRecording");
+        Assert.NotNull(Get<SaberChartRecorder>("recorder"));
+        Assert.AreEqual(2f, Get<float>("playbackAudioStartSeconds"), .001);
+        double deadline = EditorApplication.timeSinceStartup + 6;
+        while (Get<float>("lastRecordingSeconds") < 2.1f && EditorApplication.timeSinceStartup < deadline)
+            yield return null;
+        Key(KeyCode.H);
+        Assert.AreEqual(2, Document.notes.Count);
+        Key(KeyCode.Space);
+        string recorded = SaberChartUtility.ToJson(Document, false);
+        Set("currentBeat", 8f);
+        Key(KeyCode.Return);
+        Assert.True(Get<bool>("isPlaying"));
+        Assert.IsNull(Get<SaberChartRecorder>("recorder"));
+        Assert.AreEqual(2f, Get<float>("playbackAudioStartSeconds"), .001);
+        Assert.AreEqual(recorded, SaberChartUtility.ToJson(Document, false));
+        Set("currentBeat", 6f);
+        Key(KeyCode.Return);
+        Assert.AreEqual(6, Get<float>("currentBeat"), "Enter長押しのリピートで再生位置を繰り返し戻さない");
+        Key(KeyCode.Return, EventType.KeyUp);
+        Key(KeyCode.Return);
+        Assert.AreEqual(4, Get<float>("currentBeat"));
+        Key(KeyCode.Return, EventType.KeyUp);
+        Key(KeyCode.Space);
+        Set("document", new SaberChartDocument());
+        Key(KeyCode.Return);
+        Assert.False(Get<bool>("isPlaying"), "別の譜面では古い録音位置を再生しない");
     }
 
     [Test]
@@ -625,16 +804,20 @@ public class ChartRecordingWorkflowTests
         Set("recordActivePad", 4);
         Set("recordPositionGrid", 3);
         Set("recordPositionOnly", true);
+        Call("SetRecordingMirror", true);
         Call("SaveRecordingLayout");
         Set("recordPositions", null);
         Set("recordActivePad", 0);
         Set("recordPositionGrid", 0);
         Set("recordPositionOnly", false);
+        Set("recordMirrorPositions", false);
         Call("LoadRecordingLayout");
         Assert.AreEqual(new Vector2(-1.234f, .567f), Get<Vector2[]>("recordPositions")[4]);
         Assert.AreEqual(4, Get<int>("recordActivePad"));
         Assert.AreEqual(3, Get<int>("recordPositionGrid"));
         Assert.True(Get<bool>("recordPositionOnly"));
+        Assert.True(Get<bool>("recordMirrorPositions"));
+        Assert.AreEqual(new Vector2(1.234f, .567f), Get<Vector2[]>("recordPositions")[0]);
     }
 
     [Test]
@@ -728,7 +911,7 @@ public class ChartRecordingWorkflowTests
         Assert.Less(innerChord.yMax, plane.yMin - 16, "同時打ちボタンがXY見出しへ重ならない");
         Assert.Less(innerChord.xMax, outerChord.xMin);
         Assert.Greater(plane.height, 150);
-        Assert.LessOrEqual(plane.yMax, panel.yMax - 38);
+        Assert.LessOrEqual(plane.yMax, panel.yMax - 22);
         seconds = 5;
         window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = origin + innerChord.center });
         Assert.AreEqual(6, Document.notes.Count);
@@ -753,6 +936,45 @@ public class ChartRecordingWorkflowTests
         Assert.AreEqual(10, Document.notes.Count);
         Assert.AreEqual("tap", Document.notes[8].type);
         Assert.AreEqual("tap", Document.notes[9].type);
+
+        Rect undo = (Rect)Call("RecordingUndoRect", panel);
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = origin + undo.center });
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = origin + undo.center });
+        Assert.AreEqual(8, Document.notes.Count, "取り消しボタンも同時打ちをまとめて戻す");
+        Assert.NotNull(Get<SaberChartRecorder>("recorder"));
+
+        // 録音中も修飾キーなしでマーカーをつかめる。つかんだ瞬間に位置が飛ばない。
+        Call("SelectRecordingPad", 1);
+        Call("SetRecordingPosition", 1, new Vector2(-1, .4f), false);
+        Call("SetRecordingMirror", true);
+        Vector2 marker = (Vector2)Call("RecordingPositionToPoint", plane, new Vector2(-1, .4f));
+        Vector2 grab = new Vector2(3, -2);
+        Vector2 target = (Vector2)Call("RecordingPositionToPoint", plane, new Vector2(-1.5f, .8f));
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = origin + marker + grab });
+        Assert.AreEqual(new Vector2(-1, .4f), Get<Vector2[]>("recordPositions")[1]);
+        window.SendEvent(new Event { type = EventType.MouseDrag, button = 0, mousePosition = origin + target + grab });
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = origin + target + grab });
+        Assert.AreEqual(8, Document.notes.Count);
+        Assert.AreEqual(-1.5f, Get<Vector2[]>("recordPositions")[1].x, .001);
+        Assert.AreEqual(1.5f, Get<Vector2[]>("recordPositions")[3].x, .001);
+        Assert.AreEqual(.8f, Get<Vector2[]>("recordPositions")[1].y, .001);
+        Assert.AreEqual(.8f, Get<Vector2[]>("recordPositions")[3].y, .001);
+        Vector2 adjustMode = origin + new Vector2(panel.x + 128, panel.y + 145);
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = adjustMode });
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = adjustMode });
+        Assert.True(Get<bool>("recordPositionOnly"));
+        Vector2 blank = origin + plane.position + new Vector2(12, 12);
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = blank });
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = blank });
+        Assert.AreEqual(8, Document.notes.Count, "位置調整モードは空白でも入力せず配置だけを変える");
+        Vector2 inputMode = origin + new Vector2(panel.x + 48, panel.y + 145);
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = inputMode });
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = inputMode });
+        Assert.False(Get<bool>("recordPositionOnly"));
+        Vector2 mirrorToggle = origin + new Vector2(panel.x + 225, panel.y + 145);
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = mirrorToggle });
+        window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = mirrorToggle });
+        Assert.False(Get<bool>("recordMirrorPositions"));
         Key(KeyCode.Space);
         Set("expandPlaybackPreview", true);
         window.Repaint();
