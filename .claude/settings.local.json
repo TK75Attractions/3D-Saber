@@ -83,7 +83,17 @@
       "Bash(sort -k2)",
       "Skill(schedule)",
       "Skill(schedule:*)",
-      "PowerShell($gh = Get-Command gh -ErrorAction SilentlyContinue; if \\($gh\\) { $gh.Source; gh auth status } else { \"gh CLI not installed\" })"
+      "PowerShell($gh = Get-Command gh -ErrorAction SilentlyContinue; if \\($gh\\) { $gh.Source; gh auth status } else { \"gh CLI not installed\" })",
+      "PowerShell(git -C C:\\\\Users\\\\shike\\\\dev\\\\3D-Saber log --oneline -25)",
+      "PowerShell(Get-PSDrive C | Select-Object Used,Free; Get-Process | Where-Object { $_.ProcessName -match 'Unity|codex|ffmpeg' } | Select-Object ProcessName,Id,StartTime | Format-Table -AutoSize; Get-CimInstance Win32_OperatingSystem | Select-Object FreePhysicalMemory,TotalVisibleMemorySize)",
+      "PowerShell(Get-ChildItem \"C:\\\\Users\\\\shike\\\\dev\\\\3D-Saber\\\\Assets\\\\StreamingAssets\\\\Songs\" -Directory | ForEach-Object { $s = Join-Path $_.FullName 'stage.json'; $a = ''; if \\(Test-Path $s\\) { $j = Get-Content $s -Raw -Encoding UTF8 | ConvertFrom-Json; $a = \"$\\($j.artist\\) | $\\($j.displayName\\) | preview=$\\($j.previewStartSeconds\\)\" }; \"{0} :: {1} :: {2}\" -f $_.Name, \\(\\(Get-ChildItem $_.FullName | Select-Object -ExpandProperty Name\\) -join ','\\), $a })",
+      "Bash(mkdir -p \"/c/Users/shike/AppData/Local/Temp/claude/C--Users-shike-dev-3D-Saber/49112151-8577-4920-af25-a91c9c6ec4d9/scratchpad/pv/research\")",
+      "Read(//c/Users/shike/AppData/Local/Temp/claude/C--Users-shike-dev-3D-Saber/49112151-8577-4920-af25-a91c9c6ec4d9/scratchpad/**)",
+      "Bash(node \"C:/Users/shike/AppData/Local/Temp/claude/C--Users-shike-dev-3D-Saber/884c4483-83b0-4cb1-aca6-3210fafb9bd4/scratchpad/chartstats.js\" Assets/StreamingAssets/Songs)",
+      "Bash(grep -v '\\\\.meta$')",
+      "Bash(/c/pinokio/bin/miniconda/Library/bin/ffmpeg -version)",
+      "PowerShell(Get-Command py, python3, python -ErrorAction SilentlyContinue | Select-Object Name, Source; Get-ChildItem \"$env:LOCALAPPDATA\\\\Programs\\\\Python\" -ErrorAction SilentlyContinue | Select-Object Name)",
+      "Bash(grep -n \"CameraImuJudgment\\\\|cameraImuJudgment\\\\|m_Script: {fileID: 11500000, guid: \" Assets/Scenes/Game.unity)"
     ],
     "defaultMode": "bypassPermissions"
   }
