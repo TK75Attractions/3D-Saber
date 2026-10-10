@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "displayName": "校歌",
+  "displayReading": "こうか",
   "timeOrigin": "audio-file-start",
   "previewStartSeconds": 133.859,
   "audioSha256": "c0b0a76a9c3b9f7d23c850e9a4fbccc83427be6d6f29fe0f1f1bed90283d0fbb",

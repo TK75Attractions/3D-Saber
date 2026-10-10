@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "displayName": "揺籠",
+  "displayReading": "ゆりかご",
   "timeOrigin": "audio-file-start",
   "previewStartSeconds": 140.245,
   "audioSha256": "0749344ba0c4422c0a3d3e39880bf4621765e469ee1f6d4fb1a4967cc0b0b28c",

@@ -98,6 +98,62 @@ namespace Saber.ChartEditor
             return destination;
         }
 
+        public static string StagePath(string songId)
+        {
+            string folder = SongFolderPath(songId);
+            return folder == null ? null : Path.Combine(folder, "stage.json");
+        }
+
+        public static string CoverPath(string songId)
+        {
+            string folder = SongFolderPath(songId);
+            return folder == null ? null : Path.Combine(folder, "cover.png");
+        }
+
+        /// <summary>本編が鳴らす音源ファイル(ogg → wav → mp3 の順で最初に見つかったもの)。無ければ null。</summary>
+        public static string AudioPath(string songId)
+        {
+            string folder = SongFolderPath(songId);
+            if (folder == null) return null;
+            foreach (string audioName in AudioNames)
+            {
+                string path = Path.Combine(folder, audioName);
+                if (File.Exists(path)) return path;
+            }
+            return null;
+        }
+
+        /// <summary>stage.json を、譜面と同じ手順(一時ファイル→バックアップ→置き換え、失敗したら戻す)で書く。</summary>
+        public static void SaveStage(string songId, string text)
+        {
+            if (!IsValidSongId(songId, out string reason)) throw new InvalidOperationException(reason);
+            string folder = SongFolderPath(songId);
+            Directory.CreateDirectory(folder);
+            SaveTogether(new List<(string path, string difficulty)> { (Path.Combine(folder, "stage.json"), "stage") }, songId, text, folder);
+            AssetDatabase.Refresh();
+        }
+
+        /// <summary>cover.png を書く。前の画像は Library のバックアップへ写してから置き換える。</summary>
+        public static void SaveCover(string songId, byte[] png)
+        {
+            if (!IsValidSongId(songId, out string reason)) throw new InvalidOperationException(reason);
+            if (png == null || png.Length == 0) throw new InvalidOperationException("画像が空です。");
+            string folder = SongFolderPath(songId);
+            Directory.CreateDirectory(folder);
+            string destination = Path.Combine(folder, "cover.png");
+            if (File.Exists(destination))
+            {
+                string backupRoot = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Library", "3DSaberChartBackups"));
+                Directory.CreateDirectory(backupRoot);
+                File.Copy(destination, Path.Combine(backupRoot, $"{songId.Trim()}_cover_{DateTime.Now:yyyyMMdd_HHmmss_fff}.png"), true);
+            }
+            string incoming = destination + ".incoming";
+            File.WriteAllBytes(incoming, png);
+            if (File.Exists(destination)) replaceFileOperation(incoming, destination, null);
+            else moveFileOperation(incoming, destination);
+            AssetDatabase.Refresh();
+        }
+
         /// <summary>Normal(=chart.json の元)がまだ無い曲か。Easy / Hard だけ保存したときの注意に使う。</summary>
         public static bool MissingNormalChart(string songId)
         {

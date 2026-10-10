@@ -98,18 +98,18 @@ public class ResultSkin : MonoBehaviour
     }
 
     // 曲ID("ElDorado" 等)を表示タイトル("EL DORADO")へ。大文字の前に区切りを入れて全大文字化。
+    // 曲名は stage.json の displayName から読む(校歌・アンダルシアなどをコードに決め打ちしない)。
     public static string SongIdToDisplayTitle(string songId)
     {
         if (string.IsNullOrEmpty(songId)) return "";
         // 保存記録と音源フォルダのIDは維持し、画面の曲名だけを正式名称にする。
-        if (string.Equals(songId, "Epilogue", System.StringComparison.OrdinalIgnoreCase)) return "校歌";
-        if (string.Equals(songId, "Andalusia", System.StringComparison.OrdinalIgnoreCase)) return "アンダルシア";
+        string name = SongDisplayInfo.Get(songId).DisplayName;
         var sb = new System.Text.StringBuilder();
-        for (int i = 0; i < songId.Length; i++)
+        for (int i = 0; i < name.Length; i++)
         {
-            char ch = songId[i];
+            char ch = name[i];
             if (ch == '_' || ch == '-') { sb.Append(' '); continue; }
-            if (i > 0 && char.IsUpper(ch) && !char.IsUpper(songId[i - 1]) && songId[i - 1] != ' ')
+            if (i > 0 && char.IsUpper(ch) && !char.IsUpper(name[i - 1]) && name[i - 1] != ' ')
             {
                 sb.Append(' ');
             }

@@ -339,6 +339,19 @@ namespace Saber.ChartEditor
                 builder.Append(']');
                 return;
             }
+            // 1行にまとめるオブジェクトは { "a": 1, "b": 2 } と内側に空白を入れる(stage.json の書き方)。
+            if (node is SaberJsonObject inline && inline.Members.Count > 0)
+            {
+                builder.Append("{ ");
+                for (int i = 0; i < inline.Members.Count; i++)
+                {
+                    if (i > 0) builder.Append(", ");
+                    builder.Append(Quote(inline.Members[i].Key)).Append(": ");
+                    WriteCompact(inline.Members[i].Value, builder);
+                }
+                builder.Append(" }");
+                return;
+            }
             WriteCompact(node, builder);
         }
 

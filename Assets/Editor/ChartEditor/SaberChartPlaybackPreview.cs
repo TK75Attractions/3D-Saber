@@ -31,9 +31,35 @@ namespace Saber.ChartEditor
         private bool projectorMode;
         private bool disposed;
 
+        // 本編の視点(Game.unity の useSlightTopDownView と GamePlayManager の既定値)。
+        public static readonly Vector3 GameCameraPosition = new Vector3(0f, 2.35f, -7f);
+        public static readonly Vector3 GameCameraRotation = new Vector3(12f, 0f, 0f);
+        // これまでのプレビューの視点(少し低い位置から正面寄り)。
+        public static readonly Vector3 FlatCameraPosition = new Vector3(0f, 1.6f, -7f);
+        public static readonly Vector3 FlatCameraRotation = new Vector3(6f, 0f, 0f);
+        // 刃の太さ 0.32 + ノーツの当たり 0.88(本編の既定値)。この距離まで刃が近づけば切れる。
+        public const float GameHitRange = 1.2f;
+        private const float HitRingSeconds = .25f;
+
+        public bool UseGameCamera { get; set; } = true;
+        public bool ShowLandingFrame { get; set; } = true;
+        public bool ShowBarLines { get; set; } = true;
+        public bool ShowHitRadius { get; set; }
+
+        private readonly GameObject guideRoot;
+        private readonly Transform[] frameBars = new Transform[4];
+        private readonly List<GameObject> barLines = new List<GameObject>();
+        private readonly List<LineRenderer> hitRings = new List<LineRenderer>();
+        private Material frameMaterial;
+        private Material barMaterial;
+        private Material ringMaterial;
+
         public GameObject WorldRoot => root;
         public int VisibleNoteCount => entries.Count;
         public double DisplayedSongTime { get; private set; }
+        public int VisibleBarLineCount { get; private set; }
+        public int VisibleHitRingCount { get; private set; }
+        public Vector3 CameraPosition => renderer.camera.transform.position;
 
         public SaberChartPlaybackPreview()
         {
@@ -60,6 +86,13 @@ namespace Saber.ChartEditor
                 motion = root.AddComponent<NoteSpawner>();
                 motion.enabled = false;
                 projectorMode = DisplaySettings.ProjectorMode;
+                guideRoot = new GameObject("PreviewGuides");
+                guideRoot.transform.SetParent(root.transform, false);
+                frameMaterial = GuideMaterial(new Color(.16f, .88f, .95f));
+                barMaterial = GuideMaterial(new Color(.55f, .62f, .7f));
+                ringMaterial = GuideMaterial(new Color(1f, .82f, .3f));
+                for (int i = 0; i < frameBars.Length; i++) frameBars[i] = GuideBar("LandingFrame", frameMaterial).transform;
+                ApplyCamera();
                 HideHierarchy(root);
             }
             catch
@@ -124,6 +157,132 @@ namespace Saber.ChartEditor
             if (rebuildLinks) RebuildLinks();
             foreach (var link in links) link.Refresh();
             floor.Tick(songTime, 0);
+            ApplyCamera();
+            UpdateLandingFrame(document.coordScale);
+            UpdateBarLines(document, songTime);
+            UpdateHitRings(document, songTime);
+        }
+
+        private void ApplyCamera()
+        {
+            renderer.camera.transform.SetPositionAndRotation(
+                UseGameCamera ? GameCameraPosition : FlatCameraPosition,
+                Quaternion.Euler(UseGameCamera ? GameCameraRotation : FlatCameraRotation));
+        }
+
+        // 判定面(z=0)に、推奨の XY 範囲(±2.5 × ±1.5)の枠を描く。ノーツが着く場所の目安。
+        private void UpdateLandingFrame(float coordScale)
+        {
+            float scale = coordScale > 0f ? coordScale : 1f;
+            float halfWidth = SaberChartUtility.DefaultXMax * scale, halfHeight = SaberChartUtility.DefaultYMax * scale;
+            const float thickness = .025f;
+            Vector3[] positions =
+            {
+                new Vector3(0f, halfHeight, 0f), new Vector3(0f, -halfHeight, 0f),
+                new Vector3(-halfWidth, 0f, 0f), new Vector3(halfWidth, 0f, 0f),
+            };
+            Vector3[] scales =
+            {
+                new Vector3(halfWidth * 2f + thickness, thickness, thickness), new Vector3(halfWidth * 2f + thickness, thickness, thickness),
+                new Vector3(thickness, halfHeight * 2f, thickness), new Vector3(thickness, halfHeight * 2f, thickness),
+            };
+            for (int i = 0; i < frameBars.Length; i++)
+            {
+                frameBars[i].gameObject.SetActive(ShowLandingFrame);
+                frameBars[i].localPosition = positions[i];
+                frameBars[i].localScale = scales[i];
+            }
+        }
+
+        // 本編の小節線と同じ時刻(ファイルの BPM・原点・OFFSET・拍子)で、ノーツと同じ速さで流す。
+        private void UpdateBarLines(SaberChartDocument document, double songTime)
+        {
+            int used = 0;
+            if (ShowBarLines && document.bpm > 0f)
+            {
+                double origin = (document.beatZeroMs + document.offsetMs) / 1000.0;
+                double from = (songTime - .3 - origin) * document.bpm / 60.0;
+                double through = (songTime + motion.approachTime - origin) * document.bpm / 60.0;
+                float scale = document.coordScale > 0f ? document.coordScale : 1f;
+                float width = SaberChartUtility.DefaultXMax * scale * 2f;
+                float floorY = -SaberChartUtility.DefaultYMax * scale;
+                var meter = new ChartMeterMap(document.timeSignatures);
+                foreach (double beat in meter.BarStarts(Math.Max(0, from), Math.Max(0, through)))
+                {
+                    double time = origin + beat * 60.0 / document.bpm;
+                    double dt = time - songTime;
+                    if (dt < -.3 || dt > motion.approachTime) continue;
+                    if (used == barLines.Count) barLines.Add(GuideBar("BarLine", barMaterial));
+                    GameObject line = barLines[used++];
+                    line.SetActive(true);
+                    line.transform.localPosition = new Vector3(0f, floorY, motion.judgeZ + motion.Speed * (float)dt);
+                    line.transform.localScale = new Vector3(width, .02f, .05f);
+                }
+            }
+            for (int i = used; i < barLines.Count; i++) barLines[i].SetActive(false);
+            VisibleBarLineCount = used;
+        }
+
+        // 判定の前後 0.25 秒のノーツに、刃が届けば切れる範囲(半径 1.2)の円を判定面に描く。
+        private void UpdateHitRings(SaberChartDocument document, double songTime)
+        {
+            int used = 0;
+            if (ShowHitRadius)
+            {
+                float scale = document.coordScale > 0f ? document.coordScale : 1f;
+                foreach (var data in document.notes)
+                {
+                    if (data == null) continue;
+                    double hit = data.time / 1000.0 + document.offsetMs / 1000.0;
+                    if (Math.Abs(songTime - hit) > HitRingSeconds) continue;
+                    if (used == hitRings.Count) hitRings.Add(HitRing());
+                    LineRenderer ring = hitRings[used++];
+                    ring.gameObject.SetActive(true);
+                    ring.transform.localPosition = new Vector3(data.x * scale, data.y * scale, motion.judgeZ);
+                }
+            }
+            for (int i = used; i < hitRings.Count; i++) hitRings[i].gameObject.SetActive(false);
+            VisibleHitRingCount = used;
+        }
+
+        private static Material GuideMaterial(Color color)
+        {
+            Shader shader = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
+            var material = new Material(shader) { hideFlags = HideFlags.HideAndDontSave };
+            if (material.HasProperty("_BaseColor")) material.SetColor("_BaseColor", color);
+            if (material.HasProperty("_Color")) material.SetColor("_Color", color);
+            return material;
+        }
+
+        private GameObject GuideBar(string name, Material material)
+        {
+            var bar = GameObject.CreatePrimitive(PrimitiveType.Cube);
+            bar.name = name;
+            Object.DestroyImmediate(bar.GetComponent<Collider>());
+            bar.transform.SetParent(guideRoot.transform, false);
+            bar.GetComponent<MeshRenderer>().sharedMaterial = material;
+            HideHierarchy(bar);
+            return bar;
+        }
+
+        private LineRenderer HitRing()
+        {
+            var go = new GameObject("HitRange");
+            go.transform.SetParent(guideRoot.transform, false);
+            var line = go.AddComponent<LineRenderer>();
+            line.useWorldSpace = false;
+            line.loop = true;
+            line.widthMultiplier = .025f;
+            line.sharedMaterial = ringMaterial;
+            const int segments = 40;
+            line.positionCount = segments;
+            for (int i = 0; i < segments; i++)
+            {
+                float angle = i * Mathf.PI * 2f / segments;
+                line.SetPosition(i, new Vector3(Mathf.Cos(angle) * GameHitRange, Mathf.Sin(angle) * GameHitRange, 0f));
+            }
+            HideHierarchy(go);
+            return line;
         }
 
         public Texture Render(Rect rect)
@@ -256,6 +415,9 @@ namespace Saber.ChartEditor
             entries.Clear();
             renderer.Cleanup();
             ReleaseGeometry(stageResources);
+            // 目印の線や円の素材は、このプレビューだけが作って持つ。
+            foreach (Material material in new[] { frameMaterial, barMaterial, ringMaterial })
+                if (material != null) Object.DestroyImmediate(material);
         }
     }
 }

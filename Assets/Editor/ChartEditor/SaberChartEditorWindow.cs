@@ -106,6 +106,11 @@ namespace Saber.ChartEditor
         private bool isPlaying;
         [SerializeField] private bool showPlaybackPreview = true;
         [SerializeField] private bool expandPlaybackPreview;
+        // プレイ画面を本編に近づける表示(本編のカメラ、着地の枠、本編の小節線、当たりの円)。
+        [SerializeField] private bool previewGameCamera = true;
+        [SerializeField] private bool previewLandingFrame = true;
+        [SerializeField] private bool previewBarLines = true;
+        [SerializeField] private bool previewHitRadius;
         private SaberChartPlaybackPreview playbackPreview;
         private string playbackPreviewError;
         private float playbackAudioStartSeconds;
@@ -494,6 +499,7 @@ namespace Saber.ChartEditor
             if (GUILayout.Button("■", GUILayout.Width(36f))) StopPreview(true);
             GUILayout.EndHorizontal();
             DrawClickToggles();
+            DrawPreviewOptions();
 
             EditorGUI.BeginDisabledGroup(RecordingBusy);
             float maxBeat = MaxBeat();
@@ -517,6 +523,8 @@ namespace Saber.ChartEditor
                 DrawRangePanel();
                 GUILayout.Space(10f);
                 DrawDifficultyPanel();
+                GUILayout.Space(10f);
+                DrawSongInfoPanel();
                 EditorGUI.EndDisabledGroup();
             }
 
@@ -674,6 +682,10 @@ namespace Saber.ChartEditor
                 try
                 {
                     playbackPreview ??= new SaberChartPlaybackPreview();
+                    playbackPreview.UseGameCamera = previewGameCamera;
+                    playbackPreview.ShowLandingFrame = previewLandingFrame;
+                    playbackPreview.ShowBarLines = previewBarLines;
+                    playbackPreview.ShowHitRadius = previewHitRadius;
                     playbackPreview.Tick(document, BeatToAudioSeconds(currentBeat));
                     Texture frame = playbackPreview.Render(viewport);
                     if (frame != null) GUI.DrawTexture(viewport, frame, ScaleMode.ScaleToFit, false);
@@ -692,6 +704,21 @@ namespace Saber.ChartEditor
             }
             if (!recordMode && !expandPlaybackPreview)
                 DrawTimeline(new Rect(rect.x, previewRect.yMax + PanelGap, rect.width, rect.height - previewHeight - PanelGap));
+        }
+
+        // プレイ画面の見え方を本編に近づける切り替え。
+        private void DrawPreviewOptions()
+        {
+            GUILayout.BeginHorizontal();
+            previewGameCamera = GUILayout.Toggle(previewGameCamera, new GUIContent("本編の視点",
+                "本編と同じカメラ（高さ2.35・12°見下ろし）。オフで以前の正面寄りの視点"), EditorStyles.miniButtonLeft);
+            previewLandingFrame = GUILayout.Toggle(previewLandingFrame, new GUIContent("着地の枠",
+                "判定面に、推奨の XY 範囲（±2.5 × ±1.5）の枠を出します"), EditorStyles.miniButtonMid);
+            previewBarLines = GUILayout.Toggle(previewBarLines, new GUIContent("小節線",
+                "本編の小節線（ファイルの BPM・原点・OFFSET・拍子）を、ノーツと同じ速さで流します"), EditorStyles.miniButtonMid);
+            previewHitRadius = GUILayout.Toggle(previewHitRadius, new GUIContent("当たりの円",
+                "判定の前後0.25秒のノーツに、刃が届けば切れる範囲（半径1.2）の円を出します"), EditorStyles.miniButtonRight);
+            GUILayout.EndHorizontal();
         }
 
         private void DisposePlaybackPreview()
@@ -2336,7 +2363,8 @@ namespace Saber.ChartEditor
         private static void Apply(string songId, string difficulty)
         {
             GameSession.SelectedSongId = songId;
-            GameSession.SelectedSongTitle = songId;
+            // 選曲画面から始めたときと同じ曲名(stage.json の表示名)を出す。
+            GameSession.SelectedSongTitle = SongSelectController.DisplaySongTitle(songId);
             GameSession.SelectedDifficulty = difficulty;
             GameSession.IsCalibrationMode = false;
         }

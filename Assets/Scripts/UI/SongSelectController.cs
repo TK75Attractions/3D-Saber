@@ -14,11 +14,10 @@ using UnityEngine.UI;
 public class SongSelectController : MonoBehaviour
 {
     // 曲フォルダ/スコア保存キーは変えず、選曲とプレイ情報の表示名だけを統一する。
+    // 表示名は stage.json の displayName(無ければフォルダ名)。
     public static string DisplaySongTitle(string songId)
     {
-        return string.Equals(songId, "Epilogue", System.StringComparison.OrdinalIgnoreCase)
-            || string.Equals(songId, "Andalusia", System.StringComparison.OrdinalIgnoreCase)
-            ? ResultSkin.SongIdToDisplayTitle(songId) : songId;
+        return SongDisplayInfo.Get(songId).DisplayName;
     }
 
     public string gameSceneName = "Game";
@@ -165,6 +164,8 @@ public class SongSelectController : MonoBehaviour
                 hasChart |= File.Exists(Path.Combine(dir, "chart_" + difficulty.ToLowerInvariant() + ".json"));
             if (!hasChart) continue;
             string songId = Path.GetFileName(dir);
+            // 譜面エディターの曲情報で「選曲に出す」を外した曲(制作中・権利確認待ちなど)は並べない。
+            if (!SongDisplayInfo.Get(songId).Listed) continue;
             if (playableOnly && !HasPlayableChart(songId, StandardDifficulties)) continue;
             result.Add(songId);
         }

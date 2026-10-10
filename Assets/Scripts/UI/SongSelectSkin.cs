@@ -292,9 +292,11 @@ public class SongSelectSkin : MonoBehaviour
         foreach (var d in discs.OrderByDescending(x => Mathf.Abs(x.offset))) d.root.SetSiblingIndex(order++);
         animation = 0;
         string id = ctl.SongIdAt(index), title = ResultSkin.SongIdToDisplayTitle(id);
-        string markup = id == "Epilogue" ? "<ruby=こうか>校歌</ruby>" : id == "揺籠" ? "<ruby=ゆりかご>揺籠</ruby>" : title;
+        // ふりがなは stage.json の displayReading から(曲ごとのコードの決め打ちをしない)。
+        string reading = SongDisplayInfo.Get(id).Reading;
+        bool japanese = !string.IsNullOrEmpty(reading);
+        string markup = japanese ? $"<ruby={reading}>{title}</ruby>" : title;
         var titleText = songTitle.GetComponent<TextMeshProUGUI>();
-        bool japanese = id == "Epilogue" || id == "揺籠";
         // フォントは固定し、日本語は既存のフォールバックで描く。切替時に別アトラスの材質を残さない。
         titleText.fontStyle = japanese ? FontStyles.Bold : FontStyles.Normal;
         titleText.fontSizeMax = japanese ? 48 : 58;
