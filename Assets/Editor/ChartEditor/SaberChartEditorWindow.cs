@@ -300,6 +300,16 @@ namespace Saber.ChartEditor
             GUILayout.EndArea();
         }
 
+        // 開いている譜面が変わったら、上の難易度・候補・設定の比較を読み直す。
+        private void ResetDerivedViews()
+        {
+            deriveCandidates = null;
+            upperDocumentKey = null;
+            settingsMismatchKey = null;
+            overviewSectionsSong = null;
+            ClearRange();
+        }
+
         private bool SelectionDiffersFromEditing()
         {
             if (string.IsNullOrEmpty(loadedSongId) || string.IsNullOrEmpty(loadedDifficulty)) return false;
@@ -356,6 +366,7 @@ namespace Saber.ChartEditor
             loadedSongId = targetSong;
             loadedDifficulty = targetDifficulty;
             confirmedOverwriteTarget = TargetKey(targetSong, targetDifficulty);
+            ResetDerivedViews();
             selectedIndex = -1;
             history.Clear();
             savedJson = null;
@@ -499,6 +510,8 @@ namespace Saber.ChartEditor
                 GUILayout.Space(10f);
                 EditorGUI.BeginDisabledGroup(RecordingBusy);
                 DrawRangePanel();
+                GUILayout.Space(10f);
+                DrawDifficultyPanel();
                 EditorGUI.EndDisabledGroup();
             }
 
@@ -522,6 +535,7 @@ namespace Saber.ChartEditor
             GUILayout.Space(10f);
             SectionLabel("曲 / グリッド設定");
             DrawChartSettings();
+            DrawSettingsMismatch();
             GUILayout.Space(10f);
             DrawTimeSignatures();
 
@@ -931,7 +945,9 @@ namespace Saber.ChartEditor
                 DrawBeatGrid(rect, laneRect);
                 DrawRangeOnTimeline(rect, laneRect);
                 DrawMarkersOnTimeline(rect, laneRect);
+                DrawUpperOverlay(laneRect);
                 DrawNotes(laneRect);
+                DrawDeriveCandidates(laneRect);
                 DrawPlayhead(rect, laneRect);
                 DrawSnapBadge(laneRect);
                 DrawOverview(rect, Event.current);
@@ -1409,6 +1425,7 @@ namespace Saber.ChartEditor
             loadedSongId = SaberChartFileStore.IsValidSongId(targetSong, out _) ? targetSong : null;
             loadedDifficulty = loadedSongId != null ? CurrentDifficulty : null;
             confirmedOverwriteTarget = null;
+            ResetDerivedViews();
             history.Clear();
             savedJson = null;
             UpdateDirtyState();
@@ -1465,6 +1482,7 @@ namespace Saber.ChartEditor
                 loadedSongId = songId.Trim();
                 loadedDifficulty = CurrentDifficulty;
                 confirmedOverwriteTarget = null;
+                ResetDerivedViews();
                 history.Clear();
                 savedJson = nextSavedJson;
                 hasUnsavedChanges = false;
@@ -1520,6 +1538,7 @@ namespace Saber.ChartEditor
                 savedJson = CurrentJson();
                 hasUnsavedChanges = false;
                 nextAutosaveAt = 0;
+                settingsMismatchKey = null;
                 SaberChartDrafts.DeleteFor(loadedSongId, loadedDifficulty);
                 pendingDraft = null;
                 if (targetDifficulty != "normal" && SaberChartFileStore.MissingNormalChart(targetSong))

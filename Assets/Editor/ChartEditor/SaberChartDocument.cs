@@ -359,6 +359,34 @@ namespace Saber.ChartEditor
             to.markers = CopyMarkers(from.markers);
         }
 
+        /// <summary>曲の設定(BPM・OFFSET・グリッド原点・拍子・座標倍率)の食い違いを、読める文で返す。</summary>
+        public static List<string> SongSettingDifferences(SaberChartDocument mine, SaberChartDocument other)
+        {
+            var differences = new List<string>();
+            if (mine == null || other == null) return differences;
+            if (Mathf.Abs(mine.bpm - other.bpm) > .0005f)
+                differences.Add($"BPM {mine.bpm:0.###} / {other.bpm:0.###}");
+            if (Mathf.Abs(mine.offsetMs - other.offsetMs) > .5f)
+                differences.Add($"OFFSET {mine.offsetMs:0.#} / {other.offsetMs:0.#}ms");
+            if (Mathf.Abs(mine.beatZeroMs - other.beatZeroMs) > .5f)
+                differences.Add($"原点 {mine.beatZeroMs:0.#} / {other.beatZeroMs:0.#}ms");
+            if (!SameTimeSignatures(mine.timeSignatures, other.timeSignatures))
+                differences.Add($"拍子 {mine.timeSignatures?.Count ?? 0}件 / {other.timeSignatures?.Count ?? 0}件");
+            if (Mathf.Abs(mine.coordScale - other.coordScale) > .0001f)
+                differences.Add($"座標倍率 {mine.coordScale:0.###} / {other.coordScale:0.###}");
+            return differences;
+        }
+
+        private static bool SameTimeSignatures(List<ChartTimeSignature> a, List<ChartTimeSignature> b)
+        {
+            List<ChartTimeSignature> left = ChartMeterMap.Normalize(a), right = ChartMeterMap.Normalize(b);
+            if (left.Count != right.Count) return false;
+            for (int i = 0; i < left.Count; i++)
+                if (Mathf.Abs(left[i].beat - right[i].beat) > .0001f || left[i].numerator != right[i].numerator ||
+                    left[i].denominator != right[i].denominator) return false;
+            return true;
+        }
+
         private static List<SaberChartMarker> CopyMarkers(List<SaberChartMarker> source)
         {
             var copy = new List<SaberChartMarker>();
