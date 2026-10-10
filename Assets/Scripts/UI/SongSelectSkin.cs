@@ -28,8 +28,7 @@ public class SongSelectSkin : MonoBehaviour
     readonly TextMeshProUGUI[] difficultyNumbers = new TextMeshProUGUI[3];
     readonly TextMeshProUGUI[] difficultyLabels = new TextMeshProUGUI[3];
     readonly SongSelectRubyText[] counts = new SongSelectRubyText[4];
-    TextMeshProUGUI timer, achievementDifficulty, chartSummary, chartTechniques, previewStatus, previewMuteLabel, libraryPosition;
-    Button replayPreview, mutePreview;
+    TextMeshProUGUI timer, achievementDifficulty, libraryPosition;
     SongSelectRubyText songTitle;
     SongSelectCorridor corridor;
     MenuSignalNoise hardNoise;
@@ -52,6 +51,8 @@ public class SongSelectSkin : MonoBehaviour
         yield return null;
         ctl = Object.FindFirstObjectByType<SongSelectController>();
         if (ctl == null) yield break;
+        // 消音ボタンのない従来の画面へ戻すため、以前保存された試聴の消音も解除する。
+        if (ctl.ChartPreview != null && ctl.ChartPreview.Muted) ctl.ChartPreview.SetMuted(false);
         var canvas = ctl.GetComponent<Canvas>() ?? ctl.GetComponentInParent<Canvas>();
         if (canvas == null) yield break;
         canvas.renderMode = RenderMode.ScreenSpaceCamera; canvas.worldCamera = Camera.main; canvas.planeDistance = 20;
@@ -158,8 +159,6 @@ public class SongSelectSkin : MonoBehaviour
         clock.Width = 6; clock.Edge = new Color(.25f, .43f, 1); clock.EdgeRight = Cyan; clock.Bottom = Ink;
         var icon = Graphic(clock.transform, "ClockIcon", new Vector2(-89, 0), new Vector2(56, 56), SongSelectDiscGraphic.Shape.Clock, White); icon.Edge = Ink;
         timer = Label(clock.transform, "TimeRemaining", "100", 86, new Vector2(42, 0), new Vector2(180, 106), UISkinKit.LogoFontAsset());
-        Label(layout, "KeyboardGuide", "← → 曲選択  /  ↑ ↓ 難易度  /  1・2・3 直接選択  /  Enter 開始  /  Esc タイトル", 20,
-            Position(960, 164), new Vector2(1500, 30), UISkinKit.JapaneseFallbackFontAsset(), SongSelectVisuals.Muted);
     }
     void BuildDiscs()
     {
@@ -251,24 +250,9 @@ public class SongSelectSkin : MonoBehaviour
     }
     void BuildActions()
     {
-        PanelAt("ChartInfoPanel", 1630, 838, 460, 208, SongSelectVisuals.Edge, 2, 18);
-        chartSummary = Label(layout, "ChartSummary", "", 21, Position(1630, 762), new Vector2(428, 35), UISkinKit.JapaneseFallbackFontAsset());
-        chartSummary.enableAutoSizing = true; chartSummary.fontSizeMin = 16; chartSummary.fontSizeMax = 21;
-        chartTechniques = Label(layout, "ChartTechniques", "", 20, Position(1630, 801), new Vector2(428, 34), UISkinKit.JapaneseFallbackFontAsset(), SongSelectVisuals.Muted);
-        chartTechniques.enableAutoSizing = true; chartTechniques.fontSizeMin = 16; chartTechniques.fontSizeMax = 20;
-        previewStatus = Label(layout, "PreviewStatus", "", 19, Position(1630, 843), new Vector2(428, 35), UISkinKit.JapaneseFallbackFontAsset(), Cyan);
-        previewStatus.enableAutoSizing = true; previewStatus.fontSizeMin = 15; previewStatus.fontSizeMax = 19;
-        var replay = PanelAt("ReplayPreview", 1519, 903, 204, 58, Cyan, 2, 12);
-        replayPreview = ButtonOn(replay.rectTransform, replay, 1, false);
-        replayPreview.onClick.AddListener(ctl.ReplayPreview);
-        Label(replay.transform, "Label", "再試聴", 25, Vector2.zero, new Vector2(185, 45), UISkinKit.JapaneseFallbackFontAsset());
-        var mute = PanelAt("MutePreview", 1741, 903, 204, 58, SongSelectVisuals.Edge, 2, 12);
-        mutePreview = ButtonOn(mute.rectTransform, mute, 1, false);
-        mutePreview.onClick.AddListener(() => { if (ctl.ChartPreview != null) ctl.ChartPreview.SetMuted(!ctl.ChartPreview.Muted); });
-        previewMuteLabel = Label(mute.transform, "Label", "試聴音 ON", 23, Vector2.zero, new Vector2(192, 45), UISkinKit.JapaneseFallbackFontAsset());
-        var cal = PanelAt("CalibrationButton", 1630, 1003, 460, 74, SongSelectVisuals.Edge, 3);
+        var cal = PanelAt("CalibrationButton", 1630, 930, 460, 180, SongSelectVisuals.Edge, 4);
         ButtonOn(cal.rectTransform, cal, 2, false).onClick.AddListener(() => { EnterCalibration(); if (ScreenTransition.IsBusy) ctl.StopPreview(); });
-        var t = Label(cal.transform, "CalibrationLabel", "", 34, new Vector2(0, -8), new Vector2(410, 65), UISkinKit.JapaneseFallbackFontAsset()); t.fontStyle = FontStyles.Bold;
+        var t = Label(cal.transform, "CalibrationLabel", "", 52, new Vector2(0, -8), new Vector2(410, 106), UISkinKit.JapaneseFallbackFontAsset()); t.fontStyle = FontStyles.Bold;
         Ruby(t, "<ruby=はんてい>判定</ruby><ruby=ちょうせい>調整</ruby>");
         var back = PanelAt("BackToTitle", 1220, 92, 340, 96, SongSelectVisuals.Edge, 2, 16);
         ButtonOn(back.rectTransform, back, 2, false).onClick.AddListener(ctl.ReturnToTitle);
@@ -335,8 +319,6 @@ public class SongSelectSkin : MonoBehaviour
             ctl.difficultyButtons[i].interactable = ctl.DifficultyLevelAt(i) > 0;
         }
         foreach (var d in discs) d.button.interactable = d.offset == 0 ? !ctl.SelectedSongLocked && ctl.CurrentDifficultyLevel() > 0 : Mathf.Abs(d.offset) <= 2;
-        var insight = ctl.CurrentChartInsights();
-        chartSummary.text = insight.Summary; chartTechniques.text = insight.Techniques;
         achievementDifficulty.text = DifficultyDisplayName(selected, ctl.difficultyNames[selected]);
         var value = SongAchievementStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.difficultyNames[selected]);
         int[] values = { value.s, value.sPlus, value.fc, value.ap };
@@ -345,11 +327,6 @@ public class SongSelectSkin : MonoBehaviour
     void Update()
     {
         if (!built) return;
-        var preview = ctl.ChartPreview;
-        previewStatus.text = preview != null ? preview.StatusText : "試聴音源がありません";
-        previewMuteLabel.text = preview != null && preview.Muted ? "試聴音 OFF" : "試聴音 ON";
-        mutePreview.interactable = preview != null;
-        replayPreview.interactable = preview != null && !preview.IsLoading && !preview.IsPlaying && ctl.CurrentDifficultyLevel() > 0;
         animation = Mathf.Min(1, animation + Time.unscaledDeltaTime / .5f); AnimateDiscs();
         double now = Time.realtimeSinceStartupAsDouble;
         TickCountdown(now - lastTick); lastTick = now;
