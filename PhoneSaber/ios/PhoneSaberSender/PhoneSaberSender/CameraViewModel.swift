@@ -772,6 +772,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var cameraRecoveryMessage = ""
     private var cameraRecoveryGeneration = 0
     private var cameraLifecycleEnabled = true
+    private let automaticLANDiscoveryEnabled: Bool
     /// Camera the exposure experiment was applied to, and its own default
     /// activeMaxExposureDuration read before this app capped it.
     private weak var exposureExperimentCamera: AVCaptureDevice?
@@ -799,6 +800,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         // Unit tests opt in explicitly, so a bridge running on the developer's Mac
         // can never reroute the existing LAN tests.
         let underTest = NSClassFromString("XCTestCase") != nil
+        // 単体テストの送信先は applyBonjourForTesting で明示する。実 Unity の広告を拾わない。
+        self.automaticLANDiscoveryEnabled = !underTest
         self.autoStartSending = !underTest && UserDefaults.standard.bool(forKey: SendingResumePolicy.autoStartKey)
         self.resumePolicy = SendingResumePolicy(wasSending: !underTest && UserDefaults.standard.bool(forKey: SendingResumePolicy.wasSendingKey))
         self.mirrorX = underTest ? false : UserDefaults.standard.bool(forKey: Self.mirrorXKey)
@@ -873,7 +876,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         bonjourDiscovery.station = station
         updateDiagnosticDestination()
-        bonjourDiscovery.start()
+        if automaticLANDiscoveryEnabled { bonjourDiscovery.start() }
         if self.p2pEnabled { startP2P() }
         processor.onHealthSample = { [healthMeter] time, milliseconds, generation, captureToSendMs in
             healthMeter.processed(at: time, milliseconds: milliseconds, generation: generation,
@@ -933,7 +936,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         guard running else {
             return host.isEmpty && !p2pState.isConnected ? "DISCOVERING" : "NETWORK IDLE"
         }
-        if p2pState.isConnected { return "NETWORK READY (P2P)" }
+        // 経路選択（CoordinateDelivery）と同じく、Unity 応答で確認済みの LAN を P2P より優先して表示する。
+        if p2pState.isConnected && !(lanConfigured && lanProbe.isAlive) { return "NETWORK READY (P2P)" }
         if !lanConfigured { return p2pEnabled ? "NETWORK SEARCHING (P2P)" : "NETWORK CONNECTING" }
         let portStates = [senderStates[5005], senderStates[5006]].compactMap { $0 }
         if portStates.count == 2 && portStates.allSatisfy({ $0.hasPrefix("ready") }) {
@@ -1081,7 +1085,14 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func finishCameraStart(succeeded: Bool, lifecycle: Int,
                                    recovery: Int?, isRecovery: Bool) {
-        guard lifecycleGeneration == lifecycle, running else {
+        switch CameraStartCompletionPolicy.action(completedLifecycle: lifecycle,
+                                                  currentLifecycle: lifecycleGeneration,
+                                                  running: running) {
+        case .apply:
+            break
+        case .ignore:
+            return
+        case .stopSession:
             sessionRunner.stop()
             return
         }
@@ -1238,7 +1249,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     func retryDiscovery() {
         guard !running else { return }
-        bonjourDiscovery.start()
+        if automaticLANDiscoveryEnabled { bonjourDiscovery.start() }
     }
 
     // 台変更は停止中のみ。旧台の自動送信先と P2P の lock を破棄する。
@@ -1259,7 +1270,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         updateDiagnosticDestination()
         bonjourDiscovery.station = value
-        bonjourDiscovery.start()
+        if automaticLANDiscoveryEnabled { bonjourDiscovery.start() }
         if p2pEnabled { startP2P() }
     }
 
@@ -1309,6 +1320,9 @@ final class CameraViewModel: NSObject, ObservableObject {
             if running {
                 if lanConfigured {
                     sender.updateHost(update.ip)
+                    // 生存確認も新しい IP へ向ける。旧 IP のままだと LAN が確認済みにならず、
+                    // LAN で届くのに遅い P2P へ回り続ける。
+                    lanProbe.start(host: update.ip)
                 } else {
                     // Started on P2P alone; the LAN fallback becomes available now.
                     configureLAN(host: update.ip, generation: lifecycleGeneration)
@@ -1374,7 +1388,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func refreshNetworkDiscovery() {
         lastDiscoveryRefresh = ProcessInfo.processInfo.systemUptime
-        bonjourDiscovery.start()
+        if automaticLANDiscoveryEnabled { bonjourDiscovery.start() }
         if p2pEnabled { p2pSender.recoverIfNeeded() }
         if running { sender.recoverIfNeeded() }
     }
@@ -2037,6 +2051,10 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     var p2pNoRouteCountForTesting: Int { p2pNoRouteCount }
     var lanConfiguredForTesting: Bool { lanConfigured }
+    var lanProbeHostForTesting: String { lanProbe.hostForTesting }
+    func recordLANReplyForTesting(_ text: String = LANLivenessProbe.replyPrefix) {
+        lanProbe.recordReplyForTesting(text)
+    }
 
     private func applySenderUpdate(states: [Int: String], errors: [Int: String], generation: Int) {
         guard running, lifecycleGeneration == generation else {

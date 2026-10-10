@@ -133,6 +133,10 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        savedInstanceState?.let { state ->
+            val restored = ThresholdSettings.restore { key, default -> state.getInt(key, default) }
+            brightness = restored.brightness; dominance = restored.dominance
+        }
         sender = LatestUdpSender()
         resumePolicy = SendingResumePolicy(prefs.getBoolean(SendingResumePolicy.WAS_SENDING_KEY, false))
         power = getSystemService(PowerManager::class.java)
@@ -419,6 +423,11 @@ class MainActivity : ComponentActivity() {
         detection.text = "停止中\n赤: 未検出 / 送信 0 fps\n青: 未検出 / 送信 0 fps"
         updateRecoveryStatus()
         updateHealth()
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        ThresholdSettings(brightness, dominance).save(outState::putInt)
     }
 
     override fun onStop() {

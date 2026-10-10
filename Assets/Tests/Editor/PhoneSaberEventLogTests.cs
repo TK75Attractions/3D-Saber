@@ -9,6 +9,56 @@ using NUnit.Framework;
 public class PhoneSaberEventLogTests
 {
     [Test]
+    public void EmptyPollingDoesNotCreateFilesAndFlushResumesAfterDrain()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-log-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(directory, "events.log");
+        try
+        {
+            var log = new PhoneSaberEventLog(path);
+            for (int i = 0; i < 100; i++) log.Flush();
+            Assert.IsFalse(Directory.Exists(directory));
+            log.Enqueue(DateTimeOffset.UtcNow, "A", "RED", "first", "");
+            log.Flush();
+            for (int i = 0; i < 100; i++) log.Flush();
+            // 1回128件の上限を超えても残りが次の Flush に届く。
+            for (int i = 0; i < 200; i++)
+                log.Enqueue(DateTimeOffset.UtcNow, "A", "BLUE", "next", "item=" + i);
+            log.Flush();
+            Assert.AreEqual(129, File.ReadAllLines(path).Length);
+            log.Flush();
+            Assert.AreEqual(201, File.ReadAllLines(path).Length);
+            Assert.AreEqual("", log.LastError);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Test]
+    public void ConcurrentEnqueueAndPollingKeepEveryLineInOrder()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-log-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(directory, "events.log");
+        try
+        {
+            var log = new PhoneSaberEventLog(path);
+            var writer = System.Threading.Tasks.Task.Run(() =>
+            {
+                for (int i = 0; i < 200; i++)
+                    log.Enqueue(DateTimeOffset.UtcNow, "A", "RED", "test", "item=" + i);
+            });
+            while (!writer.IsCompleted) { log.Flush(); System.Threading.Thread.Yield(); }
+            writer.GetAwaiter().GetResult();
+            for (int i = 0; i < 3; i++) log.Flush();
+            string[] lines = File.ReadAllLines(path);
+            Assert.AreEqual(200, lines.Length);
+            for (int i = 0; i < lines.Length; i++)
+                StringAssert.EndsWith("item=" + i, lines[i]);
+            Assert.AreEqual("", log.LastError);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Test]
     public void FormatUsesUtcAndOneBoundedLineRegardlessOfCulture()
     {
         var previous = CultureInfo.CurrentCulture;
@@ -107,6 +157,62 @@ public class PhoneSaberEventLogTests
             log.Enqueue(DateTimeOffset.UtcNow, "A", "RED", "test", "");
             Assert.DoesNotThrow(log.Flush);
             Assert.IsNotEmpty(log.LastError);
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Test]
+    public void FailedWriteKeepsTheLineAndWritesItInOrderAfterRecovery()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-log-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(directory, "events.log");
+        try
+        {
+            var log = new PhoneSaberEventLog(path);
+            Directory.CreateDirectory(path); // ファイル名をディレクトリにして書込失敗を再現。
+            log.Enqueue(DateTimeOffset.UtcNow, "A", "RED", "receiver-failed", "item=0");
+            log.Enqueue(DateTimeOffset.UtcNow, "A", "RED", "receiver-restart", "item=1");
+            Assert.DoesNotThrow(log.Flush);
+            Assert.IsNotEmpty(log.LastError);
+            Assert.DoesNotThrow(log.Flush);
+            // 書込先が回復したら、失敗中の行も失わずに元の順序で書く。
+            Directory.Delete(path);
+            log.Flush();
+            Assert.AreEqual("", log.LastError);
+            string[] lines = File.ReadAllLines(path);
+            Assert.AreEqual(2, lines.Length);
+            StringAssert.EndsWith("item=0", lines[0]);
+            StringAssert.EndsWith("item=1", lines[1]);
+            log.Flush();
+            Assert.AreEqual(2, File.ReadAllLines(path).Length, "成功後に同じ行を二重に書かない");
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Test]
+    public void BlockedRotationKeepsAppendingAndReportsTheError()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-log-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(directory, "events.log");
+        try
+        {
+            Directory.CreateDirectory(directory);
+            File.WriteAllText(path, "old");
+            using (var file = new FileStream(path, FileMode.Open)) file.SetLength(PhoneSaberEventLog.MaximumFileBytes);
+            // 世代1の場所を空でないディレクトリにして、Windows で古い世代を開かれた時と同じく移動を失敗させる。
+            string blocked = PhoneSaberEventLog.GenerationPath(path, 1);
+            Directory.CreateDirectory(blocked);
+            File.WriteAllText(Path.Combine(blocked, "keep"), "x");
+            var log = new PhoneSaberEventLog(path);
+            log.Enqueue(DateTimeOffset.UtcNow, "A", "BLUE", "receiver-start", "after-blocked-rotation");
+            Assert.DoesNotThrow(log.Flush);
+            StringAssert.StartsWith("rotate ", log.LastError);
+            Assert.Greater(new FileInfo(path).Length, PhoneSaberEventLog.MaximumFileBytes);
+            using (var reader = new StreamReader(path))
+            {
+                reader.BaseStream.Seek(PhoneSaberEventLog.MaximumFileBytes, SeekOrigin.Begin);
+                StringAssert.Contains("after-blocked-rotation", reader.ReadToEnd());
+            }
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
     }

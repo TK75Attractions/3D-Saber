@@ -7,6 +7,7 @@ using UnityEngine.InputSystem;
 public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
 {
     bool visible;
+    PhoneSaberGuiRenderer guiRenderer;
     double nextLogFlush;
     string quitMarker;
     bool clocksSynchronized;
@@ -58,7 +59,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         overlay.CancelCalibration();
         overlay.calibrationBlue = false;
         overlay.calibrationMessage = "未設定時は従来どおりの座標です。";
-        overlay.visible = false;
+        overlay.SetVisible(false);
         overlay.clocksSynchronized = false;
         overlay.startedAt = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
         overlay.fallbackStation = PhoneSaberStation.Read();
@@ -84,7 +85,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         if (keyboard != null && keyboard.f8Key.wasPressedThisFrame)
         {
             // F8 は開閉だけ（スタッフマニュアルの操作）。揺れ補正は表示内のボタンでだけ変える。
-            visible = !visible;
+            SetVisible(!visible);
             if (!visible && calibrationCorner >= 0)
             {
                 CancelCalibration();
@@ -94,7 +95,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         }
         if (keyboard != null && keyboard.f7Key.wasPressedThisFrame)
         {
-            visible = true;
+            SetVisible(true);
             AdvanceCalibration();
             nextRefresh = 0;
         }
@@ -104,6 +105,24 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         if (now < nextRefresh) return;
         nextRefresh = now + 0.2;
         Refresh(now);
+    }
+
+    void Awake() => EnsureGuiRenderer();
+    void OnEnable() => SetVisible(visible);
+    void OnDisable() { if (guiRenderer != null) guiRenderer.enabled = false; }
+
+    void EnsureGuiRenderer()
+    {
+        if (guiRenderer != null) return;
+        guiRenderer = gameObject.AddComponent<PhoneSaberGuiRenderer>();
+        guiRenderer.Initialize(DrawGUI, true);
+    }
+
+    void SetVisible(bool value)
+    {
+        visible = value;
+        EnsureGuiRenderer();
+        guiRenderer.enabled = value && isActiveAndEnabled;
     }
 
     void CancelCalibration()
@@ -277,7 +296,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
 
     static string State(bool supported, bool running) => !supported ? "未対応" : running ? "ON" : "停止";
 
-    void OnGUI()
+    void DrawGUI()
     {
         if (!visible) return;
         if (textStyle == null)

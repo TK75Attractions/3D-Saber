@@ -3,7 +3,7 @@
 単一repoの Git/Unity root は `3D-Saber/`、ツールは `PhoneSaber/` 内です。以下のコマンドは、指定がない限り Git root から `cd PhoneSaber` して実行します。
 
 > **P2P(peer-to-peer Wi-Fi)通信**: Mac を学校 Wi-Fi につないだまま、iPhone → Mac の座標だけを Apple の
-> peer-to-peer Wi-Fi で直接送る追加機能があります。P2P が使えないときは、下の LAN(Bonjour / 手動 IP)に自動で戻ります。
+> peer-to-peer Wi-Fi で直接送る予備経路があります。既定は LAN 優先で、Unity の応答(UDP 5007)が LAN で返らないときだけ P2P を使います(手動 IP があるときは P2P を使いません)。
 > 構成・fallback 条件・実機での確認手順・rollback は [P2P_BRIDGE.md](P2P_BRIDGE.md) を参照してください。
 
 ## 実機手順

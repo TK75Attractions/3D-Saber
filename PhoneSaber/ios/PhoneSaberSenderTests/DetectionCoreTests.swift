@@ -1261,8 +1261,11 @@ final class DetectionCoreTests: XCTestCase {
         viewModel.startForTesting(host: "192.168.1.20", manual: false)
         let redBefore = sender.connectionGenerationForTesting(port: 5005)
         let blueBefore = sender.connectionGenerationForTesting(port: 5006)
+        XCTAssertEqual(viewModel.lanProbeHostForTesting, "192.168.1.20")
 
         viewModel.applyBonjourForTesting(host: "172.20.10.2", serviceName: "Festival Mac")
+        // LAN 生存確認も新しい IP を見る。旧 IP のままだと LAN が確認済みにならず P2P へ回り続ける。
+        XCTAssertEqual(viewModel.lanProbeHostForTesting, "172.20.10.2")
 
         let rebuilt = await waitUntil {
             sender.connectionGenerationForTesting(port: 5005) > redBefore &&
@@ -1713,6 +1716,45 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(result.count, bar.count)
         XCTAssertEqual(principalAxisEndpoints(result)?.0, PixelPoint(x: 4, y: 8))
         XCTAssertEqual(principalAxisEndpoints(result)?.1, PixelPoint(x: 21, y: 8))
+    }
+
+    // 大小・位置・stride の変わる proposal 群で bitmap の消去と保持済み候補の独立性を確認する。
+    func testProposalWorkspaceReusePreservesEveryCandidateField() throws {
+        func signature(_ value: Any) -> String {
+            if let value = value as? Double { return "Double:\(value.bitPattern)" }
+            let mirror = Mirror(reflecting: value)
+            let type = String(reflecting: type(of: value))
+            if mirror.children.isEmpty { return type + ":" + String(reflecting: value) }
+            let fields = mirror.children.map { ($0.label ?? "") + "=" + signature($0.value) }
+            return type + "[" + (mirror.displayStyle == .dictionary || mirror.displayStyle == .set
+                ? fields.sorted() : fields).joined(separator: ";") + "]"
+        }
+        var workspace = SaberProposalWorkspace()
+        var retained: [SaberCandidate] = [], signatures: [String] = []
+        for (width, height, x, thickness) in [(73, 59, 0, 5), (97, 83, 20, 7),
+                                              (73, 59, 71, 2), (19, 31, 8, 1), (97, 83, 40, 6)] {
+            var points: [PixelPoint] = []
+            var mask = Array(repeating: UInt8(0), count: width * height)
+            for y in 0..<height {
+                for xx in x..<min(width, x + thickness) {
+                    points.append(PixelPoint(x: xx, y: y)); mask[y * width + xx] = 1
+                }
+            }
+            let evidence = SaberEvidence(color: .blue,
+                value: Array(repeating: 255, count: mask.count),
+                chroma: Array(repeating: 0, count: mask.count), colorMask: mask, coreMask: mask)
+            let input = Array(points.reversed()) + points + [PixelPoint(x: -1, y: 0), PixelPoint(x: width, y: 0)]
+            let fresh = try XCTUnwrap(saberCandidate(from: input, width: width, height: height,
+                evidence: evidence, collectEndpointDiagnostics: true))
+            let reused = try XCTUnwrap(saberCandidate(from: input, width: width, height: height,
+                evidence: evidence, workspace: &workspace, collectEndpointDiagnostics: true))
+            XCTAssertEqual(signature(fresh), signature(reused))
+            XCTAssertEqual(reused.retainedBodyRatio, 1)
+            XCTAssertEqual(reused.endpointDiagnosticTrace?.bodyPointCount, points.count)
+            retained.append(reused); signatures.append(signature(reused))
+            XCTAssertNil(saberCandidate(from: [], width: width, height: height, workspace: &workspace))
+        }
+        XCTAssertEqual(retained.map { signature($0) }, signatures)
     }
 
     func testCandidateEndpointsUseDenseContinuousBodyInsteadOfAxialSpillAndReflection() throws {

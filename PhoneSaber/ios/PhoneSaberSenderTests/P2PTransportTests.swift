@@ -338,6 +338,31 @@ final class P2PTransportTests: XCTestCase {
         await fulfillment(of: [rejected], timeout: 2)
     }
 
+    func testCoordinateHookCompletesInlineAndFromAnotherQueue() async throws {
+        for background in [false, true] {
+            let bridge = try FakeBridge()
+            defer { bridge.stop() }
+            let port = try await bridge.ready()
+            let sender = P2PSender(timing: fastTiming(),
+                                   endpointOverride: .hostPort(host: "127.0.0.1", port: port),
+                                   coordinateSendHook: { _, completion in
+                                       if background { DispatchQueue.global().async { completion(nil) } }
+                                       else { completion(nil) }
+                                   })
+            defer { sender.stop() }
+            sender.start()
+            let connected = await waitFor { sender.isUsable }
+            XCTAssertTrue(connected)
+            let delivered = expectation(description: "hook completed background=\(background)")
+            sender.send("1,2,3,4", to: 5005) { result in
+                if case .success = result { delivered.fulfill() }
+                else { XCTFail("hook completion failed") }
+            }
+            await fulfillment(of: [delivered], timeout: 2)
+            XCTAssertEqual(sender.stalledSendCountForTesting, 0)
+        }
+    }
+
     func testAStuckCoordinateSendDropsTheLinkAfterTheWatchdog() async throws {
         let bridge = try FakeBridge()
         defer { bridge.stop() }
@@ -700,6 +725,108 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertTrue(probe.isAlive)
         probe.stop()
         XCTAssertFalse(probe.isAlive)
+    }
+
+    // 受信待ちが error で終わった接続は作り直し、その後も Unity の応答で生存を保つ。
+    func testLANLivenessProbeRebuildsTheConnectionAfterAReceiveError() async throws {
+        let unity = try FakeUnityDiscovery()
+        defer { unity.stop() }
+        let port = try await unity.ready()
+        let probe = LANLivenessProbe(port: port.rawValue)
+        defer { probe.stop() }
+        probe.start(host: "127.0.0.1")
+        let alive = await waitFor { probe.isAlive }
+        XCTAssertTrue(alive, "実ソケットで Unity の応答を受信できる")
+        XCTAssertEqual(probe.createdConnectionCountForTesting, 1)
+
+        probe.simulateReceiveErrorForTesting()
+        let rebuilt = await waitFor { probe.createdConnectionCountForTesting == 2 }
+        XCTAssertTrue(rebuilt, "次の tick で接続を作り直す")
+        // 旧接続の応答は aliveWindow で失効する。新しい接続が応答を受け続けていれば生存のまま。
+        try await Task.sleep(for: .seconds(LANLivenessProbe.aliveWindow + 0.5))
+        XCTAssertTrue(probe.isAlive)
+        XCTAssertGreaterThanOrEqual(unity.connectionCount, 2)
+
+        probe.start(host: "127.0.0.2")
+        XCTAssertEqual(probe.hostForTesting, "127.0.0.2")
+        XCTAssertFalse(probe.isAlive, "host を変えたら旧 host の応答履歴は使わない")
+    }
+
+    // 画面上部の状態表示は経路選択と同じく、確認済み LAN を P2P より優先する。
+    @MainActor
+    func testNetworkStateLabelFollowsTheVerifiedLANLikeTheRoute() async throws {
+        let bridge = try FakeBridge()
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        let lan = UDPSender { _, _, completion in completion(.success(1)) }
+        let p2p = P2PSender(timing: fastTiming(), endpointOverride: .hostPort(host: "127.0.0.1", port: port))
+        let viewModel = CameraViewModel(sender: lan, p2pSender: p2p, p2pEnabled: true, idleTimerUpdater: { _ in })
+        defer { viewModel.stop(); p2p.stop(); lan.stop() }
+        viewModel.startForTesting(manual: false)
+        let viaP2P = await waitUntilMain { viewModel.p2pState.isConnected && viewModel.senderStates.count == 2 }
+        XCTAssertTrue(viaP2P)
+        XCTAssertEqual(viewModel.networkStateLabel, "NETWORK READY (P2P)")
+        viewModel.recordLANReplyForTesting()
+        XCTAssertEqual(viewModel.networkStateLabel, "NETWORK READY")
+        XCTAssertEqual(viewModel.transportLabel, "LAN Connected")
+    }
+}
+
+/// UDP 5007 の探索に答える Unity の代役（loopback・空きポート）。
+final class FakeUnityDiscovery: @unchecked Sendable {
+    private let listener: NWListener
+    private let queue = DispatchQueue(label: "FakeUnityDiscovery")
+    private let connections = LockedBox<[NWConnection]>([])
+
+    init() throws {
+        let parameters = NWParameters.udp
+        parameters.requiredInterfaceType = .loopback
+        listener = try NWListener(using: parameters, on: .any)
+        listener.newConnectionHandler = { [weak self] connection in
+            guard let self else { return }
+            self.connections.mutate { $0.append(connection) }
+            connection.start(queue: self.queue)
+            self.receive(connection)
+        }
+    }
+
+    var connectionCount: Int { connections.value.count }
+
+    func ready() async throws -> NWEndpoint.Port {
+        try await withCheckedThrowingContinuation { continuation in
+            let resumed = LockedBox(false)
+            listener.stateUpdateHandler = { [weak self] newState in
+                guard !resumed.value else { return }
+                switch newState {
+                case .ready:
+                    resumed.mutate { $0 = true }
+                    continuation.resume(returning: self!.listener.port!)
+                case .failed(let error):
+                    resumed.mutate { $0 = true }
+                    continuation.resume(throwing: error)
+                default: break
+                }
+            }
+            listener.start(queue: queue)
+        }
+    }
+
+    private func receive(_ connection: NWConnection) {
+        connection.receiveMessage { [weak self] data, _, _, error in
+            guard let self else { return }
+            if let data, String(data: data, encoding: .ascii) == LANLivenessProbe.request {
+                connection.send(content: Data("\(LANLivenessProbe.replyPrefix) red=5005 blue=5006 name=Test".utf8),
+                                completion: .idempotent)
+            }
+            if error == nil { self.receive(connection) }
+        }
+    }
+
+    func stop() {
+        queue.sync {
+            listener.cancel()
+            connections.value.forEach { $0.cancel() }
+        }
     }
 }
 

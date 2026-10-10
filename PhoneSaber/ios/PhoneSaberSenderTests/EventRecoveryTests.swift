@@ -75,6 +75,18 @@ final class EventRecoveryTests: XCTestCase {
         XCTAssertEqual(camera.state, .recovering)
     }
 
+    // 停止→即再開（fps 切替を含む）で、前回 start の遅い完了通知が新しい run の session を止めない。
+    func testStaleCameraStartCompletionNeverStopsANewerRun() {
+        XCTAssertEqual(CameraStartCompletionPolicy.action(completedLifecycle: 4, currentLifecycle: 4, running: true),
+                       .apply)
+        XCTAssertEqual(CameraStartCompletionPolicy.action(completedLifecycle: 3, currentLifecycle: 5, running: true),
+                       .ignore, "新しい run が startRunning 済み。ここで止めると新しい run のカメラが止まる")
+        XCTAssertEqual(CameraStartCompletionPolicy.action(completedLifecycle: 3, currentLifecycle: 4, running: false),
+                       .stopSession, "送信停止中に完了した start は止める")
+        XCTAssertEqual(CameraStartCompletionPolicy.action(completedLifecycle: 4, currentLifecycle: 4, running: false),
+                       .stopSession)
+    }
+
     func testStableFramesResetBackoff() {
         var retry = RecoveryBackoff()
         _ = retry.nextDelay(at: 0)

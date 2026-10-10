@@ -46,11 +46,15 @@ class PcDiscovery(context: Context,
     private var warning = ""
     private val prefs = context.getSharedPreferences("destination", Context.MODE_PRIVATE)
     private var preferredPc = prefs.getString("preferredPc", null)
+    private var preferredAddress = prefs.getString("preferredPcAddress", null)
     private var lastRefresh = 0L
+    // 現在の探索世代が使っている UDP broadcast 先。IPv4 が変わらない LinkProperties 更新では再探索しない。
+    private var broadcastTargets: Set<InetAddress>? = null
 
     fun clearPreferredPc() {
         preferredPc = null
-        prefs.edit().remove("preferredPc").apply()
+        preferredAddress = null
+        prefs.edit().remove("preferredPc").remove("preferredPcAddress").apply()
     }
 
     fun setDeveloperNetworkOverride(enabled: Boolean) {
@@ -85,7 +89,11 @@ class PcDiscovery(context: Context,
         val events = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(wifi: Network) { main.post { if (active && session == lifecycle) switchNetwork(wifi) } }
             override fun onLinkPropertiesChanged(wifi: Network, properties: LinkProperties) {
-                main.post { if (active && session == lifecycle && wifi == network) restartDiscovery(properties) }
+                main.post {
+                    // IPv6 の RA 更新や DHCP lease 時刻でも通知される。broadcast 先が同じなら候補を消さない。
+                    if (active && session == lifecycle && wifi == network &&
+                        broadcastsFor(properties) != broadcastTargets) restartDiscovery(properties)
+                }
             }
             override fun onCapabilitiesChanged(wifi: Network, capabilities: NetworkCapabilities) {
                 main.post { if (active && session == lifecycle && wifi == network) publish() }
@@ -117,6 +125,9 @@ class PcDiscovery(context: Context,
         restartDiscovery(wifi?.let(connectivity::getLinkProperties))
     }
 
+    private fun broadcastsFor(properties: LinkProperties?): Set<InetAddress> = DiscoveryBroadcasts.addresses(
+        properties?.linkAddresses.orEmpty().map { it.address to it.prefixLength })
+
     private fun restartDiscovery(properties: LinkProperties?, preserveSelection: Boolean = false) {
         lastRefresh = System.nanoTime()
         endDiscovery()
@@ -130,18 +141,8 @@ class PcDiscovery(context: Context,
         try { multicast.acquire() } catch (e: Exception) {
             warning = "探索ロック失敗: ${e.localizedMessage}"
         }
-        val broadcasts = mutableSetOf(InetAddress.getByName("255.255.255.255"))
-        properties?.linkAddresses?.forEach { link ->
-            if (link.address is Inet4Address && link.prefixLength in 1..30) {
-                val bytes = link.address.address
-                val ip = bytes.fold(0L) { value, byte -> (value shl 8) or (byte.toLong() and 255) }
-                val mask = (0xffffffffL shl (32 - link.prefixLength)) and 0xffffffffL
-                val broadcast = ip or (mask xor 0xffffffffL)
-                broadcasts += InetAddress.getByAddress(ByteArray(4) { i ->
-                    ((broadcast shr (24 - 8 * i)) and 255).toByte()
-                })
-            }
-        }
+        val broadcasts = broadcastsFor(properties)
+        broadcastTargets = broadcasts
         try {
             val udp = DatagramSocket(null).apply {
                 try {
@@ -315,19 +316,20 @@ class PcDiscovery(context: Context,
     private fun publish() {
         if (selectedKey?.let(found::containsKey) != true) {
             selectedKey = found.entries.firstOrNull {
-                station.isNotEmpty() || preferredPc == null || it.value.destination.name == preferredPc
+                PreferredPcMatcher.accepts(station, preferredPc, preferredAddress, it.value.destination)
             }?.key
         }
         val destination = manual ?: selectedKey?.let { found[it]?.destination }
         if (manual == null && destination != null && preferredPc == null) {
             preferredPc = destination.name
-            prefs.edit().putString("preferredPc", preferredPc).apply()
+            preferredAddress = destination.address.hostAddress
+            prefs.edit().putString("preferredPc", preferredPc)
+                .putString("preferredPcAddress", preferredAddress).apply()
         }
-        val message = if (network == null) "同じ Wi-Fi に接続してください"
-            else if (allowNonWifi && !isWifi(network!!)) "開発用: 非Wi-Fi経路（PCのIPを手入力してください）"
-            else if (warning.isNotEmpty()) warning
-            else if (destination == null && station.isNotEmpty()) "台${station}の PC が見つかりません（探索中・手入力も可能）"
-            else if (destination == null) "PCを探索中（見つからない場合は手入力）" else "同じ Wi-Fi の送信先"
+        val current = network
+        val message = DiscoveryStatusText.message(current != null,
+            current != null && allowNonWifi && !isWifi(current), warning, destination != null, station,
+            preferredPc.takeIf { destination == null && station.isEmpty() && found.isNotEmpty() })
         onUpdate(destination, network, message)
     }
 
@@ -338,6 +340,7 @@ class PcDiscovery(context: Context,
         listener?.let { try { nsd.stopServiceDiscovery(it) } catch (_: Exception) { } }
         listener = null
         if (multicast.isHeld) multicast.release()
+        broadcastTargets = null
     }
 
     fun stop() {

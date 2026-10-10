@@ -36,7 +36,7 @@ core のアルゴリズムとUDP仕様は維持する。
 「色別送信fps」「認識の閾値（明るさ145、色の優位差25）」がある。
 端末状態行には「発熱 正常 / やや高い / 高い / 危険」、電池%・充電状態、
 直近5秒の実測解析fpsとJNI処理msの中央値、撮影→送信（センサー露光時刻からJNI処理完了まで）の中央値も表示する。カメラは「カメラ 60fps（低遅延）」ON（既定・保存）で AE [60,60] と VGA 以下 1/60 秒以内の YUV 解像度がある場合だけ 60fps、なければ 30fps（2026-10-08、sense9 実機未確認）。送信中は Wi-Fi の低遅延ロック（`WIFI_MODE_FULL_LOW_LATENCY`）で省電力を止める。C++ core は Debug でも -O2（-O0 では sense9 で約300ms/フレームとなり、180msの鮮度制限で全送信が破棄された）。高い・危険、または開始3秒後から
-解析fpsが要求30fpsの70%未満（21fps未満）になると注意行を出す。
+解析fpsが実際に要求したfps（60または30）の70%未満（42／21fps未満）になると注意行を出す。
 カメラfpsや認識を自動調整しない。長時間運転の対処は
 [当日runbook](../docs/claude/EVENT_DAY_RUNBOOK.md#4-正常な状態) を参照。
 両色共通の既定彩度30、sample step=2は固定。閾値変更は停止中に行う。
@@ -135,6 +135,9 @@ Macもファイアウォールが有効ならUnityの受信を許可する。
 - 自動探索は最初に見つかったPCを維持する。複数PCがある会場では意図したPCの
   IPv4を手入力して保存する。SharedPreferencesの手入力は自動探索より優先する。
   UDPには受信確認がないため、表示するPCは「探索で発見した送信先」であり接続保証ではない。
+  前回のPCはUDP名（PC名）とBonjour名（Unity共通）が異なるため、名前かIPv4の一致で同じPCとみなす。
+  前回のPC以外だけが見つかっている間は、その旨と解除方法（停止）を表示する。
+  IPv4のbroadcast先が変わらないLinkProperties更新（IPv6のRA・lease時刻）では再探索せず、送信先を保つ。
 - 探索中（画面表示中）は `WifiManager.MulticastLock` を保持し、停止・画面終了・
   ネットワーク切替でソケット/NSD/lockを解放する。Wi-Fi networkへのbindは、モバイル通信が
   default networkでも座標がWi-Fiを使うため。Wi-Fiスキャン/接続変更APIは使わないため、
@@ -142,12 +145,12 @@ Macもファイアウォールが有効ならUnityの受信を許可する。
 
 ## カメラ・座標・送信の一致条件
 
-本番iPhoneは `CameraViewModel` の `preferredCameraFormatIndex` で30fps対応の
-640×480以下の最大サイズを選び、それがなければ30fps対応の最小サイズを使う。
+本番iPhoneは `CameraViewModel` の `preferredCameraFormatIndex` で要求fps（既定60、非対応・30選択時は30）対応の
+640×480以下の最大サイズを選び、それがなければ同fps対応の最小サイズを使う。
 AVFoundationの非ミラー `.portrait`、32BGRA、stabilization off、自動露出が既定。
 通常VGAなら**検出入力は480×640のportrait**で、出力座標は1920×1080に正規化する。
-Androidも背面カメラ・同じサイズ選択方針、固定AE range [30,30]、自動露出・手ぶれ補正offを要求する。
-固定30fpsを広告しないカメラではエラーにし、別fpsへ黙って切り替えない。
+Androidも背面カメラ・同じサイズ選択方針、固定AE range [60,60]（「カメラ 60fps」ONで対応時）または [30,30]、自動露出・手ぶれ補正offを要求する。
+60fps非対応なら30fpsにする。固定30fpsも広告しないカメラではエラーにし、それ以外のfpsへ黙って切り替えない。
 実際のサイズは画面に表示する。AE/ISPによって実際のフレーム間隔が変わる可能性は残る。
 
 CameraXは `OUTPUT_IMAGE_FORMAT_RGBA_8888` / `STRATEGY_KEEP_ONLY_LATEST`。

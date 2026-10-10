@@ -20,7 +20,7 @@ Windows + Android を基本構成にします。Windows + iPhone は iPhone の�
 
 - **Editor**: Play 前に **Tools > PhoneSaber > Station > A** または **B** を選びます。設定は保存され、次の Play に適用されます。
 - **ビルド済み Player**: `Start-Saber-A.bat` / `Start-Saber-B.bat` を使います。それぞれ先頭の `GAME_EXE` を実際の exe のパスに合わせてください。既定は、このキットから相対指定した `../../Builds/Windows/3D-Saber.exe` です。空白・日本語を含むパスも引用符付きで起動します。
-- bat はゲーム終了まで待機し、**終了コード0なら監視終了、非0なら5秒後に自動再起動**します。ウィンドウに再起動回数を表示し、同じフォルダの `Start-Saber-A.log` / `B.log` に時刻・終了コード・回数を追記します。正常終了はゲームの Quit。監視停止は **Ctrl+C → バッチ終了に Y**、または空の `Start-Saber-A.STOP` / `B.STOP` (両台なら `STOP`) を作成します。STOP は現在のゲームを強制終了せず、終了後の再起動を止めます。次回起動前に削除してください。
+- bat はゲーム終了まで待機し、**終了コード0なら監視終了、非0なら5秒後に自動再起動**します。ウィンドウに再起動回数を表示し、同じフォルダの `Start-Saber-A.log` / `B.log` に時刻・終了コード・回数を追記します。正常終了はゲームの Quit。監視停止は **Ctrl+C → バッチ終了に Y**、または空の `Start-Saber-A.STOP` / `B.STOP` (両台なら `STOP`) を作成します。STOP は現在のゲームを強制終了せず、終了後の再起動を止めます (再起動待ちの5秒間も1秒ごとに確認)。次回起動前に削除してください。STOP が残ったまま bat を起動すると、ゲームを起動せずにその旨を表示して止まります。ゲーム実行中は Ctrl+C の確認がゲーム終了まで出ないことがあります。すぐ監視だけ止めたいときは bat のコンソールウィンドウを閉じます (ゲームは終了しません)。Ctrl+C やウィンドウを閉じた停止はログに残りません。
 - bat は `-phonesaberStation A` / `B` を渡します。設定の優先順は **起動引数 → 環境変数 `PHONESABER_STATION` → PlayerPrefs** です。
 - Android / iPhone の接続設定の **「台」** も同じ **A / B** にして送信を開始します。手動 IP は台の自動探索より優先されるため、必ず該当 PC の IP を使います。台設定は UDP の受信を拒否する機能ではありません。
 - **Editor とビルド済み Player を同時起動しないでください**。同じ PC 上で UDP 5005 / 5006 が競合します。
@@ -34,7 +34,9 @@ Windows + Android を基本構成にします。Windows + iPhone は iPhone の�
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\PhoneSaber\windows\Allow-PhoneSaber-Firewall.ps1
 ```
 
-この実行だけ PowerShell の実行制限を回避します。スクリプトは PhoneSaber 専用の受信規則を作成し、**UDP 5005 (RED) / 5006 (BLUE) / 5007 (Android 探索)** を、**Private と Public の両方・送信元はローカルサブネットのみ**で許可します。Windows のモバイルホットスポットは Public 扱いになることがあるためです（2026-10-07 に確認）。固定名の同じ規則を更新するので再実行しても増えません。初回の許可ダイアログを閉じたときに Windows が作る **Unity の受信ブロック規則も無効化**します（Block は Allow より優先されるため）。規則は exe 限定ではなく該当ポートへの許可なので、Editor と Player の両方で使えます。
+この実行だけ PowerShell の実行制限を回避します。スクリプトは PhoneSaber 専用の受信規則を作成し、**UDP 5005 (RED) / 5006 (BLUE) / 5007 (Android 探索)** を、**Private と Public の両方・送信元はローカルサブネットのみ**で許可します。Windows のモバイルホットスポットは Public 扱いになることがあるためです（2026-10-07 に確認）。固定名の同じ規則を更新するので再実行しても増えません。初回の許可ダイアログを閉じたとき、またはチェックしなかったネットワーク (例: パブリック) 向けに Windows が作る **Unity の受信ブロック規則も無効化**します（Block は Allow より優先されるため）。対象は表示名に `Unity` / `ServTechSlash` (Player の productName) を含む規則と、対象プログラムが `Unity.exe` / `3D-Saber.exe` の規則です。規則は exe 限定ではなく該当ポートへの許可なので、Editor と Player の両方で使えます。
+
+ブロック規則はダイアログに答えた時点で作られるため、**ビルド済み Player (と Editor) を一度起動してダイアログに答えた後に**このスクリプトを実行します。ダイアログではプライベートとパブリックの両方にチェックして許可するのが確実です。exe を別の場所に作り直した・別名にしたなどで新しいダイアログに答えたときは、スクリプトを再実行します。
 
 削除する場合は管理者 PowerShell で以下を実行します。
 
@@ -58,10 +60,10 @@ Get-NetFirewallRule -Name 'PhoneSaber-Event-UDP-500*' | Remove-NetFirewallRule
 - Android の **探索 UDP 5007**、Bonjour、P2P bridge、各色の UDP 受信機の ON / 停止も表示します。Windows の Bonjour / P2P は **未対応**。Mac の送信元 `127.0.0.1` は **P2P bridge**、それ以外は **LAN** と表示します (IP による経路の目安です)。
 - 数字が 0 のままなら、スマホの送信開始、台・手動 IP、同じネットワーク、ファイアウォールスクリプトの実行（Unity の Block 規則が残っていないか）を確認します。受信機が停止なら、もう一つの Unity / Player がポートを使っていないか確認します。
 
-F8 にイベントログのパスも表示します。`Application.persistentDataPath/PhoneSaber/events.log` と4世代、各1 MiBまでに受信機の開始・停止・再試行、1秒超の途絶と復帰、送信元・経路・台名を記録します。ディスクへの書込は main thread だけで行い、書込失敗時も受信を続けます。ゲーム起動時にバックグラウンド実行とスリープ防止を設定します。
+F8 にイベントログのパスも表示します。`Application.persistentDataPath/PhoneSaber/events.log` (Windows Player では通常 `%USERPROFILE%\AppData\LocalLow\DefaultCompany\ServTechSlash\PhoneSaber\events.log`、Unity の `Player.log` はその1つ上) と4世代、各1 MiBまでに受信機の開始・停止・再試行、1秒超の途絶と復帰、送信元・経路・台名を記録します。ディスクへの書込は main thread だけで行い、書込失敗時も受信を続けます。ゲーム起動時にバックグラウンド実行とスリープ防止を設定します。
 
 ## 6. 遅延テスト（F9、Windows / Mac 共通）
 
 ゲーム画面で **F9** を押すと画面が黒くなり、赤い棒が左右に交互に出ます。スマホのカメラをこの画面に向け、赤い棒だけが映るように置くと、棒が切り替わってから赤の受信位置が切り替わるまでの時間を測ります。画面下に **画面→受信 の中央値 / p95** が出ます。もう一度 F9 で終了し、結果をイベントログに残します。モニタ表示・カメラ・認識・Wi-Fi・受信を含むので、プレイヤーが感じる遅延にほぼ等しく、iPhone / Android・Mac / Windows を同じ方法で比べられます。スマホの画面の「撮影→送信」は、このうちスマホ内部の分です。
 
-会場に持ち込む前に、実際の Windows PC + スマホで両色の受信・探索・ホットスポットを確認してください。
+会場に持ち込む前に、実際の Windows PC + スマホで両色の受信・探索・ホットスポットを確認してください。ゲーム側のスリープ防止が Windows で効くかは未確認のため、念のため Windows の電源設定で画面オフ・スリープを「なし」にし、AC 電源につないでおきます。

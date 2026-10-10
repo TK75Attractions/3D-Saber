@@ -8,6 +8,7 @@ using UnityEngine.InputSystem;
 // 答えがなければ DefaultTimeoutSeconds で「はい」(初めての人ほど固まるため)。
 public sealed class TitleTutorialPrompt : MonoBehaviour
 {
+    int shownSeconds = -1;
     public const float DefaultTimeoutSeconds = 10f;
     // 前進演出(ロゴが去り、幕の色まで暗くなる)を見せ切ってから問いかけを出す。
     public const float RevealDelaySeconds = TitlePresentationMotion.DepartureDuration;
@@ -91,14 +92,20 @@ public sealed class TitleTutorialPrompt : MonoBehaviour
         if (timeout > 0f)
         {
             float left = timeout - (Time.unscaledTime - openedAt);
-            if (remaining != null) remaining.text = left > 0f ? "あと " + Mathf.CeilToInt(left) + " 秒で「はい」" : "";
+            // 表示する秒数が変わったときだけ文字列を作る（毎フレームの GC を避ける）。
+            int shown = left > 0f ? Mathf.CeilToInt(left) : 0;
+            if (remaining != null && shown != shownSeconds)
+            {
+                shownSeconds = shown;
+                remaining.text = shown > 0 ? "あと " + shown + " 秒で「はい」" : "";
+            }
             if (left <= 0f) Choose(true, "timeout");
         }
     }
 
     void Open()
     {
-        IsOpen = true; openedAt = Time.unscaledTime;
+        IsOpen = true; openedAt = Time.unscaledTime; shownSeconds = -1;
         YesNote = TitleStartNote.Build(YesPosition, UISkinPalette.NoteGold);
         YesNote.name = "TutorialYesNote";
         NoNote = TitleStartNote.Build(NoPosition, NoColor);

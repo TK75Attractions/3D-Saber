@@ -84,24 +84,23 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                 val map = camera2.getCameraCharacteristic(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
                 // 60fps は AE の固定 [60,60] と、VGA 以下で 1/60 秒以内に出せる YUV 解像度がある場合だけ。
                 val vga60 = map?.getOutputSizes(ImageFormat.YUV_420_888)?.any { size ->
-                    maxOf(size.width, size.height) <= 640 && minOf(size.width, size.height) <= 480 &&
-                        map.getOutputMinFrameDuration(ImageFormat.YUV_420_888, size) <= 16_666_667L
+                    CameraFormatPolicy.isCompact(size.width, size.height) &&
+                        map.getOutputMinFrameDuration(ImageFormat.YUV_420_888, size) <= CameraFormatPolicy.FRAME_60FPS_NS
                 } == true
-                val fps = if (preferredFps == 60 && ranges?.contains(Range(60, 60)) == true && vga60) 60 else 30
+                val fps = CameraFormatPolicy.selectFps(preferredFps, ranges?.contains(Range(60, 60)) == true, vga60)
                 require(ranges?.contains(Range(fps, fps)) == true) { "このカメラは固定30 fpsに対応していません" }
                 activeFps = fps
-                val maxFrameDuration = if (fps == 60) 16_666_667L else 33_333_334L
+                val maxFrameDuration = CameraFormatPolicy.maxFrameDuration(fps)
+                // Preview の候補（PRIVATE）が YUV 表に無いと getOutputMinFrameDuration は例外を投げ、
+                // bind 全体が失敗する。表に無いサイズは従来の「不明」と同じ扱いにする。
+                fun yuvMinFrameDuration(size: android.util.Size): Long? = try {
+                    map?.getOutputMinFrameDuration(ImageFormat.YUV_420_888, size)
+                } catch (_: IllegalArgumentException) { null }
                 val selector = ResolutionSelector.Builder()
                     .setResolutionFilter { sizes, _ ->
-                        val supported = sizes.filter { size ->
-                            val duration = map?.getOutputMinFrameDuration(ImageFormat.YUV_420_888, size) ?: 0L
-                            duration == 0L || duration <= maxFrameDuration
-                        }
-                        val compact = supported.filter { maxOf(it.width, it.height) <= 640 &&
-                            minOf(it.width, it.height) <= 480 }
-                        // Same iPhone policy: largest <= VGA at 30fps, otherwise smallest.
-                        if (compact.isNotEmpty()) compact.sortedByDescending { it.width.toLong() * it.height }
-                        else supported.sortedBy { it.width.toLong() * it.height }
+                        // Same iPhone policy: largest <= VGA at the requested fps, otherwise smallest.
+                        CameraFormatPolicy.order(sizes, { it.width }, { it.height }, ::yuvMinFrameDuration,
+                            maxFrameDuration)
                     }.build()
                 val builder = ImageAnalysis.Builder()
                     .setTargetRotation(Surface.ROTATION_0) // Fixed portrait independent of physical/device UI rotation.
@@ -155,7 +154,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                 val camera = cameras.bindToLifecycle(owner, CameraSelector.DEFAULT_BACK_CAMERA, frames, preview)
                 cameraState = camera.cameraInfo.cameraState
                 cameraState?.observe(owner) { state ->
-                    state.error?.let { fail(token, "カメラエラー (${it.code})") }
+                    state.error?.let { fail(token, CameraErrorText.describe(it.code, fps)) }
                 }
             } catch (e: Exception) { fail(token, "カメラ開始失敗: ${e.localizedMessage}") }
         }, ContextCompat.getMainExecutor(previewView.context))
