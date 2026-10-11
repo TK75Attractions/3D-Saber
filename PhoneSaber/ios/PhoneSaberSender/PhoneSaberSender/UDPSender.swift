@@ -672,11 +672,15 @@ final class ConnectivityLog: @unchecked Sendable {
         let message: String
     }
 
-    /// XCTest 中はファイルを作らない。
+    /// XCTest 中と、Mac 上で動かす解析用 harness ではファイルを作らない（iPhone のアプリ内だけ）。
     static var defaultFileURL: URL? {
+#if os(iOS)
         guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil,
               let library = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first else { return nil }
         return library.appendingPathComponent("Logs/connectivity.log")
+#else
+        return nil
+#endif
     }
 
     private let lock = NSLock()

@@ -2,7 +2,12 @@
 
 ## ユーザー待ち
 
-2026-10-09時点。最新版を実機に入れて確認する。手順は[当日runbook](EVENT_DAY_RUNBOOK.md)。
+2026-10-11時点。最新版を実機に入れて確認する。手順は[当日runbook](EVENT_DAY_RUNBOOK.md)。
+
+**次に iPhone を Xcode で入れ直したら（10-11 の修正の確認、合計5分ほど）:**
+- **振りだけ録画（最優先）**: 本番の場所（壁画が映る画角）で、露出 1/100 秒、Debug Recording の「振りだけ録画を開始」を押して振る位置へ。約50秒で自動終了。2本撮る（別々の振りの証拠が要るため）。core-line 過連結 guard と壁画の青 FP 対策の採用判断に使う（[解析](coreline-overlink-and-mural.md)）。
+- **Wi-Fi 切替の復帰**: 送信中に Mac の Wi-Fi を別のネットワークへ切り替え、何秒で Unity に座標が戻るか（10-10 は約100秒）。iPhone に「PC（Unity）から応答がありません」が出ること、「通信ログ」に経路の切替が残ることも見る。
+- **F9**: 画面に「比較用の記録 n/8 ブロック」が出る。8 ブロック（約2分）まで、iPhone の「fps自動比較」ON でカメラを画面に向けたまま待つ。
 
 0. **最適化の実機確認（最優先・数字の入力不要）**: Mac `git pull`→Unity Play、iPhone を Xcode で入れ直し（60fps 既定・LAN 優先・送信経路と認識の高速化・UI 12Hz）。iPhone と Mac を同じ Wi-Fi にして Debug Performance の「fps自動比較」ON → F9 を数分→F9。AQUOS は Mac に USB 接続すれば Claude が入れて 60fps 維持・JNI 中央値を確認。剣の遅延補正は F8 で 20ms を試し、振り心地を一言もらう。
 
@@ -17,6 +22,7 @@
 
 ## 現在の仮説と確度
 
+- **中（新・10-11）**: 実剣の上での端点の飛びは「core-line の過連結」（剣と遠くの明点を1本につなぐ。大差で勝つので僅差の CASE A とは別）。機構は特定済み、限定 guard は offline で有効。別 swing の実剣証拠が未達。本番の背景には青緑の壁画が一部映り、消灯時の BLUE FP になる。
 - **高**: 肌・照明・背景の誤検出と、速振りのブレによる候補消失が主因。旧CASE A代表例は背景同士で、実剣の選択修正gateは未達。
 - **高**: AWDLの詰まりは認識とは別の遅延原因。interactiveVoiceの実機効果は未確認。F8で間隔・同期時の片道時計差を比較できるが、画面全体の遅延ではない。
 - **確認済み**: score決定性は `bbc1f32`、赤warmNoDeepRedは `8363024`。10-06の実機v2では最初の剣なし赤FPが598/598→0/598。ただし別の背景FP・小さい／淡い剣の保持は追加確認が必要。
@@ -44,6 +50,18 @@
 11. **将来の構成を比較**: AWDLが不安定ならUSB/usbmuxd/TCPを試すか判断し、座標互換・滞留・切断復帰・画面全体の遅延を測る。Mac内蔵／USBカメラ直接認識は精度・端点・配置・遅延を比較して採否を決める。Continuity Cameraは別の無線経路で、縮小／FPSだけを通信遅延改善と扱わない。
 
 ## 作業ログ
+
+### 2026-10-11 10-10 の実機テストで出た不具合の修正（Claude＋Codex、verify 全項目 PASS）
+- **Wi-Fi 切替後に約100秒届かない**（0058315）: P2PSender は失敗した接続の次から、browser が報告する interface（awdl 優先）へ順に固定して試す。最初の接続と pong 後は従来どおり OS 任せ。原因は仮説（UDP が切れたネットワークの cached record へつなぎ直し続け、失敗が通知されない）で、実機未確認。iPhone のログが無く特定できなかったため、**通信ログ**（経路切替・P2P 探索/再接続・LAN 宛先変更。画面に直近12行、端末の Library/Logs/connectivity.log）を追加。
+- **届いていないのに NETWORK READY**（同）: 送信中に Unity の応答も P2P も3秒無いと「PC（Unity）から応答がありません」を表示（見出しの文言は不変）。runbook に「PC の Wi-Fi 自動接続を切る」を追記。
+- **手動録画に振りの画像が残らない**（9212734、原因調査と保持修正は Codex、[詳細](debug-retention-20261011.md)）: Stop 待ち候補の間引きが中間の最良窓を捨てる欠陥を修正。`memory` と出ていた ledger は実際には予算超過ではなく tracking 窓への置換だった（`tracking_mode` / `not_retained` に分離。**10-10 に「メモリ上限で4件捨てられた」と報告したのは誤り**）。55.40秒の event が末尾5秒扱いにならなかった件は現ソースで再現せず、実際の終了時刻（frame 数/60 より長い可能性）を `recordingEndTimeSeconds` に記録するようにした。止めに来る場面のほうが instability が高い、という設計上の限界は残るため、**振りだけ録画**（swing_only_2026_10_11 v1、51秒、消灯5秒→大きく振る→止める→速く振る、lossless 6枚、自動終了）を追加。
+- **F9 の比較が成立しない**（f32e771）: 記録ブロック数と「8 ブロックで十分」を画面に表示。
+- **解析ツール**（43c8e52、review-python-tools.md）: latency_report の `--since` を時刻として解釈（JST 指定で全件落ちていた）、書きかけの latency-block 行を無視、triage receiver に 150 秒の idle timeout、selection replay が壊れた JSON で落ちない、PlayMode batch が 0 件実行を成功にしない。
+- **Unity の受信→描画直前**（b46352b、unity-frame-cost.md）: 中央値 7.0ms / p95 7.6ms（フレーム間隔 8.33ms）、Update 先頭→描画直前 0.18ms。余分な1フレーム遅れは無い。
+- **core-line 過連結と壁画 FP の offline 解析**（327c642、Codex、[詳細](coreline-overlink-and-mural.md)）: 暗い隙間への無条件補間（pipeline.cpp:179–184 / BGRADetection.swift:390–398）と raw 長に依存する加点が原因。限定 guard G(.6) で 21952 BLUE / 21953 RED が正しい候補に戻り、formal 40/40、旧ラベルの剣 赤29・青31 の検出を保持（端点の正解までは未確認）。壁画 BLUE FP は 9→4 まで、0 にできる rule は無し。**本番採用は保留**（別 swing の実剣 2 event が未達）。
+- **iPhone 送信処理の連続運転**（[soak.md](soak.md)）: Mac 上で 15 分×2 条件。footprint +0.7〜0.8MB、スレッド・fd・送信レート・送信時間は劣化なし。
+- 検証: verify_phone_saber.sh（iOS XCTest / Detection / Lossless 40 / Tools / iOS Release / Diff Check）全 PASS。Unity EditMode は PhoneSaber 系 PASS、全体 1870 件中の失敗 2 件は譜面エディタのテスト（ChartRecordingWorkflowTests、今回の変更と無関係）。
+- Codex 週間枠は 93% 使用（10-14 頃リセット）。
 
 ### 2026-10-10 学校での実機 capture（iPhone＋Mac、Claude 解析）
 - F9（Editor、iPhone テザリング経由 LAN、60fps、n=22）: 中央値 135ms、p95 179ms、最小 103ms。10-07 の LAN（30〜40fps、中央値 132〜150ms、p95 204〜347ms）と中央値は同等。1ブロックだけなので fps 自動比較は未成立。
