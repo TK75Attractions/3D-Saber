@@ -48,3 +48,18 @@ marker 別の割り当て（profile run の合計）:
 - PhoneSaber UDP 受信 159,600 B / 3,600 packet ≒ **44 B/packet**（標準 IPEndPoint の ReceiveFrom、想定どおり）。
 
 結論: 「1フレーム約500KB」は Editor の Play 計測に含まれる Editor 自身の割り当て。ゲームと PhoneSaber の受信は Player でほぼ割り当てなし。対応不要。
+
+## 受信→描画直前の時間（2026-10-11、Claude）
+
+同じ batch run が `receive-to-sample.csv` / `receive-to-render.csv` / `sample-to-render.csv` / `frame-interval.csv` も出す。
+計測点は PlayerLoop の Update 先頭（InputPoint が最新値を取り込む直前）と PostLateUpdate 先頭（全 script の後、描画コマンド発行の前）。GPU・present・表示機器の遅延は含まない。
+
+| 指標（batchmode コピー、合成 60Hz 赤青、フレーム間隔 中央値 8.33ms） | 中央値 | p95 | 最大 |
+|---|---:|---:|---:|
+| UDP receive 完了 → 取り込んだフレームの Update 先頭 | 6.80ms | 7.39ms | 11.83ms |
+| Update 先頭 → 描画直前 | 0.18ms | 0.26ms | 1.13ms |
+| UDP receive 完了 → 描画直前 | 7.01ms | 7.60ms | 12.17ms |
+
+- 受信した 602 packet のうち 600 を別々のフレームで取り込んだ（間引きなし）。
+- Unity 側で足されるのは「次のフレームを待つ時間」（最大1フレーム）だけで、script の実行順や処理時間による余分な1フレーム遅れは無い。受信→描画で削れる余地はフレームレート以外に見つからなかった。
+- 中央値がフレーム間隔の半分（約4ms）より大きいのは、合成送信の 60Hz と描画の位相が固定されるため。実機ではばらつく。

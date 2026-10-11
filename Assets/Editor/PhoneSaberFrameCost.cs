@@ -13,12 +13,14 @@ using UnityEditor.Profiling;
 using UnityEditor.SceneManagement;
 using UnityEditorInternal;
 using UnityEngine;
+using UnityEngine.LowLevel;
 using UnityEngine.Profiling;
 using Debug = UnityEngine.Debug;
 
 // 専用コピーのバッチでだけ使う。ゲームコード、Scene、Prefab、Player の構成は変更しない。
 // -executeMethod PhoneSaberFrameCost.Measure -phonesaberFrameCostOutput <dir>
 // 任意: -phonesaberFrameCostProfile（別の診断 run。callstack の負荷を通常計測と混ぜない）
+// 受信→描画直前の時間も同じ run で測る（PlayerLoop の Update 先頭と PostLateUpdate 先頭に計測点を置く）。
 [InitializeOnLoad]
 public static class PhoneSaberFrameCost
 {
@@ -34,6 +36,16 @@ public static class PhoneSaberFrameCost
     static GamePlayManager manager;
     static SyntheticSender sender;
     static ProfilerRecorder gc, mainThread, playerLoop;
+    // 受信→描画の計測。測定中は事前確保した配列へ書くだけで、割当・文字列生成をしない。
+    // 時計は InputPoint の受信時刻と同じ SwingMonotonicClock（Stopwatch）。
+    static readonly double[] frameIntervalMs = new double[Capacity], sampleToRenderMs = new double[Capacity];
+    static readonly double[] receiveToSampleMs = new double[Capacity], receiveToRenderMs = new double[Capacity];
+    static int frameCount, appliedCount, receivedRedAtMeasure;
+    static bool latencyMeasuring, latencyOverflow;
+    static double updateStartSeconds = double.NaN, lastAppliedStamp = double.NaN;
+    static PlayerLoopSystem? originalPlayerLoop;
+    struct UpdateStartMarker { }
+    struct RenderStartMarker { }
 
     [Serializable] sealed class Metric
     {
@@ -54,6 +66,11 @@ public static class PhoneSaberFrameCost
         public double measuredSeconds, senderSeconds, senderHz, senderMaxLateMs;
         public bool redParsed, blueParsed, redEndpoints, blueEndpoints;
         public Metric gcBytes, mainThreadMs, playerLoopMs;
+        // frameInterval: Update 先頭どうしの間隔。sampleToRender: Update 先頭（InputPoint が最新値を取り込む直前）
+        // → PostLateUpdate 先頭（描画直前）。receiveToSample / receiveToRender: 赤の UDP receive() 完了 → その値を初めて
+        // 取り込んだフレームの Update 先頭 / PostLateUpdate 先頭。GPU・present・表示機器の遅延は含まない。
+        public Metric frameIntervalMs, sampleToRenderMs, receiveToSampleMs, receiveToRenderMs;
+        public int receivedRedPackets, appliedRedPackets;
         public List<Allocator> topAllocationMarkers;
     }
 
@@ -169,12 +186,14 @@ public static class PhoneSaberFrameCost
                     throw new InvalidOperationException("必要な ProfilerRecorder marker がありません");
                 sentAtMeasure = sender.SentPairs;
                 senderMeasuredAt = sender.ElapsedSeconds;
+                StartLatency(InputPoint.Instance);
                 measuredAt = EditorApplication.timeSinceStartup;
                 phase = 2;
             }
             else if (phase == 2 && now - measuredAt >= MeasureSeconds)
             {
                 gc.Stop(); mainThread.Stop(); playerLoop.Stop();
+                StopLatency();
                 int sent = sender.SentPairs - sentAtMeasure;
                 double senderSeconds = sender.ElapsedSeconds - senderMeasuredAt;
                 double senderHz = sent / senderSeconds;
@@ -182,7 +201,7 @@ public static class PhoneSaberFrameCost
                 Profiler.enabled = false;
                 Profiler.enableBinaryLog = false;
                 Profiler.enableAllocationCallstacks = false;
-                if (gc.WrappedAround || mainThread.WrappedAround || playerLoop.WrappedAround)
+                if (gc.WrappedAround || mainThread.WrappedAround || playerLoop.WrappedAround || latencyOverflow)
                     throw new InvalidOperationException("Recorder capacity を超えたため比較できません");
                 if (senderHz < 58 || senderHz > 62)
                     throw new InvalidOperationException($"60Hz条件を満たしません: {senderHz:F2}Hz ({sent} pairs / {senderSeconds:F3}s)");
@@ -213,6 +232,12 @@ public static class PhoneSaberFrameCost
                     gcBytes = Export(gc, "gc-bytes", "bytes", 1),
                     mainThreadMs = Export(mainThread, "main-thread", "ms", 1e-6),
                     playerLoopMs = Export(playerLoop, "player-loop", "ms", 1e-6),
+                    frameIntervalMs = Export(frameIntervalMs, frameCount - 1, "frame-interval", "ms"),
+                    sampleToRenderMs = Export(sampleToRenderMs, frameCount, "sample-to-render", "ms"),
+                    receiveToSampleMs = Export(receiveToSampleMs, appliedCount, "receive-to-sample", "ms"),
+                    receiveToRenderMs = Export(receiveToRenderMs, appliedCount, "receive-to-render", "ms"),
+                    receivedRedPackets = input.ReceivedPacketCount - receivedRedAtMeasure,
+                    appliedRedPackets = appliedCount,
                     profileFirstFrame = profile ? Math.Max(firstProfileFrame, ProfilerDriver.firstFrameIndex) : -1,
                     profileLastFrame = profile ? lastProfileFrame : -1,
                     topAllocationMarkers = profile ? AllocationMarkers(firstProfileFrame, lastProfileFrame) : new List<Allocator>()
@@ -220,7 +245,9 @@ public static class PhoneSaberFrameCost
                 report.senderHz = report.sentRed / report.senderSeconds;
                 File.WriteAllText(Path.Combine(output, "summary.json"), JsonUtility.ToJson(report, true) + "\n");
                 Debug.Log($"[PhoneSaberFrameCost] PASS GC median={report.gcBytes.median:F0}B p95={report.gcBytes.p95:F0}B " +
-                    $"main-thread median={report.mainThreadMs.median:F3}ms p95={report.mainThreadMs.p95:F3}ms sender={report.senderHz:F2}Hz output={output}");
+                    $"main-thread median={report.mainThreadMs.median:F3}ms p95={report.mainThreadMs.p95:F3}ms sender={report.senderHz:F2}Hz " +
+                    $"receive-to-render median={report.receiveToRenderMs.median:F3}ms p95={report.receiveToRenderMs.p95:F3}ms " +
+                    $"sample-to-render median={report.sampleToRenderMs.median:F3}ms output={output}");
                 Cleanup();
                 EditorApplication.Exit(0);
             }
@@ -231,15 +258,22 @@ public static class PhoneSaberFrameCost
     static Metric Export(ProfilerRecorder recorder, string name, string unit, double scale)
     {
         var samples = recorder.ToArray();
-        if (samples.Length < 10) throw new InvalidOperationException(name + " のサンプルが不足しています");
         var values = new double[samples.Length];
+        for (int i = 0; i < samples.Length; i++) values[i] = samples[i].Value * scale;
+        return Export(values, values.Length, name, unit);
+    }
+
+    static Metric Export(double[] source, int count, string name, string unit)
+    {
+        if (count < 10) throw new InvalidOperationException(name + " のサンプルが不足しています");
+        var values = new double[count];
+        Array.Copy(source, values, count);
         double sum = 0;
         using (var writer = new StreamWriter(Path.Combine(output, name + ".csv")))
         {
             writer.WriteLine("sample_index,value_" + unit);
-            for (int i = 0; i < samples.Length; i++)
+            for (int i = 0; i < values.Length; i++)
             {
-                values[i] = samples[i].Value * scale;
                 sum += values[i];
                 writer.WriteLine(i.ToString(CultureInfo.InvariantCulture) + "," + values[i].ToString("R", CultureInfo.InvariantCulture));
             }
@@ -249,6 +283,72 @@ public static class PhoneSaberFrameCost
         return new Metric { name = name, unit = unit, samples = values.Length, mean = sum / values.Length,
             median = values.Length % 2 == 0 ? (values[mid - 1] + values[mid]) / 2 : values[mid],
             p95 = values[(int)Math.Ceiling(values.Length * .95) - 1], max = values[values.Length - 1] };
+    }
+
+    // Update の先頭（ScriptRunBehaviourUpdate より前）に計測点を入れる。InputPoint(-2000) が最初の script。
+    static void StartLatency(InputPoint input)
+    {
+        frameCount = 0; appliedCount = 0; latencyOverflow = false;
+        updateStartSeconds = double.NaN;
+        lastAppliedStamp = input.LastReceivedMonotonicTime;
+        receivedRedAtMeasure = input.ReceivedPacketCount;
+        PlayerLoopSystem loop = PlayerLoop.GetCurrentPlayerLoop();
+        originalPlayerLoop = loop;
+        var systems = (PlayerLoopSystem[])loop.subSystemList.Clone();
+        bool inserted = false, insertedRender = false;
+        for (int i = 0; i < systems.Length; i++)
+        {
+            bool update = systems[i].type == typeof(UnityEngine.PlayerLoop.Update);
+            bool postLate = systems[i].type == typeof(UnityEngine.PlayerLoop.PostLateUpdate);
+            if (!update && !postLate) continue;
+            var children = new List<PlayerLoopSystem>(systems[i].subSystemList ?? new PlayerLoopSystem[0]);
+            // PostLateUpdate の先頭 = 全 script の LateUpdate 後、描画コマンド発行の前。
+            // (Application.onBeforeRender は batchmode の Play では呼ばれなかった)
+            children.Insert(0, update
+                ? new PlayerLoopSystem { type = typeof(UpdateStartMarker), updateDelegate = OnUpdateStart }
+                : new PlayerLoopSystem { type = typeof(RenderStartMarker), updateDelegate = OnBeforeRender });
+            systems[i].subSystemList = children.ToArray();
+            if (update) inserted = true; else insertedRender = true;
+        }
+        if (!inserted || !insertedRender) throw new InvalidOperationException("PlayerLoop に Update / PostLateUpdate がありません");
+        loop.subSystemList = systems;
+        PlayerLoop.SetPlayerLoop(loop);
+        latencyMeasuring = true;
+    }
+
+    static void StopLatency()
+    {
+        latencyMeasuring = false;
+        if (originalPlayerLoop.HasValue) PlayerLoop.SetPlayerLoop(originalPlayerLoop.Value);
+        originalPlayerLoop = null;
+    }
+
+    static void OnUpdateStart()
+    {
+        if (!latencyMeasuring) return;
+        double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+        if (!double.IsNaN(updateStartSeconds) && frameCount > 0)
+        {
+            if (frameCount - 1 < Capacity) frameIntervalMs[frameCount - 1] = (now - updateStartSeconds) * 1000;
+        }
+        updateStartSeconds = now;
+    }
+
+    static void OnBeforeRender()
+    {
+        if (!latencyMeasuring || double.IsNaN(updateStartSeconds)) return;
+        double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+        if (frameCount >= Capacity) { latencyOverflow = true; return; }
+        sampleToRenderMs[frameCount++] = (now - updateStartSeconds) * 1000;
+        var input = InputPoint.Instance;
+        if (input == null) return;
+        double stamp = input.LastReceivedMonotonicTime;
+        // 新しい赤の受信値をこのフレームで初めて取り込んだときだけ数える（間引かれた packet は含めない）。
+        if (stamp == lastAppliedStamp || double.IsInfinity(stamp)) return;
+        lastAppliedStamp = stamp;
+        if (appliedCount >= Capacity) { latencyOverflow = true; return; }
+        receiveToSampleMs[appliedCount] = (updateStartSeconds - stamp) * 1000;
+        receiveToRenderMs[appliedCount++] = (now - stamp) * 1000;
     }
 
     static List<Allocator> AllocationMarkers(int first, int last)
@@ -298,6 +398,7 @@ public static class PhoneSaberFrameCost
     static void Cleanup()
     {
         SessionState.SetBool(Key, false);
+        StopLatency();
         sender?.Dispose(); sender = null;
         gc.Dispose(); mainThread.Dispose(); playerLoop.Dispose();
         Profiler.enabled = false; Profiler.enableBinaryLog = false; Profiler.enableAllocationCallstacks = false;
