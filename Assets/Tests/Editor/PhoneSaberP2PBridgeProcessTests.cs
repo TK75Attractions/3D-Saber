@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -268,6 +269,39 @@ public class PhoneSaberP2PBridgeProcessTests
             first.Dispose();
             second.Dispose();
             File.Delete(launcher);
+        }
+    }
+
+    [Test]
+    public void UnexpectedExitRestartsWithoutNewReceiverTransitionAndStopCancelsRetry()
+    {
+        Assume.That(PhoneSaberP2PBridgeProcess.IsSupported, "macOS only");
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-retry-" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(directory);
+        string launcher = Path.Combine(directory, "fake.py");
+        string countPath = Path.Combine(directory, "count");
+        File.WriteAllText(launcher, "from pathlib import Path\nimport time\n" +
+            "p=Path(__file__).with_name('count')\nn=int(p.read_text())+1 if p.exists() else 1\n" +
+            "p.write_text(str(n))\nif n==1:\n time.sleep(0.1)\n raise SystemExit(7)\ntime.sleep(30)\n");
+        var bridge = new PhoneSaberP2PBridgeProcess();
+        try
+        {
+            PhoneSaberP2PBridgeProcess.AutoStartEnabled = true;
+            LogAssert.Expect(LogType.Warning, new Regex(@"bridge exited \(code 7"));
+            Assert.IsTrue(bridge.Start(5005, 5006, Application.dataPath, LauncherEnvironment(launcher)));
+            DateTime deadline = DateTime.UtcNow.AddSeconds(6);
+            while (DateTime.UtcNow < deadline && (!File.Exists(countPath) || File.ReadAllText(countPath) != "2"))
+                Thread.Sleep(50);
+            Assert.AreEqual("2", File.ReadAllText(countPath), "受信機の再 bind が無くても bridge を再起動する");
+            bridge.Stop();
+            Thread.Sleep(2500);
+            Assert.IsFalse(PhoneSaberP2PBridgeProcess.IsRunning);
+            Assert.AreEqual("2", File.ReadAllText(countPath), "受信機停止後に再試行しない");
+        }
+        finally
+        {
+            bridge.Dispose();
+            Directory.Delete(directory, true);
         }
     }
 

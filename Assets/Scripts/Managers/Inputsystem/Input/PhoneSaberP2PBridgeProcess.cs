@@ -32,11 +32,15 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
     static LaunchState launch;
     static PhoneSaberP2PBridgeProcess owner;
     static string lastWarning;
-    // 起動/build に失敗したら、次の script compile(Editor では SessionState で Play をまたいで保持)まで再試行しない。
-    // (macOS 以外では読む箇所が無く CS0414 になるため抑止する)
-#pragma warning disable 0414
-    static volatile bool startFailed;
-#pragma warning restore 0414
+    readonly PhoneSaberBridgeRetryPolicy retryPolicy = new PhoneSaberBridgeRetryPolicy();
+    System.Threading.Timer retryTimer;
+    int requestedRedPort = 0;
+    int requestedBluePort = 0;
+    string requestedDataPath = null;
+    string requestedStation = null;
+    Func<string, string> requestedEnvironment;
+
+    static double Now => Stopwatch.GetTimestamp() / (double)Stopwatch.Frequency;
 
     bool disposed;
 
@@ -156,14 +160,26 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
         if (!AutoStartEnabled || environment == null) return false;
         lock (Gate)
         {
-            if (disposed) return false;
-            if (ProcessIsRunning(process)) return ReferenceEquals(owner, this);
+            if (disposed || IsDisabled(environment)) return false;
+            if (owner != null && !ReferenceEquals(owner, this)) return false;
+            requestedRedPort = redPort;
+            requestedBluePort = bluePort;
+            requestedDataPath = dataPath;
+            requestedStation = station;
+            requestedEnvironment = environment;
+            owner = this;
+            if (retryTimer == null) retryTimer = new System.Threading.Timer(Retry, null, 1000, 1000);
+            if (ProcessIsRunning(process)) return true;
+            // Exited handler は lock を取らない。終了の回収と policy 更新はこの lock 内だけで行う。
+            if (launch != null && !launch.Stopping) retryPolicy.Failed(Now);
             StopProcessLocked();
-            if (startFailed || IsDisabled(environment)) return false;
+            owner = this;
+            if (!retryPolicy.CanStart(Now)) return false;
 
             string launcher = dataPath == null ? null : ResolveLauncherPath(dataPath, environment);
             if (launcher == null || !File.Exists(launcher))
             {
+                retryPolicy.Failed(Now);
                 WarnOnce($"[PhoneSaber][P2P] bridge launcher not found: {launcher}. " +
                          $"P2P は使わず従来の LAN 受信だけで動きます({ScriptEnvironmentVariable} で場所を指定できます)");
                 return false;
@@ -174,6 +190,7 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
                 using (var current = Process.GetCurrentProcess()) parentPid = current.Id;
                 string serviceName = BuildServiceName(Environment.MachineName, station);
                 var state = new LaunchState();
+                retryPolicy.Started(Now);
                 var started = new Process
                 {
                     StartInfo = new ProcessStartInfo
@@ -206,8 +223,9 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
             catch (Exception exception)
             {
                 StopProcessLocked();
-                startFailed = true;
-                WarnOnce($"[PhoneSaber][P2P] bridge start failed: {exception.Message}. 従来の LAN 受信だけで動きます");
+                owner = this;
+                retryPolicy.Failed(Now);
+                WarnOnce($"[PhoneSaber][P2P] bridge start failed: {exception.Message}. 自動再試行します。LAN 受信はそのまま動きます");
                 return false;
             }
         }
@@ -216,11 +234,31 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
 #endif
     }
 
+    // UDP packet の到着に依存せず再試行する。受信機の停止 / Dispose で timer も止める。
+    void Retry(object unused)
+    {
+        lock (Gate)
+        {
+            if (disposed || retryTimer == null || !AutoStartEnabled || !ReferenceEquals(owner, this)) return;
+            try { Start(requestedRedPort, requestedBluePort, requestedDataPath, requestedEnvironment, requestedStation); }
+            catch { } // 背景 timer の例外で Player を終了させない。
+        }
+    }
+
+    void CancelRetryLocked()
+    {
+        retryTimer?.Dispose();
+        retryTimer = null;
+        requestedEnvironment = null;
+        retryPolicy.Reset();
+    }
+
     // どちらかの receiver が失われた時に止める。後で両方 bind できたら Start で再開する。
     public void Stop()
     {
         lock (Gate)
         {
+            CancelRetryLocked();
             if (ReferenceEquals(owner, this)) StopProcessLocked();
         }
     }
@@ -231,17 +269,19 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
         {
             if (disposed) return;
             disposed = true;
+            CancelRetryLocked();
             if (ReferenceEquals(owner, this)) StopProcessLocked();
         }
     }
 
-    // テスト用: 一度だけの警告と失敗フラグを初期状態に戻す。
+    // テスト用: 一度だけの警告と再試行を初期状態に戻す。
     internal static void ResetStateForTests()
     {
         lock (Gate)
         {
             lastWarning = null;
-            startFailed = false;
+            owner?.CancelRetryLocked();
+            StopProcessLocked();
         }
     }
 
@@ -277,9 +317,8 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
             Log(LogType.Log, "[PhoneSaber][P2P] bridge exited (code 0)");
             return;
         }
-        startFailed = true;
         Log(LogType.Warning, $"[PhoneSaber][P2P] bridge exited (code {code}). " +
-                             "次の script compile / Editor 再起動まで自動起動しません。LAN 受信はそのまま動きます");
+                             "受信機が動作中なら自動で再試行します(2 / 5 / 15 / 60 秒)。LAN 受信はそのまま動きます");
     }
 
     static bool ProcessIsRunning(Process candidate)
@@ -348,14 +387,11 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
     }
 
 #if UNITY_EDITOR_OSX
-    const string FailedSessionKey = "PhoneSaber.P2PBridge.StartFailed";
     const string PrebuiltSessionKey = "PhoneSaber.P2PBridge.PrebuildStarted";
 
     [UnityEditor.InitializeOnLoadMethod]
     static void InstallEditorHooks()
     {
-        // Play 開始時の domain reload をまたいで失敗を覚えておき、毎回 build を試し直さない。
-        if (UnityEditor.SessionState.GetBool(FailedSessionKey, false)) startFailed = true;
         UnityEditor.AssemblyReloadEvents.beforeAssemblyReload -= OnBeforeAssemblyReload;
         UnityEditor.AssemblyReloadEvents.beforeAssemblyReload += OnBeforeAssemblyReload;
         UnityEditor.Compilation.CompilationPipeline.compilationFinished -= OnCompilationFinished;
@@ -371,14 +407,12 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
     static void OnBeforeAssemblyReload()
     {
         StopForEditor();
-        if (startFailed) UnityEditor.SessionState.SetBool(FailedSessionKey, true);
     }
 
     // script を直したら(bridge 側の設定を変えた可能性もあるので)もう一度試せるようにする。
     static void OnCompilationFinished(object context)
     {
-        startFailed = false;
-        UnityEditor.SessionState.EraseBool(FailedSessionKey);
+        lock (Gate) owner?.retryPolicy.Reset();
     }
 
     static void OnPlayModeStateChanged(UnityEditor.PlayModeStateChange state)
@@ -388,14 +422,18 @@ public sealed class PhoneSaberP2PBridgeProcess : IDisposable
 
     static void StopForEditor()
     {
-        lock (Gate) StopProcessLocked();
+        lock (Gate)
+        {
+            owner?.CancelRetryLocked();
+            StopProcessLocked();
+        }
     }
 
     // Editor session ごとに 1 回、Play 外で launcher --build-only を低優先度で走らせ、最初の Play をすぐ始められるようにする。
     // build 済みなら launcher は hash を確認して即終了する。Editor は待たない。
     static void PrebuildOnce()
     {
-        if (!AutoStartEnabled || startFailed || Application.isBatchMode ||
+        if (!AutoStartEnabled || Application.isBatchMode ||
             UnityEditor.EditorApplication.isPlayingOrWillChangePlaymode) return;
         if (UnityEditor.SessionState.GetBool(PrebuiltSessionKey, false)) return;
         Func<string, string> environment = Environment.GetEnvironmentVariable;

@@ -162,6 +162,50 @@ class UnityPortTests(StatusTestCase):
         })
         self.assertEqual([c.level for c in status.check_unity_ports(self.ctx(runner=runner))], ["OK", "OK"])
 
+    def test_player_product_name_owns_all_three_ports(self):
+        runner = FakeRunner({"lsof": ok(LSOF_HEADER + "".join(
+            f"ServTechSlash 99 me 3u IPv4 0x1 0t0 UDP *:{port}\n" for port in (5005, 5006, 5007)))})
+        checks = status.check_unity_ports(self.ctx(runner=runner))
+        self.assertEqual([c.level for c in checks], ["OK", "OK", "OK"])
+        self.assertTrue(all("Player" in c.detail for c in checks))
+
+    def test_existing_unity_prefixed_owner_is_still_editor(self):
+        runner = FakeRunner({"lsof": ok(LSOF_HEADER + "".join(
+            f"UnityEditor 4242 me 3u IPv4 0x1 0t0 UDP *:{port}\n" for port in (5005, 5006)))})
+        ctx = self.ctx(runner=runner)
+        checks = status.check_unity_ports(ctx)
+        self.assertEqual([c.level for c in checks], ["OK", "OK"])
+        self.assertFalse(ctx.player_owns_ports)
+
+    def test_truncated_lsof_name_uses_executable_path(self):
+        runner = FakeRunner({
+            "lsof": ok(LSOF_HEADER + "ServTechS 99 me 3u IPv4 0x1 0t0 UDP *:5005\n"),
+            "ps -ww -p 99 -o comm=": ok("/空白 テスト (1)/3D-Saber.app/Contents/MacOS/OtherProduct\n"),
+        })
+        checks = status.check_unity_ports(self.ctx(runner=runner))
+        self.assertEqual(checks[0].level, "OK")
+        self.assertIn("Player", checks[0].detail)
+
+    def test_player_log_selected_even_with_editor_open(self):
+        self.write_editor_log(EDITOR_LOG.format(gap=1800))
+        ctx = self.ctx(runner=FakeRunner({
+            "pgrep -x Unity": ok("4242\n"),
+            "lsof": ok(LSOF_HEADER + "ServTechSlash 99 me 3u IPv4 0x1 0t0 UDP *:5005\n"),
+        }))
+        player_log = self.home / "Library/Logs/DefaultCompany/ServTechSlash/Player.log"
+        player_log.parent.mkdir(parents=True)
+        player_log.write_text(EDITOR_LOG.format(gap=95), encoding="utf-8")
+        status.check_unity_ports(ctx)
+        checks = status.check_editor_log(ctx, bridge_running=True)
+        self.assertEqual(checks[0].level, "OK")
+        self.assertIn("Player.log", checks[0].detail)
+
+    def test_foreign_port_advice_supports_player(self):
+        ctx = self.ctx(runner=FakeRunner({"lsof": ok(
+            LSOF_HEADER + "Python 99 me 3u IPv4 0x1 0t0 UDP *:5005\n")}))
+        checks = status.check_unity_ports(ctx)
+        self.assertIn("Start-Saber", " ".join(checks[0].hints))
+
     def test_port_conflict_is_ng(self):
         runner = FakeRunner({
             "pgrep -x Unity": ok("4242\n"),

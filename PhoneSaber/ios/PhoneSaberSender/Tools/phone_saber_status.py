@@ -5,7 +5,7 @@
 - HTTP は 127.0.0.1:8765 の GET /health だけ(phone_saber_triage_receiver.py の既存 endpoint)。
 - UDP は送らない。5005/5006 は lsof で「誰が bind しているか」を見るだけ。
 - git は fetch しない(最後に fetch した時点の origin と比べる)。GIT_OPTIONAL_LOCKS=0 で index も書かない。
-- ファイルは読むだけ(Unity の Editor.log、受信側の latest.log、診断 inbox)。
+- ファイルは読むだけ(Unity の Editor.log / Player.log、受信側の latest.log、診断 inbox)。
 
 使い方: python3 phone_saber_status.py   (または PhoneSaber Status.command をダブルクリック)
 終了コード: NG があれば 2、WARN だけなら 1、すべて OK なら 0。
@@ -102,6 +102,7 @@ class Context:
     which: Callable[[str], Optional[str]] = shutil.which
     now: Callable[[], float] = time.time
     deadline: float = 0.0
+    player_owns_ports: bool = False
 
     def run(self, args: list, timeout: float = COMMAND_TIMEOUT_SECONDS) -> Optional[CommandResult]:
         remaining = self.deadline - time.monotonic() if self.deadline else timeout
@@ -112,6 +113,10 @@ class Context:
     @property
     def editor_log(self) -> Path:
         return self.home / "Library" / "Logs" / "Unity" / "Editor.log"
+
+    @property
+    def player_log(self) -> Path:
+        return self.home / "Library" / "Logs" / "DefaultCompany" / "ServTechSlash" / "Player.log"
 
     @property
     def receiver_log(self) -> Path:
@@ -253,32 +258,56 @@ def _receiver_age(ctx: Context, listeners: list[dict]) -> list[Check]:
 
 
 def check_unity_ports(ctx: Context) -> list[Check]:
+    ctx.player_owns_ports = False
     unity = ctx.run(["pgrep", "-x", "Unity"])
     unity_running = unity is not None and unity.returncode == 0 and unity.stdout.strip() != ""
-    lsof = ctx.run(["lsof", "-nP", f"-iUDP:{RED_PORT}", f"-iUDP:{BLUE_PORT}"])
+    lsof = ctx.run(["lsof", "-nP", f"-iUDP:{RED_PORT}", f"-iUDP:{BLUE_PORT}", "-iUDP:5007"])
     if lsof is None:
         return [Check("WARN", "Unity 受信 UDP 5005/5006", "lsof を実行できず確認できない")]
     rows = parse_lsof(lsof.stdout)
+    kinds = {}
+    # lsof の COMMAND は短縮されるので、未知の名前は PID の実行パスでも確認する。
+    for row in rows:
+        pid = row["pid"]
+        if pid in kinds:
+            continue
+        command = row["command"]
+        if command.startswith("Unity"):
+            kinds[pid] = "Editor"
+        elif command == "ServTechSlash":
+            kinds[pid] = "Player"
+        else:
+            result = ctx.run(["ps", "-ww", "-p", str(pid), "-o", "comm="])
+            executable = result.stdout.strip() if result is not None and result.returncode == 0 else ""
+            kinds[pid] = "Player" if ("/3D-Saber.app/Contents/MacOS/" in executable or
+                                      Path(executable).name == "ServTechSlash") else None
+    ctx.player_owns_ports = any(kind == "Player" for kind in kinds.values())
+    advice = "Player は Start-Saber-A/B.command で起動。Editor は Unity で Play を押す"
     checks = []
-    for port, color in ((RED_PORT, "RED"), (BLUE_PORT, "BLUE")):
+    for port, color in ((RED_PORT, "RED"), (BLUE_PORT, "BLUE"), (5007, "探索")):
         owners = [row for row in rows if re.search(rf":{port}\b", row["name"])]
-        unity_owners = [row for row in owners if row["command"].startswith("Unity")]
-        others = [row for row in owners if not row["command"].startswith("Unity")]
+        # 探索の所有者がいれば確認する。従来の未起動時の RED/BLUE 案内は維持する。
+        if port == 5007 and not owners:
+            continue
+        unity_owners = [row for row in owners if kinds[row["pid"]]]
+        others = [row for row in owners if not kinds[row["pid"]]]
         title = f"Unity 受信 UDP {port}({color})"
         if unity_owners and not others:
-            checks.append(Check("OK", title, f"Unity(pid {unity_owners[0]['pid']})が受信中"))
+            owner = unity_owners[0]
+            checks.append(Check("OK", title, f"Unity {kinds[owner['pid']]}(pid {owner['pid']})が受信中"))
         elif others:
             names = ", ".join(f"{row['command']}(pid {row['pid']})" for row in others)
             checks.append(Check("NG", title, f"Unity 以外が使用中: {names}",
-                                ["port の取り合い。その process を止め、Unity の Play を押し直す"
-                                 "(Unity は 5005/5006 の両方を bind できるまで P2P bridge を起動しない)"]))
+                                [f"port の取り合い。その process を止める。{advice}"]))
+        elif ctx.player_owns_ports:
+            checks.append(Check("NG", title, "Player は受信中だが、この port は受信していない",
+                                ["F8 の受信機表示と Player.log の receiver failed を確認する"]))
         elif unity_running:
             checks.append(Check("NG", title, "Unity は起動しているが受信していない(Play 前?)",
-                                ["Unity で Play を押す。Play 中なら Console の "
+                                [f"{advice}。Play 中なら Console の "
                                  f"`[PhoneSaber][{color}] receiver failed` を確認する"]))
         else:
-            checks.append(Check("NG", title, "Unity が起動していない",
-                                ["Unity Hub から 3D-Saber を開いて Play を押す"]))
+            checks.append(Check("NG", title, "Unity Player / Editor の受信が無い", [advice]))
     return checks
 
 
@@ -291,11 +320,11 @@ def check_bridge_process(ctx: Context) -> list[Check]:
     running = [line for line in lines if line not in building]
     if running:
         pid = running[0].split()[0]
-        return [Check("OK", "P2P bridge", f"動作中(pid {pid}。Unity の Play で自動起動)")]
+        return [Check("OK", "P2P bridge", f"動作中(pid {pid}。Player 起動 / Editor の Play で自動起動)")]
     if building:
         return [Check("WARN", "P2P bridge", "初回 build 中(数秒〜十数秒で起動する)")]
     return [Check("WARN", "P2P bridge", "動いていない(iPhone は LAN で送るので、同じ Wi-Fi でないと届かない)",
-                  ["Unity で Play を押すと自動で起動する。Console の `[PhoneSaber][P2P]` の警告を確認する",
+                  ["Player は Start-Saber-A/B.command、Editor は Play で自動起動。Player.log / Console の `[PhoneSaber][P2P]` の警告を確認する",
                    "環境変数 PHONESABER_P2P_BRIDGE=0 で自動起動を止めていないか確認する"])]
 
 
@@ -322,12 +351,13 @@ def parse_stats(text: str) -> dict:
 
 
 def check_editor_log(ctx: Context, bridge_running: bool) -> list[Check]:
-    path = ctx.editor_log
+    path = ctx.player_log if ctx.player_owns_ports else ctx.editor_log
+    log_name = path.name
     text = read_tail(path, EDITOR_LOG_TAIL_BYTES)
     if text is None:
-        return [Check("INFO", "Unity Console(Editor.log)", f"読めない: {path}")]
+        return [Check("INFO", f"Unity log({log_name})", f"読めない: {path}")]
     age = file_age(ctx, path)
-    age_text = f"Editor.log 最終更新 {format_age(age)}" if age is not None else "Editor.log"
+    age_text = f"{log_name} 最終更新 {format_age(age)}" if age is not None else log_name
     lines = text.splitlines()
     start = 0
     for index in range(len(lines) - 1, -1, -1):
@@ -381,9 +411,11 @@ def check_editor_log(ctx: Context, bridge_running: bool) -> list[Check]:
 
     warnings = [line.strip() for line in session if any(needle in line for needle in _WARNINGS)]
     if warnings:
-        checks.append(Check("WARN", "Unity Console の警告(直近の Play 以降)",
+        warning_title = "Unity Player log の警告(直近の起動以降)" if ctx.player_owns_ports else "Unity Console の警告(直近の Play 以降)"
+        checks.append(Check("WARN", warning_title,
                             f"{len(warnings)} 件。最後: {warnings[-1][:200]}",
-                            ["bridge が止まっても LAN 受信は動く。直すには Unity で script を再 compile するか Editor を再起動"]))
+                            ["bridge が止まっても LAN 受信は動く。自動再試行を待ち、Player.log / Editor Console の警告を確認する。"
+                             "Player は launcher の script パス、Editor は project 内の script を確認する"]))
     relay = [line.strip() for line in session if "diag relay: upload from" in line and "closed after" in line]
     if relay:
         checks.append(Check("INFO", "診断 relay(P2P 経由の bundle 転送)", relay[-1][:200]))

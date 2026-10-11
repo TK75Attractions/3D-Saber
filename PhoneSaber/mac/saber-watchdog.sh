@@ -15,6 +15,14 @@ RESTART_COUNT=0
 OPEN_PID=""
 MARKER_DIR="$(mktemp -d "${TMPDIR:-/tmp}/phonesaber-watchdog.XXXXXX")" || exit 1
 QUIT_MARKER="$MARKER_DIR/clean-quit"
+HANG_SECONDS="${PHONESABER_HANG_SECONDS:-45}"
+# 無効な値は既定値へ戻す。0 はハング監視を無効にする。
+case "$HANG_SECONDS" in ''|*[!0-9]*) HANG_SECONDS=45 ;; esac
+# 先頭の 0 を除き、bash の八進数解釈を避ける(長すぎる値も受け付けない)。
+while [[ ${#HANG_SECONDS} -gt 1 && "$HANG_SECONDS" == 0* ]]; do HANG_SECONDS="${HANG_SECONDS#0}"; done
+[[ ${#HANG_SECONDS} -le 6 ]] || HANG_SECONDS=45
+HEARTBEAT=""
+
 # built .app の中からは repo の P2P bridge launcher を見つけられないため、場所を環境変数で渡す。
 # 既に PHONESABER_P2P_BRIDGE_SCRIPT が設定されていればそれを優先。見つからなければ LAN だけで動く。
 BRIDGE_SCRIPT="${PHONESABER_P2P_BRIDGE_SCRIPT:-$SCRIPT_DIR/../ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py}"
@@ -68,9 +76,50 @@ game_running() {
     done < <(ps -axww -o command= 2>/dev/null)
     return 1
 }
+# open -W の PID ではなく、今回の heartbeat 引数を持つ .app 内の実プロセスを探す。
+# 別 run / 同名アプリや open 自身を強制終了しない。
+run_game_pid() {
+    local pid command found="" pattern
+    pattern="/$(basename "$GAME_APP")/Contents/MacOS/"
+    while read -r pid command; do
+        if [[ "$command" == *"$pattern"* && "$command" == *"$HEARTBEAT"* ]]; then
+            [[ -z "$found" ]] || return 1
+            found="$pid"
+        fi
+    done < <(ps -axww -o pid= -o command= 2>/dev/null)
+    [[ -n "$found" ]] || return 1
+    printf '%s\n' "$found"
+}
+monitor_game() {
+    local seen=0 modified last_modified=0 now pid command
+    while kill -0 "$OPEN_PID" 2>/dev/null; do
+        if [[ "$HANG_SECONDS" -gt 0 ]] && ! stopped; then
+            modified="$(stat -f %m "$HEARTBEAT" 2>/dev/null)" || modified=""
+            if [[ "$modified" =~ ^[0-9]+$ ]]; then
+                seen=1
+                last_modified="$modified"
+            fi
+            if [[ "$seen" -eq 1 ]]; then
+                now="$(date +%s)"
+                if [[ "$seen" -eq 1 && $((now - last_modified)) -ge "$HANG_SECONDS" ]]; then
+                    pid="$(run_game_pid)" || pid=""
+                    if [[ -n "$pid" ]]; then
+                        # 検索後に PID が再利用されても無関係なプロセスは止めない。
+                        command="$(ps -ww -p "$pid" -o command= 2>/dev/null)"
+                        if [[ "$command" == *"$HEARTBEAT"* && "$command" == */Contents/MacOS/* ]]; then
+                            log "hang detected pid=$pid heartbeat-age=$((now - last_modified))"
+                            if kill -KILL "$pid" 2>/dev/null; then HANG_DETECTED=1; return; fi
+                        fi
+                    fi
+                fi
+            fi
+        fi
+        sleep 1
+    done
+}
 cleanup() {
     [[ -z "$OPEN_PID" ]] || kill "$OPEN_PID" 2>/dev/null || true
-    rm -f "$QUIT_MARKER"
+    rm -f "$QUIT_MARKER" "$MARKER_DIR"/heartbeat-*
     rmdir "$MARKER_DIR" 2>/dev/null || true
     if [[ "$LOCK_OWNED" -eq 1 ]]; then
         rm -f "$LOCK_DIR/pid"
@@ -108,16 +157,20 @@ if game_running; then
     exit 1
 fi
 while ! stopped; do
-    rm -f "$QUIT_MARKER"
-    log "launch p2p-bridge=$BRIDGE_STATE"
+    rm -f "$QUIT_MARKER" "$MARKER_DIR"/heartbeat-*
+    HEARTBEAT="$MARKER_DIR/heartbeat-$RESTART_COUNT"
+    HANG_DETECTED=0
+    log "launch p2p-bridge=$BRIDGE_STATE hang-seconds=$HANG_SECONDS"
     printf '台 %s を起動します。再起動回数: %s [Ctrl+C: 監視終了]\n' "$STATION" "$RESTART_COUNT"
-    /usr/bin/open -W -n ${OPEN_ENV[@]+"${OPEN_ENV[@]}"} "$GAME_APP" --args -phonesaberStation "$STATION" -phonesaberQuitMarker "$QUIT_MARKER" &
+    /usr/bin/open -W -n ${OPEN_ENV[@]+"${OPEN_ENV[@]}"} "$GAME_APP" --args -phonesaberStation "$STATION" -phonesaberQuitMarker "$QUIT_MARKER" -phonesaberHeartbeat "$HEARTBEAT" &
     OPEN_PID=$!
+    monitor_game
     wait "$OPEN_PID"
     OPEN_EXIT=$?
     OPEN_PID=""
     # open の終了コードに加え、正常終了の印が無ければ crash / 強制終了として扱う。
     GAME_EXIT=$OPEN_EXIT
+    if [[ "$HANG_DETECTED" -eq 1 ]]; then GAME_EXIT=1; fi
     if [[ "$GAME_EXIT" -eq 0 && ! -f "$QUIT_MARKER" ]]; then GAME_EXIT=1; fi
     log "exit-code=$GAME_EXIT open-exit-code=$OPEN_EXIT clean-quit=$([[ -f "$QUIT_MARKER" ]] && echo yes || echo no)"
     if [[ "$GAME_EXIT" -eq 0 ]]; then

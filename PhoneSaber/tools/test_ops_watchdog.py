@@ -1,0 +1,311 @@
+"""Mac は偽 open と実プロセスで検証。Windows はソース契約のみ（実行検証ではない）。"""
+import os
+from pathlib import Path
+import signal
+import shutil
+import time
+import subprocess
+import sys
+import tempfile
+import unittest
+
+ROOT = Path(__file__).resolve().parents[2]
+
+
+@unittest.skipUnless(sys.platform == 'darwin', 'macOS bash / BSD stat の検証')
+class MacWatchdogTests(unittest.TestCase):
+    def run_watchdog(self, mode, threshold="1"):
+        with tempfile.TemporaryDirectory(prefix="縁日 テスト (1) ! ") as tmp:
+            folder = Path(tmp)
+            app = folder / "3D-Saber.app"
+            game = app / "Contents/MacOS/ServTechSlash"
+            game.parent.mkdir(parents=True)
+            game.write_text('''#!/usr/bin/env python3
+import os, sys, time
+from pathlib import Path
+args = sys.argv
+quit_path = Path(args[args.index('-phonesaberQuitMarker') + 1])
+count_path = Path(os.environ['COUNT_PATH'])
+count = int(count_path.read_text()) + 1 if count_path.exists() else 1
+count_path.write_text(str(count))
+mode = os.environ['MODE']
+if mode == 'hang' and count == 1:
+    if '-phonesaberHeartbeat' in args:
+        path = Path(args[args.index('-phonesaberHeartbeat') + 1])
+        path.write_text('1')
+        os.utime(path, (time.time() - 90, time.time() - 90))
+    quit_path.write_text('stale marker must not make hang a clean quit')
+    time.sleep(30)
+elif mode == 'fresh':
+    path = Path(args[args.index('-phonesaberHeartbeat') + 1])
+    for _ in range(4):
+        path.write_text('1')
+        time.sleep(0.4)
+elif mode in ('old', 'disabled', 'stop'):
+    if mode in ('disabled', 'stop') and '-phonesaberHeartbeat' in args:
+        path = Path(args[args.index('-phonesaberHeartbeat') + 1])
+        path.write_text('1')
+        os.utime(path, (time.time() - 90, time.time() - 90))
+    if mode == 'stop':
+        Path(os.environ['STOP_PATH']).touch()
+    time.sleep(1.5)
+quit_path.write_text('ok')
+''')
+            game.chmod(0o755)
+            fake_open = folder / "open"
+            fake_open.write_text('''#!/usr/bin/env python3
+import os, subprocess, sys
+from pathlib import Path
+args = sys.argv[1:]
+app = args[args.index('--args') - 1]
+p = subprocess.Popen([str(Path(app) / 'Contents/MacOS/ServTechSlash')] + args[args.index('--args') + 1:])
+Path(os.environ['PID_PATH']).write_text(str(p.pid))
+Path(os.environ['COMMAND_PATH']).write_text(str(Path(app) / 'Contents/MacOS/ServTechSlash') + ' ' + ' '.join(args[args.index('--args') + 1:]))
+p.wait()
+# 本物の open はアプリの crash でも 0 を返し得る。
+sys.exit(0)
+''')
+            fake_open.chmod(0o755)
+            # sandbox では ps が禁止されるため、open が記録した実 PID / 引数を返す。
+            # kill 自体は偽物にしない。
+            fake_ps = folder / "ps"
+            fake_ps.write_text('''#!/usr/bin/env python3
+import os, sys
+from pathlib import Path
+pid_file = Path(os.environ['PID_PATH'])
+if not pid_file.exists():
+    sys.exit(1)
+pid = int(pid_file.read_text())
+try:
+    os.kill(pid, 0)
+except ProcessLookupError:
+    sys.exit(1)
+command = Path(os.environ['COMMAND_PATH']).read_text()
+if '-p' in sys.argv:
+    if sys.argv[sys.argv.index('-p') + 1] != str(pid):
+        sys.exit(1)
+    print(command)
+elif 'pid=' in sys.argv:
+    print(str(pid) + ' ' + command)
+else:
+    print(command)
+''')
+            fake_ps.chmod(0o755)
+            watcher = folder / "saber-watchdog.sh"
+            watcher.write_text((ROOT / "PhoneSaber/mac/saber-watchdog.sh").read_text().replace(
+                '/usr/bin/open -W', f'"{fake_open}" -W').replace('sleep 1', 'sleep 0.1'))
+            env = dict(os.environ, MODE=mode, COUNT_PATH=str(folder / 'count'), PID_PATH=str(folder / 'pid'),
+                       PHONESABER_HANG_SECONDS=threshold, PHONESABER_P2P_BRIDGE_SCRIPT=str(folder / 'missing'),
+                       COMMAND_PATH=str(folder / 'command'), STOP_PATH=str(folder / 'STOP'), PATH=str(folder) + os.pathsep + os.environ['PATH'])
+            process = subprocess.Popen(['/bin/bash', str(watcher), 'A', str(app)], env=env,
+                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+            try:
+                out, _ = process.communicate(timeout=6)
+                log = (folder / 'Start-Saber-A.log').read_text()
+                return process.returncode, log, int((folder / 'count').read_text()), out.decode()
+            except subprocess.TimeoutExpired:
+                self.fail('監視がハングから復帰しなかった')
+            finally:
+                if process.poll() is None:
+                    process.send_signal(signal.SIGTERM)
+                pid_file = folder / 'pid'
+                if pid_file.exists():
+                    try:
+                        os.kill(int(pid_file.read_text()), signal.SIGKILL)
+                    except ProcessLookupError:
+                        pass
+                process.communicate(timeout=3)
+
+    def test_hang_kills_real_game_and_restarts_even_with_quit_marker(self):
+        code, log, count, _ = self.run_watchdog('hang')
+        self.assertEqual(code, 0)
+        self.assertEqual(count, 2)
+        self.assertIn('hang detected', log)
+        self.assertIn('exit-code=1', log)
+        self.assertIn('restart=1', log)
+
+    def test_no_heartbeat_old_build_is_never_killed(self):
+        code, log, count, _ = self.run_watchdog('old')
+        self.assertEqual((code, count), (0, 1))
+        self.assertNotIn('hang detected', log)
+
+    def test_disabled_threshold_never_kills(self):
+        code, log, count, _ = self.run_watchdog('disabled', '0')
+        self.assertEqual((code, count), (0, 1))
+        self.assertNotIn('hang detected', log)
+
+    def test_stop_does_not_force_kill_current_game(self):
+        code, log, count, _ = self.run_watchdog('stop')
+        self.assertEqual((code, count), (0, 1))
+        self.assertNotIn('hang detected', log)
+
+    def test_fresh_heartbeat_and_normal_quit(self):
+        code, log, count, _ = self.run_watchdog('fresh', '2')
+        self.assertEqual((code, count), (0, 1))
+        self.assertNotIn('hang detected', log)
+
+
+class WindowsSourceContractTests(unittest.TestCase):
+    def test_both_bats_use_shared_lock_and_monitored_exit_code(self):
+        for station in ('A', 'B'):
+            raw = (ROOT / f'PhoneSaber/windows/Start-Saber-{station}.bat').read_bytes()
+            self.assertFalse(raw.startswith(b'\xef\xbb\xbf'))
+            self.assertNotIn(b'\n', raw.replace(b'\r\n', b''))
+            text = raw.decode('utf-8')
+            self.assertIn('-Mode Lock', text)
+            self.assertIn('-Mode Run', text)
+            self.assertIn('-NoProfile', text)
+            self.assertIn('set "GAME_EXIT=%ERRORLEVEL%"', text)
+            self.assertIn('if "%GAME_EXIT%"=="0" exit /b 0', text)
+            self.assertIn('goto stopped', text)
+
+    def test_windows_lock_uses_os_liveness_and_game_process_identity(self):
+        helper = ROOT / 'PhoneSaber/windows/saber-watchdog.ps1'
+        self.assertTrue(helper.is_file(), '排他ロックとハートビートを処理する helper が無い')
+        raw = helper.read_bytes()
+        self.assertTrue(raw.startswith(b'\xef\xbb\xbf'))
+        self.assertNotIn(b'\n', raw.replace(b'\r\n', b''))
+        text = raw.decode('utf-8-sig')
+        for contract in ('FileShare]::None', 'Get-Process -Name', '3D-Saber',
+                         '-phonesaberHeartbeat', 'PHONESABER_HANG_SECONDS', 'hang detected',
+                         '$game.Kill()', '$game.ExitCode'):
+            self.assertIn(contract, text)
+
+
+@unittest.skipUnless(os.name == 'nt', 'cmd.exe / PowerShell 5.1 は Windows 実機でのみ実行')
+class WindowsWatchdogIntegrationTests(unittest.TestCase):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(prefix='縁日 テスト (1) ! ')
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        self.kit = self.root / 'PhoneSaber/windows'
+        self.kit.mkdir(parents=True)
+        build = self.root / 'Builds/Windows'
+        build.mkdir(parents=True)
+        for name in ('Start-Saber-A.bat', 'Start-Saber-B.bat', 'saber-watchdog.ps1'):
+            source = ROOT / 'PhoneSaber/windows' / name
+            if source.exists():
+                shutil.copyfile(source, self.kit / name)
+        csc = Path(os.environ['WINDIR']) / 'Microsoft.NET/Framework/v4.0.30319/csc.exe'
+        if not csc.exists():
+            self.skipTest('.NET Framework C# compiler が必要')
+        # 実ゲームが動いている PC ではテストしない。テストの kill はこの exe の PID に限定する。
+        existing = subprocess.check_output(['tasklist', '/fi', 'IMAGENAME eq 3D-Saber.exe'], text=True)
+        if '3D-Saber.exe' in existing:
+            self.skipTest('運用中の Player を終了してからテスト')
+        fake = self.root / 'Fake.cs'
+        fake.write_text('''using System;
+using System.IO;
+using System.Threading;
+class Fake {
+    static int Main(string[] args) {
+        string countPath = Environment.GetEnvironmentVariable("COUNT_PATH");
+        int n = File.Exists(countPath) ? int.Parse(File.ReadAllText(countPath))+1 : 1;
+        File.WriteAllText(countPath,n.ToString());
+        File.WriteAllText(Environment.GetEnvironmentVariable("PID_PATH"),
+            System.Diagnostics.Process.GetCurrentProcess().Id.ToString());
+        string mode = Environment.GetEnvironmentVariable("MODE");
+        int index = Array.IndexOf(args,"-phonesaberHeartbeat");
+        if ((mode=="hang" && n==1) || mode=="disabled") {
+            if (index>=0) {
+                File.WriteAllText(args[index+1],"1");
+                File.SetLastWriteTimeUtc(args[index+1],DateTime.UtcNow.AddMinutes(-2));
+            }
+        }
+        if (mode=="hang" && n==1 || mode=="hold") Thread.Sleep(30000);
+        else Thread.Sleep(2000);
+        return 0;
+    }
+}''', encoding='utf-8')
+        subprocess.run([str(csc), '/nologo', '/target:winexe', '/out:' + str(build / '3D-Saber.exe'), str(fake)], check=True)
+        self.env = dict(os.environ, COUNT_PATH=str(self.root / 'count'), PID_PATH=str(self.root / 'pid'),
+                        PHONESABER_HANG_SECONDS='1')
+        self.processes = []
+        self.addCleanup(self.stop_processes)
+
+    def stop_processes(self):
+        # STOP を先に作ることで、テスト中の Player を止めても再起動しない。
+        (self.kit / 'STOP').touch()
+        pid_path = self.root / 'pid'
+        if pid_path.exists():
+            subprocess.run(['taskkill', '/pid', pid_path.read_text(), '/f'], capture_output=True)
+        for process in self.processes:
+            try:
+                process.communicate(timeout=5)
+            except subprocess.TimeoutExpired:
+                subprocess.run(['taskkill', '/pid', str(process.pid), '/t', '/f'], capture_output=True)
+                process.communicate(timeout=5)
+
+    def launch(self, station, mode):
+        # env 展開は一度だけ。パス中の ! / % / 括弧を cmd コードに再挿入しない。
+        env = dict(self.env, MODE=mode, TEST_BATCH=str(self.kit / f'Start-Saber-{station}.bat'))
+        process = subprocess.Popen('"' + os.environ['COMSPEC'] + '" /d /s /c ""%TEST_BATCH%""',
+                                   env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        process.stdin.write(b'\n' * 10)
+        process.stdin.flush()
+        self.processes.append(process)
+        return process
+
+    def wait_for_count(self, wanted, seconds=15):
+        deadline = time.monotonic() + seconds
+        path = self.root / 'count'
+        while time.monotonic() < deadline:
+            if path.exists() and path.read_text() == str(wanted):
+                return
+            time.sleep(0.1)
+        self.fail(f'Player 起動回数が {wanted} にならなかった')
+
+    def test_hang_restart_preserves_crash_exit_code(self):
+        process = self.launch('A', 'hang')
+        out, _ = process.communicate(timeout=20)
+        self.assertEqual(process.returncode, 0, out)
+        self.assertEqual((self.root / 'count').read_text(), '2')
+        log = (self.kit / 'Start-Saber-A.log').read_text(encoding='utf-8-sig')
+        self.assertIn('hang detected', log)
+        self.assertIn('exit-code=1', log)
+        self.assertIn('exit-code=0', log)
+
+    def test_second_station_cannot_start_player(self):
+        self.launch('A', 'hold')
+        self.wait_for_count(1)
+        second = self.launch('B', 'hold')
+        out, _ = second.communicate(timeout=5)
+        self.assertNotEqual(second.returncode, 0, out)
+        self.assertEqual((self.root / 'count').read_text(), '1')
+        self.assertIn('not-started', (self.kit / 'Start-Saber-B.log').read_text(encoding='utf-8-sig'))
+
+    def test_already_running_player_without_watchdog_is_refused(self):
+        env = dict(self.env, MODE='hold')
+        game = subprocess.Popen([str(self.root / 'Builds/Windows/3D-Saber.exe')], env=env)
+        def stop_game():
+            if game.poll() is None:
+                game.kill()
+            game.wait(timeout=5)
+        self.addCleanup(stop_game)
+        self.wait_for_count(1)
+        second = self.launch('B', 'hold')
+        out, _ = second.communicate(timeout=5)
+        self.assertNotEqual(second.returncode, 0, out)
+        self.assertEqual((self.root / 'count').read_text(), '1')
+        self.assertIn('game-already-running', (self.kit / 'Start-Saber-B.log').read_text(encoding='utf-8-sig'))
+        game.kill()
+
+    def test_stale_lock_file_and_old_build_do_not_block_start(self):
+        (Path(os.environ['TEMP']) / 'phonesaber-watchdog.lock').touch(exist_ok=True)
+        process = self.launch('A', 'old')
+        out, _ = process.communicate(timeout=8)
+        self.assertEqual(process.returncode, 0, out)
+        self.assertEqual((self.root / 'count').read_text(), '1')
+        self.assertNotIn('hang detected', (self.kit / 'Start-Saber-A.log').read_text(encoding='utf-8-sig'))
+
+    def test_zero_threshold_disables_hang_detection(self):
+        self.env['PHONESABER_HANG_SECONDS'] = '0'
+        process = self.launch('B', 'disabled')
+        out, _ = process.communicate(timeout=8)
+        self.assertEqual(process.returncode, 0, out)
+        self.assertEqual((self.root / 'count').read_text(), '1')
+        self.assertNotIn('hang detected', (self.kit / 'Start-Saber-B.log').read_text(encoding='utf-8-sig'))
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -26,13 +26,19 @@ if defined STOP_FOUND (
     exit /b 1
 )
 
-rem /wait で Player の終了コードを待つ。Ctrl+C は「バッチ ジョブを終了しますか」で Y を選ぶと監視終了。
+rem PowerShell が排他 handle を保持したまま子 cmd でこの bat を実行する。
+set "PHONESABER_BATCH=%~f0"
+set "PHONESABER_STATION=A"
+if "%~1"=="--locked" goto launch
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0saber-watchdog.ps1" -Mode Lock
+exit /b %ERRORLEVEL%
+
 :launch
 if exist "%STOP_FILE%" goto stopped
 if exist "%~dp0STOP" goto stopped
 >>"%LOG_FILE%" echo [%date% %time%] station=A launch restart=%RESTART_COUNT%
 echo 台 A を起動します。再起動回数: %RESTART_COUNT%  [Ctrl+C: 監視終了]
-for %%I in ("%GAME_EXE%") do start "" /wait /D "%%~dpI" "%%~fI" -phonesaberStation A
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0saber-watchdog.ps1" -Mode Run
 set "GAME_EXIT=%ERRORLEVEL%"
 >>"%LOG_FILE%" echo [%date% %time%] station=A exit-code=%GAME_EXIT% restart=%RESTART_COUNT%
 if "%GAME_EXIT%"=="0" exit /b 0
