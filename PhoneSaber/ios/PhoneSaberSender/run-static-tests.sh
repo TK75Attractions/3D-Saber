@@ -29,7 +29,8 @@ import XCTest
 import Darwin
 let suite = DeviceHealthTests.defaultTestSuite
 suite.run()
-guard let run = suite.testRun, run.executionCount == 5, run.hasSucceeded else { exit(1) }
+// 件数は「少なくとも」で確認する（テスト追加のたびにここを直さずに済むように。0 件実行は失敗のまま）。
+guard let run = suite.testRun, run.executionCount >= 6, run.hasSucceeded else { exit(1) }
 SWIFT
 xctest_developer="$(xcode-select -p)/Platforms/MacOSX.platform/Developer"
 xctest_frameworks="$xctest_developer/Library/Frameworks"

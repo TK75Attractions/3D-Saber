@@ -51,6 +51,21 @@
 
 ## 作業ログ
 
+### 2026-10-11 午後 Codex による点検と修正（Claude が確認・検証して取り込み）
+- **Codex 無人 runner**: Codex の5時間枠を6並列で約30分で使い切り、6ジョブが途中で止まった（13:31）。Claude なしで続きを回す runner を起動（`~/Library/Logs/PhoneSaber/codex-runner/`、`runner.log`、止めるには `STOP` を作る）。枠が戻ったら3レーンで再開し、結果は各作業 branch に「codex result (not yet reviewed…)」で自動 commit する。**main には入らない。Claude が差分確認と verify をしてから取り込む。**
+  - 判定: `opt/coreline-guard-prototype`（guard G の証拠画像と既定 ON 化）→ `cx/recog-20261011`（失敗集計と次の改善案、露出とブレの数字）
+  - iPhone: `cx/ios2-20261011`（発熱時 30fps、カメラ復旧をあきらめない、充電・低電池警告、手動 IP の罠、選択中 PC の表示、fps 自動比較の切り忘れ）→ 同 branch で遅延短縮（120fps opt-in）
+  - その他: `cx/outbox-20261011`（録画の再送と「Mac 受信済み」表示）→ `cx/ops-20261011`（固まり検知、Windows 二重起動防止、bridge 再起動、status ツール）→ `cx/android-latency-20261011`
+- **取り込み済み（verify 全項目 PASS）**
+  - Mac P2P bridge（903e4ba 相当）: 診断 relay の背圧、応答末尾の欠落、build cache、Bonjour 登録解除のログ。bridge テスト 27/27。10-10 の100秒の空白は Mac 側からも原因を断定できず。
+  - Android（ca7c868 相当）: 選択中の PC が 5007 に3秒応答しないと注意表示、lint と fixture APK の同時 build。JVM 56/56。実機未確認。
+  - Unity 受信（116049d 相当）: NaN・無限大・桁外れの座標を無効扱い、sender-change は1秒1行、ログ回転失敗で世代を消さない、5007 bind 失敗時の socket 解放。
+  - Unity 追加（46254ea 相当）: **送信元ゲート**（同じ port へ2台が交互に送ると先にいた1台に固定、F8 に警告、LAN⇄P2P の単発切替は取りこぼさない）、F7 採取のキャンセル、F9 が maxQueuedFrames を元に戻す。EditMode 1897 中 1895 PASS（失敗2件は譜面エディタのテスト）。
+  - 録画→Mac 転送（e0052e8 相当、[詳細](review-debug-bundle-20261011.md)）: **Mac 側の解析契約が振りだけ録画の6枚を拒否していた**のを修正、予約した lossless が bridge と重なる・容量で押し出されるのを修正、manifest と summary の session 不一致・NUL 入りファイル名を拒否。
+  - iPhone 送信（[詳細](review-ios-event-day.md)）: ready 通知が送信中に来ると最新の待機座標を捨てる欠陥を修正。
+  - `run-static-tests.sh` の DeviceHealth テスト件数の決め打ち（5件ちょうど）を「6件以上」に変更（テスト追加で verify の Detection 段が落ちた。認識の失敗ではない）。
+- **当日の故障予測**（[premortem](premortem-20261011.md)）: 上位は背景の誤認識、箱内の発熱、B 台の通信。ゲーム本体に関わる2点（通信断で赤だけマウス操作になる、タイトルの×が確認なしで終了）は**ユーザー判断で対応しない**（10-11）。
+
 ### 2026-10-11 10-10 の実機テストで出た不具合の修正（Claude＋Codex、verify 全項目 PASS）
 - **Wi-Fi 切替後に約100秒届かない**（0058315）: P2PSender は失敗した接続の次から、browser が報告する interface（awdl 優先）へ順に固定して試す。最初の接続と pong 後は従来どおり OS 任せ。原因は仮説（UDP が切れたネットワークの cached record へつなぎ直し続け、失敗が通知されない）で、実機未確認。iPhone のログが無く特定できなかったため、**通信ログ**（経路切替・P2P 探索/再接続・LAN 宛先変更。画面に直近12行、端末の Library/Logs/connectivity.log）を追加。
 - **届いていないのに NETWORK READY**（同）: 送信中に Unity の応答も P2P も3秒無いと「PC（Unity）から応答がありません」を表示（見出しの文言は不変）。runbook に「PC の Wi-Fi 自動接続を切る」を追記。
