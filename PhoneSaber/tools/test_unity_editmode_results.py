@@ -108,6 +108,40 @@ class EditModeResultsTests(unittest.TestCase):
         self.assertEqual(self.run_report(xml, [KNOWN]).returncode, 0)
         self.assertEqual(self.run_report(xml).returncode, 1)
 
+    def test_nested_nunit_suites_with_exact_known_failure(self):
+        root = ET.fromstring(report([(KNOWN, "Failed"), ("A.Pass", "Passed")]))
+        cases = list(root)
+        for case in cases:
+            root.remove(case)
+        parent = ET.SubElement(root, "test-suite", result="Failed", site="Child",
+                               total="2", passed="1", failed="1", skipped="0", inconclusive="0")
+        ET.SubElement(parent, "failure")
+        child = ET.SubElement(parent, "test-suite", result="Failed", site="Child")
+        ET.SubElement(child, "failure")
+        child.extend(cases)
+        xml = lambda: ET.tostring(root, encoding="unicode")
+        self.assertEqual(self.run_report(xml(), [KNOWN]).returncode, 0)
+        cases[0].set("fullname", "ChartRecordingWorkflowTests.NewRegression")
+        self.assertEqual(self.run_report(xml(), [KNOWN]).returncode, 1)
+        cases[0].set("fullname", KNOWN)
+        for field, value in [("result", "Passed"), ("failed", "0"), ("total", "3"),
+                             ("passed", "-1"), ("skipped", "bad"), ("site", "SetUp"),
+                             ("site", "TearDown")]:
+            with self.subTest(field=field, value=value):
+                previous = parent.get(field)
+                parent.set(field, value)
+                self.assertNotEqual(self.run_report(xml(), [KNOWN]).returncode, 0)
+                parent.set(field, previous)
+
+    def test_unattributed_suite_error_is_not_allowed(self):
+        root = ET.fromstring(report([(KNOWN, "Failed")]))
+        case = root.find("test-case")
+        root.remove(case)
+        suite = ET.SubElement(root, "test-suite", result="Failed")
+        ET.SubElement(suite, "failure")
+        suite.append(case)
+        self.assertNotEqual(self.run_report(ET.tostring(root, encoding="unicode"), [KNOWN]).returncode, 0)
+
     def test_shell_editmode_propagates_validator_status_with_stubs(self):
         # 実 Unity、rsync、既存アプリには触れず、引数と終了コードの連携だけを検証する。
         with tempfile.TemporaryDirectory(prefix="editmode stub ") as directory:

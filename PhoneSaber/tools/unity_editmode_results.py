@@ -41,12 +41,25 @@ def failed_tests(path):
         raise ValueError("test-run の結果と失敗集計が一致しません")
     # 子の失敗を示すだけの親 suite は許容するが、SetUp/TearDown 自体の失敗は許容しない。
     for suite in root.iter("test-suite"):
-        if suite.get("result") in ("Failed", "Failed(Child)"):
-            site = suite.get("site")
-            if (site not in (None, "Child") or
-                    (site is None and suite.find("failure") is not None) or
-                    not any(case.get("result") == "Failed" for case in suite.iter("test-case"))):
-                raise ValueError("test-suite 自体の失敗があります")
+        suite_cases = list(suite.iter("test-case"))
+        suite_actual = Counter(case.get("result") for case in suite_cases)
+        suite_result = suite.get("result")
+        suite_failed = suite_result in ("Failed", "Failed(Child)")
+        if ((suite_result not in OUTCOMES.values() and suite_result != "Failed(Child)") or
+                suite_failed != (suite_actual["Failed"] > 0)):
+            raise ValueError("test-suite の結果と子の結果が一致しません")
+        site = suite.get("site")
+        if ((suite_failed and site not in (None, "Child")) or
+                (suite.find("failure") is not None and (not suite_failed or site != "Child"))):
+            raise ValueError("test-suite 自体の失敗があります")
+        # suite に集計がある形式では、その値も検証する（ない形式は子の結果で確認）。
+        if any(key in suite.attrib for key in ("total", *OUTCOMES)):
+            expected = {"total": len(suite_cases),
+                        **{key: suite_actual[outcome] for key, outcome in OUTCOMES.items()}}
+            for key, count in expected.items():
+                raw = suite.get(key, "0" if key == "inconclusive" else "")
+                if not re.fullmatch(r"[0-9]+", raw) or int(raw) != count:
+                    raise ValueError(f"test-suite の集計が一致しません: {key}={raw!r}")
     print(f"EditMode: total={counts['total']} passed={counts['passed']} failed={counts['failed']}")
     return [case.get("fullname") for case in cases if case.get("result") == "Failed"]
 
