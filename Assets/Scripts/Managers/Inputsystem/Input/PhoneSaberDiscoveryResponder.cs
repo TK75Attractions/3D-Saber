@@ -41,6 +41,10 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     }
 
     public bool Start(int redPort, int bluePort, string station = "")
+        => Start(redPort, bluePort, () => new UdpClient(AddressFamily.InterNetwork), station);
+
+    // テストでは既に bind 済みの socket を渡し、5007 を占有せず起動失敗を再現する。
+    internal bool Start(int redPort, int bluePort, Func<UdpClient> createClient, string station = "")
     {
         // テスト中は他の自動起動と同じく何も開かない(port 5007 を占有しない)。
         if (!PhoneSaberP2PBridgeProcess.AutoStartEnabled) return false;
@@ -50,11 +54,12 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
             if (running) return true;
             try
             {
-                var client = new UdpClient(AddressFamily.InterNetwork);
+                var client = createClient();
+                // bind より前に所有し、設定・bind の失敗でも catch で確実に閉じる。
+                socket = client;
                 client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
                 client.Client.Bind(new IPEndPoint(IPAddress.Any, Port));
                 client.Client.ReceiveTimeout = 500;
-                socket = client;
                 running = true;
                 byte[] reply = Encoding.ASCII.GetBytes(BuildReply(redPort, bluePort, Environment.MachineName, station));
                 thread = new Thread(() => Loop(client, reply)) { IsBackground = true, Name = "PhoneSaberDiscovery" };

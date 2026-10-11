@@ -120,6 +120,11 @@ public sealed class PhoneSaberEventLog
 
     void Rotate()
     {
+        // 移動先がディレクトリなら、既存の世代を削除・移動する前に失敗させる。
+        // 毎回同じ障害で Flush が再試行しても、過去のログを順に失わない。
+        for (int i = 1; i < FileCount; i++)
+            if (Directory.Exists(GenerationPath(LogPath, i)))
+                throw new IOException("Log generation path is a directory");
         File.Delete(GenerationPath(LogPath, FileCount - 1));
         for (int i = FileCount - 2; i >= 0; i--)
         {
@@ -139,6 +144,10 @@ public sealed class PhoneSaberConnectionEvents
     double lastPacketAt;
     bool silent;
     string sender = "";
+    // 2台のスマホが同じ port へ送ると packet ごとに送信元が入れ替わる。記録は1秒に1行までにして
+    // events.log を埋めない（抑制した回数は次の行に残す）。
+    double lastSenderChangeAt = double.NegativeInfinity;
+    int suppressedSenderChanges;
 
     public PhoneSaberConnectionEvents(double startedAt, bool mac, Action<string, string> record)
     {
@@ -159,9 +168,16 @@ public sealed class PhoneSaberConnectionEvents
             CheckSilence(now);
             if (sender != ip)
             {
-                record("sender-change", "from=" + sender + " to=" + ip +
-                    " route-from=" + PhoneSaberStatsDisplay.ClassifyRoute(sender, mac) +
-                    " route-to=" + PhoneSaberStatsDisplay.ClassifyRoute(ip, mac));
+                if (now - lastSenderChangeAt >= 1.0)
+                {
+                    record("sender-change", "from=" + sender + " to=" + ip +
+                        " route-from=" + PhoneSaberStatsDisplay.ClassifyRoute(sender, mac) +
+                        " route-to=" + PhoneSaberStatsDisplay.ClassifyRoute(ip, mac) +
+                        (suppressedSenderChanges > 0 ? " suppressed=" + suppressedSenderChanges : ""));
+                    lastSenderChangeAt = now;
+                    suppressedSenderChanges = 0;
+                }
+                else suppressedSenderChanges++;
                 sender = ip;
             }
             if (silent) record("input-back", "sender=" + ip);

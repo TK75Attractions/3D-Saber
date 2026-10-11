@@ -56,6 +56,16 @@ public sealed class PhoneSaberPacketParser
              ParseFloat(message.Slice(commas[2] + 1), out d));
     }
 
+    // 数値変換（TryParse）は旧実装と bit 一致のまま、座標として使えるかは別に判定する。
+    // 送信側は画面解像度内（高々数千）の値しか送らない。NaN は比較が常に false になるので除外される。
+    public const float MaximumCoordinateMagnitude = 1e6f;
+
+    public static bool IsUsableCoordinates(bool isStick, float a, float b, float c, float d)
+        => Usable(a) && Usable(b) && (!isStick || (Usable(c) && Usable(d)));
+
+    static bool Usable(float value)
+        => value >= -MaximumCoordinateMagnitude && value <= MaximumCoordinateMagnitude;
+
     static bool ParseFloat(ReadOnlySpan<char> value, out float result)
         => float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
 }

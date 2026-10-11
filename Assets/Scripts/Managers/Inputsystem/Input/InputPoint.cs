@@ -476,6 +476,9 @@ public class InputPoint : MonoBehaviour
             double receiveEpoch = (DateTime.UtcNow - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
             bool parsed = parser.TryParse(data.AsSpan(0, length), out bool isStick,
                 out float a, out float b, out float c, out float d, out double? sentEpoch);
+            // 数値として読めても NaN・無限大・桁外れは座標ではない（中点が Infinity になり剣が消える）。
+            // 不正な payload と同じく「到着したが無効」として数える。
+            if (parsed && !PhoneSaberPacketParser.IsUsableCoordinates(isStick, a, b, c, d)) parsed = false;
             RecordInputStats(secondStick, receiveTimestampTicks, senderIP, parsed, receiveEpoch, sentEpoch);
             if (!parsed) continue;
 

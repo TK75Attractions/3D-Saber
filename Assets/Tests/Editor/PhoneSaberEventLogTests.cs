@@ -190,6 +190,47 @@ public class PhoneSaberEventLogTests
     }
 
     [Test]
+    public void RepeatedBlockedRotationPreservesExistingGenerations()
+    {
+        string directory = Path.Combine(Path.GetTempPath(), "phonesaber-log-" + Guid.NewGuid().ToString("N"));
+        string path = Path.Combine(directory, "events.log");
+        try
+        {
+            Directory.CreateDirectory(directory);
+            using (var file = new FileStream(path, FileMode.Create)) file.SetLength(PhoneSaberEventLog.MaximumFileBytes);
+            for (int generation = 2; generation < PhoneSaberEventLog.FileCount; generation++)
+                File.WriteAllText(PhoneSaberEventLog.GenerationPath(path, generation), "generation=" + generation);
+            // 現行ファイルの移動先が塞がれていても、既存の世代を先に削除・移動しない。
+            Directory.CreateDirectory(path + ".1");
+            File.WriteAllText(Path.Combine(path + ".1", "keep"), "x");
+            var log = new PhoneSaberEventLog(path);
+            for (int attempt = 0; attempt < 3; attempt++)
+            {
+                log.Enqueue(DateTimeOffset.UtcNow, "A", "RED", "test", "item=" + attempt);
+                log.Flush();
+                StringAssert.StartsWith("rotate ", log.LastError);
+                for (int generation = 2; generation < PhoneSaberEventLog.FileCount; generation++)
+                    Assert.AreEqual("generation=" + generation,
+                        File.ReadAllText(PhoneSaberEventLog.GenerationPath(path, generation)));
+            }
+            // 障害が解消したら、保持した世代と現行ログを通常どおり交代する。
+            Directory.Delete(path + ".1", true);
+            log.Enqueue(DateTimeOffset.UtcNow, "A", "RED", "test", "recovered");
+            log.Flush();
+            Assert.AreEqual("", log.LastError);
+            Assert.AreEqual("generation=2", File.ReadAllText(path + ".3"));
+            Assert.AreEqual("generation=3", File.ReadAllText(path + ".4"));
+            using (var reader = new StreamReader(path + ".1"))
+            {
+                reader.BaseStream.Seek(PhoneSaberEventLog.MaximumFileBytes, SeekOrigin.Begin);
+                for (int attempt = 0; attempt < 3; attempt++) StringAssert.EndsWith("item=" + attempt, reader.ReadLine());
+            }
+            StringAssert.Contains("recovered", File.ReadAllText(path));
+        }
+        finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Test]
     public void BlockedRotationKeepsAppendingAndReportsTheError()
     {
         string directory = Path.Combine(Path.GetTempPath(), "phonesaber-log-" + Guid.NewGuid().ToString("N"));
@@ -215,5 +256,19 @@ public class PhoneSaberEventLogTests
             }
         }
         finally { if (Directory.Exists(directory)) Directory.Delete(directory, true); }
+    }
+
+    [Test]
+    public void AlternatingSendersAreLoggedAtMostOncePerSecond()
+    {
+        var events = new List<string>();
+        var red = new PhoneSaberConnectionEvents(0, false, (kind, detail) => events.Add(kind + " " + detail));
+        // 2台が同じ port へ 60Hz で交互に送る 3 秒間。
+        for (int i = 0; i < 180; i++) red.Packet(0.1 + i / 60.0, i % 2 == 0 ? "192.168.1.2" : "192.168.1.3");
+        var changes = events.FindAll(line => line.StartsWith("sender-change"));
+        Assert.LessOrEqual(changes.Count, 4, "毎 packet ではなく1秒に1行まで");
+        Assert.GreaterOrEqual(changes.Count, 3);
+        StringAssert.DoesNotContain("suppressed=", changes[0]);
+        StringAssert.Contains("suppressed=59", changes[1]);
     }
 }

@@ -125,6 +125,27 @@ public class PhoneSaberPacketParserTests
     }
 
     [Test]
+    public void NonFiniteAndAbsurdCoordinatesAreNotUsable()
+    {
+        Assert.IsTrue(PhoneSaberPacketParser.IsUsableCoordinates(true, 0f, -12.5f, 1920f, 1080f));
+        Assert.IsTrue(PhoneSaberPacketParser.IsUsableCoordinates(false, 3f, 4f, float.NaN, float.PositiveInfinity),
+            "2要素の payload では c,d を見ない");
+        foreach (float bad in new[] { float.NaN, float.PositiveInfinity, float.NegativeInfinity, 3e38f, -2e6f })
+        {
+            Assert.IsFalse(PhoneSaberPacketParser.IsUsableCoordinates(true, bad, 0f, 1f, 1f));
+            Assert.IsFalse(PhoneSaberPacketParser.IsUsableCoordinates(true, 0f, bad, 1f, 1f));
+            Assert.IsFalse(PhoneSaberPacketParser.IsUsableCoordinates(true, 0f, 0f, bad, 1f));
+            Assert.IsFalse(PhoneSaberPacketParser.IsUsableCoordinates(true, 0f, 0f, 1f, bad));
+            Assert.IsFalse(PhoneSaberPacketParser.IsUsableCoordinates(false, bad, 0f, 0f, 0f));
+        }
+        // 数値変換そのものは旧実装と同じく NaN も読む（bit 一致の契約）。使えるかは別判定。
+        var parser = new PhoneSaberPacketParser();
+        Assert.IsTrue(parser.TryParse(System.Text.Encoding.ASCII.GetBytes("NaN,0,1,0"), out bool isStick,
+            out float a, out float b, out float c, out float d, out _));
+        Assert.IsFalse(PhoneSaberPacketParser.IsUsableCoordinates(isStick, a, b, c, d));
+    }
+
+    [Test]
     public void SteadyParserStatisticsAndEventPollingDoNotAllocate()
     {
         var parser = new PhoneSaberPacketParser();
