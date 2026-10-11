@@ -46,6 +46,13 @@ from phone_saber_triage_protocol import (
 
 
 TOOLS_DIR = Path(__file__).resolve().parent
+# Per-socket idle timeout. The iPhone gives up after 120 s without progress
+# (DebugBundleTransfer.swift timeoutIntervalForRequest), so a live upload is never
+# cut first. Without it, an upload whose Wi-Fi vanished mid-transfer (no FIN/RST)
+# blocked its thread forever, kept a staging directory, and pinned
+# uploadsInProgress > 0, so /health never became idle and the launcher refused
+# every later stale-code restart.
+REQUEST_IDLE_TIMEOUT_SECONDS = 150.0
 
 
 @dataclass(frozen=True)
@@ -289,6 +296,7 @@ class TriageHTTPServer(ThreadingHTTPServer):
 class TriageRequestHandler(BaseHTTPRequestHandler):
     server: TriageHTTPServer
     protocol_version = "HTTP/1.1"
+    timeout = REQUEST_IDLE_TIMEOUT_SECONDS  # StreamRequestHandler applies it to the socket
 
     def do_GET(self) -> None:  # noqa: N802 - stdlib handler API
         if self.path != "/health":

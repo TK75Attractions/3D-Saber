@@ -128,6 +128,10 @@ def main(argv: list[str] | None = None) -> int:
         print("FAIL", name)
     for name in summary["crashed"]:
         print("CRASH", name)
+    if summary["total"] == 0:
+        # filter が1件も当たらない（クラス名の変更など）と 0 件実行で成功扱いになっていた。
+        print("PlayMode: テストが1件も実行されていません（-testFilter とクラス名を確認）", file=sys.stderr)
+        return 1
     return 0 if summary["failed"] == 0 and not summary["crashed"] else 1
 
 

@@ -58,6 +58,49 @@ class LatencyReportTests(unittest.TestCase):
         keys = [(r["fps"], r["queued"], r["median"]) for r in rows]
         self.assertEqual(keys, [(30, 1, 120.0), (60, 1, 100.0), (60, 2, 110.0)])
 
+    def test_line_cut_mid_write_does_not_create_a_fake_condition_or_session(self):
+        cut = SAMPLE[1][:SAMPLE[1].index("route=") + len("route=P2P")]  # crash while writing
+        blocks = latency_report.parse([SAMPLE[0], cut, SAMPLE[2]])
+        self.assertEqual([b["block"] for b in blocks], [0, 2])
+        self.assertEqual([b["session"] for b in blocks], [1, 1])
+
+    def test_crlf_and_non_utf8_bytes_are_read(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "events.log"
+            log.write_bytes(b"\xff\xfe broken\r\n" + SAMPLE[0].encode() + b"\r\n")
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                self.assertEqual(latency_report.main([str(log)]), 0)
+            self.assertIn("OSXEditor", output.getvalue())
+
+    def run_since(self, since):
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "events.log"
+            log.write_text("\n".join(SAMPLE) + "\n", encoding="utf-8")
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output), contextlib.redirect_stderr(io.StringIO()):
+                try:
+                    code = latency_report.main([str(log), "--since", since])
+                except SystemExit as exit:
+                    code = exit.code
+            return code, output.getvalue().replace(str(log), "events.log")
+
+    def test_since_compares_times_not_strings_and_accepts_utc_offsets(self):
+        # Log times are UTC (…Z). 10:00:30+09:00 == 01:00:30Z: keeps only blocks 2 and 3.
+        code, output = self.run_since("2026-10-08T10:00:30+09:00")
+        self.assertEqual(code, 0)
+        self.assertIn("     30       1", output)
+        self.assertNotIn("     60", output)
+        self.assertEqual(self.run_since("2026-10-08T01:00:30Z")[1], output)
+        self.assertEqual(self.run_since("2026-10-08T01:00:30")[1], output, "no offset means UTC")
+        self.assertEqual(self.run_since("2026-10-08")[0], 0)
+
+    def test_unreadable_since_or_missing_log_is_an_error_not_an_empty_report(self):
+        self.assertEqual(self.run_since("2026/10/08 10:00")[0], 2)
+        with contextlib.redirect_stderr(io.StringIO()) as error:
+            self.assertEqual(latency_report.main(["/nonexistent/縁日 log/events.log"]), 2)
+        self.assertIn("を読めません", error.getvalue())
+
     def test_phone_fps_buckets(self):
         self.assertEqual(latency_report.phone_fps(58), 60)
         self.assertEqual(latency_report.phone_fps(30), 30)

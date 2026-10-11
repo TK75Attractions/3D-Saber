@@ -88,6 +88,15 @@ class UnityPlayModeBatchesTests(unittest.TestCase):
         self.assertEqual(calls[0], ("A", "Bad", "C", "D"))
         self.assertEqual(calls[1], ("A", "Bad", "C", "D"))  # one retry before splitting
 
+    def test_a_run_that_executed_no_tests_is_not_reported_as_success(self):
+        empty = {"total": 0, "passed": 0, "failed": 0, "skipped": 0, "failed_tests": []}
+        with tempfile.TemporaryDirectory() as out, \
+                mock.patch.object(batches, "run_group", return_value=empty), \
+                contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()) as error:
+            code = batches.main(["--project", "/copy", "--out", out, "--classes", "RenamedPlayTests"])
+        self.assertEqual(code, 1)
+        self.assertIn("1件も実行されていません", error.getvalue())
+
 
 if __name__ == "__main__":
     unittest.main()

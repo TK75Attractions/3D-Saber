@@ -11,8 +11,10 @@ import importlib.util
 import io
 import json
 import os
+import socket
 import sys
 import tempfile
+import time
 import unittest
 from http.client import HTTPConnection
 from pathlib import Path
@@ -28,7 +30,7 @@ from phone_saber_precheck_text import explain_precheck
 from phone_saber_test_isolation import isolate_codex_logs as setUpModule  # noqa: F401
 from phone_saber_test_isolation import restore_codex_logs as tearDownModule  # noqa: F401
 from phone_saber_tracking_diagnostics import PrecheckFailed
-from phone_saber_triage_protocol import CONTENT_TYPE, MAX_BUNDLE_BYTES, BundleError
+from phone_saber_triage_protocol import CONTENT_TYPE, MAGIC, MAX_BUNDLE_BYTES, BundleError
 from test_phone_saber_triage_codex import EMPTY_ANALYSIS, fake_codex, write_codex_bundle
 
 
@@ -163,6 +165,31 @@ class ReceiverHealthTests(unittest.TestCase):
         self.assertIn(f"Content-Length={MAX_BUNDLE_BYTES + 1} outside 8..{MAX_BUNDLE_BYTES} bytes (413)", log)
         self.assertIn("rejected upload from 127.0.0.1 (400)", log)
         self.assertEqual(server.health()["uploadsInProgress"], 0)
+
+    def test_stalled_upload_times_out_and_the_receiver_becomes_idle_again(self) -> None:
+        # Wi-Fi lost mid-upload: no FIN, no more bytes. The receiver must not stay busy forever.
+        self.assertGreater(receiver.TriageRequestHandler.timeout, 120,
+                           "longer than the iPhone's own 120 s request timeout")
+        server = self.server(mode="disabled")
+        self.serve(server)
+        output = io.StringIO()
+        with mock.patch.object(receiver.TriageRequestHandler, "timeout", 1.0), \
+                contextlib.redirect_stdout(output), \
+                socket.create_connection(("127.0.0.1", server.server_port), timeout=10) as client:
+            client.sendall(f"POST /v1/bundle HTTP/1.1\r\nContent-Type: {CONTENT_TYPE}\r\n"
+                           f"Content-Length: 100\r\n\r\n".encode() + MAGIC + b"\x00\x00")
+            deadline = time.monotonic() + 10
+            busy_seen = False
+            while time.monotonic() < deadline:
+                uploads = server.health()["uploadsInProgress"]
+                busy_seen = busy_seen or uploads == 1
+                if busy_seen and uploads == 0:
+                    break
+                time.sleep(0.02)
+            self.assertTrue(busy_seen, "the partial upload was being received")
+            self.assertTrue(server.health()["idle"], "a stalled upload no longer pins the receiver busy")
+        self.assertIn("rejected upload from 127.0.0.1 (400)", output.getvalue())
+        self.assertEqual(list(self.inbox.glob(".phonesaber-receive-*")), [])
 
     def test_codex_failure_dump_is_printed_once(self) -> None:
         bundle = self.inbox / "phone_saber_triage_sample_session"

@@ -108,7 +108,9 @@ def load_sequences(bundles: Iterable[Path]) -> dict[tuple[str, str], list[tuple[
         for path in sorted(frames_dir.glob("*.json")) if frames_dir.is_dir() else []:
             try:
                 context = json.loads(path.read_text(encoding="utf-8"))
-            except (OSError, json.JSONDecodeError):
+            except (OSError, ValueError):  # ValueError: broken JSON and non-UTF-8 bytes
+                continue
+            if not isinstance(context, dict):
                 continue
             session = str(context.get("sessionID") or bundle.name)
             # Different bundles that share a sessionID (copies, test harness runs) are
@@ -121,7 +123,8 @@ def load_sequences(bundles: Iterable[Path]) -> dict[tuple[str, str], list[tuple[
                 if not isinstance(frame_id, int):
                     continue
                 for color in COLORS:
-                    geometry = (frame.get(color) or {}).get("candidateGeometry")
+                    per_color = frame.get(color)
+                    geometry = per_color.get("candidateGeometry") if isinstance(per_color, dict) else None
                     eligible = _complete_eligible(geometry) if geometry else None
                     if eligible is None:
                         continue

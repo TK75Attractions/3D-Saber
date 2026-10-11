@@ -9,6 +9,7 @@ Windows: %USERPROFILE%/AppData/LocalLow/<会社>/<製品>/PhoneSaber/events.log�
 開始記録がない旧ログでは最初に観測したブロックを開始とし、別ファイルとは結合しない。
 """
 import argparse
+from datetime import datetime, timezone
 import glob
 import os
 import re
@@ -32,6 +33,10 @@ def parse(lines, source=""):
         stream = (station, fields.get("platform", "?"))
         if match.group("event") == "latency-loop-end":
             sessions.pop(stream, None)
+            continue
+        if match.group("event") == "latency-block" and "misses" not in fields:
+            # Unity は misses= を最後に書く。無い行は書込途中で切れた行なので、
+            # 切れた route/platform で偽の条件・偽の測定区切りを作らない。
             continue
         try:
             index = int(fields["block"])
@@ -94,6 +99,27 @@ def summarize(blocks):
     return rows
 
 
+def parse_time(text):
+    """ISO 8601 を aware datetime にする。末尾 Z と +09:00 を受け付け、時差なしは UTC とみなす。"""
+    value = text.strip()
+    if value.endswith(("Z", "z")):
+        value = value[:-1] + "+00:00"
+    parsed = datetime.fromisoformat(value)  # ValueError は呼び出し側で扱う
+    return parsed if parsed.tzinfo is not None else parsed.replace(tzinfo=timezone.utc)
+
+
+def after(blocks, since):
+    """since 以降のブロック。文字列比較だと +09:00 付きや不正な指定で黙って全件落ちる。"""
+    kept = []
+    for block in blocks:
+        try:
+            if parse_time(block["time"]) >= since:
+                kept.append(block)
+        except ValueError:
+            continue
+    return kept
+
+
 def default_logs():
     home = os.path.expanduser("~")
     patterns = [
@@ -106,14 +132,27 @@ def default_logs():
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("logs", nargs="*", help="events.log（省略時は既定の場所を探す）")
-    parser.add_argument("--since", default="", help="この ISO 時刻以降のブロックだけ（例 2026-10-08T00:00）")
+    parser.add_argument("--since", default="",
+                        help="この ISO 時刻以降のブロックだけ。時差なしは UTC（ログと同じ）。"
+                             "日本時間は +09:00 を付ける（例 2026-10-08T09:00+09:00）")
     args = parser.parse_args(argv)
+    since = None
+    if args.since:
+        try:
+            since = parse_time(args.since)
+        except ValueError:
+            parser.error(f"--since を ISO 時刻として読めません: {args.since!r}（例 2026-10-08T09:00+09:00）")
     paths = args.logs or default_logs()
     blocks = []
     for path in paths:
-        with open(path, encoding="utf-8", errors="replace") as handle:
-            blocks.extend(parse(handle, source=path))
-    blocks = [b for b in blocks if b["time"] >= args.since]
+        try:
+            with open(path, encoding="utf-8", errors="replace") as handle:
+                blocks.extend(parse(handle, source=path))
+        except OSError as error:
+            print(f"{path} を読めません: {error}", file=sys.stderr)
+            return 2
+    if since is not None:
+        blocks = after(blocks, since)
     rows = summarize(blocks)
     if not rows:
         print("latency-block がありません（F9 で15回以上測ると1ブロック記録されます）")

@@ -104,6 +104,17 @@ class SelectionReplayTests(unittest.TestCase):
         self.assertEqual(gap_distribution(sequences, self.policy), [])
         self.assertEqual(replay(sequences, self.policy, 100)["changedFrames"], [])
 
+    def test_corrupted_frame_contexts_are_skipped_not_fatal(self):
+        bundle = write_bundle(self.root, SWITCH)
+        frames = bundle / "frames"
+        (frames / "frame_1_bad_bytes.json").write_bytes(b'{"sessionID": "\xff\xfe"}')  # not UTF-8
+        (frames / "frame_2_list.json").write_text("[1, 2]", encoding="utf-8")
+        (frames / "frame_3_color_string.json").write_text(json.dumps(
+            {"sessionID": "phonesaber_test", "frames": [{"frameID": 13, "red": "n/a", "blue": None}]}),
+            encoding="utf-8")
+        sequences = load_sequences([bundle])
+        self.assertEqual([fid for fid, _ in sequences[("phonesaber_test", "red")]], [10, 11, 12])
+
     def test_bundles_sharing_a_session_id_stay_separate(self):
         first = write_bundle(self.root / "one", SWITCH)
         second = write_bundle(self.root / "two", SWITCH)
