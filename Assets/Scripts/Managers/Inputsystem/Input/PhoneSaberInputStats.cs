@@ -6,6 +6,11 @@ using System.Globalization;
 public sealed class PhoneSaberSenderGate
 {
     public const double SilenceSeconds = 1.0;
+    // 既定は「検出して知らせるだけ」で、座標は弾かない（2026-10-11 の再レビュー review-merged-20261011.md）。
+    // 弾く動作には、1台のスマホが LAN と P2P を短時間に往復すると2台と誤判定して約1秒入力を止める、
+    // 不正な payload だけの送信元が正常なスマホを締め出せる、P2P bridge 経由の2台は区別できない、
+    // という穴が残っている。実機で確かめるまで本番では使わない。テストだけが true にする。
+    public static bool Enforce = false;
     readonly Action<string, string> record;
     readonly List<Departure> departures = new List<Departure>(4);
     readonly struct Departure
@@ -26,12 +31,19 @@ public sealed class PhoneSaberSenderGate
         Poll(now);
         if (LockedSender.Length > 0)
         {
-            if (sender != LockedSender) { RejectedPackets++; return false; }
+            if (sender != LockedSender)
+            {
+                if (!Enforce) return true;
+                RejectedPackets++;
+                return false;
+            }
             lockedLastPacketAt = now;
             return true;
         }
         if (sender == current) return true;
-        for (int i = 0; i < departures.Count; i++)
+        // P2P bridge（loopback）と LAN の入れ替わりは、同じスマホの経路切替でも起きる。競合とは数えない。
+        bool pathSwitch = IsLoopback(sender) || IsLoopback(current);
+        for (int i = 0; !pathSwitch && i < departures.Count; i++)
         {
             var departure = departures[i];
             if (departure.Sender != sender || now - departure.At >= SilenceSeconds) continue;
@@ -55,6 +67,8 @@ public sealed class PhoneSaberSenderGate
         current = sender;
         return true;
     }
+
+    static bool IsLoopback(string sender) => sender == "127.0.0.1" || sender == "::1";
 
     public void Poll(double now)
     {
@@ -209,7 +223,8 @@ public sealed class PhoneSaberPacketStatistics
         lock (gate)
         {
             Prune(now);
-            bool accepted = senderGate.Accept(sender, now);
+            // 不正な payload は到着としては数えるが、送信元の判定には使わない（不正な送信元が正常なスマホを締め出さない）。
+            bool accepted = !parsed || senderGate.Accept(sender, now);
             if (!accepted) senderRejectedPackets++;
             if (accepted && hasTimingPacket && timingSenderIP == sender && now >= lastTimingPacketAt)
                 Add(gaps, now, (now - lastTimingPacketAt) * 1000.0);
@@ -278,15 +293,17 @@ public sealed class PhoneSaberPacketStatistics
         return new PhoneSaberTimingStats(timingScratch);
     }
 
-    // 座標解析から独立。壊れた ts は遅延統計に入れず、既存の座標受信は変えない。
+    // 座標解析から独立。座標 parser と同じ2種類の prefix を読み、壊れた時刻は統計に入れない。
     public static double? ReadSendEpoch(string message)
         => message == null ? null : ReadSendEpoch(message.AsSpan());
 
     public static double? ReadSendEpoch(ReadOnlySpan<char> message)
     {
-        if (!message.StartsWith("ts=".AsSpan(), StringComparison.Ordinal)) return null;
-        int separator = message.Slice(3).IndexOf(';') + 3;
-        if (separator <= 3 || !double.TryParse(message.Slice(3, separator - 3),
+        int prefixLength = message.StartsWith("ts=".AsSpan(), StringComparison.Ordinal) ? 3 :
+            message.StartsWith("timestamp=".AsSpan(), StringComparison.Ordinal) ? 10 : 0;
+        if (prefixLength == 0) return null;
+        int separator = message.Slice(prefixLength).IndexOf(';') + prefixLength;
+        if (separator <= prefixLength || !double.TryParse(message.Slice(prefixLength, separator - prefixLength),
             NumberStyles.Float, CultureInfo.InvariantCulture, out double epoch) ||
             double.IsNaN(epoch) || double.IsInfinity(epoch) || epoch <= 0) return null;
         return epoch;
@@ -345,7 +362,7 @@ public static class PhoneSaberStatsDisplay
     public static string Warning(string colour, PhoneSaberInputStats stats)
     {
         string conflict = string.IsNullOrEmpty(stats.LockedSender) ? "" :
-            $"警告: {colour} は別のスマホもこのPCへ送信中です。そのスマホの台・送信先を確認してください（固定: {stats.LockedSender}）。";
+            $"警告: {colour} は別のスマホもこのPCへ送信中です。そのスマホの台・送信先を確認してください（先にいた送信元: {stats.LockedSender}）。";
         string silence = IsStale(stats) ? $"警告: {colour} のUDP入力が1秒以上届いていません。送信先・接続・ファイアウォールを確認してください。" : "";
         return conflict.Length == 0 ? silence : silence.Length == 0 ? conflict : conflict + "\n" + silence;
     }

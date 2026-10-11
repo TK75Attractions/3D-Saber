@@ -557,6 +557,8 @@ final class UDPSender {
 /// 2026-10-07 の F9 実測では LAN が P2P より中央値で約45ms、p95で約2倍速かった。
 final class LANLivenessProbe {
     static let port: UInt16 = 5007
+    /// テスト中の view model が使う宛先 port（何も応答しない）。応答は recordReplyForTesting で与える。
+    static let unusedPortForTests: UInt16 = 1
     static let request = "PHONESABER_DISCOVER 1"
     static let replyPrefix = "PHONESABER_UNITY 1"
     static let aliveWindow: TimeInterval = 1.5
@@ -673,8 +675,22 @@ final class LANLivenessProbe {
     }
 
     /// `connection` が nil のときはテストからの記録。停止・host 変更後に届いた旧接続の応答は数えない。
+    /// この iPhone が送る先（5005 / 5006、版 1）で受けている Unity の応答だけを「LAN が生きている」証拠にする。
+    /// 接頭辞だけの比較では "PHONESABER_UNITY 10 …" や別の port で待つ Unity も生存扱いになり、
+    /// 届かない LAN を優先し続けて P2P へ退避できなかった。
+    static func isCompatibleReply(_ text: String) -> Bool {
+        guard text.hasPrefix(replyPrefix) else { return false }
+        let rest = text.dropFirst(replyPrefix.count)
+        guard rest.isEmpty || rest.first == " " else { return false }
+        for field in rest.split(separator: " ") {
+            if field.hasPrefix("red="), field.dropFirst(4) != "5005" { return false }
+            if field.hasPrefix("blue="), field.dropFirst(5) != "5006" { return false }
+        }
+        return true
+    }
+
     private func handle(_ data: Data, from connection: NWConnection?) {
-        guard let text = String(data: data, encoding: .ascii), text.hasPrefix(Self.replyPrefix) else { return }
+        guard let text = String(data: data, encoding: .ascii), Self.isCompatibleReply(text) else { return }
         lock.lock()
         if connection == nil || self.connection === connection { lastReply = clock() }
         lock.unlock()
@@ -760,8 +776,12 @@ final class ConnectivityLog: @unchecked Sendable {
         try? manager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
         if let size = (try? manager.attributesOfItem(atPath: url.path))?[.size] as? Int, size >= maximumFileBytes {
             let previous = url.appendingPathExtension("1")
-            try? manager.removeItem(at: previous)
-            try? manager.moveItem(at: url, to: previous)
+            // 回転先がディレクトリでも、その中の別の記録を再帰削除しない。現行へ追記を続ける。
+            var isDirectory: ObjCBool = false
+            if !manager.fileExists(atPath: previous.path, isDirectory: &isDirectory) || !isDirectory.boolValue {
+                try? manager.removeItem(at: previous)
+                try? manager.moveItem(at: url, to: previous)
+            }
         }
         guard let data = line.data(using: .utf8) else { return }
         if let handle = try? FileHandle(forWritingTo: url) {

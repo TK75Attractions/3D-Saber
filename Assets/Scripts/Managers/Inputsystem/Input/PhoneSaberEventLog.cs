@@ -148,6 +148,7 @@ public sealed class PhoneSaberConnectionEvents
     // events.log を埋めない（抑制した回数は次の行に残す）。
     double lastSenderChangeAt = double.NegativeInfinity;
     int suppressedSenderChanges;
+    string suppressedFrom = "";
 
     public PhoneSaberConnectionEvents(double startedAt, bool mac, Action<string, string> record)
     {
@@ -158,7 +159,11 @@ public sealed class PhoneSaberConnectionEvents
 
     public void Poll(double now)
     {
-        lock (gate) CheckSilence(now);
+        lock (gate)
+        {
+            CheckSilence(now);
+            FlushSenderChange(now);
+        }
     }
 
     public void Packet(double now, string ip)
@@ -166,6 +171,7 @@ public sealed class PhoneSaberConnectionEvents
         lock (gate)
         {
             CheckSilence(now);
+            FlushSenderChange(now);
             if (sender != ip)
             {
                 if (now - lastSenderChangeAt >= 1.0)
@@ -177,13 +183,29 @@ public sealed class PhoneSaberConnectionEvents
                     lastSenderChangeAt = now;
                     suppressedSenderChanges = 0;
                 }
-                else suppressedSenderChanges++;
+                else
+                {
+                    if (suppressedSenderChanges == 0) suppressedFrom = sender;
+                    suppressedSenderChanges++;
+                }
                 sender = ip;
             }
             if (silent) record("input-back", "sender=" + ip);
             silent = false;
             lastPacketAt = now;
         }
+    }
+
+    // 最後の切替の後に同じ送信元が続いても、抑制した出来事を失わない。
+    void FlushSenderChange(double now)
+    {
+        if (suppressedSenderChanges == 0 || now - lastSenderChangeAt < 1.0) return;
+        record("sender-change", "from=" + suppressedFrom + " to=" + sender +
+            " route-from=" + PhoneSaberStatsDisplay.ClassifyRoute(suppressedFrom, mac) +
+            " route-to=" + PhoneSaberStatsDisplay.ClassifyRoute(sender, mac) +
+            " suppressed=" + suppressedSenderChanges);
+        lastSenderChangeAt = now;
+        suppressedSenderChanges = 0;
     }
 
     void CheckSilence(double now)

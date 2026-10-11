@@ -2,8 +2,27 @@ package jp.phonesaber.sender
 
 import org.junit.Assert.*
 import org.junit.Test
+import java.io.File
 
 class DiscoveryProtocolTest {
+    @Test fun sharedDiscoveryContractVectors() {
+        val root = generateSequence(File(checkNotNull(System.getProperty("user.dir")))) { it.parentFile }
+            .first { File(it, "PhoneSaber/tools/fixtures/protocol_discovery.tsv").isFile }
+        File(root, "PhoneSaber/tools/fixtures/protocol_discovery.tsv").readLines().drop(1).forEach { line ->
+            val fields = line.split('\t')
+            val reply = DiscoveryProtocol.parse(fields[1])
+            assertEquals(fields[0], fields[2] == "1", reply != null)
+            assertEquals(fields[0], fields[3] == "1", reply?.compatible == true)
+            if (reply != null) {
+                assertEquals(fields[0], fields[4].takeUnless { it == "-" } ?: "", reply.station)
+                listOf("", "A", "B").forEach { station ->
+                    assertEquals(fields[0], station.isEmpty() || station == reply.station,
+                        StationMatcher.reply(station, reply))
+                }
+            }
+        }
+    }
+
     @Test fun stationMatcherRequiresExactMetadataOnlyWhenConfigured() {
         val legacy = DiscoveryProtocol.parse("PHONESABER_UNITY 1 red=5005 blue=5006 name=PC")!!
         val a = DiscoveryProtocol.parse("PHONESABER_UNITY 1 red=5005 blue=5006 name=PC station=A")!!

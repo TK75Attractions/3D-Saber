@@ -40,9 +40,13 @@ public static class PhoneSaberParserTestCorpus
 
     static double? LegacyEpoch(string message)
     {
-        if (message == null || !message.StartsWith("ts=", StringComparison.Ordinal)) return null;
-        int separator = message.IndexOf(';', 3);
-        if (separator <= 3 || !double.TryParse(message.Substring(3, separator - 3),
+        if (message == null) return null;
+        // 座標の旧 oracle は維持し、診断の timestamp= 対応だけ期待値に反映する。
+        int prefixLength = message.StartsWith("ts=", StringComparison.Ordinal) ? 3 :
+            message.StartsWith("timestamp=", StringComparison.Ordinal) ? 10 : 0;
+        if (prefixLength == 0) return null;
+        int separator = message.IndexOf(';', prefixLength);
+        if (separator <= prefixLength || !double.TryParse(message.Substring(prefixLength, separator - prefixLength),
             NumberStyles.Float, CultureInfo.InvariantCulture, out double epoch) ||
             double.IsNaN(epoch) || double.IsInfinity(epoch) || epoch <= 0) return null;
         return epoch;

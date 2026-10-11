@@ -2,8 +2,27 @@ package jp.phonesaber.sender
 
 import org.junit.Assert.*
 import org.junit.Test
+import java.io.File
 
 class PayloadRoutingTest {
+    @Test fun sharedCoordinateContractVectorsKeepTheirBytesAndColorPorts() {
+        val root = generateSequence(File(checkNotNull(System.getProperty("user.dir")))) { it.parentFile }
+            .first { File(it, "PhoneSaber/tools/fixtures/protocol_coordinates.tsv").isFile }
+        File(root, "PhoneSaber/tools/fixtures/protocol_coordinates.tsv").readLines().drop(1).forEach { line ->
+            val fields = line.split('\t')
+            if (fields[2] != "1" || fields[3] != "1") return@forEach
+            // JNI の本文を再整形せず、通常・計測とも両色の正しい port に送る。
+            val text = fields[1]
+            val packets = PayloadRouting.datagrams(arrayOf(
+                NativeResult(0, true, false, Ports.RED, text),
+                NativeResult(1, true, false, Ports.BLUE, text)))
+            assertEquals(fields[0], listOf(CoordinateDatagram(Ports.RED, text),
+                CoordinateDatagram(Ports.BLUE, text)), packets)
+            packets.forEach { assertArrayEquals(text.toByteArray(Charsets.US_ASCII),
+                it.text.toByteArray(Charsets.US_ASCII)) }
+        }
+    }
+
     @Test fun forwardsCoreTextExactlyToFixedColorPorts() {
         val packets = PayloadRouting.datagrams(arrayOf(
             NativeResult(0, true, false, 5005, "0,1079,1919,0"),

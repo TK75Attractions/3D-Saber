@@ -16,6 +16,7 @@ class UnityPlayModeBatchesTests(unittest.TestCase):
             def fake_unity(command, **kwargs):
                 Path(command[command.index("-testResults") + 1]).write_text(
                     '<test-run total="0" passed="0" failed="0" skipped="0"/>')
+                return batches.subprocess.CompletedProcess(command, 0)
 
             with mock.patch.object(batches.subprocess, "run", side_effect=fake_unity) as launch:
                 with contextlib.redirect_stdout(io.StringIO()):
@@ -58,6 +59,49 @@ class UnityPlayModeBatchesTests(unittest.TestCase):
             (folder / "B.cs").write_text("public sealed class BTests { [TestCase(1)] public void Y(int v) {} }\n")
             (folder / "C.cs").write_text("public class CPlayTests { [UnityTest, Timeout(360000)] public IEnumerator Z() { yield break; } }\n")
             self.assertEqual(batches.discover_classes(folder), ["APlayTests", "BTests", "CPlayTests"])
+
+    def test_crash_after_writing_passed_xml_is_retried_and_fails_cli(self):
+        with tempfile.TemporaryDirectory() as folder:
+            def fake_unity(command, **kwargs):
+                Path(command[command.index("-testResults") + 1]).write_text(
+                    '<test-run total="1" passed="1" failed="0" skipped="0"/>')
+                return batches.subprocess.CompletedProcess(command, -11)
+
+            with mock.patch.object(batches.subprocess, "run", side_effect=fake_unity) as launch, \
+                    contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                code = batches.main(["--project", folder, "--out", folder, "--classes", "ExampleTests"])
+            self.assertEqual(code, 1)
+            self.assertEqual(launch.call_count, 2)
+            summary = json.loads((Path(folder) / "summary.json").read_text())
+            self.assertEqual(summary["crashed"], ["ExampleTests"])
+
+    def test_test_runner_exit_two_preserves_the_failed_test_without_retry(self):
+        with tempfile.TemporaryDirectory() as folder:
+            def fake_unity(command, **kwargs):
+                Path(command[command.index("-testResults") + 1]).write_text(
+                    '<test-run total="1" passed="0" failed="1" skipped="0">'
+                    '<test-case fullname="ExampleTests.Broken" result="Failed"/></test-run>')
+                return batches.subprocess.CompletedProcess(command, 2)
+
+            with mock.patch.object(batches.subprocess, "run", side_effect=fake_unity) as launch, \
+                    contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(io.StringIO()):
+                code = batches.main(["--project", folder, "--out", folder, "--classes", "ExampleTests"])
+            self.assertEqual(code, 1)
+            self.assertEqual(launch.call_count, 1)
+            summary = json.loads((Path(folder) / "summary.json").read_text())
+            self.assertEqual(summary["failed_tests"], ["ExampleTests.Broken"])
+            self.assertEqual(summary["failed"], 1)
+            self.assertEqual(summary["crashed"], [])
+
+    def test_skipped_or_inconclusive_tests_are_not_a_success(self):
+        for passed, skipped in [(0, 1), (1, 1), (0, 0)]:
+            with self.subTest(passed=passed, skipped=skipped), tempfile.TemporaryDirectory() as folder:
+                result = {"total": max(1, passed + skipped), "passed": passed, "failed": 0,
+                          "skipped": skipped, "failed_tests": []}
+                with mock.patch.object(batches, "run_group", return_value=result), \
+                        contextlib.redirect_stdout(io.StringIO()):
+                    code = batches.main(["--project", folder, "--out", folder, "--classes", "ExampleTests"])
+                self.assertEqual(code, 1)
 
     def test_chunks_cover_every_class_once(self):
         items = [f"C{i}" for i in range(11)]
