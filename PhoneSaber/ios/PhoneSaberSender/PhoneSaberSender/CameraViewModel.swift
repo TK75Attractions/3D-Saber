@@ -641,6 +641,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     /// 通信ログの直近（画面用）。
     @Published private(set) var connectivityLogTail: [String] = []
     private var pcReplyWatch = PCReplyWatch()
+    private let connectivityClock: () -> TimeInterval
     private var connectivityLogRevision = -1
     static let connectivityLogTailCount = 12
     @Published private(set) var p2pRoundTrip: P2PRoundTripStats.Summary?
@@ -795,6 +796,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         sender: UDPSender = UDPSender(),
         p2pSender: P2PSender = P2PSender(),
         p2pEnabled: Bool? = nil,
+        connectivityClock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
         cameraExposureExperiment: CameraExposureExperiment? = nil,
         authorizationStatus: @escaping () -> AVAuthorizationStatus = { AVCaptureDevice.authorizationStatus(for: .video) },
         requestAccess: @escaping (@escaping (Bool) -> Void) -> Void = { completion in AVCaptureDevice.requestAccess(for: .video, completionHandler: completion) },
@@ -805,7 +807,8 @@ final class CameraViewModel: NSObject, ObservableObject {
         self.processor = processor
         self.sender = sender
         self.p2pSender = p2pSender
-        let probe = LANLivenessProbe()
+        self.connectivityClock = connectivityClock
+        let probe = LANLivenessProbe(clock: connectivityClock)
         self.lanProbe = probe
         self.delivery = CoordinateDelivery(sender: sender, p2pSender: p2pSender, lanProbe: probe)
         // Unit tests opt in explicitly, so a bridge running on the developer's Mac
@@ -1430,6 +1433,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         cameraRecoveryExhausted = false
         if debugRecordingActive { stopDebugRecording() }
         running = false
+        refreshConnectivityStatus()
         publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
         cameraWatchdogTask?.cancel()
         cameraWatchdogTask = nil
@@ -1643,7 +1647,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     /// PC へ届いている証拠の有無と通信ログを画面へ反映する（12Hz の UI 更新から呼ぶ。変化時だけ publish）。
-    private func refreshConnectivityStatus(now: TimeInterval = ProcessInfo.processInfo.systemUptime) {
+    private func refreshConnectivityStatus() {
+        let now = connectivityClock()
         let manual = hostSelection.source == .manual
         let missing = pcReplyWatch.update(sending: running, lanVerified: lanConfigured && lanProbe.isAlive,
                                           p2pConnected: !manual && p2pState.isConnected, now: now)
@@ -2085,6 +2090,9 @@ final class CameraViewModel: NSObject, ObservableObject {
     func recordLANReplyForTesting(_ text: String = LANLivenessProbe.replyPrefix) {
         lanProbe.recordReplyForTesting(text)
     }
+
+    /// UI タイマーを待たず、LAN 応答の有効期限と警告を同じ注入時計で評価する。
+    func refreshConnectivityStatusForTesting() { refreshConnectivityStatus() }
 
     private func applySenderUpdate(states: [Int: String], errors: [Int: String], generation: Int) {
         guard running, lifecycleGeneration == generation else {

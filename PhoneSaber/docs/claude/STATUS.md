@@ -61,7 +61,10 @@
 - **core-line 過連結と壁画 FP の offline 解析**（327c642、Codex、[詳細](coreline-overlink-and-mural.md)）: 暗い隙間への無条件補間（pipeline.cpp:179–184 / BGRADetection.swift:390–398）と raw 長に依存する加点が原因。限定 guard G(.6) で 21952 BLUE / 21953 RED が正しい候補に戻り、formal 40/40、旧ラベルの剣 赤29・青31 の検出を保持（端点の正解までは未確認）。壁画 BLUE FP は 9→4 まで、0 にできる rule は無し。**本番採用は保留**（別 swing の実剣 2 event が未達）。
 - **iPhone 送信処理の連続運転**（[soak.md](soak.md)）: Mac 上で 15 分×2 条件。footprint +0.7〜0.8MB、スレッド・fd・送信レート・送信時間は劣化なし。
 - 検証: verify_phone_saber.sh（iOS XCTest / Detection / Lossless 40 / Tools / iOS Release / Diff Check）全 PASS。Unity EditMode は PhoneSaber 系 PASS、全体 1870 件中の失敗 2 件は譜面エディタのテスト（ChartRecordingWorkflowTests、今回の変更と無関係）。
-- Codex 週間枠は 93% 使用（10-14 頃リセット）。
+- **Codex レビュー後の修正**（8a86b0a、P1 なし・P2/P3 の4点）: 経路の順番は「リンクが使える状態に戻ったとき」だけリセット（1回だけ pong が返る経路へ戻り続ける穴）、試行中の interface の広告の出入りではやり直さない・やり直しは 4 秒以上あける、警告は送信要求に連動（P2P だけで開始した場合も出る）・手動 IP では P2P 接続を証拠にしない、手動 IP は別の文言。
+- **レビュー指摘のテスト追加**（Codex）: 警告の4パターン（P2P のみで bridge 停止、LAN 応答の途切れと回復、手動 IP、停止）と、保持処理の最悪条件（60fps で上昇し続けるスコア）。停止直後に警告が残る点を1行で修正。pending は 5 秒窓ぶん（約300件）で頭打ちになり、捨てた payload は全件返ることを確認。この最悪条件では挿入ごとに全 pending を見直すため Debug の simulator で 1 フレーム約 5ms かかる（通常の録画では pending は少数。影響は Debug Recording 中だけ）。
+- **core-line guard G の実装準備**（ローカル branch `opt/coreline-guard-prototype` fa2aaad、main には未投入・push していない）: C++ / Swift 共通の compile-time フラグ `PHONESABER_CORELINE_GUARD`、既定 OFF。OFF は main と 662/662 bit 一致、ON は formal 40/40・選択変更 0、shadow の数値を再現、C++ core 1.648→1.674 ms/frame。採用は別 swing の実剣 2 event の証拠後。
+- Codex 週間枠は 98% 使用（10-14 頃リセット）。
 
 ### 2026-10-10 学校での実機 capture（iPhone＋Mac、Claude 解析）
 - F9（Editor、iPhone テザリング経由 LAN、60fps、n=22）: 中央値 135ms、p95 179ms、最小 103ms。10-07 の LAN（30〜40fps、中央値 132〜150ms、p95 204〜347ms）と中央値は同等。1ブロックだけなので fps 自動比較は未成立。

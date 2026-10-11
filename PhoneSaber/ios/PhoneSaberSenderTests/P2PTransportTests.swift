@@ -589,6 +589,137 @@ final class P2PTransportTests: XCTestCase {
     // MARK: CameraViewModel routing
 
     @MainActor
+    func testPCReplyMissingAfterP2POnlyBridgeStopsUsesAutomaticMessage() async throws {
+        let bridge = try FakeBridge()
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        let now = LockedBox(100.0)
+        let lan = UDPSender { _, _, completion in completion(.success(1)) }
+        let p2p = P2PSender(timing: fastTiming(), endpointOverride: .hostPort(host: "127.0.0.1", port: port))
+        let model = CameraViewModel(sender: lan, p2pSender: p2p, p2pEnabled: true,
+            connectivityClock: { now.value }, idleTimerUpdater: { _ in })
+        defer { model.stop(); p2p.stop(); lan.stop() }
+        model.startForTesting(host: "", manual: false)
+        XCTAssertFalse(model.lanConfiguredForTesting)
+        let connected = await waitUntilMain { model.p2pState.isConnected }
+        XCTAssertTrue(connected)
+        model.refreshConnectivityStatusForTesting()
+        now.mutate { $0 = 110 }
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertFalse(model.pcReplyMissing, "P2P 接続は LAN 宛先がなくても到達の証拠になる")
+
+        bridge.stop()
+        let disconnected = await waitUntilMain { !model.p2pState.isConnected }
+        XCTAssertTrue(disconnected)
+        model.refreshConnectivityStatusForTesting()
+        now.mutate { $0 = 112.99 }
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertFalse(model.pcReplyMissing)
+        now.mutate { $0 = 113 }
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertTrue(model.pcReplyMissing, "橋が停止してから3秒で警告する")
+        XCTAssertEqual(model.pcReplyMissingMessage, PCReplyWatch.automaticMessage)
+    }
+
+    @MainActor
+    func testPCReplyMissingTracksLANReplyExpiryRecoveryAndLogsBothTransitions() {
+        let now = LockedBox(100.0)
+        let lan = UDPSender { _, _, completion in completion(.success(1)) }
+        let model = CameraViewModel(sender: lan, p2pEnabled: false,
+            connectivityClock: { now.value }, idleTimerUpdater: { _ in })
+        defer { model.stop(); lan.stop() }
+        model.startForTesting(host: "192.0.2.1", manual: false)
+        XCTAssertTrue(model.lanConfiguredForTesting)
+        // 実ネットワークの返信を待たず、通常と同じ LAN 応答記録経路を使う。
+        for time in [100.0, 110.0] {
+            now.mutate { $0 = time }
+            model.recordLANReplyForTesting()
+            model.refreshConnectivityStatusForTesting()
+            XCTAssertFalse(model.pcReplyMissing)
+        }
+        now.mutate { $0 = 110 + LANLivenessProbe.aliveWindow }
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertFalse(model.pcReplyMissing, "最後の応答は有効期限の境界まで有効")
+        let expiredAt = 110 + LANLivenessProbe.aliveWindow + 0.01
+        now.mutate { $0 = expiredAt }
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertFalse(model.pcReplyMissing)
+        now.mutate { $0 = expiredAt + PCReplyWatch.warnAfter - 0.01 }
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertFalse(model.pcReplyMissing)
+
+        let revision = ConnectivityLog.shared.revision
+        now.mutate { $0 = expiredAt + PCReplyWatch.warnAfter }
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertTrue(model.pcReplyMissing)
+        XCTAssertEqual(ConnectivityLog.shared.revision, revision + 1)
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertEqual(ConnectivityLog.shared.revision, revision + 1, "同じ状態を繰り返し記録しない")
+        model.recordLANReplyForTesting()
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertFalse(model.pcReplyMissing)
+        XCTAssertEqual(ConnectivityLog.shared.revision, revision + 2)
+        let transitions = Array(ConnectivityLog.shared.recent.suffix(2))
+        XCTAssertEqual(transitions.map(\.source), ["状態", "状態"])
+        XCTAssertEqual(transitions.map(\.message),
+            ["PC から応答なし（Unity 応答なし・P2P 未接続）", "PC への経路が回復"])
+        XCTAssertEqual(model.connectivityLogTail,
+            ConnectivityLog.shared.displayLines(last: CameraViewModel.connectivityLogTailCount))
+    }
+
+    @MainActor
+    func testPCReplyMissingManualIPIgnoresAvailableP2PAndUsesManualMessage() async throws {
+        let bridge = try FakeBridge()
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        let now = LockedBox(100.0)
+        let lan = UDPSender { _, _, completion in completion(.success(1)) }
+        let p2p = P2PSender(timing: fastTiming(), endpointOverride: .hostPort(host: "127.0.0.1", port: port))
+        let model = CameraViewModel(sender: lan, p2pSender: p2p, p2pEnabled: true,
+            connectivityClock: { now.value }, idleTimerUpdater: { _ in })
+        defer { model.stop(); p2p.stop(); lan.stop() }
+        let connected = await waitUntilMain { model.p2pState.isConnected }
+        XCTAssertTrue(connected)
+        model.startForTesting(host: "192.0.2.1", manual: true)
+        XCTAssertTrue(model.p2pState.isConnected, "自動モードで接続済みの橋を残して手動 IP に切り替える")
+        model.refreshConnectivityStatusForTesting()
+        now.mutate { $0 = 102.99 }
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertFalse(model.pcReplyMissing)
+        now.mutate { $0 = 103 }
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertTrue(p2p.isUsable, "橋が使えても手動 IP の到達確認にはならない")
+        XCTAssertTrue(model.pcReplyMissing)
+        XCTAssertEqual(model.pcReplyMissingMessage, PCReplyWatch.manualMessage)
+    }
+
+    @MainActor
+    func testStopClearsPCReplyMissingAndRestartsTheGracePeriod() {
+        let now = LockedBox(100.0)
+        let lan = UDPSender { _, _, completion in completion(.success(1)) }
+        let model = CameraViewModel(sender: lan, p2pEnabled: false,
+            connectivityClock: { now.value }, idleTimerUpdater: { _ in })
+        defer { model.stop(); lan.stop() }
+        model.startForTesting(host: "", manual: false)
+        model.refreshConnectivityStatusForTesting()
+        now.mutate { $0 = 103 }
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertTrue(model.pcReplyMissing)
+        model.stop()
+        XCTAssertFalse(model.pcReplyMissing, "stop() 自体が警告を解除する")
+        now.mutate { $0 = 200 }
+        model.startForTesting(host: "", manual: false)
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertFalse(model.pcReplyMissing, "再開直後に前回の応答待ち時間を引き継がない")
+        now.mutate { $0 = 202.99 }
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertFalse(model.pcReplyMissing)
+        now.mutate { $0 = 203 }
+        model.refreshConnectivityStatusForTesting()
+        XCTAssertTrue(model.pcReplyMissing)
+    }
+
+    @MainActor
     func testViewModelPrefersP2PAndFallsBackToLANWithoutRestarting() async throws {
         let bridge = try FakeBridge()
         defer { bridge.stop() }

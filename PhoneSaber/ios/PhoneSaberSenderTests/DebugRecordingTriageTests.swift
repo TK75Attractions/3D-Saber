@@ -1988,6 +1988,76 @@ final class DebugHandlingPeriodTests: XCTestCase {
         }
     }
 
+    // 上昇し続けるスコアは pending が 5 秒窓いっぱい（約300件）になる最悪条件。挿入のたびに全 pending を
+    // 見直すので、Debug の simulator では 1 フレーム約 5ms かかる（5 分ぶんだと 190 秒）。上限の確認には
+    // 5 秒窓を 2 回以上またぐ 15 秒で足りる。
+    func testRisingScoresAtSixtyFPSBoundPendingAndReportEveryDroppedPayload() {
+        let fps = 60
+        let end = 15.0
+        // 引き算の丸めで境界フレームが1枚残る場合も、5秒窓の範囲内とする。
+        let pendingLimit = Int(ceil(DebugHandlingPeriod.stopSeconds * Double(fps))) + 1
+        for capacity in [1, 2] {
+            var retention = Retention(capacity: capacity)
+            var livePayloads: Set<UInt64> = []
+            var releasedPayloads: Set<UInt64> = []
+            var insertedPayloads: Set<UInt64> = []
+            var peakPending = 0
+
+            // 全件の集合比較は重い（Debug の simulator で 172 秒かかった）ので、件数は毎回、
+            // 中身は1秒ごとと最後に照合する。
+            func release(_ dropped: [Retention.Entry], compareContents: Bool = false) {
+                for entry in dropped {
+                    XCTAssertEqual(entry.payload, entry.frameID)
+                    XCTAssertNotNil(livePayloads.remove(entry.payload), "破棄は所有中の payload に限る")
+                    XCTAssertTrue(releasedPayloads.insert(entry.payload).inserted, "二重解放を報告しない")
+                }
+                XCTAssertEqual(livePayloads.count, retention.pending.count + retention.settled.count,
+                    "保持から消えた payload は必ず呼び出し元へ返される")
+                if compareContents {
+                    XCTAssertEqual(livePayloads, Set(retention.all.map(\.payload)),
+                        "保持から消えた全 payload が呼び出し元へ返される")
+                }
+            }
+
+            for index in 0..<Int(end * Double(fps)) {
+                let id = UInt64(index)
+                let time = Double(index) / Double(fps)
+                release(retention.advance(to: time))
+                let period = DebugHandlingPeriod.period(at: time, end: nil)
+                let preference = DebugEventPreference(handlingPeriod: period != nil, score: Double(index))
+                XCTAssertTrue(retention.wouldRetain(timestamp: time, preference: preference),
+                    "上昇し続けるスコアは毎フレーム新たな首位になる")
+                livePayloads.insert(id)
+                insertedPayloads.insert(id)
+                release(retention.insert(.init(payload: id, frameID: id, timestamp: time,
+                    period: period, preference: preference)), compareContents: index % fps == 0)
+                peakPending = max(peakPending, retention.pending.count)
+                XCTAssertLessThanOrEqual(retention.pending.count, pendingLimit)
+                XCTAssertLessThanOrEqual(retention.settled.count, capacity)
+                if let oldest = retention.pending.map(\.timestamp).min() {
+                    XCTAssertGreaterThanOrEqual(oldest, time - DebugHandlingPeriod.stopSeconds - 1e-9,
+                        "5秒窓を過ぎた首位を pending に残さない")
+                }
+            }
+
+            release(retention.finish(end: end), compareContents: true)
+            let boundaryID = UInt64((end - DebugHandlingPeriod.stopSeconds) * Double(fps))
+            let expectedIDs = (0..<capacity).map { boundaryID - UInt64($0) }.sorted()
+            XCTAssertEqual(retention.settled.map(\.frameID).sorted(), expectedIDs)
+            XCTAssertEqual(retention.best?.frameID, boundaryID)
+            XCTAssertTrue(retention.settled.allSatisfy {
+                $0.period == nil && !$0.preference.handlingPeriod
+                    && $0.timestamp >= DebugHandlingPeriod.startSeconds
+                    && $0.timestamp <= end - DebugHandlingPeriod.stopSeconds
+            })
+            XCTAssertTrue(retention.pending.isEmpty)
+            XCTAssertGreaterThanOrEqual(peakPending, pendingLimit - 1, "5秒窓を満たす負荷を実際に与える")
+            XCTAssertEqual(releasedPayloads.count, insertedPayloads.count - capacity)
+            XCTAssertEqual(releasedPayloads.union(livePayloads), insertedPayloads)
+            XCTAssertTrue(releasedPayloads.isDisjoint(with: livePayloads))
+        }
+    }
+
     func testOnePointFiveSecondsBeforeStopIsMarkedStopEvenAsFallback() {
         let chosen = run([(1, 0, 1, false), (2, 55.4, 11.92, false)], end: 56.9).best
         XCTAssertEqual(chosen?.frameID, 2)
