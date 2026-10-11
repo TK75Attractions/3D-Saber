@@ -53,10 +53,10 @@ struct BridgeOptions {
             case "--forward-host": guard let v = value() else { return nil }; options.forwardHost = v
             case "--red-port": guard let v = value().flatMap(UInt16.init) else { return nil }; options.redPort = v
             case "--blue-port": guard let v = value().flatMap(UInt16.init) else { return nil }; options.bluePort = v
-            case "--stats-interval": guard let v = value().flatMap(Double.init), v > 0 else { return nil }; options.statsInterval = v
-            case "--peer-idle-timeout": guard let v = value().flatMap(Double.init), v > 0 else { return nil }; options.peerIdleTimeout = v
+            case "--stats-interval": guard let v = value().flatMap(Double.init), v.isFinite, v > 0 else { return nil }; options.statsInterval = v
+            case "--peer-idle-timeout": guard let v = value().flatMap(Double.init), v.isFinite, v > 0 else { return nil }; options.peerIdleTimeout = v
             case "--exit-with-parent": guard let v = value().flatMap(Int32.init), v > 0 else { return nil }; options.exitWithParent = v
-            case "--simulate-listener-failure-after": guard let v = value().flatMap(Double.init), v > 0 else { return nil }; options.simulateListenerFailureAfter = v
+            case "--simulate-listener-failure-after": guard let v = value().flatMap(Double.init), v.isFinite, v > 0 else { return nil }; options.simulateListenerFailureAfter = v
             case "--diag-port": guard let v = value().flatMap(UInt16.init) else { return nil }; options.diagnosticsPort = v
             case "--diag-listen-port": guard let v = value().flatMap(UInt16.init) else { return nil }; options.diagnosticsListenPort = v
             case "-h", "--help": return nil
@@ -177,23 +177,33 @@ final class DiagnosticsRelay {
             log("upload from \(label) closed after \(bytes) bytes (\(reason))")
         }
         func pipe(from source: NWConnection, to destination: NWConnection, counting: Bool) {
+            guard !closed else { return }
             source.receive(minimumIncompleteLength: 1, maximumLength: 256 * 1024) { data, _, isComplete, error in
+                guard !closed else { return }
+                func received() {
+                    if let error { close("\(error)"); return }
+                    if isComplete {
+                        // Half-close: the HTTP request is complete; keep reading the response.
+                        destination.send(content: nil, contentContext: .finalMessage, isComplete: true,
+                                         completion: .contentProcessed { sendError in
+                                             if let sendError { close("send: \(sendError)") }
+                                             else if !counting { close("done") }
+                                         })
+                        return
+                    }
+                    pipe(from: source, to: destination, counting: counting)
+                }
                 if let data, !data.isEmpty {
                     if counting { bytes += data.count }
+                    // Read the next chunk only after this send completes, so a slow
+                    // receiver cannot turn an upload into an unbounded send queue.
                     destination.send(content: data, completion: .contentProcessed { sendError in
                         if let sendError { close("send: \(sendError)") }
+                        else if !closed { received() }
                     })
+                } else {
+                    received()
                 }
-                if isComplete {
-                    // Half-close: the HTTP request is complete; keep reading the response.
-                    destination.send(content: nil, contentContext: .finalMessage, isComplete: true,
-                                     completion: .contentProcessed { _ in
-                                         if !counting { close("done") }
-                                     })
-                    return
-                }
-                if let error { close("\(error)"); return }
-                pipe(from: source, to: destination, counting: counting)
             }
         }
         log("upload from \(label) → 127.0.0.1:\(options.diagnosticsPort)")
@@ -208,8 +218,11 @@ final class DiagnosticsRelay {
                 pipe(from: inbound, to: outbound, counting: true)
                 pipe(from: outbound, to: inbound, counting: false)
             case .failed(let error), .waiting(let error):
-                close(outboundReady ? "receiver closed: \(error)"
-                                    : "receiver not reachable (Start PhoneSaber running?): \(error)")
+                // Once connected, receive/send completions own stream shutdown:
+                // a state failure must not discard a response still being piped.
+                if !outboundReady {
+                    close("receiver not reachable (Start PhoneSaber running?): \(error)")
+                }
             default:
                 break
             }
@@ -297,7 +310,12 @@ final class P2PBridge {
             }
         }
         listener.serviceRegistrationUpdateHandler = { [weak self] change in
-            if case .add(let endpoint) = change { self?.log("Bonjour registered \(endpoint)") }
+            // 2026-10-10 の Wi-Fi 切替では、公開がどう変わったかがログに無く切り分けられなかった。
+            switch change {
+            case .add(let endpoint): self?.log("Bonjour registered \(endpoint)")
+            case .remove(let endpoint): self?.log("Bonjour unregistered \(endpoint)")
+            @unknown default: break
+            }
         }
         listener.newConnectionHandler = { [weak self] connection in self?.accept(connection) }
         self.listener = listener

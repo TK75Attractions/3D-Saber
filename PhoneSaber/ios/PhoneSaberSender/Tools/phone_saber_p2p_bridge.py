@@ -44,7 +44,8 @@ def source_digest(sources: tuple[Path, ...] = SOURCES) -> str:
 
 def build(cache_dir: Path = DEFAULT_CACHE, *, force: bool = False) -> Path:
     """Compile the bridge once per source revision; returns the binary path."""
-    target = cache_dir / source_digest() / BINARY_NAME
+    revision = source_digest()
+    target = cache_dir / revision / BINARY_NAME
     if target.is_file() and os.access(target, os.X_OK) and not force:
         return target
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -75,18 +76,26 @@ def build(cache_dir: Path = DEFAULT_CACHE, *, force: bool = False) -> Path:
     if compiler.returncode != 0:
         temporary.unlink(missing_ok=True)
         raise RuntimeError(f"bridge build failed:\n{stderr}")
+    # Do not cache a binary under an earlier revision if files changed during swiftc.
+    if source_digest() != revision:
+        temporary.unlink(missing_ok=True)
+        raise RuntimeError("bridge source changed during build; run the launcher again")
     os.replace(temporary, target)
     return target
 
 
 def _remove_stale_temporaries(directory: Path, older_than: float = 600) -> None:
-    """Partial outputs of interrupted builds (pid-named, so never another live build's)."""
+    """Remove old partial outputs only when their owning launcher is gone."""
     now = time.time()
     for leftover in directory.glob(f".{BINARY_NAME}.*.tmp"):
         try:
             if now - leftover.stat().st_mtime > older_than:
-                leftover.unlink()
-        except OSError:
+                pid = int(leftover.name.split(".")[-2])
+                try:
+                    os.kill(pid, 0)
+                except ProcessLookupError:
+                    leftover.unlink()
+        except (OSError, ValueError):
             pass
 
 

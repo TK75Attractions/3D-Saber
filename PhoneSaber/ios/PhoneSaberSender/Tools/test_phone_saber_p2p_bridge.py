@@ -16,9 +16,11 @@ import struct
 import subprocess
 import sys
 import tempfile
+import threading
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
@@ -67,14 +69,14 @@ class P2PBridgeTests(unittest.TestCase):
         self.addCleanup(sock.close)
         return sock
 
-    def start_bridge(self):
+    def start_bridge(self, extra_args=()):
         started_before = self.log().count("listening on UDP")
         log = self.log_path.open("a")
         self.addCleanup(log.close)
         self.process = subprocess.Popen(
             [str(self.binary), "--no-bonjour", "--loopback-only", "--listen-port", str(self.listen_port),
              "--red-port", str(self.unity[RED].getsockname()[1]),
-             "--blue-port", str(self.unity[BLUE].getsockname()[1]), "--stats-interval", "0.5"],
+             "--blue-port", str(self.unity[BLUE].getsockname()[1]), "--stats-interval", "0.5", *extra_args],
             stdout=log, stderr=subprocess.STDOUT)
         deadline = time.monotonic() + 10
         while self.log().count("listening on UDP") == started_before and time.monotonic() < deadline:
@@ -147,6 +149,72 @@ class P2PBridgeTests(unittest.TestCase):
         self.assertEqual(self.received(RED), b"7,7,7,7")
         self.assertIn("(peers: 2)", self.log())
 
+    def test_reconnecting_the_same_session_does_not_wait_for_the_old_peer(self):
+        self.ping(41, 1)
+        self.send(datagram(COORDINATES, RED, 41, 2, b"1,2,3,4"))
+        self.assertEqual(self.received(RED), b"1,2,3,4")
+        other = self.new_socket()
+        self.assertEqual(self.ping(41, 3, other), datagram(PONG, RED, 41, 3))
+        self.send(datagram(COORDINATES, RED, 41, 4, b"5,6,7,8"), other)
+        self.assertEqual(self.received(RED), b"5,6,7,8")
+        self.send(datagram(COORDINATES, RED, 41, 2, b"1,2,3,4"))
+        self.assertIsNone(self.received(RED), "old peer cannot replay old coordinates")
+
+    def test_an_idle_peer_is_closed_and_the_same_session_can_reconnect(self):
+        self.stop_bridge()
+        self.start_bridge(("--peer-idle-timeout", "1"))
+        self.ping(44, 1)
+        deadline = time.monotonic() + 4
+        while "peer idle for 1s" not in self.log() and time.monotonic() < deadline:
+            time.sleep(0.05)
+        self.assertIn("peer idle for 1s", self.log())
+        other = self.new_socket()
+        self.assertEqual(self.ping(44, 2, other), datagram(PONG, RED, 44, 2))
+        self.send(datagram(COORDINATES, RED, 44, 3, b"1,2,3,4"), other)
+        self.assertEqual(self.received(RED), b"1,2,3,4")
+
+    def test_sigint_stops_the_bridge_cleanly(self):
+        self.ping(45, 1)
+        self.process.send_signal(signal.SIGINT)
+        self.assertEqual(self.process.wait(5), 0)
+        self.assertIn("[P2P] stopping", self.log())
+
+    def test_forwarding_recovers_when_unity_binds_after_datagrams_were_dropped(self):
+        port = self.unity[RED].getsockname()[1]
+        self.unity[RED].close()
+        for sequence in range(10):
+            self.send(datagram(COORDINATES, RED, 42, sequence, b"1,2,3,4"))
+        self.ping(42, 10)  # waits until the bridge consumed the preceding packets
+        receiver = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        receiver.bind(("127.0.0.1", port))
+        receiver.settimeout(1)
+        self.addCleanup(receiver.close)
+        self.send(datagram(COORDINATES, RED, 42, 11, b"5,6,7,8"))
+        self.assertEqual(receiver.recvfrom(64)[0], b"5,6,7,8")
+
+    def test_large_and_random_malformed_packets_do_not_stop_valid_traffic(self):
+        for size in (0, 1, 19, 20, 276, 277, 8192):
+            self.send(os.urandom(size))
+        for sequence in range(200):
+            self.send(datagram(COORDINATES, RED, 43, sequence, b"nan,inf,,4"))
+        self.assertEqual(self.ping(43, 201), datagram(PONG, RED, 43, 201))
+        self.send(datagram(COORDINATES, BLUE, 43, 202, b"1,2,3,4"))
+        self.assertEqual(self.received(BLUE), b"1,2,3,4")
+
+    def test_nonfinite_intervals_are_rejected_without_starting_the_bridge(self):
+        for option in ("--stats-interval", "--peer-idle-timeout", "--simulate-listener-failure-after"):
+            for value in ("inf", "nan"):
+                with self.subTest(option=option, value=value):
+                    process = subprocess.Popen([str(self.binary), option, value],
+                                               stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                    try:
+                        _, stderr = process.communicate(timeout=0.5)
+                        self.assertEqual(process.returncode, 2, stderr)
+                    finally:
+                        if process.poll() is None:
+                            process.kill()
+                            process.communicate()
+
     def test_per_frame_traffic_logs_only_the_first_packet_and_periodic_totals(self):
         for sequence in range(1, 101):
             self.send(datagram(COORDINATES, RED, 3, sequence, b"%d,0,1,1" % sequence))
@@ -184,6 +252,7 @@ class P2PBridgeParentWatchTests(unittest.TestCase):
                                        "--listen-port", str(free_udp_port()),
                                        "--exit-with-parent", str(parent.pid)],
                                       stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            self.addCleanup(bridge.stdout.close)
             try:
                 time.sleep(1.5)
                 self.assertIsNone(bridge.poll(), "keeps running while the parent lives")
@@ -218,6 +287,15 @@ class P2PBridgeListenerRestartTests(unittest.TestCase):
             phone = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
             phone.settimeout(0.5)
             self.addCleanup(phone.close)
+            deadline = time.monotonic() + 10
+            answered = None
+            while answered is None and time.monotonic() < deadline:
+                phone.sendto(datagram(PING, RED, 5, 1), ("127.0.0.1", port))
+                try:
+                    answered = phone.recvfrom(64)[0]
+                except socket.timeout:
+                    pass
+            self.assertEqual(answered, datagram(PONG, RED, 5, 1))
             # Generous: both waits end as soon as the event happens; 8 s was too short
             # while parallel verify runs loaded the machine (load average 50+).
             deadline = time.monotonic() + 30
@@ -225,6 +303,11 @@ class P2PBridgeListenerRestartTests(unittest.TestCase):
                 time.sleep(0.05)
             self.assertIn("restarting in 1s", log_path.read_text())
             self.assertIsNone(bridge.poll(), "the bridge process keeps running")
+            # The accepted UDP connection can still pong after listener.cancel().
+            # Wait for the new listener, rather than mistaking that pong for recovery.
+            while log_path.read_text().count("listening on UDP %d" % port) < 2 and time.monotonic() < deadline:
+                time.sleep(0.05)
+            self.assertEqual(log_path.read_text().count("listening on UDP %d" % port), 2, log_path.read_text())
             answered = None
             while answered is None and time.monotonic() < deadline:
                 phone.sendto(datagram(PING, RED, 5, 1), ("127.0.0.1", port))
@@ -290,6 +373,7 @@ class DiagnosticsRelayTests(unittest.TestCase):
 
         server = ThreadingHTTPServer(("127.0.0.1", 0), Receiver)
         threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
         self.addCleanup(server.shutdown)
         relay_port = self.start_bridge(server.server_address[1])
         payload = os.urandom(2 * 1024 * 1024)
@@ -319,8 +403,123 @@ class DiagnosticsRelayTests(unittest.TestCase):
             self.assertTrue(closed, "connection is closed, the iPhone retries or uses LAN")
         self.assertIn("receiver not reachable", self.log_path.read_text())
 
+    def test_a_stalled_receiver_applies_backpressure_instead_of_queueing_the_upload(self):
+        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        server.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4096)
+        server.bind(("127.0.0.1", 0))
+        server.listen()
+        server.settimeout(5)
+        self.addCleanup(server.close)
+        relay_port = self.start_bridge(server.getsockname()[1])
+        payload = b"x" * (32 * 1024 * 1024)
+        with socket.create_connection(("127.0.0.1", relay_port), timeout=10) as client:
+            receiver, _ = server.accept()
+            with receiver:
+                finished = threading.Event()
+                errors = []
+
+                def upload():
+                    try:
+                        client.sendall(payload)
+                        client.shutdown(socket.SHUT_WR)
+                    except OSError as error:
+                        errors.append(error)
+                    finally:
+                        finished.set()
+
+                sender = threading.Thread(target=upload)
+                sender.start()
+                try:
+                    queued_entire_upload = finished.wait(2)
+                    receiver.settimeout(10)
+                    received = 0
+                    while chunk := receiver.recv(65536):
+                        self.assertEqual(chunk, b"x" * len(chunk))
+                        received += len(chunk)
+                    receiver.sendall(b"accepted")
+                    receiver.shutdown(socket.SHUT_WR)
+                    reply = b""
+                    while chunk := client.recv(64):
+                        reply += chunk
+                    self.assertEqual(received, len(payload))
+                    self.assertEqual(reply, b"accepted")
+                    self.assertFalse(errors, errors)
+                    self.assertFalse(queued_entire_upload,
+                                     "a stalled receiver must not accumulate the whole upload in the bridge")
+                finally:
+                    client.close()
+                    sender.join(10)
+
+    def test_concurrent_partial_uploads_and_large_replies_stay_separate(self):
+        from concurrent.futures import ThreadPoolExecutor
+        from socketserver import BaseRequestHandler, ThreadingTCPServer
+
+        class Receiver(BaseRequestHandler):
+            def handle(self):
+                data = b""
+                while chunk := self.request.recv(65536):
+                    data += chunk
+                self.request.sendall(data[::-1])
+
+        server = ThreadingTCPServer(("127.0.0.1", 0), Receiver)
+        threading.Thread(target=server.serve_forever, daemon=True).start()
+        self.addCleanup(server.server_close)
+        self.addCleanup(server.shutdown)
+        relay_port = self.start_bridge(server.server_address[1])
+        payloads = [os.urandom(1024 * 1024), os.urandom(1024 * 1024 + 17)]
+        barrier = threading.Barrier(2)
+
+        def upload(payload):
+            with socket.create_connection(("127.0.0.1", relay_port), timeout=10) as client:
+                client.setsockopt(socket.SOL_SOCKET, socket.SO_RCVBUF, 4096)
+                barrier.wait(timeout=5)
+                for offset in range(0, len(payload), 4093):
+                    client.sendall(payload[offset:offset + 4093])
+                client.shutdown(socket.SHUT_WR)
+                time.sleep(0.1)  # receiver can close while response bytes are queued
+                reply = b""
+                while chunk := client.recv(65536):
+                    reply += chunk
+                return reply
+
+        with ThreadPoolExecutor(max_workers=2) as pool:
+            replies = list(pool.map(upload, payloads))
+        for reply, payload in zip(replies, payloads):
+            self.assertEqual(len(reply), len(payload), self.log_path.read_text())
+            self.assertTrue(reply == payload[::-1], "concurrent uploads cannot cross streams")
+
 
 class P2PBridgeLauncherTests(unittest.TestCase):
+    def test_changed_sources_during_build_are_not_published_under_the_old_digest(self):
+        with tempfile.TemporaryDirectory() as directory:
+            source = Path(directory) / "bridge.swift"
+            source.write_text("old source")
+            digest = launcher.source_digest
+            revision = digest((source,))
+
+            def compile_output(command, **kwargs):
+                source.write_text("changed source")
+                Path(command[-1]).write_bytes(b"compiled changed source")
+                compiler = mock.Mock(returncode=0)
+                compiler.communicate.return_value = ("", "")
+                return compiler
+
+            with mock.patch.object(launcher, "source_digest", side_effect=lambda: digest((source,))), \
+                    mock.patch.object(launcher.subprocess, "Popen", side_effect=compile_output):
+                with self.assertRaisesRegex(RuntimeError, "source.*changed"):
+                    launcher.build(Path(directory))
+            self.assertFalse((Path(directory) / revision / launcher.BINARY_NAME).exists())
+            self.assertEqual(list(Path(directory).rglob("*.tmp")), [])
+
+    def test_stale_temporary_of_a_live_build_is_not_removed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            temporary = Path(directory) / f".{launcher.BINARY_NAME}.{os.getpid()}.tmp"
+            temporary.write_bytes(b"compiler output")
+            old = time.time() - 3600
+            os.utime(temporary, (old, old))
+            launcher._remove_stale_temporaries(Path(directory))
+            self.assertTrue(temporary.exists(), "age alone does not mean the compiler is dead")
+
     def test_build_is_cached_per_source_revision(self):
         if not (sys.platform == "darwin" and shutil.which("xcrun")):
             self.skipTest("requires the macOS Swift toolchain")
@@ -336,11 +535,35 @@ class P2PBridgeLauncherTests(unittest.TestCase):
             self.assertEqual(usage.returncode, 2)
             self.assertIn("--no-bonjour", usage.stderr)
 
+    def test_concurrent_launchers_share_a_cache_in_a_japanese_space_path(self):
+        if not (sys.platform == "darwin" and shutil.which("xcrun")):
+            self.skipTest("requires the macOS Swift toolchain")
+        with tempfile.TemporaryDirectory(prefix="縁日 P2P cache ") as directory:
+            command = [sys.executable, "-B", launcher.__file__, "--build-only", "--cache-dir", directory]
+            processes = [subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                                          text=True) for _ in range(2)]
+            try:
+                for process in processes:
+                    stdout, stderr = process.communicate(timeout=30)
+                    self.assertEqual(process.returncode, 0, stderr)
+                    binary = Path(stdout.splitlines()[-1])
+                    self.assertTrue(os.access(binary, os.X_OK))
+                    usage = subprocess.run([str(binary), "--help"], capture_output=True, text=True)
+                    self.assertEqual(usage.returncode, 2, usage.stderr)
+                self.assertEqual(list(Path(directory).rglob("*.tmp")), [])
+            finally:
+                for process in processes:
+                    if process.poll() is None:
+                        process.terminate()
+                        process.communicate(timeout=10)
+
     def test_stale_partial_builds_are_removed_but_recent_ones_kept(self):
         with tempfile.TemporaryDirectory() as directory:
             folder = Path(directory)
-            stale = folder / f".{launcher.BINARY_NAME}.111.tmp"
-            fresh = folder / f".{launcher.BINARY_NAME}.222.tmp"
+            finished = subprocess.Popen([sys.executable, "-c", "pass"])
+            finished.wait(5)
+            stale = folder / f".{launcher.BINARY_NAME}.{finished.pid}.tmp"
+            fresh = folder / f".{launcher.BINARY_NAME}.{os.getpid()}.tmp"
             stale.write_bytes(b"x")
             fresh.write_bytes(b"x")
             old = time.time() - 3600
@@ -353,14 +576,30 @@ class P2PBridgeLauncherTests(unittest.TestCase):
         if not (sys.platform == "darwin" and shutil.which("xcrun")):
             self.skipTest("requires the macOS Swift toolchain")
         with tempfile.TemporaryDirectory() as directory:
-            process = subprocess.Popen([sys.executable, "-B", launcher.__file__, "--build-only",
-                                        "--rebuild", "--cache-dir", directory],
+            pid_file = Path(directory) / "compiler.pid"
+            # Record our own child directly; pgrep may be unavailable in a sandbox.
+            harness = """
+import sys
+from pathlib import Path
+sys.path.insert(0, sys.argv[1])
+import phone_saber_p2p_bridge as launcher
+original = launcher.subprocess.Popen
+def tracked_compiler(*args, **kwargs):
+    compiler = original(*args, **kwargs)
+    Path(sys.argv[3]).write_text(str(compiler.pid))
+    return compiler
+launcher.subprocess.Popen = tracked_compiler
+launcher.main(['--build-only', '--rebuild', '--cache-dir', sys.argv[2]])
+"""
+            process = subprocess.Popen([sys.executable, "-B", "-c", harness,
+                                        str(Path(launcher.__file__).parent), directory, str(pid_file)],
                                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+            self.addCleanup(process.stdout.close)
+            self.addCleanup(lambda: process.poll() is None and (process.kill(), process.wait(5)))
             deadline = time.monotonic() + 10
             compiler = None
             while time.monotonic() < deadline and compiler is None:
-                found = subprocess.run(["/usr/bin/pgrep", "-P", str(process.pid)], capture_output=True, text=True)
-                compiler = found.stdout.split()[0] if found.stdout.strip() else None
+                compiler = pid_file.read_text().strip() if pid_file.exists() else None
                 time.sleep(0.05)
             self.assertIsNotNone(compiler, "compiler child started")
             process.terminate()

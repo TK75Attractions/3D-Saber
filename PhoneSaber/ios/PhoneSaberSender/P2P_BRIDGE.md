@@ -56,6 +56,9 @@ iPhone(DebugBundleTransfer)
 - 送る中身(HTTP の `POST /v1/bundle` と bundle の byte 列)は LAN 転送と同じです。relay は byte を変えずに中継します。
 - 受信側(Start PhoneSaber の receiver)はそのままで、変更はありません。receiver が起動していないと relay は接続を閉じ、iPhone は LAN を試してから再試行します。
 - Mac のログ(Unity の Console)には `[P2P] diag relay: upload from … closed after N bytes (done)` が出ます。
+- relay は各方向の send 完了を待って次の最大 256 KiB を読むので、receiver が遅くても upload 全量を送信キューへ溜めません。
+  接続後の終了は receive/send の完了で処理し、receiver の state 変更だけで転送途中の応答を切り捨てません。
+  接続開始から 300 秒で閉じる既存の上限は維持しています(無通信時間ではなく総経過時間)。
 
 ## fallback の条件
 
@@ -99,6 +102,8 @@ iPhone(DebugBundleTransfer)
   - `[P2P] peer connected ...`、`[P2P] peer alive ...`
   - `[P2P] RED received ...` / `[P2P] BLUE received ...`(送信元 session ごとに最初の 1 回だけ)
   - `[P2P] no ping for 3s; iPhone falls back to LAN (fallback to LAN)`
+    - この判定は bridge 全体で共通です。別 peer が ping を続けると、切れた peer の警告は出ません。
+      各 peer の idle 終了(既定 10 秒)は別々に判定します。このログで iPhone の経路を制御しているわけではありません。
   - `[P2P] listener failed: …; restarting in …s`(待ち受けが失敗しても process は終了せず、同じ port で張り直す。sleep からの復帰などで起こりうる)
   - 10 秒ごとの集計(`RED=… BLUE=… stale=… malformed=… maxGapMsRED=… maxGapMsBLUE=…`)。
     `maxGapMs` は、座標が届く間隔の最大値(2 秒を超える間隔は saber が見えていないとみなして除外)。
@@ -127,6 +132,7 @@ Unity を使わずに単独で動かす場合(診断など)は、次を実行し
 
 初回は Swift の bridge を自動で build します(`~/Library/Caches/PhoneSaber/p2p-bridge/` に保存し、
 source が変わったときだけ build し直します)。そのため、Unity からの初回起動だけ数秒〜十数秒かかります。
+build 中に source の hash が変わった場合は、旧 hash の cache に binary を保存せずエラーにします。その場合は launcher を再実行してください。
 止めるときは Ctrl-C です。引数は `--` の後ろに書きます。例: `-- --name "Saber Mac"`。
 
 macOS が「ローカルネットワーク」へのアクセス許可を求めたら、bridge を起動したアプリ(Terminal など)を許可してください。
@@ -175,8 +181,35 @@ macOS が「ローカルネットワーク」へのアクセス許可を求め�
 - `Tools/test_phone_saber_p2p_bridge.py`: 実際の Swift bridge を build して起動し、loopback で、
   RED/BLUE の振り分け、本文の不変、不正な packet、重複、アプリ再起動(新 session)、2 台の peer、bridge の再起動、
   ping/pong、log の頻度制限、build の cache を確認します。
+  追加の回帰: 停止中 receiver への 32 MiB upload の背圧、並行する分割 upload と大きな応答の欠落防止、
+  build 中の source 変更、稼働中 build の一時ファイル保護。新しい source port からの同一 session の再接続、
+  Unity 未待受からの復帰、不正・大きな datagram、SIGINT、稼働 peer を伴う listener 再作成、
+  日本語・空白を含む cache への同時 build も確認します。
+  Git root で `python3 -B -m unittest discover -s PhoneSaber/ios/PhoneSaberSender/Tools -p test_phone_saber_p2p_bridge.py -v`。
 - 実機でしか確認できないこと: AWDL での接続、学校 Wi-Fi との同時使用、iPhone がどの Wi-Fi にも参加していない状態、
   Mac 2 台での選択、経路変更時の interface 表示、ローカルネットワーク拒否時の表示と許可後の復帰、P2P 接続中の検索停止。
+
+## 2026-10-10 の Wi-Fi 切替 incident の Mac 側切り分け
+
+- UDP / 診断 TCP は別々の listener で、両方 `includePeerToPeer = true`。通常起動では interface を固定していません。
+  Network.framework が公開 endpoint の追加・削除を管理します([Apple の listener 解説](https://developer.apple.com/videos/play/wwdc2018/715/))。
+  Wi-Fi の切替だけを理由に再起動が必要とは断定できません。TCP upload が AWDL で成功しても、UDP listener の公開・接続成功の証拠にはなりません。
+- UDP の `serviceRegistrationUpdateHandler` は現在 `.add` のログだけを出し、`.remove` は無記録です。
+  診断 TCP は登録変更 handler 自体がありません。100 秒の空白中に UDP の公開がどう変わったかは既存ログだけでは判断できません。
+  UDP の `.failed` は 1/2/4/8/16/30 秒の backoff で再作成、`.ready` で backoff を戻します。`.waiting` はログだけで OS の復帰を待ちます。
+- peer は connection の identity で保持するため、古い peer が残っていても新しい source port の同一 session は受け付けます。
+  sequence は session・色ごとに共有し、古い座標の再送を拒否します。ping はこの filter を通しません。
+  idle を 1 秒に短縮した loopback では、終了後に古い source port を再利用した ping がタイムアウトした一方、新しい port からは応答・転送できました。
+  AWDL の同じ現象を確認したわけではありません。今回 listener 全体の強制再起動は追加していません。
+- Unity 未待受の UDP は OS に送信できても届きません。`RED` / `BLUE` の集計は `sendto` 成功数で、Unity の受信確認ではありません。
+  後から同じ port を bind すれば新しい座標は転送できます。未受信の座標は保存・再送しません。
+
+未実装の提案・残るリスク: 登録削除/interface 変更と peer 別 ping の診断ログ、peer/session table と並行 upload の上限、
+診断 listener 再作成時の同期 throw(`try? start()`)の再試行が必要かを検討します。`announcedSessions` は期限なし、
+sequence table の「64」は硬い上限ではなく古い entry の掃除を始める条件です。大量の session ではメモリと掃除の負荷が増えます。
+上限・期限・経路変更時の再起動は運用で見える動作を変えるため、今回実装していません。
+Unity の Stop は現在 bridge 自身へ SIGTERM を送らず、子 compiler の停止後に Kill します。domain reload の停止 hook と
+`--exit-with-parent` は存在しますが、実 Editor/Player の異常終了・再起動は loopback 試験の範囲外です。
 
 ## rollback
 
