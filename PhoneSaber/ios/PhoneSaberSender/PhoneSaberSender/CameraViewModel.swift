@@ -734,6 +734,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var manualLosslessCapturePending = false
     @Published private(set) var debugManualLosslessCaptureCount = 0
     @Published private(set) var debugRecordingStatus = "OFF"
+    @Published private(set) var debugTransferEntry: DebugBundleOutbox.Entry?
+    @Published private(set) var debugTransferPendingCount = 0
     @Published private(set) var lastDebugRecordingResult: DebugRecordingResult?
     @Published private(set) var debugRecordingSessions: [DebugRecordingSessionSummary] = []
     @Published private(set) var debugRecordingCleanupStatus = ""
@@ -962,10 +964,22 @@ final class CameraViewModel: NSObject, ObservableObject {
                 }
             }
         }
+        refreshDebugTransferStatus()
+        sessionObserverTokens.append(NotificationCenter.default.addObserver(
+            forName: DebugBundleTransfer.didChange, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in self?.refreshDebugTransferStatus() }
+        })
+        sessionObserverTokens.append(NotificationCenter.default.addObserver(
+            forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main
+        ) { _ in
+            DebugBundleTransfer.shared.retryPending()
+        })
         processor.onDebugRecordingLimitReached = { [weak self] reason in
             Task { @MainActor in
                 guard let self else { return }
                 self.debugRecordingActive = false
+                DebugBundleTransfer.shared.setRecordingActive(false)
                 self.manualLosslessCapturePending = false
                 self.debugRecordingFinalizing = true
                 self.debugRecordingMaximumDurationTask?.cancel()
@@ -1287,6 +1301,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     func start() {
         guard !running, !permissionPending else { return }
+        DebugBundleTransfer.shared.retryPending()
         resumePolicy.start()
         persistSendingIntent()
         updateIdleTimerPolicy()
@@ -2290,6 +2305,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         // finalization after recorder creation instead of leaving it orphaned.
         debugRecordingActive = true
         publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
+        DebugBundleTransfer.shared.setRecordingActive(true)
         debugRecordingStatus = "録画を開始しています…"
         processor.updateDebugCameraDeviceState(nil)
         debugSegmentLabel = .unlabeled
@@ -2309,6 +2325,7 @@ final class CameraViewModel: NSObject, ObservableObject {
                 case .failure(let error):
                     guard self.debugRecordingActive, !self.debugRecordingFinalizing else { return }
                     self.debugRecordingActive = false
+                    DebugBundleTransfer.shared.setRecordingActive(false)
                     self.debugRecordingStatus = "録画開始失敗: \(error.localizedDescription)"
                     self.teardownGuidedRecording(stopAudioImmediately: true)
                 }
@@ -2322,6 +2339,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         // the metadata outcome then stays "incomplete".
         if guidedRecordingRunning { teardownGuidedRecording(stopAudioImmediately: true) }
         debugRecordingActive = false
+        DebugBundleTransfer.shared.setRecordingActive(false)
         manualLosslessCapturePending = false
         debugRecordingFinalizing = true
         processor.updateDebugCameraDeviceState(nil)
@@ -2339,6 +2357,17 @@ final class CameraViewModel: NSObject, ObservableObject {
         processor.stopDebugRecording(reason: reason) { [weak self] result in
             Task { @MainActor in self?.completeDebugRecording(result) }
         }
+    }
+
+    private func refreshDebugTransferStatus() {
+        let outbox = DebugBundleTransfer.shared.outbox
+        debugTransferEntry = outbox.latest
+        debugTransferPendingCount = outbox.pendingCount
+    }
+
+    func sendPendingDebugRecordings() {
+        guard !debugRecordingActive else { return }
+        DebugBundleTransfer.shared.retryPending(immediately: true)
     }
 
     func refreshDebugRecordingSessions() {
@@ -2378,12 +2407,13 @@ final class CameraViewModel: NSObject, ObservableObject {
         debugRecordingMaximumDurationTask?.cancel()
         debugRecordingActive = false
         debugRecordingFinalizing = false
+        DebugBundleTransfer.shared.setRecordingActive(false)
         manualLosslessCapturePending = false
         switch result {
         case .success(let recording):
             lastDebugRecordingResult = recording
             debugRecordingStatus = String(
-                format: "完了: %d frames / %@ / %.0f秒",
+                format: "端末に録画を保存: %d frames / %@ / %.0f秒（Mac受領は下の転送状態を確認）",
                 recording.recordedFrameCount,
                 formattedBytes(recording.diskUsageBytes),
                 recording.durationSeconds
@@ -2392,6 +2422,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             debugRecordingStatus = "録画処理失敗: \(error.localizedDescription)"
         }
         refreshDebugRecordingSessions()
+        refreshDebugTransferStatus()
     }
 
     private func recordingLimitDescription(_ reason: DebugRecordingFinishReason) -> String {

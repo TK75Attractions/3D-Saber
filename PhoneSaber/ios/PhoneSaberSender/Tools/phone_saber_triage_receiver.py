@@ -41,6 +41,7 @@ from phone_saber_triage_protocol import (
     MAX_BUNDLE_BYTES,
     MAX_IMAGES,
     BundleError,
+    DuplicateBundle,
     receive_bundle,
 )
 
@@ -336,6 +337,10 @@ class TriageRequestHandler(BaseHTTPRequestHandler):
     def _receive(self, length: int) -> None:
         try:
             bundle = receive_bundle(self.rfile, length, self.server.inbox)
+        except DuplicateBundle as exc:
+            print(f"[triage] confirmed duplicate from {self.client_address[0]}: {exc.session_id}", flush=True)
+            self._reply(200, {"status": "duplicate", "sessionID": exc.session_id})
+            return
         except FileExistsError as exc:
             print(f"[triage] rejected duplicate upload from {self.client_address[0]} (409): {exc}", flush=True)
             self._reply(409, {"error": str(exc)})

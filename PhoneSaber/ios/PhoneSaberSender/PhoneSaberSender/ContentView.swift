@@ -225,6 +225,21 @@ struct ContentView: View {
                             Text(model.debugRecordingEnabled ? model.debugRecordingStatus : "OFF（録画処理なし）")
                                 .font(.caption)
                                 .foregroundStyle(model.debugRecordingActive ? .red : .secondary)
+                            if let entry = model.debugTransferEntry {
+                                Text("\(entry.sessionID): \(entry.statusText)")
+                                    .font(.caption)
+                                    .foregroundStyle(entry.state == .received ? .green : .orange)
+                            }
+                            Text("未転送の録画: \(model.debugTransferPendingCount)件")
+                                .font(.caption)
+                            if model.debugTransferPendingCount > 0 {
+                                if !autoTransferDebugBundles {
+                                    Text("自動転送OFFの間は、自動再試行も停止します。")
+                                        .font(.caption2).foregroundStyle(.secondary)
+                                }
+                                Button("未転送の録画を今すぐ送る") { model.sendPendingDebugRecordings() }
+                                    .disabled(model.debugRecordingActive)
+                            }
                             if let recording = model.lastDebugRecordingResult {
                                 Text("\(recording.sessionID)  — raw / overlayは同じセッションです")
                                     .font(.caption2)

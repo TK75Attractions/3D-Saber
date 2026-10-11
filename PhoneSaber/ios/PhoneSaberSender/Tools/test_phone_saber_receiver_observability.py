@@ -161,7 +161,7 @@ class ReceiverObservabilityTests(unittest.TestCase):
                         "Content-Type": CONTENT_TYPE, "Content-Length": str(len(body)),
                     })
                     response = connection.getresponse()
-                    self.assertEqual(response.status, 409)
+                    self.assertEqual(response.status, 200)
                     response.read()
                 finally:
                     connection.close()

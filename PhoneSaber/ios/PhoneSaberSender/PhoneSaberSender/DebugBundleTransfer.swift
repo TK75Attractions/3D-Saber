@@ -23,6 +23,7 @@ private enum DebugBundleTransferError: LocalizedError {
     case discoveryTimeout
     case invalidEndpoint
     case httpStatus(Int)
+    case invalidReceipt
 
     var errorDescription: String? {
         switch self {
@@ -32,8 +33,120 @@ private enum DebugBundleTransferError: LocalizedError {
         case .bundleTooLarge: return "triage upload exceeds the 64 MiB limit"
         case .discoveryTimeout: return "PhoneSaber diagnostics receiver was not found"
         case .invalidEndpoint: return "receiver hostname or port is invalid"
+        case .invalidReceipt: return "receiver acknowledgment does not match this session"
         case .httpStatus(let status): return "receiver returned HTTP \(status)"
         }
+    }
+}
+
+// Persist relative paths: iOS may move the Documents container after relaunch.
+struct DebugBundleOutbox: Codable {
+    enum State: String, Codable { case pending, uploading, received, failed }
+    struct Entry: Codable, Equatable {
+        let sessionID: String
+        let bundlePath: String
+        let createdAt: Date
+        var state: State = .pending
+        var attempts = 0
+        var reason: String?
+        var nextAttemptAt = Date.distantPast
+        var receivedAt: Date?
+        var automatic = true
+
+        var isPending: Bool { state != .received }
+        func bundleURL(in directory: URL) -> URL {
+            bundlePath.hasPrefix("/") ? URL(fileURLWithPath: bundlePath) : directory.appendingPathComponent(bundlePath)
+        }
+        var statusText: String {
+            switch state {
+            case .pending: return "転送待ち"
+            case .uploading: return "転送中"
+            case .received:
+                let time = receivedAt.map {
+                    DateFormatter.localizedString(from: $0, dateStyle: .short, timeStyle: .medium)
+                } ?? ""
+                return "Mac 受信済み（\(time)）"
+            case .failed: return "転送失敗（\(reason ?? "不明")）— 自動で再試行します"
+            }
+        }
+    }
+
+    private(set) var entries: [Entry] = []
+    private(set) var prunedBefore = Date.distantPast
+    var pendingCount: Int { entries.filter(\.isPending).count }
+    var latest: Entry? { entries.max { $0.createdAt < $1.createdAt } }
+
+    mutating func register(sessionID: String, bundlePath: String, now: Date, automatic: Bool = true) {
+        guard now > prunedBefore, !entries.contains(where: { $0.sessionID == sessionID }) else { return }
+        entries.append(Entry(sessionID: sessionID, bundlePath: bundlePath, createdAt: now, automatic: automatic))
+    }
+
+    mutating func recover(exists: (String) -> Bool) -> [String] {
+        let missing = entries.filter { !exists($0.bundlePath) }.map(\.bundlePath)
+        entries.removeAll { missing.contains($0.bundlePath) }
+        for index in entries.indices where entries[index].state == .uploading {
+            entries[index].state = .pending
+        }
+        prune()
+        return missing
+    }
+
+    mutating func beginNext(now: Date, recording: Bool, automatic: Bool,
+                            manualIDs: Set<String> = []) -> Entry? {
+        guard !recording, !entries.contains(where: { $0.state == .uploading }),
+              let index = entries.indices.first(where: {
+                  entries[$0].isPending && entries[$0].nextAttemptAt <= now
+                      && ((automatic && entries[$0].automatic) || manualIDs.contains(entries[$0].sessionID))
+              }) else { return nil }
+        entries[index].state = .uploading
+        entries[index].reason = nil
+        return entries[index]
+    }
+
+    mutating func finish(sessionID: String, now: Date, reason: String?, attempts: Int) {
+        guard let index = entries.firstIndex(where: { $0.sessionID == sessionID }) else { return }
+        entries[index].attempts += attempts
+        entries[index].reason = reason
+        entries[index].state = reason == nil ? .received : .failed
+        entries[index].receivedAt = reason == nil ? now : nil
+        // A failed batch remains pending, with 30 s -> 60 s -> ... -> 15 min backoff.
+        let batches = max(0, (entries[index].attempts - 1) / 3)
+        entries[index].nextAttemptAt = now.addingTimeInterval(min(900, 30 * pow(2, Double(min(5, batches)))))
+        prune()
+    }
+
+    mutating func pause(sessionID: String) {
+        guard let index = entries.firstIndex(where: { $0.sessionID == sessionID }) else { return }
+        entries[index].state = .pending
+    }
+
+    mutating func retryNow() -> Set<String> {
+        let ids = Set(entries.filter(\.isPending).map(\.sessionID))
+        for index in entries.indices where entries[index].isPending {
+            entries[index].nextAttemptAt = .distantPast
+            entries[index].automatic = true
+        }
+        return ids
+    }
+
+    private mutating func prune() {
+        let received = entries.filter { $0.state == .received }.sorted {
+            ($0.receivedAt ?? .distantPast) > ($1.receivedAt ?? .distantPast)
+        }
+        let keep = Set(received.prefix(20).map(\.sessionID))
+        for entry in received where !keep.contains(entry.sessionID) {
+            prunedBefore = max(prunedBefore, entry.createdAt)
+        }
+        entries.removeAll { $0.state == .received && !keep.contains($0.sessionID) }
+    }
+
+    static func load(from url: URL) throws -> Self {
+        guard FileManager.default.fileExists(atPath: url.path) else { return Self() }
+        return try JSONDecoder().decode(Self.self, from: Data(contentsOf: url))
+    }
+
+    func save(to url: URL) throws {
+        try JSONEncoder().encode(self).write(to: url, options: .atomic)
     }
 }
 
@@ -52,7 +165,17 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
 
     private let workQueue = DispatchQueue(label: "PhoneSaberSender.debug-bundle-transfer",
                                           qos: .utility)
-    private var pendingBundles: [URL] = []
+    static let didChange = Notification.Name("PhoneSaberDebugBundleOutboxDidChange")
+    private let directory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+    private var storeURL: URL { directory.appendingPathComponent("debug-bundle-outbox.json") }
+    private(set) var outbox = DebugBundleOutbox()
+    private var recordingActive = false
+    private var manualIDs: Set<String> = []
+    private var retryWake: DispatchWorkItem?
+    private let pathMonitor = NWPathMonitor()
+    private var lanSession: URLSession?
+    private var generation = 0
+    private var activeSessionID: String?
     private var isBusy = false
     private var activeBundleURL: URL?
     private var activePackageURL: URL?
@@ -65,7 +188,72 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
 
     private enum AttemptPhase { case idle, p2p, searching, resolving, uploading, finished }
 
-    private override init() { super.init() }
+    private override init() {
+        super.init()
+        do { outbox = try DebugBundleOutbox.load(from: storeURL) }
+        catch { print("[DebugTriageTransfer] outbox load failed: \(error.localizedDescription)") }
+        recoverBundles(scan: true)
+        pathMonitor.pathUpdateHandler = { [weak self] path in
+            guard path.status == .satisfied else { return }
+            DispatchQueue.main.async { self?.retryPending() }
+        }
+        pathMonitor.start(queue: DispatchQueue(label: "PhoneSaberSender.debug-outbox-path"))
+    }
+
+    private func persist() {
+        do { try outbox.save(to: storeURL) }
+        catch { print("[DebugTriageTransfer] outbox save failed: \(error.localizedDescription)") }
+        NotificationCenter.default.post(name: Self.didChange, object: self)
+    }
+
+    private func recoverBundles(scan: Bool = false) {
+        for path in outbox.recover(exists: { self.bundleFilesExist(at: $0.hasPrefix("/") ? URL(fileURLWithPath: $0) : self.directory.appendingPathComponent($0)) }) {
+            print("[DebugTriageTransfer] dropping missing bundle: \(path)")
+        }
+        // Scan only on launch, when no builder can still be writing a bundle.
+        // Recover files finalized before the app died between creation and registration.
+        if scan {
+            for url in (try? FileManager.default.contentsOfDirectory(at: directory, includingPropertiesForKeys: nil)) ?? [] {
+                guard url.lastPathComponent.hasPrefix("phone_saber_triage_"), bundleFilesExist(at: url),
+                      let data = try? Data(contentsOf: url.appendingPathComponent("summary.json")),
+                      let summary = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                      let id = summary["sessionID"] as? String else { continue }
+                let created = (try? url.resourceValues(forKeys: [.creationDateKey]).creationDate) ?? Date()
+                outbox.register(sessionID: id, bundlePath: url.lastPathComponent, now: created,
+                                automatic: DebugRecordingLimits.shouldAutoTransfer(recordedFrames: summary["recordedFrameCount"] as? Int ?? 0))
+            }
+        }
+        persist()
+    }
+
+    private func bundleFilesExist(at url: URL) -> Bool {
+        guard let data = try? Data(contentsOf: url.appendingPathComponent("summary.json")),
+              let summary = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let images = summary["images"] as? [[String: Any]],
+              FileManager.default.fileExists(atPath: url.appendingPathComponent("prompt.md").path) else { return false }
+        return images.allSatisfy { image in
+            guard let path = image["path"] as? String, let context = image["frameContextPath"] as? String else { return false }
+            return FileManager.default.fileExists(atPath: url.appendingPathComponent(path).path)
+                && FileManager.default.fileExists(atPath: url.appendingPathComponent(context).path)
+        }
+    }
+
+    func setRecordingActive(_ active: Bool) {
+        precondition(Thread.isMainThread)
+        recordingActive = active
+        if active, let id = activeSessionID, activePackageURL != nil {
+            outbox.pause(sessionID: id)
+            persist()
+            finishCurrentBundle()
+        } else if !active { startNextBundleIfNeeded() }
+    }
+
+    func retryPending(immediately: Bool = false) {
+        precondition(Thread.isMainThread)
+        if !isBusy { recoverBundles() }
+        if immediately { manualIDs.formUnion(outbox.retryNow()); persist() }
+        startNextBundleIfNeeded()
+    }
 
     static var automaticTransferEnabled: Bool {
         // Unit tests record real triage bundles on a simulator that shares the Mac's
@@ -75,37 +263,65 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         return UserDefaults.standard.object(forKey: preferenceKey) as? Bool ?? true
     }
 
-    func enqueue(bundleURL: URL) {
+    func enqueue(bundleURL: URL, automatic: Bool = true) {
         DispatchQueue.main.async { [weak self] in
-            guard Self.automaticTransferEnabled else {
-                print("[DebugTriageTransfer] disabled; bundle kept at \(bundleURL.path)")
-                return
-            }
-            self?.pendingBundles.append(bundleURL)
-            self?.startNextBundleIfNeeded()
+            guard let self,
+                  let data = try? Data(contentsOf: bundleURL.appendingPathComponent("summary.json")),
+                  let summary = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let id = summary["sessionID"] as? String else { return }
+            let path = bundleURL.deletingLastPathComponent().standardizedFileURL == self.directory.standardizedFileURL
+                ? bundleURL.lastPathComponent : bundleURL.path
+            self.outbox.register(sessionID: id, bundlePath: path, now: Date(), automatic: automatic)
+            self.persist()
+            self.startNextBundleIfNeeded()
         }
     }
 
     private func startNextBundleIfNeeded() {
         precondition(Thread.isMainThread)
-        guard !isBusy, !pendingBundles.isEmpty else { return }
+        retryWake?.cancel()
+        retryWake = nil
+        guard !isBusy, !recordingActive else { return }
+        guard let entry = outbox.beginNext(now: Date(), recording: recordingActive,
+                                          automatic: Self.automaticTransferEnabled, manualIDs: manualIDs) else {
+            if Self.automaticTransferEnabled,
+               let next = outbox.entries.filter({ $0.isPending && $0.automatic }).map(\.nextAttemptAt).min() {
+                let wake = DispatchWorkItem { [weak self] in self?.retryPending() }
+                retryWake = wake
+                DispatchQueue.main.asyncAfter(deadline: .now() + max(1, next.timeIntervalSinceNow), execute: wake)
+            }
+            return
+        }
+        manualIDs.remove(entry.sessionID)
+        persist()
         isBusy = true
-        activeBundleURL = pendingBundles.removeFirst()
-        guard let activeBundleURL else { finishCurrentBundle(); return }
+        generation += 1
+        let token = generation
+        activeSessionID = entry.sessionID
+        let activeBundleURL = entry.bundleURL(in: directory)
+        self.activeBundleURL = activeBundleURL
         workQueue.async { [weak self] in
             do {
                 let packageURL = try Self.makePackage(for: activeBundleURL)
                 DispatchQueue.main.async {
-                    guard let self, self.activeBundleURL == activeBundleURL else {
+                    guard let self, self.generation == token, self.activeBundleURL == activeBundleURL else {
                         try? FileManager.default.removeItem(at: packageURL)
                         return
                     }
                     self.activePackageURL = packageURL
-                    self.startAttempt(1)
+                    if self.recordingActive {
+                        self.outbox.pause(sessionID: entry.sessionID)
+                        self.persist()
+                        self.finishCurrentBundle()
+                    } else { self.startAttempt(1) }
                 }
             } catch {
                 print("[DebugTriageTransfer] package failed; local bundle preserved: \(error.localizedDescription)")
-                DispatchQueue.main.async { self?.finishCurrentBundle() }
+                DispatchQueue.main.async {
+                    guard let self, self.generation == token else { return }
+                    self.recordOutcome(reason: error.localizedDescription)
+                    self.finishCurrentBundle()
+                }
             }
         }
     }
@@ -127,7 +343,7 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         phase = .p2p
         let uploader = P2PBundleUploader()
         p2pUploader = uploader
-        uploader.upload(fileURL: activePackageURL!) { [weak self] outcome in
+        uploader.upload(fileURL: activePackageURL!, sessionID: activeSessionID) { [weak self] outcome in
             DispatchQueue.main.async {
                 guard let self, self.p2pUploader === uploader, self.attempt == number,
                       self.phase == .p2p else { return }
@@ -135,6 +351,7 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
                 switch outcome {
                 case .uploaded(let service):
                     print("[DebugTriageTransfer] uploaded selected bundle over P2P via \(service)")
+                    self.recordOutcome(reason: nil)
                     self.finishCurrentBundle()
                 case .notFound:
                     self.startLANAttempt(number)
@@ -219,20 +436,24 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         configuration.timeoutIntervalForRequest = 120
         configuration.timeoutIntervalForResource = 180
         let session = URLSession(configuration: configuration)
-        session.uploadTask(with: request, fromFile: packageURL) { [weak self] _, response, error in
+        lanSession = session
+        let token = generation
+        session.uploadTask(with: request, fromFile: packageURL) { [weak self] data, response, error in
             DispatchQueue.main.async {
-                guard let self, self.attempt == attemptNumber, self.phase == .uploading else { return }
+                guard let self, self.generation == token, self.attempt == attemptNumber, self.phase == .uploading else { return }
                 if let error {
                     self.retryCurrentBundle(after: error)
                     return
                 }
                 guard let response = response as? HTTPURLResponse,
-                      (200..<300).contains(response.statusCode) else {
+                      DebugBundleReceipt.accepts(status: response.statusCode, body: data ?? Data(), sessionID: self.activeSessionID) else {
                     let status = (response as? HTTPURLResponse)?.statusCode ?? -1
-                    self.retryCurrentBundle(after: DebugBundleTransferError.httpStatus(status))
+                    self.retryCurrentBundle(after: status == 200
+                        ? DebugBundleTransferError.invalidReceipt : DebugBundleTransferError.httpStatus(status))
                     return
                 }
                 print("[DebugTriageTransfer] uploaded selected bundle to \(url.host ?? "receiver")")
+                self.recordOutcome(reason: nil)
                 self.finishCurrentBundle()
             }
         }.resume()
@@ -243,6 +464,7 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         stopDiscovery()
         guard attempt < Self.maximumAttempts else {
             print("[DebugTriageTransfer] stopped after \(attempt) attempts; local bundle preserved: \(error.localizedDescription)")
+            recordOutcome(reason: error.localizedDescription)
             finishCurrentBundle()
             return
         }
@@ -250,13 +472,16 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         phase = .finished
         let delay = Double(attempt)
         print("[DebugTriageTransfer] retry \(nextAttempt)/\(Self.maximumAttempts): \(error.localizedDescription)")
+        let token = generation
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            guard let self, self.activeBundleURL != nil else { return }
+            guard let self, self.generation == token, self.activeBundleURL != nil else { return }
             self.startAttempt(nextAttempt)
         }
     }
 
     private func stopDiscovery() {
+        lanSession?.invalidateAndCancel()
+        lanSession = nil
         p2pUploader?.cancel()
         p2pUploader = nil
         discoveryTimeout?.cancel()
@@ -269,13 +494,21 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         resolvedService = nil
     }
 
+    private func recordOutcome(reason: String?) {
+        guard let id = activeSessionID else { return }
+        outbox.finish(sessionID: id, now: Date(), reason: reason, attempts: max(1, attempt))
+        persist()
+    }
+
     private func finishCurrentBundle() {
         precondition(Thread.isMainThread)
+        generation += 1
         stopDiscovery()
         phase = .idle
         if let activePackageURL { try? FileManager.default.removeItem(at: activePackageURL) }
         activePackageURL = nil
         activeBundleURL = nil
+        activeSessionID = nil
         attempt = 0
         isBusy = false
         startNextBundleIfNeeded()
@@ -405,6 +638,16 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
 }
 
 
+enum DebugBundleReceipt {
+    static func accepts(status: Int, body: Data, sessionID: String?) -> Bool {
+        // Old receivers reply 201. A bare 409 is always a failure.
+        guard status == 200 else { return (200..<300).contains(status) }
+        guard let sessionID,
+              let receipt = try? JSONSerialization.jsonObject(with: body) as? [String: Any] else { return false }
+        return receipt["status"] as? String == "duplicate" && receipt["sessionID"] as? String == sessionID
+    }
+}
+
 /// Uploads one triage package over Network.framework with peer-to-peer Wi-Fi
 /// allowed (cellular prohibited) to the Mac P2P bridge's diagnostics relay
 /// (`_phonesaber-dp2p._tcp`), which pipes it to the unchanged receiver. Same HTTP
@@ -428,6 +671,7 @@ final class P2PBundleUploader {
     private var file: FileHandle?
     private var response = Data()
     private var serviceName = ""
+    private var sessionID: String?
     private let preferredService: () -> String?
     private let station: String
     /// Latest discovery results, used once more when discovery times out.
@@ -447,9 +691,10 @@ final class P2PBundleUploader {
         self.transferTimeout = transferTimeout
     }
 
-    func upload(fileURL: URL, completion: @escaping (Outcome) -> Void) {
+    func upload(fileURL: URL, sessionID: String? = nil, completion: @escaping (Outcome) -> Void) {
         queue.async { [self] in
             self.keepAlive = self
+            self.sessionID = sessionID
             self.completion = completion
             guard let size = (try? FileManager.default.attributesOfItem(atPath: fileURL.path)[.size]) as? NSNumber,
                   let handle = try? FileHandle(forReadingFrom: fileURL) else {
@@ -555,13 +800,25 @@ final class P2PBundleUploader {
         connection?.receive(minimumIncompleteLength: 1, maximumLength: 64 * 1024) { [weak self] data, _, isComplete, error in
             guard let self else { return }
             if let data { self.response.append(data) }
-            if let status = Self.statusCode(self.response), isComplete || error != nil || self.response.count > 64 * 1024
-                || self.response.range(of: Data("\r\n\r\n".utf8)) != nil {
-                if (200..<300).contains(status) {
-                    self.finish(.uploaded(self.serviceName))
-                } else {
-                    self.finish(.failed(UploadError(message: "receiver HTTP \(status)")))
+            if let status = Self.statusCode(self.response),
+               let end = self.response.range(of: Data("\r\n\r\n".utf8)) {
+                let body = Data(self.response[end.upperBound...])
+                let header = String(decoding: self.response[..<end.lowerBound], as: UTF8.self)
+                let length = header.components(separatedBy: "\r\n").first {
+                    $0.lowercased().hasPrefix("content-length:")
+                }.flatMap { Int($0.split(separator: ":", maxSplits: 1).last?.trimmingCharacters(in: .whitespaces) ?? "") }
+                // Duplicate receipts may arrive after the headers, in another TCP chunk.
+                if status != 200 || (length.map { body.count >= $0 } ?? isComplete) {
+                    if DebugBundleReceipt.accepts(status: status, body: body, sessionID: self.sessionID) {
+                        self.finish(.uploaded(self.serviceName))
+                    } else {
+                        self.finish(.failed(UploadError(message: "receiver HTTP \(status) or invalid receipt")))
+                    }
+                    return
                 }
+            }
+            if self.response.count > 64 * 1024 {
+                self.finish(.failed(UploadError(message: "receiver response too large")))
                 return
             }
             if isComplete || error != nil {

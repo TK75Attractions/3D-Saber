@@ -11,6 +11,7 @@ import shutil
 import struct
 import tempfile
 from pathlib import Path, PurePosixPath
+from threading import Lock
 from typing import BinaryIO, Any
 
 
@@ -28,10 +29,19 @@ MAX_CONTEXT_BYTES = 256 * 1024
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 SESSION_RE = re.compile(r"^[A-Za-z0-9_-]{1,100}$")
 FRAME_RE = re.compile(r"^frames/frame_[0-9]+_[0-9]+\.json$")
+_publish_lock = Lock()
 
 
 class BundleError(ValueError):
     """The uploaded bundle is malformed or violates resource limits."""
+
+
+class DuplicateBundle(FileExistsError):
+    """A fully validated retry matches the bytes already stored on the Mac."""
+
+    def __init__(self, session_id: str):
+        super().__init__(f"bundle already received: {session_id}")
+        self.session_id = session_id
 
 
 def _allowed_path(value: Any) -> str:
@@ -224,13 +234,34 @@ def receive_bundle(source: BinaryIO, content_length: int, inbox: Path) -> Path:
         _validate_context_files(temporary, seen)
 
         final = inbox / f"phone_saber_triage_{session_id}"
-        if final.exists():
-            raise FileExistsError(f"bundle already exists: {final.name}")
-        os.replace(temporary, final)
+        # Serialize publication, including two simultaneous POSTs of one session.
+        with _publish_lock:
+            if final.exists():
+                if _stored_bundle_matches(final, checked):
+                    raise DuplicateBundle(session_id)
+                raise FileExistsError(f"different bundle already exists: {final.name}")
+            os.replace(temporary, final)
         return final
     except Exception:
         shutil.rmtree(temporary, ignore_errors=True)
         raise
+
+
+def _stored_bundle_matches(root: Path, files: list[dict[str, Any]]) -> bool:
+    # Compare the uploaded files, allowing reports subsequently added by analysis.
+    # The summary hash also covers the original selected file list. Rehash actual
+    # stored bytes so a damaged/missing bundle is never acknowledged as received.
+    if root.is_symlink() or not root.is_dir():
+        return False
+    try:
+        for item in files:
+            path = root / item["path"]
+            if path.parent.is_symlink() or path.is_symlink() or not path.is_file() \
+                    or path.stat().st_size != item["size"] or _sha256(path) != item["sha256"]:
+                return False
+        return True
+    except OSError:
+        return False
 
 
 def _validate_summary(summary: Any, file_paths: set[str]) -> str:

@@ -3,6 +3,106 @@ import Network
 @testable import PhoneSaberSender
 import XCTest
 
+final class DebugBundleOutboxTests: XCTestCase {
+    private let now = Date(timeIntervalSince1970: 1_000)
+
+    func testFailureStaysPendingWithBackoffAndManualRetry() {
+        var outbox = DebugBundleOutbox()
+        outbox.register(sessionID: "one", bundlePath: "bundle-one", now: now)
+        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: true)?.state, .uploading)
+        XCTAssertNil(outbox.beginNext(now: now, recording: false, automatic: true), "one upload at a time")
+        outbox.finish(sessionID: "one", now: now, reason: "offline", attempts: 3)
+        XCTAssertEqual(outbox.pendingCount, 1)
+        XCTAssertEqual(outbox.latest?.state, .failed)
+        XCTAssertEqual(outbox.latest?.attempts, 3)
+        XCTAssertTrue(outbox.latest?.statusText.contains("自動で再試行") == true)
+        XCTAssertNil(outbox.beginNext(now: now.addingTimeInterval(29), recording: false, automatic: true))
+        XCTAssertEqual(outbox.beginNext(now: now.addingTimeInterval(30), recording: false, automatic: true)?.sessionID, "one")
+        outbox.finish(sessionID: "one", now: now, reason: "offline", attempts: 3)
+        XCTAssertEqual(outbox.latest?.nextAttemptAt, now.addingTimeInterval(60))
+        for _ in 0..<8 { outbox.finish(sessionID: "one", now: now, reason: "offline", attempts: 3) }
+        XCTAssertEqual(outbox.latest?.nextAttemptAt, now.addingTimeInterval(900))
+        let manual = outbox.retryNow()
+        XCTAssertEqual(manual, ["one"])
+        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: false, manualIDs: manual)?.sessionID, "one")
+    }
+
+    func testRecordingBlocksUploadsAndPauseRetainsTheBundle() {
+        var outbox = DebugBundleOutbox()
+        outbox.register(sessionID: "one", bundlePath: "bundle-one", now: now)
+        outbox.register(sessionID: "two", bundlePath: "bundle-two", now: now.addingTimeInterval(1), automatic: false)
+        XCTAssertNil(outbox.beginNext(now: now, recording: true, automatic: true))
+        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: true)?.sessionID, "one")
+        outbox.pause(sessionID: "one")
+        XCTAssertEqual(outbox.latest?.state, .pending)
+        XCTAssertEqual(outbox.pendingCount, 2)
+        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: true)?.sessionID, "one")
+        outbox.finish(sessionID: "one", now: now, reason: nil, attempts: 1)
+        XCTAssertNil(outbox.beginNext(now: now, recording: false, automatic: true), "short recording stays local until explicit send")
+        let manual = outbox.retryNow()
+        XCTAssertEqual(outbox.latest?.automatic, true, "an explicit send opts this short bundle into retries")
+        XCTAssertEqual(outbox.beginNext(now: now, recording: false, automatic: false,
+                                       manualIDs: manual)?.sessionID, "two")
+    }
+
+    func testRelaunchRecoversUploadingAndDropsMissingFiles() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let url = directory.appendingPathComponent("outbox.json")
+        var outbox = DebugBundleOutbox()
+        XCTAssertEqual(try DebugBundleOutbox.load(from: url).pendingCount, 0)
+        outbox.register(sessionID: "one", bundlePath: "bundle-one", now: now)
+        outbox.register(sessionID: "gone", bundlePath: "bundle-gone", now: now)
+        _ = outbox.beginNext(now: now, recording: false, automatic: true)
+        try outbox.save(to: url)
+        var relaunched = try DebugBundleOutbox.load(from: url)
+        XCTAssertEqual(relaunched.recover { $0 == "bundle-one" }, ["bundle-gone"])
+        XCTAssertEqual(relaunched.pendingCount, 1)
+        XCTAssertEqual(relaunched.latest?.bundlePath, "bundle-one", "relative to the new Documents container")
+        XCTAssertEqual(relaunched.latest?.bundleURL(in: directory), directory.appendingPathComponent("bundle-one"))
+        XCTAssertEqual(relaunched.latest?.state, .pending)
+        XCTAssertEqual(relaunched.beginNext(now: now, recording: false, automatic: true)?.sessionID, "one")
+        relaunched.finish(sessionID: "one", now: now, reason: "offline", attempts: 3)
+        try relaunched.save(to: url)
+        let failed = try DebugBundleOutbox.load(from: url)
+        XCTAssertEqual(failed.latest?.reason, "offline")
+        XCTAssertEqual(failed.latest?.nextAttemptAt, now.addingTimeInterval(30))
+        XCTAssertEqual(failed.latest?.attempts, 3)
+    }
+
+    func testReceivedPruningKeepsTwentyAndDoesNotRediscoverPrunedBundles() throws {
+        var outbox = DebugBundleOutbox()
+        outbox.register(sessionID: "pending", bundlePath: "pending", now: now)
+        for index in 0..<25 {
+            let id = "session-\(index)"
+            let created = now.addingTimeInterval(Double(index + 1))
+            outbox.register(sessionID: id, bundlePath: id, now: created)
+            outbox.finish(sessionID: id, now: created, reason: nil, attempts: 1)
+        }
+        XCTAssertEqual(outbox.entries.count, 21)
+        XCTAssertEqual(outbox.pendingCount, 1)
+        XCTAssertEqual(outbox.entries.filter { $0.state == .received }.count, 20)
+        XCTAssertEqual(outbox.latest?.sessionID, "session-24")
+        XCTAssertTrue(outbox.latest?.statusText.hasPrefix("Mac 受信済み") == true)
+        outbox.register(sessionID: "session-0", bundlePath: "session-0", now: now.addingTimeInterval(1))
+        XCTAssertEqual(outbox.entries.count, 21)
+        let relaunched = try JSONDecoder().decode(DebugBundleOutbox.self, from: JSONEncoder().encode(outbox))
+        XCTAssertEqual(relaunched.entries, outbox.entries)
+        XCTAssertEqual(relaunched.prunedBefore, outbox.prunedBefore)
+    }
+
+    func testDuplicateReceiptRequiresMatchingSessionAndNeverAccepts409() {
+        let body = Data(#"{"status":"duplicate","sessionID":"one"}"#.utf8)
+        XCTAssertTrue(DebugBundleReceipt.accepts(status: 200, body: body, sessionID: "one"))
+        XCTAssertFalse(DebugBundleReceipt.accepts(status: 200, body: body, sessionID: "different"))
+        XCTAssertFalse(DebugBundleReceipt.accepts(status: 200, body: Data(), sessionID: "one"))
+        XCTAssertFalse(DebugBundleReceipt.accepts(status: 409, body: body, sessionID: "one"))
+        XCTAssertTrue(DebugBundleReceipt.accepts(status: 201, body: Data(#"{"accepted":true}"#.utf8), sessionID: "one"),
+                      "old receivers still work")
+    }
+}
+
 /// Wire format, duplicate filtering, liveness and LAN fallback of the optional
 /// peer-to-peer link. The Mac bridge itself is exercised by
 /// Tools/test_phone_saber_p2p_bridge.py; here a loopback fake bridge answers.
@@ -560,6 +660,27 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertNotNil(request.range(of: Data("Content-Length: \(payload.count)\r\n".utf8)))
         let headerEnd = try XCTUnwrap(request.range(of: Data("\r\n\r\n".utf8)))
         XCTAssertEqual(request[headerEnd.upperBound...], payload[...], "body unchanged")
+    }
+
+    func testBundleUploaderReadsFragmentedDuplicateReceiptAndRejectsWrongSessionAnd409() async throws {
+        let file = FileManager.default.temporaryDirectory.appendingPathComponent("p2p-upload-\(UUID()).psbt")
+        try Data("package".utf8).write(to: file)
+        defer { try? FileManager.default.removeItem(at: file) }
+        for (status, id, received) in [(200, "one", true), (200, "other", false), (409, "one", false)] {
+            let receiver = try FakeHTTPReceiver(status: status, body: #"{"status":"duplicate","sessionID":""# + id + #""}"#,
+                                                fragmentResponse: true)
+            defer { receiver.stop() }
+            let port = try await receiver.ready()
+            let outcome = await withCheckedContinuation { continuation in
+                P2PBundleUploader(endpointOverride: .hostPort(host: "127.0.0.1", port: port))
+                    .upload(fileURL: file, sessionID: "one") { continuation.resume(returning: $0) }
+            }
+            if received {
+                guard case .uploaded = outcome else { return XCTFail("\(outcome)") }
+            } else {
+                guard case .failed = outcome else { return XCTFail("\(outcome)") }
+            }
+        }
     }
 
     func testBundleUploaderReportsHTTPErrorsAndMissingReceivers() async throws {
@@ -1158,9 +1279,13 @@ final class FakeHTTPReceiver: @unchecked Sendable {
     private let queue = DispatchQueue(label: "FakeHTTPReceiver")
     private let received = LockedBox(Data())
     private let status: Int
+    private let body: String
+    private let fragmentResponse: Bool
 
-    init(status: Int) throws {
+    init(status: Int, body: String = "{}", fragmentResponse: Bool = false) throws {
         self.status = status
+        self.body = body
+        self.fragmentResponse = fragmentResponse
         let parameters = NWParameters.tcp
         parameters.requiredInterfaceType = .loopback
         listener = try NWListener(using: parameters, on: .any)
@@ -1193,9 +1318,18 @@ final class FakeHTTPReceiver: @unchecked Sendable {
             guard let self else { return }
             if let data { self.received.mutate { $0.append(data) } }
             if isComplete || self.requestComplete() {
-                let reply = "HTTP/1.0 \(self.status) X\r\nContent-Length: 2\r\n\r\n{}"
-                connection.send(content: Data(reply.utf8), contentContext: .finalMessage, isComplete: true,
-                                completion: .contentProcessed { _ in connection.cancel() })
+                let header = "HTTP/1.0 \(self.status) X\r\nContent-Length: \(self.body.utf8.count)\r\n\r\n"
+                if self.fragmentResponse {
+                    connection.send(content: Data(header.utf8), completion: .contentProcessed { _ in
+                        self.queue.asyncAfter(deadline: .now() + 0.05) {
+                            connection.send(content: Data(self.body.utf8), contentContext: .finalMessage, isComplete: true,
+                                            completion: .contentProcessed { _ in connection.cancel() })
+                        }
+                    })
+                } else {
+                    connection.send(content: Data((header + self.body).utf8), contentContext: .finalMessage, isComplete: true,
+                                    completion: .contentProcessed { _ in connection.cancel() })
+                }
                 return
             }
             self.read(connection)

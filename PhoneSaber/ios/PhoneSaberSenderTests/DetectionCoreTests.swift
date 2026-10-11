@@ -2919,6 +2919,48 @@ final class DetectionCoreTests: XCTestCase {
         }
     }
 
+    func testFinalizedBundleIsRegisteredWhileOverlayIsStillBlocked() async throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberEarlyTransfer-\(UUID().uuidString)", isDirectory: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let recorder = try DebugVideoRecorder(directory: directory)
+        XCTAssertTrue(recorder.requestManualCapture { _ in })
+        let buffer = solidPixelBuffer(width: 64, height: 48)
+        CVPixelBufferLockBaseAddress(buffer, .readOnly)
+        XCTAssertEqual(recorder.append(pixelBuffer: buffer,
+            presentationTime: CMTime(value: 1, timescale: 30), frameID: 1, results: []), .accepted)
+        CVPixelBufferUnlockBaseAddress(buffer, .readOnly)
+        let overlayStarted = expectation(description: "overlay started")
+        let bundleRegistered = expectation(description: "bundle persisted before overlay finishes")
+        let finished = expectation(description: "recording finished")
+        let releaseOverlay = DispatchSemaphore(value: 0)
+        let sawBundle = LockedBox(false)
+        recorder.beforeOverlayForTesting = {
+            overlayStarted.fulfill()
+            _ = releaseOverlay.wait(timeout: .now() + 10)
+        }
+        let observer = NotificationCenter.default.addObserver(
+            forName: DebugBundleTransfer.didChange, object: nil, queue: .main
+        ) { _ in
+            if !sawBundle.value,
+               let entry = DebugBundleTransfer.shared.outbox.entries.first(where: { $0.sessionID == recorder.sessionID }) {
+                sawBundle.mutate { $0 = true }
+                XCTAssertEqual(entry.state, .pending, "XCTest never contacts the venue receiver")
+                XCTAssertEqual(entry.bundleURL(in: directory).standardizedFileURL,
+                               directory.appendingPathComponent("phone_saber_triage_\(recorder.sessionID)").standardizedFileURL)
+                bundleRegistered.fulfill()
+            }
+        }
+        recorder.finish { result in
+            if case .failure(let error) = result { XCTFail("\(error)") }
+            finished.fulfill()
+        }
+        await fulfillment(of: [overlayStarted, bundleRegistered], timeout: 5)
+        NotificationCenter.default.removeObserver(observer)
+        releaseOverlay.signal()
+        await fulfillment(of: [finished], timeout: 10)
+    }
+
     func testOverlayFailureKeepsValidMetadataPngAndTriage() async throws {
         let directory = FileManager.default.temporaryDirectory
             .appendingPathComponent("PhoneSaberOverlayFailure-\(UUID().uuidString)", isDirectory: true)

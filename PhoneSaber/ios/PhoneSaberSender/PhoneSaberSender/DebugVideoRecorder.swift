@@ -1572,6 +1572,7 @@ final class DebugVideoRecorder {
     private var finishReason: DebugRecordingFinishReason = .user
 #if DEBUG
     var injectedFailureStageForTesting: DebugRecordingFailureStage?
+    var beforeOverlayForTesting: (() -> Void)?
     var motionHistoryCountForTesting: Int { motionDetector.historyCount }
     var motionPreRollFrameIDsForTesting: [UInt64] { motionPreRoll.map(\.frameID) }
     var motionRetainedBytesForTesting: Int { motionRetainedBytes() + bufferedLosslessBytes }
@@ -2286,6 +2287,7 @@ final class DebugVideoRecorder {
         }
 #if DEBUG
         let injectedFailure = injectedFailureStageForTesting
+        let beforeOverlay = beforeOverlayForTesting
 #else
         let injectedFailure: DebugRecordingFailureStage? = nil
 #endif
@@ -2475,6 +2477,15 @@ final class DebugVideoRecorder {
                             print("[DebugTriage] bundle generation failed: \(error.localizedDescription)")
                         }
                     }
+                    if let triageBundleURL {
+                        DebugBundleTransfer.shared.enqueue(
+                            bundleURL: triageBundleURL,
+                            automatic: DebugRecordingLimits.shouldAutoTransfer(recordedFrames: frameCount)
+                        )
+                    }
+#if DEBUG
+                    beforeOverlay?()
+#endif
                     // Overlay is a viewing aid. Its failure must not invalidate
                     // verified metadata, PNGs, or a finished triage bundle.
                     do {
@@ -2501,13 +2512,6 @@ final class DebugVideoRecorder {
                     }
                     guard diskUsage <= DebugRecordingLimits.maximumDiskUsageBytes else {
                         throw DebugVideoRecorderError.diskUsageLimitReached
-                    }
-                    if let triageBundleURL {
-                        if DebugRecordingLimits.shouldAutoTransfer(recordedFrames: frameCount) {
-                            DebugBundleTransfer.shared.enqueue(bundleURL: triageBundleURL)
-                        } else {
-                            print("[DebugTriageTransfer] skipped: recording too short (\(frameCount) frames); bundle kept at \(triageBundleURL.path)")
-                        }
                     }
                     completion(.success(DebugRecordingResult(
                         sessionID: currentSessionID,
