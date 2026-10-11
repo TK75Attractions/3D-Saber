@@ -42,15 +42,18 @@ final class EventRecoveryTests: XCTestCase {
         }
     }
 
-    func testBackoffExhaustsAfterLongFailureAndCanReset() {
+    func testBackoffKeepsRetryingEveryMinuteAfterLongFailureAndCanReset() {
         var retry = RecoveryBackoff()
         var time = 0.0
-        while let delay = retry.nextDelay(at: time) {
+        while time < 900 {
+            let delay = retry.nextDelay(at: time)!
             XCTAssertGreaterThan(delay, 0)
             XCTAssertLessThanOrEqual(delay, 30)
             time += delay
         }
         XCTAssertEqual(time, 900)
+        let lateDelays = (0...465).map { retry.nextDelay(at: 900 + Double($0) * 60) }
+        XCTAssertEqual(lateDelays, Array(repeating: 60, count: 466))
         retry.reset()
         XCTAssertEqual(retry.nextDelay(at: 901), 1)
     }
@@ -61,7 +64,7 @@ final class EventRecoveryTests: XCTestCase {
         retry.receivedFrame(at: 1)
         XCTAssertEqual(retry.nextDelay(at: 2), 2)
         retry.receivedFrame(at: 3)
-        XCTAssertNil(retry.nextDelay(at: 20))
+        XCTAssertEqual(retry.nextDelay(at: 20), 60)
     }
 
     func testExhaustedCameraStaysRetryableOnForegroundReturn() {
@@ -95,4 +98,52 @@ final class EventRecoveryTests: XCTestCase {
         XCTAssertEqual(retry.attempts, 0)
         XCTAssertEqual(retry.nextDelay(at: 14), 1)
     }
+
+    func testRecoveryStopCompletionDefersUntilForegroundAndSending() {
+        XCTAssertTrue(CameraRecoveryCompletionPolicy.canConfigure(sending: true, foreground: true))
+        XCTAssertFalse(CameraRecoveryCompletionPolicy.canConfigure(sending: true, foreground: false))
+        XCTAssertFalse(CameraRecoveryCompletionPolicy.canConfigure(sending: false, foreground: true))
+        var camera = CameraLifecycleStateMachine()
+        camera.requestStart(at: 0)
+        XCTAssertTrue(camera.beginRecovery(at: 2))
+        _ = camera.setForeground(false, at: 3)
+        // stop完了で背面なら失敗状態に戻す。前面復帰で改めて復旧に入れる。
+        camera.runtimeError("前面への復帰を待っています")
+        XCTAssertTrue(camera.setForeground(true, at: 4))
+        XCTAssertEqual(camera.state, .recovering)
+    }
+
+    func testFPSComparisonExpiresAfterFiveMinutesEvenWhenNotSending() {
+        var policy = FPSComparisonPolicy()
+        XCTAssertFalse(policy.shouldDisable(at: 1000))
+        policy.setEnabled(true, at: 100)
+        XCTAssertFalse(policy.shouldDisable(at: 399.999))
+        XCTAssertTrue(policy.shouldDisable(at: 400))
+        XCTAssertTrue(policy.shouldDisable(at: 8 * 3600))
+        policy.setEnabled(false, at: 400)
+        XCTAssertFalse(policy.shouldDisable(at: 1000))
+        policy.setEnabled(true, at: 1000)
+        XCTAssertFalse(policy.shouldDisable(at: 1299))
+        XCTAssertTrue(policy.shouldDisable(at: 1300))
+    }
+
+#if !EVENT_RECOVERY_STANDALONE
+    @MainActor
+    func testFPSRestoreInBackgroundDefersCaptureRestart() {
+        var permissionRequests = 0
+        let model = CameraViewModel(sender: UDPSender { _, _, _ in }, p2pEnabled: false,
+                                    authorizationStatus: { .notDetermined },
+                                    requestAccess: { _ in permissionRequests += 1 })
+        model.selectCameraFPS(60, persist: false)
+        model.startForTesting()
+        model.sceneDidChange(isActive: false)
+        // 自動比較の期限切れで保存値を戻す場合と同じ呼び出し。
+        model.selectCameraFPS(30, persist: false)
+        XCTAssertEqual(model.cameraFPS, 30)
+        XCTAssertTrue(model.running)
+        XCTAssertEqual(permissionRequests, 0)
+        model.stop()
+    }
+#endif
+
 }

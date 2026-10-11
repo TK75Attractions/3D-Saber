@@ -21,7 +21,7 @@ struct SendingResumePolicy {
     mutating func stop() { evaluatedStartup = true; wantsSending = false }
 }
 
-// 再試行間隔は1・2・4…秒、最大30秒。連続15分失敗したら手動確認を待つ。
+// 再試行間隔は1・2・4…秒、最大30秒。連続15分以降も60秒ごとに復旧を試す。
 struct RecoveryBackoff {
     private(set) var attempts = 0
     private var failedSince: TimeInterval?
@@ -34,7 +34,7 @@ struct RecoveryBackoff {
         healthySince = nil
         if failedSince == nil { failedSince = time }
         let remaining = limit - (time - failedSince!)
-        guard remaining > 0 else { return nil }
+        guard remaining > 0 else { return 60 }
         let delay = min(30, pow(2, Double(min(attempts, 5))))
         attempts += 1
         return min(delay, remaining)
@@ -61,5 +61,18 @@ enum CameraStartCompletionPolicy {
         // 新しい run が session を持っている。stop() は既に同期で止めてから再開している。
         if running { return .ignore }
         return .stopSession
+    }
+}
+
+// 非同期 stop の前後で前面状態が変わっても、背面では再設定しない。
+enum CameraRecoveryCompletionPolicy {
+    static func canConfigure(sending: Bool, foreground: Bool) -> Bool { sending && foreground }
+}
+
+struct FPSComparisonPolicy {
+    private var enabledAt: TimeInterval?
+    mutating func setEnabled(_ enabled: Bool, at time: TimeInterval) { enabledAt = enabled ? time : nil }
+    func shouldDisable(at time: TimeInterval) -> Bool {
+        enabledAt.map { time - $0 >= 5 * 60 } ?? false
     }
 }

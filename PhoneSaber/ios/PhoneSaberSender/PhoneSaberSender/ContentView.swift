@@ -17,6 +17,15 @@ struct ContentView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: 12) {
+#if DEBUG
+                    if model.debugAlternateFPS {
+                        Text("fps 自動比較が ON です（F9 計測用）。通常の運用では OFF にしてください")
+                            .font(.headline).foregroundStyle(.orange)
+                    }
+#endif
+                    if model.running && !model.thermalFPSMessage.isEmpty {
+                        Text(model.thermalFPSMessage).font(.footnote).foregroundStyle(.orange)
+                    }
                     GroupBox("接続") {
                         Picker("台", selection: Binding(
                             get: { model.station }, set: { model.setStation($0) }
@@ -26,6 +35,13 @@ struct ContentView: View {
                             Text("B").tag("B")
                         }
                         .disabled(model.running)
+                        if model.manualHostActive {
+                            Text("手動 IP 指定中: 台の選択は使われません")
+                                .font(.footnote).foregroundStyle(.orange)
+                            if !model.sendingRequested {
+                                Button("手動 IP を解除して自動探索に戻す") { model.clearManualHost() }
+                            }
+                        }
                         Button("Macを再検索") { model.retryDiscovery() }
                             .disabled(model.running)
                         Text(model.networkDiscoveryStatus)
@@ -65,8 +81,12 @@ struct ContentView: View {
                         if model.running && model.cameraState.canRetry {
                             Button("カメラを再開") { model.retryCameraRecovery() }
                         }
-                        Text("Mac: \(model.discoveredMacName.isEmpty ? "未発見" : model.discoveredMacName)　IP: \(model.discoveredMacIP.isEmpty ? "-" : model.discoveredMacIP)")
+                        Text("LAN 宛先 Mac: \(model.discoveredMacName.isEmpty ? "未発見" : model.discoveredMacName)　IP: \(model.discoveredMacIP.isEmpty ? "-" : model.discoveredMacIP)")
                             .font(.footnote).foregroundStyle(.secondary)
+                        if !model.otherDiscoveredPC.isEmpty {
+                            Text("ほかに見つかった PC: \(model.otherDiscoveredPC)")
+                                .font(.caption).foregroundStyle(.secondary)
+                        }
                         Text("Mode: \(model.connectionMode)　Red: 5005　Blue: 5006")
                             .font(.footnote).foregroundStyle(.secondary)
                         Text("経路: \(model.transportLabel)")

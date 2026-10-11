@@ -4488,4 +4488,127 @@ extension DetectionCoreTests {
         XCTAssertEqual(analysis.selected[.blue]?.1, winner.endpoints.1)
         XCTAssertGreaterThan(winner.endpoints.0.y, 390)
     }
+
+    func testClearingManualHostRequiresStoppedIntentAndUnlocksAutomaticSelection() {
+        var selection = DestinationHostSelection()
+        selection.setManual("10.0.0.1", resolvedHost: "", serviceName: "")
+        XCTAssertFalse(selection.clearManual(sending: true))
+        XCTAssertEqual(selection.host, "10.0.0.1")
+        XCTAssertTrue(selection.clearManual(sending: false))
+        XCTAssertEqual(selection.source, .automatic)
+        XCTAssertEqual(selection.host, "")
+        XCTAssertEqual(selection.bonjourServiceName, "")
+        XCTAssertTrue(selection.applyBonjour(host: "10.0.0.2", serviceName: "Mac A"))
+        XCTAssertFalse(selection.clearManual(sending: false))
+    }
+
+    func testDestinationDisplayKeepsSelectedMacWhenAnotherMacResolves() {
+        var selection = DestinationHostSelection()
+        var display = DestinationDisplayPolicy()
+        selection.applyBonjour(host: "10.0.0.1", serviceName: "Mac A")
+        display.receive(name: "Mac A", ip: "10.0.0.1", status: "Resolved A", removed: false, selection: selection)
+        selection.applyBonjour(host: "10.0.0.2", serviceName: "Mac B")
+        display.receive(name: "Mac B", ip: "10.0.0.2", status: "Resolved B", removed: false, selection: selection)
+        XCTAssertEqual(DestinationDisplayPolicy.selectedName(selection), "Mac A")
+        XCTAssertEqual(selection.host, "10.0.0.1")
+        XCTAssertEqual(display.status, "Resolved A")
+        XCTAssertEqual(display.otherPC, "Mac B　IP: 10.0.0.2")
+        display.receive(name: "Mac B", ip: "", status: "Removed B", removed: true, selection: selection)
+        XCTAssertEqual(display.otherPC, "")
+        selection.applyBonjour(host: "10.0.0.3", serviceName: "Mac A")
+        display.receive(name: "Mac A", ip: "10.0.0.3", status: "Resolved new A", removed: false, selection: selection)
+        XCTAssertEqual(selection.host, "10.0.0.3")
+        XCTAssertEqual(display.status, "Resolved new A")
+        selection.setManual("10.0.0.9", resolvedHost: "", serviceName: "")
+        XCTAssertEqual(DestinationDisplayPolicy.selectedName(selection), "手動 IP")
+        display.receive(name: "Mac A", ip: "10.0.0.3", status: "Resolved A", removed: false, selection: selection)
+        XCTAssertEqual(selection.host, "10.0.0.9")
+        XCTAssertEqual(display.status, "Resolved new A")
+    }
+
+#if DEBUG
+    func testUDPSenderCallbackHistoryIsBoundedAndKeepsAbsoluteIndices() {
+        let sender = UDPSender { _, _, _ in }
+        var notified: [Int] = []
+        for index in 0..<100 {
+            sender.configure(host: "127.0.0.1", ports: []) { _, _, _ in notified.append(index) }
+        }
+        XCTAssertEqual(sender.updateHandlerHistoryCountForTesting, 16)
+        notified = []
+        sender.sendStaleUpdateForTesting(index: 0, states: [:], errors: [:])
+        XCTAssertEqual(notified, [])
+        sender.sendStaleUpdateForTesting(index: 84, states: [:], errors: [:])
+        sender.sendStaleUpdateForTesting(index: 99, states: [:], errors: [:])
+        XCTAssertEqual(notified, [84, 99])
+        // 上限から外れた callback が保持していたオブジェクトも解放する。
+        weak var retained: NSObject?
+        do {
+            let token = NSObject()
+            retained = token
+            sender.configure(host: "127.0.0.1", ports: []) { _, _, _ in _ = token }
+        }
+        XCTAssertNotNil(retained)
+        for _ in 0..<16 { sender.configure(host: "127.0.0.1", ports: []) }
+        XCTAssertNil(retained)
+        XCTAssertEqual(sender.updateHandlerHistoryCountForTesting, 16)
+        sender.stop()
+    }
+#endif
+
+    @MainActor
+    func testManualHostClearPreservesStationAndP2PPreference() {
+        for enabled in [false, true] {
+            let model = CameraViewModel(p2pEnabled: enabled)
+            model.setStation("A")
+            model.setManualHost("10.0.0.9")
+            XCTAssertTrue(model.manualHostActive)
+            model.clearManualHost()
+            XCTAssertFalse(model.manualHostActive)
+            XCTAssertEqual(model.station, "A")
+            XCTAssertEqual(model.p2pEnabled, enabled)
+            XCTAssertEqual(model.host, "")
+            XCTAssertFalse(P2PPreferredMac.coordinateDestination.manual)
+            XCTAssertEqual(P2PPreferredMac.coordinateDestination.station, "A")
+            model.applyBonjourForTesting(host: "10.0.0.3", serviceName: "Phone Saber Unity B")
+            XCTAssertEqual(model.host, "")
+            model.applyBonjourForTesting(host: "10.0.0.2", serviceName: "Phone Saber Unity A")
+            XCTAssertEqual(model.host, "10.0.0.2")
+            XCTAssertEqual(model.discoveredMacIP, model.host)
+        }
+    }
+
+    @MainActor
+    func testBonjourDisplayUsesSelectedDestinationInViewModel() {
+        let model = CameraViewModel(p2pEnabled: false)
+        model.applyBonjourForTesting(host: "10.0.0.1", serviceName: "Mac A")
+        model.applyBonjourForTesting(host: "10.0.0.2", serviceName: "Mac B")
+        XCTAssertEqual(model.host, "10.0.0.1")
+        XCTAssertEqual(model.discoveredMacName, "Mac A")
+        XCTAssertEqual(model.discoveredMacIP, model.host)
+        XCTAssertEqual(model.otherDiscoveredPC, "Mac B　IP: 10.0.0.2")
+        // 再探索の全体通知でも、送信先の名前・IP を消さない。
+        model.applyBonjourForTesting(host: "", serviceName: "")
+        XCTAssertEqual(model.discoveredMacName, "Mac A")
+        XCTAssertEqual(model.discoveredMacIP, "10.0.0.1")
+        model.setManualHost("10.0.0.9")
+        model.applyBonjourForTesting(host: "10.0.0.2", serviceName: "Mac B")
+        XCTAssertEqual(model.discoveredMacName, "手動 IP")
+        XCTAssertEqual(model.discoveredMacIP, "10.0.0.9")
+        XCTAssertEqual(model.discoveredMacIP, model.host)
+    }
+
+    @MainActor
+    func testManualHostClearIsBlockedDuringPermissionWait() {
+        let model = CameraViewModel(p2pEnabled: false, authorizationStatus: { .notDetermined },
+                                    requestAccess: { _ in })
+        model.setManualHost("10.0.0.9")
+        model.start()
+        XCTAssertFalse(model.running)
+        XCTAssertTrue(model.sendingRequested)
+        model.clearManualHost()
+        XCTAssertTrue(model.manualHostActive)
+        XCTAssertEqual(model.host, "10.0.0.9")
+        model.stop()
+    }
+
 }

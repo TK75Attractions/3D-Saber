@@ -113,4 +113,69 @@ final class DeviceHealthTests: XCTestCase {
         XCTAssertNil(fields["batteryLevel"])
     }
 #endif
+
+    func testThermalFPSReductionCoolingAndNoFlapping() {
+        var policy = ThermalFPSPolicy()
+        XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 0, userFPS: 60), 60)
+        XCTAssertEqual(policy.effectiveFPS(thermal: .high, at: 1, userFPS: 60), 30)
+        XCTAssertEqual(policy.effectiveFPS(thermal: .elevated, at: 2, userFPS: 60), 30)
+        XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 121, userFPS: 60), 30)
+        XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 122, userFPS: 60), 60)
+        // 復帰直後の再発熱でも、切替は2分以上空ける。
+        XCTAssertEqual(policy.effectiveFPS(thermal: .dangerous, at: 123, userFPS: 60), 60)
+        XCTAssertEqual(policy.effectiveFPS(thermal: .dangerous, at: 242, userFPS: 60), 30)
+    }
+
+    func testThermalCoolingMustBeContinuousAndThirtyFPSIsUnchanged() {
+        var policy = ThermalFPSPolicy()
+        XCTAssertEqual(policy.effectiveFPS(thermal: .dangerous, at: 0, userFPS: 60), 30)
+        XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 1, userFPS: 60), 30)
+        XCTAssertEqual(policy.effectiveFPS(thermal: .high, at: 120, userFPS: 60), 30)
+        XCTAssertEqual(policy.effectiveFPS(thermal: .elevated, at: 121, userFPS: 60), 30)
+        XCTAssertEqual(policy.effectiveFPS(thermal: .unknown, at: 240, userFPS: 60), 30)
+        XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 241, userFPS: 60), 30)
+        XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 360, userFPS: 60), 30)
+        XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 361, userFPS: 60), 60)
+        var thirty = ThermalFPSPolicy()
+        for thermal in [DeviceThermalLevel.normal, .elevated, .high, .dangerous] {
+            XCTAssertEqual(thirty.effectiveFPS(thermal: thermal, at: 1000, userFPS: 30), 30)
+            XCTAssertFalse(thirty.reduced)
+        }
+    }
+
+    func testBatteryAndLowPowerWarningsAppearInTheExistingHealthWarning() {
+        func warning(_ level: Double?, _ state: String, sending: Bool = true, lowPower: Bool = false) -> String? {
+            DeviceHealthText.warning(thermal: .normal, rates: DeviceHealthRates(), requestedFPS: 60,
+                                     running: sending, batteryLevel: level, batteryState: state, lowPowerMode: lowPower)
+        }
+        XCTAssertTrue((warning(0.8, "unplugged") ?? "").contains("充電されていません。ケーブルを確認"))
+        XCTAssertNil(warning(0.8, "unplugged", sending: false))
+        XCTAssertTrue((warning(0.20, "unplugged") ?? "").contains("20%以下"))
+        XCTAssertFalse((warning(0.201, "unplugged") ?? "").contains("20%以下"))
+        XCTAssertTrue((warning(0.20, "unplugged", sending: false) ?? "").contains("20%以下"))
+        XCTAssertNil(warning(0.20, "charging"))
+        XCTAssertNil(warning(0.20, "full"))
+        for state in ["charging", "full", "unplugged", "unknown"] {
+            XCTAssertTrue((warning(0.10, state, sending: false) ?? "").contains("10%以下"))
+        }
+        XCTAssertNil(warning(0.101, "charging"))
+        XCTAssertTrue((warning(nil, "unknown", sending: false, lowPower: true) ?? "").contains("設定でOFF"))
+        for invalid in [-1.0, 1.1, .nan, .infinity] { XCTAssertNil(warning(invalid, "unknown")) }
+    }
+
+    func testThermalFPSReconfigurationWaitsForLiveForegroundCamera() {
+        func shouldRestart(sending: Bool = true, foreground: Bool = true,
+                           live: Bool = true, recovering: Bool = false, effective: Int = 30) -> Bool {
+            ThermalFPSPolicy.shouldReconfigure(currentFPS: 60, effectiveFPS: effective, sending: sending,
+                                               foreground: foreground, cameraLive: live, recovering: recovering)
+        }
+        XCTAssertTrue(shouldRestart())
+        XCTAssertFalse(shouldRestart(sending: false))
+        XCTAssertFalse(shouldRestart(foreground: false))
+        // 起動・復旧中は設定へ反映されるまで待ち、stop/start で backoff をリセットしない。
+        XCTAssertFalse(shouldRestart(live: false))
+        XCTAssertFalse(shouldRestart(recovering: true))
+        XCTAssertFalse(shouldRestart(effective: 60))
+    }
+
 }

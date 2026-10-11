@@ -33,6 +33,12 @@ struct DestinationHostSelection: Equatable {
         }
     }
 
+    mutating func clearManual(sending: Bool) -> Bool {
+        guard !sending, source == .manual else { return false }
+        self = DestinationHostSelection()
+        return true
+    }
+
     mutating func restoreBonjourService(_ name: String) { bonjourServiceName = name }
 
     @discardableResult
@@ -44,6 +50,26 @@ struct DestinationHostSelection: Equatable {
         source = .bonjour
         bonjourServiceName = serviceName
         return changed
+    }
+}
+
+struct DestinationDisplayPolicy {
+    private(set) var status = "Discovering..."
+    private(set) var otherPC = ""
+
+    mutating func receive(name: String, ip: String, status: String, removed: Bool,
+                          selection: DestinationHostSelection) {
+        if name.isEmpty || (selection.source != .manual && name == selection.bonjourServiceName) {
+            self.status = status
+        } else if !ip.isEmpty {
+            otherPC = "\(name)　IP: \(ip)"
+        } else if removed && otherPC.hasPrefix(name + "　IP:") {
+            otherPC = ""
+        }
+    }
+
+    static func selectedName(_ selection: DestinationHostSelection) -> String {
+        selection.source == .manual ? "手動 IP" : selection.bonjourServiceName
     }
 }
 
@@ -619,6 +645,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     private var lastHealthPublish = 0.0
     private var lastThermalState: ProcessInfo.ThermalState?
     private var requestedHealthFPS = 30.0
+    private var thermalFPSPolicy = ThermalFPSPolicy()
+    @Published private(set) var thermalFPSMessage = ""
     @Published var fps = 0.0
     @Published var status = "停止中"
     @Published var errorMessage: String?
@@ -631,6 +659,10 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var networkDiscoveryStatus = "Discovering..."
     @Published private(set) var discoveredMacName = ""
     @Published private(set) var discoveredMacIP = ""
+    @Published private(set) var otherDiscoveredPC = ""
+    private var destinationDisplay = DestinationDisplayPolicy()
+    private var latestResolvedMac = (name: "", ip: "")
+    var manualHostActive: Bool { hostSelection.source == .manual }
     @Published private(set) var connectionMode = "Auto (Bonjour)"
     @Published private(set) var station = ""
     @Published private(set) var p2pEnabled = true { didSet { updateDeliverySettings() } }
@@ -737,6 +769,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         didSet { scheduleFPSAlternation() }
     }
     private var fpsAlternationTask: Task<Void, Never>?
+    private var fpsComparisonPolicy = FPSComparisonPolicy()
     @Published private(set) var debug60FPSFormats = "Start the camera to inspect this device"
     @Published var debugDetailedProfilingEnabled = false {
         didSet { processor.setDetailedProfilingEnabled(debugDetailedProfilingEnabled) }
@@ -763,7 +796,6 @@ final class CameraViewModel: NSObject, ObservableObject {
     private var cameraRecoveryInProgress = false
     private var cameraBackoff = RecoveryBackoff()
     private var cameraRecoveryTask: Task<Void, Never>?
-    private var cameraRecoveryExhausted = false
     private var resumePolicy = SendingResumePolicy()
     private var permissionPending = false
     private var automaticResumePending = false
@@ -842,12 +874,16 @@ final class CameraViewModel: NSObject, ObservableObject {
             }
             self.host = self.hostSelection.host
             self.connectionMode = self.hostSelection.source.rawValue
+            updateSelectedDestinationDisplay()
         }
         let timer = DispatchSource.makeTimerSource(queue: .main)
         timer.schedule(deadline: .now() + Self.uiPublishInterval, repeating: Self.uiPublishInterval,
                        leeway: .milliseconds(5))
         timer.setEventHandler { [weak self] in
-            MainActor.assumeIsolated { self?.publishPendingUI() }
+            MainActor.assumeIsolated {
+                self?.publishPendingUI()
+                self?.publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime)
+            }
         }
         uiTimer = timer
         timer.resume()
@@ -998,7 +1034,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         sceneIsActive = isActive
         updateIdleTimerPolicy()
         let now = ProcessInfo.processInfo.systemUptime
-        let recoveryRequested = cameraLifecycle.setForeground(isActive, at: now, allowRecovery: !cameraRecoveryExhausted)
+        let recoveryRequested = cameraLifecycle.setForeground(isActive, at: now, allowRecovery: true)
         let shouldRecover = cameraLifecycleEnabled && recoveryRequested
         publishCameraLifecycle(at: now)
         guard isActive else { return }
@@ -1021,7 +1057,6 @@ final class CameraViewModel: NSObject, ObservableObject {
     func retryCameraRecovery() {
         guard running, sceneIsActive, cameraLifecycleEnabled else { return }
         cameraBackoff.reset()
-        cameraRecoveryExhausted = false
         scheduleCameraRecovery(alreadyMarkedRecovering: false)
     }
 
@@ -1033,7 +1068,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func handleCameraInterruptionEnded() {
-        guard running, !cameraRecoveryExhausted else { return }
+        guard running else { return }
         if sceneIsActive {
             let now = ProcessInfo.processInfo.systemUptime
             if cameraLifecycle.interruptionEnded(at: now) {
@@ -1061,19 +1096,13 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func scheduleCameraRecovery(alreadyMarkedRecovering: Bool) {
-        guard running, sceneIsActive, cameraLifecycleEnabled, !cameraRecoveryInProgress, !cameraRecoveryExhausted else { return }
+        guard running, sceneIsActive, cameraLifecycleEnabled, !cameraRecoveryInProgress else { return }
         if debugRecordingActive { stopDebugRecording(reason: .runtimeFailure) }
         let now = ProcessInfo.processInfo.systemUptime
         if !alreadyMarkedRecovering && !cameraLifecycle.beginRecovery(at: now) { return }
-        guard let delay = cameraBackoff.nextDelay(at: now) else {
-            cameraRecoveryExhausted = true
-            cameraLifecycle.runtimeError("カメラの復旧が15分間できません。権限・端末を確認してください")
-            cameraRecoveryMessage = "カメラの復旧が15分間できません。「カメラを再開」で再試行できます"
-            publishCameraLifecycle(at: now)
-            return
-        }
+        guard let delay = cameraBackoff.nextDelay(at: now) else { return }
         cameraRecoveryInProgress = true
-        cameraRecoveryMessage = "カメラを再接続中…（\(Int(delay))秒後に再試行）"
+        cameraRecoveryMessage = "カメラを再接続中…（\(Int(delay))秒後に再試行）。続く場合は箱の通風・カメラ権限を確認"
         cameraRecoveryGeneration += 1
         let recoveryGeneration = cameraRecoveryGeneration
         let runGeneration = lifecycleGeneration
@@ -1087,11 +1116,21 @@ final class CameraViewModel: NSObject, ObservableObject {
             guard self.sceneIsActive else {
                 self.cameraRecoveryInProgress = false
                 self.cameraLifecycle.runtimeError("前面への復帰を待っています")
+                self.cameraRecoveryMessage = "前面への復帰を待っています。アプリを開いてください"
+                self.publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
                 return
             }
             self.sessionRunner.stop { [weak self] in
                 guard let self, self.lifecycleGeneration == runGeneration,
                       self.cameraRecoveryGeneration == recoveryGeneration, self.running else { return }
+                guard CameraRecoveryCompletionPolicy.canConfigure(sending: self.resumePolicy.wantsSending,
+                                                                  foreground: self.sceneIsActive) else {
+                    self.cameraRecoveryInProgress = false
+                    self.cameraLifecycle.runtimeError("前面への復帰を待っています")
+                    self.cameraRecoveryMessage = "前面への復帰を待っています。アプリを開いてください"
+                    self.publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
+                    return
+                }
                 self.configureAndStart(isRecovery: true, recoveryGeneration: recoveryGeneration)
             }
         }
@@ -1152,7 +1191,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         let becameStalled = cameraLifecycle.evaluateStall(at: time)
         publishCameraLifecycle(at: time)
         if sceneIsActive && time - lastDiscoveryRefresh >= 30 { refreshNetworkDiscovery() }
-        if sceneIsActive && cameraState.canRetry && !cameraRecoveryInProgress && !cameraRecoveryExhausted {
+        if sceneIsActive && cameraState.canRetry && !cameraRecoveryInProgress {
             scheduleCameraRecovery(alreadyMarkedRecovering: false)
         }
         if becameStalled {
@@ -1182,7 +1221,17 @@ final class CameraViewModel: NSObject, ObservableObject {
         let line = "発熱 \(thermal.title) / \(DeviceHealthText.battery(level: battery.level, state: battery.title))\n" + DeviceHealthText.timing(rates)
         assignIfChanged(\.deviceHealthLine, line)
         assignIfChanged(\.deviceHealthWarning, DeviceHealthText.warning(thermal: thermal, rates: rates,
-                                                       requestedFPS: requestedHealthFPS, running: running))
+                                                       requestedFPS: requestedHealthFPS, running: running,
+                                                       batteryLevel: battery.level, batteryState: battery.state,
+                                                       lowPowerMode: ProcessInfo.processInfo.isLowPowerModeEnabled))
+        let effectiveFPS = effectiveCameraFPS(at: time)
+        // 復旧中の停止・再設定を割り込まず、live になってから fps を反映する。
+        if cameraLifecycleEnabled && ThermalFPSPolicy.shouldReconfigure(
+            currentFPS: requestedHealthFPS, effectiveFPS: effectiveFPS, sending: running,
+            foreground: sceneIsActive, cameraLive: cameraLifecycle.state == .live,
+            recovering: cameraRecoveryInProgress) {
+            restartCameraForFPSChange()
+        }
     }
 
     private func deviceBatterySnapshot() -> (level: Double?, state: String, title: String?) {
@@ -1275,13 +1324,15 @@ final class CameraViewModel: NSObject, ObservableObject {
         station = value
         UserDefaults.standard.removeObject(forKey: "PhoneSaber.bonjourService")
         UserDefaults.standard.set(value, forKey: PhoneSaberStation.preferenceKey)
-        discoveredMacName = ""
-        discoveredMacIP = ""
+        latestResolvedMac = (name: "", ip: "")
         if hostSelection.source != .manual {
             hostSelection = DestinationHostSelection()
             host = ""
             connectionMode = hostSelection.source.rawValue
         }
+        destinationDisplay = DestinationDisplayPolicy()
+        otherDiscoveredPC = ""
+        updateSelectedDestinationDisplay()
         updateDiagnosticDestination()
         bonjourDiscovery.station = value
         if automaticLANDiscoveryEnabled { bonjourDiscovery.start() }
@@ -1292,14 +1343,37 @@ final class CameraViewModel: NSObject, ObservableObject {
         P2PPreferredMac.configure(station: station, lanHost: host, manual: hostSelection.source == .manual)
     }
 
+    func clearManualHost() {
+        guard hostSelection.clearManual(sending: sendingRequested) else { return }
+        UserDefaults.standard.removeObject(forKey: "PhoneSaber.manualHost")
+        UserDefaults.standard.removeObject(forKey: "PhoneSaber.bonjourService")
+        host = ""
+        connectionMode = hostSelection.source.rawValue
+        destinationDisplay = DestinationDisplayPolicy()
+        otherDiscoveredPC = ""
+        updateSelectedDestinationDisplay()
+        networkDiscoveryStatus = destinationDisplay.status
+        latestResolvedMac = (name: "", ip: "")
+        updateDiagnosticDestination()
+        bonjourDiscovery.station = station
+        if automaticLANDiscoveryEnabled { bonjourDiscovery.start() }
+        if p2pEnabled { startP2P() }
+    }
+
+    private func updateSelectedDestinationDisplay() {
+        discoveredMacName = DestinationDisplayPolicy.selectedName(hostSelection)
+        discoveredMacIP = hostSelection.host
+    }
+
     func setManualHost(_ value: String) {
         if NSClassFromString("XCTestCase") == nil {
             UserDefaults.standard.set(value, forKey: "PhoneSaber.manualHost")
             UserDefaults.standard.removeObject(forKey: "PhoneSaber.bonjourService")
         }
-        hostSelection.setManual(value, resolvedHost: discoveredMacIP, serviceName: discoveredMacName)
+        hostSelection.setManual(value, resolvedHost: latestResolvedMac.ip, serviceName: latestResolvedMac.name)
         host = hostSelection.host
         connectionMode = hostSelection.source.rawValue
+        updateSelectedDestinationDisplay()
         updateDiagnosticDestination()
         if hostSelection.source == .manual {
             p2pSender.stop()
@@ -1313,9 +1387,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func receiveBonjourUpdate(_ update: BonjourDiscoveryUpdate) {
         guard update.name.isEmpty || PhoneSaberStation.matches(service: update.name, station: station) else { return }
-        networkDiscoveryStatus = update.status
-        discoveredMacName = update.name
-        discoveredMacIP = update.ip
+        latestResolvedMac = (name: update.name, ip: update.ip)
         if update.removed && hostSelection.source != .manual && hostSelection.bonjourServiceName == update.name {
             lanConfigured = false
             sender.stop(); lanProbe.stop()
@@ -1345,6 +1417,11 @@ final class CameraViewModel: NSObject, ObservableObject {
                 activeDestination = "\(update.ip):5005 / \(update.ip):5006"
             }
         }
+        destinationDisplay.receive(name: update.name, ip: update.ip, status: update.status,
+                                   removed: update.removed, selection: hostSelection)
+        updateSelectedDestinationDisplay()
+        networkDiscoveryStatus = destinationDisplay.status
+        otherDiscoveredPC = destinationDisplay.otherPC
     }
 
     func applyBonjourForTesting(host: String, serviceName: String = "Test Mac") {
@@ -1366,18 +1443,32 @@ final class CameraViewModel: NSObject, ObservableObject {
         if persist && NSClassFromString("XCTestCase") == nil {
             UserDefaults.standard.set(fps, forKey: Self.cameraFPSKey)
         }
-        if running {
+        if running && sceneIsActive {
+            // 背面での自動比較終了は設定だけ戻し、再設定は前面復帰まで待つ。
             // A full stop/reconfigure keeps activeFormat, frame durations, the
             // output connection and the one-slot processor generation atomic.
-            stop()
-            start()
+            restartCameraForFPSChange()
         }
+    }
+
+    private func restartCameraForFPSChange() {
+        stop()
+        start()
+    }
+
+    private func effectiveCameraFPS(at time: TimeInterval) -> Int {
+        let effectiveFPS = thermalFPSPolicy.effectiveFPS(
+            thermal: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState), at: time, userFPS: cameraFPS)
+        thermalFPSMessage = cameraFPS == 60 && effectiveFPS == 30
+            ? "発熱のため 30fps に下げています。箱を開けて通風を確認" : ""
+        return effectiveFPS == 60 && supports60FPS ? 60 : 30
     }
 
 #if DEBUG
     private func scheduleFPSAlternation() {
         fpsAlternationTask?.cancel()
         fpsAlternationTask = nil
+        fpsComparisonPolicy.setEnabled(debugAlternateFPS, at: ProcessInfo.processInfo.systemUptime)
         guard debugAlternateFPS else {
             // 終了したら保存済みの設定へ戻す。
             selectCameraFPS(UserDefaults.standard.integer(forKey: Self.cameraFPSKey) == 30 ? 30 : 60, persist: false)
@@ -1387,7 +1478,11 @@ final class CameraViewModel: NSObject, ObservableObject {
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: 30_000_000_000)
                 guard let self, !Task.isCancelled, self.debugAlternateFPS else { return }
-                if self.running && self.supports60FPS {
+                if self.fpsComparisonPolicy.shouldDisable(at: ProcessInfo.processInfo.systemUptime) {
+                    self.debugAlternateFPS = false
+                    return
+                }
+                if self.running && self.supports60FPS && self.sceneIsActive {
                     self.selectCameraFPS(self.cameraFPS == 60 ? 30 : 60, persist: false)
                 }
             }
@@ -1430,7 +1525,6 @@ final class CameraViewModel: NSObject, ObservableObject {
         cameraRecoveryGeneration += 1
         cameraRecoveryInProgress = false
         cameraBackoff.reset()
-        cameraRecoveryExhausted = false
         if debugRecordingActive { stopDebugRecording() }
         running = false
         refreshConnectivityStatus()
@@ -1487,7 +1581,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         debugSupports60FPS = supports60FPS
         debug60FPSFormats = Self.formatSummary(sixtyFPSOptions)
 #endif
-        let targetFPS = cameraFPS == 60 && supports60FPS ? 60.0 : 30.0
+        let targetFPS = Double(effectiveCameraFPS(at: ProcessInfo.processInfo.systemUptime))
         requestedHealthFPS = targetFPS
         let selectedIndex = preferredCameraFormatIndex(options: formatOptions, targetFPS: targetFPS)
         let format = selectedIndex.map { camera.formats[$0] } ?? camera.formats.min { left, right in
@@ -1667,6 +1761,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     func publishPendingUI() {
 #if DEBUG
         let uiStart = ProcessInfo.processInfo.systemUptime
+        if debugAlternateFPS && fpsComparisonPolicy.shouldDisable(at: uiStart) { debugAlternateFPS = false }
 #endif
         refreshConnectivityStatus()
         guard let snapshot = uiPending.takeSnapshot() else { return }

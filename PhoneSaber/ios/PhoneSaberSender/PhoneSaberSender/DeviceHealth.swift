@@ -41,13 +41,16 @@ enum DeviceHealthText {
     }
 
     static func warning(thermal: DeviceThermalLevel, rates: DeviceHealthRates,
-                        requestedFPS: Double, running: Bool) -> String? {
+                        requestedFPS: Double, running: Bool, batteryLevel: Double? = nil,
+                        batteryState: String = "unknown", lowPowerMode: Bool = false) -> String? {
         var reasons: [String] = []
         if thermal == .high || thermal == .dangerous { reasons.append("発熱が\(thermal.title)") }
         if running && rates.ready && requestedFPS > 0 &&
             min(rates.cameraFPS, rates.processingFPS) < requestedFPS * 0.7 {
             reasons.append("fpsが要求値の70%未満")
         }
+        reasons += DevicePowerWarningPolicy.reasons(level: batteryLevel, state: batteryState,
+                                                  lowPowerMode: lowPowerMode, sending: running)
         return reasons.isEmpty ? nil : "注意: " + reasons.joined(separator: " / ") + "。箱を開けて通風・電源を確認"
     }
 
@@ -123,5 +126,56 @@ final class DeviceHealthMeter: @unchecked Sendable {
                                  processingFPS: Double(processing.count) / duration,
                                  medianProcessingMs: Self.median(processing.map(\.ms)), ready: time - started >= 3,
                                  medianCaptureToSendMs: Self.median(captureToSend.map(\.ms)))
+    }
+}
+
+// 単調時計で冷却の継続時間と切替間隔を判定する。保存済み fps は変更しない。
+struct ThermalFPSPolicy {
+    private(set) var reduced = false
+    private var coolSince: TimeInterval?
+    private var lastChange: TimeInterval?
+    static let minimumInterval: TimeInterval = 120
+
+    static func shouldReconfigure(currentFPS: Double, effectiveFPS: Int, sending: Bool,
+                                  foreground: Bool, cameraLive: Bool, recovering: Bool) -> Bool {
+        sending && foreground && cameraLive && !recovering && currentFPS != Double(effectiveFPS)
+    }
+
+    mutating func effectiveFPS(thermal: DeviceThermalLevel, at time: TimeInterval, userFPS: Int) -> Int {
+        let hot = thermal == .high || thermal == .dangerous
+        let cool = thermal == .normal || thermal == .elevated
+        if cool {
+            if coolSince == nil { coolSince = time }
+        } else {
+            coolSince = nil
+        }
+        guard userFPS == 60 else { return userFPS }
+        let canChange = lastChange.map { time - $0 >= Self.minimumInterval } ?? true
+        if !reduced && hot && canChange {
+            reduced = true
+            lastChange = time
+        } else if reduced && cool, let coolSince,
+                  time - coolSince >= Self.minimumInterval && canChange {
+            reduced = false
+            lastChange = time
+        }
+        return reduced ? 30 : userFPS
+    }
+}
+
+enum DevicePowerWarningPolicy {
+    static func reasons(level: Double?, state: String, lowPowerMode: Bool, sending: Bool) -> [String] {
+        var reasons: [String] = []
+        let charging = state == "charging" || state == "full"
+        if sending && state == "unplugged" { reasons.append("充電されていません。ケーブルを確認") }
+        if let level, level.isFinite, (0...1).contains(level) {
+            if level <= 0.10 {
+                reasons.append("電池が10%以下です。電源・ケーブルを確認")
+            } else if level <= 0.20 && !charging {
+                reasons.append("電池が20%以下で充電されていません。電源・ケーブルを確認")
+            }
+        }
+        if lowPowerMode { reasons.append("低電力モードがONです。設定でOFFにしてください") }
+        return reasons
     }
 }

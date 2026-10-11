@@ -1,6 +1,27 @@
 import Foundation
 import Network
 
+#if DEBUG
+struct ConfigurationCallbackHistory<Value> {
+    static var capacity: Int { 16 }
+    private(set) var values: [Value] = []
+    private(set) var firstIndex = 0
+
+    mutating func append(_ value: Value) {
+        values.append(value)
+        if values.count > Self.capacity {
+            values.removeFirst()
+            firstIndex += 1
+        }
+    }
+
+    subscript(index: Int) -> Value? {
+        let offset = index - firstIndex
+        return values.indices.contains(offset) ? values[offset] : nil
+    }
+}
+#endif
+
 final class UDPSender {
     typealias SendHandler = (String, Int, @escaping (Result<TimeInterval, Error>) -> Void) -> Void
 
@@ -69,7 +90,7 @@ final class UDPSender {
     private var nextSendID: UInt64 = 0
     private var updateHandler: (([Int: String], [Int: String], String?) -> Void)?
 #if DEBUG
-    private var updateHandlersForTesting: [(( [Int: String], [Int: String], String?) -> Void)?] = []
+    private var updateHandlersForTesting = ConfigurationCallbackHistory<(([Int: String], [Int: String], String?) -> Void)?>()
 #endif
     private var rejectedCompletionCount = 0
     private var supersededPendingCount = 0
@@ -94,7 +115,7 @@ final class UDPSender {
             isRunning = true
             updateHandler = onUpdate
 #if DEBUG
-            // テスト専用の履歴。本番では configure のたびに積み上がらないようにする。
+            // Debug の長時間運用でも直近16世代だけ保持する。古い絶対 index は無視する。
             updateHandlersForTesting.append(onUpdate)
 #endif
             states = Dictionary(uniqueKeysWithValues: ports.map { ($0, "preparing") })
@@ -500,11 +521,14 @@ final class UDPSender {
     func sendStaleUpdateForTesting(index: Int, states: [Int: String], errors: [Int: String]) {
 #if DEBUG
         queue.sync {
-            guard updateHandlersForTesting.indices.contains(index) else { return }
-            updateHandlersForTesting[index]?(states, errors, errors.values.first)
+            updateHandlersForTesting[index]??(states, errors, errors.values.first)
         }
 #endif
     }
+
+#if DEBUG
+    var updateHandlerHistoryCountForTesting: Int { queue.sync { updateHandlersForTesting.values.count } }
+#endif
 
     var rejectedCompletionCountForTesting: Int { queue.sync { rejectedCompletionCount } }
     var supersededPendingCountForTesting: Int { queue.sync { supersededPendingCount } }
