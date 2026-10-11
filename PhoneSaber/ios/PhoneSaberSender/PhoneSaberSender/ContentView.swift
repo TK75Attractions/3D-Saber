@@ -32,6 +32,23 @@ struct ContentView: View {
                             .font(.caption).foregroundStyle(.secondary)
                         Text(model.networkStateLabel)
                             .font(.headline)
+                        if model.pcReplyMissing {
+                            Text("PC（Unity）から応答がありません。iPhone と PC が同じ Wi-Fi か確認してください。")
+                                .font(.caption)
+                                .foregroundStyle(.orange)
+                        }
+                        if !model.connectivityLogTail.isEmpty {
+                            DisclosureGroup("通信ログ") {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    ForEach(Array(model.connectivityLogTail.enumerated()), id: \.offset) { _, line in
+                                        Text(line)
+                                    }
+                                }
+                                .font(.caption2.monospaced())
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .font(.caption)
+                        }
                         Text(model.cameraState.displayLabel)
                             .font(.headline)
                             .foregroundStyle(model.cameraState == .live ? .green : .orange)

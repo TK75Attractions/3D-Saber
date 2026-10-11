@@ -143,6 +143,85 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertEqual(backoff.connectionLost(at: 20), 0.25, "first pong resets the delay")
     }
 
+    // 2026-10-10: Mac が Wi-Fi を変えた後、再接続が毎回同じ（死んだ）経路へ向かい約100秒届かなかった。
+    func testPathRotationKeepsTheSystemChoiceFirstThenPinsEachAdvertisedInterface() {
+        var rotation = P2PPathRotation()
+        XCTAssertNil(rotation.next(from: ["en0", "awdl0"]), "最初の接続は従来どおり OS に任せる")
+        rotation.attemptFailed()
+        XCTAssertEqual(rotation.next(from: ["en0", "awdl0"]), "awdl0", "失敗後はまず peer-to-peer")
+        rotation.attemptFailed()
+        XCTAssertEqual(rotation.next(from: ["en0", "awdl0"]), "en0")
+        rotation.attemptFailed()
+        XCTAssertNil(rotation.next(from: ["en0", "awdl0"]), "一巡したら OS の選択へ戻る")
+        rotation.attemptFailed()
+        XCTAssertEqual(rotation.next(from: ["en0", "awdl0"]), "awdl0")
+        rotation.reset()
+        XCTAssertNil(rotation.next(from: ["en0", "awdl0"]), "pong を受けたら元に戻る")
+        rotation.attemptFailed()
+        XCTAssertNil(rotation.next(from: []), "interface 情報が無ければ固定しない（override・古い OS）")
+        XCTAssertEqual(P2PPathRotation.order(["en0", "awdl0", "en0", "", "llw0"]), ["awdl0", "en0", "llw0"])
+    }
+
+    func testPathRotationTriesANewlyAdvertisedInterfaceOnce() {
+        var rotation = P2PPathRotation()
+        rotation.prefer("awdl0")
+        XCTAssertEqual(rotation.next(from: ["en0", "awdl0"]), "awdl0")
+        XCTAssertNil(rotation.next(from: ["en0", "awdl0"]), "優先は1回だけ")
+        rotation.prefer("awdl0")
+        XCTAssertNil(rotation.next(from: ["en0"]), "もう広告されていない interface には固定しない")
+    }
+
+    func testPCReplyWatchWarnsOnlyAfterTheRouteHasBeenUnprovenForAWhile() {
+        var watch = PCReplyWatch()
+        XCTAssertFalse(watch.update(sending: true, lanVerified: false, p2pConnected: false, now: 10))
+        XCTAssertFalse(watch.update(sending: true, lanVerified: false, p2pConnected: false, now: 12.9))
+        XCTAssertTrue(watch.update(sending: true, lanVerified: false, p2pConnected: false, now: 13))
+        XCTAssertFalse(watch.update(sending: true, lanVerified: true, p2pConnected: false, now: 14), "Unity の応答で解除")
+        XCTAssertFalse(watch.update(sending: true, lanVerified: false, p2pConnected: false, now: 15), "数え直す")
+        XCTAssertFalse(watch.update(sending: true, lanVerified: false, p2pConnected: true, now: 30), "P2P 接続中は警告しない")
+        XCTAssertFalse(watch.update(sending: false, lanVerified: false, p2pConnected: false, now: 60), "停止中は警告しない")
+    }
+
+    func testConnectivityLogKeepsTheNewestEntriesAndAppendsToAFile() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("Logs/connectivity.log")
+        let log = ConnectivityLog(fileURL: file)
+        XCTAssertEqual(log.revision, 0)
+        for index in 0..<(ConnectivityLog.capacity + 5) { log.record("P2P", "event \(index)") }
+        XCTAssertEqual(log.revision, ConnectivityLog.capacity + 5)
+        XCTAssertEqual(log.recent.count, ConnectivityLog.capacity)
+        XCTAssertEqual(log.recent.first?.message, "event 5")
+        XCTAssertEqual(log.displayLines(last: 2).count, 2)
+        XCTAssertTrue(log.displayLines(last: 1)[0].hasSuffix("[P2P] event \(ConnectivityLog.capacity + 4)"))
+        log.flushForTesting()
+        let text = try String(contentsOf: file, encoding: .utf8)
+        XCTAssertEqual(text.split(separator: "\n").count, ConnectivityLog.capacity + 5)
+        XCTAssertTrue(text.hasSuffix("[P2P] event \(ConnectivityLog.capacity + 4)\n"))
+        XCTAssertNil(ConnectivityLog.defaultFileURL, "XCTest 中は端末にログファイルを作らない")
+    }
+
+    func testRouteChangesAreLoggedOncePerChange() {
+        let lan = UDPSender { _, _, completion in completion(.success(1)) }
+        let p2p = P2PSender(endpointOverride: .hostPort(host: "127.0.0.1", port: 9))
+        var now = 100.0
+        let probe = LANLivenessProbe(clock: { now })
+        let delivery = CoordinateDelivery(sender: lan, p2pSender: p2p, lanProbe: probe)
+        var settings = CoordinateDelivery.Settings()
+        settings.running = true
+        settings.lanConfigured = true
+        delivery.update(settings)
+        for _ in 0..<3 { delivery.route("1,2,3,4", port: 5005, settings: settings, onSendStarted: nil, completion: { _ in }, noRoute: {}) }
+        probe.recordReplyForTesting(LANLivenessProbe.replyPrefix)
+        for _ in 0..<3 { delivery.route("1,2,3,4", port: 5005, settings: settings, onSendStarted: nil, completion: { _ in }, noRoute: {}) }
+        now += LANLivenessProbe.aliveWindow + 1
+        delivery.route("1,2,3,4", port: 5005, settings: settings, onSendStarted: nil, completion: { _ in }, noRoute: {})
+        let logged = Array(ConnectivityLog.shared.recent.filter { $0.source == "経路" }.suffix(3).map(\.message))
+        XCTAssertEqual(logged, [CoordinateDelivery.Route.lanUnverified.rawValue, CoordinateDelivery.Route.lanVerified.rawValue,
+                                CoordinateDelivery.Route.lanUnverified.rawValue])
+        lan.stop()
+    }
+
     // MARK: Service choice, interface and browse errors
 
     func testStationFiltersLANP2PAndDiagnosticsSelection() {

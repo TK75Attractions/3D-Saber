@@ -128,6 +128,48 @@ struct P2PReconnectBackoff: Equatable {
     }
 }
 
+/// Which interface the next connection attempt is pinned to.
+///
+/// 2026-10-10: the Mac left the Wi-Fi the link was running on (iPhone tethering,
+/// en0) and coordinates did not come back over AWDL for about 100 s, although a
+/// diagnostics upload (TCP) already reached the Mac over awdl0 after ~60 s. A
+/// UDP connection to a Bonjour service becomes "ready" on whatever address
+/// resolves first and never reports that nothing answers, so every reconnect
+/// could resolve to the cached record of the dead network again.
+/// The first attempt keeps the system's choice (unchanged behaviour). After a
+/// failed attempt the next ones are pinned, in turn, to each interface the
+/// browser reports for the service (peer-to-peer first), then the system's
+/// choice again. A pong resets it. Plain names so it is unit-testable.
+struct P2PPathRotation: Equatable {
+    private(set) var failedAttempts = 0
+    private(set) var preferred: String?
+
+    /// Peer-to-peer (awdl*) first: it does not depend on the network that just failed.
+    static func order(_ names: [String]) -> [String] {
+        let unique = Array(Set(names.filter { !$0.isEmpty }))
+        return unique.filter { $0.hasPrefix("awdl") }.sorted() + unique.filter { !$0.hasPrefix("awdl") }.sorted()
+    }
+
+    /// Interface for the attempt that starts now; nil lets the system choose.
+    mutating func next(from names: [String]) -> String? {
+        let ordered = Self.order(names)
+        if let preferred {
+            self.preferred = nil
+            if ordered.contains(preferred) { return preferred }
+        }
+        guard failedAttempts > 0, !ordered.isEmpty else { return nil }
+        let slot = (failedAttempts - 1) % (ordered.count + 1)
+        return slot < ordered.count ? ordered[slot] : nil
+    }
+
+    mutating func attemptFailed() { failedAttempts += 1 }
+
+    /// The service appeared on a new interface while the link is down: try it next.
+    mutating func prefer(_ name: String) { preferred = name }
+
+    mutating func reset() { failedAttempts = 0; preferred = nil }
+}
+
 /// Name of the interface a P2P connection really uses, for the UI. AWDL and
 /// infrastructure Wi-Fi share the `.wifi` type, so a link-local endpoint scope
 /// ("fe80::...%awdl0") is preferred over the interface-type match.
@@ -285,7 +327,10 @@ final class P2PSender {
     private var browserRestart: DispatchWorkItem?
     private var selection = P2PServiceSelection()
     private var station = ""
-    private var candidate: (endpoint: NWEndpoint, name: String)?
+    private var candidate: (endpoint: NWEndpoint, name: String, interfaces: [NWInterface])?
+    private var rotation = P2PPathRotation()
+    /// A silent attempt is replaced by one on a newly advertised interface only after this long.
+    private static let pathSwitchAfterSilence: TimeInterval = 1
     private var connection: NWConnection?
     /// Service name the current connection was opened to (the UI shows it).
     private var connectedService = ""
@@ -343,7 +388,7 @@ final class P2PSender {
             self.statsHandler = onStats
             self.startTicker()
             if let endpointOverride = self.endpointOverride {
-                self.candidate = (endpointOverride, "\(endpointOverride)")
+                self.candidate = (endpointOverride, "\(endpointOverride)", [])
                 self.connect()
             } else {
                 self.startBrowser()
@@ -366,6 +411,7 @@ final class P2PSender {
             P2PPreferredMac.set(nil)
             monitor.reset()
             backoff.reset()
+            rotation.reset()
             pending.removeAll()
             setState(.disabled)
         }
@@ -384,6 +430,7 @@ final class P2PSender {
             }
             self.log("foreground: rebuilding the link")
             self.backoff.reset()
+            self.rotation.reset()
             if self.candidate != nil {
                 self.connect()
             } else {
@@ -517,25 +564,39 @@ final class P2PSender {
     }
 
     private func handle(results: Set<NWBrowser.Result>) {
-        let services = results.compactMap { result -> (endpoint: NWEndpoint, name: String)? in
-            if case .service(let name, _, _, _) = result.endpoint { return (result.endpoint, name) }
+        let services = results.compactMap { result -> (endpoint: NWEndpoint, name: String, interfaces: [NWInterface])? in
+            if case .service(let name, _, _, _) = result.endpoint { return (result.endpoint, name, result.interfaces) }
             return nil
         }
         guard let name = selection.choose(from: services.map(\.name), station: station),
               let chosen = services.first(where: { $0.name == name }) else {
             // Keep a live connection; liveness decides when it is gone.
+            if candidate != nil { log("service no longer advertised") }
             candidate = nil
             if connection == nil { setState(.searching) }
             return
         }
         let changed = candidate?.name != chosen.name
-        candidate = (chosen.endpoint, chosen.name)
+        let known = Set(candidate?.interfaces.map(\.name) ?? [])
+        let appeared = P2PPathRotation.order(chosen.interfaces.map(\.name).filter { !known.contains($0) })
+        if changed || !appeared.isEmpty || known.count != chosen.interfaces.count {
+            log("service \(chosen.name) on \(P2PPathRotation.order(chosen.interfaces.map(\.name)))")
+        }
+        candidate = (chosen.endpoint, chosen.name, chosen.interfaces)
         P2PPreferredMac.set(chosen.name)
         let now = clock()
         if connection == nil {
             if backoff.mayConnect(at: now) { connect() }  // otherwise the ticker connects
-        } else if changed && !monitor.isUsable(at: now) {
-            connect()
+        } else if !monitor.isUsable(at: now) {
+            if changed {
+                connect()
+            } else if let first = appeared.first, !known.isEmpty,
+                      now - (monitor.lastPongAt ?? monitor.connectionStartedAt ?? now) >= Self.pathSwitchAfterSilence {
+                // The Mac became reachable another way (e.g. AWDL after its Wi-Fi changed)
+                // while this attempt has been silent: do not wait for the timeout.
+                rotation.prefer(first)
+                connect()
+            }
         }
     }
 
@@ -547,13 +608,18 @@ final class P2PSender {
         connectionGeneration += 1
         connectCount += 1
         let generation = connectionGeneration
-        let connection = NWConnection(to: candidate.endpoint, using: parameters())
+        let parameters = parameters()
+        let pinned = rotation.next(from: candidate.interfaces.map(\.name))
+        if let pinned, let interface = candidate.interfaces.first(where: { $0.name == pinned }) {
+            parameters.requiredInterface = interface
+        }
+        let connection = NWConnection(to: candidate.endpoint, using: parameters)
         self.connection = connection
         connectedService = candidate.name
         interfaceName = "?"
         monitor.connectionStarted(at: clock())
         setState(.connecting(service: candidate.name))
-        log("connecting to \(candidate.name)")
+        log("connecting to \(candidate.name) via \(pinned ?? "system choice")")
         connection.stateUpdateHandler = { [weak self] newState in
             guard let self else { return }
             self.queue.async {
@@ -612,6 +678,7 @@ final class P2PSender {
                     self.roundTrips.pongReceived(message.sequence, at: now)
                     self.monitor.pongReceived(at: now)
                     self.backoff.reset()
+                    self.rotation.reset()
                     self.refreshUsability()
                 }
                 if error == nil { self.receive(on: connection, generation: generation) }
@@ -635,6 +702,7 @@ final class P2PSender {
 
     private func dropConnection(reason: String) {
         tearDownConnection()
+        rotation.attemptFailed()
         let delay = backoff.connectionLost(at: clock())
         log("reconnect in \(delay)s (\(reason))")
         resumeBrowser()
@@ -771,6 +839,7 @@ final class P2PSender {
     }
 
     private func log(_ message: String) {
+        ConnectivityLog.shared.record("P2P", message)
 #if DEBUG
         print("[P2P] \(message)")
 #endif

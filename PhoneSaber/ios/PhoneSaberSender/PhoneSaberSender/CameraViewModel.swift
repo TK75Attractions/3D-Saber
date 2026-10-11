@@ -635,6 +635,13 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var station = ""
     @Published private(set) var p2pEnabled = true { didSet { updateDeliverySettings() } }
     @Published private(set) var p2pState: P2PLinkState = .disabled
+    /// 送信中なのに Unity の応答も P2P も無い状態が続いている（見出しは NETWORK READY のままになる）。
+    @Published private(set) var pcReplyMissing = false
+    /// 通信ログの直近（画面用）。
+    @Published private(set) var connectivityLogTail: [String] = []
+    private var pcReplyWatch = PCReplyWatch()
+    private var connectivityLogRevision = -1
+    static let connectivityLogTailCount = 12
     @Published private(set) var p2pRoundTrip: P2PRoundTripStats.Summary?
     /// Opt-in exposure experiment (default auto = device exposure untouched).
     @Published private(set) var cameraExposureExperiment: CameraExposureExperiment = .auto
@@ -1322,6 +1329,7 @@ final class CameraViewModel: NSObject, ObservableObject {
                     sender.updateHost(update.ip)
                     // 生存確認も新しい IP へ向ける。旧 IP のままだと LAN が確認済みにならず、
                     // LAN で届くのに遅い P2P へ回り続ける。
+                    ConnectivityLog.shared.record("LAN", "宛先の IP が変わった \(update.ip)")
                     lanProbe.start(host: update.ip)
                 } else {
                     // Started on P2P alone; the LAN fallback becomes available now.
@@ -1630,11 +1638,27 @@ final class CameraViewModel: NSObject, ObservableObject {
         return metrics
     }
 
+    /// PC へ届いている証拠の有無と通信ログを画面へ反映する（12Hz の UI 更新から呼ぶ。変化時だけ publish）。
+    private func refreshConnectivityStatus(now: TimeInterval = ProcessInfo.processInfo.systemUptime) {
+        let missing = pcReplyWatch.update(sending: running && lanConfigured, lanVerified: lanProbe.isAlive,
+                                          p2pConnected: p2pState.isConnected, now: now)
+        if missing != pcReplyMissing {
+            pcReplyMissing = missing
+            ConnectivityLog.shared.record("状態", missing ? "PC から応答なし（Unity 応答なし・P2P 未接続）" : "PC への経路が回復")
+        }
+        let revision = ConnectivityLog.shared.revision
+        if revision != connectivityLogRevision {
+            connectivityLogRevision = revision
+            connectivityLogTail = ConnectivityLog.shared.displayLines(last: Self.connectivityLogTailCount)
+        }
+    }
+
     // UI ロックを解放したスナップショットだけを MainActor で公開する。
     func publishPendingUI() {
 #if DEBUG
         let uiStart = ProcessInfo.processInfo.systemUptime
 #endif
+        refreshConnectivityStatus()
         guard let snapshot = uiPending.takeSnapshot() else { return }
         uiSnapshotCountForTesting += 1
         assignIfChanged(\.processedFrameCount, snapshot.processed)
@@ -1887,6 +1911,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     private func configureLAN(host: String, generation: Int) {
         lanConfigured = false
+        ConnectivityLog.shared.record("LAN", "宛先 \(host)")
         lanProbe.start(host: host)
         sender.configure(host: host) { [weak self] states, errors, _ in
             Task { @MainActor in

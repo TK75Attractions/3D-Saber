@@ -657,6 +657,112 @@ final class LANLivenessProbe {
     }
 }
 
+/// 通信経路の出来事（経路の切替、P2P の探索・再接続、Unity 応答の途切れ）を時刻付きで残す。
+/// 2026-10-10 に約100秒 PC へ届かなかったとき、iPhone 側の記録が何も無く原因を特定できなかった。
+/// 直近を画面に出し、同じ内容を Library/Logs/connectivity.log へ追記する（256 KiB で1世代だけ回す）。
+/// 記録は出来事の発生時だけ（フレームごとには呼ばない）。
+final class ConnectivityLog: @unchecked Sendable {
+    static let shared = ConnectivityLog(fileURL: defaultFileURL)
+    static let capacity = 200
+    static let maximumFileBytes = 256 * 1024
+
+    struct Entry: Equatable {
+        let time: Date
+        let source: String
+        let message: String
+    }
+
+    /// XCTest 中はファイルを作らない。
+    static var defaultFileURL: URL? {
+        guard ProcessInfo.processInfo.environment["XCTestConfigurationFilePath"] == nil,
+              let library = FileManager.default.urls(for: .libraryDirectory, in: .userDomainMask).first else { return nil }
+        return library.appendingPathComponent("Logs/connectivity.log")
+    }
+
+    private let lock = NSLock()
+    private var entries: [Entry] = []
+    private var revisionValue = 0
+    private let fileURL: URL?
+    private let ioQueue = DispatchQueue(label: "PhoneSaberSender.connectivityLog", qos: .utility)
+    private let fileFormatter: ISO8601DateFormatter = {
+        let formatter = ISO8601DateFormatter()
+        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        return formatter
+    }()
+
+    init(fileURL: URL? = nil) { self.fileURL = fileURL }
+
+    /// 変化の検出用（画面はこれが変わったときだけ読み直す）。
+    var revision: Int {
+        lock.lock(); defer { lock.unlock() }
+        return revisionValue
+    }
+
+    func record(_ source: String, _ message: String, at time: Date = Date()) {
+        let entry = Entry(time: time, source: source, message: message)
+        lock.lock()
+        entries.append(entry)
+        if entries.count > Self.capacity { entries.removeFirst(entries.count - Self.capacity) }
+        revisionValue += 1
+        lock.unlock()
+        guard let fileURL else { return }
+        ioQueue.async { [fileFormatter] in
+            Self.append("\(fileFormatter.string(from: time)) [\(source)] \(message)\n", to: fileURL)
+        }
+    }
+
+    var recent: [Entry] {
+        lock.lock(); defer { lock.unlock() }
+        return entries
+    }
+
+    /// 画面用の直近 `count` 行（端末の現地時刻 HH:mm:ss）。
+    func displayLines(last count: Int) -> [String] {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.dateFormat = "HH:mm:ss"
+        return recent.suffix(count).map { "\(formatter.string(from: $0.time)) [\($0.source)] \($0.message)" }
+    }
+
+    /// ファイル書き込みの完了待ち（テスト用）。
+    func flushForTesting() { ioQueue.sync {} }
+
+    private static func append(_ line: String, to url: URL) {
+        let manager = FileManager.default
+        try? manager.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+        if let size = (try? manager.attributesOfItem(atPath: url.path))?[.size] as? Int, size >= maximumFileBytes {
+            let previous = url.appendingPathExtension("1")
+            try? manager.removeItem(at: previous)
+            try? manager.moveItem(at: url, to: previous)
+        }
+        guard let data = line.data(using: .utf8) else { return }
+        if let handle = try? FileHandle(forWritingTo: url) {
+            defer { try? handle.close() }
+            _ = try? handle.seekToEnd()
+            try? handle.write(contentsOf: data)
+        } else {
+            try? data.write(to: url)
+        }
+    }
+}
+
+/// 送信中なのに PC へ届いている証拠が無い状態（Unity の探索応答なし、かつ P2P 未接続）が続いたら知らせる。
+/// UDP は届かなくても「ready」のままなので、見出しは NETWORK READY のままになる（2026-10-10 の実機）。
+struct PCReplyWatch: Equatable {
+    static let warnAfter: TimeInterval = 3
+    private(set) var missingSince: TimeInterval?
+
+    mutating func update(sending: Bool, lanVerified: Bool, p2pConnected: Bool, now: TimeInterval) -> Bool {
+        guard sending, !lanVerified, !p2pConnected else {
+            missingSince = nil
+            return false
+        }
+        let since = missingSince ?? now
+        missingSince = since
+        return now - since >= Self.warnAfter
+    }
+}
+
 /// 検出キューから直接送信するための設定スナップショットと経路選択。
 /// UI は設定変更時だけ書き込み、フレームは MainActor を待たない。
 final class CoordinateDelivery: @unchecked Sendable {
@@ -674,9 +780,18 @@ final class CoordinateDelivery: @unchecked Sendable {
         var lanConfigured = false
     }
 
+    /// 座標が実際に選んだ経路。変化したときだけ ConnectivityLog に残す。
+    enum Route: String {
+        case none = "経路なし（送信していません）"
+        case p2p = "P2P"
+        case lanVerified = "LAN（Unity 応答あり）"
+        case lanUnverified = "LAN（Unity 応答なし。届いているか不明）"
+    }
+
     private let lock = NSLock()
     private var settings = Settings()
     private var routedViaP2P = false
+    private var lastRoute: Route?
     private let sender: UDPSender
     private let p2pSender: P2PSender
     private let lanProbe: LANLivenessProbe
@@ -690,11 +805,18 @@ final class CoordinateDelivery: @unchecked Sendable {
     func update(_ settings: Settings) {
         lock.lock(); defer { lock.unlock() }
         self.settings = settings
-        if !settings.running { routedViaP2P = false }
+        if !settings.running { routedViaP2P = false; lastRoute = nil }
     }
 
     func suspend() {
-        lock.lock(); settings.running = false; routedViaP2P = false; lock.unlock()
+        lock.lock(); settings.running = false; routedViaP2P = false; lastRoute = nil; lock.unlock()
+    }
+
+    /// lock を持った状態で呼ぶ。
+    private func note(_ route: Route) {
+        guard route != lastRoute else { return }
+        lastRoute = route
+        ConnectivityLog.shared.record("経路", route.rawValue)
     }
 
     func snapshot(generation: Int) -> Settings? {
@@ -727,6 +849,7 @@ final class CoordinateDelivery: @unchecked Sendable {
                 routedViaP2P = true
                 sender.discardPendingCoordinates()
             }
+            note(.p2p)
             p2pSender.send(text, to: port, onSendStarted: onSendStarted, completion: completion,
                            fallback: { [weak self] in
                                guard let self else { return }
@@ -739,9 +862,11 @@ final class CoordinateDelivery: @unchecked Sendable {
                            }, isCurrent: valid)
         } else if settings.lanConfigured {
             routedViaP2P = false
+            note(lanVerified ? .lanVerified : .lanUnverified)
             sender.send(text, to: port, onSendStarted: onSendStarted, isCurrent: valid, completion: completion)
         } else {
             routedViaP2P = false
+            note(.none)
             noRoute()
         }
     }
