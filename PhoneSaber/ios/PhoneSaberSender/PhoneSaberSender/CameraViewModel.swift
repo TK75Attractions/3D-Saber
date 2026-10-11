@@ -842,7 +842,10 @@ final class CameraViewModel: NSObject, ObservableObject {
         self.sender = sender
         self.p2pSender = p2pSender
         self.connectivityClock = connectivityClock
-        let probe = LANLivenessProbe(clock: connectivityClock)
+        // XCTest では本物の Unity（この Mac で Play 中の Editor や起動中のゲーム）の 5007 応答を拾わない。
+        // 拾うと LAN が確認済みになり、P2P 優先を確かめるテストが環境次第で落ちる（2026-10-12 の verify）。
+        let probePort = NSClassFromString("XCTestCase") == nil ? LANLivenessProbe.port : LANLivenessProbe.unusedPortForTests
+        let probe = LANLivenessProbe(port: probePort, clock: connectivityClock)
         self.lanProbe = probe
         self.delivery = CoordinateDelivery(sender: sender, p2pSender: p2pSender, lanProbe: probe)
         // Unit tests opt in explicitly, so a bridge running on the developer's Mac

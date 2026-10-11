@@ -20,6 +20,12 @@ from pathlib import Path
 from typing import Any
 import frame_reference
 
+# checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
+import sys as _guard_sys
+from pathlib import Path as _GuardPath
+_guard_sys.path.insert(0, str(next(p for p in _GuardPath(__file__).resolve().parents if (p / "guard_build.py").is_file())))
+import guard_build
+
 CORE = Path(__file__).resolve().parents[1]
 REPO = CORE.parents[1]
 INBOX = Path.home() / "Library/Application Support/PhoneSaber/diagnostics-inbox"
@@ -77,7 +83,8 @@ def rgba_padded(bgra: bytes, width: int, height: int) -> bytes:
 
 def build(destination: Path) -> tuple[Path, Path]:
     cli, swift = destination / "phonesaber-png", destination / "swift-reference"
-    run(["clang++", "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror", "-ffp-contract=off",
+    guard_flags = guard_build.cpp_flags()
+    run(["clang++", *guard_flags, "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror", "-ffp-contract=off",
          "-I" + str(CORE / "include"), *(str(CORE / "src" / name) for name in ("detection.cpp", "pipeline.cpp", "frame_processor.cpp")),
          str(CORE / "tools/png_cli.cpp"), str(CORE / "tools/png.cpp"), "-lz", "-o", str(cli)])
     env = {**os.environ, "CLANG_MODULE_CACHE_PATH": str(destination / "module-cache")}
@@ -116,7 +123,8 @@ def build(destination: Path) -> tuple[Path, Path]:
     sources = [REPO / "ios/PhoneSaberSender/PhoneSaberSender/DetectionCore.swift",
                REPO / "ios/PhoneSaberSender/PhoneSaberSender/BGRADetection.swift",
                runner]
-    run(["xcrun", "swiftc", "-O", *(str(path) for path in sources), "-o", str(swift)], env=env)
+    swift_flags = guard_build.swift_flags()
+    run(["xcrun", "swiftc", *swift_flags, "-O", *(str(path) for path in sources), "-o", str(swift)], env=env)
     return cli, swift
 
 

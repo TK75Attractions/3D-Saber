@@ -4,12 +4,16 @@
 
 ## ユーザー待ち
 
+プロトコル監査（cx/protocol-20261011）はオペレーターの差分レビュー・公式verify待ち。commit / push はしていない。経路受理・探索validation・警告表示の変更案は[契約報告](protocol-contracts-20261011.md)に記録し、実装していない。
+
 2026-10-11時点。最新版を実機に入れて確認する。手順は[当日runbook](EVENT_DAY_RUNBOOK.md)。
 
-**次に iPhone を Xcode で入れ直したら（10-11 の修正の確認、合計5分ほど）:**
-- **振りだけ録画（最優先）**: 本番の場所（壁画が映る画角）で、露出 1/100 秒、Debug Recording の「振りだけ録画を開始」を押して振る位置へ。約50秒で自動終了。2本撮る（別々の振りの証拠が要るため）。core-line 過連結 guard と壁画の青 FP 対策の採用判断に使う（[解析](coreline-overlink-and-mural.md)）。
+**次に実機を触れるとき（2026-10-12 時点。iPhone は Xcode で入れ直す。Mac のゲームは Desktop の「ゲーム起動（台A）.command」）:**
+- **振りだけ録画を2本（最優先）**: 本番の場所（壁画が映る画角）で露出 1/100 秒、Debug Recording の「振りだけ録画を開始」。約51秒で自動終了し、下に「Mac 受信済み」と出れば到着。10-12 に採用した **core-line 過連結 guard の実機再確認**（剣の端が遠くへ飛ばないこと、速く振っても剣を見失わないこと）と、壁画の青 FP 対策の判断に使う。
 - **Wi-Fi 切替の復帰**: 送信中に Mac の Wi-Fi を別のネットワークへ切り替え、何秒で Unity に座標が戻るか（10-10 は約100秒）。iPhone に「PC（Unity）から応答がありません」が出ること、「通信ログ」に経路の切替が残ることも見る。
-- **F9**: 画面に「比較用の記録 n/8 ブロック」が出る。8 ブロック（約2分）まで、iPhone の「fps自動比較」ON でカメラを画面に向けたまま待つ。
+- **起動キット**: F8 で P2P bridge ON、強制終了で5秒後に再起動、Quit では再起動しない。固まり検知（45秒）は実 Player で未確認。
+- **F9**: 画面に「比較用の記録 n/8 ブロック」が出る。8 ブロック（約2分）まで、iPhone の「fps自動比較」ON でカメラを画面に向けたまま待つ（5分で自動 OFF）。
+- Windows・Android（AQUOS）は実機が手元に来たとき: Windows の bat（二重起動防止・固まり検知は Windows で未実行）、Android の「PC 応答なし」注意と撮影→送信の表示。
 
 0. **最適化の実機確認（最優先・数字の入力不要）**: Mac `git pull`→Unity Play、iPhone を Xcode で入れ直し（60fps 既定・LAN 優先・送信経路と認識の高速化・UI 12Hz）。iPhone と Mac を同じ Wi-Fi にして Debug Performance の「fps自動比較」ON → F9 を数分→F9。AQUOS は Mac に USB 接続すれば Claude が入れて 60fps 維持・JNI 中央値を確認。剣の遅延補正は F8 で 20ms を試し、振り心地を一言もらう。
 
@@ -24,7 +28,8 @@
 
 ## 現在の仮説と確度
 
-- **中（新・10-11）**: 実剣の上での端点の飛びは「core-line の過連結」（剣と遠くの明点を1本につなぐ。大差で勝つので僅差の CASE A とは別）。機構は特定済み、限定 guard は offline で有効。別 swing の実剣証拠が未達。本番の背景には青緑の壁画が一部映り、消灯時の BLUE FP になる。
+- **確認済み（プロトコル監査）**: P2Pの別端末がbridgeの同じloopback送信元へ集約され、UnityのIP gateで競合を検出できない。LAN/P2P往復の誤ロックとiOS探索応答の互換性未検証も残る。ゲームの受理ルール変更は提案のみ。計測prefix `timestamp=` の受理・時刻統計の不一致だけ修正（[契約報告](protocol-contracts-20261011.md)）。
+- **採用（10-12）**: 実剣の上での端点の飛び = core-line の過連結（剣と遠くの明点を1本につなぐ）。guard G(.6) を既定 ON で採用した。根拠は独立4セッション（09-22・09-23・10-10×2）の19変更で 14 件が剣の上に戻り、悪化 0（4 件は位置は剣の上だが向きが違う、1 件は判定不能）、formal 40/40・選択変更 0、C++/Swift bit 一致。速振りでの無害性は実機未確認（ユーザー待ち）。`PHONESABER_CORELINE_GUARD=0` で比較用に切れる。本番の背景には青緑の壁画が一部映り、消灯時の BLUE FP になる（対策は未採用）。
 - **高**: 肌・照明・背景の誤検出と、速振りのブレによる候補消失が主因。旧CASE A代表例は背景同士で、実剣の選択修正gateは未達。
 - **高**: AWDLの詰まりは認識とは別の遅延原因。interactiveVoiceの実機効果は未確認。F8で間隔・同期時の片道時計差を比較できるが、画面全体の遅延ではない。
 - **確認済み**: score決定性は `bbc1f32`、赤warmNoDeepRedは `8363024`。10-06の実機v2では最初の剣なし赤FPが598/598→0/598。ただし別の背景FP・小さい／淡い剣の保持は追加確認が必要。
@@ -34,6 +39,8 @@
 根拠・残存FP・却下案は[FINDINGS](FINDINGS.md)。同文書とAndroid READMEの過去の「未commit／未実行」は、下の採用・検証commitを参照する。
 
 ## 次にやること
+
+プロトコル監査の差分をレビューし、公式verifyを実行する。iOS Releaseはsandbox/macroエラーで未成功、既存Mono統計benchmarkは変更前から失敗。無線・Player・台切替の未検証項目は[契約報告](protocol-contracts-20261011.md)を参照。
 
 0. **誤検出ルールの採用判断（実機 capture 待ち）**: benchmark（recognition_benchmark.py）の分析で、赤は high_value_ratio ≥ 0.65 で剣なし FP 56→29（剣 29/29 保持）、青は color_purity ≥ 0.25 で FP 9→3（剣 31/31 保持、unknown 変化 1/346）。ラベル付きの剣は静止・近距離中心なので、ガイド付き録画 v3 の速振り・遠距離・淡い青に手ラベルを付け、剣を落とさないことと formal 40/40 を確認してから threshold を決める（docs/claude/red-fp-features.md）。
 
@@ -52,6 +59,25 @@
 11. **将来の構成を比較**: AWDLが不安定ならUSB/usbmuxd/TCPを試すか判断し、座標互換・滞留・切断復帰・画面全体の遅延を測る。Mac内蔵／USBカメラ直接認識は精度・端点・配置・遅延を比較して採否を決める。Continuity Cameraは別の無線経路で、縮小／FPSだけを通信遅延改善と扱わない。
 
 ## 作業ログ
+
+### 2026-10-11 夜〜10-12 未明 Codex の点検結果の取り込みと仕上げ（verify 全項目 PASS）
+- **認識: core-line 過連結 guard G を採用**（Codex 実装、Claude が変更前後の画像を目視）。C++ / Swift 共通、既定 ON、切替は `PHONESABER_CORELINE_GUARD=0`。parity 325 PNG 不一致 0、formal 40/40、host の追加コスト C++ +0.03ms / Swift +0.02ms。[採用ノート](coreline-guard-prototype.md)。
+- **10-10〜11 に入れた変更の再レビュー**（Codex、[review-merged-20261011.md](review-merged-20261011.md)）で直したもの: ConnectivityLog の世代交代が directory を再帰削除する、CDPATH で Mac 起動パスが壊れる、Unity が crash しても PASS XML だけで成功扱いになる、最後の経路切替ログの欠落、など。
+- **再レビューで「未修正の P1」とされた点への対応（Claude）**:
+  - 送信元ゲートは**既定で「検出して警告するだけ」**にした（`PhoneSaberSenderGate.Enforce = false`）。弾く動作には、1台の LAN⇄P2P 往復を2台と誤判定して約1秒止める、P2P 経由の2台は区別できない、という穴がある。loopback と LAN の入れ替わりは競合に数えない。不正 payload は送信元の判定に使わない。
+  - Mac watchdog: 古い lock を2つの監視が同時に回収して二重起動する競合を修正（rename で回収、取得後に自分の PID か再確認、cleanup は自分の lock だけ）。
+  - iPhone の LAN 生存確認は版 1・port 5005/5006 の応答だけを受ける（`PHONESABER_UNITY 10` や別 port を生存扱いしていた）。
+- **部品間の取り決めの照合**（Codex、[protocol-contracts-20261011.md](protocol-contracts-20261011.md)）: `timestamp=` 接頭辞が統計と P2P で扱われない不一致を修正。座標・探索応答の共通テストベクトル（`tools/fixtures/protocol_*.tsv`）を Swift / Kotlin / C# / Python のテストが読む。
+- **手順書と実物の照合**（Codex＋Claude、[ops-doc-audit-20261011.md](ops-doc-audit-20261011.md)）: スタッフマニュアルの復旧表を「症状→一つの対処」に作り直し、runbook の先頭に開場直前チェック表。新しい画面表示（転送状態、手動 IP の解除、競合警告、発熱 30fps、充電警告）を反映。**STAFF_MANUAL.pdf を作り直した**（`tools/build_staff_manual_pdf.py`、2ページ）。
+- **検証の落とし穴を2つ修正**: view model のテストが、この Mac で動いている本物の Unity の 5007 応答を拾って落ちる（テスト中は応答しない port を使う）。Codex の sandbox が残した Gradle daemon が別 worktree に書けず build が落ちる（gradle の前に `./gradlew --stop`）。
+- **未取り込み（branch に保存。実機で確かめてから）**: `cx/ios2-20261011` の iPhone 遅延短縮（120fps の選択肢、HDR・歪み補正の無効化。カメラ設定が変わるので実機確認が先）、`cx/android-latency-20261011`（撮影→送信の表示修正、解析スレッドの優先度）、`cx/recog-20261011`（認識の失敗集計。Codex の枠切れで未完）。
+- 検証: verify_phone_saber.sh 全項目 PASS、PhoneSaber/tools 178 tests、Android JVM 58、Unity EditMode（PhoneSaber）1139 中 1137（2件は譜面エディタ）。実機・Windows 実機は未確認。
+
+### 2026-10-11 プロトコル監査のWIP継続（未commit・未push）
+
+- `8114236 wip` とcleanなworktreeから再開。認識・UDP本文生成・formal corpus・scene/prefab/meta/ProjectSettingsは変更なし。Unity統計とphone/bridge共有P2P validatorの既存 `timestamp=` alias対応を維持し、操作者に見えるstatus警告変更はWIP以前へ戻した。
+- [契約表と重大度別の報告](protocol-contracts-20261011.md)を完成。port、座標/計測、discovery/station、Bonjour、framing/session/sequence、liveness、起動/終了、ログ、triage envelope/schemaを照合。P2P複数端末のIP集約を実bridgeで再現し、見える受理ルール変更は提案に留めた。
+- 再開後PASS: 共通契約＋replay30件、latencyを含む初回14件、実bridge28件＋追加監査1件、Python status/triage/schema/report/encoding94件、UDP probe38件、Android JVM58件・Debug APK build、native core-test・parity tool4件、Mac経路XCTest6件、Mono/NUnit61件。iOS Release再試行はexit65（sandbox_applyとSwiftUI macro plugin）、Mono benchmarkは変更前sourceでもStatistics mismatch。公式verify・formal全件・Unity Editor/Player・無線実機は未実行。詳細コマンドとログは契約報告に記録。
 
 ### 2026-10-11 午後 Codex による点検と修正（Claude が確認・検証して取り込み）
 - **Codex 無人 runner**: Codex の5時間枠を6並列で約30分で使い切り、6ジョブが途中で止まった（13:31）。Claude なしで続きを回す runner を起動（`~/Library/Logs/PhoneSaber/codex-runner/`、`runner.log`、止めるには `STOP` を作る）。枠が戻ると3レーンで実行し、結果は各作業 branch に自動 commit する。**main には入らない。Claude が差分確認と verify をしてから取り込む。** 18:05 に再開。runner が正常終了を「上限で中断」と誤判定してやり直させる不具合があり 18:42 に修正（出力に写った指示文の語で判定していた）。

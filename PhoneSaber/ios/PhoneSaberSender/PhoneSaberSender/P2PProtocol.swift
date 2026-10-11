@@ -12,7 +12,7 @@ import Foundation
 ///   8..<12  sender session ID (UInt32 BE, random per app launch / bridge start)
 ///   12..<20 sequence (UInt64 BE, increasing per session)
 ///   body    coordinates: the unchanged ASCII payload ("x1,y1,x2,y2" or
-///           "ts=...;x1,y1,x2,y2"); ping/pong: empty
+///           "ts=...;x1,y1,x2,y2" / "timestamp=...;x1,y1,x2,y2"); ping/pong: empty
 /// The bridge forwards the body bytes unchanged to 127.0.0.1:5005 (RED) or :5006 (BLUE).
 enum PhoneSaberP2P {
     static let serviceType = "_phonesaber-p2p._udp"
@@ -119,16 +119,17 @@ struct P2PMessage: Equatable {
     }
 }
 
-/// The existing coordinate payload: "x1,y1,x2,y2" with optional "ts=<number>;"
+/// The existing coordinate payload: "x1,y1,x2,y2" with optional "ts=<number>;" / "timestamp=<number>;"
 /// prefix (measurement mode). Validated, never rewritten.
 enum P2PPayload {
     static func isValid(_ body: Data) -> Bool {
         guard !body.isEmpty, body.count <= PhoneSaberP2P.maximumBodySize,
               body.allSatisfy({ $0 >= 0x20 && $0 < 0x7F }),
               var text = String(data: body, encoding: .ascii) else { return false }
-        if text.hasPrefix("ts=") {
+        let prefixLength = text.hasPrefix("ts=") ? 3 : text.hasPrefix("timestamp=") ? 10 : 0
+        if prefixLength != 0 {
             guard let separator = text.firstIndex(of: ";"),
-                  Double(text[text.index(text.startIndex, offsetBy: 3)..<separator]) != nil else { return false }
+                  Double(text[text.index(text.startIndex, offsetBy: prefixLength)..<separator]) != nil else { return false }
             text = String(text[text.index(after: separator)...])
         }
         let fields = text.split(separator: ",", omittingEmptySubsequences: false)

@@ -259,6 +259,21 @@ public class PhoneSaberEventLogTests
     }
 
     [Test]
+    public void FinalSuppressedRouteChangeIsLoggedEvenWithoutAnotherChange()
+    {
+        var events = new List<string>();
+        var red = new PhoneSaberConnectionEvents(0, true, (kind, detail) => events.Add(kind + " " + detail));
+        red.Packet(0, "192.168.1.2");
+        red.Packet(0.2, "127.0.0.1");
+        for (int i = 3; i <= 10; i++) red.Packet(i / 10.0, "127.0.0.1");
+        red.Poll(1);
+        red.Poll(1.1);
+        Assert.AreEqual(2, events.Count, "最後の経路切替も1秒後に一度だけ記録する");
+        StringAssert.Contains("from=192.168.1.2 to=127.0.0.1", events[1]);
+        StringAssert.Contains("route-to=P2P bridge suppressed=1", events[1]);
+    }
+
+    [Test]
     public void AlternatingSendersAreLoggedAtMostOncePerSecond()
     {
         var events = new List<string>();

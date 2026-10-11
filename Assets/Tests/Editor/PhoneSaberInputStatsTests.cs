@@ -7,16 +7,22 @@ public class PhoneSaberInputStatsTests
     [Test]
     public void InterleavingSenderCannotReplaceKeptSendersLatencySamples()
     {
-        var statistics = new PhoneSaberPacketStatistics();
-        statistics.Record(0, "A", true);
-        statistics.Record(0.01, "B", true);
-        statistics.Record(0.02, "A", true, 1000.01, 1000);
-        statistics.Record(0.03, "B", true, 2000, 1000);
-        var snapshot = statistics.Read(0.04);
-        Assert.AreEqual(10, snapshot.OneWayDelay.MaxMs, 1e-8,
-            "固定後の別送信元は有効な遅延サンプルを上書きしない");
-        Assert.AreEqual(4, snapshot.PacketsPerSecond, "拒否も不正 payload と同じく到着として数える");
-        Assert.AreEqual(0.01, snapshot.SecondsSinceLastPacket, 1e-8);
+        // 弾く動作（Enforce）は本番の既定ではない。仕様だけここで確かめる。
+        PhoneSaberSenderGate.Enforce = true;
+        try
+        {
+            var statistics = new PhoneSaberPacketStatistics();
+            statistics.Record(0, "A", true);
+            statistics.Record(0.01, "B", true);
+            statistics.Record(0.02, "A", true, 1000.01, 1000);
+            statistics.Record(0.03, "B", true, 2000, 1000);
+            var snapshot = statistics.Read(0.04);
+            Assert.AreEqual(10, snapshot.OneWayDelay.MaxMs, 1e-8,
+                "固定後の別送信元は有効な遅延サンプルを上書きしない");
+            Assert.AreEqual(4, snapshot.PacketsPerSecond, "拒否も不正 payload と同じく到着として数える");
+            Assert.AreEqual(0.01, snapshot.SecondsSinceLastPacket, 1e-8);
+        }
+        finally { PhoneSaberSenderGate.Enforce = false; }
     }
 
     [Test]
@@ -107,7 +113,10 @@ public class PhoneSaberInputStatsTests
     [TestCase("ts=oops;1,2", null)]
     [TestCase("ts=1,25;1,2", null)]
     [TestCase("ts=1000", null)]
-    [TestCase("timestamp=1000;1,2", null)]
+    [TestCase("timestamp=1000;1,2", 1000)]
+    [TestCase("timestamp=1.25e3;1,2,3,4", 1250)]
+    [TestCase("timestamp=NaN;1,2", null)]
+    [TestCase("timestamp=0;1,2", null)]
     [TestCase("1,2,3,4", null)]
     [TestCase(null, null)]
     public void TimestampReaderAcceptsFinitePositiveEpochOnly(string payload, double? expected)

@@ -1,7 +1,7 @@
 #!/bin/bash
 # open -W の成功は crash の有無を示さない。新しい Unity build の正常終了マーカーを併用する。
 set -u
-SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd -P)" || exit 1
+SCRIPT_DIR="$(CDPATH='' cd "$(dirname "$0")" && pwd -P)" || exit 1
 STATION="${1:?station required}"
 GAME_APP="${2:?app required}"
 LOG_FILE="$SCRIPT_DIR/Start-Saber-$STATION.log"
@@ -29,7 +29,7 @@ BRIDGE_SCRIPT="${PHONESABER_P2P_BRIDGE_SCRIPT:-$SCRIPT_DIR/../ios/PhoneSaberSend
 OPEN_ENV=()
 BRIDGE_STATE=no
 if [[ -f "$BRIDGE_SCRIPT" ]]; then
-    BRIDGE_SCRIPT="$(cd "$(dirname "$BRIDGE_SCRIPT")" && pwd -P)/$(basename "$BRIDGE_SCRIPT")"
+    BRIDGE_SCRIPT="$(CDPATH='' cd "$(dirname "$BRIDGE_SCRIPT")" && pwd -P)/$(basename "$BRIDGE_SCRIPT")"
     OPEN_ENV=(--env "PHONESABER_P2P_BRIDGE_SCRIPT=$BRIDGE_SCRIPT")
     BRIDGE_STATE=yes
 fi
@@ -51,18 +51,24 @@ lock_holder() {
     esac
 }
 acquire_lock() {
-    local attempt
+    local attempt stale
     for attempt in 1 2; do
         if mkdir "$LOCK_DIR" 2>/dev/null; then
-            LOCK_OWNED=1
             printf '%s\n' "$$" > "$LOCK_DIR/pid"
+            # 同時に起動した別の監視が、この lock を「古い」と判断した直後に回収して取り直すことがある
+            # (ダブルクリックの連打)。少し待って自分の PID のままか確かめ、違えば相手に譲る。
+            sleep 1
+            [[ "$(cat "$LOCK_DIR/pid" 2>/dev/null)" == "$$" ]] || return 1
+            LOCK_OWNED=1
             return 0
         fi
         # PID を書き込む途中の lock を古いと誤判定しないよう、少し待ってから確かめる。
         sleep 1
         lock_holder >/dev/null && return 1
-        rm -f "$LOCK_DIR/pid"
-        rmdir "$LOCK_DIR" 2>/dev/null
+        # 古い lock は rename で回収する。rm + rmdir だと2つの監視が同時に回収でき、両方が起動してしまう。
+        stale="$LOCK_DIR.stale.$$"
+        mv "$LOCK_DIR" "$stale" 2>/dev/null || continue
+        rm -rf "$stale"
     done
     return 1
 }
@@ -130,14 +136,15 @@ cleanup() {
     [[ -z "$OPEN_PID" ]] || kill "$OPEN_PID" 2>/dev/null || true
     rm -f "$QUIT_MARKER" "$MARKER_DIR"/heartbeat-*
     rmdir "$MARKER_DIR" 2>/dev/null || true
-    if [[ "$LOCK_OWNED" -eq 1 ]]; then
+    # 自分の lock だけを片づける (別の監視が取り直した lock を消さない)。
+    if [[ "$LOCK_OWNED" -eq 1 && "$(cat "$LOCK_DIR/pid" 2>/dev/null)" == "$$" ]]; then
         rm -f "$LOCK_DIR/pid"
         rmdir "$LOCK_DIR" 2>/dev/null || true
     fi
 }
 trap cleanup EXIT
 trap 'log "watchdog-stopped signal"; printf "\n監視を終了しました。起動中のゲームはそのままです (終了はゲームの Quit)。\n"; exit 130' INT TERM HUP
-if [[ -f "$LOG_FILE" && $(wc -c < "$LOG_FILE") -gt $LOG_MAX_BYTES ]]; then
+if [[ -f "$LOG_FILE" && ! -d "$LOG_FILE.1" && $(wc -c < "$LOG_FILE") -gt $LOG_MAX_BYTES ]]; then
     mv -f "$LOG_FILE" "$LOG_FILE.1"
 fi
 if [[ ! -d "$GAME_APP" ]]; then

@@ -3,6 +3,66 @@
 #include "internal.hpp"
 
 namespace phonesaber::detail {
+// 全 raw interval の PCA は保持された支持点の配列順。補間点も軸に含むが、
+// 占有には実 core/color mask の画素だけを使う（offline 観測器と同じ演算順）。
+double full_lit_coverage(const Points& points, const Evidence& e, int w) {
+    if (points.empty()) return 0;
+    double mx = 0, my = 0, xx = 0, yy = 0, xy = 0;
+    for (auto p : points) { mx += p.x; my += p.y; }
+    mx /= points.size(); my /= points.size();
+    for (auto p : points) {
+        double dx = p.x-mx, dy = p.y-my;
+        xx += dx*dx; yy += dy*dy; xy += dx*dy;
+    }
+    double angle = 0.5*std::atan2(2*xy,xx-yy), ax = std::cos(angle), ay = std::sin(angle);
+    std::vector<double> projections;
+    projections.reserve(points.size());
+    for (auto p : points) projections.push_back((p.x-mx)*ax+(p.y-my)*ay);
+    double lo = *std::min_element(projections.begin(),projections.end());
+    double hi = *std::max_element(projections.begin(),projections.end());
+    int bins = std::max(1,int(std::ceil(hi-lo))+1);
+    Mask lit(bins);
+    for (std::size_t i = 0; i < points.size(); ++i) {
+        auto p = points[i]; int index = p.y*w+p.x;
+        int bin = std::min(bins-1,std::max(0,rounded(projections[i]-lo)));
+        if (e.core_mask[index] || e.color_mask[index]) lit[bin] = 1;
+    }
+    return double(std::count(lit.begin(),lit.end(),1))/double(bins);
+}
+void apply_core_line_guard(std::vector<Scored>& candidates, const Evidence& e, int w, int step) {
+    // 既存 gate 完了後の候補だけ。non-core-line 支持候補はこの guard で変わらない。
+    bool has_line = std::any_of(candidates.begin(),candidates.end(),[](const Scored& s){
+        return s.candidate.eligible && s.candidate.source == "core-line" && s.candidate.used_point_led_fallback;
+    });
+    if (!has_line) return;
+    std::vector<double> coverage(candidates.size(),-1);
+    auto measure = [&](std::size_t i) {
+        if (coverage[i] < 0) coverage[i] = full_lit_coverage(candidates[i].support_points,e,w);
+        return coverage[i];
+    };
+    for (std::size_t i = 0; i < candidates.size(); ++i) {
+        auto& line = candidates[i].candidate;
+        if (!line.eligible || line.source != "core-line" || !line.used_point_led_fallback
+            || measure(i) >= CoreLineGuard::line_coverage) continue;
+        for (std::size_t j = 0; j < candidates.size(); ++j) {
+            const auto& body = candidates[j].candidate;
+            if (!body.eligible || body.source == "core-line" || body.core_support < CoreLineGuard::neighbor_core
+                || body.high_value_ratio < CoreLineGuard::neighbor_high_value
+                || measure(j) < CoreLineGuard::neighbor_coverage) continue;
+            bool near = false;
+            for (auto a : {line.endpoints.first,line.endpoints.second})
+                for (auto b : {body.endpoints.first,body.endpoints.second})
+                    if (std::hypot(double(a.x-b.x)*step,double(a.y-b.y)*step)
+                        <= CoreLineGuard::endpoint_distance_px) near = true;
+            if (!near) continue;
+            auto scale_endpoint = [step](PixelPoint p) -> PixelPoint { return {p.x*step,p.y*step}; };
+            line.core_line_guard = CoreLineGuardVerdict{int(j),body.source,
+                {scale_endpoint(body.endpoints.first),scale_endpoint(body.endpoints.second)},coverage[i],coverage[j]};
+            line.eligible = false; line.source = "core-line-overlinked";
+            break;
+        }
+    }
+}
 struct HSV { double hue, saturation, value, chroma; };
 static HSV hsv(int r, int g, int b) {
     double rd = r, gd = g, bd = b;
@@ -454,6 +514,10 @@ FrameAnalysis analyze(const PixelBuffer& p, ColorThreshold red, ColorThreshold b
                 c.blue_no_deep_support = blue_support(scored.support_points,p,step);
                 if (c.blue_no_deep_support->rejected) c.eligible = false;
             }
+        }
+        if constexpr (CoreLineGuard::enabled) apply_core_line_guard(candidates,evidence,w,step);
+        for (auto& scored : candidates) {
+            auto& c = scored.candidate;
             auto scale = [step](PixelPoint p) -> PixelPoint { return {p.x*step,p.y*step}; };
             c.comparison_endpoints = {scale(c.comparison_endpoints.first),scale(c.comparison_endpoints.second)};
             c.endpoints = {scale(c.endpoints.first),scale(c.endpoints.second)};

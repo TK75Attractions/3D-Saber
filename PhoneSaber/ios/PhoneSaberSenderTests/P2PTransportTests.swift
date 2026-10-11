@@ -111,7 +111,8 @@ final class P2PTransportTests: XCTestCase {
 
     func testCoordinatesRoundTripWithTheUnchangedPayload() throws {
         for (text, color) in [("10,20,30,40", P2PColor.red), ("-5,0,1919,1079", .blue),
-                              ("ts=1759400000.123456;1,2,3,4", .red), ("1.5,2.25,3,4", .blue)] {
+                              ("ts=1759400000.123456;1,2,3,4", .red),
+                              ("timestamp=1759400000.123456;1,2,3,4", .blue), ("1.5,2.25,3,4", .blue)] {
             let message = try XCTUnwrap(P2PMessage.coordinates(text, color: color, session: 77, sequence: 9))
             let decoded = try P2PMessage.decode(message.encoded()).get()
             XCTAssertEqual(decoded, message)
@@ -301,6 +302,23 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertEqual(text.split(separator: "\n").count, ConnectivityLog.capacity + 5)
         XCTAssertTrue(text.hasSuffix("[P2P] event \(ConnectivityLog.capacity + 4)\n"))
         XCTAssertNil(ConnectivityLog.defaultFileURL, "XCTest 中は端末にログファイルを作らない")
+    }
+
+    func testConnectivityLogRotationDoesNotDeleteADirectoryAtTheGenerationPath() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("connectivity.log")
+        let previous = file.appendingPathExtension("1")
+        try FileManager.default.createDirectory(at: previous, withIntermediateDirectories: true)
+        let evidence = previous.appendingPathComponent("keep.txt")
+        try Data("keep".utf8).write(to: evidence)
+        let log = ConnectivityLog(fileURL: file)
+        log.record("P2P", String(repeating: "x", count: ConnectivityLog.maximumFileBytes))
+        log.flushForTesting()
+        log.record("P2P", "after blocked rotation")
+        log.flushForTesting()
+        XCTAssertTrue(FileManager.default.fileExists(atPath: evidence.path), "回転先のディレクトリを再帰削除しない")
+        XCTAssertTrue(try String(contentsOf: file, encoding: .utf8).contains("after blocked rotation"))
     }
 
     func testRouteChangesAreLoggedOncePerChange() {
@@ -1042,6 +1060,16 @@ final class P2PTransportTests: XCTestCase {
             try? await Task.sleep(for: .milliseconds(10))
         }
         return condition()
+    }
+
+    func testLANLivenessProbeAcceptsOnlyRepliesForTheVersionAndPortsThisPhoneUses() {
+        XCTAssertTrue(LANLivenessProbe.isCompatibleReply("PHONESABER_UNITY 1"))
+        XCTAssertTrue(LANLivenessProbe.isCompatibleReply("PHONESABER_UNITY 1 red=5005 blue=5006 name=Mac station=A"))
+        XCTAssertTrue(LANLivenessProbe.isCompatibleReply("PHONESABER_UNITY 1 name=Old Unity"), "port を書かない古い応答は従来どおり")
+        XCTAssertFalse(LANLivenessProbe.isCompatibleReply("PHONESABER_UNITY 10 red=5005 blue=5006"), "版 10 を版 1 と読まない")
+        XCTAssertFalse(LANLivenessProbe.isCompatibleReply("PHONESABER_UNITY 1 red=6005 blue=5006"), "別の port で待つ Unity には届かない")
+        XCTAssertFalse(LANLivenessProbe.isCompatibleReply("PHONESABER_UNITY 1 red=5005 blue=6006"))
+        XCTAssertFalse(LANLivenessProbe.isCompatibleReply("PHONESABER_DISCOVER 1"))
     }
 
     func testLANLivenessProbeRequiresARecentUnityReply() {

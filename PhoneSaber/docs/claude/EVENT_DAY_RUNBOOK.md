@@ -1,13 +1,35 @@
 # PhoneSaber 縁日当日の運用手順
 
 当日スタッフ向けのやさしい手順は [STAFF_MANUAL.md](../STAFF_MANUAL.md) を参照してください。
+スタッフに配るのは `docs/STAFF_MANUAL.pdf`（A4・2ページ）。Markdown を直したら `python3 PhoneSaber/tools/build_staff_manual_pdf.py` で PDF を作り直す（2ページに収まらないと更新しない）。
+
+## 開場直前チェック（技術担当・印刷1ページ）
+
+**A台で上から順に完了し、B台も同じ順にチェック。未完了の台は開場しない。**
+前日までのビルド・実機試験は§1、詳しい操作は§2〜6を参照。
+
+| A台 | B台 | 順番に確認すること |
+| --- | --- | --- |
+| ☐ | ☐ | 1. PC・スマホ・箱の台名、給電・通風・レンズ・床の立ち位置を確認する。予備端末と技術担当の連絡先をスタッフ用紙に記入する。 |
+| ☐ | ☐ | 2. 最新の運用監視を含むPlayerを用意し、EditorのPlay・古いPlayer・座標受信ツールを止める。起動フォルダの `Start-Saber-A.STOP` / `Start-Saber-B.STOP` と共通 `STOP` が無いことを確認する。 |
+| ☐ | ☐ | 3. 本番のWi-Fi／ホットスポットへ接続し、別ネットワークへの自動接続を切る。WindowsはPlayerの許可ダイアログに答えてから管理者でfirewallスクリプトを実行（Publicのままで可）。 |
+| ☐ | ☐ | 4. 台別launcherを1回だけ起動。台名と `再起動回数: 0`、ログを確認。Mac＋iPhoneの予備経路を使うなら `p2p-bridge=yes`。両OSともheartbeatの更新と監視が有効（既定45秒）なことを確認する。 |
+| ☐ | ☐ | 5. スマホで停止して台と手動IPを確認。自動探索なら手入力を解除、Windows＋iPhoneは現在のPCのIPv4を入力。Androidは「手入力を保存（空欄で自動探索）」を押す。PC名／IPを紙にも記入する。 |
+| ☐ | ☐ | 6. 反転・カメラfps・iPhoneの露出を事前確認済みの設定へ（露出は通常送信にも残る）。iPhoneは診断録画OFF、iPhoneのDebug版はfps自動比較OFF。遅延計測OFF・自動開始ONで通常送信を開始する。 |
+| ☐ | ☐ | 7. ゲームへフォーカスしF8、同期チェックOFF。両色点灯で5秒待ち、台・受信機ON・「payload解析: OK」・両色の「良好（間隔のみ）」・送信元を確認。F8に「別のスマホもこのPCへ送信中です」の競合警告が出たら、そのスマホの台・送信先を直す（警告だけで座標は弾かない）。 |
+| ☐ | ☐ | 8. 必要な遅延確認はF9で行いF9で終了、使ったfps自動比較はOFF・事前設定のfpsへ戻す。カメラをプレイヤー側へ戻し固定。F4（既定ON）を確認し、F7で4隅を測定。両色の向き・範囲と剣なし時の動作を確認する。 |
+| ☐ | ☐ | 9. 通常送信の前面復帰・Wi-Fi切替後の自動再開を確認。「停止」後は前面復帰だけで再開しないことを確認して通常送信へ戻す。 |
+| ☐ | ☐ | 10. 正常終了で再起動しないことを確認してlauncherで再起動。前日試験の異常終了（5秒後）・固まり（45秒検知＋5秒待機）の復旧実績を確認。F8のログ保存先とMac Statusを確認する。 |
+| ☐ | ☐ | 11. A台だけ振ってB台が動かず、B台だけ振ってA台が動かないことを確認。F8を閉じ、スタッフに「困ったら受付を止める」と起動時の文字を見せる手順を引き継ぐ。 |
+
+<!-- pagebreak -->
 
 ## 困ったら
 
-1. **ゲームが消えた** → A/B の監視起動なら5秒待つ。繰り返すなら監視を止め、ログを保存して予備PCへ。
+1. **ゲームが消えた／固まった** → launcherに異常終了と出た場合だけ5秒後に再起動開始。正常Quit・監視停止・STOP残存は自動再起動しない。固まりは更新済みPlayer＋監視で45秒検知＋5秒待機（起動時間は別）。60秒で戻らなければ監視・STOP・旧buildを技術担当が確認。繰り返すならログを保存して予備PCへ。
 2. **剣が動かない** → **F8**（Macは必要ならFn+F8）。台・RED/BLUE・送信元・無受信警告を確認。スマホを前面に戻し、送信とカメラ固定を確認。
 3. **違う台が動く／受信0** → PCとスマホの台を同じA/Bに。手動IPはそのPCの現在のIP。**Windows+iPhoneは手動IP必須**。受信機が停止なら二重起動を止める。
-4. **通信できない** → 同じWi-Fiへ。学校Wi-Fiで端末間通信が禁止ならPCのホットスポットへ切り替え、IPを入れ直す。WindowsはPrivate設定と[ファイアウォール許可](../../windows/README.md)。Mac+iPhoneは同じWi-FiでUnityの応答（UDP 5007）がある間LANで送り、届かないときだけP2P予備へ切り替わる（2026-10-08〜）。
+4. **通信できない** → 同じWi-Fiへ。学校Wi-Fiで端末間通信が禁止ならPCのホットスポットへ切り替え、IPを入れ直す。Windowsは[ファイアウォール許可](../../windows/README.md)。許可スクリプト実行済みならWindowsのホットスポットはPublicのままでよい。Mac+iPhoneは同じWi-FiでUnityの応答（UDP 5007）がある間LANで送り、届かないときだけP2P予備へ切り替わる（2026-10-08〜）。
 5. **スマホが熱い／fps低下** → 箱を開けて送風、排熱から離し給電を確認。危険が続くなら送信停止・冷却／予備端末。
 
 ログの場所はF8に表示。イベントログの現行＋`.1`〜`.4`と、起動スクリプト横のログを保存する。監視停止と通常終了は[終了手順](#6-終了手順)、詳しい対処は[トラブル表](#5-トラブル表)。
@@ -20,7 +42,7 @@ Git／Unityのルートは `3D-Saber/`、スマホアプリ・ツールは `Phon
 
 - ☐ Git LFS付きで単一repoを用意し、Unity **6000.3.9f1**で開く。事前検証はルートで `bash PhoneSaber/tools/verify_phone_saber.sh`。
 - ☐ **Mac**: `PhoneSaber/setup_mac.command`を実行。Unity の **Tools > PhoneSaber > Build > macOS Player** で `Builds/Mac/3D-Saber.app` を作る（Editor を開いたままなら、プロジェクトを複製して `-batchmode -executeMethod PhoneSaberPlayerBuild.BuildMac`）。A/B の `.command` はこのパスを使う。詳細は[Macキット](../../mac/README.md)。
-- ☐ **Windows**: [Windowsキット](../../windows/README.md)でビルド一式、A/Bの `.bat`、Privateネットワーク、UDP **5005（赤）／5006（青）／5007（探索）**の許可を用意する。ビルド・管理者操作・予備ホットスポットの詳細も同README。
+- ☐ **Windows**: [Windowsキット](../../windows/README.md)でビルド一式、A/Bの `.bat` と `saber-watchdog.ps1`、UDP **5005（赤）／5006（青）／5007（探索）**の許可を用意する。ビルド・管理者操作・予備ホットスポットの詳細も同README。
 - ☐ PC・スマホ・箱にA/Bの目印を付ける。同じPCでEditorとPlayer、複数launcher、座標受信ツールを同時起動しない。
 - ☐ Editorで試す場合はPlay前に `Tools > PhoneSaber > Station > A/B`。ビルドは台別launcherを使う。台設定の優先順は **起動引数 `-phonesaberStation` → 環境変数 `PHONESABER_STATION` → PlayerPrefs `PhoneSaber.Station`**。台名は16文字以内の英数字・`-`・`_`。
 - ☐ 1台で台指定なしに戻す場合は、起動引数・環境変数を外し、Editorを `Station > None`、スマホを「指定なし」にする。
@@ -31,7 +53,7 @@ Git／Unityのルートは `3D-Saber/`、スマホアプリ・ツールは `Phon
 - ☐ **Android（AQUOS sense9）**: [Android README](../../android/README.md)に従い、USBデバッグ・ビルド・実機への導入・カメラ許可を済ませる。
 - ☐ 自動ロックと通知を抑える。iPhoneは自動ロック「なし」、アクセスガイドとその自動ロック「なし」。Androidは画面固定／アプリ固定。両方とも集中／おやすみモード、給電、通風を用意する。
 - ☐ 正立させ、レンズを隠さず固定。剣なし・人ありで肌・照明・画面・布の誤検出を確認する。赤い物を片付けるだけでは解決しない。
-- ☐ 露出は既定の自動を維持。当日に閾値や露出を試行錯誤しない。診断録画には上限1/100・1/120・1/240秒の実験設定がある。暗所の1/50秒では速振りがぶれるため、事前に比較する（照明のちらつきは東日本1/100、西日本1/120を確認）。
+- ☐ 露出は事前確認済みの設定を使う（既定「自動(既定)」）。当日に閾値や露出を試行錯誤しない。iPhoneの「Debug Recording」内「露出実験」は上限1/100・1/120・1/240秒を選べ、**通常送信にも適用・保存される。録画をOFFにしても自動へ戻らない**。実験後は「自動(既定)」へ明示的に戻す。暗所の1/50秒では速振りがぶれるため、事前に比較する（照明のちらつきは東日本1/100、西日本1/120を確認）。
 
 ### 組み合わせごと
 
@@ -42,7 +64,7 @@ Git／Unityのルートは `3D-Saber/`、スマホアプリ・ツールは `Phon
 | Windows＋Android | 同じWi-Fi、UDP 5007探索 | 開始 | × |
 | Windows＋iPhone | 同じWi-Fi、WindowsのIPv4を手動IPへ | 通常送信を開始 | × |
 
-**手動IPは自動探索より優先**（iPhoneは手動IPがあるとP2P予備も使わずそのIPへ送る）。Windowsは `ipconfig` で使用中の接続のIPv4を見る。Androidは入力後「手入力を保存」、空欄保存で探索へ戻る。台指定は自動送信先を選ぶ機能で、違う台からのUDP受信を拒否する機能ではない。iPhoneのP2P・診断relayも同じ台に限定される。
+**手動IPは自動探索より優先**（iPhoneは手動IPがあるとP2P予備も使わずそのIPへ送る）。Windowsは `ipconfig` で使用中の接続のIPv4を見る。iPhoneは手動IPが残っていると台の横に「手動 IP 指定中: 台の選択は使われません」と出る。停止して「手動 IP を解除して自動探索に戻す」を押す（または「手動IP（自動発見できない場合のみ）」を空にする。入力は即保存）。Androidは入力後「手入力を保存（空欄で自動探索）」、空欄保存で探索へ戻る。台指定は自動送信先を選ぶ機能で、違う台からのUDP受信を拒否する機能ではない。iPhoneのP2P・診断relayも同じ台に限定される。
 
 - ☐ **Mac＋iPhoneのP2P**: [P2P手順](../../ios/PhoneSaberSender/P2P_BRIDGE.md)でbridgeを一度ビルドする。Editorは1セッションに1回裏でビルドし、キャッシュは `~/Library/Caches/PhoneSaber/p2p-bridge/`。標準スクリプトは `PhoneSaber/ios/PhoneSaberSender/Tools/phone_saber_p2p_bridge.py`。built .appには[Mac launcher](../../mac/README.md)（`saber-watchdog.sh`）がrepoのbridgeを `open --env PHONESABER_P2P_BRIDGE_SCRIPT=…` で自動で渡す（launcherログに `p2p-bridge=yes`）。.appを直接開いた場合やbridgeが見つからない場合はLANだけで動く。
 - ☐ iPhoneのWi-FiはON、インターネット共有はOFF、P2P予備はON（既定ON・保存）。LANの方が速い（F9実測で中央値約45ms・p95約半分）ので、できるだけMacと同じWi-Fiにつなぐ。端末間通信が禁止のWi-Fiでは自動でP2Pへ退避する。モバイルデータは使わない。Macは学校Wi-Fiでインターネットを使い続けられる。Macのローカルネットワーク許可はbridgeを起動するUnity／Terminalに与える。
@@ -77,10 +99,12 @@ Git／Unityのルートは `3D-Saber/`、スマホアプリ・ツールは `Phon
 | 見るもの | 合格の確認 |
 | --- | --- |
 | 台 | 該当するA/B |
-| RED 5005／BLUE 5006 | 両色を点灯して画角に入れ、直近1秒のpacket数が増え、最終payloadが **解析OK** |
-| 最終受信・送信元 | 継続受信、1秒超の無受信警告なし。送りたいPC・経路と一致 |
+| RED UDP 5005／BLUE UDP 5006 | 両色を点灯して画角に入れ、直近1秒のpacket数が増え、**「payload解析: OK」** |
+| 最終受信・送信元 | 継続受信、1秒超の無受信警告なし。意図したスマホのIP・経路と一致（送信先PCのIPではない） |
 | 受信機・探索 | 両色の受信機ON。Android探索はUDP 5007。WindowsのBonjour／P2P「未対応」は正常 |
 | 経路 | Macの `127.0.0.1` はP2P bridge、それ以外はLAN（IPによる目安。スマホ本体のIPとは限らない） |
+
+**送信元の競合**: 同じ色に別々のIPから交互に届くと、F8に「警告: RED（BLUE）は別のスマホもこのPCへ送信中です。そのスマホの台・送信先を確認してください」が出て、events.log に `sender-conflict` が1行残る。**警告だけで、座標は弾かない**（弾く動作は実機で確かめるまで無効）。警告が出たら他のスマホや練習送信を停止し、本番スマホ1台だけにする。P2P経由は複数端末でも `127.0.0.1` に見えるため警告は出ない。LANとP2Pの切替（同じスマホ）は競合に数えない。台指定は誤送信を拒否しない。
 
 F8 には補正の設定もある（どちらも台ごとに保存、**既定 OFF のまま運用**）。
 - **剣の揺れ補正**（OFF／弱／中）: 静止時のぶれを 12〜16% 減らす。中で振りの遅れが平均約3ms増える。実データで効果が小さいため、使うのは剣が止まって見える時に揺れが気になる場合だけ。
@@ -101,6 +125,7 @@ packet数・最終受信時刻には不正payloadも含む。初回受信前は�
 | **不良** | p95 **≥100ms**、最大／現在の無受信時間 **≥500ms**、未受信、最新payload解析NG。同期確認済みなら片道p95 **≥100ms**／最大 **≥500ms**も対象 |
 
 注意／不良なら送信先・許可・発熱・fpsを確認。P2Pなら、iPhoneをMacと同じWi-Fiにつないだ（またはP2P予備OFFの）LANと、同じ点灯・動作で各20〜30秒比べる。p95と最大の詰まりを見る。終わったら計測OFFで通常送信へ戻す。
+スタッフへ引き継ぐ前にF8の「スマホとPCのNTP同期を確認済み（片道遅延も判定）」をOFFにし、通常送信で5秒待って「良好（間隔のみ）」を確認する。
 
 計測の読み方:
 
@@ -108,20 +133,26 @@ packet数・最終受信時刻には不正payloadも含む。初回受信前は�
 - 片道は有効ts＋解析OKのみ。tsなし／破損時は間隔だけ。片道サンプルがなければ同期チェックONでも「間隔のみ」。モード切替後は5秒待つ。再起動／送信元IP変更で窓をリセットする。
 - tsは両アプリとも検出後・文字列生成時。送信キュー・bridge・PC受信待ちは含むが、撮影・認識・Unity描画は含まない。**画面全体の遅延ではない**。同期後も時計誤差より小さい遅延は判断できない。
 - 未検出や処理fps低下でも間隔が開く。スマホの解析／送信fpsと併せて読む。「間隔のみ」の良好では一定の大きな片道遅延を検出できない。
-- **画面全体の遅延は F9 遅延テスト**で測る（画面の赤い棒をスマホで撮り、切替→赤の受信位置の切替まで。表示・カメラ・認識・Wi-Fi・受信を含む）。結果は20回ごとに `events.log` の `latency-loop`（median/p95・赤pkt/s＝スマホfps・経路・描画fps）へ自動で残る。2026-10-07 Mac+iPhone(P2P)・30fpsで中央値120ms／p95 140ms、iPhoneの撮影→送信は30fps 50ms・60fps 37ms。
+- **画面全体の遅延は F9 遅延テスト**で測る（画面の赤い棒をスマホで撮り、切替→赤の受信位置の切替まで。表示・カメラ・認識・Wi-Fi・受信を含む）。画面の「比較用の記録 n/8 ブロック」を8ブロック（約2分、受信不足なら長くなる）まで待ち、F9で終了する。検査後はカメラをプレイヤー側へ戻し、固定・F7の補正を確認する。結果は20回ごとに `events.log` の `latency-loop`（median/p95・赤pkt/s＝スマホfps・経路・描画fps）へ自動で残る。2026-10-07 Mac+iPhone(P2P)・30fpsで中央値120ms／p95 140ms、iPhoneの撮影→送信は30fps 50ms・60fps 37ms。
+
+- iPhoneのDebug版だけにあるDebug Performanceで「fps自動比較」を使った場合は、F9終了後にfps自動比較をOFFにし、「詳細設定」→「カメラ」のfpsを事前設定へ戻す。F9を閉じるだけではスマホの自動比較は止まらない。
+
+### 表示切替（F4）
+
+F4でプロジェクターモードをON／OFF（既定ON、PCに保存）。Macは必要ならFn+F4。曲選択画面の表示ボタンからも切替できる。ノーツやUIの一部は次のシーン生成時に反映される。F7は位置補正、F8は運営表示、F9は遅延テストであり、F4は入力調整ではない。
 
 ### 台ごとの位置補正（F7）
 
 初期OFF、未設定／OFFなら従来の座標。**当日使うEditorまたはビルドで、A/Bそれぞれ測定**する。認識・送信形式は変わらない。
 
 1. タイトル／メニューでF8を開く。台・箱の位置・立ち位置・反転を確定する。
-2. **F7**／「4隅の測定を開始」。既定はRED。青で測るなら開始前に「BLUEの剣を採取」をON。両色に同じ4隅を使う。
-3. 点灯した剣の**中点**を、実際に振る範囲の **左上→右上→右下→左下** へ。方向はプレイヤーから見た画面に合わせる。各隅で静止してF7／「この隅を採取」を押し、約1秒待つ。表示が進んでから移動する。
+2. **F7**／「4隅の測定を開始 [F7]」。既定はRED。青で測るなら開始前に「BLUEの剣を採取（OFFならRED）」をON。両色に同じ4隅を使う。
+3. 点灯した剣の**中点**を、実際に振る範囲の **左上→右上→右下→左下** へ。方向はプレイヤーから見た画面に合わせる。各隅で静止してF7／「この隅を採取 [F7]」を押し、約1秒待つ。表示が進んでから移動する。
 4. 約1秒・有効受信10件以上の中点中央値で採取。受信不足／動きはその隅を再採取。交差・凹形・小さすぎる4隅は保存せず、最初からやり直す。
 5. 成功後は保存してON。剣を振り画面全体に届くか確認。4隅を1920×1080へ射影補正し、その後の感度・画面写像は従来どおり。領域外は入力矩形の外側10%まで許容し、極端な値を止める。
 
 保存先はこのPCのPlayerPrefs `PhoneSaber.PositionCalibration.<台名>.Corners.v1`／`.Enabled`（台なしは専用の空ラベルキー）。Editorとビルドは保存先が別。次回も同じ台の設定を読む。
-F8の「位置補正をON」で一時OFF、「この台の位置補正をリセット」でその台の保存だけを消す。キャンセル・F8を閉じる・受信機変更・測定失敗では以前の設定を維持する。
+F8の「位置補正をON（この台だけ）」で一時OFF、「この台の位置補正をリセット（OFFに戻す）」でその台の保存だけを消す。キャンセル・F8を閉じる・受信機変更・測定失敗では以前の設定を維持する。
 **スマホ／箱・カメラ／画角・反転・立ち位置を変えたら再測定**。[実機なしの練習](../../tools/README_saber_motion_replay.md#位置補正の練習実機なし)も参照。
 
 <a id="4-正常な状態"></a>
@@ -135,9 +166,11 @@ F8の「位置補正をON」で一時OFF、「この台の位置補正をリセ�
 - 開始3秒後から要求fpsの70%未満で注意（30fpsなら21、60fpsなら42未満）。iPhoneはカメラ／処理どちらも対象。高い／危険はfpsに関係なく注意。熱やfpsを理由に認識・カメラfpsを自動変更しない。
 - 高い／危険、fps低下、電池減少は箱の通風・排熱・給電を確認。充電でも熱は増える。危険が続けば手動停止して冷却／交代。熱状態の変化はiPhone Console／Android Logcat（DeviceHealth）、iPhone診断録画には熱と電池も残る。
 - 送信意思を保存し、中断後の前面復帰・アプリ再起動で再開する。自動開始OFFでも送信中だった場合は復帰。停止ボタンは意思を消し、前面復帰だけでは再開しない。ただし自動開始ONなら次のアプリ起動で開始する。診断／ガイド録画は自動再開しない。
-- カメラ中断・エラー・映像停止は1→2→4→8→16→最大30秒で再試行。15分失敗で警告、10秒安定で回数リセット。iPhone「カメラを再開」、Android停止→開始でも再試行できる。
-- Wi-Fi切替でも送信意思を保ち「PCを再接続中…」。同じ台を再探索・再解決（約30秒ごとにも更新）。LANの選択PC名を保存、手動IPは優先なのでIP変更時に更新する。iPhoneはLAN（Unity応答あり）優先／P2P退避を維持し、ネット再接続には15分の打切りはない。別PCへ移すときは停止して台・IPを変える。
+- カメラ中断・エラー・映像停止は1→2→4→8→16→最大30秒で再試行。iPhoneは `CAMERA LIVE` が正常、`CAMERA STALLED`／`CAMERA INTERRUPTED`／`CAMERA RECOVERING`／`CAMERA FAILED` は停止・復旧待ち（「カメラを再開」は再試行できるときだけ表示）。15分失敗で警告、10秒安定で回数リセット。iPhone「カメラを再開」、Android停止→開始でも再試行できる。
+- Wi-Fi切替でも送信意思を保ちiPhoneは「PCを再接続中…」、Androidは「PC を再接続中…」。同じ台を再探索・再解決（約30秒ごとにも更新）。LANの選択PC名を保存、手動IPは優先なのでIP変更時に更新する。iPhoneはLAN（Unity応答あり）優先／P2P退避を維持し、ネット再接続には15分の打切りはない。別PCへ移すときは停止して台・IPを変える。
 - 送信／復旧待ちの前面画面は自動ロックを防ぐ。OSによる終了後のアプリ起動、強制ロック解除、電源切れの復旧はスタッフが行う。
+
+iPhoneで「PC（Unity）から応答がありません」が出たら、PCのゲーム起動・両端のWi-Fi・台・許可を確認。「手動 IP の宛先から Unity の応答がありません」は保存したIPを確認する。送信中にUnity応答もP2P接続もない状態が3秒続くと警告する。`NETWORK READY` や送信完了数だけではPC到達を保証しない。「接続」の「通信ログ」を開くと経路・Wi-Fi・台・IPの変更履歴を読める。計測ツールは5007に応答しないため、その宛先では警告が出ても受信できることがある。
 
 ### PCの受信とログ
 
@@ -147,7 +180,7 @@ Mac＋iPhoneの追加確認:
 
 - 経路は `P2P Connected (awdl0 · Phone Saber Unity P2P (<Mac名>))`。同じWi-Fiでは `en0` の場合もある。RTTは直近40回の中央値／p95／最大／ping欠落率（0%が理想）。
 - Unity Consoleは起動時 `listening on UDP`／`Bonjour registered`、接続時 `peer connected`／`RED received`／`BLUE received`（sessionごとに1回）、復帰時 `peer alive`。10秒ごとの `last 10s` のRED／BLUE・maxGapMs・peersも見る。iPhoneは2026-10-07から既定60fps（詳細設定→カメラで30へ戻せる）で間隔約17ms・約60件/秒、Androidは2026-10-08から「カメラ 60fps（低遅延）」既定ON（対応端末のみ60fps、非対応は30fpsで約33ms・約30件/秒。AQUOSでの60fps維持は未確認）。bridgeは両色の受信機が生きている間だけ動く。
-- **PhoneSaber Status.command**は読み取りのみ・数秒。受信側 `/health`、UDP使用者、bridge、Editor.logの直近Play以降の集計5回・接続・警告・relay、最新bundle／report／解析状態、Git branch／差分（fetchなし）、Codex CLIを確認する。Editor.logは行時刻がないため最終更新時刻を表示。通常は全項目OK、maxGapMsは同ツール独自に<150msでOK、150〜499でWARN、≥500でNG。終了コードはOK=0／WARN=1／NG=2。
+- **PhoneSaber Status.command**は読み取りのみ・数秒。受信側 `/health`、UDP使用者、bridge、EditorまたはPlayer.logの最後の `bridge starting` 以降の集計5回・接続・警告・relay、最新bundle／report／解析状態、Git branch／差分（fetchなし）、Codex CLIを確認する。ログに最後の `bridge starting` がなければ読めた末尾全体を使うため、古い起動の記録が混ざる場合がある。Editor.logは行時刻がないため最終更新時刻を表示。Player受信時はPlayer.log、Editor受信時はEditor.logを読む。Git差分やCodex未ログインなどはゲームが正常でもWARNになり得る。maxGapMsは同ツール独自に<150msでOK、150〜499でWARN、≥500でNG。終了コードはOK=0／WARN=1／NG=2。
 
 ### 診断を使う場合（Mac＋iPhone）
 
@@ -155,6 +188,10 @@ Mac＋iPhoneの追加確認:
 
 受信側はUnity Playで自動起動し、Unity終了後も解析用に残る。Start PhoneSaberで単独起動でき、重複起動しない。Statusが古いコードを警告したら、待機中にStart PhoneSaberを再実行（受信／解析中は止めない）。無効化は `PHONESABER_TRIAGE_RECEIVER=0`。
 inboxは `~/Library/Application Support/PhoneSaber/diagnostics-inbox/`、ログは `~/Library/Logs/PhoneSaber/latest.log`。詳しくは[診断手順](../../ios/PhoneSaberSender/Tools/PHONE_SABER_TRIAGE.md)。Statusの直接実行は `PhoneSaber/` から `python3 ios/PhoneSaberSender/Tools/phone_saber_status.py`。
+
+短い実機診断は通常送信開始→「Debug Recording: ON」→診断対象の色を選択→「振りだけ録画を開始（約51秒・自動で終了）」。音声に従い、2本消灯→点灯して大きく振る→止める→速く振る。準備時間込み約51秒、最後は自動停止。従来の「Start Recording」／「Stop Recording」やガイド付き録画も使える。途中で前面を離れると録画は止まり、自動再開しない。
+
+「Stop後にtriage bundleをMacへ自動転送」は既定ON・保存。録画後の表示「端末に録画を保存: … frames」はMacへの到着ではない。その下の転送状態が **転送待ち → 転送中 → Mac 受信済み（時刻）** になれば到着。「転送失敗（理由）— 自動で再試行します」のときは、アプリを開いたまま同じWi-Fiへ戻すと自動で送り直す（「未転送の録画: n件」と「未転送の録画を今すぐ送る」ボタンが出る）。Mac側はMac Status／inboxの同じsessionIDでも確認できる。Xcode Consoleには `[DebugTriageTransfer] uploaded selected bundle …` が出る。`retry n/3` は再試行、`stopped after 3 attempts; local bundle preserved` は転送断念（iPhoneの保存は残る）。届かない場合は受信側と台・IPを確認し、「Triage bundleを共有」で保存物を取り出す。再送ボタンはない。Windowsに診断は対応しない。
 
 ## 5. トラブル表
 
@@ -166,12 +203,14 @@ inboxは `~/Library/Application Support/PhoneSaber/diagnostics-inbox/`、ログ�
 | 受信機が停止 | ポート競合 | 同じPCのEditor／Player／古い受信ツールを止める。自動再試行後のONを確認。MacはStatusで使用者を確認 |
 | 別台が動く／台が見つからない | 台不一致・古い手動IP | スマホとF8の台を合わせ、正しいlauncherでPCを起動し直す。手動IPを修正／解除 |
 | 学校Wi-Fiだけ届かない | 端末間通信の隔離 | PCのホットスポット（Macはインターネット共有）へ。A/BのSSIDを区別し、新しいIPを入力 |
-| Windowsだけ入力／探索なし | Public設定・firewall | [Windows README](../../windows/README.md)で共有接続もPrivate、UDP 5005〜5007許可。iPhoneは手動IP |
+| Windowsだけ入力／探索なし | firewall・UnityのBlock規則 | [Windows README](../../windows/README.md)の管理者スクリプトを実行（Publicホットスポットも対象、LocalSubnetのみ）。iPhoneは現在のPCのIPv4を手動IPへ |
 | Mac＋iPhoneのP2P未接続／ラグ／LANへ戻る | 権限・Wi-Fi OFF・bridge・詰まり | 両端の許可、Wi-Fi ON／個人用Hotspot OFF、Status、launcherログの `p2p-bridge=yes` を確認。LANへ戻る表示は正常（LANの方が速い）。P2Pでラグなら同じWi-Fiへつなぐ |
 | カメラ復旧待ちが続く | 中断・カメラ使用不可 | 権限確認。iPhone「カメラを再開」、Android停止→開始。台とF8の両色の復帰を確認 |
 | 熱い／fps低下／電池減少 | 箱内の熱・排熱・給電不足 | 箱を開け送風、排熱から離し給電確認。危険が続けば停止して冷却／予備端末 |
 | 受信OKだが剣が逆／ずれる／飛ぶ | 反転・設置・ブレ・誤検出 | レンズ・固定・画角・照明を確認。反転を直したらF7再測定。剣なし／人ありでも試す。閾値は当日変えない |
-| ゲームが消えた | 異常終了 | 監視起動なら5秒待つ。正常Quitは再起動しない。繰り返すなら監視停止・ログ保存・予備PC。Editorは手動でPlay |
+| ゲームが消えた | 異常終了／正常Quit／監視停止 | 異常終了の表示なら5秒後に再起動開始。正常Quitはlauncherから再起動。起動しない場合は表示されたSTOPを削除・既存ゲームや監視を確認。Editorは手動でPlay。繰り返すなら監視停止・ログ保存・予備PC |
+| ゲームが固まった・F8も効かない | main thread停止 | 更新済みPlayer＋監視なら45秒検知＋5秒待機。60秒で戻らなければheartbeat未更新の旧build・監視停止・STOP残存・監視無効を確認。監視を止めてゲームを強制終了し、STOPを除いてlauncherで再起動。Macのcrashダイアログの「再度開く」は押さない |
+| 別端末の剣が混じる | 送信元競合 | F8の競合警告と最後の送信元を確認。他スマホ／練習送信を停止。本番1台だけで両色を確認（P2P経由の2台は警告が出ない） |
 | iPhone診断が届かない／解析なし | 受信側・短い録画・転送OFF | Mac StatusとStart PhoneSaberを確認。数秒以上録画してStop、無料reportを先に見る。[診断手順](../../ios/PhoneSaberSender/Tools/PHONE_SABER_TRIAGE.md)へ |
 
 ## 6. 終了手順

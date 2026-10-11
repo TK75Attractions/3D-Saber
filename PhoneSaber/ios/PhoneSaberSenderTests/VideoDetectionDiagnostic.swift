@@ -21,7 +21,7 @@ private func pointJSON(_ point: PixelPoint) -> [String: Int] {
 }
 
 private func candidateJSON(_ candidate: SaberCandidate) -> [String: Any] {
-    [
+    var result: [String: Any] = [
         "blueNoDeepSupport": candidate.blueNoDeepSupport.map { verdict in
             ["applied": verdict.applied, "deepCount": verdict.deepCount,
              "pixelCount": verdict.pixelCount, "rejected": verdict.rejected,
@@ -59,6 +59,16 @@ private func candidateJSON(_ candidate: SaberCandidate) -> [String: Any] {
         "point_count": candidate.pointCount,
         "used_point_led_fallback": candidate.usedPointLEDFallback,
     ]
+    if CoreLineGuard.enabled {
+        result["coreLineGuard"] = candidate.coreLineGuard.map { v in
+            ["supportingIndex": v.supportingIndex, "supportingSource": v.supportingSource,
+             "supportingEndpoints": v.supportingEndpoints, "litCoverage": v.litCoverage,
+             "supportingLitCoverage": v.supportingLitCoverage,
+             "coverageBits": String(v.litCoverage.bitPattern),
+             "supportingCoverageBits": String(v.supportingLitCoverage.bitPattern)] as [String: Any]
+        } ?? NSNull()
+    }
+    return result
 }
 
 private func selectedJSON(_ endpoints: (PixelPoint, PixelPoint)?) -> Any {

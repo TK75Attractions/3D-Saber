@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -u
 
+# XCTest / Release / host harness の比較設定を同じ値に揃える。
+export PHONESABER_CORELINE_GUARD="${PHONESABER_CORELINE_GUARD:-1}"
+case "$PHONESABER_CORELINE_GUARD" in
+  0|1) ;;
+  *) echo "PHONESABER_CORELINE_GUARD must be 0 or 1" >&2; exit 1 ;;
+esac
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd -P)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd -P)"
 # PhoneSaber lives inside the Unity Git checkout, including linked worktrees.
@@ -433,6 +440,7 @@ if [[ -n "$IOS_SIMULATOR_ID" ]]; then
     -maximum-parallel-testing-workers 1 \
     -collect-test-diagnostics never \
     CODE_SIGNING_ALLOWED=NO \
+    "PHONESABER_CORELINE_GUARD=$PHONESABER_CORELINE_GUARD" \
     test
   xcodebuild_exit_code="$LAST_EXIT"
 
@@ -517,6 +525,7 @@ run_logged_command "iOS Release build" ios-release-build \
   -destination 'generic/platform=iOS' \
   -derivedDataPath "$RUN_DIR/iOS-Release-DerivedData" \
   CODE_SIGNING_ALLOWED=NO \
+  "PHONESABER_CORELINE_GUARD=$PHONESABER_CORELINE_GUARD" \
   build
 if [[ "$LAST_EXIT" -eq 0 ]]; then IOS_RELEASE_STATUS="PASS"; fi
 report_stage "iOS Release" "$IOS_RELEASE_STATUS"

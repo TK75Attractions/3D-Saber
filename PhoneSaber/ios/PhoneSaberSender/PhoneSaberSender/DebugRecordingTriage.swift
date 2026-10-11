@@ -1597,14 +1597,17 @@ enum DebugRecordingTriageBuilder {
                 }
             }
             if let top = diagnostic["topCandidates"] as? [[String: Any]], !top.isEmpty {
-                let limit = isSelected && integer(diagnostic["eligibleCandidateCount"]) == 0 ? 3 : 1
+                // Guard の除外理由と支持 snapshot は既存 top 3 の範囲で残す。
+                // contextByteBudget の段階的圧縮と 32 KiB preflight は維持する。
+                let hasCoreLineGuard = top.contains { $0["coreLineGuard"] is [String: Any] }
+                let limit = hasCoreLineGuard || (isSelected && integer(diagnostic["eligibleCandidateCount"]) == 0) ? 3 : 1
                 colorData["candidateDecisionTrace"] = top.prefix(limit).map { entry -> [String: Any] in
                     var trace: [String: Any] = [:]
                     for key in ["index", "sourceType", "eligible", "finalScore",
                                 "rejectionReasons", "peakValue", "meanValue",
                                 "highValueRatio", "meanColorPurity", "clippedWhiteRatio",
                                 "isCompactRed", "rawPCASpan", "robustMainIntervalLength",
-                                "continuity", "density", "componentArea", "pointCount", "compoundRejections"] {
+                                "continuity", "density", "componentArea", "pointCount", "compoundRejections", "coreLineGuard"] {
                         if let value = entry[key] { trace[key] = value }
                     }
                     if traceEmitterDiagnostics, let emitter = entry["emitterDiagnostics"] as? [String: Any] {

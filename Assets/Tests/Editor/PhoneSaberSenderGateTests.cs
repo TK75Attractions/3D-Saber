@@ -4,6 +4,34 @@ using NUnit.Framework;
 
 public class PhoneSaberSenderGateTests
 {
+    // 本番の既定は「検出して知らせるだけ」。弾く動作の仕様はここで固定しておく。
+    [SetUp] public void EnforceForTheseTests() { PhoneSaberSenderGate.Enforce = true; }
+    [TearDown] public void RestoreDefault() { PhoneSaberSenderGate.Enforce = false; }
+
+    [Test]
+    public void DefaultOnlyDetectsAndNeverRejects()
+    {
+        PhoneSaberSenderGate.Enforce = false;
+        var events = new List<string>();
+        var gate = new PhoneSaberSenderGate((kind, detail) => events.Add(kind));
+        for (int i = 0; i < 120; i++)
+            Assert.IsTrue(gate.Accept(i % 2 == 0 ? "192.168.1.10" : "192.168.1.11", i / 60.0));
+        Assert.AreEqual("192.168.1.10", gate.LockedSender, "検出して F8 とログには出す");
+        Assert.AreEqual(0, gate.RejectedPackets, "座標は弾かない");
+        CollectionAssert.AreEqual(new[] { "sender-conflict" }, events);
+    }
+
+    [Test]
+    public void LanAndP2PBridgePingPongOfOnePhoneIsNotAConflict()
+    {
+        // 1台の iPhone が 5007 応答の途絶と復帰で LAN と P2P を往復しても、2台とは判定しない。
+        var gate = new PhoneSaberSenderGate();
+        string[] order = { "192.168.1.10", "127.0.0.1", "192.168.1.10", "127.0.0.1", "127.0.0.1" };
+        for (int i = 0; i < order.Length; i++) Assert.IsTrue(gate.Accept(order[i], i * 0.1));
+        Assert.AreEqual("", gate.LockedSender);
+        Assert.AreEqual(0, gate.RejectedPackets);
+    }
+
     [Test]
     public void SingleSenderAndOneWayLanToP2PSwitchLoseNothing()
     {
@@ -154,15 +182,19 @@ public class PhoneSaberSenderGateTests
     }
 
     [Test]
-    public void InvalidPacketsFromKeptSenderAlsoRefreshLockLikeArrivalSilence()
+    public void InvalidPacketsNeitherTakeNorExtendOwnership()
     {
         var stats = new PhoneSaberPacketStatistics();
         stats.Record(0, "A", true); stats.Record(0.1, "B", true); stats.Record(0.2, "A", true);
-        stats.Record(1.1, "A", false);
-        Assert.IsFalse(stats.Record(1.2, "B", true));
-        stats.PollSenderGate(2.1);
-        Assert.AreEqual("", stats.Read(2.1).LockedSender);
-        Assert.IsTrue(stats.Record(2.1, "B", true));
+        Assert.AreEqual("A", stats.Read(0.2).LockedSender);
+        stats.Record(1.1, "A", false); // 不正 payload は固定を延長しない
+        Assert.IsTrue(stats.Record(1.21, "B", true), "A の有効な座標が1秒途絶えたので B を受理する");
+
+        // 不正 payload だけの送信元は、正常なスマホを締め出せない。
+        var other = new PhoneSaberPacketStatistics();
+        other.Record(0, "X", false); other.Record(0.01, "B", true); other.Record(0.02, "X", false);
+        Assert.IsTrue(other.Record(0.03, "B", true));
+        Assert.AreEqual("", other.Read(0.03).LockedSender);
     }
 
     [Test]

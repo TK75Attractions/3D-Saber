@@ -4,6 +4,11 @@ add_library(phonesaber_core STATIC src/detection.cpp src/pipeline.cpp src/frame_
 set_target_properties(phonesaber_core PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_features(phonesaber_core PUBLIC cxx_std_17)
 target_include_directories(phonesaber_core PUBLIC include)
+# Debug / Release / JNI / tools は同じ定義。比較時だけ 0 を渡す。
+option(PHONESABER_CORELINE_GUARD "Enable core-line over-link guard" ON)
+if(NOT PHONESABER_CORELINE_GUARD)
+    target_compile_definitions(phonesaber_core PUBLIC PHONESABER_DISABLE_CORELINE_GUARD)
+endif()
 # Swift does not contract multiply/add. Never use fast-math or reassociate sums.
 target_compile_options(phonesaber_core PRIVATE -Wall -Wextra -Werror -ffp-contract=off)
 # Debug APK(Android Studio の Run)でも -O0 にしない。-O0 では sense9 で1フレーム約300msかかり、

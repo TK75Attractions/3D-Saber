@@ -695,9 +695,11 @@ struct DebugRecordingCandidate: Codable, Equatable {
     let endpointPipeline: DebugRecordingEndpointPipeline
     /// Diagnostic path only; nil (and omitted from JSON) otherwise.
     let emitterDiagnostics: DebugRecordingEmitterDiagnostics?
+    let coreLineGuard: CoreLineGuardVerdict?
 
     init(index: Int, candidate: SaberCandidate, selectedIndex: Int?) {
         self.index = index
+        coreLineGuard = candidate.coreLineGuard
         let trace = candidate.endpointDiagnosticTrace
         emitterDiagnostics = trace?.emitter.map(DebugRecordingEmitterDiagnostics.init)
         centroid = trace.map { [$0.centroidX, $0.centroidY] }
@@ -817,7 +819,7 @@ struct DebugRecordingCandidate: Codable, Equatable {
         }
         // Older callers may not collect rejection-site details. Preserve the
         // source-based reason without inventing a threshold in that case.
-        for marker in ["core-line-overlap", "unsupported-core-line-candidate",
+        for marker in ["core-line-overlinked", "core-line-overlap", "unsupported-core-line-candidate",
                        "color-emitter-broad-coreless", "core-line-weak-raw-tail",
                        "core-line-weak-bridge", "core-halo-short-subsegment", "-subsegment"]
             where candidate.source.contains(marker)

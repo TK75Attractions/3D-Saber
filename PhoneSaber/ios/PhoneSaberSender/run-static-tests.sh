@@ -15,7 +15,15 @@ if ! command -v xcrun >/dev/null 2>&1; then
     exit 1
 fi
 
-xcrun swiftc -O \
+guard_flags=()
+case "${PHONESABER_CORELINE_GUARD:-1}" in
+    1) ;;
+    0) guard_flags=(-D PHONESABER_DISABLE_CORELINE_GUARD) ;;
+    *) echo "PHONESABER_CORELINE_GUARD must be 0 or 1" >&2; exit 1 ;;
+esac
+
+# macOS の Bash 3.2 は set -u 下で空配列の展開を未定義と扱う。
+xcrun swiftc -O ${guard_flags[@]+"${guard_flags[@]}"} \
     "$source_dir/DetectionCore.swift" \
     "$source_dir/BGRADetection.swift" \
     "$test_source" \

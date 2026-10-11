@@ -16,6 +16,12 @@ from pathlib import Path
 from run_lossless_regression import (DEFAULT_MANIFEST, analyze_png, command_output, compile_harness,
                                      load_fixtures, percentile, selected_candidate)
 
+# checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
+import sys as _guard_sys
+from pathlib import Path as _GuardPath
+_guard_sys.path.insert(0, str(next(p for p in _GuardPath(__file__).resolve().parents if (p / "guard_build.py").is_file())))
+import guard_build
+
 
 # The fixture harness's component observer counts the cleaned-mask pass.
 # On-device DEBUG aggregation additionally counts every proposal-mask pass.
@@ -49,7 +55,7 @@ def compile_detector(destination: Path, source_root: Path | None) -> None:
         return
     source = source_root / "ios/PhoneSaberSender/PhoneSaberSender"
     harness_source = Path(__file__).resolve().parents[2] / "PhoneSaberSenderTests/VideoDetectionDiagnostic.swift"
-    command_output(["xcrun", "swiftc", "-O", str(source / "DetectionCore.swift"),
+    command_output(["xcrun", "swiftc", *guard_build.swift_flags(), "-O", str(source / "DetectionCore.swift"),
                     str(source / "BGRADetection.swift"), str(harness_source),
                     "-o", str(destination)])
 

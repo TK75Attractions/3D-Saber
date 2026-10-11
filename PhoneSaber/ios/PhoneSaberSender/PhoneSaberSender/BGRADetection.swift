@@ -1184,6 +1184,9 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 }
             }
         }
+        if CoreLineGuard.enabled {
+            applyCoreLineGuard(&candidates, evidence: evidence, width: maskWidth, step: step)
+        }
         let scaled = candidates.map { candidate in
             SaberCandidate(
                 source: candidate.source,
@@ -1230,6 +1233,7 @@ func analyzeSabers(baseAddress: UnsafePointer<UInt8>, width: Int, height: Int, b
                 componentArea: candidate.componentArea * step * step,
                 pointCount: candidate.pointCount,
                 usedPointLEDFallback: candidate.usedPointLEDFallback,
+                coreLineGuard: candidate.coreLineGuard,
                 warmNoDeepRed: candidate.warmNoDeepRed,
                 blueNoDeepSupport: candidate.blueNoDeepSupport,
                 diagnosticRejections: candidate.diagnosticRejections,

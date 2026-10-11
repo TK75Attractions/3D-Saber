@@ -17,6 +17,12 @@ import tempfile
 import time
 from pathlib import Path
 
+# checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
+import sys as _guard_sys
+from pathlib import Path as _GuardPath
+_guard_sys.path.insert(0, str(next(p for p in _GuardPath(__file__).resolve().parents if (p / "guard_build.py").is_file())))
+import guard_build
+
 
 REPO = Path(__file__).resolve().parents[3]
 TARGETS = (
@@ -265,7 +271,7 @@ def compile_diagnostic(clone, root, original_detector, cutoff=0):
     (source_dir / DIAGNOSTIC.name).write_text(
         instrument_diagnostic((clone / DIAGNOSTIC).read_text()))
     binary = root / ("broken-diagnostic" if cutoff else "normal-diagnostic")
-    command(["xcrun", "swiftc", "-O", *(str(source_dir / name) for name in
+    command(["xcrun", "swiftc", *guard_build.swift_flags(), "-O", *(str(source_dir / name) for name in
              (CORE.name, DETECTOR.name, DIAGNOSTIC.name)), "-o", str(binary)],
             timeout=180)
     return binary

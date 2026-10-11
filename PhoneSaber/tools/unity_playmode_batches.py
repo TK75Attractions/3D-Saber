@@ -80,8 +80,12 @@ def run_group(project: Path, out: Path, name: str, classes: list[str], unity: st
     xml.unlink(missing_ok=True)
     command = [unity, "-batchmode", "-projectPath", str(project), "-runTests", "-testPlatform", "PlayMode",
                "-testFilter", test_filter(classes), "-testResults", str(xml), "-logFile", str(log)]
-    subprocess.run(command, check=False)
-    return parse_results(xml)
+    result = subprocess.run(command, check=False)
+    parsed = parse_results(xml)
+    # Test Runner の正規の失敗終了は2。crashとは分け、失敗名を保持する。
+    if result.returncode != 0 and not (result.returncode == 2 and parsed and parsed["failed"] > 0):
+        return None
+    return parsed
 
 
 def run(project: Path, out: Path, classes: list[str], groups: int, unity: str = UNITY) -> dict:
@@ -132,7 +136,8 @@ def main(argv: list[str] | None = None) -> int:
         # filter が1件も当たらない（クラス名の変更など）と 0 件実行で成功扱いになっていた。
         print("PlayMode: テストが1件も実行されていません（-testFilter とクラス名を確認）", file=sys.stderr)
         return 1
-    return 0 if summary["failed"] == 0 and not summary["crashed"] else 1
+    return 0 if summary["passed"] == summary["total"] and summary["failed"] == 0 \
+        and summary["skipped"] == 0 and not summary["crashed"] else 1
 
 
 if __name__ == "__main__":

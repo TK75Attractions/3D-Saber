@@ -9,6 +9,7 @@ peer-to-peer Wi-Fi (AWDL) hop needs two devices; see P2P_BRIDGE.md.
 from __future__ import annotations
 
 import os
+import csv
 import shutil
 import signal
 import socket
@@ -117,6 +118,16 @@ class P2PBridgeTests(unittest.TestCase):
             self.assertEqual(self.received(color), body)
             self.assertIsNone(self.received(BLUE if color == RED else RED), "no cross-routing")
 
+    def test_shared_coordinate_contract_vectors_are_forwarded_unchanged(self):
+        vectors = Path(__file__).resolve().parents[3] / "tools/fixtures/protocol_coordinates.tsv"
+        with vectors.open() as source:
+            for sequence, row in enumerate(csv.DictReader(source, delimiter="\t"), start=1):
+                with self.subTest(vector=row["id"]):
+                    body = row["payload"].encode("ascii")
+                    color = sequence % 2
+                    self.send(datagram(COORDINATES, color, 4242, sequence, body))
+                    self.assertEqual(self.received(color), body if row["p2p_valid"] == "1" else None)
+
     def test_malformed_datagrams_are_dropped_and_counted_once_in_the_log(self):
         for bad in (b"garbage", b"PSP2" + bytes([9, 1, 0, 0]) + bytes(12) + b"1,2,3,4",
                     datagram(COORDINATES, 2, 1, 1, b"1,2,3,4"), datagram(COORDINATES, RED, 1, 2, b"1,2,3"),
@@ -148,6 +159,18 @@ class P2PBridgeTests(unittest.TestCase):
         self.send(datagram(COORDINATES, RED, 2, 2, b"7,7,7,7"), other)
         self.assertEqual(self.received(RED), b"7,7,7,7")
         self.assertIn("(peers: 2)", self.log())
+
+    def test_two_peers_share_the_unity_sender_identity(self):
+        # 現行の制約の監査: Unity の IP gate では P2P の別端末を区別できない。
+        other = self.new_socket()
+        forwarded_sources = []
+        for sock, session, body in ((self.phone, 1, b"1,2,3,4"), (other, 2, b"7,8,9,10")):
+            self.send(datagram(COORDINATES, RED, session, 1, body), sock)
+            received, source = self.unity[RED].recvfrom(512)
+            self.assertEqual(received, body)
+            forwarded_sources.append(source)
+        self.assertEqual(forwarded_sources[0], forwarded_sources[1])
+        self.assertEqual(forwarded_sources[0][0], "127.0.0.1")
 
     def test_reconnecting_the_same_session_does_not_wait_for_the_old_peer(self):
         self.ping(41, 1)

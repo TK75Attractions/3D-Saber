@@ -1,9 +1,27 @@
+.DEFAULT_GOAL := all
 CXX = clang++
 PYTHON ?= python3.12
 CXXFLAGS = -std=c++17 -O2 -Wall -Wextra -Werror -ffp-contract=off
-BUILD ?= /tmp/phonesaber-cpp-core
+# C++ / Swift 共通。比較時だけ PHONESABER_CORELINE_GUARD=0 を指定する。
+PHONESABER_CORELINE_GUARD ?= 1
+ifneq ($(PHONESABER_CORELINE_GUARD),0)
+ifneq ($(PHONESABER_CORELINE_GUARD),1)
+$(error PHONESABER_CORELINE_GUARD must be 0 or 1)
+endif
+endif
+ifeq ($(PHONESABER_CORELINE_GUARD),0)
+CXXFLAGS += -DPHONESABER_DISABLE_CORELINE_GUARD
+endif
+export PHONESABER_CORELINE_GUARD
+BUILD ?= /tmp/phonesaber-cpp-core-guard-$(if $(filter 1,$(PHONESABER_CORELINE_GUARD)),on,off)
 SOURCES = src/detection.cpp src/pipeline.cpp src/frame_processor.cpp
-HEADERS = include/phonesaber/core.hpp src/internal.hpp
+HEADERS = include/phonesaber/core.hpp src/internal.hpp Makefile
+
+# BUILD を明示した場合も、ON/OFF 切替で古いバイナリを再利用しない。
+.PHONY: FORCE
+$(BUILD)/guard-mode: FORCE | $(BUILD)
+	@echo "$(PHONESABER_CORELINE_GUARD)" | cmp -s - "$@" || echo "$(PHONESABER_CORELINE_GUARD)" > "$@"
+HEADERS += $(BUILD)/guard-mode
 
 .PHONY: all benchmark sampling-benchmark allocation-benchmark parity test clean
 all: $(BUILD)/phonesaber-png $(BUILD)/core-test

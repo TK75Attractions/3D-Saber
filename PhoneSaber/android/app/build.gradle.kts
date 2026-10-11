@@ -2,6 +2,10 @@ plugins {
     id("com.android.application")
 }
 
+// 全 build type 共通。host tools と同じ環境変数で比較用 OFF にする。
+val corelineGuard = providers.environmentVariable("PHONESABER_CORELINE_GUARD").orElse("1").get()
+require(corelineGuard in setOf("0", "1")) { "PHONESABER_CORELINE_GUARD must be 0 or 1" }
+
 // 正式manifestだけをbuild内へ配置し、PNGは既存iOS fixtureを直接参照する。
 val fixtureManifestAssets = layout.buildDirectory.dir("generated/androidTest/manifestAssets")
 val copyFixtureManifest by tasks.registering(Sync::class) {
@@ -29,7 +33,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         ndk { abiFilters += "arm64-v8a" }
         externalNativeBuild {
-            cmake { arguments += "-DANDROID_STL=c++_shared" }
+            cmake { arguments += listOf("-DANDROID_STL=c++_shared", "-DPHONESABER_CORELINE_GUARD=$corelineGuard") }
         }
     }
     externalNativeBuild {
