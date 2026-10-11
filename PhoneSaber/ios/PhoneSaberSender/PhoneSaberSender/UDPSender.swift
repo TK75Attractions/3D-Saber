@@ -215,7 +215,7 @@ final class UDPSender {
             reconnectAttempts[port] = 0
             states[port] = sendHandler == nil ? "ready (送信可能)" : "ready (テスト送信)"
             connectionErrors[port] = nil
-            if let latest = pendingByPort.removeValue(forKey: port), activeByPort[port] == nil {
+            if activeByPort[port] == nil, let latest = pendingByPort.removeValue(forKey: port) {
                 start(latest, port: port)
             }
         case .waiting:

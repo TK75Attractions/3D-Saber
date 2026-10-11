@@ -1234,6 +1234,35 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertTrue(latestCompleted)
     }
 
+    func testReadyNotificationPreservesLatestPayloadWhileSendIsInFlight() {
+        for becameWaiting in [false, true] {
+            let completions = CompletionBox()
+            let sender = UDPSender { text, port, completion in
+                completions.append(port: port, text: text, completion: completion)
+            }
+            sender.configure(host: "127.0.0.1")
+            defer { sender.stop() }
+            let blueGeneration = sender.connectionGenerationForTesting(port: 5006)
+            sender.send("1,2,3,4", to: 5005) { _ in }
+            XCTAssertEqual(sender.pendingCountForTesting, 0)
+            XCTAssertEqual(completions.valuesCountForTesting, 1)
+            if becameWaiting {
+                sender.simulateConnectionStateForTesting(port: 5005, state: .waiting)
+            }
+            sender.send("5,6,7,8", to: 5005) { _ in }
+            sender.send("9,10,11,12", to: 5005) { _ in }
+            XCTAssertEqual(sender.pendingCountForTesting, 1)
+            sender.simulateConnectionStateForTesting(port: 5005, state: .ready)
+            XCTAssertEqual(sender.pendingCountForTesting, 1,
+                           "ready 通知でも送信中なら最新座標を完了まで保持する")
+            XCTAssertEqual(completions.sent.map(\.0), ["1,2,3,4"])
+            completions.removeFirst()?.1(.success(10))
+            XCTAssertEqual(sender.pendingCountForTesting, 0)
+            XCTAssertEqual(completions.sent.map(\.0), ["1,2,3,4", "9,10,11,12"])
+            XCTAssertEqual(sender.connectionGenerationForTesting(port: 5006), blueGeneration)
+        }
+    }
+
     func testBonjourHostSelectionTracksIPv4ChangesForSameService() {
         var selection = DestinationHostSelection()
         XCTAssertTrue(selection.applyBonjour(host: "192.168.1.20", serviceName: "Festival Mac"))
@@ -1251,6 +1280,20 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertFalse(selection.applyBonjour(host: "192.168.1.20", serviceName: "Festival Mac"))
         XCTAssertEqual(selection.host, "10.0.0.42")
         XCTAssertEqual(selection.source, .manual)
+    }
+
+    func testRestoredBonjourServiceAcceptsNewIPOnlyForTheSavedMac() {
+        var selection = DestinationHostSelection()
+        selection.restoreBonjourService("Festival Mac A")
+        XCTAssertFalse(selection.applyBonjour(host: "192.168.1.30", serviceName: "Festival Mac B"))
+        XCTAssertEqual(selection.host, "")
+        XCTAssertTrue(selection.applyBonjour(host: "192.168.1.21", serviceName: "Festival Mac A"))
+        XCTAssertEqual(selection.source, .bonjour)
+        XCTAssertEqual(selection.host, "192.168.1.21")
+        // 手動 IP を消して自動へ戻したら、保存されていた Mac の固定も解除する。
+        selection.setManual("192.168.1.40", resolvedHost: "", serviceName: "")
+        selection.setManual("", resolvedHost: "", serviceName: "")
+        XCTAssertTrue(selection.applyBonjour(host: "192.168.1.30", serviceName: "Festival Mac B"))
     }
 
     @MainActor

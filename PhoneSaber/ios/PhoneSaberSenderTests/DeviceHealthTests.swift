@@ -5,6 +5,27 @@ import XCTest
 #endif
 
 final class DeviceHealthTests: XCTestCase {
+    func testRatesAfterEightHoursUseOnlyTheRecentWindow() {
+        let meter = DeviceHealthMeter()
+        meter.reset(at: 0, generation: 1)
+        meter.cameraFrame(at: 1)
+        meter.processed(at: 1, milliseconds: 900, generation: 1, captureToSendMs: 1000)
+        let eightHours = 8.0 * 60 * 60
+        for frame in 1...300 {
+            let time = eightHours + Double(frame) / 60
+            meter.cameraFrame(at: time)
+            meter.processed(at: time, milliseconds: 12, generation: 1, captureToSendMs: 40)
+        }
+        let rates = meter.snapshot(at: eightHours + 5)
+        XCTAssertEqual(rates.cameraFPS, 60)
+        XCTAssertEqual(rates.processingFPS, 60)
+        XCTAssertEqual(rates.medianProcessingMs, 12)
+        XCTAssertEqual(rates.medianCaptureToSendMs, 40)
+        XCTAssertTrue(rates.ready)
+        XCTAssertEqual(meter.snapshot(at: eightHours + 10).cameraFPS, 0)
+        XCTAssertEqual(meter.snapshot(at: eightHours + 10).processingFPS, 0)
+    }
+
     func testThermalClassificationAndMetadata() {
         let states: [ProcessInfo.ThermalState] = [.nominal, .fair, .serious, .critical]
         XCTAssertEqual(states.map { DeviceThermalLevel(state: $0).title }, ["正常", "やや高い", "高い", "危険"])
