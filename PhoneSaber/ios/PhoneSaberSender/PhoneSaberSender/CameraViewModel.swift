@@ -707,7 +707,10 @@ final class CameraViewModel: NSObject, ObservableObject {
     /// and stays the default; these are only set by `startGuidedRecording`.
     @Published private(set) var guidedRecordingRunning = false
     @Published private(set) var guidedRecordingStatus: GuidedRecordingStatus?
+    /// The full plan shown in the UI; `startGuidedRecording(script:)` may run another one.
     let guidedRecordingScript = GuidedRecordingScript.shootingPlanV3
+    let swingOnlyRecordingScript = GuidedRecordingScript.swingOnlyV1
+    private var activeGuidedScript = GuidedRecordingScript.shootingPlanV3
     /// Replaced in tests so nothing is spoken.
     var makeGuidedCuePlayer: @MainActor () -> GuidedRecordingCuePlaying = { SpeechGuidedRecordingCuePlayer() }
     private var guidedScheduler: GuidedRecordingScheduler?
@@ -2346,8 +2349,13 @@ extension CameraViewModel {
     /// Starts a Debug Recording that follows `guidedRecordingScript`: labels,
     /// spoken cues, countdowns and swing lossless captures run by themselves,
     /// and the recording stops (and auto-transfers as usual) at the end.
-    func startGuidedRecording() {
-        guard !guidedRecordingRunning, guidedRecordingScript.validationErrors.isEmpty,
+    func startGuidedRecording() { startGuidedRecording(script: guidedRecordingScript) }
+
+    /// 振りだけ録画（約50秒）。手順は同じ仕組みで進み、最後に自動で止まる。
+    func startSwingOnlyRecording() { startGuidedRecording(script: swingOnlyRecordingScript) }
+
+    func startGuidedRecording(script: GuidedRecordingScript) {
+        guard !guidedRecordingRunning, script.validationErrors.isEmpty,
               DebugRecordingLifecyclePolicy.mayStart(
                 enabled: debugRecordingEnabled, cameraRunning: running,
                 active: debugRecordingActive, finalizing: debugRecordingFinalizing) else { return }
@@ -2357,7 +2365,8 @@ extension CameraViewModel {
         let cues = makeGuidedCuePlayer()
         guidedCues = cues
         cues.begin()
-        startDebugRecording(guidedScript: guidedRecordingScript)
+        activeGuidedScript = script
+        startDebugRecording(guidedScript: script)
     }
 
     /// Stops the guide and the recording at once; frames so far are kept and
@@ -2370,7 +2379,7 @@ extension CameraViewModel {
 
     private func beginGuidedSchedule() {
         guard guidedRecordingRunning, guidedScheduler == nil else { return }
-        guidedScheduler = GuidedRecordingScheduler(script: guidedRecordingScript)
+        guidedScheduler = GuidedRecordingScheduler(script: activeGuidedScript)
         guidedStartTime = ProcessInfo.processInfo.systemUptime
         tickGuidedRecording(at: guidedStartTime)
         guidedTask = Task { @MainActor [weak self] in

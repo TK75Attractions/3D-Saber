@@ -124,6 +124,33 @@ struct GuidedRecordingScript: Equatable, Sendable {
         closingCue: "録画を終わります。おつかれさまでした。"
     )
 
+    /// Swing-only plan (2026-10-11), about 50 s with four short cues. On 2026-10-10 the
+    /// operator found the 3-minute plan too long and made manual recordings instead;
+    /// those kept no swing frame (the 12-image bundle took the moment the operator
+    /// walked back to the phone with the sabers off) and had no segment labels. This
+    /// plan keeps what the analysis needs: one background frame without sabers, three
+    /// frames of a large swing, one still pose and one fast swing, all labelled, and it
+    /// stops by itself so nobody approaches the phone during the recording.
+    static let swingOnlyV1 = GuidedRecordingScript(
+        id: "swing_only_2026_10_11",
+        version: 1,
+        steps: [
+            GuidedRecordingStep(id: "no_saber", title: "saberなし（2本とも消灯）",
+                cue: "2本とも消したまま、振る位置で待ってください。",
+                leadInSeconds: 8, holdSeconds: 5, label: .noSaber, losslessCaptures: 1),
+            GuidedRecordingStep(id: "both_swing", title: "赤と青 点灯して大きく振る",
+                cue: "赤と青を点灯して、大きく振ってください。",
+                leadInSeconds: 6, holdSeconds: 12, label: .sabersVisible, losslessCaptures: 3),
+            GuidedRecordingStep(id: "both_still", title: "赤と青 そのまま止める",
+                cue: "2本とも、止めてください。",
+                leadInSeconds: 4, holdSeconds: 4, label: .sabersVisible, losslessCaptures: 1),
+            GuidedRecordingStep(id: "both_fast_swing", title: "赤と青 速く振る",
+                cue: "最後に、速く振ってください。",
+                leadInSeconds: 4, holdSeconds: 8, label: .sabersVisible, losslessCaptures: 1),
+        ],
+        closingCue: "終わりです。"
+    )
+
     /// Problems that would make the script unsafe to run (empty = valid).
     var validationErrors: [String] {
         var errors: [String] = []

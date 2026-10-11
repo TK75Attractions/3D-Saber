@@ -1925,6 +1925,10 @@ final class DebugVideoRecorder {
             || (diagnosticColors.includes("blue")
                 && frame.candidateDiagnostics?.blue.selectedCandidate?.centroid != nil)
         if hasTrackingEvidence || !trackingSelection.isEmpty {
+            // Motion event scores aggregate signals over an event; the tracking
+            // window uses a different per-frame score. Skipped motion captures
+            // are not evidence of memory pressure.
+            for hit in hits { motionRejectionReasons[hit.index] = "tracking_mode" }
             retainTrackingFrame(pixelFrame)
         } else {
             for hit in hits { retainMotionEvent(hit, current: pixelFrame) }
@@ -2084,6 +2088,9 @@ final class DebugVideoRecorder {
             preference: DebugEventPreference(handlingPeriod: period != nil, score: score,
                 sabersVisible: currentSegmentLabel == .sabersVisible, tieBreak: preceding.count))
         if trackingSelection.wouldRetain(timestamp: entry.timestamp, preference: entry.preference) {
+            for capture in motionCaptures {
+                motionRejectionReasons[capture.index] = "tracking_mode"
+            }
             motionCaptures.removeAll()
             motionPreRoll.removeAll()
             trackingSelection.insert(entry)
@@ -2161,7 +2168,7 @@ final class DebugVideoRecorder {
         let retained = Set(motionCaptures.map(\.index))
         var events = motionDetector.events.map { event -> [Any] in
             let status = retained.contains(event.index) ? "retained"
-                : (motionRejectionReasons[event.index] ?? "memory")
+                : (motionRejectionReasons[event.index] ?? "not_retained")
             return [event.index, event.color,
                 (event.peakScore * 1_000).rounded() / 1_000, status]
         }
@@ -2183,6 +2190,8 @@ final class DebugVideoRecorder {
                 "selectionCodes": ["retained": "top-scoring event with lossless frames",
                     "lower_score": "lower anomaly score than retained events",
                     "memory": "lossless frame retention memory budget reached",
+                    "tracking_mode": "motion capture superseded by per-frame tracking window selection; scores are not comparable",
+                    "not_retained": "no lossless capture retained; no memory rejection recorded",
                     "selected": "included in the 12-image diagnostic bundle",
                     "duplicate": "all retained frames duplicate higher-score selections",
                     "image_limit": "12-image limit reached before this event",
@@ -2240,6 +2249,7 @@ final class DebugVideoRecorder {
                 "recordingMaxScore": maximum.map { DebugTrackingDiagnostics.rankingScore($0.components) } ?? capture.peakScore,
                 "retainedPeakFrameID": capture.at.frameID, "retainedPeakColor": capture.color,
                 "retainedPeakScore": capture.peakScore, "temporalFramesRetained": capture.temporalFrames.count,
+                "recordingEndTimeSeconds": latestRecordedFrameTiming?.1 ?? 0,
                 "highestRankedFrameMissing": (maximum?.frameID != capture.at.frameID || maximum?.color != capture.color)
                     && (maximum.map { DebugTrackingDiagnostics.rankingScore($0.components) } ?? 0) > capture.peakScore
                     && info?.deprioritised != true,

@@ -160,6 +160,16 @@ struct ContentView: View {
                                               model.debugRecordingFinalizing || model.manualLosslessCapturePending ||
                                               model.debugManualLosslessCaptureCount >= DebugRecordingLimits.maximumManualLosslessCaptures)
                             }
+                            Button { model.startSwingOnlyRecording() } label: {
+                                Label("振りだけ録画を開始（約\(Int(model.swingOnlyRecordingScript.totalSeconds.rounded(.up)))秒・自動で終了）",
+                                      systemImage: "figure.wave")
+                            }
+                            .buttonStyle(.bordered)
+                            .disabled(!model.debugRecordingEnabled || !model.running ||
+                                      model.debugRecordingActive || model.debugRecordingFinalizing)
+                            Text("振りだけ: 押したら振る位置へ。消灯で5秒→点灯して振る→止める→速く振る、の順に短い音声が出ます。振りの画像は自動で残り、最後は自動で止まります。")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                             Button { model.startGuidedRecording() } label: {
                                 Label("ガイド付き録画を開始（約\(Int(model.guidedRecordingScript.totalSeconds.rounded(.up)) / 60)分\(Int(model.guidedRecordingScript.totalSeconds.rounded(.up)) % 60)秒）",
                                       systemImage: "speaker.wave.2")

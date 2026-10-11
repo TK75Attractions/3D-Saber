@@ -2484,8 +2484,10 @@ struct DebugEventPreference: Equatable {
 /// events younger than `stopSeconds` stay pending; once older they settle and
 /// compete for the `capacity` slots. A pending event that `capacity` settled or
 /// earlier pending events are at least as good as can never be kept and is
-/// dropped at once; beyond `capacity + 1` pending events the weakest one other
-/// than the oldest is dropped. At Stop the remaining pending events lie in the
+/// dropped at once. Other pending leaders must survive until they settle: an
+/// intermediate leader can be the best outside the final stop period. Callers
+/// must budget payload storage before insertion (the recorder uses 256 MiB).
+/// At Stop the remaining pending events lie in the
 /// stop handling period and settle as such. When every event lies in a handling
 /// period (short recordings) the result is the plain top-`capacity` by score,
 /// earlier event first on ties, as before handling periods existed.
@@ -2572,13 +2574,6 @@ struct DebugHandlingAwareRetention<Payload> {
             } else {
                 index += 1
             }
-        }
-        while pending.count > capacity + 1 {
-            // The oldest pending entry settles first; spare it.
-            guard let weakest = pending.indices.dropFirst().min(by: {
-                Self.weaker(pending[$0], than: pending[$1])
-            }) else { break }
-            dropped.append(pending.remove(at: weakest))
         }
         return dropped
     }

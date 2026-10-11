@@ -270,7 +270,8 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
                     or not isinstance(event[2], (int, float)) \
                     or isinstance(event[2], bool) or not math.isfinite(event[2]) \
                     or event[3] not in {"selected", "lower_score", "memory", "duplicate",
-                                         "image_limit", "byte_limit", "bridge_priority"}:
+                                         "image_limit", "byte_limit", "bridge_priority",
+                                         "tracking_mode", "not_retained"}:
                 raise BundleError("motion event selection ledger is malformed")
             seen_event_ids.add(event[0])
     active_colors = summary.get("activeColors")

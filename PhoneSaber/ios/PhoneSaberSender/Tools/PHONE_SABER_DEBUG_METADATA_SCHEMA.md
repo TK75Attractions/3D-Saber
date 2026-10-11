@@ -479,16 +479,27 @@ false-positive evidence. Diagnostic image selection only (`DebugHandlingPeriod`)
 recognition, scoring, eligibility and UDP never read it.
 
 The stop period is known only at Stop, so the recorder keeps recent leaders
-provisionally until they are older than `stopSeconds` (`DebugHandlingAwareRetention`;
-at most `capacity + 1` provisional events). When every event lies in a handling
+provisionally until they are older than `stopSeconds` (`DebugHandlingAwareRetention`).
+All non-dominated provisional leaders are kept subject to the unchanged shared
+256 MiB retained-BGRA budget. A `capacity + 1` count cap could discard a middle
+leader that later becomes the best event outside the true stop period.
+When every event lies in a handling
 period (for example a recording shorter than 8 s) the choice is the plain ranking
 of earlier builds.
+
+The motion ledger and tracking window use different scores: motion scores aggregate
+signals over an event, while tracking scores rank individual frames. `tracking_mode`
+means a motion capture was superseded by tracking window selection, not a memory
+failure. `memory` is emitted only for an actual BGRA budget rejection;
+`not_retained` means no capture and no recorded rejection reason. These additive
+selection codes do not affect recognition or repair eligibility.
 
 | Field | Where | Meaning |
 | --- | --- | --- |
 | `handlingPeriod` | tracking entry of root `motionEvents`; each `bridgeDropoutEvents` entry | `true` when the center frame (tracking peak / bridge dropout frame) lies in a handling period. |
 | `selectionNotes` | same entries | Short strings: the period of the center frame, why it was kept (for example a higher-ranked frame in a handling period that was de-prioritised, or a fallback), and a `sabersVisible` tie-break. |
 | `handlingPeriod`, `highestRankedFrameDeprioritised`, `handlingPeriodSeconds` | `motionSummary.trackingCapture` | The kept window's period, whether the recording maximum was pushed below it by a handling period (then `highestRankedFrameMissing` stays `false`), and `{startSeconds, stopSeconds}`. |
+| `recordingEndTimeSeconds` | `motionSummary.trackingCapture` | Last accepted frame timestamp used to resolve the true stop period. Additive; absent in older bundles. |
 | `selectionNotes` | `summary.json` root (optional) | `{handlingPeriodSeconds: {startSeconds, stopSeconds}, events: [...]}`; each event has exactly `kind` (`tracking` / `bridge`), `eventID`, `centerFrameID`, `handlingPeriod`, `selected` and `notes` (the recorder notes plus whether it reached the bundle). |
 
 The triage bundle orders bridge events the same way (`handlingPeriod: false` first,

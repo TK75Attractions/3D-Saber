@@ -100,6 +100,21 @@ class CodexTriageTests(unittest.TestCase):
                 gate = repair_gate(report, input_plan(bundle, allow_reports=True), root)
             self.assertEqual(gate["decision"], "needs_capture")
 
+    def test_motion_ledger_distinguishes_tracking_selection_from_memory(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "bundle"
+            write_codex_bundle(bundle)
+            summary_path = bundle / "summary.json"
+            summary = json.loads(summary_path.read_text())
+            for code in ("tracking_mode", "not_retained", "memory"):
+                summary["motionEventSummary"] = {"events": [[0, "red", 15.188, code]]}
+                summary_path.write_text(json.dumps(summary))
+                self.assertEqual(len(input_plan(bundle).image_paths), 1)
+            summary["motionEventSummary"]["events"][0][3] = "unknown_reason"
+            summary_path.write_text(json.dumps(summary))
+            with self.assertRaisesRegex(BundleError, "selection ledger is malformed"):
+                input_plan(bundle)
+
     def test_motion_event_summary_context_mismatch_is_rejected(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             bundle = Path(directory) / "bundle"

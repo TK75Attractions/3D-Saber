@@ -1,3 +1,4 @@
+import AVFoundation
 import CoreMedia
 import Foundation
 import XCTest
@@ -1952,7 +1953,7 @@ final class DebugHandlingPeriodTests: XCTestCase {
         XCTAssertEqual(sparse.settled.first { $0.frameID == 2_670 }?.period, "stop")
     }
 
-    func testDominatedEventsAreRejectedAndPendingStaysBounded() {
+    func testDominatedEventsAreRejectedButIntermediateLeadersSurvive() {
         var retention = Retention(capacity: 1)
         retention.insert(.init(payload: 1, frameID: 1, timestamp: 10, period: nil,
                                preference: DebugEventPreference(handlingPeriod: false, score: 10)))
@@ -1963,8 +1964,106 @@ final class DebugHandlingPeriodTests: XCTestCase {
         for index in 2...20 {
             retention.insert(.init(payload: UInt64(index), frameID: UInt64(index), timestamp: 10 + Double(index) / 30,
                                    period: nil, preference: DebugEventPreference(handlingPeriod: false, score: Double(10 + index))))
-            XCTAssertLessThanOrEqual(retention.pending.count, 2)
             XCTAssertEqual(retention.pending.first?.frameID, 1, "the oldest leader is spared")
         }
+        // At Stop, the newest leaders can be in the handling period while an
+        // intermediate leader has just matured. A count cap used to lose it.
+        retention.finish(end: 15.3)
+        XCTAssertEqual(retention.best?.frameID, 9)
+        XCTAssertNil(retention.best?.period)
+    }
+
+    func testIntermediateSwingWinsAtTheTrueStopBoundaryAtSixtyFPS() {
+        for capacity in [1, 2] {
+            let spikes: [Int: Double] = [3_018: 5, 3_090: 10, 3_126: 20, 3_324: 30]
+            let frames: [Frame] = (0...3_414).map { id in
+                let score = spikes[id] ?? 0
+                return (UInt64(id), Double(id) / 60, score, false)
+            }
+            let retention = run(frames, capacity: capacity, end: 56.9)
+            XCTAssertEqual(retention.best?.frameID, 3_090)
+            XCTAssertNil(retention.best?.period)
+            XCTAssertEqual(retention.settled.map(\.frameID).sorted(),
+                           capacity == 1 ? [3_090] : [3_018, 3_090])
+        }
+    }
+
+    func testOnePointFiveSecondsBeforeStopIsMarkedStopEvenAsFallback() {
+        let chosen = run([(1, 0, 1, false), (2, 55.4, 11.92, false)], end: 56.9).best
+        XCTAssertEqual(chosen?.frameID, 2)
+        XCTAssertEqual(chosen?.period, "stop")
+        XCTAssertEqual(chosen?.preference.handlingPeriod, true)
+        XCTAssertTrue(DebugHandlingPeriod.note(chosen?.period, frameID: 2, timestamp: 55.4)
+            .contains("stop handling period"))
+    }
+}
+
+final class DebugRecordingRetentionTests: XCTestCase {
+    func testStopResolvesTrackingAndDoesNotCallSupersededMotionEventsMemory() throws {
+        let directory = FileManager.default.temporaryDirectory
+            .appendingPathComponent("PhoneSaberRetention-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: directory) }
+#if os(macOS)
+        // The restricted host can report zero capacity even with free disk.
+        // Keep the recorder's disk safety gate intact; run this test on iOS.
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        if try DebugRecordingStorage.availableCapacity(at: directory) == 0 {
+            throw XCTSkip("Host capacity API reports zero; recorder disk safety gate prevents recording")
+        }
+#endif
+        let recorder = try DebugVideoRecorder(directory: directory)
+        for offset in 0..<46 {
+            var buffer: CVPixelBuffer?
+            XCTAssertEqual(CVPixelBufferCreate(kCFAllocatorDefault, 64, 48,
+                kCVPixelFormatType_32BGRA, nil, &buffer), kCVReturnSuccess)
+            let pixels = try XCTUnwrap(buffer)
+            CVPixelBufferLockBaseAddress(pixels, [])
+            memset(CVPixelBufferGetBaseAddress(pixels), 0, CVPixelBufferGetBytesPerRow(pixels) * 48)
+            let rotated = offset == 21 || offset == 36
+            let points = (8...52).flatMap { x in (20...24).map { y in
+                rotated ? PixelPoint(x: y + 10, y: x - 5) : PixelPoint(x: x, y: y)
+            } }
+            let candidate = try XCTUnwrap(saberCandidate(from: points, width: 64, height: 48,
+                collectEndpointDiagnostics: true))
+            let time = offset < 15 ? Double(offset) / 30
+                : offset < 30 ? 10 + Double(offset - 15) / 30
+                : offset < 45 ? 55.2 + Double(offset - 30) / 30 : 56.9
+            let outcome = recorder.append(pixelBuffer: pixels,
+                presentationTime: CMTime(seconds: time, preferredTimescale: 60_000),
+                frameID: UInt64(offset),
+                results: [DetectedSaber(endpoints: candidate.endpoints, color: .red, isFresh: true)],
+                analysis: SaberFrameAnalysis(candidates: [.red: [candidate]], selected: [.red: candidate.endpoints]))
+            CVPixelBufferUnlockBaseAddress(pixels, [])
+            XCTAssertEqual(outcome, .accepted)
+            XCTAssertLessThanOrEqual(recorder.motionRetainedBytesForTesting,
+                DebugMotionThresholds.maximumRetainedBGRABytes)
+            Thread.sleep(forTimeInterval: 0.04)
+        }
+        let finished = expectation(description: "Stop writes the final bundle")
+        var result: Result<DebugRecordingResult, Error>?
+        recorder.finish { result = $0; finished.fulfill() }
+        wait(for: [finished], timeout: 30)
+        let recording = try XCTUnwrap(result).get()
+        let metadata = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: recording.metadataURL)) as? [String: Any])
+        let motion = try XCTUnwrap(metadata["motionSummary"] as? [String: Any])
+        let capture = try XCTUnwrap(motion["trackingCapture"] as? [String: Any])
+        XCTAssertEqual(capture["handlingPeriod"] as? Bool, false)
+        XCTAssertEqual(try XCTUnwrap(capture["recordingEndTimeSeconds"] as? Double), 56.9, accuracy: 0.001)
+        let center = try XCTUnwrap(capture["retainedPeakFrameID"] as? Int)
+        XCTAssertTrue((15..<30).contains(center), "the middle swing must survive Stop")
+        let events = try XCTUnwrap(motion["events"] as? [[Any]])
+        let motionEvents = events.filter { ($0[0] as? Int) != DebugRecordingTriageLimits.trackingEventIndex }
+        XCTAssertFalse(motionEvents.isEmpty)
+        XCTAssertTrue(motionEvents.allSatisfy { ($0[3] as? String) == "tracking_mode" })
+        let bundle = try XCTUnwrap(recording.triageBundleURL, recording.triageErrorMessage ?? "no bundle")
+        let summary = try XCTUnwrap(JSONSerialization.jsonObject(with:
+            Data(contentsOf: bundle.appendingPathComponent("summary.json"))) as? [String: Any])
+        let notes = try XCTUnwrap(summary["selectionNotes"] as? [String: Any])
+        let entries = try XCTUnwrap(notes["events"] as? [[String: Any]])
+        XCTAssertEqual(entries.first?["centerFrameID"] as? Int, center)
+        XCTAssertEqual(entries.first?["handlingPeriod"] as? Bool, false)
+        XCTAssertEqual(entries.first?["selected"] as? Bool, true)
+        XCTAssertLessThanOrEqual(summary["selectedImageCount"] as? Int ?? Int.max, 12)
     }
 }

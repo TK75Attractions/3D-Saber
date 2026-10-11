@@ -33,6 +33,25 @@ final class GuidedRecordingTests: XCTestCase {
 
     // MARK: Script
 
+    // 2026-10-10: 手動録画では振りの画像が1枚も残らなかった。約50秒の短い手順で必ず残す。
+    func testSwingOnlyScriptIsShortLabelledAndKeepsSwingFrames() {
+        let script = GuidedRecordingScript.swingOnlyV1
+        XCTAssertEqual(script.validationErrors, [])
+        XCTAssertNotEqual(script.id, GuidedRecordingScript.shootingPlanV3.id)
+        XCTAssertLessThanOrEqual(script.totalSeconds, 60)
+        XCTAssertEqual(script.plannedLosslessCaptures, DebugRecordingLimits.maximumGuidedLosslessCaptures)
+        XCTAssertEqual(script.steps.first?.label, .noSaber, "背景（壁画など）の誤検出を1枚残す")
+        XCTAssertTrue(script.steps.dropFirst().allSatisfy { $0.label == .sabersVisible })
+        XCTAssertLessThanOrEqual(script.steps.count, 4, "音声の指示は短く少なく")
+        let scheduler = GuidedRecordingScheduler(script: script)
+        // 手順に書いた枚数が実際に全部予定される（1.5 秒間隔で hold に収まる）。
+        XCTAssertEqual(scheduler.plannedCaptureTimes.count, script.plannedLosslessCaptures)
+        for (index, bounds) in scheduler.boundaries.enumerated() {
+            let inHold = scheduler.plannedCaptureTimes.filter { $0 > bounds.hold && $0 < bounds.end }.count
+            XCTAssertEqual(inHold, script.steps[index].losslessCaptures, script.steps[index].id)
+        }
+    }
+
     func testShootingPlanScriptIsValidAndMatchesTheRequestedPlan() {
         let script = GuidedRecordingScript.shootingPlanV3
         XCTAssertEqual(script.validationErrors, [])
