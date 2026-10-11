@@ -119,6 +119,7 @@ public class CalibrationCountdownPlayTests
         while(Time.realtimeSinceStartupAsDouble<promptDeadline &&
             ((prompt=Object.FindFirstObjectByType<TitleTutorialPrompt>())==null || !prompt.IsOpen))yield return null;
         Assert.NotNull(prompt);Assert.True(prompt.IsOpen);
+        yield return new WaitForSecondsRealtime(TitleTutorialPrompt.InputDelaySeconds + .05f);
         prompt.Choose(false,"calibration-return-test");
         while(!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble<promptDeadline)yield return null;
         Assert.True(ScreenTransition.IsBusy);
@@ -174,7 +175,7 @@ public class CalibrationCountdownPlayTests
         Capture("calibration-confirmation");
     }
 
-    [UnityTest] public IEnumerator TimeoutStopsPracticeDiscardsDraftAndReturnsToFreshSelection()
+    [UnityTest] public IEnumerator TimeoutStopsPracticeDiscardsDraftAndReturnsWithTenSecondsRemaining()
     {
         var controller=Object.FindFirstObjectByType<SongSelectController>();
         controller.Select(controller.SongCount-1);controller.SetDifficulty(2);
@@ -187,12 +188,12 @@ public class CalibrationCountdownPlayTests
         Assert.True(c.Overlay.transform.Find("TimeTab/TimeRemaining").gameObject.activeSelf);
         c.Overlay.TickCountdown(15);
         Assert.True(ScreenTransition.IsBusy);Assert.False(manager.songPlayer.IsPlaying);
-        Assert.IsNull(GameSession.CalibrationSelectionSeconds);
+        Assert.AreEqual(10, GameSession.CalibrationSelectionSeconds);
         Assert.AreEqual(savedOffset,GameSession.JudgmentOffsetMs);Assert.AreEqual(savedSpeed,GameSession.NoteApproachTime);
         yield return ScreenTransitionPlayTests.WaitForTransition();yield return WaitForSelection();
         Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name);Assert.False(GameSession.IsCalibrationMode);
         AssertSelection(songId,2);
-        Assert.That(Object.FindFirstObjectByType<SongSelectSkin>().RemainingSeconds,Is.InRange(95d,100d));
+        Assert.That(Object.FindFirstObjectByType<SongSelectSkin>().RemainingSeconds,Is.InRange(8d,10d));
         yield return null;yield return null;
         Assert.AreEqual("SongSelect",SceneManager.GetActiveScene().name,"0秒を引き継いで即プレイ開始しない");
     }

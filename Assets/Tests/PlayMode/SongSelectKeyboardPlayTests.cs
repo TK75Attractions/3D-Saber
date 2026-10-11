@@ -82,7 +82,7 @@ public class SongSelectKeyboardPlayTests
         sessionValues.Clear();
     }
 
-    IEnumerator Press(Key key, bool expectHardIntro = false)
+    IEnumerator Press(Key key)
     {
         InputSystem.QueueStateEvent(keyboard, new KeyboardState(key));
         yield return null;
@@ -90,7 +90,6 @@ public class SongSelectKeyboardPlayTests
         InputSystem.QueueStateEvent(keyboard, new KeyboardState());
         yield return null;
         yield return null;
-        if (expectHardIntro) Assert.True(ScreenTransition.IsHardIntro, "校歌HARDの開始では予定された演出へ入る");
         yield return ScreenTransitionPlayTests.WaitForTransition();
     }
 
@@ -103,7 +102,7 @@ public class SongSelectKeyboardPlayTests
         Assert.AreEqual(2, controller.SelectedDifficultyIndex);
         int extraClicks = 0;
         button.onClick.AddListener(() => extraClicks++);
-        yield return Press(Key.Enter, expectHardIntro: true);
+        yield return Press(Key.Enter);
         Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         Assert.AreEqual(0, extraClicks, "Enterはプレイ開始だけを行い、前にクリックした設定を再実行しない");
         Assert.AreEqual("Hard", GameSession.SelectedDifficulty);
@@ -329,6 +328,11 @@ public class SongSelectKeyboardPlayTests
             else Assert.Greater(manager.songPlayer.SongTime, .25);
             manager.scoreManager.RegisterHit(JudgmentTier.Perfect);
 
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
+            yield return null; yield return null;
+            Assert.False(ScreenTransition.IsBusy);
+            InputSystem.QueueStateEvent(keyboard, new KeyboardState());
+            yield return null; yield return null;
             InputSystem.QueueStateEvent(keyboard, new KeyboardState(Key.Escape));
             deadline = Time.realtimeSinceStartupAsDouble + 2;
             while (!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < deadline) yield return null;

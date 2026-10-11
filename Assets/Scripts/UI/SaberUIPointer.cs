@@ -108,6 +108,7 @@ public class SaberUIPointer : MonoBehaviour
     public bool RemapToFullScreen { get; set; }
     // ライブ判定調整だけ、下端の操作帯を対象にする。ほかの画面は従来どおり。
     public bool BottomControlsOnly { get; set; }
+    public bool HideOutsideBottomControls { get; set; }
     public RectTransform BottomControlArea { get; set; }
     public bool RespectRaycastBlockers { get; set; }
     // 選曲の立体ノーツは速度付き斬撃のみ。滞留クリックを重ねて発火しない。
@@ -189,7 +190,7 @@ public class SaberUIPointer : MonoBehaviour
         var dwell = target != null ? target.GetComponent<SaberDwellTarget>() : null;
         bool fire = aimTracker.Tick(target, area, point, dt, target != null && !SlashOnly,
             dwell != null ? dwell.dwellSeconds : SongSelectAimTracker.HoldSeconds);
-        aimReticle.gameObject.SetActive(true);
+        aimReticle.gameObject.SetActive(!HideOutsideBottomControls || allowed);
         var canvasCamera = overlayCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : overlayCanvas.worldCamera;
         RectTransformUtility.ScreenPointToLocalPointInRectangle((RectTransform)overlayCanvas.transform, point, canvasCamera, out var local);
         aimReticle.rectTransform.anchoredPosition = local;

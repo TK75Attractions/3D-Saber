@@ -349,11 +349,11 @@ namespace Saber.ChartEditor
         {
             GUILayout.BeginHorizontal();
             GUILayout.Label("小節", GUILayout.Width(28f));
-            jumpMeasureText = GUILayout.TextField(jumpMeasureText ?? string.Empty, GUILayout.Width(44f));
+            jumpMeasureText = EditorGUILayout.TextField(jumpMeasureText ?? string.Empty, GUILayout.Width(44f));
             if (GUILayout.Button("移動", EditorStyles.miniButton, GUILayout.Width(38f))) JumpToMeasureText();
             GUILayout.Space(6f);
             GUILayout.Label("時刻", GUILayout.Width(28f));
-            jumpTimeText = GUILayout.TextField(jumpTimeText ?? string.Empty, GUILayout.MinWidth(54f));
+            jumpTimeText = EditorGUILayout.TextField(jumpTimeText ?? string.Empty, GUILayout.MinWidth(54f));
             if (GUILayout.Button("移動", EditorStyles.miniButton, GUILayout.Width(38f))) JumpToTimeText();
             GUILayout.EndHorizontal();
             GUILayout.Label("時刻は 1:23.5 か 83.5（秒）。音源の先頭からの時刻です", smallMutedStyle);
@@ -429,7 +429,7 @@ namespace Saber.ChartEditor
             showMarkers = EditorGUILayout.Foldout(showMarkers, $"目印（{document.markers.Count}）", true);
             if (!showMarkers) return;
             GUILayout.BeginHorizontal();
-            newMarkerName = GUILayout.TextField(newMarkerName ?? string.Empty, GUILayout.MinWidth(90f));
+            newMarkerName = EditorGUILayout.TextField(newMarkerName ?? string.Empty, GUILayout.MinWidth(90f));
             if (GUILayout.Button("現在位置に追加", EditorStyles.miniButton, GUILayout.Width(92f))) AddMarkerAtCursor();
             GUILayout.EndHorizontal();
             for (int i = 0; i < document.markers.Count; i++)

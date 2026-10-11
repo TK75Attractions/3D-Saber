@@ -44,7 +44,7 @@ public sealed class SongSelectRubyText : MonoBehaviour
         {
             if (r.start + r.length > label.textInfo.characterCount) continue;
             var first = label.textInfo.characterInfo[r.start]; var last = label.textInfo.characterInfo[r.start + r.length - 1];
-            float size = Mathf.Max(10, first.pointSize * .32f), width = Mathf.Max(last.topRight.x - first.bottomLeft.x, r.text.text.Length * size);
+            float size = Mathf.Max(16, first.pointSize * .4f), width = Mathf.Max(last.topRight.x - first.bottomLeft.x, r.text.text.Length * size);
             r.text.fontSize = size; r.text.color = label.color;
             r.text.rectTransform.sizeDelta = new Vector2(width + 8, size * 1.8f);
             r.text.rectTransform.anchoredPosition = new Vector2((first.bottomLeft.x + last.topRight.x) * .5f, first.ascender + size * .65f + 2);

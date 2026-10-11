@@ -44,7 +44,7 @@ public sealed class DailyRankingWheel : MonoBehaviour
         Image("Top", frame, new Vector2(0, 264), new Vector2(980, 3), accent);
         Image("Bottom", frame, new Vector2(0, -264), new Vector2(980, 3), accent);
         Label("Heading", frame, "本日のランキング", new Vector2(0, 211), new Vector2(900, 50), 35, accent);
-        Label("Count", frame, count.ToString("N0") + " 人中", new Vector2(0, 153), new Vector2(880, 56), 43, Color.white);
+        Label("Count", frame, count.ToString("N0") + " 回中", new Vector2(0, 153), new Vector2(880, 56), 43, Color.white);
         stateLabel = Label("State", frame, "RANKING", new Vector2(0, -203), new Vector2(890, 52), 32, accent);
 
         var mask = Rect("WheelMask", frame, new Vector2(720, 244), new Vector2(0, -12));

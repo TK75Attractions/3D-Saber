@@ -211,7 +211,7 @@ public class ResultNavigationPlayTests
         GameSession.NoteApproachTime = .5f;
         reveal.Tick(999);
         Assert.AreEqual("タイトルへ", back.GetComponentInChildren<TMPro.TextMeshProUGUI>().text);
-        Assert.AreEqual(new Vector2(0f, -466f), back.GetComponent<RectTransform>().anchoredPosition);
+        Assert.AreEqual(new Vector2(0f, -432f), back.GetComponent<RectTransform>().anchoredPosition);
         Assert.IsNull(GameObject.Find("RetrySong"));
         Assert.IsNull(GameObject.Find("ReturnToSongSelect"));
         Assert.IsNull(GameObject.Find("SkipHint"));
@@ -219,7 +219,7 @@ public class ResultNavigationPlayTests
             "中央のタイトルへボタンだけを表示する");
         ExecuteEvents.Execute(back.gameObject, new PointerEventData(EventSystem.current), ExecuteEvents.pointerClickHandler);
         Assert.True(ScreenTransition.IsBusy);
-        Assert.False(ScreenTransition.IsHardIntro);
+
         yield return WaitForTransition();
         Assert.AreEqual("Title", SceneManager.GetActiveScene().name);
         Assert.AreEqual(GameSession.JudgmentOffsetDefaultMs, GameSession.JudgmentOffsetMs);

@@ -174,4 +174,18 @@ public class TutorialProgramTests
         Assert.Greater(TitleTutorialPrompt.NoPosition.x, 0f, "いいえ は画面の右");
         Assert.AreEqual("Game", TitleSceneSkin.TutorialSceneName);
     }
+
+    [Test]
+    public void SimultaneousPracticeRequiresBothHandsInTheSamePair()
+    {
+        var pairs = new TutorialPairProgress();
+        Assert.False(pairs.Register(4, SaberHand.Right));
+        Assert.False(pairs.Register(8, SaberHand.Right), "別の回の赤を切っても合格にしない");
+        Assert.False(pairs.Register(4, SaberHand.Right), "同じ手の重複通知も数えない");
+        Assert.True(pairs.Register(4, SaberHand.Left));
+        Assert.False(pairs.Register(4, SaberHand.Left), "完成した組を二度数えない");
+        Assert.False(pairs.Register(8, SaberHand.Any));
+        pairs.Clear();
+        Assert.False(pairs.Register(8, SaberHand.Left), "前の段の成功を持ち越さない");
+    }
 }

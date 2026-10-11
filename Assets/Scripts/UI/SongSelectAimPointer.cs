@@ -20,6 +20,10 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     int sourceKind;
     bool hasPoint, mouseNeedsMove;
     float shotAge = 10;
+    public const float ArrivalGraceSeconds = .5f;
+    double arrivalUntil;
+    AudioSource confirmSource; AudioClip confirmClip;
+    public void BeginArrival() { arrivalUntil = Time.realtimeSinceStartupAsDouble + ArrivalGraceSeconds; CancelCharge(); }
     public float Progress01 => tracker.Progress01;
     public bool NeedsRelease => tracker.NeedsRelease;
     public int ShotCount { get; private set; }
@@ -45,6 +49,10 @@ public sealed class SongSelectAimPointer : MonoBehaviour
             if (dock != null) dock.GetComponent<Graphic>().raycastTarget = true;
         InputPoint.EnsureInstance();
         aim.BuildGraphics();
+        aim.BeginArrival();
+        aim.confirmSource = aim.gameObject.AddComponent<AudioSource>();
+        aim.confirmSource.playOnAwake = false; aim.confirmSource.spatialBlend = 0;
+        aim.confirmClip = JudgmentSfx.Beep(880, .07f);
         ctl.OnSelectionChanged += aim.SelectionChanged;
         ctl.OnDifficultyChanged += aim.SelectionChanged;
         return aim;
@@ -103,6 +111,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     {
         shotAge += Mathf.Max(0, dt);
         if (impact != null) impact.Show(0, false, shotAge);
+        if (ScreenTransition.IsBusy) BeginArrival();
         bool active = inputAvailable && !ScreenTransition.IsBusy;
         if (!active)
         {
@@ -120,6 +129,10 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         // 滑っている盤はため始めない。連続送りの次の1秒も、盤が止まってから数える。
         bool ready = Available(next) && !(next.disc != null && next.disc.Sliding)
             && (next.disc != null || SongSelectNoteMenu.Instance != null && SongSelectNoteMenu.Instance.IsReady);
+        bool arriving = Time.realtimeSinceStartupAsDouble < arrivalUntil;
+        if (arriving && next.disc != null && controller != null && next.disc.Button == controller.startButton)
+            tracker.BlockUntilExit(Expand(area, Padding), next.disc.Circle);
+        ready &= !arriving;
         bool repeat = next.disc != null && next.disc.RepeatWhileHeld;
         bool fire = tracker.Tick(next.key, Expand(area, Padding), point, dt, ready,
             next.disc != null ? next.disc.HoldSeconds : 1, next.disc != null && next.disc.Circle, repeat);
@@ -142,6 +155,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
             if (accepted)
             {
                 ShotCount++; shotAge = 0;
+                if (confirmSource != null && confirmClip != null) confirmSource.PlayOneShot(confirmClip, .3f);
                 Place(impact.rectTransform, hit); impact.Show(0, false, 0);
             }
         }
@@ -215,6 +229,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     void OnDisable() { CancelCharge(); if (reticle != null) reticle.gameObject.SetActive(false); }
     void OnDestroy()
     {
+        if (confirmClip != null) Destroy(confirmClip);
         if (controller != null) { controller.OnSelectionChanged -= SelectionChanged; controller.OnDifficultyChanged -= SelectionChanged; }
     }
 }

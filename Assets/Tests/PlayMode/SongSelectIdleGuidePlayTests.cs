@@ -25,6 +25,20 @@ public class SongSelectIdleGuidePlayTests
         yield return ScreenTransitionPlayTests.WaitForTransition();
         yield return new WaitForSecondsRealtime(.6f);
     }
+    [UnityTest] public IEnumerator ArrivalAtTheCenterRequiresLeavingBeforeStart()
+    {
+        var target = controller.startButton.GetComponent<SongSelectDiscTarget>();
+        var point = target.ScreenRect().center;
+        aim.BeginArrival(); aim.TickAt(point,.1f);
+        Assert.True(aim.NeedsRelease); Assert.Zero(aim.Progress01);
+        yield return new WaitForSecondsRealtime(.6f);
+        for(int i=0;i<25;i++) aim.TickAt(point,.1f);
+        Assert.False(ScreenTransition.IsBusy); Assert.Zero(aim.ShotCount);
+        aim.TickAt(new Vector2(1,1),.1f); aim.TickAt(new Vector2(1,1),.1f);
+        for(int i=0;i<21;i++) aim.TickAt(point,.1f);
+        Assert.True(ScreenTransition.IsBusy); Assert.AreEqual(1,aim.ShotCount);
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+    }
     [UnityTearDown] public IEnumerator Close()
     {
         yield return ScreenTransitionPlayTests.WaitForTransition();

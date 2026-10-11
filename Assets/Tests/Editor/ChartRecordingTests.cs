@@ -188,7 +188,7 @@ public class ChartRecordingWorkflowTests
     public void SetUp()
     {
         shown = false;
-        foreach (string key in new[] { "SongId", "Difficulty", "Snap", "Measure", "Zoom", "RecordingLayout" })
+        foreach (string key in new[] { "SongId", "Difficulty", "Snap", "Measure", "Zoom", "RecordingLayout", "ShowPlaybackPreview" })
         {
             preferences[key] = !EditorPrefs.HasKey(Prefix + key) ? null : key == "SongId" || key == "RecordingLayout" ? (object)EditorPrefs.GetString(Prefix + key)
                 : key == "Zoom" ? (object)EditorPrefs.GetFloat(Prefix + key) : EditorPrefs.GetInt(Prefix + key);
@@ -1332,6 +1332,7 @@ public class ChartRecordingWorkflowTests
     [UnityTest]
     public IEnumerator RecordingPadsAndChordsWorkAtMinimumSizeAndReleaseOutsideEndsLong()
     {
+        Set("showPlaybackPreview", true);
         window.position = new Rect(40, 40, 1050, 650);
         window.Show();
         shown = true;

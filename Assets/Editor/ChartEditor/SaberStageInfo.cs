@@ -65,6 +65,9 @@ namespace Saber.ChartEditor
 
         public bool Exists { get; }
         public string OriginalText { get; }
+        public string EditingBaselineText { get; private set; }
+        // ファイル未作成でも、開いただけなら編集済みにはしない。
+        public bool IsEdited => Write() != EditingBaselineText;
 
         private SaberStageInfo(SaberJsonObject root, bool exists, string originalText, string indent, int inlineDepth,
             string newline, bool trailingNewline)
@@ -76,6 +79,7 @@ namespace Saber.ChartEditor
             this.inlineDepth = inlineDepth;
             this.newline = newline;
             this.trailingNewline = trailingNewline;
+            EditingBaselineText = Write();
         }
 
         public static SaberStageInfo Load(string path, string songId)
@@ -83,6 +87,17 @@ namespace Saber.ChartEditor
             if (!string.IsNullOrEmpty(path) && File.Exists(path))
                 return Parse(File.ReadAllText(path, Encoding.UTF8));
             return CreateNew(songId);
+        }
+
+        // エディターの再コンパイルから、保存前の比較基準も含めて復元する。
+        public static SaberStageInfo RestoreDraft(string text, string originalText, bool existed, string baselineText = null)
+        {
+            var draft = Parse(text);
+            var restored = new SaberStageInfo(draft.root, existed, originalText, draft.indent, draft.inlineDepth,
+                draft.newline, draft.trailingNewline);
+            if (baselineText != null) restored.EditingBaselineText = baselineText;
+            else if (originalText != null) restored.EditingBaselineText = Parse(originalText).Write();
+            return restored;
         }
 
         public static SaberStageInfo Parse(string text)

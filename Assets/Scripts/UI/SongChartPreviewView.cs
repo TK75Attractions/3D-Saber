@@ -91,7 +91,7 @@ public sealed class SongChartPreviewView : IDisposable
         foreach(var note in chart.notes.Where(n=>SongPreviewWindow.Intersects(chart,n,chartWindow,approach)))
             entries.Add(new Entry{data=note,hit=SongPreviewWindow.NoteTime(chart,note)+displayOffsetSeconds,linger=SongPreviewWindow.Linger(note)});
         entries.Sort((a,b)=>a.hit.CompareTo(b.hit)); next=0; lastTime=window.Start; lastHit=-100;
-        heading.text="AUTO PREVIEW  /  "+(string.Equals(difficulty,"Hard",StringComparison.OrdinalIgnoreCase)?"MASTER":(difficulty??"NORMAL").ToUpperInvariant());
+        heading.text="AUTO PREVIEW  /  "+(string.Equals(difficulty,"Hard",StringComparison.OrdinalIgnoreCase)?"HARD":(difficulty??"NORMAL").ToUpperInvariant());
         root.SetActive(true); Tick(window.Start); camera.enabled=false;
     }
 

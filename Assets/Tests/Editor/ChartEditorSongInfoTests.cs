@@ -13,7 +13,7 @@ using Object = UnityEngine.Object;
 public class ChartEditorSongInfoTests
 {
     const string Prefix = "3DSaber.ChartEditor.";
-    static readonly string[] PrefKeys = { "SongId", "Difficulty", "Snap", "Measure", "Zoom", "RecordingLayout" };
+    static readonly string[] PrefKeys = { "SongId", "Difficulty", "Snap", "Measure", "Zoom", "RecordingLayout", "ShowPlaybackPreview" };
     readonly Dictionary<string, object> savedPrefs = new Dictionary<string, object>();
     SaberChartEditorWindow window;
 
@@ -231,6 +231,169 @@ public class ChartEditorSongInfoTests
             Assert.AreEqual(0, preview.VisibleBarLineCount);
             Assert.AreEqual(1, preview.VisibleNoteCount, "目印はノーツの数に入れない");
         }
+    }
+
+    [Test]
+    public void StageDraftSurvivesReloadAndParticipatesInUnsavedConfirmation()
+    {
+        WithSongFolder((song, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{\"bpm\":120,\"notes\":[]}");
+            string original = "{\"displayName\":\"前の名前\",\"_unknown\":7}";
+            File.WriteAllText(Path.Combine(folder, "stage.json"), original);
+            Load(song, 1); Call("EnsureSongInfo");
+            Get<SaberStageInfo>("songInfo").DisplayName = "未保存の名前";
+            Call("CacheSongInfoDraft"); Set("songInfo", null); Call("RestoreSongInfoDraft");
+            Assert.AreEqual("未保存の名前", Get<SaberStageInfo>("songInfo").DisplayName);
+            Assert.AreEqual(original, Get<SaberStageInfo>("songInfo").OriginalText);
+            Call("UpdateDirtyState"); Assert.True(window.hasUnsavedChanges);
+            int asked = 0;
+            Set("confirmChangesDialog", new Func<string, string, string, string, string, int>((a,b,c,d,e) => { asked++; return 1; }));
+            Assert.False((bool)Call("ConfirmAbandonChanges")); Assert.AreEqual(1, asked);
+            Assert.AreEqual(original, File.ReadAllText(Path.Combine(folder, "stage.json")));
+        });
+    }
+
+    [Test]
+    public void SavingMetadataOnlyDoesNotRewriteTheChart()
+    {
+        WithSongFolder((song, folder) =>
+        {
+            string chart = "{\"bpm\":120,\"notes\":[{\"beat\":2,\"time\":1000.37,\"x\":0.123}]}";
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), chart);
+            File.WriteAllText(Path.Combine(folder, "stage.json"), "{\"displayName\":\"元の曲\"}");
+            Load(song, 1); Call("EnsureSongInfo");
+            Get<SaberStageInfo>("songInfo").DisplayName = "新しい曲";
+            Call("UpdateDirtyState"); Assert.True((bool)Call("SaveDocument"));
+            Assert.AreEqual(chart, File.ReadAllText(Path.Combine(folder, "chart_normal.json")));
+            StringAssert.Contains("新しい曲", File.ReadAllText(Path.Combine(folder, "stage.json")));
+            Assert.False(window.hasUnsavedChanges);
+        });
+    }
+
+    [Test]
+    public void NewWindowRestoresTheLastChartInsteadOfAnEmptySavedDocument()
+    {
+        WithSongFolder((song, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{\"bpm\":120,\"notes\":[{\"beat\":2,\"time\":1000,\"x\":1}]}");
+            EditorPrefs.SetString(Prefix + "SongId", song); EditorPrefs.SetInt(Prefix + "Difficulty", 1);
+            var reopened = ScriptableObject.CreateInstance<SaberChartEditorWindow>();
+            try
+            {
+                var restored = (SaberChartDocument)typeof(SaberChartEditorWindow).GetField("document", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(reopened);
+                Assert.AreEqual(1, restored.notes.Count); Assert.AreEqual(1000, restored.notes[0].time);
+                Assert.False(reopened.hasUnsavedChanges);
+            }
+            finally { reopened.DiscardChanges(); Object.DestroyImmediate(reopened); }
+        });
+    }
+
+    [Test]
+    public void MissingStageIsCleanUntilEditedAndItsDraftKeepsTheOriginalBaseline()
+    {
+        WithSongFolder((song, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{\"bpm\":120,\"notes\":[]}");
+            Load(song, 1); Call("EnsureSongInfo"); Call("UpdateDirtyState");
+            Assert.False(window.hasUnsavedChanges);
+            Assert.True((bool)Call("SaveDocument"));
+            Assert.False(File.Exists(Path.Combine(folder, "stage.json")));
+            Get<SaberStageInfo>("songInfo").DisplayName="未保存";
+            Call("CacheSongInfoDraft"); Set("songInfo",null); Call("RestoreSongInfoDraft"); Call("UpdateDirtyState");
+            Assert.True(window.hasUnsavedChanges);
+            Assert.True((bool)Call("SaveDocument"));
+            Assert.True(File.Exists(Path.Combine(folder,"stage.json")));
+            Assert.False(window.hasUnsavedChanges);
+        });
+    }
+
+    [TestCase(false)]
+    [TestCase(true)]
+    public void NewChartDiscardsMetadataOnceAndLoadsTheTargetSong(bool anotherSong)
+    {
+        WithSongFolder((song, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{\"bpm\":120,\"notes\":[]}");
+            string original = "{\"displayName\":\"元の曲名\"}";
+            File.WriteAllText(Path.Combine(folder, "stage.json"), original);
+            Load(song, 1); Call("EnsureSongInfo");
+            Get<SaberStageInfo>("songInfo").DisplayName = "破棄する曲名";
+            int asked = 0, repeated = 0;
+            Set("confirmChangesDialog", new Func<string,string,string,string,string,int>((a,b,c,d,e) => { asked++; return 2; }));
+            Set("confirmSongInfoDialog", new Func<string,string,bool>((a,b) => { repeated++; return false; }));
+            string target = anotherSong ? song + "_New" : song;
+            Set("songId", target);
+            Call("NewDocument"); Call("EnsureSongInfo");
+            Assert.AreEqual(1, asked);
+            Assert.AreEqual(0, repeated, "新規作成の確認で破棄した曲情報は再確認しない");
+            Assert.AreEqual(target, Get<string>("songInfoSong"));
+            Assert.AreEqual(anotherSong ? target : "元の曲名", Get<SaberStageInfo>("songInfo").DisplayName);
+            Assert.False((bool)GetProperty("SongInfoDirty"));
+            Assert.AreEqual(original, File.ReadAllText(Path.Combine(folder, "stage.json")));
+            Assert.True(window.hasUnsavedChanges, "新しい譜面自体は未保存");
+        });
+    }
+
+    [Test]
+    public void CompactStageFormattingDoesNotCountAsAnEdit()
+    {
+        string original = "{\"displayName\":\"元の曲名\"}";
+        var info = SaberStageInfo.Parse(original);
+        Assert.False(info.IsEdited);
+        info.DisplayName = "変更後";
+        Assert.True(info.IsEdited);
+        var restored = SaberStageInfo.RestoreDraft(info.Write(), original, true);
+        Assert.True(restored.IsEdited);
+        restored.DisplayName = "元の曲名";
+        Assert.False(restored.IsEdited);
+    }
+
+    [Test]
+    public void CleanMetadataCacheReloadsExternalDiskChanges()
+    {
+        WithSongFolder((song, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{\"bpm\":120,\"notes\":[]}");
+            string stage = Path.Combine(folder, "stage.json");
+            File.WriteAllText(stage, "{\"displayName\":\"変更前\"}");
+            Load(song, 1); Call("EnsureSongInfo"); Call("CacheSongInfoDraft");
+            File.WriteAllText(stage, "{\"displayName\":\"外部で更新\",\"_external\":123}");
+            Set("songInfo", null); Call("RestoreSongInfoDraft"); Call("EnsureSongInfo");
+            Assert.AreEqual("外部で更新", Get<SaberStageInfo>("songInfo").DisplayName);
+            Get<SaberStageInfo>("songInfo").Reading = "よみ";
+            Assert.True((bool)Call("SaveDocument"));
+            StringAssert.Contains("\"_external\": 123", File.ReadAllText(stage));
+        });
+    }
+
+    [Test]
+    public void OtherDifficultyLevelOnlyDraftSurvivesReload()
+    {
+        WithSongFolder((song, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{\"bpm\":120,\"notes\":[]}");
+            File.WriteAllText(Path.Combine(folder, "chart_hard.json"), "{\"bpm\":120,\"displayLevel\":3,\"notes\":[]}");
+            Load(song, 1); Call("EnsureSongInfo");
+            Get<int[]>("songInfoLevels")[2] = 8;
+            Call("CacheSongInfoDraft"); Set("songInfo", null); Call("RestoreSongInfoDraft"); Call("EnsureSongInfo");
+            Assert.AreEqual(8, Get<int[]>("songInfoLevels")[2]);
+            Assert.True((bool)GetProperty("SongInfoDirty"));
+        });
+    }
+
+    [Test]
+    public void SavingOnlyMetadataDoesNotCreateAnEmptyChart()
+    {
+        WithSongFolder((song, folder) =>
+        {
+            Load(song, 1); Call("EnsureSongInfo");
+            Get<SaberStageInfo>("songInfo").DisplayName = "曲情報だけ保存";
+            Assert.True((bool)Call("SaveDocument"));
+            Assert.True(File.Exists(Path.Combine(folder, "stage.json")));
+            Assert.IsEmpty(Directory.GetFiles(folder, "chart*.json"));
+            Assert.False(window.hasUnsavedChanges);
+        });
     }
 
     // ---- helpers ----

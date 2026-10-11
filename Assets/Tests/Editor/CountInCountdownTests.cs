@@ -74,7 +74,7 @@ public class CountInCountdownTests
         Assert.AreEqual(UISkinPalette.LogoBlue, CountInGateCue.ColorFor(CountInGateCue.Side.Left, 0, accent), "左手と同じ青");
         Assert.AreEqual(UISkinPalette.LogoRed, CountInGateCue.ColorFor(CountInGateCue.Side.Right, 1, accent), "右手と同じ赤");
         Assert.AreEqual(Color.white, CountInGateCue.ColorFor(CountInGateCue.Side.Top, 2, accent));
-        Assert.AreEqual(accent, CountInGateCue.ColorFor(CountInGateCue.Side.Left, 3, accent), "START は難易度の色");
+        Assert.AreEqual(Color.white, CountInGateCue.ColorFor(CountInGateCue.Side.Left, 3, accent), "START は左右どちらの手も表さない白");
     }
 
     [Test]
@@ -176,7 +176,8 @@ public class CountInCountdownTests
 
         countdown.Apply(start + .05);
         left.GetPropertyBlock(block); l = block.GetColor("_EmissionColor");
-        Assert.Greater(l.g, l.r, "START: ゲート全体が難易度(EASY の緑)の色");
+        Assert.AreEqual(l.r, l.g, .001f, "START: ゲート全体が白");
+        Assert.AreEqual(l.r, l.b, .001f);
 
         countdown.Apply(countdown.EndDspTime + .01);
         Assert.IsFalse(left.HasPropertyBlock(), "終わったら上書きを外して元の材質に戻す");

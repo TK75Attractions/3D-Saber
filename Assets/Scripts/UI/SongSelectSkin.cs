@@ -28,14 +28,14 @@ public class SongSelectSkin : MonoBehaviour
     readonly TextMeshProUGUI[] difficultyNumbers = new TextMeshProUGUI[3];
     readonly TextMeshProUGUI[] difficultyLabels = new TextMeshProUGUI[3];
     readonly SongSelectRubyText[] counts = new SongSelectRubyText[4];
-    TextMeshProUGUI timer, achievementDifficulty, libraryPosition;
+    TextMeshProUGUI timer, timerNotice, achievementDifficulty, libraryPosition;
     SongSelectRubyText songTitle;
     SongSelectCorridor corridor;
     MenuSignalNoise hardNoise;
     RectTransform layout;
     float animation = 1;
     bool built;
-    int displayedSecond = -1, shownIndex = -1;
+    int displayedSecond = -1, noticeSecond = -1, shownIndex = -1;
     double lastTick;
     public bool IsReady => built;
     public double RemainingSeconds => countdown.Remaining;
@@ -69,7 +69,7 @@ public class SongSelectSkin : MonoBehaviour
         ctl.suppressDefaultDifficultyTint = true;
         corridor = SongSelectCorridor.Build(layout, ctl);
         BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildAchievements(); BuildActions();
-        hardNoise = MenuSignalNoise.BuildScreenOverlay(canvas);
+        hardNoise = MenuSignalNoise.BuildScreenOverlay(canvas, layout);
         ctl.OnSelectionChanged += SelectionChanged; ctl.OnDifficultyChanged += DifficultyChanged;
         SelectionChanged(ctl.SelectedIndex); animation = 1; AnimateDiscs();
         var guide = SongSelectIdleGuide.Build(ctl, layout);
@@ -81,7 +81,7 @@ public class SongSelectSkin : MonoBehaviour
     }
 
     public static Color DifficultyColor(int index) => SongSelectVisuals.Difficulty[Mathf.Clamp(index, 0, 2)];
-    public static string DifficultyDisplayName(int index, string sourceName) => index == 2 ? "MASTER" : string.IsNullOrEmpty(sourceName) ? $"CHART {index + 1}" : sourceName.ToUpperInvariant();
+    public static string DifficultyDisplayName(int index, string sourceName) => index == 2 ? "HARD" : string.IsNullOrEmpty(sourceName) ? $"CHART {index + 1}" : sourceName.ToUpperInvariant();
     public static int MeterSegmentsForLevel(int level) => Mathf.Clamp(level, 0, 10);
     public static string FormatDifficultyLevel(int level) => level > 0 ? $"LEVEL {Mathf.Clamp(level, 0, 99):00}" : "LEVEL --";
     public static string FormatDifficultyCardLevel(int level) => level > 0 ? $"LV {Mathf.Clamp(level, 0, 99):00}" : "LV --";
@@ -156,6 +156,7 @@ public class SongSelectSkin : MonoBehaviour
         title.fontStyle = FontStyles.Bold;
         Ruby(title, "<ruby=なんいど>難易度</ruby>と<ruby=がっきょく>楽曲</ruby>を<ruby=えら>選</ruby>んでね");
         timer = BuildCountdownDisplay(layout);
+        timerNotice = Label(layout, "TimerConsequence", "この曲が自動で始まるまで", 25, Position(1600, 171), new Vector2(560, 40), UISkinKit.JapaneseFallbackFontAsset(), White);
     }
     // 選曲と判定調整で同じ位置・図形・文字を使い、表示仕様を一か所で管理する。
     public static TextMeshProUGUI BuildCountdownDisplay(Transform parent)
@@ -208,12 +209,7 @@ public class SongSelectSkin : MonoBehaviour
             });
             discs.Add(d);
         }
-        foreach (int side in new[] { -1, 1 })
-        {
-            // 2曲先の盤(画面端)の縁にかからない高さに置く。
-            var arrow = Graphic(layout, "DecorativeArrow", Position(side < 0 ? 52 : 1844, 470), new Vector2(60, 90), SongSelectDiscGraphic.Shape.Arrow, new Color(.38f, .81f, .83f, .35f));
-            if (side > 0) arrow.rectTransform.localScale = new Vector3(-1, 1, 1);
-        }
+        Label(layout, "StartHint", "中央の曲に２秒かざすと スタート", 26, Position(960, 743), new Vector2(750, 36), UISkinKit.JapaneseFallbackFontAsset(), White);
     }
     void BuildTitle()
     {
@@ -245,9 +241,9 @@ public class SongSelectSkin : MonoBehaviour
     void BuildAchievements()
     {
         var panel = PanelAt("Achievements", 295, 915, 470, 250, SongSelectVisuals.Edge, 3, 22);
-        Ruby(Label(panel.transform, "AchievementHeading", "", 24, new Vector2(-163, 88), new Vector2(94, 45), UISkinKit.JapaneseFallbackFontAsset(), SongSelectVisuals.Accent), "<ruby=じっせき>実績</ruby>");
+        Ruby(Label(panel.transform, "AchievementHeading", "", 24, new Vector2(-163, 88), new Vector2(94, 45), UISkinKit.JapaneseFallbackFontAsset(), SongSelectVisuals.Accent), "<ruby=きろく>記録</ruby>");
         achievementDifficulty = Label(panel.transform, "AchievementDifficulty", "EASY", 24, new Vector2(-49, 86), new Vector2(152, 36), color: SongSelectVisuals.Muted);
-        string[] ranks = { "S", "S<color=#ff6e7a>+</color>", "FC", "AP" };
+        string[] ranks = { "S以上", "S<color=#ff6e7a>+</color>", "FC", "AP" };
         for (int i = 0; i < 4; i++)
         {
             float x = i % 2 == 0 ? -192 : 32, y = i < 2 ? 29 : -43;
@@ -256,7 +252,7 @@ public class SongSelectSkin : MonoBehaviour
             if (i == 3) { rank.color = Color.white; rank.enableVertexGradient = true; rank.colorGradient = new VertexGradient(new Color(1, .5f, .5f), new Color(.65f, .5f, 1), new Color(1, .85f, .45f), new Color(.3f, .9f, 1)); }
             var number = Label(panel.transform, "Count" + i, "", 36, new Vector2(x + 137, y - 2), new Vector2(106, 55), UISkinKit.LogoFontAsset());
             number.enableAutoSizing = true; number.fontSizeMin = 16; number.fontSizeMax = 36;
-            counts[i] = Ruby(number, "0<size=20><ruby=にん>人</ruby></size>");
+            counts[i] = Ruby(number, "0<size=20>回</size>");
             var line = Graphic(panel.transform, "Rule", new Vector2(x + 94, y - 31), new Vector2(196, 2), SongSelectDiscGraphic.Shape.Panel, new Color(.38f, .81f, .83f, .2f)); line.Width = 0;
         }
     }
@@ -336,7 +332,7 @@ public class SongSelectSkin : MonoBehaviour
         achievementDifficulty.text = DifficultyDisplayName(selected, ctl.difficultyNames[selected]);
         var value = SongAchievementStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.difficultyNames[selected]);
         int[] values = { value.s, value.sPlus, value.fc, value.ap };
-        for (int i = 0; i < 4; i++) counts[i].Set(values[i].ToString() + "<size=20><ruby=にん>人</ruby></size>");
+        for (int i = 0; i < 4; i++) counts[i].Set(values[i].ToString() + "<size=20>回</size>");
     }
     void Update()
     {
@@ -345,6 +341,12 @@ public class SongSelectSkin : MonoBehaviour
         double now = Time.realtimeSinceStartupAsDouble;
         TickCountdown(now - lastTick); lastTick = now;
         RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
+        if (noticeSecond != displayedSecond)
+        {
+            noticeSecond = displayedSecond;
+            timerNotice.text = displayedSecond <= 20 ? "あと " + displayedSecond + " 秒で自動スタート" : "この曲が自動で始まるまで";
+            timerNotice.color = displayedSecond <= 20 ? Gold : White;
+        }
     }
     public void TickCountdown(double deltaSeconds)
     {

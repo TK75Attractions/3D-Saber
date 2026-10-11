@@ -129,7 +129,7 @@ public class DailyRankingPlayTests
         Assert.True(back.IsInteractable());
         Assert.False(panel.GetComponent<CanvasGroup>().blocksRaycasts);
         Assert.IsNull(panel.transform.Find("Scope"));
-        Assert.AreEqual("1 人中", panel.transform.Find("Count").GetComponent<TMP_Text>().text);
+        Assert.AreEqual("1 回中", panel.transform.Find("Count").GetComponent<TMP_Text>().text);
         Assert.AreEqual(0, wheel.GetComponent<CanvasGroup>().alpha);
         Assert.AreEqual(0, panel.transform.Find("Sweep").GetComponent<Image>().color.a);
         Assert.AreEqual(0, panel.transform.Find("LandingGlow").GetComponent<Image>().color.a);
@@ -163,7 +163,7 @@ public class DailyRankingPlayTests
             var wheel = Object.FindFirstObjectByType<DailyRankingWheel>();
             Assert.AreEqual(rank <= 3, wheel != null, "上位3位だけホイールを作る");
             Assert.IsNull(view.transform.Find("Scope"));
-            Assert.True(view.transform.Find("Count").GetComponent<TMP_Text>().text.EndsWith(" 人中"));
+            Assert.True(view.transform.Find("Count").GetComponent<TMP_Text>().text.EndsWith(" 回中"));
             Canvas.ForceUpdateCanvases();
             foreach (var text in view.GetComponentsInChildren<TMP_Text>())
             {

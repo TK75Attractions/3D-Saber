@@ -27,6 +27,7 @@ public sealed class TutorialOverlay : MonoBehaviour
     float judgeShownAt = -100f;
     string shownTitle, shownSub, shownHint;
     int shownStep = -1;
+    int shownRemaining = int.MinValue; bool shownPairs;
 
     public static TutorialOverlay Ensure()
     {
@@ -77,7 +78,7 @@ public sealed class TutorialOverlay : MonoBehaviour
         rt.gameObject.AddComponent<SongSelectActionStyle>().Initialize(b, face, label, false);
         b.onClick.AddListener(click);
         var dwell = rt.gameObject.AddComponent<SaberDwellTarget>();
-        dwell.dwellSeconds = 1; dwell.progressColor = Cyan;
+        dwell.dwellSeconds = 1.5f; dwell.progressColor = Cyan;
         return b;
     }
 
@@ -85,17 +86,17 @@ public sealed class TutorialOverlay : MonoBehaviour
     {
         if (UnityEngine.Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             new GameObject("EventSystem", typeof(UnityEngine.EventSystems.EventSystem), typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule));
-        title = Label(transform, "Title", "", 56, 0, 430, 1700, 90, Ink, true, true);
+        title = Label(transform, "Title", "", 56, 0, 350, 1700, 90, Ink, true, true);
         title.enableAutoSizing = true; title.fontSizeMin = 36; title.fontSizeMax = 56; title.textWrappingMode = TextWrappingModes.NoWrap;
-        sub = Label(transform, "Sub", "", 30, 0, 366, 1600, 48, Muted);
+        sub = Label(transform, "Sub", "", 30, 0, 282, 1600, 48, Muted);
+        sub.gameObject.SetActive(false);
         hintPanel = SongSelectVisuals.Panel(transform, "HintPanel", new Vector2(0, 296), new Vector2(900, 56),
             new Color(.08f, .3f, .3f, .8f), Cyan, 8).gameObject;
         hint = Label(hintPanel.transform, "Hint", "", 26, 0, 0, 860, 48, Cyan);
         hintPanel.SetActive(false);
-        var chip = Label(transform, "Chip", "TUTORIAL", 24, 790, 480, 260, 40, Cyan);
-        chip.font = UISkinKit.LogoFontAsset(); chip.fontStyle = FontStyles.Bold; chip.characterSpacing = 8f;
-        timer = Label(transform, "Timer", "", 28, -820, 480, 220, 40, Muted, false);
-        timer.font = UISkinKit.LogoFontAsset();
+        var chip = Label(transform, "Chip", "れんしゅう", 24, 790, 480, 260, 40, Cyan);
+        chip.font = UISkinKit.JapaneseFallbackFontAsset(); chip.fontStyle = FontStyles.Bold; chip.characterSpacing = 8f;
+        timer = Label(transform, "Timer", "", 30, 0, 282, 600, 48, Ink);
         dots = Rect(transform, "Steps", -820, 446, 400, 20);
         judge = Label(transform, "Judge", "", JudgeFontSize, 0, JudgeY, 1200, 90, Ink);
         judge.font = UISkinKit.LogoFontAsset(); judge.fontStyle = FontStyles.Bold | FontStyles.Italic; judge.textWrappingMode = TextWrappingModes.NoWrap;
@@ -113,7 +114,7 @@ public sealed class TutorialOverlay : MonoBehaviour
         handsCard.SetActive(false);
         // 画面下の帯(本編の判定調整と同じ下 18%)。見えない枠だけ置き、照準の受付範囲にする。
         Controls = Rect(transform, "Controls", 0, -414, 1840, 236);
-        SkipButton = Action(Controls, "Skip", "スキップ", 760, -50, 280, 84, () => { if (ctl != null) ctl.Skip(); });
+        SkipButton = Action(Controls, "Skip", "練習をやめて 曲をえらぶ", 575, -28, 650, 108, () => { if (ctl != null) ctl.Skip(); });
     }
 
     void Blade(Transform parent, string name, float x, Color color, float tilt, string caption)
@@ -170,15 +171,27 @@ public sealed class TutorialOverlay : MonoBehaviour
     public void Tick(float frameSeconds)
     {
         if (ctl == null) return;
-        if (timer != null) timer.text = FormatTime(ctl.ElapsedSeconds);
+        if (timer != null)
+        {
+            int left = ctl.Step != null ? Mathf.Max(0, ctl.Step.Goal - ctl.Successes) : 0;
+            bool pairs = ctl.Step != null && ctl.Step.Simultaneous;
+            int remaining = ctl.Step != null && ctl.Step.Kind == TutorialStepKind.Practice && !ctl.StepDone ? left : -1;
+            if (remaining != shownRemaining || pairs != shownPairs)
+            {
+                shownRemaining = remaining; shownPairs = pairs;
+                timer.text = remaining < 0 ? "" : pairs ? "あと " + ((left + 1) / 2) + " 組" : "あと " + left + " 回";
+            }
+        }
         if (ctl.Step != null && shownStep != ctl.StepIndex) { shownStep = ctl.StepIndex; RefreshDots(shownStep); }
         if (shownTitle != ctl.BannerTitle || shownSub != ctl.BannerSub) ShowBanner(ctl.BannerTitle, ctl.BannerSub);
         if (shownHint != ctl.Hint)
         {
             shownHint = ctl.Hint;
-            if (hintPanel != null) hintPanel.SetActive(!string.IsNullOrEmpty(shownHint));
+            if (hintPanel != null) hintPanel.SetActive(false);
             if (hint != null) hint.text = shownHint ?? "";
         }
+        string nextTitle = !ctl.StepDone && !string.IsNullOrEmpty(ctl.Hint) ? ctl.Hint : shownTitle;
+        if (title != null && title.text != nextTitle) title.text = nextTitle;
         if (judge != null && judge.gameObject.activeSelf)
         {
             float t = (Time.unscaledTime - judgeShownAt) / JudgeFlashSeconds;
@@ -199,12 +212,8 @@ public sealed class TutorialOverlay : MonoBehaviour
         if (judge == null) return;
         judge.text = JudgmentTierHelper.Label(tier);
         var color = GameHUDSkin.TierColor(tier); color.a = 1f; judge.color = color;
-        string detail = wrongFlick ? "! FLICK"
-            : (score != null ? GameHUDSkin.FormatTimingHint(tier, score.LastErrorValid, score.LastErrorMs) : "");
-        judgeSub.text = detail;
-        var detailColor = wrongFlick ? new Color(1f, .7f, .2f) : (score != null ? GameHUDSkin.TimingHintColor(score.LastErrorMs) : Ink);
-        detailColor.a = 1f; judgeSub.color = detailColor;
-        judgeSub.gameObject.SetActive(!string.IsNullOrEmpty(detail));
+        judgeSub.text = "";
+        judgeSub.gameObject.SetActive(false);
         judge.rectTransform.anchoredPosition = judgeBasePos;
         judge.gameObject.SetActive(true);
         judgeShownAt = Time.unscaledTime;

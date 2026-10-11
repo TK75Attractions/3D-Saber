@@ -34,12 +34,13 @@ public class ComboBonusPresentation : MonoBehaviour
     Image glow, scrim;
     AudioSource audioSource;
     AudioClip impact;
-    bool landed;
+    bool landed, continueFromDim;
 
-    public static ComboBonusPresentation Create(int maxCombo)
+    public static ComboBonusPresentation Create(int maxCombo, bool continueFromDim = false)
     {
         var root = new GameObject("ComboBonusPresentation", typeof(RectTransform));
         var presentation = root.AddComponent<ComboBonusPresentation>();
+        presentation.continueFromDim = continueFromDim;
         presentation.Build(maxCombo);
         return presentation;
     }
@@ -137,7 +138,7 @@ public class ComboBonusPresentation : MonoBehaviour
         float shake = !low && maximum > 0 ? (3 + Tier(maximum) * 2) * Mathf.Clamp01(1f - after / .22f) : 0;
         lettering.anchoredPosition = elapsed < LandingTime ? Vector2.zero : new Vector2(0, Mathf.Sin(after * 75) * shake);
         letteringAlpha.alpha = Mathf.Clamp01(elapsed / .14f);
-        scrim.color = new Color(.012f, .018f, .055f, Mathf.Lerp(0, .87f, Mathf.Clamp01(elapsed / .18f)));
+        scrim.color = new Color(.012f, .018f, .055f, Mathf.Lerp(0, .87f, (continueFromDim ? 1f : Mathf.Clamp01(elapsed / .18f))));
         var tint = Accent(maximum);
         tint.a = (low ? .15f : .48f) * Mathf.Clamp01(elapsed / .2f);
         glow.color = tint;

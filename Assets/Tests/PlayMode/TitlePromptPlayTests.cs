@@ -37,6 +37,12 @@ public class TitlePromptPlayTests
         Assert.NotNull(prompt, "問いかけが作られる");
         Assert.IsTrue(prompt.IsOpen, "暗転の後に問いかけが開く");
         Assert.IsFalse(ScreenTransition.IsBusy, "答えるまで幕は次のシーンへ進まない");
+        Assert.False(prompt.CanAnswer);
+        Assert.False(prompt.YesNote.Note.IsJudgeable);
+        prompt.Choose(false, "early-test"); Assert.False(prompt.Answered);
+        yield return new WaitForSecondsRealtime(TitleTutorialPrompt.InputDelaySeconds + .05f);
+        Assert.True(prompt.CanAnswer);
+        Assert.NotNull(GameObject.Find("TitleSaberLeft"));
     }
 
     [UnityTest] public IEnumerator SlashingStartOpensThePromptWithYesOnTheLeftAndNoOnTheRight()

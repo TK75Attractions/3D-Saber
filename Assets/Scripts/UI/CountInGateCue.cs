@@ -2,7 +2,7 @@ using System.Collections.Generic;
 using UnityEngine;
 
 // カウントイン(3・2・1)で判定ゲートの辺と床の判定線を拍ごとに点ける(2026-10-05 Web 試作の案B「ゲートの合図」)。
-//   3: 左の辺と床の左半分が青(左手) / 2: 右の辺と床の右半分が赤(右手) / 1: 上下の辺と四隅が白 / START: 全部が難易度の色。
+//   3: 左の辺と床の左半分が青(左手) / 2: 右の辺と床の右半分が赤(右手) / 1: 上下の辺と四隅が白 / START: 全部が白。
 // 辺は JudgeGateFrame の GateLeft/GateRight/GateTop/GateBottom で、4本が材質を共有している。
 // 共有材質には触らず、レンダラーごとの MaterialPropertyBlock で上書きし、終わったら必ず外す
 // (Perfect で共有材質を光らせる GateBeatPulse を邪魔しない)。
@@ -67,10 +67,10 @@ public sealed class CountInGateCue
     public static int LightStep(Side side) => side == Side.Left ? 0 : side == Side.Right ? 1 : 2;
     public static bool IsLit(Side side, int step) => step >= LightStep(side);
 
-    // 点いた辺の色。左右はセーバーと同じ(青=左、赤=右)、上下は白、START は難易度の色。
+    // 点いた辺の色。左右はセーバーと同じ(青=左、赤=右)、上下は白、START は白。
     public static Color ColorFor(Side side, int step, Color accent)
     {
-        if (step >= 3) return accent;
+        if (step >= 3) return Color.white;
         if (side == Side.Left) return UISkinPalette.LogoBlue;
         if (side == Side.Right) return UISkinPalette.LogoRed;
         return Color.white;
@@ -95,7 +95,7 @@ public sealed class CountInGateCue
             if (step >= 3)
             {
                 float gain = 1.25f + 1.1f * Pulse(startAge, .3);
-                baseColor = accent; glow = accent * (emission * gain);
+                baseColor = Color.white; glow = Color.white * (emission * gain);
             }
             else if (IsLit(side, step))
             {
@@ -111,9 +111,9 @@ public sealed class CountInGateCue
             }
             Set(renderer, Color.Lerp(baseColor, edgeBase, back), Color.Lerp(glow, edgeEmission, back));
         }
-        // 四隅: 「1」で白く光り、START で難易度の色
+        // 四隅: 「1」と START は白。左右の手の色と区別する。
         Color cornerColor, cornerGlow;
-        if (step >= 3) { cornerColor = accent; cornerGlow = accent * (GameStageSkin.GateCornerEmission * (1.2f + Pulse(startAge, .3))); }
+        if (step >= 3) { cornerColor = Color.white; cornerGlow = Color.white * (GameStageSkin.GateCornerEmission * (1.2f + Pulse(startAge, .3))); }
         else if (step == 2)
         {
             float flash = Pulse(sinceFirstBeat - 2 * countSeconds, .25);

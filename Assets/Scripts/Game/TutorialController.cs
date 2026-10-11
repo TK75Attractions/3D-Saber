@@ -39,6 +39,8 @@ public sealed class TutorialController : MonoBehaviour
     TutorialStep[] steps;
     SaberUIPointer pointer;
     readonly List<CuttableNote> watched = new List<CuttableNote>();
+    readonly Dictionary<CuttableNote, int> noteSteps = new Dictionary<CuttableNote, int>();
+    readonly TutorialPairProgress pairs = new TutorialPairProgress();
     readonly List<TutorialStepRecord> records = new List<TutorialStepRecord>();
     double totalOffset, startChartTime, stepStart, stepEndAt, nextPatternAt;
     int stepIndex = -1, swingFrames;
@@ -80,7 +82,7 @@ public sealed class TutorialController : MonoBehaviour
         music = Resources.Load<AudioClip>(MusicResourcePath);
         if (music == null) Debug.LogError("Tutorial: 練習用の音源が見つかりません: " + MusicResourcePath);
         song.Clip = music;
-        song.PlayScheduled(AudioSettings.dspTime + .35);
+        StartCoroutine(StartMusicWhenVisible());
         Overlay = TutorialOverlay.Ensure();
         Overlay.Bind(this, score);
         // スキップの的は画面下の帯だけで受け付け、通常の振りで押されないようにする(判定調整と同じ)。
@@ -89,7 +91,14 @@ public sealed class TutorialController : MonoBehaviour
         pointer.RemapToFullScreen = true;
         pointer.RespectRaycastBlockers = true;
         pointer.BottomControlsOnly = true;
+        pointer.HideOutsideBottomControls = true;
         steps = TutorialProgram.Build(TutorialProgram.CommonFlow, true);
+    }
+
+    System.Collections.IEnumerator StartMusicWhenVisible()
+    {
+        while (ScreenTransition.IsBusy) yield return null;
+        if (!IsFinished && song != null) song.PlayScheduled(AudioSettings.dspTime + .35);
     }
 
     public void Tick(float frameSeconds)
@@ -115,7 +124,7 @@ public sealed class TutorialController : MonoBehaviour
                             break;
                         case TutorialStepKind.Explain:
                             swingFrames = AnySaberSwinging() ? swingFrames + 1 : 0;
-                            if (swingFrames >= 3 || elapsed >= step.TimeoutSeconds) Complete(now, "ok");
+                            if ((elapsed >= TutorialProgram.HandsMinimumSeconds && swingFrames >= 3) || elapsed >= step.TimeoutSeconds) Complete(now, "ok");
                             break;
                         case TutorialStepKind.Ready:
                             if (elapsed >= step.TimeoutSeconds) Complete(now, "ok");
@@ -145,6 +154,7 @@ public sealed class TutorialController : MonoBehaviour
     {
         stepIndex = index; Successes = 0; StepDone = false; swingFrames = 0; Hint = null;
         stepStart = now;
+        pairs.Clear();
         var step = Step;
         nextPatternAt = TutorialProgram.NextBarAtOrAfter(now + TutorialProgram.ReadDelaySeconds + spawner.approachTime);
         BannerTitle = step.Title; BannerSub = step.Sub;
@@ -203,6 +213,7 @@ public sealed class TutorialController : MonoBehaviour
     void WatchNote(CuttableNote note)
     {
         watched.Add(note);
+        noteSteps[note] = stepIndex;
         note.OnJudged += Judged;
         note.OnMiss += Missed;
     }
@@ -210,10 +221,11 @@ public sealed class TutorialController : MonoBehaviour
     void Judged(CuttableNote note, JudgmentTier tier, Vector3 point, Vector3 velocity)
     {
         var step = Step;
-        if (step == null || StepDone || IsFinished) return;
+        if (step == null || StepDone || IsFinished || !noteSteps.TryGetValue(note, out int owner) || owner != stepIndex) return;
         if (TutorialProgram.CountsAsSuccess(step, tier, note.LastCutCorrectDirection, note.RequiredCutCount, note.CutsAchieved))
         {
-            Successes++;
+            if (!step.Simultaneous) Successes++;
+            else if (pairs.Register(note.HitTime, note.RequiredHand)) Successes += 2;
             return;
         }
         if (note.RequiredCutCount > 1) SetHint("止まっている間に、同じ場所を 3 回切ろう");
@@ -224,7 +236,8 @@ public sealed class TutorialController : MonoBehaviour
     void Missed(CuttableNote note)
     {
         var step = Step;
-        if (step == null || step.Kind != TutorialStepKind.Practice || StepDone || IsFinished) return;
+        if (step == null || step.Kind != TutorialStepKind.Practice || StepDone || IsFinished
+            || !noteSteps.TryGetValue(note, out int owner) || owner != stepIndex) return;
         SetHint(TutorialProgram.MissHint(ColorName(note), note.RequiredDirection != CutDirection.None));
     }
 

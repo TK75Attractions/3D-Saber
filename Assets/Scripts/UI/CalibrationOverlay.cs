@@ -14,7 +14,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
         PanelColor = new Color(.025f,.043f,.065f,.97f);
     CalibrationController ctl;
     TextMeshProUGUI feedback, instruction, volume, connections, timer, value, measurementStatus;
-    TextMeshProUGUI resultTitle, resultValue, resultDetail, resultMessage;
+    TextMeshProUGUI resultTitle, resultValue, resultDetail, resultMessage, timerNotice;
     readonly SongSelectCountdown countdown = new SongSelectCountdown();
     readonly List<Button> adjustments = new List<Button>();
     readonly int[] deltas = { -10, 10 };
@@ -82,8 +82,9 @@ public sealed class CalibrationOverlay : MonoBehaviour
     {
         if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             new GameObject("EventSystem",typeof(UnityEngine.EventSystems.EventSystem),typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule));
-        Label(transform,"Title","判定調整",34,-680,475,430,60,Ink,false);
-        instruction = Label(transform,"Instruction","音に合わせて切ろう",44,0,365,1320,76,Ink);
+        var heading = Label(transform,"Title","",34,-680,469,430,76,Ink,false);
+        heading.gameObject.AddComponent<SongSelectRubyText>().Set("<ruby=はんてい>判定</ruby><ruby=ちょうせい>調整</ruby>");
+        instruction = Label(transform,"Instruction","音に合わせて切ろう",44,0,365,800,76,Ink);
         // カットする位置のすぐ下へ集約。数値や個々の早い/遅いは表示しない。
         timingGroup = Panel(transform,"RecentTiming",0,-242,1120,136).gameObject;
         feedback = Label(timingGroup.transform,"Feedback","",36,0,39,1060,56,Ink);
@@ -91,18 +92,18 @@ public sealed class CalibrationOverlay : MonoBehaviour
         timing.isDistribution = true; timing.raycastTarget = false;
         controls = Panel(transform,"Controls",0,-430,1840,220).gameObject;
         var c = controls.transform;
-        back = Action(c,"Back","戻る",-746,-52,250,96,OnBackClicked);
-        earlier = Action(c,"Earlier","← ノーツを早く",-322,-52,510,96,()=>ctl?.ChangeOffset(-10));
-        save = Action(c,"Save","決定",131,-52,300,96,()=>ctl?.SaveAndExit(),true);
-        later = Action(c,"Later","ノーツを遅く →",588,-52,530,96,()=>ctl?.ChangeOffset(10));
+        back = Action(c,"Back","曲をえらぶ",-762,-52,230,96,OnBackClicked);
+        earlier = Action(c,"Earlier","← ノーツを早く",-332,-52,430,96,()=>ctl?.ChangeOffset(-10));
+        save = Action(c,"Save","決定",772,-52,210,96,()=>ctl?.SaveAndExit(),true);
+        later = Action(c,"Later","ノーツを遅く →",302,-52,430,96,()=>ctl?.ChangeOffset(10));
         adjustments.Add(earlier); adjustments.Add(later);
         // 退出操作は調整より長くかざす。再実行には一度照準を外す必要がある。
         back.GetComponent<SaberDwellTarget>().dwellSeconds = 1.5f;
         save.GetComponent<SaberDwellTarget>().dwellSeconds = 1.5f;
-        var speedGroup = Panel(c,"SpeedGroup",-454,60,830,76);
+        var speedGroup = Panel(c,"SpeedGroup",-454,68,830,100);
         speeds = new Button[NoteSpeedPreset.Count];
         for (int i=0;i<speeds.Length;i++)
-        { int step=i; speeds[i]=Action(speedGroup,"Speed"+(i+1),NoteSpeedPreset.Names[i],-272+i*272,0,240,64,()=>ctl?.SetSpeedStep(step)); }
+        { int step=i; speeds[i]=Action(speedGroup,"Speed"+(i+1),NoteSpeedPreset.Names[i],-272+i*272,0,240,96,()=>ctl?.SetSpeedStep(step)); }
         recommend = Action(c,"Recommendation","おすすめに合わせる",522,60,660,64,()=>ctl?.ApplyLiveRecommendation());
         recommend.gameObject.SetActive(false);
         // 通常は隠し、中断時にだけ再開操作を出す。
@@ -110,6 +111,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
         play.gameObject.SetActive(false);
         BuildResults(); BuildSettings(); BuildExitDialog();
         timer = SongSelectSkin.BuildCountdownDisplay(transform);
+        timerNotice = Label(timer.transform.parent,"TimerConsequence","保存せず曲選択へ戻るまで",24,0,-79,430,44,Ink);
         countdown.Reset(GameSession.CalibrationSelectionSeconds ?? 100);
         GameSession.CalibrationSelectionSeconds = countdown.Remaining;
         lastTick = Time.realtimeSinceStartupAsDouble; RefreshCountdown();
@@ -229,9 +231,18 @@ public sealed class CalibrationOverlay : MonoBehaviour
         bool expired=countdown.Tick(deltaSeconds,true);
         GameSession.CalibrationSelectionSeconds=countdown.Remaining; RefreshCountdown();
         if (!expired) return;
-        GameSession.CalibrationSelectionSeconds=null; ctl.DiscardAndExit();
+        GameSession.CalibrationSelectionSeconds=10; ctl.DiscardAndExit();
     }
-    void RefreshCountdown() => SongSelectSkin.RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
+    void RefreshCountdown()
+    {
+        int previous = displayedSecond;
+        SongSelectSkin.RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
+        if (previous != displayedSecond && timerNotice != null)
+        {
+            timerNotice.text = displayedSecond <= 20 ? "あと " + displayedSecond + " 秒で保存せず曲選択へ" : "保存せず曲選択へ戻るまで";
+            timerNotice.color = displayedSecond <= 20 ? Amber : Ink;
+        }
+    }
     void RefreshFeedback()
     {
         feedback.text=ctl.IsLive?ctl.History.Hint:"";
@@ -255,7 +266,13 @@ public sealed class CalibrationOverlay : MonoBehaviour
         bool modal=IsSettingsOpen||IsExitDialogOpen||IsResultOpen;
         bool canAdjust=(!ctl.IsRunning||ctl.IsLive)&&!modal;
         for (int i=0;i<adjustments.Count;i++) Enable(adjustments[i],canAdjust&&(deltas[i]<0?ctl.Draft.OffsetMs>GameSession.JudgmentOffsetMinMs:ctl.Draft.OffsetMs<GameSession.JudgmentOffsetMaxMs));
-        foreach (var b in speeds) Enable(b,canAdjust);
+        for (int i=0;i<speeds.Length;i++)
+        {
+            Enable(speeds[i],canAdjust);
+            speeds[i].GetComponent<SongSelectActionStyle>().Refresh();
+            if (canAdjust && ctl.SpeedStep==i)
+                speeds[i].GetComponentInChildren<SongSelectPanelGraphic>().SetColors(new Color(.08f,.24f,.18f),Cyan);
+        }
         Enable(save,canAdjust); Enable(back,!modal); Enable(play,!modal);
         play.gameObject.SetActive(!modal&&!ctl.IsLive);
         Caption(play,ctl.IsRunning?"測定を止める":"再開");

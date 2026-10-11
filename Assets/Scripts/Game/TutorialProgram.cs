@@ -40,12 +40,13 @@ public sealed class TutorialStep
 
 public static class TutorialProgram
 {
+    public const double HandsMinimumSeconds = 2.0;
     public const float Bpm = 120f;                    // 音源・ゲート発光・練習ノーツで共通の拍
     public const double BeatSeconds = 60.0 / Bpm;
     public const double BarSeconds = 4 * BeatSeconds;
     public const double LoopSeconds = 2 * BarSeconds;
     public const double ReadDelaySeconds = .9;        // 文を読む間
-    public const double StepEndSeconds = .7;          // 「OK!」を見せる間
+    public const double StepEndSeconds = 1.2;          // 「OK!」を見せる間
     public const double TimeoutEndSeconds = 1.0;      // 「次に進むよ」を見せる間
     public const float DefaultStepTimeoutSeconds = 15f;
     public const float HandsTimeoutSeconds = 6f;
@@ -69,10 +70,10 @@ public static class TutorialProgram
     {
         switch (id)
         {
-            case "hands": return new TutorialStep { Id = id, Kind = TutorialStepKind.Explain, Title = "赤いセーバーは右手、青いセーバーは左手", Sub = "どちらかを振ると始まります", TimeoutSeconds = HandsTimeoutSeconds };
-            case "tapRed": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤いノーツを右手で切ろう", Sub = "枠に重なった瞬間に振る",
+            case "hands": return new TutorialStep { Id = id, Kind = TutorialStepKind.Explain, Title = "赤い剣は右手、青い剣は左手", Sub = "どちらかを振ると始まります", TimeoutSeconds = HandsTimeoutSeconds };
+            case "tapRed": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤い箱を右手で切ろう", Sub = "枠に重なった瞬間に振る",
                 Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(RightX, BaseY, "red", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2 };
-            case "tapBlue": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "青いノーツは左手で", Sub = "色と手を合わせる",
+            case "tapBlue": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "青い箱は左手で切ろう", Sub = "色と手を合わせる",
                 Pattern = new[] { Tap(LeftX, BaseY, "blue", 0f), Tap(LeftX, BaseY, "blue", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2 };
             case "tapMix": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "来た色と同じ手で切ろう", Sub = "赤は右、青は左",
                 Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(LeftX, BaseY, "blue", 1f), Tap(RightX, LowY, "red", 2f), Tap(LeftX, LowY, "blue", 3f) }, PeriodSeconds = LoopSeconds, Goal = 3 };
@@ -80,7 +81,7 @@ public static class TutorialProgram
                 Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2, NeedDirection = true };
             case "arrowNormal": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "矢印の向きに振ろう", Sub = "上・下・左・右",
                 Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f), Arrow(RightX, BaseY, "red", "left", 4f), Arrow(LeftX, BaseY, "blue", "right", 6f) }, PeriodSeconds = 2 * LoopSeconds, Goal = 3, NeedDirection = true };
-            case "long": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "ロングは、止まっている間に 3 回切ろう", Sub = "上の数字が残り回数",
+            case "long": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "長いノーツは、止まっている間に 3 回切ろう", Sub = "上の数字が残り回数",
                 Pattern = new[] { Long(RightX, BaseY, "red", 3, 1000f, 0f) }, PeriodSeconds = LoopSeconds, Goal = 1, LongRate = DefaultLongRate };
             case "gold": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "金色はどちらの手でもOK", Sub = "大事な一撃。好きな手で",
                 Pattern = new[] { Tap(0f, BaseY, "gold", 0f) }, PeriodSeconds = LoopSeconds, Goal = 1 };
@@ -139,5 +140,21 @@ public static class TutorialProgram
         if (hasDirection) return "矢印の向きに、速く振ろう";
         if (color == "gold") return "どちらの手でもいいので振ろう";
         return (color == "blue" ? "青は左手" : "赤は右手") + "で、枠に重なった瞬間に振ろう";
+    }
+}
+
+// 同じ到着時刻の左右を一組として数える。別の回の片手同士や二重通知では合格にしない。
+public sealed class TutorialPairProgress
+{
+    readonly Dictionary<long, int> handsByTime = new Dictionary<long, int>();
+    public void Clear() => handsByTime.Clear();
+    public bool Register(double hitTime, SaberHand hand)
+    {
+        if (double.IsNaN(hitTime) || double.IsInfinity(hitTime) || hand == SaberHand.Any) return false;
+        long key = (long)Math.Round(hitTime * 1000.0);
+        handsByTime.TryGetValue(key, out int before);
+        int after = before | (hand == SaberHand.Left ? 1 : 2);
+        handsByTime[key] = after;
+        return before != 3 && after == 3;
     }
 }

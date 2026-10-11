@@ -13,8 +13,10 @@ public sealed class TitleTutorialPrompt : MonoBehaviour
     // 前進演出(ロゴが去り、幕の色まで暗くなる)を見せ切ってから問いかけを出す。
     public const float RevealDelaySeconds = TitlePresentationMotion.DepartureDuration;
     public const float ProceedDelaySeconds = .3f;
-    public static readonly Vector3 YesPosition = new Vector3(-1.9f, -.25f, 0f);
-    public static readonly Vector3 NoPosition = new Vector3(1.9f, -.25f, 0f);
+    public const float InputDelaySeconds = .5f;
+    public bool CanAnswer => IsOpen && !Answered && Time.unscaledTime - openedAt >= InputDelaySeconds;
+    public static readonly Vector3 YesPosition = new Vector3(-2.4f, -.25f, 0f);
+    public static readonly Vector3 NoPosition = new Vector3(2.4f, -.25f, 0f);
     public static readonly Color NoColor = new Color(.55f, .62f, .75f);
 
     public bool IsOpen { get; private set; }          // 問いかけが見えて、答えを受け付けている
@@ -52,15 +54,10 @@ public sealed class TitleTutorialPrompt : MonoBehaviour
     {
         var ink = new Color(.91f, .97f, 1f);
         var muted = new Color(.65f, .76f, .82f);
-        var eyebrow = SongSelectVisuals.Label(transform, "Eyebrow", "TUTORIAL", 26, new Vector2(0, 300), new Vector2(600, 40),
-            UISkinPalette.Cyan, TextAlignmentOptions.Center, true);
-        eyebrow.characterSpacing = 12f;
-        SongSelectVisuals.Label(transform, "Question", "チュートリアルをしますか？", 60, new Vector2(0, 222), new Vector2(1600, 96),
+        SongSelectVisuals.Label(transform, "Question", "はじめての人は「はい」を切ってね", 54, new Vector2(0, 222), new Vector2(1700, 96),
             ink, TextAlignmentOptions.Center, true);
-        SongSelectVisuals.Label(transform, "Guide", "初めての方は「はい」を切ってください", 30, new Vector2(0, 152), new Vector2(1600, 48),
-            muted, TextAlignmentOptions.Center, false);
         remaining = SongSelectVisuals.Label(transform, "Remaining", "", 26, new Vector2(0, -330), new Vector2(900, 40),
-            muted, TextAlignmentOptions.Center, false);
+            ink, TextAlignmentOptions.Center, false);
         yesLabel = SongSelectVisuals.Label(transform, "YesLabel", "はい", 46, Vector2.zero, new Vector2(400, 70),
             UISkinPalette.NoteGold, TextAlignmentOptions.Center, true);
         noLabel = SongSelectVisuals.Label(transform, "NoLabel", "いいえ", 46, Vector2.zero, new Vector2(400, 70),
@@ -82,6 +79,10 @@ public sealed class TitleTutorialPrompt : MonoBehaviour
         if (Answered) return;
         group.alpha = Mathf.MoveTowards(group.alpha, 1f, Time.unscaledDeltaTime / .25f);
         PlaceLabels();
+        // 文はすぐ表示し、振り抜きによる誤決定だけを0.5秒間止める。
+        if (!CanAnswer) return;
+        if (YesNote != null) YesNote.Note.IsJudgeable = true;
+        if (NoNote != null) NoNote.Note.IsJudgeable = true;
         var keyboard = Keyboard.current;
         if (keyboard != null)
         {
@@ -110,6 +111,7 @@ public sealed class TitleTutorialPrompt : MonoBehaviour
         YesNote.name = "TutorialYesNote";
         NoNote = TitleStartNote.Build(NoPosition, NoColor);
         NoNote.name = "TutorialNoNote";
+        YesNote.Note.IsJudgeable = NoNote.Note.IsJudgeable = false;
         YesNote.OnSlashed += () => Choose(true, "slash");
         NoNote.OnSlashed += () => Choose(false, "slash");
         PlaceLabels();
@@ -134,7 +136,7 @@ public sealed class TitleTutorialPrompt : MonoBehaviour
 
     public void Choose(bool tutorial, string how)
     {
-        if (Answered || !IsOpen) return;
+        if (!CanAnswer) return;
         Answered = true; AnswerIsTutorial = tutorial;
         Debug.Log("TitleTutorialPrompt: " + (tutorial ? "はい" : "いいえ") + " (" + how + ")");
         // 選ばなかった方は消し、選んだ方は砕ける演出を見せてから進む。

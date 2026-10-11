@@ -142,4 +142,20 @@ public class SoukaiOutroSoundTests
         feedback.BeginOutro();
         Assert.IsTrue(feedback.OutroSoundPlayed, "二度目の呼び出しでは何も変えない");
     }
+    [Test] public void BonusKeepsTheScreenDimAfterAnAchievement()
+    {
+        var bonus=ComboBonusPresentation.Create(100,true);created.Add(bonus.gameObject);
+        bonus.Tick(0);
+        Assert.GreaterOrEqual(bonus.transform.Find("Dim").GetComponent<UnityEngine.UI.Image>().color.a,.86f);
+    }
+    [Test] public void QuitRequiresAnUninterruptedHoldAndFiresOnlyOnce()
+    {
+        var go=new GameObject("HoldTest",typeof(RectTransform));created.Add(go);
+        var hold=go.AddComponent<TitleQuitHold>();int calls=0;hold.Initialize(()=>calls++,()=>true);
+        var e=new UnityEngine.EventSystems.PointerEventData(null){button=UnityEngine.EventSystems.PointerEventData.InputButton.Left};
+        hold.OnPointerDown(e);hold.Tick(1,true);Assert.Zero(calls);hold.OnPointerUp(e);hold.Tick(2,true);Assert.Zero(calls);
+        hold.OnPointerDown(e);hold.Tick(2.1f,true);hold.Tick(2.1f,true);Assert.AreEqual(1,calls);
+        hold.OnPointerDown(e);hold.Tick(1,true);hold.Tick(1,false);hold.Tick(2,true);Assert.AreEqual(1,calls);
+    }
+
 }

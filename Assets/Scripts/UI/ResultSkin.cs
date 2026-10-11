@@ -259,7 +259,7 @@ public class ResultSkin : MonoBehaviour
             UISkinKit.FontAsset("Oxanium-ExtraBold"));
 
         // 和名(日本語タイトルがあるときだけ。共通書体を legacy Text でも使用)
-        if (!string.IsNullOrEmpty(title) && !UISkinKit.IsAsciiOnly(title) && title != songId)
+        if (!string.IsNullOrEmpty(title) && !UISkinKit.IsAsciiOnly(title) && title != en)
         {
             var jp = new GameObject("TitleJp", typeof(RectTransform), typeof(Text));
             jp.transform.SetParent(row.transform, false);
@@ -581,8 +581,10 @@ public class ResultSkin : MonoBehaviour
                 var rt = btn.GetComponent<RectTransform>();
                 rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
                 rt.pivot = new Vector2(0.5f, 0.5f);
-                rt.anchoredPosition = new Vector2(0f, -466f);
+                rt.anchoredPosition = new Vector2(0f, -432f);
                 rt.sizeDelta = new Vector2(420f, 96f);
+                var dwell = btn.gameObject.GetComponent<SaberDwellTarget>() ?? btn.gameObject.AddComponent<SaberDwellTarget>();
+                dwell.dwellSeconds = 1.5f;
                 var parts = UISkinKit.RestyleButton(btn, UISkinPalette.Cyan, 40f, "タイトルへ");
                 if (parts.label != null) parts.label.characterSpacing = 0f;
                 Reveal(btn.gameObject, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking), 0.45f, FromBelow);

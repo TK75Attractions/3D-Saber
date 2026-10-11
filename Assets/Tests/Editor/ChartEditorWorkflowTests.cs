@@ -11,7 +11,7 @@ using UnityEngine.TestTools;
 public class ChartEditorWorkflowTests
 {
     const string Prefix = "3DSaber.ChartEditor.";
-    static readonly string[] IntPrefs = { "Difficulty", "Snap", "Measure" };
+    static readonly string[] IntPrefs = { "Difficulty", "Snap", "Measure", "ShowPlaybackPreview" };
     readonly Dictionary<string, int> savedInts = new Dictionary<string, int>();
     readonly HashSet<string> existingPrefs = new HashSet<string>();
     SaberChartEditorWindow window;
@@ -25,7 +25,7 @@ public class ChartEditorWorkflowTests
     [SetUp]
     public void SetUp()
     {
-        foreach (string key in new[] { "SongId", "Difficulty", "Snap", "Measure", "Zoom" })
+        foreach (string key in new[] { "SongId", "Difficulty", "Snap", "Measure", "ShowPlaybackPreview", "Zoom" })
             if (EditorPrefs.HasKey(Prefix + key)) existingPrefs.Add(key);
         savedSong = EditorPrefs.GetString(Prefix + "SongId");
         savedZoom = EditorPrefs.GetFloat(Prefix + "Zoom");
@@ -64,7 +64,7 @@ public class ChartEditorWorkflowTests
         EditorPrefs.SetString(Prefix + "SongId", savedSong);
         EditorPrefs.SetFloat(Prefix + "Zoom", savedZoom);
         foreach (string key in IntPrefs) EditorPrefs.SetInt(Prefix + key, savedInts[key]);
-        foreach (string key in new[] { "SongId", "Difficulty", "Snap", "Measure", "Zoom" })
+        foreach (string key in new[] { "SongId", "Difficulty", "Snap", "Measure", "ShowPlaybackPreview", "Zoom" })
             if (!existingPrefs.Contains(key)) EditorPrefs.DeleteKey(Prefix + key);
         existingPrefs.Clear();
         savedInts.Clear();
@@ -114,6 +114,8 @@ public class ChartEditorWorkflowTests
             Set("songId", target);
             Assert.True((bool)Call("SaveDocument"));
             Set("document", new SaberChartDocument());
+            // 空にした一時データを破棄して、保存した譜面を読み直す。
+            Set("confirmChangesDialog", new System.Func<string, string, string, string, string, int>((a,b,c,d,e) => 2));
             LoadTarget(target, false);
             Assert.AreEqual(123f, Get<float>("beatZeroMs"));
             Assert.AreEqual(7, Document.timeSignatures[1].numerator);
@@ -413,6 +415,7 @@ public class ChartEditorWorkflowTests
     [UnityTest]
     public IEnumerator EditorDrawsInlineAndExpandedPreviewAndCanHideIt()
     {
+        Set("showPlaybackPreview", true);
         window.position = new Rect(40, 40, 1280, 800);
         window.Show();
         Call("SeekToBeat", 3f);

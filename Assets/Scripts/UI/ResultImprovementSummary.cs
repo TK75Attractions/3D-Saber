@@ -41,6 +41,6 @@ public static class ResultImprovementSummary
     public static string Difficulty(string name)
     {
         if (string.IsNullOrEmpty(name)) return "CHART --";
-        return string.Equals(name, "Hard", StringComparison.OrdinalIgnoreCase) ? "MASTER / HARD" : name.ToUpperInvariant();
+        return string.Equals(name, "Hard", StringComparison.OrdinalIgnoreCase) ? "HARD" : name.ToUpperInvariant();
     }
 }

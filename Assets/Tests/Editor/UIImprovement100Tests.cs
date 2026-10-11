@@ -182,6 +182,6 @@ public class UIImprovement100Tests
         StringAssert.Contains("同点", ResultImprovementSummary.BestDifference(100, 100, true));
         StringAssert.Contains("+20", ResultImprovementSummary.BestDifference(120, 100, true));
         StringAssert.Contains("まで 20", ResultImprovementSummary.BestDifference(80, 100, true));
-        Assert.AreEqual("MASTER / HARD", ResultImprovementSummary.Difficulty("Hard"));
+        Assert.AreEqual("HARD", ResultImprovementSummary.Difficulty("Hard"));
     }
 }

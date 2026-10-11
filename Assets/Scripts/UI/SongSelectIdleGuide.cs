@@ -43,7 +43,7 @@ public sealed class SongSelectIdleGuide : MonoBehaviour
         model.raycastTarget = false;
         Text("GuideEyebrow", "あそびかた", 27, new Vector2(210, 182), new Vector2(610, 40), SongSelectSkin.Cyan);
         Text("GuideMessage", "<color=#FF7387>右手</color>で照準を\n合わせてね！", 60, new Vector2(210, 64), new Vector2(620, 176), Color.white);
-        Text("GuideDetail", "赤いセイバーをかざして\nえらびたいところをねらおう", 29, new Vector2(210, -102), new Vector2(610, 90), new Color(.72f, .83f, .9f));
+        Text("GuideDetail", "赤い剣をかざして えらぼう\nまん中の盤は 2秒で スタート", 29, new Vector2(210, -102), new Vector2(610, 90), new Color(.72f, .83f, .9f));
         Text("GuideDismissHint", "操作すると案内は消えるよ", 23, new Vector2(210, -204), new Vector2(610, 38), new Color(.49f, .66f, .73f));
         Text("RightHandLabel", "右手", 25, new Vector2(-210, -213), new Vector2(100, 38), new Color(1, .45f, .54f));
         group.alpha = 0; card.gameObject.SetActive(false);

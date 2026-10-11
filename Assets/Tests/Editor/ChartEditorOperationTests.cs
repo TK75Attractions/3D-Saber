@@ -12,7 +12,7 @@ using Object = UnityEngine.Object;
 public class ChartEditorOperationTests
 {
     const string Prefix = "3DSaber.ChartEditor.";
-    static readonly string[] PrefKeys = { "SongId", "Difficulty", "Snap", "Measure", "Zoom", "RecordingLayout" };
+    static readonly string[] PrefKeys = { "SongId", "Difficulty", "Snap", "Measure", "Zoom", "RecordingLayout", "ShowPlaybackPreview" };
     readonly Dictionary<string, object> savedPrefs = new Dictionary<string, object>();
     readonly Rect timeline = new Rect(0, 0, 400, 500);
     readonly Rect lanes = new Rect(62, 0, 326, 500);

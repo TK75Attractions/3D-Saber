@@ -57,9 +57,8 @@ public class ScreenTransitionPlayTests
 
     public static IEnumerator WaitForTransition()
     {
-        // 校歌HARDは24秒の演出を最後まで見せる仕様。通常の遷移待ち20秒とは分けて数える。
-        double presentation = ScreenTransition.IsHardIntro ? HardIntroTimeline.Duration : 0;
-        double deadline = Time.realtimeSinceStartupAsDouble + presentation + 20;
+        // 全曲共通の遷移と読み込みを待つ。
+        double deadline = Time.realtimeSinceStartupAsDouble + 20;
         while (ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
         Assert.False(ScreenTransition.IsBusy, "予定された演出と読込猶予の後に暗転や入力ロックが残らない");
     }
@@ -100,6 +99,7 @@ public class ScreenTransitionPlayTests
             while (Time.realtimeSinceStartupAsDouble < promptDeadline &&
                 ((prompt = Object.FindFirstObjectByType<TitleTutorialPrompt>()) == null || !prompt.IsOpen)) yield return null;
             Assert.NotNull(prompt); Assert.True(prompt.IsOpen);
+            yield return new WaitForSecondsRealtime(TitleTutorialPrompt.InputDelaySeconds + .05f);
             prompt.Choose(false, "transition-test");
             while (!ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < promptDeadline) yield return null;
             Assert.True(ScreenTransition.IsBusy);

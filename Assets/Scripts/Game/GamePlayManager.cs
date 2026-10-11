@@ -631,15 +631,24 @@ public class GamePlayManager : MonoBehaviour
         return AudioType.UNKNOWN;
     }
 
+    double returnConfirmationUntil = double.NegativeInfinity;
+
     // 本編シーンで毎フレーム呼ばれる単一の Update。
     // 順序：現在の受付窓 → 判定 → 譜面進行 → 終了チェック。
     void Update()
     {
         // 判定調整のEscは既存の練習停止・設定終了へ渡す。幕の間は連続して戻らない。
-        if (!inCalibration && !GameSession.IsCalibrationMode && !ScreenTransition.IsBusy && InputManager.EscapeGetDown)
+        if (!finished && !inCalibration && !GameSession.IsCalibrationMode && !ScreenTransition.IsBusy && InputManager.EscapeGetDown)
         {
-            ReturnToTitle();
-            return;
+            double now = Time.unscaledTimeAsDouble;
+            if (now <= returnConfirmationUntil)
+            {
+                returnConfirmationUntil = double.NegativeInfinity;
+                ReturnToTitle();
+                return;
+            }
+            returnConfirmationUntil = now + 2;
+            OperatorNotice.Show("中断するには、２秒以内にもう一度 Esc");
         }
         if (finished || !ready || (songPlayer != null && songPlayer.IsPaused)) return;
 
@@ -833,7 +842,7 @@ public class GamePlayManager : MonoBehaviour
                 if (achievement != null) Destroy(achievement.gameObject);
             }
         }
-        var bonus = ComboBonusPresentation.Create(scoreManager.MaxCombo);
+        var bonus = ComboBonusPresentation.Create(scoreManager.MaxCombo, scoreManager.IsFullCombo);
         // アニメと精算を同じ終了経路で管理し、途中の入力では再加算しない。
         float elapsed = 0f;
         while (elapsed < bonus.Duration)

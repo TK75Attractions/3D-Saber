@@ -28,6 +28,7 @@ public class ProjectorModeHotkey : MonoBehaviour
     {
         DisplaySettings.ProjectorMode = !DisplaySettings.ProjectorMode;
         ApplyNow();
+        OperatorNotice.Show("プロジェクター表示：" + (DisplaySettings.ProjectorMode ? "ON" : "OFF"));
     }
 
     // 今のシーンに即時反映できる分を適用する。

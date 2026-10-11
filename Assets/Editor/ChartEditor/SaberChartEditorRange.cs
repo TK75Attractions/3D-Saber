@@ -148,7 +148,7 @@ namespace Saber.ChartEditor
                 GUILayout.Label("時間", GUILayout.Width(28f));
                 if (GUILayout.Button(new GUIContent("−1 Snap", "Ctrl+↓"), EditorStyles.miniButtonLeft)) ShiftSelectionBySnap(-1);
                 if (GUILayout.Button(new GUIContent("+1 Snap", "Ctrl+↑"), EditorStyles.miniButtonRight)) ShiftSelectionBySnap(1);
-                rangeShiftMsText = GUILayout.TextField(rangeShiftMsText ?? "10", GUILayout.Width(42f));
+                rangeShiftMsText = EditorGUILayout.TextField(rangeShiftMsText ?? "10", GUILayout.Width(42f));
                 GUILayout.Label("ms", GUILayout.Width(20f));
                 if (GUILayout.Button("−", EditorStyles.miniButtonLeft, GUILayout.Width(22f))) ShiftSelectionByMsText(-1f);
                 if (GUILayout.Button("+", EditorStyles.miniButtonRight, GUILayout.Width(22f))) ShiftSelectionByMsText(1f);

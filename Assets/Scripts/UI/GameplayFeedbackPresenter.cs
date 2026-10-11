@@ -88,7 +88,7 @@ public sealed class GameplayFeedbackPresenter : MonoBehaviour
     {
         if (score == null || !isActiveAndEnabled) return;
         if (score.Combo > 0 && IsMilestone(score.Combo))
-        { latestMilestone = score.Combo; milestoneAge = 0; milestone.text = score.Combo + " CHAIN"; }
+        { latestMilestone = score.Combo; milestoneAge = 0; milestone.text = score.Combo + " COMBO"; }
         if (score.Combo == 0) { milestoneAge = 99; milestone.text = ""; }
     }
 

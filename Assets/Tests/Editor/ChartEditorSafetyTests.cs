@@ -14,7 +14,7 @@ using Object = UnityEngine.Object;
 public class ChartEditorSafetyTests
 {
     const string Prefix = "3DSaber.ChartEditor.";
-    static readonly string[] PrefKeys = { "SongId", "Difficulty", "Snap", "Measure", "Zoom", "RecordingLayout" };
+    static readonly string[] PrefKeys = { "SongId", "Difficulty", "Snap", "Measure", "Zoom", "RecordingLayout", "ShowPlaybackPreview" };
     static readonly Type Drafts = typeof(SaberChartEditorWindow).Assembly.GetType("Saber.ChartEditor.SaberChartDrafts");
     readonly Dictionary<string, object> savedPrefs = new Dictionary<string, object>();
     readonly Rect timeline = new Rect(0, 0, 400, 500);

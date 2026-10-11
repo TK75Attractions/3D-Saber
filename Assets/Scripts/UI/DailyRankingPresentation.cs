@@ -93,16 +93,13 @@ public sealed class DailyRankingPresentation : MonoBehaviour
             : result.TotalPlays == 1 ? "本日最初の記録！"
             : result.IsNewBest ? "本日のトップスコア更新！"
             : result.Rank == 1 ? "本日のトップスコア！"
-            : result.Rank <= 3 ? "本日の TOP 3 にランクイン！" : "ランクイン！";
+            : result.Rank <= 3 ? "本日の TOP 3 にランクイン！" : "本日の記録";
         var status = Text("Status", headline, new Vector2(30, 19), new Vector2(500, 42), 29, accent, details.transform);
         status.alignment = TextAlignmentOptions.MidlineLeft;
-        string note = !available ? "次のプレイでもう一度チャレンジ"
-            : result.PointsToNext > 0 ? "ひとつ上の順位まで あと " + result.PointsToNext.ToString("N0") + " 点"
-            : result.TiedPlays > 1 ? "同点 " + result.TiedPlays.ToString("N0") + " 人で同率1位" : "この調子で次のプレイへ！";
-        if (available && result.TiedPlays > 1 && result.Rank > 1) note = "同率 " + result.Rank + " 位  /  " + note;
+        string note = (available && result.TiedPlays > 1 ? "同率 " + result.Rank + " 位 ／ " : "") + "あそんでくれて ありがとう！";
         var sub = Text("Next", note, new Vector2(65, -23), new Vector2(570, 32), 22, UISkinPalette.OffWhite, details.transform);
         sub.alignment = TextAlignmentOptions.MidlineLeft;
-        string count = available ? result.TotalPlays.ToString("N0") + " 人中" : "DAILY RANKING";
+        string count = available ? result.TotalPlays.ToString("N0") + " 回中" : "DAILY RANKING";
         var people = Text("Count", count, new Vector2(555, 12), new Vector2(350, 52), 38, UISkinPalette.OffWhite);
         people.enableAutoSizing = true; people.fontSizeMin = 22; people.fontSizeMax = 38;
         Text("Date", available ? result.Day.Replace('-', '/') : "", new Vector2(555, -28), new Vector2(350, 26), 18, UISkinPalette.SubtleGray);

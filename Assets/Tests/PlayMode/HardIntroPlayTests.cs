@@ -42,31 +42,19 @@ public class HardIntroPlayTests
         while (ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < end) yield return null;
         Assert.False(ScreenTransition.IsBusy, "演出後に入力ロックを残さない");
     }
-    [UnityTest] public IEnumerator HardRunsBeforeSongAndRejectsRepeatedStart()
+    [UnityTest] public IEnumerator SchoolHardStartsWithoutPhotosOrMorseAndRejectsRepeatedStart()
     {
         yield return OpenSelection();
         var select = Object.FindFirstObjectByType<SongSelectController>(); select.SetDifficulty(2);
-        select.StartGame(); Assert.True(ScreenTransition.IsBusy); Assert.True(ScreenTransition.IsHardIntro);
-        var view = Object.FindFirstObjectByType<HardSongIntro>();
-        Assert.True(view.UsesOriginalTitle); Assert.AreEqual(10, view.Level);
+        select.StartGame(); Assert.True(ScreenTransition.IsBusy);
+        Assert.IsNull(GameObject.Find("HardSongIntro"));
         Assert.False(EventSystem.current != null && EventSystem.current.enabled);
-        select.StartGame(); Assert.False(ScreenTransition.LoadGame("Game", "ElDorado", "EL DORADO", 9, "hard"));
+        select.StartGame(); Assert.False(ScreenTransition.Load("Game"));
         Assert.AreEqual("Epilogue", GameSession.SelectedSongId);
         Assert.False(select.previewSource.isPlaying);
-        bool sawGame = false, heardSignal = false;
-        double limit = Time.realtimeSinceStartupAsDouble + 40;
-        while (ScreenTransition.IsBusy && Time.realtimeSinceStartupAsDouble < limit)
-        {
-            heardSignal |= view != null && view.IsSignalPlaying;
-            var manager = Object.FindFirstObjectByType<GamePlayManager>();
-            if (SceneManager.GetActiveScene().name == "Game" && manager != null)
-            {
-                sawGame = true; Assert.False(manager.songPlayer.IsScheduled, "PVが隠している間に曲を開始しない");
-            }
-            yield return null;
-        }
-        Assert.False(ScreenTransition.IsBusy); Assert.True(sawGame); Assert.True(heardSignal);
-        yield return null; Assert.IsNull(Object.FindFirstObjectByType<HardSongIntro>());
+        yield return WaitUntilReady(15);
+        Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
+        Assert.IsNull(GameObject.Find("HardSongIntro"));
         var game = Object.FindFirstObjectByType<GamePlayManager>();
         double end = Time.realtimeSinceStartupAsDouble + 10;
         while (!game.songPlayer.IsScheduled && Time.realtimeSinceStartupAsDouble < end) yield return null;
@@ -78,8 +66,8 @@ public class HardIntroPlayTests
         {
             yield return OpenSelection(); var select = Object.FindFirstObjectByType<SongSelectController>();
             select.SetDifficulty(difficulty); select.StartGame();
-            Assert.True(ScreenTransition.IsBusy); Assert.False(ScreenTransition.IsHardIntro);
-            Assert.IsNull(Object.FindFirstObjectByType<HardSongIntro>());
+            Assert.True(ScreenTransition.IsBusy);
+            Assert.IsNull(GameObject.Find("HardSongIntro"));
             yield return WaitUntilReady(15); Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
         }
     }
@@ -90,24 +78,24 @@ public class HardIntroPlayTests
             yield return OpenSelection(songId);
             var select = Object.FindFirstObjectByType<SongSelectController>();
             select.SetDifficulty(2); select.StartGame();
-            Assert.True(ScreenTransition.IsBusy); Assert.False(ScreenTransition.IsHardIntro);
-            Assert.IsNull(Object.FindFirstObjectByType<HardSongIntro>(), songId + "に校歌の演出を出さない");
+            Assert.True(ScreenTransition.IsBusy);
+            Assert.IsNull(GameObject.Find("HardSongIntro"), songId + "に校歌の演出を出さない");
             Assert.AreEqual(songId, GameSession.SelectedSongId);
             yield return WaitUntilReady(15);
             Assert.AreEqual("Game", SceneManager.GetActiveScene().name);
-            Assert.IsNull(Object.FindFirstObjectByType<HardSongIntro>());
+            Assert.IsNull(GameObject.Find("HardSongIntro"));
         }
     }
-    [UnityTest] public IEnumerator InterruptedIntroStopsAudioAndRestoresOnlyEnabledInput()
+    [UnityTest] public IEnumerator InterruptedTransitionRestoresOnlyEnabledInput()
     {
         yield return OpenSelection();
         var input = EventSystem.current;
         var disabled = new GameObject("AlreadyDisabledInput").AddComponent<EventSystem>(); disabled.enabled = false;
         var select = Object.FindFirstObjectByType<SongSelectController>(); select.SetDifficulty(2); select.StartGame();
         yield return new WaitForSecondsRealtime(.25f);
-        var source = Object.FindFirstObjectByType<HardSongIntro>().GetComponent<AudioSource>(); Assert.True(source.isPlaying);
+        Assert.IsNull(GameObject.Find("HardSongIntro"));
         Object.Destroy(Object.FindFirstObjectByType<ScreenTransition>().gameObject); yield return null;
         Assert.False(ScreenTransition.IsBusy); Assert.True(input.enabled); Assert.False(disabled.enabled);
-        Assert.True(source == null || !source.isPlaying); Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
+        Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
     }
 }

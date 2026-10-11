@@ -66,7 +66,8 @@ public class TitleSceneSkin : MonoBehaviour
 
         if (cam != null)
         {
-            BuildTitleSaber();
+            BuildTitleSaber(SaberHand.Right, 1, true);
+            BuildTitleSaber(SaberHand.Left, 2, false);
             startNote = TitleStartNote.Build(startNoteWorldPos, UISkinPalette.LogoRed);
             startNote.OnSlashed += HandleSlashed;
         }
@@ -182,7 +183,8 @@ public class TitleSceneSkin : MonoBehaviour
         fill.color = new Color(.035f, .08f, .12f, .65f);
         var button = go.GetComponent<Button>();
         button.targetGraphic = fill;
-        button.onClick.AddListener(() => { if (!transitioning && titleCtl != null) titleCtl.OnQuitButton(); });
+        go.AddComponent<TitleQuitHold>().Initialize(() => titleCtl.OnQuitButton(),
+            () => !transitioning && !ScreenTransition.IsBusy && titleCtl != null);
         Color stroke = new Color(.65f, .82f, .92f, .9f);
         MakeLine(go.transform, "CloseA", new Vector2(-14f, -14f), new Vector2(14f, 14f), 3f, stroke);
         MakeLine(go.transform, "CloseB", new Vector2(-14f, 14f), new Vector2(14f, -14f), 3f, stroke);
@@ -216,18 +218,20 @@ public class TitleSceneSkin : MonoBehaviour
         return true;
     }
 
-    void BuildTitleSaber()
+    void BuildTitleSaber(SaberHand hand, int stick, bool mouseFallback)
     {
         InputPoint.EnsureInstance();
-        var saber = new GameObject("TitleSaber");
+        var saber = new GameObject(stick == 1 ? "TitleSaber" : "TitleSaberLeft");
         var tracker = saber.AddComponent<SaberTracker>();
         var bridge = saber.AddComponent<SaberInputBridge>();
-        bridge.SetBladeColor(SaberHandHelper.HandColor(SaberHand.Right));
+        bridge.SetBladeColor(SaberHandHelper.HandColor(hand));
+        bridge.stickIndex = stick;
         bridge.useInputPoint = true;
-        bridge.fallbackToMouse = true;
+        bridge.fallbackToMouse = mouseFallback;
         bridge.fixedZ = 0f;
         var judge = saber.AddComponent<SaberCutJudge>();
         judge.saber = tracker;
+        judge.hand = hand;
         judge.bladeRadius = .32f;
         judge.noteHitRadiusXY = .60f;
         judge.minCutSpeed = 2.5f;

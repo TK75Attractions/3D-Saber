@@ -5,7 +5,7 @@ using TMPro;
 // プレイ画面の HUD をデザインハンドオフ(プレイ画面版)準拠で実行時に作り直す。
 // 数字は Chakra Petch Bold Italic + 縦グラデ、ラベルは Oxanium(リザルト画面と同じデザイン言語)。
 //   ・スコア   … 左上(ラベル+ゼロ埋めグラデ数字+六角ランクバッジ+次ランク進捗バー)
-//   ・コンボ   … 右上(数値+CHAIN。増加時パンチ、コンボ数で色とサイズが育つ)
+//   ・コンボ   … 右上(数値+COMBO。増加時パンチ、コンボ数で色とサイズが育つ)
 //   ・判定演出 … 中央のやや下(ノーツの軌道に被らない位置で浮かび上がって消える)
 //   ・曲名/難易度 … 上部中央(英タイトル+和名(legacy Text)+難易度チップ)
 //   ・進行バー … 画面最上端の細いライン
@@ -423,7 +423,7 @@ public class GameHUDSkin : MonoBehaviour
         brt.anchorMax = new Vector2(1f, 1f);
         brt.pivot = new Vector2(0.5f, 1f);
         brt.anchoredPosition = Vector2.zero;
-        brt.sizeDelta = new Vector2(0f, 5f);
+        brt.sizeDelta = new Vector2(0f, 12f);
         var bgImg = bg.GetComponent<Image>();
         bgImg.color = new Color(1f, 1f, 1f, 0.08f);
         bgImg.raycastTarget = false;
@@ -561,7 +561,7 @@ public class GameHUDSkin : MonoBehaviour
         }
         if (timingHintText != null)
         {
-            bool valid = score != null && score.LastErrorValid;
+            bool valid = score != null && score.LastErrorValid && !wasWrongFlick;
             double errorMs = score != null ? score.LastErrorMs : 0.0;
             timingHintText.text = FormatTimingHint(tier, valid, errorMs);
             timingHintText.color = TimingHintColor(errorMs);
@@ -630,7 +630,7 @@ public class GameHUDSkin : MonoBehaviour
         if (comboGlow != null) comboGlow.color = new Color(c.r, c.g, c.b, 0.20f * DisplaySettings.AccentScale);
         if (comboLabel != null)
         {
-            comboLabel.text = "CHAIN";
+            comboLabel.text = "COMBO";
             comboLabel.color = UISkinPalette.SubtleGray;
         }
 

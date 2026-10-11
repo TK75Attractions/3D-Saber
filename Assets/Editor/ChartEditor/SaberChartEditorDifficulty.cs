@@ -34,9 +34,10 @@ namespace Saber.ChartEditor
                 if (GUILayout.Button(new GUIContent(DifficultyLabels[i], $"今の内容を {DifficultyLabels[i]} の譜面として開きます（保存するまで書きません）"),
                         EditorStyles.miniButton))
                 {
+                    string previousSong = songId; int previousDifficulty = difficultyIndex;
                     songId = EditingSongId;
                     difficultyIndex = i;
-                    DuplicateToSelection();
+                    if (!DuplicateToSelection()) { songId = previousSong; difficultyIndex = previousDifficulty; }
                 }
             }
             GUILayout.EndHorizontal();

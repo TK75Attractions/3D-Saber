@@ -24,17 +24,18 @@ public sealed class MenuSignalNoise : MonoBehaviour, ITitlePresentationLayer
         effect.selected = true;
     }
 
-    public static MenuSignalNoise BuildScreenOverlay(Canvas parent)
+    public static MenuSignalNoise BuildScreenOverlay(Canvas parent, Transform backgroundLayer = null)
     {
         var go = new GameObject("HardSignalNoise", typeof(RectTransform), typeof(Canvas), typeof(Image));
-        go.transform.SetParent(parent.transform, false);
+        go.transform.SetParent(backgroundLayer != null ? backgroundLayer : parent.transform, false);
+        if (backgroundLayer != null) go.transform.SetSiblingIndex(1);
         var rect = go.GetComponent<RectTransform>();
         rect.anchorMin = Vector2.zero;
         rect.anchorMax = Vector2.one;
         rect.offsetMin = rect.offsetMax = Vector2.zero;
-        // ポインターを後から生成しても全画面を覆い、画面遷移の幕より後ろに留める。
+        // 選曲では通路の直後に描画し、文字・盤・照準にノイズを重ねない。
         var canvas = go.GetComponent<Canvas>();
-        canvas.overrideSorting = true;
+        canvas.overrideSorting = backgroundLayer == null;
         canvas.sortingLayerID = parent.sortingLayerID;
         canvas.sortingOrder = parent.sortingOrder + 1;
         var effect = go.AddComponent<MenuSignalNoise>();
@@ -97,7 +98,7 @@ public sealed class MenuSignalNoise : MonoBehaviour, ITitlePresentationLayer
         // LOWでは粒・横線・色ずれをすべて止める。切替時に設定を保存し直さない。
         float reveal = Mathf.SmoothStep(0f, 1f, age / (overlay ? .3f : 1.4f));
         strength = selected && !DisplaySettings.ReducedEffects
-            ? reveal * (1f - Mathf.SmoothStep(0f, 1f, departure / .45f)) : 0f;
+            ? reveal * (overlay ? .70f : 1f) * (1f - Mathf.SmoothStep(0f, 1f, departure / .45f)) : 0f;
         Apply();
     }
 

@@ -147,7 +147,7 @@ public class UISkinTests
 
     [TestCase(0, "Easy", "EASY")]
     [TestCase(1, "Normal", "NORMAL")]
-    [TestCase(2, "Hard", "MASTER")]
+    [TestCase(2, "Hard", "HARD")]
     public void DifficultyRibbon_UsesRequestedDisplayNames(int index, string source, string expected)
     {
         Assert.AreEqual(expected, SongSelectSkin.DifficultyDisplayName(index, source));

@@ -13,10 +13,13 @@ namespace Saber.ChartEditor
     {
         [SerializeField] private bool showSongInfo;
         private SaberStageInfo songInfo;
-        private string songInfoSong;
-        private readonly int[] songInfoLevels = new int[3];
-        private readonly int[] songInfoLevelsLoaded = new int[3];
-        private readonly bool[] songInfoLevelExists = new bool[3];
+        [SerializeField] private string songInfoSong;
+        [SerializeField] private string songInfoDraftJson, songInfoOriginalJson, songInfoBaselineJson;
+        [SerializeField] private bool songInfoOriginallyExists;
+        [SerializeField] private bool songInfoDraftDirty;
+        [SerializeField] private int[] songInfoLevels = new int[3];
+        [SerializeField] private int[] songInfoLevelsLoaded = new int[3];
+        [SerializeField] private bool[] songInfoLevelExists = new bool[3];
         private string coverInfo;
         private long coverStamp = -1;
 
@@ -28,12 +31,29 @@ namespace Saber.ChartEditor
             get
             {
                 if (songInfo == null) return false;
-                if (songInfo.IsDirty) return true;
+                if (songInfo.IsEdited) return true;
                 for (int i = 0; i < DifficultyValues.Length; i++)
                     if (DifficultyValues[i] != EditingDifficulty && songInfoLevelExists[i] && songInfoLevels[i] != songInfoLevelsLoaded[i])
                         return true;
                 return false;
             }
+        }
+
+        // JSON と元の比較基準を両方保持し、ドメイン再読み込みでも未保存の曲情報を失わない。
+        private void CacheSongInfoDraft()
+        {
+            songInfoDraftDirty = SongInfoDirty;
+            songInfoDraftJson = songInfo?.Write();
+            songInfoOriginalJson = songInfo?.OriginalText;
+            songInfoBaselineJson = songInfo?.EditingBaselineText;
+            songInfoOriginallyExists = songInfo != null && songInfo.Exists;
+        }
+
+        private void RestoreSongInfoDraft()
+        {
+            // 未編集なら次の描画でディスクを読み直し、外部変更を古いキャッシュで巻き戻さない。
+            if (songInfo != null || !songInfoDraftDirty || string.IsNullOrEmpty(songInfoDraftJson)) return;
+            songInfo = SaberStageInfo.RestoreDraft(songInfoDraftJson, songInfoOriginalJson, songInfoOriginallyExists, songInfoBaselineJson);
         }
 
         // 編集中の曲が変わったら読み直す。未保存の曲情報があれば、先に保存するかを聞く。
@@ -127,7 +147,7 @@ namespace Saber.ChartEditor
             using (new EditorGUI.DisabledScope(!SongInfoDirty))
             {
                 if (GUILayout.Button("曲情報を保存")) SaveSongInfo();
-                if (GUILayout.Button("元に戻す", GUILayout.Width(70f))) LoadSongInfo(EditingSongId);
+                if (GUILayout.Button("ファイルから読み直す", GUILayout.Width(130f))) LoadSongInfo(EditingSongId);
             }
             GUILayout.EndHorizontal();
             GUILayout.Label("編集中の難易度の表示レベルは、譜面と一緒に保存します", smallMutedStyle);
@@ -141,7 +161,7 @@ namespace Saber.ChartEditor
             {
                 SaberStageInfo.Section section = sections[i];
                 GUILayout.BeginHorizontal();
-                section.Label = GUILayout.TextField(section.Label, GUILayout.MinWidth(60f));
+                section.Label = EditorGUILayout.TextField(section.Label, GUILayout.MinWidth(60f));
                 float start = EditorGUILayout.DelayedFloatField((float)section.StartSeconds, GUILayout.Width(52f));
                 float end = EditorGUILayout.DelayedFloatField((float)section.EndSeconds, GUILayout.Width(52f));
                 if (Math.Abs(start - section.StartSeconds) > .0005) section.StartSeconds = Math.Max(0, start);
@@ -279,6 +299,8 @@ namespace Saber.ChartEditor
                 overviewSectionsSong = null;
                 string saved = songInfoSong;
                 LoadSongInfo(saved);
+                CacheSongInfoDraft();
+                UpdateDirtyState();
                 SetStatus($"{saved} の曲情報を保存しました");
                 return true;
             }
