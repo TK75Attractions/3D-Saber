@@ -1,5 +1,7 @@
 # PhoneSaber STATUS
 
+資料の索引と、実行ファイル・道具の場所は [README.md](README.md)。
+
 ## ユーザー待ち
 
 2026-10-11時点。最新版を実機に入れて確認する。手順は[当日runbook](EVENT_DAY_RUNBOOK.md)。
