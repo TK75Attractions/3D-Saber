@@ -22,6 +22,11 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
     // ブロックごとに latency-block を記録し、PhoneSaber/tools/latency_report.py で集計する。
     const int BlockSize = 15;
     static readonly int[] QueuedFrameVariants = { 1, 2 };
+    // スマホの fps 自動比較（30秒ごとに 30⇄60）と PC 側 2 条件の組み合わせを各 2 回ずつ記録する目安。
+    // 2026-10-10 の実機では 22 回（1 ブロック）で終了してしまい、比較が成立しなかった。
+    public const int TargetBlocks = 8;
+    string progressText = "";
+    int progressBlocks = -1, progressSamples = -1;
     int blockIndex, blockStartTotal, blockStartPackets;
     double blockStartedAt;
     readonly List<double> blockSamples = new List<double>();
@@ -77,6 +82,15 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         if (total > before) blockSamples.Add(loop.SamplesMs[loop.SamplesMs.Count - 1]);
         if (total >= loggedSamples + LogEvery) { loggedSamples = total; Record("latency-loop"); }
         if (blockSamples.Count >= BlockSize) { RecordBlock(now); blockIndex++; StartBlock(now); }
+    }
+
+    // 比較に必要な記録量の目安を画面に出す（振る必要はなく、カメラを画面に向けたまま待つ）。
+    public static string ProgressText(int recordedBlocks, int samplesInBlock)
+    {
+        if (recordedBlocks >= TargetBlocks)
+            return $"比較用の記録 {recordedBlocks} ブロック。十分です（F9 で終了してよい）";
+        return $"比較用の記録 {recordedBlocks}/{TargetBlocks} ブロック（今のブロック {samplesInBlock}/{BlockSize} 回）。" +
+               $"{TargetBlocks} ブロックまで約2分、カメラを画面に向けたまま待つ";
     }
 
     void StartBlock(double now)
@@ -175,6 +189,12 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         GUI.Label(new Rect(20, 10, w - 40, h * 0.1f),
             "遅延テスト [F9: 終了]  スマホのカメラをこの画面に向け、赤い棒だけが映るようにする", textStyle);
         GUI.Label(new Rect(20, h * 0.89f, w - 40, h * 0.11f), loop.Summary(), textStyle);
+        if (progressBlocks != blockIndex || progressSamples != blockSamples.Count)
+        {
+            progressBlocks = blockIndex; progressSamples = blockSamples.Count;
+            progressText = ProgressText(blockIndex, blockSamples.Count);
+        }
+        GUI.Label(new Rect(20, h * 0.80f, w - 40, h * 0.09f), progressText, textStyle);
         GUI.depth = previousDepth;
         GUI.color = previousColour;
     }

@@ -164,4 +164,14 @@ public class PhoneSaberLatencyProbeTests
         Assert.AreEqual(2, loop.TotalSamples);
         Assert.AreEqual(90.0, loop.SamplesMs[1], 1e-6);
     }
+
+    [Test]
+    public void ProgressTextTellsHowLongToKeepMeasuring()
+    {
+        StringAssert.Contains("0/8 ブロック", PhoneSaberLatencyProbe.ProgressText(0, 0));
+        StringAssert.Contains("今のブロック 7/15 回", PhoneSaberLatencyProbe.ProgressText(3, 7));
+        StringAssert.Contains("約2分", PhoneSaberLatencyProbe.ProgressText(7, 14));
+        StringAssert.Contains("F9 で終了してよい", PhoneSaberLatencyProbe.ProgressText(PhoneSaberLatencyProbe.TargetBlocks, 0));
+        StringAssert.Contains("F9 で終了してよい", PhoneSaberLatencyProbe.ProgressText(12, 3));
+    }
 }
