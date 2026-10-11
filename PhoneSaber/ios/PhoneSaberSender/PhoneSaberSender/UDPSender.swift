@@ -752,9 +752,16 @@ final class ConnectivityLog: @unchecked Sendable {
 
 /// 送信中なのに PC へ届いている証拠が無い状態（Unity の探索応答なし、かつ P2P 未接続）が続いたら知らせる。
 /// UDP は届かなくても「ready」のままなので、見出しは NETWORK READY のままになる（2026-10-10 の実機）。
+/// `sending` は送信要求が続いているか（LAN 未設定で P2P だけの間も含む）。手動 IP は P2P を使わないので、
+/// 呼び出し側は手動 IP のとき `p2pConnected` を false で渡す。
 struct PCReplyWatch: Equatable {
     static let warnAfter: TimeInterval = 3
+    static let automaticMessage = "PC（Unity）から応答がありません。iPhone と PC が同じ Wi-Fi か確認してください。"
+    /// Unity 以外の受信先（計測ツールなど）は 5007 に応答しないので、届いていても確認できない。
+    static let manualMessage = "手動 IP の宛先から Unity の応答がありません（Unity 以外の受信先なら正常です）。"
     private(set) var missingSince: TimeInterval?
+
+    static func message(manual: Bool) -> String { manual ? manualMessage : automaticMessage }
 
     mutating func update(sending: Bool, lanVerified: Bool, p2pConnected: Bool, now: TimeInterval) -> Bool {
         guard sending, !lanVerified, !p2pConnected else {

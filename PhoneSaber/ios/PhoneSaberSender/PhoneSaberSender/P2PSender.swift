@@ -132,14 +132,16 @@ struct P2PReconnectBackoff: Equatable {
 ///
 /// 2026-10-10: the Mac left the Wi-Fi the link was running on (iPhone tethering,
 /// en0) and coordinates did not come back over AWDL for about 100 s, although a
-/// diagnostics upload (TCP) already reached the Mac over awdl0 after ~60 s. A
-/// UDP connection to a Bonjour service becomes "ready" on whatever address
-/// resolves first and never reports that nothing answers, so every reconnect
-/// could resolve to the cached record of the dead network again.
+/// diagnostics upload (TCP) already reached the Mac over awdl0 after ~60 s.
+/// Hypothesis (no iPhone log exists for that outage): UDP has no handshake, so a
+/// connection to a Bonjour service can become "ready" on an address of the dead
+/// network without any failure being reported, and each reconnect may pick it again.
 /// The first attempt keeps the system's choice (unchanged behaviour). After a
 /// failed attempt the next ones are pinned, in turn, to each interface the
 /// browser reports for the service (peer-to-peer first), then the system's
-/// choice again. A pong resets it. Plain names so it is unit-testable.
+/// choice again. It is reset only when the link is usable again (a single pong
+/// on a path that then goes silent must not send every retry back to that path).
+/// Plain names so it is unit-testable.
 struct P2PPathRotation: Equatable {
     private(set) var failedAttempts = 0
     private(set) var preferred: String?
@@ -331,6 +333,11 @@ final class P2PSender {
     private var rotation = P2PPathRotation()
     /// A silent attempt is replaced by one on a newly advertised interface only after this long.
     private static let pathSwitchAfterSilence: TimeInterval = 1
+    /// Interface the current attempt is pinned to (nil: system choice).
+    private var attemptInterface: String?
+    /// A flapping advertisement must not restart the attempt more often than a
+    /// full connect timeout, or no attempt would ever reach its timeout.
+    private var lastPathSwitchAt: TimeInterval = -.infinity
     private var connection: NWConnection?
     /// Service name the current connection was opened to (the UI shows it).
     private var connectedService = ""
@@ -412,6 +419,8 @@ final class P2PSender {
             monitor.reset()
             backoff.reset()
             rotation.reset()
+            attemptInterface = nil
+            lastPathSwitchAt = -.infinity
             pending.removeAll()
             setState(.disabled)
         }
@@ -590,10 +599,14 @@ final class P2PSender {
         } else if !monitor.isUsable(at: now) {
             if changed {
                 connect()
-            } else if let first = appeared.first, !known.isEmpty,
-                      now - (monitor.lastPongAt ?? monitor.connectionStartedAt ?? now) >= Self.pathSwitchAfterSilence {
+            } else if !known.isEmpty,
+                      let first = appeared.first(where: { $0 != attemptInterface }),
+                      now - (monitor.lastPongAt ?? monitor.connectionStartedAt ?? now) >= Self.pathSwitchAfterSilence,
+                      now - lastPathSwitchAt >= timing.liveness.connectTimeout {
                 // The Mac became reachable another way (e.g. AWDL after its Wi-Fi changed)
-                // while this attempt has been silent: do not wait for the timeout.
+                // while this attempt has been silent: do not wait for the timeout. The
+                // interface already being tried is not a reason to start over.
+                lastPathSwitchAt = now
                 rotation.prefer(first)
                 connect()
             }
@@ -610,6 +623,7 @@ final class P2PSender {
         let generation = connectionGeneration
         let parameters = parameters()
         let pinned = rotation.next(from: candidate.interfaces.map(\.name))
+        attemptInterface = pinned
         if let pinned, let interface = candidate.interfaces.first(where: { $0.name == pinned }) {
             parameters.requiredInterface = interface
         }
@@ -678,7 +692,7 @@ final class P2PSender {
                     self.roundTrips.pongReceived(message.sequence, at: now)
                     self.monitor.pongReceived(at: now)
                     self.backoff.reset()
-                    self.rotation.reset()
+                    if self.monitor.isUsable(at: now) { self.rotation.reset() }
                     self.refreshUsability()
                 }
                 if error == nil { self.receive(on: connection, generation: generation) }

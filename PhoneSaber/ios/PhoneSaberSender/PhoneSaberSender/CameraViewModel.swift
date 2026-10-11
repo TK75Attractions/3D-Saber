@@ -637,6 +637,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var p2pState: P2PLinkState = .disabled
     /// 送信中なのに Unity の応答も P2P も無い状態が続いている（見出しは NETWORK READY のままになる）。
     @Published private(set) var pcReplyMissing = false
+    var pcReplyMissingMessage: String { PCReplyWatch.message(manual: hostSelection.source == .manual) }
     /// 通信ログの直近（画面用）。
     @Published private(set) var connectivityLogTail: [String] = []
     private var pcReplyWatch = PCReplyWatch()
@@ -1643,8 +1644,9 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     /// PC へ届いている証拠の有無と通信ログを画面へ反映する（12Hz の UI 更新から呼ぶ。変化時だけ publish）。
     private func refreshConnectivityStatus(now: TimeInterval = ProcessInfo.processInfo.systemUptime) {
-        let missing = pcReplyWatch.update(sending: running && lanConfigured, lanVerified: lanProbe.isAlive,
-                                          p2pConnected: p2pState.isConnected, now: now)
+        let manual = hostSelection.source == .manual
+        let missing = pcReplyWatch.update(sending: running, lanVerified: lanConfigured && lanProbe.isAlive,
+                                          p2pConnected: !manual && p2pState.isConnected, now: now)
         if missing != pcReplyMissing {
             pcReplyMissing = missing
             ConnectivityLog.shared.record("状態", missing ? "PC から応答なし（Unity 応答なし・P2P 未接続）" : "PC への経路が回復")

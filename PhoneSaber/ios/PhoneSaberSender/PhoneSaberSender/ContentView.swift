@@ -33,7 +33,7 @@ struct ContentView: View {
                         Text(model.networkStateLabel)
                             .font(.headline)
                         if model.pcReplyMissing {
-                            Text("PC（Unity）から応答がありません。iPhone と PC が同じ Wi-Fi か確認してください。")
+                            Text(model.pcReplyMissingMessage)
                                 .font(.caption)
                                 .foregroundStyle(.orange)
                         }

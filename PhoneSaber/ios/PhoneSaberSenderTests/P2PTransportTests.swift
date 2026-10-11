@@ -156,7 +156,7 @@ final class P2PTransportTests: XCTestCase {
         rotation.attemptFailed()
         XCTAssertEqual(rotation.next(from: ["en0", "awdl0"]), "awdl0")
         rotation.reset()
-        XCTAssertNil(rotation.next(from: ["en0", "awdl0"]), "pong を受けたら元に戻る")
+        XCTAssertNil(rotation.next(from: ["en0", "awdl0"]), "リンクが使える状態に戻ったら元に戻る")
         rotation.attemptFailed()
         XCTAssertNil(rotation.next(from: []), "interface 情報が無ければ固定しない（override・古い OS）")
         XCTAssertEqual(P2PPathRotation.order(["en0", "awdl0", "en0", "", "llw0"]), ["awdl0", "en0", "llw0"])
@@ -180,6 +180,8 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertFalse(watch.update(sending: true, lanVerified: false, p2pConnected: false, now: 15), "数え直す")
         XCTAssertFalse(watch.update(sending: true, lanVerified: false, p2pConnected: true, now: 30), "P2P 接続中は警告しない")
         XCTAssertFalse(watch.update(sending: false, lanVerified: false, p2pConnected: false, now: 60), "停止中は警告しない")
+        XCTAssertTrue(PCReplyWatch.message(manual: true).contains("手動 IP"), "手動 IP は Unity 以外の受信先でも使う")
+        XCTAssertTrue(PCReplyWatch.message(manual: false).contains("同じ Wi-Fi"))
     }
 
     func testConnectivityLogKeepsTheNewestEntriesAndAppendsToAFile() throws {
