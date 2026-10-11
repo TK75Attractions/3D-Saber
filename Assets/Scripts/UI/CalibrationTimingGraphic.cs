@@ -7,10 +7,25 @@ public sealed class CalibrationTimingGraphic : MaskableGraphic
 {
     public bool isDistribution;
     double time,error; int offset; bool playing,hasError; CalibrationResult result;
-    static readonly Color Cyan=new Color(.43f,.93f,.87f), Dim=new Color(.19f,.31f,.37f);
+    CalibrationSample[] preview;
+    float previewStarted, lastInputTime;
+    int previewDelta;
+    static readonly Color Cyan=new Color(.55f,.95f,.72f), Dim=new Color(.3f,.39f,.42f), Amber=new Color(1,.79f,.35f);
+    public void PreviewAdjustment(CalibrationResult history,int delta)
+    { preview=history?.Samples; previewDelta=delta; previewStarted=Time.unscaledTime; SetVerticesDirty(); }
+    public void ClearPreview() { preview=null; SetVerticesDirty(); }
+    void Update()
+    {
+        if (preview!=null && Time.unscaledTime-previewStarted>3) { preview=null; SetVerticesDirty(); }
+        if (preview!=null || Time.unscaledTime-lastInputTime<.3f) SetVerticesDirty();
+    }
     public void SetTiming(double t,int ms,bool active) { time=t;offset=ms;playing=active;SetVerticesDirty(); }
     public void SetResult(CalibrationResult r,bool valid,double ms)
-    { if(result==r&&hasError==valid&&System.Math.Abs(error-ms)<.01) return; result=r;hasError=valid;error=ms;SetVerticesDirty(); }
+    {
+        if(result==r&&hasError==valid&&System.Math.Abs(error-ms)<.01) return;
+        if(r!=result&&r!=null) { preview=null; lastInputTime=Time.unscaledTime; }
+        result=r;hasError=valid;error=ms;SetVerticesDirty();
+    }
     void Box(VertexHelper vh,float x,float y,float w,float h,Color c)
     { SongSelectPanelGraphic.Quad(vh,new Vector2(x,y),new Vector2(x,y+h),new Vector2(x+w,y+h),new Vector2(x+w,y),c); }
     protected override void OnPopulateMesh(VertexHelper vh)
@@ -18,21 +33,27 @@ public sealed class CalibrationTimingGraphic : MaskableGraphic
         vh.Clear(); var r=rectTransform.rect;
         if(isDistribution)
         {
-            // 本番のPERFECT幅ではなく、音との中心をそろえるための±8ms。
+            // 本番と同じ非対称PERFECT帯。色はセーバーの青・赤と分ける。
             float scale=r.width/500f;
-            Box(vh,r.xMin,r.yMin,r.width,r.height,new Color(.04f,.075f,.095f));
-            Box(vh,-8*scale,r.yMin,16*scale,r.height,new Color(.1f,.35f,.30f));
-            for(int i=-5;i<=5;i++) Box(vh,i*r.width/10f-1,r.yMin+4,1,r.height-8,Dim);
-            Box(vh,-1,r.yMin,2,r.height,Cyan);
-            if(result!=null)
+            float center=r.center.x, y=r.center.y;
+            Box(vh,r.xMin,y-3,r.width,6,Dim);
+            Box(vh,center-(float)CalibrationProtocol.EarlyPerfectMs*scale,y-15,
+                (float)(CalibrationProtocol.EarlyPerfectMs+CalibrationProtocol.LatePerfectMs)*scale,30,new Color(.16f,.38f,.26f));
+            Box(vh,center-2,y-20,4,40,Cyan);
+            var points=result?.Samples??preview;
+            if(points!=null)
             {
-                int[] bins=new int[25]; foreach(var s in result.Samples) bins[Mathf.Clamp((int)((s.ErrorMs+250)/20),0,24)]++;
-                int max=1;foreach(int n in bins)max=Mathf.Max(max,n);
-                for(int i=0;i<25;i++) if(bins[i]>0) Box(vh,r.xMin+i*r.width/25+2,r.yMin+6,r.width/25-4,(r.height-12)*bins[i]/max,
-                    i<12?new Color(.4f,.72f,1):i>12?new Color(1,.59f,.48f):Cyan);
+                bool predicted=result==null;
+                float move=predicted?Mathf.SmoothStep(0,1,(Time.unscaledTime-previewStarted)/.35f):0;
+                for(int i=0;i<points.Length;i++)
+                {
+                    double ms=points[i].ErrorMs-(predicted?previewDelta*move:0);
+                    Color c=ms < -CalibrationProtocol.EarlyPerfectMs||ms > CalibrationProtocol.LatePerfectMs?Amber:Cyan;
+                    c.a=predicted?.35f:Mathf.Lerp(.25f,1,(i+1f)/points.Length);
+                    float drop=!predicted&&i==points.Length-1?14*(1-Mathf.Clamp01((Time.unscaledTime-lastInputTime)/.22f)):0;
+                    Dot(vh,center+Mathf.Clamp((float)ms,-245,245)*scale,y+drop,i==points.Length-1?8:5,c);
+                }
             }
-            // 分布があるときも直前の1回を白線で重ねる。
-            if(hasError) Box(vh,Mathf.Clamp((float)error,-245,245)*scale-3,r.yMin+2,6,r.height-4,Color.white);
             return;
         }
         Box(vh,r.xMin,0,r.width,2,Dim);
@@ -47,6 +68,18 @@ public sealed class CalibrationTimingGraphic : MaskableGraphic
             int beat=(int)System.Math.Floor(time/CalibrationProtocol.BeatSeconds)+i;
             if((!playing||(beat>=1&&beat<=32))&&x>r.xMin+8&&x<r.xMax-8) Box(vh,x-3,8,6,16,Color.white);
             if((!playing||(beat>=5&&beat<=32))&&adjusted>r.xMin+8&&adjusted<r.xMax-8) Box(vh,adjusted-5,-24,10,16,Cyan);
+        }
+    }
+    void Dot(VertexHelper vh,float x,float y,float radius,Color c)
+    {
+        const int segments=12;
+        int first=vh.currentVertCount;
+        vh.AddVert(new Vector3(x,y),c,Vector2.zero);
+        for(int i=0;i<=segments;i++)
+        {
+            float angle=i*Mathf.PI*2/segments;
+            vh.AddVert(new Vector3(x+Mathf.Cos(angle)*radius,y+Mathf.Sin(angle)*radius),c,Vector2.zero);
+            if(i>0) vh.AddTriangle(first,first+i,first+i+1);
         }
     }
 }

@@ -14,15 +14,15 @@ public class CalibrationFlowPlayTests
         var pointer=Object.FindFirstObjectByType<SaberUIPointer>();
         Assert.NotNull(pointer.AimReticle);
         pointer.enabled=false; c.ChangeOffset(-c.Draft.OffsetMs); c.Overlay.Refresh();
-        Vector2 point=AimPoint(c,"Controls/Adjust1");
+        Vector2 point=AimPoint(c,"Controls/Later");
         HoldAim(pointer,point,9); Assert.AreEqual(0,c.Draft.OffsetMs);
         Assert.AreEqual(.9f,pointer.AimProgress01,.001f);
         Assert.True(pointer.AimReticle.gameObject.activeSelf);
         Assert.Less(Vector2.Distance(point,RectTransformUtility.WorldToScreenPoint(null,pointer.AimReticle.position)),1);
-        HoldAim(pointer,point,1); Assert.AreEqual(1,c.Draft.OffsetMs);
-        HoldAim(pointer,point,20); Assert.AreEqual(1,c.Draft.OffsetMs,"置いたままで連発しない");
+        HoldAim(pointer,point,1); Assert.AreEqual(10,c.Draft.OffsetMs);
+        HoldAim(pointer,point,20); Assert.AreEqual(10,c.Draft.OffsetMs,"置いたままで連発しない");
         HoldAim(pointer,new Vector2(Screen.width*.5f,Screen.height*.5f),2);
-        HoldAim(pointer,point,10); Assert.AreEqual(2,c.Draft.OffsetMs);
+        HoldAim(pointer,point,10); Assert.AreEqual(20,c.Draft.OffsetMs);
         yield return null;
     }
 
@@ -31,7 +31,7 @@ public class CalibrationFlowPlayTests
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
         var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
         c.ChangeOffset(-c.Draft.OffsetMs); c.Overlay.Refresh();
-        Vector2 point=AimPoint(c,"Controls/Adjust1");
+        Vector2 point=AimPoint(c,"Controls/Later");
         HoldAim(pointer,point,9); pointer.SendMessage("OnApplicationFocus",false);
         Assert.False(pointer.AimReticle.gameObject.activeSelf); Assert.Zero(pointer.AimProgress01);
         HoldAim(pointer,point,9); pointer.TickAimAt(point,.1f,false); Assert.Zero(pointer.AimProgress01);
@@ -39,25 +39,24 @@ public class CalibrationFlowPlayTests
         pointer.TickAimAt(point,.3f); Assert.Zero(pointer.AimProgress01);
         HoldAim(pointer,point,9); Assert.Zero(c.Draft.OffsetMs);
         pointer.TickAimAt(point,.01f,true,true);
-        c.Overlay.transform.Find("Controls/Adjust1").GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
-        HoldAim(pointer,point,20); Assert.AreEqual(1,c.Draft.OffsetMs,"クリック後の置きっぱなしも再実行しない");
+        c.Overlay.transform.Find("Controls/Later").GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+        HoldAim(pointer,point,20); Assert.AreEqual(10,c.Draft.OffsetMs,"クリック後の置きっぱなしも再実行しない");
         yield return null;
     }
 
-    [UnityTest] public IEnumerator AimCanStartAndPausePracticeWhileOnlyBottomControlsAcceptHolds()
+    [UnityTest] public IEnumerator StartsAutomaticallyAndExitNeedsALongerHoldThanAdjustment()
     {
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
         var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
-        Vector2 play=AimPoint(c,"Controls/PlayPause");
-        HoldAim(pointer,play,10); Assert.True(c.IsLive);
-        yield return null;
-        HoldAim(pointer,play,20); Assert.True(c.IsLive,"開始した場所に置いても停止しない");
-        Vector2 back=AimPoint(c,"Header/Back");
-        HoldAim(pointer,back,20); Assert.True(c.IsLive);
-        Assert.IsNull(pointer.HoveredForTest); Assert.True(pointer.AimReticle.gameObject.activeSelf);
-        Assert.Zero(pointer.AimProgress01,"上端へ照準しても試し切り中は操作を受け付けない");
-        HoldAim(pointer,AimPoint(c,"Controls/PlayPause"),10);
-        Assert.False(c.IsRunning,$"target={pointer.HoveredForTest?.name}, progress={pointer.AimProgress01}, position={play}, screen={Screen.width}x{Screen.height}");
+        Assert.True(c.IsLive); Assert.True(pointer.BottomControlsOnly);
+        Assert.False(c.Overlay.transform.Find("Controls/PlayPause").gameObject.activeSelf);
+        c.ChangeOffset(saved<990?10:-10);
+        HoldAim(pointer,AimPoint(c,"Title"),20);
+        Assert.IsNull(pointer.HoveredForTest); Assert.True(c.IsLive);
+        var back=AimPoint(c,"Controls/Back");
+        HoldAim(pointer,back,10); Assert.False(c.Overlay.IsExitDialogOpen);
+        HoldAim(pointer,back,6); Assert.True(c.Overlay.IsExitDialogOpen);
+        Assert.False(c.IsRunning);
         yield return null;
     }
 
@@ -67,7 +66,7 @@ public class CalibrationFlowPlayTests
         var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
         c.ChangeOffset(-c.Draft.OffsetMs); c.Overlay.OpenSettings();
         yield return null;
-        HoldAim(pointer,AimPoint(c,"Controls/Adjust1"),15); Assert.Zero(c.Draft.OffsetMs);
+        HoldAim(pointer,AimPoint(c,"Controls/Later"),15); Assert.Zero(c.Draft.OffsetMs);
         Assert.Zero(pointer.AimProgress01);
         HoldAim(pointer,AimPoint(c,"AudioSettings/SettingsCard/Close"),10);
         Assert.False(c.Overlay.IsSettingsOpen,$"target={pointer.HoveredForTest?.name}, progress={pointer.AimProgress01}");
@@ -198,17 +197,17 @@ public class CalibrationFlowPlayTests
         Assert.AreEqual(saved,c.Draft.OffsetMs);Assert.AreEqual(GameSession.NoteApproachTime,c.Draft.ApproachTime);
         Assert.AreEqual(0,c.History.Count);Assert.False(c.Draft.IsDirty);
         c.ChangeOffset(GameSession.JudgmentOffsetMaxMs-c.Draft.OffsetMs);c.Overlay.Refresh();
-        Assert.False(c.Overlay.transform.Find("Controls/Adjust1").GetComponent<UnityEngine.UI.Button>().interactable);
-        Assert.True(c.Overlay.transform.Find("Controls/Adjust-1").GetComponent<UnityEngine.UI.Button>().interactable);
+        Assert.False(c.Overlay.transform.Find("Controls/Later").GetComponent<UnityEngine.UI.Button>().interactable);
+        Assert.True(c.Overlay.transform.Find("Controls/Earlier").GetComponent<UnityEngine.UI.Button>().interactable);
         c.Stop();yield return null;
     }
     [UnityTest] public IEnumerator MeasurementCannotStartWithTooLittleTimeAndHelpExplainsWhy()
     {
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;var ui=c.Overlay;
-        ui.TickCountdown(ui.RemainingSeconds-24);ui.Refresh();
+        ui.OpenSettings();ui.TickCountdown(ui.RemainingSeconds-24);ui.Refresh();
         ui.StartMeasurement();Assert.False(c.IsRunning);
-        Assert.False(ui.transform.Find("Controls/Measure").GetComponent<UnityEngine.UI.Button>().interactable);
-        StringAssert.Contains("25秒",ui.transform.Find("MeasurementStatus").GetComponent<TMPro.TextMeshProUGUI>().text);
+        Assert.False(ui.transform.Find("AudioSettings/SettingsCard/Measure").GetComponent<UnityEngine.UI.Button>().interactable);
+        StringAssert.Contains("25秒",ui.transform.Find("AudioSettings/SettingsCard/MeasurementStatus").GetComponent<TMPro.TextMeshProUGUI>().text);
         yield return null;
     }
     // 集計・入力の試験だけ時計を進める。音声同期そのものは別の実再生試験で確認する。
@@ -232,10 +231,10 @@ public class CalibrationFlowPlayTests
         var empty=SceneManager.CreateScene("CalibrationCleanup");SceneManager.SetActiveScene(empty);
         yield return SceneManager.UnloadSceneAsync(gameScene);
     }
-    [UnityTest] public IEnumerator OpensIdleAndPracticeUsesUnsavedOffsetWithoutChangingGame()
+    [UnityTest] public IEnumerator OpensLiveAndPracticeUsesUnsavedOffsetWithoutChangingGame()
     {
         var manager=Object.FindFirstObjectByType<GamePlayManager>();var c=manager.Calibration;
-        Assert.NotNull(c);Assert.AreEqual(CalibrationRunMode.Idle,c.Mode);Assert.False(manager.songPlayer.IsPlaying);
+        Assert.NotNull(c);Assert.AreEqual(CalibrationRunMode.LivePractice,c.Mode);Assert.True(manager.songPlayer.GetComponent<AudioSource>().loop);
         int delta=saved<990?10:-10;c.ChangeOffset(delta);Assert.AreEqual(saved,GameSession.JudgmentOffsetMs);
         c.Begin(CalibrationRunMode.Practice);Assert.True(c.IsRunning);
         Assert.AreEqual(manager.extraOffsetSeconds+(saved+delta)/1000.0,manager.noteSpawner.TotalOffsetSeconds,.00001);
@@ -331,28 +330,51 @@ public class CalibrationFlowPlayTests
             SetSongClock(m.songPlayer,AudioSettings.dspTime-hit-errors[index]);
             note.Cut(note.transform.position,Vector3.right*6,CutDirection.None,note.RequiredHand);c.Overlay.Tick();
             // DSP時計は音声バッファ単位で進むため、入力準備時ではなく実際に確定した誤差を検証する。
-            // ±8msの境界そのものはCalibrationLiveTestsで壁時計に依存せず検証する。
-            Assert.True(c.HasLastError);Assert.AreEqual(CalibrationProtocol.LiveFeedback(c.LastErrorMs),c.Overlay.FeedbackText);
+            // 6回未満では点だけを表示する。PERFECT幅の境界はEditModeで検証する。
+            Assert.True(c.HasLastError);Assert.AreEqual("",c.Overlay.FeedbackText);
             Assert.AreEqual(m.scoreManager.LastErrorMs,c.LastErrorMs,.001);Assert.AreEqual(0,c.CollectedCount);
         }
         double nextHit=CalibrationProtocol.NoteTime(3)+m.noteSpawner.TotalOffsetSeconds;
         SetSongClock(m.songPlayer,AudioSettings.dspTime-nextHit);c.Tick(.016f);
         var next=Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None).Single(n=>System.Math.Abs(n.HitTime-nextHit)<.001);
         next.MarkMiss();c.Overlay.Tick();
-        Assert.False(c.HasLastError);Assert.AreEqual("見逃し",c.Overlay.FeedbackText);
+        Assert.False(c.HasLastError);Assert.AreEqual("",c.Overlay.FeedbackText);Assert.AreEqual(3,c.History.Count);
         c.Stop();yield return null;
     }
 
-    [UnityTest] public IEnumerator GuidedScreenKeepsPracticeClearAndSettingsPauseLivePractice()
+    [UnityTest] public IEnumerator VisitorScreenIsSmallAndSettingsResumePractice()
     {
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;var ui=c.Overlay;
-        Assert.False(ui.IsSettingsOpen);Assert.IsNull(ui.transform.Find("Environment"));
-        Assert.IsNull(ui.transform.Find("TimingReadout"));Assert.IsNull(ui.transform.Find("MeasurementResult"));
-        Assert.NotNull(ui.transform.Find("LiveFeedback"));Assert.NotNull(ui.transform.Find("Controls"));
-        Assert.NotNull(ui.transform.Find("RecentTiming/ErrorMeter"));Assert.NotNull(ui.transform.Find("Controls/Measure"));
-        ui.TogglePractice();Assert.True(c.IsLive);Assert.False(ui.transform.Find("ReadyGuide").gameObject.activeSelf);
-        ui.OpenSettings();Assert.False(c.IsRunning);Assert.True(ui.IsSettingsOpen);
-        Assert.AreEqual(saved,GameSession.JudgmentOffsetMs);ui.OnBackClicked();Assert.False(ui.IsSettingsOpen);
+        Assert.True(c.IsLive); Assert.False(ui.IsSettingsOpen);
+        Assert.IsNull(ui.transform.Find("LiveFeedback")); Assert.IsNull(ui.transform.Find("Controls/Measure"));
+        Assert.IsNull(ui.transform.Find("Controls/OffsetValue"));
+        Assert.AreEqual(7,ui.GetComponentsInChildren<UnityEngine.UI.Button>().Count(b=>b.gameObject.activeInHierarchy));
+        foreach(var label in ui.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
+        { Assert.False(label.text.Contains("ms")); Assert.GreaterOrEqual(label.fontSize,26); }
+        Assert.AreEqual("音に合わせて切ろう",ui.transform.Find("Instruction").GetComponent<TMPro.TextMeshProUGUI>().text);
+        ui.OpenSettings(); Assert.False(c.IsRunning); Assert.True(ui.IsSettingsOpen);
+        Assert.False(ui.transform.Find("Controls").gameObject.activeInHierarchy);
+        ui.OnBackClicked(); Assert.False(ui.IsSettingsOpen); Assert.True(c.IsLive);
+        Assert.AreEqual(saved,GameSession.JudgmentOffsetMs);
+        yield return null;
+    }
+
+    [UnityTest] public IEnumerator LiveRecommendationMovesNotesWithoutSavingOrRestartingAudio()
+    {
+        var m=Object.FindFirstObjectByType<GamePlayManager>();var c=m.Calibration;
+        c.ChangeOffset(-c.Draft.OffsetMs);
+        for(int i=0;i<6;i++)c.History.Add(100,i%2==0?SaberHand.Left:SaberHand.Right);
+        c.Overlay.Tick(); Assert.True(c.Overlay.IsRecommendationVisible);
+        Assert.AreEqual(1,c.Overlay.HighlightedDirection); Assert.AreEqual("少し遅め",c.Overlay.FeedbackText);
+        var clip=m.songPlayer.Clip;double time=m.songPlayer.SongTime;
+        c.Overlay.transform.Find("Controls/Recommendation").GetComponent<UnityEngine.UI.Button>().onClick.Invoke();
+        Assert.AreEqual(100,c.Draft.OffsetMs); Assert.AreEqual(saved,GameSession.JudgmentOffsetMs);
+        Assert.AreSame(clip,m.songPlayer.Clip); Assert.GreaterOrEqual(m.songPlayer.SongTime,time);
+        Assert.Zero(c.History.Count); Assert.False(c.Overlay.IsRecommendationVisible);
+        Assert.Zero(c.Overlay.HighlightedDirection);
+        c.ChangeOffset(GameSession.JudgmentOffsetMaxMs-c.Draft.OffsetMs);
+        for(int i=0;i<6;i++)c.History.Add(100,i%2==0?SaberHand.Left:SaberHand.Right);
+        c.Overlay.Tick(); Assert.False(c.CanApplyLiveRecommendation); Assert.False(c.Overlay.IsRecommendationVisible);
         yield return null;
     }
 
@@ -367,7 +389,7 @@ public class CalibrationFlowPlayTests
         Assert.IsNull(raycast.Invoke(pointer,new object[]{position}),"ダイアログ外をかざして背後の保存を押さない");
         yield return null;
         Assert.IsNull(raycast.Invoke(pointer,new object[]{position}),"描画更新後も背後の保存を押さない");
-        c.Overlay.OnBackClicked();Canvas.ForceUpdateCanvases();
+        c.Overlay.OnBackClicked();yield return null;Canvas.ForceUpdateCanvases();
         Assert.NotNull(raycast.Invoke(pointer,new object[]{position}),"閉じたら元の操作を使える");
     }
 }

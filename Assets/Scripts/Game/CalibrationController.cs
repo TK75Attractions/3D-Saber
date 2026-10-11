@@ -86,6 +86,7 @@ public sealed class CalibrationController : MonoBehaviour
         pointer.RemapToFullScreen = true;
         pointer.RespectRaycastBlockers = true;
         AudioSettings.OnAudioConfigurationChanged += AudioConfigurationChanged;
+        if (Application.isPlaying) BeginLivePractice();
     }
 
     public void BeginLivePractice()
@@ -103,7 +104,7 @@ public sealed class CalibrationController : MonoBehaviour
         Notice = "切った瞬間に、タイミングを表示します。";
         // 試し切り中は画面下の操作だけを1秒の滞留で受け付け、通常の振りで押されるのを防ぐ。
         if (pointer != null) { pointer.BottomControlsOnly = true; pointer.gameObject.SetActive(true); }
-        Overlay.Refresh();
+        Overlay.ClearTimingPreview(); Overlay.Refresh();
     }
     void ExtendLiveChart(double time)
     {
@@ -200,7 +201,7 @@ public sealed class CalibrationController : MonoBehaviour
     }
     public void Stop()
     {
-        StopPlayback(); Mode = CalibrationRunMode.Idle; Result = null; HasLastError = false; LastInputWasMiss = false;
+        StopPlayback(); Overlay.ClearTimingPreview(); Mode = CalibrationRunMode.Idle; Result = null; HasLastError = false; LastInputWasMiss = false;
         Notice = "一時停止中。保存するまでは本番の設定は変わりません。";
     }
     public void ChangeOffset(int delta)
@@ -209,6 +210,7 @@ public sealed class CalibrationController : MonoBehaviour
         {
             int previous = Draft.OffsetMs; Draft.SetOffset(previous + delta);
             if (previous == Draft.OffsetMs) return;
+            Overlay.PreviewAdjustment(History.Summary, Draft.OffsetMs - previous);
             runOffset = Draft.OffsetMs; totalOffset = extraOffset + runOffset / 1000.0;
             RebuildLiveChart("新しい値を反映しました。音に合わせて続けてください。");
             return;
@@ -218,7 +220,7 @@ public sealed class CalibrationController : MonoBehaviour
         History.Clear();
         Notice = "仮の設定です。「試し切り」で確認してから保存できます。"; Overlay.Refresh();
     }
-    // 試し切り中に設定を変えたとき、過去のノーツは残したまま、これから来るノーツだけを新しい設定で作り直す。
+    // 音は止めずにノーツを作り直す。旧設定の測定履歴は消し、図だけに短い移動予告を残す。
     void RebuildLiveChart(string notice)
     {
         foreach (var n in watched) if (n != null) { n.OnCut -= RecordCut; n.OnMiss -= RecordMiss; }
@@ -238,7 +240,7 @@ public sealed class CalibrationController : MonoBehaviour
         if (Draft == null || (IsRunning && !IsLive)) return;
         step = Mathf.Clamp(step, 0, NoteSpeedPreset.Count - 1);
         if (Draft.SpeedStep == step) return;
-        Draft.SetSpeedStep(step);
+        Draft.SetSpeedStep(step); Overlay.ClearTimingPreview();
         if (IsLive)
         {
             spawner.approachTime = Draft.ApproachTime;
@@ -260,7 +262,7 @@ public sealed class CalibrationController : MonoBehaviour
     {
         if (IsRunning && !IsLive) return;
         bool live = IsLive;
-        Draft.RestoreSaved(); Result = null; HasLastError = false; Mode = CalibrationRunMode.Idle;
+        Draft.RestoreSaved(); Overlay.ClearTimingPreview(); Result = null; HasLastError = false; Mode = CalibrationRunMode.Idle;
         History.Clear();
         if (live)
         {
@@ -276,6 +278,13 @@ public sealed class CalibrationController : MonoBehaviour
     {
         if (Result == null || !Result.CanRecommend || IsRunning) return;
         Draft.SetOffset(Result.ProposedOffsetMs); Begin(CalibrationRunMode.Practice);
+    }
+    public bool CanApplyLiveRecommendation => IsLive && History.RecommendedDelta != 0 &&
+        Draft.OffsetMs + History.RecommendedDelta >= GameSession.JudgmentOffsetMinMs &&
+        Draft.OffsetMs + History.RecommendedDelta <= GameSession.JudgmentOffsetMaxMs;
+    public void ApplyLiveRecommendation()
+    {
+        if (CanApplyLiveRecommendation) ChangeOffset(History.RecommendedDelta);
     }
     public void ChangeVolume(float delta)
     {
@@ -301,7 +310,7 @@ public sealed class CalibrationController : MonoBehaviour
     }
     void InterruptRun(string message)
     {
-        interrupted = true; StopPlayback(); Mode = CalibrationRunMode.Idle; Result = null;
+        interrupted = true; StopPlayback(); Overlay.ClearTimingPreview(); Mode = CalibrationRunMode.Idle; Result = null;
         HasLastError = false; LastInputWasMiss = false; History.Clear(); Notice = message; Overlay.Refresh();
     }
     void OnDestroy()

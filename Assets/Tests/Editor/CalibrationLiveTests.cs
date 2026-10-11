@@ -10,29 +10,58 @@ public class CalibrationLiveTests
         for (int i = 0; i < 24; i++) h.Add(35, i % 2 == 0 ? SaberHand.Left : SaberHand.Right);
         h.RecordMiss(); h.Add(double.NaN, SaberHand.Any);
         Assert.AreEqual(24, h.Count); Assert.AreEqual(1, h.Misses);
-        Assert.AreEqual(35, h.Summary.MedianMs); Assert.AreEqual(24, h.Summary.Late);
-        StringAssert.Contains("＋", h.Hint); Assert.False(h.Summary.CanRecommend);
+        Assert.AreEqual(35, h.Summary.MedianMs); Assert.AreEqual(24, h.Summary.Center);
+        Assert.AreEqual("音に合っています", h.Hint); Assert.False(h.Summary.CanRecommend);
         h.Clear(); Assert.AreEqual(0, h.Count); Assert.AreEqual(0, h.Misses); Assert.IsNull(h.Summary);
     }
-    [Test] public void RecentHistoryRequiresEnoughConsistentHitsBeforeSuggestingADirection()
+    [Test] public void SixConsistentHitsGuideOnlyOutsideTheGamePerfectWindow()
     {
         var h = new CalibrationHistory();
-        for (int i = 0; i < 7; i++) h.Add(-30, SaberHand.Left);
-        StringAssert.Contains("あと 1", h.Hint);
-        h.Add(-30, SaberHand.Right); StringAssert.Contains("−", h.Hint);
+        for (int i=0;i<5;i++) h.Add(-65,i%2==0?SaberHand.Left:SaberHand.Right);
+        Assert.AreEqual("",h.Hint); Assert.Zero(h.SuggestedDirection);
+        h.Add(-65,SaberHand.Right);
+        Assert.AreEqual(-1,h.SuggestedDirection); Assert.AreEqual(-65,h.RecommendedDelta);
+        Assert.AreEqual("少し早め",h.Hint);
         h.Clear();
-        for (int i = 0; i < 16; i++) h.Add(i % 2 == 0 ? -25 : 25, i % 2 == 0 ? SaberHand.Left : SaberHand.Right);
-        Assert.False(h.Hint.Contains("側へ"), "左右差・ばらつきを全体のずれと取り違えない");
+        for (int i=0;i<6;i++) h.Add(100,i%2==0?SaberHand.Left:SaberHand.Right);
+        Assert.AreEqual(1,h.SuggestedDirection); Assert.AreEqual(100,h.RecommendedDelta);
+        h.Clear();
+        for (int i=0;i<6;i++) h.Add(35,i%2==0?SaberHand.Left:SaberHand.Right);
+        Assert.Zero(h.SuggestedDirection); Assert.Zero(h.RecommendedDelta);
+        Assert.AreEqual("音に合っています",h.Hint);
     }
-    [TestCase(-30,"早い")]
-    [TestCase(-8.01,"早い")]
-    [TestCase(-8,"ぴったり")]
-    [TestCase(0,"ぴったり")]
-    [TestCase(8,"ぴったり")]
-    [TestCase(8.01,"遅い")]
-    [TestCase(30,"遅い")]
-    public void LiveFeedbackClassifiesCenterAndBothSides(double error,string expected)
+    [Test] public void MissingUnbalancedAndScatteredInputsNeverOfferAnAdjustment()
+    {
+        var h=new CalibrationHistory();
+        for(int i=0;i<6;i++) h.Add(100,SaberHand.Left);
+        Assert.Zero(h.SuggestedDirection);
+        h.Clear();
+        for(int i=0;i<6;i++) h.Add(i%2==0?-70:120,i%2==0?SaberHand.Left:SaberHand.Right);
+        Assert.Zero(h.SuggestedDirection);
+        h.Clear();
+        for(int i=0;i<8;i++) h.Add(i%4<2?-70:150,i%2==0?SaberHand.Left:SaberHand.Right);
+        Assert.Zero(h.SuggestedDirection);
+        h.Clear();
+        for(int i=0;i<6;i++) {h.Add(100,i%2==0?SaberHand.Left:SaberHand.Right);h.RecordMiss();}
+        Assert.Zero(h.SuggestedDirection);
+        for(int i=0;i<12;i++) h.Add(100,i%2==0?SaberHand.Left:SaberHand.Right);
+        Assert.AreEqual(1,h.SuggestedDirection,"古い見逃しは回復後まで妨げない");
+    }
+    [TestCase(-42.51,"少し早め")]
+    [TestCase(-42.5,"音に合っています")]
+    [TestCase(0,"音に合っています")]
+    [TestCase(35,"音に合っています")]
+    [TestCase(85,"音に合っています")]
+    [TestCase(85.01,"少し遅め")]
+    public void LiveFeedbackUsesActualPerfectWindow(double error,string expected)
     {Assert.AreEqual(expected,CalibrationProtocol.LiveFeedback(error));}
+    [TestCase(-100)] [TestCase(195)]
+    public void EdgeCensoredHitsOnlySuggestSmallManualSteps(double error)
+    {
+        var h=new CalibrationHistory();
+        for(int i=0;i<6;i++)h.Add(error,i%2==0?SaberHand.Left:SaberHand.Right);
+        Assert.AreNotEqual(0,h.SuggestedDirection); Assert.Zero(h.RecommendedDelta);
+    }
     [Test] public void LiveClickLoopIsFourEqualBeatsWithSilentSeam()
     {
         const int sr=48000;var pcm=CalibrationProtocol.LiveClickSamples(sr);

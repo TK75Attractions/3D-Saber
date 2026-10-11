@@ -163,7 +163,7 @@ public class CalibrationCountdownPlayTests
         ui.OpenSettings();before=ui.RemainingSeconds;Time.timeScale=0;
         yield return new WaitForSecondsRealtime(.2f);
         Assert.Less(ui.RemainingSeconds,before,"ポーズ中も実時間で進む");Time.timeScale=1;
-        ui.TickCountdown(4);Assert.AreEqual(System.Math.Ceiling(ui.RemainingSeconds).ToString(),text.text);
+        ui.TickCountdown(4);StringAssert.Contains(System.Math.Ceiling(ui.RemainingSeconds).ToString(),text.text);
         Assert.Greater(tab.GetSiblingIndex(),ui.transform.Find("AudioSettings").GetSiblingIndex());
         Capture("calibration-settings");
         ui.OnBackClicked();c.ChangeOffset(savedOffset<990?10:-10);ui.OnBackClicked();
@@ -182,7 +182,10 @@ public class CalibrationCountdownPlayTests
         yield return EnterCalibration();
         var manager=Object.FindFirstObjectByType<GamePlayManager>();var c=manager.Calibration;
         c.ChangeOffset(savedOffset<990?10:-10);c.SetSpeedStep(c.SpeedStep==0?1:0);c.BeginLivePractice();
-        c.Overlay.TickCountdown(100);
+        c.Overlay.TickCountdown(c.Overlay.RemainingSeconds-15);
+        Assert.AreEqual("あと15秒で選曲にもどります",c.Overlay.TimeoutText);
+        Assert.False(c.Overlay.transform.Find("TimeTab/TimeRemaining").gameObject.activeSelf);
+        c.Overlay.TickCountdown(15);
         Assert.True(ScreenTransition.IsBusy);Assert.False(manager.songPlayer.IsPlaying);
         Assert.IsNull(GameSession.CalibrationSelectionSeconds);
         Assert.AreEqual(savedOffset,GameSession.JudgmentOffsetMs);Assert.AreEqual(savedSpeed,GameSession.NoteApproachTime);

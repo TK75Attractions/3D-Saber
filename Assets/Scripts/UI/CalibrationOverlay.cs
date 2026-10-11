@@ -9,24 +9,27 @@ using Object = UnityEngine.Object;
 // 音を聴く → 試す → 保存。中央のプレイ領域と下端のセーバー操作帯を分ける。
 public sealed class CalibrationOverlay : MonoBehaviour
 {
-    static readonly Color Ink = new Color(.91f,.97f,1), Muted = new Color(.65f,.76f,.82f),
-        Cyan = new Color(.43f,.93f,.87f), Blue = new Color(.4f,.72f,1), Coral = new Color(1,.59f,.48f),
+    static readonly Color Ink = new Color(.94f,.97f,1), Muted = new Color(.78f,.83f,.86f),
+        Cyan = new Color(.55f,.95f,.72f), Amber = new Color(1,.79f,.35f),
         PanelColor = new Color(.025f,.043f,.065f,.97f);
     CalibrationController ctl;
-    TextMeshProUGUI feedback, feedbackDetail, value, state, instruction, volume, connections, timer;
-    TextMeshProUGUI trendTitle, trendCounts, savedValue, device, readyDetail;
-    TextMeshProUGUI resultTitle, resultValue, resultDetail, resultMessage, measurementStatus;
+    TextMeshProUGUI feedback, instruction, volume, connections, timer, timeout, value, measurementStatus;
+    TextMeshProUGUI resultTitle, resultValue, resultDetail, resultMessage;
     readonly SongSelectCountdown countdown = new SongSelectCountdown();
     readonly List<Button> adjustments = new List<Button>();
-    readonly int[] deltas = { -10, -1, 1, 10 };
+    readonly int[] deltas = { -10, 10 };
     double lastTick;
-    Button play, save, back, measure, restore, resultPrimary, resultRetry;
-    GameObject settings, exitDialog, readyCard, resultCard;
+    Button play, save, back, measure, restore, recommend, resultPrimary, resultRetry;
+    Button earlier, later;
+    GameObject settings, exitDialog, resultCard, controls, timingGroup;
     CalibrationTimingGraphic timing;
     Button[] profiles, speeds;
     CalibrationRunMode shownMode = (CalibrationRunMode)(-1);
     int shownOffset = int.MinValue, shownSpeed = -1;
     bool shownDirty;
+    public int HighlightedDirection { get; private set; }
+    public bool IsRecommendationVisible => recommend != null && recommend.gameObject.activeSelf;
+    public string TimeoutText => timeout != null ? timeout.text : "";
     public double RemainingSeconds => countdown.Remaining;
     public int SpeedButtonCount => speeds != null ? speeds.Length : 0;
     public string SpeedCaption(int step) => speeds != null && step >= 0 && step < speeds.Length ? speeds[step].GetComponentInChildren<TextMeshProUGUI>(true).text : "";
@@ -64,7 +67,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
         b.targetGraphic = face; b.transition = Selectable.Transition.None;
         b.navigation = new Navigation { mode = Navigation.Mode.None };
         var label = Label(rt,"ActionLabel",text,30,0,0,w-24,h-8,Ink);
-        label.enableAutoSizing = true; label.fontSizeMin = 24; label.fontSizeMax = 30; label.textWrappingMode = TextWrappingModes.NoWrap;
+        label.enableAutoSizing = true; label.fontSizeMin = 26; label.fontSizeMax = 30; label.textWrappingMode = TextWrappingModes.NoWrap;
         rt.gameObject.AddComponent<SongSelectActionStyle>().Initialize(b,face,label,main);
         b.onClick.AddListener(click);
         var dwell = rt.gameObject.AddComponent<SaberDwellTarget>(); dwell.dwellSeconds = 1; dwell.progressColor = Cyan;
@@ -80,53 +83,36 @@ public sealed class CalibrationOverlay : MonoBehaviour
     {
         if (Object.FindFirstObjectByType<UnityEngine.EventSystems.EventSystem>() == null)
             new GameObject("EventSystem",typeof(UnityEngine.EventSystems.EventSystem),typeof(UnityEngine.InputSystem.UI.InputSystemUIInputModule));
-        var header = Panel(transform,"Header",0,480,1920,120);
-        back = Action(header,"Back","戻る",-815,0,190,84,OnBackClicked);
-        Label(header,"Title","判定調整",38,-542,12,320,58,Ink,false);
-        device = Label(header,"Profile","",24,-452,-28,500,38,Muted,false);
-        var live = Panel(transform,"LiveFeedback",-594,326,650,160);
-        Label(live,"Eyebrow","判定",20,0,53,600,34,Muted);
-        feedback = Label(live,"Feedback","—",42,0,3,604,70,Cyan);
-        feedback.enableAutoSizing = true; feedback.fontSizeMin = 30; feedback.fontSizeMax = 48;
-        feedbackDetail = Label(live,"FeedbackDetail","",23,0,-48,600,36,Muted);
-        var trend = Panel(transform,"RecentTiming",339,326,1160,160);
-        trendTitle = Label(trend,"Title","タイミング",23,-208,53,688,36,Ink,false);
-        trendCounts = Label(trend,"Counts","",20,362,53,380,36,Muted);
-        timing = Rect(trend,"ErrorMeter",0,6,1080,54).gameObject.AddComponent<CalibrationTimingGraphic>();
+        Label(transform,"Title","判定調整",34,-680,475,430,60,Ink,false);
+        instruction = Label(transform,"Instruction","音に合わせて切ろう",44,0,365,1320,76,Ink);
+        // カットする位置のすぐ下へ集約。数値や個々の早い/遅いは表示しない。
+        timingGroup = Panel(transform,"RecentTiming",0,-242,1120,136).gameObject;
+        feedback = Label(timingGroup.transform,"Feedback","",36,0,39,1060,56,Ink);
+        timing = Rect(timingGroup.transform,"ErrorMeter",0,-20,1010,56).gameObject.AddComponent<CalibrationTimingGraphic>();
         timing.isDistribution = true; timing.raycastTarget = false;
-        Label(trend,"Early","早い  −250 ms",18,-387,-48,305,32,Blue,false);
-        Label(trend,"Center","0",18,0,-48,60,32,Cyan);
-        Label(trend,"Late","+250 ms  遅い",18,389,-48,305,32,Coral);
-        instruction = Label(transform,"Instruction","",26,0,200,1780,48,Ink);
-        readyCard = Panel(transform,"ReadyGuide",0,-57,1060,146).gameObject;
-        readyDetail = Label(readyCard.transform,"Detail","",28,0,21,992,70,Ink);
-        Label(readyCard.transform,"LeftHand","青：左手",24,-130,-42,240,40,Blue);
-        Label(readyCard.transform,"RightHand","赤：右手",24,130,-42,240,40,Coral);
-        measurementStatus = Label(transform,"MeasurementStatus","",26,0,-265,1740,42,Muted);
-        // ボタンを下端の操作帯に収め、大きくしても試し切り領域に重ねない。
-        var controls = Panel(transform,"Controls",0,-414,1840,236);
-        Label(controls,"EarlierHint","早い → −",24,-389,98,264,34,Blue);
-        Label(controls,"LaterHint","＋ ← 遅い",24,221,98,264,34,Coral);
-        play = Action(controls,"PlayPause","試し切り",-720,26,350,80,TogglePractice,true);
-        float[] xs = { -458,-320,152,290 };
-        for (int i=0;i<deltas.Length;i++)
-        { int d=deltas[i]; adjustments.Add(Action(controls,"Adjust"+d,d.ToString("+0;-0"),xs[i],26,126,80,()=>ctl?.ChangeOffset(d))); }
-        value = Label(controls,"OffsetValue","",45,-83,34,322,62,Ink);
-        savedValue = Label(controls,"SavedValue","",22,-83,-10,325,32,Muted);
-        save = Action(controls,"Save","保存して戻る",684,26,420,80,()=>ctl?.SaveAndExit(),true);
-        measure = Action(controls,"Measure","自動測定",-720,-62,350,72,StartMeasurement);
-        speeds = new Button[NoteSpeedPreset.Count]; float[] sx = { -410,-140,130 };
+        controls = Panel(transform,"Controls",0,-430,1840,220).gameObject;
+        var c = controls.transform;
+        back = Action(c,"Back","戻る",-746,-52,250,96,OnBackClicked);
+        earlier = Action(c,"Earlier","← ノーツを早く",-322,-52,510,96,()=>ctl?.ChangeOffset(-10));
+        save = Action(c,"Save","決定",131,-52,300,96,()=>ctl?.SaveAndExit(),true);
+        later = Action(c,"Later","ノーツを遅く →",588,-52,530,96,()=>ctl?.ChangeOffset(10));
+        adjustments.Add(earlier); adjustments.Add(later);
+        // 退出操作は調整より長くかざす。再実行には一度照準を外す必要がある。
+        back.GetComponent<SaberDwellTarget>().dwellSeconds = 1.5f;
+        save.GetComponent<SaberDwellTarget>().dwellSeconds = 1.5f;
+        var speedGroup = Panel(c,"SpeedGroup",-454,60,830,76);
+        speeds = new Button[NoteSpeedPreset.Count];
         for (int i=0;i<speeds.Length;i++)
-        { int s=i; speeds[i]=Action(controls,"Speed"+(i+1),NoteSpeedPreset.Caption(i,false),sx[i],-62,254,72,()=>ctl?.SetSpeedStep(s)); }
-        restore = Action(controls,"Restore","保存値に戻す",413,-62,280,72,()=>ctl?.RestoreSaved());
-        state = Label(controls,"SaveState","",24,733,-62,326,58,Muted);
+        { int step=i; speeds[i]=Action(speedGroup,"Speed"+(i+1),NoteSpeedPreset.Names[i],-272+i*272,0,240,64,()=>ctl?.SetSpeedStep(step)); }
+        recommend = Action(c,"Recommendation","おすすめに合わせる",522,60,660,64,()=>ctl?.ApplyLiveRecommendation());
+        recommend.gameObject.SetActive(false);
+        // 通常は隠し、中断時にだけ再開操作を出す。
+        play = Action(c,"PlayPause","再開",522,60,660,64,TogglePractice);
+        play.gameObject.SetActive(false);
         BuildResults(); BuildSettings(); BuildExitDialog();
-        var clock = Panel(transform,"TimeTab",730,480,380,112);
-        foreach (var graphic in clock.GetComponentsInChildren<Graphic>()) graphic.raycastTarget = false;
-        Label(clock,"TimeLabel","残り時間",20,-102,25,140,32,Muted);
-        Label(clock,"TimeoutHint","0秒で保存せず戻る",18,-75,-20,218,32,Muted);
-        timer = Label(clock,"TimeRemaining","",70,95,0,146,100,Ink);
-        timer.font = UISkinKit.LogoFontAsset(); timer.textWrappingMode = TextWrappingModes.NoWrap;
+        var clock = Rect(transform,"TimeTab",0,0,1920,1080);
+        timer = Label(clock,"TimeRemaining","",28,780,477,280,50,Muted);
+        timeout = Label(clock,"TimeoutWarning","",38,0,475,1370,64,Amber);
         countdown.Reset(GameSession.CalibrationSelectionSeconds ?? 100);
         GameSession.CalibrationSelectionSeconds = countdown.Remaining;
         lastTick = Time.realtimeSinceStartupAsDouble; RefreshCountdown();
@@ -141,30 +127,36 @@ public sealed class CalibrationOverlay : MonoBehaviour
         resultMessage = Label(resultCard.transform,"Message","",25,0,-22,1100,106,Ink);
         resultPrimary = Action(resultCard.transform,"TryProposal","提案値で試す",-210,-125,650,76,AcceptResult,true);
         resultRetry = Action(resultCard.transform,"MeasureAgain","もう一度測る",367,-125,336,76,StartMeasurement);
-        Action(resultCard.transform,"Close","手動調整に戻る",0,-207,1070,64,()=>{ctl.Stop();Refresh();});
+        Action(resultCard.transform,"Close","練習へ",0,-207,1070,64,()=>{ctl.BeginLivePractice();Refresh();});
         resultCard.SetActive(false);
     }
     void BuildSettings()
     {
         settings = new GameObject("AudioSettings",typeof(RectTransform)); settings.transform.SetParent(transform,false);
         SongSelectVisuals.Stretch(settings.GetComponent<RectTransform>());
-        var dim = Rect(settings.transform,"Dim",0,0,1920,1080).gameObject.AddComponent<Image>(); dim.color = new Color(0,0,0,.82f);
-        var p = Panel(settings.transform,"SettingsCard",0,0,1010,744);
-        p.GetComponent<SongSelectPanelGraphic>().color = new Color(.025f,.043f,.065f,1);
-        Label(p,"Title","音・接続設定",35,0,310,940,60,Ink);
-        Label(p,"OutputLabel","調整値の保存先",24,0,234,940,44,Muted);
-        profiles = new[] {Action(p,"Speaker","PCスピーカー",-229,170,438,80,()=>ctl?.SelectProfile(0)),
-            Action(p,"Headphones","有線イヤホン",229,170,438,80,()=>ctl?.SelectProfile(1))};
-        volume = Label(p,"ClickVolume","",25,-115,77,660,54,Ink);
-        Action(p,"VolumeDown","−",282,77,96,80,()=>ctl?.ChangeVolume(-.1f));
-        Action(p,"VolumeUp","＋",394,77,96,80,()=>ctl?.ChangeVolume(.1f));
-        connections = Label(p,"Connections","",24,0,-4,928,62,Muted);
-        Label(p,"Hint","音の出力先はWindowsで切り替えます。",23,0,-64,916,44,Muted);
-        Label(p,"Shortcuts","Space 開始・停止   ← → ±1 ms   Shift ±10 ms\n1 / 2 / 3 速度   Esc 戻る   セーバーを1秒合わせて選択",21,0,-121,916,70,Muted);
-        Action(p,"Restore","保存値に戻す",0,-198,898,80,()=>ctl?.RestoreSaved());
-        Action(p,"Close","閉じる",0,-294,898,80,()=>{settings.SetActive(false);Refresh();},true);
+        var dim = Rect(settings.transform,"Dim",0,0,1920,1080).gameObject.AddComponent<Image>(); dim.color = new Color(0,0,0,.88f);
+        var p = Panel(settings.transform,"SettingsCard",0,0,1420,960);
+        Label(p,"Title","スタッフ用の調整",36,0,425,1320,58,Ink);
+        profiles = new[] {Action(p,"Speaker","PCスピーカー",-324,340,610,76,()=>ctl?.SelectProfile(0)),
+            Action(p,"Headphones","有線イヤホン",324,340,610,76,()=>ctl?.SelectProfile(1))};
+        Label(p,"Hint","音の出力先はOSで切り替えます",26,0,273,1320,44,Muted);
+        value = Label(p,"OffsetValue","",36,0,205,440,64,Ink);
+        Action(p,"FineEarlier","−1 ms",-445,205,330,72,()=>ctl?.ChangeOffset(-1));
+        Action(p,"FineLater","＋1 ms",445,205,330,72,()=>ctl?.ChangeOffset(1));
+        volume = Label(p,"ClickVolume","",28,-160,114,910,58,Ink);
+        Action(p,"VolumeDown","音量 −",363,114,210,72,()=>ctl?.ChangeVolume(-.1f));
+        Action(p,"VolumeUp","音量 ＋",595,114,210,72,()=>ctl?.ChangeVolume(.1f));
+        connections = Label(p,"Connections","",28,0,29,1320,50,Muted);
+        measure = Action(p,"Measure","自動測定",-324,-65,610,76,StartMeasurement);
+        restore = Action(p,"Restore","元に戻す",324,-65,610,76,()=>ctl?.RestoreSaved());
+        restore.GetComponent<SaberDwellTarget>().dwellSeconds=2;
+        measurementStatus = Label(p,"MeasurementStatus","",26,0,-135,1320,52,Muted);
+        Label(p,"Shortcuts","F2 スタッフ画面   Space 再開・停止   ← → ノーツを早く・遅く\nスタッフ画面では ← → 1 ms / Shift 10 ms   1・2・3 速さ   Esc 戻る",26,0,-225,1310,104,Muted);
+        Action(p,"Close","練習へ",0,-375,1260,88,CloseSettings,true);
         settings.SetActive(false);
     }
+    public void CloseSettings()
+    { settings.SetActive(false); ctl.BeginLivePractice(); Refresh(); }
     void BuildExitDialog()
     {
         exitDialog = new GameObject("UnsavedChanges",typeof(RectTransform)); exitDialog.transform.SetParent(transform,false);
@@ -172,11 +164,15 @@ public sealed class CalibrationOverlay : MonoBehaviour
         var dim = Rect(exitDialog.transform,"Dim",0,0,1920,1080).gameObject.AddComponent<Image>(); dim.color = new Color(0,0,0,.82f);
         var p = Panel(exitDialog.transform,"Dialog",0,0,1040,340);
         p.GetComponent<SongSelectPanelGraphic>().color = new Color(.025f,.043f,.065f,1);
-        Label(p,"Title","変更を保存せずに戻りますか？",32,0,56,960,68,Ink);
-        Action(p,"Continue","調整を続ける",-240,-93,450,88,()=>{exitDialog.SetActive(false);Refresh();},true);
-        Action(p,"Discard","保存せずに戻る",240,-93,450,88,()=>ctl?.DiscardAndExit());
+        Label(p,"Title","変更をやめて選曲にもどる？",32,0,56,960,68,Ink);
+        Action(p,"Continue","続ける",-240,-93,450,88,ContinuePractice,true);
+        Action(p,"Discard","変更をやめる",240,-93,450,88,()=>ctl?.DiscardAndExit());
         exitDialog.SetActive(false);
     }
+    void ContinuePractice()
+    { exitDialog.SetActive(false); ctl.BeginLivePractice(); Refresh(); }
+    public void ClearTimingPreview() => timing?.ClearPreview();
+    public void PreviewAdjustment(CalibrationResult history, int delta) => timing?.PreviewAdjustment(history,delta);
     public void TogglePractice()
     {
         if (ctl==null||IsExitDialogOpen||IsSettingsOpen||IsResultOpen) return;
@@ -184,8 +180,8 @@ public sealed class CalibrationOverlay : MonoBehaviour
     }
     public void StartMeasurement()
     {
-        if (ctl==null||IsSettingsOpen||IsExitDialogOpen||!ctl.CanMeasure||RemainingSeconds<25) return;
-        ctl.Begin(CalibrationRunMode.Measure); Refresh();
+        if (ctl==null||IsExitDialogOpen||!ctl.CanMeasure||RemainingSeconds<25) return;
+        settings.SetActive(false); ctl.Begin(CalibrationRunMode.Measure); Refresh();
     }
     void AcceptResult()
     {
@@ -199,8 +195,8 @@ public sealed class CalibrationOverlay : MonoBehaviour
     public void OnBackClicked()
     {
         if (ctl==null) {GamePlayManager.ExitCalibration();return;}
-        if (IsSettingsOpen) {settings.SetActive(false);Refresh();return;}
-        if (IsResultOpen) {ctl.Stop();Refresh();return;}
+        if (IsSettingsOpen) {CloseSettings();return;}
+        if (IsResultOpen) {ctl.BeginLivePractice();Refresh();return;}
         if (ctl.IsRunning) ctl.Stop();
         if (ctl.Draft.IsDirty) {exitDialog.SetActive(true);Refresh();} else ctl.DiscardAndExit();
     }
@@ -212,14 +208,13 @@ public sealed class CalibrationOverlay : MonoBehaviour
         if (keyboard!=null)
         {
             if (keyboard.escapeKey.wasPressedThisFrame)
+            { if (IsExitDialogOpen) ContinuePractice(); else OnBackClicked(); }
+            else if (keyboard.f2Key.wasPressedThisFrame&&!IsExitDialogOpen&&!IsResultOpen)
+            { if (IsSettingsOpen) CloseSettings(); else OpenSettings(); }
+            else if (!IsExitDialogOpen&&!IsResultOpen)
             {
-                if (IsExitDialogOpen) {exitDialog.SetActive(false);Refresh();}
-                else if (ctl.IsRunning) {ctl.Stop();Refresh();} else OnBackClicked();
-            }
-            else if (!IsSettingsOpen&&!IsExitDialogOpen&&!IsResultOpen)
-            {
-                if (keyboard.spaceKey.wasPressedThisFrame) TogglePractice();
-                int step=keyboard.leftShiftKey.isPressed||keyboard.rightShiftKey.isPressed?10:1;
+                if (!IsSettingsOpen&&keyboard.spaceKey.wasPressedThisFrame) TogglePractice();
+                int step=IsSettingsOpen&&!(keyboard.leftShiftKey.isPressed||keyboard.rightShiftKey.isPressed)?1:10;
                 if (keyboard.leftArrowKey.wasPressedThisFrame) ctl.ChangeOffset(-step);
                 if (keyboard.rightArrowKey.wasPressedThisFrame) ctl.ChangeOffset(step);
                 if (keyboard.digit1Key.wasPressedThisFrame||keyboard.numpad1Key.wasPressedThisFrame) ctl.SetSpeedStep(0);
@@ -240,36 +235,30 @@ public sealed class CalibrationOverlay : MonoBehaviour
         GameSession.CalibrationSelectionSeconds=null; ctl.DiscardAndExit();
     }
     void RefreshCountdown()
-    { timer.text=Math.Ceiling(countdown.Remaining).ToString(); timer.color=countdown.Remaining<=10?Coral:Ink; }
+    {
+        bool warning=countdown.Remaining<=15;
+        transform.Find("Title").gameObject.SetActive(!warning);
+        timer.gameObject.SetActive(!warning);
+        timer.text=$"あと {Math.Ceiling(countdown.Remaining)} 秒";
+        timeout.text=warning?$"あと{Math.Ceiling(countdown.Remaining)}秒で選曲にもどります":"";
+    }
     void RefreshFeedback()
     {
-        if (IsResultOpen)
-        {
-            feedback.text=ctl.Result.Captured>0?"完了":"入力なし";
-            feedback.color=ctl.Result.Captured>0?Cyan:Coral;
-            feedbackDetail.text="";
-        }
-        else if (ctl.HasLastError&&ctl.IsRunning)
-        {
-            double error=ctl.LastErrorMs; feedback.text=CalibrationProtocol.LiveFeedback(error);
-            feedback.color=error < -8?Blue:error > 8?Coral:Cyan;
-            feedbackDetail.text=CalibrationDraft.FormatMs(error);
-        }
-        else if (ctl.LastInputWasMiss&&ctl.IsRunning)
-        {feedback.text="見逃し";feedback.color=Muted;feedbackDetail.text="";}
-        else
-        {
-            feedback.color=Cyan;
-            feedback.text=ctl.IsRunning&&ctl.RunTime<CalibrationProtocol.FirstNoteSeconds?"準備中":"—";
-            feedbackDetail.text="";
-        }
-        var h=ctl.History;var summary=IsResultOpen?ctl.Result:h.Summary;
-        trendTitle.text=summary==null||summary.Captured==0?"タイミング":$"中央値 {CalibrationDraft.FormatMs(summary.MedianMs)}";
-        trendCounts.text=summary==null||summary.Captured==0?"":$"{(IsResultOpen?"測定":"直近")} {summary.Captured} 回";
-        timing.SetResult(summary,ctl.HasLastError,ctl.LastErrorMs);
+        feedback.text=ctl.IsLive?ctl.History.Hint:"";
+        feedback.color=ctl.History.SuggestedDirection==0?Cyan:Amber;
+        timing.SetResult(ctl.History.Summary,ctl.HasLastError,ctl.LastErrorMs);
         if (ctl.IsRunning&&!ctl.IsLive)
-            instruction.text=ctl.RunTime<CalibrationProtocol.NoteTime(CalibrationProtocol.WarmupNotes)?"準備中":
-                $"{(ctl.Mode==CalibrationRunMode.Measure?"測定":"試し切り")}  {ctl.ProgressCount} / 24";
+            instruction.text=$"{(ctl.Mode==CalibrationRunMode.Measure?"測定":"確認")}  {ctl.ProgressCount} / 24";
+        HighlightedDirection=ctl.IsLive?ctl.History.SuggestedDirection:0;
+        Highlight(earlier,HighlightedDirection<0); Highlight(later,HighlightedDirection>0);
+    }
+    static void Highlight(Button button,bool highlighted)
+    {
+        button.GetComponent<SongSelectActionStyle>().Refresh();
+        if (!highlighted||!button.interactable) return;
+        float pulse=.55f+.12f*Mathf.Sin(Time.unscaledTime*3);
+        button.GetComponentInChildren<SongSelectPanelGraphic>().SetColors(new Color(.22f,.17f,.055f),Color.Lerp(Amber,Color.white,pulse));
+        button.GetComponentInChildren<TextMeshProUGUI>().color=Amber;
     }
     void RefreshAvailability()
     {
@@ -277,43 +266,32 @@ public sealed class CalibrationOverlay : MonoBehaviour
         bool canAdjust=(!ctl.IsRunning||ctl.IsLive)&&!modal;
         for (int i=0;i<adjustments.Count;i++) Enable(adjustments[i],canAdjust&&(deltas[i]<0?ctl.Draft.OffsetMs>GameSession.JudgmentOffsetMinMs:ctl.Draft.OffsetMs<GameSession.JudgmentOffsetMaxMs));
         foreach (var b in speeds) Enable(b,canAdjust);
-        Enable(restore,canAdjust&&(ctl.Draft.OffsetMs!=ctl.Draft.SavedOffsetMs||!Mathf.Approximately(ctl.Draft.ApproachTime,GameSession.NoteApproachTime)));
-        Enable(save,canAdjust);Enable(play,!modal);Enable(back,!modal);
+        Enable(save,canAdjust); Enable(back,!modal); Enable(play,!modal);
+        play.gameObject.SetActive(!modal&&!ctl.IsLive);
+        Caption(play,ctl.IsRunning?"測定を止める":"再開");
+        recommend.gameObject.SetActive(!modal&&ctl.CanApplyLiveRecommendation);
         bool canMeasure=ctl.CanMeasure&&RemainingSeconds>=25;
-        Enable(measure,canAdjust&&canMeasure);Enable(resultRetry,canMeasure&&!IsSettingsOpen&&!IsExitDialogOpen);
+        Enable(measure,canMeasure);
+        Enable(restore,ctl.Draft.OffsetMs!=ctl.Draft.SavedOffsetMs||!Mathf.Approximately(ctl.Draft.ApproachTime,GameSession.NoteApproachTime));
+        Enable(resultRetry,canMeasure&&!IsSettingsOpen&&!IsExitDialogOpen);
         if (IsResultOpen)
-        {
             Enable(resultPrimary,!IsSettingsOpen&&!IsExitDialogOpen&&(!ctl.LastRunWasMeasurement||(ctl.Result.CanRecommend&&RemainingSeconds>=25)));
-            if (ctl.LastRunWasMeasurement&&ctl.Result.CanRecommend&&RemainingSeconds<25)
-            {
-                Caption(resultPrimary,"残り時間不足");
-                resultMessage.text="試し切りには25秒以上必要です（提案値は未保存）。";
-            }
-        }
-        if (ctl.IsRunning) measurementStatus.text="";
-        else if (RemainingSeconds<25) measurementStatus.text="自動測定には残り25秒以上必要です";
-        else measurementStatus.text=ctl.CanMeasure?"":"自動測定：両手の接続待ち";
+        measurementStatus.text=RemainingSeconds<25?"自動測定には残り25秒以上必要です":ctl.CanMeasure?"":"自動測定：両手の接続待ち";
     }
     public void Refresh()
     {
         if (ctl?.Draft==null) return;
-        shownMode=ctl.Mode;shownOffset=ctl.Draft.OffsetMs;shownDirty=ctl.Draft.IsDirty;shownSpeed=ctl.SpeedStep;
+        shownMode=ctl.Mode; shownOffset=ctl.Draft.OffsetMs; shownDirty=ctl.Draft.IsDirty; shownSpeed=ctl.SpeedStep;
         value.text=CalibrationDraft.FormatMs(ctl.Draft.OffsetMs);
-        savedValue.text=ctl.Draft.OffsetMs!=ctl.Draft.SavedOffsetMs?$"保存値 {CalibrationDraft.FormatMs(ctl.Draft.SavedOffsetMs)}":"";
-        state.text=ctl.Draft.IsDirty?"未保存":"";state.color=Coral;
-        device.text=ctl.Draft.ProfileName;Caption(play,ctl.IsRunning?"停止":"試し切り");
-        for (int i=0;i<speeds.Length;i++) Caption(speeds[i],NoteSpeedPreset.Caption(i,ctl.SpeedStep==i));
-        instruction.text="";
-        readyCard.SetActive(!ctl.IsRunning&&ctl.Mode!=CalibrationRunMode.Result);
-        readyDetail.text=ctl.Notice.Contains("中断")||ctl.Notice.Contains("音声機器")?ctl.Notice:
-            "音に合わせてカット";
+        for (int i=0;i<speeds.Length;i++) Caption(speeds[i],(ctl.SpeedStep==i?"● ":"")+NoteSpeedPreset.Names[i]);
         resultCard.SetActive(ctl.Mode==CalibrationRunMode.Result&&ctl.Result!=null);
-        instruction.gameObject.SetActive(!IsResultOpen);
-        measurementStatus.gameObject.SetActive(!IsResultOpen);
+        bool modal=IsSettingsOpen||IsExitDialogOpen||IsResultOpen;
+        instruction.gameObject.SetActive(!modal); timingGroup.SetActive(!modal); controls.SetActive(!modal);
+        instruction.text=ctl.IsRunning?"音に合わせて切ろう":"再開して続けよう";
         if (IsResultOpen) RefreshResult();
-        volume.text=$"音量   {ctl.ReferenceVolume*100:0}%";connections.text=ConnectionText;
+        volume.text=$"基準音の音量   {ctl.ReferenceVolume*100:0}%"; connections.text=ConnectionText;
         for (int i=0;i<profiles.Length;i++) Caption(profiles[i],(ctl.Draft.Profile==i?"●  ":"")+(i==0?"PCスピーカー":"有線イヤホン"));
-        RefreshFeedback();RefreshAvailability();
+        RefreshAvailability(); RefreshFeedback();
     }
     void RefreshResult()
     {
@@ -324,6 +302,6 @@ public sealed class CalibrationOverlay : MonoBehaviour
         resultDetail.text=r.Captured>0?$"有効 {r.Accepted} / 24    ばらつき {r.SpreadMs:0} ms":"";
         resultMessage.text=ctl.LastRunWasMeasurement?(r.CanRecommend?"未保存":r.Message):
             r.Accepted>=22?"合っていれば保存":"入力が少なめです。もう一度試してください。";
-        Caption(resultPrimary,ctl.LastRunWasMeasurement?(r.CanRecommend?"この値で試す":"提案なし"):"保存して戻る");
+        Caption(resultPrimary,ctl.LastRunWasMeasurement?(r.CanRecommend?"この値で試す":"提案なし"):"決定");
     }
 }

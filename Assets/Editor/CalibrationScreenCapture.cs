@@ -64,9 +64,8 @@ public static class CalibrationScreenCapture
                 if(note==null)return;
                 note.Cut(note.transform.position,Vector3.right*6,CutDirection.None,note.RequiredHand);
                 if(!controller.HasLastError)return;
-                var caption=SongSelectVisuals.Label(controller.Overlay.transform,"CaptureLabel",
-                    "表示確認用の自動カット  /  実機の測定値ではありません",20,new Vector2(0,-328),new Vector2(1500,40),Color.white,TMPro.TextAlignmentOptions.Center);
-                for(int i=0;i<16;i++) controller.History.Add(24+(i%5-2)*4,i%2==0?SaberHand.Left:SaberHand.Right);
+                controller.History.Clear();
+                for(int i=0;i<6;i++) controller.History.Add(100+(i%3-1)*4,i%2==0?SaberHand.Left:SaberHand.Right);
                 Capture("02-live-feedback.png",1920,1080);Capture("02-live-feedback-720p.png",1280,720);
                 DisplaySettings.SetReducedEffectsForTest(true);lowFrames=0;phase=10;return;
             }
@@ -75,8 +74,14 @@ public static class CalibrationScreenCapture
                 // LOW設定を読むゲーム側のUpdateが進んでから描画する。
                 if(++lowFrames<3)return;
                 Capture("02-live-low-720p.png",1280,720);DisplaySettings.ResetReducedEffectsCacheForTest();
-                var caption=controller.Overlay.transform.Find("CaptureLabel");
-                if(caption!=null)UnityEngine.Object.Destroy(caption.gameObject);
+                controller.ApplyLiveRecommendation();
+                Capture("02-adjustment-preview.png",1920,1080);
+                controller.History.Clear();
+                for(int i=0;i<6;i++)controller.History.Add(-65+(i%3-1)*3,i%2==0?SaberHand.Left:SaberHand.Right);
+                Capture("02-early.png",1920,1080);
+                controller.History.Clear();
+                for(int i=0;i<6;i++)controller.History.Add(25+(i%3-1)*4,i%2==0?SaberHand.Left:SaberHand.Right);
+                Capture("02-aligned.png",1920,1080);
                 controller.Overlay.OpenSettings();phase=2;return;
             }
             if(phase==2)
@@ -93,6 +98,10 @@ public static class CalibrationScreenCapture
                 controller.Overlay.Refresh();Capture("06-proposal-720p.png",1280,720);
                 typeof(CalibrationController).GetProperty("Result").SetValue(controller,CalibrationResult.Analyze(Array.Empty<CalibrationSample>(),controller.Draft.OffsetMs));
                 controller.Overlay.Refresh();Capture("07-no-input-720p.png",1280,720);
+                controller.BeginLivePractice();
+                controller.Overlay.TickCountdown(controller.Overlay.RemainingSeconds-15);
+                Capture("08-timeout-warning.png",1920,1080);
+                Capture("08-timeout-warning-720p.png",1280,720);
                 // 文字切れの検査。境界値と長い説明文も同じ画面で確認する。
                 controller.Overlay.Tick();
                 File.WriteAllText(Path.Combine(output,"capture-info.txt"),"Actual Game scene. Feedback uses an automated CuttableNote.Cut event; history and proposal use synthetic samples. Not hardware measurements. No settings committed. All visible calibration text checked for truncation at 1080p and 720p.\n");

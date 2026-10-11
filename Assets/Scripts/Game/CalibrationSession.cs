@@ -6,8 +6,10 @@ using UnityEngine;
 // 判定調整の測定条件。通常プレイの判定窓・カット形状は変更しない。
 public static class CalibrationProtocol
 {
-    // 本番のPERFECT幅ではなく、判定調整で中心付近を示す目安。
-    public static string LiveFeedback(double errorMs) => errorMs < -8 ? "早い" : errorMs > 8 ? "遅い" : "ぴったり";
+    // 本番と同じ非対称のPERFECT幅。調整だけ厳しい判定を表示しない。
+    public const double EarlyPerfectMs = JudgmentTierHelper.EarlyPerfectSeconds * 1000;
+    public const double LatePerfectMs = JudgmentTierHelper.LatePerfectSeconds * 1000;
+    public static string LiveFeedback(double errorMs) => errorMs < -EarlyPerfectMs ? "少し早め" : errorMs > LatePerfectMs ? "少し遅め" : "音に合っています";
     public const float Bpm = 100f;
     public const double BeatSeconds = .6;
     public const double FirstNoteSeconds = 3.0;
@@ -157,18 +159,21 @@ public struct CalibrationSample
 }
 
 // 直近のカットだけを保持する。見逃しを0msとして混ぜず、設定変更時に一緒に消す。
-// ライブの傾向は手動調整の参考。専用測定の品質条件を満たした提案とは分ける。
+// ライブの傾向は短い窓で案内し、専用測定の24ノーツ集計とは分ける。
 public sealed class CalibrationHistory
 {
     readonly List<CalibrationSample> samples = new List<CalibrationSample>();
+    readonly Queue<bool> recentInputs = new Queue<bool>();
     public CalibrationResult Summary { get; private set; }
     public int Misses { get; private set; }
     public int Count => samples.Count;
-    public void Clear() { samples.Clear(); Summary = null; Misses = 0; }
-    public void RecordMiss() { Misses++; }
+    public void Clear() { samples.Clear(); recentInputs.Clear(); Summary = null; Misses = 0; }
+    void RecordInput(bool hit) { recentInputs.Enqueue(hit); if (recentInputs.Count > 12) recentInputs.Dequeue(); }
+    public void RecordMiss() { Misses++; RecordInput(false); }
     public void Add(double errorMs, SaberHand hand)
     {
         if (double.IsNaN(errorMs) || double.IsInfinity(errorMs)) return;
+        RecordInput(true);
         if (samples.Count == CalibrationProtocol.MeasuredNotes) samples.RemoveAt(0);
         samples.Add(new CalibrationSample(0, errorMs, hand));
         for (int i = 0; i < samples.Count; i++)
@@ -176,16 +181,28 @@ public sealed class CalibrationHistory
         Summary = CalibrationResult.Analyze(samples, 0);
         Summary.CanRecommend = false;
     }
+    public bool IsConsistent => Count >= 6 && Summary.Accepted >= Math.Ceiling(Count * .8) &&
+        Summary.SpreadMs <= 25 && Summary.LeftCount >= 2 && Summary.RightCount >= 2 &&
+        Math.Abs(Summary.LeftMs - Summary.RightMs) <= 35 &&
+        recentInputs.Count(hit => !hit) * 4 <= recentInputs.Count;
+    // 単発の揺れでは方向を勧めない。PERFECT内なら調整を促さない。
+    public int SuggestedDirection => !IsConsistent ? 0 :
+        Summary.Early >= Math.Ceiling(Count * .7) ? -1 : Summary.Late >= Math.Ceiling(Count * .7) ? 1 : 0;
+    public int RecommendedDelta => SuggestedDirection != 0 && Math.Abs(Summary.MedianMs) >= 60 &&
+        Summary.MedianMs - 3 * Summary.SpreadMs > -JudgmentTierHelper.EarlyBadSeconds * 1000 + 15 &&
+        Summary.MedianMs + 3 * Summary.SpreadMs < JudgmentTierHelper.LateBadSeconds * 1000 - 15 &&
+        !samples.Any(s => s.Hand == SaberHand.Any) ? (int)Math.Round(Summary.MedianMs, MidpointRounding.AwayFromZero) : 0;
     public string Hint
     {
         get
         {
-            if (Count < 8) return $"あと {8 - Count} 回切ると、タイミングの傾向が分かります";
-            if (Summary.SpreadMs > 25) return "ばらつきがあります。まずは同じ振り幅で続けましょう";
-            if (Summary.LeftCount >= 3 && Summary.RightCount >= 3 && Math.Abs(Summary.LeftMs - Summary.RightMs) > 35)
-                return "左右に差があります。両手の振り方をそろえて確認";
-            if (Math.Abs(Summary.MedianMs) <= 8) return "中心付近で安定しています。この値で試しましょう";
-            return Summary.MedianMs < 0 ? "FAST が続いています → − 側へ少しずつ" : "LATE が続いています → ＋ 側へ少しずつ";
+            if (Count < 6) return "";
+            if (Summary.LeftCount < 2 || Summary.RightCount < 2) return "両手で切ってみよう";
+            if (Math.Abs(Summary.LeftMs - Summary.RightMs) > 35) return "左右の振りをそろえよう";
+            if (!IsConsistent) return "同じリズムで続けよう";
+            if (SuggestedDirection < 0) return "少し早め";
+            if (SuggestedDirection > 0) return "少し遅め";
+            return Summary.Center >= Math.Ceiling(Count * .7) ? "音に合っています" : "もう少し続けよう";
         }
     }
 }
@@ -223,8 +240,8 @@ public sealed class CalibrationResult
         r.LeftMs = Median(left.Select(s => s.ErrorMs)); r.RightMs = Median(right.Select(s => s.ErrorMs));
         r.DriftMs = Math.Abs(Median(kept.Where(s => s.Index < 12).Select(s => s.ErrorMs)) -
             Median(kept.Where(s => s.Index >= 12).Select(s => s.ErrorMs)));
-        // 「中央」は ±8ms の目安であり、本番の PERFECT 幅とは別。
-        r.Early = samples.Count(s => s.ErrorMs < -8); r.Late = samples.Count(s => s.ErrorMs > 8);
+        r.Early = samples.Count(s => s.ErrorMs < -CalibrationProtocol.EarlyPerfectMs);
+        r.Late = samples.Count(s => s.ErrorMs > CalibrationProtocol.LatePerfectMs);
         r.Center = samples.Length - r.Early - r.Late;
         if (interrupted) r.Message = "測定中に接続・音声設定・画面の状態が変わりました。環境を固定して測り直してください。";
         else if (slowFrames > 0) r.Message = "測定中に画面の大きな処理落ちがありました。ほかのアプリを閉じて測り直してください。";
