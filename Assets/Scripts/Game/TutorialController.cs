@@ -3,10 +3,12 @@ using UnityEngine;
 
 // タイトルの問いかけで「はい」を選んだ人向けの練習。GamePlayManager の Update からだけ Tick する。
 // 譜面・判定・演出・効果音は本番と同じ部品をそのまま使い、文は上部に 1 行、スキップは画面下の帯の照準だけ。
-// 時計は無音の 2 秒ループ(SongPlayer の DSP 時計)で、判定・受付窓・譜面の進行が同じ時計を見る。
+// 120 BPM の 2 小節ループ(SongPlayer の DSP 時計)で、音・判定・譜面の進行が同じ時計を見る。
 // 終わったら(スキップしても)選曲へ進む。得点・実績は残さない。
 public sealed class TutorialController : MonoBehaviour
 {
+    public const string MusicResourcePath = "Audio/Tutorial_Loop120";
+    public const float MusicVolume = .65f;
     public struct TutorialStepRecord { public string Id; public double Seconds; public string Reason; }
 
     public TutorialOverlay Overlay { get; private set; }
@@ -30,7 +32,9 @@ public sealed class TutorialController : MonoBehaviour
     ScoreManager score;
     SaberTracker[] sabers = System.Array.Empty<SaberTracker>();
     AudioSource source;
-    AudioClip clock;
+    AudioClip music;
+    float originalVolume;
+    bool originalLoop;
     ChartData liveChart;
     TutorialStep[] steps;
     SaberUIPointer pointer;
@@ -68,12 +72,14 @@ public sealed class TutorialController : MonoBehaviour
             if (hud.tierText != null) hud.tierText.gameObject.SetActive(false);
             if (hud.flickWarningText != null) hud.flickWarningText.gameObject.SetActive(false);
         }
-        // 無音のループで DSP 時計だけを回す。
+        // 4 秒ちょうどの PCM 音源をループし、音声の再生位置に DSP 時計を合わせる。
         source = song.GetComponent<AudioSource>();
+        originalVolume = source.volume; originalLoop = source.loop;
         source.Stop(); source.playOnAwake = false; source.loop = true; source.pitch = 1f; source.spatialBlend = 0f;
-        clock = AudioClip.Create("TutorialClock", 48000 * 2, 1, 48000, false);
-        clock.SetData(new float[48000 * 2], 0);
-        song.Clip = clock;
+        source.volume = MusicVolume;
+        music = Resources.Load<AudioClip>(MusicResourcePath);
+        if (music == null) Debug.LogError("Tutorial: 練習用の音源が見つかりません: " + MusicResourcePath);
+        song.Clip = music;
         song.PlayScheduled(AudioSettings.dspTime + .35);
         Overlay = TutorialOverlay.Ensure();
         Overlay.Bind(this, score);
@@ -140,7 +146,7 @@ public sealed class TutorialController : MonoBehaviour
         stepIndex = index; Successes = 0; StepDone = false; swingFrames = 0; Hint = null;
         stepStart = now;
         var step = Step;
-        nextPatternAt = now + TutorialProgram.ReadDelaySeconds + spawner.approachTime;
+        nextPatternAt = TutorialProgram.NextBarAtOrAfter(now + TutorialProgram.ReadDelaySeconds + spawner.approachTime);
         BannerTitle = step.Title; BannerSub = step.Sub;
         if (Overlay != null) Overlay.ShowStep(step, index, steps.Length);
     }
@@ -246,8 +252,12 @@ public sealed class TutorialController : MonoBehaviour
         foreach (var n in watched) if (n != null) { n.OnJudged -= Judged; n.OnMiss -= Missed; }
         watched.Clear();
         if (song != null) song.Stop();
-        if (source != null && source.clip == clock) source.clip = null;
-        if (clock != null) UISkinKit.SafeDestroy(clock);
-        clock = null;
+        if (source != null)
+        {
+            if (source.clip == music) source.clip = null;
+            source.volume = originalVolume; source.loop = originalLoop;
+        }
+        // Resources の共有音源は破棄しない。チュートリアルへ入り直すときにも使う。
+        music = null;
     }
 }

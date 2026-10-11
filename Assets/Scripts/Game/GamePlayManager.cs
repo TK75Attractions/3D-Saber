@@ -677,7 +677,7 @@ public class GamePlayManager : MonoBehaviour
             return;
         }
 
-        // 2a'. チュートリアル分岐：無音の時計で練習の型を流す。終わりは TutorialController が選曲へ移す。
+        // 2a'. チュートリアル分岐：120 BPM のループに合わせて練習の型を流す。終わりは TutorialController が選曲へ移す。
         if (inTutorial)
         {
             if (tutorial != null) tutorial.Tick(Time.unscaledDeltaTime);

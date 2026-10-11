@@ -56,7 +56,7 @@ public class TutorialProgramTests
             Assert.Greater(step.Pattern.Length, 0, step.Id);
             Assert.Greater(step.Goal, 0, step.Id);
             Assert.LessOrEqual(step.Goal, step.Pattern.Length, step.Id + ": 1 周で合格できる");
-            Assert.Greater(step.PeriodSeconds, step.PatternLengthSeconds + 1.0, step.Id + ": 次の周と重ならない");
+            Assert.GreaterOrEqual(step.PeriodSeconds, step.PatternLengthSeconds + 1.0, step.Id + ": 次の周まで最低 1 秒空ける");
             for (int i = 1; i < step.Pattern.Length; i++)
                 Assert.GreaterOrEqual(step.Pattern[i].dt, step.Pattern[i - 1].dt, step.Id + ": 時刻順");
             Assert.IsTrue(string.IsNullOrEmpty(step.Title) == false, step.Id + ": 文がある");
@@ -82,12 +82,12 @@ public class TutorialProgramTests
         var longNote = TutorialProgram.Get("long").Pattern[0].ToNote(12.5);
         Assert.AreEqual(12500f, longNote.time, .001f);
         Assert.AreEqual(3, longNote.count);
-        Assert.AreEqual(1400f, longNote.lengthMs, .001f);
+        Assert.AreEqual(1000f, longNote.lengthMs, .001f);
         Assert.AreEqual("red", longNote.color);
         Assert.IsTrue(longNote.IsLong);
 
         var arrow = TutorialProgram.Get("arrowEasy").Pattern[1].ToNote(0);
-        Assert.AreEqual(1800f, arrow.time, .001f);
+        Assert.AreEqual(2000f, arrow.time, .001f);
         Assert.AreEqual("down", arrow.direction);
         Assert.AreEqual("blue", arrow.color);
         Assert.IsTrue(arrow.IsDirection);
@@ -114,6 +114,40 @@ public class TutorialProgramTests
         Assert.IsTrue(TutorialProgram.CountsAsSuccess(longStep, JudgmentTier.Miss, true, 3, 3), "ロングは達成率だけを見る");
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(hands, JudgmentTier.Perfect, true, 1, 1));
         Assert.IsFalse(TutorialProgram.CountsAsSuccess(null, JudgmentTier.Perfect, true, 1, 1));
+    }
+
+    [TestCase(0, 0)]
+    [TestCase(.001, 2)]
+    [TestCase(1.999, 2)]
+    [TestCase(2, 2)]
+    [TestCase(2.001, 4)]
+    [TestCase(127.8, 128)]
+    public void PracticeStartsOnTheNextDownbeatWithoutShorteningReadingTime(double earliest, double expected)
+    {
+        Assert.AreEqual(expected, TutorialProgram.NextBarAtOrAfter(earliest), 1e-9);
+        Assert.GreaterOrEqual(TutorialProgram.NextBarAtOrAfter(earliest), earliest);
+    }
+
+    [Test]
+    public void EveryPracticeAndLongStrokeStaysOnThe120BpmGridAcrossLoops()
+    {
+        Assert.AreEqual(120, TutorialProgram.Bpm);
+        foreach (var id in TutorialProgram.CommonFlow.Concat(new[] { "arrowNormal" }))
+        {
+            var step = TutorialProgram.Get(id);
+            if (step.Kind != TutorialStepKind.Practice) continue;
+            for (int loop = 0; loop < 50; loop++)
+            foreach (var pattern in step.Pattern)
+            {
+                var note = pattern.ToNote(8 + loop * step.PeriodSeconds);
+                for (int cut = 0; cut < pattern.count; cut++)
+                {
+                    double time = note.TimeSeconds + (pattern.count > 1 ? cut * pattern.lengthMs / (pattern.count - 1) / 1000.0 : 0);
+                    double beats = time / TutorialProgram.BeatSeconds;
+                    Assert.AreEqual(System.Math.Round(beats), beats, 1e-6, id + ": 周回後も各カットが表拍に合う");
+                }
+            }
+        }
     }
 
     [Test]

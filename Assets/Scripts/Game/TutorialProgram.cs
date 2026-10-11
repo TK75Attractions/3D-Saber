@@ -40,7 +40,10 @@ public sealed class TutorialStep
 
 public static class TutorialProgram
 {
-    public const float Bpm = 100f;                    // ゲート発光の拍。ノーツの時刻は拍に縛らない
+    public const float Bpm = 120f;                    // 音源・ゲート発光・練習ノーツで共通の拍
+    public const double BeatSeconds = 60.0 / Bpm;
+    public const double BarSeconds = 4 * BeatSeconds;
+    public const double LoopSeconds = 2 * BarSeconds;
     public const double ReadDelaySeconds = .9;        // 文を読む間
     public const double StepEndSeconds = .7;          // 「OK!」を見せる間
     public const double TimeoutEndSeconds = 1.0;      // 「次に進むよ」を見せる間
@@ -58,27 +61,31 @@ public static class TutorialProgram
     static TutorialPatternNote Arrow(float x, float y, string color, string direction, float dt) => new TutorialPatternNote { dt = dt, x = x, y = y, color = color, type = "direction", direction = direction };
     static TutorialPatternNote Long(float x, float y, string color, int count, float lengthMs, float dt) => new TutorialPatternNote { dt = dt, x = x, y = y, color = color, type = "long", count = count, lengthMs = lengthMs };
 
+    // 説明や成功の時刻が拍の途中でも、次の練習は音源の小節頭から始める。
+    // 引数・戻り値は判定調整を除いた譜面時刻。調整分は NoteSpawner が一度だけ加える。
+    public static double NextBarAtOrAfter(double chartTime) => Math.Ceiling(chartTime / BarSeconds) * BarSeconds;
+
     public static TutorialStep Get(string id)
     {
         switch (id)
         {
             case "hands": return new TutorialStep { Id = id, Kind = TutorialStepKind.Explain, Title = "赤いセーバーは右手、青いセーバーは左手", Sub = "どちらかを振ると始まります", TimeoutSeconds = HandsTimeoutSeconds };
             case "tapRed": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤いノーツを右手で切ろう", Sub = "枠に重なった瞬間に振る",
-                Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(RightX, BaseY, "red", 1.6f) }, PeriodSeconds = 3.4, Goal = 2 };
+                Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(RightX, BaseY, "red", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2 };
             case "tapBlue": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "青いノーツは左手で", Sub = "色と手を合わせる",
-                Pattern = new[] { Tap(LeftX, BaseY, "blue", 0f), Tap(LeftX, BaseY, "blue", 1.6f) }, PeriodSeconds = 3.4, Goal = 2 };
+                Pattern = new[] { Tap(LeftX, BaseY, "blue", 0f), Tap(LeftX, BaseY, "blue", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2 };
             case "tapMix": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "来た色と同じ手で切ろう", Sub = "赤は右、青は左",
-                Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(LeftX, BaseY, "blue", 1.2f), Tap(RightX, LowY, "red", 2.4f), Tap(LeftX, LowY, "blue", 3.6f) }, PeriodSeconds = 5.2, Goal = 3 };
+                Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(LeftX, BaseY, "blue", 1f), Tap(RightX, LowY, "red", 2f), Tap(LeftX, LowY, "blue", 3f) }, PeriodSeconds = LoopSeconds, Goal = 3 };
             case "arrowEasy": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "矢印の向きに振ろう", Sub = "上向きなら下から上へ",
-                Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 1.8f) }, PeriodSeconds = 3.8, Goal = 2, NeedDirection = true };
+                Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2, NeedDirection = true };
             case "arrowNormal": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "矢印の向きに振ろう", Sub = "上・下・左・右",
-                Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 1.6f), Arrow(RightX, BaseY, "red", "left", 3.2f), Arrow(LeftX, BaseY, "blue", "right", 4.8f) }, PeriodSeconds = 6.6, Goal = 3, NeedDirection = true };
+                Pattern = new[] { Arrow(RightX, BaseY, "red", "up", 0f), Arrow(LeftX, BaseY, "blue", "down", 2f), Arrow(RightX, BaseY, "red", "left", 4f), Arrow(LeftX, BaseY, "blue", "right", 6f) }, PeriodSeconds = 2 * LoopSeconds, Goal = 3, NeedDirection = true };
             case "long": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "ロングは、止まっている間に 3 回切ろう", Sub = "上の数字が残り回数",
-                Pattern = new[] { Long(RightX, BaseY, "red", 3, 1400f, 0f) }, PeriodSeconds = 4.2, Goal = 1, LongRate = DefaultLongRate };
+                Pattern = new[] { Long(RightX, BaseY, "red", 3, 1000f, 0f) }, PeriodSeconds = LoopSeconds, Goal = 1, LongRate = DefaultLongRate };
             case "gold": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "金色はどちらの手でもOK", Sub = "大事な一撃。好きな手で",
-                Pattern = new[] { Tap(0f, BaseY, "gold", 0f) }, PeriodSeconds = 2.8, Goal = 1 };
+                Pattern = new[] { Tap(0f, BaseY, "gold", 0f) }, PeriodSeconds = LoopSeconds, Goal = 1 };
             case "simul": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤と青がいっしょに来たら、両手で同時に", Sub = "青は左手、赤は右手",
-                Pattern = new[] { Tap(LeftX, BaseY, "blue", 0f), Tap(RightX, BaseY, "red", 0f) }, PeriodSeconds = 3.4, Goal = 2, Simultaneous = true };
+                Pattern = new[] { Tap(LeftX, BaseY, "blue", 0f), Tap(RightX, BaseY, "red", 0f) }, PeriodSeconds = LoopSeconds, Goal = 2, Simultaneous = true };
             case "ready": return new TutorialStep { Id = id, Kind = TutorialStepKind.Ready, Title = "準備OK!", Sub = "曲を選びに行こう", TimeoutSeconds = ReadyTimeoutSeconds };
         }
         return null;

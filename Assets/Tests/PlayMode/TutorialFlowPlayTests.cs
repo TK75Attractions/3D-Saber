@@ -29,7 +29,7 @@ public class TutorialFlowPlayTests
         }
     }
 
-    [UnityTest] public IEnumerator OpensOnTheHandsStepWithASilentClockAndBottomOnlyPointer()
+    [UnityTest] public IEnumerator OpensOnTheHandsStepWithMusicAndBottomOnlyPointer()
     {
         var m = Object.FindFirstObjectByType<GamePlayManager>(); var t = m.Tutorial;
         Assert.NotNull(t, "GamePlayManager がチュートリアルを始める");
@@ -38,7 +38,12 @@ public class TutorialFlowPlayTests
         var pointer = Object.FindFirstObjectByType<SaberUIPointer>();
         Assert.NotNull(pointer); Assert.IsTrue(pointer.BottomControlsOnly, "的は画面下の帯だけ");
         yield return new WaitForSecondsRealtime(.6f);
-        Assert.IsTrue(m.songPlayer.IsPlaying, "無音の時計が回る"); Assert.NotNull(m.songPlayer.Clip);
+        Assert.IsTrue(m.songPlayer.IsPlaying, "音源と共通の時計が回る"); Assert.NotNull(m.songPlayer.Clip);
+        Assert.AreSame(Resources.Load<AudioClip>(TutorialController.MusicResourcePath), m.songPlayer.Clip);
+        var source = m.songPlayer.GetComponent<AudioSource>();
+        Assert.IsTrue(source.loop);
+        Assert.AreEqual(TutorialController.MusicVolume, source.volume, .001f);
+        Assert.AreEqual(4f, m.songPlayer.Clip.length, .0001f);
         EnsureClockAdvances(m.songPlayer);
         t.Tick(.016f);
         Assert.NotNull(t.Step); Assert.AreEqual("hands", t.Step.Id);
@@ -46,6 +51,10 @@ public class TutorialFlowPlayTests
         StringAssert.Contains("右手", t.Overlay.TitleText);
         Assert.AreEqual(0, m.noteSpawner.TotalNoteCount, "説明の間はノーツを出さない");
         Assert.AreEqual(TutorialProgram.CommonFlow.Length, t.StepCount);
+        double beforeLoop = m.songPlayer.SongTime;
+        yield return new WaitForSecondsRealtime(4.1f);
+        Assert.Greater(m.songPlayer.SongTime, beforeLoop + 4, "音源が一周しても譜面時計は戻らない");
+        Assert.AreSame(Resources.Load<AudioClip>(TutorialController.MusicResourcePath), m.songPlayer.Clip);
     }
 
     [UnityTest] public IEnumerator HandsStepTimesOutIntoPracticeAndSpawnsRedNotesOnTheRight()
@@ -65,12 +74,16 @@ public class TutorialFlowPlayTests
         Assert.AreEqual(SaberHand.Right, note.RequiredHand, "最初の型は赤(右手)");
         Assert.Greater(note.transform.position.x, 0f, "赤は画面の右");
         Assert.AreEqual(1, note.RequiredCutCount);
+        double chartHit = note.HitTime - m.noteSpawner.TotalOffsetSeconds;
+        Assert.AreEqual(System.Math.Round(chartHit / TutorialProgram.BarSeconds), chartHit / TutorialProgram.BarSeconds, .0001,
+            "説明が拍の途中で終わっても、判定調整を除いた最初のノーツは小節頭");
     }
 
     [UnityTest] public IEnumerator SkipFinishesAndLeavesForSongSelect()
     {
         var m = Object.FindFirstObjectByType<GamePlayManager>(); var t = m.Tutorial;
         yield return new WaitForSecondsRealtime(.6f);
+        var music = m.songPlayer.Clip;
         t.Skip();
         Assert.IsTrue(t.IsFinished); Assert.AreEqual("skipped", t.FinishReason);
         Assert.IsFalse(t.Overlay.SkipButton.gameObject.activeSelf, "終わったら的を消す");
@@ -82,6 +95,9 @@ public class TutorialFlowPlayTests
         Assert.IsFalse(ScreenTransition.IsBusy);
         Assert.AreEqual("SongSelect", SceneManager.GetActiveScene().name);
         Assert.IsFalse(GameSession.TutorialPending);
+        Assert.IsTrue(m == null, "選曲へ移ったら古いゲームと再生元を破棄する");
+        Assert.IsTrue(music != null, "共有音源は破棄せず、再入場にも使える");
+        Assert.AreSame(music, Resources.Load<AudioClip>(TutorialController.MusicResourcePath));
     }
 
     // バッチ実行で音声機器が無く sample 位置が進まない環境でも、DSP 時計で進行を確かめられるようにする。
