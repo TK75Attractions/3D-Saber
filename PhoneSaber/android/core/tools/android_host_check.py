@@ -14,6 +14,12 @@ import shutil
 import sys
 import tempfile
 
+# checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
+import sys as _guard_sys
+from pathlib import Path as _GuardPath
+_guard_sys.path.insert(0, str(next(p for p in _GuardPath(__file__).resolve().parents if (p / "guard_build.py").is_file())))
+import guard_build
+
 ANDROID = Path(__file__).resolve().parents[2]
 JAVA = ANDROID / "app/src/main/java/jp/phonesaber/sender"
 CORE = ANDROID / "core"
@@ -56,7 +62,7 @@ def main():
             jni_include = work / "jni"
             jni_include.mkdir()
             shutil.copyfile(headers[-1], jni_include / "jni.h")
-        run(["clang++", "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror", "-ffp-contract=off", "-shared", "-fPIC",
+        run(["clang++", *guard_build.cpp_flags(), "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror", "-ffp-contract=off", "-shared", "-fPIC",
              "-I" + str(jni_include), "-I" + str(jni_include / ("darwin" if sys.platform == "darwin" else "linux")),
              "-I" + str(CORE / "include"), *(CORE / "src" / name for name in ("detection.cpp", "pipeline.cpp", "frame_processor.cpp")),
              ANDROID / "app/src/main/cpp/phonesaber_jni.cpp", ANDROID / "app/src/androidTest/cpp/rotation_probe.cpp", "-o", lib])

@@ -17,7 +17,23 @@ static uint64_t double_bits(double value) {
     return bits;
 }
 static void candidate(const Candidate& c) {
-    std::cout << "{\"production\":{\"comparison_endpoints\":";
+    std::cout << '{';
+    if constexpr (CoreLineGuard::enabled) {
+        std::cout << "\"coreLineGuard\":";
+        if (c.core_line_guard) {
+            const auto& v = *c.core_line_guard;
+            std::cout << "{\"supportingIndex\":" << v.supporting_index
+                << ",\"supportingSource\":\"" << v.supporting_source << "\",\"supportingEndpoints\":["
+                << v.supporting_endpoints.first.x << ',' << v.supporting_endpoints.first.y << ','
+                << v.supporting_endpoints.second.x << ',' << v.supporting_endpoints.second.y
+                << "],\"litCoverage\":" << v.lit_coverage
+                << ",\"supportingLitCoverage\":" << v.supporting_lit_coverage
+                << ",\"coverageBits\":\"" << double_bits(v.lit_coverage)
+                << "\",\"supportingCoverageBits\":\"" << double_bits(v.supporting_lit_coverage) << "\"}";
+        } else std::cout << "null";
+        std::cout << ',';
+    }
+    std::cout << "\"production\":{\"comparison_endpoints\":";
     endpoints(c.comparison_endpoints);
     std::cout << ",\"robust_endpoints\":";
     if (c.robust_interval_endpoints) endpoints(*c.robust_interval_endpoints); else std::cout << "null";

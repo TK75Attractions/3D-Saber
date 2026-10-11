@@ -18,6 +18,9 @@ struct Scored {
     Candidate candidate;
     Points support_points;
 };
+double full_lit_coverage(const Points& points, const Evidence& evidence, int width);
+void apply_core_line_guard(std::vector<Scored>& candidates, const Evidence& evidence,
+                           int width, int step);
 Mask dilate(const Mask& mask, int width, int height, int radius);
 Mask erode(const Mask& mask, int width, int height, int radius);
 Mask close(const Mask& mask, int width, int height, int radius);

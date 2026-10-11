@@ -15,6 +15,12 @@ import subprocess
 import tempfile
 from pathlib import Path
 
+# checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
+import sys as _guard_sys
+from pathlib import Path as _GuardPath
+_guard_sys.path.insert(0, str(next(p for p in _GuardPath(__file__).resolve().parents if (p / "guard_build.py").is_file())))
+import guard_build
+
 CORE = Path(__file__).resolve().parents[1]
 PHONE_SABER = CORE.parents[1]
 OUTPUT = CORE.parent / "app/src/androidTest/assets/native_fixture_expectations.json"
@@ -43,7 +49,7 @@ def main() -> None:
         build = Path(temp)
         cli, frame_cli = build / "phonesaber-png", build / "phonesaber-frame"
         run(["make", "-C", str(CORE), f"BUILD={build}", str(cli)])
-        run(["clang++", "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror",
+        run(["clang++", *guard_build.cpp_flags(), "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror",
              "-ffp-contract=off", "-I" + str(CORE / "include"),
              *(str(CORE / "src" / name) for name in ("detection.cpp", "pipeline.cpp", "frame_processor.cpp")),
              str(CORE / "tools/frame_cli.cpp"), "-o", str(frame_cli)])

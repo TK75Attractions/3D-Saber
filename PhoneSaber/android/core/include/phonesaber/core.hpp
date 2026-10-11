@@ -42,6 +42,23 @@ struct ScoreBreakdown {
     double core_support = 0, longitudinal_core_coverage = 0;
     double total() const;
 };
+// 2026-10-11 採用検証用の仮値。ビルド入口を問わず既定 ON、比較時だけ無効化。
+struct CoreLineGuard {
+#ifdef PHONESABER_DISABLE_CORELINE_GUARD
+    static constexpr bool enabled = false;
+#else
+    static constexpr bool enabled = true;
+#endif
+    static constexpr double line_coverage = 0.60, neighbor_core = 0.40;
+    static constexpr double neighbor_high_value = 0.35, neighbor_coverage = 0.90;
+    static constexpr double endpoint_distance_px = 30.0;
+};
+struct CoreLineGuardVerdict {
+    int supporting_index = 0;
+    std::string supporting_source;
+    Endpoints supporting_endpoints{}; // 元画像 px。index は現 frame の score 順のみ。
+    double lit_coverage = 0, supporting_lit_coverage = 0;
+};
 struct Candidate {
     std::string source = "color-mask";
     double radiance = 0;
@@ -61,6 +78,7 @@ struct Candidate {
     double robust_body_length = 0, axial_density = 0;
     int component_area = 0, point_count = 0;
     bool used_point_led_fallback = false;
+    std::optional<CoreLineGuardVerdict> core_line_guard;
     std::optional<WarmNoDeepRed> warm_no_deep_red;
     std::optional<BlueNoDeepSupport> blue_no_deep_support;
 };

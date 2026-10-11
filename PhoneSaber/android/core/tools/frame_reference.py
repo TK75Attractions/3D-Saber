@@ -9,6 +9,12 @@ import re
 import random
 import json
 
+# checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
+import sys as _guard_sys
+from pathlib import Path as _GuardPath
+_guard_sys.path.insert(0, str(next(p for p in _GuardPath(__file__).resolve().parents if (p / "guard_build.py").is_file())))
+import guard_build
+
 
 def declaration(source: str, marker: str) -> str:
     start = source.index(marker)
@@ -142,8 +148,8 @@ def verify(destination, repo, core, run, differences):
     reference, cli = destination / "frame-reference", destination / "frame-cli"
     import os
     env = {**os.environ, "CLANG_MODULE_CACHE_PATH": str(destination / "module-cache")}
-    run(["xcrun", "swiftc", "-O", str(repo / "ios/PhoneSaberSender/PhoneSaberSender/DetectionCore.swift"), str(swift_path), "-o", str(reference)], env=env)
-    run(["clang++", "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror", "-ffp-contract=off", "-I" + str(core / "include"),
+    run(["xcrun", "swiftc", *guard_build.swift_flags(), "-O", str(repo / "ios/PhoneSaberSender/PhoneSaberSender/DetectionCore.swift"), str(swift_path), "-o", str(reference)], env=env)
+    run(["clang++", *guard_build.cpp_flags(), "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror", "-ffp-contract=off", "-I" + str(core / "include"),
          *(str(core / "src" / name) for name in ("detection.cpp", "pipeline.cpp", "frame_processor.cpp")), str(core / "tools/frame_cli.cpp"), "-o", str(cli)])
     inputs = commands()
     expected = [json.loads(line) for line in run([str(reference)], inputs).splitlines()]

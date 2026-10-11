@@ -191,7 +191,54 @@ static void rotation_tests() {
     rejected(bytes,32,0,2,16,90);
     rejected(nullptr,32,3,2,16,90);
 }
+// 暗い補間点・近傍・raw/body 分岐を同じ合成候補で確認する。
+static void core_line_guard_tests() {
+    constexpr int w = 160, h = 40;
+    detail::Mask mask(w*h), core(w*h), values(w*h,255);
+    detail::Points span, compact;
+    for (int x = 0; x < 100; ++x) {
+        span.push_back({x,20});
+        if (x < 20 || x == 99) mask[20*w+x] = core[20*w+x] = 1;
+        if (x < 20) compact.push_back({x,20});
+    }
+    detail::Evidence evidence{SaberColor::red,values,values,values,mask,core};
+    Candidate line, body;
+    line.source = "core-line"; line.eligible = true; line.used_point_led_fallback = true;
+    line.endpoints = {{0,20},{99,20}}; line.score = 100;
+    body.source = "core-halo"; body.eligible = true; body.core_support = .40; body.high_value_ratio = .35;
+    body.endpoints = {{0,20},{19,20}}; body.score = 50;
+    auto run = [&](Candidate l, Candidate b, int step = 2) {
+        std::vector<detail::Scored> c{{l,span},{b,compact}};
+        detail::apply_core_line_guard(c,evidence,w,step);
+        return c;
+    };
+    auto rejected = run(line,body);
+    assert(!rejected[0].candidate.eligible && rejected[1].candidate.eligible);
+    assert(rejected[0].candidate.core_line_guard->supporting_index == 1);
+    assert(rejected[0].candidate.core_line_guard->supporting_endpoints.second.x == 38);
+    assert(rejected[0].candidate.core_line_guard->lit_coverage == .21);
+    assert(rejected[0].candidate.score == 100);
+    body.core_support = .399; assert(run(line,body)[0].candidate.eligible); body.core_support = .40;
+    body.high_value_ratio = .349; assert(run(line,body)[0].candidate.eligible); body.high_value_ratio = .35;
+    body.eligible = false; assert(run(line,body)[0].candidate.eligible); body.eligible = true;
+    body.source = "core-line"; assert(run(line,body)[0].candidate.eligible); body.source = "core-halo";
+    body.endpoints = {{0,35},{19,35}}; assert(!run(line,body)[0].candidate.eligible);
+    body.endpoints = {{0,36},{19,36}}; assert(run(line,body)[0].candidate.eligible);
+    body.endpoints = {{0,20},{19,20}};
+    line.used_point_led_fallback = false; line.endpoints = body.endpoints;
+    assert(run(line,body)[0].candidate.eligible);
+    line.used_point_led_fallback = true; line.endpoints = {{0,20},{99,20}};
+    // 長い点 LED の全長に実支持がある場合、および .60 境界は保持する。
+    for (int x = 0; x < 100; ++x) mask[20*w+x] = core[20*w+x] = x < 59 || x == 99;
+    assert(detail::full_lit_coverage(span,evidence,w) == .60);
+    assert(run(line,body)[0].candidate.eligible);
+    for (int x = 0; x < 100; ++x) mask[20*w+x] = core[20*w+x] = x < 20 || x%4 != 3;
+    assert(detail::full_lit_coverage(span,evidence,w) == .80);
+    assert(run(line,body)[0].candidate.eligible);
+}
+
 int main() {
+    core_line_guard_tests();
     rotation_tests();
     morphology_tests();
     component_order_tests();

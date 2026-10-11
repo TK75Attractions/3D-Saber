@@ -20,6 +20,12 @@ import sys
 import tempfile
 import time
 
+# checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
+import sys as _guard_sys
+from pathlib import Path as _GuardPath
+_guard_sys.path.insert(0, str(next(p for p in _GuardPath(__file__).resolve().parents if (p / "guard_build.py").is_file())))
+import guard_build
+
 REPO = Path(__file__).resolve().parents[2]
 PHONE = REPO / "PhoneSaber"
 COLORS = ("red", "blue")
@@ -229,8 +235,9 @@ def core_digest(core):
     return signature([(str(p.relative_to(core)), sha256(p.read_bytes())) for p in files if p.is_file()])
 
 
-def build_cli(core, destination):
-    run = subprocess.run(["make", "-C", str(core), "BUILD=" + str(destination),
+def build_cli(core, destination, *, guard_enabled=None):
+    enabled = guard_build.enabled() if guard_enabled is None else guard_enabled
+    run = subprocess.run(["make", "-C", str(core), "PHONESABER_CORELINE_GUARD=" + str(int(enabled)), "BUILD=" + str(destination),
                           str(destination / "phonesaber-png")], capture_output=True, timeout=600)
     if run.returncode:
         raise RuntimeError("production CLI build failed; run make in android/core to inspect")

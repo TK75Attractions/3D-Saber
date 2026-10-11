@@ -413,6 +413,24 @@ struct SaberBlueNoDeepSupportVerdict: Codable, Equatable {
     }
 }
 
+// 2026-10-11 採用検証用の仮値。ビルド入口を問わず既定 ON、比較時だけ無効化。
+enum CoreLineGuard {
+#if PHONESABER_DISABLE_CORELINE_GUARD
+    static let enabled = false
+#else
+    static let enabled = true
+#endif
+    static let lineCoverage = 0.60, neighborCore = 0.40
+    static let neighborHighValue = 0.35, neighborCoverage = 0.90
+    static let endpointDistancePx = 30.0
+}
+struct CoreLineGuardVerdict: Codable, Equatable {
+    let supportingIndex: Int
+    let supportingSource: String
+    let supportingEndpoints: [Int] // 元画像 px。index は現 frame の score 順のみ。
+    let litCoverage: Double
+    let supportingLitCoverage: Double
+}
 struct SaberCandidate {
     var source: String = "color-mask"
     var radiance: Double = 0
@@ -450,6 +468,7 @@ struct SaberCandidate {
     let usedPointLEDFallback: Bool
     /// 最終の赤・青支持判定まで保持する mask 座標の production sample points。
     var supportSamplePoints: [PixelPoint] = []
+    var coreLineGuard: CoreLineGuardVerdict? = nil
     var warmNoDeepRed: SaberWarmNoDeepRedVerdict? = nil
     var blueNoDeepSupport: SaberBlueNoDeepSupportVerdict? = nil
     /// Populated only for Debug Recording, at the production rejection site.
@@ -1432,4 +1451,68 @@ func principalAxisEndpoints(_ points: [PixelPoint]) -> (PixelPoint, PixelPoint)?
 
 func timestampedPayload(_ coordinates: String, timestamp: TimeInterval = Date().timeIntervalSince1970) -> String {
     "ts=\(String(format: "%.6f", timestamp));\(coordinates)"
+}
+
+// 全 raw interval の PCA は保持された支持点の配列順。暗い補間点は占有に数えない。
+func fullLitCoverage(points: [PixelPoint], evidence: SaberEvidence, width: Int) -> Double {
+    guard !points.isEmpty else { return 0 }
+    var mx = 0.0, my = 0.0, xx = 0.0, yy = 0.0, xy = 0.0
+    for p in points { mx += Double(p.x); my += Double(p.y) }
+    mx /= Double(points.count); my /= Double(points.count)
+    for p in points {
+        let dx = Double(p.x) - mx, dy = Double(p.y) - my
+        xx += dx * dx; yy += dy * dy; xy += dx * dy
+    }
+    let angle = 0.5 * atan2(2 * xy, xx - yy), ax = cos(angle), ay = sin(angle)
+    let projections = points.map { (Double($0.x) - mx) * ax + (Double($0.y) - my) * ay }
+    let lo = projections.min()!, hi = projections.max()!
+    let bins = max(1, Int(ceil(hi - lo)) + 1)
+    var lit = [UInt8](repeating: 0, count: bins)
+    for i in points.indices {
+        let p = points[i], index = p.y * width + p.x
+        let bin = min(bins - 1, max(0, Int((projections[i] - lo).rounded())))
+        if evidence.coreMask[index] != 0 || evidence.colorMask[index] != 0 { lit[bin] = 1 }
+    }
+    return Double(lit.filter { $0 != 0 }.count) / Double(bins)
+}
+func applyCoreLineGuard(_ candidates: inout [SaberCandidate], evidence: SaberEvidence,
+                       width: Int, step: Int) {
+    guard candidates.contains(where: { $0.isEmitterEligible && $0.source == "core-line"
+        && $0.usedPointLEDFallback }) else { return }
+    var coverage = [Double](repeating: -1, count: candidates.count)
+    func measure(_ i: Int) -> Double {
+        if coverage[i] < 0 {
+            coverage[i] = fullLitCoverage(points: candidates[i].supportSamplePoints,
+                                         evidence: evidence, width: width)
+        }
+        return coverage[i]
+    }
+    for i in candidates.indices {
+        let line = candidates[i]
+        if !line.isEmitterEligible || line.source != "core-line" || !line.usedPointLEDFallback
+            || measure(i) >= CoreLineGuard.lineCoverage { continue }
+        for j in candidates.indices {
+            let body = candidates[j]
+            if !body.isEmitterEligible || body.source == "core-line"
+                || body.coreSupportRatio < CoreLineGuard.neighborCore
+                || body.highValueRatio < CoreLineGuard.neighborHighValue
+                || measure(j) < CoreLineGuard.neighborCoverage { continue }
+            var near = false
+            for a in [line.endpoints.0, line.endpoints.1] {
+                for b in [body.endpoints.0, body.endpoints.1] {
+                    if hypot(Double(a.x - b.x) * Double(step), Double(a.y - b.y) * Double(step))
+                        <= CoreLineGuard.endpointDistancePx { near = true }
+                }
+            }
+            if !near { continue }
+            candidates[i].coreLineGuard = CoreLineGuardVerdict(supportingIndex: j,
+                supportingSource: body.source,
+                supportingEndpoints: [body.endpoints.0.x * step, body.endpoints.0.y * step,
+                                      body.endpoints.1.x * step, body.endpoints.1.y * step],
+                litCoverage: coverage[i], supportingLitCoverage: coverage[j])
+            candidates[i].isEmitterEligible = false
+            candidates[i].source = "core-line-overlinked"
+            break
+        }
+    }
 }

@@ -35,7 +35,7 @@ def build_probe(destination):
     pipeline.write_text(source)
     cli = destination / "shadow-png"
     subprocess.run(["clang++", "-std=c++17", "-O2", "-Wall", "-Wextra", "-Werror",
-                    "-ffp-contract=off", "-I" + str(CORE / "include"),
+                    "-ffp-contract=off", "-DPHONESABER_DISABLE_CORELINE_GUARD", "-I" + str(CORE / "include"),
                     "-I" + str(CORE / "src"), "-I" + str(Path(__file__).parent),
                     str(CORE / "src/detection.cpp"), str(pipeline),
                     str(CORE / "src/frame_processor.cpp"), str(CORE / "tools/png_cli.cpp"),
@@ -197,7 +197,8 @@ def main():
     if inventory != BASELINE_INVENTORY or len(sessions) != 22:
         raise ValueError("capture inventory changed; rebuild the explicitly documented cohort")
     truths, _, missing = benchmark.truth_index(benchmark.LABELS, benchmark.MANIFEST, downloads, inbox)
-    cli = benchmark.build_cli(CORE, args.output / "native")
+    # guard 自体を比較する研究用 baseline は明示的に OFF。
+    cli = benchmark.build_cli(CORE, args.output / "native", guard_enabled=False)
     probe = build_probe(args.output / "probe")
     rows = []
     for group, entries in (("benchmark", old), ("sessions", sessions)):

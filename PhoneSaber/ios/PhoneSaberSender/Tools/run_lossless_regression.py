@@ -16,6 +16,12 @@ import tempfile
 from pathlib import Path
 from typing import Any
 
+# checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
+import sys as _guard_sys
+from pathlib import Path as _GuardPath
+_guard_sys.path.insert(0, str(next(p for p in _GuardPath(__file__).resolve().parents if (p / "guard_build.py").is_file())))
+import guard_build
+
 
 TOOLS_DIR = Path(__file__).resolve().parent
 REPO = Path(os.environ.get("PHONESABER_REGRESSION_REPO", TOOLS_DIR.parents[2])).resolve()
@@ -46,7 +52,8 @@ def compile_harness(destination: Path) -> None:
         REPO / "ios/PhoneSaberSender/PhoneSaberSender/BGRADetection.swift",
         REPO / "ios/PhoneSaberSenderTests/VideoDetectionDiagnostic.swift",
     ]
-    command_output(["xcrun", "swiftc", "-O", *(str(path) for path in sources), "-o", str(destination)])
+    flags = guard_build.swift_flags()
+    command_output(["xcrun", "swiftc", *flags, "-O", *(str(path) for path in sources), "-o", str(destination)])
 
 
 def dimensions(path: Path) -> tuple[int, int]:

@@ -19,6 +19,12 @@ import tempfile
 import unittest
 from pathlib import Path
 
+# checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
+import sys as _guard_sys
+from pathlib import Path as _GuardPath
+_guard_sys.path.insert(0, str(next(p for p in _GuardPath(__file__).resolve().parents if (p / "guard_build.py").is_file())))
+import guard_build
+
 REPO = Path(__file__).resolve().parents[3]
 SOURCES = REPO / "ios/PhoneSaberSender/PhoneSaberSender"
 FIXTURES = REPO / "ios/PhoneSaberSenderTests/Fixtures"
@@ -31,7 +37,7 @@ class DiagnosticParityTests(unittest.TestCase):
         with tempfile.TemporaryDirectory(prefix="phonesaber-parity-") as directory:
             binary = Path(directory) / "parity"
             compiled = subprocess.run(
-                ["xcrun", "swiftc", "-O", str(SOURCES / "DetectionCore.swift"),
+                ["xcrun", "swiftc", *guard_build.swift_flags(), "-O", str(SOURCES / "DetectionCore.swift"),
                  str(SOURCES / "BGRADetection.swift"), str(HARNESS), "-o", str(binary)],
                 text=True, capture_output=True, timeout=300)
             self.assertEqual(compiled.returncode, 0, compiled.stderr)

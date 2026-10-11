@@ -23,6 +23,12 @@ import subprocess
 import sys
 from pathlib import Path
 
+# checkout 内の共通ビルドスイッチ。認識の既定値は両言語の core にも置く。
+import sys as _guard_sys
+from pathlib import Path as _GuardPath
+_guard_sys.path.insert(0, str(next(p for p in _GuardPath(__file__).resolve().parents if (p / "guard_build.py").is_file())))
+import guard_build
+
 REPO = Path(__file__).resolve().parents[1]
 SOURCE = REPO / "ios/PhoneSaberSender/PhoneSaberSender"
 HARNESS = REPO / "ios/PhoneSaberSenderTests/SenderSoakHarness.swift"
@@ -49,7 +55,7 @@ def support_source(destination: Path) -> Path:
 def build(destination: Path, debug: bool) -> Path:
     destination.mkdir(parents=True, exist_ok=True)
     binary = destination / ("sender-soak-debug" if debug else "sender-soak-release")
-    command = ["xcrun", "swiftc", "-O", "-D", "SENDER_SOAK_HARNESS", "-parse-as-library",
+    command = ["xcrun", "swiftc", *guard_build.swift_flags(), "-O", "-D", "SENDER_SOAK_HARNESS", "-parse-as-library",
                "-module-cache-path", str(destination / "module-cache")]
     if debug:
         command += ["-D", "DEBUG"]
