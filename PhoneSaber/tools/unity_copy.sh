@@ -7,6 +7,10 @@
 #
 # 複製の場所: $PHONESABER_UNITY_COPY（既定 ~/Library/Caches/PhoneSaber/unity-copy）。Library を含むので数 GB。
 # 消えても sync で作り直せる（初回の import に数分かかる）。PlayMode 全件は unity_playmode_batches.py を使う。
+# 既知失敗を許容するときだけ PHONESABER_EDITMODE_KNOWN_FAILURES に完全名の JSON 配列ファイルを指定する。
+# JSON 形式例（仮の名前）: ["ExampleTests.KnownFailure", "OtherTests.KnownFailure(1)"]
+# 未指定・空配列ならすべての失敗を非ゼロで返す。クラス名・前方一致・正規表現では除外しない。
+# 既知の譜面エディタ失敗2件は完全名の記録がないため、推測でクラス全体を除外しない。
 set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)" || exit 1
 COPY="${PHONESABER_UNITY_COPY:-$HOME/Library/Caches/PhoneSaber/unity-copy}"
@@ -30,21 +34,9 @@ editmode)
     args=(-batchmode -projectPath "$COPY" -runTests -testPlatform EditMode -testResults "$OUT/editmode.xml" -logFile "$OUT/editmode.log")
     [[ -n "${2:-}" ]] && args+=(-testFilter "$2")
     "$UNITY" "${args[@]}"
-    python3 - "$OUT/editmode.xml" "$OUT/editmode.log" <<'PY'
-import sys, xml.etree.ElementTree as ET
-try:
-    root = ET.parse(sys.argv[1]).getroot()
-except Exception as error:
-    print("EditMode: 結果 XML がありません（compile error の可能性。log を確認）:", sys.argv[2], error)
-    sys.exit(2)
-failed = [c.get("fullname") for c in root.iter("test-case") if c.get("result") == "Failed"]
-print(f"EditMode: total={root.get('total')} passed={root.get('passed')} failed={root.get('failed')}")
-for name in failed:
-    print("FAIL", name)
-# 譜面エディタの ChartRecordingWorkflowTests 2 件は batchmode で以前から失敗する（PhoneSaber と無関係）。
-other = [n for n in failed if not n.startswith("ChartRecordingWorkflowTests.")]
-sys.exit(1 if other or int(root.get("total", 0)) == 0 else 0)
-PY
+    result_args=("$OUT/editmode.xml" "$OUT/editmode.log")
+    [[ -n "${PHONESABER_EDITMODE_KNOWN_FAILURES:-}" ]] && result_args+=(--known-failures "$PHONESABER_EDITMODE_KNOWN_FAILURES")
+    python3 "$ROOT/PhoneSaber/tools/unity_editmode_results.py" "${result_args[@]}"
     ;;
 build-mac)
     sync_copy || exit 1
@@ -63,7 +55,7 @@ build-mac)
     echo "build-mac: $ROOT/Builds/Mac/3D-Saber.app を $(git -C "$ROOT" log --oneline -1 | cut -c1-8) で差し替えました（1つ前は $OUT/previous-app）"
     ;;
 *)
-    sed -n '2,9p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'
+    sed -n '2,/^set -u/{s/^# \{0,1\}//p;}' "${BASH_SOURCE[0]}"
     exit 2
     ;;
 esac
