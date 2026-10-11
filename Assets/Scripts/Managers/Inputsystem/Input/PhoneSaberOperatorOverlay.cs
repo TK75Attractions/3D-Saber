@@ -109,7 +109,11 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
 
     void Awake() => EnsureGuiRenderer();
     void OnEnable() => SetVisible(visible);
-    void OnDisable() { if (guiRenderer != null) guiRenderer.enabled = false; }
+    void OnDisable()
+    {
+        CancelCalibration();
+        if (guiRenderer != null) guiRenderer.enabled = false;
+    }
 
     void EnsureGuiRenderer()
     {

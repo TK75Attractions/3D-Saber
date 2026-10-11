@@ -13,6 +13,7 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
 {
     readonly PhoneSaberLatencyLoop loop = new PhoneSaberLatencyLoop();
     bool active;
+    readonly PhoneSaberQueuedFramesRestore queuedFramesRestore = new PhoneSaberQueuedFramesRestore();
     PhoneSaberGuiRenderer guiRenderer;
     int loggedSamples;
     GUIStyle textStyle;
@@ -38,7 +39,7 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         if (probe == null)
             probe = new GameObject("PhoneSaber Latency Probe").AddComponent<PhoneSaberLatencyProbe>();
         DontDestroyOnLoad(probe.gameObject);
-        probe.active = false;
+        if (probe.active) probe.Finish();
         probe.EnsureGuiRenderer();
         probe.guiRenderer.enabled = false;
     }
@@ -65,6 +66,7 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
             if (active) Finish();
             else
             {
+                queuedFramesRestore.Begin(QualitySettings.maxQueuedFrames);
                 active = true;
                 EnsureGuiRenderer();
                 guiRenderer.enabled = true;
@@ -133,12 +135,14 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         if (active) Finish();
     }
 
+    void OnDestroy() { if (active) Finish(); }
+
     void Finish()
     {
         active = false;
         if (guiRenderer != null) guiRenderer.enabled = false;
         Record("latency-loop-end");
-        QualitySettings.maxQueuedFrames = 1; // 通常運転の値へ戻す（PhoneSaberOperatorOverlay と同じ）。
+        if (queuedFramesRestore.TryFinish(out int previous)) QualitySettings.maxQueuedFrames = previous;
     }
 
     void Record(string kind)
@@ -197,6 +201,28 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         GUI.Label(new Rect(20, h * 0.80f, w - 40, h * 0.09f), progressText, textStyle);
         GUI.depth = previousDepth;
         GUI.color = previousColour;
+    }
+}
+
+// 計測前の値を一度だけ保存・復元する。無効化と破棄が続いても二重に復元しない。
+public sealed class PhoneSaberQueuedFramesRestore
+{
+    bool pending;
+    int previous;
+
+    public void Begin(int value)
+    {
+        if (pending) return;
+        previous = value;
+        pending = true;
+    }
+
+    public bool TryFinish(out int value)
+    {
+        value = previous;
+        if (!pending) return false;
+        pending = false;
+        return true;
     }
 }
 

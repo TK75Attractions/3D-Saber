@@ -2,6 +2,82 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
+// receive thread の送信元選択。同期とイベントの書き出しは呼び出し側が担当する。
+public sealed class PhoneSaberSenderGate
+{
+    public const double SilenceSeconds = 1.0;
+    readonly Action<string, string> record;
+    readonly List<Departure> departures = new List<Departure>(4);
+    readonly struct Departure
+    {
+        public readonly string Sender;
+        public readonly double At;
+        public Departure(string sender, double at) { Sender = sender; At = at; }
+    }
+    string current;
+    double lockedLastPacketAt;
+    public string LockedSender { get; private set; } = "";
+    public long RejectedPackets { get; private set; }
+
+    public PhoneSaberSenderGate(Action<string, string> record = null) { this.record = record; }
+
+    public bool Accept(string sender, double now)
+    {
+        Poll(now);
+        if (LockedSender.Length > 0)
+        {
+            if (sender != LockedSender) { RejectedPackets++; return false; }
+            lockedLastPacketAt = now;
+            return true;
+        }
+        if (sender == current) return true;
+        for (int i = 0; i < departures.Count; i++)
+        {
+            var departure = departures[i];
+            if (departure.Sender != sender || now - departure.At >= SilenceSeconds) continue;
+            LockedSender = sender;
+            lockedLastPacketAt = now;
+            record?.Invoke("sender-conflict", "kept=" + sender + " rejected=" + current);
+            current = sender;
+            departures.Clear();
+            return true;
+        }
+        if (current != null)
+        {
+            // 期限切れの枠を再利用し、同じ送信元や定常受信では割り当てない。
+            int slot = -1;
+            for (int i = 0; i < departures.Count; i++)
+                if (now - departures[i].At >= SilenceSeconds) { slot = i; break; }
+            var departure = new Departure(current, now);
+            if (slot >= 0) departures[slot] = departure;
+            else departures.Add(departure);
+        }
+        current = sender;
+        return true;
+    }
+
+    public void Poll(double now)
+    {
+        if (LockedSender.Length > 0 && now - lockedLastPacketAt >= SilenceSeconds) Release();
+    }
+
+    void Release()
+    {
+        record?.Invoke("sender-conflict-end", "kept=" + LockedSender);
+        LockedSender = "";
+        current = null;
+        departures.Clear();
+    }
+
+    public void Reset()
+    {
+        if (LockedSender.Length > 0) Release();
+        current = null;
+        departures.Clear();
+        RejectedPackets = 0;
+    }
+}
+
 // 有効サンプルがないときは Count=0。負の時計差も丸めず残す。
 public readonly struct PhoneSaberTimingStats
 {
@@ -51,10 +127,12 @@ public readonly struct PhoneSaberInputStats
     public bool PayloadParsed { get; }
     public PhoneSaberTimingStats ArrivalGaps { get; }
     public PhoneSaberTimingStats OneWayDelay { get; }
+    public long SenderRejectedPackets { get; }
+    public string LockedSender { get; }
 
     public PhoneSaberInputStats(bool hasPacket, int packetsPerSecond, double secondsSinceLastPacket,
         string senderIP, bool payloadParsed, PhoneSaberTimingStats arrivalGaps = default,
-        PhoneSaberTimingStats oneWayDelay = default)
+        PhoneSaberTimingStats oneWayDelay = default, long senderRejectedPackets = 0, string lockedSender = "")
     {
         HasPacket = hasPacket;
         PacketsPerSecond = packetsPerSecond;
@@ -63,6 +141,8 @@ public readonly struct PhoneSaberInputStats
         PayloadParsed = payloadParsed;
         ArrivalGaps = arrivalGaps;
         OneWayDelay = oneWayDelay;
+        SenderRejectedPackets = senderRejectedPackets;
+        LockedSender = lockedSender ?? "";
     }
 }
 
@@ -88,6 +168,23 @@ public sealed class PhoneSaberPacketStatistics
     bool hasPacket;
     string senderIP = "";
     bool payloadParsed;
+    PhoneSaberSenderGate senderGate = new PhoneSaberSenderGate();
+    long senderRejectedPackets;
+    bool hasTimingPacket;
+    double lastTimingPacketAt;
+    string timingSenderIP;
+
+    // 再 bind 時は固定だけ解除。拒否の累計は受信セッションの Reset まで残す。
+    public void ResetSenderGate(Action<string, string> record = null)
+    {
+        lock (gate)
+        {
+            senderGate.Reset();
+            senderGate = new PhoneSaberSenderGate(record);
+        }
+    }
+
+    public void PollSenderGate(double now) { lock (gate) senderGate.Poll(now); }
 
     public void Reset(double now)
     {
@@ -100,24 +197,29 @@ public sealed class PhoneSaberPacketStatistics
             hasPacket = false;
             senderIP = "";
             payloadParsed = false;
+            hasTimingPacket = false;
+            senderRejectedPackets = 0;
+            senderGate.Reset();
         }
     }
 
-    public void Record(double now, string sender, bool parsed,
+    public bool Record(double now, string sender, bool parsed,
         double? receiveEpoch = null, double? sentEpoch = null)
     {
         lock (gate)
         {
             Prune(now);
-            if (hasPacket && senderIP == sender && now >= lastPacketAt)
-                Add(gaps, now, (now - lastPacketAt) * 1000.0);
-            else if (hasPacket)
+            bool accepted = senderGate.Accept(sender, now);
+            if (!accepted) senderRejectedPackets++;
+            if (accepted && hasTimingPacket && timingSenderIP == sender && now >= lastTimingPacketAt)
+                Add(gaps, now, (now - lastTimingPacketAt) * 1000.0);
+            else if (accepted && hasTimingPacket)
             {
                 // 別の端末や時計の巻き戻りをまたいで統計を混ぜない。
                 gaps.Clear();
                 delays.Clear();
             }
-            if (parsed && receiveEpoch.HasValue && sentEpoch.HasValue && sentEpoch.Value > 0)
+            if (accepted && parsed && receiveEpoch.HasValue && sentEpoch.HasValue && sentEpoch.Value > 0)
             {
                 double delayMs = (receiveEpoch.Value - sentEpoch.Value) * 1000.0;
                 if (!double.IsNaN(delayMs) && !double.IsInfinity(delayMs)) Add(delays, now, delayMs);
@@ -126,7 +228,14 @@ public sealed class PhoneSaberPacketStatistics
             lastPacketAt = now;
             hasPacket = true;
             senderIP = sender;
-            payloadParsed = parsed;
+            payloadParsed = parsed && accepted;
+            if (accepted)
+            {
+                hasTimingPacket = true;
+                lastTimingPacketAt = now;
+                timingSenderIP = sender;
+            }
+            return accepted;
         }
     }
 
@@ -137,7 +246,7 @@ public sealed class PhoneSaberPacketStatistics
             Prune(now);
             return new PhoneSaberInputStats(hasPacket, recentPackets.Count,
                 Math.Max(0.0, now - (hasPacket ? lastPacketAt : startedAt)), senderIP, payloadParsed,
-                Summarize(gaps), Summarize(delays));
+                Summarize(gaps), Summarize(delays), senderRejectedPackets, senderGate.LockedSender);
         }
     }
 
@@ -229,11 +338,15 @@ public static class PhoneSaberStatsDisplay
             stats.HasPacket ? (stats.PayloadParsed ? "OK" : "NG") : "--") +
             $"\n受信間隔（直近5秒）: {Timing(stats.ArrivalGaps)}" +
             $"\n片道時計差（tsあり）: {Timing(stats.OneWayDelay)}" +
-            $"\n判定: {Verdict(stats, clocksSynchronized)}（{(clocksSynchronized && stats.OneWayDelay.Count > 0 ? "間隔＋片道" : "間隔のみ")}）";
+            $"\n判定: {Verdict(stats, clocksSynchronized)}（{(clocksSynchronized && stats.OneWayDelay.Count > 0 ? "間隔＋片道" : "間隔のみ")}）" +
+            $"\n送信元競合による拒否: {stats.SenderRejectedPackets} pkt";
     }
 
     public static string Warning(string colour, PhoneSaberInputStats stats)
     {
-        return IsStale(stats) ? $"警告: {colour} のUDP入力が1秒以上届いていません。送信先・接続・ファイアウォールを確認してください。" : "";
+        string conflict = string.IsNullOrEmpty(stats.LockedSender) ? "" :
+            $"警告: {colour} は別のスマホもこのPCへ送信中です。そのスマホの台・送信先を確認してください（固定: {stats.LockedSender}）。";
+        string silence = IsStale(stats) ? $"警告: {colour} のUDP入力が1秒以上届いていません。送信先・接続・ファイアウォールを確認してください。" : "";
+        return conflict.Length == 0 ? silence : silence.Length == 0 ? conflict : conflict + "\n" + silence;
     }
 }

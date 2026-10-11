@@ -5,6 +5,21 @@ using NUnit.Framework;
 public class PhoneSaberInputStatsTests
 {
     [Test]
+    public void InterleavingSenderCannotReplaceKeptSendersLatencySamples()
+    {
+        var statistics = new PhoneSaberPacketStatistics();
+        statistics.Record(0, "A", true);
+        statistics.Record(0.01, "B", true);
+        statistics.Record(0.02, "A", true, 1000.01, 1000);
+        statistics.Record(0.03, "B", true, 2000, 1000);
+        var snapshot = statistics.Read(0.04);
+        Assert.AreEqual(10, snapshot.OneWayDelay.MaxMs, 1e-8,
+            "固定後の別送信元は有効な遅延サンプルを上書きしない");
+        Assert.AreEqual(4, snapshot.PacketsPerSecond, "拒否も不正 payload と同じく到着として数える");
+        Assert.AreEqual(0.01, snapshot.SecondsSinceLastPacket, 1e-8);
+    }
+
+    [Test]
     public void TimingUsesAveragedMedianAndNearestRankP95()
     {
         var values = new double[20];

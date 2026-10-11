@@ -5,6 +5,25 @@ using UnityEngine;
 // Unity の時計や描画を使わず、遅延テストの切替・計測・失敗判定を検証する。
 public class PhoneSaberLatencyProbeTests
 {
+    [TestCase(0)]
+    [TestCase(1)]
+    [TestCase(2)]
+    [TestCase(4)]
+    [TestCase(-1)]
+    public void QueueRestoreKeepsOriginalValueAndFinishesOnce(int original)
+    {
+        var restore = new PhoneSaberQueuedFramesRestore();
+        Assert.IsFalse(restore.TryFinish(out _));
+        restore.Begin(original);
+        restore.Begin(1);
+        Assert.IsTrue(restore.TryFinish(out int saved));
+        Assert.AreEqual(original, saved);
+        Assert.IsFalse(restore.TryFinish(out _));
+        restore.Begin(3);
+        Assert.IsTrue(restore.TryFinish(out saved));
+        Assert.AreEqual(3, saved);
+    }
+
     [TestCase(0.1f, 0f, 1f)]
     [TestCase(5.5f, 0f, 1f)]
     [TestCase(20f, 11f, 2f)]

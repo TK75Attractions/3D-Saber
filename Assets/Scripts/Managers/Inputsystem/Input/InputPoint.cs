@@ -42,7 +42,7 @@ public class InputPoint : MonoBehaviour
     // main thread の StartNetworkServices だけが書く。読む側は lock を取らない
     // (受信 thread が networkLifecycleLock を持ったまま外部 process を起動・停止しても、毎フレームの読み出しを止めない)。
     volatile string phoneSaberStation;
-    // 運営表示だけの統計。既存の受理数や座標・最終有効入力時刻とは独立させる。
+    // 到着統計と送信元ゲートを同じ lock で同期。座標・最終有効入力時刻は受理時だけ更新する。
     readonly PhoneSaberPacketStatistics redInputStats = new PhoneSaberPacketStatistics();
     readonly PhoneSaberPacketStatistics blueInputStats = new PhoneSaberPacketStatistics();
     PhoneSaberConnectionEvents redConnectionEvents;
@@ -435,6 +435,7 @@ public class InputPoint : MonoBehaviour
             }
             finally
             {
+                (secondStick ? blueInputStats : redInputStats).ResetSenderGate();
                 SetReceiverAlive(secondStick, false);
                 ClearReceiverClient(secondStick, client);
                 client?.Close();
@@ -454,6 +455,9 @@ public class InputPoint : MonoBehaviour
 
     void ReceiveData(UdpClient client, object targetLock, bool secondStick)
     {
+        var statistics = secondStick ? blueInputStats : redInputStats;
+        string colour = secondStick ? "BLUE" : "RED";
+        statistics.ResetSenderGate((kind, detail) => PhoneSaberEventLog.Record(phoneSaberStation, colour, kind, detail));
         // 送信元は標準の IPEndPoint で受ける（独自 EndPoint は OS・runtime 依存の挙動を避けるため使わない）。
         // 受信 buffer と送信元 IP 文字列だけを再利用し、packet ごとの byte[] と文字列を作らない。
         EndPoint endPoint = new IPEndPoint(IPAddress.Any, 0);
@@ -479,8 +483,8 @@ public class InputPoint : MonoBehaviour
             // 数値として読めても NaN・無限大・桁外れは座標ではない（中点が Infinity になり剣が消える）。
             // 不正な payload と同じく「到着したが無効」として数える。
             if (parsed && !PhoneSaberPacketParser.IsUsableCoordinates(isStick, a, b, c, d)) parsed = false;
-            RecordInputStats(secondStick, receiveTimestampTicks, senderIP, parsed, receiveEpoch, sentEpoch);
-            if (!parsed) continue;
+            bool accepted = RecordInputStats(secondStick, receiveTimestampTicks, senderIP, parsed, receiveEpoch, sentEpoch);
+            if (!parsed || !accepted) continue;
 
             // 補正前のカメラ座標を、採取中の指定色だけ記録する。
             if (isStick) PositionCapture.Add(secondStick, new Vector2(a, b), new Vector2(c, d),
@@ -542,12 +546,12 @@ public class InputPoint : MonoBehaviour
         }
     }
 
-    void RecordInputStats(bool secondStick, long timestampTicks, string senderIP, bool parsed,
+    bool RecordInputStats(bool secondStick, long timestampTicks, string senderIP, bool parsed,
         double receiveEpoch, double? sentEpoch)
     {
         (secondStick ? blueConnectionEvents : redConnectionEvents)?.Packet(
             SwingMonotonicClock.ToSeconds(timestampTicks), senderIP);
-        (secondStick ? blueInputStats : redInputStats).Record(
+        return (secondStick ? blueInputStats : redInputStats).Record(
             SwingMonotonicClock.ToSeconds(timestampTicks), senderIP, parsed, receiveEpoch, sentEpoch);
     }
 
@@ -561,6 +565,8 @@ public class InputPoint : MonoBehaviour
             double eventNow = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
             redConnectionEvents?.Poll(eventNow);
             blueConnectionEvents?.Poll(eventNow);
+            redInputStats.PollSenderGate(eventNow);
+            blueInputStats.PollSenderGate(eventNow);
         }
         float x = 0, y = 0;
         bool updated = false;
