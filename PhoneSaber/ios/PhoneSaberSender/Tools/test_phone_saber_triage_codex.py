@@ -546,6 +546,38 @@ class CodexTriageTests(unittest.TestCase):
             with self.assertRaisesRegex(BundleError, "summary.json is malformed"):
                 input_plan(bundle)
 
+    def test_swing_only_can_include_all_six_captures_without_relaxing_context_limits(self) -> None:
+        from test_phone_saber_metadata_schema import guided_recording_sample
+        from phone_saber_tracking_diagnostics import tracking_preflight
+        with tempfile.TemporaryDirectory() as directory:
+            bundle = Path(directory) / "bundle"
+            write_codex_bundle(bundle, image_count=6, failure_types=("manual_capture",) * 6)
+            summary_path = bundle / "summary.json"
+            summary = json.loads(summary_path.read_text())
+            guided = guided_recording_sample()
+            guided.update(scriptID="swing_only_2026_10_11", scriptVersion=1, plannedSeconds=51)
+            summary["guidedRecording"] = guided
+            summary["motionEventSummary"] = {"events": [[0, "red", 15.188, "tracking_mode"],
+                                                       [1, "blue", 2.0, "not_retained"]]}
+            summary_path.write_text(json.dumps(summary))
+            plan = input_plan(bundle)
+            self.assertEqual(len(plan.images), 6)
+            self.assertEqual(tracking_preflight(plan)["status"], "PASS")
+            from phone_saber_session_report import build_report
+            report = build_report(bundle)
+            self.assertEqual(report["inputContract"], "PASS")
+            self.assertEqual(report["guidedRecording"]["scriptID"], "swing_only_2026_10_11")
+            context = plan.images[0].context_path
+            context.write_text(context.read_text() + " " * (33 * 1024))
+            with self.assertRaisesRegex(BundleError, "frame context exceeds its size limit"):
+                input_plan(bundle)
+            write_codex_bundle(bundle, image_count=7, failure_types=("manual_capture",) * 7)
+            summary = json.loads(summary_path.read_text())
+            summary["guidedRecording"] = guided
+            summary_path.write_text(json.dumps(summary))
+            with self.assertRaisesRegex(BundleError, "per-failure-type"):
+                input_plan(bundle)
+
     def test_full_session_metadata_cannot_be_attached_through_summary(self) -> None:
         for key, value in (
             ("frames", [{"frameID": index} for index in range(100)]),

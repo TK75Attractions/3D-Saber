@@ -685,6 +685,11 @@ enum DebugRecordingTriageBuilder {
             manualFrameIDs: uniqueByName.values.filter(\.isManual).map(\.frameID),
             guided: metadata["guidedRecording"] as? [String: Any],
             limit: min(DebugRecordingTriageLimits.guidedManualImageReserve, requestedLimit)))
+        let guidedReservedBytes = uniqueByName.values.filter {
+            $0.isManual && guidedReserved.contains($0.frameID)
+        }.reduce(Int64(0)) { total, reference in
+            total + (directory.flatMap { fileSize($0, reference.fileName) } ?? 0)
+        }
         let bridgeImageBudget = (trackingSignificant
             ? requestedLimit - min(trackingReferences.count, DebugRecordingTriageLimits.minimumTrackingWindow)
             : requestedLimit) - guidedReserved.count
@@ -707,7 +712,7 @@ enum DebugRecordingTriageBuilder {
                                             directory: directory) else { continue }
                 let bytes = unit.reduce(Int64(0)) { $0 + $1.1 }
                 guard selected.count + unit.count <= bridgeImageBudget,
-                      selectedBytes + bytes <= imageBudget else { continue }
+                      selectedBytes + bytes + guidedReservedBytes <= imageBudget else { continue }
                 selected.append(contentsOf: unit.map(\.0))
                 selectedBytes += bytes
                 taken += 1
@@ -738,9 +743,9 @@ enum DebugRecordingTriageBuilder {
 
         let trackingIndex = DebugRecordingTriageLimits.trackingEventIndex
         let sortedReferences = uniqueByName.values.filter {
-            $0.eventIndex == trackingIndex
+            ($0.isManual && guidedReserved.contains($0.frameID)) || ($0.eventIndex == trackingIndex
                 ? trackingFits && (trackingWindow?.contains($0.frameID) ?? true)
-                : !bridgeFrameIDs.contains($0.frameID)
+                : !bridgeFrameIDs.contains($0.frameID))
         }.sorted { lhs, rhs in
             let lhsGuided = lhs.isManual && guidedReserved.contains(lhs.frameID)
             let rhsGuided = rhs.isManual && guidedReserved.contains(rhs.frameID)
@@ -784,7 +789,8 @@ enum DebugRecordingTriageBuilder {
                     $0.fileName == reference.fileName
                         || ($0.eventIndex == trackingIndex && $0.frameID == reference.frameID)
                 }) { continue }
-            } else if selected.contains(where: { $0.frameID == reference.frameID }) { continue }
+            } else if !(reference.isManual && guidedReserved.contains(reference.frameID)),
+                      selected.contains(where: { $0.frameID == reference.frameID }) { continue }
             let referenceReasons = reasonList(for: reference, reasonsByFrame: reasonsByFrame)
             let primary = referenceReasons.sorted {
                 if $0.priority != $1.priority { return $0.priority < $1.priority }

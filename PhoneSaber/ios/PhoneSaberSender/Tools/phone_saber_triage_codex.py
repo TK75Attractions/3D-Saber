@@ -51,7 +51,8 @@ from phone_saber_triage_protocol import (
 
 DEFAULT_MAX_IMAGES = 12
 PER_FAILURE_TYPE = 2
-GUIDED_MANUAL_CAPTURE_IMAGES = 5
+# Five slots are reserved, but a sixth capture can use a remaining bundle slot.
+GUIDED_MANUAL_CAPTURE_IMAGES = 6
 # A manual Debug Recording may keep all of its lossless captures
 # (DebugRecordingLimits.maximumManualLosslessCaptures = 3); found 2026-10-06.
 MANUAL_CAPTURE_IMAGES = 3

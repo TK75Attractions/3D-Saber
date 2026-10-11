@@ -35,7 +35,7 @@ class BundleError(ValueError):
 
 
 def _allowed_path(value: Any) -> str:
-    if not isinstance(value, str) or not value or "\\" in value:
+    if not isinstance(value, str) or not value or "\\" in value or "\x00" in value:
         raise BundleError("manifest contains an invalid path")
     path = PurePosixPath(value)
     if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
@@ -218,7 +218,8 @@ def receive_bundle(source: BinaryIO, content_length: int, inbox: Path) -> Path:
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
         except (OSError, UnicodeError, json.JSONDecodeError) as exc:
             raise BundleError("summary.json is malformed") from exc
-        _validate_summary(summary, seen)
+        if _validate_summary(summary, seen) != session_id:
+            raise BundleError("manifest session id does not match summary.json")
         _validate_summary_file_set(temporary, seen)
         _validate_context_files(temporary, seen)
 

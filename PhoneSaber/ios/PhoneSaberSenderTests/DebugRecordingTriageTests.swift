@@ -1789,10 +1789,21 @@ extension DebugBridgeDropoutTests {
 // MARK: Guided recording reserve (ガイド付き録画)
 
 extension DebugBridgeDropoutTests {
-    private func guidedSelection(guided: Bool) throws -> DebugRecordingTriageSelection {
+    private func guidedSelection(guided: Bool, overlapping: Bool = false,
+                                 largeImages: Bool = false) throws -> DebugRecordingTriageSelection {
         let directory = try temporaryDirectory()
-        let events = (0..<2).map { event($0 + 1, color: "red", start: 10 + $0 * 10) }
+        let events = (0..<2).map { event($0 + 1, color: "red", start: (overlapping ? 40 : 10) + $0 * 10) }
         try writeImages(events, to: directory)
+        if largeImages {
+            for image in events.flatMap({ $0["images"] as? [[String: Any]] ?? [] }) {
+                for key in ["fileName", "annotatedFileName"] {
+                    guard let name = image[key] as? String else { continue }
+                    let file = try FileHandle(forWritingTo: directory.appendingPathComponent(name))
+                    try file.truncate(atOffset: 8 * 1024 * 1024)
+                    try file.close()
+                }
+            }
+        }
         for frame in 100...110 { try Data("png".utf8).write(to: directory.appendingPathComponent("motion_\(frame).png")) }
         let manual: [(frameID: Int, step: Int)] = [(40, 5), (50, 6), (60, 6), (70, 6), (80, 10), (120, 12)]
         var frames = (0..<130).map { frame($0, red: line(100), blue: line(100, 300)) }
@@ -1800,10 +1811,15 @@ extension DebugBridgeDropoutTests {
             frames[capture.frameID]["manualCaptured"] = true
             frames[capture.frameID]["manualFileName"] = "manual_frame_\(capture.frameID).png"
             try Data("png".utf8).write(to: directory.appendingPathComponent("manual_frame_\(capture.frameID).png"))
+            if largeImages {
+                let file = try FileHandle(forWritingTo: directory.appendingPathComponent("manual_frame_\(capture.frameID).png"))
+                try file.truncate(atOffset: 8 * 1024 * 1024)
+                try file.close()
+            }
         }
         var document = try XCTUnwrap(JSONSerialization.jsonObject(with: self.document(
             frames: frames, events: events)) as? [String: Any])
-        document["motionEvents"] = [trackingMotionEvent(peak: 105, score: 2.0)]
+        document["motionEvents"] = largeImages || overlapping ? [] : [trackingMotionEvent(peak: 105, score: 2.0)]
         document["motionSummary"] = ["events": [[DebugRecordingTriageLimits.trackingEventIndex, "red", 2.0, "retained"]]]
         if guided {
             document["guidedRecording"] = ["formatVersion": 1, "scriptID": "s", "scriptVersion": 1,
@@ -1836,6 +1852,22 @@ extension DebugBridgeDropoutTests {
         XCTAssertGreaterThanOrEqual(tracking.count, DebugRecordingTriageLimits.minimumTrackingWindow)
         XCTAssertFalse(selection.images.filter { $0.bridge != nil }.isEmpty)
         XCTAssertLessThan(selection.images.filter { $0.fileName.hasPrefix("manual_frame_") }.count, 4)
+    }
+
+    func testGuidedReserveSurvivesOverlappingBridgeFrames() throws {
+        let selection = try guidedSelection(guided: true, overlapping: true)
+        let manual = selection.images.filter { $0.fileName.hasPrefix("manual_frame_") }
+        XCTAssertTrue(Set([UInt64(40), 50, 60, 80, 120]).isSubset(of: Set(manual.map(\.frameID))))
+        XCTAssertFalse(selection.images.filter { $0.bridge != nil }.isEmpty)
+        XCTAssertLessThanOrEqual(selection.images.count, DebugRecordingTriageLimits.defaultImageCount)
+    }
+
+    func testBridgeBytesCannotEvictGuidedReservedCaptures() throws {
+        // bridge 32 MiB と予約画像 40 MiB は一緒に入らない。予約画像を優先する。
+        let selection = try guidedSelection(guided: true, largeImages: true)
+        let manual = selection.images.filter { $0.fileName.hasPrefix("manual_frame_") }
+        XCTAssertTrue(Set([UInt64(40), 50, 60, 80, 120]).isSubset(of: Set(manual.map(\.frameID))))
+        XCTAssertLessThanOrEqual(selection.images.count, DebugRecordingTriageLimits.defaultImageCount)
     }
 }
 

@@ -10,6 +10,7 @@ import struct
 import sys
 import tempfile
 import unittest
+from unittest import mock
 from http.client import HTTPConnection
 from pathlib import Path
 from threading import Thread
@@ -112,6 +113,39 @@ def empty_bundle_files(summary_text: str | None = None) -> list[tuple[str, bytes
 
 
 class TriageBundleProtocolTests(unittest.TestCase):
+    def test_manifest_session_must_match_summary_and_staging_is_removed(self) -> None:
+        body = raw_envelope(empty_bundle_files(), session_id="different_session")
+        with tempfile.TemporaryDirectory() as directory:
+            inbox = Path(directory) / "inbox"
+            with self.assertRaisesRegex(protocol.BundleError, "session.*match"):
+                protocol.receive_bundle(io.BytesIO(body), len(body), inbox)
+            self.assertEqual(list(inbox.iterdir()), [])
+
+    def test_nul_in_image_name_is_rejected_as_a_bundle_error(self) -> None:
+        body = raw_envelope(empty_bundle_files() + [("images/unsafe\x00.png", png_bytes()),
+                                                   ("frames/frame_100_1.json", b"{}")])
+        with tempfile.TemporaryDirectory() as directory:
+            inbox = Path(directory) / "inbox"
+            with self.assertRaises(protocol.BundleError):
+                protocol.receive_bundle(io.BytesIO(body), len(body), inbox)
+            self.assertEqual(list(inbox.glob("*")), [])
+
+    def test_truncated_upload_and_disk_full_remove_staging(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            body = write_bundle(Path(directory) / "bundle")
+            inbox = Path(directory) / "inbox"
+            with self.assertRaisesRegex(protocol.BundleError, "ended before"):
+                protocol.receive_bundle(io.BytesIO(body[:-1]), len(body), inbox)
+            self.assertEqual(list(inbox.iterdir()), [])
+            original_open = Path.open
+            def fail_write(path, mode="r", *args, **kwargs):
+                if mode == "xb":
+                    raise OSError(28, "No space left on device")
+                return original_open(path, mode, *args, **kwargs)
+            with mock.patch.object(Path, "open", fail_write), self.assertRaises(OSError):
+                protocol.receive_bundle(io.BytesIO(body), len(body), inbox)
+            self.assertEqual(list(inbox.iterdir()), [])
+
     def test_valid_bundle_is_received_atomically_and_png_bytes_are_unchanged(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory) / "bundle"
