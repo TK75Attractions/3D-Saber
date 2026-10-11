@@ -8,7 +8,9 @@ val copyFixtureManifest by tasks.registering(Sync::class) {
     from("../../ios/PhoneSaberSender/Tools/lossless_regression_manifest.json")
     into(fixtureManifestAssets)
 }
-tasks.matching { it.name == "mergeDebugAndroidTestAssets" }.configureEach {
+// assets を読む lint もコピー完了後に実行し、同じタスクグラフでの依存検証を満たす。
+tasks.matching { it.name in setOf("mergeDebugAndroidTestAssets",
+    "generateDebugAndroidTestLintModel", "lintAnalyzeDebugAndroidTest") }.configureEach {
     dependsOn(copyFixtureManifest)
 }
 

@@ -75,6 +75,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var resumePolicy: SendingResumePolicy
     private val prefs by lazy { getSharedPreferences("destination", MODE_PRIVATE) }
     private val cameraBackoff = RecoveryBackoff()
+    private val pcReplyWatch = PcReplyWatch()
     private var cameraStarted = false
     private var cameraStartedAt = 0.0
     private var cameraRetry: Runnable? = null
@@ -282,7 +283,10 @@ class MainActivity : ComponentActivity() {
         }
         label("発熱や処理落ち（解析fpsの注意）が続くときだけ OFF にします。変更は停止中のみ。")
         camera = CameraSession(this, preview, sender) { message -> recoverCamera(message) }
-        discovery = PcDiscovery(this) { pc, network, message ->
+        discovery = PcDiscovery(this, onReply = { address, now ->
+            address.hostAddress?.let { pcReplyWatch.received(it, now) }
+            updateRecoveryStatus()
+        }) { pc, network, message ->
             destination = pc; wifi = network
             updateSendingDestination()
             pcStatus.text = if (pc == null) "PC: 未設定\n$message" else
@@ -352,6 +356,7 @@ class MainActivity : ComponentActivity() {
         // 低遅延モードは前面・画面点灯中だけ有効になる（Android 10+ / minSdk 29）。
         if (!lowLatencyWifi.isHeld) lowLatencyWifi.acquire()
         startCamera()
+        updateRecoveryStatus()
     }
 
     private fun updateSendingDestination() {
@@ -362,7 +367,9 @@ class MainActivity : ComponentActivity() {
             ?.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) } == true
         val allowed = SendingNetworkPolicy.canSend(BuildConfig.DEBUG, developerNetworkOverride,
             selectedNetwork != null, isWifi, manualDestination)
-        sendingNetwork = if (allowed) selectedNetwork else null
+        val nextNetwork = if (allowed) selectedNetwork else null
+        if (sendingNetwork != nextNetwork) pcReplyWatch.reset()
+        sendingNetwork = nextNetwork
         sender.configure(if (allowed) destination else null, sendingNetwork)
     }
 
@@ -394,8 +401,11 @@ class MainActivity : ComponentActivity() {
     private fun updateRecoveryStatus() {
         if (!::recoveryStatus.isInitialized) return
         val reconnect = sending && (destination == null || sendingNetwork == null || sender.error != null)
+        val replyWarning = pcReplyWatch.update(sending, destination?.address?.hostAddress,
+            manualDestination, System.nanoTime() / 1e9)
         recoveryStatus.text = listOf(automaticResumeMessage, cameraRecoveryMessage,
-            if (reconnect) "PC を再接続中…" else "").filter { it.isNotEmpty() }.joinToString("\n")
+            if (reconnect) "PC を再接続中…" else "", replyWarning ?: "")
+            .filter { it.isNotEmpty() }.joinToString("\n")
     }
 
     private fun stopSending(clearIntent: Boolean = true) {

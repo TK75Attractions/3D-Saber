@@ -20,6 +20,7 @@ import java.util.ArrayDeque
 
 /** Main-thread lifecycle/selection, one independent broadcast receive thread per generation. */
 class PcDiscovery(context: Context,
+                  private val onReply: (InetAddress, Double) -> Unit,
                   private val onUpdate: (Destination?, Network?, String) -> Unit) {
     private val mainExecutor = androidx.core.content.ContextCompat.getMainExecutor(context)
     private var resolveBusy = false
@@ -198,12 +199,17 @@ class PcDiscovery(context: Context,
                 val reply = DiscoveryProtocol.parse(String(bytes, 0, packet.length, Charsets.UTF_8)) ?: continue
                 if (!reply.compatible || packet.port != Ports.DISCOVERY ||
                     packet.address.isAnyLocalAddress || packet.address.isMulticastAddress) continue
+                val receivedAt = System.nanoTime() / 1e9
                 main.post {
-                    if (active && token == generation && StationMatcher.reply(station, reply)) {
-                        val destination = Destination(packet.address, reply.name, "UDP探索")
-                        val key = "udp:${packet.address.hostAddress}"
-                        if (key in found || found.size < 16) found[key] = Found(destination, System.nanoTime())
-                        publish()
+                    if (active && token == generation) {
+                        if (StationMatcher.reply(station, reply)) {
+                            val destination = Destination(packet.address, reply.name, "UDP探索")
+                            val key = "udp:${packet.address.hostAddress}"
+                            if (key in found || found.size < 16) found[key] = Found(destination, System.nanoTime())
+                            publish()
+                        }
+                        // 手入力は台名で絞らない。表示側で実際の宛先IPを照合し、Bonjourは応答と数えない。
+                        onReply(packet.address, receivedAt)
                     }
                 }
             } catch (_: SocketTimeoutException) {

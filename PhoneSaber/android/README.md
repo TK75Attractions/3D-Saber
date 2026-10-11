@@ -135,6 +135,9 @@ Macもファイアウォールが有効ならUnityの受信を許可する。
 - 自動探索は最初に見つかったPCを維持する。複数PCがある会場では意図したPCの
   IPv4を手入力して保存する。SharedPreferencesの手入力は自動探索より優先する。
   UDPには受信確認がないため、表示するPCは「探索で発見した送信先」であり接続保証ではない。
+  送信中、選択中のPCからUDP 5007の探索応答が3秒以上ないと注意行を表示する（約1秒ごとに更新）。
+  別PCの応答やBonjour広告では解除しない。応答が戻ると解除し、停止・Wi-Fi/宛先変更で履歴を破棄する。
+  座標UDPの到着保証ではない。5007だけ遮断された場合や、Unity以外の手入力宛先は確認できない。
   前回のPCはUDP名（PC名）とBonjour名（Unity共通）が異なるため、名前かIPv4の一致で同じPCとみなす。
   前回のPC以外だけが見つかっている間は、その旨と解除方法（停止）を表示する。
   IPv4のbroadcast先が変わらないLinkProperties更新（IPv6のRA・lease時刻）では再探索せず、送信先を保つ。
@@ -206,6 +209,9 @@ JVMテスト（`app/src/test`）には探索応答parser・不正応答・ポー
 端末状態の日本語分類/表示、警告境界・ウォームアップ、直近5秒の中央値・失速時の失効、
 およびReleaseのWi-Fi必須・Debugの手入力IP/明示ON条件もJVMテストに含む。
 JNIの正式lossless fixture testは下記を参照。CameraX/NSD/ライフサイクルのinstrumented testは未実装。
+
+lintと正式fixture APKの同時ビルド・manifestの無加工同梱を確認する回帰テスト（JDK/SDKが必要）:
+`python3 -B test_fixture_build.py -v`（`android/` で実行）。実機のJNIテストは実行しない。
 
 実機で必要な確認: sense9のRGBA配置/stride、VGA→480×640の向きと画面四隅のUnity mapping、
 permission拒否/再許可、開始/停止/再開・画面終了・Wi-Fi切替時の資源解放と古い送信の破棄、
