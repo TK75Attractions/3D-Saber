@@ -105,3 +105,75 @@ public class CalibrationSessionTests
         finally {UnityEngine.Object.DestroyImmediate(go);}
     }
 }
+
+public class CalibrationTimingTrailTests
+{
+    CalibrationTimingGraphic graphic;
+    [SetUp] public void Setup()
+    {
+        var go=new GameObject("TimingTrail",typeof(RectTransform));
+        graphic=go.AddComponent<CalibrationTimingGraphic>(); graphic.isDistribution=true;
+        graphic.rectTransform.sizeDelta=new Vector2(500,70);
+    }
+    [TearDown] public void Cleanup() { UnityEngine.Object.DestroyImmediate(graphic.gameObject); }
+    static CalibrationResult History(double error) => CalibrationResult.Analyze(new[]{
+        new CalibrationSample(0,error,SaberHand.Left),new CalibrationSample(1,error+5,SaberHand.Right)},0);
+
+    [TestCase(-10,-10,.175f)] [TestCase(-10,-10,.5f)]
+    [TestCase(10,10,.175f)] [TestCase(10,10,.5f)]
+    [TestCase(-10,10,.175f)] [TestCase(-10,10,.5f)]
+    public void RepeatedAdjustmentPreservesPointsAndAccumulatesMovement(int first,int second,float elapsed)
+    {
+        var history=History(-70); graphic.SetResult(history,true,-65);
+        graphic.PreviewAdjustment(history,first); graphic.SetResult(null,false,0);
+        SetPreviewAge(elapsed);
+        var before=PointPositions(); Assert.AreEqual(2,before.Length);
+        graphic.PreviewAdjustment(null,second);
+        CollectionAssert.AreEqual(before,PointPositions(),"移動中の連打でも点を元の位置に飛ばさない");
+        SetPreviewAge(.5f);
+        CollectionAssert.AreEqual(new[]{-70f-first-second,-65f-first-second},PointPositions());
+        Assert.AreEqual(-70,history.Samples[0].ErrorMs,"表示の移動で測定値を書き換えない");
+    }
+
+    [Test] public void NewMeasurementStartsItsOwnTrailAndAdjustment()
+    {
+        graphic.PreviewAdjustment(History(-70),-10); SetPreviewAge(.5f);
+        var fresh=History(30); graphic.SetResult(fresh,true,35);
+        CollectionAssert.AreEqual(new[]{30f,35f},PointPositions());
+        graphic.PreviewAdjustment(fresh,10); graphic.SetResult(null,false,0); SetPreviewAge(.5f);
+        CollectionAssert.AreEqual(new[]{20f,25f},PointPositions(),"前の調整量を新しい測定に重ねない");
+        graphic.ClearPreview(); graphic.PreviewAdjustment(null,-10);
+        Assert.IsEmpty(PointPositions(),"消去した軌跡を再表示しない");
+    }
+
+    [Test] public void RepeatedAdjustmentRenewsPreviewAndExpiryDoesNotRestoreOldPoints()
+    {
+        graphic.PreviewAdjustment(History(-70),-10); SetPreviewAge(2.9f);
+        graphic.PreviewAdjustment(null,-10); TickGraphic();
+        Assert.AreEqual(2,PointPositions().Length);
+        SetPreviewAge(3.1f); TickGraphic();
+        graphic.PreviewAdjustment(null,-10);
+        Assert.IsEmpty(PointPositions());
+    }
+
+    void SetPreviewAge(float seconds) => typeof(CalibrationTimingGraphic)
+        .GetField("previewStarted",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic)
+        .SetValue(graphic,Time.unscaledTime-seconds);
+    void TickGraphic() => typeof(CalibrationTimingGraphic)
+        .GetMethod("Update",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic).Invoke(graphic,null);
+    float[] PointPositions()
+    {
+        using(var mesh=new UnityEngine.UI.VertexHelper())
+        {
+            typeof(CalibrationTimingGraphic).GetMethod("OnPopulateMesh",System.Reflection.BindingFlags.Instance|System.Reflection.BindingFlags.NonPublic|System.Reflection.BindingFlags.DeclaredOnly)
+                .Invoke(graphic,new object[]{mesh});
+            // 帯の四角形3枚のあとに、中心+円周13頂点の点が並ぶ。幅500で1px=1ms。
+            const int bandVertices=12,pointVertices=14;
+            Assert.Zero((mesh.currentVertCount-bandVertices)%pointVertices);
+            var positions=new List<float>(); var vertex=new UIVertex();
+            for(int i=bandVertices;i<mesh.currentVertCount;i+=pointVertices)
+            { mesh.PopulateUIVertex(ref vertex,i); positions.Add(vertex.position.x); }
+            return positions.ToArray();
+        }
+    }
+}

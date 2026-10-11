@@ -8,11 +8,25 @@ public sealed class CalibrationTimingGraphic : MaskableGraphic
     public bool isDistribution;
     double time,error; int offset; bool playing,hasError; CalibrationResult result;
     CalibrationSample[] preview;
-    float previewStarted, lastInputTime;
+    float previewStarted, previewFromDelta, lastInputTime;
     int previewDelta;
     static readonly Color Cyan=new Color(.55f,.95f,.72f), Dim=new Color(.3f,.39f,.42f), Amber=new Color(1,.79f,.35f);
     public void PreviewAdjustment(CalibrationResult history,int delta)
-    { preview=history?.Samples; previewDelta=delta; previewStarted=Time.unscaledTime; SetVerticesDirty(); }
+    {
+        if(history?.Samples?.Length>0)
+        {
+            preview=history.Samples; previewFromDelta=0; previewDelta=delta;
+        }
+        else if(preview!=null)
+        {
+            // 測定履歴は調整ごとに空になる。表示用の点は残し、途中の位置から次の調整へ動かす。
+            previewFromDelta=CurrentPreviewDelta(); previewDelta+=delta;
+        }
+        else return;
+        previewStarted=Time.unscaledTime; SetVerticesDirty();
+    }
+    float CurrentPreviewDelta() => Mathf.Lerp(previewFromDelta,previewDelta,
+        Mathf.SmoothStep(0,1,(Time.unscaledTime-previewStarted)/.35f));
     public void ClearPreview() { preview=null; SetVerticesDirty(); }
     void Update()
     {
@@ -44,10 +58,10 @@ public sealed class CalibrationTimingGraphic : MaskableGraphic
             if(points!=null)
             {
                 bool predicted=result==null;
-                float move=predicted?Mathf.SmoothStep(0,1,(Time.unscaledTime-previewStarted)/.35f):0;
+                float shift=predicted?CurrentPreviewDelta():0;
                 for(int i=0;i<points.Length;i++)
                 {
-                    double ms=points[i].ErrorMs-(predicted?previewDelta*move:0);
+                    double ms=points[i].ErrorMs-shift;
                     Color c=ms < -CalibrationProtocol.EarlyPerfectMs||ms > CalibrationProtocol.LatePerfectMs?Amber:Cyan;
                     c.a=predicted?.35f:Mathf.Lerp(.25f,1,(i+1f)/points.Length);
                     float drop=!predicted&&i==points.Length-1?14*(1-Mathf.Clamp01((Time.unscaledTime-lastInputTime)/.22f)):0;

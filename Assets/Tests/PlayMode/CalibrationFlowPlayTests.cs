@@ -8,6 +8,47 @@ using UnityEngine.TestTools;
 
 public class CalibrationFlowPlayTests
 {
+    [UnityTest] public IEnumerator RepeatedAimAdjustmentsKeepTheTimingTrailUntilNewCuts()
+    {
+        var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
+        var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
+        c.ChangeOffset(-c.Draft.OffsetMs);
+        var graphic=c.Overlay.GetComponentsInChildren<CalibrationTimingGraphic>().Single(g=>g.isDistribution);
+        int emptyVertices=TimingTrailVertexCount(graphic);
+        for(int i=0;i<6;i++) c.History.Add(-70+i*2,i%2==0?SaberHand.Left:SaberHand.Right);
+        c.Overlay.Tick();
+        int trailVertices=TimingTrailVertexCount(graphic);
+        Assert.Greater(trailVertices,emptyVertices);
+        int expectedOffset=0;
+        foreach(string button in new[]{"Earlier","Earlier","Later","Later"})
+        {
+            HoldAim(pointer,new Vector2(Screen.width*.5f,Screen.height*.5f),2);
+            HoldAim(pointer,AimPoint(c,"Controls/"+button),10);
+            expectedOffset+=button=="Earlier"?-10:10;
+            Assert.AreEqual(expectedOffset,c.Draft.OffsetMs);
+            Assert.Zero(c.History.Count,"旧設定の測定値を傾向判定には混ぜない");
+            Assert.AreEqual(trailVertices,TimingTrailVertexCount(graphic),"連続調整でも表示中の点を消さない");
+            yield return new WaitForSecondsRealtime(.4f);
+            Assert.AreEqual(trailVertices,TimingTrailVertexCount(graphic));
+        }
+        c.History.Add(5,SaberHand.Left); c.Overlay.Tick();
+        int newTrailVertices=TimingTrailVertexCount(graphic);
+        Assert.Greater(newTrailVertices,emptyVertices);
+        Assert.Less(newTrailVertices,trailVertices,"新しいカットから測り直した軌跡に置き換える");
+        c.ChangeOffset(-10); c.RestoreSaved(); c.Overlay.Refresh();
+        Assert.AreEqual(emptyVertices,TimingTrailVertexCount(graphic));
+    }
+
+    static int TimingTrailVertexCount(CalibrationTimingGraphic graphic)
+    {
+        using(var mesh=new UnityEngine.UI.VertexHelper())
+        {
+            typeof(CalibrationTimingGraphic).GetMethod("OnPopulateMesh",BindingFlags.Instance|BindingFlags.NonPublic|BindingFlags.DeclaredOnly)
+                .Invoke(graphic,new object[]{mesh});
+            return mesh.currentVertCount;
+        }
+    }
+
     [UnityTest] public IEnumerator AimHoldAdjustsOnceAndRequiresLeavingBeforeAnotherChange()
     {
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
