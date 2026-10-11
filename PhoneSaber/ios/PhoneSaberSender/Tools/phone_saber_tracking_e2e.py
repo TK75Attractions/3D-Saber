@@ -21,7 +21,7 @@ def capture_bundles(destination: Path) -> dict:
     camera = (source / "CameraViewModel.swift").read_text()
     support = destination / "CameraIntervals.swift"
     support.write_text("import Foundation\n" + camera[camera.index("struct CameraFrameIntervalStatistics:"):
-        camera.index("enum CameraLifecycleState:")] + "\nstruct DebugBundleTransfer {\n    static let shared = DebugBundleTransfer()\n    func enqueue(bundleURL: URL) {} // Harness never uploads captures.\n}\n")
+        camera.index("enum CameraLifecycleState:")] + "\nstruct DebugBundleTransfer {\n    static let shared = DebugBundleTransfer()\n    func enqueue(bundleURL: URL, automatic: Bool = true) {} // Harness never uploads captures.\n}\n")
     binary = destination / "capture-harness"
     command = ["xcrun", "swiftc", "-O", "-D", "DEBUG"] + [str(source / name) for name in (
         "DetectionCore.swift", "BGRADetection.swift", "FrameProcessor.swift",

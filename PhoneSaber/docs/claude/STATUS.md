@@ -52,10 +52,14 @@
 ## 作業ログ
 
 ### 2026-10-11 午後 Codex による点検と修正（Claude が確認・検証して取り込み）
-- **Codex 無人 runner**: Codex の5時間枠を6並列で約30分で使い切り、6ジョブが途中で止まった（13:31）。Claude なしで続きを回す runner を起動（`~/Library/Logs/PhoneSaber/codex-runner/`、`runner.log`、止めるには `STOP` を作る）。枠が戻ったら3レーンで再開し、結果は各作業 branch に「codex result (not yet reviewed…)」で自動 commit する。**main には入らない。Claude が差分確認と verify をしてから取り込む。**
-  - 判定: `opt/coreline-guard-prototype`（guard G の証拠画像と既定 ON 化）→ `cx/recog-20261011`（失敗集計と次の改善案、露出とブレの数字）
-  - iPhone: `cx/ios2-20261011`（発熱時 30fps、カメラ復旧をあきらめない、充電・低電池警告、手動 IP の罠、選択中 PC の表示、fps 自動比較の切り忘れ）→ 同 branch で遅延短縮（120fps opt-in）
-  - その他: `cx/outbox-20261011`（録画の再送と「Mac 受信済み」表示）→ `cx/ops-20261011`（固まり検知、Windows 二重起動防止、bridge 再起動、status ツール）→ `cx/android-latency-20261011`
+- **Codex 無人 runner**: Codex の5時間枠を6並列で約30分で使い切り、6ジョブが途中で止まった（13:31）。Claude なしで続きを回す runner を起動（`~/Library/Logs/PhoneSaber/codex-runner/`、`runner.log`、止めるには `STOP` を作る）。枠が戻ると3レーンで実行し、結果は各作業 branch に自動 commit する。**main には入らない。Claude が差分確認と verify をしてから取り込む。** 18:05 に再開。runner が正常終了を「上限で中断」と誤判定してやり直させる不具合があり 18:42 に修正（出力に写った指示文の語で判定していた）。
+  - 優先順（ユーザー指示 10-11: 撮り逃しは減った。それ以外、特にバグを残さない）: A = 録画の再送 → 10-10〜11 に入れた変更のバグ探し（`cx/review-today-20261011`）→ guard G → 認識の集計。B = iPhone 当日対策 → 部品間の取り決めの食い違い探し（`cx/protocol-20261011`）→ iPhone 遅延。C = 運用4点 → 手順書と実物の照合（`cx/ops-20261011` 上）→ Android 遅延。
+- **取り込み済み・夜（verify: iOS XCTest / Detection / Lossless 40 / iOS Release / Diff Check PASS、Tools 428＋126 PASS、Unity EditMode 1903 中 1901 PASS・失敗2件は譜面エディタ）**
+  - 録画の再送と受信確認（`cx/outbox`、Codex）: 永続 outbox（アプリ再起動後も残る、前面復帰・経路復旧・送信開始で再試行、録画中は送らない）、画面に 転送待ち／転送中／Mac 受信済み／転送失敗 と未転送件数と「今すぐ送る」、同じ内容の再送だけ 200-duplicate で受領扱い（別内容と裸の 409 は失敗のまま）、bundle 確定直後に転送開始（overlay 生成を待たない）。「録画完了」は「端末に録画を保存」に変更。
+  - iPhone 当日対策（`cx/ios2`、Codex）: 発熱 serious/critical で実効 30fps・nominal/fair が120秒続いたら復帰（保存設定は不変）、カメラ復旧は15分後も60秒ごとに無期限、非同期停止完了時に前面を再確認、未充電・低電池（20% 非充電／10%）・低電力モードの警告、手動 IP 指定中の表示と解除ボタン、選択中の PC を正しく表示、fps 自動比較は5分で自動 OFF＋警告、DEBUG の callback 履歴を16世代に制限。
+  - 運用（`cx/ops`、Codex）: 固まり検知（Player が毎秒 heartbeat、初回確認後45秒止まったら kill して再起動。`PHONESABER_HANG_SECONDS=0` で無効）、Windows 二重起動防止、P2P bridge の自動再起動（2/5/15/60秒）、Mac Status ツールが built Player を認識。
+  - Claude が追加: **監視自身が10秒以上止まっていた（PC のスリープ復帰）直後は固まり判定を1周期休む**（復帰直後に正常なゲームを kill する穴）、新規 C# 3ファイルの .meta、host 用 stub（tracking e2e・sender soak）を転送 API の変更に追随。
+  - いずれも実機・Windows 実機では未確認。
 - **取り込み済み（verify 全項目 PASS）**
   - Mac P2P bridge（903e4ba 相当）: 診断 relay の背圧、応答末尾の欠落、build cache、Bonjour 登録解除のログ。bridge テスト 27/27。10-10 の100秒の空白は Mac 側からも原因を断定できず。
   - Android（ca7c868 相当）: 選択中の PC が 5007 に3秒応答しないと注意表示、lint と fixture APK の同時 build。JVM 56/56。実機未確認。

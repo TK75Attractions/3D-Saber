@@ -74,7 +74,18 @@ try {
     # Start が返す実際の Player の handle で監視する。名前で他の process を kill しない。
     $game = [Diagnostics.Process]::Start($info)
     $commonStop = Join-Path ([IO.Path]::GetDirectoryName($env:STOP_FILE)) 'STOP'
+    $lastTick = [DateTime]::UtcNow
+    $graceUntil = [DateTime]::MinValue
     while (-not $game.WaitForExit(1000)) {
+        # 監視自身が止まっていた（PC のスリープ復帰など）間は、ゲームも heartbeat を書けていない。
+        # 復帰直後に誤って正常なゲームを終了させないよう、判定をいったん休む。
+        $tick = [DateTime]::UtcNow
+        if (($tick - $lastTick).TotalSeconds -gt 10) {
+            $graceUntil = $tick.AddSeconds($hangSeconds)
+            Write-WatchdogLog ('watchdog resumed after {0}s; hang check paused' -f [int]($tick - $lastTick).TotalSeconds)
+        }
+        $lastTick = $tick
+        if ($tick -lt $graceUntil) { continue }
         # STOP はゲームを強制終了しないという従来の操作を維持する。
         if ((Test-Path -LiteralPath $env:STOP_FILE) -or (Test-Path -LiteralPath $commonStop)) { continue }
         if ($hangSeconds -eq 0) { continue }

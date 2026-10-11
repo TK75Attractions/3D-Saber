@@ -91,9 +91,18 @@ run_game_pid() {
     printf '%s\n' "$found"
 }
 monitor_game() {
-    local seen=0 modified last_modified=0 now pid command
+    local seen=0 modified last_modified=0 now pid command last_tick grace_until=0
+    last_tick="$(date +%s)"
     while kill -0 "$OPEN_PID" 2>/dev/null; do
-        if [[ "$HANG_SECONDS" -gt 0 ]] && ! stopped; then
+        # 監視自身が止まっていた（Mac のスリープ復帰など）間は、ゲームも heartbeat を書けていない。
+        # 復帰直後に「止まっている」と誤判定して正常なゲームを終了させないよう、判定をいったん休む。
+        now="$(date +%s)"
+        if [[ $((now - last_tick)) -gt 10 ]]; then
+            grace_until=$((now + HANG_SECONDS))
+            log "watchdog resumed after $((now - last_tick))s; hang check paused"
+        fi
+        last_tick="$now"
+        if [[ "$HANG_SECONDS" -gt 0 && "$now" -ge "$grace_until" ]] && ! stopped; then
             modified="$(stat -f %m "$HEARTBEAT" 2>/dev/null)" || modified=""
             if [[ "$modified" =~ ^[0-9]+$ ]]; then
                 seen=1

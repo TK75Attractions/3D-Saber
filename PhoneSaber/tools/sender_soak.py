@@ -41,7 +41,7 @@ def support_source(destination: Path) -> Path:
     support = destination / "CameraIntervals.swift"
     support.write_text("import Foundation\n" + camera[start:end] +
                        "\nstruct DebugBundleTransfer {\n    static let shared = DebugBundleTransfer()\n"
-                       "    func enqueue(bundleURL: URL) {} // The soak never uploads captures.\n}\n",
+                       "    func enqueue(bundleURL: URL, automatic: Bool = true) {} // The soak never uploads captures.\n}\n",
                        encoding="utf-8")
     return support
 
