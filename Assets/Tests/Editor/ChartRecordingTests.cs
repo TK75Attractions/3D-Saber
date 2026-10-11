@@ -1324,7 +1324,8 @@ public class ChartRecordingWorkflowTests
         window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = end });
         Assert.AreEqual(1, Document.notes.Count);
         Assert.AreEqual(5, Document.notes[0].beat);
-        Assert.AreEqual(SaberChartUtility.CoordinateForLane(3, 8, -2.5f, 2.5f), Document.notes[0].x);
+        // 相対ドラッグの加算と列座標の補間は、float の丸めで最下位桁が異なる。
+        Assert.AreEqual(SaberChartUtility.CoordinateForLane(3, 8, -2.5f, 2.5f), Document.notes[0].x, .00001f);
         LogAssert.NoUnexpectedReceived();
     }
 

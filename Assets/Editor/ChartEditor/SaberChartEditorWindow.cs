@@ -487,11 +487,13 @@ namespace Saber.ChartEditor
 
         private void DrawRightPanel(Rect rect)
         {
+            RevealSelectedNote();
             GUI.Box(rect, GUIContent.none, panelStyle);
             GUILayout.BeginArea(new Rect(rect.x + 10f, rect.y + 10f, rect.width - 20f, rect.height - 20f));
             rightScroll = GUILayout.BeginScrollView(rightScroll, false, false);
 
             DrawDraftBanner();
+            DrawFocusedNotePanel();
             SectionLabel("再生 / シーク");
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("|◀", GUILayout.Width(42f))) SeekToBeat(0f);
@@ -552,19 +554,6 @@ namespace Saber.ChartEditor
             DrawTempoMapPanel();
             GUILayout.Space(10f);
             DrawTimeSignatures();
-
-            GUILayout.Space(10f);
-            SectionLabel(SelectedNote != null ? "選択ノーツのXY位置" : "次に置くXY位置");
-            Rect padRect = GUILayoutUtility.GetRect(220f, 220f, GUILayout.ExpandWidth(true));
-            DrawSpatialPad(padRect);
-            GUILayout.Label("上が +Y / 右が +X", centeredSmallStyle);
-
-            if (SelectedNote != null)
-            {
-                GUILayout.Space(10f);
-                SectionLabel("選択ノーツ詳細");
-                DrawSelectedInspector();
-            }
 
             GUILayout.Space(10f);
             DrawValidationSummary();

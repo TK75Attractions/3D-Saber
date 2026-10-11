@@ -471,7 +471,182 @@ public class ChartEditorOperationTests
         Assert.AreEqual(3, Document.notes.Count);
     }
 
+    // ---- 選択ノーツを右パネルの先頭で修正する ----
+
+    [Test]
+    public void QuickNavigationIncludesSimultaneousNotesAndDoesNotModifyTheChart()
+    {
+        Call("SelectAdjacentNote", 1);
+        Assert.AreEqual(0, Get<int>("selectedIndex"));
+        Call("SelectAdjacentNote", 1);
+        Assert.AreEqual(1, Get<int>("selectedIndex"), "同時刻のもう一方も選ぶ");
+        Assert.AreEqual(4f, Get<float>("currentBeat"));
+        Call("SelectAdjacentNote", 1);
+        Assert.AreEqual(2, Get<int>("selectedIndex"));
+        Assert.AreEqual(8f, Get<float>("currentBeat"));
+        Call("SelectAdjacentNote", 1);
+        Assert.AreEqual(2, Get<int>("selectedIndex"), "末尾で先頭へ戻らない");
+        Call("SelectAdjacentNote", -1);
+        Assert.AreEqual(1, Get<int>("selectedIndex"));
+        Assert.False(window.hasUnsavedChanges);
+        Assert.False(CanUndo);
+    }
+
+    [Test]
+    public void QuickNavigationStartsNearCursorAndLeavesRangeEditing()
+    {
+        Call("SetRange", 0f, 5000f);
+        Set("currentBeat", 6f);
+        Call("SelectAdjacentNote", -1);
+        Assert.AreEqual(1, Get<int>("selectedIndex"));
+        Assert.False((bool)GetProperty("HasRangeSelection"));
+        Set("selectedIndex", -1);
+        Set("currentBeat", 6f);
+        Call("SelectAdjacentNote", 1);
+        Assert.AreEqual(2, Get<int>("selectedIndex"));
+        Document.notes.Clear();
+        Call("SelectAdjacentNote", 1);
+        Assert.AreEqual(-1, (int)Call("AdjacentNoteIndex", -1));
+    }
+
+    [Test]
+    public void QuickNudgeKeepsSelectionAfterSortingAndUndoesInOneStep()
+    {
+        Set("selectedIndex", 0);
+        SaberChartNote selected = Document.notes[0];
+        Call("NudgeSelectedNoteTime", 10f);
+        Assert.AreSame(selected, GetProperty("SelectedNote"));
+        Assert.AreEqual(2010f, selected.time);
+        Assert.AreEqual(4.02f, selected.beat, .0001f);
+        Assert.AreEqual(4.02f, Get<float>("currentBeat"), .0001f);
+        Assert.AreEqual(2000f, Document.notes.Find(n => n.color == "red").time);
+        Assert.AreEqual(-.3571429f, selected.x);
+        Key(KeyCode.Z, EventModifiers.Control);
+        Assert.False(window.hasUnsavedChanges);
+        Key(KeyCode.Y, EventModifiers.Control);
+        Assert.AreEqual(2010f, Document.notes.Find(n => n.color == "blue").time);
+    }
+
+    [Test]
+    public void QuickNudgeRejectsTimesBeforeZeroWithoutAddingUndo()
+    {
+        Document.notes[0].time = 5f;
+        Set("selectedIndex", 0);
+        string before = SaberChartUtility.ToJson(Document, false);
+        Call("NudgeSelectedNoteTime", -10f);
+        Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+        Assert.False(CanUndo);
+    }
+
+    [Test]
+    public void QuickSnapUsesTempoMapAndPreservesLongLengthAndMetadata()
+    {
+        Document.tempoMap = new List<SaberChartTempoPoint>
+        {
+            new SaberChartTempoPoint { beat = 0f, timeMs = 100f },
+            new SaberChartTempoPoint { beat = 4f, timeMs = 2100f },
+            new SaberChartTempoPoint { beat = 8f, timeMs = 6100f },
+        };
+        Document.offsetMs = 80f;
+        SaberChartNote selected = Document.notes[2];
+        selected.time = 4370f;
+        selected.lengthMs = 850f;
+        Set("selectedIndex", 2);
+        string before = SaberChartUtility.ToJson(Document, false);
+        Call("SnapSelectedNote");
+        Assert.AreEqual(4350f, selected.time, .01f, "6.25拍のテンポ地図の時刻。OFFSETを足さない");
+        Assert.AreEqual(6.25f, selected.beat, .0001f);
+        Assert.AreEqual(850f, selected.lengthMs);
+        Assert.AreEqual(3, selected.count);
+        Assert.AreEqual("long", selected.type);
+        Assert.AreEqual("gold", selected.color);
+        Assert.AreEqual(.4285714f, selected.y);
+        Key(KeyCode.Z, EventModifiers.Control);
+        Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+    }
+
+    [Test]
+    public void QuickSnapOnGridPreservesStoredBeatAndDoesNotAddUndo()
+    {
+        Document.notes[0].beat = 99f;
+        Set("selectedIndex", 0);
+        string before = SaberChartUtility.ToJson(Document, false);
+        Call("SnapSelectedNote");
+        Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+        Assert.False(CanUndo);
+    }
+
+    [Test]
+    public void QuickActionsAreDisabledDuringPlaybackAndRecording()
+    {
+        Set("selectedIndex", 0);
+        Set("isPlaying", true);
+        string before = SaberChartUtility.ToJson(Document, false);
+        Call("NudgeSelectedNoteTime", 10f);
+        Call("SnapSelectedNote");
+        Call("SelectAdjacentNote", 1);
+        Call("SeekSelectedNote", 1f);
+        Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+        Assert.AreEqual(0, Get<int>("selectedIndex"));
+        Assert.AreEqual(4f, Get<float>("currentBeat"));
+        Assert.True(Get<bool>("isPlaying"));
+        Set("isPlaying", false);
+        Set("countingIn", true);
+        Call("NudgeSelectedNoteTime", 10f);
+        Call("SelectAdjacentNote", 1);
+        Assert.AreEqual(before, SaberChartUtility.ToJson(Document, false));
+        Assert.AreEqual(0, Get<int>("selectedIndex"));
+        Set("countingIn", false);
+    }
+
+    [Test]
+    public void SelectedNoteRevealScrollsOnlyWhenSelectionChanges()
+    {
+        Set("selectedIndex", 0);
+        Set("rightScroll", new Vector2(0f, 600f));
+        Call("RevealSelectedNote");
+        Assert.AreEqual(Vector2.zero, Get<Vector2>("rightScroll"));
+        Set("rightScroll", new Vector2(0f, 100f));
+        Call("RevealSelectedNote");
+        Assert.AreEqual(100f, Get<Vector2>("rightScroll").y, "同じ選択の間はスクロールできる");
+        Set("selectedIndex", 1);
+        Call("RevealSelectedNote");
+        Assert.AreEqual(Vector2.zero, Get<Vector2>("rightScroll"));
+    }
+
+    [Test]
+    public void SelectionLeadInSeeksOneBeatEarlierAndClampsAtStart()
+    {
+        Set("selectedIndex", 0);
+        Call("SeekSelectedNote", 1f);
+        Assert.AreEqual(3f, Get<float>("currentBeat"));
+        Document.notes[0].time = 100f;
+        Call("SeekSelectedNote", 1f);
+        Assert.AreEqual(0f, Get<float>("currentBeat"));
+        Assert.False(CanUndo);
+    }
+
+    [UnityEngine.TestTools.UnityTest]
+    public System.Collections.IEnumerator QuickPanelCanRenderWithNoSelectionAndExpandedLongDetails()
+    {
+        Set("showPlaybackPreview", false);
+        window.Show();
+        window.position = new Rect(80f, 80f, 1050f, 650f);
+        foreach (int index in new[] { -1, 0, 2 })
+        {
+            Set("selectedIndex", index);
+            Set("showQuickNoteDetails", index >= 0);
+            Set("showQuickNotePosition", index >= 0);
+            window.SendEvent(new Event { type = EventType.Layout });
+            window.Repaint();
+            yield return null;
+            UnityEngine.TestTools.LogAssert.NoUnexpectedReceived();
+        }
+    }
+
     // ---- helpers ----
+
+    bool CanUndo => (bool)Get<object>("history").GetType().GetProperty("CanUndo").GetValue(Get<object>("history"));
 
     SaberChartDocument Document => Get<SaberChartDocument>("document");
 
