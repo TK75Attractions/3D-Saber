@@ -76,7 +76,7 @@ public class SongSelectSkin : MonoBehaviour
         SongSelectAimPointer.Build(ctl, canvas, null, guide);
         countdown.Reset(GameSession.CalibrationSelectionSeconds ?? 100);
         GameSession.CalibrationSelectionSeconds = null;
-        timer.text = Mathf.CeilToInt((float)countdown.Remaining).ToString();
+        RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
         lastTick = Time.realtimeSinceStartupAsDouble; built = true;
     }
 
@@ -155,10 +155,22 @@ public class SongSelectSkin : MonoBehaviour
         var title = Label(header.transform, "Instruction", "", 48, new Vector2(0, -7), new Vector2(825, 80), UISkinKit.JapaneseFallbackFontAsset());
         title.fontStyle = FontStyles.Bold;
         Ruby(title, "<ruby=なんいど>難易度</ruby>と<ruby=がっきょく>楽曲</ruby>を<ruby=えら>選</ruby>んでね");
-        var clock = Graphic(layout, "TimeTab", Position(1680, 92), new Vector2(360, 112), SongSelectDiscGraphic.Shape.Tab, Panel);
+        timer = BuildCountdownDisplay(layout);
+    }
+    // 選曲と判定調整で同じ位置・図形・文字を使い、表示仕様を一か所で管理する。
+    public static TextMeshProUGUI BuildCountdownDisplay(Transform parent)
+    {
+        var clock = Graphic(parent, "TimeTab", Position(1680, 92), new Vector2(360, 112), SongSelectDiscGraphic.Shape.Tab, Panel);
         clock.Width = 6; clock.Edge = new Color(.25f, .43f, 1); clock.EdgeRight = Cyan; clock.Bottom = Ink;
         var icon = Graphic(clock.transform, "ClockIcon", new Vector2(-89, 0), new Vector2(56, 56), SongSelectDiscGraphic.Shape.Clock, White); icon.Edge = Ink;
-        timer = Label(clock.transform, "TimeRemaining", "100", 86, new Vector2(42, 0), new Vector2(180, 106), UISkinKit.LogoFontAsset());
+        return Label(clock.transform, "TimeRemaining", "100", 86, new Vector2(42, 0), new Vector2(180, 106), UISkinKit.LogoFontAsset());
+    }
+    public static void RefreshCountdownDisplay(TextMeshProUGUI timer, double remaining, ref int displayedSecond)
+    {
+        int seconds = Mathf.CeilToInt((float)remaining);
+        if (displayedSecond != seconds) { timer.text = seconds.ToString(); displayedSecond = seconds; }
+        timer.color = seconds <= 10 ? Gold : White;
+        timer.rectTransform.localScale = Vector3.one * (seconds <= 10 ? 1 + .055f * Mathf.Exp(-((100 - (float)remaining) % 1) * 8) : 1);
     }
     void BuildDiscs()
     {
@@ -332,10 +344,7 @@ public class SongSelectSkin : MonoBehaviour
         animation = Mathf.Min(1, animation + Time.unscaledDeltaTime / .5f); AnimateDiscs();
         double now = Time.realtimeSinceStartupAsDouble;
         TickCountdown(now - lastTick); lastTick = now;
-        int seconds = Mathf.CeilToInt((float)countdown.Remaining);
-        if (displayedSecond != seconds) { timer.text = seconds.ToString(); displayedSecond = seconds; }
-        timer.color = seconds <= 10 ? Gold : White;
-        timer.rectTransform.localScale = Vector3.one * (seconds <= 10 ? 1 + .055f * Mathf.Exp(-((100 - (float)countdown.Remaining) % 1) * 8) : 1);
+        RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
     }
     public void TickCountdown(double deltaSeconds)
     {

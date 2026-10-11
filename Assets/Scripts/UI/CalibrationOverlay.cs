@@ -13,7 +13,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
         Cyan = new Color(.55f,.95f,.72f), Amber = new Color(1,.79f,.35f),
         PanelColor = new Color(.025f,.043f,.065f,.97f);
     CalibrationController ctl;
-    TextMeshProUGUI feedback, instruction, volume, connections, timer, timeout, value, measurementStatus;
+    TextMeshProUGUI feedback, instruction, volume, connections, timer, value, measurementStatus;
     TextMeshProUGUI resultTitle, resultValue, resultDetail, resultMessage;
     readonly SongSelectCountdown countdown = new SongSelectCountdown();
     readonly List<Button> adjustments = new List<Button>();
@@ -25,11 +25,10 @@ public sealed class CalibrationOverlay : MonoBehaviour
     CalibrationTimingGraphic timing;
     Button[] profiles, speeds;
     CalibrationRunMode shownMode = (CalibrationRunMode)(-1);
-    int shownOffset = int.MinValue, shownSpeed = -1;
+    int shownOffset = int.MinValue, shownSpeed = -1, displayedSecond = -1;
     bool shownDirty;
     public int HighlightedDirection { get; private set; }
     public bool IsRecommendationVisible => recommend != null && recommend.gameObject.activeSelf;
-    public string TimeoutText => timeout != null ? timeout.text : "";
     public double RemainingSeconds => countdown.Remaining;
     public int SpeedButtonCount => speeds != null ? speeds.Length : 0;
     public string SpeedCaption(int step) => speeds != null && step >= 0 && step < speeds.Length ? speeds[step].GetComponentInChildren<TextMeshProUGUI>(true).text : "";
@@ -44,7 +43,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
         var go = new GameObject("CalibrationOverlay",typeof(Canvas),typeof(CanvasScaler),typeof(GraphicRaycaster));
         var canvas = go.GetComponent<Canvas>(); canvas.renderMode = RenderMode.ScreenSpaceOverlay; canvas.sortingOrder = 100;
         var scaler = go.GetComponent<CanvasScaler>(); scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920,1080); scaler.matchWidthOrHeight = .5f;
+        scaler.referenceResolution = new Vector2(1920,1080); scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
         var overlay = go.AddComponent<CalibrationOverlay>(); overlay.Build(); return overlay;
     }
     public void Bind(CalibrationController controller) { ctl = controller; Refresh(); }
@@ -110,9 +109,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
         play = Action(c,"PlayPause","再開",522,60,660,64,TogglePractice);
         play.gameObject.SetActive(false);
         BuildResults(); BuildSettings(); BuildExitDialog();
-        var clock = Rect(transform,"TimeTab",0,0,1920,1080);
-        timer = Label(clock,"TimeRemaining","",28,780,477,280,50,Muted);
-        timeout = Label(clock,"TimeoutWarning","",38,0,475,1370,64,Amber);
+        timer = SongSelectSkin.BuildCountdownDisplay(transform);
         countdown.Reset(GameSession.CalibrationSelectionSeconds ?? 100);
         GameSession.CalibrationSelectionSeconds = countdown.Remaining;
         lastTick = Time.realtimeSinceStartupAsDouble; RefreshCountdown();
@@ -234,14 +231,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
         if (!expired) return;
         GameSession.CalibrationSelectionSeconds=null; ctl.DiscardAndExit();
     }
-    void RefreshCountdown()
-    {
-        bool warning=countdown.Remaining<=15;
-        transform.Find("Title").gameObject.SetActive(!warning);
-        timer.gameObject.SetActive(!warning);
-        timer.text=$"あと {Math.Ceiling(countdown.Remaining)} 秒";
-        timeout.text=warning?$"あと{Math.Ceiling(countdown.Remaining)}秒で選曲にもどります":"";
-    }
+    void RefreshCountdown() => SongSelectSkin.RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
     void RefreshFeedback()
     {
         feedback.text=ctl.IsLive?ctl.History.Hint:"";

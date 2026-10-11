@@ -183,8 +183,8 @@ public class CalibrationCountdownPlayTests
         var manager=Object.FindFirstObjectByType<GamePlayManager>();var c=manager.Calibration;
         c.ChangeOffset(savedOffset<990?10:-10);c.SetSpeedStep(c.SpeedStep==0?1:0);c.BeginLivePractice();
         c.Overlay.TickCountdown(c.Overlay.RemainingSeconds-15);
-        Assert.AreEqual("あと15秒で選曲にもどります",c.Overlay.TimeoutText);
-        Assert.False(c.Overlay.transform.Find("TimeTab/TimeRemaining").gameObject.activeSelf);
+        Assert.AreEqual("15",c.Overlay.transform.Find("TimeTab/TimeRemaining").GetComponent<TextMeshProUGUI>().text);
+        Assert.True(c.Overlay.transform.Find("TimeTab/TimeRemaining").gameObject.activeSelf);
         c.Overlay.TickCountdown(15);
         Assert.True(ScreenTransition.IsBusy);Assert.False(manager.songPlayer.IsPlaying);
         Assert.IsNull(GameSession.CalibrationSelectionSeconds);

@@ -100,8 +100,11 @@ public static class CalibrationScreenCapture
                 controller.Overlay.Refresh();Capture("07-no-input-720p.png",1280,720);
                 controller.BeginLivePractice();
                 controller.Overlay.TickCountdown(controller.Overlay.RemainingSeconds-15);
-                Capture("08-timeout-warning.png",1920,1080);
-                Capture("08-timeout-warning-720p.png",1280,720);
+                Capture("08-fifteen-seconds.png",1920,1080);
+                Capture("08-fifteen-seconds-720p.png",1280,720);
+                controller.Overlay.TickCountdown(controller.Overlay.RemainingSeconds-10);
+                Capture("09-ten-seconds.png",1920,1080);
+                Capture("09-ten-seconds-720p.png",1280,720);
                 // 文字切れの検査。境界値と長い説明文も同じ画面で確認する。
                 controller.Overlay.Tick();
                 File.WriteAllText(Path.Combine(output,"capture-info.txt"),"Actual Game scene. Feedback uses an automated CuttableNote.Cut event; history and proposal use synthetic samples. Not hardware measurements. No settings committed. All visible calibration text checked for truncation at 1080p and 720p.\n");
@@ -119,14 +122,16 @@ public static class CalibrationScreenCapture
             target.Create();camera.targetTexture=target;camera.aspect=width/(float)height;
             controller.Overlay.Tick();Canvas.ForceUpdateCanvases();
             RenderPipeline.SubmitRenderRequest(camera,new UniversalRenderPipeline.SingleCameraRequest{destination=target});
+            RenderTexture.active=target;image.ReadPixels(new Rect(0,0,width,height),0,0);image.Apply();
+            File.WriteAllBytes(Path.Combine(output,name),image.EncodeToPNG());
             foreach(var label in controller.Overlay.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
             {
                 label.ForceMeshUpdate();
-                if(label.isTextOverflowing||label.isTextTruncated)
+                if(label.isTextTruncated||(label.isTextOverflowing&&label.overflowMode!=TMPro.TextOverflowModes.Overflow))
                     throw new InvalidOperationException(name+" 文字切れ: "+label.name+" / "+label.text);
+                // 選曲と共通の数字は行高・SDF余白のオーバーフローを許可している。
+                // 切り詰めは上で検査し、枠との重なりは保存した通常時・10秒時の画像で確認する。
             }
-            RenderTexture.active=target;image.ReadPixels(new Rect(0,0,width,height),0,0);image.Apply();
-            File.WriteAllBytes(Path.Combine(output,name),image.EncodeToPNG());
         }
         finally {camera.targetTexture=old;camera.aspect=aspect;RenderTexture.active=active;target.Release();UnityEngine.Object.DestroyImmediate(target);UnityEngine.Object.DestroyImmediate(image);}
     }
