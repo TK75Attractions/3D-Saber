@@ -8,13 +8,16 @@
 
 ## 実機手順
 
-1. Macで `run_debug.command` をFinderからダブルクリックします。UDP 5005/5006の診断受信、Bonjour `_phonesaber._udp` 公開、ブラウザの状態画面を開始します。診断受信中はUnityを停止してください（同じUDPポートを二つのプロセスで安全に共有できません）。
-2. iPhoneとMacを同じWi-Fi、またはiPhone Personal Hotspotへ接続します。初回はiPhoneのカメラと「ローカルネットワーク」アクセスを許可します。iPhoneはBonjourでMacを見つけ、画面のNetwork欄にMac名とIPを表示します。
-3. iPhoneで「通常送信を開始」を押します。自動発見ができない場合だけ、手動IP欄にMacのIPv4を入力してください。送信形式は従来どおり赤=UDP 5005、青=UDP 5006、`x1,y1,x2,y2` です。
+1. Macで `start_phone_saber_latency.command`（`PhoneSaber/`直下） をFinderからダブルクリックします。UDP 5005/5006の診断受信、Bonjour `_phonesaber._udp` 公開、ブラウザの状態画面を開始します。診断受信中はUnityを停止してください（同じUDPポートを二つのプロセスで安全に共有できません）。
+2. iPhoneとMacを同じWi-Fi、またはiPhone Personal Hotspotへ接続します。初回はiPhoneのカメラと「ローカルネットワーク」アクセスを許可します。iPhoneはBonjourでMacを見つけ、画面の「接続」欄にMac名とIPを表示します。
+3. iPhoneで停止して「台」を合わせ（台なしのprobeなら「指定なし」）、手動IP欄にこのMacのIPv4を入力します。probeはUnityの5007探索応答もP2Pも持たないので、**計測ツール宛ては手動IPを使う**。「詳細設定」→「接続・出力」→「遅延計測モード」をONにして「遅延計測を開始」を押します。赤=UDP 5005、青=UDP 5006、既存の `ts=<Unix秒>;x1,y1,x2,y2` を送ります。通常モードは `x1,y1,x2,y2` のみで、時計差を計測できません。
+4. 終了後は停止して「遅延計測モード」をOFFに戻します。Unityへ戻る際は台・送信先を戻し、自動探索なら手動IPを空にして「通常送信を開始」。
 
 ```sh
-open /Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber/start_phone_saber_latency.command
+open start_phone_saber_latency.command
 ```
+
+probeのライブ画面は `http://127.0.0.1:8765`。Macの診断受信側（Start PhoneSaber）も8765を使うため、受信・解析を終えて停止してからprobeを起動します。
 
 ライブ画面にはMacが受信した各packetの受信Unix時刻、iPhone `ts`、`(Mac受信時刻 - iPhone ts) × 1000`、色、受信順、赤青別の件数と最新値が表示されます。差分はMacとiPhoneの時計差を含み、iPhone内部処理時間や表示時刻との照合値とは別の値です。tsなし・不正・非有限値は未計測として表示され、受信件数には含まれますが有効差分件数には含まれません。
 
@@ -23,6 +26,16 @@ open /Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber/start_phone_saber_latency.
 保存ログを使う従来の終了後照合は、`python3 -B udp_receive_probe.py --display-log /tmp/saber-display-log.json` のように従来CLIを直接起動して利用できます。無指定CLI、`run`呼び出し、`ts=`/`timestamp=`と座標だけの解析、終了後のtrial照合も保持しています。
 
 時計はMacとiPhoneで自動設定をオンにし、計測直前に両端末の時刻を確認します。時計オフセットとドリフト、自動時刻設定の限界、ブラウザ描画開始と発光の差、液晶走査、露光・ローリングシャッター、検出処理待ち、遠近歪みが誤差要因です。`ts=`の時刻はiPhoneがpayloadを生成した時刻で、露光時刻でもMac受信成功時刻でもありません。
+
+## 本番の画面・復旧（技術担当）
+
+本番は台別launcherでUnityを起動する（[当日runbook](../../docs/claude/EVENT_DAY_RUNBOOK.md)）。Mac＋iPhoneは手動IPを解除してLAN自動探索とP2P予備、Windows＋iPhoneは現在のPCのIPv4を手動IPへ。台変更だけでは保存した手動IPは変わらない。
+
+- 「起動時に送信を自動開始」は既定OFF・保存。送信中の前面復帰／再起動は自動再開。「停止」後の前面復帰では再開しないが、自動開始ONなら次のアプリ起動では開始する。
+- 「PC（Unity）から応答がありません」は送信中にUnity応答もP2P接続もない状態が3秒続いた警告。「接続」の「通信ログ」で経路・Wi-Fi切替を確認する。手動IPでprobeへ送ると「手動 IP の宛先から Unity の応答がありません」が出ても正常（probeは5007に応答しない）。`NETWORK READY` はPC到達の証明ではない。
+- 「露出実験」はDebug Recording内にあるが、通常送信にも適用・保存される。録画OFF／停止では解除されない。実験後は「自動(既定)」へ戻す。閾値・露出は当日試行錯誤しない。
+- 「Debug Recording: ON」→「振りだけ録画を開始（約51秒・自動で終了）」は準備時間込みで約51秒。消灯→点灯して大きく振る→静止→速振りの音声に従う。自動停止するが、転送は「Stop後にtriage bundleをMacへ自動転送」（既定ON）の設定による。
+- 録画後の「端末に録画を保存: … frames」は保存のみ。その下の転送状態（転送待ち／転送中／Mac 受信済み／転送失敗 — 自動で再試行します）と「未転送の録画: n件」で到着を確認する。失敗した録画はアプリ再起動後も残り、前面復帰・ネットワーク復旧・送信開始時に自動で送り直す（「未転送の録画を今すぐ送る」でも可）。MacのPhoneSaber Status／inboxで同じsessionIDでも確認できる。Xcode Consoleには `[DebugTriageTransfer] uploaded selected bundle …`／`retry n/3`／`stopped after 3 attempts; local bundle preserved` が出る。失敗時は保存物を「Triage bundleを共有」で取り出す（再送ボタンなし）。
 
 ## 定義
 
@@ -37,7 +50,7 @@ open /Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber/start_phone_saber_latency.
 macOSのSwiftツールチェーンだけで、本番の `detectSaber` を行パディング付きBGRA静止画へ適用する回帰テストを実行できます。カメラ、UDP、iOS Simulatorは使用しません。
 
 ```sh
-cd /Users/satoshi/縁日/GitHub/3D-Saber/PhoneSaber
+# PhoneSaber/ から実行
 bash ios/PhoneSaberSender/run-static-tests.sh
 ```
 
