@@ -53,11 +53,11 @@ public static class GameSession
 
     // 判定オフセット（ミリ秒）。SongSelect でユーザーが調整して PlayerPrefs に保存。
     // GamePlayManager がプレイ開始時にこの値を実効オフセットに加算する。
-    // 既定 +60ms: 実測で譜面が曲とずれており、+60ms で合致した(2026-07)。リセット時もこの値へ戻る。
+    // 既定 +30ms: 従来の +60ms から「ノーツを早く」3回分（-10ms×3）早める。リセット時もこの値へ戻る（2026-10-13）。
     private const string JudgmentOffsetMsKey = "judgmentOffsetMs";
     public const int JudgmentOffsetMinMs = -1000;
     public const int JudgmentOffsetMaxMs = 1000;
-    public const int JudgmentOffsetDefaultMs = 60;
+    public const int JudgmentOffsetDefaultMs = 30;
 
     public static int JudgmentOffsetMs
     {

@@ -7,11 +7,13 @@ public class JudgmentOffsetTests
 {
     private readonly List<GameObject> created = new List<GameObject>();
     private int savedOffset;
+    private bool hadOffset;
 
     [SetUp]
     public void SaveOffset()
     {
-        savedOffset = GameSession.JudgmentOffsetMs;
+        hadOffset = PlayerPrefs.HasKey("judgmentOffsetMs");
+        savedOffset = PlayerPrefs.GetInt("judgmentOffsetMs");
         GameSession.ResetJudgmentOffset();
     }
 
@@ -23,8 +25,10 @@ public class JudgmentOffsetTests
             if (go != null) Object.DestroyImmediate(go);
         }
         created.Clear();
-        // テスト終了後は元の値に戻す
-        GameSession.JudgmentOffsetMs = savedOffset;
+        // 値だけでなく未保存だった状態も戻し、テストで利用者の初期設定を固定しない。
+        if (hadOffset) PlayerPrefs.SetInt("judgmentOffsetMs", savedOffset);
+        else PlayerPrefs.DeleteKey("judgmentOffsetMs");
+        PlayerPrefs.Save();
     }
 
     // -- GameSession --
@@ -32,7 +36,7 @@ public class JudgmentOffsetTests
     [Test]
     public void GameSession_DefaultOffsetIsRecommended()
     {
-        // 未保存時は推奨既定値(+60ms)から始まる
+        // 未保存時は推奨既定値(+30ms)から始まる
         Assert.AreEqual(GameSession.JudgmentOffsetDefaultMs, GameSession.JudgmentOffsetMs);
     }
 
