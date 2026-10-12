@@ -86,6 +86,8 @@ crashlytics-build.properties
 
 # TestRunner generated files
 InitTestScene*.unity*
+# Unity がクラッシュ時に自動で作る復旧用 scene。既に登録済みのものはそのまま、新しく出来たものは無視する。
+/Assets/_Recovery/
 
 # Addressables default ignores, before user customizations
 /ServerData
