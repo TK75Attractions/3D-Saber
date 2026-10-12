@@ -359,6 +359,13 @@ public static class PhoneSaberStatsDisplay
             $"\n送信元競合による拒否: {stats.SenderRejectedPackets} pkt";
     }
 
+    // 画面の更新が毎秒 50 回未満だと、ゲーム全体が 30 コマに見えて「もっさり」する。
+    // 2026-10-13: Mac の低電力モード(バッテリー駆動)で Player の更新が 30Hz になっていた。
+    public static string DisplayWarning(double refreshHz)
+        => refreshHz > 1 && refreshHz < 50
+            ? $"警告: 画面の更新が毎秒 {refreshHz:0} 回しかありません。PC を電源につなぎ、低電力モード(省電力)を切ってください。"
+            : "";
+
     public static string Warning(string colour, PhoneSaberInputStats stats)
     {
         string conflict = string.IsNullOrEmpty(stats.LockedSender) ? "" :

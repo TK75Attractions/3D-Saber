@@ -64,4 +64,34 @@ public class PhoneSaberBuildShaderTests
         Assert.AreEqual(PhoneSaberPlayerSmoke.DefaultSeconds, PhoneSaberPlayerSmoke.ResolveSeconds(new[] { "app", "-phonesaberSmoke", "9999" }));
         Assert.AreEqual(PhoneSaberPlayerSmoke.DefaultSeconds, PhoneSaberPlayerSmoke.ResolveSeconds(new[] { "app", "-phonesaberSmoke", "-batchmode" }));
     }
+
+    [Test]
+    public void PerfWindowCountsFramesAndHitches()
+    {
+        var window = new PhoneSaberPerfWindow();
+        Assert.IsFalse(window.Started);
+        window.Start(100.0);
+        double now = 100.0;
+        for (int i = 0; i < 60; i++) { now += 1.0 / 60.0; window.Frame(now); }
+        now += 0.030; window.Frame(now);   // 30ms のコマ落ち
+        now += 0.080; window.Frame(now);   // 80ms のコマ落ち
+        Assert.AreEqual(62, window.Frames);
+        Assert.AreEqual(2, window.Over25);
+        Assert.AreEqual(1, window.Over50);
+        Assert.AreEqual(80.0, window.MaxFrameMs, 1e-6);
+        Assert.AreEqual(1.11, window.Elapsed(now), 1e-9);
+        window.Start(now);
+        Assert.AreEqual(0, window.Frames);
+        Assert.AreEqual(0.0, window.MaxFrameMs);
+    }
+
+    [Test]
+    public void LowRefreshRateIsReportedToStaff()
+    {
+        StringAssert.Contains("毎秒 30 回", PhoneSaberStatsDisplay.DisplayWarning(30));
+        StringAssert.Contains("低電力モード", PhoneSaberStatsDisplay.DisplayWarning(30));
+        Assert.AreEqual("", PhoneSaberStatsDisplay.DisplayWarning(60));
+        Assert.AreEqual("", PhoneSaberStatsDisplay.DisplayWarning(120));
+        Assert.AreEqual("", PhoneSaberStatsDisplay.DisplayWarning(0), "不明(0)では警告しない");
+    }
 }

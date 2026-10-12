@@ -60,6 +60,13 @@
 
 ## 作業ログ
 
+### 2026-10-13 ビルド済みアプリが「もっさり」する件（ユーザー報告、原因を実測）
+- Player に `event=perf`（10秒ごとに fps・最大フレーム時間・25ms/50ms 超のコマ数・赤青 pkt/s・画面の更新回数・vsync）を追加して、実画面で測った。**Title / SongSelect は fps=30.0、refresh-hz=30、vsync=1**。本編は vsync=0 で約900fps（描画は上限なし）。
+- この Mac は**低電力モード ON・バッテリー駆動**だった（`pmset -g` の lowpowermode 1）。ディスプレイ自体は 60Hz のままだが、Unity の Player が受け取る更新は 30Hz になり、メニューは 30fps、本編も画面に出るのは毎秒30コマ。**低電力モードを切って電源につないだ状態での再計測は未実施**（設定はユーザーが変える）。
+- 対応: 起動キットが低電力モード・バッテリー駆動を見つけると注意を表示、F8 に「画面の更新が毎秒 30 回しかありません」、runbook の準備チェックに追記。
+- 同じセッションの events.log では、iPhone（192.168.1.8、LAN）からの座標が1秒以上途切れる記録が頻繁にある（剣が画面外・未検出でも出るので、これだけでは通信の問題とは言えない）。perf の pkt/s で次回から区別できる。
+- 未対応の観察: 本編は fps 上限なし（約900fps）で GPU を使い切る。ファンのない Mac では長時間で発熱する可能性がある（ゲーム本体側の設定 `UnlockFrameRate`。変更していない）。
+
 ### 2026-10-12 夜 ビルド済み Player で剣が出ない・本編が動かない不具合（ユーザー報告、修正済み）
 - **原因**: `Shader.Find("Universal Render Pipeline/Unlit")`（予備の `Unlit/Color` も）が、ビルド済み Player では null を返す。どの Material も参照していない shader は build に入らないため。Editor では必ず見つかるので気づけなかった。
   - `SaberInputBridge.EnsureBladeOutline`（投影モード既定 ON の輪郭線）で `new Material(null)` が例外になり、Awake が止まって**剣が出ない**（Player.log に `ArgumentNullException: shader`）。

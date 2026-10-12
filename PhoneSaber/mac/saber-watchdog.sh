@@ -172,6 +172,23 @@ if game_running; then
     log "not-started game-already-running"
     exit 1
 fi
+# 低電力モードやバッテリー駆動では画面の更新が毎秒30回に落ち、ゲーム全体が「もっさり」する(2026-10-13)。
+# 設定は変えずに知らせるだけ。起動は止めない。
+power_warning() {
+    local low source
+    low="$(pmset -g 2>/dev/null | awk '$1 == "lowpowermode" { print $2 }')"
+    source="$(pmset -g batt 2>/dev/null | head -1)"
+    if [[ "$low" == "1" ]]; then
+        printf '注意: この Mac は低電力モードが ON です。画面が毎秒30コマになり、動きが重く見えます。\n'
+        printf '      システム設定 > バッテリー > 低電力モード を「しない」にしてから起動し直してください。\n'
+        log "warning low-power-mode"
+    fi
+    if [[ "$source" == *"Battery Power"* ]]; then
+        printf '注意: バッテリーで動いています。電源アダプタをつないでください。\n'
+        log "warning battery-power"
+    fi
+}
+power_warning
 while ! stopped; do
     rm -f "$QUIT_MARKER" "$MARKER_DIR"/heartbeat-*
     HEARTBEAT="$MARKER_DIR/heartbeat-$RESTART_COUNT"

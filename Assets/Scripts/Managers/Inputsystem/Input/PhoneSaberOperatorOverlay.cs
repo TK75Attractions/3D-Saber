@@ -21,6 +21,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     string blueText;
     string redWarning;
     string blueWarning;
+    string displayWarning;
     GUIStyle textStyle;
     GUIStyle warningStyle;
     GUIStyle toggleStyle;
@@ -277,6 +278,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         blueText = PhoneSaberStatsDisplay.Format("BLUE", input != null ? input.port2 : 5006, blue, mac, clocksSynchronized);
         redWarning = PhoneSaberStatsDisplay.Warning("RED", red);
         blueWarning = PhoneSaberStatsDisplay.Warning("BLUE", blue);
+        displayWarning = PhoneSaberStatsDisplay.DisplayWarning(Screen.currentResolution.refreshRateRatio.value);
         services = $"探索 UDP 5007: {State(true, input != null && input.DiscoveryResponderRunning)}\n" +
             $"Bonjour: {State(mac, input != null && input.BonjourPublisherRunning)}  |  " +
             $"P2P bridge: {State(PhoneSaberP2PBridgeProcess.IsSupported, PhoneSaberP2PBridgeProcess.IsRunning)}\n" +
@@ -331,6 +333,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         // 日本語の折り返しが増えても、下の色や警告を切り落とさない。
         scrollPosition = GUILayout.BeginScrollView(scrollPosition);
         GUILayout.Label(redText, textStyle);
+        if (!string.IsNullOrEmpty(displayWarning)) GUILayout.Label(displayWarning, warningStyle);
         if (!string.IsNullOrEmpty(redWarning)) GUILayout.Label(redWarning, warningStyle);
         GUILayout.Space(8);
         GUILayout.Label(blueText, textStyle);
