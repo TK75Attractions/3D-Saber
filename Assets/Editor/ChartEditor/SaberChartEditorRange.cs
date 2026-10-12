@@ -32,7 +32,13 @@ namespace Saber.ChartEditor
             if (endMs < startMs) (startMs, endMs) = (endMs, startMs);
             rangeStartMs = Mathf.Max(0f, startMs);
             rangeEndMs = Mathf.Max(rangeStartMs, endMs);
-            if (HasRangeSelection) selectedIndex = -1;
+            if (HasRangeSelection)
+            {
+                selectedIndex = -1;
+                SetInspectorSection(InspectorSection.Notes);
+                showInspector = true;
+                rightScroll = Vector2.zero;
+            }
             Repaint();
         }
 

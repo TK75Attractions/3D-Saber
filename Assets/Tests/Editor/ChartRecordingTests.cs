@@ -1310,16 +1310,18 @@ public class ChartRecordingWorkflowTests
         window.Repaint();
         yield return null;
         Vector2 origin = window.rootVisualElement.worldBound.position;
-        var timeline = new Rect(252, 95, 498, 520);
+        object workspace = Call("CalculateWorkspace", window.position.size);
+        Rect timeline = (Rect)workspace.GetType().GetField("center").GetValue(workspace);
+        float laneWidth = (timeline.width - 62f - 12f) / 8f;
         float y = (float)Call("YForBeat", 4f, timeline);
-        Vector2 start = origin + new Vector2(314 + 53 * 2.5f, y);
+        Vector2 start = origin + new Vector2(timeline.x + 62f + laneWidth * 2.5f, y);
         window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = start });
         window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = start });
         Assert.AreEqual(1, Document.notes.Count);
         Assert.AreEqual(4, Document.notes[0].beat);
         Assert.AreEqual(SaberChartUtility.CoordinateForLane(2, 8, -2.5f, 2.5f), Document.notes[0].x);
         window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = start });
-        Vector2 end = start + new Vector2(53, -80);
+        Vector2 end = start + new Vector2(laneWidth, -80);
         window.SendEvent(new Event { type = EventType.MouseDrag, button = 0, mousePosition = end });
         window.SendEvent(new Event { type = EventType.MouseUp, button = 0, mousePosition = end });
         Assert.AreEqual(1, Document.notes.Count);
@@ -1348,7 +1350,10 @@ public class ChartRecordingWorkflowTests
         Set("isPlaying", false); // 手動時計のGUI試験では音声側の自動停止を走らせない。
         // SendEventの宛先はタブを含む親View。コンテンツ座標へその余白を加える。
         Vector2 origin = window.rootVisualElement.worldBound.position;
-        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = origin + new Vector2(275, 153) });
+        object workspace = Call("CalculateWorkspace", window.position.size);
+        Rect center = (Rect)workspace.GetType().GetField("center").GetValue(workspace);
+        Rect panel = (Rect)Call("RecordingPanelRect", center);
+        window.SendEvent(new Event { type = EventType.MouseDown, button = 0, mousePosition = origin + new Vector2(panel.x + 23f, panel.y + 58f) });
         Assert.AreEqual(1, Document.notes.Count);
         Assert.AreEqual("blue", Document.notes[0].color);
         seconds = 1.6f;
@@ -1358,7 +1363,6 @@ public class ChartRecordingWorkflowTests
 
         // XY入力は停止せずに任意位置へ打ち込める。調整だけのドラッグはノーツを増やさない。
         Set("recordPositionGrid", 0);
-        Rect panel = new Rect(252, 95, 498, (650 - 95 - 28 - 7) * .68f);
         Rect plane = (Rect)Call("RecordingPlaneRect", panel);
         Vector2 blue = (Vector2)Call("RecordingPositionToPoint", plane, new Vector2(1.2f, .9f));
         seconds = 2;

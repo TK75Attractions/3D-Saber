@@ -21,10 +21,10 @@ namespace Saber.ChartEditor
             Erase,
         }
 
-        private const float HeaderHeight = 88f;
+        private const float HeaderHeight = 44f;
+        private const float TransportHeight = 68f;
+        private const float DocumentPickerHeight = 90f;
         private const float FooterHeight = 28f;
-        private const float LeftPanelWidth = 238f;
-        private const float RightPanelWidth = 286f;
         private const float PanelGap = 7f;
         private const float TimelineGutter = 62f;
         private const int LaneCount = SaberChartUtility.DefaultLaneCount;
@@ -174,6 +174,7 @@ namespace Saber.ChartEditor
             SaberChartUtility.Normalize(document);
             if (!documentInitialized) savedJson ??= SaberChartUtility.ToJson(document, false);
             LoadPreferences();
+            LoadWorkspacePreferences();
             RestoreLastDocument();
             RestoreSongInfoDraft();
             LoadRecordingLayout();
@@ -192,6 +193,7 @@ namespace Saber.ChartEditor
             DisposePlaybackPreview();
             CacheSongInfoDraft();
             SavePreferences();
+            SaveWorkspacePreferences();
             SaveRecordingLayout();
             SaveHistoryState();
             FinishLatencyCalibration(true);
@@ -239,83 +241,23 @@ namespace Saber.ChartEditor
         {
             EnsureStyles();
             HandleKeyboardShortcuts(Event.current);
+            RevealSelectedNote();
             EditorGUI.DrawRect(new Rect(Vector2.zero, position.size), BackgroundColor);
 
-            Rect headerRect = new Rect(0f, 0f, position.width, HeaderHeight);
-            Rect footerRect = new Rect(0f, position.height - FooterHeight, position.width, FooterHeight);
-            float contentY = HeaderHeight + PanelGap;
-            float contentHeight = Mathf.Max(100f, position.height - contentY - FooterHeight - PanelGap);
-            Rect leftRect = new Rect(PanelGap, contentY, LeftPanelWidth, contentHeight);
-            Rect rightRect = new Rect(position.width - RightPanelWidth - PanelGap, contentY, RightPanelWidth, contentHeight);
-            Rect timelineRect = new Rect(
-                leftRect.xMax + PanelGap,
-                contentY,
-                Mathf.Max(120f, rightRect.xMin - leftRect.xMax - PanelGap * 2f),
-                contentHeight);
-
-            using (new EditorGUI.DisabledScope(RecordingBusy))
+            WorkspaceRects layout = CalculateWorkspace(position.size);
+            DrawWorkspaceHeader(layout.header);
+            DrawTransportBar(layout.transport);
+            if (showDocumentPicker) DrawDocumentPicker(layout.picker);
+            if (showPalette)
             {
-                DrawHeader(headerRect);
-                DrawLeftPanel(leftRect);
+                using (new EditorGUI.DisabledScope(RecordingBusy)) DrawLeftPanel(layout.left);
             }
-            DrawCenterPanel(timelineRect);
-            DrawRightPanel(rightRect);
-            DrawFooter(footerRect);
+            DrawCenterPanel(layout.center);
+            if (showInspector) DrawRightPanel(layout.right);
+            DrawPanelResizers(layout);
+            DrawFooter(layout.footer);
             CacheSongInfoDraft();
             UpdateDirtyState();
-        }
-
-        private void DrawHeader(Rect rect)
-        {
-            GUI.Box(rect, GUIContent.none, headerStyle);
-            GUILayout.BeginArea(new Rect(rect.x + 14f, rect.y + 8f, rect.width - 28f, rect.height - 12f));
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label("3D SABER  /  CHART STUDIO", titleStyle, GUILayout.Width(360f));
-            int mode = GUILayout.Toolbar(recordMode ? recordStepMode ? 2 : 1 : 0, new[] { "編集", "録音", "ステップ" }, GUILayout.Width(210f));
-            if (mode != (recordMode ? recordStepMode ? 2 : 1 : 0)) SetRecordingInputMode(mode);
-            GUILayout.FlexibleSpace();
-            if (SelectionDiffersFromEditing())
-            {
-                // 選んだだけでは開かない。保存先は「編集中」のまま。
-                GUILayout.Label($"選択中の {songId?.Trim()} / {DifficultyLabels[Mathf.Clamp(difficultyIndex, 0, 2)]} は未読込",
-                    new GUIStyle(smallMutedStyle) { normal = { textColor = GoldColor } });
-                if (GUILayout.Button(new GUIContent("ここへ複製", "今の内容を、選択中の曲・難易度の新しい譜面として開きます（保存するまで書きません）"),
-                        EditorStyles.miniButton, GUILayout.Width(70f))) DuplicateToSelection();
-                if (GUILayout.Button(new GUIContent("選択を戻す", "選択を編集中の曲・難易度へ戻します"),
-                        EditorStyles.miniButton, GUILayout.Width(70f))) ResetSelectionToEditing();
-                GUILayout.Space(8f);
-            }
-            showPlaybackPreview = GUILayout.Toggle(showPlaybackPreview, "プレイ画面", EditorStyles.miniButton, GUILayout.Width(90f));
-            if (hasUnsavedChanges)
-                GUILayout.Label("● 未保存", new GUIStyle(smallMutedStyle) { normal = { textColor = GoldColor } });
-            else
-                GUILayout.Label("保存済み", smallMutedStyle);
-            GUILayout.EndHorizontal();
-
-            GUILayout.BeginHorizontal();
-            GUILayout.Label(new GUIContent($"編集中  {EditingSongId} / {EditingDifficultyLabel}", "保存先です。上書きするのはこのファイルだけです。"),
-                new GUIStyle(EditorStyles.boldLabel) { normal = { textColor = Color.white } }, GUILayout.MaxWidth(230f));
-            GUI.enabled = !RecordingBusy && SaberChartFileStore.IsValidSongId(EditingSongId, out _);
-            if (GUILayout.Button(new GUIContent("保存", "譜面と曲情報を保存 (Ctrl+S)"), GUILayout.Width(52f))) SaveDocument();
-            GUI.enabled = !RecordingBusy;
-            if (GUILayout.Button("フォルダ", GUILayout.Width(62f))) RevealSongFolder();
-            GUILayout.Space(10f);
-            GUILayout.Label(new GUIContent("読込先", "選ぶだけでは切り替わりません。「読込」で開きます。保存先は左の「編集中」です。"), smallMutedStyle, GUILayout.Width(52f));
-            GUI.SetNextControlName("ChartText:string_nextSongId");
-            string nextSongId = EditorGUILayout.TextField(songId ?? string.Empty, GUILayout.MinWidth(90f), GUILayout.MaxWidth(200f));
-            if (nextSongId != songId) songId = nextSongId;
-            if (GUILayout.Button("▾", EditorStyles.miniButton, GUILayout.Width(24f))) ShowSongMenu();
-
-            int nextDifficulty = EditorGUILayout.Popup(difficultyIndex, DifficultyLabels, GUILayout.Width(72f));
-            if (nextDifficulty != difficultyIndex) difficultyIndex = nextDifficulty;
-
-            if (GUILayout.Button(new GUIContent("読込", "選択中の曲・難易度を開きます"), GUILayout.Width(48f))) LoadDocument();
-            if (GUILayout.Button(new GUIContent("新規", "選択中の曲・難易度に空の譜面を作ります"), GUILayout.Width(48f))) NewDocument();
-            GUILayout.FlexibleSpace();
-            GUILayout.Label($"{document.notes.Count:N0} NOTES", smallMutedStyle, GUILayout.Width(80f));
-            GUILayout.EndHorizontal();
-            GUILayout.EndArea();
         }
 
         // 開いている譜面が変わったら、上の難易度・候補・設定の比較を読み直す。
@@ -406,12 +348,18 @@ namespace Saber.ChartEditor
         {
             GUI.Box(rect, GUIContent.none, panelStyle);
             GUILayout.BeginArea(new Rect(rect.x + 10f, rect.y + 10f, rect.width - 20f, rect.height - 20f));
-            leftScroll = GUILayout.BeginScrollView(leftScroll, false, false);
+            // スクロール内容の最小幅でパレットが横にはみ出さないよう、縦スクロール用の幅を先に確保する。
+            leftScroll.x = 0f;
+            leftScroll = GUILayout.BeginScrollView(leftScroll, false, true);
+            float contentWidth = rect.width - 40f;
+            GUILayout.BeginVertical(GUILayout.Width(contentWidth));
 
             if (!string.IsNullOrEmpty(persistentWarning)) EditorGUILayout.HelpBox(persistentWarning, MessageType.Warning);
             if (SaberChartFileStore.IsValidSongId(EditingSongId, out _) && EditingDifficulty != "normal" &&
                 SaberChartFileStore.MissingNormalChart(EditingSongId))
                 EditorGUILayout.HelpBox("Normal がまだありません。共通の chart.json は Normal を保存すると作成されます。", MessageType.Info);
+            SectionLabel("次に置くノーツ / パレット");
+            GUILayout.Label("選択済みノーツは右の「ノーツ」で編集", smallMutedStyle);
             SectionLabel("編集ツール");
             GUILayout.BeginHorizontal();
             DrawToolToggle(EditTool.Select, "選択 (1)");
@@ -470,25 +418,25 @@ namespace Saber.ChartEditor
                 GUILayout.EndHorizontal();
             }
             GUILayout.Label("キー: QWE / ASD / ZXC（S=なし）・テンキー", smallMutedStyle);
-            directionAdvance = EditorGUILayout.ToggleLeft(new GUIContent("方向を付けたら次のノーツへ",
-                "キーで方向を付けたあと、次のノーツを選びます（ステップでは次の配置済みの拍へ）"), directionAdvance);
+            directionAdvance = EditorGUILayout.ToggleLeft(new GUIContent("方向入力後、次のノーツへ",
+                "キーで方向を付けたあと、次のノーツを選びます（ステップでは次の配置済みの拍へ）"), directionAdvance, GUILayout.Width(contentWidth));
 
             GUILayout.Space(10f);
             SectionLabel("LONG カット回数");
-            paletteCount = EditorGUILayout.IntSlider(paletteCount, 2, 12);
+            paletteCount = EditorGUILayout.IntSlider(paletteCount, 2, 12, GUILayout.Width(contentWidth));
 
             GUILayout.Space(10f);
             SectionLabel("分解能 / SNAP");
-            snapIndex = EditorGUILayout.Popup(snapIndex, SnapLabels);
+            snapIndex = EditorGUILayout.Popup(snapIndex, SnapLabels, GUILayout.Width(contentWidth));
             GUILayout.Label($"1ステップ = {SaberChartUtility.SnapStep(CurrentSnap):0.###} 拍", smallMutedStyle);
 
             GUILayout.Space(10f);
             SectionLabel("履歴");
             GUILayout.BeginHorizontal();
             GUI.enabled = !RecordingBusy && history.CanUndo;
-            if (GUILayout.Button("↶ 元に戻す")) Undo();
+            if (GUILayout.Button("↶ 元に戻す", GUILayout.MinWidth(0f))) Undo();
             GUI.enabled = !RecordingBusy && history.CanRedo;
-            if (GUILayout.Button("↷ やり直し")) Redo();
+            if (GUILayout.Button("↷ やり直し", GUILayout.MinWidth(0f))) Redo();
             GUI.enabled = !RecordingBusy;
             GUILayout.EndHorizontal();
 
@@ -497,92 +445,14 @@ namespace Saber.ChartEditor
                 "中央: 横=X / 縦=時間\n空間パッド: X・Y位置（選択ノーツ欄）\n右クリック: ノーツ削除",
                 MessageType.None);
 
+            GUILayout.EndVertical();
             GUILayout.EndScrollView();
             GUILayout.EndArea();
         }
 
         private void DrawRightPanel(Rect rect)
         {
-            RevealSelectedNote();
-            GUI.Box(rect, GUIContent.none, panelStyle);
-            GUILayout.BeginArea(new Rect(rect.x + 10f, rect.y + 10f, rect.width - 20f, rect.height - 20f));
-            rightScroll = GUILayout.BeginScrollView(rightScroll, false, false);
-
-            DrawDraftBanner();
-            DrawFocusedNotePanel();
-            SectionLabel("再生 / シーク");
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("|◀", GUILayout.Width(42f))) SeekToBeat(0f);
-            if (GUILayout.Button(isPlaying ? "一時停止" : "▶ 再生", GUILayout.Height(28f))) TogglePreview();
-            if (GUILayout.Button("■", GUILayout.Width(36f))) StopPreview(true);
-            GUILayout.EndHorizontal();
-            DrawClickToggles();
-            DrawPreviewOptions();
-
-            EditorGUI.BeginDisabledGroup(RecordingBusy);
-            float maxBeat = MaxBeat();
-            EditorGUI.BeginChangeCheck();
-            float soughtBeat = EditorGUILayout.Slider(currentBeat, 0f, maxBeat);
-            if (EditorGUI.EndChangeCheck()) SeekToBeat(soughtBeat);
-            GUILayout.Label(
-                $"{SaberChartUtility.FormatMusicalPosition(currentBeat, document, CurrentSnap)}   /   {BeatToAudioSeconds(currentBeat):0.000}s",
-                centeredSmallStyle);
-            useGameTiming = EditorGUILayout.ToggleLeft(new GUIContent(
-                $"ゲームと同じ表示補正（{GameSession.JudgmentOffsetMs:+0;-0;0}ms）",
-                "ゲームの判定調整と同じ量だけ再生カーソルを補正します。波形と保存する譜面時刻は変わりません。"), useGameTiming);
-            DrawJumpControls();
-            DrawMarkerControls();
-            EditorGUI.EndDisabledGroup();
-
-            if (!recordMode)
-            {
-                GUILayout.Space(10f);
-                EditorGUI.BeginDisabledGroup(RecordingBusy);
-                DrawRangePanel();
-                GUILayout.Space(10f);
-                DrawDifficultyPanel();
-                GUILayout.Space(10f);
-                DrawSongInfoPanel();
-                EditorGUI.EndDisabledGroup();
-            }
-
-            DrawRecordingSettings();
-
-            EditorGUI.BeginDisabledGroup(RecordingBusy);
-            GUILayout.Space(10f);
-            SectionLabel("音源");
-            EditorGUI.BeginChangeCheck();
-            AudioClip nextClip = (AudioClip)EditorGUILayout.ObjectField(audioClip, typeof(AudioClip), false);
-            if (EditorGUI.EndChangeCheck()) HandleAudioClipSelection(nextClip);
-            GUILayout.BeginHorizontal();
-            if (GUILayout.Button("曲フォルダから取得")) EnsureAudioForSong(true);
-            if (GUILayout.Button("音源を取り込む")) ImportAudio();
-            GUILayout.EndHorizontal();
-            if (!SaberChartAudioPreview.IsSupported)
-                EditorGUILayout.HelpBox("音源プレビューAPIを利用できません。保存・編集は可能です。", MessageType.Warning);
-            else if (!string.IsNullOrEmpty(waveform.Error))
-                GUILayout.Label("波形: " + waveform.Error, smallMutedStyle);
-
-            GUILayout.Space(10f);
-            SectionLabel("曲 / グリッド設定");
-            DrawChartSettings();
-            DrawSettingsMismatch();
-            DrawTempoMapPanel();
-            GUILayout.Space(10f);
-            DrawTimeSignatures();
-
-            GUILayout.Space(10f);
-            DrawValidationSummary();
-
-            GUILayout.Space(8f);
-            GUI.enabled = !RecordingBusy && SaberChartFileStore.IsValidSongId(EditingSongId, out _);
-            // 変更がなければ保存せずに本編を開く。開いて試すだけでファイルを書き換えない。
-            if (GUILayout.Button(hasUnsavedChanges ? "保存して本編でテスト" : "本編でテスト（保存なし）", GUILayout.Height(32f))) TestInGame();
-            GUI.enabled = !RecordingBusy;
-            EditorGUI.EndDisabledGroup();
-
-            GUILayout.EndScrollView();
-            GUILayout.EndArea();
+            DrawInspectorWorkspace(rect);
         }
 
         private void DrawChartSettings()
@@ -591,7 +461,7 @@ namespace Saber.ChartEditor
             EditorGUI.BeginChangeCheck();
             float nextBpm = EditorGUILayout.DelayedFloatField("BPM", document.bpm);
             float nextOffset = EditorGUILayout.DelayedFloatField("全体OFFSET (ms)", document.offsetMs);
-            float nextBeatZero = EditorGUILayout.DelayedFloatField("譜面グリッド原点 (ms / 0以上)", beatZeroMs);
+            float nextBeatZero = EditorGUILayout.DelayedFloatField(new GUIContent("拍の始まり (ms)", "譜面グリッド原点。0以上の時刻を指定します。ノーツの時刻は変わりません。"), beatZeroMs);
             float nextScale = EditorGUILayout.DelayedFloatField("座標倍率", document.coordScale);
             bool changed = EditorGUI.EndChangeCheck();
             if (!Mathf.Approximately(document.beatZeroMs, beatZeroMs))
@@ -719,6 +589,8 @@ namespace Saber.ChartEditor
                 "本編と同じカメラ（高さ2.35・12°見下ろし）。オフで以前の正面寄りの視点"), EditorStyles.miniButtonLeft);
             previewLandingFrame = GUILayout.Toggle(previewLandingFrame, new GUIContent("着地の枠",
                 "判定面に、推奨の XY 範囲（±2.5 × ±1.5）の枠を出します"), EditorStyles.miniButtonMid);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
             previewBarLines = GUILayout.Toggle(previewBarLines, new GUIContent("小節線",
                 "本編の小節線（ファイルの BPM・原点・OFFSET・拍子）を、ノーツと同じ速さで流します"), EditorStyles.miniButtonMid);
             previewHitRadius = GUILayout.Toggle(previewHitRadius, new GUIContent("当たりの円",
@@ -1604,6 +1476,7 @@ namespace Saber.ChartEditor
                 nextAutosaveAt = 0;
                 settingsMismatchKey = null;
                 SaberChartDrafts.DeleteFor(loadedSongId, loadedDifficulty);
+                lastDraftSavedAt = lastDraftTarget = null;
                 pendingDraft = null;
                 if (targetDifficulty != "normal" && SaberChartFileStore.MissingNormalChart(targetSong))
                     SetStatus($"保存: {Path.GetFileName(destination)}。Normal がまだ無いため、本編の Easy / Normal は選べません（chart.json は Normal から作ります）");
@@ -2104,6 +1977,8 @@ namespace Saber.ChartEditor
             try
             {
                 SaberChartDrafts.Write(EditingSongId, EditingDifficulty, document);
+                lastDraftSavedAt = DateTime.Now.ToString("HH:mm");
+                lastDraftTarget = TargetKey(EditingSongId, EditingDifficulty);
                 return true;
             }
             catch (Exception exception) when (exception is IOException || exception is UnauthorizedAccessException)
@@ -2121,6 +1996,7 @@ namespace Saber.ChartEditor
         private void CheckForDraft()
         {
             pendingDraft = null;
+            lastDraftSavedAt = lastDraftTarget = null;
             if (hasUnsavedChanges || !SaberChartFileStore.IsValidSongId(EditingSongId, out _)) return;
             SaberChartDrafts.Draft draft = SaberChartDrafts.LatestFor(EditingSongId, EditingDifficulty, out _);
             if (draft == null) return;
@@ -2135,7 +2011,7 @@ namespace Saber.ChartEditor
         {
             if (pendingDraft == null) return;
             DateTime local = pendingDraft.SavedAtUtc.ToLocalTime();
-            EditorGUILayout.HelpBox($"保存していない下書きがあります（{local:M/d HH:mm}・{pendingDraft.noteCount}ノーツ）。\n" +
+            EditorGUILayout.HelpBox($"{pendingDraft.songId} / {pendingDraft.difficulty} の下書き（{local:M/d HH:mm}・{pendingDraft.noteCount}ノーツ）\n" +
                                     "Unity が終了する前の編集かもしれません。", MessageType.Warning);
             GUILayout.BeginHorizontal();
             if (GUILayout.Button("下書きを開く")) RestoreDraft();
@@ -2230,7 +2106,7 @@ namespace Saber.ChartEditor
             bool active = editTool == tool;
             Color old = GUI.backgroundColor;
             if (active) GUI.backgroundColor = AccentColor;
-            if (GUILayout.Button(label, GUILayout.Height(28f))) editTool = tool;
+            if (GUILayout.Button(label, GUILayout.MinWidth(0f), GUILayout.Height(28f))) editTool = tool;
             GUI.backgroundColor = old;
         }
 
@@ -2238,7 +2114,7 @@ namespace Saber.ChartEditor
         {
             Color old = GUI.backgroundColor;
             GUI.backgroundColor = active ? tint : new Color(0.33f, 0.38f, 0.45f);
-            bool clicked = GUILayout.Button(label, GUILayout.Height(height));
+            bool clicked = GUILayout.Button(label, GUILayout.MinWidth(0f), GUILayout.Height(height));
             GUI.backgroundColor = old;
             return clicked;
         }
@@ -2299,6 +2175,7 @@ namespace Saber.ChartEditor
             sectionStyle = new GUIStyle(EditorStyles.boldLabel)
             {
                 fontSize = 12,
+                wordWrap = true,
                 normal = { textColor = AccentColor },
                 margin = new RectOffset(1, 1, 3, 4),
             };
@@ -2309,6 +2186,7 @@ namespace Saber.ChartEditor
             };
             smallMutedStyle = new GUIStyle(EditorStyles.miniLabel)
             {
+                wordWrap = true,
                 normal = { textColor = MutedTextColor },
             };
             centeredSmallStyle = new GUIStyle(smallMutedStyle)

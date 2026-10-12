@@ -99,6 +99,8 @@ namespace Saber.ChartEditor
             FinishTextEditing();
             ClearRecordingStepInput();
             recordMode = enabled;
+            SetInspectorSection(enabled ? InspectorSection.Recording : InspectorSection.Notes);
+            showInspector = true;
             if (!enabled)
             {
                 Array.Clear(recordKeysDown, 0, recordKeysDown.Length);
@@ -208,7 +210,7 @@ namespace Saber.ChartEditor
         {
             if (!recordMode) return rect;
             EnsureRecordingPositions();
-            Rect panel = new Rect(rect.x, rect.y, rect.width, Mathf.Min(426, rect.height * .68f));
+            Rect panel = RecordingPanelRect(rect);
             EditorGUI.DrawRect(panel, PanelColor);
             string label = countingIn ? $"開始まで {Mathf.Clamp(Mathf.CeilToInt((float)(countInEndsAt - EditorApplication.timeSinceStartup) * Grid.TempoAt(currentBeat) / 60f), 1, 4)}"
                 : recorder != null ? $"● 録音中  +{recorder.AddedCount} NOTES"
@@ -693,6 +695,13 @@ namespace Saber.ChartEditor
             SetRecordingPosition(recordActivePad, RecordingPosition(recordActivePad) + Vector2.Scale(direction, step), false);
             input.Use();
             return true;
+        }
+
+        private Rect RecordingPanelRect(Rect rect)
+        {
+            // 固定操作バーを増やしても最小サイズでXYパッドの高さを保つ。下には譜面の領域を残す。
+            float height = Mathf.Min(426f, Mathf.Min(Mathf.Max(354f, rect.height * .68f), Mathf.Max(220f, rect.height - 100f)));
+            return new Rect(rect.x, rect.y, rect.width, height);
         }
 
         private Rect RecordingPlaneRect(Rect panel)

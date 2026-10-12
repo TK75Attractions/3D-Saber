@@ -352,7 +352,8 @@ namespace Saber.ChartEditor
             GUI.SetNextControlName("ChartText:jumpMeasureText");
             jumpMeasureText = EditorGUILayout.TextField(jumpMeasureText ?? string.Empty, GUILayout.Width(44f));
             if (GUILayout.Button("移動", EditorStyles.miniButton, GUILayout.Width(38f))) JumpToMeasureText();
-            GUILayout.Space(6f);
+            GUILayout.EndHorizontal();
+            GUILayout.BeginHorizontal();
             GUILayout.Label("時刻", GUILayout.Width(28f));
             GUI.SetNextControlName("ChartText:jumpTimeText");
             jumpTimeText = EditorGUILayout.TextField(jumpTimeText ?? string.Empty, GUILayout.MinWidth(54f));

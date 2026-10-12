@@ -14,7 +14,12 @@ namespace Saber.ChartEditor
         {
             if (ReferenceEquals(inspectorNote, SelectedNote)) return;
             inspectorNote = SelectedNote;
-            if (inspectorNote != null) rightScroll = Vector2.zero;
+            if (inspectorNote != null)
+            {
+                SetInspectorSection(InspectorSection.Notes);
+                showInspector = true;
+                rightScroll = Vector2.zero;
+            }
         }
 
         private void DrawFocusedNotePanel()
@@ -50,7 +55,7 @@ namespace Saber.ChartEditor
                 }
                 else
                 {
-                    GUILayout.Label(HasRangeSelection ? "範囲を編集中。下の「範囲」でまとめて変更できます" : "タイムラインか前後のボタンでノーツを選択", smallMutedStyle);
+                    GUILayout.Label(HasRangeSelection ? "範囲を編集中。「範囲の編集」欄でまとめて変更できます" : "タイムラインか前後のボタンでノーツを選択", smallMutedStyle);
                 }
 
                 showQuickNotePosition = EditorGUILayout.Foldout(showQuickNotePosition,
