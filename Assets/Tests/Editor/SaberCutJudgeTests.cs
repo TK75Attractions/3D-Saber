@@ -440,7 +440,7 @@ public class SaberCutJudgeTests
         Assert.AreEqual(end - .01, note.LastCutSongTime.Value, 1e-9);
     }
 
-    // ------ 曲時計があるとき: 刃の中心がノーツを通り過ぎたら切る・向きは刃の中心が動いた向き ------
+    // ------ 曲時計があるとき: 刃がノーツを通り過ぎたら切る(細い側で振るときは先端)・向きは刃の中心が動いた向き ------
 
     private (SaberCutJudge judge, SaberTracker tracker, SaberInputBridge bridge) GameBladeRig()
     {
@@ -462,36 +462,91 @@ public class SaberCutJudgeTests
     }
 
     [Test]
-    public void VerticalBladeSwungAlongItselfIsCutAndScoredWhenItsCenterPassesTheNote()
+    public void VerticalBladeSwungAlongItselfIsCutWhenItsTipPassesTheNote()
     {
         var (judge, tracker, bridge) = GameBladeRig();
         var note = TimedNote(Vector3.zero, 1.0);
         note.RequiredDirection = CutDirection.Down;
         tracker.ResetTo(new Vector3(.3f, 2f, 0f));
         Assert.AreEqual(0, Step(judge, tracker, bridge, new Vector2(.3f, 1.4f), .94)); // 入る(刃の下端からノーツまで約0.95)
-        Assert.AreEqual(0, Step(judge, tracker, bridge, new Vector2(.3f, .45f), .96)); // 刃の先がノーツの高さに届く(距離0.3)
-        Assert.AreEqual(0, Step(judge, tracker, bridge, new Vector2(.3f, .15f), .98)); // 距離は0.3のまま。中心はまだ上
+        Assert.AreEqual(0, Step(judge, tracker, bridge, new Vector2(.3f, .45f), .96)); // 刃の先がノーツの高さを越える(入ってから0.95しか動いていない)
         Assert.False(note.IsCut);
-        Assert.AreEqual(1, Step(judge, tracker, bridge, new Vector2(.3f, -.15f), 1.0)); // 中心がノーツより下へ
-        Assert.True(note.IsCut, "当たりの円(半径1.2)を抜け切る前に切れる");
+        Assert.AreEqual(1, Step(judge, tracker, bridge, new Vector2(.3f, .35f), .98)); // 振りが止まりかけ。刃の中心はまだノーツより上
+        Assert.True(note.IsCut, "刃の先が越えていれば、刃の中心が届くまで振り切らなくても切れる");
         Assert.True(note.LastCutCorrectDirection);
-        Assert.AreEqual(.99, note.LastCutSongTime.Value, 1e-6,
-            "採点は刃の中心が通り過ぎた時刻(.98と1.0の間)。刃の先が届いた時刻(.96)ではない");
+        Assert.AreEqual(.94 + .02 * (.9 / .95), note.LastCutSongTime.Value, 1e-6,
+            "採点は刃の先がノーツの中心の高さを通り過ぎた時刻(.94と.96の間)");
     }
 
     [Test]
-    public void PokeAndPullBackIsScoredWhenTheCenterPassedInTheCutDirection()
+    public void SlantedBladeIsScoredWhenItReachesTheNoteNotWhenItsCenterPasses()
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = TimedNote(new Vector3(0f, .4f, 0f), 1.0);
+        tracker.ResetTo(new Vector3(-2f, 0f, 0f));
+        // 45°の刃(長さ約1.4)を右へ振る。ノーツは刃の上半分の高さ(.4)にある。
+        SlantedStep(-1f, .96);
+        SlantedStep(.2f, .98);
+        Assert.True(note.IsCut);
+        Assert.AreEqual(.97, note.LastCutSongTime.Value, 1e-6,
+            "刃がノーツの上を通った時刻(.97)。刃の中心がノーツの横を過ぎた時刻(約.977)ではない");
+
+        void SlantedStep(float x, double time)
+        {
+            tracker.Tick(new Vector3(x, 0f, 0f), .02f);
+            bridge.OverrideBlade(new Vector3(x - .5f, -.5f, 0f), new Vector3(x + .5f, .5f, 0f));
+            judge.TryCut(time);
+        }
+    }
+
+    // 細い側で振る(刃が動く向きに沿う)と振りを横切る刃の幅がないので、そのときだけ当たりを半径1.7まで広げる。
+    // カメラの値が届いていて、曲時計があるときだけ。腹で払う刃(幅1.0)は今のまま。
+    [TestCase(true, true, true, true)]
+    [TestCase(true, false, true, false)]
+    [TestCase(true, true, false, false)]
+    [TestCase(false, true, true, false)]
+    public void ThinSideSwingReachesFurtherSidewaysOnlyWithTheCamera(bool vertical, bool camera, bool clock, bool cut)
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        bridge.OverrideCameraInput(camera);
+        var note = TimedNote(Vector3.zero, 1.0);
+        float x = vertical ? 1.5f : 2f; // どちらも、振り下ろす刃からノーツまで横に1.5(今の当たり1.2の外)
+        tracker.ResetTo(new Vector3(x, 3f, 0f));
+        Step(judge, tracker, bridge, new Vector2(x, 2f), clock ? .94 : double.NaN, vertical);
+        Step(judge, tracker, bridge, new Vector2(x, 1f), clock ? .96 : double.NaN, vertical);
+        Step(judge, tracker, bridge, new Vector2(x, -.1f), clock ? .98 : double.NaN, vertical);
+        Step(judge, tracker, bridge, new Vector2(x, -2f), clock ? 1.0 : double.NaN, vertical);
+        Assert.AreEqual(cut, note.IsCut);
+    }
+
+    [Test]
+    public void ThinSideIsNotWidenedWhileAnotherNoteIsNearby()
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        bridge.OverrideCameraInput(true);
+        var note = TimedNote(Vector3.zero, 1.0);
+        var other = TimedNote(new Vector3(-1f, 0f, 0f), 1.25); // 時刻の違うノーツが2.9以内で受付中
+        tracker.ResetTo(new Vector3(1.5f, 3f, 0f));
+        Step(judge, tracker, bridge, new Vector2(1.5f, 2f), .94);
+        Step(judge, tracker, bridge, new Vector2(1.5f, 1f), .96);
+        Step(judge, tracker, bridge, new Vector2(1.5f, -.1f), .98);
+        Assert.False(note.IsCut, "近くに別の時刻のノーツがあるときは広げない(巻き込みを増やさない)");
+        Assert.False(other.IsCut);
+    }
+
+    [Test]
+    public void PokeAndPullBackIsScoredWhenTheBladePassedInTheCutDirection()
     {
         var (judge, tracker, bridge) = GameBladeRig();
         var note = TimedNote(Vector3.zero, 1.0);
         tracker.ResetTo(new Vector3(0f, -.6f, 0f));
         Step(judge, tracker, bridge, new Vector2(0f, -.5f), .96, false, 1f); // 円の中で入る
-        Step(judge, tracker, bridge, new Vector2(0f, .3f), .98, false, 1f);  // 突き上げて中心がノーツを越える(0.8しか動かず、まだ切れない)
+        Step(judge, tracker, bridge, new Vector2(0f, .3f), .98, false, 1f);  // 突き上げて刃がノーツを越える(0.8しか動かず、まだ切れない)
         Step(judge, tracker, bridge, new Vector2(0f, -.4f), 1.0, false, 1f); // 引き戻して、もう一度越える
         Assert.False(note.IsCut);
         Step(judge, tracker, bridge, new Vector2(0f, -1.4f), 1.02, false, 1f); // 円の外へ抜けて切れる
         Assert.True(note.IsCut);
-        Assert.AreEqual(.9725, note.LastCutSongTime.Value, 1e-6, "切った向き(突き上げ)で中心が通り過ぎた時刻。引き戻した時刻ではない");
+        Assert.AreEqual(.9725, note.LastCutSongTime.Value, 1e-6, "切った向き(突き上げ)で刃が通り過ぎた時刻。引き戻した時刻ではない");
     }
 
     // 画面上の振りの向き(x, y)。カメラの値は縦が約1/2.4に縮んで届くので、カメラのときは縦を2.4倍して向きを比べる。
@@ -524,7 +579,7 @@ public class SaberCutJudgeTests
         Step(judge, tracker, bridge, new Vector2(-2f, 0f), clock ? .98 : double.NaN); // 縦の刃。ノーツから2.0(当たり1.2の外)
         Step(judge, tracker, bridge, new Vector2(2f, 0f), clock ? 1.0 : double.NaN);  // 次の値では反対側の外
         Assert.AreEqual(clock, note.IsCut, clock ? "前の刃から今の刃までが通った面で拾う" : "曲時計のない画面は従来どおり");
-        if (clock) Assert.AreEqual(.99, note.LastCutSongTime.Value, 1e-6, "中心がノーツを通り過ぎた時刻(前後の値の間)");
+        if (clock) Assert.AreEqual(.99, note.LastCutSongTime.Value, 1e-6, "刃がノーツを通り過ぎた時刻(前後の値の間)");
     }
 
     [Test]

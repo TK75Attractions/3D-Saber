@@ -4,10 +4,13 @@ using UnityEngine;
 // セーバー軌跡の XY 成分だけでノーツとの当たり判定を取る（Z は無視）。
 // 刃の有効範囲に入った瞬間を entry として記録し、範囲から抜けたら Cut を発火させる。
 // 曲時計を受け取ったときは、刃がノーツにいちばん近づいた時刻で採点する(当たりの大きさで判定の時刻がずれない)。
-// さらに曲時計があるとき(本編・チュートリアル・判定調整)は、抜け切るのを待たず、刃の中心がノーツを通り過ぎたら切る。
+// さらに曲時計があるとき(本編・チュートリアル・判定調整)は、抜け切るのを待たず、刃がノーツを通り過ぎたら切る。
+// 見るのは刃のうちノーツに届く部分(CuttingPoint)。刃の腹で払うときはノーツの横の位置にある刃の点、
+// 細い側で振る(刃が動く向きに沿う)ときは先端なので、刃の中心が届くまで振り切らなくても切れる。
 // そのときの向きは、入った瞬間の速さではなく刃の中心が動いた向きで決める(構えの振りを拾わない)。
 // 曲時計があるときは、前に判定したときの刃から今の刃までが通った面でも入ったかを見て(速い振りの飛び越し)、
-// 採点は刃の中心がノーツを通り過ぎた時刻にする(縦の刃を上下に振ったとき、先端が触れた時刻で早めに出ないように)。
+// 採点はノーツに届く部分がノーツの中心を通り過ぎた時刻にする(前後の刃の値の間で割り振る)。
+// カメラの値で細い側から振ると、振りを横切る刃の幅がなくなるので、そのときだけ当たりを広げる(近くに別の時刻のノーツがなければ)。
 // 1回の振りで切れるのは1つの時刻のノーツだけ(同時のノーツはまとめて)。後続のノーツは同じ振りの続きでは切れない。
 public class SaberCutJudge : MonoBehaviour
 {
@@ -17,6 +20,8 @@ public class SaberCutJudge : MonoBehaviour
     const float DirectionTravel = .5f;
     // 通り過ぎた時刻を前後の刃の値の間で割り振るのは、値の間がこれ以下のときだけ(秒)。長ければ今の値の時刻にする。
     const double MaxStepSeconds = .05;
+    // 刃が動く向きからの傾きがこれ(tan 15°)以内なら細い側で振っているとみなし、ノーツに届く部分を先頭の端にする。
+    const float ThinSideSlope = .268f;
 
     public SaberTracker saber;
     // ブレード（線分）の端点を提供するソース。指定なし or HasBlade=false のときは従来の点-軌跡判定。
@@ -43,6 +48,12 @@ public class SaberCutJudge : MonoBehaviour
     // それを判定面の±5.5×±3へ写すため。位置合わせ(4隅)を使うと変わる)。向きを比べるときだけ縦の動きをこの倍率で戻す。
     // カメラの値が届いていて曲時計があるときだけ使う。画面の刃・切り口・破片の向きは変えない。
     [Range(1f, 4f)] public float verticalDirectionScale = 2.4f;
+    // 細い側で振る(刃が動く向きに沿う・カメラに向いて短く写る)と、振りを横切る刃の幅がなくなり、横の当たりは 2×1.2 だけになる。
+    // そのときだけ、振りを横切る幅がこの値になるまで当たりを広げる(刃の幅が0なら半径1.7)。腹で払う刃(幅1.0以上)は今のまま。
+    // 曲時計があり、カメラの値が届いているときだけ使う。当たりの2倍(2.4)以下にすると広げない。画面の刃は変えない。
+    public float minSwingWidth = 3.4f;
+    // 広げた当たりで入るのは、この距離の中に時刻の違う受付中のノーツ(この手で切れるもの)がないときだけ(巻き込みを増やさない)。
+    public float widenGuardDistance = 2.9f;
 
     // GamePlayManager / GManager から RunJudge() を呼ぶときは false にして
     // 自前の Update を止め、外部から1点で呼び出す（GManager 主体パターン）。
@@ -61,6 +72,8 @@ public class SaberCutJudge : MonoBehaviour
         public uint version;
         public Vector3 hitPoint;
         public Vector3 velocity;
+        // このノーツの当たり(入ったときの距離の上限)。細い側で振って広げたときは広げた値のまま、抜けたかもこれで見る。
+        public float range;
         // 刃がいちばん近づいたときの距離と曲時計。ノーツが切れる時間内のフレームだけで更新する(時計がなければ NaN)。
         public float bestDistance;
         public double bestSongTime;
@@ -68,7 +81,7 @@ public class SaberCutJudge : MonoBehaviour
         // 起点からいちばん近づいたところまでの中心の動き(抜けて切るときの向き)。
         public Vector2 anchor;
         public Vector2 approach;
-        // 刃の中心がノーツを通り過ぎた時刻とそのときの動き(判定窓の中のときだけ。なければ NaN)。
+        // 刃のうちノーツに届く部分が、ノーツの中心を通り過ぎた時刻とそのときの動きの向き(判定窓の中のときだけ。なければ NaN)。
         // 最新の1回と、その前の1回を持つ(突いて引き戻したとき、切った向きと同じ向きの通過を選べるように)。
         public double crossSongTime, previousCrossSongTime;
         public Vector2 crossDirection, previousCrossDirection;
@@ -91,10 +104,13 @@ public class SaberCutJudge : MonoBehaviour
     // 次の振りに変わった(保留中のノーツの起点を置き直す)。
     bool strokeRestarted;
 
-    // 刃の中心のひとつ前の値と今の値(カメラの新しい値で動いたときだけ進める)と、それぞれを初めて見た曲時計。
-    Vector2 stepFrom, stepTo;
+    // 刃の両端のひとつ前の値と今の値(カメラの新しい値で動いたときだけ進める)と、それぞれを初めて見た曲時計。点のときは両端が同じ点。
+    Vector2 stepFromA, stepFromB, stepToA, stepToB;
     double stepFromTime = double.NaN, stepToTime = double.NaN;
     bool hasStepFrom, hasStepTo;
+    // 刃の中心が最後に動いた向き(刃が回るだけで中心が動かないときも、この向きで通り過ぎたかを見る)。
+    Vector2 lastMotion;
+    bool hasLastMotion;
     // 前に入りを調べたときの刃(通った面で調べる起点)。
     Vector2 sweepA, sweepB;
     bool hasSweep;
@@ -121,7 +137,7 @@ public class SaberCutJudge : MonoBehaviour
         TryCut();
     }
 
-    // 本編: 曲時計を渡すと、刃の中心がノーツを通り過ぎた時刻(なければいちばん近づいた時刻)で採点する。
+    // 本編: 曲時計を渡すと、刃のうちノーツに届く部分がノーツの中心を通り過ぎた時刻(なければいちばん近づいた時刻)で採点する。
     public void RunJudge(double currentSongTime)
     {
         TryCut(currentSongTime);
@@ -155,7 +171,7 @@ public class SaberCutJudge : MonoBehaviour
         if (blade != lastModeWasBlade) { ResetMotion(); lastModeWasBlade = blade; }
         // 振り返したら、保留中のノーツの起点を今の刃の中心へ置き直す(次の振りで通り過ぎたかを見る)。
         if (strokeRestarted) Reanchor(Center(blade));
-        TrackStep(Center(blade));
+        TrackStep(blade);
         return blade ? TryCutBlade() : TryCutPoint();
     }
 
@@ -163,10 +179,11 @@ public class SaberCutJudge : MonoBehaviour
     {
         if (saber.Speed < minCutSpeed) return CheckPending(true);
 
-        Vector2 a = new Vector2(bladeProvider.WorldEndA.x, bladeProvider.WorldEndA.y);
-        Vector2 b = new Vector2(bladeProvider.WorldEndB.x, bladeProvider.WorldEndB.y);
+        Vector2 a = EndA, b = EndB;
         Vector2 center = (a + b) * .5f;
         float hitRange = bladeRadius + noteHitRadiusXY;
+        // 細い側で振っているときに広げた当たり(広げないときは hitRange と同じ)。
+        float thinRange = ThinRange(a, b, hitRange);
         // 曲時計があるときは、前に調べたときの刃から今の刃までが通った面でも入ったかを見る(速い振りで円を飛び越えても拾う)。
         // 端の向きはそろえる。誤認識で刃が飛んだとき(中心が maxCutDistance より動いた)は使わない。
         Vector2 a0 = sweepA, b0 = sweepB;
@@ -192,9 +209,11 @@ public class SaberCutJudge : MonoBehaviour
             {
                 // 通った面で入ったときは、動き始めた位置(前の刃の中心)を起点にする。
                 float swept = CameraSaberHistory.SweptDistance(noteXY, a0, b0, a, b, out Vector2 sweptClosest);
-                if (swept <= hitRange) { d = swept; closest = sweptClosest; anchor = (a0 + b0) * .5f; }
+                if (swept < d) { d = swept; closest = sweptClosest; anchor = (a0 + b0) * .5f; }
             }
-            if (d <= hitRange) pending[note] = NewPending(note, closest, d, anchor, center);
+            // 広げた当たりで入るのは、近くに時刻の違う受付中のノーツがないときだけ(巻き込みを増やさない)。
+            float range = d > hitRange && d <= thinRange && !Crowded(note) ? thinRange : hitRange;
+            if (d <= range) pending[note] = NewPending(note, closest, d, anchor, center, range);
         }
         sweepA = a; sweepB = b; hasSweep = true;
         return CheckPending(true);
@@ -224,23 +243,23 @@ public class SaberCutJudge : MonoBehaviour
             Vector2 noteXY = new Vector2(note.transform.position.x, note.transform.position.y);
             float d = DistPointToSegment(noteXY, from, to, out Vector2 closest);
             // 点は1フレームの軌跡で入るので、起点はその軌跡の始まり。
-            if (d <= hitRange) pending[note] = NewPending(note, closest, d, from, to);
+            if (d <= hitRange) pending[note] = NewPending(note, closest, d, from, to, hitRange);
         }
 
         return CheckPending(false);
     }
 
-    // 保留中のノーツを見て、刃が範囲から抜けたら切る。曲時計があれば、刃の中心がノーツを通り過ぎたときにも切る。
+    // 保留中のノーツを見て、刃が範囲から抜けたら切る。曲時計があれば、刃がノーツを通り過ぎたときにも切る。
     private int CheckPending(bool blade)
     {
         if (pending.Count == 0) return 0;
-        Vector2 a = blade ? new Vector2(bladeProvider.WorldEndA.x, bladeProvider.WorldEndA.y) : Vector2.zero;
-        Vector2 b = blade ? new Vector2(bladeProvider.WorldEndB.x, bladeProvider.WorldEndB.y) : Vector2.zero;
         Vector2 center = Center(blade);
-        float hitRange = bladeRadius + noteHitRadiusXY;
+        // 点のときは刃の両端を今の位置にする(ノーツに届く部分 = 今の位置)。
+        Vector2 a = blade ? EndA : center;
+        Vector2 b = blade ? EndB : center;
 
         toRemove.Clear(); tracked.Clear();
-        // 先に、刃の中心がノーツを通り過ぎた時刻を全部のノーツで覚える(どのノーツを切るか選ぶときにも使う)。
+        // 先に、刃がノーツを通り過ぎた時刻を全部のノーツで覚える(どのノーツを切るか選ぶときにも使う)。
         if (Finite(songTime) && hasStepFrom)
         {
             foreach (var kv in pending)
@@ -263,7 +282,7 @@ public class SaberCutJudge : MonoBehaviour
             Vector2 noteXY = new Vector2(note.transform.position.x, note.transform.position.y);
             Vector2 closest = center;
             float distNow = blade ? DistPointToSegment(noteXY, a, b, out closest) : Vector2.Distance(center, noteXY);
-            if (distNow > hitRange)
+            if (distNow > p.range)
             {
                 if (TakeTurn(note)) Finish(note, p, imuHint, ExitVelocity(p, center));
                 cuts++;
@@ -271,7 +290,7 @@ public class SaberCutJudge : MonoBehaviour
                 continue;
             }
             p = Track(note, p, distNow, closest, center);
-            if (!Passed(p, center, noteXY)) continue;
+            if (!Passed(p, a, b, center, noteXY)) continue;
             // 通り過ぎた: 抜け切るのを待たずに切る。切れなかったら(逆向き・ロングの途中)この振りではもう切らない。
             // 構えの振りで通り過ぎても、振り返してから入り直すので、振り下ろしの時刻で採点される。
             if (TakeTurn(note))
@@ -286,13 +305,14 @@ public class SaberCutJudge : MonoBehaviour
         return cuts;
     }
 
-    Pending NewPending(CuttableNote note, Vector2 closest, float distance, Vector2 anchor, Vector2 center)
+    Pending NewPending(CuttableNote note, Vector2 closest, float distance, Vector2 anchor, Vector2 center, float range)
     {
         return new Pending
         {
             version = note.SpawnVersion,
             hitPoint = new Vector3(closest.x, closest.y, note.transform.position.z),
             velocity = saber.Velocity,
+            range = range,
             bestDistance = distance,
             // 進入は判定窓の中でしか起きない(IsCandidate)ので、進入時刻はそのまま採点に使える。
             bestSongTime = Finite(songTime) ? songTime : double.NaN,
@@ -303,40 +323,45 @@ public class SaberCutJudge : MonoBehaviour
         };
     }
 
-    // 刃の中心が、動いた向きで見てノーツを通り過ぎた時刻を覚える(曲時計があり、判定窓の中のときだけ)。
+    // 刃のうちノーツに届く部分(CuttingPoint)が、動いた向きで見てノーツの中心を通り過ぎた時刻を覚える
+    // (曲時計があり、判定窓の中のときだけ)。細い側で振るときは先端が届いた時刻、腹で払うときは刃がノーツの上を通った時刻。
     // 時刻は前後の刃の値の間で割り振る。同じ値の組では何度呼んでも同じ結果になる。変わったら tracked に積む。
     void TrackCrossing(CuttableNote note, Pending p)
     {
-        if (!Finite(songTime) || !hasStepFrom || !note.IsJudgeable) return;
+        if (!Finite(songTime) || !hasStepFrom || !hasLastMotion || !note.IsJudgeable) return;
         Vector2 noteXY = new Vector2(note.transform.position.x, note.transform.position.y);
-        Vector2 step = stepTo - stepFrom;
-        float length2 = step.sqrMagnitude;
-        if (length2 < 1e-8f) return;
-        float ahead = Vector2.Dot(noteXY - stepFrom, step);
-        if (ahead <= 0f || Vector2.Dot(noteXY - stepTo, step) > 0f) return;
+        Vector2 m = lastMotion;
+        // 動く向きで見た、届く部分からノーツまでの残り(正ならまだ手前)。
+        float before = Vector2.Dot(noteXY - CuttingPoint(stepFromA, stepFromB, noteXY, m), m);
+        float after = Vector2.Dot(noteXY - CuttingPoint(stepToA, stepToB, noteXY, m), m);
+        if (before <= 0f || after > 0f) return;
         double span = stepToTime - stepFromTime;
         double time = Finite(span) && span >= 0 && span <= MaxStepSeconds
-            ? stepFromTime + span * (ahead / length2)
+            ? stepFromTime + span * (before / (before - after))
             : stepToTime;
-        if (time == p.crossSongTime && step == p.crossDirection) return;
+        if (time == p.crossSongTime && m == p.crossDirection) return;
         p.previousCrossSongTime = p.crossSongTime;
         p.previousCrossDirection = p.crossDirection;
         p.crossSongTime = time;
-        p.crossDirection = step;
+        p.crossDirection = m;
         tracked.Add(new KeyValuePair<CuttableNote, Pending>(note, p));
     }
 
-    // 刃の中心が動いたら(カメラの新しい値)、ひとつ前の値と今の値を進める。時刻はその値を初めて見たときの曲時計。
-    void TrackStep(Vector2 center)
+    // 刃が動いたら(カメラの新しい値)、両端のひとつ前の値と今の値を進める。時刻はその値を初めて見たときの曲時計。
+    void TrackStep(bool blade)
     {
-        if (hasStepTo && center == stepTo) return;
-        stepFrom = stepTo; stepFromTime = stepToTime; hasStepFrom = hasStepTo;
-        stepTo = center; stepToTime = songTime; hasStepTo = true;
+        Vector2 a = blade ? EndA : Center(false);
+        Vector2 b = blade ? EndB : a;
+        if (hasStepTo && a == stepToA && b == stepToB) return;
+        stepFromA = stepToA; stepFromB = stepToB; stepFromTime = stepToTime; hasStepFrom = hasStepTo;
+        stepToA = a; stepToB = b; stepToTime = songTime; hasStepTo = true;
+        Vector2 moved = (stepToA + stepToB - stepFromA - stepFromB) * .5f;
+        if (hasStepFrom && moved.sqrMagnitude > 1e-8f) { lastMotion = moved.normalized; hasLastMotion = true; }
     }
 
     void ResetMotion()
     {
-        hasStepFrom = hasStepTo = hasSweep = false;
+        hasStepFrom = hasStepTo = hasSweep = hasLastMotion = false;
     }
 
     // 範囲内にとどまっている間は、いちばん近づいた瞬間を更新する(判定窓の中のフレームだけ)。
@@ -353,15 +378,71 @@ public class SaberCutJudge : MonoBehaviour
         return p;
     }
 
-    // 刃の中心が起点から passCutTravel 以上動き、動いた向きで見てノーツより先へ出たか(曲時計があるときだけ)。
-    bool Passed(Pending p, Vector2 center, Vector2 noteXY)
+    // 刃の中心が起点から passCutTravel 以上動き、起点から見てノーツが動いた向きの先にあって、
+    // 刃のうちノーツに届く部分がノーツより先へ出たか(曲時計があるときだけ)。
+    // 細い側で振るときは先端が越えれば切れる(刃の中心が届くまで振り切らなくてよい)。
+    bool Passed(Pending p, Vector2 a, Vector2 b, Vector2 center, Vector2 noteXY)
     {
         if (!Finite(songTime)) return false;
         Vector2 travel = center - p.anchor;
         float min = Mathf.Max(passCutTravel, .0001f);
         if (travel.sqrMagnitude < min * min) return false;
-        return Vector2.Dot(noteXY - p.anchor, travel) > 0f && Vector2.Dot(noteXY - center, travel) < 0f;
+        if (Vector2.Dot(noteXY - p.anchor, travel) <= 0f) return false;
+        Vector2 m = travel.normalized;
+        return Vector2.Dot(noteXY - CuttingPoint(a, b, noteXY, m), m) < 0f;
     }
+
+    // 刃 a-b のうち、向き m に動いたときにノーツに届く部分。ノーツの横の位置にある刃の点(刃の外なら横で近いほうの端)を基本に、
+    // 刃が動く向きに沿っている(傾きが ThinSideSlope 以内 = 細い側で振っている)ときは先頭の端にする。点の判定では a と b が同じ。
+    // 横のずれから、前に出ているぶんを少し差し引いた値がいちばん小さい点を選ぶ(候補は両端と、ノーツの横の位置にある刃の点)。
+    static Vector2 CuttingPoint(Vector2 a, Vector2 b, Vector2 note, Vector2 m)
+    {
+        Vector2 side = new Vector2(-m.y, m.x);
+        float sa = Vector2.Dot(a - note, side), sb = Vector2.Dot(b - note, side);
+        Vector2 best = a;
+        float bestCost = Mathf.Abs(sa) - ThinSideSlope * Vector2.Dot(a, m);
+        float costB = Mathf.Abs(sb) - ThinSideSlope * Vector2.Dot(b, m);
+        if (costB < bestCost) { best = b; bestCost = costB; }
+        if (sa * sb < 0f)
+        {
+            Vector2 q = a + (b - a) * (sa / (sa - sb));
+            if (-ThinSideSlope * Vector2.Dot(q, m) < bestCost) best = q;
+        }
+        return best;
+    }
+
+    // 細い側で振っているときの当たり。振りを横切る刃の幅(動く向きに直交する広がり)が minSwingWidth に届くまで広げる。
+    // 曲時計があり、カメラの値が届いているときだけ(それ以外は hitRange のまま)。
+    float ThinRange(Vector2 a, Vector2 b, float hitRange)
+    {
+        if (!Finite(songTime) || !ReceivingCamera) return hitRange;
+        Vector2 v = new Vector2(saber.Velocity.x, saber.Velocity.y);
+        if (v.sqrMagnitude < 1e-8f) return hitRange;
+        Vector2 m = v.normalized, blade = b - a;
+        float across = Mathf.Abs(blade.x * m.y - blade.y * m.x);
+        return Mathf.Max(hitRange, (minSwingWidth - across) * .5f);
+    }
+
+    // このノーツから widenGuardDistance 以内に、時刻の違う受付中のノーツ(この手で切れるもの)があるか。
+    bool Crowded(CuttableNote note)
+    {
+        Vector2 xy = new Vector2(note.transform.position.x, note.transform.position.y);
+        float guard2 = widenGuardDistance * widenGuardDistance;
+        var notes = CuttableNote.ActiveNotes;
+        for (int i = 0; i < notes.Count; i++)
+        {
+            var other = notes[i];
+            if (other == note || !IsCandidate(other)) continue;
+            if (!SaberHandHelper.CanCut(other.RequiredHand, EffectiveHand())) continue;
+            if (System.Math.Abs(other.HitTime - note.HitTime) <= SimultaneousSeconds) continue;
+            Vector2 o = new Vector2(other.transform.position.x, other.transform.position.y);
+            if ((o - xy).sqrMagnitude <= guard2) return true;
+        }
+        return false;
+    }
+
+    Vector2 EndA => new Vector2(bladeProvider.WorldEndA.x, bladeProvider.WorldEndA.y);
+    Vector2 EndB => new Vector2(bladeProvider.WorldEndB.x, bladeProvider.WorldEndB.y);
 
     // 抜けて切るときの向き: 起点からいちばん近づいたところまでの中心の動き(短ければ起点から今まで)。
     // 曲時計がないとき(タイトル・単体テスト)は従来どおり、入った(近づいた)ときの速さ。
@@ -435,7 +516,8 @@ public class SaberCutJudge : MonoBehaviour
 
     bool ReceivingCamera => bladeProvider != null && bladeProvider.ReceivingCamera;
 
-    // 採点の時刻: 刃の中心がノーツを通り過ぎた時刻(切った向きと同じ向きに通り過ぎたもの)。なければいちばん近づいた時刻。
+    // 採点の時刻: 刃のうちノーツに届く部分がノーツの中心を通り過ぎた時刻(切った向きと同じ向きに通り過ぎたもの)。
+    // なければいちばん近づいた時刻。
     // 1回で切るノーツは判定窓の端に収める(切れたのに MISS と採点しない)。ロングは完了の割合で採点する。
     double? ScoreTime(CuttableNote note, Pending p, Vector2 cutMotion)
     {

@@ -83,6 +83,8 @@ public static class SaberRig
         to.passCutTravel = from.passCutTravel;
         to.directionToleranceDegrees = from.directionToleranceDegrees;
         to.verticalDirectionScale = from.verticalDirectionScale;
+        to.minSwingWidth = from.minSwingWidth;
+        to.widenGuardDistance = from.widenGuardDistance;
     }
 
     private static SaberCutJudge FindSecondJudge(SaberCutJudge primary)

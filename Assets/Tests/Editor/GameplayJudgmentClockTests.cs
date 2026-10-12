@@ -217,12 +217,12 @@ public class GameplayJudgmentClockTests
         tracker.ResetTo(new Vector3(.3f, 2f, 0));
         StepVerticalBlade(new Vector2(.3f, 1.4f), 1.17); // 入る(判定窓の終わり近く)
         StepVerticalBlade(new Vector2(.3f, .8f), 1.19);  // 窓の中でいちばん近づく
-        StepVerticalBlade(new Vector2(.3f, .5f), 1.27);  // 締め切り(1 + 0.2025 + 0.06)を過ぎたが、まだ中心はノーツの上
+        StepVerticalBlade(new Vector2(.3f, .5f), 1.27);  // 締め切り(1 + 0.2025 + 0.06)を過ぎたが、刃の先はノーツの高さまでで、まだ越えていない
         Assert.False(note.IsMissed, "刃がノーツの上を通っている最中は Miss を待つ");
         Assert.False(note.IsCut);
         if (passes)
         {
-            StepVerticalBlade(new Vector2(.3f, -.4f), 1.30); // 中心がノーツより下へ
+            StepVerticalBlade(new Vector2(.3f, -.4f), 1.30); // 刃の先がノーツより下へ
             Assert.True(note.IsCut);
             Assert.False(note.IsMissed);
             Assert.AreEqual(1.19, note.LastCutSongTime.Value, .02, "採点はいちばん近づいた時刻");
