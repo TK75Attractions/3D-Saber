@@ -60,6 +60,14 @@
 
 ## 作業ログ
 
+### 2026-10-12 夜 ビルド済み Player で剣が出ない・本編が動かない不具合（ユーザー報告、修正済み）
+- **原因**: `Shader.Find("Universal Render Pipeline/Unlit")`（予備の `Unlit/Color` も）が、ビルド済み Player では null を返す。どの Material も参照していない shader は build に入らないため。Editor では必ず見つかるので気づけなかった。
+  - `SaberInputBridge.EnsureBladeOutline`（投影モード既定 ON の輪郭線）で `new Material(null)` が例外になり、Awake が止まって**剣が出ない**（Player.log に `ArgumentNullException: shader`）。
+  - 本編では `GamePlayManager.Update` が**毎フレーム例外**（16秒で 33,131 回。小節線など）。曲選択のプレビュー・`SaberRig` も同じ形。Player では本編が正常に動いていなかった。
+- **修正**: Graphics の Always Included Shaders に `Universal Render Pipeline/Unlit` を追加（`ProjectSettings/GraphicsSettings.asset` に1行。Editor の動作は変わらない）。`SaberInputBridge` は shader が無くても落ちない（輪郭線だけ省く）。
+- **再発防止**: `PhoneSaber/tools/unity_copy.sh build-mac` が、**差し替える前に Player を窓なしで起動**して Title → SongSelect → Game を開き、例外の数と「自分へ送った座標が届いて剣の部品があること」を確かめる（`PhoneSaberPlayerSmoke.cs`、`-phonesaberSmoke`）。修正前の build では例外 33,131 件で不合格、修正後は 0 件・入力 OK。EditMode に `PhoneSaberBuildShaderTests`（script が名前で探す shader が build に入る見込みか）を追加。
+- EditMode（PhoneSaber）1178/1178。Windows の build にも同じ設定が効くが、Windows 実機では未確認。
+
 ### 2026-10-12 認識の失敗集計（Codex、offline のみ。認識コードは未変更）
 - [recognition-census-20261011.md](recognition-census-20261011.md): 696 ファイル（重複除外 657 画像）を本番 C++ で再認識し、剣ありの出力 RED 86/99・BLUE 82/82、剣なし FP RED 77/153・BLUE 44/178、位置ラベルとの合致 RED 60/77・BLUE 52/59。選抜された異常場面が中心なので当日の発生率ではない。
 - 次に実機で確かめる第一候補は**青の背景条件**（限定した mask 条件＋purity。既知 FP 44→33、位置が合っていた 52 出力を保持）。赤の HV≥.65 の一律追加は見送り。赤の見落とし 13 件は候補が全て ineligible（compactRed purity<.50 が 11 件）。

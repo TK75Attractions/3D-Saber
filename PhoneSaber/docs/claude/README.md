@@ -25,7 +25,7 @@ AI と開発者向け。**いまの状態を知るには [STATUS.md](STATUS.md) 
 | 公式検証 | `bash PhoneSaber/tools/verify_phone_saber.sh`（Git root から） |
 | スタッフ用 PDF | `python3 PhoneSaber/tools/build_staff_manual_pdf.py`（`docs/STAFF_MANUAL.md` → `.pdf`、2ページ） |
 | Android のテストとビルド | `cd PhoneSaber/android && ./gradlew --stop; ./gradlew :app:testDebugUnitTest :app:assembleDebug`（`JAVA_HOME` は Android Studio の jbr。Codex の後は先に `--stop`） |
-| Unity のテスト・ビルド | `PhoneSaber/tools/unity_copy.sh editmode` / `build-mac`（複製 `~/Library/Caches/PhoneSaber/unity-copy` で実行）、PlayMode 全件は `unity_playmode_batches.py` |
+| Unity のテスト・ビルド | `PhoneSaber/tools/unity_copy.sh editmode` / `build-mac`（複製 `~/Library/Caches/PhoneSaber/unity-copy` で実行）、PlayMode 全件は `unity_playmode_batches.py`。`build-mac` は作った Player を窓なしで起動して例外と入力を確かめてから差し替える（`smoke` だけでも実行できる）。**Editor で動いても Player で動くとは限らない**（build に入らない shader など）。 |
 | C++ / Swift の一致確認 | `make -C PhoneSaber/android/core test parity` |
 
 ## 当日運用

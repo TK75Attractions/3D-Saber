@@ -60,6 +60,7 @@ public class SaberInputBridge : MonoBehaviour
     Material bladeMaterialOwned;
     // プロジェクターモード用: 刃の背面に敷く暗い縁取り線
     LineRenderer bladeOutline;
+    bool bladeOutlineUnavailable;
     Material bladeOutlineMaterialOwned;
     SaberBladeVisual bladeVisual;
 
@@ -247,7 +248,9 @@ public class SaberInputBridge : MonoBehaviour
         if (bladeLine.sharedMaterial == null)
         {
             // URP標準Unlitはラインの頂点色を使わないため、専用の頂点色シェーダーで描く。
-            var sh = Resources.Load<Shader>("Effects/GameplayCutAccent") ?? Shader.Find("Universal Render Pipeline/Unlit");
+            // ビルド済み Player では、どの Material も参照していない shader は含まれず Shader.Find が null を返す。
+            // null のまま new Material すると Awake が例外で止まり、剣が出なくなる(2026-10-12)。
+            var sh = Resources.Load<Shader>("Effects/GameplayCutAccent") ?? FindLineShader();
             bladeMaterialOwned = new Material(sh);
             // ラインの頂点色で着色する。同じ色を材質にも掛けて暗くしない。
             if (bladeMaterialOwned.HasProperty("_BaseColor")) bladeMaterialOwned.SetColor("_BaseColor", Color.white);
@@ -261,6 +264,10 @@ public class SaberInputBridge : MonoBehaviour
 
     // プロジェクターモードでは刃を太くする(灰色に浮いた投影面で細い線が埋もれるため)
     float EffectiveBladeWidth => bladeWidth * (DisplaySettings.ProjectorMode ? ProjectorMode.BladeWidthScale : 1f);
+    // Graphics の Always Included Shaders に入っている Unlit を使う。無ければ必ず含まれる Sprites/Default。
+    static Shader FindLineShader()
+        => Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color") ?? Shader.Find("Sprites/Default");
+
 
     // 刃の背面に敷く暗い縁取り線(プロジェクターモードのみ)。刃より少し奥(+z)に置いて Z ファイトを避ける。
     void EnsureBladeOutline()
@@ -273,6 +280,17 @@ public class SaberInputBridge : MonoBehaviour
         }
         if (bladeOutline == null)
         {
+            var sh = FindLineShader();
+            if (sh == null)
+            {
+                // 輪郭線は飾り。shader が無い build でも剣そのものは出す。
+                if (!bladeOutlineUnavailable)
+                {
+                    bladeOutlineUnavailable = true;
+                    Debug.LogWarning("[Saber] 輪郭線用の shader が build に含まれていません。輪郭線なしで続行します。");
+                }
+                return;
+            }
             var go = new GameObject("BladeOutline");
             go.transform.SetParent(transform, false);
             bladeOutline = go.AddComponent<LineRenderer>();
@@ -281,7 +299,6 @@ public class SaberInputBridge : MonoBehaviour
             bladeOutline.numCapVertices = 4;
             bladeOutline.numCornerVertices = 0;
             bladeOutline.alignment = LineAlignment.View;
-            var sh = Shader.Find("Universal Render Pipeline/Unlit") ?? Shader.Find("Unlit/Color");
             bladeOutlineMaterialOwned = new Material(sh);
             if (bladeOutlineMaterialOwned.HasProperty("_BaseColor")) bladeOutlineMaterialOwned.SetColor("_BaseColor", ProjectorMode.BladeOutlineColor);
             else bladeOutlineMaterialOwned.color = ProjectorMode.BladeOutlineColor;
