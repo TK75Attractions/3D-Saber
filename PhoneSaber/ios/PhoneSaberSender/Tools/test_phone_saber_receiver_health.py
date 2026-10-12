@@ -18,7 +18,7 @@ import time
 import unittest
 from http.client import HTTPConnection
 from pathlib import Path
-from threading import Thread
+from threading import Event, Thread
 from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -135,19 +135,37 @@ class ReceiverHealthTests(unittest.TestCase):
         server = self.server(mode="disabled")
         seen: list[bool] = []
         original = server.enqueue_analysis
+        finish_entered, release_finish, finished = Event(), Event(), Event()
+        original_finish = server.upload_finished
 
         def enqueue(bundle, **kwargs):
             seen.append(server.health()["idle"])
             return original(bundle, **kwargs)
 
+        def finish():
+            finish_entered.set()
+            # HTTP 応答は finally の終了処理より先に届く。処理順を固定して両状態を検証する。
+            if not release_finish.wait(3):
+                return
+            original_finish()
+            finished.set()
+
         self.serve(server)
         body = write_codex_bundle(self.root / "upload")
         with mock.patch.object(server, "enqueue_analysis", side_effect=enqueue), \
+                mock.patch.object(server, "upload_finished", side_effect=finish), \
                 contextlib.redirect_stdout(io.StringIO()):
-            status, _ = self.request(server, "POST", "/v1/bundle", body, {
-                "Content-Type": CONTENT_TYPE, "Content-Length": str(len(body))})
-        self.assertEqual(status, 201)
-        self.assertEqual(seen, [False])
+            try:
+                status, _ = self.request(server, "POST", "/v1/bundle", body, {
+                    "Content-Type": CONTENT_TYPE, "Content-Length": str(len(body))})
+                self.assertEqual(status, 201)
+                self.assertEqual(seen, [False])
+                self.assertTrue(finish_entered.wait(3), "upload_finished was not reached")
+                self.assertFalse(server.health()["idle"])
+                self.assertEqual(server.health()["uploadsInProgress"], 1)
+            finally:
+                release_finish.set()
+                self.assertTrue(finished.wait(3), "upload_finished did not complete")
         self.assertTrue(server.health()["idle"])
 
     def test_rejected_uploads_are_logged_with_reason(self) -> None:
