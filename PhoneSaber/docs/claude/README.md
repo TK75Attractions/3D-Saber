@@ -51,6 +51,7 @@ AI と開発者向け。**いまの状態を知るには [STATUS.md](STATUS.md) 
 | [recognition-benchmark.md](recognition-benchmark.md) | 現行認識の PNG benchmark |
 | [coreline-overlink-and-mural.md](coreline-overlink-and-mural.md) | core-line の過連結と壁画の誤検出（offline 分析、guard G） |
 | [coreline-guard-prototype.md](coreline-guard-prototype.md) | guard G の採用ノート（証拠、切り方、残る確認） |
+| [recognition-census-20261011.md](recognition-census-20261011.md) | 認識の失敗集計（見落とし・順位負け・誤検出・露出）と次の改善候補 |
 | [red-fp-features.md](red-fp-features.md) | 赤・青の誤検出と winner の特徴量 |
 | [debug-retention-20261011.md](debug-retention-20261011.md) | 手動録画に振りの画像が残らなかった原因 |
 | [fixb-offline.md](fixb-offline.md) / [jitter-analysis.md](jitter-analysis.md) / [jitter-filter.md](jitter-filter.md) / [predict-real.md](predict-real.md) / [unity-predict.md](unity-predict.md) | 端点の修正案、揺れ、予測の検討 |

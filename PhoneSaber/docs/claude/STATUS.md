@@ -60,6 +60,12 @@
 
 ## 作業ログ
 
+### 2026-10-12 認識の失敗集計（Codex、offline のみ。認識コードは未変更）
+- [recognition-census-20261011.md](recognition-census-20261011.md): 696 ファイル（重複除外 657 画像）を本番 C++ で再認識し、剣ありの出力 RED 86/99・BLUE 82/82、剣なし FP RED 77/153・BLUE 44/178、位置ラベルとの合致 RED 60/77・BLUE 52/59。選抜された異常場面が中心なので当日の発生率ではない。
+- 次に実機で確かめる第一候補は**青の背景条件**（限定した mask 条件＋purity。既知 FP 44→33、位置が合っていた 52 出力を保持）。赤の HV≥.65 の一律追加は見送り。赤の見落とし 13 件は候補が全て ineligible（compactRed purity<.50 が 11 件）。
+- 露出: 10ms の赤速振り 4/4、20ms 8/9 で位置出力あり。別撮影・別姿勢で、1/100 より短い既定を選ぶ根拠は無い。**短い露出の既定化には比較撮影が1本必要。**
+- Codex の無人 runner は 10-12 04:39 に全ジョブを終えて終了した。新しいジョブは入れていない。
+
 ### 2026-10-11 夜〜10-12 未明 Codex の点検結果の取り込みと仕上げ（verify 全項目 PASS）
 - **認識: core-line 過連結 guard G を採用**（Codex 実装、Claude が変更前後の画像を目視）。C++ / Swift 共通、既定 ON、切替は `PHONESABER_CORELINE_GUARD=0`。parity 325 PNG 不一致 0、formal 40/40、host の追加コスト C++ +0.03ms / Swift +0.02ms。[採用ノート](coreline-guard-prototype.md)。
 - **10-10〜11 に入れた変更の再レビュー**（Codex、[review-merged-20261011.md](review-merged-20261011.md)）で直したもの: ConnectivityLog の世代交代が directory を再帰削除する、CDPATH で Mac 起動パスが壊れる、Unity が crash しても PASS XML だけで成功扱いになる、最後の経路切替ログの欠落、など。
@@ -70,7 +76,7 @@
 - **部品間の取り決めの照合**（Codex、[protocol-contracts-20261011.md](protocol-contracts-20261011.md)）: `timestamp=` 接頭辞が統計と P2P で扱われない不一致を修正。座標・探索応答の共通テストベクトル（`tools/fixtures/protocol_*.tsv`）を Swift / Kotlin / C# / Python のテストが読む。
 - **手順書と実物の照合**（Codex＋Claude、[ops-doc-audit-20261011.md](ops-doc-audit-20261011.md)）: スタッフマニュアルの復旧表を「症状→一つの対処」に作り直し、runbook の先頭に開場直前チェック表。新しい画面表示（転送状態、手動 IP の解除、競合警告、発熱 30fps、充電警告）を反映。**STAFF_MANUAL.pdf を作り直した**（`tools/build_staff_manual_pdf.py`、2ページ）。
 - **検証の落とし穴を2つ修正**: view model のテストが、この Mac で動いている本物の Unity の 5007 応答を拾って落ちる（テスト中は応答しない port を使う）。Codex の sandbox が残した Gradle daemon が別 worktree に書けず build が落ちる（gradle の前に `./gradlew --stop`）。
-- **未取り込み（branch に保存。実機で確かめてから）**: `cx/ios2-20261011` の iPhone 遅延短縮（120fps の選択肢、HDR・歪み補正の無効化。カメラ設定が変わるので実機確認が先）、`cx/android-latency-20261011`（撮影→送信の表示修正、解析スレッドの優先度）、`cx/recog-20261011`（認識の失敗集計。Codex の枠切れで未完）。
+- **未取り込み（branch に保存。実機で確かめてから）**: `cx/ios2-20261011` の iPhone 遅延短縮（120fps の選択肢、HDR・歪み補正の無効化。カメラ設定が変わるので実機確認が先）、`cx/android-latency-20261011`（撮影→送信の表示修正、解析スレッドの優先度）、認識の失敗集計は 10-12 に完了して取り込み済み（上の項）。
 - 検証: verify_phone_saber.sh 全項目 PASS、PhoneSaber/tools 178 tests、Android JVM 58、Unity EditMode（PhoneSaber）1139 中 1137（2件は譜面エディタ）。実機・Windows 実機は未確認。
 
 ### 2026-10-11 プロトコル監査のWIP継続（未commit・未push）
