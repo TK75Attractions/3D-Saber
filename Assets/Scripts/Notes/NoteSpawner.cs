@@ -20,6 +20,9 @@ public class NoteSpawner : MonoBehaviour
     public float earlyJudgeWindow = (float)JudgmentTierHelper.EarlyBadSeconds;
     // lateWindow を過ぎたら自動的に miss 扱いにする猶予秒数。
     public float missGrace = 0.06f;
+    // 刃がノーツの上を通っている最中(HoldMiss が true)なら、Miss の確定をさらにこの秒数まで待つ。
+    // その間に刃が通り過ぎれば切れる(採点は刃がいちばん近づいた時刻)。新規フィールドなのでシーンの値は無くコード既定値が効く。
+    public float passHoldSeconds = 0.15f;
     // miss 扱いになった後、ノーツを画面後方まで流してから片付けるまでの秒数。
     public float despawnAfterMissSeconds = 1.5f;
     // ロングノーツの追加カット1回あたりの判定ウィンドウ延長秒。
@@ -129,6 +132,13 @@ public class NoteSpawner : MonoBehaviour
     public IReadOnlyList<CuttableNote> LiveNotes => liveNotes;
     // ゲーム判定側だけが設定する、受信待ち中のMiss確定保留。
     public System.Func<CuttableNote, double, bool> ShouldDeferMiss { get; set; }
+    // セーバー判定が「刃がこのノーツの上を通っている最中」と答えたら、passHoldSeconds まで Miss を待つ(GamePlayManager が設定)。
+    public System.Func<CuttableNote, bool> HoldMiss { get; set; }
+    // 判定の時計の遅れ(秒)。カメラの入力の遅れを、受付窓と Miss の確定だけで差し引く。
+    // ノーツの位置・着地枠などの見た目は曲の時計のまま。GamePlayManager が毎フレーム設定する(既定 0)。
+    public double JudgeLatencySeconds { get; set; }
+    // 判定に使う曲時計(曲の時計から遅れを引いた時刻)。
+    public double JudgeClock(double songTime) => songTime - JudgeLatencySeconds;
     public int NextIndex => nextIndex;
     // 譜面の総ノーツ数(ランクの合計割合計算用)。譜面未設定なら 0。
     public int TotalNoteCount => chart != null && chart.notes != null ? chart.notes.Count : 0;
@@ -195,14 +205,14 @@ public class NoteSpawner : MonoBehaviour
         if (cutFeedback != null) cutFeedback.Tick(Time.deltaTime);
     }
 
-    // セーバー判定の前に受付窓だけを今の曲時計へ合わせる。
+    // セーバー判定の前に受付窓だけを今の曲時計へ合わせる(判定の時計で見る)。
     // 生成・移動・Miss通知は従来どおり判定後の Tick で行う。
     public void RefreshJudgmentWindows(double songTime)
     {
         foreach (CuttableNote note in liveNotes)
         {
             if (note != null)
-                UpdateJudgmentWindow(note, note.HitTime - songTime, LateWindowFor(note));
+                UpdateJudgmentWindow(note, note.HitTime - JudgeClock(songTime), LateWindowFor(note));
         }
     }
 
@@ -437,11 +447,12 @@ public class NoteSpawner : MonoBehaviour
             note.transform.position = new Vector3(p.x, p.y, z);
 
             // ロングノーツは複数回切る時間が必要なので、後方の窓を回数に応じて伸ばす。
-            // 早め側は earlyJudgeWindow で別管理（小さい）、遅め側は lateWindow（大きい）で非対称化。
+            // 早め側は earlyJudgeWindow、遅め側は lateWindow。受付窓と Miss は判定の時計(カメラの遅れを引いた時刻)で見る。
             float lateWindow = LateWindowFor(note);
-            UpdateJudgmentWindow(note, dt, lateWindow);
+            double judgeDt = note.HitTime - JudgeClock(songTime);
+            UpdateJudgmentWindow(note, judgeDt, lateWindow);
 
-            // タイミングキュー(着地ゴースト)の駆動
+            // タイミングキュー(着地ゴースト)の駆動。見た目なので曲の時計のまま。
             if (note.TimingCue != null)
             {
                 note.TimingCue.Tick(dt, approachTime, earlyJudgeWindow, lateWindow);
@@ -455,8 +466,9 @@ public class NoteSpawner : MonoBehaviour
             }
 
             // 判定窓を過ぎた瞬間に Miss を1回だけ発火するが、ノーツは消さずに後ろへ流し続ける。
-            if (!note.IsMissed && dt < -(lateWindow + missGrace)
-                && !(ShouldDeferMiss?.Invoke(note, songTime) ?? false))
+            if (!note.IsMissed && judgeDt < -(lateWindow + missGrace)
+                && !(ShouldDeferMiss?.Invoke(note, songTime) ?? false)
+                && !HoldsMiss(note, judgeDt, lateWindow))
             {
                 note.MarkMiss();
                 OnNoteMissed?.Invoke(note);
@@ -486,6 +498,12 @@ public class NoteSpawner : MonoBehaviour
     {
         if (note == null) return judgeWindow;
         return judgeWindow + LingerSecondsFor(note);
+    }
+
+    // 刃がノーツの上を通っている最中なら、締め切りのあとも passHoldSeconds までは Miss にしない。
+    bool HoldsMiss(CuttableNote note, double judgeDt, float lateWindow)
+    {
+        return HoldMiss != null && judgeDt >= -(lateWindow + missGrace + passHoldSeconds) && HoldMiss(note);
     }
 
     // ロングノーツは HitTime 経過後に判定面の少し後方で「滞留」させて、プレイヤーが切り続けやすくする。

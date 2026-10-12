@@ -191,17 +191,19 @@ public class CuttableNote : MonoBehaviour
         return CutCore(hitPoint, cutVelocity, CutDirection.None, cutterHand, songTime, directionTolerance);
     }
 
-    // 従来のセーバー判定用。judgedSongTime があれば、その曲時計(刃がいちばん近づいた時刻)で採点する。
-    // 方向の扱いは Cut と同じ(逆方向は切らない)。切れたかどうかを返す。
+    // 従来のセーバー判定用。judgedSongTime があれば、その曲時計(刃がノーツを通り過ぎた・いちばん近づいた時刻)で採点する。
+    // 方向の扱いは Cut と同じ(逆方向は切らない)。directionTolerance は向きが合うとみなす dot 閾値(既定 ±30°)。
+    // judgedDirection は向きの判定だけに使う動き(省略時は cutVelocity)。切り口や破片は cutVelocity のまま。
+    // 切れたかどうかを返す。
     public bool CutAtSongTime(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand,
-        double? judgedSongTime)
+        double? judgedSongTime, float directionTolerance = .866f, Vector2? judgedDirection = null)
     {
         if (judgedSongTime.HasValue && !CameraSaberHistory.Finite(judgedSongTime.Value)) judgedSongTime = null;
-        return CutCore(hitPoint, cutVelocity, imuHint, cutterHand, null, .866f, judgedSongTime);
+        return CutCore(hitPoint, cutVelocity, imuHint, cutterHand, null, directionTolerance, judgedSongTime, judgedDirection);
     }
 
     bool CutCore(Vector3 hitPoint, Vector3 cutVelocity, CutDirection imuHint, SaberHand cutterHand,
-        double? swingSongTime, float directionTolerance, double? judgedSongTime = null)
+        double? swingSongTime, float directionTolerance, double? judgedSongTime = null, Vector2? judgedDirection = null)
     {
         if (!isActiveAndEnabled || IsCut || IsMissed || IsFinalized) return false;
 
@@ -214,7 +216,7 @@ public class CuttableNote : MonoBehaviour
         // 逆方向（要求方向と約120°以上ズレた）スイングはそもそも切らない。
         // 「準備で間違って切ってしまう」現象を防ぐためのガード。
         // 横方向（90°前後）は dot ≈ 0 で reject されないので、従来通り降格カットで通る。
-        Vector2 vXY = new Vector2(cutVelocity.x, cutVelocity.y);
+        Vector2 vXY = judgedDirection ?? new Vector2(cutVelocity.x, cutVelocity.y);
         // 方向が見た目だけのノーツ(ナビノーツ)は逆方向拒否も方向判定もしない
         bool judgeDirection = RequiredDirection != CutDirection.None && !DirectionVisualOnly;
         if (!swingSongTime.HasValue && judgeDirection &&
@@ -227,7 +229,7 @@ public class CuttableNote : MonoBehaviour
         // 方向判定（1回でも誤方向なら以降 false 維持）
         bool dirOk = !judgeDirection || (swingSongTime.HasValue
             ? CutDirectionHelper.Matches(RequiredDirection, vXY, directionTolerance)
-            : CutDirectionHelper.MatchesWithHint(RequiredDirection, vXY, imuHint));
+            : CutDirectionHelper.MatchesWithHint(RequiredDirection, vXY, imuHint, directionTolerance));
         if (CutsAchieved == 0) LastCutCorrectDirection = dirOk;
         else LastCutCorrectDirection = LastCutCorrectDirection && dirOk;
 

@@ -73,11 +73,11 @@ public static class CutDirectionHelper
         return Vector2.Dot(v, r) >= tolerance;
     }
 
-    // 速度方向か IMU 検知方向のどちらかが一致すれば OK。
-    public static bool MatchesWithHint(CutDirection required, Vector2 cutVelXY, CutDirection imuHint)
+    // 速度方向か IMU 検知方向のどちらかが一致すれば OK。tolerance は Matches と同じ dot 閾値。
+    public static bool MatchesWithHint(CutDirection required, Vector2 cutVelXY, CutDirection imuHint, float tolerance = 0.866f)
     {
         if (required == CutDirection.None) return true;
-        if (Matches(required, cutVelXY)) return true;
+        if (Matches(required, cutVelXY, tolerance)) return true;
         if (imuHint != CutDirection.None && imuHint == required) return true;
         return false;
     }

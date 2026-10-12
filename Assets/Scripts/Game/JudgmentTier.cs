@@ -12,17 +12,19 @@ public static class JudgmentTierHelper
     // 判定窓（秒）。2026-09「全体的に厳しく(1/2くらい)、その代わり PERFECT の比率を少し上げて」の要望で、
     // 全体(Bad)を 405ms → 202.5ms に半減し、PERFECT の取り分を全体の 1/3 → 約 42% に広げた
     // (旧: 135/225/315/405ms、2026-07「だいぶ甘く」時の値)。
-    // 早め（error < 0）は遅めの 1/2 のままにして、準備スイングの誤爆だけ引き続き抑える非対称窓。
+    // 2026-10「どうしても切りにくい」の対策で、カメラの遅れを判定の時計だけで差し引くようにした(GamePlayManager)。
+    // それに合わせて、早め（error < 0）も遅めと同じ幅にした(以前は半分)。体の動きで見ると、早めに受け付ける
+    // 限界は以前とほぼ同じ(約0.22秒前)なので、準備の振りで切れてしまう早さは変わらない。
     // NoteSpawner の判定可能ウィンドウは GamePlayManager がこの定数から同期する
     // （シーンに古い狭い値が焼き込まれていても、ここを変えれば全体が追従する）。
     public const double LatePerfectSeconds = 0.085;
     public const double LateGreatSeconds = 0.130;
     public const double LateGoodSeconds = 0.170;
     public const double LateBadSeconds = 0.2025;
-    public const double EarlyPerfectSeconds = LatePerfectSeconds * 0.5; // 0.0425
-    public const double EarlyGreatSeconds = LateGreatSeconds * 0.5;     // 0.065
-    public const double EarlyGoodSeconds = LateGoodSeconds * 0.5;       // 0.085
-    public const double EarlyBadSeconds = LateBadSeconds * 0.5;         // 0.10125
+    public const double EarlyPerfectSeconds = LatePerfectSeconds;
+    public const double EarlyGreatSeconds = LateGreatSeconds;
+    public const double EarlyGoodSeconds = LateGoodSeconds;
+    public const double EarlyBadSeconds = LateBadSeconds;
 
     // 判定時刻との誤差（秒）からティアを決める。
     public static JudgmentTier Classify(double errorSeconds)

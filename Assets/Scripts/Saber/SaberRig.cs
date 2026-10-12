@@ -80,6 +80,9 @@ public static class SaberRig
         to.maxCutDistance = from.maxCutDistance;
         to.noteHitRadiusXY = from.noteHitRadiusXY;
         to.imuHintMaxAgeSeconds = from.imuHintMaxAgeSeconds;
+        to.passCutTravel = from.passCutTravel;
+        to.directionToleranceDegrees = from.directionToleranceDegrees;
+        to.verticalDirectionScale = from.verticalDirectionScale;
     }
 
     private static SaberCutJudge FindSecondJudge(SaberCutJudge primary)

@@ -440,6 +440,220 @@ public class SaberCutJudgeTests
         Assert.AreEqual(end - .01, note.LastCutSongTime.Value, 1e-9);
     }
 
+    // ------ 曲時計があるとき: 刃の中心がノーツを通り過ぎたら切る・向きは刃の中心が動いた向き ------
+
+    private (SaberCutJudge judge, SaberTracker tracker, SaberInputBridge bridge) GameBladeRig()
+    {
+        var rig = MakeBladeRig();
+        rig.judge.bladeRadius = .32f; rig.judge.noteHitRadiusXY = .88f; // 本編と同じ当たり(刃との距離 1.2)
+        rig.judge.minCutSpeed = 2f;
+        return rig;
+    }
+
+    // 刃(長さ 2*half、vertical なら縦向き)の中心を center へ動かして判定する。time が NaN なら曲時計なし。
+    private static int Step(SaberCutJudge judge, SaberTracker tracker, SaberInputBridge bridge,
+        Vector2 center, double time, bool vertical = true, float half = .5f)
+    {
+        tracker.Tick(new Vector3(center.x, center.y, 0f), .02f);
+        Vector3 c = new Vector3(center.x, center.y, 0f);
+        Vector3 along = vertical ? new Vector3(0f, half, 0f) : new Vector3(half, 0f, 0f);
+        bridge.OverrideBlade(c - along, c + along);
+        return judge.TryCut(time);
+    }
+
+    [Test]
+    public void VerticalBladeSwungAlongItselfIsCutAndScoredWhenItsCenterPassesTheNote()
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = TimedNote(Vector3.zero, 1.0);
+        note.RequiredDirection = CutDirection.Down;
+        tracker.ResetTo(new Vector3(.3f, 2f, 0f));
+        Assert.AreEqual(0, Step(judge, tracker, bridge, new Vector2(.3f, 1.4f), .94)); // 入る(刃の下端からノーツまで約0.95)
+        Assert.AreEqual(0, Step(judge, tracker, bridge, new Vector2(.3f, .45f), .96)); // 刃の先がノーツの高さに届く(距離0.3)
+        Assert.AreEqual(0, Step(judge, tracker, bridge, new Vector2(.3f, .15f), .98)); // 距離は0.3のまま。中心はまだ上
+        Assert.False(note.IsCut);
+        Assert.AreEqual(1, Step(judge, tracker, bridge, new Vector2(.3f, -.15f), 1.0)); // 中心がノーツより下へ
+        Assert.True(note.IsCut, "当たりの円(半径1.2)を抜け切る前に切れる");
+        Assert.True(note.LastCutCorrectDirection);
+        Assert.AreEqual(.99, note.LastCutSongTime.Value, 1e-6,
+            "採点は刃の中心が通り過ぎた時刻(.98と1.0の間)。刃の先が届いた時刻(.96)ではない");
+    }
+
+    [Test]
+    public void PokeAndPullBackIsScoredWhenTheCenterPassedInTheCutDirection()
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = TimedNote(Vector3.zero, 1.0);
+        tracker.ResetTo(new Vector3(0f, -.6f, 0f));
+        Step(judge, tracker, bridge, new Vector2(0f, -.5f), .96, false, 1f); // 円の中で入る
+        Step(judge, tracker, bridge, new Vector2(0f, .3f), .98, false, 1f);  // 突き上げて中心がノーツを越える(0.8しか動かず、まだ切れない)
+        Step(judge, tracker, bridge, new Vector2(0f, -.4f), 1.0, false, 1f); // 引き戻して、もう一度越える
+        Assert.False(note.IsCut);
+        Step(judge, tracker, bridge, new Vector2(0f, -1.4f), 1.02, false, 1f); // 円の外へ抜けて切れる
+        Assert.True(note.IsCut);
+        Assert.AreEqual(.9725, note.LastCutSongTime.Value, 1e-6, "切った向き(突き上げ)で中心が通り過ぎた時刻。引き戻した時刻ではない");
+    }
+
+    // 画面上の振りの向き(x, y)。カメラの値は縦が約1/2.4に縮んで届くので、カメラのときは縦を2.4倍して向きを比べる。
+    [TestCase(CutDirection.Down, .819f, -.574f, true, true)]   // 画面では真下から55°。体の動きでは約31°
+    [TestCase(CutDirection.Down, .819f, -.574f, false, false)] // マウスなど(カメラ以外)は補正しない
+    [TestCase(CutDirection.Right, .766f, .643f, true, false)]  // 画面では水平から40°。体の動きでは約64°
+    [TestCase(CutDirection.Right, .766f, .643f, false, true)]
+    public void CameraSwingDirectionIsComparedWithTheVerticalMotionScaledBack(CutDirection required, float x, float y,
+        bool camera, bool correct)
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        bridge.OverrideCameraInput(camera);
+        var note = TimedNote(Vector3.zero, 1.0);
+        note.RequiredDirection = required;
+        Vector2 dir = new Vector2(x, y).normalized;
+        tracker.ResetTo(-dir * 1.5f);
+        Step(judge, tracker, bridge, -dir, .98, false);
+        Step(judge, tracker, bridge, dir * .6f, 1.0, false);
+        Assert.True(note.IsCut);
+        Assert.AreEqual(correct, note.LastCutCorrectDirection);
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public void FastSwingThatJumpsOverTheNoteBetweenTwoValuesStillCuts(bool clock)
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = TimedNote(Vector3.zero, 1.0);
+        tracker.ResetTo(new Vector3(-3f, 0f, 0f));
+        Step(judge, tracker, bridge, new Vector2(-2f, 0f), clock ? .98 : double.NaN); // 縦の刃。ノーツから2.0(当たり1.2の外)
+        Step(judge, tracker, bridge, new Vector2(2f, 0f), clock ? 1.0 : double.NaN);  // 次の値では反対側の外
+        Assert.AreEqual(clock, note.IsCut, clock ? "前の刃から今の刃までが通った面で拾う" : "曲時計のない画面は従来どおり");
+        if (clock) Assert.AreEqual(.99, note.LastCutSongTime.Value, 1e-6, "中心がノーツを通り過ぎた時刻(前後の値の間)");
+    }
+
+    [Test]
+    public void BladeThatJumpsFarAfterAMisdetectionDoesNotSweepThroughNotes()
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = TimedNote(Vector3.zero, 1.0);
+        tracker.ResetTo(new Vector3(-4f, 0f, 0f));
+        Step(judge, tracker, bridge, new Vector2(-3f, 0f), .98);
+        Step(judge, tracker, bridge, new Vector2(3f, 0f), 1.0); // 中心が6動いた(maxCutDistance 5 を超える誤認識の飛び)
+        Assert.False(note.IsCut);
+        Assert.AreEqual(0, judge.PendingCount);
+    }
+
+    [Test]
+    public void ScoredTimeStaysInsideTheJudgmentWindow()
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = TimedNote(Vector3.zero, 1.0);
+        tracker.ResetTo(new Vector3(-3f, 0f, 0f));
+        Step(judge, tracker, bridge, new Vector2(-2f, 0f), .68);
+        Step(judge, tracker, bridge, new Vector2(2f, 0f), .70); // 通り過ぎたのは .69(早めの窓の外)
+        Assert.True(note.IsCut);
+        Assert.AreEqual(1.0 - JudgmentTierHelper.EarlyBadSeconds, note.LastCutSongTime.Value, 1e-9, "切れたのに MISS と採点しない");
+    }
+
+    [Test]
+    public void WithoutTheSongClockTheBladeStillHasToLeaveTheHitRange()
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = MakeNote(Vector3.zero);
+        tracker.ResetTo(new Vector3(.3f, 2f, 0f));
+        Step(judge, tracker, bridge, new Vector2(.3f, 1.4f), double.NaN);
+        Step(judge, tracker, bridge, new Vector2(.3f, .2f), double.NaN);
+        Step(judge, tracker, bridge, new Vector2(.3f, -.4f), double.NaN);
+        Assert.False(note.IsCut, "タイトルなど曲時計のない画面は従来どおり、抜けたときに切る");
+        Step(judge, tracker, bridge, new Vector2(.3f, -1.8f), double.NaN);
+        Assert.True(note.IsCut);
+    }
+
+    [Test]
+    public void WindUpThroughADownNoteDoesNotCutAndTheDownSwingIsScoredOnItsOwnTiming()
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = TimedNote(Vector3.zero, 1.0);
+        note.RequiredDirection = CutDirection.Down;
+        tracker.ResetTo(new Vector3(0f, -1.5f, 0f));
+        // 下から振り上げる(構え)。ノーツを通り過ぎても逆向きなので切れない。
+        Step(judge, tracker, bridge, new Vector2(0f, -1f), .90, false, 1f);
+        Step(judge, tracker, bridge, new Vector2(0f, -.3f), .92, false, 1f);
+        Step(judge, tracker, bridge, new Vector2(0f, .4f), .94, false, 1f);
+        Assert.False(note.IsCut, "振り上げ(逆向き)では切れない");
+        Step(judge, tracker, bridge, new Vector2(0f, .9f), .96, false, 1f);
+        // 円の中で振り返して振り下ろす。
+        Step(judge, tracker, bridge, new Vector2(0f, .7f), .98, false, 1f);
+        Step(judge, tracker, bridge, new Vector2(0f, 0f), 1.0, false, 1f);
+        Step(judge, tracker, bridge, new Vector2(0f, -.6f), 1.02, false, 1f);
+        Assert.True(note.IsCut, "振り下ろしで、円を抜ける前に切れる");
+        Assert.True(note.LastCutCorrectDirection);
+        Assert.AreEqual(1.0, note.LastCutSongTime.Value, 1e-9, "振り上げのときの時刻(0.92)では採点しない");
+    }
+
+    [Test]
+    public void TurningBackInsideTheHitRangeStillCutsOnTheReturnSwing()
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = TimedNote(Vector3.zero, 1.0);
+        note.RequiredDirection = CutDirection.Down;
+        tracker.ResetTo(new Vector3(0f, -.6f, 0f));
+        // 小さく振り上げ(入ってから0.8しか動かない)、円の中で振り返して振り下ろす。
+        Step(judge, tracker, bridge, new Vector2(0f, -.5f), .90, false, 1f);
+        Step(judge, tracker, bridge, new Vector2(0f, -.1f), .92, false, 1f);
+        Step(judge, tracker, bridge, new Vector2(0f, .3f), .94, false, 1f);
+        Step(judge, tracker, bridge, new Vector2(0f, .25f), .96, false, 1f); // 振り返し
+        Assert.False(note.IsCut);
+        Step(judge, tracker, bridge, new Vector2(0f, 0f), 1.0, false, 1f);
+        Step(judge, tracker, bridge, new Vector2(0f, -.8f), 1.02, false, 1f);
+        Assert.True(note.IsCut, "振り返したところから測って、通り過ぎたら切れる");
+        Assert.True(note.LastCutCorrectDirection, "向きは振り返したあとの動き(下)");
+    }
+
+    [Test]
+    public void SmallShakesOnTheNoteDoNotCut()
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = TimedNote(Vector3.zero, 1.0);
+        tracker.ResetTo(new Vector3(.4f, 0f, 0f));
+        for (int i = 0; i < 20; i++)
+            Step(judge, tracker, bridge, new Vector2(i % 2 == 0 ? -.4f : .4f, 0f), .9 + i * .01);
+        Assert.False(note.IsCut, "刃を止めたときの揺れ(1.0未満の動き)では切らない");
+        Assert.AreEqual(1, judge.PendingCount);
+    }
+
+    [TestCase(40f, true, true)]
+    [TestCase(50f, true, false)]
+    [TestCase(40f, false, false)]
+    public void DirectionToleranceIs45DegreesOnlyWithTheSongClock(float degrees, bool clock, bool correct)
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = MakeNote(Vector3.zero);
+        note.HitTime = 1.0;
+        note.RequiredDirection = CutDirection.Down;
+        float rad = degrees * Mathf.Deg2Rad;
+        Vector2 dir = new Vector2(Mathf.Sin(rad), -Mathf.Cos(rad)); // 真下から degrees だけ傾けた向き
+        tracker.ResetTo(-dir * 1.5f);
+        Step(judge, tracker, bridge, -dir, clock ? .98 : double.NaN, false);
+        Step(judge, tracker, bridge, dir * .6f, clock ? 1.0 : double.NaN, false);
+        if (!clock) Step(judge, tracker, bridge, dir * 2.6f, double.NaN, false); // 時計がなければ抜けたときに切る
+        Assert.True(note.IsCut);
+        Assert.AreEqual(correct, note.LastCutCorrectDirection, clock ? "曲時計があるときは ±45°" : "時計がないときは従来の ±30°");
+    }
+
+    [Test]
+    public void LongNoteIsCutOncePerSwingWhenPassing()
+    {
+        var (judge, tracker, bridge) = GameBladeRig();
+        var note = TimedNote(Vector3.zero, 1.0);
+        note.RequiredCutCount = note.RemainingCuts = 3;
+        tracker.ResetTo(new Vector3(-2f, 0f, 0f));
+        Step(judge, tracker, bridge, new Vector2(-1f, 0f), 1.0);
+        Step(judge, tracker, bridge, new Vector2(.5f, 0f), 1.02);  // 通り過ぎる → 1回
+        Step(judge, tracker, bridge, new Vector2(1f, 0f), 1.04);   // 同じ振りのまま、まだ円の中
+        Step(judge, tracker, bridge, new Vector2(2.5f, 0f), 1.06); // 抜ける
+        Assert.AreEqual(1, note.CutsAchieved, "同じ振りでは1回だけ");
+        Step(judge, tracker, bridge, new Vector2(.5f, 0f), 1.10);  // 振り返して入る
+        Step(judge, tracker, bridge, new Vector2(-1f, 0f), 1.12);  // 通り過ぎる → 2回目
+        Assert.AreEqual(2, note.CutsAchieved);
+    }
+
     [Test]
     public void GameUsesTheEnlargedHitRangeInCodeAndScene()
     {

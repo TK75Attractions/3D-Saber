@@ -56,7 +56,7 @@ public class GameplayJudgmentClockTests
     {
         Create(blade, secondJudge, 1);
         Set(manager, "inCalibration", calibration);
-        spawner.Tick(.86);
+        spawner.Tick(.76); // 早めの窓(0.2025秒)の外
         Assert.False(note.IsJudgeable);
         tracker.ResetTo(new Vector3(-2, 0, 0));
         tracker.Tick(blade ? Vector3.zero : new Vector3(2, 0, 0), .033f);
@@ -156,6 +156,91 @@ public class GameplayJudgmentClockTests
         Assert.AreEqual(0, misses);
         Assert.AreEqual(1, spawner.AliveCount);
         Assert.AreEqual(position, note.transform.position);
+    }
+
+    // カメラの値が届いているときは判定の時計だけを遅らせる。マウス等(カメラなし)では遅らせない。
+    [TestCase(true, 1.0)]
+    [TestCase(false, 1.12)]
+    public void CameraInputDelaysOnlyTheJudgeClock(bool camera, double expectedScoredTime)
+    {
+        Create(true, false, 1);
+        bridge.OverrideCameraInput(camera);
+        spawner.Tick(.9);
+        tracker.ResetTo(new Vector3(-2, 0, 0)); tracker.Tick(Vector3.zero, .033f);
+        bridge.OverrideBlade(Vector3.left, Vector3.right); // ノーツの真上
+        TickManager(1.12);
+        Assert.AreEqual(camera ? manager.cameraJudgeLatencySeconds : 0, spawner.JudgeLatencySeconds, 1e-6);
+        Assert.AreEqual(-.12f * spawner.Speed, note.transform.position.z, .05f, "ノーツの位置は曲の時計のまま");
+        tracker.Tick(new Vector3(3, 0, 0), .033f);
+        bridge.OverrideBlade(new Vector3(3, 0, 0), new Vector3(5, 0, 0)); // 抜けた
+        TickManager(1.15);
+        Assert.True(note.IsCut);
+        Assert.AreEqual(expectedScoredTime, note.LastCutSongTime.Value, .02);
+    }
+
+    [TestCase(true)]
+    [TestCase(false)]
+    public void CameraLatencyKeepsTheWindowOpenLongerAndDelaysTheMiss(bool camera)
+    {
+        Create(true, false, 1);
+        bridge.OverrideCameraInput(camera);
+        spawner.Tick(.9);
+        TickManager(1.30); // 判定の時計では、カメラなら0.18秒過ぎ(窓の中)、なしなら0.30秒過ぎ
+        Assert.AreEqual(camera, note.IsJudgeable);
+        Assert.AreEqual(!camera, note.IsMissed);
+        TickManager(1.40);
+        Assert.True(note.IsMissed);
+    }
+
+    [Test]
+    public void ImuJudgedSaberDoesNotDelayTheJudgeClock()
+    {
+        Create(true, false, 1);
+        bridge.OverrideCameraInput(true);
+        judge.ExternalJudgment = true;
+        spawner.Tick(.9);
+        TickManager(1.0);
+        Assert.AreEqual(0, spawner.JudgeLatencySeconds, 1e-9, "IMU 判定は自前で遅れを補正するので二重にしない");
+    }
+
+    // 遅めに近づき、締め切り(Miss)のときにまだノーツの上を通っている刃は、通り過ぎたら切れる。
+    // 通り過ぎないまま止まっていたら、少し待ってから Miss。
+    [TestCase(true)]
+    [TestCase(false)]
+    public void BladeStillPassingTheNoteAtTheDeadlineIsCutWhenItPasses(bool passes)
+    {
+        Create(true, false, 1);
+        spawner.HoldMiss = (System.Func<CuttableNote, bool>)typeof(GamePlayManager)
+            .GetMethod("SaberCuttingThrough", Fields).CreateDelegate(typeof(System.Func<CuttableNote, bool>), manager);
+        judge.bladeRadius = .32f; judge.noteHitRadiusXY = .88f; // 本編と同じ当たり(刃との距離 1.2)
+        spawner.Tick(.9);
+        tracker.ResetTo(new Vector3(.3f, 2f, 0));
+        StepVerticalBlade(new Vector2(.3f, 1.4f), 1.17); // 入る(判定窓の終わり近く)
+        StepVerticalBlade(new Vector2(.3f, .8f), 1.19);  // 窓の中でいちばん近づく
+        StepVerticalBlade(new Vector2(.3f, .5f), 1.27);  // 締め切り(1 + 0.2025 + 0.06)を過ぎたが、まだ中心はノーツの上
+        Assert.False(note.IsMissed, "刃がノーツの上を通っている最中は Miss を待つ");
+        Assert.False(note.IsCut);
+        if (passes)
+        {
+            StepVerticalBlade(new Vector2(.3f, -.4f), 1.30); // 中心がノーツより下へ
+            Assert.True(note.IsCut);
+            Assert.False(note.IsMissed);
+            Assert.AreEqual(1.19, note.LastCutSongTime.Value, .02, "採点はいちばん近づいた時刻");
+        }
+        else
+        {
+            StepVerticalBlade(new Vector2(.3f, .5f), 1.45); // 止まったまま、待つ時間(0.15秒)も過ぎた
+            Assert.True(note.IsMissed);
+            Assert.False(note.IsCut);
+        }
+    }
+
+    // 縦の刃(長さ1)の中心を動かして、1フレーム進める。
+    void StepVerticalBlade(Vector2 center, double time)
+    {
+        tracker.Tick(new Vector3(center.x, center.y, 0), .02f);
+        bridge.OverrideBlade(new Vector3(center.x, center.y - .5f, 0), new Vector3(center.x, center.y + .5f, 0));
+        TickManager(time);
     }
 
     void TickManager(double time)

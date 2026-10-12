@@ -102,6 +102,43 @@ public class NoteSpawnerTests
         Assert.AreEqual(1, missed, "miss は1回だけ発火");
     }
 
+    // カメラの遅れは判定の時計(受付窓・Miss)だけで差し引き、ノーツの位置は曲の時計のまま動かす。
+    [Test]
+    public void JudgeLatencyShiftsTheWindowAndMissButNotTheNotePosition()
+    {
+        var (sp, _, spawned) = MakeSpawner();
+        int missed = 0;
+        sp.OnNoteMissed += _ => missed++;
+        sp.SetChart(MakeChart(1000f));
+        sp.JudgeLatencySeconds = 0.12;
+        sp.Tick(0.0);
+        sp.Tick(0.9); // 曲の時計で0.1秒前。判定の時計では0.22秒前で、早めの窓(0.2025)の外
+        Assert.IsFalse(spawned[0].IsJudgeable);
+        sp.Tick(1.25); // 曲の時計で0.25秒過ぎ。判定の時計では0.13秒過ぎで、まだ窓(0.15)の中
+        Assert.IsTrue(spawned[0].IsJudgeable);
+        Assert.AreEqual(0, missed);
+        Assert.AreEqual(sp.judgeZ - sp.Speed * 0.25f, spawned[0].transform.position.z, 0.001f, "位置は曲の時計のまま");
+        sp.Tick(1.33); // 判定の時計で0.21秒過ぎ(窓0.15 + 猶予0.05 を超える)
+        Assert.AreEqual(1, missed);
+    }
+
+    // 刃がノーツの上を通っている最中(HoldMiss)は、締め切りのあとも passHoldSeconds まで Miss を待つ。
+    [TestCase(true)]
+    [TestCase(false)]
+    public void HoldMissWaitsOnlyWhileTheBladeIsPassingAndOnlyUpToPassHoldSeconds(bool holding)
+    {
+        var (sp, _, _) = MakeSpawner();
+        int missed = 0;
+        sp.OnNoteMissed += _ => missed++;
+        sp.SetChart(MakeChart(1000f));
+        sp.HoldMiss = _ => holding;
+        sp.Tick(0.0);
+        sp.Tick(1.25); // 窓0.15 + 猶予0.05 = 0.20 を過ぎた
+        Assert.AreEqual(holding ? 0 : 1, missed);
+        sp.Tick(1.36); // さらに passHoldSeconds(0.15) を足した 0.35 を過ぎた
+        Assert.AreEqual(1, missed, "待つのは passHoldSeconds まで");
+    }
+
     [Test]
     public void Speed_MatchesSpawnRange()
     {

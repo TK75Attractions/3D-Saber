@@ -57,6 +57,13 @@ public class GamePlayManager : MonoBehaviour
     public float saberNoteHitRadiusXYV2 = 0.88f;
     public float saberMinCutSpeedV2 = 2.0f;
 
+    [Header("Camera latency (判定だけ遅らせる)")]
+    // iPhone カメラ(PhoneSaber)の値は、振ってから届くまで約0.135秒かかる(2026-10-10 学校で実測した中央値)。
+    // ノーツの見た目と音は動かさず、判定の時計(受付窓・刃の判定・Miss)だけをこの秒数遅らせて差し引く。
+    // カメラの値が届いているときだけ効かせる(マウスは遅れが小さく、IMU 判定は自前で補正するので効かせない)。
+    // 2026-10-12 追加。新規フィールドなのでシーンの値は無くコード既定値が効く。
+    public float cameraJudgeLatencySeconds = 0.12f;
+
     [Header("Two sabers (2本セーバー)")]
     // 棒1(port5005)=シーンのセーバー、棒2(port5006)=実行時生成の2本目。
     // 青ノーツ=左手、赤ノーツ=右手、金・無色=どちらでも。マウスフォールバック時は全色切れる。
@@ -183,6 +190,8 @@ public class GamePlayManager : MonoBehaviour
         if (cameraImuJudgment == null) cameraImuJudgment = GetComponent<CameraImuJudgment>();
         if (cameraImuJudgment == null) cameraImuJudgment = gameObject.AddComponent<CameraImuJudgment>();
         cameraImuJudgment.Configure(noteSpawner, cutJudge, cutJudge2);
+        // 刃がノーツの上を通っている最中は、締め切りのあとも少しだけ Miss を待つ(通り過ぎたら切れる)。
+        noteSpawner.HoldMiss = SaberCuttingThrough;
         // 切れた手の刃だけを光らせる(爽快感カタログ 手8)。
         SaberCutFlash.Attach(gameObject, scoreManager, cutJudge, cutJudge2);
         if (useOverhauledStage)
@@ -652,6 +661,9 @@ public class GamePlayManager : MonoBehaviour
         }
         if (finished || !ready || (songPlayer != null && songPlayer.IsPaused)) return;
 
+        // カメラの遅れは判定の時計だけで差し引く(受付窓・刃の判定・Miss の3か所。ノーツの位置と音は曲の時計のまま)。
+        if (noteSpawner != null) noteSpawner.JudgeLatencySeconds = CameraInputActive() ? cameraJudgeLatencySeconds : 0;
+
         // 判定と採点が同じ曲時計を見るよう、前フレームの受付可否を更新する。
         // 負の開始予約時刻にも対応し、停止時の SongTime=0 では巻き戻さない。
         if (songPlayer != null && songPlayer.IsScheduled && noteSpawner != null)
@@ -662,8 +674,10 @@ public class GamePlayManager : MonoBehaviour
             cameraImuJudgment.Tick(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp),
                 songPlayer != null ? songPlayer.SongTime : 0,
                 songPlayer != null && songPlayer.IsScheduled && Time.timeScale > 0f);
-        // 採点は刃がノーツにいちばん近づいた時刻。受付窓と同じ曲時計を渡す(開始予約前は従来どおり)。
-        double judgeTime = songPlayer != null && songPlayer.IsScheduled ? songPlayer.SongTime : double.NaN;
+        // 採点は刃がノーツにいちばん近づいた時刻。受付窓と同じ判定の時計を渡す(開始予約前は従来どおり)。
+        double judgeTime = songPlayer != null && songPlayer.IsScheduled
+            ? (noteSpawner != null ? noteSpawner.JudgeClock(songPlayer.SongTime) : songPlayer.SongTime)
+            : double.NaN;
         if (cutJudge != null) cutJudge.RunJudge(judgeTime);
         if (cutJudge2 != null) cutJudge2.RunJudge(judgeTime);
         if (gatePerfectPulse != null) gatePerfectPulse.Tick(Time.unscaledTimeAsDouble);
@@ -713,6 +727,17 @@ public class GamePlayManager : MonoBehaviour
             FinishGame();
         }
     }
+
+    // カメラ(PhoneSaber)の値で従来の判定を使っている棒があるか。マウス・IMU 判定・入力なしでは false。
+    bool CameraInputActive() => UsesCamera(cutJudge) || UsesCamera(cutJudge2);
+
+    static bool UsesCamera(SaberCutJudge judge) =>
+        judge != null && judge.isActiveAndEnabled && !judge.ExternalJudgment
+        && judge.bladeProvider != null && judge.bladeProvider.ReceivingCamera;
+
+    // 刃がノーツの上を通っている最中か(NoteSpawner.HoldMiss)。
+    bool SaberCuttingThrough(CuttableNote note) =>
+        (cutJudge != null && cutJudge.IsCuttingThrough(note)) || (cutJudge2 != null && cutJudge2.IsCuttingThrough(note));
 
     private void ReturnToTitle()
     {

@@ -325,6 +325,19 @@ public class SaberInputBridge : MonoBehaviour
 
     public LineRenderer BladeOutlineForTest => bladeOutline;
 
+    // iPhone カメラ(InputPoint の UDP)の値が最近届いているか。GamePlayManager が判定の時計を遅らせるかに使う。
+    // 端点が欠けた一瞬のマウス切替では変えず、届かなくなって inputPointStaleSeconds たったら false になる。
+    public bool ReceivingCamera
+    {
+        get
+        {
+            if (cameraInputOverride.HasValue) return cameraInputOverride.Value;
+            var ip = useInputPoint ? InputPoint.Instance : null;
+            return isActiveAndEnabled && ip != null && IsStickRecentlyActive(ip);
+        }
+    }
+    bool? cameraInputOverride;
+
     // この Bridge が読む棒のデータが「最近」届いているか(棒1/棒2で別管理)。
     private bool IsStickRecentlyActive(InputPoint ip)
     {
@@ -654,6 +667,12 @@ public class SaberInputBridge : MonoBehaviour
     public void OverrideMouseFallback(bool usingMouse)
     {
         UsingMouseFallback = usingMouse;
+    }
+
+    // テスト用：カメラの値が届いているか(ReceivingCamera)を直接差し込む。
+    public void OverrideCameraInput(bool receiving)
+    {
+        cameraInputOverride = receiving;
     }
 
     // テスト用に純関数化。
