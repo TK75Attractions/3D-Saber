@@ -330,6 +330,12 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         GUILayout.Label($"PhoneSaber 運営表示 [F8: 開閉]  |  台: {(string.IsNullOrEmpty(station) ? "指定なし" : station)}", textStyle);
         // 日本語の折り返しが増えても、下の色や警告を切り落とさない。
         scrollPosition = GUILayout.BeginScrollView(scrollPosition);
+        GUILayout.Label(redText, textStyle);
+        if (!string.IsNullOrEmpty(redWarning)) GUILayout.Label(redWarning, warningStyle);
+        GUILayout.Space(8);
+        GUILayout.Label(blueText, textStyle);
+        if (!string.IsNullOrEmpty(blueWarning)) GUILayout.Label(blueWarning, warningStyle);
+        GUILayout.Space(8);
         DrawFilter();
         GUILayout.Space(8);
         DrawPrediction();
@@ -340,12 +346,6 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         bool synchronized = GUILayout.Toggle(clocksSynchronized,
             "スマホとPCのNTP同期を確認済み（片道遅延も判定）", toggleStyle);
         if (synchronized != clocksSynchronized) { clocksSynchronized = synchronized; nextRefresh = 0; }
-        GUILayout.Space(8);
-        GUILayout.Label(redText, textStyle);
-        if (!string.IsNullOrEmpty(redWarning)) GUILayout.Label(redWarning, warningStyle);
-        GUILayout.Space(8);
-        GUILayout.Label(blueText, textStyle);
-        if (!string.IsNullOrEmpty(blueWarning)) GUILayout.Label(blueWarning, warningStyle);
         GUILayout.Space(8);
         var log = PhoneSaberEventLog.Current;
         GUILayout.Label("イベントログ: " + (log?.LogPath ?? "作成できません"), textStyle);

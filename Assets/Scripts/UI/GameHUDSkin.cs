@@ -34,15 +34,8 @@ public class GameHUDSkin : MonoBehaviour
         }
     }
 
-    // コンボ数に応じて育つ色(ScoreHUD.ColorByComboTier と同じ階調)
-    public static Color ComboColor(int combo)
-    {
-        if (combo >= 100) return new Color(1f, 0.30f, 0.85f);   // マゼンタ
-        if (combo >= 60) return new Color(1f, 0.55f, 0.25f);    // オレンジ
-        if (combo >= 30) return new Color(1f, 0.92f, 0.35f);    // 黄
-        if (combo >= 10) return new Color(0.27f, 1f, 0.97f);    // シアン
-        return new Color(0.91f, 0.93f, 1f);                     // オフホワイト
-    }
+    // 最大コンボと同じ段階の金色で、連続成功の成長を示す。
+    public static Color ComboColor(int combo) => combo >= 300 ? SongSelectSkin.Gold : ComboBonusPresentation.Accent(combo);
 
     // コンボ数に応じて数字が育つ(90px → 128px、150 コンボで最大)。テストから直接叩く純関数。
     public static float ComboFontSize(int combo)
@@ -507,7 +500,7 @@ public class GameHUDSkin : MonoBehaviour
             }
             if (rankBadgeText != null)
             {
-                rankBadgeText.text = PlayRankHelper.Label(rank);
+                rankBadgeText.text = rank == PlayRank.C ? "" : PlayRankHelper.Label(rank);
             }
 
             bool hasNext = PlayRankHelper.TryNextRank(rank, out PlayRank next);
@@ -624,7 +617,7 @@ public class GameHUDSkin : MonoBehaviour
             comboValue.text = combo.ToString();
             comboValue.fontSize = ComboFontSize(combo);
             comboValue.enableVertexGradient = true;
-            comboValue.colorGradient = new VertexGradient(Color.white, Color.white, c, c);
+            comboValue.colorGradient = ComboBonusPresentation.Gradient(combo);
         }
         comboValue.color = Color.white;
         if (comboGlow != null) comboGlow.color = new Color(c.r, c.g, c.b, 0.20f * DisplaySettings.AccentScale);

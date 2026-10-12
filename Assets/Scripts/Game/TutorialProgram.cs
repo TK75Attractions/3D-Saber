@@ -71,7 +71,7 @@ public static class TutorialProgram
         switch (id)
         {
             case "hands": return new TutorialStep { Id = id, Kind = TutorialStepKind.Explain, Title = "赤い剣は右手、青い剣は左手", Sub = "どちらかを振ると始まります", TimeoutSeconds = HandsTimeoutSeconds };
-            case "tapRed": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤い箱を右手で切ろう", Sub = "枠に重なった瞬間に振る",
+            case "tapRed": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "赤い箱を右手で切ろう", Sub = "手前の枠に重なった瞬間に振る",
                 Pattern = new[] { Tap(RightX, BaseY, "red", 0f), Tap(RightX, BaseY, "red", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2 };
             case "tapBlue": return new TutorialStep { Id = id, Kind = TutorialStepKind.Practice, Title = "青い箱は左手で切ろう", Sub = "色と手を合わせる",
                 Pattern = new[] { Tap(LeftX, BaseY, "blue", 0f), Tap(LeftX, BaseY, "blue", 2f) }, PeriodSeconds = LoopSeconds, Goal = 2 };
@@ -139,7 +139,7 @@ public static class TutorialProgram
     {
         if (hasDirection) return "矢印の向きに、速く振ろう";
         if (color == "gold") return "どちらの手でもいいので振ろう";
-        return (color == "blue" ? "青は左手" : "赤は右手") + "で、枠に重なった瞬間に振ろう";
+        return (color == "blue" ? "青は左手" : "赤は右手") + "で、手前の枠に重なった瞬間に振ろう";
     }
 }
 

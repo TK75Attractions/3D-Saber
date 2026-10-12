@@ -85,6 +85,16 @@ public class ResultSkin : MonoBehaviour
             Mathf.Max(3f, DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .2f));
         StyleBackButton(canvas);
         var pointer = SaberUIPointer.Build();
+        // 結果の出口は演出後に現れる。隠れている間に入場猶予が消費されても、
+        // 受付開始時点で照準が重なっていれば、一度外すまで決定させない。
+        float exitReadyAt = DailyRankingPresentation.CompletionTime(GameSession.FinalDailyRanking) + .45f;
+        bool exitAimStarted = false;
+        reveal.TimeChanged += time =>
+        {
+            if (exitAimStarted || time < exitReadyAt) return;
+            exitAimStarted = true;
+            if (pointer != null) pointer.BeginArrival();
+        };
         pointer.RemapToFullScreen = true;
         pointer.RespectRaycastBlockers = true;
     }
@@ -457,7 +467,7 @@ public class ResultSkin : MonoBehaviour
         if (newRecord)
         {
             UISkinKit.MakeTMP(row.transform, "NewRecord", "NEW RECORD!", 28f,
-                UISkinPalette.Magenta, TextAlignmentOptions.MidlineLeft,
+                SongSelectSkin.Gold, TextAlignmentOptions.MidlineLeft,
                 Vector2.zero, new Vector2(10f, 36f), FontStyles.Normal, 0f, chakra);
         }
     }

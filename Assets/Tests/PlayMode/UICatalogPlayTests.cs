@@ -136,11 +136,116 @@ public class UICatalogPlayTests
         GameSession.FinalDailyRanking=null;
         yield return SceneManager.LoadSceneAsync("Result");
         yield return new WaitForSecondsRealtime(.5f);
+        var pointer = Object.FindFirstObjectByType<SaberUIPointer>();
+        var guard = (SaberUIArrivalGuard)typeof(SaberUIPointer).GetField("arrival",BindingFlags.Instance|BindingFlags.NonPublic).GetValue(pointer);
+        for (int i=0;i<7;i++) guard.Tick(.1f);
+        Assert.False(guard.Tick(.1f));
         Object.FindFirstObjectByType<ResultReveal>().Tick(999);
+        Assert.True(guard.Tick(.1f)); Assert.True(guard.CaptureTarget, "出口の受付開始時にも初回対象を保護する");
         Assert.IsNull(GameObject.Find("TitleJp"));
         var dwell=Object.FindFirstObjectByType<SaberDwellTarget>();Assert.NotNull(dwell);Assert.AreEqual(1.5f,dwell.dwellSeconds);
         Capture("result");
     }
+    [UnityTest] public IEnumerator SelectionHitAreasLeaveTheStartInstructionUntargeted()
+    {
+        yield return SceneManager.LoadSceneAsync("SongSelect");
+        double deadline = Time.realtimeSinceStartupAsDouble + 20;
+        while (Object.FindFirstObjectByType<SongSelectSkin>()?.IsReady != true && Time.realtimeSinceStartupAsDouble < deadline) yield return null;
+        var controller = Object.FindFirstObjectByType<SongSelectController>();
+        var guide = Object.FindFirstObjectByType<SongSelectIdleGuide>(); guide.RegisterActivity();
+        var aim = Object.FindFirstObjectByType<SongSelectAimPointer>(); aim.enabled = false;
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        yield return new WaitForSecondsRealtime(.6f);
+        var layout = (RectTransform)GameObject.Find("DiscSelectLayout").transform;
+        var canvas = layout.GetComponentInParent<Canvas>();
+        System.Func<float, float, Vector2> point = (x,y) => RectTransformUtility.WorldToScreenPoint(canvas.worldCamera,
+            layout.TransformPoint(new Vector3(x - 960, 540 - y)));
+        Canvas.ForceUpdateCanvases();
+        foreach (var p in new[] { point(960,700), point(960,743), point(1130,743) })
+        {
+            var hits = new List<UnityEngine.EventSystems.RaycastResult>();
+            var es = UnityEngine.EventSystems.EventSystem.current;
+            es.RaycastAll(new UnityEngine.EventSystems.PointerEventData(es) { position = p }, hits);
+            Assert.False(hits.Exists(h => h.gameObject.GetComponentInParent<SongSelectDiscTarget>() != null));
+        }
+        var normal = controller.difficultyButtons[1].GetComponent<SongSelectDiscTarget>();
+        Assert.True(normal.IsRaycastLocationValid(point(960,780), canvas.worldCamera));
+        aim.BeginArrival(); aim.TickAt(normal.ScreenRect().center,.1f);
+        for (int i=0;i<30;i++) aim.TickAt(normal.ScreenRect().center,.1f);
+        Assert.Zero(aim.ShotCount, "入場時の難易度ボタンも一度外すまで決定しない");
+        for (int i=0;i<2;i++) aim.TickAt(point(960,743),.1f);
+        for (int i=0;i<10;i++) aim.TickAt(normal.ScreenRect().center,.1f);
+        Assert.AreEqual(1,aim.ShotCount);
+        var status=Object.FindFirstObjectByType<MenuSaberStatus>(); Assert.NotNull(status);
+        var input=InputPoint.Instance; Assert.NotNull(input);
+        double red=input.LastReceivedTime, blue=input.LastReceivedTime2;
+        try
+        {
+            typeof(InputPoint).GetProperty("LastReceivedTime").SetValue(input,Time.realtimeSinceStartupAsDouble);
+            typeof(InputPoint).GetProperty("LastReceivedTime2").SetValue(input,-1000d);
+            status.SendMessage("Update");
+            var label=status.GetComponentInChildren<TMPro.TMP_Text>();
+            StringAssert.Contains("赤 ●",label.text); StringAssert.Contains("青 ○",label.text);
+            Capture("selection-reconsidered");
+        }
+        finally
+        {
+            typeof(InputPoint).GetProperty("LastReceivedTime").SetValue(input,red);
+            typeof(InputPoint).GetProperty("LastReceivedTime2").SetValue(input,blue);
+        }
+        aim.TickAt(point(960,743),.1f); aim.TickAt(point(960,743),.1f);
+        for(int i=0;i<6;i++) aim.TickAt(point(960,452),.1f);
+        var skin=Object.FindFirstObjectByType<SongSelectSkin>(); skin.SendMessage("Update");
+        Capture("selection-holding");
+        skin.TickCountdown(skin.RemainingSeconds-8.5); skin.SendMessage("Update");
+        Capture("selection-countdown");
+    }
+
+    [UnityTest] public IEnumerator CalibrationArrivalOverExitCannotBounceBackToSelection()
+    {
+        GameSession.IsCalibrationMode = true;
+        yield return SceneManager.LoadSceneAsync("Game");
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        yield return new WaitForSecondsRealtime(.5f);
+        var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
+        var overlay=Object.FindFirstObjectByType<CalibrationOverlay>();
+        var calibration=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
+        calibration.ChangeOffset(calibration.Draft.OffsetMs < 990 ? 10 : -10);
+        var target=overlay.transform.Find("Controls/Back") as RectTransform;
+        Assert.NotNull(target);
+        Vector2 point=SongSelectAimPointer.RectOnScreen(target).center;
+        pointer.BeginArrival();
+        for(int i=0;i<50;i++) pointer.TickAimAt(point,.1f);
+        Assert.False(overlay.IsExitDialogOpen); Assert.Zero(pointer.AimProgress01);
+        pointer.TickAimAt(new Vector2(Screen.width*.5f,Screen.height*.5f),.1f);
+        pointer.TickAimAt(new Vector2(Screen.width*.5f,Screen.height*.5f),.1f);
+        for(int i=0;i<16;i++) pointer.TickAimAt(point,.1f);
+        Assert.True(overlay.IsExitDialogOpen);
+    }
+
+    [UnityTest] public IEnumerator EarlyRankStaysEmptyAndComboUsesTheMaximumComboPalette()
+    {
+        GameSession.SelectedSongId="Morning"; GameSession.SelectedDifficulty="normal";
+        GameSession.TutorialPending=false; GameSession.IsCalibrationMode=false;
+        yield return SceneManager.LoadSceneAsync("Game");
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+        yield return new WaitForSecondsRealtime(.5f);
+        var hud=Object.FindFirstObjectByType<GameHUDSkin>(); Assert.NotNull(hud);
+        var score=Object.FindFirstObjectByType<ScoreManager>(); score.Reset();
+        hud.SendMessage("Update");
+        Assert.AreEqual("",hud.transform.Find("RankBadge/RankLetter").GetComponent<TMPro.TMP_Text>().text);
+        Assert.IsNull(Object.FindFirstObjectByType<MenuSaberStatus>(), "通常プレイへ状態表示を持ち込まない");
+        typeof(ScoreManager).GetProperty("Combo").SetValue(score, 100);
+        typeof(ScoreManager).GetProperty("MaxCombo").SetValue(score, 100);
+        hud.SendMessage("Update");
+        var combo=hud.transform.Find("ComboValue").GetComponent<TMPro.TMP_Text>();
+        var max=hud.transform.Find("MaxComboValue").GetComponent<TMPro.TMP_Text>();
+        Assert.AreEqual(max.colorGradient.bottomLeft,combo.colorGradient.bottomLeft);
+        Capture("game-reconsidered");
+        DisplaySettings.SetReducedEffectsForTest(true); yield return null;
+        Capture("game-reconsidered-low");
+    }
+
     public static void Capture(string name)
     {
         string output = System.Environment.GetEnvironmentVariable("SABER_UI_CATALOG_CAPTURE_DIR");

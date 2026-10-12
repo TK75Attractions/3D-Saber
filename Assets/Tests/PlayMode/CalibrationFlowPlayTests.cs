@@ -12,6 +12,7 @@ public class CalibrationFlowPlayTests
     {
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
         var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
+        HoldAim(pointer, new Vector2(Screen.width*.5f, Screen.height*.5f), 7);
         c.ChangeOffset(-c.Draft.OffsetMs);
         var graphic=c.Overlay.GetComponentsInChildren<CalibrationTimingGraphic>().Single(g=>g.isDistribution);
         int emptyVertices=TimingTrailVertexCount(graphic);
@@ -54,7 +55,8 @@ public class CalibrationFlowPlayTests
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
         var pointer=Object.FindFirstObjectByType<SaberUIPointer>();
         Assert.NotNull(pointer.AimReticle);
-        pointer.enabled=false; c.ChangeOffset(-c.Draft.OffsetMs); c.Overlay.Refresh();
+        pointer.enabled=false;
+        HoldAim(pointer, new Vector2(Screen.width*.5f, Screen.height*.5f), 7); c.ChangeOffset(-c.Draft.OffsetMs); c.Overlay.Refresh();
         Vector2 point=AimPoint(c,"Controls/Later");
         HoldAim(pointer,point,9); Assert.AreEqual(0,c.Draft.OffsetMs);
         Assert.AreEqual(.9f,pointer.AimProgress01,.001f);
@@ -71,6 +73,7 @@ public class CalibrationFlowPlayTests
     {
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
         var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
+        HoldAim(pointer, new Vector2(Screen.width*.5f, Screen.height*.5f), 7);
         c.ChangeOffset(-c.Draft.OffsetMs); c.Overlay.Refresh();
         Vector2 point=AimPoint(c,"Controls/Later");
         HoldAim(pointer,point,9); pointer.SendMessage("OnApplicationFocus",false);
@@ -89,6 +92,7 @@ public class CalibrationFlowPlayTests
     {
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
         var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
+        HoldAim(pointer, new Vector2(Screen.width*.5f, Screen.height*.5f), 7);
         Assert.True(c.IsLive); Assert.True(pointer.BottomControlsOnly);
         Assert.False(c.Overlay.transform.Find("Controls/PlayPause").gameObject.activeSelf);
         c.ChangeOffset(saved<990?10:-10);
@@ -105,6 +109,7 @@ public class CalibrationFlowPlayTests
     {
         var c=Object.FindFirstObjectByType<GamePlayManager>().Calibration;
         var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
+        HoldAim(pointer, new Vector2(Screen.width*.5f, Screen.height*.5f), 7);
         c.ChangeOffset(-c.Draft.OffsetMs); c.Overlay.OpenSettings();
         yield return null;
         HoldAim(pointer,AimPoint(c,"Controls/Later"),15); Assert.Zero(c.Draft.OffsetMs);
@@ -121,6 +126,7 @@ public class CalibrationFlowPlayTests
     [UnityTest] public IEnumerator AimFollowsMouseAndTrackedCoordinatesAndHidesWhenTrackingExpires()
     {
         var pointer=Object.FindFirstObjectByType<SaberUIPointer>(); pointer.enabled=false;
+        HoldAim(pointer, new Vector2(Screen.width*.5f, Screen.height*.5f), 7);
         var input=InputPoint.Instance;
         double previous=input.LastReceivedTime;
         Vector2 previousPosition=input.NormalizedPosition;
@@ -391,7 +397,9 @@ public class CalibrationFlowPlayTests
         Assert.IsNull(ui.transform.Find("Controls/OffsetValue"));
         Assert.AreEqual(7,ui.GetComponentsInChildren<UnityEngine.UI.Button>().Count(b=>b.gameObject.activeInHierarchy));
         foreach(var label in ui.GetComponentsInChildren<TMPro.TextMeshProUGUI>())
-        { Assert.False(label.text.Contains("ms")); Assert.GreaterOrEqual(label.fontSize,26); }
+        { Assert.False(label.text.Contains("ms"));
+            bool ruby = label.name == "Ruby" && label.transform.parent.GetComponent<SongSelectRubyText>() != null;
+            Assert.GreaterOrEqual(label.fontSize, ruby ? 16 : 26, label.name); }
         Assert.AreEqual("音に合わせて切ろう",ui.transform.Find("Instruction").GetComponent<TMPro.TextMeshProUGUI>().text);
         ui.OpenSettings(); Assert.False(c.IsRunning); Assert.True(ui.IsSettingsOpen);
         Assert.False(ui.transform.Find("Controls").gameObject.activeInHierarchy);

@@ -20,10 +20,11 @@ public sealed class SongSelectAimPointer : MonoBehaviour
     int sourceKind;
     bool hasPoint, mouseNeedsMove;
     float shotAge = 10;
-    public const float ArrivalGraceSeconds = .5f;
-    double arrivalUntil;
+    public const float ArrivalGraceSeconds = SaberUIArrivalGuard.GraceSeconds;
+    readonly SaberUIArrivalGuard arrival = new SaberUIArrivalGuard();
+    Object guideTarget; float guideHeld;
     AudioSource confirmSource; AudioClip confirmClip;
-    public void BeginArrival() { arrivalUntil = Time.realtimeSinceStartupAsDouble + ArrivalGraceSeconds; CancelCharge(); }
+    public void BeginArrival() { arrival.Reset(); guideTarget = null; guideHeld = 0; CancelCharge(); }
     public float Progress01 => tracker.Progress01;
     public bool NeedsRelease => tracker.NeedsRelease;
     public int ShotCount { get; private set; }
@@ -83,7 +84,7 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         int kind = input != null && input.IsRecentlyActive(.2f) ? 1 : mouse != null ? 2 : 0;
         if (sourceKind != kind)
         {
-            CancelCharge(); hasPoint = false;
+            BeginArrival(); hasPoint = false;
             if (sourceKind == 1 && kind != 1) { mouseNeedsMove = true; lastMouse = mousePoint; }
             if (kind == 1) mouseNeedsMove = false;
             sourceKind = kind;
@@ -115,13 +116,13 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         bool active = inputAvailable && !ScreenTransition.IsBusy;
         if (!active)
         {
-            CancelCharge();
+            CancelCharge(); guideTarget = null; guideHeld = 0;
             if (reticle != null) reticle.gameObject.SetActive(false);
             return;
         }
         Target next = Resolve(point);
         // 対象の端での小さな震えは許容。他のボタンへ移ったときは必ずため直す。
-        if (next.key == null && Available(hovered) && SongSelectAimTracker.Contains(Expand(ScreenArea(hovered), Padding), point, hovered.disc != null && hovered.disc.Circle))
+        if (next.key == null && Available(hovered) && (hovered.disc != null ? hovered.disc.ContainsPoint(point, Padding) : SongSelectAimTracker.Contains(Expand(ScreenArea(hovered), Padding), point, false)))
             next = hovered;
         if (next.key != hovered.key) SetHovered(next);
         else hovered = next;
@@ -129,10 +130,21 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         // 滑っている盤はため始めない。連続送りの次の1秒も、盤が止まってから数える。
         bool ready = Available(next) && !(next.disc != null && next.disc.Sliding)
             && (next.disc != null || SongSelectNoteMenu.Instance != null && SongSelectNoteMenu.Instance.IsReady);
-        bool arriving = Time.realtimeSinceStartupAsDouble < arrivalUntil;
-        if (arriving && next.disc != null && controller != null && next.disc.Button == controller.startButton)
-            tracker.BlockUntilExit(Expand(area, Padding), next.disc.Circle);
+        bool arriving = arrival.Tick(dt);
+        if (arrival.CaptureTarget && next.key != null)
+            tracker.BlockUntilExit(Expand(area, Padding), next.disc != null && next.disc.Circle);
         ready &= !arriving;
+        // 案内を閉じるための狙いと、スタートの2秒は分けて数える。
+        bool guideBlocksStart = idleGuide != null && idleGuide.IsVisible && next.disc != null
+            && controller != null && next.disc.Button == controller.startButton;
+        if (!ReferenceEquals(guideTarget, next.key) || !ready || tracker.NeedsRelease || dt < 0 || dt > .2f || float.IsNaN(dt)) guideHeld = 0;
+        guideTarget = next.key;
+        if (guideBlocksStart && ready && !tracker.NeedsRelease)
+        {
+            guideHeld += dt;
+            if (guideHeld >= SongSelectIdleState.AimActivitySeconds) idleGuide.RegisterActivity();
+        }
+        ready &= !guideBlocksStart;
         bool repeat = next.disc != null && next.disc.RepeatWhileHeld;
         bool fire = tracker.Tick(next.key, Expand(area, Padding), point, dt, ready,
             next.disc != null ? next.disc.HoldSeconds : 1, next.disc != null && next.disc.Circle, repeat);
@@ -226,7 +238,8 @@ public sealed class SongSelectAimPointer : MonoBehaviour
         foreach (var action in Object.FindObjectsByType<MenuNoteAction>(FindObjectsSortMode.None)) action.CancelPendingShot();
     }
     void CancelCharge() { tracker.Cancel(); SetHovered(default); }
-    void OnDisable() { CancelCharge(); if (reticle != null) reticle.gameObject.SetActive(false); }
+    void OnApplicationFocus(bool focused) { if (!focused) BeginArrival(); }
+    void OnDisable() { BeginArrival(); if (reticle != null) reticle.gameObject.SetActive(false); }
     void OnDestroy()
     {
         if (confirmClip != null) Destroy(confirmClip);

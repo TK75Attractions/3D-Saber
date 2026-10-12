@@ -53,25 +53,11 @@ public class GameHUDSkinTests
     }
 
     [Test]
-    public void ComboColor_MatchesLegacyTiers()
+    public void ComboColor_MatchesMaximumComboRewardPalette()
     {
-        // 旧 ScoreHUD.ColorByComboTier と同じ階調を保つ
-        var c0 = GameHUDSkin.ComboColor(0);
-        Assert.That(c0.r, Is.GreaterThan(0.8f));
-        Assert.That(c0.g, Is.GreaterThan(0.8f));
-
-        var c10 = GameHUDSkin.ComboColor(10);
-        Assert.That(c10.r, Is.LessThan(0.5f));
-        Assert.That(c10.g, Is.GreaterThan(0.8f));
-
-        var c100 = GameHUDSkin.ComboColor(100);
-        Assert.That(c100.r, Is.GreaterThan(0.8f));
-        Assert.That(c100.g, Is.LessThan(0.5f));
-
-        Assert.That(GameHUDSkin.ComboColor(9), Is.Not.EqualTo(GameHUDSkin.ComboColor(10)));
-        Assert.That(GameHUDSkin.ComboColor(29), Is.Not.EqualTo(GameHUDSkin.ComboColor(30)));
-        Assert.That(GameHUDSkin.ComboColor(59), Is.Not.EqualTo(GameHUDSkin.ComboColor(60)));
-        Assert.That(GameHUDSkin.ComboColor(99), Is.Not.EqualTo(GameHUDSkin.ComboColor(100)));
+        foreach (int count in new[] { 0, 10, 30, 60, 100, 300, 500 })
+            Assert.AreEqual(count >= 300 ? SongSelectSkin.Gold : ComboBonusPresentation.Accent(count), GameHUDSkin.ComboColor(count));
+        Assert.AreNotEqual(GameHUDSkin.TierColor(JudgmentTier.Bad), GameHUDSkin.ComboColor(100));
     }
 
     [Test]

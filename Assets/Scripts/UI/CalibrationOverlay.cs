@@ -111,7 +111,7 @@ public sealed class CalibrationOverlay : MonoBehaviour
         play.gameObject.SetActive(false);
         BuildResults(); BuildSettings(); BuildExitDialog();
         timer = SongSelectSkin.BuildCountdownDisplay(transform);
-        timerNotice = Label(timer.transform.parent,"TimerConsequence","保存せず曲選択へ戻るまで",24,0,-79,430,44,Ink);
+        timerNotice = Label(timer.transform.parent,"TimerConsequence","保存せず曲選択へ戻るまで",26,0,-79,430,44,Ink);
         countdown.Reset(GameSession.CalibrationSelectionSeconds ?? 100);
         GameSession.CalibrationSelectionSeconds = countdown.Remaining;
         lastTick = Time.realtimeSinceStartupAsDouble; RefreshCountdown();

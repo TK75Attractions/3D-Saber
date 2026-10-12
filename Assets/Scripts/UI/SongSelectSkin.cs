@@ -28,11 +28,13 @@ public class SongSelectSkin : MonoBehaviour
     readonly TextMeshProUGUI[] difficultyNumbers = new TextMeshProUGUI[3];
     readonly TextMeshProUGUI[] difficultyLabels = new TextMeshProUGUI[3];
     readonly SongSelectRubyText[] counts = new SongSelectRubyText[4];
-    TextMeshProUGUI timer, timerNotice, achievementDifficulty, libraryPosition;
+    TextMeshProUGUI timer, timerNotice, achievementDifficulty, libraryPosition, startHint, holdHint;
+    AudioSource countdownSource; AudioClip countdownClip;
+    int lastBeepSecond = -1;
     SongSelectRubyText songTitle;
     SongSelectCorridor corridor;
     MenuSignalNoise hardNoise;
-    RectTransform layout;
+    RectTransform layout, holdHintRoot;
     float animation = 1;
     bool built;
     int displayedSecond = -1, noticeSecond = -1, shownIndex = -1;
@@ -69,6 +71,9 @@ public class SongSelectSkin : MonoBehaviour
         ctl.suppressDefaultDifficultyTint = true;
         corridor = SongSelectCorridor.Build(layout, ctl);
         BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildAchievements(); BuildActions();
+        countdownSource = gameObject.AddComponent<AudioSource>();
+        countdownSource.playOnAwake = false; countdownSource.spatialBlend = 0;
+        countdownClip = JudgmentSfx.Beep(660, .045f);
         hardNoise = MenuSignalNoise.BuildScreenOverlay(canvas, layout);
         ctl.OnSelectionChanged += SelectionChanged; ctl.OnDifficultyChanged += DifficultyChanged;
         SelectionChanged(ctl.SelectedIndex); animation = 1; AnimateDiscs();
@@ -209,7 +214,10 @@ public class SongSelectSkin : MonoBehaviour
             });
             discs.Add(d);
         }
-        Label(layout, "StartHint", "中央の曲に２秒かざすと スタート", 26, Position(960, 743), new Vector2(750, 36), UISkinKit.JapaneseFallbackFontAsset(), White);
+        holdHintRoot = PanelAt("HoldStartPanel", 960, 580, 660, 68, new Color(.012f,.024f,.047f,.94f), 0, 12).rectTransform;
+        holdHint = Label(holdHintRoot, "HoldStartHint", "そのまま かざすと スタート", 36, Vector2.zero, new Vector2(640, 58), UISkinKit.JapaneseFallbackFontAsset(), White);
+        holdHintRoot.gameObject.SetActive(false);
+        startHint = Label(layout, "StartHint", "中央の曲に２秒かざすと スタート", 26, Position(960, 743), new Vector2(750, 36), UISkinKit.JapaneseFallbackFontAsset(), White);
     }
     void BuildTitle()
     {
@@ -232,9 +240,10 @@ public class SongSelectSkin : MonoBehaviour
             difficultyRings[i] = Graphic(root, "SelectedRing", new Vector2(0, 2), new Vector2(158, 158), SongSelectDiscGraphic.Shape.Ring, White); difficultyRings[i].Width = 5;
             difficultyNumbers[i] = Label(root, "Level", "", 58, new Vector2(0, 2), new Vector2(110, 100), UISkinKit.LogoFontAsset(), DifficultyColor(i));
             difficultyLabels[i] = Label(root, "DifficultyName", DifficultyDisplayName(i, ctl.difficultyNames[i]), 28, new Vector2(0, -88), new Vector2(210, 40));
-            // 資料の190×196の受付範囲。円と下の難易度名を一つの的にする。
-            var hit = Graphic(root, "HitArea", Vector2.zero, new Vector2(190, 196), SongSelectDiscGraphic.Shape.Panel, Color.clear); hit.Width = 0;
+            // 円と難易度名を含め、上の開始案内は操作対象から外す。
+            var hit = Graphic(root, "HitArea", new Vector2(0, -17), new Vector2(190, 162), SongSelectDiscGraphic.Shape.Panel, Color.clear); hit.Width = 0;
             ctl.difficultyButtons[i] = ButtonOn(root, hit, 1, false);
+            root.GetComponent<SongSelectDiscTarget>().HitArea = hit.rectTransform;
             ctl.difficultyButtons[i].onClick.AddListener(() => ctl.SetDifficulty(index));
         }
     }
@@ -252,7 +261,7 @@ public class SongSelectSkin : MonoBehaviour
             if (i == 3) { rank.color = Color.white; rank.enableVertexGradient = true; rank.colorGradient = new VertexGradient(new Color(1, .5f, .5f), new Color(.65f, .5f, 1), new Color(1, .85f, .45f), new Color(.3f, .9f, 1)); }
             var number = Label(panel.transform, "Count" + i, "", 36, new Vector2(x + 137, y - 2), new Vector2(106, 55), UISkinKit.LogoFontAsset());
             number.enableAutoSizing = true; number.fontSizeMin = 16; number.fontSizeMax = 36;
-            counts[i] = Ruby(number, "0<size=20>回</size>");
+            counts[i] = Ruby(number, "0<size=24>回</size>");
             var line = Graphic(panel.transform, "Rule", new Vector2(x + 94, y - 31), new Vector2(196, 2), SongSelectDiscGraphic.Shape.Panel, new Color(.38f, .81f, .83f, .2f)); line.Width = 0;
         }
     }
@@ -288,6 +297,7 @@ public class SongSelectSkin : MonoBehaviour
             d.to = DiscSlotPosition(d.slot); d.toScale = DiscSlotDiameter(d.slot) / 540f;
             if (!built) { d.from = d.to; d.fromScale = d.toScale; }
             d.target.HoldSeconds = offset == 0 ? 2 : 1;
+            d.target.BottomInset = offset == 0 ? 30 : 0;
             // 隣と2曲先は曲送りの的で、乗せたままでも続けて送る。中央(スタート)は一度外れるまで受け付けない。
             d.target.RepeatWhileHeld = offset != 0; d.target.Sliding = built;
             d.halo.gameObject.SetActive(offset == 0); d.rim.gameObject.SetActive(offset == 0); d.progress.gameObject.SetActive(offset == 0);
@@ -332,7 +342,7 @@ public class SongSelectSkin : MonoBehaviour
         achievementDifficulty.text = DifficultyDisplayName(selected, ctl.difficultyNames[selected]);
         var value = SongAchievementStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.difficultyNames[selected]);
         int[] values = { value.s, value.sPlus, value.fc, value.ap };
-        for (int i = 0; i < 4; i++) counts[i].Set(values[i].ToString() + "<size=20>回</size>");
+        for (int i = 0; i < 4; i++) counts[i].Set(values[i].ToString() + "<size=24>回</size>");
     }
     void Update()
     {
@@ -341,6 +351,16 @@ public class SongSelectSkin : MonoBehaviour
         double now = Time.realtimeSinceStartupAsDouble;
         TickCountdown(now - lastTick); lastTick = now;
         RefreshCountdownDisplay(timer, countdown.Remaining, ref displayedSecond);
+        bool charging = ctl.startButton != null && ctl.startButton.GetComponent<SongSelectDiscTarget>().Progress > 0;
+        holdHintRoot.gameObject.SetActive(charging);
+        bool urgent = displayedSecond > 0 && displayedSecond <= 10;
+        startHint.text = urgent ? "あと " + displayedSecond + "秒で この曲が はじまるよ" : "中央の曲に２秒かざすと スタート";
+        startHint.color = urgent ? Gold : White;
+        if (urgent && lastBeepSecond != displayedSecond && !ScreenTransition.IsBusy && (Application.isFocused || Application.isBatchMode))
+        {
+            lastBeepSecond = displayedSecond;
+            countdownSource.PlayOneShot(countdownClip, .12f);
+        }
         if (noticeSecond != displayedSecond)
         {
             noticeSecond = displayedSecond;
@@ -391,6 +411,7 @@ public class SongSelectSkin : MonoBehaviour
     }
     void OnDestroy()
     {
+        if (countdownClip != null) Destroy(countdownClip);
         if (ctl != null) { ctl.OnSelectionChanged -= SelectionChanged; ctl.OnDifficultyChanged -= DifficultyChanged; }
     }
     Sprite CoverSprite(int index) => ctl != null ? ctl.CoverSpriteAt(index) : null;

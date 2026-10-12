@@ -144,13 +144,13 @@ public class TitleSceneSkin : MonoBehaviour
         glow.raycastTarget = false;
 
         // 閉じたボタン枠ではなく、切る対象を示す四隅の切り欠き。
-        Color edge = new Color(.22f, .75f, 1f, .54f);
+        Color edge = new Color(.22f, .75f, 1f, .75f);
         for (int x = -1; x <= 1; x += 2)
         for (int y = -1; y <= 1; y += 2)
         {
             Vector2 corner = new Vector2(x * 111f, y * 100f);
-            MakeLine(go.transform, "TargetEdge", corner - new Vector2(x * 27f, 0), corner, 2f, edge);
-            MakeLine(go.transform, "TargetEdge", corner, corner - new Vector2(0, y * 27f), 2f, edge);
+            MakeLine(go.transform, "TargetEdge", corner - new Vector2(x * 27f, 0), corner, 3f, edge);
+            MakeLine(go.transform, "TargetEdge", corner, corner - new Vector2(0, y * 27f), 3f, edge);
         }
         MakeLine(go.transform, "SlashCue", new Vector2(-135f, -100f), new Vector2(-103f, -68f), 3f,
             new Color(.2f, 1f, .62f, .72f));

@@ -108,8 +108,12 @@ namespace Saber.ChartEditor
             }
             if (!songInfo.Exists) GUILayout.Label("まだ stage.json がありません。保存すると作ります", smallMutedStyle);
 
+            GUI.SetNextControlName("ChartText:songInfo.DisplayName");
+
             songInfo.DisplayName = EditorGUILayout.TextField(new GUIContent("表示名", "選曲・プレイ・リザルトに出る曲名"), songInfo.DisplayName);
+            GUI.SetNextControlName("ChartText:songInfo.Reading");
             songInfo.Reading = EditorGUILayout.TextField(new GUIContent("ふりがな", "漢字の曲名のときだけ。選曲画面でルビになります"), songInfo.Reading);
+            GUI.SetNextControlName("ChartText:songInfo.Artist");
             songInfo.Artist = EditorGUILayout.TextField("アーティスト", songInfo.Artist);
             songInfo.Listed = EditorGUILayout.ToggleLeft(new GUIContent("選曲に出す",
                 "外すと本編の曲一覧に出ません（制作中や、曲の権利の確認が済んでいない曲に）"), songInfo.Listed);
@@ -161,6 +165,7 @@ namespace Saber.ChartEditor
             {
                 SaberStageInfo.Section section = sections[i];
                 GUILayout.BeginHorizontal();
+                GUI.SetNextControlName("ChartText:section.Label");
                 section.Label = EditorGUILayout.TextField(section.Label, GUILayout.MinWidth(60f));
                 float start = EditorGUILayout.DelayedFloatField((float)section.StartSeconds, GUILayout.Width(52f));
                 float end = EditorGUILayout.DelayedFloatField((float)section.EndSeconds, GUILayout.Width(52f));

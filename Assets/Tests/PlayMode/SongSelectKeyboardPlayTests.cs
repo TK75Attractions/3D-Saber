@@ -246,24 +246,28 @@ public class SongSelectKeyboardPlayTests
         InputSystem.QueueStateEvent(mouse, new MouseState { position = pixel });
         var normalized = typeof(InputPoint).GetProperty("NormalizedPosition");
         var received = typeof(InputPoint).GetProperty("LastReceivedTime");
-        double until = Time.realtimeSinceStartupAsDouble + .5;
-        while (Time.realtimeSinceStartupAsDouble < until)
+        IEnumerator Track(Vector2 point, float seconds)
         {
-            normalized.SetValue(input, new Vector2(pixel.x / Screen.width, pixel.y / Screen.height));
-            received.SetValue(input, Time.realtimeSinceStartupAsDouble);
-            yield return null;
+            double until = Time.realtimeSinceStartupAsDouble + seconds;
+            while (Time.realtimeSinceStartupAsDouble < until)
+            {
+                normalized.SetValue(input, new Vector2(point.x / Screen.width, point.y / Screen.height));
+                received.SetValue(input, Time.realtimeSinceStartupAsDouble);
+                yield return null;
+            }
         }
+        // 入力元が変わった直後は中立位置から入る。通常のためを途中で切る試験。
+        yield return Track(Vector2.zero, .65f);
+        yield return Track(pixel, .5f);
         Assert.Greater(aim.Progress01, .2f);
         received.SetValue(input, -1000d);
         yield return new WaitForSecondsRealtime(1.4f);
         Assert.Zero(aim.ShotCount); Assert.Zero(aim.Progress01);
-        until = Time.realtimeSinceStartupAsDouble + 1.4;
-        while (Time.realtimeSinceStartupAsDouble < until)
-        {
-            normalized.SetValue(input, new Vector2(pixel.x / Screen.width, pixel.y / Screen.height));
-            received.SetValue(input, Time.realtimeSinceStartupAsDouble);
-            yield return null;
-        }
+        // 復帰した位置が同じボタンでも、離すまでは古い操作を再開しない。
+        yield return Track(pixel, 1.4f);
+        Assert.Zero(aim.ShotCount); Assert.True(aim.NeedsRelease);
+        yield return Track(Vector2.zero, .3f);
+        yield return Track(pixel, 1.2f);
         Assert.AreEqual(1, aim.ShotCount); Assert.AreEqual(0, controller.SelectedDifficultyIndex);
     }
 

@@ -19,6 +19,7 @@ public class SongSelectNoteMenuPlayTests
         controller.Select(Enumerable.Range(0, controller.SongCount).Single(i => controller.SongIdAt(i) == "Epilogue"));
         controller.SetDifficulty(0);
         yield return new WaitForSecondsRealtime(.6f); Canvas.ForceUpdateCanvases();
+        aim.BeginArrival(); Hold(Vector2.zero, 7);
     }
     [UnityTearDown] public IEnumerator Cleanup()
     {

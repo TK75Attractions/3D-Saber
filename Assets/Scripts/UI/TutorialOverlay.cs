@@ -110,7 +110,7 @@ public sealed class TutorialOverlay : MonoBehaviour
             new Color(.22f, .39f, .45f), 12).gameObject;
         Blade(handsCard.transform, "LeftBlade", -180, UISkinPalette.LogoBlue, 16f, "左手");
         Blade(handsCard.transform, "RightBlade", 180, UISkinPalette.LogoRed, -16f, "右手");
-        Label(handsCard.transform, "HandsText", "来たノーツを、同じ色の手で切る", 28, 0, -148, 980, 44, Ink);
+        Label(handsCard.transform, "HandsText", "来た箱を、同じ色の剣で切る", 28, 0, -148, 980, 44, Ink);
         handsCard.SetActive(false);
         // 画面下の帯(本編の判定調整と同じ下 18%)。見えない枠だけ置き、照準の受付範囲にする。
         Controls = Rect(transform, "Controls", 0, -414, 1840, 236);
@@ -175,7 +175,7 @@ public sealed class TutorialOverlay : MonoBehaviour
         {
             int left = ctl.Step != null ? Mathf.Max(0, ctl.Step.Goal - ctl.Successes) : 0;
             bool pairs = ctl.Step != null && ctl.Step.Simultaneous;
-            int remaining = ctl.Step != null && ctl.Step.Kind == TutorialStepKind.Practice && !ctl.StepDone ? left : -1;
+            int remaining = ctl.Step != null && ctl.Step.Kind == TutorialStepKind.Practice && ctl.Step.Goal > 1 && !ctl.StepDone ? left : -1;
             if (remaining != shownRemaining || pairs != shownPairs)
             {
                 shownRemaining = remaining; shownPairs = pairs;

@@ -349,10 +349,12 @@ namespace Saber.ChartEditor
         {
             GUILayout.BeginHorizontal();
             GUILayout.Label("小節", GUILayout.Width(28f));
+            GUI.SetNextControlName("ChartText:jumpMeasureText");
             jumpMeasureText = EditorGUILayout.TextField(jumpMeasureText ?? string.Empty, GUILayout.Width(44f));
             if (GUILayout.Button("移動", EditorStyles.miniButton, GUILayout.Width(38f))) JumpToMeasureText();
             GUILayout.Space(6f);
             GUILayout.Label("時刻", GUILayout.Width(28f));
+            GUI.SetNextControlName("ChartText:jumpTimeText");
             jumpTimeText = EditorGUILayout.TextField(jumpTimeText ?? string.Empty, GUILayout.MinWidth(54f));
             if (GUILayout.Button("移動", EditorStyles.miniButton, GUILayout.Width(38f))) JumpToTimeText();
             GUILayout.EndHorizontal();
@@ -429,6 +431,7 @@ namespace Saber.ChartEditor
             showMarkers = EditorGUILayout.Foldout(showMarkers, $"目印（{document.markers.Count}）", true);
             if (!showMarkers) return;
             GUILayout.BeginHorizontal();
+            GUI.SetNextControlName("ChartText:newMarkerName");
             newMarkerName = EditorGUILayout.TextField(newMarkerName ?? string.Empty, GUILayout.MinWidth(90f));
             if (GUILayout.Button("現在位置に追加", EditorStyles.miniButton, GUILayout.Width(92f))) AddMarkerAtCursor();
             GUILayout.EndHorizontal();

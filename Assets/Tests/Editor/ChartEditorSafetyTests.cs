@@ -424,6 +424,68 @@ public class ChartEditorSafetyTests
         });
     }
 
+    [TestCase("chart_normal.json", false)]
+    [TestCase("chart.json", false)]
+    [TestCase("chart_normal.json", true)]
+    public void ExternalChangesRequireConfirmationAndCancellationPreservesBothVersions(string changedFile, bool delete)
+    {
+        WithChartFolder((target, folder) =>
+        {
+            string path = Path.Combine(folder, "chart_normal.json");
+            File.WriteAllText(path, OneNoteChart);
+            File.WriteAllText(Path.Combine(folder, "chart.json"), OneNoteChart);
+            Load(target, 1);
+            Set("selectedIndex", 0); Key(KeyCode.D, EventModifiers.Control);
+            string draft = SaberChartUtility.ToJson(Document, false);
+            string changed = Path.Combine(folder, changedFile);
+            if (delete) File.Delete(changed); else File.WriteAllText(changed, VariableTempoChart);
+            // 再コンパイル相当の再有効化でも、読込時点の比較を維持する。
+            Call("OnDisable"); Call("OnEnable");
+            int asked = 0;
+            Set("confirmExternalOverwrite", new Func<string, bool>(message => { asked++; return false; }));
+            Assert.False((bool)Call("SaveDocument"));
+            Assert.AreEqual(1, asked);
+            Assert.AreEqual(draft, SaberChartUtility.ToJson(Document, false));
+            if (delete) Assert.False(File.Exists(changed)); else Assert.AreEqual(VariableTempoChart, File.ReadAllText(changed));
+            Assert.True(window.hasUnsavedChanges);
+            Set("confirmExternalOverwrite", new Func<string, bool>(message => { asked++; return true; }));
+            Assert.True((bool)Call("SaveDocument"));
+            Assert.AreEqual(2, asked);
+            Assert.AreEqual(2, ChartLoader.LoadFromFile(path).notes.Count);
+            Set("selectedIndex", 0); Key(KeyCode.D, EventModifiers.Control);
+            Assert.True((bool)Call("SaveDocument")); Assert.AreEqual(2, asked, "保存成功後は比較元を更新する");
+        });
+    }
+
+    [Test]
+    public void FileCreatedAfterOpeningAnEmptyDifficultyIsAlsoProtected()
+    {
+        WithChartFolder((target, folder) =>
+        {
+            Load(target, 2);
+            File.WriteAllText(Path.Combine(folder, "chart_hard.json"), OneNoteChart);
+            Document.notes.Add(new SaberChartNote { time = 600 }); Call("UpdateDirtyState");
+            Set("confirmExternalOverwrite", new Func<string, bool>(message => false));
+            Assert.False((bool)Call("SaveDocument"));
+            Assert.AreEqual(OneNoteChart, File.ReadAllText(Path.Combine(folder, "chart_hard.json")));
+        });
+    }
+
+    [Test]
+    public void FailedAutomaticRestoreKeepsAPersistentWarningAndNeverClaimsSaved()
+    {
+        WithChartFolder((target, folder) =>
+        {
+            File.WriteAllText(Path.Combine(folder, "chart_normal.json"), "{ broken JSON");
+            Set("songId", target); Set("difficultyIndex", 1); Set("loadedSongId", null);
+            Set("document", new SaberChartDocument()); Set("documentInitialized", false);
+            Call("RestoreLastDocument"); Call("UpdateDirtyState");
+            StringAssert.Contains("前回の譜面を読み込めません", Get<string>("persistentWarning"));
+            Assert.IsNull(Get<string>("savedJson")); Assert.True(window.hasUnsavedChanges);
+            Assert.AreEqual("{ broken JSON", File.ReadAllText(Path.Combine(folder, "chart_normal.json")));
+        });
+    }
+
     // ---- helpers ----
 
     const string OneNoteChart = "{\"bpm\":150,\"notes\":[{\"beat\":2,\"time\":800,\"x\":1}]}";

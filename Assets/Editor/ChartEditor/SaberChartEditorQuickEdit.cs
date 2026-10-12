@@ -33,7 +33,7 @@ namespace Saber.ChartEditor
                 {
                     SaberChartNote note = SelectedNote;
                     int color = System.Array.IndexOf(ColorValues, note.color);
-                    GUILayout.Label($"{(note.time + document.offsetMs) / 1000f:0.000}s  /  {(color >= 0 ? ColorLabels[color] : note.color)}  /  {DirectionGlyph(note.direction)}", smallMutedStyle);
+                    GUILayout.Label($"音源上 {(note.time + document.offsetMs) / 1000f:0.000}s（OFFSET込み） /  {(color >= 0 ? ColorLabels[color] : note.color)}  /  {DirectionGlyph(note.direction)}", smallMutedStyle);
                     GUILayout.BeginHorizontal();
                     if (GUILayout.Button("10ms早く")) NudgeSelectedNoteTime(-10f);
                     if (GUILayout.Button("10ms遅く")) NudgeSelectedNoteTime(10f);

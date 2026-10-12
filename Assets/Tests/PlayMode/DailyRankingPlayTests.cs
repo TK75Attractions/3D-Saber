@@ -112,7 +112,11 @@ public class DailyRankingPlayTests
         Assert.AreEqual(0, panel.GetComponent<CanvasGroup>().alpha);
         Assert.False(back.IsInteractable());
         Time.timeScale = 0;
-        reveal.Tick(2.9f);
+        reveal.Tick(2.47f);
+        Assert.AreEqual(0, GameObject.Find("DailyRankingWheel").GetComponent<CanvasGroup>().alpha);
+        reveal.Tick(4.47f);
+        Assert.AreEqual(0, GameObject.Find("DailyRankingWheel").GetComponent<CanvasGroup>().alpha);
+        reveal.Tick(DailyRankingWheel.StartTime + .18f);
         Assert.AreEqual(0, rank.GetComponent<CanvasGroup>().alpha, "回転中に確定順位を先に見せない");
         var wheel = GameObject.Find("DailyRankingWheel");
         Assert.Greater(wheel.GetComponent<CanvasGroup>().alpha, 0);
@@ -120,7 +124,7 @@ public class DailyRankingPlayTests
         reveal.Tick(DailyRankingWheel.StopTime + .05f);
         Assert.Greater(wheel.transform.Find("Frame/Stamp").localScale.x, 1);
         DisplaySettings.SetReducedEffectsForTest(true);
-        reveal.Tick(2.9f);
+        reveal.Tick(DailyRankingWheel.StartTime + .18f);
         Assert.AreEqual(0, wheel.GetComponent<CanvasGroup>().alpha);
         Assert.AreEqual(Vector3.one, rank.localScale);
         reveal.Tick(999);

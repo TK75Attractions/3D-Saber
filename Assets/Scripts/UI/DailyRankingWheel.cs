@@ -5,10 +5,10 @@ using UnityEngine.UI;
 // 上位3位だけの数字リール。ResultRevealの共通時計で回し、確定後は元のランキング帯へ戻す。
 public sealed class DailyRankingWheel : MonoBehaviour
 {
-    public const float StartTime = 2.72f;
-    public const float StopTime = 4.30f;
-    public const float ImpactTime = 4.48f;
-    public const float EndTime = 5.65f;
+    public const float StartTime = 4.72f;
+    public const float StopTime = 6.30f;
+    public const float ImpactTime = 6.48f;
+    public const float EndTime = 7.65f;
     const float CellHeight = 146;
     readonly TextMeshProUGUI[] cells = new TextMeshProUGUI[5];
     CanvasGroup group, reelGroup, stampGroup;

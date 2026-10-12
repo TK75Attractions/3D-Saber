@@ -88,7 +88,6 @@ public class SaberUIPointer : MonoBehaviour
     private Image cursorDot;
     private Image progressRing;
     private SaberInputBridge bridge; // セーバー本体。ある場合はその実位置に点を重ねる
-    private readonly DwellTracker tracker = new DwellTracker(DwellSeconds, CooldownSeconds);
     private Button hovered;
     private Vector3 smoothedPosition;
     private bool hasSmoothed;
@@ -99,6 +98,8 @@ public class SaberUIPointer : MonoBehaviour
     private Vector2 aimPosition, lastMouse;
     private int aimSource;
     private bool hasAimPosition, mouseNeedsMove;
+    readonly SaberUIArrivalGuard arrival = new SaberUIArrivalGuard();
+    public void BeginArrival() { arrival.Reset(); aimTracker.Cancel(); }
     public float AimProgress01 => aimTracker.Progress01;
     public RectTransform AimReticle => aimReticle != null ? aimReticle.rectTransform : null;
 
@@ -154,7 +155,7 @@ public class SaberUIPointer : MonoBehaviour
         int source = input != null && input.IsRecentlyActive(.2f) ? 1 : mouse != null ? 2 : 0;
         if (source != aimSource)
         {
-            aimTracker.Cancel(); hasAimPosition = false;
+            BeginArrival(); hasAimPosition = false;
             // 追跡が途切れても、古いマウス位置で勝手に操作を始めない。
             if (aimSource == 1 && source != 1) { mouseNeedsMove = true; lastMouse = mousePoint; }
             if (source == 1) mouseNeedsMove = false;
@@ -174,6 +175,7 @@ public class SaberUIPointer : MonoBehaviour
     public void TickAimAt(Vector2 point, float dt, bool inputAvailable = true, bool clicked = false)
     {
         if (aimReticle == null) return;
+        if (ScreenTransition.IsBusy) BeginArrival();
         if (!inputAvailable || ScreenTransition.IsBusy || !new Rect(0, 0, Screen.width, Screen.height).Contains(point))
         {
             aimTracker.Cancel(); SetHovered(null); aimReticle.gameObject.SetActive(false); return;
@@ -188,7 +190,9 @@ public class SaberUIPointer : MonoBehaviour
         // 通常クリックでもホールドを解除するまで同じ操作を繰り返さない。
         if (clicked && target != null) aimTracker.BlockUntilExit(area);
         var dwell = target != null ? target.GetComponent<SaberDwellTarget>() : null;
-        bool fire = aimTracker.Tick(target, area, point, dt, target != null && !SlashOnly,
+        bool arriving = arrival.Tick(dt);
+        if (arrival.CaptureTarget && target != null) aimTracker.BlockUntilExit(area);
+        bool fire = aimTracker.Tick(target, area, point, dt, target != null && !SlashOnly && !arriving,
             dwell != null ? dwell.dwellSeconds : SongSelectAimTracker.HoldSeconds);
         aimReticle.gameObject.SetActive(!HideOutsideBottomControls || allowed);
         var canvasCamera = overlayCanvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : overlayCanvas.worldCamera;
@@ -200,6 +204,7 @@ public class SaberUIPointer : MonoBehaviour
 
     private void OnDisable()
     {
+        BeginArrival(); SetCursorVisible(false); SetHovered(null);
         if (aimReticle == null) return;
         aimTracker.Cancel(); SetHovered(null); hasAimPosition = false;
         aimReticle.gameObject.SetActive(false);
@@ -261,13 +266,14 @@ public class SaberUIPointer : MonoBehaviour
     void Update()
     {
         if (aimReticle != null) { UpdateAim(); return; }
+        if (ScreenTransition.IsBusy) BeginArrival();
         var ip = InputPoint.Instance;
-        bool active = !ScreenTransition.IsBusy && ip != null && ip.IsRecentlyActive(StaleSeconds) && cam != null;
+        bool active = (Application.isFocused || Application.isBatchMode) && !ScreenTransition.IsBusy && ip != null && ip.IsRecentlyActive(StaleSeconds) && cam != null;
         if (!active)
         {
             SetCursorVisible(false);
             SetHovered(null);
-            tracker.Reset();
+            aimTracker.Cancel();
             hasSmoothed = false;
             return;
         }
@@ -306,7 +312,7 @@ public class SaberUIPointer : MonoBehaviour
 
         if (BottomControlsOnly && !IsInsideBottomControls(screen, Screen.width, Screen.height))
         {
-            SetCursorVisible(false); SetHovered(null); tracker.Reset(); return;
+            SetCursorVisible(false); SetHovered(null); aimTracker.Cancel(); return;
         }
         SetCursorVisible(true);
         cursorDot.rectTransform.position = new Vector3(screen.x, screen.y, 0f);
@@ -317,7 +323,7 @@ public class SaberUIPointer : MonoBehaviour
 
         if (SlashOnly || (target != null && target.GetComponent<MenuNoteAction>() != null))
         {
-            tracker.Reset();
+            aimTracker.Cancel();
             progressRing.fillAmount = 0f;
             return;
         }
@@ -327,8 +333,11 @@ public class SaberUIPointer : MonoBehaviour
         Color progressColor = dwellTarget != null ? dwellTarget.progressColor : UISkinPalette.Cyan;
         progressRing.color = new Color(progressColor.r, progressColor.g, progressColor.b, 0.62f);
 
-        bool fired = tracker.Tick(target, Time.unscaledDeltaTime, dwellSeconds);
-        progressRing.fillAmount = tracker.Progress01;
+        bool arriving = arrival.Tick(Time.unscaledDeltaTime);
+        Rect area = target != null ? SongSelectAimPointer.RectOnScreen((RectTransform)target.transform) : default;
+        if (arrival.CaptureTarget && target != null) aimTracker.BlockUntilExit(area);
+        bool fired = aimTracker.Tick(target, area, screen, Time.unscaledDeltaTime, target != null && !arriving, dwellSeconds);
+        progressRing.fillAmount = aimTracker.Progress01;
         if (fired && target != null)
         {
             Click(target, screen);

@@ -24,11 +24,14 @@ public class SongSelectIdleGuidePlayTests
         controller = Object.FindFirstObjectByType<SongSelectController>();
         yield return ScreenTransitionPlayTests.WaitForTransition();
         yield return new WaitForSecondsRealtime(.6f);
+        aim.BeginArrival();
+        for (int i = 0; i < 7; i++) aim.TickAt(new Vector2(1, 1), .1f);
     }
     [UnityTest] public IEnumerator ArrivalAtTheCenterRequiresLeavingBeforeStart()
     {
         var target = controller.startButton.GetComponent<SongSelectDiscTarget>();
         var point = target.ScreenRect().center;
+        guide.RegisterActivity();
         aim.BeginArrival(); aim.TickAt(point,.1f);
         Assert.True(aim.NeedsRelease); Assert.Zero(aim.Progress01);
         yield return new WaitForSecondsRealtime(.6f);
@@ -175,6 +178,19 @@ public class SongSelectIdleGuidePlayTests
         guide.Tick(20, true); Assert.False(guide.IsVisible);
         yield return null;
     }
+    [UnityTest] public IEnumerator GuideDismissalDoesNotCountTowardTheStartHold()
+    {
+        var point = controller.startButton.GetComponent<SongSelectDiscTarget>().ScreenRect().center;
+        guide.Tick(.25f, true); Assert.True(guide.IsVisible);
+        for (int i=0;i<4;i++) aim.TickAt(point,.1f);
+        Assert.False(guide.IsVisible); Assert.Zero(aim.Progress01);
+        for (int i=0;i<19;i++) aim.TickAt(point,.1f);
+        Assert.False(ScreenTransition.IsBusy); Assert.Zero(aim.ShotCount);
+        aim.TickAt(point,.1f);
+        Assert.True(ScreenTransition.IsBusy); Assert.AreEqual(1,aim.ShotCount);
+        yield return ScreenTransitionPlayTests.WaitForTransition();
+    }
+
     [UnityTest] public IEnumerator ButtonSelectionBeforeDeadlineSuppressesGuide()
     {
         guide.Tick(.25f, true); Assert.True(guide.IsVisible);

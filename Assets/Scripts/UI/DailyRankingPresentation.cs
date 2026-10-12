@@ -97,7 +97,7 @@ public sealed class DailyRankingPresentation : MonoBehaviour
         var status = Text("Status", headline, new Vector2(30, 19), new Vector2(500, 42), 29, accent, details.transform);
         status.alignment = TextAlignmentOptions.MidlineLeft;
         string note = (available && result.TiedPlays > 1 ? "同率 " + result.Rank + " 位 ／ " : "") + "あそんでくれて ありがとう！";
-        var sub = Text("Next", note, new Vector2(65, -23), new Vector2(570, 32), 22, UISkinPalette.OffWhite, details.transform);
+        var sub = Text("Next", note, new Vector2(65, -23), new Vector2(570, 34), 24, UISkinPalette.OffWhite, details.transform);
         sub.alignment = TextAlignmentOptions.MidlineLeft;
         string count = available ? result.TotalPlays.ToString("N0") + " 回中" : "DAILY RANKING";
         var people = Text("Count", count, new Vector2(555, 12), new Vector2(350, 52), 38, UISkinPalette.OffWhite);
