@@ -25,6 +25,20 @@ sync_copy() {
     rsync -a --delete "$ROOT/PhoneSaber/tools/fixtures" "$COPY/PhoneSaber/tools/" || return 1
 }
 
+# macOS では実行ファイルを直接起動すると、batchmode でも Dock に出て前面のアプリからフォーカスを奪う
+# （作業中のユーザーの画面に割り込む。2026-10-13 ユーザー指摘）。.app の中の実行ファイルは
+# open -g -j（前面に出さない・隠して起動）で起動し、終了まで待つ。
+# open 経由では終了コードが取れないので、成否は必ずログ・結果ファイルで判定する。
+run_hidden() {   # run_hidden <実行ファイル> [引数...]
+    local exe="$1"; shift
+    local app="${exe%/Contents/MacOS/*}"
+    if [[ "$app" != "$exe" && -d "$app" && -x /usr/bin/open && -z "${PHONESABER_UNITY_FOREGROUND:-}" ]]; then
+        /usr/bin/open -g -j -n -W "$app" --args "$@"
+    else
+        "$exe" "$@"
+    fi
+}
+
 # ビルド済み Player を窓なしで起動し、Title → SongSelect → Game を順に開いて例外を数える。
 # (PhoneSaberPlayerSmoke.cs。UDP 5005-5007 を数十秒使うので、ゲームが起動中のときは呼ばない)
 smoke_player() {
@@ -32,12 +46,17 @@ smoke_player() {
     exe="$(find "$app/Contents/MacOS" -maxdepth 1 -type f | head -1)"
     [[ -x "$exe" ]] || { echo "smoke: 実行ファイルが見つかりません: $app"; return 1; }
     rm -f "$log"
-    "$exe" -batchmode -phonesaberSmoke "${PHONESABER_SMOKE_SECONDS:-8}" -logFile "$log" >/dev/null 2>&1 &
+    run_hidden "$exe" -batchmode -phonesaberSmoke "${PHONESABER_SMOKE_SECONDS:-8}" -logFile "$log" >/dev/null 2>&1 &
     pid=$!
     while kill -0 "$pid" 2>/dev/null; do
-        if (( waited >= limit )); then kill -KILL "$pid" 2>/dev/null; echo "smoke: ${limit} 秒で終わらないため中止 ($log)"; return 1; fi
+        if (( waited >= limit )); then
+            # open 経由のときは Player が別プロセスなので、起動確認の引数で特定して止める（遊んでいるゲームは対象外）。
+            pkill -KILL -f -- "-phonesaberSmoke" 2>/dev/null; kill -KILL "$pid" 2>/dev/null
+            echo "smoke: ${limit} 秒で終わらないため中止 ($log)"; return 1
+        fi
         sleep 1; waited=$((waited + 1))
     done
+    # open 経由では Player の終了コードは分からない（常に 0）。下のログの判定が本体。
     wait "$pid"; local code=$?
     local count
     count="$(grep -cE '^[A-Za-z.]*Exception' "$log" 2>/dev/null)"
@@ -65,7 +84,7 @@ editmode)
     rm -f "$OUT/editmode.xml"
     args=(-batchmode -projectPath "$COPY" -runTests -testPlatform EditMode -testResults "$OUT/editmode.xml" -logFile "$OUT/editmode.log")
     [[ -n "${2:-}" ]] && args+=(-testFilter "$2")
-    "$UNITY" "${args[@]}"
+    run_hidden "$UNITY" "${args[@]}"
     result_args=("$OUT/editmode.xml" "$OUT/editmode.log")
     [[ -n "${PHONESABER_EDITMODE_KNOWN_FAILURES:-}" ]] && result_args+=(--known-failures "$PHONESABER_EDITMODE_KNOWN_FAILURES")
     python3 "$ROOT/PhoneSaber/tools/unity_editmode_results.py" "${result_args[@]}"
@@ -73,7 +92,8 @@ editmode)
 build-mac)
     sync_copy || exit 1
     rm -rf "$COPY/Builds/Mac"
-    "$UNITY" -batchmode -quit -projectPath "$COPY" -executeMethod PhoneSaberPlayerBuild.BuildMac -logFile "$OUT/build-mac.log"
+    rm -f "$OUT/build-mac.log"
+    run_hidden "$UNITY" -batchmode -quit -projectPath "$COPY" -executeMethod PhoneSaberPlayerBuild.BuildMac -logFile "$OUT/build-mac.log"
     if ! grep -q "Result: Success" "$OUT/build-mac.log" || [[ ! -d "$COPY/Builds/Mac/3D-Saber.app" ]]; then
         echo "build-mac: 失敗（$OUT/build-mac.log）"; exit 1
     fi

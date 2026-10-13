@@ -209,19 +209,22 @@ public class PhoneSaberEndpointFilterTests
         inputType.GetField("phoneSaberStation", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(input, station);
         var resolve = bridgeType.GetMethod("ResolveFilterMode", BindingFlags.Instance | BindingFlags.NonPublic);
         var filter = (PhoneSaberEndpointFilter)bridgeType.GetField("endpointFilter", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(bridge);
-        var predictor = (PhoneSaberEndpointPredictor)bridgeType.GetField("endpointPredictor", BindingFlags.Instance | BindingFlags.NonPublic).GetValue(bridge);
+        // 予測器は struct。取り出した値は複製なので、書き戻してから bridge 側の実体を読み直す。
+        var predictorField = bridgeType.GetField("endpointPredictor", BindingFlags.Instance | BindingFlags.NonPublic);
+        var predictor = (PhoneSaberEndpointPredictor)predictorField.GetValue(bridge);
         try
         {
             Assert.AreEqual(0, resolve.Invoke(bridge, new object[] { input }));
             predictor.AddSample(0, Vector2.zero, Vector2.one);
             predictor.AddSample(.03, Vector2.right, Vector2.one + Vector2.right);
+            predictorField.SetValue(bridge, predictor);
             var count = typeof(PhoneSaberEndpointPredictor).GetField("sampleCount", BindingFlags.Instance | BindingFlags.NonPublic);
             inputType.GetProperty("PredictionRevision").SetValue(input, 1);
             resolve.Invoke(bridge, new object[] { input });
-            Assert.AreEqual(2, count.GetValue(predictor), "OFF中は従来の予測側だけが履歴を管理する");
+            Assert.AreEqual(2, count.GetValue(predictorField.GetValue(bridge)), "OFF中は従来の予測側だけが履歴を管理する");
             PhoneSaberFilterSettings.Save(station, 1);
             Assert.AreEqual(1, resolve.Invoke(bridge, new object[] { input }));
-            Assert.AreEqual(0, count.GetValue(predictor));
+            Assert.AreEqual(0, count.GetValue(predictorField.GetValue(bridge)));
             filter.Apply(0, Vector2.zero, Vector2.one, 1, out _, out _);
             filter.Apply(.03, Vector2.right, Vector2.one + Vector2.right, 1, out _, out _);
             inputType.GetProperty("PredictionRevision").SetValue(input, 99);

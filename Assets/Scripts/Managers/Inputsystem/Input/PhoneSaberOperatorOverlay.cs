@@ -257,6 +257,20 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
             "tsは送信時刻のため撮影・画面表示の遅れは含みません。", textStyle);
     }
 
+    void DrawDisplaySync()
+    {
+        bool vsync = PhoneSaberDisplaySync.Mode == PhoneSaberDisplaySyncSettings.VSync;
+        GUILayout.Label($"画面同期: {(vsync ? "ON（画面の更新に合わせて描く）" : "ゲームの設定のまま")}（この台に保存）", textStyle);
+        GUILayout.BeginHorizontal();
+        if (GUILayout.Button((vsync ? "" : "● ") + "ゲームの設定のまま", buttonStyle) && vsync)
+            PhoneSaberDisplaySync.SetMode(PhoneSaberDisplaySyncSettings.GameDefault);
+        if (GUILayout.Button((vsync ? "● " : "") + "ON", buttonStyle) && !vsync)
+            PhoneSaberDisplaySync.SetMode(PhoneSaberDisplaySyncSettings.VSync);
+        GUILayout.EndHorizontal();
+        GUILayout.Label("本編はゲームの設定だと画面の更新を待たずに描きます（60 Hz の画面に数百 fps）。\n" +
+            "絵が横にずれて見える・動きがガタつくときは ON と比べてください。元へ戻すと次の曲から反映されます。", textStyle);
+    }
+
     void DrawFilter()
     {
         var input = InputPoint.Instance;
@@ -348,6 +362,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         DrawFilter();
         GUILayout.Space(8);
         DrawPrediction();
+        GUILayout.Space(8);
+        DrawDisplaySync();
         GUILayout.Space(8);
         DrawCalibration();
         GUILayout.Space(8);

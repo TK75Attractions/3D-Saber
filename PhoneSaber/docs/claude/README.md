@@ -43,6 +43,8 @@ AI と開発者向け。**いまの状態を知るには [STATUS.md](STATUS.md) 
 
 [review-ios-sender.md](review-ios-sender.md)（10-10）・[review-ios-event-day.md](review-ios-event-day.md)（8時間運用）・[review-android.md](review-android.md)・[review-unity-phonesaber.md](review-unity-phonesaber.md)・[review-mac-launchers.md](review-mac-launchers.md)・[review-windows-kit.md](review-windows-kit.md)・[review-python-tools.md](review-python-tools.md)・[review-debug-bundle-20261011.md](review-debug-bundle-20261011.md)（録画→Mac 転送）・[review-merged-20261011.md](review-merged-20261011.md)（10-10〜11 に入れた変更の再レビュー。未解決の指摘あり）
 
+クラッシュ・ハング監査（10-13、報告と修正案）: [ios-crash-audit-20261013.md](ios-crash-audit-20261013.md)・[android-crash-audit-20261013.md](android-crash-audit-20261013.md)
+
 ## 認識（判定）
 
 | 文書 | 内容 |
@@ -63,6 +65,7 @@ AI と開発者向け。**いまの状態を知るには [STATUS.md](STATUS.md) 
 - Android / C++ core: [perf_core_detection.md](perf_core_detection.md)・[core-r2.md](core-r2.md)・[core-r3.md](core-r3.md)・[core-r4.md](core-r4.md)・[android-perf.md](android-perf.md)
 - Unity: [unity-frame-cost.md](unity-frame-cost.md)（受信→描画を含む）・[unity-gc.md](unity-gc.md)・[unity-ui-gc.md](unity-ui-gc.md)
 - [integration.md](integration.md): 最適化7ブランチの統合検証（10-09）
+- 10-13 の遅延の見直し: [pc-latency-20261013.md](pc-latency-20261013.md)（PC の表示経路・全体の遅延予算・F8「画面同期」）・[predict-20261013.md](predict-20261013.md)（予測の offline 評価、既定 OFF の理由）・[ios-latency-20261013.md](ios-latency-20261013.md)・[android-latency-20261011.md](android-latency-20261011.md)（どちらも自己計測ログと実機手順）
 
 ## この Mac だけにあるもの（git 管理外）
 

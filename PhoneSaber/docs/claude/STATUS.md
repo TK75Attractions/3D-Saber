@@ -4,6 +4,10 @@
 
 ## ユーザー待ち
 
+**10-13 追加（ビルド済みアプリを作り直したあと）:**
+- **「もっさり・不快」の確認**: 低電力モード OFF・電源接続で起動し、本編で F8 →「画面同期」を ON にして、ゲームの設定のまま（本編は vsync なしで約900 fps）と見え方を比べる。数字の入力は不要（`event=perf` に `vsync=`・`fps=`・座標の古さが残る）。ON のほうが良ければ、ゲーム側の `UnlockFrameRate` を担当者に直してもらうのが本筋。
+- iPhone / Android の「低遅延カメラ設定（試験）」と 120 fps は既定 OFF。実機で比べるまで本番では使わない。
+
 iPhone遅延: 10-13 に main へ取り込み済み（公式 verify PASS）。既定の動作は 60fps のまま。120fps と「低遅延カメラ設定（試験）」は既定 OFF で、実機での比較待ち（iPhone 13 で 60/120 fps と試験 OFF/ON を各60秒。数値入力不要、`Library/Logs/connectivity.log` の `CAPTURE_METRICS` を読む）。[手順と検証](ios-latency-20261013.md)。
 
 プロトコル監査（cx/protocol-20261011）はオペレーターの差分レビュー・公式verify待ち。commit / push はしていない。経路受理・探索validation・警告表示の変更案は[契約報告](protocol-contracts-20261011.md)に記録し、実装していない。
@@ -61,6 +65,15 @@ iPhone遅延: 10-13 に main へ取り込み済み（公式 verify PASS）。既
 11. **将来の構成を比較**: AWDLが不安定ならUSB/usbmuxd/TCPを試すか判断し、座標互換・滞留・切断復帰・画面全体の遅延を測る。Mac内蔵／USBカメラ直接認識は精度・端点・配置・遅延を比較して採否を決める。Continuity Cameraは別の無線経路で、縮小／FPSだけを通信遅延改善と扱わない。
 
 ## 作業ログ
+
+### 2026-10-13 Codex 6並列の1巡目を取り込み（Claude がレビュー・検証）
+- ユーザー指示「Codex のリセットが頻繁に来るのでガンガン使ってよい。ゲームの完成度を高く」。runner を3本にして6並列＋待ち行列にした（`~/Library/Logs/PhoneSaber/codex-runner/`、`runner.log`）。5時間枠は 10:58 に使い切り、リセット後に自動再開（iosgaps・mural・docs2・review2 は途中）。
+- **PC の予測**（[predict-20261013.md](predict-20261013.md)）: 録画の座標列では予測の効果がはっきりしない（40 ms で誤差の中央値 0.203→0.157、RMS は 0.6% 減、静止時の揺れは 9% 増）ので既定は OFF のまま。起動・欠測復帰の直後に1区間だけで外挿して剣が跳ぶ不具合を修正（3点そろうまで予測しない）。F8 に「自動」（NTP 同期確認済みのときだけ片道遅延を使う）を追加。
+- **PC の表示遅延**（[pc-latency-20261013.md](pc-latency-20261013.md)）: `event=perf` がシーン・描画条件の切替で窓を切り直すようになり（以前はメニューの fps を Game 名で報告することがあった）、座標の古さ（描画直前、中央値/p95）・受信→初回使用・何が fps を制限しているか（vsync / target / 低電力の疑い / GPU の疑い / 不明）を記録。F8 に同じ判定を1行表示。`InputPoint.ResampleLatestInput()` を追加（まだ誰も呼ばない）。Mac / Windows の起動スクリプトが電源・画面の Hz を毎回ログに残す。
+- **F8「画面同期」**（Claude 追加、`PhoneSaberDisplaySync.cs`）: 本編は `UnlockFrameRate` が vsync を切り 60 Hz の画面へ約900 fps で描いている。破れ・コマ揺れと比べられるよう、台ごとに vsync=1 を明示選択できる。既定は「ゲームの設定のまま」で何も変えない。
+- **クラッシュ監査（報告のみ）**: [iPhone](ios-crash-audit-20261013.md) は P1 が1件（カメラの通知を main で同期配信しているため、停止の同期待ちと相互待ちになりうる。実機では未再現）、P2 が1件（overlay writer が失敗状態のとき録画終了が進まない）。[Android](android-crash-audit-20261013.md) は P0/P1 なし、P2 が1件（保存値の型が違うと起動時に ClassCastException。現行の書き込みでは起きない）。修正の適用は runner の待ち行列（iosfix / androidfix）。
+- `unity_copy.sh` は Unity とビルド済みアプリを `open -g -j` で隠して起動するようにした（ユーザー指摘: 検証の窓が作業中の画面に出る）。終了コードが取れないので成否はログで判定。
+- 検証: 公式 verify PASS（iOS XCTest・Detection・Lossless 40/40・Tools・iOS Release）、Unity EditMode 2011/2011、gradle unit/assemble/lint、core parity 325/325。実機は未実施。
 
 ### 2026-10-13 Android capture→send の仕上げ（Codex 実装、Claude がレビュー・検証して取り込み）
 - 送信中10秒ごとに `PhoneSaberLatency` タグで1行（撮影fps・解析fps・赤青の送信fps・撮影→送信 median/p95・未解析推定・送信破棄・発熱・PC 応答からの秒数・Camera2 の実設定）。画面の「ログをコピー」で直近5分を取れる。数値の手入力は不要。

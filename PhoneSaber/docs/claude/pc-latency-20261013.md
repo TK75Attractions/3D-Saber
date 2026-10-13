@@ -178,3 +178,12 @@ PlayMode全体はCOPY上で既存 `unity_playmode_batches.py`、正式な総合v
 4. WindowsのIndependent Flip成立、不要な重なり・描画キューを避ける。旧合成経路なら約1T削減候補。flip=1/queue=1は既に設定済み。
 5. 合成135 ms区間を光学/nativeデータで分離。phone60 fpsの37 ms対30 fpsの50 msという約13 ms差は既知、PCだけで消せない。capture/ISP/露光・F9元画面・送信の整理は別仕事。recognitionは触らない。
 6. GPU律速が実測された時だけ解像度/描画負荷/URP設定をゲーム側で検討。今回の900 fpsからGPU飽和を決めつけない。Metalのnative queue/present調整、VRR/driver調整も実機根拠と別レビューが必要。
+
+## 取り込み時の追加（Claude、2026-10-13）: F8 の「画面同期」
+
+ゲームのコードと Scene を変えずに vsync ON / OFF を同じ台で比べられるよう、F8 に「画面同期」を追加した（`PhoneSaberDisplaySync.cs`）。
+
+- 既定は「ゲームの設定のまま」で、このときは何も変更しない（本編は `UnlockFrameRate` により vsync=0）。
+- 「ON」を選ぶと、その台では `QualitySettings.vSyncCount` を 1 に保つ（ゲームが本編の読み込みで 0 に戻しても、次のフレームで 1 にする）。選択は台ごとに PlayerPrefs へ保存し、events.log に `event=display-sync` を残す。
+- 「ゲームの設定のまま」へ戻したときは値を書き戻さない。次の曲（本編の読み込み）からゲームの設定になる。
+- 効果の確認は `event=perf` の `vsync=` と `fps=`、F8 の「PC描画」の行でできる。体感の比較（絵のずれ・ガタつき）はユーザーの確認待ち。採用するなら、ゲーム側で `UnlockFrameRate` の `vSyncCount` を 1 にするのが本筋（担当者の変更）。
