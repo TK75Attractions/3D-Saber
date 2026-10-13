@@ -15,6 +15,8 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
     public const string Request = "PHONESABER_DISCOVER 1";
     public const string ReplyPrefix = "PHONESABER_UNITY 1";
 
+    public PhoneSaberMetricsStore Metrics { get; } = new PhoneSaberMetricsStore();
+
     readonly object gate = new object();
     UdpClient socket;
     Thread thread;
@@ -81,13 +83,17 @@ public sealed class PhoneSaberDiscoveryResponder : IDisposable
 
     void Loop(UdpClient client, byte[] reply)
     {
-        var remote = new IPEndPoint(IPAddress.Any, 0);
+        EndPoint remote = new IPEndPoint(IPAddress.Any, 0);
+        var data = new byte[PhoneSaberMetrics.MaximumBytes + 1];
         while (running)
         {
             try
             {
-                byte[] data = client.Receive(ref remote);
-                if (IsRequest(data, data.Length)) client.Send(reply, reply.Length, remote);
+                int length = client.Client.ReceiveFrom(data, ref remote);
+                if (IsRequest(data, length)) client.Send(reply, reply.Length, (IPEndPoint)remote);
+                else if (length <= PhoneSaberMetrics.MaximumBytes)
+                    Metrics.Receive(data, length, ((IPEndPoint)remote).Address,
+                        SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
             }
             catch (SocketException exception) when (exception.SocketErrorCode == SocketError.TimedOut) { }
             catch (Exception)

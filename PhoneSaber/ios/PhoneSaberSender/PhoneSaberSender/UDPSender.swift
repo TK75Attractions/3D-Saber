@@ -573,6 +573,7 @@ final class LANLivenessProbe {
     private var timer: DispatchSourceTimer?
     private var lastReply = -Double.infinity
     private var createdConnectionCount = 0
+    private var roundTrip = ProbeRoundTrip()
 
     init(port: UInt16 = LANLivenessProbe.port,
          clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime }) {
@@ -599,6 +600,7 @@ final class LANLivenessProbe {
         lock.lock()
         let timer = self.timer, connection = self.connection
         self.timer = nil; self.connection = nil; host = ""; lastReply = -Double.infinity
+        roundTrip = ProbeRoundTrip()
         lock.unlock()
         timer?.cancel()
         connection?.cancel()
@@ -607,6 +609,22 @@ final class LANLivenessProbe {
     var isAlive: Bool {
         lock.lock(); defer { lock.unlock() }
         return clock() - lastReply <= Self.aliveWindow
+    }
+
+    func metricsRoundTrip(at now: Double) -> (median: Double?, count: Int, age: Double?) {
+        lock.lock(); defer { lock.unlock() }
+        return roundTrip.snapshot(at: now)
+    }
+
+    // 5007の既存接続と専用探索キューを使う。座標のudpキューへenqueueしない・再送しない。
+    func sendMetrics(_ text: String) {
+        guard text.utf8.count < 400, let data = text.data(using: .ascii) else { return }
+        lock.lock(); let expected = connection; lock.unlock()
+        queue.async { [weak self, weak expected] in
+            guard let self, let expected, case .ready = expected.state else { return }
+            self.lock.lock(); let current = self.connection === expected; self.lock.unlock()
+            if current { expected.send(content: data, completion: .idempotent) }
+        }
     }
 
     func recordReplyForTesting(_ text: String) { handle(Data(text.utf8), from: nil) }
@@ -648,6 +666,9 @@ final class LANLivenessProbe {
             created.start(queue: queue)
             receive(on: created)
             connection = created
+        }
+        if let connection, case .ready = connection.state {
+            lock.lock(); roundTrip.sent(at: clock()); lock.unlock()
         }
         connection?.send(content: Data(Self.request.utf8), completion: .idempotent)
     }
@@ -692,7 +713,10 @@ final class LANLivenessProbe {
     private func handle(_ data: Data, from connection: NWConnection?) {
         guard let text = String(data: data, encoding: .ascii), Self.isCompatibleReply(text) else { return }
         lock.lock()
-        if connection == nil || self.connection === connection { lastReply = clock() }
+        if connection == nil || self.connection === connection {
+            lastReply = clock()
+            roundTrip.reply(at: lastReply)
+        }
         lock.unlock()
     }
 }

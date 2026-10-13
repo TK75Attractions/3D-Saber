@@ -90,7 +90,9 @@ final class DebugVideoRecorder {
         (build / "Scaffold.swift").write_text(scaffold)
         subprocess.run(["xcrun", "clang", "-O2", "-c", str(pathlib.Path(__file__).with_name("allocations.c")), "-o", str(build / "allocations.o")], check=True)
         sender_sources = []
-        for name in ["UDPSender.swift", "P2PSender.swift", "P2PProtocol.swift"]:
+        for name in (["UDPSender.swift", "P2PSender.swift", "P2PProtocol.swift", "MetricsDatagram.swift"]
+                     if "ProbeRoundTrip" in read_source("UDPSender.swift") else
+                     ["UDPSender.swift", "P2PSender.swift", "P2PProtocol.swift"]):
             copied = build / name
             copied.write_text(read_source(name))
             sender_sources.append(str(copied))

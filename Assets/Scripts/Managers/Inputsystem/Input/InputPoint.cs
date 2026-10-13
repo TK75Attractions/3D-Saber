@@ -56,6 +56,11 @@ public class InputPoint : MonoBehaviour
     bool hasNewData = false;
     bool hasStickData = false;
     long rawReceiveTimestampTicks;
+    string rawSender, rawSender2;
+    public string RedCoordinateSender { get; private set; }
+    public string BlueCoordinateSender { get; private set; }
+    public PhoneSaberMetrics ReadPhoneMetrics(string sender, double now)
+        => Volatile.Read(ref discoveryResponder)?.Metrics.Read(sender, now);
     float rawX2, rawY2;
     float rawX2a, rawY2a, rawX2b, rawY2b;
     bool hasNewData2 = false;
@@ -595,6 +600,7 @@ public class InputPoint : MonoBehaviour
                         hasStickData2 = false;
                     }
                     rawReceiveTimestampTicks2 = receiveTimestampTicks;
+                    rawSender2 = senderIP;
                     hasNewData2 = true;
                 }
                 else
@@ -618,6 +624,7 @@ public class InputPoint : MonoBehaviour
                         hasStickData = false;
                     }
                     rawReceiveTimestampTicks = receiveTimestampTicks;
+                    rawSender = senderIP;
                     hasNewData = true;
                 }
             }
@@ -691,6 +698,8 @@ public class InputPoint : MonoBehaviour
                 y = rawY;
                 hasNewData = false;
                 receiveTimestampTicks = rawReceiveTimestampTicks;
+                if (RedCoordinateSender != rawSender) RedCoordinateTiming.ResetSource();
+                RedCoordinateSender = rawSender;
                 updated = true;
                 updatedStick = hasStickData;
                 if (updatedStick)
@@ -715,6 +724,8 @@ public class InputPoint : MonoBehaviour
                 y2 = rawY2;
                 hasNewData2 = false;
                 receiveTimestampTicks2 = rawReceiveTimestampTicks2;
+                if (BlueCoordinateSender != rawSender2) BlueCoordinateTiming.ResetSource();
+                BlueCoordinateSender = rawSender2;
                 updated2 = true;
                 updatedStick2 = hasStickData2;
                 if (updatedStick2)

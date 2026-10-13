@@ -71,6 +71,7 @@ struct DeviceHealthRates: Equatable {
     var p95CaptureToSendMs: Double?
     var redSendFPS = 0.0
     var blueSendFPS = 0.0
+    var captureToSendSamples = 0
 }
 
 // 数値入力不要の比較ログ。停止・再設定後は新しい10秒区間から始める。
@@ -172,7 +173,8 @@ final class DeviceHealthMeter: @unchecked Sendable {
                                  medianCaptureToSendMs: Self.median(ages),
                                  p95CaptureToSendMs: ages.isEmpty ? nil : ages[Int(ceil(Double(ages.count) * 0.95)) - 1],
                                  redSendFPS: Double(liveSends.filter { $0.port == 5005 }.count) / duration,
-                                 blueSendFPS: Double(liveSends.filter { $0.port == 5006 }.count) / duration)
+                                 blueSendFPS: Double(liveSends.filter { $0.port == 5006 }.count) / duration,
+                                 captureToSendSamples: ages.count)
     }
 }
 

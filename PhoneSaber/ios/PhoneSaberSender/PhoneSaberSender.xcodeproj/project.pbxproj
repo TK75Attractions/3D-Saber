@@ -34,9 +34,12 @@
 		A0000000000000000000A001 /* GuidedRecording.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A001 /* GuidedRecording.swift */; };
 		A0000000000000000000A002 /* GuidedRecordingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A002 /* GuidedRecordingTests.swift */; };
 		A0000000000000000000A003 /* DeviceHealth.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A003 /* DeviceHealth.swift */; };
+		A0000000000000000000B013 /* MetricsDatagram.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000B013 /* MetricsDatagram.swift */; };
 		A0000000000000000000A004 /* DeviceHealthTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A004 /* DeviceHealthTests.swift */; };
+		A0000000000000000000B014 /* MetricsDatagramTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000B014 /* MetricsDatagramTests.swift */; };
 		A0000000000000000000A005 /* EventRecovery.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A005 /* EventRecovery.swift */; };
 		A0000000000000000000A006 /* EventRecoveryTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000A006 /* EventRecoveryTests.swift */; };
+		A0000000000000000000B015 /* protocol_metrics.tsv in Resources */ = {isa = PBXBuildFile; fileRef = B1000000000000000000B015 /* protocol_metrics.tsv */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -79,9 +82,12 @@
 		B1000000000000000000A001 /* GuidedRecording.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedRecording.swift; sourceTree = "<group>"; };
 		B1000000000000000000A002 /* GuidedRecordingTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GuidedRecordingTests.swift; sourceTree = "<group>"; };
 		B1000000000000000000A003 /* DeviceHealth.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceHealth.swift; sourceTree = "<group>"; };
+		B1000000000000000000B013 /* MetricsDatagram.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsDatagram.swift; sourceTree = "<group>"; };
 		B1000000000000000000A004 /* DeviceHealthTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeviceHealthTests.swift; sourceTree = "<group>"; };
+		B1000000000000000000B014 /* MetricsDatagramTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetricsDatagramTests.swift; sourceTree = "<group>"; };
 		B1000000000000000000A005 /* EventRecovery.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventRecovery.swift; sourceTree = "<group>"; };
 		B1000000000000000000A006 /* EventRecoveryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EventRecoveryTests.swift; sourceTree = "<group>"; };
+		B1000000000000000000B015 /* protocol_metrics.tsv */ = {isa = PBXFileReference; lastKnownFileType = text; path = ../../tools/fixtures/protocol_metrics.tsv; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -121,6 +127,7 @@
 				B10000000000000000000014 /* DebugRecordingTriage.swift */,
 				B1000000000000000000A001 /* GuidedRecording.swift */,
 				B1000000000000000000A003 /* DeviceHealth.swift */,
+				B1000000000000000000B013 /* MetricsDatagram.swift */,
 				B1000000000000000000A005 /* EventRecovery.swift */,
 				B10000000000000000000016 /* DebugBundleTransfer.swift */,
 				B10000000000000000000008 /* UDPSender.swift */,
@@ -142,6 +149,8 @@
 				B10000000000000000000019 /* P2PTransportTests.swift */,
 				B1000000000000000000A002 /* GuidedRecordingTests.swift */,
 				B1000000000000000000A004 /* DeviceHealthTests.swift */,
+				B1000000000000000000B014 /* MetricsDatagramTests.swift */,
+				B1000000000000000000B015 /* protocol_metrics.tsv */,
 				B1000000000000000000A006 /* EventRecoveryTests.swift */,
 				D00000000000000000000004 /* Fixtures */,
 			);
@@ -258,6 +267,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				A0000000000000000000B015 /* protocol_metrics.tsv in Resources */,
 				A0000000000000000000000A /* blue-led-with-curtain-reflection-01.png in Resources */,
 				A0000000000000000000000B /* blue-led-with-curtain-reflection-02.png in Resources */,
 				A0000000000000000000000C /* blue-led-with-left-curtain-reflection-03.png in Resources */,
@@ -283,6 +293,7 @@
 				A00000000000000000000014 /* DebugRecordingTriage.swift in Sources */,
 				A0000000000000000000A001 /* GuidedRecording.swift in Sources */,
 				A0000000000000000000A003 /* DeviceHealth.swift in Sources */,
+				A0000000000000000000B013 /* MetricsDatagram.swift in Sources */,
 				A0000000000000000000A005 /* EventRecovery.swift in Sources */,
 				A00000000000000000000016 /* DebugBundleTransfer.swift in Sources */,
 				A00000000000000000000008 /* UDPSender.swift in Sources */,
@@ -304,6 +315,7 @@
 				A00000000000000000000019 /* P2PTransportTests.swift in Sources */,
 				A0000000000000000000A002 /* GuidedRecordingTests.swift in Sources */,
 				A0000000000000000000A004 /* DeviceHealthTests.swift in Sources */,
+				A0000000000000000000B014 /* MetricsDatagramTests.swift in Sources */,
 				A0000000000000000000A006 /* EventRecoveryTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

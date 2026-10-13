@@ -49,6 +49,19 @@ class PcDiscovery(context: Context,
     private var preferredPc = prefs.getString("preferredPc", null)
     private var preferredAddress = prefs.getString("preferredPcAddress", null)
     private var lastRefresh = 0L
+    private val rttGate = Any()
+    private val roundTrips = linkedMapOf<String, ProbeRoundTrip>()
+    @Volatile private var pendingMetrics: Pair<InetAddress, ByteArray>? = null
+
+    fun metricsRoundTrip(address: InetAddress?, now: Double): Triple<Double?, Int, Double?> = synchronized(rttGate) {
+        roundTrips[address?.hostAddress]?.snapshot(now) ?: Triple(null, 0, null)
+    }
+
+    // 探索socket/threadを再利用する。座標workerのlock・socketを触らず、最新1件だけを送る。
+    fun sendMetrics(address: InetAddress, line: String) {
+        if (line.length < 400 && line.all { it.code in 32..126 })
+            pendingMetrics = address to line.toByteArray(Charsets.US_ASCII)
+    }
     // 現在の探索世代が使っている UDP broadcast 先。IPv4 が変わらない LinkProperties 更新では再探索しない。
     private var broadcastTargets: Set<InetAddress>? = null
 
@@ -183,10 +196,19 @@ class PcDiscovery(context: Context,
         val request = DiscoveryProtocol.REQUEST.toByteArray(Charsets.US_ASCII)
         val bytes = ByteArray(1025)
         var nextRequest = 0L
+        var requestedAt = 0.0
+        val replied = mutableSetOf<String>()
         while (token == generation && !udp.isClosed) {
             try {
                 val now = System.nanoTime()
+                pendingMetrics?.let { metrics ->
+                    pendingMetrics = null
+                    try { udp.send(DatagramPacket(metrics.second, metrics.second.size, metrics.first, Ports.DISCOVERY)) }
+                    catch (_: Exception) { /* 診断失敗は探索・座標へ影響させない。 */ }
+                }
                 if (now >= nextRequest) {
+                    requestedAt = now / 1e9
+                    replied.clear()
                     for (address in addresses) {
                         // One failed directed broadcast must not suppress the other address.
                         try { udp.send(DatagramPacket(request, request.size, address, Ports.DISCOVERY)) }
@@ -200,6 +222,11 @@ class PcDiscovery(context: Context,
                 if (!reply.compatible || packet.port != Ports.DISCOVERY ||
                     packet.address.isAnyLocalAddress || packet.address.isMulticastAddress) continue
                 val receivedAt = System.nanoTime() / 1e9
+                val sender = packet.address.hostAddress ?: continue
+                if (receivedAt - requestedAt <= 1 && replied.size < 16 && replied.add(sender)) synchronized(rttGate) {
+                    if (token == generation && (sender in roundTrips || roundTrips.size < 16))
+                        roundTrips.getOrPut(sender) { ProbeRoundTrip() }.record(requestedAt, receivedAt)
+                }
                 main.post {
                     if (active && token == generation) {
                         if (StationMatcher.reply(station, reply)) {
@@ -341,6 +368,8 @@ class PcDiscovery(context: Context,
 
     private fun endDiscovery() {
         generation++
+        pendingMetrics = null
+        synchronized(rttGate) { roundTrips.clear() }
         resumeResolve = null
         socket?.close(); socket = null
         listener?.let { try { nsd.stopServiceDiscovery(it) } catch (_: Exception) { } }

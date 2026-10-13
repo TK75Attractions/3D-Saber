@@ -42,6 +42,9 @@ public class InputPoint {
     public bool PredictionAutomatic=true;
     public string PredictionLeadSource="fallback";
     public long PredictionDraws,PredictionSuppressedDraws;
+    public string RedCoordinateSender,BlueCoordinateSender,StationLabel;
+    public double LastReceivedMonotonicTime,LastReceivedMonotonicTime2;
+    public PhoneSaberMetrics ReadPhoneMetrics(string sender,double now)=>null;
     public PhoneSaberCoordinateTiming RedCoordinateTiming=new PhoneSaberCoordinateTiming(),BlueCoordinateTiming=new PhoneSaberCoordinateTiming();
 }
 public static class SwingMonotonicClock { public static long Timestamp=>(long)(UnityEngine.Time.realtimeSinceStartupAsDouble*1000000); public static double ToSeconds(long ticks)=>ticks/1000000.0; }
@@ -94,7 +97,7 @@ class ForecastTests(unittest.TestCase):
         root = parity.ROOT / 'Assets/Scripts/Managers/Inputsystem/Input'
         discovery = (root / 'PhoneSaberDiscoveryResponder.cs').read_text()
         sources = {name: (root / name).read_text() for name in
-                   ('PhoneSaberPredictionSettings.cs', 'PhoneSaberInputStats.cs', 'PhoneSaberPerfLog.cs')}
+                   ('PhoneSaberPredictionSettings.cs', 'PhoneSaberInputStats.cs', 'PhoneSaberPerfLog.cs', 'PhoneSaberLatencyEstimate.cs')}
         sources['Stubs.cs'] = STUBS
         sources['Station.cs'] = 'using System;\n' + discovery[discovery.index('public static class PhoneSaberStation'):]
         self.assertIn('300000 frames = 0 B', parity.check_csharp(extra_sources=sources, program=SMOKE))

@@ -21,10 +21,28 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
     double gpuMs;
     double gpuSum;
     int gpuCount;
+    static PhoneSaberLatencyEstimate redEstimate, blueEstimate;
+    double nextLatencyLog;
+    public static string LatencyLine(bool blue, double now)
+    {
+        var estimate = blue ? blueEstimate : redEstimate;
+        var input = InputPoint.Instance;
+        string sender = input == null ? null : blue ? input.BlueCoordinateSender : input.RedCoordinateSender;
+        if (sender == "127.0.0.1" || sender == "::1")
+            return "遅延の目安 " + (blue ? "青" : "赤") + ": スマホからの計測が届いていません（旧アプリ / P2P 経由）";
+        if (input != null && estimate != null &&
+            (estimate.Sender != (blue ? input.BlueCoordinateSender : input.RedCoordinateSender) ||
+             now - (blue ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime) > 1))
+            return "遅延の目安 " + (blue ? "青" : "赤") + ": 計測不足（座標の未受信 / 経路切替）";
+        return estimate?.Line(blue ? "青" : "赤", now)
+            ?? "遅延の目安 " + (blue ? "青" : "赤") + ": スマホからの計測が届いていません（旧アプリ / P2P 経由）";
+    }
     public static string Verdict { get; private set; } = "PC描画: 計測中（10秒）";
 
     void OnEnable()
     {
+        redEstimate = blueEstimate = null;
+        nextLatencyLog = Time.realtimeSinceStartupAsDouble + WindowSeconds;
         lowPowerAtLaunch = Environment.GetEnvironmentVariable("PHONESABER_LOW_POWER_MODE") ?? "unknown";
         Application.onBeforeRender += BeforeRender;
     }
@@ -74,8 +92,10 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
             blueAtStart = input != null ? input.ReceivedPacketCount2 : 0;
             predictionsAtStart = input != null ? input.PredictionDraws : 0;
             suppressedAtStart = input != null ? input.PredictionSuppressedDraws : 0;
+            UpdateLatency(input, now);
             return;
         }
+        UpdateLatency(input, now);
         window.Frame(now);
         if (FrameTimingManager.IsFeatureEnabled()) FrameTimingManager.CaptureFrameTimings();
         if (FrameTimingManager.IsFeatureEnabled() && FrameTimingManager.GetLatestTimings(1, frameTiming) > 0 && frameTiming[0].gpuFrameTime > 0)
@@ -124,6 +144,26 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
         gpuSum = 0; gpuCount = 0;
         redAtStart = red; blueAtStart = blue;
         predictionsAtStart = predictions; suppressedAtStart = suppressed;
+    }
+
+    // perf窓がシーン切替で再開しても、診断行は10秒ごとに残す。
+    void UpdateLatency(InputPoint input, double now)
+    {
+        if (input == null || now < nextLatencyLog) return;
+        nextLatencyLog = now + WindowSeconds;
+        double clockNow = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+        redEstimate = Estimate(input, false, clockNow, input.RedCoordinateTiming.Age);
+        blueEstimate = Estimate(input, true, clockNow, input.BlueCoordinateTiming.Age);
+        PhoneSaberEventLog.Record(input.StationLabel, "RED", "latency-estimate", redEstimate.Log());
+        PhoneSaberEventLog.Record(input.StationLabel, "BLUE", "latency-estimate", blueEstimate.Log());
+    }
+
+    static PhoneSaberLatencyEstimate Estimate(InputPoint input, bool blue, double now, PhoneSaberTimingStats timing)
+    {
+        string sender = blue ? input.BlueCoordinateSender : input.RedCoordinateSender;
+        return new PhoneSaberLatencyEstimate(input.ReadPhoneMetrics(sender, now), timing, sender,
+            now - (blue ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime), now,
+            Screen.currentResolution.refreshRateRatio.value, QualitySettings.vSyncCount);
     }
 
     static string AgeLabel(PhoneSaberTimingStats stats) => stats.Count == 0 ? "未測定" :
@@ -230,6 +270,14 @@ public sealed class PhoneSaberCoordinateTiming
     public void ClearWindow()
     {
         age.Clear(); firstRead.Clear(); firstRender.Clear(); apply.Clear(); dropped = 0;
+    }
+
+    // 別の送信元へ切り替わったら、前の端末の「読み出し済み座標」を診断に混ぜない。
+    public void ResetSource()
+    {
+        ClearWindow();
+        received = readReceived = renderedReceived = double.NegativeInfinity;
+        lastFrame = -1;
     }
 }
 

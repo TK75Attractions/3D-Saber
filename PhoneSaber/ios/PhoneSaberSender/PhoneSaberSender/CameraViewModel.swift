@@ -896,6 +896,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private var cameraPostProcessingState: CameraPostProcessingState?
     private var cameraWideColorAutomatic: Bool?
     private var latencyLogPolicy = CaptureLatencyLogPolicy()
+    private var metricsCadence = MetricsCadence()
     private var activeCaptureFPS = 0.0
     @Published private(set) var automaticResumeMessage = ""
     @Published private(set) var cameraRecoveryMessage = ""
@@ -1319,6 +1320,21 @@ final class CameraViewModel: NSObject, ObservableObject {
                 rates: rates, thermal: thermal))
         }
         let battery = deviceBatterySnapshot()
+        if metricsCadence.due(at: time, sending: running),
+           delivery.currentRoute == .lanVerified || delivery.currentRoute == .lanUnverified {
+            let rtt = lanProbe.metricsRoundTrip(at: time)
+            var metrics = MetricsDatagram()
+            metrics.station = station
+            metrics.app = (Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String) ?? "unknown"
+            metrics.fpsMode = activeCaptureFPS
+            metrics.captureFPS = rates.cameraFPS; metrics.redFPS = rates.redSendFPS; metrics.blueFPS = rates.blueSendFPS
+            metrics.median = rates.medianCaptureToSendMs; metrics.p95 = rates.p95CaptureToSendMs
+            metrics.samples = rates.captureToSendSamples
+            metrics.rtt = rtt.median; metrics.rttSamples = rtt.count; metrics.rttAge = rtt.age
+            metrics.thermal = thermal.metadataValue; metrics.battery = battery.level.map { $0 * 100 }
+            metrics.lowLatencyTest = lowLatencyCameraSettings
+            if let line = metrics.line() { lanProbe.sendMetrics(line) }
+        }
         if debugRecordingActive {
             processor.updateDebugDeviceHealthState(DebugDeviceHealthState(
                 thermalState: thermal.metadataValue, batteryLevel: battery.level, batteryState: battery.state))

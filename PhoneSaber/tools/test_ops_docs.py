@@ -12,6 +12,16 @@ def read(path):
 
 
 class OperationsDocsTests(unittest.TestCase):
+    def test_auto_latency_needs_no_owner_measurement_steps(self):
+        staff = read("docs/STAFF_MANUAL.md")
+        runbook = read("docs/claude/EVENT_DAY_RUNBOOK.md")
+        for label in ("遅延の目安", "自動記録", "数値入力", "コピー"):
+            self.assertIn(label, staff)
+        self.assertIn("event=latency-estimate", runbook)
+        self.assertIn("--estimates", runbook)
+        self.assertIn("旧アプリ/P2P", runbook)
+        self.assertIn("投影機処理は未算入", runbook)
+
     def test_staff_recovery_is_two_columns_and_has_no_network_jargon(self):
         recovery = read("docs/STAFF_MANUAL.md").split("## 3. 困ったとき", 1)[1].split("## 4.", 1)[0]
         rows = [line for line in recovery.splitlines() if line.startswith("|")]

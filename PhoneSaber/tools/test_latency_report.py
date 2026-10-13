@@ -149,5 +149,43 @@ class LatencyReportTests(unittest.TestCase):
         self.assertIsNone(latency_report.phone_fps(44))
 
 
+class AutoEstimateReportTests(unittest.TestCase):
+    def line(self, colour="RED", station="A", fps=60, total=54, phone=37, pc=7):
+        return (f"2026-10-13T01:00:00Z station={station} colour={colour} event=latency-estimate "
+                f"status=estimate platform=ios fps-mode={fps} route=LAN c2s-end=detection "
+                f"c2s-median-ms={phone} network-ms=2 pc-median-ms={pc} display-ms=8 total-ms={total} "
+                "c2s-n=100 pc-n=100 rtt-n=8 phone-age-s=1 rtt-age-s=1 thermal=nominal")
+
+    def test_estimates_separate_station_colour_fps_and_summarize_terms(self):
+        lines = [self.line(), self.line(total=64, phone=47), self.line(colour="BLUE"),
+                 self.line(station="B"), self.line(fps=30)]
+        rows = latency_report.summarize_estimates(latency_report.parse_estimates(lines))
+        self.assertEqual(len(rows), 4)
+        red = next(row for row in rows if row["station"] == "A" and row["colour"] == "RED" and row["fps"] == 60)
+        self.assertEqual(red["terms"]["total-ms"], (59, 64))
+        self.assertEqual(red["terms"]["c2s-median-ms"], (42, 47))
+
+    def test_missing_stale_nan_negative_and_truncated_are_excluded(self):
+        good = self.line()
+        lines = [good.replace("status=estimate", "status=missing-rtt"),
+                 good.replace("total-ms=54", "total-ms=NaN"),
+                 good.replace("total-ms=54", "total-ms=-1"),
+                 good.replace("phone-age-s=1", "phone-age-s=16"),
+                 good.replace("rtt-age-s=1", "rtt-age-s=11"),
+                 good.replace(" c2s-n=100", " c2s-n=0"), good.split("total-ms")[0]]
+        self.assertEqual(latency_report.parse_estimates(lines), [])
+
+    def test_estimates_cli_needs_only_pc_log_and_handles_rotation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            first, second = Path(directory) / "events.log", Path(directory) / "events.log.1"
+            first.write_text(self.line(), encoding="utf-8")
+            second.write_text(self.line(total=64), encoding="utf-8")
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                self.assertEqual(latency_report.main([str(first), str(second), "--estimates"]), 0)
+            self.assertIn("total-ms", output.getvalue())
+            self.assertIn("59.0/64.0", output.getvalue())
+
+
 if __name__ == "__main__":
     unittest.main()

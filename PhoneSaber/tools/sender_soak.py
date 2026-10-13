@@ -35,7 +35,7 @@ HARNESS = REPO / "ios/PhoneSaberSenderTests/SenderSoakHarness.swift"
 FIXTURE = REPO / "ios/PhoneSaberSenderTests/Fixtures/lossless-regression/phonesaber_20260922_101530_202/frame_390.png"
 SOURCES = ("DetectionCore.swift", "BGRADetection.swift", "FrameProcessor.swift", "DebugVideoRecorder.swift",
            "DebugRecordingTriage.swift", "GuidedRecording.swift", "UDPSender.swift", "P2PSender.swift",
-           "P2PProtocol.swift")
+           "P2PProtocol.swift", "MetricsDatagram.swift")
 WARMUP_MINUTES = 5.0
 
 

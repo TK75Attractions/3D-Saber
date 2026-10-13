@@ -50,14 +50,14 @@ public sealed class PhoneSaberEventLog
     {
         return timestamp.ToUniversalTime().ToString("yyyy-MM-dd'T'HH:mm:ss.fff'Z'", CultureInfo.InvariantCulture) +
             " station=" + Field(string.IsNullOrEmpty(station) ? "none" : station) +
-            " colour=" + Field(colour) + " event=" + Field(kind) + " " + Field(detail) + "\n";
+            " colour=" + Field(colour) + " event=" + Field(kind) + " " + Field(detail, 2048) + "\n";
     }
 
-    static string Field(string value)
+    static string Field(string value, int limit = 512)
     {
         if (value == null) return "";
         var result = new StringBuilder();
-        for (int i = 0; i < Math.Min(value.Length, 512); i++)
+        for (int i = 0; i < Math.Min(value.Length, limit); i++)
             result.Append(char.IsControl(value[i]) ? ' ' : value[i]);
         return result.ToString();
     }

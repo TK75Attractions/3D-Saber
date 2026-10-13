@@ -104,7 +104,7 @@ import Foundation
             source.write_text("import Foundation\nimport CoreMedia\nenum HostMonotonicClock {" + clock + harness)
             binary = build / "check"
             self.run_checked(["xcrun", "swiftc", "-O", "-module-cache-path", str(build / "cache"),
-                              *(str(IOS / name) for name in ("UDPSender.swift", "P2PSender.swift", "P2PProtocol.swift")),
+                              *(str(IOS / name) for name in ("UDPSender.swift", "P2PSender.swift", "P2PProtocol.swift", "MetricsDatagram.swift")),
                               str(source), "-o", str(binary)])
             self.run_checked([str(binary), str(VECTORS.parent / "protocol_discovery.tsv")])
 

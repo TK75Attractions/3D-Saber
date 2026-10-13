@@ -55,6 +55,7 @@ class MainActivity : ComponentActivity() {
             .apply { setReferenceCounted(false) }
     }
     private val latencyLog = LatencyLog()
+    private val metricsCadence = MetricsCadence()
     private val logTime = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US)
     private lateinit var camera: CameraSession
     private lateinit var discovery: PcDiscovery
@@ -131,13 +132,29 @@ class MainActivity : ComponentActivity() {
                 }
             }
             updateRecoveryStatus()
-            updateHealth()
+            val healthRates = updateHealth()
             val now = System.nanoTime()
             val elapsed = (now - lastStats) / 1e9
             val red = sender.redSent.getAndSet(0) / elapsed
             val blue = sender.blueSent.getAndSet(0) / elapsed
             lastStats = now
             val seconds = now / 1e9
+            if (metricsCadence.due(seconds, sending && sendingNetwork != null)) destination?.let { pc ->
+                val rates = healthRates
+                val rtt = discovery.metricsRoundTrip(pc.address, seconds)
+                val thermal = when (ThermalLevel.fromStatus(thermalStatus)) {
+                    ThermalLevel.NORMAL -> "nominal"; ThermalLevel.ELEVATED -> "fair"
+                    ThermalLevel.HIGH -> "serious"; ThermalLevel.DANGEROUS -> "critical"
+                    ThermalLevel.UNKNOWN -> "unknown"
+                }
+                MetricsDatagram(station = prefs.getString("station", "") ?: "", app = BuildConfig.VERSION_CODE.toString(),
+                    fpsMode = camera.activeFps.toDouble(), captureFps = rates.captureFps,
+                    redFps = rates.redSendFps, blueFps = rates.blueSendFps,
+                    median = rates.medianCaptureToSendMs, p95 = rates.p95CaptureToSendMs, samples = rates.sentSamples,
+                    rtt = rtt.first, rttSamples = rtt.second, rttAge = rtt.third, thermal = thermal,
+                    battery = battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY).toDouble(),
+                    lowLatencyTest = lowLatencyCameraSwitch.isChecked).line()?.let { discovery.sendMetrics(pc.address, it) }
+            }
             if (latencyLog.due(seconds, sending)) {
                 val line = "${logTime.format(Date())} device=${Build.MODEL} api=${Build.VERSION.SDK_INT} " +
                     "requested_fps=${camera.activeFps} ${camera.status.dimensions} " +
@@ -503,7 +520,7 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
     }
 
-    private fun updateHealth() {
+    private fun updateHealth(): HealthRates {
         val level = ThermalLevel.fromStatus(thermalStatus)
         val rates = if (sending) camera.healthRates() else HealthRates()
         val percent = battery.getIntProperty(BatteryManager.BATTERY_PROPERTY_CAPACITY).takeIf { it in 0..100 }
@@ -512,6 +529,7 @@ class MainActivity : ComponentActivity() {
         val warning = DeviceHealthText.warning(level, rates, camera.activeFps.toDouble(), sending)
         health.text = "発熱 ${level.title} / ${DeviceHealthText.battery(percent, DeviceHealthText.batteryState(state))}\n" +
             DeviceHealthText.timing(rates) + (warning?.let { "\n$it" } ?: "")
+        return rates
     }
 
     private fun toast(message: String) { Toast.makeText(this, message, Toast.LENGTH_LONG).show() }

@@ -34,6 +34,10 @@ public class InputPoint
     public int PredictionHorizonMilliseconds;
     public string PredictionLeadSource = "manual";
     public long PredictionDraws, PredictionSuppressedDraws;
+    public string RedCoordinateSender, BlueCoordinateSender, StationLabel;
+    public double LastReceivedMonotonicTime, LastReceivedMonotonicTime2;
+    public PhoneSaberMetricsStore Metrics = new PhoneSaberMetricsStore();
+    public PhoneSaberMetrics ReadPhoneMetrics(string sender, double now) => Metrics.Read(sender, now);
 #endif
 }
 public static class PhoneSaberPlayerSmoke { public static float ResolveSeconds(string[] args) => 0; }
@@ -42,6 +46,7 @@ public static class PhoneSaberStation { public static string Read() => "TEST"; }
 public static class PhoneSaberEventLog
 {
     public static readonly List<string> Lines = new List<string>();
-    public static void Record(string station, string colour, string kind, string detail) => Lines.Add(detail);
+    public static readonly List<string> Kinds = new List<string>();
+    public static void Record(string station, string colour, string kind, string detail) { Lines.Add(detail); Kinds.Add(colour + ":" + kind); }
 }
 public static class SwingMonotonicClock { public static long Timestamp => (long)(UnityEngine.Time.realtimeSinceStartupAsDouble * 1000000); public static double ToSeconds(long ticks) => ticks / 1000000.0; }

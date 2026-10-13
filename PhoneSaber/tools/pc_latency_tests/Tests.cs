@@ -33,8 +33,69 @@ public class PerfBoundaryTests
     }
 }
 #if AFTER
+public class AutoLatencyWindowTests
+{
+    static void Invoke(PhoneSaberPerfLog log, string method) => typeof(PhoneSaberPerfLog)
+        .GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic).Invoke(log, null);
+    [Test] public void ColourBreakdownsUseTheirOwnCoordinateSender()
+    {
+        Time.realtimeSinceStartupAsDouble = 0;
+        var log = new PhoneSaberPerfLog();
+        var input = new InputPoint { RedCoordinateSender="red", BlueCoordinateSender="blue",
+            LastReceivedMonotonicTime=9.993, LastReceivedMonotonicTime2=9.986, StationLabel="A" };
+        InputPoint.Instance = input;
+        PhoneSaberEventLog.Lines.Clear(); PhoneSaberEventLog.Kinds.Clear();
+        Invoke(log, "OnEnable"); Invoke(log, "Update");
+        try
+        {
+            var text = System.IO.File.ReadAllLines("PhoneSaber/tools/fixtures/protocol_metrics.tsv")[1].Split('\t')[1];
+            var red = System.Text.Encoding.ASCII.GetBytes(text);
+            var blue = System.Text.Encoding.ASCII.GetBytes(text.Replace("36.9", "80.0").Replace("44.1", "85.0"));
+            input.Metrics.Receive(red, red.Length, "red", 5); input.Metrics.Receive(blue, blue.Length, "blue", 5);
+            input.RedCoordinateTiming.Applied(9.993, 9.998); input.RedCoordinateTiming.Read(9.999);
+            input.BlueCoordinateTiming.Applied(9.986, 9.998); input.BlueCoordinateTiming.Read(9.999);
+            input.RedCoordinateTiming.BeforeRender(10, 1); input.BlueCoordinateTiming.BeforeRender(10, 1);
+            Time.realtimeSinceStartupAsDouble = 10; Invoke(log, "Update");
+            int r = PhoneSaberEventLog.Kinds.IndexOf("RED:latency-estimate");
+            int b = PhoneSaberEventLog.Kinds.IndexOf("BLUE:latency-estimate");
+            Assert.GreaterOrEqual(r, 0); Assert.GreaterOrEqual(b, 0);
+            StringAssert.Contains("total-ms=53.8", PhoneSaberEventLog.Lines[r]);
+            StringAssert.Contains("total-ms=103.9", PhoneSaberEventLog.Lines[b]);
+            input.BlueCoordinateSender = "127.0.0.1";
+            StringAssert.Contains("P2P", PhoneSaberPerfLog.LatencyLine(true, 10));
+            StringAssert.Contains("届いていません", PhoneSaberPerfLog.LatencyLine(true, 10));
+        }
+        finally { Invoke(log, "OnDisable"); InputPoint.Instance = null; }
+    }
+    [Test] public void SceneChangesDoNotPostponeTenSecondDiagnosticLog()
+    {
+        Time.realtimeSinceStartupAsDouble = 0;
+        var log = new PhoneSaberPerfLog(); InputPoint.Instance = new InputPoint();
+        PhoneSaberEventLog.Lines.Clear(); PhoneSaberEventLog.Kinds.Clear(); Invoke(log, "OnEnable");
+        try
+        {
+            for (int i = 0; i <= 10; i++)
+            {
+                SceneManager.Active = new Scene {name="changing",handle=100+i};
+                Time.realtimeSinceStartupAsDouble = i * 2; Invoke(log, "Update");
+            }
+            Assert.AreEqual(4, PhoneSaberEventLog.Kinds.Count);
+            foreach (string kind in PhoneSaberEventLog.Kinds) StringAssert.EndsWith(":latency-estimate", kind);
+        }
+        finally { Invoke(log, "OnDisable"); InputPoint.Instance = null; }
+    }
+}
 public class CoordinateTimingTests
 {
+    [Test] public void SourceSwitchDoesNotAttributeOldReadToNewPhone()
+    {
+        var t = new PhoneSaberCoordinateTiming();
+        t.Applied(1, 1.001); t.Read(1.002); t.BeforeRender(1.003, 1);
+        t.ResetSource(); t.Applied(2, 2.001); t.BeforeRender(2.003, 2);
+        Assert.AreEqual(0, t.Age.Count);
+        t.Read(2.004); t.BeforeRender(2.005, 3);
+        Assert.AreEqual(1, t.Age.Count); Assert.AreEqual(5, t.Age.MedianMs, 1e-9);
+    }
     [Test] public void RepeatedReadAndRenderDoNotCountPacketTwice()
     {
         var t = new PhoneSaberCoordinateTiming();

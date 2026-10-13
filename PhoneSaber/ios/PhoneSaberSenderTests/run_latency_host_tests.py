@@ -209,7 +209,7 @@ guard let run = suite.testRun, run.executionCount > 0, run.hasSucceeded else { e
         camera_result = subprocess.run([str(tmp / "tests")]).returncode
         # P2P internalsは変更せず、本番の経路選択とLAN退避時のログを既存XCTestで検証する。
         routing_sources = []
-        for name in ["UDPSender.swift", "P2PSender.swift", "P2PProtocol.swift"]:
+        for name in ["UDPSender.swift", "P2PSender.swift", "P2PProtocol.swift", "MetricsDatagram.swift"]:
             copied = tmp / name
             content = source(name) if name == "UDPSender.swift" else (SOURCE / name).read_text()
             if "var currentRoute:" not in content and name == "UDPSender.swift":

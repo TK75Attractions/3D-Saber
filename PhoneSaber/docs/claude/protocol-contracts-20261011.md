@@ -136,3 +136,9 @@
 - `PhoneSaber/tools/test_protocol_contracts.py` はPython/Swift/C#を実行。Android `DiscoveryProtocolTest.sharedDiscoveryContractVectors` は同じdiscovery fixtureを読む。iOSの実LAN probeとPython replayも同じfixtureの別期待値列を読み、既存の受理差を明示する。Android `PayloadRoutingTest` は同じcoordinate fixtureで色portとbyte保存を検証する。実bridgeのPythonテストもcoordinate fixtureを直接読む。Xcode既存 `P2PTransportTests` にもalias byte保存例を追加済み。
 
 残存P1を直すには、まず経路受理・探索validationの変更範囲をオペレーターが決める必要がある。今回のprefix互換修正だけで実地の入力途絶、不正LAN生存判定、P2P複数端末の競合が解消されたとは扱わない。
+
+## 2026-10-13: 別 datagram の自動遅延診断
+
+`PHONESABER_METRICS 1 key=value ...` は座標の送信先 PC の **UDP 5007だけ**に送る診断。ASCII・改行なし・400 bytes未満・送信中5秒ごと。5005/5006の座標、DISCOVER/UNITYの文面は変更しない。旧PCの実受信Loopは未知datagramを無返信で破棄して探索返信を続ける（`check_auto_latency.py --before-ref <旧ref>`で確認）。旧スマホ/P2Pは欠測。
+
+共有 `tools/fixtures/protocol_metrics.tsv` をSwift/Kotlinの純粋formatter、C#receiver、Python契約テストで検証する。未知keyは無視、不正version/ASCII/重複key/範囲/件数の矛盾は拒否。数値は有限・非負、欠測はunknownと件数0。必須keyと各時間項目の定義・RTTの制約は [auto-latency-20261013.md](auto-latency-20261013.md)。RTTは既存probeの単調時計往復で、nonceや同期時計は追加しない。P2P bridgeは座標のみのまま。

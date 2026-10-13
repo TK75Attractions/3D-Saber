@@ -65,7 +65,7 @@ public class SaberInputBridge : MonoBehaviour {}
                 return 1
             print('Before regression FAIL reproduced (expected)')
         exe = build / 'after.exe'
-        if run(compiler + ['/define:AFTER', '/r:' + str(nunit), '/out:' + str(exe)] + list(map(str, host_sources + [INPUT / 'PhoneSaberPerfLog.cs']))):
+        if run(compiler + ['/define:AFTER', '/r:' + str(nunit), '/out:' + str(exe)] + list(map(str, host_sources + [INPUT / 'PhoneSaberPerfLog.cs', INPUT / 'PhoneSaberLatencyEstimate.cs']))):
             return 1
         return run([str(mono / 'bin/mono'), str(exe)], env=host_env)
 

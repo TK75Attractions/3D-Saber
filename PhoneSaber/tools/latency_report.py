@@ -12,6 +12,7 @@ Windows: %USERPROFILE%/AppData/LocalLow/<会社>/<製品>/PhoneSaber/events.log�
 import argparse
 from datetime import datetime, timezone
 import glob
+import math
 import os
 import re
 import statistics
@@ -21,6 +22,47 @@ CAPTURE_MODE = re.compile(r"\[CAPTURE_METRICS\] (\S+) station=(\S+) requested-fp
 CONNECTIVITY_CAPTURE_MODE = re.compile(r"^(\S+) \[CAPTURE_MODE\] station=(\S+) requested-fps=(30|60|120) capture-fps=(\d+)")
 
 LINE = re.compile(r"^(?P<time>\S+) (?P<context>.*?)event=(?P<event>latency-block|latency-loop-end) (?P<detail>.*)$")
+
+ESTIMATE_TERMS = ("c2s-median-ms", "network-ms", "pc-median-ms", "display-ms", "total-ms")
+
+
+def parse_estimates(lines, source=""):
+    """同期不要の自動計測。欠測・古い値・途中までの書込みは比較に入れない。"""
+    rows = []
+    for line in lines:
+        fields = dict(item.split("=", 1) for item in line.split()[1:] if "=" in item)
+        if fields.get("event") != "latency-estimate" or fields.get("status") != "estimate":
+            continue
+        try:
+            terms = {key: float(fields[key]) for key in ESTIMATE_TERMS}
+            ages = [float(fields["phone-age-s"]), float(fields["rtt-age-s"])]
+            if (not all(math.isfinite(v) and v >= 0 for v in list(terms.values()) + ages)
+                    or ages[0] > 15 or ages[1] > 10
+                    or any(int(fields[key]) <= 0 for key in ("c2s-n", "pc-n", "rtt-n"))):
+                continue
+            rows.append(dict(time=line.split()[0], source=source, station=fields["station"],
+                             colour=fields["colour"], fps=int(float(fields["fps-mode"])),
+                             platform=fields["platform"], route=fields["route"],
+                             end=fields["c2s-end"], terms=terms))
+        except (KeyError, ValueError, OverflowError, IndexError):
+            continue
+    return rows
+
+
+def summarize_estimates(samples):
+    groups = {}
+    for row in samples:
+        key = tuple(row[k] for k in ("station", "colour", "fps", "platform", "route", "end"))
+        groups.setdefault(key, []).append(row)
+    result = []
+    for key, items in sorted(groups.items()):
+        terms = {}
+        for term in ESTIMATE_TERMS:
+            values = sorted(item["terms"][term] for item in items)
+            terms[term] = (statistics.median(values), values[math.ceil(len(values) * .95) - 1])
+        result.append(dict(zip(("station", "colour", "fps", "platform", "route", "end"), key),
+                           n=len(items), terms=terms))
+    return result
 
 
 def parse(lines, source=""):
@@ -177,6 +219,7 @@ def main(argv=None):
                         help="この ISO 時刻以降のブロックだけ。時差なしは UTC（ログと同じ）。"
                              "日本時間は +09:00 を付ける（例 2026-10-08T09:00+09:00）")
     parser.add_argument("--sender-metrics", help="iPhone の [CAPTURE_METRICS] ログ。PCと時計同期が必要")
+    parser.add_argument("--estimates", action="store_true", help="通常プレイの自動計測を台・色・fps別に集計（PCログのみ）")
     args = parser.parse_args(argv)
     since = None
     if args.since:
@@ -189,12 +232,23 @@ def main(argv=None):
     for path in paths:
         try:
             with open(path, encoding="utf-8", errors="replace") as handle:
-                blocks.extend(parse(handle, source=path))
+                blocks.extend((parse_estimates if args.estimates else parse)(handle, source=path))
         except OSError as error:
             print(f"{path} を読めません: {error}", file=sys.stderr)
             return 2
     if since is not None:
         blocks = after(blocks, since)
+    if args.estimates:
+        rows = summarize_estimates(blocks)
+        if not rows:
+            print("有効な latency-estimate がありません（旧アプリ・P2P・欠測・期限切れは集計しません）")
+            return 1
+        print("各10秒区間の代表値の中央値/p95（ms）。全フレームのp95ではありません。画面は推定、投影機処理は未算入。")
+        print("station colour fps platform route n " + " ".join(ESTIMATE_TERMS))
+        for row in rows:
+            print(f"{row['station']} {row['colour']} {row['fps']} {row['platform']} {row['route']} {row['n']} " +
+                  " ".join(f"{row['terms'][term][0]:.1f}/{row['terms'][term][1]:.1f}" for term in ESTIMATE_TERMS))
+        return 0
     modes = None
     if args.sender_metrics:
         try:

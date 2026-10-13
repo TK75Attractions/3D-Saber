@@ -353,6 +353,9 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         scrollPosition = GUILayout.BeginScrollView(scrollPosition);
         GUILayout.Label(redText, textStyle);
         GUILayout.Label(PhoneSaberPerfLog.Verdict, textStyle);
+        double latencyNow = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+        GUILayout.Label(PhoneSaberPerfLog.LatencyLine(false, latencyNow), textStyle);
+        GUILayout.Label(PhoneSaberPerfLog.LatencyLine(true, latencyNow), textStyle);
         if (!string.IsNullOrEmpty(displayWarning)) GUILayout.Label(displayWarning, warningStyle);
         if (!string.IsNullOrEmpty(redWarning)) GUILayout.Label(redWarning, warningStyle);
         GUILayout.Space(8);
