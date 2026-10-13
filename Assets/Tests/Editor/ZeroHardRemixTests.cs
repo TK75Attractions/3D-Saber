@@ -7,7 +7,6 @@ using UnityEngine;
 public class ZeroHardRemixTests
 {
     [TestCase(34250f)]
-    [TestCase(88750f)]
     [TestCase(148125f)]
     public void AuthoredPairedLongsRetainEveryNoteField(float startMs)
     {
@@ -24,5 +23,30 @@ public class ZeroHardRemixTests
         Assert.AreEqual(original.offsetMs, current.offsetMs);
         Assert.AreEqual(original.beatZeroMs, current.beatZeroMs);
         Assert.AreEqual(original.displayLevel, current.displayLevel);
+    }
+
+    [Test]
+    public void SignatureLongsShareFiftyCutsAndTheLongerDeadline()
+    {
+        string saved = Path.Combine(Application.dataPath, "../Tools/ChartDesign/Seisakuchu/ZeroHardRemix/authored-hard.json");
+        var original = ChartLoader.Parse(File.ReadAllText(saved));
+        var current = ChartLoader.LoadFromStreamingAssets("製作中", "hard");
+        var before = original.notes.Where(n => n.time == 88750f && n.count > 1).OrderBy(n => n.x).ToArray();
+        var after = current.notes.Where(n => n.time == 88750f && n.count > 1).OrderBy(n => n.x).ToArray();
+        Assert.AreEqual(2, before.Length);
+        Assert.AreEqual(2, after.Length);
+        for (int i = 0; i < before.Length; i++)
+        {
+            before[i].count = 50;
+            before[i].lengthMs = 21677f;
+            before[i].y = -.3f;
+            Assert.AreEqual(JsonUtility.ToJson(before[i]), JsonUtility.ToJson(after[i]));
+        }
+        var extras = current.notes.Where(n => n.time > 88750f && n.time < 88750f + 21677f).ToArray();
+        Assert.AreEqual(8, extras.Length);
+        Assert.IsTrue(extras.All(n => n.count == 1 && n.type == "tap" && n.direction == "none"));
+        Assert.AreEqual(2, extras.Select(n => new Vector2(n.x, n.y)).Distinct().Count());
+        Assert.IsTrue(extras.All(n => Mathf.Abs(n.x) >= 2f), "超ロング中の単発は外側の固定レーンへ置く");
+        Assert.IsTrue(extras.All(n => n.y == 1.5f), "配置可能域内の上段へ置く");
     }
 }

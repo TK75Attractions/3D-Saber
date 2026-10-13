@@ -1,62 +1,19 @@
 {
-  "before": {
-    "notes": 314,
-    "cuts": 455,
-    "longNotes": 15,
-    "simultaneousPairs": 55,
-    "directionNotes": 82,
-    "colors": {
-      "blue": 104,
-      "red": 109,
-      "gold": 101
-    },
-    "minimumSameHandRecoveryMs": 4.736,
-    "maximumCenterSpeed": 206.873,
-    "sections": {
-      "intro": 26,
-      "staircase": 12,
-      "first_roll": 7,
-      "fan": 48,
-      "first_peak": 63,
-      "hold_relay": 8,
-      "signature_roll": 18,
-      "return": 20,
-      "quiet": 8,
-      "final_stream": 43,
-      "wide_roll": 15,
-      "finale": 34,
-      "coda": 12
-    }
+  "revision": 2,
+  "notes": 270,
+  "cuts": 424,
+  "longNotes": 14,
+  "directionNotes": 105,
+  "simultaneousPairs": 22,
+  "sameColorRuns": {
+    "2": 40,
+    "1": 5,
+    "3": 24
   },
-  "after": {
-    "notes": 262,
-    "cuts": 404,
-    "longNotes": 14,
-    "simultaneousPairs": 22,
-    "directionNotes": 157,
-    "colors": {
-      "blue": 122,
-      "red": 125,
-      "gold": 15
-    },
-    "minimumSameHandRecoveryMs": 428.054,
-    "maximumCenterSpeed": 2.09,
-    "sections": {
-      "intro": 22,
-      "staircase": 24,
-      "first_roll": 2,
-      "fan": 40,
-      "first_peak": 47,
-      "hold_relay": 11,
-      "signature_roll": 2,
-      "return": 26,
-      "quiet": 10,
-      "final_stream": 43,
-      "wide_roll": 2,
-      "finale": 24,
-      "coda": 9
-    }
-  },
+  "signatureLongCount": 50,
+  "signatureLongLengthMs": 21677,
+  "signatureExtraTaps": 8,
+  "minimumSameHandRecoveryMs": 206.667,
   "flow": {
     "failures": [],
     "optionalGoldTaps": 0,
@@ -67,28 +24,5 @@
     "maxBranchStates": 1,
     "goldRouting": "position-side assignment; paired gold longs use one hand each"
   },
-  "protectedPairedLongs": [
-    {
-      "startMs": 34250,
-      "lengthsMs": [
-        4926.333,
-        4918.333
-      ]
-    },
-    {
-      "startMs": 88750,
-      "lengthsMs": [
-        18406.333,
-        21677
-      ]
-    },
-    {
-      "startMs": 148125,
-      "lengthsMs": [
-        3750,
-        3750
-      ]
-    }
-  ],
   "sourceSha256": "b069bd8920a3865245e0302d7463c0bbca700a12fb7959b9c176f7ba88799b99"
 }

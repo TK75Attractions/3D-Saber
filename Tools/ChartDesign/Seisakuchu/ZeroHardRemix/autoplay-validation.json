@@ -1,20 +1,29 @@
 {
+  "revision": 2,
   "songId": "製作中",
   "difficulty": "hard",
-  "expectedNotes": 262,
-  "expectedCuts": 404,
-  "observedCuts": 404,
-  "cutTimePrecisionMs": 1,
-  "allTimesPositionsLongIndicesMatched": true,
-  "long44CutEvents": 88,
+  "expectedNotes": 270,
+  "expectedCuts": 424,
+  "observedCuts": 424,
+  "maximumCutTimeErrorMs": 0.0,
+  "long50CutEvents": 100,
+  "chartSha256": "b66d83af0449b10be747682458096d7eb5ae8caefa59a4a5e7a926bc37573c6b",
+  "cutPlanSha256": "d1a3c9a1a61f1f280d32504d63a659065b78cb08dae63e10ca84cb0f71cd37af",
   "eventTypes": {
-    "tap": 85,
-    "flick": 157,
-    "gold": 15,
-    "tick": 142,
+    "tap": 146,
+    "flick": 105,
+    "gold": 14,
+    "tick": 154,
     "finish": 5
   },
   "editModeTestsPassed": 50,
   "playModeCapturePassed": true,
-  "verificationScope": "Scripted judgments through game runtime; not a test of physical input or all gold-hand choices"
+  "visibility": {
+    "extraTaps": 8,
+    "framesChecked": 240,
+    "maximumBodyCoverage": 0.0,
+    "maximumCountLabelCoverage": 0.003752988,
+    "allInsideViewport": true
+  },
+  "verificationScope": "Scripted judgments and projected renderer bounds in captured camera view; not physical input or all gold-hand choices"
 }

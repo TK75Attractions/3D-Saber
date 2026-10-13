@@ -278,10 +278,16 @@ def main():
     parser=argparse.ArgumentParser()
     parser.add_argument('--features',type=Path,required=True)
     parser.add_argument('--output',type=Path,required=True)
+    parser.add_argument('--revision',type=int,choices=(1,2),default=2)
     args=parser.parse_args(); args.output.mkdir(parents=True,exist_ok=True)
     source=load(ROOT/'authored-hard.json')
     chart,provenance=make(source,AudioEvidence(args.features))
-    report=validate(source,chart)
+    if args.revision == 2:
+        from revision2 import revise
+        chart,provenance,plan,report=revise(source,chart,provenance)
+        (args.output/'cut-plan.json').write_text(json.dumps(plan,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
+    else:
+        report=validate(source,chart)
     report['sourceSha256']=hashlib.sha256((ROOT/'authored-hard.json').read_bytes()).hexdigest()
     for filename,value in [('chart_hard.json',chart),('provenance.json',provenance),('validation.json',report)]:
         (args.output/filename).write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf-8')
