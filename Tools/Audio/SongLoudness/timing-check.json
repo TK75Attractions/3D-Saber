@@ -1,0 +1,33 @@
+{
+  "sampleRate": 44100,
+  "channels": 2,
+  "originalFrames": 9118080,
+  "normalizedFrames": 9118080,
+  "checks": [
+    {
+      "second": 10,
+      "lagSamples": 0,
+      "correlation": 0.9986756362744877
+    },
+    {
+      "second": 60,
+      "lagSamples": 0,
+      "correlation": 0.9999999127083291
+    },
+    {
+      "second": 100,
+      "lagSamples": 0,
+      "correlation": 0.9999865922799532
+    },
+    {
+      "second": 150,
+      "lagSamples": 0,
+      "correlation": 0.999999987676764
+    },
+    {
+      "second": 200,
+      "lagSamples": 0,
+      "correlation": 0.9999999042358422
+    }
+  ]
+}

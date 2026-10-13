@@ -17,7 +17,7 @@ public class SongAudioLoadingPlayTests
     readonly List<string> folders = new List<string>();
     Scene temporaryScene;
 
-    string MakeSong(bool reservedCharacters = false)
+    string MakeSong(bool reservedCharacters = false, int seconds = 1)
     {
         string id = "__SongAudioTest_" + (reservedCharacters ? "日本語 # % " : "") + Guid.NewGuid().ToString("N");
         string folder = Path.Combine(Application.streamingAssetsPath, "Songs", id);
@@ -25,7 +25,7 @@ public class SongAudioLoadingPlayTests
         Directory.CreateDirectory(folder);
         using (var writer = new BinaryWriter(File.Create(Path.Combine(folder, "audio.wav"))))
         {
-            const int samples = 8000;
+            int samples = 8000 * seconds;
             writer.Write(System.Text.Encoding.ASCII.GetBytes("RIFF")); writer.Write(36 + samples * 2);
             writer.Write(System.Text.Encoding.ASCII.GetBytes("WAVEfmt ")); writer.Write(16);
             writer.Write((short)1); writer.Write((short)1); writer.Write(8000); writer.Write(16000);
@@ -54,6 +54,60 @@ public class SongAudioLoadingPlayTests
         yield return (IEnumerator)typeof(GamePlayManager).GetMethod("LoadAudio", BindingFlags.Instance | BindingFlags.NonPublic)
             .Invoke(manager, new object[] { songId });
         if (manager.songPlayer.Clip != null) clips.Add(manager.songPlayer.Clip);
+    }
+
+    void AddLoudness(string id)
+    {
+        string folder = Path.Combine(Application.streamingAssetsPath, "Songs", id);
+        string path = Path.Combine(folder, "audio.wav");
+        using (var sha = System.Security.Cryptography.SHA256.Create())
+        {
+            var metadata = new SongLoudness.Metadata { version = 1, sourceFile = "audio.wav", gainDb = -6.0206f,
+                sourceSha256 = BitConverter.ToString(sha.ComputeHash(File.ReadAllBytes(path))).Replace("-", "") };
+            File.WriteAllText(Path.Combine(folder, "loudness.json"), JsonUtility.ToJson(metadata));
+        }
+    }
+
+    [UnityTest]
+    public IEnumerator GameplayReloadDoesNotMultiplyGainAndNextRawSongRestoresBaseVolume()
+    {
+        string id = MakeSong(); AddLoudness(id);
+        var manager = MakeManager();
+        var audio = manager.songPlayer.GetComponent<AudioSource>(); audio.volume = .6f;
+        yield return Load(manager, id);
+        Assert.AreEqual(.3f, audio.volume, .0001f);
+        Assert.AreEqual(8000, manager.songPlayer.Clip.samples);
+        yield return Load(manager, id);
+        Assert.AreEqual(.3f, audio.volume, .0001f);
+        yield return Load(manager, MakeSong());
+        Assert.AreEqual(.6f, audio.volume, .0001f);
+    }
+
+    [UnityTest]
+    public IEnumerator PreviewFadeReplayAndSongChangeUseTheSameNormalization()
+    {
+        string id = MakeSong(seconds: 4); AddLoudness(id);
+        var chart = new ChartData { bpm = 120, notes = new List<NoteData> { new NoteData { time = 1000, color = "red" } } };
+        string folder = Path.Combine(Application.streamingAssetsPath, "Songs", id);
+        File.WriteAllText(Path.Combine(folder, "chart_normal.json"), JsonUtility.ToJson(chart));
+        var go = new GameObject("LoudnessPreview", typeof(AudioSource)); objects.Add(go);
+        var source = go.GetComponent<AudioSource>(); source.volume = .6f; source.playOnAwake = false;
+        var preview = go.AddComponent<SongSelectChartPreview>(); preview.Initialize(source);
+        for (int repeat = 0; repeat < 3; repeat++)
+        {
+            if (repeat == 2) File.Delete(Path.Combine(folder, "loudness.json"));
+            preview.Select(id, "normal", 4);
+            double deadline = Time.realtimeSinceStartupAsDouble + 8;
+            while ((!preview.IsPlaying || preview.SongTime < preview.Window.Start + .2) && Time.realtimeSinceStartupAsDouble < deadline)
+            { preview.Tick(); yield return null; }
+            Assert.True(preview.IsPlaying);
+            preview.Tick();
+            Assert.AreEqual(repeat == 2 ? .6f : .3f, source.volume, .001f);
+            Assert.AreEqual(32000, source.clip.samples);
+            preview.Cancel();
+            Assert.AreEqual(.6f, source.volume, .0001f);
+            yield return null;
+        }
     }
 
     [UnityTest]

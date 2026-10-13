@@ -50,6 +50,7 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     private Coroutine loading;
     private SongChartPreviewView view;
     private float baseVolume;
+    private float loudnessGain = 1;
     private double scheduledDsp;
     private int startSample;
     private bool clockSynchronized;
@@ -130,10 +131,11 @@ public sealed class SongSelectChartPreview : MonoBehaviour
         if(chart?.notes==null || chart.notes.Count==0) { State=PreviewState.Unavailable; loading=null; yield break; }
         State=PreviewState.Loading;
         string dir=Path.Combine(Application.streamingAssetsPath,"Songs",songId);
-        foreach(var name in new[]{"audio.ogg","audio.wav","audio.mp3"})
+        foreach(var playback in SongLoudness.CandidatesInFolder(dir))
         {
-            string full=Path.Combine(dir,name); if(!File.Exists(full)) continue;
-            AudioType type=name.EndsWith(".ogg")?AudioType.OGGVORBIS:name.EndsWith(".wav")?AudioType.WAV:AudioType.MPEG;
+            string full=playback.Path;
+            string extension=Path.GetExtension(full).ToLowerInvariant();
+            AudioType type=extension==".ogg"?AudioType.OGGVORBIS:extension==".wav"?AudioType.WAV:AudioType.MPEG;
             request=UnityWebRequestMultimedia.GetAudioClip(new Uri(full).AbsoluteUri,type);
             request.timeout=10;
             ((DownloadHandlerAudioClip)request.downloadHandler).streamAudio=true;
@@ -143,6 +145,7 @@ public sealed class SongSelectChartPreview : MonoBehaviour
             ownedClip=DownloadHandlerAudioClip.GetContent(request);
             request.Dispose(); request=null;
             if(ownedClip==null) continue;
+            loudnessGain=playback.Gain;
             var timeline=StagePerformanceTimeline.Load(songId);
             Window=SongPreviewWindow.Resolve(timeline,ownedClip.length,duration);
             if(token!=generation) yield break;
@@ -182,7 +185,7 @@ public sealed class SongSelectChartPreview : MonoBehaviour
         if(!source.isPlaying && Time.realtimeSinceStartupAsDouble-StartedAt>.5)
         { State=PreviewState.Failed; Finish(); return; }
         float gain=Mathf.Min(Mathf.Clamp01((float)(elapsed/.08)),Mathf.Clamp01((float)((Window.Duration-elapsed)/.25)));
-        source.volume=baseVolume*gain;
+        source.volume=baseVolume*gain*loudnessGain;
         view?.Show(); view?.Tick(time);
     }
 
@@ -196,7 +199,7 @@ public sealed class SongSelectChartPreview : MonoBehaviour
     private void Finish()
     {
         if(IsPlaying) stoppedSongTime=SongTime;
-        IsPlaying=false; clockSynchronized=false;
+        IsPlaying=false; clockSynchronized=false; loudnessGain=1;
         if(source!=null) { source.Stop(); source.clip=null; source.volume=baseVolume; }
         if(ownedClip!=null) { Destroy(ownedClip); ownedClip=null; }
         view?.Hide();

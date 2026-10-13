@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "sourceFile": "audio.mp3",
+  "sourceSha256": "ad935ca87f900ed4ed2d4f18149c956724d22e41ebc378a1003dbfadcc014487",
+  "targetLufs": -18.0,
+  "inputLufs": -12.31,
+  "inputTruePeakDbtp": 0.28,
+  "gainDb": -5.69,
+  "outputLufs": -18.0,
+  "outputTruePeakDbtp": -5.41
+}

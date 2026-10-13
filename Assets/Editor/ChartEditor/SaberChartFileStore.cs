@@ -258,6 +258,7 @@ namespace Saber.ChartEditor
             public bool failed;
             public DateTime writeTimeUtc;
             public long fileLength;
+            public SongLoudness.Playback loudness;
         }
 
         private static readonly Dictionary<string, CachedAudio> audioCache =
@@ -278,16 +279,29 @@ namespace Saber.ChartEditor
                 if (!File.Exists(path)) continue;
 
                 var info = new FileInfo(path);
+                var loudness = SongLoudness.Resolve(path);
                 if (audioCache.TryGetValue(path, out CachedAudio cached) &&
                     cached.writeTimeUtc == info.LastWriteTimeUtc &&
-                    cached.fileLength == info.Length)
+                    cached.fileLength == info.Length && ReferenceEquals(cached.loudness, loudness))
                 {
                     if (cached.failed) continue;         // 前回デコード失敗 → 次の候補へ
                     if (cached.clip) return cached.clip; // 生存していればそのまま使う
                     // クリップが破棄されていたら作り直しに落ちる
                 }
 
-                AudioClip clip = DecodeAudioFile(path);
+                if (cached != null && cached.clip != null)
+                {
+                    SaberChartAudioPreview.Stop();
+                    UnityEngine.Object.DestroyImmediate(cached.clip);
+                }
+                AudioClip clip = null;
+                foreach (var playback in SongLoudness.Candidates(path))
+                {
+                    clip = DecodeAudioFile(playback.Path);
+                    if (clip == null) continue;
+                    SongLoudness.ApplyToDecodedClip(clip, playback.Gain);
+                    break;
+                }
                 if (clip != null)
                 {
                     clip.name = songId + " audio";
@@ -299,6 +313,7 @@ namespace Saber.ChartEditor
                     failed = clip == null,
                     writeTimeUtc = info.LastWriteTimeUtc,
                     fileLength = info.Length,
+                    loudness = loudness,
                 };
                 if (clip != null) return clip;
             }
@@ -457,6 +472,8 @@ namespace Saber.ChartEditor
                     UnityEngine.Object.DestroyImmediate(cached.clip);
                 audioCache.Remove(path);
             }
+            // 同一サイズ・更新時刻の取り込みでも古い音量情報を再利用しない。
+            SongLoudness.Invalidate(destination);
             importedClip.name = songId + " audio";
             importedClip.hideFlags = HideFlags.HideAndDontSave;
             audioCache[destination] = new CachedAudio

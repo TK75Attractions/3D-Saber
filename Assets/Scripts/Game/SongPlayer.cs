@@ -6,6 +6,16 @@ using UnityEngine;
 public class SongPlayer : MonoBehaviour
 {
     private AudioSource source;
+    private float loudnessBaseVolume = -1;
+
+    // フェードやサビ演出に渡す前の曲別音量。再ロードしても減衰を重ねない。
+    public void SetLoudnessGain(float gain)
+    {
+        EnsureSource();
+        if (loudnessBaseVolume < 0) loudnessBaseVolume = source.volume;
+        source.volume = loudnessBaseVolume * Mathf.Clamp01(gain);
+    }
+
     private double startDspTime;
     private bool scheduled;
     private bool clockSynchronized;

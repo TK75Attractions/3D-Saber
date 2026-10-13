@@ -585,13 +585,12 @@ public class GamePlayManager : MonoBehaviour
         ReleaseOwnedSongClip();
         songPlayer.Stop();
         songPlayer.Clip = null;
+        songPlayer.SetLoudnessGain(1);
         string dir = Path.Combine(Application.streamingAssetsPath, "Songs", songId);
-        string[] candidates = { "audio.ogg", "audio.wav", "audio.mp3" };
-        foreach (var name in candidates)
+        foreach (var playback in SongLoudness.CandidatesInFolder(dir))
         {
-            string full = Path.Combine(dir, name);
-            if (!File.Exists(full)) continue;
-            AudioType type = GuessType(name);
+            string full = playback.Path;
+            AudioType type = GuessType(full);
             // #・%・日本語・空白を含む曲フォルダーも、選曲プレビューと同じ方法で扱う。
             using (UnityWebRequest req = UnityWebRequestMultimedia.GetAudioClip(new System.Uri(full).AbsoluteUri, type))
             {
@@ -605,6 +604,7 @@ public class GamePlayManager : MonoBehaviour
                         ReleaseOwnedSongClip();
                         ownedSongClip = clip;
                         songPlayer.Clip = clip;
+                        songPlayer.SetLoudnessGain(playback.Gain);
                         yield break;
                     }
                 }
