@@ -224,7 +224,7 @@ public class SaberInputBridge : MonoBehaviour
         if (double.IsNaN(stamp) || double.IsInfinity(stamp)) { ResetPrediction(); return; }
         endpointPredictor.AddSample(stamp, a, b);
         endpointPredictor.Predict(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp),
-            input.PredictionHorizonMilliseconds, out a, out b);
+            input.PredictionLead(stickIndex == 2), out a, out b);
         input.RecordPrediction(endpointPredictor.LastPredictionSuppressed);
     }
 
@@ -388,7 +388,7 @@ public class SaberInputBridge : MonoBehaviour
                 Vector2 endB = stickIndex == 2 ? ip.LocalStickRawB2 : ip.LocalStickRawB;
                 int mode = ResolveFilterMode(ip);
                 bool filtering = mode != PhoneSaberEndpointFilter.Off;
-                bool predicting = ip.PredictionHorizonMilliseconds > 0;
+                bool predicting = ip.PredictionLead(stickIndex == 2) > 0;
                 bool processing = filtering || predicting;
                 Vector3 observedA = new Vector3(endA.x, endA.y, fixedZ);
                 Vector3 observedB = new Vector3(endB.x, endB.y, fixedZ);

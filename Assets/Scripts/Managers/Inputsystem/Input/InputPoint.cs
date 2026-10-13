@@ -146,6 +146,9 @@ public class InputPoint : MonoBehaviour
     public long PredictionDraws { get; private set; }
     public long PredictionSuppressedDraws { get; private set; }
     double nextPredictionRefresh;
+    PhoneSaberAutomaticLeadPolicy redPrediction = new PhoneSaberAutomaticLeadPolicy(), bluePrediction = new PhoneSaberAutomaticLeadPolicy();
+    public int PredictionLead(bool blue) => PredictionAutomatic ? (blue ? bluePrediction : redPrediction).Lead : PredictionHorizonMilliseconds;
+    public string PredictionSource(bool blue) => PredictionAutomatic ? (blue ? bluePrediction : redPrediction).Source : "manual";
 
     public void RecordPrediction(bool suppressed)
     {
@@ -155,19 +158,42 @@ public class InputPoint : MonoBehaviour
 
     public void SetPredictionAutomatic()
     {
+        redPrediction = new PhoneSaberAutomaticLeadPolicy(); bluePrediction = new PhoneSaberAutomaticLeadPolicy();
         PredictionAutomatic = true;
         PhoneSaberPredictionSettings.SaveAutomatic(StationLabel, true);
         PredictionRevision++;
-        RefreshPredictionLead();
+        RefreshPredictionLead(true);
     }
 
-    void RefreshPredictionLead()
+    void RefreshPredictionLead(bool forceLog = false)
     {
-        int red = PhoneSaberPredictionSettings.AutomaticLead(ReadInputStats(), PredictionClocksSynchronized, out bool redMeasured);
-        int blue = PhoneSaberPredictionSettings.AutomaticLead(ReadInputStats(true), PredictionClocksSynchronized, out bool blueMeasured);
-        PredictionHorizonMilliseconds = redMeasured && blueMeasured ? System.Math.Max(red, blue) :
-            redMeasured ? red : blueMeasured ? blue : PhoneSaberPredictionSettings.AutomaticFallbackMilliseconds;
-        PredictionLeadSource = redMeasured || blueMeasured ? "one-way-ts" : "fallback";
+        double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+        RefreshPredictionColour(false, now, redPrediction, forceLog);
+        RefreshPredictionColour(true, now, bluePrediction, forceLog);
+        PredictionHorizonMilliseconds = redPrediction.Lead;
+        PredictionLeadSource = redPrediction.Source;
+    }
+
+    void RefreshPredictionColour(bool blue, double now, PhoneSaberAutomaticLeadPolicy policy, bool forceLog)
+    {
+        var stats = ReadInputStats(blue);
+        PhoneSaberPredictionSettings.AutomaticLead(stats, PredictionClocksSynchronized, out bool measured);
+        string sender = blue ? BlueCoordinateSender : RedCoordinateSender;
+        var estimate = PhoneSaberPerfLog.Estimate(this, blue, now, (blue ? BlueCoordinateTiming : RedCoordinateTiming).Shown);
+        double? total = PhoneSaberPredictionSettings.AutomaticEstimate(estimate);
+        double expiresAt = (blue ? LastReceivedMonotonicTime2 : LastReceivedMonotonicTime) + 15;
+        if (total.HasValue)
+            expiresAt = System.Math.Min(expiresAt, System.Math.Min(estimate.Phone.ReceivedAt + 15,
+                estimate.Phone.ReceivedAt + 10 - estimate.Phone.RttAge.Value));
+        if (!total.HasValue && !PredictionClocksSynchronized && policy.Source == "one-way-ts")
+            expiresAt = now;
+        string device = estimate.Phone == null ? null : estimate.Phone.Platform + ":" + estimate.Phone.App;
+        if (policy.Update(now, sender, total, measured ? (double?)stats.OneWayDelay.MedianMs : null, expiresAt, device) || forceLog)
+            PhoneSaberEventLog.Record(StationLabel, blue ? "BLUE" : "RED", "prediction-lead",
+                "lead-ms=" + policy.Lead + " source=" + policy.Source + " median-ms=" +
+                policy.Median.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) +
+                " clamped=" + (policy.Clamped ? "1" : "0") + " maximum-ms=" + PhoneSaberEndpointPredictor.MaximumHorizonMilliseconds +
+                " sender=" + (sender ?? "unknown"));
     }
 
     public void SetPredictionHorizonMilliseconds(int milliseconds)
@@ -178,6 +204,8 @@ public class InputPoint : MonoBehaviour
         PredictionHorizonMilliseconds = PhoneSaberPredictionSettings.Clamp(milliseconds);
         PredictionRevision++;
         PhoneSaberPredictionSettings.Save(StationLabel, PredictionHorizonMilliseconds);
+        PhoneSaberEventLog.Record(StationLabel, "SYSTEM", "prediction-lead",
+            "lead-ms=" + PredictionHorizonMilliseconds + " source=manual clamped=0");
     }
 
     // 色ごとのreceiver診断。一方の異常は反対色の状態に影響させない。
@@ -455,6 +483,7 @@ public class InputPoint : MonoBehaviour
             PredictionAutomatic = PhoneSaberPredictionSettings.LoadAutomatic(phoneSaberStation);
             if (PredictionAutomatic)
             {
+                redPrediction = new PhoneSaberAutomaticLeadPolicy(); bluePrediction = new PhoneSaberAutomaticLeadPolicy();
                 PredictionHorizonMilliseconds = PhoneSaberPredictionSettings.AutomaticFallbackMilliseconds;
                 PredictionLeadSource = "fallback";
             }
@@ -644,7 +673,8 @@ public class InputPoint : MonoBehaviour
     {
         // 自動の統計読出しは秒1回だけ。描画ごとに時刻配列や文字列を作らない。
         double predictionNow = Time.realtimeSinceStartupAsDouble;
-        if (PredictionAutomatic && predictionNow >= nextPredictionRefresh)
+        if (PredictionAutomatic && (predictionNow >= nextPredictionRefresh ||
+            redPrediction.NeedsExpiry(predictionNow) || bluePrediction.NeedsExpiry(predictionNow)))
         {
             nextPredictionRefresh = predictionNow + 1;
             RefreshPredictionLead();

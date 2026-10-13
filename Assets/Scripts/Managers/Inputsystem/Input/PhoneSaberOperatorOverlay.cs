@@ -231,12 +231,17 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         }
     }
 
+    static string PredictionSourceLabel(string source) => source == "automatic-estimate" ? "自動計測" :
+        source == "one-way-ts" ? "同期済 ts" : "計測なし・OFF";
+
     void DrawPrediction()
     {
         var input = InputPoint.Instance;
         int horizon = input != null ? input.PredictionHorizonMilliseconds : 0;
         bool automatic = input != null && input.PredictionAutomatic;
-        GUILayout.Label($"剣の遅延補正: {(automatic ? "自動 " : "")}{(horizon == 0 ? "OFF" : horizon + " ms")}（この台に保存）", textStyle);
+        string choice = automatic ? $"自動 赤 {input.PredictionLead(false)} ms（{PredictionSourceLabel(input.PredictionSource(false))}） / 青 {input.PredictionLead(true)} ms（{PredictionSourceLabel(input.PredictionSource(true))}）" :
+            horizon == 0 ? "OFF" : horizon + " ms";
+        GUILayout.Label($"剣の遅延補正: {choice}（この台に保存）", textStyle);
         bool previousEnabled = GUI.enabled;
         GUI.enabled = previousEnabled && input != null && calibrationCorner < 0;
         GUILayout.BeginHorizontal();
@@ -253,8 +258,8 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         GUI.enabled = previousEnabled;
         GUILayout.Label("初期値はOFF。20 msから試してください。折り返しでは行き過ぎが増えます。\n" +
             "端点の移動上限は0.35、受信が100 ms止まると予測量はゼロに戻ります。", textStyle);
-        GUILayout.Label("自動: 同期確認済みのts片道遅延（最大60 ms）。未計測時はOFF。\n" +
-            "tsは送信時刻のため撮影・画面表示の遅れは含みません。", textStyle);
+        GUILayout.Label("自動: スマホ＋通信＋PC＋画面の目安（最大60 ms）。未計測時はOFF。\n" +
+            "同期確認済みのts片道値は第2候補。30秒中央値が5 ms超変化した時、10秒以上あけて更新。", textStyle);
     }
 
     void DrawDisplaySync()
