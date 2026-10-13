@@ -1,4 +1,4 @@
-"""第2稿の録画イベント・ロングの切断経路・追加単発の画面上の重なりを照合する。"""
+"""録画イベント・ロングの切断経路・追加単発の画面上の重なりを照合する。"""
 import argparse
 import collections
 import csv
@@ -46,7 +46,8 @@ def main():
     tests = ET.parse(args.tests).getroot()
     capture = ET.parse(args.capture/'capture-results.xml').getroot()
     assert tests.get('result') == capture.get('result') == 'Passed'
-    report = dict(revision=2, songId='製作中', difficulty='hard', expectedNotes=len(chart['notes']),
+    revision = json.loads((root/'validation.json').read_text(encoding='utf-8'))['revision']
+    report = dict(revision=revision, songId='製作中', difficulty='hard', expectedNotes=len(chart['notes']),
                   expectedCuts=sum(n['count'] for n in chart['notes']), observedCuts=len(cuts),
                   maximumCutTimeErrorMs=round(max(errors), 6), long50CutEvents=100,
                   chartSha256=hashlib.sha256(chart_path.read_bytes()).hexdigest(),

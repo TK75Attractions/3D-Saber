@@ -1,19 +1,27 @@
 {
-  "revision": 2,
+  "revision": 3,
   "notes": 270,
   "cuts": 424,
   "longNotes": 14,
-  "directionNotes": 105,
-  "simultaneousPairs": 22,
-  "sameColorRuns": {
+  "directionNotes": 184,
+  "simultaneousPairs": 24,
+  "continuousFlickRuns": {
     "2": 40,
-    "1": 5,
     "3": 24
   },
   "signatureLongCount": 50,
   "signatureLongLengthMs": 21677,
+  "signatureLongStartAudioSeconds": 88.79551020400001,
   "signatureExtraTaps": 8,
-  "minimumSameHandRecoveryMs": 206.667,
+  "timing": {
+    "movedMoreThan1Ms": 234,
+    "movedMoreThan40Ms": 177,
+    "maxMoveMs": 204.795918,
+    "grid": "eighth notes at BPM98, audio origin20ms",
+    "meanOnsetBefore": 0.7027418518518516,
+    "meanOnsetAfter": 0.9349503703703697,
+    "measure": "positive spectral flux within40-45ms; supporting evidence, not isolated-instrument transcription"
+  },
   "flow": {
     "failures": [],
     "optionalGoldTaps": 0,

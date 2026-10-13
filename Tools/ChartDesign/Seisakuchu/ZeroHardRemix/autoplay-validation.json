@@ -1,5 +1,5 @@
 {
-  "revision": 2,
+  "revision": 3,
   "songId": "製作中",
   "difficulty": "hard",
   "expectedNotes": 270,
@@ -7,22 +7,22 @@
   "observedCuts": 424,
   "maximumCutTimeErrorMs": 0.0,
   "long50CutEvents": 100,
-  "chartSha256": "b66d83af0449b10be747682458096d7eb5ae8caefa59a4a5e7a926bc37573c6b",
-  "cutPlanSha256": "d1a3c9a1a61f1f280d32504d63a659065b78cb08dae63e10ca84cb0f71cd37af",
+  "chartSha256": "ed922ed0e03f7ebcaa6e378ce341b0f63e19aaa4746fdd7d7e6ff308fdf43c84",
+  "cutPlanSha256": "f1e505d0322d2c0f0bc6cfe11cc4a96a56117e06990a2144185e2d666f8833a9",
   "eventTypes": {
-    "tap": 146,
-    "flick": 105,
+    "flick": 184,
+    "tap": 67,
     "gold": 14,
     "tick": 154,
     "finish": 5
   },
-  "editModeTestsPassed": 50,
+  "editModeTestsPassed": 52,
   "playModeCapturePassed": true,
   "visibility": {
     "extraTaps": 8,
-    "framesChecked": 240,
+    "framesChecked": 241,
     "maximumBodyCoverage": 0.0,
-    "maximumCountLabelCoverage": 0.003752988,
+    "maximumCountLabelCoverage": 0.004380399,
     "allInsideViewport": true
   },
   "verificationScope": "Scripted judgments and projected renderer bounds in captured camera view; not physical input or all gold-hand choices"
