@@ -69,45 +69,49 @@ def score_specs(diff, evidence):
     patterns = {
         'easy': [[0, 2], [0, 3], [1, 3], [0, 2]],
         'normal': [[0, 1, 2.5], [0, 1.5, 3], [0, 1, 2, 3], [0, 1.5, 2.5, 3.5]],
-        'hard': [[0, .5, 1.5, 2, 3], [0, 1, 1.5, 2.5, 3, 3.5],
-                 [0, 1, 2, 2.5, 3.5], [0, .5, 1.5, 2.5, 3, 3.5]],
+        'hard': [[0, 1, 2, 3], [0, 1, 2.5, 3.5],
+                 [0, 1, 2, 3], [0, 1.5, 2.5, 3.5]],
     }[diff]
     for bar in range(1, 15):
         pattern = patterns[bar % len(patterns)]
-        if bar < 3 and hard: pattern = [0, 1, 2.5, 3.5]
+        if bar < 3 and hard: pattern = [0, 1, 2, 3]
         for p in pattern: add(bar * 4 + p)
     if hard: add(2)
 
     # リズム導入4小節。主部の直前までは両手アクセントを控える。
     for bar in range(4):
-        pattern = [0, 2] if easy else ([0, 1, 2, 3] if not hard else [0, 1, 1.5, 2, 2.5, 3, 3.5])
+        pattern = [0, 2] if easy else [0, 1, 2, 3]
         for p in pattern: add(68 + bar * 4 + p)
 
-    # 主部は 3+3+2 のアクセント(0, 1.5, 3拍)を軸にする。
+    # 主部の3+3+2は要所に残す。Hardは細分音の連続を減らし、拍刻みと両手の着地を主体にする。
     main_patterns = {
         'easy': [[0, 3], [0, 1.5, 3], [0, 3], [0, 1.5, 3]],
         'normal': [[0, 1.5, 2, 3], [0, .5, 1.5, 3], [0, 1.5, 3, 3.5], [0, 1, 1.5, 2.5, 3]],
-        'hard': [[0, .5, 1.5, 2, 3, 3.5], [0, .5, 1, 1.5, 2.5, 3, 3.5],
-                 [0, .5, 1.5, 2, 2.5, 3, 3.5], [0, 1, 1.5, 2, 3, 3.5]],
+        'hard': [[0, 1, 2, 3], [0, 1.5, 3],
+                 [0, 1, 2, 3], [0, 1, 2.5, 3.5]],
     }[diff]
     for bar in range(14):
         for p in main_patterns[bar % 4]: add(84 + 4 * bar + p)
 
     for bar in range(3):
-        for p in ([0, 2] if easy else ([0, 1, 2, 3] if not hard else [0, 1, 2, 2.5, 3.5])):
+        for p in ([0, 2] if easy else [0, 1, 2, 3]):
             add(140 + 4 * bar + p)
     for bar in range(5):
         pattern = ([0, 2] if bar % 2 == 0 else [1, 3]) if easy else (
-            [0, 1, 2, 3] if not hard else [[0, .5, 1, 2, 2.5, 3], [0, 1, 1.5, 2, 3, 3.5]][bar % 2])
+            [0, 1, 2, 3] if not hard else [[0, 1, 2, 3], [0, 1, 2, 3.5]][bar % 2])
         for p in pattern: add(152 + 4 * bar + p)
     for bar in range(8):
         pattern = main_patterns[(bar + 1) % 4]
-        if hard and bar in (3, 7): pattern = [0, .5, 1.5, 2, 2.5, 3, 3.5]
+        if hard and bar in (3, 7): pattern = [0, 1, 2, 3]
         for p in pattern: add(172 + 4 * bar + p)
 
     # ロングは指定回数を切る形式。最低でも約0.45秒間隔を確保し、内部へ別ノーツを置かない。
     holds = [(8, 2, 3), (24, 2, 3), (56, 2, 3), (60, 4, 3),
              (140, 3 if not hard else 2, 3), (148, 2, 3), (204, 4, 3 if easy else 4)]
+    if hard:
+        # 前半の音の伸び、主部・再展開・終盤にもロングを散らす。内部は均等な拍で切る。
+        holds += [(16, 2, 3), (40, 2, 3), (80, 2, 3), (104, 2, 3),
+                  (120, 2, 3), (156, 2, 3), (192, 2, 3)]
     for beat, length, count in holds:
         start, end = seconds(beat), seconds(beat + length)
         padding = .65 if easy else .43
@@ -115,14 +119,15 @@ def score_specs(diff, evidence):
             if start - padding < seconds(old) < end + padding: del specs[old]
         add(beat, 'long', length, count)
 
-    # 両手は区間の着地だけ。隣接音との間隔が両手の回復に足りる箇所へ限定する。
+    # 両手は区間とフレーズの着地へ。隣接音との間隔が両手の回復に足りる箇所へ限定する。
     pair_beats = {
         'easy': [84, 100, 116, 132, 172, 188, 200],
         'normal': [68, 84, 92, 100, 108, 116, 124, 132, 152, 160, 172, 180, 188, 196, 200],
-        'hard': [68, 76, 84, 92, 100, 108, 116, 124, 132, 136, 152, 160, 168, 172, 180, 188, 196, 200],
+        'hard': [12, 20, 28, 36, 44, 52, 68, 76, 84, 92, 100, 108, 112, 116,
+                 124, 128, 132, 136, 152, 160, 164, 168, 172, 176, 180, 184, 188, 196, 200],
     }[diff]
     for b in pair_beats:
-        if b not in specs: continue
+        if b not in specs or specs[b]['kind'] != 'single': continue
         recovery = .55 if easy else .43
         if hard and specs[b]['evidence']['strength'] >= .9:
             nearby = [other for other in specs if other != b and abs(seconds(b)-seconds(other)) < recovery]
@@ -199,7 +204,10 @@ def build(diff, evidence):
                 if abs(dy) >= abs(dx) and abs(dy) > .25 and dy*n['y'] > 0:
                     n['direction'] = 'up' if dy > 0 else 'down'
                     n['type'] = 'direction'
-    chart = dict(_comment='Phobia PARTⅠ: 96→132 BPMの解析に基づく初版。変化の格子境界は余韻中の40秒。ノーツは音源先頭からの実時刻。',
+    comment = ('Phobia PARTⅠ: Hard第2版。細分音の連続を減らし、拍刻み・ロング・両手の着地を増やした。'
+               '96→132 BPM、格子境界は余韻中の40秒。ノーツは音源先頭からの実時刻。') if diff == 'hard' else (
+               'Phobia PARTⅠ: 96→132 BPMの解析に基づく初版。変化の格子境界は余韻中の40秒。ノーツは音源先頭からの実時刻。')
+    chart = dict(_comment=comment,
                  bpm=BPM, coordScale=1.0, offsetMs=OFFSET, beatZeroMs=0,
                  displayLevel=LEVELS[diff], timeSignatures=[dict(beat=0, numerator=4, denominator=4)],
                  editorTempoMap=MAP,

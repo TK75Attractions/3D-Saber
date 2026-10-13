@@ -4079,17 +4079,31 @@
       ]
     },
     {
-      "beat": 6.5,
+      "beat": 6,
       "region": "intro",
       "role": "single",
-      "peakSeconds": 4.085714,
-      "distanceMs": 7.214,
+      "peakSeconds": 3.776417,
+      "distanceMs": 10.417,
+      "strength": 0.2569,
+      "bands": [
+        0.0812,
+        0.5839,
+        0.7167,
+        0.4821
+      ]
+    },
+    {
+      "beat": 7,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 4.419955,
+      "distanceMs": 28.955,
       "strength": 0.2948,
       "bands": [
-        0.1009,
-        0.8116,
-        0.4618,
-        0.6072
+        0.0266,
+        0.9466,
+        0.8746,
+        0.3675
       ]
     },
     {
@@ -4107,23 +4121,9 @@
       ]
     },
     {
-      "beat": 11.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 7.218594,
-      "distanceMs": 15.094,
-      "strength": 0.2414,
-      "bands": [
-        0.1122,
-        0.9165,
-        0.4937,
-        0.3322
-      ]
-    },
-    {
       "beat": 12,
       "region": "intro",
-      "role": "single",
+      "role": "pair",
       "peakSeconds": 7.527891,
       "distanceMs": 11.891,
       "strength": 0.3363,
@@ -4135,17 +4135,17 @@
       ]
     },
     {
-      "beat": 12.5,
+      "beat": 12,
       "region": "intro",
-      "role": "single",
-      "peakSeconds": 7.837188,
-      "distanceMs": 8.688,
-      "strength": 0.3766,
+      "role": "pair",
+      "peakSeconds": 7.527891,
+      "distanceMs": 11.891,
+      "strength": 0.3363,
       "bands": [
-        0.4233,
-        0.9535,
-        0.7488,
-        0.3424
+        0.5457,
+        0.4935,
+        0.6039,
+        0.4104
       ]
     },
     {
@@ -4177,37 +4177,9 @@
       ]
     },
     {
-      "beat": 15,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 9.418594,
-      "distanceMs": 27.594,
-      "strength": 0.3182,
-      "bands": [
-        0.2872,
-        1.2175,
-        0.5972,
-        0.3247
-      ]
-    },
-    {
-      "beat": 15.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 9.712925,
-      "distanceMs": 9.425,
-      "strength": 0.2507,
-      "bands": [
-        0.3796,
-        0.4841,
-        0.593,
-        0.3796
-      ]
-    },
-    {
       "beat": 16,
       "region": "intro",
-      "role": "single",
+      "role": "long",
       "peakSeconds": 10.037188,
       "distanceMs": 21.188,
       "strength": 0.3545,
@@ -4216,48 +4188,6 @@
         0.5562,
         0.8556,
         0.3525
-      ]
-    },
-    {
-      "beat": 16.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 10.341497,
-      "distanceMs": 12.997,
-      "strength": 0.4943,
-      "bands": [
-        1.0858,
-        0.9666,
-        0.4531,
-        0.3368
-      ]
-    },
-    {
-      "beat": 17.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 10.955102,
-      "distanceMs": 1.602,
-      "strength": 0.4368,
-      "bands": [
-        0.7486,
-        0.512,
-        0.9572,
-        0.3733
-      ]
-    },
-    {
-      "beat": 18,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 11.29932,
-      "distanceMs": 33.32,
-      "strength": 0.3631,
-      "bands": [
-        0.6836,
-        0.3563,
-        0.9391,
-        0.3221
       ]
     },
     {
@@ -4277,7 +4207,21 @@
     {
       "beat": 20,
       "region": "intro",
-      "role": "single",
+      "role": "pair",
+      "peakSeconds": 12.526531,
+      "distanceMs": 10.531,
+      "strength": 0.2957,
+      "bands": [
+        0.4564,
+        0.6181,
+        0.5191,
+        0.3247
+      ]
+    },
+    {
+      "beat": 20,
+      "region": "intro",
+      "role": "pair",
       "peakSeconds": 12.526531,
       "distanceMs": 10.531,
       "strength": 0.2957,
@@ -4303,20 +4247,6 @@
       ]
     },
     {
-      "beat": 21.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 13.454422,
-      "distanceMs": 0.922,
-      "strength": 0.3695,
-      "bands": [
-        0.5425,
-        0.7875,
-        0.5557,
-        0.4866
-      ]
-    },
-    {
       "beat": 22.5,
       "region": "intro",
       "role": "single",
@@ -4328,20 +4258,6 @@
         0.7216,
         0.6439,
         0.2747
-      ]
-    },
-    {
-      "beat": 23,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 14.39229,
-      "distanceMs": 1.29,
-      "strength": 0.408,
-      "bands": [
-        0.4764,
-        1.2323,
-        0.6577,
-        0.3933
       ]
     },
     {
@@ -4359,23 +4275,37 @@
       ]
     },
     {
-      "beat": 27.5,
+      "beat": 27,
       "region": "intro",
       "role": "single",
-      "peakSeconds": 17.245805,
-      "distanceMs": 42.305,
-      "strength": 0.3472,
+      "peakSeconds": 16.906576,
+      "distanceMs": 15.576,
+      "strength": 0.4461,
       "bands": [
-        0.5553,
-        0.8941,
-        0.452,
-        0.4082
+        0.8255,
+        0.5617,
+        0.7427,
+        0.3893
       ]
     },
     {
       "beat": 28,
       "region": "intro",
-      "role": "single",
+      "role": "pair",
+      "peakSeconds": 17.520181,
+      "distanceMs": 4.181,
+      "strength": 0.3553,
+      "bands": [
+        0.768,
+        0.7099,
+        0.4873,
+        0.3303
+      ]
+    },
+    {
+      "beat": 28,
+      "region": "intro",
+      "role": "pair",
       "peakSeconds": 17.520181,
       "distanceMs": 4.181,
       "strength": 0.3553,
@@ -4415,20 +4345,6 @@
       ]
     },
     {
-      "beat": 31,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 19.356009,
-      "distanceMs": -34.991,
-      "strength": 0.3108,
-      "bands": [
-        0.2177,
-        0.7513,
-        0.5579,
-        0.568
-      ]
-    },
-    {
       "beat": 32,
       "region": "intro",
       "role": "gold",
@@ -4443,17 +4359,17 @@
       ]
     },
     {
-      "beat": 33.5,
+      "beat": 33,
       "region": "intro",
       "role": "single",
-      "peakSeconds": 20.982313,
-      "distanceMs": 28.813,
-      "strength": 0.2878,
+      "peakSeconds": 20.682993,
+      "distanceMs": 41.993,
+      "strength": 0.449,
       "bands": [
-        0.5121,
-        0.3656,
-        0.5566,
-        0.424
+        1.0834,
+        0.5822,
+        0.5041,
+        0.3958
       ]
     },
     {
@@ -4487,7 +4403,21 @@
     {
       "beat": 36,
       "region": "intro",
-      "role": "single",
+      "role": "pair",
+      "peakSeconds": 22.55873,
+      "distanceMs": 42.73,
+      "strength": 0.4173,
+      "bands": [
+        1.329,
+        0.3277,
+        0.3755,
+        0.1677
+      ]
+    },
+    {
+      "beat": 36,
+      "region": "intro",
+      "role": "pair",
       "peakSeconds": 22.55873,
       "distanceMs": 42.73,
       "strength": 0.4173,
@@ -4513,20 +4443,6 @@
       ]
     },
     {
-      "beat": 37.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 23.471655,
-      "distanceMs": 18.155,
-      "strength": 0.4629,
-      "bands": [
-        1.1103,
-        0.5691,
-        0.5546,
-        0.2929
-      ]
-    },
-    {
       "beat": 38.5,
       "region": "intro",
       "role": "single",
@@ -4541,23 +4457,9 @@
       ]
     },
     {
-      "beat": 39,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 24.399546,
-      "distanceMs": 8.546,
-      "strength": 0.3092,
-      "bands": [
-        0.5486,
-        0.421,
-        0.5827,
-        0.3881
-      ]
-    },
-    {
       "beat": 40,
       "region": "intro",
-      "role": "single",
+      "role": "long",
       "peakSeconds": 25.033107,
       "distanceMs": 17.107,
       "strength": 0.4776,
@@ -4569,65 +4471,23 @@
       ]
     },
     {
-      "beat": 41,
+      "beat": 43,
       "region": "intro",
       "role": "single",
-      "peakSeconds": 25.641723,
-      "distanceMs": 0.723,
-      "strength": 0.5155,
+      "peakSeconds": 26.908844,
+      "distanceMs": 17.844,
+      "strength": 0.3038,
       "bands": [
-        0.5592,
-        0.8113,
-        1.1801,
-        0.5021
-      ]
-    },
-    {
-      "beat": 42,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 26.275283,
-      "distanceMs": 9.283,
-      "strength": 0.5538,
-      "bands": [
-        0.704,
-        0.7185,
-        1.1758,
-        0.5135
-      ]
-    },
-    {
-      "beat": 42.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 26.559637,
-      "distanceMs": -18.863,
-      "strength": 0.3603,
-      "bands": [
-        0.8472,
-        0.489,
-        0.4141,
-        0.3223
-      ]
-    },
-    {
-      "beat": 43.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 27.193197,
-      "distanceMs": -10.303,
-      "strength": 0.307,
-      "bands": [
-        0.5659,
-        0.4025,
-        0.4998,
-        0.4236
+        0.4557,
+        0.4499,
+        0.7146,
+        0.3677
       ]
     },
     {
       "beat": 44,
       "region": "intro",
-      "role": "single",
+      "role": "pair",
       "peakSeconds": 27.527438,
       "distanceMs": 11.438,
       "strength": 0.4699,
@@ -4639,17 +4499,17 @@
       ]
     },
     {
-      "beat": 44.5,
+      "beat": 44,
       "region": "intro",
-      "role": "single",
-      "peakSeconds": 27.866667,
-      "distanceMs": 38.167,
-      "strength": 0.3532,
+      "role": "pair",
+      "peakSeconds": 27.527438,
+      "distanceMs": 11.438,
+      "strength": 0.4699,
       "bands": [
-        0.3949,
-        0.5233,
-        0.9263,
-        0.5219
+        0.974,
+        0.6261,
+        0.825,
+        0.3135
       ]
     },
     {
@@ -4681,20 +4541,6 @@
       ]
     },
     {
-      "beat": 47,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 29.388209,
-      "distanceMs": -2.791,
-      "strength": 0.3614,
-      "bands": [
-        0.6007,
-        0.2972,
-        0.6558,
-        0.6323
-      ]
-    },
-    {
       "beat": 48,
       "region": "intro",
       "role": "gold",
@@ -4709,17 +4555,17 @@
       ]
     },
     {
-      "beat": 49.5,
+      "beat": 49,
       "region": "intro",
       "role": "single",
-      "peakSeconds": 30.964626,
-      "distanceMs": 11.126,
-      "strength": 0.5738,
+      "peakSeconds": 30.655329,
+      "distanceMs": 14.329,
+      "strength": 0.4638,
       "bands": [
-        0.6926,
-        1.9204,
-        0.7842,
-        0.3598
+        0.8021,
+        1.0381,
+        0.7562,
+        0.3527
       ]
     },
     {
@@ -4753,7 +4599,21 @@
     {
       "beat": 52,
       "region": "intro",
-      "role": "single",
+      "role": "pair",
+      "peakSeconds": 32.521088,
+      "distanceMs": 5.088,
+      "strength": 0.4252,
+      "bands": [
+        1.0708,
+        0.7032,
+        0.3953,
+        0.3388
+      ]
+    },
+    {
+      "beat": 52,
+      "region": "intro",
+      "role": "pair",
       "peakSeconds": 32.521088,
       "distanceMs": 5.088,
       "strength": 0.4252,
@@ -4779,20 +4639,6 @@
       ]
     },
     {
-      "beat": 53.5,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 33.439002,
-      "distanceMs": -14.498,
-      "strength": 0.3304,
-      "bands": [
-        0.6275,
-        0.619,
-        0.6448,
-        0.3089
-      ]
-    },
-    {
       "beat": 54.5,
       "region": "intro",
       "role": "single",
@@ -4804,20 +4650,6 @@
         0.7004,
         0.8059,
         0.3387
-      ]
-    },
-    {
-      "beat": 55,
-      "region": "intro",
-      "role": "single",
-      "peakSeconds": 34.401814,
-      "distanceMs": 10.814,
-      "strength": 0.3694,
-      "bands": [
-        0.7361,
-        0.5925,
-        0.5337,
-        0.3747
       ]
     },
     {
@@ -4891,20 +4723,6 @@
       ]
     },
     {
-      "beat": 69.5,
-      "region": "entry",
-      "role": "single",
-      "peakSeconds": 42.528345,
-      "distanceMs": 12.345,
-      "strength": 0.4278,
-      "bands": [
-        0.092,
-        0.9799,
-        1.2818,
-        0.4362
-      ]
-    },
-    {
       "beat": 70,
       "region": "entry",
       "role": "single",
@@ -4916,20 +4734,6 @@
         0.6734,
         0.7967,
         0.6522
-      ]
-    },
-    {
-      "beat": 70.5,
-      "region": "entry",
-      "role": "single",
-      "peakSeconds": 42.977324,
-      "distanceMs": 6.779,
-      "strength": 0.7229,
-      "bands": [
-        0.3957,
-        0.727,
-        1.6146,
-        0.9177
       ]
     },
     {
@@ -4947,23 +4751,9 @@
       ]
     },
     {
-      "beat": 71.5,
-      "region": "entry",
-      "role": "single",
-      "peakSeconds": 43.436281,
-      "distanceMs": 11.19,
-      "strength": 0.6513,
-      "bands": [
-        0.2826,
-        1.2557,
-        0.981,
-        0.8813
-      ]
-    },
-    {
       "beat": 72,
       "region": "entry",
-      "role": "single",
+      "role": "gold",
       "peakSeconds": 43.660771,
       "distanceMs": 8.407,
       "strength": 0.6473,
@@ -4989,20 +4779,6 @@
       ]
     },
     {
-      "beat": 73.5,
-      "region": "entry",
-      "role": "single",
-      "peakSeconds": 44.344218,
-      "distanceMs": 10.036,
-      "strength": 0.5815,
-      "bands": [
-        0.0592,
-        1.8329,
-        0.808,
-        0.6355
-      ]
-    },
-    {
       "beat": 74,
       "region": "entry",
       "role": "single",
@@ -5014,20 +4790,6 @@
         0.4555,
         0.9019,
         0.6366
-      ]
-    },
-    {
-      "beat": 74.5,
-      "region": "entry",
-      "role": "single",
-      "peakSeconds": 44.798186,
-      "distanceMs": 9.459,
-      "strength": 0.6892,
-      "bands": [
-        0.3169,
-        0.9488,
-        1.077,
-        0.9621
       ]
     },
     {
@@ -5045,23 +4807,23 @@
       ]
     },
     {
-      "beat": 75.5,
+      "beat": 76,
       "region": "entry",
-      "role": "single",
-      "peakSeconds": 45.252154,
-      "distanceMs": 8.881,
-      "strength": 0.6393,
+      "role": "pair",
+      "peakSeconds": 45.476644,
+      "distanceMs": 6.099,
+      "strength": 0.6453,
       "bands": [
-        0.196,
-        0.5374,
-        0.9163,
-        1.201
+        0.2323,
+        1.138,
+        1.5774,
+        0.5381
       ]
     },
     {
       "beat": 76,
       "region": "entry",
-      "role": "single",
+      "role": "pair",
       "peakSeconds": 45.476644,
       "distanceMs": 6.099,
       "strength": 0.6453,
@@ -5087,20 +4849,6 @@
       ]
     },
     {
-      "beat": 77.5,
-      "region": "entry",
-      "role": "single",
-      "peakSeconds": 46.160091,
-      "distanceMs": 7.727,
-      "strength": 0.5526,
-      "bands": [
-        0.1718,
-        1.665,
-        1.2008,
-        0.2597
-      ]
-    },
-    {
       "beat": 78,
       "region": "entry",
       "role": "single",
@@ -5112,20 +4860,6 @@
         0.7299,
         0.7524,
         0.4244
-      ]
-    },
-    {
-      "beat": 78.5,
-      "region": "entry",
-      "role": "single",
-      "peakSeconds": 46.619048,
-      "distanceMs": 12.139,
-      "strength": 0.6991,
-      "bands": [
-        0.1041,
-        0.7342,
-        1.95,
-        0.7419
       ]
     },
     {
@@ -5143,23 +4877,9 @@
       ]
     },
     {
-      "beat": 79.5,
-      "region": "entry",
-      "role": "single",
-      "peakSeconds": 47.068027,
-      "distanceMs": 6.573,
-      "strength": 0.69,
-      "bands": [
-        0.2734,
-        1.1378,
-        1.0481,
-        0.915
-      ]
-    },
-    {
       "beat": 80,
       "region": "entry",
-      "role": "single",
+      "role": "long",
       "peakSeconds": 47.297506,
       "distanceMs": 8.778,
       "strength": 0.7603,
@@ -5168,62 +4888,6 @@
         1.1343,
         1.5614,
         0.5514
-      ]
-    },
-    {
-      "beat": 81,
-      "region": "entry",
-      "role": "single",
-      "peakSeconds": 47.751474,
-      "distanceMs": 8.201,
-      "strength": 0.8022,
-      "bands": [
-        1.1775,
-        0.937,
-        1.1977,
-        0.3897
-      ]
-    },
-    {
-      "beat": 81.5,
-      "region": "entry",
-      "role": "single",
-      "peakSeconds": 47.975964,
-      "distanceMs": 5.418,
-      "strength": 0.4284,
-      "bands": [
-        0.171,
-        1.0312,
-        0.947,
-        0.284
-      ]
-    },
-    {
-      "beat": 82,
-      "region": "entry",
-      "role": "single",
-      "peakSeconds": 48.205442,
-      "distanceMs": 7.624,
-      "strength": 0.7557,
-      "bands": [
-        0.8132,
-        0.5793,
-        1.1895,
-        0.7239
-      ]
-    },
-    {
-      "beat": 82.5,
-      "region": "entry",
-      "role": "single",
-      "peakSeconds": 48.434921,
-      "distanceMs": 9.83,
-      "strength": 0.6887,
-      "bands": [
-        0.147,
-        0.7595,
-        1.0956,
-        1.1186
       ]
     },
     {
@@ -5269,17 +4933,17 @@
       ]
     },
     {
-      "beat": 85.5,
+      "beat": 85,
       "region": "main",
       "role": "single",
-      "peakSeconds": 49.791837,
-      "distanceMs": 3.109,
-      "strength": 1.1865,
+      "peakSeconds": 49.567347,
+      "distanceMs": 5.892,
+      "strength": 0.454,
       "bands": [
-        2.5234,
-        0.5065,
-        0.9176,
-        1.1391
+        0.3306,
+        1.5953,
+        0.5959,
+        0.6347
       ]
     },
     {
@@ -5299,7 +4963,7 @@
     {
       "beat": 87,
       "region": "main",
-      "role": "single",
+      "role": "gold",
       "peakSeconds": 50.475283,
       "distanceMs": 4.738,
       "strength": 0.7949,
@@ -5308,20 +4972,6 @@
         0.7069,
         1.0102,
         0.4144
-      ]
-    },
-    {
-      "beat": 87.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 50.699773,
-      "distanceMs": 1.955,
-      "strength": 0.902,
-      "bands": [
-        2.3013,
-        0.4741,
-        0.716,
-        0.4318
       ]
     },
     {
@@ -5339,34 +4989,6 @@
       ]
     },
     {
-      "beat": 88.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 51.15873,
-      "distanceMs": 6.367,
-      "strength": 0.9896,
-      "bands": [
-        2.7777,
-        0.2428,
-        0.7711,
-        0.7522
-      ]
-    },
-    {
-      "beat": 89,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 51.358277,
-      "distanceMs": -21.36,
-      "strength": 0.615,
-      "bands": [
-        1.0831,
-        0.5412,
-        0.5264,
-        1.1341
-      ]
-    },
-    {
       "beat": 89.5,
       "region": "main",
       "role": "single",
@@ -5378,20 +5000,6 @@
         1.8632,
         1.2793,
         1.1763
-      ]
-    },
-    {
-      "beat": 90.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 52.071655,
-      "distanceMs": 10.201,
-      "strength": 0.8972,
-      "bands": [
-        2.2098,
-        0.5296,
-        0.9235,
-        0.8475
       ]
     },
     {
@@ -5437,17 +5045,17 @@
       ]
     },
     {
-      "beat": 93.5,
+      "beat": 93,
       "region": "main",
       "role": "single",
-      "peakSeconds": 53.428571,
-      "distanceMs": 3.481,
-      "strength": 1.5893,
+      "peakSeconds": 53.239002,
+      "distanceMs": 41.184,
+      "strength": 0.5719,
       "bands": [
-        0.7441,
-        1.6928,
-        2.4269,
-        2.6225
+        1.1108,
+        0.9673,
+        0.6191,
+        0.7731
       ]
     },
     {
@@ -5507,45 +5115,17 @@
       ]
     },
     {
-      "beat": 97.5,
+      "beat": 98.5,
       "region": "main",
       "role": "single",
-      "peakSeconds": 55.249433,
-      "distanceMs": 6.16,
-      "strength": 1.8105,
+      "peakSeconds": 55.698413,
+      "distanceMs": 0.595,
+      "strength": 0.5667,
       "bands": [
-        1.1068,
-        2.2882,
-        2.1894,
-        2.7743
-      ]
-    },
-    {
-      "beat": 98,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 55.473923,
-      "distanceMs": 3.377,
-      "strength": 0.7477,
-      "bands": [
-        1.6158,
-        0.629,
-        0.7923,
-        0.7535
-      ]
-    },
-    {
-      "beat": 99,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 55.927891,
-      "distanceMs": 2.8,
-      "strength": 1.7186,
-      "bands": [
-        1.0017,
-        1.7696,
-        2.7077,
-        2.5051
+        0.7638,
+        0.89,
+        0.7109,
+        0.8929
       ]
     },
     {
@@ -5577,17 +5157,17 @@
       ]
     },
     {
-      "beat": 101.5,
+      "beat": 101,
       "region": "main",
       "role": "single",
-      "peakSeconds": 57.065306,
-      "distanceMs": 3.852,
-      "strength": 1.9222,
+      "peakSeconds": 56.840816,
+      "distanceMs": 6.635,
+      "strength": 0.9547,
       "bands": [
-        0.6581,
-        2.2409,
-        2.9487,
-        3.0725
+        1.9945,
+        1.0992,
+        1.0888,
+        0.6832
       ]
     },
     {
@@ -5607,7 +5187,7 @@
     {
       "beat": 103,
       "region": "main",
-      "role": "single",
+      "role": "gold",
       "peakSeconds": 57.748753,
       "distanceMs": 5.48,
       "strength": 1.8542,
@@ -5619,23 +5199,9 @@
       ]
     },
     {
-      "beat": 103.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 57.978231,
-      "distanceMs": 7.686,
-      "strength": 0.7834,
-      "bands": [
-        1.4604,
-        0.6602,
-        0.9653,
-        0.8474
-      ]
-    },
-    {
       "beat": 104,
       "region": "main",
-      "role": "single",
+      "role": "long",
       "peakSeconds": 58.202721,
       "distanceMs": 4.903,
       "strength": 1.5383,
@@ -5644,62 +5210,6 @@
         1.3287,
         2.4196,
         2.5995
-      ]
-    },
-    {
-      "beat": 104.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 58.437188,
-      "distanceMs": 12.097,
-      "strength": 0.3319,
-      "bands": [
-        0.1911,
-        0.9855,
-        0.6889,
-        0.6214
-      ]
-    },
-    {
-      "beat": 105,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 58.656689,
-      "distanceMs": 4.326,
-      "strength": 0.9509,
-      "bands": [
-        1.7914,
-        1.1189,
-        0.5316,
-        1.0211
-      ]
-    },
-    {
-      "beat": 105.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 58.881179,
-      "distanceMs": 1.543,
-      "strength": 2.0251,
-      "bands": [
-        0.8958,
-        2.3241,
-        2.3735,
-        3.339
-      ]
-    },
-    {
-      "beat": 106.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 59.340136,
-      "distanceMs": 5.954,
-      "strength": 0.5546,
-      "bands": [
-        0.8376,
-        0.825,
-        0.6329,
-        0.8964
       ]
     },
     {
@@ -5745,17 +5255,17 @@
       ]
     },
     {
-      "beat": 109.5,
+      "beat": 109,
       "region": "main",
       "role": "single",
-      "peakSeconds": 60.702041,
-      "distanceMs": 4.223,
-      "strength": 1.9666,
+      "peakSeconds": 60.502494,
+      "distanceMs": 31.949,
+      "strength": 0.4844,
       "bands": [
-        0.4659,
-        2.6792,
-        3.3677,
-        2.8511
+        1.1523,
+        0.3559,
+        0.4713,
+        0.655
       ]
     },
     {
@@ -5789,7 +5299,21 @@
     {
       "beat": 112,
       "region": "main",
-      "role": "single",
+      "role": "pair",
+      "peakSeconds": 61.839456,
+      "distanceMs": 5.274,
+      "strength": 2.4136,
+      "bands": [
+        2.0483,
+        2.086,
+        2.7787,
+        3.2979
+      ]
+    },
+    {
+      "beat": 112,
+      "region": "main",
+      "role": "pair",
       "peakSeconds": 61.839456,
       "distanceMs": 5.274,
       "strength": 2.4136,
@@ -5815,45 +5339,17 @@
       ]
     },
     {
-      "beat": 113.5,
+      "beat": 114.5,
       "region": "main",
       "role": "single",
-      "peakSeconds": 62.517914,
-      "distanceMs": 1.914,
-      "strength": 2.2932,
+      "peakSeconds": 62.996825,
+      "distanceMs": 26.28,
+      "strength": 0.6459,
       "bands": [
-        1.1529,
-        2.1827,
-        3.2486,
-        3.5016
-      ]
-    },
-    {
-      "beat": 114,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 62.752381,
-      "distanceMs": 9.108,
-      "strength": 0.4057,
-      "bands": [
-        0.2471,
-        0.9173,
-        0.7455,
-        0.841
-      ]
-    },
-    {
-      "beat": 115,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 63.201361,
-      "distanceMs": 3.542,
-      "strength": 1.7038,
-      "bands": [
-        0.9037,
-        1.5299,
-        2.8108,
-        2.5152
+        1.1809,
+        0.9229,
+        0.6,
+        0.7173
       ]
     },
     {
@@ -5885,17 +5381,17 @@
       ]
     },
     {
-      "beat": 117.5,
+      "beat": 117,
       "region": "main",
       "role": "single",
-      "peakSeconds": 64.338776,
-      "distanceMs": 4.594,
-      "strength": 1.7828,
+      "peakSeconds": 64.114286,
+      "distanceMs": 7.377,
+      "strength": 1.0346,
       "bands": [
-        0.3864,
-        2.4065,
-        3.2815,
-        2.5206
+        3.0098,
+        0.3551,
+        0.5956,
+        0.5003
       ]
     },
     {
@@ -5915,7 +5411,7 @@
     {
       "beat": 119,
       "region": "main",
-      "role": "single",
+      "role": "gold",
       "peakSeconds": 65.017234,
       "distanceMs": 1.234,
       "strength": 1.716,
@@ -5927,23 +5423,9 @@
       ]
     },
     {
-      "beat": 119.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 65.246712,
-      "distanceMs": 3.439,
-      "strength": 1.008,
-      "bands": [
-        2.4003,
-        0.565,
-        0.4939,
-        0.8953
-      ]
-    },
-    {
       "beat": 120,
       "region": "main",
-      "role": "single",
+      "role": "long",
       "peakSeconds": 65.471202,
       "distanceMs": 0.656,
       "strength": 2.2662,
@@ -5952,62 +5434,6 @@
         1.9289,
         3.3981,
         3.3303
-      ]
-    },
-    {
-      "beat": 120.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 65.705669,
-      "distanceMs": 7.851,
-      "strength": 0.604,
-      "bands": [
-        0.3271,
-        0.4015,
-        1.0844,
-        1.3513
-      ]
-    },
-    {
-      "beat": 121,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 65.930159,
-      "distanceMs": 5.068,
-      "strength": 1.3204,
-      "bands": [
-        2.8958,
-        0.5349,
-        1.0662,
-        1.1347
-      ]
-    },
-    {
-      "beat": 121.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 66.154649,
-      "distanceMs": 2.285,
-      "strength": 2.7075,
-      "bands": [
-        1.7152,
-        3.2454,
-        3.4843,
-        3.5973
-      ]
-    },
-    {
-      "beat": 122.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 66.613605,
-      "distanceMs": 6.696,
-      "strength": 0.7561,
-      "bands": [
-        1.6244,
-        0.6512,
-        0.8702,
-        0.6566
       ]
     },
     {
@@ -6053,17 +5479,17 @@
       ]
     },
     {
-      "beat": 125.5,
+      "beat": 125,
       "region": "main",
       "role": "single",
-      "peakSeconds": 67.97551,
-      "distanceMs": 4.965,
-      "strength": 1.9429,
+      "peakSeconds": 67.770975,
+      "distanceMs": 27.702,
+      "strength": 0.2862,
       "bands": [
-        0.82,
-        2.3609,
-        3.3809,
-        2.5981
+        0.5755,
+        0.4975,
+        0.3924,
+        0.5856
       ]
     },
     {
@@ -6097,7 +5523,21 @@
     {
       "beat": 128,
       "region": "main",
-      "role": "single",
+      "role": "pair",
+      "peakSeconds": 69.112925,
+      "distanceMs": 6.016,
+      "strength": 2.1662,
+      "bands": [
+        2.2465,
+        2.1189,
+        2.7087,
+        2.3961
+      ]
+    },
+    {
+      "beat": 128,
+      "region": "main",
+      "role": "pair",
       "peakSeconds": 69.112925,
       "distanceMs": 6.016,
       "strength": 2.1662,
@@ -6123,45 +5563,17 @@
       ]
     },
     {
-      "beat": 129.5,
+      "beat": 130.5,
       "region": "main",
       "role": "single",
-      "peakSeconds": 69.791383,
-      "distanceMs": 2.656,
-      "strength": 2.1358,
+      "peakSeconds": 70.25034,
+      "distanceMs": 7.067,
+      "strength": 0.5324,
       "bands": [
-        0.8471,
-        3.2251,
-        2.8549,
-        3.06
-      ]
-    },
-    {
-      "beat": 130,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 70.005896,
-      "distanceMs": -10.104,
-      "strength": 0.2958,
-      "bands": [
-        0.268,
-        0.4381,
-        0.5927,
-        0.7961
-      ]
-    },
-    {
-      "beat": 131,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 70.47483,
-      "distanceMs": 4.284,
-      "strength": 1.8639,
-      "bands": [
-        1.3522,
-        1.7996,
-        2.6926,
-        2.4808
+        0.8115,
+        0.5077,
+        0.4722,
+        0.8733
       ]
     },
     {
@@ -6193,17 +5605,17 @@
       ]
     },
     {
-      "beat": 133.5,
+      "beat": 133,
       "region": "main",
       "role": "single",
-      "peakSeconds": 71.607256,
-      "distanceMs": 0.347,
-      "strength": 2.3733,
+      "peakSeconds": 71.387755,
+      "distanceMs": 8.119,
+      "strength": 1.0092,
       "bands": [
-        0.7084,
-        2.6089,
-        4.9326,
-        2.9342
+        2.8333,
+        0.4795,
+        0.5337,
+        0.6199
       ]
     },
     {
@@ -6263,20 +5675,6 @@
       ]
     },
     {
-      "beat": 137,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 73.203628,
-      "distanceMs": 5.81,
-      "strength": 0.9149,
-      "bands": [
-        2.1774,
-        0.5584,
-        0.479,
-        0.9302
-      ]
-    },
-    {
       "beat": 137.5,
       "region": "main",
       "role": "single",
@@ -6288,20 +5686,6 @@
         1.935,
         2.7038,
         2.7499
-      ]
-    },
-    {
-      "beat": 138.5,
-      "region": "main",
-      "role": "single",
-      "peakSeconds": 73.887075,
-      "distanceMs": 7.438,
-      "strength": 1.0561,
-      "bands": [
-        2.6951,
-        0.6088,
-        0.6193,
-        0.9223
       ]
     },
     {
@@ -6333,17 +5717,17 @@
       ]
     },
     {
-      "beat": 143.5,
+      "beat": 143,
       "region": "break",
       "role": "single",
-      "peakSeconds": 76.161905,
-      "distanceMs": 9.541,
-      "strength": 1.134,
+      "peakSeconds": 75.932426,
+      "distanceMs": 7.335,
+      "strength": 1.0293,
       "bands": [
-        0.8768,
-        1.8956,
-        2.1239,
-        0.9296
+        1.0088,
+        1.1688,
+        1.6616,
+        1.0937
       ]
     },
     {
@@ -6389,17 +5773,17 @@
       ]
     },
     {
-      "beat": 146.5,
+      "beat": 147,
       "region": "break",
       "role": "single",
-      "peakSeconds": 77.52381,
-      "distanceMs": 7.81,
-      "strength": 1.2813,
+      "peakSeconds": 77.748299,
+      "distanceMs": 5.027,
+      "strength": 0.7866,
       "bands": [
-        1.3215,
-        1.5683,
-        2.002,
-        1.1248
+        1.742,
+        0.3729,
+        1.1574,
+        0.3603
       ]
     },
     {
@@ -6417,23 +5801,23 @@
       ]
     },
     {
-      "beat": 151.5,
+      "beat": 151,
       "region": "break",
       "role": "single",
-      "peakSeconds": 79.793651,
-      "distanceMs": 4.924,
-      "strength": 1.6164,
+      "peakSeconds": 79.569161,
+      "distanceMs": 7.706,
+      "strength": 1.1425,
       "bands": [
-        1.794,
-        2.196,
-        2.3651,
-        1.2155
+        1.4144,
+        0.8194,
+        1.9115,
+        1.0303
       ]
     },
     {
       "beat": 152,
       "region": "rise",
-      "role": "single",
+      "role": "pair",
       "peakSeconds": 80.023129,
       "distanceMs": 7.129,
       "strength": 1.2775,
@@ -6445,17 +5829,17 @@
       ]
     },
     {
-      "beat": 152.5,
+      "beat": 152,
       "region": "rise",
-      "role": "single",
-      "peakSeconds": 80.252608,
-      "distanceMs": 9.335,
-      "strength": 0.9399,
+      "role": "pair",
+      "peakSeconds": 80.023129,
+      "distanceMs": 7.129,
+      "strength": 1.2775,
       "bands": [
-        2.2096,
-        0.72,
-        1.0994,
-        0.7364
+        1.5084,
+        2.0458,
+        1.3448,
+        1.4352
       ]
     },
     {
@@ -6475,7 +5859,7 @@
     {
       "beat": 154,
       "region": "rise",
-      "role": "single",
+      "role": "gold",
       "peakSeconds": 80.965986,
       "distanceMs": 40.895,
       "strength": 0.4737,
@@ -6484,20 +5868,6 @@
         0.5542,
         0.5899,
         0.6166
-      ]
-    },
-    {
-      "beat": 154.5,
-      "region": "rise",
-      "role": "single",
-      "peakSeconds": 81.165533,
-      "distanceMs": 13.169,
-      "strength": 1.1097,
-      "bands": [
-        1.2242,
-        1.5494,
-        1.7522,
-        1.3494
       ]
     },
     {
@@ -6517,7 +5887,7 @@
     {
       "beat": 156,
       "region": "rise",
-      "role": "single",
+      "role": "long",
       "peakSeconds": 81.839002,
       "distanceMs": 4.82,
       "strength": 1.2799,
@@ -6526,62 +5896,6 @@
         0.5509,
         1.0002,
         1.7559
-      ]
-    },
-    {
-      "beat": 157,
-      "region": "rise",
-      "role": "single",
-      "peakSeconds": 82.292971,
-      "distanceMs": 4.243,
-      "strength": 1.9135,
-      "bands": [
-        1.2179,
-        2.4137,
-        2.5283,
-        2.6965
-      ]
-    },
-    {
-      "beat": 157.5,
-      "region": "rise",
-      "role": "single",
-      "peakSeconds": 82.522449,
-      "distanceMs": 6.449,
-      "strength": 0.824,
-      "bands": [
-        1.4172,
-        1.1885,
-        0.9097,
-        0.802
-      ]
-    },
-    {
-      "beat": 158,
-      "region": "rise",
-      "role": "single",
-      "peakSeconds": 82.746939,
-      "distanceMs": 3.666,
-      "strength": 1.2535,
-      "bands": [
-        3.049,
-        0.8893,
-        0.9248,
-        0.7238
-      ]
-    },
-    {
-      "beat": 159,
-      "region": "rise",
-      "role": "single",
-      "peakSeconds": 83.200907,
-      "distanceMs": 3.089,
-      "strength": 2.2486,
-      "bands": [
-        0.1373,
-        2.6485,
-        3.5209,
-        3.7651
       ]
     },
     {
@@ -6613,20 +5927,6 @@
       ]
     },
     {
-      "beat": 160.5,
-      "region": "rise",
-      "role": "single",
-      "peakSeconds": 83.884354,
-      "distanceMs": 4.717,
-      "strength": 1.0867,
-      "bands": [
-        2.2598,
-        0.5536,
-        1.0303,
-        0.9177
-      ]
-    },
-    {
       "beat": 161,
       "region": "rise",
       "role": "single",
@@ -6643,7 +5943,7 @@
     {
       "beat": 162,
       "region": "rise",
-      "role": "single",
+      "role": "gold",
       "peakSeconds": 84.5678,
       "distanceMs": 6.346,
       "strength": 1.0175,
@@ -6652,20 +5952,6 @@
         0.9841,
         1.2745,
         0.888
-      ]
-    },
-    {
-      "beat": 162.5,
-      "region": "rise",
-      "role": "single",
-      "peakSeconds": 84.797279,
-      "distanceMs": 8.552,
-      "strength": 1.45,
-      "bands": [
-        2.3176,
-        1.6354,
-        1.8473,
-        0.9696
       ]
     },
     {
@@ -6685,7 +5971,21 @@
     {
       "beat": 164,
       "region": "rise",
-      "role": "single",
+      "role": "pair",
+      "peakSeconds": 85.475737,
+      "distanceMs": 5.192,
+      "strength": 1.1109,
+      "bands": [
+        2.6063,
+        0.6238,
+        0.7141,
+        0.8352
+      ]
+    },
+    {
+      "beat": 164,
+      "region": "rise",
+      "role": "pair",
       "peakSeconds": 85.475737,
       "distanceMs": 5.192,
       "strength": 1.1109,
@@ -6711,20 +6011,6 @@
       ]
     },
     {
-      "beat": 165.5,
-      "region": "rise",
-      "role": "single",
-      "peakSeconds": 86.169161,
-      "distanceMs": 16.797,
-      "strength": 0.5853,
-      "bands": [
-        0.4156,
-        1.2174,
-        1.5341,
-        0.5296
-      ]
-    },
-    {
       "beat": 166,
       "region": "rise",
       "role": "single",
@@ -6736,20 +6022,6 @@
         0.6614,
         0.9875,
         0.9593
-      ]
-    },
-    {
-      "beat": 167,
-      "region": "rise",
-      "role": "single",
-      "peakSeconds": 86.837642,
-      "distanceMs": 3.46,
-      "strength": 2.3165,
-      "bands": [
-        0.9063,
-        2.5307,
-        3.2813,
-        3.4071
       ]
     },
     {
@@ -6781,20 +6053,6 @@
       ]
     },
     {
-      "beat": 168.5,
-      "region": "rise",
-      "role": "single",
-      "peakSeconds": 87.526077,
-      "distanceMs": 10.077,
-      "strength": 0.8232,
-      "bands": [
-        2.0278,
-        0.4288,
-        1.0458,
-        0.6276
-      ]
-    },
-    {
       "beat": 169,
       "region": "rise",
       "role": "single",
@@ -6811,7 +6069,7 @@
     {
       "beat": 170,
       "region": "rise",
-      "role": "single",
+      "role": "gold",
       "peakSeconds": 88.154649,
       "distanceMs": -43.17,
       "strength": 0.3941,
@@ -6820,20 +6078,6 @@
         1.0908,
         0.9082,
         0.5683
-      ]
-    },
-    {
-      "beat": 170.5,
-      "region": "rise",
-      "role": "single",
-      "peakSeconds": 88.429025,
-      "distanceMs": 3.934,
-      "strength": 2.3303,
-      "bands": [
-        0.8224,
-        2.9759,
-        3.2597,
-        3.5472
       ]
     },
     {
@@ -6879,20 +6123,6 @@
       ]
     },
     {
-      "beat": 173,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 89.56644,
-      "distanceMs": 4.985,
-      "strength": 0.552,
-      "bands": [
-        0.8756,
-        0.9013,
-        0.8968,
-        0.8292
-      ]
-    },
-    {
       "beat": 173.5,
       "region": "final",
       "role": "single",
@@ -6907,23 +6137,9 @@
       ]
     },
     {
-      "beat": 174.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 90.214966,
-      "distanceMs": -28.307,
-      "strength": 0.4129,
-      "bands": [
-        0.586,
-        0.5984,
-        0.8978,
-        0.7213
-      ]
-    },
-    {
       "beat": 175,
       "region": "final",
-      "role": "single",
+      "role": "gold",
       "peakSeconds": 90.474376,
       "distanceMs": 3.831,
       "strength": 1.3077,
@@ -6935,23 +6151,9 @@
       ]
     },
     {
-      "beat": 175.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 90.703855,
-      "distanceMs": 6.037,
-      "strength": 1.4052,
-      "bands": [
-        2.3777,
-        1.0861,
-        1.5468,
-        1.3333
-      ]
-    },
-    {
       "beat": 176,
       "region": "final",
-      "role": "single",
+      "role": "pair",
       "peakSeconds": 90.928345,
       "distanceMs": 3.254,
       "strength": 1.7351,
@@ -6963,31 +6165,31 @@
       ]
     },
     {
-      "beat": 176.5,
+      "beat": 176,
       "region": "final",
-      "role": "single",
-      "peakSeconds": 91.162812,
-      "distanceMs": 10.448,
-      "strength": 0.6298,
+      "role": "pair",
+      "peakSeconds": 90.928345,
+      "distanceMs": 3.254,
+      "strength": 1.7351,
       "bands": [
-        1.4226,
-        0.5294,
-        1.0393,
-        0.6703
+        0.5667,
+        1.4352,
+        2.5284,
+        3.2095
       ]
     },
     {
-      "beat": 177.5,
+      "beat": 177,
       "region": "final",
       "role": "single",
-      "peakSeconds": 91.611791,
-      "distanceMs": 4.882,
-      "strength": 1.2183,
+      "peakSeconds": 91.417234,
+      "distanceMs": 37.597,
+      "strength": 0.6415,
       "bands": [
-        0.7727,
-        2.1304,
-        1.842,
-        1.83
+        1.1299,
+        0.5985,
+        0.5255,
+        1.2975
       ]
     },
     {
@@ -7002,20 +6204,6 @@
         1.799,
         1.2862,
         1.1306
-      ]
-    },
-    {
-      "beat": 178.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 92.06576,
-      "distanceMs": 4.305,
-      "strength": 1.0088,
-      "bands": [
-        0.9472,
-        1.5254,
-        1.7399,
-        1.3204
       ]
     },
     {
@@ -7075,51 +6263,23 @@
       ]
     },
     {
-      "beat": 181.5,
+      "beat": 182.5,
       "region": "final",
       "role": "single",
-      "peakSeconds": 93.427664,
-      "distanceMs": 2.573,
-      "strength": 1.1897,
+      "peakSeconds": 93.871655,
+      "distanceMs": -7.981,
+      "strength": 0.5666,
       "bands": [
-        1.0622,
-        1.1105,
-        1.7725,
-        1.987
-      ]
-    },
-    {
-      "beat": 182,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 93.657143,
-      "distanceMs": 4.779,
-      "strength": 0.8246,
-      "bands": [
-        1.8012,
-        1.3079,
-        0.6394,
-        0.8315
-      ]
-    },
-    {
-      "beat": 183,
-      "region": "final",
-      "role": "gold",
-      "peakSeconds": 94.101134,
-      "distanceMs": -5.775,
-      "strength": 1.0298,
-      "bands": [
-        0.8892,
-        1.5219,
-        1.7146,
-        1.5459
+        1.2233,
+        0.7384,
+        0.6188,
+        0.8171
       ]
     },
     {
       "beat": 184,
       "region": "final",
-      "role": "single",
+      "role": "pair",
       "peakSeconds": 94.565079,
       "distanceMs": 3.625,
       "strength": 1.6174,
@@ -7131,31 +6291,31 @@
       ]
     },
     {
-      "beat": 184.5,
+      "beat": 184,
       "region": "final",
-      "role": "single",
-      "peakSeconds": 94.799546,
-      "distanceMs": 10.819,
-      "strength": 0.6236,
+      "role": "pair",
+      "peakSeconds": 94.565079,
+      "distanceMs": 3.625,
+      "strength": 1.6174,
       "bands": [
-        1.7743,
-        0.5585,
-        0.5513,
-        0.5365
+        1.3012,
+        1.6299,
+        2.0755,
+        2.4526
       ]
     },
     {
-      "beat": 185.5,
+      "beat": 185,
       "region": "final",
       "role": "single",
-      "peakSeconds": 95.253515,
-      "distanceMs": 10.242,
-      "strength": 0.5715,
+      "peakSeconds": 95.043991,
+      "distanceMs": 27.991,
+      "strength": 0.595,
       "bands": [
-        0.477,
-        1.8399,
-        0.6511,
-        0.9294
+        1.1698,
+        0.9473,
+        0.5401,
+        0.8793
       ]
     },
     {
@@ -7170,20 +6330,6 @@
         0.5763,
         0.8301,
         0.9722
-      ]
-    },
-    {
-      "beat": 186.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 95.707483,
-      "distanceMs": 9.665,
-      "strength": 0.7973,
-      "bands": [
-        1.4867,
-        0.9672,
-        0.9424,
-        0.8288
       ]
     },
     {
@@ -7229,20 +6375,6 @@
       ]
     },
     {
-      "beat": 189,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 96.854875,
-      "distanceMs": 20.693,
-      "strength": 0.5517,
-      "bands": [
-        0.9969,
-        0.5906,
-        0.9263,
-        0.8698
-      ]
-    },
-    {
       "beat": 189.5,
       "region": "final",
       "role": "single",
@@ -7257,23 +6389,9 @@
       ]
     },
     {
-      "beat": 190.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 97.528345,
-      "distanceMs": 12.345,
-      "strength": 0.5265,
-      "bands": [
-        0.2395,
-        1.3545,
-        1.1171,
-        0.8599
-      ]
-    },
-    {
       "beat": 191,
       "region": "final",
-      "role": "single",
+      "role": "gold",
       "peakSeconds": 97.747846,
       "distanceMs": 4.573,
       "strength": 1.4433,
@@ -7285,23 +6403,9 @@
       ]
     },
     {
-      "beat": 191.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 97.977324,
-      "distanceMs": 6.779,
-      "strength": 1.0373,
-      "bands": [
-        2.6966,
-        0.8157,
-        0.475,
-        0.8002
-      ]
-    },
-    {
       "beat": 192,
       "region": "final",
-      "role": "single",
+      "role": "long",
       "peakSeconds": 98.206803,
       "distanceMs": 8.985,
       "strength": 0.7901,
@@ -7310,62 +6414,6 @@
         1.2726,
         1.8886,
         1.3386
-      ]
-    },
-    {
-      "beat": 192.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 98.426304,
-      "distanceMs": 1.213,
-      "strength": 0.5445,
-      "bands": [
-        0.7525,
-        0.8174,
-        0.7434,
-        1.0423
-      ]
-    },
-    {
-      "beat": 193.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 98.885261,
-      "distanceMs": 5.624,
-      "strength": 1.6219,
-      "bands": [
-        1.0489,
-        2.2166,
-        2.1655,
-        2.3047
-      ]
-    },
-    {
-      "beat": 194,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 99.114739,
-      "distanceMs": 7.83,
-      "strength": 0.8154,
-      "bands": [
-        2.0571,
-        0.2887,
-        0.8577,
-        0.6852
-      ]
-    },
-    {
-      "beat": 194.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 99.339229,
-      "distanceMs": 5.047,
-      "strength": 1.3393,
-      "bands": [
-        0.1468,
-        1.83,
-        2.5138,
-        2.1765
       ]
     },
     {
@@ -7425,45 +6473,17 @@
       ]
     },
     {
-      "beat": 197.5,
+      "beat": 198.5,
       "region": "final",
       "role": "single",
-      "peakSeconds": 100.706122,
-      "distanceMs": 8.304,
-      "strength": 0.9838,
+      "peakSeconds": 101.155102,
+      "distanceMs": 2.738,
+      "strength": 0.5254,
       "bands": [
-        0.5025,
-        1.7546,
-        1.8429,
-        1.595
-      ]
-    },
-    {
-      "beat": 198,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 100.935601,
-      "distanceMs": 10.51,
-      "strength": 0.568,
-      "bands": [
-        0.5717,
-        1.2226,
-        0.7665,
-        1.1742
-      ]
-    },
-    {
-      "beat": 199,
-      "region": "final",
-      "role": "gold",
-      "peakSeconds": 101.38458,
-      "distanceMs": 4.944,
-      "strength": 0.9998,
-      "bands": [
-        0.2316,
-        1.1014,
-        2.1811,
-        1.8958
+        0.5878,
+        0.9307,
+        0.8979,
+        1.0715
       ]
     },
     {
@@ -7495,17 +6515,17 @@
       ]
     },
     {
-      "beat": 201.5,
+      "beat": 201,
       "region": "final",
       "role": "single",
-      "peakSeconds": 102.521995,
-      "distanceMs": 5.995,
-      "strength": 1.8847,
+      "peakSeconds": 102.307483,
+      "distanceMs": 18.756,
+      "strength": 0.6058,
       "bands": [
-        2.2373,
-        1.6485,
-        2.0799,
-        2.5546
+        0.9184,
+        1.0672,
+        0.8219,
+        0.9666
       ]
     },
     {
@@ -7520,20 +6540,6 @@
         1.0434,
         0.9092,
         0.9875
-      ]
-    },
-    {
-      "beat": 202.5,
-      "region": "final",
-      "role": "single",
-      "peakSeconds": 102.995918,
-      "distanceMs": 25.373,
-      "strength": 0.3602,
-      "bands": [
-        0.6858,
-        0.5274,
-        0.5274,
-        0.8188
       ]
     },
     {
