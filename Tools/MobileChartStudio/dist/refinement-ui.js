@@ -1,3 +1,4 @@
+import { transformRange } from './editing.js';
 import { refineChart, chartReport, noteSeek, beatSeek, chartWithBeatOrigin, safeBookmarks, filterProjects } from './refinement.js';
 import { formatTime } from './core.js';
 import { deleteProject, getAudio } from './storage.js';
@@ -6,22 +7,27 @@ export function installRefinementUI(context) {
   const {getState, mutate, stop, seek, persist, run, toast, selectNote, downloadBlob} = context;
   const $ = id => document.getElementById(id);
   let pending = null;
-  const operationNames = {shift:'時刻移動', height:'同時押しの高さ統一', counts:'同時ロングの回数統一', symmetry:'左右位置の対称化', snap:'近い拍へ補正', ends:'ロング終端を拍へ整列', delete:'区間削除', dedupe:'完全重複の除去', color:'色の変更', direction:'矢印の変更', longCount:'ロング回数の変更', position:'位置の移動', vertical:'上下反転'};
+  const operationNames = {alignTime:'同時押しの時刻統一',copy:'区間コピー',mirror:'左右反転',shift:'時刻移動', height:'同時押しの高さ統一', counts:'同時ロングの回数統一', symmetry:'左右位置の対称化', snap:'近い拍へ補正', ends:'ロング終端を拍へ整列', delete:'区間削除', dedupe:'完全重複の除去', color:'色の変更', direction:'矢印の変更', longCount:'ロング回数の変更', position:'位置の移動', vertical:'上下反転'};
 
-  function clearPreview() { pending = null; $('refineApply').disabled = true; $('refinePreview').textContent = '「変更内容を確認」で対象と変更件数を確認できます。'; }
+  function clearPreview() { pending = null; $('refineApply').disabled = true; $('refineTargetCount').textContent=''; $('refinePreview').textContent = '「変更内容を確認」で対象と変更件数を確認できます。'; }
   function showRefinement() {
-    if (!getState().project) return; stop(); clearPreview(); $('refineDialog').showModal();
+    if (!getState().project) return; stop(); $('refineStart').value=$('rangeStart').value;$('refineEnd').value=$('rangeEnd').value;clearPreview(); $('refineDialog').showModal();
   }
   function preview() {
     stop(); const {chart, audio} = getState(), scope = {color:$('refineColor').value};
     if ($('refineScope').value === 'range') {
-      const start = Number($('rangeStart').value), end = Number($('rangeEnd').value);
-      if (!Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || end > audio.duration + .001) throw new Error('録音画面の開始A・終了Bを先に指定してください。');
+      const start = Number($('refineStart').value), end = Number($('refineEnd').value);
+      if ($('refineStart').value==='' || $('refineEnd').value==='' || !Number.isFinite(start) || !Number.isFinite(end) || start < 0 || end <= start || end > audio.duration + .001) throw new Error('開始A・終了Bを音源内で指定してください。');
       Object.assign(scope, {start, end});
     }
     const kind = $('refineKind').value;
+    if(['snap','ends'].includes(kind)&&getState().bpmConfirmed===false)throw new Error('先に曲設定でBPMを確定してください。未設定の拍にはそろえません。');
+    const required={shift:['refineShift'],copy:['refineDestination'],position:['refineX','refineY'],longCount:['refineLongCount']}[kind]||[];
+    if(required.some(id=>$(id).value===''))throw new Error('変更量を入力してください。空欄のまま適用できません。');
     const operation = {kind, ms:Number($('refineShift').value), toleranceMs:Number($('chordTolerance').value), step:Number($('refineGrid').value), windowMs:Number($('refineWindow').value), color:$('refineNewColor').value, direction:$('refineDirection').value, count:Number($('refineLongCount').value), x:Number($('refineX').value), y:Number($('refineY').value)};
-    const result = refineChart(chart, scope, operation, audio.duration);
+    let result;
+    if(kind==='copy'||kind==='mirror'){const range={start:scope.start??0,end:scope.end??audio.duration,color:scope.color};result=transformRange(chart,range,{kind,value:Number($('refineDestination').value),swapColors:$('refineSwap').checked},audio.duration);result.targetCount=result.count;}else result=refineChart(chart, scope, operation, audio.duration);
+    $('refineTargetCount').textContent=`対象 ${result.targetCount} 個 · ${scope.start===undefined?'曲全体':scope.start+'〜'+scope.end+'秒'}`;
     pending = {before:JSON.stringify(chart), ...result, kind};
     $('refinePreview').textContent = `${operationNames[kind]}：対象 ${result.targetCount} 個のうち ${result.count} 個を${kind === 'delete' || kind === 'dedupe' ? '削除' : '変更'}します。${kind === 'shift' ? ` ${operation.ms}ms（${operation.ms < 0 ? '早く' : '遅く'}）` : ''}「戻す」で取り消せます。`;
     $('refineApply').disabled = result.count === 0;
@@ -40,27 +46,27 @@ export function installRefinementUI(context) {
   });
   $('refineDirection').innerHTML = $('direction').innerHTML;
 
-  $('reportButton').addEventListener('click', run(() => {
+  function reportChart() {
     if (!getState().project) return; stop();
-    const {chart, audio} = getState(), report = chartReport(chart, audio.duration);
+    const {chart, audio, difficulty,bpmConfirmed} = getState(), report = chartReport(chart, audio.duration, bpmConfirmed===false?undefined:difficulty);
     $('reportStats').textContent = `タップ ${report.counts.tap} / フリック ${report.counts.flick} / ロング ${report.counts.long}\n青 ${report.counts.blue} / 赤 ${report.counts.red} / 金 ${report.counts.gold} / その他 ${report.counts.default}\n平均 ${report.average.toFixed(2)} 個/秒 · 最大2秒密度 ${report.peakNps.toFixed(2)} 個/秒（${formatTime(report.peakStart,true)}から）`;
     $('reportDensity').replaceChildren(); const maximum = Math.max(1, ...report.buckets.map(bucket => bucket.count));
     for (const bucket of report.buckets) {
       const button = document.createElement('button'); button.className = 'density-bucket';
       button.style.setProperty('--density', `${bucket.count / maximum * 100}%`);
       button.textContent = `${formatTime(bucket.start)}〜 ${bucket.count}個`;
-      button.onclick = () => { seek(bucket.start); $('reportDialog').close(); };
+      button.onclick = () => { seek(bucket.start); };
       $('reportDensity').append(button);
     }
-    $('reportIssueCount').textContent = report.issueCount ? `確認候補 ${report.issueCount} 件（自動修正はしません）` : '音源外・配置外・重複・同じ手の急移動は見つかりませんでした。';
+    $('reportIssueCount').textContent = (report.issueCount ? `確認候補 ${report.issueCount} 件（自動修正はしません）` : '現在の検査では見直し候補は見つかりませんでした。')+(bpmConfirmed===false?' BPM未設定のため難易度の拍間隔は診断しません。':'');
     $('reportIssues').replaceChildren();
     for (const issue of report.issues) {
       const button = document.createElement('button'); button.textContent = `${formatTime(issue.time,true)} · ${issue.text}`;
-      button.onclick = () => { $('reportDialog').close(); selectNote(issue.id); }; $('reportIssues').append(button);
+      button.onclick = () => { selectNote(issue.id); }; $('reportIssues').append(button);
     }
     if (report.issueCount > report.issues.length) { const text = document.createElement('p'); text.textContent = '先頭200件を表示しています。編集後に再診断すると残りを確認できます。'; $('reportIssues').append(text); }
-    $('reportDialog').showModal();
-  }));
+    }
+  $('reportButton').addEventListener('click',()=>context.openPreview());
   for (const [id, direction] of [['jumpPreviousNote',-1],['jumpNextNote',1]]) $(id).onclick = () => { const {chart,audio} = getState(); seek(noteSeek(chart,audio.time(),direction,audio.duration)); };
   for (const [id, direction] of [['jumpPreviousBeat',-1],['jumpNextBeat',1]]) $(id).onclick = () => { const {chart,audio} = getState(); seek(beatSeek(chart,audio.time(),direction,audio.duration)); };
   $('setBeatOrigin').onclick = () => {
@@ -90,7 +96,8 @@ export function installRefinementUI(context) {
   }));
   $('projectSearch').addEventListener('input', () => {
     for (const row of $('projectList').querySelectorAll('[data-project-name]')) row.hidden = !filterProjects([{name:row.dataset.projectName,difficulty:row.dataset.projectDifficulty}],$('projectSearch').value).length;
-    const visible = [...$('projectList').children].filter(row => row.dataset.projectName !== undefined && !row.hidden).length;
+    const visible = [...$('projectList').querySelectorAll('[data-project-name]')].filter(row => row.dataset.projectName !== undefined && !row.hidden).length;
+    for(const group of $('projectList').querySelectorAll('.project-group'))group.hidden=![...group.querySelectorAll('[data-project-name]')].some(row=>!row.hidden);
     $('projectSearchStatus').textContent = `${visible} 件の下書き`;
   });
   async function removeProject(item) {
@@ -104,7 +111,7 @@ export function installRefinementUI(context) {
     const button = document.createElement('button'); button.className = 'subtle danger'; button.textContent = '削除'; button.setAttribute('aria-label',`${item.name} ${(item.difficulty||'normal').toUpperCase()}を削除`); button.addEventListener('click',run(() => removeProject(item))); row.append(button);
   }
   return {
-    decorateProject,
+    decorateProject,report:reportChart,
     refreshLibrary() { $('projectSearch').dispatchEvent(new Event('input')); },
     refresh() {
       const {project,loading,audio,mode} = getState();

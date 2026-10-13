@@ -52,7 +52,7 @@ export function quantizeMs(rawMs, chart, step = 0) {
   return chart.beatZeroMs + Math.round((rawMs - chart.beatZeroMs) / tick) * tick;
 }
 export function snapInputMs(rawMs, chart, options) {
-  if (options.snapMode==='off' || !(options.snap>0)) return rawMs;
+  if (options.bpmConfirmed===false || options.snapMode==='off' || !(options.snap>0)) return rawMs;
   const nearest=quantizeMs(rawMs,chart,options.snap);
   // 従来の設定にはsnapModeがないため、既存の「すべて整列」を維持する。
   if (options.snapMode!=='near') return nearest;
@@ -68,9 +68,9 @@ export function makeNote(gesture, endAudio, chart, options) {
   const raw = snapInputMs(startAudioMs - chart.offsetMs, chart, options);
   const time = Math.max(-chart.offsetMs, raw);
   const end = snapInputMs(Math.max(startAudioMs, endAudio * 1000 - correction) - chart.offsetMs, chart, options);
-  const held = (endAudio - gesture.startAudio) / rate >= .24;
+  const held = (endAudio - gesture.startAudio) / rate >= clamp(Number(options.longThresholdMs)||240,150,1000)/1000;
   const lengthMs = held ? Math.max(50, end - time) : 0;
-  const automatic = clamp(1 + Math.round(lengthMs / (60000 / chart.bpm)), 2, 99);
+  const automatic = clamp(1 + Math.round(lengthMs / (60000 / chart.bpm * (['easy','normal'].includes(options.difficulty)?2:1))), 2, 99);
   const count = held ? (options.longCount === 'auto' ? automatic : clamp(Number(options.longCount), 2, 99)) : 1;
   const flick = !held && options.flickEnabled!==false && DIRECTIONS.includes(gesture.flickDirection) && gesture.flickDirection!=='none';
   const direction = flick ? gesture.flickDirection : options.direction || 'none';

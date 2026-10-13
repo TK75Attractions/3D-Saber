@@ -33,6 +33,9 @@ export function refineChart(chart, scope, operation, duration) {
       number(operation.ms, '移動量');
       for (const note of selected) moveTime(note, note.time + operation.ms);
       break;
+    case 'alignTime':
+      for(const group of chordGroups(selected,25))for(const note of group)moveTime(note,group[0].time);
+      break;
     case 'height':
     case 'counts':
     case 'symmetry':
@@ -95,7 +98,7 @@ export function refineChart(chart, scope, operation, duration) {
     default: throw new Error('編集操作を選んでください。');
   }
   // 移動系の操作で音源外へ出る場合は、切り詰めず全体を中止する。
-  if (['shift', 'snap', 'ends'].includes(operation.kind)) {
+  if (['shift', 'snap', 'ends', 'alignTime'].includes(operation.kind)) {
     if (!(duration > 0) || !Number.isFinite(duration)) throw new Error('音源を開いてください。');
     for (const note of selected) if (audioTime(note, result) < -1e-7 || audioTime(note, result) + longSeconds(note) > duration + 1e-7) throw new Error('ノーツやロング終端が音源の外へ出ます。変更量または対象区間を調整してください。');
   }
@@ -105,7 +108,7 @@ export function refineChart(chart, scope, operation, duration) {
   return {chart: result, count, targetCount: selected.length};
 }
 
-export function chartReport(chart, duration) {
+export function chartReport(chart, duration, difficulty) {
   const counts = {blue: 0, red: 0, gold: 0, default: 0, tap: 0, flick: 0, long: 0}, issues = [], bucketWidth = 10;
   const bucketCount = Math.max(1, Math.ceil(Math.max(0, duration) / bucketWidth));
   const buckets = Array.from({length: bucketCount}, (_, i) => ({start: i * bucketWidth, count: 0}));
@@ -114,21 +117,30 @@ export function chartReport(chart, duration) {
   const issue = (note, text) => { issueCount++; if (issues.length < 200) issues.push({id: note.__editorId, time: audioTime(note, chart), text}); };
   for (let index = 0; index < notes.length; index++) {
     const note = notes[index], time = audioTime(note, chart), end = time + longSeconds(note);
+    if(difficulty==='easy'&&note.direction!=='none')issue(note,'EASYの生成基準にはない矢印です（意図した配置なら維持できます）');
     counts[note.color]++; counts[isLong(note) ? 'long' : note.direction !== 'none' ? 'flick' : 'tap']++;
     if (time >= 0 && time < duration) buckets[Math.min(buckets.length - 1, Math.floor(time / bucketWidth))].count++;
     while (notes[index].time - notes[first].time >= 2000) first++;
     if (index - first + 1 > peak) { peak = index - first + 1; peakStart = audioTime(notes[first], chart); }
     if (time < 0 || end > duration + .001) issue(note, '音源の外に開始・終了があります');
     if (Math.abs(note.x * chart.coordScale) > 2.5 || Math.abs(note.y * chart.coordScale) > 1.5) issue(note, '入力パッドの外に配置されています');
+    if(note.color==='gold'&&heldHands.blue?.end>time+.001&&heldHands.red?.end>time+.001)issue(note,'金ノーツの時刻に青・赤のロングが続いています。空いている手を確認してください');
     const key = signature(note); if (seen.has(key)) issue(note, '同じノーツが完全に重複しています'); seen.add(key);
     if (note.color === 'blue' || note.color === 'red') {
       const previous = lastHand[note.color], hold = heldHands[note.color];
       if (hold && hold.end > time + .001) issue(note, '同じ色のロングが続いている間に次のノーツがあります');
       if (previous && time - previous.time < .1 && Math.hypot(note.x - previous.note.x, note.y - previous.note.y) * chart.coordScale > 2) issue(note, '同じ手が100ms未満で大きく移動します');
+      if(previous){const gap=time-previous.time;
+        if(gap>.025+1e-7&&gap<.12)issue(note,'同じ手の間隔が25〜120msです。振り直せるか本編で確認してください');
+        if(gap>.025+1e-7&&gap<.4&&note.direction!=='none'&&note.direction===previous.note.direction)issue(note,'同じ矢印が400ms以内に続きます。手を戻す動きを確認してください');
+        const minimum=difficulty==='easy'?Math.max(.5,60/chart.bpm):difficulty==='normal'?Math.max(.25,30/chart.bpm):0;
+        if(gap>.025+1e-7&&gap+1e-7<minimum)issue(note,difficulty.toUpperCase()+'の生成基準より同じ手の間隔が短い配置です（難易度の目安）');
+      }
       lastHand[note.color] = {note, time};
       if (isLong(note) && (!hold || end > hold.end)) heldHands[note.color] = {end};
     }
   }
+  if(['easy','normal'].includes(difficulty))for(const group of chordGroups(notes,25)){const max=difficulty==='easy'?1:2;if(group.length>max)issue(group[0],difficulty.toUpperCase()+'の生成基準より同時押しが多い配置です（難易度の目安）');}
   return {counts, buckets, issues, issueCount, average: duration > 0 ? notes.length / duration : 0, peakNps: peak / 2, peakStart};
 }
 

@@ -6,7 +6,7 @@ const MAX_META = 32 * 1024 * 1024, MAX_AUDIO = 100 * 1024 * 1024;
 const invalid = () => new Error('Saber Tap Studioのバックアップを選んでください。ファイルが途中で壊れていないか確認してください。');
 function safeSettings(value) {
   const s=value&&typeof value==='object'?value:{};
-  return {...inputPreferences(s),rate:[1,.75,.5].includes(s.rate)?s.rate:1,
+  return {...inputPreferences(s),bpmConfirmed:s.bpmConfirmed!==false,longThresholdMs:clamp(Number(s.longThresholdMs)||300,150,1000),rate:[1,.75,.5].includes(s.rate)?s.rate:1,
     positionGrid:[.25,.5,1].includes(s.positionGrid)?s.positionGrid:0,
     songVolume:Number.isFinite(s.songVolume)?clamp(s.songVolume,0,1):1,feedbackVolume:Number.isFinite(s.feedbackVolume)?clamp(s.feedbackVolume,0,1):1,previewLoop:s.previewLoop===true,
     longCount:['auto','2','3','4','6','8'].includes(String(s.longCount))?String(s.longCount):'auto',direction:DIRECTIONS.includes(s.direction)?s.direction:'none',

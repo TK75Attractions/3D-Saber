@@ -1,11 +1,16 @@
 const DB = 'saber-tap-studio-v1';
 let connection;
+const revisions = new Map();
+const contentOf = project => {
+  const {_revision,updated,position,...content}=project;
+  return JSON.stringify({...content,chart:{...content.chart,notes:content.chart.notes.map(({__editorId,...note})=>note)}});
+};
 async function database() {
   if (connection) return connection;
   connection = new Promise((resolve,reject) => {
     const request = indexedDB.open(DB, 1);
     request.onupgradeneeded = () => { request.result.createObjectStore('projects', { keyPath: 'id' }); request.result.createObjectStore('audio', { keyPath: 'id' }); };
-    request.onsuccess = () => resolve(request.result);
+    request.onsuccess = () => { const db=request.result;db.onversionchange=()=>{db.close();connection=null;};resolve(db); };
     request.onerror = () => { connection = null; reject(request.error); };
   });
   return connection;
@@ -17,9 +22,25 @@ async function request(store, mode, operation) {
     tx.oncomplete = () => resolve(result.result); tx.onabort = tx.onerror = () => reject(tx.error || new Error('端末への保存に失敗しました。'));
   });
 }
-export const saveProject = project => request('projects', 'readwrite', s => s.put(project));
+// 同じ下書きを別タブで更新していたら上書きしない。照合と保存は同一トランザクション。
+export async function saveProject(project) {
+  const db=await database(), expected=revisions.get(project.id)??project._revision??0;
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction('projects','readwrite'),store=tx.objectStore('projects'),read=store.get(project.id);
+    let conflict,nextRevision=expected+1;
+    read.onsuccess=()=>{
+      const current=read.result;
+      // 再生位置だけの保存や、開き直した際の内部IDの違いは編集競合にしない。
+      if(current&&contentOf(current)===contentOf(project)){nextRevision=current._revision||0;store.put({...project,_revision:nextRevision});return;}
+      if((current?current._revision||0:0)!==expected){conflict=new Error('別のタブでこの下書きが更新・削除されました。手元の譜面を書き出してから、画面を再読み込みしてください。');conflict.name='ConflictError';tx.abort();return;}
+      store.put({...project,_revision:expected+1});
+    };
+    tx.oncomplete=()=>{revisions.set(project.id,nextRevision);project._revision=nextRevision;resolve();};
+    tx.onabort=tx.onerror=()=>reject(conflict||tx.error||new Error('端末への保存に失敗しました。'));
+  });
+}
 export const listProjects = () => request('projects', 'readonly', s => s.getAll());
-export const getProject = id => request('projects', 'readonly', s => s.get(id));
+export const getProject = async id => {const project=await request('projects','readonly',s=>s.get(id));if(project)revisions.set(id,project._revision||0);return project;};
 export const saveAudio = (id, blob, name) => request('audio', 'readwrite', s => s.put({ id, blob, name }));
 export const getAudio = id => request('audio', 'readonly', s => s.get(id));
 
@@ -45,8 +66,8 @@ export async function saveProjectWithAudio(project, audio) {
   const db = await database();
   return new Promise((resolve, reject) => {
     const tx = db.transaction(['projects','audio'], 'readwrite');
-    tx.objectStore('audio').put(audio);tx.objectStore('projects').put(project);
-    tx.oncomplete = () => resolve();
+    tx.objectStore('audio').put(audio);tx.objectStore('projects').put({...project,_revision:1});
+    tx.oncomplete = () => {revisions.set(project.id,1);project._revision=1;resolve();};
     tx.onabort = tx.onerror = () => reject(tx.error || new Error('バックアップを端末に保存できませんでした。'));
   });
 }
