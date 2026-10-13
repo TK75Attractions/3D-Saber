@@ -79,7 +79,10 @@ shots_player() {
     local app="$1" exe dir="$OUT/shots" log="$OUT/shots.log" pid game waited=0 args
     exe="$(find "$app/Contents/MacOS" -maxdepth 1 -type f | head -1)"
     [[ -x "$exe" ]] || { echo "shots: 実行ファイルが見つかりません: $app"; return 1; }
-    rm -rf "$dir" "$log"; mkdir -p "$dir"
+    # 古い成功結果を再利用しない。削除・作成に失敗したら起動前に止める。
+    if ! rm -rf "$dir" "$log" || ! mkdir -p "$dir"; then
+        echo "shots: 出力先を初期化できません ($dir, $log)"; return 1;
+    fi
     args=(-phonesaberSmoke "${PHONESABER_SMOKE_SECONDS:-5}" -phonesaberSmokeShots "$dir" -logFile "$log")
     [[ -n "${PHONESABER_SHOTS_REFRESH_HZ:-}" ]] && args+=(-phonesaberSmokeRefreshHz "$PHONESABER_SHOTS_REFRESH_HZ")
     run_hidden "$exe" "${args[@]}" >/dev/null 2>&1 &
@@ -94,7 +97,14 @@ shots_player() {
         sleep 0.5; waited=$((waited + 1))
     done
     grep "PhoneSaberSmoke\] \(shot\|done\)" "$log" 2>/dev/null
-    ls "$dir"/*.png >/dev/null 2>&1 || { echo "shots: 画像がありません ($log)"; return 1; }
+    # 途中終了で1枚だけ残っても成功にしない。open の終了コードでは Player の成否は分からない。
+    local scene
+    for scene in Title SongSelect Game; do
+        [[ -s "$dir/$scene.png" ]] || { echo "shots: $scene の画像がありません、または空です ($log)"; return 1; }
+    done
+    grep -qE '^\[PhoneSaberSmoke\] done exceptions=0 input=ok$' "$log" || {
+        echo "shots: Player の正常完了を確認できません ($log)"; return 1;
+    }
     echo "shots: $dir"
 }
 
