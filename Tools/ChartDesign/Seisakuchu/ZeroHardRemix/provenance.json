@@ -1,0 +1,3292 @@
+{
+  "notes": [
+    {
+      "source": [
+        0,
+        1
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.8702,
+        "peakSeconds": 3.087982,
+        "distanceMs": -22.018
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        0,
+        1
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.8702,
+        "peakSeconds": 3.087982,
+        "distanceMs": -22.018
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        2,
+        3
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.9777,
+        "peakSeconds": 4.614512,
+        "distanceMs": 4.512
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        2,
+        3
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.9777,
+        "peakSeconds": 4.614512,
+        "distanceMs": 4.512
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        4,
+        5
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.4948,
+        "peakSeconds": 6.19093,
+        "distanceMs": -44.07
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        4,
+        5
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.4948,
+        "peakSeconds": 6.19093,
+        "distanceMs": -44.07
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        6,
+        7
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 1.1593,
+        "peakSeconds": 7.672562,
+        "distanceMs": -23.438
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        6,
+        7
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 1.1593,
+        "peakSeconds": 7.672562,
+        "distanceMs": -23.438
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        8
+      ],
+      "motif": "authored_gold_reply",
+      "evidence": {
+        "strength": 1.4115,
+        "peakSeconds": 8.590476,
+        "distanceMs": -19.524
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        9,
+        10
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 1.4298,
+        "peakSeconds": 9.199093,
+        "distanceMs": -35.907
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        9,
+        10
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 1.4298,
+        "peakSeconds": 9.199093,
+        "distanceMs": -35.907
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        11
+      ],
+      "motif": "intro",
+      "evidence": {
+        "strength": 0.4089,
+        "peakSeconds": 10.151927,
+        "distanceMs": -35.74
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        12,
+        13
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.5261,
+        "peakSeconds": 10.765533,
+        "distanceMs": -22.134
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        12,
+        13
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.5261,
+        "peakSeconds": 10.765533,
+        "distanceMs": -22.134
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        15
+      ],
+      "motif": "intro",
+      "evidence": {
+        "strength": 0.2152,
+        "peakSeconds": 11.429025,
+        "distanceMs": -1.308
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        16,
+        17
+      ],
+      "motif": "intro",
+      "evidence": {
+        "strength": 0.4151,
+        "peakSeconds": 11.703401,
+        "distanceMs": -31.599
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        18,
+        19
+      ],
+      "motif": "intro",
+      "evidence": {
+        "strength": 0.9373,
+        "peakSeconds": 12.032653,
+        "distanceMs": -37.347
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        20,
+        21
+      ],
+      "motif": "intro",
+      "evidence": {
+        "strength": 0.3995,
+        "peakSeconds": 12.321995,
+        "distanceMs": -38.005
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        22
+      ],
+      "motif": "intro",
+      "evidence": {
+        "strength": 0.3443,
+        "peakSeconds": 13.83356,
+        "distanceMs": -26.44
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        23
+      ],
+      "motif": "intro",
+      "evidence": {
+        "strength": 0.1971,
+        "peakSeconds": 14.417234,
+        "distanceMs": -37.099
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        24
+      ],
+      "motif": "intro",
+      "evidence": {
+        "strength": 0.2999,
+        "peakSeconds": 15.040816,
+        "distanceMs": -5.517
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        25
+      ],
+      "motif": "intro",
+      "evidence": {
+        "strength": 0.2383,
+        "peakSeconds": 15.62449,
+        "distanceMs": 14.49
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        26
+      ],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.4837,
+        "peakSeconds": 18.468027,
+        "distanceMs": 20.027
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.8962,
+        "peakSeconds": 19.306122,
+        "distanceMs": 0.408
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 1.2141,
+        "peakSeconds": 20.224036,
+        "distanceMs": -0.045
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        27
+      ],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.7719,
+        "peakSeconds": 20.832653,
+        "distanceMs": 33.32
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.8369,
+        "peakSeconds": 21.755556,
+        "distanceMs": 0.862
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.9259,
+        "peakSeconds": 22.369161,
+        "distanceMs": 2.222
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 1.2011,
+        "peakSeconds": 22.673469,
+        "distanceMs": 0.408
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        28
+      ],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.8267,
+        "peakSeconds": 23.282086,
+        "distanceMs": -8.581
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        29
+      ],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.8066,
+        "peakSeconds": 23.895692,
+        "distanceMs": 5.025
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        30
+      ],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.731,
+        "peakSeconds": 24.504308,
+        "distanceMs": -12.359
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        31
+      ],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 1.478,
+        "peakSeconds": 25.117914,
+        "distanceMs": 7.914
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        32
+      ],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.7778,
+        "peakSeconds": 25.731519,
+        "distanceMs": -43.814
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        33
+      ],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.8183,
+        "peakSeconds": 26.345125,
+        "distanceMs": -14.875
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        34
+      ],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.8487,
+        "peakSeconds": 26.95873,
+        "distanceMs": 8.397
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        35
+      ],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.7673,
+        "peakSeconds": 27.572336,
+        "distanceMs": 5.336
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        36
+      ],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 1.4649,
+        "peakSeconds": 28.180952,
+        "distanceMs": -3.048
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        37
+      ],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.9584,
+        "peakSeconds": 28.794558,
+        "distanceMs": 10.558
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 1.1224,
+        "peakSeconds": 29.408163,
+        "distanceMs": 0.408
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "hold_and_response",
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 1.112,
+        "peakSeconds": 30.326077,
+        "distanceMs": -0.045
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 1.5375,
+        "peakSeconds": 31.239002,
+        "distanceMs": -5.488
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 1.0336,
+        "peakSeconds": 31.857596,
+        "distanceMs": 0.862
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 0.9029,
+        "peakSeconds": 32.77551,
+        "distanceMs": 0.408
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "staircase",
+      "evidence": {
+        "strength": 1.1827,
+        "peakSeconds": 33.384127,
+        "distanceMs": -3.22
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        39
+      ],
+      "motif": "authored_long",
+      "frozen": true
+    },
+    {
+      "source": [
+        38
+      ],
+      "motif": "authored_long",
+      "frozen": true
+    },
+    {
+      "source": [],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.5637,
+        "peakSeconds": 40.133787,
+        "distanceMs": 11.746
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.5356,
+        "peakSeconds": 41.006803,
+        "distanceMs": -33.605
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        45
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.3709,
+        "peakSeconds": 41.695238,
+        "distanceMs": -39.762
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        46
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.3049,
+        "peakSeconds": 42.02449,
+        "distanceMs": -17.843
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        47
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.3065,
+        "peakSeconds": 42.363719,
+        "distanceMs": 3.719
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        48
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.3105,
+        "peakSeconds": 42.578231,
+        "distanceMs": -31.769
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        49
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.872,
+        "peakSeconds": 42.947392,
+        "distanceMs": 29.725
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        50
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.3188,
+        "peakSeconds": 43.236735,
+        "distanceMs": 1.735
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        51
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.3595,
+        "peakSeconds": 43.570975,
+        "distanceMs": 11.308
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        52
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.478,
+        "peakSeconds": 43.855329,
+        "distanceMs": -4.671
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        53,
+        54
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.7781,
+        "peakSeconds": 44.174603,
+        "distanceMs": -43.063
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        55,
+        56
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.8002,
+        "peakSeconds": 44.478912,
+        "distanceMs": -6.088
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        57,
+        58
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.8439,
+        "peakSeconds": 44.78322,
+        "distanceMs": -33.78
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        59,
+        60
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 1.0687,
+        "peakSeconds": 45.092517,
+        "distanceMs": -17.483
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        61,
+        62
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.8055,
+        "peakSeconds": 45.401814,
+        "distanceMs": -15.519
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        63,
+        64
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 1.0213,
+        "peakSeconds": 45.706122,
+        "distanceMs": -28.878
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        65,
+        66
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.8883,
+        "peakSeconds": 46.01542,
+        "distanceMs": -43.58
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        67
+      ],
+      "motif": "authored_gold_reply",
+      "evidence": {
+        "strength": 0.9031,
+        "peakSeconds": 46.853515,
+        "distanceMs": -6.485
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        68
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.8454,
+        "peakSeconds": 47.46712,
+        "distanceMs": -17.88
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        69
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 1.0283,
+        "peakSeconds": 48.080726,
+        "distanceMs": -29.274
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        70
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 1.0213,
+        "peakSeconds": 48.694331,
+        "distanceMs": -40.669
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        71,
+        72
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.4206,
+        "peakSeconds": 49.382766,
+        "distanceMs": 22.766
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        71,
+        72
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.4206,
+        "peakSeconds": 49.382766,
+        "distanceMs": 22.766
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        73,
+        74
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.4101,
+        "peakSeconds": 49.951474,
+        "distanceMs": -33.526
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        75,
+        76
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.5994,
+        "peakSeconds": 50.585034,
+        "distanceMs": -24.966
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        75,
+        76
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.5994,
+        "peakSeconds": 50.585034,
+        "distanceMs": -24.966
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        77,
+        78
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.4415,
+        "peakSeconds": 51.178685,
+        "distanceMs": -40.982
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        79,
+        80
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.5856,
+        "peakSeconds": 51.79229,
+        "distanceMs": -20.043
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        79,
+        80
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.5856,
+        "peakSeconds": 51.79229,
+        "distanceMs": -20.043
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        81,
+        82
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.8205,
+        "peakSeconds": 52.370975,
+        "distanceMs": -41.358
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        83,
+        84
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 1.2449,
+        "peakSeconds": 52.974603,
+        "distanceMs": -10.397
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        83,
+        84
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 1.2449,
+        "peakSeconds": 52.974603,
+        "distanceMs": -10.397
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        85
+      ],
+      "motif": "authored_gold_reply",
+      "evidence": {
+        "strength": 0.4918,
+        "peakSeconds": 53.673016,
+        "distanceMs": 22.016
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        86
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 1.215,
+        "peakSeconds": 54.506122,
+        "distanceMs": 21.122
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        87
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 1.0674,
+        "peakSeconds": 55.424036,
+        "distanceMs": -19.964
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        88
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 1.2726,
+        "peakSeconds": 56.34195,
+        "distanceMs": -18.05
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        89
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.7338,
+        "peakSeconds": 57.110204,
+        "distanceMs": 0.204
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        90
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.6109,
+        "peakSeconds": 57.883447,
+        "distanceMs": -44.22
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        91
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 0.5221,
+        "peakSeconds": 58.776417,
+        "distanceMs": 41.417
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        92
+      ],
+      "motif": "fan",
+      "evidence": {
+        "strength": 1.033,
+        "peakSeconds": 59.404989,
+        "distanceMs": -23.011
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        93
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.6014,
+        "peakSeconds": 60.941497,
+        "distanceMs": -43.503
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        94
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.6269,
+        "peakSeconds": 61.545125,
+        "distanceMs": -13.208
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        95
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.3987,
+        "peakSeconds": 62.203628,
+        "distanceMs": -31.372
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        96
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.404,
+        "peakSeconds": 62.497959,
+        "distanceMs": -44.374
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        97
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.4506,
+        "peakSeconds": 62.86712,
+        "distanceMs": 7.12
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        98,
+        99
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.9848,
+        "peakSeconds": 63.695238,
+        "distanceMs": -39.762
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        98,
+        99
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.9848,
+        "peakSeconds": 63.695238,
+        "distanceMs": -39.762
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        102,
+        103
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.5034,
+        "peakSeconds": 64.383673,
+        "distanceMs": 23.673
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        104,
+        105
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.379,
+        "peakSeconds": 64.702948,
+        "distanceMs": -12.886
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        106,
+        107
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.7697,
+        "peakSeconds": 65.072109,
+        "distanceMs": 37.109
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        108,
+        109
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.7618,
+        "peakSeconds": 65.376417,
+        "distanceMs": 16.417
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        110,
+        111
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.9406,
+        "peakSeconds": 65.685714,
+        "distanceMs": 28.547
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        112,
+        113
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.6114,
+        "peakSeconds": 65.980045,
+        "distanceMs": 41.712
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        114,
+        115
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.4314,
+        "peakSeconds": 66.249433,
+        "distanceMs": 14.433
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        116,
+        117
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.7036,
+        "peakSeconds": 66.608617,
+        "distanceMs": -1.383
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        118,
+        119
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.7157,
+        "peakSeconds": 66.902948,
+        "distanceMs": 42.948
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        120
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.4514,
+        "peakSeconds": 67.207256,
+        "distanceMs": 43.923
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        121
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 1.4425,
+        "peakSeconds": 67.516553,
+        "distanceMs": 31.553
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        122
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.4094,
+        "peakSeconds": 67.7161,
+        "distanceMs": -18.9
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        123
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.7634,
+        "peakSeconds": 68.130159,
+        "distanceMs": 20.159
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        124
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.5143,
+        "peakSeconds": 68.359637,
+        "distanceMs": -0.363
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        125
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.3981,
+        "peakSeconds": 68.653968,
+        "distanceMs": -34.365
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        126
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.4141,
+        "peakSeconds": 68.968254,
+        "distanceMs": -16.746
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        127
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.8377,
+        "peakSeconds": 69.35737,
+        "distanceMs": -2.63
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        128
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.8281,
+        "peakSeconds": 69.586848,
+        "distanceMs": -23.152
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        129
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.6346,
+        "peakSeconds": 69.856236,
+        "distanceMs": -41.097
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        130,
+        131
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.8509,
+        "peakSeconds": 70.270295,
+        "distanceMs": 35.295
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        132
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 1.1614,
+        "peakSeconds": 70.579592,
+        "distanceMs": 32.259
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        133
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.4033,
+        "peakSeconds": 70.878912,
+        "distanceMs": 18.912
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        134
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.5925,
+        "peakSeconds": 71.188209,
+        "distanceMs": 8.209
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        135
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.4513,
+        "peakSeconds": 71.492517,
+        "distanceMs": 44.85
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        136
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.5622,
+        "peakSeconds": 71.692063,
+        "distanceMs": -42.937
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        137
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 1.2112,
+        "peakSeconds": 72.106122,
+        "distanceMs": 41.455
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        138
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.5229,
+        "peakSeconds": 72.34059,
+        "distanceMs": -19.41
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        139
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.4296,
+        "peakSeconds": 72.684807,
+        "distanceMs": 20.14
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        140,
+        141
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.9107,
+        "peakSeconds": 73.029025,
+        "distanceMs": 44.025
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        142
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.6556,
+        "peakSeconds": 73.223583,
+        "distanceMs": -11.417
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        143
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 1.1909,
+        "peakSeconds": 73.637642,
+        "distanceMs": 27.642
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        144
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.4009,
+        "peakSeconds": 73.8322,
+        "distanceMs": -27.8
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        145
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.9892,
+        "peakSeconds": 74.106576,
+        "distanceMs": -42.424
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        146,
+        147
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.5624,
+        "peakSeconds": 74.480726,
+        "distanceMs": -4.274
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        148
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.4269,
+        "peakSeconds": 74.819955,
+        "distanceMs": 21.288
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        149
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.4797,
+        "peakSeconds": 75.094331,
+        "distanceMs": -15.669
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        150,
+        151
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 1.0079,
+        "peakSeconds": 75.328798,
+        "distanceMs": -31.202
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        152,
+        153
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.7727,
+        "peakSeconds": 75.777778,
+        "distanceMs": 42.778
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        154,
+        155
+      ],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.5051,
+        "peakSeconds": 75.99229,
+        "distanceMs": -37.877
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "first_peak",
+      "evidence": {
+        "strength": 0.8037,
+        "peakSeconds": 76.855329,
+        "distanceMs": -1.406
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "hold_relay",
+      "evidence": {
+        "strength": 0.5143,
+        "peakSeconds": 77.468934,
+        "distanceMs": -0.045
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "hold_and_response",
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "hold_relay",
+      "evidence": {
+        "strength": 0.6051,
+        "peakSeconds": 78.386848,
+        "distanceMs": -0.499
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        156
+      ],
+      "motif": "hold_relay",
+      "evidence": {
+        "strength": 0.6705,
+        "peakSeconds": 79.614059,
+        "distanceMs": 44.059
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        157
+      ],
+      "motif": "hold_relay",
+      "evidence": {
+        "strength": 0.2323,
+        "peakSeconds": 80.561905,
+        "distanceMs": 33.905
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        158
+      ],
+      "motif": "hold_relay",
+      "evidence": {
+        "strength": 0.287,
+        "peakSeconds": 81.375057,
+        "distanceMs": -20.61
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        159
+      ],
+      "motif": "hold_relay",
+      "evidence": {
+        "strength": 0.7298,
+        "peakSeconds": 82.3678,
+        "distanceMs": 7.8
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        160
+      ],
+      "motif": "authored_long",
+      "frozen": true
+    },
+    {
+      "source": [
+        161
+      ],
+      "motif": "hold_relay",
+      "evidence": {
+        "strength": 0.2916,
+        "peakSeconds": 84.068934,
+        "distanceMs": -41.066
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        162
+      ],
+      "motif": "authored_long",
+      "frozen": true
+    },
+    {
+      "source": [
+        163
+      ],
+      "motif": "hold_relay",
+      "evidence": {
+        "strength": 0.2803,
+        "peakSeconds": 86.029478,
+        "distanceMs": 44.478
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        164
+      ],
+      "motif": "authored_long",
+      "frozen": true
+    },
+    {
+      "source": [
+        165
+      ],
+      "motif": "authored_long",
+      "frozen": true
+    },
+    {
+      "source": [],
+      "motif": "return",
+      "evidence": {
+        "strength": 1.1625,
+        "peakSeconds": 111.142404,
+        "distanceMs": -0.045
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.7422,
+        "peakSeconds": 111.451701,
+        "distanceMs": 3.129
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.7856,
+        "peakSeconds": 111.75102,
+        "distanceMs": -3.673
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "return",
+      "evidence": {
+        "strength": 1.65,
+        "peakSeconds": 112.060317,
+        "distanceMs": -0.499
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "return",
+      "evidence": {
+        "strength": 1.0037,
+        "peakSeconds": 112.364626,
+        "distanceMs": -2.313
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.8004,
+        "peakSeconds": 112.673923,
+        "distanceMs": 0.862
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "return",
+      "evidence": {
+        "strength": 1.0333,
+        "peakSeconds": 112.978231,
+        "distanceMs": -0.952
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "return",
+      "evidence": {
+        "strength": 1.6168,
+        "peakSeconds": 113.28254,
+        "distanceMs": -2.766
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        182
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.837,
+        "peakSeconds": 113.896145,
+        "distanceMs": -24.188
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        183
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.3838,
+        "peakSeconds": 114.609524,
+        "distanceMs": 39.524
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        184
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.4772,
+        "peakSeconds": 115.163265,
+        "distanceMs": -31.402
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        185
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.388,
+        "peakSeconds": 115.74195,
+        "distanceMs": -36.717
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        186
+      ],
+      "motif": "authored_gold_reply",
+      "evidence": {
+        "strength": 0.4574,
+        "peakSeconds": 116.420408,
+        "distanceMs": 17.741
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        187
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.3518,
+        "peakSeconds": 116.719728,
+        "distanceMs": -15.272
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        188
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.3003,
+        "peakSeconds": 117.034014,
+        "distanceMs": -10.653
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        189
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.2761,
+        "peakSeconds": 117.323356,
+        "distanceMs": -36.644
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        190
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.6736,
+        "peakSeconds": 117.647619,
+        "distanceMs": -30.714
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        191
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.799,
+        "peakSeconds": 118.026757,
+        "distanceMs": 41.757
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        192
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.399,
+        "peakSeconds": 118.236281,
+        "distanceMs": -42.052
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        193
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.6899,
+        "peakSeconds": 118.490703,
+        "distanceMs": 5.703
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        194,
+        195
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 0.7024,
+        "peakSeconds": 118.87483,
+        "distanceMs": 14.83
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        196,
+        197
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.9951,
+        "peakSeconds": 119.478458,
+        "distanceMs": 12.792
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        196,
+        197
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.9951,
+        "peakSeconds": 119.478458,
+        "distanceMs": 12.792
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        198,
+        199
+      ],
+      "motif": "return",
+      "evidence": {
+        "strength": 1.1652,
+        "peakSeconds": 120.022222,
+        "distanceMs": -33.111
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        200,
+        201
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.8438,
+        "peakSeconds": 120.630839,
+        "distanceMs": -16.494
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        200,
+        201
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.8438,
+        "peakSeconds": 120.630839,
+        "distanceMs": -16.494
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        202
+      ],
+      "motif": "quiet_hold_bridge",
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "quiet",
+      "evidence": {
+        "strength": 0.4964,
+        "peakSeconds": 122.167347,
+        "distanceMs": 4.49
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        203
+      ],
+      "motif": "quiet",
+      "evidence": {
+        "strength": 0.357,
+        "peakSeconds": 124.901134,
+        "distanceMs": -20.866
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "quiet",
+      "evidence": {
+        "strength": 0.4983,
+        "peakSeconds": 127.061224,
+        "distanceMs": 0.408
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        204,
+        205
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.3894,
+        "peakSeconds": 127.984127,
+        "distanceMs": -39.206
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        204,
+        205
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.3894,
+        "peakSeconds": 127.984127,
+        "distanceMs": -39.206
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        206
+      ],
+      "motif": "quiet",
+      "evidence": {
+        "strength": 0.2026,
+        "peakSeconds": 129.819955,
+        "distanceMs": -40.045
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        207
+      ],
+      "motif": "quiet",
+      "evidence": {
+        "strength": 0.5384,
+        "peakSeconds": 131.351474,
+        "distanceMs": -8.526
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        208,
+        209
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.1596,
+        "peakSeconds": 133.207256,
+        "distanceMs": -27.744
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        208,
+        209
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.1596,
+        "peakSeconds": 133.207256,
+        "distanceMs": -27.744
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 1.6762,
+        "peakSeconds": 134.708844,
+        "distanceMs": -5.034
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.8892,
+        "peakSeconds": 135.018141,
+        "distanceMs": -1.859
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.9785,
+        "peakSeconds": 135.322449,
+        "distanceMs": -3.673
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.8655,
+        "peakSeconds": 135.631746,
+        "distanceMs": -0.499
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 1.3729,
+        "peakSeconds": 135.936054,
+        "distanceMs": -2.313
+      },
+      "frozen": false
+    },
+    {
+      "source": [],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 1.0994,
+        "peakSeconds": 136.245351,
+        "distanceMs": 0.862
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        210
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.5907,
+        "peakSeconds": 136.619501,
+        "distanceMs": 9.501
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        211
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.9893,
+        "peakSeconds": 136.853968,
+        "distanceMs": -6.032
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        212
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.6187,
+        "peakSeconds": 137.198186,
+        "distanceMs": -36.814
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        213
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.9724,
+        "peakSeconds": 137.462585,
+        "distanceMs": -22.415
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        214
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.3294,
+        "peakSeconds": 137.831746,
+        "distanceMs": -28.254
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        215,
+        216
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.9661,
+        "peakSeconds": 138.081179,
+        "distanceMs": -28.821
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        217
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.5477,
+        "peakSeconds": 138.425397,
+        "distanceMs": -23.27
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        218
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.5518,
+        "peakSeconds": 138.769615,
+        "distanceMs": -4.385
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        219
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.487,
+        "peakSeconds": 139.029025,
+        "distanceMs": -36.642
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        220
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.45,
+        "peakSeconds": 139.388209,
+        "distanceMs": 28.209
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        221
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.4741,
+        "peakSeconds": 139.697506,
+        "distanceMs": 23.839
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        222
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.5187,
+        "peakSeconds": 139.991837,
+        "distanceMs": 6.837
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        223
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.6428,
+        "peakSeconds": 140.261224,
+        "distanceMs": -29.443
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        224
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.4597,
+        "peakSeconds": 140.600454,
+        "distanceMs": -9.546
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        225
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.3976,
+        "peakSeconds": 140.914739,
+        "distanceMs": -8.594
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        226
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.7549,
+        "peakSeconds": 141.214059,
+        "distanceMs": 23.059
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        227,
+        228
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 1.0514,
+        "peakSeconds": 141.448526,
+        "distanceMs": -36.474
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        230
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.4706,
+        "peakSeconds": 141.852608,
+        "distanceMs": 27.941
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        231
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.5507,
+        "peakSeconds": 142.136961,
+        "distanceMs": 26.961
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        232
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.5631,
+        "peakSeconds": 142.401361,
+        "distanceMs": -23.306
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        233
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.5779,
+        "peakSeconds": 142.710658,
+        "distanceMs": -24.342
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        234
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.4273,
+        "peakSeconds": 143.029932,
+        "distanceMs": -2.735
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        235
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.6753,
+        "peakSeconds": 143.319274,
+        "distanceMs": -40.726
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        236
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.5223,
+        "peakSeconds": 143.608617,
+        "distanceMs": -41.05
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        237
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.3921,
+        "peakSeconds": 143.972789,
+        "distanceMs": -12.211
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        238
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.6153,
+        "peakSeconds": 144.237188,
+        "distanceMs": -38.145
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        239
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.6206,
+        "peakSeconds": 144.546485,
+        "distanceMs": -28.515
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        240,
+        241
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.783,
+        "peakSeconds": 144.815873,
+        "distanceMs": -44.127
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        243
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.4547,
+        "peakSeconds": 145.190023,
+        "distanceMs": 15.023
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        244
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.5275,
+        "peakSeconds": 145.494331,
+        "distanceMs": 9.331
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        245
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.4392,
+        "peakSeconds": 145.813605,
+        "distanceMs": 12.938
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        246
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.478,
+        "peakSeconds": 146.068027,
+        "distanceMs": -41.973
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        247
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.9903,
+        "peakSeconds": 146.342404,
+        "distanceMs": -17.596
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        248
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.8384,
+        "peakSeconds": 146.651701,
+        "distanceMs": -40.632
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        249
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 1.0425,
+        "peakSeconds": 146.956009,
+        "distanceMs": -28.991
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        250
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.5176,
+        "peakSeconds": 147.330159,
+        "distanceMs": 12.159
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        251
+      ],
+      "motif": "final_stream",
+      "evidence": {
+        "strength": 0.9982,
+        "peakSeconds": 147.569615,
+        "distanceMs": -40.385
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        255
+      ],
+      "motif": "authored_long",
+      "frozen": true
+    },
+    {
+      "source": [
+        254
+      ],
+      "motif": "authored_long",
+      "frozen": true
+    },
+    {
+      "source": [
+        268
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.4287,
+        "peakSeconds": 152.50839,
+        "distanceMs": -35.61
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        269,
+        270
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.3844,
+        "peakSeconds": 153.446259,
+        "distanceMs": -38.741
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        269,
+        270
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.3844,
+        "peakSeconds": 153.446259,
+        "distanceMs": -38.741
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        271
+      ],
+      "motif": "authored_long",
+      "frozen": true
+    },
+    {
+      "source": [
+        272
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.9409,
+        "peakSeconds": 155.072562,
+        "distanceMs": 17.229
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        273
+      ],
+      "motif": "authored_gold_reply",
+      "evidence": {
+        "strength": 0.4583,
+        "peakSeconds": 156.559184,
+        "distanceMs": 36.184
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        274
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.366,
+        "peakSeconds": 157.097959,
+        "distanceMs": -12.041
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        275
+      ],
+      "motif": "authored_long",
+      "frozen": true
+    },
+    {
+      "source": [
+        276
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.4149,
+        "peakSeconds": 158.21542,
+        "distanceMs": -19.58
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        277
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.3691,
+        "peakSeconds": 159.587302,
+        "distanceMs": 8.969
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        278
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.9867,
+        "peakSeconds": 159.81678,
+        "distanceMs": -43.22
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        279
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.4408,
+        "peakSeconds": 160.156009,
+        "distanceMs": -30.991
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        280
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.5219,
+        "peakSeconds": 160.500227,
+        "distanceMs": 15.227
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        281
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.5506,
+        "peakSeconds": 160.809524,
+        "distanceMs": 6.524
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        282
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.5182,
+        "peakSeconds": 161.0839,
+        "distanceMs": -26.1
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        283
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.7407,
+        "peakSeconds": 161.348299,
+        "distanceMs": -11.701
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        286,
+        287
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 1.1533,
+        "peakSeconds": 161.802268,
+        "distanceMs": 32.268
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        288,
+        289
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.795,
+        "peakSeconds": 162.111565,
+        "distanceMs": 41.898
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        290,
+        291
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.567,
+        "peakSeconds": 162.385941,
+        "distanceMs": 25.941
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        292,
+        293
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.6822,
+        "peakSeconds": 162.720181,
+        "distanceMs": 41.514
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        294,
+        295
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.7348,
+        "peakSeconds": 163.029478,
+        "distanceMs": 44.478
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        296,
+        297
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.7872,
+        "peakSeconds": 163.328798,
+        "distanceMs": 41.798
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        298,
+        299
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.6689,
+        "peakSeconds": 163.643084,
+        "distanceMs": 33.084
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        300,
+        301
+      ],
+      "motif": "finale",
+      "evidence": {
+        "strength": 0.7635,
+        "peakSeconds": 163.872562,
+        "distanceMs": 12.562
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        302,
+        303
+      ],
+      "motif": "coda",
+      "evidence": {
+        "strength": 0.512,
+        "peakSeconds": 164.186848,
+        "distanceMs": -0.318
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        304
+      ],
+      "motif": "coda",
+      "evidence": {
+        "strength": 0.4872,
+        "peakSeconds": 164.481179,
+        "distanceMs": -3.821
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        305
+      ],
+      "motif": "coda",
+      "evidence": {
+        "strength": 0.3975,
+        "peakSeconds": 165.129705,
+        "distanceMs": 19.705
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        306
+      ],
+      "motif": "coda",
+      "evidence": {
+        "strength": 0.6697,
+        "peakSeconds": 165.778231,
+        "distanceMs": 43.231
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        307
+      ],
+      "motif": "coda",
+      "evidence": {
+        "strength": 0.4136,
+        "peakSeconds": 166.277098,
+        "distanceMs": -36.235
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        308
+      ],
+      "motif": "authored_long",
+      "frozen": true
+    },
+    {
+      "source": [
+        309
+      ],
+      "motif": "authored_gold_reply",
+      "evidence": {
+        "strength": 0.5713,
+        "peakSeconds": 168.84127,
+        "distanceMs": -18.73
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        310,
+        311
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.4915,
+        "peakSeconds": 170.756916,
+        "distanceMs": 21.916
+      },
+      "frozen": false
+    },
+    {
+      "source": [
+        310,
+        311
+      ],
+      "motif": "paired_accent",
+      "evidence": {
+        "strength": 0.4915,
+        "peakSeconds": 170.756916,
+        "distanceMs": 21.916
+      },
+      "frozen": false
+    }
+  ],
+  "removed": [
+    {
+      "source": 172,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 173,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 176,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 177,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 40,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 41,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 42,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 43,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 44,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 166,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 167,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 168,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 169,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 170,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 171,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 174,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 175,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 178,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 179,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 180,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 181,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 252,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 253,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 256,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 257,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 258,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 259,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 260,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 261,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 262,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 263,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 264,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 265,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 266,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 267,
+      "reason": "paired_long_occupies_both_hands"
+    },
+    {
+      "source": 14,
+      "reason": "hand_recovery"
+    },
+    {
+      "source": 100,
+      "reason": "hand_recovery"
+    },
+    {
+      "source": 101,
+      "reason": "hand_recovery"
+    },
+    {
+      "source": 229,
+      "reason": "hand_recovery"
+    },
+    {
+      "source": 242,
+      "reason": "hand_recovery"
+    },
+    {
+      "source": 284,
+      "reason": "hand_recovery"
+    },
+    {
+      "source": 285,
+      "reason": "hand_recovery"
+    },
+    {
+      "source": 312,
+      "reason": "hand_recovery"
+    },
+    {
+      "source": 313,
+      "reason": "hand_recovery"
+    }
+  ],
+  "arrowsRelaxed": [
+    18,
+    19,
+    20,
+    21,
+    26,
+    28,
+    33,
+    35,
+    36,
+    38,
+    41,
+    42,
+    71,
+    72,
+    73,
+    74,
+    77,
+    79
+  ],
+  "protectedSourceIndices": [
+    38,
+    39,
+    164,
+    165,
+    254,
+    255
+  ]
+}

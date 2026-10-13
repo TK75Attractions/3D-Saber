@@ -1,0 +1,20 @@
+{
+  "songId": "製作中",
+  "difficulty": "hard",
+  "expectedNotes": 262,
+  "expectedCuts": 404,
+  "observedCuts": 404,
+  "cutTimePrecisionMs": 1,
+  "allTimesPositionsLongIndicesMatched": true,
+  "long44CutEvents": 88,
+  "eventTypes": {
+    "tap": 85,
+    "flick": 157,
+    "gold": 15,
+    "tick": 142,
+    "finish": 5
+  },
+  "editModeTestsPassed": 50,
+  "playModeCapturePassed": true,
+  "verificationScope": "Scripted judgments through game runtime; not a test of physical input or all gold-hand choices"
+}
