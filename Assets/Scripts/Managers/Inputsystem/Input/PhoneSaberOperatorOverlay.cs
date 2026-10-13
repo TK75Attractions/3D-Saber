@@ -338,6 +338,7 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         // 日本語の折り返しが増えても、下の色や警告を切り落とさない。
         scrollPosition = GUILayout.BeginScrollView(scrollPosition);
         GUILayout.Label(redText, textStyle);
+        GUILayout.Label(PhoneSaberPerfLog.Verdict, textStyle);
         if (!string.IsNullOrEmpty(displayWarning)) GUILayout.Label(displayWarning, warningStyle);
         if (!string.IsNullOrEmpty(redWarning)) GUILayout.Label(redWarning, warningStyle);
         GUILayout.Space(8);

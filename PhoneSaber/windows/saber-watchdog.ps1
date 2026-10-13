@@ -53,6 +53,68 @@ if ($Mode -eq 'Lock') {
     }
 }
 
+# 読み取りだけ。電源プラン・Game Mode・出力のHzを毎起動ログに残す。
+function Write-PresentationDiagnostics {
+    $env:PHONESABER_LOW_POWER_MODE = 'unknown'
+    try {
+        $plan = (& powercfg /getactivescheme 2>&1 | Out-String).Trim()
+        Write-WatchdogLog ('power-plan=' + $plan)
+        Write-Host ('電源プラン: ' + $plan + '。AC電源で使用してください。')
+        $bar = Get-ItemProperty -LiteralPath 'HKCU:\Software\Microsoft\GameBar' -ErrorAction SilentlyContinue
+        Write-WatchdogLog ('game-mode-auto=' + $bar.AutoGameModeEnabled)
+        Write-Host 'プロジェクターの出力は60 Hz以上・ゲームモード推奨。設定 > システム > ディスプレイ > ディスプレイの詳細設定で出力先を確認してください。'
+        Add-Type -AssemblyName System.Windows.Forms
+        Add-Type -TypeDefinition @'
+using System;
+using System.Runtime.InteropServices;
+public static class PhoneSaberDisplayRead {
+    [StructLayout(LayoutKind.Explicit, Size=220)]
+    public struct Mode {
+        [FieldOffset(68)] public ushort Size;
+        [FieldOffset(172)] public uint Width;
+        [FieldOffset(176)] public uint Height;
+        [FieldOffset(184)] public uint Hz;
+    }
+    [StructLayout(LayoutKind.Sequential)]
+    public struct Power {
+        public byte AC, Battery, Percent, Saver;
+        public uint Life, FullLife;
+    }
+    [DllImport("user32.dll", CharSet=CharSet.Unicode)]
+    public static extern bool EnumDisplaySettings(string name, int number, ref Mode mode);
+    [DllImport("kernel32.dll")]
+    public static extern bool GetSystemPowerStatus(out Power power);
+}
+'@
+        $power = New-Object PhoneSaberDisplayRead+Power
+        if ([PhoneSaberDisplayRead]::GetSystemPowerStatus([ref]$power)) {
+            $env:PHONESABER_LOW_POWER_MODE = [string]$power.Saver
+            Write-WatchdogLog ('power ac={0} saver={1} battery-percent={2}' -f $power.AC, $power.Saver, $power.Percent)
+            if ($power.Saver -eq 1 -or $power.AC -eq 0) {
+                Write-Host '注意: 省電力またはバッテリー駆動です。AC電源をつなぎ、省電力を解除してから起動し直してください。'
+            }
+        }
+        foreach ($screen in [System.Windows.Forms.Screen]::AllScreens) {
+            $mode = New-Object PhoneSaberDisplayRead+Mode
+            $mode.Size = 220
+            if ([PhoneSaberDisplayRead]::EnumDisplaySettings($screen.DeviceName, -1, [ref]$mode)) {
+                $detail = 'display={0} primary={1} pixels={2}x{3} hz={4} logical-bounds={5}' -f $screen.DeviceName, $screen.Primary, $mode.Width, $mode.Height, $mode.Hz, $screen.Bounds
+                Write-WatchdogLog $detail
+                Write-Host ('画面: {0} {1}x{2} / {3} Hz' -f $screen.DeviceName, $mode.Width, $mode.Height, $mode.Hz)
+                if ($mode.Hz -gt 1 -and $mode.Hz -lt 59) {
+                    Write-Host '注意: 60 Hz未満の出力があります。プロジェクター側の出力設定を確認してください。'
+                }
+            }
+        }
+        Write-Host '表示倍率と解像度は自動変更しません。ウィンドウを重ねず全画面で使用し、F8のPC描画判定も確認してください。'
+    } catch {
+        Write-WatchdogLog ('presentation-check-unavailable=' + $_.Exception.Message)
+        Write-Host '画面・電源の自動確認ができませんでした。F8のPC描画判定とWindowsのディスプレイ設定を確認してください。'
+    }
+}
+
+Write-PresentationDiagnostics
+
 $heartbeat = Join-Path $env:TEMP ('phonesaber-heartbeat-' + [Guid]::NewGuid().ToString('N'))
 $game = $null
 $seen = $false

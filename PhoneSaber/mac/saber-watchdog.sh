@@ -177,7 +177,9 @@ fi
 power_warning() {
     local low source
     low="$(pmset -g 2>/dev/null | awk '$1 == "lowpowermode" { print $2 }')"
+    case "$low" in 0|1) LOW_POWER_STATE="$low" ;; *) LOW_POWER_STATE=unknown ;; esac
     source="$(pmset -g batt 2>/dev/null | head -1)"
+    log "power low-power=$LOW_POWER_STATE source=$source"
     if [[ "$low" == "1" ]]; then
         printf '注意: この Mac は低電力モードが ON です。画面が毎秒30コマになり、動きが重く見えます。\n'
         printf '      システム設定 > バッテリー > 低電力モード を「しない」にしてから起動し直してください。\n'
@@ -188,14 +190,14 @@ power_warning() {
         log "warning battery-power"
     fi
 }
-power_warning
 while ! stopped; do
+    power_warning
     rm -f "$QUIT_MARKER" "$MARKER_DIR"/heartbeat-*
     HEARTBEAT="$MARKER_DIR/heartbeat-$RESTART_COUNT"
     HANG_DETECTED=0
     log "launch p2p-bridge=$BRIDGE_STATE hang-seconds=$HANG_SECONDS"
     printf '台 %s を起動します。再起動回数: %s [Ctrl+C: 監視終了]\n' "$STATION" "$RESTART_COUNT"
-    /usr/bin/open -W -n ${OPEN_ENV[@]+"${OPEN_ENV[@]}"} "$GAME_APP" --args -phonesaberStation "$STATION" -phonesaberQuitMarker "$QUIT_MARKER" -phonesaberHeartbeat "$HEARTBEAT" &
+    /usr/bin/open -W -n ${OPEN_ENV[@]+"${OPEN_ENV[@]}"} --env "PHONESABER_LOW_POWER_MODE=$LOW_POWER_STATE" "$GAME_APP" --args -phonesaberStation "$STATION" -phonesaberQuitMarker "$QUIT_MARKER" -phonesaberHeartbeat "$HEARTBEAT" &
     OPEN_PID=$!
     monitor_game
     wait "$OPEN_PID"

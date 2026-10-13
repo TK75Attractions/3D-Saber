@@ -21,15 +21,19 @@ namespace UnityEngine {
         public static string GetString(string k,string v)=>v;
         public static void Save() {}
     }
-    public static class Time { public static double realtimeSinceStartupAsDouble; }
-    public static class Application { public static int targetFrameRate=120; public static string platform="stub"; }
+    public static class Time { public static double realtimeSinceStartupAsDouble; public static int frameCount; }
+    public static class Application { public static event System.Action onBeforeRender; public static int targetFrameRate=120; public static string platform="stub"; public static void Render()=>onBeforeRender?.Invoke(); }
+    public class BeforeRenderOrderAttribute:System.Attribute { public BeforeRenderOrderAttribute(int order) {} }
+    public static class SystemInfo { public static string graphicsDeviceType="stub"; }
+    public struct FrameTiming { public double gpuFrameTime; }
+    public static class FrameTimingManager { public static bool IsFeatureEnabled()=>false; public static void CaptureFrameTimings() {} public static uint GetLatestTimings(uint n,FrameTiming[] values)=>0; }
     public struct RefreshRate { public double value=>60; }
     public struct Resolution { public RefreshRate refreshRateRatio; }
-    public static class Screen { public static int width=1920,height=1080; public static Resolution currentResolution; }
-    public static class QualitySettings { public static int vSyncCount; public static int GetQualityLevel()=>0; }
+    public static class Screen { public static int width=1920,height=1080,fullScreenMode=1; public static Resolution currentResolution; }
+    public static class QualitySettings { public static int vSyncCount,maxQueuedFrames=2; public static int GetQualityLevel()=>0; }
 }
 namespace UnityEngine.SceneManagement {
-    public struct Scene { public string name=>"stub-scene"; }
+    public struct Scene { public string name=>"stub-scene"; public int handle=>1; }
     public static class SceneManager { public static Scene GetActiveScene()=>default; }
 }
 public class InputPoint {
@@ -38,7 +42,9 @@ public class InputPoint {
     public bool PredictionAutomatic=true;
     public string PredictionLeadSource="fallback";
     public long PredictionDraws,PredictionSuppressedDraws;
+    public PhoneSaberCoordinateTiming RedCoordinateTiming=new PhoneSaberCoordinateTiming(),BlueCoordinateTiming=new PhoneSaberCoordinateTiming();
 }
+public static class SwingMonotonicClock { public static long Timestamp=>(long)(UnityEngine.Time.realtimeSinceStartupAsDouble*1000000); public static double ToSeconds(long ticks)=>ticks/1000000.0; }
 public static class PhoneSaberP2PBridgeProcess { public static bool AutoStartEnabled=false; }
 public static class PhoneSaberPlayerSmoke { public static float ResolveSeconds(string[] args)=>0; }
 public static class PhoneSaberEventLog { public static string Detail; public static void Record(string station,string colour,string kind,string detail) { Detail=detail; } }

@@ -1,0 +1,132 @@
+using System;
+using System.Reflection;
+using NUnit.Framework;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+
+public class PerfBoundaryTests
+{
+    void Tick(PhoneSaberPerfLog log, double at)
+    {
+        Time.realtimeSinceStartupAsDouble = at;
+        typeof(PhoneSaberPerfLog).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic).Invoke(log, null);
+    }
+
+    [TestCase("scene")]
+    [TestCase("vsync")]
+    [TestCase("target")]
+    public void NewConditionsDoNotInheritOldWindow(string change)
+    {
+        PhoneSaberEventLog.Lines.Clear();
+        SceneManager.Active = new Scene { name="Menu", handle=1 };
+        QualitySettings.vSyncCount = 1; Application.targetFrameRate = -1;
+        var log = new PhoneSaberPerfLog();
+        Tick(log, 0); Tick(log, 1); Tick(log, 4);
+        if (change == "scene") SceneManager.Active = new Scene { name="Game", handle=2 };
+        if (change == "vsync") QualitySettings.vSyncCount = 0;
+        if (change == "target") Application.targetFrameRate = 30;
+        Tick(log, 5); Tick(log, 10);
+        Assert.AreEqual(0, PhoneSaberEventLog.Lines.Count, "古い条件の5秒を新しい条件のperfに混ぜない");
+        Tick(log, 15);
+        Assert.AreEqual(1, PhoneSaberEventLog.Lines.Count);
+        StringAssert.Contains("fps=0.2", PhoneSaberEventLog.Lines[0]);
+    }
+}
+#if AFTER
+public class CoordinateTimingTests
+{
+    [Test] public void RepeatedReadAndRenderDoNotCountPacketTwice()
+    {
+        var t = new PhoneSaberCoordinateTiming();
+        t.Applied(1, 1.005); t.Read(1.006); t.Read(1.008);
+        t.BeforeRender(1.010, 1); t.BeforeRender(1.011, 1); t.BeforeRender(1.020, 2);
+        Assert.AreEqual(1, t.FirstRead.Count); Assert.AreEqual(6, t.FirstRead.MedianMs, 1e-9);
+        Assert.AreEqual(1, t.FirstRender.Count); Assert.AreEqual(10, t.FirstRender.MedianMs, 1e-9);
+        Assert.AreEqual(2, t.Age.Count); Assert.AreEqual(15, t.Age.MedianMs, 1e-9);
+    }
+    [Test] public void NoNewPacketPreservesSampleAndFirstUse()
+    {
+        var t = new PhoneSaberCoordinateTiming();
+        t.Applied(1, 1.005); t.Read(1.006); t.Applied(1, 1.020); t.Read(1.021);
+        Assert.IsFalse(t.NeedsFirstRead); Assert.AreEqual(1, t.Apply.Count);
+        Assert.AreEqual(5, t.Apply.MedianMs, 1e-9); Assert.AreEqual(1, t.FirstRead.Count);
+    }
+    [Test] public void UnreadNewPacketIsNotReportedAsDisplayed()
+    {
+        var t = new PhoneSaberCoordinateTiming();
+        t.Applied(1, 1.005); t.Read(1.006); t.BeforeRender(1.010, 1);
+        t.Applied(1.015, 1.016); t.BeforeRender(1.020, 2);
+        Assert.AreEqual(15, t.Age.MedianMs, 1e-9); Assert.AreEqual(1, t.FirstRender.Count);
+        t.Read(1.021); t.BeforeRender(1.025, 3);
+        Assert.AreEqual(2, t.FirstRender.Count); Assert.AreEqual(6, t.FirstRead.MedianMs, 1e-9);
+    }
+    [Test] public void SkippedPacketsHaveNoFirstUseSample()
+    {
+        var t = new PhoneSaberCoordinateTiming();
+        t.Applied(1, 1.001); t.Applied(1.002, 1.003); t.Read(1.004); t.BeforeRender(1.006, 1);
+        Assert.AreEqual(2, t.Apply.Count); Assert.AreEqual(1, t.FirstRead.Count);
+        Assert.AreEqual(4, t.FirstRender.MedianMs, 1e-9);
+    }
+    [Test] public void EmptyWindowIsUnknownAndResetKeepsSampleIdentity()
+    {
+        var t = new PhoneSaberCoordinateTiming(); t.BeforeRender(1, 1);
+        StringAssert.Contains("median-ms=unknown", t.Format("red"));
+        t.Applied(1, 1.005); t.Read(1.006); t.BeforeRender(1.010, 2); t.ClearWindow();
+        t.Read(1.020); t.BeforeRender(1.025, 3);
+        Assert.AreEqual(0, t.FirstRead.Count); Assert.AreEqual(0, t.FirstRender.Count);
+        Assert.AreEqual(25, t.Age.MedianMs, 1e-9);
+    }
+    [Test] public void HotTimingPathDoesNotAllocate()
+    {
+        var t = new PhoneSaberCoordinateTiming();
+        for(int i=0;i<100;i++) {t.Applied(i,i+.001); t.Read(i+.002); t.BeforeRender(i+.003,i);}
+        long before=GC.GetAllocatedBytesForCurrentThread();
+        for(int i=100;i<10100;i++) {t.Applied(i,i+.001); t.Read(i+.002); t.BeforeRender(i+.003,i);}
+        long allocated=GC.GetAllocatedBytesForCurrentThread()-before;
+        Assert.AreEqual(0,allocated);
+        Assert.AreEqual(10100,t.Age.Count);
+    }
+    [Test] public void CapacityIsBoundedAndDropsAreVisible()
+    {
+        var t = new PhoneSaberCoordinateTiming(); t.Applied(0,0); t.Read(0);
+        for(int i=0;i<20000;i++) t.BeforeRender(i*.001,i);
+        Assert.AreEqual(16384,t.Age.Count); StringAssert.Contains("timing-dropped=3616",t.Format("red"));
+    }
+}
+public class PresentationTests
+{
+    [TestCase(60,60,1,30,"unknown",0,"vsync")]
+    [TestCase(30,60,2,-1,"unknown",0,"vsync")]
+    [TestCase(120,60,0,120,"unknown",0,"target")]
+    [TestCase(30,60,1,-1,"1",0,"os-low-power-suspected")]
+    [TestCase(30,60,1,-1,"unknown",0,"cpu-or-os-unknown")]
+    [TestCase(30,60,1,-1,"0",33,"gpu-suspected")]
+    [TestCase(900,60,0,-1,"1",0,"uncapped-or-cpu-os-unknown")]
+    public void LimiterUsesEvidence(double fps,double hz,int vsync,int target,string low,double gpu,string expected)
+    { Assert.AreEqual(expected,PhoneSaberPresentationDiagnosis.Limiter(fps,hz,vsync,target,low,gpu)); }
+}
+#endif
+
+class Run
+{
+    static int Main()
+    {
+        int passed=0,failed=0;
+        foreach(var type in Assembly.GetExecutingAssembly().GetTypes())
+        foreach(var method in type.GetMethods())
+        {
+            var cases=method.GetCustomAttributes(typeof(TestCaseAttribute),false);
+            if(cases.Length==0 && !method.IsDefined(typeof(TestAttribute),false)) continue;
+            if(cases.Length==0) cases=new object[]{null};
+            foreach(var item in cases)
+            {
+                object[] args=item==null?new object[0]:((TestCaseAttribute)item).Arguments;
+                var parameters=method.GetParameters();
+                for(int i=0;i<args.Length;i++) args[i]=Convert.ChangeType(args[i],parameters[i].ParameterType);
+                try {method.Invoke(Activator.CreateInstance(type),args);passed++;}
+                catch(Exception e) {Console.WriteLine("FAIL "+method.Name+" "+(e.InnerException??e).Message); failed++;}
+            }
+        }
+        Console.WriteLine("NUnit host: "+passed+" PASS / "+failed+" FAIL"); return failed==0?0:1;
+    }
+}

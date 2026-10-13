@@ -75,6 +75,16 @@ public class InputPoint : MonoBehaviour
     // UnityのUpdate時刻ではなく、この受信時刻をSwingEventと同じ時計で使う。
     public double LastReceivedMonotonicTime { get; private set; } = double.NegativeInfinity;
     public double LastReceivedMonotonicTime2 { get; private set; } = double.NegativeInfinity;
+    // 診断用。受信・公開・消費者の読み出しを同じ monotonic 時計で区別する。
+    public PhoneSaberCoordinateTiming RedCoordinateTiming { get; } = new PhoneSaberCoordinateTiming();
+    public PhoneSaberCoordinateTiming BlueCoordinateTiming { get; } = new PhoneSaberCoordinateTiming();
+    static void RecordCoordinateRead(PhoneSaberCoordinateTiming timing)
+    {
+        // 同じサンプルの端点を繰り返し読んでも時計取得・記録は初回だけ。
+        if (timing.NeedsFirstRead)
+            timing.Read(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
+    }
+
     // 「最近データが来ているか」を判定するヘルパー。既定 1 秒。
     public bool IsRecentlyActive(double thresholdSeconds = 1.0)
     {
@@ -87,8 +97,18 @@ public class InputPoint : MonoBehaviour
     public Vector2 LocalStickA { get; private set; }
     public Vector2 LocalStickB { get; private set; }
     // 元の board/local 座標（ピクセルや boardRect ローカル）を保持
-    public Vector2 LocalStickRawA { get; private set; }
-    public Vector2 LocalStickRawB { get; private set; }
+    Vector2 localStickRawA;
+    public Vector2 LocalStickRawA
+    {
+        get { RecordCoordinateRead(RedCoordinateTiming); return localStickRawA; }
+        private set { localStickRawA = value; }
+    }
+    Vector2 localStickRawB;
+    public Vector2 LocalStickRawB
+    {
+        get { RecordCoordinateRead(RedCoordinateTiming); return localStickRawB; }
+        private set { localStickRawB = value; }
+    }
     public Vector2 LocalStickA2 { get; private set; }
     public Vector2 LocalStickB2 { get; private set; }
     public float LocalStickLength { get; private set; }
@@ -96,8 +116,18 @@ public class InputPoint : MonoBehaviour
     // 0..1 に正規化した棒の長さ（対角最大長 sqrt(8) で割る）
     public float LocalStickLengthNormalized { get; private set; }
     public float LocalStickLengthNormalized2 { get; private set; }
-    public Vector2 LocalStickRawA2 { get; private set; }
-    public Vector2 LocalStickRawB2 { get; private set; }
+    Vector2 localStickRawA2;
+    public Vector2 LocalStickRawA2
+    {
+        get { RecordCoordinateRead(BlueCoordinateTiming); return localStickRawA2; }
+        private set { localStickRawA2 = value; }
+    }
+    Vector2 localStickRawB2;
+    public Vector2 LocalStickRawB2
+    {
+        get { RecordCoordinateRead(BlueCoordinateTiming); return localStickRawB2; }
+        private set { localStickRawB2 = value; }
+    }
     // 直近packetが4要素の棒端点を含んでいたか。2要素packetで必ずfalseに戻す。
     public bool HasValidStickEndpoints { get; private set; }
     public bool HasValidStickEndpoints2 { get; private set; }
@@ -220,8 +250,18 @@ public class InputPoint : MonoBehaviour
     public float camWidth = 1920f;
     public float camHeight = 1080f;
     public RectTransform boardRect;
-    public Vector2 LocalPosition { get; private set; }
-    public Vector2 LocalPosition2 { get; private set; }
+    Vector2 localPosition;
+    public Vector2 LocalPosition
+    {
+        get { RecordCoordinateRead(RedCoordinateTiming); return localPosition; }
+        private set { localPosition = value; }
+    }
+    Vector2 localPosition2;
+    public Vector2 LocalPosition2
+    {
+        get { RecordCoordinateRead(BlueCoordinateTiming); return localPosition2; }
+        private set { localPosition2 = value; }
+    }
     // 感度・写像を掛ける前の「送信側そのままの中点」。InputDebugOverlay(F3)が
     // 「ポインタが端まで届かないのは送信側の可動域か受信側の変換か」を切り分けるために表示する。
     public Vector2 LastRaw { get; private set; }
@@ -613,6 +653,18 @@ public class InputPoint : MonoBehaviour
             redInputStats.PollSenderGate(eventNow);
             blueInputStats.PollSenderGate(eventNow);
         }
+        ApplyLatestInput(true);
+    }
+
+    // main thread 専用。描画用の消費者が LateUpdate / onBeforeRender で読む直前に呼ぶ。
+    // 自動では呼ばない（ゲームの判定・フィルタ・予測の更新順は変更しない）。新着なしでは何もしない。
+    public void ResampleLatestInput()
+    {
+        if (isActiveAndEnabled && Instance == this) ApplyLatestInput(false);
+    }
+
+    void ApplyLatestInput(bool allowImuFallback)
+    {
         float x = 0, y = 0;
         bool updated = false;
         bool updatedStick = false;
@@ -704,7 +756,7 @@ public class InputPoint : MonoBehaviour
 
         // 両色とも更新がなく IMU も使わない場合、座標処理へ進む必要がない。
         // 受信機監視・接続イベント・診断ログ・レート表示は上で従来どおり行う。
-        if (!updated && !updated2 && !useImuFallback) return;
+        if (!updated && !updated2 && (!allowImuFallback || !useImuFallback)) return;
         bool calibrated = PositionCalibrationEnabled;
         if (updated)
         {
@@ -742,13 +794,15 @@ public class InputPoint : MonoBehaviour
             }
             LastReceivedTime = Time.realtimeSinceStartupAsDouble;
             LastReceivedMonotonicTime = SwingMonotonicClock.ToSeconds(receiveTimestampTicks);
+            RedCoordinateTiming.Applied(LastReceivedMonotonicTime,
+                SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
             if (debugCoordinates)
             {
                 bool isNorm = Mathf.Abs(x) <= 1.5f && Mathf.Abs(y) <= 1.5f;
-                Debug.Log($"[InputPoint] raw=({x:F2},{y:F2}) norm=({NormalizedPosition.x:F3},{NormalizedPosition.y:F3}) local=({LocalPosition.x:F1},{LocalPosition.y:F1}) isNorm={isNorm}");
+                Debug.Log($"[InputPoint] raw=({x:F2},{y:F2}) norm=({NormalizedPosition.x:F3},{NormalizedPosition.y:F3}) local=({localPosition.x:F1},{localPosition.y:F1}) isNorm={isNorm}");
                 if (updatedStick)
                 {
-                    Debug.Log($"[InputPoint] stickRawA=({LocalStickRawA.x:F1},{LocalStickRawA.y:F1}) stickRawB=({LocalStickRawB.x:F1},{LocalStickRawB.y:F1}) stickNormA=({LocalStickA.x:F3},{LocalStickA.y:F3}) stickNormB=({LocalStickB.x:F3},{LocalStickB.y:F3})");
+                    Debug.Log($"[InputPoint] stickRawA=({localStickRawA.x:F1},{localStickRawA.y:F1}) stickRawB=({localStickRawB.x:F1},{localStickRawB.y:F1}) stickNormA=({LocalStickA.x:F3},{LocalStickA.y:F3}) stickNormB=({LocalStickB.x:F3},{LocalStickB.y:F3})");
                 }
             }
         }
@@ -789,6 +843,8 @@ public class InputPoint : MonoBehaviour
             }
             LastReceivedTime2 = Time.realtimeSinceStartupAsDouble;
             LastReceivedMonotonicTime2 = SwingMonotonicClock.ToSeconds(receiveTimestampTicks2);
+            BlueCoordinateTiming.Applied(LastReceivedMonotonicTime2,
+                SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
         }
 
         if (updated)
@@ -796,7 +852,7 @@ public class InputPoint : MonoBehaviour
             return;
         }
 
-        if (!useImuFallback)
+        if (!allowImuFallback || !useImuFallback)
         {
             return;
         }
@@ -807,7 +863,7 @@ public class InputPoint : MonoBehaviour
         }
 
         Vector2 imuLocal = new Vector2(gyro.y, -gyro.x) * (imuPositionScale / 100f);
-        LocalPosition = Vector2.Lerp(LocalPosition, imuLocal, 0.2f);
+        LocalPosition = Vector2.Lerp(localPosition, imuLocal, 0.2f);
 
         float nx = Mathf.Clamp01((accel.x + 1f) * 0.5f);
         float ny = Mathf.Clamp01((accel.y + 1f) * 0.5f);
@@ -817,8 +873,8 @@ public class InputPoint : MonoBehaviour
         {
             Vector2 half = boardRect.rect.size * 0.5f;
             LocalPosition = new Vector2(
-                Mathf.Clamp(LocalPosition.x, -half.x, half.x),
-                Mathf.Clamp(LocalPosition.y, -half.y, half.y)
+                Mathf.Clamp(localPosition.x, -half.x, half.x),
+                Mathf.Clamp(localPosition.y, -half.y, half.y)
             );
         }
         //Debug.Log(LocalStickA + " " + LocalStickB);
