@@ -2,6 +2,12 @@ package jp.phonesaber.sender
 
 import androidx.camera.core.CameraState
 
+object CameraPostProcessingPolicy {
+    // OFF非対応ならHAL既定を維持。FAST等の別モードには置き換えない。
+    fun offMode(experimental: Boolean, available: IntArray?, off: Int): Int? =
+        off.takeIf { experimental && available?.contains(off) == true }
+}
+
 /** カメラ解像度・fps の選択。Android の Size/Range に依存しない純粋関数（JVM テスト用）。 */
 object CameraFormatPolicy {
     const val FRAME_60FPS_NS = 16_666_667L

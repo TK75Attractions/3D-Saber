@@ -1,6 +1,7 @@
 package jp.phonesaber.sender
 
 import android.net.Network
+import android.os.SystemClock
 import java.net.InetSocketAddress
 import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
@@ -8,7 +9,8 @@ import java.util.concurrent.atomic.AtomicInteger
 
 /** One pending frame, replaced on offer; nonblocking sends, no retries or FIFO. */
 class LatestUdpSender : AutoCloseable {
-    private data class Frame(val packets: List<CoordinateDatagram>, val started: Long)
+    private data class Frame(val packets: List<CoordinateDatagram>, val started: Long, val capturedNs: Long?)
+    internal val healthMeter = DeviceHealthMeter()
     private val gate = Object()
     private var destination: Destination? = null
     private var network: Network? = null
@@ -32,10 +34,11 @@ class LatestUdpSender : AutoCloseable {
         redSent.set(0); blueSent.set(0)
     }
 
-    fun offer(results: Array<NativeResult>, processingStarted: Long) = synchronized(gate) {
+    fun offer(results: Array<NativeResult>, processingStarted: Long, capturedNs: Long? = null) = synchronized(gate) {
         if (!closed && destination != null && network != null) {
             // Even an empty/held frame replaces pending fresh coordinates.
-            pending = Frame(PayloadRouting.datagrams(results), processingStarted)
+            pending?.let { healthMeter.droppedFrame(it.packets.isNotEmpty()) }
+            pending = Frame(PayloadRouting.datagrams(results), processingStarted, capturedNs)
             gate.notifyAll()
         }
     }
@@ -57,6 +60,9 @@ class LatestUdpSender : AutoCloseable {
             pending = null
             val target = destination ?: return@synchronized
             val wifi = network ?: return@synchronized
+            var completedNs: Long? = null
+            var redSucceeded = false
+            var blueSucceeded = false
             try {
                 val socket = channel ?: DatagramChannel.open().also {
                     // Bind traffic to Wi-Fi even if mobile data is the default route.
@@ -71,7 +77,14 @@ class LatestUdpSender : AutoCloseable {
                     val bytes = packet.text.toByteArray(Charsets.US_ASCII)
                     val sent = socket.send(ByteBuffer.wrap(bytes), InetSocketAddress(target.address, packet.port))
                     if (sent == bytes.size) {
-                        if (packet.port == Ports.RED) redSent.incrementAndGet() else blueSent.incrementAndGet()
+                        completedNs = SystemClock.elapsedRealtimeNanos()
+                        if (packet.port == Ports.RED) {
+                            redSucceeded = true
+                            redSent.incrementAndGet()
+                        } else {
+                            blueSucceeded = true
+                            blueSent.incrementAndGet()
+                        }
                         error = null
                     }
                     // A full OS socket drops this datagram; never retain it for retry.
@@ -80,6 +93,14 @@ class LatestUdpSender : AutoCloseable {
                 error = "UDP送信失敗: ${e.localizedMessage}"
                 channel?.close()
                 channel = null
+            } finally {
+                // 両色成功でもフレーム1件。置換・期限切れ・socket満杯は計測しない。
+                // 統計のlockを赤と青のsendの間に挟まない。
+                val at = System.nanoTime() / 1e9
+                if (redSucceeded) healthMeter.datagramSent(at, true)
+                if (blueSucceeded) healthMeter.datagramSent(at, false)
+                completedNs?.let { healthMeter.sent(at, frame.capturedNs, it) }
+                if (completedNs == null) healthMeter.droppedFrame(frame.packets.isNotEmpty())
             }
         }
     }

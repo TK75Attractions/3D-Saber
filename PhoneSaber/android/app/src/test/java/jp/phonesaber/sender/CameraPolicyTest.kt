@@ -5,6 +5,13 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class CameraPolicyTest {
+    @Test fun postProcessingOnlyRequestsSupportedOffWhenExplicitlyEnabled() {
+        assertNull(CameraPostProcessingPolicy.offMode(false, intArrayOf(0, 1, 2), 0))
+        assertEquals(0, CameraPostProcessingPolicy.offMode(true, intArrayOf(0, 1, 2), 0))
+        assertNull(CameraPostProcessingPolicy.offMode(true, intArrayOf(1, 2), 0))
+        assertNull(CameraPostProcessingPolicy.offMode(true, intArrayOf(), 0))
+        assertNull(CameraPostProcessingPolicy.offMode(true, null, 0))
+    }
     private data class Size(val width: Int, val height: Int)
 
     private fun order(sizes: List<Size>, durations: Map<Size, Long?>, fps: Int) =

@@ -4,9 +4,12 @@ import android.Manifest
 import android.content.pm.PackageManager
 import android.content.Intent
 import android.content.IntentFilter
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
 import android.os.BatteryManager
+import android.os.Build
 import android.os.PowerManager
 import android.util.Log
 import android.widget.Switch
@@ -34,6 +37,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import java.util.Locale
+import java.text.SimpleDateFormat
+import java.util.Date
 
 class MainActivity : ComponentActivity() {
     private val main = Handler(Looper.getMainLooper())
@@ -43,6 +48,14 @@ class MainActivity : ComponentActivity() {
             .createWifiLock(WifiManager.WIFI_MODE_FULL_LOW_LATENCY, "PhoneSaber:sending")
             .apply { setReferenceCounted(false) }
     }
+    @Suppress("DEPRECATION")
+    private val highPerformanceWifi by lazy {
+        applicationContext.getSystemService(WifiManager::class.java)
+            .createWifiLock(WifiManager.WIFI_MODE_FULL_HIGH_PERF, "PhoneSaber:sending-perf")
+            .apply { setReferenceCounted(false) }
+    }
+    private val latencyLog = LatencyLog()
+    private val logTime = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ssXXX", Locale.US)
     private lateinit var camera: CameraSession
     private lateinit var discovery: PcDiscovery
     private lateinit var pcStatus: TextView
@@ -68,6 +81,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var mirrorYSwitch: Switch
     private lateinit var measurementSwitch: Switch
     private lateinit var fps60Switch: Switch
+    private lateinit var lowLatencyCameraSwitch: Switch
     private var mirrors = MirrorSettings()
     private var destination: Destination? = null
     private var wifi: Network? = null
@@ -123,6 +137,15 @@ class MainActivity : ComponentActivity() {
             val red = sender.redSent.getAndSet(0) / elapsed
             val blue = sender.blueSent.getAndSet(0) / elapsed
             lastStats = now
+            val seconds = now / 1e9
+            if (latencyLog.due(seconds, sending)) {
+                val line = "${logTime.format(Date())} device=${Build.MODEL} api=${Build.VERSION.SDK_INT} " +
+                    "requested_fps=${camera.activeFps} ${camera.status.dimensions} " +
+                    LatencyStatusText.line(camera.healthRates(), thermalStatus, pcReplyWatch.ageSeconds(seconds)) +
+                    " ${camera.diagnostics} wifi_low_latency=${lowLatencyWifi.isHeld} wifi_high_perf=${highPerformanceWifi.isHeld}"
+                Log.i(LatencyLog.TAG, line)
+                latencyLog.append(seconds, line)
+            }
             val status = camera.status
             detection.text = if (sending) String.format(Locale.JAPAN,
                 "赤: %s / 送信 %.1f fps\n青: %s / 送信 %.1f fps\n%s\n%s",
@@ -164,6 +187,19 @@ class MainActivity : ComponentActivity() {
         val preview = PreviewView(this).apply { scaleType = PreviewView.ScaleType.FIT_CENTER }
         panel.addView(preview, LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, dp(250)))
         health = label("端末状態を確認中")
+        Button(this).apply {
+            text = "ログをコピー"
+            panel.addView(this)
+            setOnClickListener {
+                val text = latencyLog.copy(System.nanoTime() / 1e9)
+                if (text.isEmpty()) toast("送信開始から10秒後にログが記録されます")
+                else {
+                    getSystemService(ClipboardManager::class.java)
+                        .setPrimaryClip(ClipData.newPlainText("PhoneSaber latency", text))
+                    toast("直近5分のログをコピーしました")
+                }
+            }
+        }
         pcStatus = label("PCを探索中")
         label("台（PC と同じ台を指定）")
         val stations = listOf("", "A", "B")
@@ -281,7 +317,14 @@ class MainActivity : ComponentActivity() {
             setOnCheckedChangeListener { _, on -> prefs.edit().putInt("cameraFps", if (on) 60 else 30).apply() }
             panel.addView(this)
         }
-        label("発熱や処理落ち（解析fpsの注意）が続くときだけ OFF にします。変更は停止中のみ。")
+        label("暗い場所では60fps固定により画像が暗くなる場合があります。暗さ・発熱・処理落ちが続くときは OFF で30fpsと比較します。変更は停止中のみ。")
+        // 保存しない。再起動時はOFFに戻し、本番で意図せず画素が変わるのを防ぐ。
+        lowLatencyCameraSwitch = Switch(this).apply {
+            text = "低遅延カメラ設定（試験）"
+            isChecked = false
+            panel.addView(this)
+        }
+        label("ノイズ低減・輪郭強調を対応端末で OFF にします。画質と認識結果が変わる可能性があります。既定 OFF。変更は停止中のみ。")
         camera = CameraSession(this, preview, sender) { message -> recoverCamera(message) }
         discovery = PcDiscovery(this, onReply = { address, now ->
             address.hostAddress?.let { pcReplyWatch.received(it, now) }
@@ -351,10 +394,13 @@ class MainActivity : ComponentActivity() {
         mirrorXSwitch.isEnabled = false; mirrorYSwitch.isEnabled = false
         measurementSwitch.isEnabled = false
         fps60Switch.isEnabled = false
+        lowLatencyCameraSwitch.isEnabled = false
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         // 送信中は Wi-Fi の省電力（ビーコン待ちの送信まとめ）を止め、遅延とばらつきを減らす。
         // 低遅延モードは前面・画面点灯中だけ有効になる（Android 10+ / minSdk 29）。
         if (!lowLatencyWifi.isHeld) lowLatencyWifi.acquire()
+        if (!highPerformanceWifi.isHeld) highPerformanceWifi.acquire()
+        latencyLog.start(System.nanoTime() / 1e9)
         startCamera()
         updateRecoveryStatus()
     }
@@ -379,7 +425,7 @@ class MainActivity : ComponentActivity() {
         cameraStartedAt = System.nanoTime() / 1e9
         updateSendingDestination()
         camera.start(brightness, dominance, mirrors, measurementSwitch.isChecked,
-            if (fps60Switch.isChecked) 60 else 30)
+            if (fps60Switch.isChecked) 60 else 30, lowLatencyCameraSwitch.isChecked)
     }
 
     private fun recoverCamera(message: String) {
@@ -428,8 +474,10 @@ class MainActivity : ComponentActivity() {
         mirrorXSwitch.isEnabled = true; mirrorYSwitch.isEnabled = true
         measurementSwitch.isEnabled = true
         fps60Switch.isEnabled = true
+        lowLatencyCameraSwitch.isEnabled = true
         window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         if (lowLatencyWifi.isHeld) lowLatencyWifi.release()
+        if (highPerformanceWifi.isHeld) highPerformanceWifi.release()
         detection.text = "停止中\n赤: 未検出 / 送信 0 fps\n青: 未検出 / 送信 0 fps"
         updateRecoveryStatus()
         updateHealth()

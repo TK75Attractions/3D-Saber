@@ -14,6 +14,8 @@ class PcReplyWatch {
 
     fun reset() { target = null; waitingSince = null; lastReplyAt = null }
 
+    fun ageSeconds(now: Double): Double? = lastReplyAt?.let { maxOf(0.0, now - it) }
+
     fun received(address: String, now: Double) {
         val since = waitingSince ?: return
         if (address == target && now >= since) lastReplyAt = maxOf(lastReplyAt ?: since, now)

@@ -2,10 +2,13 @@ package jp.phonesaber.sender
 
 import android.graphics.ImageFormat
 import android.hardware.camera2.CameraCharacteristics
+import android.hardware.camera2.CameraCaptureSession
 import android.hardware.camera2.CaptureRequest
+import android.hardware.camera2.CaptureResult
+import android.hardware.camera2.TotalCaptureResult
 import android.os.Handler
 import android.os.Looper
-import android.os.SystemClock
+import android.os.Process
 import android.util.Range
 import android.view.Surface
 import androidx.camera.camera2.interop.Camera2CameraInfo
@@ -20,7 +23,6 @@ import androidx.camera.view.PreviewView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.LifecycleOwner
 import java.util.concurrent.ScheduledFuture
-import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 
 @androidx.annotation.OptIn(markerClass = [ExperimentalCamera2Interop::class])
@@ -38,22 +40,27 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
     // 実際に要求しているカメラ fps（60 非対応の端末・解像度では 30）。
     @Volatile var activeFps = 30
         private set
-    private val executor = ScheduledThreadPoolExecutor(1).apply { removeOnCancelPolicy = true }
+    @Volatile var diagnostics = "camera=starting"
+        private set
+    private val executor = analysisExecutor {
+        Process.setThreadPriority(Process.THREAD_PRIORITY_MORE_FAVORABLE)
+    }
     private var provider: ProcessCameraProvider? = null
     private var analysis: ImageAnalysis? = null
     private var cameraState: androidx.lifecycle.LiveData<androidx.camera.core.CameraState>? = null
     // These fields are accessed only on executor.
     private var core: NativeCore? = null
     private var expiry: ScheduledFuture<*>? = null
-    private val healthMeter = DeviceHealthMeter()
+    private val healthMeter = sender.healthMeter
     fun healthRates(): HealthRates = healthMeter.snapshot(System.nanoTime() / 1e9)
 
     fun start(brightness: Int, dominance: Int, mirrors: MirrorSettings, measurementMode: Boolean = false,
-              preferredFps: Int = 30) {
+              preferredFps: Int = 30, experimentalLowLatency: Boolean = false) {
         val token = synchronized(gate) {
             running = true
             status = Status()
             lastFrameAt = 0.0
+            diagnostics = "camera=starting"
             healthMeter.reset(System.nanoTime() / 1e9)
             ++generation
         }
@@ -75,8 +82,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                 val info = CameraSelector.DEFAULT_BACK_CAMERA.filter(cameras.availableCameraInfos).firstOrNull()
                     ?: error("背面カメラがありません")
                 val camera2 = Camera2CameraInfo.from(info)
-                // 撮影→送信の表示用。REALTIME 以外の端末は CLOCK_MONOTONIC（System.nanoTime）とみなし、
-                // 0〜2秒の範囲外は DeviceHealthMeter が捨てる。
+                // REALTIME のセンサー時刻だけを elapsedRealtimeNanos と比較する。
                 val realtimeSensorClock = camera2.getCameraCharacteristic(
                     CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE) ==
                     CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME
@@ -107,8 +113,9 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                     .setResolutionSelector(selector)
                     .setOutputImageFormat(ImageAnalysis.OUTPUT_IMAGE_FORMAT_RGBA_8888)
                     .setOutputImageRotationEnabled(false) // JNI 内で同じ向きへ byte 単位で回転。
+                    // この方式ではsetImageQueueDepthは無効。FIFOを作らず最新だけを解析する。
                     .setBackpressureStrategy(ImageAnalysis.STRATEGY_KEEP_ONLY_LATEST)
-                Camera2Interop.Extender(builder)
+                val interop = Camera2Interop.Extender(builder)
                     .setCaptureRequestOption(CaptureRequest.CONTROL_AE_TARGET_FPS_RANGE, Range(fps, fps))
                     .setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE, CaptureRequest.CONTROL_AE_MODE_ON)
                     .setCaptureRequestOption(CaptureRequest.CONTROL_AE_LOCK, false)
@@ -116,6 +123,41 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                         CaptureRequest.CONTROL_VIDEO_STABILIZATION_MODE_OFF)
                     .setCaptureRequestOption(CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE,
                         CaptureRequest.LENS_OPTICAL_STABILIZATION_MODE_OFF)
+                // 認識に渡る画素が変わるので、試験設定ONかつOFF対応のときだけ指定する。
+                CameraPostProcessingPolicy.offMode(experimentalLowLatency,
+                    camera2.getCameraCharacteristic(CameraCharacteristics.NOISE_REDUCTION_AVAILABLE_NOISE_REDUCTION_MODES),
+                    CaptureRequest.NOISE_REDUCTION_MODE_OFF)?.let {
+                    interop.setCaptureRequestOption(CaptureRequest.NOISE_REDUCTION_MODE, it)
+                }
+                CameraPostProcessingPolicy.offMode(experimentalLowLatency,
+                    camera2.getCameraCharacteristic(CameraCharacteristics.EDGE_AVAILABLE_EDGE_MODES),
+                    CaptureRequest.EDGE_MODE_OFF)?.let {
+                    interop.setCaptureRequestOption(CaptureRequest.EDGE_MODE, it)
+                }
+                var nextDiagnosticAt = 0.0
+                interop.setSessionCaptureCallback(object : CameraCaptureSession.CaptureCallback() {
+                    override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest,
+                                                    result: TotalCaptureResult) {
+                        val now = System.nanoTime() / 1e9
+                        synchronized(gate) {
+                            if (!running || token != generation) return
+                            healthMeter.captured(now, result.frameNumber)
+                            // CaptureResultは実際のHAL設定。毎フレームの文字列生成を避ける。
+                            if (now >= nextDiagnosticAt) {
+                                nextDiagnosticAt = now + 1.0
+                                diagnostics = "camera_generation=$token clock=${if (realtimeSensorClock) "REALTIME" else "UNKNOWN"} " +
+                                    "experimental=$experimentalLowLatency " +
+                                    "nr=${result.get(CaptureResult.NOISE_REDUCTION_MODE)} " +
+                                    "edge=${result.get(CaptureResult.EDGE_MODE)} " +
+                                    "video_stabilization=${result.get(CaptureResult.CONTROL_VIDEO_STABILIZATION_MODE)} " +
+                                    "ois=${result.get(CaptureResult.LENS_OPTICAL_STABILIZATION_MODE)} " +
+                                    "exposure_ns=${result.get(CaptureResult.SENSOR_EXPOSURE_TIME)} " +
+                                    "frame_duration_ns=${result.get(CaptureResult.SENSOR_FRAME_DURATION)} " +
+                                    "ae_fps=${result.get(CaptureResult.CONTROL_AE_TARGET_FPS_RANGE)}"
+                            }
+                        }
+                    }
+                })
                 val frames = builder.build()
                 analysis = frames
                 frames.setAnalyzer(executor) { image ->
@@ -130,13 +172,12 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                             val results = processor.processCamera(plane.buffer, image.width, image.height,
                                 plane.rowStride, plane.pixelStride, degrees, started / 1e9, brightness, dominance)
                             val jniEnded = System.nanoTime()
-                            val sensorNow = if (realtimeSensorClock) SystemClock.elapsedRealtimeNanos() else jniEnded
-                            val captureToSendMs = (sensorNow - image.imageInfo.timestamp) / 1e6
+                            val capturedNs = CaptureClock.timestamp(image.imageInfo.timestamp, realtimeSensorClock)
                             synchronized(gate) {
                                 if (running && token == generation) {
                                     lastFrameAt = jniEnded / 1e9
-                                    healthMeter.processed(jniEnded / 1e9, (jniEnded - jniStarted) / 1e6, captureToSendMs)
-                                    sender.offer(results, started)
+                                    healthMeter.processed(jniEnded / 1e9, (jniEnded - jniStarted) / 1e6)
+                                    sender.offer(results, started, capturedNs)
                                     val width = if (degrees % 180 == 0) image.width else image.height
                                     val height = if (degrees % 180 == 0) image.height else image.width
                                     status = describe(results, "${width}×${height} / $fps fps要求")

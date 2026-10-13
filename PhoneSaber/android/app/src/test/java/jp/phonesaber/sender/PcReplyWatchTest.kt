@@ -4,6 +4,21 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class PcReplyWatchTest {
+    @Test fun replyAgeNeverSubstitutesWaitingTimeForARealReplyAndResetsWithTarget() {
+        val watch = PcReplyWatch()
+        assertNull(watch.ageSeconds(100.0))
+        watch.update(true, "192.168.1.10", false, 100.0)
+        assertNull(watch.ageSeconds(110.0))
+        watch.received("192.168.1.11", 110.0)
+        assertNull(watch.ageSeconds(111.0))
+        watch.received("192.168.1.10", 110.0)
+        assertEquals(2.0, watch.ageSeconds(112.0)!!, 0.000001)
+        assertEquals(0.0, watch.ageSeconds(109.0)!!, 0.000001)
+        watch.update(true, "192.168.1.11", false, 112.0)
+        assertNull(watch.ageSeconds(113.0))
+        watch.reset()
+        assertNull(watch.ageSeconds(114.0))
+    }
     private val pc = "192.168.137.1"
     private val other = "192.168.137.5"
 

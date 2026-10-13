@@ -62,6 +62,12 @@ iPhone遅延: 10-13 に main へ取り込み済み（公式 verify PASS）。既
 
 ## 作業ログ
 
+### 2026-10-13 Android capture→send の仕上げ（Codex 実装、Claude がレビュー・検証して取り込み）
+- 送信中10秒ごとに `PhoneSaberLatency` タグで1行（撮影fps・解析fps・赤青の送信fps・撮影→送信 median/p95・未解析推定・送信破棄・発熱・PC 応答からの秒数・Camera2 の実設定）。画面の「ログをコピー」で直近5分を取れる。数値の手入力は不要。
+- 撮影→送信は「センサー時刻（REALTIME の端末だけ）→ OS への送信完了」で測るように変更。解析スレッドの優先度を1段上げ、送信中は Wi-Fi の low-latency と high-perf の両 lock を持つ。
+- 「低遅延カメラ設定（試験）」（ノイズ低減・輪郭強調 OFF）は既定 OFF・保存しない。画素が変わるので AQUOS での比較が先。
+- 検証: gradle unit / assembleDebug / lintDebug 成功、`make -C PhoneSaber/android/core test parity` で 325 PNG 差分 0・formal 40/40。AQUOS と Windows の実機は未実施。[結果と実機手順](android-latency-20261011.md)。
+
 ### 2026-10-13 iPhone capture→send の仕上げ（Codex 実装、Claude がレビュー・verify して取り込み）
 - 60/30の通常AVCapture setter履歴をmainと一致させ、HDR/GDC/広色域変更は既定OFFの試験トグルへ分離。120 opt-inと最新1枚mailboxを維持。
 - Releaseで撮影時刻を取得し、10秒ごとの経路・fps・遅延median/p95・発熱ログを追加。健康統計を現在の送信より後へ移し、集計ロックを短縮。120再発熱時の30fps退避、LAN fallback後の経路ログも修正。
