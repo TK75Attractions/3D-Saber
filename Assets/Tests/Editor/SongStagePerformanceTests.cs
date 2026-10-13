@@ -11,7 +11,7 @@ public class SongStagePerformanceTests
 
     [TestCase("2_23_AM",2,196.075)] [TestCase("ElDorado",3,144.065306)] [TestCase("Epilogue",3,166.408707)]
     [TestCase("Morning",2,165.329)] [TestCase("揺籠",4,184.24163)] [TestCase("NeonParade",2,121.9)]
-    [TestCase("製作中",2,174.864)]
+    [TestCase("製作中",2,178.224)]
     public void AuthoredSectionsMatchAudioAndRemainSmooth(string song,int count,double duration)
     {
         string folder=Path.Combine(Application.streamingAssetsPath,"Songs",song);
