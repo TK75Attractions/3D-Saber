@@ -1,0 +1,468 @@
+{
+  "id": "BenkyouRemaster",
+  "source": "勉強（Remaster.mp3",
+  "sha256": "e8a897d48b2a36c6112d0df155b6aabb21b60ab596450627be6098d26ed5e920",
+  "duration": 138.76244897959182,
+  "firstActiveSeconds": 0.773015873015873,
+  "lastActiveSeconds": 137.33315192743765,
+  "suppliedTempoAnchors": [
+    {
+      "beat": 0,
+      "relativeSeconds": 0.0,
+      "bpm": 160
+    },
+    {
+      "beat": 80,
+      "relativeSeconds": 30.0,
+      "bpm": 100
+    },
+    {
+      "beat": 114,
+      "relativeSeconds": 50.4,
+      "bpm": 160
+    },
+    {
+      "beat": 280,
+      "relativeSeconds": 112.65,
+      "bpm": 70
+    },
+    {
+      "beat": 304,
+      "relativeSeconds": 133.2214285714286,
+      "bpm": 360
+    }
+  ],
+  "phaseCandidates": [
+    {
+      "offsetSeconds": 0.024,
+      "score": 0.46489
+    },
+    {
+      "offsetSeconds": 1.526,
+      "score": 0.43619
+    },
+    {
+      "offsetSeconds": 0.776,
+      "score": 0.37579
+    },
+    {
+      "offsetSeconds": 2.276,
+      "score": 0.36397
+    },
+    {
+      "offsetSeconds": 0.962,
+      "score": 0.36006
+    },
+    {
+      "offsetSeconds": 2.462,
+      "score": 0.35656
+    },
+    {
+      "offsetSeconds": 0.4,
+      "score": 0.35436
+    },
+    {
+      "offsetSeconds": 1.9,
+      "score": 0.34717
+    },
+    {
+      "offsetSeconds": 1.15,
+      "score": 0.34104
+    },
+    {
+      "offsetSeconds": 1.338,
+      "score": 0.33985
+    },
+    {
+      "offsetSeconds": 2.838,
+      "score": 0.33775
+    },
+    {
+      "offsetSeconds": 1.714,
+      "score": 0.33678
+    }
+  ],
+  "regions": [
+    {
+      "startSeconds": 0.0,
+      "energy": 0.27192,
+      "onsetMean": 0.1595
+    },
+    {
+      "startSeconds": 4.0,
+      "energy": 0.33121,
+      "onsetMean": 0.1855
+    },
+    {
+      "startSeconds": 8.0,
+      "energy": 0.30823,
+      "onsetMean": 0.1542
+    },
+    {
+      "startSeconds": 12.0,
+      "energy": 0.32234,
+      "onsetMean": 0.232
+    },
+    {
+      "startSeconds": 16.0,
+      "energy": 0.32793,
+      "onsetMean": 0.2632
+    },
+    {
+      "startSeconds": 20.0,
+      "energy": 0.30143,
+      "onsetMean": 0.2655
+    },
+    {
+      "startSeconds": 24.0,
+      "energy": 0.41372,
+      "onsetMean": 0.2989
+    },
+    {
+      "startSeconds": 28.0,
+      "energy": 0.30525,
+      "onsetMean": 0.303
+    },
+    {
+      "startSeconds": 32.0,
+      "energy": 0.24942,
+      "onsetMean": 0.2031
+    },
+    {
+      "startSeconds": 36.0,
+      "energy": 0.23281,
+      "onsetMean": 0.207
+    },
+    {
+      "startSeconds": 40.0,
+      "energy": 0.24207,
+      "onsetMean": 0.1987
+    },
+    {
+      "startSeconds": 44.0,
+      "energy": 0.24813,
+      "onsetMean": 0.1942
+    },
+    {
+      "startSeconds": 48.0,
+      "energy": 0.20482,
+      "onsetMean": 0.1736
+    },
+    {
+      "startSeconds": 52.0,
+      "energy": 0.20639,
+      "onsetMean": 0.2114
+    },
+    {
+      "startSeconds": 56.0,
+      "energy": 0.21558,
+      "onsetMean": 0.2139
+    },
+    {
+      "startSeconds": 60.0,
+      "energy": 0.22234,
+      "onsetMean": 0.2094
+    },
+    {
+      "startSeconds": 64.0,
+      "energy": 0.27525,
+      "onsetMean": 0.255
+    },
+    {
+      "startSeconds": 68.0,
+      "energy": 0.19267,
+      "onsetMean": 0.1944
+    },
+    {
+      "startSeconds": 72.0,
+      "energy": 0.24436,
+      "onsetMean": 0.0978
+    },
+    {
+      "startSeconds": 76.0,
+      "energy": 0.30148,
+      "onsetMean": 0.1087
+    },
+    {
+      "startSeconds": 80.0,
+      "energy": 0.29016,
+      "onsetMean": 0.0958
+    },
+    {
+      "startSeconds": 84.0,
+      "energy": 0.17554,
+      "onsetMean": 0.106
+    },
+    {
+      "startSeconds": 88.0,
+      "energy": 0.31016,
+      "onsetMean": 0.2238
+    },
+    {
+      "startSeconds": 92.0,
+      "energy": 0.29297,
+      "onsetMean": 0.227
+    },
+    {
+      "startSeconds": 96.0,
+      "energy": 0.25742,
+      "onsetMean": 0.2042
+    },
+    {
+      "startSeconds": 100.0,
+      "energy": 0.30899,
+      "onsetMean": 0.2094
+    },
+    {
+      "startSeconds": 104.0,
+      "energy": 0.28672,
+      "onsetMean": 0.2105
+    },
+    {
+      "startSeconds": 108.0,
+      "energy": 0.235,
+      "onsetMean": 0.1364
+    },
+    {
+      "startSeconds": 112.0,
+      "energy": 0.33859,
+      "onsetMean": 0.0313
+    },
+    {
+      "startSeconds": 116.0,
+      "energy": 0.42564,
+      "onsetMean": 0.0474
+    },
+    {
+      "startSeconds": 120.0,
+      "energy": 0.42578,
+      "onsetMean": 0.0552
+    },
+    {
+      "startSeconds": 124.0,
+      "energy": 0.42306,
+      "onsetMean": 0.0734
+    },
+    {
+      "startSeconds": 128.0,
+      "energy": 0.44203,
+      "onsetMean": 0.0696
+    },
+    {
+      "startSeconds": 132.0,
+      "energy": 0.40278,
+      "onsetMean": 0.277
+    },
+    {
+      "startSeconds": 136.0,
+      "energy": 0.04033,
+      "onsetMean": 0.0555
+    }
+  ],
+  "earlyOnsets": [
+    {
+      "time": 0.76327,
+      "strength": 1.502
+    },
+    {
+      "time": 0.88299,
+      "strength": 0.303
+    },
+    {
+      "time": 0.95782,
+      "strength": 0.821
+    },
+    {
+      "time": 1.02766,
+      "strength": 0.369
+    },
+    {
+      "time": 1.14739,
+      "strength": 0.722
+    },
+    {
+      "time": 1.24218,
+      "strength": 0.395
+    },
+    {
+      "time": 1.33696,
+      "strength": 0.826
+    },
+    {
+      "time": 1.44671,
+      "strength": 0.425
+    },
+    {
+      "time": 1.5415,
+      "strength": 0.409
+    },
+    {
+      "time": 1.61633,
+      "strength": 0.299
+    },
+    {
+      "time": 1.7161,
+      "strength": 0.791
+    },
+    {
+      "time": 1.89569,
+      "strength": 0.752
+    },
+    {
+      "time": 1.97551,
+      "strength": 0.313
+    },
+    {
+      "time": 2.07528,
+      "strength": 0.297
+    },
+    {
+      "time": 2.26984,
+      "strength": 0.562
+    },
+    {
+      "time": 2.35964,
+      "strength": 0.589
+    },
+    {
+      "time": 2.47937,
+      "strength": 0.258
+    },
+    {
+      "time": 2.5542,
+      "strength": 0.554
+    },
+    {
+      "time": 2.62902,
+      "strength": 0.711
+    },
+    {
+      "time": 2.75374,
+      "strength": 0.246
+    },
+    {
+      "time": 2.83356,
+      "strength": 0.516
+    },
+    {
+      "time": 2.95828,
+      "strength": 0.27
+    },
+    {
+      "time": 3.03311,
+      "strength": 0.41
+    },
+    {
+      "time": 3.11791,
+      "strength": 0.762
+    },
+    {
+      "time": 3.2127,
+      "strength": 0.691
+    },
+    {
+      "time": 3.28254,
+      "strength": 0.417
+    },
+    {
+      "time": 3.39728,
+      "strength": 0.71
+    },
+    {
+      "time": 3.48209,
+      "strength": 0.477
+    },
+    {
+      "time": 3.55692,
+      "strength": 0.413
+    },
+    {
+      "time": 3.77143,
+      "strength": 0.798
+    },
+    {
+      "time": 3.86122,
+      "strength": 0.345
+    },
+    {
+      "time": 3.961,
+      "strength": 0.667
+    },
+    {
+      "time": 4.06576,
+      "strength": 0.195
+    },
+    {
+      "time": 4.15057,
+      "strength": 0.742
+    },
+    {
+      "time": 4.26032,
+      "strength": 0.314
+    },
+    {
+      "time": 4.36009,
+      "strength": 0.339
+    },
+    {
+      "time": 4.43991,
+      "strength": 0.522
+    },
+    {
+      "time": 4.52971,
+      "strength": 0.512
+    },
+    {
+      "time": 4.64444,
+      "strength": 0.189
+    },
+    {
+      "time": 4.71429,
+      "strength": 0.685
+    },
+    {
+      "time": 4.90385,
+      "strength": 0.805
+    },
+    {
+      "time": 5.02857,
+      "strength": 0.509
+    },
+    {
+      "time": 5.15329,
+      "strength": 0.448
+    },
+    {
+      "time": 5.27302,
+      "strength": 0.799
+    },
+    {
+      "time": 5.3678,
+      "strength": 0.361
+    },
+    {
+      "time": 5.44762,
+      "strength": 0.612
+    },
+    {
+      "time": 5.60726,
+      "strength": 0.589
+    },
+    {
+      "time": 5.6771,
+      "strength": 0.409
+    },
+    {
+      "time": 5.74694,
+      "strength": 0.395
+    },
+    {
+      "time": 5.81678,
+      "strength": 0.645
+    },
+    {
+      "time": 5.97642,
+      "strength": 0.355
+    }
+  ]
+}

@@ -21,6 +21,19 @@ public sealed class SongSelectBeatTimeline
         var charts = (source ?? Enumerable.Empty<ChartData>()).Where(c => c != null).ToList();
         var knots = new SortedDictionary<double, List<double>>();
         foreach (var chart in charts)
+        {
+            var clock = new ChartTempoMap(chart.bpm, chart.beatZeroMs, chart.editorTempoMap);
+            if (clock.Points.Count >= 2 && Finite(chart.offsetMs))
+            {
+                // 休符の中のテンポ変更も保つ。ノーツ間の推測より作者の地図を優先。
+                foreach (var point in clock.Points)
+                {
+                    double beat = point.beat, time = (point.timeMs + chart.offsetMs) / 1000.0;
+                    if (!knots.TryGetValue(beat, out var values)) knots[beat] = values = new List<double>();
+                    values.Add(time);
+                }
+                continue;
+            }
             foreach (var note in chart.notes ?? new List<NoteData>())
             {
                 if (note == null || !Finite(note.beat) || !Finite(note.time) || !Finite(chart.offsetMs)) continue;
@@ -28,6 +41,7 @@ public sealed class SongSelectBeatTimeline
                 if (!knots.TryGetValue(beat, out var values)) knots[beat] = values = new List<double>();
                 values.Add(time);
             }
+        }
         points = new List<KeyValuePair<double, double>>();
         foreach (var knot in knots)
         {

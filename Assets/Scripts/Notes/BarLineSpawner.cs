@@ -45,7 +45,7 @@ public class BarLineSpawner : MonoBehaviour
         barTimes.Clear();
         if (chart == null || chart.bpm <= 0 || float.IsNaN(chart.bpm) || float.IsInfinity(chart.bpm)) return;
         double offset = chart.offsetMs / 1000.0 + extraOffsetSeconds;
-        double origin = chart.beatZeroMs / 1000.0 + offset;
+        var clock = new ChartTempoMap(chart.bpm, chart.beatZeroMs, chart.editorTempoMap);
         double end = 0;
         if (chart.notes != null && chart.notes.Count > 0)
         {
@@ -59,8 +59,8 @@ public class BarLineSpawner : MonoBehaviour
             end += 4.0 + offset;
         }
         var meter = new ChartMeterMap(chart.timeSignatures, beatsPerBar);
-        foreach (double beat in meter.BarStarts(0, (end - origin) * chart.bpm / 60.0))
-            barTimes.Add(origin + beat * 60.0 / chart.bpm);
+        foreach (double beat in meter.BarStarts(0, clock.BeatAt((end - offset) * 1000.0)))
+            barTimes.Add(clock.TimeAt(beat) / 1000.0 + offset);
     }
 
     public void Tick(double songTime)

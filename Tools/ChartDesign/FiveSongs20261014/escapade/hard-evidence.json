@@ -1,0 +1,3647 @@
+[
+  {
+    "index": 0,
+    "beat": 16.0,
+    "hand": "blue",
+    "role": "前半・片手の反転フリック",
+    "peakSeconds": 5.068481,
+    "distanceMs": -4.151,
+    "strength": 1.6721
+  },
+  {
+    "index": 1,
+    "beat": 17.0,
+    "hand": "blue",
+    "role": "前半・片手の反転フリック",
+    "peakSeconds": 5.387755,
+    "distanceMs": -0.666,
+    "strength": 0.7982
+  },
+  {
+    "index": 2,
+    "beat": 18.0,
+    "hand": "blue",
+    "role": "前半・片手の反転フリック",
+    "peakSeconds": 5.702041,
+    "distanceMs": -2.17,
+    "strength": 0.352
+  },
+  {
+    "index": 3,
+    "beat": 20.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 6.495238,
+    "distanceMs": 1.554,
+    "strength": 0.9687
+  },
+  {
+    "index": 4,
+    "beat": 21.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 6.659864,
+    "distanceMs": 8.285,
+    "strength": 0.4382
+  },
+  {
+    "index": 5,
+    "beat": 22.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 7.12381,
+    "distanceMs": -1.454,
+    "strength": 0.9099
+  },
+  {
+    "index": 6,
+    "beat": 24.0,
+    "hand": "red",
+    "role": "前半・片手の反転フリック",
+    "peakSeconds": 7.602721,
+    "distanceMs": 3.774,
+    "strength": 1.1127
+  },
+  {
+    "index": 7,
+    "beat": 25.0,
+    "hand": "red",
+    "role": "前半・片手の反転フリック",
+    "peakSeconds": 7.912018,
+    "distanceMs": -2.719,
+    "strength": 0.5666
+  },
+  {
+    "index": 8,
+    "beat": 26.0,
+    "hand": "red",
+    "role": "前半・片手の反転フリック",
+    "peakSeconds": 8.236281,
+    "distanceMs": 5.755,
+    "strength": 0.4235
+  },
+  {
+    "index": 9,
+    "beat": 28.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 9.02449,
+    "distanceMs": 4.49,
+    "strength": 1.0856
+  },
+  {
+    "index": 10,
+    "beat": 29.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 9.17415,
+    "distanceMs": -3.745,
+    "strength": 0.5289
+  },
+  {
+    "index": 11,
+    "beat": 30.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 9.493424,
+    "distanceMs": -0.26,
+    "strength": 0.8792
+  },
+  {
+    "index": 12,
+    "beat": 30.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 9.653061,
+    "distanceMs": 1.482,
+    "strength": 1.0301
+  },
+  {
+    "index": 13,
+    "beat": 31.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 9.80771,
+    "distanceMs": -1.764,
+    "strength": 0.6372
+  },
+  {
+    "index": 14,
+    "beat": 32.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 10.126984,
+    "distanceMs": 1.721,
+    "strength": 1.0165
+  },
+  {
+    "index": 15,
+    "beat": 32.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 10.126984,
+    "distanceMs": 1.721,
+    "strength": 1.0165
+  },
+  {
+    "index": 16,
+    "beat": 33.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 10.44127,
+    "distanceMs": 0.217,
+    "strength": 0.6314
+  },
+  {
+    "index": 17,
+    "beat": 33.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 10.595918,
+    "distanceMs": -3.029,
+    "strength": 0.6847
+  },
+  {
+    "index": 18,
+    "beat": 34.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 10.760544,
+    "distanceMs": 3.702,
+    "strength": 0.3675
+  },
+  {
+    "index": 19,
+    "beat": 35.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 11.07483,
+    "distanceMs": 2.198,
+    "strength": 0.5635
+  },
+  {
+    "index": 20,
+    "beat": 35.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 11.07483,
+    "distanceMs": 2.198,
+    "strength": 0.5635
+  },
+  {
+    "index": 21,
+    "beat": 36.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 11.389116,
+    "distanceMs": 0.695,
+    "strength": 0.3953
+  },
+  {
+    "index": 22,
+    "beat": 37.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 11.698413,
+    "distanceMs": -5.798,
+    "strength": 0.8542
+  },
+  {
+    "index": 23,
+    "beat": 37.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 11.698413,
+    "distanceMs": -5.798,
+    "strength": 0.8542
+  },
+  {
+    "index": 24,
+    "beat": 38.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 12.182313,
+    "distanceMs": 4.418,
+    "strength": 0.7471
+  },
+  {
+    "index": 25,
+    "beat": 40.0,
+    "hand": "red",
+    "role": "句末ロング",
+    "peakSeconds": 12.651247,
+    "distanceMs": -0.332,
+    "strength": 1.1299
+  },
+  {
+    "index": 26,
+    "beat": 41.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 13.12517,
+    "distanceMs": -0.093,
+    "strength": 0.7147
+  },
+  {
+    "index": 27,
+    "beat": 43.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 13.604082,
+    "distanceMs": 5.134,
+    "strength": 0.5025
+  },
+  {
+    "index": 28,
+    "beat": 43.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 13.604082,
+    "distanceMs": 5.134,
+    "strength": 0.5025
+  },
+  {
+    "index": 29,
+    "beat": 44.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 13.913379,
+    "distanceMs": -1.358,
+    "strength": 1.1907
+  },
+  {
+    "index": 30,
+    "beat": 45.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 14.232653,
+    "distanceMs": 2.127,
+    "strength": 0.6088
+  },
+  {
+    "index": 31,
+    "beat": 45.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 14.232653,
+    "distanceMs": 2.127,
+    "strength": 0.6088
+  },
+  {
+    "index": 32,
+    "beat": 46.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 14.546939,
+    "distanceMs": 0.623,
+    "strength": 0.7403
+  },
+  {
+    "index": 33,
+    "beat": 47.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 14.861224,
+    "distanceMs": -0.881,
+    "strength": 0.5649
+  },
+  {
+    "index": 34,
+    "beat": 47.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 14.861224,
+    "distanceMs": -0.881,
+    "strength": 0.5649
+  },
+  {
+    "index": 35,
+    "beat": 48.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 15.17551,
+    "distanceMs": -2.385,
+    "strength": 0.9841
+  },
+  {
+    "index": 36,
+    "beat": 49.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 15.494785,
+    "distanceMs": 1.1,
+    "strength": 0.6176
+  },
+  {
+    "index": 37,
+    "beat": 49.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 15.494785,
+    "distanceMs": 1.1,
+    "strength": 0.6176
+  },
+  {
+    "index": 38,
+    "beat": 50.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 15.804082,
+    "distanceMs": -5.392,
+    "strength": 0.5973
+  },
+  {
+    "index": 39,
+    "beat": 51.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 16.123356,
+    "distanceMs": -1.907,
+    "strength": 0.5006
+  },
+  {
+    "index": 40,
+    "beat": 51.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 16.123356,
+    "distanceMs": -1.907,
+    "strength": 0.5006
+  },
+  {
+    "index": 41,
+    "beat": 52.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 16.44263,
+    "distanceMs": 1.578,
+    "strength": 0.4267
+  },
+  {
+    "index": 42,
+    "beat": 52.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 16.597279,
+    "distanceMs": -1.668,
+    "strength": 0.8827
+  },
+  {
+    "index": 43,
+    "beat": 54.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 17.07619,
+    "distanceMs": 3.559,
+    "strength": 0.5898
+  },
+  {
+    "index": 44,
+    "beat": 54.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 17.07619,
+    "distanceMs": 3.559,
+    "strength": 0.5898
+  },
+  {
+    "index": 45,
+    "beat": 55.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 17.385488,
+    "distanceMs": -2.934,
+    "strength": 0.6373
+  },
+  {
+    "index": 46,
+    "beat": 56.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 17.704762,
+    "distanceMs": 0.551,
+    "strength": 0.9848
+  },
+  {
+    "index": 47,
+    "beat": 56.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 17.704762,
+    "distanceMs": 0.551,
+    "strength": 0.9848
+  },
+  {
+    "index": 48,
+    "beat": 57.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 18.019048,
+    "distanceMs": -0.952,
+    "strength": 0.6897
+  },
+  {
+    "index": 49,
+    "beat": 58.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 18.338322,
+    "distanceMs": 2.533,
+    "strength": 0.8299
+  },
+  {
+    "index": 50,
+    "beat": 58.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 18.338322,
+    "distanceMs": 2.533,
+    "strength": 0.8299
+  },
+  {
+    "index": 51,
+    "beat": 59.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 18.807256,
+    "distanceMs": -2.217,
+    "strength": 0.615
+  },
+  {
+    "index": 52,
+    "beat": 60.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 18.966893,
+    "distanceMs": -0.475,
+    "strength": 0.3967
+  },
+  {
+    "index": 53,
+    "beat": 61.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 19.281179,
+    "distanceMs": -1.979,
+    "strength": 0.7444
+  },
+  {
+    "index": 54,
+    "beat": 61.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 19.281179,
+    "distanceMs": -1.979,
+    "strength": 0.7444
+  },
+  {
+    "index": 55,
+    "beat": 62.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 19.600454,
+    "distanceMs": 1.506,
+    "strength": 0.9583
+  },
+  {
+    "index": 56,
+    "beat": 63.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 19.909751,
+    "distanceMs": -4.986,
+    "strength": 0.5418
+  },
+  {
+    "index": 57,
+    "beat": 63.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 19.909751,
+    "distanceMs": -4.986,
+    "strength": 0.5418
+  },
+  {
+    "index": 58,
+    "beat": 64.0,
+    "hand": "red",
+    "role": "句末ロング",
+    "peakSeconds": 20.229025,
+    "distanceMs": -1.501,
+    "strength": 0.9186
+  },
+  {
+    "index": 59,
+    "beat": 64.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 20.393651,
+    "distanceMs": 5.23,
+    "strength": 0.7945
+  },
+  {
+    "index": 60,
+    "beat": 65.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 20.702948,
+    "distanceMs": -1.263,
+    "strength": 0.6015
+  },
+  {
+    "index": 61,
+    "beat": 67.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 21.176871,
+    "distanceMs": -1.024,
+    "strength": 0.5508
+  },
+  {
+    "index": 62,
+    "beat": 68.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 21.491156,
+    "distanceMs": -2.528,
+    "strength": 0.4786
+  },
+  {
+    "index": 63,
+    "beat": 68.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 21.650794,
+    "distanceMs": -0.785,
+    "strength": 1.0514
+  },
+  {
+    "index": 64,
+    "beat": 69.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 21.805442,
+    "distanceMs": -4.032,
+    "strength": 0.6634
+  },
+  {
+    "index": 65,
+    "beat": 70.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 22.124717,
+    "distanceMs": -0.547,
+    "strength": 0.7792
+  },
+  {
+    "index": 66,
+    "beat": 71.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 22.434014,
+    "distanceMs": -7.039,
+    "strength": 0.4819
+  },
+  {
+    "index": 67,
+    "beat": 72.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 22.758277,
+    "distanceMs": 1.435,
+    "strength": 0.8194
+  },
+  {
+    "index": 68,
+    "beat": 73.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 23.072562,
+    "distanceMs": -0.069,
+    "strength": 0.7228
+  },
+  {
+    "index": 69,
+    "beat": 73.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 23.227211,
+    "distanceMs": -3.315,
+    "strength": 0.5993
+  },
+  {
+    "index": 70,
+    "beat": 74.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 23.381859,
+    "distanceMs": -6.562,
+    "strength": 0.7548
+  },
+  {
+    "index": 71,
+    "beat": 75.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 23.706122,
+    "distanceMs": 1.912,
+    "strength": 0.5582
+  },
+  {
+    "index": 72,
+    "beat": 76.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 24.01542,
+    "distanceMs": -4.58,
+    "strength": 0.5728
+  },
+  {
+    "index": 73,
+    "beat": 76.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 24.175057,
+    "distanceMs": -2.838,
+    "strength": 1.0356
+  },
+  {
+    "index": 74,
+    "beat": 77.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 24.329705,
+    "distanceMs": -6.084,
+    "strength": 0.6686
+  },
+  {
+    "index": 75,
+    "beat": 78.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 24.64898,
+    "distanceMs": -2.599,
+    "strength": 0.7919
+  },
+  {
+    "index": 76,
+    "beat": 78.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 24.813605,
+    "distanceMs": 4.132,
+    "strength": 1.1224
+  },
+  {
+    "index": 77,
+    "beat": 80.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 25.28254,
+    "distanceMs": -0.618,
+    "strength": 1.0258
+  },
+  {
+    "index": 78,
+    "beat": 80.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 25.28254,
+    "distanceMs": -0.618,
+    "strength": 1.0258
+  },
+  {
+    "index": 79,
+    "beat": 81.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 25.596825,
+    "distanceMs": -2.122,
+    "strength": 0.5655
+  },
+  {
+    "index": 80,
+    "beat": 82.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 25.9161,
+    "distanceMs": 1.363,
+    "strength": 0.7634
+  },
+  {
+    "index": 81,
+    "beat": 82.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 25.9161,
+    "distanceMs": 1.363,
+    "strength": 0.7634
+  },
+  {
+    "index": 82,
+    "beat": 83.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 26.230385,
+    "distanceMs": -0.141,
+    "strength": 0.5523
+  },
+  {
+    "index": 83,
+    "beat": 84.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 26.54966,
+    "distanceMs": 3.344,
+    "strength": 0.4757
+  },
+  {
+    "index": 84,
+    "beat": 84.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 26.704308,
+    "distanceMs": 0.098,
+    "strength": 0.8437
+  },
+  {
+    "index": 85,
+    "beat": 86.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 27.178231,
+    "distanceMs": 0.337,
+    "strength": 0.9332
+  },
+  {
+    "index": 86,
+    "beat": 86.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 27.178231,
+    "distanceMs": 0.337,
+    "strength": 0.9332
+  },
+  {
+    "index": 87,
+    "beat": 87.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 27.492517,
+    "distanceMs": -1.167,
+    "strength": 1.0773
+  },
+  {
+    "index": 88,
+    "beat": 88.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 27.811791,
+    "distanceMs": 2.318,
+    "strength": 0.7803
+  },
+  {
+    "index": 89,
+    "beat": 88.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 27.811791,
+    "distanceMs": 2.318,
+    "strength": 0.7803
+  },
+  {
+    "index": 90,
+    "beat": 89.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 28.126077,
+    "distanceMs": 0.814,
+    "strength": 0.753
+  },
+  {
+    "index": 91,
+    "beat": 90.0,
+    "hand": "blue",
+    "role": "句末ロング",
+    "peakSeconds": 28.445351,
+    "distanceMs": 4.299,
+    "strength": 0.8623
+  },
+  {
+    "index": 92,
+    "beat": 91.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 28.754649,
+    "distanceMs": -2.194,
+    "strength": 0.6152
+  },
+  {
+    "index": 93,
+    "beat": 92.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 29.068934,
+    "distanceMs": -3.697,
+    "strength": 0.4731
+  },
+  {
+    "index": 94,
+    "beat": 94.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 29.702494,
+    "distanceMs": -1.716,
+    "strength": 1.0174
+  },
+  {
+    "index": 95,
+    "beat": 94.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 29.702494,
+    "distanceMs": -1.716,
+    "strength": 1.0174
+  },
+  {
+    "index": 96,
+    "beat": 95.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 30.01678,
+    "distanceMs": -3.22,
+    "strength": 0.7147
+  },
+  {
+    "index": 97,
+    "beat": 95.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 30.186395,
+    "distanceMs": 8.5,
+    "strength": 0.9406
+  },
+  {
+    "index": 98,
+    "beat": 96.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 30.336054,
+    "distanceMs": 0.265,
+    "strength": 0.9797
+  },
+  {
+    "index": 99,
+    "beat": 97.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 30.655329,
+    "distanceMs": 3.75,
+    "strength": 0.9087
+  },
+  {
+    "index": 100,
+    "beat": 98.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 30.964626,
+    "distanceMs": -2.743,
+    "strength": 0.8632
+  },
+  {
+    "index": 101,
+    "beat": 99.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 31.2839,
+    "distanceMs": 0.742,
+    "strength": 0.6154
+  },
+  {
+    "index": 102,
+    "beat": 99.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 31.438549,
+    "distanceMs": -2.504,
+    "strength": 0.616
+  },
+  {
+    "index": 103,
+    "beat": 100.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 31.593197,
+    "distanceMs": -5.75,
+    "strength": 0.4393
+  },
+  {
+    "index": 104,
+    "beat": 100.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 31.757823,
+    "distanceMs": 0.981,
+    "strength": 1.0305
+  },
+  {
+    "index": 105,
+    "beat": 102.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 32.226757,
+    "distanceMs": -3.769,
+    "strength": 0.9444
+  },
+  {
+    "index": 106,
+    "beat": 102.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 32.386395,
+    "distanceMs": -2.026,
+    "strength": 1.0265
+  },
+  {
+    "index": 107,
+    "beat": 103.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 32.546032,
+    "distanceMs": -0.284,
+    "strength": 0.5433
+  },
+  {
+    "index": 108,
+    "beat": 104.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 32.865306,
+    "distanceMs": 3.201,
+    "strength": 0.8349
+  },
+  {
+    "index": 109,
+    "beat": 104.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 33.024943,
+    "distanceMs": 4.943,
+    "strength": 0.4628
+  },
+  {
+    "index": 110,
+    "beat": 105.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 33.33424,
+    "distanceMs": -1.549,
+    "strength": 0.6006
+  },
+  {
+    "index": 111,
+    "beat": 106.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 33.493878,
+    "distanceMs": 0.193,
+    "strength": 1.0111
+  },
+  {
+    "index": 112,
+    "beat": 107.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 33.813152,
+    "distanceMs": 3.678,
+    "strength": 0.4647
+  },
+  {
+    "index": 113,
+    "beat": 108.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 34.127438,
+    "distanceMs": 2.174,
+    "strength": 0.5354
+  },
+  {
+    "index": 114,
+    "beat": 108.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 34.282086,
+    "distanceMs": -1.072,
+    "strength": 1.0345
+  },
+  {
+    "index": 115,
+    "beat": 109.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 34.436735,
+    "distanceMs": -4.318,
+    "strength": 0.4549
+  },
+  {
+    "index": 116,
+    "beat": 110.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 34.756009,
+    "distanceMs": -0.833,
+    "strength": 0.8277
+  },
+  {
+    "index": 117,
+    "beat": 110.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 34.920635,
+    "distanceMs": 5.898,
+    "strength": 1.2053
+  },
+  {
+    "index": 118,
+    "beat": 111.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 35.070295,
+    "distanceMs": -2.337,
+    "strength": 0.605
+  },
+  {
+    "index": 119,
+    "beat": 112.0,
+    "hand": "blue",
+    "role": "句末ロング",
+    "peakSeconds": 35.38458,
+    "distanceMs": -3.841,
+    "strength": 1.1224
+  },
+  {
+    "index": 120,
+    "beat": 114.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 36.018141,
+    "distanceMs": -1.859,
+    "strength": 0.8398
+  },
+  {
+    "index": 121,
+    "beat": 115.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 36.492063,
+    "distanceMs": -1.621,
+    "strength": 0.5953
+  },
+  {
+    "index": 122,
+    "beat": 116.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 36.651701,
+    "distanceMs": 0.122,
+    "strength": 0.5452
+  },
+  {
+    "index": 123,
+    "beat": 117.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 36.960998,
+    "distanceMs": -6.371,
+    "strength": 0.4843
+  },
+  {
+    "index": 124,
+    "beat": 118.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 37.280272,
+    "distanceMs": -2.886,
+    "strength": 0.8589
+  },
+  {
+    "index": 125,
+    "beat": 119.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 37.599546,
+    "distanceMs": 0.599,
+    "strength": 0.7603
+  },
+  {
+    "index": 126,
+    "beat": 119.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 37.764172,
+    "distanceMs": 7.33,
+    "strength": 0.6853
+  },
+  {
+    "index": 127,
+    "beat": 120.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 37.913832,
+    "distanceMs": -0.905,
+    "strength": 1.0575
+  },
+  {
+    "index": 128,
+    "beat": 120.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 38.073469,
+    "distanceMs": 0.838,
+    "strength": 0.6004
+  },
+  {
+    "index": 129,
+    "beat": 121.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 38.228118,
+    "distanceMs": -2.408,
+    "strength": 0.8443
+  },
+  {
+    "index": 130,
+    "beat": 122.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 38.542404,
+    "distanceMs": -3.912,
+    "strength": 1.0438
+  },
+  {
+    "index": 131,
+    "beat": 123.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 38.861678,
+    "distanceMs": -0.427,
+    "strength": 0.4663
+  },
+  {
+    "index": 132,
+    "beat": 124.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 39.175964,
+    "distanceMs": -1.931,
+    "strength": 0.5757
+  },
+  {
+    "index": 133,
+    "beat": 124.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 39.335601,
+    "distanceMs": -0.189,
+    "strength": 1.1069
+  },
+  {
+    "index": 134,
+    "beat": 125.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 39.649887,
+    "distanceMs": -1.692,
+    "strength": 0.7422
+  },
+  {
+    "index": 135,
+    "beat": 126.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 39.809524,
+    "distanceMs": 0.05,
+    "strength": 0.8848
+  },
+  {
+    "index": 136,
+    "beat": 126.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 39.969161,
+    "distanceMs": 1.793,
+    "strength": 0.9349
+  },
+  {
+    "index": 137,
+    "beat": 127.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 40.12381,
+    "distanceMs": -1.454,
+    "strength": 0.6585
+  },
+  {
+    "index": 138,
+    "beat": 128.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 40.443084,
+    "distanceMs": 2.031,
+    "strength": 0.9749
+  },
+  {
+    "index": 139,
+    "beat": 129.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 40.75737,
+    "distanceMs": 0.528,
+    "strength": 0.7623
+  },
+  {
+    "index": 140,
+    "beat": 130.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 41.071655,
+    "distanceMs": -0.976,
+    "strength": 0.7789
+  },
+  {
+    "index": 141,
+    "beat": 130.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 41.226304,
+    "distanceMs": -4.222,
+    "strength": 0.6955
+  },
+  {
+    "index": 142,
+    "beat": 131.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 41.545578,
+    "distanceMs": -0.738,
+    "strength": 0.6094
+  },
+  {
+    "index": 143,
+    "beat": 132.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 41.705215,
+    "distanceMs": 1.005,
+    "strength": 0.4679
+  },
+  {
+    "index": 144,
+    "beat": 132.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 41.859864,
+    "distanceMs": -2.241,
+    "strength": 1.1609
+  },
+  {
+    "index": 145,
+    "beat": 133.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 42.014512,
+    "distanceMs": -5.488,
+    "strength": 0.7125
+  },
+  {
+    "index": 146,
+    "beat": 134.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 42.333787,
+    "distanceMs": -2.003,
+    "strength": 0.9649
+  },
+  {
+    "index": 147,
+    "beat": 134.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 42.503401,
+    "distanceMs": 9.717,
+    "strength": 0.8353
+  },
+  {
+    "index": 148,
+    "beat": 136.0,
+    "hand": "red",
+    "role": "句末ロング",
+    "peakSeconds": 42.972336,
+    "distanceMs": 4.967,
+    "strength": 0.929
+  },
+  {
+    "index": 149,
+    "beat": 138.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 43.595918,
+    "distanceMs": -3.029,
+    "strength": 0.6766
+  },
+  {
+    "index": 150,
+    "beat": 139.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 43.915193,
+    "distanceMs": 0.456,
+    "strength": 0.4623
+  },
+  {
+    "index": 151,
+    "beat": 139.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 44.07483,
+    "distanceMs": 2.198,
+    "strength": 0.6367
+  },
+  {
+    "index": 152,
+    "beat": 140.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 44.234467,
+    "distanceMs": 3.941,
+    "strength": 0.4764
+  },
+  {
+    "index": 153,
+    "beat": 140.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 44.384127,
+    "distanceMs": -4.294,
+    "strength": 1.374
+  },
+  {
+    "index": 154,
+    "beat": 142.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 44.863039,
+    "distanceMs": 0.933,
+    "strength": 0.9386
+  },
+  {
+    "index": 155,
+    "beat": 142.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 45.017687,
+    "distanceMs": -2.313,
+    "strength": 0.9138
+  },
+  {
+    "index": 156,
+    "beat": 143.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 45.137415,
+    "distanceMs": -40.48,
+    "strength": 0.4413
+  },
+  {
+    "index": 157,
+    "beat": 143.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 45.336961,
+    "distanceMs": 1.172,
+    "strength": 0.7207
+  },
+  {
+    "index": 158,
+    "beat": 144.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 45.496599,
+    "distanceMs": 2.914,
+    "strength": 0.8702
+  },
+  {
+    "index": 159,
+    "beat": 145.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 45.785941,
+    "distanceMs": -23.533,
+    "strength": 0.4805
+  },
+  {
+    "index": 160,
+    "beat": 145.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 45.960544,
+    "distanceMs": -6.824,
+    "strength": 0.6133
+  },
+  {
+    "index": 161,
+    "beat": 146.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 46.289796,
+    "distanceMs": 6.638,
+    "strength": 0.4423
+  },
+  {
+    "index": 162,
+    "beat": 147.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 46.594104,
+    "distanceMs": -4.843,
+    "strength": 0.3834
+  },
+  {
+    "index": 163,
+    "beat": 148.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 46.763719,
+    "distanceMs": 6.877,
+    "strength": 0.3415
+  },
+  {
+    "index": 164,
+    "beat": 149.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 47.078005,
+    "distanceMs": 5.373,
+    "strength": 0.8871
+  },
+  {
+    "index": 165,
+    "beat": 150.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 47.546939,
+    "distanceMs": 0.623,
+    "strength": 1.1783
+  },
+  {
+    "index": 166,
+    "beat": 151.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 47.686621,
+    "distanceMs": -17.589,
+    "strength": 0.4863
+  },
+  {
+    "index": 167,
+    "beat": 151.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 47.861224,
+    "distanceMs": -0.881,
+    "strength": 0.9705
+  },
+  {
+    "index": 168,
+    "beat": 152.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 48.02585,
+    "distanceMs": 5.85,
+    "strength": 0.5519
+  },
+  {
+    "index": 169,
+    "beat": 153.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 48.335147,
+    "distanceMs": -0.642,
+    "strength": 0.3636
+  },
+  {
+    "index": 170,
+    "beat": 154.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 48.649433,
+    "distanceMs": -2.146,
+    "strength": 0.3275
+  },
+  {
+    "index": 171,
+    "beat": 154.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 48.80907,
+    "distanceMs": -0.403,
+    "strength": 0.3562
+  },
+  {
+    "index": 172,
+    "beat": 155.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 49.118367,
+    "distanceMs": -6.896,
+    "strength": 0.4335
+  },
+  {
+    "index": 173,
+    "beat": 157.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 49.602268,
+    "distanceMs": 3.32,
+    "strength": 0.8776
+  },
+  {
+    "index": 174,
+    "beat": 157.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 49.751927,
+    "distanceMs": -4.915,
+    "strength": 0.4053
+  },
+  {
+    "index": 175,
+    "beat": 158.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 49.951474,
+    "distanceMs": 36.737,
+    "strength": 0.382
+  },
+  {
+    "index": 176,
+    "beat": 158.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 50.071202,
+    "distanceMs": -1.43,
+    "strength": 1.4298
+  },
+  {
+    "index": 177,
+    "beat": 159.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 50.230839,
+    "distanceMs": 0.313,
+    "strength": 0.3896
+  },
+  {
+    "index": 178,
+    "beat": 160.0,
+    "hand": "red",
+    "role": "句末ロング",
+    "peakSeconds": 50.550113,
+    "distanceMs": 3.798,
+    "strength": 1.1219
+  },
+  {
+    "index": 179,
+    "beat": 163.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 51.468027,
+    "distanceMs": -25.657,
+    "strength": 0.4243
+  },
+  {
+    "index": 180,
+    "beat": 164.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 51.812245,
+    "distanceMs": 2.771,
+    "strength": 0.975
+  },
+  {
+    "index": 181,
+    "beat": 164.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 51.812245,
+    "distanceMs": 2.771,
+    "strength": 0.975
+  },
+  {
+    "index": 182,
+    "beat": 165.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 52.126531,
+    "distanceMs": 1.267,
+    "strength": 1.0629
+  },
+  {
+    "index": 183,
+    "beat": 166.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 52.440816,
+    "distanceMs": -0.236,
+    "strength": 1.0962
+  },
+  {
+    "index": 184,
+    "beat": 166.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 52.440816,
+    "distanceMs": -0.236,
+    "strength": 1.0962
+  },
+  {
+    "index": 185,
+    "beat": 168.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 53.074376,
+    "distanceMs": 1.745,
+    "strength": 0.8693
+  },
+  {
+    "index": 186,
+    "beat": 168.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 53.074376,
+    "distanceMs": 1.745,
+    "strength": 0.8693
+  },
+  {
+    "index": 187,
+    "beat": 169.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 53.398639,
+    "distanceMs": 10.218,
+    "strength": 0.937
+  },
+  {
+    "index": 188,
+    "beat": 170.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 53.702948,
+    "distanceMs": -1.263,
+    "strength": 0.8491
+  },
+  {
+    "index": 189,
+    "beat": 170.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 53.702948,
+    "distanceMs": -1.263,
+    "strength": 0.8491
+  },
+  {
+    "index": 190,
+    "beat": 171.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 54.062132,
+    "distanceMs": 42.132,
+    "strength": 0.5303
+  },
+  {
+    "index": 191,
+    "beat": 171.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 54.181859,
+    "distanceMs": 3.965,
+    "strength": 0.809
+  },
+  {
+    "index": 192,
+    "beat": 172.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 54.306576,
+    "distanceMs": -29.214,
+    "strength": 0.4768
+  },
+  {
+    "index": 193,
+    "beat": 173.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 54.655782,
+    "distanceMs": 4.203,
+    "strength": 0.5958
+  },
+  {
+    "index": 194,
+    "beat": 173.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 54.655782,
+    "distanceMs": 4.203,
+    "strength": 0.5958
+  },
+  {
+    "index": 195,
+    "beat": 174.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 54.965079,
+    "distanceMs": -2.289,
+    "strength": 0.3943
+  },
+  {
+    "index": 196,
+    "beat": 175.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 55.284354,
+    "distanceMs": 1.196,
+    "strength": 1.3934
+  },
+  {
+    "index": 197,
+    "beat": 175.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 55.284354,
+    "distanceMs": 1.196,
+    "strength": 1.3934
+  },
+  {
+    "index": 198,
+    "beat": 176.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 55.618594,
+    "distanceMs": 19.647,
+    "strength": 1.0542
+  },
+  {
+    "index": 199,
+    "beat": 177.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 55.907937,
+    "distanceMs": -6.8,
+    "strength": 0.7824
+  },
+  {
+    "index": 200,
+    "beat": 178.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 56.242177,
+    "distanceMs": 11.651,
+    "strength": 1.074
+  },
+  {
+    "index": 201,
+    "beat": 179.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 56.581406,
+    "distanceMs": 35.09,
+    "strength": 0.6214
+  },
+  {
+    "index": 202,
+    "beat": 179.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 56.701134,
+    "distanceMs": -3.077,
+    "strength": 0.9159
+  },
+  {
+    "index": 203,
+    "beat": 180.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 56.875737,
+    "distanceMs": 13.632,
+    "strength": 1.4027
+  },
+  {
+    "index": 204,
+    "beat": 181.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 57.135147,
+    "distanceMs": -42.747,
+    "strength": 0.7268
+  },
+  {
+    "index": 205,
+    "beat": 181.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 57.364626,
+    "distanceMs": 28.836,
+    "strength": 0.8926
+  },
+  {
+    "index": 206,
+    "beat": 182.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 57.509297,
+    "distanceMs": 15.613,
+    "strength": 1.184
+  },
+  {
+    "index": 207,
+    "beat": 183.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 57.778685,
+    "distanceMs": -30.789,
+    "strength": 0.5456
+  },
+  {
+    "index": 208,
+    "beat": 184.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 58.142857,
+    "distanceMs": 17.594,
+    "strength": 1.0445
+  },
+  {
+    "index": 209,
+    "beat": 185.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 58.4322,
+    "distanceMs": -8.853,
+    "strength": 0.5537
+  },
+  {
+    "index": 210,
+    "beat": 186.0,
+    "hand": "blue",
+    "role": "句末ロング",
+    "peakSeconds": 58.76644,
+    "distanceMs": 9.598,
+    "strength": 1.5412
+  },
+  {
+    "index": 211,
+    "beat": 186.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 58.871202,
+    "distanceMs": -43.535,
+    "strength": 0.5092
+  },
+  {
+    "index": 212,
+    "beat": 187.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 59.260317,
+    "distanceMs": 29.791,
+    "strength": 0.802
+  },
+  {
+    "index": 213,
+    "beat": 189.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 59.65941,
+    "distanceMs": -44.8,
+    "strength": 0.6345
+  },
+  {
+    "index": 214,
+    "beat": 189.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 59.893878,
+    "distanceMs": 31.772,
+    "strength": 0.8982
+  },
+  {
+    "index": 215,
+    "beat": 190.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 60.03356,
+    "distanceMs": 13.56,
+    "strength": 1.1215
+  },
+  {
+    "index": 216,
+    "beat": 191.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 60.292971,
+    "distanceMs": -42.819,
+    "strength": 0.6418
+  },
+  {
+    "index": 217,
+    "beat": 191.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 60.522449,
+    "distanceMs": 28.765,
+    "strength": 0.7513
+  },
+  {
+    "index": 218,
+    "beat": 192.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 60.652154,
+    "distanceMs": 0.575,
+    "strength": 0.9279
+  },
+  {
+    "index": 219,
+    "beat": 193.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 60.96644,
+    "distanceMs": -0.929,
+    "strength": 1.4035
+  },
+  {
+    "index": 220,
+    "beat": 194.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 61.275737,
+    "distanceMs": -7.421,
+    "strength": 1.2628
+  },
+  {
+    "index": 221,
+    "beat": 195.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 61.590023,
+    "distanceMs": -8.925,
+    "strength": 0.4311
+  },
+  {
+    "index": 222,
+    "beat": 195.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 61.714739,
+    "distanceMs": -42.103,
+    "strength": 0.9674
+  },
+  {
+    "index": 223,
+    "beat": 196.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 61.909297,
+    "distanceMs": -5.44,
+    "strength": 1.0673
+  },
+  {
+    "index": 224,
+    "beat": 197.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 62.228571,
+    "distanceMs": -1.955,
+    "strength": 1.0799
+  },
+  {
+    "index": 225,
+    "beat": 198.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 62.542857,
+    "distanceMs": -3.459,
+    "strength": 1.4986
+  },
+  {
+    "index": 226,
+    "beat": 199.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 62.817234,
+    "distanceMs": -44.872,
+    "strength": 0.342
+  },
+  {
+    "index": 227,
+    "beat": 199.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 62.976871,
+    "distanceMs": -43.129,
+    "strength": 0.8652
+  },
+  {
+    "index": 228,
+    "beat": 200.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 63.176417,
+    "distanceMs": -1.478,
+    "strength": 0.8867
+  },
+  {
+    "index": 229,
+    "beat": 201.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 63.490703,
+    "distanceMs": -2.981,
+    "strength": 1.2281
+  },
+  {
+    "index": 230,
+    "beat": 202.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 63.804989,
+    "distanceMs": -4.485,
+    "strength": 1.4099
+  },
+  {
+    "index": 231,
+    "beat": 203.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 64.119274,
+    "distanceMs": -5.989,
+    "strength": 0.4889
+  },
+  {
+    "index": 232,
+    "beat": 203.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 64.239002,
+    "distanceMs": -44.156,
+    "strength": 0.7651
+  },
+  {
+    "index": 233,
+    "beat": 204.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 64.438549,
+    "distanceMs": -2.504,
+    "strength": 1.3124
+  },
+  {
+    "index": 234,
+    "beat": 205.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 64.752834,
+    "distanceMs": -4.008,
+    "strength": 1.4634
+  },
+  {
+    "index": 235,
+    "beat": 205.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 64.912472,
+    "distanceMs": -2.265,
+    "strength": 1.3293
+  },
+  {
+    "index": 236,
+    "beat": 206.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 65.072109,
+    "distanceMs": -0.523,
+    "strength": 1.4182
+  },
+  {
+    "index": 237,
+    "beat": 206.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 65.231746,
+    "distanceMs": 1.22,
+    "strength": 0.7458
+  },
+  {
+    "index": 238,
+    "beat": 208.0,
+    "hand": "red",
+    "role": "後半・反転フリック＋逆手の弧",
+    "peakSeconds": 65.695692,
+    "distanceMs": -8.519,
+    "strength": 1.6693
+  },
+  {
+    "index": 239,
+    "beat": 208.0,
+    "hand": "blue",
+    "role": "後半・反転フリック＋逆手の弧",
+    "peakSeconds": 65.695692,
+    "distanceMs": -8.519,
+    "strength": 1.6693
+  },
+  {
+    "index": 240,
+    "beat": 209.0,
+    "hand": "red",
+    "role": "後半・反転フリック＋逆手の弧",
+    "peakSeconds": 66.014966,
+    "distanceMs": -5.034,
+    "strength": 1.6637
+  },
+  {
+    "index": 241,
+    "beat": 209.0,
+    "hand": "blue",
+    "role": "後半・反転フリック＋逆手の弧",
+    "peakSeconds": 66.014966,
+    "distanceMs": -5.034,
+    "strength": 1.6637
+  },
+  {
+    "index": 242,
+    "beat": 210.0,
+    "hand": "red",
+    "role": "後半・反転フリック＋逆手の弧",
+    "peakSeconds": 66.344218,
+    "distanceMs": 8.428,
+    "strength": 0.6288
+  },
+  {
+    "index": 243,
+    "beat": 210.0,
+    "hand": "blue",
+    "role": "後半・反転フリック＋逆手の弧",
+    "peakSeconds": 66.344218,
+    "distanceMs": 8.428,
+    "strength": 0.6288
+  },
+  {
+    "index": 244,
+    "beat": 212.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 66.9678,
+    "distanceMs": 0.432,
+    "strength": 1.6392
+  },
+  {
+    "index": 245,
+    "beat": 212.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 66.9678,
+    "distanceMs": 0.432,
+    "strength": 1.6392
+  },
+  {
+    "index": 246,
+    "beat": 213.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 67.287075,
+    "distanceMs": 3.917,
+    "strength": 1.6086
+  },
+  {
+    "index": 247,
+    "beat": 214.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 67.626304,
+    "distanceMs": 27.356,
+    "strength": 0.5559
+  },
+  {
+    "index": 248,
+    "beat": 214.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 67.626304,
+    "distanceMs": 27.356,
+    "strength": 0.5559
+  },
+  {
+    "index": 249,
+    "beat": 215.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 67.910658,
+    "distanceMs": -4.079,
+    "strength": 1.6659
+  },
+  {
+    "index": 250,
+    "beat": 216.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 68.229932,
+    "distanceMs": -0.594,
+    "strength": 1.589
+  },
+  {
+    "index": 251,
+    "beat": 216.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 68.229932,
+    "distanceMs": -0.594,
+    "strength": 1.589
+  },
+  {
+    "index": 252,
+    "beat": 217.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 68.544218,
+    "distanceMs": -2.098,
+    "strength": 1.6311
+  },
+  {
+    "index": 253,
+    "beat": 218.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 68.873469,
+    "distanceMs": 11.364,
+    "strength": 0.6189
+  },
+  {
+    "index": 254,
+    "beat": 218.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 68.873469,
+    "distanceMs": 11.364,
+    "strength": 0.6189
+  },
+  {
+    "index": 255,
+    "beat": 219.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 69.172789,
+    "distanceMs": -5.106,
+    "strength": 1.7032
+  },
+  {
+    "index": 256,
+    "beat": 220.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 69.492063,
+    "distanceMs": -1.621,
+    "strength": 1.9561
+  },
+  {
+    "index": 257,
+    "beat": 220.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 69.492063,
+    "distanceMs": -1.621,
+    "strength": 1.9561
+  },
+  {
+    "index": 258,
+    "beat": 221.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 69.806349,
+    "distanceMs": -3.124,
+    "strength": 1.5463
+  },
+  {
+    "index": 259,
+    "beat": 222.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 70.155556,
+    "distanceMs": 30.292,
+    "strength": 0.763
+  },
+  {
+    "index": 260,
+    "beat": 222.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 70.155556,
+    "distanceMs": 30.292,
+    "strength": 0.763
+  },
+  {
+    "index": 261,
+    "beat": 223.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 70.439909,
+    "distanceMs": -1.143,
+    "strength": 1.9582
+  },
+  {
+    "index": 262,
+    "beat": 224.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 70.754195,
+    "distanceMs": -2.647,
+    "strength": 1.0616
+  },
+  {
+    "index": 263,
+    "beat": 224.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 70.754195,
+    "distanceMs": -2.647,
+    "strength": 1.0616
+  },
+  {
+    "index": 264,
+    "beat": 225.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 71.068481,
+    "distanceMs": -4.151,
+    "strength": 1.6215
+  },
+  {
+    "index": 265,
+    "beat": 226.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 71.392744,
+    "distanceMs": 4.323,
+    "strength": 0.5202
+  },
+  {
+    "index": 266,
+    "beat": 226.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 71.392744,
+    "distanceMs": 4.323,
+    "strength": 0.5202
+  },
+  {
+    "index": 267,
+    "beat": 227.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 71.702041,
+    "distanceMs": -2.17,
+    "strength": 1.8848
+  },
+  {
+    "index": 268,
+    "beat": 228.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 72.021315,
+    "distanceMs": 1.315,
+    "strength": 1.5132
+  },
+  {
+    "index": 269,
+    "beat": 228.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 72.021315,
+    "distanceMs": 1.315,
+    "strength": 1.5132
+  },
+  {
+    "index": 270,
+    "beat": 229.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 72.34059,
+    "distanceMs": 4.8,
+    "strength": 1.4407
+  },
+  {
+    "index": 271,
+    "beat": 229.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 72.490249,
+    "distanceMs": -3.435,
+    "strength": 1.7117
+  },
+  {
+    "index": 272,
+    "beat": 230.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 72.689796,
+    "distanceMs": 38.217,
+    "strength": 0.4183
+  },
+  {
+    "index": 273,
+    "beat": 231.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 72.969161,
+    "distanceMs": 1.793,
+    "strength": 1.6044
+  },
+  {
+    "index": 274,
+    "beat": 231.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 72.969161,
+    "distanceMs": 1.793,
+    "strength": 1.6044
+  },
+  {
+    "index": 275,
+    "beat": 232.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 73.283447,
+    "distanceMs": 0.289,
+    "strength": 1.415
+  },
+  {
+    "index": 276,
+    "beat": 233.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 73.597732,
+    "distanceMs": -1.215,
+    "strength": 1.384
+  },
+  {
+    "index": 277,
+    "beat": 233.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 73.597732,
+    "distanceMs": -1.215,
+    "strength": 1.384
+  },
+  {
+    "index": 278,
+    "beat": 234.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 73.936961,
+    "distanceMs": 22.225,
+    "strength": 0.68
+  },
+  {
+    "index": 279,
+    "beat": 235.0,
+    "hand": "red",
+    "role": "句末ロング",
+    "peakSeconds": 74.231293,
+    "distanceMs": 0.766,
+    "strength": 1.5729
+  },
+  {
+    "index": 280,
+    "beat": 238.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 75.17415,
+    "distanceMs": -3.745,
+    "strength": 1.2759
+  },
+  {
+    "index": 281,
+    "beat": 239.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 75.493424,
+    "distanceMs": -0.26,
+    "strength": 0.8391
+  },
+  {
+    "index": 282,
+    "beat": 239.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 75.493424,
+    "distanceMs": -0.26,
+    "strength": 0.8391
+  },
+  {
+    "index": 283,
+    "beat": 240.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 75.80771,
+    "distanceMs": -1.764,
+    "strength": 0.8363
+  },
+  {
+    "index": 284,
+    "beat": 241.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 76.102041,
+    "distanceMs": -23.222,
+    "strength": 0.6435
+  },
+  {
+    "index": 285,
+    "beat": 242.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 76.466213,
+    "distanceMs": 25.161,
+    "strength": 0.4793
+  },
+  {
+    "index": 286,
+    "beat": 242.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 76.630839,
+    "distanceMs": 31.892,
+    "strength": 0.5681
+  },
+  {
+    "index": 287,
+    "beat": 243.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 76.880272,
+    "distanceMs": -34.465,
+    "strength": 0.4616
+  },
+  {
+    "index": 288,
+    "beat": 244.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 77.044898,
+    "distanceMs": -27.734,
+    "strength": 0.443
+  },
+  {
+    "index": 289,
+    "beat": 245.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 77.40907,
+    "distanceMs": 20.649,
+    "strength": 0.3794
+  },
+  {
+    "index": 290,
+    "beat": 246.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 77.748299,
+    "distanceMs": 44.089,
+    "strength": 0.4357
+  },
+  {
+    "index": 291,
+    "beat": 247.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 78.04263,
+    "distanceMs": 22.63,
+    "strength": 0.4307
+  },
+  {
+    "index": 292,
+    "beat": 247.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 78.167347,
+    "distanceMs": -10.548,
+    "strength": 0.3639
+  },
+  {
+    "index": 293,
+    "beat": 248.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 78.326984,
+    "distanceMs": -8.805,
+    "strength": 0.44
+  },
+  {
+    "index": 294,
+    "beat": 248.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 78.496599,
+    "distanceMs": 2.914,
+    "strength": 0.5653
+  },
+  {
+    "index": 295,
+    "beat": 249.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 78.646259,
+    "distanceMs": -5.32,
+    "strength": 0.3474
+  },
+  {
+    "index": 296,
+    "beat": 250.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 78.960544,
+    "distanceMs": -6.824,
+    "strength": 0.4974
+  },
+  {
+    "index": 297,
+    "beat": 251.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 79.279819,
+    "distanceMs": -3.339,
+    "strength": 0.5395
+  },
+  {
+    "index": 298,
+    "beat": 252.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 79.594104,
+    "distanceMs": -4.843,
+    "strength": 0.4142
+  },
+  {
+    "index": 299,
+    "beat": 252.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 79.75873,
+    "distanceMs": 1.888,
+    "strength": 0.4163
+  },
+  {
+    "index": 300,
+    "beat": 253.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 79.913379,
+    "distanceMs": -1.358,
+    "strength": 0.3895
+  },
+  {
+    "index": 301,
+    "beat": 253.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 80.063039,
+    "distanceMs": -9.593,
+    "strength": 0.3366
+  },
+  {
+    "index": 302,
+    "beat": 254.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 80.227664,
+    "distanceMs": -2.862,
+    "strength": 0.4326
+  },
+  {
+    "index": 303,
+    "beat": 255.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 80.54195,
+    "distanceMs": -4.366,
+    "strength": 0.5306
+  },
+  {
+    "index": 304,
+    "beat": 256.0,
+    "hand": "blue",
+    "role": "句末ロング",
+    "peakSeconds": 80.856236,
+    "distanceMs": -5.869,
+    "strength": 0.7217
+  },
+  {
+    "index": 305,
+    "beat": 258.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 81.494785,
+    "distanceMs": 1.1,
+    "strength": 0.4747
+  },
+  {
+    "index": 306,
+    "beat": 259.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 81.804082,
+    "distanceMs": -5.392,
+    "strength": 0.5519
+  },
+  {
+    "index": 307,
+    "beat": 259.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 81.963719,
+    "distanceMs": -3.65,
+    "strength": 0.4028
+  },
+  {
+    "index": 308,
+    "beat": 260.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 82.123356,
+    "distanceMs": -1.907,
+    "strength": 0.4738
+  },
+  {
+    "index": 309,
+    "beat": 260.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 82.282993,
+    "distanceMs": -0.165,
+    "strength": 0.5657
+  },
+  {
+    "index": 310,
+    "beat": 262.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 82.751927,
+    "distanceMs": -4.915,
+    "strength": 0.4023
+  },
+  {
+    "index": 311,
+    "beat": 263.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 83.071202,
+    "distanceMs": -1.43,
+    "strength": 0.3706
+  },
+  {
+    "index": 312,
+    "beat": 263.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 83.22585,
+    "distanceMs": -4.676,
+    "strength": 0.3843
+  },
+  {
+    "index": 313,
+    "beat": 264.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 83.385488,
+    "distanceMs": -2.934,
+    "strength": 0.3255
+  },
+  {
+    "index": 314,
+    "beat": 265.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 83.704762,
+    "distanceMs": 0.551,
+    "strength": 0.3391
+  },
+  {
+    "index": 315,
+    "beat": 266.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 84.014059,
+    "distanceMs": -5.941,
+    "strength": 0.3567
+  },
+  {
+    "index": 316,
+    "beat": 267.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 84.328345,
+    "distanceMs": -7.445,
+    "strength": 0.5081
+  },
+  {
+    "index": 317,
+    "beat": 267.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 84.497959,
+    "distanceMs": 4.275,
+    "strength": 0.3354
+  },
+  {
+    "index": 318,
+    "beat": 268.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 84.657596,
+    "distanceMs": 6.017,
+    "strength": 0.3767
+  },
+  {
+    "index": 319,
+    "beat": 268.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 84.807256,
+    "distanceMs": -2.217,
+    "strength": 0.5524
+  },
+  {
+    "index": 320,
+    "beat": 269.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 84.961905,
+    "distanceMs": -5.464,
+    "strength": 0.3177
+  },
+  {
+    "index": 321,
+    "beat": 270.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 85.281179,
+    "distanceMs": -1.979,
+    "strength": 0.37
+  },
+  {
+    "index": 322,
+    "beat": 270.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 85.440816,
+    "distanceMs": -0.236,
+    "strength": 1.1792
+  },
+  {
+    "index": 323,
+    "beat": 272.0,
+    "hand": "red",
+    "role": "後半・反転フリック＋逆手の弧",
+    "peakSeconds": 85.914739,
+    "distanceMs": 0.002,
+    "strength": 0.8492
+  },
+  {
+    "index": 324,
+    "beat": 272.0,
+    "hand": "blue",
+    "role": "後半・反転フリック＋逆手の弧",
+    "peakSeconds": 85.914739,
+    "distanceMs": 0.002,
+    "strength": 0.8492
+  },
+  {
+    "index": 325,
+    "beat": 273.0,
+    "hand": "red",
+    "role": "後半・反転フリック＋逆手の弧",
+    "peakSeconds": 86.234014,
+    "distanceMs": 3.487,
+    "strength": 0.5245
+  },
+  {
+    "index": 326,
+    "beat": 273.0,
+    "hand": "blue",
+    "role": "後半・反転フリック＋逆手の弧",
+    "peakSeconds": 86.234014,
+    "distanceMs": 3.487,
+    "strength": 0.5245
+  },
+  {
+    "index": 327,
+    "beat": 274.0,
+    "hand": "red",
+    "role": "後半・反転フリック＋逆手の弧",
+    "peakSeconds": 86.543311,
+    "distanceMs": -3.005,
+    "strength": 0.7288
+  },
+  {
+    "index": 328,
+    "beat": 274.0,
+    "hand": "blue",
+    "role": "後半・反転フリック＋逆手の弧",
+    "peakSeconds": 86.543311,
+    "distanceMs": -3.005,
+    "strength": 0.7288
+  },
+  {
+    "index": 329,
+    "beat": 276.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 87.171882,
+    "distanceMs": -6.013,
+    "strength": 0.4026
+  },
+  {
+    "index": 330,
+    "beat": 277.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 87.47619,
+    "distanceMs": -17.494,
+    "strength": 0.4819
+  },
+  {
+    "index": 331,
+    "beat": 277.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 87.47619,
+    "distanceMs": -17.494,
+    "strength": 0.4819
+  },
+  {
+    "index": 332,
+    "beat": 278.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 87.810431,
+    "distanceMs": 0.957,
+    "strength": 0.8548
+  },
+  {
+    "index": 333,
+    "beat": 278.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 87.965079,
+    "distanceMs": -2.289,
+    "strength": 1.1063
+  },
+  {
+    "index": 334,
+    "beat": 280.0,
+    "hand": "blue",
+    "role": "句末ロング",
+    "peakSeconds": 88.443991,
+    "distanceMs": 2.938,
+    "strength": 1.0912
+  },
+  {
+    "index": 335,
+    "beat": 283.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 89.386848,
+    "distanceMs": -1.573,
+    "strength": 0.5739
+  },
+  {
+    "index": 336,
+    "beat": 283.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 89.541497,
+    "distanceMs": -4.819,
+    "strength": 0.6497
+  },
+  {
+    "index": 337,
+    "beat": 284.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 89.701134,
+    "distanceMs": -3.077,
+    "strength": 0.3788
+  },
+  {
+    "index": 338,
+    "beat": 285.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 90.01542,
+    "distanceMs": -4.58,
+    "strength": 0.5034
+  },
+  {
+    "index": 339,
+    "beat": 285.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 90.01542,
+    "distanceMs": -4.58,
+    "strength": 0.5034
+  },
+  {
+    "index": 340,
+    "beat": 286.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 90.334694,
+    "distanceMs": -1.096,
+    "strength": 0.9653
+  },
+  {
+    "index": 341,
+    "beat": 286.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 90.494331,
+    "distanceMs": 0.647,
+    "strength": 0.9931
+  },
+  {
+    "index": 342,
+    "beat": 287.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 90.653968,
+    "distanceMs": 2.389,
+    "strength": 0.4417
+  },
+  {
+    "index": 343,
+    "beat": 288.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 90.968254,
+    "distanceMs": 0.886,
+    "strength": 1.1288
+  },
+  {
+    "index": 344,
+    "beat": 288.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 90.968254,
+    "distanceMs": 0.886,
+    "strength": 1.1288
+  },
+  {
+    "index": 345,
+    "beat": 289.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 91.28254,
+    "distanceMs": -0.618,
+    "strength": 0.6001
+  },
+  {
+    "index": 346,
+    "beat": 290.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 91.596825,
+    "distanceMs": -2.122,
+    "strength": 0.8656
+  },
+  {
+    "index": 347,
+    "beat": 290.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 91.596825,
+    "distanceMs": -2.122,
+    "strength": 0.8656
+  },
+  {
+    "index": 348,
+    "beat": 291.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 91.9161,
+    "distanceMs": 1.363,
+    "strength": 0.5703
+  },
+  {
+    "index": 349,
+    "beat": 292.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 92.225397,
+    "distanceMs": -5.129,
+    "strength": 0.5157
+  },
+  {
+    "index": 350,
+    "beat": 292.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 92.225397,
+    "distanceMs": -5.129,
+    "strength": 0.5157
+  },
+  {
+    "index": 351,
+    "beat": 293.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 92.519728,
+    "distanceMs": -26.588,
+    "strength": 0.5653
+  },
+  {
+    "index": 352,
+    "beat": 294.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 92.858957,
+    "distanceMs": -3.148,
+    "strength": 0.9207
+  },
+  {
+    "index": 353,
+    "beat": 294.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 92.858957,
+    "distanceMs": -3.148,
+    "strength": 0.9207
+  },
+  {
+    "index": 354,
+    "beat": 296.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 93.497506,
+    "distanceMs": 3.821,
+    "strength": 1.1135
+  },
+  {
+    "index": 355,
+    "beat": 296.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 93.497506,
+    "distanceMs": 3.821,
+    "strength": 1.1135
+  },
+  {
+    "index": 356,
+    "beat": 297.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 93.811791,
+    "distanceMs": 2.318,
+    "strength": 0.5301
+  },
+  {
+    "index": 357,
+    "beat": 298.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 94.121088,
+    "distanceMs": -4.175,
+    "strength": 1.0002
+  },
+  {
+    "index": 358,
+    "beat": 298.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 94.121088,
+    "distanceMs": -4.175,
+    "strength": 1.0002
+  },
+  {
+    "index": 359,
+    "beat": 299.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 94.435374,
+    "distanceMs": -5.678,
+    "strength": 0.6454
+  },
+  {
+    "index": 360,
+    "beat": 300.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 94.754649,
+    "distanceMs": -2.194,
+    "strength": 0.48
+  },
+  {
+    "index": 361,
+    "beat": 300.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 94.754649,
+    "distanceMs": -2.194,
+    "strength": 0.48
+  },
+  {
+    "index": 362,
+    "beat": 301.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 95.068934,
+    "distanceMs": -3.697,
+    "strength": 0.5157
+  },
+  {
+    "index": 363,
+    "beat": 302.0,
+    "hand": "red",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 95.388209,
+    "distanceMs": -0.212,
+    "strength": 0.9742
+  },
+  {
+    "index": 364,
+    "beat": 302.0,
+    "hand": "blue",
+    "role": "強拍の両手アクセント",
+    "peakSeconds": 95.388209,
+    "distanceMs": -0.212,
+    "strength": 0.9742
+  },
+  {
+    "index": 365,
+    "beat": 303.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 95.742404,
+    "distanceMs": 38.193,
+    "strength": 0.5011
+  },
+  {
+    "index": 366,
+    "beat": 303.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 95.862132,
+    "distanceMs": 0.026,
+    "strength": 0.7549
+  },
+  {
+    "index": 367,
+    "beat": 304.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 96.021769,
+    "distanceMs": 1.769,
+    "strength": 0.5538
+  },
+  {
+    "index": 368,
+    "beat": 305.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 96.331066,
+    "distanceMs": -4.724,
+    "strength": 0.6149
+  },
+  {
+    "index": 369,
+    "beat": 306.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 96.804989,
+    "distanceMs": -4.485,
+    "strength": 0.7626
+  },
+  {
+    "index": 370,
+    "beat": 307.0,
+    "hand": "blue",
+    "role": "句末ロング",
+    "peakSeconds": 96.964626,
+    "distanceMs": -2.743,
+    "strength": 0.6863
+  },
+  {
+    "index": 371,
+    "beat": 307.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 97.124263,
+    "distanceMs": -1.0,
+    "strength": 0.7525
+  },
+  {
+    "index": 372,
+    "beat": 310.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 97.912472,
+    "distanceMs": -2.265,
+    "strength": 0.5232
+  },
+  {
+    "index": 373,
+    "beat": 310.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 98.06712,
+    "distanceMs": -5.511,
+    "strength": 0.9081
+  },
+  {
+    "index": 374,
+    "beat": 311.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 98.226757,
+    "distanceMs": -3.769,
+    "strength": 0.488
+  },
+  {
+    "index": 375,
+    "beat": 312.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 98.541043,
+    "distanceMs": -5.273,
+    "strength": 1.0477
+  },
+  {
+    "index": 376,
+    "beat": 313.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 98.860317,
+    "distanceMs": -1.788,
+    "strength": 0.4771
+  },
+  {
+    "index": 377,
+    "beat": 313.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 99.014966,
+    "distanceMs": -5.034,
+    "strength": 0.4523
+  },
+  {
+    "index": 378,
+    "beat": 314.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 99.33424,
+    "distanceMs": -1.549,
+    "strength": 0.4887
+  },
+  {
+    "index": 379,
+    "beat": 315.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 99.648526,
+    "distanceMs": -3.053,
+    "strength": 0.7941
+  },
+  {
+    "index": 380,
+    "beat": 316.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 99.9678,
+    "distanceMs": 0.432,
+    "strength": 0.8849
+  },
+  {
+    "index": 381,
+    "beat": 317.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 100.122449,
+    "distanceMs": -2.814,
+    "strength": 0.4834
+  },
+  {
+    "index": 382,
+    "beat": 317.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 100.277098,
+    "distanceMs": -6.06,
+    "strength": 0.6971
+  },
+  {
+    "index": 383,
+    "beat": 318.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 100.436735,
+    "distanceMs": -4.318,
+    "strength": 0.4457
+  },
+  {
+    "index": 384,
+    "beat": 318.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 100.596372,
+    "distanceMs": -2.575,
+    "strength": 0.9627
+  },
+  {
+    "index": 385,
+    "beat": 319.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 100.910658,
+    "distanceMs": -4.079,
+    "strength": 0.6489
+  },
+  {
+    "index": 386,
+    "beat": 320.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 101.070295,
+    "distanceMs": -2.337,
+    "strength": 0.9112
+  },
+  {
+    "index": 387,
+    "beat": 320.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 101.229932,
+    "distanceMs": -0.594,
+    "strength": 0.6935
+  },
+  {
+    "index": 388,
+    "beat": 321.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 101.544218,
+    "distanceMs": -2.098,
+    "strength": 0.7312
+  },
+  {
+    "index": 389,
+    "beat": 322.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 101.708844,
+    "distanceMs": 4.633,
+    "strength": 0.2968
+  },
+  {
+    "index": 390,
+    "beat": 323.0,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 102.018141,
+    "distanceMs": -1.859,
+    "strength": 0.6573
+  },
+  {
+    "index": 391,
+    "beat": 324.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 102.487075,
+    "distanceMs": -6.609,
+    "strength": 1.049
+  },
+  {
+    "index": 392,
+    "beat": 325.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 102.651701,
+    "distanceMs": 0.122,
+    "strength": 0.5497
+  },
+  {
+    "index": 393,
+    "beat": 326.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 102.965986,
+    "distanceMs": -1.382,
+    "strength": 0.4785
+  },
+  {
+    "index": 394,
+    "beat": 326.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 103.120635,
+    "distanceMs": -4.628,
+    "strength": 1.0612
+  },
+  {
+    "index": 395,
+    "beat": 327.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 103.285261,
+    "distanceMs": 2.103,
+    "strength": 0.5561
+  },
+  {
+    "index": 396,
+    "beat": 328.0,
+    "hand": "red",
+    "role": "句末ロング",
+    "peakSeconds": 103.594558,
+    "distanceMs": -4.39,
+    "strength": 0.9544
+  },
+  {
+    "index": 397,
+    "beat": 329.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 104.068481,
+    "distanceMs": -4.151,
+    "strength": 0.7385
+  },
+  {
+    "index": 398,
+    "beat": 331.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 104.542404,
+    "distanceMs": -3.912,
+    "strength": 0.8067
+  },
+  {
+    "index": 399,
+    "beat": 332.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 104.866667,
+    "distanceMs": 4.561,
+    "strength": 0.279
+  },
+  {
+    "index": 400,
+    "beat": 332.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 105.016327,
+    "distanceMs": -3.673,
+    "strength": 1.0672
+  },
+  {
+    "index": 401,
+    "beat": 333.0,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 105.175964,
+    "distanceMs": -1.931,
+    "strength": 0.4922
+  },
+  {
+    "index": 402,
+    "beat": 333.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 105.335601,
+    "distanceMs": -0.189,
+    "strength": 0.5845
+  },
+  {
+    "index": 403,
+    "beat": 334.5,
+    "hand": "blue",
+    "role": "音源の発音",
+    "peakSeconds": 105.644898,
+    "distanceMs": -6.681,
+    "strength": 1.0609
+  },
+  {
+    "index": 404,
+    "beat": 335.5,
+    "hand": "red",
+    "role": "音源の発音",
+    "peakSeconds": 105.964172,
+    "distanceMs": -3.196,
+    "strength": 0.7928
+  }
+]

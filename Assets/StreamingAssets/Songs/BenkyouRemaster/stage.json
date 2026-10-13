@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "displayName": "勉強（Remaster）",
+  "composer": "爆裂P",
+  "timeOrigin": "audio-file-start",
+  "audioSha256": "e8a897d48b2a36c6112d0df155b6aabb21b60ab596450627be6098d26ed5e920",
+  "previewStartSeconds": 6.024,
+  "sections": [
+    {
+      "label": "高揚部 1",
+      "startSeconds": 6.024,
+      "endSeconds": 30.024,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 0.85
+    },
+    {
+      "label": "高揚部 2",
+      "startSeconds": 73.674,
+      "endSeconds": 79.674,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    },
+    {
+      "label": "高揚部 3",
+      "startSeconds": 91.674,
+      "endSeconds": 97.674,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    },
+    {
+      "label": "高揚部 4",
+      "startSeconds": 119.531143,
+      "endSeconds": 135.912095,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    }
+  ],
+  "hideBarLines": false
+}

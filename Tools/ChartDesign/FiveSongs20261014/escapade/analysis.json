@@ -1,0 +1,237 @@
+{
+  "id": "escapade",
+  "source": "escapade.mp3",
+  "sha256": "f204714e47d8cb885d7aa899dd4098c1b79744c9f6acdc3f1e25039bff3c8ca8",
+  "duration": 109.94403628117914,
+  "firstActiveSeconds": 5.070022675736961,
+  "lastActiveSeconds": 106.73736961451247,
+  "suppliedTempoAnchors": [
+    {
+      "beat": 0,
+      "relativeSeconds": 0.0,
+      "bpm": 190
+    }
+  ],
+  "phaseCandidates": [
+    {
+      "offsetSeconds": 2.862,
+      "score": 0.46037
+    },
+    {
+      "offsetSeconds": 2.704,
+      "score": 0.45953
+    },
+    {
+      "offsetSeconds": 2.546,
+      "score": 0.45866
+    },
+    {
+      "offsetSeconds": 2.388,
+      "score": 0.45777
+    },
+    {
+      "offsetSeconds": 2.23,
+      "score": 0.45685
+    },
+    {
+      "offsetSeconds": 2.074,
+      "score": 0.45622
+    },
+    {
+      "offsetSeconds": 1.916,
+      "score": 0.45579
+    },
+    {
+      "offsetSeconds": 1.758,
+      "score": 0.45533
+    },
+    {
+      "offsetSeconds": 1.6,
+      "score": 0.45484
+    },
+    {
+      "offsetSeconds": 1.442,
+      "score": 0.45433
+    },
+    {
+      "offsetSeconds": 1.284,
+      "score": 0.45378
+    },
+    {
+      "offsetSeconds": -0.138,
+      "score": 0.45362
+    }
+  ],
+  "regions": [
+    {
+      "startSeconds": 0.0,
+      "energy": 0.0,
+      "onsetMean": 0.0
+    },
+    {
+      "startSeconds": 4.0,
+      "energy": 0.23028,
+      "onsetMean": 0.1556
+    },
+    {
+      "startSeconds": 8.0,
+      "energy": 0.316,
+      "onsetMean": 0.1953
+    },
+    {
+      "startSeconds": 12.0,
+      "energy": 0.3832,
+      "onsetMean": 0.2375
+    },
+    {
+      "startSeconds": 16.0,
+      "energy": 0.36893,
+      "onsetMean": 0.2499
+    },
+    {
+      "startSeconds": 20.0,
+      "energy": 0.34481,
+      "onsetMean": 0.2278
+    },
+    {
+      "startSeconds": 24.0,
+      "energy": 0.35419,
+      "onsetMean": 0.2466
+    },
+    {
+      "startSeconds": 28.0,
+      "energy": 0.35008,
+      "onsetMean": 0.2152
+    },
+    {
+      "startSeconds": 32.0,
+      "energy": 0.34815,
+      "onsetMean": 0.2295
+    },
+    {
+      "startSeconds": 36.0,
+      "energy": 0.34922,
+      "onsetMean": 0.2221
+    },
+    {
+      "startSeconds": 40.0,
+      "energy": 0.36107,
+      "onsetMean": 0.2156
+    },
+    {
+      "startSeconds": 44.0,
+      "energy": 0.34044,
+      "onsetMean": 0.2277
+    },
+    {
+      "startSeconds": 48.0,
+      "energy": 0.42602,
+      "onsetMean": 0.2526
+    },
+    {
+      "startSeconds": 52.0,
+      "energy": 0.42688,
+      "onsetMean": 0.2527
+    },
+    {
+      "startSeconds": 56.0,
+      "energy": 0.33464,
+      "onsetMean": 0.3096
+    },
+    {
+      "startSeconds": 60.0,
+      "energy": 0.28575,
+      "onsetMean": 0.2839
+    },
+    {
+      "startSeconds": 64.0,
+      "energy": 0.42451,
+      "onsetMean": 0.3741
+    },
+    {
+      "startSeconds": 68.0,
+      "energy": 0.45598,
+      "onsetMean": 0.3798
+    },
+    {
+      "startSeconds": 72.0,
+      "energy": 0.45153,
+      "onsetMean": 0.3863
+    },
+    {
+      "startSeconds": 76.0,
+      "energy": 0.26,
+      "onsetMean": 0.2441
+    },
+    {
+      "startSeconds": 80.0,
+      "energy": 0.22587,
+      "onsetMean": 0.1865
+    },
+    {
+      "startSeconds": 84.0,
+      "energy": 0.32001,
+      "onsetMean": 0.2395
+    },
+    {
+      "startSeconds": 88.0,
+      "energy": 0.38195,
+      "onsetMean": 0.246
+    },
+    {
+      "startSeconds": 92.0,
+      "energy": 0.36815,
+      "onsetMean": 0.2422
+    },
+    {
+      "startSeconds": 96.0,
+      "energy": 0.16001,
+      "onsetMean": 0.1034
+    },
+    {
+      "startSeconds": 100.0,
+      "energy": 0.14318,
+      "onsetMean": 0.1161
+    },
+    {
+      "startSeconds": 104.0,
+      "energy": 0.07357,
+      "onsetMean": 0.052
+    },
+    {
+      "startSeconds": 108.0,
+      "energy": 5e-05,
+      "onsetMean": 0.0
+    }
+  ],
+  "earlyOnsets": [
+    {
+      "time": 5.06848,
+      "strength": 1.672
+    },
+    {
+      "time": 5.14331,
+      "strength": 0.35
+    },
+    {
+      "time": 5.22812,
+      "strength": 0.469
+    },
+    {
+      "time": 5.38776,
+      "strength": 0.798
+    },
+    {
+      "time": 5.5424,
+      "strength": 0.449
+    },
+    {
+      "time": 5.63719,
+      "strength": 0.361
+    },
+    {
+      "time": 5.86168,
+      "strength": 0.743
+    }
+  ]
+}

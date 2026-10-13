@@ -1,0 +1,35 @@
+{
+  "schemaVersion": 1,
+  "displayName": "Manic Sonic",
+  "composer": "浜Bay",
+  "timeOrigin": "audio-file-start",
+  "audioSha256": "c14d865027b435813886f8b25dd119c8ec835c6719840b42bd942327d7d62176",
+  "previewStartSeconds": 81.166667,
+  "sections": [
+    {
+      "label": "高揚部 1",
+      "startSeconds": 5.333333,
+      "endSeconds": 10.666667,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 0.85
+    },
+    {
+      "label": "高揚部 2",
+      "startSeconds": 21.333333,
+      "endSeconds": 42.666667,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    },
+    {
+      "label": "高揚部 3",
+      "startSeconds": 81.166667,
+      "endSeconds": 107.833333,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    }
+  ],
+  "hideBarLines": false
+}

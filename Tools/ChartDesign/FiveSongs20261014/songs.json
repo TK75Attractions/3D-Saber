@@ -1,0 +1,7 @@
+[
+  {"id":"ManicSonic","source":"Manic Sonic.wav","title":"Manic Sonic","composer":"浜Bay","reading":"","meter":[4,4],"tempos":[[0,180],[171,160],[199,180],[379,60],[395,180],[403,200]]},
+  {"id":"escapade","source":"escapade.mp3","title":"escapade","composer":"ぴくちゃ","reading":"","meter":[4,4],"tempos":[[0,190]]},
+  {"id":"logic","source":"logic.mp3","title":"logic!!!","composer":"爆裂P","reading":"","meter":[8,8],"tempos":[[0,160],[141,120],[227.5,100],[229,80],[235,100],[236,120],[400.5,160]]},
+  {"id":"BenkyouRemaster","source":"勉強（Remaster.mp3","title":"勉強（Remaster）","composer":"爆裂P","reading":"","meter":[4,4],"tempos":[[0,160],[80,100],[114,160],[280,70],[304,360]],"tempoCorrection":"写真の21〜29小節前半の120は、音源に一致する100へ変更。2026-10-14ユーザー承認。"},
+  {"id":"Aobasou","source":"青葉騒.wav","title":"青葉騒 feat.初音ミク","composer":"キョーカスイゲツ。","reading":"","meter":[4,4],"tempos":[[0,140]]}
+]

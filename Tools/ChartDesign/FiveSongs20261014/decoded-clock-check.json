@@ -1,0 +1,87 @@
+{
+  "ManicSonic": [
+    {
+      "second": 10,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 1.0
+    },
+    {
+      "second": 60,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 1.0
+    },
+    {
+      "second": 100,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 1.0
+    }
+  ],
+  "escapade": [
+    {
+      "second": 10,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 0.9988694
+    },
+    {
+      "second": 60,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 0.9963597
+    },
+    {
+      "second": 100,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 0.9972402
+    }
+  ],
+  "logic": [
+    {
+      "second": 10,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 0.9999984
+    },
+    {
+      "second": 60,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 0.9999999
+    },
+    {
+      "second": 100,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 0.9999994
+    }
+  ],
+  "BenkyouRemaster": [
+    {
+      "second": 10,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 1.0
+    },
+    {
+      "second": 60,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 1.0
+    },
+    {
+      "second": 100,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 1.0
+    }
+  ],
+  "Aobasou": [
+    {
+      "second": 10,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 1.0
+    },
+    {
+      "second": 60,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 1.0
+    },
+    {
+      "second": 100,
+      "sourceMinusUnityMs": 0.0,
+      "correlation": 1.0
+    }
+  ]
+}

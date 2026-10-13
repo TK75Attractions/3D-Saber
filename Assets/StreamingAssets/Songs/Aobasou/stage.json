@@ -1,0 +1,43 @@
+{
+  "schemaVersion": 1,
+  "displayName": "青葉騒 feat.初音ミク",
+  "composer": "キョーカスイゲツ。",
+  "timeOrigin": "audio-file-start",
+  "audioSha256": "0eaa9b9519f700f8e60345943c2d3bb67cb671ac4c1bab7437e6c67b1521f8dc",
+  "previewStartSeconds": 109.714286,
+  "sections": [
+    {
+      "label": "高揚部 1",
+      "startSeconds": 6.857143,
+      "endSeconds": 13.714286,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 0.85
+    },
+    {
+      "label": "高揚部 2",
+      "startSeconds": 61.714286,
+      "endSeconds": 68.571429,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    },
+    {
+      "label": "高揚部 3",
+      "startSeconds": 82.285714,
+      "endSeconds": 96.0,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    },
+    {
+      "label": "高揚部 4",
+      "startSeconds": 109.714286,
+      "endSeconds": 130.285714,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    }
+  ],
+  "hideBarLines": false
+}

@@ -1,0 +1,476 @@
+{
+  "id": "Aobasou",
+  "source": "青葉騒.wav",
+  "sha256": "0eaa9b9519f700f8e60345943c2d3bb67cb671ac4c1bab7437e6c67b1521f8dc",
+  "duration": 138.857052154195,
+  "firstActiveSeconds": 0.0,
+  "lastActiveSeconds": 138.8570068027211,
+  "suppliedTempoAnchors": [
+    {
+      "beat": 0,
+      "relativeSeconds": 0.0,
+      "bpm": 140
+    }
+  ],
+  "phaseCandidates": [
+    {
+      "offsetSeconds": 2.996,
+      "score": 0.47121
+    },
+    {
+      "offsetSeconds": 2.568,
+      "score": 0.47114
+    },
+    {
+      "offsetSeconds": 2.782,
+      "score": 0.47104
+    },
+    {
+      "offsetSeconds": 2.354,
+      "score": 0.47086
+    },
+    {
+      "offsetSeconds": 2.14,
+      "score": 0.4703
+    },
+    {
+      "offsetSeconds": 1.926,
+      "score": 0.46966
+    },
+    {
+      "offsetSeconds": 1.496,
+      "score": 0.46954
+    },
+    {
+      "offsetSeconds": 1.282,
+      "score": 0.46951
+    },
+    {
+      "offsetSeconds": 1.068,
+      "score": 0.46937
+    },
+    {
+      "offsetSeconds": 0.854,
+      "score": 0.46936
+    },
+    {
+      "offsetSeconds": 1.71,
+      "score": 0.46935
+    },
+    {
+      "offsetSeconds": 0.64,
+      "score": 0.46919
+    }
+  ],
+  "regions": [
+    {
+      "startSeconds": 0.0,
+      "energy": 0.72608,
+      "onsetMean": 0.2967
+    },
+    {
+      "startSeconds": 4.0,
+      "energy": 0.71422,
+      "onsetMean": 0.2943
+    },
+    {
+      "startSeconds": 8.0,
+      "energy": 0.73021,
+      "onsetMean": 0.2726
+    },
+    {
+      "startSeconds": 12.0,
+      "energy": 0.67517,
+      "onsetMean": 0.289
+    },
+    {
+      "startSeconds": 16.0,
+      "energy": 0.57846,
+      "onsetMean": 0.2201
+    },
+    {
+      "startSeconds": 20.0,
+      "energy": 0.6197,
+      "onsetMean": 0.2404
+    },
+    {
+      "startSeconds": 24.0,
+      "energy": 0.65483,
+      "onsetMean": 0.278
+    },
+    {
+      "startSeconds": 28.0,
+      "energy": 0.57688,
+      "onsetMean": 0.2458
+    },
+    {
+      "startSeconds": 32.0,
+      "energy": 0.56655,
+      "onsetMean": 0.2058
+    },
+    {
+      "startSeconds": 36.0,
+      "energy": 0.54895,
+      "onsetMean": 0.1991
+    },
+    {
+      "startSeconds": 40.0,
+      "energy": 0.65357,
+      "onsetMean": 0.2264
+    },
+    {
+      "startSeconds": 44.0,
+      "energy": 0.52486,
+      "onsetMean": 0.2126
+    },
+    {
+      "startSeconds": 48.0,
+      "energy": 0.57902,
+      "onsetMean": 0.242
+    },
+    {
+      "startSeconds": 52.0,
+      "energy": 0.61184,
+      "onsetMean": 0.2586
+    },
+    {
+      "startSeconds": 56.0,
+      "energy": 0.67049,
+      "onsetMean": 0.24
+    },
+    {
+      "startSeconds": 60.0,
+      "energy": 0.66745,
+      "onsetMean": 0.2406
+    },
+    {
+      "startSeconds": 64.0,
+      "energy": 0.66712,
+      "onsetMean": 0.2403
+    },
+    {
+      "startSeconds": 68.0,
+      "energy": 0.66748,
+      "onsetMean": 0.2553
+    },
+    {
+      "startSeconds": 72.0,
+      "energy": 0.66997,
+      "onsetMean": 0.2453
+    },
+    {
+      "startSeconds": 76.0,
+      "energy": 0.68275,
+      "onsetMean": 0.2625
+    },
+    {
+      "startSeconds": 80.0,
+      "energy": 0.67991,
+      "onsetMean": 0.3026
+    },
+    {
+      "startSeconds": 84.0,
+      "energy": 0.74687,
+      "onsetMean": 0.3138
+    },
+    {
+      "startSeconds": 88.0,
+      "energy": 0.79277,
+      "onsetMean": 0.3393
+    },
+    {
+      "startSeconds": 92.0,
+      "energy": 0.78515,
+      "onsetMean": 0.3409
+    },
+    {
+      "startSeconds": 96.0,
+      "energy": 0.56207,
+      "onsetMean": 0.2597
+    },
+    {
+      "startSeconds": 100.0,
+      "energy": 0.53765,
+      "onsetMean": 0.2022
+    },
+    {
+      "startSeconds": 104.0,
+      "energy": 0.58567,
+      "onsetMean": 0.2184
+    },
+    {
+      "startSeconds": 108.0,
+      "energy": 0.62417,
+      "onsetMean": 0.292
+    },
+    {
+      "startSeconds": 112.0,
+      "energy": 0.79305,
+      "onsetMean": 0.3158
+    },
+    {
+      "startSeconds": 116.0,
+      "energy": 0.82397,
+      "onsetMean": 0.3462
+    },
+    {
+      "startSeconds": 120.0,
+      "energy": 0.78628,
+      "onsetMean": 0.3376
+    },
+    {
+      "startSeconds": 124.0,
+      "energy": 0.68322,
+      "onsetMean": 0.318
+    },
+    {
+      "startSeconds": 128.0,
+      "energy": 0.70951,
+      "onsetMean": 0.3221
+    },
+    {
+      "startSeconds": 132.0,
+      "energy": 0.71617,
+      "onsetMean": 0.3375
+    },
+    {
+      "startSeconds": 136.0,
+      "energy": 0.19976,
+      "onsetMean": 0.0896
+    }
+  ],
+  "earlyOnsets": [
+    {
+      "time": 0.02494,
+      "strength": 0.661
+    },
+    {
+      "time": 0.16463,
+      "strength": 0.451
+    },
+    {
+      "time": 0.23447,
+      "strength": 0.441
+    },
+    {
+      "time": 0.30431,
+      "strength": 0.453
+    },
+    {
+      "time": 0.40408,
+      "strength": 0.484
+    },
+    {
+      "time": 0.50884,
+      "strength": 0.441
+    },
+    {
+      "time": 0.58367,
+      "strength": 0.413
+    },
+    {
+      "time": 0.65351,
+      "strength": 0.474
+    },
+    {
+      "time": 0.7483,
+      "strength": 0.455
+    },
+    {
+      "time": 0.85306,
+      "strength": 0.633
+    },
+    {
+      "time": 0.99274,
+      "strength": 0.494
+    },
+    {
+      "time": 1.11247,
+      "strength": 0.477
+    },
+    {
+      "time": 1.1873,
+      "strength": 0.356
+    },
+    {
+      "time": 1.25714,
+      "strength": 0.408
+    },
+    {
+      "time": 1.33696,
+      "strength": 0.47
+    },
+    {
+      "time": 1.42177,
+      "strength": 0.374
+    },
+    {
+      "time": 1.4966,
+      "strength": 0.391
+    },
+    {
+      "time": 1.64127,
+      "strength": 0.474
+    },
+    {
+      "time": 1.74104,
+      "strength": 0.722
+    },
+    {
+      "time": 1.81587,
+      "strength": 0.399
+    },
+    {
+      "time": 1.94558,
+      "strength": 0.388
+    },
+    {
+      "time": 2.05034,
+      "strength": 0.591
+    },
+    {
+      "time": 2.16508,
+      "strength": 0.365
+    },
+    {
+      "time": 2.2449,
+      "strength": 0.315
+    },
+    {
+      "time": 2.31973,
+      "strength": 0.594
+    },
+    {
+      "time": 2.39955,
+      "strength": 0.348
+    },
+    {
+      "time": 2.47438,
+      "strength": 0.291
+    },
+    {
+      "time": 2.57415,
+      "strength": 0.765
+    },
+    {
+      "time": 2.64898,
+      "strength": 0.441
+    },
+    {
+      "time": 2.76372,
+      "strength": 0.38
+    },
+    {
+      "time": 2.87347,
+      "strength": 0.411
+    },
+    {
+      "time": 2.9932,
+      "strength": 0.873
+    },
+    {
+      "time": 3.17279,
+      "strength": 0.419
+    },
+    {
+      "time": 3.33243,
+      "strength": 0.386
+    },
+    {
+      "time": 3.42222,
+      "strength": 0.79
+    },
+    {
+      "time": 3.5619,
+      "strength": 0.469
+    },
+    {
+      "time": 3.67166,
+      "strength": 0.502
+    },
+    {
+      "time": 3.77143,
+      "strength": 0.629
+    },
+    {
+      "time": 3.8712,
+      "strength": 0.687
+    },
+    {
+      "time": 3.97596,
+      "strength": 0.72
+    },
+    {
+      "time": 4.07574,
+      "strength": 0.605
+    },
+    {
+      "time": 4.1805,
+      "strength": 0.559
+    },
+    {
+      "time": 4.28027,
+      "strength": 0.794
+    },
+    {
+      "time": 4.38503,
+      "strength": 0.489
+    },
+    {
+      "time": 4.50975,
+      "strength": 0.475
+    },
+    {
+      "time": 4.62449,
+      "strength": 0.557
+    },
+    {
+      "time": 4.75918,
+      "strength": 0.439
+    },
+    {
+      "time": 4.87392,
+      "strength": 0.54
+    },
+    {
+      "time": 4.96871,
+      "strength": 0.491
+    },
+    {
+      "time": 5.06848,
+      "strength": 0.382
+    },
+    {
+      "time": 5.13832,
+      "strength": 0.697
+    },
+    {
+      "time": 5.28798,
+      "strength": 0.538
+    },
+    {
+      "time": 5.37778,
+      "strength": 0.548
+    },
+    {
+      "time": 5.46259,
+      "strength": 0.367
+    },
+    {
+      "time": 5.56735,
+      "strength": 0.573
+    },
+    {
+      "time": 5.722,
+      "strength": 0.379
+    },
+    {
+      "time": 5.80181,
+      "strength": 0.63
+    },
+    {
+      "time": 5.99637,
+      "strength": 0.62
+    }
+  ]
+}

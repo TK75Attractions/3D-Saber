@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "displayName": "escapade",
+  "composer": "ぴくちゃ",
+  "timeOrigin": "audio-file-start",
+  "audioSha256": "f204714e47d8cb885d7aa899dd4098c1b79744c9f6acdc3f1e25039bff3c8ca8",
+  "previewStartSeconds": 85.914737,
+  "sections": [
+    {
+      "label": "高揚部 1",
+      "startSeconds": 10.125263,
+      "endSeconds": 20.230526,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 0.85
+    },
+    {
+      "label": "高揚部 2",
+      "startSeconds": 25.283158,
+      "endSeconds": 30.335789,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    },
+    {
+      "label": "高揚部 3",
+      "startSeconds": 50.546316,
+      "endSeconds": 55.598947,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    },
+    {
+      "label": "高揚部 4",
+      "startSeconds": 65.704211,
+      "endSeconds": 75.809474,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    },
+    {
+      "label": "高揚部 5",
+      "startSeconds": 85.914737,
+      "endSeconds": 96.02,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    }
+  ],
+  "hideBarLines": false
+}

@@ -1,0 +1,51 @@
+{
+  "schemaVersion": 1,
+  "displayName": "logic!!!",
+  "composer": "爆裂P",
+  "timeOrigin": "audio-file-start",
+  "audioSha256": "7a328946d53336ea6f1cbcf6aca6251fdfa4ce436d593bfac65d591e20befa7a",
+  "previewStartSeconds": 144.153,
+  "sections": [
+    {
+      "label": "高揚部 1",
+      "startSeconds": 36.028,
+      "endSeconds": 48.028,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 0.85
+    },
+    {
+      "label": "高揚部 2",
+      "startSeconds": 54.403,
+      "endSeconds": 62.403,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    },
+    {
+      "label": "高揚部 3",
+      "startSeconds": 70.403,
+      "endSeconds": 94.403,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    },
+    {
+      "label": "高揚部 4",
+      "startSeconds": 128.153,
+      "endSeconds": 136.153,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    },
+    {
+      "label": "高揚部 5",
+      "startSeconds": 144.153,
+      "endSeconds": 176.153,
+      "fadeInSeconds": 0.8,
+      "fadeOutSeconds": 1.4,
+      "intensity": 1
+    }
+  ],
+  "hideBarLines": false
+}

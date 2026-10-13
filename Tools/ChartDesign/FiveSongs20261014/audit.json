@@ -1,0 +1,496 @@
+{
+  "ManicSonic": {
+    "easy": {
+      "notes": 212,
+      "cuts": 230,
+      "types": {
+        "tap": 194,
+        "long": 18
+      },
+      "simultaneousBeats": 17,
+      "goldNotes": 20,
+      "developments": [],
+      "recoveryAdjustments": [
+        {
+          "bar": 82,
+          "action": "前小節と同一になる打点を休符へ"
+        },
+        {
+          "bar": 86,
+          "action": "前小節と同一になる打点を休符へ"
+        },
+        {
+          "bar": 88,
+          "action": "前小節と同一になる打点を休符へ"
+        },
+        {
+          "bar": 103,
+          "action": "前小節と同一になる打点を休符へ"
+        },
+        {
+          "bar": 104,
+          "action": "前小節と同一になる打点を休符へ"
+        }
+      ],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    },
+    "normal": {
+      "notes": 415,
+      "cuts": 451,
+      "types": {
+        "tap": 317,
+        "direction": 80,
+        "long": 18
+      },
+      "simultaneousBeats": 21,
+      "goldNotes": 24,
+      "developments": [],
+      "recoveryAdjustments": [
+        {
+          "bar": 90,
+          "action": "前小節と同一になる打点を休符へ"
+        }
+      ],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    },
+    "hard": {
+      "notes": 460,
+      "cuts": 516,
+      "types": {
+        "tap": 191,
+        "direction": 241,
+        "long": 28
+      },
+      "simultaneousBeats": 82,
+      "goldNotes": 78,
+      "developments": [
+        {
+          "sourceBar": 5,
+          "developedBar": 61,
+          "offsets": [
+            1,
+            2,
+            3
+          ],
+          "leadHand": "red"
+        },
+        {
+          "sourceBar": 7,
+          "developedBar": 69,
+          "offsets": [
+            0,
+            1,
+            2
+          ],
+          "leadHand": "blue"
+        },
+        {
+          "sourceBar": 9,
+          "developedBar": 77,
+          "offsets": [
+            0,
+            1,
+            2
+          ],
+          "leadHand": "red"
+        }
+      ],
+      "recoveryAdjustments": [
+        {
+          "beat": 17.0,
+          "action": "入口を自由タップへ"
+        }
+      ],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    }
+  },
+  "escapade": {
+    "easy": {
+      "notes": 177,
+      "cuts": 190,
+      "types": {
+        "long": 13,
+        "tap": 164
+      },
+      "simultaneousBeats": 14,
+      "goldNotes": 6,
+      "developments": [],
+      "recoveryAdjustments": [
+        {
+          "bar": 48,
+          "action": "前小節と同一になる打点を休符へ"
+        },
+        {
+          "bar": 55,
+          "action": "前小節と同一になる打点を休符へ"
+        },
+        {
+          "bar": 66,
+          "action": "前小節と同一になる打点を休符へ"
+        }
+      ],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    },
+    "normal": {
+      "notes": 351,
+      "cuts": 377,
+      "types": {
+        "long": 13,
+        "tap": 256,
+        "direction": 82
+      },
+      "simultaneousBeats": 17,
+      "goldNotes": 16,
+      "developments": [],
+      "recoveryAdjustments": [],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    },
+    "hard": {
+      "notes": 405,
+      "cuts": 429,
+      "types": {
+        "direction": 205,
+        "tap": 188,
+        "long": 12
+      },
+      "simultaneousBeats": 52,
+      "goldNotes": 68,
+      "developments": [
+        {
+          "sourceBar": 5,
+          "developedBar": 53,
+          "offsets": [
+            0,
+            1,
+            2
+          ],
+          "leadHand": "blue"
+        },
+        {
+          "sourceBar": 7,
+          "developedBar": 69,
+          "offsets": [
+            0,
+            1,
+            2
+          ],
+          "leadHand": "red"
+        }
+      ],
+      "recoveryAdjustments": [
+        {
+          "beat": 24.0,
+          "action": "入口を自由タップへ"
+        },
+        {
+          "beat": 68.5,
+          "action": "入口を自由タップへ"
+        },
+        {
+          "beat": 272.0,
+          "action": "入口を自由タップへ"
+        },
+        {
+          "beat": 208.0,
+          "action": "入口を自由タップへ"
+        },
+        {
+          "beat": 260.5,
+          "action": "入口を自由タップへ"
+        }
+      ],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    }
+  },
+  "logic": {
+    "easy": {
+      "notes": 243,
+      "cuts": 270,
+      "types": {
+        "tap": 226,
+        "long": 17
+      },
+      "simultaneousBeats": 16,
+      "goldNotes": 16,
+      "developments": [],
+      "recoveryAdjustments": [],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    },
+    "normal": {
+      "notes": 461,
+      "cuts": 495,
+      "types": {
+        "tap": 336,
+        "direction": 108,
+        "long": 17
+      },
+      "simultaneousBeats": 15,
+      "goldNotes": 18,
+      "developments": [],
+      "recoveryAdjustments": [],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    },
+    "hard": {
+      "notes": 513,
+      "cuts": 545,
+      "types": {
+        "direction": 292,
+        "tap": 205,
+        "long": 16
+      },
+      "simultaneousBeats": 64,
+      "goldNotes": 68,
+      "developments": [
+        {
+          "sourceBar": 9,
+          "developedBar": 73,
+          "offsets": [
+            0,
+            1,
+            2
+          ],
+          "leadHand": "red"
+        },
+        {
+          "sourceBar": 11,
+          "developedBar": 83,
+          "offsets": [
+            0,
+            1,
+            2
+          ],
+          "leadHand": "blue"
+        },
+        {
+          "sourceBar": 14,
+          "developedBar": 91,
+          "offsets": [
+            0,
+            1,
+            2
+          ],
+          "leadHand": "red"
+        }
+      ],
+      "recoveryAdjustments": [
+        {
+          "beat": 32.0,
+          "action": "入口を自由タップへ"
+        },
+        {
+          "beat": 52.0,
+          "action": "入口を自由タップへ"
+        },
+        {
+          "beat": 288.0,
+          "action": "入口を自由タップへ"
+        },
+        {
+          "beat": 360.0,
+          "action": "入口を自由タップへ"
+        },
+        {
+          "beat": 40.0,
+          "action": "入口を自由タップへ"
+        },
+        {
+          "beat": 328.0,
+          "action": "入口を自由タップへ"
+        }
+      ],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    }
+  },
+  "BenkyouRemaster": {
+    "easy": {
+      "notes": 169,
+      "cuts": 187,
+      "types": {
+        "tap": 155,
+        "long": 14
+      },
+      "simultaneousBeats": 14,
+      "goldNotes": 18,
+      "developments": [],
+      "recoveryAdjustments": [
+        {
+          "bar": 43,
+          "action": "前小節と同一になる打点を休符へ"
+        },
+        {
+          "bar": 47,
+          "action": "前小節と同一になる打点を休符へ"
+        },
+        {
+          "bar": 80,
+          "action": "前小節と同一になる打点を休符へ"
+        },
+        {
+          "bar": 81,
+          "action": "前小節と同一になる打点を休符へ"
+        }
+      ],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    },
+    "normal": {
+      "notes": 327,
+      "cuts": 363,
+      "types": {
+        "tap": 245,
+        "direction": 68,
+        "long": 14
+      },
+      "simultaneousBeats": 21,
+      "goldNotes": 22,
+      "developments": [],
+      "recoveryAdjustments": [
+        {
+          "bar": 31,
+          "action": "前小節と同一になる打点を休符へ"
+        }
+      ],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    },
+    "hard": {
+      "notes": 372,
+      "cuts": 428,
+      "types": {
+        "direction": 199,
+        "tap": 151,
+        "long": 22
+      },
+      "simultaneousBeats": 60,
+      "goldNotes": 60,
+      "developments": [
+        {
+          "sourceBar": 5,
+          "developedBar": 57,
+          "offsets": [
+            0,
+            1,
+            2
+          ],
+          "leadHand": "blue"
+        },
+        {
+          "sourceBar": 7,
+          "developedBar": 73,
+          "offsets": [
+            0,
+            1,
+            2
+          ],
+          "leadHand": "red"
+        }
+      ],
+      "recoveryAdjustments": [],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    }
+  },
+  "Aobasou": {
+    "easy": {
+      "notes": 172,
+      "cuts": 185,
+      "types": {
+        "tap": 159,
+        "long": 13
+      },
+      "simultaneousBeats": 12,
+      "goldNotes": 2,
+      "developments": [],
+      "recoveryAdjustments": [
+        {
+          "bar": 24,
+          "action": "前小節と同一になる打点を休符へ"
+        },
+        {
+          "bar": 28,
+          "action": "前小節と同一になる打点を休符へ"
+        },
+        {
+          "bar": 34,
+          "action": "前小節と同一になる打点を休符へ"
+        },
+        {
+          "bar": 36,
+          "action": "前小節と同一になる打点を休符へ"
+        }
+      ],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    },
+    "normal": {
+      "notes": 347,
+      "cuts": 373,
+      "types": {
+        "tap": 259,
+        "direction": 75,
+        "long": 13
+      },
+      "simultaneousBeats": 16,
+      "goldNotes": 10,
+      "developments": [],
+      "recoveryAdjustments": [],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    },
+    "hard": {
+      "notes": 409,
+      "cuts": 431,
+      "types": {
+        "tap": 152,
+        "direction": 246,
+        "long": 11
+      },
+      "simultaneousBeats": 52,
+      "goldNotes": 58,
+      "developments": [
+        {
+          "sourceBar": 5,
+          "developedBar": 49,
+          "offsets": [
+            0,
+            1,
+            2
+          ],
+          "leadHand": "red"
+        },
+        {
+          "sourceBar": 7,
+          "developedBar": 65,
+          "offsets": [
+            0,
+            1,
+            2
+          ],
+          "leadHand": "blue"
+        },
+        {
+          "sourceBar": 9,
+          "developedBar": 73,
+          "offsets": [
+            0,
+            1,
+            2
+          ],
+          "leadHand": "red"
+        }
+      ],
+      "recoveryAdjustments": [],
+      "flowPassed": true,
+      "identicalAdjacentBars": []
+    }
+  }
+}

@@ -48,7 +48,7 @@ public class SongStagePerformanceTests
     {
         var songs=Directory.GetDirectories(Path.Combine(Application.streamingAssetsPath,"Songs"))
             .Where(p=>Directory.GetFiles(p,"chart*.json").Length>0).ToArray();
-        CollectionAssert.AreEquivalent(new[]{"2_23_AM","ElDorado","Epilogue","Morning","揺籠","Andalusia","製作中","Phobia PARTⅠ"},
+        CollectionAssert.AreEquivalent(new[]{"2_23_AM","ElDorado","Epilogue","Morning","揺籠","Andalusia","製作中","Phobia PARTⅠ","ManicSonic","escapade","logic","BenkyouRemaster","Aobasou"},
             songs.Select(Path.GetFileName).ToArray());
         foreach(var folder in songs)
         {

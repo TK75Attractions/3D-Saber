@@ -20,6 +20,8 @@ public class ChartData
     // 四分音符グリッドの原点（ms）。offsetMs は別途一度だけ加算する。
     public float beatZeroMs;
     public List<ChartTimeSignature> timeSignatures = new List<ChartTimeSignature>();
+    // エディターと本編の拍ガイドで共有する時刻アンカー。ノーツの実時刻は変更しない。
+    public List<ChartTempoPoint> editorTempoMap = new List<ChartTempoPoint>();
     public List<NoteData> notes = new List<NoteData>();
 }
 

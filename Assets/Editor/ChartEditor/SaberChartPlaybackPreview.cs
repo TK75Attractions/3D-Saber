@@ -200,16 +200,17 @@ namespace Saber.ChartEditor
             int used = 0;
             if (ShowBarLines && document.bpm > 0f)
             {
-                double origin = (document.beatZeroMs + document.offsetMs) / 1000.0;
-                double from = (songTime - .3 - origin) * document.bpm / 60.0;
-                double through = (songTime + motion.approachTime - origin) * document.bpm / 60.0;
+                var clock = new SaberChartGrid(document.bpm, document.beatZeroMs, document.tempoMap);
+                double offset = document.offsetMs / 1000.0;
+                double from = clock.BeatAt((float)((songTime - .3 - offset) * 1000.0));
+                double through = clock.BeatAt((float)((songTime + motion.approachTime - offset) * 1000.0));
                 float scale = document.coordScale > 0f ? document.coordScale : 1f;
                 float width = SaberChartUtility.DefaultXMax * scale * 2f;
                 float floorY = -SaberChartUtility.DefaultYMax * scale;
                 var meter = new ChartMeterMap(document.timeSignatures);
                 foreach (double beat in meter.BarStarts(Math.Max(0, from), Math.Max(0, through)))
                 {
-                    double time = origin + beat * 60.0 / document.bpm;
+                    double time = clock.TimeAt((float)beat) / 1000.0 + offset;
                     double dt = time - songTime;
                     if (dt < -.3 || dt > motion.approachTime) continue;
                     if (used == barLines.Count) barLines.Add(GuideBar("BarLine", barMaterial));

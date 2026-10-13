@@ -19,6 +19,7 @@ public static class SongSelectDesignPreview
     static int state;
     static string output;
     static SongSelectController controller;
+    static bool FiveSongPack => SessionState.GetBool(Key + ".FiveSongPack", false);
     static SongSelectDesignPreview()
     {
         EditorApplication.update += Tick;
@@ -36,6 +37,7 @@ public static class SongSelectDesignPreview
         if (!Application.isBatchMode) throw new InvalidOperationException("専用バッチのみ");
         var args = Environment.GetCommandLineArgs(); int at = Array.IndexOf(args, "-songSelectPreviewOutput");
         if (at < 0 || at + 1 >= args.Length) throw new ArgumentException("出力先が必要です");
+        SessionState.SetBool(Key + ".FiveSongPack", Array.IndexOf(args, "-fiveSongPack") >= 0);
         output = Path.GetFullPath(args[at + 1]); Directory.CreateDirectory(output);
         File.WriteAllText(Path.Combine(output,"runtime-check.txt"),"");
         SessionState.SetString(Key + ".Output", output); SessionState.SetBool(Key, true);
@@ -61,9 +63,10 @@ public static class SongSelectDesignPreview
                 Choose(); return;
             }
             if (EditorApplication.timeSinceStartup - ready < 2) return;
-            var label = new[] { "two23am-easy", "school-master", "el-dorado-normal", "zero-composer", "yurikago-projector" }[state];
+            var label = (FiveSongPack ? new[] { "manic-sonic", "escapade", "logic", "benkyou-remaster", "aobasou" }
+                : new[] { "two23am-easy", "school-master", "el-dorado-normal", "zero-composer", "yurikago-projector" })[state];
             Capture(Path.Combine(output, label + ".png"), 1920, 1080);
-            if (state == 1 || state == 3) Capture(Path.Combine(output, $"{label}-720p.png"), 1280, 720);
+            if (FiveSongPack || state == 1 || state == 3) Capture(Path.Combine(output, $"{label}-720p.png"), 1280, 720);
             File.AppendAllText(Path.Combine(output, "runtime-check.txt"), $"{label}: selected={controller.SongIdAt(controller.SelectedIndex)}, level={controller.CurrentDifficultyDisplayLevel()}, canStart={controller.startButton.interactable}, navNotes={UnityEngine.Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None).Length}; scene not saved.\n");
             if (++state < 5) { Choose(); return; }
             VerifyInteractions();
@@ -83,10 +86,11 @@ public static class SongSelectDesignPreview
     }
     static void Choose()
     {
-        string id = new[] { "2_23_AM", "Epilogue", "ElDorado", "製作中", "揺籠" }[state];
-        if (state == 4) { DisplaySettings.ProjectorMode = true; ProjectorMode.Apply(Camera.main); }
+        string id = (FiveSongPack ? new[] { "ManicSonic", "escapade", "logic", "BenkyouRemaster", "Aobasou" }
+            : new[] { "2_23_AM", "Epilogue", "ElDorado", "製作中", "揺籠" })[state];
+        if (state == 4 && !FiveSongPack) { DisplaySettings.ProjectorMode = true; ProjectorMode.Apply(Camera.main); }
         int index = Enumerable.Range(0, controller.SongCount).FirstOrDefault(i => controller.SongIdAt(i) == id);
-        controller.Select(index); controller.SetDifficulty(state == 0 ? 0 : state == 1 ? 2 : 1);
+        controller.Select(index); controller.SetDifficulty(FiveSongPack ? 2 : state == 0 ? 0 : state == 1 ? 2 : 1);
         var credit = GameObject.Find("ComposerName").GetComponent<TMPro.TextMeshProUGUI>();
         if (credit.text != SongDisplayInfo.Get(id).Composer || credit.raycastTarget || credit.richText)
             throw new InvalidOperationException("作曲者の表示または入力設定が不正です");

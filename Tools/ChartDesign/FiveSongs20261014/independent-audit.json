@@ -1,0 +1,132 @@
+{
+  "ManicSonic": {
+    "easy": {
+      "notes": 212,
+      "cuts": 230,
+      "maxSwingSpeed": 4.6214,
+      "minimumSameHandGapMs": 333.333,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 0
+    },
+    "normal": {
+      "notes": 415,
+      "cuts": 451,
+      "maxSwingSpeed": 5.0462,
+      "minimumSameHandGapMs": 333.333,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 0
+    },
+    "hard": {
+      "notes": 460,
+      "cuts": 516,
+      "maxSwingSpeed": 5.0462,
+      "minimumSameHandGapMs": 300.0,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 3
+    }
+  },
+  "escapade": {
+    "easy": {
+      "notes": 177,
+      "cuts": 190,
+      "maxSwingSpeed": 4.8782,
+      "minimumSameHandGapMs": 315.789,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 0
+    },
+    "normal": {
+      "notes": 351,
+      "cuts": 377,
+      "maxSwingSpeed": 4.8782,
+      "minimumSameHandGapMs": 315.789,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 0
+    },
+    "hard": {
+      "notes": 405,
+      "cuts": 429,
+      "maxSwingSpeed": 5.3266,
+      "minimumSameHandGapMs": 315.789,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 2
+    }
+  },
+  "logic": {
+    "easy": {
+      "notes": 243,
+      "cuts": 270,
+      "maxSwingSpeed": 3.081,
+      "minimumSameHandGapMs": 375.0,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 0
+    },
+    "normal": {
+      "notes": 461,
+      "cuts": 495,
+      "maxSwingSpeed": 4.1079,
+      "minimumSameHandGapMs": 375.0,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 0
+    },
+    "hard": {
+      "notes": 513,
+      "cuts": 545,
+      "maxSwingSpeed": 4.1079,
+      "minimumSameHandGapMs": 375.0,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 3
+    }
+  },
+  "BenkyouRemaster": {
+    "easy": {
+      "notes": 169,
+      "cuts": 187,
+      "maxSwingSpeed": 3.9631,
+      "minimumSameHandGapMs": 333.333,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 0
+    },
+    "normal": {
+      "notes": 327,
+      "cuts": 363,
+      "maxSwingSpeed": 4.1079,
+      "minimumSameHandGapMs": 300.0,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 0
+    },
+    "hard": {
+      "notes": 372,
+      "cuts": 428,
+      "maxSwingSpeed": 4.4855,
+      "minimumSameHandGapMs": 300.0,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 2
+    }
+  },
+  "Aobasou": {
+    "easy": {
+      "notes": 172,
+      "cuts": 185,
+      "maxSwingSpeed": 3.5945,
+      "minimumSameHandGapMs": 428.571,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 0
+    },
+    "normal": {
+      "notes": 347,
+      "cuts": 373,
+      "maxSwingSpeed": 3.9248,
+      "minimumSameHandGapMs": 428.571,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 0
+    },
+    "hard": {
+      "notes": 409,
+      "cuts": 431,
+      "maxSwingSpeed": 3.9248,
+      "minimumSameHandGapMs": 428.571,
+      "repeatedOneTwoFourBarBlocks": [],
+      "developedMotifs": 3
+    }
+  }
+}
