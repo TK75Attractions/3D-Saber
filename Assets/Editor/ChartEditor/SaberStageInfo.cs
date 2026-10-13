@@ -10,7 +10,7 @@ using System.Text.RegularExpressions;
 namespace Saber.ChartEditor
 {
     /// <summary>
-    /// stage.json(曲ごとの表示名・ふりがな・アーティスト・試聴の開始位置・サビの区間・公開)の読み書き。
+    /// stage.json(曲ごとの表示名・ふりがな・作曲者・アーティスト・試聴の開始位置・サビの区間・公開)の読み書き。
     /// 触っていない項目と書き方(字下げ・区間を1行で書くか)は読み込んだときのまま保つ。
     /// </summary>
     public sealed class SaberStageInfo
@@ -119,6 +119,7 @@ namespace Saber.ChartEditor
             var created = new SaberJsonObject();
             created.Set("schemaVersion", new SaberJsonValue("1"));
             created.Set("displayName", SaberJson.String(songId ?? string.Empty));
+            created.Set("composer", SaberJson.String("???"));
             created.Set("timeOrigin", SaberJson.String("audio-file-start"));
             created.Set("previewStartSeconds", new SaberJsonValue("0"));
             created.Set("sections", new SaberJsonArray());
@@ -135,6 +136,13 @@ namespace Saber.ChartEditor
         {
             get => SaberJson.TryGetString(root.Get("displayReading"), out string value) ? value : string.Empty;
             set => SetString("displayReading", value, keepWhenEmpty: false, before: "timeOrigin");
+        }
+
+        // 作曲者は演奏者などのアーティスト情報と分け、未設定の曲も同じ欄で表示する。
+        public string Composer
+        {
+            get => SaberJson.TryGetString(root.Get("composer"), out string value) ? value : string.Empty;
+            set => SetString("composer", value, keepWhenEmpty: root.Has("composer"), before: "timeOrigin");
         }
 
         public string Artist

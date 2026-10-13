@@ -80,16 +80,18 @@ public class ChartEditorSongInfoTests
         var info = SaberStageInfo.Parse(text);
         info.DisplayName = "新しい名前";
         info.Reading = "あたらしいなまえ";
+        info.Composer = "作曲者A";
         info.Listed = false;
         info.PreviewStartSeconds = 12.25;
         info.Sections[0].EndSeconds = 44;
         info.AddSection("二回目", 60, 80);
         string written = info.Write();
-        StringAssert.Contains("\"displayName\": \"新しい名前\",\n  \"displayReading\": \"あたらしいなまえ\",\n  \"timeOrigin\"", written);
+        StringAssert.Contains("\"displayName\": \"新しい名前\",\n  \"displayReading\": \"あたらしいなまえ\",", written);
         StringAssert.Contains("\"listed\": false,\n  \"audioSha256\": \"abc\"", written);
         StringAssert.Contains("\"_comment\": \"メモ\"", written);
         StringAssert.Contains("\"intensity\": 0.80, \"impactSeconds\": 0.6 }", written, "触っていない数値の綴りと項目を保つ");
         StringAssert.Contains("\"endSeconds\": 44,", written);
+        Assert.AreEqual("作曲者A", SaberStageInfo.Parse(written).Composer);
         var timeline = JsonUtility.FromJson<StagePerformanceTimeline>(written);
         Assert.AreEqual(2, timeline.sections.Length);
         Assert.AreEqual(12.25, timeline.previewStartSeconds, 1e-6);
@@ -102,6 +104,7 @@ public class ChartEditorSongInfoTests
     {
         var info = SaberStageInfo.CreateNew("NewTune");
         Assert.False(info.Exists);
+        Assert.AreEqual("???", info.Composer);
         Assert.True(info.IsDirty);
         info.AddSection("サビ", 30, 50);
         var timeline = JsonUtility.FromJson<StagePerformanceTimeline>(info.Write());
@@ -123,6 +126,7 @@ public class ChartEditorSongInfoTests
             Call("EnsureSongInfo");
             var info = Get<SaberStageInfo>("songInfo");
             Assert.False(info.Exists);
+            Assert.AreEqual("???", info.Composer);
             info.DisplayName = "テストの曲";
             info.Reading = "てすとのきょく";
             info.AddSection("サビ", 30, 50);

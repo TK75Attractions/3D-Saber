@@ -28,7 +28,7 @@ public class SongSelectSkin : MonoBehaviour
     readonly TextMeshProUGUI[] difficultyNumbers = new TextMeshProUGUI[3];
     readonly TextMeshProUGUI[] difficultyLabels = new TextMeshProUGUI[3];
     readonly SongSelectRubyText[] counts = new SongSelectRubyText[4];
-    TextMeshProUGUI timer, timerNotice, achievementDifficulty, libraryPosition, startHint, holdHint;
+    TextMeshProUGUI composerName, timer, timerNotice, achievementDifficulty, libraryPosition, startHint, holdHint;
     AudioSource countdownSource; AudioClip countdownClip;
     int lastBeepSecond = -1;
     SongSelectRubyText songTitle;
@@ -221,11 +221,22 @@ public class SongSelectSkin : MonoBehaviour
     }
     void BuildTitle()
     {
-        PanelAt("TitleShadow", 960, 1000, 716, 108, Ink, 5, 30);
-        var panel = PanelAt("SongTitlePanel", 960, 1000, 700, 92, Cyan, 5);
-        var t = Label(panel.transform, "PanelSongTitle", "", 58, new Vector2(0, -2), new Vector2(660, 74), UISkinKit.FontAsset("Oxanium-ExtraBold"));
-        t.enableAutoSizing = true; t.fontSizeMin = 26; t.fontSizeMax = 58; songTitle = Ruby(t, "");
+        PanelAt("TitleShadow", 960, 1006, 716, 130, Ink, 5, 30);
+        var panel = PanelAt("SongTitlePanel", 960, 1006, 700, 116, Cyan, 4);
+        var t = Label(panel.transform, "PanelSongTitle", "", 50, new Vector2(0, 22), new Vector2(660, 62), UISkinKit.FontAsset("Oxanium-ExtraBold"));
+        t.enableAutoSizing = true; t.fontSizeMin = 24; t.fontSizeMax = 50; songTitle = Ruby(t, "");
+        // 曲名のすぐ下をクレジット欄にする。装飾は曲選択や難易度の入力を遮らない。
+        Graphic(panel.transform, "ComposerRule", new Vector2(0, -18), new Vector2(626, 1), SongSelectDiscGraphic.Shape.Panel,
+            new Color(Cyan.r, Cyan.g, Cyan.b, .22f)).Width = 0;
+        Label(panel.transform, "ComposerLabel", "作曲者", 22, new Vector2(-257, -37), new Vector2(96, 30),
+            UISkinKit.JapaneseFallbackFontAsset(), SongSelectVisuals.Muted);
+        composerName = Label(panel.transform, "ComposerName", "???", 26, new Vector2(49, -37), new Vector2(500, 32));
+        composerName.alignment = TextAlignmentOptions.MidlineLeft;
+        composerName.enableAutoSizing = true; composerName.fontSizeMin = 18; composerName.fontSizeMax = 26;
+        composerName.overflowMode = TextOverflowModes.Ellipsis;
+        composerName.richText = false; composerName.parseCtrlCharacters = false;
     }
+
     void BuildDifficulties()
     {
         var tray = PanelAt("DifficultyTray", 960, 828, 720, 124, new Color(.09f, .19f, .29f), 4, 62); tray.color = new Color(.024f, .043f, .082f);
@@ -311,14 +322,16 @@ public class SongSelectSkin : MonoBehaviour
         animation = 0;
         string id = ctl.SongIdAt(index), title = ResultSkin.SongIdToDisplayTitle(id);
         // ふりがなは stage.json の displayReading から(曲ごとのコードの決め打ちをしない)。
-        string reading = SongDisplayInfo.Get(id).Reading;
+        var info = SongDisplayInfo.Get(id);
+        string reading = info.Reading;
+        composerName.text = info.Composer;
         bool japanese = !string.IsNullOrEmpty(reading);
         string markup = japanese ? $"<ruby={reading}>{title}</ruby>" : title;
         var titleText = songTitle.GetComponent<TextMeshProUGUI>();
         // フォントは固定し、日本語は既存のフォールバックで描く。切替時に別アトラスの材質を残さない。
         titleText.fontStyle = japanese ? FontStyles.Bold : FontStyles.Normal;
-        titleText.fontSizeMax = japanese ? 48 : 58;
-        titleText.rectTransform.anchoredPosition = new Vector2(0, japanese ? -11 : -2);
+        titleText.fontSizeMax = japanese ? 44 : 50;
+        titleText.rectTransform.anchoredPosition = new Vector2(0, japanese ? 14 : 22);
         songTitle.Set(markup); DifficultyChanged(ctl.SelectedDifficultyIndex);
         corridor.Select(id);
     }

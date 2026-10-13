@@ -61,12 +61,16 @@ public static class SongSelectDesignPreview
                 Choose(); return;
             }
             if (EditorApplication.timeSinceStartup - ready < 2) return;
-            var label = new[] { "two23am-easy", "school-master", "el-dorado-normal", "neonparade", "yurikago-projector" }[state];
+            var label = new[] { "two23am-easy", "school-master", "el-dorado-normal", "zero-composer", "yurikago-projector" }[state];
             Capture(Path.Combine(output, label + ".png"), 1920, 1080);
-            if (state == 1) Capture(Path.Combine(output, "school-master-720p.png"), 1280, 720);
+            if (state == 1 || state == 3) Capture(Path.Combine(output, $"{label}-720p.png"), 1280, 720);
             File.AppendAllText(Path.Combine(output, "runtime-check.txt"), $"{label}: selected={controller.SongIdAt(controller.SelectedIndex)}, level={controller.CurrentDifficultyDisplayLevel()}, canStart={controller.startButton.interactable}, navNotes={UnityEngine.Object.FindObjectsByType<CuttableNote>(FindObjectsSortMode.None).Length}; scene not saved.\n");
             if (++state < 5) { Choose(); return; }
             VerifyInteractions();
+            // 長い日本語・共同名義も枠内に収まり、マークアップとして解釈されないことを確認する。
+            var credit = GameObject.Find("ComposerName").GetComponent<TMPro.TextMeshProUGUI>();
+            credit.text = "とても長い作曲者の名前 / Composer B <test>";
+            Capture(Path.Combine(output, "long-composer-720p.png"), 1280, 720);
             RestoreSettings(); SessionState.SetBool(Key, false); Debug.Log("[SongSelectDesignPreview] PASS"); EditorApplication.Exit(0);
         }
         catch (Exception e) { RestoreSettings(); SessionState.SetBool(Key, false); Debug.LogException(e); EditorApplication.Exit(1); }
@@ -79,10 +83,13 @@ public static class SongSelectDesignPreview
     }
     static void Choose()
     {
-        string id = new[] { "2_23_AM", "Epilogue", "ElDorado", "NeonParade", "揺籠" }[state];
+        string id = new[] { "2_23_AM", "Epilogue", "ElDorado", "製作中", "揺籠" }[state];
         if (state == 4) { DisplaySettings.ProjectorMode = true; ProjectorMode.Apply(Camera.main); }
         int index = Enumerable.Range(0, controller.SongCount).FirstOrDefault(i => controller.SongIdAt(i) == id);
         controller.Select(index); controller.SetDifficulty(state == 0 ? 0 : state == 1 ? 2 : 1);
+        var credit = GameObject.Find("ComposerName").GetComponent<TMPro.TextMeshProUGUI>();
+        if (credit.text != SongDisplayInfo.Get(id).Composer || credit.raycastTarget || credit.richText)
+            throw new InvalidOperationException("作曲者の表示または入力設定が不正です");
         ready = EditorApplication.timeSinceStartup;
     }
     static void VerifyInteractions()

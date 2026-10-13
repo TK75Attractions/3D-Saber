@@ -30,8 +30,8 @@ public class SongDisplayInfoTests
     [TestCase("Andalusia", "アンダルシア", "アンダルシア")]
     [TestCase("揺籠", "揺籠", "揺籠")]
     [TestCase("ElDorado", "ElDorado", "EL DORADO")]
-    [TestCase("NeonParade", "Neon Parade", "NEON PARADE")]
-    [TestCase("PrismCircuit", "Prism Circuit", "PRISM CIRCUIT")]
+
+
     [TestCase("2_23_AM", "2:23 AM", "2:23 AM")]
     public void TitlesComeFromStageJson(string songId, string listTitle, string styledTitle)
     {
@@ -46,6 +46,35 @@ public class SongDisplayInfoTests
     public void ReadingsComeFromStageJson(string songId, string reading)
     {
         Assert.AreEqual(reading, SongDisplayInfo.Get(songId).Reading);
+    }
+
+    [TestCase(null, "???")]
+    [TestCase("", "???")]
+    [TestCase("   ", "???")]
+    [TestCase("  作曲者A / B  ", "作曲者A / B")]
+    public void ComposerIsReadIndependentlyOfArtist(string composer, string expected)
+    {
+        string songId = "__SongDisplayTest_" + Guid.NewGuid().ToString("N");
+        folder = Path.Combine(Application.streamingAssetsPath, "Songs", songId);
+        Directory.CreateDirectory(folder);
+        var info = Saber.ChartEditor.SaberStageInfo.CreateNew(songId);
+        info.Composer = composer;
+        info.Artist = "演奏者";
+        File.WriteAllText(Path.Combine(folder, "stage.json"), info.Write());
+        SongDisplayInfo.ClearCache();
+        Assert.AreEqual(expected, SongDisplayInfo.Get(songId).Composer);
+        Assert.AreEqual("演奏者", SongDisplayInfo.Get(songId).Artist);
+        Assert.AreEqual("???", SongDisplayInfo.Get("__MissingComposerSong").Composer);
+    }
+
+    [Test]
+    public void RemovedSongsAreAbsentFromTheLibraryAndContent()
+    {
+        foreach (string id in new[] { "NeonParade", "PrismCircuit" })
+        {
+            CollectionAssert.DoesNotContain(SongSelectController.EnumerateSongIds(), id);
+            Assert.False(Directory.Exists(Path.Combine(Application.streamingAssetsPath, "Songs", id)));
+        }
     }
 
     [Test]

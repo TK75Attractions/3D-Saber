@@ -6,7 +6,7 @@ using UnityEngine;
 namespace Saber.ChartEditor
 {
     /// <summary>
-    /// 曲情報パネル: 表示名・ふりがな・アーティスト・選曲に出すか・試聴の開始位置・表示レベル(3難易度)・
+    /// 曲情報パネル: 表示名・ふりがな・作曲者・アーティスト・選曲に出すか・試聴の開始位置・表示レベル(3難易度)・
     /// サビの区間・ジャケットを、エディターの中で決めて stage.json などに保存する。新曲をコードの修正なしで出すため。
     /// </summary>
     public sealed partial class SaberChartEditorWindow
@@ -113,6 +113,8 @@ namespace Saber.ChartEditor
             songInfo.DisplayName = EditorGUILayout.TextField(new GUIContent("表示名", "選曲・プレイ・リザルトに出る曲名"), songInfo.DisplayName);
             GUI.SetNextControlName("ChartText:songInfo.Reading");
             songInfo.Reading = EditorGUILayout.TextField(new GUIContent("ふりがな", "漢字の曲名のときだけ。選曲画面でルビになります"), songInfo.Reading);
+            GUI.SetNextControlName("ChartText:songInfo.Composer");
+            songInfo.Composer = EditorGUILayout.TextField(new GUIContent("作曲者", "曲選択画面の曲名の下に表示。未設定や空欄は ??? になります"), songInfo.Composer);
             GUI.SetNextControlName("ChartText:songInfo.Artist");
             songInfo.Artist = EditorGUILayout.TextField("アーティスト", songInfo.Artist);
             songInfo.Listed = EditorGUILayout.ToggleLeft(new GUIContent("選曲に出す",

@@ -26,7 +26,7 @@
 
 拍の時刻は各難易度のノーツの `(beat, time + offsetMs)` を統合して補間する。校歌のテンポ変化とアンダルシアの拍子変更に対応し、強拍は `ChartMeterMap` と `timeSignatures` から決める。判定調整の個人オフセットは背景には加えない。ノーツから2点を得られない場合のみBPMと譜面の開始時刻に戻す。
 
-資料付属のジャケットを2:23 AM、El Dorado、校歌、Morning、揺籠へ設定。アンダルシアは既存画像を使う。画像がない曲は曲名入りの仮ジャケットを表示するため、NeonParadeや追加曲も表示できる。
+資料付属のジャケットを2:23 AM、El Dorado、校歌、Morning、揺籠へ設定。アンダルシアは既存画像を使う。画像がない曲は曲名入りの仮ジャケットを表示するため、ジャケット未設定の追加曲も表示できる。
 
 ## 実績
 
@@ -53,3 +53,11 @@
 Unity 6000.3.9f1の検証用コピーで、既存のユーザー設定とは異なる保存先を使ってテストする。編集時テストは `SongSelect;SongAchievement;SongWheel;SongPreviewWindow;UISkinTests`、プレイ時テストは `SongSelect;SongPreviewSynchronization;SongChartPreview;SongChartAvailability;SongJacketOwnership;AndalusiaSongFlow;ScreenTransition;PlayFeedbackPlayTests.SongSelect` が対象。
 
 画像出力は1920×1080と1280×720で確認する。プロジェクターモードの画像は確認対象だが、実際の投影と実機の外部照準での操作感は別途調整が必要。
+
+## 作曲者表示と収録曲（2026-10-14）
+
+曲名パネルの下段に「作曲者」を表示する。`stage.json` の `composer` を読み、空欄・未設定は `???`。初期値は全曲 `???` とし、譜面エディターの「曲情報」で曲ごとに設定できる。アーティスト情報とは独立して保存する。長い名前は縮小し、収まりきらない分は省略表示する。
+
+Neon Parade と Prism Circuit は収録データ（音源・全難易度・演出）から削除した。過去の制作資料・生成スクリプトは履歴資料として残す。
+
+関連EditModeテスト132件・PlayModeテスト19件に成功。実選曲画面で1080p/720p、ふりがな付き曲名、長い共同名義、曲送り・難易度・開始などの入力を確認した。撮影用の曲情報は保存せず、シーンとレイアウトは実行前の状態へ復元した。

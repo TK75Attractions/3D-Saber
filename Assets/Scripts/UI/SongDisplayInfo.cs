@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
 
-// 曲の表示名・ふりがな・アーティストと、選曲に出すかを、曲フォルダの stage.json から読む。
+// 曲の表示名・ふりがな・作曲者・アーティストと、選曲に出すかを、曲フォルダの stage.json から読む。
 // 新しい曲のたびにコードへ曲名を決め打ちしない。stage.json に無い項目は、フォルダ名(曲ID)をそのまま使う。
 // 保存記録と音源フォルダの ID は変えず、画面に出す名前だけをここで決める。
 public static class SongDisplayInfo
@@ -14,6 +14,7 @@ public static class SongDisplayInfo
         public string displayName;
         public string displayReading;
         public string artist;
+        public string composer;
         // 譜面エディターの「選曲に出す」を外すと false。項目が無い曲はこれまでどおり出す。
         public bool listed = true;
     }
@@ -23,13 +24,15 @@ public static class SongDisplayInfo
         public readonly string DisplayName;
         public readonly string Reading;
         public readonly string Artist;
+        public readonly string Composer;
         public readonly bool Listed;
 
-        public Info(string displayName, string reading, string artist, bool listed)
+        public Info(string displayName, string reading, string artist, bool listed, string composer = null)
         {
             DisplayName = displayName;
             Reading = reading;
             Artist = artist;
+            Composer = string.IsNullOrWhiteSpace(composer) ? "???" : composer.Trim();
             Listed = listed;
         }
     }
@@ -81,7 +84,7 @@ public static class SongDisplayInfo
                     string name = data.displayName?.Trim();
                     bool meaningful = !string.IsNullOrEmpty(name) && !string.Equals(name, folder, StringComparison.Ordinal);
                     info = new Info(meaningful ? name : fallback.DisplayName,
-                        data.displayReading?.Trim() ?? string.Empty, data.artist?.Trim() ?? string.Empty, data.listed);
+                        data.displayReading?.Trim() ?? string.Empty, data.artist?.Trim() ?? string.Empty, data.listed, data.composer);
                 }
             }
             catch (Exception error) when (error is IOException || error is UnauthorizedAccessException || error is ArgumentException)
