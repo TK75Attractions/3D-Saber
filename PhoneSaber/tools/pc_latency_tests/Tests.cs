@@ -87,6 +87,27 @@ public class AutoLatencyWindowTests
 }
 public class CoordinateTimingTests
 {
+    [Test]
+    public void ShownLatencyDoesNotDependOnReadersAndDoesNotGrowWhileInputIsSilent()
+    {
+        // 2026-10-13 の実機: 曲選択では計測用 getter を誰も読まず、age が数十秒まで伸びて「遅延の目安」に入っていた。
+        var t = new PhoneSaberCoordinateTiming();
+        t.BeforeRender(0.5, 1);
+        Assert.AreEqual(0, t.Shown.Count, "座標が来る前は標本なし");
+        t.Applied(1, 1.001); t.BeforeRender(1.004, 2);
+        Assert.AreEqual(1, t.Shown.Count); Assert.AreEqual(4, t.Shown.MedianMs, 1e-9);
+        // 同じ座標のまま何秒描いても増えない（読み出しも無い）。
+        for (int frame = 3; frame < 600; frame++) t.BeforeRender(1 + frame * 0.016, frame);
+        Assert.AreEqual(1, t.Shown.Count);
+        // 次の座標は、その受信から最初の描画直前まで。同じフレームの2回目の呼び出しは数えない。
+        t.Applied(20, 20.002); t.BeforeRender(20.010, 600); t.BeforeRender(20.011, 600);
+        Assert.AreEqual(2, t.Shown.Count); Assert.AreEqual(10, t.Shown.P95Ms, 1e-9);
+        t.ResetSource(); t.BeforeRender(21, 601);
+        Assert.AreEqual(0, t.Shown.Count, "送信元が替わったら前の端末の座標を数えない");
+        t.Applied(22, 22.001); t.BeforeRender(22.003, 602);
+        Assert.AreEqual(1, t.Shown.Count); Assert.AreEqual(3, t.Shown.MedianMs, 1e-9);
+    }
+
     [Test] public void SourceSwitchDoesNotAttributeOldReadToNewPhone()
     {
         var t = new PhoneSaberCoordinateTiming();

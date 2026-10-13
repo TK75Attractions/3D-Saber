@@ -24,7 +24,7 @@ PHONESABER_METRICS 1 station=A platform=ios app=42 fps-mode=60 capture-fps=59.8 
 | --- | --- | --- |
 | スマホ（c2s） | 既存meterの直近5秒の中央値/p95と件数 | iOS `c2s-end=detection`: capture host timestamp → 認識完了（送信直前）。**UDP queue待ち・実際のsend完了は含まない**。Android `c2s-end=os-send`: REALTIMEセンサー先頭行の露光開始 → そのframeで最後に成功したOS送信。時計がUNKNOWNの端末は欠測。カメラのtimestampより前の露光・rolling shutter全体を保証しない。両色共通のframe統計であり、色別の独立c2sではない。 |
 | 通信（network-ms） | 推定 | スマホの単調時計で測る既存探索のrequest→reply RTTの中央値÷2。非同期時計でも使える。探索reply処理・OS配送を含む。往復非対称・port別処理・送信待ちの差は分離不能。 |
-| PC（pc-median-ms / pc-p95-ms） | 実測 | 各色で、読み出し済み座標の受信→`onBeforeRender`直前の年齢（既存event=perfと同じ）。同じ座標を繰り返す描画も含む。未消費座標は含めない。GPU完了・present待ち・実際の発光は含まない。 |
+| PC（pc-median-ms / pc-p95-ms） | 実測 | 各色で、**新しい座標が公開されてから最初の `onBeforeRender` 直前まで**（`event=perf` の `*-receive-shown-*` と同じ）。座標が来ていない間・同じ座標を描き続けている間は標本を増やさない。GPU完了・present待ち・実際の発光は含まない。2026-10-13 の実機で、当初の定義（読み出し済み座標の年齢）は曲選択で数秒〜数十秒と出たため Claude が変更。 |
 | 画面（display-ms） | 推定 | **設定refresh Hzの半周期**（500/Hz ms）。60Hzなら約8ms、30Hzなら約17ms。vsync・設定Hzはログに残すが、この項目にUnityの900fpsを使わない。glassの実Hzはunknown。低電力で設定60Hz・実30Hzなら過小評価になる。 |
 | total | 上記の和の目安 | 個々の中央値の和。実際の同一frameのend-to-end実測でも、そのp95でもない。**プロジェクター固有処理、GPU/present待ちなど未計測分は加算していない**。 |
 

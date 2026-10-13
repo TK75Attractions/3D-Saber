@@ -133,8 +133,8 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
         if (input != null)
         {
             detail += input.RedCoordinateTiming.Format("red") + input.BlueCoordinateTiming.Format("blue");
-            var redAge = input.RedCoordinateTiming.Age;
-            var blueAge = input.BlueCoordinateTiming.Age;
+            var redAge = input.RedCoordinateTiming.Shown;
+            var blueAge = input.BlueCoordinateTiming.Shown;
             Verdict += " / 受信→描画直前 R " + AgeLabel(redAge) + " B " + AgeLabel(blueAge);
             input.RedCoordinateTiming.ClearWindow(); input.BlueCoordinateTiming.ClearWindow();
         }
@@ -152,8 +152,8 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
         if (input == null || now < nextLatencyLog) return;
         nextLatencyLog = now + WindowSeconds;
         double clockNow = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
-        redEstimate = Estimate(input, false, clockNow, input.RedCoordinateTiming.Age);
-        blueEstimate = Estimate(input, true, clockNow, input.BlueCoordinateTiming.Age);
+        redEstimate = Estimate(input, false, clockNow, input.RedCoordinateTiming.Shown);
+        blueEstimate = Estimate(input, true, clockNow, input.BlueCoordinateTiming.Shown);
         PhoneSaberEventLog.Record(input.StationLabel, "RED", "latency-estimate", redEstimate.Log());
         PhoneSaberEventLog.Record(input.StationLabel, "BLUE", "latency-estimate", blueEstimate.Log());
     }
@@ -217,9 +217,10 @@ public sealed class PhoneSaberCoordinateTiming
     const int Capacity = 16384;
     readonly List<double> age = new List<double>(Capacity), firstRead = new List<double>(Capacity);
     readonly List<double> firstRender = new List<double>(Capacity), apply = new List<double>(Capacity);
+    readonly List<double> shown = new List<double>(Capacity);
     double received = double.NegativeInfinity, readReceived = double.NegativeInfinity;
-    double renderedReceived = double.NegativeInfinity;
-    int lastFrame = -1, dropped;
+    double renderedReceived = double.NegativeInfinity, shownReceived = double.NegativeInfinity;
+    int lastFrame = -1, lastShownFrame = -1, dropped;
     public bool NeedsFirstRead => received != readReceived && !double.IsNegativeInfinity(received);
 
     public void Applied(double receiveAt, double appliedAt)
@@ -238,6 +239,15 @@ public sealed class PhoneSaberCoordinateTiming
 
     public void BeforeRender(double now, int frame)
     {
+        // 新しい座標が公開(Applied)されてから、初めて描画直前まで来るまで。「遅延の目安」の PC の項に使う。
+        // 読み出し側の実装に依らず、座標が来ていない間は標本を増やさない（2026-10-13 の実機:
+        // 曲選択では age が「最後に読まれた座標」からの経過になり、数秒〜数十秒と出ていた）。
+        if (frame != lastShownFrame && received != shownReceived && !double.IsNegativeInfinity(received))
+        {
+            lastShownFrame = frame;
+            shownReceived = received;
+            Add(shown, (now - received) * 1000.0);
+        }
         if (frame == lastFrame || double.IsNegativeInfinity(readReceived)) return;
         lastFrame = frame;
         double ms = (now - readReceived) * 1000.0;
@@ -257,10 +267,12 @@ public sealed class PhoneSaberCoordinateTiming
     public PhoneSaberTimingStats FirstRead => new PhoneSaberTimingStats(firstRead);
     public PhoneSaberTimingStats FirstRender => new PhoneSaberTimingStats(firstRender);
     public PhoneSaberTimingStats Apply => new PhoneSaberTimingStats(apply);
+    public PhoneSaberTimingStats Shown => new PhoneSaberTimingStats(shown);
 
     public string Format(string colour) => Metric(colour + "-coord-age-render", Age) +
         Metric(colour + "-receive-first-use", FirstRead) + Metric(colour + "-receive-first-render", FirstRender) +
-        Metric(colour + "-receive-apply", Apply) + " " + colour + "-timing-dropped=" + dropped;
+        Metric(colour + "-receive-apply", Apply) + Metric(colour + "-receive-shown", Shown) +
+        " " + colour + "-timing-dropped=" + dropped;
 
     static string Metric(string name, PhoneSaberTimingStats stats) => string.Format(CultureInfo.InvariantCulture,
         " {0}-n={1} {0}-median-ms={2} {0}-p95-ms={3}", name, stats.Count,
@@ -269,15 +281,15 @@ public sealed class PhoneSaberCoordinateTiming
 
     public void ClearWindow()
     {
-        age.Clear(); firstRead.Clear(); firstRender.Clear(); apply.Clear(); dropped = 0;
+        age.Clear(); firstRead.Clear(); firstRender.Clear(); apply.Clear(); shown.Clear(); dropped = 0;
     }
 
     // 別の送信元へ切り替わったら、前の端末の「読み出し済み座標」を診断に混ぜない。
     public void ResetSource()
     {
         ClearWindow();
-        received = readReceived = renderedReceived = double.NegativeInfinity;
-        lastFrame = -1;
+        received = readReceived = renderedReceived = shownReceived = double.NegativeInfinity;
+        lastFrame = lastShownFrame = -1;
     }
 }
 
