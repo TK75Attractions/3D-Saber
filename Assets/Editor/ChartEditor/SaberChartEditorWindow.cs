@@ -461,7 +461,7 @@ namespace Saber.ChartEditor
             EditorGUI.BeginChangeCheck();
             float nextBpm = EditorGUILayout.DelayedFloatField("BPM", document.bpm);
             float nextOffset = EditorGUILayout.DelayedFloatField("全体OFFSET (ms)", document.offsetMs);
-            float nextBeatZero = EditorGUILayout.DelayedFloatField(new GUIContent("拍の始まり (ms)", "譜面グリッド原点。0以上の時刻を指定します。ノーツの時刻は変わりません。"), beatZeroMs);
+            float nextBeatZero = EditorGUILayout.DelayedFloatField(new GUIContent("拍の始まり (ms)", "譜面グリッド原点。全体OFFSETを足した位置が音源上の拍の始まりです。負の値も指定できます。ノーツの時刻は変わりません。"), beatZeroMs);
             float nextScale = EditorGUILayout.DelayedFloatField("座標倍率", document.coordScale);
             bool changed = EditorGUI.EndChangeCheck();
             if (!Mathf.Approximately(document.beatZeroMs, beatZeroMs))
@@ -483,7 +483,8 @@ namespace Saber.ChartEditor
             EndNoteDrag();
             string before = CurrentJson();
             float safeBpm = Mathf.Max(1f, nextBpm);
-            float safeBeatZero = Mathf.Max(0f, nextBeatZero);
+            // 全体OFFSETが正なら、音源上の拍へ合わせる原点は負になることもある。
+            float safeBeatZero = nextBeatZero;
             bool bpmChanged = !Mathf.Approximately(safeBpm, document.bpm);
             bool originChanged = !Mathf.Approximately(safeBeatZero, beatZeroMs);
             // 拍の値が1つの格子に乗っていない譜面(テンポが変わる曲など)は、拍の値に曲のテンポの情報がある。
@@ -1727,7 +1728,8 @@ namespace Saber.ChartEditor
 
         private float BeatToAudioSeconds(float beat)
         {
-            return (TimeAtBeat(beat) + document.offsetMs) / 1000f;
+            // 音源上の時刻へ変換してから制限し、正のOFFSETで相殺される負の原点を保つ。
+            return Mathf.Max(0f, (GridTimeAt(Mathf.Max(0f, beat)) + document.offsetMs) / 1000f);
         }
 
         private float MaxBeat()

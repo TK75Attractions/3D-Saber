@@ -75,8 +75,9 @@ public class ChartMeterMapTests
         Assert.AreEqual("002 : 03 : 00", SaberChartUtility.FormatMusicalPosition(4.5f, doc, 16));
     }
 
-    [Test]
-    public void SpawnerUsesMeterOriginAndBothOffsetsExactlyOnce()
+    [TestCase(200f, 100f, .35)]
+    [TestCase(-90f, 110f, .07)]
+    public void SpawnerUsesMeterOriginAndBothOffsetsExactlyOnce(float originMs, float offsetMs, double firstBarSeconds)
     {
         var go = new GameObject("MeterSpawner");
         var root = new GameObject("MeterLines");
@@ -86,21 +87,21 @@ public class ChartMeterMapTests
             var spawner = go.AddComponent<BarLineSpawner>();
             spawner.root = root.transform; spawner.barLinePrefab = prefab;
             spawner.approachTime = 1; spawner.spawnZ = 10; spawner.judgeZ = 0;
-            var chart = new ChartData { bpm = 120, beatZeroMs = 200, offsetMs = 100,
+            var chart = new ChartData { bpm = 120, beatZeroMs = originMs, offsetMs = offsetMs,
                 timeSignatures = new List<ChartTimeSignature> { Meter(0, 7, 8), Meter(7, 3, 4) },
                 notes = new List<NoteData> { new NoteData { time = 6000 } } };
             spawner.SetChart(chart, .05);
-            spawner.Tick(-.65);
+            spawner.Tick(firstBarSeconds - 1);
             Assert.AreEqual(1, spawner.NextIndex);
             Assert.AreEqual(10, root.transform.GetChild(0).position.z, .0001);
-            spawner.Tick(.35);
+            spawner.Tick(firstBarSeconds);
             Assert.AreEqual(0, root.transform.GetChild(0).position.z, .0001);
-            spawner.Tick(2.1);
+            spawner.Tick(firstBarSeconds + 1.75);
             Assert.AreEqual(2, spawner.NextIndex);
             Assert.AreEqual(0, root.transform.GetChild(root.transform.childCount - 1).position.z, .0001);
-            spawner.Tick(3.85);
+            spawner.Tick(firstBarSeconds + 3.5);
             Assert.AreEqual(3, spawner.NextIndex);
-            spawner.Tick(5.35);
+            spawner.Tick(firstBarSeconds + 5);
             Assert.AreEqual(4, spawner.NextIndex);
         }
         finally

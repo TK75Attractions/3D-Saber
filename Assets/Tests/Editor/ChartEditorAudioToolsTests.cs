@@ -342,6 +342,31 @@ public class ChartEditorAudioToolsTests
     }
 
     [Test]
+    public void EighthNoteMetronomeKeepsAudioOriginWithPositiveOffsetAndNegativeGridOrigin()
+    {
+        Document.bpm = 98f;
+        Document.offsetMs = 110f;
+        Document.beatZeroMs = -90f;
+        Set("beatZeroMs", -90f);
+        Document.timeSignatures = new List<ChartTimeSignature>
+        {
+            new ChartTimeSignature { beat = 0, numerator = 5, denominator = 8 },
+            new ChartTimeSignature { beat = 2.5f, numerator = 4, denominator = 8 }
+        };
+        var clicks = ((IEnumerable<(double seconds, bool accent)>)Call("MetronomeSeconds", 3f)).ToList();
+        Assert.AreEqual(10, clicks.Count);
+        Assert.AreEqual(.02f, (float)Call("BeatToAudioSeconds", 0f), .00001f,
+            "先頭から試聴したときに最初のクリックを飛ばさない");
+        for (int i = 0; i < clicks.Count; i++)
+        {
+            Assert.AreEqual(.02 + i * 30.0 / 98.0, clicks[i].seconds, .00001,
+                "BPM98の8分音符。全体OFFSETは原点と合算して一度だけ適用");
+            Assert.AreEqual(i == 0 || i == 5 || i == 9, clicks[i].accent,
+                "5/8から4/8へ変わる小節頭を強拍にする");
+        }
+    }
+
+    [Test]
     public void RecordingNeverPlaysTheClickMix()
     {
         clip = AudioClip.Create("NoClicksWhileRecording", 44100 * 4, 1, 44100, false);

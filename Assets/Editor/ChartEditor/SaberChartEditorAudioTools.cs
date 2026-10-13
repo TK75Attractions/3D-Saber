@@ -230,7 +230,8 @@ namespace Saber.ChartEditor
                 {
                     double beat = start + pulse * 4.0 / bar.Denominator;
                     if (beat >= bar.BarEnd - ChartMeterMap.Epsilon) break;
-                    double seconds = (TimeAtBeat((float)beat) + document.offsetMs) / 1000.0;
+                    // 原点が負でも、全体OFFSETを足す前に0へ丸めない。
+                    double seconds = (GridTimeAt((float)beat) + document.offsetMs) / 1000.0;
                     if (seconds >= 0 && seconds < songLength) yield return (seconds, pulse == 0);
                 }
             }

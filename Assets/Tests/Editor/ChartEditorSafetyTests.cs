@@ -300,6 +300,30 @@ public class ChartEditorSafetyTests
         });
     }
 
+    [Test]
+    public void EditingSettingsAndReloadingKeepsNegativeOriginAndAuthoredNoteTimes()
+    {
+        WithChartFolder((target, folder) =>
+        {
+            string path = Path.Combine(folder, "chart_hard.json");
+            File.WriteAllText(path,
+                "{\"bpm\":98,\"offsetMs\":110,\"beatZeroMs\":-90," +
+                "\"timeSignatures\":[{\"beat\":0,\"numerator\":5,\"denominator\":8}]," +
+                "\"notes\":[{\"beat\":5.047,\"time\":3000,\"x\":-0.75,\"y\":0.2,\"color\":\"blue\"}]} ");
+            Load(target, 2);
+            Call("ApplyChartSettings", 99f, 110f, Get<float>("beatZeroMs"), 1f);
+            Assert.True((bool)Call("SaveDocument"));
+            Load(target, 2);
+            Assert.AreEqual(-90f, Document.beatZeroMs, "他の設定変更で原点を0へ丸めない");
+            Assert.AreEqual(-90f, Get<float>("beatZeroMs"));
+            Assert.AreEqual(20f, Document.beatZeroMs + Document.offsetMs, "音源上の拍の位置を維持");
+            Assert.AreEqual(3000f, Document.notes[0].time, "作者のノーツ時刻を維持");
+            Assert.AreEqual(110f, Document.offsetMs, "作者のタイミング補正を維持");
+            Assert.AreEqual(-.75f, Document.notes[0].x);
+            Assert.AreEqual(.2f, Document.notes[0].y);
+        });
+    }
+
     // ---- 新規: 既存の譜面を黙って置き換えない。曲の設定は他の難易度から引き継ぐ ----
 
     [Test]

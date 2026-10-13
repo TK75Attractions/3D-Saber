@@ -2,907 +2,1277 @@
   "song": "製作中",
   "referenceFile": "メトロノーム入りです。.mp3",
   "referenceSha256": "29ffec9ba55b4c83386a62d56ead4f6c5fbaa3eaff05fa136e815b36a64b3d6d",
-  "originalAudioSha256": "bc5601889c272cffb9a362842a1331b541ea4734e2793a8a675339ef3999855d",
-  "bpm": 196,
+  "originalAudioSha256": "5effa6bd84cfa597ac0c85802ddffb004f1a9f713bf503ed2891aea7b3805041",
+  "bpm": 98,
   "beatZeroMs": 20.0,
-  "measuredBpm": 196.000071,
+  "measuredBpm": 98.000035,
   "matchedTiming95PercentileMs": 1.2492,
   "clickCount": 558,
   "measureCount": 99,
   "lastClickSeconds": 170.530204,
   "finalMeasureEndSeconds": 170.836327,
-  "finalMeasureEvidence": "The last accent at beat 552 is followed by five regular clicks (553..557); no clicks from 558. Its 6/4 length is inferred from that terminal group, not a subsequent downbeat.",
-  "method": "Independent matched filters for 770 Hz regular click and accent partials at 2090/4550/5930 Hz. Reference musical notation BPM196 explicitly selected by user. Original audio and note times retained.",
+  "finalMeasureEvidence": "The last accent is eighth-note index 552 (quarter beat 276), followed by five regular clicks. The final 6/8 length is inferred from this group; no later downbeat is available.",
+  "method": "Reference attachment SHA-256 matches the previously analyzed file. Reuse independent matched filters for the regular click at 770 Hz and accent partials at 2090/4550/5930 Hz. User confirmed quarter-note BPM98; clicks are eighth notes. Preserve all note fields except beat and compensate grid origin for each existing offsetMs.",
   "meterChanges": [
     {
-      "beat": 0,
+      "beat": 0.0,
       "numerator": 5,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 60,
+      "beat": 30.0,
       "numerator": 4,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 76,
+      "beat": 38.0,
       "numerator": 5,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 96,
+      "beat": 48.0,
       "numerator": 4,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 152,
+      "beat": 76.0,
       "numerator": 11,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 196,
+      "beat": 98.0,
       "numerator": 6,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 208,
+      "beat": 104.0,
       "numerator": 5,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 248,
+      "beat": 124.0,
       "numerator": 6,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 356,
+      "beat": 178.0,
       "numerator": 4,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 396,
+      "beat": 198.0,
       "numerator": 11,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 484,
+      "beat": 242.0,
       "numerator": 6,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 496,
+      "beat": 248.0,
       "numerator": 5,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 536,
+      "beat": 268.0,
       "numerator": 4,
-      "denominator": 4
+      "denominator": 8
     },
     {
-      "beat": 552,
+      "beat": 276.0,
       "numerator": 6,
-      "denominator": 4
+      "denominator": 8
     }
   ],
   "bars": [
     {
       "measure": 1,
-      "beat": 0,
-      "beats": 5,
+      "beat": 0.0,
+      "beats": 2.5,
       "gridSeconds": 0.02,
       "measuredClickSeconds": 0.019333,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 0,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 2,
-      "beat": 5,
-      "beats": 5,
+      "beat": 2.5,
+      "beats": 2.5,
       "gridSeconds": 1.550612,
       "measuredClickSeconds": 1.551083,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 5,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 3,
-      "beat": 10,
-      "beats": 5,
+      "beat": 5.0,
+      "beats": 2.5,
       "gridSeconds": 3.081224,
       "measuredClickSeconds": 3.08075,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 10,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 4,
-      "beat": 15,
-      "beats": 5,
+      "beat": 7.5,
+      "beats": 2.5,
       "gridSeconds": 4.611837,
       "measuredClickSeconds": 4.61125,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 15,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 5,
-      "beat": 20,
-      "beats": 5,
+      "beat": 10.0,
+      "beats": 2.5,
       "gridSeconds": 6.142449,
       "measuredClickSeconds": 6.142708,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 20,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 6,
-      "beat": 25,
-      "beats": 5,
+      "beat": 12.5,
+      "beats": 2.5,
       "gridSeconds": 7.673061,
       "measuredClickSeconds": 7.6735,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 25,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 7,
-      "beat": 30,
-      "beats": 5,
+      "beat": 15.0,
+      "beats": 2.5,
       "gridSeconds": 9.203673,
       "measuredClickSeconds": 9.2035,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 30,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 8,
-      "beat": 35,
-      "beats": 5,
+      "beat": 17.5,
+      "beats": 2.5,
       "gridSeconds": 10.734286,
       "measuredClickSeconds": 10.734708,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 35,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 9,
-      "beat": 40,
-      "beats": 5,
+      "beat": 20.0,
+      "beats": 2.5,
       "gridSeconds": 12.264898,
       "measuredClickSeconds": 12.264667,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 40,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 10,
-      "beat": 45,
-      "beats": 5,
+      "beat": 22.5,
+      "beats": 2.5,
       "gridSeconds": 13.79551,
       "measuredClickSeconds": 13.794917,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 45,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 11,
-      "beat": 50,
-      "beats": 5,
+      "beat": 25.0,
+      "beats": 2.5,
       "gridSeconds": 15.326122,
       "measuredClickSeconds": 15.325125,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 50,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 12,
-      "beat": 55,
-      "beats": 5,
+      "beat": 27.5,
+      "beats": 2.5,
       "gridSeconds": 16.856735,
       "measuredClickSeconds": 16.85675,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 55,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 13,
-      "beat": 60,
-      "beats": 4,
+      "beat": 30.0,
+      "beats": 2.0,
       "gridSeconds": 18.387347,
       "measuredClickSeconds": 18.386333,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 60,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 14,
-      "beat": 64,
-      "beats": 4,
+      "beat": 32.0,
+      "beats": 2.0,
       "gridSeconds": 19.611837,
       "measuredClickSeconds": 19.61125,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 64,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 15,
-      "beat": 68,
-      "beats": 4,
+      "beat": 34.0,
+      "beats": 2.0,
       "gridSeconds": 20.836327,
       "measuredClickSeconds": 20.835917,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 68,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 16,
-      "beat": 72,
-      "beats": 4,
+      "beat": 36.0,
+      "beats": 2.0,
       "gridSeconds": 22.060816,
       "measuredClickSeconds": 22.060333,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 72,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 17,
-      "beat": 76,
-      "beats": 5,
+      "beat": 38.0,
+      "beats": 2.5,
       "gridSeconds": 23.285306,
       "measuredClickSeconds": 23.285458,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 76,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 18,
-      "beat": 81,
-      "beats": 5,
+      "beat": 40.5,
+      "beats": 2.5,
       "gridSeconds": 24.815918,
       "measuredClickSeconds": 24.81575,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 81,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 19,
-      "beat": 86,
-      "beats": 5,
+      "beat": 43.0,
+      "beats": 2.5,
       "gridSeconds": 26.346531,
       "measuredClickSeconds": 26.347375,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 86,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 20,
-      "beat": 91,
-      "beats": 5,
+      "beat": 45.5,
+      "beats": 2.5,
       "gridSeconds": 27.877143,
       "measuredClickSeconds": 27.877167,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 91,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 21,
-      "beat": 96,
-      "beats": 4,
+      "beat": 48.0,
+      "beats": 2.0,
       "gridSeconds": 29.407755,
       "measuredClickSeconds": 29.407792,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 96,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 22,
-      "beat": 100,
-      "beats": 4,
+      "beat": 50.0,
+      "beats": 2.0,
       "gridSeconds": 30.632245,
       "measuredClickSeconds": 30.63225,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 100,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 23,
-      "beat": 104,
-      "beats": 4,
+      "beat": 52.0,
+      "beats": 2.0,
       "gridSeconds": 31.856735,
       "measuredClickSeconds": 31.856625,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 104,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 24,
-      "beat": 108,
-      "beats": 4,
+      "beat": 54.0,
+      "beats": 2.0,
       "gridSeconds": 33.081224,
       "measuredClickSeconds": 33.08075,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 108,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 25,
-      "beat": 112,
-      "beats": 4,
+      "beat": 56.0,
+      "beats": 2.0,
       "gridSeconds": 34.305714,
       "measuredClickSeconds": 34.306042,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 112,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 26,
-      "beat": 116,
-      "beats": 4,
+      "beat": 58.0,
+      "beats": 2.0,
       "gridSeconds": 35.530204,
       "measuredClickSeconds": 35.529958,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 116,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 27,
-      "beat": 120,
-      "beats": 4,
+      "beat": 60.0,
+      "beats": 2.0,
       "gridSeconds": 36.754694,
       "measuredClickSeconds": 36.754208,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 120,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 28,
-      "beat": 124,
-      "beats": 4,
+      "beat": 62.0,
+      "beats": 2.0,
       "gridSeconds": 37.979184,
       "measuredClickSeconds": 37.979375,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 124,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 29,
-      "beat": 128,
-      "beats": 4,
+      "beat": 64.0,
+      "beats": 2.0,
       "gridSeconds": 39.203673,
       "measuredClickSeconds": 39.203,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 128,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 30,
-      "beat": 132,
-      "beats": 4,
+      "beat": 66.0,
+      "beats": 2.0,
       "gridSeconds": 40.428163,
       "measuredClickSeconds": 40.427708,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 132,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 31,
-      "beat": 136,
-      "beats": 4,
+      "beat": 68.0,
+      "beats": 2.0,
       "gridSeconds": 41.652653,
       "measuredClickSeconds": 41.652708,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 136,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 32,
-      "beat": 140,
-      "beats": 4,
+      "beat": 70.0,
+      "beats": 2.0,
       "gridSeconds": 42.877143,
       "measuredClickSeconds": 42.877625,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 140,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 33,
-      "beat": 144,
-      "beats": 4,
+      "beat": 72.0,
+      "beats": 2.0,
       "gridSeconds": 44.101633,
       "measuredClickSeconds": 44.101375,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 144,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 34,
-      "beat": 148,
-      "beats": 4,
+      "beat": 74.0,
+      "beats": 2.0,
       "gridSeconds": 45.326122,
       "measuredClickSeconds": 45.325667,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 148,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 35,
-      "beat": 152,
-      "beats": 11,
+      "beat": 76.0,
+      "beats": 5.5,
       "gridSeconds": 46.550612,
       "measuredClickSeconds": 46.550958,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 152,
+      "numerator": 11,
+      "denominator": 8
     },
     {
       "measure": 36,
-      "beat": 163,
-      "beats": 11,
+      "beat": 81.5,
+      "beats": 5.5,
       "gridSeconds": 49.917959,
       "measuredClickSeconds": 49.917125,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 163,
+      "numerator": 11,
+      "denominator": 8
     },
     {
       "measure": 37,
-      "beat": 174,
-      "beats": 11,
+      "beat": 87.0,
+      "beats": 5.5,
       "gridSeconds": 53.285306,
       "measuredClickSeconds": 53.284708,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 174,
+      "numerator": 11,
+      "denominator": 8
     },
     {
       "measure": 38,
-      "beat": 185,
-      "beats": 11,
+      "beat": 92.5,
+      "beats": 5.5,
       "gridSeconds": 56.652653,
       "measuredClickSeconds": 56.6535,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 185,
+      "numerator": 11,
+      "denominator": 8
     },
     {
       "measure": 39,
-      "beat": 196,
-      "beats": 6,
+      "beat": 98.0,
+      "beats": 3.0,
       "gridSeconds": 60.02,
       "measuredClickSeconds": 60.020458,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 196,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 40,
-      "beat": 202,
-      "beats": 6,
+      "beat": 101.0,
+      "beats": 3.0,
       "gridSeconds": 61.856735,
       "measuredClickSeconds": 61.85625,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 202,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 41,
-      "beat": 208,
-      "beats": 5,
+      "beat": 104.0,
+      "beats": 2.5,
       "gridSeconds": 63.693469,
       "measuredClickSeconds": 63.693458,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 208,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 42,
-      "beat": 213,
-      "beats": 5,
+      "beat": 106.5,
+      "beats": 2.5,
       "gridSeconds": 65.224082,
       "measuredClickSeconds": 65.22325,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 213,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 43,
-      "beat": 218,
-      "beats": 5,
+      "beat": 109.0,
+      "beats": 2.5,
       "gridSeconds": 66.754694,
       "measuredClickSeconds": 66.75375,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 218,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 44,
-      "beat": 223,
-      "beats": 5,
+      "beat": 111.5,
+      "beats": 2.5,
       "gridSeconds": 68.285306,
       "measuredClickSeconds": 68.285625,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 223,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 45,
-      "beat": 228,
-      "beats": 5,
+      "beat": 114.0,
+      "beats": 2.5,
       "gridSeconds": 69.815918,
       "measuredClickSeconds": 69.815583,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 228,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 46,
-      "beat": 233,
-      "beats": 5,
+      "beat": 116.5,
+      "beats": 2.5,
       "gridSeconds": 71.346531,
       "measuredClickSeconds": 71.347375,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 233,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 47,
-      "beat": 238,
-      "beats": 5,
+      "beat": 119.0,
+      "beats": 2.5,
       "gridSeconds": 72.877143,
       "measuredClickSeconds": 72.87675,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 238,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 48,
-      "beat": 243,
-      "beats": 5,
+      "beat": 121.5,
+      "beats": 2.5,
       "gridSeconds": 74.407755,
       "measuredClickSeconds": 74.407167,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 243,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 49,
-      "beat": 248,
-      "beats": 6,
+      "beat": 124.0,
+      "beats": 3.0,
       "gridSeconds": 75.938367,
       "measuredClickSeconds": 75.938833,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 248,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 50,
-      "beat": 254,
-      "beats": 6,
+      "beat": 127.0,
+      "beats": 3.0,
       "gridSeconds": 77.775102,
       "measuredClickSeconds": 77.775542,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 254,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 51,
-      "beat": 260,
-      "beats": 6,
+      "beat": 130.0,
+      "beats": 3.0,
       "gridSeconds": 79.611837,
       "measuredClickSeconds": 79.612292,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 260,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 52,
-      "beat": 266,
-      "beats": 6,
+      "beat": 133.0,
+      "beats": 3.0,
       "gridSeconds": 81.448571,
       "measuredClickSeconds": 81.449,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 266,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 53,
-      "beat": 272,
-      "beats": 6,
+      "beat": 136.0,
+      "beats": 3.0,
       "gridSeconds": 83.285306,
       "measuredClickSeconds": 83.285125,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 272,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 54,
-      "beat": 278,
-      "beats": 6,
+      "beat": 139.0,
+      "beats": 3.0,
       "gridSeconds": 85.122041,
       "measuredClickSeconds": 85.122375,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 278,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 55,
-      "beat": 284,
-      "beats": 6,
+      "beat": 142.0,
+      "beats": 3.0,
       "gridSeconds": 86.958776,
       "measuredClickSeconds": 86.958292,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 284,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 56,
-      "beat": 290,
-      "beats": 6,
+      "beat": 145.0,
+      "beats": 3.0,
       "gridSeconds": 88.79551,
       "measuredClickSeconds": 88.795042,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 290,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 57,
-      "beat": 296,
-      "beats": 6,
+      "beat": 148.0,
+      "beats": 3.0,
       "gridSeconds": 90.632245,
       "measuredClickSeconds": 90.632667,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 296,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 58,
-      "beat": 302,
-      "beats": 6,
+      "beat": 151.0,
+      "beats": 3.0,
       "gridSeconds": 92.46898,
       "measuredClickSeconds": 92.469,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 302,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 59,
-      "beat": 308,
-      "beats": 6,
+      "beat": 154.0,
+      "beats": 3.0,
       "gridSeconds": 94.305714,
       "measuredClickSeconds": 94.306125,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 308,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 60,
-      "beat": 314,
-      "beats": 6,
+      "beat": 157.0,
+      "beats": 3.0,
       "gridSeconds": 96.142449,
       "measuredClickSeconds": 96.142333,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 314,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 61,
-      "beat": 320,
-      "beats": 6,
+      "beat": 160.0,
+      "beats": 3.0,
       "gridSeconds": 97.979184,
       "measuredClickSeconds": 97.979208,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 320,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 62,
-      "beat": 326,
-      "beats": 6,
+      "beat": 163.0,
+      "beats": 3.0,
       "gridSeconds": 99.815918,
       "measuredClickSeconds": 99.816333,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 326,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 63,
-      "beat": 332,
-      "beats": 6,
+      "beat": 166.0,
+      "beats": 3.0,
       "gridSeconds": 101.652653,
       "measuredClickSeconds": 101.65225,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 332,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 64,
-      "beat": 338,
-      "beats": 6,
+      "beat": 169.0,
+      "beats": 3.0,
       "gridSeconds": 103.489388,
       "measuredClickSeconds": 103.488792,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 338,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 65,
-      "beat": 344,
-      "beats": 6,
+      "beat": 172.0,
+      "beats": 3.0,
       "gridSeconds": 105.326122,
       "measuredClickSeconds": 105.325292,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 344,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 66,
-      "beat": 350,
-      "beats": 6,
+      "beat": 175.0,
+      "beats": 3.0,
       "gridSeconds": 107.162857,
       "measuredClickSeconds": 107.162458,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 350,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 67,
-      "beat": 356,
-      "beats": 4,
+      "beat": 178.0,
+      "beats": 2.0,
       "gridSeconds": 108.999592,
       "measuredClickSeconds": 108.999375,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 356,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 68,
-      "beat": 360,
-      "beats": 4,
+      "beat": 180.0,
+      "beats": 2.0,
       "gridSeconds": 110.224082,
       "measuredClickSeconds": 110.2235,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 360,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 69,
-      "beat": 364,
-      "beats": 4,
+      "beat": 182.0,
+      "beats": 2.0,
       "gridSeconds": 111.448571,
       "measuredClickSeconds": 111.449,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 364,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 70,
-      "beat": 368,
-      "beats": 4,
+      "beat": 184.0,
+      "beats": 2.0,
       "gridSeconds": 112.673061,
       "measuredClickSeconds": 112.6735,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 368,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 71,
-      "beat": 372,
-      "beats": 4,
+      "beat": 186.0,
+      "beats": 2.0,
       "gridSeconds": 113.897551,
       "measuredClickSeconds": 113.896708,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 372,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 72,
-      "beat": 376,
-      "beats": 4,
+      "beat": 188.0,
+      "beats": 2.0,
       "gridSeconds": 115.122041,
       "measuredClickSeconds": 115.121583,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 376,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 73,
-      "beat": 380,
-      "beats": 4,
+      "beat": 190.0,
+      "beats": 2.0,
       "gridSeconds": 116.346531,
       "measuredClickSeconds": 116.346708,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 380,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 74,
-      "beat": 384,
-      "beats": 4,
+      "beat": 192.0,
+      "beats": 2.0,
       "gridSeconds": 117.57102,
       "measuredClickSeconds": 117.571542,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 384,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 75,
-      "beat": 388,
-      "beats": 4,
+      "beat": 194.0,
+      "beats": 2.0,
       "gridSeconds": 118.79551,
       "measuredClickSeconds": 118.795542,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 388,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 76,
-      "beat": 392,
-      "beats": 4,
+      "beat": 196.0,
+      "beats": 2.0,
       "gridSeconds": 120.02,
       "measuredClickSeconds": 120.019417,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 392,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 77,
-      "beat": 396,
-      "beats": 11,
+      "beat": 198.0,
+      "beats": 5.5,
       "gridSeconds": 121.24449,
       "measuredClickSeconds": 121.244917,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 396,
+      "numerator": 11,
+      "denominator": 8
     },
     {
       "measure": 78,
-      "beat": 407,
-      "beats": 11,
+      "beat": 203.5,
+      "beats": 5.5,
       "gridSeconds": 124.611837,
       "measuredClickSeconds": 124.611833,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 407,
+      "numerator": 11,
+      "denominator": 8
     },
     {
       "measure": 79,
-      "beat": 418,
-      "beats": 11,
+      "beat": 209.0,
+      "beats": 5.5,
       "gridSeconds": 127.979184,
       "measuredClickSeconds": 127.979667,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 418,
+      "numerator": 11,
+      "denominator": 8
     },
     {
       "measure": 80,
-      "beat": 429,
-      "beats": 11,
+      "beat": 214.5,
+      "beats": 5.5,
       "gridSeconds": 131.346531,
       "measuredClickSeconds": 131.347,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 429,
+      "numerator": 11,
+      "denominator": 8
     },
     {
       "measure": 81,
-      "beat": 440,
-      "beats": 11,
+      "beat": 220.0,
+      "beats": 5.5,
       "gridSeconds": 134.713878,
       "measuredClickSeconds": 134.714375,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 440,
+      "numerator": 11,
+      "denominator": 8
     },
     {
       "measure": 82,
-      "beat": 451,
-      "beats": 11,
+      "beat": 225.5,
+      "beats": 5.5,
       "gridSeconds": 138.081224,
       "measuredClickSeconds": 138.081667,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 451,
+      "numerator": 11,
+      "denominator": 8
     },
     {
       "measure": 83,
-      "beat": 462,
-      "beats": 11,
+      "beat": 231.0,
+      "beats": 5.5,
       "gridSeconds": 141.448571,
       "measuredClickSeconds": 141.448167,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 462,
+      "numerator": 11,
+      "denominator": 8
     },
     {
       "measure": 84,
-      "beat": 473,
-      "beats": 11,
+      "beat": 236.5,
+      "beats": 5.5,
       "gridSeconds": 144.815918,
       "measuredClickSeconds": 144.815917,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 473,
+      "numerator": 11,
+      "denominator": 8
     },
     {
       "measure": 85,
-      "beat": 484,
-      "beats": 6,
+      "beat": 242.0,
+      "beats": 3.0,
       "gridSeconds": 148.183265,
       "measuredClickSeconds": 148.183667,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 484,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 86,
-      "beat": 490,
-      "beats": 6,
+      "beat": 245.0,
+      "beats": 3.0,
       "gridSeconds": 150.02,
       "measuredClickSeconds": 150.019167,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 490,
+      "numerator": 6,
+      "denominator": 8
     },
     {
       "measure": 87,
-      "beat": 496,
-      "beats": 5,
+      "beat": 248.0,
+      "beats": 2.5,
       "gridSeconds": 151.856735,
       "measuredClickSeconds": 151.85675,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 496,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 88,
-      "beat": 501,
-      "beats": 5,
+      "beat": 250.5,
+      "beats": 2.5,
       "gridSeconds": 153.387347,
       "measuredClickSeconds": 153.3875,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 501,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 89,
-      "beat": 506,
-      "beats": 5,
+      "beat": 253.0,
+      "beats": 2.5,
       "gridSeconds": 154.917959,
       "measuredClickSeconds": 154.917333,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 506,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 90,
-      "beat": 511,
-      "beats": 5,
+      "beat": 255.5,
+      "beats": 2.5,
       "gridSeconds": 156.448571,
       "measuredClickSeconds": 156.449042,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 511,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 91,
-      "beat": 516,
-      "beats": 5,
+      "beat": 258.0,
+      "beats": 2.5,
       "gridSeconds": 157.979184,
       "measuredClickSeconds": 157.97875,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 516,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 92,
-      "beat": 521,
-      "beats": 5,
+      "beat": 260.5,
+      "beats": 2.5,
       "gridSeconds": 159.509796,
       "measuredClickSeconds": 159.510125,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 521,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 93,
-      "beat": 526,
-      "beats": 5,
+      "beat": 263.0,
+      "beats": 2.5,
       "gridSeconds": 161.040408,
       "measuredClickSeconds": 161.040417,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 526,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 94,
-      "beat": 531,
-      "beats": 5,
+      "beat": 265.5,
+      "beats": 2.5,
       "gridSeconds": 162.57102,
       "measuredClickSeconds": 162.571458,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 531,
+      "numerator": 5,
+      "denominator": 8
     },
     {
       "measure": 95,
-      "beat": 536,
-      "beats": 4,
+      "beat": 268.0,
+      "beats": 2.0,
       "gridSeconds": 164.101633,
       "measuredClickSeconds": 164.101042,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 536,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 96,
-      "beat": 540,
-      "beats": 4,
+      "beat": 270.0,
+      "beats": 2.0,
       "gridSeconds": 165.326122,
       "measuredClickSeconds": 165.326125,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 540,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 97,
-      "beat": 544,
-      "beats": 4,
+      "beat": 272.0,
+      "beats": 2.0,
       "gridSeconds": 166.550612,
       "measuredClickSeconds": 166.550625,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 544,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 98,
-      "beat": 548,
-      "beats": 4,
+      "beat": 274.0,
+      "beats": 2.0,
       "gridSeconds": 167.775102,
       "measuredClickSeconds": 167.775583,
-      "endEvidence": "next-accent"
+      "endEvidence": "next-accent",
+      "eighthNoteIndex": 548,
+      "numerator": 4,
+      "denominator": 8
     },
     {
       "measure": 99,
-      "beat": 552,
-      "beats": 6,
+      "beat": 276.0,
+      "beats": 3.0,
       "gridSeconds": 168.999592,
       "measuredClickSeconds": 168.999917,
-      "endEvidence": "six final clicks followed by tail"
+      "endEvidence": "six final clicks followed by tail",
+      "eighthNoteIndex": 552,
+      "numerator": 6,
+      "denominator": 8
     }
   ],
   "charts": {
     "chart.json": {
       "notes": 278,
-      "firstTimeMs": 2468.98,
-      "lastTimeMs": 168999.592,
-      "beforeSha256": "a24a493f3fb2e60b37efc7161337f176d8066836199b3f978e263a3b3f4a0385"
+      "beforeBpm": 196,
+      "beatZeroMs": 20.0,
+      "offsetMs": 0.0,
+      "audioBeatZeroMs": 20.0,
+      "beforeSha256": "013d9be1a3cfb65223451cc29cc49545396f7c937fb2bbd15b9f8a577c56319f",
+      "noteFieldsOtherThanBeatUnchanged": true
     },
     "chart_easy.json": {
       "notes": 160,
-      "firstTimeMs": 2468.98,
-      "lastTimeMs": 168999.592,
-      "beforeSha256": "3deebb9ccdf4baadf715d3b8c0391ce570cd18c596a2e4ec8b47c0204fa2460f"
+      "beforeBpm": 196,
+      "beatZeroMs": 20.0,
+      "offsetMs": 0.0,
+      "audioBeatZeroMs": 20.0,
+      "beforeSha256": "c785a2c66695f2785ca706434f926ad86b2e805a014c7ad2177fd584bf8ed229",
+      "noteFieldsOtherThanBeatUnchanged": true
     },
     "chart_normal.json": {
       "notes": 278,
-      "firstTimeMs": 2468.98,
-      "lastTimeMs": 168999.592,
-      "beforeSha256": "a24a493f3fb2e60b37efc7161337f176d8066836199b3f978e263a3b3f4a0385"
+      "beforeBpm": 196,
+      "beatZeroMs": 20.0,
+      "offsetMs": 0.0,
+      "audioBeatZeroMs": 20.0,
+      "beforeSha256": "013d9be1a3cfb65223451cc29cc49545396f7c937fb2bbd15b9f8a577c56319f",
+      "noteFieldsOtherThanBeatUnchanged": true
     },
     "chart_hard.json": {
-      "notes": 350,
-      "firstTimeMs": 2468.98,
-      "lastTimeMs": 168999.592,
-      "beforeSha256": "61a626df938b883758a101da49c5e935e740473bd270c49b0419a87986e4cdd9"
+      "notes": 314,
+      "beforeBpm": 120,
+      "beatZeroMs": -90,
+      "offsetMs": 110,
+      "audioBeatZeroMs": 20,
+      "beforeSha256": "0da1e1bb98965cc163341a4f35fea1a3dff54aaac9f7b79509890e674b8f3557",
+      "noteFieldsOtherThanBeatUnchanged": true
     }
-  }
+  },
+  "displayName": "Zero -狂奏曲-",
+  "revision": "2026-10-13 BPM98 correction",
+  "clickUnit": "eighth-note",
+  "clickIntervalSeconds": 0.30612244897959184,
+  "currentAudioAlignment": [
+    {
+      "center": 2,
+      "lagMs": -0.375,
+      "correlation": 0.6233132796847975
+    },
+    {
+      "center": 10,
+      "lagMs": 0.0,
+      "correlation": 0.6638594823651287
+    },
+    {
+      "center": 20,
+      "lagMs": 0.0,
+      "correlation": 0.6017963309625497
+    },
+    {
+      "center": 30,
+      "lagMs": 0.125,
+      "correlation": 0.5348434740084786
+    },
+    {
+      "center": 50,
+      "lagMs": 0.0,
+      "correlation": 0.8560955426697371
+    },
+    {
+      "center": 70,
+      "lagMs": -0.0625,
+      "correlation": 0.7542185179643349
+    },
+    {
+      "center": 90,
+      "lagMs": 0.0,
+      "correlation": 0.8051416626882464
+    },
+    {
+      "center": 110,
+      "lagMs": 0.125,
+      "correlation": 0.776934477401482
+    },
+    {
+      "center": 130,
+      "lagMs": 0.0625,
+      "correlation": 0.8393778661331593
+    },
+    {
+      "center": 150,
+      "lagMs": 0.0625,
+      "correlation": 0.8643040916062781
+    },
+    {
+      "center": 168,
+      "lagMs": -0.0625,
+      "correlation": 0.7477190717063461
+    }
+  ]
 }
