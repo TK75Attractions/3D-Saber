@@ -1,13 +1,13 @@
 {
-  "revision": 3,
+  "revision": 4,
   "notes": 270,
   "cuts": 424,
   "longNotes": 14,
-  "directionNotes": 184,
+  "directionNotes": 131,
   "simultaneousPairs": 24,
   "continuousFlickRuns": {
-    "2": 40,
-    "3": 24
+    "2": 39,
+    "3": 7
   },
   "signatureLongCount": 50,
   "signatureLongLengthMs": 21677,
@@ -32,5 +32,73 @@
     "maxBranchStates": 1,
     "goldRouting": "position-side assignment; paired gold longs use one hand each"
   },
+  "variedMeasures": 38,
+  "colors": {
+    "blue": 123,
+    "red": 133,
+    "gold": 14
+  },
+  "repetitionBefore": {
+    "adjacentIdenticalLayouts": [
+      {
+        "first": 32,
+        "second": 33
+      }
+    ],
+    "reusedDenseHandRhythmWindows": {
+      "2": [
+        {
+          "firstMeasures": [
+            42
+          ],
+          "repeatedAt": 44
+        },
+        {
+          "firstMeasures": [
+            43
+          ],
+          "repeatedAt": 45
+        },
+        {
+          "firstMeasures": [
+            42,
+            44
+          ],
+          "repeatedAt": 46
+        },
+        {
+          "firstMeasures": [
+            43,
+            45
+          ],
+          "repeatedAt": 47
+        }
+      ],
+      "4": [
+        {
+          "firstMeasures": [
+            42
+          ],
+          "repeatedAt": 44
+        },
+        {
+          "firstMeasures": [
+            43
+          ],
+          "repeatedAt": 45
+        }
+      ]
+    },
+    "comparison": "actual meter, relative beats and colors; 2/4-bar windows with >=3 heads/bar on average, no empty bars or active longs"
+  },
+  "repetitionAfter": {
+    "adjacentIdenticalLayouts": [],
+    "reusedDenseHandRhythmWindows": {
+      "2": [],
+      "4": []
+    },
+    "comparison": "actual meter, relative beats and colors; 2/4-bar windows with >=3 heads/bar on average, no empty bars or active longs"
+  },
+  "revision4TimingChanges": 0,
   "sourceSha256": "b069bd8920a3865245e0302d7463c0bbca700a12fb7959b9c176f7ba88799b99"
 }

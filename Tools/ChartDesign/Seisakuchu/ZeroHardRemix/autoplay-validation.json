@@ -1,5 +1,5 @@
 {
-  "revision": 3,
+  "revision": 4,
   "songId": "製作中",
   "difficulty": "hard",
   "expectedNotes": 270,
@@ -7,20 +7,20 @@
   "observedCuts": 424,
   "maximumCutTimeErrorMs": 0.0,
   "long50CutEvents": 100,
-  "chartSha256": "ed922ed0e03f7ebcaa6e378ce341b0f63e19aaa4746fdd7d7e6ff308fdf43c84",
-  "cutPlanSha256": "f1e505d0322d2c0f0bc6cfe11cc4a96a56117e06990a2144185e2d666f8833a9",
+  "chartSha256": "b4332c69a953b2124510a5c83135008170270fa21b96275c86084380740825df",
+  "cutPlanSha256": "f504d747190940993aa721c0904025a2deb8de2a9ae8f6b695f0a611059d66d3",
   "eventTypes": {
-    "flick": 184,
-    "tap": 67,
+    "flick": 131,
+    "tap": 120,
     "gold": 14,
     "tick": 154,
     "finish": 5
   },
-  "editModeTestsPassed": 52,
+  "editModeTestsPassed": 55,
   "playModeCapturePassed": true,
   "visibility": {
     "extraTaps": 8,
-    "framesChecked": 241,
+    "framesChecked": 240,
     "maximumBodyCoverage": 0.0,
     "maximumCountLabelCoverage": 0.004380399,
     "allInsideViewport": true

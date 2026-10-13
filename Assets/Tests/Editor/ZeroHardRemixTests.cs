@@ -1,5 +1,7 @@
 using System.IO;
 using System.Linq;
+using System.Collections.Generic;
+using System.Globalization;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -91,8 +93,56 @@ public class ZeroHardRemixTests
                 connected++;
             }
         }
-        Assert.GreaterOrEqual(connected, 60, "2連・3連に連続フリックを残す");
+        Assert.GreaterOrEqual(connected, 40, "単発の受け渡しを混ぜても2連・3連の連続フリックを残す");
     }
+
+    [TestCase(2)]
+    [TestCase(4)]
+    public void DenseMeasurePhrasesDoNotReuseTheSameHandAndRhythmSequence(int length)
+    {
+        var chart = ChartLoader.LoadFromStreamingAssets("製作中", "hard");
+        var meter = new ChartMeterMap(chart.timeSignatures);
+        var bars = meter.BarStarts(0, chart.notes.Max(n => n.beat)).Select(b => meter.At(b)).ToArray();
+        var seen = new Dictionary<string, int>();
+        int checkedPhrases = 0;
+        for (int i = 0; i + length <= bars.Length; i++)
+        {
+            var window = bars.Skip(i).Take(length).ToArray();
+            var groups = window.Select(b => chart.notes.Where(n => n.beat >= b.BarStart && n.beat < b.BarEnd).ToArray()).ToArray();
+            // 指定して残す長い連打・固定レーン・休符を、密な反復配置の比較から除く。
+            if (groups.Any(g => g.Length == 0) || groups.Sum(g => g.Length) < length * 3) continue;
+            if (window.Any(b => HasActiveLong(chart, b))) continue;
+            string key = string.Join("/", window.Select((b, k) => Number(b.BarEnd - b.BarStart) + ":" +
+                string.Join(";", groups[k].Select(n => Number(n.beat - b.BarStart) + n.color + n.count))));
+            Assert.IsFalse(seen.TryGetValue(key, out int prior), $"{prior}小節目と{bars[i].Measure}小節目で{length}小節分の手順が同じ");
+            seen[key] = bars[i].Measure;
+            checkedPhrases++;
+        }
+        Assert.Greater(checkedPhrases, 0, "連続した通常配置を比較したことを確認する");
+    }
+
+    [Test]
+    public void AdjacentNormalMeasuresDoNotRepeatIdenticalLayouts()
+    {
+        var chart = ChartLoader.LoadFromStreamingAssets("製作中", "hard");
+        var meter = new ChartMeterMap(chart.timeSignatures);
+        string previous = null;
+        foreach (double start in meter.BarStarts(0, chart.notes.Max(n => n.beat)))
+        {
+            var bar = meter.At(start);
+            var notes = chart.notes.Where(n => n.beat >= bar.BarStart && n.beat < bar.BarEnd).ToArray();
+            if (notes.Length < 2 || HasActiveLong(chart, bar)) { previous = null; continue; }
+            string signature = Number(bar.BarEnd - bar.BarStart) + ":" + string.Join(";", notes.Select(n =>
+                Number(n.beat - bar.BarStart) + n.color + Number(n.x) + "," + Number(n.y) + n.direction));
+            Assert.AreNotEqual(previous, signature, $"{bar.Measure - 1}〜{bar.Measure}小節で同じ配置を続けない");
+            previous = signature;
+        }
+    }
+
+    static bool HasActiveLong(ChartData chart, ChartMeterMap.Position bar) => chart.notes.Any(n =>
+        n.IsLong && n.beat < bar.BarEnd && n.beat + n.lengthMs * (double)chart.bpm / 60000 > bar.BarStart);
+
+    static string Number(double value) => value.ToString("0.0", CultureInfo.InvariantCulture);
 
     static Vector2 DirectionVector(string direction)
     {

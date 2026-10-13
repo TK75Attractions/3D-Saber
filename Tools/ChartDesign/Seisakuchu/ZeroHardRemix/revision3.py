@@ -86,17 +86,18 @@ def musical_cut_plan(notes):
     return plan
 
 
-def connect_runs(notes, origins, plan):
+def connect_runs(notes, origins, plan, run_indices=None, layouts=None):
     flow = base.audit_module()
     cuts = previous.expanded(notes,plan)
-    runs = []
-    for run in origins['runs']:
-        ids = [i for i,p in enumerate(origins['notes']) if p.get('revision2TimeMs',-1) >= run['startMs']
-               and p.get('revision2TimeMs',-1) <= run['endMs'] and p.get('motif') == f'{run["count"]}_note_run'
-               and notes[i]['color'] == run['color']]
-        assert len(ids) == run['count'], (run,ids)
-        if len(ids) >= 2:
-            runs.append(ids)
+    runs = [] if run_indices is None else run_indices
+    if run_indices is None:
+        for run in origins['runs']:
+            ids = [i for i,p in enumerate(origins['notes']) if p.get('revision2TimeMs',-1) >= run['startMs']
+                   and p.get('revision2TimeMs',-1) <= run['endMs'] and p.get('motif') == f'{run["count"]}_note_run'
+                   and notes[i]['color'] == run['color']]
+            assert len(ids) == run['count'], (run,ids)
+            if len(ids) >= 2:
+                runs.append(ids)
     membership = {i:r for r,ids in enumerate(runs) for i in ids}
     for n in notes:
         if n['count'] == 1:
@@ -126,16 +127,19 @@ def connect_runs(notes, origins, plan):
                 route = []
                 if is_run:
                     unit = flow.UNIT_DIRECTIONS[direction]
-                    center = 1.25 if hand == 'red' else -1.25
+                    layout = layouts.get(block[0]['parent']) if layouts else None
+                    center = (layout['width'] if layout else 1.25) * (1 if hand == 'red' else -1)
+                    center_y = layout['y'] if layout else 0
                     for k,n in enumerate(block):
                         v = tuple(value*((-1)**k) for value in unit)
                         d = min(flow.DIR_NAMES,key=lambda name:math.dist(v,flow.UNIT_DIRECTIONS[name]))
-                        route.append((dict(n,x=round(center+.28*v[0],6),y=round(.28*v[1],6),
+                        route.append((dict(n,x=round(center+.28*v[0],6),y=round(center_y+.28*v[1] if layout else .28*v[1],6),
                                            direction=d,type='direction'),d))
                     # 主に左右往復。中盤は上下を優先し、接続に合う斜めも候補に残す。
                     section = base.section(block[0]['time']+110)
                     preferred = ('up','down') if section == 'first_peak' else ('left','right')
-                    penalty = 0 if direction in preferred else .32
+                    if layout: preferred = layout['directions']
+                    penalty = 0 if direction in preferred else (3 if layout else .32)
                 else:
                     route = [(block[0],direction)]
                     penalty = 0 if direction in ('up','down') else .02
