@@ -69,7 +69,7 @@ iPhone遅延: 10-13 に main へ取り込み済み（公式 verify PASS）。既
 ### 2026-10-13 遅延の自動計測（ユーザー依頼「実機の遅延計測をもっと簡単に」「最優先」。Codex 実装、Claude がレビュー・検証）
 - 手順なしの常時計測にした。スマホが送信中5秒ごとに診断 `PHONESABER_METRICS 1 …`（撮影→送信の中央値/p95、探索の往復時間 RTT、fps、発熱、電池）を PC の 5007 番へ送り、PC が自分の計測（受信→描画直前）と画面の半周期を足して、F8 に色別の「遅延の目安」を1行、events.log に `event=latency-estimate` を10秒ごとに残す。座標の payload と既存の探索メッセージは変えていない。古い PC は診断を無視し、古いスマホは送らない（PC は「届いていません」と表示）。P2P 経由は対象外。
 - 内訳: スマホ（実測。iOS は撮影→認識完了、Android は撮影→OS 送信）＋ 通信（RTT÷2、推定）＋ PC（実測）＋ 画面（設定 Hz の半周期、推定。プロジェクターの処理・GPU の待ちは含まない）。詳細と限界は [auto-latency-20261013.md](auto-latency-20261013.md)。1日分の集計は `latency_report.py`。
-- 検証: 公式 verify PASS、Unity EditMode 2018/2018、Android 76 tests・APK・lint、`check_auto_latency.py`（Swift の実 socket → C# の受信 Loop）。ビルド済みアプリでは `PhoneSaber/tools/auto_latency_player_check.py` で、この Mac の LAN アドレスからスマホ役のデータを流して確認する（結果は下の行）。**実機（iPhone / AQUOS）は未実施**。iPhone は Xcode で入れ直し、Android は APK の入れ直しが必要。
+- 検証: 公式 verify PASS、Unity EditMode 2018/2018、Android 76 tests・APK・lint、`check_auto_latency.py`（Swift の実 socket → C# の受信 Loop）。ビルド済みアプリでは `PhoneSaber/tools/auto_latency_player_check.py` で、この Mac の LAN アドレスからスマホ役のデータを流して確認する。結果（ビルド 53a5dfa、窓なし起動）: 8行すべて `status=estimate`、赤・青とも total 56.9 ms = スマホ 36.9（流した値）＋ 通信 1.6 ＋ PC 10.1（実測、7048 フレーム）＋ 画面 8.3（60 Hz）。**実機（iPhone / AQUOS）は未実施**。iPhone は Xcode で入れ直し、Android は APK の入れ直しが必要。
 
 ### 2026-10-13 「アプリにすると重い」（ユーザー報告 2回目、ログで確認）
 - 12:46〜12:52 JST のプレイ（台A、新しいビルド）の `event=perf`: `low-power-at-launch=1`、`refresh-hz=30`。SongSelect は 29.5 fps（全フレームが 25 ms 超）、Game は vsync=0 で 900→640 fps（5分でじわじわ低下）だが画面は 30 Hz。原因は前回と同じ **Mac の低電力モード（バッテリー駆動）**。座標は届いていない（スマホなしのプレイ）。

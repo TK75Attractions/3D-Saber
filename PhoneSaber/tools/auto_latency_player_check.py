@@ -5,9 +5,10 @@ Player を隠して起動し(-phonesaberSmoke)、この Mac の LAN アドレス
 座標(5005/5006)と診断(PHONESABER_METRICS、5007)を送る。127.0.0.1 から送ると PC 側は
 「P2P 経由」とみなして欠測にするので、必ず LAN アドレスを使う。
 
-  python3 PhoneSaber/tools/auto_latency_player_check.py            # 窓なし(batchmode)。PC の項は測れない
-  python3 PhoneSaber/tools/auto_latency_player_check.py --windowed # 窓ありを隠して起動。4項目そろうことを確認
+  python3 PhoneSaber/tools/auto_latency_player_check.py            # 窓なし(batchmode)。画面には何も出ない
+  python3 PhoneSaber/tools/auto_latency_player_check.py --windowed # 窓ありを隠して起動(通常は不要)
 
+窓なしでも4項目(スマホ・通信・PC・画面)がそろう(2026-10-13 に確認)。
 --windowed は Player が自分で前面に出ようとするたびに隠し直す(一瞬見えることがある)。
 ゲームを起動中のときは使わない(同じ UDP port を使う)。
 """
@@ -122,11 +123,10 @@ def main():
     if not matched:
         print("NG: スマホ役の診断が、座標の送信元と結び付いていません")
         return 1
-    if args.windowed and not estimates:
+    if not estimates:
         print("NG: 4項目そろった行(status=estimate)がありません")
         return 1
-    print("OK: " + ("4項目そろった目安が記録されました" if estimates else
-                    "診断の受信と送信元の照合を確認(PC の項は窓なしでは測れないので --windowed で確認)"))
+    print("OK: 4項目そろった目安が記録されました")
     return 0
 
 
