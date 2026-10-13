@@ -17,7 +17,8 @@
         "strength": 0.8702,
         "peakSeconds": 3.087982,
         "distanceMs": 6.757
-      }
+      },
+      "revision4Index": 0
     },
     {
       "source": [
@@ -36,7 +37,8 @@
         "strength": 0.8702,
         "peakSeconds": 3.087982,
         "distanceMs": 6.757
-      }
+      },
+      "revision4Index": 1
     },
     {
       "source": [
@@ -55,7 +57,8 @@
         "strength": 0.9777,
         "peakSeconds": 4.614512,
         "distanceMs": 2.676
-      }
+      },
+      "revision4Index": 2
     },
     {
       "source": [
@@ -74,7 +77,8 @@
         "strength": 0.9777,
         "peakSeconds": 4.614512,
         "distanceMs": 2.676
-      }
+      },
+      "revision4Index": 3
     },
     {
       "source": [
@@ -93,7 +97,8 @@
         "strength": 1.1346,
         "peakSeconds": 6.146032,
         "distanceMs": 3.583
-      }
+      },
+      "revision4Index": 4
     },
     {
       "source": [
@@ -112,7 +117,8 @@
         "strength": 1.1346,
         "peakSeconds": 6.146032,
         "distanceMs": 3.583
-      }
+      },
+      "revision4Index": 5
     },
     {
       "source": [
@@ -131,7 +137,8 @@
         "strength": 1.1593,
         "peakSeconds": 7.672562,
         "distanceMs": -0.499
-      }
+      },
+      "revision4Index": 6
     },
     {
       "source": [
@@ -150,7 +157,8 @@
         "strength": 1.1593,
         "peakSeconds": 7.672562,
         "distanceMs": -0.499
-      }
+      },
+      "revision4Index": 7
     },
     {
       "source": [
@@ -168,7 +176,8 @@
         "strength": 1.4115,
         "peakSeconds": 8.590476,
         "distanceMs": -0.952
-      }
+      },
+      "revision4Index": 8
     },
     {
       "source": [
@@ -187,7 +196,8 @@
         "strength": 1.4298,
         "peakSeconds": 9.199093,
         "distanceMs": -4.58
-      }
+      },
+      "revision4Index": 9
     },
     {
       "source": [
@@ -206,7 +216,8 @@
         "strength": 1.4298,
         "peakSeconds": 9.199093,
         "distanceMs": -4.58
-      }
+      },
+      "revision4Index": 10
     },
     {
       "source": [
@@ -224,7 +235,8 @@
         "strength": 1.2415,
         "peakSeconds": 10.121995,
         "distanceMs": -0.045
-      }
+      },
+      "revision4Index": 11
     },
     {
       "source": [
@@ -243,7 +255,8 @@
         "strength": 1.3309,
         "peakSeconds": 10.735601,
         "distanceMs": 1.315
-      }
+      },
+      "revision4Index": 12
     },
     {
       "source": [
@@ -262,7 +275,8 @@
         "strength": 1.3309,
         "peakSeconds": 10.735601,
         "distanceMs": 1.315
-      }
+      },
+      "revision4Index": 13
     },
     {
       "source": [
@@ -280,7 +294,8 @@
         "strength": 0.6022,
         "peakSeconds": 11.344218,
         "distanceMs": -2.313
-      }
+      },
+      "revision4Index": 14
     },
     {
       "source": [
@@ -299,7 +314,8 @@
         "strength": 1.4413,
         "peakSeconds": 11.648526,
         "distanceMs": -4.127
-      }
+      },
+      "revision4Index": 15
     },
     {
       "source": [
@@ -318,7 +334,8 @@
         "strength": 1.6933,
         "peakSeconds": 11.957823,
         "distanceMs": -0.952
-      }
+      },
+      "revision4Index": 16
     },
     {
       "source": [
@@ -337,7 +354,8 @@
         "strength": 0.5439,
         "peakSeconds": 12.292063,
         "distanceMs": 27.166
-      }
+      },
+      "revision4Index": 17
     },
     {
       "source": [
@@ -355,7 +373,8 @@
         "strength": 0.3443,
         "peakSeconds": 13.83356,
         "distanceMs": 38.05
-      }
+      },
+      "revision4Index": 18
     },
     {
       "source": [
@@ -373,7 +392,8 @@
         "strength": 0.3669,
         "peakSeconds": 14.367347,
         "distanceMs": -40.408
-      }
+      },
+      "revision4Index": 19
     },
     {
       "source": [
@@ -391,7 +411,8 @@
         "strength": 0.2999,
         "peakSeconds": 15.040816,
         "distanceMs": 20.816
-      }
+      },
+      "revision4Index": 20
     },
     {
       "source": [
@@ -409,7 +430,8 @@
         "strength": 0.3727,
         "peakSeconds": 15.65941,
         "distanceMs": 27.166
-      }
+      },
+      "revision4Index": 21
     },
     {
       "source": [
@@ -430,7 +452,8 @@
         "distanceMs": -4.127
       },
       "measure": 13,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 22
     },
     {
       "source": [],
@@ -449,7 +472,8 @@
         "distanceMs": 0.408
       },
       "measure": 13,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 23
     },
     {
       "source": [],
@@ -468,7 +492,8 @@
         "distanceMs": -0.045
       },
       "measure": 14,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 24
     },
     {
       "source": [
@@ -489,7 +514,8 @@
         "distanceMs": -3.673
       },
       "measure": 15,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 25
     },
     {
       "source": [],
@@ -508,7 +534,8 @@
         "distanceMs": 0.862
       },
       "measure": 15,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 26
     },
     {
       "source": [],
@@ -527,7 +554,8 @@
         "distanceMs": 2.222
       },
       "measure": 16,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 27
     },
     {
       "source": [],
@@ -546,7 +574,8 @@
         "distanceMs": 0.408
       },
       "measure": 16,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 28
     },
     {
       "source": [
@@ -567,7 +596,8 @@
         "distanceMs": -3.22
       },
       "measure": 17,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 29
     },
     {
       "source": [
@@ -588,7 +618,8 @@
         "distanceMs": -1.859
       },
       "measure": 17,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 30
     },
     {
       "source": [
@@ -609,7 +640,8 @@
         "distanceMs": -5.488
       },
       "measure": 17,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 31
     },
     {
       "source": [
@@ -630,7 +662,8 @@
         "distanceMs": -4.127
       },
       "measure": 18,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 32
     },
     {
       "source": [
@@ -651,7 +684,8 @@
         "distanceMs": -2.766
       },
       "measure": 18,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 33
     },
     {
       "source": [
@@ -672,7 +706,8 @@
         "distanceMs": -1.406
       },
       "measure": 19,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 34
     },
     {
       "source": [
@@ -693,7 +728,8 @@
         "distanceMs": -0.045
       },
       "measure": 19,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 35
     },
     {
       "source": [
@@ -714,7 +750,8 @@
         "distanceMs": 1.315
       },
       "measure": 19,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 36
     },
     {
       "source": [
@@ -735,7 +772,8 @@
         "distanceMs": -2.313
       },
       "measure": 20,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 37
     },
     {
       "source": [
@@ -756,7 +794,8 @@
         "distanceMs": -0.952
       },
       "measure": 20,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 38
     },
     {
       "source": [],
@@ -772,7 +811,8 @@
         "strength": 1.1224,
         "peakSeconds": 29.408163,
         "distanceMs": 0.408
-      }
+      },
+      "revision4Index": 39
     },
     {
       "source": [],
@@ -783,7 +823,8 @@
         "strength": 1.112,
         "peakSeconds": 30.326077,
         "distanceMs": -0.045
-      }
+      },
+      "revision4Index": 40
     },
     {
       "source": [],
@@ -799,7 +840,8 @@
         "strength": 1.112,
         "peakSeconds": 30.326077,
         "distanceMs": -0.045
-      }
+      },
+      "revision4Index": 41
     },
     {
       "source": [],
@@ -815,7 +857,8 @@
         "strength": 1.5375,
         "peakSeconds": 31.239002,
         "distanceMs": -5.488
-      }
+      },
+      "revision4Index": 42
     },
     {
       "source": [],
@@ -831,7 +874,8 @@
         "strength": 1.0336,
         "peakSeconds": 31.857596,
         "distanceMs": 0.862
-      }
+      },
+      "revision4Index": 43
     },
     {
       "source": [],
@@ -847,7 +891,8 @@
         "strength": 0.9029,
         "peakSeconds": 32.77551,
         "distanceMs": 0.408
-      }
+      },
+      "revision4Index": 44
     },
     {
       "source": [],
@@ -863,7 +908,8 @@
         "strength": 1.1827,
         "peakSeconds": 33.384127,
         "distanceMs": -3.22
-      }
+      },
+      "revision4Index": 45
     },
     {
       "source": [
@@ -876,7 +922,8 @@
         "strength": 0.5422,
         "peakSeconds": 34.307029,
         "distanceMs": 1.315
-      }
+      },
+      "revision4Index": 46
     },
     {
       "source": [
@@ -889,7 +936,8 @@
         "strength": 0.5422,
         "peakSeconds": 34.307029,
         "distanceMs": 1.315
-      }
+      },
+      "revision4Index": 47
     },
     {
       "source": [],
@@ -905,7 +953,8 @@
         "strength": 0.5637,
         "peakSeconds": 40.133787,
         "distanceMs": 11.746
-      }
+      },
+      "revision4Index": 48
     },
     {
       "source": [],
@@ -921,7 +970,8 @@
         "strength": 0.5356,
         "peakSeconds": 41.006803,
         "distanceMs": -33.605
-      }
+      },
+      "revision4Index": 49
     },
     {
       "source": [
@@ -942,7 +992,8 @@
         "distanceMs": 2.676
       },
       "measure": 31,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 50
     },
     {
       "source": [
@@ -963,7 +1014,8 @@
         "distanceMs": -39.048
       },
       "measure": 31,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 51
     },
     {
       "source": [
@@ -984,7 +1036,8 @@
         "distanceMs": -40.862
       },
       "measure": 31,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 52
     },
     {
       "source": [
@@ -1005,7 +1058,8 @@
         "distanceMs": 7.211
       },
       "measure": 31,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 53
     },
     {
       "source": [
@@ -1026,7 +1080,8 @@
         "distanceMs": 0.408
       },
       "measure": 32,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 54
     },
     {
       "source": [
@@ -1047,7 +1102,8 @@
         "distanceMs": -1.406
       },
       "measure": 32,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 55
     },
     {
       "source": [
@@ -1068,7 +1124,8 @@
         "distanceMs": -28.163
       },
       "measure": 32,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 56
     },
     {
       "source": [
@@ -1089,7 +1146,8 @@
         "distanceMs": -0.045
       },
       "measure": 32,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 57
     },
     {
       "source": [
@@ -1111,7 +1169,8 @@
         "distanceMs": -1.859
       },
       "measure": 33,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 58
     },
     {
       "source": [
@@ -1133,7 +1192,8 @@
         "distanceMs": -3.673
       },
       "measure": 33,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 59
     },
     {
       "source": [
@@ -1155,7 +1215,8 @@
         "distanceMs": -0.499
       },
       "measure": 33,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 60
     },
     {
       "source": [
@@ -1177,7 +1238,8 @@
         "distanceMs": -2.313
       },
       "measure": 33,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 61
     },
     {
       "source": [
@@ -1199,7 +1261,8 @@
         "distanceMs": 0.862
       },
       "measure": 34,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 62
     },
     {
       "source": [
@@ -1221,7 +1284,8 @@
         "distanceMs": -0.952
       },
       "measure": 34,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 63
     },
     {
       "source": [
@@ -1243,7 +1307,8 @@
         "distanceMs": -2.766
       },
       "measure": 34,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 64
     },
     {
       "source": [
@@ -1261,7 +1326,8 @@
         "strength": 0.9031,
         "peakSeconds": 46.853515,
         "distanceMs": -3.22
-      }
+      },
+      "revision4Index": 65
     },
     {
       "source": [
@@ -1279,7 +1345,8 @@
         "strength": 0.8454,
         "peakSeconds": 47.46712,
         "distanceMs": -1.859
-      }
+      },
+      "revision4Index": 66
     },
     {
       "source": [
@@ -1297,7 +1364,8 @@
         "strength": 1.0283,
         "peakSeconds": 48.080726,
         "distanceMs": -0.499
-      }
+      },
+      "revision4Index": 67
     },
     {
       "source": [
@@ -1315,14 +1383,15 @@
         "strength": 1.0811,
         "peakSeconds": 48.689342,
         "distanceMs": -4.127
-      }
+      },
+      "revision4Index": 68
     },
     {
       "source": [
         71,
         72
       ],
-      "motif": "paired_accent",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.4206,
         "peakSeconds": 49.382766,
@@ -1334,14 +1403,15 @@
         "strength": 0.9804,
         "peakSeconds": 49.302948,
         "distanceMs": -2.766
-      }
+      },
+      "revision4Index": 69
     },
     {
       "source": [
         71,
         72
       ],
-      "motif": "paired_accent",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.4206,
         "peakSeconds": 49.382766,
@@ -1353,7 +1423,8 @@
         "strength": 0.9804,
         "peakSeconds": 49.302948,
         "distanceMs": -2.766
-      }
+      },
+      "revision4Index": 70
     },
     {
       "source": [
@@ -1372,7 +1443,8 @@
         "strength": 0.9106,
         "peakSeconds": 49.921542,
         "distanceMs": 3.583
-      }
+      },
+      "revision4Index": 71
     },
     {
       "source": [
@@ -1391,7 +1463,8 @@
         "strength": 1.0812,
         "peakSeconds": 50.52517,
         "distanceMs": -5.034
-      }
+      },
+      "revision4Index": 72
     },
     {
       "source": [
@@ -1410,7 +1483,8 @@
         "strength": 1.0812,
         "peakSeconds": 50.52517,
         "distanceMs": -5.034
-      }
+      },
+      "revision4Index": 73
     },
     {
       "source": [
@@ -1429,14 +1503,15 @@
         "strength": 0.9962,
         "peakSeconds": 51.138776,
         "distanceMs": -3.673
-      }
+      },
+      "revision4Index": 74
     },
     {
       "source": [
         79,
         80
       ],
-      "motif": "paired_accent",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.5856,
         "peakSeconds": 51.79229,
@@ -1448,14 +1523,15 @@
         "strength": 1.0259,
         "peakSeconds": 51.752381,
         "distanceMs": -2.313
-      }
+      },
+      "revision4Index": 75
     },
     {
       "source": [
         79,
         80
       ],
-      "motif": "paired_accent",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.5856,
         "peakSeconds": 51.79229,
@@ -1467,7 +1543,8 @@
         "strength": 1.0259,
         "peakSeconds": 51.752381,
         "distanceMs": -2.313
-      }
+      },
+      "revision4Index": 76
     },
     {
       "source": [
@@ -1486,7 +1563,8 @@
         "strength": 1.2844,
         "peakSeconds": 52.365986,
         "distanceMs": -0.952
-      }
+      },
+      "revision4Index": 77
     },
     {
       "source": [
@@ -1505,7 +1583,8 @@
         "strength": 1.2449,
         "peakSeconds": 52.974603,
         "distanceMs": -4.58
-      }
+      },
+      "revision4Index": 78
     },
     {
       "source": [
@@ -1524,13 +1603,25 @@
         "strength": 1.2449,
         "peakSeconds": 52.974603,
         "distanceMs": -4.58
+      },
+      "revision4Index": 79
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.1133,
+        "peakSeconds": 53.588209,
+        "distanceMs": -3.22
       }
     },
     {
       "source": [
         85
       ],
-      "motif": "authored_gold_reply",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.4918,
         "peakSeconds": 53.673016,
@@ -1542,7 +1633,8 @@
         "strength": 1.1133,
         "peakSeconds": 53.588209,
         "distanceMs": -3.22
-      }
+      },
+      "revision4Index": 80
     },
     {
       "source": [
@@ -1563,7 +1655,8 @@
         "distanceMs": -3.673
       },
       "measure": 37,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 81
     },
     {
       "source": [
@@ -1584,7 +1677,8 @@
         "distanceMs": -4.127
       },
       "measure": 37,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 82
     },
     {
       "source": [
@@ -1605,13 +1699,14 @@
         "distanceMs": -4.58
       },
       "measure": 37,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 83
     },
     {
       "source": [
         89
       ],
-      "motif": "bar_phrase",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.7338,
         "peakSeconds": 57.110204,
@@ -1626,7 +1721,19 @@
         "distanceMs": -3.22
       },
       "measure": 38,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 84
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.0133,
+        "peakSeconds": 56.955556,
+        "distanceMs": -3.22
+      }
     },
     {
       "source": [
@@ -1647,7 +1754,8 @@
         "distanceMs": -3.673
       },
       "measure": 38,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 85
     },
     {
       "source": [
@@ -1668,7 +1776,8 @@
         "distanceMs": -4.127
       },
       "measure": 38,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 86
     },
     {
       "source": [
@@ -1689,7 +1798,8 @@
         "distanceMs": -2.766
       },
       "measure": 38,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 87
     },
     {
       "source": [
@@ -1707,7 +1817,8 @@
         "strength": 0.8557,
         "peakSeconds": 60.936508,
         "distanceMs": -1.859
-      }
+      },
+      "revision4Index": 88
     },
     {
       "source": [
@@ -1725,7 +1836,8 @@
         "strength": 0.6269,
         "peakSeconds": 61.545125,
         "distanceMs": -5.488
-      }
+      },
+      "revision4Index": 89
     },
     {
       "source": [
@@ -1743,7 +1855,8 @@
         "strength": 1.0464,
         "peakSeconds": 62.15873,
         "distanceMs": -4.127
-      }
+      },
+      "revision4Index": 90
     },
     {
       "source": [
@@ -1761,7 +1874,8 @@
         "strength": 0.8061,
         "peakSeconds": 62.468027,
         "distanceMs": -0.952
-      }
+      },
+      "revision4Index": 91
     },
     {
       "source": [
@@ -1779,14 +1893,15 @@
         "strength": 1.2109,
         "peakSeconds": 62.772336,
         "distanceMs": -2.766
-      }
+      },
+      "revision4Index": 92
     },
     {
       "source": [
         98,
         99
       ],
-      "motif": "paired_accent",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.9848,
         "peakSeconds": 63.695238,
@@ -1798,14 +1913,15 @@
         "strength": 0.9848,
         "peakSeconds": 63.695238,
         "distanceMs": 1.769
-      }
+      },
+      "revision4Index": 93
     },
     {
       "source": [
         98,
         99
       ],
-      "motif": "paired_accent",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.9848,
         "peakSeconds": 63.695238,
@@ -1817,7 +1933,8 @@
         "strength": 0.9848,
         "peakSeconds": 63.695238,
         "distanceMs": 1.769
-      }
+      },
+      "revision4Index": 94
     },
     {
       "source": [
@@ -1839,7 +1956,8 @@
         "distanceMs": 38.05
       },
       "measure": 41,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 95
     },
     {
       "source": [
@@ -1861,7 +1979,8 @@
         "distanceMs": 1.315
       },
       "measure": 41,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 96
     },
     {
       "source": [
@@ -1883,14 +2002,15 @@
         "distanceMs": -0.499
       },
       "measure": 41,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 97
     },
     {
       "source": [
         108,
         109
       ],
-      "motif": "bar_phrase",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.7618,
         "peakSeconds": 65.376417,
@@ -1905,7 +2025,19 @@
         "distanceMs": 2.676
       },
       "measure": 42,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 98
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 0.966,
+        "peakSeconds": 65.226757,
+        "distanceMs": 2.676
+      }
     },
     {
       "source": [
@@ -1927,7 +2059,8 @@
         "distanceMs": -4.127
       },
       "measure": 42,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 99
     },
     {
       "source": [
@@ -1949,7 +2082,8 @@
         "distanceMs": 43.946
       },
       "measure": 42,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 100
     },
     {
       "source": [
@@ -1971,7 +2105,8 @@
         "distanceMs": -2.766
       },
       "measure": 42,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 101
     },
     {
       "source": [
@@ -1993,7 +2128,8 @@
         "distanceMs": 0.408
       },
       "measure": 42,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 102
     },
     {
       "source": [
@@ -2015,7 +2151,8 @@
         "distanceMs": -1.406
       },
       "measure": 43,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 103
     },
     {
       "source": [
@@ -2036,7 +2173,8 @@
         "distanceMs": -3.22
       },
       "measure": 43,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 104
     },
     {
       "source": [
@@ -2057,7 +2195,8 @@
         "distanceMs": -44.943
       },
       "measure": 43,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 105
     },
     {
       "source": [
@@ -2078,7 +2217,8 @@
         "distanceMs": -1.859
       },
       "measure": 43,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 106
     },
     {
       "source": [
@@ -2099,13 +2239,14 @@
         "distanceMs": -3.673
       },
       "measure": 43,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 107
     },
     {
       "source": [
         124
       ],
-      "motif": "bar_phrase",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.5143,
         "peakSeconds": 68.359637,
@@ -2120,7 +2261,19 @@
         "distanceMs": -0.499
       },
       "measure": 44,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 108
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.0374,
+        "peakSeconds": 68.284807,
+        "distanceMs": -0.499
+      }
     },
     {
       "source": [
@@ -2141,7 +2294,8 @@
         "distanceMs": -2.313
       },
       "measure": 44,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 109
     },
     {
       "source": [
@@ -2162,7 +2316,8 @@
         "distanceMs": 40.771
       },
       "measure": 44,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 110
     },
     {
       "source": [
@@ -2183,7 +2338,8 @@
         "distanceMs": -0.952
       },
       "measure": 44,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 111
     },
     {
       "source": [
@@ -2204,7 +2360,19 @@
         "distanceMs": 2.222
       },
       "measure": 44,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 112
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "colored_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 0.8152,
+        "peakSeconds": 69.821315,
+        "distanceMs": 5.397
+      }
     },
     {
       "source": [
@@ -2225,7 +2393,8 @@
         "distanceMs": 5.397
       },
       "measure": 45,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 113
     },
     {
       "source": [
@@ -2247,7 +2416,8 @@
         "distanceMs": -1.406
       },
       "measure": 45,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 114
     },
     {
       "source": [
@@ -2268,7 +2438,8 @@
         "distanceMs": -13.197
       },
       "measure": 45,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 115
     },
     {
       "source": [
@@ -2289,7 +2460,8 @@
         "distanceMs": 4.943
       },
       "measure": 45,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 116
     },
     {
       "source": [
@@ -2310,13 +2482,25 @@
         "distanceMs": -1.859
       },
       "measure": 45,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 117
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 0.914,
+        "peakSeconds": 71.352834,
+        "distanceMs": 6.304
+      }
     },
     {
       "source": [
         135
       ],
-      "motif": "bar_phrase",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.4513,
         "peakSeconds": 71.492517,
@@ -2331,7 +2515,8 @@
         "distanceMs": 6.304
       },
       "measure": 46,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 118
     },
     {
       "source": [
@@ -2352,7 +2537,8 @@
         "distanceMs": -5.488
       },
       "measure": 46,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 119
     },
     {
       "source": [
@@ -2373,7 +2559,8 @@
         "distanceMs": 37.596
       },
       "measure": 46,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 120
     },
     {
       "source": [
@@ -2394,7 +2581,8 @@
         "distanceMs": -4.127
       },
       "measure": 46,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 121
     },
     {
       "source": [
@@ -2415,7 +2603,8 @@
         "distanceMs": -0.952
       },
       "measure": 46,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 122
     },
     {
       "source": [
@@ -2437,7 +2626,19 @@
         "distanceMs": 32.154
       },
       "measure": 47,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 123
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "colored_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 0.8295,
+        "peakSeconds": 72.909297,
+        "distanceMs": 32.154
+      }
     },
     {
       "source": [
@@ -2458,7 +2659,8 @@
         "distanceMs": 0.408
       },
       "measure": 47,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 124
     },
     {
       "source": [
@@ -2479,7 +2681,8 @@
         "distanceMs": 38.503
       },
       "measure": 47,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 125
     },
     {
       "source": [
@@ -2500,7 +2703,8 @@
         "distanceMs": 1.769
       },
       "measure": 47,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 126
     },
     {
       "source": [
@@ -2521,14 +2725,26 @@
         "distanceMs": -5.034
       },
       "measure": 47,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 127
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 0.9225,
+        "peakSeconds": 74.410884,
+        "distanceMs": 3.129
+      }
     },
     {
       "source": [
         146,
         147
       ],
-      "motif": "bar_phrase",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.5624,
         "peakSeconds": 74.480726,
@@ -2543,7 +2759,8 @@
         "distanceMs": 3.129
       },
       "measure": 48,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 128
     },
     {
       "source": [
@@ -2564,7 +2781,8 @@
         "distanceMs": 1.315
       },
       "measure": 48,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 129
     },
     {
       "source": [
@@ -2585,7 +2803,8 @@
         "distanceMs": 39.41
       },
       "measure": 48,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 130
     },
     {
       "source": [
@@ -2607,7 +2826,8 @@
         "distanceMs": 2.676
       },
       "measure": 48,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 131
     },
     {
       "source": [
@@ -2629,7 +2849,8 @@
         "distanceMs": 0.862
       },
       "measure": 48,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 132
     },
     {
       "source": [
@@ -2651,7 +2872,8 @@
         "distanceMs": -0.952
       },
       "measure": 49,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 133
     },
     {
       "source": [],
@@ -2667,7 +2889,8 @@
         "strength": 0.8037,
         "peakSeconds": 76.855329,
         "distanceMs": -1.406
-      }
+      },
+      "revision4Index": 134
     },
     {
       "source": [],
@@ -2683,7 +2906,8 @@
         "strength": 0.5143,
         "peakSeconds": 77.468934,
         "distanceMs": -0.045
-      }
+      },
+      "revision4Index": 135
     },
     {
       "source": [],
@@ -2694,7 +2918,8 @@
         "strength": 0.5143,
         "peakSeconds": 77.468934,
         "distanceMs": -0.045
-      }
+      },
+      "revision4Index": 136
     },
     {
       "source": [],
@@ -2710,7 +2935,8 @@
         "strength": 0.6051,
         "peakSeconds": 78.386848,
         "distanceMs": -0.499
-      }
+      },
+      "revision4Index": 137
     },
     {
       "source": [
@@ -2728,7 +2954,8 @@
         "strength": 0.6705,
         "peakSeconds": 79.614059,
         "distanceMs": 2.222
-      }
+      },
+      "revision4Index": 138
     },
     {
       "source": [
@@ -2746,7 +2973,8 @@
         "strength": 0.2323,
         "peakSeconds": 80.561905,
         "distanceMs": 31.701
-      }
+      },
+      "revision4Index": 139
     },
     {
       "source": [
@@ -2764,7 +2992,8 @@
         "strength": 0.8329,
         "peakSeconds": 81.449887,
         "distanceMs": 1.315
-      }
+      },
+      "revision4Index": 140
     },
     {
       "source": [
@@ -2782,7 +3011,8 @@
         "strength": 0.7298,
         "peakSeconds": 82.3678,
         "distanceMs": 0.862
-      }
+      },
+      "revision4Index": 141
     },
     {
       "source": [
@@ -2795,7 +3025,8 @@
         "strength": 0.4717,
         "peakSeconds": 83.590023,
         "distanceMs": -1.406
-      }
+      },
+      "revision4Index": 142
     },
     {
       "source": [
@@ -2813,7 +3044,8 @@
         "strength": 1.2933,
         "peakSeconds": 84.203628,
         "distanceMs": -0.045
-      }
+      },
+      "revision4Index": 143
     },
     {
       "source": [
@@ -2826,7 +3058,8 @@
         "strength": 1.1748,
         "peakSeconds": 85.121542,
         "distanceMs": -0.499
-      }
+      },
+      "revision4Index": 144
     },
     {
       "source": [
@@ -2844,7 +3077,8 @@
         "strength": 1.3763,
         "peakSeconds": 86.039456,
         "distanceMs": -0.952
-      }
+      },
+      "revision4Index": 145
     },
     {
       "source": [
@@ -2857,7 +3091,8 @@
         "strength": 1.8505,
         "peakSeconds": 88.793197,
         "distanceMs": -2.313
-      }
+      },
+      "revision4Index": 146
     },
     {
       "source": [
@@ -2870,7 +3105,8 @@
         "strength": 1.8505,
         "peakSeconds": 88.793197,
         "distanceMs": -2.313
-      }
+      },
+      "revision4Index": 147
     },
     {
       "source": [
@@ -2883,7 +3119,8 @@
         "strength": 1.0372,
         "peakSeconds": 92.464853,
         "distanceMs": -4.127
-      }
+      },
+      "revision4Index": 148
     },
     {
       "source": [
@@ -2896,7 +3133,8 @@
         "strength": 1.1818,
         "peakSeconds": 95.223583,
         "distanceMs": -0.499
-      }
+      },
+      "revision4Index": 149
     },
     {
       "source": [
@@ -2909,7 +3147,8 @@
         "strength": 1.0074,
         "peakSeconds": 97.977324,
         "distanceMs": -1.859
-      }
+      },
+      "revision4Index": 150
     },
     {
       "source": [
@@ -2922,7 +3161,8 @@
         "strength": 1.0483,
         "peakSeconds": 99.813152,
         "distanceMs": -2.766
-      }
+      },
+      "revision4Index": 151
     },
     {
       "source": [
@@ -2935,7 +3175,8 @@
         "strength": 0.8448,
         "peakSeconds": 101.64898,
         "distanceMs": -3.673
-      }
+      },
+      "revision4Index": 152
     },
     {
       "source": [
@@ -2948,7 +3189,8 @@
         "strength": 1.1019,
         "peakSeconds": 102.566893,
         "distanceMs": -4.127
-      }
+      },
+      "revision4Index": 153
     },
     {
       "source": [
@@ -2961,7 +3203,8 @@
         "strength": 0.7927,
         "peakSeconds": 105.325624,
         "distanceMs": -0.499
-      }
+      },
+      "revision4Index": 154
     },
     {
       "source": [
@@ -2974,7 +3217,8 @@
         "strength": 0.3868,
         "peakSeconds": 108.084354,
         "distanceMs": 3.129
-      }
+      },
+      "revision4Index": 155
     },
     {
       "source": [],
@@ -2993,7 +3237,8 @@
         "distanceMs": -0.045
       },
       "measure": 68,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 156
     },
     {
       "source": [],
@@ -3012,7 +3257,8 @@
         "distanceMs": 3.129
       },
       "measure": 69,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 157
     },
     {
       "source": [],
@@ -3031,7 +3277,8 @@
         "distanceMs": -3.673
       },
       "measure": 69,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 158
     },
     {
       "source": [],
@@ -3050,7 +3297,8 @@
         "distanceMs": -0.499
       },
       "measure": 69,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 159
     },
     {
       "source": [],
@@ -3069,7 +3317,8 @@
         "distanceMs": -2.313
       },
       "measure": 69,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 160
     },
     {
       "source": [],
@@ -3088,7 +3337,8 @@
         "distanceMs": 0.862
       },
       "measure": 70,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 161
     },
     {
       "source": [],
@@ -3107,7 +3357,8 @@
         "distanceMs": -0.952
       },
       "measure": 70,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 162
     },
     {
       "source": [],
@@ -3126,7 +3377,8 @@
         "distanceMs": -2.766
       },
       "measure": 70,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 163
     },
     {
       "source": [
@@ -3147,7 +3399,8 @@
         "distanceMs": -1.406
       },
       "measure": 71,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 164
     },
     {
       "source": [
@@ -3168,7 +3421,8 @@
         "distanceMs": -44.943
       },
       "measure": 71,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 165
     },
     {
       "source": [
@@ -3189,7 +3443,8 @@
         "distanceMs": 41.224
       },
       "measure": 72,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 166
     },
     {
       "source": [
@@ -3210,7 +3465,8 @@
         "distanceMs": -7.302
       },
       "measure": 72,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 167
     },
     {
       "source": [
@@ -3231,7 +3487,8 @@
         "distanceMs": -0.952
       },
       "measure": 73,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 168
     },
     {
       "source": [
@@ -3252,7 +3509,8 @@
         "distanceMs": -42.676
       },
       "measure": 73,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 169
     },
     {
       "source": [
@@ -3273,7 +3531,8 @@
         "distanceMs": -44.49
       },
       "measure": 73,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 170
     },
     {
       "source": [
@@ -3294,7 +3553,8 @@
         "distanceMs": 28.526
       },
       "measure": 73,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 171
     },
     {
       "source": [
@@ -3315,7 +3575,8 @@
         "distanceMs": -3.22
       },
       "measure": 74,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 172
     },
     {
       "source": [
@@ -3336,7 +3597,8 @@
         "distanceMs": 19.909
       },
       "measure": 74,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 173
     },
     {
       "source": [
@@ -3357,7 +3619,8 @@
         "distanceMs": -31.791
       },
       "measure": 74,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 174
     },
     {
       "source": [
@@ -3378,7 +3641,8 @@
         "distanceMs": 1.315
       },
       "measure": 74,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 175
     },
     {
       "source": [
@@ -3400,7 +3664,8 @@
         "distanceMs": -0.499
       },
       "measure": 75,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 176
     },
     {
       "source": [
@@ -3419,7 +3684,8 @@
         "strength": 0.7287,
         "peakSeconds": 119.403628,
         "distanceMs": -4.127
-      }
+      },
+      "revision4Index": 177
     },
     {
       "source": [
@@ -3438,7 +3704,8 @@
         "strength": 0.7287,
         "peakSeconds": 119.403628,
         "distanceMs": -4.127
-      }
+      },
+      "revision4Index": 178
     },
     {
       "source": [
@@ -3457,7 +3724,8 @@
         "strength": 1.1652,
         "peakSeconds": 120.022222,
         "distanceMs": 2.222
-      }
+      },
+      "revision4Index": 179
     },
     {
       "source": [
@@ -3476,7 +3744,8 @@
         "strength": 0.8438,
         "peakSeconds": 120.630839,
         "distanceMs": -1.406
-      }
+      },
+      "revision4Index": 180
     },
     {
       "source": [
@@ -3495,7 +3764,8 @@
         "strength": 0.8438,
         "peakSeconds": 120.630839,
         "distanceMs": -1.406
-      }
+      },
+      "revision4Index": 181
     },
     {
       "source": [
@@ -3508,7 +3778,8 @@
         "strength": 0.3275,
         "peakSeconds": 121.533787,
         "distanceMs": -16.825
-      }
+      },
+      "revision4Index": 182
     },
     {
       "source": [],
@@ -3524,7 +3795,8 @@
         "strength": 0.4964,
         "peakSeconds": 122.167347,
         "distanceMs": 4.49
-      }
+      },
+      "revision4Index": 183
     },
     {
       "source": [
@@ -3542,7 +3814,8 @@
         "strength": 0.357,
         "peakSeconds": 124.901134,
         "distanceMs": -16.825
-      }
+      },
+      "revision4Index": 184
     },
     {
       "source": [],
@@ -3558,7 +3831,8 @@
         "strength": 0.4983,
         "peakSeconds": 127.061224,
         "distanceMs": 0.408
-      }
+      },
+      "revision4Index": 185
     },
     {
       "source": [
@@ -3577,7 +3851,8 @@
         "strength": 0.3894,
         "peakSeconds": 127.984127,
         "distanceMs": 4.943
-      }
+      },
+      "revision4Index": 186
     },
     {
       "source": [
@@ -3596,7 +3871,8 @@
         "strength": 0.3894,
         "peakSeconds": 127.984127,
         "distanceMs": 4.943
-      }
+      },
+      "revision4Index": 187
     },
     {
       "source": [
@@ -3614,7 +3890,8 @@
         "strength": 0.3041,
         "peakSeconds": 129.814966,
         "distanceMs": -0.952
-      }
+      },
+      "revision4Index": 188
     },
     {
       "source": [
@@ -3632,7 +3909,8 @@
         "strength": 0.5384,
         "peakSeconds": 131.351474,
         "distanceMs": 4.943
-      }
+      },
+      "revision4Index": 189
     },
     {
       "source": [
@@ -3651,7 +3929,8 @@
         "strength": 0.1596,
         "peakSeconds": 133.207256,
         "distanceMs": 23.991
-      }
+      },
+      "revision4Index": 190
     },
     {
       "source": [
@@ -3670,11 +3949,24 @@
         "strength": 0.1596,
         "peakSeconds": 133.207256,
         "distanceMs": 23.991
-      }
+      },
+      "revision4Index": 191
     },
     {
       "source": [],
-      "motif": "bar_phrase",
+      "frozen": false,
+      "motif": "opposite_hand_arc",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.6762,
+        "peakSeconds": 134.708844,
+        "distanceMs": -5.034
+      },
+      "parentBeat": 220.0
+    },
+    {
+      "source": [],
+      "motif": "developed_flick",
       "evidence": {
         "strength": 1.6762,
         "peakSeconds": 134.708844,
@@ -3689,11 +3981,25 @@
         "distanceMs": -5.034
       },
       "measure": 81,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 192,
+      "sourceMotifBeat": 68
     },
     {
       "source": [],
-      "motif": "bar_phrase",
+      "frozen": false,
+      "motif": "opposite_hand_arc",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 0.8892,
+        "peakSeconds": 135.018141,
+        "distanceMs": -1.859
+      },
+      "parentBeat": 220.5
+    },
+    {
+      "source": [],
+      "motif": "developed_flick",
       "evidence": {
         "strength": 0.8892,
         "peakSeconds": 135.018141,
@@ -3708,11 +4014,25 @@
         "distanceMs": -1.859
       },
       "measure": 81,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 193,
+      "sourceMotifBeat": 68.5
     },
     {
       "source": [],
-      "motif": "bar_phrase",
+      "frozen": false,
+      "motif": "opposite_hand_arc",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 0.9785,
+        "peakSeconds": 135.322449,
+        "distanceMs": -3.673
+      },
+      "parentBeat": 221.0
+    },
+    {
+      "source": [],
+      "motif": "developed_flick",
       "evidence": {
         "strength": 0.9785,
         "peakSeconds": 135.322449,
@@ -3727,7 +4047,9 @@
         "distanceMs": -3.673
       },
       "measure": 81,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 194,
+      "sourceMotifBeat": 69
     },
     {
       "source": [],
@@ -3746,7 +4068,8 @@
         "distanceMs": -0.499
       },
       "measure": 81,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 195
     },
     {
       "source": [],
@@ -3765,7 +4088,8 @@
         "distanceMs": -2.313
       },
       "measure": 81,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 196
     },
     {
       "source": [],
@@ -3784,7 +4108,8 @@
         "distanceMs": 0.862
       },
       "measure": 81,
-      "phrasePosition": 5
+      "phrasePosition": 5,
+      "revision4Index": 197
     },
     {
       "source": [
@@ -3805,7 +4130,8 @@
         "distanceMs": -0.952
       },
       "measure": 81,
-      "phrasePosition": 6
+      "phrasePosition": 6,
+      "revision4Index": 198
     },
     {
       "source": [
@@ -3826,7 +4152,8 @@
         "distanceMs": -2.766
       },
       "measure": 81,
-      "phrasePosition": 7
+      "phrasePosition": 7,
+      "revision4Index": 199
     },
     {
       "source": [
@@ -3847,7 +4174,8 @@
         "distanceMs": -4.58
       },
       "measure": 81,
-      "phrasePosition": 8
+      "phrasePosition": 8,
+      "revision4Index": 200
     },
     {
       "source": [
@@ -3868,13 +4196,14 @@
         "distanceMs": -6.395
       },
       "measure": 81,
-      "phrasePosition": 9
+      "phrasePosition": 9,
+      "revision4Index": 201
     },
     {
       "source": [
         214
       ],
-      "motif": "bar_phrase",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.3294,
         "peakSeconds": 137.831746,
@@ -3889,14 +4218,26 @@
         "distanceMs": -3.22
       },
       "measure": 81,
-      "phrasePosition": 10
+      "phrasePosition": 10,
+      "revision4Index": 202
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.302,
+        "peakSeconds": 137.771882,
+        "distanceMs": -3.22
+      }
     },
     {
       "source": [
         215,
         216
       ],
-      "motif": "bar_phrase",
+      "motif": "developed_flick",
       "evidence": {
         "strength": 0.9661,
         "peakSeconds": 138.081179,
@@ -3911,13 +4252,27 @@
         "distanceMs": -0.045
       },
       "measure": 82,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 203,
+      "sourceMotifBeat": 109.5
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "opposite_hand_arc",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 0.9661,
+        "peakSeconds": 138.081179,
+        "distanceMs": -0.045
+      },
+      "parentBeat": 225.5
     },
     {
       "source": [
         217
       ],
-      "motif": "bar_phrase",
+      "motif": "developed_flick",
       "evidence": {
         "strength": 0.5477,
         "peakSeconds": 138.425397,
@@ -3932,13 +4287,27 @@
         "distanceMs": -1.859
       },
       "measure": 82,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 204,
+      "sourceMotifBeat": 110
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "opposite_hand_arc",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 0.7458,
+        "peakSeconds": 138.385488,
+        "distanceMs": -1.859
+      },
+      "parentBeat": 226.0
     },
     {
       "source": [
         218
       ],
-      "motif": "bar_phrase",
+      "motif": "developed_flick",
       "evidence": {
         "strength": 0.5518,
         "peakSeconds": 138.769615,
@@ -3953,7 +4322,21 @@
         "distanceMs": -3.673
       },
       "measure": 82,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 205,
+      "sourceMotifBeat": 109.5
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "opposite_hand_arc",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.1511,
+        "peakSeconds": 138.689796,
+        "distanceMs": -3.673
+      },
+      "parentBeat": 226.5
     },
     {
       "source": [
@@ -3974,7 +4357,8 @@
         "distanceMs": -0.499
       },
       "measure": 82,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 206
     },
     {
       "source": [
@@ -3995,7 +4379,8 @@
         "distanceMs": -7.302
       },
       "measure": 82,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 207
     },
     {
       "source": [
@@ -4016,7 +4401,8 @@
         "distanceMs": -4.127
       },
       "measure": 82,
-      "phrasePosition": 5
+      "phrasePosition": 5,
+      "revision4Index": 208
     },
     {
       "source": [
@@ -4037,7 +4423,8 @@
         "distanceMs": -0.952
       },
       "measure": 82,
-      "phrasePosition": 6
+      "phrasePosition": 6,
+      "revision4Index": 209
     },
     {
       "source": [
@@ -4058,7 +4445,8 @@
         "distanceMs": -2.766
       },
       "measure": 82,
-      "phrasePosition": 7
+      "phrasePosition": 7,
+      "revision4Index": 210
     },
     {
       "source": [
@@ -4079,7 +4467,8 @@
         "distanceMs": 0.408
       },
       "measure": 82,
-      "phrasePosition": 8
+      "phrasePosition": 8,
+      "revision4Index": 211
     },
     {
       "source": [
@@ -4100,13 +4489,25 @@
         "distanceMs": -1.406
       },
       "measure": 82,
-      "phrasePosition": 9
+      "phrasePosition": 9,
+      "revision4Index": 212
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.5326,
+        "peakSeconds": 141.139229,
+        "distanceMs": -3.22
+      }
     },
     {
       "source": [
         226
       ],
-      "motif": "bar_phrase",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.7549,
         "peakSeconds": 141.214059,
@@ -4121,14 +4522,27 @@
         "distanceMs": -3.22
       },
       "measure": 82,
-      "phrasePosition": 10
+      "phrasePosition": 10,
+      "revision4Index": 213
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "opposite_hand_arc",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.0514,
+        "peakSeconds": 141.448526,
+        "distanceMs": -0.045
+      },
+      "parentBeat": 231.0
     },
     {
       "source": [
         227,
         228
       ],
-      "motif": "bar_phrase",
+      "motif": "developed_flick",
       "evidence": {
         "strength": 1.0514,
         "peakSeconds": 141.448526,
@@ -4143,13 +4557,27 @@
         "distanceMs": -0.045
       },
       "measure": 83,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 214,
+      "sourceMotifBeat": 114
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "opposite_hand_arc",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.0367,
+        "peakSeconds": 141.752834,
+        "distanceMs": -1.859
+      },
+      "parentBeat": 231.5
     },
     {
       "source": [
         230
       ],
-      "motif": "bar_phrase",
+      "motif": "developed_flick",
       "evidence": {
         "strength": 0.4706,
         "peakSeconds": 141.852608,
@@ -4164,13 +4592,27 @@
         "distanceMs": -1.859
       },
       "measure": 83,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 215,
+      "sourceMotifBeat": 114.5
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "opposite_hand_arc",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.0178,
+        "peakSeconds": 142.057143,
+        "distanceMs": -3.673
+      },
+      "parentBeat": 232.0
     },
     {
       "source": [
         231
       ],
-      "motif": "bar_phrase",
+      "motif": "developed_flick",
       "evidence": {
         "strength": 0.5507,
         "peakSeconds": 142.136961,
@@ -4185,7 +4627,9 @@
         "distanceMs": -3.673
       },
       "measure": 83,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 216,
+      "sourceMotifBeat": 115
     },
     {
       "source": [
@@ -4206,7 +4650,8 @@
         "distanceMs": -0.499
       },
       "measure": 83,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 217
     },
     {
       "source": [
@@ -4227,7 +4672,8 @@
         "distanceMs": -2.313
       },
       "measure": 83,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 218
     },
     {
       "source": [
@@ -4248,7 +4694,8 @@
         "distanceMs": -4.127
       },
       "measure": 83,
-      "phrasePosition": 5
+      "phrasePosition": 5,
+      "revision4Index": 219
     },
     {
       "source": [
@@ -4269,7 +4716,8 @@
         "distanceMs": -5.941
       },
       "measure": 83,
-      "phrasePosition": 6
+      "phrasePosition": 6,
+      "revision4Index": 220
     },
     {
       "source": [
@@ -4290,7 +4738,8 @@
         "distanceMs": -2.766
       },
       "measure": 83,
-      "phrasePosition": 7
+      "phrasePosition": 7,
+      "revision4Index": 221
     },
     {
       "source": [
@@ -4311,7 +4760,8 @@
         "distanceMs": -4.58
       },
       "measure": 83,
-      "phrasePosition": 8
+      "phrasePosition": 8,
+      "revision4Index": 222
     },
     {
       "source": [
@@ -4332,13 +4782,14 @@
         "distanceMs": -1.406
       },
       "measure": 83,
-      "phrasePosition": 9
+      "phrasePosition": 9,
+      "revision4Index": 223
     },
     {
       "source": [
         239
       ],
-      "motif": "bar_phrase",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.6206,
         "peakSeconds": 144.546485,
@@ -4353,14 +4804,26 @@
         "distanceMs": -3.22
       },
       "measure": 83,
-      "phrasePosition": 10
+      "phrasePosition": 10,
+      "revision4Index": 224
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.1116,
+        "peakSeconds": 144.506576,
+        "distanceMs": -3.22
+      }
     },
     {
       "source": [
         240,
         241
       ],
-      "motif": "bar_phrase",
+      "motif": "developed_flick",
       "evidence": {
         "strength": 0.783,
         "peakSeconds": 144.815873,
@@ -4375,13 +4838,27 @@
         "distanceMs": -0.045
       },
       "measure": 84,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 225,
+      "sourceMotifBeat": 120
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "opposite_hand_arc",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 0.783,
+        "peakSeconds": 144.815873,
+        "distanceMs": -0.045
+      },
+      "parentBeat": 236.5
     },
     {
       "source": [
         243
       ],
-      "motif": "bar_phrase",
+      "motif": "developed_flick",
       "evidence": {
         "strength": 0.4547,
         "peakSeconds": 145.190023,
@@ -4396,13 +4873,27 @@
         "distanceMs": -6.848
       },
       "measure": 84,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 226,
+      "sourceMotifBeat": 120.5
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "opposite_hand_arc",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.0707,
+        "peakSeconds": 145.115193,
+        "distanceMs": -6.848
+      },
+      "parentBeat": 237.0
     },
     {
       "source": [
         244
       ],
-      "motif": "bar_phrase",
+      "motif": "developed_flick",
       "evidence": {
         "strength": 0.5275,
         "peakSeconds": 145.494331,
@@ -4417,7 +4908,21 @@
         "distanceMs": -3.673
       },
       "measure": 84,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 227,
+      "sourceMotifBeat": 120
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "opposite_hand_arc",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.022,
+        "peakSeconds": 145.42449,
+        "distanceMs": -3.673
+      },
+      "parentBeat": 237.5
     },
     {
       "source": [
@@ -4438,7 +4943,8 @@
         "distanceMs": -0.499
       },
       "measure": 84,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 228
     },
     {
       "source": [
@@ -4459,7 +4965,8 @@
         "distanceMs": -2.313
       },
       "measure": 84,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 229
     },
     {
       "source": [
@@ -4480,7 +4987,8 @@
         "distanceMs": -4.127
       },
       "measure": 84,
-      "phrasePosition": 5
+      "phrasePosition": 5,
+      "revision4Index": 230
     },
     {
       "source": [
@@ -4501,7 +5009,8 @@
         "distanceMs": -0.952
       },
       "measure": 84,
-      "phrasePosition": 6
+      "phrasePosition": 6,
+      "revision4Index": 231
     },
     {
       "source": [
@@ -4522,7 +5031,8 @@
         "distanceMs": -2.766
       },
       "measure": 84,
-      "phrasePosition": 7
+      "phrasePosition": 7,
+      "revision4Index": 232
     },
     {
       "source": [
@@ -4543,13 +5053,14 @@
         "distanceMs": -4.58
       },
       "measure": 84,
-      "phrasePosition": 8
+      "phrasePosition": 8,
+      "revision4Index": 233
     },
     {
       "source": [
         251
       ],
-      "motif": "bar_phrase",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.9982,
         "peakSeconds": 147.569615,
@@ -4564,7 +5075,19 @@
         "distanceMs": -6.395
       },
       "measure": 84,
-      "phrasePosition": 9
+      "phrasePosition": 9,
+      "revision4Index": 234
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.0639,
+        "peakSeconds": 147.564626,
+        "distanceMs": -6.395
+      }
     },
     {
       "source": [
@@ -4577,7 +5100,8 @@
         "strength": 0.5722,
         "peakSeconds": 148.188209,
         "distanceMs": 4.943
-      }
+      },
+      "revision4Index": 235
     },
     {
       "source": [
@@ -4590,7 +5114,8 @@
         "strength": 0.5722,
         "peakSeconds": 148.188209,
         "distanceMs": 4.943
-      }
+      },
+      "revision4Index": 236
     },
     {
       "source": [
@@ -4608,7 +5133,8 @@
         "strength": 0.4287,
         "peakSeconds": 152.50839,
         "distanceMs": 39.41
-      }
+      },
+      "revision4Index": 237
     },
     {
       "source": [
@@ -4627,7 +5153,8 @@
         "strength": 1.094,
         "peakSeconds": 153.386395,
         "distanceMs": -0.952
-      }
+      },
+      "revision4Index": 238
     },
     {
       "source": [
@@ -4646,7 +5173,8 @@
         "strength": 1.094,
         "peakSeconds": 153.386395,
         "distanceMs": -0.952
-      }
+      },
+      "revision4Index": 239
     },
     {
       "source": [
@@ -4659,7 +5187,8 @@
         "strength": 1.0733,
         "peakSeconds": 154.917914,
         "distanceMs": -0.045
-      }
+      },
+      "revision4Index": 240
     },
     {
       "source": [
@@ -4677,7 +5206,8 @@
         "strength": 1.0733,
         "peakSeconds": 154.917914,
         "distanceMs": -0.045
-      }
+      },
+      "revision4Index": 241
     },
     {
       "source": [
@@ -4695,7 +5225,8 @@
         "strength": 1.049,
         "peakSeconds": 156.449433,
         "distanceMs": 0.862
-      }
+      },
+      "revision4Index": 242
     },
     {
       "source": [
@@ -4713,20 +5244,8 @@
         "strength": 0.366,
         "peakSeconds": 157.097959,
         "distanceMs": 37.143
-      }
-    },
-    {
-      "source": [
-        275
-      ],
-      "motif": "authored_long",
-      "frozen": false,
-      "revision2TimeMs": 158059.333,
-      "timingEvidence": {
-        "strength": 0.7831,
-        "peakSeconds": 158.280272,
-        "distanceMs": -5.034
-      }
+      },
+      "revision4Index": 243
     },
     {
       "source": [
@@ -4744,13 +5263,39 @@
         "strength": 0.7831,
         "peakSeconds": 158.280272,
         "distanceMs": -5.034
+      },
+      "revision4Index": 245
+    },
+    {
+      "source": [
+        275
+      ],
+      "motif": "authored_long",
+      "frozen": false,
+      "revision2TimeMs": 158059.333,
+      "timingEvidence": {
+        "strength": 0.7831,
+        "peakSeconds": 158.280272,
+        "distanceMs": -5.034
+      },
+      "revision4Index": 244
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 0.8142,
+        "peakSeconds": 159.507483,
+        "distanceMs": -2.313
       }
     },
     {
       "source": [
         277
       ],
-      "motif": "bar_phrase",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.3691,
         "peakSeconds": 159.587302,
@@ -4765,7 +5310,8 @@
         "distanceMs": -2.313
       },
       "measure": 92,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 246
     },
     {
       "source": [
@@ -4786,7 +5332,8 @@
         "distanceMs": -4.127
       },
       "measure": 92,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 247
     },
     {
       "source": [
@@ -4807,7 +5354,8 @@
         "distanceMs": -0.952
       },
       "measure": 92,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 248
     },
     {
       "source": [
@@ -4828,7 +5376,8 @@
         "distanceMs": -2.766
       },
       "measure": 92,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 249
     },
     {
       "source": [
@@ -4849,13 +5398,14 @@
         "distanceMs": -4.58
       },
       "measure": 92,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 250
     },
     {
       "source": [
         282
       ],
-      "motif": "bar_phrase",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.5182,
         "peakSeconds": 161.0839,
@@ -4870,7 +5420,19 @@
         "distanceMs": -1.406
       },
       "measure": 93,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 251
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.037,
+        "peakSeconds": 161.039002,
+        "distanceMs": -1.406
+      }
     },
     {
       "source": [
@@ -4891,7 +5453,8 @@
         "distanceMs": 1.769
       },
       "measure": 93,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 252
     },
     {
       "source": [
@@ -4913,7 +5476,8 @@
         "distanceMs": 34.875
       },
       "measure": 93,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 253
     },
     {
       "source": [
@@ -4935,7 +5499,8 @@
         "distanceMs": -1.859
       },
       "measure": 93,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 254
     },
     {
       "source": [
@@ -4957,7 +5522,8 @@
         "distanceMs": -3.673
       },
       "measure": 93,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 255
     },
     {
       "source": [
@@ -4979,7 +5545,8 @@
         "distanceMs": -0.499
       },
       "measure": 94,
-      "phrasePosition": 0
+      "phrasePosition": 0,
+      "revision4Index": 256
     },
     {
       "source": [
@@ -5001,7 +5568,8 @@
         "distanceMs": -2.313
       },
       "measure": 94,
-      "phrasePosition": 1
+      "phrasePosition": 1,
+      "revision4Index": 257
     },
     {
       "source": [
@@ -5023,7 +5591,8 @@
         "distanceMs": 30.794
       },
       "measure": 94,
-      "phrasePosition": 2
+      "phrasePosition": 2,
+      "revision4Index": 258
     },
     {
       "source": [
@@ -5045,14 +5614,26 @@
         "distanceMs": -0.952
       },
       "measure": 94,
-      "phrasePosition": 3
+      "phrasePosition": 3,
+      "revision4Index": 259
+    },
+    {
+      "source": [],
+      "frozen": false,
+      "motif": "gold_pair_accent",
+      "revision5Added": true,
+      "timingEvidence": {
+        "strength": 1.239,
+        "peakSeconds": 163.792744,
+        "distanceMs": -2.766
+      }
     },
     {
       "source": [
         300,
         301
       ],
-      "motif": "bar_phrase",
+      "motif": "gold_pair_accent",
       "evidence": {
         "strength": 0.7635,
         "peakSeconds": 163.872562,
@@ -5067,7 +5648,8 @@
         "distanceMs": -2.766
       },
       "measure": 94,
-      "phrasePosition": 4
+      "phrasePosition": 4,
+      "revision4Index": 260
     },
     {
       "source": [
@@ -5086,7 +5668,8 @@
         "strength": 0.7227,
         "peakSeconds": 164.102041,
         "distanceMs": 0.408
-      }
+      },
+      "revision4Index": 261
     },
     {
       "source": [
@@ -5104,7 +5687,8 @@
         "strength": 0.688,
         "peakSeconds": 164.406349,
         "distanceMs": -1.406
-      }
+      },
+      "revision4Index": 262
     },
     {
       "source": [
@@ -5122,7 +5706,8 @@
         "strength": 0.8682,
         "peakSeconds": 165.019955,
         "distanceMs": -0.045
-      }
+      },
+      "revision4Index": 263
     },
     {
       "source": [
@@ -5140,7 +5725,8 @@
         "strength": 1.1581,
         "peakSeconds": 165.628571,
         "distanceMs": -3.673
-      }
+      },
+      "revision4Index": 264
     },
     {
       "source": [
@@ -5158,7 +5744,8 @@
         "strength": 0.6865,
         "peakSeconds": 166.242177,
         "distanceMs": -2.313
-      }
+      },
+      "revision4Index": 265
     },
     {
       "source": [
@@ -5171,7 +5758,8 @@
         "strength": 0.7355,
         "peakSeconds": 166.860771,
         "distanceMs": 4.036
-      }
+      },
+      "revision4Index": 266
     },
     {
       "source": [
@@ -5189,7 +5777,8 @@
         "strength": 1.1426,
         "peakSeconds": 169.000907,
         "distanceMs": 1.315
-      }
+      },
+      "revision4Index": 267
     },
     {
       "source": [
@@ -5208,7 +5797,8 @@
         "strength": 1.2509,
         "peakSeconds": 170.527438,
         "distanceMs": -2.766
-      }
+      },
+      "revision4Index": 268
     },
     {
       "source": [
@@ -5227,7 +5817,8 @@
         "strength": 1.2509,
         "peakSeconds": 170.527438,
         "distanceMs": -2.766
-      }
+      },
+      "revision4Index": 269
     }
   ],
   "removed": [
@@ -5404,7 +5995,7 @@
     254,
     255
   ],
-  "revision": 4,
+  "revision": 5,
   "revision2ArrowsRelaxed": [
     175,
     177,
@@ -10149,664 +10740,6 @@
       }
     }
   ],
-  "barPhrases": [
-    {
-      "measure": 13,
-      "handPattern": "RR",
-      "layout": "upper_horizontal",
-      "indices": [
-        22,
-        23
-      ],
-      "actualDirections": [
-        "left",
-        "right"
-      ]
-    },
-    {
-      "measure": 14,
-      "handPattern": "B",
-      "layout": "outer_vertical",
-      "indices": [
-        24
-      ],
-      "actualDirections": [
-        "none"
-      ]
-    },
-    {
-      "measure": 15,
-      "handPattern": "BR",
-      "layout": "rising_diagonal",
-      "indices": [
-        25,
-        26
-      ],
-      "actualDirections": [
-        "none",
-        "none"
-      ]
-    },
-    {
-      "measure": 16,
-      "handPattern": "RB",
-      "layout": "lower_horizontal",
-      "indices": [
-        27,
-        28
-      ],
-      "actualDirections": [
-        "none",
-        "none"
-      ]
-    },
-    {
-      "measure": 17,
-      "handPattern": "BRR",
-      "layout": "falling_diagonal",
-      "indices": [
-        29,
-        30,
-        31
-      ],
-      "actualDirections": [
-        "none",
-        "upleft",
-        "downright"
-      ]
-    },
-    {
-      "measure": 18,
-      "handPattern": "BB",
-      "layout": "upper_horizontal",
-      "indices": [
-        32,
-        33
-      ],
-      "actualDirections": [
-        "right",
-        "left"
-      ]
-    },
-    {
-      "measure": 19,
-      "handPattern": "RRB",
-      "layout": "outer_vertical",
-      "indices": [
-        34,
-        35,
-        36
-      ],
-      "actualDirections": [
-        "down",
-        "up",
-        "none"
-      ]
-    },
-    {
-      "measure": 20,
-      "handPattern": "BR",
-      "layout": "rising_diagonal",
-      "indices": [
-        37,
-        38
-      ],
-      "actualDirections": [
-        "none",
-        "none"
-      ]
-    },
-    {
-      "measure": 31,
-      "handPattern": "RRRB",
-      "layout": "lower_horizontal",
-      "indices": [
-        50,
-        51,
-        52,
-        53
-      ],
-      "actualDirections": [
-        "downright",
-        "upleft",
-        "downright",
-        "none"
-      ]
-    },
-    {
-      "measure": 32,
-      "handPattern": "BRRB",
-      "layout": "falling_diagonal",
-      "indices": [
-        54,
-        55,
-        56,
-        57
-      ],
-      "actualDirections": [
-        "none",
-        "upleft",
-        "downright",
-        "none"
-      ]
-    },
-    {
-      "measure": 33,
-      "handPattern": "BBRR",
-      "layout": "upper_horizontal",
-      "indices": [
-        58,
-        59,
-        60,
-        61
-      ],
-      "actualDirections": [
-        "right",
-        "left",
-        "left",
-        "right"
-      ]
-    },
-    {
-      "measure": 34,
-      "handPattern": "RBB",
-      "layout": "outer_vertical",
-      "indices": [
-        62,
-        63,
-        64
-      ],
-      "actualDirections": [
-        "none",
-        "down",
-        "up"
-      ]
-    },
-    {
-      "measure": 37,
-      "handPattern": "RRB",
-      "layout": "rising_diagonal",
-      "indices": [
-        81,
-        82,
-        83
-      ],
-      "actualDirections": [
-        "upleft",
-        "downright",
-        "none"
-      ]
-    },
-    {
-      "measure": 38,
-      "handPattern": "BRRB",
-      "layout": "lower_horizontal",
-      "indices": [
-        84,
-        85,
-        86,
-        87
-      ],
-      "actualDirections": [
-        "down",
-        "left",
-        "right",
-        "none"
-      ]
-    },
-    {
-      "measure": 41,
-      "handPattern": "RRB",
-      "layout": "falling_diagonal",
-      "indices": [
-        95,
-        96,
-        97
-      ],
-      "actualDirections": [
-        "downright",
-        "upleft",
-        "none"
-      ]
-    },
-    {
-      "measure": 42,
-      "handPattern": "BRRBB",
-      "layout": "upper_horizontal",
-      "indices": [
-        98,
-        99,
-        100,
-        101,
-        102
-      ],
-      "actualDirections": [
-        "none",
-        "right",
-        "left",
-        "downright",
-        "upleft"
-      ]
-    },
-    {
-      "measure": 43,
-      "handPattern": "RBBRR",
-      "layout": "outer_vertical",
-      "indices": [
-        103,
-        104,
-        105,
-        106,
-        107
-      ],
-      "actualDirections": [
-        "none",
-        "down",
-        "up",
-        "up",
-        "down"
-      ]
-    },
-    {
-      "measure": 44,
-      "handPattern": "BRBRB",
-      "layout": "rising_diagonal",
-      "indices": [
-        108,
-        109,
-        110,
-        111,
-        112
-      ],
-      "actualDirections": [
-        "none",
-        "none",
-        "none",
-        "none",
-        "none"
-      ]
-    },
-    {
-      "measure": 45,
-      "handPattern": "RRRBB",
-      "layout": "lower_horizontal",
-      "indices": [
-        113,
-        114,
-        115,
-        116,
-        117
-      ],
-      "actualDirections": [
-        "right",
-        "left",
-        "right",
-        "downleft",
-        "upright"
-      ]
-    },
-    {
-      "measure": 46,
-      "handPattern": "RBRRB",
-      "layout": "falling_diagonal",
-      "indices": [
-        118,
-        119,
-        120,
-        121,
-        122
-      ],
-      "actualDirections": [
-        "none",
-        "none",
-        "upleft",
-        "downright",
-        "none"
-      ]
-    },
-    {
-      "measure": 47,
-      "handPattern": "BRBBR",
-      "layout": "upper_horizontal",
-      "indices": [
-        123,
-        124,
-        125,
-        126,
-        127
-      ],
-      "actualDirections": [
-        "none",
-        "none",
-        "right",
-        "left",
-        "none"
-      ]
-    },
-    {
-      "measure": 48,
-      "handPattern": "RBBRR",
-      "layout": "outer_vertical",
-      "indices": [
-        128,
-        129,
-        130,
-        131,
-        132
-      ],
-      "actualDirections": [
-        "none",
-        "downright",
-        "upleft",
-        "down",
-        "up"
-      ]
-    },
-    {
-      "measure": 49,
-      "handPattern": "B",
-      "layout": "rising_diagonal",
-      "indices": [
-        133
-      ],
-      "actualDirections": [
-        "none"
-      ]
-    },
-    {
-      "measure": 68,
-      "handPattern": "R",
-      "layout": "lower_horizontal",
-      "indices": [
-        156
-      ],
-      "actualDirections": [
-        "none"
-      ]
-    },
-    {
-      "measure": 69,
-      "handPattern": "RRBB",
-      "layout": "falling_diagonal",
-      "indices": [
-        157,
-        158,
-        159,
-        160
-      ],
-      "actualDirections": [
-        "upleft",
-        "downright",
-        "upleft",
-        "downright"
-      ]
-    },
-    {
-      "measure": 70,
-      "handPattern": "BRR",
-      "layout": "upper_horizontal",
-      "indices": [
-        161,
-        162,
-        163
-      ],
-      "actualDirections": [
-        "none",
-        "left",
-        "right"
-      ]
-    },
-    {
-      "measure": 71,
-      "handPattern": "BB",
-      "layout": "outer_vertical",
-      "indices": [
-        164,
-        165
-      ],
-      "actualDirections": [
-        "down",
-        "up"
-      ]
-    },
-    {
-      "measure": 72,
-      "handPattern": "RR",
-      "layout": "rising_diagonal",
-      "indices": [
-        166,
-        167
-      ],
-      "actualDirections": [
-        "downleft",
-        "upright"
-      ]
-    },
-    {
-      "measure": 73,
-      "handPattern": "RBBB",
-      "layout": "lower_horizontal",
-      "indices": [
-        168,
-        169,
-        170,
-        171
-      ],
-      "actualDirections": [
-        "none",
-        "downright",
-        "upleft",
-        "downright"
-      ]
-    },
-    {
-      "measure": 74,
-      "handPattern": "RRBB",
-      "layout": "falling_diagonal",
-      "indices": [
-        172,
-        173,
-        174,
-        175
-      ],
-      "actualDirections": [
-        "upleft",
-        "downright",
-        "upleft",
-        "downright"
-      ]
-    },
-    {
-      "measure": 75,
-      "handPattern": "R",
-      "layout": "upper_horizontal",
-      "indices": [
-        176
-      ],
-      "actualDirections": [
-        "none"
-      ]
-    },
-    {
-      "measure": 81,
-      "handPattern": "RRBBRBRRRBB",
-      "layout": "outer_vertical",
-      "indices": [
-        192,
-        193,
-        194,
-        195,
-        196,
-        197,
-        198,
-        199,
-        200,
-        201,
-        202
-      ],
-      "actualDirections": [
-        "down",
-        "up",
-        "down",
-        "up",
-        "none",
-        "none",
-        "up",
-        "down",
-        "up",
-        "up",
-        "down"
-      ]
-    },
-    {
-      "measure": 82,
-      "handPattern": "RBBBRRBRBBR",
-      "layout": "rising_diagonal",
-      "indices": [
-        203,
-        204,
-        205,
-        206,
-        207,
-        208,
-        209,
-        210,
-        211,
-        212,
-        213
-      ],
-      "actualDirections": [
-        "none",
-        "upright",
-        "downleft",
-        "upright",
-        "upright",
-        "downleft",
-        "none",
-        "none",
-        "upright",
-        "downleft",
-        "none"
-      ]
-    },
-    {
-      "measure": 83,
-      "handPattern": "BRRBRBBRRRB",
-      "layout": "lower_horizontal",
-      "indices": [
-        214,
-        215,
-        216,
-        217,
-        218,
-        219,
-        220,
-        221,
-        222,
-        223,
-        224
-      ],
-      "actualDirections": [
-        "none",
-        "down",
-        "up",
-        "none",
-        "none",
-        "right",
-        "left",
-        "left",
-        "right",
-        "left",
-        "none"
-      ]
-    },
-    {
-      "measure": 84,
-      "handPattern": "RBRBBRRBRB",
-      "layout": "falling_diagonal",
-      "indices": [
-        225,
-        226,
-        227,
-        228,
-        229,
-        230,
-        231,
-        232,
-        233,
-        234
-      ],
-      "actualDirections": [
-        "none",
-        "none",
-        "none",
-        "downright",
-        "upleft",
-        "downright",
-        "upleft",
-        "none",
-        "none",
-        "none"
-      ]
-    },
-    {
-      "measure": 92,
-      "handPattern": "RRBBR",
-      "layout": "upper_horizontal",
-      "indices": [
-        246,
-        247,
-        248,
-        249,
-        250
-      ],
-      "actualDirections": [
-        "right",
-        "left",
-        "right",
-        "left",
-        "none"
-      ]
-    },
-    {
-      "measure": 93,
-      "handPattern": "BRRRB",
-      "layout": "outer_vertical",
-      "indices": [
-        251,
-        252,
-        253,
-        254,
-        255
-      ],
-      "actualDirections": [
-        "none",
-        "down",
-        "up",
-        "down",
-        "none"
-      ]
-    },
-    {
-      "measure": 94,
-      "handPattern": "BBRBR",
-      "layout": "rising_diagonal",
-      "indices": [
-        256,
-        257,
-        258,
-        259,
-        260
-      ],
-      "actualDirections": [
-        "upright",
-        "downleft",
-        "none",
-        "none",
-        "none"
-      ]
-    }
-  ],
   "revision3FlickRuns": [
     {
       "indices": [
@@ -11753,7 +11686,786 @@
       ]
     }
   ],
-  "continuousFlickRuns": [
+  "motifDevelopments": [
+    {
+      "sourceBeats": [
+        68,
+        68.5,
+        69
+      ],
+      "targetBeats": [
+        220.0,
+        220.5,
+        221.0
+      ],
+      "hand": "red",
+      "sourceIndices": [
+        50,
+        51,
+        52
+      ],
+      "targetIndices": [
+        201,
+        203,
+        205
+      ],
+      "arcIndices": [
+        200,
+        202,
+        204
+      ],
+      "arcMeaning": "Three free-cut notes on a continuous spatial path; not a new slide judgment"
+    },
+    {
+      "sourceBeats": [
+        109.5,
+        110
+      ],
+      "targetBeats": [
+        225.5,
+        226.0,
+        226.5
+      ],
+      "hand": "blue",
+      "sourceIndices": [
+        107,
+        108
+      ],
+      "targetIndices": [
+        215,
+        217,
+        219
+      ],
+      "arcIndices": [
+        216,
+        218,
+        220
+      ],
+      "arcMeaning": "Three free-cut notes on a continuous spatial path; not a new slide judgment"
+    },
+    {
+      "sourceBeats": [
+        114,
+        114.5,
+        115
+      ],
+      "targetBeats": [
+        231.0,
+        231.5,
+        232.0
+      ],
+      "hand": "red",
+      "sourceIndices": [
+        118,
+        119,
+        120
+      ],
+      "targetIndices": [
+        231,
+        233,
+        235
+      ],
+      "arcIndices": [
+        230,
+        232,
+        234
+      ],
+      "arcMeaning": "Three free-cut notes on a continuous spatial path; not a new slide judgment"
+    },
+    {
+      "sourceBeats": [
+        120,
+        120.5
+      ],
+      "targetBeats": [
+        236.5,
+        237.0,
+        237.5
+      ],
+      "hand": "blue",
+      "sourceIndices": [
+        132,
+        133
+      ],
+      "targetIndices": [
+        245,
+        247,
+        249
+      ],
+      "arcIndices": [
+        246,
+        248,
+        250
+      ],
+      "arcMeaning": "Three free-cut notes on a continuous spatial path; not a new slide judgment"
+    }
+  ],
+  "revision5ArrowsRelaxed": [
+    87,
+    121,
+    206,
+    222,
+    251
+  ],
+  "revision4BarPhrases": [
+    {
+      "measure": 13,
+      "handPattern": "RR",
+      "layout": "upper_horizontal",
+      "indices": [
+        22,
+        23
+      ],
+      "actualDirections": [
+        "left",
+        "right"
+      ]
+    },
+    {
+      "measure": 14,
+      "handPattern": "B",
+      "layout": "outer_vertical",
+      "indices": [
+        24
+      ],
+      "actualDirections": [
+        "none"
+      ]
+    },
+    {
+      "measure": 15,
+      "handPattern": "BR",
+      "layout": "rising_diagonal",
+      "indices": [
+        25,
+        26
+      ],
+      "actualDirections": [
+        "none",
+        "none"
+      ]
+    },
+    {
+      "measure": 16,
+      "handPattern": "RB",
+      "layout": "lower_horizontal",
+      "indices": [
+        27,
+        28
+      ],
+      "actualDirections": [
+        "none",
+        "none"
+      ]
+    },
+    {
+      "measure": 17,
+      "handPattern": "BRR",
+      "layout": "falling_diagonal",
+      "indices": [
+        29,
+        30,
+        31
+      ],
+      "actualDirections": [
+        "none",
+        "upleft",
+        "downright"
+      ]
+    },
+    {
+      "measure": 18,
+      "handPattern": "BB",
+      "layout": "upper_horizontal",
+      "indices": [
+        32,
+        33
+      ],
+      "actualDirections": [
+        "right",
+        "left"
+      ]
+    },
+    {
+      "measure": 19,
+      "handPattern": "RRB",
+      "layout": "outer_vertical",
+      "indices": [
+        34,
+        35,
+        36
+      ],
+      "actualDirections": [
+        "down",
+        "up",
+        "none"
+      ]
+    },
+    {
+      "measure": 20,
+      "handPattern": "BR",
+      "layout": "rising_diagonal",
+      "indices": [
+        37,
+        38
+      ],
+      "actualDirections": [
+        "none",
+        "none"
+      ]
+    },
+    {
+      "measure": 31,
+      "handPattern": "RRRB",
+      "layout": "lower_horizontal",
+      "indices": [
+        50,
+        51,
+        52,
+        53
+      ],
+      "actualDirections": [
+        "downright",
+        "upleft",
+        "downright",
+        "none"
+      ]
+    },
+    {
+      "measure": 32,
+      "handPattern": "BRRB",
+      "layout": "falling_diagonal",
+      "indices": [
+        54,
+        55,
+        56,
+        57
+      ],
+      "actualDirections": [
+        "none",
+        "upleft",
+        "downright",
+        "none"
+      ]
+    },
+    {
+      "measure": 33,
+      "handPattern": "BBRR",
+      "layout": "upper_horizontal",
+      "indices": [
+        58,
+        59,
+        60,
+        61
+      ],
+      "actualDirections": [
+        "right",
+        "left",
+        "left",
+        "right"
+      ]
+    },
+    {
+      "measure": 34,
+      "handPattern": "RBB",
+      "layout": "outer_vertical",
+      "indices": [
+        62,
+        63,
+        64
+      ],
+      "actualDirections": [
+        "none",
+        "down",
+        "up"
+      ]
+    },
+    {
+      "measure": 37,
+      "handPattern": "RRB",
+      "layout": "rising_diagonal",
+      "indices": [
+        81,
+        82,
+        83
+      ],
+      "actualDirections": [
+        "upleft",
+        "downright",
+        "none"
+      ]
+    },
+    {
+      "measure": 38,
+      "handPattern": "BRRB",
+      "layout": "lower_horizontal",
+      "indices": [
+        84,
+        85,
+        86,
+        87
+      ],
+      "actualDirections": [
+        "down",
+        "left",
+        "right",
+        "none"
+      ]
+    },
+    {
+      "measure": 41,
+      "handPattern": "RRB",
+      "layout": "falling_diagonal",
+      "indices": [
+        95,
+        96,
+        97
+      ],
+      "actualDirections": [
+        "downright",
+        "upleft",
+        "none"
+      ]
+    },
+    {
+      "measure": 42,
+      "handPattern": "BRRBB",
+      "layout": "upper_horizontal",
+      "indices": [
+        98,
+        99,
+        100,
+        101,
+        102
+      ],
+      "actualDirections": [
+        "none",
+        "right",
+        "left",
+        "downright",
+        "upleft"
+      ]
+    },
+    {
+      "measure": 43,
+      "handPattern": "RBBRR",
+      "layout": "outer_vertical",
+      "indices": [
+        103,
+        104,
+        105,
+        106,
+        107
+      ],
+      "actualDirections": [
+        "none",
+        "down",
+        "up",
+        "up",
+        "down"
+      ]
+    },
+    {
+      "measure": 44,
+      "handPattern": "BRBRB",
+      "layout": "rising_diagonal",
+      "indices": [
+        108,
+        109,
+        110,
+        111,
+        112
+      ],
+      "actualDirections": [
+        "none",
+        "none",
+        "none",
+        "none",
+        "none"
+      ]
+    },
+    {
+      "measure": 45,
+      "handPattern": "RRRBB",
+      "layout": "lower_horizontal",
+      "indices": [
+        113,
+        114,
+        115,
+        116,
+        117
+      ],
+      "actualDirections": [
+        "right",
+        "left",
+        "right",
+        "downleft",
+        "upright"
+      ]
+    },
+    {
+      "measure": 46,
+      "handPattern": "RBRRB",
+      "layout": "falling_diagonal",
+      "indices": [
+        118,
+        119,
+        120,
+        121,
+        122
+      ],
+      "actualDirections": [
+        "none",
+        "none",
+        "upleft",
+        "downright",
+        "none"
+      ]
+    },
+    {
+      "measure": 47,
+      "handPattern": "BRBBR",
+      "layout": "upper_horizontal",
+      "indices": [
+        123,
+        124,
+        125,
+        126,
+        127
+      ],
+      "actualDirections": [
+        "none",
+        "none",
+        "right",
+        "left",
+        "none"
+      ]
+    },
+    {
+      "measure": 48,
+      "handPattern": "RBBRR",
+      "layout": "outer_vertical",
+      "indices": [
+        128,
+        129,
+        130,
+        131,
+        132
+      ],
+      "actualDirections": [
+        "none",
+        "downright",
+        "upleft",
+        "down",
+        "up"
+      ]
+    },
+    {
+      "measure": 49,
+      "handPattern": "B",
+      "layout": "rising_diagonal",
+      "indices": [
+        133
+      ],
+      "actualDirections": [
+        "none"
+      ]
+    },
+    {
+      "measure": 68,
+      "handPattern": "R",
+      "layout": "lower_horizontal",
+      "indices": [
+        156
+      ],
+      "actualDirections": [
+        "none"
+      ]
+    },
+    {
+      "measure": 69,
+      "handPattern": "RRBB",
+      "layout": "falling_diagonal",
+      "indices": [
+        157,
+        158,
+        159,
+        160
+      ],
+      "actualDirections": [
+        "upleft",
+        "downright",
+        "upleft",
+        "downright"
+      ]
+    },
+    {
+      "measure": 70,
+      "handPattern": "BRR",
+      "layout": "upper_horizontal",
+      "indices": [
+        161,
+        162,
+        163
+      ],
+      "actualDirections": [
+        "none",
+        "left",
+        "right"
+      ]
+    },
+    {
+      "measure": 71,
+      "handPattern": "BB",
+      "layout": "outer_vertical",
+      "indices": [
+        164,
+        165
+      ],
+      "actualDirections": [
+        "down",
+        "up"
+      ]
+    },
+    {
+      "measure": 72,
+      "handPattern": "RR",
+      "layout": "rising_diagonal",
+      "indices": [
+        166,
+        167
+      ],
+      "actualDirections": [
+        "downleft",
+        "upright"
+      ]
+    },
+    {
+      "measure": 73,
+      "handPattern": "RBBB",
+      "layout": "lower_horizontal",
+      "indices": [
+        168,
+        169,
+        170,
+        171
+      ],
+      "actualDirections": [
+        "none",
+        "downright",
+        "upleft",
+        "downright"
+      ]
+    },
+    {
+      "measure": 74,
+      "handPattern": "RRBB",
+      "layout": "falling_diagonal",
+      "indices": [
+        172,
+        173,
+        174,
+        175
+      ],
+      "actualDirections": [
+        "upleft",
+        "downright",
+        "upleft",
+        "downright"
+      ]
+    },
+    {
+      "measure": 75,
+      "handPattern": "R",
+      "layout": "upper_horizontal",
+      "indices": [
+        176
+      ],
+      "actualDirections": [
+        "none"
+      ]
+    },
+    {
+      "measure": 81,
+      "handPattern": "RRBBRBRRRBB",
+      "layout": "outer_vertical",
+      "indices": [
+        192,
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202
+      ],
+      "actualDirections": [
+        "down",
+        "up",
+        "down",
+        "up",
+        "none",
+        "none",
+        "up",
+        "down",
+        "up",
+        "up",
+        "down"
+      ]
+    },
+    {
+      "measure": 82,
+      "handPattern": "RBBBRRBRBBR",
+      "layout": "rising_diagonal",
+      "indices": [
+        203,
+        204,
+        205,
+        206,
+        207,
+        208,
+        209,
+        210,
+        211,
+        212,
+        213
+      ],
+      "actualDirections": [
+        "none",
+        "upright",
+        "downleft",
+        "upright",
+        "upright",
+        "downleft",
+        "none",
+        "none",
+        "upright",
+        "downleft",
+        "none"
+      ]
+    },
+    {
+      "measure": 83,
+      "handPattern": "BRRBRBBRRRB",
+      "layout": "lower_horizontal",
+      "indices": [
+        214,
+        215,
+        216,
+        217,
+        218,
+        219,
+        220,
+        221,
+        222,
+        223,
+        224
+      ],
+      "actualDirections": [
+        "none",
+        "down",
+        "up",
+        "none",
+        "none",
+        "right",
+        "left",
+        "left",
+        "right",
+        "left",
+        "none"
+      ]
+    },
+    {
+      "measure": 84,
+      "handPattern": "RBRBBRRBRB",
+      "layout": "falling_diagonal",
+      "indices": [
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234
+      ],
+      "actualDirections": [
+        "none",
+        "none",
+        "none",
+        "downright",
+        "upleft",
+        "downright",
+        "upleft",
+        "none",
+        "none",
+        "none"
+      ]
+    },
+    {
+      "measure": 92,
+      "handPattern": "RRBBR",
+      "layout": "upper_horizontal",
+      "indices": [
+        246,
+        247,
+        248,
+        249,
+        250
+      ],
+      "actualDirections": [
+        "right",
+        "left",
+        "right",
+        "left",
+        "none"
+      ]
+    },
+    {
+      "measure": 93,
+      "handPattern": "BRRRB",
+      "layout": "outer_vertical",
+      "indices": [
+        251,
+        252,
+        253,
+        254,
+        255
+      ],
+      "actualDirections": [
+        "none",
+        "down",
+        "up",
+        "down",
+        "none"
+      ]
+    },
+    {
+      "measure": 94,
+      "handPattern": "BBRBR",
+      "layout": "rising_diagonal",
+      "indices": [
+        256,
+        257,
+        258,
+        259,
+        260
+      ],
+      "actualDirections": [
+        "upright",
+        "downleft",
+        "none",
+        "none",
+        "none"
+      ]
+    }
+  ],
+  "revision4ContinuousFlickRuns": [
     {
       "indices": [
         22,

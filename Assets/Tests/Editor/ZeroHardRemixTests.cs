@@ -80,7 +80,7 @@ public class ZeroHardRemixTests
         int connected = 0;
         foreach (string color in new[] { "red", "blue" })
         {
-            var notes = chart.notes.Where(n => n.color == color).ToArray();
+            var notes = chart.notes.Where(n => n.color == color || (n.color == "gold" && (n.x < 0 ? "blue" : "red") == color)).ToArray();
             for (int i = 1; i < notes.Length; i++)
             {
                 var a = notes[i - 1];
@@ -137,6 +137,51 @@ public class ZeroHardRemixTests
             Assert.AreNotEqual(previous, signature, $"{bar.Measure - 1}〜{bar.Measure}小節で同じ配置を続けない");
             previous = signature;
         }
+    }
+
+
+    [Test]
+    public void PeaksHaveMorePairsAndSpacedGoldAccents()
+    {
+        var chart = ChartLoader.LoadFromStreamingAssets("製作中", "hard");
+        var pairs = chart.notes.GroupBy(n => n.beat).Where(g => g.Count() == 2).ToArray();
+        Assert.GreaterOrEqual(pairs.Count(g => g.Key >= 80 && g.Key < 124), 10);
+        Assert.GreaterOrEqual(pairs.Count(g => g.Key >= 220 && g.Key < 268), 18);
+        var goldPairs = pairs.Where(g => g.All(n => n.color == "gold" && n.count == 1)).ToArray();
+        Assert.GreaterOrEqual(goldPairs.Length, 12);
+        foreach (var pair in goldPairs)
+        {
+            Assert.IsTrue(pair.All(n => n.direction == "none" && n.type == "tap"));
+            Assert.Less(pair.Min(n => n.x), -1f);
+            Assert.Greater(pair.Max(n => n.x), 1f);
+        }
+        Assert.IsTrue(chart.notes.GroupBy(n => n.beat).All(g => g.Count() <= 2), "同時入力は両手まで");
+    }
+
+    [TestCase(68f, 220f, "red", 3)]
+    [TestCase(109.5f, 225.5f, "blue", 2)]
+    [TestCase(114f, 231f, "red", 3)]
+    [TestCase(120f, 236.5f, "blue", 2)]
+    public void LaterMotifRetainsTheEarlierFlickAndAddsAnOppositeHandPath(float source, float target, string hand, int sourceCount)
+    {
+        var chart = ChartLoader.LoadFromStreamingAssets("製作中", "hard");
+        string other = hand == "red" ? "blue" : "red";
+        var points = new Vector2[3];
+        for (int k = 0; k < 3; k++)
+        {
+            var before = chart.notes.Single(n => n.beat == source + (k % sourceCount) * .5f && n.color == hand);
+            var after = chart.notes.Single(n => n.beat == target + k * .5f && n.color == hand);
+            Assert.AreEqual(before.direction, after.direction);
+            Assert.AreEqual(before.x, after.x);
+            Assert.AreEqual(before.y, after.y);
+            Assert.IsTrue(after.IsDirection);
+            var companion = chart.notes.Single(n => n.beat == after.beat && n.color == other);
+            Assert.AreEqual("none", companion.direction);
+            Assert.AreEqual(1, companion.count);
+            points[k] = new Vector2(companion.x, companion.y);
+            if (k > 0) Assert.That(Vector2.Distance(points[k-1], points[k]), Is.InRange(.2f, .8f));
+        }
+        Assert.Greater(Vector2.Distance(points[0], points[2]), .8f, "反対の手は同じ位置の連打ではなく、弧状につなぐ");
     }
 
     static bool HasActiveLong(ChartData chart, ChartMeterMap.Position bar) => chart.notes.Any(n =>
