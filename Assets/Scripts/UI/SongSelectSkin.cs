@@ -263,7 +263,7 @@ public class SongSelectSkin : MonoBehaviour
         var panel = PanelAt("Achievements", 295, 915, 470, 250, SongSelectVisuals.Edge, 3, 22);
         Ruby(Label(panel.transform, "AchievementHeading", "", 24, new Vector2(-163, 88), new Vector2(94, 45), UISkinKit.JapaneseFallbackFontAsset(), SongSelectVisuals.Accent), "<ruby=きろく>記録</ruby>");
         achievementDifficulty = Label(panel.transform, "AchievementDifficulty", "EASY", 24, new Vector2(-49, 86), new Vector2(152, 36), color: SongSelectVisuals.Muted);
-        string[] ranks = { "S以上", "S<color=#ff6e7a>+</color>", "FC", "AP" };
+        string[] ranks = { "S↑", "S<color=#ff6e7a>+</color>", "FC", "AP" };
         for (int i = 0; i < 4; i++)
         {
             float x = i % 2 == 0 ? -192 : 32, y = i < 2 ? 29 : -43;
