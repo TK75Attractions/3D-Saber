@@ -67,6 +67,14 @@
         { "beat": 124.00, "time": 83332, "x": -0.49, "y": 0.53, "type": "tap", "color": "gold", "direction": "none", "count": 1 },
         { "beat": 125.00, "time": 83998, "x": 1.14, "y": 0.46, "type": "tap", "color": "gold", "direction": "none", "count": 1 },
         { "beat": 130.00, "time": 87332, "x": 0.29, "y": -0.41, "type": "tap", "color": "gold", "direction": "none", "count": 1 },
+        { "beat": 132, "time": 88665, "x": -1.071429, "y": -0.214286, "type": "tap", "color": "blue", "direction": "none", "count": 1, "lengthMs": 0 },
+        { "beat": 136, "time": 91332, "x": 1.071429, "y": -0.214286, "type": "tap", "color": "red", "direction": "none", "count": 1, "lengthMs": 0 },
+        { "beat": 140, "time": 93998, "x": -1.071429, "y": -0.214286, "type": "tap", "color": "blue", "direction": "none", "count": 1, "lengthMs": 0 },
+        { "beat": 144, "time": 96665, "x": 1.071429, "y": -0.214286, "type": "tap", "color": "red", "direction": "none", "count": 1, "lengthMs": 0 },
+        { "beat": 148, "time": 99332, "x": -1.071429, "y": -0.214286, "type": "tap", "color": "blue", "direction": "none", "count": 1, "lengthMs": 0 },
+        { "beat": 152, "time": 101999, "x": 1.071429, "y": -0.214286, "type": "tap", "color": "red", "direction": "none", "count": 1, "lengthMs": 0 },
+        { "beat": 156, "time": 104665, "x": -1.071429, "y": -0.214286, "type": "tap", "color": "blue", "direction": "none", "count": 1, "lengthMs": 0 },
+        { "beat": 160, "time": 107332, "x": 1.071429, "y": -0.214286, "type": "tap", "color": "red", "direction": "none", "count": 1, "lengthMs": 0 },
         { "beat": 164.00, "time": 109999, "x": 1.19, "y": 0.26, "type": "tap", "color": "gold", "direction": "none", "count": 1 },
         { "beat": 166.00, "time": 111332, "x": -1.56, "y": 0.14, "type": "tap", "color": "blue", "direction": "none", "count": 1 },
         { "beat": 170.00, "time": 113999, "x": 1.09, "y": 0.32, "type": "tap", "color": "gold", "direction": "none", "count": 1 },
@@ -120,6 +128,7 @@
         { "beat": 274.00, "time": 183333, "x": -1.12, "y": 0.63, "type": "tap", "color": "blue", "direction": "none", "count": 1 },
         { "beat": 277.00, "time": 185333, "x": 0.35, "y": 0.33, "type": "tap", "color": "red", "direction": "none", "count": 1 },
         { "beat": 282.00, "time": 188666, "x": -0.35, "y": 0.52, "type": "tap", "color": "blue", "direction": "none", "count": 1 },
+        { "beat": 286, "time": 191333, "x": 0.357143, "y": -0.214286, "type": "tap", "color": "gold", "direction": "none", "count": 1, "lengthMs": 0 },
         { "beat": 290.00, "time": 194000, "x": 1.27, "y": -0.65, "type": "tap", "color": "red", "direction": "none", "count": 1 }
     ]
 }
