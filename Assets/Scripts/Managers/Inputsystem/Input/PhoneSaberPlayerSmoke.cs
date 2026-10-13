@@ -10,10 +10,16 @@ using UnityEngine.SceneManagement;
 //   Title → SongSelect → Game(ElDorado / normal)を順に開き、本編では自分へ座標を送って受信と剣の部品を確かめる。
 //   終了コード: 0 = 例外なし・入力 OK、1 = 例外あり、2 = 入力が通らない。
 // PhoneSaber/tools/unity_copy.sh build-mac が、差し替える前の Player に対して実行する。
+// 見た目の確認(unity_copy.sh shots): -phonesaberSmokeShots <folder> を足すと各 scene の画面を PNG に残す
+// (窓を隠して起動したまま撮れる。batchmode では撮れない)。-phonesaberSmokeRefreshHz <Hz> は
+// 「画面の更新が遅い」注意の表示確認用に、注意の判定に使う Hz だけを差し替える(描画や vsync は変えない)。
 public sealed class PhoneSaberPlayerSmoke : MonoBehaviour
 {
     public const string Argument = "-phonesaberSmoke";
     public const float DefaultSeconds = 8f;
+    public const string ShotsArgument = "-phonesaberSmokeShots";
+    public const string RefreshHzArgument = "-phonesaberSmokeRefreshHz";
+    string shotsFolder;
     static readonly string[] Scenes = { "Title", "SongSelect", "Game" };
     float secondsPerScene;
     int exceptions;
@@ -26,6 +32,10 @@ public sealed class PhoneSaberPlayerSmoke : MonoBehaviour
         if (seconds <= 0f) return;
         var smoke = new GameObject("PhoneSaber Player Smoke").AddComponent<PhoneSaberPlayerSmoke>();
         smoke.secondsPerScene = seconds;
+        string[] args = Environment.GetCommandLineArgs();
+        smoke.shotsFolder = Application.isBatchMode ? null : ResolveValue(args, ShotsArgument);
+        if (double.TryParse(ResolveValue(args, RefreshHzArgument), NumberStyles.Float, CultureInfo.InvariantCulture,
+                out double hz) && hz > 0) PhoneSaberDisplaySync.RefreshHzOverride = hz;
         DontDestroyOnLoad(smoke.gameObject);
     }
 
@@ -42,6 +52,27 @@ public sealed class PhoneSaberPlayerSmoke : MonoBehaviour
         return 0f;
     }
 
+    // 引数の次の値。無い・次が別の引数なら null。
+    public static string ResolveValue(string[] args, string name)
+    {
+        for (int i = 1; i + 1 < args.Length; i++)
+            if (args[i] == name && !args[i + 1].StartsWith("-")) return args[i + 1];
+        return null;
+    }
+
+    IEnumerator Capture(string scene)
+    {
+        if (string.IsNullOrEmpty(shotsFolder)) yield break;
+        string path = System.IO.Path.Combine(shotsFolder, scene + ".png");
+        try { System.IO.Directory.CreateDirectory(shotsFolder); System.IO.File.Delete(path); }
+        catch (Exception e) { Debug.Log("[PhoneSaberSmoke] shot: " + e.Message); yield break; }
+        ScreenCapture.CaptureScreenshot(path);
+        // 書き出しはフレームの終わり以降。最大2秒待つ。
+        float until = Time.realtimeSinceStartup + 2f;
+        while (!System.IO.File.Exists(path) && Time.realtimeSinceStartup < until) yield return null;
+        Debug.Log("[PhoneSaberSmoke] shot " + scene + " " + (System.IO.File.Exists(path) ? "saved" : "MISSING"));
+    }
+
     void OnEnable() { Application.logMessageReceived += OnLog; }
     void OnDisable() { Application.logMessageReceived -= OnLog; }
 
@@ -54,6 +85,7 @@ public sealed class PhoneSaberPlayerSmoke : MonoBehaviour
     {
         Debug.Log("[PhoneSaberSmoke] start seconds-per-scene=" + secondsPerScene.ToString(CultureInfo.InvariantCulture));
         yield return new WaitForSecondsRealtime(secondsPerScene); // 起動時の scene(Title)
+        yield return Capture(Scenes[0]);
         for (int i = 1; i < Scenes.Length; i++)
         {
             bool game = Scenes[i] == "Game";
@@ -71,6 +103,7 @@ public sealed class PhoneSaberPlayerSmoke : MonoBehaviour
             yield return new WaitForSecondsRealtime(secondsPerScene);
             if (game) yield return CheckInput();
             if (game) yield return new WaitForSecondsRealtime(secondsPerScene);
+            yield return Capture(Scenes[i]);
         }
         Debug.Log("[PhoneSaberSmoke] done exceptions=" + exceptions + " input=" + (inputOk ? "ok" : "FAILED"));
         Application.Quit(exceptions > 0 ? 1 : inputOk ? 0 : 2);

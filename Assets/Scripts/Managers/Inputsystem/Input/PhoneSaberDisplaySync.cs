@@ -30,6 +30,8 @@ public static class PhoneSaberDisplaySyncSettings
 public sealed class PhoneSaberDisplaySync : MonoBehaviour
 {
     public static int Mode { get; private set; }
+    // 注意の表示確認用(-phonesaberSmokeRefreshHz)。0 なら実際の画面の値を使う。
+    public static double RefreshHzOverride;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void CreateAtStartup()
@@ -66,7 +68,8 @@ public sealed class PhoneSaberDisplaySync : MonoBehaviour
         if (notice == null || now < nextNoticeCheck) return;
         nextNoticeCheck = now + 1;
         notice.Text = PhoneSaberDisplayNotice.TextFor(
-            PhoneSaberStatsDisplay.DisplayWarning(Screen.currentResolution.refreshRateRatio.value),
+            PhoneSaberStatsDisplay.DisplayWarning(RefreshHzOverride > 0
+                ? RefreshHzOverride : Screen.currentResolution.refreshRateRatio.value),
             SceneManager.GetActiveScene().name);
         notice.enabled = notice.Text.Length > 0;
     }

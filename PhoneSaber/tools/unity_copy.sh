@@ -4,6 +4,7 @@
 #   PhoneSaber/tools/unity_copy.sh sync                 複製を現在の checkout に合わせる
 #   PhoneSaber/tools/unity_copy.sh editmode [filter]    EditMode テスト（filter は -testFilter の正規表現）
 #   PhoneSaber/tools/unity_copy.sh build-mac            macOS Player をビルドし、起動して確かめてから Builds/Mac/3D-Saber.app を差し替える
+#   PhoneSaber/tools/unity_copy.sh shots [app]          ビルド済み Player を隠して起動し、各 scene の画面を _out/shots/*.png に残す
 #   PhoneSaber/tools/unity_copy.sh smoke [app]          ビルド済み Player を窓なしで起動し、例外が出ないか確かめる
 #
 # 複製の場所: $PHONESABER_UNITY_COPY（既定 ~/Library/Caches/PhoneSaber/unity-copy）。Library を含むので数 GB。
@@ -72,9 +73,37 @@ smoke_player() {
     echo "smoke: Title / SongSelect / Game を例外なしで通過、座標の受信と剣の部品も確認 (${waited} 秒)"
 }
 
+# ビルド済み Player を隠したまま起動し、各 scene の画面を PNG に残す（見た目の確認用。窓は出さない）。
+# 万一 Player が前面に出たら、すぐ隠し直す。PHONESABER_SHOTS_REFRESH_HZ=30 で「画面の更新が遅い」注意の表示を確かめられる。
+shots_player() {
+    local app="$1" exe dir="$OUT/shots" log="$OUT/shots.log" pid game waited=0 args
+    exe="$(find "$app/Contents/MacOS" -maxdepth 1 -type f | head -1)"
+    [[ -x "$exe" ]] || { echo "shots: 実行ファイルが見つかりません: $app"; return 1; }
+    rm -rf "$dir" "$log"; mkdir -p "$dir"
+    args=(-phonesaberSmoke "${PHONESABER_SMOKE_SECONDS:-5}" -phonesaberSmokeShots "$dir" -logFile "$log")
+    [[ -n "${PHONESABER_SHOTS_REFRESH_HZ:-}" ]] && args+=(-phonesaberSmokeRefreshHz "$PHONESABER_SHOTS_REFRESH_HZ")
+    run_hidden "$exe" "${args[@]}" >/dev/null 2>&1 &
+    pid=$!
+    while kill -0 "$pid" 2>/dev/null; do
+        if (( waited >= 240 )); then pkill -KILL -f -- "-phonesaberSmokeShots" 2>/dev/null; kill -KILL "$pid" 2>/dev/null; echo "shots: 終わらないため中止 ($log)"; return 1; fi
+        game="$(pgrep -f -- "-phonesaberSmokeShots" | head -1)"
+        if [[ -n "$game" ]] && [[ "$(osascript -e 'tell application "System Events" to get unix id of first process whose frontmost is true' 2>/dev/null)" == "$game" ]]; then
+            osascript -e "tell application \"System Events\" to set visible of (first process whose unix id is $game) to false" >/dev/null 2>&1
+            echo "shots: Player が前面に出たので隠しました"
+        fi
+        sleep 0.5; waited=$((waited + 1))
+    done
+    grep "PhoneSaberSmoke\] \(shot\|done\)" "$log" 2>/dev/null
+    ls "$dir"/*.png >/dev/null 2>&1 || { echo "shots: 画像がありません ($log)"; return 1; }
+    echo "shots: $dir"
+}
+
 case "${1:-}" in
 smoke)
     smoke_player "${2:-$ROOT/Builds/Mac/3D-Saber.app}"
+    ;;
+shots)
+    shots_player "${2:-$ROOT/Builds/Mac/3D-Saber.app}"
     ;;
 sync)
     sync_copy && echo "synced: $COPY"
