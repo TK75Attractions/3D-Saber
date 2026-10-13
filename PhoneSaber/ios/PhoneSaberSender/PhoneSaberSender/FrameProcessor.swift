@@ -79,6 +79,7 @@ struct LatestCameraFrameMailbox<Frame> {
 
 final class FrameProcessor: @unchecked Sendable {
     let queue = DispatchQueue(label: "PhoneSaberSender.frames", qos: .userInteractive)
+    var onProcessingActivity: ((Bool) -> Void)?
     var onResult: (([DetectedSaber], Int, Int, TimeInterval, Int, FrameTrace?) -> Void)?
     /// (time, detection ms, generation, capture→detection-end ms). The last value is nil when
     /// AVCapture's clock could not be converted to the host clock.
@@ -493,6 +494,8 @@ final class FrameProcessor: @unchecked Sendable {
                          sequence: UInt64, callbackHostTime: TimeInterval,
                          captureHostTime: TimeInterval?,
                          callbackIntervalMs: Double?, callbackWorkMs: Double?) {
+        onProcessingActivity?(true)
+        defer { onProcessingActivity?(false) }
         let processingStart = clock()
         let accessStart = processingStart
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }

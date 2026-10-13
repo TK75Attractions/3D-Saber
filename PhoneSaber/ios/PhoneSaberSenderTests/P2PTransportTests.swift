@@ -485,6 +485,105 @@ final class P2PTransportTests: XCTestCase {
 
     // MARK: Loopback link against a fake bridge
 
+    @MainActor
+    func testUnchangedBonjourAndPathRefreshPreserveBothLANConnections() {
+        let lan = UDPSender { _, _, _ in }
+        let p2p = P2PSender()
+        let model = CameraViewModel(sender: lan, p2pSender: p2p, p2pEnabled: false, idleTimerUpdater: { _ in })
+        defer { model.stop(); p2p.stop() }
+        model.startForTesting(host: "", manual: false)
+        model.applyBonjourForTesting(host: "127.0.0.1")
+        let generations = [5005, 5006].map { lan.connectionGenerationForTesting(port: $0) }
+        let processorGeneration = model.processor.currentGeneration
+        let lifecycleGeneration = model.lifecycleGenerationForTesting
+        lan.simulateConnectionStateForTesting(port: 5005, state: .waiting)
+        lan.simulateConnectionStateForTesting(port: 5006, state: .waiting)
+        for port in [5005, 5006] { lan.send("1,2,3,4", to: port) { _ in } }
+        XCTAssertEqual(lan.pendingCountForTesting, 2)
+        for _ in 0..<3 {
+            model.receiveNetworkPathUpdate(status: "Wi-Fi経路あり", interface: "wifi")
+            model.applyBonjourForTesting(host: "127.0.0.1")
+        }
+        XCTAssertEqual([5005, 5006].map { lan.connectionGenerationForTesting(port: $0) }, generations)
+        XCTAssertEqual(model.processor.currentGeneration, processorGeneration)
+        XCTAssertEqual(model.lifecycleGenerationForTesting, lifecycleGeneration)
+        XCTAssertEqual(lan.pendingCountForTesting, 2, "広告再解決で両色の待機座標を捨てない")
+    }
+
+    @MainActor
+    func testP2PConnectedNotificationPreservesPendingVerifiedLANCoordinates() async throws {
+        let bridge = try FakeBridge()
+        bridge.answering = false
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        let lan = UDPSender { _, _, _ in }
+        let p2p = P2PSender(timing: fastTiming(), endpointOverride: .hostPort(host: "127.0.0.1", port: port))
+        let model = CameraViewModel(sender: lan, p2pSender: p2p, p2pEnabled: true, idleTimerUpdater: { _ in })
+        defer { model.stop(); p2p.stop() }
+        model.startForTesting(manual: false)
+        model.recordLANReplyForTesting()
+        lan.simulateConnectionStateForTesting(port: 5005, state: .waiting)
+        lan.send("1,2,3,4", to: 5005) { _ in }
+        XCTAssertEqual(lan.pendingCountForTesting, 1)
+        bridge.answering = true
+        let connected = await waitUntilMain { model.p2pState.isConnected }
+        XCTAssertTrue(connected)
+        XCTAssertEqual(lan.pendingCountForTesting, 1, "P2P の接続通知は座標経路の切替ではない")
+    }
+
+    func testCoordinateSendFailureInvalidatesP2PAndFallsBackToLAN() async throws {
+        let bridge = try FakeBridge()
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        let p2p = P2PSender(timing: fastTiming(), endpointOverride: .hostPort(host: "127.0.0.1", port: port),
+                            coordinateSendHook: { _, complete in complete(POSIXError(.ENETDOWN)) })
+        let lan = UDPSender { _, _, complete in complete(.success(1)) }
+        defer { p2p.stop(); lan.stop() }
+        p2p.start()
+        let usable = await waitFor { p2p.isUsable }
+        XCTAssertTrue(usable)
+        lan.configure(host: "127.0.0.1")
+        let delivery = CoordinateDelivery(sender: lan, p2pSender: p2p, lanProbe: LANLivenessProbe())
+        var config = CoordinateDelivery.Settings()
+        config.running = true; config.lanConfigured = true; config.p2pEnabled = true
+        delivery.update(config)
+        let completed = expectation(description: "failed P2P coordinate goes to LAN")
+        delivery.route("1,2,3,4", port: 5005, settings: config, onSendStarted: nil,
+                       completion: { result in
+                           if case .failure = result { XCTFail("LAN fallback missing") }
+                           completed.fulfill()
+                       }, noRoute: { XCTFail("LAN exists") })
+        await fulfillment(of: [completed], timeout: 3)
+        XCTAssertFalse(p2p.isUsable)
+        XCTAssertEqual(delivery.currentRoute, .lanUnverified)
+    }
+
+    func testPendingP2PCoordinateFallsBackWhenPongsExpireBeforeCompletion() async throws {
+        let bridge = try FakeBridge()
+        defer { bridge.stop() }
+        let port = try await bridge.ready()
+        let now = LockedBox(100.0)
+        let callback = LockedBox<((Error?) -> Void)?>(nil)
+        let p2p = P2PSender(endpointOverride: .hostPort(host: "127.0.0.1", port: port), clock: { now.value },
+                            coordinateSendHook: { _, complete in callback.mutate { $0 = complete } })
+        defer { p2p.stop() }
+        p2p.start()
+        let usable = await waitFor { p2p.isUsable }
+        XCTAssertTrue(usable)
+        p2p.send("1,2,3,4", to: 5005) { _ in }
+        let started = await waitFor { callback.value != nil }
+        XCTAssertTrue(started)
+        let fallback = expectation(description: "latest pending coordinate uses LAN")
+        p2p.send("5,6,7,8", to: 5005, completion: { _ in XCTFail("expired P2P cannot send") },
+                 fallback: { fallback.fulfill() })
+        // 同じキューの先行 send を完了させてから pong を止め、liveness の時刻を進める。
+        _ = p2p.stateForTesting
+        bridge.answering = false
+        now.mutate { $0 += 2 }
+        callback.value?(nil)
+        await fulfillment(of: [fallback], timeout: 3)
+    }
+
     private func fastTiming() -> P2PSender.Timing {
         var timing = P2PSender.Timing()
         timing.pingInterval = 0.05
@@ -1573,3 +1672,156 @@ private final class PipelineLockedValue<Value>: @unchecked Sendable {
     var value: Value { lock.lock(); defer { lock.unlock() }; return stored }
     func mutate(_ body: (inout Value) -> Void) { lock.lock(); defer { lock.unlock() }; body(&stored) }
 }
+
+// timer を待たず、復帰時の観測更新より前に原因が残ることも検証する。
+final class SendGapTests: XCTestCase {
+    func testEveryCauseLogsOnceAndSendingAgainRearmsTheMonitor() {
+        for cause in ["camera delivered no frame", "processing stalled", "no fresh detection for either colour",
+                      "route had no destination", "send error", "generation rejected"] {
+            var now = 0.0
+            var lines: [String] = []
+            let monitor = SendGapMonitor(clock: { now }, automaticPolling: false) { lines.append($0) }
+            monitor.setIntent(true)
+            monitor.cameraFrame(); monitor.results(fresh: true); monitor.sent()
+            if cause != "camera delivered no frame" {
+                // 停止中もカメラは動いている（更新で自動 poll する前の時刻を使う）。
+                now = 0.4; monitor.cameraFrame()
+            }
+            if cause != "camera delivered no frame" && cause != "processing stalled" {
+                now = 0.4; monitor.results(fresh: cause != "no fresh detection for either colour")
+            }
+            now = 0.5; monitor.poll()
+            XCTAssertTrue(lines.isEmpty, "0.5 秒ちょうどは停止扱いにしない")
+            now = 0.6
+            if ["route had no destination", "send error", "generation rejected"].contains(cause) {
+                monitor.blocked(cause, detail: "test\nline")
+            }
+            monitor.poll(); monitor.poll()
+            XCTAssertEqual(lines.count, 1)
+            XCTAssertTrue(lines[0].contains("cause=\(cause)"), lines[0])
+            XCTAssertFalse(lines[0].contains("\n"))
+            monitor.sent()
+            now = 1.2
+            monitor.poll()
+            XCTAssertEqual(lines.count, 2)
+            monitor.setIntent(false)
+            now = 2
+            monitor.poll()
+            XCTAssertEqual(lines.count, 2)
+        }
+    }
+
+    func testLateTimerDoesNotLoseCameraOrDetectionGapOnRecovery() {
+        for cameraGap in [true, false] {
+            var now = 0.0
+            var lines: [String] = []
+            let monitor = SendGapMonitor(clock: { now }, automaticPolling: false) { lines.append($0) }
+            monitor.setIntent(true)
+            monitor.cameraFrame(); monitor.results(fresh: true); monitor.sent()
+            if !cameraGap {
+                for time in [0.2, 0.4] { now = time; monitor.cameraFrame(); monitor.results(fresh: false) }
+            }
+            now = 0.6
+            monitor.cameraFrame(); monitor.processing(active: true); monitor.results(fresh: true); monitor.sent()
+            XCTAssertEqual(lines.count, 1)
+            XCTAssertTrue(lines[0].contains(cameraGap ? "cause=camera delivered no frame" : "cause=no fresh detection for either colour"), lines[0])
+        }
+    }
+
+    func testReconfigurationKeepsIntentAndStopStillLogsTheLastGap() {
+        var now = 0.0
+        var lines: [String] = []
+        let monitor = SendGapMonitor(clock: { now }, automaticPolling: false) { lines.append($0) }
+        monitor.setIntent(true)
+        monitor.context("thermal stop/start")
+        monitor.beginReconfiguration(); monitor.setIntent(false); monitor.setIntent(true); monitor.endReconfiguration()
+        now = 0.6
+        monitor.setIntent(false)
+        XCTAssertEqual(lines.count, 1)
+        XCTAssertTrue(lines.first?.contains("context=thermal stop/start") == true)
+        now = 2; monitor.poll()
+        XCTAssertEqual(lines.count, 1)
+    }
+
+    func testLogExportIncludesRotationAndLimitsWholeUTF8Lines() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        let file = root.appendingPathComponent("connectivity.log")
+        try "2026-10-13T00:00:00.000Z previous SEND_GAP\n".write(to: file.appendingPathExtension("1"), atomically: true, encoding: .utf8)
+        let log = ConnectivityLog(fileURL: file)
+        log.record("TEST", "current", at: Date(timeIntervalSince1970: 0))
+        XCTAssertTrue(log.exportTail().contains("previous SEND_GAP"), log.exportTail())
+        XCTAssertTrue(log.exportTail().contains("1970-01-01T00:00:00.000Z [TEST] current"), log.exportTail())
+        for _ in 0..<1000 { log.recordToFileOnly("TEST", String(repeating: "日本語", count: 10)) }
+        let tail = log.exportTail()
+        XCTAssertLessThanOrEqual(tail.utf8.count, 64 * 1024)
+        XCTAssertFalse(tail.contains("�"))
+        XCTAssertTrue(tail.hasPrefix("1970-") || tail.first?.isNumber == true, String(tail.prefix(200)))
+        XCTAssertTrue(tail.hasSuffix("\n"))
+    }
+
+    func testIdenticalUDPConfigurationPreservesInFlightAndNewestPendingCoordinates() {
+        let packets = PipelineLockedValue<[String]>([])
+        let callback = PipelineLockedValue<((Result<TimeInterval, Error>) -> Void)?>(nil)
+        let started = expectation(description: "active send")
+        let latest = expectation(description: "latest pending send")
+        let sender = UDPSender { text, _, complete in
+            packets.mutate { $0.append(text) }
+            callback.mutate { $0 = complete }
+            if text == "1,2,3,4" { started.fulfill() } else { latest.fulfill() }
+        }
+        defer { sender.stop() }
+        sender.configure(host: "127.0.0.1")
+        sender.send("1,2,3,4", to: 5005) { _ in }
+        wait(for: [started], timeout: 2)
+        sender.send("5,6,7,8", to: 5005) { _ in }
+        XCTAssertEqual(sender.pendingCountForTesting, 1)
+        let generation = sender.connectionGenerationForTesting(port: 5005)
+        sender.configure(host: "127.0.0.1", ports: [5006, 5005])
+        sender.updateHost("127.0.0.1")
+        XCTAssertEqual(sender.connectionGenerationForTesting(port: 5005), generation)
+        XCTAssertEqual(sender.pendingCountForTesting, 1)
+        callback.value?(.success(1))
+        wait(for: [latest], timeout: 2)
+        XCTAssertEqual(packets.value, ["1,2,3,4", "5,6,7,8"])
+    }
+}
+
+#if !PIPELINE_ROUTING_STANDALONE
+final class DebugBundleLogTests: XCTestCase {
+    func testOptionalLogTravelsInPackageAndOldBundlesStillPackage() throws {
+        let root = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: root, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: root) }
+        try Data("{\"sessionID\":\"gap_test\",\"selectedImageCount\":0,\"images\":[]}".utf8)
+            .write(to: root.appendingPathComponent("summary.json"))
+        try Data("test".utf8).write(to: root.appendingPathComponent("prompt.md"))
+        let logURL = root.appendingPathComponent("connectivity.log")
+        let log = "2026-10-13T16:15:40.000Z [SEND_GAP] cause=processing stalled 日本語\n"
+        for present in [false, true] {
+            if present { try log.write(to: logURL, atomically: true, encoding: .utf8) }
+            let package = try DebugBundleTransfer.makePackage(for: root)
+            defer { try? FileManager.default.removeItem(at: package) }
+            let bytes = try Data(contentsOf: package)
+            XCTAssertEqual(String(decoding: bytes.prefix(4), as: UTF8.self), "PSBT")
+            let length = bytes[4..<8].reduce(0) { ($0 << 8) | Int($1) }
+            let manifest = try XCTUnwrap(JSONSerialization.jsonObject(with: bytes[8..<8 + length]) as? [String: Any])
+            let files = try XCTUnwrap(manifest["files"] as? [[String: Any]])
+            XCTAssertEqual(files.count, present ? 3 : 2)
+            XCTAssertEqual(files.contains { $0["path"] as? String == "connectivity.log" }, present)
+            if present {
+                XCTAssertTrue(String(decoding: bytes.suffix(from: 8 + length), as: UTF8.self).contains(log))
+                XCTAssertEqual(files.first { $0["path"] as? String == "connectivity.log" }?["contentType"] as? String,
+                               "text/plain; charset=utf-8")
+            }
+        }
+        try String(repeating: "x", count: 64 * 1024 + 1).write(to: logURL, atomically: true, encoding: .utf8)
+        XCTAssertThrowsError(try DebugBundleTransfer.makePackage(for: root))
+        try FileManager.default.removeItem(at: logURL)
+        try FileManager.default.createSymbolicLink(at: logURL, withDestinationURL: root.appendingPathComponent("prompt.md"))
+        XCTAssertThrowsError(try DebugBundleTransfer.makePackage(for: root))
+    }
+}
+
+#endif

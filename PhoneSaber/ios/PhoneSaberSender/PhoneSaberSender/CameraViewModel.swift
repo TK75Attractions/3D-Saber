@@ -995,16 +995,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             let interface = path.availableInterfaces.map { String(describing: $0.type) }.joined(separator: ", ")
             Task { @MainActor in
                 guard let self else { return }
-                self.pathStatus = status; self.pathInterface = interface
-                if self.running && self.cameraLifecycleEnabled {
-                    if self.hostSelection.source == .manual {
-                        self.configureLAN(host: self.host, generation: self.lifecycleGeneration)
-                    } else {
-                        self.lanConfigured = false
-                        self.sender.stop(); self.lanProbe.stop()
-                    }
-                }
-                self.refreshNetworkDiscovery()
+                self.receiveNetworkPathUpdate(status: status, interface: interface)
             }
         }
         pathMonitor.start(queue: DispatchQueue(label: "PhoneSaberSender.path"))
@@ -1017,6 +1008,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         updateDiagnosticDestination()
         if automaticLANDiscoveryEnabled { bonjourDiscovery.start() }
         if self.p2pEnabled { startP2P() }
+        processor.onProcessingActivity = { active in
+            ConnectivityLog.sendGapMonitor.processing(active: active)
+        }
         processor.onHealthSample = { [healthMeter] time, milliseconds, generation, captureToSendMs in
             healthMeter.processed(at: time, milliseconds: milliseconds, generation: generation,
                                   captureToSendMs: captureToSendMs)
@@ -1164,6 +1158,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     private func handleCameraInterruption(reason: String) {
         guard running else { return }
         if debugRecordingActive { stopDebugRecording(reason: .interruption) }
+        ConnectivityLog.sendGapMonitor.context("camera interruption: \(reason)")
         cameraLifecycle.interruptionBegan(reason: reason)
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
     }
@@ -1187,6 +1182,7 @@ final class CameraViewModel: NSObject, ObservableObject {
             recomputeErrorMessage()
             return
         }
+        ConnectivityLog.sendGapMonitor.context("camera runtime error: \(message)")
         cameraLifecycle.runtimeError(message)
         cameraErrorMessage = message
         publishCameraLifecycle(at: ProcessInfo.processInfo.systemUptime)
@@ -1203,6 +1199,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         if !alreadyMarkedRecovering && !cameraLifecycle.beginRecovery(at: now) { return }
         guard let delay = cameraBackoff.nextDelay(at: now) else { return }
         cameraRecoveryInProgress = true
+        ConnectivityLog.sendGapMonitor.context("camera recovery backoff=\(delay)s")
         cameraRecoveryMessage = "カメラを再接続中…（\(Int(delay))秒後に再試行）。続く場合は箱の通風・カメラ権限を確認"
         cameraRecoveryGeneration += 1
         let recoveryGeneration = cameraRecoveryGeneration
@@ -1410,6 +1407,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         guard !running, !permissionPending else { return }
         DebugBundleTransfer.shared.retryPending()
         resumePolicy.start()
+        ConnectivityLog.sendGapMonitor.setIntent(true)
         persistSendingIntent()
         updateIdleTimerPolicy()
         lifecycleGeneration += 1
@@ -1575,8 +1573,12 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func restartCameraForFPSChange() {
+        ConnectivityLog.sendGapMonitor.context("camera stop/reconfigure/start requested-fps=\(cameraFPS)")
+        // 内部再設定も送信の意思が続く一つの区間として診断する。
+        ConnectivityLog.sendGapMonitor.beginReconfiguration()
         stop()
         start()
+        ConnectivityLog.sendGapMonitor.endReconfiguration()
     }
 
     func setLowLatencyCameraSettings(_ enabled: Bool) {
@@ -1631,6 +1633,14 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
     }
 
+    func receiveNetworkPathUpdate(status: String, interface: String) {
+        pathStatus = status; pathInterface = interface
+        // NWConnection が経路変更を追う。広告の再解決中も既知の LAN 宛先を失わない。
+        if running { sender.recoverIfNeeded() }
+        ConnectivityLog.shared.record("PATH", "\(status) interface=\(interface)")
+        refreshNetworkDiscovery()
+    }
+
     private func refreshNetworkDiscovery() {
         lastDiscoveryRefresh = ProcessInfo.processInfo.systemUptime
         if automaticLANDiscoveryEnabled { bonjourDiscovery.start() }
@@ -1649,6 +1659,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     func stop() {
         publishPendingUI()
         resumePolicy.stop()
+        ConnectivityLog.sendGapMonitor.setIntent(false)
         persistSendingIntent()
         permissionPending = false
         automaticResumePending = false
@@ -1861,6 +1872,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     // 検出キューで payload と経路を確定。UI の描画・診断更新は送信を待たせない。
     nonisolated private func sendResults(_ results: [DetectedSaber], width: Int, height: Int,
                                         processingStart: TimeInterval, generation: Int) -> SendMetrics? {
+        ConnectivityLog.sendGapMonitor.results(fresh: results.contains { $0.isFresh })
         guard let settings = delivery.snapshot(generation: generation) else { return nil }
         var metrics = SendMetrics(lifecycleGeneration: settings.lifecycleGeneration)
         for result in results where result.isFresh {
@@ -1883,6 +1895,11 @@ final class CameraViewModel: NSObject, ObservableObject {
             let sendRequestStart = ProcessInfo.processInfo.systemUptime
 #endif
             let completion: (Result<TimeInterval, Error>) -> Void = { [weak self] result in
+                switch result {
+                case .success: ConnectivityLog.sendGapMonitor.sent()
+                case .failure(let error):
+                    ConnectivityLog.sendGapMonitor.blocked("send error", detail: error.localizedDescription)
+                }
                 if case .success = result {
                     self?.healthMeter.sent(at: ProcessInfo.processInfo.systemUptime, port: port, generation: generation)
                 }
@@ -2204,8 +2221,7 @@ final class CameraViewModel: NSObject, ObservableObject {
                 guard let self, self.p2pEnabled, self.hostSelection.source != .manual,
                       self.station == requestedStation else { return }
                 self.p2pState = state
-                // P2P carries coordinates again: drop anything LAN still queues.
-                if state.isConnected { self.sender.discardPendingCoordinates() }
+                // LAN 待機座標の破棄は、検出キューが実際に P2P を選んだときだけ行う。
             }
         }, onStats: { [weak self] summary in
             Task { @MainActor in
@@ -2351,6 +2367,7 @@ final class CameraViewModel: NSObject, ObservableObject {
 
     var p2pNoRouteCountForTesting: Int { p2pNoRouteCount }
     var lanConfiguredForTesting: Bool { lanConfigured }
+    var lifecycleGenerationForTesting: Int { lifecycleGeneration }
     var lanProbeHostForTesting: String { lanProbe.hostForTesting }
     func recordLANReplyForTesting(_ text: String = LANLivenessProbe.replyPrefix) {
         lanProbe.recordReplyForTesting(text)
@@ -2744,6 +2761,7 @@ extension CameraViewModel {
 extension CameraViewModel: AVCaptureVideoDataOutputSampleBufferDelegate {
     nonisolated func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         let frameTime = ProcessInfo.processInfo.systemUptime
+        ConnectivityLog.sendGapMonitor.cameraFrame()
         healthMeter.cameraFrame(at: frameTime)
         processor.submit(sampleBuffer)
         uiPending.cameraFrame(at: frameTime)

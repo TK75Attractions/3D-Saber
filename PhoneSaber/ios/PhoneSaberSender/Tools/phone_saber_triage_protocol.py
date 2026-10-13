@@ -20,12 +20,13 @@ FORMAT_VERSION = 1
 CONTENT_TYPE = "application/vnd.phonesaber.triage-v1"
 MAX_IMAGES = 20
 DEFAULT_MAX_IMAGES = 12
-MAX_FILES = 2 + MAX_IMAGES * 2
+MAX_FILES = 3 + MAX_IMAGES * 2
 MAX_BUNDLE_BYTES = 512 * 1024 * 1024
 MAX_MANIFEST_BYTES = 128 * 1024
 MAX_SUMMARY_BYTES = 512 * 1024
 MAX_PROMPT_BYTES = 64 * 1024
 MAX_CONTEXT_BYTES = 256 * 1024
+MAX_CONNECTIVITY_BYTES = 64 * 1024
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 SESSION_RE = re.compile(r"^[A-Za-z0-9_-]{1,100}$")
 FRAME_RE = re.compile(r"^frames/frame_[0-9]+_[0-9]+\.json$")
@@ -51,7 +52,7 @@ def _allowed_path(value: Any) -> str:
     if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
         raise BundleError("manifest path escapes the bundle")
     normalized = path.as_posix()
-    if normalized in {"summary.json", "prompt.md"}:
+    if normalized in {"summary.json", "prompt.md", "connectivity.log"}:
         return normalized
     if normalized.startswith("images/") and normalized.lower().endswith(".png"):
         if len(path.parts) != 2 or path.name != normalized.split("/", 1)[1]:
@@ -63,6 +64,8 @@ def _allowed_path(value: Any) -> str:
 
 
 def _content_type(path: str) -> str:
+    if path == "connectivity.log":
+        return "text/plain; charset=utf-8"
     if path.endswith(".png"):
         return "image/png"
     if path.endswith(".md"):
@@ -96,6 +99,8 @@ def _manifest_files(root: Path) -> tuple[str, list[dict[str, Any]]]:
             raise BundleError("prompt.md is too large")
         elif normalized.startswith("frames/") and size > MAX_CONTEXT_BYTES:
             raise BundleError("frame context is too large")
+        elif normalized == "connectivity.log" and size > MAX_CONNECTIVITY_BYTES:
+            raise BundleError("connectivity.log is too large")
         digest = _sha256(file_path)
         entries.append({
             "path": normalized,
@@ -184,6 +189,8 @@ def receive_bundle(source: BinaryIO, content_length: int, inbox: Path) -> Path:
             raise BundleError("summary.json is too large")
         if relative == "prompt.md" and size > MAX_PROMPT_BYTES:
             raise BundleError("prompt.md is too large")
+        if relative == "connectivity.log" and size > MAX_CONNECTIVITY_BYTES:
+            raise BundleError("connectivity.log is too large")
         if relative.startswith("frames/") and size > MAX_CONTEXT_BYTES:
             raise BundleError("frame context is too large")
         if relative.startswith("images/"):

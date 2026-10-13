@@ -56,6 +56,20 @@ private func waitUntil(_ condition: @escaping @MainActor () -> Bool, timeout: Ti
 }
 
 final class DetectionCoreTests: XCTestCase {
+    func testDebugRecordingBundleIncludesConnectivityTailWithoutSelectedImages() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let metadata = try JSONSerialization.data(withJSONObject: ["sessionID": "gap_export", "frames": []])
+        let bundle = try DebugRecordingTriageBuilder.build(
+            metadataData: metadata, metadataURL: directory.appendingPathComponent("metadata.json"),
+            forensicDirectoryURL: nil)
+        // 選択 PNG が0枚の録画でも、カメラ・通信の停止理由を持ち帰る。
+        let log = try String(contentsOf: bundle.appendingPathComponent("connectivity.log"), encoding: .utf8)
+        XCTAssertLessThanOrEqual(log.utf8.count, 64 * 1024)
+        XCTAssertEqual(log, ConnectivityLog.shared.exportTail())
+    }
+
     func testCoreLineCandidateScoringIsIndependentOfPointOrder() throws {
         // A slanted, ragged bright-core proposal: the same pixels in any order (and
         // any Set instance) must score bit-identically. Set iteration order used to

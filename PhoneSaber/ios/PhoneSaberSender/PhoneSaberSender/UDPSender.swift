@@ -108,6 +108,16 @@ final class UDPSender {
     func configure(host: String, ports: [Int] = [5005, 5006],
                    onUpdate: (([Int: String], [Int: String], String?) -> Void)? = nil) {
         queue.sync {
+            // 同じ宛先の再通知では、待機中・送信中の座標と接続を保持する。
+            if isRunning, configuredHost == host, configuredPorts == Set(ports) {
+#if DEBUG
+                // 接続世代は保ち、テスト用の通知設定履歴だけ更新する。
+                updateHandlersForTesting.append(onUpdate)
+#endif
+                updateHandler = onUpdate
+                publish()
+                return
+            }
             stopLocked(clearHandler: false)
             configurationGeneration += 1
             configuredHost = host
@@ -229,6 +239,9 @@ final class UDPSender {
         guard isRunning, self.configurationGeneration == configurationGeneration,
               portGenerations[port] == portGeneration else { return }
         phases[port] = phase
+        if phase == .waiting || phase == .failed {
+            ConnectivityLog.sendGapMonitor.blocked("send error", detail: "UDP \(phase) port=\(port) \(reason ?? "")")
+        }
         switch phase {
         case .ready:
             waitingWork.removeValue(forKey: port)?.cancel()
@@ -379,6 +392,7 @@ final class UDPSender {
 #if DEBUG
             print("[UDP][\(port)] send watchdog timeout count=\(self.watchdogTimeoutCounts[port, default: 0]) generation=\(portGeneration)")
 #endif
+            ConnectivityLog.sendGapMonitor.blocked("send error", detail: "UDP send watchdog timeout port=\(port)")
             self.scheduleReconnect(port: port, reason: "send watchdog timeout")
         }
         watchdogWork[port] = item
@@ -723,12 +737,111 @@ final class LANLivenessProbe {
 
 /// 通信経路の出来事（経路の切替、P2P の探索・再接続、Unity 応答の途切れ）を時刻付きで残す。
 /// 2026-10-10 に約100秒 PC へ届かなかったとき、iPhone 側の記録が何も無く原因を特定できなかった。
+// カメラ・検出・通信のキューと独立した診断。ローカル送信完了は PC の受信保証ではない。
+final class SendGapMonitor: @unchecked Sendable {
+    private let lock = NSLock()
+    private let clock: () -> TimeInterval
+    private let emit: (String) -> Void
+    private var timer: DispatchSourceTimer?
+    private var intent = false
+    private var reconfiguring = false
+    private var lastSend: TimeInterval = 0
+    private var lastFrame: TimeInterval?
+    private var lastResult: TimeInterval?
+    private var lastFresh: TimeInterval?
+    private var processingSince: TimeInterval?
+    private var obstruction: (time: TimeInterval, cause: String, detail: String)?
+    private var cameraContext = ""
+    private var logged = false
+    static let threshold: TimeInterval = 0.5
+
+    init(clock: @escaping () -> TimeInterval = { ProcessInfo.processInfo.systemUptime },
+         automaticPolling: Bool = true, emit: @escaping (String) -> Void) {
+        self.clock = clock
+        self.emit = emit
+        if automaticPolling {
+            let timer = DispatchSource.makeTimerSource(queue: DispatchQueue(label: "PhoneSaberSender.sendGaps", qos: .utility))
+            timer.schedule(deadline: .now() + 0.1, repeating: 0.1)
+            timer.setEventHandler { [weak self] in self?.poll() }
+            self.timer = timer
+            timer.resume()
+        }
+    }
+
+    deinit { timer?.cancel() }
+
+    func setIntent(_ enabled: Bool) {
+        if !enabled { poll() }
+        lock.lock(); defer { lock.unlock() }
+        guard !reconfiguring, intent != enabled else { return }
+        intent = enabled
+        if enabled {
+            lastSend = clock(); lastFrame = nil; lastResult = nil; lastFresh = nil
+            processingSince = nil; obstruction = nil; cameraContext = ""; logged = false
+        }
+    }
+
+    func beginReconfiguration() { lock.lock(); reconfiguring = true; lock.unlock() }
+    func endReconfiguration() { lock.lock(); reconfiguring = false; lock.unlock() }
+    func context(_ text: String) { lock.lock(); cameraContext = text; lock.unlock() }
+    func cameraFrame() {
+        poll()
+        lock.lock(); lastFrame = clock(); lock.unlock()
+    }
+    func processing(active: Bool) {
+        poll()
+        lock.lock(); processingSince = active ? clock() : nil; lock.unlock()
+    }
+    func results(fresh: Bool) {
+        // timer が遅れたときも、復帰したフレームで停止中の観測を上書きしない。
+        poll()
+        lock.lock(); lastResult = clock()
+        if fresh { lastFresh = lastResult }
+        lock.unlock()
+    }
+    func blocked(_ cause: String, detail: String = "") {
+        lock.lock(); obstruction = (clock(), cause, detail); lock.unlock()
+    }
+
+    func sent() {
+        // timer が遅れても復帰時に 0.5 秒超の区間を取りこぼさない。
+        poll()
+        lock.lock(); lastSend = clock(); logged = false; obstruction = nil; cameraContext = ""; lock.unlock()
+    }
+
+    func poll() {
+        lock.lock()
+        let now = clock()
+        guard intent, !logged, now - lastSend > Self.threshold else { lock.unlock(); return }
+        let cause: String
+        var detail = ""
+        if lastFrame.map({ now - $0 > Self.threshold }) ?? true {
+            cause = "camera delivered no frame"
+        } else if lastResult.map({ now - $0 > Self.threshold }) ?? true {
+            cause = "processing stalled"
+        } else if lastFresh.map({ now - $0 > Self.threshold }) ?? true {
+            cause = "no fresh detection for either colour"
+        } else if let obstruction, obstruction.time >= lastSend {
+            cause = obstruction.cause; detail = obstruction.detail
+        } else {
+            cause = "send error"; detail = "local send completion pending (delivery unconfirmed)"
+        }
+        func age(_ time: TimeInterval?) -> String { time.map { String(format: "%.3f", max(0, now - $0)) } ?? "none" }
+        let line = "cause=\(cause) gap-s=\(age(lastSend)) frame-age-s=\(age(lastFrame)) result-age-s=\(age(lastResult)) fresh-age-s=\(age(lastFresh)) processing-s=\(age(processingSince)) context=\(cameraContext) detail=\(detail)"
+        logged = true
+        lock.unlock()
+        // ログ側の lock と逆順で取得しない。
+        emit(line.replacingOccurrences(of: "\n", with: " ").replacingOccurrences(of: "\r", with: " "))
+    }
+}
+
 /// 直近を画面に出し、同じ内容を Library/Logs/connectivity.log へ追記する（1 MiB で1世代だけ回す）。
 /// 記録は出来事の発生時だけ（フレームごとには呼ばない）。10秒ごとの計測行は `recordToFileOnly` で
 /// ファイルにだけ残す（画面と直近200件を計測行で埋めて、経路の出来事を押し出さないため）。
 /// 計測行は8時間で約0.7 MiB なので、1日分の出来事が回転で消えない上限にしてある。
 final class ConnectivityLog: @unchecked Sendable {
     static let shared = ConnectivityLog(fileURL: defaultFileURL)
+    static let sendGapMonitor = SendGapMonitor { shared.record("SEND_GAP", $0) }
     static let capacity = 200
     static let maximumFileBytes = 1024 * 1024
 
@@ -797,6 +910,36 @@ final class ConnectivityLog: @unchecked Sendable {
         formatter.locale = Locale(identifier: "en_US_POSIX")
         formatter.dateFormat = "HH:mm:ss"
         return recent.suffix(count).map { "\(formatter.string(from: $0.time)) [\($0.source)] \($0.message)" }
+    }
+
+    /// 録画バンドル用。UTC のまま保存し、前回起動分も含む直近 64 KiB を運ぶ。
+    func exportTail() -> String {
+        ioQueue.sync {
+            var data = Data()
+            if let fileURL {
+                // 回転直後でも直前の停止理由を失わず、巨大なファイル全体は読まない。
+                for url in [fileURL.appendingPathExtension("1"), fileURL] {
+                    guard let handle = try? FileHandle(forReadingFrom: url) else { continue }
+                    defer { try? handle.close() }
+                    if let size = try? handle.seekToEnd() {
+                        let offset = size > 64 * 1024 ? size - 64 * 1024 : 0
+                        try? handle.seek(toOffset: offset)
+                        if let tail = try? handle.read(upToCount: 64 * 1024) {
+                            if offset > 0 { data.append(tail.drop(while: { $0 != 10 }).dropFirst()) }
+                            else { data.append(tail) }
+                        }
+                    }
+                }
+            }
+            if data.isEmpty {
+                let formatter = ISO8601DateFormatter()
+                formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+                data = Data(recent.map { "\(formatter.string(from: $0.time)) [\($0.source)] \($0.message)\n" }.joined().utf8)
+            }
+            let tail = data.suffix(64 * 1024)
+            let bytes = data.count > tail.count ? tail.drop(while: { $0 != 10 }).dropFirst() : tail[...]
+            return String(decoding: bytes, as: UTF8.self)
+        }
     }
 
     /// ファイル書き込みの完了待ち（テスト用）。
@@ -912,13 +1055,18 @@ final class CoordinateDelivery: @unchecked Sendable {
 
     func snapshot(generation: Int) -> Settings? {
         lock.lock(); defer { lock.unlock() }
-        guard settings.running, settings.processorGeneration == generation else { return nil }
+        guard settings.running, settings.processorGeneration == generation else {
+            ConnectivityLog.sendGapMonitor.blocked("generation rejected")
+            return nil
+        }
         return settings
     }
 
     private func isCurrent(_ request: Settings) -> Bool {
         lock.lock(); defer { lock.unlock() }
-        return matches(request)
+        let current = matches(request)
+        if !current { ConnectivityLog.sendGapMonitor.blocked("generation rejected") }
+        return current
     }
 
     private func matches(_ request: Settings) -> Bool {
@@ -932,7 +1080,10 @@ final class CoordinateDelivery: @unchecked Sendable {
                noRoute: @escaping () -> Void) {
         // 設定変更・停止と enqueue の順序を固定する。送信自体は非同期なので待たない。
         lock.lock(); defer { lock.unlock() }
-        guard matches(request) else { return }
+        guard matches(request) else {
+            ConnectivityLog.sendGapMonitor.blocked("generation rejected")
+            return
+        }
         let valid: () -> Bool = { [weak self] in self?.isCurrent(request) == true }
         let lanVerified = settings.lanConfigured && lanProbe.isAlive
         if !settings.manual && settings.p2pEnabled && p2pSender.isUsable && !lanVerified {
@@ -950,7 +1101,7 @@ final class CoordinateDelivery: @unchecked Sendable {
                                    self.note(.lanUnverified)
                                    self.sender.send(text, to: port, onSendStarted: onSendStarted,
                                                     isCurrent: valid, completion: completion)
-                               } else { self.note(.none); noRoute() }
+                               } else { self.note(.none); ConnectivityLog.sendGapMonitor.blocked("route had no destination"); noRoute() }
                            }, isCurrent: valid)
         } else if settings.lanConfigured {
             routedViaP2P = false
@@ -959,6 +1110,7 @@ final class CoordinateDelivery: @unchecked Sendable {
         } else {
             routedViaP2P = false
             note(.none)
+            ConnectivityLog.sendGapMonitor.blocked("route had no destination")
             noRoute()
         }
     }

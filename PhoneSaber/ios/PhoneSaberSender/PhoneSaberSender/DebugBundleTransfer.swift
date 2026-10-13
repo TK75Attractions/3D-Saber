@@ -159,7 +159,7 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
     static let serviceType = "_phonesaber-diag._tcp."
     static let serviceName = "Phone Saber Diagnostics"
     private static let maximumImages = 20
-    private static let maximumFiles = 42
+    private static let maximumFiles = 43
     private static let maximumBytes: Int64 = 64 * 1024 * 1024
     private static let maximumAttempts = 3
 
@@ -524,7 +524,7 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
         return components.url
     }
 
-    private static func makePackage(for bundleURL: URL) throws -> URL {
+    static func makePackage(for bundleURL: URL) throws -> URL {
         let root = bundleURL.standardizedFileURL
         var isDirectory: ObjCBool = false
         guard root.isFileURL,
@@ -557,6 +557,13 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
             throw DebugBundleTransferError.invalidFiles
         }
 
+        let logURL = root.appendingPathComponent("connectivity.log")
+        if FileManager.default.fileExists(atPath: logURL.path) {
+            guard (try logURL.resourceValues(forKeys: [.fileSizeKey])).fileSize.map({ $0 <= 64 * 1024 }) == true else {
+                throw DebugBundleTransferError.invalidFiles
+            }
+            selectedPaths.insert("connectivity.log")
+        }
         let names = selectedPaths.sorted()
         var files: [DebugBundleManifestFile] = []
         var totalBytes: Int64 = 0
@@ -572,6 +579,7 @@ final class DebugBundleTransfer: NSObject, NetServiceBrowserDelegate, NetService
             let digest = try sha256(fileURL)
             let contentType: String
             if name.hasSuffix(".png") { contentType = "image/png" }
+            else if name == "connectivity.log" { contentType = "text/plain; charset=utf-8" }
             else if name.hasSuffix(".md") { contentType = "text/markdown; charset=utf-8" }
             else { contentType = "application/json; charset=utf-8" }
             files.append(DebugBundleManifestFile(path: name, size: Int64(fileSize),

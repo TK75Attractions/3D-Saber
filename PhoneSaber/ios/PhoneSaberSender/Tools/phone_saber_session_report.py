@@ -430,6 +430,15 @@ def _strip_members(hotspots: Any) -> Any:
     return {**hotspots, "clusters": clusters}
 
 
+def connectivity_section(bundle: Path) -> dict:
+    path = bundle / "connectivity.log"
+    if not path.exists():
+        return {"present": False, "lines": []}
+    if path.is_symlink() or not path.is_file() or path.stat().st_size > 64 * 1024:
+        raise ValueError("connectivity.log is unsafe or exceeds 64 KiB")
+    return {"present": True, "lines": path.read_text(encoding="utf-8").splitlines()}
+
+
 def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MARGINS,
                  holds: tuple[int, ...] = DEFAULT_REPLAY_HOLDS) -> dict:
     """Read-only. Every section degrades to None/n/a instead of raising."""
@@ -468,6 +477,7 @@ def build_report(bundle: Path, *, margins: tuple[float, ...] = DEFAULT_REPLAY_MA
         "redBlueDetectionSummary": summary.get("redBlueDetectionSummary"),
         "dropoutSummary": summary.get("dropoutSummary"),
         "inputContract": "PASS" if plan is not None else f"FAIL ({contract_error})",
+        "connectivity": _guard(errors, "connectivity.log", lambda: connectivity_section(bundle)),
         "segments": segments,
         "guidedRecording": _guard(errors, "guided_recording", lambda: guided_section(summary)),
         "cameraExposureExperiment": _guard(errors, "camera_exposure_experiment",
@@ -676,6 +686,16 @@ def render_markdown(report: dict) -> str:
     add("")
     add(f"- bundle: `{report.get('bundle')}`")
     add(f"- input contract (`input_plan`, allow_reports): {report.get('inputContract')}")
+    add("")
+    add("## iPhone 接続ログ (UTC / ローカル送信完了は PC 受信保証ではありません)")
+    add("")
+    connectivity = report.get("connectivity") or {}
+    if connectivity.get("present"):
+        # ファイルの文字列を Markdown として実行・解釈させない。
+        out.extend("> " + line.replace("`", "\\`").replace("<", "&lt;").replace(">", "&gt;")
+                   for line in connectivity.get("lines", []))
+    else:
+        add("connectivity.log: n/a (旧バンドル)")
     add("")
     add("## セッション概要")
     add("")

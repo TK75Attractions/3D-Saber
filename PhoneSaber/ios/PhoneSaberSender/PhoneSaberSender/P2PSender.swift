@@ -314,6 +314,7 @@ final class P2PSender {
         let enqueuedAt: TimeInterval
         let onSendStarted: ((TimeInterval, Int) -> Void)?
         let isCurrent: (() -> Bool)?
+        let fallback: (() -> Void)?
         let completion: (Result<TimeInterval, Error>) -> Void
     }
 
@@ -458,7 +459,7 @@ final class P2PSender {
               fallback: (() -> Void)? = nil,
               isCurrent: (() -> Bool)? = nil) {
         let request = PendingSend(text: text, enqueuedAt: HostMonotonicClock.now(),
-                                  onSendStarted: onSendStarted, isCurrent: isCurrent, completion: completion)
+                                  onSendStarted: onSendStarted, isCurrent: isCurrent, fallback: fallback, completion: completion)
         queue.async { [weak self] in
             guard let self, request.isCurrent?() != false else { return }
             guard let color = P2PColor(port: port) else {
@@ -784,8 +785,9 @@ final class P2PSender {
 
     private func transmit(_ request: PendingSend, color: P2PColor) {
         guard request.isCurrent?() != false else { return }
-        guard let connection else {
-            request.completion(.failure(SendError.notUsable))
+        guard running, let connection, monitor.isUsable(at: clock()) else {
+            if let fallback = request.fallback { fallback() }
+            else { request.completion(.failure(SendError.notUsable)) }
             return
         }
         sequence &+= 1
@@ -825,7 +827,14 @@ final class P2PSender {
         guard connectionGeneration == generation, inFlight[color] == sendID else { return }
         inFlight[color] = nil
         sendWatchdogs.removeValue(forKey: color)?.cancel()
-        request.completion(error.map { .failure($0) } ?? .success(ProcessInfo.processInfo.systemUptime))
+        if let error {
+            ConnectivityLog.sendGapMonitor.blocked("send error", detail: error.localizedDescription)
+            dropConnection(reason: "coordinate send failed: \(error.localizedDescription)")
+            if request.isCurrent?() != false, let fallback = request.fallback { fallback() }
+            else { request.completion(.failure(error)) }
+            return
+        }
+        request.completion(.success(ProcessInfo.processInfo.systemUptime))
         if let next = pending.removeValue(forKey: color) { transmit(next, color: color) }
     }
 

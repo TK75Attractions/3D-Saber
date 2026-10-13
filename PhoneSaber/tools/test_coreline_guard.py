@@ -26,7 +26,9 @@ class CoreLineGuardTests(unittest.TestCase):
             support.write_text('import Foundation\n' + camera[camera.index('struct CameraFrameIntervalStatistics:'):
                 camera.index('enum CameraLifecycleState:')] + '\nstruct DebugBundleTransfer {\n'
                 '    static let shared = DebugBundleTransfer()\n'
-                '    func enqueue(bundleURL: URL, automatic: Bool = true) {}\n}\n')
+                '    func enqueue(bundleURL: URL, automatic: Bool = true) {}\n}\n'
+                'final class ConnectivityLog {\n    static let shared = ConnectivityLog()\n'
+                '    func exportTail() -> String { String() }\n}\n')
             binary = root / 'guard-test'
             command = ['xcrun', 'swiftc', *guard_build.swift_flags(), '-O', '-D', 'DEBUG',
                        '-D', 'CORELINE_GUARD_DIAGNOSTICS', '-module-cache-path', str(root/'cache')]

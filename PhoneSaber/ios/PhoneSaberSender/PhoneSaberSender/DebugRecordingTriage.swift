@@ -1013,6 +1013,8 @@ enum DebugRecordingTriageBuilder {
             try promptText(sessionID: sessionID, imageCount: selection.images.count)
                 .write(to: bundleURL.appendingPathComponent("prompt.md"), atomically: true,
                        encoding: .utf8)
+            try ConnectivityLog.shared.exportTail().write(
+                to: bundleURL.appendingPathComponent("connectivity.log"), atomically: true, encoding: .utf8)
             guard DebugRecordingStorage.diskUsage(at: bundleURL)
                 <= DebugRecordingTriageLimits.maximumBundleBytes else {
                 throw DebugRecordingTriageError.bundleTooLarge

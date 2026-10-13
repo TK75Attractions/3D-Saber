@@ -441,6 +441,10 @@ def input_plan(bundle_dir: Path, max_images: int = DEFAULT_MAX_IMAGES, *,
         if not path.is_file():
             raise BundleError("Codex bundle cannot contain symlinks or special files")
         actual.add(path.relative_to(root).as_posix())
+    if "connectivity.log" in actual:
+        if (root / "connectivity.log").stat().st_size > 64 * 1024:
+            raise BundleError("connectivity.log exceeds its size limit")
+        expected.add("connectivity.log")
     if allow_reports:
         generated = actual & GENERATED_REPORT_FILES
         if any((root / name).stat().st_size > MAX_REPORT_BYTES for name in generated):
