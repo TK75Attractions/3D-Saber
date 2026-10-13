@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 // 本編は UnlockFrameRate が vsync を切り、60 Hz の画面へ約900 fps で描く（2026-10-13 のビルド済みアプリで実測）。
 // 画面の破れ・コマ揺れと比べられるよう、台ごとに「画面同期 ON（vsync=1）」を明示選択できるようにする。
@@ -36,9 +37,12 @@ public sealed class PhoneSaberDisplaySync : MonoBehaviour
         if (!PhoneSaberP2PBridgeProcess.AutoStartEnabled) return; // テスト中は作らない
         Mode = PhoneSaberDisplaySyncSettings.Load(PhoneSaberStation.Read());
         var go = new GameObject("PhoneSaber Display Sync");
-        go.AddComponent<PhoneSaberDisplaySync>();
+        go.AddComponent<PhoneSaberDisplaySync>().notice = go.AddComponent<PhoneSaberDisplayNotice>();
         DontDestroyOnLoad(go);
     }
+
+    PhoneSaberDisplayNotice notice;
+    double nextNoticeCheck;
 
     // OFF へ戻したときは値を書き戻さない（ゲームが次のシーンで自分の設定を入れ直す）。
     public static void SetMode(int mode)
@@ -57,5 +61,41 @@ public sealed class PhoneSaberDisplaySync : MonoBehaviour
     {
         int value = PhoneSaberDisplaySyncSettings.VSyncCountToApply(Mode, QualitySettings.vSyncCount);
         if (value >= 0) QualitySettings.vSyncCount = value;
+        // 画面の更新が遅い（低電力モードなど）ときの知らせ。確認は秒1回、描画は必要なときだけ有効にする。
+        double now = Time.realtimeSinceStartupAsDouble;
+        if (notice == null || now < nextNoticeCheck) return;
+        nextNoticeCheck = now + 1;
+        notice.Text = PhoneSaberDisplayNotice.TextFor(
+            PhoneSaberStatsDisplay.DisplayWarning(Screen.currentResolution.refreshRateRatio.value),
+            SceneManager.GetActiveScene().name);
+        notice.enabled = notice.Text.Length > 0;
+    }
+}
+
+// F8 を開かなくても気づけるよう、メニュー画面の上端に出す（2026-10-13: 低電力モードのまま起動して
+// 「アプリにすると重い」となることが続いた）。本編（Game）では出さない（プレイ画面を隠さない）。
+public sealed class PhoneSaberDisplayNotice : MonoBehaviour
+{
+    public const string GameSceneName = "Game";
+    public string Text = "";
+    GUIStyle style;
+
+    public static string TextFor(string displayWarning, string sceneName) =>
+        string.IsNullOrEmpty(displayWarning) || sceneName == GameSceneName ? "" :
+            displayWarning + "\n（Mac: システム設定 > バッテリー > 低電力モード を「しない」に）";
+
+    void Awake() => enabled = false;
+
+    void OnGUI()
+    {
+        if (Text.Length == 0) return;
+        if (style == null)
+        {
+            style = new GUIStyle(GUI.skin.box) { alignment = TextAnchor.MiddleCenter, wordWrap = true };
+            style.normal.textColor = Color.yellow;
+        }
+        style.fontSize = Mathf.Max(14, Screen.height / 40);
+        float height = style.fontSize * 3.6f;
+        GUI.Box(new Rect(Screen.width * 0.1f, 8, Screen.width * 0.8f, height), Text, style);
     }
 }

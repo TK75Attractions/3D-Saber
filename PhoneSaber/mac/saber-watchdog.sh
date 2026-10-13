@@ -192,6 +192,13 @@ power_warning() {
 }
 while ! stopped; do
     power_warning
+    # 最初の起動だけ: 低電力モードの注意を読めるよう少し待つ(ゲームが全画面になると端末の表示が隠れる)。
+    # 無人の再起動(2回目以降)と、端末以外からの起動では待たない。PHONESABER_LOW_POWER_WAIT=0 で無効。
+    if [[ "$RESTART_COUNT" == "0" && "$LOW_POWER_STATE" == "1" && -t 0 && "${PHONESABER_LOW_POWER_WAIT:-10}" != "0" ]]; then
+        printf '%s 秒後にこのまま起動します(Enter ですぐ起動 / Ctrl+C で中止)。\n' "${PHONESABER_LOW_POWER_WAIT:-10}"
+        read -r -t "${PHONESABER_LOW_POWER_WAIT:-10}" _ || true
+        log "low-power-wait done"
+    fi
     rm -f "$QUIT_MARKER" "$MARKER_DIR"/heartbeat-*
     HEARTBEAT="$MARKER_DIR/heartbeat-$RESTART_COUNT"
     HANG_DETECTED=0

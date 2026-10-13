@@ -14,6 +14,27 @@ public class PhoneSaberDisplaySyncTests
     }
 
     [Test]
+    public void SlowDisplayNoticeShowsOnMenusButNeverCoversTheGame()
+    {
+        string slow = PhoneSaberStatsDisplay.DisplayWarning(30);
+        Assert.IsNotEmpty(slow);
+        StringAssert.Contains("30", PhoneSaberDisplayNotice.TextFor(slow, "Title"));
+        StringAssert.Contains("低電力モード", PhoneSaberDisplayNotice.TextFor(slow, "SongSelect"));
+        Assert.IsEmpty(PhoneSaberDisplayNotice.TextFor(slow, PhoneSaberDisplayNotice.GameSceneName));
+        Assert.IsEmpty(PhoneSaberDisplayNotice.TextFor(PhoneSaberStatsDisplay.DisplayWarning(60), "Title"));
+        Assert.IsEmpty(PhoneSaberDisplayNotice.TextFor(null, "Title"));
+    }
+
+    [Test]
+    public void GameSceneNameMatchesTheBuildSettings()
+    {
+        bool found = false;
+        foreach (var scene in UnityEditor.EditorBuildSettings.scenes)
+            if (System.IO.Path.GetFileNameWithoutExtension(scene.path) == PhoneSaberDisplayNotice.GameSceneName) found = true;
+        Assert.IsTrue(found, "本編の scene 名が変わったら PhoneSaberDisplayNotice.GameSceneName も直す");
+    }
+
+    [Test]
     public void VSyncModeWritesOneOnlyWhenTheGameChangedIt()
     {
         Assert.AreEqual(1, PhoneSaberDisplaySyncSettings.VSyncCountToApply(PhoneSaberDisplaySyncSettings.VSync, 0));
