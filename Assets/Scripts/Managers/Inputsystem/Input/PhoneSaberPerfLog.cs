@@ -132,6 +132,8 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
             Math.Max(0, predictions - predictionsAtStart), Math.Max(0, suppressed - suppressedAtStart));
         if (input != null)
         {
+            detail += " prediction-red-lead-ms=" + input.PredictionLead(false) + " prediction-blue-lead-ms=" + input.PredictionLead(true) +
+                " prediction-red-source=" + input.PredictionSource(false) + " prediction-blue-source=" + input.PredictionSource(true);
             detail += input.RedCoordinateTiming.Format("red") + input.BlueCoordinateTiming.Format("blue");
             var redAge = input.RedCoordinateTiming.Shown;
             var blueAge = input.BlueCoordinateTiming.Shown;
@@ -158,13 +160,23 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
         PhoneSaberEventLog.Record(input.StationLabel, "BLUE", "latency-estimate", blueEstimate.Log());
     }
 
-    static PhoneSaberLatencyEstimate Estimate(InputPoint input, bool blue, double now, PhoneSaberTimingStats timing)
+    public static PhoneSaberLatencyEstimate Estimate(InputPoint input, bool blue, double now, PhoneSaberTimingStats timing)
     {
         string sender = blue ? input.BlueCoordinateSender : input.RedCoordinateSender;
+        bool measured = PhoneSaberDisplayMeasurementSettings.Load(input.StationLabel, DisplayConfiguration(),
+            DateTimeOffset.UtcNow.ToUnixTimeSeconds(), out double display, out double age);
         return new PhoneSaberLatencyEstimate(input.ReadPhoneMetrics(sender, now), timing, sender,
             now - (blue ? input.LastReceivedMonotonicTime2 : input.LastReceivedMonotonicTime), now,
-            Screen.currentResolution.refreshRateRatio.value, QualitySettings.vSyncCount);
+            Screen.currentResolution.refreshRateRatio.value, QualitySettings.vSyncCount, measured ? (double?)display : null, age);
     }
+
+    // 同じ名前でも投影機の内部モード変更は検出できない。変更時は F9 をやり直す。
+    public static string DisplayConfiguration() => string.Format(CultureInfo.InvariantCulture,
+        "display={0},pixels={1}x{2},screen={3}x{4},refresh-hz={5:0.###},vsync={6},fullscreen={7},queued={8},api={9},target={10}",
+        Uri.EscapeDataString(Screen.mainWindowDisplayInfo.name ?? "unknown"),
+        Screen.currentResolution.width, Screen.currentResolution.height, Screen.width, Screen.height,
+        Screen.currentResolution.refreshRateRatio.value, QualitySettings.vSyncCount, Screen.fullScreenMode,
+        QualitySettings.maxQueuedFrames, SystemInfo.graphicsDeviceType, Application.targetFrameRate);
 
     static string AgeLabel(PhoneSaberTimingStats stats) => stats.Count == 0 ? "未測定" :
         string.Format(CultureInfo.InvariantCulture, "{0:0.0}/{1:0.0}ms(中央値/p95)", stats.MedianMs, stats.P95Ms);

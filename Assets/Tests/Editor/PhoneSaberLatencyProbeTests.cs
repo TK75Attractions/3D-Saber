@@ -190,7 +190,21 @@ public class PhoneSaberLatencyProbeTests
         StringAssert.Contains("0/8 ブロック", PhoneSaberLatencyProbe.ProgressText(0, 0));
         StringAssert.Contains("今のブロック 7/15 回", PhoneSaberLatencyProbe.ProgressText(3, 7));
         StringAssert.Contains("約2分", PhoneSaberLatencyProbe.ProgressText(7, 14));
-        StringAssert.Contains("F9 で終了してよい", PhoneSaberLatencyProbe.ProgressText(PhoneSaberLatencyProbe.TargetBlocks, 0));
-        StringAssert.Contains("F9 で終了してよい", PhoneSaberLatencyProbe.ProgressText(12, 3));
+        StringAssert.Contains("自動終了", PhoneSaberLatencyProbe.ProgressText(PhoneSaberLatencyProbe.TargetBlocks, 0));
+        StringAssert.Contains("自動終了", PhoneSaberLatencyProbe.ProgressText(12, 3));
+    }
+
+    [Test]
+    public void AutoProbeArgumentIsOffByDefaultAndClampsTheBlockCount()
+    {
+        Assert.AreEqual(0, PhoneSaberLatencyProbe.ResolveAutoBlocks(new[] { "app" }));
+        Assert.AreEqual(0, PhoneSaberLatencyProbe.ResolveAutoBlocks(new[] { "app", "-phonesaberSmoke", "8" }));
+        Assert.AreEqual(3, PhoneSaberLatencyProbe.ResolveAutoBlocks(new[] { "app", PhoneSaberLatencyProbe.AutoArgument, "3" }));
+        Assert.AreEqual(PhoneSaberLatencyProbe.TargetBlocks,
+            PhoneSaberLatencyProbe.ResolveAutoBlocks(new[] { "app", PhoneSaberLatencyProbe.AutoArgument }));
+        Assert.AreEqual(PhoneSaberLatencyProbe.TargetBlocks,
+            PhoneSaberLatencyProbe.ResolveAutoBlocks(new[] { "app", PhoneSaberLatencyProbe.AutoArgument, "99" }));
+        Assert.AreEqual(PhoneSaberLatencyProbe.TargetBlocks,
+            PhoneSaberLatencyProbe.ResolveAutoBlocks(new[] { "app", PhoneSaberLatencyProbe.AutoArgument, "-logFile" }));
     }
 }

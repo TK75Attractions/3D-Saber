@@ -79,6 +79,7 @@ def main(argv=None):
     parser.add_argument("xml", type=Path)
     parser.add_argument("log", type=Path)
     parser.add_argument("--known-failures", type=Path)
+    parser.add_argument("--unity-exit-code", type=int, default=0)
     args = parser.parse_args(argv)
     try:
         allowed = known_failures(args.known_failures)
@@ -88,6 +89,10 @@ def main(argv=None):
         return 2
     for name in failed:
         print(("KNOWN FAIL " if name in allowed else "FAIL ") + name)
+    # exit 2 はテスト失敗の通知。検証済み XML に失敗がある場合だけ既知失敗の判定へ進める。
+    if args.unity_exit_code != 0 and not (args.unity_exit_code == 2 and failed):
+        print(f"EditMode: Unity が異常終了しました: exit={args.unity_exit_code}", file=sys.stderr)
+        return 1
     return 1 if any(name not in allowed for name in failed) else 0
 
 

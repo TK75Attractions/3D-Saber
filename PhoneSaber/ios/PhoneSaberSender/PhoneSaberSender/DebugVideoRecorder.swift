@@ -3133,6 +3133,13 @@ final class DebugVideoRecorder {
             OverlayRasterizer.draw(frame.red, color: .red, into: pixelBuffer)
             OverlayRasterizer.draw(frame.blue, color: .blue, into: pixelBuffer)
             while !input.isReadyForMoreMediaData {
+                // 終端状態では readiness は戻らない。完成済みの raw / metadata は保持して終了する。
+                guard writer.status == .writing else {
+                    let message = writer.error?.localizedDescription ?? "overlay writer stopped while waiting"
+                    reader.cancelReading()
+                    writer.cancelWriting()
+                    throw DebugVideoRecorderError.appendFailed(message)
+                }
                 try await Task.sleep(nanoseconds: 1_000_000)
             }
             let presentationTime = CMSampleBufferGetPresentationTimeStamp(sample)

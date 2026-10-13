@@ -97,7 +97,7 @@ run_game_pid() {
     printf '%s\n' "$found"
 }
 monitor_game() {
-    local seen=0 modified last_modified=0 now pid command last_tick grace_until=0
+    local seen=0 modified size last_modified=0 now pid command last_tick grace_until=0
     last_tick="$(date +%s)"
     while kill -0 "$OPEN_PID" 2>/dev/null; do
         # 監視自身が止まっていた（Mac のスリープ復帰など）間は、ゲームも heartbeat を書けていない。
@@ -109,8 +109,9 @@ monitor_game() {
         fi
         last_tick="$now"
         if [[ "$HANG_SECONDS" -gt 0 && "$now" -ge "$grace_until" ]] && ! stopped; then
-            modified="$(stat -f %m "$HEARTBEAT" 2>/dev/null)" || modified=""
-            if [[ "$modified" =~ ^[0-9]+$ ]]; then
+            read -r modified size <<< "$(stat -f '%m %z' "$HEARTBEAT" 2>/dev/null)"
+            # 作成だけ成功し、最初の書込みが容量不足で失敗した0 byteファイルは進行の証拠ではない。
+            if [[ "$modified" =~ ^[0-9]+$ && "$size" == "1" ]]; then
                 seen=1
                 last_modified="$modified"
             fi

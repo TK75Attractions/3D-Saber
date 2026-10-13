@@ -170,15 +170,33 @@ class ReceiverHealthTests(unittest.TestCase):
 
     def test_rejected_uploads_are_logged_with_reason(self) -> None:
         server = self.server(mode="disabled")
+        finish_entered, release_finish, finished = Event(), Event(), Event()
+        original_finish = server.upload_finished
+
+        def finish():
+            finish_entered.set()
+            # 拒否応答も finally の終了処理より先に届く。完了前後を明示的に確認する。
+            if not release_finish.wait(3):
+                return
+            original_finish()
+            finished.set()
+
         self.serve(server)
         output = io.StringIO()
-        with contextlib.redirect_stdout(output):
+        with contextlib.redirect_stdout(output), \
+                mock.patch.object(server, "upload_finished", side_effect=finish):
             status, _ = self.request(server, "POST", "/v1/bundle", b"x" * 16, {
                 "Content-Type": CONTENT_TYPE, "Content-Length": str(MAX_BUNDLE_BYTES + 1)})
             self.assertEqual(status, 413)
-            status, _ = self.request(server, "POST", "/v1/bundle", b"not-a-bundle", {
-                "Content-Type": CONTENT_TYPE, "Content-Length": "12"})
-            self.assertEqual(status, 400)
+            try:
+                status, _ = self.request(server, "POST", "/v1/bundle", b"not-a-bundle", {
+                    "Content-Type": CONTENT_TYPE, "Content-Length": "12"})
+                self.assertEqual(status, 400)
+                self.assertTrue(finish_entered.wait(3), "upload_finished was not reached")
+                self.assertEqual(server.health()["uploadsInProgress"], 1)
+            finally:
+                release_finish.set()
+                self.assertTrue(finished.wait(3), "upload_finished did not complete")
         log = output.getvalue()
         self.assertIn(f"Content-Length={MAX_BUNDLE_BYTES + 1} outside 8..{MAX_BUNDLE_BYTES} bytes (413)", log)
         self.assertIn("rejected upload from 127.0.0.1 (400)", log)

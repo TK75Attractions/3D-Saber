@@ -19,6 +19,7 @@ namespace UnityEngine {
         public static int GetInt(string k,int v)=>values.TryGetValue(k,out var n)?n:v;
         public static void SetInt(string k,int v)=>values[k]=v;
         public static string GetString(string k,string v)=>v;
+        public static void SetString(string k,string v) {}
         public static void Save() {}
     }
     public static class Time { public static double realtimeSinceStartupAsDouble; public static int frameCount; }
@@ -28,8 +29,9 @@ namespace UnityEngine {
     public struct FrameTiming { public double gpuFrameTime; }
     public static class FrameTimingManager { public static bool IsFeatureEnabled()=>false; public static void CaptureFrameTimings() {} public static uint GetLatestTimings(uint n,FrameTiming[] values)=>0; }
     public struct RefreshRate { public double value=>60; }
-    public struct Resolution { public RefreshRate refreshRateRatio; }
-    public static class Screen { public static int width=1920,height=1080,fullScreenMode=1; public static Resolution currentResolution; }
+    public struct Resolution { public RefreshRate refreshRateRatio; public int width,height; }
+    public struct DisplayInfo { public string name; }
+    public static class Screen { public static DisplayInfo mainWindowDisplayInfo; public static int width=1920,height=1080,fullScreenMode=1; public static Resolution currentResolution; }
     public static class QualitySettings { public static int vSyncCount,maxQueuedFrames=2; public static int GetQualityLevel()=>0; }
 }
 namespace UnityEngine.SceneManagement {
@@ -41,6 +43,8 @@ public class InputPoint {
     public int ReceivedPacketCount,ReceivedPacketCount2,PredictionHorizonMilliseconds=40;
     public bool PredictionAutomatic=true;
     public string PredictionLeadSource="fallback";
+    public int PredictionLead(bool blue)=>PredictionHorizonMilliseconds;
+    public string PredictionSource(bool blue)=>PredictionLeadSource;
     public long PredictionDraws,PredictionSuppressedDraws;
     public string RedCoordinateSender,BlueCoordinateSender,StationLabel;
     public double LastReceivedMonotonicTime,LastReceivedMonotonicTime2;

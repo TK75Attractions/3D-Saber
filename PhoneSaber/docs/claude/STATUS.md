@@ -81,6 +81,12 @@ iPhone遅延: 10-13 に main へ取り込み済み（公式 verify PASS）。既
 
 `755ba38`から継続。既存の接続保持・P2P退避・connectivity.log同梱を維持し、P2P接続通知だけでのLAN pending破棄と停止診断の取りこぼしを修正。修正前失敗／修正後PASSをhost XCTestとPythonで確認。ReleaseとXCTest build成功。実機・公式verifyは未実行。実行コマンド・結果・リスクは[調査報告](ios-send-gaps-20261013.md)。認識・座標形式・corpus・Unityは無変更。
 
+### 2026-10-14 Codex 2巡目（10-13 22:15〜23:00）の取り込みと、無人の遅延計測の準備（Claude）
+- 取り込み: **lat2**（[latency-compensation-20261013.md](latency-compensation-20261013.md)。F8「剣の遅延補正: 自動」が実測の合計から色ごとに先読み量を決める。5 ms 超の変化だけ・10 秒に1回まで・欠測は15 秒以内に OFF、上限は予測器の最大値。F9 は maxQueuedFrames を切り替えなくなり、ブロックごとに「画面の遅延」を分解して `event=display-measured` に残し、同じ画面条件なら推定に使う）、**iosfix + review2**（[ios-crash-fixes-20261013.md](ios-crash-fixes-20261013.md)、[review-merged-20261013.md](review-merged-20261013.md)。カメラ通知を main 待ちにしない＝停止との相互待ちの解消、overlay writer が失敗状態のとき録画終了が進まない件、発熱による再起動と録画開始の状態不整合、heartbeat が 0 byte のまま固まり判定に入る件（Mac / Windows の watchdog）、アプリ・PDF の差し替えが途中で失敗しても旧版を残す、古い検証結果を再利用しない）、**robust**（[robustness-20261013.md](robustness-20261013.md)。P2P bridge の診断 relay が完了した接続を保持し続ける件、受信側の manifest・深い JSON・壊れたログでの異常終了、再実行用スクリプト `PhoneSaber/tools/robustness/`）。
+- **青の背景ルール**は文書だけ取り込み（[blue-background-rule-prototype.md](blue-background-rule-prototype.md)）。ON にすると画面端の実青剣を1枚失い static suite も落ちるので、実装は `cx/mural-20261013` に残し、認識コードには入れていない。
+- 無人計測の準備: Player に `-phonesaberLatencyProbe [ブロック数]`（キー操作なしで F9 を始めて終わったら終了、スマホが画面を向いていなければ 40 秒であきらめる）。iPhone アプリは起動引数 `-PhoneSaber.experiment.lowLatencyCamera YES` のときだけ低遅延カメラ設定（試験）を ON で始める（保存しない）。`-cameraFPS 30|60`・`-PhoneSaber.autoStartSending YES` は既存の UserDefaults の鍵なので引数で上書きできる。これで Mac から iPhone を再起動しながら条件を変えて F9 を回せる。
+- 検証: 公式 verify（iOS XCTest・Detection・Lossless 40/40・iOS Release）PASS、Tools 全件 PASS、Unity EditMode `^(PhoneSaber|InputPoint|SaberInput)` 1241/1241。全体の EditMode では `ZeroHardRemixTests` の3件が落ちるが、main 単体でも落ちる（譜面の作業中、担当者のもの）。
+
 ### 2026-10-13 AQUOS sense9 の F9（Mac のビルド済みアプリ、iPhone のテザリング経由、16:44〜16:46）と、内訳の訂正
 - F9 の往復: 中央値 114 ms（ブロック 111 / 109 / 114、55 サンプル、読み違い 0）、p95 217 ms、最大 308 ms。AQUOS は 30 fps（60fps のスイッチ OFF）。
 - AQUOS 自身の計測: 撮影→OS 送信 87 ms（p95 95）、認識 6〜9 ms、通信（RTT÷2）4〜6 ms で時々 18〜23 ms。PC 受信→描画直前 1.5〜1.8 ms。

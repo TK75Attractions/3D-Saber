@@ -17,6 +17,12 @@ SAMPLE = [
 
 
 class LatencyReportTests(unittest.TestCase):
+    @unittest.expectedFailure
+    def test_nonfinite_block_measurement_does_not_poison_report(self):
+        # robustness-20261013.md の提案。集計結果が変わるため operator レビューまで未修正。
+        corrupt = SAMPLE[0].replace("median-ms=100", "median-ms=nan")
+        self.assertEqual(latency_report.summarize(latency_report.parse([corrupt])), [])
+
     def test_restarted_measurements_do_not_average_together(self):
         restarted = SAMPLE[0].replace("01:00:00", "02:00:00").replace("median-ms=100", "median-ms=300")
         rows = latency_report.summarize(latency_report.parse([SAMPLE[0], restarted]))
@@ -185,6 +191,45 @@ class AutoEstimateReportTests(unittest.TestCase):
                 self.assertEqual(latency_report.main([str(first), str(second), "--estimates"]), 0)
             self.assertIn("total-ms", output.getvalue())
             self.assertIn("59.0/64.0", output.getvalue())
+
+
+
+
+class DisplayMeasuredReportTests(unittest.TestCase):
+    LINE = ("2026-10-13T00:00:00Z station=A colour=RED event=display-measured status=valid reason=none "
+            "display-ms=54.6 loop-median-ms=100.0 loop-n=15 c2s-median-ms=34.4 c2s-n=300 network-ms=0.7 "
+            "rtt-n=8 exposure-phase-ms=8.3 exposure-source=half-camera-frame-estimate pc-present-ms=2.0 "
+            "pc-present-n=15 pc-present-source=update-to-gui-repaint block=0 "
+            "configuration=display=Projector,pixels=1920x1080,refresh-hz=60,vsync=0,fullscreen=FullScreenWindow "
+            "conditions-changed=0 phone-windows=3 platform=OSXPlayer sender=phone")
+
+    def test_valid_display_residuals_group_by_station_and_configuration(self):
+        rows = latency_report.parse_display([self.LINE, self.LINE.replace("display-ms=54.6", "display-ms=64.6"),
+                                            self.LINE.replace("station=A", "station=B")])
+        result = latency_report.summarize_display(rows)
+        self.assertEqual([(r["station"], r["n"]) for r in result], [("A", 2), ("B", 1)])
+        self.assertAlmostEqual(59.6, result[0]["median"])
+        self.assertAlmostEqual(54.6, result[1]["median"])
+        self.assertIn("vsync=0", result[0]["configuration"])
+
+    def test_rejected_sparse_nonfinite_and_truncated_records_are_excluded(self):
+        invalid = [self.LINE.replace("status=valid", "status=rejected"), self.LINE.replace("loop-n=15", "loop-n=2"),
+                   self.LINE.replace("display-ms=54.6", "display-ms=nan"), self.LINE.replace("display-ms=54.6", "display-ms=501"),
+                   self.LINE.replace("display-ms=54.6", "display-ms=-1"), self.LINE.replace("c2s-n=300", "c2s-n=0"),
+                   self.LINE.replace("pc-present-n=15", "pc-present-n=14"),
+                   self.LINE.replace("conditions-changed=0", "conditions-changed=1"), self.LINE.split(" configuration=")[0]]
+        self.assertEqual([], latency_report.parse_display(invalid))
+        self.assertEqual([], latency_report.parse([self.LINE]))
+
+    def test_cli_reports_measured_display_and_since(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log = Path(directory) / "events.log"
+            log.write_text(self.LINE + "\n", encoding="utf-8")
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                self.assertEqual(0, latency_report.main([str(log), "--display-measured", "--since", "2026-10-13T00:00Z"]))
+            self.assertIn("54.6", output.getvalue())
+            self.assertIn("露光位相", output.getvalue())
 
 
 if __name__ == "__main__":

@@ -5,7 +5,7 @@ Unity の events.log（Mac: ~/Library/Application Support/<会社>/<製品>/Phon
 Windows: %USERPROFILE%/AppData/LocalLow/<会社>/<製品>/PhoneSaber/events.log）を読む。
 条件 = PC の max-queued-frames × スマホの fps × 経路。
 --sender-metrics で iPhone の設定ログを指定する。省略時は赤 pkt/s からの推定。
-同じ測定の中で交互に切り替えたブロックだけを比べるので、照明・置き方の差は打ち消される。
+旧F9の交互ブロックも読める。新F9は現在の画面設定を固定して測り、--display-measuredで残差を集計する。
 台・ログファイル・測定ごとに分離する。測定は block 番号の再開始または終了記録で区切る。
 開始記録がない旧ログでは最初に観測したブロックを開始とし、別ファイルとは結合しない。
 """
@@ -63,6 +63,42 @@ def summarize_estimates(samples):
         result.append(dict(zip(("station", "colour", "fps", "platform", "route", "end"), key),
                            n=len(items), terms=terms))
     return result
+
+
+DISPLAY_TERMS = ("display-ms", "loop-median-ms", "c2s-median-ms", "network-ms", "exposure-phase-ms", "pc-present-ms")
+
+
+def parse_display(lines, source=""):
+    """F9残差。拒否・設定変更・標本不足・途中書込みを除く。"""
+    rows = []
+    for line in lines:
+        match = re.match(r"^(\S+) (.*?)event=display-measured (.*)$", line.strip())
+        if not match:
+            continue
+        fields = dict(item.split("=", 1) for item in match[3].split() if "=" in item)
+        context = dict(item.split("=", 1) for item in match[2].split() if "=" in item)
+        try:
+            terms = {key: float(fields[key]) for key in DISPLAY_TERMS}
+            if fields["status"] != "valid" or fields["conditions-changed"] != "0" or int(fields["loop-n"]) < 15 or \
+                    int(fields["pc-present-n"]) != int(fields["loop-n"]) or int(fields["c2s-n"]) < 20 or int(fields["rtt-n"]) < 2 or \
+                    any(not math.isfinite(v) or v < 0 for v in terms.values()) or terms["display-ms"] > 500:
+                continue
+            rows.append(dict(time=match[1], station=context["station"], configuration=fields["configuration"],
+                             platform=fields["platform"], terms=terms, source=source))
+        except (KeyError, ValueError, OverflowError):
+            continue
+    return rows
+
+
+def summarize_display(rows):
+    groups = {}
+    for row in rows:
+        key = row["station"], row["platform"], row["configuration"]
+        groups.setdefault(key, []).append(row)
+    return [dict(station=key[0], platform=key[1], configuration=key[2], n=len(items),
+                 median=statistics.median(row["terms"]["display-ms"] for row in items),
+                 terms={term: statistics.median(row["terms"][term] for row in items) for term in DISPLAY_TERMS})
+            for key, items in sorted(groups.items())]
 
 
 def parse(lines, source=""):
@@ -220,7 +256,10 @@ def main(argv=None):
                              "日本時間は +09:00 を付ける（例 2026-10-08T09:00+09:00）")
     parser.add_argument("--sender-metrics", help="iPhone の [CAPTURE_METRICS] ログ。PCと時計同期が必要")
     parser.add_argument("--estimates", action="store_true", help="通常プレイの自動計測を台・色・fps別に集計（PCログのみ）")
+    parser.add_argument("--display-measured", action="store_true", help="F9の画面残差を台・画面条件別に集計")
     args = parser.parse_args(argv)
+    if args.display_measured and args.estimates:
+        parser.error("--display-measured と --estimates は別々に指定してください")
     since = None
     if args.since:
         try:
@@ -232,18 +271,28 @@ def main(argv=None):
     for path in paths:
         try:
             with open(path, encoding="utf-8", errors="replace") as handle:
-                blocks.extend((parse_estimates if args.estimates else parse)(handle, source=path))
+                blocks.extend((parse_display if args.display_measured else parse_estimates if args.estimates else parse)(handle, source=path))
         except OSError as error:
             print(f"{path} を読めません: {error}", file=sys.stderr)
             return 2
     if since is not None:
         blocks = after(blocks, since)
+    if args.display_measured:
+        rows = summarize_display(blocks)
+        if not rows:
+            print("有効な display-measured がありません（拒否・標本不足・設定変更は除外）")
+            return 1
+        print("画面の残差（露光位相は半フレームの推定）。各ブロック中央値の中央値、ms。")
+        for row in rows:
+            print(f"station={row['station']} platform={row['platform']} configuration={row['configuration']} blocks={row['n']} " +
+                  " ".join(f"{term}={row['terms'][term]:.1f}" for term in DISPLAY_TERMS))
+        return 0
     if args.estimates:
         rows = summarize_estimates(blocks)
         if not rows:
             print("有効な latency-estimate がありません（旧アプリ・P2P・欠測・期限切れは集計しません）")
             return 1
-        print("各10秒区間の代表値の中央値/p95（ms）。全フレームのp95ではありません。画面は推定、投影機処理は未算入。")
+        print("各10秒区間の代表値の中央値/p95（ms）。全フレームのp95ではありません。画面は半周期推定またはF9の残差（display-source参照）。")
         print("station colour fps platform route n " + " ".join(ESTIMATE_TERMS))
         for row in rows:
             print(f"{row['station']} {row['colour']} {row['fps']} {row['platform']} {row['route']} {row['n']} " +

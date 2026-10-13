@@ -121,14 +121,17 @@ public sealed class PhoneSaberLatencyEstimate
     public readonly PhoneSaberTimingStats Pc;
     public readonly double At, RefreshHz, CoordinateAge;
     public readonly int Vsync;
-    public readonly string Sender, Status;
+    public readonly string Sender, Status, DisplaySource;
+    public readonly double DisplayAgeMinutes;
     public readonly double? NetworkMs, DisplayMs, TotalMs;
     public PhoneSaberLatencyEstimate(PhoneSaberMetrics phone, PhoneSaberTimingStats pc, string sender,
-        double coordinateAge, double now, double refreshHz, int vsync)
+        double coordinateAge, double now, double refreshHz, int vsync, double? measuredDisplay = null, double displayAgeMinutes = 0)
     {
         Phone = phone; Pc = pc; At = now; RefreshHz = refreshHz; Vsync = vsync; Sender = sender ?? "unknown";
         CoordinateAge = coordinateAge;
-        DisplayMs = refreshHz > 0 && !double.IsInfinity(refreshHz) ? 500.0 / refreshHz : (double?)null;
+        DisplaySource = measuredDisplay.HasValue && PhoneSaberDisplayMeasurement.IsPlausible(measuredDisplay.Value) ? "measured" : "configured-half-refresh";
+        DisplayAgeMinutes = displayAgeMinutes;
+        DisplayMs = DisplaySource == "measured" ? measuredDisplay : refreshHz > 0 && !double.IsInfinity(refreshHz) ? 500.0 / refreshHz : (double?)null;
         NetworkMs = phone?.Rtt / 2;
         Status = phone == null || Sender == "127.0.0.1" || Sender == "::1" ||
             now - phone.ReceivedAt > PhoneSaberMetricsStore.FreshSeconds ? "missing-phone" :
@@ -146,8 +149,9 @@ public sealed class PhoneSaberLatencyEstimate
         if (!TotalMs.HasValue || now - At > 15 || Phone.RttAge + now - Phone.ReceivedAt > 10)
             return head + "計測不足（スマホ / 通信 / PC / 画面）";
         return head + string.Format(CultureInfo.InvariantCulture,
-            "約{0:0} ms（スマホ {1:0} + 通信 約{2:0} + PC {3:0} + 画面 約{4:0}）/ {5:0}秒前まで・投影機の処理は含まず",
-            TotalMs, Phone.C2sMedian, NetworkMs, Pc.MedianMs, DisplayMs, Math.Max(0, now - Phone.ReceivedAt));
+            "約{0:0} ms（スマホ {1:0} + 通信 約{2:0} + PC {3:0} + 画面 約{4:0}）/ {5:0}秒前まで・{6}",
+            TotalMs, Phone.C2sMedian, NetworkMs, Pc.MedianMs, DisplayMs, Math.Max(0, now - Phone.ReceivedAt), DisplaySource == "measured" ?
+            $"画面は実測（{DisplayAgeMinutes:0}分前）" : "画面は半周期の推定・投影機処理は含まず");
     }
     public string Log() => "status=" + Status + " sender=" + Sender + " platform=" + (Phone?.Platform ?? "unknown") +
         " app=" + (Phone?.App ?? "unknown") + " fps-mode=" + N(Phone?.FpsMode) + " route=" + (Phone?.Route ?? "unknown") +
@@ -157,11 +161,76 @@ public sealed class PhoneSaberLatencyEstimate
         " rtt-age-s=" + N(Phone?.RttAge + At - Phone?.ReceivedAt) + " network-ms=" + N(NetworkMs) +
         " pc-median-ms=" + N(Pc.Count > 0 ? (double?)Pc.MedianMs : null) +
         " pc-p95-ms=" + N(Pc.Count > 0 ? (double?)Pc.P95Ms : null) + " pc-n=" + Pc.Count +
-        " display-ms=" + N(DisplayMs) + " display-source=configured-half-refresh glass-hz=unknown projector-ms=unknown" +
+        " display-ms=" + N(DisplayMs) + " display-source=" + DisplaySource + " display-age-min=" + N(DisplaySource == "measured" ? (double?)DisplayAgeMinutes : null) + " glass-hz=unknown" +
         " refresh-hz=" + N(RefreshHz) + " vsync=" + Vsync + " total-ms=" + N(TotalMs) +
         " phone-age-s=" + N(Phone == null ? (double?)null : At - Phone.ReceivedAt) +
         " capture-fps=" + N(Phone?.CaptureFps) + " send-red-fps=" + N(Phone?.RedFps) +
         " send-blue-fps=" + N(Phone?.BlueFps) + " thermal=" + (Phone?.Thermal ?? "unknown") +
         " battery=" + N(Phone?.Battery) + " low-latency-test=" + (Phone?.LowLatencyTest ?? 0) +
         " pc-coordinate-age-s=" + N(double.IsInfinity(CoordinateAge) ? (double?)null : CoordinateAge);
+}
+
+// F9 の残差は露光位相を半周期とみなした推定。GPU/present/投影機も残差に含む。
+public sealed class PhoneSaberDisplayMeasurement
+{
+    public readonly double LoopMs, PhoneMs, NetworkMs, ExposureMs, PresentMs, DisplayMs;
+    public readonly int LoopCount, PhoneCount, RttCount, PresentCount;
+    public readonly string Reason;
+    public bool Valid => Reason == null;
+    public PhoneSaberDisplayMeasurement(PhoneSaberTimingStats loop, PhoneSaberMetrics phone,
+        PhoneSaberTimingStats present, double now, bool conditionsChanged = false)
+    {
+        LoopMs = loop.MedianMs; LoopCount = loop.Count; PresentMs = present.MedianMs; PresentCount = present.Count;
+        PhoneMs = phone?.C2sMedian ?? double.NaN; PhoneCount = phone?.C2sCount ?? 0;
+        NetworkMs = (phone?.Rtt ?? double.NaN) / 2; RttCount = phone?.RttCount ?? 0;
+        ExposureMs = phone?.CaptureFps > 0 ? 500 / phone.CaptureFps.Value : double.NaN;
+        DisplayMs = LoopMs - PhoneMs - NetworkMs - ExposureMs - PresentMs;
+        Reason = conditionsChanged ? "conditions-changed" : LoopCount < 15 || PresentCount != LoopCount ? "too-few-samples" :
+            phone == null || now - phone.ReceivedAt > 15 || phone.Route != "LAN" || PhoneCount < 20 ||
+            RttCount < 2 || phone.RttAge + now - phone.ReceivedAt > 10 ||
+            double.IsNaN(PhoneMs) || double.IsNaN(NetworkMs) || double.IsNaN(ExposureMs) ? "missing-phone-metrics" :
+            !IsPlausible(DisplayMs) || !FiniteNonnegative(LoopMs) || !FiniteNonnegative(PhoneMs) ||
+            !FiniteNonnegative(NetworkMs) || !FiniteNonnegative(ExposureMs) || !FiniteNonnegative(PresentMs) ? "implausible-result" : null;
+    }
+    static bool FiniteNonnegative(double n) => n >= 0 && !double.IsNaN(n) && !double.IsInfinity(n);
+    public static bool IsPlausible(double n) => n >= 0 && n <= 500 && !double.IsNaN(n) && !double.IsInfinity(n);
+    public string Result => Valid ? string.Format(CultureInfo.InvariantCulture,
+        "画面の遅延: 約{0:0} ms（この PC とこの画面）", DisplayMs) :
+        Reason == "conditions-changed" ? "画面の遅延: 測定中に画面設定・接続・撮影設定が変わりました（再試行）" :
+        Reason == "too-few-samples" ? "画面の遅延: 測定回数が足りません（カメラを画面に向けて再試行）" :
+        Reason == "missing-phone-metrics" ? "画面の遅延: スマホの計測が届いていません（更新したアプリで LAN 接続）" :
+        "画面の遅延: 計測が不整合です（0〜500 ms の範囲外、再試行してください）";
+    public string Log() => string.Format(CultureInfo.InvariantCulture,
+        "status={0} reason={1} display-ms={2:0.0} loop-median-ms={3:0.0} loop-n={4} c2s-median-ms={5:0.0} c2s-n={6} " +
+        "network-ms={7:0.0} rtt-n={8} exposure-phase-ms={9:0.0} exposure-source=half-camera-frame-estimate " +
+        "pc-present-ms={10:0.0} pc-present-n={11} pc-present-source=update-to-gui-repaint",
+        Valid ? "valid" : "rejected", Reason ?? "none", DisplayMs, LoopMs, LoopCount, PhoneMs, PhoneCount,
+        NetworkMs, RttCount, ExposureMs, PresentMs, PresentCount);
+}
+
+// Unity に依存する保存だけを分け、数値・時刻・設定一致の検証は純粋関数でも実行する。
+public static class PhoneSaberDisplayMeasurementSettings
+{
+    public static string Key(string station) => "PhoneSaber.DisplayMeasured." + PhoneSaberStation.Normalize(station) + ".v1";
+    public static string Encode(string configuration, double value, double unixSeconds) =>
+        configuration + "|" + value.ToString("R", CultureInfo.InvariantCulture) + "|" + unixSeconds.ToString("R", CultureInfo.InvariantCulture);
+    public static bool Decode(string saved, string configuration, double now, out double value, out double ageMinutes)
+    {
+        value = ageMinutes = 0;
+        var fields = (saved ?? "").Split('|');
+        if (fields.Length != 3 || fields[0] != configuration ||
+            !double.TryParse(fields[1], NumberStyles.Float, CultureInfo.InvariantCulture, out value) ||
+            !double.TryParse(fields[2], NumberStyles.Float, CultureInfo.InvariantCulture, out double at) ||
+            !PhoneSaberDisplayMeasurement.IsPlausible(value) || double.IsNaN(at) || double.IsInfinity(at) ||
+            at <= 0 || at > now || double.IsNaN(now) || double.IsInfinity(now)) return false;
+        ageMinutes = (now - at) / 60; return true;
+    }
+    public static void Save(string station, string configuration, double value, double unixSeconds)
+    {
+        if (!PhoneSaberDisplayMeasurement.IsPlausible(value) || unixSeconds <= 0 || double.IsNaN(unixSeconds) || double.IsInfinity(unixSeconds)) return;
+        UnityEngine.PlayerPrefs.SetString(Key(station) + "." + configuration, Encode(configuration, value, unixSeconds));
+        UnityEngine.PlayerPrefs.Save();
+    }
+    public static bool Load(string station, string configuration, double now, out double value, out double ageMinutes) =>
+        Decode(UnityEngine.PlayerPrefs.GetString(Key(station) + "." + configuration, ""), configuration, now, out value, out ageMinutes);
 }

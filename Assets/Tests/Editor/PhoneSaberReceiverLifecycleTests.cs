@@ -29,31 +29,26 @@ public class PhoneSaberReceiverLifecycleTests
         finally { Object.DestroyImmediate(go); }
     }
 
+    // 2026-10-13: F9 は maxQueuedFrames を切り替えなくなった（画面条件を1ブロック内で固定し、
+    // 画面の遅延を条件ごとに保存するため）。終了・破棄で値を書き換えないことと、状態が閉じることを確かめる。
     [TestCase("Finish", 2)]
     [TestCase("OnDisable", 3)]
     [TestCase("OnDestroy", 4)]
-    public void ProbeCompletionRestoresValueSavedAtStart(string completion, int previous)
+    public void ProbeCompletionLeavesQueuedFramesAloneAndClosesTheProbe(string completion, int queued)
     {
         int saved = QualitySettings.maxQueuedFrames;
-        var go = new GameObject("キュー設定復元テスト");
+        var go = new GameObject("キュー設定テスト");
         var probe = go.AddComponent<PhoneSaberLatencyProbe>();
         try
         {
-            QualitySettings.maxQueuedFrames = previous;
+            QualitySettings.maxQueuedFrames = queued;
             int expected = QualitySettings.maxQueuedFrames;
-            // F9開始と同じ保存処理。旧コードでも終了処理の回帰を実行できるよう反射で取得する。
-            object restore = typeof(PhoneSaberLatencyProbe).GetField("queuedFramesRestore",
-                BindingFlags.Instance | BindingFlags.NonPublic)?.GetValue(probe);
-            restore?.GetType().GetMethod("Begin").Invoke(restore, new object[] { expected });
             Set(probe, "active", true);
-            QualitySettings.maxQueuedFrames = 1;
             Invoke(probe, completion);
             Assert.AreEqual(expected, QualitySettings.maxQueuedFrames);
             Assert.IsFalse(Field<bool>(probe, "active"));
-            QualitySettings.maxQueuedFrames = previous + 1;
-            int later = QualitySettings.maxQueuedFrames;
             Invoke(probe, "OnDisable");
-            Assert.AreEqual(later, QualitySettings.maxQueuedFrames, "二重の終了通知では復元しない");
+            Assert.AreEqual(expected, QualitySettings.maxQueuedFrames, "二重の終了通知でも変えない");
         }
         finally { Object.DestroyImmediate(go); QualitySettings.maxQueuedFrames = saved; }
     }

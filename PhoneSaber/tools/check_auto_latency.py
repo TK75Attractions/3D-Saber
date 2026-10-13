@@ -32,7 +32,7 @@ def main():
 using System.Diagnostics;
 namespace UnityEngine {
  public static class Debug { public static void Log(object x){} public static void LogWarning(object x){} }
- public static class PlayerPrefs { public static string GetString(string k,string d)=>d; }
+ public static class PlayerPrefs { public static string GetString(string k,string d)=>d; public static void SetString(string k,string v){} public static void Save(){} }
 }
 public static class PhoneSaberP2PBridgeProcess { public static bool AutoStartEnabled=true; }
 public static class SwingMonotonicClock { public static long Timestamp => Stopwatch.GetTimestamp(); public static double ToSeconds(long ticks) => ticks/(double)Stopwatch.Frequency; }

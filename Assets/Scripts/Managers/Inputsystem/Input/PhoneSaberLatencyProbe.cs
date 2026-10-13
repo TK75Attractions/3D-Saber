@@ -3,33 +3,39 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// 画面→カメラ→認識→UDP→受信 の実遅延を測る運営用テスト（F9 で開始/終了）。
+// 画面→カメラ→認識→UDP→受信 の実遅延を測る運営用テスト（F9 で開始、自動終了）。
 // 画面に赤い棒を左右交互に出し、スマホに画面を撮らせる。棒を切り替えた Update から、
 // 赤の受信位置が切り替わった UDP の受信時刻までを1サンプルとする。
-// 表示遅延（描画・モニタ）も含むので、プレイヤーが感じる遅延にほぼ等しい。
+// 画面の往路とスマホの復路を含むループであり、プレイの片道遅延とは異なる。
 // iPhone/Android・Mac/Windows とも同じ方法で比較できる。シーンや prefab は変更しない。
 [DefaultExecutionOrder(-1900)]
 public sealed class PhoneSaberLatencyProbe : MonoBehaviour
 {
     readonly PhoneSaberLatencyLoop loop = new PhoneSaberLatencyLoop();
     bool active;
-    readonly PhoneSaberQueuedFramesRestore queuedFramesRestore = new PhoneSaberQueuedFramesRestore();
     PhoneSaberGuiRenderer guiRenderer;
     int loggedSamples;
     GUIStyle textStyle;
     // 20回ごとにイベントログへ自動記録する（手入力なしで後から比較できるように）。
     const int LogEvery = 20;
-    // PC 側の設定は同じ条件のまま交互に切り替えて比べる（時間・照明・置き方の差を打ち消す）。
     // ブロックごとに latency-block を記録し、PhoneSaber/tools/latency_report.py で集計する。
     const int BlockSize = 15;
-    static readonly int[] QueuedFrameVariants = { 1, 2 };
-    // スマホの fps 自動比較（30秒ごとに 30⇄60）と PC 側 2 条件の組み合わせを各 2 回ずつ記録する目安。
-    // 2026-10-10 の実機では 22 回（1 ブロック）で終了してしまい、比較が成立しなかった。
+    // 画面設定は変えず、その台の現在の条件を測る。
+    // 複数ブロックで測定し、必要量に達したら自動終了する。
     public const int TargetBlocks = 8;
     string progressText = "";
     int progressBlocks = -1, progressSamples = -1;
-    int blockIndex, blockStartTotal, blockStartPackets;
-    double blockStartedAt;
+    int blockIndex, blockStartPackets;
+    double blockStartedAt, startedAt, resultUntil, switchAt, repaintMs;
+    int drawnSide = -1;
+    // blockConfiguration は StartBlock 前（Play 停止・破棄での終了処理）でも null にしない。
+    string resultText = "", blockConfiguration = "", blockSender, blockPhoneIdentity;
+    bool blockMismatch;
+    readonly List<double> blockPresent = new List<double>();
+    readonly List<double> blockC2s = new List<double>(), blockNetwork = new List<double>(), blockFps = new List<double>();
+    PhoneSaberMetrics blockPhone;
+    int blockPhoneSamples, blockRttSamples;
+    double lastMetricsAt, nextConfigurationCheck;
     readonly List<double> blockSamples = new List<double>();
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
@@ -42,6 +48,36 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         if (probe.active) probe.Finish();
         probe.EnsureGuiRenderer();
         probe.guiRenderer.enabled = false;
+        // 無人計測: -phonesaberLatencyProbe [ブロック数] で起動すると、キー操作なしで F9 と同じ計測を始め、
+        // 終わったらアプリを終了する（スマホが画面を向いていなければ 40 秒であきらめる）。Editor では無効。
+        if (!Application.isEditor)
+        {
+            int blocks = ResolveAutoBlocks(System.Environment.GetCommandLineArgs());
+            if (blocks > 0)
+            {
+                probe.autoBlocks = blocks;
+                probe.autoStartAt = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp) + AutoStartDelaySeconds;
+            }
+        }
+    }
+
+    public const string AutoArgument = "-phonesaberLatencyProbe";
+    public const double AutoStartDelaySeconds = 8, AutoGiveUpSeconds = 40;
+    int autoBlocks;
+    bool autoRunning;
+    double autoStartAt = double.PositiveInfinity, autoQuitAt = double.PositiveInfinity;
+
+    // 引数が無ければ 0（無効）。ブロック数が無い・範囲外なら TargetBlocks。
+    public static int ResolveAutoBlocks(string[] args)
+    {
+        for (int i = 1; i < args.Length; i++)
+        {
+            if (args[i] != AutoArgument) continue;
+            if (i + 1 < args.Length && int.TryParse(args[i + 1], out int blocks) && blocks >= 1 && blocks <= TargetBlocks)
+                return blocks;
+            return TargetBlocks;
+        }
+        return 0;
     }
 
     void Awake() => EnsureGuiRenderer();
@@ -58,18 +94,29 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
     {
         var keyboard = Keyboard.current;
         bool toggle = keyboard != null && keyboard.f9Key.wasPressedThisFrame;
+        if (autoBlocks > 0)
+        {
+            double autoNow = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
+            if (!active && autoNow >= autoStartAt) { toggle = true; autoRunning = true; autoStartAt = double.PositiveInfinity; }
+            if (autoNow >= autoQuitAt) { autoQuitAt = double.PositiveInfinity; Application.Quit(); }
+        }
         // 非表示フレームでは Stopwatch の読み出し・秒への変換もしない。
-        if (!active && !toggle) return;
+        if (!active && !toggle)
+        {
+            if (resultUntil > 0 && SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp) >= resultUntil)
+            { resultUntil = 0; if (guiRenderer != null) guiRenderer.enabled = false; }
+            return;
+        }
         double now = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
         if (toggle)
         {
             if (active) Finish();
             else
             {
-                queuedFramesRestore.Begin(QualitySettings.maxQueuedFrames);
                 active = true;
                 EnsureGuiRenderer();
                 guiRenderer.enabled = true;
+                resultText = ""; resultUntil = 0; startedAt = now;
                 loggedSamples = 0; loop.Reset(now); blockIndex = 0; StartBlock(now);
             }
         }
@@ -78,31 +125,80 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         bool hasPacket = input != null && input.HasValidStickEndpoints;
         float x = hasPacket ? ReadNormalizedX(input) : 0f;
         double packetTime = input != null ? input.LastReceivedMonotonicTime : double.NegativeInfinity;
-        int before = loop.TotalSamples;
+        CollectPhoneMetrics(input, now);
+        int before = loop.TotalSamples, previousSide = loop.Side;
         loop.Tick(now, packetTime, x, hasPacket);
         int total = loop.TotalSamples;
-        if (total > before) blockSamples.Add(loop.SamplesMs[loop.SamplesMs.Count - 1]);
+        if (loop.Side != previousSide) { switchAt = now; drawnSide = -1; repaintMs = double.NaN; }
+        if (total > before)
+        {
+            blockSamples.Add(loop.SamplesMs[loop.SamplesMs.Count - 1]);
+            if (!double.IsNaN(repaintMs)) blockPresent.Add(repaintMs);
+        }
         if (total >= loggedSamples + LogEvery) { loggedSamples = total; Record("latency-loop"); }
-        if (blockSamples.Count >= BlockSize) { RecordBlock(now); blockIndex++; StartBlock(now); }
+        if (blockSamples.Count >= BlockSize)
+        {
+            RecordBlock(now); blockIndex++;
+            if (blockIndex >= (autoRunning ? autoBlocks : TargetBlocks)) Finish(); else StartBlock(now);
+        }
+        if (active && now - startedAt >= 180) Finish();
+        if (active && autoRunning && loop.TotalSamples == 0 && now - startedAt >= AutoGiveUpSeconds) Finish();
     }
 
     // 比較に必要な記録量の目安を画面に出す（振る必要はなく、カメラを画面に向けたまま待つ）。
     public static string ProgressText(int recordedBlocks, int samplesInBlock)
     {
-        if (recordedBlocks >= TargetBlocks)
-            return $"比較用の記録 {recordedBlocks} ブロック。十分です（F9 で終了してよい）";
-        return $"比較用の記録 {recordedBlocks}/{TargetBlocks} ブロック（今のブロック {samplesInBlock}/{BlockSize} 回）。" +
-               $"{TargetBlocks} ブロックまで約2分、カメラを画面に向けたまま待つ";
+        if (recordedBlocks >= TargetBlocks) return "測定完了（自動終了）";
+        return $"測定 {recordedBlocks}/{TargetBlocks} ブロック（今のブロック {samplesInBlock}/{BlockSize} 回）、約2分で自動終了";
     }
 
     void StartBlock(double now)
     {
-        QualitySettings.maxQueuedFrames = QueuedFrameVariants[blockIndex % QueuedFrameVariants.Length];
-        blockSamples.Clear();
-        blockStartTotal = loop.TotalSamples;
+        blockSamples.Clear(); blockPresent.Clear(); blockC2s.Clear(); blockNetwork.Clear(); blockFps.Clear();
+        blockPhone = null; lastMetricsAt = double.NegativeInfinity; blockPhoneSamples = blockRttSamples = 0;
+        blockPhoneIdentity = null; blockMismatch = false;
+        blockConfiguration = PhoneSaberPerfLog.DisplayConfiguration(); nextConfigurationCheck = now;
         blockStartedAt = now;
         var input = InputPoint.Instance;
+        blockSender = input?.RedCoordinateSender;
         blockStartPackets = input != null ? input.ReceivedPacketCount : 0;
+    }
+
+    void CollectPhoneMetrics(InputPoint input, double now)
+    {
+        if (input == null) return;
+        string sender = input.RedCoordinateSender;
+        if (blockSender == null) blockSender = sender;
+        if (sender != blockSender) blockMismatch = true;
+        if (now >= nextConfigurationCheck)
+        {
+            nextConfigurationCheck = now + 1;
+            if (PhoneSaberPerfLog.DisplayConfiguration() != blockConfiguration) blockMismatch = true;
+        }
+        var phone = input.ReadPhoneMetrics(sender, now);
+        if (phone == null || sender == "127.0.0.1" || sender == "::1" || phone.ReceivedAt == lastMetricsAt) return;
+        string identity = phone.Platform + ":" + phone.App + ":" + phone.FpsMode;
+        if (blockPhoneIdentity != null && identity != blockPhoneIdentity) blockMismatch = true;
+        blockPhoneIdentity = identity; lastMetricsAt = phone.ReceivedAt;
+        if (!phone.C2sMedian.HasValue || !phone.Rtt.HasValue || !phone.CaptureFps.HasValue ||
+            now - phone.ReceivedAt + phone.RttAge > 10) return;
+        blockPhone = phone;
+        blockC2s.Add(phone.C2sMedian.Value); blockNetwork.Add(phone.Rtt.Value); blockFps.Add(phone.CaptureFps.Value);
+        blockPhoneSamples += phone.C2sCount; blockRttSamples += phone.RttCount;
+    }
+
+    PhoneSaberDisplayMeasurement Decompose(double now)
+    {
+        PhoneSaberMetrics phone = null;
+        if (!blockMismatch && blockPhone != null && now - blockPhone.ReceivedAt <= 15)
+            phone = new PhoneSaberMetrics {
+                C2sMedian = new PhoneSaberTimingStats(blockC2s.ToArray()).MedianMs, C2sCount = blockPhoneSamples,
+                Rtt = new PhoneSaberTimingStats(blockNetwork.ToArray()).MedianMs, RttCount = blockRttSamples,
+                RttAge = blockPhone.RttAge, ReceivedAt = blockPhone.ReceivedAt,
+                CaptureFps = new PhoneSaberTimingStats(blockFps.ToArray()).MedianMs, Route = blockPhone.Route
+            };
+        return new PhoneSaberDisplayMeasurement(new PhoneSaberTimingStats(blockSamples.ToArray()), phone,
+            new PhoneSaberTimingStats(blockPresent.ToArray()), now, blockMismatch);
     }
 
     void RecordBlock(double now)
@@ -121,6 +217,17 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
             blockIndex, QualitySettings.maxQueuedFrames, stats.MedianMs, stats.P95Ms, stats.Count, redRate, route,
             Application.platform, Application.isEditor, loop.Rejected, loop.Misses);
         PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "RED", "latency-block", detail);
+        if (PhoneSaberPerfLog.DisplayConfiguration() != blockConfiguration) blockMismatch = true;
+        var measurement = Decompose(now);
+        resultText = measurement.Result;
+        PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "RED", "display-measured", measurement.Log() +
+            " block=" + blockIndex + " configuration=" + blockConfiguration + " conditions-changed=" + (blockMismatch ? "1" : "0") +
+            " phone-windows=" + blockC2s.Count + " rtt-count-source=sum-snapshot-counts capture-fps=" +
+            (blockFps.Count > 0 ? new PhoneSaberTimingStats(blockFps.ToArray()).MedianMs.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture) : "unknown") +
+            " " + blockConfiguration.Replace(',', ' ') + " platform=" + Application.platform + " sender=" + (blockSender ?? "unknown"));
+        if (measurement.Valid)
+            PhoneSaberDisplayMeasurementSettings.Save(PhoneSaberStation.Read(), blockConfiguration,
+                measurement.DisplayMs, DateTimeOffset.UtcNow.ToUnixTimeSeconds());
         PhoneSaberEventLog.Current?.Flush();
     }
 
@@ -131,18 +238,22 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
     // Play 停止・シーン破棄でも途中結果を残す。
     void OnDisable()
     {
-        if (guiRenderer != null) guiRenderer.enabled = false;
         if (active) Finish();
+        resultUntil = 0;
+        if (guiRenderer != null) guiRenderer.enabled = false;
     }
 
     void OnDestroy() { if (active) Finish(); }
 
     void Finish()
     {
+        if (blockIndex == 0 || blockSamples.Count < BlockSize && blockSamples.Count > 0)
+            RecordBlock(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp));
         active = false;
-        if (guiRenderer != null) guiRenderer.enabled = false;
+        resultUntil = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp) + 20;
+        if (guiRenderer != null) guiRenderer.enabled = true;
         Record("latency-loop-end");
-        if (queuedFramesRestore.TryFinish(out int previous)) QualitySettings.maxQueuedFrames = previous;
+        if (autoRunning) { autoRunning = false; autoQuitAt = resultUntil - 17; } // 結果を3秒だけ見せて終了
     }
 
     void Record(string kind)
@@ -168,7 +279,7 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
 
     void DrawGUI()
     {
-        if (!active) return;
+        if (!active && resultUntil <= 0) return;
         if (textStyle == null)
         {
             textStyle = new GUIStyle(GUI.skin.label)
@@ -183,6 +294,16 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         Color previousColour = GUI.color;
         GUI.depth = -20000;
         float w = Screen.width, h = Screen.height;
+        if (!active)
+        {
+            GUI.Label(new Rect(20, 20, w - 40, 100), resultText, textStyle);
+            GUI.depth = previousDepth; GUI.color = previousColour; return;
+        }
+        if (Event.current.type == EventType.Repaint && drawnSide != loop.Side && loop.Waiting)
+        {
+            repaintMs = (SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp) - switchAt) * 1000;
+            drawnSide = loop.Side;
+        }
         GUI.color = Color.black;
         GUI.DrawTexture(new Rect(0, 0, w, h), Texture2D.whiteTexture);
         GUI.color = Color.red;
@@ -191,8 +312,8 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         GUI.DrawTexture(new Rect(centre - barWidth * 0.5f, h * 0.12f, barWidth, h * 0.76f), Texture2D.whiteTexture);
         GUI.color = Color.white;
         GUI.Label(new Rect(20, 10, w - 40, h * 0.1f),
-            "遅延テスト [F9: 終了]  スマホのカメラをこの画面に向け、赤い棒だけが映るようにする", textStyle);
-        GUI.Label(new Rect(20, h * 0.89f, w - 40, h * 0.11f), loop.Summary(), textStyle);
+            "スマホのカメラをこの画面に向け、赤い棒だけが映るようにして自動終了まで待ってください。", textStyle);
+        GUI.Label(new Rect(20, h * 0.89f, w - 40, h * 0.11f), string.IsNullOrEmpty(resultText) ? loop.Summary() : resultText, textStyle);
         if (progressBlocks != blockIndex || progressSamples != blockSamples.Count)
         {
             progressBlocks = blockIndex; progressSamples = blockSamples.Count;

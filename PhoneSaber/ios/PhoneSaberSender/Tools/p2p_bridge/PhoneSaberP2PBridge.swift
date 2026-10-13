@@ -169,9 +169,15 @@ final class DiagnosticsRelay {
         let label = "\(inbound.endpoint)"
         var bytes = 0
         var closed = false
+        let timeout = DispatchSource.makeTimerSource(queue: queue)
         func close(_ reason: String) {
             guard !closed else { return }
             closed = true
+            // 完了した接続を300秒の timeout と state handler が保持し続けないようにする。
+            timeout.setEventHandler(handler: nil)
+            timeout.cancel()
+            inbound.stateUpdateHandler = nil
+            outbound.stateUpdateHandler = nil
             inbound.cancel()
             outbound.cancel()
             log("upload from \(label) closed after \(bytes) bytes (\(reason))")
@@ -230,7 +236,9 @@ final class DiagnosticsRelay {
         inbound.start(queue: queue)
         outbound.start(queue: queue)
         // An abandoned upload must not keep sockets open forever.
-        queue.asyncAfter(deadline: .now() + 300) { close("timeout") }
+        timeout.schedule(deadline: .now() + 300)
+        timeout.setEventHandler { close("timeout") }
+        timeout.resume()
     }
 }
 

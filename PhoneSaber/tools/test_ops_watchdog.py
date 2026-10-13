@@ -41,10 +41,10 @@ elif mode == 'fresh':
     for _ in range(4):
         path.write_text('1')
         time.sleep(0.4)
-elif mode in ('old', 'disabled', 'stop'):
-    if mode in ('disabled', 'stop') and '-phonesaberHeartbeat' in args:
+elif mode in ('old', 'disabled', 'stop', 'empty'):
+    if (mode in ('disabled', 'stop') or (mode == 'empty' and count == 1)) and '-phonesaberHeartbeat' in args:
         path = Path(args[args.index('-phonesaberHeartbeat') + 1])
-        path.write_text('1')
+        path.write_text('' if mode == 'empty' else '1')
         os.utime(path, (time.time() - 90, time.time() - 90))
     if mode == 'stop':
         Path(os.environ['STOP_PATH']).touch()
@@ -129,6 +129,12 @@ else:
         self.assertEqual((code, count), (0, 1))
         self.assertNotIn('hang detected', log)
 
+    def test_created_but_unwritten_heartbeat_does_not_arm_hang_detection(self):
+        # OpenOrCreate 成功後、最初の Write が容量不足で失敗すると0 byteのファイルだけが残る。
+        code, log, count, _ = self.run_watchdog('empty')
+        self.assertEqual((code, count), (0, 1))
+        self.assertNotIn('hang detected', log)
+
     def test_disabled_threshold_never_kills(self):
         code, log, count, _ = self.run_watchdog('disabled', '0')
         self.assertEqual((code, count), (0, 1))
@@ -206,9 +212,9 @@ class Fake {
             System.Diagnostics.Process.GetCurrentProcess().Id.ToString());
         string mode = Environment.GetEnvironmentVariable("MODE");
         int index = Array.IndexOf(args,"-phonesaberHeartbeat");
-        if ((mode=="hang" && n==1) || mode=="disabled") {
+        if ((mode=="hang" && n==1) || mode=="disabled" || (mode=="empty" && n==1)) {
             if (index>=0) {
-                File.WriteAllText(args[index+1],"1");
+                File.WriteAllText(args[index+1],mode=="empty" ? "" : "1");
                 File.SetLastWriteTimeUtc(args[index+1],DateTime.UtcNow.AddMinutes(-2));
             }
         }
@@ -294,6 +300,13 @@ class Fake {
         (Path(os.environ['TEMP']) / 'phonesaber-watchdog.lock').touch(exist_ok=True)
         process = self.launch('A', 'old')
         out, _ = process.communicate(timeout=8)
+        self.assertEqual(process.returncode, 0, out)
+        self.assertEqual((self.root / 'count').read_text(), '1')
+        self.assertNotIn('hang detected', (self.kit / 'Start-Saber-A.log').read_text(encoding='utf-8-sig'))
+
+    def test_created_but_unwritten_heartbeat_does_not_arm_hang_detection(self):
+        process = self.launch('A', 'empty')
+        out, _ = process.communicate(timeout=10)
         self.assertEqual(process.returncode, 0, out)
         self.assertEqual((self.root / 'count').read_text(), '1')
         self.assertNotIn('hang detected', (self.kit / 'Start-Saber-A.log').read_text(encoding='utf-8-sig'))
