@@ -893,6 +893,7 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var supports60FPS = true
     @Published private(set) var supports120FPS = false
     @Published private(set) var lowLatencyCameraSettings = false
+    static let lowLatencyCameraLaunchKey = "PhoneSaber.experiment.lowLatencyCamera"
     private var cameraPostProcessingState: CameraPostProcessingState?
     private var cameraWideColorAutomatic: Bool?
     private var latencyLogPolicy = CaptureLatencyLogPolicy()
@@ -939,6 +940,9 @@ final class CameraViewModel: NSObject, ObservableObject {
         self.automaticLANDiscoveryEnabled = !underTest
         self.autoStartSending = !underTest && UserDefaults.standard.bool(forKey: SendingResumePolicy.autoStartKey)
         self.resumePolicy = SendingResumePolicy(wasSending: !underTest && UserDefaults.standard.bool(forKey: SendingResumePolicy.wasSendingKey))
+        // 無人の比較計測用: 起動引数 `-PhoneSaber.experiment.lowLatencyCamera YES` のときだけ試験設定を ON で始める。
+        // アプリはこの鍵を保存しないので、引数なしの通常起動では必ず OFF。
+        self.lowLatencyCameraSettings = !underTest && UserDefaults.standard.bool(forKey: Self.lowLatencyCameraLaunchKey)
         self.mirrorX = underTest ? false : UserDefaults.standard.bool(forKey: Self.mirrorXKey)
         self.mirrorY = underTest ? false : UserDefaults.standard.bool(forKey: Self.mirrorYKey)
         self.p2pEnabled = p2pEnabled
@@ -1095,11 +1099,12 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     private func registerCameraSessionObservers() {
+        // session の同期停止中も通知元を main 待ちにしない。状態更新は既存の MainActor Task へ渡す。
         let center = NotificationCenter.default
         sessionObserverTokens.append(center.addObserver(
             forName: AVCaptureSession.wasInterruptedNotification,
             object: session,
-            queue: .main
+            queue: nil
         ) { [weak self] notification in
             let reason = notification.userInfo?[AVCaptureSessionInterruptionReasonKey]
                 .map { String(describing: $0) } ?? "理由不明"
@@ -1108,14 +1113,14 @@ final class CameraViewModel: NSObject, ObservableObject {
         sessionObserverTokens.append(center.addObserver(
             forName: AVCaptureSession.interruptionEndedNotification,
             object: session,
-            queue: .main
+            queue: nil
         ) { [weak self] _ in
             Task { @MainActor in self?.handleCameraInterruptionEnded() }
         })
         sessionObserverTokens.append(center.addObserver(
             forName: AVCaptureSession.runtimeErrorNotification,
             object: session,
-            queue: .main
+            queue: nil
         ) { [weak self] notification in
             let error = notification.userInfo?[AVCaptureSessionErrorKey] as? NSError
             let message = error?.localizedDescription ?? "AVCaptureSession runtime error"
@@ -2471,12 +2476,14 @@ final class CameraViewModel: NSObject, ObservableObject {
             enabled: debugRecordingEnabled, cameraRunning: running,
             active: debugRecordingActive, finalizing: debugRecordingFinalizing
         ) else { return }
+        // 発熱による再起動を、recorder 作成前の active 予約で録画終了と誤認させない。
+        publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
+        guard running else { teardownGuidedRecording(stopAudioImmediately: true); return }
         lastDebugRecordingResult = nil
         debugManualLosslessCaptureCount = 0
         // Reserve the state immediately so a rapid app Stop queues recorder
         // finalization after recorder creation instead of leaving it orphaned.
         debugRecordingActive = true
-        publishDeviceHealth(at: ProcessInfo.processInfo.systemUptime, force: true)
         DebugBundleTransfer.shared.setRecordingActive(true)
         debugRecordingStatus = "録画を開始しています…"
         processor.updateDebugCameraDeviceState(nil)
