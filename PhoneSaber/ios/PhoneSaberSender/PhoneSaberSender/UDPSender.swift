@@ -699,12 +699,14 @@ final class LANLivenessProbe {
 
 /// 通信経路の出来事（経路の切替、P2P の探索・再接続、Unity 応答の途切れ）を時刻付きで残す。
 /// 2026-10-10 に約100秒 PC へ届かなかったとき、iPhone 側の記録が何も無く原因を特定できなかった。
-/// 直近を画面に出し、同じ内容を Library/Logs/connectivity.log へ追記する（256 KiB で1世代だけ回す）。
-/// 記録は出来事の発生時だけ（フレームごとには呼ばない）。
+/// 直近を画面に出し、同じ内容を Library/Logs/connectivity.log へ追記する（1 MiB で1世代だけ回す）。
+/// 記録は出来事の発生時だけ（フレームごとには呼ばない）。10秒ごとの計測行は `recordToFileOnly` で
+/// ファイルにだけ残す（画面と直近200件を計測行で埋めて、経路の出来事を押し出さないため）。
+/// 計測行は8時間で約0.7 MiB なので、1日分の出来事が回転で消えない上限にしてある。
 final class ConnectivityLog: @unchecked Sendable {
     static let shared = ConnectivityLog(fileURL: defaultFileURL)
     static let capacity = 200
-    static let maximumFileBytes = 256 * 1024
+    static let maximumFileBytes = 1024 * 1024
 
     struct Entry: Equatable {
         let time: Date
@@ -749,6 +751,11 @@ final class ConnectivityLog: @unchecked Sendable {
         if entries.count > Self.capacity { entries.removeFirst(entries.count - Self.capacity) }
         revisionValue += 1
         lock.unlock()
+        recordToFileOnly(source, message, at: time)
+    }
+
+    /// 定期的な計測行用。ファイルにだけ書き、画面と `recent` には出さない。
+    func recordToFileOnly(_ source: String, _ message: String, at time: Date = Date()) {
         guard let fileURL else { return }
         ioQueue.async { [fileFormatter] in
             Self.append("\(fileFormatter.string(from: time)) [\(source)] \(message)\n", to: fileURL)
@@ -851,6 +858,11 @@ final class CoordinateDelivery: @unchecked Sendable {
     private let p2pSender: P2PSender
     private let lanProbe: LANLivenessProbe
 
+    var currentRoute: Route {
+        lock.lock(); defer { lock.unlock() }
+        return lastRoute ?? .none
+    }
+
     init(sender: UDPSender, p2pSender: P2PSender, lanProbe: LANLivenessProbe) {
         self.sender = sender
         self.p2pSender = p2pSender
@@ -911,9 +923,10 @@ final class CoordinateDelivery: @unchecked Sendable {
                                self.lock.lock(); defer { self.lock.unlock() }
                                guard self.matches(request) else { return }
                                if self.settings.lanConfigured {
+                                   self.note(.lanUnverified)
                                    self.sender.send(text, to: port, onSendStarted: onSendStarted,
                                                     isCurrent: valid, completion: completion)
-                               } else { noRoute() }
+                               } else { self.note(.none); noRoute() }
                            }, isCurrent: valid)
         } else if settings.lanConfigured {
             routedViaP2P = false

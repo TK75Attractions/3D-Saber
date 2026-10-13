@@ -26,6 +26,67 @@ final class DeviceHealthTests: XCTestCase {
         XCTAssertEqual(meter.snapshot(at: eightHours + 10).processingFPS, 0)
     }
 
+    func test120FPSThermalReductionAndCooldownKeepTheOptInPreference() {
+        for hot in [DeviceThermalLevel.high, .dangerous] {
+            var policy = ThermalFPSPolicy()
+            XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 0, userFPS: 120), 120)
+            XCTAssertEqual(policy.effectiveFPS(thermal: hot, at: 1, userFPS: 120), 30)
+            XCTAssertEqual(policy.effectiveFPS(thermal: .elevated, at: 2, userFPS: 120), 30)
+            XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 121.999, userFPS: 120), 30)
+            XCTAssertEqual(policy.effectiveFPS(thermal: .normal, at: 122, userFPS: 120), 120)
+            // 120fps は復帰直後でも serious/critical になったら即座に30へ退避する。
+            XCTAssertEqual(policy.effectiveFPS(thermal: hot, at: 123, userFPS: 120), 30)
+        }
+    }
+
+    func testCaptureLatencyLogRunsEveryTenSecondsOnlyWhileSending() {
+        var policy = CaptureLatencyLogPolicy()
+        XCTAssertFalse(policy.shouldLog(at: 0, sending: false))
+        XCTAssertFalse(policy.shouldLog(at: 100, sending: true))
+        XCTAssertFalse(policy.shouldLog(at: 109.999, sending: true))
+        XCTAssertTrue(policy.shouldLog(at: 110, sending: true))
+        XCTAssertFalse(policy.shouldLog(at: 110, sending: true))
+        XCTAssertTrue(policy.shouldLog(at: 120, sending: true))
+        XCTAssertFalse(policy.shouldLog(at: 121, sending: false))
+        XCTAssertFalse(policy.shouldLog(at: 200, sending: true))
+        XCTAssertTrue(policy.shouldLog(at: 210, sending: true))
+        let empty = CaptureLatencyLogPolicy.line(route: "P2P", captureModeFPS: 120,
+                                                rates: DeviceHealthRates(), thermal: .high)
+        XCTAssertTrue(empty.contains("capture-to-send-median-ms=unavailable"))
+        XCTAssertTrue(empty.contains("capture-to-send-p95-ms=unavailable"))
+        XCTAssertTrue(empty.contains("thermal=serious"))
+        XCTAssertFalse(empty.contains("\n"))
+    }
+
+    func testCaptureLatencyLogContainsMeasuredRatesPercentilesAndRejectsOldSends() {
+        let meter = DeviceHealthMeter()
+        meter.reset(at: 100, generation: 2)
+        for index in 1...100 {
+            let time = 100 + Double(index) / 20
+            meter.cameraFrame(at: time)
+            meter.processed(at: time, milliseconds: 3, generation: 2, captureToSendMs: Double(index))
+            meter.sent(at: time, port: 5005, generation: 2)
+            if index.isMultiple(of: 2) { meter.sent(at: time, port: 5006, generation: 2) }
+            meter.sent(at: time, port: 5005, generation: 1)
+        }
+        let rates = meter.snapshot(at: 105)
+        XCTAssertEqual(rates.medianCaptureToSendMs, 50.5)
+        XCTAssertEqual(rates.p95CaptureToSendMs, 95)
+        XCTAssertEqual(rates.redSendFPS, 20)
+        XCTAssertEqual(rates.blueSendFPS, 10)
+        let line = CaptureLatencyLogPolicy.line(route: "LAN", captureModeFPS: 60, rates: rates, thermal: .normal)
+        for field in ["route=LAN", "capture-mode-fps=60", "capture-fps=20.0", "processed-fps=20.0",
+                      "send-fps-red=20.0", "send-fps-blue=10.0", "capture-to-send-median-ms=50.5",
+                      "capture-to-send-p95-ms=95.0", "thermal=nominal"] {
+            XCTAssertTrue(line.contains(field), line)
+        }
+        XCTAssertEqual(meter.snapshot(at: 110).redSendFPS, 0)
+        XCTAssertNil(meter.snapshot(at: 110).p95CaptureToSendMs)
+        meter.reset(at: 110, generation: 3)
+        meter.sent(at: 111, port: 5006, generation: 2)
+        XCTAssertEqual(meter.snapshot(at: 111).blueSendFPS, 0)
+    }
+
     func testThermalClassificationAndMetadata() {
         let states: [ProcessInfo.ThermalState] = [.nominal, .fair, .serious, .critical]
         XCTAssertEqual(states.map { DeviceThermalLevel(state: $0).title }, ["正常", "やや高い", "高い", "危険"])

@@ -70,6 +70,14 @@ enum CameraRecoveryCompletionPolicy {
 }
 
 struct FPSComparisonPolicy {
+    static func lowerFPS(highFPS: Int, supports120: Bool) -> Int {
+        highFPS == 120 && supports120 ? 60 : 30
+    }
+    static func nextFPS(current: Int, highFPS: Int, supports120: Bool) -> Int {
+        let lower = lowerFPS(highFPS: highFPS, supports120: supports120)
+        return current == lower ? lower * 2 : lower
+    }
+
     private var enabledAt: TimeInterval?
     mutating func setEnabled(_ enabled: Bool, at time: TimeInterval) { enabledAt = enabled ? time : nil }
     func shouldDisable(at time: TimeInterval) -> Bool {

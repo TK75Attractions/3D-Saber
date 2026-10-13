@@ -304,6 +304,26 @@ final class P2PTransportTests: XCTestCase {
         XCTAssertNil(ConnectivityLog.defaultFileURL, "XCTest 中は端末にログファイルを作らない")
     }
 
+    // 10秒ごとの計測行はファイルにだけ残す。画面と直近の出来事（経路の切替など）を押し出さない。
+    func testPeriodicMetricsGoToTheFileWithoutPushingEventsOffTheScreen() throws {
+        let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appendingPathComponent("Logs/connectivity.log")
+        let log = ConnectivityLog(fileURL: file)
+        log.record("経路", "LAN → P2P")
+        let revision = log.revision
+        for index in 0..<(ConnectivityLog.capacity + 5) { log.recordToFileOnly("CAPTURE_METRICS", "sample \(index)") }
+        XCTAssertEqual(log.revision, revision, "画面の読み直しを起こさない")
+        XCTAssertEqual(log.recent.map(\.message), ["LAN → P2P"])
+        XCTAssertTrue(log.displayLines(last: CameraViewModel.connectivityLogTailCount)[0].hasSuffix("[経路] LAN → P2P"))
+        log.flushForTesting()
+        let lines = try String(contentsOf: file, encoding: .utf8).split(separator: "\n")
+        XCTAssertEqual(lines.count, ConnectivityLog.capacity + 6)
+        XCTAssertTrue(lines.last?.hasSuffix("[CAPTURE_METRICS] sample \(ConnectivityLog.capacity + 4)") == true)
+        // 8時間ぶんの計測行（10秒ごと、1行 約250 byte）が1世代に収まる。
+        XCTAssertGreaterThan(ConnectivityLog.maximumFileBytes, 8 * 360 * 250)
+    }
+
     func testConnectivityLogRotationDoesNotDeleteADirectoryAtTheGenerationPath() throws {
         let directory = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
         defer { try? FileManager.default.removeItem(at: directory) }
@@ -1420,6 +1440,7 @@ final class CoordinateDeliveryTests: XCTestCase {
             wait(for: [sent], timeout: 2)
             XCTAssertEqual(lan.pendingCountForTesting, 1)
             XCTAssertEqual(lan.discardedForP2PCountForTesting, 0)
+            XCTAssertEqual(delivery.currentRoute, manual ? .lanUnverified : .lanVerified)
         }
     }
 
@@ -1447,6 +1468,7 @@ final class CoordinateDeliveryTests: XCTestCase {
         wait(for: [sent], timeout: 2)
         XCTAssertEqual(lan.pendingCountForTesting, 0)
         XCTAssertEqual(lan.discardedForP2PCountForTesting, 1)
+        XCTAssertEqual(delivery.currentRoute, .lanUnverified)
     }
 
     func testNoRouteAndFallbackWithoutLANAreCountedWithoutCompletion() {
@@ -1463,6 +1485,7 @@ final class CoordinateDeliveryTests: XCTestCase {
             delivery.route("1,2,3,4", port: 5005, settings: config, onSendStarted: nil,
                            completion: { _ in XCTFail("no completion") }, noRoute: { dropped.fulfill() })
             wait(for: [dropped], timeout: 2)
+            XCTAssertEqual(delivery.currentRoute, .none)
         }
     }
 
@@ -1496,6 +1519,7 @@ final class CoordinateDeliveryTests: XCTestCase {
         XCTAssertNotNil(delivery.snapshot(generation: old.processorGeneration))
         delivery.suspend()
         XCTAssertNil(delivery.snapshot(generation: old.processorGeneration))
+        XCTAssertEqual(delivery.currentRoute, .none)
     }
 
     func testPendingCoordinatesAreRevalidatedAfterRecoveryAndCompletion() {

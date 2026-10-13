@@ -68,6 +68,31 @@ struct DeviceHealthRates: Equatable {
     var medianProcessingMs: Double?
     var ready = false
     var medianCaptureToSendMs: Double?
+    var p95CaptureToSendMs: Double?
+    var redSendFPS = 0.0
+    var blueSendFPS = 0.0
+}
+
+// 数値入力不要の比較ログ。停止・再設定後は新しい10秒区間から始める。
+struct CaptureLatencyLogPolicy {
+    private var lastLog: TimeInterval?
+
+    mutating func shouldLog(at time: TimeInterval, sending: Bool) -> Bool {
+        guard sending else { lastLog = nil; return false }
+        guard let lastLog else { self.lastLog = time; return false }
+        guard time - lastLog >= 10 else { return false }
+        self.lastLog = time
+        return true
+    }
+
+    static func line(route: String, captureModeFPS: Double, rates: DeviceHealthRates,
+                     thermal: DeviceThermalLevel) -> String {
+        let median = rates.medianCaptureToSendMs.map { String(format: "%.1f", $0) } ?? "unavailable"
+        let p95 = rates.p95CaptureToSendMs.map { String(format: "%.1f", $0) } ?? "unavailable"
+        return String(format: "route=%@ capture-mode-fps=%.0f capture-fps=%.1f processed-fps=%.1f send-fps-red=%.1f send-fps-blue=%.1f capture-to-send-median-ms=%@ capture-to-send-p95-ms=%@ thermal=%@ window-s=5",
+                      route, captureModeFPS, rates.cameraFPS, rates.processingFPS, rates.redSendFPS,
+                      rates.blueSendFPS, median, p95, thermal.metadataValue)
+    }
 }
 
 // キャプチャ・処理・UIの各キューから観測するだけ。認識や送信には使わない。
@@ -79,6 +104,7 @@ final class DeviceHealthMeter: @unchecked Sendable {
     private var processing: [(time: TimeInterval, ms: Double)] = []
     // 撮影時刻（AVCapture のホスト時計）から認識完了＝送信直前まで。0〜2秒の範囲外は捨てる。
     private var captureToSend: [(time: TimeInterval, ms: Double)] = []
+    private var sends: [(time: TimeInterval, port: Int)] = []
     private let window = 5.0
 
     func reset(at time: TimeInterval, generation: Int) {
@@ -86,6 +112,16 @@ final class DeviceHealthMeter: @unchecked Sendable {
         started = time; self.generation = generation
         cameraTimes.removeAll(keepingCapacity: true); processing.removeAll(keepingCapacity: true)
         captureToSend.removeAll(keepingCapacity: true)
+        sends.removeAll(keepingCapacity: true)
+    }
+
+    // ローカル送信完了の頻度。PCでの受信確認を意味しない。
+    func sent(at time: TimeInterval, port: Int, generation: Int) {
+        lock.lock(); defer { lock.unlock() }
+        guard generation == self.generation, port == 5005 || port == 5006 else { return }
+        sends.append((time, port))
+        sends.removeAll { $0.time <= time - window }
+        if sends.count > 2400 { sends.removeFirst(sends.count - 2400) }
     }
 
     func cameraFrame(at time: TimeInterval) {
@@ -116,16 +152,27 @@ final class DeviceHealthMeter: @unchecked Sendable {
     }
 
     func snapshot(at time: TimeInterval) -> DeviceHealthRates {
-        lock.lock(); defer { lock.unlock() }
+        // UIのソート中に検出・capture・UDPキューを待たせない。
+        lock.lock()
+        let started = started
+        let cameraTimes = cameraTimes
+        let processing = processing
+        let captureToSend = captureToSend
+        let sends = sends
+        lock.unlock()
         guard let started, time > started else { return DeviceHealthRates() }
-        cameraTimes.removeAll { $0 <= time - window }
-        processing.removeAll { $0.time <= time - window }
-        captureToSend.removeAll { $0.time <= time - window }
+        let liveCamera = cameraTimes.filter { $0 > time - window }
+        let liveProcessing = processing.filter { $0.time > time - window }
+        let ages = captureToSend.filter { $0.time > time - window }.map(\.ms).sorted()
+        let liveSends = sends.filter { $0.time > time - window }
         let duration = min(window, time - started)
-        return DeviceHealthRates(cameraFPS: Double(cameraTimes.count) / duration,
-                                 processingFPS: Double(processing.count) / duration,
-                                 medianProcessingMs: Self.median(processing.map(\.ms)), ready: time - started >= 3,
-                                 medianCaptureToSendMs: Self.median(captureToSend.map(\.ms)))
+        return DeviceHealthRates(cameraFPS: Double(liveCamera.count) / duration,
+                                 processingFPS: Double(liveProcessing.count) / duration,
+                                 medianProcessingMs: Self.median(liveProcessing.map(\.ms)), ready: time - started >= 3,
+                                 medianCaptureToSendMs: Self.median(ages),
+                                 p95CaptureToSendMs: ages.isEmpty ? nil : ages[Int(ceil(Double(ages.count) * 0.95)) - 1],
+                                 redSendFPS: Double(liveSends.filter { $0.port == 5005 }.count) / duration,
+                                 blueSendFPS: Double(liveSends.filter { $0.port == 5006 }.count) / duration)
     }
 }
 
@@ -149,9 +196,9 @@ struct ThermalFPSPolicy {
         } else {
             coolSince = nil
         }
-        guard userFPS == 60 else { return userFPS }
+        guard userFPS == 60 || userFPS == 120 else { return userFPS }
         let canChange = lastChange.map { time - $0 >= Self.minimumInterval } ?? true
-        if !reduced && hot && canChange {
+        if !reduced && hot && (canChange || userFPS == 120) {
             reduced = true
             lastChange = time
         } else if reduced && cool, let coolSince,

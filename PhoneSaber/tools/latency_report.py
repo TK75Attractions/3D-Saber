@@ -3,7 +3,8 @@
 
 Unity の events.log（Mac: ~/Library/Application Support/<会社>/<製品>/PhoneSaber/events.log、
 Windows: %USERPROFILE%/AppData/LocalLow/<会社>/<製品>/PhoneSaber/events.log）を読む。
-条件 = PC の max-queued-frames × スマホの fps（ブロック平均の赤 pkt/s から推定）× 経路。
+条件 = PC の max-queued-frames × スマホの fps × 経路。
+--sender-metrics で iPhone の設定ログを指定する。省略時は赤 pkt/s からの推定。
 同じ測定の中で交互に切り替えたブロックだけを比べるので、照明・置き方の差は打ち消される。
 台・ログファイル・測定ごとに分離する。測定は block 番号の再開始または終了記録で区切る。
 開始記録がない旧ログでは最初に観測したブロックを開始とし、別ファイルとは結合しない。
@@ -15,6 +16,9 @@ import os
 import re
 import statistics
 import sys
+
+CAPTURE_MODE = re.compile(r"\[CAPTURE_METRICS\] (\S+) station=(\S+) requested-fps=(30|60|120) capture-fps=(\d+)")
+CONNECTIVITY_CAPTURE_MODE = re.compile(r"^(\S+) \[CAPTURE_MODE\] station=(\S+) requested-fps=(30|60|120) capture-fps=(\d+)")
 
 LINE = re.compile(r"^(?P<time>\S+) (?P<context>.*?)event=(?P<event>latency-block|latency-loop-end) (?P<detail>.*)$")
 
@@ -63,7 +67,8 @@ def parse(lines, source=""):
             session, started = next_session, block["time"]
         else:
             session, started = previous["session"], previous["started"]
-        block.update(session=session, started=started)
+        block.update(session=session, started=started,
+                     start_time=previous["time"] if previous and previous["session"] == session else None)
         sessions[stream] = block
         blocks.append(block)
     return blocks
@@ -71,17 +76,53 @@ def parse(lines, source=""):
 
 def phone_fps(rate):
     """赤の平均受信数からスマホの fps を推定する。切替をまたいだ中間値は None。"""
-    if rate >= 45:
+    if 105 <= rate <= 132:
+        return 120
+    if 45 <= rate <= 72:
         return 60
     if 15 <= rate <= 36:
         return 30
     return None
 
 
-def summarize(blocks):
+def parse_sender_metrics(lines):
+    """送信側の設定区間。端末とPCの壁時計を同期して使う。"""
+    modes = []
+    for line in lines:
+        match = CAPTURE_MODE.search(line) or CONNECTIVITY_CAPTURE_MODE.search(line)
+        if not match:
+            continue
+        time, station, requested, actual = match.groups()
+        try:
+            modes.append({"time": parse_time(time), "station": station,
+                          "requested": int(requested), "fps": int(actual)})
+        except ValueError:
+            continue
+    return sorted(modes, key=lambda mode: mode["time"])
+
+
+def capture_mode_for_block(block, modes):
+    # 最初の block は開始時刻が不明。切替をまたぐ block も推定で補わず除外する。
+    if block["start_time"] is None:
+        return None
+    try:
+        start, end = parse_time(block["start_time"]), parse_time(block["time"])
+    except ValueError:
+        return None
+    if start >= end:
+        return None
+    applicable = [mode for mode in modes if mode["station"] == block["station"] and mode["time"] <= end]
+    if not applicable or applicable[-1]["time"] > start:
+        return None
+    fps = applicable[-1]["fps"]
+    return fps if fps in (30, 60, 120) else None
+
+
+def summarize(blocks, sender_metrics=None):
     groups = {}
     for block in blocks:
-        fps = phone_fps(block["rate"])
+        fps = (phone_fps(block["rate"]) if sender_metrics is None
+               else capture_mode_for_block(block, sender_metrics))
         if fps is None or block["n"] < 5:
             continue
         key = (block["source"], block["station"], block["session"],
@@ -135,6 +176,7 @@ def main(argv=None):
     parser.add_argument("--since", default="",
                         help="この ISO 時刻以降のブロックだけ。時差なしは UTC（ログと同じ）。"
                              "日本時間は +09:00 を付ける（例 2026-10-08T09:00+09:00）")
+    parser.add_argument("--sender-metrics", help="iPhone の [CAPTURE_METRICS] ログ。PCと時計同期が必要")
     args = parser.parse_args(argv)
     since = None
     if args.since:
@@ -153,10 +195,19 @@ def main(argv=None):
             return 2
     if since is not None:
         blocks = after(blocks, since)
-    rows = summarize(blocks)
+    modes = None
+    if args.sender_metrics:
+        try:
+            with open(args.sender_metrics, encoding="utf-8", errors="replace") as handle:
+                modes = parse_sender_metrics(handle)
+        except OSError as error:
+            print(f"{args.sender_metrics} を読めません: {error}", file=sys.stderr)
+            return 2
+    rows = summarize(blocks, sender_metrics=modes)
     if not rows:
         print("latency-block がありません（F9 で15回以上測ると1ブロック記録されます）")
         return 1
+    print("fps-source=" + ("sender-metrics" if modes is not None else "packet-rate-estimate"))
     previous = None
     for row in rows:
         identity = (row["source"], row["station"], row["session"])

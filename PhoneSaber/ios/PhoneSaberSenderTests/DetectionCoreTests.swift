@@ -117,6 +117,166 @@ final class DetectionCoreTests: XCTestCase {
     }
 
 
+    func test120FPSFormatRequiresIdenticalAnalysisGeometryAndFieldOfView() {
+        let baseline = CameraFormatOption(index: 0, width: 640, height: 480,
+                                         frameRateRanges: [1...60], fieldOfView: 65)
+        let highSpeed = CameraFormatOption(index: 1, width: 640, height: 480,
+                                          frameRateRanges: [1...120], fieldOfView: 65, isBinned: true)
+        XCTAssertEqual(highSpeedCameraFormatIndex(options: [baseline, highSpeed]), 1)
+        var incompatible = highSpeed
+        incompatible.fieldOfView = 64
+        XCTAssertNil(highSpeedCameraFormatIndex(options: [baseline, incompatible]))
+        incompatible.fieldOfView = .nan
+        XCTAssertNil(highSpeedCameraFormatIndex(options: [baseline, incompatible]))
+        let larger = CameraFormatOption(index: 2, width: 1280, height: 720,
+                                        frameRateRanges: [1...240], fieldOfView: 65)
+        XCTAssertNil(highSpeedCameraFormatIndex(options: [baseline, larger]))
+        XCTAssertNil(highSpeedCameraFormatIndex(options: [baseline]))
+        XCTAssertNil(highSpeedCameraFormatIndex(options: []))
+        XCTAssertNil(highSpeedCameraFormatIndex(options: [CameraFormatOption(
+            index: 3, width: 640, height: 480, frameRateRanges: [1...120])]))
+    }
+
+    func test120FPSFormatPrefersShortestSupportedDurationWithoutChanging60FPS() {
+        let options = [
+            CameraFormatOption(index: 0, width: 640, height: 480, frameRateRanges: [1...60], fieldOfView: 65),
+            CameraFormatOption(index: 1, width: 640, height: 480, frameRateRanges: [1...120], fieldOfView: 65),
+            CameraFormatOption(index: 2, width: 640, height: 480, frameRateRanges: [1...240], fieldOfView: 65),
+            CameraFormatOption(index: 3, width: 640, height: 480, frameRateRanges: [1...240], fieldOfView: 65)
+        ]
+        XCTAssertEqual(preferredCameraFormatIndex(options: options, targetFPS: 60), 0)
+        XCTAssertEqual(highSpeedCameraFormatIndex(options: options.reversed()), 2)
+        XCTAssertEqual(CMTimeGetSeconds(fixedFrameDuration(fps: 120, ranges: [1...240])!),
+                       1 / 120.0, accuracy: 0.000001)
+        XCTAssertNil(fixedFrameDuration(fps: 120, ranges: [1...60]))
+        XCTAssertEqual(storedCameraFPS(120), 120)
+        XCTAssertEqual(storedCameraFPS(0), 60)
+        XCTAssertEqual(storedCameraFPS(90), 60)
+    }
+
+    func testLatestFramePolicyProcessesEvery120FPSFrameWhenWorkFits() {
+        var mailbox = LatestCameraFrameMailbox<Int>()
+        for frame in 0..<120 {
+            let offered = mailbox.offer(frame)
+            XCTAssertTrue(offered.schedule)
+            XCTAssertFalse(offered.replaced)
+            XCTAssertEqual(mailbox.take(), frame)
+            // 3ms の仕事は次の 8.33ms 周期までに完了する。
+            XCTAssertFalse(mailbox.finish())
+        }
+    }
+
+    func testLatestFramePolicyDropsWaitingFramesWhileMeasuredWorkExceeds120FPSBudget() {
+        var mailbox = LatestCameraFrameMailbox<Int>()
+        XCTAssertTrue(mailbox.offer(0).schedule)
+        XCTAssertEqual(mailbox.take(), 0)
+        // 20ms の仕事中に 8.33ms と 16.67ms の2枚が届く。待機列は増やさない。
+        XCTAssertFalse(mailbox.offer(1).schedule)
+        let newer = mailbox.offer(2)
+        XCTAssertFalse(newer.schedule)
+        XCTAssertTrue(newer.replaced)
+        XCTAssertTrue(mailbox.finish())
+        XCTAssertEqual(mailbox.take(), 2)
+        for frame in 3..<120 { XCTAssertFalse(mailbox.offer(frame).schedule) }
+        XCTAssertTrue(mailbox.finish())
+        XCTAssertEqual(mailbox.take(), 119)
+        mailbox.clearPending()
+        XCTAssertFalse(mailbox.finish())
+        XCTAssertNil(mailbox.take())
+        XCTAssertTrue(mailbox.offer(120).schedule)
+    }
+
+#if CAMERA_LATENCY_STANDALONE
+    func testDefaultCameraSettingsMatchMainAtThirtyAndSixtyFPS() throws {
+        for fps in [30, 60] {
+            let camera = AVCaptureDevice()
+            let reference = AVCaptureDevice()
+            let setup = CaptureSetup()
+            let main = MainCaptureSetup()
+            try setup.configure(camera, fps: fps)
+            try main.configure(reference, fps: fps)
+            XCTAssertEqual(camera.writes, reference.writes)
+            XCTAssertEqual(setup.session.writes, main.session.writes)
+            XCTAssertEqual(setup.output.writes, main.output.writes)
+            XCTAssertEqual(setup.output.connectionValue.writes, main.output.connectionValue.writes)
+            XCTAssertTrue(camera.automaticallyAdjustsVideoHDREnabled)
+            XCTAssertTrue(camera.isVideoHDREnabled)
+            XCTAssertTrue(camera.isGeometricDistortionCorrectionEnabled)
+            XCTAssertEqual(camera.activeColorSpace, .sRGB)
+        }
+    }
+
+    func testPostProcessingExperimentRestoresOriginalStateForDefaultCapture() throws {
+        let camera = AVCaptureDevice()
+        let setup = CaptureSetup()
+        setup.lowLatencyCameraSettings = true
+        try setup.configure(camera, fps: 60)
+        XCTAssertFalse(camera.isVideoHDREnabled)
+        XCTAssertFalse(camera.isGeometricDistortionCorrectionEnabled)
+        XCTAssertFalse(setup.session.automaticallyConfiguresCaptureDeviceForWideColor)
+        setup.lowLatencyCameraSettings = false
+        try setup.configure(camera, fps: 30)
+        XCTAssertTrue(camera.automaticallyAdjustsVideoHDREnabled)
+        XCTAssertTrue(camera.isVideoHDREnabled)
+        XCTAssertTrue(camera.isGeometricDistortionCorrectionEnabled)
+        XCTAssertEqual(camera.activeColorSpace, .sRGB)
+        XCTAssertTrue(setup.session.automaticallyConfiguresCaptureDeviceForWideColor)
+    }
+
+    // ホストでは AVCaptureDevice の設定可能性と初期値だけを stub にする。
+    func testPostProcessingDisablesAutomaticHDRBeforeHDRAndPreservesUnsupportedFeatures() {
+        let supported = AVCaptureDevice()
+        supported.activeColorSpace = .HLG_BT2020
+        XCTAssertTrue(configureCameraPostProcessing(supported, experimental: true))
+        XCTAssertEqual(supported.activeColorSpace, .sRGB)
+        XCTAssertFalse(supported.automaticallyAdjustsVideoHDREnabled)
+        XCTAssertFalse(supported.isVideoHDREnabled)
+        XCTAssertFalse(supported.automaticallyEnablesLowLightBoostWhenAvailable)
+        XCTAssertFalse(supported.isGeometricDistortionCorrectionEnabled)
+        let unsupported = AVCaptureDevice()
+        unsupported.isLowLightBoostSupported = false
+        unsupported.isGeometricDistortionCorrectionSupported = false
+        XCTAssertTrue(configureCameraPostProcessing(unsupported, experimental: true))
+        XCTAssertFalse(unsupported.isVideoHDREnabled)
+        XCTAssertEqual(unsupported.unsupportedWrites, 0)
+        let hdrOnly = AVCaptureDevice()
+        hdrOnly.activeColorSpace = .HLG_BT2020
+        hdrOnly.activeFormat.supportedColorSpaces = [.HLG_BT2020]
+        XCTAssertFalse(disableCameraPostProcessing(hdrOnly))
+    }
+#endif
+
+    func testFrameSendPrecedesHealthStatistics() {
+        let processor = FrameProcessor(expiryScheduler: nil)
+        let frame = sampleBuffer(width: 16, height: 16) { _, _ in }
+        var order: [String] = []
+        processor.onResult = { _, _, _, _, _, _ in order.append("send") }
+        processor.onHealthSample = { _, _, _, _ in
+            XCTAssertEqual(order, ["send"], "UI統計を待つ前に座標を送信する")
+            order.append("health")
+        }
+        processor.queue.sync { processor.process(frame) }
+        XCTAssertEqual(order, ["send", "health"])
+    }
+
+    func testCaptureHealthUsesHostClockInReleaseAsWellAsDebug() throws {
+        let processor = FrameProcessor(expiryScheduler: nil)
+        processor.configureCaptureSynchronizationClock(CMClockGetHostTimeClock())
+        let frame = sampleBuffer(width: 16, height: 16) { _, _ in }
+        let pts = CMClockGetTime(CMClockGetHostTimeClock()) - CMTime(seconds: 0.02, preferredTimescale: 1_000_000)
+        var timing = CMSampleTimingInfo(duration: .invalid, presentationTimeStamp: pts, decodeTimeStamp: .invalid)
+        var timedFrame: CMSampleBuffer?
+        XCTAssertEqual(CMSampleBufferCreateCopyWithNewTiming(allocator: kCFAllocatorDefault, sampleBuffer: frame,
+                        sampleTimingEntryCount: 1, sampleTimingArray: &timing, sampleBufferOut: &timedFrame), noErr)
+        let sample = try XCTUnwrap(timedFrame)
+        var age: Double?
+        processor.onHealthSample = { _, _, _, captureMs in age = captureMs }
+        processor.submit(sample)
+        processor.queue.sync {}
+        XCTAssertNotNil(age)
+        XCTAssertGreaterThanOrEqual(age ?? 0, 20)
+    }
+
     func testReusingClosedMaskProducesSameCloseOpenResult() {
         let width = 17, height = 13
         var mask = Array(repeating: UInt8(0), count: width * height)
@@ -497,6 +657,15 @@ final class DetectionCoreTests: XCTestCase {
         XCTAssertEqual(metric?.latest, 150)
         XCTAssertEqual(metric?.median, 91)
         XCTAssertEqual(metric?.maximum, 150)
+        pending.setAcceptance(running: true, processor: 1, lifecycle: 1)
+        let trace = FrameTrace(sequence: 1, captureHostTime: 100, callbackHostTime: 100.01,
+                               processingStart: 100.01, detectionEnd: 100.013, receivedFrames: 1,
+                               processedFrames: 1, replacedFrames: 0, inputFrameIntervalStatistics: nil,
+                               captureFPS: 120)
+        pending.frame([], width: 480, height: 640, generation: 1, lifecycle: 1,
+                      redEpoch: nil, blueEpoch: nil, trace: trace,
+                      redEnqueuedAt: nil, blueEnqueuedAt: nil, requestMs: 0)
+        XCTAssertEqual(pending.performanceSnapshot().metrics["Capture mode FPS"]?.latest, 120)
     }
 
     @MainActor
@@ -508,7 +677,7 @@ final class DetectionCoreTests: XCTestCase {
 
         XCTAssertFalse(viewModel.debugDetailedProfilingEnabled,
                        "collapsed Debug Performance must not enable detailed hot-path timers")
-        XCTAssertEqual(viewModel.debugPerformanceRows.filter { $0.category == "Camera" }.count, 5)
+        XCTAssertEqual(viewModel.debugPerformanceRows.filter { $0.category == "Camera" }.count, 6)
         XCTAssertEqual(viewModel.debugPerformanceRows.filter { $0.category == "Processing" }.count, 14)
         XCTAssertEqual(viewModel.debugPerformanceRows.filter { $0.category == "Network" }.count, 3)
         let frameAge = try? XCTUnwrap(viewModel.debugPerformanceRows.first { $0.label == "Frame age" })
@@ -1059,6 +1228,47 @@ final class DetectionCoreTests: XCTestCase {
                        ["_phonesaber._udp", "_phonesaber-p2p._udp", "_phonesaber-dp2p._tcp", "_phonesaber-diag._tcp"])
         XCTAssertFalse((Bundle.main.object(forInfoDictionaryKey: "NSLocalNetworkUsageDescription")
                         as? String ?? "").isEmpty)
+    }
+
+    func test120FPSMailboxPreservesBGRAFrameDimensionsAndRecognitionForTheSameFrame() throws {
+        let frame = sampleBuffer(width: 480, height: 640) { base, stride in
+            let bytes = base.assumingMemoryBound(to: UInt8.self)
+            for x in 100...300 {
+                for y in 300...308 {
+                    bytes[y * stride + x * 4] = 35
+                    bytes[y * stride + x * 4 + 1] = 45
+                    bytes[y * stride + x * 4 + 2] = 245
+                }
+            }
+        }
+        let buffer = try XCTUnwrap(CMSampleBufferGetImageBuffer(frame))
+        XCTAssertEqual(CVPixelBufferGetPixelFormatType(buffer), kCVPixelFormatType_32BGRA)
+        let baseline = FrameProcessor(expiryScheduler: nil)
+        var expected: [DetectedSaber] = []
+        baseline.onResult = { results, width, height, _, _, _ in
+            XCTAssertEqual(width, 480); XCTAssertEqual(height, 640)
+            expected = results
+        }
+        baseline.queue.sync { baseline.process(frame) }
+        XCTAssertFalse(expected.isEmpty)
+        let highSpeed = FrameProcessor(expiryScheduler: nil)
+        highSpeed.configureCaptureFPS(120)
+        let delivered = expectation(description: "120fps frame delivered")
+        highSpeed.onResult = { results, width, height, _, _, trace in
+            XCTAssertEqual(width, 480); XCTAssertEqual(height, 640)
+            XCTAssertEqual(results.map(\.color), expected.map(\.color))
+            XCTAssertEqual(results.map { $0.endpoints.0 }, expected.map { $0.endpoints.0 })
+            XCTAssertEqual(results.map { $0.endpoints.1 }, expected.map { $0.endpoints.1 })
+#if DEBUG
+            XCTAssertEqual(trace?.captureFPS, 120)
+#endif
+            delivered.fulfill()
+        }
+        highSpeed.submit(frame)
+        wait(for: [delivered], timeout: 3)
+        XCTAssertEqual(CVPixelBufferGetWidth(buffer), 480)
+        XCTAssertEqual(CVPixelBufferGetHeight(buffer), 640)
+        XCTAssertEqual(CVPixelBufferGetPixelFormatType(buffer), kCVPixelFormatType_32BGRA)
     }
 
     func testFrameMailboxProcessesOnlyNewestWaitingFrame() {

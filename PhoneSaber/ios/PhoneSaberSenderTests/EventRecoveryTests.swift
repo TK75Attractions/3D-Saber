@@ -113,6 +113,15 @@ final class EventRecoveryTests: XCTestCase {
         XCTAssertEqual(camera.state, .recovering)
     }
 
+    func testFPSComparisonSupports60Versus120AndFallsBackOnUnsupportedDevices() {
+        XCTAssertEqual(FPSComparisonPolicy.nextFPS(current: 60, highFPS: 120, supports120: true), 120)
+        XCTAssertEqual(FPSComparisonPolicy.nextFPS(current: 120, highFPS: 120, supports120: true), 60)
+        XCTAssertEqual(FPSComparisonPolicy.nextFPS(current: 30, highFPS: 120, supports120: true), 60)
+        XCTAssertEqual(FPSComparisonPolicy.nextFPS(current: 30, highFPS: 120, supports120: false), 60)
+        XCTAssertEqual(FPSComparisonPolicy.nextFPS(current: 60, highFPS: 120, supports120: false), 30)
+        XCTAssertEqual(FPSComparisonPolicy.nextFPS(current: 60, highFPS: 60, supports120: true), 30)
+    }
+
     func testFPSComparisonExpiresAfterFiveMinutesEvenWhenNotSending() {
         var policy = FPSComparisonPolicy()
         XCTAssertFalse(policy.shouldDisable(at: 1000))

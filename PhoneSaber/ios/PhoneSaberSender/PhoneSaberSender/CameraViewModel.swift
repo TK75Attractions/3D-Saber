@@ -78,6 +78,8 @@ struct CameraFormatOption: Equatable {
     let width: Int32
     let height: Int32
     let frameRateRanges: [ClosedRange<Double>]
+    var fieldOfView: Float = 0
+    var isBinned = false
 
     var pixelCount: Int64 { Int64(width) * Int64(height) }
 }
@@ -113,6 +115,77 @@ func preferredCameraFormatIndex(
         if lhsCeiling != rhsCeiling { return lhsCeiling < rhsCeiling }
         return lhs.index < rhs.index
     }.first?.index
+}
+
+// 60fps と同じ解析寸法・画角だけを許可する。未知の画角は互換とみなさない。
+func highSpeedCameraFormatIndex(options: [CameraFormatOption]) -> Int? {
+    guard let baselineIndex = preferredCameraFormatIndex(options: options, targetFPS: 60),
+          let baseline = options.first(where: { $0.index == baselineIndex }),
+          baseline.fieldOfView.isFinite, baseline.fieldOfView > 0 else { return nil }
+    return options.filter {
+        $0.width == baseline.width && $0.height == baseline.height &&
+        $0.fieldOfView == baseline.fieldOfView && supportsFrameRate(120, ranges: $0.frameRateRanges)
+    }.sorted { lhs, rhs in
+        let left = lhs.frameRateRanges.map(\.upperBound).max() ?? 0
+        let right = rhs.frameRateRanges.map(\.upperBound).max() ?? 0
+        if left != right { return left > right }
+        return lhs.index < rhs.index
+    }.first?.index
+}
+
+func storedCameraFPS(_ value: Int) -> Int {
+    [30, 60, 120].contains(value) ? value : 60
+}
+
+// 通常は main と同じ低照度設定だけを書く。HDR・画角を変える設定は明示 opt-in。
+func configureCameraPostProcessing(_ camera: AVCaptureDevice, experimental: Bool) -> Bool {
+    if camera.isLowLightBoostSupported {
+        camera.automaticallyEnablesLowLightBoostWhenAvailable = false
+    }
+    return !experimental || disableCameraPostProcessing(camera)
+}
+
+// 試験終了後に同じ device を再利用しても、試験の設定が通常撮影に残らないようにする。
+struct CameraPostProcessingState {
+    let format: AVCaptureDevice.Format
+    let colorSpace: AVCaptureColorSpace
+    let automaticHDR: Bool
+    let hdr: Bool
+    let distortionCorrection: Bool?
+
+    init(_ camera: AVCaptureDevice) {
+        format = camera.activeFormat
+        colorSpace = camera.activeColorSpace
+        automaticHDR = camera.automaticallyAdjustsVideoHDREnabled
+        hdr = camera.isVideoHDREnabled
+        distortionCorrection = camera.isGeometricDistortionCorrectionSupported
+            ? camera.isGeometricDistortionCorrectionEnabled : nil
+    }
+
+    func restore(_ camera: AVCaptureDevice) {
+        camera.activeFormat = format
+        camera.activeColorSpace = colorSpace
+        camera.automaticallyAdjustsVideoHDREnabled = false
+        camera.isVideoHDREnabled = hdr
+        camera.automaticallyAdjustsVideoHDREnabled = automaticHDR
+        if let distortionCorrection { camera.isGeometricDistortionCorrectionEnabled = distortionCorrection }
+    }
+}
+
+// activeFormat を設定した後、同じ configuration lock 内で呼ぶ。
+@discardableResult
+func disableCameraPostProcessing(_ camera: AVCaptureDevice) -> Bool {
+    // HLG では videoHDREnabled=false が無視されるため、先に SDR へ戻す。
+    if camera.activeColorSpace == .HLG_BT2020 {
+        guard camera.activeFormat.supportedColorSpaces.contains(.sRGB) else { return false }
+        camera.activeColorSpace = .sRGB
+    }
+    camera.automaticallyAdjustsVideoHDREnabled = false
+    camera.isVideoHDREnabled = false
+    if camera.isGeometricDistortionCorrectionSupported {
+        camera.isGeometricDistortionCorrectionEnabled = false
+    }
+    return true
 }
 
 struct CameraFrameIntervalStatistics: Equatable {
@@ -565,6 +638,7 @@ final class CameraUIPendingState: @unchecked Sendable {
     }
 
     private func recordFrameTrace(_ trace: FrameTrace) {
+        addPerformance("Capture mode FPS", value: Double(trace.captureFPS))
         if let capture = trace.captureHostTime, trace.callbackHostTime >= capture {
             addPerformance("Camera / AVFoundation age", value: (trace.callbackHostTime - capture) * 1000)
         }
@@ -765,10 +839,13 @@ final class CameraViewModel: NSObject, ObservableObject {
     @Published private(set) var debugCameraConfiguration = DebugCameraConfiguration.unavailable
     @Published private(set) var debugFrameIntervalStatistics: CameraFrameIntervalStatistics?
     @Published private(set) var debugSupports60FPS = false
-    /// F9 遅延テスト用: 送信中だけ 30⇄60fps を30秒ごとに切り替える（保存しない）。
-    /// PC 側は赤の受信数（約30/約60 件/秒）でどちらの区間かを判別する。
+    /// F9 遅延テスト用: 選択した2つのfpsを30秒ごとに切り替える（保存しない）。
+    /// PC 側は赤の受信数（約30/約60/約120 件/秒）でどちらの区間かを判別する。
     @Published var debugAlternateFPS = false {
         didSet { scheduleFPSAlternation() }
+    }
+    @Published var debugComparisonHighFPS = 60 {
+        didSet { if debugAlternateFPS { scheduleFPSAlternation() } }
     }
     private var fpsAlternationTask: Task<Void, Never>?
     private var fpsComparisonPolicy = FPSComparisonPolicy()
@@ -812,8 +889,14 @@ final class CameraViewModel: NSObject, ObservableObject {
     /// 本番のカメラ fps（既定60）。2026-10-07 の Mac+iPhone 実測で撮影→送信が 50→37ms。
     /// 60fps の形式がない端末は30fpsで動かす。認識・UDP形式は変えない。
     static let cameraFPSKey = "cameraFPS"
-    @Published private(set) var cameraFPS: Int = UserDefaults.standard.integer(forKey: CameraViewModel.cameraFPSKey) == 30 ? 30 : 60
+    @Published private(set) var cameraFPS: Int = storedCameraFPS(UserDefaults.standard.integer(forKey: CameraViewModel.cameraFPSKey))
     @Published private(set) var supports60FPS = true
+    @Published private(set) var supports120FPS = false
+    @Published private(set) var lowLatencyCameraSettings = false
+    private var cameraPostProcessingState: CameraPostProcessingState?
+    private var cameraWideColorAutomatic: Bool?
+    private var latencyLogPolicy = CaptureLatencyLogPolicy()
+    private var activeCaptureFPS = 0.0
     @Published private(set) var automaticResumeMessage = ""
     @Published private(set) var cameraRecoveryMessage = ""
     private var cameraRecoveryGeneration = 0
@@ -1230,6 +1313,11 @@ final class CameraViewModel: NSObject, ObservableObject {
         }
         lastThermalState = state
         let rates = running ? healthMeter.snapshot(at: time) : DeviceHealthRates()
+        if latencyLogPolicy.shouldLog(at: time, sending: running) {
+            ConnectivityLog.shared.recordToFileOnly("CAPTURE_METRICS", CaptureLatencyLogPolicy.line(
+                route: delivery.currentRoute.rawValue, captureModeFPS: activeCaptureFPS,
+                rates: rates, thermal: thermal))
+        }
         let battery = deviceBatterySnapshot()
         if debugRecordingActive {
             processor.updateDebugDeviceHealthState(DebugDeviceHealthState(
@@ -1456,7 +1544,8 @@ final class CameraViewModel: NSObject, ObservableObject {
     }
 
     func selectCameraFPS(_ fps: Int, persist: Bool = true) {
-        guard fps == 30 || fps == 60, fps != cameraFPS else { return }
+        guard [30, 60, 120].contains(fps), fps != cameraFPS,
+              fps != 120 || supports120FPS else { return }
         cameraFPS = fps
         if persist && NSClassFromString("XCTestCase") == nil {
             UserDefaults.standard.set(fps, forKey: Self.cameraFPSKey)
@@ -1474,12 +1563,19 @@ final class CameraViewModel: NSObject, ObservableObject {
         start()
     }
 
+    func setLowLatencyCameraSettings(_ enabled: Bool) {
+        guard enabled != lowLatencyCameraSettings, cameraExposureExperimentEditable else { return }
+        lowLatencyCameraSettings = enabled
+        if running && sceneIsActive { restartCameraForFPSChange() }
+    }
+
     private func effectiveCameraFPS(at time: TimeInterval) -> Int {
         let effectiveFPS = thermalFPSPolicy.effectiveFPS(
             thermal: DeviceThermalLevel(state: ProcessInfo.processInfo.thermalState), at: time, userFPS: cameraFPS)
-        thermalFPSMessage = cameraFPS == 60 && effectiveFPS == 30
+        thermalFPSMessage = cameraFPS > 30 && effectiveFPS == 30
             ? "発熱のため 30fps に下げています。箱を開けて通風を確認" : ""
-        return effectiveFPS == 60 && supports60FPS ? 60 : 30
+        if effectiveFPS == 120 && supports120FPS { return 120 }
+        return effectiveFPS >= 60 && supports60FPS ? 60 : 30
     }
 
 #if DEBUG
@@ -1489,8 +1585,12 @@ final class CameraViewModel: NSObject, ObservableObject {
         fpsComparisonPolicy.setEnabled(debugAlternateFPS, at: ProcessInfo.processInfo.systemUptime)
         guard debugAlternateFPS else {
             // 終了したら保存済みの設定へ戻す。
-            selectCameraFPS(UserDefaults.standard.integer(forKey: Self.cameraFPSKey) == 30 ? 30 : 60, persist: false)
+            let saved = storedCameraFPS(UserDefaults.standard.integer(forKey: Self.cameraFPSKey))
+            selectCameraFPS(saved == 120 && !supports120FPS ? 60 : saved, persist: false)
             return
+        }
+        if debugComparisonHighFPS == 120 && supports120FPS && cameraFPS == 30 {
+            selectCameraFPS(60, persist: false)
         }
         fpsAlternationTask = Task { @MainActor [weak self] in
             while !Task.isCancelled {
@@ -1501,7 +1601,8 @@ final class CameraViewModel: NSObject, ObservableObject {
                     return
                 }
                 if self.running && self.supports60FPS && self.sceneIsActive {
-                    self.selectCameraFPS(self.cameraFPS == 60 ? 30 : 60, persist: false)
+                    self.selectCameraFPS(FPSComparisonPolicy.nextFPS(current: self.cameraFPS, highFPS: self.debugComparisonHighFPS,
+                                                                  supports120: self.supports120FPS), persist: false)
                 }
             }
         }
@@ -1583,6 +1684,14 @@ final class CameraViewModel: NSObject, ObservableObject {
             fail("カメラを初期化できません")
             return
         }
+        if let automatic = cameraWideColorAutomatic {
+            session.automaticallyConfiguresCaptureDeviceForWideColor = automatic
+            cameraWideColorAutomatic = nil
+        }
+        if lowLatencyCameraSettings {
+            cameraWideColorAutomatic = session.automaticallyConfiguresCaptureDeviceForWideColor
+            session.automaticallyConfiguresCaptureDeviceForWideColor = false
+        }
         session.addInput(input)
         let formatOptions = camera.formats.enumerated().map { index, format in
             let size = CMVideoFormatDescriptionGetDimensions(format.formatDescription)
@@ -1590,18 +1699,22 @@ final class CameraViewModel: NSObject, ObservableObject {
                 index: index,
                 width: size.width,
                 height: size.height,
-                frameRateRanges: format.videoSupportedFrameRateRanges.map { $0.minFrameRate...$0.maxFrameRate }
+                frameRateRanges: format.videoSupportedFrameRateRanges.map { $0.minFrameRate...$0.maxFrameRate },
+                fieldOfView: format.videoFieldOfView, isBinned: format.isVideoBinned
             )
         }
         let sixtyFPSOptions = formatOptions.filter { supportsFrameRate(60, ranges: $0.frameRateRanges) }
         supports60FPS = !sixtyFPSOptions.isEmpty
+        let highSpeedIndex = highSpeedCameraFormatIndex(options: formatOptions)
+        supports120FPS = highSpeedIndex != nil
 #if DEBUG
         debugSupports60FPS = supports60FPS
         debug60FPSFormats = Self.formatSummary(sixtyFPSOptions)
 #endif
         let targetFPS = Double(effectiveCameraFPS(at: ProcessInfo.processInfo.systemUptime))
         requestedHealthFPS = targetFPS
-        let selectedIndex = preferredCameraFormatIndex(options: formatOptions, targetFPS: targetFPS)
+        let selectedIndex = targetFPS == 120 ? highSpeedIndex
+            : preferredCameraFormatIndex(options: formatOptions, targetFPS: targetFPS)
         let format = selectedIndex.map { camera.formats[$0] } ?? camera.formats.min { left, right in
             let lhs = CMVideoFormatDescriptionGetDimensions(left.formatDescription)
             let rhs = CMVideoFormatDescriptionGetDimensions(right.formatDescription)
@@ -1611,12 +1724,18 @@ final class CameraViewModel: NSObject, ObservableObject {
             do {
                 try camera.lockForConfiguration()
                 defer { camera.unlockForConfiguration() }
+                if let saved = cameraPostProcessingState {
+                    saved.restore(camera)
+                    cameraPostProcessingState = nil
+                }
                 camera.activeFormat = format
                 if #available(iOS 18.0, *), format.isAutoVideoFrameRateSupported {
                     camera.isAutoVideoFrameRateEnabled = false
                 }
-                if camera.isLowLightBoostSupported {
-                    camera.automaticallyEnablesLowLightBoostWhenAvailable = false
+                if lowLatencyCameraSettings { cameraPostProcessingState = CameraPostProcessingState(camera) }
+                guard configureCameraPostProcessing(camera, experimental: lowLatencyCameraSettings) else {
+                    throw NSError(domain: "PhoneSaberCamera", code: 1,
+                                  userInfo: [NSLocalizedDescriptionKey: "このカメラ形式ではHDRを無効にできません"])
                 }
                 let supportedRanges = format.videoSupportedFrameRateRanges.map { $0.minFrameRate...$0.maxFrameRate }
                 if let duration = fixedFrameDuration(fps: targetFPS, ranges: supportedRanges) {
@@ -1624,6 +1743,12 @@ final class CameraViewModel: NSObject, ObservableObject {
                     camera.activeVideoMaxFrameDuration = duration
                 }
             } catch {
+                if lowLatencyCameraSettings || cameraPostProcessingState != nil {
+                    session.commitConfiguration()
+                    cameraRecoveryInProgress = false
+                    fail("カメラ形式を設定できません: \(error.localizedDescription)")
+                    return
+                }
                 errorMessage = "カメラ形式を設定できません: \(error.localizedDescription)"
             }
         }
@@ -1647,10 +1772,18 @@ final class CameraViewModel: NSObject, ObservableObject {
         // activeMaxExposureDuration, so the experiment is (re)applied here.
         // With the default auto setting this does not touch the device.
         applyCameraExposureExperiment(to: camera)
+        let actualDuration = CMTimeGetSeconds(camera.activeVideoMaxFrameDuration)
+        let actualFPS = actualDuration > 0 && actualDuration.isFinite ? Int((1 / actualDuration).rounded()) : 0
+        activeCaptureFPS = Double(actualFPS)
 #if DEBUG
         activeCamera = camera
         updateCameraConfiguration(camera)
+        // F9 の PC ログと照合する設定区間。座標 datagram には何も追加しない。
+        print("[CAPTURE_METRICS] \(ISO8601DateFormatter().string(from: Date())) station=\(station.isEmpty ? "?" : station) requested-fps=\(cameraFPS) capture-fps=\(actualFPS)")
 #endif
+        processor.configureCaptureFPS(actualFPS)
+        let activeFormatIndex = camera.formats.firstIndex(of: camera.activeFormat).map { String($0) } ?? "?"
+        ConnectivityLog.shared.record("CAPTURE_MODE", "station=\(station.isEmpty ? "?" : station) requested-fps=\(cameraFPS) capture-fps=\(actualFPS) low-latency=\(lowLatencyCameraSettings) format-index=\(activeFormatIndex) format=\(CMVideoFormatDescriptionGetDimensions(camera.activeFormat.formatDescription)) fov=\(camera.activeFormat.videoFieldOfView) binned=\(camera.activeFormat.isVideoBinned) BGRA portrait")
         processor.configureCaptureSynchronizationClock(session.synchronizationClock)
         let currentGeneration = lifecycleGeneration
         if configuredHost.isEmpty {
@@ -1734,6 +1867,9 @@ final class CameraViewModel: NSObject, ObservableObject {
             let sendRequestStart = ProcessInfo.processInfo.systemUptime
 #endif
             let completion: (Result<TimeInterval, Error>) -> Void = { [weak self] result in
+                if case .success = result {
+                    self?.healthMeter.sent(at: ProcessInfo.processInfo.systemUptime, port: port, generation: generation)
+                }
                 self?.uiPending.completed(port: port, generation: sendGeneration, result: result,
                                           processingStart: processingStart)
             }
@@ -1875,7 +2011,7 @@ final class CameraViewModel: NSObject, ObservableObject {
         let updated = DebugCameraConfiguration(
             device: camera.localizedName,
             position: camera.position == .back ? "Back" : camera.position == .front ? "Front" : "Unspecified",
-            format: "\(size.width)×\(size.height)",
+            format: "#\(camera.formats.firstIndex(of: format).map { String($0) } ?? "?") \(size.width)×\(size.height) / FOV \(format.videoFieldOfView) / binned \(format.isVideoBinned)",
             fpsRanges: ranges.isEmpty ? "Not available" : ranges,
             minimumDuration: Self.durationDescription(camera.activeVideoMinFrameDuration),
             maximumDuration: Self.durationDescription(camera.activeVideoMaxFrameDuration),
@@ -1888,7 +2024,7 @@ final class CameraViewModel: NSObject, ObservableObject {
                 exposure: camera.exposureDuration,
                 frameDuration: camera.activeVideoMaxFrameDuration
             ),
-            hdr: "format \(format.isVideoHDRSupported ? "supported" : "unsupported"), active \(camera.isVideoHDREnabled ? "On" : "Off"), auto \(camera.automaticallyAdjustsVideoHDREnabled ? "On" : "Off")",
+            hdr: "GDC \(camera.isGeometricDistortionCorrectionEnabled ? "On" : "Off"), wide auto \(session.automaticallyConfiguresCaptureDeviceForWideColor ? "On" : "Off"), format \(format.isVideoHDRSupported ? "supported" : "unsupported"), active \(camera.isVideoHDREnabled ? "On" : "Off"), auto \(camera.automaticallyAdjustsVideoHDREnabled ? "On" : "Off")",
             lowLightBoost: camera.isLowLightBoostSupported
                 ? "active \(camera.isLowLightBoostEnabled ? "Yes" : "No"), auto \(camera.automaticallyEnablesLowLightBoostWhenAvailable ? "On" : "Off")"
                 : "Unsupported",
@@ -2656,6 +2792,7 @@ struct DebugPerformanceRow: Identifiable, Equatable {
     static let definitions: [(category: String, label: String, source: String, unit: String)] = [
         ("Camera", "Frame age", "Camera / AVFoundation age", "ms"),
         ("Camera", "Frame queue", "Callback → processing start", "ms"),
+        ("Camera", "Capture mode", "Capture mode FPS", "fps"),
         ("Camera", "Input FPS", "Input FPS", "fps"),
         ("Camera", "Processed FPS", "Processed FPS", "fps"),
         ("Camera", "Replaced FPS", "Replaced frames", "fps"),

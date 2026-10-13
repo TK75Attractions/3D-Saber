@@ -30,6 +30,7 @@ struct FrameTrace {
     let processedFrames: Int
     let replacedFrames: Int
     let inputFrameIntervalStatistics: CameraFrameIntervalStatistics?
+    var captureFPS = 60
 
     var cameraAgeMs: Double? {
         guard let captureHostTime, callbackHostTime >= captureHostTime else { return nil }
@@ -44,6 +45,36 @@ enum HostMonotonicClock {
     static func now() -> TimeInterval {
         CMTimeGetSeconds(CMClockGetTime(CMClockGetHostTimeClock()))
     }
+}
+
+// 処理がフレーム周期以内なら全枚、超える間は待機中の最新1枚だけを保持する。
+// 呼出側の lock で保護する。処理時間を予測して間引く閾値は設けない。
+struct LatestCameraFrameMailbox<Frame> {
+    private(set) var pending: Frame?
+    private var workerScheduled = false
+
+    mutating func offer(_ frame: Frame) -> (schedule: Bool, replaced: Bool) {
+        let replaced = pending != nil
+        pending = frame
+        let schedule = !workerScheduled
+        workerScheduled = true
+        return (schedule, replaced)
+    }
+
+    mutating func take() -> Frame? {
+        let frame = pending
+        pending = nil
+        if frame == nil { workerScheduled = false }
+        return frame
+    }
+
+    mutating func finish() -> Bool {
+        let hasPending = pending != nil
+        if !hasPending { workerScheduled = false }
+        return hasPending
+    }
+
+    mutating func clearPending() { pending = nil }
 }
 
 final class FrameProcessor: @unchecked Sendable {
@@ -77,15 +108,15 @@ final class FrameProcessor: @unchecked Sendable {
         let callbackIntervalMs: Double?
         let callbackWorkMs: Double?
     }
-    private var pendingFrame: PendingFrame?
+    private var mailbox = LatestCameraFrameMailbox<PendingFrame>()
     private var pendingFrameShouldSave = false
     private var rawFrameSaveRequested = false
-    private var workerScheduled = false
     private var replacedPendingFrames = 0
     private var receivedFrames = 0
     private var processedFrames = 0
     private var nextFrameSequence: UInt64 = 0
     private var captureSynchronizationClock: CMClock?
+    private var captureFPS = 60
     private var debugVideoRecorder: DebugVideoRecorder?
     private var debugRecordingIsFinalizing = false
     private var debugRecordingFinishCallbacks: [
@@ -160,7 +191,7 @@ final class FrameProcessor: @unchecked Sendable {
     @discardableResult
     func reset() -> Int {
         pendingLock.lock()
-        pendingFrame = nil
+        mailbox.clearPending()
         pendingFrameShouldSave = false
         rawFrameSaveRequested = false
         replacedPendingFrames = 0
@@ -195,6 +226,10 @@ final class FrameProcessor: @unchecked Sendable {
         }
     }
 
+    func configureCaptureFPS(_ fps: Int) {
+        pendingLock.lock(); captureFPS = fps; pendingLock.unlock()
+    }
+
     /// AVCaptureSession documents that its output PTS values use this clock's
     /// timebase. Keeping it here lets the callback convert to host time before
     /// it enters the one-slot mailbox.
@@ -222,45 +257,40 @@ final class FrameProcessor: @unchecked Sendable {
         pendingLock.lock()
         receivedFrames += 1
         nextFrameSequence += 1
-#if DEBUG
         let callbackHostTime = clock()
+        let captureHostTime = convertedCaptureHostTime(sampleBuffer)
+#if DEBUG
         let presentationTime = validPresentationTime(sampleBuffer)
         inputFrameIntervalWindow.record(presentationTime: presentationTime)
-        let captureHostTime = convertedCaptureHostTime(sampleBuffer)
         let callbackIntervalMs = freezeDiagnosticsEnabled
             ? lastCameraCallbackTime.map { (callbackHostTime - $0) * 1000 } : nil
         if freezeDiagnosticsEnabled { lastCameraCallbackTime = callbackHostTime }
         let callbackWorkMs: Double? = freezeDiagnosticsEnabled
             ? max(0, (clock() - callbackHostTime) * 1000) : nil
 #else
-        let callbackHostTime: TimeInterval = 0
-        let captureHostTime: TimeInterval? = nil
         let callbackIntervalMs: Double? = nil
         let callbackWorkMs: Double? = nil
 #endif
-        if pendingFrame != nil { replacedPendingFrames += 1 }
-        pendingFrame = PendingFrame(sampleBuffer: sampleBuffer, sequence: nextFrameSequence,
+        let offered = mailbox.offer(PendingFrame(sampleBuffer: sampleBuffer, sequence: nextFrameSequence,
                                     callbackHostTime: callbackHostTime, captureHostTime: captureHostTime,
                                     callbackIntervalMs: callbackIntervalMs,
-                                    callbackWorkMs: callbackWorkMs)
+                                    callbackWorkMs: callbackWorkMs))
+        if offered.replaced { replacedPendingFrames += 1 }
         if rawFrameSaveRequested {
             pendingFrameShouldSave = true
             rawFrameSaveRequested = false
         }
-        let shouldSchedule = !workerScheduled
-        if shouldSchedule { workerScheduled = true }
+        let shouldSchedule = offered.schedule
         pendingLock.unlock()
         if shouldSchedule { queue.async { [weak self] in self?.drainLatestFrames() } }
     }
 
     private func drainLatestFrames() {
         pendingLock.lock()
-        guard let next = pendingFrame else {
-            workerScheduled = false
+        guard let next = mailbox.take() else {
             pendingLock.unlock()
             return
         }
-        pendingFrame = nil
         let shouldSave = pendingFrameShouldSave
         pendingFrameShouldSave = false
         pendingLock.unlock()
@@ -275,8 +305,7 @@ final class FrameProcessor: @unchecked Sendable {
         // on MainActor; give that check and reset/configuration calls a turn
         // between frames while still retaining only the newest pending frame.
         pendingLock.lock()
-        let hasPendingFrame = pendingFrame != nil
-        if !hasPendingFrame { workerScheduled = false }
+        let hasPendingFrame = mailbox.finish()
         pendingLock.unlock()
         if hasPendingFrame {
             queue.async { [weak self] in self?.drainLatestFrames() }
@@ -285,14 +314,11 @@ final class FrameProcessor: @unchecked Sendable {
 
     func process(_ sampleBuffer: CMSampleBuffer) {
         pendingLock.lock(); nextFrameSequence += 1; receivedFrames += 1
-#if DEBUG
         let sequence = nextFrameSequence; let callbackHostTime = clock()
+        let captureHostTime = convertedCaptureHostTime(sampleBuffer)
+#if DEBUG
         let presentationTime = validPresentationTime(sampleBuffer)
         inputFrameIntervalWindow.record(presentationTime: presentationTime)
-        let captureHostTime = convertedCaptureHostTime(sampleBuffer)
-#else
-        let sequence = nextFrameSequence; let callbackHostTime: TimeInterval = 0
-        let captureHostTime: TimeInterval? = nil
 #endif
         pendingLock.unlock()
         process(sampleBuffer, saveRequestedRawFrame: false, sequence: sequence,
@@ -523,8 +549,6 @@ final class FrameProcessor: @unchecked Sendable {
             (.blue, sabers[.blue])
         ]
         let detectionEnd = clock()
-        onHealthSample?(ProcessInfo.processInfo.systemUptime, max(0, (detectionEnd - processingStart) * 1000), generation,
-                        captureHostTime.map { (detectionEnd - $0) * 1000 })
         // Detection has finished reading BGRA. Keep the lock only when a
         // requested recording or raw save still needs the pixel buffer.
 #if DEBUG
@@ -544,18 +568,23 @@ final class FrameProcessor: @unchecked Sendable {
         let traceProcessedFrames = processedFrames
         let traceReplacedFrames = replacedPendingFrames
         let inputIntervalSamples = inputFrameIntervalWindow.samples
+        let traceCaptureFPS = captureFPS
         pendingLock.unlock()
         let trace = FrameTrace(sequence: sequence, captureHostTime: captureHostTime,
                                callbackHostTime: callbackHostTime, processingStart: processingStart,
                                detectionEnd: detectionEnd, receivedFrames: traceReceivedFrames,
                                processedFrames: traceProcessedFrames, replacedFrames: traceReplacedFrames,
-                               inputFrameIntervalStatistics: CameraFrameIntervalWindow.statistics(for: inputIntervalSamples))
+                               inputFrameIntervalStatistics: CameraFrameIntervalWindow.statistics(for: inputIntervalSamples),
+                               captureFPS: traceCaptureFPS)
         #else
         let trace: FrameTrace? = nil
         #endif
         let emitted = emitResults(detected, width: width, height: height,
                                   processingStart: processingStart,
                                   generation: generation, trace: trace, recordingFrameID: sequence)
+        // 統計ロックを待つ前に座標を送信する。従来の撮影→認識完了の測定終点は維持。
+        onHealthSample?(ProcessInfo.processInfo.systemUptime, max(0, (detectionEnd - processingStart) * 1000), generation,
+                        captureHostTime.map { (detectionEnd - $0) * 1000 })
         if let debugVideoRecorder = debugVideoRecorder {
             let processingTimeSeconds = max(0, clock() - processingStart)
             // Recording only: this frame's Exif attachment plus the newest

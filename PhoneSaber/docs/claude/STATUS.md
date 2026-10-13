@@ -4,6 +4,8 @@
 
 ## ユーザー待ち
 
+iPhone遅延: 10-13 に main へ取り込み済み（公式 verify PASS）。既定の動作は 60fps のまま。120fps と「低遅延カメラ設定（試験）」は既定 OFF で、実機での比較待ち（iPhone 13 で 60/120 fps と試験 OFF/ON を各60秒。数値入力不要、`Library/Logs/connectivity.log` の `CAPTURE_METRICS` を読む）。[手順と検証](ios-latency-20261013.md)。
+
 プロトコル監査（cx/protocol-20261011）はオペレーターの差分レビュー・公式verify待ち。commit / push はしていない。経路受理・探索validation・警告表示の変更案は[契約報告](protocol-contracts-20261011.md)に記録し、実装していない。
 
 2026-10-11時点。最新版を実機に入れて確認する。手順は[当日runbook](EVENT_DAY_RUNBOOK.md)。
@@ -59,6 +61,11 @@
 11. **将来の構成を比較**: AWDLが不安定ならUSB/usbmuxd/TCPを試すか判断し、座標互換・滞留・切断復帰・画面全体の遅延を測る。Mac内蔵／USBカメラ直接認識は精度・端点・配置・遅延を比較して採否を決める。Continuity Cameraは別の無線経路で、縮小／FPSだけを通信遅延改善と扱わない。
 
 ## 作業ログ
+
+### 2026-10-13 iPhone capture→send の仕上げ（Codex 実装、Claude がレビュー・verify して取り込み）
+- 60/30の通常AVCapture setter履歴をmainと一致させ、HDR/GDC/広色域変更は既定OFFの試験トグルへ分離。120 opt-inと最新1枚mailboxを維持。
+- Releaseで撮影時刻を取得し、10秒ごとの経路・fps・遅延median/p95・発熱ログを追加。健康統計を現在の送信より後へ移し、集計ロックを短縮。120再発熱時の30fps退避、LAN fallback後の経路ログも修正。
+- 修正前FAIL／修正後PASSのhost回帰、formal 40/40、静的検出、latency_report 15/15、iOS Release build・Debug XCTest build PASS。取り込み時に公式 verify（Simulator の全 XCTest を含む）PASS。実機は未実施。10秒ごとの計測行は画面の通信ログに出さずファイルだけに書くよう Claude が変更（経路の出来事を押し出さないため。ファイル上限は 1 MiB）。詳しいコマンド・人工負荷bench・未実装案は[ノート](ios-latency-20261013.md)。認識・UDP本文・Unity設定は未変更。
 
 ### 2026-10-13 ビルド済みアプリが「もっさり」する件（ユーザー報告、原因を実測）
 - Player に `event=perf`（10秒ごとに fps・最大フレーム時間・25ms/50ms 超のコマ数・赤青 pkt/s・画面の更新回数・vsync）を追加して、実画面で測った。**Title / SongSelect は fps=30.0、refresh-hz=30、vsync=1**。本編は vsync=0 で約900fps（描画は上限なし）。

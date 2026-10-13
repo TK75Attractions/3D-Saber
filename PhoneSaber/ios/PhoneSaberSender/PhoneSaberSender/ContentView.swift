@@ -333,9 +333,16 @@ struct ContentView: View {
                             )) {
                                 Text("30 FPS").tag(30)
                                 Text("60 FPS").tag(60)
+                                if model.supports120FPS { Text("120 FPS").tag(120) }
                             }
                             .pickerStyle(.segmented)
-                            Toggle("fps自動比較（30秒ごとに30⇄60・保存しない。PCのF9遅延テスト用）", isOn: $model.debugAlternateFPS)
+                            if model.supports120FPS {
+                                Picker("F9 比較条件", selection: $model.debugComparisonHighFPS) {
+                                    Text("30⇄60").tag(60)
+                                    Text("60⇄120").tag(120)
+                                }.pickerStyle(.segmented)
+                            }
+                            Toggle("fps自動比較（30秒ごと・保存しない。PCのF9遅延テスト用）", isOn: $model.debugAlternateFPS)
                             DebugInfoRow(label: "60 FPS formats", value: model.debug60FPSFormats)
                             DebugInfoRow(label: "Device", value: model.debugCameraConfiguration.device)
                             DebugInfoRow(label: "Position", value: model.debugCameraConfiguration.position)
@@ -358,6 +365,9 @@ struct ContentView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                         VStack(alignment: .leading, spacing: 4) {
                             Text("Camera Frame Timing").font(.subheadline.weight(.semibold))
+                            DebugInfoRow(label: "Active format", value: model.debugCameraConfiguration.format)
+                            DebugInfoRow(label: "Pixel format", value: model.debugCameraConfiguration.pixelFormat)
+                            DebugInfoRow(label: "Frame duration", value: model.debugCameraConfiguration.maximumDuration)
                             if let timing = model.debugFrameIntervalStatistics {
                                 DebugInfoRow(label: "Measured camera FPS", value: String(format: "%.1f fps", timing.measuredFPS))
                                 DebugInfoRow(label: "Interval latest", value: String(format: "%.1f ms", timing.latestMs))
@@ -397,8 +407,16 @@ struct ContentView: View {
                             )) {
                                 Text("60 fps（低遅延・既定）").tag(60)
                                 Text("30 fps").tag(30)
+                                if model.supports120FPS { Text("120 fps（実験）").tag(120) }
                             }
                             .pickerStyle(.segmented)
+                            Toggle("低遅延カメラ設定（試験）", isOn: Binding(
+                                get: { model.lowLatencyCameraSettings },
+                                set: { model.setLowLatencyCameraSettings($0) }
+                            ))
+                            .disabled(!model.cameraExposureExperimentEditable)
+                            Text("既定OFF。HDR・歪み補正を無効化するため画像が変わる場合があります。アプリ終了でOFFに戻ります。")
+                                .font(.caption).foregroundStyle(.secondary)
                             Text(model.supports60FPS
                                  ? "60 fpsは撮影から送信までが約13ms短い（2026-10-07実測）。発熱や処理落ちが続くときだけ30 fpsにします。"
                                  : "この端末のカメラは60 fpsに対応していないため、30 fpsで動きます。")

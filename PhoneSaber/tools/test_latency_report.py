@@ -101,6 +101,48 @@ class LatencyReportTests(unittest.TestCase):
             self.assertEqual(latency_report.main(["/nonexistent/縁日 log/events.log"]), 2)
         self.assertIn("を読めません", error.getvalue())
 
+    def test_120fps_is_not_mislabeled_as_60_and_transition_blocks_are_excluded(self):
+        lines = [SAMPLE[0], SAMPLE[1].replace("red-pkt-per-s=59.0", "red-pkt-per-s=119.5"),
+                 SAMPLE[2].replace("red-pkt-per-s=29.5", "red-pkt-per-s=90.0")]
+        rows = latency_report.summarize(latency_report.parse(lines))
+        self.assertEqual([(r["fps"], r["median"]) for r in rows], [(60, 100), (120, 110)])
+        for rate in [73, 90, 104.9, 133, float("nan"), float("inf")]:
+            self.assertIsNone(latency_report.phone_fps(rate))
+        self.assertEqual(latency_report.phone_fps(105), 120)
+        self.assertEqual(latency_report.phone_fps(132), 120)
+
+    def test_sender_metrics_identify_overloaded_120_and_exclude_switching_blocks(self):
+        metrics = latency_report.parse_sender_metrics([
+            "[CAPTURE_METRICS] 2026-10-08T01:00:00Z station=A requested-fps=120 capture-fps=120",
+            "[CAPTURE_METRICS] 2026-10-08T01:00:30Z station=A requested-fps=120 capture-fps=30",
+            "[CAPTURE_METRICS] 2026-10-08T01:00:50Z station=B requested-fps=60 capture-fps=60",
+        ])
+        rows = latency_report.summarize(latency_report.parse(SAMPLE), sender_metrics=metrics)
+        # block 1 の受信は59/sでも、設定は120。block 2 は熱降格をまたぐので除外。
+        self.assertEqual([(r["fps"], r["median"]) for r in rows], [(30, 999), (120, 110)])
+        self.assertEqual(latency_report.summarize(latency_report.parse(SAMPLE), sender_metrics=[]), [])
+        self.assertEqual(latency_report.parse_sender_metrics([
+            "[CAPTURE_METRICS] bad-time station=A requested-fps=120 capture-fps=120"]), [])
+
+    def test_sender_metrics_cli_does_not_fall_back_to_packet_rate(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log, metrics = Path(directory) / "events.log", Path(directory) / "sender.log"
+            log.write_text("\n".join(SAMPLE), encoding="utf-8")
+            metrics.write_text("[CAPTURE_METRICS] 2026-10-08T01:00:00Z station=A requested-fps=120 capture-fps=120", encoding="utf-8")
+            output = io.StringIO()
+            with contextlib.redirect_stdout(output):
+                self.assertEqual(latency_report.main([str(log), "--sender-metrics", str(metrics)]), 0)
+            self.assertIn("fps-source=sender-metrics", output.getvalue())
+            self.assertIn("    120", output.getvalue())
+
+    def test_release_connectivity_log_records_identify_capture_mode(self):
+        modes = latency_report.parse_sender_metrics([
+            "2026-10-13T01:00:00.123Z [CAPTURE_MODE] station=A requested-fps=120 capture-fps=120 low-latency=false format=640x480 BGRA portrait",
+            "2026-10-13T01:00:10.123Z [CAPTURE_METRICS] route=LAN capture-mode-fps=120 capture-fps=58.0 processed-fps=57.0",
+        ])
+        self.assertEqual(len(modes), 1)
+        self.assertEqual((modes[0]["station"], modes[0]["fps"]), ("A", 120))
+
     def test_phone_fps_buckets(self):
         self.assertEqual(latency_report.phone_fps(58), 60)
         self.assertEqual(latency_report.phone_fps(30), 30)
