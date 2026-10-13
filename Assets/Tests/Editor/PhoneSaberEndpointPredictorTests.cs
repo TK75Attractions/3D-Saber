@@ -12,7 +12,7 @@ public class PhoneSaberEndpointPredictorTests
     {
         // Python/.NET と同じ固定ベクトル。生成はテスト中に行わない。
         string path = Path.Combine(Application.dataPath, "..", "PhoneSaber", "tools", "fixtures", "endpoint_predictor_vectors.csv");
-        PhoneSaberEndpointPredictor predictor = null;
+        PhoneSaberEndpointPredictor predictor = default;
         int predictions = 0;
         foreach (string line in File.ReadAllLines(path))
         {
@@ -49,6 +49,80 @@ public class PhoneSaberEndpointPredictorTests
     static void Near(Vector2 expected, Vector2 actual) =>
         Assert.Less(Vector2.Distance(expected, actual), 1e-5f);
 
+    [TestCase(0.0)]
+    [TestCase(1.0)]
+    public void FirstIntervalAfterStartOrGapDoesNotExtendJump(double start)
+    {
+        PhoneSaberEndpointPredictor predictor = default;
+        if (start > 0)
+        {
+            predictor.AddSample(0, Vector2.zero, Vector2.zero);
+            predictor.AddSample(0.02, Vector2.one * 0.02f, Vector2.one * 0.02f);
+        }
+        predictor.AddSample(start, Vector2.zero, Vector2.zero);
+        var a = new Vector2(3, 4); var b = new Vector2(-4, 3);
+        predictor.AddSample(start + 0.02, a, b);
+        predictor.Predict(start + 0.02, 60, out var predictedA, out var predictedB);
+        Near(a, predictedA); Near(b, predictedB);
+        Assert.IsTrue(predictor.LastPredictionSuppressed);
+    }
+
+    [Test]
+    public void AutomaticLeadRejectsUnsynchronizedNegativeStaleAndMissingMeasurements()
+    {
+        var values = new double[PhoneSaberStatsDisplay.MinimumTimingSamples];
+        for (int i = 0; i < values.Length; i++) values[i] = 32;
+        var measured = new PhoneSaberInputStats(true, 60, .01, "", true,
+            oneWayDelay: new PhoneSaberTimingStats(values));
+        Assert.AreEqual(32, PhoneSaberPredictionSettings.AutomaticLead(measured, true, out bool used));
+        Assert.IsTrue(used);
+        Assert.AreEqual(0, PhoneSaberPredictionSettings.AutomaticLead(measured, false, out used));
+        Assert.IsFalse(used);
+        Assert.AreEqual(0, PhoneSaberPredictionSettings.AutomaticLead(default, true, out used));
+        var stale = new PhoneSaberInputStats(true, 60, .2, "", true, oneWayDelay: measured.OneWayDelay);
+        Assert.AreEqual(0, PhoneSaberPredictionSettings.AutomaticLead(stale, true, out used));
+        values[0] = -1;
+        var negative = new PhoneSaberInputStats(true, 60, .01, "", true,
+            oneWayDelay: new PhoneSaberTimingStats(values));
+        Assert.AreEqual(0, PhoneSaberPredictionSettings.AutomaticLead(negative, true, out used));
+        for (int i = 0; i < values.Length; i++) values[i] = 135;
+        var high = new PhoneSaberInputStats(true, 60, .01, "", true,
+            oneWayDelay: new PhoneSaberTimingStats(values));
+        Assert.AreEqual(60, PhoneSaberPredictionSettings.AutomaticLead(high, true, out used));
+    }
+
+    [Test]
+    public void AutomaticModePersistsIndependentlyAndManualSelectionClearsIt()
+    {
+        string station = "auto-" + Guid.NewGuid().ToString("N").Substring(0, 10);
+        var go = new GameObject("自動予測設定テスト");
+        go.SetActive(false);
+        var input = go.AddComponent<InputPoint>();
+        typeof(InputPoint).GetField("phoneSaberStation", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(input, station);
+        try
+        {
+            Assert.IsFalse(PhoneSaberPredictionSettings.LoadAutomatic(station));
+            input.SetPredictionAutomatic();
+            Assert.IsTrue(input.PredictionAutomatic);
+            Assert.IsTrue(PhoneSaberPredictionSettings.LoadAutomatic(station));
+            Assert.AreEqual(0, input.PredictionHorizonMilliseconds);
+            input.RecordPrediction(true); input.RecordPrediction(false);
+            Assert.AreEqual(2, input.PredictionDraws);
+            Assert.AreEqual(1, input.PredictionSuppressedDraws);
+            input.SetPredictionHorizonMilliseconds(0);
+            Assert.IsFalse(input.PredictionAutomatic);
+            Assert.IsFalse(PhoneSaberPredictionSettings.LoadAutomatic(station));
+            Assert.AreEqual(0, input.PredictionHorizonMilliseconds);
+        }
+        finally
+        {
+            PlayerPrefs.DeleteKey(PhoneSaberPredictionSettings.Key(station));
+            PlayerPrefs.DeleteKey(PhoneSaberPredictionSettings.AutomaticKey(station));
+            PlayerPrefs.Save();
+            UnityEngine.Object.DestroyImmediate(go);
+        }
+    }
+
     [Test]
     public void DecelerationDampsEachAxisButAccelerationKeepsConservativeSpeed()
     {
@@ -78,7 +152,7 @@ public class PhoneSaberEndpointPredictorTests
 
     [TestCase(2)]
     [TestCase(3)]
-    public void ConstantVelocityIsExactForIndependentEndpoints(int samples)
+    public void ConstantVelocityWaitsForThreeSamplesThenIsExactForIndependentEndpoints(int samples)
     {
         var predictor = new PhoneSaberEndpointPredictor();
         var va = new Vector2(2, -1);
@@ -90,20 +164,23 @@ public class PhoneSaberEndpointPredictorTests
             predictor.AddSample(time, va * (float)time, Vector2.one + vb * (float)time);
         }
         predictor.Predict(time, 40, out var a, out var b);
-        Near(va * (float)(time + 0.04), a);
-        Near(Vector2.one + vb * (float)(time + 0.04), b);
+        double target = samples == 2 ? time : time + 0.04;
+        Near(va * (float)target, a);
+        Near(Vector2.one + vb * (float)target, b);
     }
 
     [Test]
     public void DisplacementIsClampedByDistanceAndHorizonIsCapped()
     {
         var predictor = new PhoneSaberEndpointPredictor(0.25f);
+        predictor.AddSample(-0.02, new Vector2(-3, -4), new Vector2(4, -3));
         predictor.AddSample(0, Vector2.zero, Vector2.zero);
         predictor.AddSample(0.02, new Vector2(3, 4), new Vector2(-4, 3));
         predictor.Predict(0.02, 1000, out var a, out var b);
         Near(new Vector2(3.15f, 4.2f), a);
         Near(new Vector2(-4.2f, 3.15f), b);
         var slow = new PhoneSaberEndpointPredictor();
+        slow.AddSample(-0.02, Vector2.right * -0.02f, Vector2.zero);
         slow.AddSample(0, Vector2.zero, Vector2.zero);
         slow.AddSample(0.02, Vector2.right * 0.02f, Vector2.zero);
         slow.Predict(0.02, 1000, out a, out b);
@@ -121,13 +198,17 @@ public class PhoneSaberEndpointPredictorTests
         Near(Vector2.right, a); Near(Vector2.one, b);
         predictor.AddSample(0.141, Vector2.right * 1.02f, Vector2.one);
         predictor.Predict(0.141, 20, out a, out b);
-        Near(Vector2.right * 1.04f, a); Near(Vector2.one, b);
+        Near(Vector2.right * 1.02f, a); Near(Vector2.one, b);
+        predictor.AddSample(0.161, Vector2.right * 1.04f, Vector2.one);
+        predictor.Predict(0.161, 20, out a, out b);
+        Near(Vector2.right * 1.06f, a); Near(Vector2.one, b);
     }
 
     [Test]
     public void StopsDecayToZeroWithoutExtrapolatingSampleAge()
     {
         var predictor = new PhoneSaberEndpointPredictor();
+        predictor.AddSample(-0.02, Vector2.right * -0.02f, Vector2.one);
         predictor.AddSample(0, Vector2.zero, Vector2.one);
         predictor.AddSample(0.02, Vector2.right * 0.02f, Vector2.one);
         predictor.Predict(0.04, 60, out var a, out _);

@@ -235,21 +235,26 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
     {
         var input = InputPoint.Instance;
         int horizon = input != null ? input.PredictionHorizonMilliseconds : 0;
-        GUILayout.Label($"剣の遅延補償: {(horizon == 0 ? "OFF" : horizon + " ms")}（この台に保存）", textStyle);
+        bool automatic = input != null && input.PredictionAutomatic;
+        GUILayout.Label($"剣の遅延補正: {(automatic ? "自動 " : "")}{(horizon == 0 ? "OFF" : horizon + " ms")}（この台に保存）", textStyle);
         bool previousEnabled = GUI.enabled;
         GUI.enabled = previousEnabled && input != null && calibrationCorner < 0;
         GUILayout.BeginHorizontal();
+        if (GUILayout.Button((automatic ? "● " : "") + "自動", buttonStyle) && !automatic)
+            input.SetPredictionAutomatic();
         foreach (int milliseconds in PredictionHorizons)
         {
             string label = milliseconds == 0 ? "0 ms / OFF" : milliseconds + " ms";
-            if (GUILayout.Button((horizon == milliseconds ? "● " : "") + label, buttonStyle) &&
-                horizon != milliseconds)
+            if (GUILayout.Button((!automatic && horizon == milliseconds ? "● " : "") + label, buttonStyle) &&
+                (automatic || horizon != milliseconds))
                 input.SetPredictionHorizonMilliseconds(milliseconds);
         }
         GUILayout.EndHorizontal();
         GUI.enabled = previousEnabled;
         GUILayout.Label("初期値はOFF。20 msから試してください。折り返しでは行き過ぎが増えます。\n" +
             "端点の移動上限は0.35、受信が100 ms止まると予測量はゼロに戻ります。", textStyle);
+        GUILayout.Label("自動: 同期確認済みのts片道遅延（最大60 ms）。未計測時はOFF。\n" +
+            "tsは送信時刻のため撮影・画面表示の遅れは含みません。", textStyle);
     }
 
     void DrawFilter()
@@ -348,7 +353,11 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         GUILayout.Label(services, textStyle);
         bool synchronized = GUILayout.Toggle(clocksSynchronized,
             "スマホとPCのNTP同期を確認済み（片道遅延も判定）", toggleStyle);
-        if (synchronized != clocksSynchronized) { clocksSynchronized = synchronized; nextRefresh = 0; }
+        if (synchronized != clocksSynchronized)
+        {
+            clocksSynchronized = synchronized; nextRefresh = 0;
+            if (InputPoint.Instance != null) InputPoint.Instance.PredictionClocksSynchronized = synchronized;
+        }
         GUILayout.Space(8);
         var log = PhoneSaberEventLog.Current;
         GUILayout.Label("イベントログ: " + (log?.LogPath ?? "作成できません"), textStyle);

@@ -76,7 +76,7 @@ public class SaberInputBridge : MonoBehaviour
     Transform saberTransform;
     // EditMode の直接呼出しでは Awake 前でも同じ Transform を解決する。
     Transform SaberTransform => saberTransform ?? (saberTransform = transform);
-    readonly PhoneSaberEndpointPredictor endpointPredictor = new PhoneSaberEndpointPredictor();
+    PhoneSaberEndpointPredictor endpointPredictor;
     readonly PhoneSaberEndpointFilter endpointFilter = new PhoneSaberEndpointFilter();
     InputPoint filterInput;
     int filterStickIndex, filterInputRevision, filterSettingsRevision, filterMode;
@@ -225,6 +225,7 @@ public class SaberInputBridge : MonoBehaviour
         endpointPredictor.AddSample(stamp, a, b);
         endpointPredictor.Predict(SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp),
             input.PredictionHorizonMilliseconds, out a, out b);
+        input.RecordPrediction(endpointPredictor.LastPredictionSuppressed);
     }
 
     void EnsureBladeLine()

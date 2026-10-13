@@ -105,9 +105,41 @@ public class InputPoint : MonoBehaviour
     // 予測設定と履歴の世代は main thread 専用。受信・認識結果には触れない。
     public int PredictionHorizonMilliseconds { get; private set; }
     public int PredictionRevision { get; private set; }
+    public bool PredictionAutomatic { get; private set; }
+    public bool PredictionClocksSynchronized { get; set; }
+    public string PredictionLeadSource { get; private set; } = "manual";
+    public long PredictionDraws { get; private set; }
+    public long PredictionSuppressedDraws { get; private set; }
+    double nextPredictionRefresh;
+
+    public void RecordPrediction(bool suppressed)
+    {
+        PredictionDraws++;
+        if (suppressed) PredictionSuppressedDraws++;
+    }
+
+    public void SetPredictionAutomatic()
+    {
+        PredictionAutomatic = true;
+        PhoneSaberPredictionSettings.SaveAutomatic(StationLabel, true);
+        PredictionRevision++;
+        RefreshPredictionLead();
+    }
+
+    void RefreshPredictionLead()
+    {
+        int red = PhoneSaberPredictionSettings.AutomaticLead(ReadInputStats(), PredictionClocksSynchronized, out bool redMeasured);
+        int blue = PhoneSaberPredictionSettings.AutomaticLead(ReadInputStats(true), PredictionClocksSynchronized, out bool blueMeasured);
+        PredictionHorizonMilliseconds = redMeasured && blueMeasured ? System.Math.Max(red, blue) :
+            redMeasured ? red : blueMeasured ? blue : PhoneSaberPredictionSettings.AutomaticFallbackMilliseconds;
+        PredictionLeadSource = redMeasured || blueMeasured ? "one-way-ts" : "fallback";
+    }
 
     public void SetPredictionHorizonMilliseconds(int milliseconds)
     {
+        PredictionAutomatic = false;
+        PredictionLeadSource = "manual";
+        PhoneSaberPredictionSettings.SaveAutomatic(StationLabel, false);
         PredictionHorizonMilliseconds = PhoneSaberPredictionSettings.Clamp(milliseconds);
         PredictionRevision++;
         PhoneSaberPredictionSettings.Save(StationLabel, PredictionHorizonMilliseconds);
@@ -375,6 +407,12 @@ public class InputPoint : MonoBehaviour
             phoneSaberStation = PhoneSaberStation.Read();
             positionCalibration = PhoneSaberPositionCalibrationStore.Load(phoneSaberStation, out positionCalibrationEnabled);
             PredictionHorizonMilliseconds = PhoneSaberPredictionSettings.Load(phoneSaberStation);
+            PredictionAutomatic = PhoneSaberPredictionSettings.LoadAutomatic(phoneSaberStation);
+            if (PredictionAutomatic)
+            {
+                PredictionHorizonMilliseconds = PhoneSaberPredictionSettings.AutomaticFallbackMilliseconds;
+                PredictionLeadSource = "fallback";
+            }
             PredictionRevision++;
             PositionCapture.Cancel();
             double eventStart = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp);
@@ -557,6 +595,13 @@ public class InputPoint : MonoBehaviour
 
     void Update()
     {
+        // 自動の統計読出しは秒1回だけ。描画ごとに時刻配列や文字列を作らない。
+        double predictionNow = Time.realtimeSinceStartupAsDouble;
+        if (PredictionAutomatic && predictionNow >= nextPredictionRefresh)
+        {
+            nextPredictionRefresh = predictionNow + 1;
+            RefreshPredictionLead();
+        }
         // Join timeout後も旧threadが完全終了するまでは重複起動せず、終了確認後にだけ再開する。
         if (networkShutdown && isActiveAndEnabled && Instance == this) StartNetworkServices();
         FlushReceiverDiagnostics();

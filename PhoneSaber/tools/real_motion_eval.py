@@ -73,7 +73,7 @@ class ExperimentalPredictor(BaselinePredictor):
 
 
 def load_segments(path, world_width=11.0, world_height=6.0, max_truth_gap=0.05,
-                  allow_unknown_prediction=True, align_endpoints=False):
+                  allow_unknown_prediction=True, align_endpoints=False, minimum_samples=3):
     """Do not interpolate across missing/predicted endpoints, frame holes or sessions."""
     groups = defaultdict(list)
     for row in read_rows(path):
@@ -103,7 +103,7 @@ def load_segments(path, world_width=11.0, world_height=6.0, max_truth_gap=0.05,
                                    ("x2", "width", world_width, 1), ("y2", "height", world_height, -1)))
                 sample = Sample(row["time_s"], row["time_s"], endpoints)
             if not valid or (current and sample.capture - current[-1].capture > max_truth_gap):
-                if len(current) >= 3:
+                if len(current) >= minimum_samples:
                     segments.append((session, color, current))
                 current = []
             if valid:
@@ -117,7 +117,7 @@ def load_segments(path, world_width=11.0, world_height=6.0, max_truth_gap=0.05,
                 current.append(sample)
             else:
                 invalid += 1
-        if len(current) >= 3:
+        if len(current) >= minimum_samples:
             segments.append((session, color, current))
         inventory.append(dict(session=session, color=color, rows=len(rows), invalid_rows=invalid,
                               unknown_prediction_flags=unknown, nearest_endpoint_swaps=swaps))

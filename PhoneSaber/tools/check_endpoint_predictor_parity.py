@@ -48,7 +48,7 @@ using System.IO;
 using UnityEngine;
 class Program {
     static void Main(string[] args) {
-        PhoneSaberEndpointPredictor predictor = null;
+        PhoneSaberEndpointPredictor predictor = default;
         int count = 0;
         foreach (var line in File.ReadAllLines(args[0])) {
             var r = line.Split(',');
@@ -79,10 +79,10 @@ class Program {
 '''
 
 
-def check_csharp(path=VECTORS, dotnet="dotnet", before_ref=None):
+def check_csharp(path=VECTORS, dotnet="dotnet", before_ref=None, extra_sources=None, program=None):
     sdk = subprocess.check_output([dotnet, "--version"], text=True).strip()
     major = int(sdk.split(".")[0])
-    with tempfile.TemporaryDirectory(prefix="predict-real-parity-", dir="/tmp") as tmp:
+    with tempfile.TemporaryDirectory(prefix="predict-real-parity-") as tmp:
         folder = Path(tmp)
         (folder / "Harness.csproj").write_text(
             f'<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>Exe</OutputType>'
@@ -93,7 +93,9 @@ def check_csharp(path=VECTORS, dotnet="dotnet", before_ref=None):
         source = subprocess.check_output(["git", "show", f"{before_ref}:{PREDICTOR}"], cwd=ROOT, text=True) if before_ref else (ROOT / PREDICTOR).read_text()
         (folder / "Predictor.cs").write_text(source)
         (folder / "Vector.cs").write_text(VECTOR)
-        (folder / "Program.cs").write_text(PROGRAM)
+        (folder / "Program.cs").write_text(program or PROGRAM)
+        for name, content in (extra_sources or {}).items():
+            (folder / name).write_text(content)
         env = dict(os.environ, DOTNET_CLI_HOME=str(folder / "cli-home"),
                    DOTNET_SKIP_FIRST_TIME_EXPERIENCE="1", DOTNET_CLI_TELEMETRY_OPTOUT="1",
                    NUGET_PACKAGES=str(folder / "packages"), DOTNET_TieredCompilation="0")

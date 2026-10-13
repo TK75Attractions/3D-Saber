@@ -36,12 +36,14 @@ class PredictorTests(unittest.TestCase):
             for i in range(count):
                 t = i * 0.025
                 predictor.add(t, (2 * t, -t, 1 - t, 1 + 3 * t))
-            target = (2 * (t + 0.04), -(t + 0.04), 1 - (t + 0.04), 1 + 3 * (t + 0.04))
+            target_time = t if count == 2 else t + .04
+            target = (2 * target_time, -target_time, 1 - target_time, 1 + 3 * target_time)
             for expected, actual in zip(target, predictor.predict(t, 40)):
                 self.assertAlmostEqual(expected, actual, delta=1e-6)
 
     def test_clamp_gap_decay_and_restart(self):
         predictor = replay.Predictor(0.25)
+        predictor.add(-.02, (-3, -4, 4, -3))
         predictor.add(0, (0, 0, 0, 0))
         predictor.add(0.02, (3, 4, -4, 3))
         self.assertEqual(tuple(replay.f32(v) for v in (3.15, 4.2, -4.2, 3.15)), predictor.predict(0.02, 1000))
@@ -49,9 +51,21 @@ class PredictorTests(unittest.TestCase):
         predictor.add(0.121, (1, 1, 1, 1))
         self.assertEqual((1, 1, 1, 1), predictor.predict(0.121, 60))
         predictor.add(0.141, (1.02, 1, 1, 1))
-        self.assertAlmostEqual(1.08, predictor.predict(0.141, 60)[0], delta=1e-6)
-        halfway = 0.141 + (replay.DECAY_START + replay.MAX_GAP) / 2
-        self.assertAlmostEqual(1.05, predictor.predict(halfway, 60)[0])
+        self.assertAlmostEqual(1.02, predictor.predict(0.141, 60)[0], delta=1e-6)
+        predictor.add(0.161, (1.04, 1, 1, 1))
+        self.assertAlmostEqual(1.10, predictor.predict(0.161, 60)[0], delta=1e-6)
+        halfway = 0.161 + (replay.DECAY_START + replay.MAX_GAP) / 2
+        self.assertAlmostEqual(1.07, predictor.predict(halfway, 60)[0], delta=1e-6)
+
+    def test_first_interval_after_start_or_gap_never_extends_a_jump(self):
+        for start in (0, 1):
+            predictor = replay.Predictor()
+            if start:
+                predictor.add(0, (0, 0, 0, 0))
+                predictor.add(.02, (.02, 0, .02, 0))
+            predictor.add(start, (0, 0, 0, 0))
+            predictor.add(start+.02, (3, 4, -4, 3))
+            self.assertEqual((3, 4, -4, 3), predictor.predict(start+.02, 60))
 
     def test_reversal_spike_duplicate_invalid_and_reset(self):
         predictor = replay.Predictor()

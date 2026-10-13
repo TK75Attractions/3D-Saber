@@ -43,6 +43,8 @@ class Predictor:
     No detector, payload, or recognition code runs here.
     """
 
+    warmup_samples = 3
+
     def __init__(self, maximum_displacement=MAX_DISPLACEMENT):
         maximum_displacement = f32(maximum_displacement)
         if not math.isfinite(maximum_displacement) or maximum_displacement < 0:
@@ -69,10 +71,10 @@ class Predictor:
             self.velocity = self.previous_velocity = (0.0,) * 4
         else:
             current = tuple(float_divide(f32(v - p), f32(gap)) for v, p in zip(endpoints, self.latest))
-            self.velocity = current if self.count == 1 else tuple(
+            self.velocity = (current if self.warmup_samples == 2 else (0.0,) * 4) if self.count == 1 else tuple(
                 self.conservative_axis(p, v) for p, v in zip(self.previous_velocity, current))
             self.previous_velocity = current
-            self.count = 2
+            self.count = min(3, self.count + 1)
         self.latest = endpoints
         self.time = timestamp
 
@@ -87,7 +89,7 @@ class Predictor:
         return f32(current * ratio)
 
     def predict(self, now, horizon_ms):
-        if horizon_ms <= 0 or self.count < 2 or not math.isfinite(now):
+        if horizon_ms <= 0 or self.count < self.warmup_samples or not math.isfinite(now):
             return self.latest
         age = max(0.0, now - self.time)
         if age >= MAX_GAP:
@@ -109,7 +111,13 @@ class Predictor:
         return tuple(result)
 
 
-class BaselinePredictor(Predictor):
+class LegacyPredictor(Predictor):
+    """Frozen 2026-10-13 input implementation, including two-point warmup."""
+
+    warmup_samples = 2
+
+
+class BaselinePredictor(LegacyPredictor):
     """Frozen 977d5c6 estimator for reproducible before/after real replays."""
 
     @staticmethod

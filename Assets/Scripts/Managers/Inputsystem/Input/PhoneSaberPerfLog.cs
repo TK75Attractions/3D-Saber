@@ -12,6 +12,7 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
     static double windowSeconds = WindowSeconds;
     PhoneSaberPerfWindow window;
     int redAtStart, blueAtStart;
+    long predictionsAtStart, suppressedAtStart;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
     static void CreateAtStartup()
@@ -32,22 +33,31 @@ public sealed class PhoneSaberPerfLog : MonoBehaviour
             window.Start(now);
             redAtStart = input != null ? input.ReceivedPacketCount : 0;
             blueAtStart = input != null ? input.ReceivedPacketCount2 : 0;
+            predictionsAtStart = input != null ? input.PredictionDraws : 0;
+            suppressedAtStart = input != null ? input.PredictionSuppressedDraws : 0;
             return;
         }
         window.Frame(now);
         if (window.Elapsed(now) < windowSeconds) return;
         int red = input != null ? input.ReceivedPacketCount : 0, blue = input != null ? input.ReceivedPacketCount2 : 0;
         double seconds = window.Elapsed(now);
+        long predictions = input != null ? input.PredictionDraws : 0;
+        long suppressed = input != null ? input.PredictionSuppressedDraws : 0;
         string detail = string.Format(CultureInfo.InvariantCulture,
             "scene={0} fps={1:0.0} frame-ms-max={2:0.0} frames-over-25ms={3} frames-over-50ms={4} " +
-            "red-pkt-per-s={5:0.0} blue-pkt-per-s={6:0.0} screen={7}x{8} refresh-hz={9:0} vsync={10} target-fps={11} quality={12} platform={13}",
+            "red-pkt-per-s={5:0.0} blue-pkt-per-s={6:0.0} screen={7}x{8} refresh-hz={9:0} vsync={10} target-fps={11} quality={12} platform={13} " +
+            "prediction-mode={14} prediction-lead-ms={15} prediction-source={16} prediction-draws={17} prediction-suppressed-draws={18}",
             SceneManager.GetActiveScene().name, window.Frames / seconds, window.MaxFrameMs, window.Over25, window.Over50,
             (red - redAtStart) / seconds, (blue - blueAtStart) / seconds, Screen.width, Screen.height,
             Screen.currentResolution.refreshRateRatio.value, QualitySettings.vSyncCount, Application.targetFrameRate,
-            QualitySettings.GetQualityLevel(), Application.platform);
+            QualitySettings.GetQualityLevel(), Application.platform,
+            input != null && input.PredictionAutomatic ? "auto" : input != null && input.PredictionHorizonMilliseconds > 0 ? "manual" : "off",
+            input != null ? input.PredictionHorizonMilliseconds : 0, input != null ? input.PredictionLeadSource : "none",
+            System.Math.Max(0, predictions - predictionsAtStart), System.Math.Max(0, suppressed - suppressedAtStart));
         PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "SYSTEM", "perf", detail);
         window.Start(now);
         redAtStart = red; blueAtStart = blue;
+        predictionsAtStart = predictions; suppressedAtStart = suppressed;
     }
 }
 

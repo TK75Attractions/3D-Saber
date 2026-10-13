@@ -3,7 +3,7 @@ using UnityEngine;
 
 // 時計・受信・Unity のライフサイクルに依存しない、端点だけの短時間予測。
 // 座標の単位は呼び出し側と同じ。セーバー経路では適用前の world XY を使う。
-public sealed class PhoneSaberEndpointPredictor
+public struct PhoneSaberEndpointPredictor
 {
     public const double MaximumGapSeconds = 0.1;
     public const double DecayStartSeconds = 1.0 / 30.0;
@@ -11,15 +11,19 @@ public sealed class PhoneSaberEndpointPredictor
     public const float DefaultMaximumDisplacement = 0.35f;
 
     readonly float maximumDisplacement;
+    readonly bool configuredDisplacement;
     Vector2 latestA, latestB, previousVelocityA, previousVelocityB, velocityA, velocityB;
     double latestTime;
     int sampleCount;
+    public bool LastPredictionSuppressed { get; private set; }
 
-    public PhoneSaberEndpointPredictor(float maximumDisplacement = DefaultMaximumDisplacement)
+    public PhoneSaberEndpointPredictor(float maximumDisplacement)
     {
         if (!Finite(maximumDisplacement) || maximumDisplacement < 0)
             throw new ArgumentOutOfRangeException(nameof(maximumDisplacement));
+        this = default;
         this.maximumDisplacement = maximumDisplacement;
+        configuredDisplacement = true;
     }
 
     public void Reset() { sampleCount = 0; }
@@ -40,11 +44,12 @@ public sealed class PhoneSaberEndpointPredictor
         {
             Vector2 nextA = (a - latestA) / (float)gap;
             Vector2 nextB = (b - latestB) / (float)gap;
-            velocityA = sampleCount == 1 ? nextA : ConservativeVelocity(previousVelocityA, nextA);
-            velocityB = sampleCount == 1 ? nextB : ConservativeVelocity(previousVelocityB, nextB);
+            // 起動・欠測復帰の1区間だけでは跳ねか定速かを区別できない。3点まで延長しない。
+            velocityA = sampleCount == 1 ? Vector2.zero : ConservativeVelocity(previousVelocityA, nextA);
+            velocityB = sampleCount == 1 ? Vector2.zero : ConservativeVelocity(previousVelocityB, nextB);
             previousVelocityA = nextA;
             previousVelocityB = nextB;
-            sampleCount = 2;
+            sampleCount = sampleCount == 1 ? 2 : 3;
         }
         latestA = a; latestB = b; latestTime = receiveTimeSeconds;
     }
@@ -52,8 +57,9 @@ public sealed class PhoneSaberEndpointPredictor
     public void Predict(double nowSeconds, int horizonMilliseconds, out Vector2 a, out Vector2 b)
     {
         a = latestA; b = latestB;
+        LastPredictionSuppressed = true;
         // OFF は加算すらしない（符号付きゼロを含め、そのまま返す）。
-        if (horizonMilliseconds <= 0 || sampleCount < 2 ||
+        if (horizonMilliseconds <= 0 || sampleCount < 3 ||
             double.IsNaN(nowSeconds) || double.IsInfinity(nowSeconds)) return;
         double age = Math.Max(0, nowSeconds - latestTime);
         if (age >= MaximumGapSeconds) return;
@@ -61,8 +67,10 @@ public sealed class PhoneSaberEndpointPredictor
             (MaximumGapSeconds - age) / (MaximumGapSeconds - DecayStartSeconds);
         float seconds = (float)(Math.Min(horizonMilliseconds, MaximumHorizonMilliseconds) * 0.001 * decay);
         // 受信の古さを H に足さない。無音中に走り続けることを防ぐ。
-        a += Displacement(velocityA, seconds);
-        b += Displacement(velocityB, seconds);
+        Vector2 deltaA = Displacement(velocityA, seconds), deltaB = Displacement(velocityB, seconds);
+        LastPredictionSuppressed = deltaA.x == 0 && deltaA.y == 0 && deltaB.x == 0 && deltaB.y == 0;
+        a += deltaA;
+        b += deltaB;
     }
 
     static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
@@ -90,7 +98,8 @@ public sealed class PhoneSaberEndpointPredictor
         if (!Finite(velocity.x) || !Finite(velocity.y)) return Vector2.zero;
         Vector2 delta = velocity * seconds;
         double length = Math.Sqrt((double)delta.x * delta.x + (double)delta.y * delta.y);
-        if (length > maximumDisplacement) delta *= (float)(maximumDisplacement / length);
+        float limit = configuredDisplacement ? maximumDisplacement : DefaultMaximumDisplacement;
+        if (length > limit) delta *= (float)(limit / length);
         return delta;
     }
 }

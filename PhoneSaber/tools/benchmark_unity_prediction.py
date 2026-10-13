@@ -63,7 +63,8 @@ class Program {
         p.AddSample(0.161,new Vector2(1.02f,0),new Vector2(1,1));
         p.AddSample(0.181,new Vector2(1.01f,0),new Vector2(1,1));
         p.Predict(0.181,60,out a,out b); Near(1.01,a.x);
-        p.Reset(); p.AddSample(0,new Vector2(0,0),new Vector2(0,0));
+        p.Reset(); p.AddSample(-0.02,new Vector2(-3,-4),new Vector2(4,-3));
+        p.AddSample(0,new Vector2(0,0),new Vector2(0,0));
         p.AddSample(0.02,new Vector2(3,4),new Vector2(-4,3));
         p.Predict(0.02,60,out a,out b); Near(3.21,a.x); Near(4.28,a.y);
         float negativeZero=BitConverter.Int32BitsToSingle(unchecked((int)0x80000000));
