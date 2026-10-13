@@ -61,6 +61,8 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         }
     }
 
+    // 測れなかったときの切り分け用: この測定で受信した赤の中点の範囲（[-1, 1]）。
+    float seenMinX, seenMaxX, seenMinY, seenMaxY;
     public const string AutoArgument = "-phonesaberLatencyProbe";
     public const double AutoStartDelaySeconds = 8, AutoGiveUpSeconds = 40;
     int autoBlocks;
@@ -117,6 +119,7 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
                 EnsureGuiRenderer();
                 guiRenderer.enabled = true;
                 resultText = ""; resultUntil = 0; startedAt = now;
+                seenMinX = seenMinY = float.PositiveInfinity; seenMaxX = seenMaxY = float.NegativeInfinity;
                 loggedSamples = 0; loop.Reset(now); blockIndex = 0; StartBlock(now);
             }
         }
@@ -124,10 +127,16 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         var input = InputPoint.Instance;
         bool hasPacket = input != null && input.HasValidStickEndpoints;
         float x = hasPacket ? ReadNormalizedX(input) : 0f;
+        float y = hasPacket ? (input.LocalStickA.y + input.LocalStickB.y) * 0.5f : 0f;
         double packetTime = input != null ? input.LastReceivedMonotonicTime : double.NegativeInfinity;
         CollectPhoneMetrics(input, now);
         int before = loop.TotalSamples, previousSide = loop.Side;
-        loop.Tick(now, packetTime, x, hasPacket);
+        loop.Tick(now, packetTime, x, y, hasPacket);
+        if (hasPacket)
+        {
+            seenMinX = Mathf.Min(seenMinX, x); seenMaxX = Mathf.Max(seenMaxX, x);
+            seenMinY = Mathf.Min(seenMinY, y); seenMaxY = Mathf.Max(seenMaxY, y);
+        }
         int total = loop.TotalSamples;
         if (loop.Side != previousSide) { switchAt = now; drawnSide = -1; repaintMs = double.NaN; }
         if (total > before)
@@ -272,6 +281,9 @@ public sealed class PhoneSaberLatencyProbe : MonoBehaviour
         string detail = loop.LogDetail() + context +
             $" platform={Application.platform} editor={Application.isEditor} " +
             $"render-fps={(1f / Mathf.Max(Time.smoothDeltaTime, 1e-4f)):0} max-queued-frames={QualitySettings.maxQueuedFrames}";
+        if (seenMaxX >= seenMinX)
+            detail += string.Format(System.Globalization.CultureInfo.InvariantCulture,
+                " seen-x={0:0.00}..{1:0.00} seen-y={2:0.00}..{3:0.00}", seenMinX, seenMaxX, seenMinY, seenMaxY);
         Debug.Log("[PhoneSaber] " + kind + " " + detail);
         PhoneSaberEventLog.Record(PhoneSaberStation.Read(), "RED", kind, detail);
         PhoneSaberEventLog.Current?.Flush();
@@ -362,6 +374,9 @@ public sealed class PhoneSaberLatencyLoop
     float? baseline;
     // 左右それぞれの棒の受信位置（落ち着いた値の移動平均）。両方わかったら、切替先の側に近い値だけを応答とする。
     readonly float?[] sideX = new float?[2];
+    // スマホを横向きに置くと、画面の左右の動きはカメラの上下に出る。x と y の両方で距離を見る。
+    readonly float[] sideY = new float[2];
+    float baselineY;
 
     public PhoneSaberLatencyLoop(int seed = 7) { random = new System.Random(seed); Reset(0); }
 
@@ -388,17 +403,24 @@ public sealed class PhoneSaberLatencyLoop
     }
 
     // packetTime は最新の赤の受信時刻（受信 thread の単調時計）、x はその中点。
-    public void Tick(double now, double packetTime, float x, bool hasPacket)
+    public void Tick(double now, double packetTime, float x, bool hasPacket) => Tick(now, packetTime, x, 0f, hasPacket);
+
+    static double Distance(float x, float y, float x0, float y0)
+        => Math.Sqrt((double)(x - x0) * (x - x0) + (double)(y - y0) * (y - y0));
+
+    // x, y は赤の棒の中点（[-1, 1]）。向きに依らず、棒の位置が動いたことを 2 次元の距離で判定する。
+    public void Tick(double now, double packetTime, float x, float y, bool hasPacket)
     {
         bool fresh = hasPacket && packetTime > lastPacketTime;
         if (fresh) lastPacketTime = packetTime;
         if (Waiting)
         {
-            if (fresh && packetTime > switchAt && baseline.HasValue && Math.Abs(x - baseline.Value) > MoveThreshold)
+            if (fresh && packetTime > switchAt && baseline.HasValue &&
+                Distance(x, y, baseline.Value, baselineY) > MoveThreshold)
             {
                 double latencyMs = (packetTime - switchAt) * 1000.0;
                 bool towardNewSide = !sideX[0].HasValue || !sideX[1].HasValue ||
-                    Math.Abs(x - sideX[Side].Value) < Math.Abs(x - sideX[1 - Side].Value);
+                    Distance(x, y, sideX[Side].Value, sideY[Side]) < Distance(x, y, sideX[1 - Side].Value, sideY[1 - Side]);
                 if (latencyMs < MinPlausibleMs || !towardNewSide) Rejected++;
                 else
                 {
@@ -406,7 +428,7 @@ public sealed class PhoneSaberLatencyLoop
                     TotalSamples++;
                     if (samples.Count > MaxSamples) samples.RemoveAt(0);
                     Waiting = false;
-                    baseline = x;
+                    baseline = x; baselineY = y;
                     ScheduleNext(now);
                 }
             }
@@ -422,7 +444,8 @@ public sealed class PhoneSaberLatencyLoop
         }
         if (fresh)
         {
-            baseline = x;
+            baseline = x; baselineY = y;
+            sideY[Side] = sideX[Side].HasValue ? sideY[Side] * 0.8f + y * 0.2f : y;
             sideX[Side] = sideX[Side].HasValue ? sideX[Side].Value * 0.8f + x * 0.2f : x;
         }
         // 直前まで受信が続いている（棒を認識している）ときだけ切り替える。

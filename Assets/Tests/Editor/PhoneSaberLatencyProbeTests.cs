@@ -207,4 +207,30 @@ public class PhoneSaberLatencyProbeTests
         Assert.AreEqual(PhoneSaberLatencyProbe.TargetBlocks,
             PhoneSaberLatencyProbe.ResolveAutoBlocks(new[] { "app", PhoneSaberLatencyProbe.AutoArgument, "-logFile" }));
     }
+
+    // 2026-10-14: スマホを横向きに置いた無人計測では、棒の左右の動きがカメラの上下に出て1回も測れなかった。
+    [Test]
+    public void LoopAcceptsABarThatMovesAlongTheOtherAxis()
+    {
+        var loop = new PhoneSaberLatencyLoop();
+        loop.Reset(0);
+        double now = 0, packet = 0;
+        int measured = 0;
+        for (int frame = 0; frame < 1200 && measured < 6; frame++)
+        {
+            now = frame / 60.0;
+            // 表示から 100 ms 遅れて、切替先の位置（y だけが変わる）が届く。
+            int shownSide = loop.Waiting && now - SwitchTime(loop) < 0.1 ? 1 - loop.Side : loop.Side;
+            packet = now - 0.001;
+            int before = loop.TotalSamples;
+            loop.Tick(now, packet, 0.1f, shownSide == 0 ? -0.5f : 0.5f, true);
+            if (loop.TotalSamples > before) measured++;
+        }
+        Assert.GreaterOrEqual(loop.TotalSamples, 6);
+        Assert.AreEqual(0, loop.Misses);
+        foreach (double ms in loop.SamplesMs) Assert.That(ms, Is.InRange(90.0, 125.0));
+    }
+
+    static double SwitchTime(PhoneSaberLatencyLoop loop) => (double)typeof(PhoneSaberLatencyLoop)
+        .GetField("switchAt", System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic).GetValue(loop);
 }

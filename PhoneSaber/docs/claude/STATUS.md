@@ -81,6 +81,14 @@ iPhone遅延: 10-13 に main へ取り込み済み（公式 verify PASS）。既
 
 `755ba38`から継続。既存の接続保持・P2P退避・connectivity.log同梱を維持し、P2P接続通知だけでのLAN pending破棄と停止診断の取りこぼしを修正。修正前失敗／修正後PASSをhost XCTestとPythonで確認。ReleaseとXCTest build成功。実機・公式verifyは未実行。実行コマンド・結果・リスクは[調査報告](ios-send-gaps-20261013.md)。認識・座標形式・corpus・Unityは無変更。
 
+### 2026-10-14 未明 無人の遅延計測（iPhone 13 を Mac の画面に向けて固定、家の LAN、Claude）
+- 道具: `PhoneSaber/tools/latency_matrix.py`（iPhone を起動引数つきで再起動 → Player を `-phonesaberLatencyProbe` で起動、を条件ごとに繰り返して表にする）、Player の `-phonesaberTrackingProbe <秒>`（赤い棒を既知の軌道 0.5〜2.5 Hz と静止で動かし、戻ってきた座標と一緒に CSV 保存）、`PhoneSaber/tools/tracking_report.py`（見た目の遅れ＝相互相関、先読み方式ごとの表示のずれ）。F9 の判定は棒の位置を2次元の距離で見るようにした（スマホを横向き・斜めに置くと左右の動きがカメラの上下に出て1回も測れなかった）。
+- **F9（30 fps、発熱 serious）**: 往復 117〜137 ms（run 間の揺れ ±6 ms 程度）。「低遅延カメラ設定（試験）」ON はスマホ自身の計測値が 48→41 ms に下がるが往復は変わらない（117〜122 対 119〜122）＝実際の遅れは減っていない。ウィンドウ表示・解像度変更は、スマホから見える棒の位置が変わって測れない（設定も次の起動に残るので条件から外した）。画面同期・maxQueuedFrames も差なし（10-13）。**設定で削れるものは見つからなかった。**
+- **追従（30 fps、発熱 serious、70 秒）**: 見た目の遅れ 112 ms（相関 0.997、0.5〜2.5 Hz で 108〜114 ms とほぼ一定）。静止時の揺れは移動幅の 2.1%。受信は 26 件/秒で、100 ms 超の途切れが 70 秒に 52 回（速い動きで検出が抜ける）。
+- **先読みの実力（同じデータ、表示のずれ＝移動幅に対する RMS %）**: 先読みなし 0.5 Hz 15.6 / 1 Hz 26.2 / 1.5 Hz 42.0 / 2 Hz 52.5。直近3点の直線で 80 ms 先読みすると 0.5 Hz 10.6 / 1 Hz 15.6（約3〜4割減）だが、1.5 Hz 以上は良くならず 2 Hz 以上は悪化、静止時の揺れは 2.6→2.8%。本番の予測器（保守的・上限 60 ms）は 1 Hz で 18.0。30 fps では標本の間隔が広く雑音が増幅されるので、先読みの伸びしろは 60 fps より小さい。
+- **iPhone の発熱**: 電池 45% から急速充電しながら 60 fps で送ると、約2分で nominal → serious になり 30 fps に落ちる（00:18→00:20）。30 fps ではスマホの処理が約 33→48 ms、露光待ちが 8→17 ms、先読みも効きにくい。本番は「満充電にしてから使う・急速充電器を使わない・箱の通風」が効く。
+- 60 fps（冷えた状態）の追従データはまだ無い。予測器の改善（このデータで設計・評価）と 60 fps の計測は Codex に渡す。
+
 ### 2026-10-14 Codex 2巡目（10-13 22:15〜23:00）の取り込みと、無人の遅延計測の準備（Claude）
 - 取り込み: **lat2**（[latency-compensation-20261013.md](latency-compensation-20261013.md)。F8「剣の遅延補正: 自動」が実測の合計から色ごとに先読み量を決める。5 ms 超の変化だけ・10 秒に1回まで・欠測は15 秒以内に OFF、上限は予測器の最大値。F9 は maxQueuedFrames を切り替えなくなり、ブロックごとに「画面の遅延」を分解して `event=display-measured` に残し、同じ画面条件なら推定に使う）、**iosfix + review2**（[ios-crash-fixes-20261013.md](ios-crash-fixes-20261013.md)、[review-merged-20261013.md](review-merged-20261013.md)。カメラ通知を main 待ちにしない＝停止との相互待ちの解消、overlay writer が失敗状態のとき録画終了が進まない件、発熱による再起動と録画開始の状態不整合、heartbeat が 0 byte のまま固まり判定に入る件（Mac / Windows の watchdog）、アプリ・PDF の差し替えが途中で失敗しても旧版を残す、古い検証結果を再利用しない）、**robust**（[robustness-20261013.md](robustness-20261013.md)。P2P bridge の診断 relay が完了した接続を保持し続ける件、受信側の manifest・深い JSON・壊れたログでの異常終了、再実行用スクリプト `PhoneSaber/tools/robustness/`）。
 - **青の背景ルール**は文書だけ取り込み（[blue-background-rule-prototype.md](blue-background-rule-prototype.md)）。ON にすると画面端の実青剣を1枚失い static suite も落ちるので、実装は `cx/mural-20261013` に残し、認識コードには入れていない。
