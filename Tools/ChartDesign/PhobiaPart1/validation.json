@@ -1,0 +1,115 @@
+{
+  "easy": {
+    "notes": 100,
+    "cuts": 114,
+    "types": {
+      "tap": 93,
+      "long": 7
+    },
+    "colors": {
+      "blue": 43,
+      "gold": 15,
+      "red": 42
+    },
+    "simultaneousPairs": 2,
+    "peakNotesPerSecond": 2.5,
+    "minimumSameHandRecoveryMs": 681.818,
+    "maximumCenterTravelUnitsPerSecond": 1.27,
+    "sections": {
+      "intro": 22,
+      "tail": 1,
+      "entry": 8,
+      "main": 35,
+      "break": 3,
+      "rise": 10,
+      "final": 20,
+      "outro": 1
+    },
+    "flow": {
+      "failures": [],
+      "allGoldAssignmentsFeasible": true,
+      "optionalGoldTaps": 8,
+      "halfSwingUnits": 0.25,
+      "swingTravelLimitUnitsPerSecond": 5.5,
+      "maxEntryAngleDegrees": 45,
+      "rapidArrowMinimumTurnDegrees": 120,
+      "maxBranchStates": 2
+    }
+  },
+  "normal": {
+    "notes": 189,
+    "cuts": 204,
+    "types": {
+      "tap": 159,
+      "long": 7,
+      "direction": 23
+    },
+    "colors": {
+      "blue": 85,
+      "red": 85,
+      "gold": 19
+    },
+    "simultaneousPairs": 11,
+    "peakNotesPerSecond": 3.5,
+    "minimumSameHandRecoveryMs": 454.545,
+    "maximumCenterTravelUnitsPerSecond": 3.15,
+    "sections": {
+      "intro": 40,
+      "tail": 1,
+      "entry": 17,
+      "main": 66,
+      "break": 7,
+      "rise": 22,
+      "final": 35,
+      "outro": 1
+    },
+    "flow": {
+      "failures": [],
+      "allGoldAssignmentsFeasible": true,
+      "optionalGoldTaps": 12,
+      "halfSwingUnits": 0.25,
+      "swingTravelLimitUnitsPerSecond": 5.5,
+      "maxEntryAngleDegrees": 45,
+      "rapidArrowMinimumTurnDegrees": 120,
+      "maxBranchStates": 2
+    }
+  },
+  "hard": {
+    "notes": 251,
+    "cuts": 266,
+    "types": {
+      "tap": 192,
+      "long": 7,
+      "direction": 52
+    },
+    "colors": {
+      "blue": 118,
+      "red": 118,
+      "gold": 15
+    },
+    "simultaneousPairs": 14,
+    "peakNotesPerSecond": 4.5,
+    "minimumSameHandRecoveryMs": 454.545,
+    "maximumCenterTravelUnitsPerSecond": 3.15,
+    "sections": {
+      "intro": 56,
+      "tail": 1,
+      "entry": 28,
+      "main": 77,
+      "break": 8,
+      "rise": 30,
+      "final": 50,
+      "outro": 1
+    },
+    "flow": {
+      "failures": [],
+      "allGoldAssignmentsFeasible": true,
+      "optionalGoldTaps": 8,
+      "halfSwingUnits": 0.25,
+      "swingTravelLimitUnitsPerSecond": 5.5,
+      "maxEntryAngleDegrees": 45,
+      "rapidArrowMinimumTurnDegrees": 120,
+      "maxBranchStates": 2
+    }
+  }
+}

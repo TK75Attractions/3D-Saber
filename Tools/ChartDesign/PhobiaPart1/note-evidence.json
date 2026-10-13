@@ -1,0 +1,7568 @@
+{
+  "easy": [
+    {
+      "beat": 4,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 2.544218,
+      "distanceMs": 28.218,
+      "strength": 0.2824,
+      "bands": [
+        0.2083,
+        0.7017,
+        0.4668,
+        0.4915
+      ]
+    },
+    {
+      "beat": 8,
+      "region": "intro",
+      "role": "long",
+      "peakSeconds": 4.973696,
+      "distanceMs": -42.304,
+      "strength": 0.2983,
+      "bands": [
+        0.1879,
+        0.813,
+        0.6272,
+        0.4332
+      ]
+    },
+    {
+      "beat": 12,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 7.527891,
+      "distanceMs": 11.891,
+      "strength": 0.3363,
+      "bands": [
+        0.5457,
+        0.4935,
+        0.6039,
+        0.4104
+      ]
+    },
+    {
+      "beat": 14,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 8.804989,
+      "distanceMs": 38.989,
+      "strength": 0.3349,
+      "bands": [
+        0.0919,
+        0.6194,
+        1.288,
+        0.3682
+      ]
+    },
+    {
+      "beat": 16,
+      "region": "intro",
+      "role": "gold",
+      "peakSeconds": 10.037188,
+      "distanceMs": 21.188,
+      "strength": 0.3545,
+      "bands": [
+        0.5417,
+        0.5562,
+        0.8556,
+        0.3525
+      ]
+    },
+    {
+      "beat": 18,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 11.29932,
+      "distanceMs": 33.32,
+      "strength": 0.3631,
+      "bands": [
+        0.6836,
+        0.3563,
+        0.9391,
+        0.3221
+      ]
+    },
+    {
+      "beat": 20,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 12.526531,
+      "distanceMs": 10.531,
+      "strength": 0.2957,
+      "bands": [
+        0.4564,
+        0.6181,
+        0.5191,
+        0.3247
+      ]
+    },
+    {
+      "beat": 24,
+      "region": "intro",
+      "role": "long",
+      "peakSeconds": 15.040816,
+      "distanceMs": 24.816,
+      "strength": 0.5407,
+      "bands": [
+        1.3379,
+        0.9284,
+        0.5244,
+        0.2256
+      ]
+    },
+    {
+      "beat": 28,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 17.520181,
+      "distanceMs": 4.181,
+      "strength": 0.3553,
+      "bands": [
+        0.768,
+        0.7099,
+        0.4873,
+        0.3303
+      ]
+    },
+    {
+      "beat": 30,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 18.767347,
+      "distanceMs": 1.347,
+      "strength": 0.3129,
+      "bands": [
+        0.2144,
+        0.5098,
+        0.9016,
+        0.4923
+      ]
+    },
+    {
+      "beat": 32,
+      "region": "intro",
+      "role": "gold",
+      "peakSeconds": 20.02449,
+      "distanceMs": 8.49,
+      "strength": 0.6073,
+      "bands": [
+        0.5458,
+        0.899,
+        1.704,
+        0.4391
+      ]
+    },
+    {
+      "beat": 34,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 21.286621,
+      "distanceMs": 20.621,
+      "strength": 0.292,
+      "bands": [
+        0.1883,
+        0.7128,
+        0.7862,
+        0.4378
+      ]
+    },
+    {
+      "beat": 36,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 22.55873,
+      "distanceMs": 42.73,
+      "strength": 0.4173,
+      "bands": [
+        1.329,
+        0.3277,
+        0.3755,
+        0.1677
+      ]
+    },
+    {
+      "beat": 39,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 24.399546,
+      "distanceMs": 8.546,
+      "strength": 0.3092,
+      "bands": [
+        0.5486,
+        0.421,
+        0.5827,
+        0.3881
+      ]
+    },
+    {
+      "beat": 41,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 25.641723,
+      "distanceMs": 0.723,
+      "strength": 0.5155,
+      "bands": [
+        0.5592,
+        0.8113,
+        1.1801,
+        0.5021
+      ]
+    },
+    {
+      "beat": 43,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 26.908844,
+      "distanceMs": 17.844,
+      "strength": 0.3038,
+      "bands": [
+        0.4557,
+        0.4499,
+        0.7146,
+        0.3677
+      ]
+    },
+    {
+      "beat": 44,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 27.527438,
+      "distanceMs": 11.438,
+      "strength": 0.4699,
+      "bands": [
+        0.974,
+        0.6261,
+        0.825,
+        0.3135
+      ]
+    },
+    {
+      "beat": 46,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 28.78458,
+      "distanceMs": 18.58,
+      "strength": 0.3936,
+      "bands": [
+        0.4415,
+        1.1807,
+        0.752,
+        0.4641
+      ]
+    },
+    {
+      "beat": 48,
+      "region": "intro",
+      "role": "gold",
+      "peakSeconds": 30.021769,
+      "distanceMs": 5.769,
+      "strength": 0.4763,
+      "bands": [
+        0.8692,
+        0.6436,
+        0.701,
+        0.5172
+      ]
+    },
+    {
+      "beat": 50,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 31.273923,
+      "distanceMs": 7.923,
+      "strength": 0.3553,
+      "bands": [
+        0.4996,
+        0.9828,
+        0.6868,
+        0.2822
+      ]
+    },
+    {
+      "beat": 52,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 32.521088,
+      "distanceMs": 5.088,
+      "strength": 0.4252,
+      "bands": [
+        1.0708,
+        0.7032,
+        0.3953,
+        0.3388
+      ]
+    },
+    {
+      "beat": 56,
+      "region": "intro",
+      "role": "long",
+      "peakSeconds": 35.025397,
+      "distanceMs": 9.397,
+      "strength": 0.3783,
+      "bands": [
+        0.9515,
+        0.8325,
+        0.34,
+        0.2024
+      ]
+    },
+    {
+      "beat": 60,
+      "region": "tail",
+      "role": "long",
+      "peakSeconds": 37.554649,
+      "distanceMs": 38.649,
+      "strength": 0.2768,
+      "bands": [
+        0.2461,
+        0.7771,
+        0.7082,
+        0.2478
+      ]
+    },
+    {
+      "beat": 68,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 41.839909,
+      "distanceMs": 5.727,
+      "strength": 1.0919,
+      "bands": [
+        0.0921,
+        0.8081,
+        2.0525,
+        1.8999
+      ]
+    },
+    {
+      "beat": 70,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 42.752834,
+      "distanceMs": 9.562,
+      "strength": 0.4621,
+      "bands": [
+        0.4181,
+        0.6734,
+        0.7967,
+        0.6522
+      ]
+    },
+    {
+      "beat": 72,
+      "region": "entry",
+      "role": "gold",
+      "peakSeconds": 43.660771,
+      "distanceMs": 8.407,
+      "strength": 0.6473,
+      "bands": [
+        0.1275,
+        1.1069,
+        1.6392,
+        0.6336
+      ]
+    },
+    {
+      "beat": 74,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 44.568707,
+      "distanceMs": 7.253,
+      "strength": 0.647,
+      "bands": [
+        0.8943,
+        0.4555,
+        0.9019,
+        0.6366
+      ]
+    },
+    {
+      "beat": 76,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 45.476644,
+      "distanceMs": 6.099,
+      "strength": 0.6453,
+      "bands": [
+        0.2323,
+        1.138,
+        1.5774,
+        0.5381
+      ]
+    },
+    {
+      "beat": 78,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 46.38458,
+      "distanceMs": 4.944,
+      "strength": 0.5754,
+      "bands": [
+        0.8142,
+        0.7299,
+        0.7524,
+        0.4244
+      ]
+    },
+    {
+      "beat": 80,
+      "region": "entry",
+      "role": "gold",
+      "peakSeconds": 47.297506,
+      "distanceMs": 8.778,
+      "strength": 0.7603,
+      "bands": [
+        0.5242,
+        1.1343,
+        1.5614,
+        0.5514
+      ]
+    },
+    {
+      "beat": 82,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 48.205442,
+      "distanceMs": 7.624,
+      "strength": 0.7557,
+      "bands": [
+        0.8132,
+        0.5793,
+        1.1895,
+        0.7239
+      ]
+    },
+    {
+      "beat": 84,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 49.10839,
+      "distanceMs": 1.481,
+      "strength": 2.2352,
+      "bands": [
+        3.9784,
+        1.2736,
+        1.645,
+        1.9918
+      ]
+    },
+    {
+      "beat": 84,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 49.10839,
+      "distanceMs": 1.481,
+      "strength": 2.2352,
+      "bands": [
+        3.9784,
+        1.2736,
+        1.645,
+        1.9918
+      ]
+    },
+    {
+      "beat": 87,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 50.475283,
+      "distanceMs": 4.738,
+      "strength": 0.7949,
+      "bands": [
+        1.7304,
+        0.7069,
+        1.0102,
+        0.4144
+      ]
+    },
+    {
+      "beat": 88,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 50.924263,
+      "distanceMs": -0.828,
+      "strength": 1.8297,
+      "bands": [
+        1.4014,
+        3.0385,
+        1.741,
+        2.4377
+      ]
+    },
+    {
+      "beat": 89.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 51.612698,
+      "distanceMs": 5.789,
+      "strength": 1.1685,
+      "bands": [
+        1.7882,
+        1.8632,
+        1.2793,
+        1.1763
+      ]
+    },
+    {
+      "beat": 91,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 52.291156,
+      "distanceMs": 2.429,
+      "strength": 0.8083,
+      "bands": [
+        0.9789,
+        0.7988,
+        1.3704,
+        1.194
+      ]
+    },
+    {
+      "beat": 92,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 52.745125,
+      "distanceMs": 1.852,
+      "strength": 1.8621,
+      "bands": [
+        3.2699,
+        1.1742,
+        1.7204,
+        1.911
+      ]
+    },
+    {
+      "beat": 95,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 54.112018,
+      "distanceMs": 5.109,
+      "strength": 1.5005,
+      "bands": [
+        0.4266,
+        1.8618,
+        2.4581,
+        2.4383
+      ]
+    },
+    {
+      "beat": 96,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 54.565986,
+      "distanceMs": 4.532,
+      "strength": 1.9596,
+      "bands": [
+        1.4963,
+        2.1021,
+        2.0626,
+        2.9366
+      ]
+    },
+    {
+      "beat": 97.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 55.249433,
+      "distanceMs": 6.16,
+      "strength": 1.8105,
+      "bands": [
+        1.1068,
+        2.2882,
+        2.1894,
+        2.7743
+      ]
+    },
+    {
+      "beat": 99,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 55.927891,
+      "distanceMs": 2.8,
+      "strength": 1.7186,
+      "bands": [
+        1.0017,
+        1.7696,
+        2.7077,
+        2.5051
+      ]
+    },
+    {
+      "beat": 100,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 56.381859,
+      "distanceMs": 2.223,
+      "strength": 1.9089,
+      "bands": [
+        0.6198,
+        1.8234,
+        2.7135,
+        3.3779
+      ]
+    },
+    {
+      "beat": 103,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 57.748753,
+      "distanceMs": 5.48,
+      "strength": 1.8542,
+      "bands": [
+        1.4844,
+        1.2244,
+        2.61,
+        2.6711
+      ]
+    },
+    {
+      "beat": 104,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 58.202721,
+      "distanceMs": 4.903,
+      "strength": 1.5383,
+      "bands": [
+        0.6165,
+        1.3287,
+        2.4196,
+        2.5995
+      ]
+    },
+    {
+      "beat": 105.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 58.881179,
+      "distanceMs": 1.543,
+      "strength": 2.0251,
+      "bands": [
+        0.8958,
+        2.3241,
+        2.3735,
+        3.339
+      ]
+    },
+    {
+      "beat": 107,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 59.574603,
+      "distanceMs": 13.149,
+      "strength": 0.9623,
+      "bands": [
+        2.1951,
+        0.9078,
+        0.9226,
+        0.705
+      ]
+    },
+    {
+      "beat": 108,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 60.023583,
+      "distanceMs": 7.583,
+      "strength": 1.316,
+      "bands": [
+        0.7304,
+        1.3417,
+        2.4752,
+        1.9203
+      ]
+    },
+    {
+      "beat": 111,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 61.385488,
+      "distanceMs": 5.851,
+      "strength": 2.0156,
+      "bands": [
+        1.4772,
+        2.1224,
+        2.9192,
+        2.5417
+      ]
+    },
+    {
+      "beat": 112,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 61.839456,
+      "distanceMs": 5.274,
+      "strength": 2.4136,
+      "bands": [
+        2.0483,
+        2.086,
+        2.7787,
+        3.2979
+      ]
+    },
+    {
+      "beat": 113.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 62.517914,
+      "distanceMs": 1.914,
+      "strength": 2.2932,
+      "bands": [
+        1.1529,
+        2.1827,
+        3.2486,
+        3.5016
+      ]
+    },
+    {
+      "beat": 115,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 63.201361,
+      "distanceMs": 3.542,
+      "strength": 1.7038,
+      "bands": [
+        0.9037,
+        1.5299,
+        2.8108,
+        2.5152
+      ]
+    },
+    {
+      "beat": 116,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 63.655329,
+      "distanceMs": 2.965,
+      "strength": 2.6332,
+      "bands": [
+        0.9996,
+        2.7095,
+        4.6041,
+        3.5244
+      ]
+    },
+    {
+      "beat": 119,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 65.017234,
+      "distanceMs": 1.234,
+      "strength": 1.716,
+      "bands": [
+        0.6518,
+        2.2073,
+        2.2477,
+        2.7466
+      ]
+    },
+    {
+      "beat": 120,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 65.471202,
+      "distanceMs": 0.656,
+      "strength": 2.2662,
+      "bands": [
+        1.1958,
+        1.9289,
+        3.3981,
+        3.3303
+      ]
+    },
+    {
+      "beat": 121.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 66.154649,
+      "distanceMs": 2.285,
+      "strength": 2.7075,
+      "bands": [
+        1.7152,
+        3.2454,
+        3.4843,
+        3.5973
+      ]
+    },
+    {
+      "beat": 123,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 66.838095,
+      "distanceMs": 3.913,
+      "strength": 1.0743,
+      "bands": [
+        2.4303,
+        1.5016,
+        0.6911,
+        0.6369
+      ]
+    },
+    {
+      "beat": 124,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 67.292063,
+      "distanceMs": 3.336,
+      "strength": 1.5179,
+      "bands": [
+        1.7169,
+        2.4006,
+        2.0499,
+        1.3651
+      ]
+    },
+    {
+      "beat": 127,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 68.658957,
+      "distanceMs": 6.593,
+      "strength": 1.688,
+      "bands": [
+        1.4465,
+        1.7628,
+        2.2436,
+        2.1422
+      ]
+    },
+    {
+      "beat": 128,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 69.112925,
+      "distanceMs": 6.016,
+      "strength": 2.1662,
+      "bands": [
+        2.2465,
+        2.1189,
+        2.7087,
+        2.3961
+      ]
+    },
+    {
+      "beat": 129.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 69.791383,
+      "distanceMs": 2.656,
+      "strength": 2.1358,
+      "bands": [
+        0.8471,
+        3.2251,
+        2.8549,
+        3.06
+      ]
+    },
+    {
+      "beat": 131,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 70.47483,
+      "distanceMs": 4.284,
+      "strength": 1.8639,
+      "bands": [
+        1.3522,
+        1.7996,
+        2.6926,
+        2.4808
+      ]
+    },
+    {
+      "beat": 132,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 70.928798,
+      "distanceMs": 3.707,
+      "strength": 2.5106,
+      "bands": [
+        1.0341,
+        2.9403,
+        3.7022,
+        3.4891
+      ]
+    },
+    {
+      "beat": 135,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 72.290703,
+      "distanceMs": 1.976,
+      "strength": 1.9883,
+      "bands": [
+        0.8591,
+        2.0942,
+        2.2555,
+        3.3393
+      ]
+    },
+    {
+      "beat": 136,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 72.744671,
+      "distanceMs": 1.398,
+      "strength": 2.1325,
+      "bands": [
+        0.7843,
+        2.0704,
+        3.2413,
+        3.3062
+      ]
+    },
+    {
+      "beat": 137.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 73.428118,
+      "distanceMs": 3.027,
+      "strength": 1.8754,
+      "bands": [
+        1.1452,
+        1.935,
+        2.7038,
+        2.7499
+      ]
+    },
+    {
+      "beat": 140,
+      "region": "break",
+      "role": "long",
+      "peakSeconds": 74.525624,
+      "distanceMs": -35.831,
+      "strength": 0.7917,
+      "bands": [
+        1.4533,
+        0.6232,
+        0.7691,
+        1.2001
+      ]
+    },
+    {
+      "beat": 146,
+      "region": "break",
+      "role": "single",
+      "peakSeconds": 77.294331,
+      "distanceMs": 5.604,
+      "strength": 1.3382,
+      "bands": [
+        2.3028,
+        1.6773,
+        1.2408,
+        0.9064
+      ]
+    },
+    {
+      "beat": 148,
+      "region": "break",
+      "role": "long",
+      "peakSeconds": 78.212245,
+      "distanceMs": 14.427,
+      "strength": 1.002,
+      "bands": [
+        1.8422,
+        0.9627,
+        1.4835,
+        0.5007
+      ]
+    },
+    {
+      "beat": 152,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 80.023129,
+      "distanceMs": 7.129,
+      "strength": 1.2775,
+      "bands": [
+        1.5084,
+        2.0458,
+        1.3448,
+        1.4352
+      ]
+    },
+    {
+      "beat": 154,
+      "region": "rise",
+      "role": "gold",
+      "peakSeconds": 80.965986,
+      "distanceMs": 40.895,
+      "strength": 0.4737,
+      "bands": [
+        1.2575,
+        0.5542,
+        0.5899,
+        0.6166
+      ]
+    },
+    {
+      "beat": 157,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 82.292971,
+      "distanceMs": 4.243,
+      "strength": 1.9135,
+      "bands": [
+        1.2179,
+        2.4137,
+        2.5283,
+        2.6965
+      ]
+    },
+    {
+      "beat": 159,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 83.200907,
+      "distanceMs": 3.089,
+      "strength": 2.2486,
+      "bands": [
+        0.1373,
+        2.6485,
+        3.5209,
+        3.7651
+      ]
+    },
+    {
+      "beat": 160,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 83.654875,
+      "distanceMs": 2.512,
+      "strength": 0.9403,
+      "bands": [
+        2.3031,
+        0.5429,
+        0.4721,
+        0.7774
+      ]
+    },
+    {
+      "beat": 162,
+      "region": "rise",
+      "role": "gold",
+      "peakSeconds": 84.5678,
+      "distanceMs": 6.346,
+      "strength": 1.0175,
+      "bands": [
+        1.7286,
+        0.9841,
+        1.2745,
+        0.888
+      ]
+    },
+    {
+      "beat": 165,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 85.929705,
+      "distanceMs": 4.614,
+      "strength": 2.1488,
+      "bands": [
+        1.5168,
+        2.3367,
+        2.5877,
+        2.9713
+      ]
+    },
+    {
+      "beat": 167,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 86.837642,
+      "distanceMs": 3.46,
+      "strength": 2.3165,
+      "bands": [
+        0.9063,
+        2.5307,
+        3.2813,
+        3.4071
+      ]
+    },
+    {
+      "beat": 168,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 87.29161,
+      "distanceMs": 2.883,
+      "strength": 1.1849,
+      "bands": [
+        2.8496,
+        1.0611,
+        0.6769,
+        0.7842
+      ]
+    },
+    {
+      "beat": 170,
+      "region": "rise",
+      "role": "gold",
+      "peakSeconds": 88.154649,
+      "distanceMs": -43.17,
+      "strength": 0.3941,
+      "bands": [
+        0.293,
+        1.0908,
+        0.9082,
+        0.5683
+      ]
+    },
+    {
+      "beat": 172,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 89.112472,
+      "distanceMs": 5.563,
+      "strength": 2.1021,
+      "bands": [
+        2.2335,
+        1.598,
+        2.8307,
+        2.6712
+      ]
+    },
+    {
+      "beat": 172,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 89.112472,
+      "distanceMs": 5.563,
+      "strength": 2.1021,
+      "bands": [
+        2.2335,
+        1.598,
+        2.8307,
+        2.6712
+      ]
+    },
+    {
+      "beat": 173.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 89.79093,
+      "distanceMs": 2.202,
+      "strength": 1.6611,
+      "bands": [
+        0.9275,
+        2.0156,
+        2.146,
+        2.6866
+      ]
+    },
+    {
+      "beat": 175,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 90.474376,
+      "distanceMs": 3.831,
+      "strength": 1.3077,
+      "bands": [
+        0.7477,
+        0.8345,
+        2.1921,
+        2.2436
+      ]
+    },
+    {
+      "beat": 176,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 90.928345,
+      "distanceMs": 3.254,
+      "strength": 1.7351,
+      "bands": [
+        0.5667,
+        1.4352,
+        2.5284,
+        3.2095
+      ]
+    },
+    {
+      "beat": 179,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 92.300227,
+      "distanceMs": 11.499,
+      "strength": 0.9422,
+      "bands": [
+        1.8611,
+        1.0017,
+        1.2954,
+        0.8026
+      ]
+    },
+    {
+      "beat": 180,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 92.749206,
+      "distanceMs": 5.934,
+      "strength": 1.7101,
+      "bands": [
+        0.4263,
+        2.7807,
+        3.0627,
+        2.5169
+      ]
+    },
+    {
+      "beat": 181.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 93.427664,
+      "distanceMs": 2.573,
+      "strength": 1.1897,
+      "bands": [
+        1.0622,
+        1.1105,
+        1.7725,
+        1.987
+      ]
+    },
+    {
+      "beat": 183,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 94.101134,
+      "distanceMs": -5.775,
+      "strength": 1.0298,
+      "bands": [
+        0.8892,
+        1.5219,
+        1.7146,
+        1.5459
+      ]
+    },
+    {
+      "beat": 184,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 94.565079,
+      "distanceMs": 3.625,
+      "strength": 1.6174,
+      "bands": [
+        1.3012,
+        1.6299,
+        2.0755,
+        2.4526
+      ]
+    },
+    {
+      "beat": 187,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 95.931973,
+      "distanceMs": 6.882,
+      "strength": 1.8493,
+      "bands": [
+        2.0877,
+        1.4833,
+        2.5893,
+        2.2555
+      ]
+    },
+    {
+      "beat": 188,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 96.385941,
+      "distanceMs": 6.305,
+      "strength": 1.4124,
+      "bands": [
+        1.3775,
+        1.074,
+        3.1027,
+        1.5194
+      ]
+    },
+    {
+      "beat": 189.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 97.069388,
+      "distanceMs": 7.933,
+      "strength": 1.1257,
+      "bands": [
+        1.1176,
+        1.5924,
+        1.42,
+        1.6541
+      ]
+    },
+    {
+      "beat": 191,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 97.747846,
+      "distanceMs": 4.573,
+      "strength": 1.4433,
+      "bands": [
+        0.7853,
+        1.6343,
+        2.6372,
+        2.0122
+      ]
+    },
+    {
+      "beat": 192,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 98.206803,
+      "distanceMs": 8.985,
+      "strength": 0.7901,
+      "bands": [
+        0.2136,
+        1.2726,
+        1.8886,
+        1.3386
+      ]
+    },
+    {
+      "beat": 195,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 99.568707,
+      "distanceMs": 7.253,
+      "strength": 0.5813,
+      "bands": [
+        0.9031,
+        0.6898,
+        0.9712,
+        0.7488
+      ]
+    },
+    {
+      "beat": 196,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 100.017687,
+      "distanceMs": 1.687,
+      "strength": 1.9125,
+      "bands": [
+        0.4649,
+        2.451,
+        2.7496,
+        3.2199
+      ]
+    },
+    {
+      "beat": 197.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 100.706122,
+      "distanceMs": 8.304,
+      "strength": 0.9838,
+      "bands": [
+        0.5025,
+        1.7546,
+        1.8429,
+        1.595
+      ]
+    },
+    {
+      "beat": 199,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 101.38458,
+      "distanceMs": 4.944,
+      "strength": 0.9998,
+      "bands": [
+        0.2316,
+        1.1014,
+        2.1811,
+        1.8958
+      ]
+    },
+    {
+      "beat": 200,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 101.843537,
+      "distanceMs": 9.356,
+      "strength": 1.9659,
+      "bands": [
+        3.0614,
+        1.5476,
+        2.2994,
+        1.9245
+      ]
+    },
+    {
+      "beat": 204,
+      "region": "outro",
+      "role": "long",
+      "peakSeconds": 103.664399,
+      "distanceMs": 12.035,
+      "strength": 1.1852,
+      "bands": [
+        2.386,
+        0.942,
+        1.6061,
+        0.9546
+      ]
+    }
+  ],
+  "normal": [
+    {
+      "beat": 4,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 2.544218,
+      "distanceMs": 28.218,
+      "strength": 0.2824,
+      "bands": [
+        0.2083,
+        0.7017,
+        0.4668,
+        0.4915
+      ]
+    },
+    {
+      "beat": 5.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 3.457143,
+      "distanceMs": 3.643,
+      "strength": 0.3228,
+      "bands": [
+        0.2058,
+        0.5378,
+        0.8996,
+        0.4743
+      ]
+    },
+    {
+      "beat": 7,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 4.419955,
+      "distanceMs": 28.955,
+      "strength": 0.2948,
+      "bands": [
+        0.0266,
+        0.9466,
+        0.8746,
+        0.3675
+      ]
+    },
+    {
+      "beat": 8,
+      "region": "intro",
+      "role": "long",
+      "peakSeconds": 4.973696,
+      "distanceMs": -42.304,
+      "strength": 0.2983,
+      "bands": [
+        0.1879,
+        0.813,
+        0.6272,
+        0.4332
+      ]
+    },
+    {
+      "beat": 12,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 7.527891,
+      "distanceMs": 11.891,
+      "strength": 0.3363,
+      "bands": [
+        0.5457,
+        0.4935,
+        0.6039,
+        0.4104
+      ]
+    },
+    {
+      "beat": 13.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 8.440816,
+      "distanceMs": -12.684,
+      "strength": 0.2941,
+      "bands": [
+        0.558,
+        0.5556,
+        0.4739,
+        0.3095
+      ]
+    },
+    {
+      "beat": 14.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 9.09932,
+      "distanceMs": 20.82,
+      "strength": 0.2782,
+      "bands": [
+        0.4074,
+        0.5859,
+        0.6006,
+        0.3272
+      ]
+    },
+    {
+      "beat": 15.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 9.712925,
+      "distanceMs": 9.425,
+      "strength": 0.2507,
+      "bands": [
+        0.3796,
+        0.4841,
+        0.593,
+        0.3796
+      ]
+    },
+    {
+      "beat": 16,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 10.037188,
+      "distanceMs": 21.188,
+      "strength": 0.3545,
+      "bands": [
+        0.5417,
+        0.5562,
+        0.8556,
+        0.3525
+      ]
+    },
+    {
+      "beat": 17,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 10.660771,
+      "distanceMs": 19.771,
+      "strength": 0.4354,
+      "bands": [
+        0.9168,
+        0.445,
+        0.7418,
+        0.3592
+      ]
+    },
+    {
+      "beat": 18.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 11.598639,
+      "distanceMs": 20.139,
+      "strength": 0.5326,
+      "bands": [
+        1.0382,
+        0.5498,
+        1.1714,
+        0.3087
+      ]
+    },
+    {
+      "beat": 20,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 12.526531,
+      "distanceMs": 10.531,
+      "strength": 0.2957,
+      "bands": [
+        0.4564,
+        0.6181,
+        0.5191,
+        0.3247
+      ]
+    },
+    {
+      "beat": 21.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 13.454422,
+      "distanceMs": 0.922,
+      "strength": 0.3695,
+      "bands": [
+        0.5425,
+        0.7875,
+        0.5557,
+        0.4866
+      ]
+    },
+    {
+      "beat": 23,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 14.39229,
+      "distanceMs": 1.29,
+      "strength": 0.408,
+      "bands": [
+        0.4764,
+        1.2323,
+        0.6577,
+        0.3933
+      ]
+    },
+    {
+      "beat": 24,
+      "region": "intro",
+      "role": "long",
+      "peakSeconds": 15.040816,
+      "distanceMs": 24.816,
+      "strength": 0.5407,
+      "bands": [
+        1.3379,
+        0.9284,
+        0.5244,
+        0.2256
+      ]
+    },
+    {
+      "beat": 27,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 16.906576,
+      "distanceMs": 15.576,
+      "strength": 0.4461,
+      "bands": [
+        0.8255,
+        0.5617,
+        0.7427,
+        0.3893
+      ]
+    },
+    {
+      "beat": 28,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 17.520181,
+      "distanceMs": 4.181,
+      "strength": 0.3553,
+      "bands": [
+        0.768,
+        0.7099,
+        0.4873,
+        0.3303
+      ]
+    },
+    {
+      "beat": 29.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 18.497959,
+      "distanceMs": 44.459,
+      "strength": 0.2764,
+      "bands": [
+        0.3328,
+        0.6563,
+        0.4595,
+        0.4775
+      ]
+    },
+    {
+      "beat": 30.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 19.046712,
+      "distanceMs": -31.788,
+      "strength": 0.3091,
+      "bands": [
+        0.1209,
+        0.8357,
+        0.924,
+        0.4041
+      ]
+    },
+    {
+      "beat": 32,
+      "region": "intro",
+      "role": "gold",
+      "peakSeconds": 20.02449,
+      "distanceMs": 8.49,
+      "strength": 0.6073,
+      "bands": [
+        0.5458,
+        0.899,
+        1.704,
+        0.4391
+      ]
+    },
+    {
+      "beat": 33,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 20.682993,
+      "distanceMs": 41.993,
+      "strength": 0.449,
+      "bands": [
+        1.0834,
+        0.5822,
+        0.5041,
+        0.3958
+      ]
+    },
+    {
+      "beat": 34.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 21.556009,
+      "distanceMs": -22.491,
+      "strength": 0.2672,
+      "bands": [
+        0.1226,
+        0.652,
+        0.9174,
+        0.3745
+      ]
+    },
+    {
+      "beat": 36,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 22.55873,
+      "distanceMs": 42.73,
+      "strength": 0.4173,
+      "bands": [
+        1.329,
+        0.3277,
+        0.3755,
+        0.1677
+      ]
+    },
+    {
+      "beat": 37.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 23.471655,
+      "distanceMs": 18.155,
+      "strength": 0.4629,
+      "bands": [
+        1.1103,
+        0.5691,
+        0.5546,
+        0.2929
+      ]
+    },
+    {
+      "beat": 39,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 24.399546,
+      "distanceMs": 8.546,
+      "strength": 0.3092,
+      "bands": [
+        0.5486,
+        0.421,
+        0.5827,
+        0.3881
+      ]
+    },
+    {
+      "beat": 40,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 25.033107,
+      "distanceMs": 17.107,
+      "strength": 0.4776,
+      "bands": [
+        1.0654,
+        0.9456,
+        0.3925,
+        0.2887
+      ]
+    },
+    {
+      "beat": 41,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 25.641723,
+      "distanceMs": 0.723,
+      "strength": 0.5155,
+      "bands": [
+        0.5592,
+        0.8113,
+        1.1801,
+        0.5021
+      ]
+    },
+    {
+      "beat": 42,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 26.275283,
+      "distanceMs": 9.283,
+      "strength": 0.5538,
+      "bands": [
+        0.704,
+        0.7185,
+        1.1758,
+        0.5135
+      ]
+    },
+    {
+      "beat": 43,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 26.908844,
+      "distanceMs": 17.844,
+      "strength": 0.3038,
+      "bands": [
+        0.4557,
+        0.4499,
+        0.7146,
+        0.3677
+      ]
+    },
+    {
+      "beat": 44,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 27.527438,
+      "distanceMs": 11.438,
+      "strength": 0.4699,
+      "bands": [
+        0.974,
+        0.6261,
+        0.825,
+        0.3135
+      ]
+    },
+    {
+      "beat": 45.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 28.470295,
+      "distanceMs": 16.795,
+      "strength": 0.4725,
+      "bands": [
+        1.1034,
+        0.4623,
+        0.5701,
+        0.5518
+      ]
+    },
+    {
+      "beat": 46.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 29.0839,
+      "distanceMs": 5.4,
+      "strength": 0.2775,
+      "bands": [
+        0.3546,
+        0.5912,
+        0.6401,
+        0.492
+      ]
+    },
+    {
+      "beat": 47.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 29.722449,
+      "distanceMs": 18.949,
+      "strength": 0.3101,
+      "bands": [
+        0.4488,
+        0.5133,
+        0.5005,
+        0.596
+      ]
+    },
+    {
+      "beat": 48,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 30.021769,
+      "distanceMs": 5.769,
+      "strength": 0.4763,
+      "bands": [
+        0.8692,
+        0.6436,
+        0.701,
+        0.5172
+      ]
+    },
+    {
+      "beat": 49,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 30.655329,
+      "distanceMs": 14.329,
+      "strength": 0.4638,
+      "bands": [
+        0.8021,
+        1.0381,
+        0.7562,
+        0.3527
+      ]
+    },
+    {
+      "beat": 50.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 31.598186,
+      "distanceMs": 19.686,
+      "strength": 0.3509,
+      "bands": [
+        0.3784,
+        1.1909,
+        0.679,
+        0.2957
+      ]
+    },
+    {
+      "beat": 52,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 32.521088,
+      "distanceMs": 5.088,
+      "strength": 0.4252,
+      "bands": [
+        1.0708,
+        0.7032,
+        0.3953,
+        0.3388
+      ]
+    },
+    {
+      "beat": 53.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 33.439002,
+      "distanceMs": -14.498,
+      "strength": 0.3304,
+      "bands": [
+        0.6275,
+        0.619,
+        0.6448,
+        0.3089
+      ]
+    },
+    {
+      "beat": 55,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 34.401814,
+      "distanceMs": 10.814,
+      "strength": 0.3694,
+      "bands": [
+        0.7361,
+        0.5925,
+        0.5337,
+        0.3747
+      ]
+    },
+    {
+      "beat": 56,
+      "region": "intro",
+      "role": "long",
+      "peakSeconds": 35.025397,
+      "distanceMs": 9.397,
+      "strength": 0.3783,
+      "bands": [
+        0.9515,
+        0.8325,
+        0.34,
+        0.2024
+      ]
+    },
+    {
+      "beat": 60,
+      "region": "tail",
+      "role": "long",
+      "peakSeconds": 37.554649,
+      "distanceMs": 38.649,
+      "strength": 0.2768,
+      "bands": [
+        0.2461,
+        0.7771,
+        0.7082,
+        0.2478
+      ]
+    },
+    {
+      "beat": 68,
+      "region": "entry",
+      "role": "pair",
+      "peakSeconds": 41.839909,
+      "distanceMs": 5.727,
+      "strength": 1.0919,
+      "bands": [
+        0.0921,
+        0.8081,
+        2.0525,
+        1.8999
+      ]
+    },
+    {
+      "beat": 68,
+      "region": "entry",
+      "role": "pair",
+      "peakSeconds": 41.839909,
+      "distanceMs": 5.727,
+      "strength": 1.0919,
+      "bands": [
+        0.0921,
+        0.8081,
+        2.0525,
+        1.8999
+      ]
+    },
+    {
+      "beat": 69,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 42.298866,
+      "distanceMs": 10.139,
+      "strength": 0.8283,
+      "bands": [
+        0.7286,
+        1.2036,
+        0.9995,
+        1.156
+      ]
+    },
+    {
+      "beat": 70,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 42.752834,
+      "distanceMs": 9.562,
+      "strength": 0.4621,
+      "bands": [
+        0.4181,
+        0.6734,
+        0.7967,
+        0.6522
+      ]
+    },
+    {
+      "beat": 71,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 43.211791,
+      "distanceMs": 13.973,
+      "strength": 0.5761,
+      "bands": [
+        0.2126,
+        0.4929,
+        1.2892,
+        0.9051
+      ]
+    },
+    {
+      "beat": 72,
+      "region": "entry",
+      "role": "gold",
+      "peakSeconds": 43.660771,
+      "distanceMs": 8.407,
+      "strength": 0.6473,
+      "bands": [
+        0.1275,
+        1.1069,
+        1.6392,
+        0.6336
+      ]
+    },
+    {
+      "beat": 73,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 44.114739,
+      "distanceMs": 7.83,
+      "strength": 0.612,
+      "bands": [
+        0.3709,
+        0.6412,
+        1.1626,
+        0.7874
+      ]
+    },
+    {
+      "beat": 74,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 44.568707,
+      "distanceMs": 7.253,
+      "strength": 0.647,
+      "bands": [
+        0.8943,
+        0.4555,
+        0.9019,
+        0.6366
+      ]
+    },
+    {
+      "beat": 75,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 45.022676,
+      "distanceMs": 6.676,
+      "strength": 1.0904,
+      "bands": [
+        1.3031,
+        1.2162,
+        1.7205,
+        0.7821
+      ]
+    },
+    {
+      "beat": 76,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 45.476644,
+      "distanceMs": 6.099,
+      "strength": 0.6453,
+      "bands": [
+        0.2323,
+        1.138,
+        1.5774,
+        0.5381
+      ]
+    },
+    {
+      "beat": 77,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 45.935601,
+      "distanceMs": 10.51,
+      "strength": 0.6058,
+      "bands": [
+        0.3536,
+        0.5153,
+        1.2138,
+        0.7827
+      ]
+    },
+    {
+      "beat": 78,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 46.38458,
+      "distanceMs": 4.944,
+      "strength": 0.5754,
+      "bands": [
+        0.8142,
+        0.7299,
+        0.7524,
+        0.4244
+      ]
+    },
+    {
+      "beat": 79,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 46.843537,
+      "distanceMs": 9.356,
+      "strength": 0.8618,
+      "bands": [
+        0.5313,
+        0.9141,
+        1.6779,
+        0.9276
+      ]
+    },
+    {
+      "beat": 80,
+      "region": "entry",
+      "role": "gold",
+      "peakSeconds": 47.297506,
+      "distanceMs": 8.778,
+      "strength": 0.7603,
+      "bands": [
+        0.5242,
+        1.1343,
+        1.5614,
+        0.5514
+      ]
+    },
+    {
+      "beat": 81,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 47.751474,
+      "distanceMs": 8.201,
+      "strength": 0.8022,
+      "bands": [
+        1.1775,
+        0.937,
+        1.1977,
+        0.3897
+      ]
+    },
+    {
+      "beat": 82,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 48.205442,
+      "distanceMs": 7.624,
+      "strength": 0.7557,
+      "bands": [
+        0.8132,
+        0.5793,
+        1.1895,
+        0.7239
+      ]
+    },
+    {
+      "beat": 83,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 48.65941,
+      "distanceMs": 7.047,
+      "strength": 0.9173,
+      "bands": [
+        0.8029,
+        0.9337,
+        1.9671,
+        0.65
+      ]
+    },
+    {
+      "beat": 84,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 49.10839,
+      "distanceMs": 1.481,
+      "strength": 2.2352,
+      "bands": [
+        3.9784,
+        1.2736,
+        1.645,
+        1.9918
+      ]
+    },
+    {
+      "beat": 84,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 49.10839,
+      "distanceMs": 1.481,
+      "strength": 2.2352,
+      "bands": [
+        3.9784,
+        1.2736,
+        1.645,
+        1.9918
+      ]
+    },
+    {
+      "beat": 85.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 49.791837,
+      "distanceMs": 3.109,
+      "strength": 1.1865,
+      "bands": [
+        2.5234,
+        0.5065,
+        0.9176,
+        1.1391
+      ]
+    },
+    {
+      "beat": 86,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 50.021315,
+      "distanceMs": 5.315,
+      "strength": 1.1995,
+      "bands": [
+        2.8003,
+        0.8303,
+        0.7949,
+        0.884
+      ]
+    },
+    {
+      "beat": 87,
+      "region": "main",
+      "role": "gold",
+      "peakSeconds": 50.475283,
+      "distanceMs": 4.738,
+      "strength": 0.7949,
+      "bands": [
+        1.7304,
+        0.7069,
+        1.0102,
+        0.4144
+      ]
+    },
+    {
+      "beat": 88,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 50.924263,
+      "distanceMs": -0.828,
+      "strength": 1.8297,
+      "bands": [
+        1.4014,
+        3.0385,
+        1.741,
+        2.4377
+      ]
+    },
+    {
+      "beat": 88.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 51.15873,
+      "distanceMs": 6.367,
+      "strength": 0.9896,
+      "bands": [
+        2.7777,
+        0.2428,
+        0.7711,
+        0.7522
+      ]
+    },
+    {
+      "beat": 89.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 51.612698,
+      "distanceMs": 5.789,
+      "strength": 1.1685,
+      "bands": [
+        1.7882,
+        1.8632,
+        1.2793,
+        1.1763
+      ]
+    },
+    {
+      "beat": 91,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 52.291156,
+      "distanceMs": 2.429,
+      "strength": 0.8083,
+      "bands": [
+        0.9789,
+        0.7988,
+        1.3704,
+        1.194
+      ]
+    },
+    {
+      "beat": 92,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 52.745125,
+      "distanceMs": 1.852,
+      "strength": 1.8621,
+      "bands": [
+        3.2699,
+        1.1742,
+        1.7204,
+        1.911
+      ]
+    },
+    {
+      "beat": 92,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 52.745125,
+      "distanceMs": 1.852,
+      "strength": 1.8621,
+      "bands": [
+        3.2699,
+        1.1742,
+        1.7204,
+        1.911
+      ]
+    },
+    {
+      "beat": 93.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 53.428571,
+      "distanceMs": 3.481,
+      "strength": 1.5893,
+      "bands": [
+        0.7441,
+        1.6928,
+        2.4269,
+        2.6225
+      ]
+    },
+    {
+      "beat": 95,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 54.112018,
+      "distanceMs": 5.109,
+      "strength": 1.5005,
+      "bands": [
+        0.4266,
+        1.8618,
+        2.4581,
+        2.4383
+      ]
+    },
+    {
+      "beat": 95.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 54.341497,
+      "distanceMs": 7.315,
+      "strength": 1.0043,
+      "bands": [
+        2.6046,
+        0.6996,
+        0.7557,
+        0.6398
+      ]
+    },
+    {
+      "beat": 96,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 54.565986,
+      "distanceMs": 4.532,
+      "strength": 1.9596,
+      "bands": [
+        1.4963,
+        2.1021,
+        2.0626,
+        2.9366
+      ]
+    },
+    {
+      "beat": 97,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 55.039909,
+      "distanceMs": 23.909,
+      "strength": 0.3699,
+      "bands": [
+        0.7929,
+        0.7194,
+        0.4724,
+        0.5205
+      ]
+    },
+    {
+      "beat": 97.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 55.249433,
+      "distanceMs": 6.16,
+      "strength": 1.8105,
+      "bands": [
+        1.1068,
+        2.2882,
+        2.1894,
+        2.7743
+      ]
+    },
+    {
+      "beat": 98.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 55.698413,
+      "distanceMs": 0.595,
+      "strength": 0.5667,
+      "bands": [
+        0.7638,
+        0.89,
+        0.7109,
+        0.8929
+      ]
+    },
+    {
+      "beat": 99,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 55.927891,
+      "distanceMs": 2.8,
+      "strength": 1.7186,
+      "bands": [
+        1.0017,
+        1.7696,
+        2.7077,
+        2.5051
+      ]
+    },
+    {
+      "beat": 100,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 56.381859,
+      "distanceMs": 2.223,
+      "strength": 1.9089,
+      "bands": [
+        0.6198,
+        1.8234,
+        2.7135,
+        3.3779
+      ]
+    },
+    {
+      "beat": 100,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 56.381859,
+      "distanceMs": 2.223,
+      "strength": 1.9089,
+      "bands": [
+        0.6198,
+        1.8234,
+        2.7135,
+        3.3779
+      ]
+    },
+    {
+      "beat": 101.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 57.065306,
+      "distanceMs": 3.852,
+      "strength": 1.9222,
+      "bands": [
+        0.6581,
+        2.2409,
+        2.9487,
+        3.0725
+      ]
+    },
+    {
+      "beat": 102,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 57.294785,
+      "distanceMs": 6.057,
+      "strength": 0.4706,
+      "bands": [
+        0.1933,
+        0.7067,
+        0.7419,
+        1.2241
+      ]
+    },
+    {
+      "beat": 103,
+      "region": "main",
+      "role": "gold",
+      "peakSeconds": 57.748753,
+      "distanceMs": 5.48,
+      "strength": 1.8542,
+      "bands": [
+        1.4844,
+        1.2244,
+        2.61,
+        2.6711
+      ]
+    },
+    {
+      "beat": 104,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 58.202721,
+      "distanceMs": 4.903,
+      "strength": 1.5383,
+      "bands": [
+        0.6165,
+        1.3287,
+        2.4196,
+        2.5995
+      ]
+    },
+    {
+      "beat": 104.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 58.437188,
+      "distanceMs": 12.097,
+      "strength": 0.3319,
+      "bands": [
+        0.1911,
+        0.9855,
+        0.6889,
+        0.6214
+      ]
+    },
+    {
+      "beat": 105.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 58.881179,
+      "distanceMs": 1.543,
+      "strength": 2.0251,
+      "bands": [
+        0.8958,
+        2.3241,
+        2.3735,
+        3.339
+      ]
+    },
+    {
+      "beat": 107,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 59.574603,
+      "distanceMs": 13.149,
+      "strength": 0.9623,
+      "bands": [
+        2.1951,
+        0.9078,
+        0.9226,
+        0.705
+      ]
+    },
+    {
+      "beat": 108,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 60.023583,
+      "distanceMs": 7.583,
+      "strength": 1.316,
+      "bands": [
+        0.7304,
+        1.3417,
+        2.4752,
+        1.9203
+      ]
+    },
+    {
+      "beat": 108,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 60.023583,
+      "distanceMs": 7.583,
+      "strength": 1.316,
+      "bands": [
+        0.7304,
+        1.3417,
+        2.4752,
+        1.9203
+      ]
+    },
+    {
+      "beat": 109.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 60.702041,
+      "distanceMs": 4.223,
+      "strength": 1.9666,
+      "bands": [
+        0.4659,
+        2.6792,
+        3.3677,
+        2.8511
+      ]
+    },
+    {
+      "beat": 111,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 61.385488,
+      "distanceMs": 5.851,
+      "strength": 2.0156,
+      "bands": [
+        1.4772,
+        2.1224,
+        2.9192,
+        2.5417
+      ]
+    },
+    {
+      "beat": 111.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 61.614966,
+      "distanceMs": 8.057,
+      "strength": 1.0563,
+      "bands": [
+        2.7825,
+        0.6327,
+        0.7082,
+        0.5838
+      ]
+    },
+    {
+      "beat": 112,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 61.839456,
+      "distanceMs": 5.274,
+      "strength": 2.4136,
+      "bands": [
+        2.0483,
+        2.086,
+        2.7787,
+        3.2979
+      ]
+    },
+    {
+      "beat": 113,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 62.318367,
+      "distanceMs": 29.64,
+      "strength": 0.323,
+      "bands": [
+        0.9115,
+        0.2005,
+        0.4695,
+        0.4934
+      ]
+    },
+    {
+      "beat": 113.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 62.517914,
+      "distanceMs": 1.914,
+      "strength": 2.2932,
+      "bands": [
+        1.1529,
+        2.1827,
+        3.2486,
+        3.5016
+      ]
+    },
+    {
+      "beat": 114.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 62.996825,
+      "distanceMs": 26.28,
+      "strength": 0.6459,
+      "bands": [
+        1.1809,
+        0.9229,
+        0.6,
+        0.7173
+      ]
+    },
+    {
+      "beat": 115,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 63.201361,
+      "distanceMs": 3.542,
+      "strength": 1.7038,
+      "bands": [
+        0.9037,
+        1.5299,
+        2.8108,
+        2.5152
+      ]
+    },
+    {
+      "beat": 116,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 63.655329,
+      "distanceMs": 2.965,
+      "strength": 2.6332,
+      "bands": [
+        0.9996,
+        2.7095,
+        4.6041,
+        3.5244
+      ]
+    },
+    {
+      "beat": 116,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 63.655329,
+      "distanceMs": 2.965,
+      "strength": 2.6332,
+      "bands": [
+        0.9996,
+        2.7095,
+        4.6041,
+        3.5244
+      ]
+    },
+    {
+      "beat": 117.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 64.338776,
+      "distanceMs": 4.594,
+      "strength": 1.7828,
+      "bands": [
+        0.3864,
+        2.4065,
+        3.2815,
+        2.5206
+      ]
+    },
+    {
+      "beat": 118,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 64.523356,
+      "distanceMs": -38.099,
+      "strength": 0.421,
+      "bands": [
+        0.7101,
+        0.8322,
+        0.3974,
+        0.6679
+      ]
+    },
+    {
+      "beat": 119,
+      "region": "main",
+      "role": "gold",
+      "peakSeconds": 65.017234,
+      "distanceMs": 1.234,
+      "strength": 1.716,
+      "bands": [
+        0.6518,
+        2.2073,
+        2.2477,
+        2.7466
+      ]
+    },
+    {
+      "beat": 120,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 65.471202,
+      "distanceMs": 0.656,
+      "strength": 2.2662,
+      "bands": [
+        1.1958,
+        1.9289,
+        3.3981,
+        3.3303
+      ]
+    },
+    {
+      "beat": 120.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 65.705669,
+      "distanceMs": 7.851,
+      "strength": 0.604,
+      "bands": [
+        0.3271,
+        0.4015,
+        1.0844,
+        1.3513
+      ]
+    },
+    {
+      "beat": 121.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 66.154649,
+      "distanceMs": 2.285,
+      "strength": 2.7075,
+      "bands": [
+        1.7152,
+        3.2454,
+        3.4843,
+        3.5973
+      ]
+    },
+    {
+      "beat": 123,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 66.838095,
+      "distanceMs": 3.913,
+      "strength": 1.0743,
+      "bands": [
+        2.4303,
+        1.5016,
+        0.6911,
+        0.6369
+      ]
+    },
+    {
+      "beat": 124,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 67.292063,
+      "distanceMs": 3.336,
+      "strength": 1.5179,
+      "bands": [
+        1.7169,
+        2.4006,
+        2.0499,
+        1.3651
+      ]
+    },
+    {
+      "beat": 124,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 67.292063,
+      "distanceMs": 3.336,
+      "strength": 1.5179,
+      "bands": [
+        1.7169,
+        2.4006,
+        2.0499,
+        1.3651
+      ]
+    },
+    {
+      "beat": 125.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 67.97551,
+      "distanceMs": 4.965,
+      "strength": 1.9429,
+      "bands": [
+        0.82,
+        2.3609,
+        3.3809,
+        2.5981
+      ]
+    },
+    {
+      "beat": 127,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 68.658957,
+      "distanceMs": 6.593,
+      "strength": 1.688,
+      "bands": [
+        1.4465,
+        1.7628,
+        2.2436,
+        2.1422
+      ]
+    },
+    {
+      "beat": 127.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 68.883447,
+      "distanceMs": 3.81,
+      "strength": 1.0465,
+      "bands": [
+        2.4516,
+        1.1718,
+        0.5713,
+        0.6042
+      ]
+    },
+    {
+      "beat": 128,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 69.112925,
+      "distanceMs": 6.016,
+      "strength": 2.1662,
+      "bands": [
+        2.2465,
+        2.1189,
+        2.7087,
+        2.3961
+      ]
+    },
+    {
+      "beat": 129,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 69.591837,
+      "distanceMs": 30.382,
+      "strength": 0.3315,
+      "bands": [
+        0.6426,
+        0.5091,
+        0.463,
+        0.5266
+      ]
+    },
+    {
+      "beat": 129.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 69.791383,
+      "distanceMs": 2.656,
+      "strength": 2.1358,
+      "bands": [
+        0.8471,
+        3.2251,
+        2.8549,
+        3.06
+      ]
+    },
+    {
+      "beat": 130.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 70.25034,
+      "distanceMs": 7.067,
+      "strength": 0.5324,
+      "bands": [
+        0.8115,
+        0.5077,
+        0.4722,
+        0.8733
+      ]
+    },
+    {
+      "beat": 131,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 70.47483,
+      "distanceMs": 4.284,
+      "strength": 1.8639,
+      "bands": [
+        1.3522,
+        1.7996,
+        2.6926,
+        2.4808
+      ]
+    },
+    {
+      "beat": 132,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 70.928798,
+      "distanceMs": 3.707,
+      "strength": 2.5106,
+      "bands": [
+        1.0341,
+        2.9403,
+        3.7022,
+        3.4891
+      ]
+    },
+    {
+      "beat": 132,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 70.928798,
+      "distanceMs": 3.707,
+      "strength": 2.5106,
+      "bands": [
+        1.0341,
+        2.9403,
+        3.7022,
+        3.4891
+      ]
+    },
+    {
+      "beat": 133.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 71.607256,
+      "distanceMs": 0.347,
+      "strength": 2.3733,
+      "bands": [
+        0.7084,
+        2.6089,
+        4.9326,
+        2.9342
+      ]
+    },
+    {
+      "beat": 134,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 71.791837,
+      "distanceMs": -42.345,
+      "strength": 0.5246,
+      "bands": [
+        1.1927,
+        0.3971,
+        0.5612,
+        0.6815
+      ]
+    },
+    {
+      "beat": 135,
+      "region": "main",
+      "role": "gold",
+      "peakSeconds": 72.290703,
+      "distanceMs": 1.976,
+      "strength": 1.9883,
+      "bands": [
+        0.8591,
+        2.0942,
+        2.2555,
+        3.3393
+      ]
+    },
+    {
+      "beat": 136,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 72.744671,
+      "distanceMs": 1.398,
+      "strength": 2.1325,
+      "bands": [
+        0.7843,
+        2.0704,
+        3.2413,
+        3.3062
+      ]
+    },
+    {
+      "beat": 136.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 72.964172,
+      "distanceMs": -6.373,
+      "strength": 0.4411,
+      "bands": [
+        1.1163,
+        0.3337,
+        0.4603,
+        0.5479
+      ]
+    },
+    {
+      "beat": 137.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 73.428118,
+      "distanceMs": 3.027,
+      "strength": 1.8754,
+      "bands": [
+        1.1452,
+        1.935,
+        2.7038,
+        2.7499
+      ]
+    },
+    {
+      "beat": 139,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 74.116553,
+      "distanceMs": 9.644,
+      "strength": 1.291,
+      "bands": [
+        2.1129,
+        1.3733,
+        1.8199,
+        1.1214
+      ]
+    },
+    {
+      "beat": 140,
+      "region": "break",
+      "role": "long",
+      "peakSeconds": 74.525624,
+      "distanceMs": -35.831,
+      "strength": 0.7917,
+      "bands": [
+        1.4533,
+        0.6232,
+        0.7691,
+        1.2001
+      ]
+    },
+    {
+      "beat": 144,
+      "region": "break",
+      "role": "single",
+      "peakSeconds": 76.386395,
+      "distanceMs": 6.758,
+      "strength": 0.787,
+      "bands": [
+        1.7493,
+        0.8105,
+        0.7767,
+        0.4432
+      ]
+    },
+    {
+      "beat": 145,
+      "region": "break",
+      "role": "single",
+      "peakSeconds": 76.840363,
+      "distanceMs": 6.181,
+      "strength": 0.8863,
+      "bands": [
+        1.6923,
+        0.2919,
+        1.0272,
+        0.8564
+      ]
+    },
+    {
+      "beat": 146,
+      "region": "break",
+      "role": "single",
+      "peakSeconds": 77.294331,
+      "distanceMs": 5.604,
+      "strength": 1.3382,
+      "bands": [
+        2.3028,
+        1.6773,
+        1.2408,
+        0.9064
+      ]
+    },
+    {
+      "beat": 147,
+      "region": "break",
+      "role": "single",
+      "peakSeconds": 77.748299,
+      "distanceMs": 5.027,
+      "strength": 0.7866,
+      "bands": [
+        1.742,
+        0.3729,
+        1.1574,
+        0.3603
+      ]
+    },
+    {
+      "beat": 148,
+      "region": "break",
+      "role": "long",
+      "peakSeconds": 78.212245,
+      "distanceMs": 14.427,
+      "strength": 1.002,
+      "bands": [
+        1.8422,
+        0.9627,
+        1.4835,
+        0.5007
+      ]
+    },
+    {
+      "beat": 151,
+      "region": "break",
+      "role": "single",
+      "peakSeconds": 79.569161,
+      "distanceMs": 7.706,
+      "strength": 1.1425,
+      "bands": [
+        1.4144,
+        0.8194,
+        1.9115,
+        1.0303
+      ]
+    },
+    {
+      "beat": 152,
+      "region": "rise",
+      "role": "pair",
+      "peakSeconds": 80.023129,
+      "distanceMs": 7.129,
+      "strength": 1.2775,
+      "bands": [
+        1.5084,
+        2.0458,
+        1.3448,
+        1.4352
+      ]
+    },
+    {
+      "beat": 152,
+      "region": "rise",
+      "role": "pair",
+      "peakSeconds": 80.023129,
+      "distanceMs": 7.129,
+      "strength": 1.2775,
+      "bands": [
+        1.5084,
+        2.0458,
+        1.3448,
+        1.4352
+      ]
+    },
+    {
+      "beat": 153,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 80.442177,
+      "distanceMs": -28.369,
+      "strength": 0.5606,
+      "bands": [
+        0.9489,
+        0.5274,
+        0.6201,
+        1.114
+      ]
+    },
+    {
+      "beat": 154,
+      "region": "rise",
+      "role": "gold",
+      "peakSeconds": 80.965986,
+      "distanceMs": 40.895,
+      "strength": 0.4737,
+      "bands": [
+        1.2575,
+        0.5542,
+        0.5899,
+        0.6166
+      ]
+    },
+    {
+      "beat": 155,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 81.385034,
+      "distanceMs": 5.398,
+      "strength": 1.9675,
+      "bands": [
+        3.0363,
+        1.795,
+        2.7962,
+        1.5638
+      ]
+    },
+    {
+      "beat": 156,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 81.839002,
+      "distanceMs": 4.82,
+      "strength": 1.2799,
+      "bands": [
+        2.3102,
+        0.5509,
+        1.0002,
+        1.7559
+      ]
+    },
+    {
+      "beat": 157,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 82.292971,
+      "distanceMs": 4.243,
+      "strength": 1.9135,
+      "bands": [
+        1.2179,
+        2.4137,
+        2.5283,
+        2.6965
+      ]
+    },
+    {
+      "beat": 158,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 82.746939,
+      "distanceMs": 3.666,
+      "strength": 1.2535,
+      "bands": [
+        3.049,
+        0.8893,
+        0.9248,
+        0.7238
+      ]
+    },
+    {
+      "beat": 159,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 83.200907,
+      "distanceMs": 3.089,
+      "strength": 2.2486,
+      "bands": [
+        0.1373,
+        2.6485,
+        3.5209,
+        3.7651
+      ]
+    },
+    {
+      "beat": 160,
+      "region": "rise",
+      "role": "pair",
+      "peakSeconds": 83.654875,
+      "distanceMs": 2.512,
+      "strength": 0.9403,
+      "bands": [
+        2.3031,
+        0.5429,
+        0.4721,
+        0.7774
+      ]
+    },
+    {
+      "beat": 160,
+      "region": "rise",
+      "role": "pair",
+      "peakSeconds": 83.654875,
+      "distanceMs": 2.512,
+      "strength": 0.9403,
+      "bands": [
+        2.3031,
+        0.5429,
+        0.4721,
+        0.7774
+      ]
+    },
+    {
+      "beat": 161,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 84.108844,
+      "distanceMs": 1.934,
+      "strength": 2.4509,
+      "bands": [
+        1.0204,
+        2.7835,
+        3.3155,
+        3.6646
+      ]
+    },
+    {
+      "beat": 162,
+      "region": "rise",
+      "role": "gold",
+      "peakSeconds": 84.5678,
+      "distanceMs": 6.346,
+      "strength": 1.0175,
+      "bands": [
+        1.7286,
+        0.9841,
+        1.2745,
+        0.888
+      ]
+    },
+    {
+      "beat": 163,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 85.021769,
+      "distanceMs": 5.769,
+      "strength": 1.4666,
+      "bands": [
+        1.1082,
+        1.6905,
+        2.0164,
+        1.9336
+      ]
+    },
+    {
+      "beat": 164,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 85.475737,
+      "distanceMs": 5.192,
+      "strength": 1.1109,
+      "bands": [
+        2.6063,
+        0.6238,
+        0.7141,
+        0.8352
+      ]
+    },
+    {
+      "beat": 165,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 85.929705,
+      "distanceMs": 4.614,
+      "strength": 2.1488,
+      "bands": [
+        1.5168,
+        2.3367,
+        2.5877,
+        2.9713
+      ]
+    },
+    {
+      "beat": 166,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 86.383673,
+      "distanceMs": 4.037,
+      "strength": 1.0843,
+      "bands": [
+        2.2032,
+        0.6614,
+        0.9875,
+        0.9593
+      ]
+    },
+    {
+      "beat": 167,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 86.837642,
+      "distanceMs": 3.46,
+      "strength": 2.3165,
+      "bands": [
+        0.9063,
+        2.5307,
+        3.2813,
+        3.4071
+      ]
+    },
+    {
+      "beat": 168,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 87.29161,
+      "distanceMs": 2.883,
+      "strength": 1.1849,
+      "bands": [
+        2.8496,
+        1.0611,
+        0.6769,
+        0.7842
+      ]
+    },
+    {
+      "beat": 169,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 87.745578,
+      "distanceMs": 2.306,
+      "strength": 2.2024,
+      "bands": [
+        2.5284,
+        2.3047,
+        2.3774,
+        2.5069
+      ]
+    },
+    {
+      "beat": 170,
+      "region": "rise",
+      "role": "gold",
+      "peakSeconds": 88.154649,
+      "distanceMs": -43.17,
+      "strength": 0.3941,
+      "bands": [
+        0.293,
+        1.0908,
+        0.9082,
+        0.5683
+      ]
+    },
+    {
+      "beat": 171,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 88.658503,
+      "distanceMs": 6.14,
+      "strength": 1.8625,
+      "bands": [
+        3.048,
+        2.0859,
+        2.2676,
+        1.2812
+      ]
+    },
+    {
+      "beat": 172,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 89.112472,
+      "distanceMs": 5.563,
+      "strength": 2.1021,
+      "bands": [
+        2.2335,
+        1.598,
+        2.8307,
+        2.6712
+      ]
+    },
+    {
+      "beat": 172.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 89.34195,
+      "distanceMs": 7.768,
+      "strength": 0.7756,
+      "bands": [
+        1.5263,
+        0.8403,
+        1.1543,
+        0.8228
+      ]
+    },
+    {
+      "beat": 173.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 89.79093,
+      "distanceMs": 2.202,
+      "strength": 1.6611,
+      "bands": [
+        0.9275,
+        2.0156,
+        2.146,
+        2.6866
+      ]
+    },
+    {
+      "beat": 175,
+      "region": "final",
+      "role": "gold",
+      "peakSeconds": 90.474376,
+      "distanceMs": 3.831,
+      "strength": 1.3077,
+      "bands": [
+        0.7477,
+        0.8345,
+        2.1921,
+        2.2436
+      ]
+    },
+    {
+      "beat": 176,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 90.928345,
+      "distanceMs": 3.254,
+      "strength": 1.7351,
+      "bands": [
+        0.5667,
+        1.4352,
+        2.5284,
+        3.2095
+      ]
+    },
+    {
+      "beat": 177.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 91.611791,
+      "distanceMs": 4.882,
+      "strength": 1.2183,
+      "bands": [
+        0.7727,
+        2.1304,
+        1.842,
+        1.83
+      ]
+    },
+    {
+      "beat": 179,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 92.300227,
+      "distanceMs": 11.499,
+      "strength": 0.9422,
+      "bands": [
+        1.8611,
+        1.0017,
+        1.2954,
+        0.8026
+      ]
+    },
+    {
+      "beat": 179.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 92.504762,
+      "distanceMs": -11.238,
+      "strength": 0.5227,
+      "bands": [
+        0.7076,
+        1.0972,
+        0.773,
+        0.8378
+      ]
+    },
+    {
+      "beat": 180,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 92.749206,
+      "distanceMs": 5.934,
+      "strength": 1.7101,
+      "bands": [
+        0.4263,
+        2.7807,
+        3.0627,
+        2.5169
+      ]
+    },
+    {
+      "beat": 181,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 93.218141,
+      "distanceMs": 20.322,
+      "strength": 0.6296,
+      "bands": [
+        0.9783,
+        0.9657,
+        0.7275,
+        1.1182
+      ]
+    },
+    {
+      "beat": 181.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 93.427664,
+      "distanceMs": 2.573,
+      "strength": 1.1897,
+      "bands": [
+        1.0622,
+        1.1105,
+        1.7725,
+        1.987
+      ]
+    },
+    {
+      "beat": 182.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 93.871655,
+      "distanceMs": -7.981,
+      "strength": 0.5666,
+      "bands": [
+        1.2233,
+        0.7384,
+        0.6188,
+        0.8171
+      ]
+    },
+    {
+      "beat": 183,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 94.101134,
+      "distanceMs": -5.775,
+      "strength": 1.0298,
+      "bands": [
+        0.8892,
+        1.5219,
+        1.7146,
+        1.5459
+      ]
+    },
+    {
+      "beat": 184,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 94.565079,
+      "distanceMs": 3.625,
+      "strength": 1.6174,
+      "bands": [
+        1.3012,
+        1.6299,
+        2.0755,
+        2.4526
+      ]
+    },
+    {
+      "beat": 185.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 95.253515,
+      "distanceMs": 10.242,
+      "strength": 0.5715,
+      "bands": [
+        0.477,
+        1.8399,
+        0.6511,
+        0.9294
+      ]
+    },
+    {
+      "beat": 186,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 95.478005,
+      "distanceMs": 7.459,
+      "strength": 1.1913,
+      "bands": [
+        2.9816,
+        0.5763,
+        0.8301,
+        0.9722
+      ]
+    },
+    {
+      "beat": 187,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 95.931973,
+      "distanceMs": 6.882,
+      "strength": 1.8493,
+      "bands": [
+        2.0877,
+        1.4833,
+        2.5893,
+        2.2555
+      ]
+    },
+    {
+      "beat": 188,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 96.385941,
+      "distanceMs": 6.305,
+      "strength": 1.4124,
+      "bands": [
+        1.3775,
+        1.074,
+        3.1027,
+        1.5194
+      ]
+    },
+    {
+      "beat": 188.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 96.610431,
+      "distanceMs": 3.522,
+      "strength": 0.8989,
+      "bands": [
+        2.3949,
+        0.7565,
+        0.6024,
+        0.757
+      ]
+    },
+    {
+      "beat": 189.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 97.069388,
+      "distanceMs": 7.933,
+      "strength": 1.1257,
+      "bands": [
+        1.1176,
+        1.5924,
+        1.42,
+        1.6541
+      ]
+    },
+    {
+      "beat": 191,
+      "region": "final",
+      "role": "gold",
+      "peakSeconds": 97.747846,
+      "distanceMs": 4.573,
+      "strength": 1.4433,
+      "bands": [
+        0.7853,
+        1.6343,
+        2.6372,
+        2.0122
+      ]
+    },
+    {
+      "beat": 192,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 98.206803,
+      "distanceMs": 8.985,
+      "strength": 0.7901,
+      "bands": [
+        0.2136,
+        1.2726,
+        1.8886,
+        1.3386
+      ]
+    },
+    {
+      "beat": 193.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 98.885261,
+      "distanceMs": 5.624,
+      "strength": 1.6219,
+      "bands": [
+        1.0489,
+        2.2166,
+        2.1655,
+        2.3047
+      ]
+    },
+    {
+      "beat": 195,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 99.568707,
+      "distanceMs": 7.253,
+      "strength": 0.5813,
+      "bands": [
+        0.9031,
+        0.6898,
+        0.9712,
+        0.7488
+      ]
+    },
+    {
+      "beat": 195.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 99.808163,
+      "distanceMs": 19.436,
+      "strength": 0.5587,
+      "bands": [
+        0.0,
+        0.7559,
+        1.3972,
+        1.1601
+      ]
+    },
+    {
+      "beat": 196,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 100.017687,
+      "distanceMs": 1.687,
+      "strength": 1.9125,
+      "bands": [
+        0.4649,
+        2.451,
+        2.7496,
+        3.2199
+      ]
+    },
+    {
+      "beat": 197,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 100.466667,
+      "distanceMs": -3.879,
+      "strength": 0.5892,
+      "bands": [
+        0.8849,
+        0.9369,
+        0.629,
+        1.1524
+      ]
+    },
+    {
+      "beat": 197.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 100.706122,
+      "distanceMs": 8.304,
+      "strength": 0.9838,
+      "bands": [
+        0.5025,
+        1.7546,
+        1.8429,
+        1.595
+      ]
+    },
+    {
+      "beat": 198.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 101.155102,
+      "distanceMs": 2.738,
+      "strength": 0.5254,
+      "bands": [
+        0.5878,
+        0.9307,
+        0.8979,
+        1.0715
+      ]
+    },
+    {
+      "beat": 199,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 101.38458,
+      "distanceMs": 4.944,
+      "strength": 0.9998,
+      "bands": [
+        0.2316,
+        1.1014,
+        2.1811,
+        1.8958
+      ]
+    },
+    {
+      "beat": 200,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 101.843537,
+      "distanceMs": 9.356,
+      "strength": 1.9659,
+      "bands": [
+        3.0614,
+        1.5476,
+        2.2994,
+        1.9245
+      ]
+    },
+    {
+      "beat": 200,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 101.843537,
+      "distanceMs": 9.356,
+      "strength": 1.9659,
+      "bands": [
+        3.0614,
+        1.5476,
+        2.2994,
+        1.9245
+      ]
+    },
+    {
+      "beat": 201.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 102.521995,
+      "distanceMs": 5.995,
+      "strength": 1.8847,
+      "bands": [
+        2.2373,
+        1.6485,
+        2.0799,
+        2.5546
+      ]
+    },
+    {
+      "beat": 202,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 102.76644,
+      "distanceMs": 23.167,
+      "strength": 0.8642,
+      "bands": [
+        1.7786,
+        1.0434,
+        0.9092,
+        0.9875
+      ]
+    },
+    {
+      "beat": 203,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 103.240363,
+      "distanceMs": 42.545,
+      "strength": 0.5599,
+      "bands": [
+        1.0642,
+        0.5423,
+        0.7697,
+        0.9123
+      ]
+    },
+    {
+      "beat": 204,
+      "region": "outro",
+      "role": "long",
+      "peakSeconds": 103.664399,
+      "distanceMs": 12.035,
+      "strength": 1.1852,
+      "bands": [
+        2.386,
+        0.942,
+        1.6061,
+        0.9546
+      ]
+    }
+  ],
+  "hard": [
+    {
+      "beat": 4,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 2.544218,
+      "distanceMs": 28.218,
+      "strength": 0.2824,
+      "bands": [
+        0.2083,
+        0.7017,
+        0.4668,
+        0.4915
+      ]
+    },
+    {
+      "beat": 5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 3.137868,
+      "distanceMs": -3.132,
+      "strength": 0.2906,
+      "bands": [
+        0.2538,
+        0.3658,
+        0.6885,
+        0.5309
+      ]
+    },
+    {
+      "beat": 6.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 4.085714,
+      "distanceMs": 7.214,
+      "strength": 0.2948,
+      "bands": [
+        0.1009,
+        0.8116,
+        0.4618,
+        0.6072
+      ]
+    },
+    {
+      "beat": 8,
+      "region": "intro",
+      "role": "long",
+      "peakSeconds": 4.973696,
+      "distanceMs": -42.304,
+      "strength": 0.2983,
+      "bands": [
+        0.1879,
+        0.813,
+        0.6272,
+        0.4332
+      ]
+    },
+    {
+      "beat": 11.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 7.218594,
+      "distanceMs": 15.094,
+      "strength": 0.2414,
+      "bands": [
+        0.1122,
+        0.9165,
+        0.4937,
+        0.3322
+      ]
+    },
+    {
+      "beat": 12,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 7.527891,
+      "distanceMs": 11.891,
+      "strength": 0.3363,
+      "bands": [
+        0.5457,
+        0.4935,
+        0.6039,
+        0.4104
+      ]
+    },
+    {
+      "beat": 12.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 7.837188,
+      "distanceMs": 8.688,
+      "strength": 0.3766,
+      "bands": [
+        0.4233,
+        0.9535,
+        0.7488,
+        0.3424
+      ]
+    },
+    {
+      "beat": 13.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 8.440816,
+      "distanceMs": -12.684,
+      "strength": 0.2941,
+      "bands": [
+        0.558,
+        0.5556,
+        0.4739,
+        0.3095
+      ]
+    },
+    {
+      "beat": 14.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 9.09932,
+      "distanceMs": 20.82,
+      "strength": 0.2782,
+      "bands": [
+        0.4074,
+        0.5859,
+        0.6006,
+        0.3272
+      ]
+    },
+    {
+      "beat": 15,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 9.418594,
+      "distanceMs": 27.594,
+      "strength": 0.3182,
+      "bands": [
+        0.2872,
+        1.2175,
+        0.5972,
+        0.3247
+      ]
+    },
+    {
+      "beat": 15.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 9.712925,
+      "distanceMs": 9.425,
+      "strength": 0.2507,
+      "bands": [
+        0.3796,
+        0.4841,
+        0.593,
+        0.3796
+      ]
+    },
+    {
+      "beat": 16,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 10.037188,
+      "distanceMs": 21.188,
+      "strength": 0.3545,
+      "bands": [
+        0.5417,
+        0.5562,
+        0.8556,
+        0.3525
+      ]
+    },
+    {
+      "beat": 16.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 10.341497,
+      "distanceMs": 12.997,
+      "strength": 0.4943,
+      "bands": [
+        1.0858,
+        0.9666,
+        0.4531,
+        0.3368
+      ]
+    },
+    {
+      "beat": 17.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 10.955102,
+      "distanceMs": 1.602,
+      "strength": 0.4368,
+      "bands": [
+        0.7486,
+        0.512,
+        0.9572,
+        0.3733
+      ]
+    },
+    {
+      "beat": 18,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 11.29932,
+      "distanceMs": 33.32,
+      "strength": 0.3631,
+      "bands": [
+        0.6836,
+        0.3563,
+        0.9391,
+        0.3221
+      ]
+    },
+    {
+      "beat": 19,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 11.892971,
+      "distanceMs": 1.971,
+      "strength": 0.367,
+      "bands": [
+        0.3451,
+        0.7485,
+        0.9927,
+        0.3875
+      ]
+    },
+    {
+      "beat": 20,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 12.526531,
+      "distanceMs": 10.531,
+      "strength": 0.2957,
+      "bands": [
+        0.4564,
+        0.6181,
+        0.5191,
+        0.3247
+      ]
+    },
+    {
+      "beat": 21,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 13.145125,
+      "distanceMs": 4.125,
+      "strength": 0.4286,
+      "bands": [
+        0.5875,
+        1.1971,
+        0.558,
+        0.382
+      ]
+    },
+    {
+      "beat": 21.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 13.454422,
+      "distanceMs": 0.922,
+      "strength": 0.3695,
+      "bands": [
+        0.5425,
+        0.7875,
+        0.5557,
+        0.4866
+      ]
+    },
+    {
+      "beat": 22.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 14.102948,
+      "distanceMs": 24.448,
+      "strength": 0.3919,
+      "bands": [
+        0.8134,
+        0.7216,
+        0.6439,
+        0.2747
+      ]
+    },
+    {
+      "beat": 23,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 14.39229,
+      "distanceMs": 1.29,
+      "strength": 0.408,
+      "bands": [
+        0.4764,
+        1.2323,
+        0.6577,
+        0.3933
+      ]
+    },
+    {
+      "beat": 24,
+      "region": "intro",
+      "role": "long",
+      "peakSeconds": 15.040816,
+      "distanceMs": 24.816,
+      "strength": 0.5407,
+      "bands": [
+        1.3379,
+        0.9284,
+        0.5244,
+        0.2256
+      ]
+    },
+    {
+      "beat": 27.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 17.245805,
+      "distanceMs": 42.305,
+      "strength": 0.3472,
+      "bands": [
+        0.5553,
+        0.8941,
+        0.452,
+        0.4082
+      ]
+    },
+    {
+      "beat": 28,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 17.520181,
+      "distanceMs": 4.181,
+      "strength": 0.3553,
+      "bands": [
+        0.768,
+        0.7099,
+        0.4873,
+        0.3303
+      ]
+    },
+    {
+      "beat": 29.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 18.497959,
+      "distanceMs": 44.459,
+      "strength": 0.2764,
+      "bands": [
+        0.3328,
+        0.6563,
+        0.4595,
+        0.4775
+      ]
+    },
+    {
+      "beat": 30.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 19.046712,
+      "distanceMs": -31.788,
+      "strength": 0.3091,
+      "bands": [
+        0.1209,
+        0.8357,
+        0.924,
+        0.4041
+      ]
+    },
+    {
+      "beat": 31,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 19.356009,
+      "distanceMs": -34.991,
+      "strength": 0.3108,
+      "bands": [
+        0.2177,
+        0.7513,
+        0.5579,
+        0.568
+      ]
+    },
+    {
+      "beat": 32,
+      "region": "intro",
+      "role": "gold",
+      "peakSeconds": 20.02449,
+      "distanceMs": 8.49,
+      "strength": 0.6073,
+      "bands": [
+        0.5458,
+        0.899,
+        1.704,
+        0.4391
+      ]
+    },
+    {
+      "beat": 33.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 20.982313,
+      "distanceMs": 28.813,
+      "strength": 0.2878,
+      "bands": [
+        0.5121,
+        0.3656,
+        0.5566,
+        0.424
+      ]
+    },
+    {
+      "beat": 34,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 21.286621,
+      "distanceMs": 20.621,
+      "strength": 0.292,
+      "bands": [
+        0.1883,
+        0.7128,
+        0.7862,
+        0.4378
+      ]
+    },
+    {
+      "beat": 35,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 21.860317,
+      "distanceMs": -30.683,
+      "strength": 0.3941,
+      "bands": [
+        0.643,
+        0.5528,
+        0.7749,
+        0.4369
+      ]
+    },
+    {
+      "beat": 36,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 22.55873,
+      "distanceMs": 42.73,
+      "strength": 0.4173,
+      "bands": [
+        1.329,
+        0.3277,
+        0.3755,
+        0.1677
+      ]
+    },
+    {
+      "beat": 37,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 23.162358,
+      "distanceMs": 21.358,
+      "strength": 0.2918,
+      "bands": [
+        0.7229,
+        0.5896,
+        0.4119,
+        0.2189
+      ]
+    },
+    {
+      "beat": 37.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 23.471655,
+      "distanceMs": 18.155,
+      "strength": 0.4629,
+      "bands": [
+        1.1103,
+        0.5691,
+        0.5546,
+        0.2929
+      ]
+    },
+    {
+      "beat": 38.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 24.085261,
+      "distanceMs": 6.761,
+      "strength": 0.3207,
+      "bands": [
+        0.5316,
+        0.8499,
+        0.5182,
+        0.2677
+      ]
+    },
+    {
+      "beat": 39,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 24.399546,
+      "distanceMs": 8.546,
+      "strength": 0.3092,
+      "bands": [
+        0.5486,
+        0.421,
+        0.5827,
+        0.3881
+      ]
+    },
+    {
+      "beat": 40,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 25.033107,
+      "distanceMs": 17.107,
+      "strength": 0.4776,
+      "bands": [
+        1.0654,
+        0.9456,
+        0.3925,
+        0.2887
+      ]
+    },
+    {
+      "beat": 41,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 25.641723,
+      "distanceMs": 0.723,
+      "strength": 0.5155,
+      "bands": [
+        0.5592,
+        0.8113,
+        1.1801,
+        0.5021
+      ]
+    },
+    {
+      "beat": 42,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 26.275283,
+      "distanceMs": 9.283,
+      "strength": 0.5538,
+      "bands": [
+        0.704,
+        0.7185,
+        1.1758,
+        0.5135
+      ]
+    },
+    {
+      "beat": 42.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 26.559637,
+      "distanceMs": -18.863,
+      "strength": 0.3603,
+      "bands": [
+        0.8472,
+        0.489,
+        0.4141,
+        0.3223
+      ]
+    },
+    {
+      "beat": 43.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 27.193197,
+      "distanceMs": -10.303,
+      "strength": 0.307,
+      "bands": [
+        0.5659,
+        0.4025,
+        0.4998,
+        0.4236
+      ]
+    },
+    {
+      "beat": 44,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 27.527438,
+      "distanceMs": 11.438,
+      "strength": 0.4699,
+      "bands": [
+        0.974,
+        0.6261,
+        0.825,
+        0.3135
+      ]
+    },
+    {
+      "beat": 44.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 27.866667,
+      "distanceMs": 38.167,
+      "strength": 0.3532,
+      "bands": [
+        0.3949,
+        0.5233,
+        0.9263,
+        0.5219
+      ]
+    },
+    {
+      "beat": 45.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 28.470295,
+      "distanceMs": 16.795,
+      "strength": 0.4725,
+      "bands": [
+        1.1034,
+        0.4623,
+        0.5701,
+        0.5518
+      ]
+    },
+    {
+      "beat": 46.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 29.0839,
+      "distanceMs": 5.4,
+      "strength": 0.2775,
+      "bands": [
+        0.3546,
+        0.5912,
+        0.6401,
+        0.492
+      ]
+    },
+    {
+      "beat": 47,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 29.388209,
+      "distanceMs": -2.791,
+      "strength": 0.3614,
+      "bands": [
+        0.6007,
+        0.2972,
+        0.6558,
+        0.6323
+      ]
+    },
+    {
+      "beat": 48,
+      "region": "intro",
+      "role": "gold",
+      "peakSeconds": 30.021769,
+      "distanceMs": 5.769,
+      "strength": 0.4763,
+      "bands": [
+        0.8692,
+        0.6436,
+        0.701,
+        0.5172
+      ]
+    },
+    {
+      "beat": 49.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 30.964626,
+      "distanceMs": 11.126,
+      "strength": 0.5738,
+      "bands": [
+        0.6926,
+        1.9204,
+        0.7842,
+        0.3598
+      ]
+    },
+    {
+      "beat": 50,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 31.273923,
+      "distanceMs": 7.923,
+      "strength": 0.3553,
+      "bands": [
+        0.4996,
+        0.9828,
+        0.6868,
+        0.2822
+      ]
+    },
+    {
+      "beat": 51,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 31.897506,
+      "distanceMs": 6.506,
+      "strength": 0.3427,
+      "bands": [
+        0.243,
+        1.2751,
+        0.6528,
+        0.4073
+      ]
+    },
+    {
+      "beat": 52,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 32.521088,
+      "distanceMs": 5.088,
+      "strength": 0.4252,
+      "bands": [
+        1.0708,
+        0.7032,
+        0.3953,
+        0.3388
+      ]
+    },
+    {
+      "beat": 53,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 33.104762,
+      "distanceMs": -36.238,
+      "strength": 0.3776,
+      "bands": [
+        0.7945,
+        0.6481,
+        0.6751,
+        0.2725
+      ]
+    },
+    {
+      "beat": 53.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 33.439002,
+      "distanceMs": -14.498,
+      "strength": 0.3304,
+      "bands": [
+        0.6275,
+        0.619,
+        0.6448,
+        0.3089
+      ]
+    },
+    {
+      "beat": 54.5,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 34.047619,
+      "distanceMs": -30.881,
+      "strength": 0.3158,
+      "bands": [
+        0.4178,
+        0.7004,
+        0.8059,
+        0.3387
+      ]
+    },
+    {
+      "beat": 55,
+      "region": "intro",
+      "role": "single",
+      "peakSeconds": 34.401814,
+      "distanceMs": 10.814,
+      "strength": 0.3694,
+      "bands": [
+        0.7361,
+        0.5925,
+        0.5337,
+        0.3747
+      ]
+    },
+    {
+      "beat": 56,
+      "region": "intro",
+      "role": "long",
+      "peakSeconds": 35.025397,
+      "distanceMs": 9.397,
+      "strength": 0.3783,
+      "bands": [
+        0.9515,
+        0.8325,
+        0.34,
+        0.2024
+      ]
+    },
+    {
+      "beat": 60,
+      "region": "tail",
+      "role": "long",
+      "peakSeconds": 37.554649,
+      "distanceMs": 38.649,
+      "strength": 0.2768,
+      "bands": [
+        0.2461,
+        0.7771,
+        0.7082,
+        0.2478
+      ]
+    },
+    {
+      "beat": 68,
+      "region": "entry",
+      "role": "pair",
+      "peakSeconds": 41.839909,
+      "distanceMs": 5.727,
+      "strength": 1.0919,
+      "bands": [
+        0.0921,
+        0.8081,
+        2.0525,
+        1.8999
+      ]
+    },
+    {
+      "beat": 68,
+      "region": "entry",
+      "role": "pair",
+      "peakSeconds": 41.839909,
+      "distanceMs": 5.727,
+      "strength": 1.0919,
+      "bands": [
+        0.0921,
+        0.8081,
+        2.0525,
+        1.8999
+      ]
+    },
+    {
+      "beat": 69,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 42.298866,
+      "distanceMs": 10.139,
+      "strength": 0.8283,
+      "bands": [
+        0.7286,
+        1.2036,
+        0.9995,
+        1.156
+      ]
+    },
+    {
+      "beat": 69.5,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 42.528345,
+      "distanceMs": 12.345,
+      "strength": 0.4278,
+      "bands": [
+        0.092,
+        0.9799,
+        1.2818,
+        0.4362
+      ]
+    },
+    {
+      "beat": 70,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 42.752834,
+      "distanceMs": 9.562,
+      "strength": 0.4621,
+      "bands": [
+        0.4181,
+        0.6734,
+        0.7967,
+        0.6522
+      ]
+    },
+    {
+      "beat": 70.5,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 42.977324,
+      "distanceMs": 6.779,
+      "strength": 0.7229,
+      "bands": [
+        0.3957,
+        0.727,
+        1.6146,
+        0.9177
+      ]
+    },
+    {
+      "beat": 71,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 43.211791,
+      "distanceMs": 13.973,
+      "strength": 0.5761,
+      "bands": [
+        0.2126,
+        0.4929,
+        1.2892,
+        0.9051
+      ]
+    },
+    {
+      "beat": 71.5,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 43.436281,
+      "distanceMs": 11.19,
+      "strength": 0.6513,
+      "bands": [
+        0.2826,
+        1.2557,
+        0.981,
+        0.8813
+      ]
+    },
+    {
+      "beat": 72,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 43.660771,
+      "distanceMs": 8.407,
+      "strength": 0.6473,
+      "bands": [
+        0.1275,
+        1.1069,
+        1.6392,
+        0.6336
+      ]
+    },
+    {
+      "beat": 73,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 44.114739,
+      "distanceMs": 7.83,
+      "strength": 0.612,
+      "bands": [
+        0.3709,
+        0.6412,
+        1.1626,
+        0.7874
+      ]
+    },
+    {
+      "beat": 73.5,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 44.344218,
+      "distanceMs": 10.036,
+      "strength": 0.5815,
+      "bands": [
+        0.0592,
+        1.8329,
+        0.808,
+        0.6355
+      ]
+    },
+    {
+      "beat": 74,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 44.568707,
+      "distanceMs": 7.253,
+      "strength": 0.647,
+      "bands": [
+        0.8943,
+        0.4555,
+        0.9019,
+        0.6366
+      ]
+    },
+    {
+      "beat": 74.5,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 44.798186,
+      "distanceMs": 9.459,
+      "strength": 0.6892,
+      "bands": [
+        0.3169,
+        0.9488,
+        1.077,
+        0.9621
+      ]
+    },
+    {
+      "beat": 75,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 45.022676,
+      "distanceMs": 6.676,
+      "strength": 1.0904,
+      "bands": [
+        1.3031,
+        1.2162,
+        1.7205,
+        0.7821
+      ]
+    },
+    {
+      "beat": 75.5,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 45.252154,
+      "distanceMs": 8.881,
+      "strength": 0.6393,
+      "bands": [
+        0.196,
+        0.5374,
+        0.9163,
+        1.201
+      ]
+    },
+    {
+      "beat": 76,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 45.476644,
+      "distanceMs": 6.099,
+      "strength": 0.6453,
+      "bands": [
+        0.2323,
+        1.138,
+        1.5774,
+        0.5381
+      ]
+    },
+    {
+      "beat": 77,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 45.935601,
+      "distanceMs": 10.51,
+      "strength": 0.6058,
+      "bands": [
+        0.3536,
+        0.5153,
+        1.2138,
+        0.7827
+      ]
+    },
+    {
+      "beat": 77.5,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 46.160091,
+      "distanceMs": 7.727,
+      "strength": 0.5526,
+      "bands": [
+        0.1718,
+        1.665,
+        1.2008,
+        0.2597
+      ]
+    },
+    {
+      "beat": 78,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 46.38458,
+      "distanceMs": 4.944,
+      "strength": 0.5754,
+      "bands": [
+        0.8142,
+        0.7299,
+        0.7524,
+        0.4244
+      ]
+    },
+    {
+      "beat": 78.5,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 46.619048,
+      "distanceMs": 12.139,
+      "strength": 0.6991,
+      "bands": [
+        0.1041,
+        0.7342,
+        1.95,
+        0.7419
+      ]
+    },
+    {
+      "beat": 79,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 46.843537,
+      "distanceMs": 9.356,
+      "strength": 0.8618,
+      "bands": [
+        0.5313,
+        0.9141,
+        1.6779,
+        0.9276
+      ]
+    },
+    {
+      "beat": 79.5,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 47.068027,
+      "distanceMs": 6.573,
+      "strength": 0.69,
+      "bands": [
+        0.2734,
+        1.1378,
+        1.0481,
+        0.915
+      ]
+    },
+    {
+      "beat": 80,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 47.297506,
+      "distanceMs": 8.778,
+      "strength": 0.7603,
+      "bands": [
+        0.5242,
+        1.1343,
+        1.5614,
+        0.5514
+      ]
+    },
+    {
+      "beat": 81,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 47.751474,
+      "distanceMs": 8.201,
+      "strength": 0.8022,
+      "bands": [
+        1.1775,
+        0.937,
+        1.1977,
+        0.3897
+      ]
+    },
+    {
+      "beat": 81.5,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 47.975964,
+      "distanceMs": 5.418,
+      "strength": 0.4284,
+      "bands": [
+        0.171,
+        1.0312,
+        0.947,
+        0.284
+      ]
+    },
+    {
+      "beat": 82,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 48.205442,
+      "distanceMs": 7.624,
+      "strength": 0.7557,
+      "bands": [
+        0.8132,
+        0.5793,
+        1.1895,
+        0.7239
+      ]
+    },
+    {
+      "beat": 82.5,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 48.434921,
+      "distanceMs": 9.83,
+      "strength": 0.6887,
+      "bands": [
+        0.147,
+        0.7595,
+        1.0956,
+        1.1186
+      ]
+    },
+    {
+      "beat": 83,
+      "region": "entry",
+      "role": "single",
+      "peakSeconds": 48.65941,
+      "distanceMs": 7.047,
+      "strength": 0.9173,
+      "bands": [
+        0.8029,
+        0.9337,
+        1.9671,
+        0.65
+      ]
+    },
+    {
+      "beat": 84,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 49.10839,
+      "distanceMs": 1.481,
+      "strength": 2.2352,
+      "bands": [
+        3.9784,
+        1.2736,
+        1.645,
+        1.9918
+      ]
+    },
+    {
+      "beat": 84,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 49.10839,
+      "distanceMs": 1.481,
+      "strength": 2.2352,
+      "bands": [
+        3.9784,
+        1.2736,
+        1.645,
+        1.9918
+      ]
+    },
+    {
+      "beat": 85.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 49.791837,
+      "distanceMs": 3.109,
+      "strength": 1.1865,
+      "bands": [
+        2.5234,
+        0.5065,
+        0.9176,
+        1.1391
+      ]
+    },
+    {
+      "beat": 86,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 50.021315,
+      "distanceMs": 5.315,
+      "strength": 1.1995,
+      "bands": [
+        2.8003,
+        0.8303,
+        0.7949,
+        0.884
+      ]
+    },
+    {
+      "beat": 87,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 50.475283,
+      "distanceMs": 4.738,
+      "strength": 0.7949,
+      "bands": [
+        1.7304,
+        0.7069,
+        1.0102,
+        0.4144
+      ]
+    },
+    {
+      "beat": 87.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 50.699773,
+      "distanceMs": 1.955,
+      "strength": 0.902,
+      "bands": [
+        2.3013,
+        0.4741,
+        0.716,
+        0.4318
+      ]
+    },
+    {
+      "beat": 88,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 50.924263,
+      "distanceMs": -0.828,
+      "strength": 1.8297,
+      "bands": [
+        1.4014,
+        3.0385,
+        1.741,
+        2.4377
+      ]
+    },
+    {
+      "beat": 88.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 51.15873,
+      "distanceMs": 6.367,
+      "strength": 0.9896,
+      "bands": [
+        2.7777,
+        0.2428,
+        0.7711,
+        0.7522
+      ]
+    },
+    {
+      "beat": 89,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 51.358277,
+      "distanceMs": -21.36,
+      "strength": 0.615,
+      "bands": [
+        1.0831,
+        0.5412,
+        0.5264,
+        1.1341
+      ]
+    },
+    {
+      "beat": 89.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 51.612698,
+      "distanceMs": 5.789,
+      "strength": 1.1685,
+      "bands": [
+        1.7882,
+        1.8632,
+        1.2793,
+        1.1763
+      ]
+    },
+    {
+      "beat": 90.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 52.071655,
+      "distanceMs": 10.201,
+      "strength": 0.8972,
+      "bands": [
+        2.2098,
+        0.5296,
+        0.9235,
+        0.8475
+      ]
+    },
+    {
+      "beat": 91,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 52.291156,
+      "distanceMs": 2.429,
+      "strength": 0.8083,
+      "bands": [
+        0.9789,
+        0.7988,
+        1.3704,
+        1.194
+      ]
+    },
+    {
+      "beat": 92,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 52.745125,
+      "distanceMs": 1.852,
+      "strength": 1.8621,
+      "bands": [
+        3.2699,
+        1.1742,
+        1.7204,
+        1.911
+      ]
+    },
+    {
+      "beat": 92,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 52.745125,
+      "distanceMs": 1.852,
+      "strength": 1.8621,
+      "bands": [
+        3.2699,
+        1.1742,
+        1.7204,
+        1.911
+      ]
+    },
+    {
+      "beat": 93.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 53.428571,
+      "distanceMs": 3.481,
+      "strength": 1.5893,
+      "bands": [
+        0.7441,
+        1.6928,
+        2.4269,
+        2.6225
+      ]
+    },
+    {
+      "beat": 94,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 53.663039,
+      "distanceMs": 10.675,
+      "strength": 0.8163,
+      "bands": [
+        2.029,
+        0.4788,
+        0.7077,
+        0.779
+      ]
+    },
+    {
+      "beat": 95,
+      "region": "main",
+      "role": "gold",
+      "peakSeconds": 54.112018,
+      "distanceMs": 5.109,
+      "strength": 1.5005,
+      "bands": [
+        0.4266,
+        1.8618,
+        2.4581,
+        2.4383
+      ]
+    },
+    {
+      "beat": 96,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 54.565986,
+      "distanceMs": 4.532,
+      "strength": 1.9596,
+      "bands": [
+        1.4963,
+        2.1021,
+        2.0626,
+        2.9366
+      ]
+    },
+    {
+      "beat": 97,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 55.039909,
+      "distanceMs": 23.909,
+      "strength": 0.3699,
+      "bands": [
+        0.7929,
+        0.7194,
+        0.4724,
+        0.5205
+      ]
+    },
+    {
+      "beat": 97.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 55.249433,
+      "distanceMs": 6.16,
+      "strength": 1.8105,
+      "bands": [
+        1.1068,
+        2.2882,
+        2.1894,
+        2.7743
+      ]
+    },
+    {
+      "beat": 98,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 55.473923,
+      "distanceMs": 3.377,
+      "strength": 0.7477,
+      "bands": [
+        1.6158,
+        0.629,
+        0.7923,
+        0.7535
+      ]
+    },
+    {
+      "beat": 99,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 55.927891,
+      "distanceMs": 2.8,
+      "strength": 1.7186,
+      "bands": [
+        1.0017,
+        1.7696,
+        2.7077,
+        2.5051
+      ]
+    },
+    {
+      "beat": 100,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 56.381859,
+      "distanceMs": 2.223,
+      "strength": 1.9089,
+      "bands": [
+        0.6198,
+        1.8234,
+        2.7135,
+        3.3779
+      ]
+    },
+    {
+      "beat": 100,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 56.381859,
+      "distanceMs": 2.223,
+      "strength": 1.9089,
+      "bands": [
+        0.6198,
+        1.8234,
+        2.7135,
+        3.3779
+      ]
+    },
+    {
+      "beat": 101.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 57.065306,
+      "distanceMs": 3.852,
+      "strength": 1.9222,
+      "bands": [
+        0.6581,
+        2.2409,
+        2.9487,
+        3.0725
+      ]
+    },
+    {
+      "beat": 102,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 57.294785,
+      "distanceMs": 6.057,
+      "strength": 0.4706,
+      "bands": [
+        0.1933,
+        0.7067,
+        0.7419,
+        1.2241
+      ]
+    },
+    {
+      "beat": 103,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 57.748753,
+      "distanceMs": 5.48,
+      "strength": 1.8542,
+      "bands": [
+        1.4844,
+        1.2244,
+        2.61,
+        2.6711
+      ]
+    },
+    {
+      "beat": 103.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 57.978231,
+      "distanceMs": 7.686,
+      "strength": 0.7834,
+      "bands": [
+        1.4604,
+        0.6602,
+        0.9653,
+        0.8474
+      ]
+    },
+    {
+      "beat": 104,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 58.202721,
+      "distanceMs": 4.903,
+      "strength": 1.5383,
+      "bands": [
+        0.6165,
+        1.3287,
+        2.4196,
+        2.5995
+      ]
+    },
+    {
+      "beat": 104.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 58.437188,
+      "distanceMs": 12.097,
+      "strength": 0.3319,
+      "bands": [
+        0.1911,
+        0.9855,
+        0.6889,
+        0.6214
+      ]
+    },
+    {
+      "beat": 105,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 58.656689,
+      "distanceMs": 4.326,
+      "strength": 0.9509,
+      "bands": [
+        1.7914,
+        1.1189,
+        0.5316,
+        1.0211
+      ]
+    },
+    {
+      "beat": 105.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 58.881179,
+      "distanceMs": 1.543,
+      "strength": 2.0251,
+      "bands": [
+        0.8958,
+        2.3241,
+        2.3735,
+        3.339
+      ]
+    },
+    {
+      "beat": 106.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 59.340136,
+      "distanceMs": 5.954,
+      "strength": 0.5546,
+      "bands": [
+        0.8376,
+        0.825,
+        0.6329,
+        0.8964
+      ]
+    },
+    {
+      "beat": 107,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 59.574603,
+      "distanceMs": 13.149,
+      "strength": 0.9623,
+      "bands": [
+        2.1951,
+        0.9078,
+        0.9226,
+        0.705
+      ]
+    },
+    {
+      "beat": 108,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 60.023583,
+      "distanceMs": 7.583,
+      "strength": 1.316,
+      "bands": [
+        0.7304,
+        1.3417,
+        2.4752,
+        1.9203
+      ]
+    },
+    {
+      "beat": 108,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 60.023583,
+      "distanceMs": 7.583,
+      "strength": 1.316,
+      "bands": [
+        0.7304,
+        1.3417,
+        2.4752,
+        1.9203
+      ]
+    },
+    {
+      "beat": 109.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 60.702041,
+      "distanceMs": 4.223,
+      "strength": 1.9666,
+      "bands": [
+        0.4659,
+        2.6792,
+        3.3677,
+        2.8511
+      ]
+    },
+    {
+      "beat": 110,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 60.931519,
+      "distanceMs": 6.428,
+      "strength": 1.1003,
+      "bands": [
+        2.6666,
+        0.8655,
+        0.4581,
+        0.8933
+      ]
+    },
+    {
+      "beat": 111,
+      "region": "main",
+      "role": "gold",
+      "peakSeconds": 61.385488,
+      "distanceMs": 5.851,
+      "strength": 2.0156,
+      "bands": [
+        1.4772,
+        2.1224,
+        2.9192,
+        2.5417
+      ]
+    },
+    {
+      "beat": 112,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 61.839456,
+      "distanceMs": 5.274,
+      "strength": 2.4136,
+      "bands": [
+        2.0483,
+        2.086,
+        2.7787,
+        3.2979
+      ]
+    },
+    {
+      "beat": 113,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 62.318367,
+      "distanceMs": 29.64,
+      "strength": 0.323,
+      "bands": [
+        0.9115,
+        0.2005,
+        0.4695,
+        0.4934
+      ]
+    },
+    {
+      "beat": 113.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 62.517914,
+      "distanceMs": 1.914,
+      "strength": 2.2932,
+      "bands": [
+        1.1529,
+        2.1827,
+        3.2486,
+        3.5016
+      ]
+    },
+    {
+      "beat": 114,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 62.752381,
+      "distanceMs": 9.108,
+      "strength": 0.4057,
+      "bands": [
+        0.2471,
+        0.9173,
+        0.7455,
+        0.841
+      ]
+    },
+    {
+      "beat": 115,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 63.201361,
+      "distanceMs": 3.542,
+      "strength": 1.7038,
+      "bands": [
+        0.9037,
+        1.5299,
+        2.8108,
+        2.5152
+      ]
+    },
+    {
+      "beat": 116,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 63.655329,
+      "distanceMs": 2.965,
+      "strength": 2.6332,
+      "bands": [
+        0.9996,
+        2.7095,
+        4.6041,
+        3.5244
+      ]
+    },
+    {
+      "beat": 116,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 63.655329,
+      "distanceMs": 2.965,
+      "strength": 2.6332,
+      "bands": [
+        0.9996,
+        2.7095,
+        4.6041,
+        3.5244
+      ]
+    },
+    {
+      "beat": 117.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 64.338776,
+      "distanceMs": 4.594,
+      "strength": 1.7828,
+      "bands": [
+        0.3864,
+        2.4065,
+        3.2815,
+        2.5206
+      ]
+    },
+    {
+      "beat": 118,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 64.523356,
+      "distanceMs": -38.099,
+      "strength": 0.421,
+      "bands": [
+        0.7101,
+        0.8322,
+        0.3974,
+        0.6679
+      ]
+    },
+    {
+      "beat": 119,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 65.017234,
+      "distanceMs": 1.234,
+      "strength": 1.716,
+      "bands": [
+        0.6518,
+        2.2073,
+        2.2477,
+        2.7466
+      ]
+    },
+    {
+      "beat": 119.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 65.246712,
+      "distanceMs": 3.439,
+      "strength": 1.008,
+      "bands": [
+        2.4003,
+        0.565,
+        0.4939,
+        0.8953
+      ]
+    },
+    {
+      "beat": 120,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 65.471202,
+      "distanceMs": 0.656,
+      "strength": 2.2662,
+      "bands": [
+        1.1958,
+        1.9289,
+        3.3981,
+        3.3303
+      ]
+    },
+    {
+      "beat": 120.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 65.705669,
+      "distanceMs": 7.851,
+      "strength": 0.604,
+      "bands": [
+        0.3271,
+        0.4015,
+        1.0844,
+        1.3513
+      ]
+    },
+    {
+      "beat": 121,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 65.930159,
+      "distanceMs": 5.068,
+      "strength": 1.3204,
+      "bands": [
+        2.8958,
+        0.5349,
+        1.0662,
+        1.1347
+      ]
+    },
+    {
+      "beat": 121.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 66.154649,
+      "distanceMs": 2.285,
+      "strength": 2.7075,
+      "bands": [
+        1.7152,
+        3.2454,
+        3.4843,
+        3.5973
+      ]
+    },
+    {
+      "beat": 122.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 66.613605,
+      "distanceMs": 6.696,
+      "strength": 0.7561,
+      "bands": [
+        1.6244,
+        0.6512,
+        0.8702,
+        0.6566
+      ]
+    },
+    {
+      "beat": 123,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 66.838095,
+      "distanceMs": 3.913,
+      "strength": 1.0743,
+      "bands": [
+        2.4303,
+        1.5016,
+        0.6911,
+        0.6369
+      ]
+    },
+    {
+      "beat": 124,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 67.292063,
+      "distanceMs": 3.336,
+      "strength": 1.5179,
+      "bands": [
+        1.7169,
+        2.4006,
+        2.0499,
+        1.3651
+      ]
+    },
+    {
+      "beat": 124,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 67.292063,
+      "distanceMs": 3.336,
+      "strength": 1.5179,
+      "bands": [
+        1.7169,
+        2.4006,
+        2.0499,
+        1.3651
+      ]
+    },
+    {
+      "beat": 125.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 67.97551,
+      "distanceMs": 4.965,
+      "strength": 1.9429,
+      "bands": [
+        0.82,
+        2.3609,
+        3.3809,
+        2.5981
+      ]
+    },
+    {
+      "beat": 126,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 68.204989,
+      "distanceMs": 7.17,
+      "strength": 1.2196,
+      "bands": [
+        3.2552,
+        0.8308,
+        0.4895,
+        0.6911
+      ]
+    },
+    {
+      "beat": 127,
+      "region": "main",
+      "role": "gold",
+      "peakSeconds": 68.658957,
+      "distanceMs": 6.593,
+      "strength": 1.688,
+      "bands": [
+        1.4465,
+        1.7628,
+        2.2436,
+        2.1422
+      ]
+    },
+    {
+      "beat": 128,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 69.112925,
+      "distanceMs": 6.016,
+      "strength": 2.1662,
+      "bands": [
+        2.2465,
+        2.1189,
+        2.7087,
+        2.3961
+      ]
+    },
+    {
+      "beat": 129,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 69.591837,
+      "distanceMs": 30.382,
+      "strength": 0.3315,
+      "bands": [
+        0.6426,
+        0.5091,
+        0.463,
+        0.5266
+      ]
+    },
+    {
+      "beat": 129.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 69.791383,
+      "distanceMs": 2.656,
+      "strength": 2.1358,
+      "bands": [
+        0.8471,
+        3.2251,
+        2.8549,
+        3.06
+      ]
+    },
+    {
+      "beat": 130,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 70.005896,
+      "distanceMs": -10.104,
+      "strength": 0.2958,
+      "bands": [
+        0.268,
+        0.4381,
+        0.5927,
+        0.7961
+      ]
+    },
+    {
+      "beat": 131,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 70.47483,
+      "distanceMs": 4.284,
+      "strength": 1.8639,
+      "bands": [
+        1.3522,
+        1.7996,
+        2.6926,
+        2.4808
+      ]
+    },
+    {
+      "beat": 132,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 70.928798,
+      "distanceMs": 3.707,
+      "strength": 2.5106,
+      "bands": [
+        1.0341,
+        2.9403,
+        3.7022,
+        3.4891
+      ]
+    },
+    {
+      "beat": 132,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 70.928798,
+      "distanceMs": 3.707,
+      "strength": 2.5106,
+      "bands": [
+        1.0341,
+        2.9403,
+        3.7022,
+        3.4891
+      ]
+    },
+    {
+      "beat": 133.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 71.607256,
+      "distanceMs": 0.347,
+      "strength": 2.3733,
+      "bands": [
+        0.7084,
+        2.6089,
+        4.9326,
+        2.9342
+      ]
+    },
+    {
+      "beat": 134,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 71.791837,
+      "distanceMs": -42.345,
+      "strength": 0.5246,
+      "bands": [
+        1.1927,
+        0.3971,
+        0.5612,
+        0.6815
+      ]
+    },
+    {
+      "beat": 135,
+      "region": "main",
+      "role": "gold",
+      "peakSeconds": 72.290703,
+      "distanceMs": 1.976,
+      "strength": 1.9883,
+      "bands": [
+        0.8591,
+        2.0942,
+        2.2555,
+        3.3393
+      ]
+    },
+    {
+      "beat": 136,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 72.744671,
+      "distanceMs": 1.398,
+      "strength": 2.1325,
+      "bands": [
+        0.7843,
+        2.0704,
+        3.2413,
+        3.3062
+      ]
+    },
+    {
+      "beat": 136,
+      "region": "main",
+      "role": "pair",
+      "peakSeconds": 72.744671,
+      "distanceMs": 1.398,
+      "strength": 2.1325,
+      "bands": [
+        0.7843,
+        2.0704,
+        3.2413,
+        3.3062
+      ]
+    },
+    {
+      "beat": 137,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 73.203628,
+      "distanceMs": 5.81,
+      "strength": 0.9149,
+      "bands": [
+        2.1774,
+        0.5584,
+        0.479,
+        0.9302
+      ]
+    },
+    {
+      "beat": 137.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 73.428118,
+      "distanceMs": 3.027,
+      "strength": 1.8754,
+      "bands": [
+        1.1452,
+        1.935,
+        2.7038,
+        2.7499
+      ]
+    },
+    {
+      "beat": 138.5,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 73.887075,
+      "distanceMs": 7.438,
+      "strength": 1.0561,
+      "bands": [
+        2.6951,
+        0.6088,
+        0.6193,
+        0.9223
+      ]
+    },
+    {
+      "beat": 139,
+      "region": "main",
+      "role": "single",
+      "peakSeconds": 74.116553,
+      "distanceMs": 9.644,
+      "strength": 1.291,
+      "bands": [
+        2.1129,
+        1.3733,
+        1.8199,
+        1.1214
+      ]
+    },
+    {
+      "beat": 140,
+      "region": "break",
+      "role": "long",
+      "peakSeconds": 74.525624,
+      "distanceMs": -35.831,
+      "strength": 0.7917,
+      "bands": [
+        1.4533,
+        0.6232,
+        0.7691,
+        1.2001
+      ]
+    },
+    {
+      "beat": 143.5,
+      "region": "break",
+      "role": "single",
+      "peakSeconds": 76.161905,
+      "distanceMs": 9.541,
+      "strength": 1.134,
+      "bands": [
+        0.8768,
+        1.8956,
+        2.1239,
+        0.9296
+      ]
+    },
+    {
+      "beat": 144,
+      "region": "break",
+      "role": "single",
+      "peakSeconds": 76.386395,
+      "distanceMs": 6.758,
+      "strength": 0.787,
+      "bands": [
+        1.7493,
+        0.8105,
+        0.7767,
+        0.4432
+      ]
+    },
+    {
+      "beat": 145,
+      "region": "break",
+      "role": "single",
+      "peakSeconds": 76.840363,
+      "distanceMs": 6.181,
+      "strength": 0.8863,
+      "bands": [
+        1.6923,
+        0.2919,
+        1.0272,
+        0.8564
+      ]
+    },
+    {
+      "beat": 146,
+      "region": "break",
+      "role": "single",
+      "peakSeconds": 77.294331,
+      "distanceMs": 5.604,
+      "strength": 1.3382,
+      "bands": [
+        2.3028,
+        1.6773,
+        1.2408,
+        0.9064
+      ]
+    },
+    {
+      "beat": 146.5,
+      "region": "break",
+      "role": "single",
+      "peakSeconds": 77.52381,
+      "distanceMs": 7.81,
+      "strength": 1.2813,
+      "bands": [
+        1.3215,
+        1.5683,
+        2.002,
+        1.1248
+      ]
+    },
+    {
+      "beat": 148,
+      "region": "break",
+      "role": "long",
+      "peakSeconds": 78.212245,
+      "distanceMs": 14.427,
+      "strength": 1.002,
+      "bands": [
+        1.8422,
+        0.9627,
+        1.4835,
+        0.5007
+      ]
+    },
+    {
+      "beat": 151.5,
+      "region": "break",
+      "role": "single",
+      "peakSeconds": 79.793651,
+      "distanceMs": 4.924,
+      "strength": 1.6164,
+      "bands": [
+        1.794,
+        2.196,
+        2.3651,
+        1.2155
+      ]
+    },
+    {
+      "beat": 152,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 80.023129,
+      "distanceMs": 7.129,
+      "strength": 1.2775,
+      "bands": [
+        1.5084,
+        2.0458,
+        1.3448,
+        1.4352
+      ]
+    },
+    {
+      "beat": 152.5,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 80.252608,
+      "distanceMs": 9.335,
+      "strength": 0.9399,
+      "bands": [
+        2.2096,
+        0.72,
+        1.0994,
+        0.7364
+      ]
+    },
+    {
+      "beat": 153,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 80.442177,
+      "distanceMs": -28.369,
+      "strength": 0.5606,
+      "bands": [
+        0.9489,
+        0.5274,
+        0.6201,
+        1.114
+      ]
+    },
+    {
+      "beat": 154,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 80.965986,
+      "distanceMs": 40.895,
+      "strength": 0.4737,
+      "bands": [
+        1.2575,
+        0.5542,
+        0.5899,
+        0.6166
+      ]
+    },
+    {
+      "beat": 154.5,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 81.165533,
+      "distanceMs": 13.169,
+      "strength": 1.1097,
+      "bands": [
+        1.2242,
+        1.5494,
+        1.7522,
+        1.3494
+      ]
+    },
+    {
+      "beat": 155,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 81.385034,
+      "distanceMs": 5.398,
+      "strength": 1.9675,
+      "bands": [
+        3.0363,
+        1.795,
+        2.7962,
+        1.5638
+      ]
+    },
+    {
+      "beat": 156,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 81.839002,
+      "distanceMs": 4.82,
+      "strength": 1.2799,
+      "bands": [
+        2.3102,
+        0.5509,
+        1.0002,
+        1.7559
+      ]
+    },
+    {
+      "beat": 157,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 82.292971,
+      "distanceMs": 4.243,
+      "strength": 1.9135,
+      "bands": [
+        1.2179,
+        2.4137,
+        2.5283,
+        2.6965
+      ]
+    },
+    {
+      "beat": 157.5,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 82.522449,
+      "distanceMs": 6.449,
+      "strength": 0.824,
+      "bands": [
+        1.4172,
+        1.1885,
+        0.9097,
+        0.802
+      ]
+    },
+    {
+      "beat": 158,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 82.746939,
+      "distanceMs": 3.666,
+      "strength": 1.2535,
+      "bands": [
+        3.049,
+        0.8893,
+        0.9248,
+        0.7238
+      ]
+    },
+    {
+      "beat": 159,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 83.200907,
+      "distanceMs": 3.089,
+      "strength": 2.2486,
+      "bands": [
+        0.1373,
+        2.6485,
+        3.5209,
+        3.7651
+      ]
+    },
+    {
+      "beat": 159.5,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 83.435374,
+      "distanceMs": 10.283,
+      "strength": 1.245,
+      "bands": [
+        0.913,
+        1.9548,
+        2.4722,
+        1.0925
+      ]
+    },
+    {
+      "beat": 160,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 83.654875,
+      "distanceMs": 2.512,
+      "strength": 0.9403,
+      "bands": [
+        2.3031,
+        0.5429,
+        0.4721,
+        0.7774
+      ]
+    },
+    {
+      "beat": 160.5,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 83.884354,
+      "distanceMs": 4.717,
+      "strength": 1.0867,
+      "bands": [
+        2.2598,
+        0.5536,
+        1.0303,
+        0.9177
+      ]
+    },
+    {
+      "beat": 161,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 84.108844,
+      "distanceMs": 1.934,
+      "strength": 2.4509,
+      "bands": [
+        1.0204,
+        2.7835,
+        3.3155,
+        3.6646
+      ]
+    },
+    {
+      "beat": 162,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 84.5678,
+      "distanceMs": 6.346,
+      "strength": 1.0175,
+      "bands": [
+        1.7286,
+        0.9841,
+        1.2745,
+        0.888
+      ]
+    },
+    {
+      "beat": 162.5,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 84.797279,
+      "distanceMs": 8.552,
+      "strength": 1.45,
+      "bands": [
+        2.3176,
+        1.6354,
+        1.8473,
+        0.9696
+      ]
+    },
+    {
+      "beat": 163,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 85.021769,
+      "distanceMs": 5.769,
+      "strength": 1.4666,
+      "bands": [
+        1.1082,
+        1.6905,
+        2.0164,
+        1.9336
+      ]
+    },
+    {
+      "beat": 164,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 85.475737,
+      "distanceMs": 5.192,
+      "strength": 1.1109,
+      "bands": [
+        2.6063,
+        0.6238,
+        0.7141,
+        0.8352
+      ]
+    },
+    {
+      "beat": 165,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 85.929705,
+      "distanceMs": 4.614,
+      "strength": 2.1488,
+      "bands": [
+        1.5168,
+        2.3367,
+        2.5877,
+        2.9713
+      ]
+    },
+    {
+      "beat": 165.5,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 86.169161,
+      "distanceMs": 16.797,
+      "strength": 0.5853,
+      "bands": [
+        0.4156,
+        1.2174,
+        1.5341,
+        0.5296
+      ]
+    },
+    {
+      "beat": 166,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 86.383673,
+      "distanceMs": 4.037,
+      "strength": 1.0843,
+      "bands": [
+        2.2032,
+        0.6614,
+        0.9875,
+        0.9593
+      ]
+    },
+    {
+      "beat": 167,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 86.837642,
+      "distanceMs": 3.46,
+      "strength": 2.3165,
+      "bands": [
+        0.9063,
+        2.5307,
+        3.2813,
+        3.4071
+      ]
+    },
+    {
+      "beat": 167.5,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 87.06712,
+      "distanceMs": 5.666,
+      "strength": 1.7331,
+      "bands": [
+        1.5282,
+        2.6051,
+        2.5191,
+        1.6455
+      ]
+    },
+    {
+      "beat": 168,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 87.29161,
+      "distanceMs": 2.883,
+      "strength": 1.1849,
+      "bands": [
+        2.8496,
+        1.0611,
+        0.6769,
+        0.7842
+      ]
+    },
+    {
+      "beat": 168.5,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 87.526077,
+      "distanceMs": 10.077,
+      "strength": 0.8232,
+      "bands": [
+        2.0278,
+        0.4288,
+        1.0458,
+        0.6276
+      ]
+    },
+    {
+      "beat": 169,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 87.745578,
+      "distanceMs": 2.306,
+      "strength": 2.2024,
+      "bands": [
+        2.5284,
+        2.3047,
+        2.3774,
+        2.5069
+      ]
+    },
+    {
+      "beat": 170,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 88.154649,
+      "distanceMs": -43.17,
+      "strength": 0.3941,
+      "bands": [
+        0.293,
+        1.0908,
+        0.9082,
+        0.5683
+      ]
+    },
+    {
+      "beat": 170.5,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 88.429025,
+      "distanceMs": 3.934,
+      "strength": 2.3303,
+      "bands": [
+        0.8224,
+        2.9759,
+        3.2597,
+        3.5472
+      ]
+    },
+    {
+      "beat": 171,
+      "region": "rise",
+      "role": "single",
+      "peakSeconds": 88.658503,
+      "distanceMs": 6.14,
+      "strength": 1.8625,
+      "bands": [
+        3.048,
+        2.0859,
+        2.2676,
+        1.2812
+      ]
+    },
+    {
+      "beat": 172,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 89.112472,
+      "distanceMs": 5.563,
+      "strength": 2.1021,
+      "bands": [
+        2.2335,
+        1.598,
+        2.8307,
+        2.6712
+      ]
+    },
+    {
+      "beat": 172,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 89.112472,
+      "distanceMs": 5.563,
+      "strength": 2.1021,
+      "bands": [
+        2.2335,
+        1.598,
+        2.8307,
+        2.6712
+      ]
+    },
+    {
+      "beat": 173,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 89.56644,
+      "distanceMs": 4.985,
+      "strength": 0.552,
+      "bands": [
+        0.8756,
+        0.9013,
+        0.8968,
+        0.8292
+      ]
+    },
+    {
+      "beat": 173.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 89.79093,
+      "distanceMs": 2.202,
+      "strength": 1.6611,
+      "bands": [
+        0.9275,
+        2.0156,
+        2.146,
+        2.6866
+      ]
+    },
+    {
+      "beat": 174.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 90.214966,
+      "distanceMs": -28.307,
+      "strength": 0.4129,
+      "bands": [
+        0.586,
+        0.5984,
+        0.8978,
+        0.7213
+      ]
+    },
+    {
+      "beat": 175,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 90.474376,
+      "distanceMs": 3.831,
+      "strength": 1.3077,
+      "bands": [
+        0.7477,
+        0.8345,
+        2.1921,
+        2.2436
+      ]
+    },
+    {
+      "beat": 175.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 90.703855,
+      "distanceMs": 6.037,
+      "strength": 1.4052,
+      "bands": [
+        2.3777,
+        1.0861,
+        1.5468,
+        1.3333
+      ]
+    },
+    {
+      "beat": 176,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 90.928345,
+      "distanceMs": 3.254,
+      "strength": 1.7351,
+      "bands": [
+        0.5667,
+        1.4352,
+        2.5284,
+        3.2095
+      ]
+    },
+    {
+      "beat": 176.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 91.162812,
+      "distanceMs": 10.448,
+      "strength": 0.6298,
+      "bands": [
+        1.4226,
+        0.5294,
+        1.0393,
+        0.6703
+      ]
+    },
+    {
+      "beat": 177.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 91.611791,
+      "distanceMs": 4.882,
+      "strength": 1.2183,
+      "bands": [
+        0.7727,
+        2.1304,
+        1.842,
+        1.83
+      ]
+    },
+    {
+      "beat": 178,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 91.866213,
+      "distanceMs": 32.031,
+      "strength": 0.9829,
+      "bands": [
+        1.3042,
+        1.799,
+        1.2862,
+        1.1306
+      ]
+    },
+    {
+      "beat": 178.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 92.06576,
+      "distanceMs": 4.305,
+      "strength": 1.0088,
+      "bands": [
+        0.9472,
+        1.5254,
+        1.7399,
+        1.3204
+      ]
+    },
+    {
+      "beat": 179,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 92.300227,
+      "distanceMs": 11.499,
+      "strength": 0.9422,
+      "bands": [
+        1.8611,
+        1.0017,
+        1.2954,
+        0.8026
+      ]
+    },
+    {
+      "beat": 180,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 92.749206,
+      "distanceMs": 5.934,
+      "strength": 1.7101,
+      "bands": [
+        0.4263,
+        2.7807,
+        3.0627,
+        2.5169
+      ]
+    },
+    {
+      "beat": 180,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 92.749206,
+      "distanceMs": 5.934,
+      "strength": 1.7101,
+      "bands": [
+        0.4263,
+        2.7807,
+        3.0627,
+        2.5169
+      ]
+    },
+    {
+      "beat": 181,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 93.218141,
+      "distanceMs": 20.322,
+      "strength": 0.6296,
+      "bands": [
+        0.9783,
+        0.9657,
+        0.7275,
+        1.1182
+      ]
+    },
+    {
+      "beat": 181.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 93.427664,
+      "distanceMs": 2.573,
+      "strength": 1.1897,
+      "bands": [
+        1.0622,
+        1.1105,
+        1.7725,
+        1.987
+      ]
+    },
+    {
+      "beat": 182,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 93.657143,
+      "distanceMs": 4.779,
+      "strength": 0.8246,
+      "bands": [
+        1.8012,
+        1.3079,
+        0.6394,
+        0.8315
+      ]
+    },
+    {
+      "beat": 183,
+      "region": "final",
+      "role": "gold",
+      "peakSeconds": 94.101134,
+      "distanceMs": -5.775,
+      "strength": 1.0298,
+      "bands": [
+        0.8892,
+        1.5219,
+        1.7146,
+        1.5459
+      ]
+    },
+    {
+      "beat": 184,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 94.565079,
+      "distanceMs": 3.625,
+      "strength": 1.6174,
+      "bands": [
+        1.3012,
+        1.6299,
+        2.0755,
+        2.4526
+      ]
+    },
+    {
+      "beat": 184.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 94.799546,
+      "distanceMs": 10.819,
+      "strength": 0.6236,
+      "bands": [
+        1.7743,
+        0.5585,
+        0.5513,
+        0.5365
+      ]
+    },
+    {
+      "beat": 185.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 95.253515,
+      "distanceMs": 10.242,
+      "strength": 0.5715,
+      "bands": [
+        0.477,
+        1.8399,
+        0.6511,
+        0.9294
+      ]
+    },
+    {
+      "beat": 186,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 95.478005,
+      "distanceMs": 7.459,
+      "strength": 1.1913,
+      "bands": [
+        2.9816,
+        0.5763,
+        0.8301,
+        0.9722
+      ]
+    },
+    {
+      "beat": 186.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 95.707483,
+      "distanceMs": 9.665,
+      "strength": 0.7973,
+      "bands": [
+        1.4867,
+        0.9672,
+        0.9424,
+        0.8288
+      ]
+    },
+    {
+      "beat": 187,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 95.931973,
+      "distanceMs": 6.882,
+      "strength": 1.8493,
+      "bands": [
+        2.0877,
+        1.4833,
+        2.5893,
+        2.2555
+      ]
+    },
+    {
+      "beat": 188,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 96.385941,
+      "distanceMs": 6.305,
+      "strength": 1.4124,
+      "bands": [
+        1.3775,
+        1.074,
+        3.1027,
+        1.5194
+      ]
+    },
+    {
+      "beat": 188,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 96.385941,
+      "distanceMs": 6.305,
+      "strength": 1.4124,
+      "bands": [
+        1.3775,
+        1.074,
+        3.1027,
+        1.5194
+      ]
+    },
+    {
+      "beat": 189,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 96.854875,
+      "distanceMs": 20.693,
+      "strength": 0.5517,
+      "bands": [
+        0.9969,
+        0.5906,
+        0.9263,
+        0.8698
+      ]
+    },
+    {
+      "beat": 189.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 97.069388,
+      "distanceMs": 7.933,
+      "strength": 1.1257,
+      "bands": [
+        1.1176,
+        1.5924,
+        1.42,
+        1.6541
+      ]
+    },
+    {
+      "beat": 190.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 97.528345,
+      "distanceMs": 12.345,
+      "strength": 0.5265,
+      "bands": [
+        0.2395,
+        1.3545,
+        1.1171,
+        0.8599
+      ]
+    },
+    {
+      "beat": 191,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 97.747846,
+      "distanceMs": 4.573,
+      "strength": 1.4433,
+      "bands": [
+        0.7853,
+        1.6343,
+        2.6372,
+        2.0122
+      ]
+    },
+    {
+      "beat": 191.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 97.977324,
+      "distanceMs": 6.779,
+      "strength": 1.0373,
+      "bands": [
+        2.6966,
+        0.8157,
+        0.475,
+        0.8002
+      ]
+    },
+    {
+      "beat": 192,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 98.206803,
+      "distanceMs": 8.985,
+      "strength": 0.7901,
+      "bands": [
+        0.2136,
+        1.2726,
+        1.8886,
+        1.3386
+      ]
+    },
+    {
+      "beat": 192.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 98.426304,
+      "distanceMs": 1.213,
+      "strength": 0.5445,
+      "bands": [
+        0.7525,
+        0.8174,
+        0.7434,
+        1.0423
+      ]
+    },
+    {
+      "beat": 193.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 98.885261,
+      "distanceMs": 5.624,
+      "strength": 1.6219,
+      "bands": [
+        1.0489,
+        2.2166,
+        2.1655,
+        2.3047
+      ]
+    },
+    {
+      "beat": 194,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 99.114739,
+      "distanceMs": 7.83,
+      "strength": 0.8154,
+      "bands": [
+        2.0571,
+        0.2887,
+        0.8577,
+        0.6852
+      ]
+    },
+    {
+      "beat": 194.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 99.339229,
+      "distanceMs": 5.047,
+      "strength": 1.3393,
+      "bands": [
+        0.1468,
+        1.83,
+        2.5138,
+        2.1765
+      ]
+    },
+    {
+      "beat": 195,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 99.568707,
+      "distanceMs": 7.253,
+      "strength": 0.5813,
+      "bands": [
+        0.9031,
+        0.6898,
+        0.9712,
+        0.7488
+      ]
+    },
+    {
+      "beat": 196,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 100.017687,
+      "distanceMs": 1.687,
+      "strength": 1.9125,
+      "bands": [
+        0.4649,
+        2.451,
+        2.7496,
+        3.2199
+      ]
+    },
+    {
+      "beat": 196,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 100.017687,
+      "distanceMs": 1.687,
+      "strength": 1.9125,
+      "bands": [
+        0.4649,
+        2.451,
+        2.7496,
+        3.2199
+      ]
+    },
+    {
+      "beat": 197,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 100.466667,
+      "distanceMs": -3.879,
+      "strength": 0.5892,
+      "bands": [
+        0.8849,
+        0.9369,
+        0.629,
+        1.1524
+      ]
+    },
+    {
+      "beat": 197.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 100.706122,
+      "distanceMs": 8.304,
+      "strength": 0.9838,
+      "bands": [
+        0.5025,
+        1.7546,
+        1.8429,
+        1.595
+      ]
+    },
+    {
+      "beat": 198,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 100.935601,
+      "distanceMs": 10.51,
+      "strength": 0.568,
+      "bands": [
+        0.5717,
+        1.2226,
+        0.7665,
+        1.1742
+      ]
+    },
+    {
+      "beat": 199,
+      "region": "final",
+      "role": "gold",
+      "peakSeconds": 101.38458,
+      "distanceMs": 4.944,
+      "strength": 0.9998,
+      "bands": [
+        0.2316,
+        1.1014,
+        2.1811,
+        1.8958
+      ]
+    },
+    {
+      "beat": 200,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 101.843537,
+      "distanceMs": 9.356,
+      "strength": 1.9659,
+      "bands": [
+        3.0614,
+        1.5476,
+        2.2994,
+        1.9245
+      ]
+    },
+    {
+      "beat": 200,
+      "region": "final",
+      "role": "pair",
+      "peakSeconds": 101.843537,
+      "distanceMs": 9.356,
+      "strength": 1.9659,
+      "bands": [
+        3.0614,
+        1.5476,
+        2.2994,
+        1.9245
+      ]
+    },
+    {
+      "beat": 201.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 102.521995,
+      "distanceMs": 5.995,
+      "strength": 1.8847,
+      "bands": [
+        2.2373,
+        1.6485,
+        2.0799,
+        2.5546
+      ]
+    },
+    {
+      "beat": 202,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 102.76644,
+      "distanceMs": 23.167,
+      "strength": 0.8642,
+      "bands": [
+        1.7786,
+        1.0434,
+        0.9092,
+        0.9875
+      ]
+    },
+    {
+      "beat": 202.5,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 102.995918,
+      "distanceMs": 25.373,
+      "strength": 0.3602,
+      "bands": [
+        0.6858,
+        0.5274,
+        0.5274,
+        0.8188
+      ]
+    },
+    {
+      "beat": 203,
+      "region": "final",
+      "role": "single",
+      "peakSeconds": 103.240363,
+      "distanceMs": 42.545,
+      "strength": 0.5599,
+      "bands": [
+        1.0642,
+        0.5423,
+        0.7697,
+        0.9123
+      ]
+    },
+    {
+      "beat": 204,
+      "region": "outro",
+      "role": "long",
+      "peakSeconds": 103.664399,
+      "distanceMs": 12.035,
+      "strength": 1.1852,
+      "bands": [
+        2.386,
+        0.942,
+        1.6061,
+        0.9546
+      ]
+    }
+  ]
+}

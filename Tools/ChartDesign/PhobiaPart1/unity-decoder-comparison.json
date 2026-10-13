@@ -1,0 +1,66 @@
+{
+  "ffmpegDuration": 110.96816326530612,
+  "unityDuration": 111.54285714285714,
+  "windows": [
+    {
+      "centerSeconds": 1,
+      "unityLagMs": 0.0,
+      "correlation": 0.999999
+    },
+    {
+      "centerSeconds": 5,
+      "unityLagMs": 0.0,
+      "correlation": 0.99999
+    },
+    {
+      "centerSeconds": 15,
+      "unityLagMs": 0.0,
+      "correlation": 0.999992
+    },
+    {
+      "centerSeconds": 30,
+      "unityLagMs": 0.0,
+      "correlation": 0.999987
+    },
+    {
+      "centerSeconds": 40,
+      "unityLagMs": 0.0,
+      "correlation": 0.999996
+    },
+    {
+      "centerSeconds": 45,
+      "unityLagMs": 0.0,
+      "correlation": 0.999994
+    },
+    {
+      "centerSeconds": 55,
+      "unityLagMs": 0.0,
+      "correlation": 0.999966
+    },
+    {
+      "centerSeconds": 70,
+      "unityLagMs": 0.0,
+      "correlation": 0.999987
+    },
+    {
+      "centerSeconds": 85,
+      "unityLagMs": 0.0,
+      "correlation": 0.999985
+    },
+    {
+      "centerSeconds": 95,
+      "unityLagMs": 0.0,
+      "correlation": 0.999979
+    },
+    {
+      "centerSeconds": 103,
+      "unityLagMs": 0.0,
+      "correlation": 0.999949
+    },
+    {
+      "centerSeconds": 106,
+      "unityLagMs": 0.0,
+      "correlation": 0.999932
+    }
+  ]
+}
