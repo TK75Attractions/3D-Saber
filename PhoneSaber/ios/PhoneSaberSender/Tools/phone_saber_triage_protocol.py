@@ -92,7 +92,7 @@ def _manifest_files(root: Path) -> tuple[str, list[dict[str, Any]]]:
                 raise BundleError("summary.json is too large")
             try:
                 summary = json.loads(file_path.read_text(encoding="utf-8"))
-            except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+            except (OSError, UnicodeError, ValueError, RecursionError) as exc:
                 raise BundleError("summary.json is malformed") from exc
             session_id = _validate_summary(summary, set())
         elif normalized == "prompt.md" and size > MAX_PROMPT_BYTES:
@@ -153,9 +153,11 @@ def receive_bundle(source: BinaryIO, content_length: int, inbox: Path) -> Path:
     manifest_size = struct.unpack(">I", _read_exact(source, 4))[0]
     if not 2 <= manifest_size <= MAX_MANIFEST_BYTES:
         raise BundleError("manifest size is outside the permitted range")
+    if manifest_size > content_length - 8:
+        raise BundleError("manifest exceeds the declared request size")
     try:
         manifest = json.loads(_read_exact(source, manifest_size).decode("utf-8"))
-    except (UnicodeError, json.JSONDecodeError) as exc:
+    except (UnicodeError, ValueError, RecursionError) as exc:
         raise BundleError("manifest JSON is malformed") from exc
     if not isinstance(manifest, dict) or manifest.get("formatVersion") != FORMAT_VERSION:
         raise BundleError("unsupported bundle format")
@@ -233,7 +235,7 @@ def receive_bundle(source: BinaryIO, content_length: int, inbox: Path) -> Path:
         summary_path = temporary / "summary.json"
         try:
             summary = json.loads(summary_path.read_text(encoding="utf-8"))
-        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        except (OSError, UnicodeError, ValueError, RecursionError) as exc:
             raise BundleError("summary.json is malformed") from exc
         if _validate_summary(summary, seen) != session_id:
             raise BundleError("manifest session id does not match summary.json")
@@ -310,7 +312,7 @@ def _validate_summary(summary: Any, file_paths: set[str]) -> str:
         context_paths.add(context_path)
         if not isinstance(image.get("frameID"), int) or isinstance(image.get("frameID"), bool):
             raise BundleError("summary image entry has no frameID")
-        if image.get("color") not in {"red", "blue", "both"}:
+        if not isinstance(image.get("color"), str) or image["color"] not in {"red", "blue", "both"}:
             raise BundleError("summary image entry has an invalid color")
         if not isinstance(image.get("failureType"), str) or not isinstance(image.get("reason"), str):
             raise BundleError("summary image entry has no selection reason")
@@ -359,7 +361,7 @@ def _validate_context_files(root: Path, paths: set[str]) -> None:
             continue
         try:
             context = json.loads((root / relative).read_text(encoding="utf-8"))
-        except (OSError, UnicodeError, json.JSONDecodeError) as exc:
+        except (OSError, UnicodeError, ValueError, RecursionError) as exc:
             raise BundleError(f"frame context is malformed: {relative}") from exc
         if not isinstance(context, dict) or not isinstance(context.get("frames"), list) \
                 or not 1 <= len(context["frames"]) <= 5:

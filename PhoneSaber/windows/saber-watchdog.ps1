@@ -153,7 +153,8 @@ try {
         if ($hangSeconds -eq 0) { continue }
         # 旧 build / 書込み失敗は heartbeat が無いので強制終了しない。
         $file = Get-Item -LiteralPath $heartbeat -ErrorAction SilentlyContinue
-        if ($null -ne $file) {
+        # 作成後の最初の書込みが失敗した0 byteファイルでは、監視を有効にしない。
+        if ($null -ne $file -and $file.Length -eq 1) {
             $seen = $true
             $lastWrite = $file.LastWriteTimeUtc
         }

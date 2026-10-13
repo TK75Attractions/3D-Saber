@@ -41,6 +41,29 @@ def free_udp_port() -> int:
         return probe.getsockname()[1]
 
 
+class BridgeTestCleanupTests(unittest.TestCase):
+    def test_failed_setup_stops_the_started_bridge(self):
+        with tempfile.TemporaryDirectory() as directory:
+            case = P2PBridgeTests("test_red_and_blue_bodies_reach_their_unity_ports_unchanged")
+            case.cache = mock.Mock()
+            case.cache.name = directory
+            process = mock.Mock()
+            process.poll.return_value = None
+
+            def fail_start():
+                case.process = process
+                raise AssertionError("listener startup failed")
+
+            with mock.patch.object(case, "start_bridge", side_effect=fail_start):
+                try:
+                    with self.assertRaises(AssertionError):
+                        case.setUp()
+                finally:
+                    case.doCleanups()
+            process.terminate.assert_called_once()
+            process.wait.assert_called_once_with(timeout=5)
+
+
 @unittest.skipUnless(sys.platform == "darwin" and shutil.which("xcrun"), "requires the macOS Swift toolchain")
 class P2PBridgeTests(unittest.TestCase):
     @classmethod
@@ -60,8 +83,9 @@ class P2PBridgeTests(unittest.TestCase):
         self.listen_port = free_udp_port()
         self.log_path = Path(self.cache.name) / f"bridge-{self.id().rsplit('.', 1)[-1]}.log"
         self.process = None
-        self.start_bridge()
+        # 起動待ちの assertion が失敗しても、子 process を次のテストに残さない。
         self.addCleanup(self.stop_bridge)
+        self.start_bridge()
         self.phone = self.new_socket()
 
     def new_socket(self) -> socket.socket:
@@ -82,7 +106,7 @@ class P2PBridgeTests(unittest.TestCase):
         deadline = time.monotonic() + 10
         while self.log().count("listening on UDP") == started_before and time.monotonic() < deadline:
             time.sleep(0.02)
-        self.assertGreater(self.log().count("listening on UDP"), started_before)
+        self.assertGreater(self.log().count("listening on UDP"), started_before, self.log())
 
     def stop_bridge(self):
         if self.process and self.process.poll() is None:

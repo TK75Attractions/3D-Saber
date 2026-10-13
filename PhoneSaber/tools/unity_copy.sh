@@ -14,7 +14,7 @@
 # 未指定・空配列ならすべての失敗を非ゼロで返す。クラス名・前方一致・正規表現では除外しない。
 # 既知の譜面エディタ失敗2件は完全名の記録がないため、推測でクラス全体を除外しない。
 set -u
-ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)" || exit 1
+ROOT="$(CDPATH='' cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd -P)" || exit 1
 COPY="${PHONESABER_UNITY_COPY:-$HOME/Library/Caches/PhoneSaber/unity-copy}"
 UNITY="${PHONESABER_UNITY:-/Applications/Unity/Hub/Editor/6000.3.9f1/Unity.app/Contents/MacOS/Unity}"
 OUT="${PHONESABER_UNITY_OUT:-$COPY/_out}"
@@ -46,7 +46,8 @@ smoke_player() {
     local app="$1" exe log="$OUT/smoke.log" pid waited=0 limit="${PHONESABER_SMOKE_LIMIT:-150}"
     exe="$(find "$app/Contents/MacOS" -maxdepth 1 -type f | head -1)"
     [[ -x "$exe" ]] || { echo "smoke: 実行ファイルが見つかりません: $app"; return 1; }
-    rm -f "$log"
+    # 古い成功ログを削除できない場合は、今回の結果として再利用しない。
+    rm -f "$log" || { echo "smoke: ログを初期化できません ($log)"; return 1; }
     run_hidden "$exe" -batchmode -phonesaberSmoke "${PHONESABER_SMOKE_SECONDS:-8}" -logFile "$log" >/dev/null 2>&1 &
     pid=$!
     while kill -0 "$pid" 2>/dev/null; do
@@ -120,20 +121,22 @@ sync)
     ;;
 editmode)
     sync_copy || exit 1
-    rm -f "$OUT/editmode.xml"
+    rm -f "$OUT/editmode.xml" "$OUT/editmode.log" || { echo "editmode: 結果を初期化できません ($OUT)"; exit 1; }
     args=(-batchmode -projectPath "$COPY" -runTests -testPlatform EditMode -testResults "$OUT/editmode.xml" -logFile "$OUT/editmode.log")
     [[ -n "${2:-}" ]] && args+=(-testFilter "$2")
     run_hidden "$UNITY" "${args[@]}"
+    unity_exit=$?
     result_args=("$OUT/editmode.xml" "$OUT/editmode.log")
     [[ -n "${PHONESABER_EDITMODE_KNOWN_FAILURES:-}" ]] && result_args+=(--known-failures "$PHONESABER_EDITMODE_KNOWN_FAILURES")
-    python3 "$ROOT/PhoneSaber/tools/unity_editmode_results.py" "${result_args[@]}"
+    python3 "$ROOT/PhoneSaber/tools/unity_editmode_results.py" "${result_args[@]}" --unity-exit-code "$unity_exit"
     ;;
 build-mac)
     sync_copy || exit 1
-    rm -rf "$COPY/Builds/Mac"
-    rm -f "$OUT/build-mac.log"
+    rm -rf "$COPY/Builds/Mac" || { echo "build-mac: 古い build を削除できません"; exit 1; }
+    rm -f "$OUT/build-mac.log" || { echo "build-mac: ログを初期化できません"; exit 1; }
     run_hidden "$UNITY" -batchmode -quit -projectPath "$COPY" -executeMethod PhoneSaberPlayerBuild.BuildMac -logFile "$OUT/build-mac.log"
-    if ! grep -q "Result: Success" "$OUT/build-mac.log" || [[ ! -d "$COPY/Builds/Mac/3D-Saber.app" ]]; then
+    unity_exit=$?
+    if [[ "$unity_exit" -ne 0 ]] || ! grep -q "Result: Success" "$OUT/build-mac.log" || [[ ! -d "$COPY/Builds/Mac/3D-Saber.app" ]]; then
         echo "build-mac: 失敗（$OUT/build-mac.log）"; exit 1
     fi
     if pgrep -f "/3D-Saber.app/Contents/MacOS/" >/dev/null; then
@@ -141,10 +144,23 @@ build-mac)
     fi
     # 差し替える前に、作った Player を実際に起動して確かめる(Editor では動くのに Player だけ落ちる不具合を止める)。
     smoke_player "$COPY/Builds/Mac/3D-Saber.app" || { echo "build-mac: 動作確認に失敗したので差し替えていません"; exit 4; }
-    mkdir -p "$ROOT/Builds/Mac" "$OUT/previous-app"
-    rm -rf "$OUT/previous-app/3D-Saber.app"
-    [[ -d "$ROOT/Builds/Mac/3D-Saber.app" ]] && mv "$ROOT/Builds/Mac/3D-Saber.app" "$OUT/previous-app/"
-    ditto "$COPY/Builds/Mac/3D-Saber.app" "$ROOT/Builds/Mac/3D-Saber.app" || exit 1
+    mkdir -p "$ROOT/Builds/Mac" "$OUT/previous-app" || exit 1
+    # コピー失敗・容量不足でも旧 Player は起動できる場所に残す。完成後だけ同じ volume 内で差し替える。
+    staged="$ROOT/Builds/Mac/.3D-Saber-new.app"
+    rm -rf "$staged" || exit 1
+    ditto "$COPY/Builds/Mac/3D-Saber.app" "$staged" || exit 1
+    # smoke / コピーの待ち時間に運営側が起動した場合も、稼働中の app は差し替えない。
+    if pgrep -f "/3D-Saber.app/Contents/MacOS/" >/dev/null; then
+        echo "build-mac: ビルド成功。ゲームが起動したので差し替えていません: $staged"; exit 3
+    fi
+    rm -rf "$OUT/previous-app/3D-Saber.app" || exit 1
+    if [[ -d "$ROOT/Builds/Mac/3D-Saber.app" ]]; then
+        mv "$ROOT/Builds/Mac/3D-Saber.app" "$OUT/previous-app/" || exit 1
+    fi
+    if ! mv "$staged" "$ROOT/Builds/Mac/3D-Saber.app"; then
+        [[ -d "$OUT/previous-app/3D-Saber.app" ]] && mv "$OUT/previous-app/3D-Saber.app" "$ROOT/Builds/Mac/"
+        exit 1
+    fi
     echo "build-mac: $ROOT/Builds/Mac/3D-Saber.app を $(git -C "$ROOT" log --oneline -1 | cut -c1-8) で差し替えました（1つ前は $OUT/previous-app）"
     ;;
 *)

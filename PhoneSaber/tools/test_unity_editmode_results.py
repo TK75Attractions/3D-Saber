@@ -148,7 +148,8 @@ class EditModeResultsTests(unittest.TestCase):
             folder = Path(directory)
             unity = folder / "fake unity"
             unity.write_text(f"#!{sys.executable}\nimport os, sys\nfrom pathlib import Path\n"
-                             "Path(sys.argv[sys.argv.index('-testResults') + 1]).write_text(os.environ['TEST_XML'])\n")
+                             "Path(sys.argv[sys.argv.index('-testResults') + 1]).write_text(os.environ['TEST_XML'])\n"
+                             "sys.exit(int(os.environ.get('TEST_UNITY_EXIT', '0')))\n")
             unity.chmod(0o755)
             rsync = folder / "rsync"
             rsync.write_text("#!/bin/sh\nexit 0\n")
@@ -166,6 +167,49 @@ class EditModeResultsTests(unittest.TestCase):
                     run = subprocess.run(["bash", str(TOOLS / "unity_copy.sh"), "editmode"],
                                          env=env, capture_output=True, text=True)
                     self.assertEqual(run.returncode, expected, run.stdout + run.stderr)
+
+            env['TEST_XML'] = report([('A.Pass', 'Passed')])
+            for code in (1, 2, 139):
+                with self.subTest(unity_exit=code):
+                    env['TEST_UNITY_EXIT'] = str(code)
+                    run = subprocess.run(['bash', str(TOOLS / 'unity_copy.sh'), 'editmode'],
+                                         env=env, capture_output=True, text=True)
+                    self.assertNotEqual(run.returncode, 0, run.stdout + run.stderr)
+            env['TEST_UNITY_EXIT'] = '2'
+            env['TEST_XML'] = report([(KNOWN, 'Failed')])
+            run = subprocess.run(['bash', str(TOOLS / 'unity_copy.sh'), 'editmode'],
+                                 env=env, capture_output=True, text=True)
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+            env['TEST_UNITY_EXIT'] = '0'
+            env['TEST_XML'] = report([('A.Pass', 'Passed')])
+            env['CDPATH'] = '.'
+            run = subprocess.run(['bash', str(TOOLS / 'unity_copy.sh'), 'editmode'],
+                                 env=env, capture_output=True, text=True)
+            self.assertEqual(run.returncode, 0, run.stdout + run.stderr)
+
+    def test_failed_build_never_runs_smoke_even_with_success_log(self):
+        with tempfile.TemporaryDirectory(prefix='build stub ') as directory:
+            folder = Path(directory)
+            unity = folder / 'unity'
+            unity.write_text(f'#!{sys.executable}\nimport os, sys\nfrom pathlib import Path\n'
+                             "Path(sys.argv[sys.argv.index('-logFile') + 1]).write_text('Result: Success')\n"
+                             "exe = Path(os.environ['PHONESABER_UNITY_COPY']) / 'Builds/Mac/3D-Saber.app/Contents/MacOS/game'\n"
+                             "exe.parent.mkdir(parents=True)\n"
+                             "exe.write_text('#!/bin/sh\\ntouch \"' + os.environ['TEST_SMOKE_CALLED'] + '\"\\nexit 1\\n')\n"
+                             "exe.chmod(0o755)\nsys.exit(139)\n")
+            unity.chmod(0o755)
+            for name in ('rsync', 'pgrep'):
+                stub = folder / name
+                stub.write_text('#!/bin/sh\nexit ' + ('0' if name == 'rsync' else '1') + '\n')
+                stub.chmod(0o755)
+            called = folder / 'smoke-called'
+            env = dict(os.environ, PATH=str(folder) + os.pathsep + os.environ['PATH'],
+                       PHONESABER_UNITY=str(unity), PHONESABER_UNITY_COPY=str(folder / 'copy'),
+                       PHONESABER_UNITY_OUT=str(folder / 'out'), TEST_SMOKE_CALLED=str(called))
+            run = subprocess.run(['bash', str(TOOLS / 'unity_copy.sh'), 'build-mac'],
+                                 env=env, capture_output=True, text=True, timeout=10)
+            self.assertEqual(run.returncode, 1, run.stdout + run.stderr)
+            self.assertFalse(called.exists(), '異常終了した build は配布の検証に進めない')
 
     def test_invalid_allowlist_is_rejected(self):
         for known in (["ChartRecordingWorkflowTests.*"], [""], [12], {}, "A.Fail"):

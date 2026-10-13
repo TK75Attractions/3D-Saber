@@ -192,7 +192,9 @@ def check_receiver(ctx: Context) -> list[Check]:
     if response is not None and response[0] == 200:
         try:
             payload = json.loads(response[1])
-        except ValueError:
+        except (ValueError, RecursionError):
+            payload = {}
+        if not isinstance(payload, dict):
             payload = {}
         if payload.get("service") == "phonesaber-triage" and payload.get("status") == "ready":
             checks = [Check("OK", "受信側(Start PhoneSaber)", f"起動中: {url} = ready")]
@@ -219,7 +221,9 @@ def _receiver_health_details(payload: dict) -> list[Check]:
     checks: list[Check] = []
     started = payload.get("startedAt", "?")
     if payload.get("codeChangedSinceStart"):
-        changed = ", ".join(str(name) for name in payload.get("changedFiles") or []) or "?"
+        files = payload.get("changedFiles")
+        changed = ", ".join(str(name) for name in files) if isinstance(files, list) else ""
+        changed = changed or "?"
         hint = ("待機中なので、Start PhoneSaber をもう一度ダブルクリックすると自動で起動し直す"
                 if payload.get("idle") else
                 "今は作業中。終わってから Start PhoneSaber をもう一度ダブルクリックすると自動で起動し直す")
@@ -346,7 +350,10 @@ def parse_stats(text: str) -> dict:
     """`RED=313 BLUE=313 maxGapMsRED=121 ... peers=1` を dict にする。"""
     values: dict = {}
     for key, value in re.findall(r"(\w+)=(-?\d+)", text):
-        values[key] = int(value)
+        try:
+            values[key] = int(value)
+        except ValueError:
+            continue  # 壊れたログの巨大な整数は表示に使わない。
     return values
 
 
@@ -484,10 +491,14 @@ def check_inbox(ctx: Context) -> list[Check]:
     if analysis_json.is_file():
         try:
             report = json.loads(analysis_json.read_text(encoding="utf-8"))
-        except (OSError, ValueError):
+        except (OSError, ValueError, RecursionError):
+            report = {}
+        if not isinstance(report, dict):
             report = {}
         precheck = report.get("precheck") if isinstance(report.get("precheck"), dict) else {}
         codes = precheck.get("reasonCodes") or []
+        if not isinstance(codes, list) or not all(isinstance(code, str) for code in codes):
+            codes = []
         if report.get("analysisExecuted"):
             checks.append(Check("OK", "Codex 解析", "完了(analysis_report.md を開く)"))
         elif codes:

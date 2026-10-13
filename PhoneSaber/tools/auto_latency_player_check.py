@@ -70,7 +70,15 @@ def main():
     if subprocess.run(["pgrep", "-f", "/3D-Saber.app/Contents/MacOS/"], capture_output=True).stdout.strip():
         print("ゲームが起動中です。終了してから実行してください。")
         return 2
-    offset = EVENTS.stat().st_size if EVENTS.exists() else 0
+    # 世代交代では名前だけが変わる。各ファイルの開始位置を inode に結び付け、時計変更にも依存しない。
+    offsets = {}
+    for generation in range(5):
+        path = Path(str(EVENTS) + (f".{generation}" if generation else ""))
+        try:
+            stat = path.stat()
+            offsets[(stat.st_dev, stat.st_ino)] = stat.st_size
+        except FileNotFoundError:
+            pass
     log = Path(os.environ.get("TMPDIR", "/tmp")) / "phonesaber-auto-latency-check.log"
     command = ["/usr/bin/open", "-g", "-j", "-n", "-W", args.app, "--args", "-phonesaberSmoke", str(args.seconds),
                "-logFile", str(log)]
@@ -104,9 +112,17 @@ def main():
         subprocess.run(["pkill", "-KILL", "-f", "--", "-phonesaberSmoke"])
         print("Player が終わらないため中止しました:", log)
         return 1
-    with EVENTS.open("rb") as handle:
-        handle.seek(offset)
-        lines = [line for line in handle.read().decode("utf-8", "replace").splitlines() if "event=latency-estimate" in line]
+    lines = []
+    for generation in range(4, -1, -1):
+        path = Path(str(EVENTS) + (f".{generation}" if generation else ""))
+        try:
+            with path.open("rb") as handle:
+                stat = os.fstat(handle.fileno())
+                handle.seek(offsets.get((stat.st_dev, stat.st_ino), 0))
+                lines.extend(line for line in handle.read().decode("utf-8", "replace").splitlines()
+                             if "event=latency-estimate" in line)
+        except FileNotFoundError:
+            pass
     if not lines:
         print("event=latency-estimate が1行もありません:", EVENTS)
         return 1

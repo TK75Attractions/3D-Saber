@@ -149,7 +149,11 @@ def main(argv: list[str] | None = None) -> int:
     if pages != EXPECTED_PAGES:
         print(f"{pages} ページになりました（{EXPECTED_PAGES} ページに収める）。PDF は更新していません", file=sys.stderr)
         return 1
-    args.output.write_bytes(data)
+    # 容量不足・書込み失敗でも、配布中の PDF は完成した新しいファイルでだけ置き換える。
+    with tempfile.TemporaryDirectory(prefix=".staff-manual-", dir=args.output.parent) as directory:
+        staged = Path(directory) / args.output.name
+        staged.write_bytes(data)
+        staged.replace(args.output)
     print(f"{args.output} を更新しました（{pages} ページ）")
     return 0
 
