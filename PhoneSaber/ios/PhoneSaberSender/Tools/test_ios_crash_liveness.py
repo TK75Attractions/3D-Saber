@@ -41,6 +41,16 @@ class IOSCrashLivenessTests(unittest.TestCase):
                                 '"AVCaptureSessionInterruptionReasonKey"')
         self.run_swift(NOTIFICATION_HEAD + method + NOTIFICATION_TAIL)
 
+    def test_late_initial_camera_start_keeps_newer_lifecycle_events(self):
+        camera = (SOURCE / "CameraViewModel.swift").read_text()
+        lifecycle = camera[camera.index("enum CameraLifecycleState:"):
+                           camera.index("private final class CaptureSessionRunner")]
+        start = camera.index("    private func finishCameraStart(")
+        end = camera.index("    private func startCameraWatchdog()", start)
+        method = camera[start:end].replace("private func finish", "func finish")
+        recovery = (SOURCE / "EventRecovery.swift").read_text()
+        self.run_swift(recovery + lifecycle + START_COMPLETION_HEAD + method + START_COMPLETION_TAIL)
+
     def test_terminal_overlay_writer_does_not_wait_forever(self):
         recorder = (SOURCE / "DebugVideoRecorder.swift").read_text()
         start = recorder.index("            while !input.isReadyForMoreMediaData {")
@@ -82,6 +92,56 @@ NOTIFICATION_TAIL = r'''
    print(name.rawValue, passed ? "PASS" : "FAIL: poster waits for main")
   }
   model.sessionObserverTokens.forEach(NotificationCenter.default.removeObserver)
+  exit(failures == 0 ? 0 : 1)
+ }
+}
+'''
+
+START_COMPLETION_HEAD = r'''
+import Darwin
+final class SessionRunner {
+ var stops = 0
+ func stop() { stops += 1 }
+}
+@MainActor final class CameraViewModel {
+ let sessionRunner = SessionRunner()
+ var cameraLifecycle = CameraLifecycleStateMachine()
+ var lifecycleGeneration = 1
+ var cameraRecoveryGeneration = 1
+ var running = true
+ var cameraRecoveryInProgress = true
+ var cameraErrorMessage: String? = "latest error"
+ func publishCameraLifecycle(at time: TimeInterval) {}
+ func recomputeErrorMessage() {}
+'''
+
+START_COMPLETION_TAIL = r'''
+}
+@main struct Audit {
+ @MainActor static func main() {
+  var failures = 0
+  for event in 0...2 {
+   for succeeded in [false, true] {
+    let model = CameraViewModel()
+    model.cameraLifecycle.requestStart(at: 0)
+    switch event {
+    case 0: model.cameraLifecycle.interruptionBegan(reason: "camera in use")
+    case 1: model.cameraLifecycle.runtimeError("media services reset")
+    default: _ = model.cameraLifecycle.beginRecovery(at: 2)
+    }
+    let expected = model.cameraLifecycle.state
+    model.finishCameraStart(succeeded: succeeded, lifecycle: 1, recovery: nil, isRecovery: false)
+    let passed = model.cameraLifecycle.state == expected && model.cameraErrorMessage == "latest error" &&
+     model.cameraRecoveryInProgress && model.sessionRunner.stops == 0
+    print("late initial start", event, succeeded, passed ? "PASS" : "FAIL: newer lifecycle event overwritten")
+    if !passed { failures += 1 }
+    if event == 2 {
+     model.finishCameraStart(succeeded: false, lifecycle: 1, recovery: 1, isRecovery: true)
+     if model.cameraLifecycle.state != .failed("capture sessionを再開できませんでした") ||
+        model.cameraRecoveryInProgress { failures += 1 }
+    }
+   }
+  }
   exit(failures == 0 ? 0 : 1)
  }
 }
