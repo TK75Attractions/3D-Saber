@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "convertedCount": 76,
-  "appliedCount": 72,
+  "convertedCount": 82,
+  "appliedCount": 77,
   "applications": [
     {
       "patternId": "shut-up-dance-2",
@@ -10128,7 +10128,7 @@
         {
           "beat": 65.5,
           "time": 24590.5,
-          "x": -0.6,
+          "x": -1.9,
           "y": -0.6,
           "type": "tap",
           "color": "blue",
@@ -10139,7 +10139,7 @@
         {
           "beat": 66.5,
           "time": 24965.5,
-          "x": 0.6,
+          "x": 1.9,
           "y": -0.6,
           "type": "tap",
           "color": "red",
@@ -12632,11 +12632,11 @@
       "sourceUrl": "https://www.youtube.com/watch?v=WR5PG2IMFmg&t=89",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=easy&t=174.65",
       "noteIndices": [
+        226,
         227,
         228,
         229,
-        230,
-        231
+        230
       ],
       "appliedNotes": [
         {
@@ -14779,13 +14779,13 @@
       "sourceUrl": "https://www.youtube.com/watch?v=qWqfjnDhju0&t=118",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=easy&t=60.90",
       "noteIndices": [
-        74,
         75,
         76,
         77,
         78,
         79,
-        80
+        80,
+        81
       ],
       "appliedNotes": [
         {
@@ -22634,8 +22634,8 @@
       "sourcePhaseOffsetBeats": 2.5,
       "positionChangedNotes": 2,
       "spatialLayout": "右外から左低、右内へ",
-      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
-      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=20.49",
       "noteIndices": [
         90,
@@ -22809,7 +22809,163 @@
           "lengthMs": 0
         }
       ],
-      "addedNotes": 14
+      "addedNotes": 14,
+      "preHierarchyAppliedNotes": [
+        {
+          "beat": 68.0,
+          "time": 21493.6842,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 68.5,
+          "time": 21651.5789,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 69.0,
+          "time": 21809.4737,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 69.5,
+          "time": 21967.3684,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 70.0,
+          "time": 22125.2632,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 70.5,
+          "time": 22283.1579,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 71.5,
+          "time": 22598.9474,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 72.0,
+          "time": 22756.8421,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 72.5,
+          "time": 22914.7368,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 73.0,
+          "time": 23072.6316,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 73.5,
+          "time": 23230.5263,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 74.0,
+          "time": 23388.4211,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 74.5,
+          "time": 23546.3158,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 75.5,
+          "time": 23862.1053,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
     },
     {
       "patternId": "unlimited-noarrows-normal-2",
@@ -22830,8 +22986,8 @@
       "sourcePhaseOffsetBeats": 3.5,
       "positionChangedNotes": 3,
       "spatialLayout": "左の高い音から右の低い音へ",
-      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
-      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "layoutAdaptation": "曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。",
+      "fidelity": "以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。",
       "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=33.13",
       "noteIndices": [
         165,
@@ -23005,7 +23161,992 @@
           "lengthMs": 0
         }
       ],
-      "addedNotes": 14
+      "addedNotes": 14,
+      "preHierarchyAppliedNotes": [
+        {
+          "beat": 108.0,
+          "time": 34125.2632,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 108.5,
+          "time": 34283.1579,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 109.5,
+          "time": 34598.9474,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 110.0,
+          "time": 34756.8421,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 110.5,
+          "time": 34914.7368,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 110.5,
+          "time": 34914.7368,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 111.0,
+          "time": 35072.6316,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 111.5,
+          "time": 35230.5263,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 112.0,
+          "time": 35388.4211,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 113.0,
+          "time": 35704.2105,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 113.5,
+          "time": 35862.1053,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 114.0,
+          "time": 36020.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 114.5,
+          "time": 36177.8947,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 115.5,
+          "time": 36493.6842,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ]
+    },
+    {
+      "patternId": "angel-hard-1",
+      "songId": "BenkyouRemaster",
+      "songTitle": "勉強（Remaster）",
+      "difficulty": "hard",
+      "startBeat": 16,
+      "endBeat": 24,
+      "startBar": 5,
+      "barCount": 2,
+      "startSeconds": 6.024,
+      "endSeconds": 9.024,
+      "targetBpm": 160,
+      "referenceBpm": 166.0,
+      "bpmDifferencePercent": -3.614,
+      "sourceUrl": "https://www.youtube.com/watch?v=2APVYHQHMNI&t=41",
+      "integrationMode": "hierarchy-reference",
+      "sourcePhaseOffsetBeats": 2,
+      "positionChangedNotes": 4,
+      "spatialLayout": "低い左から高い右、後半を休む",
+      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
+      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=5.02",
+      "noteIndices": [
+        14,
+        15,
+        16,
+        17,
+        18,
+        19,
+        20,
+        21
+      ],
+      "appliedNotes": [
+        {
+          "beat": 16.0,
+          "time": 6024.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 17.0,
+          "time": 6399.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "direction",
+          "color": "blue",
+          "direction": "upleft",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 18.0,
+          "time": 6774.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 19.0,
+          "time": 7149.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 20.0,
+          "time": 7524.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 21.0,
+          "time": 7899.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 22.0,
+          "time": 8274.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 23.0,
+          "time": 8649.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "addedNotes": 8,
+      "batch": "hourly-20261015-0341"
+    },
+    {
+      "patternId": "angel-hard-2",
+      "songId": "BenkyouRemaster",
+      "songTitle": "勉強（Remaster）",
+      "difficulty": "hard",
+      "startBeat": 136,
+      "endBeat": 144,
+      "startBar": 35,
+      "barCount": 2,
+      "startSeconds": 58.674,
+      "endSeconds": 61.674,
+      "targetBpm": 160,
+      "referenceBpm": 166.0,
+      "bpmDifferencePercent": -3.614,
+      "sourceUrl": "https://www.youtube.com/watch?v=2APVYHQHMNI&t=98",
+      "integrationMode": "hierarchy-reference",
+      "sourcePhaseOffsetBeats": 3,
+      "positionChangedNotes": 5,
+      "spatialLayout": "左の同列上下に右の低い応答",
+      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
+      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=57.67",
+      "noteIndices": [
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232
+      ],
+      "appliedNotes": [
+        {
+          "beat": 136.0,
+          "time": 58674.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 137.0,
+          "time": 59049.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 138.0,
+          "time": 59424.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 138.5,
+          "time": 59611.5,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 139.0,
+          "time": 59799.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 140.0,
+          "time": 60174.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 141.0,
+          "time": 60549.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 141.5,
+          "time": 60736.5,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 142.0,
+          "time": 60924.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 142.5,
+          "time": 61111.5,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 143.0,
+          "time": 61299.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "addedNotes": 11,
+      "batch": "hourly-20261015-0341"
+    },
+    {
+      "patternId": "exit-hard-1",
+      "songId": "logic",
+      "songTitle": "logic!!!",
+      "difficulty": "hard",
+      "startBeat": 60,
+      "endBeat": 68,
+      "startBar": 16,
+      "barCount": 2,
+      "startSeconds": 22.528,
+      "endSeconds": 25.528,
+      "targetBpm": 160,
+      "referenceBpm": 170.0,
+      "bpmDifferencePercent": -5.882,
+      "sourceUrl": "https://www.youtube.com/watch?v=UVtfg7BtxpY&t=34",
+      "integrationMode": "hierarchy-reference",
+      "sourcePhaseOffsetBeats": 3,
+      "positionChangedNotes": 7,
+      "spatialLayout": "内側の交互上下から最後だけ外へ",
+      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
+      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=21.53",
+      "noteIndices": [
+        68,
+        69,
+        70,
+        71,
+        72,
+        73,
+        74,
+        75,
+        76,
+        77,
+        78,
+        79,
+        80,
+        81
+      ],
+      "appliedNotes": [
+        {
+          "beat": 60.5,
+          "time": 22715.5,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 61.0,
+          "time": 22903.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 61.5,
+          "time": 23090.5,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 62.0,
+          "time": 23278.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 62.5,
+          "time": 23465.5,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 63.0,
+          "time": 23653.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 63.5,
+          "time": 23840.5,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 64.0,
+          "time": 24028.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 64.5,
+          "time": 24215.5,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 65.0,
+          "time": 24403.0,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 65.5,
+          "time": 24590.5,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 66.5,
+          "time": 24965.5,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 67.0,
+          "time": 25153.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 67.5,
+          "time": 25340.5,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "addedNotes": 14,
+      "batch": "hourly-20261015-0341"
+    },
+    {
+      "patternId": "exit-hard-2",
+      "songId": "BenkyouRemaster",
+      "songTitle": "勉強（Remaster）",
+      "difficulty": "hard",
+      "startBeat": 248,
+      "endBeat": 256,
+      "startBar": 63,
+      "barCount": 2,
+      "startSeconds": 100.674,
+      "endSeconds": 103.674,
+      "targetBpm": 160,
+      "referenceBpm": 170.0,
+      "bpmDifferencePercent": -5.882,
+      "sourceUrl": "https://www.youtube.com/watch?v=UVtfg7BtxpY&t=121",
+      "integrationMode": "hierarchy-reference",
+      "sourcePhaseOffsetBeats": 1,
+      "positionChangedNotes": 2,
+      "spatialLayout": "左右で異なる内外の受け渡し",
+      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
+      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=99.67",
+      "noteIndices": [
+        374,
+        375,
+        376,
+        377,
+        378,
+        379,
+        380,
+        381,
+        382,
+        383,
+        384,
+        385
+      ],
+      "appliedNotes": [
+        {
+          "beat": 248.0,
+          "time": 100674.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 249.0,
+          "time": 101049.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 250.0,
+          "time": 101424.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 250.75,
+          "time": 101705.25,
+          "x": 0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 251.0,
+          "time": 101799.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 251.5,
+          "time": 101986.5,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 252.0,
+          "time": 102174.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 253.0,
+          "time": 102549.0,
+          "x": -1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 253.5,
+          "time": 102736.5,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 254.0,
+          "time": 102924.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 254.5,
+          "time": 103111.5,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 255.0,
+          "time": 103299.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "addedNotes": 12,
+      "batch": "hourly-20261015-0341"
+    },
+    {
+      "patternId": "liftoff-hard-1",
+      "songId": "logic",
+      "songTitle": "logic!!!",
+      "difficulty": "hard",
+      "startBeat": 348,
+      "endBeat": 356,
+      "startBar": 88,
+      "barCount": 2,
+      "startSeconds": 158.153,
+      "endSeconds": 162.153,
+      "targetBpm": 120,
+      "referenceBpm": 120.0,
+      "bpmDifferencePercent": 0.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=l40NJhXxXUU&t=25",
+      "integrationMode": "hierarchy-reference",
+      "sourcePhaseOffsetBeats": 1.5,
+      "positionChangedNotes": 3,
+      "spatialLayout": "右の二打を挟む左から左への応答",
+      "layoutAdaptation": "対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。",
+      "fidelity": "映像に基づく動きの翻案。原作の正確な採譜ではない。",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=157.15",
+      "noteIndices": [
+        493,
+        494,
+        495,
+        496,
+        497,
+        498,
+        499,
+        500,
+        501,
+        502,
+        503,
+        504
+      ],
+      "appliedNotes": [
+        {
+          "beat": 348.5,
+          "time": 158403.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 349.5,
+          "time": 158903.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 350.0,
+          "time": 159153.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 350.5,
+          "time": 159403.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 351.0,
+          "time": 159653.0,
+          "x": 1.9,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 351.5,
+          "time": 159903.0,
+          "x": -0.6,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 352.0,
+          "time": 160153.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 352.5,
+          "time": 160403.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 353.5,
+          "time": 160903.0,
+          "x": -0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 354.5,
+          "time": 161403.0,
+          "x": 0.6,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 355.0,
+          "time": 161653.0,
+          "x": -1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 355.5,
+          "time": 161903.0,
+          "x": 1.9,
+          "y": 0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "addedNotes": 12,
+      "batch": "hourly-20261015-0341"
     }
   ],
   "inputChartHashes": {
@@ -23018,24 +24159,42 @@
   "spatialLayoutVersion": 2,
   "pending": [
     {
-      "patternId": "angel-hard-1",
-      "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
-      "candidateCount": 48
-    },
-    {
-      "patternId": "angel-hard-2",
-      "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
-      "candidateCount": 4
-    },
-    {
       "patternId": "light-normal-1",
-      "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
-      "candidateCount": 0
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "candidateCount": 0,
+      "rejections": {}
     },
     {
       "patternId": "light-normal-2",
-      "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
-      "candidateCount": 0
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "liftoff-hard-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "cathedral-hard-1",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "candidateCount": 0,
+      "rejections": {}
+    },
+    {
+      "patternId": "cathedral-hard-2",
+      "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+      "candidateCount": 0,
+      "rejections": {}
     }
-  ]
+  ],
+  "hierarchyInputHashes": {
+    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "f0e2ee3ee2fab33ebf66307efeb67ac73bec11dbe894d4bfc4d0b750ba9d5920",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "a99c4f86d081ef37a0e3b0775029db8822a0b02ca80683b61dd48bebe5c18ca5",
+    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "0069c2a0351619f61bd0bb644c6d800be07922c03d397896947af3e4aad90651",
+    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "aa2ab008475687d54a4c4537f01d188fc086e38ccff7a9185500f1749530c5de",
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "514c4beec036091e39df23fbe5de18cdac36e161fe750b5a4a1cd128332b8d33"
+  },
+  "hierarchyBatch": "hourly-20261015-0341"
 }

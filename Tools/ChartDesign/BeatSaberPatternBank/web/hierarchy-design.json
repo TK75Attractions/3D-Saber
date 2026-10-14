@@ -3163,22 +3163,22 @@
           "pairNotePercent": 11.44,
           "movementOver1_2Within1s": 42.51,
           "movementWithin1sDenominator": 207,
-          "movementOver1_2AllGaps": 47.67,
+          "movementOver1_2AllGaps": 48.77,
           "fastSameHandUnder250ms": 0,
           "sameHandSingleTransitionPercent": 10.8,
-          "identicalBarRepeatPercent": 1.8,
+          "identicalBarRepeatPercent": 0.9,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 6
         },
         "easy": {
-          "notes": 257,
+          "notes": 256,
           "pairs": 7,
-          "pairNotePercent": 5.45,
-          "movementOver1_2Within1s": 25.49,
-          "movementWithin1sDenominator": 51,
-          "movementOver1_2AllGaps": 49.41,
+          "pairNotePercent": 5.47,
+          "movementOver1_2Within1s": 24.49,
+          "movementWithin1sDenominator": 49,
+          "movementOver1_2AllGaps": 48.82,
           "fastSameHandUnder250ms": 0,
-          "sameHandSingleTransitionPercent": 15.29,
+          "sameHandSingleTransitionPercent": 15.77,
           "identicalBarRepeatPercent": 7.41,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 6
@@ -3817,9 +3817,9 @@
           "notes": 489,
           "pairs": 33,
           "pairNotePercent": 13.5,
-          "movementOver1_2Within1s": 64.11,
+          "movementOver1_2Within1s": 62.98,
           "movementWithin1sDenominator": 443,
-          "movementOver1_2AllGaps": 64.68,
+          "movementOver1_2AllGaps": 63.04,
           "fastSameHandUnder250ms": 40,
           "sameHandSingleTransitionPercent": 19.91,
           "identicalBarRepeatPercent": 2.47,
@@ -3830,9 +3830,9 @@
           "notes": 264,
           "pairs": 17,
           "pairNotePercent": 12.88,
-          "movementOver1_2Within1s": 47.24,
+          "movementOver1_2Within1s": 46.01,
           "movementWithin1sDenominator": 163,
-          "movementOver1_2AllGaps": 49.62,
+          "movementOver1_2AllGaps": 48.85,
           "fastSameHandUnder250ms": 0,
           "sameHandSingleTransitionPercent": 10.92,
           "identicalBarRepeatPercent": 2.47,
@@ -3848,7 +3848,7 @@
           "movementOver1_2AllGaps": 44.94,
           "fastSameHandUnder250ms": 0,
           "sameHandSingleTransitionPercent": 11.04,
-          "identicalBarRepeatPercent": 6.25,
+          "identicalBarRepeatPercent": 5.0,
           "inheritedTimeHandPositionPercent": 100,
           "sharedAccents": 3
         }
@@ -4891,31 +4891,45 @@
   },
   "materialUpdate": {
     "added": [
-      "unlimited-noarrows-normal-1",
-      "unlimited-noarrows-normal-2"
+      "angel-hard-1",
+      "angel-hard-2",
+      "exit-hard-1",
+      "exit-hard-2",
+      "liftoff-hard-1"
     ],
     "pending": [
       {
-        "patternId": "angel-hard-1",
-        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
-        "candidateCount": 48
-      },
-      {
-        "patternId": "angel-hard-2",
-        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
-        "candidateCount": 4
-      },
-      {
         "patternId": "light-normal-1",
-        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
-        "candidateCount": 0
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
       },
       {
         "patternId": "light-normal-2",
-        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
-        "candidateCount": 0
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "liftoff-hard-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "cathedral-hard-1",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
+      },
+      {
+        "patternId": "cathedral-hard-2",
+        "reason": "近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。",
+        "candidateCount": 0,
+        "rejections": {}
       }
-    ]
+    ],
+    "batch": "hourly-20261015-0341"
   },
   "validation": {
     "pack": "15譜面合格",

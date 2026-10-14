@@ -7,11 +7,12 @@ from hierarchy_rework import read,save,Music,FORM,reduced,finalize,path_for
 from integrate_patterns import internal
 from scope_guard import authorize_specs
 
-def movement_valid(ns):
+def movement_valid(ns,m):
  for h in (0,1):
   seq=[n for n in ns if n['_hand']==h]
   for a,b in zip(seq,seq[1:]):
-   gap=(b['time']-a['time']-a['lengthMs'])/1000;d=math.dist((a['x'],a['y']),(b['x'],b['y']))
+   # ロング表示の余白ではなく、記録された最終カットから移動時間を測る。
+   gap=b['time']/1000-m.t(a['_cutBeats'][-1]);d=math.dist((a['x'],a['y']),(b['x'],b['y']))
    if d>1.2 and gap<.3-1e-5:return False
  groups=collections.defaultdict(list)
  for n in ns:groups[n['time']].append(n)
@@ -53,21 +54,23 @@ def main():
      if ratio<.75:continue
      score=abs(m.bpm(base)/pattern['referenceBpm']-1)*10-ratio
      choices.append((score,sid,base,phase,matches))
-  accepted=None
+  accepted=None;rejections=collections.Counter()
   for score,sid,base,phase,matches in sorted(choices,key=lambda c:c[:4]):
    state=states[sid];ns=copy.deepcopy(state['ns']);changed=0
    for i,source in matches:
     changed+=(ns[i]['x'],ns[i]['y'])!=(source['x'],source['y']);ns[i]['x']=source['x'];ns[i]['y']=source['y']
-   if changed<2 or not movement_valid(ns):continue
+   if changed<2:rejections['unchanged']+=1;continue
+   if not movement_valid(ns,state['m']):rejections['movementOrSimultaneous']+=1;continue
    _,failure=path_for(ns,state['m'])
-   if failure is not None:continue
+   if failure is not None:rejections['cutPath']+=1;continue
    # 下位の共通アクセントを失わず、同じ手・位置で間引けることも先に検査。
    keys=[a['beat'] for a in history['songs'][sid]['sharedAccents']]
    try:normal=reduced(ns,state['m'],'normal',keys);easy=reduced(normal,state['m'],'easy',keys)
-   except AssertionError:continue
+   except AssertionError:rejections['lowerHierarchy']+=1;continue
    accepted=(sid,base,phase,ns,changed,matches);break
   if accepted is None:
-   pending.append({'patternId':pattern['id'],'reason':'近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。','candidateCount':len(choices)});continue
+   reason=('近いBPMの未使用区間に、この素材の担当手・打点・両手／単発の並びが十分に一致する箇所がない。音や手順を無理に変更せず、小節素材として保存。' if not choices else '打点の一致候補はあるが、前後の移動・カット経路・下位包含を同時に満たさない。小節素材として保存。')
+   pending.append({'patternId':pattern['id'],'reason':reason,'candidateCount':len(choices),'rejections':dict(rejections)});continue
   sid,base,phase,ns,changed,matches=accepted;state=states[sid];state.update(ns=ns,changed=True);m=state['m']
   app=dict(patternId=pattern['id'],songId=sid,songTitle=m.spec['title'],difficulty='hard',startBeat=base,endBeat=base+8,startBar=base//4+1,barCount=2,startSeconds=round(m.t(base),4),endSeconds=round(m.t(base+8),4),targetBpm=m.bpm(base),referenceBpm=pattern['referenceBpm'],bpmDifferencePercent=round((m.bpm(base)/pattern['referenceBpm']-1)*100,3),sourceUrl=pattern['sourceUrl'],integrationMode='hierarchy-reference',sourcePhaseOffsetBeats=phase,positionChangedNotes=changed,spatialLayout=pattern['layout'],layoutAdaptation='対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。',fidelity='映像に基づく動きの翻案。原作の正確な採譜ではない。',viewerUrl=f'https://saber-chart-library.metuji48.chatgpt.site/?song={sid}&difficulty=hard&t={max(0,m.t(base)-1):.2f}')
   apps.append(app);added.append(app['patternId']);print(app['patternId'],sid,base,changed,flush=True)

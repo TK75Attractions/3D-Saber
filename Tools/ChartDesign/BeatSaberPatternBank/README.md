@@ -15,9 +15,9 @@ ZeroとPhobiaは固定。RushEを含むすべての対象外曲も変更・再�
 
 ## 現行の素材と作り分け
 
-現行76素材すべてを本作の4拍JSONへ翻案。72素材を15譜面へ144小節として参照・適用し、4素材は理由付きで保留。以下の先行改修の説明は履歴。
-採用候補42・調整して採用28・避けたい例6（問題点を解消した修正版）。
-譜面データからの変換8、映像に基づく翻案56、解説の修正版6。映像は正確な採譜ではない。
+現行82素材すべてを本作の4拍JSONへ翻案。77素材を15譜面へ154小節として参照・適用し、5素材は理由付きで保留。以下の先行改修の説明は履歴。
+採用候補45・調整して採用31・避けたい例6（問題点を解消した修正版）。
+譜面データからの変換8、映像に基づく翻案68、解説の修正版6。映像は正確な採譜ではない。
 前回の6素材は Crystallized / Normal（174 BPM）、Firestarter / Normal（135 BPM）、MISA MISA!（190 BPM、Expert+相当の推定）の各2区間。
 MISA MISA!の作者公開映像の0:00〜1:27が対象曲。難易度画面はなく、現行譜面ZIPも取得不可のため版・難易度の一致は未確定。比較用として密度を下げた。
 元動画・投稿者・作者・時刻・分類理由は `collection.json/csv`。自由利用の許諾を得た素材ではなく、出典付きの短い研究用抜粋。
@@ -34,7 +34,7 @@ Manic Sonicは主拍と両手の着地、escapadeは短い連打と休符、logi
 
 1. scope-policy、現在のcollection・converted-patterns・applicationsと最新ユーザー指示を読む。
 2. 映像と前後を実見し、新規素材ごとにEXPLICIT/LAYOUTの固有定義を追加する。登録済み58本・64本等の過去件数へリセットしない。
-3. convert_patterns.pyで素材化。integrate_patterns.py --repo <入力> --output <候補> --features <解析> --spatial-preserve-rhythmで未適用分だけ候補へ挿入する。
+3. convert_patterns.pyで素材化。候補コピー上でhierarchy_materials.py --repo <候補> --features <解析>を実行し、Hardの位置を変えたら下位も包含関係を保つ。旧spatial-preserve-rhythmは現行譜面には使わない。
 4. 曲別再設計済みの譜面を旧rechart.pyで再生成しない（保護あり）。音や展開を再設計するときだけidentity_rework.pyの曲別定義をレビューして使う。定時更新は現在の譜面を入力にする。
 5. 入力との差分・元音源・verify_pack.py・verify_conversion.pyを確認。変更箇所と適用済み素材の記録を照合する。
 6. FiveSongPackTests / FiveSongPlayabilityTests / FiveSongLoadingPlayTestsを検証。開いているユーザーのUnityを閉じない。独立コピーはWindowsのパス長を避けて短い場所へ作る。
@@ -73,3 +73,9 @@ Full Charge / Normal（125 BPM）、Origins / Hard（175 BPM）、Give a Little 
 追加はAngel Voices Hard166、Light it Up Normal174、Unlimited Power Normal No Arrows198 BPM各2区間。Angel Voicesの作者クレジットは公式Hardと動画説明が一致せず明記。映像の4拍相当であり小節頭・譜面版は未確定。2素材をescapadeへ反映、4素材は保留。
 
 
+
+## 定時追加 2026-10-15 03:41
+
+公式3曲から6素材を追加し、固有の4拍譜面に翻案。今回の3素材と、前回保留のAngel Voicesの2素材をlogic!!!・勉強の合計10小節へ反映。Hardの発音・手・ロングは保持し、下位包含を再検証。残る5素材は候補件数と不採用理由をapplications.jsonへ保存。累計82変換・77適用。
+
+移動時間の検査をロング表示の終了ではなくcut-planの最終カット基準へ修正。表示余白を待ち時間に二重計上していたため、以前は有効な候補も除外されていた。test_material_gate.pyで境界と同時ノーツ間隔を回帰検証する。
