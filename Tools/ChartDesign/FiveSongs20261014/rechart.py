@@ -7,6 +7,10 @@ import json
 import math
 from pathlib import Path
 
+import sys
+sys.path.insert(0,str(Path(__file__).resolve().parent.parent/'BeatSaberPatternBank'))
+from scope_guard import authorize_specs
+
 import numpy as np
 
 from analyze import analyze, anchors, time_at
@@ -217,7 +221,9 @@ def main():
     p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--features',type=Path);p.add_argument('--output',type=Path,required=True)
     args=p.parse_args();design=args.repo/'Tools/ChartDesign/FiveSongs20261014';summaries={}
     features=args.features or args.repo/'Library/FiveSongRechartAnalysis'
-    for spec in json.loads((design/'songs.json').read_text(encoding='utf8')):
+    specs=json.loads((design/'songs.json').read_text(encoding='utf8'))
+    authorize_specs(specs)
+    for spec in specs:
         folder=args.repo/'Assets/StreamingAssets/Songs'/spec['id']
         audio=next(x for x in folder.glob('audio.*') if x.suffix!='.meta')
         if not (features/spec['id']/'features.npz').is_file():analyze(spec,audio,features/spec['id'])
@@ -226,6 +232,8 @@ def main():
         summaries[spec['id']]={}
         for diff in DIFFS:
             metadata=json.loads((folder/f'chart_{diff}.json').read_text(encoding='utf8'))
+            if metadata.get('identityDesignVersion'):
+                raise ValueError('曲別設計済み。共通リズムへの再生成を禁止。現在の譜面を使い素材統合の候補を作る。')
             chart,plan,evidence,summary=build(m,diff,metadata)
             target=args.output/'Assets/StreamingAssets/Songs'/spec['id']
             save(target/f'chart_{diff}.json',chart)

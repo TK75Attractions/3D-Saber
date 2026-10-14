@@ -3,6 +3,7 @@ import argparse,collections,copy,hashlib,json,math,sys
 from pathlib import Path
 HERE=Path(__file__).resolve().parent
 sys.path.insert(0,str(HERE.parent/'FiveSongs20261014'))
+from scope_guard import authorize,authorize_specs,protected_repo,assert_unchanged
 from rechart import Music,FORM,DIFFS,limit_flicks
 from analyze import analyze
 from build_pack import path_for,save
@@ -53,9 +54,11 @@ def plan_notes(notes,m,diff):
 def main():
  p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--features',type=Path);args=p.parse_args()
  repo=args.repo;design=repo/'Tools/ChartDesign/FiveSongs20261014';bank=repo/'Tools/ChartDesign/BeatSaberPatternBank';output=args.output
+ protected=protected_repo(repo);authorize_specs(read(design/'songs.json'))
  patterns=read(bank/'converted-patterns.json')['patterns'];prior=read(bank/'applications.json') if (bank/'applications.json').exists() else {'applications':[]}
  done={a['patternId'] for a in prior['applications']};pending=[x for x in patterns if x['id'] not in done]
  states={};musics={};original_hashes={};occupancy=collections.defaultdict(list);applications=list(prior['applications'])
+ for a in applications:authorize(a['songId'],a['difficulty'])
  for a in applications:occupancy[(a['songId'],a['difficulty'])].append((a['startBeat'],a['endBeat']))
  features=args.features or output/'Features'
  for spec in read(design/'songs.json'):
@@ -71,6 +74,7 @@ def main():
  for pattern in pending:
   candidates=[];minimum=DIFFS.index(pattern['minimumDifficulty'])
   for (sid,diff),state in states.items():
+   if pattern.get('preferredSongs') and sid not in pattern['preferredSongs']:continue
    level=DIFFS.index(diff)
    if level<minimum:continue
    m=state['m'];ns=state['notes']
@@ -86,6 +90,7 @@ def main():
      old=[n for n in ns if base<=n['beat']<base+8]
      if not old:continue
      bpm=m.bpm(base)
+     if abs(bpm-pattern['referenceBpm'])/pattern['referenceBpm']*100>pattern.get('maximumBpmDifferencePercent',10):continue
      if abs(math.log2(bpm/pattern['referenceBpm']))>.60:continue
      strength=sum(min(m.ev(b)['strength'],2) for b in set(beats))/len(set(beats))
      score=abs(math.log2(bpm/pattern['referenceBpm']))*8+(level-minimum)*5+len(occupancy[(sid,diff)])*3
@@ -131,5 +136,6 @@ def main():
   summaries[sid][diff].update(notes=len(ns),cuts=sum(n['count'] for n in ns),types=dict(collections.Counter(n['type'] for n in ns)),materialPatterns=[a['patternId'] for a in current],flowPassed=True)
  save(output/'Tools/ChartDesign/FiveSongs20261014/audit.json',summaries)
  save(output/'Tools/ChartDesign/BeatSaberPatternBank/applications.json',{**prior,'version':1,'convertedCount':len(patterns),'appliedCount':len(applications),'applications':applications,'inputChartHashes':original_hashes})
+ assert_unchanged(protected,protected_repo(repo))
  print(json.dumps({'converted':len(patterns),'applied':len(applications),'charts':{sid+':'+d:len(occupancy[(sid,d)]) for sid,d in states}},ensure_ascii=False))
 if __name__=='__main__':main()

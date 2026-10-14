@@ -1,138 +1,47 @@
-# Beat Saber 配置素材ノート
+# Beat Saber 配置素材と5曲の設計
 
-スマホ用の閲覧・ダウンロード先: https://beat-saber-pattern-bank.metuji48.chatgpt.site
+素材集: https://beat-saber-pattern-bank.metuji48.chatgpt.site
+譜面: https://beat-saber-pattern-bank.metuji48.chatgpt.site/patterns.html
+今回の変更: https://beat-saber-pattern-bank.metuji48.chatgpt.site/design.html
+全曲ビューア: https://saber-chart-library.metuji48.chatgpt.site
 
-変換済み譜面: https://beat-saber-pattern-bank.metuji48.chatgpt.site/patterns.html
+## 更新範囲の固定
 
-## 3D-Saberへの反映
+ユーザー指定により、更新できるのは ManicSonic / escapade / logic / BenkyouRemaster / Aobasou の Easy・Normal・Hard だけ。
+ZeroとPhobiaは固定。RushEを含むすべての対象外曲も変更・再生成・書き出ししない。
+`scope-policy.json` と `scope_guard.py` を生成・素材統合・サイト書き出しで使用する。
+作業前後で対象外のローカル37譜面とWeb28譜面のハッシュ、およびWeb目録を照合する。
+`frozen-baseline-20261014.json` は固定指示時点の記録。後日の手動編集をこの過去版へ勝手に戻さない。
 
-58素材すべてを4拍の本作形式JSONへ変換し、元の5曲のEasy / Normal / Hard、計15譜面へ反映した。
-各素材は1小節の配置と左右を入れ替えた応答の計2小節で、合計116小節。
-採用候補30・調整して採用22を適合させ、避けたい例6は指摘された問題を修正した配置にした。
-Manic Sonic / escapade / logic!!! / 勉強（Remaster）/ 青葉騒へ、それぞれ11 / 9 / 13 / 12 / 13素材を組み込んだ。
+## 現行の素材と作り分け
 
-公式動画44素材は映像で観察した構造に基づく簡略化した翻案で、原作ノーツの完全な採譜ではない。
-カスタム8素材は原譜面の拍・左右の手を使い、本作の座標とフリック数へ調整した。
-解説6素材は修正案から作った新規配置。元の悪い配置をそのまま移植していない。
+64素材すべてを本作の4拍JSONへ翻案し、15譜面へ128小節として適用済み。
+採用候補34・調整して採用24・避けたい例6（問題点を解消した修正版）。
+譜面データからの変換8、映像に基づく翻案50、解説の修正版6。映像は正確な採譜ではない。
+今回の6素材は Crystallized / Normal（174 BPM）、Firestarter / Normal（135 BPM）、MISA MISA!（190 BPM、Expert+相当の推定）の各2区間。
+MISA MISA!の作者公開映像の0:00〜1:27が対象曲。難易度画面はなく、現行譜面ZIPも取得不可のため版・難易度の一致は未確定。比較用として密度を下げた。
+元動画・投稿者・作者・時刻・分類理由は `collection.json/csv`。自由利用の許諾を得た素材ではなく、出典付きの短い研究用抜粋。
 
-`patterns/` と `converted-patterns.json` が再利用用の譜面。
-`applications.json` に各素材の適用先、開始小節、拍、ノーツ列、元動画URL、音源付きの通し譜面へのリンクを保存する。
-スマホページでは4拍素材と実際に組み込んだ2小節を切り替えられ、元動画と比較できる。
-各JSONと全116譜面のZIPも保存可能。プレビューの音はメトロノームで、曲音源は通し譜面のリンクで再生する。
+同じリズム表・常時左右交互・同じ上下運動を5曲全体に当てる作り方を見直した。
+650小節の通常フレーズを曲別に再設計し、別に新素材6本を12小節へ適用した。既存58素材の適用ノーツは保持。
+Manic Sonicは主拍と両手の着地、escapadeは短い連打と休符、logic!!!は非対称の応答、勉強は変速の対比、青葉騒は歌の発音と間を主軸にする。
+`FiveSongs20261014/identity-design.json` に変更小節・時刻・参照素材・BPM差・未参照理由・変更前後の比較を記録する。
+通常の横配置を主軸にする。縦・交差・反転は短い技であり、全体を周期回転させない。
+色で担当手を判定し、金はcut-plan/evidenceの記録を使う。xの正負で手を推定しない。
+フリック連続は現行で全体最大2・片手最大3。Easyは0。境界と同時打ちの並び順も検証する。
 
-音源の発音候補、既存ロング、前後の手の移動、変速、難易度を検査して配置先を選定した。
-現行15譜面のフリック連続数は全体・片手とも最大3。Easyは0。
-独立検証は `integration-validation.json`、ブラウザとUnityの検証概要は `conversion-verification.json` を参照。
-現行版はUnityの関連EditMode 58件とPlayMode 1件が成功。物理セイバーでの通しプレイは未実施。
+## 継続更新の手順
 
-## 通常配置と短い技の使い分け
+1. scope-policy、現在のcollection・converted-patterns・applicationsと最新ユーザー指示を読む。
+2. 映像と前後を実見し、新規素材ごとにEXPLICIT/LAYOUTの固有定義を追加する。登録済み58本・64本等の過去件数へリセットしない。
+3. convert_patterns.pyで素材化。integrate_patterns.py --repo <入力> --output <候補> --features <解析>で未適用分だけ候補へ挿入する。
+4. 曲別再設計済みの譜面を旧rechart.pyで再生成しない（保護あり）。音や展開を再設計するときだけidentity_rework.pyの曲別定義をレビューして使う。定時更新は現在の譜面を入力にする。
+5. 入力との差分・元音源・verify_pack.py・verify_conversion.pyを確認。変更箇所と適用済み素材の記録を照合する。
+6. FiveSongPackTests / FiveSongPlayabilityTests / FiveSongLoadingPlayTestsを検証。開いているユーザーのUnityを閉じない。独立コピーはWindowsのパス長を避けて短い場所へ作る。
+7. export_web.py --pattern-site <既存サイト> --chart-site <既存ビューア>で対象5曲だけ反映する。対象外のハッシュ不変を必ず確認。
+8. JSON/CSV・分類ZIP・件数・スマホ表示・動画デコード/再生を確認し、同じSites IDと非公開範囲で公開する。
 
-最新の方針は「縦・交差・反転も技の一つ」であり、全体の基本形にはしない。
-曲全体を32拍周期で回転させる処理を廃止し、通常の横配置を主軸に戻した。
-58素材のうち47素材は通常配置、11素材は短い技の比較・再利用用にした。
-本編は前後の経路が成立した7箇所に短い技を使う。残る4箇所は、拍・手順・休符を保って横配置へ調整した。
-各適用記録の `spatialLayout` / `layoutAdaptation` と、スマホの「曲へ組み込んだ2小節」で差を確認できる。
-素材と本編のノーツ数、拍、時刻、色、ロング長、既存46箇所の対応を維持した。
-今回フリックを増減していない。全体・色別とも連続最大3、Easyは0。
-
-色は担当手を示す。xの正負から手を推定せず、金ノーツはcut-plan/evidenceの担当を使う。
-全曲・全難易度に同じ技を義務付けるテストを外し、通常配置が主体であることを検査する。
-基本譜面は `FiveSongs20261014/spatial_layout.py`、素材は `convert_patterns.py` の `LAYOUT` / `EXPLICIT` を参照。
-新素材も一律に回転させず、音・視認性・前後の振り・余白に応じて配置を選ぶ。
-`reflow_positions.py` は旧版用の一度限りの移行記録で、現行素材へ再実行しない。
-配置比率と候補の採否は `layout-balance-verification.json`、動作は `integration-validation.json` に記録。
-
-## 追加収集時の更新
-
-Python 3、NumPy、SciPy、FFmpegを使う。Unityルートから実行する。
-
-```text
-python Tools/ChartDesign/BeatSaberPatternBank/convert_patterns.py
-python Tools/ChartDesign/BeatSaberPatternBank/integrate_patterns.py --repo . --output <候補フォルダー>
-python Tools/ChartDesign/BeatSaberPatternBank/verify_conversion.py
-python Tools/ChartDesign/FiveSongs20261014/verify_pack.py --repo . --output <検証結果.json>
-python Tools/ChartDesign/BeatSaberPatternBank/export_web.py --pattern-site <素材サイトのチェックアウト> --chart-site <全譜面サイトのチェックアウト>
-```
-
-新素材は映像を確認し、`convert_patterns.py` の定義または原譜面データと、`LAYOUT` の画面配置を追加してから変換する。
-`integrate_patterns.py` は `applications.json` で反映済みIDを除き、未反映素材だけの候補を生成する。
-`--features <既存解析フォルダー>` で音源ハッシュ確認済みの解析を再利用できる。
-挿入に伴う直近16ノーツの密度変化で既存フリックが解除される候補は棄却し、別の位置を選ぶ。
-候補の対象JSONを検証して本体へ反映し、以降の検証とUnityの関連3テスト群を実行する。
-ユーザーのUnityが開いている場合は終了させず、短い専用パスの独立コピーで検証する。Windowsでは深い検証フォルダーが依存DLLのパス長制限に掛かるため、Assets / Packages / ProjectSettingsと必要な設計記録を短い場所へコピーし、Library/PackageCacheは読み取り元から再利用する。検証した対象譜面と本体のハッシュが一致することも確認する。
-適合する場所がない場合は無理に挿入せず、未適用理由を記録して配置を再検討する。
-`export_web.py` は素材サイトと対象5曲のスマホ用譜面を更新する。両サイトを既存の公開範囲で更新する。
-毎時の自動処理も収集・変換・適用・検証・サイト更新を対象とする。
-
-2026-10-14 に作成。初回34素材から、19時台と20時台の定期処理で各6素材を追加した。
-現在は公式12曲とカスタム2曲、計18譜面から52区間と、配置の比較解説6区間。
-各素材に観察理由、3D-Saber向けの調整案、出典と元動画の時刻を記録している。
-
-19時台はElixia / Hard（128 BPM）とBe There For You / Normal（126 BPM）から各3区間を追加。
-休符から単発へ戻る配置、2拍おきの両手打ち、片手2連から交互へ移る配置を収録した。
-既存34素材の適用ノーツを保持し、追加6素材をlogic!!!と青葉騒へ組み込んだ。
-追加・変換・適用・検証の記録は `batches/20261014-1915.json`。
-
-20時台はEscape / Normal（175 BPM）とBeat Saber / Hard（166 BPM）から各3区間を追加。
-片手打ち後の余白、両手から単発への切替、右手2打を挟む受け渡しを収録し、固有の座標を
-`EXPLICIT` に定義した。左右反転・同じ側の上下配置・縦の交互も使う。
-escapade Easy、勉強 Easy / Normal / Hard、青葉騒 Easy / Normalの6譜面へ12小節を追加。
-既存40素材と今回の挿入範囲外のノーツを保持した。記録は `batches/20261014-2021.json`。
-分類別ZIPは25MiB未満。調整して採用は2分割し、サイトのリンクとpackages/manifest.jsonに内訳を保存する。
-
-21時台は I Need You / Normal（128 BPM）と Rum n' Bass / Normal（132 BPM）から各3区間を追加。
-左手2打から右へ渡す音型、両手・片手・両手の応答、長い余白からの単発、右手2打の横移動を個別定義した。
-今回の6素材は通常配置のタップ中心。既存46素材の適用ノーツと挿入範囲外のノーツは変更していない。
-6箇所・12小節を追加し、累計52素材・104小節。記録は `batches/20261014-2125.json`。
-Rum n' Bass / Hard の候補はHTTP403で取得できず、別動画のNormalを使用した。
-
-22時台は Reason For Living / Hard（128 BPM）と Crab Rave / Normal（125 BPM）から各3区間を追加。
-半拍交互から両手で締める配置、同じ側の上下での短い応答、低い横配置の両手反復を個別に定義した。
-通常配置5素材と短い技1素材。壁・爆弾・身体の回避を本作へそのまま持ち込まず、タップへ調整した。
-Manic Sonic Easy / Hard、logic!!! Normal、勉強 Normal、青葉騒 Normal / Hardの6箇所・12小節へ適用。
-既存52素材の適用ノーツと挿入範囲外を保持し、累計58素材・116小節。記録は `batches/20261014-2227.json`。
-
-## 収録範囲
-
-| 曲 | BPM | 難易度 | 区間数 |
-| --- | --- | --- | --- |
-| Into the Dream | 183 | Normal / Hard | 8 |
-| Burning Sands | 142 | Hard | 4 |
-| Unlimited Power | 198 | Hard | 4 |
-| Lvl Insane | 160 | Expert | 4 |
-| Bring It On | 160 | Easy / Normal / Hard / Expert | 4 |
-| Shut Up and Dance | 128 | Expert+ | 4 |
-| Elixia | 128 | Hard | 3 |
-| Be There For You | 126 | Normal | 3 |
-| Escape (ft. Summer Haze) | 175 | Normal | 3 |
-| Beat Saber | 166 | Hard | 3 |
-| I Need You | 128 | Normal | 3 |
-| Rum n' Bass | 132 | Normal | 3 |
-| Reason For Living | 128 | Hard | 3 |
-| Crab Rave | 125 | Normal | 3 |
-| Cyrixの配置解説 | 未指定 | 解説 | 6 |
-
-各楽曲区間は `240 / BPM` 秒の4拍。公式44区間は音声から拍を推定したもので、楽譜上の小節頭は未確定。カスタム8区間は原譜面の4拍グリッドと原曲音声を動画へ照合した（音声の照合刻みは20ms）。いずれも30fpsで書き出しているため、映像の境界にはフレーム単位の丸めがある。解説6区間は4秒の抜粋で、小節には数えない。
-
-Bring It On は複数難易度を切り替える動画のため、素材ごとに画面の表示を確認した。前後付きの選択区間内も同じ難易度。Shut Up and Dance は終了画面の Expert+ / 894 good cuts と収録譜面のノーツ数を照合した。
-
-## 素材の使い方
-
-`collection.json` の `barFile`、`contextFile`、`poster` は閲覧サイトを基準にした相対パス。サイトから動画を個別保存でき、分類別ZIPには動画と索引を収録している。動画のGit保存先はSitesのソースリポジトリ。このUnityリポジトリには索引、変換譜面、適用記録、検証結果を置く。
-
-`sourceNotes` はカスタム譜面の小節内時刻・左右の手・列・段・原作の矢印を記録した参考データで、ゲーム用の生成済み譜面ではない。`beat` は区間先頭からの相対拍、`column` は0〜3、`row` は0〜2、`cutDirection` はBeat Saber v2形式（0上、1下、2左、3右、4左上、5右上、6左下、7右下、8任意）。
-
-分類は選択区間の移植適性の暫定評価。原作の高難度・交差・大きい動きだけを理由に悪配置とはしない。譜面全体の評価や実機プレイの快適さの保証ではない。小節を接続する際は前の振り終わりと次の開始位置も確認する。
-
-移植はタップを基本にし、各素材のフリックは0〜1個を目安とする。連結後の譜面全体、および左右それぞれのノーツ列で、フリックが10ノーツ以上連続しないことを再検証する。動画中の原作の矢印数へこの制限を適用するものではない。動画の色はカスタムの場合があるため、左右の手を基準に3D-Saberの色へ変換する。
-
-## 検証
-
-- 116本（短い動画58＋前後付き58）すべてH.264/AACで書き出し、全区間のデコードと長さを確認。初回68本と追加48本を各バッチで検証。
-- フレーム列と前後付きの画像で配置・難易度表示を確認。実機での打感は未検証。
-- モバイル幅390pxとPC幅1440pxで表示確認。初回34素材と追加24素材のブラウザ再生を確認。検索、分類/BPM絞り込み、候補保存の再読込、速度変更、前後付き切替、ダウンロードも検証。
-- ZIPのCRCと動画のSHA-256を確認。分類別ZIPはすべて25MiB未満。
-
-参考基準: [BSMG Basic Mapping](https://bsmg.wiki/mapping/basic-mapping.html)、[Intermediate Mapping](https://bsmg.wiki/mapping/intermediate-mapping.html)、[BeastSaber Curation](https://bsaber.com/curation)。素材ごとの判断は収録映像の観察メモに記載。
-
-動画・楽曲・譜面の権利は各権利者に帰属する。出典付きの短い研究用抜粋であり、自由利用素材のライセンスを付与するものではない。
+新素材のpreferredSongsとmaximumBpmDifferencePercentで、適用先とBPM差を明示できる。無理に違う曲へ埋め込まない。
+`applications.json` は素材と実際の曲・難易度・小節・時刻・ノーツを相互に結ぶ。
+既存の検証履歴は `batches/`。最新のテスト結果は `conversion-verification.json` を参照。
+物理セイバーでの通しプレイは未実施。

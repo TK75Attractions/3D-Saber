@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "allowedSongIds": ["ManicSonic", "escapade", "logic", "BenkyouRemaster", "Aobasou"],
+  "allowedDifficulties": ["easy", "normal", "hard"],
+  "explicitlyFrozen": ["Zero", "Phobia"],
+  "allOtherSongsFrozen": true,
+  "reason": "ユーザー指定。写真の5曲だけを編集・生成・サイト反映する。Zero、Phobia、RushEを含む対象外は定時更新で変更しない。",
+  "layoutPolicy": "通常の横配置を中心にし、縦・交差・反転は短いフレーズの技として使う。曲全体を回転させない。",
+  "handPolicy": "色で担当手を判定し、金はcut-plan/evidenceを使う。x座標から手を推定しない。"
+}

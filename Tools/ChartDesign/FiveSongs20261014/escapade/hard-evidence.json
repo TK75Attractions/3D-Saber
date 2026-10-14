@@ -62,8 +62,8 @@
   {
     "index": 6,
     "beat": 20.0,
-    "hand": "red",
-    "role": "裏拍の主題",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 6.330612,
     "distanceMs": -5.177,
@@ -72,8 +72,8 @@
   {
     "index": 7,
     "beat": 20.5,
-    "hand": "blue",
-    "role": "裏拍の主題",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 6.495238,
     "distanceMs": 1.554,
@@ -82,8 +82,8 @@
   {
     "index": 8,
     "beat": 21.5,
-    "hand": "red",
-    "role": "裏拍の主題",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 6.814512,
     "distanceMs": 5.039,
@@ -92,8 +92,8 @@
   {
     "index": 9,
     "beat": 22.0,
-    "hand": "blue",
-    "role": "裏拍の主題",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 6.964172,
     "distanceMs": -3.196,
@@ -101,256 +101,216 @@
   },
   {
     "index": 10,
-    "beat": 22.5,
-    "hand": "red",
-    "role": "裏拍の主題",
-    "phrase": 1,
-    "peakSeconds": 7.12381,
-    "distanceMs": -1.454,
-    "strength": 0.9099
-  },
-  {
-    "index": 11,
     "beat": 23.5,
     "hand": "blue",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 7.443084,
     "distanceMs": 2.031,
     "strength": 0.747
   },
   {
-    "index": 12,
+    "index": 11,
     "beat": 24.0,
     "hand": "red",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 7.602721,
     "distanceMs": 3.774,
     "strength": 1.1127
   },
   {
-    "index": 13,
+    "index": 12,
     "beat": 24.5,
     "hand": "blue",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 7.762358,
     "distanceMs": 5.516,
     "strength": 0.7611
   },
   {
-    "index": 14,
+    "index": 13,
     "beat": 25.5,
     "hand": "red",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 8.071655,
     "distanceMs": -0.976,
     "strength": 0.7384
   },
   {
-    "index": 15,
-    "beat": 26.0,
-    "hand": "blue",
-    "role": "裏拍の主題",
-    "phrase": 1,
-    "peakSeconds": 8.236281,
-    "distanceMs": 5.755,
-    "strength": 0.4235
-  },
-  {
-    "index": 16,
+    "index": 14,
     "beat": 26.5,
-    "hand": "red",
-    "role": "裏拍の主題",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 8.39093,
     "distanceMs": 2.509,
     "strength": 0.7393
   },
   {
-    "index": 17,
+    "index": 15,
     "beat": 27.5,
-    "hand": "blue",
-    "role": "裏拍の主題",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 8.705215,
     "distanceMs": 1.005,
     "strength": 0.7265
   },
   {
-    "index": 18,
+    "index": 16,
     "beat": 28.0,
-    "hand": "red",
-    "role": "裏拍の主題",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 8.859864,
     "distanceMs": -2.241,
     "strength": 0.4608
   },
   {
-    "index": 19,
+    "index": 17,
     "beat": 28.5,
-    "hand": "blue",
-    "role": "裏拍の主題",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 9.02449,
     "distanceMs": 4.49,
     "strength": 1.0856
   },
   {
-    "index": 20,
+    "index": 18,
     "beat": 29.5,
-    "hand": "red",
-    "role": "裏拍の主題",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 9.333787,
     "distanceMs": -2.003,
     "strength": 0.5776
   },
   {
-    "index": 21,
-    "beat": 30.0,
-    "hand": "blue",
-    "role": "裏拍の主題",
-    "phrase": 1,
-    "peakSeconds": 9.493424,
-    "distanceMs": -0.26,
-    "strength": 0.8792
-  },
-  {
-    "index": 22,
+    "index": 19,
     "beat": 30.5,
     "hand": "red",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 1,
     "peakSeconds": 9.653061,
     "distanceMs": 1.482,
     "strength": 1.0301
   },
   {
-    "index": 23,
-    "beat": 32.0,
-    "hand": "red",
-    "role": "裏拍の主題",
-    "phrase": 2,
-    "peakSeconds": 10.126984,
-    "distanceMs": 1.721,
-    "strength": 1.0165
-  },
-  {
-    "index": 24,
-    "beat": 32.0,
+    "index": 20,
+    "beat": 31.0,
     "hand": "blue",
-    "role": "裏拍の主題",
-    "phrase": 2,
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 1,
+    "peakSeconds": 9.80771,
+    "distanceMs": -1.764,
+    "strength": 0.6372
+  },
+  {
+    "index": 21,
+    "beat": 32,
+    "hand": "blue",
+    "role": "素材: 片手の反復を逆手の斜めで応答する",
+    "phrase": -1,
     "peakSeconds": 10.126984,
     "distanceMs": 1.721,
     "strength": 1.0165
   },
   {
-    "index": 25,
+    "index": 22,
+    "beat": 32.5,
+    "hand": "blue",
+    "role": "素材: 片手の反復を逆手の斜めで応答する",
+    "phrase": -1,
+    "peakSeconds": 10.276644,
+    "distanceMs": -6.514,
+    "strength": 0.668
+  },
+  {
+    "index": 23,
     "beat": 33.5,
     "hand": "red",
-    "role": "裏拍の主題",
-    "phrase": 2,
+    "role": "素材: 片手の反復を逆手の斜めで応答する",
+    "phrase": -1,
     "peakSeconds": 10.595918,
     "distanceMs": -3.029,
     "strength": 0.6847
   },
   {
-    "index": 26,
-    "beat": 34.0,
-    "hand": "blue",
-    "role": "裏拍の主題",
-    "phrase": 2,
-    "peakSeconds": 10.760544,
-    "distanceMs": 3.702,
-    "strength": 0.3675
-  },
-  {
-    "index": 27,
+    "index": 24,
     "beat": 34.5,
-    "hand": "red",
-    "role": "裏拍の主題",
-    "phrase": 2,
+    "hand": "blue",
+    "role": "素材: 片手の反復を逆手の斜めで応答する",
+    "phrase": -1,
     "peakSeconds": 10.910204,
     "distanceMs": -4.533,
     "strength": 0.7053
   },
   {
-    "index": 28,
+    "index": 25,
     "beat": 35.5,
-    "hand": "blue",
-    "role": "裏拍の主題",
-    "phrase": 2,
+    "hand": "red",
+    "role": "素材: 片手の反復を逆手の斜めで応答する",
+    "phrase": -1,
     "peakSeconds": 11.229478,
     "distanceMs": -1.048,
     "strength": 0.6393
   },
   {
-    "index": 29,
-    "beat": 36.0,
+    "index": 26,
+    "beat": 36,
     "hand": "red",
-    "role": "裏拍の主題",
-    "phrase": 2,
+    "role": "素材: 片手の反復を逆手の斜めで応答する",
+    "phrase": -1,
     "peakSeconds": 11.389116,
     "distanceMs": 0.695,
     "strength": 0.3953
   },
   {
-    "index": 30,
+    "index": 27,
     "beat": 36.5,
-    "hand": "blue",
-    "role": "裏拍の主題",
-    "phrase": 2,
+    "hand": "red",
+    "role": "素材: 片手の反復を逆手の斜めで応答する",
+    "phrase": -1,
     "peakSeconds": 11.548753,
     "distanceMs": 2.437,
     "strength": 1.0687
   },
   {
-    "index": 31,
+    "index": 28,
     "beat": 37.5,
-    "hand": "red",
-    "role": "裏拍の主題",
-    "phrase": 2,
+    "hand": "blue",
+    "role": "素材: 片手の反復を逆手の斜めで応答する",
+    "phrase": -1,
     "peakSeconds": 11.868027,
     "distanceMs": 5.922,
     "strength": 0.6273
   },
   {
-    "index": 32,
-    "beat": 38.0,
-    "hand": "blue",
-    "role": "裏拍の主題",
-    "phrase": 2,
-    "peakSeconds": 12.022676,
-    "distanceMs": 2.676,
-    "strength": 0.5483
-  },
-  {
-    "index": 33,
+    "index": 29,
     "beat": 38.5,
     "hand": "red",
-    "role": "裏拍の主題",
-    "phrase": 2,
+    "role": "素材: 片手の反復を逆手の斜めで応答する",
+    "phrase": -1,
     "peakSeconds": 12.182313,
     "distanceMs": 4.418,
     "strength": 0.7471
   },
   {
-    "index": 34,
+    "index": 30,
     "beat": 39.5,
     "hand": "blue",
-    "role": "裏拍の主題",
-    "phrase": 2,
+    "role": "素材: 片手の反復を逆手の斜めで応答する",
+    "phrase": -1,
     "peakSeconds": 12.496599,
     "distanceMs": 2.914,
     "strength": 0.6981
   },
   {
-    "index": 35,
+    "index": 31,
     "beat": 40.0,
     "hand": "red",
     "role": "裏拍の主題",
@@ -360,7 +320,7 @@
     "strength": 1.1299
   },
   {
-    "index": 36,
+    "index": 32,
     "beat": 40.5,
     "hand": "blue",
     "role": "裏拍の主題",
@@ -370,7 +330,7 @@
     "strength": 0.4978
   },
   {
-    "index": 37,
+    "index": 33,
     "beat": 41.5,
     "hand": "red",
     "role": "裏拍の主題",
@@ -380,7 +340,7 @@
     "strength": 0.7147
   },
   {
-    "index": 38,
+    "index": 34,
     "beat": 42.0,
     "hand": "blue",
     "role": "裏拍の主題",
@@ -390,7 +350,7 @@
     "strength": 0.265
   },
   {
-    "index": 39,
+    "index": 35,
     "beat": 42.5,
     "hand": "red",
     "role": "裏拍の主題",
@@ -400,7 +360,7 @@
     "strength": 0.7374
   },
   {
-    "index": 40,
+    "index": 36,
     "beat": 43.5,
     "hand": "blue",
     "role": "裏拍の主題",
@@ -410,7 +370,7 @@
     "strength": 0.6597
   },
   {
-    "index": 41,
+    "index": 37,
     "beat": 44.0,
     "hand": "red",
     "role": "裏拍の主題",
@@ -420,7 +380,7 @@
     "strength": 1.1907
   },
   {
-    "index": 42,
+    "index": 38,
     "beat": 44.5,
     "hand": "blue",
     "role": "裏拍の主題",
@@ -430,7 +390,7 @@
     "strength": 0.8556
   },
   {
-    "index": 43,
+    "index": 39,
     "beat": 45.5,
     "hand": "red",
     "role": "裏拍の主題",
@@ -440,7 +400,7 @@
     "strength": 0.5276
   },
   {
-    "index": 44,
+    "index": 40,
     "beat": 46.0,
     "hand": "blue",
     "role": "裏拍の主題",
@@ -450,7 +410,7 @@
     "strength": 0.7403
   },
   {
-    "index": 45,
+    "index": 41,
     "beat": 49.5,
     "hand": "red",
     "role": "裏拍の主題",
@@ -460,7 +420,7 @@
     "strength": 0.5604
   },
   {
-    "index": 46,
+    "index": 42,
     "beat": 50.0,
     "hand": "blue",
     "role": "裏拍の主題",
@@ -470,7 +430,7 @@
     "strength": 0.5973
   },
   {
-    "index": 47,
+    "index": 43,
     "beat": 50.5,
     "hand": "red",
     "role": "裏拍の主題",
@@ -480,7 +440,7 @@
     "strength": 0.6989
   },
   {
-    "index": 48,
+    "index": 44,
     "beat": 51.5,
     "hand": "blue",
     "role": "裏拍の主題",
@@ -490,67 +450,57 @@
     "strength": 0.5555
   },
   {
-    "index": 49,
+    "index": 45,
     "beat": 52.0,
-    "hand": "red",
-    "role": "裏拍の主題",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 3,
     "peakSeconds": 16.44263,
     "distanceMs": 1.578,
     "strength": 0.4267
   },
   {
-    "index": 50,
+    "index": 46,
     "beat": 52.5,
-    "hand": "blue",
-    "role": "裏拍の主題",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 3,
     "peakSeconds": 16.597279,
     "distanceMs": -1.668,
     "strength": 0.8827
   },
   {
-    "index": 51,
+    "index": 47,
     "beat": 53.5,
-    "hand": "red",
-    "role": "裏拍の主題",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 3,
     "peakSeconds": 16.916553,
     "distanceMs": 1.816,
     "strength": 0.6388
   },
   {
-    "index": 52,
+    "index": 48,
     "beat": 54.0,
-    "hand": "blue",
-    "role": "裏拍の主題",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 3,
     "peakSeconds": 17.07619,
     "distanceMs": 3.559,
     "strength": 0.5898
   },
   {
-    "index": 53,
-    "beat": 54.5,
-    "hand": "red",
-    "role": "裏拍の主題",
-    "phrase": 3,
-    "peakSeconds": 17.230839,
-    "distanceMs": 0.313,
-    "strength": 0.9573
-  },
-  {
-    "index": 54,
+    "index": 49,
     "beat": 55.5,
     "hand": "blue",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 3,
     "peakSeconds": 17.550113,
     "distanceMs": 3.798,
     "strength": 0.6678
   },
   {
-    "index": 55,
+    "index": 50,
     "beat": 56.0,
     "hand": "red",
     "role": "裏拍の主題",
@@ -560,7 +510,7 @@
     "strength": 0.9848
   },
   {
-    "index": 56,
+    "index": 51,
     "beat": 56.5,
     "hand": "blue",
     "role": "裏拍の主題",
@@ -570,7 +520,7 @@
     "strength": 0.6144
   },
   {
-    "index": 57,
+    "index": 52,
     "beat": 57.5,
     "hand": "red",
     "role": "裏拍の主題",
@@ -580,7 +530,7 @@
     "strength": 0.4986
   },
   {
-    "index": 58,
+    "index": 53,
     "beat": 58.0,
     "hand": "blue",
     "role": "裏拍の主題",
@@ -590,7 +540,7 @@
     "strength": 0.8299
   },
   {
-    "index": 59,
+    "index": 54,
     "beat": 58.5,
     "hand": "red",
     "role": "裏拍の主題",
@@ -600,7 +550,7 @@
     "strength": 0.6768
   },
   {
-    "index": 60,
+    "index": 55,
     "beat": 59.5,
     "hand": "blue",
     "role": "裏拍の主題",
@@ -610,237 +560,207 @@
     "strength": 0.615
   },
   {
-    "index": 61,
+    "index": 56,
     "beat": 60.0,
-    "hand": "red",
-    "role": "裏拍の主題",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 3,
     "peakSeconds": 18.966893,
     "distanceMs": -0.475,
     "strength": 0.3967
   },
   {
-    "index": 62,
+    "index": 57,
     "beat": 60.5,
-    "hand": "blue",
-    "role": "裏拍の主題",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 3,
     "peakSeconds": 19.126531,
     "distanceMs": 1.267,
     "strength": 1.0218
   },
   {
-    "index": 63,
+    "index": 58,
     "beat": 61.5,
-    "hand": "red",
-    "role": "裏拍の主題",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 3,
     "peakSeconds": 19.435828,
     "distanceMs": -5.225,
     "strength": 0.616
   },
   {
-    "index": 64,
-    "beat": 62.0,
-    "hand": "blue",
-    "role": "裏拍の主題",
-    "phrase": 3,
-    "peakSeconds": 19.600454,
-    "distanceMs": 1.506,
-    "strength": 0.9583
-  },
-  {
-    "index": 65,
+    "index": 59,
     "beat": 62.5,
     "hand": "red",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 3,
     "peakSeconds": 19.755102,
     "distanceMs": -1.74,
     "strength": 1.0107
   },
   {
-    "index": 66,
-    "beat": 64.0,
-    "hand": "red",
-    "role": "裏拍の主題",
-    "phrase": 4,
-    "peakSeconds": 20.229025,
-    "distanceMs": -1.501,
-    "strength": 0.9186
+    "index": 60,
+    "beat": 63.0,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 3,
+    "peakSeconds": 19.909751,
+    "distanceMs": -4.986,
+    "strength": 0.5418
   },
   {
-    "index": 67,
+    "index": 61,
     "beat": 64.0,
     "hand": "blue",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 20.229025,
     "distanceMs": -1.501,
     "strength": 0.9186
   },
   {
-    "index": 68,
+    "index": 62,
+    "beat": 64.5,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 4,
+    "peakSeconds": 20.393651,
+    "distanceMs": 5.23,
+    "strength": 0.7945
+  },
+  {
+    "index": 63,
     "beat": 65.5,
     "hand": "red",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 20.702948,
     "distanceMs": -1.263,
     "strength": 0.6015
   },
   {
-    "index": 69,
-    "beat": 66.0,
-    "hand": "blue",
-    "role": "裏拍の主題",
-    "phrase": 4,
-    "peakSeconds": 20.862585,
-    "distanceMs": 0.48,
-    "strength": 0.7755
-  },
-  {
-    "index": 70,
+    "index": 64,
     "beat": 66.5,
-    "hand": "red",
-    "role": "裏拍の主題",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 21.017234,
     "distanceMs": -2.766,
     "strength": 0.6587
   },
   {
-    "index": 71,
+    "index": 65,
     "beat": 67.5,
-    "hand": "blue",
-    "role": "裏拍の主題",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 21.336508,
     "distanceMs": 0.718,
     "strength": 0.4433
   },
   {
-    "index": 72,
+    "index": 66,
     "beat": 68.0,
     "hand": "red",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 21.491156,
     "distanceMs": -2.528,
     "strength": 0.4786
   },
   {
-    "index": 73,
-    "beat": 68.5,
+    "index": 67,
+    "beat": 69.0,
     "hand": "blue",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
-    "peakSeconds": 21.650794,
-    "distanceMs": -0.785,
-    "strength": 1.0514
+    "peakSeconds": 21.805442,
+    "distanceMs": -4.032,
+    "strength": 0.6634
   },
   {
-    "index": 74,
+    "index": 68,
     "beat": 69.5,
     "hand": "red",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 21.965079,
     "distanceMs": -2.289,
     "strength": 0.5388
   },
   {
-    "index": 75,
-    "beat": 70.0,
-    "hand": "blue",
-    "role": "裏拍の主題",
-    "phrase": 4,
-    "peakSeconds": 22.124717,
-    "distanceMs": -0.547,
-    "strength": 0.7792
-  },
-  {
-    "index": 76,
+    "index": 69,
     "beat": 70.5,
-    "hand": "red",
-    "role": "裏拍の主題",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 22.294331,
     "distanceMs": 11.173,
     "strength": 0.7643
   },
   {
-    "index": 77,
+    "index": 70,
     "beat": 71.5,
-    "hand": "blue",
-    "role": "裏拍の主題",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 22.598639,
     "distanceMs": -0.308,
     "strength": 0.8239
   },
   {
-    "index": 78,
+    "index": 71,
     "beat": 72.0,
     "hand": "red",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 22.758277,
     "distanceMs": 1.435,
     "strength": 0.8194
   },
   {
-    "index": 79,
+    "index": 72,
     "beat": 72.5,
-    "hand": "blue",
-    "role": "裏拍の主題",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 22.922902,
     "distanceMs": 8.166,
     "strength": 0.5347
   },
   {
-    "index": 80,
+    "index": 73,
     "beat": 73.5,
-    "hand": "red",
-    "role": "裏拍の主題",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 23.227211,
     "distanceMs": -3.315,
     "strength": 0.5993
   },
   {
-    "index": 81,
+    "index": 74,
     "beat": 74.0,
-    "hand": "blue",
-    "role": "裏拍の主題",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 23.381859,
     "distanceMs": -6.562,
     "strength": 0.7548
   },
   {
-    "index": 82,
-    "beat": 74.5,
-    "hand": "red",
-    "role": "裏拍の主題",
-    "phrase": 4,
-    "peakSeconds": 23.546485,
-    "distanceMs": 0.169,
-    "strength": 0.7706
-  },
-  {
-    "index": 83,
+    "index": 75,
     "beat": 75.5,
     "hand": "blue",
-    "role": "裏拍の主題",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 4,
     "peakSeconds": 23.860771,
     "distanceMs": -1.334,
     "strength": 0.5332
   },
   {
-    "index": 84,
+    "index": 76,
     "beat": 76.0,
     "hand": "red",
     "role": "裏拍の主題",
@@ -850,7 +770,7 @@
     "strength": 0.5728
   },
   {
-    "index": 85,
+    "index": 77,
     "beat": 76.5,
     "hand": "blue",
     "role": "裏拍の主題",
@@ -860,7 +780,7 @@
     "strength": 1.0356
   },
   {
-    "index": 86,
+    "index": 78,
     "beat": 77.5,
     "hand": "red",
     "role": "裏拍の主題",
@@ -870,7 +790,7 @@
     "strength": 0.5552
   },
   {
-    "index": 87,
+    "index": 79,
     "beat": 78.0,
     "hand": "blue",
     "role": "裏拍の主題",
@@ -880,7 +800,7 @@
     "strength": 0.7919
   },
   {
-    "index": 88,
+    "index": 80,
     "beat": 81.5,
     "hand": "red",
     "role": "主題の応答",
@@ -890,7 +810,7 @@
     "strength": 0.4054
   },
   {
-    "index": 89,
+    "index": 81,
     "beat": 82.0,
     "hand": "blue",
     "role": "主題の応答",
@@ -900,7 +820,7 @@
     "strength": 0.7634
   },
   {
-    "index": 90,
+    "index": 82,
     "beat": 82.5,
     "hand": "red",
     "role": "主題の応答",
@@ -910,7 +830,7 @@
     "strength": 0.5592
   },
   {
-    "index": 91,
+    "index": 83,
     "beat": 83.5,
     "hand": "blue",
     "role": "主題の応答",
@@ -920,357 +840,307 @@
     "strength": 0.5023
   },
   {
-    "index": 92,
+    "index": 84,
     "beat": 84.0,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
     "peakSeconds": 26.54966,
     "distanceMs": 3.344,
     "strength": 0.4757
   },
   {
-    "index": 93,
+    "index": 85,
     "beat": 84.5,
-    "hand": "blue",
-    "role": "主題の応答",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
     "peakSeconds": 26.704308,
     "distanceMs": 0.098,
     "strength": 0.8437
   },
   {
-    "index": 94,
+    "index": 86,
     "beat": 85.5,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
     "peakSeconds": 27.018594,
     "distanceMs": -1.406,
     "strength": 0.6
   },
   {
-    "index": 95,
-    "beat": 86.0,
-    "hand": "blue",
-    "role": "主題の応答",
-    "phrase": 5,
-    "peakSeconds": 27.178231,
-    "distanceMs": 0.337,
-    "strength": 0.9332
-  },
-  {
-    "index": 96,
+    "index": 87,
     "beat": 86.5,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
     "peakSeconds": 27.337868,
     "distanceMs": 2.079,
     "strength": 0.8798
   },
   {
-    "index": 97,
-    "beat": 87.5,
+    "index": 88,
+    "beat": 87.0,
     "hand": "blue",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
-    "peakSeconds": 27.657143,
-    "distanceMs": 5.564,
-    "strength": 0.9048
+    "peakSeconds": 27.492517,
+    "distanceMs": -1.167,
+    "strength": 1.0773
   },
   {
-    "index": 98,
+    "index": 89,
     "beat": 88.0,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
     "peakSeconds": 27.811791,
     "distanceMs": 2.318,
     "strength": 0.7803
   },
   {
-    "index": 99,
+    "index": 90,
     "beat": 88.5,
     "hand": "blue",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
     "peakSeconds": 27.96644,
     "distanceMs": -0.929,
     "strength": 0.69
   },
   {
-    "index": 100,
+    "index": 91,
     "beat": 89.5,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
     "peakSeconds": 28.280726,
     "distanceMs": -2.432,
     "strength": 0.4426
   },
   {
-    "index": 101,
-    "beat": 90.0,
-    "hand": "blue",
-    "role": "主題の応答",
-    "phrase": 5,
-    "peakSeconds": 28.445351,
-    "distanceMs": 4.299,
-    "strength": 0.8623
-  },
-  {
-    "index": 102,
+    "index": 92,
     "beat": 90.5,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
     "peakSeconds": 28.6,
     "distanceMs": 1.053,
     "strength": 0.5164
   },
   {
-    "index": 103,
+    "index": 93,
     "beat": 91.5,
-    "hand": "blue",
-    "role": "主題の応答",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
     "peakSeconds": 28.914286,
     "distanceMs": -0.451,
     "strength": 0.6497
   },
   {
-    "index": 104,
+    "index": 94,
     "beat": 92.0,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
     "peakSeconds": 29.068934,
     "distanceMs": -3.697,
     "strength": 0.4731
   },
   {
-    "index": 105,
-    "beat": 92.5,
+    "index": 95,
+    "beat": 93.0,
     "hand": "blue",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
-    "peakSeconds": 29.23356,
-    "distanceMs": 3.034,
-    "strength": 1.1698
+    "peakSeconds": 29.388209,
+    "distanceMs": -0.212,
+    "strength": 0.5278
   },
   {
-    "index": 106,
+    "index": 96,
     "beat": 93.5,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
     "peakSeconds": 29.547846,
     "distanceMs": 1.53,
     "strength": 0.7358
   },
   {
-    "index": 107,
-    "beat": 94.0,
-    "hand": "blue",
-    "role": "主題の応答",
-    "phrase": 5,
-    "peakSeconds": 29.702494,
-    "distanceMs": -1.716,
-    "strength": 1.0174
-  },
-  {
-    "index": 108,
+    "index": 97,
     "beat": 94.5,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 5,
     "peakSeconds": 29.86712,
     "distanceMs": 5.015,
     "strength": 1.0343
   },
   {
-    "index": 109,
+    "index": 98,
+    "beat": 95.5,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 5,
+    "peakSeconds": 30.186395,
+    "distanceMs": 8.5,
+    "strength": 0.9406
+  },
+  {
+    "index": 99,
     "beat": 96.0,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
     "peakSeconds": 30.336054,
     "distanceMs": 0.265,
     "strength": 0.9797
   },
   {
-    "index": 110,
-    "beat": 96.0,
-    "hand": "blue",
-    "role": "主題の応答",
+    "index": 100,
+    "beat": 96.5,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
-    "peakSeconds": 30.336054,
-    "distanceMs": 0.265,
-    "strength": 0.9797
+    "peakSeconds": 30.50068,
+    "distanceMs": 6.996,
+    "strength": 0.4557
   },
   {
-    "index": 111,
+    "index": 101,
     "beat": 97.5,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
     "peakSeconds": 30.809977,
     "distanceMs": 0.504,
     "strength": 0.4188
   },
   {
-    "index": 112,
+    "index": 102,
     "beat": 98.0,
-    "hand": "blue",
-    "role": "主題の応答",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
     "peakSeconds": 30.964626,
     "distanceMs": -2.743,
     "strength": 0.8632
   },
   {
-    "index": 113,
-    "beat": 98.5,
-    "hand": "red",
-    "role": "主題の応答",
-    "phrase": 6,
-    "peakSeconds": 31.119274,
-    "distanceMs": -5.989,
-    "strength": 0.7392
-  },
-  {
-    "index": 114,
+    "index": 103,
     "beat": 99.5,
     "hand": "blue",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
     "peakSeconds": 31.438549,
     "distanceMs": -2.504,
     "strength": 0.616
   },
   {
-    "index": 115,
+    "index": 104,
     "beat": 100.0,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
     "peakSeconds": 31.593197,
     "distanceMs": -5.75,
     "strength": 0.4393
   },
   {
-    "index": 116,
-    "beat": 100.5,
-    "hand": "blue",
-    "role": "主題の応答",
+    "index": 105,
+    "beat": 101.0,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
-    "peakSeconds": 31.757823,
-    "distanceMs": 0.981,
-    "strength": 1.0305
+    "peakSeconds": 31.912472,
+    "distanceMs": -2.265,
+    "strength": 0.4812
   },
   {
-    "index": 117,
+    "index": 106,
     "beat": 101.5,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
     "peakSeconds": 32.072109,
     "distanceMs": -0.523,
     "strength": 0.6538
   },
   {
-    "index": 118,
-    "beat": 102.0,
-    "hand": "blue",
-    "role": "主題の応答",
-    "phrase": 6,
-    "peakSeconds": 32.226757,
-    "distanceMs": -3.769,
-    "strength": 0.9444
-  },
-  {
-    "index": 119,
+    "index": 107,
     "beat": 102.5,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
     "peakSeconds": 32.386395,
     "distanceMs": -2.026,
     "strength": 1.0265
   },
   {
-    "index": 120,
-    "beat": 103.5,
+    "index": 108,
+    "beat": 103.0,
     "hand": "blue",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
-    "peakSeconds": 32.705669,
-    "distanceMs": 1.458,
-    "strength": 0.6333
+    "peakSeconds": 32.546032,
+    "distanceMs": -0.284,
+    "strength": 0.5433
   },
   {
-    "index": 121,
+    "index": 109,
     "beat": 104.0,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
     "peakSeconds": 32.865306,
     "distanceMs": 3.201,
     "strength": 0.8349
   },
   {
-    "index": 122,
+    "index": 110,
     "beat": 104.5,
-    "hand": "blue",
-    "role": "主題の応答",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
     "peakSeconds": 33.024943,
     "distanceMs": 4.943,
     "strength": 0.4628
   },
   {
-    "index": 123,
+    "index": 111,
     "beat": 105.5,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
     "peakSeconds": 33.33424,
     "distanceMs": -1.549,
     "strength": 0.6006
   },
   {
-    "index": 124,
-    "beat": 106.0,
-    "hand": "blue",
-    "role": "主題の応答",
-    "phrase": 6,
-    "peakSeconds": 33.493878,
-    "distanceMs": 0.193,
-    "strength": 1.0111
-  },
-  {
-    "index": 125,
+    "index": 112,
     "beat": 106.5,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
     "peakSeconds": 33.648526,
     "distanceMs": -3.053,
     "strength": 0.7089
   },
   {
-    "index": 126,
-    "beat": 107.5,
-    "hand": "blue",
-    "role": "主題の応答",
+    "index": 113,
+    "beat": 107.0,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 6,
-    "peakSeconds": 33.962812,
-    "distanceMs": -4.557,
-    "strength": 0.6785
+    "peakSeconds": 33.813152,
+    "distanceMs": 3.678,
+    "strength": 0.4647
   },
   {
-    "index": 127,
+    "index": 114,
     "beat": 108.0,
     "hand": "red",
     "role": "主題の応答",
@@ -1280,7 +1150,7 @@
     "strength": 0.5354
   },
   {
-    "index": 128,
+    "index": 115,
     "beat": 108.5,
     "hand": "blue",
     "role": "主題の応答",
@@ -1290,7 +1160,7 @@
     "strength": 1.0345
   },
   {
-    "index": 129,
+    "index": 116,
     "beat": 109.5,
     "hand": "red",
     "role": "主題の応答",
@@ -1300,7 +1170,7 @@
     "strength": 0.6227
   },
   {
-    "index": 130,
+    "index": 117,
     "beat": 110.0,
     "hand": "blue",
     "role": "主題の応答",
@@ -1310,7 +1180,7 @@
     "strength": 0.8277
   },
   {
-    "index": 131,
+    "index": 118,
     "beat": 113.5,
     "hand": "red",
     "role": "主題の応答",
@@ -1320,7 +1190,7 @@
     "strength": 0.504
   },
   {
-    "index": 132,
+    "index": 119,
     "beat": 114.0,
     "hand": "blue",
     "role": "主題の応答",
@@ -1330,7 +1200,7 @@
     "strength": 0.8398
   },
   {
-    "index": 133,
+    "index": 120,
     "beat": 114.5,
     "hand": "red",
     "role": "主題の応答",
@@ -1340,7 +1210,7 @@
     "strength": 0.5246
   },
   {
-    "index": 134,
+    "index": 121,
     "beat": 115.5,
     "hand": "blue",
     "role": "主題の応答",
@@ -1350,67 +1220,57 @@
     "strength": 0.5953
   },
   {
-    "index": 135,
+    "index": 122,
     "beat": 116.0,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 7,
     "peakSeconds": 36.651701,
     "distanceMs": 0.122,
     "strength": 0.5452
   },
   {
-    "index": 136,
+    "index": 123,
     "beat": 116.5,
-    "hand": "blue",
-    "role": "主題の応答",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 7,
     "peakSeconds": 36.806349,
     "distanceMs": -3.124,
     "strength": 0.9606
   },
   {
-    "index": 137,
+    "index": 124,
     "beat": 117.5,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 7,
     "peakSeconds": 37.125624,
     "distanceMs": 0.36,
     "strength": 0.6192
   },
   {
-    "index": 138,
-    "beat": 118.0,
-    "hand": "blue",
-    "role": "主題の応答",
-    "phrase": 7,
-    "peakSeconds": 37.280272,
-    "distanceMs": -2.886,
-    "strength": 0.8589
-  },
-  {
-    "index": 139,
+    "index": 125,
     "beat": 118.5,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 7,
     "peakSeconds": 37.439909,
     "distanceMs": -1.143,
     "strength": 0.8825
   },
   {
-    "index": 140,
-    "beat": 119.5,
+    "index": 126,
+    "beat": 119.0,
     "hand": "blue",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 7,
-    "peakSeconds": 37.764172,
-    "distanceMs": 7.33,
-    "strength": 0.6853
+    "peakSeconds": 37.599546,
+    "distanceMs": 0.599,
+    "strength": 0.7603
   },
   {
-    "index": 141,
+    "index": 127,
     "beat": 120.0,
     "hand": "red",
     "role": "主題の応答",
@@ -1420,7 +1280,7 @@
     "strength": 1.0575
   },
   {
-    "index": 142,
+    "index": 128,
     "beat": 120.5,
     "hand": "blue",
     "role": "主題の応答",
@@ -1430,7 +1290,7 @@
     "strength": 0.6004
   },
   {
-    "index": 143,
+    "index": 129,
     "beat": 121.5,
     "hand": "red",
     "role": "主題の応答",
@@ -1440,7 +1300,7 @@
     "strength": 0.4556
   },
   {
-    "index": 144,
+    "index": 130,
     "beat": 122.0,
     "hand": "blue",
     "role": "主題の応答",
@@ -1450,7 +1310,7 @@
     "strength": 1.0438
   },
   {
-    "index": 145,
+    "index": 131,
     "beat": 122.5,
     "hand": "red",
     "role": "主題の応答",
@@ -1460,7 +1320,7 @@
     "strength": 0.5638
   },
   {
-    "index": 146,
+    "index": 132,
     "beat": 123.5,
     "hand": "blue",
     "role": "主題の応答",
@@ -1470,237 +1330,207 @@
     "strength": 0.6622
   },
   {
-    "index": 147,
+    "index": 133,
     "beat": 124.0,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 7,
     "peakSeconds": 39.175964,
     "distanceMs": -1.931,
     "strength": 0.5757
   },
   {
-    "index": 148,
-    "beat": 124.5,
+    "index": 134,
+    "beat": 125.0,
     "hand": "blue",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 7,
-    "peakSeconds": 39.335601,
-    "distanceMs": -0.189,
-    "strength": 1.1069
+    "peakSeconds": 39.490249,
+    "distanceMs": -3.435,
+    "strength": 0.6237
   },
   {
-    "index": 149,
+    "index": 135,
     "beat": 125.5,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 7,
     "peakSeconds": 39.649887,
     "distanceMs": -1.692,
     "strength": 0.7422
   },
   {
-    "index": 150,
-    "beat": 126.0,
-    "hand": "blue",
-    "role": "主題の応答",
-    "phrase": 7,
-    "peakSeconds": 39.809524,
-    "distanceMs": 0.05,
-    "strength": 0.8848
-  },
-  {
-    "index": 151,
+    "index": 136,
     "beat": 126.5,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 7,
     "peakSeconds": 39.969161,
     "distanceMs": 1.793,
     "strength": 0.9349
   },
   {
-    "index": 152,
+    "index": 137,
+    "beat": 127.5,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 7,
+    "peakSeconds": 40.283447,
+    "distanceMs": 0.289,
+    "strength": 0.7302
+  },
+  {
+    "index": 138,
     "beat": 128.0,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
     "peakSeconds": 40.443084,
     "distanceMs": 2.031,
     "strength": 0.9749
   },
   {
-    "index": 153,
-    "beat": 128.0,
-    "hand": "blue",
-    "role": "主題の応答",
+    "index": 139,
+    "beat": 128.5,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
-    "peakSeconds": 40.443084,
-    "distanceMs": 2.031,
-    "strength": 0.9749
+    "peakSeconds": 40.597732,
+    "distanceMs": -1.215,
+    "strength": 0.5664
   },
   {
-    "index": 154,
+    "index": 140,
     "beat": 129.5,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
     "peakSeconds": 40.917007,
     "distanceMs": 2.27,
     "strength": 0.3296
   },
   {
-    "index": 155,
+    "index": 141,
     "beat": 130.0,
-    "hand": "blue",
-    "role": "主題の応答",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
     "peakSeconds": 41.071655,
     "distanceMs": -0.976,
     "strength": 0.7789
   },
   {
-    "index": 156,
-    "beat": 130.5,
-    "hand": "red",
-    "role": "主題の応答",
-    "phrase": 8,
-    "peakSeconds": 41.226304,
-    "distanceMs": -4.222,
-    "strength": 0.6955
-  },
-  {
-    "index": 157,
+    "index": 142,
     "beat": 131.5,
     "hand": "blue",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
     "peakSeconds": 41.545578,
     "distanceMs": -0.738,
     "strength": 0.6094
   },
   {
-    "index": 158,
+    "index": 143,
     "beat": 132.0,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
     "peakSeconds": 41.705215,
     "distanceMs": 1.005,
     "strength": 0.4679
   },
   {
-    "index": 159,
-    "beat": 132.5,
-    "hand": "blue",
-    "role": "主題の応答",
+    "index": 144,
+    "beat": 133.0,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
-    "peakSeconds": 41.859864,
-    "distanceMs": -2.241,
-    "strength": 1.1609
+    "peakSeconds": 42.014512,
+    "distanceMs": -5.488,
+    "strength": 0.7125
   },
   {
-    "index": 160,
+    "index": 145,
     "beat": 133.5,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
     "peakSeconds": 42.179138,
     "distanceMs": 1.244,
     "strength": 0.7986
   },
   {
-    "index": 161,
-    "beat": 134.0,
-    "hand": "blue",
-    "role": "主題の応答",
-    "phrase": 8,
-    "peakSeconds": 42.333787,
-    "distanceMs": -2.003,
-    "strength": 0.9649
-  },
-  {
-    "index": 162,
+    "index": 146,
     "beat": 134.5,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
     "peakSeconds": 42.503401,
     "distanceMs": 9.717,
     "strength": 0.8353
   },
   {
-    "index": 163,
-    "beat": 135.5,
+    "index": 147,
+    "beat": 135.0,
     "hand": "blue",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
-    "peakSeconds": 42.812698,
-    "distanceMs": 3.225,
-    "strength": 0.5703
+    "peakSeconds": 42.648073,
+    "distanceMs": -3.506,
+    "strength": 0.5939
   },
   {
-    "index": 164,
+    "index": 148,
     "beat": 136.0,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
     "peakSeconds": 42.972336,
     "distanceMs": 4.967,
     "strength": 0.929
   },
   {
-    "index": 165,
+    "index": 149,
     "beat": 136.5,
-    "hand": "blue",
-    "role": "主題の応答",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
     "peakSeconds": 43.121995,
     "distanceMs": -3.268,
     "strength": 0.6902
   },
   {
-    "index": 166,
+    "index": 150,
     "beat": 137.5,
     "hand": "red",
-    "role": "主題の応答",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
     "peakSeconds": 43.471202,
     "distanceMs": 30.149,
     "strength": 0.4123
   },
   {
-    "index": 167,
-    "beat": 138.0,
-    "hand": "blue",
-    "role": "主題の応答",
-    "phrase": 8,
-    "peakSeconds": 43.595918,
-    "distanceMs": -3.029,
-    "strength": 0.6766
-  },
-  {
-    "index": 168,
+    "index": 151,
     "beat": 138.5,
-    "hand": "red",
-    "role": "主題の応答",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
     "peakSeconds": 43.750567,
     "distanceMs": -6.275,
     "strength": 0.9362
   },
   {
-    "index": 169,
-    "beat": 139.5,
-    "hand": "blue",
-    "role": "主題の応答",
+    "index": 152,
+    "beat": 139.0,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 8,
-    "peakSeconds": 44.07483,
-    "distanceMs": 2.198,
-    "strength": 0.6367
+    "peakSeconds": 43.915193,
+    "distanceMs": 0.456,
+    "strength": 0.4623
   },
   {
-    "index": 170,
+    "index": 153,
     "beat": 140.0,
     "hand": "red",
     "role": "主題の応答",
@@ -1710,7 +1540,7 @@
     "strength": 0.4764
   },
   {
-    "index": 171,
+    "index": 154,
     "beat": 140.5,
     "hand": "blue",
     "role": "主題の応答",
@@ -1720,7 +1550,7 @@
     "strength": 1.374
   },
   {
-    "index": 172,
+    "index": 155,
     "beat": 141.5,
     "hand": "red",
     "role": "主題の応答",
@@ -1730,7 +1560,7 @@
     "strength": 0.6716
   },
   {
-    "index": 173,
+    "index": 156,
     "beat": 142.0,
     "hand": "blue",
     "role": "主題の応答",
@@ -1740,7 +1570,7 @@
     "strength": 0.9386
   },
   {
-    "index": 174,
+    "index": 157,
     "beat": 143.5,
     "hand": "blue",
     "role": "主題の応答",
@@ -1750,7 +1580,7 @@
     "strength": 0.7207
   },
   {
-    "index": 175,
+    "index": 158,
     "beat": 145.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -1760,7 +1590,7 @@
     "strength": 0.4805
   },
   {
-    "index": 176,
+    "index": 159,
     "beat": 146.0,
     "hand": "red",
     "role": "つなぎ",
@@ -1770,7 +1600,7 @@
     "strength": 0.3581
   },
   {
-    "index": 177,
+    "index": 160,
     "beat": 147.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -1780,87 +1610,107 @@
     "strength": 0.3155
   },
   {
-    "index": 178,
+    "index": 161,
     "beat": 148.0,
     "hand": "red",
-    "role": "つなぎ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 9,
     "peakSeconds": 46.763719,
     "distanceMs": 6.877,
     "strength": 0.3415
   },
   {
-    "index": 179,
+    "index": 162,
     "beat": 149.0,
     "hand": "blue",
-    "role": "つなぎ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 9,
     "peakSeconds": 47.078005,
     "distanceMs": 5.373,
     "strength": 0.8871
   },
   {
-    "index": 180,
-    "beat": 150.0,
+    "index": 163,
+    "beat": 149.5,
     "hand": "red",
-    "role": "つなぎ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 9,
-    "peakSeconds": 47.387302,
-    "distanceMs": -1.119,
-    "strength": 0.3434
+    "peakSeconds": 47.217687,
+    "distanceMs": -12.839,
+    "strength": 0.428
   },
   {
-    "index": 181,
-    "beat": 151.0,
+    "index": 164,
+    "beat": 150.5,
     "hand": "blue",
-    "role": "つなぎ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 9,
-    "peakSeconds": 47.686621,
-    "distanceMs": -17.589,
-    "strength": 0.4863
+    "peakSeconds": 47.546939,
+    "distanceMs": 0.623,
+    "strength": 1.1783
   },
   {
-    "index": 182,
+    "index": 165,
+    "beat": 151.5,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 9,
+    "peakSeconds": 47.861224,
+    "distanceMs": -0.881,
+    "strength": 0.9705
+  },
+  {
+    "index": 166,
     "beat": 152.0,
     "hand": "red",
-    "role": "つなぎ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 9,
     "peakSeconds": 48.02585,
     "distanceMs": 5.85,
     "strength": 0.5519
   },
   {
-    "index": 183,
-    "beat": 153.0,
-    "hand": "blue",
-    "role": "つなぎ",
+    "index": 167,
+    "beat": 152.5,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 9,
-    "peakSeconds": 48.335147,
-    "distanceMs": -0.642,
-    "strength": 0.3636
+    "peakSeconds": 48.21542,
+    "distanceMs": 37.525,
+    "strength": 0.4073
   },
   {
-    "index": 184,
+    "index": 168,
+    "beat": 153.5,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 9,
+    "peakSeconds": 48.489796,
+    "distanceMs": -3.888,
+    "strength": 0.5154
+  },
+  {
+    "index": 169,
     "beat": 154.0,
     "hand": "red",
-    "role": "つなぎ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 9,
     "peakSeconds": 48.649433,
     "distanceMs": -2.146,
     "strength": 0.3275
   },
   {
-    "index": 185,
-    "beat": 155.0,
+    "index": 170,
+    "beat": 155.5,
     "hand": "blue",
-    "role": "つなぎ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 9,
-    "peakSeconds": 48.95873,
-    "distanceMs": -8.638,
-    "strength": 0.321
+    "peakSeconds": 49.118367,
+    "distanceMs": -6.896,
+    "strength": 0.4335
   },
   {
-    "index": 186,
+    "index": 171,
     "beat": 156.0,
     "hand": "red",
     "role": "つなぎ",
@@ -1870,7 +1720,7 @@
     "strength": 0.2659
   },
   {
-    "index": 187,
+    "index": 172,
     "beat": 157.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -1880,7 +1730,7 @@
     "strength": 0.8776
   },
   {
-    "index": 188,
+    "index": 173,
     "beat": 158.0,
     "hand": "red",
     "role": "つなぎ",
@@ -1890,7 +1740,7 @@
     "strength": 0.382
   },
   {
-    "index": 189,
+    "index": 174,
     "beat": 159.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -1900,7 +1750,7 @@
     "strength": 0.3896
   },
   {
-    "index": 190,
+    "index": 175,
     "beat": 160.0,
     "hand": "red",
     "role": "表拍へ",
@@ -1910,7 +1760,7 @@
     "strength": 1.1219
   },
   {
-    "index": 191,
+    "index": 176,
     "beat": 160.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -1920,7 +1770,7 @@
     "strength": 1.1219
   },
   {
-    "index": 192,
+    "index": 177,
     "beat": 161.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -1930,7 +1780,7 @@
     "strength": 1.0152
   },
   {
-    "index": 193,
+    "index": 178,
     "beat": 162.0,
     "hand": "red",
     "role": "表拍へ",
@@ -1940,7 +1790,7 @@
     "strength": 1.0022
   },
   {
-    "index": 194,
+    "index": 179,
     "beat": 163.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -1950,7 +1800,7 @@
     "strength": 0.4243
   },
   {
-    "index": 195,
+    "index": 180,
     "beat": 163.5,
     "hand": "red",
     "role": "表拍へ",
@@ -1960,107 +1810,107 @@
     "strength": 1.0231
   },
   {
-    "index": 196,
+    "index": 181,
     "beat": 164.0,
     "hand": "blue",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 10,
     "peakSeconds": 51.812245,
     "distanceMs": 2.771,
     "strength": 0.975
   },
   {
-    "index": 197,
+    "index": 182,
     "beat": 165.0,
     "hand": "red",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 10,
     "peakSeconds": 52.126531,
     "distanceMs": 1.267,
     "strength": 1.0629
   },
   {
-    "index": 198,
-    "beat": 166.0,
+    "index": 183,
+    "beat": 165.5,
     "hand": "blue",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 10,
-    "peakSeconds": 52.440816,
-    "distanceMs": -0.236,
-    "strength": 1.0962
+    "peakSeconds": 52.261224,
+    "distanceMs": -21.933,
+    "strength": 0.373
   },
   {
-    "index": 199,
-    "beat": 167.0,
+    "index": 184,
+    "beat": 166.5,
     "hand": "red",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 10,
+    "peakSeconds": 52.580499,
+    "distanceMs": -18.449,
+    "strength": 0.4618
+  },
+  {
+    "index": 185,
+    "beat": 167.0,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 10,
     "peakSeconds": 52.72517,
     "distanceMs": -31.672,
     "strength": 0.4437
   },
   {
-    "index": 200,
-    "beat": 167.5,
-    "hand": "blue",
-    "role": "表拍へ",
-    "phrase": 10,
-    "peakSeconds": 52.914739,
-    "distanceMs": 0.002,
-    "strength": 1.0001
-  },
-  {
-    "index": 201,
+    "index": 186,
     "beat": 168.0,
-    "hand": "red",
-    "role": "表拍へ",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 10,
     "peakSeconds": 53.074376,
     "distanceMs": 1.745,
     "strength": 0.8693
   },
   {
-    "index": 202,
-    "beat": 169.0,
-    "hand": "blue",
-    "role": "表拍へ",
-    "phrase": 10,
-    "peakSeconds": 53.398639,
-    "distanceMs": 10.218,
-    "strength": 0.937
-  },
-  {
-    "index": 203,
-    "beat": 170.0,
+    "index": 187,
+    "beat": 168.5,
     "hand": "red",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 10,
-    "peakSeconds": 53.702948,
-    "distanceMs": -1.263,
-    "strength": 0.8491
+    "peakSeconds": 53.234014,
+    "distanceMs": 3.487,
+    "strength": 0.5265
   },
   {
-    "index": 204,
-    "beat": 171.0,
+    "index": 188,
+    "beat": 169.5,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 10,
+    "peakSeconds": 53.548299,
+    "distanceMs": 1.984,
+    "strength": 0.6076
+  },
+  {
+    "index": 189,
+    "beat": 170.5,
     "hand": "blue",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 10,
+    "peakSeconds": 53.887528,
+    "distanceMs": 25.423,
+    "strength": 0.5092
+  },
+  {
+    "index": 190,
+    "beat": 171.0,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 10,
     "peakSeconds": 54.062132,
     "distanceMs": 42.132,
     "strength": 0.5303
   },
   {
-    "index": 205,
-    "beat": 171.5,
-    "hand": "red",
-    "role": "表拍へ",
-    "phrase": 10,
-    "peakSeconds": 54.181859,
-    "distanceMs": 3.965,
-    "strength": 0.809
-  },
-  {
-    "index": 206,
+    "index": 191,
     "beat": 172.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -2070,7 +1920,7 @@
     "strength": 0.4768
   },
   {
-    "index": 207,
+    "index": 192,
     "beat": 173.0,
     "hand": "red",
     "role": "表拍へ",
@@ -2080,7 +1930,7 @@
     "strength": 0.5958
   },
   {
-    "index": 208,
+    "index": 193,
     "beat": 174.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -2090,7 +1940,7 @@
     "strength": 0.3943
   },
   {
-    "index": 209,
+    "index": 194,
     "beat": 177.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -2100,7 +1950,7 @@
     "strength": 0.7824
   },
   {
-    "index": 210,
+    "index": 195,
     "beat": 178.0,
     "hand": "red",
     "role": "表拍へ",
@@ -2110,7 +1960,7 @@
     "strength": 1.074
   },
   {
-    "index": 211,
+    "index": 196,
     "beat": 179.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -2120,7 +1970,7 @@
     "strength": 0.6214
   },
   {
-    "index": 212,
+    "index": 197,
     "beat": 179.5,
     "hand": "red",
     "role": "表拍へ",
@@ -2130,57 +1980,57 @@
     "strength": 0.9159
   },
   {
-    "index": 213,
+    "index": 198,
     "beat": 180.0,
     "hand": "blue",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 11,
     "peakSeconds": 56.875737,
     "distanceMs": 13.632,
     "strength": 1.4027
   },
   {
-    "index": 214,
-    "beat": 181.0,
+    "index": 199,
+    "beat": 180.5,
     "hand": "red",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 11,
-    "peakSeconds": 57.135147,
-    "distanceMs": -42.747,
-    "strength": 0.7268
+    "peakSeconds": 57.010431,
+    "distanceMs": -9.569,
+    "strength": 0.4323
   },
   {
-    "index": 215,
-    "beat": 182.0,
+    "index": 200,
+    "beat": 181.5,
     "hand": "blue",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 11,
-    "peakSeconds": 57.509297,
-    "distanceMs": 15.613,
-    "strength": 1.184
+    "peakSeconds": 57.364626,
+    "distanceMs": 28.836,
+    "strength": 0.8926
   },
   {
-    "index": 216,
-    "beat": 183.0,
+    "index": 201,
+    "beat": 182.5,
     "hand": "red",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 11,
+    "peakSeconds": 57.653968,
+    "distanceMs": 2.389,
+    "strength": 0.5669
+  },
+  {
+    "index": 202,
+    "beat": 183.0,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 11,
     "peakSeconds": 57.778685,
     "distanceMs": -30.789,
     "strength": 0.5456
   },
   {
-    "index": 217,
-    "beat": 183.5,
-    "hand": "blue",
-    "role": "表拍へ",
-    "phrase": 11,
-    "peakSeconds": 58.003175,
-    "distanceMs": 35.806,
-    "strength": 0.7052
-  },
-  {
-    "index": 218,
+    "index": 203,
     "beat": 184.0,
     "hand": "red",
     "role": "表拍へ",
@@ -2190,7 +2040,7 @@
     "strength": 1.0445
   },
   {
-    "index": 219,
+    "index": 204,
     "beat": 185.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -2200,7 +2050,7 @@
     "strength": 0.5537
   },
   {
-    "index": 220,
+    "index": 205,
     "beat": 186.0,
     "hand": "red",
     "role": "表拍へ",
@@ -2210,7 +2060,7 @@
     "strength": 1.5412
   },
   {
-    "index": 221,
+    "index": 206,
     "beat": 187.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -2220,7 +2070,7 @@
     "strength": 0.5074
   },
   {
-    "index": 222,
+    "index": 207,
     "beat": 187.5,
     "hand": "red",
     "role": "表拍へ",
@@ -2230,7 +2080,7 @@
     "strength": 0.802
   },
   {
-    "index": 223,
+    "index": 208,
     "beat": 188.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -2240,7 +2090,7 @@
     "strength": 0.9763
   },
   {
-    "index": 224,
+    "index": 209,
     "beat": 189.0,
     "hand": "red",
     "role": "表拍へ",
@@ -2250,7 +2100,7 @@
     "strength": 0.6345
   },
   {
-    "index": 225,
+    "index": 210,
     "beat": 189.5,
     "hand": "blue",
     "role": "表拍へ",
@@ -2260,7 +2110,7 @@
     "strength": 0.8982
   },
   {
-    "index": 226,
+    "index": 211,
     "beat": 190.0,
     "hand": "red",
     "role": "表拍へ",
@@ -2270,7 +2120,7 @@
     "strength": 1.1215
   },
   {
-    "index": 227,
+    "index": 212,
     "beat": 191.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -2280,167 +2130,177 @@
     "strength": 0.6418
   },
   {
-    "index": 228,
-    "beat": 192.0,
-    "hand": "red",
-    "role": "表拍へ",
-    "phrase": 12,
+    "index": 213,
+    "beat": 192,
+    "hand": "blue",
+    "role": "素材: 短い連続から斜めの受け渡しへ",
+    "phrase": -1,
     "peakSeconds": 60.652154,
     "distanceMs": 0.575,
     "strength": 0.9279
   },
   {
-    "index": 229,
-    "beat": 192.0,
-    "hand": "blue",
-    "role": "表拍へ",
-    "phrase": 12,
-    "peakSeconds": 60.652154,
-    "distanceMs": 0.575,
-    "strength": 0.9279
-  },
-  {
-    "index": 230,
-    "beat": 193.0,
+    "index": 214,
+    "beat": 192.5,
     "hand": "red",
-    "role": "表拍へ",
-    "phrase": 12,
-    "peakSeconds": 60.96644,
-    "distanceMs": -0.929,
-    "strength": 1.4035
+    "role": "素材: 短い連続から斜めの受け渡しへ",
+    "phrase": -1,
+    "peakSeconds": 60.851701,
+    "distanceMs": 42.227,
+    "strength": 0.3742
   },
   {
-    "index": 231,
-    "beat": 194.0,
+    "index": 215,
+    "beat": 193.5,
+    "hand": "red",
+    "role": "素材: 短い連続から斜めの受け渡しへ",
+    "phrase": -1,
+    "peakSeconds": 61.165986,
+    "distanceMs": 40.723,
+    "strength": 0.2703
+  },
+  {
+    "index": 216,
+    "beat": 194,
     "hand": "blue",
-    "role": "表拍へ",
-    "phrase": 12,
+    "role": "素材: 短い連続から斜めの受け渡しへ",
+    "phrase": -1,
     "peakSeconds": 61.275737,
     "distanceMs": -7.421,
     "strength": 1.2628
   },
   {
-    "index": 232,
-    "beat": 195.0,
+    "index": 217,
+    "beat": 195,
     "hand": "red",
-    "role": "表拍へ",
-    "phrase": 12,
+    "role": "素材: 短い連続から斜めの受け渡しへ",
+    "phrase": -1,
     "peakSeconds": 61.590023,
     "distanceMs": -8.925,
     "strength": 0.4311
   },
   {
-    "index": 233,
+    "index": 218,
     "beat": 195.5,
     "hand": "blue",
-    "role": "表拍へ",
-    "phrase": 12,
+    "role": "素材: 短い連続から斜めの受け渡しへ",
+    "phrase": -1,
     "peakSeconds": 61.714739,
     "distanceMs": -42.103,
     "strength": 0.9674
   },
   {
-    "index": 234,
-    "beat": 196.0,
+    "index": 219,
+    "beat": 196,
     "hand": "red",
-    "role": "表拍へ",
-    "phrase": 12,
+    "role": "素材: 短い連続から斜めの受け渡しへ",
+    "phrase": -1,
     "peakSeconds": 61.909297,
     "distanceMs": -5.44,
     "strength": 1.0673
   },
   {
-    "index": 235,
-    "beat": 197.0,
+    "index": 220,
+    "beat": 196.5,
     "hand": "blue",
-    "role": "表拍へ",
-    "phrase": 12,
-    "peakSeconds": 62.228571,
-    "distanceMs": -1.955,
-    "strength": 1.0799
+    "role": "素材: 短い連続から斜めの受け渡しへ",
+    "phrase": -1,
+    "peakSeconds": 62.113832,
+    "distanceMs": 41.201,
+    "strength": 0.3685
   },
   {
-    "index": 236,
-    "beat": 198.0,
+    "index": 221,
+    "beat": 197.5,
+    "hand": "blue",
+    "role": "素材: 短い連続から斜めの受け渡しへ",
+    "phrase": -1,
+    "peakSeconds": 62.433107,
+    "distanceMs": 44.686,
+    "strength": 0.4685
+  },
+  {
+    "index": 222,
+    "beat": 198,
     "hand": "red",
-    "role": "表拍へ",
-    "phrase": 12,
+    "role": "素材: 短い連続から斜めの受け渡しへ",
+    "phrase": -1,
     "peakSeconds": 62.542857,
     "distanceMs": -3.459,
     "strength": 1.4986
   },
   {
-    "index": 237,
-    "beat": 199.0,
+    "index": 223,
+    "beat": 199,
     "hand": "blue",
-    "role": "表拍へ",
-    "phrase": 12,
+    "role": "素材: 短い連続から斜めの受け渡しへ",
+    "phrase": -1,
     "peakSeconds": 62.817234,
     "distanceMs": -44.872,
     "strength": 0.342
   },
   {
-    "index": 238,
+    "index": 224,
     "beat": 199.5,
     "hand": "red",
-    "role": "表拍へ",
-    "phrase": 12,
+    "role": "素材: 短い連続から斜めの受け渡しへ",
+    "phrase": -1,
     "peakSeconds": 62.976871,
     "distanceMs": -43.129,
     "strength": 0.8652
   },
   {
-    "index": 239,
+    "index": 225,
     "beat": 200.0,
     "hand": "blue",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 12,
     "peakSeconds": 63.176417,
     "distanceMs": -1.478,
     "strength": 0.8867
   },
   {
-    "index": 240,
-    "beat": 201.0,
+    "index": 226,
+    "beat": 200.5,
     "hand": "red",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 12,
-    "peakSeconds": 63.490703,
-    "distanceMs": -2.981,
-    "strength": 1.2281
+    "peakSeconds": 63.375964,
+    "distanceMs": 40.174,
+    "strength": 0.4106
   },
   {
-    "index": 241,
-    "beat": 202.0,
+    "index": 227,
+    "beat": 201.5,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 12,
+    "peakSeconds": 63.695238,
+    "distanceMs": 43.659,
+    "strength": 0.3229
+  },
+  {
+    "index": 228,
+    "beat": 202.5,
     "hand": "blue",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 12,
-    "peakSeconds": 63.804989,
-    "distanceMs": -4.485,
-    "strength": 1.4099
+    "peakSeconds": 64.009524,
+    "distanceMs": 42.155,
+    "strength": 0.6672
   },
   {
-    "index": 242,
+    "index": 229,
     "beat": 203.0,
     "hand": "red",
-    "role": "表拍へ",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 12,
     "peakSeconds": 64.119274,
     "distanceMs": -5.989,
     "strength": 0.4889
   },
   {
-    "index": 243,
-    "beat": 203.5,
-    "hand": "blue",
-    "role": "表拍へ",
-    "phrase": 12,
-    "peakSeconds": 64.239002,
-    "distanceMs": -44.156,
-    "strength": 0.7651
-  },
-  {
-    "index": 244,
+    "index": 230,
     "beat": 204.0,
     "hand": "red",
     "role": "表拍へ",
@@ -2450,7 +2310,7 @@
     "strength": 1.3124
   },
   {
-    "index": 245,
+    "index": 231,
     "beat": 205.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -2460,7 +2320,7 @@
     "strength": 1.4634
   },
   {
-    "index": 246,
+    "index": 232,
     "beat": 205.5,
     "hand": "red",
     "role": "表拍へ",
@@ -2470,7 +2330,7 @@
     "strength": 1.3293
   },
   {
-    "index": 247,
+    "index": 233,
     "beat": 206.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -2480,7 +2340,7 @@
     "strength": 1.4182
   },
   {
-    "index": 248,
+    "index": 234,
     "beat": 207.0,
     "hand": "blue",
     "role": "表拍へ",
@@ -2490,7 +2350,7 @@
     "strength": 1.4823
   },
   {
-    "index": 249,
+    "index": 235,
     "beat": 209.0,
     "hand": "red",
     "role": "シンコペーション",
@@ -2500,7 +2360,7 @@
     "strength": 1.6637
   },
   {
-    "index": 250,
+    "index": 236,
     "beat": 209.5,
     "hand": "blue",
     "role": "シンコペーション",
@@ -2510,7 +2370,7 @@
     "strength": 1.8367
   },
   {
-    "index": 251,
+    "index": 237,
     "beat": 210.5,
     "hand": "red",
     "role": "シンコペーション",
@@ -2520,7 +2380,7 @@
     "strength": 1.2675
   },
   {
-    "index": 252,
+    "index": 238,
     "beat": 211.0,
     "hand": "blue",
     "role": "シンコペーション",
@@ -2530,7 +2390,7 @@
     "strength": 2.2571
   },
   {
-    "index": 253,
+    "index": 239,
     "beat": 212.0,
     "hand": "blue",
     "role": "素材: 交互の中で手を切り替える",
@@ -2540,7 +2400,7 @@
     "strength": 1.6392
   },
   {
-    "index": 254,
+    "index": 240,
     "beat": 212.5,
     "hand": "red",
     "role": "素材: 交互の中で手を切り替える",
@@ -2550,7 +2410,7 @@
     "strength": 0.3771
   },
   {
-    "index": 255,
+    "index": 241,
     "beat": 213.0,
     "hand": "blue",
     "role": "素材: 交互の中で手を切り替える",
@@ -2560,7 +2420,7 @@
     "strength": 1.6086
   },
   {
-    "index": 256,
+    "index": 242,
     "beat": 214.0,
     "hand": "blue",
     "role": "素材: 交互の中で手を切り替える",
@@ -2570,7 +2430,7 @@
     "strength": 0.5559
   },
   {
-    "index": 257,
+    "index": 243,
     "beat": 215.0,
     "hand": "red",
     "role": "素材: 交互の中で手を切り替える",
@@ -2580,7 +2440,7 @@
     "strength": 1.6659
   },
   {
-    "index": 258,
+    "index": 244,
     "beat": 216.0,
     "hand": "red",
     "role": "素材: 交互の中で手を切り替える",
@@ -2590,7 +2450,7 @@
     "strength": 1.589
   },
   {
-    "index": 259,
+    "index": 245,
     "beat": 216.5,
     "hand": "blue",
     "role": "素材: 交互の中で手を切り替える",
@@ -2600,7 +2460,7 @@
     "strength": 0.3208
   },
   {
-    "index": 260,
+    "index": 246,
     "beat": 217.0,
     "hand": "red",
     "role": "素材: 交互の中で手を切り替える",
@@ -2610,7 +2470,7 @@
     "strength": 1.6311
   },
   {
-    "index": 261,
+    "index": 247,
     "beat": 218.0,
     "hand": "red",
     "role": "素材: 交互の中で手を切り替える",
@@ -2620,7 +2480,7 @@
     "strength": 0.6189
   },
   {
-    "index": 262,
+    "index": 248,
     "beat": 219.0,
     "hand": "blue",
     "role": "素材: 交互の中で手を切り替える",
@@ -2630,57 +2490,57 @@
     "strength": 1.7032
   },
   {
-    "index": 263,
+    "index": 249,
     "beat": 220.0,
-    "hand": "red",
-    "role": "シンコペーション",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 13,
     "peakSeconds": 69.492063,
     "distanceMs": -1.621,
     "strength": 1.9561
   },
   {
-    "index": 264,
-    "beat": 221.0,
-    "hand": "blue",
-    "role": "シンコペーション",
+    "index": 250,
+    "beat": 220.5,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 13,
-    "peakSeconds": 69.806349,
-    "distanceMs": -3.124,
-    "strength": 1.5463
+    "peakSeconds": 69.69161,
+    "distanceMs": 40.031,
+    "strength": 0.3247
   },
   {
-    "index": 265,
+    "index": 251,
     "beat": 221.5,
-    "hand": "red",
-    "role": "シンコペーション",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 13,
     "peakSeconds": 69.965986,
     "distanceMs": -1.382,
     "strength": 1.3689
   },
   {
-    "index": 266,
+    "index": 252,
     "beat": 222.5,
-    "hand": "blue",
-    "role": "シンコペーション",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 13,
     "peakSeconds": 70.280272,
     "distanceMs": -2.886,
     "strength": 1.399
   },
   {
-    "index": 267,
+    "index": 253,
     "beat": 223.0,
-    "hand": "red",
-    "role": "シンコペーション",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 13,
     "peakSeconds": 70.439909,
     "distanceMs": -1.143,
     "strength": 1.9582
   },
   {
-    "index": 268,
+    "index": 254,
     "beat": 224.0,
     "hand": "blue",
     "role": "素材: 短時間の同方向リセット",
@@ -2690,7 +2550,7 @@
     "strength": 1.0616
   },
   {
-    "index": 269,
+    "index": 255,
     "beat": 224.5,
     "hand": "red",
     "role": "素材: 短時間の同方向リセット",
@@ -2700,7 +2560,7 @@
     "strength": 0.4748
   },
   {
-    "index": 270,
+    "index": 256,
     "beat": 225.0,
     "hand": "blue",
     "role": "素材: 短時間の同方向リセット",
@@ -2710,7 +2570,7 @@
     "strength": 1.6215
   },
   {
-    "index": 271,
+    "index": 257,
     "beat": 226.0,
     "hand": "red",
     "role": "素材: 短時間の同方向リセット",
@@ -2720,7 +2580,7 @@
     "strength": 0.5202
   },
   {
-    "index": 272,
+    "index": 258,
     "beat": 226.5,
     "hand": "blue",
     "role": "素材: 短時間の同方向リセット",
@@ -2730,7 +2590,7 @@
     "strength": 1.4669
   },
   {
-    "index": 273,
+    "index": 259,
     "beat": 227.0,
     "hand": "red",
     "role": "素材: 短時間の同方向リセット",
@@ -2740,7 +2600,7 @@
     "strength": 1.8848
   },
   {
-    "index": 274,
+    "index": 260,
     "beat": 228.0,
     "hand": "red",
     "role": "素材: 短時間の同方向リセット",
@@ -2750,7 +2610,7 @@
     "strength": 1.5132
   },
   {
-    "index": 275,
+    "index": 261,
     "beat": 228.5,
     "hand": "blue",
     "role": "素材: 短時間の同方向リセット",
@@ -2760,7 +2620,7 @@
     "strength": 0.5647
   },
   {
-    "index": 276,
+    "index": 262,
     "beat": 229.0,
     "hand": "red",
     "role": "素材: 短時間の同方向リセット",
@@ -2770,7 +2630,7 @@
     "strength": 1.4407
   },
   {
-    "index": 277,
+    "index": 263,
     "beat": 230.0,
     "hand": "blue",
     "role": "素材: 短時間の同方向リセット",
@@ -2780,7 +2640,7 @@
     "strength": 0.4183
   },
   {
-    "index": 278,
+    "index": 264,
     "beat": 230.5,
     "hand": "red",
     "role": "素材: 短時間の同方向リセット",
@@ -2790,7 +2650,7 @@
     "strength": 1.7869
   },
   {
-    "index": 279,
+    "index": 265,
     "beat": 231.0,
     "hand": "blue",
     "role": "素材: 短時間の同方向リセット",
@@ -2800,57 +2660,57 @@
     "strength": 1.6044
   },
   {
-    "index": 280,
+    "index": 266,
     "beat": 232.0,
-    "hand": "blue",
-    "role": "シンコペーション",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 14,
     "peakSeconds": 73.283447,
     "distanceMs": 0.289,
     "strength": 1.415
   },
   {
-    "index": 281,
-    "beat": 233.0,
+    "index": 267,
+    "beat": 232.5,
     "hand": "red",
-    "role": "シンコペーション",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 14,
-    "peakSeconds": 73.597732,
-    "distanceMs": -1.215,
-    "strength": 1.384
+    "peakSeconds": 73.443084,
+    "distanceMs": 2.031,
+    "strength": 0.6934
   },
   {
-    "index": 282,
+    "index": 268,
     "beat": 233.5,
     "hand": "blue",
-    "role": "シンコペーション",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 14,
     "peakSeconds": 73.75737,
     "distanceMs": 0.528,
     "strength": 1.9787
   },
   {
-    "index": 283,
-    "beat": 234.5,
+    "index": 269,
+    "beat": 234.0,
     "hand": "red",
-    "role": "シンコペーション",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 14,
-    "peakSeconds": 74.071655,
-    "distanceMs": -0.976,
-    "strength": 1.5287
+    "peakSeconds": 73.936961,
+    "distanceMs": 22.225,
+    "strength": 0.68
   },
   {
-    "index": 284,
-    "beat": 235.0,
+    "index": 270,
+    "beat": 235.5,
     "hand": "blue",
-    "role": "シンコペーション",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 14,
-    "peakSeconds": 74.231293,
-    "distanceMs": 0.766,
-    "strength": 1.5729
+    "peakSeconds": 74.385941,
+    "distanceMs": -2.48,
+    "strength": 0.6221
   },
   {
-    "index": 285,
+    "index": 271,
     "beat": 236.0,
     "hand": "red",
     "role": "シンコペーション",
@@ -2860,7 +2720,7 @@
     "strength": 1.8997
   },
   {
-    "index": 286,
+    "index": 272,
     "beat": 237.0,
     "hand": "blue",
     "role": "シンコペーション",
@@ -2870,7 +2730,7 @@
     "strength": 1.452
   },
   {
-    "index": 287,
+    "index": 273,
     "beat": 237.5,
     "hand": "red",
     "role": "シンコペーション",
@@ -2880,7 +2740,7 @@
     "strength": 1.7482
   },
   {
-    "index": 288,
+    "index": 274,
     "beat": 238.5,
     "hand": "blue",
     "role": "シンコペーション",
@@ -2890,7 +2750,7 @@
     "strength": 0.8099
   },
   {
-    "index": 289,
+    "index": 275,
     "beat": 240.0,
     "hand": "blue",
     "role": "間奏",
@@ -2900,7 +2760,7 @@
     "strength": 0.8363
   },
   {
-    "index": 290,
+    "index": 276,
     "beat": 241.0,
     "hand": "red",
     "role": "間奏",
@@ -2910,7 +2770,7 @@
     "strength": 0.6435
   },
   {
-    "index": 291,
+    "index": 277,
     "beat": 242.0,
     "hand": "blue",
     "role": "間奏",
@@ -2920,7 +2780,7 @@
     "strength": 0.4793
   },
   {
-    "index": 292,
+    "index": 278,
     "beat": 243.0,
     "hand": "red",
     "role": "間奏",
@@ -2930,247 +2790,307 @@
     "strength": 0.4705
   },
   {
-    "index": 293,
+    "index": 279,
     "beat": 244.0,
     "hand": "blue",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 15,
     "peakSeconds": 77.044898,
     "distanceMs": -27.734,
     "strength": 0.443
   },
   {
-    "index": 294,
-    "beat": 245.0,
+    "index": 280,
+    "beat": 244.5,
     "hand": "red",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 15,
-    "peakSeconds": 77.40907,
-    "distanceMs": 20.649,
-    "strength": 0.3794
+    "peakSeconds": 77.229478,
+    "distanceMs": -1.048,
+    "strength": 0.5635
   },
   {
-    "index": 295,
-    "beat": 246.0,
+    "index": 281,
+    "beat": 245.5,
     "hand": "blue",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 15,
-    "peakSeconds": 77.748299,
-    "distanceMs": 44.089,
-    "strength": 0.4357
+    "peakSeconds": 77.548753,
+    "distanceMs": 2.437,
+    "strength": 0.3557
   },
   {
-    "index": 296,
-    "beat": 247.0,
+    "index": 282,
+    "beat": 246.5,
     "hand": "red",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 15,
+    "peakSeconds": 77.85805,
+    "distanceMs": -4.055,
+    "strength": 0.3378
+  },
+  {
+    "index": 283,
+    "beat": 247.0,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 15,
     "peakSeconds": 78.04263,
     "distanceMs": 22.63,
     "strength": 0.4307
   },
   {
-    "index": 297,
+    "index": 284,
     "beat": 248.0,
     "hand": "blue",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 15,
     "peakSeconds": 78.326984,
     "distanceMs": -8.805,
     "strength": 0.44
   },
   {
-    "index": 298,
-    "beat": 249.0,
-    "hand": "red",
-    "role": "間奏",
-    "phrase": 15,
-    "peakSeconds": 78.646259,
-    "distanceMs": -5.32,
-    "strength": 0.3474
-  },
-  {
-    "index": 299,
-    "beat": 250.0,
+    "index": 285,
+    "beat": 248.5,
     "hand": "blue",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 15,
-    "peakSeconds": 78.960544,
-    "distanceMs": -6.824,
-    "strength": 0.4974
+    "peakSeconds": 78.496599,
+    "distanceMs": 2.914,
+    "strength": 0.5653
   },
   {
-    "index": 300,
-    "beat": 251.0,
+    "index": 286,
+    "beat": 249.5,
     "hand": "red",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 15,
-    "peakSeconds": 79.279819,
-    "distanceMs": -3.339,
-    "strength": 0.5395
+    "peakSeconds": 78.850794,
+    "distanceMs": 41.32,
+    "strength": 0.3471
   },
   {
-    "index": 301,
+    "index": 287,
+    "beat": 250.5,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 15,
+    "peakSeconds": 79.085261,
+    "distanceMs": -40.002,
+    "strength": 0.3086
+  },
+  {
+    "index": 288,
+    "beat": 251.5,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 15,
+    "peakSeconds": 79.474376,
+    "distanceMs": 33.324,
+    "strength": 0.2838
+  },
+  {
+    "index": 289,
     "beat": 252.0,
-    "hand": "blue",
-    "role": "間奏",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 15,
     "peakSeconds": 79.594104,
     "distanceMs": -4.843,
     "strength": 0.4142
   },
   {
-    "index": 302,
+    "index": 290,
     "beat": 253.0,
-    "hand": "red",
-    "role": "間奏",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 15,
     "peakSeconds": 79.913379,
     "distanceMs": -1.358,
     "strength": 0.3895
   },
   {
-    "index": 303,
-    "beat": 254.0,
-    "hand": "blue",
-    "role": "間奏",
-    "phrase": 15,
-    "peakSeconds": 80.227664,
-    "distanceMs": -2.862,
-    "strength": 0.4326
-  },
-  {
-    "index": 304,
-    "beat": 255.0,
+    "index": 291,
+    "beat": 253.5,
     "hand": "red",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 15,
-    "peakSeconds": 80.54195,
-    "distanceMs": -4.366,
-    "strength": 0.5306
+    "peakSeconds": 80.063039,
+    "distanceMs": -9.593,
+    "strength": 0.3366
   },
   {
-    "index": 305,
-    "beat": 256.0,
+    "index": 292,
+    "beat": 254.5,
     "hand": "blue",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 15,
+    "peakSeconds": 80.382313,
+    "distanceMs": -6.108,
+    "strength": 0.3153
+  },
+  {
+    "index": 293,
+    "beat": 255.5,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 15,
+    "peakSeconds": 80.701587,
+    "distanceMs": -2.623,
+    "strength": 0.4371
+  },
+  {
+    "index": 294,
+    "beat": 256.0,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 16,
     "peakSeconds": 80.856236,
     "distanceMs": -5.869,
     "strength": 0.7217
   },
   {
-    "index": 306,
-    "beat": 257.0,
+    "index": 295,
+    "beat": 256.5,
     "hand": "red",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 16,
-    "peakSeconds": 81.170522,
-    "distanceMs": -7.373,
-    "strength": 0.2843
+    "peakSeconds": 81.020862,
+    "distanceMs": 0.862,
+    "strength": 0.5573
   },
   {
-    "index": 307,
-    "beat": 258.0,
+    "index": 296,
+    "beat": 257.5,
     "hand": "blue",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 16,
+    "peakSeconds": 81.330159,
+    "distanceMs": -5.631,
+    "strength": 0.3475
+  },
+  {
+    "index": 297,
+    "beat": 258.0,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 16,
     "peakSeconds": 81.494785,
     "distanceMs": 1.1,
     "strength": 0.4747
   },
   {
-    "index": 308,
-    "beat": 259.0,
-    "hand": "red",
-    "role": "間奏",
+    "index": 298,
+    "beat": 259.5,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 16,
-    "peakSeconds": 81.804082,
-    "distanceMs": -5.392,
-    "strength": 0.5519
+    "peakSeconds": 81.963719,
+    "distanceMs": -3.65,
+    "strength": 0.4028
   },
   {
-    "index": 309,
+    "index": 299,
     "beat": 260.0,
     "hand": "blue",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 16,
     "peakSeconds": 82.123356,
     "distanceMs": -1.907,
     "strength": 0.4738
   },
   {
-    "index": 310,
+    "index": 300,
     "beat": 261.0,
     "hand": "red",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 16,
     "peakSeconds": 82.432653,
     "distanceMs": -8.4,
     "strength": 0.2668
   },
   {
-    "index": 311,
-    "beat": 262.0,
+    "index": 301,
+    "beat": 261.5,
     "hand": "blue",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 16,
-    "peakSeconds": 82.751927,
-    "distanceMs": -4.915,
-    "strength": 0.4023
+    "peakSeconds": 82.597279,
+    "distanceMs": -1.668,
+    "strength": 0.3784
   },
   {
-    "index": 312,
-    "beat": 263.0,
+    "index": 302,
+    "beat": 262.5,
     "hand": "red",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 16,
+    "peakSeconds": 82.906576,
+    "distanceMs": -8.161,
+    "strength": 0.262
+  },
+  {
+    "index": 303,
+    "beat": 263.0,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 16,
     "peakSeconds": 83.071202,
     "distanceMs": -1.43,
     "strength": 0.3706
   },
   {
-    "index": 313,
+    "index": 304,
     "beat": 264.0,
     "hand": "blue",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 16,
     "peakSeconds": 83.385488,
     "distanceMs": -2.934,
     "strength": 0.3255
   },
   {
-    "index": 314,
-    "beat": 265.0,
+    "index": 305,
+    "beat": 264.5,
     "hand": "red",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 16,
-    "peakSeconds": 83.704762,
-    "distanceMs": 0.551,
-    "strength": 0.3391
+    "peakSeconds": 83.540136,
+    "distanceMs": -6.18,
+    "strength": 0.6419
   },
   {
-    "index": 315,
-    "beat": 266.0,
+    "index": 306,
+    "beat": 265.5,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 16,
+    "peakSeconds": 83.85941,
+    "distanceMs": -2.695,
+    "strength": 0.303
+  },
+  {
+    "index": 307,
+    "beat": 266.5,
     "hand": "blue",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 16,
-    "peakSeconds": 84.014059,
-    "distanceMs": -5.941,
-    "strength": 0.3567
+    "peakSeconds": 84.168707,
+    "distanceMs": -9.187,
+    "strength": 0.3474
   },
   {
-    "index": 316,
+    "index": 308,
     "beat": 267.0,
     "hand": "red",
-    "role": "間奏",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 16,
     "peakSeconds": 84.328345,
     "distanceMs": -7.445,
     "strength": 0.5081
   },
   {
-    "index": 317,
+    "index": 309,
     "beat": 268.0,
     "hand": "blue",
     "role": "間奏",
@@ -3180,7 +3100,7 @@
     "strength": 0.3767
   },
   {
-    "index": 318,
+    "index": 310,
     "beat": 269.0,
     "hand": "red",
     "role": "間奏",
@@ -3190,7 +3110,7 @@
     "strength": 0.3177
   },
   {
-    "index": 319,
+    "index": 311,
     "beat": 270.0,
     "hand": "blue",
     "role": "間奏",
@@ -3200,7 +3120,7 @@
     "strength": 0.37
   },
   {
-    "index": 320,
+    "index": 312,
     "beat": 273.5,
     "hand": "blue",
     "role": "主題の回帰",
@@ -3210,7 +3130,7 @@
     "strength": 0.4537
   },
   {
-    "index": 321,
+    "index": 313,
     "beat": 274.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -3220,7 +3140,7 @@
     "strength": 0.7288
   },
   {
-    "index": 322,
+    "index": 314,
     "beat": 274.5,
     "hand": "blue",
     "role": "主題の回帰",
@@ -3230,7 +3150,7 @@
     "strength": 0.5823
   },
   {
-    "index": 323,
+    "index": 315,
     "beat": 275.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -3240,177 +3160,157 @@
     "strength": 0.5926
   },
   {
-    "index": 324,
+    "index": 316,
     "beat": 276.0,
-    "hand": "blue",
-    "role": "主題の回帰",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
     "peakSeconds": 87.171882,
     "distanceMs": -6.013,
     "strength": 0.4026
   },
   {
-    "index": 325,
-    "beat": 276.5,
-    "hand": "red",
-    "role": "主題の回帰",
+    "index": 317,
+    "beat": 277.0,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
-    "peakSeconds": 87.336508,
-    "distanceMs": 0.718,
-    "strength": 1.2176
+    "peakSeconds": 87.47619,
+    "distanceMs": -17.494,
+    "strength": 0.4819
   },
   {
-    "index": 326,
+    "index": 318,
     "beat": 277.5,
-    "hand": "blue",
-    "role": "主題の回帰",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
     "peakSeconds": 87.655782,
     "distanceMs": 4.203,
     "strength": 0.8139
   },
   {
-    "index": 327,
-    "beat": 278.0,
-    "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 17,
-    "peakSeconds": 87.810431,
-    "distanceMs": 0.957,
-    "strength": 0.8548
-  },
-  {
-    "index": 328,
+    "index": 319,
     "beat": 278.5,
     "hand": "blue",
-    "role": "主題の回帰",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
     "peakSeconds": 87.965079,
     "distanceMs": -2.289,
     "strength": 1.1063
   },
   {
-    "index": 329,
+    "index": 320,
     "beat": 279.5,
     "hand": "red",
-    "role": "主題の回帰",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
     "peakSeconds": 88.244444,
     "distanceMs": -38.713,
     "strength": 0.5574
   },
   {
-    "index": 330,
+    "index": 321,
     "beat": 280.0,
-    "hand": "blue",
-    "role": "主題の回帰",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
     "peakSeconds": 88.443991,
     "distanceMs": 2.938,
     "strength": 1.0912
   },
   {
-    "index": 331,
+    "index": 322,
     "beat": 280.5,
     "hand": "red",
-    "role": "主題の回帰",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
     "peakSeconds": 88.603628,
     "distanceMs": 4.681,
     "strength": 0.5471
   },
   {
-    "index": 332,
+    "index": 323,
     "beat": 281.5,
     "hand": "blue",
-    "role": "主題の回帰",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
     "peakSeconds": 88.912925,
     "distanceMs": -1.812,
     "strength": 0.7003
   },
   {
-    "index": 333,
+    "index": 324,
     "beat": 282.0,
     "hand": "red",
-    "role": "主題の回帰",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
     "peakSeconds": 89.072562,
     "distanceMs": -0.069,
     "strength": 0.764
   },
   {
-    "index": 334,
-    "beat": 282.5,
-    "hand": "blue",
-    "role": "主題の回帰",
-    "phrase": 17,
-    "peakSeconds": 89.227211,
-    "distanceMs": -3.315,
-    "strength": 0.6327
-  },
-  {
-    "index": 335,
+    "index": 325,
     "beat": 283.5,
-    "hand": "red",
-    "role": "主題の回帰",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
     "peakSeconds": 89.541497,
     "distanceMs": -4.819,
     "strength": 0.6497
   },
   {
-    "index": 336,
+    "index": 326,
     "beat": 284.0,
     "hand": "blue",
-    "role": "主題の回帰",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
     "peakSeconds": 89.701134,
     "distanceMs": -3.077,
     "strength": 0.3788
   },
   {
-    "index": 337,
-    "beat": 284.5,
+    "index": 327,
+    "beat": 285.0,
     "hand": "red",
-    "role": "主題の回帰",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
-    "peakSeconds": 89.86576,
-    "distanceMs": 3.654,
-    "strength": 1.2229
+    "peakSeconds": 90.01542,
+    "distanceMs": -4.58,
+    "strength": 0.5034
   },
   {
-    "index": 338,
+    "index": 328,
     "beat": 285.5,
     "hand": "blue",
-    "role": "主題の回帰",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
     "peakSeconds": 90.180045,
     "distanceMs": 2.151,
     "strength": 0.8319
   },
   {
-    "index": 339,
-    "beat": 286.0,
-    "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 17,
-    "peakSeconds": 90.334694,
-    "distanceMs": -1.096,
-    "strength": 0.9653
-  },
-  {
-    "index": 340,
+    "index": 329,
     "beat": 286.5,
-    "hand": "blue",
-    "role": "主題の回帰",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 17,
     "peakSeconds": 90.494331,
     "distanceMs": 0.647,
     "strength": 0.9931
   },
   {
-    "index": 341,
+    "index": 330,
+    "beat": 287.0,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
+    "phrase": 17,
+    "peakSeconds": 90.653968,
+    "distanceMs": 2.389,
+    "strength": 0.4417
+  },
+  {
+    "index": 331,
     "beat": 288.0,
     "hand": "red",
     "role": "素材: 左右の上下運動をそろえる",
@@ -3420,7 +3320,7 @@
     "strength": 1.1288
   },
   {
-    "index": 342,
+    "index": 332,
     "beat": 288.0,
     "hand": "blue",
     "role": "素材: 左右の上下運動をそろえる",
@@ -3430,7 +3330,7 @@
     "strength": 1.1288
   },
   {
-    "index": 343,
+    "index": 333,
     "beat": 289.0,
     "hand": "blue",
     "role": "素材: 左右の上下運動をそろえる",
@@ -3440,7 +3340,7 @@
     "strength": 0.6001
   },
   {
-    "index": 344,
+    "index": 334,
     "beat": 289.5,
     "hand": "red",
     "role": "素材: 左右の上下運動をそろえる",
@@ -3450,7 +3350,7 @@
     "strength": 0.6959
   },
   {
-    "index": 345,
+    "index": 335,
     "beat": 290.0,
     "hand": "blue",
     "role": "素材: 左右の上下運動をそろえる",
@@ -3460,7 +3360,7 @@
     "strength": 0.8656
   },
   {
-    "index": 346,
+    "index": 336,
     "beat": 291.0,
     "hand": "red",
     "role": "素材: 左右の上下運動をそろえる",
@@ -3470,7 +3370,7 @@
     "strength": 0.5703
   },
   {
-    "index": 347,
+    "index": 337,
     "beat": 292.0,
     "hand": "red",
     "role": "素材: 左右の上下運動をそろえる",
@@ -3480,7 +3380,7 @@
     "strength": 0.5157
   },
   {
-    "index": 348,
+    "index": 338,
     "beat": 292.0,
     "hand": "blue",
     "role": "素材: 左右の上下運動をそろえる",
@@ -3490,7 +3390,7 @@
     "strength": 0.5157
   },
   {
-    "index": 349,
+    "index": 339,
     "beat": 293.0,
     "hand": "red",
     "role": "素材: 左右の上下運動をそろえる",
@@ -3500,7 +3400,7 @@
     "strength": 0.5653
   },
   {
-    "index": 350,
+    "index": 340,
     "beat": 293.5,
     "hand": "blue",
     "role": "素材: 左右の上下運動をそろえる",
@@ -3510,7 +3410,7 @@
     "strength": 0.6435
   },
   {
-    "index": 351,
+    "index": 341,
     "beat": 294.0,
     "hand": "red",
     "role": "素材: 左右の上下運動をそろえる",
@@ -3520,7 +3420,7 @@
     "strength": 0.9207
   },
   {
-    "index": 352,
+    "index": 342,
     "beat": 295.0,
     "hand": "blue",
     "role": "素材: 左右の上下運動をそろえる",
@@ -3530,7 +3430,7 @@
     "strength": 0.4972
   },
   {
-    "index": 353,
+    "index": 343,
     "beat": 296.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -3540,7 +3440,7 @@
     "strength": 1.1135
   },
   {
-    "index": 354,
+    "index": 344,
     "beat": 296.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -3550,7 +3450,7 @@
     "strength": 0.5174
   },
   {
-    "index": 355,
+    "index": 345,
     "beat": 297.5,
     "hand": "blue",
     "role": "主題の回帰",
@@ -3560,7 +3460,7 @@
     "strength": 0.5036
   },
   {
-    "index": 356,
+    "index": 346,
     "beat": 298.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -3570,7 +3470,7 @@
     "strength": 1.0002
   },
   {
-    "index": 357,
+    "index": 347,
     "beat": 298.5,
     "hand": "blue",
     "role": "主題の回帰",
@@ -3580,7 +3480,7 @@
     "strength": 0.8365
   },
   {
-    "index": 358,
+    "index": 348,
     "beat": 299.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -3590,7 +3490,7 @@
     "strength": 0.4427
   },
   {
-    "index": 359,
+    "index": 349,
     "beat": 300.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -3600,7 +3500,7 @@
     "strength": 0.48
   },
   {
-    "index": 360,
+    "index": 350,
     "beat": 300.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -3610,7 +3510,7 @@
     "strength": 1.2523
   },
   {
-    "index": 361,
+    "index": 351,
     "beat": 301.5,
     "hand": "blue",
     "role": "主題の回帰",
@@ -3620,7 +3520,7 @@
     "strength": 0.5249
   },
   {
-    "index": 362,
+    "index": 352,
     "beat": 302.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -3630,7 +3530,7 @@
     "strength": 0.9742
   },
   {
-    "index": 363,
+    "index": 353,
     "beat": 303.5,
     "hand": "red",
     "role": "主題の回帰",
@@ -3640,7 +3540,7 @@
     "strength": 0.7549
   },
   {
-    "index": 364,
+    "index": 354,
     "beat": 304.5,
     "hand": "red",
     "role": "余韻",
@@ -3650,7 +3550,7 @@
     "strength": 0.7288
   },
   {
-    "index": 365,
+    "index": 355,
     "beat": 305.5,
     "hand": "blue",
     "role": "余韻",
@@ -3660,7 +3560,7 @@
     "strength": 0.6077
   },
   {
-    "index": 366,
+    "index": 356,
     "beat": 306.0,
     "hand": "red",
     "role": "余韻",
@@ -3670,7 +3570,7 @@
     "strength": 0.269
   },
   {
-    "index": 367,
+    "index": 357,
     "beat": 306.5,
     "hand": "blue",
     "role": "余韻",
@@ -3680,7 +3580,7 @@
     "strength": 0.7626
   },
   {
-    "index": 368,
+    "index": 358,
     "beat": 307.5,
     "hand": "red",
     "role": "余韻",
@@ -3690,117 +3590,107 @@
     "strength": 0.7525
   },
   {
-    "index": 369,
+    "index": 359,
     "beat": 308.0,
     "hand": "blue",
-    "role": "余韻",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 19,
     "peakSeconds": 97.273923,
     "distanceMs": -9.235,
     "strength": 0.3497
   },
   {
-    "index": 370,
-    "beat": 308.5,
+    "index": 360,
+    "beat": 309.0,
     "hand": "red",
-    "role": "余韻",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 19,
-    "peakSeconds": 97.438549,
-    "distanceMs": -2.504,
-    "strength": 0.9166
+    "peakSeconds": 97.598186,
+    "distanceMs": -0.761,
+    "strength": 0.4158
   },
   {
-    "index": 371,
+    "index": 361,
     "beat": 309.5,
     "hand": "blue",
-    "role": "余韻",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 19,
     "peakSeconds": 97.752834,
     "distanceMs": -4.008,
     "strength": 0.7864
   },
   {
-    "index": 372,
-    "beat": 310.0,
-    "hand": "red",
-    "role": "余韻",
-    "phrase": 19,
-    "peakSeconds": 97.912472,
-    "distanceMs": -2.265,
-    "strength": 0.5232
-  },
-  {
-    "index": 373,
+    "index": 362,
     "beat": 310.5,
-    "hand": "blue",
-    "role": "余韻",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 19,
     "peakSeconds": 98.06712,
     "distanceMs": -5.511,
     "strength": 0.9081
   },
   {
-    "index": 374,
-    "beat": 311.5,
-    "hand": "red",
-    "role": "余韻",
+    "index": 363,
+    "beat": 311.0,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 19,
-    "peakSeconds": 98.386395,
-    "distanceMs": -2.026,
-    "strength": 0.7079
+    "peakSeconds": 98.226757,
+    "distanceMs": -3.769,
+    "strength": 0.488
   },
   {
-    "index": 375,
+    "index": 364,
     "beat": 312.0,
     "hand": "blue",
-    "role": "余韻",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 19,
     "peakSeconds": 98.541043,
     "distanceMs": -5.273,
     "strength": 1.0477
   },
   {
-    "index": 376,
+    "index": 365,
     "beat": 312.5,
     "hand": "red",
-    "role": "余韻",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 19,
     "peakSeconds": 98.70068,
     "distanceMs": -3.53,
     "strength": 0.4556
   },
   {
-    "index": 377,
+    "index": 366,
     "beat": 313.5,
-    "hand": "blue",
-    "role": "余韻",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 19,
     "peakSeconds": 99.014966,
     "distanceMs": -5.034,
     "strength": 0.4523
   },
   {
-    "index": 378,
+    "index": 367,
     "beat": 314.5,
-    "hand": "red",
-    "role": "余韻",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 19,
     "peakSeconds": 99.33424,
     "distanceMs": -1.549,
     "strength": 0.4887
   },
   {
-    "index": 379,
-    "beat": 315.5,
-    "hand": "blue",
-    "role": "余韻",
+    "index": 368,
+    "beat": 315.0,
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 19,
-    "peakSeconds": 99.648526,
-    "distanceMs": -3.053,
-    "strength": 0.7941
+    "peakSeconds": 99.488889,
+    "distanceMs": -4.795,
+    "strength": 0.4888
   },
   {
-    "index": 380,
+    "index": 369,
     "beat": 316.5,
     "hand": "red",
     "role": "余韻",
@@ -3810,7 +3700,7 @@
     "strength": 0.8849
   },
   {
-    "index": 381,
+    "index": 370,
     "beat": 317.5,
     "hand": "blue",
     "role": "余韻",
@@ -3820,7 +3710,7 @@
     "strength": 0.6971
   },
   {
-    "index": 382,
+    "index": 371,
     "beat": 318.0,
     "hand": "red",
     "role": "余韻",
@@ -3830,7 +3720,7 @@
     "strength": 0.4457
   },
   {
-    "index": 383,
+    "index": 372,
     "beat": 319.5,
     "hand": "red",
     "role": "余韻",
@@ -3840,7 +3730,7 @@
     "strength": 0.6489
   },
   {
-    "index": 384,
+    "index": 373,
     "beat": 320.5,
     "hand": "red",
     "role": "余韻",
@@ -3850,7 +3740,7 @@
     "strength": 0.6935
   },
   {
-    "index": 385,
+    "index": 374,
     "beat": 321.5,
     "hand": "blue",
     "role": "余韻",
@@ -3860,7 +3750,7 @@
     "strength": 0.7312
   },
   {
-    "index": 386,
+    "index": 375,
     "beat": 322.0,
     "hand": "red",
     "role": "余韻",
@@ -3870,7 +3760,7 @@
     "strength": 0.2968
   },
   {
-    "index": 387,
+    "index": 376,
     "beat": 322.5,
     "hand": "blue",
     "role": "余韻",
@@ -3880,7 +3770,7 @@
     "strength": 0.8263
   },
   {
-    "index": 388,
+    "index": 377,
     "beat": 323.5,
     "hand": "red",
     "role": "余韻",
@@ -3890,127 +3780,107 @@
     "strength": 0.7095
   },
   {
-    "index": 389,
+    "index": 378,
     "beat": 324.0,
     "hand": "blue",
-    "role": "余韻",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 20,
     "peakSeconds": 102.332426,
     "distanceMs": -3.363,
     "strength": 0.4006
   },
   {
-    "index": 390,
+    "index": 379,
     "beat": 324.5,
     "hand": "red",
-    "role": "余韻",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 20,
     "peakSeconds": 102.487075,
     "distanceMs": -6.609,
     "strength": 1.049
   },
   {
-    "index": 391,
+    "index": 380,
     "beat": 325.5,
     "hand": "blue",
-    "role": "余韻",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 20,
     "peakSeconds": 102.806349,
     "distanceMs": -3.124,
     "strength": 0.809
   },
   {
-    "index": 392,
-    "beat": 326.0,
-    "hand": "red",
-    "role": "余韻",
-    "phrase": 20,
-    "peakSeconds": 102.965986,
-    "distanceMs": -1.382,
-    "strength": 0.4785
-  },
-  {
-    "index": 393,
+    "index": 381,
     "beat": 326.5,
-    "hand": "blue",
-    "role": "余韻",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 20,
     "peakSeconds": 103.120635,
     "distanceMs": -4.628,
     "strength": 1.0612
   },
   {
-    "index": 394,
-    "beat": 327.5,
-    "hand": "red",
-    "role": "余韻",
+    "index": 382,
+    "beat": 327.0,
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 20,
-    "peakSeconds": 103.434921,
-    "distanceMs": -6.132,
-    "strength": 0.642
+    "peakSeconds": 103.285261,
+    "distanceMs": 2.103,
+    "strength": 0.5561
   },
   {
-    "index": 395,
+    "index": 383,
     "beat": 328.0,
     "hand": "blue",
-    "role": "余韻",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 20,
     "peakSeconds": 103.594558,
     "distanceMs": -4.39,
     "strength": 0.9544
   },
   {
-    "index": 396,
+    "index": 384,
     "beat": 328.5,
-    "hand": "red",
-    "role": "余韻",
+    "hand": "blue",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 20,
     "peakSeconds": 103.754195,
     "distanceMs": -2.647,
     "strength": 0.5229
   },
   {
-    "index": 397,
+    "index": 385,
     "beat": 329.5,
-    "hand": "blue",
-    "role": "余韻",
+    "hand": "red",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 20,
     "peakSeconds": 104.068481,
     "distanceMs": -4.151,
     "strength": 0.7385
   },
   {
-    "index": 398,
-    "beat": 330.0,
-    "hand": "red",
-    "role": "余韻",
-    "phrase": 20,
-    "peakSeconds": 104.228118,
-    "distanceMs": -2.408,
-    "strength": 0.3398
-  },
-  {
-    "index": 399,
+    "index": 386,
     "beat": 330.5,
     "hand": "blue",
-    "role": "余韻",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 20,
     "peakSeconds": 104.387755,
     "distanceMs": -0.666,
     "strength": 0.6885
   },
   {
-    "index": 400,
+    "index": 387,
     "beat": 331.5,
     "hand": "red",
-    "role": "余韻",
+    "role": "曲別: 短い同手2打・裏拍・休符の跳ね。190 BPMでも動線を小さくして、一定の交互連打にしない。",
     "phrase": 20,
     "peakSeconds": 104.702041,
     "distanceMs": -2.17,
     "strength": 0.4853
   },
   {
-    "index": 401,
+    "index": 388,
     "beat": 332.0,
     "hand": "blue",
     "role": "余韻",
@@ -4020,7 +3890,7 @@
     "strength": 0.279
   },
   {
-    "index": 402,
+    "index": 389,
     "beat": 332.5,
     "hand": "red",
     "role": "余韻",
@@ -4030,7 +3900,7 @@
     "strength": 1.0672
   },
   {
-    "index": 403,
+    "index": 390,
     "beat": 333.5,
     "hand": "blue",
     "role": "余韻",
@@ -4040,7 +3910,7 @@
     "strength": 0.5845
   },
   {
-    "index": 404,
+    "index": 391,
     "beat": 334.0,
     "hand": "red",
     "role": "余韻",
@@ -4050,7 +3920,7 @@
     "strength": 0.5214
   },
   {
-    "index": 405,
+    "index": 392,
     "beat": 335.5,
     "hand": "red",
     "role": "余韻",

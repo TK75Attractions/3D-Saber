@@ -3,7 +3,7 @@
     "index": 0,
     "beat": 4.0,
     "hand": "red",
-    "role": "導入",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 0,
     "peakSeconds": 1.366893,
     "distanceMs": 33.56,
@@ -13,7 +13,7 @@
     "index": 1,
     "beat": 6.0,
     "hand": "blue",
-    "role": "導入",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 0,
     "peakSeconds": 1.995465,
     "distanceMs": -4.535,
@@ -93,7 +93,7 @@
     "index": 9,
     "beat": 20.0,
     "hand": "red",
-    "role": "導入",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 1,
     "peakSeconds": 6.664853,
     "distanceMs": -1.814,
@@ -103,7 +103,7 @@
     "index": 10,
     "beat": 22.0,
     "hand": "blue",
-    "role": "導入",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 1,
     "peakSeconds": 7.328345,
     "distanceMs": -4.989,
@@ -112,8 +112,8 @@
   {
     "index": 11,
     "beat": 24.0,
-    "hand": "red",
-    "role": "導入",
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 1,
     "peakSeconds": 7.996825,
     "distanceMs": -3.175,
@@ -122,8 +122,8 @@
   {
     "index": 12,
     "beat": 26.0,
-    "hand": "blue",
-    "role": "導入",
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 1,
     "peakSeconds": 8.665306,
     "distanceMs": -1.361,
@@ -132,8 +132,8 @@
   {
     "index": 13,
     "beat": 28.0,
-    "hand": "red",
-    "role": "導入",
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 1,
     "peakSeconds": 9.338776,
     "distanceMs": 5.442,
@@ -141,19 +141,19 @@
   },
   {
     "index": 14,
-    "beat": 30.0,
-    "hand": "blue",
-    "role": "導入",
+    "beat": 31.0,
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 1,
-    "peakSeconds": 9.997279,
-    "distanceMs": -2.721,
-    "strength": 0.8901
+    "peakSeconds": 10.326531,
+    "distanceMs": -6.803,
+    "strength": 0.6764
   },
   {
     "index": 15,
     "beat": 32.0,
     "hand": "red",
-    "role": "主拍",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 2,
     "peakSeconds": 10.66576,
     "distanceMs": -0.907,
@@ -163,7 +163,7 @@
     "index": 16,
     "beat": 34.0,
     "hand": "blue",
-    "role": "主拍",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 2,
     "peakSeconds": 11.37415,
     "distanceMs": 40.816,
@@ -172,8 +172,8 @@
   {
     "index": 17,
     "beat": 36.0,
-    "hand": "red",
-    "role": "主拍",
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 2,
     "peakSeconds": 11.997732,
     "distanceMs": -2.268,
@@ -182,8 +182,8 @@
   {
     "index": 18,
     "beat": 38.0,
-    "hand": "blue",
-    "role": "主拍",
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 2,
     "peakSeconds": 12.661224,
     "distanceMs": -5.442,
@@ -293,7 +293,7 @@
     "index": 29,
     "beat": 56.0,
     "hand": "red",
-    "role": "主拍",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 3,
     "peakSeconds": 18.662585,
     "distanceMs": -4.082,
@@ -303,7 +303,7 @@
     "index": 30,
     "beat": 58.0,
     "hand": "blue",
-    "role": "主拍",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 3,
     "peakSeconds": 19.326077,
     "distanceMs": -7.256,
@@ -313,7 +313,7 @@
     "index": 31,
     "beat": 60.0,
     "hand": "red",
-    "role": "主拍",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 3,
     "peakSeconds": 19.999546,
     "distanceMs": -0.454,
@@ -323,7 +323,7 @@
     "index": 32,
     "beat": 62.0,
     "hand": "blue",
-    "role": "主拍",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 3,
     "peakSeconds": 20.663039,
     "distanceMs": -3.628,
@@ -333,7 +333,7 @@
     "index": 33,
     "beat": 64.0,
     "hand": "red",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 4,
     "peakSeconds": 21.331519,
     "distanceMs": -1.814,
@@ -341,19 +341,19 @@
   },
   {
     "index": 34,
-    "beat": 66.0,
+    "beat": 67.0,
     "hand": "blue",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 4,
-    "peakSeconds": 21.995011,
-    "distanceMs": -4.989,
-    "strength": 0.6639
+    "peakSeconds": 22.329252,
+    "distanceMs": -4.082,
+    "strength": 1.3336
   },
   {
     "index": 35,
     "beat": 68.0,
     "hand": "red",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 4,
     "peakSeconds": 22.668481,
     "distanceMs": 1.814,
@@ -363,7 +363,7 @@
     "index": 36,
     "beat": 70.0,
     "hand": "blue",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 4,
     "peakSeconds": 23.366893,
     "distanceMs": 33.56,
@@ -443,7 +443,7 @@
     "index": 44,
     "beat": 84.0,
     "hand": "red",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 5,
     "peakSeconds": 27.996372,
     "distanceMs": -3.628,
@@ -453,7 +453,7 @@
     "index": 45,
     "beat": 86.0,
     "hand": "blue",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 5,
     "peakSeconds": 28.659864,
     "distanceMs": -6.803,
@@ -463,7 +463,7 @@
     "index": 46,
     "beat": 88.0,
     "hand": "red",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 5,
     "peakSeconds": 29.328345,
     "distanceMs": -4.989,
@@ -473,7 +473,7 @@
     "index": 47,
     "beat": 90.0,
     "hand": "blue",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 5,
     "peakSeconds": 29.991837,
     "distanceMs": -8.163,
@@ -482,8 +482,8 @@
   {
     "index": 48,
     "beat": 92.0,
-    "hand": "red",
-    "role": "主題A",
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 5,
     "peakSeconds": 30.660317,
     "distanceMs": -6.349,
@@ -492,8 +492,8 @@
   {
     "index": 49,
     "beat": 94.0,
-    "hand": "blue",
-    "role": "主題A",
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 5,
     "peakSeconds": 31.328798,
     "distanceMs": -4.535,
@@ -503,7 +503,7 @@
     "index": 50,
     "beat": 96.0,
     "hand": "red",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 6,
     "peakSeconds": 31.997279,
     "distanceMs": -2.721,
@@ -511,19 +511,19 @@
   },
   {
     "index": 51,
-    "beat": 98.0,
+    "beat": 99.0,
     "hand": "blue",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 6,
-    "peakSeconds": 32.66576,
-    "distanceMs": -0.907,
-    "strength": 0.5424
+    "peakSeconds": 33.0,
+    "distanceMs": 0.0,
+    "strength": 0.7946
   },
   {
     "index": 52,
     "beat": 100.0,
     "hand": "red",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 6,
     "peakSeconds": 33.369161,
     "distanceMs": 35.828,
@@ -533,7 +533,7 @@
     "index": 53,
     "beat": 102.0,
     "hand": "blue",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 6,
     "peakSeconds": 33.997732,
     "distanceMs": -2.268,
@@ -583,7 +583,7 @@
     "index": 58,
     "beat": 112.0,
     "hand": "red",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 7,
     "peakSeconds": 37.330159,
     "distanceMs": -3.175,
@@ -591,126 +591,116 @@
   },
   {
     "index": 59,
-    "beat": 112.0,
-    "hand": "blue",
-    "role": "主題A",
-    "phrase": 7,
-    "peakSeconds": 37.330159,
-    "distanceMs": -3.175,
-    "strength": 0.9521
-  },
-  {
-    "index": 60,
     "beat": 114.0,
     "hand": "blue",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 7,
     "peakSeconds": 38.008617,
     "distanceMs": 8.617,
     "strength": 0.8861
   },
   {
-    "index": 61,
+    "index": 60,
     "beat": 116.0,
     "hand": "red",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 7,
     "peakSeconds": 38.662132,
     "distanceMs": -4.535,
     "strength": 0.5956
   },
   {
-    "index": 62,
+    "index": 61,
     "beat": 118.0,
     "hand": "blue",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 7,
     "peakSeconds": 39.330612,
     "distanceMs": -2.721,
     "strength": 0.6326
   },
   {
-    "index": 63,
+    "index": 62,
     "beat": 120.0,
     "hand": "red",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 7,
     "peakSeconds": 39.994104,
     "distanceMs": -5.896,
     "strength": 0.9339
   },
   {
-    "index": 64,
+    "index": 63,
     "beat": 122.0,
     "hand": "blue",
-    "role": "主題A",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 7,
     "peakSeconds": 40.662585,
     "distanceMs": -4.082,
     "strength": 0.8834
   },
   {
-    "index": 65,
+    "index": 64,
     "beat": 124.0,
-    "hand": "red",
-    "role": "主題A",
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 7,
     "peakSeconds": 41.331066,
     "distanceMs": -2.268,
     "strength": 0.7393
   },
   {
-    "index": 66,
+    "index": 65,
     "beat": 126.0,
-    "hand": "blue",
-    "role": "主題A",
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 7,
     "peakSeconds": 41.999546,
     "distanceMs": -0.454,
     "strength": 1.0227
   },
   {
-    "index": 67,
+    "index": 66,
     "beat": 128.0,
-    "hand": "red",
-    "role": "応答",
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 8,
     "peakSeconds": 42.663039,
     "distanceMs": -3.628,
     "strength": 0.7792
   },
   {
-    "index": 68,
+    "index": 67,
     "beat": 130.0,
-    "hand": "blue",
-    "role": "応答",
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 8,
     "peakSeconds": 43.326531,
     "distanceMs": -6.803,
     "strength": 0.8841
   },
   {
-    "index": 69,
+    "index": 68,
     "beat": 132.0,
-    "hand": "red",
-    "role": "応答",
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 8,
     "peakSeconds": 43.995011,
     "distanceMs": -4.989,
     "strength": 0.8397
   },
   {
-    "index": 70,
-    "beat": 134.0,
-    "hand": "blue",
-    "role": "応答",
+    "index": 69,
+    "beat": 135.0,
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 8,
-    "peakSeconds": 44.658503,
-    "distanceMs": -8.163,
-    "strength": 1.4035
+    "peakSeconds": 44.977778,
+    "distanceMs": -22.222,
+    "strength": 0.4625
   },
   {
-    "index": 71,
+    "index": 70,
     "beat": 136.0,
     "hand": "red",
     "role": "応答",
@@ -720,7 +710,7 @@
     "strength": 1.3728
   },
   {
-    "index": 72,
+    "index": 71,
     "beat": 138.0,
     "hand": "blue",
     "role": "応答",
@@ -730,7 +720,7 @@
     "strength": 1.7788
   },
   {
-    "index": 73,
+    "index": 72,
     "beat": 140.0,
     "hand": "red",
     "role": "応答",
@@ -740,7 +730,7 @@
     "strength": 1.3826
   },
   {
-    "index": 74,
+    "index": 73,
     "beat": 142.0,
     "hand": "blue",
     "role": "応答",
@@ -750,7 +740,7 @@
     "strength": 1.6983
   },
   {
-    "index": 75,
+    "index": 74,
     "beat": 144.0,
     "hand": "red",
     "role": "応答",
@@ -760,7 +750,7 @@
     "strength": 1.3072
   },
   {
-    "index": 76,
+    "index": 75,
     "beat": 144.0,
     "hand": "blue",
     "role": "応答",
@@ -770,7 +760,7 @@
     "strength": 1.3072
   },
   {
-    "index": 77,
+    "index": 76,
     "beat": 146.0,
     "hand": "blue",
     "role": "応答",
@@ -780,67 +770,67 @@
     "strength": 1.8062
   },
   {
-    "index": 78,
+    "index": 77,
     "beat": 148.0,
-    "hand": "red",
-    "role": "応答",
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 9,
     "peakSeconds": 49.327891,
     "distanceMs": -5.442,
     "strength": 1.1331
   },
   {
-    "index": 79,
+    "index": 78,
     "beat": 150.0,
-    "hand": "blue",
-    "role": "応答",
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 9,
     "peakSeconds": 49.991383,
     "distanceMs": -8.617,
     "strength": 1.2859
   },
   {
-    "index": 80,
+    "index": 79,
     "beat": 152.0,
     "hand": "red",
-    "role": "応答",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 9,
     "peakSeconds": 50.659864,
     "distanceMs": -6.803,
     "strength": 1.1299
   },
   {
-    "index": 81,
-    "beat": 154.0,
+    "index": 80,
+    "beat": 155.0,
     "hand": "blue",
-    "role": "応答",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 9,
-    "peakSeconds": 51.328345,
-    "distanceMs": -4.989,
-    "strength": 1.3259
+    "peakSeconds": 51.657596,
+    "distanceMs": -9.07,
+    "strength": 1.0232
   },
   {
-    "index": 82,
+    "index": 81,
     "beat": 156.0,
     "hand": "red",
-    "role": "応答",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 9,
     "peakSeconds": 51.991837,
     "distanceMs": -8.163,
     "strength": 1.4553
   },
   {
-    "index": 83,
+    "index": 82,
     "beat": 158.0,
     "hand": "blue",
-    "role": "応答",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 9,
     "peakSeconds": 52.660317,
     "distanceMs": -6.349,
     "strength": 1.5609
   },
   {
-    "index": 84,
+    "index": 83,
     "beat": 160.0,
     "hand": "red",
     "role": "素材: 単発の間隔を残す",
@@ -850,7 +840,7 @@
     "strength": 0.8668
   },
   {
-    "index": 85,
+    "index": 84,
     "beat": 162.0,
     "hand": "blue",
     "role": "素材: 単発の間隔を残す",
@@ -860,7 +850,7 @@
     "strength": 0.6902
   },
   {
-    "index": 86,
+    "index": 85,
     "beat": 164.0,
     "hand": "blue",
     "role": "素材: 単発の間隔を残す",
@@ -870,7 +860,7 @@
     "strength": 1.0896
   },
   {
-    "index": 87,
+    "index": 86,
     "beat": 166.0,
     "hand": "red",
     "role": "素材: 単発の間隔を残す",
@@ -880,7 +870,7 @@
     "strength": 0.2032
   },
   {
-    "index": 88,
+    "index": 87,
     "beat": 168.0,
     "hand": "red",
     "role": "減速と余韻",
@@ -890,7 +880,7 @@
     "strength": 0.2393
   },
   {
-    "index": 89,
+    "index": 88,
     "beat": 172.0,
     "hand": "blue",
     "role": "減速と余韻",
@@ -900,14 +890,24 @@
     "strength": 1.365
   },
   {
-    "index": 90,
+    "index": 89,
     "beat": 180.0,
     "hand": "red",
-    "role": "減速と余韻",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
     "phrase": 11,
     "peakSeconds": 60.372789,
     "distanceMs": -2.211,
     "strength": 0.868
+  },
+  {
+    "index": 90,
+    "beat": 182.0,
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 11,
+    "peakSeconds": 61.111111,
+    "distanceMs": -13.889,
+    "strength": 0.2487
   },
   {
     "index": 91,
@@ -941,16 +941,26 @@
   },
   {
     "index": 94,
-    "beat": 201.0,
+    "beat": 200.0,
     "hand": "red",
-    "role": "再導入",
-    "phrase": 13,
-    "peakSeconds": 68.135147,
-    "distanceMs": -31.519,
-    "strength": 0.4451
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 12,
+    "peakSeconds": 67.82585,
+    "distanceMs": -7.483,
+    "strength": 1.6978
   },
   {
     "index": 95,
+    "beat": 202.0,
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 12,
+    "peakSeconds": 68.539229,
+    "distanceMs": 39.229,
+    "strength": 0.3539
+  },
+  {
+    "index": 96,
     "beat": 207.0,
     "hand": "blue",
     "role": "再導入",
@@ -960,7 +970,7 @@
     "strength": 0.392
   },
   {
-    "index": 96,
+    "index": 97,
     "beat": 215.0,
     "hand": "red",
     "role": "再導入",
@@ -970,27 +980,27 @@
     "strength": 0.4106
   },
   {
-    "index": 97,
-    "beat": 217.0,
-    "hand": "blue",
-    "role": "再導入",
-    "phrase": 14,
-    "peakSeconds": 73.492971,
-    "distanceMs": -7.029,
-    "strength": 0.9363
-  },
-  {
     "index": 98,
-    "beat": 219.0,
-    "hand": "red",
-    "role": "再導入",
-    "phrase": 14,
-    "peakSeconds": 74.161451,
-    "distanceMs": -5.215,
-    "strength": 1.6961
+    "beat": 216.0,
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 13,
+    "peakSeconds": 73.15873,
+    "distanceMs": -7.937,
+    "strength": 0.9114
   },
   {
     "index": 99,
+    "beat": 218.0,
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 13,
+    "peakSeconds": 73.827211,
+    "distanceMs": -6.122,
+    "strength": 0.8496
+  },
+  {
+    "index": 100,
     "beat": 221.0,
     "hand": "blue",
     "role": "再導入",
@@ -1000,57 +1010,67 @@
     "strength": 1.9125
   },
   {
-    "index": 100,
-    "beat": 226.0,
+    "index": 101,
+    "beat": 224.0,
     "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 15,
-    "peakSeconds": 76.496145,
-    "distanceMs": -3.855,
-    "strength": 1.1709
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 14,
+    "peakSeconds": 75.827664,
+    "distanceMs": -5.669,
+    "strength": 1.1357
   },
   {
-    "index": 101,
-    "beat": 228.0,
+    "index": 102,
+    "beat": 227.0,
     "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 15,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 14,
+    "peakSeconds": 76.825397,
+    "distanceMs": -7.937,
+    "strength": 1.2214
+  },
+  {
+    "index": 103,
+    "beat": 228.0,
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 14,
     "peakSeconds": 77.159637,
     "distanceMs": -7.029,
     "strength": 0.9304
   },
   {
-    "index": 102,
+    "index": 104,
     "beat": 230.0,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 15,
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 14,
     "peakSeconds": 77.833107,
     "distanceMs": -0.227,
     "strength": 0.4812
   },
   {
-    "index": 103,
+    "index": 105,
     "beat": 232.0,
     "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 15,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 14,
     "peakSeconds": 78.471655,
     "distanceMs": -28.345,
     "strength": 0.6238
   },
   {
-    "index": 104,
+    "index": 106,
     "beat": 234.0,
     "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 15,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 14,
     "peakSeconds": 79.160091,
     "distanceMs": -6.576,
     "strength": 1.2886
   },
   {
-    "index": 105,
+    "index": 107,
     "beat": 238.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -1060,47 +1080,47 @@
     "strength": 0.4682
   },
   {
-    "index": 106,
+    "index": 108,
     "beat": 240.0,
     "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 16,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 15,
     "peakSeconds": 81.135601,
     "distanceMs": -31.066,
     "strength": 0.316
   },
   {
-    "index": 107,
+    "index": 109,
     "beat": 242.0,
     "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 16,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 15,
     "peakSeconds": 81.80907,
     "distanceMs": -24.263,
     "strength": 0.4371
   },
   {
-    "index": 108,
+    "index": 110,
     "beat": 244.0,
     "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 16,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 15,
     "peakSeconds": 82.497506,
     "distanceMs": -2.494,
     "strength": 1.154
   },
   {
-    "index": 109,
+    "index": 111,
     "beat": 246.0,
     "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 16,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 15,
     "peakSeconds": 83.160998,
     "distanceMs": -5.669,
     "strength": 1.0165
   },
   {
-    "index": 110,
+    "index": 112,
     "beat": 248.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -1110,7 +1130,7 @@
     "strength": 0.5216
   },
   {
-    "index": 111,
+    "index": 113,
     "beat": 250.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -1120,7 +1140,7 @@
     "strength": 0.9386
   },
   {
-    "index": 112,
+    "index": 114,
     "beat": 252.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -1130,7 +1150,7 @@
     "strength": 0.8615
   },
   {
-    "index": 113,
+    "index": 115,
     "beat": 254.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -1140,7 +1160,7 @@
     "strength": 1.0642
   },
   {
-    "index": 114,
+    "index": 116,
     "beat": 256.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -1150,7 +1170,7 @@
     "strength": 1.1057
   },
   {
-    "index": 115,
+    "index": 117,
     "beat": 256.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -1160,7 +1180,7 @@
     "strength": 1.1057
   },
   {
-    "index": 116,
+    "index": 118,
     "beat": 258.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -1170,107 +1190,107 @@
     "strength": 0.7697
   },
   {
-    "index": 117,
+    "index": 119,
     "beat": 260.0,
     "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 17,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 16,
     "peakSeconds": 87.830385,
     "distanceMs": -2.948,
     "strength": 0.645
   },
   {
-    "index": 118,
+    "index": 120,
     "beat": 262.0,
     "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 17,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 16,
     "peakSeconds": 88.498866,
     "distanceMs": -1.134,
     "strength": 0.6568
   },
   {
-    "index": 119,
+    "index": 121,
     "beat": 264.0,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 17,
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 16,
     "peakSeconds": 89.162358,
     "distanceMs": -4.308,
     "strength": 1.0923
   },
   {
-    "index": 120,
+    "index": 122,
     "beat": 266.0,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 17,
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 16,
     "peakSeconds": 89.840816,
     "distanceMs": 7.483,
     "strength": 0.5251
   },
   {
-    "index": 121,
+    "index": 123,
     "beat": 268.0,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 17,
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 16,
     "peakSeconds": 90.494331,
     "distanceMs": -5.669,
     "strength": 0.9198
   },
   {
-    "index": 122,
-    "beat": 270.0,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 17,
-    "peakSeconds": 91.162812,
-    "distanceMs": -3.855,
-    "strength": 0.9951
+    "index": 124,
+    "beat": 271.0,
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 16,
+    "peakSeconds": 91.497052,
+    "distanceMs": -2.948,
+    "strength": 0.5988
   },
   {
-    "index": 123,
+    "index": 125,
     "beat": 272.0,
     "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 18,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 17,
     "peakSeconds": 91.831293,
     "distanceMs": -2.041,
     "strength": 0.8562
   },
   {
-    "index": 124,
+    "index": 126,
     "beat": 274.0,
     "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 18,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 17,
     "peakSeconds": 92.499773,
     "distanceMs": -0.227,
     "strength": 1.0843
   },
   {
-    "index": 125,
+    "index": 127,
     "beat": 276.0,
     "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 18,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 17,
     "peakSeconds": 93.163265,
     "distanceMs": -3.401,
     "strength": 1.1779
   },
   {
-    "index": 126,
+    "index": 128,
     "beat": 278.0,
     "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 18,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 17,
     "peakSeconds": 93.831746,
     "distanceMs": -1.587,
     "strength": 0.7857
   },
   {
-    "index": 127,
+    "index": 129,
     "beat": 280.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -1280,7 +1300,7 @@
     "strength": 0.555
   },
   {
-    "index": 128,
+    "index": 130,
     "beat": 282.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -1290,7 +1310,7 @@
     "strength": 0.8941
   },
   {
-    "index": 129,
+    "index": 131,
     "beat": 284.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -1300,7 +1320,7 @@
     "strength": 0.9753
   },
   {
-    "index": 130,
+    "index": 132,
     "beat": 286.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -1310,137 +1330,127 @@
     "strength": 0.7338
   },
   {
-    "index": 131,
+    "index": 133,
     "beat": 288.0,
     "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 19,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 18,
     "peakSeconds": 97.164172,
     "distanceMs": -2.494,
     "strength": 1.1238
-  },
-  {
-    "index": 132,
-    "beat": 288.0,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 19,
-    "peakSeconds": 97.164172,
-    "distanceMs": -2.494,
-    "strength": 1.1238
-  },
-  {
-    "index": 133,
-    "beat": 290.0,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 19,
-    "peakSeconds": 97.832653,
-    "distanceMs": -0.68,
-    "strength": 0.7396
   },
   {
     "index": 134,
+    "beat": 291.0,
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 18,
+    "peakSeconds": 98.161905,
+    "distanceMs": -4.762,
+    "strength": 0.967
+  },
+  {
+    "index": 135,
     "beat": 292.0,
     "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 19,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 18,
     "peakSeconds": 98.501134,
     "distanceMs": 1.134,
     "strength": 0.8551
   },
   {
-    "index": 135,
+    "index": 136,
     "beat": 294.0,
     "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 19,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 18,
     "peakSeconds": 99.159637,
     "distanceMs": -7.029,
     "strength": 0.866
   },
   {
-    "index": 136,
+    "index": 137,
     "beat": 296.0,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 19,
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 18,
     "peakSeconds": 99.828118,
     "distanceMs": -5.215,
     "strength": 1.4788
   },
   {
-    "index": 137,
+    "index": 138,
     "beat": 298.0,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 19,
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 18,
     "peakSeconds": 100.496599,
     "distanceMs": -3.401,
     "strength": 1.0012
   },
   {
-    "index": 138,
+    "index": 139,
     "beat": 300.0,
-    "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 19,
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 18,
     "peakSeconds": 101.160091,
     "distanceMs": -6.576,
     "strength": 0.9389
   },
   {
-    "index": 139,
-    "beat": 302.0,
-    "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 19,
-    "peakSeconds": 101.828571,
-    "distanceMs": -4.762,
-    "strength": 0.9393
+    "index": 140,
+    "beat": 303.0,
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 18,
+    "peakSeconds": 102.162812,
+    "distanceMs": -3.855,
+    "strength": 0.7346
   },
   {
-    "index": 140,
+    "index": 141,
     "beat": 304.0,
     "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 20,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 19,
     "peakSeconds": 102.497052,
     "distanceMs": -2.948,
     "strength": 0.7198
   },
   {
-    "index": 141,
+    "index": 142,
     "beat": 306.0,
     "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 20,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 19,
     "peakSeconds": 103.160544,
     "distanceMs": -6.122,
     "strength": 0.6438
   },
   {
-    "index": 142,
+    "index": 143,
     "beat": 308.0,
     "hand": "red",
-    "role": "主題Aの発展",
-    "phrase": 20,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 19,
     "peakSeconds": 103.829025,
     "distanceMs": -4.308,
     "strength": 0.8273
   },
   {
-    "index": 143,
+    "index": 144,
     "beat": 310.0,
     "hand": "blue",
-    "role": "主題Aの発展",
-    "phrase": 20,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 19,
     "peakSeconds": 104.492517,
     "distanceMs": -7.483,
     "strength": 0.9219
   },
   {
-    "index": 144,
+    "index": 145,
     "beat": 312.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -1450,7 +1460,7 @@
     "strength": 0.9019
   },
   {
-    "index": 145,
+    "index": 146,
     "beat": 314.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -1460,7 +1470,7 @@
     "strength": 0.7521
   },
   {
-    "index": 146,
+    "index": 147,
     "beat": 316.0,
     "hand": "red",
     "role": "主題Aの発展",
@@ -1470,7 +1480,7 @@
     "strength": 0.5864
   },
   {
-    "index": 147,
+    "index": 148,
     "beat": 318.0,
     "hand": "blue",
     "role": "主題Aの発展",
@@ -1480,7 +1490,7 @@
     "strength": 1.2856
   },
   {
-    "index": 148,
+    "index": 149,
     "beat": 321,
     "hand": "red",
     "role": "素材: 右の任意方向から左の単発へ",
@@ -1490,7 +1500,7 @@
     "strength": 2.064
   },
   {
-    "index": 149,
+    "index": 150,
     "beat": 323,
     "hand": "blue",
     "role": "素材: 右の任意方向から左の単発へ",
@@ -1500,7 +1510,7 @@
     "strength": 1.4805
   },
   {
-    "index": 150,
+    "index": 151,
     "beat": 325,
     "hand": "blue",
     "role": "素材: 右の任意方向から左の単発へ",
@@ -1510,7 +1520,7 @@
     "strength": 2.0188
   },
   {
-    "index": 151,
+    "index": 152,
     "beat": 327,
     "hand": "red",
     "role": "素材: 右の任意方向から左の単発へ",
@@ -1520,87 +1530,87 @@
     "strength": 1.2988
   },
   {
-    "index": 152,
+    "index": 153,
     "beat": 328.0,
     "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 21,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 20,
     "peakSeconds": 110.493878,
     "distanceMs": -6.122,
     "strength": 1.441
   },
   {
-    "index": 153,
+    "index": 154,
     "beat": 330.0,
     "hand": "blue",
-    "role": "主題の回帰",
-    "phrase": 21,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 20,
     "peakSeconds": 111.15737,
     "distanceMs": -9.297,
     "strength": 1.347
   },
   {
-    "index": 154,
+    "index": 155,
     "beat": 332.0,
     "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 21,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 20,
     "peakSeconds": 111.82585,
     "distanceMs": -7.483,
     "strength": 1.5417
   },
   {
-    "index": 155,
+    "index": 156,
     "beat": 334.0,
     "hand": "blue",
-    "role": "主題の回帰",
-    "phrase": 21,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 20,
     "peakSeconds": 112.494331,
     "distanceMs": -5.669,
     "strength": 1.309
   },
   {
-    "index": 156,
+    "index": 157,
     "beat": 336.0,
     "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 22,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 21,
     "peakSeconds": 113.162812,
     "distanceMs": -3.855,
     "strength": 1.0468
   },
   {
-    "index": 157,
+    "index": 158,
     "beat": 338.0,
     "hand": "blue",
-    "role": "主題の回帰",
-    "phrase": 22,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 21,
     "peakSeconds": 113.826304,
     "distanceMs": -7.029,
     "strength": 1.2445
   },
   {
-    "index": 158,
+    "index": 159,
     "beat": 340.0,
-    "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 22,
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 21,
     "peakSeconds": 114.494785,
     "distanceMs": -5.215,
     "strength": 1.1907
   },
   {
-    "index": 159,
+    "index": 160,
     "beat": 342.0,
-    "hand": "blue",
-    "role": "主題の回帰",
-    "phrase": 22,
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 21,
     "peakSeconds": 115.163265,
     "distanceMs": -3.401,
     "strength": 1.2902
   },
   {
-    "index": 160,
+    "index": 161,
     "beat": 344.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -1610,7 +1620,7 @@
     "strength": 1.0284
   },
   {
-    "index": 161,
+    "index": 162,
     "beat": 346.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -1620,7 +1630,7 @@
     "strength": 1.2754
   },
   {
-    "index": 162,
+    "index": 163,
     "beat": 348.0,
     "hand": "red",
     "role": "主題の回帰",
@@ -1630,7 +1640,7 @@
     "strength": 1.2968
   },
   {
-    "index": 163,
+    "index": 164,
     "beat": 350.0,
     "hand": "blue",
     "role": "主題の回帰",
@@ -1640,21 +1650,11 @@
     "strength": 1.7062
   },
   {
-    "index": 164,
-    "beat": 352.0,
-    "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 23,
-    "peakSeconds": 118.495692,
-    "distanceMs": -4.308,
-    "strength": 1.3794
-  },
-  {
     "index": 165,
     "beat": 352.0,
     "hand": "blue",
-    "role": "主題の回帰",
-    "phrase": 23,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 22,
     "peakSeconds": 118.495692,
     "distanceMs": -4.308,
     "strength": 1.3794
@@ -1662,9 +1662,9 @@
   {
     "index": 166,
     "beat": 354.0,
-    "hand": "blue",
-    "role": "主題の回帰",
-    "phrase": 23,
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 22,
     "peakSeconds": 119.159184,
     "distanceMs": -7.483,
     "strength": 1.1993
@@ -1672,29 +1672,29 @@
   {
     "index": 167,
     "beat": 356.0,
-    "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 23,
+    "hand": "blue",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 22,
     "peakSeconds": 119.827664,
     "distanceMs": -5.669,
     "strength": 1.1299
   },
   {
     "index": 168,
-    "beat": 358.0,
-    "hand": "blue",
-    "role": "主題の回帰",
-    "phrase": 23,
-    "peakSeconds": 120.496145,
-    "distanceMs": -3.855,
-    "strength": 1.6353
+    "beat": 359.0,
+    "hand": "red",
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 22,
+    "peakSeconds": 120.830385,
+    "distanceMs": -2.948,
+    "strength": 1.3004
   },
   {
     "index": 169,
     "beat": 360.0,
     "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 23,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 22,
     "peakSeconds": 121.164626,
     "distanceMs": -2.041,
     "strength": 1.292
@@ -1703,8 +1703,8 @@
     "index": 170,
     "beat": 362.0,
     "hand": "blue",
-    "role": "主題の回帰",
-    "phrase": 23,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 22,
     "peakSeconds": 121.828118,
     "distanceMs": -5.215,
     "strength": 1.4264
@@ -1713,8 +1713,8 @@
     "index": 171,
     "beat": 364.0,
     "hand": "red",
-    "role": "主題の回帰",
-    "phrase": 23,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 22,
     "peakSeconds": 122.496599,
     "distanceMs": -3.401,
     "strength": 1.2704
@@ -1723,8 +1723,8 @@
     "index": 172,
     "beat": 366.0,
     "hand": "blue",
-    "role": "主題の回帰",
-    "phrase": 23,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 22,
     "peakSeconds": 123.160091,
     "distanceMs": -6.576,
     "strength": 1.196
@@ -1821,20 +1821,20 @@
   },
   {
     "index": 182,
-    "beat": 397.0,
+    "beat": 396.0,
     "hand": "red",
-    "role": "再加速",
-    "phrase": 26,
-    "peakSeconds": 144.162358,
-    "distanceMs": -4.308,
-    "strength": 0.9162
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 24,
+    "peakSeconds": 143.828118,
+    "distanceMs": -5.215,
+    "strength": 1.1253
   },
   {
     "index": 183,
     "beat": 399.0,
     "hand": "blue",
-    "role": "再加速",
-    "phrase": 26,
+    "role": "曲別: 主拍の推進力と両手の着地。半拍交互は短くまとめ、主題の反復は残す。",
+    "phrase": 24,
     "peakSeconds": 144.820862,
     "distanceMs": -12.472,
     "strength": 0.6161

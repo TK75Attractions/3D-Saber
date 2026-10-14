@@ -62,8 +62,8 @@
   {
     "index": 6,
     "beat": 4.0,
-    "hand": "blue",
-    "role": "導入",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 0,
     "peakSeconds": 1.741043,
     "distanceMs": 26.757,
@@ -72,8 +72,8 @@
   {
     "index": 7,
     "beat": 5.0,
-    "hand": "red",
-    "role": "導入",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 0,
     "peakSeconds": 2.100227,
     "distanceMs": -42.63,
@@ -81,29 +81,29 @@
   },
   {
     "index": 8,
-    "beat": 6.0,
-    "hand": "blue",
-    "role": "導入",
+    "beat": 5.5,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 0,
-    "peakSeconds": 2.57415,
-    "distanceMs": 2.721,
-    "strength": 0.7653
+    "peakSeconds": 2.319728,
+    "distanceMs": -37.415,
+    "strength": 0.5936
   },
   {
     "index": 9,
-    "beat": 7.0,
-    "hand": "red",
-    "role": "導入",
+    "beat": 6.5,
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 0,
-    "peakSeconds": 2.993197,
-    "distanceMs": -6.803,
-    "strength": 0.8727
+    "peakSeconds": 2.763719,
+    "distanceMs": -21.995,
+    "strength": 0.3803
   },
   {
     "index": 10,
     "beat": 7.5,
-    "hand": "blue",
-    "role": "導入",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 0,
     "peakSeconds": 3.172789,
     "distanceMs": -41.497,
@@ -113,7 +113,7 @@
     "index": 11,
     "beat": 8.0,
     "hand": "red",
-    "role": "導入",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 0,
     "peakSeconds": 3.422222,
     "distanceMs": -6.349,
@@ -121,43 +121,43 @@
   },
   {
     "index": 12,
-    "beat": 9.0,
+    "beat": 8.5,
     "hand": "blue",
-    "role": "導入",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 0,
-    "peakSeconds": 3.871202,
-    "distanceMs": 14.059,
-    "strength": 0.6869
+    "peakSeconds": 3.671655,
+    "distanceMs": 28.798,
+    "strength": 0.5021
   },
   {
     "index": 13,
-    "beat": 10.0,
+    "beat": 9.5,
     "hand": "red",
-    "role": "導入",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 0,
-    "peakSeconds": 4.280272,
-    "distanceMs": -5.442,
-    "strength": 0.7938
+    "peakSeconds": 4.075737,
+    "distanceMs": 4.308,
+    "strength": 0.6052
   },
   {
     "index": 14,
-    "beat": 11.0,
+    "beat": 10.5,
     "hand": "blue",
-    "role": "導入",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 0,
+    "peakSeconds": 4.509751,
+    "distanceMs": 9.751,
+    "strength": 0.4746
+  },
+  {
+    "index": 15,
+    "beat": 11.0,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 0,
     "peakSeconds": 4.759184,
     "distanceMs": 44.898,
     "strength": 0.4395
-  },
-  {
-    "index": 15,
-    "beat": 11.5,
-    "hand": "red",
-    "role": "導入",
-    "phrase": 0,
-    "peakSeconds": 4.968707,
-    "distanceMs": 40.136,
-    "strength": 0.4912
   },
   {
     "index": 16,
@@ -243,7 +243,7 @@
     "index": 24,
     "beat": 20.0,
     "hand": "red",
-    "role": "導入",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 1,
     "peakSeconds": 8.565533,
     "distanceMs": -5.896,
@@ -251,39 +251,39 @@
   },
   {
     "index": 25,
-    "beat": 21.0,
+    "beat": 20.5,
     "hand": "blue",
-    "role": "導入",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 1,
-    "peakSeconds": 8.994558,
-    "distanceMs": -5.442,
-    "strength": 0.7868
+    "peakSeconds": 8.795011,
+    "distanceMs": 9.297,
+    "strength": 0.4255
   },
   {
     "index": 26,
-    "beat": 22.0,
+    "beat": 21.5,
     "hand": "red",
-    "role": "導入",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 1,
+    "peakSeconds": 9.219048,
+    "distanceMs": 4.762,
+    "strength": 0.5367
+  },
+  {
+    "index": 27,
+    "beat": 22.0,
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 1,
     "peakSeconds": 9.443537,
     "distanceMs": 14.966,
     "strength": 0.7916
   },
   {
-    "index": 27,
-    "beat": 23.0,
-    "hand": "blue",
-    "role": "導入",
-    "phrase": 1,
-    "peakSeconds": 9.852608,
-    "distanceMs": -4.535,
-    "strength": 0.8877
-  },
-  {
     "index": 28,
     "beat": 23.5,
     "hand": "red",
-    "role": "導入",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 1,
     "peakSeconds": 10.092063,
     "distanceMs": 20.635,
@@ -342,8 +342,8 @@
   {
     "index": 34,
     "beat": 28.0,
-    "hand": "red",
-    "role": "導入",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 1,
     "peakSeconds": 12.00771,
     "distanceMs": 7.71,
@@ -351,19 +351,19 @@
   },
   {
     "index": 35,
-    "beat": 29.0,
-    "hand": "blue",
-    "role": "導入",
+    "beat": 28.5,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 1,
-    "peakSeconds": 12.426757,
-    "distanceMs": -1.814,
-    "strength": 0.7106
+    "peakSeconds": 12.227211,
+    "distanceMs": 12.925,
+    "strength": 0.6632
   },
   {
     "index": 36,
     "beat": 29.5,
-    "hand": "red",
-    "role": "導入",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 1,
     "peakSeconds": 12.656236,
     "distanceMs": 13.379,
@@ -371,36 +371,26 @@
   },
   {
     "index": 37,
-    "beat": 30.0,
-    "hand": "blue",
-    "role": "導入",
-    "phrase": 1,
-    "peakSeconds": 12.850794,
-    "distanceMs": -6.349,
-    "strength": 0.696
-  },
-  {
-    "index": 38,
     "beat": 30.5,
     "hand": "red",
-    "role": "導入",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 1,
     "peakSeconds": 13.080272,
     "distanceMs": 8.844,
     "strength": 0.5242
   },
   {
-    "index": 39,
-    "beat": 31.0,
+    "index": 38,
+    "beat": 31.5,
     "hand": "blue",
-    "role": "導入",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 1,
-    "peakSeconds": 13.294785,
-    "distanceMs": 9.07,
-    "strength": 0.7733
+    "peakSeconds": 13.509297,
+    "distanceMs": 9.297,
+    "strength": 0.8361
   },
   {
-    "index": 40,
+    "index": 39,
     "beat": 32,
     "hand": "blue",
     "role": "素材: 細かな交互から両手で締める",
@@ -410,7 +400,7 @@
     "strength": 0.5592
   },
   {
-    "index": 41,
+    "index": 40,
     "beat": 32.5,
     "hand": "red",
     "role": "素材: 細かな交互から両手で締める",
@@ -420,7 +410,7 @@
     "strength": 0.4299
   },
   {
-    "index": 42,
+    "index": 41,
     "beat": 33,
     "hand": "blue",
     "role": "素材: 細かな交互から両手で締める",
@@ -430,7 +420,7 @@
     "strength": 0.7534
   },
   {
-    "index": 43,
+    "index": 42,
     "beat": 33.5,
     "hand": "red",
     "role": "素材: 細かな交互から両手で締める",
@@ -440,7 +430,7 @@
     "strength": 0.6644
   },
   {
-    "index": 44,
+    "index": 43,
     "beat": 34,
     "hand": "blue",
     "role": "素材: 細かな交互から両手で締める",
@@ -450,7 +440,7 @@
     "strength": 0.7188
   },
   {
-    "index": 45,
+    "index": 44,
     "beat": 34.5,
     "hand": "red",
     "role": "素材: 細かな交互から両手で締める",
@@ -460,7 +450,7 @@
     "strength": 0.4491
   },
   {
-    "index": 46,
+    "index": 45,
     "beat": 35,
     "hand": "red",
     "role": "素材: 細かな交互から両手で締める",
@@ -470,7 +460,7 @@
     "strength": 0.7735
   },
   {
-    "index": 47,
+    "index": 46,
     "beat": 35,
     "hand": "blue",
     "role": "素材: 細かな交互から両手で締める",
@@ -480,7 +470,7 @@
     "strength": 0.7735
   },
   {
-    "index": 48,
+    "index": 47,
     "beat": 36,
     "hand": "red",
     "role": "素材: 細かな交互から両手で締める",
@@ -490,7 +480,7 @@
     "strength": 0.5239
   },
   {
-    "index": 49,
+    "index": 48,
     "beat": 36.5,
     "hand": "blue",
     "role": "素材: 細かな交互から両手で締める",
@@ -500,7 +490,7 @@
     "strength": 0.4357
   },
   {
-    "index": 50,
+    "index": 49,
     "beat": 37,
     "hand": "red",
     "role": "素材: 細かな交互から両手で締める",
@@ -510,7 +500,7 @@
     "strength": 0.6982
   },
   {
-    "index": 51,
+    "index": 50,
     "beat": 37.5,
     "hand": "blue",
     "role": "素材: 細かな交互から両手で締める",
@@ -520,7 +510,7 @@
     "strength": 0.5133
   },
   {
-    "index": 52,
+    "index": 51,
     "beat": 38,
     "hand": "red",
     "role": "素材: 細かな交互から両手で締める",
@@ -530,7 +520,7 @@
     "strength": 0.7832
   },
   {
-    "index": 53,
+    "index": 52,
     "beat": 38.5,
     "hand": "blue",
     "role": "素材: 細かな交互から両手で締める",
@@ -540,7 +530,7 @@
     "strength": 0.4766
   },
   {
-    "index": 54,
+    "index": 53,
     "beat": 39,
     "hand": "red",
     "role": "素材: 細かな交互から両手で締める",
@@ -550,7 +540,7 @@
     "strength": 0.8276
   },
   {
-    "index": 55,
+    "index": 54,
     "beat": 39,
     "hand": "blue",
     "role": "素材: 細かな交互から両手で締める",
@@ -560,7 +550,7 @@
     "strength": 0.8276
   },
   {
-    "index": 56,
+    "index": 55,
     "beat": 40.0,
     "hand": "blue",
     "role": "歌の応答",
@@ -570,7 +560,7 @@
     "strength": 0.812
   },
   {
-    "index": 57,
+    "index": 56,
     "beat": 41.0,
     "hand": "red",
     "role": "歌の応答",
@@ -580,7 +570,7 @@
     "strength": 0.7822
   },
   {
-    "index": 58,
+    "index": 57,
     "beat": 41.5,
     "hand": "blue",
     "role": "歌の応答",
@@ -590,7 +580,7 @@
     "strength": 0.5233
   },
   {
-    "index": 59,
+    "index": 58,
     "beat": 42.0,
     "hand": "red",
     "role": "歌の応答",
@@ -600,7 +590,7 @@
     "strength": 0.6109
   },
   {
-    "index": 60,
+    "index": 59,
     "beat": 43.0,
     "hand": "blue",
     "role": "歌の応答",
@@ -610,7 +600,7 @@
     "strength": 0.7372
   },
   {
-    "index": 61,
+    "index": 60,
     "beat": 43.5,
     "hand": "red",
     "role": "歌の応答",
@@ -620,7 +610,7 @@
     "strength": 0.3267
   },
   {
-    "index": 62,
+    "index": 61,
     "beat": 44.0,
     "hand": "blue",
     "role": "歌の応答",
@@ -630,7 +620,7 @@
     "strength": 0.7113
   },
   {
-    "index": 63,
+    "index": 62,
     "beat": 45.0,
     "hand": "red",
     "role": "歌の応答",
@@ -640,7 +630,7 @@
     "strength": 0.4951
   },
   {
-    "index": 64,
+    "index": 63,
     "beat": 45.5,
     "hand": "blue",
     "role": "歌の応答",
@@ -650,7 +640,7 @@
     "strength": 0.4914
   },
   {
-    "index": 65,
+    "index": 64,
     "beat": 46.0,
     "hand": "red",
     "role": "歌の応答",
@@ -660,7 +650,7 @@
     "strength": 0.9462
   },
   {
-    "index": 66,
+    "index": 65,
     "beat": 49.0,
     "hand": "red",
     "role": "歌の応答",
@@ -670,7 +660,7 @@
     "strength": 0.8449
   },
   {
-    "index": 67,
+    "index": 66,
     "beat": 49.5,
     "hand": "blue",
     "role": "歌の応答",
@@ -680,7 +670,7 @@
     "strength": 0.4789
   },
   {
-    "index": 68,
+    "index": 67,
     "beat": 50.0,
     "hand": "red",
     "role": "歌の応答",
@@ -690,7 +680,7 @@
     "strength": 0.7244
   },
   {
-    "index": 69,
+    "index": 68,
     "beat": 51.0,
     "hand": "blue",
     "role": "歌の応答",
@@ -700,7 +690,7 @@
     "strength": 0.731
   },
   {
-    "index": 70,
+    "index": 69,
     "beat": 51.5,
     "hand": "red",
     "role": "歌の応答",
@@ -710,67 +700,57 @@
     "strength": 0.4827
   },
   {
-    "index": 71,
+    "index": 70,
     "beat": 52.0,
     "hand": "blue",
-    "role": "歌の応答",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 3,
     "peakSeconds": 22.284354,
     "distanceMs": -1.361,
     "strength": 0.5852
   },
   {
-    "index": 72,
-    "beat": 53.0,
+    "index": 71,
+    "beat": 52.5,
     "hand": "red",
-    "role": "歌の応答",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 3,
-    "peakSeconds": 22.713379,
-    "distanceMs": -0.907,
-    "strength": 0.9657
+    "peakSeconds": 22.538776,
+    "distanceMs": 38.776,
+    "strength": 0.5056
   },
   {
-    "index": 73,
+    "index": 72,
     "beat": 53.5,
     "hand": "blue",
-    "role": "歌の応答",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 3,
     "peakSeconds": 22.912925,
     "distanceMs": -15.646,
     "strength": 0.5362
   },
   {
+    "index": 73,
+    "beat": 54.5,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 3,
+    "peakSeconds": 23.361905,
+    "distanceMs": 4.762,
+    "strength": 0.5141
+  },
+  {
     "index": 74,
-    "beat": 54.0,
-    "hand": "red",
-    "role": "歌の応答",
-    "phrase": 3,
-    "peakSeconds": 23.137415,
-    "distanceMs": -5.442,
-    "strength": 0.8295
-  },
-  {
-    "index": 75,
-    "beat": 55.0,
-    "hand": "blue",
-    "role": "歌の応答",
-    "phrase": 3,
-    "peakSeconds": 23.571429,
-    "distanceMs": 0.0,
-    "strength": 1.0264
-  },
-  {
-    "index": 76,
     "beat": 55.5,
-    "hand": "red",
-    "role": "歌の応答",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 3,
     "peakSeconds": 23.795918,
     "distanceMs": 10.204,
     "strength": 0.6239
   },
   {
-    "index": 77,
+    "index": 75,
     "beat": 56.0,
     "hand": "blue",
     "role": "歌の応答",
@@ -780,7 +760,7 @@
     "strength": 0.8885
   },
   {
-    "index": 78,
+    "index": 76,
     "beat": 57.0,
     "hand": "red",
     "role": "歌の応答",
@@ -790,7 +770,7 @@
     "strength": 0.8417
   },
   {
-    "index": 79,
+    "index": 77,
     "beat": 57.5,
     "hand": "blue",
     "role": "歌の応答",
@@ -800,7 +780,7 @@
     "strength": 0.4866
   },
   {
-    "index": 80,
+    "index": 78,
     "beat": 58.0,
     "hand": "red",
     "role": "歌の応答",
@@ -810,7 +790,7 @@
     "strength": 0.6059
   },
   {
-    "index": 81,
+    "index": 79,
     "beat": 59.0,
     "hand": "blue",
     "role": "歌の応答",
@@ -820,7 +800,7 @@
     "strength": 0.7925
   },
   {
-    "index": 82,
+    "index": 80,
     "beat": 59.5,
     "hand": "red",
     "role": "歌の応答",
@@ -830,7 +810,7 @@
     "strength": 0.39
   },
   {
-    "index": 83,
+    "index": 81,
     "beat": 60.0,
     "hand": "blue",
     "role": "歌の応答",
@@ -840,7 +820,7 @@
     "strength": 0.7273
   },
   {
-    "index": 84,
+    "index": 82,
     "beat": 61.0,
     "hand": "red",
     "role": "歌の応答",
@@ -850,7 +830,7 @@
     "strength": 0.7541
   },
   {
-    "index": 85,
+    "index": 83,
     "beat": 61.5,
     "hand": "blue",
     "role": "歌の応答",
@@ -860,7 +840,7 @@
     "strength": 0.4634
   },
   {
-    "index": 86,
+    "index": 84,
     "beat": 62.0,
     "hand": "red",
     "role": "歌の応答",
@@ -870,7 +850,7 @@
     "strength": 0.8291
   },
   {
-    "index": 87,
+    "index": 85,
     "beat": 62.5,
     "hand": "blue",
     "role": "歌の応答",
@@ -880,7 +860,7 @@
     "strength": 0.6109
   },
   {
-    "index": 88,
+    "index": 86,
     "beat": 63.0,
     "hand": "red",
     "role": "歌の応答",
@@ -890,7 +870,7 @@
     "strength": 0.8894
   },
   {
-    "index": 89,
+    "index": 87,
     "beat": 64.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -900,7 +880,7 @@
     "strength": 0.6914
   },
   {
-    "index": 90,
+    "index": 88,
     "beat": 64.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -910,7 +890,7 @@
     "strength": 0.6914
   },
   {
-    "index": 91,
+    "index": 89,
     "beat": 65.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -920,7 +900,7 @@
     "strength": 0.7502
   },
   {
-    "index": 92,
+    "index": 90,
     "beat": 66.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -930,7 +910,7 @@
     "strength": 0.9179
   },
   {
-    "index": 93,
+    "index": 91,
     "beat": 67.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -940,7 +920,7 @@
     "strength": 0.7895
   },
   {
-    "index": 94,
+    "index": 92,
     "beat": 67.5,
     "hand": "red",
     "role": "主拍の主題",
@@ -950,107 +930,107 @@
     "strength": 0.628
   },
   {
-    "index": 95,
+    "index": 93,
     "beat": 68.0,
-    "hand": "blue",
-    "role": "主拍の主題",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 4,
     "peakSeconds": 29.133787,
     "distanceMs": -9.07,
     "strength": 1.0354
   },
   {
-    "index": 96,
-    "beat": 69.0,
-    "hand": "red",
-    "role": "主拍の主題",
+    "index": 94,
+    "beat": 68.5,
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 4,
-    "peakSeconds": 29.562812,
-    "distanceMs": -8.617,
-    "strength": 0.7317
+    "peakSeconds": 29.373243,
+    "distanceMs": 16.1,
+    "strength": 0.6361
   },
   {
-    "index": 97,
+    "index": 95,
+    "beat": 69.5,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 4,
+    "peakSeconds": 29.797279,
+    "distanceMs": 11.565,
+    "strength": 0.5182
+  },
+  {
+    "index": 96,
     "beat": 70.0,
     "hand": "blue",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 4,
     "peakSeconds": 29.991837,
     "distanceMs": -8.163,
     "strength": 1.2517
   },
   {
-    "index": 98,
-    "beat": 71.0,
-    "hand": "red",
-    "role": "主拍の主題",
-    "phrase": 4,
-    "peakSeconds": 30.420862,
-    "distanceMs": -7.71,
-    "strength": 1.1421
-  },
-  {
-    "index": 99,
+    "index": 97,
     "beat": 71.5,
-    "hand": "blue",
-    "role": "主拍の主題",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 4,
     "peakSeconds": 30.655329,
     "distanceMs": 12.472,
     "strength": 0.4861
   },
   {
-    "index": 100,
+    "index": 98,
     "beat": 72.0,
     "hand": "red",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 4,
     "peakSeconds": 30.849887,
     "distanceMs": -7.256,
     "strength": 1.1823
   },
   {
-    "index": 101,
-    "beat": 73.0,
+    "index": 99,
+    "beat": 72.5,
     "hand": "blue",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 4,
-    "peakSeconds": 31.278912,
-    "distanceMs": -6.803,
-    "strength": 0.8921
+    "peakSeconds": 31.084354,
+    "distanceMs": 12.925,
+    "strength": 0.6102
   },
   {
-    "index": 102,
-    "beat": 74.0,
+    "index": 100,
+    "beat": 73.5,
     "hand": "red",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 4,
+    "peakSeconds": 31.50839,
+    "distanceMs": 8.39,
+    "strength": 0.6222
+  },
+  {
+    "index": 101,
+    "beat": 74.0,
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 4,
     "peakSeconds": 31.707937,
     "distanceMs": -6.349,
     "strength": 0.9841
   },
   {
-    "index": 103,
+    "index": 102,
     "beat": 75.0,
-    "hand": "blue",
-    "role": "主拍の主題",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 4,
     "peakSeconds": 32.136961,
     "distanceMs": -5.896,
     "strength": 1.17
   },
   {
-    "index": 104,
-    "beat": 75.5,
-    "hand": "red",
-    "role": "主拍の主題",
-    "phrase": 4,
-    "peakSeconds": 32.371429,
-    "distanceMs": 14.286,
-    "strength": 0.6343
-  },
-  {
-    "index": 105,
+    "index": 103,
     "beat": 76.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1060,7 +1040,7 @@
     "strength": 1.0336
   },
   {
-    "index": 106,
+    "index": 104,
     "beat": 77.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1070,7 +1050,7 @@
     "strength": 0.6764
   },
   {
-    "index": 107,
+    "index": 105,
     "beat": 77.5,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1080,7 +1060,7 @@
     "strength": 0.5873
   },
   {
-    "index": 108,
+    "index": 106,
     "beat": 78.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1090,7 +1070,7 @@
     "strength": 1.4279
   },
   {
-    "index": 109,
+    "index": 107,
     "beat": 79.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1100,7 +1080,7 @@
     "strength": 1.6665
   },
   {
-    "index": 110,
+    "index": 108,
     "beat": 81.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1110,7 +1090,7 @@
     "strength": 0.8825
   },
   {
-    "index": 111,
+    "index": 109,
     "beat": 82.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1120,7 +1100,7 @@
     "strength": 0.9266
   },
   {
-    "index": 112,
+    "index": 110,
     "beat": 83.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1130,7 +1110,7 @@
     "strength": 1.2377
   },
   {
-    "index": 113,
+    "index": 111,
     "beat": 83.5,
     "hand": "red",
     "role": "主拍の主題",
@@ -1140,107 +1120,97 @@
     "strength": 0.555
   },
   {
-    "index": 114,
+    "index": 112,
     "beat": 84.0,
-    "hand": "blue",
-    "role": "主拍の主題",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 5,
     "peakSeconds": 35.993197,
     "distanceMs": -6.803,
     "strength": 1.0734
   },
   {
-    "index": 115,
+    "index": 113,
     "beat": 85.0,
-    "hand": "red",
-    "role": "主拍の主題",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 5,
     "peakSeconds": 36.422222,
     "distanceMs": -6.349,
     "strength": 0.8159
   },
   {
-    "index": 116,
-    "beat": 86.0,
-    "hand": "blue",
-    "role": "主拍の主題",
-    "phrase": 5,
-    "peakSeconds": 36.851247,
-    "distanceMs": -5.896,
-    "strength": 1.3221
-  },
-  {
-    "index": 117,
-    "beat": 87.0,
+    "index": 114,
+    "beat": 85.5,
     "hand": "red",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 5,
-    "peakSeconds": 37.275283,
-    "distanceMs": -10.431,
-    "strength": 1.5267
+    "peakSeconds": 36.656689,
+    "distanceMs": 13.832,
+    "strength": 0.7871
   },
   {
-    "index": 118,
-    "beat": 87.5,
+    "index": 115,
+    "beat": 86.5,
     "hand": "blue",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 5,
+    "peakSeconds": 37.085714,
+    "distanceMs": 14.286,
+    "strength": 1.0457
+  },
+  {
+    "index": 116,
+    "beat": 87.5,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 5,
     "peakSeconds": 37.514739,
     "distanceMs": 14.739,
     "strength": 0.5849
   },
   {
-    "index": 119,
+    "index": 117,
     "beat": 88.0,
     "hand": "red",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 5,
     "peakSeconds": 37.724263,
     "distanceMs": 9.977,
     "strength": 0.7009
   },
   {
+    "index": 118,
+    "beat": 88.5,
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 5,
+    "peakSeconds": 37.943764,
+    "distanceMs": 15.193,
+    "strength": 0.4967
+  },
+  {
+    "index": 119,
+    "beat": 90.5,
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 5,
+    "peakSeconds": 38.806803,
+    "distanceMs": 21.088,
+    "strength": 0.4111
+  },
+  {
     "index": 120,
-    "beat": 89.0,
-    "hand": "blue",
-    "role": "主拍の主題",
-    "phrase": 5,
-    "peakSeconds": 38.098413,
-    "distanceMs": -44.444,
-    "strength": 0.3094
-  },
-  {
-    "index": 121,
-    "beat": 90.0,
-    "hand": "red",
-    "role": "主拍の主題",
-    "phrase": 5,
-    "peakSeconds": 38.527438,
-    "distanceMs": -43.991,
-    "strength": 0.2035
-  },
-  {
-    "index": 122,
     "beat": 91.0,
-    "hand": "blue",
-    "role": "主拍の主題",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 5,
     "peakSeconds": 39.011338,
     "distanceMs": 11.338,
     "strength": 1.0131
   },
   {
-    "index": 123,
-    "beat": 91.5,
-    "hand": "red",
-    "role": "主拍の主題",
-    "phrase": 5,
-    "peakSeconds": 39.240816,
-    "distanceMs": 26.531,
-    "strength": 0.4721
-  },
-  {
-    "index": 124,
+    "index": 121,
     "beat": 92.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1250,7 +1220,7 @@
     "strength": 1.267
   },
   {
-    "index": 125,
+    "index": 122,
     "beat": 93.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1260,7 +1230,7 @@
     "strength": 0.3572
   },
   {
-    "index": 126,
+    "index": 123,
     "beat": 93.5,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1270,7 +1240,7 @@
     "strength": 0.8302
   },
   {
-    "index": 127,
+    "index": 124,
     "beat": 94.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1280,7 +1250,7 @@
     "strength": 0.6222
   },
   {
-    "index": 128,
+    "index": 125,
     "beat": 94.5,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1290,7 +1260,7 @@
     "strength": 1.5373
   },
   {
-    "index": 129,
+    "index": 126,
     "beat": 95.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1300,7 +1270,7 @@
     "strength": 1.3505
   },
   {
-    "index": 130,
+    "index": 127,
     "beat": 96.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1310,7 +1280,7 @@
     "strength": 1.1616
   },
   {
-    "index": 131,
+    "index": 128,
     "beat": 96.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1320,7 +1290,7 @@
     "strength": 1.1616
   },
   {
-    "index": 132,
+    "index": 129,
     "beat": 97.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1330,7 +1300,7 @@
     "strength": 1.0378
   },
   {
-    "index": 133,
+    "index": 130,
     "beat": 98.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1340,7 +1310,7 @@
     "strength": 1.1124
   },
   {
-    "index": 134,
+    "index": 131,
     "beat": 99.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1350,7 +1320,7 @@
     "strength": 1.0923
   },
   {
-    "index": 135,
+    "index": 132,
     "beat": 99.5,
     "hand": "red",
     "role": "主拍の主題",
@@ -1360,57 +1330,57 @@
     "strength": 0.5604
   },
   {
-    "index": 136,
+    "index": 133,
     "beat": 100.0,
-    "hand": "blue",
-    "role": "主拍の主題",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 6,
     "peakSeconds": 42.847619,
     "distanceMs": -9.524,
     "strength": 1.0075
   },
   {
-    "index": 137,
-    "beat": 101.0,
-    "hand": "red",
-    "role": "主拍の主題",
+    "index": 134,
+    "beat": 100.5,
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 6,
-    "peakSeconds": 43.286621,
-    "distanceMs": 0.907,
-    "strength": 0.9716
+    "peakSeconds": 43.077098,
+    "distanceMs": 5.669,
+    "strength": 0.3621
   },
   {
-    "index": 138,
+    "index": 135,
+    "beat": 101.5,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 6,
+    "peakSeconds": 43.511111,
+    "distanceMs": 11.111,
+    "strength": 0.6075
+  },
+  {
+    "index": 136,
     "beat": 102.0,
     "hand": "blue",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 6,
     "peakSeconds": 43.705669,
     "distanceMs": -8.617,
     "strength": 1.2725
   },
   {
-    "index": 139,
-    "beat": 103.0,
-    "hand": "red",
-    "role": "主拍の主題",
-    "phrase": 6,
-    "peakSeconds": 44.134694,
-    "distanceMs": -8.163,
-    "strength": 1.429
-  },
-  {
-    "index": 140,
+    "index": 137,
     "beat": 103.5,
-    "hand": "blue",
-    "role": "主拍の主題",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 6,
     "peakSeconds": 44.364172,
     "distanceMs": 7.029,
     "strength": 0.721
   },
   {
-    "index": 141,
+    "index": 138,
     "beat": 104.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1420,7 +1390,7 @@
     "strength": 1.2501
   },
   {
-    "index": 142,
+    "index": 139,
     "beat": 105.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1430,7 +1400,7 @@
     "strength": 1.0877
   },
   {
-    "index": 143,
+    "index": 140,
     "beat": 106.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1440,7 +1410,7 @@
     "strength": 1.3382
   },
   {
-    "index": 144,
+    "index": 141,
     "beat": 107.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1450,7 +1420,7 @@
     "strength": 1.1726
   },
   {
-    "index": 145,
+    "index": 142,
     "beat": 107.5,
     "hand": "red",
     "role": "主拍の主題",
@@ -1460,7 +1430,7 @@
     "strength": 0.6129
   },
   {
-    "index": 146,
+    "index": 143,
     "beat": 108.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1470,7 +1440,7 @@
     "strength": 1.1169
   },
   {
-    "index": 147,
+    "index": 144,
     "beat": 109.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1480,7 +1450,7 @@
     "strength": 1.2375
   },
   {
-    "index": 148,
+    "index": 145,
     "beat": 109.5,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1490,7 +1460,7 @@
     "strength": 0.6237
   },
   {
-    "index": 149,
+    "index": 146,
     "beat": 110.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1500,7 +1470,7 @@
     "strength": 1.3206
   },
   {
-    "index": 150,
+    "index": 147,
     "beat": 111.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1510,7 +1480,7 @@
     "strength": 1.7048
   },
   {
-    "index": 151,
+    "index": 148,
     "beat": 113.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1520,7 +1490,7 @@
     "strength": 0.8178
   },
   {
-    "index": 152,
+    "index": 149,
     "beat": 114.0,
     "hand": "red",
     "role": "主拍の主題",
@@ -1530,7 +1500,7 @@
     "strength": 0.7751
   },
   {
-    "index": 153,
+    "index": 150,
     "beat": 115.0,
     "hand": "blue",
     "role": "主拍の主題",
@@ -1540,7 +1510,7 @@
     "strength": 0.6906
   },
   {
-    "index": 154,
+    "index": 151,
     "beat": 115.5,
     "hand": "red",
     "role": "主拍の主題",
@@ -1550,167 +1520,157 @@
     "strength": 0.5043
   },
   {
-    "index": 155,
+    "index": 152,
     "beat": 116.0,
-    "hand": "blue",
-    "role": "主拍の主題",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
     "peakSeconds": 49.712018,
     "distanceMs": -2.268,
     "strength": 0.6626
   },
   {
-    "index": 156,
+    "index": 153,
     "beat": 117.0,
-    "hand": "red",
-    "role": "主拍の主題",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
     "peakSeconds": 50.141043,
     "distanceMs": -1.814,
     "strength": 0.8965
   },
   {
-    "index": 157,
-    "beat": 118.0,
-    "hand": "blue",
-    "role": "主拍の主題",
-    "phrase": 7,
-    "peakSeconds": 50.565079,
-    "distanceMs": -6.349,
-    "strength": 0.8832
-  },
-  {
-    "index": 158,
-    "beat": 119.0,
+    "index": 154,
+    "beat": 117.5,
     "hand": "red",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
-    "peakSeconds": 50.994104,
-    "distanceMs": -5.896,
-    "strength": 1.2604
+    "peakSeconds": 50.385488,
+    "distanceMs": 28.345,
+    "strength": 0.7361
   },
   {
-    "index": 159,
-    "beat": 119.5,
+    "index": 155,
+    "beat": 118.5,
     "hand": "blue",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 7,
+    "peakSeconds": 50.789569,
+    "distanceMs": 3.855,
+    "strength": 0.6872
+  },
+  {
+    "index": 156,
+    "beat": 119.5,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
     "peakSeconds": 51.243537,
     "distanceMs": 29.252,
     "strength": 0.5709
   },
   {
-    "index": 160,
+    "index": 157,
     "beat": 120.0,
     "hand": "red",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
     "peakSeconds": 51.423129,
     "distanceMs": -5.442,
     "strength": 0.846
   },
   {
-    "index": 161,
-    "beat": 121.0,
+    "index": 158,
+    "beat": 120.5,
     "hand": "blue",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
-    "peakSeconds": 51.847166,
-    "distanceMs": -9.977,
-    "strength": 0.7378
+    "peakSeconds": 51.672562,
+    "distanceMs": 29.705,
+    "strength": 0.408
   },
   {
-    "index": 162,
-    "beat": 122.0,
+    "index": 159,
+    "beat": 121.5,
     "hand": "red",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
-    "peakSeconds": 52.281179,
-    "distanceMs": -4.535,
-    "strength": 0.8544
+    "peakSeconds": 52.081633,
+    "distanceMs": 10.204,
+    "strength": 0.5414
   },
   {
-    "index": 163,
-    "beat": 123.0,
+    "index": 160,
+    "beat": 122.5,
     "hand": "blue",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 7,
+    "peakSeconds": 52.505669,
+    "distanceMs": 5.669,
+    "strength": 0.6189
+  },
+  {
+    "index": 161,
+    "beat": 123.0,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
     "peakSeconds": 52.720181,
     "distanceMs": 5.896,
     "strength": 0.777
   },
   {
-    "index": 164,
-    "beat": 123.5,
-    "hand": "red",
-    "role": "主拍の主題",
-    "phrase": 7,
-    "peakSeconds": 52.944671,
-    "distanceMs": 16.1,
-    "strength": 0.5145
-  },
-  {
-    "index": 165,
+    "index": 162,
     "beat": 124.0,
     "hand": "blue",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
     "peakSeconds": 53.139229,
     "distanceMs": -3.628,
     "strength": 0.5341
   },
   {
-    "index": 166,
+    "index": 163,
     "beat": 125.0,
     "hand": "red",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
     "peakSeconds": 53.563265,
     "distanceMs": -8.163,
     "strength": 0.759
   },
   {
-    "index": 167,
+    "index": 164,
     "beat": 125.5,
     "hand": "blue",
-    "role": "主拍の主題",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
     "peakSeconds": 53.812698,
     "distanceMs": 26.984,
     "strength": 0.5631
   },
   {
-    "index": 168,
-    "beat": 126.0,
-    "hand": "red",
-    "role": "主拍の主題",
-    "phrase": 7,
-    "peakSeconds": 53.997279,
-    "distanceMs": -2.721,
-    "strength": 0.9007
-  },
-  {
-    "index": 169,
+    "index": 165,
     "beat": 126.5,
-    "hand": "blue",
-    "role": "主拍の主題",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
     "peakSeconds": 54.211791,
     "distanceMs": -2.494,
     "strength": 0.5743
   },
   {
-    "index": 170,
+    "index": 166,
     "beat": 127.0,
-    "hand": "red",
-    "role": "主拍の主題",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 7,
     "peakSeconds": 54.421315,
     "distanceMs": -7.256,
     "strength": 1.1839
   },
   {
-    "index": 171,
+    "index": 167,
     "beat": 128.0,
     "hand": "red",
     "role": "素材: 短い連打から両手へ",
@@ -1720,7 +1680,7 @@
     "strength": 0.6547
   },
   {
-    "index": 172,
+    "index": 168,
     "beat": 128.5,
     "hand": "red",
     "role": "素材: 短い連打から両手へ",
@@ -1730,7 +1690,7 @@
     "strength": 0.4854
   },
   {
-    "index": 173,
+    "index": 169,
     "beat": 129.0,
     "hand": "blue",
     "role": "素材: 短い連打から両手へ",
@@ -1740,7 +1700,7 @@
     "strength": 1.0123
   },
   {
-    "index": 174,
+    "index": 170,
     "beat": 130.0,
     "hand": "red",
     "role": "素材: 短い連打から両手へ",
@@ -1750,7 +1710,7 @@
     "strength": 0.8944
   },
   {
-    "index": 175,
+    "index": 171,
     "beat": 131.0,
     "hand": "red",
     "role": "素材: 短い連打から両手へ",
@@ -1760,7 +1720,7 @@
     "strength": 0.922
   },
   {
-    "index": 176,
+    "index": 172,
     "beat": 131.0,
     "hand": "blue",
     "role": "素材: 短い連打から両手へ",
@@ -1770,7 +1730,7 @@
     "strength": 0.922
   },
   {
-    "index": 177,
+    "index": 173,
     "beat": 132.0,
     "hand": "blue",
     "role": "素材: 短い連打から両手へ",
@@ -1780,7 +1740,7 @@
     "strength": 0.5593
   },
   {
-    "index": 178,
+    "index": 174,
     "beat": 132.5,
     "hand": "blue",
     "role": "素材: 短い連打から両手へ",
@@ -1790,7 +1750,7 @@
     "strength": 0.3998
   },
   {
-    "index": 179,
+    "index": 175,
     "beat": 133.0,
     "hand": "red",
     "role": "素材: 短い連打から両手へ",
@@ -1800,7 +1760,7 @@
     "strength": 1.147
   },
   {
-    "index": 180,
+    "index": 176,
     "beat": 134.0,
     "hand": "blue",
     "role": "素材: 短い連打から両手へ",
@@ -1810,7 +1770,7 @@
     "strength": 0.7947
   },
   {
-    "index": 181,
+    "index": 177,
     "beat": 135.0,
     "hand": "red",
     "role": "素材: 短い連打から両手へ",
@@ -1820,7 +1780,7 @@
     "strength": 1.3786
   },
   {
-    "index": 182,
+    "index": 178,
     "beat": 135.0,
     "hand": "blue",
     "role": "素材: 短い連打から両手へ",
@@ -1830,7 +1790,7 @@
     "strength": 1.3786
   },
   {
-    "index": 183,
+    "index": 179,
     "beat": 136.0,
     "hand": "red",
     "role": "展開",
@@ -1840,7 +1800,7 @@
     "strength": 0.7496
   },
   {
-    "index": 184,
+    "index": 180,
     "beat": 136.5,
     "hand": "blue",
     "role": "展開",
@@ -1850,7 +1810,7 @@
     "strength": 0.5936
   },
   {
-    "index": 185,
+    "index": 181,
     "beat": 137.0,
     "hand": "red",
     "role": "展開",
@@ -1860,7 +1820,7 @@
     "strength": 1.2376
   },
   {
-    "index": 186,
+    "index": 182,
     "beat": 138.0,
     "hand": "blue",
     "role": "展開",
@@ -1870,7 +1830,7 @@
     "strength": 0.7625
   },
   {
-    "index": 187,
+    "index": 183,
     "beat": 138.5,
     "hand": "red",
     "role": "展開",
@@ -1880,7 +1840,7 @@
     "strength": 0.5316
   },
   {
-    "index": 188,
+    "index": 184,
     "beat": 139.0,
     "hand": "blue",
     "role": "展開",
@@ -1890,7 +1850,7 @@
     "strength": 0.8337
   },
   {
-    "index": 189,
+    "index": 185,
     "beat": 140.0,
     "hand": "red",
     "role": "展開",
@@ -1900,7 +1860,7 @@
     "strength": 0.5028
   },
   {
-    "index": 190,
+    "index": 186,
     "beat": 140.5,
     "hand": "blue",
     "role": "展開",
@@ -1910,7 +1870,7 @@
     "strength": 0.4223
   },
   {
-    "index": 191,
+    "index": 187,
     "beat": 141.0,
     "hand": "red",
     "role": "展開",
@@ -1920,7 +1880,7 @@
     "strength": 1.3879
   },
   {
-    "index": 192,
+    "index": 188,
     "beat": 141.5,
     "hand": "blue",
     "role": "展開",
@@ -1930,7 +1890,7 @@
     "strength": 0.5568
   },
   {
-    "index": 193,
+    "index": 189,
     "beat": 142.0,
     "hand": "red",
     "role": "展開",
@@ -1940,7 +1900,7 @@
     "strength": 0.792
   },
   {
-    "index": 194,
+    "index": 190,
     "beat": 143.0,
     "hand": "red",
     "role": "展開",
@@ -1950,7 +1910,7 @@
     "strength": 1.2147
   },
   {
-    "index": 195,
+    "index": 191,
     "beat": 145.0,
     "hand": "blue",
     "role": "展開",
@@ -1960,7 +1920,7 @@
     "strength": 0.8507
   },
   {
-    "index": 196,
+    "index": 192,
     "beat": 146.0,
     "hand": "red",
     "role": "展開",
@@ -1970,7 +1930,7 @@
     "strength": 0.7058
   },
   {
-    "index": 197,
+    "index": 193,
     "beat": 146.5,
     "hand": "blue",
     "role": "展開",
@@ -1980,7 +1940,7 @@
     "strength": 0.6203
   },
   {
-    "index": 198,
+    "index": 194,
     "beat": 147.0,
     "hand": "red",
     "role": "展開",
@@ -1990,127 +1950,107 @@
     "strength": 1.0668
   },
   {
-    "index": 199,
+    "index": 195,
     "beat": 148.0,
     "hand": "blue",
-    "role": "展開",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 9,
     "peakSeconds": 63.42585,
     "distanceMs": -2.721,
     "strength": 0.6198
   },
   {
-    "index": 200,
-    "beat": 148.5,
-    "hand": "red",
-    "role": "展開",
-    "phrase": 9,
-    "peakSeconds": 63.660317,
-    "distanceMs": 17.46,
-    "strength": 0.5926
-  },
-  {
-    "index": 201,
+    "index": 196,
     "beat": 149.0,
-    "hand": "blue",
-    "role": "展開",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 9,
     "peakSeconds": 63.854875,
     "distanceMs": -2.268,
     "strength": 1.1639
   },
   {
-    "index": 202,
-    "beat": 150.0,
-    "hand": "red",
-    "role": "展開",
+    "index": 197,
+    "beat": 149.5,
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 9,
-    "peakSeconds": 64.278912,
-    "distanceMs": -6.803,
-    "strength": 0.8083
+    "peakSeconds": 64.09932,
+    "distanceMs": 27.891,
+    "strength": 0.6891
   },
   {
-    "index": 203,
+    "index": 198,
     "beat": 150.5,
-    "hand": "blue",
-    "role": "展開",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 9,
     "peakSeconds": 64.50839,
     "distanceMs": 8.39,
     "strength": 0.6311
   },
   {
-    "index": 204,
+    "index": 199,
     "beat": 151.0,
-    "hand": "red",
-    "role": "展開",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 9,
     "peakSeconds": 64.712925,
     "distanceMs": -1.361,
     "strength": 1.2351
   },
   {
-    "index": 205,
+    "index": 200,
     "beat": 152.0,
     "hand": "blue",
-    "role": "展開",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 9,
     "peakSeconds": 65.136961,
     "distanceMs": -5.896,
     "strength": 0.9018
   },
   {
-    "index": 206,
-    "beat": 152.5,
-    "hand": "red",
-    "role": "展開",
-    "phrase": 9,
-    "peakSeconds": 65.36644,
-    "distanceMs": 9.297,
-    "strength": 0.6412
-  },
-  {
-    "index": 207,
+    "index": 201,
     "beat": 153.0,
-    "hand": "blue",
-    "role": "展開",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 9,
     "peakSeconds": 65.565986,
     "distanceMs": -5.442,
     "strength": 1.0868
   },
   {
-    "index": 208,
+    "index": 202,
     "beat": 154.0,
-    "hand": "red",
-    "role": "展開",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 9,
     "peakSeconds": 65.995011,
     "distanceMs": -4.989,
     "strength": 0.7507
   },
   {
-    "index": 209,
+    "index": 203,
     "beat": 154.5,
-    "hand": "blue",
-    "role": "展開",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 9,
     "peakSeconds": 66.22449,
     "distanceMs": 10.204,
     "strength": 0.5006
   },
   {
-    "index": 210,
-    "beat": 155.0,
-    "hand": "red",
-    "role": "展開",
+    "index": 204,
+    "beat": 155.5,
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 9,
-    "peakSeconds": 66.424036,
-    "distanceMs": -4.535,
-    "strength": 0.9144
+    "peakSeconds": 66.668481,
+    "distanceMs": 25.624,
+    "strength": 0.6357
   },
   {
-    "index": 211,
+    "index": 205,
     "beat": 156.0,
     "hand": "blue",
     "role": "展開",
@@ -2120,7 +2060,7 @@
     "strength": 0.5839
   },
   {
-    "index": 212,
+    "index": 206,
     "beat": 156.5,
     "hand": "red",
     "role": "展開",
@@ -2130,7 +2070,7 @@
     "strength": 0.6082
   },
   {
-    "index": 213,
+    "index": 207,
     "beat": 157.0,
     "hand": "blue",
     "role": "展開",
@@ -2140,7 +2080,7 @@
     "strength": 1.2125
   },
   {
-    "index": 214,
+    "index": 208,
     "beat": 157.5,
     "hand": "red",
     "role": "展開",
@@ -2150,7 +2090,7 @@
     "strength": 0.6877
   },
   {
-    "index": 215,
+    "index": 209,
     "beat": 158.0,
     "hand": "blue",
     "role": "展開",
@@ -2160,7 +2100,7 @@
     "strength": 0.8733
   },
   {
-    "index": 216,
+    "index": 210,
     "beat": 158.5,
     "hand": "red",
     "role": "展開",
@@ -2170,7 +2110,7 @@
     "strength": 0.5672
   },
   {
-    "index": 217,
+    "index": 211,
     "beat": 159.0,
     "hand": "blue",
     "role": "展開",
@@ -2180,7 +2120,7 @@
     "strength": 1.2227
   },
   {
-    "index": 218,
+    "index": 212,
     "beat": 160.0,
     "hand": "red",
     "role": "つなぎ",
@@ -2190,7 +2130,7 @@
     "strength": 0.5461
   },
   {
-    "index": 219,
+    "index": 213,
     "beat": 160.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -2200,7 +2140,7 @@
     "strength": 0.5461
   },
   {
-    "index": 220,
+    "index": 214,
     "beat": 161.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -2210,7 +2150,7 @@
     "strength": 0.4445
   },
   {
-    "index": 221,
+    "index": 215,
     "beat": 161.5,
     "hand": "red",
     "role": "つなぎ",
@@ -2220,7 +2160,7 @@
     "strength": 0.4492
   },
   {
-    "index": 222,
+    "index": 216,
     "beat": 162.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -2230,7 +2170,7 @@
     "strength": 0.8396
   },
   {
-    "index": 223,
+    "index": 217,
     "beat": 163.0,
     "hand": "red",
     "role": "つなぎ",
@@ -2240,7 +2180,7 @@
     "strength": 0.4639
   },
   {
-    "index": 224,
+    "index": 218,
     "beat": 163.5,
     "hand": "blue",
     "role": "つなぎ",
@@ -2250,67 +2190,57 @@
     "strength": 0.4192
   },
   {
-    "index": 225,
+    "index": 219,
     "beat": 164.0,
     "hand": "red",
-    "role": "つなぎ",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 10,
     "peakSeconds": 70.280272,
     "distanceMs": -5.442,
     "strength": 0.6879
   },
   {
-    "index": 226,
+    "index": 220,
     "beat": 165.0,
     "hand": "blue",
-    "role": "つなぎ",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 10,
     "peakSeconds": 70.714286,
     "distanceMs": 0.0,
     "strength": 0.4437
   },
   {
-    "index": 227,
+    "index": 221,
     "beat": 165.5,
     "hand": "red",
-    "role": "つなぎ",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 10,
     "peakSeconds": 70.948753,
     "distanceMs": 20.181,
     "strength": 0.4293
   },
   {
-    "index": 228,
-    "beat": 166.0,
+    "index": 222,
+    "beat": 166.5,
     "hand": "blue",
-    "role": "つなぎ",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 10,
-    "peakSeconds": 71.138322,
-    "distanceMs": -4.535,
-    "strength": 0.8072
+    "peakSeconds": 71.352834,
+    "distanceMs": -4.308,
+    "strength": 0.7401
   },
   {
-    "index": 229,
-    "beat": 167.0,
-    "hand": "red",
-    "role": "つなぎ",
-    "phrase": 10,
-    "peakSeconds": 71.567347,
-    "distanceMs": -4.082,
-    "strength": 0.9168
-  },
-  {
-    "index": 230,
+    "index": 223,
     "beat": 167.5,
-    "hand": "blue",
-    "role": "つなぎ",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 10,
     "peakSeconds": 71.781859,
     "distanceMs": -3.855,
     "strength": 0.6639
   },
   {
-    "index": 231,
+    "index": 224,
     "beat": 168.0,
     "hand": "red",
     "role": "つなぎ",
@@ -2320,7 +2250,7 @@
     "strength": 0.5558
   },
   {
-    "index": 232,
+    "index": 225,
     "beat": 169.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -2330,7 +2260,7 @@
     "strength": 0.4194
   },
   {
-    "index": 233,
+    "index": 226,
     "beat": 169.5,
     "hand": "red",
     "role": "つなぎ",
@@ -2340,7 +2270,7 @@
     "strength": 0.8301
   },
   {
-    "index": 234,
+    "index": 227,
     "beat": 170.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -2350,7 +2280,7 @@
     "strength": 0.8109
   },
   {
-    "index": 235,
+    "index": 228,
     "beat": 171.0,
     "hand": "red",
     "role": "つなぎ",
@@ -2360,7 +2290,7 @@
     "strength": 0.4955
   },
   {
-    "index": 236,
+    "index": 229,
     "beat": 171.5,
     "hand": "blue",
     "role": "つなぎ",
@@ -2370,7 +2300,7 @@
     "strength": 0.5595
   },
   {
-    "index": 237,
+    "index": 230,
     "beat": 172.0,
     "hand": "red",
     "role": "つなぎ",
@@ -2380,7 +2310,7 @@
     "strength": 0.7278
   },
   {
-    "index": 238,
+    "index": 231,
     "beat": 173.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -2390,7 +2320,7 @@
     "strength": 0.5266
   },
   {
-    "index": 239,
+    "index": 232,
     "beat": 173.5,
     "hand": "red",
     "role": "つなぎ",
@@ -2400,7 +2330,7 @@
     "strength": 0.6745
   },
   {
-    "index": 240,
+    "index": 233,
     "beat": 174.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -2410,7 +2340,7 @@
     "strength": 0.7401
   },
   {
-    "index": 241,
+    "index": 234,
     "beat": 175.0,
     "hand": "blue",
     "role": "つなぎ",
@@ -2420,7 +2350,7 @@
     "strength": 0.8739
   },
   {
-    "index": 242,
+    "index": 235,
     "beat": 177.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -2430,7 +2360,7 @@
     "strength": 0.7657
   },
   {
-    "index": 243,
+    "index": 236,
     "beat": 177.5,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -2440,7 +2370,7 @@
     "strength": 1.0111
   },
   {
-    "index": 244,
+    "index": 237,
     "beat": 178.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -2450,7 +2380,7 @@
     "strength": 0.7138
   },
   {
-    "index": 245,
+    "index": 238,
     "beat": 179.0,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -2460,7 +2390,7 @@
     "strength": 0.5274
   },
   {
-    "index": 246,
+    "index": 239,
     "beat": 179.5,
     "hand": "red",
     "role": "歌の裏拍",
@@ -2470,67 +2400,57 @@
     "strength": 1.0904
   },
   {
-    "index": 247,
+    "index": 240,
     "beat": 180.0,
     "hand": "blue",
-    "role": "歌の裏拍",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 11,
     "peakSeconds": 77.144671,
     "distanceMs": 1.814,
     "strength": 0.5547
   },
   {
-    "index": 248,
+    "index": 241,
     "beat": 181.0,
     "hand": "red",
-    "role": "歌の裏拍",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 11,
     "peakSeconds": 77.563719,
     "distanceMs": -7.71,
     "strength": 0.604
   },
   {
-    "index": 249,
+    "index": 242,
     "beat": 181.5,
     "hand": "blue",
-    "role": "歌の裏拍",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 11,
     "peakSeconds": 77.778231,
     "distanceMs": -7.483,
     "strength": 1.4483
   },
   {
-    "index": 250,
-    "beat": 182.0,
+    "index": 243,
+    "beat": 182.5,
     "hand": "red",
-    "role": "歌の裏拍",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 11,
-    "peakSeconds": 77.992744,
-    "distanceMs": -7.256,
-    "strength": 0.9309
+    "peakSeconds": 78.242177,
+    "distanceMs": 27.891,
+    "strength": 0.441
   },
   {
-    "index": 251,
+    "index": 244,
     "beat": 183.0,
     "hand": "blue",
-    "role": "歌の裏拍",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 11,
     "peakSeconds": 78.421769,
     "distanceMs": -6.803,
     "strength": 0.6356
   },
   {
-    "index": 252,
-    "beat": 183.5,
-    "hand": "red",
-    "role": "歌の裏拍",
-    "phrase": 11,
-    "peakSeconds": 78.64127,
-    "distanceMs": -1.587,
-    "strength": 0.7285
-  },
-  {
-    "index": 253,
+    "index": 245,
     "beat": 184.0,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -2540,7 +2460,7 @@
     "strength": 0.6892
   },
   {
-    "index": 254,
+    "index": 246,
     "beat": 185.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -2550,7 +2470,7 @@
     "strength": 0.517
   },
   {
-    "index": 255,
+    "index": 247,
     "beat": 185.5,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -2560,7 +2480,7 @@
     "strength": 1.0127
   },
   {
-    "index": 256,
+    "index": 248,
     "beat": 186.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -2570,7 +2490,7 @@
     "strength": 0.6883
   },
   {
-    "index": 257,
+    "index": 249,
     "beat": 187.0,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -2580,7 +2500,7 @@
     "strength": 0.8864
   },
   {
-    "index": 258,
+    "index": 250,
     "beat": 187.5,
     "hand": "red",
     "role": "歌の裏拍",
@@ -2590,67 +2510,57 @@
     "strength": 1.1481
   },
   {
-    "index": 259,
+    "index": 251,
     "beat": 188.0,
-    "hand": "blue",
-    "role": "歌の裏拍",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 11,
     "peakSeconds": 80.566893,
     "distanceMs": -4.535,
     "strength": 1.02
   },
   {
-    "index": 260,
-    "beat": 189.0,
-    "hand": "red",
-    "role": "歌の裏拍",
+    "index": 252,
+    "beat": 188.5,
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 11,
-    "peakSeconds": 80.956009,
-    "distanceMs": -43.991,
-    "strength": 0.3887
+    "peakSeconds": 80.771429,
+    "distanceMs": -14.286,
+    "strength": 0.2797
   },
   {
-    "index": 261,
+    "index": 253,
     "beat": 189.5,
-    "hand": "blue",
-    "role": "歌の裏拍",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 11,
     "peakSeconds": 81.195465,
     "distanceMs": -18.821,
     "strength": 1.841
   },
   {
-    "index": 262,
+    "index": 254,
     "beat": 190.0,
-    "hand": "red",
-    "role": "歌の裏拍",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 11,
     "peakSeconds": 81.404989,
     "distanceMs": -23.583,
     "strength": 0.4151
   },
   {
-    "index": 263,
-    "beat": 190.5,
-    "hand": "blue",
-    "role": "歌の裏拍",
-    "phrase": 11,
-    "peakSeconds": 81.62449,
-    "distanceMs": -18.367,
-    "strength": 1.2518
-  },
-  {
-    "index": 264,
-    "beat": 191.0,
+    "index": 255,
+    "beat": 191.5,
     "hand": "red",
-    "role": "歌の裏拍",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 11,
-    "peakSeconds": 81.839002,
-    "distanceMs": -18.141,
-    "strength": 1.3564
+    "peakSeconds": 82.053515,
+    "distanceMs": -17.914,
+    "strength": 0.7073
   },
   {
-    "index": 265,
+    "index": 256,
     "beat": 192,
     "hand": "blue",
     "role": "素材: 細かい交互から両手へ",
@@ -2660,7 +2570,7 @@
     "strength": 1.2464
   },
   {
-    "index": 266,
+    "index": 257,
     "beat": 192.5,
     "hand": "red",
     "role": "素材: 細かい交互から両手へ",
@@ -2670,7 +2580,7 @@
     "strength": 0.4772
   },
   {
-    "index": 267,
+    "index": 258,
     "beat": 192.75,
     "hand": "blue",
     "role": "素材: 細かい交互から両手へ",
@@ -2680,7 +2590,7 @@
     "strength": 0.8884
   },
   {
-    "index": 268,
+    "index": 259,
     "beat": 193,
     "hand": "red",
     "role": "素材: 細かい交互から両手へ",
@@ -2690,7 +2600,7 @@
     "strength": 0.8056
   },
   {
-    "index": 269,
+    "index": 260,
     "beat": 193.25,
     "hand": "blue",
     "role": "素材: 細かい交互から両手へ",
@@ -2700,7 +2610,7 @@
     "strength": 0.4202
   },
   {
-    "index": 270,
+    "index": 261,
     "beat": 193.5,
     "hand": "red",
     "role": "素材: 細かい交互から両手へ",
@@ -2710,7 +2620,7 @@
     "strength": 0.8259
   },
   {
-    "index": 271,
+    "index": 262,
     "beat": 193.75,
     "hand": "blue",
     "role": "素材: 細かい交互から両手へ",
@@ -2720,7 +2630,7 @@
     "strength": 0.5124
   },
   {
-    "index": 272,
+    "index": 263,
     "beat": 194,
     "hand": "red",
     "role": "素材: 細かい交互から両手へ",
@@ -2730,7 +2640,7 @@
     "strength": 0.985
   },
   {
-    "index": 273,
+    "index": 264,
     "beat": 194,
     "hand": "blue",
     "role": "素材: 細かい交互から両手へ",
@@ -2740,7 +2650,7 @@
     "strength": 0.985
   },
   {
-    "index": 274,
+    "index": 265,
     "beat": 195,
     "hand": "red",
     "role": "素材: 細かい交互から両手へ",
@@ -2750,7 +2660,7 @@
     "strength": 0.4674
   },
   {
-    "index": 275,
+    "index": 266,
     "beat": 195,
     "hand": "blue",
     "role": "素材: 細かい交互から両手へ",
@@ -2760,7 +2670,7 @@
     "strength": 0.4674
   },
   {
-    "index": 276,
+    "index": 267,
     "beat": 196,
     "hand": "red",
     "role": "素材: 細かい交互から両手へ",
@@ -2770,7 +2680,7 @@
     "strength": 0.7778
   },
   {
-    "index": 277,
+    "index": 268,
     "beat": 196.5,
     "hand": "blue",
     "role": "素材: 細かい交互から両手へ",
@@ -2780,7 +2690,7 @@
     "strength": 0.4553
   },
   {
-    "index": 278,
+    "index": 269,
     "beat": 196.75,
     "hand": "red",
     "role": "素材: 細かい交互から両手へ",
@@ -2790,7 +2700,7 @@
     "strength": 0.8198
   },
   {
-    "index": 279,
+    "index": 270,
     "beat": 197,
     "hand": "blue",
     "role": "素材: 細かい交互から両手へ",
@@ -2800,7 +2710,7 @@
     "strength": 0.6512
   },
   {
-    "index": 280,
+    "index": 271,
     "beat": 197.25,
     "hand": "red",
     "role": "素材: 細かい交互から両手へ",
@@ -2810,7 +2720,7 @@
     "strength": 0.3883
   },
   {
-    "index": 281,
+    "index": 272,
     "beat": 197.5,
     "hand": "blue",
     "role": "素材: 細かい交互から両手へ",
@@ -2820,7 +2730,7 @@
     "strength": 1.1326
   },
   {
-    "index": 282,
+    "index": 273,
     "beat": 197.75,
     "hand": "red",
     "role": "素材: 細かい交互から両手へ",
@@ -2830,7 +2740,7 @@
     "strength": 0.4877
   },
   {
-    "index": 283,
+    "index": 274,
     "beat": 198,
     "hand": "red",
     "role": "素材: 細かい交互から両手へ",
@@ -2840,7 +2750,7 @@
     "strength": 0.6288
   },
   {
-    "index": 284,
+    "index": 275,
     "beat": 198,
     "hand": "blue",
     "role": "素材: 細かい交互から両手へ",
@@ -2850,7 +2760,7 @@
     "strength": 0.6288
   },
   {
-    "index": 285,
+    "index": 276,
     "beat": 199,
     "hand": "red",
     "role": "素材: 細かい交互から両手へ",
@@ -2860,7 +2770,7 @@
     "strength": 0.8553
   },
   {
-    "index": 286,
+    "index": 277,
     "beat": 199,
     "hand": "blue",
     "role": "素材: 細かい交互から両手へ",
@@ -2870,7 +2780,7 @@
     "strength": 0.8553
   },
   {
-    "index": 287,
+    "index": 278,
     "beat": 200.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -2880,7 +2790,7 @@
     "strength": 0.6226
   },
   {
-    "index": 288,
+    "index": 279,
     "beat": 201.0,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -2890,7 +2800,7 @@
     "strength": 0.5272
   },
   {
-    "index": 289,
+    "index": 280,
     "beat": 201.5,
     "hand": "red",
     "role": "歌の裏拍",
@@ -2900,7 +2810,7 @@
     "strength": 1.0127
   },
   {
-    "index": 290,
+    "index": 281,
     "beat": 202.0,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -2910,7 +2820,7 @@
     "strength": 0.724
   },
   {
-    "index": 291,
+    "index": 282,
     "beat": 203.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -2920,7 +2830,7 @@
     "strength": 0.5876
   },
   {
-    "index": 292,
+    "index": 283,
     "beat": 203.5,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -2930,7 +2840,7 @@
     "strength": 1.0688
   },
   {
-    "index": 293,
+    "index": 284,
     "beat": 204.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -2940,7 +2850,7 @@
     "strength": 0.5529
   },
   {
-    "index": 294,
+    "index": 285,
     "beat": 205.0,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -2950,7 +2860,7 @@
     "strength": 0.4841
   },
   {
-    "index": 295,
+    "index": 286,
     "beat": 205.5,
     "hand": "red",
     "role": "歌の裏拍",
@@ -2960,7 +2870,7 @@
     "strength": 0.9982
   },
   {
-    "index": 296,
+    "index": 287,
     "beat": 206.0,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -2970,7 +2880,7 @@
     "strength": 0.731
   },
   {
-    "index": 297,
+    "index": 288,
     "beat": 207.0,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -2980,7 +2890,7 @@
     "strength": 1.0721
   },
   {
-    "index": 298,
+    "index": 289,
     "beat": 209.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -2990,7 +2900,7 @@
     "strength": 0.5496
   },
   {
-    "index": 299,
+    "index": 290,
     "beat": 209.5,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -3000,7 +2910,7 @@
     "strength": 0.7493
   },
   {
-    "index": 300,
+    "index": 291,
     "beat": 210.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -3010,7 +2920,7 @@
     "strength": 0.6656
   },
   {
-    "index": 301,
+    "index": 292,
     "beat": 211.0,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -3020,7 +2930,7 @@
     "strength": 0.75
   },
   {
-    "index": 302,
+    "index": 293,
     "beat": 211.5,
     "hand": "red",
     "role": "歌の裏拍",
@@ -3030,67 +2940,57 @@
     "strength": 0.9248
   },
   {
-    "index": 303,
+    "index": 294,
     "beat": 212.0,
     "hand": "blue",
-    "role": "歌の裏拍",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 13,
     "peakSeconds": 90.848526,
     "distanceMs": -8.617,
     "strength": 0.5977
   },
   {
-    "index": 304,
+    "index": 295,
     "beat": 213.0,
     "hand": "red",
-    "role": "歌の裏拍",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 13,
     "peakSeconds": 91.24263,
     "distanceMs": -43.084,
     "strength": 0.4625
   },
   {
-    "index": 305,
+    "index": 296,
     "beat": 213.5,
     "hand": "blue",
-    "role": "歌の裏拍",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 13,
     "peakSeconds": 91.497052,
     "distanceMs": -2.948,
     "strength": 0.74
   },
   {
-    "index": 306,
-    "beat": 214.0,
+    "index": 297,
+    "beat": 214.5,
     "hand": "red",
-    "role": "歌の裏拍",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 13,
-    "peakSeconds": 91.746485,
-    "distanceMs": 32.2,
-    "strength": 0.6004
+    "peakSeconds": 91.921088,
+    "distanceMs": -7.483,
+    "strength": 0.6897
   },
   {
-    "index": 307,
+    "index": 298,
     "beat": 215.0,
     "hand": "blue",
-    "role": "歌の裏拍",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 13,
     "peakSeconds": 92.14059,
     "distanceMs": -2.268,
     "strength": 0.7855
   },
   {
-    "index": 308,
-    "beat": 215.5,
-    "hand": "red",
-    "role": "歌の裏拍",
-    "phrase": 13,
-    "peakSeconds": 92.350113,
-    "distanceMs": -7.029,
-    "strength": 0.9193
-  },
-  {
-    "index": 309,
+    "index": 299,
     "beat": 216.0,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -3100,7 +3000,7 @@
     "strength": 0.6193
   },
   {
-    "index": 310,
+    "index": 300,
     "beat": 217.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -3110,7 +3010,7 @@
     "strength": 0.6084
   },
   {
-    "index": 311,
+    "index": 301,
     "beat": 217.5,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -3120,7 +3020,7 @@
     "strength": 0.9424
   },
   {
-    "index": 312,
+    "index": 302,
     "beat": 218.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -3130,7 +3030,7 @@
     "strength": 0.6584
   },
   {
-    "index": 313,
+    "index": 303,
     "beat": 219.0,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -3140,7 +3040,7 @@
     "strength": 0.5733
   },
   {
-    "index": 314,
+    "index": 304,
     "beat": 219.5,
     "hand": "red",
     "role": "歌の裏拍",
@@ -3150,7 +3050,7 @@
     "strength": 1.0717
   },
   {
-    "index": 315,
+    "index": 305,
     "beat": 220.0,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -3160,7 +3060,7 @@
     "strength": 0.8419
   },
   {
-    "index": 316,
+    "index": 306,
     "beat": 221.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -3170,7 +3070,7 @@
     "strength": 0.4529
   },
   {
-    "index": 317,
+    "index": 307,
     "beat": 221.5,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -3180,7 +3080,7 @@
     "strength": 1.0069
   },
   {
-    "index": 318,
+    "index": 308,
     "beat": 222.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -3190,7 +3090,7 @@
     "strength": 0.6621
   },
   {
-    "index": 319,
+    "index": 309,
     "beat": 222.5,
     "hand": "blue",
     "role": "歌の裏拍",
@@ -3200,7 +3100,7 @@
     "strength": 1.0134
   },
   {
-    "index": 320,
+    "index": 310,
     "beat": 223.0,
     "hand": "red",
     "role": "歌の裏拍",
@@ -3210,7 +3110,7 @@
     "strength": 0.592
   },
   {
-    "index": 321,
+    "index": 311,
     "beat": 224.0,
     "hand": "red",
     "role": "主拍への回帰",
@@ -3220,7 +3120,7 @@
     "strength": 0.8584
   },
   {
-    "index": 322,
+    "index": 312,
     "beat": 224.0,
     "hand": "blue",
     "role": "主拍への回帰",
@@ -3230,7 +3130,7 @@
     "strength": 0.8584
   },
   {
-    "index": 323,
+    "index": 313,
     "beat": 225.0,
     "hand": "blue",
     "role": "主拍への回帰",
@@ -3240,7 +3140,7 @@
     "strength": 1.1813
   },
   {
-    "index": 324,
+    "index": 314,
     "beat": 226.0,
     "hand": "red",
     "role": "主拍への回帰",
@@ -3250,7 +3150,7 @@
     "strength": 0.8983
   },
   {
-    "index": 325,
+    "index": 315,
     "beat": 227.0,
     "hand": "blue",
     "role": "主拍への回帰",
@@ -3260,7 +3160,7 @@
     "strength": 1.1689
   },
   {
-    "index": 326,
+    "index": 316,
     "beat": 227.5,
     "hand": "red",
     "role": "主拍への回帰",
@@ -3270,107 +3170,107 @@
     "strength": 0.4478
   },
   {
-    "index": 327,
+    "index": 317,
     "beat": 228.0,
-    "hand": "blue",
-    "role": "主拍への回帰",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 14,
     "peakSeconds": 97.707937,
     "distanceMs": -6.349,
     "strength": 1.1662
   },
   {
-    "index": 328,
-    "beat": 229.0,
-    "hand": "red",
-    "role": "主拍への回帰",
+    "index": 318,
+    "beat": 228.5,
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 14,
-    "peakSeconds": 98.136961,
-    "distanceMs": -5.896,
-    "strength": 1.3672
+    "peakSeconds": 97.962358,
+    "distanceMs": 33.787,
+    "strength": 0.4478
   },
   {
-    "index": 329,
+    "index": 319,
+    "beat": 229.5,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 14,
+    "peakSeconds": 98.36644,
+    "distanceMs": 9.297,
+    "strength": 0.5732
+  },
+  {
+    "index": 320,
     "beat": 230.0,
     "hand": "blue",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 14,
     "peakSeconds": 98.565986,
     "distanceMs": -5.442,
     "strength": 1.2377
   },
   {
-    "index": 330,
-    "beat": 231.0,
-    "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 14,
-    "peakSeconds": 98.995011,
-    "distanceMs": -4.989,
-    "strength": 1.3652
-  },
-  {
-    "index": 331,
+    "index": 321,
     "beat": 231.5,
-    "hand": "blue",
-    "role": "主拍への回帰",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 14,
     "peakSeconds": 99.22449,
     "distanceMs": 10.204,
     "strength": 0.4233
   },
   {
-    "index": 332,
+    "index": 322,
     "beat": 232.0,
     "hand": "red",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 14,
     "peakSeconds": 99.419048,
     "distanceMs": -9.524,
     "strength": 1.3104
   },
   {
-    "index": 333,
-    "beat": 233.0,
+    "index": 323,
+    "beat": 232.5,
     "hand": "blue",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 14,
-    "peakSeconds": 99.848073,
-    "distanceMs": -9.07,
-    "strength": 1.4686
+    "peakSeconds": 99.608617,
+    "distanceMs": -34.24,
+    "strength": 0.3382
   },
   {
-    "index": 334,
-    "beat": 234.0,
+    "index": 324,
+    "beat": 233.5,
     "hand": "red",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 14,
+    "peakSeconds": 100.08254,
+    "distanceMs": 11.111,
+    "strength": 0.4593
+  },
+  {
+    "index": 325,
+    "beat": 234.0,
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 14,
     "peakSeconds": 100.282086,
     "distanceMs": -3.628,
     "strength": 1.3825
   },
   {
-    "index": 335,
+    "index": 326,
     "beat": 235.0,
-    "hand": "blue",
-    "role": "主拍への回帰",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 14,
     "peakSeconds": 100.706122,
     "distanceMs": -8.163,
     "strength": 1.5878
   },
   {
-    "index": 336,
-    "beat": 235.5,
-    "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 14,
-    "peakSeconds": 100.950567,
-    "distanceMs": 21.995,
-    "strength": 0.3817
-  },
-  {
-    "index": 337,
+    "index": 327,
     "beat": 236.0,
     "hand": "blue",
     "role": "主拍への回帰",
@@ -3380,7 +3280,7 @@
     "strength": 1.4813
   },
   {
-    "index": 338,
+    "index": 328,
     "beat": 237.0,
     "hand": "red",
     "role": "主拍への回帰",
@@ -3390,7 +3290,7 @@
     "strength": 1.394
   },
   {
-    "index": 339,
+    "index": 329,
     "beat": 237.5,
     "hand": "blue",
     "role": "主拍への回帰",
@@ -3400,7 +3300,7 @@
     "strength": 0.6075
   },
   {
-    "index": 340,
+    "index": 330,
     "beat": 238.0,
     "hand": "red",
     "role": "主拍への回帰",
@@ -3410,7 +3310,7 @@
     "strength": 1.5489
   },
   {
-    "index": 341,
+    "index": 331,
     "beat": 239.0,
     "hand": "red",
     "role": "主拍への回帰",
@@ -3420,7 +3320,7 @@
     "strength": 1.6611
   },
   {
-    "index": 342,
+    "index": 332,
     "beat": 241.0,
     "hand": "blue",
     "role": "主拍への回帰",
@@ -3430,7 +3330,7 @@
     "strength": 1.8522
   },
   {
-    "index": 343,
+    "index": 333,
     "beat": 242.0,
     "hand": "red",
     "role": "主拍への回帰",
@@ -3440,7 +3340,7 @@
     "strength": 1.5507
   },
   {
-    "index": 344,
+    "index": 334,
     "beat": 243.0,
     "hand": "blue",
     "role": "主拍への回帰",
@@ -3450,7 +3350,7 @@
     "strength": 1.5695
   },
   {
-    "index": 345,
+    "index": 335,
     "beat": 243.5,
     "hand": "red",
     "role": "主拍への回帰",
@@ -3460,157 +3360,147 @@
     "strength": 0.4511
   },
   {
-    "index": 346,
+    "index": 336,
     "beat": 244.0,
-    "hand": "blue",
-    "role": "主拍への回帰",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 15,
     "peakSeconds": 104.562358,
     "distanceMs": -9.07,
     "strength": 1.3263
   },
   {
-    "index": 347,
+    "index": 337,
     "beat": 245.0,
-    "hand": "red",
-    "role": "主拍への回帰",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 15,
     "peakSeconds": 104.991383,
     "distanceMs": -8.617,
     "strength": 1.5567
   },
   {
-    "index": 348,
-    "beat": 246.0,
-    "hand": "blue",
-    "role": "主拍への回帰",
-    "phrase": 15,
-    "peakSeconds": 105.420408,
-    "distanceMs": -8.163,
-    "strength": 1.4107
-  },
-  {
-    "index": 349,
-    "beat": 247.0,
+    "index": 338,
+    "beat": 245.5,
     "hand": "red",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 15,
-    "peakSeconds": 105.849433,
-    "distanceMs": -7.71,
-    "strength": 2.0849
+    "peakSeconds": 105.235828,
+    "distanceMs": 21.542,
+    "strength": 0.6823
   },
   {
-    "index": 350,
-    "beat": 247.5,
+    "index": 339,
+    "beat": 246.5,
     "hand": "blue",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 15,
+    "peakSeconds": 105.654875,
+    "distanceMs": 12.018,
+    "strength": 0.6674
+  },
+  {
+    "index": 340,
+    "beat": 247.5,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 15,
     "peakSeconds": 106.0839,
     "distanceMs": 12.472,
     "strength": 0.5501
   },
   {
-    "index": 351,
+    "index": 341,
     "beat": 248.0,
     "hand": "red",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 15,
     "peakSeconds": 106.278458,
     "distanceMs": -7.256,
     "strength": 1.3952
   },
   {
-    "index": 352,
-    "beat": 249.0,
+    "index": 342,
+    "beat": 248.5,
     "hand": "blue",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 15,
-    "peakSeconds": 106.707483,
-    "distanceMs": -6.803,
-    "strength": 1.9501
+    "peakSeconds": 106.502948,
+    "distanceMs": 2.948,
+    "strength": 0.3625
   },
   {
-    "index": 353,
-    "beat": 250.0,
+    "index": 343,
+    "beat": 249.5,
     "hand": "red",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 15,
-    "peakSeconds": 107.136508,
-    "distanceMs": -6.349,
-    "strength": 1.3125
+    "peakSeconds": 106.931973,
+    "distanceMs": 3.401,
+    "strength": 0.3718
   },
   {
-    "index": 354,
-    "beat": 251.0,
+    "index": 344,
+    "beat": 250.5,
     "hand": "blue",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
+    "phrase": 15,
+    "peakSeconds": 107.360998,
+    "distanceMs": 3.855,
+    "strength": 0.4075
+  },
+  {
+    "index": 345,
+    "beat": 251.0,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 15,
     "peakSeconds": 107.565533,
     "distanceMs": -5.896,
     "strength": 1.8232
   },
   {
-    "index": 355,
-    "beat": 251.5,
-    "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 15,
-    "peakSeconds": 107.790023,
-    "distanceMs": 4.308,
-    "strength": 0.3358
-  },
-  {
-    "index": 356,
+    "index": 346,
     "beat": 252.0,
     "hand": "blue",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 15,
     "peakSeconds": 107.989569,
     "distanceMs": -10.431,
     "strength": 1.9895
   },
   {
-    "index": 357,
+    "index": 347,
     "beat": 253.0,
     "hand": "red",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 15,
     "peakSeconds": 108.43356,
     "distanceMs": 4.989,
     "strength": 0.3933
   },
   {
-    "index": 358,
+    "index": 348,
     "beat": 253.5,
     "hand": "blue",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 15,
     "peakSeconds": 108.633107,
     "distanceMs": -9.751,
     "strength": 1.7438
   },
   {
-    "index": 359,
-    "beat": 254.0,
-    "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 15,
-    "peakSeconds": 108.867574,
-    "distanceMs": 10.431,
-    "strength": 0.3542
-  },
-  {
-    "index": 360,
+    "index": 349,
     "beat": 255.0,
     "hand": "blue",
-    "role": "主拍への回帰",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 15,
     "peakSeconds": 109.276644,
     "distanceMs": -9.07,
     "strength": 2.2124
   },
   {
-    "index": 361,
+    "index": 350,
     "beat": 256,
     "hand": "red",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3620,7 +3510,7 @@
     "strength": 1.2185
   },
   {
-    "index": 362,
+    "index": 351,
     "beat": 256.5,
     "hand": "blue",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3630,7 +3520,7 @@
     "strength": 0.5098
   },
   {
-    "index": 363,
+    "index": 352,
     "beat": 257,
     "hand": "red",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3640,7 +3530,7 @@
     "strength": 0.7215
   },
   {
-    "index": 364,
+    "index": 353,
     "beat": 257.5,
     "hand": "blue",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3650,7 +3540,7 @@
     "strength": 0.7615
   },
   {
-    "index": 365,
+    "index": 354,
     "beat": 258.5,
     "hand": "red",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3660,7 +3550,7 @@
     "strength": 0.4934
   },
   {
-    "index": 366,
+    "index": 355,
     "beat": 259,
     "hand": "blue",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3670,7 +3560,7 @@
     "strength": 0.6769
   },
   {
-    "index": 367,
+    "index": 356,
     "beat": 259.5,
     "hand": "red",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3680,7 +3570,7 @@
     "strength": 0.8747
   },
   {
-    "index": 368,
+    "index": 357,
     "beat": 260,
     "hand": "blue",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3690,7 +3580,7 @@
     "strength": 0.6095
   },
   {
-    "index": 369,
+    "index": 358,
     "beat": 260.5,
     "hand": "red",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3700,7 +3590,7 @@
     "strength": 0.3785
   },
   {
-    "index": 370,
+    "index": 359,
     "beat": 261,
     "hand": "blue",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3710,7 +3600,7 @@
     "strength": 0.552
   },
   {
-    "index": 371,
+    "index": 360,
     "beat": 261.5,
     "hand": "red",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3720,7 +3610,7 @@
     "strength": 0.8155
   },
   {
-    "index": 372,
+    "index": 361,
     "beat": 262.5,
     "hand": "blue",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3730,7 +3620,7 @@
     "strength": 0.8261
   },
   {
-    "index": 373,
+    "index": 362,
     "beat": 263,
     "hand": "red",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3740,7 +3630,7 @@
     "strength": 0.6793
   },
   {
-    "index": 374,
+    "index": 363,
     "beat": 263.5,
     "hand": "blue",
     "role": "素材: 高い位置と低い位置の対比",
@@ -3750,7 +3640,7 @@
     "strength": 0.6982
   },
   {
-    "index": 375,
+    "index": 364,
     "beat": 264.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -3760,7 +3650,7 @@
     "strength": 0.7245
   },
   {
-    "index": 376,
+    "index": 365,
     "beat": 265.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -3770,7 +3660,7 @@
     "strength": 0.4793
   },
   {
-    "index": 377,
+    "index": 366,
     "beat": 265.5,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -3780,7 +3670,7 @@
     "strength": 0.9996
   },
   {
-    "index": 378,
+    "index": 367,
     "beat": 266.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -3790,7 +3680,7 @@
     "strength": 0.5903
   },
   {
-    "index": 379,
+    "index": 368,
     "beat": 267.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -3800,7 +3690,7 @@
     "strength": 0.5318
   },
   {
-    "index": 380,
+    "index": 369,
     "beat": 267.5,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -3810,7 +3700,7 @@
     "strength": 0.909
   },
   {
-    "index": 381,
+    "index": 370,
     "beat": 268.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -3820,7 +3710,7 @@
     "strength": 0.6993
   },
   {
-    "index": 382,
+    "index": 371,
     "beat": 269.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -3830,7 +3720,7 @@
     "strength": 0.5385
   },
   {
-    "index": 383,
+    "index": 372,
     "beat": 269.5,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -3840,7 +3730,7 @@
     "strength": 0.76
   },
   {
-    "index": 384,
+    "index": 373,
     "beat": 270.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -3850,7 +3740,7 @@
     "strength": 0.6146
   },
   {
-    "index": 385,
+    "index": 374,
     "beat": 271.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -3860,7 +3750,7 @@
     "strength": 0.8734
   },
   {
-    "index": 386,
+    "index": 375,
     "beat": 273.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -3870,7 +3760,7 @@
     "strength": 0.739
   },
   {
-    "index": 387,
+    "index": 376,
     "beat": 273.5,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -3880,7 +3770,7 @@
     "strength": 0.8832
   },
   {
-    "index": 388,
+    "index": 377,
     "beat": 274.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -3890,7 +3780,7 @@
     "strength": 0.6317
   },
   {
-    "index": 389,
+    "index": 378,
     "beat": 275.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -3900,7 +3790,7 @@
     "strength": 0.7915
   },
   {
-    "index": 390,
+    "index": 379,
     "beat": 275.5,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -3910,127 +3800,107 @@
     "strength": 0.8032
   },
   {
-    "index": 391,
+    "index": 380,
     "beat": 276.0,
-    "hand": "red",
-    "role": "歌の主題の発展",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 17,
     "peakSeconds": 118.306122,
     "distanceMs": 20.408,
     "strength": 0.5408
   },
   {
-    "index": 392,
+    "index": 381,
     "beat": 277.0,
-    "hand": "blue",
-    "role": "歌の主題の発展",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 17,
     "peakSeconds": 118.710204,
     "distanceMs": -4.082,
     "strength": 0.665
   },
   {
-    "index": 393,
+    "index": 382,
     "beat": 277.5,
-    "hand": "red",
-    "role": "歌の主題の発展",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 17,
     "peakSeconds": 118.929705,
     "distanceMs": 1.134,
     "strength": 0.7672
   },
   {
-    "index": 394,
-    "beat": 278.0,
-    "hand": "blue",
-    "role": "歌の主題の発展",
+    "index": 383,
+    "beat": 278.5,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 17,
-    "peakSeconds": 119.13424,
-    "distanceMs": -8.617,
-    "strength": 0.6919
+    "peakSeconds": 119.393651,
+    "distanceMs": 36.508,
+    "strength": 0.4679
   },
   {
-    "index": 395,
+    "index": 384,
     "beat": 279.0,
-    "hand": "red",
-    "role": "歌の主題の発展",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 17,
     "peakSeconds": 119.563265,
     "distanceMs": -8.163,
     "strength": 0.7414
   },
   {
-    "index": 396,
-    "beat": 279.5,
-    "hand": "blue",
-    "role": "歌の主題の発展",
-    "phrase": 17,
-    "peakSeconds": 119.782766,
-    "distanceMs": -2.948,
-    "strength": 0.7772
-  },
-  {
-    "index": 397,
+    "index": 385,
     "beat": 280.0,
-    "hand": "red",
-    "role": "歌の主題の発展",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 17,
     "peakSeconds": 119.99229,
     "distanceMs": -7.71,
     "strength": 0.8783
   },
   {
-    "index": 398,
+    "index": 386,
     "beat": 281.0,
-    "hand": "blue",
-    "role": "歌の主題の発展",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 17,
     "peakSeconds": 120.421315,
     "distanceMs": -7.256,
     "strength": 0.7187
   },
   {
-    "index": 399,
-    "beat": 281.5,
-    "hand": "red",
-    "role": "歌の主題の発展",
-    "phrase": 17,
-    "peakSeconds": 120.635828,
-    "distanceMs": -7.029,
-    "strength": 1.0607
-  },
-  {
-    "index": 400,
+    "index": 387,
     "beat": 282.0,
     "hand": "blue",
-    "role": "歌の主題の発展",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 17,
     "peakSeconds": 120.865306,
     "distanceMs": 8.163,
     "strength": 0.603
   },
   {
-    "index": 401,
-    "beat": 283.0,
+    "index": 388,
+    "beat": 282.5,
     "hand": "red",
-    "role": "歌の主題の発展",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 17,
-    "peakSeconds": 121.319274,
-    "distanceMs": 33.56,
-    "strength": 0.6023
+    "peakSeconds": 121.029932,
+    "distanceMs": -41.497,
+    "strength": 0.5076
   },
   {
-    "index": 402,
+    "index": 389,
     "beat": 283.5,
     "hand": "blue",
-    "role": "歌の主題の発展",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 17,
     "peakSeconds": 121.498866,
     "distanceMs": -1.134,
     "strength": 1.0471
   },
   {
-    "index": 403,
+    "index": 390,
     "beat": 284.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -4040,7 +3910,7 @@
     "strength": 0.7661
   },
   {
-    "index": 404,
+    "index": 391,
     "beat": 285.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -4050,7 +3920,7 @@
     "strength": 0.5859
   },
   {
-    "index": 405,
+    "index": 392,
     "beat": 285.5,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -4060,7 +3930,7 @@
     "strength": 0.9794
   },
   {
-    "index": 406,
+    "index": 393,
     "beat": 286.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -4070,7 +3940,7 @@
     "strength": 0.4622
   },
   {
-    "index": 407,
+    "index": 394,
     "beat": 286.5,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -4080,7 +3950,7 @@
     "strength": 0.7965
   },
   {
-    "index": 408,
+    "index": 395,
     "beat": 287.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -4090,137 +3960,127 @@
     "strength": 0.6457
   },
   {
-    "index": 409,
-    "beat": 288.0,
-    "hand": "red",
-    "role": "歌の主題の発展",
-    "phrase": 18,
-    "peakSeconds": 123.454422,
-    "distanceMs": 25.85,
-    "strength": 0.5755
-  },
-  {
-    "index": 410,
-    "beat": 288.0,
+    "index": 396,
+    "beat": 288,
     "hand": "blue",
-    "role": "歌の主題の発展",
-    "phrase": 18,
+    "role": "素材: 壁を抜けて細かい交互へ戻る",
+    "phrase": -1,
     "peakSeconds": 123.454422,
     "distanceMs": 25.85,
     "strength": 0.5755
   },
   {
-    "index": 411,
-    "beat": 289.0,
+    "index": 397,
+    "beat": 288.5,
     "hand": "red",
-    "role": "歌の主題の発展",
-    "phrase": 18,
+    "role": "素材: 壁を抜けて細かい交互へ戻る",
+    "phrase": -1,
+    "peakSeconds": 123.653968,
+    "distanceMs": 11.111,
+    "strength": 0.4674
+  },
+  {
+    "index": 398,
+    "beat": 289,
+    "hand": "blue",
+    "role": "素材: 壁を抜けて細かい交互へ戻る",
+    "phrase": -1,
     "peakSeconds": 123.823583,
     "distanceMs": -33.56,
     "strength": 0.5899
   },
   {
-    "index": 412,
-    "beat": 289.5,
-    "hand": "blue",
-    "role": "歌の主題の発展",
-    "phrase": 18,
-    "peakSeconds": 124.068027,
-    "distanceMs": -3.401,
-    "strength": 0.9189
-  },
-  {
-    "index": 413,
-    "beat": 290.0,
+    "index": 399,
+    "beat": 290,
     "hand": "red",
-    "role": "歌の主題の発展",
-    "phrase": 18,
+    "role": "素材: 壁を抜けて細かい交互へ戻る",
+    "phrase": -1,
     "peakSeconds": 124.297506,
     "distanceMs": 11.791,
     "strength": 0.5762
   },
   {
-    "index": 414,
-    "beat": 291.0,
+    "index": 400,
+    "beat": 290.5,
     "hand": "blue",
-    "role": "歌の主題の発展",
-    "phrase": 18,
-    "peakSeconds": 124.721542,
-    "distanceMs": 7.256,
-    "strength": 0.5911
+    "role": "素材: 壁を抜けて細かい交互へ戻る",
+    "phrase": -1,
+    "peakSeconds": 124.462132,
+    "distanceMs": -37.868,
+    "strength": 0.3946
   },
   {
-    "index": 415,
+    "index": 401,
     "beat": 291.5,
     "hand": "red",
-    "role": "歌の主題の発展",
-    "phrase": 18,
+    "role": "素材: 壁を抜けて細かい交互へ戻る",
+    "phrase": -1,
     "peakSeconds": 124.926077,
     "distanceMs": -2.494,
     "strength": 1.1466
   },
   {
-    "index": 416,
-    "beat": 292.0,
-    "hand": "blue",
-    "role": "歌の主題の発展",
-    "phrase": 18,
+    "index": 402,
+    "beat": 292,
+    "hand": "red",
+    "role": "素材: 壁を抜けて細かい交互へ戻る",
+    "phrase": -1,
     "peakSeconds": 125.135601,
     "distanceMs": -7.256,
     "strength": 0.6005
   },
   {
-    "index": 417,
-    "beat": 293.0,
+    "index": 403,
+    "beat": 292.5,
+    "hand": "blue",
+    "role": "素材: 壁を抜けて細かい交互へ戻る",
+    "phrase": -1,
+    "peakSeconds": 125.365079,
+    "distanceMs": 7.937,
+    "strength": 0.471
+  },
+  {
+    "index": 404,
+    "beat": 293,
     "hand": "red",
-    "role": "歌の主題の発展",
-    "phrase": 18,
+    "role": "素材: 壁を抜けて細かい交互へ戻る",
+    "phrase": -1,
     "peakSeconds": 125.574603,
     "distanceMs": 3.175,
     "strength": 0.6968
   },
   {
-    "index": 418,
-    "beat": 293.5,
+    "index": 405,
+    "beat": 294,
     "hand": "blue",
-    "role": "歌の主題の発展",
-    "phrase": 18,
-    "peakSeconds": 125.784127,
-    "distanceMs": -1.587,
-    "strength": 0.9457
-  },
-  {
-    "index": 419,
-    "beat": 294.0,
-    "hand": "red",
-    "role": "歌の主題の発展",
-    "phrase": 18,
+    "role": "素材: 壁を抜けて細かい交互へ戻る",
+    "phrase": -1,
     "peakSeconds": 125.988662,
     "distanceMs": -11.338,
     "strength": 0.5684
   },
   {
-    "index": 420,
-    "beat": 295.0,
-    "hand": "blue",
-    "role": "歌の主題の発展",
-    "phrase": 18,
-    "peakSeconds": 126.422676,
-    "distanceMs": -5.896,
-    "strength": 0.556
+    "index": 406,
+    "beat": 294.5,
+    "hand": "red",
+    "role": "素材: 壁を抜けて細かい交互へ戻る",
+    "phrase": -1,
+    "peakSeconds": 126.25805,
+    "distanceMs": 43.764,
+    "strength": 0.463
   },
   {
-    "index": 421,
+    "index": 407,
     "beat": 295.5,
-    "hand": "red",
-    "role": "歌の主題の発展",
-    "phrase": 18,
+    "hand": "blue",
+    "role": "素材: 壁を抜けて細かい交互へ戻る",
+    "phrase": -1,
     "peakSeconds": 126.637188,
     "distanceMs": -5.669,
     "strength": 0.9283
   },
   {
-    "index": 422,
+    "index": 408,
     "beat": 296.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -4230,7 +4090,7 @@
     "strength": 0.873
   },
   {
-    "index": 423,
+    "index": 409,
     "beat": 297.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -4240,7 +4100,7 @@
     "strength": 0.4878
   },
   {
-    "index": 424,
+    "index": 410,
     "beat": 297.5,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -4250,7 +4110,7 @@
     "strength": 0.9113
   },
   {
-    "index": 425,
+    "index": 411,
     "beat": 298.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -4260,7 +4120,7 @@
     "strength": 0.5929
   },
   {
-    "index": 426,
+    "index": 412,
     "beat": 299.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -4270,7 +4130,7 @@
     "strength": 0.5376
   },
   {
-    "index": 427,
+    "index": 413,
     "beat": 299.5,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -4280,7 +4140,7 @@
     "strength": 1.0098
   },
   {
-    "index": 428,
+    "index": 414,
     "beat": 300.0,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -4290,7 +4150,7 @@
     "strength": 0.8822
   },
   {
-    "index": 429,
+    "index": 415,
     "beat": 301.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -4300,7 +4160,7 @@
     "strength": 0.5948
   },
   {
-    "index": 430,
+    "index": 416,
     "beat": 301.5,
     "hand": "blue",
     "role": "歌の主題の発展",
@@ -4310,7 +4170,7 @@
     "strength": 0.8725
   },
   {
-    "index": 431,
+    "index": 417,
     "beat": 302.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -4320,7 +4180,7 @@
     "strength": 0.5544
   },
   {
-    "index": 432,
+    "index": 418,
     "beat": 303.0,
     "hand": "red",
     "role": "歌の主題の発展",
@@ -4330,7 +4190,7 @@
     "strength": 0.8172
   },
   {
-    "index": 433,
+    "index": 419,
     "beat": 304.0,
     "hand": "red",
     "role": "終止",
@@ -4340,7 +4200,7 @@
     "strength": 0.9427
   },
   {
-    "index": 434,
+    "index": 420,
     "beat": 304.5,
     "hand": "blue",
     "role": "終止",
@@ -4350,7 +4210,7 @@
     "strength": 0.6085
   },
   {
-    "index": 435,
+    "index": 421,
     "beat": 305.5,
     "hand": "red",
     "role": "終止",
@@ -4360,7 +4220,7 @@
     "strength": 0.9525
   },
   {
-    "index": 436,
+    "index": 422,
     "beat": 306.0,
     "hand": "blue",
     "role": "終止",
@@ -4370,7 +4230,7 @@
     "strength": 0.5204
   },
   {
-    "index": 437,
+    "index": 423,
     "beat": 306.5,
     "hand": "red",
     "role": "終止",
@@ -4380,7 +4240,7 @@
     "strength": 0.5724
   },
   {
-    "index": 438,
+    "index": 424,
     "beat": 307.5,
     "hand": "blue",
     "role": "終止",
@@ -4390,127 +4250,107 @@
     "strength": 0.8883
   },
   {
-    "index": 439,
+    "index": 425,
     "beat": 308.0,
     "hand": "red",
-    "role": "終止",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 19,
     "peakSeconds": 132.004989,
     "distanceMs": 4.989,
     "strength": 0.5537
   },
   {
-    "index": 440,
-    "beat": 308.5,
+    "index": 426,
+    "beat": 309.0,
     "hand": "blue",
-    "role": "終止",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 19,
-    "peakSeconds": 132.214512,
-    "distanceMs": 0.227,
-    "strength": 0.7022
+    "peakSeconds": 132.429025,
+    "distanceMs": 0.454,
+    "strength": 0.6607
   },
   {
-    "index": 441,
+    "index": 427,
     "beat": 309.5,
     "hand": "red",
-    "role": "終止",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 19,
     "peakSeconds": 132.638549,
     "distanceMs": -4.308,
     "strength": 1.1013
   },
   {
-    "index": 442,
-    "beat": 310.0,
-    "hand": "blue",
-    "role": "終止",
-    "phrase": 19,
-    "peakSeconds": 132.843084,
-    "distanceMs": -14.059,
-    "strength": 0.6385
-  },
-  {
-    "index": 443,
+    "index": 428,
     "beat": 310.5,
-    "hand": "red",
-    "role": "終止",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 19,
     "peakSeconds": 133.067574,
     "distanceMs": -3.855,
     "strength": 0.5399
   },
   {
-    "index": 444,
+    "index": 429,
     "beat": 311.5,
-    "hand": "blue",
-    "role": "終止",
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 19,
     "peakSeconds": 133.496599,
     "distanceMs": -3.401,
     "strength": 0.8999
   },
   {
-    "index": 445,
+    "index": 430,
     "beat": 312.0,
     "hand": "red",
-    "role": "終止",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 19,
     "peakSeconds": 133.706122,
     "distanceMs": -8.163,
     "strength": 0.5992
   },
   {
-    "index": 446,
+    "index": 431,
     "beat": 312.5,
     "hand": "blue",
-    "role": "終止",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 19,
     "peakSeconds": 133.920635,
     "distanceMs": -7.937,
     "strength": 0.6216
   },
   {
-    "index": 447,
+    "index": 432,
     "beat": 313.5,
     "hand": "red",
-    "role": "終止",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 19,
     "peakSeconds": 134.354649,
     "distanceMs": -2.494,
     "strength": 1.1087
   },
   {
-    "index": 448,
-    "beat": 314.0,
-    "hand": "blue",
-    "role": "終止",
-    "phrase": 19,
-    "peakSeconds": 134.564172,
-    "distanceMs": -7.256,
-    "strength": 0.7667
-  },
-  {
-    "index": 449,
+    "index": 433,
     "beat": 314.5,
-    "hand": "red",
-    "role": "終止",
+    "hand": "blue",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 19,
     "peakSeconds": 134.783673,
     "distanceMs": -2.041,
     "strength": 0.515
   },
   {
-    "index": 450,
-    "beat": 315.5,
-    "hand": "blue",
-    "role": "終止",
+    "index": 434,
+    "beat": 315.0,
+    "hand": "red",
+    "role": "曲別: 歌の発音に沿う1.5拍の受け渡しと息継ぎ。広めの横方向の弧をゆっくり戻す。",
     "phrase": 19,
-    "peakSeconds": 135.212698,
-    "distanceMs": -1.587,
-    "strength": 0.7973
+    "peakSeconds": 135.038095,
+    "distanceMs": 38.095,
+    "strength": 0.6373
   },
   {
-    "index": 451,
+    "index": 435,
     "beat": 316.0,
     "hand": "red",
     "role": "終止",
@@ -4520,7 +4360,7 @@
     "strength": 0.7643
   },
   {
-    "index": 452,
+    "index": 436,
     "beat": 316.5,
     "hand": "blue",
     "role": "終止",
@@ -4530,7 +4370,7 @@
     "strength": 0.7472
   },
   {
-    "index": 453,
+    "index": 437,
     "beat": 317.5,
     "hand": "red",
     "role": "終止",
@@ -4540,7 +4380,7 @@
     "strength": 0.943
   },
   {
-    "index": 454,
+    "index": 438,
     "beat": 318.0,
     "hand": "blue",
     "role": "終止",

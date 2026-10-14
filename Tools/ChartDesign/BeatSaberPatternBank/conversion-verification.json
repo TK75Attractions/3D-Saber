@@ -1,46 +1,82 @@
 {
-  "batch": "20261014-2227",
+  "batch": "identity-20261014",
   "newCollected": 6,
   "newConverted": 6,
   "newApplied": 6,
-  "totalCollected": 58,
-  "totalConverted": 58,
-  "totalApplied": 58,
-  "classification": {
-    "conditional": 3,
-    "good": 3
-  },
-  "excludedCandidates": [],
-  "changedSongs": 4,
-  "changedCharts": 6,
-  "retainedPreviousApplications": 52,
-  "outsideInsertionRangesUnchanged": true,
-  "protectedOtherChartsDuringInstall": 37,
-  "concurrentOtherChartEditsExcluded": [],
+  "newAppliedBars": 12,
+  "totalCollected": 64,
+  "totalConverted": 64,
+  "totalApplied": 64,
+  "redesignedCharts": 15,
+  "redesignedRegularBars": 650,
+  "retainedPreviousApplications": 58,
+  "protectedRepoCharts": 37,
   "protectedHostedCharts": 28,
+  "scopePolicy": "scope-policy.json",
+  "automationUpdated": true,
+  "identityDesign": "../FiveSongs20261014/identity-design.json",
+  "similarity": {
+    "easy": {
+      "before": {
+        "rhythm": 0.6086,
+        "hands": 0.3716,
+        "positions": 0.2125
+      },
+      "after": {
+        "rhythm": 0.5355,
+        "hands": 0.3014,
+        "positions": 0.079
+      }
+    },
+    "normal": {
+      "before": {
+        "rhythm": 0.4166,
+        "hands": 0.3087,
+        "positions": 0.0834
+      },
+      "after": {
+        "rhythm": 0.3532,
+        "hands": 0.2386,
+        "positions": 0.0346
+      }
+    },
+    "hard": {
+      "before": {
+        "rhythm": 0.2528,
+        "hands": 0.1936,
+        "positions": 0.0436
+      },
+      "after": {
+        "rhythm": 0.2412,
+        "hands": 0.1215,
+        "positions": 0.0113
+      }
+    }
+  },
   "unity": {
     "tests-merged": {
       "result": "Passed",
       "total": "58",
       "passed": "58",
       "failed": "0",
-      "start-time": "2026-10-14 13:59:00Z",
-      "end-time": "2026-10-14 13:59:13Z"
+      "start-time": "2026-10-14 14:37:28Z",
+      "end-time": "2026-10-14 14:37:44Z"
     },
     "tests-playmode": {
       "result": "Passed",
       "total": "1",
       "passed": "1",
       "failed": "0",
-      "start-time": "2026-10-14 14:00:03Z",
-      "end-time": "2026-10-14 14:00:10Z"
+      "start-time": "2026-10-14 14:38:49Z",
+      "end-time": "2026-10-14 14:39:00Z"
     }
   },
+  "unityValidationProject": "独立コピー UvIdentity。対象20個のchart JSONが実際の本体と同一であることを検証。ユーザーのUnityは終了させていない。",
   "browser": {
-    "patternViews": 116,
+    "patternViews": 128,
     "fullCharts": 15,
     "matchingChartFiles": 15,
-    "inspectedHandLabels": 768,
+    "inspectedHandLabels": 861,
     "oppositeSideLabels": 43,
     "mobileViewport": "390x844",
     "desktopViewport": "1440x1000",
@@ -50,69 +86,67 @@
   "finalBrowser": {
     "bookmarkPersistsAfterReload": true,
     "packageLinks": 5,
-    "oldVideoLinks": 52,
+    "oldVideoLinks": 58,
     "newApplicationDeepLinks": 6,
     "mobileOverflow": false,
     "errors": [],
     "passed": true
   },
-  "maxFlickRun": 3,
+  "scopeTests": {
+    "deniedSongs": [
+      "Zero",
+      "Phobia",
+      "RushE",
+      "unexpected"
+    ],
+    "allowedCharts": 15,
+    "deniedDifficulty": "expert",
+    "preservedApplications": 58,
+    "protectedRepoCharts": 37,
+    "protectedWebCharts": 28
+  },
+  "maxFlickRun": 2,
   "maxPerHandFlickRun": 3,
   "physicalPlayTest": false,
   "phoneHardwareTest": false,
-  "positionPolicy": "通常の横配置を主軸にし、縦・交差・反転は短い技の一つ。今回追加分は通常配置5素材と同じ側の上下の短い技1素材。担当手をx座標から推測しない。",
-  "layoutFrequency": {
-    "templates": 58,
-    "ordinaryTemplates": 47,
-    "techniqueTemplates": [
-      "dream-normal-2",
-      "dream-hard-2",
-      "dream-hard-3",
-      "burning-hard-4",
-      "bring-it-on-3",
-      "shut-up-dance-2",
-      "there-normal-2",
-      "escape-normal-2",
-      "escape-normal-3",
-      "beat-hard-3",
-      "reason-hard-3"
-    ],
-    "appliedTechniques": [
-      "beat-hard-3",
-      "burning-hard-4",
-      "dream-normal-2",
-      "escape-normal-2",
-      "escape-normal-3",
-      "reason-hard-3",
-      "there-normal-2"
-    ],
-    "newTechnique": "reason-hard-3",
-    "wholeSongRotations": false,
-    "templateFlickMax": 1
-  },
-  "sourceVerification": {
-    "verificationSource": "https://beatsaber.com/documentation/level-mappers/index.html",
-    "verifiedOn": "2026-10-14",
-    "entries": [
-      {
-        "song": "Reason For Living",
-        "difficulty": "Hard",
-        "mapper": "Freeek"
-      },
-      {
-        "song": "Crab Rave",
-        "difficulty": "Normal",
-        "mapper": "Freeek"
+  "sourceLimitations": "MISA MISA!は作者の曲区間と190 BPMを確認。動画の難易度はExpert+相当の推定。譜面ZIPは403で照合できず、版と小節頭は未確定。すべて正確な採譜ではなく配置構造の翻案。",
+  "positionPolicy": "通常配置が主軸。全曲を周期回転させず、縦・交差等は既存の短い技だけ保持。色で担当手を判定する。",
+  "publication": {
+    "pattern": {
+      "commit": "e6ca2321c858cf7cfc235e64d805a151be0009cb",
+      "deployment": {
+        "id": "appgdep_6acf95175c30819185f137c507a358a2",
+        "project_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2",
+        "title": "Beat Saber 配置素材ノート",
+        "version_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2~appgver_49d1a147f38c81918b514e0cc7383012",
+        "type": "publish",
+        "status": "succeeded",
+        "url": "https://beat-saber-pattern-bank.metuji48.chatgpt.site",
+        "has_mcp": false,
+        "screenshot_asset_pointer": null,
+        "provider_deployment_id": "site---6acf41e8dc0c8191b5a040cbed34bdc2",
+        "failure_message": null,
+        "env_set_revision": 0,
+        "updated_at": "2026-10-14T14:44:21.715922+00:00"
       }
-    ],
-    "bpmSource": "投稿者説明のBeatmap Informationと音声の拍を照合。Reason For Living 128、Crab Rave 125。",
-    "customColors": {
-      "reason-hard": "黄=左手、桃=右手。両セイバーの振りをフレーム列で確認。",
-      "crab-normal": "緑=左手、青=右手。両セイバーの振りをフレーム列で確認。"
     },
-    "mapVersion": "投稿時の映像版。現在の配布譜面との同一性とハッシュは未確定。"
-  },
-  "unityValidationProject": "独立コピー Uv2227。初回の長いパスによる依存DLL読込エラーを解消して再実行。ユーザーのUnityは開いたまま維持。",
-  "newVideosBrowserChecked": 12,
-  "newVideosDecoded": 12
+    "charts": {
+      "commit": "daa60c13036e0ff346f5c147d2476724384688d3",
+      "deployment": {
+        "id": "appgdep_6acf955ce6cc819188516520e25c0908",
+        "project_id": "appgprj_6acf32845a308191985cae6f72e92c2d",
+        "title": "3D Saber 譜面ライブラリ",
+        "version_id": "appgprj_6acf32845a308191985cae6f72e92c2d~appgver_b01404b462608191a2a090da8ea8f5d1",
+        "type": "publish",
+        "status": "succeeded",
+        "url": "https://saber-chart-library.metuji48.chatgpt.site",
+        "has_mcp": false,
+        "screenshot_asset_pointer": null,
+        "provider_deployment_id": "site---6acf32845a308191985cae6f72e92c2d",
+        "failure_message": null,
+        "env_set_revision": 0,
+        "updated_at": "2026-10-14T14:45:10.175588+00:00"
+      }
+    }
+  }
 }
