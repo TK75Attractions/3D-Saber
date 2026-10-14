@@ -1,5 +1,5 @@
 {
-  "_comment": "通常の横配置を主軸とし、選んだ短い素材フレーズだけ縦・反転などを使う。色は担当手であり、画面位置とは別。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 160,
   "coordScale": 1,
   "offsetMs": 0,
@@ -66,6 +66,10 @@
     {
       "timeMs": 52903.0,
       "name": "BPM120へ"
+    },
+    {
+      "timeMs": 62403.0,
+      "name": "素材: rum-normal-3"
     },
     {
       "timeMs": 70403.0,
@@ -894,21 +898,21 @@
       "lengthMs": 0
     },
     {
-      "beat": 161.0,
+      "beat": 161,
       "time": 62903.0,
-      "x": -0.976,
-      "y": 0.2,
+      "x": 1.05,
+      "y": 0.1,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
     {
-      "beat": 163.0,
+      "beat": 163,
       "time": 63903.0,
-      "x": 0.976,
-      "y": -0.2,
+      "x": 1.3,
+      "y": 0.1,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -916,10 +920,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 165.0,
+      "beat": 165,
       "time": 64903.0,
-      "x": -0.976,
-      "y": -0.2,
+      "x": -1.05,
+      "y": 0.1,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -927,12 +931,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 167.0,
+      "beat": 167,
       "time": 65903.0,
-      "x": 0.976,
-      "y": 0.2,
+      "x": -1.3,
+      "y": 0.1,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0

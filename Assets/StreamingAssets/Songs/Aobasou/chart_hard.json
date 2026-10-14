@@ -1,5 +1,5 @@
 {
-  "_comment": "通常の横配置を主軸とし、選んだ短い素材フレーズだけ縦・反転などを使う。色は担当手であり、画面位置とは別。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 140,
   "coordScale": 1,
   "offsetMs": 0,

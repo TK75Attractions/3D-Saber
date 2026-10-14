@@ -1,5 +1,5 @@
 {
-  "_comment": "通常の横配置を主軸とし、選んだ短い素材フレーズだけ縦・反転などを使う。色は担当手であり、画面位置とは別。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 160,
   "coordScale": 1,
   "offsetMs": 0,
@@ -50,6 +50,10 @@
     {
       "timeMs": 30024.0,
       "name": "BPM100"
+    },
+    {
+      "timeMs": 30024.0,
+      "name": "素材: need-normal-3"
     },
     {
       "timeMs": 50424.0,
@@ -545,10 +549,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 80.0,
-      "time": 30024.0,
-      "x": -0.832,
-      "y": -0.2,
+      "beat": 83.5,
+      "time": 32124.0,
+      "x": -1.15,
+      "y": 0.15,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -556,32 +560,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 82.0,
-      "time": 31224.0,
-      "x": 0.832,
-      "y": -0.2,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 84.0,
-      "time": 32424.0,
-      "x": -1.12,
-      "y": 0.2,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 86.0,
-      "time": 33624.0,
-      "x": 1.12,
-      "y": 0.2,
+      "beat": 87.5,
+      "time": 34524.0,
+      "x": 1.15,
+      "y": 0.15,
       "type": "tap",
       "color": "red",
       "direction": "none",

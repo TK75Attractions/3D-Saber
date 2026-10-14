@@ -1,5 +1,5 @@
 {
-  "_comment": "通常の横配置を主軸とし、選んだ短い素材フレーズだけ縦・反転などを使う。色は担当手であり、画面位置とは別。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 160,
   "coordScale": 1,
   "offsetMs": 0,
@@ -82,6 +82,10 @@
     {
       "timeMs": 70403.0,
       "name": "中盤の展開"
+    },
+    {
+      "timeMs": 78403.0,
+      "name": "素材: need-normal-2"
     },
     {
       "timeMs": 94403.0,
@@ -1881,10 +1885,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 192.0,
+      "beat": 192,
       "time": 78403.0,
-      "x": 0.992,
-      "y": 0.272,
+      "x": 1.25,
+      "y": 0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1892,10 +1896,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 192.0,
+      "beat": 192,
       "time": 78403.0,
-      "x": -1.12,
-      "y": -0.272,
+      "x": -1.25,
+      "y": 0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1903,10 +1907,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 193.0,
+      "beat": 193,
       "time": 78903.0,
-      "x": -1.12,
-      "y": 0.272,
+      "x": -1.15,
+      "y": -0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1914,21 +1918,21 @@
       "lengthMs": 0
     },
     {
-      "beat": 194.0,
-      "time": 79403.0,
-      "x": 1.12,
-      "y": -0.272,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 195.0,
+      "beat": 195,
       "time": 79903.0,
-      "x": -0.992,
-      "y": -0.272,
+      "x": 1.25,
+      "y": -0.25,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 195,
+      "time": 79903.0,
+      "x": -1.25,
+      "y": -0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1936,10 +1940,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 196.0,
+      "beat": 196,
       "time": 80403.0,
-      "x": 1.12,
-      "y": 0.272,
+      "x": 1.25,
+      "y": 0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1947,10 +1951,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 197.0,
-      "time": 80903.0,
-      "x": -0.992,
-      "y": 0.272,
+      "beat": 196,
+      "time": 80403.0,
+      "x": -1.25,
+      "y": 0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1958,10 +1962,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 198.0,
-      "time": 81403.0,
-      "x": 0.992,
-      "y": -0.272,
+      "beat": 197,
+      "time": 80903.0,
+      "x": 1.15,
+      "y": -0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1969,10 +1973,21 @@
       "lengthMs": 0
     },
     {
-      "beat": 199.0,
+      "beat": 199,
       "time": 81903.0,
-      "x": -0.832,
-      "y": -0.272,
+      "x": 1.25,
+      "y": -0.25,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 199,
+      "time": 81903.0,
+      "x": -1.25,
+      "y": -0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",

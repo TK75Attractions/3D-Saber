@@ -1,56 +1,58 @@
 {
-  "batch": "20261014-2021",
+  "batch": "20261014-2125",
   "newCollected": 6,
   "newConverted": 6,
   "newApplied": 6,
-  "totalCollected": 46,
-  "totalConverted": 46,
-  "totalApplied": 46,
+  "totalCollected": 52,
+  "totalConverted": 52,
+  "totalApplied": 52,
   "classification": {
-    "good": 4,
-    "conditional": 2
+    "good": 5,
+    "conditional": 1
   },
   "excludedCandidates": [
     {
-      "key": "country-hard",
-      "bpm": 210,
-      "reason": "今回は120〜200 BPMの不足帯を優先するため収録を見送った。150という事前推定は投稿者の譜面情報で訂正。"
-    },
-    {
-      "key": "breezer-hard",
-      "bpm": 112.5,
-      "reason": "今回は対象BPM帯を優先して見送った。小数BPMを保持するよう調査用の読取処理も修正。"
+      "sourceVideoId": "cutBvQUZF8M",
+      "difficulty": "Hard",
+      "reason": "公開動画の取得がHTTP403で失敗。Normalの別動画に変更。"
     }
   ],
-  "changedSongs": 3,
+  "changedSongs": 4,
   "changedCharts": 6,
-  "retainedPreviousApplications": 40,
+  "retainedPreviousApplications": 46,
   "outsideInsertionRangesUnchanged": true,
-  "protectedOtherCharts": 37,
+  "protectedOtherChartsDuringInstall": 37,
+  "concurrentOtherChartEditsExcluded": [
+    "Assets/StreamingAssets/Songs/RushE/chart.json",
+    "Assets/StreamingAssets/Songs/RushE/chart_easy.json",
+    "Assets/StreamingAssets/Songs/RushE/chart_hard.json",
+    "Assets/StreamingAssets/Songs/RushE/chart_normal.json"
+  ],
+  "protectedHostedCharts": 28,
   "unity": {
     "tests-merged": {
       "result": "Passed",
       "total": "58",
       "passed": "58",
       "failed": "0",
-      "start-time": "2026-10-14 11:30:43Z",
-      "end-time": "2026-10-14 11:30:50Z"
+      "start-time": "2026-10-14 12:34:10Z",
+      "end-time": "2026-10-14 12:34:20Z"
     },
     "tests-playmode": {
       "result": "Passed",
       "total": "1",
       "passed": "1",
       "failed": "0",
-      "start-time": "2026-10-14 11:31:26Z",
-      "end-time": "2026-10-14 11:31:32Z"
+      "start-time": "2026-10-14 12:35:51Z",
+      "end-time": "2026-10-14 12:35:57Z"
     }
   },
   "browser": {
-    "patternViews": 92,
+    "patternViews": 104,
     "fullCharts": 15,
     "matchingChartFiles": 15,
-    "inspectedHandLabels": 621,
-    "oppositeSideLabels": 267,
+    "inspectedHandLabels": 672,
+    "oppositeSideLabels": 40,
     "mobileViewport": "390x844",
     "desktopViewport": "1440x1000",
     "errors": [],
@@ -58,8 +60,8 @@
   },
   "finalBrowser": {
     "bookmarkPersistsAfterReload": true,
-    "packageLinks": 4,
-    "oldVideoLinks": 40,
+    "packageLinks": 5,
+    "oldVideoLinks": 46,
     "newApplicationDeepLinks": 6,
     "mobileOverflow": false,
     "errors": [],
@@ -69,7 +71,7 @@
   "maxPerHandFlickRun": 3,
   "physicalPlayTest": false,
   "phoneHardwareTest": false,
-  "positionPolicy": "色は担当手のみ。上下・左右反転・同じ側の配置を使用。担当手をx座標から推測しない。",
+  "positionPolicy": "通常の横配置を主軸にし、縦・交差・反転は短い技の一つ。今回追加分は通常配置。担当手をx座標から推測しない。",
   "newVideosBrowserChecked": 12,
   "newVideosDecoded": 12
 }

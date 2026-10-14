@@ -695,7 +695,7 @@
         59903.0
       ],
       "directions": [
-        "right"
+        "upright"
       ]
     },
     {
@@ -705,7 +705,7 @@
         60903.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -725,17 +725,17 @@
         61903.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
       "index": 72,
-      "hand": "blue",
+      "hand": "red",
       "timesMs": [
         62903.0
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -745,7 +745,7 @@
         63903.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -755,17 +755,17 @@
         64903.0
       ],
       "directions": [
-        "down"
+        "upleft"
       ]
     },
     {
       "index": 75,
-      "hand": "red",
+      "hand": "blue",
       "timesMs": [
         65903.0
       ],
       "directions": [
-        "right"
+        "down"
       ]
     },
     {
@@ -776,8 +776,8 @@
         67903.0
       ],
       "directions": [
-        "left",
-        "right"
+        "down",
+        "up"
       ]
     },
     {
@@ -797,7 +797,7 @@
         70403.0
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -817,7 +817,7 @@
         72403.0
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -837,7 +837,7 @@
         74403.0
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -858,8 +858,8 @@
         77403.0
       ],
       "directions": [
-        "down",
-        "up"
+        "left",
+        "right"
       ]
     },
     {
@@ -889,7 +889,7 @@
         78403.0
       ],
       "directions": [
-        "up"
+        "upleft"
       ]
     },
     {
@@ -909,7 +909,7 @@
         80403.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -929,7 +929,7 @@
         82403.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -949,7 +949,7 @@
         84403.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -969,7 +969,7 @@
         86403.0
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -989,7 +989,7 @@
         88403.0
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {

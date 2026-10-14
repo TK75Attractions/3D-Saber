@@ -2605,7 +2605,7 @@
         95388.4211
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -2615,7 +2615,7 @@
         96020.0
       ],
       "directions": [
-        "down"
+        "right"
       ]
     },
     {
@@ -2625,7 +2625,7 @@
         96651.5789
       ],
       "directions": [
-        "down"
+        "left"
       ]
     },
     {
@@ -2635,7 +2635,7 @@
         97125.2632
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -2645,7 +2645,7 @@
         97283.1579
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -2655,7 +2655,7 @@
         97914.7368
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -2665,7 +2665,7 @@
         98388.4211
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -2675,7 +2675,7 @@
         98546.3158
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -2685,7 +2685,7 @@
         99651.5789
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -2695,7 +2695,7 @@
         100441.0526
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -2705,24 +2705,24 @@
         100914.7368
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
       "index": 269,
-      "hand": "red",
+      "hand": "blue",
       "timesMs": [
         101072.6316
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
       "index": 270,
       "hand": "blue",
       "timesMs": [
-        101704.2105
+        101388.4211
       ],
       "directions": [
         "up"
@@ -2732,40 +2732,40 @@
       "index": 271,
       "hand": "red",
       "timesMs": [
-        102177.8947
+        102020.0
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
       "index": 272,
-      "hand": "blue",
+      "hand": "red",
       "timesMs": [
         102335.7895
       ],
       "directions": [
-        "up"
+        "upright"
       ]
     },
     {
       "index": 273,
       "hand": "red",
       "timesMs": [
-        102967.3684
+        102651.5789
       ],
       "directions": [
-        "up"
+        "upleft"
       ]
     },
     {
       "index": 274,
       "hand": "blue",
       "timesMs": [
-        103441.0526
+        103283.1579
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -2775,7 +2775,7 @@
         103598.9474
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -2785,7 +2785,7 @@
         104230.5263
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {

@@ -1,5 +1,5 @@
 {
-  "_comment": "通常の横配置を主軸とし、選んだ短い素材フレーズだけ縦・反転などを使う。色は担当手であり、画面位置とは別。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 190,
   "coordScale": 1,
   "offsetMs": 0,
@@ -70,6 +70,10 @@
     {
       "timeMs": 96020.0,
       "name": "余韻"
+    },
+    {
+      "timeMs": 101072.6316,
+      "name": "素材: need-normal-1"
     }
   ],
   "notes": [
@@ -3033,21 +3037,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 320.0,
+      "beat": 320,
       "time": 101072.6316,
-      "x": 0.976,
-      "y": -0.272,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 322.0,
-      "time": 101704.2105,
-      "x": -0.976,
-      "y": -0.272,
+      "x": -1.2,
+      "y": -0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3055,10 +3048,21 @@
       "lengthMs": 0
     },
     {
-      "beat": 323.5,
-      "time": 102177.8947,
-      "x": 0.976,
-      "y": 0.272,
+      "beat": 321,
+      "time": 101388.4211,
+      "x": -1.2,
+      "y": 0.25,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 323,
+      "time": 102020.0,
+      "x": 1.15,
+      "y": -0.2,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3066,21 +3070,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 324.0,
+      "beat": 324,
       "time": 102335.7895,
-      "x": -0.976,
-      "y": 0.272,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 326.0,
-      "time": 102967.3684,
-      "x": 0.976,
-      "y": -0.272,
+      "x": 1.2,
+      "y": -0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3088,10 +3081,21 @@
       "lengthMs": 0
     },
     {
-      "beat": 327.5,
-      "time": 103441.0526,
-      "x": -0.976,
-      "y": -0.272,
+      "beat": 325,
+      "time": 102651.5789,
+      "x": 1.2,
+      "y": 0.25,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 327,
+      "time": 103283.1579,
+      "x": -1.15,
+      "y": -0.2,
       "type": "tap",
       "color": "blue",
       "direction": "none",

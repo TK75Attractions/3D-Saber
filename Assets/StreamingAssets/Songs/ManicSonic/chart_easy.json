@@ -1,5 +1,5 @@
 {
-  "_comment": "通常の横配置を主軸とし、選んだ短い素材フレーズだけ縦・反転などを使う。色は担当手であり、画面位置とは別。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 180,
   "coordScale": 1,
   "offsetMs": 0,
@@ -78,6 +78,10 @@
     {
       "timeMs": 107833.3333,
       "name": "主題の回帰"
+    },
+    {
+      "timeMs": 107833.3333,
+      "name": "素材: rum-normal-1"
     },
     {
       "timeMs": 123833.3333,
@@ -1715,43 +1719,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 320.0,
-      "time": 107833.3333,
-      "x": 0.928,
-      "y": -0.2,
-      "type": "tap",
-      "color": "gold",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 320.0,
-      "time": 107833.3333,
-      "x": -0.928,
-      "y": -0.2,
-      "type": "tap",
-      "color": "gold",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 322.0,
-      "time": 108500.0,
-      "x": -1.12,
-      "y": 0.2,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 324.0,
-      "time": 109166.6667,
-      "x": 1.12,
-      "y": 0.2,
+      "beat": 321,
+      "time": 108166.6667,
+      "x": 1.25,
+      "y": 0.1,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1759,12 +1730,34 @@
       "lengthMs": 0
     },
     {
-      "beat": 326.0,
-      "time": 109833.3333,
-      "x": -0.832,
-      "y": -0.2,
+      "beat": 323,
+      "time": 108833.3333,
+      "x": -1.2,
+      "y": -0.25,
       "type": "tap",
       "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 325,
+      "time": 109500.0,
+      "x": -1.25,
+      "y": 0.1,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 327,
+      "time": 110166.6667,
+      "x": 1.2,
+      "y": -0.25,
+      "type": "tap",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
