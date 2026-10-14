@@ -615,6 +615,8 @@ public class InputPoint : MonoBehaviour
             // メインスレッドと衝突しないようロック
             lock (targetLock)
             {
+                // 停止と受信が重なっても、破棄済みの入力を再び新着にしない。
+                if (networkShutdown) return;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
                 RecordFreezeReceiveGap(secondStick, receiveTimestampTicks);
 #endif
@@ -1134,6 +1136,26 @@ public class InputPoint : MonoBehaviour
     void StopAndFlushEvents()
     {
         StopNetworkServices();
+        // 未反映の旧パケットと公開済みの鮮度を破棄し、再開後は新しい受信を待つ。
+        // Join timeout 後も ReceiveData の停止確認と同じ lock で遅い書き込みを防ぐ。
+        lock (lockObj)
+        {
+            hasNewData = false;
+            hasStickData = false;
+            rawSender = null;
+        }
+        lock (lockObj2)
+        {
+            hasNewData2 = false;
+            hasStickData2 = false;
+            rawSender2 = null;
+        }
+        HasValidStickEndpoints = HasValidStickEndpoints2 = false;
+        LastReceivedTime = LastReceivedTime2 = -1000.0;
+        LastReceivedMonotonicTime = LastReceivedMonotonicTime2 = double.NegativeInfinity;
+        RedCoordinateSender = BlueCoordinateSender = null;
+        RedCoordinateTiming.ResetSource();
+        BlueCoordinateTiming.ResetSource();
         // Join 後に main thread で書き出す。終了時の受信機停止も保存する。
         PhoneSaberEventLog.Current?.Flush();
     }
