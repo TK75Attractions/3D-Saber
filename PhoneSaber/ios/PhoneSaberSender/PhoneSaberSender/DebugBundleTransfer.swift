@@ -807,7 +807,14 @@ final class P2PBundleUploader {
 
     private func sendNextChunk() {
         guard let connection, let file else { return }
-        let chunk = (try? file.read(upToCount: 256 * 1024)) ?? Data()
+        let chunk: Data
+        do {
+            chunk = try file.read(upToCount: 256 * 1024) ?? Data()
+        } catch {
+            // 読み取り失敗を EOF として送らず、元のエラーで接続とファイルを閉じる。
+            finish(.failed(error))
+            return
+        }
         if chunk.isEmpty {
             // Request complete; the relay half-closes towards the receiver.
             connection.send(content: nil, contentContext: .finalMessage, isComplete: true,
