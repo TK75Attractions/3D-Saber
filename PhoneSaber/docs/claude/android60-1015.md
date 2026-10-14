@@ -1,0 +1,28 @@
+# android60-1015 完了監査（2026-10-15）
+- 対象: 保存コミット1028514、main=8d04c9b。git log -3/-5、status、diff main...HEADを確認。開始時clean、専用の前回メモなし。commit/pushなし。
+- 維持: Androidの同一成功送信フレームの段階計測、bind後のstream診断、UDP送信とofferのlock分離、host検証からframeworkテストを除外。
+- 中・LatestUdpSender.kt:45/75: 旧版は遅いsendがofferも止め、解析/ImageProxy解放を遅らせる。既存回帰の本体をそのままmain/HEADで実行し、旧1/1 TimeoutException、現1/1 PASSを確認。
+- 低・core/tools/android_host_check.py:71: 旧版はAndroid/Mockito依存テストをhostに混ぜ、Kotlin compileに失敗。main版の失敗と現行host成功を確認。除外2クラスはGradleで実行済み。
+- 低・LatestUdpSenderTest.kt:105/142: 片色失敗/socket満杯/期限切れ/held/空の段階統計は未検証だった。2テスト（6シナリオ）を追加し、成功した色だけの時刻・件数・破棄数を検証。
+- DeviceHealthTest.kt:27: 数値だけで時計源を識別できるという誤解を避け、テスト名/コメントを「不正な区間の除外」に修正。古いoffer同期を説明したコメントも訂正。
+- 今回の追加変更はテストとこのメモのみ。productionの追加修正なし。未完成option/TODO/stubなし。段階/stream診断は通常送信中の毎秒DeviceHealthログへ到達し、新しいoption不要。
+- fps既定値・解像度選択・試験設定・露出・認識・threshold・UDP x1,y1,x2,y2・180ms期限・再送なしは維持。送信待ちの解析停止を解消し診断項目を増やす点は前回差分の意図した変更。
+- corpus/scenes/prefabs/.meta/ProjectSettings変更なし。新規.cs/Swift/Kotlinなし（project登録/.meta追加不要）。
+- 以下repo root、PythonはPATH=/Users/satoshi/.pyenv/versions/3.12.1/bin:$PATH（3.12.1）。GUIアプリ起動なし。
+- PASS: `python3 -B -m unittest discover -s PhoneSaber/tools -v` — 276件、skip 6、既存expected failure 1。
+- FAIL（差分外の環境）: `python3 -B -m unittest discover -s PhoneSaber/ios/PhoneSaberSender/Tools -v` — 438件、error 1、skip 1。tracking E2EのsetUpClassが容量API=0で録画開始拒否（必要1040187392 bytes）。容量ゲート未変更。
+- PASS: `python3 -B PhoneSaber/tools/check_pc_latency.py` — Unity API 4構成compile、C# host 35/35。
+- PASS: `python3 -B PhoneSaber/tools/check_auto_latency.py` — C# 5/5、Swift XCTest 3/3、実Swift→C# UDP loopback。
+- PASS: `make -C PhoneSaber/android/core test parity PYTHON=python3` — core、Python 4件、325 PNG/541遷移/27合成の差分0、formal 40/40。
+- PASS: `PhoneSaber/ios/PhoneSaberSender/run-static-tests.sh` — static BGRA、DeviceHealth XCTest 13/13。
+- PASS: `python3 -B -m unittest discover -s PhoneSaber/android -v` — 3/3、host JNI/JVM 83件。初回はnested GradleにJAVA_HOME未指定で1失敗、下記JBR/SDK指定で再実行成功。
+- Gradle環境: JAVA_HOME=/Applications/Android Studio.app/Contents/jbr/Contents/Home、ANDROID_HOME=/Users/satoshi/Library/Android/sdk。
+- PASS: `PhoneSaber/android/gradlew -p PhoneSaber/android --no-daemon --rerun-tasks -Pkotlin.compiler.execution.strategy=in-process :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest :app:lintDebug` — 138 tasks実行、JVM 91/91（sender 9/9）、Debug/Release/test APKとlint成功。
+- FAIL（sandbox）: `xcodebuild -project PhoneSaber/ios/PhoneSaberSender/PhoneSaberSender.xcodeproj -scheme PhoneSaberSender -configuration Release -destination generic/platform=iOS -derivedDataPath /private/tmp/phonesaber-finish-android60/iOS-Release-DerivedData CODE_SIGNING_ALLOWED=NO PHONESABER_CORELINE_GUARD=1 build` — exit 65、sandbox_apply拒否→SwiftUI State macro server malformed response。
+- PASS: git diff --check（作業差分とmain...HEAD）。
+- 未実行: 公式verify、Unity Editor/Player、iOS Simulator XCTest、Android connectedDebugAndroidTest、実機camera/Wi-Fi/発熱/光学遅延。
+- operator最小: `PATH=/Users/satoshi/.pyenv/versions/3.12.1/bin:$PATH PhoneSaber/tools/verify_phone_saber.sh`（iOS XCTest/Releaseと上記E2Eを再確認）。Unity差分なしのため追加EditModeクラスなし。
+- operator実機: AQUOSで通常threshold/試験OFFの60fps→30fps、各10秒warm-up＋両剣30秒を記録。`adb logcat -v time -s DeviceHealth:I`で実size/fps/段階median/p95/件数、REALTIMEならsensor段階、UNKNOWNならsensor未計測を確認。停止再開/Wi-Fi切替/送信先変更で旧座標が出ず統計がresetすることを一度確認。
+- operator実機JNI: 上記JBR/SDKで `PhoneSaber/android/gradlew -p PhoneSaber/android --no-daemon -Pkotlin.compiler.execution.strategy=in-process :app:connectedDebugAndroidTest`。
+- 未認証: Preview併用の実60fps、HAL/時計源/無線での遅延改善、長時間発熱。hostのPASSを実機性能の証拠にしない。カメラ設定の自動変更は提案のみで未実装。
+- ログ/旧版再現: /private/tmp/phonesaber-finish-android60/（python-tools.log、python-ios.log、core.log、swift.log、csharp.log、android-host-final.log、gradle-final.log、ios-release.log、regression-before.log、regression/）。pc_latency出力はツール結果に記録。

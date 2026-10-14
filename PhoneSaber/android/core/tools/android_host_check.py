@@ -67,7 +67,10 @@ def main():
              "-I" + str(jni_include), "-I" + str(jni_include / ("darwin" if sys.platform == "darwin" else "linux")),
              "-I" + str(CORE / "include"), *(CORE / "src" / name for name in ("detection.cpp", "pipeline.cpp", "frame_processor.cpp")),
              ANDROID / "app/src/main/cpp/phonesaber_jni.cpp", ANDROID / "app/src/androidTest/cpp/rotation_probe.cpp", "-o", lib])
-        tests = sorted((ANDROID / "app/src/test/java/jp/phonesaber/sender").glob("*Test.kt"))
+        # Android framework/mockitoを必要とするsocketテストはGradleで実行する。
+        framework_tests = {"LatestUdpSenderTest.kt", "PcDiscoverySocketTest.kt"}
+        tests = sorted(t for t in (ANDROID / "app/src/test/java/jp/phonesaber/sender").glob("*Test.kt")
+                       if t.name not in framework_tests)
         tests.append(ANDROID / "app/src/androidTest/java/jp/phonesaber/sender/NativeRotationTest.kt")
         sources = [JAVA / (name + ".kt") for name in ("RotationHelper", "NativeCore", "Protocol", "MirrorSettings",
                    "DeviceHealth", "EventRecovery", "SendingNetworkPolicy", "CameraPolicy",

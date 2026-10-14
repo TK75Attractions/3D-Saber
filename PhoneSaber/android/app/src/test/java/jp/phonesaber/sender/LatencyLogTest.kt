@@ -44,7 +44,10 @@ class LatencyLogTest {
         for (field in listOf("capture_fps=UNKNOWN", "analysis_fps=0.0", "send_red_fps=0.0",
             "send_blue_fps=0.0", "capture_to_send_median_ms=UNKNOWN", "capture_to_send_p95_ms=UNKNOWN",
             "samples=0", "dropped_camera_frames_est=0", "dropped_udp_frames=0",
-            "thermal=-1(不明)", "pc_reply_age_s=UNKNOWN")) assertTrue(unknown, unknown.contains(field))
+            "thermal=-1(不明)", "pc_reply_age_s=UNKNOWN", "sensor_to_analyzer_median_ms=UNKNOWN",
+            "sensor_to_analyzer_p95_ms=UNKNOWN", "analyzer_to_jni_end_median_ms=UNKNOWN",
+            "analyzer_to_jni_end_p95_ms=UNKNOWN", "jni_end_to_send_median_ms=UNKNOWN",
+            "jni_end_to_send_p95_ms=UNKNOWN", "stage_samples=0")) assertTrue(unknown, unknown.contains(field))
         val measured = LatencyStatusText.line(HealthRates(60.0, medianCaptureToSendMs = 37.0,
             p95CaptureToSendMs = 50.0, sentSamples = 300, captureFps = 60.0,
             redSendFps = 60.0, blueSendFps = 30.0, unanalysedEstimate = 2, udpDroppedFrames = 3), 3, 2.5)

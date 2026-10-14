@@ -4,6 +4,63 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class DeviceHealthTest {
+    @Test fun stageTimesUseTheSameSentFrameAndIncludeDispatchWait() {
+        val meter = DeviceHealthMeter()
+        meter.reset(100.0)
+        // 露光開始→解析開始80ms、解析準備/JNI 7ms、送信待ち/OS送信8ms。
+        meter.sent(100.095, 100_000_000_000L, 100_095_000_000L,
+            100_080_000_000L, 100_087_000_000L)
+        val rates = meter.snapshot(101.0)
+        assertEquals(80.0, rates.medianSensorToAnalyzerMs!!, 0.0)
+        assertEquals(7.0, rates.medianAnalyzerToJniEndMs!!, 0.0)
+        assertEquals(8.0, rates.medianJniEndToSendMs!!, 0.0)
+        assertEquals(95.0, rates.medianCaptureToSendMs!!, 0.0)
+        assertEquals(1, rates.stageSamples)
+        val line = LatencyStatusText.line(rates, 0, null)
+        for (field in listOf("sensor_to_analyzer_median_ms=80.0", "sensor_to_analyzer_p95_ms=80.0",
+            "analyzer_to_jni_end_median_ms=7.0", "analyzer_to_jni_end_p95_ms=7.0",
+            "jni_end_to_send_median_ms=8.0", "jni_end_to_send_p95_ms=8.0", "stage_samples=1"))
+            assertTrue(line, line.contains(field))
+        assertEquals(0, meter.snapshot(105.095).stageSamples)
+        assertNull(meter.snapshot(105.095).medianJniEndToSendMs)
+    }
+
+    @Test fun stageTimesRejectInvalidIntervalsAndRemainAvailableWithoutSensorClock() {
+        val meter = DeviceHealthMeter()
+        meter.reset(100.0)
+        // SENSOR=UNKNOWNでも残りのelapsedRealtime段階は計測できる。
+        meter.sent(101.0, null, 100_095_000_000L, 100_080_000_000L, 100_087_000_000L)
+        // 逆転/大きな差、および段階欠落は使わない。時計源そのものは数値から判定できない。
+        meter.sent(101.0, null, 100_095_000_000L, 100_080_000_000L, 100_079_000_000L)
+        meter.sent(101.0, null, 100_095_000_000L, 100_080_000_000L, 100_096_000_000L)
+        meter.sent(101.0, null, 100_095_000_000L, 90_080_000_000L, 100_087_000_000L)
+        meter.sent(101.0, null, 100_095_000_000L, 0L, 100_087_000_000L)
+        meter.sent(101.0, null, 100_095_000_000L)
+        val rates = meter.snapshot(102.0)
+        assertNull(rates.medianSensorToAnalyzerMs)
+        assertNull(rates.medianCaptureToSendMs)
+        assertEquals(7.0, rates.medianAnalyzerToJniEndMs!!, 0.0)
+        assertEquals(8.0, rates.p95JniEndToSendMs!!, 0.0)
+        assertEquals(1, rates.stageSamples)
+        meter.reset(103.0)
+        assertEquals(0, meter.snapshot(104.0).stageSamples)
+    }
+
+    @Test fun stageWindowIsBoundedAndUsesNearestRankP95() {
+        val meter = DeviceHealthMeter()
+        meter.reset(100.0)
+        for (ms in 1..20) meter.sent(101.0, 100_000_000_000L,
+            100_000_000_000L + ms * 3_000_000L, 100_000_000_000L + ms * 1_000_000L,
+            100_000_000_000L + ms * 2_000_000L)
+        val rates = meter.snapshot(102.0)
+        assertEquals(10.5, rates.medianSensorToAnalyzerMs!!, 0.0)
+        assertEquals(19.0, rates.p95SensorToAnalyzerMs!!, 0.0)
+        assertEquals(19.0, rates.p95AnalyzerToJniEndMs!!, 0.0)
+        assertEquals(19.0, rates.p95JniEndToSendMs!!, 0.0)
+        repeat(1300) { meter.sent(103.0, null, 100_095_000_000L, 100_080_000_000L, 100_087_000_000L) }
+        assertEquals(1200, meter.snapshot(104.0).stageSamples)
+        assertNull(meter.snapshot(104.0).medianSensorToAnalyzerMs)
+    }
     @Test fun rateQueuesAreBoundedWithoutLosingCumulativeDroppedEstimate() {
         val meter = DeviceHealthMeter()
         meter.reset(100.0)

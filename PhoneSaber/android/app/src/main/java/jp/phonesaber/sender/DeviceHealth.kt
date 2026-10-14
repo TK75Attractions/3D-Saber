@@ -23,7 +23,11 @@ data class HealthRates(val analysisFps: Double = 0.0, val medianJniMs: Double? =
                        val p95CaptureToSendMs: Double? = null, val sentSamples: Int = 0,
                        val captureFps: Double? = null, val redSendFps: Double = 0.0,
                        val blueSendFps: Double = 0.0, val unanalysedEstimate: Long = 0,
-                       val udpDroppedFrames: Long = 0)
+                       val udpDroppedFrames: Long = 0,
+                       val medianSensorToAnalyzerMs: Double? = null, val p95SensorToAnalyzerMs: Double? = null,
+                       val medianAnalyzerToJniEndMs: Double? = null, val p95AnalyzerToJniEndMs: Double? = null,
+                       val medianJniEndToSendMs: Double? = null, val p95JniEndToSendMs: Double? = null,
+                       val stageSamples: Int = 0)
 
 object DeviceHealthText {
     fun batteryState(status: Int): String? = when (status) {
@@ -67,6 +71,9 @@ class DeviceHealthMeter {
     private val samples = ArrayDeque<Pair<Double, Double>>()
     // センサー先頭行の露光開始から、そのフレームで最後に成功したOS送信まで。
     private val ages = ArrayDeque<Pair<Double, Double>>()
+    private data class Stages(val at: Double, val sensorToAnalyzer: Double?,
+                              val analyzerToJniEnd: Double, val jniEndToSend: Double)
+    private val stages = ArrayDeque<Stages>()
     private val captures = ArrayDeque<Double>()
     private val redSends = ArrayDeque<Double>()
     private val blueSends = ArrayDeque<Double>()
@@ -76,7 +83,7 @@ class DeviceHealthMeter {
     private var analysedTotal = 0L
     private var udpDropped = 0L
     @Synchronized fun reset(at: Double) {
-        started = at; samples.clear(); ages.clear()
+        started = at; samples.clear(); ages.clear(); stages.clear()
         captures.clear(); redSends.clear(); blueSends.clear()
         lastCaptureFrame = -1; capturedTotal = 0; analysedTotal = 0; udpDropped = 0
     }
@@ -103,37 +110,55 @@ class DeviceHealthMeter {
         prune(at)
         while (samples.size > 1200) samples.removeFirst()
     }
-    @Synchronized fun sent(at: Double, capturedNs: Long?, completedNs: Long) {
-        if (capturedNs == null || capturedNs <= 0 || completedNs < capturedNs) return
-        val milliseconds = (completedNs - capturedNs) / 1e6
-        if (milliseconds !in 0.0..2000.0) return
-        ages.addLast(at to milliseconds)
+    @Synchronized fun sent(at: Double, capturedNs: Long?, completedNs: Long,
+                           analyzerStartedNs: Long? = null, jniEndedNs: Long? = null) {
+        fun interval(start: Long?, end: Long): Double? {
+            if (start == null || start <= 0 || end < start) return null
+            return ((end - start) / 1e6).takeIf { it in 0.0..2000.0 }
+        }
+        interval(capturedNs, completedNs)?.let { ages.addLast(at to it) }
+        // 全段階はelapsedRealtimeNanos。同じ成功送信フレームだけを組にし、UNKNOWNを補完しない。
+        if (analyzerStartedNs != null && jniEndedNs != null &&
+            interval(analyzerStartedNs, completedNs) != null &&
+            jniEndedNs in analyzerStartedNs..completedNs) {
+            stages.addLast(Stages(at, interval(capturedNs, analyzerStartedNs),
+                (jniEndedNs - analyzerStartedNs) / 1e6, (completedNs - jniEndedNs) / 1e6))
+        }
         prune(at)
         while (ages.size > 1200) ages.removeFirst()
+        while (stages.size > 1200) stages.removeFirst()
     }
     private fun prune(at: Double) {
         while (samples.isNotEmpty() && samples.first().first <= at - 5.0) samples.removeFirst()
         while (ages.isNotEmpty() && ages.first().first <= at - 5.0) ages.removeFirst()
+        while (stages.isNotEmpty() && stages.first().at <= at - 5.0) stages.removeFirst()
         for (queue in eventQueues)
             while (queue.isNotEmpty() && queue.first() <= at - 5.0) queue.removeFirst()
     }
-    private fun median(values: List<Double>): Double? {
-        val sorted = values.sorted()
+    // snapshotで各系列を一度だけソートし、中央値/p95で共有する。
+    private fun median(sorted: List<Double>): Double? {
         val n = sorted.size
         return if (n == 0) null else if (n % 2 == 0) (sorted[n / 2 - 1] + sorted[n / 2]) / 2 else sorted[n / 2]
+    }
+    private fun p95(sorted: List<Double>): Double? {
+        return if (sorted.isEmpty()) null else sorted[ceil(sorted.size * 0.95).toInt() - 1]
     }
     @Synchronized fun snapshot(at: Double): HealthRates {
         prune(at)
         val elapsed = at - started
         if (elapsed <= 0) return HealthRates()
         val sortedAges = ages.map { it.second }.sorted()
-        val p95 = if (sortedAges.isEmpty()) null else sortedAges[ceil(sortedAges.size * 0.95).toInt() - 1]
+        val sensorToAnalyzer = stages.mapNotNull { it.sensorToAnalyzer }.sorted()
+        val analyzerToJniEnd = stages.map { it.analyzerToJniEnd }.sorted()
+        val jniEndToSend = stages.map { it.jniEndToSend }.sorted()
         val window = minOf(5.0, elapsed)
         // callbackとanalyzerは非同期。差には配送中のフレームも含むので「推定」と明記する。
-        return HealthRates(samples.size / window, median(samples.map { it.second }), elapsed >= 3.0,
-            median(sortedAges), p95, sortedAges.size,
+        return HealthRates(samples.size / window, median(samples.map { it.second }.sorted()), elapsed >= 3.0,
+            median(sortedAges), p95(sortedAges), sortedAges.size,
             if (lastCaptureFrame < 0) null else captures.size / window,
             redSends.size / window, blueSends.size / window,
-            maxOf(0L, capturedTotal - analysedTotal), udpDropped)
+            maxOf(0L, capturedTotal - analysedTotal), udpDropped,
+            median(sensorToAnalyzer), p95(sensorToAnalyzer), median(analyzerToJniEnd), p95(analyzerToJniEnd),
+            median(jniEndToSend), p95(jniEndToSend), stages.size)
     }
 }

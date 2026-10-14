@@ -35,6 +35,12 @@ object LatencyStatusText {
             "send_red_fps=${number(rates.redSendFps)} send_blue_fps=${number(rates.blueSendFps)} " +
             "capture_to_send_median_ms=${number(rates.medianCaptureToSendMs)} " +
             "capture_to_send_p95_ms=${number(rates.p95CaptureToSendMs)} samples=${rates.sentSamples} " +
+            "sensor_to_analyzer_median_ms=${number(rates.medianSensorToAnalyzerMs)} " +
+            "sensor_to_analyzer_p95_ms=${number(rates.p95SensorToAnalyzerMs)} " +
+            "analyzer_to_jni_end_median_ms=${number(rates.medianAnalyzerToJniEndMs)} " +
+            "analyzer_to_jni_end_p95_ms=${number(rates.p95AnalyzerToJniEndMs)} " +
+            "jni_end_to_send_median_ms=${number(rates.medianJniEndToSendMs)} " +
+            "jni_end_to_send_p95_ms=${number(rates.p95JniEndToSendMs)} stage_samples=${rates.stageSamples} " +
             "dropped_camera_frames_est=${rates.unanalysedEstimate} dropped_udp_frames=${rates.udpDroppedFrames} " +
             "thermal=$thermal(${ThermalLevel.fromStatus(thermal).title}) pc_reply_age_s=${number(replyAge)} " +
             "jni_median_ms=${number(rates.medianJniMs)} window_s=5 drops=session"

@@ -9,6 +9,7 @@ import android.hardware.camera2.TotalCaptureResult
 import android.os.Handler
 import android.os.Looper
 import android.os.Process
+import android.os.SystemClock
 import android.util.Range
 import android.view.Surface
 import androidx.camera.camera2.interop.Camera2CameraInfo
@@ -88,12 +89,13 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                     CameraCharacteristics.SENSOR_INFO_TIMESTAMP_SOURCE_REALTIME
                 val ranges = camera2.getCameraCharacteristic(CameraCharacteristics.CONTROL_AE_AVAILABLE_TARGET_FPS_RANGES)
                 val map = camera2.getCameraCharacteristic(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP)
+                val fixed60 = ranges?.contains(Range(60, 60)) == true
                 // 60fps は AE の固定 [60,60] と、VGA 以下で 1/60 秒以内に出せる YUV 解像度がある場合だけ。
                 val vga60 = map?.getOutputSizes(ImageFormat.YUV_420_888)?.any { size ->
                     CameraFormatPolicy.isCompact(size.width, size.height) &&
                         map.getOutputMinFrameDuration(ImageFormat.YUV_420_888, size) <= CameraFormatPolicy.FRAME_60FPS_NS
                 } == true
-                val fps = CameraFormatPolicy.selectFps(preferredFps, ranges?.contains(Range(60, 60)) == true, vga60)
+                val fps = CameraFormatPolicy.selectFps(preferredFps, fixed60, vga60)
                 require(ranges?.contains(Range(fps, fps)) == true) { "このカメラは固定30 fpsに対応していません" }
                 activeFps = fps
                 val maxFrameDuration = CameraFormatPolicy.maxFrameDuration(fps)
@@ -135,6 +137,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                     interop.setCaptureRequestOption(CaptureRequest.EDGE_MODE, it)
                 }
                 var nextDiagnosticAt = 0.0
+                var streamDiagnostics = "streams=starting"
                 interop.setSessionCaptureCallback(object : CameraCaptureSession.CaptureCallback() {
                     override fun onCaptureCompleted(session: CameraCaptureSession, request: CaptureRequest,
                                                     result: TotalCaptureResult) {
@@ -147,6 +150,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                                 nextDiagnosticAt = now + 1.0
                                 diagnostics = "camera_generation=$token clock=${if (realtimeSensorClock) "REALTIME" else "UNKNOWN"} " +
                                     "experimental=$experimentalLowLatency " +
+                                    "fixed60=$fixed60 compact60=$vga60 $streamDiagnostics " +
                                     "nr=${result.get(CaptureResult.NOISE_REDUCTION_MODE)} " +
                                     "edge=${result.get(CaptureResult.EDGE_MODE)} " +
                                     "video_stabilization=${result.get(CaptureResult.CONTROL_VIDEO_STABILIZATION_MODE)} " +
@@ -161,6 +165,7 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                 val frames = builder.build()
                 analysis = frames
                 frames.setAnalyzer(executor) { image ->
+                    val analyzerStartedNs = SystemClock.elapsedRealtimeNanos()
                     try {
                         if (running && token == generation) {
                             val started = System.nanoTime()
@@ -172,12 +177,13 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                             val results = processor.processCamera(plane.buffer, image.width, image.height,
                                 plane.rowStride, plane.pixelStride, degrees, started / 1e9, brightness, dominance)
                             val jniEnded = System.nanoTime()
+                            val jniEndedNs = SystemClock.elapsedRealtimeNanos()
                             val capturedNs = CaptureClock.timestamp(image.imageInfo.timestamp, realtimeSensorClock)
                             synchronized(gate) {
                                 if (running && token == generation) {
                                     lastFrameAt = jniEnded / 1e9
                                     healthMeter.processed(jniEnded / 1e9, (jniEnded - jniStarted) / 1e6)
-                                    sender.offer(results, started, capturedNs)
+                                    sender.offer(results, started, capturedNs, analyzerStartedNs, jniEndedNs)
                                     val width = if (degrees % 180 == 0) image.width else image.height
                                     val height = if (degrees % 180 == 0) image.height else image.width
                                     status = describe(results, "${width}×${height} / $fps fps要求")
@@ -193,6 +199,18 @@ class CameraSession(private val owner: LifecycleOwner, private val previewView: 
                 preview.setSurfaceProvider(previewView.surfaceProvider)
                 cameras.unbindAll()
                 val camera = cameras.bindToLifecycle(owner, CameraSelector.DEFAULT_BACK_CAMERA, frames, preview)
+                // 選択された実サイズを記録。AE表だけではPreview併用時の実60fpsは保証できない。
+                val analysisSize = frames.resolutionInfo?.resolution
+                val previewSize = preview.resolutionInfo?.resolution
+                val analysisDuration = analysisSize?.let(::yuvMinFrameDuration)
+                val previewDuration = try {
+                    previewSize?.let { map?.getOutputMinFrameDuration(ImageFormat.PRIVATE, it) }
+                } catch (_: IllegalArgumentException) { null }
+                synchronized(gate) {
+                    streamDiagnostics = "format=RGBA_8888 analysis_size=$analysisSize " +
+                        "analysis_yuv_min_frame_ns=$analysisDuration " +
+                        "preview_size=$previewSize preview_private_min_frame_ns=$previewDuration"
+                }
                 cameraState = camera.cameraInfo.cameraState
                 cameraState?.observe(owner) { state ->
                     state.error?.let { fail(token, CameraErrorText.describe(it.code, fps)) }
