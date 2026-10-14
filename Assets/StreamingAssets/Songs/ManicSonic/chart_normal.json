@@ -1,5 +1,5 @@
 {
-  "_comment": "Beat Saber参照・フレーズ単位の反復と応答。フリックは句末に限定し、全体/各手の連続数を検証。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 180,
   "coordScale": 1,
   "offsetMs": 0,
@@ -52,6 +52,10 @@
       "name": "主拍"
     },
     {
+      "timeMs": 10666.6667,
+      "name": "素材: unlimited-hard-2"
+    },
+    {
       "timeMs": 21333.3333,
       "name": "主題A"
     },
@@ -74,6 +78,14 @@
     {
       "timeMs": 107833.3333,
       "name": "主題の回帰"
+    },
+    {
+      "timeMs": 109166.6667,
+      "name": "素材: dream-hard-1"
+    },
+    {
+      "timeMs": 113166.6667,
+      "name": "素材: dream-hard-2"
     },
     {
       "timeMs": 123833.3333,
@@ -393,8 +405,8 @@
     {
       "beat": 32.0,
       "time": 10666.6667,
-      "x": -1.4,
-      "y": 0.34,
+      "x": -1.12,
+      "y": -0.163,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -404,8 +416,8 @@
     {
       "beat": 33.0,
       "time": 11000.0,
-      "x": 1.4,
-      "y": 0.34,
+      "x": 1.12,
+      "y": -0.163,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -415,10 +427,10 @@
     {
       "beat": 34.0,
       "time": 11333.3333,
-      "x": -1.04,
-      "y": -0.34,
+      "x": 1.12,
+      "y": 0.163,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -426,19 +438,8 @@
     {
       "beat": 35.0,
       "time": 11666.6667,
-      "x": 1.04,
-      "y": -0.34,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 36.0,
-      "time": 12000.0,
-      "x": -1.4,
-      "y": 0.34,
+      "x": -1.12,
+      "y": 0.163,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -446,10 +447,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 37.0,
-      "time": 12333.3333,
-      "x": 1.4,
-      "y": 0.34,
+      "beat": 36.0,
+      "time": 12000.0,
+      "x": 1.12,
+      "y": -0.163,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -457,10 +458,21 @@
       "lengthMs": 0
     },
     {
+      "beat": 37.0,
+      "time": 12333.3333,
+      "x": -1.12,
+      "y": -0.163,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 38.0,
       "time": 12666.6667,
-      "x": -1.04,
-      "y": -0.34,
+      "x": -1.12,
+      "y": 0.163,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -470,8 +482,8 @@
     {
       "beat": 39.0,
       "time": 13000.0,
-      "x": 1.04,
-      "y": -0.34,
+      "x": 1.12,
+      "y": 0.163,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3044,10 +3056,10 @@
     {
       "beat": 324.0,
       "time": 109166.6667,
-      "x": 1.04,
-      "y": -0.34,
+      "x": -1.3,
+      "y": -0.25,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3055,19 +3067,8 @@
     {
       "beat": 325.0,
       "time": 109500.0,
-      "x": -1.4,
-      "y": 0.34,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 326.0,
-      "time": 109833.3333,
-      "x": 1.4,
-      "y": 0.34,
+      "x": 1.3,
+      "y": -0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3075,10 +3076,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 327.0,
-      "time": 110166.6667,
-      "x": -1.04,
-      "y": -0.34,
+      "beat": 326.0,
+      "time": 109833.3333,
+      "x": -1.06,
+      "y": 0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3086,10 +3087,21 @@
       "lengthMs": 0
     },
     {
+      "beat": 327.0,
+      "time": 110166.6667,
+      "x": 1.06,
+      "y": 0.25,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 328.0,
       "time": 110500.0,
-      "x": 1.04,
-      "y": -0.34,
+      "x": 1.3,
+      "y": -0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3099,8 +3111,8 @@
     {
       "beat": 329.0,
       "time": 110833.3333,
-      "x": -1.4,
-      "y": 0.34,
+      "x": -1.3,
+      "y": -0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3110,8 +3122,8 @@
     {
       "beat": 330.0,
       "time": 111166.6667,
-      "x": 1.4,
-      "y": 0.34,
+      "x": 1.06,
+      "y": 0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3121,8 +3133,8 @@
     {
       "beat": 331.0,
       "time": 111500.0,
-      "x": -1.04,
-      "y": -0.34,
+      "x": -1.06,
+      "y": 0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3176,8 +3188,8 @@
     {
       "beat": 336.0,
       "time": 113166.6667,
-      "x": 1.04,
-      "y": -0.34,
+      "x": 1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3185,10 +3197,21 @@
       "lengthMs": 0
     },
     {
+      "beat": 336.0,
+      "time": 113166.6667,
+      "x": -1.18,
+      "y": -0.25,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 337.0,
       "time": 113500.0,
-      "x": -1.4,
-      "y": 0.34,
+      "x": -1.18,
+      "y": 0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3198,8 +3221,8 @@
     {
       "beat": 338.0,
       "time": 113833.3333,
-      "x": 1.4,
-      "y": 0.34,
+      "x": 1.18,
+      "y": 0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3209,8 +3232,8 @@
     {
       "beat": 339.0,
       "time": 114166.6667,
-      "x": -1.04,
-      "y": -0.34,
+      "x": -1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3220,10 +3243,21 @@
     {
       "beat": 340.0,
       "time": 114500.0,
-      "x": 1.04,
-      "y": -0.34,
+      "x": 1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 340.0,
+      "time": 114500.0,
+      "x": -1.18,
+      "y": -0.25,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3231,19 +3265,8 @@
     {
       "beat": 341.0,
       "time": 114833.3333,
-      "x": -1.4,
-      "y": 0.34,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 342.0,
-      "time": 115166.6667,
-      "x": 1.4,
-      "y": 0.34,
+      "x": 1.18,
+      "y": 0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3251,13 +3274,24 @@
       "lengthMs": 0
     },
     {
-      "beat": 343.0,
-      "time": 115500.0,
-      "x": -1.04,
-      "y": -0.34,
+      "beat": 342.0,
+      "time": 115166.6667,
+      "x": -1.18,
+      "y": 0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 343.0,
+      "time": 115500.0,
+      "x": 1.18,
+      "y": -0.25,
+      "type": "direction",
+      "color": "red",
+      "direction": "down",
       "count": 1,
       "lengthMs": 0
     },
@@ -3310,9 +3344,9 @@
       "time": 117166.6667,
       "x": 1.04,
       "y": -0.34,
-      "type": "direction",
+      "type": "tap",
       "color": "red",
-      "direction": "down",
+      "direction": "none",
       "count": 1,
       "lengthMs": 0
     },

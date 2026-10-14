@@ -1622,9 +1622,9 @@
   {
     "index": 162,
     "beat": 304.0,
-    "hand": "red",
-    "role": "終止",
-    "phrase": 19,
+    "hand": "blue",
+    "role": "素材: 中央をふさぐ壁",
+    "phrase": -1,
     "peakSeconds": 130.2839,
     "distanceMs": -1.814,
     "strength": 0.9427
@@ -1632,9 +1632,9 @@
   {
     "index": 163,
     "beat": 306.0,
-    "hand": "blue",
-    "role": "終止",
-    "phrase": 19,
+    "hand": "red",
+    "role": "素材: 中央をふさぐ壁",
+    "phrase": -1,
     "peakSeconds": 131.156916,
     "distanceMs": 14.059,
     "strength": 0.5204
@@ -1643,8 +1643,8 @@
     "index": 164,
     "beat": 308.0,
     "hand": "red",
-    "role": "終止",
-    "phrase": 19,
+    "role": "素材: 中央をふさぐ壁",
+    "phrase": -1,
     "peakSeconds": 132.004989,
     "distanceMs": 4.989,
     "strength": 0.5537
@@ -1653,8 +1653,8 @@
     "index": 165,
     "beat": 310.0,
     "hand": "blue",
-    "role": "終止",
-    "phrase": 19,
+    "role": "素材: 中央をふさぐ壁",
+    "phrase": -1,
     "peakSeconds": 132.843084,
     "distanceMs": -14.059,
     "strength": 0.6385

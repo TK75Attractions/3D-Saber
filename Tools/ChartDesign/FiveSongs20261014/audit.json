@@ -1,10 +1,10 @@
 {
   "ManicSonic": {
     "easy": {
-      "notes": 188,
-      "cuts": 201,
+      "notes": 190,
+      "cuts": 203,
       "types": {
-        "tap": 175,
+        "tap": 177,
         "long": 13
       },
       "phrases": [
@@ -234,13 +234,16 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "dream-normal-1"
+      ]
     },
     "normal": {
-      "notes": 341,
-      "cuts": 354,
+      "notes": 343,
+      "cuts": 356,
       "types": {
-        "tap": 317,
+        "tap": 319,
         "direction": 11,
         "long": 13
       },
@@ -471,13 +474,18 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "dream-hard-2",
+        "dream-hard-1",
+        "unlimited-hard-2"
+      ]
     },
     "hard": {
-      "notes": 523,
-      "cuts": 536,
+      "notes": 524,
+      "cuts": 537,
       "types": {
-        "tap": 452,
+        "tap": 453,
         "direction": 58,
         "long": 13
       },
@@ -708,7 +716,12 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "lvl-expert-4",
+        "burning-hard-2",
+        "unlimited-hard-4"
+      ]
     }
   },
   "escapade": {
@@ -898,14 +911,17 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "dream-normal-3"
+      ]
     },
     "normal": {
       "notes": 282,
       "cuts": 291,
       "types": {
-        "tap": 259,
-        "direction": 14,
+        "tap": 260,
+        "direction": 13,
         "long": 9
       },
       "phrases": [
@@ -1087,14 +1103,19 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "burning-hard-1",
+        "dream-hard-4",
+        "unlimited-hard-1"
+      ]
     },
     "hard": {
-      "notes": 405,
-      "cuts": 416,
+      "notes": 406,
+      "cuts": 417,
       "types": {
         "tap": 361,
-        "direction": 33,
+        "direction": 34,
         "long": 11
       },
       "phrases": [
@@ -1276,15 +1297,20 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "avoid-double-direction",
+        "dream-hard-3",
+        "unlimited-hard-3"
+      ]
     }
   },
   "logic": {
     "easy": {
-      "notes": 206,
-      "cuts": 220,
+      "notes": 209,
+      "cuts": 223,
       "types": {
-        "tap": 192,
+        "tap": 195,
         "long": 14
       },
       "phrases": [
@@ -1546,7 +1572,10 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "bring-it-on-1"
+      ]
     },
     "normal": {
       "notes": 389,
@@ -1815,13 +1844,18 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "avoid-hand-clap",
+        "dream-normal-2",
+        "lvl-expert-3"
+      ]
     },
     "hard": {
-      "notes": 605,
-      "cuts": 619,
+      "notes": 617,
+      "cuts": 631,
       "types": {
-        "tap": 536,
+        "tap": 548,
         "direction": 55,
         "long": 14
       },
@@ -2084,15 +2118,19 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "shut-up-dance-2",
+        "shut-up-dance-1"
+      ]
     }
   },
   "BenkyouRemaster": {
     "easy": {
-      "notes": 147,
-      "cuts": 159,
+      "notes": 149,
+      "cuts": 161,
       "types": {
-        "tap": 135,
+        "tap": 137,
         "long": 12
       },
       "phrases": [
@@ -2290,13 +2328,16 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "dream-normal-4"
+      ]
     },
     "normal": {
-      "notes": 274,
-      "cuts": 286,
+      "notes": 272,
+      "cuts": 284,
       "types": {
-        "tap": 252,
+        "tap": 250,
         "direction": 10,
         "long": 12
       },
@@ -2495,13 +2536,18 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "avoid-hammer",
+        "burning-hard-3",
+        "lvl-expert-1"
+      ]
     },
     "hard": {
-      "notes": 403,
-      "cuts": 415,
+      "notes": 409,
+      "cuts": 421,
       "types": {
-        "tap": 357,
+        "tap": 363,
         "direction": 34,
         "long": 12
       },
@@ -2700,7 +2746,12 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "bring-it-on-4",
+        "bring-it-on-3",
+        "lvl-expert-2"
+      ]
     }
   },
   "Aobasou": {
@@ -2882,7 +2933,10 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "avoid-central-wall"
+      ]
     },
     "normal": {
       "notes": 312,
@@ -3063,13 +3117,18 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "avoid-face-punch",
+        "avoid-vision-block",
+        "bring-it-on-2"
+      ]
     },
     "hard": {
-      "notes": 442,
-      "cuts": 453,
+      "notes": 452,
+      "cuts": 463,
       "types": {
-        "tap": 374,
+        "tap": 384,
         "direction": 57,
         "long": 11
       },
@@ -3244,7 +3303,12 @@
         }
       ],
       "recoveryAdjustments": [],
-      "flowPassed": true
+      "flowPassed": true,
+      "materialPatterns": [
+        "shut-up-dance-3",
+        "shut-up-dance-4",
+        "burning-hard-4"
+      ]
     }
   }
 }

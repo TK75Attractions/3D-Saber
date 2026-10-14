@@ -1,0 +1,62 @@
+{
+  "_comment": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+  "bpm": 140,
+  "coordScale": 1,
+  "offsetMs": 0,
+  "beatZeroMs": 0,
+  "displayLevel": 5,
+  "timeSignatures": [
+    {
+      "beat": 0,
+      "numerator": 4,
+      "denominator": 4
+    }
+  ],
+  "editorTempoMap": [],
+  "notes": [
+    {
+      "beat": 0.0,
+      "time": 0.0,
+      "x": -1.4,
+      "y": -0.25,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 1.0,
+      "time": 428.5714,
+      "x": 1.4,
+      "y": -0.25,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 2.0,
+      "time": 857.1429,
+      "x": -1.4,
+      "y": 0.25,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 3.0,
+      "time": 1285.7143,
+      "x": 1.4,
+      "y": 0.25,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    }
+  ]
+}

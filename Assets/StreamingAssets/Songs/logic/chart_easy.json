@@ -1,5 +1,5 @@
 {
-  "_comment": "Beat Saber参照・フレーズ単位の反復と応答。フリックは句末に限定し、全体/各手の連続数を検証。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 160,
   "coordScale": 1,
   "offsetMs": 0,
@@ -50,6 +50,10 @@
     {
       "timeMs": 28.0,
       "name": "8/8の導入"
+    },
+    {
+      "timeMs": 7528.0,
+      "name": "素材: bring-it-on-1"
     },
     {
       "timeMs": 12028.0,
@@ -138,10 +142,43 @@
       "lengthMs": 0
     },
     {
-      "beat": 24.0,
-      "time": 9028.0,
-      "x": 1.22,
-      "y": -0.25,
+      "beat": 21,
+      "time": 7903.0,
+      "x": -1.35,
+      "y": -0.24,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 23,
+      "time": 8653.0,
+      "x": -1.05,
+      "y": -0.24,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 25,
+      "time": 9403.0,
+      "x": 1.35,
+      "y": -0.24,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 27,
+      "time": 10153.0,
+      "x": 1.05,
+      "y": -0.24,
       "type": "tap",
       "color": "red",
       "direction": "none",

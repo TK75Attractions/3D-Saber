@@ -1,5 +1,5 @@
 {
-  "_comment": "Beat Saber参照・フレーズ単位の反復と応答。フリックは句末に限定し、全体/各手の連続数を検証。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 190,
   "coordScale": 1,
   "offsetMs": 0,
@@ -58,6 +58,10 @@
     {
       "timeMs": 96020.0,
       "name": "余韻"
+    },
+    {
+      "timeMs": 101072.6316,
+      "name": "素材: dream-normal-3"
     }
   ],
   "notes": [
@@ -1659,10 +1663,10 @@
     {
       "beat": 320.0,
       "time": 101072.6316,
-      "x": 1.22,
-      "y": 0.25,
+      "x": -1.06,
+      "y": -0.25,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -1681,7 +1685,7 @@
     {
       "beat": 324.0,
       "time": 102335.7895,
-      "x": 1.22,
+      "x": 1.06,
       "y": -0.25,
       "type": "tap",
       "color": "red",
@@ -1692,10 +1696,10 @@
     {
       "beat": 326.0,
       "time": 102967.3684,
-      "x": -1.22,
-      "y": -0.25,
+      "x": 1.22,
+      "y": 0.25,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0

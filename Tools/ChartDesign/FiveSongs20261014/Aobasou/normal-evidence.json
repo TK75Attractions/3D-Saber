@@ -2272,9 +2272,9 @@
   {
     "index": 227,
     "beat": 228.0,
-    "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 14,
+    "hand": "blue",
+    "role": "素材: 次のノーツを隠す配置",
+    "phrase": -1,
     "peakSeconds": 97.707937,
     "distanceMs": -6.349,
     "strength": 1.1662
@@ -2282,9 +2282,9 @@
   {
     "index": 228,
     "beat": 229.0,
-    "hand": "blue",
-    "role": "主拍への回帰",
-    "phrase": 14,
+    "hand": "red",
+    "role": "素材: 次のノーツを隠す配置",
+    "phrase": -1,
     "peakSeconds": 98.136961,
     "distanceMs": -5.896,
     "strength": 1.3672
@@ -2292,9 +2292,9 @@
   {
     "index": 229,
     "beat": 230.0,
-    "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 14,
+    "hand": "blue",
+    "role": "素材: 次のノーツを隠す配置",
+    "phrase": -1,
     "peakSeconds": 98.565986,
     "distanceMs": -5.442,
     "strength": 1.2377
@@ -2302,9 +2302,9 @@
   {
     "index": 230,
     "beat": 231.0,
-    "hand": "blue",
-    "role": "主拍への回帰",
-    "phrase": 14,
+    "hand": "red",
+    "role": "素材: 次のノーツを隠す配置",
+    "phrase": -1,
     "peakSeconds": 98.995011,
     "distanceMs": -4.989,
     "strength": 1.3652
@@ -2313,8 +2313,8 @@
     "index": 231,
     "beat": 232.0,
     "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 14,
+    "role": "素材: 次のノーツを隠す配置",
+    "phrase": -1,
     "peakSeconds": 99.419048,
     "distanceMs": -9.524,
     "strength": 1.3104
@@ -2323,8 +2323,8 @@
     "index": 232,
     "beat": 233.0,
     "hand": "blue",
-    "role": "主拍への回帰",
-    "phrase": 14,
+    "role": "素材: 次のノーツを隠す配置",
+    "phrase": -1,
     "peakSeconds": 99.848073,
     "distanceMs": -9.07,
     "strength": 1.4686
@@ -2333,8 +2333,8 @@
     "index": 233,
     "beat": 234.0,
     "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 14,
+    "role": "素材: 次のノーツを隠す配置",
+    "phrase": -1,
     "peakSeconds": 100.282086,
     "distanceMs": -3.628,
     "strength": 1.3825
@@ -2343,8 +2343,8 @@
     "index": 234,
     "beat": 235.0,
     "hand": "blue",
-    "role": "主拍への回帰",
-    "phrase": 14,
+    "role": "素材: 次のノーツを隠す配置",
+    "phrase": -1,
     "peakSeconds": 100.706122,
     "distanceMs": -8.163,
     "strength": 1.5878
@@ -2422,9 +2422,9 @@
   {
     "index": 242,
     "beat": 244.0,
-    "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 15,
+    "hand": "blue",
+    "role": "素材: 顔の近くを横切る両手",
+    "phrase": -1,
     "peakSeconds": 104.562358,
     "distanceMs": -9.07,
     "strength": 1.3263
@@ -2432,9 +2432,9 @@
   {
     "index": 243,
     "beat": 245.0,
-    "hand": "blue",
-    "role": "主拍への回帰",
-    "phrase": 15,
+    "hand": "red",
+    "role": "素材: 顔の近くを横切る両手",
+    "phrase": -1,
     "peakSeconds": 104.991383,
     "distanceMs": -8.617,
     "strength": 1.5567
@@ -2442,9 +2442,9 @@
   {
     "index": 244,
     "beat": 246.0,
-    "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 15,
+    "hand": "blue",
+    "role": "素材: 顔の近くを横切る両手",
+    "phrase": -1,
     "peakSeconds": 105.420408,
     "distanceMs": -8.163,
     "strength": 1.4107
@@ -2452,9 +2452,9 @@
   {
     "index": 245,
     "beat": 247.0,
-    "hand": "blue",
-    "role": "主拍への回帰",
-    "phrase": 15,
+    "hand": "red",
+    "role": "素材: 顔の近くを横切る両手",
+    "phrase": -1,
     "peakSeconds": 105.849433,
     "distanceMs": -7.71,
     "strength": 2.0849
@@ -2463,8 +2463,8 @@
     "index": 246,
     "beat": 248.0,
     "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 15,
+    "role": "素材: 顔の近くを横切る両手",
+    "phrase": -1,
     "peakSeconds": 106.278458,
     "distanceMs": -7.256,
     "strength": 1.3952
@@ -2473,8 +2473,8 @@
     "index": 247,
     "beat": 249.0,
     "hand": "blue",
-    "role": "主拍への回帰",
-    "phrase": 15,
+    "role": "素材: 顔の近くを横切る両手",
+    "phrase": -1,
     "peakSeconds": 106.707483,
     "distanceMs": -6.803,
     "strength": 1.9501
@@ -2483,8 +2483,8 @@
     "index": 248,
     "beat": 250.0,
     "hand": "red",
-    "role": "主拍への回帰",
-    "phrase": 15,
+    "role": "素材: 顔の近くを横切る両手",
+    "phrase": -1,
     "peakSeconds": 107.136508,
     "distanceMs": -6.349,
     "strength": 1.3125
@@ -2493,8 +2493,8 @@
     "index": 249,
     "beat": 251.0,
     "hand": "blue",
-    "role": "主拍への回帰",
-    "phrase": 15,
+    "role": "素材: 顔の近くを横切る両手",
+    "phrase": -1,
     "peakSeconds": 107.565533,
     "distanceMs": -5.896,
     "strength": 1.8232
@@ -3041,63 +3041,63 @@
   },
   {
     "index": 304,
-    "beat": 308.0,
+    "beat": 308,
     "hand": "blue",
-    "role": "終止",
-    "phrase": 19,
+    "role": "素材: 左2個から右へ受け渡す",
+    "phrase": -1,
     "peakSeconds": 132.004989,
     "distanceMs": 4.989,
     "strength": 0.5537
   },
   {
     "index": 305,
-    "beat": 310.0,
-    "hand": "red",
-    "role": "終止",
-    "phrase": 19,
-    "peakSeconds": 132.843084,
-    "distanceMs": -14.059,
-    "strength": 0.6385
+    "beat": 309,
+    "hand": "blue",
+    "role": "素材: 左2個から右へ受け渡す",
+    "phrase": -1,
+    "peakSeconds": 132.429025,
+    "distanceMs": 0.454,
+    "strength": 0.6607
   },
   {
     "index": 306,
-    "beat": 311.5,
-    "hand": "blue",
-    "role": "終止",
-    "phrase": 19,
-    "peakSeconds": 133.496599,
-    "distanceMs": -3.401,
-    "strength": 0.8999
+    "beat": 310.5,
+    "hand": "red",
+    "role": "素材: 左2個から右へ受け渡す",
+    "phrase": -1,
+    "peakSeconds": 133.067574,
+    "distanceMs": -3.855,
+    "strength": 0.5399
   },
   {
     "index": 307,
-    "beat": 312.0,
+    "beat": 312,
     "hand": "red",
-    "role": "終止",
-    "phrase": 19,
+    "role": "素材: 左2個から右へ受け渡す",
+    "phrase": -1,
     "peakSeconds": 133.706122,
     "distanceMs": -8.163,
     "strength": 0.5992
   },
   {
     "index": 308,
-    "beat": 314.0,
-    "hand": "blue",
-    "role": "終止",
-    "phrase": 19,
-    "peakSeconds": 134.564172,
-    "distanceMs": -7.256,
-    "strength": 0.7667
+    "beat": 313,
+    "hand": "red",
+    "role": "素材: 左2個から右へ受け渡す",
+    "phrase": -1,
+    "peakSeconds": 134.135147,
+    "distanceMs": -7.71,
+    "strength": 0.4788
   },
   {
     "index": 309,
-    "beat": 315.5,
-    "hand": "red",
-    "role": "終止",
-    "phrase": 19,
-    "peakSeconds": 135.212698,
-    "distanceMs": -1.587,
-    "strength": 0.7973
+    "beat": 314.5,
+    "hand": "blue",
+    "role": "素材: 左2個から右へ受け渡す",
+    "phrase": -1,
+    "peakSeconds": 134.783673,
+    "distanceMs": -2.041,
+    "strength": 0.515
   },
   {
     "index": 310,

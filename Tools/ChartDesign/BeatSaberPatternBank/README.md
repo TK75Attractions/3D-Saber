@@ -2,6 +2,48 @@
 
 スマホ用の閲覧・ダウンロード先: https://beat-saber-pattern-bank.metuji48.chatgpt.site
 
+変換済み譜面: https://beat-saber-pattern-bank.metuji48.chatgpt.site/patterns.html
+
+## 3D-Saberへの反映
+
+34素材すべてを4拍の本作形式JSONへ変換し、元の5曲のEasy / Normal / Hard、計15譜面へ反映した。
+各素材は1小節の配置と左右を入れ替えた応答の計2小節で、合計68小節。
+採用候補15・調整して採用13を適合させ、避けたい例6は指摘された問題を修正した配置にした。
+Manic Sonic / escapade / logic!!! / 勉強（Remaster）/ 青葉騒へ、それぞれ7 / 7 / 6 / 7 / 7素材を組み込んだ。
+
+公式動画20素材は映像で観察した構造に基づく簡略化した翻案で、原作ノーツの完全な採譜ではない。
+カスタム8素材は原譜面の拍・左右の手を使い、本作の座標とフリック数へ調整した。
+解説6素材は修正案から作った新規配置。元の悪い配置をそのまま移植していない。
+
+`patterns/` と `converted-patterns.json` が再利用用の譜面。
+`applications.json` に各素材の適用先、開始小節、拍、ノーツ列、元動画URL、音源付きの通し譜面へのリンクを保存する。
+スマホページでは4拍素材と実際に組み込んだ2小節を切り替えられ、元動画と比較できる。
+各JSONと全68譜面のZIPも保存可能。プレビューの音はメトロノームで、曲音源は通し譜面のリンクで再生する。
+
+音源の発音候補、既存ロング、前後の手の移動、変速、難易度を検査して配置先を選定した。
+現行15譜面のフリック連続数は全体・片手とも最大3。Easyは0。
+独立検証は `integration-validation.json`、ブラウザとUnityの検証概要は `conversion-verification.json` を参照。
+Unityの関連EditMode 43件とPlayMode 1件が成功。物理セイバーでの通しプレイは未実施。
+
+## 追加収集時の更新
+
+Python 3、NumPy、SciPy、FFmpegを使う。Unityルートから実行する。
+
+```text
+python Tools/ChartDesign/BeatSaberPatternBank/convert_patterns.py
+python Tools/ChartDesign/BeatSaberPatternBank/integrate_patterns.py --repo . --output <候補フォルダー>
+python Tools/ChartDesign/BeatSaberPatternBank/verify_conversion.py
+python Tools/ChartDesign/FiveSongs20261014/verify_pack.py --repo . --output <検証結果.json>
+python Tools/ChartDesign/BeatSaberPatternBank/export_web.py --pattern-site <素材サイトのチェックアウト> --chart-site <全譜面サイトのチェックアウト>
+```
+
+新素材は映像を確認し、`convert_patterns.py` の定義または原譜面データを追加してから変換する。
+`integrate_patterns.py` は `applications.json` で反映済みIDを除き、未反映素材だけの候補を生成する。
+候補の対象JSONを検証して本体へ反映し、以降の検証とUnityの関連3テスト群を実行する。
+適合する場所がない場合は無理に挿入せず、未適用理由を記録して配置を再検討する。
+`export_web.py` は素材サイトと対象5曲のスマホ用譜面を更新する。両サイトを既存の公開範囲で更新する。
+毎時の自動処理も収集・変換・適用・検証・サイト更新を対象とする。
+
 2026-10-14 に作成。公式4曲とカスタム2曲、計10譜面から28区間を収集し、配置の比較解説6区間を追加した。採用候補15、調整して採用13、避けたい例6。各素材に観察理由、3D-Saber向けの調整案、出典と元動画の時刻を記録している。
 
 ## 収録範囲
@@ -22,7 +64,7 @@ Bring It On は複数難易度を切り替える動画のため、素材ごと�
 
 ## 素材の使い方
 
-`collection.json` の `barFile`、`contextFile`、`poster` は閲覧サイトを基準にした相対パス。サイトから動画を個別保存でき、分類別ZIPには動画と索引を収録している。動画のGit保存先はSitesのソースリポジトリ。このUnityリポジトリには索引と検証結果のみ置く。
+`collection.json` の `barFile`、`contextFile`、`poster` は閲覧サイトを基準にした相対パス。サイトから動画を個別保存でき、分類別ZIPには動画と索引を収録している。動画のGit保存先はSitesのソースリポジトリ。このUnityリポジトリには索引、変換譜面、適用記録、検証結果を置く。
 
 `sourceNotes` はカスタム譜面の小節内時刻・左右の手・列・段・原作の矢印を記録した参考データで、ゲーム用の生成済み譜面ではない。`beat` は区間先頭からの相対拍、`column` は0〜3、`row` は0〜2、`cutDirection` はBeat Saber v2形式（0上、1下、2左、3右、4左上、5右上、6左下、7右下、8任意）。
 

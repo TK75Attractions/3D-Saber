@@ -1,6 +1,7 @@
 # 5曲追加 / 2026-10-14
 
-**現行版は同日の作り直し版。[Beat Saber参照・配置方針・検証結果](RECHART.md)を参照。**
+**現行版は同日の作り直し版へ、収集した34素材をすべて組み込んだ版。**
+[配置方針](RECHART.md)、[素材ごとの変換・適用記録](../BeatSaberPatternBank/README.md)を参照。
 
 提供された音源をそのまま収録し、各曲に Easy / Normal / Hard を用意した。
 `chart.json` は Normal と同一。曲名・作曲者・拍子はユーザー添付の2枚の表が出典。
@@ -68,6 +69,11 @@ SHA-256、デコード実測長、発音位置、音量区間を各曲の `analy
   VBR MP3のUnityデコードで増える末尾は無音であり、曲中の時間軸は一致する。
 
 ## 再生成
+
+`rechart.py` は素材適用前の基礎譜面を再生成する。現行譜面の再現には、
+`../BeatSaberPatternBank/applications.json` の適用済みノーツ列と開始・終了拍も必要。
+基礎譜面だけで本編を上書きすると34素材の適用が失われる。通常の素材追加は
+`../BeatSaberPatternBank/integrate_patterns.py` を現行譜面に対して実行する。
 
 Python 3、NumPy、SciPy、FFmpegを使用。FFmpegがPATHにない場合は `FFMPEG` 環境変数で実行ファイルを指定する。
 元ファイル名は `songs.json` を参照。以下はUnityプロジェクトルートから実行する。

@@ -1,5 +1,5 @@
 {
-  "_comment": "Beat Saber参照・フレーズ単位の反復と応答。フリックは句末に限定し、全体/各手の連続数を検証。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 190,
   "coordScale": 1,
   "offsetMs": 0,
@@ -48,12 +48,24 @@
       "name": "シンコペーション"
     },
     {
+      "timeMs": 66967.3684,
+      "name": "素材: unlimited-hard-3"
+    },
+    {
+      "timeMs": 70756.8421,
+      "name": "素材: avoid-double-direction"
+    },
+    {
       "timeMs": 75809.4737,
       "name": "間奏"
     },
     {
       "timeMs": 85914.7368,
       "name": "主題の回帰"
+    },
+    {
+      "timeMs": 90967.3684,
+      "name": "素材: dream-hard-3"
     },
     {
       "timeMs": 96020.0,
@@ -2847,8 +2859,19 @@
     {
       "beat": 212.0,
       "time": 66967.3684,
-      "x": 1.04,
-      "y": -0.34,
+      "x": -1.18,
+      "y": -0.25,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 212.5,
+      "time": 67125.2632,
+      "x": 1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2858,8 +2881,8 @@
     {
       "beat": 213.0,
       "time": 67283.1579,
-      "x": -1.4,
-      "y": 0.34,
+      "x": -1.18,
+      "y": 0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2867,21 +2890,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 213.5,
-      "time": 67441.0526,
-      "x": 1.4,
-      "y": 0.34,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 214.5,
-      "time": 67756.8421,
-      "x": -1.04,
-      "y": -0.34,
+      "beat": 214.0,
+      "time": 67598.9474,
+      "x": -1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2891,8 +2903,8 @@
     {
       "beat": 215.0,
       "time": 67914.7368,
-      "x": 1.04,
-      "y": -0.34,
+      "x": 1.18,
+      "y": 0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2902,8 +2914,19 @@
     {
       "beat": 216.0,
       "time": 68230.5263,
-      "x": -1.4,
-      "y": 0.34,
+      "x": 1.18,
+      "y": -0.25,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 216.5,
+      "time": 68388.4211,
+      "x": -1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -2913,8 +2936,8 @@
     {
       "beat": 217.0,
       "time": 68546.3158,
-      "x": 1.4,
-      "y": 0.34,
+      "x": 1.18,
+      "y": 0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2922,21 +2945,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 217.5,
-      "time": 68704.2105,
-      "x": -1.04,
-      "y": -0.34,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 218.5,
-      "time": 69020.0,
-      "x": 1.04,
-      "y": -0.34,
+      "beat": 218.0,
+      "time": 68862.1053,
+      "x": 1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -2946,8 +2958,8 @@
     {
       "beat": 219.0,
       "time": 69177.8947,
-      "x": -1.4,
-      "y": 0.34,
+      "x": -1.18,
+      "y": 0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3012,21 +3024,21 @@
     {
       "beat": 224.0,
       "time": 70756.8421,
-      "x": 1.16,
-      "y": -0.34,
+      "x": -1.18,
+      "y": -0.25,
       "type": "tap",
-      "color": "gold",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
     {
-      "beat": 224.0,
-      "time": 70756.8421,
-      "x": -1.16,
-      "y": -0.34,
+      "beat": 224.5,
+      "time": 70914.7368,
+      "x": 1.18,
+      "y": -0.25,
       "type": "tap",
-      "color": "gold",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3034,21 +3046,21 @@
     {
       "beat": 225.0,
       "time": 71072.6316,
-      "x": 1.4,
-      "y": 0.34,
+      "x": -1.18,
+      "y": 0.25,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
     {
-      "beat": 225.5,
-      "time": 71230.5263,
-      "x": -1.4,
-      "y": 0.34,
+      "beat": 226.0,
+      "time": 71388.4211,
+      "x": 1.18,
+      "y": 0.25,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3056,10 +3068,10 @@
     {
       "beat": 226.5,
       "time": 71546.3158,
-      "x": 1.04,
-      "y": -0.34,
+      "x": -1.18,
+      "y": -0.25,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3067,10 +3079,10 @@
     {
       "beat": 227.0,
       "time": 71704.2105,
-      "x": -1.04,
-      "y": -0.34,
+      "x": 1.18,
+      "y": -0.25,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3078,10 +3090,21 @@
     {
       "beat": 228.0,
       "time": 72020.0,
-      "x": 1.4,
-      "y": 0.34,
+      "x": 1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 228.5,
+      "time": 72177.8947,
+      "x": -1.18,
+      "y": -0.25,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3089,21 +3112,21 @@
     {
       "beat": 229.0,
       "time": 72335.7895,
-      "x": -1.4,
-      "y": 0.34,
+      "x": 1.18,
+      "y": 0.25,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
     {
-      "beat": 229.5,
-      "time": 72493.6842,
-      "x": 1.04,
-      "y": -0.34,
+      "beat": 230.0,
+      "time": 72651.5789,
+      "x": -1.18,
+      "y": 0.25,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3111,10 +3134,10 @@
     {
       "beat": 230.5,
       "time": 72809.4737,
-      "x": -1.04,
-      "y": -0.34,
+      "x": 1.18,
+      "y": -0.25,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3122,10 +3145,10 @@
     {
       "beat": 231.0,
       "time": 72967.3684,
-      "x": 1.4,
-      "y": 0.34,
+      "x": -1.18,
+      "y": -0.25,
       "type": "tap",
-      "color": "red",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3804,41 +3827,8 @@
     {
       "beat": 288.0,
       "time": 90967.3684,
-      "x": 1.4,
-      "y": 0.34,
-      "type": "tap",
-      "color": "gold",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 288.0,
-      "time": 90967.3684,
-      "x": -1.4,
-      "y": 0.34,
-      "type": "tap",
-      "color": "gold",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 289.5,
-      "time": 91441.0526,
-      "x": -1.04,
-      "y": -0.34,
-      "type": "tap",
-      "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 290.0,
-      "time": 91598.9474,
-      "x": 1.04,
-      "y": -0.34,
+      "x": 1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3846,10 +3836,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 290.5,
-      "time": 91756.8421,
-      "x": -1.4,
-      "y": 0.34,
+      "beat": 288.0,
+      "time": 90967.3684,
+      "x": -1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3857,10 +3847,43 @@
       "lengthMs": 0
     },
     {
-      "beat": 291.5,
-      "time": 92072.6316,
-      "x": 1.4,
-      "y": 0.34,
+      "beat": 289.0,
+      "time": 91283.1579,
+      "x": -1.18,
+      "y": 0.25,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 289.5,
+      "time": 91441.0526,
+      "x": 1.18,
+      "y": 0.25,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 290.0,
+      "time": 91598.9474,
+      "x": -1.18,
+      "y": -0.25,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 291.0,
+      "time": 91914.7368,
+      "x": 1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3870,8 +3893,19 @@
     {
       "beat": 292.0,
       "time": 92230.5263,
-      "x": -1.04,
-      "y": -0.34,
+      "x": 1.18,
+      "y": -0.25,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 292.0,
+      "time": 92230.5263,
+      "x": -1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3879,10 +3913,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 292.5,
-      "time": 92388.4211,
-      "x": 1.04,
-      "y": -0.34,
+      "beat": 293.0,
+      "time": 92546.3158,
+      "x": 1.18,
+      "y": 0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3892,8 +3926,8 @@
     {
       "beat": 293.5,
       "time": 92704.2105,
-      "x": -1.4,
-      "y": 0.34,
+      "x": -1.18,
+      "y": 0.25,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -3903,8 +3937,8 @@
     {
       "beat": 294.0,
       "time": 92862.1053,
-      "x": 1.4,
-      "y": 0.34,
+      "x": 1.18,
+      "y": -0.25,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -3912,24 +3946,13 @@
       "lengthMs": 0
     },
     {
-      "beat": 294.5,
-      "time": 93020.0,
-      "x": -1.04,
-      "y": -0.34,
-      "type": "tap",
+      "beat": 295.0,
+      "time": 93177.8947,
+      "x": -1.18,
+      "y": -0.25,
+      "type": "direction",
       "color": "blue",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 295.5,
-      "time": 93335.7895,
-      "x": 1.04,
-      "y": -0.34,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
+      "direction": "downleft",
       "count": 1,
       "lengthMs": 0
     },

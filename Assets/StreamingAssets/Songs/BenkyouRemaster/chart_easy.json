@@ -1,5 +1,5 @@
 {
-  "_comment": "Beat Saber参照・フレーズ単位の反復と応答。フリックは句末に限定し、全体/各手の連続数を検証。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 160,
   "coordScale": 1,
   "offsetMs": 0,
@@ -62,6 +62,10 @@
     {
       "timeMs": 70674.0,
       "name": "小節頭と余韻"
+    },
+    {
+      "timeMs": 82674.0,
+      "name": "素材: dream-normal-4"
     },
     {
       "timeMs": 85674.0,
@@ -1111,8 +1115,19 @@
     {
       "beat": 200.0,
       "time": 82674.0,
-      "x": -1.22,
-      "y": 0.25,
+      "x": 1.18,
+      "y": -0.18,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 200.0,
+      "time": 82674.0,
+      "x": -1.18,
+      "y": -0.18,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1122,10 +1137,21 @@
     {
       "beat": 204.0,
       "time": 84174.0,
-      "x": 1.22,
-      "y": 0.25,
+      "x": 1.18,
+      "y": -0.18,
       "type": "tap",
       "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 204.0,
+      "time": 84174.0,
+      "x": -1.18,
+      "y": -0.18,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0

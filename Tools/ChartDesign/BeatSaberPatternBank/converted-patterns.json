@@ -1,0 +1,2998 @@
+{
+  "schemaVersion": 1,
+  "count": 34,
+  "patterns": [
+    {
+      "id": "dream-normal-1",
+      "title": "単発の間隔を残す",
+      "category": "good",
+      "minimumDifficulty": "easy",
+      "referenceBpm": 183,
+      "sourceUrl": "https://www.youtube.com/watch?v=JmEDepUBXgU&t=24",
+      "adaptation": "音数の少ない区間の基準にする。矢印をタップへ置き換え、間を埋めない。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/dream-normal-1.json",
+      "beats": 4,
+      "noteCount": 2,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 183,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 3,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": 1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 655.7377,
+            "x": -1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "dream-normal-2",
+      "title": "両手のアクセントから単発へ",
+      "category": "good",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 183,
+      "sourceUrl": "https://www.youtube.com/watch?v=JmEDepUBXgU&t=55",
+      "adaptation": "両手タップで区切りを示し、その後は単発。アクセントだけフリック候補。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/dream-normal-2.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 183,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": 1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 655.7377,
+            "x": 1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 983.6066,
+            "x": -1.18,
+            "y": 0.25,
+            "type": "direction",
+            "color": "blue",
+            "direction": "up",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "dream-normal-3",
+      "title": "片手の役割を短く保つ",
+      "category": "good",
+      "minimumDifficulty": "easy",
+      "referenceBpm": 183,
+      "sourceUrl": "https://www.youtube.com/watch?v=JmEDepUBXgU&t=91",
+      "adaptation": "同じ手で取る短いフレーズに利用。各ノーツをフリックにしない。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/dream-normal-3.json",
+      "beats": 4,
+      "noteCount": 2,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 183,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 3,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.06,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 655.7377,
+            "x": -1.22,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "dream-normal-4",
+      "title": "ノーツを置かない区切り",
+      "category": "good",
+      "minimumDifficulty": "easy",
+      "referenceBpm": 183,
+      "sourceUrl": "https://www.youtube.com/watch?v=JmEDepUBXgU&t=137",
+      "adaptation": "壁の動作は移さず、ノーツの休止を残す。前後付き再生で入り口を確認。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/dream-normal-4.json",
+      "beats": 4,
+      "noteCount": 2,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 183,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 3,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": 1.18,
+            "y": -0.18,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.18,
+            "y": -0.18,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "dream-hard-1",
+      "title": "壁と単発の組み合わせ",
+      "category": "conditional",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 183,
+      "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=24",
+      "adaptation": "単発のリズムだけ取り入れ、壁を前提にした横移動は小さくする。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/dream-hard-1.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 183,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.3,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 327.8689,
+            "x": 1.3,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 655.7377,
+            "x": -1.06,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 983.6066,
+            "x": 1.06,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "dream-hard-2",
+      "title": "同時から交互へ戻る",
+      "category": "good",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 183,
+      "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=56",
+      "adaptation": "両手タップを節目に置き、続きは交互タップ。終端だけフリック候補。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/dream-hard-2.json",
+      "beats": 4,
+      "noteCount": 5,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 183,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": 1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 327.8689,
+            "x": -1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 655.7377,
+            "x": 1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 983.6066,
+            "x": -1.18,
+            "y": -0.25,
+            "type": "direction",
+            "color": "blue",
+            "direction": "down",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "dream-hard-3",
+      "title": "左右の上下運動をそろえる",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 183,
+      "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=91",
+      "adaptation": "左右の順番と高さのまとまりを残す。方向指定は節目の1回に絞る。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/dream-hard-3.json",
+      "beats": 4,
+      "noteCount": 6,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 183,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": 1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 327.8689,
+            "x": -1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.5,
+            "time": 491.8033,
+            "x": 1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 655.7377,
+            "x": -1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 983.6066,
+            "x": 1.18,
+            "y": -0.25,
+            "type": "direction",
+            "color": "red",
+            "direction": "down",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "dream-hard-4",
+      "title": "壁を挟む手の切り替え",
+      "category": "conditional",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 183,
+      "sourceUrl": "https://www.youtube.com/watch?v=VfRyM0-jCSs&t=158",
+      "adaptation": "壁を省き、手の切り替わるタイミングを素材にする。位置は中央へ寄せる。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/dream-hard-4.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 183,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": 1.06,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 327.8689,
+            "x": -1.06,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 655.7377,
+            "x": 1.22,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 983.6066,
+            "x": -1.22,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "burning-hard-1",
+      "title": "左右を行き来する単発",
+      "category": "good",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 142,
+      "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=24",
+      "adaptation": "左右交互のタップ列として使う。次の手へ移る距離を小さくする。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/burning-hard-1.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 142,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": 1.3,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 422.5352,
+            "x": -1.3,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 845.0704,
+            "x": 1.06,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1267.6056,
+            "x": -1.06,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "burning-hard-2",
+      "title": "片手の上下を細かく刻む",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 142,
+      "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=56",
+      "adaptation": "刻みはタップ中心。原作の矢印をすべてフリックにすると忙しすぎる。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/burning-hard-2.json",
+      "beats": 4,
+      "noteCount": 6,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 142,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": 1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 211.2676,
+            "x": 1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 422.5352,
+            "x": -1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 845.0704,
+            "x": 1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.5,
+            "time": 1056.338,
+            "x": 1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1267.6056,
+            "x": -1.18,
+            "y": 0.25,
+            "type": "direction",
+            "color": "blue",
+            "direction": "upleft",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "burning-hard-3",
+      "title": "左右の高さに差をつける",
+      "category": "good",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 142,
+      "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=90",
+      "adaptation": "高さの対比を残して左右タップにする。高低差を画面の端まで広げない。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/burning-hard-3.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 142,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.08,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 422.5352,
+            "x": 1.08,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 845.0704,
+            "x": -1.28,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1267.6056,
+            "x": 1.28,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "burning-hard-4",
+      "title": "短い連打から両手へ",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 142,
+      "sourceUrl": "https://www.youtube.com/watch?v=QcaBh6KS7_E&t=137",
+      "adaptation": "連打はタップ、両手の節目も基本はタップ。フリックは片手1個まで。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/burning-hard-4.json",
+      "beats": 4,
+      "noteCount": 6,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 142,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": 1.06,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 211.2676,
+            "x": 1.22,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 422.5352,
+            "x": -1.06,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 845.0704,
+            "x": 1.3,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1267.6056,
+            "x": 1.22,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1267.6056,
+            "x": -1.22,
+            "y": 0.25,
+            "type": "direction",
+            "color": "blue",
+            "direction": "up",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "unlimited-hard-1",
+      "title": "高速でも基本形を小さく",
+      "category": "good",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 198,
+      "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=14",
+      "adaptation": "BPMの高い曲の土台にする。狭い範囲の交互タップを優先する。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/unlimited-hard-1.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 198,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": 1.12,
+            "y": -0.163,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 303.0303,
+            "x": -1.12,
+            "y": -0.163,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 606.0606,
+            "x": 1.12,
+            "y": 0.163,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 909.0909,
+            "x": -1.12,
+            "y": 0.163,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "unlimited-hard-2",
+      "title": "片手の横振りと壁",
+      "category": "conditional",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 198,
+      "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=36",
+      "adaptation": "タイミングを残し、画面の左右を大きく往復する操作は縮める。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/unlimited-hard-2.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 198,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.12,
+            "y": -0.163,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 303.0303,
+            "x": 1.12,
+            "y": -0.163,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 606.0606,
+            "x": 1.12,
+            "y": 0.163,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 909.0909,
+            "x": -1.12,
+            "y": 0.163,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "unlimited-hard-3",
+      "title": "交互の中で手を切り替える",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 198,
+      "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=67",
+      "adaptation": "反復の順番を使い、連続する方向指定はタップへ置き換える。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/unlimited-hard-3.json",
+      "beats": 4,
+      "noteCount": 5,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 198,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 151.5152,
+            "x": 1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 303.0303,
+            "x": -1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 606.0606,
+            "x": -1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 909.0909,
+            "x": 1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "unlimited-hard-4",
+      "title": "単発に両手を混ぜる",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 198,
+      "sourceUrl": "https://www.youtube.com/watch?v=pykGEBUtJeE&t=92",
+      "adaptation": "強拍の両手タップを素材にする。必要なら最後の片手だけフリック。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/unlimited-hard-4.json",
+      "beats": 4,
+      "noteCount": 5,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 198,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.12,
+            "y": -0.163,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 303.0303,
+            "x": 1.12,
+            "y": -0.163,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 606.0606,
+            "x": -1.12,
+            "y": 0.163,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 909.0909,
+            "x": 1.12,
+            "y": 0.163,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 909.0909,
+            "x": -1.12,
+            "y": -0.163,
+            "type": "direction",
+            "color": "blue",
+            "direction": "downleft",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "lvl-expert-1",
+      "title": "爆弾のある単発列",
+      "category": "conditional",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 160,
+      "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=15",
+      "adaptation": "ノーツの間隔だけ使う。爆弾をそのまま入れず、見やすさを優先する。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/lvl-expert-1.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 160,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.3,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 375.0,
+            "x": 1.3,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 750.0,
+            "x": -1.06,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1125.0,
+            "x": 1.06,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "lvl-expert-2",
+      "title": "横方向を含む短い反復",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 160,
+      "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=36",
+      "adaptation": "左右順とリズムをタップに使う。横フリックの連鎖は作らない。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/lvl-expert-2.json",
+      "beats": 4,
+      "noteCount": 6,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 160,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.33,
+            "y": 0,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 187.5,
+            "x": 1.33,
+            "y": 0,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 375.0,
+            "x": -1.03,
+            "y": 0,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 750.0,
+            "x": 1.03,
+            "y": 0,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.5,
+            "time": 937.5,
+            "x": -1.33,
+            "y": 0,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1125.0,
+            "x": 1.33,
+            "y": 0,
+            "type": "direction",
+            "color": "red",
+            "direction": "upright",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "lvl-expert-3",
+      "title": "左右の役割を分離する",
+      "category": "good",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 160,
+      "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=66",
+      "adaptation": "両手の担当を分けたタップ列として利用。端への移動は控えめにする。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/lvl-expert-3.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 160,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.4,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 375.0,
+            "x": 1.4,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 750.0,
+            "x": -1.4,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1125.0,
+            "x": 1.4,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "lvl-expert-4",
+      "title": "横振りから密度を上げる",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 160,
+      "sourceUrl": "https://www.youtube.com/watch?v=am22mbvgyD8&t=93",
+      "adaptation": "次の小節まで見て採否を決める。細かい部分はタップにして密度を調整。",
+      "fidelity": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/lvl-expert-4.json",
+      "beats": 4,
+      "noteCount": 7,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。",
+        "bpm": 160,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.33,
+            "y": 0,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 375.0,
+            "x": 1.33,
+            "y": 0,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.5,
+            "time": 562.5,
+            "x": -1.03,
+            "y": 0,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 750.0,
+            "x": 1.03,
+            "y": 0,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.5,
+            "time": 937.5,
+            "x": -1.33,
+            "y": 0,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1125.0,
+            "x": 1.33,
+            "y": 0,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.5,
+            "time": 1312.5,
+            "x": -1.03,
+            "y": 0,
+            "type": "direction",
+            "color": "blue",
+            "direction": "right",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "bring-it-on-1",
+      "title": "2拍おきの片手フレーズ",
+      "category": "good",
+      "minimumDifficulty": "easy",
+      "referenceBpm": 160,
+      "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=40",
+      "adaptation": "低難度の短い片手フレーズに使う。2個ともタップにし、休みを保持。",
+      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "sourceTiming": "map-grid",
+      "chartFile": "patterns/bring-it-on-1.json",
+      "beats": 4,
+      "noteCount": 2,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+        "bpm": 160,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 3,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 1,
+            "time": 375.0,
+            "x": -1.35,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1125.0,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "bring-it-on-2",
+      "title": "左2個から右へ受け渡す",
+      "category": "good",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 160,
+      "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=46",
+      "adaptation": "左・左・右の順と間隔を使う。右手のアクセントのみフリック候補。",
+      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "sourceTiming": "map-grid",
+      "chartFile": "patterns/bring-it-on-2.json",
+      "beats": 4,
+      "noteCount": 3,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+        "bpm": 160,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 375.0,
+            "x": -1.35,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.5,
+            "time": 937.5,
+            "x": 1.35,
+            "y": 0,
+            "type": "direction",
+            "color": "red",
+            "direction": "up",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "bring-it-on-3",
+      "title": "両手から片手連打へ",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 160,
+      "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=58",
+      "adaptation": "両手の節目とリズムを残す。右手の移動幅を縮め、連打はタップへ。",
+      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "sourceTiming": "map-grid",
+      "chartFile": "patterns/bring-it-on-3.json",
+      "beats": 4,
+      "noteCount": 6,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+        "bpm": 160,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.35,
+            "y": 0,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 375.0,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 750.0,
+            "x": 1.35,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1125.0,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.5,
+            "time": 1312.5,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "bring-it-on-4",
+      "title": "細かい拍を含む交互",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 160,
+      "sourceUrl": "https://www.youtube.com/watch?v=16oSzYCTD3A&t=88",
+      "adaptation": "Expert向けのリズム素材。低難度には細分を間引き、方向指定を減らす。",
+      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "sourceTiming": "map-grid",
+      "chartFile": "patterns/bring-it-on-4.json",
+      "beats": 4,
+      "noteCount": 9,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+        "bpm": 160,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.25,
+            "time": 93.75,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 187.5,
+            "x": 1.35,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 375.0,
+            "x": -1.35,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.5,
+            "time": 562.5,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 750.0,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.5,
+            "time": 937.5,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1125.0,
+            "x": -1.35,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.5,
+            "time": 1312.5,
+            "x": 1.35,
+            "y": 0,
+            "type": "direction",
+            "color": "red",
+            "direction": "right",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "shut-up-dance-1",
+      "title": "8分のリズムを左右へ配る",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 128,
+      "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=24",
+      "adaptation": "8分のタップ列の素材にする。大きな横移動を縮め、終端のみフリック候補。",
+      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "sourceTiming": "map-grid",
+      "chartFile": "patterns/shut-up-dance-1.json",
+      "beats": 4,
+      "noteCount": 8,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+        "bpm": 128,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 234.375,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 468.75,
+            "x": 1.35,
+            "y": 0,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.5,
+            "time": 703.125,
+            "x": -1.35,
+            "y": 0,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 937.5,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.5,
+            "time": 1171.875,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1406.25,
+            "x": -1.35,
+            "y": 0,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.5,
+            "time": 1640.625,
+            "x": 1.35,
+            "y": 0,
+            "type": "direction",
+            "color": "red",
+            "direction": "right",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "shut-up-dance-2",
+      "title": "両手が一緒に移動する",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 128,
+      "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=54",
+      "adaptation": "リズムは使えるが両手同時を減らす。高低差と移動幅を縮める。",
+      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "sourceTiming": "map-grid",
+      "chartFile": "patterns/shut-up-dance-2.json",
+      "beats": 4,
+      "noteCount": 12,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+        "bpm": 128,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 234.375,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 234.375,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 468.75,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 468.75,
+            "x": -1.35,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.5,
+            "time": 703.125,
+            "x": 1.35,
+            "y": 0,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.5,
+            "time": 703.125,
+            "x": -1.05,
+            "y": 0,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 937.5,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 937.5,
+            "x": -1.35,
+            "y": 0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1406.25,
+            "x": 1.35,
+            "y": 0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1406.25,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "direction",
+            "color": "blue",
+            "direction": "downright",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "shut-up-dance-3",
+      "title": "細かい交互から両手へ",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 128,
+      "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=92",
+      "adaptation": "交互部分はタップ列。両手の移動は小さくし、難度に応じて細分を間引く。",
+      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "sourceTiming": "map-grid",
+      "chartFile": "patterns/shut-up-dance-3.json",
+      "beats": 4,
+      "noteCount": 11,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+        "bpm": 128,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.35,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 234.375,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.75,
+            "time": 351.5625,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 468.75,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.25,
+            "time": 585.9375,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.5,
+            "time": 703.125,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.75,
+            "time": 820.3125,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 937.5,
+            "x": 1.35,
+            "y": 0,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 937.5,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1406.25,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1406.25,
+            "x": -1.35,
+            "y": 0,
+            "type": "direction",
+            "color": "blue",
+            "direction": "left",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "shut-up-dance-4",
+      "title": "高い位置と低い位置の対比",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 128,
+      "sourceUrl": "https://www.youtube.com/watch?v=5aLDCKQ63P4&t=137",
+      "adaptation": "高低の対比だけ残して可動域を縮める。全ノーツのフリック化は避ける。",
+      "fidelity": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+      "sourceTiming": "map-grid",
+      "chartFile": "patterns/shut-up-dance-4.json",
+      "beats": 4,
+      "noteCount": 7,
+      "flickCount": 1,
+      "chart": {
+        "_comment": "譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。",
+        "bpm": 128,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": 1.35,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 234.375,
+            "x": -1.35,
+            "y": 0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 468.75,
+            "x": 1.05,
+            "y": 0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.5,
+            "time": 703.125,
+            "x": -1.35,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.5,
+            "time": 1171.875,
+            "x": 1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1406.25,
+            "x": -1.05,
+            "y": -0.24,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.5,
+            "time": 1640.625,
+            "x": 1.35,
+            "y": 0,
+            "type": "direction",
+            "color": "red",
+            "direction": "upright",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "avoid-hand-clap",
+      "title": "両手がぶつかる内向き配置",
+      "category": "avoid",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 140,
+      "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=68",
+      "adaptation": "同時の内向きフリックを避ける。高さ・時刻をずらすかタップにする。",
+      "fidelity": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+      "sourceTiming": "explanation",
+      "chartFile": "patterns/avoid-hand-clap.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+        "bpm": 140,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": 1.3,
+            "y": -0.16,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.3,
+            "y": -0.16,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 857.1429,
+            "x": -1.3,
+            "y": 0.16,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1285.7143,
+            "x": 1.3,
+            "y": 0.16,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "avoid-central-wall",
+      "title": "中央をふさぐ壁",
+      "category": "avoid",
+      "minimumDifficulty": "easy",
+      "referenceBpm": 140,
+      "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=97",
+      "adaptation": "スマホ向け素材には壁を含めず、ノーツと音の対応を抽出する。",
+      "fidelity": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+      "sourceTiming": "explanation",
+      "chartFile": "patterns/avoid-central-wall.json",
+      "beats": 4,
+      "noteCount": 2,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+        "bpm": 140,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 3,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.12,
+            "y": -0.163,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 857.1429,
+            "x": 1.12,
+            "y": -0.163,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "avoid-face-punch",
+      "title": "顔の近くを横切る両手",
+      "category": "avoid",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 140,
+      "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=163",
+      "adaptation": "高い位置の交差フリックを避け、左右の担当を分ける。",
+      "fidelity": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+      "sourceTiming": "explanation",
+      "chartFile": "patterns/avoid-face-punch.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+        "bpm": 140,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.3,
+            "y": -0.16,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 428.5714,
+            "x": 1.3,
+            "y": -0.16,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 857.1429,
+            "x": -1.3,
+            "y": 0.16,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1285.7143,
+            "x": 1.3,
+            "y": 0.16,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "avoid-vision-block",
+      "title": "次のノーツを隠す配置",
+      "category": "avoid",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 140,
+      "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=206",
+      "adaptation": "接近中も次のノーツが見える間隔・位置にする。小画面では特に確認。",
+      "fidelity": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+      "sourceTiming": "explanation",
+      "chartFile": "patterns/avoid-vision-block.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+        "bpm": 140,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.4,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 428.5714,
+            "x": 1.4,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 857.1429,
+            "x": -1.4,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1285.7143,
+            "x": 1.4,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "avoid-hammer",
+      "title": "振り抜いた先に爆弾",
+      "category": "avoid",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 140,
+      "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=259",
+      "adaptation": "自然な操作の先に回避物を置かない。タップ後の移動先もふさがない。",
+      "fidelity": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+      "sourceTiming": "explanation",
+      "chartFile": "patterns/avoid-hammer.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+        "bpm": 140,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 428.5714,
+            "x": 1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 857.1429,
+            "x": -1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1285.7143,
+            "x": 1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "avoid-double-direction",
+      "title": "短時間の同方向リセット",
+      "category": "avoid",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 140,
+      "sourceUrl": "https://www.youtube.com/watch?v=mgGaqZ20Scw&t=311",
+      "adaptation": "短間隔の同方向フリックを続けない。十分な休みがある低難度では別判断。",
+      "fidelity": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+      "sourceTiming": "explanation",
+      "chartFile": "patterns/avoid-double-direction.json",
+      "beats": 4,
+      "noteCount": 6,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。",
+        "bpm": 140,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.0,
+            "time": 0.0,
+            "x": -1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 214.2857,
+            "x": 1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.0,
+            "time": 428.5714,
+            "x": -1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.0,
+            "time": 857.1429,
+            "x": 1.18,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.5,
+            "time": 1071.4286,
+            "x": -1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.0,
+            "time": 1285.7143,
+            "x": 1.18,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    }
+  ]
+}

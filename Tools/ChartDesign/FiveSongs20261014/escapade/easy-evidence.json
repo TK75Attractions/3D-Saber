@@ -1452,9 +1452,9 @@
   {
     "index": 145,
     "beat": 320.0,
-    "hand": "red",
-    "role": "余韻",
-    "phrase": 20,
+    "hand": "blue",
+    "role": "素材: 片手の役割を短く保つ",
+    "phrase": -1,
     "peakSeconds": 101.070295,
     "distanceMs": -2.337,
     "strength": 0.9112
@@ -1463,8 +1463,8 @@
     "index": 146,
     "beat": 322.0,
     "hand": "blue",
-    "role": "余韻",
-    "phrase": 20,
+    "role": "素材: 片手の役割を短く保つ",
+    "phrase": -1,
     "peakSeconds": 101.708844,
     "distanceMs": 4.633,
     "strength": 0.2968
@@ -1473,8 +1473,8 @@
     "index": 147,
     "beat": 324.0,
     "hand": "red",
-    "role": "余韻",
-    "phrase": 20,
+    "role": "素材: 片手の役割を短く保つ",
+    "phrase": -1,
     "peakSeconds": 102.332426,
     "distanceMs": -3.363,
     "strength": 0.4006
@@ -1482,9 +1482,9 @@
   {
     "index": 148,
     "beat": 326.0,
-    "hand": "blue",
-    "role": "余韻",
-    "phrase": 20,
+    "hand": "red",
+    "role": "素材: 片手の役割を短く保つ",
+    "phrase": -1,
     "peakSeconds": 102.965986,
     "distanceMs": -1.382,
     "strength": 0.4785

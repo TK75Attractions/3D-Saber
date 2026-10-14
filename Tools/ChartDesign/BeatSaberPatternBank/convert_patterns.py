@@ -1,0 +1,109 @@
+"""参考映像の要素を本作の4拍譜面に翻案する。原作の完全な採譜ではない。"""
+import argparse,copy,json,sys
+from pathlib import Path
+HERE=Path(__file__).resolve().parent
+sys.path.insert(0,str(HERE.parent/'FiveSongs20261014'))
+from build_pack import path_for,save
+
+# 動画で確認した手の受け渡し・密度差を記述する。位置は本作の可動域へ縮める。
+# L/R=手、B=両手、末尾の数字=四分拍。原作の矢印はタップへ置き換える。
+MANUAL={
+ 'dream-normal-1':('easy','R0 L2','vertical'),
+ 'dream-normal-2':('normal','B0 R2 L3','vertical'),
+ 'dream-normal-3':('easy','L0 L2','arc'),
+ 'dream-normal-4':('easy','B0','rest'),
+ 'dream-hard-1':('normal','L0 R1 L2 R3','diagonal'),
+ 'dream-hard-2':('normal','B0 L1 R2 L3','vertical'),
+ 'dream-hard-3':('hard','B0 L1 R1.5 L2 R3','vertical'),
+ 'dream-hard-4':('normal','R0 L1 R2 L3','arc'),
+ 'burning-hard-1':('normal','R0 L1 R2 L3','diagonal'),
+ 'burning-hard-2':('hard','R0 R0.5 L1 R2 R2.5 L3','vertical'),
+ 'burning-hard-3':('normal','L0 R1 L2 R3','height'),
+ 'burning-hard-4':('hard','R0 R0.5 L1 R2 B3','arc'),
+ 'unlimited-hard-1':('normal','R0 L1 R2 L3','compact'),
+ 'unlimited-hard-2':('normal','L0 R1 R2 L3','compact'),
+ 'unlimited-hard-3':('hard','L0 R0.5 L1 L2 R3','vertical'),
+ 'unlimited-hard-4':('hard','L0 R1 L2 B3','compact'),
+ 'lvl-expert-1':('normal','L0 R1 L2 R3','diagonal'),
+ 'lvl-expert-2':('hard','L0 R0.5 L1 R2 L2.5 R3','horizontal'),
+ 'lvl-expert-3':('normal','L0 R1 L2 R3','wide'),
+ 'lvl-expert-4':('hard','L0 R1 L1.5 R2 L2.5 R3 L3.5','horizontal'),
+ 'avoid-hand-clap':('normal','B0 L2 R3','separated'),
+ 'avoid-central-wall':('easy','L0 R2','compact'),
+ 'avoid-face-punch':('normal','L0 R1 L2 R3','separated'),
+ 'avoid-vision-block':('normal','L0 R1 L2 R3','wide'),
+ 'avoid-hammer':('normal','L0 R1 L2 R3','vertical'),
+ 'avoid-double-direction':('hard','L0 R0.5 L1 R2 L2.5 R3','vertical'),
+}
+class Clock:
+ def __init__(self,bpm):self.value=bpm
+ def t(self,b):return b*60/self.value
+ def bpm(self,b):return self.value
+
+def manual_events(tokens,motion):
+ events=[];phase={'L':0,'R':0}
+ for token in tokens.split():
+  hand=token[0];beat=float(token[1:])
+  for h in ('L','R') if hand=='B' else (hand,):
+   parity=phase[h]%2;sign=-1 if h=='L' else 1
+   x=1.18;y=(-.25,.25)[parity]
+   if motion=='diagonal':x+=(.12,-.12)[parity]
+   if motion=='arc':x+=(-.12,.04,.12,.04)[phase[h]%4]
+   if motion=='compact':x=1.12;y*=.65
+   if motion=='height':y=.25 if h=='R' else -.25;x+=(-.10,.10)[parity]
+   if motion=='horizontal':x+=(.15,-.15)[parity];y=0
+   if motion=='wide':x=1.4
+   if motion=='separated':x=1.3;y=(-.16,.16)[parity]
+   if motion=='rest':y=-.18
+   events.append({'beat':beat,'hand':'left' if h=='L' else 'right','x':round(sign*x,3),'y':round(y,3)})
+   phase[h]+=1
+ return events
+
+def convert(item):
+ source=item.get('sourceNotes');identifier=item['id']
+ if source:
+  diff={'Easy':'easy','Normal':'normal','Hard':'hard','Expert':'hard','Expert+':'hard'}[item['difficulty']]
+  events=[]
+  for n in source:
+   left=n['hand']=='left'
+   # 交差は担当側へ収め、元の内外・高低の対比を残す。
+   inner=1.05;outer=1.35
+   x=-(outer if n['column']==0 else inner) if left else (outer if n['column']==3 else inner)
+   events.append({'beat':n['beat'],'hand':n['hand'],'x':x,'y':[-.24,0,.24][n['row']]})
+  fidelity='譜面データの拍と左右を保持。交差と移動幅を縮め、方向指定を削減。'
+ else:
+  diff,tokens,motion=MANUAL[identifier];events=manual_events(tokens,motion)
+  fidelity='映像の配置要素から設計した簡略化・翻案。原作の全ノーツの正確な採譜ではない。'
+ if item['category']=='avoid':fidelity='問題点を取り除いた修正版。解説映像そのものを再現する譜面ではない。'
+ bpm=item['bpm'] or 140;clock=Clock(bpm);notes=[]
+ for e in events:
+  h=1 if e['hand']=='left' else 0
+  notes.append(dict(beat=e['beat'],time=round(clock.t(e['beat'])*1000,4),x=e['x'],y=e['y'],type='tap',color='blue' if h==1 else 'red',direction='none',count=1,lengthMs=0,
+   _hand=h,_cutBeats=[e['beat']],_arrow=False,_forced=None))
+ notes.sort(key=lambda n:(n['time'],n['_hand']))
+ if diff!='easy' and item['suggestedFlicksMax'] and len(notes)>=3:
+  notes[-1]['_arrow']=True
+ plan,failure=path_for(notes,clock)
+ if failure:
+  # 方向指定で入り口が成立しない場合だけ自由タップへ戻す。
+  for n in notes:n['_arrow']=False
+  plan,failure=path_for(notes,clock)
+ assert failure is None,(identifier,failure)
+ for i,n in enumerate(notes):
+  if n['_arrow']:n['direction']=plan[i]['directions'][0];n['type']='direction'
+ chart={'_comment':fidelity,'bpm':bpm,'coordScale':1,'offsetMs':0,'beatZeroMs':0,'displayLevel':{'easy':3,'normal':5,'hard':7}[diff],
+  'timeSignatures':[{'beat':0,'numerator':4,'denominator':4}],'editorTempoMap':[],
+  'notes':[{k:v for k,v in n.items() if not k.startswith('_')} for n in notes]}
+ return {'id':identifier,'title':item['title'],'category':item['category'],'minimumDifficulty':diff,'referenceBpm':bpm,'sourceUrl':item['sourceUrl'],
+  'adaptation':item['adaptation'],'fidelity':fidelity,'sourceTiming':item['timing'],'chartFile':'patterns/'+identifier+'.json','beats':4,
+  'noteCount':len(notes),'flickCount':sum(n['_arrow'] for n in notes),'chart':chart}
+
+def main():
+ p=argparse.ArgumentParser();p.add_argument('--collection',type=Path,default=HERE/'collection.json');p.add_argument('--output',type=Path,default=HERE);args=p.parse_args()
+ collection=json.loads(args.collection.read_text(encoding='utf-8'))
+ patterns=[convert(item) for item in collection['items']]
+ assert len({p['id'] for p in patterns})==len(collection['items'])
+ for item in patterns:save(args.output/item['chartFile'],item['chart'])
+ save(args.output/'converted-patterns.json',{'schemaVersion':1,'count':len(patterns),'patterns':patterns})
+ print(json.dumps({'converted':len(patterns),'sourceData':sum('sourceNotes' in c for c in collection['items']),'videoAdaptations':len(MANUAL)-6,'corrected':6}))
+if __name__=='__main__':main()

@@ -1,5 +1,5 @@
 {
-  "_comment": "Beat Saber参照・フレーズ単位の反復と応答。フリックは句末に限定し、全体/各手の連続数を検証。",
+  "_comment": "収集したBeat Saber素材を本作向けに翻案。素材ごとの適用箇所はTools/ChartDesign/BeatSaberPatternBank/applications.json。",
   "bpm": 140,
   "coordScale": 1,
   "offsetMs": 0,
@@ -58,6 +58,10 @@
     {
       "timeMs": 130285.7143,
       "name": "終止"
+    },
+    {
+      "timeMs": 130285.7143,
+      "name": "素材: avoid-central-wall"
     }
   ],
   "notes": [
@@ -1846,19 +1850,8 @@
     {
       "beat": 304.0,
       "time": 130285.7143,
-      "x": 1.24,
-      "y": -0.25,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 306.0,
-      "time": 131142.8571,
-      "x": -1.24,
-      "y": -0.25,
+      "x": -1.12,
+      "y": -0.163,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1866,10 +1859,21 @@
       "lengthMs": 0
     },
     {
+      "beat": 306.0,
+      "time": 131142.8571,
+      "x": 1.12,
+      "y": -0.163,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
       "beat": 308.0,
       "time": 132000.0,
-      "x": 1.24,
-      "y": 0.25,
+      "x": 1.12,
+      "y": -0.163,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1879,8 +1883,8 @@
     {
       "beat": 310.0,
       "time": 132857.1429,
-      "x": -1.24,
-      "y": 0.25,
+      "x": -1.12,
+      "y": -0.163,
       "type": "tap",
       "color": "blue",
       "direction": "none",

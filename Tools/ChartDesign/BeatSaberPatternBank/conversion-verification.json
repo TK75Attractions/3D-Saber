@@ -1,0 +1,38 @@
+{
+  "date": "2026-10-14",
+  "materials": 34,
+  "converted": 34,
+  "applied": 34,
+  "affectedSongs": 5,
+  "affectedCharts": 15,
+  "appliedBars": 68,
+  "unity": {
+    "tests-merged": {
+      "result": "Passed",
+      "total": "43",
+      "passed": "43",
+      "failed": "0",
+      "start-time": "2026-10-14 09:23:16Z",
+      "end-time": "2026-10-14 09:23:23Z"
+    },
+    "tests-playmode": {
+      "result": "Passed",
+      "total": "1",
+      "passed": "1",
+      "failed": "0",
+      "start-time": "2026-10-14 09:23:51Z",
+      "end-time": "2026-10-14 09:23:56Z"
+    }
+  },
+  "browser": {
+    "patternViews": 68,
+    "fullCharts": 15,
+    "matchingChartFiles": 15,
+    "errors": [],
+    "passed": true
+  },
+  "protectedOtherCharts": 37,
+  "physicalPlayTest": false,
+  "patternSiteCommit": "fbcab08c6f6be443b2fc8365367262854f7ad7c6",
+  "chartSiteCommit": "58a8107cc67f56682531bbc1892c508cc895bbf0"
+}
