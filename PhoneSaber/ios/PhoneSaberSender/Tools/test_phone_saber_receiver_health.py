@@ -25,6 +25,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import phone_saber_triage_codex as analysis
 import phone_saber_triage_receiver as receiver
+import phone_saber_receiver_launcher as launcher
 from phone_saber_codex_process import CodexProcessError
 from phone_saber_precheck_text import explain_precheck
 from phone_saber_test_isolation import isolate_codex_logs as setUpModule  # noqa: F401
@@ -130,6 +131,65 @@ class ReceiverHealthTests(unittest.TestCase):
         self.assertEqual(payload["changedFiles"], ["phone_saber_triage_codex.py"])
         self.assertEqual(payload["analysis"]["running"], "phone_saber_triage_x")
         self.assertIs(payload["idle"], False)
+
+    def test_analysis_handoffs_never_allow_a_stale_receiver_restart(self) -> None:
+        server = self.server(mode="disabled")
+        server.analysis_mode = "automatic"
+        self.serve(server)
+        bundle = self.inbox / "phone_saber_triage_sample_session"
+        dequeued, release_dequeued = Event(), Event()
+        finishing, release_finishing = Event(), Event()
+        original_get = server.analysis_queue.get
+        original_done = server.analysis_queue.task_done
+
+        def get():
+            if dequeued.is_set():
+                raise SystemExit
+            job = original_get()
+            dequeued.set()
+            if not release_dequeued.wait(5):
+                raise AssertionError("dequeued job was not released")
+            return job
+
+        def done():
+            finishing.set()
+            if not release_finishing.wait(5):
+                raise AssertionError("finished job was not released")
+            original_done()
+
+        with mock.patch.object(server.analysis_queue, "get", side_effect=get), \
+                mock.patch.object(server.analysis_queue, "task_done", side_effect=done), \
+                mock.patch.object(server, "_process_analysis"), \
+                mock.patch.object(server.code_snapshot, "changed_files", return_value=["phone_saber_triage_receiver.py"]), \
+                contextlib.redirect_stdout(io.StringIO()):
+            # 実ワーカーの取り出し直後と task_done 直前を固定し、停止可否を HTTP 経由で検証する。
+            self.assertTrue(server.enqueue_analysis(bundle))
+            worker = Thread(target=server._analysis_worker, daemon=True)
+            worker.start()
+            try:
+                for phase, entered, release in (("dequeued", dequeued, release_dequeued),
+                                                ("finishing", finishing, release_finishing)):
+                    with self.subTest(phase=phase):
+                        self.assertTrue(entered.wait(3), f"worker did not reach {phase}")
+                        status, health = self.request(server, "GET", "/health")
+                        self.assertEqual(status, 200)
+                        self.assertEqual(health["analysis"], {"mode": "automatic", "running": None, "queued": 0})
+                        self.assertFalse(health["idle"], "unfinished analysis must prevent a restart")
+                        decision = launcher.assess_running_receiver(health, {
+                            "pid": str(os.getpid()), "repo": str(self.root),
+                        }, self.root)
+                        self.assertFalse(decision.restart)
+                    release.set()
+            finally:
+                release_dequeued.set()
+                release_finishing.set()
+                worker.join(timeout=3)
+            self.assertFalse(worker.is_alive())
+            health = server.health()
+            self.assertTrue(health["idle"])
+            self.assertTrue(launcher.assess_running_receiver(health, {
+                "pid": str(os.getpid()), "repo": str(self.root),
+            }, self.root).restart)
 
     def test_upload_counts_as_busy_until_analysis_is_queued(self) -> None:
         server = self.server(mode="disabled")

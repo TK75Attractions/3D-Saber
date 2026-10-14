@@ -234,6 +234,9 @@ class TriageHTTPServer(ThreadingHTTPServer):
             running = self.analysis_running
             uploads = self.uploads_in_progress
         queued = self.analysis_queue.qsize()
+        # キュー取り出し後から task_done までの引継ぎ中も、再起動を許可しない。
+        with self.analysis_queue.all_tasks_done:
+            analysis_pending = self.analysis_queue.unfinished_tasks > 0
         return {
             "status": "ready", "service": "phonesaber-triage",
             "pid": os.getpid(),
@@ -242,7 +245,7 @@ class TriageHTTPServer(ThreadingHTTPServer):
             "codeChangedSinceStart": bool(changed), "changedFiles": changed,
             "analysis": {"mode": self.analysis_mode, "running": running, "queued": queued},
             "uploadsInProgress": uploads,
-            "idle": running is None and queued == 0 and uploads == 0,
+            "idle": running is None and queued == 0 and not analysis_pending and uploads == 0,
         }
 
     def _process_analysis(self, bundle: Path, started: float) -> None:
