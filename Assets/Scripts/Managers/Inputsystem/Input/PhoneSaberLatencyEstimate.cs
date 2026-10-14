@@ -123,7 +123,7 @@ public sealed class PhoneSaberLatencyEstimate
     public readonly int Vsync;
     public readonly string Sender, Status, DisplaySource;
     public readonly double DisplayAgeMinutes;
-    public readonly double? NetworkMs, DisplayMs, TotalMs;
+    public readonly double? NetworkMs, DisplayMs, ExposureMs, TotalMs;
     public PhoneSaberLatencyEstimate(PhoneSaberMetrics phone, PhoneSaberTimingStats pc, string sender,
         double coordinateAge, double now, double refreshHz, int vsync, double? measuredDisplay = null, double displayAgeMinutes = 0)
     {
@@ -133,11 +133,14 @@ public sealed class PhoneSaberLatencyEstimate
         DisplayAgeMinutes = displayAgeMinutes;
         DisplayMs = DisplaySource == "measured" ? measuredDisplay : refreshHz > 0 && !double.IsInfinity(refreshHz) ? 500.0 / refreshHz : (double?)null;
         NetworkMs = phone?.Rtt / 2;
+        // F9が画面残差から差し引いた露光位相を、合計へ必ず戻す。
+        ExposureMs = phone?.CaptureFps > 0 && !double.IsInfinity(phone.CaptureFps.Value) ? 500 / phone.CaptureFps.Value : (double?)null;
         Status = phone == null || Sender == "127.0.0.1" || Sender == "::1" ||
             now - phone.ReceivedAt > PhoneSaberMetricsStore.FreshSeconds ? "missing-phone" :
             phone.C2sMedian == null ? "missing-c2s" : phone.Rtt == null || now - phone.ReceivedAt + phone.RttAge > 10 ? "missing-rtt" :
-            pc.Count == 0 || coordinateAge > 1 ? "missing-pc" : DisplayMs == null ? "missing-display" : "estimate";
-        if (Status == "estimate") TotalMs = phone.C2sMedian + NetworkMs + pc.MedianMs + DisplayMs;
+            pc.Count == 0 || coordinateAge > 1 ? "missing-pc" : DisplayMs == null ? "missing-display" :
+            ExposureMs == null ? "missing-exposure" : "estimate";
+        if (Status == "estimate") TotalMs = phone.C2sMedian + NetworkMs + pc.MedianMs + DisplayMs + ExposureMs;
     }
     static string N(double? n) => n.HasValue ? n.Value.ToString("0.0", CultureInfo.InvariantCulture) : "unknown";
     public string Line(string colour, double now)
@@ -149,9 +152,9 @@ public sealed class PhoneSaberLatencyEstimate
         if (!TotalMs.HasValue || now - At > 15 || Phone.RttAge + now - Phone.ReceivedAt > 10)
             return head + "計測不足（スマホ / 通信 / PC / 画面）";
         return head + string.Format(CultureInfo.InvariantCulture,
-            "約{0:0} ms（スマホ {1:0} + 通信 約{2:0} + PC {3:0} + 画面 約{4:0}）/ {5:0}秒前まで・{6}",
+            "約{0:0} ms（スマホ {1:0} + 通信 約{2:0} + PC {3:0} + 画面 約{4:0} + 露光 約{7:0}）/ {5:0}秒前まで・{6}",
             TotalMs, Phone.C2sMedian, NetworkMs, Pc.MedianMs, DisplayMs, Math.Max(0, now - Phone.ReceivedAt), DisplaySource == "measured" ?
-            $"画面は実測（{DisplayAgeMinutes:0}分前）" : "画面は半周期の推定・投影機処理は含まず");
+            $"画面は実測（{DisplayAgeMinutes:0}分前）" : "画面は半周期の推定・投影機処理は含まず", ExposureMs);
     }
     public string Log() => "status=" + Status + " sender=" + Sender + " platform=" + (Phone?.Platform ?? "unknown") +
         " app=" + (Phone?.App ?? "unknown") + " fps-mode=" + N(Phone?.FpsMode) + " route=" + (Phone?.Route ?? "unknown") +
@@ -167,7 +170,8 @@ public sealed class PhoneSaberLatencyEstimate
         " capture-fps=" + N(Phone?.CaptureFps) + " send-red-fps=" + N(Phone?.RedFps) +
         " send-blue-fps=" + N(Phone?.BlueFps) + " thermal=" + (Phone?.Thermal ?? "unknown") +
         " battery=" + N(Phone?.Battery) + " low-latency-test=" + (Phone?.LowLatencyTest ?? 0) +
-        " pc-coordinate-age-s=" + N(double.IsInfinity(CoordinateAge) ? (double?)null : CoordinateAge);
+        " pc-coordinate-age-s=" + N(double.IsInfinity(CoordinateAge) ? (double?)null : CoordinateAge) +
+        " exposure-phase-ms=" + N(ExposureMs);
 }
 
 // F9 の残差は露光位相を半周期とみなした推定。GPU/present/投影機も残差に含む。

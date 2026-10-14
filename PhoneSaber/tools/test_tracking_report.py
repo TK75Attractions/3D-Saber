@@ -37,6 +37,66 @@ def synthetic(path, lag, rate=60.0, seconds=66.0, noise=0.0, angle=1.1):
 
 
 class TrackingReportTests(unittest.TestCase):
+    @staticmethod
+    def target_report():
+        metrics = dict(p95_percent=30, rms_percent=20, lag_component_percent=20, jitter_percent=1)
+        off = {str(hz): dict(metrics) for hz in set(tracking_report.FREQUENCIES)}
+        after = {hz: dict(value, p95_percent=20, rms_percent=15, lag_component_percent=9) for hz, value in off.items()}
+        return {"results": [{"kind": "off", "by_frequency": off},
+                            {"kind": "adaptive", "by_frequency": after}]}
+
+    def test_targets_require_every_speed_and_still_measurement(self):
+        report = self.target_report()
+        self.assertEqual(tracking_report.check_targets(report), [])
+        for missing in ("0.0", "2.5"):
+            with self.subTest(missing=missing):
+                partial = self.target_report()
+                for item in partial["results"]:
+                    del item["by_frequency"][missing]
+                self.assertIn(missing + "Hz 未測定", tracking_report.check_targets(partial))
+
+    def test_targets_reject_nonfinite_metrics_in_both_modes(self):
+        for mode in range(2):
+            for hz, key in (("0.0", "jitter_percent"), ("0.5", "lag_component_percent"),
+                            ("1.5", "rms_percent"), ("2.5", "p95_percent")):
+                for value in (None, float("nan"), float("inf")):
+                    with self.subTest(mode=mode, hz=hz, key=key, value=value):
+                        report = self.target_report()
+                        report["results"][mode]["by_frequency"][hz][key] = value
+                        self.assertIn(hz + "Hz " + key + "未測定", tracking_report.check_targets(report))
+
+    def test_ablation_cannot_silently_ignore_replay_or_target_options(self):
+        for option in (("--check-targets", "--lead-ms", "106"), ("--lead-ms", "106"),
+                       ("--render-hz", "120"), ("--candidate-maximum-ms", "90"),
+                       ("--before-ref", "main"), ("--compare-ref", "main")):
+            with self.subTest(option=option), mock.patch("sys.argv", ["tracking_report.py", "missing-predict3-probe.csv", "--actual-csharp", "--ablation-ref", "ea7848d", *option]):
+                with contextlib.redirect_stderr(io.StringIO()), contextlib.redirect_stdout(io.StringIO()), self.assertRaises(SystemExit) as error:
+                    tracking_report.main()
+                self.assertEqual(error.exception.code, 2)
+
+    def test_partial_still_segment_prints_unmeasured_instead_of_nan_or_crashing(self):
+        report = dict(lag_ms=106, calibration="test", residual_percent=0, travel_world=1, excluded_frames=0,
+                      results=[dict(kind="off", lead_ms=0, jerk_rms_world_s3=0,
+                                    by_frequency={"0.0": dict(jitter_percent=None, jitter_with_transition_percent=1)})])
+        output = io.StringIO()
+        with contextlib.redirect_stdout(output):
+            tracking_report.print_csharp(report)
+        self.assertIn("静止jitter=-", output.getvalue())
+
+    def test_target_does_not_hide_correlated_residual_by_subtracting_rms_squares(self):
+        # 総RMSと残差が相関すると二乗差は小さくなり、遅延半減を誤ってPASSにしていた。
+        off = {"p95_percent": 30, "lag_excess_percent": 20, "lag_component_percent": 20}
+        after = {"p95_percent": 20, "lag_excess_percent": 5, "lag_component_percent": 11}
+        report = self.target_report()
+        report["results"][0]["by_frequency"]["0.5"] = off
+        report["results"][1]["by_frequency"]["0.5"] = after
+        self.assertEqual(tracking_report.check_targets(report), ["0.5Hz lag-component > 0.5x OFF"])
+
+    def test_rounded_turning_point_is_not_lost_between_zero_steps(self):
+        times = np.arange(8) * .01
+        command = np.array([.6, .7, .8, .8, .8, .7, .6, .5])
+        np.testing.assert_allclose(tracking_report.turning_times(times, command), [.03])
+
     def test_lag_is_recovered_for_a_tilted_phone(self):
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "tracking-test.csv"
@@ -63,6 +123,22 @@ class TrackingReportTests(unittest.TestCase):
             predicted = next(item for item in results if item["kind"] == "linear3+age")
             # 2 Hz 以上の往復も含む全体の値なので差は小さいが、雑音なしなら先読みのほうが必ず小さい。
             self.assertLess(predicted["rms_moving"], hold["rms_moving"] * 0.9)
+
+    def test_perspective_fit_removes_distortion_without_fitting_away_lag(self):
+        frames = np.array([(t, target(t)) for t in np.arange(0, 64, 1 / 120)])
+        times = np.arange(.5, 63, 1 / 60)
+        reference = np.interp(times - .106, frames[:, 0], frames[:, 1])
+        expected = np.array([1.4, -.12, 1.2])
+        values = tracking_report.mapping(reference, expected)
+        lag, fit, correlation = tracking_report.fit_mapping(times, values, frames[:, 0], frames[:, 1])
+        self.assertAlmostEqual(lag, 106, delta=.5)
+        self.assertGreater(correlation, .9999)
+        self.assertLess(np.std(values - tracking_report.mapping(reference, fit)), .001)
+        affine_lag, affine, _ = tracking_report.fit_mapping(times, values, frames[:, 0], frames[:, 1], "affine")
+        self.assertGreater(np.std(values - tracking_report.mapping(reference, affine)), .04)
+        self.assertEqual(affine_lag, tracking_report.best_lag(times, values, frames[:, 0], frames[:, 1])[0])
+        grid = tracking_report.mapping(np.linspace(.2, .8, 101), fit)
+        self.assertTrue(np.all(np.diff(grid) > 0))
 
     def test_too_little_data_is_reported_not_raised(self):
         with tempfile.TemporaryDirectory() as directory:

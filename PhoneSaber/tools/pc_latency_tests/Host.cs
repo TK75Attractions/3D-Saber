@@ -66,4 +66,4 @@ public static class PhoneSaberEventLog
 }
 public static class SwingMonotonicClock { public static long Timestamp => (long)(UnityEngine.Time.realtimeSinceStartupAsDouble * 1000000); public static double ToSeconds(long ticks) => ticks / 1000000.0; }
 
-public static class PhoneSaberEndpointPredictor { public const int MaximumHorizonMilliseconds = 60; public const double MaximumGapSeconds = .1; }
+public static class PhoneSaberEndpointPredictor { public const int MaximumHorizonMilliseconds = 120; public const int MaximumManualHorizonMilliseconds = 60; public const double MaximumGapSeconds = .1; }

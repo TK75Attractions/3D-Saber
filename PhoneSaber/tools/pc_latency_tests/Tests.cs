@@ -59,8 +59,8 @@ public class AutoLatencyWindowTests
             int r = PhoneSaberEventLog.Kinds.IndexOf("RED:latency-estimate");
             int b = PhoneSaberEventLog.Kinds.IndexOf("BLUE:latency-estimate");
             Assert.GreaterOrEqual(r, 0); Assert.GreaterOrEqual(b, 0);
-            StringAssert.Contains("total-ms=53.8", PhoneSaberEventLog.Lines[r]);
-            StringAssert.Contains("total-ms=103.9", PhoneSaberEventLog.Lines[b]);
+            StringAssert.Contains("total-ms=62.2", PhoneSaberEventLog.Lines[r]);
+            StringAssert.Contains("total-ms=112.3", PhoneSaberEventLog.Lines[b]);
             input.BlueCoordinateSender = "127.0.0.1";
             StringAssert.Contains("P2P", PhoneSaberPerfLog.LatencyLine(true, 10));
             StringAssert.Contains("届いていません", PhoneSaberPerfLog.LatencyLine(true, 10));

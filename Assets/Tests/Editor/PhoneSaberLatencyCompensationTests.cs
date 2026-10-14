@@ -3,6 +3,12 @@ using NUnit.Framework;
 
 public class PhoneSaberLatencyCompensationTests
 {
+    static PhoneSaberTimingStats Timing(double value, int count = 15)
+    {
+        var samples = new double[count]; for (int i = 0; i < count; i++) samples[i] = value;
+        return new PhoneSaberTimingStats(samples);
+    }
+
     static PhoneSaberLatencyEstimate Estimate(double phoneMs = 34.4, double network = .7, double? display = null)
     {
         var phone = new PhoneSaberMetrics { C2sMedian = phoneMs, C2sCount = 300, Rtt = network * 2,
@@ -25,7 +31,22 @@ public class PhoneSaberLatencyCompensationTests
         int lead = policy.Lead;
         Assert.AreEqual("automatic-estimate", policy.Source);
 #endif
-        Assert.AreEqual(44, lead, "通常payloadにもスマホ34.4 + 通信0.7 + PC0.3 + 画面8.3を適用する");
+        Assert.AreEqual(52, lead, "通常payloadにもスマホ34.4 + 通信0.7 + PC0.3 + 画面8.3 + 露光8.3を適用する");
+    }
+
+    [Test] public void MeasuredLoopTotalRestoresExposureAndFeedsMoreThanSixtyMs()
+    {
+        var phone = Estimate().Phone;
+        var display = new PhoneSaberDisplayMeasurement(Timing(106), phone, Timing(.3), 0);
+        Assert.IsTrue(display.Valid);
+        var total = new PhoneSaberLatencyEstimate(phone, Timing(.3), "phone", 0, 0, 60, 0, display.DisplayMs);
+        Assert.AreEqual(106, total.TotalMs, 1e-9, "F9の分解→再合成で露光位相を落とさない");
+        var policy = new PhoneSaberAutomaticLeadPolicy();
+        policy.Update(0, "phone", PhoneSaberPredictionSettings.AutomaticEstimate(total), null);
+        Assert.AreEqual(106, policy.Lead); Assert.IsFalse(policy.Clamped);
+        Assert.AreEqual(60, PhoneSaberPredictionSettings.Clamp(106), "手動の保存値は従来どおり最大60ms");
+        phone.CaptureFps = null;
+        Assert.IsNull(new PhoneSaberLatencyEstimate(phone, Timing(.3), "phone", 0, 0, 60, 0, display.DisplayMs).TotalMs);
     }
 
     [Test] public void MatchingDisplayMeasurementReplacesHalfRefresh()
@@ -54,8 +75,8 @@ public class PhoneSaberLatencyCompensationTests
         policy.Update(0, "phone", 20, null);
         for (int i = 1; i < 10; i++) { policy.Update(i, "phone", 200, null); Assert.AreEqual(20, policy.Lead); }
         Assert.IsTrue(policy.Update(10, "phone", 200, null));
-        Assert.AreEqual(60, policy.Lead); Assert.IsTrue(policy.Clamped);
-        for (int i = 11; i < 20; i++) { policy.Update(i, "phone", 0, null); Assert.AreEqual(60, policy.Lead); }
+        Assert.AreEqual(120, policy.Lead); Assert.IsTrue(policy.Clamped);
+        for (int i = 11; i < 20; i++) { policy.Update(i, "phone", 0, null); Assert.AreEqual(120, policy.Lead); }
     }
     [Test] public void PerColourSourcesDisagreeAndSenderChangeClearsHistory()
     {
@@ -128,11 +149,6 @@ public class PhoneSaberLatencyCompensationTests
         Assert.AreEqual("fallback", p.Source);
     }
 
-    static PhoneSaberTimingStats Timing(double value, int count = 15)
-    {
-        var samples = new double[count]; for (int i = 0; i < count; i++) samples[i] = value;
-        return new PhoneSaberTimingStats(samples);
-    }
     [Test] public void DisplayDecompositionSubtractsOnlyTermsInTheLoop()
     {
         var m = new PhoneSaberDisplayMeasurement(Timing(100), Estimate().Phone, Timing(2), 0);

@@ -16,7 +16,7 @@ from benchmark_unity_prediction import ROOT, PREDICTOR, VECTOR
 from endpoint_prediction_eval import Predictor, BaselinePredictor, float_bits
 
 VECTORS = Path(__file__).with_name("fixtures") / "endpoint_predictor_vectors.csv"
-ADAPTIVE_VECTORS = VECTORS.with_name("endpoint_adaptive_vectors.csv")
+ADAPTIVE_VECTORS = VECTORS.with_name("endpoint_catchup_vectors.csv")
 
 
 def check_python(path=VECTORS, baseline=False):
@@ -53,7 +53,11 @@ class Program {
         int count = 0;
         foreach (var line in File.ReadAllLines(args[0])) {
             var r = line.Split(',');
-            Func<int, double> number = i => double.Parse(r[i], CultureInfo.InvariantCulture);
+            Func<int, double> number = i => {
+                double value = double.Parse(r[i], CultureInfo.InvariantCulture);
+                return value == 0 && r[i].StartsWith("-", StringComparison.Ordinal) ?
+                    BitConverter.Int64BitsToDouble(long.MinValue) : value;
+            };
             switch (r[0]) {
                 case "op": break;
                 case "new": predictor = new PhoneSaberEndpointPredictor((float)number(1)); break;
@@ -117,7 +121,8 @@ def main():
     args = parser.parse_args()
     print(f"Python float32 bit parity: PASS ({check_python(args.vectors)} predictions)")
     print(check_csharp(args.vectors, args.dotnet))
-    print(check_csharp(ADAPTIVE_VECTORS, args.dotnet, program=PROGRAM.replace('predictor.Predict(', 'predictor.PredictAdaptive(')))
+    adaptive = PROGRAM.replace('predictor.Predict(', 'predictor.PredictAdaptive(')
+    print(check_csharp(ADAPTIVE_VECTORS, args.dotnet, program=adaptive))
     if args.before_ref:
         print(f"Python baseline bit parity: PASS ({check_python(args.vectors, True)} predictions)")
         print(check_csharp(args.vectors, args.dotnet, args.before_ref))

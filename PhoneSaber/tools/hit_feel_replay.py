@@ -135,7 +135,7 @@ def bridge_clamp_source():
 
 
 class CSharpReplay:
-    def __init__(self, before_ref=None, program=None, extra_sources=None, references=(), candidate_maximum_ms=None):
+    def __init__(self, before_ref=None, program=None, extra_sources=None, references=(), candidate_maximum_ms=None, source_transform=None):
         if before_ref and candidate_maximum_ms is not None:
             raise ValueError('旧版buildには自動予測の上限候補を適用できません')
         self.modes = ('off', 'current') if before_ref else ('off', 'current', 'adaptive')
@@ -155,6 +155,8 @@ class CSharpReplay:
             + '</ItemGroup></Project>')
         (self.folder / "NuGet.Config").write_text('<configuration><packageSources><clear /></packageSources></configuration>')
         source = subprocess.check_output(["git", "show", f"{before_ref}:{PREDICTOR}"], cwd=ROOT, text=True) if before_ref else (ROOT / PREDICTOR).read_text()
+        if source_transform is not None:
+            source = source_transform(source)
         if candidate_maximum_ms is not None:
             # 上限の採否を実C#で評価するための一時build。repoの実装・手動予測は変更しない。
             source = source.replace('Math.Min(horizonMilliseconds, MaximumHorizonMilliseconds) * .001 +',

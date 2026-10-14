@@ -34,7 +34,7 @@ public static class PhoneSaberPredictionSettings
         estimate != null && estimate.Status == "estimate" ? estimate.TotalMs : null;
 
     public static int Clamp(int milliseconds) =>
-        Mathf.Clamp(milliseconds, 0, PhoneSaberEndpointPredictor.MaximumHorizonMilliseconds);
+        Mathf.Clamp(milliseconds, 0, PhoneSaberEndpointPredictor.MaximumManualHorizonMilliseconds);
 
     public static void Save(string station, int milliseconds)
     {
@@ -90,8 +90,8 @@ public sealed class PhoneSaberAutomaticLeadPolicy
             {
                 chosenMedian = Median; changedAt = now; Source = source;
                 Clamped = Median > PhoneSaberEndpointPredictor.MaximumHorizonMilliseconds;
-                Lead = PhoneSaberPredictionSettings.Clamp((int)System.Math.Round(
-                    System.Math.Min(Median, PhoneSaberEndpointPredictor.MaximumHorizonMilliseconds)));
+                Lead = (int)System.Math.Round(
+                    System.Math.Min(Median, PhoneSaberEndpointPredictor.MaximumHorizonMilliseconds));
             }
         }
         else if (now >= System.Math.Min(validUntil, expiresAt ?? validUntil))

@@ -35,7 +35,7 @@ public class PhoneSaberLatencyEstimateTests
     [Test] public void TermsAndUnknownsNeverBecomeZeroLatency() {
         var m = Phone(); var pc = new PhoneSaberTimingStats(new double[] { 7, 7, 7 });
         var e = new PhoneSaberLatencyEstimate(m, pc, "10.0.0.1", .1, 1, 60, 0);
-        Assert.AreEqual(36.9 + 1.6 + 7 + 500.0 / 60, e.TotalMs.Value, 1e-9);
+        Assert.AreEqual(36.9 + 1.6 + 7 + 500.0 / 60 + 500.0 / m.CaptureFps.Value, e.TotalMs.Value, 1e-9);
         StringAssert.Contains("画面 約8", e.Line("赤", 1));
         Assert.IsNull(new PhoneSaberLatencyEstimate(m, default, "x", .1, 1, 60, 1).TotalMs);
         Assert.IsNull(new PhoneSaberLatencyEstimate(null, pc, "x", .1, 1, 60, 1).TotalMs);
@@ -59,7 +59,7 @@ public class PhoneSaberLatencyEstimateTests
         var e = new PhoneSaberLatencyEstimate(phone, new PhoneSaberTimingStats(new double[] { 7 }),
             "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff", 0, 1, 60, 1);
         string log = PhoneSaberEventLog.Format(DateTimeOffset.UtcNow, "A", "RED", "latency-estimate", e.Log());
-        StringAssert.Contains("total-ms=53.8", log);
+        StringAssert.Contains("total-ms=62.2", log);
         StringAssert.Contains("phone-age-s=1.0", log);
         StringAssert.Contains("thermal=nominal", log);
         StringAssert.EndsWith(e.Log() + "\n", log);

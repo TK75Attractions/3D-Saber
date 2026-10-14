@@ -7,7 +7,9 @@ public struct PhoneSaberEndpointPredictor
 {
     public const double MaximumGapSeconds = 0.1;
     public const double DecayStartSeconds = 1.0 / 30.0;
-    public const int MaximumHorizonMilliseconds = 60;
+    public const int MaximumHorizonMilliseconds = 120;
+    public const int MaximumManualHorizonMilliseconds = 60;
+    public const float AutomaticMaximumDisplacement = 2f;
     public const float DefaultMaximumDisplacement = 0.35f;
 
     readonly float maximumDisplacement;
@@ -15,8 +17,15 @@ public struct PhoneSaberEndpointPredictor
     Vector2 latestA, latestB, previousVelocityA, previousVelocityB, velocityA, velocityB;
     double latestTime;
     int sampleCount;
-    Vector2 oldestMid, olderMid, previousMid;
-    double oldestTime, olderTime, previousTime;
+    // 固定長の履歴。配列を持たず、structのコピーも履歴を共有しない。
+    struct Sample { public double time; public Vector2 mid; }
+    Sample h0, h1, h2, h3, h4, h5, h6, h7;
+    int historyCount;
+    double packetInterval;
+    Vector2 automaticVelocity, automaticAcceleration;
+    Vector2 automaticRange;
+    double automaticSpan;
+
     public bool LastPredictionSuppressed { get; private set; }
 
     public PhoneSaberEndpointPredictor(float maximumDisplacement)
@@ -28,7 +37,7 @@ public struct PhoneSaberEndpointPredictor
         configuredDisplacement = true;
     }
 
-    public void Reset() { sampleCount = 0; }
+    public void Reset() { sampleCount = historyCount = 0; packetInterval = 0; }
 
     public void AddSample(double receiveTimeSeconds, Vector2 a, Vector2 b)
     {
@@ -53,10 +62,17 @@ public struct PhoneSaberEndpointPredictor
             previousVelocityB = nextB;
             sampleCount = Math.Min(4, sampleCount + 1);
         }
-        oldestMid = olderMid; oldestTime = olderTime;
-        olderMid = previousMid; olderTime = previousTime;
-        previousMid = (latestA + latestB) * 0.5f; previousTime = latestTime;
+        if (historyCount == 0 || gap > MaximumGapSeconds)
+        {
+            historyCount = 0; packetInterval = 0;
+        }
+        else if (gap >= .001)
+            packetInterval = packetInterval == 0 ? gap : packetInterval + .2 * (Math.Min(gap, 2 * packetInterval) - packetInterval);
+        h7 = h6; h6 = h5; h5 = h4; h4 = h3; h3 = h2; h2 = h1; h1 = h0;
+        h0 = new Sample { time = receiveTimeSeconds, mid = (a + b) * .5f };
+        historyCount = Math.Min(8, historyCount + 1);
         latestA = a; latestB = b; latestTime = receiveTimeSeconds;
+        FitAutomatic();
     }
 
     public void Predict(double nowSeconds, int horizonMilliseconds, out Vector2 a, out Vector2 b)
@@ -70,7 +86,7 @@ public struct PhoneSaberEndpointPredictor
         if (age >= MaximumGapSeconds) return;
         double decay = age <= DecayStartSeconds ? 1 :
             (MaximumGapSeconds - age) / (MaximumGapSeconds - DecayStartSeconds);
-        float seconds = (float)(Math.Min(horizonMilliseconds, MaximumHorizonMilliseconds) * 0.001 * decay);
+        float seconds = (float)(Math.Min(horizonMilliseconds, MaximumManualHorizonMilliseconds) * 0.001 * decay);
         // 受信の古さを H に足さない。無音中に走り続けることを防ぐ。
         Vector2 deltaA = Displacement(velocityA, seconds), deltaB = Displacement(velocityB, seconds);
         LastPredictionSuppressed = deltaA.x == 0 && deltaA.y == 0 && deltaB.x == 0 && deltaB.y == 0;
@@ -78,56 +94,125 @@ public struct PhoneSaberEndpointPredictor
         b += deltaB;
     }
 
-    // F8「自動」専用。手動・OFF の既存ベクトルと受信時刻の観測値は変えない。
+    // F8「自動」専用。手動・OFF の演算と受信した端点は変更しない。
     public void PredictAdaptive(double nowSeconds, int horizonMilliseconds, out Vector2 a, out Vector2 b)
     {
         a = latestA; b = latestB;
         LastPredictionSuppressed = true;
-        if (horizonMilliseconds <= 0 || sampleCount < 4 ||
+        if (horizonMilliseconds <= 0 || historyCount < 4 ||
             double.IsNaN(nowSeconds) || double.IsInfinity(nowSeconds)) return;
         double age = Math.Max(0, nowSeconds - latestTime);
-        if (age >= MaximumGapSeconds) return;
-        // 1サンプルの欠測は最大1/30秒だけ進める。以後は減衰し、100msで必ず停止。
-        double seconds = Math.Min(horizonMilliseconds, MaximumHorizonMilliseconds) * .001 +
-            Math.Min(age, DecayStartSeconds);
-        double decay = age <= 2 * DecayStartSeconds ? 1 :
-            (MaximumGapSeconds - age) / DecayStartSeconds;
-        Vector2 mid = (latestA + latestB) * 0.5f;
-        Vector2 velocity = new Vector2(
-            AdaptiveAxis(oldestMid.x, olderMid.x, previousMid.x, mid.x, seconds),
-            AdaptiveAxis(oldestMid.y, olderMid.y, previousMid.y, mid.y, seconds));
-        // 共通の平行移動にし、端点雑音による伸縮・回転を先読みで増幅しない。
-        Vector2 delta = Displacement(velocity, (float)seconds) * (float)decay;
+        if (age >= MaximumGapSeconds || packetInterval < .001) return;
+        // 普段のpacket間隔で期限を決める。1欠測から滑らかに縮め、100msで停止。
+        double decayStart = Math.Min(MaximumGapSeconds * .8, 1.5 * packetInterval);
+        double fraction = Math.Max(0, (age - decayStart) / (MaximumGapSeconds - decayStart));
+        double decay = 1 - fraction * fraction * (3 - 2 * fraction);
+        double seconds = (Math.Min(horizonMilliseconds, MaximumHorizonMilliseconds) * .001 +
+            Math.Min(age, packetInterval)) * decay;
+        Vector2 delta = new Vector2(AutomaticAxis(automaticVelocity.x, automaticAcceleration.x, seconds),
+            AutomaticAxis(automaticVelocity.y, automaticAcceleration.y, seconds));
+        // 観測窓の移動幅を超えて突然加速しない。world感度や棒の移動幅にも追従する上限。
+        // 定加速度で静止から動いた場合も、末端速度は窓の平均速度の2倍まで。
+        float rangeScale = (float)Math.Max(1, 2 * seconds / automaticSpan);
+        delta.x = (float)Math.Max(-automaticRange.x * rangeScale, Math.Min(automaticRange.x * rangeScale, delta.x));
+        delta.y = (float)Math.Max(-automaticRange.y * rangeScale, Math.Min(automaticRange.y * rangeScale, delta.y));
+        double length = Math.Sqrt((double)delta.x * delta.x + (double)delta.y * delta.y);
+        float limit = configuredDisplacement ? maximumDisplacement : AutomaticMaximumDisplacement;
+        if (length > limit) delta *= (float)(limit / length);
         LastPredictionSuppressed = delta.x == 0 && delta.y == 0;
         a += delta; b += delta;
     }
 
-    float AdaptiveAxis(float oldest, float older, float previous, float latest, double horizon)
+    static float AutomaticAxis(float velocity, float acceleration, double horizon)
     {
-        double span = latestTime - oldestTime;
-        if (span < .001 || span > .15) return 0;
-        // 不等間隔の直近4点を二次の最小二乗。時刻を[-1,0]にして桁落ちを抑える。
-        double t0 = -1, t1 = (olderTime - latestTime) / span, t2 = (previousTime - latestTime) / span;
-        double y0 = oldest - latest, y1 = older - latest, y2 = previous - latest;
-        double s1 = t0 + t1 + t2, s2 = t0*t0 + t1*t1 + t2*t2;
-        double s3 = t0*t0*t0 + t1*t1*t1 + t2*t2*t2;
-        double s4 = t0*t0*t0*t0 + t1*t1*t1*t1 + t2*t2*t2*t2;
-        double r0 = y0 + y1 + y2, r1 = t0*y0 + t1*y1 + t2*y2;
-        double r2 = t0*t0*y0 + t1*t1*y1 + t2*t2*y2;
-        double aa = s2 - s1*s1/4, ab = s3 - s1*s2/4, bb = s4 - s2*s2/4;
-        double av = r1 - s1*r0/4, bv = r2 - s2*r0/4;
+        // 二次fitが減速を支持しても、未受信の反転へは進めない。停止位置までの積分だけ。
+        if (velocity * acceleration < 0) horizon = Math.Min(horizon, -velocity / acceleration);
+        double delta = velocity * horizon + .5 * acceleration * horizon * horizon;
+        return double.IsNaN(delta) || double.IsInfinity(delta) ? 0 : (float)delta;
+    }
+
+    Sample History(int i)
+    {
+        switch (i)
+        {
+            case 0: return h0; case 1: return h1; case 2: return h2; case 3: return h3;
+            case 4: return h4; case 5: return h5; case 6: return h6; default: return h7;
+        }
+    }
+
+    void FitAutomatic()
+    {
+        automaticVelocity = automaticAcceleration = automaticRange = Vector2.zero;
+        automaticSpan = 1;
+        if (historyCount < 4 || packetInterval < .001) return;
+        // 60fpsは約7点/110ms、30fpsは約5点/133ms。不等間隔を実時刻でfitする。
+        double window = Math.Max(.11, 4 * packetInterval);
+        int n = 1;
+        while (n < historyCount && latestTime - History(n).time <= window + .000001) n++;
+        if (n < 4) return;
+        double span = latestTime - History(n - 1).time;
+        if (span < .01 || span > .2) return;
+        automaticSpan = span;
+        Vector2 low = h0.mid, high = h0.mid;
+        for (int i = 1; i < n; i++)
+        {
+            Vector2 mid = History(i).mid;
+            low.x = Math.Min(low.x, mid.x); low.y = Math.Min(low.y, mid.y);
+            high.x = Math.Max(high.x, mid.x); high.y = Math.Max(high.y, mid.y);
+        }
+        automaticRange = high - low;
+        automaticVelocity.x = FitAxis(n, span, true, out float ax);
+        automaticVelocity.y = FitAxis(n, span, false, out float ay);
+        automaticAcceleration = new Vector2(ax, ay);
+    }
+
+    float FitAxis(int n, double span, bool x, out float acceleration)
+    {
+        acceleration = 0;
+        double s1 = 0, s2 = 0, s3 = 0, s4 = 0, r0 = 0, r1 = 0, r2 = 0;
+        double latest = x ? h0.mid.x : h0.mid.y;
+        for (int i = 0; i < n; i++)
+        {
+            Sample sample = History(i);
+            double t = (sample.time - latestTime) / span;
+            double y = (x ? sample.mid.x : sample.mid.y) - latest;
+            s1 += t; s2 += t*t; s3 += t*t*t; s4 += t*t*t*t;
+            r0 += y; r1 += t*y; r2 += t*t*y;
+        }
+        double aa = s2 - s1*s1/n, ab = s3 - s1*s2/n, bb = s4 - s2*s2/n;
+        double av = r1 - s1*r0/n, bv = r2 - s2*r0/n;
         double determinant = aa*bb - ab*ab;
         if (determinant <= 1e-8) return 0;
-        double velocity = (av*bb - bv*ab) / determinant / span;
-        double acceleration = 2 * (bv*aa - av*ab) / determinant / (span*span);
-        // 静止雑音約0.08 worldから速度の不確かさを見積もり、静止中の延長を抑える。
-        double noiseSpeed = .08 / span;
-        double confidence = Math.Max(0, Math.Min(1, (Math.Abs(velocity) - noiseSpeed) / (3 * noiseSpeed)));
-        double delta = velocity*horizon + .5*acceleration*horizon*horizon;
-        // まだ受信していない折り返しを作らない。外向き延長は既存の移動量上限で制限。
-        if (delta * velocity <= 0 || double.IsNaN(delta) || double.IsInfinity(delta)) return 0;
-        return (float)(delta / horizon * confidence);
+        double v = (av*bb - bv*ab) / determinant;
+        double q = (bv*aa - av*ab) / determinant;
+        double intercept = (r0 - v*s1 - q*s2) / n;
+        double residual = 0;
+        for (int i = 0; i < n; i++)
+        {
+            Sample sample = History(i);
+            double t = (sample.time - latestTime) / span;
+            double error = (x ? sample.mid.x : sample.mid.y) - latest - intercept - v*t - q*t*t;
+            residual += error * error;
+        }
+        // 残差が小さくても端点の量子化・相関雑音を無視しない。
+        double noise = Math.Max(.08, Math.Sqrt(residual / (n - 3)));
+        double linear = av / aa / span;
+        double linearError = noise / Math.Sqrt(aa) / span;
+        double velocity = v / span;
+        double velocityError = noise * Math.Sqrt(bb / determinant) / span;
+        double confidence = Math.Min(Unit((Math.Abs(linear) / linearError - 3) / 2),
+            Unit((Math.Abs(velocity) / velocityError - .5)));
+        double acc = 2 * q / (span * span);
+        double accError = 2 * noise * Math.Sqrt(aa / determinant) / (span * span);
+        double supported = Unit((Math.Abs(acc) / accError - 2) / 2);
+        // 最新の区間と逆方向のfitは、観測済みの反転や単発の跳ねとして抑制。
+        double fresh = latest - (x ? h1.mid.x : h1.mid.y);
+        if (fresh * velocity <= 0) return 0;
+        acceleration = (float)(acc * supported * confidence);
+        return (float)(velocity * confidence);
     }
+
+    static double Unit(double value) => Math.Max(0, Math.Min(1, value));
 
     static bool Finite(float value) => !float.IsNaN(value) && !float.IsInfinity(value);
 

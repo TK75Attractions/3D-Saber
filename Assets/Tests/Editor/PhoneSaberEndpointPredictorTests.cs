@@ -373,11 +373,76 @@ public class PhoneSaberAdaptivePredictionTests
     static Vector2 B(float x) => new Vector2(x, .5f);
     static void Predict(ref PhoneSaberEndpointPredictor p, double now, out Vector2 a, out Vector2 b)
     {
-#if PHONESABER_BEFORE
-        p.Predict(now, 60, out a, out b);
-#else
         p.PredictAdaptive(now, 60, out a, out b);
-#endif
+    }
+
+    [Test]
+    public void BothPacketRatesRecoverTheMeasuredTotalBeyondSixtyMs()
+    {
+        foreach (int rate in new[] { 60, 30 })
+        {
+            PhoneSaberEndpointPredictor p = default;
+            for (int i = 0; i <= 20; i++) p.AddSample(i / (double)rate, A(i * 10f / rate), B(i * 10f / rate));
+            double now = 20.0 / rate + .008;
+            p.PredictAdaptive(now, 106, out var a, out var b);
+            Assert.AreEqual(200f / rate + 1.14f, a.x, .002f, $"{rate}fps 合計106ms＋受信age8ms");
+            Assert.AreEqual(a.x, b.x);
+            p.Predict(now, 60, out var manual, out _);
+            Assert.AreEqual(200f / rate + .35f, manual.x, .00001f, "手動は従来の60ms/0.35world上限");
+        }
+    }
+
+    [Test]
+    public void SupportedAccelerationCannotLeapBeyondObservedTravelWindow()
+    {
+        var p = new PhoneSaberEndpointPredictor(100);
+        for (int i = 0; i <= 4; i++) p.AddSample(i / 30.0, A(i * i), B(i * i));
+        p.PredictAdaptive(4 / 30.0, 106, out var a, out var b);
+        Assert.AreEqual(41.44f, a.x, .001f, "観測窓の平均速度120の2倍×106msまで延長する");
+        Assert.AreEqual(a.x, b.x);
+    }
+
+    [Test]
+    public void SupportedDecelerationStopsAtTheVertexWithoutInventingAReversal()
+    {
+        var p = new PhoneSaberEndpointPredictor(100);
+        for (int i = 0; i <= 8; i++)
+        {
+            double t = (i - 8) / 60.0;
+            float x = (float)(40*t - 500*t*t);
+            p.AddSample(t, A(x), B(x));
+        }
+        p.PredictAdaptive(0, 120, out var a, out _);
+        Assert.AreEqual(.8f, a.x, .002f, "v=40,a=-1000 の40ms後の停止位置で止まる");
+        p.PredictAdaptive(.008, 120, out var later, out _);
+        Assert.AreEqual(a.x, later.x, .002f);
+        p.AddSample(.02, A(-.2f), B(-.2f));
+        p.PredictAdaptive(.02, 120, out var reversed, out _);
+        Assert.LessOrEqual(reversed.x, -.2f, "反転受信後に古い外向き速度を延長しない");
+    }
+
+    [Test]
+    public void MissingSixtyFpsPacketsShrinkLeadBeforeTheOldThirtyFpsDeadline()
+    {
+        PhoneSaberEndpointPredictor p = default;
+        for (int i = 0; i <= 12; i++) p.AddSample(i / 60.0, A(i / 6f), B(i / 6f));
+        p.PredictAdaptive(.208, 106, out var fresh, out _);
+        p.PredictAdaptive(.25, 106, out var missing, out _);
+        Assert.Less(missing.x, fresh.x, "60fpsの欠測を30fpsの期限まで延長しない");
+        p.PredictAdaptive(.30, 106, out var stale, out _);
+        Assert.AreEqual(2, stale.x, .00001f);
+    }
+
+    [Test]
+    public void IndependentStructCopiesAndResetDoNotShareFitHistory()
+    {
+        PhoneSaberEndpointPredictor p = default;
+        for (int i = 0; i <= 12; i++) p.AddSample(i / 60.0, A(i / 6f), B(i / 6f));
+        var copy = p;
+        copy.Reset(); copy.AddSample(.21, A(-4), B(-4));
+        p.PredictAdaptive(.208, 106, out var original, out _);
+        copy.PredictAdaptive(.218, 106, out var reset, out _);
+        Assert.Greater(original.x, 3); Assert.AreEqual(-4, reset.x);
     }
 
     [Test]
@@ -418,15 +483,15 @@ public class PhoneSaberAdaptivePredictionTests
     public void PacketAgeAdvancesShortHoldButStopsAtHardDeadline()
     {
         PhoneSaberEndpointPredictor p = default;
-        for (int i = 0; i < 4; i++) p.AddSample(i / 30.0, A(i * .1f), B(i * .1f));
+        for (int i = 0; i < 4; i++) p.AddSample(i / 30.0, A(i * .15f), B(i * .15f));
         Predict(ref p, .1, out var first, out _);
         Predict(ref p, .12, out var advanced, out _);
-        Assert.Greater(advanced.x, first.x + .04f);
-        Assert.LessOrEqual(Math.Abs(advanced.x - .3f), .35001f);
+        Assert.Greater(advanced.x, first.x + .03f);
+        Assert.LessOrEqual(Math.Abs(advanced.x - .45f), PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement + .00001f);
         Predict(ref p, .200001, out var stale, out _);
-        Assert.AreEqual(.3f, stale.x);
+        Assert.AreEqual(3 * .15f, stale.x);
         p.PredictAdaptive(.12, 0, out var off, out _);
-        Assert.AreEqual(.3f, off.x);
+        Assert.AreEqual(3 * .15f, off.x);
     }
 
     [Test]
@@ -444,15 +509,20 @@ public class PhoneSaberAdaptivePredictionTests
     }
 
     [Test]
-    public void SharedVectorsMatchStandaloneFloatBits()
+    public void SharedVectorsMatchStandaloneBits()
     {
-        string path = Path.Combine(Application.dataPath, "..", "PhoneSaber", "tools", "fixtures", "endpoint_adaptive_vectors.csv");
+        string path = Path.Combine(Application.dataPath, "..", "PhoneSaber", "tools", "fixtures", "endpoint_catchup_vectors.csv");
         PhoneSaberEndpointPredictor p = default;
         int count = 0;
         foreach (string line in File.ReadAllLines(path))
         {
             string[] row = line.Split(',');
-            Func<int, double> number = i => double.Parse(row[i], CultureInfo.InvariantCulture);
+            Func<int, double> number = i => {
+                double value = double.Parse(row[i], CultureInfo.InvariantCulture);
+                // MonoのParseが落とす負のゼロも、固定fixtureのbitどおりに渡す。
+                return value == 0 && row[i].StartsWith("-", StringComparison.Ordinal) ?
+                    BitConverter.Int64BitsToDouble(long.MinValue) : value;
+            };
             if (row[0] == "new") p = new PhoneSaberEndpointPredictor((float)number(1));
             else if (row[0] == "reset") p.Reset();
             else if (row[0] == "add") p.AddSample(number(1), new Vector2((float)number(2), (float)number(3)), new Vector2((float)number(4), (float)number(5)));
@@ -464,11 +534,7 @@ public class PhoneSaberAdaptivePredictionTests
                 {
                     uint bits = BitConverter.ToUInt32(BitConverter.GetBytes(actual[axis]), 0);
                     uint expected = Convert.ToUInt32(row[axis + 7], 16);
-                    // 自動の先読みは double の最小二乗を通るので、Unity の Mono と standalone の .NET で末尾の数 ulp が違う
-                    // （2026-10-14 の実 EditMode で 8 ulp）。値として一致することを確かめる（手動の予測は別テストで bit 一致）。
-                    float expectedValue = BitConverter.ToSingle(BitConverter.GetBytes(expected), 0);
-                    if ((bits & 0x7fffffff) != 0 || (expected & 0x7fffffff) != 0)
-                        Assert.AreEqual(expectedValue, actual[axis], 1e-5f * Math.Max(1f, Math.Abs(expectedValue)), $"予測{count} 成分{axis}");
+                    Assert.AreEqual(expected, bits, $"予測{count} 成分{axis}");
                 }
                 count++;
             }

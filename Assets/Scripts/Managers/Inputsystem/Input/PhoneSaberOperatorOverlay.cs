@@ -257,8 +257,9 @@ public sealed class PhoneSaberOperatorOverlay : MonoBehaviour
         GUILayout.EndHorizontal();
         GUI.enabled = previousEnabled;
         GUILayout.Label("初期値はOFF。20 msから試してください。折り返しでは行き過ぎが増えます。\n" +
-            "端点の移動上限は0.35、受信が100 ms止まると予測量はゼロに戻ります。", textStyle);
-        GUILayout.Label("自動: スマホ＋通信＋PC＋画面の目安（最大60 ms）。未計測時はOFF。\n" +
+            $"手動: 最大{PhoneSaberEndpointPredictor.MaximumManualHorizonMilliseconds} ms・移動上限{PhoneSaberEndpointPredictor.DefaultMaximumDisplacement} world。\n" +
+            $"自動: 最大{PhoneSaberEndpointPredictor.MaximumHorizonMilliseconds} ms・移動上限{PhoneSaberEndpointPredictor.AutomaticMaximumDisplacement} world。受信が100 ms止まると予測量はゼロに戻ります。", textStyle);
+        GUILayout.Label("自動: スマホ＋通信＋PC＋画面＋露光の目安。未計測時はOFF。\n" +
             "同期確認済みのts片道値は第2候補。30秒中央値が5 ms超変化した時、10秒以上あけて更新。", textStyle);
     }
 
