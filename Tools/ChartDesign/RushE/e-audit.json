@@ -1,5 +1,5 @@
 {
-  "revision": "beatsaber-1eb9-2026-10-14",
+  "revision": "beatsaber-1eb9-gold-2026-10-14",
   "sourceMapId": "1eb9",
   "sourceNotesSha256": "c024ae017deda053cfa8172ac0c0eb41b4e7600499e0934bb2746890be4e6722",
   "notes": 1158,
@@ -8,6 +8,22 @@
     "tap": 1151,
     "long": 7
   },
+  "colors": {
+    "red": 521,
+    "blue": 466,
+    "gold": 171
+  },
+  "goldClimaxStartMs": 125718.4921,
+  "goldClimaxNotes": 159,
+  "goldAccentNotes": 12,
+  "goldAccentTimesMs": [
+    47437.2421,
+    57093.4921,
+    65437.2421,
+    95562.2421,
+    112218.4921,
+    118405.9921
+  ],
   "sourceNotesPreserved": 1158,
   "droppedSourceNotes": 0,
   "flicks": 0,

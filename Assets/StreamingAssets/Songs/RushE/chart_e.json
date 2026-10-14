@@ -1,5 +1,5 @@
 {
-  "_comment": "指定動画HkKRAd7JYkUのRUSH E (v2) / JonathanRune / Expert+ (BeatSaver 1eb9)。全1158ノーツの時刻・4列3段配置・担当手を移植。フリックなし、7か所のみ短いロング。",
+  "_comment": "指定動画HkKRAd7JYkUのRUSH E (v2) / JonathanRune / Expert+ (BeatSaver 1eb9)。全1158ノーツの時刻・4列3段配置を移植。フリックなし、7か所のみ短いロング。終盤ラッシュと途中6組の同時押しを金へ変更し、金以外の担当手を維持。",
   "bpm": 120,
   "coordScale": 1,
   "offsetMs": 0,
@@ -32,24 +32,52 @@
       "name": "E / 短いロング"
     },
     {
+      "timeMs": 47437.2421,
+      "name": "E / 金アクセント"
+    },
+    {
       "timeMs": 54030.9921,
       "name": "E / 短いロング"
+    },
+    {
+      "timeMs": 57093.4921,
+      "name": "E / 金アクセント"
     },
     {
       "timeMs": 60437.2421,
       "name": "E / 短いロング"
     },
     {
+      "timeMs": 65437.2421,
+      "name": "E / 金アクセント"
+    },
+    {
       "timeMs": 78312.2421,
       "name": "E / 短いロング"
     },
     {
       "timeMs": 78312.2421,
       "name": "E / 短いロング"
+    },
+    {
+      "timeMs": 95562.2421,
+      "name": "E / 金アクセント"
     },
     {
       "timeMs": 109187.2421,
       "name": "E / 短いロング"
+    },
+    {
+      "timeMs": 112218.4921,
+      "name": "E / 金アクセント"
+    },
+    {
+      "timeMs": 118405.9921,
+      "name": "E / 金アクセント"
+    },
+    {
+      "timeMs": 125718.4921,
+      "name": "E / 金ラッシュ開始"
     }
   ],
   "notes": [
@@ -2644,7 +2672,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -2655,7 +2683,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3535,7 +3563,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -3546,7 +3574,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4118,7 +4146,7 @@
       "x": -1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -4129,7 +4157,7 @@
       "x": 1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -7792,7 +7820,7 @@
       "x": -0.5,
       "y": 0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -7803,7 +7831,7 @@
       "x": 0.5,
       "y": 0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -9453,7 +9481,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -9464,7 +9492,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -10223,7 +10251,7 @@
       "x": -1.5,
       "y": 0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -10234,7 +10262,7 @@
       "x": 1.5,
       "y": 0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11048,7 +11076,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11059,7 +11087,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11070,7 +11098,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11081,7 +11109,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11092,7 +11120,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11103,7 +11131,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11114,7 +11142,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11125,7 +11153,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11136,7 +11164,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11147,7 +11175,7 @@
       "x": 1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11158,7 +11186,7 @@
       "x": -1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11169,7 +11197,7 @@
       "x": 0.5,
       "y": 0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11180,7 +11208,7 @@
       "x": -0.5,
       "y": 0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11191,7 +11219,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11202,7 +11230,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11213,7 +11241,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11224,7 +11252,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11235,7 +11263,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11246,7 +11274,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11257,7 +11285,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11268,7 +11296,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11279,7 +11307,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11290,7 +11318,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11301,7 +11329,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11312,7 +11340,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11323,7 +11351,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11334,7 +11362,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11345,7 +11373,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11356,7 +11384,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11367,7 +11395,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11378,7 +11406,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11389,7 +11417,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11400,7 +11428,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11411,7 +11439,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11422,7 +11450,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11433,7 +11461,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11444,7 +11472,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11455,7 +11483,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11466,7 +11494,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11477,7 +11505,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11488,7 +11516,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11499,7 +11527,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11510,7 +11538,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11521,7 +11549,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11532,7 +11560,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11543,7 +11571,7 @@
       "x": -1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11554,7 +11582,7 @@
       "x": 1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11565,7 +11593,7 @@
       "x": 1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11576,7 +11604,7 @@
       "x": -1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11587,7 +11615,7 @@
       "x": -1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11598,7 +11626,7 @@
       "x": 1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11609,7 +11637,7 @@
       "x": 1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11620,7 +11648,7 @@
       "x": -1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11631,7 +11659,7 @@
       "x": -1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11642,7 +11670,7 @@
       "x": 1.5,
       "y": 0.0,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11653,7 +11681,7 @@
       "x": 1.5,
       "y": 0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11664,7 +11692,7 @@
       "x": -1.5,
       "y": 0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11675,7 +11703,7 @@
       "x": 1.5,
       "y": 0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11686,7 +11714,7 @@
       "x": -1.5,
       "y": 0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11697,7 +11725,7 @@
       "x": 1.5,
       "y": 0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11708,7 +11736,7 @@
       "x": -1.5,
       "y": 0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11719,7 +11747,7 @@
       "x": -1.5,
       "y": 0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11730,7 +11758,7 @@
       "x": 1.5,
       "y": 0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11741,7 +11769,7 @@
       "x": 0.5,
       "y": 0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11752,7 +11780,7 @@
       "x": -0.5,
       "y": 0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11763,7 +11791,7 @@
       "x": -0.5,
       "y": 0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11774,7 +11802,7 @@
       "x": 0.5,
       "y": 0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11785,7 +11813,7 @@
       "x": 0.5,
       "y": 0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11796,7 +11824,7 @@
       "x": -0.5,
       "y": 0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11807,7 +11835,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11818,7 +11846,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11829,7 +11857,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11840,7 +11868,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11851,7 +11879,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11862,7 +11890,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11873,7 +11901,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11884,7 +11912,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11895,7 +11923,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11906,7 +11934,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11917,7 +11945,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11928,7 +11956,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11939,7 +11967,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11950,7 +11978,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11961,7 +11989,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11972,7 +12000,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11983,7 +12011,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -11994,7 +12022,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12005,7 +12033,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12016,7 +12044,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12027,7 +12055,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12038,7 +12066,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12049,7 +12077,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12060,7 +12088,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12071,7 +12099,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12082,7 +12110,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12093,7 +12121,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12104,7 +12132,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12115,7 +12143,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12126,7 +12154,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12137,7 +12165,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12148,7 +12176,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12159,7 +12187,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12170,7 +12198,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12181,7 +12209,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12192,7 +12220,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12203,7 +12231,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12214,7 +12242,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12225,7 +12253,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12236,7 +12264,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12247,7 +12275,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12258,7 +12286,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12269,7 +12297,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12280,7 +12308,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12291,7 +12319,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12302,7 +12330,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12313,7 +12341,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12324,7 +12352,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12335,7 +12363,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12346,7 +12374,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12357,7 +12385,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12368,7 +12396,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12379,7 +12407,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12390,7 +12418,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12401,7 +12429,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12412,7 +12440,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12423,7 +12451,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12434,7 +12462,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12445,7 +12473,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12456,7 +12484,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12467,7 +12495,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12478,7 +12506,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12489,7 +12517,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12500,7 +12528,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12511,7 +12539,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12522,7 +12550,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12533,7 +12561,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12544,7 +12572,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12555,7 +12583,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12566,7 +12594,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12577,7 +12605,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12588,7 +12616,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12599,7 +12627,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12610,7 +12638,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12621,7 +12649,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12632,7 +12660,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12643,7 +12671,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12654,7 +12682,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12665,7 +12693,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12676,7 +12704,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12687,7 +12715,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12698,7 +12726,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12709,7 +12737,7 @@
       "x": 1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12720,7 +12748,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12731,7 +12759,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12742,7 +12770,7 @@
       "x": -1.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12753,7 +12781,7 @@
       "x": 0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12764,7 +12792,7 @@
       "x": -0.5,
       "y": -0.8,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12775,7 +12803,7 @@
       "x": -0.5,
       "y": 0.0,
       "type": "tap",
-      "color": "blue",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
@@ -12786,7 +12814,7 @@
       "x": 0.5,
       "y": 0.0,
       "type": "tap",
-      "color": "red",
+      "color": "gold",
       "direction": "none",
       "count": 1,
       "lengthMs": 0

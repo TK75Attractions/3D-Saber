@@ -65,6 +65,13 @@ public class RushESecretTests
         Assert.AreEqual(1158, e.notes.Count, "指定動画の原譜を間引かない");
         Assert.AreEqual(7, e.notes.Count(n => n.IsLong), "要所のみ短いロングへ変更する");
         Assert.AreEqual(1169, e.notes.Sum(n => n.count));
+        Assert.AreEqual(171, e.notes.Count(n => n.color == "gold"));
+        Assert.AreEqual(159, e.notes.Count(n => n.time >= 125718f));
+        Assert.IsTrue(e.notes.Where(n => n.time >= 125718f).All(n => n.color == "gold"), "終盤ラッシュを金へ変更する");
+        var accents = e.notes.Where(n => n.color == "gold" && n.time < 125718f).GroupBy(n => n.time).ToArray();
+        Assert.AreEqual(6, accents.Length, "山場とは別に途中6組だけ金を追加する");
+        Assert.IsTrue(accents.All(g => g.Count() == 2 && g.Any(n => n.x < 0) && g.Any(n => n.x > 0)));
+        Assert.IsTrue(e.notes.Where(n => n.IsLong).All(n => n.color != "gold"), "既存ロングの担当手を保つ");
         Assert.AreEqual(4, e.notes.GroupBy(n => n.time).Max(g => g.Count()), "最後の上下2段の両手同時も保持する");
         Assert.AreNotEqual(SongAchievementStore.Key("RushE", "E"), SongAchievementStore.Key("RushE", "Hard"));
         Assert.AreNotEqual(HighScoreStore.Key("RushE", "E"), HighScoreStore.Key("RushE", "Hard"));
@@ -73,7 +80,7 @@ public class RushESecretTests
     }
 
     [Test]
-    public void EPreservesEveryBeatSaberNoteTimePositionAndHand()
+    public void EPreservesEveryBeatSaberNoteTimePositionAndNonGoldHand()
     {
         byte[] raw = File.ReadAllBytes(Path.Combine("Tools", "ChartDesign", "RushE", "BeatSaberSource", "ExpertPlus.dat"));
         using (var sha = System.Security.Cryptography.SHA256.Create())
@@ -88,7 +95,8 @@ public class RushESecretTests
             Assert.AreEqual(original._time * 500.0 - 18263.0 / 11025 * 1000, converted.time, .02, "時刻 / " + i);
             Assert.AreEqual(original._lineIndex - 1.5f, converted.x, .001f, "左右配置 / " + i);
             Assert.AreEqual((original._lineLayer - 1) * .8f, converted.y, .001f, "上下配置 / " + i);
-            Assert.AreEqual(original._type == 0 ? SaberHand.Left : SaberHand.Right, SaberHandHelper.FromColor(converted.color), "担当手 / " + i);
+            var expectedHand = converted.color == "gold" ? SaberHand.Any : original._type == 0 ? SaberHand.Left : SaberHand.Right;
+            Assert.AreEqual(expectedHand, SaberHandHelper.FromColor(converted.color), "金以外の担当手 / " + i);
             Assert.AreEqual("none", converted.direction);
         }
         Assert.IsTrue(e.notes.Any(n => n.x > 0 && n.color == "blue"), "左手で右側を切るクロスも維持する");

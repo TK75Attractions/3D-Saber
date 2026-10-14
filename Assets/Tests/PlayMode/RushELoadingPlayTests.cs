@@ -35,7 +35,7 @@ public class RushELoadingPlayTests
             foreach (bool low in new[] { false, true })
             {
                 DisplaySettings.SetReducedEffectsForTest(low);
-                foreach (double time in new[] { 78.45, 128.0, 136.281 })
+                foreach (double time in new[] { 65.5, 78.45, 128.0, 136.281 })
                 {
                     // その瞬間に見える部分だけを実ノーツとして描く。過去ノーツのMiss演出を混ぜない。
                     spawner.SetChart(new ChartData { bpm = chart.bpm, notes = chart.notes.Where(n => n.TimeSeconds >= time - .2 && n.TimeSeconds <= time + 1).ToList() });
@@ -43,12 +43,14 @@ public class RushELoadingPlayTests
                     yield return null;
                     Assert.Greater(spawner.AliveCount, 0);
                     Assert.IsTrue(spawner.LiveNotes.All(n => n.RequiredDirection == CutDirection.None));
-                    if (time < 79)
+                    if (time > 78 && time < 79)
                     {
                         var longs = spawner.LiveNotes.Where(n => n.RequiredCutCount > 1).ToArray();
                         Assert.AreEqual(2, longs.Length, "両手ロングを実際に生成する");
                         Assert.IsTrue(longs.All(n => n.countLabel != null && n.countLabel.gameObject.activeInHierarchy));
                     }
+                    if (time < 66) Assert.IsTrue(spawner.LiveNotes.Any(n => n.IsGold), "途中の金アクセントを描く");
+                    if (time > 125) Assert.IsTrue(spawner.LiveNotes.All(n => n.IsGold && n.RequiredHand == SaberHand.Any), "終盤は金ノーツで両手のどちらでも切れる");
                     if (time > 136) Assert.AreEqual(4, spawner.AliveCount, "最後の上下2段の両手同時を表示する");
                     UICatalogPlayTests.Capture($"rush-e-{(low ? "low" : "normal")}-{time:F3}");
                 }

@@ -8,4 +8,5 @@ Jacket: official YouTube thumbnail, https://i.ytimg.com/vi/Qskm9MTz2V4/maxresdef
 E chart: RUSH E (v2), charted by JonathanRune (BeatSaver uploader: ryhme), Standard Expert+.
 Source map: https://beatsaver.com/maps/1eb9
 Reference gameplay: MASO Channel, https://www.youtube.com/watch?v=HkKRAd7JYkU
-E adaptation: original note timing, grid and hands; no arrows; seven short repeated-cut long notes.
+E adaptation: original note timing and grid; no arrows; seven short repeated-cut long notes.
+171 gold notes (159 climax + 12 accents) accept either hand; all other notes preserve the original hand.
