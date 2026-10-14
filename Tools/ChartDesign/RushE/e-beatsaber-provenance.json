@@ -1,0 +1,24 @@
+{
+  "referenceVideo": "https://www.youtube.com/watch?v=HkKRAd7JYkU",
+  "referenceChannel": "MASO Channel",
+  "identification": "Result screen at 153 seconds: RUSH E (v2), Charted by JonathanRune, Expert+",
+  "mapUrl": "https://beatsaver.com/maps/1eb9",
+  "uploader": "ryhme",
+  "mapper": "JonathanRune",
+  "characteristic": "Standard",
+  "difficulty": "ExpertPlus",
+  "versionHash": "b6a0b4ea2319a5c8ea8175d3a1d86b5d1b617db1",
+  "archiveSha256": "eda2d449c6fddffc378183bed2a2dc906105f8aa4e602c6d7bf49599c25a570",
+  "notesSha256": "c024ae017deda053cfa8172ac0c0eb41b4e7600499e0934bb2746890be4e6722",
+  "gameAudioSha256": "dd8fb71abaa1760ad0d989b3668974cb1c0ffff426a54139a3340c94329a0d65",
+  "sourceMinusGameSeconds": 1.6565079365079365,
+  "audioAlignment": {
+    "method": "PCM cross-correlation at 11025 Hz; each 3-second game window searched in source audio within +/-3 seconds",
+    "gameWindowStartsSeconds": [4, 20, 45, 70, 95, 120, 134],
+    "sourceMinusGameSamplesAtEveryWindow": 18263,
+    "normalizedCorrelations": [0.9971676, 0.9961918, 0.9925524, 0.9943445, 0.9920891, 0.9903257, 0.9816493]
+  },
+  "coordinateMapping": {"x": [-1.5, -0.5, 0.5, 1.5], "y": [-0.8, 0, 0.8]},
+  "handMapping": {"source0-left": "blue", "source1-right": "red"},
+  "adaptation": "All 1158 source notes retained, no arrows, 7 short long notes (1169 cuts). Source audio and jacket are not copied into the repository."
+}

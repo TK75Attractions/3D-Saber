@@ -103,7 +103,9 @@ public class RushESongTests
                 spawner.Tick(seconds);
                 Assert.IsTrue(spawned.TryGetValue(cut.index, out var note), "生成漏れ: " + cut.index);
                 Assert.IsNotNull(note, "カット前の退場: " + cut.index);
-                var hand = chart.notes[cut.index].x > 0 ? SaberHand.Right : SaberHand.Left;
+                // クロス配置でも位置から手を推測しない。金ノーツだけ従来の左右位置で振る。
+                var hand = SaberHandHelper.FromColor(chart.notes[cut.index].color);
+                if (hand == SaberHand.Any) hand = chart.notes[cut.index].x > 0 ? SaberHand.Right : SaberHand.Left;
                 var direction = CutDirectionHelper.ToVector(CutDirectionHelper.Parse(cut.direction)).normalized;
                 Assert.IsTrue(note.TryCutWithCameraTiming(note.transform.position, new Vector3(direction.x, direction.y, 0) * 12,
                     hand, seconds, .866f), difficulty + " / " + cut.index);

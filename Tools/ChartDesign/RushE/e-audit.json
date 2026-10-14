@@ -1,21 +1,31 @@
 {
-  "revision": "audio-faithful-2026-10-14",
-  "audioSha256": "dd8fb71abaa1760ad0d989b3668974cb1c0ffff426a54139a3340c94329a0d65",
-  "notes": 1062,
-  "cuts": 1062,
+  "revision": "beatsaber-1eb9-2026-10-14",
+  "sourceMapId": "1eb9",
+  "sourceNotesSha256": "c024ae017deda053cfa8172ac0c0eb41b4e7600499e0934bb2746890be4e6722",
+  "notes": 1158,
+  "cuts": 1169,
   "types": {
-    "tap": 1062
+    "tap": 1151,
+    "long": 7
   },
-  "distinctAttacks": 1022,
-  "coveredAttacks": 1022,
-  "quietRunAttacks": 200,
-  "simultaneousGroups": 40,
-  "maximumSwingSpeed": 6.3206,
-  "minimumSameHandGapMs": 79.819,
-  "minimumDistinctAttackGapMs": 39.909,
-  "firstNoteMs": 94.7846,
-  "lastNoteEndMs": 136280.2721,
-  "syntheticCuts": 0,
-  "droppedForHandRecovery": 0,
-  "flicks": 0
+  "sourceNotesPreserved": 1158,
+  "droppedSourceNotes": 0,
+  "flicks": 0,
+  "sourceMinusGameSeconds": 1.6565079365079365,
+  "simultaneousGroups": {
+    "1": 770,
+    "2": 192,
+    "4": 1
+  },
+  "firstNoteMs": 93.4921,
+  "lastNoteEndMs": 136280.9921,
+  "longTimesMs": [
+    18218.4921,
+    24530.9921,
+    54030.9921,
+    60437.2421,
+    78312.2421,
+    78312.2421,
+    109187.2421
+  ]
 }

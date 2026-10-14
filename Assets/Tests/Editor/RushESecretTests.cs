@@ -1,9 +1,14 @@
+using System;
+using System.IO;
 using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
 public class RushESecretTests
 {
+    [Serializable] sealed class BeatSaberNote { public float _time; public int _lineIndex, _lineLayer, _type; }
+    [Serializable] sealed class BeatSaberChart { public BeatSaberNote[] _notes; }
+
     [Test]
     public void TenIndependentHitsUnlockOnlyRushEAndChangingSongResetsEverything()
     {
@@ -57,28 +62,50 @@ public class RushESecretTests
         var e = ChartLoader.LoadFromStreamingAssets("RushE", "E"); var hard = ChartLoader.LoadFromStreamingAssets("RushE", "Hard");
         Assert.AreEqual(10, e.displayLevel); Assert.Greater(e.notes.Sum(n => n.count), hard.notes.Sum(n => n.count) * 2);
         Assert.IsTrue(e.notes.All(n => n.direction == "none" && (n.type == "tap" || n.type == "long")));
-        Assert.GreaterOrEqual(e.notes.Count, 1000, "連続する弱い音を休憩用に間引かない");
-        Assert.IsTrue(e.notes.All(n => n.type == "tap" && n.count == 1 && n.lengthMs == 0), "発音1回を1ノーツにする");
-        Assert.IsTrue(e.notes.GroupBy(n => n.time).All(g => g.Count() <= 2), "和音は左右同時にまとめる");
+        Assert.AreEqual(1158, e.notes.Count, "指定動画の原譜を間引かない");
+        Assert.AreEqual(7, e.notes.Count(n => n.IsLong), "要所のみ短いロングへ変更する");
+        Assert.AreEqual(1169, e.notes.Sum(n => n.count));
+        Assert.AreEqual(4, e.notes.GroupBy(n => n.time).Max(g => g.Count()), "最後の上下2段の両手同時も保持する");
         Assert.AreNotEqual(SongAchievementStore.Key("RushE", "E"), SongAchievementStore.Key("RushE", "Hard"));
         Assert.AreNotEqual(HighScoreStore.Key("RushE", "E"), HighScoreStore.Key("RushE", "Hard"));
         Assert.AreNotEqual(DailyRankingStore.Key("RushE", "E"), DailyRankingStore.Key("RushE", "Hard"));
         Assert.AreEqual(RushESecretState.Purple, GameHUDSkin.DifficultyColor("E"));
     }
 
-    [TestCase(11488.89f)]
-    [TestCase(11628.57f)]
-    [TestCase(41904.76f)]
-    [TestCase(42099.32f)]
-    [TestCase(42483.45f)]
-    [TestCase(96545.58f)]
-    [TestCase(97618.14f)]
-    [TestCase(121244.44f)]
-    public void EIncludesQuietAndAcceleratingAudioAttacks(float audioPeakMs)
+    [Test]
+    public void EPreservesEveryBeatSaberNoteTimePositionAndHand()
     {
-        // 原版の波形から確認した弱拍・加速音。旧譜面の強度や手の回復による抜けを防ぐ。
+        byte[] raw = File.ReadAllBytes(Path.Combine("Tools", "ChartDesign", "RushE", "BeatSaberSource", "ExpertPlus.dat"));
+        using (var sha = System.Security.Cryptography.SHA256.Create())
+            Assert.AreEqual("c024ae017deda053cfa8172ac0c0eb41b4e7600499e0934bb2746890be4e6722",
+                BitConverter.ToString(sha.ComputeHash(raw)).Replace("-", "").ToLowerInvariant(), "参照版を固定する");
+        var source = JsonUtility.FromJson<BeatSaberChart>(System.Text.Encoding.UTF8.GetString(raw))._notes.OrderBy(n => n._time).ToArray();
         var e = ChartLoader.LoadFromStreamingAssets("RushE", "E");
-        Assert.IsTrue(e.notes.Any(n => Mathf.Abs(n.time - audioPeakMs) < 20), audioPeakMs.ToString());
+        Assert.AreEqual(source.Length, e.notes.Count);
+        for (int i = 0; i < source.Length; i++)
+        {
+            var original = source[i]; var converted = e.notes[i];
+            Assert.AreEqual(original._time * 500.0 - 18263.0 / 11025 * 1000, converted.time, .02, "時刻 / " + i);
+            Assert.AreEqual(original._lineIndex - 1.5f, converted.x, .001f, "左右配置 / " + i);
+            Assert.AreEqual((original._lineLayer - 1) * .8f, converted.y, .001f, "上下配置 / " + i);
+            Assert.AreEqual(original._type == 0 ? SaberHand.Left : SaberHand.Right, SaberHandHelper.FromColor(converted.color), "担当手 / " + i);
+            Assert.AreEqual("none", converted.direction);
+        }
+        Assert.IsTrue(e.notes.Any(n => n.x > 0 && n.color == "blue"), "左手で右側を切るクロスも維持する");
+        Assert.IsTrue(e.notes.Any(n => n.x < 0 && n.color == "red"), "右手で左側を切るクロスも維持する");
+    }
+
+    [Test]
+    public void ELongsFinishBeforeTheNextNoteForThatHand()
+    {
+        var e = ChartLoader.LoadFromStreamingAssets("RushE", "E");
+        foreach (var note in e.notes.Where(n => n.IsLong))
+        {
+            Assert.That(note.count, Is.InRange(2, 3));
+            Assert.That(note.lengthMs, Is.InRange(420f, 700f));
+            var next = e.notes.First(n => n.time > note.time && n.color == note.color);
+            Assert.GreaterOrEqual(next.time - note.time - note.lengthMs, 250f, "次の同じ手のノーツまで戻し時間を残す");
+        }
     }
 
     [Test]
@@ -87,7 +114,7 @@ public class RushESecretTests
         var e = ChartLoader.LoadFromStreamingAssets("RushE", "E");
         Assert.AreEqual(136280.27f, e.notes.Max(n => n.time), 1f);
         var lastChord = e.notes.Where(n => Mathf.Abs(n.time - 136280.27f) < 1f).ToArray();
-        Assert.AreEqual(2, lastChord.Length);
+        Assert.AreEqual(4, lastChord.Length);
         Assert.IsTrue(lastChord.Any(n => n.x < 0) && lastChord.Any(n => n.x > 0));
         Assert.IsTrue(lastChord.All(n => n.count == 1 && n.lengthMs == 0));
     }
