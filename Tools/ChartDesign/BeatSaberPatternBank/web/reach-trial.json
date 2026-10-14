@@ -1,0 +1,185 @@
+{
+  "bpm": 80,
+  "coordScale": 1,
+  "offsetMs": 0,
+  "beatZeroMs": 0,
+  "notes": [
+    {
+      "beat": 0,
+      "time": 0,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 1,
+      "time": 750,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 2,
+      "time": 1500,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 3,
+      "time": 2250,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 4,
+      "time": 3000,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 5,
+      "time": 3750,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 6,
+      "time": 4500,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 7,
+      "time": 5250,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 8,
+      "time": 6000,
+      "x": 0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 9,
+      "time": 6750,
+      "x": -0.6,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 10,
+      "time": 7500,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 11,
+      "time": 8250,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 12,
+      "time": 9000,
+      "x": 0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 13,
+      "time": 9750,
+      "x": -0.6,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 14,
+      "time": 10500,
+      "x": 1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 15,
+      "time": 11250,
+      "x": -1.9,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    }
+  ],
+  "_comment": "到達確認用の無音12秒。ゲームの曲索引に追加しない。"
+}

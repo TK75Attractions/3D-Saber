@@ -28,6 +28,7 @@ def main():
   (dist/'pattern-renderer').mkdir(exist_ok=True);shutil.copy2(repo/'Tools/MobileChartLibrary/web'/name,dist/'pattern-renderer'/name)
  for pattern in data['patterns']:
   pattern['applications']=[a for a in apps if a['patternId']==pattern['id']]
+  pattern['pending']=next((p for p in read(HERE/'applications.json').get('pending',[]) if p['patternId']==pattern['id']),None)
   save(dist/pattern['chartFile'],pattern['chart'])
   for a in pattern['applications']:
    chart=read(repo/'Assets/StreamingAssets/Songs'/a['songId']/f"chart_{a['difficulty']}.json")
@@ -54,7 +55,7 @@ def main():
    chart=read(source);ns=chart['notes']
    if source.read_bytes()!=(chartdist/entry['path']).read_bytes():
     shutil.copy2(source,chartdist/entry['path']);updates+=1
-   entry.update(sha256=hashlib.sha256(source.read_bytes()).hexdigest(),count=len(ns),flicks=sum(n['direction']!='none' for n in ns),longs=sum(n['count']>1 for n in ns),gold=sum(n['color']=='gold' for n in ns))
+   entry.update(sha256=hashlib.sha256(source.read_bytes()).hexdigest(),level=chart['displayLevel'],count=len(ns),flicks=sum(n['direction']!='none' for n in ns),longs=sum(n['count']>1 for n in ns),gold=sum(n['color']=='gold' for n in ns))
  catalog['updated']=datetime.date.today().isoformat();save(chartdist/'catalog.json',catalog)
  assert_unchanged(protected,protected_web(chartdist))
  save(HERE/'export-scope-verification.json',{'passed':True,'protectedCharts':len(protected['hashes']),'allowedSongs':sorted(ALLOWED),'protectedHashes':protected['hashes']})

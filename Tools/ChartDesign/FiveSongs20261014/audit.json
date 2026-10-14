@@ -1,7 +1,7 @@
 {
   "ManicSonic": {
     "easy": {
-      "notes": 190,
+      "notes": 176,
       "cuts": 203,
       "types": {
         "tap": 177,
@@ -246,10 +246,11 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 52
+      "identityPhrases": 52,
+      "hierarchyDesignVersion": 1
     },
     "normal": {
-      "notes": 316,
+      "notes": 274,
       "cuts": 329,
       "types": {
         "tap": 292,
@@ -497,10 +498,11 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 54
+      "identityPhrases": 54,
+      "hierarchyDesignVersion": 1
     },
     "hard": {
-      "notes": 620,
+      "notes": 624,
       "cuts": 633,
       "types": {
         "tap": 579,
@@ -751,12 +753,13 @@
         "flicksConvertedToTaps": []
       },
       "identityPhrases": 45,
-      "hardRhythmDesignVersion": 1
+      "hardRhythmDesignVersion": 1,
+      "hierarchyDesignVersion": 1
     }
   },
   "escapade": {
     "easy": {
-      "notes": 157,
+      "notes": 127,
       "cuts": 168,
       "types": {
         "tap": 146,
@@ -952,10 +955,11 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 48
+      "identityPhrases": 48,
+      "hierarchyDesignVersion": 1
     },
     "normal": {
-      "notes": 257,
+      "notes": 206,
       "cuts": 266,
       "types": {
         "tap": 240,
@@ -1154,10 +1158,11 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 48
+      "identityPhrases": 48,
+      "hierarchyDesignVersion": 1
     },
     "hard": {
-      "notes": 519,
+      "notes": 550,
       "cuts": 530,
       "types": {
         "tap": 487,
@@ -1358,12 +1363,13 @@
         "flicksConvertedToTaps": []
       },
       "identityPhrases": 43,
-      "hardRhythmDesignVersion": 1
+      "hardRhythmDesignVersion": 1,
+      "hierarchyDesignVersion": 1
     }
   },
   "logic": {
     "easy": {
-      "notes": 213,
+      "notes": 257,
       "cuts": 227,
       "types": {
         "tap": 199,
@@ -1640,10 +1646,11 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 68
+      "identityPhrases": 68,
+      "hierarchyDesignVersion": 1
     },
     "normal": {
-      "notes": 352,
+      "notes": 367,
       "cuts": 366,
       "types": {
         "tap": 333,
@@ -1924,10 +1931,11 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 57
+      "identityPhrases": 57,
+      "hierarchyDesignVersion": 1
     },
     "hard": {
-      "notes": 597,
+      "notes": 623,
       "cuts": 611,
       "types": {
         "tap": 554,
@@ -2209,12 +2217,13 @@
         "flicksConvertedToTaps": []
       },
       "identityPhrases": 57,
-      "hardRhythmDesignVersion": 1
+      "hardRhythmDesignVersion": 1,
+      "hierarchyDesignVersion": 1
     }
   },
   "BenkyouRemaster": {
     "easy": {
-      "notes": 146,
+      "notes": 180,
       "cuts": 158,
       "types": {
         "tap": 134,
@@ -2427,10 +2436,11 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 34
+      "identityPhrases": 34,
+      "hierarchyDesignVersion": 1
     },
     "normal": {
-      "notes": 253,
+      "notes": 264,
       "cuts": 265,
       "types": {
         "tap": 233,
@@ -2646,7 +2656,8 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 29
+      "identityPhrases": 29,
+      "hierarchyDesignVersion": 1
     },
     "hard": {
       "notes": 489,
@@ -2865,12 +2876,13 @@
         "flicksConvertedToTaps": []
       },
       "identityPhrases": 25,
-      "hardRhythmDesignVersion": 1
+      "hardRhythmDesignVersion": 1,
+      "hierarchyDesignVersion": 1
     }
   },
   "Aobasou": {
     "easy": {
-      "notes": 163,
+      "notes": 168,
       "cuts": 174,
       "types": {
         "tap": 152,
@@ -3059,10 +3071,11 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 43
+      "identityPhrases": 43,
+      "hierarchyDesignVersion": 1
     },
     "normal": {
-      "notes": 286,
+      "notes": 274,
       "cuts": 296,
       "types": {
         "tap": 265,
@@ -3256,10 +3269,11 @@
         "policy": "通常配置を主軸に、短い技を選択",
         "flicksConvertedToTaps": []
       },
-      "identityPhrases": 26
+      "identityPhrases": 26,
+      "hierarchyDesignVersion": 1
     },
     "hard": {
-      "notes": 556,
+      "notes": 582,
       "cuts": 567,
       "types": {
         "tap": 500,
@@ -3454,7 +3468,8 @@
         "flicksConvertedToTaps": []
       },
       "identityPhrases": 29,
-      "hardRhythmDesignVersion": 1
+      "hardRhythmDesignVersion": 1,
+      "hierarchyDesignVersion": 1
     }
   }
 }

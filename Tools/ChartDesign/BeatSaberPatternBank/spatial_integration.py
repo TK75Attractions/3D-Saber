@@ -26,6 +26,7 @@ def integrate(args):
   sid=spec['id'];authorize(sid,'hard');folder=repo/'Assets/StreamingAssets/Songs'/sid;m=Music(spec,args.features)
   audio=next(p for p in folder.glob('audio.*') if p.suffix!='.meta');assert digest(audio)==m.analysis['sha256']
   path=folder/'chart_hard.json';chart=read(path);assert chart.get('hardRhythmDesignVersion')
+  if chart.get('hierarchyDesignVersion'):raise ValueError('下位包含・4置き場を保護。hierarchy_materials.pyで主譜面と下位を同時に検証して候補へ反映すること。')
   hashes[path.relative_to(repo).as_posix()]=digest(path)
   notes=internal(chart,read(design/sid/'hard-cut-plan.json'),m,read(design/sid/'hard-evidence.json'))
   states[sid]={'chart':chart,'notes':notes,'m':m,'before':copy.deepcopy(notes),'changed':False}

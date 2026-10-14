@@ -1,0 +1,207 @@
+{
+  "ManicSonic": {
+    "hard": {
+      "notes": 624,
+      "pairs": 42,
+      "pairNotePercent": 13.46,
+      "movementOver1_2Within1s": 64.42,
+      "movementWithin1sDenominator": 593,
+      "movementOver1_2AllGaps": 64.31,
+      "fastSameHandUnder250ms": 70,
+      "sameHandSingleTransitionPercent": 14.1,
+      "identicalBarRepeatPercent": 0.97,
+      "inheritedTimeHandPositionPercent": null,
+      "sharedAccents": 8
+    },
+    "normal": {
+      "notes": 274,
+      "pairs": 16,
+      "pairNotePercent": 11.68,
+      "movementOver1_2Within1s": 43.88,
+      "movementWithin1sDenominator": 196,
+      "movementOver1_2AllGaps": 42.65,
+      "fastSameHandUnder250ms": 0,
+      "sameHandSingleTransitionPercent": 11.2,
+      "identicalBarRepeatPercent": 1.94,
+      "inheritedTimeHandPositionPercent": 100,
+      "sharedAccents": 8
+    },
+    "easy": {
+      "notes": 176,
+      "pairs": 8,
+      "pairNotePercent": 9.09,
+      "movementOver1_2Within1s": 21.05,
+      "movementWithin1sDenominator": 19,
+      "movementOver1_2AllGaps": 37.36,
+      "fastSameHandUnder250ms": 0,
+      "sameHandSingleTransitionPercent": 12.58,
+      "identicalBarRepeatPercent": 9.18,
+      "inheritedTimeHandPositionPercent": 100,
+      "sharedAccents": 8
+    }
+  },
+  "escapade": {
+    "hard": {
+      "notes": 550,
+      "pairs": 37,
+      "pairNotePercent": 13.45,
+      "movementOver1_2Within1s": 54.23,
+      "movementWithin1sDenominator": 544,
+      "movementOver1_2AllGaps": 54.2,
+      "fastSameHandUnder250ms": 70,
+      "sameHandSingleTransitionPercent": 13.05,
+      "identicalBarRepeatPercent": 1.25,
+      "inheritedTimeHandPositionPercent": null,
+      "sharedAccents": 5
+    },
+    "normal": {
+      "notes": 206,
+      "pairs": 13,
+      "pairNotePercent": 12.62,
+      "movementOver1_2Within1s": 41.61,
+      "movementWithin1sDenominator": 149,
+      "movementOver1_2AllGaps": 42.65,
+      "fastSameHandUnder250ms": 0,
+      "sameHandSingleTransitionPercent": 8.38,
+      "identicalBarRepeatPercent": 1.28,
+      "inheritedTimeHandPositionPercent": 100,
+      "sharedAccents": 5
+    },
+    "easy": {
+      "notes": 127,
+      "pairs": 5,
+      "pairNotePercent": 7.87,
+      "movementOver1_2Within1s": 28.57,
+      "movementWithin1sDenominator": 14,
+      "movementOver1_2AllGaps": 45.6,
+      "fastSameHandUnder250ms": 0,
+      "sameHandSingleTransitionPercent": 14.66,
+      "identicalBarRepeatPercent": 8.7,
+      "inheritedTimeHandPositionPercent": 100,
+      "sharedAccents": 5
+    }
+  },
+  "logic": {
+    "hard": {
+      "notes": 623,
+      "pairs": 42,
+      "pairNotePercent": 13.48,
+      "movementOver1_2Within1s": 67.31,
+      "movementWithin1sDenominator": 566,
+      "movementOver1_2AllGaps": 68.28,
+      "fastSameHandUnder250ms": 15,
+      "sameHandSingleTransitionPercent": 15.99,
+      "identicalBarRepeatPercent": 0.0,
+      "inheritedTimeHandPositionPercent": null,
+      "sharedAccents": 6
+    },
+    "normal": {
+      "notes": 367,
+      "pairs": 21,
+      "pairNotePercent": 11.44,
+      "movementOver1_2Within1s": 42.51,
+      "movementWithin1sDenominator": 207,
+      "movementOver1_2AllGaps": 47.67,
+      "fastSameHandUnder250ms": 0,
+      "sameHandSingleTransitionPercent": 10.8,
+      "identicalBarRepeatPercent": 1.8,
+      "inheritedTimeHandPositionPercent": 100,
+      "sharedAccents": 6
+    },
+    "easy": {
+      "notes": 257,
+      "pairs": 7,
+      "pairNotePercent": 5.45,
+      "movementOver1_2Within1s": 25.49,
+      "movementWithin1sDenominator": 51,
+      "movementOver1_2AllGaps": 49.41,
+      "fastSameHandUnder250ms": 0,
+      "sameHandSingleTransitionPercent": 15.29,
+      "identicalBarRepeatPercent": 7.41,
+      "inheritedTimeHandPositionPercent": 100,
+      "sharedAccents": 6
+    }
+  },
+  "BenkyouRemaster": {
+    "hard": {
+      "notes": 489,
+      "pairs": 33,
+      "pairNotePercent": 13.5,
+      "movementOver1_2Within1s": 64.11,
+      "movementWithin1sDenominator": 443,
+      "movementOver1_2AllGaps": 64.68,
+      "fastSameHandUnder250ms": 40,
+      "sameHandSingleTransitionPercent": 19.91,
+      "identicalBarRepeatPercent": 2.47,
+      "inheritedTimeHandPositionPercent": null,
+      "sharedAccents": 3
+    },
+    "normal": {
+      "notes": 264,
+      "pairs": 17,
+      "pairNotePercent": 12.88,
+      "movementOver1_2Within1s": 47.24,
+      "movementWithin1sDenominator": 163,
+      "movementOver1_2AllGaps": 49.62,
+      "fastSameHandUnder250ms": 0,
+      "sameHandSingleTransitionPercent": 10.92,
+      "identicalBarRepeatPercent": 2.47,
+      "inheritedTimeHandPositionPercent": 100,
+      "sharedAccents": 3
+    },
+    "easy": {
+      "notes": 180,
+      "pairs": 8,
+      "pairNotePercent": 8.89,
+      "movementOver1_2Within1s": 25.0,
+      "movementWithin1sDenominator": 20,
+      "movementOver1_2AllGaps": 44.94,
+      "fastSameHandUnder250ms": 0,
+      "sameHandSingleTransitionPercent": 11.04,
+      "identicalBarRepeatPercent": 6.25,
+      "inheritedTimeHandPositionPercent": 100,
+      "sharedAccents": 3
+    }
+  },
+  "Aobasou": {
+    "hard": {
+      "notes": 582,
+      "pairs": 39,
+      "pairNotePercent": 13.4,
+      "movementOver1_2Within1s": 64.37,
+      "movementWithin1sDenominator": 567,
+      "movementOver1_2AllGaps": 64.14,
+      "fastSameHandUnder250ms": 76,
+      "sameHandSingleTransitionPercent": 14.91,
+      "identicalBarRepeatPercent": 0.0,
+      "inheritedTimeHandPositionPercent": null,
+      "sharedAccents": 2
+    },
+    "normal": {
+      "notes": 274,
+      "pairs": 14,
+      "pairNotePercent": 10.22,
+      "movementOver1_2Within1s": 44.03,
+      "movementWithin1sDenominator": 159,
+      "movementOver1_2AllGaps": 43.75,
+      "fastSameHandUnder250ms": 0,
+      "sameHandSingleTransitionPercent": 12.65,
+      "identicalBarRepeatPercent": 0.0,
+      "inheritedTimeHandPositionPercent": 100,
+      "sharedAccents": 2
+    },
+    "easy": {
+      "notes": 168,
+      "pairs": 6,
+      "pairNotePercent": 7.14,
+      "movementOver1_2Within1s": 21.43,
+      "movementWithin1sDenominator": 14,
+      "movementOver1_2AllGaps": 46.39,
+      "fastSameHandUnder250ms": 0,
+      "sameHandSingleTransitionPercent": 18.71,
+      "identicalBarRepeatPercent": 2.56,
+      "inheritedTimeHandPositionPercent": 100,
+      "sharedAccents": 2
+    }
+  }
+}

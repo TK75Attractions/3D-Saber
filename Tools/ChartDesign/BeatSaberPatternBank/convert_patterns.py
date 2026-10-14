@@ -8,6 +8,13 @@ from spatial_layout import rotate
 
 # 通常配置を主体にし、短い特徴的なフレーズだけ縦・反転・斜めを使う。
 LAYOUT={
+ 'angel-hard-1':0,
+ 'angel-hard-2':0,
+ 'light-normal-1':0,
+ 'light-normal-2':0,
+ 'unlimited-noarrows-normal-1':0,
+ 'unlimited-noarrows-normal-2':0,
+
  'full-charge-normal-1':0,
  'full-charge-normal-2':0,
  'origins-hard-1':0,
@@ -87,6 +94,13 @@ LAYOUT={
 # 映像で確認した単発・休符・担当手の順を、素材ごとに個別に翻案する。
 # 座標は本作用に設計済み。原作映像のセイバー色から担当手を確認し、本作の担当色（左=青）へ変換する。
 EXPLICIT={
+ 'angel-hard-1':('easy', '低い左から高い右、後半を休む', [(0, 'left', -1.9, -0.6), (1, 'right', 1.9, 0.3)]),
+ 'angel-hard-2':('normal', '左の同列上下に右の低い応答', [(0, 'left', -1.9, -0.6), (1, 'right', 0.6, -0.6), (2, 'left', -1.9, 0.3)]),
+ 'light-normal-1':('easy', '壁相当の休みの後に左一打', [(3, 'left', -1.9, 0.3)]),
+ 'light-normal-2':('normal', '外上の両手から低い組へ', [(0, 'left', -1.9, 0.3), (0, 'right', 1.9, 0.3), (2, 'left', -0.85, -0.6), (2, 'right', 0.85, -0.6)]),
+ 'unlimited-noarrows-normal-1':('normal', '右外から左低、右内へ', [(0, 'right', 1.9, 0.3), (1, 'left', -1.9, -0.6), (2, 'right', 0.6, -0.6)]),
+ 'unlimited-noarrows-normal-2':('easy', '左の高い音から右の低い音へ', [(0, 'left', -1.9, 0.3), (2, 'right', 0.6, -0.6)]),
+
  'full-charge-normal-1':('normal', '左の連なりと低い両手', [(0, 'left', -1.4, 0.1), (1, 'left', -1.8, -0.4), (2, 'left', -1.5, -0.7), (2, 'right', 1.5, -0.7), (3, 'right', 1.8, -0.1)]),
  'full-charge-normal-2':('hard', '一度だけ上下に重ねて横へ戻す', [(0.5, 'left', 0.9, 0.95), (0.5, 'right', 0.9, -0.95), (2, 'right', 1.7, -0.6), (3, 'left', -1.2, 0)]),
  'origins-hard-1':('hard', '右の内外から左の低い応答', [(0, 'right', 1.7, 0.1), (1, 'right', 0.9, 0.7), (2, 'left', -1.5, -0.6), (3, 'right', 1.4, -0.3)]),

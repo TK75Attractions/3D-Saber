@@ -1,0 +1,92 @@
+"""4置き場の主譜面へ個別素材の対応打点だけを移植し、下位包含を更新する。"""
+import argparse,copy,collections,math,sys
+from pathlib import Path
+HERE=Path(__file__).parent
+sys.path.insert(0,str(HERE.parent/'FiveSongs20261014'))
+from hierarchy_rework import read,save,Music,FORM,reduced,finalize,path_for
+from integrate_patterns import internal
+from scope_guard import authorize_specs
+
+def movement_valid(ns):
+ for h in (0,1):
+  seq=[n for n in ns if n['_hand']==h]
+  for a,b in zip(seq,seq[1:]):
+   gap=(b['time']-a['time']-a['lengthMs'])/1000;d=math.dist((a['x'],a['y']),(b['x'],b['y']))
+   if d>1.2 and gap<.3-1e-5:return False
+ groups=collections.defaultdict(list)
+ for n in ns:groups[n['time']].append(n)
+ return all(len(g)<2 or math.dist((g[0]['x'],g[0]['y']),(g[1]['x'],g[1]['y']))>1.5 for g in groups.values())
+
+def main():
+ p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--features',type=Path,required=True);args=p.parse_args()
+ repo=args.repo;design=repo/'Tools/ChartDesign/FiveSongs20261014';bank=repo/'Tools/ChartDesign/BeatSaberPatternBank';prior=read(bank/'applications.json');apps=prior['applications'];patterns=read(bank/'converted-patterns.json')['patterns'];history=read(design/'hierarchy-design.json');specs=read(design/'songs.json');authorize_specs(specs)
+ states={};pending=[];added=[];done={a['patternId'] for a in apps}
+ for spec in specs:
+  sid=spec['id'];m=Music(spec,args.features);chart=read(repo/'Assets/StreamingAssets/Songs'/sid/'chart_hard.json');ev=read(design/sid/'hard-evidence.json');ns=internal(chart,read(design/sid/'hard-cut-plan.json'),m,ev)
+  groups=collections.Counter(n['time'] for n in ns)
+  for n,e in zip(ns,ev):n['_key']=e.get('sharedAccent',False);n['_pair']=groups[n['time']]==2;n['_arrow']=False;n['_forced']=None
+  states[sid]=dict(m=m,chart=chart,ns=ns,changed=False)
+ for pattern in patterns:
+  if pattern['id'] in done:continue
+  choices=[]
+  for sid,state in states.items():
+   if pattern.get('preferredSongs') and sid not in pattern['preferredSongs']:continue
+   m=state['m'];ns=state['ns'];occupied=[(a['startBeat'],a['endBeat']) for a in apps if a['songId']==sid and a['difficulty']=='hard']
+   for base in range(8,int(m.last_beat)-8,4):
+    if abs(m.bpm(base)/pattern['referenceBpm']-1)>.10:continue
+    if any(base<b and base+8>a for a,b in occupied):continue
+    if any(base<b<base+8 for b,t,bpm in m.points):continue
+    window=[n for n in ns if base<=n['beat']<base+8]
+    if any(n.get('_key') or n['type']=='long' for n in window):continue
+    if len(pattern['chart']['notes'])==1 and len(window)>4:continue
+    for phase in (0,.5,1,1.5,2,2.5,3,3.5):
+     matches=[]
+     for r in (0,1):
+      for source in pattern['chart']['notes']:
+       b=base+r*4+(source['beat']+phase)%4;h=0 if source['color']=='red' else 1
+       match=next((i for i,n in enumerate(ns) if abs(n['beat']-b)<.001 and n['_hand']==h and not n['_pair']),None)
+       # 両手素材は両手が既にある実音へ合わせる。
+       if sum(q['beat']==source['beat'] for q in pattern['chart']['notes'])==2:
+        match=next((i for i,n in enumerate(ns) if abs(n['beat']-b)<.001 and n['_hand']==h and n['_pair']),None)
+       if match is not None:matches.append((match,source))
+     ratio=len(matches)/(2*len(pattern['chart']['notes']))
+     if ratio<.75:continue
+     score=abs(m.bpm(base)/pattern['referenceBpm']-1)*10-ratio
+     choices.append((score,sid,base,phase,matches))
+  accepted=None
+  for score,sid,base,phase,matches in sorted(choices,key=lambda c:c[:4]):
+   state=states[sid];ns=copy.deepcopy(state['ns']);changed=0
+   for i,source in matches:
+    changed+=(ns[i]['x'],ns[i]['y'])!=(source['x'],source['y']);ns[i]['x']=source['x'];ns[i]['y']=source['y']
+   if changed<2 or not movement_valid(ns):continue
+   _,failure=path_for(ns,state['m'])
+   if failure is not None:continue
+   # 下位の共通アクセントを失わず、同じ手・位置で間引けることも先に検査。
+   keys=[a['beat'] for a in history['songs'][sid]['sharedAccents']]
+   try:normal=reduced(ns,state['m'],'normal',keys);easy=reduced(normal,state['m'],'easy',keys)
+   except AssertionError:continue
+   accepted=(sid,base,phase,ns,changed,matches);break
+  if accepted is None:
+   pending.append({'patternId':pattern['id'],'reason':'近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。','candidateCount':len(choices)});continue
+  sid,base,phase,ns,changed,matches=accepted;state=states[sid];state.update(ns=ns,changed=True);m=state['m']
+  app=dict(patternId=pattern['id'],songId=sid,songTitle=m.spec['title'],difficulty='hard',startBeat=base,endBeat=base+8,startBar=base//4+1,barCount=2,startSeconds=round(m.t(base),4),endSeconds=round(m.t(base+8),4),targetBpm=m.bpm(base),referenceBpm=pattern['referenceBpm'],bpmDifferencePercent=round((m.bpm(base)/pattern['referenceBpm']-1)*100,3),sourceUrl=pattern['sourceUrl'],integrationMode='hierarchy-reference',sourcePhaseOffsetBeats=phase,positionChangedNotes=changed,spatialLayout=pattern['layout'],layoutAdaptation='対応する実音の担当手へ、素材固有の置き場だけを移植。休符や中間の発音は本曲を保持。下位は同じ位置から間引く。',fidelity='映像に基づく動きの翻案。原作の正確な採譜ではない。',viewerUrl=f'https://saber-chart-library.metuji48.chatgpt.site/?song={sid}&difficulty=hard&t={max(0,m.t(base)-1):.2f}')
+  apps.append(app);added.append(app['patternId']);print(app['patternId'],sid,base,changed,flush=True)
+ for sid,state in states.items():
+  if not state['changed']:continue
+  m=state['m'];hard=state['ns'];keys=[a['beat'] for a in history['songs'][sid]['sharedAccents']];normal=reduced(hard,m,'normal',keys);easy=reduced(normal,m,'easy',keys)
+  for diff,ns in [('hard',hard),('normal',normal),('easy',easy)]:
+   target=repo/'Assets/StreamingAssets/Songs'/sid;chart,plan,ev=finalize(ns,m,diff,read(target/f'chart_{diff}.json'),hard if diff=='normal' else None);save(target/f'chart_{diff}.json',chart)
+   if diff=='normal':save(target/'chart.json',chart)
+   save(design/sid/f'{diff}-cut-plan.json',plan);save(design/sid/f'{diff}-evidence.json',ev)
+ # 改修前の適用は履歴へ。現在の索引は必ず現在の実ノーツへ対応させる。
+ for a in apps:
+  chart=read(repo/'Assets/StreamingAssets/Songs'/a['songId']/f"chart_{a['difficulty']}.json")
+  if 'appliedNotes' in a:a.setdefault('preHierarchyAppliedNotes',copy.deepcopy(a['appliedNotes']))
+  a['noteIndices']=[i for i,n in enumerate(chart['notes']) if a['startBeat']<=n['beat']<a['endBeat']];a['appliedNotes']=[chart['notes'][i] for i in a['noteIndices']];a['addedNotes']=len(a['appliedNotes'])
+  if a['patternId'] not in added:
+   a['fidelity']='以前の素材を参照した区間を、今回の実音・4置き場・下位包含に合わせて再設計。元の翻案そのものと現在の区間は同一ではない。履歴はpreHierarchyAppliedNotes。'
+   a['layoutAdaptation']='曲別の音はめと共通アクセント、Hardからの包含を優先して再構成。原作配置のそのままのコピーではない。'
+ prior.update(applications=apps,pending=pending,convertedCount=len(patterns),appliedCount=len(apps));save(bank/'applications.json',prior)
+ history['materialUpdate']={'added':added,'pending':pending};save(design/'hierarchy-design.json',history)
+ print({'newApplied':len(added),'pending':len(pending)})
+if __name__=='__main__':main()

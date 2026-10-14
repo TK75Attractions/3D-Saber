@@ -15,8 +15,8 @@ ZeroとPhobiaは固定。RushEを含むすべての対象外曲も変更・再�
 
 ## 現行の素材と作り分け
 
-70素材すべてを本作の4拍JSONへ翻案し、15譜面へ140小節として適用済み。
-採用候補38・調整して採用26・避けたい例6（問題点を解消した修正版）。
+現行76素材すべてを本作の4拍JSONへ翻案。72素材を15譜面へ144小節として参照・適用し、4素材は理由付きで保留。以下の先行改修の説明は履歴。
+採用候補42・調整して採用28・避けたい例6（問題点を解消した修正版）。
 譜面データからの変換8、映像に基づく翻案56、解説の修正版6。映像は正確な採譜ではない。
 前回の6素材は Crystallized / Normal（174 BPM）、Firestarter / Normal（135 BPM）、MISA MISA!（190 BPM、Expert+相当の推定）の各2区間。
 MISA MISA!の作者公開映像の0:00〜1:27が対象曲。難易度画面はなく、現行譜面ZIPも取得不可のため版・難易度の一致は未確定。比較用として密度を下げた。
@@ -63,3 +63,13 @@ Full Charge / Normal（125 BPM）、Origins / Hard（175 BPM）、Give a Little 
 今後、音はめ改修済みHardを従来の疎な2小節テンプレートで置換する実行は停止する。未適用素材がない場合は書き換えない。適合しない素材は無理に入れず理由を記録して保留する。
 
 座標差分の診断値 `positionChangedNotes` は移動距離0.15超を数える。今回の83ノーツは境界での小さな補間も含む全座標変更数。打点の追加・削除は0。
+
+## 2026-10-15 難易度包含・4置き場への改修
+
+今回の最新指示は5曲15譜面。以前の「Hardのみ」を更新した。hierarchy-design.json / verify_hierarchy.pyが現行設計。HardからNormal、NormalからEasyを選び、時刻・手・位置を100%保持。ユーザー指定の共通アクセントを保持。中心間距離1.2超は判定領域の非重複を保証しない。実機の到達・追跡は未確認。
+
+定時の新素材は候補コピーでhierarchy_materials.py --repo <候補> --features <解析>を使う。微小な補間や単独Hard書換えへ戻さない。全15譜面のverify_pack.py / verify_hierarchy.pyとverify_conversion.pyを通す。適用できない素材はapplications.jsonのpendingへ理由付きで残す。現行76素材、72素材適用、4素材保留。旧70素材の適用記録は今回の曲別再設計に合わせて更新し、元のノーツはpreHierarchyAppliedNotesへ保存した。
+
+追加はAngel Voices Hard166、Light it Up Normal174、Unlimited Power Normal No Arrows198 BPM各2区間。Angel Voicesの作者クレジットは公式Hardと動画説明が一致せず明記。映像の4拍相当であり小節頭・譜面版は未確定。2素材をescapadeへ反映、4素材は保留。
+
+

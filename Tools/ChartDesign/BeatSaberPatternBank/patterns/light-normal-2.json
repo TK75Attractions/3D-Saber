@@ -1,0 +1,62 @@
+{
+  "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+  "bpm": 174.0,
+  "coordScale": 1,
+  "offsetMs": 0,
+  "beatZeroMs": 0,
+  "displayLevel": 5,
+  "timeSignatures": [
+    {
+      "beat": 0,
+      "numerator": 4,
+      "denominator": 4
+    }
+  ],
+  "editorTempoMap": [],
+  "notes": [
+    {
+      "beat": 0,
+      "time": 0.0,
+      "x": 1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 0,
+      "time": 0.0,
+      "x": -1.9,
+      "y": 0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 2,
+      "time": 689.6552,
+      "x": 0.85,
+      "y": -0.6,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 2,
+      "time": 689.6552,
+      "x": -0.85,
+      "y": -0.6,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    }
+  ]
+}

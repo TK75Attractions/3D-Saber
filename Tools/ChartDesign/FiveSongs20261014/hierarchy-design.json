@@ -1,0 +1,4926 @@
+{
+  "version": 1,
+  "movementDefinition": "同じ担当手の1秒以内の中心間距離>1.2。判定領域の非重複や実機での運動を保証する指標ではない。",
+  "reachTest": "未実施。2.7〜3.1mでの到達とカメラ追跡は利用者の試遊が必要。",
+  "songs": {
+    "ManicSonic": {
+      "sharedAccents": [
+        {
+          "beat": 3.0,
+          "seconds": 1.0,
+          "peakSeconds": 0.992744,
+          "distanceMs": -7.256,
+          "strength": 1.7543
+        },
+        {
+          "beat": 41.0,
+          "seconds": 13.666666666666666,
+          "peakSeconds": 13.658957,
+          "distanceMs": -7.71,
+          "strength": 2.0566
+        },
+        {
+          "beat": 45.0,
+          "seconds": 15.0,
+          "peakSeconds": 14.99093,
+          "distanceMs": -9.07,
+          "strength": 1.8659
+        },
+        {
+          "beat": 49.0,
+          "seconds": 16.333333333333332,
+          "peakSeconds": 16.327891,
+          "distanceMs": -5.442,
+          "strength": 2.0132
+        },
+        {
+          "beat": 321.0,
+          "seconds": 108.16666666666666,
+          "peakSeconds": 108.159184,
+          "distanceMs": -7.483,
+          "strength": 2.064
+        },
+        {
+          "beat": 325.0,
+          "seconds": 109.5,
+          "peakSeconds": 109.491156,
+          "distanceMs": -8.844,
+          "strength": 2.0188
+        },
+        {
+          "beat": 329.0,
+          "seconds": 110.83333333333334,
+          "peakSeconds": 110.828118,
+          "distanceMs": -5.215,
+          "strength": 1.9512
+        },
+        {
+          "beat": 395.0,
+          "seconds": 143.5,
+          "peakSeconds": 143.493878,
+          "distanceMs": -6.122,
+          "strength": 1.5744
+        }
+      ],
+      "changes": [
+        {
+          "reason": "小さい導入は整数拍の骨格へ",
+          "removed": 14,
+          "untilSeconds": 10.7
+        },
+        {
+          "beat": 6.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 8.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 15.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 32.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 33.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 34.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 35.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 36.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 38.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 39.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 40.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 41.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 42.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 49.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 60.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 61.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 62.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 80.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 81.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 106.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 107.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 114.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 114.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 115.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 128.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 128.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 129.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 130.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 131.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 131.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 135.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 135.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 136.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 143.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 150.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 151.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 151.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 152.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 152.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 155.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 155.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 156.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 156.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 157.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 159.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 160.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 168.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 216.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 216.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 217.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 224.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 225.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 226.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 228.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 228.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 229.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 234.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 237.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 237.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 238.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 241.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 244.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 246.75,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 247.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 250.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 251.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 251.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 252.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 252.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 253.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 253.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 254.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 254.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 255.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 255.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 256.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 257.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 262.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 262.75,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 263.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 263.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 264.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 265.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 266.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 266.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 267.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 271.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 271.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 272.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 272.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 273.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 273.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 276.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 278.75,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 279.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 279.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 283.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 283.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 284.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 284.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 285.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 285.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 286.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 287.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 287.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 288.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 289.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 293.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 294.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 294.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 295.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 295.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 298.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 298.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 299.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 301.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 301.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 302.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 302.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 304,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 304.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 305,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 305.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 317.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 318.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 318.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 319.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 319.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 320.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 321.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 322.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 324.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 329.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 330.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 332.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 333.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 334.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 337.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 337.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 338.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 338.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 339.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 339.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 340.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 344.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 346.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 347.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 347.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 348.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 351.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 362.75,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 396.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 398.75,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 399.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 399.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 401.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 402.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 405.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 405.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 407.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 407.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 408.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 408.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 410.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        }
+      ],
+      "shortTechniques": [
+        {
+          "seconds": 57.375,
+          "type": "vertical",
+          "notes": 2,
+          "reason": "十分な前後間隔を持つ一度の技。実機追跡は未確認。"
+        }
+      ],
+      "charts": {
+        "hard": {
+          "notes": 624,
+          "pairs": 42,
+          "pairNotePercent": 13.46,
+          "movementOver1_2Within1s": 64.42,
+          "movementWithin1sDenominator": 593,
+          "movementOver1_2AllGaps": 64.31,
+          "fastSameHandUnder250ms": 70,
+          "sameHandSingleTransitionPercent": 14.1,
+          "identicalBarRepeatPercent": 0.97,
+          "inheritedTimeHandPositionPercent": null,
+          "sharedAccents": 8
+        },
+        "normal": {
+          "notes": 274,
+          "pairs": 16,
+          "pairNotePercent": 11.68,
+          "movementOver1_2Within1s": 43.88,
+          "movementWithin1sDenominator": 196,
+          "movementOver1_2AllGaps": 42.65,
+          "fastSameHandUnder250ms": 0,
+          "sameHandSingleTransitionPercent": 11.2,
+          "identicalBarRepeatPercent": 1.94,
+          "inheritedTimeHandPositionPercent": 100,
+          "sharedAccents": 8
+        },
+        "easy": {
+          "notes": 176,
+          "pairs": 8,
+          "pairNotePercent": 9.09,
+          "movementOver1_2Within1s": 21.05,
+          "movementWithin1sDenominator": 19,
+          "movementOver1_2AllGaps": 37.36,
+          "fastSameHandUnder250ms": 0,
+          "sameHandSingleTransitionPercent": 12.58,
+          "identicalBarRepeatPercent": 9.18,
+          "inheritedTimeHandPositionPercent": 100,
+          "sharedAccents": 8
+        }
+      }
+    },
+    "escapade": {
+      "sharedAccents": [
+        {
+          "beat": 16.0,
+          "seconds": 5.072631578947368,
+          "peakSeconds": 5.068481,
+          "distanceMs": -4.151,
+          "strength": 1.6721
+        },
+        {
+          "beat": 316.5,
+          "seconds": 99.96736842105263,
+          "peakSeconds": 99.9678,
+          "distanceMs": 0.432,
+          "strength": 0.8849
+        },
+        {
+          "beat": 318.5,
+          "seconds": 100.59894736842105,
+          "peakSeconds": 100.596372,
+          "distanceMs": -2.575,
+          "strength": 0.9627
+        },
+        {
+          "beat": 322.5,
+          "seconds": 101.86210526315789,
+          "peakSeconds": 101.858503,
+          "distanceMs": -3.602,
+          "strength": 0.8263
+        },
+        {
+          "beat": 332.5,
+          "seconds": 105.02,
+          "peakSeconds": 105.016327,
+          "distanceMs": -3.673,
+          "strength": 1.0672
+        }
+      ],
+      "changes": [
+        {
+          "addedBeat": 195.25,
+          "requestedSeconds": 61.71,
+          "reason": "指定された裏拍・決めの実音",
+          "evidence": {
+            "peakSeconds": 61.714739,
+            "distanceMs": 36.844,
+            "strength": 0.9674
+          }
+        },
+        {
+          "addedBeat": 196.75,
+          "requestedSeconds": 62.18,
+          "reason": "強い発音の根拠が不足したため最終候補から削除。指定の共通アクセントは保持。",
+          "evidence": {
+            "peakSeconds": 62.118821,
+            "distanceMs": -32.758,
+            "strength": 0.4998
+          },
+          "status": "rejected-final-review"
+        },
+        {
+          "addedBeat": 198.25,
+          "requestedSeconds": 62.65,
+          "reason": "指定された裏拍・決めの実音",
+          "evidence": {
+            "peakSeconds": 62.647619,
+            "distanceMs": 22.356,
+            "strength": 0.6071
+          }
+        },
+        {
+          "beat": 20.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 20.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 24.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 30.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 30.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 31.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 31.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 32,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 33.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 36,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 37.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 40.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 41.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 44.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 45.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 49.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 49.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 50.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 50.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 52.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 52.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 57.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 58.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 58.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 60.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 60.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 61.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 62.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 62.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 63.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 63.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 64.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 66.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 66.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 68.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 68.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 70.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 70.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 72.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 73.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 73.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 74.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 74.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 77.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 77.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 78.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 80.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 84.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 84.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 86.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 88.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 90.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 92.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 93.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 93.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 94.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 95.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 96.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 97.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 100.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 102.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 103.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 103.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 104.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 104.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 106.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 106.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 107.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 107.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 108.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 108.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 111.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 112.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 116.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 116.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 118.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 119.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 121.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 122.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 122.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 125.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 125.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 127.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 127.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 128.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 132.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 134.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 134.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 135.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 138.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 138.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 139.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 139.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 140.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 145.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 145.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 152.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 159.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 159.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 162.75,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 163.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 163.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 164.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 170.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 171.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 173.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 174.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 177.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 182.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 182.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 183.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 185.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 189.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 189.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 190.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 192,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 195.25,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 195.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 196,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 197.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 197.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 198,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 202.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 203.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 204.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 205.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 205.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 206.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 206.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 207.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 213.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 213.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 214.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 214.25,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 214.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 222.25,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 222.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 223.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 223.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 224.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 224.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 225.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 230.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 230.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 231.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 232.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 235.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 235.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 236.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 238.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 239.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 248.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 256.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 260.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 276.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 277.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 277.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 280.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 281.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 281.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 282.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 282.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 284.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 286.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 286.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 287.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 287.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 288.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 289.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 289.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 290.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 295.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 295.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 296.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 296.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 299.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 300.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 304.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 307.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 308.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 308.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 320.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 321.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 321.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 328.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 331.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        }
+      ],
+      "shortTechniques": [],
+      "charts": {
+        "hard": {
+          "notes": 550,
+          "pairs": 37,
+          "pairNotePercent": 13.45,
+          "movementOver1_2Within1s": 54.23,
+          "movementWithin1sDenominator": 544,
+          "movementOver1_2AllGaps": 54.2,
+          "fastSameHandUnder250ms": 70,
+          "sameHandSingleTransitionPercent": 13.05,
+          "identicalBarRepeatPercent": 1.25,
+          "inheritedTimeHandPositionPercent": null,
+          "sharedAccents": 5
+        },
+        "normal": {
+          "notes": 206,
+          "pairs": 13,
+          "pairNotePercent": 12.62,
+          "movementOver1_2Within1s": 41.61,
+          "movementWithin1sDenominator": 149,
+          "movementOver1_2AllGaps": 42.65,
+          "fastSameHandUnder250ms": 0,
+          "sameHandSingleTransitionPercent": 8.38,
+          "identicalBarRepeatPercent": 1.28,
+          "inheritedTimeHandPositionPercent": 100,
+          "sharedAccents": 5
+        },
+        "easy": {
+          "notes": 127,
+          "pairs": 5,
+          "pairNotePercent": 7.87,
+          "movementOver1_2Within1s": 28.57,
+          "movementWithin1sDenominator": 14,
+          "movementOver1_2AllGaps": 45.6,
+          "fastSameHandUnder250ms": 0,
+          "sameHandSingleTransitionPercent": 14.66,
+          "identicalBarRepeatPercent": 8.7,
+          "inheritedTimeHandPositionPercent": 100,
+          "sharedAccents": 5
+        }
+      }
+    },
+    "logic": {
+      "sharedAccents": [
+        {
+          "beat": 3.0,
+          "seconds": 1.153,
+          "peakSeconds": 1.142404,
+          "distanceMs": -10.596,
+          "strength": 1.3556
+        },
+        {
+          "beat": 31.0,
+          "seconds": 11.653,
+          "peakSeconds": 11.653515,
+          "distanceMs": 0.515,
+          "strength": 1.5851
+        },
+        {
+          "beat": 81.25,
+          "seconds": 30.49675,
+          "peakSeconds": 30.54059,
+          "distanceMs": 43.84,
+          "strength": 0.2442
+        },
+        {
+          "beat": 143.92688,
+          "seconds": 54.366440000000004,
+          "peakSeconds": 54.36644,
+          "distanceMs": -0.0,
+          "strength": 1.3848
+        },
+        {
+          "beat": 243.5,
+          "seconds": 105.90299999999999,
+          "peakSeconds": 105.929252,
+          "distanceMs": 26.252,
+          "strength": 1.6371
+        },
+        {
+          "beat": 247.5,
+          "seconds": 107.90299999999999,
+          "peakSeconds": 107.929705,
+          "distanceMs": 26.705,
+          "strength": 1.6811
+        }
+      ],
+      "changes": [
+        {
+          "beat": 6.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 7.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 8.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 23.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 26.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 32.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 44.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 53.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 55.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 56.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 62.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 63.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 64.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 72.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 86.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 87.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 99.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 99.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 103.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 117.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 118.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 127.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 127.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 135.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 136.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 136.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 137.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 140.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 145.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 145.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 147.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 147.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 148.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 151.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 155.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 155.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 166.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 168.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 168.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 169.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 179.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 180.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 180.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 181.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 183.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 184.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 185.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 191.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 193.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 199.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 202.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 203.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 205.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 209.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 210.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 211.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 215.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 216.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 217.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 218.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 219.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 223.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 240.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 256,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 256.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 261,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 261.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 262,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 264.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 264.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 288.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 289.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 292.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 293.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 304.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 304.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 307.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 312.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 312.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 325.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 328.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 328.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 330.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 336.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 343.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 345.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 345.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 346.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 346.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 347.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 347.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 350.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 351.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 352.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 352.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 355.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 355.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 356.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 357.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 375.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 377.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 377.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 378.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 378.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 379.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 379.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 382.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 383.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 404.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 405.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 405.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 408.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 408.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 410.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 413.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 413.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 414.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 414.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 415.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 416.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 425.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 426.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 428.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 428.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 430.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 433.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 436.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        }
+      ],
+      "shortTechniques": [],
+      "charts": {
+        "hard": {
+          "notes": 623,
+          "pairs": 42,
+          "pairNotePercent": 13.48,
+          "movementOver1_2Within1s": 67.31,
+          "movementWithin1sDenominator": 566,
+          "movementOver1_2AllGaps": 68.28,
+          "fastSameHandUnder250ms": 15,
+          "sameHandSingleTransitionPercent": 15.99,
+          "identicalBarRepeatPercent": 0.0,
+          "inheritedTimeHandPositionPercent": null,
+          "sharedAccents": 6
+        },
+        "normal": {
+          "notes": 367,
+          "pairs": 21,
+          "pairNotePercent": 11.44,
+          "movementOver1_2Within1s": 42.51,
+          "movementWithin1sDenominator": 207,
+          "movementOver1_2AllGaps": 47.67,
+          "fastSameHandUnder250ms": 0,
+          "sameHandSingleTransitionPercent": 10.8,
+          "identicalBarRepeatPercent": 1.8,
+          "inheritedTimeHandPositionPercent": 100,
+          "sharedAccents": 6
+        },
+        "easy": {
+          "notes": 257,
+          "pairs": 7,
+          "pairNotePercent": 5.45,
+          "movementOver1_2Within1s": 25.49,
+          "movementWithin1sDenominator": 51,
+          "movementOver1_2AllGaps": 49.41,
+          "fastSameHandUnder250ms": 0,
+          "sameHandSingleTransitionPercent": 15.29,
+          "identicalBarRepeatPercent": 7.41,
+          "inheritedTimeHandPositionPercent": 100,
+          "sharedAccents": 6
+        }
+      }
+    },
+    "BenkyouRemaster": {
+      "sharedAccents": [
+        {
+          "beat": 163.5,
+          "seconds": 68.9865,
+          "peakSeconds": 68.998186,
+          "distanceMs": 11.686,
+          "strength": 2.4301
+        },
+        {
+          "beat": 167.0,
+          "seconds": 70.299,
+          "peakSeconds": 70.310204,
+          "distanceMs": 11.204,
+          "strength": 2.4031
+        },
+        {
+          "beat": 304.0,
+          "seconds": 133.2454285714286,
+          "peakSeconds": 133.242177,
+          "distanceMs": -3.252,
+          "strength": 2.7585
+        }
+      ],
+      "changes": [
+        {
+          "reason": "小さい導入は整数拍の骨格へ",
+          "removed": 21,
+          "untilSeconds": 12
+        },
+        {
+          "beat": 7.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 10.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 15.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 21.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 34.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 35.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 36.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 37.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 37.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 40.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 41.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 41.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 42.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 42.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 43.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 43.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 44.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 44.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 45.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 45.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 47.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 49.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 50.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 50.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 51.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 51.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 53.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 54.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 54.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 60.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 64,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 67.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 69,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 69.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 70,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 72.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 80.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 84.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 85.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 95.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 101.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 111.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 112.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 117.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 117.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 118.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 121.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 122.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 124.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 149.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 155.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 156.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 156.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 157.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 157.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 158.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 158.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 159.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 159.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 160.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 160.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 164.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 164.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 212.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 212.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 213.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 215.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 217.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 217.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 218.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 221.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 222.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 225,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 227.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 231,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 234.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 234.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 252.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 257.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 258,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 261.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 262,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 264.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 264.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 265.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 265.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 267.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 268.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 268.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 269.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 269.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 270.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 270.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 271.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 271.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 272.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 272.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 295.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        }
+      ],
+      "shortTechniques": [
+        {
+          "seconds": 31.524,
+          "type": "cross",
+          "notes": 1,
+          "reason": "十分な前後間隔を持つ一度の技。実機追跡は未確認。"
+        }
+      ],
+      "charts": {
+        "hard": {
+          "notes": 489,
+          "pairs": 33,
+          "pairNotePercent": 13.5,
+          "movementOver1_2Within1s": 64.11,
+          "movementWithin1sDenominator": 443,
+          "movementOver1_2AllGaps": 64.68,
+          "fastSameHandUnder250ms": 40,
+          "sameHandSingleTransitionPercent": 19.91,
+          "identicalBarRepeatPercent": 2.47,
+          "inheritedTimeHandPositionPercent": null,
+          "sharedAccents": 3
+        },
+        "normal": {
+          "notes": 264,
+          "pairs": 17,
+          "pairNotePercent": 12.88,
+          "movementOver1_2Within1s": 47.24,
+          "movementWithin1sDenominator": 163,
+          "movementOver1_2AllGaps": 49.62,
+          "fastSameHandUnder250ms": 0,
+          "sameHandSingleTransitionPercent": 10.92,
+          "identicalBarRepeatPercent": 2.47,
+          "inheritedTimeHandPositionPercent": 100,
+          "sharedAccents": 3
+        },
+        "easy": {
+          "notes": 180,
+          "pairs": 8,
+          "pairNotePercent": 8.89,
+          "movementOver1_2Within1s": 25.0,
+          "movementWithin1sDenominator": 20,
+          "movementOver1_2AllGaps": 44.94,
+          "fastSameHandUnder250ms": 0,
+          "sameHandSingleTransitionPercent": 11.04,
+          "identicalBarRepeatPercent": 6.25,
+          "inheritedTimeHandPositionPercent": 100,
+          "sharedAccents": 3
+        }
+      }
+    },
+    "Aobasou": {
+      "sharedAccents": [
+        {
+          "beat": 192.0,
+          "seconds": 82.28571428571429,
+          "peakSeconds": 82.278005,
+          "distanceMs": -7.71,
+          "strength": 1.2464
+        },
+        {
+          "beat": 255.0,
+          "seconds": 109.28571428571429,
+          "peakSeconds": 109.276644,
+          "distanceMs": -9.07,
+          "strength": 2.2124
+        }
+      ],
+      "changes": [
+        {
+          "addedBeat": 252.5,
+          "requestedSeconds": 108.21,
+          "reason": "強い発音の根拠が不足したため最終候補から削除。指定の共通アクセントは保持。",
+          "evidence": {
+            "peakSeconds": 108.214059,
+            "distanceMs": -0.227,
+            "strength": 0.2795
+          },
+          "status": "rejected-final-review"
+        },
+        {
+          "beat": 4.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 6.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 7.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 8.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 8.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 10.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 11.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 17.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 18.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 21.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 22.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 25.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 26.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 28.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 28.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 30.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 30.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 31.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 32,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 32.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 33,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 33.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 34,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 34.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 48.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 53.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 53.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 54.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 55.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 63.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 66.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 68.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 68.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 69.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 72.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 72.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 73.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 74.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 80.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 81.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 82.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 84.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 86.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 86.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 88.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 88.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 95.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 100.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 100.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 101.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 104.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 106.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 114.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 116.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 118.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 120.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 120.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 122.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 123.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 126.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 127.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 128.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 129.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 129.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 132.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 133.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 136.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 136.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 137.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 141.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 142.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 143.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 143.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 145.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 147.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 148.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 150.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 152.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 153.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 155.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 155.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 160.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 166.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 167.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 168.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 176.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 182.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 183.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 183.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 184.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 186.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 187.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 191.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 191.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 195.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 198,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 199,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 200.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 207.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 217.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 217.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 218.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 218.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 219.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 219.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 220.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 228.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 228.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 244.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 246.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 246.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 248.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 248.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 250.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 251.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 253.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 253.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 256,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 256.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 257,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 257.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 262.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 263,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 263.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 272.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 273.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 273.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 274.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 276.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 278.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 279.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 280.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 282.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 282.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 282.75,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 287.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 288,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 288.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 289,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 289.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 294,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 294.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 296.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 296.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 298.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 299.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 299.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 300.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 304.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 304.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 308.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 309.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 309.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 311.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 311.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 314.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 317.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        },
+        {
+          "beat": 317.5,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 0,
+          "toHand": 1
+        },
+        {
+          "beat": 318.0,
+          "reason": "高速の片手連打を空いている逆手へ",
+          "fromHand": 1,
+          "toHand": 0
+        }
+      ],
+      "shortTechniques": [
+        {
+          "seconds": 47.5714286,
+          "type": "vertical",
+          "notes": 2,
+          "reason": "十分な前後間隔を持つ一度の技。実機追跡は未確認。"
+        }
+      ],
+      "charts": {
+        "hard": {
+          "notes": 582,
+          "pairs": 39,
+          "pairNotePercent": 13.4,
+          "movementOver1_2Within1s": 64.37,
+          "movementWithin1sDenominator": 567,
+          "movementOver1_2AllGaps": 64.14,
+          "fastSameHandUnder250ms": 76,
+          "sameHandSingleTransitionPercent": 14.91,
+          "identicalBarRepeatPercent": 0.0,
+          "inheritedTimeHandPositionPercent": null,
+          "sharedAccents": 2
+        },
+        "normal": {
+          "notes": 274,
+          "pairs": 14,
+          "pairNotePercent": 10.22,
+          "movementOver1_2Within1s": 44.03,
+          "movementWithin1sDenominator": 159,
+          "movementOver1_2AllGaps": 43.75,
+          "fastSameHandUnder250ms": 0,
+          "sameHandSingleTransitionPercent": 12.65,
+          "identicalBarRepeatPercent": 0.0,
+          "inheritedTimeHandPositionPercent": 100,
+          "sharedAccents": 2
+        },
+        "easy": {
+          "notes": 168,
+          "pairs": 6,
+          "pairNotePercent": 7.14,
+          "movementOver1_2Within1s": 21.43,
+          "movementWithin1sDenominator": 14,
+          "movementOver1_2AllGaps": 46.39,
+          "fastSameHandUnder250ms": 0,
+          "sameHandSingleTransitionPercent": 18.71,
+          "identicalBarRepeatPercent": 2.56,
+          "inheritedTimeHandPositionPercent": 100,
+          "sharedAccents": 2
+        }
+      }
+    }
+  },
+  "materialUpdate": {
+    "added": [
+      "unlimited-noarrows-normal-1",
+      "unlimited-noarrows-normal-2"
+    ],
+    "pending": [
+      {
+        "patternId": "angel-hard-1",
+        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
+        "candidateCount": 48
+      },
+      {
+        "patternId": "angel-hard-2",
+        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
+        "candidateCount": 4
+      },
+      {
+        "patternId": "light-normal-1",
+        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
+        "candidateCount": 0
+      },
+      {
+        "patternId": "light-normal-2",
+        "reason": "近いBPMの打点・休符・4置き場の前後経路・下位包含を同時に満たす未使用区間が今回見つからない。小節素材は保存済み。",
+        "candidateCount": 0
+      }
+    ]
+  },
+  "validation": {
+    "pack": "15譜面合格",
+    "hierarchy": "時刻・手・座標100%包含。共通アクセント・最終カットからの移動間隔・Easy交差なしを検証。",
+    "physicalPlayTest": false,
+    "radiusCaveat": "中心間距離1.2超は運動量の比較指標。半径1.2の判定領域は中心間1.58でも重なり、刃の線分・軌跡もあるため、手を動かす必要を保証しない。"
+  }
+}

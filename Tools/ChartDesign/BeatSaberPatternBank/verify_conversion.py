@@ -6,8 +6,10 @@ REPO=HERE.parents[2]
 def read(p):return json.loads(p.read_text(encoding='utf-8-sig'))
 def main():
  refs=read(HERE/'collection.json')['items'];converted=read(HERE/'converted-patterns.json')['patterns'];apps=read(HERE/'applications.json')['applications']
- ids={x['id'] for x in refs};assert ids=={x['id'] for x in converted}=={a['patternId'] for a in apps}
- assert len(ids)==len(refs)==len(converted)==len(apps)
+ pending=read(HERE/'applications.json').get('pending',[])
+ ids={x['id'] for x in refs};assert ids=={x['id'] for x in converted}==({a['patternId'] for a in apps}|{a['patternId'] for a in pending})
+ assert len(ids)==len(refs)==len(converted)==len(apps)+len(pending)
+ assert all(p.get('reason') for p in pending)
  for item in converted:
   chart=read(HERE/item['chartFile']);assert chart==item['chart']
   assert chart['notes'] and chart['notes']==sorted(chart['notes'],key=lambda n:(n['time'],0 if n['color']=='red' else 1))
@@ -25,5 +27,5 @@ def main():
   assert len(actual)==a['addedNotes'] and a['endBeat']-a['startBeat']==8
   assert a['startBar']==a['startBeat']//4+1
  assert len({(a['songId'],a['difficulty']) for a in apps})==15
- print(json.dumps({'sourceMaterials':len(refs),'converted':len(converted),'applied':len(apps),'affectedCharts':15,'passed':True}))
+ print(json.dumps({'sourceMaterials':len(refs),'converted':len(converted),'applied':len(apps),'pending':len(pending),'affectedCharts':15,'passed':True}))
 if __name__=='__main__':main()
