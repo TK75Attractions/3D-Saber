@@ -16,7 +16,7 @@ public class RushELoadingPlayTests
         bool calibration = GameSession.IsCalibrationMode;
         try
         {
-            foreach (string level in new[] { "Easy", "Normal", "Hard" })
+            foreach (string level in new[] { "Easy", "Normal", "Hard", "E" })
             {
                 GameSession.SelectedSongId = "RushE"; GameSession.SelectedDifficulty = level; GameSession.IsCalibrationMode = false;
                 yield return SceneManager.LoadSceneAsync("Game", LoadSceneMode.Single);

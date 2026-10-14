@@ -20,6 +20,7 @@ public class RushESongTests
     [TestCase("easy")]
     [TestCase("normal")]
     [TestCase("hard")]
+    [TestCase("e")]
     public void EditorRoundTripKeepsEveryAudioTimeAndTempoAnchor(string difficulty)
     {
         string json = File.ReadAllText(Path.Combine(Folder, "chart_" + difficulty + ".json"));
@@ -31,7 +32,10 @@ public class RushESongTests
         Assert.AreEqual(source.notes.Count, result.notes.Count);
         Assert.AreEqual(source.editorTempoMap.Count, result.editorTempoMap.Count);
         Assert.AreEqual(source.displayLevel, result.displayLevel);
-        foreach (var pair in source.notes.Zip(result.notes, (a, b) => (a, b)))
+        // エディターは同時刻の左右を座標順に保存するため、識別できる位置で対応させる。
+        var before = source.notes.OrderBy(n => n.time).ThenBy(n => n.x).ThenBy(n => n.y);
+        var after = result.notes.OrderBy(n => n.time).ThenBy(n => n.x).ThenBy(n => n.y);
+        foreach (var pair in before.Zip(after, (a, b) => (a, b)))
         {
             Assert.AreEqual(pair.a.time, pair.b.time, .001f);
             Assert.AreEqual(pair.a.lengthMs, pair.b.lengthMs, .001f);
@@ -73,6 +77,7 @@ public class RushESongTests
     [TestCase("easy")]
     [TestCase("normal")]
     [TestCase("hard")]
+    [TestCase("e")]
     public void EntireChartCanBeCutAndScoredWithThePlannedHands(string difficulty)
     {
         var random = UnityEngine.Random.state;

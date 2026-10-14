@@ -201,24 +201,9 @@ save(SONG/'stage.json',dict(schemaVersion=1,displayName='RUSH E',composer='Andre
 source=json.loads((ROOT/'Source/provenance.json').read_text(encoding='utf8'))
 save(DESIGN/'source.json',source)
 (SONG/'CREDITS.txt').write_text('RUSH E\nComposed by Andrew Wrangell\nMusic by Sheet Music Boss\nOriginal video: https://www.youtube.com/watch?v=Qskm9MTz2V4\nOfficial audio: https://soundcloud.com/sheetmusicboss/rush-e-impossible3\nUsed with permission for the three-day school festival.\n',encoding='utf8')
-# ジャケットは独自の文字・図形。公式動画の画像を転載しない。
-im=Image.new('RGB',(1024,1024),'#101122');d=ImageDraw.Draw(im)
-for y in range(1024):
-    d.line((0,y,1024,y),fill=(16+int(y*.022),17+int(y*.010),34+int(y*.030)))
-for k in range(12):d.line((k*100-220,0,k*100+300,1024),fill='#353048',width=2)
-fontpath=os.environ.get('RUSH_E_COVER_FONT') or next((str(p) for p in (
-    Path('C:/Windows/Fonts/arialbd.ttf'), Path('/System/Library/Fonts/Supplemental/Arial Bold.ttf'),
-    Path('/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf')) if p.exists()), None)
-if not fontpath:
-    raise SystemExit('RUSH_E_COVER_FONTに太字TrueTypeフォントを指定してください。')
-big=ImageFont.truetype(fontpath,570);small=ImageFont.truetype(fontpath,78);name=ImageFont.truetype(fontpath,26)
-d.text((510,70),'RUSH',font=small,fill='#faf5e9',anchor='mt')
-for off,col in [(13,'#fa5070'),(-10,'#42ded5'),(0,'#faf5e9')]:d.text((512+off,116),'E',font=big,fill=col,anchor='mt')
-for i in range(14):
-    x=54+i*65;d.rounded_rectangle((x,818,x+59,960),radius=5,fill='#f4f0e7')
-    if i%7 not in (2,6):d.rounded_rectangle((x+45,818,x+76,904),radius=3,fill='#151526')
-d.text((512,741),'SHEET MUSIC BOSS',font=name,fill='#f4f0e7',anchor='mt')
-im.save(SONG/'cover.png')
+# YouTube公式ジャケットは原画像を別途取得する。既存画像を描き直さない。
+if (ROOT/'Source/rush-e-youtube.jpg').exists():
+    shutil.copyfile(ROOT/'Source/rush-e-youtube.jpg', SONG/'cover.jpg')
 for p in list((STAGE/'Assets').rglob('*')):
     if p.suffix=='.meta' or p.name.startswith('audio.'):continue
     meta=Path(str(p)+'.meta')

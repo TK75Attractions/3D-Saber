@@ -69,6 +69,29 @@ public class SongSelectController : MonoBehaviour
     // ロック中(譜面が1つも無い)曲のインデックス。譜面を作れば次回から自動で解禁される
     private readonly HashSet<int> lockedIndices = new HashSet<int>();
 
+    public RushESecretState RushESecret { get; } = new RushESecretState();
+    public event System.Action OnRushESecretChanged;
+    public string CurrentDifficultyName => RushESecret.Unlocked ? RushESecretState.Difficulty
+        : difficultyNames != null && selectedDifficulty >= 0 && selectedDifficulty < difficultyNames.Length ? difficultyNames[selectedDifficulty] : "Normal";
+    bool HasRushEChart => SongIdAt(selectedIndex) == RushESecretState.SongId
+        && File.Exists(Path.Combine(Application.streamingAssetsPath, "Songs", RushESecretState.SongId, "chart_e.json"))
+        && LevelFor(RushESecretState.SongId, RushESecretState.Difficulty) > 0;
+    public bool TryRushEHit(double now)
+    {
+        if (ScreenTransition.IsBusy || !HasRushEChart || !RushESecret.TryHit(now)) return false;
+        if (RushESecret.Transitioning) { StopPreview(); RefreshStartAvailability(); OnDifficultyChanged?.Invoke(selectedDifficulty); }
+        OnRushESecretChanged?.Invoke(); return true;
+    }
+    public void RevealRushESecret()
+    {
+        if (!RushESecret.Reveal()) return;
+        RefreshDifficultyDisplay(); RefreshStartAvailability(); OnDifficultyChanged?.Invoke(selectedDifficulty); OnRushESecretChanged?.Invoke();
+    }
+    public void FinishRushESecret()
+    {
+        if (!RushESecret.Finish()) return;
+        RefreshStartAvailability(); OnDifficultyChanged?.Invoke(selectedDifficulty); OnRushESecretChanged?.Invoke(); ReplayPreview();
+    }
     public int SelectedIndex => selectedIndex;
     public int SelectedDifficultyIndex => selectedDifficulty;
     public int SongCount => songIds.Count;
@@ -208,7 +231,7 @@ public class SongSelectController : MonoBehaviour
 
     private bool CanStartSelectedChart => selectedIndex >= 0 && selectedIndex < songIds.Count
         && difficultyNames != null && selectedDifficulty >= 0 && selectedDifficulty < difficultyNames.Length
-        && !SelectedSongLocked && CurrentDifficultyLevel() > 0;
+        && !SelectedSongLocked && !RushESecret.Transitioning && CurrentDifficultyLevel() > 0;
 
     private void RefreshStartAvailability()
     {
@@ -238,6 +261,7 @@ public class SongSelectController : MonoBehaviour
             if (!HasPlayableChart(songIds[i], difficultyNames)) lockedIndices.Add(i);
         }
         selectedIndex = songIds.IndexOf(previousSong);
+        RushESecret.Select(SongIdAt(selectedIndex));
         if (selectedIndex >= 0) StartPreview(songIds[selectedIndex]);
         RefreshDifficultyDisplay();
         RefreshStartAvailability();
@@ -279,6 +303,7 @@ public class SongSelectController : MonoBehaviour
         if (idx < 0 || idx >= songIds.Count) return;
         if (selectedIndex == idx) return;
         selectedIndex = idx;
+        RushESecret.Select(songIds[idx]);
         // 曲送り後に未制作の難易度で行き止まらない。近い難易度を優先する。
         if (DifficultyLevelAt(selectedDifficulty) <= 0 && difficultyNames != null)
         {
@@ -301,12 +326,12 @@ public class SongSelectController : MonoBehaviour
     // 選択中の曲×難易度のレベル(1〜10)。譜面なし/空は 0。
     public int CurrentDifficultyLevel()
     {
-        return DifficultyLevelAt(selectedDifficulty);
+        return RushESecret.Unlocked ? (HasRushEChart ? LevelFor(RushESecretState.SongId, RushESecretState.Difficulty) : 0) : DifficultyLevelAt(selectedDifficulty);
     }
 
     public int CurrentDifficultyDisplayLevel()
     {
-        return DifficultyDisplayLevelAt(selectedDifficulty);
+        return RushESecret.Unlocked ? (HasRushEChart ? 10 : 0) : DifficultyDisplayLevelAt(selectedDifficulty);
     }
 
     // 表示用レベル(選択中の曲)。実装は DisplayLevelFor を参照。
@@ -405,9 +430,9 @@ public class SongSelectController : MonoBehaviour
     private void RefreshDifficultyDisplay()
     {
         if (difficultyDisplay == null || difficultyNames == null || difficultyNames.Length == 0) return;
-        string name = difficultyNames[Mathf.Clamp(selectedDifficulty, 0, difficultyNames.Length - 1)];
+        string name = CurrentDifficultyName;
         int level = CurrentDifficultyDisplayLevel();
-        difficultyDisplay.text = level > 0 ? $"{name}  {level}" : name;
+        difficultyDisplay.text = RushESecret.Unlocked ? "E" : level > 0 ? $"{name}  {level}" : name;
     }
 
     private void Move(int delta)
@@ -454,6 +479,7 @@ public class SongSelectController : MonoBehaviour
         Sprite sprite = null;
         Texture2D texture = null;
         string path = Path.Combine(Application.streamingAssetsPath, "Songs", songId, "cover.png");
+        if (!File.Exists(path)) path = Path.Combine(Application.streamingAssetsPath, "Songs", songId, "cover.jpg");
         try
         {
             if (File.Exists(path))
@@ -487,10 +513,10 @@ public class SongSelectController : MonoBehaviour
 
     private void StartPreview(string songId)
     {
-        if (!Application.isPlaying || previewSource == null || SelectedSongLocked) return;
+        if (!Application.isPlaying || previewSource == null || SelectedSongLocked || RushESecret.Transitioning) return;
         if (difficultyNames == null || selectedDifficulty >= difficultyNames.Length) return;
         EnsureChartPreview();
-        chartPreview.Select(songId, difficultyNames[selectedDifficulty], previewDuration);
+        chartPreview.Select(songId, CurrentDifficultyName, previewDuration);
     }
 
     private void EnsureChartPreview()
@@ -512,9 +538,9 @@ public class SongSelectController : MonoBehaviour
     {
         if (selectedIndex < 0 || selectedIndex >= songIds.Count || difficultyNames == null
             || selectedDifficulty < 0 || selectedDifficulty >= difficultyNames.Length) return SongChartInsights.Empty;
-        string key = songIds[selectedIndex] + "::" + difficultyNames[selectedDifficulty];
+        string key = songIds[selectedIndex] + "::" + CurrentDifficultyName;
         if (insightsCache.TryGetValue(key, out var value)) return value;
-        try { value = SongChartInsights.From(ChartLoader.LoadFromStreamingAssets(songIds[selectedIndex], difficultyNames[selectedDifficulty])); }
+        try { value = SongChartInsights.From(ChartLoader.LoadFromStreamingAssets(songIds[selectedIndex], CurrentDifficultyName)); }
         catch (System.Exception) { value = SongChartInsights.Empty; }
         insightsCache[key] = value;
         return value;
@@ -545,6 +571,7 @@ public class SongSelectController : MonoBehaviour
 
     public void ChangeDifficulty(int delta)
     {
+        if (RushESecret.Unlocked || RushESecret.Transitioning) return;
         if (difficultyNames == null || difficultyNames.Length == 0) return;
         if (delta == 0) return;
         int direction = delta < 0 ? -1 : 1;
@@ -557,6 +584,7 @@ public class SongSelectController : MonoBehaviour
 
     public void SetDifficulty(int idx)
     {
+        if (RushESecret.Unlocked || RushESecret.Transitioning) return;
         if (difficultyNames == null || difficultyNames.Length == 0) return;
         idx = Mathf.Clamp(idx, 0, difficultyNames.Length - 1);
         bool changed = selectedDifficulty != idx;
@@ -581,12 +609,12 @@ public class SongSelectController : MonoBehaviour
 
     public void StartGame()
     {
-        if (ScreenTransition.IsBusy) return;
+        if (ScreenTransition.IsBusy || RushESecret.Transitioning) return;
         if (selectedIndex < 0 || selectedIndex >= songIds.Count) return;
         if (SelectedSongLocked) return; // ロック曲(譜面未制作)は開始できない
         if (difficultyNames == null || selectedDifficulty < 0 || selectedDifficulty >= difficultyNames.Length) return;
         // 選曲中に編集・削除された譜面も、開始直前には読み直す。
-        string key = songIds[selectedIndex] + "::" + difficultyNames[selectedDifficulty];
+        string key = songIds[selectedIndex] + "::" + CurrentDifficultyName;
         levelCache.Remove(key);
         authoredLevelCache.Remove(key);
         RefreshStartAvailability();
@@ -602,9 +630,7 @@ public class SongSelectController : MonoBehaviour
         GameSession.IsCalibrationMode = false;
         GameSession.SelectedSongId = songIds[selectedIndex];
         GameSession.SelectedSongTitle = DisplaySongTitle(songIds[selectedIndex]);
-        GameSession.SelectedDifficulty = (selectedDifficulty < difficultyNames.Length)
-            ? difficultyNames[selectedDifficulty]
-            : "Normal";
+        GameSession.SelectedDifficulty = CurrentDifficultyName;
         GameSession.ResetResult();
     }
 }

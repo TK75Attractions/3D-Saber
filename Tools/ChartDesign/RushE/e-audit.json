@@ -1,0 +1,17 @@
+{
+  "notes": 852,
+  "cuts": 890,
+  "types": {
+    "tap": 838,
+    "long": 14
+  },
+  "simultaneousGroups": 48,
+  "maximumSwingSpeed": 3.8504,
+  "minimumSameHandGapMs": 144.67,
+  "onsetThreshold": 0.35,
+  "minimumDistinctAttackGapMs": 75,
+  "firstNoteMs": 94.78,
+  "lastNoteEndMs": 137660.27,
+  "longDesign": "All roll cuts follow detected attacks; the sustained final chord uses five evenly spaced cuts per hand.",
+  "flicks": 0
+}

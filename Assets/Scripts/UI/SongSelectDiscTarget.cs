@@ -6,6 +6,8 @@ using UnityEngine.UI;
 public sealed class SongSelectDiscTarget : MonoBehaviour, ICanvasRaycastFilter, IPointerEnterHandler, IPointerExitHandler
 {
     public float HoldSeconds = 1;
+    // かざして発射したときの動作。盤のクリックによる秘密の打音とは分ける。
+    public System.Func<bool> ShootOverride;
     public bool Circle;
     public RectTransform HitArea;
     public float BottomInset;
@@ -40,6 +42,7 @@ public sealed class SongSelectDiscTarget : MonoBehaviour, ICanvasRaycastFilter, 
     public bool TryShoot()
     {
         if (!Available || ScreenTransition.IsBusy) return false;
+        if (ShootOverride != null) return ShootOverride();
         Button.onClick.Invoke(); return true;
     }
     public void OnPointerEnter(PointerEventData e) { Hovered = true; }

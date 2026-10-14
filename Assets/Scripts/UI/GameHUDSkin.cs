@@ -47,6 +47,7 @@ public class GameHUDSkin : MonoBehaviour
     public static Color DifficultyColor(string difficulty)
     {
         string d = string.IsNullOrEmpty(difficulty) ? "" : difficulty.ToLowerInvariant();
+        if (d == "e") return RushESecretState.Purple;
         if (d == "easy") return UISkinPalette.LogoGreen;
         if (d == "hard") return UISkinPalette.LogoRed;
         return UISkinPalette.LogoBlue; // normal / 不明

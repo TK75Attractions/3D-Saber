@@ -69,6 +69,20 @@ public sealed class SongSelectCorridor : MonoBehaviour
     int nextBeat, barNumber;
     float l, r, wall, ring, fan, glow;
     Color ringColor = Color.white;
+    public bool SecretTheme { get; private set; }
+    public void SetSecretTheme(bool on)
+    {
+        SecretTheme = on;
+        if (view == null) return;
+        view.backgroundColor = on ? new Color(.07f,.005f,.14f) : new Color(.009f,.015f,.03f);
+        left.color = on ? new Color(.65f,.13f,1) : new Color(1,.18f,.30f);
+        right.color = on ? new Color(.88f,.23f,1) : new Color(.18f,.55f,1);
+        edge.color = on ? new Color(.77f,.45f,1) : new Color(.65f,1,1);
+        fanLight.color = on ? new Color(.77f,.42f,1) : Color.white;
+        centerHaze.SetColor("_Tint", on ? new Color(.58f,.08f,1,.42f) : new Color(.27f,1,.97f,.22f));
+        leftHaze.SetColor("_Tint", on ? new Color(.6f,.02f,1,.35f) : new Color(1,.18f,.3f,.2f));
+        rightHaze.SetColor("_Tint", on ? new Color(.8f,.1f,1,.35f) : new Color(.18f,.55f,1,.2f));
+    }
     public float CenterPulse { get; private set; }
     public RenderTexture Texture => texture;
     public Camera ViewCamera => view;
@@ -243,7 +257,7 @@ public sealed class SongSelectCorridor : MonoBehaviour
             previousSongTime=time;
         }
         Tint(left,Mathf.Max(wall,l),.55f,.45f); Tint(right,Mathf.Max(wall,r),.55f,.45f);
-        ringLight.color=ringColor; Tint(ringLight,ring,.3f,.7f); Tint(fanLight,fan,.12f,.6f); Tint(edge,glow,.6f,.4f);
+        ringLight.color=SecretTheme ? RushESecretState.Purple : ringColor; Tint(ringLight,ring,.3f,.7f); Tint(fanLight,fan,.12f,.6f); Tint(edge,glow,.6f,.4f);
         SetAlpha(centerHaze,.22f+.20f*glow); SetAlpha(leftHaze,.2f+.22f*Mathf.Max(glow,.5f*l)); SetAlpha(rightHaze,.2f+.22f*Mathf.Max(glow,.5f*r));
         for(int i=0;i<8;i++)
         {

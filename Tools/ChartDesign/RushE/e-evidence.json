@@ -1,0 +1,7708 @@
+[
+  {
+    "index": 0,
+    "timeMs": 94.78,
+    "strength": 1.079,
+    "role": "attack",
+    "cutTimesMs": [
+      94.78
+    ]
+  },
+  {
+    "index": 1,
+    "timeMs": 4095.69,
+    "strength": 1.059,
+    "role": "attack",
+    "cutTimesMs": [
+      4095.69
+    ]
+  },
+  {
+    "index": 2,
+    "timeMs": 5806.8,
+    "strength": 1.072,
+    "role": "attack",
+    "cutTimesMs": [
+      5806.8
+    ]
+  },
+  {
+    "index": 3,
+    "timeMs": 7113.83,
+    "strength": 1.077,
+    "role": "attack",
+    "cutTimesMs": [
+      7113.83
+    ]
+  },
+  {
+    "index": 4,
+    "timeMs": 7672.56,
+    "strength": 1.062,
+    "role": "attack",
+    "cutTimesMs": [
+      7672.56
+    ]
+  },
+  {
+    "index": 5,
+    "timeMs": 8176.42,
+    "strength": 1.012,
+    "role": "attack",
+    "cutTimesMs": [
+      8176.42
+    ]
+  },
+  {
+    "index": 6,
+    "timeMs": 8490.7,
+    "strength": 1.007,
+    "role": "attack",
+    "cutTimesMs": [
+      8490.7
+    ]
+  },
+  {
+    "index": 7,
+    "timeMs": 8790.02,
+    "strength": 0.961,
+    "role": "attack",
+    "cutTimesMs": [
+      8790.02
+    ]
+  },
+  {
+    "index": 8,
+    "timeMs": 9074.38,
+    "strength": 0.93,
+    "role": "attack",
+    "cutTimesMs": [
+      9074.38
+    ]
+  },
+  {
+    "index": 9,
+    "timeMs": 9273.92,
+    "strength": 0.899,
+    "role": "attack",
+    "cutTimesMs": [
+      9273.92
+    ]
+  },
+  {
+    "index": 10,
+    "timeMs": 9468.48,
+    "strength": 0.808,
+    "role": "attack",
+    "cutTimesMs": [
+      9468.48
+    ]
+  },
+  {
+    "index": 11,
+    "timeMs": 9663.04,
+    "strength": 0.895,
+    "role": "attack",
+    "cutTimesMs": [
+      9663.04
+    ]
+  },
+  {
+    "index": 12,
+    "timeMs": 9842.63,
+    "strength": 0.903,
+    "role": "attack",
+    "cutTimesMs": [
+      9842.63
+    ]
+  },
+  {
+    "index": 13,
+    "timeMs": 10022.22,
+    "strength": 0.874,
+    "role": "attack",
+    "cutTimesMs": [
+      10022.22
+    ]
+  },
+  {
+    "index": 14,
+    "timeMs": 10191.84,
+    "strength": 0.855,
+    "role": "attack",
+    "cutTimesMs": [
+      10191.84
+    ]
+  },
+  {
+    "index": 15,
+    "timeMs": 10361.45,
+    "strength": 0.881,
+    "role": "attack",
+    "cutTimesMs": [
+      10361.45
+    ]
+  },
+  {
+    "index": 16,
+    "timeMs": 10521.09,
+    "strength": 0.885,
+    "role": "attack",
+    "cutTimesMs": [
+      10521.09
+    ]
+  },
+  {
+    "index": 17,
+    "timeMs": 10670.75,
+    "strength": 0.815,
+    "role": "attack",
+    "cutTimesMs": [
+      10670.75
+    ]
+  },
+  {
+    "index": 18,
+    "timeMs": 10805.44,
+    "strength": 0.751,
+    "role": "attack",
+    "cutTimesMs": [
+      10805.44
+    ]
+  },
+  {
+    "index": 19,
+    "timeMs": 10930.16,
+    "strength": 0.613,
+    "role": "attack",
+    "cutTimesMs": [
+      10930.16
+    ]
+  },
+  {
+    "index": 20,
+    "timeMs": 11039.91,
+    "strength": 1.015,
+    "role": "attack",
+    "cutTimesMs": [
+      11039.91
+    ]
+  },
+  {
+    "index": 21,
+    "timeMs": 11144.67,
+    "strength": 0.949,
+    "role": "attack",
+    "cutTimesMs": [
+      11144.67
+    ]
+  },
+  {
+    "index": 22,
+    "timeMs": 11234.47,
+    "strength": 1.211,
+    "role": "attack",
+    "cutTimesMs": [
+      11234.47
+    ]
+  },
+  {
+    "index": 23,
+    "timeMs": 11324.26,
+    "strength": 1.19,
+    "role": "attack",
+    "cutTimesMs": [
+      11324.26
+    ]
+  },
+  {
+    "index": 24,
+    "timeMs": 11409.07,
+    "strength": 1.271,
+    "role": "attack",
+    "cutTimesMs": [
+      11409.07
+    ]
+  },
+  {
+    "index": 25,
+    "timeMs": 11488.89,
+    "strength": 1.263,
+    "role": "attack",
+    "cutTimesMs": [
+      11488.89
+    ]
+  },
+  {
+    "index": 26,
+    "timeMs": 11693.42,
+    "strength": 1.362,
+    "role": "attack",
+    "cutTimesMs": [
+      11693.42
+    ]
+  },
+  {
+    "index": 27,
+    "timeMs": 11927.89,
+    "strength": 0.991,
+    "role": "attack",
+    "cutTimesMs": [
+      11927.89
+    ]
+  },
+  {
+    "index": 28,
+    "timeMs": 12032.65,
+    "strength": 0.572,
+    "role": "attack",
+    "cutTimesMs": [
+      12032.65
+    ]
+  },
+  {
+    "index": 29,
+    "timeMs": 12132.43,
+    "strength": 1.009,
+    "role": "attack",
+    "cutTimesMs": [
+      12132.43
+    ]
+  },
+  {
+    "index": 30,
+    "timeMs": 12217.23,
+    "strength": 0.695,
+    "role": "attack",
+    "cutTimesMs": [
+      12217.23
+    ]
+  },
+  {
+    "index": 31,
+    "timeMs": 12302.04,
+    "strength": 0.621,
+    "role": "attack",
+    "cutTimesMs": [
+      12302.04
+    ]
+  },
+  {
+    "index": 32,
+    "timeMs": 12451.7,
+    "strength": 0.75,
+    "role": "attack",
+    "cutTimesMs": [
+      12451.7
+    ]
+  },
+  {
+    "index": 33,
+    "timeMs": 12591.38,
+    "strength": 1.174,
+    "role": "attack",
+    "cutTimesMs": [
+      12591.38
+    ]
+  },
+  {
+    "index": 34,
+    "timeMs": 12691.16,
+    "strength": 0.59,
+    "role": "attack",
+    "cutTimesMs": [
+      12691.16
+    ]
+  },
+  {
+    "index": 35,
+    "timeMs": 12825.85,
+    "strength": 0.432,
+    "role": "attack",
+    "cutTimesMs": [
+      12825.85
+    ]
+  },
+  {
+    "index": 36,
+    "timeMs": 13110.2,
+    "strength": 0.39,
+    "role": "attack",
+    "cutTimesMs": [
+      13110.2
+    ]
+  },
+  {
+    "index": 37,
+    "timeMs": 13529.25,
+    "strength": 1.079,
+    "role": "chord",
+    "cutTimesMs": [
+      13529.25
+    ]
+  },
+  {
+    "index": 38,
+    "timeMs": 13529.25,
+    "strength": 1.079,
+    "role": "chord",
+    "cutTimesMs": [
+      13529.25
+    ]
+  },
+  {
+    "index": 39,
+    "timeMs": 14402.27,
+    "strength": 1.349,
+    "role": "attack",
+    "cutTimesMs": [
+      14402.27
+    ]
+  },
+  {
+    "index": 40,
+    "timeMs": 15190.48,
+    "strength": 1.619,
+    "role": "chord",
+    "cutTimesMs": [
+      15190.48
+    ]
+  },
+  {
+    "index": 41,
+    "timeMs": 15190.48,
+    "strength": 1.619,
+    "role": "chord",
+    "cutTimesMs": [
+      15190.48
+    ]
+  },
+  {
+    "index": 42,
+    "timeMs": 15858.96,
+    "strength": 0.681,
+    "role": "attack",
+    "cutTimesMs": [
+      15858.96
+    ]
+  },
+  {
+    "index": 43,
+    "timeMs": 16033.56,
+    "strength": 0.535,
+    "role": "attack",
+    "cutTimesMs": [
+      16033.56
+    ]
+  },
+  {
+    "index": 44,
+    "timeMs": 16228.12,
+    "strength": 0.381,
+    "role": "attack",
+    "cutTimesMs": [
+      16228.12
+    ]
+  },
+  {
+    "index": 45,
+    "timeMs": 16756.92,
+    "strength": 0.79,
+    "role": "attack",
+    "cutTimesMs": [
+      16756.92
+    ]
+  },
+  {
+    "index": 46,
+    "timeMs": 17525.17,
+    "strength": 1.241,
+    "role": "chord",
+    "cutTimesMs": [
+      17525.17
+    ]
+  },
+  {
+    "index": 47,
+    "timeMs": 17525.17,
+    "strength": 1.241,
+    "role": "chord",
+    "cutTimesMs": [
+      17525.17
+    ]
+  },
+  {
+    "index": 48,
+    "timeMs": 18223.58,
+    "strength": 1.55,
+    "role": "attack",
+    "cutTimesMs": [
+      18223.58
+    ]
+  },
+  {
+    "index": 49,
+    "timeMs": 18897.05,
+    "strength": 1.637,
+    "role": "attack",
+    "cutTimesMs": [
+      18897.05
+    ]
+  },
+  {
+    "index": 50,
+    "timeMs": 19211.34,
+    "strength": 0.568,
+    "role": "attack",
+    "cutTimesMs": [
+      19211.34
+    ]
+  },
+  {
+    "index": 51,
+    "timeMs": 19525.62,
+    "strength": 0.977,
+    "role": "attack",
+    "cutTimesMs": [
+      19525.62
+    ]
+  },
+  {
+    "index": 52,
+    "timeMs": 19819.95,
+    "strength": 0.844,
+    "role": "attack",
+    "cutTimesMs": [
+      19819.95
+    ]
+  },
+  {
+    "index": 53,
+    "timeMs": 20119.27,
+    "strength": 1.377,
+    "role": "chord",
+    "cutTimesMs": [
+      20119.27
+    ]
+  },
+  {
+    "index": 54,
+    "timeMs": 20119.27,
+    "strength": 1.377,
+    "role": "chord",
+    "cutTimesMs": [
+      20119.27
+    ]
+  },
+  {
+    "index": 55,
+    "timeMs": 20418.59,
+    "strength": 0.675,
+    "role": "attack",
+    "cutTimesMs": [
+      20418.59
+    ]
+  },
+  {
+    "index": 56,
+    "timeMs": 20712.93,
+    "strength": 1.205,
+    "role": "attack",
+    "cutTimesMs": [
+      20712.93
+    ]
+  },
+  {
+    "index": 57,
+    "timeMs": 21012.24,
+    "strength": 0.815,
+    "role": "attack",
+    "cutTimesMs": [
+      21012.24
+    ]
+  },
+  {
+    "index": 58,
+    "timeMs": 21306.58,
+    "strength": 1.588,
+    "role": "attack",
+    "cutTimesMs": [
+      21306.58
+    ]
+  },
+  {
+    "index": 59,
+    "timeMs": 21600.91,
+    "strength": 0.906,
+    "role": "attack",
+    "cutTimesMs": [
+      21600.91
+    ]
+  },
+  {
+    "index": 60,
+    "timeMs": 21885.26,
+    "strength": 1.377,
+    "role": "chord",
+    "cutTimesMs": [
+      21885.26
+    ]
+  },
+  {
+    "index": 61,
+    "timeMs": 21885.26,
+    "strength": 1.377,
+    "role": "chord",
+    "cutTimesMs": [
+      21885.26
+    ]
+  },
+  {
+    "index": 62,
+    "timeMs": 22174.6,
+    "strength": 0.823,
+    "role": "attack",
+    "cutTimesMs": [
+      22174.6
+    ]
+  },
+  {
+    "index": 63,
+    "timeMs": 22453.97,
+    "strength": 1.395,
+    "role": "attack",
+    "cutTimesMs": [
+      22453.97
+    ]
+  },
+  {
+    "index": 64,
+    "timeMs": 22728.34,
+    "strength": 0.737,
+    "role": "attack",
+    "cutTimesMs": [
+      22728.34
+    ]
+  },
+  {
+    "index": 65,
+    "timeMs": 23002.72,
+    "strength": 1.172,
+    "role": "attack",
+    "cutTimesMs": [
+      23002.72
+    ]
+  },
+  {
+    "index": 66,
+    "timeMs": 23257.14,
+    "strength": 0.767,
+    "role": "attack",
+    "cutTimesMs": [
+      23257.14
+    ]
+  },
+  {
+    "index": 67,
+    "timeMs": 23516.55,
+    "strength": 1.488,
+    "role": "chord",
+    "cutTimesMs": [
+      23516.55
+    ]
+  },
+  {
+    "index": 68,
+    "timeMs": 23516.55,
+    "strength": 1.488,
+    "role": "chord",
+    "cutTimesMs": [
+      23516.55
+    ]
+  },
+  {
+    "index": 69,
+    "timeMs": 23775.96,
+    "strength": 0.586,
+    "role": "attack",
+    "cutTimesMs": [
+      23775.96
+    ]
+  },
+  {
+    "index": 70,
+    "timeMs": 24030.39,
+    "strength": 0.779,
+    "role": "attack",
+    "cutTimesMs": [
+      24030.39
+    ]
+  },
+  {
+    "index": 71,
+    "timeMs": 24279.82,
+    "strength": 0.693,
+    "role": "attack",
+    "cutTimesMs": [
+      24279.82
+    ]
+  },
+  {
+    "index": 72,
+    "timeMs": 24519.27,
+    "strength": 1.526,
+    "role": "attack",
+    "cutTimesMs": [
+      24519.27
+    ]
+  },
+  {
+    "index": 73,
+    "timeMs": 24993.2,
+    "strength": 1.288,
+    "role": "attack",
+    "cutTimesMs": [
+      24993.2
+    ]
+  },
+  {
+    "index": 74,
+    "timeMs": 25073.02,
+    "strength": 0.419,
+    "role": "attack",
+    "cutTimesMs": [
+      25073.02
+    ]
+  },
+  {
+    "index": 75,
+    "timeMs": 25227.66,
+    "strength": 0.971,
+    "role": "attack",
+    "cutTimesMs": [
+      25227.66
+    ]
+  },
+  {
+    "index": 76,
+    "timeMs": 25467.12,
+    "strength": 1.326,
+    "role": "chord",
+    "cutTimesMs": [
+      25467.12
+    ]
+  },
+  {
+    "index": 77,
+    "timeMs": 25467.12,
+    "strength": 1.326,
+    "role": "chord",
+    "cutTimesMs": [
+      25467.12
+    ]
+  },
+  {
+    "index": 78,
+    "timeMs": 25936.05,
+    "strength": 1.052,
+    "role": "attack",
+    "cutTimesMs": [
+      25936.05
+    ]
+  },
+  {
+    "index": 79,
+    "timeMs": 26395.01,
+    "strength": 1.414,
+    "role": "attack",
+    "cutTimesMs": [
+      26395.01
+    ]
+  },
+  {
+    "index": 80,
+    "timeMs": 26834.01,
+    "strength": 0.964,
+    "role": "attack",
+    "cutTimesMs": [
+      26834.01
+    ]
+  },
+  {
+    "index": 81,
+    "timeMs": 27248.07,
+    "strength": 1.442,
+    "role": "chord",
+    "cutTimesMs": [
+      27248.07
+    ]
+  },
+  {
+    "index": 82,
+    "timeMs": 27248.07,
+    "strength": 1.442,
+    "role": "chord",
+    "cutTimesMs": [
+      27248.07
+    ]
+  },
+  {
+    "index": 83,
+    "timeMs": 27457.6,
+    "strength": 0.766,
+    "role": "attack",
+    "cutTimesMs": [
+      27457.6
+    ]
+  },
+  {
+    "index": 84,
+    "timeMs": 27662.13,
+    "strength": 1.556,
+    "role": "attack",
+    "cutTimesMs": [
+      27662.13
+    ]
+  },
+  {
+    "index": 85,
+    "timeMs": 27871.66,
+    "strength": 0.542,
+    "role": "attack",
+    "cutTimesMs": [
+      27871.66
+    ]
+  },
+  {
+    "index": 86,
+    "timeMs": 28076.19,
+    "strength": 1.167,
+    "role": "attack",
+    "cutTimesMs": [
+      28076.19
+    ]
+  },
+  {
+    "index": 87,
+    "timeMs": 28275.74,
+    "strength": 0.354,
+    "role": "attack",
+    "cutTimesMs": [
+      28275.74
+    ]
+  },
+  {
+    "index": 88,
+    "timeMs": 28465.31,
+    "strength": 1.543,
+    "role": "attack",
+    "cutTimesMs": [
+      28465.31
+    ]
+  },
+  {
+    "index": 89,
+    "timeMs": 28659.86,
+    "strength": 0.562,
+    "role": "attack",
+    "cutTimesMs": [
+      28659.86
+    ]
+  },
+  {
+    "index": 90,
+    "timeMs": 28859.41,
+    "strength": 1.257,
+    "role": "chord",
+    "cutTimesMs": [
+      28859.41
+    ]
+  },
+  {
+    "index": 91,
+    "timeMs": 28859.41,
+    "strength": 1.257,
+    "role": "chord",
+    "cutTimesMs": [
+      28859.41
+    ]
+  },
+  {
+    "index": 92,
+    "timeMs": 29058.96,
+    "strength": 0.369,
+    "role": "attack",
+    "cutTimesMs": [
+      29058.96
+    ]
+  },
+  {
+    "index": 93,
+    "timeMs": 29253.51,
+    "strength": 1.318,
+    "role": "attack",
+    "cutTimesMs": [
+      29253.51
+    ]
+  },
+  {
+    "index": 94,
+    "timeMs": 29443.08,
+    "strength": 0.474,
+    "role": "attack",
+    "cutTimesMs": [
+      29443.08
+    ]
+  },
+  {
+    "index": 95,
+    "timeMs": 29632.65,
+    "strength": 1.022,
+    "role": "attack",
+    "cutTimesMs": [
+      29632.65
+    ]
+  },
+  {
+    "index": 96,
+    "timeMs": 29822.22,
+    "strength": 0.653,
+    "role": "attack",
+    "cutTimesMs": [
+      29822.22
+    ]
+  },
+  {
+    "index": 97,
+    "timeMs": 30016.78,
+    "strength": 1.432,
+    "role": "attack",
+    "cutTimesMs": [
+      30016.78
+    ]
+  },
+  {
+    "index": 98,
+    "timeMs": 30206.35,
+    "strength": 0.354,
+    "role": "attack",
+    "cutTimesMs": [
+      30206.35
+    ]
+  },
+  {
+    "index": 99,
+    "timeMs": 30400.91,
+    "strength": 1.285,
+    "role": "chord",
+    "cutTimesMs": [
+      30400.91
+    ]
+  },
+  {
+    "index": 100,
+    "timeMs": 30400.91,
+    "strength": 1.285,
+    "role": "chord",
+    "cutTimesMs": [
+      30400.91
+    ]
+  },
+  {
+    "index": 101,
+    "timeMs": 30585.49,
+    "strength": 0.593,
+    "role": "attack",
+    "cutTimesMs": [
+      30585.49
+    ]
+  },
+  {
+    "index": 102,
+    "timeMs": 30765.08,
+    "strength": 1.448,
+    "role": "attack",
+    "cutTimesMs": [
+      30765.08
+    ]
+  },
+  {
+    "index": 103,
+    "timeMs": 30944.67,
+    "strength": 0.548,
+    "role": "attack",
+    "cutTimesMs": [
+      30944.67
+    ]
+  },
+  {
+    "index": 104,
+    "timeMs": 31129.25,
+    "strength": 1.242,
+    "role": "attack",
+    "cutTimesMs": [
+      31129.25
+    ]
+  },
+  {
+    "index": 105,
+    "timeMs": 31473.47,
+    "strength": 1.398,
+    "role": "attack",
+    "cutTimesMs": [
+      31473.47
+    ]
+  },
+  {
+    "index": 106,
+    "timeMs": 31822.68,
+    "strength": 1.599,
+    "role": "attack",
+    "cutTimesMs": [
+      31822.68
+    ]
+  },
+  {
+    "index": 107,
+    "timeMs": 32521.09,
+    "strength": 1.685,
+    "role": "chord",
+    "cutTimesMs": [
+      32521.09
+    ]
+  },
+  {
+    "index": 108,
+    "timeMs": 32521.09,
+    "strength": 1.685,
+    "role": "chord",
+    "cutTimesMs": [
+      32521.09
+    ]
+  },
+  {
+    "index": 109,
+    "timeMs": 33119.73,
+    "strength": 0.63,
+    "role": "attack",
+    "cutTimesMs": [
+      33119.73
+    ]
+  },
+  {
+    "index": 110,
+    "timeMs": 33219.5,
+    "strength": 0.644,
+    "role": "attack",
+    "cutTimesMs": [
+      33219.5
+    ]
+  },
+  {
+    "index": 111,
+    "timeMs": 33568.71,
+    "strength": 0.619,
+    "role": "attack",
+    "cutTimesMs": [
+      33568.71
+    ]
+  },
+  {
+    "index": 112,
+    "timeMs": 33673.47,
+    "strength": 0.413,
+    "role": "attack",
+    "cutTimesMs": [
+      33673.47
+    ]
+  },
+  {
+    "index": 113,
+    "timeMs": 33902.95,
+    "strength": 1.257,
+    "role": "attack",
+    "cutTimesMs": [
+      33902.95
+    ]
+  },
+  {
+    "index": 114,
+    "timeMs": 34067.57,
+    "strength": 0.409,
+    "role": "attack",
+    "cutTimesMs": [
+      34067.57
+    ]
+  },
+  {
+    "index": 115,
+    "timeMs": 34237.19,
+    "strength": 1.37,
+    "role": "chord",
+    "cutTimesMs": [
+      34237.19
+    ]
+  },
+  {
+    "index": 116,
+    "timeMs": 34237.19,
+    "strength": 1.37,
+    "role": "chord",
+    "cutTimesMs": [
+      34237.19
+    ]
+  },
+  {
+    "index": 117,
+    "timeMs": 34401.81,
+    "strength": 0.5,
+    "role": "attack",
+    "cutTimesMs": [
+      34401.81
+    ]
+  },
+  {
+    "index": 118,
+    "timeMs": 34556.46,
+    "strength": 1.239,
+    "role": "attack",
+    "cutTimesMs": [
+      34556.46
+    ]
+  },
+  {
+    "index": 119,
+    "timeMs": 34860.77,
+    "strength": 0.825,
+    "role": "attack",
+    "cutTimesMs": [
+      34860.77
+    ]
+  },
+  {
+    "index": 120,
+    "timeMs": 35020.41,
+    "strength": 0.438,
+    "role": "attack",
+    "cutTimesMs": [
+      35020.41
+    ]
+  },
+  {
+    "index": 121,
+    "timeMs": 35165.08,
+    "strength": 1.34,
+    "role": "attack",
+    "cutTimesMs": [
+      35165.08
+    ]
+  },
+  {
+    "index": 122,
+    "timeMs": 35469.39,
+    "strength": 1.107,
+    "role": "attack",
+    "cutTimesMs": [
+      35469.39
+    ]
+  },
+  {
+    "index": 123,
+    "timeMs": 35629.02,
+    "strength": 0.453,
+    "role": "attack",
+    "cutTimesMs": [
+      35629.02
+    ]
+  },
+  {
+    "index": 124,
+    "timeMs": 35773.7,
+    "strength": 1.136,
+    "role": "chord",
+    "cutTimesMs": [
+      35773.7
+    ]
+  },
+  {
+    "index": 125,
+    "timeMs": 35773.7,
+    "strength": 1.136,
+    "role": "chord",
+    "cutTimesMs": [
+      35773.7
+    ]
+  },
+  {
+    "index": 126,
+    "timeMs": 36073.02,
+    "strength": 0.566,
+    "role": "attack",
+    "cutTimesMs": [
+      36073.02
+    ]
+  },
+  {
+    "index": 127,
+    "timeMs": 36212.7,
+    "strength": 0.533,
+    "role": "attack",
+    "cutTimesMs": [
+      36212.7
+    ]
+  },
+  {
+    "index": 128,
+    "timeMs": 36362.36,
+    "strength": 1.002,
+    "role": "attack",
+    "cutTimesMs": [
+      36362.36
+    ]
+  },
+  {
+    "index": 129,
+    "timeMs": 36636.73,
+    "strength": 0.998,
+    "role": "attack",
+    "cutTimesMs": [
+      36636.73
+    ]
+  },
+  {
+    "index": 130,
+    "timeMs": 36776.42,
+    "strength": 0.573,
+    "role": "attack",
+    "cutTimesMs": [
+      36776.42
+    ]
+  },
+  {
+    "index": 131,
+    "timeMs": 36911.11,
+    "strength": 0.94,
+    "role": "attack",
+    "cutTimesMs": [
+      36911.11
+    ]
+  },
+  {
+    "index": 132,
+    "timeMs": 37175.51,
+    "strength": 0.693,
+    "role": "attack",
+    "cutTimesMs": [
+      37175.51
+    ]
+  },
+  {
+    "index": 133,
+    "timeMs": 37439.91,
+    "strength": 1.075,
+    "role": "chord",
+    "cutTimesMs": [
+      37439.91
+    ]
+  },
+  {
+    "index": 134,
+    "timeMs": 37439.91,
+    "strength": 1.075,
+    "role": "chord",
+    "cutTimesMs": [
+      37439.91
+    ]
+  },
+  {
+    "index": 135,
+    "timeMs": 37704.31,
+    "strength": 0.905,
+    "role": "attack",
+    "cutTimesMs": [
+      37704.31
+    ]
+  },
+  {
+    "index": 136,
+    "timeMs": 37963.72,
+    "strength": 1.133,
+    "role": "attack",
+    "cutTimesMs": [
+      37963.72
+    ]
+  },
+  {
+    "index": 137,
+    "timeMs": 38228.12,
+    "strength": 0.915,
+    "role": "attack",
+    "cutTimesMs": [
+      38228.12
+    ]
+  },
+  {
+    "index": 138,
+    "timeMs": 38352.83,
+    "strength": 0.421,
+    "role": "attack",
+    "cutTimesMs": [
+      38352.83
+    ]
+  },
+  {
+    "index": 139,
+    "timeMs": 38467.57,
+    "strength": 1.057,
+    "role": "attack",
+    "cutTimesMs": [
+      38467.57
+    ]
+  },
+  {
+    "index": 140,
+    "timeMs": 38707.03,
+    "strength": 1.124,
+    "role": "attack",
+    "cutTimesMs": [
+      38707.03
+    ]
+  },
+  {
+    "index": 141,
+    "timeMs": 38941.5,
+    "strength": 0.964,
+    "role": "attack",
+    "cutTimesMs": [
+      38941.5
+    ]
+  },
+  {
+    "index": 142,
+    "timeMs": 39165.99,
+    "strength": 1.489,
+    "role": "chord",
+    "cutTimesMs": [
+      39165.99
+    ]
+  },
+  {
+    "index": 143,
+    "timeMs": 39165.99,
+    "strength": 1.489,
+    "role": "chord",
+    "cutTimesMs": [
+      39165.99
+    ]
+  },
+  {
+    "index": 144,
+    "timeMs": 39395.46,
+    "strength": 0.89,
+    "role": "attack",
+    "cutTimesMs": [
+      39395.46
+    ]
+  },
+  {
+    "index": 145,
+    "timeMs": 39624.94,
+    "strength": 0.889,
+    "role": "attack",
+    "cutTimesMs": [
+      39624.94
+    ]
+  },
+  {
+    "index": 146,
+    "timeMs": 39839.46,
+    "strength": 1.019,
+    "role": "attack-roll",
+    "cutTimesMs": [
+      39839.46,
+      40283.45,
+      40502.95
+    ]
+  },
+  {
+    "index": 147,
+    "timeMs": 40058.96,
+    "strength": 1.168,
+    "role": "attack",
+    "cutTimesMs": [
+      40058.96
+    ]
+  },
+  {
+    "index": 148,
+    "timeMs": 40398.19,
+    "strength": 0.359,
+    "role": "attack",
+    "cutTimesMs": [
+      40398.19
+    ]
+  },
+  {
+    "index": 149,
+    "timeMs": 40732.43,
+    "strength": 1.142,
+    "role": "chord",
+    "cutTimesMs": [
+      40732.43
+    ]
+  },
+  {
+    "index": 150,
+    "timeMs": 40732.43,
+    "strength": 1.142,
+    "role": "chord",
+    "cutTimesMs": [
+      40732.43
+    ]
+  },
+  {
+    "index": 151,
+    "timeMs": 41176.42,
+    "strength": 1.118,
+    "role": "attack",
+    "cutTimesMs": [
+      41176.42
+    ]
+  },
+  {
+    "index": 152,
+    "timeMs": 41510.66,
+    "strength": 0.423,
+    "role": "attack",
+    "cutTimesMs": [
+      41510.66
+    ]
+  },
+  {
+    "index": 153,
+    "timeMs": 41615.42,
+    "strength": 0.735,
+    "role": "attack",
+    "cutTimesMs": [
+      41615.42
+    ]
+  },
+  {
+    "index": 154,
+    "timeMs": 41700.23,
+    "strength": 0.518,
+    "role": "attack",
+    "cutTimesMs": [
+      41700.23
+    ]
+  },
+  {
+    "index": 155,
+    "timeMs": 41809.98,
+    "strength": 0.942,
+    "role": "attack",
+    "cutTimesMs": [
+      41809.98
+    ]
+  },
+  {
+    "index": 156,
+    "timeMs": 41904.76,
+    "strength": 0.47,
+    "role": "attack",
+    "cutTimesMs": [
+      41904.76
+    ]
+  },
+  {
+    "index": 157,
+    "timeMs": 42004.54,
+    "strength": 1.127,
+    "role": "attack",
+    "cutTimesMs": [
+      42004.54
+    ]
+  },
+  {
+    "index": 158,
+    "timeMs": 42099.32,
+    "strength": 0.41,
+    "role": "attack",
+    "cutTimesMs": [
+      42099.32
+    ]
+  },
+  {
+    "index": 159,
+    "timeMs": 42199.09,
+    "strength": 0.638,
+    "role": "attack",
+    "cutTimesMs": [
+      42199.09
+    ]
+  },
+  {
+    "index": 160,
+    "timeMs": 42293.88,
+    "strength": 0.449,
+    "role": "attack",
+    "cutTimesMs": [
+      42293.88
+    ]
+  },
+  {
+    "index": 161,
+    "timeMs": 42388.66,
+    "strength": 1.114,
+    "role": "attack",
+    "cutTimesMs": [
+      42388.66
+    ]
+  },
+  {
+    "index": 162,
+    "timeMs": 42483.45,
+    "strength": 0.374,
+    "role": "attack",
+    "cutTimesMs": [
+      42483.45
+    ]
+  },
+  {
+    "index": 163,
+    "timeMs": 42578.23,
+    "strength": 1.079,
+    "role": "attack",
+    "cutTimesMs": [
+      42578.23
+    ]
+  },
+  {
+    "index": 164,
+    "timeMs": 42682.99,
+    "strength": 0.504,
+    "role": "attack",
+    "cutTimesMs": [
+      42682.99
+    ]
+  },
+  {
+    "index": 165,
+    "timeMs": 42772.79,
+    "strength": 1.222,
+    "role": "attack",
+    "cutTimesMs": [
+      42772.79
+    ]
+  },
+  {
+    "index": 166,
+    "timeMs": 42872.56,
+    "strength": 0.38,
+    "role": "attack",
+    "cutTimesMs": [
+      42872.56
+    ]
+  },
+  {
+    "index": 167,
+    "timeMs": 42967.35,
+    "strength": 0.834,
+    "role": "attack",
+    "cutTimesMs": [
+      42967.35
+    ]
+  },
+  {
+    "index": 168,
+    "timeMs": 43067.12,
+    "strength": 0.503,
+    "role": "attack",
+    "cutTimesMs": [
+      43067.12
+    ]
+  },
+  {
+    "index": 169,
+    "timeMs": 43166.89,
+    "strength": 1.097,
+    "role": "attack",
+    "cutTimesMs": [
+      43166.89
+    ]
+  },
+  {
+    "index": 170,
+    "timeMs": 43261.68,
+    "strength": 0.475,
+    "role": "attack",
+    "cutTimesMs": [
+      43261.68
+    ]
+  },
+  {
+    "index": 171,
+    "timeMs": 43356.46,
+    "strength": 0.967,
+    "role": "attack",
+    "cutTimesMs": [
+      43356.46
+    ]
+  },
+  {
+    "index": 172,
+    "timeMs": 43456.24,
+    "strength": 0.408,
+    "role": "attack",
+    "cutTimesMs": [
+      43456.24
+    ]
+  },
+  {
+    "index": 173,
+    "timeMs": 43551.02,
+    "strength": 1.269,
+    "role": "attack",
+    "cutTimesMs": [
+      43551.02
+    ]
+  },
+  {
+    "index": 174,
+    "timeMs": 43740.59,
+    "strength": 1.008,
+    "role": "attack",
+    "cutTimesMs": [
+      43740.59
+    ]
+  },
+  {
+    "index": 175,
+    "timeMs": 43840.36,
+    "strength": 0.466,
+    "role": "attack",
+    "cutTimesMs": [
+      43840.36
+    ]
+  },
+  {
+    "index": 176,
+    "timeMs": 43940.14,
+    "strength": 1.111,
+    "role": "attack",
+    "cutTimesMs": [
+      43940.14
+    ]
+  },
+  {
+    "index": 177,
+    "timeMs": 44144.67,
+    "strength": 0.737,
+    "role": "attack",
+    "cutTimesMs": [
+      44144.67
+    ]
+  },
+  {
+    "index": 178,
+    "timeMs": 44324.26,
+    "strength": 1.058,
+    "role": "chord",
+    "cutTimesMs": [
+      44324.26
+    ]
+  },
+  {
+    "index": 179,
+    "timeMs": 44324.26,
+    "strength": 1.058,
+    "role": "chord",
+    "cutTimesMs": [
+      44324.26
+    ]
+  },
+  {
+    "index": 180,
+    "timeMs": 44518.82,
+    "strength": 0.815,
+    "role": "attack",
+    "cutTimesMs": [
+      44518.82
+    ]
+  },
+  {
+    "index": 181,
+    "timeMs": 44708.39,
+    "strength": 1.297,
+    "role": "attack",
+    "cutTimesMs": [
+      44708.39
+    ]
+  },
+  {
+    "index": 182,
+    "timeMs": 44808.16,
+    "strength": 0.461,
+    "role": "attack",
+    "cutTimesMs": [
+      44808.16
+    ]
+  },
+  {
+    "index": 183,
+    "timeMs": 44902.95,
+    "strength": 1.405,
+    "role": "attack",
+    "cutTimesMs": [
+      44902.95
+    ]
+  },
+  {
+    "index": 184,
+    "timeMs": 44997.73,
+    "strength": 0.51,
+    "role": "attack",
+    "cutTimesMs": [
+      44997.73
+    ]
+  },
+  {
+    "index": 185,
+    "timeMs": 45097.51,
+    "strength": 0.975,
+    "role": "attack",
+    "cutTimesMs": [
+      45097.51
+    ]
+  },
+  {
+    "index": 186,
+    "timeMs": 45292.06,
+    "strength": 1.263,
+    "role": "attack",
+    "cutTimesMs": [
+      45292.06
+    ]
+  },
+  {
+    "index": 187,
+    "timeMs": 45386.85,
+    "strength": 0.637,
+    "role": "attack",
+    "cutTimesMs": [
+      45386.85
+    ]
+  },
+  {
+    "index": 188,
+    "timeMs": 45486.62,
+    "strength": 1.09,
+    "role": "attack",
+    "cutTimesMs": [
+      45486.62
+    ]
+  },
+  {
+    "index": 189,
+    "timeMs": 45676.19,
+    "strength": 1.229,
+    "role": "attack",
+    "cutTimesMs": [
+      45676.19
+    ]
+  },
+  {
+    "index": 190,
+    "timeMs": 45870.75,
+    "strength": 1.066,
+    "role": "attack",
+    "cutTimesMs": [
+      45870.75
+    ]
+  },
+  {
+    "index": 191,
+    "timeMs": 45970.52,
+    "strength": 0.545,
+    "role": "attack",
+    "cutTimesMs": [
+      45970.52
+    ]
+  },
+  {
+    "index": 192,
+    "timeMs": 46060.32,
+    "strength": 1.076,
+    "role": "attack",
+    "cutTimesMs": [
+      46060.32
+    ]
+  },
+  {
+    "index": 193,
+    "timeMs": 46259.86,
+    "strength": 1.033,
+    "role": "chord",
+    "cutTimesMs": [
+      46259.86
+    ]
+  },
+  {
+    "index": 194,
+    "timeMs": 46259.86,
+    "strength": 1.033,
+    "role": "chord",
+    "cutTimesMs": [
+      46259.86
+    ]
+  },
+  {
+    "index": 195,
+    "timeMs": 46449.43,
+    "strength": 1.3,
+    "role": "attack",
+    "cutTimesMs": [
+      46449.43
+    ]
+  },
+  {
+    "index": 196,
+    "timeMs": 46648.98,
+    "strength": 1.303,
+    "role": "attack",
+    "cutTimesMs": [
+      46648.98
+    ]
+  },
+  {
+    "index": 197,
+    "timeMs": 46838.55,
+    "strength": 1.214,
+    "role": "attack",
+    "cutTimesMs": [
+      46838.55
+    ]
+  },
+  {
+    "index": 198,
+    "timeMs": 47028.12,
+    "strength": 1.677,
+    "role": "attack",
+    "cutTimesMs": [
+      47028.12
+    ]
+  },
+  {
+    "index": 199,
+    "timeMs": 47422.22,
+    "strength": 1.229,
+    "role": "attack",
+    "cutTimesMs": [
+      47422.22
+    ]
+  },
+  {
+    "index": 200,
+    "timeMs": 47816.33,
+    "strength": 0.75,
+    "role": "attack-roll",
+    "cutTimesMs": [
+      47816.33,
+      48000.91,
+      48200.45,
+      48499.77,
+      48684.35
+    ]
+  },
+  {
+    "index": 201,
+    "timeMs": 47896.15,
+    "strength": 0.415,
+    "role": "attack",
+    "cutTimesMs": [
+      47896.15
+    ]
+  },
+  {
+    "index": 202,
+    "timeMs": 48100.68,
+    "strength": 0.469,
+    "role": "attack",
+    "cutTimesMs": [
+      48100.68
+    ]
+  },
+  {
+    "index": 203,
+    "timeMs": 48390.02,
+    "strength": 0.923,
+    "role": "attack",
+    "cutTimesMs": [
+      48390.02
+    ]
+  },
+  {
+    "index": 204,
+    "timeMs": 48584.58,
+    "strength": 1.209,
+    "role": "attack",
+    "cutTimesMs": [
+      48584.58
+    ]
+  },
+  {
+    "index": 205,
+    "timeMs": 48779.14,
+    "strength": 0.623,
+    "role": "attack",
+    "cutTimesMs": [
+      48779.14
+    ]
+  },
+  {
+    "index": 206,
+    "timeMs": 48873.92,
+    "strength": 0.377,
+    "role": "attack",
+    "cutTimesMs": [
+      48873.92
+    ]
+  },
+  {
+    "index": 207,
+    "timeMs": 48968.71,
+    "strength": 1.243,
+    "role": "attack",
+    "cutTimesMs": [
+      48968.71
+    ]
+  },
+  {
+    "index": 208,
+    "timeMs": 49163.27,
+    "strength": 1.007,
+    "role": "attack",
+    "cutTimesMs": [
+      49163.27
+    ]
+  },
+  {
+    "index": 209,
+    "timeMs": 49263.04,
+    "strength": 0.366,
+    "role": "attack",
+    "cutTimesMs": [
+      49263.04
+    ]
+  },
+  {
+    "index": 210,
+    "timeMs": 49357.82,
+    "strength": 1.246,
+    "role": "attack",
+    "cutTimesMs": [
+      49357.82
+    ]
+  },
+  {
+    "index": 211,
+    "timeMs": 49567.35,
+    "strength": 0.625,
+    "role": "attack",
+    "cutTimesMs": [
+      49567.35
+    ]
+  },
+  {
+    "index": 212,
+    "timeMs": 49652.15,
+    "strength": 0.404,
+    "role": "attack",
+    "cutTimesMs": [
+      49652.15
+    ]
+  },
+  {
+    "index": 213,
+    "timeMs": 49746.94,
+    "strength": 1.009,
+    "role": "attack",
+    "cutTimesMs": [
+      49746.94
+    ]
+  },
+  {
+    "index": 214,
+    "timeMs": 49936.51,
+    "strength": 0.915,
+    "role": "attack",
+    "cutTimesMs": [
+      49936.51
+    ]
+  },
+  {
+    "index": 215,
+    "timeMs": 50131.07,
+    "strength": 1.129,
+    "role": "chord",
+    "cutTimesMs": [
+      50131.07
+    ]
+  },
+  {
+    "index": 216,
+    "timeMs": 50131.07,
+    "strength": 1.129,
+    "role": "chord",
+    "cutTimesMs": [
+      50131.07
+    ]
+  },
+  {
+    "index": 217,
+    "timeMs": 50340.59,
+    "strength": 0.636,
+    "role": "attack",
+    "cutTimesMs": [
+      50340.59
+    ]
+  },
+  {
+    "index": 218,
+    "timeMs": 50520.18,
+    "strength": 1.149,
+    "role": "attack",
+    "cutTimesMs": [
+      50520.18
+    ]
+  },
+  {
+    "index": 219,
+    "timeMs": 50709.75,
+    "strength": 0.824,
+    "role": "attack",
+    "cutTimesMs": [
+      50709.75
+    ]
+  },
+  {
+    "index": 220,
+    "timeMs": 50899.32,
+    "strength": 1.108,
+    "role": "attack",
+    "cutTimesMs": [
+      50899.32
+    ]
+  },
+  {
+    "index": 221,
+    "timeMs": 51103.85,
+    "strength": 0.775,
+    "role": "attack",
+    "cutTimesMs": [
+      51103.85
+    ]
+  },
+  {
+    "index": 222,
+    "timeMs": 51288.44,
+    "strength": 1.029,
+    "role": "attack",
+    "cutTimesMs": [
+      51288.44
+    ]
+  },
+  {
+    "index": 223,
+    "timeMs": 51487.98,
+    "strength": 1.003,
+    "role": "attack",
+    "cutTimesMs": [
+      51487.98
+    ]
+  },
+  {
+    "index": 224,
+    "timeMs": 51677.55,
+    "strength": 0.923,
+    "role": "attack",
+    "cutTimesMs": [
+      51677.55
+    ]
+  },
+  {
+    "index": 225,
+    "timeMs": 51867.12,
+    "strength": 1.353,
+    "role": "chord",
+    "cutTimesMs": [
+      51867.12
+    ]
+  },
+  {
+    "index": 226,
+    "timeMs": 51867.12,
+    "strength": 1.353,
+    "role": "chord",
+    "cutTimesMs": [
+      51867.12
+    ]
+  },
+  {
+    "index": 227,
+    "timeMs": 52066.67,
+    "strength": 1.079,
+    "role": "attack",
+    "cutTimesMs": [
+      52066.67
+    ]
+  },
+  {
+    "index": 228,
+    "timeMs": 52161.45,
+    "strength": 0.367,
+    "role": "attack",
+    "cutTimesMs": [
+      52161.45
+    ]
+  },
+  {
+    "index": 229,
+    "timeMs": 52261.22,
+    "strength": 0.802,
+    "role": "attack",
+    "cutTimesMs": [
+      52261.22
+    ]
+  },
+  {
+    "index": 230,
+    "timeMs": 52455.78,
+    "strength": 1.037,
+    "role": "attack",
+    "cutTimesMs": [
+      52455.78
+    ]
+  },
+  {
+    "index": 231,
+    "timeMs": 52550.57,
+    "strength": 0.368,
+    "role": "attack",
+    "cutTimesMs": [
+      52550.57
+    ]
+  },
+  {
+    "index": 232,
+    "timeMs": 52650.34,
+    "strength": 1.286,
+    "role": "attack",
+    "cutTimesMs": [
+      52650.34
+    ]
+  },
+  {
+    "index": 233,
+    "timeMs": 52844.9,
+    "strength": 1.047,
+    "role": "attack",
+    "cutTimesMs": [
+      52844.9
+    ]
+  },
+  {
+    "index": 234,
+    "timeMs": 52934.69,
+    "strength": 0.488,
+    "role": "attack",
+    "cutTimesMs": [
+      52934.69
+    ]
+  },
+  {
+    "index": 235,
+    "timeMs": 53034.47,
+    "strength": 1.071,
+    "role": "attack",
+    "cutTimesMs": [
+      53034.47
+    ]
+  },
+  {
+    "index": 236,
+    "timeMs": 53234.01,
+    "strength": 1.079,
+    "role": "attack",
+    "cutTimesMs": [
+      53234.01
+    ]
+  },
+  {
+    "index": 237,
+    "timeMs": 53613.15,
+    "strength": 1.207,
+    "role": "chord",
+    "cutTimesMs": [
+      53613.15
+    ]
+  },
+  {
+    "index": 238,
+    "timeMs": 53613.15,
+    "strength": 1.207,
+    "role": "attack-roll",
+    "cutTimesMs": [
+      53613.15,
+      54002.27,
+      54291.61
+    ]
+  },
+  {
+    "index": 239,
+    "timeMs": 53892.52,
+    "strength": 0.527,
+    "role": "attack",
+    "cutTimesMs": [
+      53892.52
+    ]
+  },
+  {
+    "index": 240,
+    "timeMs": 54151.93,
+    "strength": 0.448,
+    "role": "attack",
+    "cutTimesMs": [
+      54151.93
+    ]
+  },
+  {
+    "index": 241,
+    "timeMs": 54391.38,
+    "strength": 0.696,
+    "role": "attack",
+    "cutTimesMs": [
+      54391.38
+    ]
+  },
+  {
+    "index": 242,
+    "timeMs": 54580.95,
+    "strength": 0.611,
+    "role": "attack",
+    "cutTimesMs": [
+      54580.95
+    ]
+  },
+  {
+    "index": 243,
+    "timeMs": 54775.51,
+    "strength": 0.727,
+    "role": "attack",
+    "cutTimesMs": [
+      54775.51
+    ]
+  },
+  {
+    "index": 244,
+    "timeMs": 54965.08,
+    "strength": 0.664,
+    "role": "attack",
+    "cutTimesMs": [
+      54965.08
+    ]
+  },
+  {
+    "index": 245,
+    "timeMs": 55164.63,
+    "strength": 0.924,
+    "role": "attack",
+    "cutTimesMs": [
+      55164.63
+    ]
+  },
+  {
+    "index": 246,
+    "timeMs": 55359.18,
+    "strength": 0.702,
+    "role": "attack",
+    "cutTimesMs": [
+      55359.18
+    ]
+  },
+  {
+    "index": 247,
+    "timeMs": 55548.75,
+    "strength": 0.939,
+    "role": "attack",
+    "cutTimesMs": [
+      55548.75
+    ]
+  },
+  {
+    "index": 248,
+    "timeMs": 55748.3,
+    "strength": 0.726,
+    "role": "attack",
+    "cutTimesMs": [
+      55748.3
+    ]
+  },
+  {
+    "index": 249,
+    "timeMs": 55937.87,
+    "strength": 0.874,
+    "role": "attack",
+    "cutTimesMs": [
+      55937.87
+    ]
+  },
+  {
+    "index": 250,
+    "timeMs": 56132.43,
+    "strength": 0.993,
+    "role": "attack",
+    "cutTimesMs": [
+      56132.43
+    ]
+  },
+  {
+    "index": 251,
+    "timeMs": 56322.0,
+    "strength": 0.9,
+    "role": "attack",
+    "cutTimesMs": [
+      56322.0
+    ]
+  },
+  {
+    "index": 252,
+    "timeMs": 56521.54,
+    "strength": 0.834,
+    "role": "attack",
+    "cutTimesMs": [
+      56521.54
+    ]
+  },
+  {
+    "index": 253,
+    "timeMs": 56711.11,
+    "strength": 0.937,
+    "role": "attack",
+    "cutTimesMs": [
+      56711.11
+    ]
+  },
+  {
+    "index": 254,
+    "timeMs": 56905.67,
+    "strength": 0.966,
+    "role": "attack",
+    "cutTimesMs": [
+      56905.67
+    ]
+  },
+  {
+    "index": 255,
+    "timeMs": 57100.23,
+    "strength": 1.052,
+    "role": "chord",
+    "cutTimesMs": [
+      57100.23
+    ]
+  },
+  {
+    "index": 256,
+    "timeMs": 57100.23,
+    "strength": 1.052,
+    "role": "chord",
+    "cutTimesMs": [
+      57100.23
+    ]
+  },
+  {
+    "index": 257,
+    "timeMs": 57289.8,
+    "strength": 0.645,
+    "role": "attack",
+    "cutTimesMs": [
+      57289.8
+    ]
+  },
+  {
+    "index": 258,
+    "timeMs": 57394.56,
+    "strength": 0.45,
+    "role": "attack",
+    "cutTimesMs": [
+      57394.56
+    ]
+  },
+  {
+    "index": 259,
+    "timeMs": 57484.35,
+    "strength": 0.87,
+    "role": "attack",
+    "cutTimesMs": [
+      57484.35
+    ]
+  },
+  {
+    "index": 260,
+    "timeMs": 57678.91,
+    "strength": 1.126,
+    "role": "attack",
+    "cutTimesMs": [
+      57678.91
+    ]
+  },
+  {
+    "index": 261,
+    "timeMs": 57873.47,
+    "strength": 0.818,
+    "role": "attack",
+    "cutTimesMs": [
+      57873.47
+    ]
+  },
+  {
+    "index": 262,
+    "timeMs": 58068.03,
+    "strength": 0.606,
+    "role": "attack",
+    "cutTimesMs": [
+      58068.03
+    ]
+  },
+  {
+    "index": 263,
+    "timeMs": 58262.59,
+    "strength": 0.787,
+    "role": "attack",
+    "cutTimesMs": [
+      58262.59
+    ]
+  },
+  {
+    "index": 264,
+    "timeMs": 58452.15,
+    "strength": 1.109,
+    "role": "attack",
+    "cutTimesMs": [
+      58452.15
+    ]
+  },
+  {
+    "index": 265,
+    "timeMs": 58651.7,
+    "strength": 1.192,
+    "role": "chord",
+    "cutTimesMs": [
+      58651.7
+    ]
+  },
+  {
+    "index": 266,
+    "timeMs": 58651.7,
+    "strength": 1.192,
+    "role": "chord",
+    "cutTimesMs": [
+      58651.7
+    ]
+  },
+  {
+    "index": 267,
+    "timeMs": 58841.27,
+    "strength": 1.041,
+    "role": "attack",
+    "cutTimesMs": [
+      58841.27
+    ]
+  },
+  {
+    "index": 268,
+    "timeMs": 59035.83,
+    "strength": 1.042,
+    "role": "attack",
+    "cutTimesMs": [
+      59035.83
+    ]
+  },
+  {
+    "index": 269,
+    "timeMs": 59230.39,
+    "strength": 0.816,
+    "role": "attack",
+    "cutTimesMs": [
+      59230.39
+    ]
+  },
+  {
+    "index": 270,
+    "timeMs": 59419.95,
+    "strength": 1.162,
+    "role": "attack",
+    "cutTimesMs": [
+      59419.95
+    ]
+  },
+  {
+    "index": 271,
+    "timeMs": 59609.52,
+    "strength": 0.462,
+    "role": "attack",
+    "cutTimesMs": [
+      59609.52
+    ]
+  },
+  {
+    "index": 272,
+    "timeMs": 59809.07,
+    "strength": 1.286,
+    "role": "attack",
+    "cutTimesMs": [
+      59809.07
+    ]
+  },
+  {
+    "index": 273,
+    "timeMs": 59918.82,
+    "strength": 0.388,
+    "role": "attack",
+    "cutTimesMs": [
+      59918.82
+    ]
+  },
+  {
+    "index": 274,
+    "timeMs": 60008.62,
+    "strength": 0.671,
+    "role": "attack",
+    "cutTimesMs": [
+      60008.62
+    ]
+  },
+  {
+    "index": 275,
+    "timeMs": 60193.2,
+    "strength": 0.779,
+    "role": "attack",
+    "cutTimesMs": [
+      60193.2
+    ]
+  },
+  {
+    "index": 276,
+    "timeMs": 60477.55,
+    "strength": 0.542,
+    "role": "attack",
+    "cutTimesMs": [
+      60477.55
+    ]
+  },
+  {
+    "index": 277,
+    "timeMs": 60582.31,
+    "strength": 0.681,
+    "role": "attack",
+    "cutTimesMs": [
+      60582.31
+    ]
+  },
+  {
+    "index": 278,
+    "timeMs": 60776.87,
+    "strength": 0.951,
+    "role": "attack",
+    "cutTimesMs": [
+      60776.87
+    ]
+  },
+  {
+    "index": 279,
+    "timeMs": 60966.44,
+    "strength": 0.792,
+    "role": "attack",
+    "cutTimesMs": [
+      60966.44
+    ]
+  },
+  {
+    "index": 280,
+    "timeMs": 61156.01,
+    "strength": 0.802,
+    "role": "attack",
+    "cutTimesMs": [
+      61156.01
+    ]
+  },
+  {
+    "index": 281,
+    "timeMs": 61355.56,
+    "strength": 1.028,
+    "role": "attack",
+    "cutTimesMs": [
+      61355.56
+    ]
+  },
+  {
+    "index": 282,
+    "timeMs": 61555.1,
+    "strength": 0.764,
+    "role": "attack",
+    "cutTimesMs": [
+      61555.1
+    ]
+  },
+  {
+    "index": 283,
+    "timeMs": 61739.68,
+    "strength": 0.967,
+    "role": "attack",
+    "cutTimesMs": [
+      61739.68
+    ]
+  },
+  {
+    "index": 284,
+    "timeMs": 61939.23,
+    "strength": 0.854,
+    "role": "attack",
+    "cutTimesMs": [
+      61939.23
+    ]
+  },
+  {
+    "index": 285,
+    "timeMs": 62029.02,
+    "strength": 0.539,
+    "role": "attack",
+    "cutTimesMs": [
+      62029.02
+    ]
+  },
+  {
+    "index": 286,
+    "timeMs": 62133.79,
+    "strength": 1.046,
+    "role": "attack",
+    "cutTimesMs": [
+      62133.79
+    ]
+  },
+  {
+    "index": 287,
+    "timeMs": 62323.36,
+    "strength": 0.86,
+    "role": "attack",
+    "cutTimesMs": [
+      62323.36
+    ]
+  },
+  {
+    "index": 288,
+    "timeMs": 62517.91,
+    "strength": 0.722,
+    "role": "attack",
+    "cutTimesMs": [
+      62517.91
+    ]
+  },
+  {
+    "index": 289,
+    "timeMs": 62712.47,
+    "strength": 0.8,
+    "role": "attack",
+    "cutTimesMs": [
+      62712.47
+    ]
+  },
+  {
+    "index": 290,
+    "timeMs": 62907.03,
+    "strength": 1.049,
+    "role": "chord",
+    "cutTimesMs": [
+      62907.03
+    ]
+  },
+  {
+    "index": 291,
+    "timeMs": 62907.03,
+    "strength": 1.049,
+    "role": "chord",
+    "cutTimesMs": [
+      62907.03
+    ]
+  },
+  {
+    "index": 292,
+    "timeMs": 63096.6,
+    "strength": 0.872,
+    "role": "attack",
+    "cutTimesMs": [
+      63096.6
+    ]
+  },
+  {
+    "index": 293,
+    "timeMs": 63291.16,
+    "strength": 0.782,
+    "role": "attack",
+    "cutTimesMs": [
+      63291.16
+    ]
+  },
+  {
+    "index": 294,
+    "timeMs": 63480.73,
+    "strength": 1.075,
+    "role": "attack",
+    "cutTimesMs": [
+      63480.73
+    ]
+  },
+  {
+    "index": 295,
+    "timeMs": 63680.27,
+    "strength": 0.682,
+    "role": "attack",
+    "cutTimesMs": [
+      63680.27
+    ]
+  },
+  {
+    "index": 296,
+    "timeMs": 63869.84,
+    "strength": 0.852,
+    "role": "attack",
+    "cutTimesMs": [
+      63869.84
+    ]
+  },
+  {
+    "index": 297,
+    "timeMs": 64059.41,
+    "strength": 1.816,
+    "role": "attack",
+    "cutTimesMs": [
+      64059.41
+    ]
+  },
+  {
+    "index": 298,
+    "timeMs": 64263.95,
+    "strength": 1.116,
+    "role": "attack",
+    "cutTimesMs": [
+      64263.95
+    ]
+  },
+  {
+    "index": 299,
+    "timeMs": 64453.51,
+    "strength": 0.851,
+    "role": "attack",
+    "cutTimesMs": [
+      64453.51
+    ]
+  },
+  {
+    "index": 300,
+    "timeMs": 64648.07,
+    "strength": 1.279,
+    "role": "chord",
+    "cutTimesMs": [
+      64648.07
+    ]
+  },
+  {
+    "index": 301,
+    "timeMs": 64648.07,
+    "strength": 1.279,
+    "role": "chord",
+    "cutTimesMs": [
+      64648.07
+    ]
+  },
+  {
+    "index": 302,
+    "timeMs": 64842.63,
+    "strength": 1.132,
+    "role": "attack",
+    "cutTimesMs": [
+      64842.63
+    ]
+  },
+  {
+    "index": 303,
+    "timeMs": 65416.33,
+    "strength": 2.027,
+    "role": "attack",
+    "cutTimesMs": [
+      65416.33
+    ]
+  },
+  {
+    "index": 304,
+    "timeMs": 65620.86,
+    "strength": 1.443,
+    "role": "attack",
+    "cutTimesMs": [
+      65620.86
+    ]
+  },
+  {
+    "index": 305,
+    "timeMs": 66004.99,
+    "strength": 0.918,
+    "role": "attack",
+    "cutTimesMs": [
+      66004.99
+    ]
+  },
+  {
+    "index": 306,
+    "timeMs": 66294.33,
+    "strength": 0.461,
+    "role": "attack",
+    "cutTimesMs": [
+      66294.33
+    ]
+  },
+  {
+    "index": 307,
+    "timeMs": 66389.12,
+    "strength": 0.799,
+    "role": "attack",
+    "cutTimesMs": [
+      66389.12
+    ]
+  },
+  {
+    "index": 308,
+    "timeMs": 66478.91,
+    "strength": 0.401,
+    "role": "attack",
+    "cutTimesMs": [
+      66478.91
+    ]
+  },
+  {
+    "index": 309,
+    "timeMs": 66573.7,
+    "strength": 0.875,
+    "role": "attack",
+    "cutTimesMs": [
+      66573.7
+    ]
+  },
+  {
+    "index": 310,
+    "timeMs": 66678.46,
+    "strength": 0.435,
+    "role": "attack",
+    "cutTimesMs": [
+      66678.46
+    ]
+  },
+  {
+    "index": 311,
+    "timeMs": 66758.28,
+    "strength": 1.033,
+    "role": "attack",
+    "cutTimesMs": [
+      66758.28
+    ]
+  },
+  {
+    "index": 312,
+    "timeMs": 66848.07,
+    "strength": 0.467,
+    "role": "attack",
+    "cutTimesMs": [
+      66848.07
+    ]
+  },
+  {
+    "index": 313,
+    "timeMs": 66942.86,
+    "strength": 0.742,
+    "role": "attack",
+    "cutTimesMs": [
+      66942.86
+    ]
+  },
+  {
+    "index": 314,
+    "timeMs": 67127.44,
+    "strength": 1.143,
+    "role": "attack",
+    "cutTimesMs": [
+      67127.44
+    ]
+  },
+  {
+    "index": 315,
+    "timeMs": 67217.23,
+    "strength": 0.409,
+    "role": "attack",
+    "cutTimesMs": [
+      67217.23
+    ]
+  },
+  {
+    "index": 316,
+    "timeMs": 67312.02,
+    "strength": 1.297,
+    "role": "attack",
+    "cutTimesMs": [
+      67312.02
+    ]
+  },
+  {
+    "index": 317,
+    "timeMs": 67401.81,
+    "strength": 0.49,
+    "role": "attack",
+    "cutTimesMs": [
+      67401.81
+    ]
+  },
+  {
+    "index": 318,
+    "timeMs": 67496.6,
+    "strength": 1.275,
+    "role": "attack",
+    "cutTimesMs": [
+      67496.6
+    ]
+  },
+  {
+    "index": 319,
+    "timeMs": 67596.37,
+    "strength": 0.374,
+    "role": "attack",
+    "cutTimesMs": [
+      67596.37
+    ]
+  },
+  {
+    "index": 320,
+    "timeMs": 67681.18,
+    "strength": 1.19,
+    "role": "attack",
+    "cutTimesMs": [
+      67681.18
+    ]
+  },
+  {
+    "index": 321,
+    "timeMs": 67775.96,
+    "strength": 0.496,
+    "role": "attack",
+    "cutTimesMs": [
+      67775.96
+    ]
+  },
+  {
+    "index": 322,
+    "timeMs": 67870.75,
+    "strength": 1.064,
+    "role": "attack",
+    "cutTimesMs": [
+      67870.75
+    ]
+  },
+  {
+    "index": 323,
+    "timeMs": 67965.53,
+    "strength": 0.43,
+    "role": "attack",
+    "cutTimesMs": [
+      67965.53
+    ]
+  },
+  {
+    "index": 324,
+    "timeMs": 68050.34,
+    "strength": 0.975,
+    "role": "attack",
+    "cutTimesMs": [
+      68050.34
+    ]
+  },
+  {
+    "index": 325,
+    "timeMs": 68145.12,
+    "strength": 0.402,
+    "role": "attack",
+    "cutTimesMs": [
+      68145.12
+    ]
+  },
+  {
+    "index": 326,
+    "timeMs": 68239.91,
+    "strength": 1.51,
+    "role": "attack",
+    "cutTimesMs": [
+      68239.91
+    ]
+  },
+  {
+    "index": 327,
+    "timeMs": 68424.49,
+    "strength": 1.088,
+    "role": "attack",
+    "cutTimesMs": [
+      68424.49
+    ]
+  },
+  {
+    "index": 328,
+    "timeMs": 68514.29,
+    "strength": 0.533,
+    "role": "attack",
+    "cutTimesMs": [
+      68514.29
+    ]
+  },
+  {
+    "index": 329,
+    "timeMs": 68614.06,
+    "strength": 1.076,
+    "role": "attack",
+    "cutTimesMs": [
+      68614.06
+    ]
+  },
+  {
+    "index": 330,
+    "timeMs": 68793.65,
+    "strength": 0.72,
+    "role": "attack",
+    "cutTimesMs": [
+      68793.65
+    ]
+  },
+  {
+    "index": 331,
+    "timeMs": 68978.23,
+    "strength": 1.127,
+    "role": "chord",
+    "cutTimesMs": [
+      68978.23
+    ]
+  },
+  {
+    "index": 332,
+    "timeMs": 68978.23,
+    "strength": 1.127,
+    "role": "chord",
+    "cutTimesMs": [
+      68978.23
+    ]
+  },
+  {
+    "index": 333,
+    "timeMs": 69167.8,
+    "strength": 0.801,
+    "role": "attack",
+    "cutTimesMs": [
+      69167.8
+    ]
+  },
+  {
+    "index": 334,
+    "timeMs": 69347.39,
+    "strength": 1.353,
+    "role": "attack",
+    "cutTimesMs": [
+      69347.39
+    ]
+  },
+  {
+    "index": 335,
+    "timeMs": 69442.18,
+    "strength": 0.423,
+    "role": "attack",
+    "cutTimesMs": [
+      69442.18
+    ]
+  },
+  {
+    "index": 336,
+    "timeMs": 69531.97,
+    "strength": 1.674,
+    "role": "attack",
+    "cutTimesMs": [
+      69531.97
+    ]
+  },
+  {
+    "index": 337,
+    "timeMs": 69631.75,
+    "strength": 0.569,
+    "role": "attack",
+    "cutTimesMs": [
+      69631.75
+    ]
+  },
+  {
+    "index": 338,
+    "timeMs": 69721.54,
+    "strength": 0.938,
+    "role": "attack",
+    "cutTimesMs": [
+      69721.54
+    ]
+  },
+  {
+    "index": 339,
+    "timeMs": 69811.34,
+    "strength": 0.415,
+    "role": "attack",
+    "cutTimesMs": [
+      69811.34
+    ]
+  },
+  {
+    "index": 340,
+    "timeMs": 69901.13,
+    "strength": 1.354,
+    "role": "attack",
+    "cutTimesMs": [
+      69901.13
+    ]
+  },
+  {
+    "index": 341,
+    "timeMs": 70000.91,
+    "strength": 0.654,
+    "role": "attack",
+    "cutTimesMs": [
+      70000.91
+    ]
+  },
+  {
+    "index": 342,
+    "timeMs": 70090.7,
+    "strength": 0.976,
+    "role": "attack",
+    "cutTimesMs": [
+      70090.7
+    ]
+  },
+  {
+    "index": 343,
+    "timeMs": 70275.28,
+    "strength": 1.309,
+    "role": "attack",
+    "cutTimesMs": [
+      70275.28
+    ]
+  },
+  {
+    "index": 344,
+    "timeMs": 70459.86,
+    "strength": 1.276,
+    "role": "attack",
+    "cutTimesMs": [
+      70459.86
+    ]
+  },
+  {
+    "index": 345,
+    "timeMs": 70554.65,
+    "strength": 0.441,
+    "role": "attack",
+    "cutTimesMs": [
+      70554.65
+    ]
+  },
+  {
+    "index": 346,
+    "timeMs": 70644.44,
+    "strength": 1.31,
+    "role": "attack",
+    "cutTimesMs": [
+      70644.44
+    ]
+  },
+  {
+    "index": 347,
+    "timeMs": 70829.02,
+    "strength": 0.984,
+    "role": "attack",
+    "cutTimesMs": [
+      70829.02
+    ]
+  },
+  {
+    "index": 348,
+    "timeMs": 71013.61,
+    "strength": 1.491,
+    "role": "chord",
+    "cutTimesMs": [
+      71013.61
+    ]
+  },
+  {
+    "index": 349,
+    "timeMs": 71013.61,
+    "strength": 1.491,
+    "role": "chord",
+    "cutTimesMs": [
+      71013.61
+    ]
+  },
+  {
+    "index": 350,
+    "timeMs": 71203.17,
+    "strength": 1.507,
+    "role": "attack",
+    "cutTimesMs": [
+      71203.17
+    ]
+  },
+  {
+    "index": 351,
+    "timeMs": 71387.76,
+    "strength": 0.925,
+    "role": "attack",
+    "cutTimesMs": [
+      71387.76
+    ]
+  },
+  {
+    "index": 352,
+    "timeMs": 71572.34,
+    "strength": 1.48,
+    "role": "attack",
+    "cutTimesMs": [
+      71572.34
+    ]
+  },
+  {
+    "index": 353,
+    "timeMs": 71946.49,
+    "strength": 1.418,
+    "role": "attack",
+    "cutTimesMs": [
+      71946.49
+    ]
+  },
+  {
+    "index": 354,
+    "timeMs": 72180.95,
+    "strength": 0.405,
+    "role": "attack",
+    "cutTimesMs": [
+      72180.95
+    ]
+  },
+  {
+    "index": 355,
+    "timeMs": 72310.66,
+    "strength": 0.689,
+    "role": "attack",
+    "cutTimesMs": [
+      72310.66
+    ]
+  },
+  {
+    "index": 356,
+    "timeMs": 72500.23,
+    "strength": 0.511,
+    "role": "attack",
+    "cutTimesMs": [
+      72500.23
+    ]
+  },
+  {
+    "index": 357,
+    "timeMs": 72585.03,
+    "strength": 0.431,
+    "role": "attack",
+    "cutTimesMs": [
+      72585.03
+    ]
+  },
+  {
+    "index": 358,
+    "timeMs": 72684.81,
+    "strength": 0.855,
+    "role": "attack",
+    "cutTimesMs": [
+      72684.81
+    ]
+  },
+  {
+    "index": 359,
+    "timeMs": 72869.39,
+    "strength": 0.931,
+    "role": "attack",
+    "cutTimesMs": [
+      72869.39
+    ]
+  },
+  {
+    "index": 360,
+    "timeMs": 72959.18,
+    "strength": 0.352,
+    "role": "attack",
+    "cutTimesMs": [
+      72959.18
+    ]
+  },
+  {
+    "index": 361,
+    "timeMs": 73053.97,
+    "strength": 1.126,
+    "role": "attack",
+    "cutTimesMs": [
+      73053.97
+    ]
+  },
+  {
+    "index": 362,
+    "timeMs": 73243.54,
+    "strength": 0.591,
+    "role": "attack",
+    "cutTimesMs": [
+      73243.54
+    ]
+  },
+  {
+    "index": 363,
+    "timeMs": 73348.3,
+    "strength": 0.406,
+    "role": "attack",
+    "cutTimesMs": [
+      73348.3
+    ]
+  },
+  {
+    "index": 364,
+    "timeMs": 73428.12,
+    "strength": 1.085,
+    "role": "attack",
+    "cutTimesMs": [
+      73428.12
+    ]
+  },
+  {
+    "index": 365,
+    "timeMs": 73517.91,
+    "strength": 0.489,
+    "role": "attack",
+    "cutTimesMs": [
+      73517.91
+    ]
+  },
+  {
+    "index": 366,
+    "timeMs": 73607.71,
+    "strength": 1.123,
+    "role": "attack",
+    "cutTimesMs": [
+      73607.71
+    ]
+  },
+  {
+    "index": 367,
+    "timeMs": 73702.49,
+    "strength": 0.462,
+    "role": "attack",
+    "cutTimesMs": [
+      73702.49
+    ]
+  },
+  {
+    "index": 368,
+    "timeMs": 73797.28,
+    "strength": 1.304,
+    "role": "attack",
+    "cutTimesMs": [
+      73797.28
+    ]
+  },
+  {
+    "index": 369,
+    "timeMs": 73897.05,
+    "strength": 0.415,
+    "role": "attack",
+    "cutTimesMs": [
+      73897.05
+    ]
+  },
+  {
+    "index": 370,
+    "timeMs": 73996.83,
+    "strength": 0.784,
+    "role": "attack",
+    "cutTimesMs": [
+      73996.83
+    ]
+  },
+  {
+    "index": 371,
+    "timeMs": 74166.44,
+    "strength": 1.207,
+    "role": "chord",
+    "cutTimesMs": [
+      74166.44
+    ]
+  },
+  {
+    "index": 372,
+    "timeMs": 74166.44,
+    "strength": 1.207,
+    "role": "chord",
+    "cutTimesMs": [
+      74166.44
+    ]
+  },
+  {
+    "index": 373,
+    "timeMs": 74356.01,
+    "strength": 0.873,
+    "role": "attack",
+    "cutTimesMs": [
+      74356.01
+    ]
+  },
+  {
+    "index": 374,
+    "timeMs": 74440.82,
+    "strength": 0.452,
+    "role": "attack",
+    "cutTimesMs": [
+      74440.82
+    ]
+  },
+  {
+    "index": 375,
+    "timeMs": 74535.6,
+    "strength": 1.208,
+    "role": "attack",
+    "cutTimesMs": [
+      74535.6
+    ]
+  },
+  {
+    "index": 376,
+    "timeMs": 74720.18,
+    "strength": 0.61,
+    "role": "attack",
+    "cutTimesMs": [
+      74720.18
+    ]
+  },
+  {
+    "index": 377,
+    "timeMs": 74909.75,
+    "strength": 1.124,
+    "role": "attack",
+    "cutTimesMs": [
+      74909.75
+    ]
+  },
+  {
+    "index": 378,
+    "timeMs": 75094.33,
+    "strength": 0.803,
+    "role": "attack",
+    "cutTimesMs": [
+      75094.33
+    ]
+  },
+  {
+    "index": 379,
+    "timeMs": 75273.92,
+    "strength": 1.669,
+    "role": "attack",
+    "cutTimesMs": [
+      75273.92
+    ]
+  },
+  {
+    "index": 380,
+    "timeMs": 75463.49,
+    "strength": 0.734,
+    "role": "attack",
+    "cutTimesMs": [
+      75463.49
+    ]
+  },
+  {
+    "index": 381,
+    "timeMs": 75558.28,
+    "strength": 0.403,
+    "role": "attack",
+    "cutTimesMs": [
+      75558.28
+    ]
+  },
+  {
+    "index": 382,
+    "timeMs": 75648.07,
+    "strength": 1.273,
+    "role": "attack",
+    "cutTimesMs": [
+      75648.07
+    ]
+  },
+  {
+    "index": 383,
+    "timeMs": 75732.88,
+    "strength": 0.413,
+    "role": "attack",
+    "cutTimesMs": [
+      75732.88
+    ]
+  },
+  {
+    "index": 384,
+    "timeMs": 75837.64,
+    "strength": 0.773,
+    "role": "attack",
+    "cutTimesMs": [
+      75837.64
+    ]
+  },
+  {
+    "index": 385,
+    "timeMs": 75927.44,
+    "strength": 0.395,
+    "role": "attack",
+    "cutTimesMs": [
+      75927.44
+    ]
+  },
+  {
+    "index": 386,
+    "timeMs": 76022.22,
+    "strength": 1.248,
+    "role": "attack",
+    "cutTimesMs": [
+      76022.22
+    ]
+  },
+  {
+    "index": 387,
+    "timeMs": 76206.8,
+    "strength": 1.135,
+    "role": "attack",
+    "cutTimesMs": [
+      76206.8
+    ]
+  },
+  {
+    "index": 388,
+    "timeMs": 76296.6,
+    "strength": 0.409,
+    "role": "attack",
+    "cutTimesMs": [
+      76296.6
+    ]
+  },
+  {
+    "index": 389,
+    "timeMs": 76396.37,
+    "strength": 0.943,
+    "role": "attack",
+    "cutTimesMs": [
+      76396.37
+    ]
+  },
+  {
+    "index": 390,
+    "timeMs": 76491.16,
+    "strength": 0.455,
+    "role": "attack",
+    "cutTimesMs": [
+      76491.16
+    ]
+  },
+  {
+    "index": 391,
+    "timeMs": 76575.96,
+    "strength": 1.011,
+    "role": "attack",
+    "cutTimesMs": [
+      76575.96
+    ]
+  },
+  {
+    "index": 392,
+    "timeMs": 76670.75,
+    "strength": 0.535,
+    "role": "attack",
+    "cutTimesMs": [
+      76670.75
+    ]
+  },
+  {
+    "index": 393,
+    "timeMs": 76755.56,
+    "strength": 1.618,
+    "role": "attack",
+    "cutTimesMs": [
+      76755.56
+    ]
+  },
+  {
+    "index": 394,
+    "timeMs": 76860.32,
+    "strength": 0.374,
+    "role": "attack",
+    "cutTimesMs": [
+      76860.32
+    ]
+  },
+  {
+    "index": 395,
+    "timeMs": 76945.12,
+    "strength": 1.063,
+    "role": "attack",
+    "cutTimesMs": [
+      76945.12
+    ]
+  },
+  {
+    "index": 396,
+    "timeMs": 77034.92,
+    "strength": 0.537,
+    "role": "attack",
+    "cutTimesMs": [
+      77034.92
+    ]
+  },
+  {
+    "index": 397,
+    "timeMs": 77134.69,
+    "strength": 0.988,
+    "role": "attack",
+    "cutTimesMs": [
+      77134.69
+    ]
+  },
+  {
+    "index": 398,
+    "timeMs": 77224.49,
+    "strength": 0.501,
+    "role": "attack",
+    "cutTimesMs": [
+      77224.49
+    ]
+  },
+  {
+    "index": 399,
+    "timeMs": 77314.29,
+    "strength": 1.216,
+    "role": "attack",
+    "cutTimesMs": [
+      77314.29
+    ]
+  },
+  {
+    "index": 400,
+    "timeMs": 77419.05,
+    "strength": 0.372,
+    "role": "attack",
+    "cutTimesMs": [
+      77419.05
+    ]
+  },
+  {
+    "index": 401,
+    "timeMs": 77498.87,
+    "strength": 1.227,
+    "role": "attack",
+    "cutTimesMs": [
+      77498.87
+    ]
+  },
+  {
+    "index": 402,
+    "timeMs": 77608.62,
+    "strength": 0.433,
+    "role": "attack",
+    "cutTimesMs": [
+      77608.62
+    ]
+  },
+  {
+    "index": 403,
+    "timeMs": 77738.32,
+    "strength": 0.428,
+    "role": "attack",
+    "cutTimesMs": [
+      77738.32
+    ]
+  },
+  {
+    "index": 404,
+    "timeMs": 77912.93,
+    "strength": 1.18,
+    "role": "chord",
+    "cutTimesMs": [
+      77912.93
+    ]
+  },
+  {
+    "index": 405,
+    "timeMs": 77912.93,
+    "strength": 1.18,
+    "role": "chord",
+    "cutTimesMs": [
+      77912.93
+    ]
+  },
+  {
+    "index": 406,
+    "timeMs": 78067.57,
+    "strength": 0.577,
+    "role": "attack",
+    "cutTimesMs": [
+      78067.57
+    ]
+  },
+  {
+    "index": 407,
+    "timeMs": 78212.24,
+    "strength": 0.692,
+    "role": "attack",
+    "cutTimesMs": [
+      78212.24
+    ]
+  },
+  {
+    "index": 408,
+    "timeMs": 78346.94,
+    "strength": 0.675,
+    "role": "attack",
+    "cutTimesMs": [
+      78346.94
+    ]
+  },
+  {
+    "index": 409,
+    "timeMs": 78446.71,
+    "strength": 0.687,
+    "role": "attack",
+    "cutTimesMs": [
+      78446.71
+    ]
+  },
+  {
+    "index": 410,
+    "timeMs": 78531.52,
+    "strength": 0.674,
+    "role": "attack",
+    "cutTimesMs": [
+      78531.52
+    ]
+  },
+  {
+    "index": 411,
+    "timeMs": 78626.3,
+    "strength": 0.812,
+    "role": "attack",
+    "cutTimesMs": [
+      78626.3
+    ]
+  },
+  {
+    "index": 412,
+    "timeMs": 78721.09,
+    "strength": 0.49,
+    "role": "attack",
+    "cutTimesMs": [
+      78721.09
+    ]
+  },
+  {
+    "index": 413,
+    "timeMs": 78800.91,
+    "strength": 0.572,
+    "role": "attack",
+    "cutTimesMs": [
+      78800.91
+    ]
+  },
+  {
+    "index": 414,
+    "timeMs": 78900.68,
+    "strength": 0.614,
+    "role": "attack",
+    "cutTimesMs": [
+      78900.68
+    ]
+  },
+  {
+    "index": 415,
+    "timeMs": 79040.36,
+    "strength": 0.387,
+    "role": "attack",
+    "cutTimesMs": [
+      79040.36
+    ]
+  },
+  {
+    "index": 416,
+    "timeMs": 79185.03,
+    "strength": 0.576,
+    "role": "attack",
+    "cutTimesMs": [
+      79185.03
+    ]
+  },
+  {
+    "index": 417,
+    "timeMs": 79294.78,
+    "strength": 0.491,
+    "role": "attack",
+    "cutTimesMs": [
+      79294.78
+    ]
+  },
+  {
+    "index": 418,
+    "timeMs": 79484.35,
+    "strength": 0.907,
+    "role": "attack",
+    "cutTimesMs": [
+      79484.35
+    ]
+  },
+  {
+    "index": 419,
+    "timeMs": 79584.13,
+    "strength": 0.518,
+    "role": "attack",
+    "cutTimesMs": [
+      79584.13
+    ]
+  },
+  {
+    "index": 420,
+    "timeMs": 79758.73,
+    "strength": 0.685,
+    "role": "attack",
+    "cutTimesMs": [
+      79758.73
+    ]
+  },
+  {
+    "index": 421,
+    "timeMs": 79858.5,
+    "strength": 0.464,
+    "role": "attack",
+    "cutTimesMs": [
+      79858.5
+    ]
+  },
+  {
+    "index": 422,
+    "timeMs": 79983.22,
+    "strength": 0.866,
+    "role": "attack",
+    "cutTimesMs": [
+      79983.22
+    ]
+  },
+  {
+    "index": 423,
+    "timeMs": 80666.67,
+    "strength": 1.358,
+    "role": "attack-roll",
+    "cutTimesMs": [
+      80666.67,
+      80985.94,
+      81295.24
+    ]
+  },
+  {
+    "index": 424,
+    "timeMs": 80666.67,
+    "strength": 1.358,
+    "role": "chord",
+    "cutTimesMs": [
+      80666.67
+    ]
+  },
+  {
+    "index": 425,
+    "timeMs": 80861.22,
+    "strength": 1.347,
+    "role": "attack",
+    "cutTimesMs": [
+      80861.22
+    ]
+  },
+  {
+    "index": 426,
+    "timeMs": 81105.67,
+    "strength": 0.661,
+    "role": "attack",
+    "cutTimesMs": [
+      81105.67
+    ]
+  },
+  {
+    "index": 427,
+    "timeMs": 81893.88,
+    "strength": 0.639,
+    "role": "attack",
+    "cutTimesMs": [
+      81893.88
+    ]
+  },
+  {
+    "index": 428,
+    "timeMs": 82093.42,
+    "strength": 1.169,
+    "role": "attack",
+    "cutTimesMs": [
+      82093.42
+    ]
+  },
+  {
+    "index": 429,
+    "timeMs": 82238.1,
+    "strength": 0.705,
+    "role": "attack",
+    "cutTimesMs": [
+      82238.1
+    ]
+  },
+  {
+    "index": 430,
+    "timeMs": 82332.88,
+    "strength": 0.376,
+    "role": "attack",
+    "cutTimesMs": [
+      82332.88
+    ]
+  },
+  {
+    "index": 431,
+    "timeMs": 82447.62,
+    "strength": 0.747,
+    "role": "attack",
+    "cutTimesMs": [
+      82447.62
+    ]
+  },
+  {
+    "index": 432,
+    "timeMs": 82542.4,
+    "strength": 0.421,
+    "role": "attack",
+    "cutTimesMs": [
+      82542.4
+    ]
+  },
+  {
+    "index": 433,
+    "timeMs": 82946.49,
+    "strength": 1.03,
+    "role": "chord",
+    "cutTimesMs": [
+      82946.49
+    ]
+  },
+  {
+    "index": 434,
+    "timeMs": 82946.49,
+    "strength": 1.03,
+    "role": "chord",
+    "cutTimesMs": [
+      82946.49
+    ]
+  },
+  {
+    "index": 435,
+    "timeMs": 83096.15,
+    "strength": 1.116,
+    "role": "attack",
+    "cutTimesMs": [
+      83096.15
+    ]
+  },
+  {
+    "index": 436,
+    "timeMs": 83190.93,
+    "strength": 0.607,
+    "role": "attack",
+    "cutTimesMs": [
+      83190.93
+    ]
+  },
+  {
+    "index": 437,
+    "timeMs": 83280.73,
+    "strength": 0.726,
+    "role": "attack",
+    "cutTimesMs": [
+      83280.73
+    ]
+  },
+  {
+    "index": 438,
+    "timeMs": 83425.4,
+    "strength": 1.115,
+    "role": "attack",
+    "cutTimesMs": [
+      83425.4
+    ]
+  },
+  {
+    "index": 439,
+    "timeMs": 83879.37,
+    "strength": 1.032,
+    "role": "attack",
+    "cutTimesMs": [
+      83879.37
+    ]
+  },
+  {
+    "index": 440,
+    "timeMs": 84029.02,
+    "strength": 0.962,
+    "role": "attack",
+    "cutTimesMs": [
+      84029.02
+    ]
+  },
+  {
+    "index": 441,
+    "timeMs": 84108.84,
+    "strength": 0.608,
+    "role": "attack",
+    "cutTimesMs": [
+      84108.84
+    ]
+  },
+  {
+    "index": 442,
+    "timeMs": 84213.61,
+    "strength": 0.648,
+    "role": "attack",
+    "cutTimesMs": [
+      84213.61
+    ]
+  },
+  {
+    "index": 443,
+    "timeMs": 84692.52,
+    "strength": 1.097,
+    "role": "attack",
+    "cutTimesMs": [
+      84692.52
+    ]
+  },
+  {
+    "index": 444,
+    "timeMs": 84822.22,
+    "strength": 0.816,
+    "role": "attack",
+    "cutTimesMs": [
+      84822.22
+    ]
+  },
+  {
+    "index": 445,
+    "timeMs": 84907.03,
+    "strength": 0.625,
+    "role": "attack",
+    "cutTimesMs": [
+      84907.03
+    ]
+  },
+  {
+    "index": 446,
+    "timeMs": 84986.85,
+    "strength": 0.438,
+    "role": "attack",
+    "cutTimesMs": [
+      84986.85
+    ]
+  },
+  {
+    "index": 447,
+    "timeMs": 85126.53,
+    "strength": 0.796,
+    "role": "attack",
+    "cutTimesMs": [
+      85126.53
+    ]
+  },
+  {
+    "index": 448,
+    "timeMs": 85500.68,
+    "strength": 0.883,
+    "role": "attack",
+    "cutTimesMs": [
+      85500.68
+    ]
+  },
+  {
+    "index": 449,
+    "timeMs": 85635.37,
+    "strength": 0.981,
+    "role": "attack",
+    "cutTimesMs": [
+      85635.37
+    ]
+  },
+  {
+    "index": 450,
+    "timeMs": 85804.99,
+    "strength": 0.385,
+    "role": "attack",
+    "cutTimesMs": [
+      85804.99
+    ]
+  },
+  {
+    "index": 451,
+    "timeMs": 85894.78,
+    "strength": 0.644,
+    "role": "attack",
+    "cutTimesMs": [
+      85894.78
+    ]
+  },
+  {
+    "index": 452,
+    "timeMs": 86224.04,
+    "strength": 1.049,
+    "role": "attack",
+    "cutTimesMs": [
+      86224.04
+    ]
+  },
+  {
+    "index": 453,
+    "timeMs": 86338.78,
+    "strength": 0.641,
+    "role": "attack",
+    "cutTimesMs": [
+      86338.78
+    ]
+  },
+  {
+    "index": 454,
+    "timeMs": 86463.49,
+    "strength": 0.527,
+    "role": "attack",
+    "cutTimesMs": [
+      86463.49
+    ]
+  },
+  {
+    "index": 455,
+    "timeMs": 86568.25,
+    "strength": 0.871,
+    "role": "attack",
+    "cutTimesMs": [
+      86568.25
+    ]
+  },
+  {
+    "index": 456,
+    "timeMs": 86872.56,
+    "strength": 1.047,
+    "role": "attack",
+    "cutTimesMs": [
+      86872.56
+    ]
+  },
+  {
+    "index": 457,
+    "timeMs": 86987.3,
+    "strength": 0.97,
+    "role": "attack",
+    "cutTimesMs": [
+      86987.3
+    ]
+  },
+  {
+    "index": 458,
+    "timeMs": 87082.09,
+    "strength": 0.715,
+    "role": "attack",
+    "cutTimesMs": [
+      87082.09
+    ]
+  },
+  {
+    "index": 459,
+    "timeMs": 87171.88,
+    "strength": 0.625,
+    "role": "attack",
+    "cutTimesMs": [
+      87171.88
+    ]
+  },
+  {
+    "index": 460,
+    "timeMs": 87456.24,
+    "strength": 1.66,
+    "role": "chord",
+    "cutTimesMs": [
+      87456.24
+    ]
+  },
+  {
+    "index": 461,
+    "timeMs": 87456.24,
+    "strength": 1.66,
+    "role": "chord",
+    "cutTimesMs": [
+      87456.24
+    ]
+  },
+  {
+    "index": 462,
+    "timeMs": 87600.91,
+    "strength": 0.679,
+    "role": "attack",
+    "cutTimesMs": [
+      87600.91
+    ]
+  },
+  {
+    "index": 463,
+    "timeMs": 87720.63,
+    "strength": 0.856,
+    "role": "attack-roll",
+    "cutTimesMs": [
+      87720.63,
+      87980.05,
+      88179.59,
+      88429.02
+    ]
+  },
+  {
+    "index": 464,
+    "timeMs": 87805.44,
+    "strength": 0.43,
+    "role": "attack",
+    "cutTimesMs": [
+      87805.44
+    ]
+  },
+  {
+    "index": 465,
+    "timeMs": 88084.81,
+    "strength": 0.673,
+    "role": "attack",
+    "cutTimesMs": [
+      88084.81
+    ]
+  },
+  {
+    "index": 466,
+    "timeMs": 88274.38,
+    "strength": 0.594,
+    "role": "attack",
+    "cutTimesMs": [
+      88274.38
+    ]
+  },
+  {
+    "index": 467,
+    "timeMs": 88513.83,
+    "strength": 0.651,
+    "role": "attack",
+    "cutTimesMs": [
+      88513.83
+    ]
+  },
+  {
+    "index": 468,
+    "timeMs": 88658.5,
+    "strength": 0.938,
+    "role": "attack",
+    "cutTimesMs": [
+      88658.5
+    ]
+  },
+  {
+    "index": 469,
+    "timeMs": 88853.06,
+    "strength": 1.069,
+    "role": "attack",
+    "cutTimesMs": [
+      88853.06
+    ]
+  },
+  {
+    "index": 470,
+    "timeMs": 88942.86,
+    "strength": 1.054,
+    "role": "attack",
+    "cutTimesMs": [
+      88942.86
+    ]
+  },
+  {
+    "index": 471,
+    "timeMs": 89082.54,
+    "strength": 0.564,
+    "role": "attack",
+    "cutTimesMs": [
+      89082.54
+    ]
+  },
+  {
+    "index": 472,
+    "timeMs": 89262.13,
+    "strength": 0.968,
+    "role": "attack",
+    "cutTimesMs": [
+      89262.13
+    ]
+  },
+  {
+    "index": 473,
+    "timeMs": 89371.88,
+    "strength": 0.637,
+    "role": "attack",
+    "cutTimesMs": [
+      89371.88
+    ]
+  },
+  {
+    "index": 474,
+    "timeMs": 89451.7,
+    "strength": 0.742,
+    "role": "attack",
+    "cutTimesMs": [
+      89451.7
+    ]
+  },
+  {
+    "index": 475,
+    "timeMs": 89636.28,
+    "strength": 1.185,
+    "role": "attack",
+    "cutTimesMs": [
+      89636.28
+    ]
+  },
+  {
+    "index": 476,
+    "timeMs": 89716.1,
+    "strength": 0.967,
+    "role": "attack",
+    "cutTimesMs": [
+      89716.1
+    ]
+  },
+  {
+    "index": 477,
+    "timeMs": 89835.83,
+    "strength": 0.651,
+    "role": "attack",
+    "cutTimesMs": [
+      89835.83
+    ]
+  },
+  {
+    "index": 478,
+    "timeMs": 90000.45,
+    "strength": 1.047,
+    "role": "chord",
+    "cutTimesMs": [
+      90000.45
+    ]
+  },
+  {
+    "index": 479,
+    "timeMs": 90000.45,
+    "strength": 1.047,
+    "role": "chord",
+    "cutTimesMs": [
+      90000.45
+    ]
+  },
+  {
+    "index": 480,
+    "timeMs": 90185.03,
+    "strength": 1.007,
+    "role": "attack",
+    "cutTimesMs": [
+      90185.03
+    ]
+  },
+  {
+    "index": 481,
+    "timeMs": 90359.64,
+    "strength": 0.856,
+    "role": "attack",
+    "cutTimesMs": [
+      90359.64
+    ]
+  },
+  {
+    "index": 482,
+    "timeMs": 90449.43,
+    "strength": 0.399,
+    "role": "attack",
+    "cutTimesMs": [
+      90449.43
+    ]
+  },
+  {
+    "index": 483,
+    "timeMs": 90539.23,
+    "strength": 1.934,
+    "role": "attack",
+    "cutTimesMs": [
+      90539.23
+    ]
+  },
+  {
+    "index": 484,
+    "timeMs": 90639.0,
+    "strength": 0.45,
+    "role": "attack",
+    "cutTimesMs": [
+      90639.0
+    ]
+  },
+  {
+    "index": 485,
+    "timeMs": 90718.82,
+    "strength": 0.784,
+    "role": "attack",
+    "cutTimesMs": [
+      90718.82
+    ]
+  },
+  {
+    "index": 486,
+    "timeMs": 90808.62,
+    "strength": 0.47,
+    "role": "attack",
+    "cutTimesMs": [
+      90808.62
+    ]
+  },
+  {
+    "index": 487,
+    "timeMs": 90898.41,
+    "strength": 1.11,
+    "role": "attack",
+    "cutTimesMs": [
+      90898.41
+    ]
+  },
+  {
+    "index": 488,
+    "timeMs": 91073.02,
+    "strength": 0.8,
+    "role": "attack",
+    "cutTimesMs": [
+      91073.02
+    ]
+  },
+  {
+    "index": 489,
+    "timeMs": 91162.81,
+    "strength": 0.414,
+    "role": "attack",
+    "cutTimesMs": [
+      91162.81
+    ]
+  },
+  {
+    "index": 490,
+    "timeMs": 91257.6,
+    "strength": 1.913,
+    "role": "attack",
+    "cutTimesMs": [
+      91257.6
+    ]
+  },
+  {
+    "index": 491,
+    "timeMs": 91357.37,
+    "strength": 0.555,
+    "role": "attack",
+    "cutTimesMs": [
+      91357.37
+    ]
+  },
+  {
+    "index": 492,
+    "timeMs": 91437.19,
+    "strength": 0.766,
+    "role": "attack",
+    "cutTimesMs": [
+      91437.19
+    ]
+  },
+  {
+    "index": 493,
+    "timeMs": 91526.98,
+    "strength": 0.511,
+    "role": "attack",
+    "cutTimesMs": [
+      91526.98
+    ]
+  },
+  {
+    "index": 494,
+    "timeMs": 91616.78,
+    "strength": 1.012,
+    "role": "attack",
+    "cutTimesMs": [
+      91616.78
+    ]
+  },
+  {
+    "index": 495,
+    "timeMs": 91796.37,
+    "strength": 0.673,
+    "role": "attack",
+    "cutTimesMs": [
+      91796.37
+    ]
+  },
+  {
+    "index": 496,
+    "timeMs": 91881.18,
+    "strength": 0.571,
+    "role": "attack",
+    "cutTimesMs": [
+      91881.18
+    ]
+  },
+  {
+    "index": 497,
+    "timeMs": 91970.98,
+    "strength": 1.914,
+    "role": "attack",
+    "cutTimesMs": [
+      91970.98
+    ]
+  },
+  {
+    "index": 498,
+    "timeMs": 92075.74,
+    "strength": 0.539,
+    "role": "attack",
+    "cutTimesMs": [
+      92075.74
+    ]
+  },
+  {
+    "index": 499,
+    "timeMs": 92155.56,
+    "strength": 0.702,
+    "role": "attack",
+    "cutTimesMs": [
+      92155.56
+    ]
+  },
+  {
+    "index": 500,
+    "timeMs": 92245.35,
+    "strength": 0.554,
+    "role": "attack",
+    "cutTimesMs": [
+      92245.35
+    ]
+  },
+  {
+    "index": 501,
+    "timeMs": 92340.14,
+    "strength": 1.052,
+    "role": "attack",
+    "cutTimesMs": [
+      92340.14
+    ]
+  },
+  {
+    "index": 502,
+    "timeMs": 92504.76,
+    "strength": 0.675,
+    "role": "attack",
+    "cutTimesMs": [
+      92504.76
+    ]
+  },
+  {
+    "index": 503,
+    "timeMs": 92689.34,
+    "strength": 2.048,
+    "role": "chord",
+    "cutTimesMs": [
+      92689.34
+    ]
+  },
+  {
+    "index": 504,
+    "timeMs": 92689.34,
+    "strength": 2.048,
+    "role": "chord",
+    "cutTimesMs": [
+      92689.34
+    ]
+  },
+  {
+    "index": 505,
+    "timeMs": 92868.93,
+    "strength": 0.912,
+    "role": "attack",
+    "cutTimesMs": [
+      92868.93
+    ]
+  },
+  {
+    "index": 506,
+    "timeMs": 92953.74,
+    "strength": 0.359,
+    "role": "attack",
+    "cutTimesMs": [
+      92953.74
+    ]
+  },
+  {
+    "index": 507,
+    "timeMs": 93058.5,
+    "strength": 0.977,
+    "role": "attack",
+    "cutTimesMs": [
+      93058.5
+    ]
+  },
+  {
+    "index": 508,
+    "timeMs": 93228.12,
+    "strength": 0.978,
+    "role": "attack",
+    "cutTimesMs": [
+      93228.12
+    ]
+  },
+  {
+    "index": 509,
+    "timeMs": 93407.71,
+    "strength": 1.709,
+    "role": "attack",
+    "cutTimesMs": [
+      93407.71
+    ]
+  },
+  {
+    "index": 510,
+    "timeMs": 93587.3,
+    "strength": 0.813,
+    "role": "attack",
+    "cutTimesMs": [
+      93587.3
+    ]
+  },
+  {
+    "index": 511,
+    "timeMs": 93697.05,
+    "strength": 0.444,
+    "role": "attack",
+    "cutTimesMs": [
+      93697.05
+    ]
+  },
+  {
+    "index": 512,
+    "timeMs": 93776.87,
+    "strength": 0.997,
+    "role": "attack",
+    "cutTimesMs": [
+      93776.87
+    ]
+  },
+  {
+    "index": 513,
+    "timeMs": 93946.49,
+    "strength": 0.719,
+    "role": "attack",
+    "cutTimesMs": [
+      93946.49
+    ]
+  },
+  {
+    "index": 514,
+    "timeMs": 94126.08,
+    "strength": 1.673,
+    "role": "attack",
+    "cutTimesMs": [
+      94126.08
+    ]
+  },
+  {
+    "index": 515,
+    "timeMs": 94225.85,
+    "strength": 0.518,
+    "role": "attack",
+    "cutTimesMs": [
+      94225.85
+    ]
+  },
+  {
+    "index": 516,
+    "timeMs": 94305.67,
+    "strength": 0.813,
+    "role": "attack",
+    "cutTimesMs": [
+      94305.67
+    ]
+  },
+  {
+    "index": 517,
+    "timeMs": 94385.49,
+    "strength": 0.48,
+    "role": "attack",
+    "cutTimesMs": [
+      94385.49
+    ]
+  },
+  {
+    "index": 518,
+    "timeMs": 94490.25,
+    "strength": 1.185,
+    "role": "attack",
+    "cutTimesMs": [
+      94490.25
+    ]
+  },
+  {
+    "index": 519,
+    "timeMs": 94679.82,
+    "strength": 0.714,
+    "role": "attack",
+    "cutTimesMs": [
+      94679.82
+    ]
+  },
+  {
+    "index": 520,
+    "timeMs": 94844.44,
+    "strength": 1.493,
+    "role": "chord",
+    "cutTimesMs": [
+      94844.44
+    ]
+  },
+  {
+    "index": 521,
+    "timeMs": 94844.44,
+    "strength": 1.493,
+    "role": "chord",
+    "cutTimesMs": [
+      94844.44
+    ]
+  },
+  {
+    "index": 522,
+    "timeMs": 95024.04,
+    "strength": 1.004,
+    "role": "attack",
+    "cutTimesMs": [
+      95024.04
+    ]
+  },
+  {
+    "index": 523,
+    "timeMs": 95203.63,
+    "strength": 1.213,
+    "role": "attack",
+    "cutTimesMs": [
+      95203.63
+    ]
+  },
+  {
+    "index": 524,
+    "timeMs": 95293.42,
+    "strength": 0.551,
+    "role": "attack",
+    "cutTimesMs": [
+      95293.42
+    ]
+  },
+  {
+    "index": 525,
+    "timeMs": 95562.81,
+    "strength": 1.336,
+    "role": "attack",
+    "cutTimesMs": [
+      95562.81
+    ]
+  },
+  {
+    "index": 526,
+    "timeMs": 95677.55,
+    "strength": 0.367,
+    "role": "attack",
+    "cutTimesMs": [
+      95677.55
+    ]
+  },
+  {
+    "index": 527,
+    "timeMs": 95817.23,
+    "strength": 0.579,
+    "role": "attack",
+    "cutTimesMs": [
+      95817.23
+    ]
+  },
+  {
+    "index": 528,
+    "timeMs": 95912.02,
+    "strength": 0.827,
+    "role": "attack",
+    "cutTimesMs": [
+      95912.02
+    ]
+  },
+  {
+    "index": 529,
+    "timeMs": 96006.8,
+    "strength": 0.453,
+    "role": "attack",
+    "cutTimesMs": [
+      96006.8
+    ]
+  },
+  {
+    "index": 530,
+    "timeMs": 96096.6,
+    "strength": 0.726,
+    "role": "attack",
+    "cutTimesMs": [
+      96096.6
+    ]
+  },
+  {
+    "index": 531,
+    "timeMs": 96181.41,
+    "strength": 0.45,
+    "role": "attack",
+    "cutTimesMs": [
+      96181.41
+    ]
+  },
+  {
+    "index": 532,
+    "timeMs": 96276.19,
+    "strength": 1.77,
+    "role": "attack-roll",
+    "cutTimesMs": [
+      96276.19,
+      96545.58,
+      96809.98,
+      96989.57
+    ]
+  },
+  {
+    "index": 533,
+    "timeMs": 96455.78,
+    "strength": 0.982,
+    "role": "attack",
+    "cutTimesMs": [
+      96455.78
+    ]
+  },
+  {
+    "index": 534,
+    "timeMs": 96640.36,
+    "strength": 1.002,
+    "role": "attack",
+    "cutTimesMs": [
+      96640.36
+    ]
+  },
+  {
+    "index": 535,
+    "timeMs": 96904.76,
+    "strength": 0.361,
+    "role": "attack",
+    "cutTimesMs": [
+      96904.76
+    ]
+  },
+  {
+    "index": 536,
+    "timeMs": 97094.33,
+    "strength": 0.469,
+    "role": "attack",
+    "cutTimesMs": [
+      97094.33
+    ]
+  },
+  {
+    "index": 537,
+    "timeMs": 97174.15,
+    "strength": 0.944,
+    "role": "attack",
+    "cutTimesMs": [
+      97174.15
+    ]
+  },
+  {
+    "index": 538,
+    "timeMs": 97263.95,
+    "strength": 0.583,
+    "role": "attack",
+    "cutTimesMs": [
+      97263.95
+    ]
+  },
+  {
+    "index": 539,
+    "timeMs": 97353.74,
+    "strength": 0.921,
+    "role": "attack",
+    "cutTimesMs": [
+      97353.74
+    ]
+  },
+  {
+    "index": 540,
+    "timeMs": 97533.33,
+    "strength": 0.593,
+    "role": "attack",
+    "cutTimesMs": [
+      97533.33
+    ]
+  },
+  {
+    "index": 541,
+    "timeMs": 97618.14,
+    "strength": 0.499,
+    "role": "attack",
+    "cutTimesMs": [
+      97618.14
+    ]
+  },
+  {
+    "index": 542,
+    "timeMs": 97707.94,
+    "strength": 1.662,
+    "role": "attack",
+    "cutTimesMs": [
+      97707.94
+    ]
+  },
+  {
+    "index": 543,
+    "timeMs": 97812.7,
+    "strength": 0.423,
+    "role": "attack",
+    "cutTimesMs": [
+      97812.7
+    ]
+  },
+  {
+    "index": 544,
+    "timeMs": 97892.52,
+    "strength": 0.723,
+    "role": "attack",
+    "cutTimesMs": [
+      97892.52
+    ]
+  },
+  {
+    "index": 545,
+    "timeMs": 97982.31,
+    "strength": 0.364,
+    "role": "attack",
+    "cutTimesMs": [
+      97982.31
+    ]
+  },
+  {
+    "index": 546,
+    "timeMs": 98077.1,
+    "strength": 1.005,
+    "role": "attack",
+    "cutTimesMs": [
+      98077.1
+    ]
+  },
+  {
+    "index": 547,
+    "timeMs": 98241.72,
+    "strength": 0.79,
+    "role": "attack",
+    "cutTimesMs": [
+      98241.72
+    ]
+  },
+  {
+    "index": 548,
+    "timeMs": 98426.3,
+    "strength": 2.003,
+    "role": "chord",
+    "cutTimesMs": [
+      98426.3
+    ]
+  },
+  {
+    "index": 549,
+    "timeMs": 98426.3,
+    "strength": 2.003,
+    "role": "chord",
+    "cutTimesMs": [
+      98426.3
+    ]
+  },
+  {
+    "index": 550,
+    "timeMs": 98605.9,
+    "strength": 0.66,
+    "role": "attack",
+    "cutTimesMs": [
+      98605.9
+    ]
+  },
+  {
+    "index": 551,
+    "timeMs": 98690.7,
+    "strength": 0.377,
+    "role": "attack",
+    "cutTimesMs": [
+      98690.7
+    ]
+  },
+  {
+    "index": 552,
+    "timeMs": 98780.5,
+    "strength": 0.931,
+    "role": "attack",
+    "cutTimesMs": [
+      98780.5
+    ]
+  },
+  {
+    "index": 553,
+    "timeMs": 98865.31,
+    "strength": 0.411,
+    "role": "attack",
+    "cutTimesMs": [
+      98865.31
+    ]
+  },
+  {
+    "index": 554,
+    "timeMs": 98970.07,
+    "strength": 0.74,
+    "role": "attack",
+    "cutTimesMs": [
+      98970.07
+    ]
+  },
+  {
+    "index": 555,
+    "timeMs": 99144.67,
+    "strength": 1.729,
+    "role": "attack",
+    "cutTimesMs": [
+      99144.67
+    ]
+  },
+  {
+    "index": 556,
+    "timeMs": 99254.42,
+    "strength": 0.77,
+    "role": "attack",
+    "cutTimesMs": [
+      99254.42
+    ]
+  },
+  {
+    "index": 557,
+    "timeMs": 99508.84,
+    "strength": 1.006,
+    "role": "attack",
+    "cutTimesMs": [
+      99508.84
+    ]
+  },
+  {
+    "index": 558,
+    "timeMs": 99683.45,
+    "strength": 0.742,
+    "role": "attack",
+    "cutTimesMs": [
+      99683.45
+    ]
+  },
+  {
+    "index": 559,
+    "timeMs": 99778.23,
+    "strength": 0.388,
+    "role": "attack",
+    "cutTimesMs": [
+      99778.23
+    ]
+  },
+  {
+    "index": 560,
+    "timeMs": 99858.05,
+    "strength": 1.289,
+    "role": "attack",
+    "cutTimesMs": [
+      99858.05
+    ]
+  },
+  {
+    "index": 561,
+    "timeMs": 99942.86,
+    "strength": 0.427,
+    "role": "attack",
+    "cutTimesMs": [
+      99942.86
+    ]
+  },
+  {
+    "index": 562,
+    "timeMs": 100042.63,
+    "strength": 1.009,
+    "role": "attack",
+    "cutTimesMs": [
+      100042.63
+    ]
+  },
+  {
+    "index": 563,
+    "timeMs": 100132.43,
+    "strength": 0.536,
+    "role": "attack",
+    "cutTimesMs": [
+      100132.43
+    ]
+  },
+  {
+    "index": 564,
+    "timeMs": 100227.21,
+    "strength": 1.121,
+    "role": "attack",
+    "cutTimesMs": [
+      100227.21
+    ]
+  },
+  {
+    "index": 565,
+    "timeMs": 100396.83,
+    "strength": 1.118,
+    "role": "chord",
+    "cutTimesMs": [
+      100396.83
+    ]
+  },
+  {
+    "index": 566,
+    "timeMs": 100396.83,
+    "strength": 1.118,
+    "role": "chord",
+    "cutTimesMs": [
+      100396.83
+    ]
+  },
+  {
+    "index": 567,
+    "timeMs": 100581.41,
+    "strength": 1.44,
+    "role": "attack",
+    "cutTimesMs": [
+      100581.41
+    ]
+  },
+  {
+    "index": 568,
+    "timeMs": 100761.0,
+    "strength": 0.833,
+    "role": "attack",
+    "cutTimesMs": [
+      100761.0
+    ]
+  },
+  {
+    "index": 569,
+    "timeMs": 100935.6,
+    "strength": 1.421,
+    "role": "attack",
+    "cutTimesMs": [
+      100935.6
+    ]
+  },
+  {
+    "index": 570,
+    "timeMs": 101020.41,
+    "strength": 0.491,
+    "role": "attack",
+    "cutTimesMs": [
+      101020.41
+    ]
+  },
+  {
+    "index": 571,
+    "timeMs": 101165.08,
+    "strength": 0.644,
+    "role": "attack",
+    "cutTimesMs": [
+      101165.08
+    ]
+  },
+  {
+    "index": 572,
+    "timeMs": 101299.77,
+    "strength": 0.895,
+    "role": "attack",
+    "cutTimesMs": [
+      101299.77
+    ]
+  },
+  {
+    "index": 573,
+    "timeMs": 101549.21,
+    "strength": 0.684,
+    "role": "attack",
+    "cutTimesMs": [
+      101549.21
+    ]
+  },
+  {
+    "index": 574,
+    "timeMs": 101629.02,
+    "strength": 0.912,
+    "role": "attack",
+    "cutTimesMs": [
+      101629.02
+    ]
+  },
+  {
+    "index": 575,
+    "timeMs": 101843.54,
+    "strength": 0.669,
+    "role": "attack",
+    "cutTimesMs": [
+      101843.54
+    ]
+  },
+  {
+    "index": 576,
+    "timeMs": 101928.34,
+    "strength": 0.707,
+    "role": "attack",
+    "cutTimesMs": [
+      101928.34
+    ]
+  },
+  {
+    "index": 577,
+    "timeMs": 102008.16,
+    "strength": 0.683,
+    "role": "attack",
+    "cutTimesMs": [
+      102008.16
+    ]
+  },
+  {
+    "index": 578,
+    "timeMs": 102187.76,
+    "strength": 1.256,
+    "role": "chord",
+    "cutTimesMs": [
+      102187.76
+    ]
+  },
+  {
+    "index": 579,
+    "timeMs": 102187.76,
+    "strength": 1.256,
+    "role": "chord",
+    "cutTimesMs": [
+      102187.76
+    ]
+  },
+  {
+    "index": 580,
+    "timeMs": 102367.35,
+    "strength": 0.616,
+    "role": "attack",
+    "cutTimesMs": [
+      102367.35
+    ]
+  },
+  {
+    "index": 581,
+    "timeMs": 102551.93,
+    "strength": 1.338,
+    "role": "attack",
+    "cutTimesMs": [
+      102551.93
+    ]
+  },
+  {
+    "index": 582,
+    "timeMs": 102736.51,
+    "strength": 0.847,
+    "role": "attack",
+    "cutTimesMs": [
+      102736.51
+    ]
+  },
+  {
+    "index": 583,
+    "timeMs": 102975.96,
+    "strength": 0.497,
+    "role": "attack",
+    "cutTimesMs": [
+      102975.96
+    ]
+  },
+  {
+    "index": 584,
+    "timeMs": 103090.7,
+    "strength": 0.794,
+    "role": "attack",
+    "cutTimesMs": [
+      103090.7
+    ]
+  },
+  {
+    "index": 585,
+    "timeMs": 103285.26,
+    "strength": 0.538,
+    "role": "attack",
+    "cutTimesMs": [
+      103285.26
+    ]
+  },
+  {
+    "index": 586,
+    "timeMs": 103365.08,
+    "strength": 0.435,
+    "role": "attack",
+    "cutTimesMs": [
+      103365.08
+    ]
+  },
+  {
+    "index": 587,
+    "timeMs": 103449.89,
+    "strength": 0.503,
+    "role": "attack",
+    "cutTimesMs": [
+      103449.89
+    ]
+  },
+  {
+    "index": 588,
+    "timeMs": 103624.49,
+    "strength": 0.973,
+    "role": "attack",
+    "cutTimesMs": [
+      103624.49
+    ]
+  },
+  {
+    "index": 589,
+    "timeMs": 103804.08,
+    "strength": 1.094,
+    "role": "chord",
+    "cutTimesMs": [
+      103804.08
+    ]
+  },
+  {
+    "index": 590,
+    "timeMs": 103804.08,
+    "strength": 1.094,
+    "role": "chord",
+    "cutTimesMs": [
+      103804.08
+    ]
+  },
+  {
+    "index": 591,
+    "timeMs": 103983.67,
+    "strength": 1.069,
+    "role": "attack",
+    "cutTimesMs": [
+      103983.67
+    ]
+  },
+  {
+    "index": 592,
+    "timeMs": 104168.25,
+    "strength": 1.026,
+    "role": "attack",
+    "cutTimesMs": [
+      104168.25
+    ]
+  },
+  {
+    "index": 593,
+    "timeMs": 104367.8,
+    "strength": 0.636,
+    "role": "attack",
+    "cutTimesMs": [
+      104367.8
+    ]
+  },
+  {
+    "index": 594,
+    "timeMs": 104497.51,
+    "strength": 0.833,
+    "role": "attack",
+    "cutTimesMs": [
+      104497.51
+    ]
+  },
+  {
+    "index": 595,
+    "timeMs": 104582.31,
+    "strength": 0.577,
+    "role": "attack",
+    "cutTimesMs": [
+      104582.31
+    ]
+  },
+  {
+    "index": 596,
+    "timeMs": 104707.03,
+    "strength": 0.533,
+    "role": "attack-roll",
+    "cutTimesMs": [
+      104707.03,
+      104886.62,
+      105235.83
+    ]
+  },
+  {
+    "index": 597,
+    "timeMs": 104791.84,
+    "strength": 0.758,
+    "role": "attack",
+    "cutTimesMs": [
+      104791.84
+    ]
+  },
+  {
+    "index": 598,
+    "timeMs": 105061.22,
+    "strength": 0.924,
+    "role": "attack",
+    "cutTimesMs": [
+      105061.22
+    ]
+  },
+  {
+    "index": 599,
+    "timeMs": 105415.42,
+    "strength": 0.98,
+    "role": "attack",
+    "cutTimesMs": [
+      105415.42
+    ]
+  },
+  {
+    "index": 600,
+    "timeMs": 105600.0,
+    "strength": 0.865,
+    "role": "attack",
+    "cutTimesMs": [
+      105600.0
+    ]
+  },
+  {
+    "index": 601,
+    "timeMs": 105779.59,
+    "strength": 0.501,
+    "role": "attack",
+    "cutTimesMs": [
+      105779.59
+    ]
+  },
+  {
+    "index": 602,
+    "timeMs": 105959.18,
+    "strength": 0.631,
+    "role": "attack",
+    "cutTimesMs": [
+      105959.18
+    ]
+  },
+  {
+    "index": 603,
+    "timeMs": 106133.79,
+    "strength": 0.984,
+    "role": "attack",
+    "cutTimesMs": [
+      106133.79
+    ]
+  },
+  {
+    "index": 604,
+    "timeMs": 106318.37,
+    "strength": 1.083,
+    "role": "attack",
+    "cutTimesMs": [
+      106318.37
+    ]
+  },
+  {
+    "index": 605,
+    "timeMs": 106403.17,
+    "strength": 0.369,
+    "role": "attack",
+    "cutTimesMs": [
+      106403.17
+    ]
+  },
+  {
+    "index": 606,
+    "timeMs": 106497.96,
+    "strength": 1.107,
+    "role": "attack",
+    "cutTimesMs": [
+      106497.96
+    ]
+  },
+  {
+    "index": 607,
+    "timeMs": 106667.57,
+    "strength": 2.217,
+    "role": "attack",
+    "cutTimesMs": [
+      106667.57
+    ]
+  },
+  {
+    "index": 608,
+    "timeMs": 106752.38,
+    "strength": 0.604,
+    "role": "attack",
+    "cutTimesMs": [
+      106752.38
+    ]
+  },
+  {
+    "index": 609,
+    "timeMs": 106862.13,
+    "strength": 0.776,
+    "role": "attack",
+    "cutTimesMs": [
+      106862.13
+    ]
+  },
+  {
+    "index": 610,
+    "timeMs": 106941.95,
+    "strength": 0.543,
+    "role": "attack",
+    "cutTimesMs": [
+      106941.95
+    ]
+  },
+  {
+    "index": 611,
+    "timeMs": 107041.72,
+    "strength": 0.955,
+    "role": "attack",
+    "cutTimesMs": [
+      107041.72
+    ]
+  },
+  {
+    "index": 612,
+    "timeMs": 107211.34,
+    "strength": 1.46,
+    "role": "attack",
+    "cutTimesMs": [
+      107211.34
+    ]
+  },
+  {
+    "index": 613,
+    "timeMs": 107291.16,
+    "strength": 0.571,
+    "role": "attack",
+    "cutTimesMs": [
+      107291.16
+    ]
+  },
+  {
+    "index": 614,
+    "timeMs": 107415.87,
+    "strength": 0.621,
+    "role": "attack",
+    "cutTimesMs": [
+      107415.87
+    ]
+  },
+  {
+    "index": 615,
+    "timeMs": 107580.5,
+    "strength": 0.586,
+    "role": "attack",
+    "cutTimesMs": [
+      107580.5
+    ]
+  },
+  {
+    "index": 616,
+    "timeMs": 107660.32,
+    "strength": 0.533,
+    "role": "attack",
+    "cutTimesMs": [
+      107660.32
+    ]
+  },
+  {
+    "index": 617,
+    "timeMs": 107750.11,
+    "strength": 0.996,
+    "role": "attack",
+    "cutTimesMs": [
+      107750.11
+    ]
+  },
+  {
+    "index": 618,
+    "timeMs": 107829.93,
+    "strength": 0.467,
+    "role": "attack",
+    "cutTimesMs": [
+      107829.93
+    ]
+  },
+  {
+    "index": 619,
+    "timeMs": 107934.69,
+    "strength": 0.722,
+    "role": "attack",
+    "cutTimesMs": [
+      107934.69
+    ]
+  },
+  {
+    "index": 620,
+    "timeMs": 108109.3,
+    "strength": 1.037,
+    "role": "chord",
+    "cutTimesMs": [
+      108109.3
+    ]
+  },
+  {
+    "index": 621,
+    "timeMs": 108109.3,
+    "strength": 1.037,
+    "role": "chord",
+    "cutTimesMs": [
+      108109.3
+    ]
+  },
+  {
+    "index": 622,
+    "timeMs": 108283.9,
+    "strength": 0.827,
+    "role": "attack",
+    "cutTimesMs": [
+      108283.9
+    ]
+  },
+  {
+    "index": 623,
+    "timeMs": 108463.49,
+    "strength": 1.3,
+    "role": "attack",
+    "cutTimesMs": [
+      108463.49
+    ]
+  },
+  {
+    "index": 624,
+    "timeMs": 108558.28,
+    "strength": 0.407,
+    "role": "attack",
+    "cutTimesMs": [
+      108558.28
+    ]
+  },
+  {
+    "index": 625,
+    "timeMs": 108638.1,
+    "strength": 0.688,
+    "role": "attack",
+    "cutTimesMs": [
+      108638.1
+    ]
+  },
+  {
+    "index": 626,
+    "timeMs": 108722.9,
+    "strength": 0.376,
+    "role": "attack",
+    "cutTimesMs": [
+      108722.9
+    ]
+  },
+  {
+    "index": 627,
+    "timeMs": 108817.69,
+    "strength": 0.967,
+    "role": "attack",
+    "cutTimesMs": [
+      108817.69
+    ]
+  },
+  {
+    "index": 628,
+    "timeMs": 108897.51,
+    "strength": 0.529,
+    "role": "attack",
+    "cutTimesMs": [
+      108897.51
+    ]
+  },
+  {
+    "index": 629,
+    "timeMs": 109092.06,
+    "strength": 0.639,
+    "role": "attack",
+    "cutTimesMs": [
+      109092.06
+    ]
+  },
+  {
+    "index": 630,
+    "timeMs": 109186.85,
+    "strength": 1.478,
+    "role": "attack",
+    "cutTimesMs": [
+      109186.85
+    ]
+  },
+  {
+    "index": 631,
+    "timeMs": 109266.67,
+    "strength": 0.372,
+    "role": "attack",
+    "cutTimesMs": [
+      109266.67
+    ]
+  },
+  {
+    "index": 632,
+    "timeMs": 109356.46,
+    "strength": 0.556,
+    "role": "attack",
+    "cutTimesMs": [
+      109356.46
+    ]
+  },
+  {
+    "index": 633,
+    "timeMs": 109451.25,
+    "strength": 0.415,
+    "role": "attack",
+    "cutTimesMs": [
+      109451.25
+    ]
+  },
+  {
+    "index": 634,
+    "timeMs": 109551.02,
+    "strength": 0.827,
+    "role": "attack",
+    "cutTimesMs": [
+      109551.02
+    ]
+  },
+  {
+    "index": 635,
+    "timeMs": 109735.6,
+    "strength": 0.716,
+    "role": "attack",
+    "cutTimesMs": [
+      109735.6
+    ]
+  },
+  {
+    "index": 636,
+    "timeMs": 109900.23,
+    "strength": 1.999,
+    "role": "chord",
+    "cutTimesMs": [
+      109900.23
+    ]
+  },
+  {
+    "index": 637,
+    "timeMs": 109900.23,
+    "strength": 1.999,
+    "role": "chord",
+    "cutTimesMs": [
+      109900.23
+    ]
+  },
+  {
+    "index": 638,
+    "timeMs": 110084.81,
+    "strength": 0.616,
+    "role": "attack",
+    "cutTimesMs": [
+      110084.81
+    ]
+  },
+  {
+    "index": 639,
+    "timeMs": 110264.4,
+    "strength": 0.816,
+    "role": "attack",
+    "cutTimesMs": [
+      110264.4
+    ]
+  },
+  {
+    "index": 640,
+    "timeMs": 110364.17,
+    "strength": 0.461,
+    "role": "attack",
+    "cutTimesMs": [
+      110364.17
+    ]
+  },
+  {
+    "index": 641,
+    "timeMs": 110443.99,
+    "strength": 0.831,
+    "role": "attack",
+    "cutTimesMs": [
+      110443.99
+    ]
+  },
+  {
+    "index": 642,
+    "timeMs": 110618.59,
+    "strength": 1.303,
+    "role": "attack",
+    "cutTimesMs": [
+      110618.59
+    ]
+  },
+  {
+    "index": 643,
+    "timeMs": 110803.17,
+    "strength": 0.695,
+    "role": "attack",
+    "cutTimesMs": [
+      110803.17
+    ]
+  },
+  {
+    "index": 644,
+    "timeMs": 110977.78,
+    "strength": 1.201,
+    "role": "attack",
+    "cutTimesMs": [
+      110977.78
+    ]
+  },
+  {
+    "index": 645,
+    "timeMs": 111167.35,
+    "strength": 0.667,
+    "role": "attack",
+    "cutTimesMs": [
+      111167.35
+    ]
+  },
+  {
+    "index": 646,
+    "timeMs": 111336.96,
+    "strength": 1.764,
+    "role": "attack",
+    "cutTimesMs": [
+      111336.96
+    ]
+  },
+  {
+    "index": 647,
+    "timeMs": 111516.55,
+    "strength": 0.89,
+    "role": "attack",
+    "cutTimesMs": [
+      111516.55
+    ]
+  },
+  {
+    "index": 648,
+    "timeMs": 111696.15,
+    "strength": 1.317,
+    "role": "attack-roll",
+    "cutTimesMs": [
+      111696.15,
+      111855.78,
+      112224.94
+    ]
+  },
+  {
+    "index": 649,
+    "timeMs": 111696.15,
+    "strength": 1.317,
+    "role": "chord",
+    "cutTimesMs": [
+      111696.15
+    ]
+  },
+  {
+    "index": 650,
+    "timeMs": 112090.25,
+    "strength": 0.489,
+    "role": "attack",
+    "cutTimesMs": [
+      112090.25
+    ]
+  },
+  {
+    "index": 651,
+    "timeMs": 112324.72,
+    "strength": 0.74,
+    "role": "attack",
+    "cutTimesMs": [
+      112324.72
+    ]
+  },
+  {
+    "index": 652,
+    "timeMs": 112499.32,
+    "strength": 0.576,
+    "role": "attack",
+    "cutTimesMs": [
+      112499.32
+    ]
+  },
+  {
+    "index": 653,
+    "timeMs": 112634.01,
+    "strength": 1.166,
+    "role": "attack",
+    "cutTimesMs": [
+      112634.01
+    ]
+  },
+  {
+    "index": 654,
+    "timeMs": 112818.59,
+    "strength": 0.508,
+    "role": "attack",
+    "cutTimesMs": [
+      112818.59
+    ]
+  },
+  {
+    "index": 655,
+    "timeMs": 112918.37,
+    "strength": 0.624,
+    "role": "attack",
+    "cutTimesMs": [
+      112918.37
+    ]
+  },
+  {
+    "index": 656,
+    "timeMs": 113127.89,
+    "strength": 1.154,
+    "role": "attack",
+    "cutTimesMs": [
+      113127.89
+    ]
+  },
+  {
+    "index": 657,
+    "timeMs": 113217.69,
+    "strength": 0.46,
+    "role": "attack",
+    "cutTimesMs": [
+      113217.69
+    ]
+  },
+  {
+    "index": 658,
+    "timeMs": 113307.48,
+    "strength": 1.184,
+    "role": "attack",
+    "cutTimesMs": [
+      113307.48
+    ]
+  },
+  {
+    "index": 659,
+    "timeMs": 113397.28,
+    "strength": 0.533,
+    "role": "attack",
+    "cutTimesMs": [
+      113397.28
+    ]
+  },
+  {
+    "index": 660,
+    "timeMs": 113482.09,
+    "strength": 1.405,
+    "role": "attack",
+    "cutTimesMs": [
+      113482.09
+    ]
+  },
+  {
+    "index": 661,
+    "timeMs": 113561.9,
+    "strength": 0.494,
+    "role": "attack",
+    "cutTimesMs": [
+      113561.9
+    ]
+  },
+  {
+    "index": 662,
+    "timeMs": 113661.68,
+    "strength": 0.971,
+    "role": "attack",
+    "cutTimesMs": [
+      113661.68
+    ]
+  },
+  {
+    "index": 663,
+    "timeMs": 113746.49,
+    "strength": 0.622,
+    "role": "attack",
+    "cutTimesMs": [
+      113746.49
+    ]
+  },
+  {
+    "index": 664,
+    "timeMs": 113831.29,
+    "strength": 0.901,
+    "role": "attack",
+    "cutTimesMs": [
+      113831.29
+    ]
+  },
+  {
+    "index": 665,
+    "timeMs": 113921.09,
+    "strength": 0.732,
+    "role": "attack",
+    "cutTimesMs": [
+      113921.09
+    ]
+  },
+  {
+    "index": 666,
+    "timeMs": 114000.91,
+    "strength": 1.269,
+    "role": "attack",
+    "cutTimesMs": [
+      114000.91
+    ]
+  },
+  {
+    "index": 667,
+    "timeMs": 114095.69,
+    "strength": 0.643,
+    "role": "attack",
+    "cutTimesMs": [
+      114095.69
+    ]
+  },
+  {
+    "index": 668,
+    "timeMs": 114180.5,
+    "strength": 1.394,
+    "role": "attack",
+    "cutTimesMs": [
+      114180.5
+    ]
+  },
+  {
+    "index": 669,
+    "timeMs": 114350.11,
+    "strength": 0.907,
+    "role": "attack",
+    "cutTimesMs": [
+      114350.11
+    ]
+  },
+  {
+    "index": 670,
+    "timeMs": 114449.89,
+    "strength": 0.628,
+    "role": "attack",
+    "cutTimesMs": [
+      114449.89
+    ]
+  },
+  {
+    "index": 671,
+    "timeMs": 114529.71,
+    "strength": 1.043,
+    "role": "attack",
+    "cutTimesMs": [
+      114529.71
+    ]
+  },
+  {
+    "index": 672,
+    "timeMs": 114624.49,
+    "strength": 0.556,
+    "role": "attack",
+    "cutTimesMs": [
+      114624.49
+    ]
+  },
+  {
+    "index": 673,
+    "timeMs": 114704.31,
+    "strength": 1.385,
+    "role": "attack",
+    "cutTimesMs": [
+      114704.31
+    ]
+  },
+  {
+    "index": 674,
+    "timeMs": 114789.12,
+    "strength": 0.487,
+    "role": "attack",
+    "cutTimesMs": [
+      114789.12
+    ]
+  },
+  {
+    "index": 675,
+    "timeMs": 114883.9,
+    "strength": 1.442,
+    "role": "attack",
+    "cutTimesMs": [
+      114883.9
+    ]
+  },
+  {
+    "index": 676,
+    "timeMs": 114963.72,
+    "strength": 0.475,
+    "role": "attack",
+    "cutTimesMs": [
+      114963.72
+    ]
+  },
+  {
+    "index": 677,
+    "timeMs": 115058.5,
+    "strength": 1.051,
+    "role": "attack",
+    "cutTimesMs": [
+      115058.5
+    ]
+  },
+  {
+    "index": 678,
+    "timeMs": 115138.32,
+    "strength": 0.569,
+    "role": "attack",
+    "cutTimesMs": [
+      115138.32
+    ]
+  },
+  {
+    "index": 679,
+    "timeMs": 115233.11,
+    "strength": 0.892,
+    "role": "attack",
+    "cutTimesMs": [
+      115233.11
+    ]
+  },
+  {
+    "index": 680,
+    "timeMs": 115322.9,
+    "strength": 0.389,
+    "role": "attack",
+    "cutTimesMs": [
+      115322.9
+    ]
+  },
+  {
+    "index": 681,
+    "timeMs": 115407.71,
+    "strength": 1.422,
+    "role": "attack",
+    "cutTimesMs": [
+      115407.71
+    ]
+  },
+  {
+    "index": 682,
+    "timeMs": 115582.31,
+    "strength": 1.533,
+    "role": "attack",
+    "cutTimesMs": [
+      115582.31
+    ]
+  },
+  {
+    "index": 683,
+    "timeMs": 115662.13,
+    "strength": 0.434,
+    "role": "attack",
+    "cutTimesMs": [
+      115662.13
+    ]
+  },
+  {
+    "index": 684,
+    "timeMs": 115751.93,
+    "strength": 0.881,
+    "role": "attack",
+    "cutTimesMs": [
+      115751.93
+    ]
+  },
+  {
+    "index": 685,
+    "timeMs": 115931.52,
+    "strength": 0.933,
+    "role": "attack",
+    "cutTimesMs": [
+      115931.52
+    ]
+  },
+  {
+    "index": 686,
+    "timeMs": 116106.12,
+    "strength": 1.488,
+    "role": "attack",
+    "cutTimesMs": [
+      116106.12
+    ]
+  },
+  {
+    "index": 687,
+    "timeMs": 116195.92,
+    "strength": 0.355,
+    "role": "attack",
+    "cutTimesMs": [
+      116195.92
+    ]
+  },
+  {
+    "index": 688,
+    "timeMs": 116280.73,
+    "strength": 1.321,
+    "role": "attack",
+    "cutTimesMs": [
+      116280.73
+    ]
+  },
+  {
+    "index": 689,
+    "timeMs": 116370.52,
+    "strength": 0.645,
+    "role": "attack",
+    "cutTimesMs": [
+      116370.52
+    ]
+  },
+  {
+    "index": 690,
+    "timeMs": 116455.33,
+    "strength": 1.569,
+    "role": "attack",
+    "cutTimesMs": [
+      116455.33
+    ]
+  },
+  {
+    "index": 691,
+    "timeMs": 116545.12,
+    "strength": 0.465,
+    "role": "attack",
+    "cutTimesMs": [
+      116545.12
+    ]
+  },
+  {
+    "index": 692,
+    "timeMs": 116634.92,
+    "strength": 1.011,
+    "role": "attack",
+    "cutTimesMs": [
+      116634.92
+    ]
+  },
+  {
+    "index": 693,
+    "timeMs": 116724.72,
+    "strength": 0.49,
+    "role": "attack",
+    "cutTimesMs": [
+      116724.72
+    ]
+  },
+  {
+    "index": 694,
+    "timeMs": 116804.54,
+    "strength": 1.337,
+    "role": "attack",
+    "cutTimesMs": [
+      116804.54
+    ]
+  },
+  {
+    "index": 695,
+    "timeMs": 116899.32,
+    "strength": 0.532,
+    "role": "attack",
+    "cutTimesMs": [
+      116899.32
+    ]
+  },
+  {
+    "index": 696,
+    "timeMs": 116979.14,
+    "strength": 1.803,
+    "role": "attack",
+    "cutTimesMs": [
+      116979.14
+    ]
+  },
+  {
+    "index": 697,
+    "timeMs": 117063.95,
+    "strength": 0.496,
+    "role": "attack",
+    "cutTimesMs": [
+      117063.95
+    ]
+  },
+  {
+    "index": 698,
+    "timeMs": 117153.74,
+    "strength": 1.005,
+    "role": "attack",
+    "cutTimesMs": [
+      117153.74
+    ]
+  },
+  {
+    "index": 699,
+    "timeMs": 117243.54,
+    "strength": 0.54,
+    "role": "attack",
+    "cutTimesMs": [
+      117243.54
+    ]
+  },
+  {
+    "index": 700,
+    "timeMs": 117328.34,
+    "strength": 1.227,
+    "role": "attack",
+    "cutTimesMs": [
+      117328.34
+    ]
+  },
+  {
+    "index": 701,
+    "timeMs": 117423.13,
+    "strength": 0.747,
+    "role": "attack",
+    "cutTimesMs": [
+      117423.13
+    ]
+  },
+  {
+    "index": 702,
+    "timeMs": 117502.95,
+    "strength": 1.192,
+    "role": "attack",
+    "cutTimesMs": [
+      117502.95
+    ]
+  },
+  {
+    "index": 703,
+    "timeMs": 117597.73,
+    "strength": 0.581,
+    "role": "attack",
+    "cutTimesMs": [
+      117597.73
+    ]
+  },
+  {
+    "index": 704,
+    "timeMs": 117677.55,
+    "strength": 1.488,
+    "role": "attack",
+    "cutTimesMs": [
+      117677.55
+    ]
+  },
+  {
+    "index": 705,
+    "timeMs": 117852.15,
+    "strength": 1.435,
+    "role": "chord",
+    "cutTimesMs": [
+      117852.15
+    ]
+  },
+  {
+    "index": 706,
+    "timeMs": 117852.15,
+    "strength": 1.435,
+    "role": "attack-roll",
+    "cutTimesMs": [
+      117852.15,
+      118126.53,
+      118375.96,
+      118630.39
+    ]
+  },
+  {
+    "index": 707,
+    "timeMs": 118026.76,
+    "strength": 1.559,
+    "role": "attack",
+    "cutTimesMs": [
+      118026.76
+    ]
+  },
+  {
+    "index": 708,
+    "timeMs": 118271.2,
+    "strength": 0.49,
+    "role": "attack",
+    "cutTimesMs": [
+      118271.2
+    ]
+  },
+  {
+    "index": 709,
+    "timeMs": 118525.62,
+    "strength": 0.593,
+    "role": "attack",
+    "cutTimesMs": [
+      118525.62
+    ]
+  },
+  {
+    "index": 710,
+    "timeMs": 118730.16,
+    "strength": 0.905,
+    "role": "attack",
+    "cutTimesMs": [
+      118730.16
+    ]
+  },
+  {
+    "index": 711,
+    "timeMs": 118899.77,
+    "strength": 0.795,
+    "role": "attack",
+    "cutTimesMs": [
+      118899.77
+    ]
+  },
+  {
+    "index": 712,
+    "timeMs": 119074.38,
+    "strength": 1.501,
+    "role": "attack",
+    "cutTimesMs": [
+      119074.38
+    ]
+  },
+  {
+    "index": 713,
+    "timeMs": 119243.99,
+    "strength": 0.942,
+    "role": "attack",
+    "cutTimesMs": [
+      119243.99
+    ]
+  },
+  {
+    "index": 714,
+    "timeMs": 119343.76,
+    "strength": 0.573,
+    "role": "attack",
+    "cutTimesMs": [
+      119343.76
+    ]
+  },
+  {
+    "index": 715,
+    "timeMs": 119423.58,
+    "strength": 0.997,
+    "role": "attack",
+    "cutTimesMs": [
+      119423.58
+    ]
+  },
+  {
+    "index": 716,
+    "timeMs": 119598.19,
+    "strength": 0.988,
+    "role": "attack",
+    "cutTimesMs": [
+      119598.19
+    ]
+  },
+  {
+    "index": 717,
+    "timeMs": 119772.79,
+    "strength": 1.42,
+    "role": "chord",
+    "cutTimesMs": [
+      119772.79
+    ]
+  },
+  {
+    "index": 718,
+    "timeMs": 119772.79,
+    "strength": 1.42,
+    "role": "chord",
+    "cutTimesMs": [
+      119772.79
+    ]
+  },
+  {
+    "index": 719,
+    "timeMs": 119942.4,
+    "strength": 1.106,
+    "role": "attack",
+    "cutTimesMs": [
+      119942.4
+    ]
+  },
+  {
+    "index": 720,
+    "timeMs": 120032.2,
+    "strength": 0.538,
+    "role": "attack",
+    "cutTimesMs": [
+      120032.2
+    ]
+  },
+  {
+    "index": 721,
+    "timeMs": 120126.98,
+    "strength": 0.874,
+    "role": "attack",
+    "cutTimesMs": [
+      120126.98
+    ]
+  },
+  {
+    "index": 722,
+    "timeMs": 120206.8,
+    "strength": 0.438,
+    "role": "attack",
+    "cutTimesMs": [
+      120206.8
+    ]
+  },
+  {
+    "index": 723,
+    "timeMs": 120291.61,
+    "strength": 0.814,
+    "role": "attack",
+    "cutTimesMs": [
+      120291.61
+    ]
+  },
+  {
+    "index": 724,
+    "timeMs": 120376.42,
+    "strength": 0.495,
+    "role": "attack",
+    "cutTimesMs": [
+      120376.42
+    ]
+  },
+  {
+    "index": 725,
+    "timeMs": 120471.2,
+    "strength": 1.292,
+    "role": "attack",
+    "cutTimesMs": [
+      120471.2
+    ]
+  },
+  {
+    "index": 726,
+    "timeMs": 120640.82,
+    "strength": 1.073,
+    "role": "attack",
+    "cutTimesMs": [
+      120640.82
+    ]
+  },
+  {
+    "index": 727,
+    "timeMs": 120735.6,
+    "strength": 0.564,
+    "role": "attack",
+    "cutTimesMs": [
+      120735.6
+    ]
+  },
+  {
+    "index": 728,
+    "timeMs": 120820.41,
+    "strength": 0.844,
+    "role": "attack",
+    "cutTimesMs": [
+      120820.41
+    ]
+  },
+  {
+    "index": 729,
+    "timeMs": 120990.02,
+    "strength": 1.227,
+    "role": "attack",
+    "cutTimesMs": [
+      120990.02
+    ]
+  },
+  {
+    "index": 730,
+    "timeMs": 121164.63,
+    "strength": 1.468,
+    "role": "attack",
+    "cutTimesMs": [
+      121164.63
+    ]
+  },
+  {
+    "index": 731,
+    "timeMs": 121339.23,
+    "strength": 0.834,
+    "role": "attack",
+    "cutTimesMs": [
+      121339.23
+    ]
+  },
+  {
+    "index": 732,
+    "timeMs": 121434.01,
+    "strength": 0.353,
+    "role": "attack",
+    "cutTimesMs": [
+      121434.01
+    ]
+  },
+  {
+    "index": 733,
+    "timeMs": 121513.83,
+    "strength": 1.082,
+    "role": "attack",
+    "cutTimesMs": [
+      121513.83
+    ]
+  },
+  {
+    "index": 734,
+    "timeMs": 121603.63,
+    "strength": 0.431,
+    "role": "attack",
+    "cutTimesMs": [
+      121603.63
+    ]
+  },
+  {
+    "index": 735,
+    "timeMs": 121683.45,
+    "strength": 0.925,
+    "role": "attack",
+    "cutTimesMs": [
+      121683.45
+    ]
+  },
+  {
+    "index": 736,
+    "timeMs": 121763.27,
+    "strength": 0.375,
+    "role": "attack",
+    "cutTimesMs": [
+      121763.27
+    ]
+  },
+  {
+    "index": 737,
+    "timeMs": 121858.05,
+    "strength": 1.893,
+    "role": "attack",
+    "cutTimesMs": [
+      121858.05
+    ]
+  },
+  {
+    "index": 738,
+    "timeMs": 121957.82,
+    "strength": 0.444,
+    "role": "attack",
+    "cutTimesMs": [
+      121957.82
+    ]
+  },
+  {
+    "index": 739,
+    "timeMs": 122037.64,
+    "strength": 0.902,
+    "role": "attack",
+    "cutTimesMs": [
+      122037.64
+    ]
+  },
+  {
+    "index": 740,
+    "timeMs": 122122.45,
+    "strength": 0.661,
+    "role": "attack",
+    "cutTimesMs": [
+      122122.45
+    ]
+  },
+  {
+    "index": 741,
+    "timeMs": 122202.27,
+    "strength": 0.932,
+    "role": "attack",
+    "cutTimesMs": [
+      122202.27
+    ]
+  },
+  {
+    "index": 742,
+    "timeMs": 122292.06,
+    "strength": 0.449,
+    "role": "attack",
+    "cutTimesMs": [
+      122292.06
+    ]
+  },
+  {
+    "index": 743,
+    "timeMs": 122386.85,
+    "strength": 0.961,
+    "role": "attack",
+    "cutTimesMs": [
+      122386.85
+    ]
+  },
+  {
+    "index": 744,
+    "timeMs": 122556.46,
+    "strength": 1.487,
+    "role": "attack",
+    "cutTimesMs": [
+      122556.46
+    ]
+  },
+  {
+    "index": 745,
+    "timeMs": 122636.28,
+    "strength": 0.568,
+    "role": "attack",
+    "cutTimesMs": [
+      122636.28
+    ]
+  },
+  {
+    "index": 746,
+    "timeMs": 122736.05,
+    "strength": 0.686,
+    "role": "attack",
+    "cutTimesMs": [
+      122736.05
+    ]
+  },
+  {
+    "index": 747,
+    "timeMs": 122815.87,
+    "strength": 0.55,
+    "role": "attack",
+    "cutTimesMs": [
+      122815.87
+    ]
+  },
+  {
+    "index": 748,
+    "timeMs": 122905.67,
+    "strength": 1.035,
+    "role": "attack",
+    "cutTimesMs": [
+      122905.67
+    ]
+  },
+  {
+    "index": 749,
+    "timeMs": 123000.45,
+    "strength": 0.615,
+    "role": "attack",
+    "cutTimesMs": [
+      123000.45
+    ]
+  },
+  {
+    "index": 750,
+    "timeMs": 123130.16,
+    "strength": 0.471,
+    "role": "attack",
+    "cutTimesMs": [
+      123130.16
+    ]
+  },
+  {
+    "index": 751,
+    "timeMs": 123259.86,
+    "strength": 0.609,
+    "role": "attack",
+    "cutTimesMs": [
+      123259.86
+    ]
+  },
+  {
+    "index": 752,
+    "timeMs": 123339.68,
+    "strength": 0.486,
+    "role": "attack",
+    "cutTimesMs": [
+      123339.68
+    ]
+  },
+  {
+    "index": 753,
+    "timeMs": 123419.5,
+    "strength": 1.796,
+    "role": "attack",
+    "cutTimesMs": [
+      123419.5
+    ]
+  },
+  {
+    "index": 754,
+    "timeMs": 123594.1,
+    "strength": 0.827,
+    "role": "attack",
+    "cutTimesMs": [
+      123594.1
+    ]
+  },
+  {
+    "index": 755,
+    "timeMs": 123773.7,
+    "strength": 0.57,
+    "role": "attack-roll",
+    "cutTimesMs": [
+      123773.7,
+      124063.04,
+      124292.52,
+      124462.13
+    ]
+  },
+  {
+    "index": 756,
+    "timeMs": 123938.32,
+    "strength": 2.152,
+    "role": "attack",
+    "cutTimesMs": [
+      123938.32
+    ]
+  },
+  {
+    "index": 757,
+    "timeMs": 124187.76,
+    "strength": 0.731,
+    "role": "attack",
+    "cutTimesMs": [
+      124187.76
+    ]
+  },
+  {
+    "index": 758,
+    "timeMs": 124372.34,
+    "strength": 0.943,
+    "role": "attack",
+    "cutTimesMs": [
+      124372.34
+    ]
+  },
+  {
+    "index": 759,
+    "timeMs": 124541.95,
+    "strength": 0.79,
+    "role": "attack",
+    "cutTimesMs": [
+      124541.95
+    ]
+  },
+  {
+    "index": 760,
+    "timeMs": 124706.58,
+    "strength": 1.05,
+    "role": "attack",
+    "cutTimesMs": [
+      124706.58
+    ]
+  },
+  {
+    "index": 761,
+    "timeMs": 124796.37,
+    "strength": 0.88,
+    "role": "attack",
+    "cutTimesMs": [
+      124796.37
+    ]
+  },
+  {
+    "index": 762,
+    "timeMs": 124881.18,
+    "strength": 1.01,
+    "role": "attack",
+    "cutTimesMs": [
+      124881.18
+    ]
+  },
+  {
+    "index": 763,
+    "timeMs": 124961.0,
+    "strength": 1.08,
+    "role": "attack",
+    "cutTimesMs": [
+      124961.0
+    ]
+  },
+  {
+    "index": 764,
+    "timeMs": 125125.62,
+    "strength": 1.174,
+    "role": "attack",
+    "cutTimesMs": [
+      125125.62
+    ]
+  },
+  {
+    "index": 765,
+    "timeMs": 125205.44,
+    "strength": 0.768,
+    "role": "attack",
+    "cutTimesMs": [
+      125205.44
+    ]
+  },
+  {
+    "index": 766,
+    "timeMs": 125285.26,
+    "strength": 1.151,
+    "role": "attack",
+    "cutTimesMs": [
+      125285.26
+    ]
+  },
+  {
+    "index": 767,
+    "timeMs": 125380.05,
+    "strength": 0.864,
+    "role": "attack",
+    "cutTimesMs": [
+      125380.05
+    ]
+  },
+  {
+    "index": 768,
+    "timeMs": 125534.69,
+    "strength": 0.787,
+    "role": "attack",
+    "cutTimesMs": [
+      125534.69
+    ]
+  },
+  {
+    "index": 769,
+    "timeMs": 125619.5,
+    "strength": 1.019,
+    "role": "attack",
+    "cutTimesMs": [
+      125619.5
+    ]
+  },
+  {
+    "index": 770,
+    "timeMs": 125779.14,
+    "strength": 0.786,
+    "role": "attack",
+    "cutTimesMs": [
+      125779.14
+    ]
+  },
+  {
+    "index": 771,
+    "timeMs": 125863.95,
+    "strength": 0.744,
+    "role": "attack",
+    "cutTimesMs": [
+      125863.95
+    ]
+  },
+  {
+    "index": 772,
+    "timeMs": 125948.75,
+    "strength": 1.207,
+    "role": "attack",
+    "cutTimesMs": [
+      125948.75
+    ]
+  },
+  {
+    "index": 773,
+    "timeMs": 126033.56,
+    "strength": 0.903,
+    "role": "attack",
+    "cutTimesMs": [
+      126033.56
+    ]
+  },
+  {
+    "index": 774,
+    "timeMs": 126193.2,
+    "strength": 0.741,
+    "role": "attack",
+    "cutTimesMs": [
+      126193.2
+    ]
+  },
+  {
+    "index": 775,
+    "timeMs": 126278.0,
+    "strength": 0.757,
+    "role": "attack",
+    "cutTimesMs": [
+      126278.0
+    ]
+  },
+  {
+    "index": 776,
+    "timeMs": 126437.64,
+    "strength": 1.014,
+    "role": "attack",
+    "cutTimesMs": [
+      126437.64
+    ]
+  },
+  {
+    "index": 777,
+    "timeMs": 126517.46,
+    "strength": 0.46,
+    "role": "attack",
+    "cutTimesMs": [
+      126517.46
+    ]
+  },
+  {
+    "index": 778,
+    "timeMs": 126597.28,
+    "strength": 1.224,
+    "role": "attack",
+    "cutTimesMs": [
+      126597.28
+    ]
+  },
+  {
+    "index": 779,
+    "timeMs": 126796.83,
+    "strength": 0.53,
+    "role": "attack",
+    "cutTimesMs": [
+      126796.83
+    ]
+  },
+  {
+    "index": 780,
+    "timeMs": 126916.55,
+    "strength": 1.186,
+    "role": "attack",
+    "cutTimesMs": [
+      126916.55
+    ]
+  },
+  {
+    "index": 781,
+    "timeMs": 127081.18,
+    "strength": 1.001,
+    "role": "attack",
+    "cutTimesMs": [
+      127081.18
+    ]
+  },
+  {
+    "index": 782,
+    "timeMs": 127245.8,
+    "strength": 1.145,
+    "role": "chord",
+    "cutTimesMs": [
+      127245.8
+    ]
+  },
+  {
+    "index": 783,
+    "timeMs": 127245.8,
+    "strength": 1.145,
+    "role": "chord",
+    "cutTimesMs": [
+      127245.8
+    ]
+  },
+  {
+    "index": 784,
+    "timeMs": 127400.45,
+    "strength": 0.953,
+    "role": "attack",
+    "cutTimesMs": [
+      127400.45
+    ]
+  },
+  {
+    "index": 785,
+    "timeMs": 127485.26,
+    "strength": 0.72,
+    "role": "attack",
+    "cutTimesMs": [
+      127485.26
+    ]
+  },
+  {
+    "index": 786,
+    "timeMs": 127565.08,
+    "strength": 0.804,
+    "role": "attack",
+    "cutTimesMs": [
+      127565.08
+    ]
+  },
+  {
+    "index": 787,
+    "timeMs": 127719.73,
+    "strength": 1.034,
+    "role": "attack",
+    "cutTimesMs": [
+      127719.73
+    ]
+  },
+  {
+    "index": 788,
+    "timeMs": 127804.54,
+    "strength": 0.825,
+    "role": "attack",
+    "cutTimesMs": [
+      127804.54
+    ]
+  },
+  {
+    "index": 789,
+    "timeMs": 127884.35,
+    "strength": 0.879,
+    "role": "attack",
+    "cutTimesMs": [
+      127884.35
+    ]
+  },
+  {
+    "index": 790,
+    "timeMs": 128039.0,
+    "strength": 0.993,
+    "role": "attack",
+    "cutTimesMs": [
+      128039.0
+    ]
+  },
+  {
+    "index": 791,
+    "timeMs": 128198.64,
+    "strength": 1.053,
+    "role": "attack",
+    "cutTimesMs": [
+      128198.64
+    ]
+  },
+  {
+    "index": 792,
+    "timeMs": 128278.46,
+    "strength": 0.703,
+    "role": "attack",
+    "cutTimesMs": [
+      128278.46
+    ]
+  },
+  {
+    "index": 793,
+    "timeMs": 128358.28,
+    "strength": 1.205,
+    "role": "attack",
+    "cutTimesMs": [
+      128358.28
+    ]
+  },
+  {
+    "index": 794,
+    "timeMs": 128443.08,
+    "strength": 0.724,
+    "role": "attack",
+    "cutTimesMs": [
+      128443.08
+    ]
+  },
+  {
+    "index": 795,
+    "timeMs": 128522.9,
+    "strength": 0.704,
+    "role": "attack",
+    "cutTimesMs": [
+      128522.9
+    ]
+  },
+  {
+    "index": 796,
+    "timeMs": 128667.57,
+    "strength": 0.92,
+    "role": "attack",
+    "cutTimesMs": [
+      128667.57
+    ]
+  },
+  {
+    "index": 797,
+    "timeMs": 128752.38,
+    "strength": 0.446,
+    "role": "attack",
+    "cutTimesMs": [
+      128752.38
+    ]
+  },
+  {
+    "index": 798,
+    "timeMs": 128832.2,
+    "strength": 1.136,
+    "role": "attack",
+    "cutTimesMs": [
+      128832.2
+    ]
+  },
+  {
+    "index": 799,
+    "timeMs": 128976.87,
+    "strength": 0.544,
+    "role": "attack",
+    "cutTimesMs": [
+      128976.87
+    ]
+  },
+  {
+    "index": 800,
+    "timeMs": 129066.67,
+    "strength": 0.74,
+    "role": "attack-roll",
+    "cutTimesMs": [
+      129066.67,
+      129296.15,
+      129555.56
+    ]
+  },
+  {
+    "index": 801,
+    "timeMs": 129201.36,
+    "strength": 0.638,
+    "role": "attack",
+    "cutTimesMs": [
+      129201.36
+    ]
+  },
+  {
+    "index": 802,
+    "timeMs": 129425.85,
+    "strength": 0.825,
+    "role": "attack",
+    "cutTimesMs": [
+      129425.85
+    ]
+  },
+  {
+    "index": 803,
+    "timeMs": 129770.07,
+    "strength": 0.87,
+    "role": "attack",
+    "cutTimesMs": [
+      129770.07
+    ]
+  },
+  {
+    "index": 804,
+    "timeMs": 129884.81,
+    "strength": 0.876,
+    "role": "attack",
+    "cutTimesMs": [
+      129884.81
+    ]
+  },
+  {
+    "index": 805,
+    "timeMs": 130069.39,
+    "strength": 1.141,
+    "role": "attack",
+    "cutTimesMs": [
+      130069.39
+    ]
+  },
+  {
+    "index": 806,
+    "timeMs": 130199.09,
+    "strength": 0.881,
+    "role": "attack",
+    "cutTimesMs": [
+      130199.09
+    ]
+  },
+  {
+    "index": 807,
+    "timeMs": 130303.85,
+    "strength": 0.874,
+    "role": "attack",
+    "cutTimesMs": [
+      130303.85
+    ]
+  },
+  {
+    "index": 808,
+    "timeMs": 130388.66,
+    "strength": 0.977,
+    "role": "attack",
+    "cutTimesMs": [
+      130388.66
+    ]
+  },
+  {
+    "index": 809,
+    "timeMs": 130533.33,
+    "strength": 0.91,
+    "role": "attack",
+    "cutTimesMs": [
+      130533.33
+    ]
+  },
+  {
+    "index": 810,
+    "timeMs": 130687.98,
+    "strength": 0.939,
+    "role": "attack",
+    "cutTimesMs": [
+      130687.98
+    ]
+  },
+  {
+    "index": 811,
+    "timeMs": 130842.63,
+    "strength": 0.642,
+    "role": "attack",
+    "cutTimesMs": [
+      130842.63
+    ]
+  },
+  {
+    "index": 812,
+    "timeMs": 130997.28,
+    "strength": 0.743,
+    "role": "attack",
+    "cutTimesMs": [
+      130997.28
+    ]
+  },
+  {
+    "index": 813,
+    "timeMs": 131216.78,
+    "strength": 0.762,
+    "role": "attack",
+    "cutTimesMs": [
+      131216.78
+    ]
+  },
+  {
+    "index": 814,
+    "timeMs": 131301.59,
+    "strength": 0.626,
+    "role": "attack",
+    "cutTimesMs": [
+      131301.59
+    ]
+  },
+  {
+    "index": 815,
+    "timeMs": 131446.26,
+    "strength": 0.804,
+    "role": "attack",
+    "cutTimesMs": [
+      131446.26
+    ]
+  },
+  {
+    "index": 816,
+    "timeMs": 131595.92,
+    "strength": 0.931,
+    "role": "attack",
+    "cutTimesMs": [
+      131595.92
+    ]
+  },
+  {
+    "index": 817,
+    "timeMs": 131735.6,
+    "strength": 0.798,
+    "role": "attack",
+    "cutTimesMs": [
+      131735.6
+    ]
+  },
+  {
+    "index": 818,
+    "timeMs": 131815.42,
+    "strength": 0.399,
+    "role": "attack",
+    "cutTimesMs": [
+      131815.42
+    ]
+  },
+  {
+    "index": 819,
+    "timeMs": 131895.24,
+    "strength": 1.032,
+    "role": "attack",
+    "cutTimesMs": [
+      131895.24
+    ]
+  },
+  {
+    "index": 820,
+    "timeMs": 132049.89,
+    "strength": 0.834,
+    "role": "attack",
+    "cutTimesMs": [
+      132049.89
+    ]
+  },
+  {
+    "index": 821,
+    "timeMs": 132194.56,
+    "strength": 1.033,
+    "role": "chord",
+    "cutTimesMs": [
+      132194.56
+    ]
+  },
+  {
+    "index": 822,
+    "timeMs": 132194.56,
+    "strength": 1.033,
+    "role": "chord",
+    "cutTimesMs": [
+      132194.56
+    ]
+  },
+  {
+    "index": 823,
+    "timeMs": 132339.23,
+    "strength": 0.767,
+    "role": "attack",
+    "cutTimesMs": [
+      132339.23
+    ]
+  },
+  {
+    "index": 824,
+    "timeMs": 132488.89,
+    "strength": 0.895,
+    "role": "attack",
+    "cutTimesMs": [
+      132488.89
+    ]
+  },
+  {
+    "index": 825,
+    "timeMs": 132588.66,
+    "strength": 1.001,
+    "role": "attack",
+    "cutTimesMs": [
+      132588.66
+    ]
+  },
+  {
+    "index": 826,
+    "timeMs": 132708.39,
+    "strength": 0.528,
+    "role": "attack",
+    "cutTimesMs": [
+      132708.39
+    ]
+  },
+  {
+    "index": 827,
+    "timeMs": 132793.2,
+    "strength": 0.933,
+    "role": "attack",
+    "cutTimesMs": [
+      132793.2
+    ]
+  },
+  {
+    "index": 828,
+    "timeMs": 132907.94,
+    "strength": 0.493,
+    "role": "attack",
+    "cutTimesMs": [
+      132907.94
+    ]
+  },
+  {
+    "index": 829,
+    "timeMs": 133082.54,
+    "strength": 1.115,
+    "role": "attack",
+    "cutTimesMs": [
+      133082.54
+    ]
+  },
+  {
+    "index": 830,
+    "timeMs": 133162.36,
+    "strength": 0.562,
+    "role": "attack-roll",
+    "cutTimesMs": [
+      133162.36,
+      133521.54,
+      133756.01
+    ]
+  },
+  {
+    "index": 831,
+    "timeMs": 133307.03,
+    "strength": 0.779,
+    "role": "attack",
+    "cutTimesMs": [
+      133307.03
+    ]
+  },
+  {
+    "index": 832,
+    "timeMs": 133671.2,
+    "strength": 0.903,
+    "role": "attack",
+    "cutTimesMs": [
+      133671.2
+    ]
+  },
+  {
+    "index": 833,
+    "timeMs": 133880.73,
+    "strength": 0.637,
+    "role": "attack",
+    "cutTimesMs": [
+      133880.73
+    ]
+  },
+  {
+    "index": 834,
+    "timeMs": 134020.41,
+    "strength": 0.691,
+    "role": "attack",
+    "cutTimesMs": [
+      134020.41
+    ]
+  },
+  {
+    "index": 835,
+    "timeMs": 134209.98,
+    "strength": 0.516,
+    "role": "attack",
+    "cutTimesMs": [
+      134209.98
+    ]
+  },
+  {
+    "index": 836,
+    "timeMs": 134324.72,
+    "strength": 0.432,
+    "role": "attack",
+    "cutTimesMs": [
+      134324.72
+    ]
+  },
+  {
+    "index": 837,
+    "timeMs": 134414.51,
+    "strength": 0.501,
+    "role": "attack",
+    "cutTimesMs": [
+      134414.51
+    ]
+  },
+  {
+    "index": 838,
+    "timeMs": 134614.06,
+    "strength": 0.398,
+    "role": "attack",
+    "cutTimesMs": [
+      134614.06
+    ]
+  },
+  {
+    "index": 839,
+    "timeMs": 134763.72,
+    "strength": 0.74,
+    "role": "attack",
+    "cutTimesMs": [
+      134763.72
+    ]
+  },
+  {
+    "index": 840,
+    "timeMs": 134983.22,
+    "strength": 0.451,
+    "role": "attack",
+    "cutTimesMs": [
+      134983.22
+    ]
+  },
+  {
+    "index": 841,
+    "timeMs": 135127.89,
+    "strength": 0.798,
+    "role": "attack",
+    "cutTimesMs": [
+      135127.89
+    ]
+  },
+  {
+    "index": 842,
+    "timeMs": 135267.57,
+    "strength": 0.556,
+    "role": "attack",
+    "cutTimesMs": [
+      135267.57
+    ]
+  },
+  {
+    "index": 843,
+    "timeMs": 135412.24,
+    "strength": 2.346,
+    "role": "chord",
+    "cutTimesMs": [
+      135412.24
+    ]
+  },
+  {
+    "index": 844,
+    "timeMs": 135412.24,
+    "strength": 2.346,
+    "role": "chord",
+    "cutTimesMs": [
+      135412.24
+    ]
+  },
+  {
+    "index": 845,
+    "timeMs": 135561.9,
+    "strength": 1.218,
+    "role": "attack",
+    "cutTimesMs": [
+      135561.9
+    ]
+  },
+  {
+    "index": 846,
+    "timeMs": 135711.56,
+    "strength": 1.175,
+    "role": "attack",
+    "cutTimesMs": [
+      135711.56
+    ]
+  },
+  {
+    "index": 847,
+    "timeMs": 135851.25,
+    "strength": 1.118,
+    "role": "attack",
+    "cutTimesMs": [
+      135851.25
+    ]
+  },
+  {
+    "index": 848,
+    "timeMs": 136005.9,
+    "strength": 0.805,
+    "role": "attack",
+    "cutTimesMs": [
+      136005.9
+    ]
+  },
+  {
+    "index": 849,
+    "timeMs": 136135.6,
+    "strength": 0.474,
+    "role": "attack",
+    "cutTimesMs": [
+      136135.6
+    ]
+  },
+  {
+    "index": 850,
+    "timeMs": 136280.27,
+    "strength": 2.832,
+    "role": "sustained-final-chord",
+    "cutTimesMs": [
+      136280.27,
+      136600.27,
+      136920.27,
+      137240.27,
+      137560.27
+    ]
+  },
+  {
+    "index": 851,
+    "timeMs": 136280.27,
+    "strength": 2.832,
+    "role": "sustained-final-chord",
+    "cutTimesMs": [
+      136280.27,
+      136600.27,
+      136920.27,
+      137240.27,
+      137560.27
+    ]
+  }
+]

@@ -33,6 +33,12 @@ public class SongSelectSkin : MonoBehaviour
     int lastBeepSecond = -1;
     SongSelectRubyText songTitle;
     SongSelectCorridor corridor;
+    RushESecret secretView;
+    RectTransform secretDifficulty;
+    SongSelectDiscGraphic difficultyTray;
+    public bool DiscsSettled => animation >= 1;
+    public Rect SelectedDiscScreenRect => ctl != null && ctl.startButton != null
+        ? ctl.startButton.GetComponent<SongSelectDiscTarget>().ScreenRect() : default;
     MenuSignalNoise hardNoise;
     RectTransform layout, holdHintRoot;
     float animation = 1;
@@ -70,11 +76,12 @@ public class SongSelectSkin : MonoBehaviour
         layout = SongSelectVisuals.Rect(canvas.transform, "DiscSelectLayout", Vector2.zero, new Vector2(1920, 1080));
         ctl.suppressDefaultDifficultyTint = true;
         corridor = SongSelectCorridor.Build(layout, ctl);
-        BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildAchievements(); BuildActions();
+        BuildHeader(); BuildDiscs(); BuildTitle(); BuildDifficulties(); BuildSecretDifficulty(); BuildAchievements(); BuildActions();
         countdownSource = gameObject.AddComponent<AudioSource>();
         countdownSource.playOnAwake = false; countdownSource.spatialBlend = 0;
         countdownClip = JudgmentSfx.Beep(660, .045f);
         hardNoise = MenuSignalNoise.BuildScreenOverlay(canvas, layout);
+        secretView = RushESecret.Build(ctl, this, layout);
         ctl.OnSelectionChanged += SelectionChanged; ctl.OnDifficultyChanged += DifficultyChanged;
         SelectionChanged(ctl.SelectedIndex); animation = 1; AnimateDiscs();
         var guide = SongSelectIdleGuide.Build(ctl, layout);
@@ -206,10 +213,20 @@ public class SongSelectSkin : MonoBehaviour
             d.rim = Graphic(d.root, "DiscRim", Vector2.zero, new Vector2(544, 544), SongSelectDiscGraphic.Shape.Ring, Cyan); d.rim.Width = 3;
             d.progress = Graphic(d.root, "StartProgress", Vector2.zero, new Vector2(588, 588), SongSelectDiscGraphic.Shape.Ring, Gold); d.progress.Width = 12; d.progress.Progress = 0;
             d.button = ButtonOn(d.root, face, 2, true); d.target = d.root.GetComponent<SongSelectDiscTarget>();
+            d.target.ShootOverride = () =>
+            {
+                if (ScreenTransition.IsBusy || ctl.RushESecret.Transitioning) return false;
+                if (d.index == ctl.SelectedIndex) ctl.StartGame(); else if (Mathf.Abs(d.offset) <= 2) ctl.Select(d.index);
+                return true;
+            };
             d.button.onClick.AddListener(() =>
             {
                 if (ScreenTransition.IsBusy) return;
-                if (d.index == ctl.SelectedIndex) ctl.StartGame();
+                if (d.index == ctl.SelectedIndex)
+                {
+                    if (ctl.SongIdAt(d.index) == RushESecretState.SongId && !ctl.RushESecret.Unlocked) secretView.Click();
+                    else ctl.StartGame();
+                }
                 else if (Mathf.Abs(d.offset) <= 2) ctl.Select(d.index);
             });
             discs.Add(d);
@@ -246,6 +263,7 @@ public class SongSelectSkin : MonoBehaviour
     void BuildDifficulties()
     {
         var tray = PanelAt("DifficultyTray", 960, 828, 720, 124, new Color(.09f, .19f, .29f), 4, 62); tray.color = new Color(.024f, .043f, .082f);
+        difficultyTray = tray;
         ctl.difficultyButtons = new Button[3];
         for (int i = 0; i < 3; i++)
         {
@@ -263,6 +281,15 @@ public class SongSelectSkin : MonoBehaviour
             root.GetComponent<SongSelectDiscTarget>().HitArea = hit.rectTransform;
             ctl.difficultyButtons[i].onClick.AddListener(() => ctl.SetDifficulty(index));
         }
+    }
+    void BuildSecretDifficulty()
+    {
+        secretDifficulty = Rect("RushEOnlyDifficulty", 960, 832, 200, 190);
+        var glow = Graphic(secretDifficulty, "Glow", Vector2.zero, new Vector2(192, 192), SongSelectDiscGraphic.Shape.Ring, new Color(.62f,.17f,1,.25f)); glow.Width = 20;
+        var face = Graphic(secretDifficulty, "Face", Vector2.zero, new Vector2(158, 158), SongSelectDiscGraphic.Shape.Cover, new Color(.12f,.03f,.24f));
+        var ring = Graphic(secretDifficulty, "Ring", Vector2.zero, new Vector2(164, 164), SongSelectDiscGraphic.Shape.Ring, RushESecretState.Purple); ring.Width = 6;
+        Label(secretDifficulty, "Letter", "E", 126, new Vector2(0, 2), new Vector2(140, 150), UISkinKit.LogoFontAsset(), RushESecretState.Purple);
+        secretDifficulty.gameObject.SetActive(false);
     }
     void BuildAchievements()
     {
@@ -345,9 +372,14 @@ public class SongSelectSkin : MonoBehaviour
     }
     void DifficultyChanged(int selected)
     {
-        hardNoise.SetHardSelected(string.Equals(ctl.difficultyNames[selected], "Hard", System.StringComparison.OrdinalIgnoreCase));
+        bool secret = ctl.RushESecret.Unlocked;
+        secretDifficulty.gameObject.SetActive(secret);
+        difficultyTray.gameObject.SetActive(!secret);
+        corridor.SetSecretTheme(secret);
+        hardNoise.SetHardSelected(!secret && string.Equals(ctl.CurrentDifficultyName, "Hard", System.StringComparison.OrdinalIgnoreCase));
         for (int i = 0; i < 3; i++)
         {
+            ctl.difficultyButtons[i].gameObject.SetActive(!secret);
             bool active = i == selected; int level = ctl.DifficultyDisplayLevelAt(i);
             difficultyNumbers[i].text = level > 0 ? level.ToString() : "—";
             difficultyNumbers[i].color = active ? Ink : DifficultyColor(i);
@@ -357,11 +389,12 @@ public class SongSelectSkin : MonoBehaviour
             difficultyRings[i].gameObject.SetActive(active);
             difficultyLabels[i].color = active ? White : new Color(.56f, .61f, .66f);
             difficultyLabels[i].text = level > 0 ? DifficultyDisplayName(i, ctl.difficultyNames[i]) : "未制作";
-            ctl.difficultyButtons[i].interactable = ctl.DifficultyLevelAt(i) > 0;
+            ctl.difficultyButtons[i].interactable = !ctl.RushESecret.Transitioning && ctl.DifficultyLevelAt(i) > 0;
         }
-        foreach (var d in discs) d.button.interactable = d.offset == 0 ? !ctl.SelectedSongLocked && ctl.CurrentDifficultyLevel() > 0 : Mathf.Abs(d.offset) <= 2;
-        achievementDifficulty.text = DifficultyDisplayName(selected, ctl.difficultyNames[selected]);
-        var value = SongAchievementStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.difficultyNames[selected]);
+        foreach (var d in discs) d.button.interactable = d.offset == 0 ? !ctl.RushESecret.Transitioning && !ctl.SelectedSongLocked && ctl.CurrentDifficultyLevel() > 0 : Mathf.Abs(d.offset) <= 2;
+        achievementDifficulty.text = secret ? "E" : DifficultyDisplayName(selected, ctl.CurrentDifficultyName);
+        achievementDifficulty.color = secret ? RushESecretState.Purple : SongSelectVisuals.Muted;
+        var value = SongAchievementStore.Load(ctl.SongIdAt(ctl.SelectedIndex), ctl.CurrentDifficultyName);
         int[] values = { value.s, value.sPlus, value.fc, value.ap };
         for (int i = 0; i < 4; i++) counts[i].Set(values[i].ToString() + "<size=24>回</size>");
     }
@@ -391,7 +424,7 @@ public class SongSelectSkin : MonoBehaviour
     }
     public void TickCountdown(double deltaSeconds)
     {
-        if (built && countdown.Tick(deltaSeconds, !ScreenTransition.IsBusy
+        if (built && countdown.Tick(deltaSeconds, !ScreenTransition.IsBusy && !ctl.RushESecret.Transitioning
             && (Application.isFocused || Application.isBatchMode) && ctl.SongCount > 0 && ctl.CurrentDifficultyLevel() > 0)) ctl.StartGame();
     }
     void AnimateDiscs()
@@ -414,11 +447,12 @@ public class SongSelectSkin : MonoBehaviour
             if (d.fallback != null) d.fallback.color = new Color(brightness, brightness, brightness);
             if (d.offset == 0)
             {
+                Color accent = ctl.RushESecret.Unlocked ? RushESecretState.Purple : Cyan;
                 float pulse = corridor != null ? corridor.CenterPulse : 0;
-                d.rim.color = new Color(Cyan.r, Cyan.g, Cyan.b, .35f + .55f * pulse); d.rim.Width = 3 + 4 * pulse; d.rim.Refresh();
+                d.rim.color = new Color(accent.r, accent.g, accent.b, .35f + .55f * pulse); d.rim.Width = 3 + 4 * pulse; d.rim.Refresh();
                 float spread = 24 + 40 * pulse;
                 d.halo.Width = spread; d.halo.rectTransform.sizeDelta = Vector2.one * (540 + spread * 2);
-                d.halo.color = new Color(Cyan.r, Cyan.g, Cyan.b, .04f + .08f * pulse);
+                d.halo.color = new Color(accent.r, accent.g, accent.b, .04f + .08f * pulse);
                 d.progress.Progress = d.target.Progress; d.progress.Refresh();
             }
             if (animation >= 1 && Mathf.Abs(d.offset) > 2) d.root.gameObject.SetActive(false);
