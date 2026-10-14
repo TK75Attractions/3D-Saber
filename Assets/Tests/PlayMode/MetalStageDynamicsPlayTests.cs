@@ -10,7 +10,7 @@ public class MetalStageDynamicsPlayTests
     private static void ForceStage(Scene scene,LoadSceneMode mode)
     {
         if(scene.name!="Game") return;
-        var stage=new GameObject("MetalMotionTest").AddComponent<FloorRenderer>(); stage.randomizeOnPlay=false; stage.Build(theme);
+        var stage=new GameObject("MetalMotionTest").AddComponent<FloorRenderer>(); stage.useSongThemeOnPlay=false; stage.Build(theme);
     }
     [UnityTest]
     public IEnumerator ActualGameDrivesMetalFloorClockAndFreezesWhenAudioStops()

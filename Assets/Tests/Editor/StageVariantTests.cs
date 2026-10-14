@@ -4,37 +4,6 @@ using UnityEngine;
 
 public class StageVariantTests
 {
-    [Test]
-    public void FirstSelectionCanReachEveryTheme()
-    {
-        CollectionAssert.AreEquivalent(System.Enum.GetValues(typeof(StageTheme)),
-            Enumerable.Range(0, StageThemeCatalog.Count).Select(i => StageThemeCatalog.Choose(i, -1)).ToArray());
-    }
-
-    [TestCase(0)] [TestCase(1)] [TestCase(2)] [TestCase(3)] [TestCase(4)]
-    [TestCase(5)] [TestCase(6)] [TestCase(7)] [TestCase(8)] [TestCase(9)] [TestCase(10)]
-    public void NextSelectionIsUniformOverOtherThemes(int previous)
-    {
-        var choices = Enumerable.Range(0, StageThemeCatalog.Count - 1).Select(i => StageThemeCatalog.Choose(i, previous)).ToArray();
-        Assert.AreEqual(StageThemeCatalog.Count - 1, choices.Distinct().Count());
-        Assert.IsFalse(choices.Contains((StageTheme)previous));
-        Assert.IsTrue(choices.All(t => (int)t >= 0 && (int)t < StageThemeCatalog.Count));
-    }
-
-    [Test]
-    public void RandomChoiceDoesNotConsumeGameplayRandomStateOrRepeat()
-    {
-        var before = Random.state;
-        var previous = StageThemeCatalog.NextForPlay();
-        for (int i = 0; i < 50; i++)
-        {
-            var next = StageThemeCatalog.NextForPlay();
-            Assert.AreNotEqual(previous, next);
-            previous = next;
-        }
-        Assert.AreEqual(before, Random.state);
-    }
-
     [TestCase(StageTheme.ObsidianRelay)] [TestCase(StageTheme.VioletVault)]
     [TestCase(StageTheme.AmberFoundry)] [TestCase(StageTheme.AzurePrism)]
     public void AllThemesAreBoundedStaticAndLeaveNotesClear(StageTheme theme)

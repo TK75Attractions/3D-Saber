@@ -49,7 +49,7 @@ public static class FoundryMotionPreview
         if (scene.name != "Game" || !SessionState.GetBool(Key, false)) return;
         SceneManager.sceneLoaded -= ForceFoundry;
         var stage = new GameObject("PreviewFoundry").AddComponent<FloorRenderer>();
-        stage.randomizeOnPlay = false;
+        stage.useSongThemeOnPlay = false;
         stage.Build(StageTheme.AmberFoundry);
     }
 

@@ -21,7 +21,7 @@ public class MarinePassageTests
         DisplaySettings.SetReducedEffectsForTest(false);
         DisplaySettings.SetProjectorModeForTest(false);
         root = new GameObject("MarinePassTest");
-        floor = root.AddComponent<FloorRenderer>(); floor.randomizeOnPlay = false;
+        floor = root.AddComponent<FloorRenderer>(); floor.useSongThemeOnPlay = false;
         floor.Build(StageTheme.AbyssalRuins);
         otherMeshes = root.GetComponentsInChildren<MeshFilter>().Select(f => f.sharedMesh).Distinct().ToArray();
         otherMaterials = root.GetComponentsInChildren<Renderer>().SelectMany(r => r.sharedMaterials).Distinct().ToArray();

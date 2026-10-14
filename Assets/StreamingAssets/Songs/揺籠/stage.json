@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "displayName": "揺籠",
+  "stageTheme": "MoonlitGarden",
   "displayReading": "ゆりかご",
   "composer": "???",
   "timeOrigin": "audio-file-start",

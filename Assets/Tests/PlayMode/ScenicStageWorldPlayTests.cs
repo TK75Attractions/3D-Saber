@@ -11,7 +11,7 @@ public class ScenicStageWorldPlayTests
     {
         if(scene.name!="Game") return;
         var stage = new GameObject("TestWorld").AddComponent<FloorRenderer>();
-        stage.randomizeOnPlay=false; stage.Build(nextTheme);
+        stage.useSongThemeOnPlay=false; stage.Build(nextTheme);
     }
 
     [UnityTest]

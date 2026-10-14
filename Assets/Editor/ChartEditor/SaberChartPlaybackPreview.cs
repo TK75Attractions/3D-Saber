@@ -80,7 +80,7 @@ namespace Saber.ChartEditor
                 root = new GameObject("ChartEditorPreviewWorld");
                 renderer.AddSingleGO(root);
                 floor = root.AddComponent<FloorRenderer>();
-                floor.randomizeOnPlay = false;
+                floor.useSongThemeOnPlay = false;
                 floor.Build(StageTheme.ObsidianRelay);
                 CollectGeometry(root, stageResources);
                 motion = root.AddComponent<NoteSpawner>();

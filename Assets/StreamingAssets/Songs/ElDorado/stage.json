@@ -1,6 +1,7 @@
 {
     "schemaVersion": 1,
     "displayName": "ElDorado",
+    "stageTheme": "AmberFoundry",
     "composer": "???",
     "timeOrigin": "audio-file-start",
     "previewStartSeconds": 100.203,

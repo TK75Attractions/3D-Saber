@@ -70,7 +70,7 @@ public sealed class SongChartPreviewView : IDisposable
         camera.targetTexture=texture; camera.depth=-20; camera.allowMSAA=false; camera.allowHDR=false;
         var cameraData=camera.GetUniversalAdditionalCameraData(); cameraData.renderPostProcessing=false; cameraData.renderShadows=false; cameraData.volumeLayerMask=0;
         var stage=new GameObject("PreviewStage"); stage.transform.SetParent(root.transform,false);
-        floor=stage.AddComponent<FloorRenderer>(); floor.randomizeOnPlay=false; floor.Build(StageTheme.ObsidianRelay);
+        floor=stage.AddComponent<FloorRenderer>(); floor.useSongThemeOnPlay=false; floor.Build(StageTheme.ObsidianRelay);
         gateMaterial=new Material(Shader.Find("Universal Render Pipeline/Unlit")){name="PreviewGate"};
         gateMaterial.SetColor("_BaseColor",new Color(.18f,.37f,.44f));
         // 判定面は小窓でも判別できる薄いコーナー枠。背景と違い、仮想カット時だけ短く光らせる。

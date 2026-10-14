@@ -3,7 +3,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 
 // Obsidian Relay: 段差のあるデッキと、奥へ重なる側壁で距離を表す。
-// 金属環境4種と独立世界6種。ノーツ・HUDには触れず、中央は空け、光は床端と側壁に置く。
+// 曲ごとの立体背景。ノーツ・HUDには触れず、中央は空け、光は床端と側壁に置く。
 // 結合メッシュの板はGPUで剛体変形し、パーツ数に比例した描画呼び出しを増やさない。
 // 資源は OnDestroy で解放。独自Updateは持たず、GamePlayManagerが曲時計でTickする。
 [ExecuteAlways]
@@ -11,7 +11,9 @@ public partial class FloorRenderer : MonoBehaviour
 {
     [Header("Stage variation")]
     public StageTheme theme = StageTheme.ObsidianRelay;
-    public bool randomizeOnPlay = true;
+    [UnityEngine.Serialization.FormerlySerializedAs("randomizeOnPlay")]
+    [Tooltip("プレイ開始時に曲の stage.json で指定した背景を使う。OFF は Inspector の theme を使う。")]
+    public bool useSongThemeOnPlay = true;
     public StageTheme ActiveTheme { get; private set; }
     [Header("Floor / Ceiling extents")]
     public float floorY = -2.5f;
@@ -97,14 +99,17 @@ public partial class FloorRenderer : MonoBehaviour
     public void Build()
     {
         if (built) return;
-        Build(Application.isPlaying && randomizeOnPlay ? StageThemeCatalog.NextForPlay() : theme);
+        Build(Application.isPlaying && useSongThemeOnPlay
+            ? GameSession.IsCalibrationMode || GameSession.TutorialPending
+                ? StageTheme.ObsidianRelay : StageThemeCatalog.ForSong(GameSession.SelectedSongId)
+            : theme);
     }
 
-    // 明示指定はプレビュー/Inspector用。通常プレイでは上の入口で開始時に一度だけ抽選する。
+    // 明示指定はプレビュー/Inspector用。通常プレイでは曲の背景を開始時に一度だけ構築する。
     public void Build(StageTheme selectedTheme)
     {
         if (built) return;
-        ActiveTheme = (int)selectedTheme >= 0 && (int)selectedTheme < StageThemeCatalog.Count
+        ActiveTheme = StageThemeCatalog.IsDefined(selectedTheme)
             ? selectedTheme : StageTheme.ObsidianRelay;
         built = true;
         if (ActiveTheme == StageTheme.PulseArray)

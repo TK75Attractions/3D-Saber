@@ -50,7 +50,7 @@ public class FloorTimingGuidePlayTests
             if (old != null) Object.Destroy(old.gameObject);
             yield return null;
             var floor = new GameObject("GuidePreviewStage").AddComponent<FloorRenderer>();
-            floor.randomizeOnPlay = false; floor.Build((StageTheme)theme);
+            floor.useSongThemeOnPlay = false; floor.Build(StageThemeCatalog.All[theme]);
             for (int mode = 0; mode < 2; mode++)
             {
                 DisplaySettings.SetProjectorModeForTest(mode == 1);

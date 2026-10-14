@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "displayName": "校歌",
+  "stageTheme": "VioletVault",
   "displayReading": "こうか",
   "composer": "???",
   "timeOrigin": "audio-file-start",

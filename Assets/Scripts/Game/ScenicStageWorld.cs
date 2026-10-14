@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
-// 六つの独立した立体世界。FloorRenderer が選択し、GamePlayManager が曲時計で駆動する。
+// 独立した立体世界。FloorRenderer が選択し、GamePlayManager が曲時計で駆動する。
 [ExecuteAlways]
 public sealed partial class ScenicStageWorld : MonoBehaviour
 {
@@ -60,6 +60,9 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
             case StageTheme.CrystalGrotto: BuildCrystal(); break;
             case StageTheme.AstralOrbit: BuildOrbit(); break;
             case StageTheme.DesertSanctum: BuildDesert(); break;
+            case StageTheme.MidnightHarbor: BuildHarbor(); break;
+            case StageTheme.VerdantAtrium: BuildAtrium(); break;
+            case StageTheme.ClockworkLibrary: BuildLibrary(); break;
         }
         foreach (var group in groups) Emit("World-" + group.Key.name, group.Value, group.Key, transform);
         CreateMotes(); Tick(0);
@@ -180,6 +183,9 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
             case StageTheme.MoonlitGarden: return new Color(.34f,.43f,.26f);
             case StageTheme.CrystalGrotto: return new Color(.43f,.24f,.57f);
             case StageTheme.AstralOrbit: return new Color(.32f,.23f,.57f);
+            case StageTheme.MidnightHarbor: return new Color(.18f,.32f,.47f);
+            case StageTheme.VerdantAtrium: return new Color(.27f,.43f,.21f);
+            case StageTheme.ClockworkLibrary: return new Color(.44f,.32f,.17f);
             default: return new Color(.56f,.31f,.12f);
         }
     }
@@ -218,6 +224,9 @@ public sealed partial class ScenicStageWorld : MonoBehaviour
             if (Theme == StageTheme.CrystalGrotto) { y = floor + 4.7f - phase*4.7f; size = .065f; color = new Color(.48f,.60f,.68f,.50f*fade); }
             if (Theme == StageTheme.AstralOrbit) { y = floor + phase*6; x += side*2; size = .05f; color = new Color(.52f,.56f,.72f,.28f*fade); }
             if (Theme == StageTheme.DesertSanctum) { x = side*(7.35f + Mathf.Sin(seed)*.20f); z = 4+(i%3)*9.5f + Mathf.Cos(seed)*.20f; y = floor + 4.0f - phase*4; size = .065f + (i%3)*.02f; color = new Color(.62f,.46f,.26f,.65f*fade); }
+            if (Theme == StageTheme.MidnightHarbor) { y = floor + .4f + phase*1.8f; size = .045f; color = new Color(.35f,.52f,.63f,.25f*fade); }
+            if (Theme == StageTheme.VerdantAtrium) { y = floor + 1 + phase*4; size = .055f; color = new Color(.60f,.67f,.32f,.38f*fade); }
+            if (Theme == StageTheme.ClockworkLibrary) { y = floor + .7f + phase*4.5f; size = .035f; color = new Color(.66f,.49f,.28f,.30f*fade); }
             size *= 1 + ChorusIntensity * .25f;
             color.a *= 1 + ChorusIntensity * .30f;
             particles[i] = new ParticleSystem.Particle { position = new Vector3(x + Mathf.Sin((float)(time*.8)+seed)*.10f,y,z),

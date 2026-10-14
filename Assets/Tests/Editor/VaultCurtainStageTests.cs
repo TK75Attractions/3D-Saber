@@ -20,7 +20,7 @@ public class VaultCurtainStageTests
         DisplaySettings.SetReducedEffectsForTest(false);
         DisplaySettings.SetProjectorModeForTest(false);
         root = new GameObject("VaultCurtainTest");
-        floor = root.AddComponent<FloorRenderer>(); floor.randomizeOnPlay = false;
+        floor = root.AddComponent<FloorRenderer>(); floor.useSongThemeOnPlay = false;
         floor.Build(StageTheme.VioletVault);
         stage = root.GetComponentInChildren<VioletCurtainStage>(); Assert.NotNull(stage);
         curtain = stage.GetComponentInChildren<MeshFilter>().sharedMesh;

@@ -12,7 +12,7 @@ public class ScenicStageWorldTests
     private FloorRenderer stage;
     private ScenicStageWorld world;
     private static readonly StageTheme[] Themes = { StageTheme.AbyssalRuins,StageTheme.SkySanctuary,StageTheme.MoonlitGarden,
-        StageTheme.CrystalGrotto,StageTheme.AstralOrbit,StageTheme.DesertSanctum };
+        StageTheme.CrystalGrotto,StageTheme.AstralOrbit,StageTheme.DesertSanctum, StageTheme.MidnightHarbor,StageTheme.VerdantAtrium,StageTheme.ClockworkLibrary };
     private void Build(StageTheme theme)
     {
         root = new GameObject("WorldTest"); stage = root.AddComponent<FloorRenderer>(); stage.Build(theme);
@@ -58,7 +58,7 @@ public class ScenicStageWorldTests
         Build(theme);
         for (int i = 0; i < 12; i++)
         {
-            world.Tick(i*1.41);
+            world.Tick(i*1.41, (int)theme >= 14 ? i%2 : 0);
             foreach (var filter in root.GetComponentsInChildren<MeshFilter>())
                 foreach (var v in filter.sharedMesh.vertices)
                 {
@@ -110,29 +110,6 @@ public class ScenicStageWorldTests
         var mats = world.GetComponentsInChildren<Renderer>().Select(f=>f.sharedMaterial).Distinct().ToArray();
         Object.DestroyImmediate(root); root = null;
         Assert.IsTrue(meshes.All(m=>m==null)); Assert.IsTrue(mats.All(m=>m==null));
-    }
-
-    [Test]
-    public void AllThemesAreSelectedPerPlayNotPerSong()
-    {
-        // 写真背景3種は削除済み。現行11テーマと列挙値の一致・全テーマの抽選は引き続き確認する。
-        Assert.AreEqual(11,StageThemeCatalog.Count); Assert.AreEqual(StageThemeCatalog.Count,Enum.GetValues(typeof(StageTheme)).Length);
-        string original = GameSession.SelectedSongId;
-        var randomState = UnityEngine.Random.state;
-        try
-        {
-            GameSession.SelectedSongId = "ElDorado";
-            StageTheme previous = StageThemeCatalog.NextForPlay();
-            var seen = new System.Collections.Generic.HashSet<StageTheme>{previous};
-            for (int i=0;i<1000;i++)
-            {
-                StageTheme next = StageThemeCatalog.NextForPlay(); Assert.AreNotEqual(previous,next);
-                seen.Add(next); previous = next;
-            }
-            Assert.AreEqual(StageThemeCatalog.Count,seen.Count);
-            Assert.AreEqual(randomState,UnityEngine.Random.state,"譜面用乱数を消費しない");
-        }
-        finally { GameSession.SelectedSongId = original; }
     }
 
     [TestCase("Stage/ScenicSurface")] [TestCase("Stage/ScenicMotes")]

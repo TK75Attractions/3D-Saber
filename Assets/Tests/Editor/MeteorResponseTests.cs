@@ -21,7 +21,7 @@ public class MeteorResponseTests
         DisplaySettings.SetReducedEffectsForTest(false);
         DisplaySettings.SetProjectorModeForTest(false);
         root = new GameObject("MeteorResponseTest");
-        floor = root.AddComponent<FloorRenderer>(); floor.randomizeOnPlay = false;
+        floor = root.AddComponent<FloorRenderer>(); floor.useSongThemeOnPlay = false;
         floor.Build(StageTheme.AstralOrbit);
         world = root.GetComponentInChildren<ScenicStageWorld>(); Assert.NotNull(world);
         Assert.IsTrue(world.MeteorResponsesReady);
@@ -193,7 +193,7 @@ public class MeteorResponseTests
         var other = new GameObject("NonAstralWorld");
         try
         {
-            var otherFloor = other.AddComponent<FloorRenderer>(); otherFloor.randomizeOnPlay = false;
+            var otherFloor = other.AddComponent<FloorRenderer>(); otherFloor.useSongThemeOnPlay = false;
             otherFloor.Build(StageTheme.MoonlitGarden);
             var otherWorld = other.GetComponentInChildren<ScenicStageWorld>();
             Assert.IsFalse(otherWorld.MeteorResponsesReady);

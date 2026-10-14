@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "displayName": "Morning",
+  "stageTheme": "SkySanctuary",
   "composer": "???",
   "timeOrigin": "audio-file-start",
   "previewStartSeconds": 113.898,

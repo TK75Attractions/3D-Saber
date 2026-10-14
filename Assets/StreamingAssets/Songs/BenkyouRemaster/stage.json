@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "displayName": "勉強（Remaster）",
+  "stageTheme": "ClockworkLibrary",
   "composer": "爆裂P",
   "timeOrigin": "audio-file-start",
   "audioSha256": "e8a897d48b2a36c6112d0df155b6aabb21b60ab596450627be6098d26ed5e920",

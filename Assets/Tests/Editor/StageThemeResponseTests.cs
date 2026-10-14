@@ -15,12 +15,12 @@ public class StageThemeResponseTests
     [Test]
     public void UnsupportedThemesOrInvalidFloorDoNotCreateOrReplaceAnything()
     {
-        for (int i = 0; i < StageThemeCatalog.Count; i++)
-            if (i != (int)StageTheme.MoonlitGarden && i != (int)StageTheme.AmberFoundry &&
-                i != (int)StageTheme.AzurePrism && i != (int)StageTheme.CrystalGrotto &&
-                i != (int)StageTheme.ObsidianRelay && i != (int)StageTheme.AbyssalRuins &&
-                i != (int)StageTheme.SkySanctuary)
-                Assert.IsNull(Create((StageTheme)i));
+        foreach (StageTheme value in StageThemeCatalog.All)
+            if (value != StageTheme.MoonlitGarden && value != StageTheme.AmberFoundry &&
+                value != StageTheme.AzurePrism && value != StageTheme.CrystalGrotto &&
+                value != StageTheme.ObsidianRelay && value != StageTheme.AbyssalRuins &&
+                value != StageTheme.SkySanctuary)
+                Assert.IsNull(Create(value));
         Assert.IsNull(StageThemeResponse.Create(root.transform, StageTheme.MoonlitGarden, float.NaN));
         Assert.AreEqual(0, root.transform.childCount);
     }

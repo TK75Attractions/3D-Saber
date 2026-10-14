@@ -178,7 +178,7 @@ public static class SchoolSongFlowPreview
         var parent = old != null ? old.transform.parent : null;
         if (old != null) UnityEngine.Object.DestroyImmediate(old.gameObject);
         var stage = new GameObject("FloorRenderer").AddComponent<FloorRenderer>();
-        stage.transform.SetParent(parent, false); stage.randomizeOnPlay = false; stage.Build((StageTheme)shot);
+        stage.transform.SetParent(parent, false); stage.useSongThemeOnPlay = false; stage.Build((StageTheme)shot);
         spawner.Tick(Starts[shot]);
     }
 

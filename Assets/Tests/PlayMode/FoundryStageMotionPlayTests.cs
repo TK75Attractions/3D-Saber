@@ -10,7 +10,7 @@ public class FoundryStageMotionPlayTests
     {
         if (scene.name != "Game") return;
         var stage = new GameObject("TestFoundry").AddComponent<FloorRenderer>();
-        stage.randomizeOnPlay = false;
+        stage.useSongThemeOnPlay = false;
         stage.Build(StageTheme.AmberFoundry);
     }
 

@@ -1,6 +1,7 @@
 {
   "schemaVersion": 1,
   "displayName": "2:23 AM",
+  "stageTheme": "MidnightHarbor",
   "composer": "???",
   "timeOrigin": "audio-file-start",
   "previewStartSeconds": 129.333,

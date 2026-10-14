@@ -126,7 +126,7 @@ public static class StageDesignPreview
                 CaptureCamera(capturePath);
                 if (allVariants && ++themeIndex < StageThemeCatalog.Count)
                 {
-                    ReplaceStage((StageTheme)themeIndex);
+                    ReplaceStage(StageThemeCatalog.All[themeIndex]);
                     frame = 0;
                     return;
                 }
@@ -159,7 +159,7 @@ public static class StageDesignPreview
         var go = new GameObject("FloorRenderer");
         go.transform.SetParent(parent, false);
         var stage = go.AddComponent<FloorRenderer>();
-        stage.randomizeOnPlay = false;
+        stage.useSongThemeOnPlay = false;
         stage.Build(theme);
     }
 

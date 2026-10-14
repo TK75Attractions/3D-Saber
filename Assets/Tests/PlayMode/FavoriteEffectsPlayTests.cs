@@ -44,11 +44,11 @@ public class FavoriteEffectsPlayTests
     }
 
     [UnityTest, Timeout(360000)]
-    public IEnumerator YurikagoHardAll11Backgrounds_AcceleratedClockReloadAndResourceRelease()
+    public IEnumerator YurikagoHardAllBackgrounds_AcceleratedClockReloadAndResourceRelease()
     {
         for (int theme = 0; theme < StageThemeCatalog.Count; theme++)
         {
-            yield return LoadGame((StageTheme)theme);
+            yield return LoadGame(StageThemeCatalog.All[theme]);
             var chart = ChartLoader.LoadFromStreamingAssets("揺籠", "hard");
             Assert.AreEqual(404, chart.notes.Count, "調査対象譜面が変わっています。");
             SetChart(chart);
@@ -64,7 +64,7 @@ public class FavoriteEffectsPlayTests
                 if (frame % 20 == 0) yield return null;
             }
             Assert.AreEqual(404, manager.noteSpawner.NextIndex);
-            Assert.AreEqual(404, judged, "高速走査中にノーツを見逃しました: " + (StageTheme)theme);
+            Assert.AreEqual(404, judged, "高速走査中にノーツを見逃しました: " + StageThemeCatalog.All[theme]);
             Assert.AreEqual(0, effects.ActiveWaveCount);
             var response = floor.GetComponentInChildren<StageThemeResponse>();
             if (response != null) Assert.AreEqual(0, response.ActiveResponseCount);
@@ -343,7 +343,7 @@ public class FavoriteEffectsPlayTests
     {
         if (scene.name != "Game") return;
         var forced = new GameObject("MeteorResponseGameTestFloor").AddComponent<FloorRenderer>();
-        forced.randomizeOnPlay = false; forced.Build(StageTheme.AstralOrbit);
+        forced.useSongThemeOnPlay = false; forced.Build(StageTheme.AstralOrbit);
     }
 
     [UnityTest, Timeout(120000)]
@@ -446,7 +446,7 @@ public class FavoriteEffectsPlayTests
     {
         if(scene.name!="Game")return;
         var stage=new GameObject("MarinePassGameTestFloor").AddComponent<FloorRenderer>();
-        stage.randomizeOnPlay=false;stage.Build(StageTheme.AbyssalRuins);
+        stage.useSongThemeOnPlay=false;stage.Build(StageTheme.AbyssalRuins);
     }
 
     [UnityTest, Timeout(120000)]
@@ -570,7 +570,7 @@ public class FavoriteEffectsPlayTests
     {
         if (scene.name != "Game") return;
         var forced = new GameObject("VaultCurtainGameTestFloor").AddComponent<FloorRenderer>();
-        forced.randomizeOnPlay = false; forced.Build(StageTheme.VioletVault);
+        forced.useSongThemeOnPlay = false; forced.Build(StageTheme.VioletVault);
     }
 
     [UnityTest, Timeout(120000)]
@@ -627,7 +627,7 @@ public class FavoriteEffectsPlayTests
     {
         if (scene.name != "Game") return;
         var forced = new GameObject("PulseFormationGameTestFloor").AddComponent<FloorRenderer>();
-        forced.randomizeOnPlay = false; forced.Build(StageTheme.PulseArray);
+        forced.useSongThemeOnPlay = false; forced.Build(StageTheme.PulseArray);
     }
 
     IEnumerator RealTimeAudioWithScriptedPerfectInput(StageTheme theme)
@@ -682,7 +682,7 @@ public class FavoriteEffectsPlayTests
         manager.noteSpawner.OnNoteSpawned += Collect;
         yield return ReleaseFloorAndAssertResources();
         floor = new GameObject("FavoriteEffectsPlayTestFloor").AddComponent<FloorRenderer>();
-        floor.randomizeOnPlay = false; floor.theme = theme; floor.Build(theme);
+        floor.useSongThemeOnPlay = false; floor.theme = theme; floor.Build(theme);
         timeline = StagePerformanceTimeline.Load("揺籠");
         scenic = floor.GetComponentInChildren<ScenicStageWorld>();
         foundry = FoundryStageMotion.Ensure(floor);

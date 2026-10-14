@@ -46,7 +46,7 @@ public static class ScenicWorldsPreview
     private static void SelectSong()
     {
         if(!SessionState.GetBool(Key,false)) return;
-        GameSession.SelectedSongId="ElDorado"; GameSession.SelectedDifficulty="normal"; GameSession.IsCalibrationMode=false;
+        GameSession.SelectedSongId="ElDorado"; GameSession.SelectedDifficulty="normal"; GameSession.IsCalibrationMode=false; DisplaySettings.SetReducedEffectsForTest(SessionState.GetBool(Key+".Low",false));
     }
     public static void Render()
     {
@@ -55,11 +55,17 @@ public static class ScenicWorldsPreview
         if(at<0||at+1>=args.Length) throw new ArgumentException("出力先が必要です。");
         output=Path.GetFullPath(args[at+1]); Directory.CreateDirectory(output);
         SessionState.SetString(Key+".Output",output); SessionState.SetBool(Key,true);
+        SessionState.SetBool(Key+".Low",Array.IndexOf(args,"-scenicPreviewLow")>=0);
         SessionState.SetBool(Key+".Stills",Array.IndexOf(args,"-scenicPreviewStills")>=0);
         SessionState.SetBool(Key+".Dynamics",Array.IndexOf(args,"-scenicDynamicsDemo")>=0);
         int only=Array.IndexOf(args,"-scenicPreviewTheme");
         int first=0,last=StageThemeCatalog.Count-1;
-        if(only>=0 && only+1<args.Length) { first=int.Parse(args[only+1]); last=first; }
+        if(only>=0 && only+1<args.Length)
+        {
+            StageTheme requested=(StageTheme)int.Parse(args[only+1]);
+            if(!StageThemeCatalog.IsDefined(requested)) throw new ArgumentOutOfRangeException("背景番号");
+            first=StageThemeCatalog.All.ToList().IndexOf(requested); last=first;
+        }
         if(first<0||last>=StageThemeCatalog.Count) throw new ArgumentOutOfRangeException("背景番号");
         SessionState.SetInt(Key+".First",first); SessionState.SetInt(Key+".Last",last);
         File.WriteAllText(Path.Combine(output,"runtime-check.txt"),"Actual Game scene; same camera and held notes. No scene/chart saving.\n");
@@ -132,7 +138,7 @@ public static class ScenicWorldsPreview
         Transform parent=old!=null?old.transform.parent:manager.transform;
         if(old!=null) UnityEngine.Object.DestroyImmediate(old.gameObject);
         stage=new GameObject("PreviewWorld").AddComponent<FloorRenderer>(); stage.transform.SetParent(parent,false);
-        stage.randomizeOnPlay=false; stage.Build((StageTheme)themeIndex);
+        stage.useSongThemeOnPlay=false; stage.Build(StageThemeCatalog.All[themeIndex]);
         world=stage.GetComponentInChildren<ScenicStageWorld>(); foundry=FoundryStageMotion.Ensure(stage);
         folder=Path.Combine(output,$"{themeIndex:D2}-{stage.ActiveTheme}"); Directory.CreateDirectory(Path.Combine(folder,"Frames"));
         caption.text=$"{themeIndex+1:00} / {StageThemeCatalog.Count}    {StageThemeCatalog.DisplayName(stage.ActiveTheme).ToUpperInvariant()}";
@@ -162,8 +168,8 @@ public static class ScenicWorldsPreview
         File.WriteAllBytes(Path.Combine(folder,"preview.png"),pixels.EncodeToPNG());
         if(themeIndex>=4)
         {
-            if(newOverview==null) newOverview=new Texture2D(Width*3,Height*2,TextureFormat.RGB24,false);
-            int i=themeIndex-4; newOverview.SetPixels(i%3*Width,(1-i/3)*Height,Width,Height,pixels.GetPixels()); newOverview.Apply();
+            if(newOverview==null) newOverview=new Texture2D(Width*3,Height*((StageThemeCatalog.Count-4+2)/3),TextureFormat.RGB24,false);
+            int i=themeIndex-4; newOverview.SetPixels(i%3*Width,((StageThemeCatalog.Count-4+2)/3-1-i/3)*Height,Width,Height,pixels.GetPixels()); newOverview.Apply();
             File.WriteAllBytes(Path.Combine(output,"new-worlds-overview.png"),newOverview.EncodeToPNG());
         }
         else

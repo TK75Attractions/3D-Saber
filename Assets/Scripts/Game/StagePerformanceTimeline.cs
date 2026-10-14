@@ -20,6 +20,8 @@ public sealed class StagePerformanceTimeline
     }
 
     public Section[] sections = Array.Empty<Section>();
+    // 曲専用の背景。列挙名で保存し、譜面の難易度と独立させる。
+    public string stageTheme = "";
     // 選曲画面用の見せ場。音源先頭基準。未指定なら演出区間から安全に選ぶ。
     public double previewStartSeconds = -1;
     // 拍子が一定でない曲は、誤った4拍の小節線を出さない。未指定の既存曲は維持する。
