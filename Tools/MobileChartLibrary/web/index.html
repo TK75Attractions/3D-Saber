@@ -1,0 +1,28 @@
+<!doctype html>
+<html lang="ja"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#090e18"><meta name="description" content="3D Saberの全譜面を、スマートフォンで音付き再生。曲と難易度を選んで、配置やフリックをスローで確認できます。"><title>譜面ライブラリ · 3D SABER</title><link rel="icon" href="icon.svg" type="image/svg+xml"><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="masthead"><a class="brand" href="./" aria-label="3D SABER 譜面ライブラリ"><span class="brandmark" aria-hidden="true">╱╲</span> 3D SABER</a><span class="edition">CHART LIBRARY</span></header>
+<main>
+<div class="page-heading"><div><p class="eyebrow">LISTEN. WATCH. REPLAY.</p><h1>譜面ライブラリ</h1></div><p id="catalogCount" class="catalog-count">読み込み中</p></div>
+<div class="layout">
+<section class="viewer" aria-label="譜面プレイヤー">
+<div class="song-heading"><div><p id="songArtist" class="artist">3D SABER</p><h2 id="songTitle">譜面を読み込み中…</h2></div><a class="library-jump" href="#library">曲を選ぶ <span aria-hidden="true">↓</span></a></div>
+<div id="difficulties" class="difficulties" role="group" aria-label="難易度"></div>
+<div id="player" class="player">
+<div class="stage-wrap"><canvas id="stage" aria-label="音楽に同期してノーツが流れる配置プレビュー"></canvas><div class="stage-top"><span id="stageLabel">CONFIGURATION PREVIEW</span><button id="expand" class="icon-button" aria-label="プレイヤーを拡大" title="拡大">⛶</button></div><div class="stage-bottom"><span><i class="dot blue"></i>左手 <i class="dot red"></i>右手 <i class="dot gold"></i>どちらでも</span><span id="noteProgress">0 / 0</span></div><button id="canvasPlay" class="canvas-play" aria-label="再生"><span aria-hidden="true">▶</span></button></div>
+<div class="controls">
+<div class="timeline"><canvas id="density" aria-label="曲全体のノーツ密度"></canvas><input id="seek" type="range" min="0" max="1" step="0.01" value="0" aria-label="再生位置"></div>
+<div class="time-row"><output id="position">0:00</output><output id="duration">0:00</output></div>
+<div class="transport"><div class="transport-main"><button id="back" class="quiet" aria-label="5秒戻る">−5秒</button><button id="play" class="play" disabled>▶ 再生</button><button id="forward" class="quiet" aria-label="5秒進む">+5秒</button></div><label class="speed-label"><span>速度</span><select id="speed" aria-label="再生速度"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="0.75">0.75×</option><option value="1" selected>1×</option><option value="1.25">1.25×</option></select></label></div>
+</div></div>
+<p id="status" class="status" role="status" aria-live="polite">譜面と音源を準備しています。</p>
+<div id="stats" class="stats"></div>
+<div class="section-label"><h3>ここから見る</h3><button id="share" class="text-button">この箇所を共有 ↗</button></div>
+<nav id="chapters" class="chapters" aria-label="曲の区間"></nav>
+<details class="view-settings"><summary>表示設定・譜面情報</summary><div class="setting-row"><label for="approach">ノーツの先読み</label><select id="approach"><option value="1" selected>1秒（標準）</option><option value="1.5">1.5秒</option><option value="2">2秒</option></select></div><div class="setting-row"><label for="volume">音量</label><input type="range" id="volume" min="0" max="1" step="0.05" value="0.8"></div><p>矢印はフリック方向、数字はロングの残り回数です。再生・早送りしても譜面の配置は変わりません。</p><p class="small">ゲームの譜面データを使った配置確認用プレビューです。背景・エフェクトは閲覧用の簡易表示です。</p><a id="downloadChart" download>譜面JSONを保存 ↓</a> <a id="credits" hidden target="_blank" rel="noopener">楽曲クレジット ↗</a></details>
+</section>
+<aside id="library" class="library" aria-label="曲一覧"><div class="library-title"><h2>すべての曲</h2><span id="libraryCount"></span></div><label class="search"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="曲名・作曲者で検索" aria-label="曲名・作曲者で検索" autocomplete="off"></label><div class="filters" role="group" aria-label="曲の絞り込み"><button id="allFilter" class="active" aria-pressed="true">すべて</button><button id="recentFilter" aria-pressed="false">作り直した5曲</button></div><div id="songList" class="song-list"></div><p id="empty" hidden>該当する曲がありません。</p><p class="library-foot">最新の5曲・全15譜面を更新済み。<br>Rush Eの難易度Eも収録しています。</p></aside>
+</div>
+<footer><span>3D SABER / CHART LIBRARY</span><span id="updated"></span></footer>
+</main><audio id="audio" preload="metadata"></audio><script type="module" src="app.js"></script>
+</body></html>
