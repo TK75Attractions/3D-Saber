@@ -52,6 +52,10 @@
       "name": "主拍"
     },
     {
+      "timeMs": 16000.0,
+      "name": "素材: reason-hard-1"
+    },
+    {
       "timeMs": 21333.3333,
       "name": "主題A"
     },
@@ -355,10 +359,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 48.0,
+      "beat": 48,
       "time": 16000.0,
-      "x": 1.12,
-      "y": 0.2,
+      "x": 1.15,
+      "y": -0.2,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -366,10 +370,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 48.0,
-      "time": 16000.0,
-      "x": -0.928,
-      "y": -0.2,
+      "beat": 49,
+      "time": 16333.3333,
+      "x": -1.1,
+      "y": -0.15,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -377,10 +381,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 50.0,
-      "time": 16666.6667,
-      "x": -1.12,
-      "y": 0.2,
+      "beat": 51,
+      "time": 17000.0,
+      "x": -1.35,
+      "y": -0.15,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -388,10 +392,21 @@
       "lengthMs": 0
     },
     {
-      "beat": 52.0,
+      "beat": 52,
       "time": 17333.3333,
-      "x": 0.832,
+      "x": -1.15,
       "y": -0.2,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 53,
+      "time": 17666.6667,
+      "x": 1.1,
+      "y": -0.15,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -399,12 +414,12 @@
       "lengthMs": 0
     },
     {
-      "beat": 54.0,
-      "time": 18000.0,
-      "x": -0.832,
-      "y": -0.2,
+      "beat": 55,
+      "time": 18333.3333,
+      "x": 1.35,
+      "y": -0.15,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0

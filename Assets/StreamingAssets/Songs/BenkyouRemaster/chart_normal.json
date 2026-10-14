@@ -56,6 +56,10 @@
       "name": "BPM100"
     },
     {
+      "timeMs": 39624.0,
+      "name": "素材: crab-normal-1"
+    },
+    {
       "timeMs": 50424.0,
       "name": "主拍へ復帰"
     },
@@ -1092,32 +1096,21 @@
       "lengthMs": 0
     },
     {
-      "beat": 96.0,
+      "beat": 96,
       "time": 39624.0,
-      "x": 0.928,
-      "y": -0.272,
+      "x": -1.15,
+      "y": -0.15,
       "type": "tap",
-      "color": "gold",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
     {
-      "beat": 96.0,
-      "time": 39624.0,
-      "x": -0.928,
-      "y": -0.272,
-      "type": "tap",
-      "color": "gold",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 97.0,
+      "beat": 97,
       "time": 40224.0,
-      "x": 1.12,
-      "y": 0.272,
+      "x": 1.15,
+      "y": -0.15,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1125,10 +1118,21 @@
       "lengthMs": 0
     },
     {
-      "beat": 98.0,
+      "beat": 98,
       "time": 40824.0,
-      "x": -1.12,
-      "y": 0.272,
+      "x": 1.3,
+      "y": -0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 98,
+      "time": 40824.0,
+      "x": -1.3,
+      "y": -0.3,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1136,10 +1140,10 @@
       "lengthMs": 0
     },
     {
-      "beat": 99.0,
+      "beat": 99,
       "time": 41424.0,
-      "x": 0.832,
-      "y": -0.272,
+      "x": 1.25,
+      "y": -0.1,
       "type": "tap",
       "color": "red",
       "direction": "none",
@@ -1147,32 +1151,32 @@
       "lengthMs": 0
     },
     {
-      "beat": 100.0,
+      "beat": 99,
+      "time": 41424.0,
+      "x": -1.25,
+      "y": -0.1,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 100,
       "time": 42024.0,
-      "x": -0.832,
-      "y": -0.272,
+      "x": 1.15,
+      "y": -0.15,
       "type": "tap",
-      "color": "blue",
+      "color": "red",
       "direction": "none",
       "count": 1,
       "lengthMs": 0
     },
     {
-      "beat": 101.0,
+      "beat": 101,
       "time": 42624.0,
-      "x": 1.12,
-      "y": 0.272,
-      "type": "tap",
-      "color": "red",
-      "direction": "none",
-      "count": 1,
-      "lengthMs": 0
-    },
-    {
-      "beat": 102.0,
-      "time": 43224.0,
-      "x": -1.12,
-      "y": 0.272,
+      "x": -1.15,
+      "y": -0.15,
       "type": "tap",
       "color": "blue",
       "direction": "none",
@@ -1180,12 +1184,45 @@
       "lengthMs": 0
     },
     {
-      "beat": 103.0,
-      "time": 43824.0,
-      "x": 0.832,
-      "y": -0.272,
+      "beat": 102,
+      "time": 43224.0,
+      "x": 1.3,
+      "y": -0.3,
       "type": "tap",
       "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 102,
+      "time": 43224.0,
+      "x": -1.3,
+      "y": -0.3,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 103,
+      "time": 43824.0,
+      "x": 1.25,
+      "y": -0.1,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 103,
+      "time": 43824.0,
+      "x": -1.25,
+      "y": -0.1,
+      "type": "tap",
+      "color": "blue",
       "direction": "none",
       "count": 1,
       "lengthMs": 0

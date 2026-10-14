@@ -1,70 +1,88 @@
 {
   "hard": {
-    "notes": 388,
-    "cuts": 423,
+    "parent": "e",
+    "notes": 316,
+    "parentNotes": 1158,
+    "cuts": 351,
     "types": {
-      "tap": 334,
+      "tap": 268,
       "long": 10,
-      "direction": 44
+      "direction": 38
     },
-    "simultaneousGroups": 66,
-    "parallelSweeps": 11,
-    "goldNotes": 24,
+    "arrows": 38,
+    "simultaneousInstants": 54,
+    "instants": 262,
+    "goldNotes": 40,
     "longs": 10,
-    "arrows": 44,
-    "peakInstantsIn2s": 10,
+    "crossedNotes": 33,
+    "made": {
+      "kept": 305,
+      "long-from-run": 6,
+      "long-as-tap": 3,
+      "long-added": 2
+    },
+    "peakInstantsIn2s": 8,
     "minimumSameHandGapMs": 312.5,
-    "sourceMapId": "1eb9",
-    "sourceInstantsUsed": 320,
-    "sourceInstantsTotal": 963,
     "firstNoteMs": 93.4921,
     "lastNoteEndMs": 137780.9921,
-    "displayLevel": 8,
-    "raterScore": 8.714
+    "displayLevel": 7,
+    "raterScore": 7.444
   },
   "normal": {
-    "notes": 227,
-    "cuts": 254,
+    "parent": "hard",
+    "notes": 194,
+    "parentNotes": 316,
+    "cuts": 217,
     "types": {
-      "tap": 193,
-      "long": 10,
-      "direction": 24
+      "tap": 165,
+      "long": 9,
+      "direction": 20
     },
-    "simultaneousGroups": 32,
-    "parallelSweeps": 8,
-    "goldNotes": 16,
-    "longs": 10,
-    "arrows": 24,
-    "peakInstantsIn2s": 6,
+    "arrows": 20,
+    "simultaneousInstants": 31,
+    "instants": 163,
+    "goldNotes": 30,
+    "longs": 9,
+    "crossedNotes": 6,
+    "made": {
+      "kept": 186,
+      "long-fewer-cuts": 5,
+      "long-as-tap": 1,
+      "long-added": 2
+    },
+    "peakInstantsIn2s": 5,
     "minimumSameHandGapMs": 468.75,
-    "sourceMapId": "1eb9",
-    "sourceInstantsUsed": 193,
-    "sourceInstantsTotal": 963,
     "firstNoteMs": 93.4921,
     "lastNoteEndMs": 137780.9921,
-    "displayLevel": 6,
-    "raterScore": 5.916
+    "displayLevel": 5,
+    "raterScore": 5.335
   },
   "easy": {
-    "notes": 129,
-    "cuts": 145,
+    "parent": "normal",
+    "notes": 111,
+    "parentNotes": 194,
+    "cuts": 125,
     "types": {
-      "tap": 122,
-      "long": 7
+      "tap": 105,
+      "long": 6
     },
-    "simultaneousGroups": 13,
-    "parallelSweeps": 0,
-    "goldNotes": 13,
-    "longs": 7,
     "arrows": 0,
-    "peakInstantsIn2s": 4,
-    "minimumSameHandGapMs": 937.5,
-    "sourceMapId": "1eb9",
-    "sourceInstantsUsed": 116,
-    "sourceInstantsTotal": 963,
+    "simultaneousInstants": 11,
+    "instants": 100,
+    "goldNotes": 19,
+    "longs": 6,
+    "crossedNotes": 0,
+    "made": {
+      "kept": 103,
+      "long-fewer-cuts": 5,
+      "long-as-tap": 2,
+      "long-added": 1
+    },
+    "peakInstantsIn2s": 3,
+    "minimumSameHandGapMs": 875.0,
     "firstNoteMs": 93.4921,
     "lastNoteEndMs": 137780.9921,
     "displayLevel": 3,
-    "raterScore": 3.926
+    "raterScore": 3.424
   }
 }

@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "count": 52,
+  "count": 58,
   "patterns": [
     {
       "id": "dream-normal-1",
@@ -4279,6 +4279,568 @@
             "y": 0.1,
             "type": "tap",
             "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "reason-hard-1",
+      "title": "壁の切替後に右から左2打へ",
+      "category": "conditional",
+      "minimumDifficulty": "easy",
+      "referenceBpm": 128.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=wd_d19bUZ0Q&t=26",
+      "adaptation": "右0拍・左1拍・左3拍のタップへ簡略化。壁の回避は省き、左の2打は高さを保って内外へ小さく移す。 画面配置は右から左2打の内外移動を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "右から左2打の内外移動",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/reason-hard-1.json",
+      "beats": 4,
+      "noteCount": 3,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 128.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 3,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": 1.15,
+            "y": -0.2,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 468.75,
+            "x": -1.1,
+            "y": -0.15,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1406.25,
+            "x": -1.35,
+            "y": -0.15,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "reason-hard-2",
+      "title": "細かな交互から両手で締める",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 128.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=wd_d19bUZ0Q&t=58",
+      "adaptation": "0〜2.5拍の半拍交互6打と3拍の両手に整理。小さな上下動のタップとし、速い交互部分にフリックを連続させない。 画面配置は半拍交互から横の両手へを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "半拍交互から横の両手へ",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/reason-hard-2.json",
+      "beats": 4,
+      "noteCount": 8,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 128.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.15,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 234.375,
+            "x": 1.15,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 468.75,
+            "x": -1.2,
+            "y": 0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.5,
+            "time": 703.125,
+            "x": 1.2,
+            "y": -0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 937.5,
+            "x": -1.1,
+            "y": -0.25,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.5,
+            "time": 1171.875,
+            "x": 1.1,
+            "y": 0.25,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1406.25,
+            "x": 1.25,
+            "y": -0.2,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1406.25,
+            "x": -1.25,
+            "y": -0.2,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "reason-hard-3",
+      "title": "単発の後に同じ側の上下で応答",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 128.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=wd_d19bUZ0Q&t=114",
+      "adaptation": "右1拍・左2拍の後、3.5拍に同じ側の上下タップを1組。上下間隔を1.7以上確保し、前後の手別速度を通過した箇所だけへ入れる。 画面配置は単発から右寄り上下の両手へを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "単発から右寄り上下の両手へ",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/reason-hard-3.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 128.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 1,
+            "time": 468.75,
+            "x": 1.2,
+            "y": 0.2,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 937.5,
+            "x": -1.05,
+            "y": -0.2,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.5,
+            "time": 1640.625,
+            "x": 0.75,
+            "y": 0.9,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.5,
+            "time": 1640.625,
+            "x": 0.75,
+            "y": -0.9,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "crab-normal-1",
+      "title": "単発から両手2組へ広げる",
+      "category": "good",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 125.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=Zlse-YrMing&t=42",
+      "adaptation": "左0拍・右1拍・両手2拍と3拍のタップへ。両手を横に離し、高低差は小さくする。原作色では青が右担当である点を変換時に区別。 画面配置は単発から低い両手2組を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "単発から低い両手2組",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/crab-normal-1.json",
+      "beats": 4,
+      "noteCount": 6,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 125.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.15,
+            "y": -0.15,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 480.0,
+            "x": 1.15,
+            "y": -0.15,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 960.0,
+            "x": 1.3,
+            "y": -0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 960.0,
+            "x": -1.3,
+            "y": -0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1440.0,
+            "x": 1.25,
+            "y": -0.1,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1440.0,
+            "x": -1.25,
+            "y": -0.1,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "crab-normal-2",
+      "title": "爆弾の間を通る低い両手の反復",
+      "category": "conditional",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 125.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=Zlse-YrMing&t=90",
+      "adaptation": "右0拍、1.5拍と2.5拍の両手、3.5拍の左手へ密度を整理。爆弾は移植せず、低い横配置と片手へほどける終わり方を残す。 画面配置は右から低い両手を反復し左へを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "右から低い両手を反復し左へ",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/crab-normal-2.json",
+      "beats": 4,
+      "noteCount": 6,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 125.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": 1.15,
+            "y": -0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.5,
+            "time": 720.0,
+            "x": 1.25,
+            "y": -0.2,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1.5,
+            "time": 720.0,
+            "x": -1.25,
+            "y": -0.2,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.5,
+            "time": 1200.0,
+            "x": 1.2,
+            "y": -0.35,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2.5,
+            "time": 1200.0,
+            "x": -1.2,
+            "y": -0.35,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3.5,
+            "time": 1680.0,
+            "x": -1.05,
+            "y": -0.2,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "crab-normal-3",
+      "title": "天井壁の後の横向きと両手",
+      "category": "conditional",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 125.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=Zlse-YrMing&t=121",
+      "adaptation": "左0拍・1拍、両手2拍、左3拍のタップへ。身体の回避は省き、左手を小さく内外へ動かす。方向指定を連打せず、横移動の特徴だけを残す。 画面配置は左の横移動と両手の応答を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "左の横移動と両手の応答",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/crab-normal-3.json",
+      "beats": 4,
+      "noteCount": 5,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 125.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.3,
+            "y": 0.05,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 480.0,
+            "x": -1.05,
+            "y": 0.05,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 960.0,
+            "x": 1.2,
+            "y": -0.2,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 960.0,
+            "x": -1.2,
+            "y": -0.2,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1440.0,
+            "x": -1.3,
+            "y": 0.1,
+            "type": "tap",
+            "color": "blue",
             "direction": "none",
             "count": 1,
             "lengthMs": 0

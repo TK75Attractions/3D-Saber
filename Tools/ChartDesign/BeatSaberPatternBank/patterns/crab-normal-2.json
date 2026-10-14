@@ -1,0 +1,84 @@
+{
+  "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+  "bpm": 125.0,
+  "coordScale": 1,
+  "offsetMs": 0,
+  "beatZeroMs": 0,
+  "displayLevel": 5,
+  "timeSignatures": [
+    {
+      "beat": 0,
+      "numerator": 4,
+      "denominator": 4
+    }
+  ],
+  "editorTempoMap": [],
+  "notes": [
+    {
+      "beat": 0,
+      "time": 0.0,
+      "x": 1.15,
+      "y": -0.3,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 1.5,
+      "time": 720.0,
+      "x": 1.25,
+      "y": -0.2,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 1.5,
+      "time": 720.0,
+      "x": -1.25,
+      "y": -0.2,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 2.5,
+      "time": 1200.0,
+      "x": 1.2,
+      "y": -0.35,
+      "type": "tap",
+      "color": "red",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 2.5,
+      "time": 1200.0,
+      "x": -1.2,
+      "y": -0.35,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    },
+    {
+      "beat": 3.5,
+      "time": 1680.0,
+      "x": -1.05,
+      "y": -0.2,
+      "type": "tap",
+      "color": "blue",
+      "direction": "none",
+      "count": 1,
+      "lengthMs": 0
+    }
+  ]
+}

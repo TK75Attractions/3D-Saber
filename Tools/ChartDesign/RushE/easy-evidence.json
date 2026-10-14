@@ -2,2743 +2,2280 @@
   {
     "index": 0,
     "timeMs": 93.4921,
-    "sourceBeat": 3.5,
-    "sourceNotes": [
-      {
-        "index": 0,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "beat": 3.5,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "0:14R",
+    "made": "kept",
+    "eNotes": [
+      0
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "0:14",
     "onset": 20.36
   },
   {
     "index": 1,
     "timeMs": 4093.4921,
-    "sourceBeat": 11.5,
-    "sourceNotes": [
-      {
-        "index": 1,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "beat": 11.5,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "2:14R",
+    "made": "kept",
+    "eNotes": [
+      1
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "2:14",
     "onset": 32.75
   },
   {
     "index": 2,
     "timeMs": 5812.2421,
-    "sourceBeat": 14.9375,
-    "sourceNotes": [
-      {
-        "index": 2,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "beat": 14.9375,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "3:11.75R",
+    "made": "kept",
+    "eNotes": [
+      2
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "3:11.75",
     "onset": 16.54
   },
   {
     "index": 3,
     "timeMs": 7124.7421,
-    "sourceBeat": 17.5625,
-    "sourceNotes": [
-      {
-        "index": 3,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "beat": 17.5625,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "4:6.25R",
+    "made": "kept",
+    "eNotes": [
+      3
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "4:6.25",
     "onset": 16.79
   },
   {
     "index": 4,
-    "timeMs": 8187.2421,
-    "sourceBeat": 19.6875,
-    "sourceNotes": [
-      {
-        "index": 5,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "timeMs": 8499.7421,
+    "beat": 20.3125,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "4:14.75R",
-    "onset": 9.53
+    "made": "kept",
+    "eNotes": [
+      6
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "5:1.25",
+    "onset": 7.41
   },
   {
     "index": 5,
-    "timeMs": 9062.2421,
-    "sourceBeat": 21.4375,
-    "sourceNotes": [
-      {
-        "index": 8,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "up"
-      }
+    "timeMs": 10374.7421,
+    "beat": 24.0625,
+    "color": "gold",
+    "arrow": null,
+    "hand": "any",
+    "role": "long-gold",
+    "made": "long-fewer-cuts",
+    "eNotes": [
+      15,
+      16,
+      17,
+      18,
+      19,
+      20,
+      21,
+      22,
+      23,
+      24,
+      25,
+      26,
+      27,
+      28,
+      29,
+      30,
+      31,
+      32,
+      33,
+      34,
+      35
     ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "5:5.75L",
-    "onset": 7.09
+    "plannedSwing": null,
+    "beatSaberDirections": [
+      "down",
+      "up",
+      "down",
+      "up",
+      "down",
+      "up",
+      "down",
+      "up"
+    ],
+    "pattern": "6:0.25K4",
+    "onset": 5.54
   },
   {
     "index": 6,
-    "timeMs": 10374.7421,
-    "sourceBeat": 24.0625,
-    "sourceNotes": [
-      {
-        "index": 15,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
+    "timeMs": 13530.9921,
+    "beat": 30.375,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      45
     ],
-    "hand": "red",
-    "role": "long-gold",
-    "pattern": "6:0.25W4/14",
-    "onset": 5.54
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "7:9.5",
+    "onset": 5.34
   },
   {
     "index": 7,
     "timeMs": 13530.9921,
-    "sourceBeat": 30.375,
-    "sourceNotes": [
-      {
-        "index": 45,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 46,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
+    "beat": 30.375,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      46
     ],
-    "hand": "blue",
-    "role": "gold-double",
-    "pattern": "7:9.50G",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "7:9.5",
     "onset": 5.34
   },
   {
     "index": 8,
-    "timeMs": 13530.9921,
-    "sourceBeat": 30.375,
-    "sourceNotes": [
-      {
-        "index": 45,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 46,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
-    "role": "gold-double",
-    "pattern": "7:9.50G",
-    "onset": 5.34
-  },
-  {
-    "index": 9,
     "timeMs": 15187.2421,
-    "sourceBeat": 33.6875,
-    "sourceNotes": [
-      {
-        "index": 49,
-        "hand": "L",
-        "column": 3,
-        "row": 0,
-        "direction": "right"
-      },
-      {
-        "index": 50,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "right"
-      }
-    ],
-    "hand": "red",
+    "beat": 33.6875,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "8:6.75R",
+    "made": "kept",
+    "eNotes": [
+      50
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "right"
+    ],
+    "pattern": "8:6.75",
     "onset": 11.67
   },
   {
-    "index": 10,
+    "index": 9,
     "timeMs": 16749.7421,
-    "sourceBeat": 36.8125,
-    "sourceNotes": [
-      {
-        "index": 55,
-        "hand": "L",
-        "column": 2,
-        "row": 0,
-        "direction": "downright"
-      },
-      {
-        "index": 56,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "downright"
-      }
-    ],
-    "hand": "red",
+    "beat": 36.8125,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "9:3.25R",
+    "made": "kept",
+    "eNotes": [
+      56
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "downright"
+    ],
+    "pattern": "9:3.25",
     "onset": 5.71
   },
   {
-    "index": 11,
+    "index": 10,
     "timeMs": 18218.4921,
-    "sourceBeat": 39.75,
-    "sourceNotes": [
-      {
-        "index": 58,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "upright"
-      },
-      {
-        "index": 59,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "downleft"
-      }
-    ],
-    "hand": "blue",
+    "beat": 39.75,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "9:15.00L",
+    "made": "kept",
+    "eNotes": [
+      59
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "upright"
+    ],
+    "pattern": "9:15",
     "onset": 10.54
   },
   {
-    "index": 12,
-    "timeMs": 19530.9921,
-    "sourceBeat": 42.375,
-    "sourceNotes": [
-      {
-        "index": 62,
-        "hand": "L",
-        "column": 2,
-        "row": 0,
-        "direction": "downright"
-      }
-    ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "10:9.50L",
-    "onset": 6.58
-  },
-  {
-    "index": 13,
+    "index": 11,
     "timeMs": 20718.4921,
-    "sourceBeat": 44.75,
-    "sourceNotes": [
-      {
-        "index": 66,
-        "hand": "L",
-        "column": 0,
-        "row": 0,
-        "direction": "downleft"
-      }
-    ],
-    "hand": "blue",
+    "beat": 44.75,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "11:3.00L",
+    "made": "kept",
+    "eNotes": [
+      66
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "downleft"
+    ],
+    "pattern": "11:3",
     "onset": 7.07
   },
   {
-    "index": 14,
+    "index": 12,
     "timeMs": 21905.9921,
-    "sourceBeat": 47.125,
-    "sourceNotes": [
-      {
-        "index": 70,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "left"
-      }
-    ],
-    "hand": "blue",
+    "beat": 47.125,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "11:12.50L",
+    "made": "kept",
+    "eNotes": [
+      70
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "left"
+    ],
+    "pattern": "11:12.5",
     "onset": 7.34
   },
   {
-    "index": 15,
+    "index": 13,
     "timeMs": 22999.7421,
-    "sourceBeat": 49.3125,
-    "sourceNotes": [
-      {
-        "index": 74,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "blue",
+    "beat": 49.3125,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "12:5.25L",
+    "made": "kept",
+    "eNotes": [
+      74
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "12:5.25",
     "onset": 7.17
   },
   {
-    "index": 16,
+    "index": 14,
     "timeMs": 24530.9921,
-    "sourceBeat": 52.375,
-    "sourceNotes": [
-      {
-        "index": 80,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 81,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
+    "beat": 52.375,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "long-as-tap",
+    "eNotes": [
+      80
     ],
-    "hand": "blue",
-    "role": "double",
-    "pattern": "13:1.50D",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "13:1.5",
     "onset": 8.39
+  },
+  {
+    "index": 15,
+    "timeMs": 24530.9921,
+    "beat": 52.375,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      81
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "13:1.5",
+    "onset": 8.39
+  },
+  {
+    "index": 16,
+    "timeMs": 25468.4921,
+    "beat": 54.25,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      85
+    ],
+    "plannedSwing": "up",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "13:9",
+    "onset": 5.93
   },
   {
     "index": 17,
-    "timeMs": 24530.9921,
-    "sourceBeat": 52.375,
-    "sourceNotes": [
-      {
-        "index": 80,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 81,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
+    "timeMs": 26843.4921,
+    "beat": 57,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      88
     ],
-    "hand": "red",
-    "role": "double",
-    "pattern": "13:1.50D",
-    "onset": 8.39
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "upright"
+    ],
+    "pattern": "14:4",
+    "onset": 5.78
   },
   {
     "index": 18,
-    "timeMs": 25468.4921,
-    "sourceBeat": 54.25,
-    "sourceNotes": [
-      {
-        "index": 85,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "timeMs": 28468.4921,
+    "beat": 60.25,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "13:9.00R",
-    "onset": 5.93
-  },
-  {
-    "index": 19,
-    "timeMs": 26405.9921,
-    "sourceBeat": 56.125,
-    "sourceNotes": [
-      {
-        "index": 87,
-        "hand": "R",
-        "column": 0,
-        "row": 1,
-        "direction": "left"
-      }
+    "made": "kept",
+    "eNotes": [
+      95
     ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "14:0.50R",
-    "onset": 7.68
-  },
-  {
-    "index": 20,
-    "timeMs": 27249.7421,
-    "sourceBeat": 57.8125,
-    "sourceNotes": [
-      {
-        "index": 89,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
     ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "14:7.25L",
-    "onset": 8.94
-  },
-  {
-    "index": 21,
-    "timeMs": 28062.2421,
-    "sourceBeat": 59.4375,
-    "sourceNotes": [
-      {
-        "index": 93,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "14:13.75R",
-    "onset": 7.75
-  },
-  {
-    "index": 22,
-    "timeMs": 28874.7421,
-    "sourceBeat": 61.0625,
-    "sourceNotes": [
-      {
-        "index": 97,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "15:4.25L",
-    "onset": 5.82
-  },
-  {
-    "index": 23,
-    "timeMs": 29624.7421,
-    "sourceBeat": 62.5625,
-    "sourceNotes": [
-      {
-        "index": 101,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "15:10.25R",
-    "onset": 6.21
-  },
-  {
-    "index": 24,
-    "timeMs": 31124.7421,
-    "sourceBeat": 65.5625,
-    "sourceNotes": [
-      {
-        "index": 109,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "left"
-      },
-      {
-        "index": 110,
-        "hand": "R",
-        "column": 0,
-        "row": 0,
-        "direction": "left"
-      }
-    ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "16:6.25L",
+    "pattern": "15:1",
     "onset": 5.74
   },
   {
-    "index": 25,
-    "timeMs": 32530.9921,
-    "sourceBeat": 68.375,
-    "sourceNotes": [
-      {
-        "index": 115,
-        "hand": "L",
-        "column": 1,
-        "row": 2,
-        "direction": "up"
-      },
-      {
-        "index": 116,
-        "hand": "R",
-        "column": 2,
-        "row": 2,
-        "direction": "up"
-      }
+    "index": 19,
+    "timeMs": 30030.9921,
+    "beat": 63.375,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      103
     ],
-    "hand": "blue",
-    "role": "double",
-    "pattern": "17:1.50D",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "15:13.5",
+    "onset": 6.35
+  },
+  {
+    "index": 20,
+    "timeMs": 31124.7421,
+    "beat": 65.5625,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      110
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "left"
+    ],
+    "pattern": "16:6.25",
+    "onset": 5.74
+  },
+  {
+    "index": 21,
+    "timeMs": 32530.9921,
+    "beat": 68.375,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      116
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "17:1.5",
     "onset": 9.24
   },
   {
-    "index": 26,
+    "index": 22,
     "timeMs": 32530.9921,
-    "sourceBeat": 68.375,
-    "sourceNotes": [
-      {
-        "index": 115,
-        "hand": "L",
-        "column": 1,
-        "row": 2,
-        "direction": "up"
-      },
-      {
-        "index": 116,
-        "hand": "R",
-        "column": 2,
-        "row": 2,
-        "direction": "up"
-      }
+    "beat": 68.375,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      115
     ],
-    "hand": "red",
-    "role": "double",
-    "pattern": "17:1.50D",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "17:1.5",
     "onset": 9.24
   },
   {
-    "index": 27,
+    "index": 23,
     "timeMs": 33562.2421,
-    "sourceBeat": 70.4375,
-    "sourceNotes": [
-      {
-        "index": 122,
-        "hand": "L",
-        "column": 0,
-        "row": 0,
-        "direction": "down"
-      }
+    "beat": 70.4375,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      122
     ],
-    "hand": "red",
-    "role": "long-gold",
-    "pattern": "17:9.75W3/16",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "17:9.75",
     "onset": 3.45
   },
   {
-    "index": 28,
+    "index": 24,
     "timeMs": 36343.4921,
-    "sourceBeat": 76,
-    "sourceNotes": [
-      {
-        "index": 140,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "downright"
-      }
-    ],
-    "hand": "red",
+    "beat": 76,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "19:0.00R",
+    "made": "kept",
+    "eNotes": [
+      140
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "downright"
+    ],
+    "pattern": "19:0",
     "onset": 4.3
   },
   {
-    "index": 29,
+    "index": 25,
     "timeMs": 37437.2421,
-    "sourceBeat": 78.1875,
-    "sourceNotes": [
-      {
-        "index": 147,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 148,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "beat": 78.1875,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "19:8.75L",
+    "made": "kept",
+    "eNotes": [
+      148
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "19:8.75",
     "onset": 5.61
   },
   {
-    "index": 30,
-    "timeMs": 38718.4921,
-    "sourceBeat": 80.75,
-    "sourceNotes": [
-      {
-        "index": 157,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
+    "index": 26,
+    "timeMs": 38468.4921,
+    "beat": 80.25,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "20:3.00R",
-    "onset": 4.37
+    "made": "kept",
+    "eNotes": [
+      155
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "20:1",
+    "onset": 5.4
+  },
+  {
+    "index": 27,
+    "timeMs": 39843.4921,
+    "beat": 83,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      167
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "20:12",
+    "onset": 5.92
+  },
+  {
+    "index": 28,
+    "timeMs": 41187.2421,
+    "beat": 85.6875,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      178
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "left"
+    ],
+    "pattern": "21:6.75",
+    "onset": 4.61
+  },
+  {
+    "index": 29,
+    "timeMs": 41187.2421,
+    "beat": 85.6875,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      177
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "right"
+    ],
+    "pattern": "21:6.75",
+    "onset": 4.61
+  },
+  {
+    "index": 30,
+    "timeMs": 42593.4921,
+    "beat": 88.5,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      189
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "22:2",
+    "onset": 4.35
   },
   {
     "index": 31,
-    "timeMs": 39405.9921,
-    "sourceBeat": 82.125,
-    "sourceNotes": [
-      {
-        "index": 163,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "timeMs": 43843.4921,
+    "beat": 91,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "20:8.50L",
-    "onset": 3.56
+    "made": "kept",
+    "eNotes": [
+      202
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "22:12",
+    "onset": 2.56
   },
   {
     "index": 32,
-    "timeMs": 40062.2421,
-    "sourceBeat": 83.4375,
-    "sourceNotes": [
-      {
-        "index": 169,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
+    "timeMs": 45093.4921,
+    "beat": 93.5,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "20:13.75R",
-    "onset": 3.82
+    "made": "kept",
+    "eNotes": [
+      213
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "23:6",
+    "onset": 4.92
   },
   {
     "index": 33,
-    "timeMs": 41187.2421,
-    "sourceBeat": 85.6875,
-    "sourceNotes": [
-      {
-        "index": 177,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "left"
-      },
-      {
-        "index": 178,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "right"
-      }
+    "timeMs": 46249.7421,
+    "beat": 95.8125,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      225
     ],
-    "hand": "blue",
-    "role": "double",
-    "pattern": "21:6.75D",
-    "onset": 4.61
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "23:15.25",
+    "onset": 4.2
   },
   {
     "index": 34,
-    "timeMs": 41187.2421,
-    "sourceBeat": 85.6875,
-    "sourceNotes": [
-      {
-        "index": 177,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "left"
-      },
-      {
-        "index": 178,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "right"
-      }
+    "timeMs": 47437.2421,
+    "beat": 98.1875,
+    "color": "gold",
+    "arrow": null,
+    "hand": "left",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      235
     ],
-    "hand": "red",
-    "role": "double",
-    "pattern": "21:6.75D",
-    "onset": 4.61
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "24:8.75",
+    "onset": 6.12
   },
   {
     "index": 35,
-    "timeMs": 42374.7421,
-    "sourceBeat": 88.0625,
-    "sourceNotes": [
-      {
-        "index": 187,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
+    "timeMs": 47437.2421,
+    "beat": 98.1875,
+    "color": "gold",
+    "arrow": null,
+    "hand": "right",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      236
     ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "22:0.25R",
-    "onset": 5.33
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "24:8.75",
+    "onset": 6.12
   },
   {
     "index": 36,
-    "timeMs": 43155.9921,
-    "sourceBeat": 89.625,
-    "sourceNotes": [
-      {
-        "index": 195,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "timeMs": 50115.3579,
+    "beat": 103.54373168945312,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "22:6.50L",
-    "onset": 6.02
+    "made": "kept",
+    "eNotes": [
+      262
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "25:14.17",
+    "onset": 4.16
   },
   {
     "index": 37,
-    "timeMs": 43937.2421,
-    "sourceBeat": 91.1875,
-    "sourceNotes": [
-      {
-        "index": 203,
-        "hand": "L",
-        "column": 0,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 204,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "timeMs": 50905.9921,
+    "beat": 105.125,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "22:12.75R",
-    "onset": 3.7
+    "made": "kept",
+    "eNotes": [
+      269
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "26:4.5",
+    "onset": 5.78
   },
   {
     "index": 38,
-    "timeMs": 44718.4921,
-    "sourceBeat": 92.75,
-    "sourceNotes": [
-      {
-        "index": 209,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "timeMs": 52062.2421,
+    "beat": 107.4375,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "23:3.00L",
-    "onset": 5.93
+    "made": "kept",
+    "eNotes": [
+      281
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "26:13.75",
+    "onset": 3.55
   },
   {
     "index": 39,
-    "timeMs": 45499.7421,
-    "sourceBeat": 94.3125,
-    "sourceNotes": [
-      {
-        "index": 217,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "timeMs": 53218.4921,
+    "beat": 109.75,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "23:9.25R",
-    "onset": 4.32
+    "made": "kept",
+    "eNotes": [
+      294
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "27:7",
+    "onset": 4.21
   },
   {
     "index": 40,
-    "timeMs": 46062.2421,
-    "sourceBeat": 95.4375,
-    "sourceNotes": [
-      {
-        "index": 223,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "23:13.75L",
-    "onset": 4.67
-  },
-  {
-    "index": 41,
-    "timeMs": 47030.9921,
-    "sourceBeat": 97.375,
-    "sourceNotes": [
-      {
-        "index": 233,
-        "hand": "L",
-        "column": 1,
-        "row": 2,
-        "direction": "upright"
-      },
-      {
-        "index": 234,
-        "hand": "R",
-        "column": 2,
-        "row": 2,
-        "direction": "upleft"
-      }
-    ],
-    "hand": "blue",
-    "role": "double",
-    "pattern": "24:5.50D",
-    "onset": 6.73
-  },
-  {
-    "index": 42,
-    "timeMs": 47030.9921,
-    "sourceBeat": 97.375,
-    "sourceNotes": [
-      {
-        "index": 233,
-        "hand": "L",
-        "column": 1,
-        "row": 2,
-        "direction": "upright"
-      },
-      {
-        "index": 234,
-        "hand": "R",
-        "column": 2,
-        "row": 2,
-        "direction": "upleft"
-      }
-    ],
-    "hand": "red",
-    "role": "double",
-    "pattern": "24:5.50D",
-    "onset": 6.73
-  },
-  {
-    "index": 43,
-    "timeMs": 48177.8579,
-    "sourceBeat": 99.668732,
-    "sourceNotes": [
-      {
-        "index": 241,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "24:14.67R",
-    "onset": 3.74
-  },
-  {
-    "index": 44,
-    "timeMs": 48959.1079,
-    "sourceBeat": 101.231232,
-    "sourceNotes": [
-      {
-        "index": 249,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "25:4.92L",
-    "onset": 4.87
-  },
-  {
-    "index": 45,
-    "timeMs": 50530.9921,
-    "sourceBeat": 104.375,
-    "sourceNotes": [
-      {
-        "index": 265,
-        "hand": "L",
-        "column": 1,
-        "row": 2,
-        "direction": "up"
-      },
-      {
-        "index": 266,
-        "hand": "R",
-        "column": 2,
-        "row": 2,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "26:1.50R",
-    "onset": 4.79
-  },
-  {
-    "index": 46,
-    "timeMs": 51687.2421,
-    "sourceBeat": 106.6875,
-    "sourceNotes": [
-      {
-        "index": 277,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "26:10.75L",
-    "onset": 4.05
-  },
-  {
-    "index": 47,
-    "timeMs": 52468.4921,
-    "sourceBeat": 108.25,
-    "sourceNotes": [
-      {
-        "index": 285,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      },
-      {
-        "index": 286,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "27:1.00R",
-    "onset": 4.54
-  },
-  {
-    "index": 48,
-    "timeMs": 53593.4921,
-    "sourceBeat": 110.5,
-    "sourceNotes": [
-      {
-        "index": 295,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "left"
-      },
-      {
-        "index": 296,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "right"
-      }
-    ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "27:10.00L",
-    "onset": 3.94
-  },
-  {
-    "index": 49,
-    "timeMs": 54593.4921,
-    "sourceBeat": 112.5,
-    "sourceNotes": [
-      {
-        "index": 303,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "28:2.00R",
-    "onset": 4.06
-  },
-  {
-    "index": 50,
     "timeMs": 55343.4921,
-    "sourceBeat": 114,
-    "sourceNotes": [
-      {
-        "index": 307,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "beat": 114,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "28:8.00L",
+    "made": "kept",
+    "eNotes": [
+      307
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "28:8",
     "onset": 6.17
   },
   {
-    "index": 51,
-    "timeMs": 56312.2421,
-    "sourceBeat": 115.9375,
-    "sourceNotes": [
-      {
-        "index": 312,
-        "hand": "R",
-        "column": 2,
-        "row": 2,
-        "direction": "up"
-      }
+    "index": 41,
+    "timeMs": 57093.4921,
+    "beat": 117.5,
+    "color": "gold",
+    "arrow": null,
+    "hand": "right",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      317
     ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "28:15.75R",
-    "onset": 9.56
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "29:6R",
+    "onset": 8.06
   },
   {
-    "index": 52,
+    "index": 42,
     "timeMs": 57687.2421,
-    "sourceBeat": 118.6875,
-    "sourceNotes": [
-      {
-        "index": 320,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "upleft"
-      }
-    ],
-    "hand": "blue",
+    "beat": 118.6875,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "29:10.75L",
+    "made": "kept",
+    "eNotes": [
+      320
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "upleft"
+    ],
+    "pattern": "29:10.75",
     "onset": 4.32
   },
   {
-    "index": 53,
+    "index": 43,
     "timeMs": 58655.9921,
-    "sourceBeat": 120.625,
-    "sourceNotes": [
-      {
-        "index": 325,
-        "hand": "L",
-        "column": 2,
-        "row": 0,
-        "direction": "downright"
-      },
-      {
-        "index": 326,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "downright"
-      }
-    ],
-    "hand": "red",
+    "beat": 120.625,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "30:2.50R",
+    "made": "kept",
+    "eNotes": [
+      326
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "downright"
+    ],
+    "pattern": "30:2.5",
     "onset": 6.97
   },
   {
-    "index": 54,
-    "timeMs": 59812.2421,
-    "sourceBeat": 122.9375,
-    "sourceNotes": [
-      {
-        "index": 336,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "upleft"
-      }
-    ],
-    "hand": "blue",
+    "index": 44,
+    "timeMs": 60780.9921,
+    "beat": 124.875,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "30:11.75L",
-    "onset": 5.02
+    "made": "kept",
+    "eNotes": [
+      341
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "31:3.5",
+    "onset": 4.26
   },
   {
-    "index": 55,
-    "timeMs": 60437.2421,
-    "sourceBeat": 124.1875,
-    "sourceNotes": [
-      {
-        "index": 339,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "31:0.75R",
-    "onset": 1.21
-  },
-  {
-    "index": 56,
-    "timeMs": 61155.9921,
-    "sourceBeat": 125.625,
-    "sourceNotes": [
-      {
-        "index": 343,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "31:6.50L",
-    "onset": 5.71
-  },
-  {
-    "index": 57,
-    "timeMs": 61749.7421,
-    "sourceBeat": 126.8125,
-    "sourceNotes": [
-      {
-        "index": 346,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "31:11.25R",
-    "onset": 6.67
-  },
-  {
-    "index": 58,
+    "index": 45,
     "timeMs": 62530.9921,
-    "sourceBeat": 128.375,
-    "sourceNotes": [
-      {
-        "index": 350,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "blue",
+    "beat": 128.375,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "32:1.50L",
+    "made": "kept",
+    "eNotes": [
+      350
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "32:1.5",
     "onset": 4.84
   },
   {
-    "index": 59,
+    "index": 46,
     "timeMs": 63499.7421,
-    "sourceBeat": 130.3125,
-    "sourceNotes": [
-      {
-        "index": 355,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 356,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
+    "beat": 130.3125,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      355
     ],
-    "hand": "blue",
-    "role": "double",
-    "pattern": "32:9.25D",
+    "plannedSwing": "up",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "32:9.25R",
     "onset": 9.55
   },
   {
-    "index": 60,
-    "timeMs": 63499.7421,
-    "sourceBeat": 130.3125,
-    "sourceNotes": [
-      {
-        "index": 355,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 356,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
+    "index": 47,
+    "timeMs": 64249.7421,
+    "beat": 131.8125,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      362
     ],
-    "hand": "red",
-    "role": "double",
-    "pattern": "32:9.25D",
-    "onset": 9.55
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "32:15.25",
+    "onset": 2.06
   },
   {
-    "index": 61,
+    "index": 48,
     "timeMs": 65437.2421,
-    "sourceBeat": 134.1875,
-    "sourceNotes": [
-      {
-        "index": 369,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "left"
-      },
-      {
-        "index": 370,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "right"
-      }
+    "beat": 134.1875,
+    "color": "gold",
+    "arrow": null,
+    "hand": "left",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      369
     ],
-    "hand": "blue",
-    "role": "gold-double",
-    "pattern": "33:8.75G",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "left"
+    ],
+    "pattern": "33:8.75",
     "onset": 12.44
   },
   {
-    "index": 62,
+    "index": 49,
     "timeMs": 65437.2421,
-    "sourceBeat": 134.1875,
-    "sourceNotes": [
-      {
-        "index": 369,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "left"
-      },
-      {
-        "index": 370,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "right"
-      }
+    "beat": 134.1875,
+    "color": "gold",
+    "arrow": null,
+    "hand": "right",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      370
     ],
-    "hand": "red",
-    "role": "gold-double",
-    "pattern": "33:8.75G",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "right"
+    ],
+    "pattern": "33:8.75",
     "onset": 12.44
   },
   {
-    "index": 63,
-    "timeMs": 66749.7421,
-    "sourceBeat": 136.8125,
-    "sourceNotes": [
-      {
-        "index": 379,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "index": 50,
+    "timeMs": 66374.7421,
+    "beat": 136.0625,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "34:3.25R",
-    "onset": 4.02
+    "made": "kept",
+    "eNotes": [
+      375
+    ],
+    "plannedSwing": "up",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "34:0.25",
+    "onset": 4.69
   },
   {
-    "index": 64,
-    "timeMs": 67499.7421,
-    "sourceBeat": 138.3125,
-    "sourceNotes": [
-      {
-        "index": 387,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "index": 51,
+    "timeMs": 67843.4921,
+    "beat": 139,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "34:9.25L",
-    "onset": 4.63
+    "made": "kept",
+    "eNotes": [
+      391
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "34:12",
+    "onset": 3.87
   },
   {
-    "index": 65,
-    "timeMs": 68999.7421,
-    "sourceBeat": 141.3125,
-    "sourceNotes": [
-      {
-        "index": 409,
-        "hand": "L",
-        "column": 1,
-        "row": 2,
-        "direction": "up"
-      },
-      {
-        "index": 410,
-        "hand": "R",
-        "column": 2,
-        "row": 2,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
+    "index": 52,
+    "timeMs": 69187.2421,
+    "beat": 141.6875,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "35:5.25R",
-    "onset": 5.51
+    "made": "kept",
+    "eNotes": [
+      411
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "35:6.75",
+    "onset": 2.36
   },
   {
-    "index": 66,
-    "timeMs": 69905.9921,
-    "sourceBeat": 143.125,
-    "sourceNotes": [
-      {
-        "index": 419,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "blue",
+    "index": 53,
+    "timeMs": 69187.2421,
+    "beat": 141.6875,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "35:12.50L",
-    "onset": 3.89
+    "made": "kept",
+    "eNotes": [
+      412
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "35:6.75",
+    "onset": 2.36
   },
   {
-    "index": 67,
-    "timeMs": 70655.9921,
-    "sourceBeat": 144.625,
-    "sourceNotes": [
-      {
-        "index": 427,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
+    "index": 54,
+    "timeMs": 70093.4921,
+    "beat": 143.5,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "36:2.50R",
-    "onset": 3.68
+    "made": "kept",
+    "eNotes": [
+      421
+    ],
+    "plannedSwing": "up",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "35:14",
+    "onset": 4.52
   },
   {
-    "index": 68,
-    "timeMs": 71562.2421,
-    "sourceBeat": 146.4375,
-    "sourceNotes": [
-      {
-        "index": 437,
-        "hand": "L",
-        "column": 1,
-        "row": 2,
-        "direction": "upright"
-      },
-      {
-        "index": 438,
-        "hand": "R",
-        "column": 2,
-        "row": 2,
-        "direction": "upleft"
-      }
-    ],
-    "hand": "blue",
+    "index": 55,
+    "timeMs": 71405.9921,
+    "beat": 146.125,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "36:9.75L",
-    "onset": 6.48
+    "made": "kept",
+    "eNotes": [
+      436
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "left"
+    ],
+    "pattern": "36:8.5",
+    "onset": 4.21
   },
   {
-    "index": 69,
+    "index": 56,
+    "timeMs": 71405.9921,
+    "beat": 146.125,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      435
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "right"
+    ],
+    "pattern": "36:8.5",
+    "onset": 4.21
+  },
+  {
+    "index": 57,
     "timeMs": 72312.2421,
-    "sourceBeat": 147.9375,
-    "sourceNotes": [
-      {
-        "index": 441,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "beat": 147.9375,
+    "color": "gold",
+    "arrow": null,
+    "hand": "any",
     "role": "long-gold",
-    "pattern": "36:15.75W3/11",
+    "made": "long-fewer-cuts",
+    "eNotes": [
+      441,
+      442,
+      443,
+      444,
+      445,
+      446,
+      447,
+      448,
+      449,
+      450,
+      451,
+      452,
+      453,
+      454,
+      455,
+      456,
+      457,
+      458,
+      459,
+      460,
+      461,
+      462,
+      463,
+      464
+    ],
+    "plannedSwing": null,
+    "beatSaberDirections": [
+      "down",
+      "down",
+      "up",
+      "up",
+      "down",
+      "down",
+      "up",
+      "up"
+    ],
+    "pattern": "36:15.75K3",
     "onset": 3.5
   },
   {
-    "index": 70,
-    "timeMs": 74905.9921,
-    "sourceBeat": 153.125,
-    "sourceNotes": [
-      {
-        "index": 481,
-        "hand": "L",
-        "column": 0,
-        "row": 2,
-        "direction": "up"
-      },
-      {
-        "index": 482,
-        "hand": "R",
-        "column": 3,
-        "row": 2,
-        "direction": "up"
-      }
-    ],
-    "hand": "blue",
+    "index": 58,
+    "timeMs": 75093.4921,
+    "beat": 153.5,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "38:4.50L",
-    "onset": 5.5
+    "made": "kept",
+    "eNotes": [
+      483
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "38:6",
+    "onset": 2.38
   },
   {
-    "index": 71,
-    "timeMs": 76030.9921,
-    "sourceBeat": 155.375,
-    "sourceNotes": [
-      {
-        "index": 493,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "index": 59,
+    "timeMs": 75093.4921,
+    "beat": 153.5,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "38:13.50R",
-    "onset": 5.58
+    "made": "kept",
+    "eNotes": [
+      484
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "38:6",
+    "onset": 2.38
   },
   {
-    "index": 72,
-    "timeMs": 76749.7421,
-    "sourceBeat": 156.8125,
-    "sourceNotes": [
-      {
-        "index": 501,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "index": 60,
+    "timeMs": 76405.9921,
+    "beat": 156.125,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "39:3.25L",
-    "onset": 5.53
+    "made": "kept",
+    "eNotes": [
+      497
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "39:0.5",
+    "onset": 5.11
   },
   {
-    "index": 73,
+    "index": 61,
     "timeMs": 77499.7421,
-    "sourceBeat": 158.3125,
-    "sourceNotes": [
-      {
-        "index": 509,
-        "hand": "L",
-        "column": 0,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 510,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "beat": 158.3125,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
+    "made": "kept",
+    "eNotes": [
+      510
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
     "pattern": "39:9.25R",
     "onset": 4.38
   },
   {
-    "index": 74,
+    "index": 62,
     "timeMs": 78312.2421,
-    "sourceBeat": 159.9375,
-    "sourceNotes": [
-      {
-        "index": 513,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 514,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "beat": 159.9375,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "39:15.75L",
+    "made": "long-as-tap",
+    "eNotes": [
+      513
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "39:15.75LT",
     "onset": 1.15
   },
   {
-    "index": 75,
-    "timeMs": 80655.9921,
-    "sourceBeat": 164.625,
-    "sourceNotes": [
-      {
-        "index": 523,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      },
-      {
-        "index": 524,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "blue",
-    "role": "double",
-    "pattern": "41:2.50D",
-    "onset": 8.44
-  },
-  {
-    "index": 76,
-    "timeMs": 80655.9921,
-    "sourceBeat": 164.625,
-    "sourceNotes": [
-      {
-        "index": 523,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      },
-      {
-        "index": 524,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
-    "role": "double",
-    "pattern": "41:2.50D",
-    "onset": 8.44
-  },
-  {
-    "index": 77,
-    "timeMs": 82437.2421,
-    "sourceBeat": 168.1875,
-    "sourceNotes": [
-      {
-        "index": 541,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 542,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "index": 63,
+    "timeMs": 79999.7421,
+    "beat": 163.3125,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
+    "made": "kept",
+    "eNotes": [
+      521
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "40:13.25L",
+    "onset": 6.9
+  },
+  {
+    "index": 64,
+    "timeMs": 80655.9921,
+    "beat": 164.625,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      524
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "41:2.5R",
+    "onset": 8.44
+  },
+  {
+    "index": 65,
+    "timeMs": 81312.2421,
+    "beat": 165.9375,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      534
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "41:7.75",
+    "onset": 5.86
+  },
+  {
+    "index": 66,
+    "timeMs": 82437.2421,
+    "beat": 168.1875,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      542
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
     "pattern": "42:0.75L",
     "onset": 5.86
   },
   {
-    "index": 78,
+    "index": 67,
     "timeMs": 83437.2421,
-    "sourceBeat": 170.1875,
-    "sourceNotes": [
-      {
-        "index": 553,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 554,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "beat": 170.1875,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "42:8.75R",
+    "made": "kept",
+    "eNotes": [
+      554
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "42:8.75",
     "onset": 5.1
   },
   {
-    "index": 79,
+    "index": 68,
     "timeMs": 84687.2421,
-    "sourceBeat": 172.6875,
-    "sourceNotes": [
-      {
-        "index": 563,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      },
-      {
-        "index": 564,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "blue",
+    "beat": 172.6875,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
+    "made": "kept",
+    "eNotes": [
+      563
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
     "pattern": "43:2.75L",
     "onset": 7.04
   },
   {
-    "index": 80,
-    "timeMs": 85874.7421,
-    "sourceBeat": 175.0625,
-    "sourceNotes": [
-      {
-        "index": 581,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 582,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "index": 69,
+    "timeMs": 85499.7421,
+    "beat": 174.3125,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "43:12.25R",
-    "onset": 2.75
+    "made": "kept",
+    "eNotes": [
+      571
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "43:9.25",
+    "onset": 3.34
   },
   {
-    "index": 81,
+    "index": 70,
     "timeMs": 86874.7421,
-    "sourceBeat": 177.0625,
-    "sourceNotes": [
-      {
-        "index": 591,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      },
-      {
-        "index": 592,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "blue",
+    "beat": 177.0625,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "44:4.25L",
+    "made": "kept",
+    "eNotes": [
+      592
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "44:4.25",
     "onset": 3.36
   },
   {
-    "index": 82,
+    "index": 71,
     "timeMs": 87968.4921,
-    "sourceBeat": 179.25,
-    "sourceNotes": [
-      {
-        "index": 609,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 610,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "beat": 179.25,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "44:13.00R",
+    "made": "kept",
+    "eNotes": [
+      610
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "44:13",
     "onset": 2.59
   },
   {
-    "index": 83,
-    "timeMs": 89249.7421,
-    "sourceBeat": 181.8125,
-    "sourceNotes": [
-      {
-        "index": 629,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "index": 72,
+    "timeMs": 88843.4921,
+    "beat": 181,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "45:7.25R",
-    "onset": 3.95
+    "made": "kept",
+    "eNotes": [
+      622
+    ],
+    "plannedSwing": "up",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "45:4L",
+    "onset": 3.08
   },
   {
-    "index": 84,
+    "index": 73,
     "timeMs": 90374.7421,
-    "sourceBeat": 184.0625,
-    "sourceNotes": [
-      {
-        "index": 646,
-        "hand": "L",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "beat": 184.0625,
+    "color": "gold",
+    "arrow": null,
+    "hand": "any",
     "role": "long-gold",
-    "pattern": "46:0.25W3/14",
+    "made": "long-fewer-cuts",
+    "eNotes": [
+      646,
+      647,
+      648,
+      649,
+      650,
+      651,
+      652,
+      653,
+      654,
+      655,
+      656,
+      657,
+      658,
+      659,
+      660,
+      661,
+      662,
+      663,
+      664,
+      665
+    ],
+    "plannedSwing": null,
+    "beatSaberDirections": [
+      "down",
+      "up",
+      "up",
+      "down",
+      "down",
+      "up",
+      "up",
+      "down"
+    ],
+    "pattern": "46:0.25K3",
     "onset": 3.18
   },
   {
-    "index": 85,
+    "index": 74,
     "timeMs": 92874.7421,
-    "sourceBeat": 189.0625,
-    "sourceNotes": [
-      {
-        "index": 675,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 676,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
+    "beat": 189.0625,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      675
     ],
-    "hand": "blue",
-    "role": "double",
-    "pattern": "47:4.25D",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "47:4.25L",
     "onset": 3.47
   },
   {
-    "index": 86,
-    "timeMs": 92874.7421,
-    "sourceBeat": 189.0625,
-    "sourceNotes": [
-      {
-        "index": 675,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 676,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
-    "role": "double",
-    "pattern": "47:4.25D",
-    "onset": 3.47
-  },
-  {
-    "index": 87,
-    "timeMs": 94155.9921,
-    "sourceBeat": 191.625,
-    "sourceNotes": [
-      {
-        "index": 690,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
+    "index": 75,
+    "timeMs": 94343.4921,
+    "beat": 192,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "47:14.50R",
-    "onset": 2.75
-  },
-  {
-    "index": 88,
-    "timeMs": 95187.2421,
-    "sourceBeat": 193.6875,
-    "sourceNotes": [
-      {
-        "index": 701,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "left"
-      },
-      {
-        "index": 702,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "right"
-      }
+    "made": "kept",
+    "eNotes": [
+      692
     ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "48:6.75L",
-    "onset": 5.07
-  },
-  {
-    "index": 89,
-    "timeMs": 96280.9921,
-    "sourceBeat": 195.875,
-    "sourceNotes": [
-      {
-        "index": 709,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
     ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "48:15.50R",
-    "onset": 3.01
+    "pattern": "48:0",
+    "onset": 2.42
   },
   {
-    "index": 90,
-    "timeMs": 97187.2421,
-    "sourceBeat": 197.6875,
-    "sourceNotes": [
-      {
-        "index": 719,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
+    "index": 76,
+    "timeMs": 95562.2421,
+    "beat": 194.4375,
+    "color": "gold",
+    "arrow": null,
+    "hand": "right",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      704
     ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "49:6.75L",
-    "onset": 3.78
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "upleft"
+    ],
+    "pattern": "48:9.75R",
+    "onset": 4.48
   },
   {
-    "index": 91,
+    "index": 77,
+    "timeMs": 96374.7421,
+    "beat": 196.0625,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      710
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "49:0.25",
+    "onset": 1.14
+  },
+  {
+    "index": 78,
+    "timeMs": 97530.9921,
+    "beat": 198.375,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      723
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "49:9.5",
+    "onset": 2.83
+  },
+  {
+    "index": 79,
     "timeMs": 98437.2421,
-    "sourceBeat": 200.1875,
-    "sourceNotes": [
-      {
-        "index": 733,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 734,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "beat": 200.1875,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
+    "made": "kept",
+    "eNotes": [
+      733
+    ],
+    "plannedSwing": "up",
+    "beatSaberDirections": [
+      "down"
+    ],
     "pattern": "50:0.75L",
     "onset": 4.05
   },
   {
-    "index": 92,
-    "timeMs": 99530.9921,
-    "sourceBeat": 202.375,
-    "sourceNotes": [
-      {
-        "index": 745,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "index": 80,
+    "timeMs": 99343.4921,
+    "beat": 202,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "50:9.50R",
-    "onset": 3.67
+    "made": "kept",
+    "eNotes": [
+      743
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "50:8",
+    "onset": 3.13
   },
   {
-    "index": 93,
+    "index": 81,
     "timeMs": 100218.4921,
-    "sourceBeat": 203.75,
-    "sourceNotes": [
-      {
-        "index": 753,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "beat": 203.75,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "50:15.00L",
+    "made": "kept",
+    "eNotes": [
+      753
+    ],
+    "plannedSwing": "up",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "50:15",
     "onset": 4.14
   },
   {
-    "index": 94,
-    "timeMs": 101312.2421,
-    "sourceBeat": 205.9375,
-    "sourceNotes": [
-      {
-        "index": 763,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "left"
-      },
-      {
-        "index": 764,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "right"
-      }
-    ],
-    "hand": "red",
+    "index": 82,
+    "timeMs": 100937.2421,
+    "beat": 205.1875,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "51:7.75R",
-    "onset": 2.84
+    "made": "kept",
+    "eNotes": [
+      761
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "51:4.75",
+    "onset": 4.0
   },
   {
-    "index": 95,
-    "timeMs": 102562.2421,
-    "sourceBeat": 208.4375,
-    "sourceNotes": [
-      {
-        "index": 774,
-        "hand": "L",
-        "column": 0,
-        "row": 0,
-        "direction": "left"
-      }
-    ],
-    "hand": "blue",
+    "index": 83,
+    "timeMs": 101843.4921,
+    "beat": 207,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "52:1.75L",
-    "onset": 4.15
+    "made": "kept",
+    "eNotes": [
+      769
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "51:12",
+    "onset": 3.49
   },
   {
-    "index": 96,
+    "index": 84,
     "timeMs": 103280.9921,
-    "sourceBeat": 209.875,
-    "sourceNotes": [
-      {
-        "index": 781,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "beat": 209.875,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "52:7.50R",
+    "made": "kept",
+    "eNotes": [
+      781
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "52:7.5",
     "onset": 1.67
   },
   {
-    "index": 97,
+    "index": 85,
     "timeMs": 104343.4921,
-    "sourceBeat": 212,
-    "sourceNotes": [
-      {
-        "index": 791,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "upleft"
-      }
-    ],
-    "hand": "blue",
+    "beat": 212,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "53:0.00L",
+    "made": "kept",
+    "eNotes": [
+      791
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "upleft"
+    ],
+    "pattern": "53:0",
     "onset": 3.27
   },
   {
-    "index": 98,
-    "timeMs": 105062.2421,
-    "sourceBeat": 213.4375,
-    "sourceNotes": [
-      {
-        "index": 798,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "index": 86,
+    "timeMs": 105593.4921,
+    "beat": 214.5,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "53:5.75R",
-    "onset": 4.08
+    "made": "kept",
+    "eNotes": [
+      803
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "53:10",
+    "onset": 5.57
   },
   {
-    "index": 99,
+    "index": 87,
     "timeMs": 106687.2421,
-    "sourceBeat": 216.6875,
-    "sourceNotes": [
-      {
-        "index": 815,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "upleft"
-      },
-      {
-        "index": 816,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "upright"
-      }
+    "beat": 216.6875,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      816
     ],
-    "hand": "blue",
-    "role": "double",
-    "pattern": "54:2.75D",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "upleft"
+    ],
+    "pattern": "54:2.75",
     "onset": 8.61
   },
   {
-    "index": 100,
+    "index": 88,
     "timeMs": 106687.2421,
-    "sourceBeat": 216.6875,
-    "sourceNotes": [
-      {
-        "index": 815,
-        "hand": "L",
-        "column": 0,
-        "row": 1,
-        "direction": "upleft"
-      },
-      {
-        "index": 816,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "upright"
-      }
+    "beat": 216.6875,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      815
     ],
-    "hand": "red",
-    "role": "double",
-    "pattern": "54:2.75D",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "upright"
+    ],
+    "pattern": "54:2.75",
     "onset": 8.61
   },
   {
-    "index": 101,
+    "index": 89,
     "timeMs": 107937.2421,
-    "sourceBeat": 219.1875,
-    "sourceNotes": [
-      {
-        "index": 827,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      },
-      {
-        "index": 828,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "blue",
+    "beat": 219.1875,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "54:12.75L",
+    "made": "kept",
+    "eNotes": [
+      828
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "54:12.75",
     "onset": 2.91
   },
   {
-    "index": 102,
-    "timeMs": 109905.9921,
-    "sourceBeat": 223.125,
-    "sourceNotes": [
-      {
-        "index": 841,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 842,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "index": 90,
+    "timeMs": 108812.2421,
+    "beat": 220.9375,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "55:12.50R",
+    "made": "kept",
+    "eNotes": [
+      835
+    ],
+    "plannedSwing": "up",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "55:3.75L",
+    "onset": 5.57
+  },
+  {
+    "index": 91,
+    "timeMs": 109905.9921,
+    "beat": 223.125,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
+    "role": "single",
+    "made": "kept",
+    "eNotes": [
+      842
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "55:12.5R",
     "onset": 6.05
   },
   {
-    "index": 103,
+    "index": 92,
     "timeMs": 110968.4921,
-    "sourceBeat": 225.25,
-    "sourceNotes": [
-      {
-        "index": 849,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "beat": 225.25,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "56:5.00L",
+    "made": "kept",
+    "eNotes": [
+      849
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "56:5",
     "onset": 3.94
   },
   {
-    "index": 104,
+    "index": 93,
     "timeMs": 112218.4921,
-    "sourceBeat": 227.75,
-    "sourceNotes": [
-      {
-        "index": 854,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 855,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
+    "beat": 227.75,
+    "color": "gold",
+    "arrow": null,
+    "hand": "left",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      854
     ],
-    "hand": "blue",
-    "role": "gold-double",
-    "pattern": "56:15.00G",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "56:15",
     "onset": 10.52
   },
   {
-    "index": 105,
+    "index": 94,
     "timeMs": 112218.4921,
-    "sourceBeat": 227.75,
-    "sourceNotes": [
-      {
-        "index": 854,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 855,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
+    "beat": 227.75,
+    "color": "gold",
+    "arrow": null,
+    "hand": "right",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      855
     ],
-    "hand": "red",
-    "role": "gold-double",
-    "pattern": "56:15.00G",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "56:15",
     "onset": 10.52
   },
   {
-    "index": 106,
+    "index": 95,
     "timeMs": 113124.7421,
-    "sourceBeat": 229.5625,
-    "sourceNotes": [
-      {
-        "index": 866,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
+    "beat": 229.5625,
+    "color": "gold",
+    "arrow": null,
+    "hand": "any",
     "role": "long-gold",
-    "pattern": "57:6.25W3/15",
+    "made": "long-fewer-cuts",
+    "eNotes": [
+      866,
+      867,
+      868,
+      869,
+      870,
+      871,
+      872,
+      873,
+      874,
+      875,
+      876,
+      877,
+      878,
+      879,
+      880,
+      881,
+      882,
+      883,
+      884,
+      885,
+      886,
+      887
+    ],
+    "plannedSwing": null,
+    "beatSaberDirections": [
+      "down",
+      "down",
+      "up",
+      "up",
+      "down",
+      "down",
+      "up",
+      "up"
+    ],
+    "pattern": "57:6.25K3",
     "onset": 5.21
   },
   {
-    "index": 107,
-    "timeMs": 115749.7421,
-    "sourceBeat": 234.8125,
-    "sourceNotes": [
-      {
-        "index": 896,
-        "hand": "L",
-        "column": 2,
-        "row": 0,
-        "direction": "upleft"
-      },
-      {
-        "index": 897,
-        "hand": "R",
-        "column": 3,
-        "row": 1,
-        "direction": "upleft"
-      }
-    ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "58:11.25R",
-    "onset": 3.47
-  },
-  {
-    "index": 108,
+    "index": 96,
     "timeMs": 116968.4921,
-    "sourceBeat": 237.25,
-    "sourceNotes": [
-      {
-        "index": 910,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "beat": 237.25,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "59:5.00L",
+    "made": "kept",
+    "eNotes": [
+      910
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "59:5",
     "onset": 3.77
   },
   {
-    "index": 109,
-    "timeMs": 118405.9921,
-    "sourceBeat": 240.125,
-    "sourceNotes": [
-      {
-        "index": 924,
-        "hand": "L",
-        "column": 0,
-        "row": 2,
-        "direction": "up"
-      },
-      {
-        "index": 925,
-        "hand": "R",
-        "column": 3,
-        "row": 2,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
+    "index": 97,
+    "timeMs": 117843.4921,
+    "beat": 239,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "60:0.50R",
+    "made": "kept",
+    "eNotes": [
+      920
+    ],
+    "plannedSwing": "up",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "59:12",
+    "onset": 4.73
+  },
+  {
+    "index": 98,
+    "timeMs": 118405.9921,
+    "beat": 240.125,
+    "color": "gold",
+    "arrow": null,
+    "hand": "left",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      924
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "60:0.5L",
     "onset": 4.26
   },
   {
-    "index": 110,
-    "timeMs": 119780.9921,
-    "sourceBeat": 242.875,
-    "sourceNotes": [
-      {
-        "index": 938,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "index": 99,
+    "timeMs": 119249.7421,
+    "beat": 241.8125,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "60:11.50L",
-    "onset": 2.99
+    "made": "kept",
+    "eNotes": [
+      932
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "60:7.25",
+    "onset": 3.91
   },
   {
-    "index": 111,
-    "timeMs": 120655.9921,
-    "sourceBeat": 244.625,
-    "sourceNotes": [
-      {
-        "index": 949,
-        "hand": "L",
-        "column": 0,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
+    "index": 100,
+    "timeMs": 120124.7421,
+    "beat": 243.5625,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "61:2.50R",
-    "onset": 3.63
+    "made": "kept",
+    "eNotes": [
+      942
+    ],
+    "plannedSwing": "up",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "60:14.25",
+    "onset": 2.78
   },
   {
-    "index": 112,
-    "timeMs": 121343.4921,
-    "sourceBeat": 246,
-    "sourceNotes": [
-      {
-        "index": 956,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      },
-      {
-        "index": 957,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "blue",
+    "index": 101,
+    "timeMs": 120999.7421,
+    "beat": 245.3125,
+    "color": "blue",
+    "arrow": null,
+    "hand": "left",
     "role": "single",
-    "pattern": "61:8.00L",
-    "onset": 3.47
+    "made": "kept",
+    "eNotes": [
+      953
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "61:5.25",
+    "onset": 4.6
   },
   {
-    "index": 113,
-    "timeMs": 122030.9921,
-    "sourceBeat": 247.375,
-    "sourceNotes": [
-      {
-        "index": 964,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
+    "index": 102,
+    "timeMs": 122905.9921,
+    "beat": 249.125,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "61:13.50R",
-    "onset": 3.24
-  },
-  {
-    "index": 114,
-    "timeMs": 123437.2421,
-    "sourceBeat": 250.1875,
-    "sourceNotes": [
-      {
-        "index": 976,
-        "hand": "L",
-        "column": 1,
-        "row": 2,
-        "direction": "up"
-      },
-      {
-        "index": 977,
-        "hand": "R",
-        "column": 2,
-        "row": 2,
-        "direction": "up"
-      }
+    "made": "kept",
+    "eNotes": [
+      975
     ],
-    "hand": "blue",
-    "role": "double",
-    "pattern": "62:8.75D",
-    "onset": 5.7
-  },
-  {
-    "index": 115,
-    "timeMs": 123437.2421,
-    "sourceBeat": 250.1875,
-    "sourceNotes": [
-      {
-        "index": 976,
-        "hand": "L",
-        "column": 1,
-        "row": 2,
-        "direction": "up"
-      },
-      {
-        "index": 977,
-        "hand": "R",
-        "column": 2,
-        "row": 2,
-        "direction": "up"
-      }
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
     ],
-    "hand": "red",
-    "role": "double",
-    "pattern": "62:8.75D",
-    "onset": 5.7
+    "pattern": "62:4.5R",
+    "onset": 4.82
   },
   {
-    "index": 116,
+    "index": 103,
     "timeMs": 124468.4921,
-    "sourceBeat": 252.25,
-    "sourceNotes": [
-      {
-        "index": 984,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
+    "beat": 252.25,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "63:1.00R",
+    "made": "kept",
+    "eNotes": [
+      984
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "63:1",
     "onset": 2.41
   },
   {
-    "index": 117,
-    "timeMs": 125312.2421,
-    "sourceBeat": 253.9375,
-    "sourceNotes": [
-      {
-        "index": 994,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "blue",
+    "index": 104,
+    "timeMs": 125624.7421,
+    "beat": 254.5625,
+    "color": "red",
+    "arrow": null,
+    "hand": "right",
     "role": "single",
-    "pattern": "63:7.75L",
-    "onset": 3.18
+    "made": "kept",
+    "eNotes": [
+      998
+    ],
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "63:10.25",
+    "onset": 3.03
   },
   {
-    "index": 118,
-    "timeMs": 126124.7421,
-    "sourceBeat": 255.5625,
-    "sourceNotes": [
-      {
-        "index": 1004,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "63:14.25R",
-    "onset": 2.18
-  },
-  {
-    "index": 119,
+    "index": 105,
     "timeMs": 127249.7421,
-    "sourceBeat": 257.8125,
-    "sourceNotes": [
-      {
-        "index": 1016,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
+    "beat": 257.8125,
+    "color": "gold",
+    "arrow": null,
+    "hand": "right",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      1016
     ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "64:7.25L",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "64:7.25",
     "onset": 3.74
   },
   {
-    "index": 120,
-    "timeMs": 128218.4921,
-    "sourceBeat": 259.75,
-    "sourceNotes": [
-      {
-        "index": 1028,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
-    ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "64:15.00R",
-    "onset": 2.53
-  },
-  {
-    "index": 121,
+    "index": 106,
     "timeMs": 129030.9921,
-    "sourceBeat": 261.375,
-    "sourceNotes": [
-      {
-        "index": 1038,
-        "hand": "L",
-        "column": 0,
-        "row": 0,
-        "direction": "none"
-      },
-      {
-        "index": 1039,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "none"
-      }
-    ],
-    "hand": "red",
+    "beat": 261.375,
+    "color": "gold",
+    "arrow": null,
+    "hand": "any",
     "role": "long-gold",
-    "pattern": "65:5.50W4/16",
+    "made": "long-fewer-cuts",
+    "eNotes": [
+      1038,
+      1039,
+      1040,
+      1041,
+      1042,
+      1043,
+      1044,
+      1045,
+      1046,
+      1047,
+      1048,
+      1049,
+      1050,
+      1051,
+      1052,
+      1053,
+      1054,
+      1055,
+      1056,
+      1057,
+      1058,
+      1059,
+      1060,
+      1061,
+      1062,
+      1063,
+      1064,
+      1065,
+      1066,
+      1067,
+      1068,
+      1069,
+      1070,
+      1071,
+      1072,
+      1073,
+      1074,
+      1075,
+      1076,
+      1077,
+      1078,
+      1079,
+      1080,
+      1081,
+      1082,
+      1083,
+      1084,
+      1085,
+      1086,
+      1087,
+      1088,
+      1089,
+      1090
+    ],
+    "plannedSwing": null,
+    "beatSaberDirections": [
+      "none",
+      "none",
+      "none",
+      "none",
+      "none",
+      "none",
+      "none",
+      "none"
+    ],
+    "pattern": "65:5.5K4",
     "onset": 1.2
   },
   {
-    "index": 122,
-    "timeMs": 131905.9921,
-    "sourceBeat": 267.125,
-    "sourceNotes": [
-      {
-        "index": 1100,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "down"
-      }
+    "index": 107,
+    "timeMs": 132187.2421,
+    "beat": 267.6875,
+    "color": "gold",
+    "arrow": null,
+    "hand": "right",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      1104
     ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "66:12.50R",
-    "onset": 3.33
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "66:14.75",
+    "onset": 3.46
   },
   {
-    "index": 123,
-    "timeMs": 132437.2421,
-    "sourceBeat": 268.1875,
-    "sourceNotes": [
-      {
-        "index": 1107,
-        "hand": "L",
-        "column": 0,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "67:0.75L",
-    "onset": 1.99
-  },
-  {
-    "index": 124,
+    "index": 108,
     "timeMs": 133530.9921,
-    "sourceBeat": 270.375,
-    "sourceNotes": [
-      {
-        "index": 1122,
-        "hand": "L",
-        "column": 0,
-        "row": 0,
-        "direction": "up"
-      },
-      {
-        "index": 1123,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
+    "beat": 270.375,
+    "color": "gold",
+    "arrow": null,
+    "hand": "left",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      1122
     ],
-    "hand": "blue",
-    "role": "double",
-    "pattern": "67:9.50D",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "67:9.5",
     "onset": 3.12
   },
   {
-    "index": 125,
-    "timeMs": 133530.9921,
-    "sourceBeat": 270.375,
-    "sourceNotes": [
-      {
-        "index": 1122,
-        "hand": "L",
-        "column": 0,
-        "row": 0,
-        "direction": "up"
-      },
-      {
-        "index": 1123,
-        "hand": "R",
-        "column": 1,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
-    "role": "double",
-    "pattern": "67:9.50D",
-    "onset": 3.12
-  },
-  {
-    "index": 126,
+    "index": 109,
     "timeMs": 134812.2421,
-    "sourceBeat": 272.9375,
-    "sourceNotes": [
-      {
-        "index": 1136,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "up"
-      }
+    "beat": 272.9375,
+    "color": "gold",
+    "arrow": null,
+    "hand": "right",
+    "role": "gold",
+    "made": "kept",
+    "eNotes": [
+      1136
     ],
-    "hand": "blue",
-    "role": "single",
-    "pattern": "68:3.75L",
+    "plannedSwing": "down",
+    "beatSaberDirections": [
+      "up"
+    ],
+    "pattern": "68:3.75",
     "onset": 3.6
   },
   {
-    "index": 127,
-    "timeMs": 135405.9921,
-    "sourceBeat": 274.125,
-    "sourceNotes": [
-      {
-        "index": 1144,
-        "hand": "L",
-        "column": 2,
-        "row": 0,
-        "direction": "up"
-      },
-      {
-        "index": 1145,
-        "hand": "R",
-        "column": 3,
-        "row": 0,
-        "direction": "up"
-      }
-    ],
-    "hand": "red",
-    "role": "single",
-    "pattern": "68:8.50R",
-    "onset": 7.26
-  },
-  {
-    "index": 128,
+    "index": 110,
     "timeMs": 136280.9921,
-    "sourceBeat": 275.875,
-    "sourceNotes": [
-      {
-        "index": 1154,
-        "hand": "L",
-        "column": 1,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 1155,
-        "hand": "L",
-        "column": 1,
-        "row": 1,
-        "direction": "down"
-      },
-      {
-        "index": 1156,
-        "hand": "R",
-        "column": 2,
-        "row": 0,
-        "direction": "down"
-      },
-      {
-        "index": 1157,
-        "hand": "R",
-        "column": 2,
-        "row": 1,
-        "direction": "down"
-      }
+    "beat": 275.875,
+    "color": "gold",
+    "arrow": null,
+    "hand": "left",
+    "role": "long",
+    "made": "long-added",
+    "eNotes": [
+      1156
     ],
-    "hand": "red",
-    "role": "long-gold",
-    "pattern": "68:15.50W3/12",
+    "plannedSwing": null,
+    "beatSaberDirections": [
+      "down"
+    ],
+    "pattern": "68:15.5L",
     "onset": 5.77
   }
 ]
