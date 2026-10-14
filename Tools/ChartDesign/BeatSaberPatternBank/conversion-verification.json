@@ -1,33 +1,22 @@
 {
-  "batch": "20261014-2125",
+  "batch": "20261014-2227",
   "newCollected": 6,
   "newConverted": 6,
   "newApplied": 6,
-  "totalCollected": 52,
-  "totalConverted": 52,
-  "totalApplied": 52,
+  "totalCollected": 58,
+  "totalConverted": 58,
+  "totalApplied": 58,
   "classification": {
-    "good": 5,
-    "conditional": 1
+    "conditional": 3,
+    "good": 3
   },
-  "excludedCandidates": [
-    {
-      "sourceVideoId": "cutBvQUZF8M",
-      "difficulty": "Hard",
-      "reason": "公開動画の取得がHTTP403で失敗。Normalの別動画に変更。"
-    }
-  ],
+  "excludedCandidates": [],
   "changedSongs": 4,
   "changedCharts": 6,
-  "retainedPreviousApplications": 46,
+  "retainedPreviousApplications": 52,
   "outsideInsertionRangesUnchanged": true,
   "protectedOtherChartsDuringInstall": 37,
-  "concurrentOtherChartEditsExcluded": [
-    "Assets/StreamingAssets/Songs/RushE/chart.json",
-    "Assets/StreamingAssets/Songs/RushE/chart_easy.json",
-    "Assets/StreamingAssets/Songs/RushE/chart_hard.json",
-    "Assets/StreamingAssets/Songs/RushE/chart_normal.json"
-  ],
+  "concurrentOtherChartEditsExcluded": [],
   "protectedHostedCharts": 28,
   "unity": {
     "tests-merged": {
@@ -35,24 +24,24 @@
       "total": "58",
       "passed": "58",
       "failed": "0",
-      "start-time": "2026-10-14 12:34:10Z",
-      "end-time": "2026-10-14 12:34:20Z"
+      "start-time": "2026-10-14 13:59:00Z",
+      "end-time": "2026-10-14 13:59:13Z"
     },
     "tests-playmode": {
       "result": "Passed",
       "total": "1",
       "passed": "1",
       "failed": "0",
-      "start-time": "2026-10-14 12:35:51Z",
-      "end-time": "2026-10-14 12:35:57Z"
+      "start-time": "2026-10-14 14:00:03Z",
+      "end-time": "2026-10-14 14:00:10Z"
     }
   },
   "browser": {
-    "patternViews": 104,
+    "patternViews": 116,
     "fullCharts": 15,
     "matchingChartFiles": 15,
-    "inspectedHandLabels": 672,
-    "oppositeSideLabels": 40,
+    "inspectedHandLabels": 768,
+    "oppositeSideLabels": 43,
     "mobileViewport": "390x844",
     "desktopViewport": "1440x1000",
     "errors": [],
@@ -61,7 +50,7 @@
   "finalBrowser": {
     "bookmarkPersistsAfterReload": true,
     "packageLinks": 5,
-    "oldVideoLinks": 46,
+    "oldVideoLinks": 52,
     "newApplicationDeepLinks": 6,
     "mobileOverflow": false,
     "errors": [],
@@ -71,7 +60,59 @@
   "maxPerHandFlickRun": 3,
   "physicalPlayTest": false,
   "phoneHardwareTest": false,
-  "positionPolicy": "通常の横配置を主軸にし、縦・交差・反転は短い技の一つ。今回追加分は通常配置。担当手をx座標から推測しない。",
+  "positionPolicy": "通常の横配置を主軸にし、縦・交差・反転は短い技の一つ。今回追加分は通常配置5素材と同じ側の上下の短い技1素材。担当手をx座標から推測しない。",
+  "layoutFrequency": {
+    "templates": 58,
+    "ordinaryTemplates": 47,
+    "techniqueTemplates": [
+      "dream-normal-2",
+      "dream-hard-2",
+      "dream-hard-3",
+      "burning-hard-4",
+      "bring-it-on-3",
+      "shut-up-dance-2",
+      "there-normal-2",
+      "escape-normal-2",
+      "escape-normal-3",
+      "beat-hard-3",
+      "reason-hard-3"
+    ],
+    "appliedTechniques": [
+      "beat-hard-3",
+      "burning-hard-4",
+      "dream-normal-2",
+      "escape-normal-2",
+      "escape-normal-3",
+      "reason-hard-3",
+      "there-normal-2"
+    ],
+    "newTechnique": "reason-hard-3",
+    "wholeSongRotations": false,
+    "templateFlickMax": 1
+  },
+  "sourceVerification": {
+    "verificationSource": "https://beatsaber.com/documentation/level-mappers/index.html",
+    "verifiedOn": "2026-10-14",
+    "entries": [
+      {
+        "song": "Reason For Living",
+        "difficulty": "Hard",
+        "mapper": "Freeek"
+      },
+      {
+        "song": "Crab Rave",
+        "difficulty": "Normal",
+        "mapper": "Freeek"
+      }
+    ],
+    "bpmSource": "投稿者説明のBeatmap Informationと音声の拍を照合。Reason For Living 128、Crab Rave 125。",
+    "customColors": {
+      "reason-hard": "黄=左手、桃=右手。両セイバーの振りをフレーム列で確認。",
+      "crab-normal": "緑=左手、青=右手。両セイバーの振りをフレーム列で確認。"
+    },
+    "mapVersion": "投稿時の映像版。現在の配布譜面との同一性とハッシュは未確定。"
+  },
+  "unityValidationProject": "独立コピー Uv2227。初回の長いパスによる依存DLL読込エラーを解消して再実行。ユーザーのUnityは開いたまま維持。",
   "newVideosBrowserChecked": 12,
   "newVideosDecoded": 12
 }
