@@ -81,6 +81,14 @@ iPhone遅延: 10-13 に main へ取り込み済み（公式 verify PASS）。既
 
 `755ba38`から継続。既存の接続保持・P2P退避・connectivity.log同梱を維持し、P2P接続通知だけでのLAN pending破棄と停止診断の取りこぼしを修正。修正前失敗／修正後PASSをhost XCTestとPythonで確認。ReleaseとXCTest build成功。実機・公式verifyは未実行。実行コマンド・結果・リスクは[調査報告](ios-send-gaps-20261013.md)。認識・座標形式・corpus・Unityは無変更。
 
+### 2026-10-14 午前 直列の Codex ジョブを1件ずつ取り込み（Claude）
+- 先読み: `PredictAdaptive`（F8「自動」のときだけ）。実データ（30 fps、遅れ 112〜118 ms）で表示のずれ RMS は 0.5 / 1 Hz で OFF 15.6 / 26.2 → 現行60 ms 12.2 / 20.5 → adaptive 60 ms 11.1 / 19.6（% of travel）。効果は控えめで、予測器の上限 60 ms が頭打ち。60 fps の録りはまだ無い。
+- Player: 起動確認が Title → SongSelect → Game → Result → 判定調整 → Title を一周して実カットまで見る。`unity_copy.sh soak [分]`（連続プレイ）: 6 分・8 周は例外 0・Error 0、漏れ判定は 11 周以上で出る（未実施）。
+- 小さな修正 7 件（iPhone のカメラ通知の世代・P2P 復帰時の古い座標・録画 outbox、Unity の受信再起動時の古い座標、Android の UDP channel の close、host check、receiver launcher）。各々回帰テストつき。
+- 検証: 公式 verify PASS、Tools 全件、gradle、Unity EditMode PhoneSaber 系 1271 pass。`FiveSongPlayabilityTests` 15 件は main 単体でも失敗（10-13 に追加された5曲、担当者のもの）。
+- Mac のアプリと Android の APK は 4938069 でビルド済み。**iPhone は端末に届かず未更新**（ロック中か圏外。入っているのは 10-14 00:10 頃の版）。
+- runner9 は直列でバグ探しを継続中（bughunt7〜）。
+
 ### 2026-10-14 未明 無人の遅延計測（iPhone 13 を Mac の画面に向けて固定、家の LAN、Claude）
 - 道具: `PhoneSaber/tools/latency_matrix.py`（iPhone を起動引数つきで再起動 → Player を `-phonesaberLatencyProbe` で起動、を条件ごとに繰り返して表にする）、Player の `-phonesaberTrackingProbe <秒>`（赤い棒を既知の軌道 0.5〜2.5 Hz と静止で動かし、戻ってきた座標と一緒に CSV 保存）、`PhoneSaber/tools/tracking_report.py`（見た目の遅れ＝相互相関、先読み方式ごとの表示のずれ）。F9 の判定は棒の位置を2次元の距離で見るようにした（スマホを横向き・斜めに置くと左右の動きがカメラの上下に出て1回も測れなかった）。
 - **F9（30 fps、発熱 serious）**: 往復 117〜137 ms（run 間の揺れ ±6 ms 程度）。「低遅延カメラ設定（試験）」ON はスマホ自身の計測値が 48→41 ms に下がるが往復は変わらない（117〜122 対 119〜122）＝実際の遅れは減っていない。ウィンドウ表示・解像度変更は、スマホから見える棒の位置が変わって測れない（設定も次の起動に残るので条件から外した）。画面同期・maxQueuedFrames も差なし（10-13）。**設定で削れるものは見つからなかった。**
