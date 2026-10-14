@@ -1,17 +1,21 @@
 {
-  "notes": 852,
-  "cuts": 890,
+  "revision": "audio-faithful-2026-10-14",
+  "audioSha256": "dd8fb71abaa1760ad0d989b3668974cb1c0ffff426a54139a3340c94329a0d65",
+  "notes": 1062,
+  "cuts": 1062,
   "types": {
-    "tap": 838,
-    "long": 14
+    "tap": 1062
   },
-  "simultaneousGroups": 48,
-  "maximumSwingSpeed": 3.8504,
-  "minimumSameHandGapMs": 144.67,
-  "onsetThreshold": 0.35,
-  "minimumDistinctAttackGapMs": 75,
-  "firstNoteMs": 94.78,
-  "lastNoteEndMs": 137660.27,
-  "longDesign": "All roll cuts follow detected attacks; the sustained final chord uses five evenly spaced cuts per hand.",
+  "distinctAttacks": 1022,
+  "coveredAttacks": 1022,
+  "quietRunAttacks": 200,
+  "simultaneousGroups": 40,
+  "maximumSwingSpeed": 6.3206,
+  "minimumSameHandGapMs": 79.819,
+  "minimumDistinctAttackGapMs": 39.909,
+  "firstNoteMs": 94.7846,
+  "lastNoteEndMs": 136280.2721,
+  "syntheticCuts": 0,
+  "droppedForHandRecovery": 0,
   "flicks": 0
 }

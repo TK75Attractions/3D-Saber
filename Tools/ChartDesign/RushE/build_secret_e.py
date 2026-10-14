@@ -1,102 +1,218 @@
-"""RUSH Eの専用最難関。通常・同時・ロングで実音のアタックを拾う。"""
+"""難易度E: 弱い連続音も拾い、和音の減衰をランダムな連打にしない。"""
 from pathlib import Path
-import json,math,collections,sys
-ROOT=Path(__file__).resolve().parent
-SOURCE=Path(sys.argv[1]).resolve() if len(sys.argv)>1 else ROOT
-OUT=SOURCE/'Staging'
-def save(path,value):
-    path.parent.mkdir(parents=True,exist_ok=True)
-    path.write_text(json.dumps(value,ensure_ascii=False,indent=2)+'\n',encoding='utf8')
-analysis=json.loads((SOURCE/'Analysis/analysis.json').read_text(encoding='utf8'))
-base=json.loads((SOURCE/'Staging/Assets/StreamingAssets/Songs/RushE/chart_hard.json').read_text(encoding='utf8'))
-events=[e for e in analysis['events'] if e['time']<=136.31 and e['strength']>=.35]
-# 連続する同じ発音を二重に取らず、前奏の間と終止後の減衰は休符のまま残す。
-peaks=[]
-for e in sorted(events,key=lambda e:-e['strength']):
-    if all(abs(e['time']-p['time'])>=.075 for p in peaks):peaks.append(e)
-peaks.sort(key=lambda e:e['time'])
-notes=[];last=[-10.,-10.];preferred=0;last_pair=-10
-for i,e in enumerate(peaks):
-    t=e['time']; available=[h for h in (preferred,1-preferred) if t-last[h]>=.140]
-    if not available:continue
-    h=available[0]
-    # 和音のアクセントは両手へ。直後の音を拾う片手を残せる間隔に限る。
-    following=peaks[i+1]['time']-t if i+1<len(peaks) else 2
-    pair=len(available)==2 and t>13 and e['strength']>=1.03 and t-last_pair>=1.45 and following>=.140
-    for hand in ((0,1) if pair else (h,)):
-        x=(1.04+.07*math.sin(t*.32))*(1 if hand==0 else -1)
-        y=.11*math.sin(t*.52+hand*2.5)
-        notes.append(dict(time=round(t*1000,4),x=round(x,4),y=round(y,4),type='tap',color='red' if hand==0 else 'blue',direction='none',count=1,lengthMs=0,
-            _hand=hand,_cuts=[t],_strength=e['strength'],_role='chord' if pair else 'attack'))
-        last[hand]=t
-    if pair:last_pair=t
-    preferred=1-h
-# 同じ手の実際の発音列をロングにまとめる。反対の手は伴奏・旋律をそのまま拾える。
-long_targets=[(13.529,.80),(24.519,.80),(32.521,.90),(40.059,.74),(47.8,.87),(53.61,.9),(65.418,.86),
-              (71.6,.82),(80.666,.86),(87.676,.90),(96.28,.87),(104.65,.86),(111.696,.80),(117.8,.82),(123.9,.85),(129.136,.78),(133.08,.74)]
-for k,(target,length) in enumerate(long_targets):
-    candidates=[n for n in notes if n['type']=='tap' and abs(n['time']/1000-target)<.22 and n['_hand']==k%2]
-    if not candidates:continue
-    first=min(candidates,key=lambda n:abs(n['time']/1000-target));t=first['time']/1000
-    group=[n for n in notes if n['_hand']==first['_hand'] and t<=n['time']/1000<=t+length and n['type']=='tap']
-    if len(group)<3:continue
-    times=[n['time']/1000 for n in group]
-    first.update(type='long',count=len(times),lengthMs=round((times[-1]-t+.055)*1000,4),_cuts=times,_role='attack-roll')
-    remove={id(n) for n in group[1:]};notes=[n for n in notes if id(n) not in remove]
-# 最後の和音の余韻だけは、左右のロングを最後まで交互に切るフィニッシュ。
-final=min(analysis['events'],key=lambda e:abs(e['time']-136.28027))
-notes=[n for n in notes if n['time']<final['time']*1000-.12*1000]
-for h in (0,1):
-    t=final['time'];cuts=[t+k*.32 for k in range(5)]
-    notes.append(dict(time=round(t*1000,4),x=1.04 if h==0 else -1.04,y=.06 if h==0 else -.06,type='long',color='red' if h==0 else 'blue',direction='none',count=5,lengthMs=1380,
-        _hand=h,_cuts=cuts,_strength=final['strength'],_role='sustained-final-chord'))
-notes.sort(key=lambda n:(n['time'],n['_hand']))
-DIRS=('up','down','left','right','upleft','upright','downleft','downright')
-VECS=dict(zip(DIRS,[(0,1),(0,-1),(-1,0),(1,0),(-2**-.5,2**-.5),(2**-.5,2**-.5),(-2**-.5,-2**-.5),(2**-.5,-2**-.5)]))
-plan=[dict(index=i,timesMs=[round(t*1000,4) for t in n['_cuts']],directions=[]) for i,n in enumerate(notes)]
-maxspeed=0;mingap=99
-for hand in (0,1):
-    seq=sorted([(t,i,k) for i,n in enumerate(notes) if n['_hand']==hand for k,t in enumerate(n['_cuts'])])
-    states={}
-    for j,(t,i,k) in enumerate(seq):
-        n=notes[i];following={}
-        for d,v in VECS.items():
-            if not j:following[d]=(0,[d]);continue
-            pt,pi,pk=seq[j-1];prev=notes[pi];gap=t-pt
-            delta=(n['x']-prev['x'],n['y']-prev['y']);choices=[]
-            for pd,(cost,path) in states.items():
-                pv=VECS[pd]
-                if sum(pv[a]*v[a] for a in (0,1))>.01 and gap<.5:continue
-                travel=.5+math.hypot(*(delta[a]-.25*(v[a]+pv[a]) for a in (0,1)))
-                if travel/gap>5.5:continue
-                choices.append((cost+travel,path+[d]))
-            if choices:following[d]=min(choices,key=lambda p:p[0])
-        if not following:raise AssertionError(f'Hand cannot recover: {hand} / {t}')
-        states=following
-    dirs=min(states.values(),key=lambda p:p[0])[1]
-    for (t,i,k),d in zip(seq,dirs):plan[i]['directions'].append(d)
-    for (ta,ia,ka),(tb,ib,kb),da,db in zip(seq,seq[1:],dirs,dirs[1:]):
-        a,b=notes[ia],notes[ib];va,vb=VECS[da],VECS[db];gap=tb-ta
-        speed=(.5+math.hypot(b['x']-a['x']-.25*(va[0]+vb[0]),b['y']-a['y']-.25*(va[1]+vb[1])))/gap
-        maxspeed=max(maxspeed,speed);mingap=min(mingap,gap)
-grid=base['editorTempoMap']
-def beat_at(ms):
-    k=next((i for i in range(len(grid)-2,-1,-1) if grid[i]['timeMs']<=ms),0)
-    a,b=grid[k],grid[k+1]
-    return a['beat']+(ms-a['timeMs'])*(b['beat']-a['beat'])/(b['timeMs']-a['timeMs'])
-clean=[]
-for n in notes:
-    row={k:v for k,v in n.items() if not k.startswith('_')};row['beat']=round(beat_at(n['time']),6);clean.append(row)
-    assert n['time']+n['lengthMs']<analysis['duration']*1000
-base.update(_comment='RUSH E限定の隠し最難関E。通常・同時・実音の発音列をまとめたロング。フリックなし。終止和音の持続以外は検出アタックに配置。',displayLevel=10,notes=clean)
-dest=OUT/'Tools/ChartDesign/RushE'
-save(OUT/'Assets/StreamingAssets/Songs/RushE/chart_e.json',base)
-save(dest/'e-cut-plan.json',dict(notes=plan))
-save(dest/'e-evidence.json',[dict(index=i,timeMs=n['time'],strength=n['_strength'],role=n['_role'],cutTimesMs=plan[i]['timesMs']) for i,n in enumerate(notes)])
-groups=collections.Counter(n['time'] for n in notes)
-audit=dict(notes=len(notes),cuts=sum(n['count'] for n in notes),types=dict(collections.Counter(n['type'] for n in notes)),
-    simultaneousGroups=sum(v==2 for v in groups.values()),maximumSwingSpeed=round(maxspeed,4),minimumSameHandGapMs=round(mingap*1000,3),
-    onsetThreshold=.35,minimumDistinctAttackGapMs=75,firstNoteMs=notes[0]['time'],lastNoteEndMs=max(n['time']+n['lengthMs'] for n in notes),
-    longDesign='All roll cuts follow detected attacks; the sustained final chord uses five evenly spaced cuts per hand.',flicks=0)
-save(dest/'e-audit.json',audit)
-print(json.dumps(audit,ensure_ascii=False,indent=2))
+import argparse
+import collections
+import json
+import math
+
+import numpy as np
+
+
+def save(path, value):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(value, ensure_ascii=False, indent=2) + '\n', encoding='utf8')
+
+
+# 原版の連続旋律区間。周期は音声から再推定し、音のないグリッド点は追加しない。
+RUNS = [(41.61, 64.65), (66.38, 78.17), (89.2, 104.16),
+        (105.05, 111.70), (113.12, 121.85), (121.85, 125.70)]
+# 大量の重なった音の余韻。ここでは細かなスペクトル変動を発音と扱わない。
+CLOUDS = [(12.60, 13.50), (15.85, 16.70), (32.60, 33.45),
+          (78.30, 80.64), (125.71, 135.39)]
+DENSE_RHYTHMS = [(125.71, 129.13, .154, .168),
+                 (129.13, 133.52, .146, .159), (133.52, 135.39, .142, .155)]
+FINAL = 136.28027
+
+
+def select_attacks(features):
+    times, onset, flux = (features[k] for k in ('times', 'onset', 'flux'))
+    # 低音のうなりだけで弱い旋律を判定しない。中高域の発音も独立に調べる。
+    upper = .45 * flux[2] + .55 * flux[3]
+    local = np.median(np.lib.stride_tricks.sliding_window_view(
+        np.pad(onset, (15, 15), mode='edge'), 31), axis=1)
+    upper_local = np.median(np.lib.stride_tricks.sliding_window_view(
+        np.pad(upper, (15, 15), mode='edge'), 31), axis=1)
+    novelty = np.maximum(onset, upper - .55 * upper_local)
+    maxima = np.zeros(len(times)-2, dtype=bool)
+    for band in (novelty, onset, upper):
+        maxima |= (band[1:-1] > band[:-2]) & (band[1:-1] >= band[2:])
+    indices = np.where(maxima & (novelty[1:-1] >= .12))[0] + 1
+    candidates = []
+    for i in indices:
+        time = float(times[i])
+        if time > FINAL + .012:
+            continue
+        prominence = float(novelty[i] - max(np.min(novelty[max(0, i-5):i+1]),
+                                            np.min(novelty[i:i+6])))
+        candidates.append(dict(frame=int(i), time=time, strength=float(onset[i]),
+                               upper=float(upper[i]), prominence=prominence,
+                               score=float(novelty[i]), background=float(local[i])))
+
+    # 同じピアノ打音の帯域別ピークを統合。従来の75ms間引きは行わない。
+    distinct = []
+    for e in sorted(candidates, key=lambda e: -e['score']):
+        if all(abs(e['time'] - p['time']) >= .035 for p in distinct):
+            distinct.append(e)
+    distinct.sort(key=lambda e: e['time'])
+    chosen = {}
+    fits = []
+    for e in distinct:
+        i, time = e['frame'], e['time']
+        cloud = any(a <= time < b for a, b in CLOUDS)
+        if cloud:
+            # 「バーン」の明確な立ち上がりだけ。余韻へ架空の刻みを置かない。
+            accept = e['strength'] >= .72 and e['strength'] >= 2.5 * e['background'] and e['prominence'] >= .23
+            role = 'chord-attack'
+        else:
+            accept = ((e['strength'] >= .48 and e['strength'] >= 1.8 * e['background']) or
+                      (e['upper'] >= .55 and e['upper'] >= 2.0 * upper_local[i])) and e['prominence'] >= .12
+            role = 'attack'
+        if accept:
+            chosen[i] = dict(e, role=role)
+
+    # 連打の弱拍を強拍と同じ音量しきい値で捨てない。
+    # 周期は採否の裏付けだけに使い、ノーツ時刻は必ず実音のピークにする。
+    for start, end in RUNS:
+        best = (-1., 0., 0.)
+        for period in np.arange(.083, .101, .00002):
+            phases = np.arange(0, period, .001)
+            grid = start + phases[:, None] + np.arange(int((end-start)/period))[None, :] * period
+            scores = np.interp(grid, times, np.minimum(onset, 1.8)).mean(axis=1)
+            k = int(np.argmax(scores))
+            if scores[k] > best[0]:
+                best = float(scores[k]), float(period), float(start + phases[k])
+        score, period, phase = best
+        fits.append(dict(start=start, end=end, periodMs=round(period*1000, 4),
+                         phaseMs=round(phase*1000, 4), score=round(score, 4)))
+        for pulse in np.arange(phase-period, end, period):
+            options = [e for e in candidates if start <= e['time'] <= end and
+                       abs(e['time']-pulse) <= .020 and e['strength'] >= .12 and e['prominence'] >= .035 and
+                       (flux[1, e['frame']] >= .35 or flux[2, e['frame']] >= .35 or flux[3, e['frame']] >= .20)]
+            if options:
+                e = max(options, key=lambda e: e['score'])
+                if e['frame'] not in chosen:
+                    chosen[e['frame']] = dict(e, role='quiet-run-attack')
+
+    # 終盤の大量和音は、鳴っている主要拍を拾う。音塊内の不規則なピークは除く。
+    for start, end, low, high in DENSE_RHYTHMS:
+        chosen = {i: e for i, e in chosen.items() if not start <= e['time'] < end}
+        best = (-1., 0., 0.)
+        for period in np.arange(low, high, .00002):
+            phases = np.arange(0, period, .001)
+            grid = start + phases[:, None] + np.arange(int((end-start)/period))[None, :] * period
+            scores = np.interp(grid, times, np.minimum(onset, 1.8)).mean(axis=1)
+            k = int(np.argmax(scores))
+            if scores[k] > best[0]:
+                best = float(scores[k]), float(period), float(start + phases[k])
+        score, period, phase = best
+        fits.append(dict(start=start, end=end, periodMs=round(period*1000, 4),
+                         phaseMs=round(phase*1000, 4), score=round(score, 4), role='dense-chord-pulse'))
+        for pulse in np.arange(phase-period, end, period):
+            options = [e for e in distinct if start <= e['time'] < end and
+                       abs(e['time']-pulse) <= .024 and e['strength'] >= .22 and e['prominence'] >= .045]
+            if options:
+                e = max(options, key=lambda e: e['score'])
+                chosen[e['frame']] = dict(e, role='dense-chord-pulse')
+
+    attacks = sorted(chosen.values(), key=lambda e: e['time'])
+    # 和音の帯域ごとの立ち上がりは同一打音へまとめる。時刻をずらして連打にしない。
+    merged = []
+    for e in attacks:
+        if merged and e['time'] - merged[-1]['time'] < .035:
+            if e['score'] > merged[-1]['score']:
+                merged[-1] = e
+        else:
+            merged.append(e)
+    assert merged and abs(merged[-1]['time'] - FINAL) < .02
+    return merged, fits
+
+
+def build(source, output):
+    analysis = json.loads((source / 'Analysis/analysis.json').read_text(encoding='utf8'))
+    base = json.loads((source / 'Staging/Assets/StreamingAssets/Songs/RushE/chart_hard.json').read_text(encoding='utf8'))
+    features = np.load(source / 'Analysis/features.npz')
+    attacks, fits = select_attacks(features)
+    notes = []
+    hand, last_pair = 0, -10.
+    last = [-10., -10.]
+    for i, e in enumerate(attacks):
+        t = e['time']
+        before = t - attacks[i-1]['time'] if i else 10
+        after = attacks[i+1]['time'] - t if i+1 < len(attacks) else 10
+        # 両手同時は実際の強い打音だけ。連打が続くときは左右交互を優先する。
+        pair = (e['strength'] >= 1.03 and t > 13 and t-last_pair >= .75 and
+                min(before, after) >= .135 and min(t-v for v in last) >= .135)
+        if i == len(attacks)-1:
+            pair = True
+        for h in ((0, 1) if pair else (hand,)):
+            x = (1.04 + .07 * math.sin(t*.32)) * (1 if h == 0 else -1)
+            y = .11 * math.sin(t*.52 + h*2.5)
+            notes.append(dict(time=round(t*1000, 4), x=round(x, 4), y=round(y, 4),
+                              type='tap', color='red' if h == 0 else 'blue', direction='none',
+                              count=1, lengthMs=0, _hand=h, _event=i, _role=e['role']))
+            last[h] = t
+        if pair:
+            last_pair = t
+        hand = 1-hand
+
+    grid = base['editorTempoMap']
+    def beat_at(ms):
+        k = next((i for i in range(len(grid)-2, -1, -1) if grid[i]['timeMs'] <= ms), 0)
+        a, b = grid[k], grid[k+1]
+        return a['beat']+(ms-a['timeMs'])*(b['beat']-a['beat'])/(b['timeMs']-a['timeMs'])
+
+    plan = [dict(index=i, timesMs=[n['time']], directions=[]) for i, n in enumerate(notes)]
+    maxspeed, mingap = 0., 100.
+    for h in (0, 1):
+        previous = None
+        for j, (i, n) in enumerate((i, n) for i, n in enumerate(notes) if n['_hand'] == h):
+            # 密集時に腕を毎回戻さず、同じ場所で上下を交互に切る。
+            plan[i]['directions'].append('down' if j % 2 else 'up')
+            if previous:
+                gap = (n['time']-previous['time']) / 1000
+                speed = (.5 + math.hypot(n['x']-previous['x'], n['y']-previous['y'])) / gap
+                maxspeed, mingap = max(maxspeed, speed), min(mingap, gap)
+            previous = n
+    assert mingap >= .070, f'左右の割り当てを要確認: {mingap}'
+    assert maxspeed < 7.5, f'動作速度を要確認: {maxspeed}'
+    clean = []
+    evidence = []
+    for i, n in enumerate(notes):
+        row = {k: v for k, v in n.items() if not k.startswith('_')}
+        row['beat'] = round(beat_at(n['time']), 6)
+        clean.append(row)
+        e = attacks[n['_event']]
+        evidence.append(dict(index=i, attackIndex=n['_event'], timeMs=n['time'],
+                             strength=round(e['strength'], 4), upperStrength=round(e['upper'], 4),
+                             role=n['_role'], cutTimesMs=[n['time']]))
+    base.update(_comment='RUSH E限定E。連続旋律の弱い発音も1打ずつ通常ノーツへ。密集和音は明確な立ち上がりにまとめ、余韻の架空連打・連打を隠すロング・休憩用の間引きなし。',
+                displayLevel=10, notes=clean)
+    dest = output / 'Tools/ChartDesign/RushE'
+    save(output / 'Assets/StreamingAssets/Songs/RushE/chart_e.json', base)
+    save(dest / 'e-cut-plan.json', dict(notes=plan))
+    save(dest / 'e-evidence.json', evidence)
+    source_attacks = [dict(timeMs=round(e['time']*1000, 4), strength=round(e['strength'], 4),
+                          upperStrength=round(e['upper'], 4), role=e['role']) for e in attacks]
+    save(dest / 'e-attacks.json', dict(audioSha256=analysis['sha256'],
+                                      method='audio peaks + quieter periodic attacks; no synthetic cuts',
+                                      rhythmFits=fits, chordCloudsSeconds=CLOUDS, attacks=source_attacks))
+    groups = collections.Counter(n['time'] for n in notes)
+    audit = dict(revision='audio-faithful-2026-10-14', audioSha256=analysis['sha256'],
+                 notes=len(notes), cuts=len(notes), types={'tap': len(notes)},
+                 distinctAttacks=len(attacks), coveredAttacks=len(groups),
+                 quietRunAttacks=sum(e['role'] == 'quiet-run-attack' for e in attacks),
+                 simultaneousGroups=sum(v == 2 for v in groups.values()),
+                 maximumSwingSpeed=round(maxspeed, 4), minimumSameHandGapMs=round(mingap*1000, 3),
+                 minimumDistinctAttackGapMs=round(min(b['time']-a['time'] for a, b in zip(attacks, attacks[1:]))*1000, 3),
+                 firstNoteMs=notes[0]['time'], lastNoteEndMs=notes[-1]['time'],
+                 syntheticCuts=0, droppedForHandRecovery=0, flicks=0)
+    save(dest / 'e-audit.json', audit)
+    print(json.dumps(audit, ensure_ascii=False, indent=2))
+
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('source', type=Path, help='Analysisと標準譜面のStagingがある解析作業フォルダー')
+    parser.add_argument('--output', type=Path, help='別のStagingフォルダー（本編には自動適用しない）')
+    args = parser.parse_args()
+    build(args.source.resolve(), (args.output or args.source / 'Staging').resolve())

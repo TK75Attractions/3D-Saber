@@ -57,11 +57,38 @@ public class RushESecretTests
         var e = ChartLoader.LoadFromStreamingAssets("RushE", "E"); var hard = ChartLoader.LoadFromStreamingAssets("RushE", "Hard");
         Assert.AreEqual(10, e.displayLevel); Assert.Greater(e.notes.Sum(n => n.count), hard.notes.Sum(n => n.count) * 2);
         Assert.IsTrue(e.notes.All(n => n.direction == "none" && (n.type == "tap" || n.type == "long")));
-        Assert.GreaterOrEqual(e.notes.Count(n => n.type == "long"), 12);
-        Assert.GreaterOrEqual(e.notes.GroupBy(n => n.time).Count(g => g.Count() == 2), 40);
+        Assert.GreaterOrEqual(e.notes.Count, 1000, "連続する弱い音を休憩用に間引かない");
+        Assert.IsTrue(e.notes.All(n => n.type == "tap" && n.count == 1 && n.lengthMs == 0), "発音1回を1ノーツにする");
+        Assert.IsTrue(e.notes.GroupBy(n => n.time).All(g => g.Count() <= 2), "和音は左右同時にまとめる");
         Assert.AreNotEqual(SongAchievementStore.Key("RushE", "E"), SongAchievementStore.Key("RushE", "Hard"));
         Assert.AreNotEqual(HighScoreStore.Key("RushE", "E"), HighScoreStore.Key("RushE", "Hard"));
         Assert.AreNotEqual(DailyRankingStore.Key("RushE", "E"), DailyRankingStore.Key("RushE", "Hard"));
         Assert.AreEqual(RushESecretState.Purple, GameHUDSkin.DifficultyColor("E"));
+    }
+
+    [TestCase(11488.89f)]
+    [TestCase(11628.57f)]
+    [TestCase(41904.76f)]
+    [TestCase(42099.32f)]
+    [TestCase(42483.45f)]
+    [TestCase(96545.58f)]
+    [TestCase(97618.14f)]
+    [TestCase(121244.44f)]
+    public void EIncludesQuietAndAcceleratingAudioAttacks(float audioPeakMs)
+    {
+        // 原版の波形から確認した弱拍・加速音。旧譜面の強度や手の回復による抜けを防ぐ。
+        var e = ChartLoader.LoadFromStreamingAssets("RushE", "E");
+        Assert.IsTrue(e.notes.Any(n => Mathf.Abs(n.time - audioPeakMs) < 20), audioPeakMs.ToString());
+    }
+
+    [Test]
+    public void EEndsOnTheFinalChordWithoutInventedTailCuts()
+    {
+        var e = ChartLoader.LoadFromStreamingAssets("RushE", "E");
+        Assert.AreEqual(136280.27f, e.notes.Max(n => n.time), 1f);
+        var lastChord = e.notes.Where(n => Mathf.Abs(n.time - 136280.27f) < 1f).ToArray();
+        Assert.AreEqual(2, lastChord.Length);
+        Assert.IsTrue(lastChord.Any(n => n.x < 0) && lastChord.Any(n => n.x > 0));
+        Assert.IsTrue(lastChord.All(n => n.count == 1 && n.lengthMs == 0));
     }
 }
