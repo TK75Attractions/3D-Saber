@@ -15,10 +15,10 @@ ZeroとPhobiaは固定。RushEを含むすべての対象外曲も変更・再�
 
 ## 現行の素材と作り分け
 
-64素材すべてを本作の4拍JSONへ翻案し、15譜面へ128小節として適用済み。
-採用候補34・調整して採用24・避けたい例6（問題点を解消した修正版）。
-譜面データからの変換8、映像に基づく翻案50、解説の修正版6。映像は正確な採譜ではない。
-今回の6素材は Crystallized / Normal（174 BPM）、Firestarter / Normal（135 BPM）、MISA MISA!（190 BPM、Expert+相当の推定）の各2区間。
+70素材すべてを本作の4拍JSONへ翻案し、15譜面へ140小節として適用済み。
+採用候補38・調整して採用26・避けたい例6（問題点を解消した修正版）。
+譜面データからの変換8、映像に基づく翻案56、解説の修正版6。映像は正確な採譜ではない。
+前回の6素材は Crystallized / Normal（174 BPM）、Firestarter / Normal（135 BPM）、MISA MISA!（190 BPM、Expert+相当の推定）の各2区間。
 MISA MISA!の作者公開映像の0:00〜1:27が対象曲。難易度画面はなく、現行譜面ZIPも取得不可のため版・難易度の一致は未確定。比較用として密度を下げた。
 元動画・投稿者・作者・時刻・分類理由は `collection.json/csv`。自由利用の許諾を得た素材ではなく、出典付きの短い研究用抜粋。
 
@@ -34,7 +34,7 @@ Manic Sonicは主拍と両手の着地、escapadeは短い連打と休符、logi
 
 1. scope-policy、現在のcollection・converted-patterns・applicationsと最新ユーザー指示を読む。
 2. 映像と前後を実見し、新規素材ごとにEXPLICIT/LAYOUTの固有定義を追加する。登録済み58本・64本等の過去件数へリセットしない。
-3. convert_patterns.pyで素材化。integrate_patterns.py --repo <入力> --output <候補> --features <解析>で未適用分だけ候補へ挿入する。
+3. convert_patterns.pyで素材化。integrate_patterns.py --repo <入力> --output <候補> --features <解析> --spatial-preserve-rhythmで未適用分だけ候補へ挿入する。
 4. 曲別再設計済みの譜面を旧rechart.pyで再生成しない（保護あり）。音や展開を再設計するときだけidentity_rework.pyの曲別定義をレビューして使う。定時更新は現在の譜面を入力にする。
 5. 入力との差分・元音源・verify_pack.py・verify_conversion.pyを確認。変更箇所と適用済み素材の記録を照合する。
 6. FiveSongPackTests / FiveSongPlayabilityTests / FiveSongLoadingPlayTestsを検証。開いているユーザーのUnityを閉じない。独立コピーはWindowsのパス長を避けて短い場所へ作る。
@@ -54,3 +54,12 @@ Manic Sonicは主拍と両手の着地、escapadeは短い連打と休符、logi
 横幅は約±2.1、縦は約±1.1まで使用。高速部分は経路を詰め、広い高低差を通常の運動として許可する。縦・交差・同側は短い区間へ組み込む。
 23件のHard素材適用を音源に合わせて再構成し、`applications.json` の `appliedNotes` と `noteIndices` を更新。元の適用は `referenceAppliedNotes` として保持。`identity-design.json` のHard統計はこの改修前の履歴であり、現在値は `hard-rhythm-design.json` を参照。
 実機で人がプレイした検証ではない。更新時は現在のHardを共通定型リズムから再生成しない。
+
+## 定時追加 2026-10-15 00:20
+
+Full Charge / Normal（125 BPM）、Origins / Hard（175 BPM）、Give a Little Love / Hard（128 BPM）から各2区間を追加。4拍相当で小節頭・譜面版は未確定。6素材の固有定義を映像と前後の流れから作成した。
+今回の曲への適用は `integrate_patterns.py --spatial-preserve-rhythm` を使用。Manic Sonic、logic!!!、青葉騒のHardへ各2素材、合計12小節を適用した。座標のみを変更し、打点・手・種類・フリック・ロング長は完全保持。Easy・Normalと残り2曲のHardは変更なし。
+素材自体の4拍JSONと、曲の既存リズムに合わせた位置の翻案は別に表示する。参照BPMとの差、位相、合う担当手と発音、変更前のノーツは applications.json に記録。前回の短い技、既存64素材の適用内容、音はめ改修の根拠も保持。
+今後、音はめ改修済みHardを従来の疎な2小節テンプレートで置換する実行は停止する。未適用素材がない場合は書き換えない。適合しない素材は無理に入れず理由を記録して保留する。
+
+座標差分の診断値 `positionChangedNotes` は移動距離0.15超を数える。今回の83ノーツは境界での小さな補間も含む全座標変更数。打点の追加・削除は0。

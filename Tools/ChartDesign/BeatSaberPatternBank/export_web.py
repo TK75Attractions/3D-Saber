@@ -1,5 +1,5 @@
 """素材プレビューと更新した5曲だけを既存のスマホサイトへ反映する。"""
-import argparse,copy,hashlib,json,shutil,zipfile
+import argparse,copy,hashlib,json,shutil,zipfile,datetime
 from pathlib import Path
 from scope_guard import ALLOWED,authorize,protected_web,assert_unchanged
 HERE=Path(__file__).resolve().parent
@@ -31,6 +31,8 @@ def main():
   save(dist/pattern['chartFile'],pattern['chart'])
   for a in pattern['applications']:
    chart=read(repo/'Assets/StreamingAssets/Songs'/a['songId']/f"chart_{a['difficulty']}.json")
+   evidence=read(repo/'Tools/ChartDesign/FiveSongs20261014'/a['songId']/f"{a['difficulty']}-evidence.json")
+   a['hands']=[evidence[i]['hand'] for i in a['noteIndices']]
    applied={'_comment':'曲へ実際に組み込んだ2小節。時刻と拍を区間先頭へ正規化。','bpm':a['targetBpm'],'coordScale':1,'offsetMs':0,'beatZeroMs':0,
     'displayLevel':chart['displayLevel'],'timeSignatures':chart['timeSignatures'],'editorTempoMap':[],
     'notes':[{**n,'beat':n['beat']-a['startBeat'],'time':round(n['time']-a['startSeconds']*1000,3)} for n in a['appliedNotes']]}
@@ -49,10 +51,11 @@ def main():
   for entry in song['charts']:
    authorize(song['sourceId'],Path(entry['path']).stem.removeprefix('chart_'))
    source=repo/'Assets/StreamingAssets/Songs'/song['sourceId']/Path(entry['path']).name
-   chart=read(source);shutil.copy2(source,chartdist/entry['path']);ns=chart['notes']
+   chart=read(source);ns=chart['notes']
+   if source.read_bytes()!=(chartdist/entry['path']).read_bytes():
+    shutil.copy2(source,chartdist/entry['path']);updates+=1
    entry.update(sha256=hashlib.sha256(source.read_bytes()).hexdigest(),count=len(ns),flicks=sum(n['direction']!='none' for n in ns),longs=sum(n['count']>1 for n in ns),gold=sum(n['color']=='gold' for n in ns))
-   updates+=1
- catalog['updated']='2026-10-14';save(chartdist/'catalog.json',catalog)
+ catalog['updated']=datetime.date.today().isoformat();save(chartdist/'catalog.json',catalog)
  assert_unchanged(protected,protected_web(chartdist))
  save(HERE/'export-scope-verification.json',{'passed':True,'protectedCharts':len(protected['hashes']),'allowedSongs':sorted(ALLOWED),'protectedHashes':protected['hashes']})
  print(json.dumps({'patterns':len(data['patterns']),'applications':len(apps),'updatedCharts':updates}))

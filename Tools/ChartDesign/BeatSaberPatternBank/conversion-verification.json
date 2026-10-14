@@ -1,362 +1,802 @@
 {
-  "batch": "hard-rhythm-20261015",
-  "changedCharts": 5,
-  "difficulty": "hard",
-  "newCollected": 0,
-  "newConverted": 0,
-  "newApplied": 0,
-  "adaptedApplications": 23,
-  "totalCollected": 64,
-  "totalConverted": 64,
-  "totalApplied": 64,
-  "addedNotes": 556,
-  "removedNotes": 72,
-  "protectedRepoCharts": 52,
-  "protectedHostedCharts": 38,
+  "batch": "hourly-20261015-0020",
+  "newCollected": 6,
+  "newConverted": 6,
+  "newApplied": 6,
+  "totalCollected": 70,
+  "totalConverted": 70,
+  "totalApplied": 70,
+  "changedCharts": 3,
+  "changedPositions": 83,
+  "addedNotes": 0,
+  "removedNotes": 0,
+  "categories": {
+    "good": 38,
+    "conditional": 26,
+    "avoid": 6
+  },
   "tests": {
-    "edit": {
-      "passed": 58,
-      "failed": 0
+    "tests-merged": {
+      "total": "58",
+      "passed": "58",
+      "failed": "0",
+      "result": "Passed"
     },
-    "play": {
-      "passed": 1,
-      "failed": 0
+    "tests-playmode": {
+      "total": "1",
+      "passed": "1",
+      "failed": "0",
+      "result": "Passed"
     }
   },
   "isolatedChartsMatch": true,
-  "browser": {
-    "passed": true,
-    "mobileViewport": "390x844",
-    "hardPlayback": [
-      {
-        "songId": "ManicSonic",
-        "title": "Manic Sonic",
-        "startBeat": 336,
-        "startSeconds": 113.1667,
-        "kind": "cross",
-        "url": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=112.67",
-        "time": 113.58838,
-        "rate": 0.5,
-        "paused": true,
-        "error": null,
-        "notes": 620,
-        "downloadMatched": true
-      },
-      {
-        "songId": "escapade",
-        "title": "escapade",
-        "startBeat": 40,
-        "startSeconds": 12.6516,
-        "kind": "cross",
-        "url": "https://saber-chart-library.metuji48.chatgpt.site/?song=escapade&difficulty=hard&t=12.15",
-        "time": 13.068779,
-        "rate": 0.5,
-        "paused": true,
-        "error": null,
-        "notes": 519,
-        "downloadMatched": true
-      },
-      {
-        "songId": "logic",
-        "title": "logic!!!",
-        "startBeat": 120,
-        "startSeconds": 45.028,
-        "kind": "cross",
-        "url": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=44.53",
-        "time": 45.440076,
-        "rate": 0.5,
-        "paused": true,
-        "error": null,
-        "notes": 597,
-        "downloadMatched": true
-      },
-      {
-        "songId": "BenkyouRemaster",
-        "title": "勉強（Remaster）",
-        "startBeat": 224,
-        "startSeconds": 91.674,
-        "kind": "cross",
-        "url": "https://saber-chart-library.metuji48.chatgpt.site/?song=BenkyouRemaster&difficulty=hard&t=91.17",
-        "time": 92.085293,
-        "rate": 0.5,
-        "paused": true,
-        "error": null,
-        "notes": 489,
-        "downloadMatched": true
-      },
-      {
-        "songId": "Aobasou",
-        "title": "青葉騒 feat.初音ミク",
-        "startBeat": 40,
-        "startSeconds": 17.1429,
-        "kind": "same-side",
-        "url": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=16.64",
-        "time": 17.554173,
-        "rate": 0.5,
-        "paused": true,
-        "error": null,
-        "notes": 556,
-        "downloadMatched": true
-      }
-    ],
-    "updatedApplicationViews": 23,
-    "protectedCharts": 38,
-    "protectedEntries": [
-      "songs/s-620eb5b792/chart_easy.json",
-      "songs/s-620eb5b792/chart_normal.json",
-      "songs/s-7554e33fd4/chart_easy.json",
-      "songs/s-7554e33fd4/chart_normal.json",
-      "songs/s-08e4e1c34e/chart_easy.json",
-      "songs/s-08e4e1c34e/chart_normal.json",
-      "songs/s-8cf4cc290a/chart_easy.json",
-      "songs/s-8cf4cc290a/chart_normal.json",
-      "songs/s-2a3f1f3134/chart_easy.json",
-      "songs/s-2a3f1f3134/chart_normal.json",
-      "songs/s-d9dd086588/chart_easy.json",
-      "songs/s-d9dd086588/chart_normal.json",
-      "songs/s-d9dd086588/chart_hard.json",
-      "songs/s-642d5e9b77/chart_easy.json",
-      "songs/s-642d5e9b77/chart_normal.json",
-      "songs/s-642d5e9b77/chart_hard.json",
-      "songs/s-09cc07835a/chart_easy.json",
-      "songs/s-09cc07835a/chart_normal.json",
-      "songs/s-09cc07835a/chart_hard.json",
-      "songs/s-64186d3a47/chart_easy.json",
-      "songs/s-64186d3a47/chart_normal.json",
-      "songs/s-64186d3a47/chart_hard.json",
-      "songs/s-e9376a281a/chart_easy.json",
-      "songs/s-e9376a281a/chart_normal.json",
-      "songs/s-e9376a281a/chart_hard.json",
-      "songs/s-bd0623a421/chart_easy.json",
-      "songs/s-bd0623a421/chart_normal.json",
-      "songs/s-bd0623a421/chart_hard.json",
-      "songs/s-d2f1f87682/chart_easy.json",
-      "songs/s-d2f1f87682/chart_normal.json",
-      "songs/s-d2f1f87682/chart_hard.json",
-      "songs/s-d2f1f87682/chart_e.json",
-      "songs/s-32d8275186/chart_easy.json",
-      "songs/s-32d8275186/chart_normal.json",
-      "songs/s-32d8275186/chart_hard.json",
-      "songs/s-be9f46268e/chart_easy.json",
-      "songs/s-be9f46268e/chart_normal.json",
-      "songs/s-be9f46268e/chart_hard.json"
-    ],
-    "errors": []
-  },
-  "maxFlickRun": 2,
-  "maxPerHandFlickRun": 3,
+  "sourceAndAppliedViews": 12,
+  "playedClips": 12,
+  "videoLinksVerified": 140,
+  "mobileViewport": "390x844",
+  "protectedHostedCharts": 40,
+  "flickGlobalMax": 2,
+  "flickPerHandMax": 3,
   "physicalPlayTest": false,
   "phoneHardwareTest": false,
-  "automationUpdated": true,
-  "intent": "Hardの実音の強い打点を補い、広い高低差と短い縦・交差・同側の技を曲別に設計。Easy・Normalと対象外の全曲を保持。",
-  "evidence": "../FiveSongs20261014/hard-rhythm-design.json",
-  "sourceLimitations": "発音検出と拍の照合は採譜の補助。検出基準に一致する発音の網羅率を、楽曲全体の音はめの正解率と見なさない。",
-  "previousBatch": "identity-20261014.json",
-  "charts": {
-    "ManicSonic": {
-      "before": {
-        "notes": 515,
-        "strongHalfBeats": 437,
-        "strongHalfBeatsCovered": 323,
-        "meanOnsetDistanceMs": 9.522,
-        "xRange": [
-          -1.32,
-          1.32
-        ],
-        "yRange": [
-          -0.9,
-          0.9
-        ],
-        "outerNotes": 0,
-        "highLowNotes": 4,
-        "oppositeSideNotes": 2,
-        "rhythmSignatures": 30
-      },
-      "after": {
-        "notes": 620,
-        "strongHalfBeats": 437,
-        "strongHalfBeatsCovered": 437,
-        "meanOnsetDistanceMs": 8.35,
-        "xRange": [
-          -2.06,
-          2.13
-        ],
-        "yRange": [
-          -1.12,
-          1.12
-        ],
-        "outerNotes": 266,
-        "highLowNotes": 98,
-        "oppositeSideNotes": 8,
-        "rhythmSignatures": 35
-      },
-      "sha256": "6d3013ca216ec157ec4171b1b093ccec38a0c0964f8515f5fff80fa918ed81c7"
+  "timing": "映像と音声の拍から4拍相当に切り出した翻案。小節頭と原譜面版は未確定。",
+  "integration": "既存Hardの打点、休符、担当手、種類、方向、ロング長を全て保持。今回の12小節だけ座標を翻案。前回の短い技と既存64素材の適用も保持。",
+  "rights": "出典付きの短い研究用抜粋。自由利用のライセンスを示すものではない。",
+  "applications": [
+    {
+      "patternId": "full-charge-normal-1",
+      "songId": "logic",
+      "difficulty": "hard",
+      "startBar": 45,
+      "startSeconds": 70.403,
+      "targetBpm": 120,
+      "referenceBpm": 125.0,
+      "bpmDifferencePercent": -4.0,
+      "positionChangedNotes": 15,
+      "sourceUrl": "https://www.youtube.com/watch?v=qG20h1eSPQY&t=23",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=68.90",
+      "fidelity": "映像から設計した小節素材の位置・高低差を参照。曲の既存リズム・担当手・フリックは保持。原作の正確な採譜やリズムのコピーではない。"
     },
-    "escapade": {
-      "before": {
-        "notes": 393,
-        "strongHalfBeats": 341,
-        "strongHalfBeatsCovered": 210,
-        "meanOnsetDistanceMs": 7.073,
-        "xRange": [
-          -1.25,
-          1.25
-        ],
-        "yRange": [
-          -0.336,
-          0.28
-        ],
-        "outerNotes": 0,
-        "highLowNotes": 0,
-        "oppositeSideNotes": 0,
-        "rhythmSignatures": 22
-      },
-      "after": {
-        "notes": 519,
-        "strongHalfBeats": 341,
-        "strongHalfBeatsCovered": 341,
-        "meanOnsetDistanceMs": 5.337,
-        "xRange": [
-          -2.06,
-          2.06
-        ],
-        "yRange": [
-          -1.0446,
-          1.024
-        ],
-        "outerNotes": 183,
-        "highLowNotes": 65,
-        "oppositeSideNotes": 11,
-        "rhythmSignatures": 35
-      },
-      "sha256": "7bb337c0fefd8bb22782d68c3e3e5b5f8ca0d470b460720fa4ecf70f8320af0c"
+    {
+      "patternId": "full-charge-normal-2",
+      "songId": "logic",
+      "difficulty": "hard",
+      "startBar": 54,
+      "startSeconds": 88.403,
+      "targetBpm": 120,
+      "referenceBpm": 125.0,
+      "bpmDifferencePercent": -4.0,
+      "positionChangedNotes": 14,
+      "sourceUrl": "https://www.youtube.com/watch?v=qG20h1eSPQY&t=81",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=86.90",
+      "fidelity": "映像から設計した小節素材の位置・高低差を参照。曲の既存リズム・担当手・フリックは保持。原作の正確な採譜やリズムのコピーではない。"
     },
-    "logic": {
-      "before": {
-        "notes": 553,
-        "strongHalfBeats": 271,
-        "strongHalfBeatsCovered": 193,
-        "meanOnsetDistanceMs": 16.967,
-        "xRange": [
-          -1.24,
-          1.24
-        ],
-        "yRange": [
-          -0.336,
-          0.272
-        ],
-        "outerNotes": 0,
-        "highLowNotes": 0,
-        "oppositeSideNotes": 0,
-        "rhythmSignatures": 50
-      },
-      "after": {
-        "notes": 597,
-        "strongHalfBeats": 271,
-        "strongHalfBeatsCovered": 271,
-        "meanOnsetDistanceMs": 14.556,
-        "xRange": [
-          -2.0689,
-          2.13
-        ],
-        "yRange": [
-          -1.12,
-          1.12
-        ],
-        "outerNotes": 197,
-        "highLowNotes": 140,
-        "oppositeSideNotes": 20,
-        "rhythmSignatures": 66
-      },
-      "sha256": "fa47eb6144bcb3a650b85cd90a3f422489d77f38c8298bb429398f79ddd51191"
+    {
+      "patternId": "little-love-hard-1",
+      "songId": "Aobasou",
+      "difficulty": "hard",
+      "startBar": 30,
+      "startSeconds": 49.7143,
+      "targetBpm": 140,
+      "referenceBpm": 128.0,
+      "bpmDifferencePercent": 9.375,
+      "positionChangedNotes": 11,
+      "sourceUrl": "https://www.youtube.com/watch?v=9rj8fuMslwk&t=26",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=48.21",
+      "fidelity": "映像から設計した小節素材の位置・高低差を参照。曲の既存リズム・担当手・フリックは保持。原作の正確な採譜やリズムのコピーではない。"
     },
-    "BenkyouRemaster": {
-      "before": {
-        "notes": 397,
-        "strongHalfBeats": 330,
-        "strongHalfBeatsCovered": 243,
-        "meanOnsetDistanceMs": 9.391,
-        "xRange": [
-          -1.28,
-          1.28
-        ],
-        "yRange": [
-          -0.72,
-          0.72
-        ],
-        "outerNotes": 0,
-        "highLowNotes": 4,
-        "oppositeSideNotes": 0,
-        "rhythmSignatures": 31
-      },
-      "after": {
-        "notes": 489,
-        "strongHalfBeats": 330,
-        "strongHalfBeatsCovered": 330,
-        "meanOnsetDistanceMs": 8.735,
-        "xRange": [
-          -2.13,
-          2.13
-        ],
-        "yRange": [
-          -1.12,
-          1.12
-        ],
-        "outerNotes": 255,
-        "highLowNotes": 88,
-        "oppositeSideNotes": 13,
-        "rhythmSignatures": 31
-      },
-      "sha256": "b118fd0ba75ba73aefdbddb043a16d1f1e3e61ab276e4626cbdb2054e802886f"
+    {
+      "patternId": "little-love-hard-2",
+      "songId": "Aobasou",
+      "difficulty": "hard",
+      "startBar": 62,
+      "startSeconds": 104.5714,
+      "targetBpm": 140,
+      "referenceBpm": 128.0,
+      "bpmDifferencePercent": 9.375,
+      "positionChangedNotes": 15,
+      "sourceUrl": "https://www.youtube.com/watch?v=9rj8fuMslwk&t=98",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=103.07",
+      "fidelity": "映像から設計した小節素材の位置・高低差を参照。曲の既存リズム・担当手・フリックは保持。原作の正確な採譜やリズムのコピーではない。"
     },
-    "Aobasou": {
-      "before": {
-        "notes": 439,
-        "strongHalfBeats": 378,
-        "strongHalfBeatsCovered": 272,
-        "meanOnsetDistanceMs": 10.491,
-        "xRange": [
-          -1.45,
-          1.45
-        ],
-        "yRange": [
-          -0.741,
-          0.8315
-        ],
-        "outerNotes": 0,
-        "highLowNotes": 6,
-        "oppositeSideNotes": 0,
-        "rhythmSignatures": 26
-      },
-      "after": {
-        "notes": 556,
-        "strongHalfBeats": 378,
-        "strongHalfBeatsCovered": 378,
-        "meanOnsetDistanceMs": 9.658,
-        "xRange": [
-          -2.1017,
-          2.0463
-        ],
-        "yRange": [
-          -1.0278,
-          1.08
-        ],
-        "outerNotes": 204,
-        "highLowNotes": 59,
-        "oppositeSideNotes": 1,
-        "rhythmSignatures": 30
-      },
-      "sha256": "2578cde0dba1413af23b8dbd0a1df97dec3e69004fdd80480acade521bfcb23b"
+    {
+      "patternId": "origins-hard-1",
+      "songId": "ManicSonic",
+      "difficulty": "hard",
+      "startBar": 17,
+      "startSeconds": 21.3333,
+      "targetBpm": 180,
+      "referenceBpm": 175.0,
+      "bpmDifferencePercent": 2.857,
+      "positionChangedNotes": 10,
+      "sourceUrl": "https://www.youtube.com/watch?v=GnwUlvJd5a4&t=42",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=19.83",
+      "fidelity": "映像から設計した小節素材の位置・高低差を参照。曲の既存リズム・担当手・フリックは保持。原作の正確な採譜やリズムのコピーではない。"
+    },
+    {
+      "patternId": "origins-hard-2",
+      "songId": "ManicSonic",
+      "difficulty": "hard",
+      "startBar": 23,
+      "startSeconds": 29.3333,
+      "targetBpm": 180,
+      "referenceBpm": 175.0,
+      "bpmDifferencePercent": 2.857,
+      "positionChangedNotes": 13,
+      "sourceUrl": "https://www.youtube.com/watch?v=GnwUlvJd5a4&t=106",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=27.83",
+      "fidelity": "映像から設計した小節素材の位置・高低差を参照。曲の既存リズム・担当手・フリックは保持。原作の正確な採譜やリズムのコピーではない。"
     }
+  ],
+  "scopeAndSimilarity": {
+    "outsideApplicationWindowsUnchanged": true,
+    "oldTechniquesUnchanged": true,
+    "onsetEvidenceUnchanged": true,
+    "songs": {
+      "ManicSonic": {
+        "notes": 620,
+        "changedPositions": 25,
+        "rhythmAndHandsIdentical": true,
+        "uniqueBarSignatures": {
+          "before": {
+            "rhythm": 45,
+            "hands": 76,
+            "positions": 102
+          },
+          "after": {
+            "rhythm": 45,
+            "hands": 76,
+            "positions": 102
+          }
+        }
+      },
+      "escapade": {
+        "notes": 519,
+        "changedPositions": 0,
+        "rhythmAndHandsIdentical": true,
+        "uniqueBarSignatures": {
+          "before": {
+            "rhythm": 38,
+            "hands": 71,
+            "positions": 80
+          },
+          "after": {
+            "rhythm": 38,
+            "hands": 71,
+            "positions": 80
+          }
+        }
+      },
+      "logic": {
+        "notes": 597,
+        "changedPositions": 29,
+        "rhythmAndHandsIdentical": true,
+        "uniqueBarSignatures": {
+          "before": {
+            "rhythm": 70,
+            "hands": 94,
+            "positions": 112
+          },
+          "after": {
+            "rhythm": 70,
+            "hands": 94,
+            "positions": 112
+          }
+        }
+      },
+      "BenkyouRemaster": {
+        "notes": 489,
+        "changedPositions": 0,
+        "rhythmAndHandsIdentical": true,
+        "uniqueBarSignatures": {
+          "before": {
+            "rhythm": 36,
+            "hands": 60,
+            "positions": 79
+          },
+          "after": {
+            "rhythm": 36,
+            "hands": 60,
+            "positions": 79
+          }
+        }
+      },
+      "Aobasou": {
+        "notes": 556,
+        "changedPositions": 29,
+        "rhythmAndHandsIdentical": true,
+        "uniqueBarSignatures": {
+          "before": {
+            "rhythm": 35,
+            "hands": 65,
+            "positions": 80
+          },
+          "after": {
+            "rhythm": 35,
+            "hands": 65,
+            "positions": 80
+          }
+        }
+      }
+    },
+    "pairs": [
+      {
+        "songs": [
+          "ManicSonic",
+          "escapade"
+        ],
+        "rhythm": {
+          "before": {
+            "shared": 9,
+            "union": 74,
+            "jaccard": 0.121622
+          },
+          "after": {
+            "shared": 9,
+            "union": 74,
+            "jaccard": 0.121622
+          }
+        },
+        "hands": {
+          "before": {
+            "shared": 3,
+            "union": 144,
+            "jaccard": 0.020833
+          },
+          "after": {
+            "shared": 3,
+            "union": 144,
+            "jaccard": 0.020833
+          }
+        },
+        "positions": {
+          "before": {
+            "shared": 0,
+            "union": 182,
+            "jaccard": 0.0
+          },
+          "after": {
+            "shared": 0,
+            "union": 182,
+            "jaccard": 0.0
+          }
+        }
+      },
+      {
+        "songs": [
+          "ManicSonic",
+          "logic"
+        ],
+        "rhythm": {
+          "before": {
+            "shared": 13,
+            "union": 102,
+            "jaccard": 0.127451
+          },
+          "after": {
+            "shared": 13,
+            "union": 102,
+            "jaccard": 0.127451
+          }
+        },
+        "hands": {
+          "before": {
+            "shared": 4,
+            "union": 166,
+            "jaccard": 0.024096
+          },
+          "after": {
+            "shared": 4,
+            "union": 166,
+            "jaccard": 0.024096
+          }
+        },
+        "positions": {
+          "before": {
+            "shared": 0,
+            "union": 214,
+            "jaccard": 0.0
+          },
+          "after": {
+            "shared": 0,
+            "union": 214,
+            "jaccard": 0.0
+          }
+        }
+      },
+      {
+        "songs": [
+          "ManicSonic",
+          "BenkyouRemaster"
+        ],
+        "rhythm": {
+          "before": {
+            "shared": 14,
+            "union": 67,
+            "jaccard": 0.208955
+          },
+          "after": {
+            "shared": 14,
+            "union": 67,
+            "jaccard": 0.208955
+          }
+        },
+        "hands": {
+          "before": {
+            "shared": 7,
+            "union": 129,
+            "jaccard": 0.054264
+          },
+          "after": {
+            "shared": 7,
+            "union": 129,
+            "jaccard": 0.054264
+          }
+        },
+        "positions": {
+          "before": {
+            "shared": 0,
+            "union": 181,
+            "jaccard": 0.0
+          },
+          "after": {
+            "shared": 0,
+            "union": 181,
+            "jaccard": 0.0
+          }
+        }
+      },
+      {
+        "songs": [
+          "ManicSonic",
+          "Aobasou"
+        ],
+        "rhythm": {
+          "before": {
+            "shared": 13,
+            "union": 67,
+            "jaccard": 0.19403
+          },
+          "after": {
+            "shared": 13,
+            "union": 67,
+            "jaccard": 0.19403
+          }
+        },
+        "hands": {
+          "before": {
+            "shared": 7,
+            "union": 134,
+            "jaccard": 0.052239
+          },
+          "after": {
+            "shared": 7,
+            "union": 134,
+            "jaccard": 0.052239
+          }
+        },
+        "positions": {
+          "before": {
+            "shared": 0,
+            "union": 182,
+            "jaccard": 0.0
+          },
+          "after": {
+            "shared": 0,
+            "union": 182,
+            "jaccard": 0.0
+          }
+        }
+      },
+      {
+        "songs": [
+          "escapade",
+          "logic"
+        ],
+        "rhythm": {
+          "before": {
+            "shared": 19,
+            "union": 89,
+            "jaccard": 0.213483
+          },
+          "after": {
+            "shared": 19,
+            "union": 89,
+            "jaccard": 0.213483
+          }
+        },
+        "hands": {
+          "before": {
+            "shared": 6,
+            "union": 159,
+            "jaccard": 0.037736
+          },
+          "after": {
+            "shared": 6,
+            "union": 159,
+            "jaccard": 0.037736
+          }
+        },
+        "positions": {
+          "before": {
+            "shared": 0,
+            "union": 192,
+            "jaccard": 0.0
+          },
+          "after": {
+            "shared": 0,
+            "union": 192,
+            "jaccard": 0.0
+          }
+        }
+      },
+      {
+        "songs": [
+          "escapade",
+          "BenkyouRemaster"
+        ],
+        "rhythm": {
+          "before": {
+            "shared": 10,
+            "union": 64,
+            "jaccard": 0.15625
+          },
+          "after": {
+            "shared": 10,
+            "union": 64,
+            "jaccard": 0.15625
+          }
+        },
+        "hands": {
+          "before": {
+            "shared": 2,
+            "union": 129,
+            "jaccard": 0.015504
+          },
+          "after": {
+            "shared": 2,
+            "union": 129,
+            "jaccard": 0.015504
+          }
+        },
+        "positions": {
+          "before": {
+            "shared": 0,
+            "union": 159,
+            "jaccard": 0.0
+          },
+          "after": {
+            "shared": 0,
+            "union": 159,
+            "jaccard": 0.0
+          }
+        }
+      },
+      {
+        "songs": [
+          "escapade",
+          "Aobasou"
+        ],
+        "rhythm": {
+          "before": {
+            "shared": 8,
+            "union": 65,
+            "jaccard": 0.123077
+          },
+          "after": {
+            "shared": 8,
+            "union": 65,
+            "jaccard": 0.123077
+          }
+        },
+        "hands": {
+          "before": {
+            "shared": 2,
+            "union": 134,
+            "jaccard": 0.014925
+          },
+          "after": {
+            "shared": 2,
+            "union": 134,
+            "jaccard": 0.014925
+          }
+        },
+        "positions": {
+          "before": {
+            "shared": 0,
+            "union": 160,
+            "jaccard": 0.0
+          },
+          "after": {
+            "shared": 0,
+            "union": 160,
+            "jaccard": 0.0
+          }
+        }
+      },
+      {
+        "songs": [
+          "logic",
+          "BenkyouRemaster"
+        ],
+        "rhythm": {
+          "before": {
+            "shared": 11,
+            "union": 95,
+            "jaccard": 0.115789
+          },
+          "after": {
+            "shared": 11,
+            "union": 95,
+            "jaccard": 0.115789
+          }
+        },
+        "hands": {
+          "before": {
+            "shared": 2,
+            "union": 152,
+            "jaccard": 0.013158
+          },
+          "after": {
+            "shared": 2,
+            "union": 152,
+            "jaccard": 0.013158
+          }
+        },
+        "positions": {
+          "before": {
+            "shared": 0,
+            "union": 191,
+            "jaccard": 0.0
+          },
+          "after": {
+            "shared": 0,
+            "union": 191,
+            "jaccard": 0.0
+          }
+        }
+      },
+      {
+        "songs": [
+          "logic",
+          "Aobasou"
+        ],
+        "rhythm": {
+          "before": {
+            "shared": 9,
+            "union": 96,
+            "jaccard": 0.09375
+          },
+          "after": {
+            "shared": 9,
+            "union": 96,
+            "jaccard": 0.09375
+          }
+        },
+        "hands": {
+          "before": {
+            "shared": 4,
+            "union": 155,
+            "jaccard": 0.025806
+          },
+          "after": {
+            "shared": 4,
+            "union": 155,
+            "jaccard": 0.025806
+          }
+        },
+        "positions": {
+          "before": {
+            "shared": 0,
+            "union": 192,
+            "jaccard": 0.0
+          },
+          "after": {
+            "shared": 0,
+            "union": 192,
+            "jaccard": 0.0
+          }
+        }
+      },
+      {
+        "songs": [
+          "BenkyouRemaster",
+          "Aobasou"
+        ],
+        "rhythm": {
+          "before": {
+            "shared": 11,
+            "union": 60,
+            "jaccard": 0.183333
+          },
+          "after": {
+            "shared": 11,
+            "union": 60,
+            "jaccard": 0.183333
+          }
+        },
+        "hands": {
+          "before": {
+            "shared": 4,
+            "union": 121,
+            "jaccard": 0.033058
+          },
+          "after": {
+            "shared": 4,
+            "union": 121,
+            "jaccard": 0.033058
+          }
+        },
+        "positions": {
+          "before": {
+            "shared": 0,
+            "union": 159,
+            "jaccard": 0.0
+          },
+          "after": {
+            "shared": 0,
+            "union": 159,
+            "jaccard": 0.0
+          }
+        }
+      }
+    ],
+    "interpretation": "今回は音はめ改修を保持するため、5曲間のリズム・担当手の類似度は不変。座標は新規6素材の12小節だけを個別翻案。完全一致の小節比較は単調さの知覚全体を評価する指標ではない。"
   },
+  "browser": {
+    "passed": true,
+    "viewport": "390x844",
+    "sourceAndAppliedViews": 12,
+    "songWindows": [
+      {
+        "id": "full-charge-normal-1",
+        "song": "logic",
+        "notes": 597,
+        "downloadMatched": true,
+        "audioPlayed": true
+      },
+      {
+        "id": "full-charge-normal-2",
+        "song": "logic",
+        "notes": 597,
+        "downloadMatched": true,
+        "audioPlayed": true
+      },
+      {
+        "id": "little-love-hard-1",
+        "song": "Aobasou",
+        "notes": 556,
+        "downloadMatched": true,
+        "audioPlayed": true
+      },
+      {
+        "id": "little-love-hard-2",
+        "song": "Aobasou",
+        "notes": 556,
+        "downloadMatched": true,
+        "audioPlayed": true
+      },
+      {
+        "id": "origins-hard-1",
+        "song": "ManicSonic",
+        "notes": 620,
+        "downloadMatched": true,
+        "audioPlayed": true
+      },
+      {
+        "id": "origins-hard-2",
+        "song": "ManicSonic",
+        "notes": 620,
+        "downloadMatched": true,
+        "audioPlayed": true
+      }
+    ],
+    "videoLinks": 140,
+    "protectedCharts": 40,
+    "errors": []
+  },
+  "media": {
+    "passed": true,
+    "videos": [
+      {
+        "id": "full-charge-normal-1",
+        "mode": "bar",
+        "duration": 1.933008,
+        "decoded": true
+      },
+      {
+        "id": "full-charge-normal-1",
+        "mode": "context",
+        "duration": 5.766667,
+        "decoded": true
+      },
+      {
+        "id": "full-charge-normal-2",
+        "mode": "bar",
+        "duration": 1.933008,
+        "decoded": true
+      },
+      {
+        "id": "full-charge-normal-2",
+        "mode": "context",
+        "duration": 5.766667,
+        "decoded": true
+      },
+      {
+        "id": "origins-hard-1",
+        "mode": "bar",
+        "duration": 1.399675,
+        "decoded": true
+      },
+      {
+        "id": "origins-hard-1",
+        "mode": "context",
+        "duration": 4.114,
+        "decoded": true
+      },
+      {
+        "id": "origins-hard-2",
+        "mode": "bar",
+        "duration": 1.371,
+        "decoded": true
+      },
+      {
+        "id": "origins-hard-2",
+        "mode": "context",
+        "duration": 4.114,
+        "decoded": true
+      },
+      {
+        "id": "little-love-hard-1",
+        "mode": "bar",
+        "duration": 1.899675,
+        "decoded": true
+      },
+      {
+        "id": "little-love-hard-1",
+        "mode": "context",
+        "duration": 5.633333,
+        "decoded": true
+      },
+      {
+        "id": "little-love-hard-2",
+        "mode": "bar",
+        "duration": 1.875,
+        "decoded": true
+      },
+      {
+        "id": "little-love-hard-2",
+        "mode": "context",
+        "duration": 5.633008,
+        "decoded": true
+      }
+    ]
+  },
+  "sourceReview": "各区間の8フレームと前後を含む24フレームを実見。配置の前後関係と動画再生を確認。",
+  "excludedCandidates": [
+    {
+      "key": "balearic-hard",
+      "reason": "111 BPMのため今回の120〜200 BPMの対象外"
+    },
+    {
+      "key": "breezer-hard",
+      "reason": "112.5 BPMのため今回の120〜200 BPMの対象外"
+    },
+    {
+      "key": "magic-normal",
+      "reason": "208 BPMのため今回の120〜200 BPMの対象外"
+    }
+  ],
+  "localQaIssueResolved": "簡易HTTPサーバーのRange非対応で音声シークが0へ戻ったため、途中読み込み対応サーバーで全6区間を再検証。製品コードの変更なし。",
+  "protectedRepoCharts": 54,
   "publication": {
     "pattern": {
-      "commit": "812a9eedb5ea4cce555a2160f251cbd7100d5283",
+      "commit": "aeb5ad31a74d6de91fc8b15be420672024503838",
       "deployment": {
-        "id": "appgdep_6acf9c83e2f88191b0b68fde08b4540e",
+        "id": "appgdep_6acfa509bf2c8191ace81d529f069f8c",
         "project_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2",
         "title": "Beat Saber 配置素材ノート",
-        "version_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2~appgver_ad39c653e6b48191aa28c17d5d023a9d",
+        "version_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2~appgver_8771dfcde5048191b015e704d7695125",
         "type": "publish",
         "status": "succeeded",
         "url": "https://beat-saber-pattern-bank.metuji48.chatgpt.site",
@@ -365,16 +805,16 @@
         "provider_deployment_id": "site---6acf41e8dc0c8191b5a040cbed34bdc2",
         "failure_message": null,
         "env_set_revision": 0,
-        "updated_at": "2026-10-14T15:15:57.496667+00:00"
+        "updated_at": "2026-10-14T15:52:29.875105+00:00"
       }
     },
     "charts": {
-      "commit": "cbd3789d847a0c86446df22cd51df0fefc4f7f9e",
+      "commit": "300f90e56d8ea811add4221922b2e0aaac81a124",
       "deployment": {
-        "id": "appgdep_6acf9cc170588191806f3746b1474c93",
+        "id": "appgdep_6acfa498fabc819183aa08ae7d6e06ec",
         "project_id": "appgprj_6acf32845a308191985cae6f72e92c2d",
         "title": "3D Saber 譜面ライブラリ",
-        "version_id": "appgprj_6acf32845a308191985cae6f72e92c2d~appgver_336109735da88191a00943ec1f49231e",
+        "version_id": "appgprj_6acf32845a308191985cae6f72e92c2d~appgver_ed6f4c6034c0819191376ec2f81f9aa9",
         "type": "publish",
         "status": "succeeded",
         "url": "https://saber-chart-library.metuji48.chatgpt.site",
@@ -383,7 +823,7 @@
         "provider_deployment_id": "site---6acf32845a308191985cae6f72e92c2d",
         "failure_message": null,
         "env_set_revision": 0,
-        "updated_at": "2026-10-14T15:16:38.267040+00:00"
+        "updated_at": "2026-10-14T15:50:08.178243+00:00"
       }
     }
   }

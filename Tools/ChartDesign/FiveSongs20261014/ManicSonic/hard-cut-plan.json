@@ -1001,7 +1001,7 @@
         20666.6667
       ],
       "directions": [
-        "down"
+        "downleft"
       ]
     },
     {
@@ -1021,7 +1021,7 @@
         21333.3333
       ],
       "directions": [
-        "upleft"
+        "upright"
       ]
     },
     {
@@ -1041,7 +1041,7 @@
         21666.6667
       ],
       "directions": [
-        "right"
+        "upleft"
       ]
     },
     {
@@ -1051,7 +1051,7 @@
         21833.3333
       ],
       "directions": [
-        "left"
+        "down"
       ]
     },
     {
@@ -1061,7 +1061,7 @@
         22000.0
       ],
       "directions": [
-        "up"
+        "down"
       ]
     },
     {
@@ -1071,7 +1071,7 @@
         22333.3333
       ],
       "directions": [
-        "down"
+        "up"
       ]
     },
     {
@@ -1081,7 +1081,7 @@
         22666.6667
       ],
       "directions": [
-        "up"
+        "right"
       ]
     },
     {
@@ -1091,7 +1091,7 @@
         22833.3333
       ],
       "directions": [
-        "right"
+        "down"
       ]
     },
     {
@@ -1101,7 +1101,7 @@
         23000.0
       ],
       "directions": [
-        "downright"
+        "up"
       ]
     },
     {
@@ -1111,7 +1111,7 @@
         23333.3333
       ],
       "directions": [
-        "upleft"
+        "up"
       ]
     },
     {
@@ -1121,7 +1121,7 @@
         23500.0
       ],
       "directions": [
-        "downleft"
+        "down"
       ]
     },
     {
@@ -1131,7 +1131,7 @@
         23666.6667
       ],
       "directions": [
-        "upright"
+        "left"
       ]
     },
     {
@@ -1141,7 +1141,7 @@
         24000.0
       ],
       "directions": [
-        "upleft"
+        "up"
       ]
     },
     {
@@ -1413,7 +1413,7 @@
         29500.0
       ],
       "directions": [
-        "down"
+        "left"
       ]
     },
     {
@@ -1423,7 +1423,7 @@
         29666.6667
       ],
       "directions": [
-        "downleft"
+        "down"
       ]
     },
     {
@@ -1433,7 +1433,7 @@
         30000.0
       ],
       "directions": [
-        "upright"
+        "up"
       ]
     },
     {
@@ -1443,7 +1443,7 @@
         30166.6667
       ],
       "directions": [
-        "downright"
+        "up"
       ]
     },
     {
@@ -1453,7 +1453,7 @@
         30333.3333
       ],
       "directions": [
-        "upleft"
+        "down"
       ]
     },
     {
@@ -1463,7 +1463,7 @@
         30666.6667
       ],
       "directions": [
-        "right"
+        "up"
       ]
     },
     {
@@ -1473,7 +1473,7 @@
         30666.6667
       ],
       "directions": [
-        "downleft"
+        "down"
       ]
     },
     {
@@ -1483,7 +1483,7 @@
         31000.0
       ],
       "directions": [
-        "up"
+        "left"
       ]
     },
     {
@@ -1493,7 +1493,7 @@
         31333.3333
       ],
       "directions": [
-        "downleft"
+        "right"
       ]
     },
     {
@@ -1503,7 +1503,7 @@
         31500.0
       ],
       "directions": [
-        "left"
+        "upright"
       ]
     },
     {
@@ -1513,7 +1513,7 @@
         31666.6667
       ],
       "directions": [
-        "downright"
+        "down"
       ]
     },
     {
@@ -1523,7 +1523,7 @@
         31833.3333
       ],
       "directions": [
-        "up"
+        "upleft"
       ]
     },
     {
@@ -1533,7 +1533,7 @@
         32000.0
       ],
       "directions": [
-        "left"
+        "right"
       ]
     },
     {
@@ -1563,7 +1563,7 @@
         32333.3333
       ],
       "directions": [
-        "upright"
+        "left"
       ]
     },
     {
@@ -1583,7 +1583,7 @@
         32666.6667
       ],
       "directions": [
-        "upleft"
+        "up"
       ]
     },
     {

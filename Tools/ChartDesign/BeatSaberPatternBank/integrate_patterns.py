@@ -52,11 +52,16 @@ def plan_notes(notes,m,diff):
  return notes,plan
 
 def main():
- p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--features',type=Path);args=p.parse_args()
+ p=argparse.ArgumentParser();p.add_argument('--repo',type=Path,required=True);p.add_argument('--output',type=Path,required=True);p.add_argument('--features',type=Path);p.add_argument('--spatial-preserve-rhythm',action='store_true');args=p.parse_args()
+ if args.spatial_preserve_rhythm:
+  from spatial_integration import integrate
+  return integrate(args)
  repo=args.repo;design=repo/'Tools/ChartDesign/FiveSongs20261014';bank=repo/'Tools/ChartDesign/BeatSaberPatternBank';output=args.output
  protected=protected_repo(repo);authorize_specs(read(design/'songs.json'))
  patterns=read(bank/'converted-patterns.json')['patterns'];prior=read(bank/'applications.json') if (bank/'applications.json').exists() else {'applications':[]}
  done={a['patternId'] for a in prior['applications']};pending=[x for x in patterns if x['id'] not in done]
+ if not pending:
+  print('未適用素材なし。既存譜面は書き換えない。');return
  states={};musics={};original_hashes={};occupancy=collections.defaultdict(list);applications=list(prior['applications'])
  for a in applications:authorize(a['songId'],a['difficulty'])
  for a in applications:occupancy[(a['songId'],a['difficulty'])].append((a['startBeat'],a['endBeat']))
@@ -67,6 +72,7 @@ def main():
   m=Music(spec,features);musics[sid]=m;assert digest(audio)==m.analysis['sha256']
   for diff in DIFFS:
    path=folder/f'chart_{diff}.json';chart=read(path);original_hashes[str(path.relative_to(repo)).replace('\\','/')]=digest(path)
+   if pending and chart.get('hardRhythmDesignVersion'):raise AssertionError('音はめ改修済みHard。--spatial-preserve-rhythmで現在の打点を保持すること。')
    notes=internal(chart,read(design/sid/f'{diff}-cut-plan.json'),m,read(design/sid/f'{diff}-evidence.json'))
    states[(sid,diff)]={'chart':chart,'notes':notes,'m':m}
  # 難しい素材を先に割り当て、低難度の素材を狭い空き区間へ押し込まない。

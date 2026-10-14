@@ -740,7 +740,9 @@
         "burning-hard-2",
         "unlimited-hard-4",
         "reason-hard-3",
-        "crystal-normal-1"
+        "crystal-normal-1",
+        "origins-hard-1",
+        "origins-hard-2"
       ],
       "spatialLayout": {
         "version": 2,
@@ -2196,7 +2198,9 @@
         "shut-up-dance-2",
         "shut-up-dance-1",
         "elixia-hard-2",
-        "elixia-hard-3"
+        "elixia-hard-3",
+        "full-charge-normal-1",
+        "full-charge-normal-2"
       ],
       "spatialLayout": {
         "version": 2,
@@ -3439,7 +3443,9 @@
         "shut-up-dance-4",
         "burning-hard-4",
         "reason-hard-2",
-        "fire-normal-2"
+        "fire-normal-2",
+        "little-love-hard-1",
+        "little-love-hard-2"
       ],
       "spatialLayout": {
         "version": 2,

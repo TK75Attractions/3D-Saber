@@ -37,8 +37,8 @@
           -1.12,
           1.12
         ],
-        "outerNotes": 266,
-        "highLowNotes": 98,
+        "outerNotes": 255,
+        "highLowNotes": 95,
         "oppositeSideNotes": 8,
         "rhythmSignatures": 35
       },
@@ -9738,9 +9738,9 @@
           -1.12,
           1.12
         ],
-        "outerNotes": 197,
-        "highLowNotes": 140,
-        "oppositeSideNotes": 20,
+        "outerNotes": 194,
+        "highLowNotes": 143,
+        "oppositeSideNotes": 21,
         "rhythmSignatures": 66
       },
       "rhythm": {
@@ -17575,14 +17575,14 @@
         "meanOnsetDistanceMs": 9.658,
         "xRange": [
           -2.1017,
-          2.0463
+          2.0297
         ],
         "yRange": [
           -1.0278,
           1.08
         ],
-        "outerNotes": 204,
-        "highLowNotes": 59,
+        "outerNotes": 199,
+        "highLowNotes": 55,
         "oppositeSideNotes": 1,
         "rhythmSignatures": 30
       },
@@ -22288,5 +22288,40 @@
         "verticalPairs": 0
       }
     }
-  }
+  },
+  "materialUpdates": [
+    {
+      "batch": "hourly-20261015-0020",
+      "mode": "spatial-preserve-rhythm",
+      "changes": [
+        {
+          "songId": "ManicSonic",
+          "patternIds": [
+            "origins-hard-1",
+            "origins-hard-2"
+          ],
+          "rhythmAndHandUnchanged": true,
+          "positionsChanged": 25
+        },
+        {
+          "songId": "logic",
+          "patternIds": [
+            "full-charge-normal-1",
+            "full-charge-normal-2"
+          ],
+          "rhythmAndHandUnchanged": true,
+          "positionsChanged": 29
+        },
+        {
+          "songId": "Aobasou",
+          "patternIds": [
+            "little-love-hard-1",
+            "little-love-hard-2"
+          ],
+          "rhythmAndHandUnchanged": true,
+          "positionsChanged": 29
+        }
+      ]
+    }
+  ]
 }

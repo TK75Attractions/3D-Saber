@@ -1,7 +1,7 @@
 {
   "version": 1,
-  "convertedCount": 64,
-  "appliedCount": 64,
+  "convertedCount": 70,
+  "appliedCount": 70,
   "applications": [
     {
       "patternId": "shut-up-dance-2",
@@ -12749,24 +12749,2489 @@
       "layoutScale": 1,
       "layoutAdaptation": "左0拍・右0.5拍・左2拍・右3.5拍のタップへ整理。左右で高さをずらし、間を残して応答する。原作色の赤左・青右を本作の担当色へ変換。 画面配置は高低差と間のある応答を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
       "bpmDifferencePercent": 3.7
+    },
+    {
+      "patternId": "full-charge-normal-1",
+      "songId": "logic",
+      "songTitle": "logic!!!",
+      "difficulty": "hard",
+      "startBeat": 176,
+      "endBeat": 184,
+      "startBar": 45,
+      "barCount": 2,
+      "startSeconds": 70.403,
+      "endSeconds": 74.403,
+      "targetBpm": 120,
+      "referenceBpm": 125.0,
+      "bpmDifferencePercent": -4.0,
+      "mirrorFirstBar": false,
+      "secondBar": "担当手・リズムを保持して動きを続ける。機械的な左右反転はしない。",
+      "section": "中盤の展開",
+      "removedNotes": 0,
+      "addedNotes": 15,
+      "newNotes": 0,
+      "positionChangedNotes": 15,
+      "sourceCategory": "good",
+      "integrationMode": "spatial-preserve-rhythm",
+      "sourcePhaseOffsetBeats": 2,
+      "blend": 1,
+      "matchedSourceAnchors": [
+        [
+          178,
+          1
+        ],
+        [
+          179,
+          1
+        ],
+        [
+          176,
+          0
+        ],
+        [
+          177,
+          0
+        ],
+        [
+          183,
+          1
+        ],
+        [
+          180,
+          0
+        ],
+        [
+          181,
+          0
+        ]
+      ],
+      "strongMatchedAnchors": [
+        [
+          178,
+          1
+        ],
+        [
+          179,
+          1
+        ],
+        [
+          177,
+          0
+        ],
+        [
+          183,
+          1
+        ],
+        [
+          180,
+          0
+        ],
+        [
+          181,
+          0
+        ]
+      ],
+      "beforeNotes": [
+        {
+          "beat": 176.0,
+          "time": 70403.0,
+          "x": 0.94,
+          "y": 0.22,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 176.5,
+          "time": 70653.0,
+          "x": -1.4519,
+          "y": 0.2919,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 177.0,
+          "time": 70903.0,
+          "x": 1.9489,
+          "y": -0.195,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 177.5,
+          "time": 71153.0,
+          "x": 1.5482,
+          "y": 0.0425,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 178.0,
+          "time": 71403.0,
+          "x": -1.647,
+          "y": -0.2425,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 178.5,
+          "time": 71653.0,
+          "x": 2.0297,
+          "y": 0.28,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 179.0,
+          "time": 71903.0,
+          "x": -1.7757,
+          "y": -0.2425,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 179.5,
+          "time": 72153.0,
+          "x": -1.5667,
+          "y": -0.2425,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 180.0,
+          "time": 72403.0,
+          "x": 1.7125,
+          "y": 0.28,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 180.5,
+          "time": 72653.0,
+          "x": -1.697,
+          "y": -0.3644,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 181.0,
+          "time": 72903.0,
+          "x": 1.8059,
+          "y": 0.605,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 182.0,
+          "time": 73403.0,
+          "x": 1.727,
+          "y": 0.93,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 182.5,
+          "time": 73653.0,
+          "x": -1.5839,
+          "y": -0.43,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 183.0,
+          "time": 73903.0,
+          "x": -1.7164,
+          "y": -0.13,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 183.5,
+          "time": 74153.0,
+          "x": -1.5119,
+          "y": 0.17,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "fidelity": "映像から設計した小節素材の位置・高低差を参照。曲の既存リズム・担当手・フリックは保持。原作の正確な採譜やリズムのコピーではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=qG20h1eSPQY&t=23",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=68.90",
+      "noteIndices": [
+        222,
+        223,
+        224,
+        225,
+        226,
+        227,
+        228,
+        229,
+        230,
+        231,
+        232,
+        233,
+        234,
+        235,
+        236
+      ],
+      "appliedNotes": [
+        {
+          "beat": 176.0,
+          "time": 70403.0,
+          "x": 1.127,
+          "y": -0.087,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 176.5,
+          "time": 70653.0,
+          "x": -1.467,
+          "y": -0.236,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 177.0,
+          "time": 70903.0,
+          "x": 1.8,
+          "y": -0.1,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 177.5,
+          "time": 71153.0,
+          "x": 1.75,
+          "y": -0.2,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 178.0,
+          "time": 71403.0,
+          "x": -1.4,
+          "y": 0.1,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 178.5,
+          "time": 71653.0,
+          "x": 1.65,
+          "y": -0.4,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 179.0,
+          "time": 71903.0,
+          "x": -1.8,
+          "y": -0.4,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 179.5,
+          "time": 72153.0,
+          "x": -1.65,
+          "y": -0.55,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 180.0,
+          "time": 72403.0,
+          "x": 1.5,
+          "y": -0.7,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 180.5,
+          "time": 72653.0,
+          "x": -1.475,
+          "y": -0.5,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 181.0,
+          "time": 72903.0,
+          "x": 1.8,
+          "y": -0.1,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 182.0,
+          "time": 73403.0,
+          "x": 1.7,
+          "y": -0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 182.5,
+          "time": 73653.0,
+          "x": -1.6,
+          "y": -0.15,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 183.0,
+          "time": 73903.0,
+          "x": -1.772,
+          "y": -0.31,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 183.5,
+          "time": 74153.0,
+          "x": -1.558,
+          "y": -0.07,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "spatialLayout": "左の連なりと低い両手",
+      "layoutAdaptation": "素材の高低差・内外の動きを、曲の既存打点と担当手に沿って補間。入り口と出口は元の動線へ接続し、同時押しやフリックは曲の既存構成を保持。"
+    },
+    {
+      "patternId": "full-charge-normal-2",
+      "songId": "logic",
+      "songTitle": "logic!!!",
+      "difficulty": "hard",
+      "startBeat": 212,
+      "endBeat": 220,
+      "startBar": 54,
+      "barCount": 2,
+      "startSeconds": 88.403,
+      "endSeconds": 92.403,
+      "targetBpm": 120,
+      "referenceBpm": 125.0,
+      "bpmDifferencePercent": -4.0,
+      "mirrorFirstBar": false,
+      "secondBar": "担当手・リズムを保持して動きを続ける。機械的な左右反転はしない。",
+      "section": "中盤の展開",
+      "removedNotes": 0,
+      "addedNotes": 14,
+      "newNotes": 0,
+      "positionChangedNotes": 14,
+      "sourceCategory": "conditional",
+      "integrationMode": "spatial-preserve-rhythm",
+      "sourcePhaseOffsetBeats": 0,
+      "blend": 1,
+      "matchedSourceAnchors": [
+        [
+          212.5,
+          1
+        ],
+        [
+          214,
+          0
+        ],
+        [
+          215,
+          1
+        ],
+        [
+          216.5,
+          0
+        ],
+        [
+          218,
+          0
+        ],
+        [
+          219,
+          1
+        ]
+      ],
+      "strongMatchedAnchors": [
+        [
+          212.5,
+          1
+        ],
+        [
+          215,
+          1
+        ],
+        [
+          216.5,
+          0
+        ],
+        [
+          218,
+          0
+        ]
+      ],
+      "beforeNotes": [
+        {
+          "beat": 212.0,
+          "time": 88403.0,
+          "x": 1.6943,
+          "y": 0.28,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 212.5,
+          "time": 88653.0,
+          "x": -1.7598,
+          "y": -0.3644,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 213.0,
+          "time": 88903.0,
+          "x": 1.7412,
+          "y": 0.605,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 214.0,
+          "time": 89403.0,
+          "x": 1.5835,
+          "y": 0.93,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 214.5,
+          "time": 89653.0,
+          "x": -1.5944,
+          "y": -0.43,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 215.0,
+          "time": 89903.0,
+          "x": -1.6038,
+          "y": -0.13,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 215.5,
+          "time": 90153.0,
+          "x": -1.5192,
+          "y": 0.17,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 216.0,
+          "time": 90403.0,
+          "x": 1.4617,
+          "y": -0.67,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 216.5,
+          "time": 90653.0,
+          "x": 1.7062,
+          "y": -0.4325,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 217.0,
+          "time": 90903.0,
+          "x": -1.7188,
+          "y": 0.1138,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 217.5,
+          "time": 91153.0,
+          "x": -1.4704,
+          "y": -0.0644,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 218.0,
+          "time": 91403.0,
+          "x": 1.6212,
+          "y": 0.28,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 218.5,
+          "time": 91653.0,
+          "x": 1.6223,
+          "y": 0.28,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 219.0,
+          "time": 91903.0,
+          "x": -0.94,
+          "y": -0.28,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "fidelity": "映像から設計した小節素材の位置・高低差を参照。曲の既存リズム・担当手・フリックは保持。原作の正確な採譜やリズムのコピーではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=qG20h1eSPQY&t=81",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=logic&difficulty=hard&t=86.90",
+      "noteIndices": [
+        286,
+        287,
+        288,
+        289,
+        290,
+        291,
+        292,
+        293,
+        294,
+        295,
+        296,
+        297,
+        298,
+        299
+      ],
+      "appliedNotes": [
+        {
+          "beat": 212.0,
+          "time": 88403.0,
+          "x": 1.483,
+          "y": -0.107,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 212.5,
+          "time": 88653.0,
+          "x": 0.013,
+          "y": 0.512,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 213.0,
+          "time": 88903.0,
+          "x": 1.167,
+          "y": -0.833,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 214.0,
+          "time": 89403.0,
+          "x": 1.7,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 214.5,
+          "time": 89653.0,
+          "x": -0.78,
+          "y": 0.19,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 215.0,
+          "time": 89903.0,
+          "x": -1.2,
+          "y": 0.0,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 215.5,
+          "time": 90153.0,
+          "x": -0.5,
+          "y": 0.317,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 216.0,
+          "time": 90403.0,
+          "x": 1.06,
+          "y": -0.88,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 216.5,
+          "time": 90653.0,
+          "x": 0.9,
+          "y": -0.95,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 217.0,
+          "time": 90903.0,
+          "x": 0.48,
+          "y": 0.76,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 217.5,
+          "time": 91153.0,
+          "x": 0.06,
+          "y": 0.57,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 218.0,
+          "time": 91403.0,
+          "x": 1.7,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 218.5,
+          "time": 91653.0,
+          "x": 1.54,
+          "y": -0.67,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 219.0,
+          "time": 91903.0,
+          "x": -1.113,
+          "y": -0.093,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "spatialLayout": "一度だけ上下に重ねて横へ戻す",
+      "layoutAdaptation": "素材の高低差・内外の動きを、曲の既存打点と担当手に沿って補間。入り口と出口は元の動線へ接続し、同時押しやフリックは曲の既存構成を保持。"
+    },
+    {
+      "patternId": "little-love-hard-1",
+      "songId": "Aobasou",
+      "songTitle": "青葉騒 feat.初音ミク",
+      "difficulty": "hard",
+      "startBeat": 116,
+      "endBeat": 124,
+      "startBar": 30,
+      "barCount": 2,
+      "startSeconds": 49.7143,
+      "endSeconds": 53.1429,
+      "targetBpm": 140,
+      "referenceBpm": 128.0,
+      "bpmDifferencePercent": 9.375,
+      "mirrorFirstBar": false,
+      "secondBar": "担当手・リズムを保持して動きを続ける。機械的な左右反転はしない。",
+      "section": "主拍の主題",
+      "removedNotes": 0,
+      "addedNotes": 14,
+      "newNotes": 0,
+      "positionChangedNotes": 11,
+      "sourceCategory": "good",
+      "integrationMode": "spatial-preserve-rhythm",
+      "sourcePhaseOffsetBeats": 1,
+      "blend": 1,
+      "matchedSourceAnchors": [
+        [
+          117,
+          1
+        ],
+        [
+          118,
+          1
+        ],
+        [
+          119,
+          0
+        ],
+        [
+          116,
+          0
+        ],
+        [
+          121,
+          1
+        ],
+        [
+          122,
+          1
+        ],
+        [
+          123,
+          0
+        ],
+        [
+          120,
+          0
+        ]
+      ],
+      "strongMatchedAnchors": [
+        [
+          117,
+          1
+        ],
+        [
+          118,
+          1
+        ],
+        [
+          119,
+          0
+        ],
+        [
+          116,
+          0
+        ],
+        [
+          121,
+          1
+        ],
+        [
+          122,
+          1
+        ],
+        [
+          123,
+          0
+        ],
+        [
+          120,
+          0
+        ]
+      ],
+      "beforeNotes": [
+        {
+          "beat": 116.0,
+          "time": 49714.2857,
+          "x": 1.6712,
+          "y": 1.08,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 117.0,
+          "time": 50142.8571,
+          "x": -1.7808,
+          "y": -0.6175,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 117.5,
+          "time": 50357.1429,
+          "x": 1.6796,
+          "y": 0.63,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 118.0,
+          "time": 50571.4286,
+          "x": -1.7348,
+          "y": -0.3925,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 118.5,
+          "time": 50785.7143,
+          "x": -1.6042,
+          "y": -0.205,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 119.0,
+          "time": 51000.0,
+          "x": 1.8753,
+          "y": -0.02,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 119.5,
+          "time": 51214.2857,
+          "x": 1.478,
+          "y": -0.27,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 120.0,
+          "time": 51428.5714,
+          "x": 1.5879,
+          "y": -0.52,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 120.5,
+          "time": 51642.8571,
+          "x": -1.3921,
+          "y": 0.17,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 121.0,
+          "time": 51857.1429,
+          "x": -1.5997,
+          "y": -0.0175,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 121.5,
+          "time": 52071.4286,
+          "x": 1.5273,
+          "y": 0.23,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 122.0,
+          "time": 52285.7143,
+          "x": -1.7196,
+          "y": -0.3925,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 122.5,
+          "time": 52500.0,
+          "x": -1.6178,
+          "y": -0.505,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 123.0,
+          "time": 52714.2857,
+          "x": 1.7178,
+          "y": 0.78,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "fidelity": "映像から設計した小節素材の位置・高低差を参照。曲の既存リズム・担当手・フリックは保持。原作の正確な採譜やリズムのコピーではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=9rj8fuMslwk&t=26",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=48.21",
+      "noteIndices": [
+        193,
+        194,
+        195,
+        196,
+        197,
+        198,
+        199,
+        200,
+        201,
+        202,
+        203,
+        204,
+        205,
+        206
+      ],
+      "appliedNotes": [
+        {
+          "beat": 116.0,
+          "time": 49714.2857,
+          "x": 1.714,
+          "y": 0.753,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 117.0,
+          "time": 50142.8571,
+          "x": -1.4,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 117.5,
+          "time": 50357.1429,
+          "x": 1.6,
+          "y": -0.25,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 118.0,
+          "time": 50571.4286,
+          "x": -1.9,
+          "y": -0.2,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 118.5,
+          "time": 50785.7143,
+          "x": -1.55,
+          "y": -0.4,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 119.0,
+          "time": 51000.0,
+          "x": 1.4,
+          "y": -0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 119.5,
+          "time": 51214.2857,
+          "x": 1.6,
+          "y": -0.25,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 120.0,
+          "time": 51428.5714,
+          "x": 1.8,
+          "y": 0.1,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 120.5,
+          "time": 51642.8571,
+          "x": -1.35,
+          "y": 0.075,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 121.0,
+          "time": 51857.1429,
+          "x": -1.4,
+          "y": 0.3,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 121.5,
+          "time": 52071.4286,
+          "x": 1.6,
+          "y": -0.25,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 122.0,
+          "time": 52285.7143,
+          "x": -1.9,
+          "y": -0.2,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 122.5,
+          "time": 52500.0,
+          "x": -1.55,
+          "y": -0.4,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 123.0,
+          "time": 52714.2857,
+          "x": 1.506,
+          "y": -0.14,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "spatialLayout": "左の横の折り返しと着地",
+      "layoutAdaptation": "素材の高低差・内外の動きを、曲の既存打点と担当手に沿って補間。入り口と出口は元の動線へ接続し、同時押しやフリックは曲の既存構成を保持。"
+    },
+    {
+      "patternId": "little-love-hard-2",
+      "songId": "Aobasou",
+      "songTitle": "青葉騒 feat.初音ミク",
+      "difficulty": "hard",
+      "startBeat": 244,
+      "endBeat": 252,
+      "startBar": 62,
+      "barCount": 2,
+      "startSeconds": 104.5714,
+      "endSeconds": 108.0,
+      "targetBpm": 140,
+      "referenceBpm": 128.0,
+      "bpmDifferencePercent": 9.375,
+      "mirrorFirstBar": false,
+      "secondBar": "担当手・リズムを保持して動きを続ける。機械的な左右反転はしない。",
+      "section": "主拍への回帰",
+      "removedNotes": 0,
+      "addedNotes": 15,
+      "newNotes": 0,
+      "positionChangedNotes": 15,
+      "sourceCategory": "conditional",
+      "integrationMode": "spatial-preserve-rhythm",
+      "sourcePhaseOffsetBeats": 0.5,
+      "blend": 1,
+      "matchedSourceAnchors": [
+        [
+          244.5,
+          1
+        ],
+        [
+          245.5,
+          0
+        ],
+        [
+          246.5,
+          1
+        ],
+        [
+          247.5,
+          0
+        ],
+        [
+          248.5,
+          1
+        ],
+        [
+          249.5,
+          0
+        ],
+        [
+          250.5,
+          1
+        ]
+      ],
+      "strongMatchedAnchors": [
+        [
+          244.5,
+          1
+        ],
+        [
+          245.5,
+          0
+        ],
+        [
+          246.5,
+          1
+        ],
+        [
+          247.5,
+          0
+        ]
+      ],
+      "beforeNotes": [
+        {
+          "beat": 244.0,
+          "time": 104571.4286,
+          "x": 2.0211,
+          "y": 1.08,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 244.5,
+          "time": 104785.7143,
+          "x": -1.7737,
+          "y": -0.73,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 245.0,
+          "time": 105000.0,
+          "x": -2.0463,
+          "y": -0.6175,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 245.5,
+          "time": 105214.2857,
+          "x": 1.6512,
+          "y": 0.63,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 246.0,
+          "time": 105428.5714,
+          "x": 2.0073,
+          "y": 0.48,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 246.5,
+          "time": 105642.8571,
+          "x": -1.5937,
+          "y": -0.205,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 247.0,
+          "time": 105857.1429,
+          "x": -1.9489,
+          "y": -0.0175,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 247.5,
+          "time": 106071.4286,
+          "x": 1.467,
+          "y": -0.27,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 248.0,
+          "time": 106285.7143,
+          "x": 1.8775,
+          "y": -0.52,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 248.5,
+          "time": 106500.0,
+          "x": -1.3681,
+          "y": 0.17,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 249.0,
+          "time": 106714.2857,
+          "x": -1.9489,
+          "y": -0.0175,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 249.5,
+          "time": 106928.5714,
+          "x": 1.4379,
+          "y": 0.23,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 250.0,
+          "time": 107142.8571,
+          "x": -1.9611,
+          "y": -0.3925,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 250.5,
+          "time": 107357.1429,
+          "x": -1.5063,
+          "y": -0.505,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 251.0,
+          "time": 107571.4286,
+          "x": 2.0463,
+          "y": 0.78,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "fidelity": "映像から設計した小節素材の位置・高低差を参照。曲の既存リズム・担当手・フリックは保持。原作の正確な採譜やリズムのコピーではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=9rj8fuMslwk&t=98",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=Aobasou&difficulty=hard&t=103.07",
+      "noteIndices": [
+        417,
+        418,
+        419,
+        420,
+        421,
+        422,
+        423,
+        424,
+        425,
+        426,
+        427,
+        428,
+        429,
+        430,
+        431
+      ],
+      "appliedNotes": [
+        {
+          "beat": 244.0,
+          "time": 104571.4286,
+          "x": 1.939,
+          "y": 0.678,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 244.5,
+          "time": 104785.7143,
+          "x": -1.858,
+          "y": -0.577,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 245.0,
+          "time": 105000.0,
+          "x": -1.7,
+          "y": -0.525,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 245.5,
+          "time": 105214.2857,
+          "x": 1.4,
+          "y": 0.4,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 246.0,
+          "time": 105428.5714,
+          "x": 1.525,
+          "y": 0.225,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 246.5,
+          "time": 105642.8571,
+          "x": -1.1,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 247.0,
+          "time": 105857.1429,
+          "x": -1.3,
+          "y": -0.575,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 247.5,
+          "time": 106071.4286,
+          "x": 1.9,
+          "y": -0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 248.0,
+          "time": 106285.7143,
+          "x": 1.775,
+          "y": -0.125,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 248.5,
+          "time": 106500.0,
+          "x": -1.9,
+          "y": -0.5,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 249.0,
+          "time": 106714.2857,
+          "x": -1.7,
+          "y": -0.525,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 249.5,
+          "time": 106928.5714,
+          "x": 1.4,
+          "y": 0.4,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 250.0,
+          "time": 107142.8571,
+          "x": -1.3,
+          "y": -0.575,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 250.5,
+          "time": 107357.1429,
+          "x": -1.1,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 251.0,
+          "time": 107571.4286,
+          "x": 1.865,
+          "y": 0.177,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "spatialLayout": "幅の違う低い左と右の応答",
+      "layoutAdaptation": "素材の高低差・内外の動きを、曲の既存打点と担当手に沿って補間。入り口と出口は元の動線へ接続し、同時押しやフリックは曲の既存構成を保持。"
+    },
+    {
+      "patternId": "origins-hard-1",
+      "songId": "ManicSonic",
+      "songTitle": "Manic Sonic",
+      "difficulty": "hard",
+      "startBeat": 64,
+      "endBeat": 72,
+      "startBar": 17,
+      "barCount": 2,
+      "startSeconds": 21.3333,
+      "endSeconds": 24.0,
+      "targetBpm": 180,
+      "referenceBpm": 175.0,
+      "bpmDifferencePercent": 2.857,
+      "mirrorFirstBar": false,
+      "secondBar": "担当手・リズムを保持して動きを続ける。機械的な左右反転はしない。",
+      "section": "主題A",
+      "removedNotes": 0,
+      "addedNotes": 12,
+      "newNotes": 0,
+      "positionChangedNotes": 10,
+      "sourceCategory": "good",
+      "integrationMode": "spatial-preserve-rhythm",
+      "sourcePhaseOffsetBeats": 1,
+      "blend": 1,
+      "matchedSourceAnchors": [
+        [
+          65,
+          0
+        ],
+        [
+          66,
+          0
+        ],
+        [
+          67,
+          1
+        ],
+        [
+          64,
+          0
+        ],
+        [
+          69,
+          0
+        ],
+        [
+          71,
+          1
+        ],
+        [
+          68,
+          0
+        ]
+      ],
+      "strongMatchedAnchors": [
+        [
+          65,
+          0
+        ],
+        [
+          66,
+          0
+        ],
+        [
+          67,
+          1
+        ],
+        [
+          64,
+          0
+        ],
+        [
+          69,
+          0
+        ],
+        [
+          71,
+          1
+        ],
+        [
+          68,
+          0
+        ]
+      ],
+      "beforeNotes": [
+        {
+          "beat": 64.0,
+          "time": 21333.3333,
+          "x": 1.6026,
+          "y": -0.52,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 64.0,
+          "time": 21333.3333,
+          "x": -1.6026,
+          "y": 0.3575,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 65.0,
+          "time": 21666.6667,
+          "x": 1.5412,
+          "y": -0.27,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 65.5,
+          "time": 21833.3333,
+          "x": -1.547,
+          "y": 0.0763,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 66.0,
+          "time": 22000.0,
+          "x": 1.6192,
+          "y": -0.02,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 67.0,
+          "time": 22333.3333,
+          "x": -2.0113,
+          "y": -0.3925,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 68.0,
+          "time": 22666.6667,
+          "x": 1.7229,
+          "y": 0.98,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 68.5,
+          "time": 22833.3333,
+          "x": -1.5945,
+          "y": -0.6737,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 69.0,
+          "time": 23000.0,
+          "x": 1.7198,
+          "y": 0.73,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 70.0,
+          "time": 23333.3333,
+          "x": -1.604,
+          "y": -0.3925,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 70.5,
+          "time": 23500.0,
+          "x": 1.6541,
+          "y": 0.23,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 71.0,
+          "time": 23666.6667,
+          "x": -1.6752,
+          "y": -0.0175,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "fidelity": "映像から設計した小節素材の位置・高低差を参照。曲の既存リズム・担当手・フリックは保持。原作の正確な採譜やリズムのコピーではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=GnwUlvJd5a4&t=42",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=19.83",
+      "noteIndices": [
+        101,
+        102,
+        103,
+        104,
+        105,
+        106,
+        107,
+        108,
+        109,
+        110,
+        111,
+        112
+      ],
+      "appliedNotes": [
+        {
+          "beat": 64.0,
+          "time": 21333.3333,
+          "x": 1.535,
+          "y": -0.447,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 64.0,
+          "time": 21333.3333,
+          "x": -1.568,
+          "y": 0.038,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 65.0,
+          "time": 21666.6667,
+          "x": 1.7,
+          "y": 0.1,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 65.5,
+          "time": 21833.3333,
+          "x": -1.5,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 66.0,
+          "time": 22000.0,
+          "x": 0.9,
+          "y": 0.7,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 67.0,
+          "time": 22333.3333,
+          "x": -1.5,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 68.0,
+          "time": 22666.6667,
+          "x": 1.4,
+          "y": -0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 68.5,
+          "time": 22833.3333,
+          "x": -1.5,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 69.0,
+          "time": 23000.0,
+          "x": 1.7,
+          "y": 0.1,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 70.0,
+          "time": 23333.3333,
+          "x": -1.5,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 70.5,
+          "time": 23500.0,
+          "x": 1.025,
+          "y": 0.45,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 71.0,
+          "time": 23666.6667,
+          "x": -1.558,
+          "y": -0.406,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "spatialLayout": "右の内外から左の低い応答",
+      "layoutAdaptation": "素材の高低差・内外の動きを、曲の既存打点と担当手に沿って補間。入り口と出口は元の動線へ接続し、同時押しやフリックは曲の既存構成を保持。"
+    },
+    {
+      "patternId": "origins-hard-2",
+      "songId": "ManicSonic",
+      "songTitle": "Manic Sonic",
+      "difficulty": "hard",
+      "startBeat": 88,
+      "endBeat": 96,
+      "startBar": 23,
+      "barCount": 2,
+      "startSeconds": 29.3333,
+      "endSeconds": 32.0,
+      "targetBpm": 180,
+      "referenceBpm": 175.0,
+      "bpmDifferencePercent": 2.857,
+      "mirrorFirstBar": false,
+      "secondBar": "担当手・リズムを保持して動きを続ける。機械的な左右反転はしない。",
+      "section": "主題A",
+      "removedNotes": 0,
+      "addedNotes": 13,
+      "newNotes": 0,
+      "positionChangedNotes": 13,
+      "sourceCategory": "good",
+      "integrationMode": "spatial-preserve-rhythm",
+      "sourcePhaseOffsetBeats": 1,
+      "blend": 1,
+      "matchedSourceAnchors": [
+        [
+          89,
+          1
+        ],
+        [
+          90,
+          0
+        ],
+        [
+          91,
+          0
+        ],
+        [
+          88,
+          1
+        ],
+        [
+          93,
+          1
+        ],
+        [
+          94,
+          0
+        ],
+        [
+          95,
+          0
+        ],
+        [
+          92,
+          1
+        ]
+      ],
+      "strongMatchedAnchors": [
+        [
+          89,
+          1
+        ],
+        [
+          90,
+          0
+        ],
+        [
+          91,
+          0
+        ],
+        [
+          88,
+          1
+        ],
+        [
+          93,
+          1
+        ],
+        [
+          94,
+          0
+        ],
+        [
+          95,
+          0
+        ],
+        [
+          92,
+          1
+        ]
+      ],
+      "beforeNotes": [
+        {
+          "beat": 88.0,
+          "time": 29333.3333,
+          "x": -1.5945,
+          "y": 0.3575,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 88.5,
+          "time": 29500.0,
+          "x": 1.5298,
+          "y": -0.395,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 89.0,
+          "time": 29666.6667,
+          "x": -1.5678,
+          "y": 0.17,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 90.0,
+          "time": 30000.0,
+          "x": 1.666,
+          "y": -0.02,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 90.5,
+          "time": 30166.6667,
+          "x": -1.6423,
+          "y": -0.205,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 91.0,
+          "time": 30333.3333,
+          "x": 1.654,
+          "y": 0.48,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 92.0,
+          "time": 30666.6667,
+          "x": 1.7425,
+          "y": 0.98,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 92.0,
+          "time": 30666.6667,
+          "x": -1.7425,
+          "y": -0.7675,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 93.0,
+          "time": 31000.0,
+          "x": -1.6978,
+          "y": -0.58,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 94.0,
+          "time": 31333.3333,
+          "x": 1.7504,
+          "y": 0.48,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 94.5,
+          "time": 31500.0,
+          "x": -1.8972,
+          "y": -0.205,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 95.0,
+          "time": 31666.6667,
+          "x": 1.6962,
+          "y": -0.02,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 95.5,
+          "time": 31833.3333,
+          "x": -1.8846,
+          "y": 0.17,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "fidelity": "映像から設計した小節素材の位置・高低差を参照。曲の既存リズム・担当手・フリックは保持。原作の正確な採譜やリズムのコピーではない。",
+      "sourceUrl": "https://www.youtube.com/watch?v=GnwUlvJd5a4&t=106",
+      "viewerUrl": "https://saber-chart-library.metuji48.chatgpt.site/?song=ManicSonic&difficulty=hard&t=27.83",
+      "noteIndices": [
+        139,
+        140,
+        141,
+        142,
+        143,
+        144,
+        145,
+        146,
+        147,
+        148,
+        149,
+        150,
+        151
+      ],
+      "appliedNotes": [
+        {
+          "beat": 88.0,
+          "time": 29333.3333,
+          "x": -1.496,
+          "y": 0.105,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 88.5,
+          "time": 29500.0,
+          "x": 1.343,
+          "y": -0.032,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 89.0,
+          "time": 29666.6667,
+          "x": -1.5,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 90.0,
+          "time": 30000.0,
+          "x": 1.3,
+          "y": 0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 90.5,
+          "time": 30166.6667,
+          "x": -1.4,
+          "y": -0.5,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 91.0,
+          "time": 30333.3333,
+          "x": 1.2,
+          "y": -0.3,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 92.0,
+          "time": 30666.6667,
+          "x": 1.233,
+          "y": 0.0,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 92.0,
+          "time": 30666.6667,
+          "x": -1.3,
+          "y": -0.4,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 93.0,
+          "time": 31000.0,
+          "x": -1.5,
+          "y": -0.6,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 94.0,
+          "time": 31333.3333,
+          "x": 1.3,
+          "y": 0.6,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 94.5,
+          "time": 31500.0,
+          "x": -1.4,
+          "y": -0.5,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 95.0,
+          "time": 31666.6667,
+          "x": 1.365,
+          "y": -0.207,
+          "type": "tap",
+          "color": "red",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        },
+        {
+          "beat": 95.5,
+          "time": 31833.3333,
+          "x": -1.701,
+          "y": -0.031,
+          "type": "tap",
+          "color": "blue",
+          "direction": "none",
+          "count": 1,
+          "lengthMs": 0
+        }
+      ],
+      "spatialLayout": "左を低く右は上下へ",
+      "layoutAdaptation": "素材の高低差・内外の動きを、曲の既存打点と担当手に沿って補間。入り口と出口は元の動線へ接続し、同時押しやフリックは曲の既存構成を保持。"
     }
   ],
   "inputChartHashes": {
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_easy.json": "35232543752e89d8e2a883f3c125879f983e2d3d33a8e58f0cdf843aae2c260a",
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_normal.json": "1df27b550ac3b3c9610d2d7baf51e7c6c4b622c42ac55c651a06bd8cb68dff8a",
-    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "d2a619eef3a808194afcea7d2e36b58c5d4071134d107a38fede7a5c2105ab61",
-    "Assets/StreamingAssets/Songs/escapade/chart_easy.json": "cfa11b3967126d2c4174c9c729c7e9bfd282965a78e8a01824b8fff132dcbbd7",
-    "Assets/StreamingAssets/Songs/escapade/chart_normal.json": "e50264685478777fc44cbb76832d6c76b03e722dee388172b0dd2b09eaedac2f",
-    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "dcd0622b5c6689341ef25d4cfedfffcad9f203f0667ef68b15b538034e018e67",
-    "Assets/StreamingAssets/Songs/logic/chart_easy.json": "67cc4804c7f6fb8fd04e53cdd68d6d02fecc3c3e5e970351d9dd304dc50bc6f5",
-    "Assets/StreamingAssets/Songs/logic/chart_normal.json": "05e2a23d22e21c348f89d096884fe6a5b9ea8612ccb2c12386a2cd6ecc57c7ec",
-    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "91b46defdbb452fa8cb8aa3fe4e78d38c3b0d1fe4037cb14ffdaa8ad42550ec4",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_easy.json": "57de0a4bc34a155c055f0ed1d82aa5d1bba3c49a71efa272f3aead377c267c86",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_normal.json": "1a16eebcf404fe914a634b0a8a6e9ccb40fc364a8cac5dd50abf81c0eb38e8f2",
-    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "fdd2f7b9f53c0f1ac3e68d97476704676cff352e0d16cc2062525de98b00be39",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_easy.json": "055baa762239396b11ac34d0597c1229507aebdd6ee107f5fcf2a7ed79a19d0d",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_normal.json": "6cb6e07f91b502450111660b965e148e2c0ef4ce31e084d5581a8023446f688e",
-    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "3b409633fa8b0efa972ab626bed1a46b4d4b1ecde48683ac5922c6066740368b"
+    "Assets/StreamingAssets/Songs/ManicSonic/chart_hard.json": "6d3013ca216ec157ec4171b1b093ccec38a0c0964f8515f5fff80fa918ed81c7",
+    "Assets/StreamingAssets/Songs/escapade/chart_hard.json": "7bb337c0fefd8bb22782d68c3e3e5b5f8ca0d470b460720fa4ecf70f8320af0c",
+    "Assets/StreamingAssets/Songs/logic/chart_hard.json": "fa47eb6144bcb3a650b85cd90a3f422489d77f38c8298bb429398f79ddd51191",
+    "Assets/StreamingAssets/Songs/BenkyouRemaster/chart_hard.json": "b118fd0ba75ba73aefdbddb043a16d1f1e3e61ab276e4626cbdb2054e802886f",
+    "Assets/StreamingAssets/Songs/Aobasou/chart_hard.json": "2578cde0dba1413af23b8dbd0a1df97dec3e69004fdd80480acade521bfcb23b"
   },
   "spatialLayoutVersion": 2
 }

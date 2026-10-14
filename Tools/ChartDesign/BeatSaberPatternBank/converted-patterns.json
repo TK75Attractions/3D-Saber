@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "count": 64,
+  "count": 70,
   "patterns": [
     {
       "id": "dream-normal-1",
@@ -5414,6 +5414,532 @@
             "time": 1105.2632,
             "x": 1.05,
             "y": -0.15,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "full-charge-normal-1",
+      "title": "左の連なりから低い両手、右の応答へ",
+      "category": "good",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 125.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=qG20h1eSPQY&t=23",
+      "preferredSongs": [
+        "logic"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "spatial-preserve-rhythm",
+      "adaptation": "左の連なりと低い両手の着地をタップ化。壁は移植せず、曲の既存打点を保って横幅の変化を参照する。 画面配置は左の連なりと低い両手を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "左の連なりと低い両手",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/full-charge-normal-1.json",
+      "beats": 4,
+      "noteCount": 5,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 125.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.4,
+            "y": 0.1,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 480.0,
+            "x": -1.8,
+            "y": -0.4,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 960.0,
+            "x": 1.5,
+            "y": -0.7,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 960.0,
+            "x": -1.5,
+            "y": -0.7,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1440.0,
+            "x": 1.8,
+            "y": -0.1,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "full-charge-normal-2",
+      "title": "短い上下の両色から横配置へ戻る",
+      "category": "conditional",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 125.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=qG20h1eSPQY&t=81",
+      "preferredSongs": [
+        "logic"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "spatial-preserve-rhythm",
+      "adaptation": "上下の間隔を1.8以上取り、縦並びを短い技として使う。壁と身体移動を除き、前後の横配置へ無理なく戻せる場合に採用。 画面配置は一度だけ上下に重ねて横へ戻すを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "一度だけ上下に重ねて横へ戻す",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/full-charge-normal-2.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 125.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0.5,
+            "time": 240.0,
+            "x": 0.9,
+            "y": -0.95,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 0.5,
+            "time": 240.0,
+            "x": 0.9,
+            "y": 0.95,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 960.0,
+            "x": 1.7,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1440.0,
+            "x": -1.2,
+            "y": 0.0,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "origins-hard-1",
+      "title": "右手の横移動から左へ渡して戻す",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 175.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=GnwUlvJd5a4&t=42",
+      "preferredSongs": [
+        "ManicSonic"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "spatial-preserve-rhythm",
+      "adaptation": "175 BPMの片手の運動を近いテンポで参照。右の内外移動を小さくし、左との高低差を付ける。原作の方向矢印は連続フリックにしない。 画面配置は右の内外から左の低い応答を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "右の内外から左の低い応答",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/origins-hard-1.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 175.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": 1.7,
+            "y": 0.1,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 342.8571,
+            "x": 0.9,
+            "y": 0.7,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 685.7143,
+            "x": -1.5,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1028.5714,
+            "x": 1.4,
+            "y": -0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "origins-hard-2",
+      "title": "低い左と右の高低差を分ける",
+      "category": "good",
+      "minimumDifficulty": "hard",
+      "referenceBpm": 175.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=GnwUlvJd5a4&t=106",
+      "preferredSongs": [
+        "ManicSonic"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "spatial-preserve-rhythm",
+      "adaptation": "低い左と右の上下応答を、既存リズムに沿う短い運動として参照。間のある打点を広く、細分の打点は補間して経路を詰める。 画面配置は左を低く右は上下へを使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "左を低く右は上下へ",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/origins-hard-2.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 175.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 7,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.5,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 342.8571,
+            "x": 1.3,
+            "y": 0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 685.7143,
+            "x": 1.2,
+            "y": -0.3,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1028.5714,
+            "x": -1.3,
+            "y": -0.4,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "little-love-hard-1",
+      "title": "左の横方向の連なりと両手の着地",
+      "category": "good",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 128.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=9rj8fuMslwk&t=26",
+      "preferredSongs": [
+        "Aobasou"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "spatial-preserve-rhythm",
+      "adaptation": "片手の横方向の折り返しと両手の低い着地をタップ中心へ翻案。Full Chargeとは横幅と高さの変化を別に設計する。 画面配置は左の横の折り返しと着地を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "左の横の折り返しと着地",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/little-love-hard-1.json",
+      "beats": 4,
+      "noteCount": 5,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 128.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.4,
+            "y": 0.3,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 468.75,
+            "x": -1.9,
+            "y": -0.2,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 937.5,
+            "x": 1.4,
+            "y": -0.6,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 937.5,
+            "x": -1.2,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1406.25,
+            "x": 1.8,
+            "y": 0.1,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          }
+        ]
+      }
+    },
+    {
+      "id": "little-love-hard-2",
+      "title": "左右の幅を変える低い受け渡し",
+      "category": "conditional",
+      "minimumDifficulty": "normal",
+      "referenceBpm": 128.0,
+      "sourceUrl": "https://www.youtube.com/watch?v=9rj8fuMslwk&t=98",
+      "preferredSongs": [
+        "Aobasou"
+      ],
+      "maximumBpmDifferencePercent": 10,
+      "applicationMode": "spatial-preserve-rhythm",
+      "adaptation": "壁を外し、低い左の内外と右の高さの違いだけを参照。休符を埋めず、原曲の明瞭な打点で幅を変える。 画面配置は幅の違う低い左と右の応答を使用。色は担当手を示し、画面の左右に絶対固定せず、特殊配置は短い技として選ぶ。",
+      "layout": "幅の違う低い左と右の応答",
+      "orientationDegrees": 0,
+      "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+      "sourceTiming": "estimated",
+      "chartFile": "patterns/little-love-hard-2.json",
+      "beats": 4,
+      "noteCount": 4,
+      "flickCount": 0,
+      "chart": {
+        "_comment": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",
+        "bpm": 128.0,
+        "coordScale": 1,
+        "offsetMs": 0,
+        "beatZeroMs": 0,
+        "displayLevel": 5,
+        "timeSignatures": [
+          {
+            "beat": 0,
+            "numerator": 4,
+            "denominator": 4
+          }
+        ],
+        "editorTempoMap": [],
+        "notes": [
+          {
+            "beat": 0,
+            "time": 0.0,
+            "x": -1.9,
+            "y": -0.5,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 1,
+            "time": 468.75,
+            "x": 1.4,
+            "y": 0.4,
+            "type": "tap",
+            "color": "red",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 2,
+            "time": 937.5,
+            "x": -1.1,
+            "y": -0.6,
+            "type": "tap",
+            "color": "blue",
+            "direction": "none",
+            "count": 1,
+            "lengthMs": 0
+          },
+          {
+            "beat": 3,
+            "time": 1406.25,
+            "x": 1.9,
+            "y": -0.3,
             "type": "tap",
             "color": "red",
             "direction": "none",
