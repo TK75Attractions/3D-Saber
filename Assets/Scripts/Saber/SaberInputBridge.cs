@@ -80,8 +80,9 @@ public class SaberInputBridge : MonoBehaviour
     readonly PhoneSaberEndpointFilter endpointFilter = new PhoneSaberEndpointFilter();
     InputPoint filterInput;
     int filterStickIndex, filterInputRevision, filterSettingsRevision, filterMode;
-    string filterStation;
+    string filterStation, filterSender;
     InputPoint predictionInput;
+    string predictionSender;
     int predictionStickIndex;
     int predictionRevision;
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
@@ -172,14 +173,15 @@ public class SaberInputBridge : MonoBehaviour
     int ResolveFilterMode(InputPoint input)
     {
         string station = input.StationLabel;
+        string sender = stickIndex == 2 ? input.BlueCoordinateSender : input.RedCoordinateSender;
         int mode = filterMode;
         // 通常フレームはキー文字列を作り直さず、保存・入力源変更時だけ設定を読み直す。
         if (filterInput != input || filterStation != station || filterSettingsRevision != PhoneSaberFilterSettings.Revision)
             mode = PhoneSaberFilterSettings.Load(station);
         filterSettingsRevision = PhoneSaberFilterSettings.Revision;
-        // 台・入力源・位置補正・強さの切替時は古い履歴を混ぜない。
+        // 台・入力源・送信元・位置補正・強さの切替時は古い履歴を混ぜない。
         if (filterInput != input || filterStickIndex != stickIndex || filterStation != station ||
-            filterInputRevision != input.PredictionRevision || filterMode != mode)
+            filterSender != sender || filterInputRevision != input.PredictionRevision || filterMode != mode)
         {
             endpointFilter.Reset();
             // フィルタを使っていない間の予測履歴は、従来の予測側だけで管理する。
@@ -188,6 +190,7 @@ public class SaberInputBridge : MonoBehaviour
             filterInput = input;
             filterStickIndex = stickIndex;
             filterStation = station;
+            filterSender = sender;
             filterInputRevision = input.PredictionRevision;
             filterMode = mode;
         }
@@ -210,12 +213,14 @@ public class SaberInputBridge : MonoBehaviour
             ResetPrediction();
             return;
         }
-        if (predictionInput != input || predictionStickIndex != stickIndex ||
+        string sender = stickIndex == 2 ? input.BlueCoordinateSender : input.RedCoordinateSender;
+        if (predictionInput != input || predictionStickIndex != stickIndex || predictionSender != sender ||
             predictionRevision != input.PredictionRevision)
         {
             endpointPredictor.Reset();
             predictionInput = input;
             predictionStickIndex = stickIndex;
+            predictionSender = sender;
             predictionRevision = input.PredictionRevision;
         }
         // 最新の適用サンプルだけを使う。Unity が間引いた packet をキューで追いかけない。

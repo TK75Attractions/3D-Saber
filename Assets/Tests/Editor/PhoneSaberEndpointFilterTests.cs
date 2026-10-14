@@ -196,6 +196,80 @@ public class PhoneSaberEndpointFilterTests
         }
     }
 
+    [TestCase(1, 1, 0)]
+    [TestCase(2, 2, 0)]
+    [TestCase(1, 0, 40)]
+    [TestCase(2, 0, 40)]
+    [TestCase(1, 1, 40)]
+    [TestCase(2, 2, 40)]
+    public void SenderChangesRestartOnlyTheSelectedSticksFilterAndPrediction(int stick, int mode, int horizon)
+    {
+        var go = new GameObject("送信元切替の端点履歴テスト");
+        go.SetActive(false);
+        var input = go.AddComponent<InputPoint>(); input.enabled = false;
+        var bridge = go.AddComponent<SaberInputBridge>();
+        bridge.stickIndex = stick; bridge.clampToBounds = false;
+        string station = "source-" + Guid.NewGuid().ToString("N").Substring(0, 8);
+        var type = typeof(InputPoint);
+        var instance = type.GetProperty("Instance");
+        var previousInput = InputPoint.Instance;
+        string suffix = stick == 2 ? "2" : "";
+        string senderProperty = stick == 2 ? "BlueCoordinateSender" : "RedCoordinateSender";
+        Action<string, object> set = (name, value) => type.GetProperty(name).SetValue(input, value);
+        var update = typeof(SaberInputBridge).GetMethod("Update", BindingFlags.Instance | BindingFlags.NonPublic);
+        // 実時計の減衰と無関係に、100ms未満の送信元切替を再現する。ソケットは開かない。
+        double at = SwingMonotonicClock.ToSeconds(SwingMonotonicClock.Timestamp) + 1;
+        Action<string, double, float> sample = (sender, time, x) =>
+        {
+            set(senderProperty, sender);
+            set("LastReceivedTime" + suffix, Time.realtimeSinceStartupAsDouble);
+            set("LastReceivedMonotonicTime" + suffix, time);
+            set("LocalStickRawA" + suffix, new Vector2(x, 0));
+            set("LocalStickRawB" + suffix, new Vector2(x + 1, 0));
+            update.Invoke(bridge, null);
+        };
+        try
+        {
+            instance.SetValue(null, input);
+            type.GetField("phoneSaberStation", BindingFlags.Instance | BindingFlags.NonPublic).SetValue(input, station);
+            PhoneSaberFilterSettings.Save(station, mode);
+            set("PredictionHorizonMilliseconds", horizon);
+            set("HasValidStickEndpoints" + suffix, true);
+            for (int i = 0; i < 4; i++) sample("10.0.0.1", at + i * .02, i * .1f);
+            at += .06;
+
+            var beforeA = bridge.WorldEndA; var beforeB = bridge.WorldEndB;
+            set(stick == 2 ? "RedCoordinateSender" : "BlueCoordinateSender", "10.0.0.99");
+            update.Invoke(bridge, null);
+            Assert.AreEqual(beforeA, bridge.WorldEndA, "反対色の送信元変更では履歴を捨てない");
+            Assert.AreEqual(beforeB, bridge.WorldEndB);
+
+            // LAN→P2P→別のLAN端末。切替後の各サンプルは、新しい履歴だけの結果と一致する。
+            foreach (string sender in new[] { "127.0.0.1", "10.0.0.2" })
+            {
+                var filter = new PhoneSaberEndpointFilter();
+                PhoneSaberEndpointPredictor predictor = default;
+                for (int i = 0; i < 4; i++)
+                {
+                    at += .02;
+                    float x = 1 + i * .1f;
+                    var a = new Vector2(x, 0); var b = new Vector2(x + 1, 0);
+                    if (mode != 0) filter.Apply(at, a, b, mode, out a, out b);
+                    if (horizon > 0) { predictor.AddSample(at, a, b); predictor.Predict(at, horizon, out a, out b); }
+                    sample(sender, at, x);
+                    Near(a, new Vector2(bridge.WorldEndA.x, bridge.WorldEndA.y));
+                    Near(b, new Vector2(bridge.WorldEndB.x, bridge.WorldEndB.y));
+                }
+            }
+        }
+        finally
+        {
+            instance.SetValue(null, previousInput);
+            PlayerPrefs.DeleteKey(PhoneSaberFilterSettings.Key(station)); PlayerPrefs.Save();
+            UnityEngine.Object.DestroyImmediate(go);
+        }
+    }
+
     [Test]
     public void BridgeModeChangesClearPredictionAndCalibrationChangesRestartFilter()
     {
