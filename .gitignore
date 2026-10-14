@@ -127,3 +127,6 @@ InitTestScene*.unity*
 /PhoneSaber/mac/.saber-watchdog.lock/
 /PhoneSaber/mac/*.STOP
 /PhoneSaber/mac/STOP
+
+# Local playback review requests and captured frames
+/PlaybackReviews/
