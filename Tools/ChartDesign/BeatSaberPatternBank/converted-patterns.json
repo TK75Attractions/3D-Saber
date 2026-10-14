@@ -3665,7 +3665,7 @@
     },
     {
       "id": "beat-hard-1",
-      "title": "一定の交互から低い壁へつなぐ",
+      "title": "一定の交互からしゃがみ壁へつなぐ",
       "category": "conditional",
       "minimumDifficulty": "normal",
       "referenceBpm": 166.0,
@@ -3749,7 +3749,7 @@
       "minimumDifficulty": "normal",
       "referenceBpm": 166.0,
       "sourceUrl": "https://www.youtube.com/watch?v=KQoUHhbs6rA&t=55",
-      "adaptation": "小節頭を斜めに離した両手タップにし、3拍目の左手へ移る。余白を保ち、内向きの同時フリックは付けない。 画面配置は斜めの両手から単発へを使用。色は担当手を示し、画面の左右を固定しない。",
+      "adaptation": "小節頭を斜めに離した両手タップにし、3拍後の左手へ移る。余白を保ち、内向きの同時フリックは付けない。 画面配置は斜めの両手から単発へを使用。色は担当手を示し、画面の左右を固定しない。",
       "layout": "斜めの両手から単発へ",
       "orientationDegrees": 0,
       "fidelity": "映像で確認した担当手の順・休符・密度から設計した翻案。位置は本作独自で、原作の正確な採譜ではない。",

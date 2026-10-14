@@ -1,46 +1,75 @@
 {
-  "batch": "20261014-1915",
+  "batch": "20261014-2021",
   "newCollected": 6,
   "newConverted": 6,
   "newApplied": 6,
-  "totalCollected": 40,
-  "totalConverted": 40,
-  "totalApplied": 40,
+  "totalCollected": 46,
+  "totalConverted": 46,
+  "totalApplied": 46,
   "classification": {
-    "good": 3,
-    "conditional": 3,
-    "avoid": 0
+    "good": 4,
+    "conditional": 2
   },
-  "retainedPreviousApplications": 34,
+  "excludedCandidates": [
+    {
+      "key": "country-hard",
+      "bpm": 210,
+      "reason": "今回は120〜200 BPMの不足帯を優先するため収録を見送った。150という事前推定は投稿者の譜面情報で訂正。"
+    },
+    {
+      "key": "breezer-hard",
+      "bpm": 112.5,
+      "reason": "今回は対象BPM帯を優先して見送った。小数BPMを保持するよう調査用の読取処理も修正。"
+    }
+  ],
+  "changedSongs": 3,
+  "changedCharts": 6,
+  "retainedPreviousApplications": 40,
+  "outsideInsertionRangesUnchanged": true,
   "protectedOtherCharts": 37,
   "unity": {
     "tests-merged": {
       "result": "Passed",
-      "total": "43",
-      "passed": "43",
+      "total": "58",
+      "passed": "58",
       "failed": "0",
-      "start-time": "2026-10-14 10:42:29Z",
-      "end-time": "2026-10-14 10:42:36Z"
+      "start-time": "2026-10-14 11:30:43Z",
+      "end-time": "2026-10-14 11:30:50Z"
     },
     "tests-playmode": {
       "result": "Passed",
       "total": "1",
       "passed": "1",
       "failed": "0",
-      "start-time": "2026-10-14 10:43:22Z",
-      "end-time": "2026-10-14 10:43:27Z"
+      "start-time": "2026-10-14 11:31:26Z",
+      "end-time": "2026-10-14 11:31:32Z"
     }
   },
   "browser": {
-    "patternViews": 80,
+    "patternViews": 92,
     "fullCharts": 15,
     "matchingChartFiles": 15,
+    "inspectedHandLabels": 621,
+    "oppositeSideLabels": 267,
+    "mobileViewport": "390x844",
+    "desktopViewport": "1440x1000",
+    "errors": [],
+    "passed": true
+  },
+  "finalBrowser": {
+    "bookmarkPersistsAfterReload": true,
+    "packageLinks": 4,
+    "oldVideoLinks": 40,
+    "newApplicationDeepLinks": 6,
+    "mobileOverflow": false,
     "errors": [],
     "passed": true
   },
   "maxFlickRun": 3,
   "maxPerHandFlickRun": 3,
   "physicalPlayTest": false,
+  "phoneHardwareTest": false,
+  "positionPolicy": "色は担当手のみ。上下・左右反転・同じ側の配置を使用。担当手をx座標から推測しない。",
   "newVideosBrowserChecked": 12,
   "newVideosDecoded": 12
 }

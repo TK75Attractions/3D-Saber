@@ -1,0 +1,40 @@
+{
+  "batch": "20261014-2021",
+  "collected": 6,
+  "converted": 6,
+  "applied": 6,
+  "total": 46,
+  "gameImplementationCommit": "d215ca2",
+  "patternSite": {
+    "id": "appgdep_6acf6a8d32a88191a038532c5527b98e",
+    "project_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2",
+    "title": "Beat Saber 配置素材ノート",
+    "version_id": "appgprj_6acf41e8dc0c8191b5a040cbed34bdc2~appgver_b44422255b688191b8cdce10e9c9e996",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://beat-saber-pattern-bank.metuji48.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6acf41e8dc0c8191b5a040cbed34bdc2",
+    "failure_message": null,
+    "env_set_revision": 0,
+    "updated_at": "2026-10-14T11:42:51.201558+00:00",
+    "commit_sha": "e77bba577b6ccaa2792eff887666d7b76767916d"
+  },
+  "chartSite": {
+    "id": "appgdep_6acf6a4a4f8881918a2c0ec9ba0a30be",
+    "project_id": "appgprj_6acf32845a308191985cae6f72e92c2d",
+    "title": "3D Saber 譜面ライブラリ",
+    "version_id": "appgprj_6acf32845a308191985cae6f72e92c2d~appgver_4476364716888191919917ca0eae75e9",
+    "type": "publish",
+    "status": "succeeded",
+    "url": "https://saber-chart-library.metuji48.chatgpt.site",
+    "has_mcp": false,
+    "screenshot_asset_pointer": null,
+    "provider_deployment_id": "site---6acf32845a308191985cae6f72e92c2d",
+    "failure_message": null,
+    "env_set_revision": 0,
+    "updated_at": "2026-10-14T11:41:17.813760+00:00",
+    "commit_sha": "55ed94567dbcbcabe36f5bf09b576fd2289473b6"
+  }
+}
